@@ -17,6 +17,8 @@ pub struct PromptContext {
     pub character: CharacterData,
     pub active_lore: Vec<LorebookEntry>,
     pub state_variables: Vec<StateVariable>,
+    #[serde(default)]
+    pub cognitive: Option<crate::modules::memory::CognitiveOverview>,
     pub reply_language: Option<String>, // e.g. "Deutsch", "English"
 }
 
@@ -84,6 +86,47 @@ pub fn build_system_prompt(ctx: &PromptContext) -> String {
             }
         }
         parts.push(vars_str);
+    }
+
+    // 6.5. Cognitive Soul Memory & Inner Psychology
+    if let Some(cog) = &ctx.cognitive {
+        let mut cog_str = String::from("## Innerer Geisteszustand & Kognitives Gedächtnis\n");
+        cog_str.push_str(&format!(
+            "- **Emotion & Intensität**: {} (Intensität {} von 5)\n",
+            cog.psychology.primary_emotion, cog.psychology.intensity
+        ));
+        if !cog.psychology.psychological_tension.trim().is_empty() && cog.psychology.psychological_tension != "Keine." {
+            cog_str.push_str(&format!("- **Innere Anspannung**: {}\n", cog.psychology.psychological_tension));
+        }
+        if !cog.psychology.active_agenda.trim().is_empty() {
+            cog_str.push_str(&format!("- **Unbewusste Agenda**: {}\n", cog.psychology.active_agenda));
+        }
+        if !cog.psychology.immediate_focus.trim().is_empty() {
+            cog_str.push_str(&format!("- **Gedanklicher Fokus**: {}\n", cog.psychology.immediate_focus));
+        }
+        cog_str.push_str(&format!("- **Vertrauensstufe zu {}**: {}\n", ctx.user_name, cog.relationship.trust_level));
+        if !cog.relationship.unspoken_tension.trim().is_empty() && cog.relationship.unspoken_tension != "Keine." {
+            cog_str.push_str(&format!("- **Ungesagte Spannungen**: {}\n", cog.relationship.unspoken_tension));
+        }
+        if !cog.relationship.preferences_habits.is_empty() {
+            cog_str.push_str(&format!(
+                "- **Bekannte Vorlieben/Gewohnheiten**: {}\n",
+                cog.relationship.preferences_habits.join(", ")
+            ));
+        }
+        if !cog.relationship.shared_milestones.is_empty() {
+            cog_str.push_str(&format!(
+                "- **Gemeinsame Meilensteine**: {}\n",
+                cog.relationship.shared_milestones.join("; ")
+            ));
+        }
+        if !cog.recent_memories.is_empty() {
+            cog_str.push_str("\n### Erinnertes Langzeitgedächtnis (Fakten, Versprechen, Erlebnisse):\n");
+            for mem in &cog.recent_memories {
+                cog_str.push_str(&format!("- [{}] {}\n", mem.category, mem.content));
+            }
+        }
+        parts.push(cog_str);
     }
 
     // 7. Language Directive

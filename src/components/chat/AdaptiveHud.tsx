@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { useAppStore } from '../../store/useAppStore';
-import { Heart, Zap, Smile, Users, ChevronDown, BookOpen } from 'lucide-react';
+import { Heart, Zap, Smile, Users, ChevronDown, BookOpen, Brain } from 'lucide-react';
+import { CognitiveMemoryDrawer } from './CognitiveMemoryDrawer';
 
 export const AdaptiveHud = () => {
   const {
@@ -12,6 +13,7 @@ export const AdaptiveHud = () => {
   } = useAppStore();
 
   const [showSelector, setShowSelector] = useState(false);
+  const [showMemoryDrawer, setShowMemoryDrawer] = useState(false);
 
   if (!activeCharacter) {
     return null;
@@ -154,7 +156,23 @@ export const AdaptiveHud = () => {
             </div>
           );
         })}
+
+        {/* Cognitive Soul Memory Drawer Trigger */}
+        <button
+          onClick={() => setShowMemoryDrawer(true)}
+          className="flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-purple-950/50 border border-purple-500/40 text-purple-300 hover:bg-purple-900/60 hover:text-purple-200 transition text-[11px] font-medium shadow-sm cursor-pointer"
+          title="Kognitiven Seelenspeicher öffnen"
+        >
+          <Brain className="w-3.5 h-3.5 text-purple-400" />
+          <span>Seelenspeicher</span>
+        </button>
       </div>
+
+      <CognitiveMemoryDrawer
+        isOpen={showMemoryDrawer}
+        onClose={() => setShowMemoryDrawer(false)}
+      />
     </div>
   );
 };
+

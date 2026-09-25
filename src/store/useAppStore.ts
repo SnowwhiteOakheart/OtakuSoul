@@ -9,6 +9,9 @@ import {
   CharacterProfile,
   Lorebook,
   StateVariable,
+  CognitiveOverview,
+  PsychologyState,
+  RelationshipState,
 } from '../types';
 
 interface AppStoreState {
@@ -40,6 +43,16 @@ interface AppStoreState {
   selectCharacter: (character: CharacterProfile) => Promise<void>;
   loadPresetCharacters: () => Promise<void>;
   updateStateVariable: (name: string, value: string) => void;
+
+  // Cognitive Soul Memory (Phase 5)
+  cognitiveOverview: CognitiveOverview | null;
+  isMemoryLoading: boolean;
+  fetchCognitiveOverview: (charId?: string, userName?: string) => Promise<void>;
+  updatePsychology: (psych: PsychologyState) => Promise<void>;
+  updateRelationship: (rel: RelationshipState) => Promise<void>;
+  addManualMemory: (category: string, content: string, significance: number) => Promise<void>;
+  addManualDiary: (title: string, entryText: string, mood: string) => Promise<void>;
+  triggerEmotionalDecay: () => Promise<void>;
 
   // Chat & LLM
   selectedBackend: 'local' | 'cloud';
@@ -161,6 +174,80 @@ export const useAppStore = create<AppStoreState>((set, get) => ({
     }));
   },
 
+  // Phase 5: Cognitive Soul Memory
+  cognitiveOverview: null,
+  isMemoryLoading: false,
+
+  fetchCognitiveOverview: async (charId?: string, userName?: string) => {
+    const activeChar = charId || get().activeCharacter?.id;
+    const user = userName || get().userPersona.name;
+    if (!activeChar) return;
+
+    set({ isMemoryLoading: true });
+    try {
+      const overview = await api.getCognitiveOverview(activeChar, user);
+      set({ cognitiveOverview: overview, isMemoryLoading: false });
+    } catch (e) {
+      console.error('Failed to fetch cognitive overview:', e);
+      set({ isMemoryLoading: false });
+    }
+  },
+
+  updatePsychology: async (psych: PsychologyState) => {
+    const activeChar = get().activeCharacter?.id;
+    if (!activeChar) return;
+    try {
+      await api.updatePsychology(activeChar, psych);
+      await get().fetchCognitiveOverview();
+    } catch (e) {
+      console.error('Failed to update psychology:', e);
+    }
+  },
+
+  updateRelationship: async (rel: RelationshipState) => {
+    const activeChar = get().activeCharacter?.id;
+    if (!activeChar) return;
+    try {
+      await api.updateRelationship(activeChar, rel);
+      await get().fetchCognitiveOverview();
+    } catch (e) {
+      console.error('Failed to update relationship:', e);
+    }
+  },
+
+  addManualMemory: async (category: string, content: string, significance: number) => {
+    const activeChar = get().activeCharacter?.id;
+    if (!activeChar) return;
+    try {
+      await api.addEpisodicMemory(activeChar, category, content, significance);
+      await get().fetchCognitiveOverview();
+    } catch (e) {
+      console.error('Failed to add memory:', e);
+    }
+  },
+
+  addManualDiary: async (title: string, entryText: string, mood: string) => {
+    const activeChar = get().activeCharacter?.id;
+    if (!activeChar) return;
+    try {
+      await api.addDiaryEntry(activeChar, title, entryText, mood);
+      await get().fetchCognitiveOverview();
+    } catch (e) {
+      console.error('Failed to add diary entry:', e);
+    }
+  },
+
+  triggerEmotionalDecay: async () => {
+    const activeChar = get().activeCharacter?.id;
+    if (!activeChar) return;
+    try {
+      await api.applyEmotionalDecay(activeChar);
+      await get().fetchCognitiveOverview();
+    } catch (e) {
+      console.error('Failed to apply emotional decay:', e);
+    }
+  },
+
   selectCharacter: async (character: CharacterProfile) => {
     set({
       activeCharacter: character,
@@ -173,6 +260,8 @@ export const useAppStore = create<AppStoreState>((set, get) => ({
       streamingText: '',
       streamingThought: '',
     });
+    // Load cognitive overview for newly selected character
+    await get().fetchCognitiveOverview(character.id, get().userPersona.name);
   },
 
   loadPresetCharacters: async () => {
@@ -269,6 +358,7 @@ export const useAppStore = create<AppStoreState>((set, get) => ({
         character: activeCharacter.card.data,
         active_lore: matchedLore,
         state_variables: stateVariables,
+        cognitive: get().cognitiveOverview || undefined,
         reply_language: 'Deutsch',
       });
 
@@ -310,6 +400,13 @@ export const useAppStore = create<AppStoreState>((set, get) => ({
         streamingThought: '',
         isGenerating: false,
       }));
+
+      // Naturally apply emotional decay tick & refresh soul overview
+      if (activeCharacter?.id) {
+        api.applyEmotionalDecay(activeCharacter.id)
+          .then(() => get().fetchCognitiveOverview())
+          .catch((err) => console.warn('Decay tick error:', err));
+      }
     } catch (e) {
       console.error('Chat error:', e);
       set((state) => ({

@@ -132,11 +132,65 @@ export interface StateVariable {
   max_value?: number;
 }
 
+// Phase 5: Cognitive Soul Memory
+export interface PsychologyState {
+  primary_emotion: string;
+  intensity: number; // 1..5
+  psychological_tension: string;
+  emotional_decay_counter: number;
+  active_agenda: string;
+  immediate_focus: string;
+  updated_at: number;
+}
+
+export interface RelationshipState {
+  user_name: string;
+  trust_level: string;
+  unspoken_tension: string;
+  preferences_habits: string[];
+  shared_milestones: string[];
+  updated_at: number;
+}
+
+export interface EpisodicMemory {
+  id: number;
+  category: string; // 'event' | 'fact' | 'location' | 'secret' | 'promise'
+  content: string;
+  significance: number; // 1..5
+  created_at: number;
+  last_accessed_at: number;
+}
+
+export interface DiaryEntry {
+  id: number;
+  title: string;
+  entry_text: string;
+  mood: string;
+  created_at: number;
+}
+
+export interface HealingLogEntry {
+  id: number;
+  action: string;
+  details: string;
+  created_at: number;
+}
+
+export interface CognitiveOverview {
+  psychology: PsychologyState;
+  relationship: RelationshipState;
+  recent_memories: EpisodicMemory[];
+  recent_diary: DiaryEntry[];
+  healing_logs: HealingLogEntry[];
+}
+
 export interface PromptContext {
   char_name: string;
   user_name: string;
   character: CharacterData;
   active_lore: LorebookEntry[];
   state_variables: StateVariable[];
+  cognitive?: CognitiveOverview;
   reply_language?: string;
 }
+

@@ -79,4 +79,81 @@ pub fn read_file_binary(file_path: String) -> Result<Vec<u8>, String> {
     std::fs::read(&file_path).map_err(|e| format!("Fehler beim Lesen der Datei {:?}: {}", file_path, e))
 }
 
+// --- Phase 5: Cognitive Soul Memory Commands ---
+
+#[tauri::command]
+pub fn get_cognitive_overview(
+    state: State<'_, AppState>,
+    char_id: String,
+    user_name: String,
+) -> Result<crate::modules::memory::CognitiveOverview, String> {
+    state
+        .memory_db
+        .get_cognitive_overview(&char_id, &user_name)
+        .map_err(|e| e.to_string())
+}
+
+#[tauri::command]
+pub fn update_psychology(
+    state: State<'_, AppState>,
+    char_id: String,
+    psychology: crate::modules::memory::PsychologyState,
+) -> Result<(), String> {
+    state
+        .memory_db
+        .update_psychology(&char_id, &psychology)
+        .map_err(|e| e.to_string())
+}
+
+#[tauri::command]
+pub fn update_relationship(
+    state: State<'_, AppState>,
+    char_id: String,
+    relationship: crate::modules::memory::RelationshipState,
+) -> Result<(), String> {
+    state
+        .memory_db
+        .update_relationship(&char_id, &relationship)
+        .map_err(|e| e.to_string())
+}
+
+#[tauri::command]
+pub fn add_episodic_memory(
+    state: State<'_, AppState>,
+    char_id: String,
+    category: String,
+    content: String,
+    significance: u32,
+) -> Result<i64, String> {
+    state
+        .memory_db
+        .add_episodic_memory(&char_id, &category, &content, significance)
+        .map_err(|e| e.to_string())
+}
+
+#[tauri::command]
+pub fn add_diary_entry(
+    state: State<'_, AppState>,
+    char_id: String,
+    title: String,
+    entry_text: String,
+    mood: String,
+) -> Result<i64, String> {
+    state
+        .memory_db
+        .add_diary_entry(&char_id, &title, &entry_text, &mood)
+        .map_err(|e| e.to_string())
+}
+
+#[tauri::command]
+pub fn apply_emotional_decay(
+    state: State<'_, AppState>,
+    char_id: String,
+) -> Result<Option<String>, String> {
+    state
+        .memory_db
+        .apply_emotional_decay(&char_id)
+        .map_err(|e| e.to_string())
+}
+
 

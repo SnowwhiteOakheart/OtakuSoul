@@ -11,6 +11,9 @@ import {
   Lorebook,
   LorebookEntry,
   PromptContext,
+  CognitiveOverview,
+  PsychologyState,
+  RelationshipState,
 } from '../types';
 
 export const api = {
@@ -79,6 +82,63 @@ export const api = {
   readFileBinary: async (filePath: string): Promise<Uint8Array> => {
     const bytes = await invoke<number[]>('read_file_binary', { filePath });
     return new Uint8Array(bytes);
+  },
+
+  // Phase 5: Cognitive Soul Memory
+  getCognitiveOverview: async (
+    charId: string,
+    userName: string
+  ): Promise<CognitiveOverview> => {
+    return await invoke<CognitiveOverview>('get_cognitive_overview', {
+      charId,
+      userName,
+    });
+  },
+
+  updatePsychology: async (
+    charId: string,
+    psychology: PsychologyState
+  ): Promise<void> => {
+    return await invoke<void>('update_psychology', { charId, psychology });
+  },
+
+  updateRelationship: async (
+    charId: string,
+    relationship: RelationshipState
+  ): Promise<void> => {
+    return await invoke<void>('update_relationship', { charId, relationship });
+  },
+
+  addEpisodicMemory: async (
+    charId: string,
+    category: string,
+    content: string,
+    significance: number
+  ): Promise<number> => {
+    return await invoke<number>('add_episodic_memory', {
+      charId,
+      category,
+      content,
+      significance,
+    });
+  },
+
+  addDiaryEntry: async (
+    charId: string,
+    title: string,
+    entryText: string,
+    mood: string
+  ): Promise<number> => {
+    return await invoke<number>('add_diary_entry', {
+      charId,
+      title,
+      entryText,
+      mood,
+    });
+  },
+
+  applyEmotionalDecay: async (charId: string): Promise<string | null> => {
+    return await invoke<string | null>('apply_emotional_decay', { charId });
   },
 
 

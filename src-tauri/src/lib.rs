@@ -25,6 +25,12 @@ pub fn run() {
             commands::evaluate_lorebook_context,
             commands::assemble_prompt,
             commands::read_file_binary,
+            commands::get_cognitive_overview,
+            commands::update_psychology,
+            commands::update_relationship,
+            commands::add_episodic_memory,
+            commands::add_diary_entry,
+            commands::apply_emotional_decay,
         ])
         .run(tauri::generate_context!())
         .expect("error while running OtakuSoul application");
