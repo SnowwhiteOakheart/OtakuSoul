@@ -97,6 +97,7 @@
 | `src/store/useAppStore.ts` | Zentraler Zustand State Store |
 | `src/components/Header.tsx` | VRAM-Monitor & Server-Status Header |
 | `src/components/chat/ChatView.tsx` | Split-Screen Chat & 3D Avatar |
+| `src/components/chat/RoleplayMessage.tsx` | Trennung von Handlungen (*...*) und gesprochenem Wort ("...") |
 | `src/components/chat/AdaptiveHud.tsx` | Charakter-Switcher & Zuneigungs-/Statusleiste |
 | `src/components/chat/CognitiveMemoryDrawer.tsx` | Seelenspeicher-Inspektor (SQLite) |
 | `src/components/avatar/VrmViewer.tsx` | Three.js 3D VRM Player mit LipSync |

@@ -3,6 +3,7 @@ import { useAppStore } from '../../store/useAppStore';
 import { api } from '../../services/api';
 import { AdaptiveHud } from './AdaptiveHud';
 import { AvatarCanvas } from '../avatar/AvatarCanvas';
+import { RoleplayMessage } from './RoleplayMessage';
 import {
   Send,
   Square,
@@ -229,7 +230,7 @@ export const ChatView = () => {
                       : 'bg-slate-900 border border-slate-800 text-slate-100 shadow-sm'
                   }`}
                 >
-                  <div className="whitespace-pre-wrap">{msg.content}</div>
+                  <RoleplayMessage content={msg.content} isUser={msg.role === 'user'} />
                 </div>
               </div>
             ))}
@@ -272,7 +273,7 @@ export const ChatView = () => {
                 {/* Live Streaming Text Bubble */}
                 {streamText && (
                   <div className="max-w-[85%] rounded-2xl px-4 py-2.5 text-sm leading-relaxed bg-slate-900 border border-purple-500/30 text-slate-100 shadow-md">
-                    <div className="whitespace-pre-wrap">{streamText}</div>
+                    <RoleplayMessage content={streamText} isUser={false} />
                   </div>
                 )}
               </div>

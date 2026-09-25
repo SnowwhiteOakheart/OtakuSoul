@@ -147,16 +147,23 @@ pub fn build_system_prompt(ctx: &PromptContext) -> String {
         ));
     }
 
-    // 9. Formatting & Reasoning Suppression Directive
+    // 9. Formatting & Roleplay Convention Directive
+    let mut formatting_rules = vec![
+        "- Formatiere alle Handlungen, Gesten, Mimiken und Beschreibungen strikt in Sternchen (z. B. *lächelt sanft und lehnt sich vor*).",
+        "- Formatiere alle gesprochenen Worte und wörtliche Rede strikt in Anführungszeichen (z. B. \"Alles klar, wie du willst!\").",
+        "- Trenne Handlungen und gesprochene Worte sauber voneinander.",
+    ];
+
     if !ctx.allow_reasoning.unwrap_or(false) {
-        parts.push(
-            "## Formatierungsanweisung & Rollenspiel-Fokus\n\
-             - Antworte sofort, lebendig und direkt in Deiner Rolle als Charakter.\n\
-             - Verwende NIEMALS <think>-Tags, Denkschritte, Meta-Erklärungen oder interne Monologe.\n\
-             - Beginne Deine Antwort unmittelbar mit den Worten oder Taten Deines Charakters."
-                .to_string(),
-        );
+        formatting_rules.push("- Antworte sofort, lebendig und direkt in Deiner Rolle als Charakter.");
+        formatting_rules.push("- Verwende NIEMALS <think>-Tags, Denkschritte, Meta-Erklärungen oder interne Monologe.");
+        formatting_rules.push("- Beginne Deine Antwort unmittelbar mit den Worten oder Taten Deines Charakters.");
     }
+
+    parts.push(format!(
+        "## Formatierungs- & Rollenspiel-Konventionen\n{}",
+        formatting_rules.join("\n")
+    ));
 
     parts.join("\n\n")
 }
