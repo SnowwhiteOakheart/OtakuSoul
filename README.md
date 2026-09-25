@@ -84,6 +84,9 @@ npm run tauri build
   - Neurohormonal simulation (Dopamine, Cortisol, Oxytocin, Fatigue)
   - Tool calling engine with Human-in-the-Loop 25s safety countdown banner
   - Full companion desktop dashboard & audit execution log
+- [ ] **Phases 8–18: Remaining feature parity with Soul of Waifu**
+  - Character library, persistent chats, all cloud providers, Soul Memory agents, TTS/STT, Live2D, AI Game Master, real companion tools, web client, Discord & more
+  - See **[Roadmap.md](Roadmap.md)** for the full, detailed plan (German)
 
 ---
 
