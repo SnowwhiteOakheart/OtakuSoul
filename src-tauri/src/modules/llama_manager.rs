@@ -167,6 +167,17 @@ impl LlamaServerManager {
             binary_path, config.port, model_path
         );
 
+        // Ensure port is completely free on Linux/Unix to prevent EADDRINUSE
+        #[cfg(unix)]
+        {
+            let _ = tokio::process::Command::new("fuser")
+                .arg("-k")
+                .arg(format!("{}/tcp", config.port))
+                .output()
+                .await;
+            tokio::time::sleep(Duration::from_millis(150)).await;
+        }
+
         let mut cmd = Command::new(&binary_path);
         cmd.arg("-m")
             .arg(&config.model_path)

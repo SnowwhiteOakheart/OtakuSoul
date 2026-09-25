@@ -162,21 +162,64 @@ export const VrmViewer = ({
 
       const vrm = vrmRef.current;
       if (vrm) {
-        // A. Breathing animation (Spine & Chest subtle sinusoidal tilt)
+        // A. Breathing animation, Head Tracking & Natural Idle Pose (Arms down)
         if (vrm.humanoid) {
           const spine = vrm.humanoid.getNormalizedBoneNode('spine');
           if (spine) {
             spine.rotation.x = Math.sin(elapsed * 1.8) * 0.012;
+            spine.rotation.z = Math.sin(elapsed * 0.9) * 0.005;
           }
           const chest = vrm.humanoid.getNormalizedBoneNode('chest');
           if (chest) {
             chest.rotation.x = Math.sin(elapsed * 1.8 + 0.3) * 0.01;
-            chest.rotation.y = Math.sin(elapsed * 0.9) * 0.005;
+            chest.rotation.y = Math.sin(elapsed * 0.9) * 0.008;
           }
           const head = vrm.humanoid.getNormalizedBoneNode('head');
           if (head) {
-            head.rotation.y = THREE.MathUtils.lerp(head.rotation.y, mousePos.x * 0.15, 0.05);
-            head.rotation.x = THREE.MathUtils.lerp(head.rotation.x, -mousePos.y * 0.1, 0.05);
+            head.rotation.y = THREE.MathUtils.lerp(head.rotation.y, mousePos.x * 0.2, 0.05);
+            head.rotation.x = THREE.MathUtils.lerp(head.rotation.x, -mousePos.y * 0.12, 0.05);
+            head.rotation.z = THREE.MathUtils.lerp(head.rotation.z, -mousePos.x * 0.04, 0.05);
+          }
+
+          // Natural Resting Arms (Drop down from T-pose to sides of body)
+          const leftUpperArm = vrm.humanoid.getNormalizedBoneNode('leftUpperArm');
+          if (leftUpperArm) {
+            // Lower arm to side (Z ~ -72 deg), slightly forward (X ~ 7 deg)
+            leftUpperArm.rotation.z = -1.25 + Math.sin(elapsed * 1.8) * 0.015;
+            leftUpperArm.rotation.x = 0.12;
+            leftUpperArm.rotation.y = -0.05;
+          }
+
+          const rightUpperArm = vrm.humanoid.getNormalizedBoneNode('rightUpperArm');
+          if (rightUpperArm) {
+            // Lower arm to side (Z ~ +72 deg), slightly forward (X ~ 7 deg)
+            rightUpperArm.rotation.z = 1.25 - Math.sin(elapsed * 1.8) * 0.015;
+            rightUpperArm.rotation.x = 0.12;
+            rightUpperArm.rotation.y = 0.05;
+          }
+
+          const leftLowerArm = vrm.humanoid.getNormalizedBoneNode('leftLowerArm');
+          if (leftLowerArm) {
+            // Elbow naturally bent forward towards waist
+            leftLowerArm.rotation.y = -0.3;
+            leftLowerArm.rotation.x = 0.05;
+          }
+
+          const rightLowerArm = vrm.humanoid.getNormalizedBoneNode('rightLowerArm');
+          if (rightLowerArm) {
+            // Elbow naturally bent forward towards waist
+            rightLowerArm.rotation.y = 0.3;
+            rightLowerArm.rotation.x = 0.05;
+          }
+
+          const leftHand = vrm.humanoid.getNormalizedBoneNode('leftHand');
+          if (leftHand) {
+            leftHand.rotation.y = -0.1;
+          }
+
+          const rightHand = vrm.humanoid.getNormalizedBoneNode('rightHand');
+          if (rightHand) {
+            rightHand.rotation.y = 0.1;
           }
         }
 
