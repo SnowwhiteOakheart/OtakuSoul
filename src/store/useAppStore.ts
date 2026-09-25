@@ -17,6 +17,10 @@ import {
   CampaignClock,
   CombatCondition,
   DiceRollResult,
+  ToolCallRequest,
+  ToolExecutionResult,
+  CompanionSettings,
+  CompanionState,
 } from '../types';
 import { soundFx } from '../services/soundFx';
 
@@ -75,6 +79,15 @@ interface AppStoreState {
   nextEncounterTurn: () => Promise<void>;
   applyCombatantDelta: (combatantId: string, hpDelta: number, stressDelta: number) => Promise<void>;
   addCombatantCondition: (combatantId: string, condition: CombatCondition) => Promise<void>;
+
+  // Soul Companion & Tool Calling (Phase 7)
+  companionState: CompanionState | null;
+  fetchCompanionState: () => Promise<void>;
+  applyHormoneInteraction: (interactionType: string) => Promise<void>;
+  setHormones: (dopamine: number, cortisol: number, oxytocin: number, fatigue: number) => Promise<void>;
+  requestToolCall: (toolName: string, args: Record<string, any>) => Promise<ToolCallRequest | null>;
+  resolveToolCall: (callId: string, approved: boolean) => Promise<ToolExecutionResult | null>;
+  updateCompanionSettings: (settings: CompanionSettings) => Promise<void>;
 
   // Chat & LLM
   selectedBackend: 'local' | 'cloud';
@@ -391,6 +404,80 @@ export const useAppStore = create<AppStoreState>((set, get) => ({
       await get().fetchStageState();
     } catch (e) {
       console.error('Failed to add combatant condition:', e);
+    }
+  },
+
+  // Phase 7: Soul Companion & Tool Calling
+  companionState: null,
+
+  fetchCompanionState: async () => {
+    try {
+      const state = await api.getCompanionState();
+      set({ companionState: state });
+    } catch (e) {
+      console.error('Failed to fetch companion state:', e);
+    }
+  },
+
+  applyHormoneInteraction: async (interactionType: string) => {
+    try {
+      const hormones = await api.applyHormoneInteraction(interactionType);
+      set((state) => ({
+        companionState: state.companionState
+          ? { ...state.companionState, hormones }
+          : null,
+      }));
+    } catch (e) {
+      console.error('Failed to apply hormone interaction:', e);
+    }
+  },
+
+  setHormones: async (dopamine: number, cortisol: number, oxytocin: number, fatigue: number) => {
+    try {
+      const hormones = await api.setHormones(dopamine, cortisol, oxytocin, fatigue);
+      set((state) => ({
+        companionState: state.companionState
+          ? { ...state.companionState, hormones }
+          : null,
+      }));
+    } catch (e) {
+      console.error('Failed to set hormones:', e);
+    }
+  },
+
+  requestToolCall: async (toolName: string, args: Record<string, any>) => {
+    try {
+      const req = await api.requestToolCall(toolName, args);
+      await get().fetchCompanionState();
+      return req;
+    } catch (e) {
+      console.error('Failed to request tool call:', e);
+      return null;
+    }
+  },
+
+  resolveToolCall: async (callId: string, approved: boolean) => {
+    try {
+      if (approved) {
+        soundFx.playHealChime();
+      } else {
+        soundFx.playCriticalFailure();
+      }
+      const res = await api.resolveToolCall(callId, approved);
+      await get().fetchCompanionState();
+      return res;
+    } catch (e) {
+      console.error('Failed to resolve tool call:', e);
+      return null;
+    }
+  },
+
+  updateCompanionSettings: async (settings: CompanionSettings) => {
+    try {
+      await api.updateCompanionSettings(settings);
+      await get().fetchCompanionState();
+    } catch (e) {
+      console.error('Failed to update companion settings:', e);
     }
   },
 

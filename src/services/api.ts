@@ -19,6 +19,11 @@ import {
   WorldState,
   CampaignClock,
   CombatCondition,
+  Neurohormones,
+  ToolCallRequest,
+  ToolExecutionResult,
+  CompanionSettings,
+  CompanionState,
 } from '../types';
 
 export const api = {
@@ -212,6 +217,59 @@ export const api = {
       combatantId,
       condition,
     });
+  },
+
+  // Phase 7: Soul Companion & Tool Calling
+  getCompanionState: async (): Promise<CompanionState> => {
+    return await invoke<CompanionState>('get_companion_state');
+  },
+
+  applyHormoneInteraction: async (
+    interactionType: string
+  ): Promise<Neurohormones> => {
+    return await invoke<Neurohormones>('apply_hormone_interaction', {
+      interactionType,
+    });
+  },
+
+  setHormones: async (
+    dopamine: number,
+    cortisol: number,
+    oxytocin: number,
+    fatigue: number
+  ): Promise<Neurohormones> => {
+    return await invoke<Neurohormones>('set_hormones', {
+      dopamine,
+      cortisol,
+      oxytocin,
+      fatigue,
+    });
+  },
+
+  requestToolCall: async (
+    toolName: string,
+    args: Record<string, any>
+  ): Promise<ToolCallRequest> => {
+    return await invoke<ToolCallRequest>('request_tool_call', {
+      toolName,
+      arguments: args,
+    });
+  },
+
+  resolveToolCall: async (
+    callId: string,
+    approved: boolean
+  ): Promise<ToolExecutionResult> => {
+    return await invoke<ToolExecutionResult>('resolve_tool_call', {
+      callId,
+      approved,
+    });
+  },
+
+  updateCompanionSettings: async (
+    settings: CompanionSettings
+  ): Promise<void> => {
+    return await invoke<void>('update_companion_settings', { settings });
   },
 
   // Streaming Listeners

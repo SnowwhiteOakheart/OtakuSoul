@@ -12,16 +12,17 @@ OtakuSoul is a ground-up high-performance rewrite and evolution of Souls of Waif
 ### Core Stack
 - **Backend / Orchestrator:** Rust (Tauri v2 + Tokio async runtime)
   - Native hardware & VRAM probing (dynamically calculates optimal `n_gpu_layers` and context limits).
-  - Managed `llama-server` process with guaranteed termination (zero-zombie orphan prevention).
+  - Managed `llama-server` process with guaranteed termination (`PR_SET_PDEATHSIG` zero-zombie orphan prevention).
   - Multi-provider Cloud fallback (OpenRouter, DeepSeek, Claude, OpenAI, Gemini).
-  - High-performance cognitive Soul Memory powered by SQLite.
-  - Deterministic Soul Stage tabletop RPG engine.
-  - Native SillyTavern / Tavern Card V2 parser (JSON & embedded PNG chunks).
+  - High-performance cognitive Soul Memory powered by SQLite (Psychology, Relationships, Episodic Memory, Diary, Emotional Decay).
+  - Deterministic Soul Stage tabletop RPG engine (dice roller with DC checks, campaign clocks, tactical combat).
+  - Biometric neurohormonal simulation (Dopamine, Cortisol, Oxytocin, Fatigue) & 25s Human-in-the-Loop tool safety.
+  - Native SillyTavern / Tavern Card V2 parser (JSON & embedded binary PNG chunks).
 - **Frontend / Visualization:** React 19 + TypeScript + Vite + Tailwind CSS v4
-  - 3D VRM rendering via `@pixiv/three-vrm` and Three.js with emotion morph targets and LipSync.
+  - 3D VRM rendering via `@pixiv/three-vrm` and Three.js with emotion morph targets, idle breathing, blinking, and LipSync.
   - 2D Live2D rendering via PixiJS.
-  - Procedural Web Audio synthesizer (dice rolls, critical fanfares, campfires).
-  - Cyberpunk / Anime Glassmorphism responsive UI with Adaptive Stat Variable HUD.
+  - Procedural Web Audio synthesizer (dice rolls, critical fanfares, buzzers, and campfire atmosphere).
+  - Cyberpunk / Anime Glassmorphism responsive UI with Adaptive Stat Variable HUD and Cognitive Soul Drawer.
 
 ---
 
@@ -30,7 +31,7 @@ OtakuSoul is a ground-up high-performance rewrite and evolution of Souls of Waif
 ### Prerequisites
 - **Rust:** 1.78+ (`rustup update`)
 - **Node.js:** 20+ (`node -v`)
-- **System libraries (Linux):** `webkit2gtk-4.1`, `gtk3`, `libsoup-3.0`
+- **System libraries (Linux):** `webkit2gtk-4.1`, `gtk3`, `libsoup-3.0`, `librsvg-2.0`
 
 ### Development
 
@@ -51,34 +52,38 @@ npm run tauri build
 
 ---
 
-## 🗺️ Migration Roadmap
+## 🗺️ Migration Roadmap & Features
 
 - [x] **Phase 1: Architecture & Foundation Setup**
   - Tauri v2 + React 19 + TypeScript + Tailwind CSS v4
-  - Cross-platform dependency tree & Cargo configuration
-  - Private GitHub repository bootstrap
-- [ ] **Phase 2: Hardware Probing & LLM Process Orchestrator**
-  - Native VRAM/RAM probing for RTX 4070 Ti SUPER / Vulkan / Apple Silicon
-  - `llama-server` child process manager with lifecycle & health monitoring
-  - SSE streaming proxy & OpenAI-compatible cloud provider integration
-- [ ] **Phase 3: Character Cards (V2) & Lorebooks Engine**
-  - PNG chunk & JSON parser for Tavern/SillyTavern cards
+  - Cross-platform dependency tree & Cargo workspace configuration
+  - Private GitHub repository bootstrap ([SnowwhiteOakheart/OtakuSoul](https://github.com/SnowwhiteOakheart/OtakuSoul))
+- [x] **Phase 2: Hardware Probing & LLM Process Orchestrator**
+  - Native VRAM/RAM probing for NVIDIA GPUs (RTX 4070 Ti SUPER), Vulkan & Apple Silicon
+  - `llama-server` child process manager with lifecycle & `/health` monitoring
+  - SSE streaming proxy with `<think>` reasoning token separation
+- [x] **Phase 3: Character Cards (V2) & Lorebooks Engine**
+  - PNG chunk & JSON parser for Tavern/SillyTavern V2 cards
   - Dynamic Lorebook situational injector & token budget manager
   - Reactive Stat Variables & Adaptive HUD
-- [ ] **Phase 4: 3D VRM & 2D Live2D Avatar Engine**
-  - WebGL Three.js VRM player with eye blinking, idle breathing, and emotions
-  - Pixi.js Live2D viewer
-  - Audio Lip-Sync matching
-- [ ] **Phase 5: Kognitive Soul Memory (SQLite)**
+- [x] **Phase 4: 3D VRM & 2D Live2D Avatar Engine**
+  - WebGL Three.js VRM player with eye blinking, idle breathing, and emotion morphing
+  - Audio-driven mouth LipSync matching
+  - Offline binary model loader (CORS-free)
+- [x] **Phase 5: Kognitive Soul Memory (SQLite)**
   - 4 Layers: Psychology, Relationship, Episodic Archive, Diary
-  - Emotional decay & memory self-healing
-- [ ] **Phase 6: Soul Stage Tabletop RPG & Procedural SFX**
-  - WorldState & AI Game Master
-  - Deterministic dice roller & tactical encounter mode
-  - Web Audio procedural SFX synthesizer
-- [ ] **Phase 7: Soul Companion & Tool Calling**
-  - Neurohormonal simulation & Human-in-the-Loop 25s safety countdown
-  - MCP (Model Context Protocol) integration
+  - Mathematical emotional decay & memory deduplication with significance boosting
+  - Full-featured Soul Memory Inspector drawer in the HUD
+- [x] **Phase 6: Soul Stage Tabletop RPG & Procedural SFX**
+  - WorldState & AI Game Master atmosphere controls
+  - Deterministic dice roller (d4 to d100) with DC checks & critical detection
+  - Blades in the Dark circular campaign clocks
+  - Tactical encounter mode with initiative queue, HP/stress bars, and status effects
+  - Procedural Web Audio synthesizer (zero external sound files)
+- [x] **Phase 7: Soul Companion & Tool Calling**
+  - Neurohormonal simulation (Dopamine, Cortisol, Oxytocin, Fatigue)
+  - Tool calling engine with Human-in-the-Loop 25s safety countdown banner
+  - Full companion desktop dashboard & audit execution log
 
 ---
 

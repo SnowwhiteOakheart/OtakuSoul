@@ -255,4 +255,60 @@ pub fn add_combatant_condition(
     Ok(())
 }
 
+// --- Phase 7: Soul Companion & Tool Calling Commands ---
+
+#[tauri::command]
+pub fn get_companion_state(
+    state: State<'_, AppState>,
+) -> crate::modules::companion::CompanionState {
+    state.companion_engine.get_state()
+}
+
+#[tauri::command]
+pub fn apply_hormone_interaction(
+    state: State<'_, AppState>,
+    interaction_type: String,
+) -> Result<crate::modules::companion::Neurohormones, String> {
+    Ok(state.companion_engine.apply_hormone_interaction(&interaction_type))
+}
+
+#[tauri::command]
+pub fn set_hormones(
+    state: State<'_, AppState>,
+    dopamine: f32,
+    cortisol: f32,
+    oxytocin: f32,
+    fatigue: f32,
+) -> Result<crate::modules::companion::Neurohormones, String> {
+    Ok(state.companion_engine.set_hormone_values(dopamine, cortisol, oxytocin, fatigue))
+}
+
+#[tauri::command]
+pub fn request_tool_call(
+    state: State<'_, AppState>,
+    tool_name: String,
+    arguments: serde_json::Value,
+) -> Result<crate::modules::companion::ToolCallRequest, String> {
+    state.companion_engine.request_tool_call(&tool_name, arguments)
+}
+
+#[tauri::command]
+pub fn resolve_tool_call(
+    state: State<'_, AppState>,
+    call_id: String,
+    approved: bool,
+) -> Result<crate::modules::companion::ToolExecutionResult, String> {
+    state.companion_engine.resolve_tool_call(&call_id, approved)
+}
+
+#[tauri::command]
+pub fn update_companion_settings(
+    state: State<'_, AppState>,
+    settings: crate::modules::companion::CompanionSettings,
+) -> Result<(), String> {
+    state.companion_engine.update_settings(settings);
+    Ok(())
+}
+
+
 

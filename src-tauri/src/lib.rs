@@ -42,6 +42,12 @@ pub fn run() {
             commands::next_encounter_turn,
             commands::apply_combatant_delta,
             commands::add_combatant_condition,
+            commands::get_companion_state,
+            commands::apply_hormone_interaction,
+            commands::set_hormones,
+            commands::request_tool_call,
+            commands::resolve_tool_call,
+            commands::update_companion_settings,
         ])
         .run(tauri::generate_context!())
         .expect("error while running OtakuSoul application");

@@ -260,4 +260,45 @@ export interface StageState {
   encounter: EncounterState;
 }
 
+// Phase 7: Soul Companion & Tool Calling
+export interface Neurohormones {
+  dopamine: number;
+  cortisol: number;
+  oxytocin: number;
+  fatigue: number;
+  mood_label: string;
+  energy_level: number;
+}
+
+export interface ToolCallRequest {
+  id: string;
+  tool_name: string;
+  arguments: Record<string, any>;
+  requires_confirmation: boolean;
+  status: 'pending' | 'approved' | 'rejected' | 'executed';
+  created_at: number;
+}
+
+export interface ToolExecutionResult {
+  call_id: string;
+  tool_name: string;
+  success: boolean;
+  output: string;
+  executed_at: number;
+}
+
+export interface CompanionSettings {
+  auto_approve_safe_tools: boolean;
+  countdown_seconds: number;
+  enable_neurohormones: boolean;
+}
+
+export interface CompanionState {
+  hormones: Neurohormones;
+  pending_tool_calls: ToolCallRequest[];
+  tool_history: ToolExecutionResult[];
+  settings: CompanionSettings;
+}
+
+
 
