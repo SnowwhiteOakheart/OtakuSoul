@@ -31,6 +31,9 @@ rand = "0.8"
 base64 = "0.22"
 png = "0.17"
 
+[target.'cfg(unix)'.dependencies]
+libc = "0.2"
+
 
 # Read the optimization guideline for more details: https://tauri.app/concept/size/#cargo-configuration
 [profile.release]

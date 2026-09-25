@@ -2677,6 +2677,7 @@ dependencies = [
  "base64 0.22.1",
  "directories",
  "futures-util",
+ "libc",
  "png 0.17.16",
  "rand",
  "reqwest 0.12.28",

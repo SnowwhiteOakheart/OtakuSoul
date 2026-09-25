@@ -1,14 +1,26 @@
-// Learn more about Tauri commands at https://tauri.app/develop/calling-rust/
-#[tauri::command]
-fn greet(name: &str) -> String {
-    format!("Hello, {}! You've been greeted from Rust!", name)
-}
+pub mod commands;
+pub mod modules;
+pub mod state;
+
+use state::AppState;
 
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
 pub fn run() {
+    // Initialize tracing subscriber for clean logs
+    let _ = tracing_subscriber::fmt().try_init();
+
     tauri::Builder::default()
         .plugin(tauri_plugin_opener::init())
-        .invoke_handler(tauri::generate_handler![greet])
+        .manage(AppState::new())
+        .invoke_handler(tauri::generate_handler![
+            commands::get_hardware_info,
+            commands::get_layer_recommendation,
+            commands::start_llama_server,
+            commands::stop_llama_server,
+            commands::get_llama_server_status,
+            commands::send_chat_message,
+            commands::abort_chat_generation,
+        ])
         .run(tauri::generate_context!())
-        .expect("error while running tauri application");
+        .expect("error while running OtakuSoul application");
 }
