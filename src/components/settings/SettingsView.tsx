@@ -173,7 +173,13 @@ export const SettingsView = () => {
               {detectedPresets.map((preset, i) => (
                 <div
                   key={i}
-                  onClick={() => setServerConfig({ model_path: preset.path })}
+                  onClick={() => {
+                    const is27B = preset.path.includes('27B');
+                    setServerConfig({
+                      model_path: preset.path,
+                      gpu_layers: is27B ? 50 : 99,
+                    });
+                  }}
                   className={`p-2.5 rounded-lg border text-xs cursor-pointer transition-all ${
                     serverConfig.model_path === preset.path
                       ? 'border-purple-500/80 bg-purple-950/30 text-purple-200 shadow-sm'

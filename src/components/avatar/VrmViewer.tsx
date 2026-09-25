@@ -143,7 +143,8 @@ export const VrmViewer = ({
     container.addEventListener('mousemove', handleMouseMove);
 
     // 5. Animation Loop
-    const clock = new THREE.Clock();
+    let lastTime = performance.now();
+    const startTime = performance.now();
     let nextBlinkTime = 2.0;
     let blinkDuration = 0.15;
     let blinkTimer = 0.0;
@@ -152,8 +153,10 @@ export const VrmViewer = ({
 
     const animate = () => {
       animationFrameId = requestAnimationFrame(animate);
-      const delta = clock.getDelta();
-      const elapsed = clock.getElapsedTime();
+      const now = performance.now();
+      const delta = (now - lastTime) / 1000;
+      lastTime = now;
+      const elapsed = (now - startTime) / 1000;
 
       controls.update();
 
