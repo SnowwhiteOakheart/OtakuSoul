@@ -14,6 +14,11 @@ import {
   CognitiveOverview,
   PsychologyState,
   RelationshipState,
+  DiceRollResult,
+  StageState,
+  WorldState,
+  CampaignClock,
+  CombatCondition,
 } from '../types';
 
 export const api = {
@@ -141,6 +146,73 @@ export const api = {
     return await invoke<string | null>('apply_emotional_decay', { charId });
   },
 
+  // Phase 6: Soul Stage Tabletop RPG
+  rollStageDice: async (
+    formula: string,
+    targetDc?: number
+  ): Promise<DiceRollResult> => {
+    return await invoke<DiceRollResult>('roll_stage_dice', {
+      formula,
+      targetDc,
+    });
+  },
+
+  getStageState: async (): Promise<StageState> => {
+    return await invoke<StageState>('get_stage_state');
+  },
+
+  updateWorldState: async (world: WorldState): Promise<void> => {
+    return await invoke<void>('update_world_state', { world });
+  },
+
+  setClockProgress: async (
+    clockId: string,
+    progress: number
+  ): Promise<void> => {
+    return await invoke<void>('set_clock_progress', { clockId, progress });
+  },
+
+  addClock: async (clock: CampaignClock): Promise<void> => {
+    return await invoke<void>('add_clock', { clock });
+  },
+
+  deleteClock: async (clockId: string): Promise<void> => {
+    return await invoke<void>('delete_clock', { clockId });
+  },
+
+  startEncounter: async (): Promise<void> => {
+    return await invoke<void>('start_encounter');
+  },
+
+  endEncounter: async (): Promise<void> => {
+    return await invoke<void>('end_encounter');
+  },
+
+  nextEncounterTurn: async (): Promise<void> => {
+    return await invoke<void>('next_encounter_turn');
+  },
+
+  applyCombatantDelta: async (
+    combatantId: string,
+    hpDelta: number,
+    stressDelta: number
+  ): Promise<void> => {
+    return await invoke<void>('apply_combatant_delta', {
+      combatantId,
+      hpDelta,
+      stressDelta,
+    });
+  },
+
+  addCombatantCondition: async (
+    combatantId: string,
+    condition: CombatCondition
+  ): Promise<void> => {
+    return await invoke<void>('add_combatant_condition', {
+      combatantId,
+      condition,
+    });
+  },
 
   // Streaming Listeners
   onLlmToken: async (callback: (text: string) => void): Promise<UnlistenFn> => {

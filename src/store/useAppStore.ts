@@ -12,7 +12,13 @@ import {
   CognitiveOverview,
   PsychologyState,
   RelationshipState,
+  StageState,
+  WorldState,
+  CampaignClock,
+  CombatCondition,
+  DiceRollResult,
 } from '../types';
+import { soundFx } from '../services/soundFx';
 
 interface AppStoreState {
   // Navigation
@@ -53,6 +59,22 @@ interface AppStoreState {
   addManualMemory: (category: string, content: string, significance: number) => Promise<void>;
   addManualDiary: (title: string, entryText: string, mood: string) => Promise<void>;
   triggerEmotionalDecay: () => Promise<void>;
+
+  // Soul Stage Tabletop RPG (Phase 6)
+  stageState: StageState | null;
+  lastDiceRoll: DiceRollResult | null;
+  isRollingDice: boolean;
+  fetchStageState: () => Promise<void>;
+  rollDice: (formula: string, targetDc?: number) => Promise<DiceRollResult | null>;
+  updateWorldState: (world: WorldState) => Promise<void>;
+  setClockProgress: (clockId: string, progress: number) => Promise<void>;
+  addClock: (clock: CampaignClock) => Promise<void>;
+  deleteClock: (clockId: string) => Promise<void>;
+  startEncounter: () => Promise<void>;
+  endEncounter: () => Promise<void>;
+  nextEncounterTurn: () => Promise<void>;
+  applyCombatantDelta: (combatantId: string, hpDelta: number, stressDelta: number) => Promise<void>;
+  addCombatantCondition: (combatantId: string, condition: CombatCondition) => Promise<void>;
 
   // Chat & LLM
   selectedBackend: 'local' | 'cloud';
@@ -245,6 +267,130 @@ export const useAppStore = create<AppStoreState>((set, get) => ({
       await get().fetchCognitiveOverview();
     } catch (e) {
       console.error('Failed to apply emotional decay:', e);
+    }
+  },
+
+  // Phase 6: Soul Stage Tabletop RPG
+  stageState: null,
+  lastDiceRoll: null,
+  isRollingDice: false,
+
+  fetchStageState: async () => {
+    try {
+      const state = await api.getStageState();
+      set({ stageState: state });
+    } catch (e) {
+      console.error('Failed to fetch stage state:', e);
+    }
+  },
+
+  rollDice: async (formula: string, targetDc?: number) => {
+    set({ isRollingDice: true });
+    soundFx.playDiceRoll();
+
+    try {
+      await new Promise((res) => setTimeout(res, 260));
+      const res = await api.rollStageDice(formula, targetDc);
+
+      if (res.is_critical_success) {
+        soundFx.playCriticalSuccess();
+      } else if (res.is_critical_failure) {
+        soundFx.playCriticalFailure();
+      }
+
+      set({ lastDiceRoll: res, isRollingDice: false });
+      return res;
+    } catch (e) {
+      console.error('Dice roll error:', e);
+      set({ isRollingDice: false });
+      return null;
+    }
+  },
+
+  updateWorldState: async (world: WorldState) => {
+    try {
+      await api.updateWorldState(world);
+      await get().fetchStageState();
+    } catch (e) {
+      console.error('Failed to update world state:', e);
+    }
+  },
+
+  setClockProgress: async (clockId: string, progress: number) => {
+    try {
+      await api.setClockProgress(clockId, progress);
+      await get().fetchStageState();
+    } catch (e) {
+      console.error('Failed to set clock progress:', e);
+    }
+  },
+
+  addClock: async (clock: CampaignClock) => {
+    try {
+      await api.addClock(clock);
+      await get().fetchStageState();
+    } catch (e) {
+      console.error('Failed to add clock:', e);
+    }
+  },
+
+  deleteClock: async (clockId: string) => {
+    try {
+      await api.deleteClock(clockId);
+      await get().fetchStageState();
+    } catch (e) {
+      console.error('Failed to delete clock:', e);
+    }
+  },
+
+  startEncounter: async () => {
+    try {
+      soundFx.playAttackHit();
+      await api.startEncounter();
+      await get().fetchStageState();
+    } catch (e) {
+      console.error('Failed to start encounter:', e);
+    }
+  },
+
+  endEncounter: async () => {
+    try {
+      await api.endEncounter();
+      await get().fetchStageState();
+    } catch (e) {
+      console.error('Failed to end encounter:', e);
+    }
+  },
+
+  nextEncounterTurn: async () => {
+    try {
+      await api.nextEncounterTurn();
+      await get().fetchStageState();
+    } catch (e) {
+      console.error('Failed to advance encounter turn:', e);
+    }
+  },
+
+  applyCombatantDelta: async (combatantId: string, hpDelta: number, stressDelta: number) => {
+    try {
+      if (hpDelta < 0) {
+        soundFx.playAttackHit();
+      } else if (hpDelta > 0) {
+        soundFx.playHealChime();
+      }
+      await api.applyCombatantDelta(combatantId, hpDelta, stressDelta);
+      await get().fetchStageState();
+    } catch (e) {
+      console.error('Failed to apply combatant delta:', e);
+    }
+  },
+
+  addCombatantCondition: async (combatantId: string, condition: CombatCondition) => {
+    try {
+      await api.addCombatantCondition(combatantId, condition);
+      await get().fetchStageState();
+    } catch (e) {
+      console.error('Failed to add combatant condition:', e);
     }
   },
 

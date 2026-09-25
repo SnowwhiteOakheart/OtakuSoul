@@ -156,4 +156,103 @@ pub fn apply_emotional_decay(
         .map_err(|e| e.to_string())
 }
 
+// --- Phase 6: Soul Stage Tabletop RPG Commands ---
+
+#[tauri::command]
+pub fn roll_stage_dice(
+    formula: String,
+    target_dc: Option<i32>,
+) -> Result<crate::modules::stage::DiceRollResult, String> {
+    crate::modules::stage::roll_dice(&formula, target_dc)
+}
+
+#[tauri::command]
+pub fn get_stage_state(
+    state: State<'_, AppState>,
+) -> crate::modules::stage::StageState {
+    state.stage_engine.get_state()
+}
+
+#[tauri::command]
+pub fn update_world_state(
+    state: State<'_, AppState>,
+    world: crate::modules::stage::WorldState,
+) -> Result<(), String> {
+    state.stage_engine.update_world(world);
+    Ok(())
+}
+
+#[tauri::command]
+pub fn set_clock_progress(
+    state: State<'_, AppState>,
+    clock_id: String,
+    progress: u32,
+) -> Result<(), String> {
+    state.stage_engine.set_clock_progress(&clock_id, progress);
+    Ok(())
+}
+
+#[tauri::command]
+pub fn add_clock(
+    state: State<'_, AppState>,
+    clock: crate::modules::stage::CampaignClock,
+) -> Result<(), String> {
+    state.stage_engine.add_clock(clock);
+    Ok(())
+}
+
+#[tauri::command]
+pub fn delete_clock(
+    state: State<'_, AppState>,
+    clock_id: String,
+) -> Result<(), String> {
+    state.stage_engine.delete_clock(&clock_id);
+    Ok(())
+}
+
+#[tauri::command]
+pub fn start_encounter(
+    state: State<'_, AppState>,
+) -> Result<(), String> {
+    state.stage_engine.start_encounter();
+    Ok(())
+}
+
+#[tauri::command]
+pub fn end_encounter(
+    state: State<'_, AppState>,
+) -> Result<(), String> {
+    state.stage_engine.end_encounter();
+    Ok(())
+}
+
+#[tauri::command]
+pub fn next_encounter_turn(
+    state: State<'_, AppState>,
+) -> Result<(), String> {
+    state.stage_engine.next_turn();
+    Ok(())
+}
+
+#[tauri::command]
+pub fn apply_combatant_delta(
+    state: State<'_, AppState>,
+    combatant_id: String,
+    hp_delta: i32,
+    stress_delta: i32,
+) -> Result<(), String> {
+    state.stage_engine.apply_combatant_delta(&combatant_id, hp_delta, stress_delta);
+    Ok(())
+}
+
+#[tauri::command]
+pub fn add_combatant_condition(
+    state: State<'_, AppState>,
+    combatant_id: String,
+    condition: crate::modules::stage::CombatCondition,
+) -> Result<(), String> {
+    state.stage_engine.add_condition(&combatant_id, condition);
+    Ok(())
+}
+
 

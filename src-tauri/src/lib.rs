@@ -31,6 +31,17 @@ pub fn run() {
             commands::add_episodic_memory,
             commands::add_diary_entry,
             commands::apply_emotional_decay,
+            commands::roll_stage_dice,
+            commands::get_stage_state,
+            commands::update_world_state,
+            commands::set_clock_progress,
+            commands::add_clock,
+            commands::delete_clock,
+            commands::start_encounter,
+            commands::end_encounter,
+            commands::next_encounter_turn,
+            commands::apply_combatant_delta,
+            commands::add_combatant_condition,
         ])
         .run(tauri::generate_context!())
         .expect("error while running OtakuSoul application");

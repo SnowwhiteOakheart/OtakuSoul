@@ -5,3 +5,4 @@ pub mod llama_manager;
 pub mod lorebook;
 pub mod memory;
 pub mod prompt_builder;
+pub mod stage;

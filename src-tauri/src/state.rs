@@ -2,11 +2,13 @@ use std::sync::Arc;
 use crate::modules::inference::InferenceClient;
 use crate::modules::llama_manager::LlamaServerManager;
 use crate::modules::memory::MemoryDb;
+use crate::modules::stage::StageEngine;
 
 pub struct AppState {
     pub llama_manager: Arc<LlamaServerManager>,
     pub inference_client: Arc<InferenceClient>,
     pub memory_db: Arc<MemoryDb>,
+    pub stage_engine: Arc<StageEngine>,
 }
 
 impl AppState {
@@ -25,6 +27,7 @@ impl AppState {
             llama_manager: Arc::new(LlamaServerManager::new()),
             inference_client: Arc::new(InferenceClient::new()),
             memory_db: Arc::new(memory_db),
+            stage_engine: Arc::new(StageEngine::new()),
         }
     }
 }

@@ -194,3 +194,70 @@ export interface PromptContext {
   reply_language?: string;
 }
 
+// Phase 6: Soul Stage Tabletop RPG
+export interface DcCheckResult {
+  target_dc: number;
+  passed: boolean;
+  margin: number;
+}
+
+export interface DiceRollResult {
+  formula: string;
+  dice_count: number;
+  die_faces: number;
+  modifier: number;
+  individual_rolls: number[];
+  sum: number;
+  is_critical_success: boolean;
+  is_critical_failure: boolean;
+  dc_check?: DcCheckResult | null;
+}
+
+export interface WorldState {
+  time_of_day: string;
+  weather: string;
+  location: string;
+  danger_level: number;
+  active_quest: string;
+}
+
+export interface CampaignClock {
+  id: string;
+  name: string;
+  current: number;
+  max: number;
+  clock_type: string;
+}
+
+export interface CombatCondition {
+  name: string;
+  rounds_remaining: number;
+}
+
+export interface Combatant {
+  id: string;
+  name: string;
+  role: 'player' | 'companion' | 'enemy' | 'boss';
+  hp: number;
+  max_hp: number;
+  stress: number;
+  max_stress: number;
+  initiative: number;
+  conditions: CombatCondition[];
+}
+
+export interface EncounterState {
+  is_active: boolean;
+  round: number;
+  current_turn_index: number;
+  combatants: Combatant[];
+  combat_log: string[];
+}
+
+export interface StageState {
+  world: WorldState;
+  clocks: CampaignClock[];
+  encounter: EncounterState;
+}
+
+
