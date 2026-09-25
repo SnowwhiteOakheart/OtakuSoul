@@ -37,6 +37,8 @@ pub struct ChatRequest {
     pub model: Option<String>,
     pub messages: Vec<ChatMessage>,
     pub sampling: Option<SamplingParams>,
+    #[serde(default)]
+    pub reasoning_mode: Option<bool>,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
@@ -92,7 +94,7 @@ impl InferenceClient {
         }
 
         let sampling = request.sampling.unwrap_or_default();
-        let body = serde_json::json!({
+        let mut body = serde_json::json!({
             "model": request.model.unwrap_or_else(|| "default".to_string()),
             "messages": request.messages,
             "stream": true,
@@ -101,6 +103,17 @@ impl InferenceClient {
             "min_p": sampling.min_p.unwrap_or(0.05),
             "max_tokens": sampling.max_tokens.unwrap_or(2048),
         });
+
+        // If reasoning mode is disabled (the default for roleplay), suppress thinking budget & template
+        if !request.reasoning_mode.unwrap_or(false) {
+            body["chat_template_kwargs"] = serde_json::json!({
+                "enable_thinking": false
+            });
+            body["extra_body"] = serde_json::json!({
+                "thinking": { "type": "disabled" },
+                "thinking_budget_tokens": 0
+            });
+        }
 
         let response = req_builder
             .json(&body)

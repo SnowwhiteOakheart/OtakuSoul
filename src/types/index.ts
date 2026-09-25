@@ -42,6 +42,7 @@ export interface LlamaServerConfig {
   gpu_layers: number;
   threads?: number;
   flash_attn: boolean;
+  reasoning_mode?: boolean;
 }
 
 export interface ChatMessage {
@@ -63,6 +64,7 @@ export interface ChatRequest {
   model?: string;
   messages: ChatMessage[];
   sampling?: SamplingParams;
+  reasoning_mode?: boolean;
 }
 
 export interface DoneEvent {
@@ -192,6 +194,7 @@ export interface PromptContext {
   state_variables: StateVariable[];
   cognitive?: CognitiveOverview;
   reply_language?: string;
+  allow_reasoning?: boolean;
 }
 
 // Phase 6: Soul Stage Tabletop RPG

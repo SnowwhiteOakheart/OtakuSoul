@@ -126,7 +126,7 @@ pub fn recommend_gpu_layers(
         None => (0, 0),
     };
 
-    if free_vram == 0 {
+    if total_vram == 0 {
         return LayerRecommendation {
             recommended_layers: 0,
             fits_entirely_in_vram: false,
@@ -136,8 +136,10 @@ pub fn recommend_gpu_layers(
         };
     }
 
-    // Leave a safety margin for OS & WebGL window compositor (1500 MB)
-    let safe_vram = free_vram.saturating_sub(1500);
+    // Leave a safety margin for OS & WebGL window compositor (1500 MB).
+    // Starting a new model stops any existing server, freeing allocated VRAM,
+    // so we budget against the maximum capacity available to the LLM.
+    let safe_vram = total_vram.saturating_sub(1500);
 
     // Approximate context overhead: ~1.2MB per 1000 tokens for 8B-14B models
     let context_overhead_mb = ((context_size as u64) * 12) / 10000;

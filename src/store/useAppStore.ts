@@ -148,6 +148,7 @@ export const useAppStore = create<AppStoreState>((set, get) => ({
     context_size: 4096,
     gpu_layers: 99,
     flash_attn: true,
+    reasoning_mode: false,
   },
 
   setServerConfig: (config) =>
@@ -593,6 +594,7 @@ export const useAppStore = create<AppStoreState>((set, get) => ({
         state_variables: stateVariables,
         cognitive: get().cognitiveOverview || undefined,
         reply_language: 'Deutsch',
+        allow_reasoning: serverConfig.reasoning_mode,
       });
 
       systemPromptMsg = { role: 'system', content: promptText };
@@ -613,6 +615,7 @@ export const useAppStore = create<AppStoreState>((set, get) => ({
         api_key: selectedBackend === 'cloud' ? cloudApiKey : undefined,
         model: selectedBackend === 'cloud' ? cloudModel : undefined,
         messages: payloadMessages,
+        reasoning_mode: serverConfig.reasoning_mode,
         sampling: {
           temperature: 0.7,
           min_p: 0.05,

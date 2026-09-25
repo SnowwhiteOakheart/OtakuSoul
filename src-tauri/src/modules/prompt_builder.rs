@@ -20,6 +20,8 @@ pub struct PromptContext {
     #[serde(default)]
     pub cognitive: Option<crate::modules::memory::CognitiveOverview>,
     pub reply_language: Option<String>, // e.g. "Deutsch", "English"
+    #[serde(default)]
+    pub allow_reasoning: Option<bool>,
 }
 
 pub fn build_system_prompt(ctx: &PromptContext) -> String {
@@ -143,6 +145,17 @@ pub fn build_system_prompt(ctx: &PromptContext) -> String {
             "## Dialogbeispiele (Stilvorgabe)\n{}",
             replace_macros(&ctx.character.mes_example)
         ));
+    }
+
+    // 9. Formatting & Reasoning Suppression Directive
+    if !ctx.allow_reasoning.unwrap_or(false) {
+        parts.push(
+            "## Formatierungsanweisung & Rollenspiel-Fokus\n\
+             - Antworte sofort, lebendig und direkt in Deiner Rolle als Charakter.\n\
+             - Verwende NIEMALS <think>-Tags, Denkschritte, Meta-Erklärungen oder interne Monologe.\n\
+             - Beginne Deine Antwort unmittelbar mit den Worten oder Taten Deines Charakters."
+                .to_string(),
+        );
     }
 
     parts.join("\n\n")

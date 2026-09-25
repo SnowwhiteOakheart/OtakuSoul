@@ -17,6 +17,8 @@ pub struct LlamaServerConfig {
     pub gpu_layers: u32,
     pub threads: Option<u32>,
     pub flash_attn: bool,
+    #[serde(default)]
+    pub reasoning_mode: bool,
 }
 
 impl Default for LlamaServerConfig {
@@ -29,6 +31,7 @@ impl Default for LlamaServerConfig {
             gpu_layers: 99,
             threads: None,
             flash_attn: true,
+            reasoning_mode: false,
         }
     }
 }
@@ -179,6 +182,13 @@ impl LlamaServerManager {
         if config.flash_attn {
             cmd.arg("-fa");
             cmd.arg("auto");
+        }
+
+        if !config.reasoning_mode {
+            cmd.arg("--reasoning")
+                .arg("off")
+                .arg("--reasoning-budget")
+                .arg("0");
         }
 
         if let Some(t) = config.threads {

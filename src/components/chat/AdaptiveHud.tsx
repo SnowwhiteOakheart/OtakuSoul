@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { useAppStore } from '../../store/useAppStore';
-import { Heart, Zap, Smile, Users, ChevronDown, BookOpen, Brain } from 'lucide-react';
+import { Heart, Zap, Smile, Users, ChevronDown, BookOpen, Brain, Sparkles } from 'lucide-react';
 import { CognitiveMemoryDrawer } from './CognitiveMemoryDrawer';
 
 export const AdaptiveHud = () => {
@@ -10,6 +10,8 @@ export const AdaptiveHud = () => {
     selectCharacter,
     stateVariables,
     activeLorebooks,
+    serverConfig,
+    setServerConfig,
   } = useAppStore();
 
   const [showSelector, setShowSelector] = useState(false);
@@ -156,6 +158,27 @@ export const AdaptiveHud = () => {
             </div>
           );
         })}
+
+        {/* Quick Reasoning Mode Toggle */}
+        <button
+          onClick={() => setServerConfig({ reasoning_mode: !serverConfig.reasoning_mode })}
+          className={`flex items-center gap-1.5 px-2.5 py-1 rounded-lg border text-[11px] font-medium transition cursor-pointer ${
+            serverConfig.reasoning_mode
+              ? 'bg-amber-950/50 border-amber-500/50 text-amber-300 hover:bg-amber-900/60'
+              : 'bg-slate-800/60 border-slate-700/60 text-slate-400 hover:text-slate-200'
+          }`}
+          title={
+            serverConfig.reasoning_mode
+              ? 'Reasoning-Modus ist AN (Modell denkt intern in <think>-Tags nach)'
+              : 'Reasoning-Modus ist AUS (Sofortiges Rollenspiel ohne Denkpause)'
+          }
+        >
+          <Sparkles className={`w-3.5 h-3.5 ${serverConfig.reasoning_mode ? 'text-amber-400' : 'text-slate-500'}`} />
+          <span className="hidden sm:inline">Reasoning:</span>
+          <span className={serverConfig.reasoning_mode ? 'text-amber-300 font-bold' : 'text-slate-400'}>
+            {serverConfig.reasoning_mode ? 'An' : 'Aus'}
+          </span>
+        </button>
 
         {/* Cognitive Soul Memory Drawer Trigger */}
         <button

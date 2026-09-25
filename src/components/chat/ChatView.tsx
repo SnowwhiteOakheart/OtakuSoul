@@ -44,33 +44,48 @@ export const ChatView = () => {
     loadPresetCharacters();
   }, []);
 
-  // Setup live streaming listeners
+  // Setup live streaming listeners with bulletproof subscription lifecycle
   useEffect(() => {
-    let unlistenToken: (() => void) | undefined;
-    let unlistenThought: (() => void) | undefined;
-    let unlistenDone: (() => void) | undefined;
+    let isSubscribed = true;
+    const cleanups: (() => void)[] = [];
 
     const setup = async () => {
-      unlistenToken = await api.onLlmToken((token) => {
-        setStreamText((prev) => prev + token);
+      const uToken = await api.onLlmToken((token) => {
+        if (isSubscribed) setStreamText((prev) => prev + token);
       });
+      if (!isSubscribed) {
+        uToken();
+      } else {
+        cleanups.push(uToken);
+      }
 
-      unlistenThought = await api.onLlmThought((thought) => {
-        setStreamThought((prev) => prev + thought);
+      const uThought = await api.onLlmThought((thought) => {
+        if (isSubscribed) setStreamThought((prev) => prev + thought);
       });
+      if (!isSubscribed) {
+        uThought();
+      } else {
+        cleanups.push(uThought);
+      }
 
-      unlistenDone = await api.onLlmDone(() => {
-        setStreamText('');
-        setStreamThought('');
+      const uDone = await api.onLlmDone(() => {
+        if (isSubscribed) {
+          setStreamText('');
+          setStreamThought('');
+        }
       });
+      if (!isSubscribed) {
+        uDone();
+      } else {
+        cleanups.push(uDone);
+      }
     };
 
     setup();
 
     return () => {
-      if (unlistenToken) unlistenToken();
-      if (unlistenThought) unlistenThought();
-      if (unlistenDone) unlistenDone();
+      isSubscribed = false;
+      cleanups.forEach((cleanup) => cleanup());
     };
   }, []);
 

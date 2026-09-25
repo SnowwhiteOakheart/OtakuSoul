@@ -267,7 +267,20 @@ export const SettingsView = () => {
                   type="checkbox"
                   checked={serverConfig.flash_attn}
                   onChange={(e) => setServerConfig({ flash_attn: e.target.checked })}
-                  className="rounded accent-purple-500"
+                  className="rounded accent-purple-500 cursor-pointer"
+                />
+              </div>
+
+              <div className="flex items-center justify-between pt-2 border-t border-slate-800/60 mt-1">
+                <div>
+                  <label className="text-xs font-medium text-slate-300 block">Denk-/Reasoning-Modus (&lt;think&gt;):</label>
+                  <span className="text-[10px] text-slate-500">Deaktiviert = Sofortiges, immersives Rollenspiel ohne Denkpause (Soul-of-Waifu Standard)</span>
+                </div>
+                <input
+                  type="checkbox"
+                  checked={serverConfig.reasoning_mode ?? false}
+                  onChange={(e) => setServerConfig({ reasoning_mode: e.target.checked })}
+                  className="rounded accent-purple-500 cursor-pointer"
                 />
               </div>
             </div>
