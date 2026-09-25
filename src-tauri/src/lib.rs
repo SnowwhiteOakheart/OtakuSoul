@@ -20,6 +20,10 @@ pub fn run() {
             commands::get_llama_server_status,
             commands::send_chat_message,
             commands::abort_chat_generation,
+            commands::load_character_card,
+            commands::load_lorebook,
+            commands::evaluate_lorebook_context,
+            commands::assemble_prompt,
         ])
         .run(tauri::generate_context!())
         .expect("error while running OtakuSoul application");

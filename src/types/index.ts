@@ -69,3 +69,74 @@ export interface DoneEvent {
   full_text: string;
   full_thought: string;
 }
+
+// Phase 3: Character Cards, Lorebooks & State Variables
+export interface CharacterData {
+  name: string;
+  description: string;
+  personality: string;
+  scenario: string;
+  first_mes: string;
+  mes_example: string;
+  alternate_greetings: string[];
+  system_prompt?: string;
+  post_history_instructions?: string;
+  creator_notes?: string;
+  character_version?: string;
+  tags: string[];
+  creator?: string;
+  extensions: {
+    sow_title?: string;
+    sow_avatar?: string;
+    sow_live2d?: string;
+    sow_vrm?: string;
+    [key: string]: unknown;
+  };
+}
+
+export interface CharacterCardV2 {
+  spec: string;
+  spec_version: string;
+  data: CharacterData;
+}
+
+export interface CharacterProfile {
+  id: string;
+  card: CharacterCardV2;
+  avatar_data_url?: string;
+  source_path?: string;
+  bound_lorebooks: string[];
+}
+
+export interface LorebookEntry {
+  uid?: number;
+  name: string;
+  key: string[];
+  exclude_key: string[];
+  content: string;
+  trigger_type: string;
+  probability?: number;
+  injection_behavior?: string;
+}
+
+export interface Lorebook {
+  name: string;
+  description: string;
+  entries: LorebookEntry[];
+}
+
+export interface StateVariable {
+  name: string;
+  value: string;
+  var_type: 'int' | 'str' | 'bool' | 'progress';
+  max_value?: number;
+}
+
+export interface PromptContext {
+  char_name: string;
+  user_name: string;
+  character: CharacterData;
+  active_lore: LorebookEntry[];
+  state_variables: StateVariable[];
+  reply_language?: string;
+}

@@ -50,3 +50,27 @@ pub fn abort_chat_generation(state: State<'_, AppState>) -> Result<(), String> {
     state.inference_client.abort();
     Ok(())
 }
+
+#[tauri::command]
+pub fn load_character_card(file_path: String) -> Result<crate::modules::characters::CharacterProfile, String> {
+    crate::modules::characters::load_character_from_file(std::path::Path::new(&file_path))
+}
+
+#[tauri::command]
+pub fn load_lorebook(file_path: String) -> Result<crate::modules::lorebook::Lorebook, String> {
+    crate::modules::lorebook::Lorebook::load_from_file(std::path::Path::new(&file_path))
+}
+
+#[tauri::command]
+pub fn evaluate_lorebook_context(
+    lorebook: crate::modules::lorebook::Lorebook,
+    context: String,
+) -> Vec<crate::modules::lorebook::LorebookEntry> {
+    lorebook.scan_and_activate(&context)
+}
+
+#[tauri::command]
+pub fn assemble_prompt(context: crate::modules::prompt_builder::PromptContext) -> String {
+    crate::modules::prompt_builder::build_system_prompt(&context)
+}
+

@@ -1,6 +1,6 @@
 import { Bot } from 'lucide-react';
 
-export const CompanionView: React.FC = () => {
+export const CompanionView = () => {
   return (
     <div className="flex-1 p-6 flex flex-col items-center justify-center bg-slate-950 text-center">
       <div className="max-w-md p-8 rounded-2xl border border-cyan-500/30 bg-cyan-950/20 backdrop-blur space-y-4">

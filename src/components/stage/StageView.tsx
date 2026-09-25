@@ -1,6 +1,6 @@
 import { Dice5 } from 'lucide-react';
 
-export const StageView: React.FC = () => {
+export const StageView = () => {
   return (
     <div className="flex-1 p-6 flex flex-col items-center justify-center bg-slate-950 text-center">
       <div className="max-w-md p-8 rounded-2xl border border-purple-500/30 bg-purple-950/20 backdrop-blur space-y-4">

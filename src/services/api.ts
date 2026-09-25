@@ -7,6 +7,10 @@ import {
   LlamaServerConfig,
   ChatRequest,
   DoneEvent,
+  CharacterProfile,
+  Lorebook,
+  LorebookEntry,
+  PromptContext,
 } from '../types';
 
 export const api = {
@@ -47,6 +51,29 @@ export const api = {
 
   abortChatGeneration: async (): Promise<void> => {
     return await invoke<void>('abort_chat_generation');
+  },
+
+  // Character Cards & Lorebooks (Phase 3)
+  loadCharacterCard: async (filePath: string): Promise<CharacterProfile> => {
+    return await invoke<CharacterProfile>('load_character_card', { filePath });
+  },
+
+  loadLorebook: async (filePath: string): Promise<Lorebook> => {
+    return await invoke<Lorebook>('load_lorebook', { filePath });
+  },
+
+  evaluateLorebookContext: async (
+    lorebook: Lorebook,
+    context: string
+  ): Promise<LorebookEntry[]> => {
+    return await invoke<LorebookEntry[]>('evaluate_lorebook_context', {
+      lorebook,
+      context,
+    });
+  },
+
+  assemblePrompt: async (context: PromptContext): Promise<string> => {
+    return await invoke<string>('assemble_prompt', { context });
   },
 
   // Streaming Listeners

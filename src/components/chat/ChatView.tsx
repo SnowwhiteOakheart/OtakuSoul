@@ -1,6 +1,7 @@
-import React, { useState, useEffect, useRef } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { useAppStore } from '../../store/useAppStore';
 import { api } from '../../services/api';
+import { AdaptiveHud } from './AdaptiveHud';
 import {
   Send,
   Square,
@@ -13,7 +14,7 @@ import {
   Cloud,
 } from 'lucide-react';
 
-export const ChatView: React.FC = () => {
+export const ChatView = () => {
   const {
     messages,
     sendMessage,
@@ -23,6 +24,7 @@ export const ChatView: React.FC = () => {
     selectedBackend,
     setSelectedBackend,
     serverStatus,
+    loadPresetCharacters,
   } = useAppStore();
 
   const [input, setInput] = useState('');
@@ -32,6 +34,10 @@ export const ChatView: React.FC = () => {
   const [expandedThoughts, setExpandedThoughts] = useState<Record<number, boolean>>({});
 
   const messagesEndRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    loadPresetCharacters();
+  }, []);
 
   // Setup live streaming listeners
   useEffect(() => {
@@ -123,6 +129,9 @@ export const ChatView: React.FC = () => {
           <Trash2 className="w-4 h-4" />
         </button>
       </div>
+
+      {/* Adaptive HUD Bar */}
+      <AdaptiveHud />
 
       {/* Messages Stream Area */}
       <div className="flex-1 overflow-y-auto p-4 space-y-4">

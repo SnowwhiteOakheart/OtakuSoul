@@ -12,7 +12,7 @@ import {
   RefreshCw,
 } from 'lucide-react';
 
-export const SettingsView: React.FC = () => {
+export const SettingsView = () => {
   const {
     hardware,
     fetchHardware,
