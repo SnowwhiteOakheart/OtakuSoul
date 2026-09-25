@@ -76,6 +76,12 @@ export const api = {
     return await invoke<string>('assemble_prompt', { context });
   },
 
+  readFileBinary: async (filePath: string): Promise<Uint8Array> => {
+    const bytes = await invoke<number[]>('read_file_binary', { filePath });
+    return new Uint8Array(bytes);
+  },
+
+
   // Streaming Listeners
   onLlmToken: async (callback: (text: string) => void): Promise<UnlistenFn> => {
     return await listen<{ text: string }>('llm-token', (event) => {

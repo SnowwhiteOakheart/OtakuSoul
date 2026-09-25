@@ -24,6 +24,7 @@ pub fn run() {
             commands::load_lorebook,
             commands::evaluate_lorebook_context,
             commands::assemble_prompt,
+            commands::read_file_binary,
         ])
         .run(tauri::generate_context!())
         .expect("error while running OtakuSoul application");

@@ -74,3 +74,9 @@ pub fn assemble_prompt(context: crate::modules::prompt_builder::PromptContext) -
     crate::modules::prompt_builder::build_system_prompt(&context)
 }
 
+#[tauri::command]
+pub fn read_file_binary(file_path: String) -> Result<Vec<u8>, String> {
+    std::fs::read(&file_path).map_err(|e| format!("Fehler beim Lesen der Datei {:?}: {}", file_path, e))
+}
+
+
