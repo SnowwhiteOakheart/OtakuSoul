@@ -8,6 +8,11 @@ use tracing::{info, warn};
 
 use crate::modules::paths::resolve_app_paths;
 
+const EDGE_TTS_TRUSTED_CLIENT_TOKEN: &str = "6A5AA1D4EAFF4E9FB37E23D68491D6F4";
+const EDGE_TTS_SEC_MS_GEC_VERSION: &str = "1-143.0.3650.75";
+const EDGE_TTS_USER_AGENT: &str = "Mozilla/5.0 (Windows NT 10.0; Win64; x64) \
+    AppleWebKit/537.36 (KHTML, like Gecko) Chrome/143.0.0.0 Safari/537.36 Edg/143.0.0.0";
+
 // ---------------------------------------------------------------------------
 // Data Models
 // ---------------------------------------------------------------------------
@@ -439,23 +444,14 @@ async fn synthesize_edge_tts_websocket(text: &str, voice_id: &str, rate: &str, p
     );
 
     let connection_id = uuid_v4().replace('-', "");
-    let ws_url = format!(
-        "wss://speech.platform.bing.com/consumer/speech/synthesize/readaloud/edge/v1?TrustedClientToken=6A5AA1D4EAFF4E9FB37E23D68491D6F4&ConnectionId={}",
-        connection_id
-    );
+    let ws_url = edge_tts_websocket_url(&connection_id);
 
     // We use tokio-tungstenite for WebSocket communication
     use futures_util::{SinkExt, StreamExt};
     use tokio_tungstenite::connect_async;
     use tokio_tungstenite::tungstenite::Message;
 
-    let request = tokio_tungstenite::tungstenite::http::Request::builder()
-        .uri(&ws_url)
-        .header("User-Agent", "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/130.0.0.0 Safari/537.36 Edg/130.0.0.0")
-        .header("Origin", "chrome-extension://jdiccldimpdaibmpdkjnbmckianbfold")
-        .header("Sec-WebSocket-Protocol", "")
-        .body(())
-        .map_err(|e| format!("WebSocket-Anfrage konnte nicht erstellt werden: {}", e))?;
+    let request = build_edge_tts_request(&ws_url)?;
 
     let (mut ws_stream, _response) = connect_async(request)
         .await
@@ -522,6 +518,80 @@ async fn synthesize_edge_tts_websocket(text: &str, voice_id: &str, rate: &str, p
     info!("Edge-TTS: {} Bytes Audio-Daten empfangen.", audio_data.len());
     let b64 = base64::prelude::BASE64_STANDARD.encode(&audio_data);
     Ok(format!("data:audio/mp3;base64,{}", b64))
+}
+
+fn build_edge_tts_request(
+    ws_url: &str,
+) -> Result<tokio_tungstenite::tungstenite::http::Request<()>, String> {
+    use tokio_tungstenite::tungstenite::client::IntoClientRequest;
+    use tokio_tungstenite::tungstenite::http::header::{
+        HeaderValue, ACCEPT_ENCODING, ACCEPT_LANGUAGE, CACHE_CONTROL, COOKIE, ORIGIN, PRAGMA,
+        USER_AGENT,
+    };
+
+    // IntoClientRequest generates the mandatory WebSocket handshake headers,
+    // including a fresh Sec-WebSocket-Key. Building a plain HTTP request here
+    // would bypass that logic and tungstenite would reject it before connecting.
+    let mut request = ws_url
+        .into_client_request()
+        .map_err(|e| format!("WebSocket-Anfrage konnte nicht erstellt werden: {}", e))?;
+
+    request.headers_mut().insert(
+        USER_AGENT,
+        HeaderValue::from_static(EDGE_TTS_USER_AGENT),
+    );
+    request
+        .headers_mut()
+        .insert(PRAGMA, HeaderValue::from_static("no-cache"));
+    request
+        .headers_mut()
+        .insert(CACHE_CONTROL, HeaderValue::from_static("no-cache"));
+    request.headers_mut().insert(
+        ORIGIN,
+        HeaderValue::from_static("chrome-extension://jdiccldimpdaibmpdkjnbmckianbfold"),
+    );
+    request.headers_mut().insert(
+        ACCEPT_ENCODING,
+        HeaderValue::from_static("gzip, deflate, br, zstd"),
+    );
+    request.headers_mut().insert(
+        ACCEPT_LANGUAGE,
+        HeaderValue::from_static("en-US,en;q=0.9"),
+    );
+    let muid = uuid_v4().replace('-', "").to_uppercase();
+    request.headers_mut().insert(
+        COOKIE,
+        HeaderValue::from_str(&format!("muid={};", muid))
+            .map_err(|e| format!("Edge-TTS-Cookie konnte nicht erstellt werden: {}", e))?,
+    );
+
+    Ok(request)
+}
+
+fn edge_tts_websocket_url(connection_id: &str) -> String {
+    format!(
+        "wss://speech.platform.bing.com/consumer/speech/synthesize/readaloud/edge/v1\
+         ?TrustedClientToken={EDGE_TTS_TRUSTED_CLIENT_TOKEN}\
+         &ConnectionId={connection_id}\
+         &Sec-MS-GEC={}\
+         &Sec-MS-GEC-Version={EDGE_TTS_SEC_MS_GEC_VERSION}",
+        generate_edge_sec_ms_gec(chrono::Utc::now().timestamp())
+    )
+}
+
+fn generate_edge_sec_ms_gec(unix_timestamp: i64) -> String {
+    use sha2::{Digest, Sha256};
+
+    const WINDOWS_EPOCH_OFFSET_SECONDS: i64 = 11_644_473_600;
+    const FIVE_MINUTES_SECONDS: i64 = 300;
+    const HUNDRED_NANOSECONDS_PER_SECOND: i64 = 10_000_000;
+
+    let rounded_timestamp =
+        unix_timestamp - unix_timestamp.rem_euclid(FIVE_MINUTES_SECONDS);
+    let windows_file_time = (rounded_timestamp + WINDOWS_EPOCH_OFFSET_SECONDS)
+        * HUNDRED_NANOSECONDS_PER_SECOND;
+    let value = format!("{windows_file_time}{EDGE_TTS_TRUSTED_CLIENT_TOKEN}");
+    format!("{:X}", Sha256::digest(value.as_bytes()))
 }
 
 // ---------------------------------------------------------------------------
@@ -1078,6 +1148,64 @@ mod tests {
         assert!(voices.iter().any(|v| v.locale.starts_with("de-")));
         assert!(voices.iter().any(|v| v.locale.starts_with("ja-")));
         assert!(voices.iter().any(|v| v.locale.starts_with("en-")));
+    }
+
+    #[test]
+    fn test_edge_tts_request_contains_websocket_handshake_headers() {
+        let request = build_edge_tts_request(
+            "wss://speech.platform.bing.com/consumer/speech/synthesize/readaloud/edge/v1?TrustedClientToken=test&ConnectionId=test",
+        )
+        .unwrap();
+        let headers = request.headers();
+
+        assert_eq!(request.method(), "GET");
+        assert!(headers.contains_key("host"));
+        assert!(headers.contains_key("connection"));
+        assert!(headers.contains_key("upgrade"));
+        assert!(headers.contains_key("sec-websocket-version"));
+        assert!(headers.contains_key("sec-websocket-key"));
+        assert_eq!(
+            headers.get("origin").unwrap(),
+            "chrome-extension://jdiccldimpdaibmpdkjnbmckianbfold"
+        );
+        assert!(headers
+            .get("cookie")
+            .unwrap()
+            .to_str()
+            .unwrap()
+            .starts_with("muid="));
+        assert!(!headers.contains_key("sec-websocket-protocol"));
+    }
+
+    #[test]
+    fn test_edge_tts_security_token_and_url() {
+        assert_eq!(
+            generate_edge_sec_ms_gec(0),
+            "7ECB79D14E3AA576D2D79E6D487A1388156D91E614B1BE11C64226A29BC8DD8C"
+        );
+
+        let url = edge_tts_websocket_url("test-connection");
+        assert!(url.contains("TrustedClientToken=6A5AA1D4EAFF4E9FB37E23D68491D6F4"));
+        assert!(url.contains("ConnectionId=test-connection"));
+        assert!(url.contains("Sec-MS-GEC="));
+        assert!(url.contains("Sec-MS-GEC-Version=1-143.0.3650.75"));
+    }
+
+    #[tokio::test]
+    #[ignore = "requires access to the public Edge-TTS service"]
+    async fn test_edge_tts_live_synthesis() {
+        let audio = synthesize_edge_tts(
+            "Dies ist ein kurzer Test.",
+            "de-DE-KatjaNeural",
+            "+0%",
+            "+0Hz",
+            "+0%",
+        )
+        .await
+        .unwrap();
+
+        assert!(audio.starts_with("data:audio/mp3;base64,"));
+        assert!(audio.len() > 1_000);
     }
 
     #[test]
