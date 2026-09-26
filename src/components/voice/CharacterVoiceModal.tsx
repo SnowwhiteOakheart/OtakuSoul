@@ -16,7 +16,7 @@ const DEFAULT_CONFIG: VoiceConfig = {
   rate: '+0%',
   pitch: '+0Hz',
   volume: '+0%',
-  filter_mode: 'all',
+  filter_mode: 'strip_actions',
   custom_regex: '',
   elevenlabs_api_key: '',
   openai_endpoint: 'http://localhost:8880/v1/audio/speech',

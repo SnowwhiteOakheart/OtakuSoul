@@ -110,6 +110,7 @@ export const Live2DViewer: React.FC<Live2DViewerProps> = ({
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const isDraggingRef = useRef(false);
+  const didDragRef = useRef(false);
   const dragStartRef = useRef({ x: 0, y: 0 });
 
   const modelRef = useRef<any>(null);
@@ -236,7 +237,12 @@ export const Live2DViewer: React.FC<Live2DViewerProps> = ({
     // Click on canvas to trigger Tap motion
     const handleCanvasClick = (e: MouseEvent) => {
       if (!modelRef.current || !container) return;
-      if (isDraggingRef.current) return;
+      // A pointer drag ends before the synthetic click event fires. Remember the
+      // completed drag separately so repositioning the model never triggers a motion.
+      if (didDragRef.current) {
+        didDragRef.current = false;
+        return;
+      }
       const rect = container.getBoundingClientRect();
       const x = e.clientX - rect.left;
       const y = e.clientY - rect.top;
@@ -261,7 +267,7 @@ export const Live2DViewer: React.FC<Live2DViewerProps> = ({
     };
 
     // Mouse tracking (look at cursor)
-    const handleMouseMove = (e: MouseEvent) => {
+    const handlePointerMove = (e: PointerEvent) => {
       if (!modelRef.current || !container) return;
       const rect = container.getBoundingClientRect();
       const x = e.clientX - rect.left;
@@ -270,11 +276,10 @@ export const Live2DViewer: React.FC<Live2DViewerProps> = ({
       if (isDraggingRef.current) {
         const dx = x - dragStartRef.current.x;
         const dy = y - dragStartRef.current.y;
+        if (Math.abs(dx) + Math.abs(dy) > 0.5) didDragRef.current = true;
         dragStartRef.current = { x, y };
-        if (modelRef.current) {
-          modelRef.current.x += dx;
-          modelRef.current.y += dy;
-        }
+        modelRef.current.x += dx;
+        modelRef.current.y += dy;
         return;
       }
 
@@ -283,16 +288,28 @@ export const Live2DViewer: React.FC<Live2DViewerProps> = ({
       } catch {}
     };
 
-    const handleMouseDown = (e: MouseEvent) => {
-      if (e.button === 0 && e.shiftKey) {
-        isDraggingRef.current = true;
-        const rect = container.getBoundingClientRect();
-        dragStartRef.current = { x: e.clientX - rect.left, y: e.clientY - rect.top };
-      }
+    const handlePointerDown = (e: PointerEvent) => {
+      if (e.button !== 0) return;
+      e.preventDefault();
+      isDraggingRef.current = true;
+      didDragRef.current = false;
+      const rect = container.getBoundingClientRect();
+      dragStartRef.current = { x: e.clientX - rect.left, y: e.clientY - rect.top };
+      container.setPointerCapture?.(e.pointerId);
     };
 
-    const handleMouseUp = () => {
+    const handlePointerUp = (e: PointerEvent) => {
       isDraggingRef.current = false;
+      if (container.hasPointerCapture?.(e.pointerId)) {
+        container.releasePointerCapture(e.pointerId);
+      }
+      // Browsers normally dispatch click immediately after pointerup. Clear the
+      // guard on the next task as a fallback when a platform suppresses that click.
+      if (didDragRef.current) {
+        window.setTimeout(() => {
+          didDragRef.current = false;
+        }, 0);
+      }
     };
 
     const handleWheel = (e: WheelEvent) => {
@@ -304,18 +321,20 @@ export const Live2DViewer: React.FC<Live2DViewerProps> = ({
     };
 
     container.addEventListener('click', handleCanvasClick);
-    container.addEventListener('mousemove', handleMouseMove);
-    container.addEventListener('mousedown', handleMouseDown);
-    window.addEventListener('mouseup', handleMouseUp);
+    container.addEventListener('pointermove', handlePointerMove);
+    container.addEventListener('pointerdown', handlePointerDown);
+    container.addEventListener('pointerup', handlePointerUp);
+    container.addEventListener('pointercancel', handlePointerUp);
     container.addEventListener('wheel', handleWheel, { passive: false });
 
     return () => {
       isDisposed = true;
       if (cleanupAudio) cleanupAudio();
       container.removeEventListener('click', handleCanvasClick);
-      container.removeEventListener('mousemove', handleMouseMove);
-      container.removeEventListener('mousedown', handleMouseDown);
-      window.removeEventListener('mouseup', handleMouseUp);
+      container.removeEventListener('pointermove', handlePointerMove);
+      container.removeEventListener('pointerdown', handlePointerDown);
+      container.removeEventListener('pointerup', handlePointerUp);
+      container.removeEventListener('pointercancel', handlePointerUp);
       container.removeEventListener('wheel', handleWheel);
 
       if (modelRef.current) {
@@ -365,7 +384,7 @@ export const Live2DViewer: React.FC<Live2DViewerProps> = ({
       {/* 2D PixiJS Canvas Container */}
       <div
         ref={containerRef}
-        className="w-full h-full cursor-grab active:cursor-grabbing"
+        className="w-full h-full cursor-grab active:cursor-grabbing touch-none"
       />
 
       {/* Loading Overlay */}

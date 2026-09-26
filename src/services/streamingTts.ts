@@ -4,6 +4,21 @@ import { audioPlayer, gainFromVoiceVolume } from './audioPlayer';
 
 const SENTENCE_END = /[.!?…]+[”"')\]]*(?:\s+|$)/g;
 
+function hasUnclosedAsteriskSpan(text: string) {
+  let delimiters = 0;
+  for (let index = 0; index < text.length;) {
+    if (text[index] !== '*' || (index > 0 && text[index - 1] === '\\')) {
+      index += 1;
+      continue;
+    }
+
+    // A run such as **...** is one delimiter, just like *...*.
+    delimiters += 1;
+    while (text[index] === '*') index += 1;
+  }
+  return delimiters % 2 !== 0;
+}
+
 /**
  * Converts completed sentences while an LLM response is still streaming.
  * Synthesis stays serialized so audio is always queued in textual order.
@@ -33,7 +48,13 @@ export class StreamingTtsManager {
     let completedUntil = 0;
     SENTENCE_END.lastIndex = 0;
     for (let match = SENTENCE_END.exec(this.buffer); match; match = SENTENCE_END.exec(this.buffer)) {
-      completedUntil = match.index + match[0].length;
+      const candidateEnd = match.index + match[0].length;
+      // Do not send a partial *action with punctuation.* to the backend. The
+      // closing asterisk may arrive in a later stream token and the incomplete
+      // fragment would otherwise be spoken (including "Stern" by Edge-TTS).
+      if (!hasUnclosedAsteriskSpan(this.buffer.slice(0, candidateEnd))) {
+        completedUntil = candidateEnd;
+      }
     }
     if (completedUntil === 0) return;
 

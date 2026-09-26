@@ -162,7 +162,7 @@ pub struct VoiceConfig {
 fn default_rate() -> String { "+0%".to_string() }
 fn default_pitch() -> String { "+0Hz".to_string() }
 fn default_volume() -> String { "+0%".to_string() }
-fn default_filter_mode() -> TtsFilterMode { TtsFilterMode::All }
+fn default_filter_mode() -> TtsFilterMode { TtsFilterMode::StripActions }
 fn default_openai_endpoint() -> String { "http://localhost:8880/v1/audio/speech".to_string() }
 fn default_openai_model() -> String { "tts-1".to_string() }
 fn default_stt_endpoint() -> String { "http://localhost:8080/v1/audio/transcriptions".to_string() }
@@ -187,7 +187,7 @@ impl Default for VoiceConfig {
             rate: default_rate(),
             pitch: default_pitch(),
             volume: default_volume(),
-            filter_mode: TtsFilterMode::All,
+            filter_mode: TtsFilterMode::StripActions,
             custom_regex: String::new(),
             elevenlabs_api_key: String::new(),
             openai_endpoint: default_openai_endpoint(),
@@ -234,10 +234,11 @@ pub fn clean_text_for_tts(raw: &str, filter_mode: &TtsFilterMode, custom_regex: 
     let url_re = regex::Regex::new(r"https?://\S+").unwrap();
     text = url_re.replace_all(&text, "").to_string();
 
-    // 5. Remove markdown headers, bold, italic markers
-    let header_re = regex::Regex::new(r"^#{1,6}\s+").unwrap();
+    // 5. Remove markdown headers and underscore emphasis markers. Asterisks
+    // remain until the action filter has had a chance to inspect them.
+    let header_re = regex::Regex::new(r"(?m)^#{1,6}\s+").unwrap();
     text = header_re.replace_all(&text, "").to_string();
-    text = text.replace("**", "").replace("__", "");
+    text = text.replace("__", "");
 
     // 6. Apply filter mode
     text = match filter_mode {
@@ -258,9 +259,13 @@ pub fn clean_text_for_tts(raw: &str, filter_mode: &TtsFilterMode, custom_regex: 
             }
         }
         TtsFilterMode::StripActions => {
-            // Remove text within asterisks *action*
-            let action_re = regex::Regex::new(r"\*[^*]+\*").unwrap();
-            action_re.replace_all(&text, "").to_string()
+            // Remove roleplay actions, including multiline/double-star variants.
+            // A dangling opening marker can occur when streamed text is flushed;
+            // in that case it is safer to omit the unfinished action as well.
+            let action_re = regex::Regex::new(r"(?s)\*{1,3}[^*]*?\*{1,3}").unwrap();
+            let dangling_action_re = regex::Regex::new(r"(?s)\*{1,3}[^*]*$").unwrap();
+            let without_actions = action_re.replace_all(&text, "");
+            dangling_action_re.replace(&without_actions, "").to_string()
         }
     };
 
@@ -271,7 +276,11 @@ pub fn clean_text_for_tts(raw: &str, filter_mode: &TtsFilterMode, custom_regex: 
         }
     }
 
-    // 8. Collapse whitespace
+    // 8. Never pass Markdown asterisks to a speech engine. In "Alles"
+    // mode their content remains, but Edge-TTS must not pronounce "Stern".
+    text = text.replace('*', "");
+
+    // 9. Collapse whitespace
     let ws_re = regex::Regex::new(r"\s+").unwrap();
     text = ws_re.replace_all(&text, " ").to_string();
 
@@ -1176,6 +1185,28 @@ mod tests {
     }
 
     #[test]
+    fn test_clean_text_for_tts_strip_actions_handles_multiline_and_bold_markers() {
+        let input = "**Sie schaut kurz auf.\nDann lächelt sie.** \"Hallo!\"";
+        let result = clean_text_for_tts(input, &TtsFilterMode::StripActions, "");
+        assert_eq!(result, "\"Hallo!\"");
+    }
+
+    #[test]
+    fn test_clean_text_for_tts_strip_actions_omits_dangling_stream_fragment() {
+        let input = "Hallo. *Sie schaut zum Fenster und";
+        let result = clean_text_for_tts(input, &TtsFilterMode::StripActions, "");
+        assert_eq!(result, "Hallo.");
+    }
+
+    #[test]
+    fn test_clean_text_for_tts_all_never_speaks_markdown_asterisks() {
+        let input = "*lächelt* Hallo! **Wichtig.**";
+        let result = clean_text_for_tts(input, &TtsFilterMode::All, "");
+        assert_eq!(result, "lächelt Hallo! Wichtig.");
+        assert!(!result.contains('*'));
+    }
+
+    #[test]
     fn test_clean_text_for_tts_dialogue_only() {
         let input = "*Sie schaut auf* \"Hallo!\" *lächelt* \"Wie geht es dir?\"";
         let result = clean_text_for_tts(input, &TtsFilterMode::DialogueOnly, "");
@@ -1274,6 +1305,7 @@ mod tests {
         let parsed: VoiceConfig = serde_json::from_str(&json).unwrap();
         assert_eq!(parsed.voice_id, "de-DE-KatjaNeural");
         assert_eq!(parsed.engine, TtsEngine::Edge);
+        assert_eq!(parsed.filter_mode, TtsFilterMode::StripActions);
     }
 
     #[test]

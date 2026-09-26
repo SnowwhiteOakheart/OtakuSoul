@@ -44,6 +44,8 @@ export const VrmViewer = ({
     setError(null);
     
     let currentAmplitude = 0;
+    let leftArmDirection = 1;
+    let rightArmDirection = -1;
     const cleanupAudio = audioPlayer.onAudioFrame((amp) => {
       currentAmplitude = amp;
     });
@@ -123,6 +125,16 @@ export const VrmViewer = ({
             VRMUtils.combineSkeletons(gltf.scene);
             VRMUtils.rotateVRM0(vrm);
 
+            // Normalized VRM 0.x rigs can still point their arm chains along
+            // the opposite X axis from VRM 1.0 rigs. Derive the direction from
+            // the actual skeleton instead of assuming one convention.
+            leftArmDirection = Math.sign(
+              vrm.humanoid.getNormalizedBoneNode('leftLowerArm')?.position.x ?? 1,
+            ) || 1;
+            rightArmDirection = Math.sign(
+              vrm.humanoid.getNormalizedBoneNode('rightLowerArm')?.position.x ?? -1,
+            ) || -1;
+
             vrmRef.current = vrm;
             scene.add(vrm.scene);
             setLoading(false);
@@ -195,16 +207,15 @@ export const VrmViewer = ({
           // Natural Resting Arms (Drop down from T-pose to sides of body)
           const leftUpperArm = vrm.humanoid.getNormalizedBoneNode('leftUpperArm');
           if (leftUpperArm) {
-            // Lower arm to side (Z ~ -72 deg), slightly forward (X ~ 7 deg)
-            leftUpperArm.rotation.z = -1.25 + Math.sin(elapsed * 1.8) * 0.015;
+            // Rotate whichever way this model's arm chain points toward the floor.
+            leftUpperArm.rotation.z = -leftArmDirection * (1.25 - Math.sin(elapsed * 1.8) * 0.015);
             leftUpperArm.rotation.x = 0.12;
             leftUpperArm.rotation.y = -0.05;
           }
 
           const rightUpperArm = vrm.humanoid.getNormalizedBoneNode('rightUpperArm');
           if (rightUpperArm) {
-            // Lower arm to side (Z ~ +72 deg), slightly forward (X ~ 7 deg)
-            rightUpperArm.rotation.z = 1.25 - Math.sin(elapsed * 1.8) * 0.015;
+            rightUpperArm.rotation.z = -rightArmDirection * (1.25 - Math.sin(elapsed * 1.8) * 0.015);
             rightUpperArm.rotation.x = 0.12;
             rightUpperArm.rotation.y = 0.05;
           }
@@ -212,25 +223,25 @@ export const VrmViewer = ({
           const leftLowerArm = vrm.humanoid.getNormalizedBoneNode('leftLowerArm');
           if (leftLowerArm) {
             // Elbow naturally bent forward towards waist
-            leftLowerArm.rotation.y = -0.3;
+            leftLowerArm.rotation.y = -leftArmDirection * 0.3;
             leftLowerArm.rotation.x = 0.05;
           }
 
           const rightLowerArm = vrm.humanoid.getNormalizedBoneNode('rightLowerArm');
           if (rightLowerArm) {
             // Elbow naturally bent forward towards waist
-            rightLowerArm.rotation.y = 0.3;
+            rightLowerArm.rotation.y = -rightArmDirection * 0.3;
             rightLowerArm.rotation.x = 0.05;
           }
 
           const leftHand = vrm.humanoid.getNormalizedBoneNode('leftHand');
           if (leftHand) {
-            leftHand.rotation.y = -0.1;
+            leftHand.rotation.y = -leftArmDirection * 0.1;
           }
 
           const rightHand = vrm.humanoid.getNormalizedBoneNode('rightHand');
           if (rightHand) {
-            rightHand.rotation.y = 0.1;
+            rightHand.rotation.y = -rightArmDirection * 0.1;
           }
         }
 
