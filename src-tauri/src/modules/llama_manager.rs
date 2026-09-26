@@ -19,6 +19,22 @@ pub struct LlamaServerConfig {
     pub flash_attn: bool,
     #[serde(default)]
     pub reasoning_mode: bool,
+    #[serde(default)]
+    pub thinking_budget: Option<i32>,
+    #[serde(default)]
+    pub batch_size: Option<u32>,
+    #[serde(default)]
+    pub ubatch_size: Option<u32>,
+    #[serde(default)]
+    pub cache_type_k: Option<String>,
+    #[serde(default)]
+    pub cache_type_v: Option<String>,
+    #[serde(default)]
+    pub mlock: bool,
+    #[serde(default)]
+    pub no_mmap: bool,
+    #[serde(default)]
+    pub cpu_moe: bool,
 }
 
 impl Default for LlamaServerConfig {
@@ -32,6 +48,14 @@ impl Default for LlamaServerConfig {
             threads: None,
             flash_attn: true,
             reasoning_mode: false,
+            thinking_budget: Some(0),
+            batch_size: Some(2048),
+            ubatch_size: Some(512),
+            cache_type_k: Some("f16".to_string()),
+            cache_type_v: Some("f16".to_string()),
+            mlock: false,
+            no_mmap: false,
+            cpu_moe: false,
         }
     }
 }
@@ -88,21 +112,31 @@ impl LlamaServerManager {
             }
         }
 
-        // Candidate search paths
-        let candidates = vec![
-            // 1. Local OtakuSoul binary paths
-            "/home/deathtrap/development/OtakuSoul/bin/cuda/llama-server",
-            "./bin/cuda/llama-server",
-            "../bin/cuda/llama-server",
-            "./bin/llama-server",
-            "../bin/llama-server",
-            "llama-server",
+        let app_paths = crate::modules::paths::resolve_app_paths();
+        let bin_dir = PathBuf::from(&app_paths.bundled_bin_dir);
+
+        #[allow(unused_mut)]
+        let mut candidates = vec![
+            bin_dir.join("llama-server"),
+            bin_dir.join("cuda").join("llama-server"),
+            PathBuf::from("/home/deathtrap/development/OtakuSoul/bin/cuda/llama-server"),
+            PathBuf::from("./bin/cuda/llama-server"),
+            PathBuf::from("../bin/cuda/llama-server"),
+            PathBuf::from("./bin/llama-server"),
+            PathBuf::from("../bin/llama-server"),
         ];
 
+        #[cfg(windows)]
+        {
+            candidates.push(bin_dir.join("llama-server.exe"));
+            candidates.push(bin_dir.join("cuda").join("llama-server.exe"));
+            candidates.push(PathBuf::from("./bin/cuda/llama-server.exe"));
+            candidates.push(PathBuf::from("./bin/llama-server.exe"));
+        }
+
         for candidate in candidates {
-            let path = PathBuf::from(candidate);
-            if path.exists() {
-                return Ok(path);
+            if candidate.exists() {
+                return Ok(candidate);
             }
         }
 
@@ -208,6 +242,34 @@ impl LlamaServerManager {
                 .arg("off")
                 .arg("--reasoning-budget")
                 .arg("0");
+        } else if let Some(budget) = config.thinking_budget {
+            cmd.arg("--reasoning-budget").arg(budget.to_string());
+        }
+
+        if let Some(b) = config.batch_size {
+            cmd.arg("-b").arg(b.to_string());
+        }
+        if let Some(ub) = config.ubatch_size {
+            cmd.arg("-ub").arg(ub.to_string());
+        }
+        if let Some(ref k) = config.cache_type_k {
+            if !k.is_empty() {
+                cmd.arg("--cache-type-k").arg(k);
+            }
+        }
+        if let Some(ref v) = config.cache_type_v {
+            if !v.is_empty() {
+                cmd.arg("--cache-type-v").arg(v);
+            }
+        }
+        if config.mlock {
+            cmd.arg("--mlock");
+        }
+        if config.no_mmap {
+            cmd.arg("--no-mmap");
+        }
+        if config.cpu_moe {
+            cmd.arg("--cpu-moe");
         }
 
         if let Some(t) = config.threads {

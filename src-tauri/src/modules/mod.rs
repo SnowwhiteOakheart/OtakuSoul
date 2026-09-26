@@ -7,5 +7,8 @@ pub mod lorebook;
 pub mod memory;
 pub mod paths;
 pub mod prompt_builder;
+pub mod providers;
 pub mod settings;
 pub mod stage;
+pub mod llm_presets;
+pub mod models_hub;

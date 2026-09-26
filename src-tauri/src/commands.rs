@@ -570,3 +570,52 @@ pub fn import_chat_jsonl(
         .map_err(|e| e.to_string())
 }
 
+#[tauri::command]
+pub async fn fetch_openrouter_models(
+    api_key: Option<String>,
+) -> Result<Vec<crate::modules::providers::OpenRouterModelInfo>, String> {
+    crate::modules::providers::fetch_openrouter_models(api_key.as_deref()).await
+}
+
+#[tauri::command]
+pub fn load_llm_presets() -> Result<Vec<crate::modules::llm_presets::LlmPreset>, String> {
+    Ok(crate::modules::llm_presets::load_llm_presets(None))
+}
+
+#[tauri::command]
+pub fn save_llm_preset(
+    preset: crate::modules::llm_presets::LlmPreset,
+) -> Result<Vec<crate::modules::llm_presets::LlmPreset>, String> {
+    crate::modules::llm_presets::save_llm_preset(preset, None)
+}
+
+#[tauri::command]
+pub fn delete_llm_preset(
+    preset_id: String,
+) -> Result<Vec<crate::modules::llm_presets::LlmPreset>, String> {
+    crate::modules::llm_presets::delete_llm_preset(&preset_id, None)
+}
+
+#[tauri::command]
+pub async fn search_hf_models(
+    query: String,
+) -> Result<Vec<crate::modules::models_hub::HfModelSummary>, String> {
+    crate::modules::models_hub::search_hf_models(&query).await
+}
+
+#[tauri::command]
+pub async fn get_hf_model_files(
+    model_id: String,
+) -> Result<Vec<crate::modules::models_hub::HfGgufFile>, String> {
+    crate::modules::models_hub::get_hf_model_files(&model_id).await
+}
+
+#[tauri::command]
+pub async fn download_gguf_model(
+    app: tauri::AppHandle,
+    download_url: String,
+    filename: String,
+) -> Result<String, String> {
+    crate::modules::models_hub::download_gguf_file(&app, &download_url, &filename).await
+}
+

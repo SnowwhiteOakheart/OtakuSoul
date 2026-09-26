@@ -86,6 +86,9 @@
 | `src-tauri/src/modules/memory.rs` | SQLite Kognitives Seelen-Gedächtnis & Emotional Decay |
 | `src-tauri/src/modules/stage.rs` | RPG Würfel-Engine, Kampagnen-Clocks & Taktischer Kampf |
 | `src-tauri/src/modules/companion.rs` | Neurohormone & Tool-Calling mit Sicherheitsabfrage |
+| `src-tauri/src/modules/providers.rs` | LLM Provider Abstraktion (OpenRouter, Anthropic Messages API, OpenAI, DeepSeek, Gemini, Mistral, Custom) |
+| `src-tauri/src/modules/llm_presets.rs` | LLM Sampler Presets Engine mit 5 Built-in Profilen & JSON-Persistenz |
+| `src-tauri/src/modules/models_hub.rs` | Hugging Face GGUF API-Suche, Quants-Inspektion & Async File Downloader |
 | `src-tauri/src/state.rs` | Globaler Tokio/Tauri `AppState` |
 | `src-tauri/src/commands.rs` | Alle Tauri IPC Commands |
 | `src-tauri/src/lib.rs` | App Builder, Dialog-Plugin & Handler-Registrierung |
@@ -148,7 +151,7 @@ Alle benötigten Daten sind eigenständig in diesem Projektverzeichnis gekapselt
   - Native Dateidialoge (`tauri-plugin-dialog`), dynamische Pfade & Asset-Scans
   - Persistente `settings.json`, anpassbares Sampling & konfigurierbare Antwortsprache
   - SillyTavern V2 PNG tEXt Chunk Injection & Export, Charakter-Editor, Galerie-Bibliothek, User-Personas
-- [x] **Phase 9: Vollwertiger Chat, Swipes & HUD-Presets**
+- [x] **Phase 9: Vollwertiger Chat, Swipes & HUD-Presets** (Commit `d8c2bde`)
   - **SQLite Chat-Persistenz:** Tabellen `chat_sessions` & `chat_messages` mit Multi-Chat-Unterstützung pro Charakter
   - **SillyTavern Swipes (Antwortvarianten):** Beliebig viele Varianten pro Nachricht in `swipes_json`, browsbar via `< 1/3 >` Pagination
   - **Nachrichten-Aktionen:** Inline-Editing mit Textarea, Löschen, Fortsetzen (Continue), Neu generieren (Swipe anlegen)
@@ -156,8 +159,17 @@ Alle benötigten Daten sind eigenständig in diesem Projektverzeichnis gekapselt
   - **Reaktives State Parsing:** Regex-Extraktion von `<state>{...}</state>`, automatische Aktualisierung der HUD-Variablen und Tag-Stripping aus Chatblasen
   - **11 Rollenspiel-HUD-Presets:** Romance, RPG, Survival, Horror, Cyberpunk, Slice-of-Life, Detektiv, Space Opera, Cultivation, Comedy, Tabletop Tactical
   - **SillyTavern & SoW JSONL Import/Export:** Volle Kompatibilität inkl. aller Metadaten und Swipes-Historie
+- [x] **Phase 10: LLM-Provider & llama.cpp-Tuning**
+  - **Provider-Abstraktion in Rust:** `LlmProviderType` und `ProviderRegistry` unterstützen LocalLlama, OpenRouter, Anthropic (natives Messages-API Format), OpenAI, DeepSeek, Gemini, Mistral & Custom OpenAI-kompatible Endpunkte.
+  - **Natives Anthropic-Protokoll:** Eigene Header (`x-api-key`, `anthropic-version`), oberstes `system`-Prompt Feld (keine System-Rollen im Nachrichten-Array), rollen-alternierende Normalisierung und SSE-Event-Streaming für `content_block_delta`.
+  - **OpenRouter Modellkatalog:** Automatisches Abrufen aller Modelle von OpenRouter mit Kontextlänge & Preisinformationen, Volltext-Suchfilter und 1-Klick-Übernahme.
+  - **Fortgeschrittene Sampler-Engine:** Dynamic Temperature (`dynatemp_range`, `dynatemp_exponent`), DRY (`dry_multiplier`, `dry_base`, `dry_allowed_length`, `dry_penalty_last_n`), XTC (`xtc_threshold`, `xtc_probability`), Min-P, Top-P, Top-K, Repeat Penalty und Stop Strings.
+  - **LLM-Presets System:** 5 vordefinierte Presets (Storytelling/Kreativ, Rollenspiel Standard, Stage GM / Logik, XTC Wild, Fast Chat) + CRUD für eigene Presets mit Persistenz in `llm_presets.json`.
+  - **llama-server Hardware-Tuning:** Batch Size (`-b`), UBatch Size (`-ub`), KV-Cache Quantisierung (`--cache-type-k`, `--cache-type-v` z. B. `q8_0` für 50% VRAM-Ersparnis bei großen Kontexten), Memory-Lock (`--mlock`), no-mmap (`--no-mmap`), CPU MoE Offloading (`--cpu-moe`).
+  - **Models Hub (Hugging Face):** Direkte GGUF-Suche via Hugging Face API, Repo-Dateien-Inspektion mit Quantisierungs-Erkennung (Q4_K_M, Q8_0 etc.), asynchroner Downloader mit Live-Fortschrittsbalken und Download-Geschwindigkeit in MB/s (`model-download-progress`).
+  - **Moderne Einstellungs-Tabs:** Unterteilung in Server Tuning, Cloud Provider & OpenRouter Katalog, Sampler & Presets sowie Models Hub.
 
-**Offene Phasen 10–18** (Provider-Abstraktion, Soul Memory 2.0, Lorebook 2.0, Stimme, Live2D, Stage-GM, echter Companion, Ökosystem, i18n & Auslieferung) sind in [`Roadmap.md`](Roadmap.md) dokumentiert. **Vor neuen Features dort nachsehen und erledigte Punkte mit Commit-Hash abhaken.**
+**Offene Phasen 11–18** (Soul Memory 2.0, Lorebook 2.0, Stimme, Live2D, Stage-GM, echter Companion, Ökosystem, i18n & Auslieferung) sind in [`Roadmap.md`](Roadmap.md) dokumentiert. **Vor neuen Features dort nachsehen und erledigte Punkte mit Commit-Hash abhaken.**
 
 ---
 
@@ -166,6 +178,8 @@ Alle benötigten Daten sind eigenständig in diesem Projektverzeichnis gekapselt
 - **SillyTavern Swipes-Prinzip:** Swipes werden im SQLite-Feld `swipes_json` als Array von `{ content, thought }` gespeichert. Ein `swipe_index` markiert die aktive Variante. Das Erzeugen eines neuen Swipes („Neu generieren“) überschreibt niemals die bisherigen Varianten, sondern hängt eine neue an und setzt den Index auf das Ende.
 - **State Parsing (`<state>` Tags):** Rollenspiel-Modelle können via System-Prompt angewiesen werden, Status-Änderungen am Ende der Nachricht als `<state>{"Affection": 55}</state>` auszugeben. Der Parser in `src/utils/stateParser.ts` fängt diese Tags ab, aktualisiert die Zustand-Variablen und entfernt den Tag restlos aus der sichtbaren Blase, damit der Rollenspielfluss unberührt bleibt.
 - **Reasoning-Unterdrückung im Rollenspiel:** Wie in *Soul of Waifu* ist der Reasoning-Modus standardmäßig **deaktiviert**, um lästige interne Denkmonologe zu unterbinden und die Generierung maximal zu beschleunigen. Bei `reasoning_mode = false` übergibt `llama_manager` die Flags `--reasoning off --reasoning-budget 0`, sendet `enable_thinking: false` und der System-Prompt untersagt `<think>`-Tags explizit. Umschaltbar über den Schnellschalter im Chat-HUD (`AdaptiveHud.tsx`) oder in den Einstellungen.
+- **KV-Cache Quantisierung:** Mit `--cache-type-k q8_0` und `--cache-type-v q8_0` lässt sich der VRAM-Bedarf für lange Kontextfenster (16k–32k Tokens) auf der RTX 4070 Ti SUPER fast halbieren, ohne spürbare Einbußen bei der Generierungsqualität.
+- **Anthropic Messages Streaming:** Anthropic nutzt SSE Events (`content_block_delta`), bei denen das Text-Delta unter `delta.text` liegt, während OpenAI/v1/chat/completions das Delta unter `choices[0].delta.content` platziert. Die `ProviderRegistry` normalisiert beide Formate transparent auf das einheitliche `llm-token` Event in Tauri.
 - **Streaming-Listener & React-Lifecycle:** Asynchrone Tauri-Listener (`listen(...)`) müssen zwingend mit einem `isSubscribed`-Guard gekapselt werden, damit bei unmounted Components / React StrictMode keine Geister-Listener verbleiben, die Tokens doppelt empfangen.
 - **Mobile Viewports (iOS/Android):** Alle UI-Container nutzen Flex/Grid und sind vorbereitet für Touch-Gesten und responsive Breakpoints (`sm:`, `lg:`).
 - **Tool Calling Erweiterung:** Neue Tools können direkt in `src-tauri/src/modules/companion.rs` in `execute_internal` registriert werden. Deklariere gefährliche Operationen in `is_dangerous`, damit der 25s Sicherheits-Countdown automatisch greift.

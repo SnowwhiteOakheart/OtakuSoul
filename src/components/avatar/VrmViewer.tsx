@@ -92,6 +92,11 @@ export const VrmViewer = ({
     loader.register((parser) => new VRMLoaderPlugin(parser));
 
     const loadModel = async () => {
+      if (!modelPath || !modelPath.trim()) {
+        setLoading(false);
+        return;
+      }
+
       try {
         const bytes = await api.readFileBinary(modelPath);
         if (isDisposed) return;

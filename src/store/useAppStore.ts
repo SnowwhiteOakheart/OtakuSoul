@@ -29,6 +29,12 @@ import {
   AppSettings,
   ChatSession,
   StoredChatMessage,
+  LlmProviderType,
+  OpenRouterModelInfo,
+  LlmPreset,
+  HfModelSummary,
+  HfGgufFile,
+  DownloadProgressEvent,
 } from '../types';
 import { soundFx } from '../services/soundFx';
 import { extractStateUpdates, applyStateUpdates } from '../utils/stateParser';
@@ -132,6 +138,29 @@ interface AppStoreState {
   setCloudApiKey: (key: string) => void;
   cloudModel: string;
   setCloudModel: (model: string) => void;
+
+  // Phase 10: LLM Provider, Presets & Models Hub
+  cloudProvider: LlmProviderType;
+  setCloudProvider: (provider: LlmProviderType) => void;
+  openRouterModels: OpenRouterModelInfo[];
+  isLoadingOpenRouterModels: boolean;
+  fetchOpenRouterModels: (apiKey?: string) => Promise<void>;
+
+  llmPresets: LlmPreset[];
+  activePresetId: string | null;
+  fetchLlmPresets: () => Promise<void>;
+  applyLlmPreset: (presetId: string) => void;
+  saveLlmPreset: (preset: LlmPreset) => Promise<void>;
+  deleteLlmPreset: (presetId: string) => Promise<void>;
+
+  hfSearchResults: HfModelSummary[];
+  isSearchingHf: boolean;
+  searchHfModels: (query: string) => Promise<void>;
+  hfModelFiles: Record<string, HfGgufFile[]>;
+  isLoadingHfFiles: Record<string, boolean>;
+  fetchHfModelFiles: (modelId: string) => Promise<void>;
+  downloadProgress: Record<string, DownloadProgressEvent>;
+  downloadGgufModel: (downloadUrl: string, filename: string) => Promise<void>;
 
   messages: ChatMessage[];
   streamingText: string;
@@ -352,13 +381,41 @@ export const useAppStore = create<AppStoreState>((set, get) => ({
           max_tokens: 2048,
         },
         selectedBackend: settings.selected_backend || 'local',
+        cloudProvider: settings.cloud_provider || 'open_router',
         cloudEndpoint: settings.cloud_endpoint || 'https://openrouter.ai/api/v1/chat/completions',
         cloudApiKey: settings.cloud_api_key || '',
         cloudModel: settings.cloud_model || 'anthropic/claude-3.5-sonnet',
+        activePresetId: settings.active_preset_id || null,
         replyLanguage: settings.reply_language || 'Deutsch',
         lorebookScanDepth: settings.lorebook_scan_depth || 5,
         activeVrmPath: vrmPath,
       });
+
+      // 3b. Load LLM Presets & listen to model downloads
+      try {
+        const presets = await api.loadLlmPresets();
+        set({ llmPresets: presets });
+      } catch (err) {
+        console.warn('Failed to load presets:', err);
+      }
+
+      try {
+        await api.onModelDownloadProgress((prog) => {
+          set((state) => ({
+            downloadProgress: {
+              ...state.downloadProgress,
+              [prog.filename]: prog,
+            },
+          }));
+          if (prog.finished) {
+            api.scanModels().then((models) => {
+              set({ scannedModels: models });
+            });
+          }
+        });
+      } catch (err) {
+        console.warn('Failed to attach download progress listener:', err);
+      }
 
       // 4. Load Personas
       const loadedPersonas = await api.loadPersonas();
@@ -392,9 +449,11 @@ export const useAppStore = create<AppStoreState>((set, get) => ({
         server_config: state.serverConfig,
         sampling: state.sampling,
         selected_backend: state.selectedBackend,
+        cloud_provider: state.cloudProvider,
         cloud_endpoint: state.cloudEndpoint,
         cloud_api_key: state.cloudApiKey,
         cloud_model: state.cloudModel,
+        active_preset_id: state.activePresetId,
         reply_language: state.replyLanguage,
         lorebook_scan_depth: state.lorebookScanDepth,
         active_character_id: state.activeCharacter?.id || null,
@@ -765,6 +824,131 @@ export const useAppStore = create<AppStoreState>((set, get) => ({
     get().saveCurrentSettings();
   },
 
+  // Phase 10: LLM Provider, Presets & Models Hub
+  cloudProvider: 'open_router',
+  setCloudProvider: (cloudProvider) => {
+    let endpoint = get().cloudEndpoint;
+    let model = get().cloudModel;
+    if (cloudProvider === 'anthropic') {
+      endpoint = 'https://api.anthropic.com/v1/messages';
+      model = 'claude-3-5-sonnet-20241022';
+    } else if (cloudProvider === 'open_router') {
+      endpoint = 'https://openrouter.ai/api/v1/chat/completions';
+      model = 'anthropic/claude-3.5-sonnet';
+    } else if (cloudProvider === 'open_ai') {
+      endpoint = 'https://api.openai.com/v1/chat/completions';
+      model = 'gpt-4o';
+    } else if (cloudProvider === 'deep_seek') {
+      endpoint = 'https://api.deepseek.com/v1/chat/completions';
+      model = 'deepseek-chat';
+    } else if (cloudProvider === 'local_llama') {
+      endpoint = `http://127.0.0.1:${get().serverConfig.port}/v1/chat/completions`;
+    }
+    set({ cloudProvider, cloudEndpoint: endpoint, cloudModel: model });
+    get().saveCurrentSettings();
+  },
+
+  openRouterModels: [],
+  isLoadingOpenRouterModels: false,
+  fetchOpenRouterModels: async (apiKey?: string) => {
+    set({ isLoadingOpenRouterModels: true });
+    try {
+      const models = await api.fetchOpenRouterModels(apiKey || get().cloudApiKey);
+      set({ openRouterModels: models, isLoadingOpenRouterModels: false });
+    } catch (e) {
+      console.error('Failed to fetch OpenRouter models:', e);
+      set({ isLoadingOpenRouterModels: false });
+    }
+  },
+
+  llmPresets: [],
+  activePresetId: null,
+  fetchLlmPresets: async () => {
+    try {
+      const presets = await api.loadLlmPresets();
+      set({ llmPresets: presets });
+    } catch (e) {
+      console.error('Failed to load LLM presets:', e);
+    }
+  },
+
+  applyLlmPreset: (presetId: string) => {
+    const preset = get().llmPresets.find((p) => p.id === presetId);
+    if (preset) {
+      set({
+        activePresetId: presetId,
+        sampling: { ...preset.sampling },
+      });
+      get().saveCurrentSettings();
+    }
+  },
+
+  saveLlmPreset: async (preset: LlmPreset) => {
+    try {
+      const updated = await api.saveLlmPreset(preset);
+      set({ llmPresets: updated, activePresetId: preset.id });
+    } catch (e) {
+      console.error('Failed to save LLM preset:', e);
+    }
+  },
+
+  deleteLlmPreset: async (presetId: string) => {
+    try {
+      const updated = await api.deleteLlmPreset(presetId);
+      set({
+        llmPresets: updated,
+        activePresetId: get().activePresetId === presetId ? null : get().activePresetId,
+      });
+    } catch (e) {
+      console.error('Failed to delete LLM preset:', e);
+    }
+  },
+
+  hfSearchResults: [],
+  isSearchingHf: false,
+  searchHfModels: async (query: string) => {
+    if (!query.trim()) return;
+    set({ isSearchingHf: true });
+    try {
+      const results = await api.searchHfModels(query);
+      set({ hfSearchResults: results, isSearchingHf: false });
+    } catch (e) {
+      console.error('Failed to search HF models:', e);
+      set({ isSearchingHf: false });
+    }
+  },
+
+  hfModelFiles: {},
+  isLoadingHfFiles: {},
+  fetchHfModelFiles: async (modelId: string) => {
+    set((state) => ({
+      isLoadingHfFiles: { ...state.isLoadingHfFiles, [modelId]: true },
+    }));
+    try {
+      const files = await api.getHfModelFiles(modelId);
+      set((state) => ({
+        hfModelFiles: { ...state.hfModelFiles, [modelId]: files },
+        isLoadingHfFiles: { ...state.isLoadingHfFiles, [modelId]: false },
+      }));
+    } catch (e) {
+      console.error('Failed to fetch HF model files:', e);
+      set((state) => ({
+        isLoadingHfFiles: { ...state.isLoadingHfFiles, [modelId]: false },
+      }));
+    }
+  },
+
+  downloadProgress: {},
+  downloadGgufModel: async (downloadUrl: string, filename: string) => {
+    try {
+      await api.downloadGgufModel(downloadUrl, filename);
+      const models = await api.scanModels();
+      set({ scannedModels: models });
+    } catch (e) {
+      console.error('Failed to download GGUF model:', e);
+    }
+  },
+
   messages: [],
   streamingText: '',
   streamingThought: '',
@@ -969,6 +1153,7 @@ export const useAppStore = create<AppStoreState>((set, get) => ({
       cloudEndpoint,
       cloudApiKey,
       cloudModel,
+      cloudProvider,
       activeCharacter,
       activeLorebooks,
       stateVariables,
@@ -1043,15 +1228,13 @@ export const useAppStore = create<AppStoreState>((set, get) => ({
     try {
       const done = await api.sendChatMessage({
         endpoint_url: endpoint,
+        provider: selectedBackend === 'cloud' ? cloudProvider : 'local_llama',
         api_key: selectedBackend === 'cloud' ? cloudApiKey : undefined,
         model: selectedBackend === 'cloud' ? cloudModel : undefined,
         messages: payloadMessages,
         reasoning_mode: serverConfig.reasoning_mode,
         sampling: {
-          temperature: sampling.temperature ?? 0.7,
-          min_p: sampling.min_p ?? 0.05,
-          top_p: sampling.top_p ?? 0.9,
-          max_tokens: sampling.max_tokens ?? 2048,
+          ...sampling,
         },
       });
 
@@ -1098,6 +1281,7 @@ export const useAppStore = create<AppStoreState>((set, get) => ({
       cloudEndpoint,
       cloudApiKey,
       cloudModel,
+      cloudProvider,
       activeCharacter,
       activeLorebooks,
       stateVariables,
@@ -1165,15 +1349,13 @@ export const useAppStore = create<AppStoreState>((set, get) => ({
     try {
       const done = await api.sendChatMessage({
         endpoint_url: endpoint,
+        provider: selectedBackend === 'cloud' ? cloudProvider : 'local_llama',
         api_key: selectedBackend === 'cloud' ? cloudApiKey : undefined,
         model: selectedBackend === 'cloud' ? cloudModel : undefined,
         messages: payloadMessages,
         reasoning_mode: serverConfig.reasoning_mode,
         sampling: {
-          temperature: sampling.temperature ?? 0.7,
-          min_p: sampling.min_p ?? 0.05,
-          top_p: sampling.top_p ?? 0.9,
-          max_tokens: sampling.max_tokens ?? 2048,
+          ...sampling,
         },
       });
 
@@ -1250,6 +1432,7 @@ export const useAppStore = create<AppStoreState>((set, get) => ({
       cloudEndpoint,
       cloudApiKey,
       cloudModel,
+      cloudProvider,
       activeLorebooks,
       stateVariables,
       replyLanguage,
@@ -1342,15 +1525,13 @@ export const useAppStore = create<AppStoreState>((set, get) => ({
     try {
       const done = await api.sendChatMessage({
         endpoint_url: endpoint,
+        provider: selectedBackend === 'cloud' ? cloudProvider : 'local_llama',
         api_key: selectedBackend === 'cloud' ? cloudApiKey : undefined,
         model: selectedBackend === 'cloud' ? cloudModel : undefined,
         messages: payloadMessages,
         reasoning_mode: serverConfig.reasoning_mode,
         sampling: {
-          temperature: sampling.temperature ?? 0.7,
-          min_p: sampling.min_p ?? 0.05,
-          top_p: sampling.top_p ?? 0.9,
-          max_tokens: sampling.max_tokens ?? 2048,
+          ...sampling,
         },
       });
 

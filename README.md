@@ -98,7 +98,13 @@ npm run tauri build
   - Real-time `<state>` JSON tag extraction, tag-stripping, and automatic reactive HUD updates
   - 11 Roleplay HUD Presets (Romance, RPG, Survival, Horror, Cyberpunk, Slice-of-Life, etc.)
   - Full SillyTavern & SoW JSONL chat import and export
-- [ ] **Phases 10–18: Remaining feature parity with Soul of Waifu**
+- [x] **Phase 10: LLM Providers, Presets, llama.cpp Tuning & Models Hub**
+  - Provider Abstraction: Local llama-server, OpenRouter (live catalog search), Anthropic (native Messages API with SSE parser), OpenAI, DeepSeek, Gemini, Mistral, and Custom endpoints
+  - Advanced Samplers: Dynamic Temperature (`dynatemp`), DRY, XTC, Min-P, Top-P, Top-K, Repeat Penalty, and Stop Strings
+  - LLM Presets System: 5 built-in presets (Storytelling/Kreativ, Standard, Logik, XTC Wild, Fast Chat) + custom user presets in `llm_presets.json`
+  - llama-server Hardware Tuning: Batch (`-b`), UBatch (`-ub`), KV-Cache quantization (`q8_0`/`q4_0`), Flash Attention, RAM lock (`--mlock`), no-mmap, CPU MoE offload, thinking budget
+  - Hugging Face Models Hub: In-app GGUF model search, quantization inspection (Q4_K_M, Q8_0 etc.), and async downloader with live progress and transfer speed tracking
+- [ ] **Phases 11–18: Remaining feature parity with Soul of Waifu**
   - Provider abstraction & LLM presets, Soul Memory 2.0 agents, voice (TTS/STT), Live2D, AI Game Master, real companion tools, web client, Discord & packaging
   - See **[Roadmap.md](Roadmap.md)** for the full, detailed plan (German)
 

@@ -32,6 +32,7 @@ tracing-subscriber = "0.3"
 rand = "0.8"
 base64 = "0.22"
 png = "0.17"
+urlencoding = "2.1"
 
 [target.'cfg(unix)'.dependencies]
 libc = "0.2"

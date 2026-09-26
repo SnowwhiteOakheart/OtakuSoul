@@ -31,6 +31,11 @@ import {
   UserPersona,
   ChatSession,
   StoredChatMessage,
+  OpenRouterModelInfo,
+  LlmPreset,
+  HfModelSummary,
+  HfGgufFile,
+  DownloadProgressEvent,
 } from '../types';
 
 export const api = {
@@ -458,6 +463,53 @@ export const api = {
       characterId,
       jsonlContent,
       titleOverride: titleOverride ?? null,
+    });
+  },
+
+  // Phase 10: LLM Provider, Presets & Models Hub
+  fetchOpenRouterModels: async (
+    apiKey?: string | null
+  ): Promise<OpenRouterModelInfo[]> => {
+    return await invoke<OpenRouterModelInfo[]>('fetch_openrouter_models', {
+      apiKey: apiKey ?? null,
+    });
+  },
+
+  loadLlmPresets: async (): Promise<LlmPreset[]> => {
+    return await invoke<LlmPreset[]>('load_llm_presets');
+  },
+
+  saveLlmPreset: async (preset: LlmPreset): Promise<LlmPreset[]> => {
+    return await invoke<LlmPreset[]>('save_llm_preset', { preset });
+  },
+
+  deleteLlmPreset: async (presetId: string): Promise<LlmPreset[]> => {
+    return await invoke<LlmPreset[]>('delete_llm_preset', { presetId });
+  },
+
+  searchHfModels: async (query: string): Promise<HfModelSummary[]> => {
+    return await invoke<HfModelSummary[]>('search_hf_models', { query });
+  },
+
+  getHfModelFiles: async (modelId: string): Promise<HfGgufFile[]> => {
+    return await invoke<HfGgufFile[]>('get_hf_model_files', { modelId });
+  },
+
+  downloadGgufModel: async (
+    downloadUrl: string,
+    filename: string
+  ): Promise<string> => {
+    return await invoke<string>('download_gguf_model', {
+      downloadUrl,
+      filename,
+    });
+  },
+
+  onModelDownloadProgress: async (
+    callback: (data: DownloadProgressEvent) => void
+  ): Promise<UnlistenFn> => {
+    return await listen<DownloadProgressEvent>('model-download-progress', (event) => {
+      callback(event.payload);
     });
   },
 

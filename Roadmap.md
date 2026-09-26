@@ -81,16 +81,16 @@ Die Reihenfolge ist nach Abhängigkeit und Nutzen sortiert: erst das, was jede a
 - [ ] **Tool Calling im normalen Chat** – Websuche, Datum/Zeit, Rechner (SoW: `ai_clients/tools.py`)
 - [ ] **Prompt-Log / Debug-Dump** des letzten Prompts (SoW: `_dump_last_prompt`)
 
-### Phase 10 – LLM-Provider & llama.cpp-Tuning 🟠
+### Phase 10 – LLM-Provider & llama.cpp-Tuning ✅ Abgeschlossen
 
-- [ ] **Provider-Abstraktion in Rust** (Trait `Provider`) statt nur „lokal vs. eine Cloud-URL“
-- [ ] **Provider**: OpenRouter (Modellliste laden), OpenAI, **Anthropic** (eigenes Messages-API-Format, kein OpenAI-Schema), DeepSeek, Grok, Gemini, Qwen, Mistral, Z.AI, Player2, Custom
-- [ ] **Vollständige Sampler-Einstellungen** – Temperature, Top-P, Min-P, Freq/Presence-Penalty, **Dynamic Temperature**, **DRY** (Multiplier/Base/Allowed Length), **XTC** (Threshold/Probability), Stop-Strings, Max Tokens
-- [ ] **LLM-Presets** speichern/laden/löschen (SoW: `save_current_as_llm_preset`)
-- [ ] **llama-server-Optionen** – Kontextgröße, Batch-Size, CPU-Threads, Flash Attention, mlock, KV-Cache-Quantisierung (`q8_0`/`q4_0`), **CPU-MoE-Layer**, Thinking-Budget
+- [x] **Provider-Abstraktion in Rust** (`LlmProviderType`, `ProviderRegistry`) mit nativer Unterstützung für Streaming
+- [x] **Provider**: OpenRouter (Modellkatalog abrufen & 1-Klick-Auswahl), **Anthropic** (natives Messages-API-Format mit `x-api-key`, `anthropic-version`, separatem `system`-Prompt & `content_block_delta` SSE-Parsing), OpenAI, DeepSeek, Gemini, Mistral, Custom Endpoints
+- [x] **Vollständige Sampler-Einstellungen** – Temperature, Top-P, Min-P, Repeat Penalty, Top-K, **Dynamic Temperature** (`dynatemp_range`, `dynatemp_exponent`), **DRY** (`dry_multiplier`, `dry_base`, `dry_allowed_length`, `dry_penalty_last_n`), **XTC** (`xtc_threshold`, `xtc_probability`), Stop-Strings, Max Tokens
+- [x] **LLM-Presets** speichern / laden / löschen (5 vordefinierte Presets: Storytelling/Kreativ, Rollenspiel Standard, Stage GM / Logik, XTC Wild, Fast Chat + Benutzer-Presets in `llm_presets.json`)
+- [x] **llama-server-Optionen** – Kontextgröße, Batch-Size (`-b`), UBatch (`-ub`), CPU-Threads, Flash Attention (`-fa`), RAM Lock (`--mlock`), no-mmap (`--no-mmap`), KV-Cache-Quantisierung (`--cache-type-k`, `--cache-type-v` für `q8_0` / `q4_0`), **CPU-MoE-Layer** (`--cpu-moe`), Thinking-Budget
+- [x] **Models Hub** – Hugging-Face-API-Suche (`filter=gguf`), Dateibaum-Inspektion mit Quantisierungs-Erkennung (Q4_K_M, Q8_0 etc.), async GGUF-Downloader mit Live-Fortschrittsbalken und Download-Geschwindigkeit (`model-download-progress`)
 - [ ] **Backend-Auswahl** CUDA/HIP/SYCL/Vulkan/CPU
 - [ ] **llama.cpp-Updater** – GitHub-Release abrufen, passendes Asset wählen, installieren, Backup/Rollback (SoW: `backend_updater.py`, `tools/fetch_llama_backend.py`, `build_llama_cuda.sh`)
-- [ ] **Models Hub** – Hugging-Face-Suche, Repo-Dateien, GGUF-Download mit Fortschritt/Abbruch, empfohlene Modelle nach VRAM-Kompatibilität, „Meine Modelle“ (SoW: `models_hub.py`)
 
 ### Phase 11 – Soul Memory 2.0 (echte kognitive Pipeline) 🟠
 

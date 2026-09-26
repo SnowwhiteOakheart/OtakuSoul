@@ -16,6 +16,20 @@ pub struct SamplingParams {
     pub temperature: Option<f32>,
     pub top_p: Option<f32>,
     pub min_p: Option<f32>,
+    pub top_k: Option<u32>,
+    pub frequency_penalty: Option<f32>,
+    pub presence_penalty: Option<f32>,
+    pub repeat_penalty: Option<f32>,
+    pub dynatemp_range: Option<f32>,
+    pub dynatemp_exponent: Option<f32>,
+    pub dry_multiplier: Option<f32>,
+    pub dry_base: Option<f32>,
+    pub dry_allowed_length: Option<u32>,
+    pub dry_penalty_last_n: Option<i32>,
+    pub xtc_threshold: Option<f32>,
+    pub xtc_probability: Option<f32>,
+    #[serde(default)]
+    pub stop_strings: Vec<String>,
     pub max_tokens: Option<u32>,
 }
 
@@ -25,6 +39,19 @@ impl Default for SamplingParams {
             temperature: Some(0.7),
             top_p: Some(0.9),
             min_p: Some(0.05),
+            top_k: Some(40),
+            frequency_penalty: None,
+            presence_penalty: None,
+            repeat_penalty: Some(1.05),
+            dynatemp_range: None,
+            dynatemp_exponent: None,
+            dry_multiplier: None,
+            dry_base: None,
+            dry_allowed_length: None,
+            dry_penalty_last_n: None,
+            xtc_threshold: None,
+            xtc_probability: None,
+            stop_strings: Vec::new(),
             max_tokens: Some(2048),
         }
     }
@@ -39,6 +66,7 @@ pub struct ChatRequest {
     pub sampling: Option<SamplingParams>,
     #[serde(default)]
     pub reasoning_mode: Option<bool>,
+    pub provider: Option<crate::modules::providers::LlmProviderType>,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
@@ -84,39 +112,15 @@ impl InferenceClient {
     ) -> Result<DoneEvent, String> {
         self.abort_flag.store(false, Ordering::Relaxed);
 
+        let provider = crate::modules::providers::ProviderRegistry::detect_provider(
+            &request.endpoint_url,
+            request.provider.as_ref(),
+        );
+
         let client = reqwest::Client::new();
-        let mut req_builder = client.post(&request.endpoint_url);
-
-        if let Some(key) = &request.api_key {
-            if !key.is_empty() {
-                req_builder = req_builder.header("Authorization", format!("Bearer {}", key));
-            }
-        }
-
-        let sampling = request.sampling.unwrap_or_default();
-        let mut body = serde_json::json!({
-            "model": request.model.unwrap_or_else(|| "default".to_string()),
-            "messages": request.messages,
-            "stream": true,
-            "temperature": sampling.temperature.unwrap_or(0.7),
-            "top_p": sampling.top_p.unwrap_or(0.9),
-            "min_p": sampling.min_p.unwrap_or(0.05),
-            "max_tokens": sampling.max_tokens.unwrap_or(2048),
-        });
-
-        // If reasoning mode is disabled (the default for roleplay), suppress thinking budget & template
-        if !request.reasoning_mode.unwrap_or(false) {
-            body["chat_template_kwargs"] = serde_json::json!({
-                "enable_thinking": false
-            });
-            body["extra_body"] = serde_json::json!({
-                "thinking": { "type": "disabled" },
-                "thinking_budget_tokens": 0
-            });
-        }
+        let req_builder = crate::modules::providers::ProviderRegistry::build_http_request(&client, &request)?;
 
         let response = req_builder
-            .json(&body)
             .send()
             .await
             .map_err(|e| format!("Verbindungsfehler zu {}: {}", request.endpoint_url, e))?;
@@ -131,7 +135,6 @@ impl InferenceClient {
         let mut full_text = String::new();
         let mut full_thought = String::new();
         let mut in_think_block = false;
-
         let mut buffer = String::new();
 
         while let Some(chunk_res) = stream.next().await {
@@ -152,71 +155,53 @@ impl InferenceClient {
                     continue;
                 }
 
-                if line == "data: [DONE]" {
+                let delta = crate::modules::providers::ProviderRegistry::parse_sse_line(&line, &provider);
+                if delta.is_done {
                     break;
                 }
 
-                if let Some(data_json) = line.strip_prefix("data: ") {
-                    if let Ok(val) = serde_json::from_str::<serde_json::Value>(data_json) {
-                        if let Some(delta) = val["choices"][0]["delta"].as_object() {
-                            // Check for dedicated reasoning_content (DeepSeek / Qwen API format)
-                            if let Some(reasoning) = delta.get("reasoning_content").and_then(|v| v.as_str()) {
-                                if !reasoning.is_empty() {
-                                    full_thought.push_str(reasoning);
-                                    let _ = app_handle.emit("llm-thought", ThoughtEvent {
-                                        text: reasoning.to_string(),
-                                    });
-                                    continue;
+                if let Some(th) = delta.thought {
+                    if !th.is_empty() {
+                        full_thought.push_str(&th);
+                        let _ = app_handle.emit("llm-thought", ThoughtEvent { text: th });
+                    }
+                }
+
+                if let Some(content) = delta.text {
+                    if content.is_empty() {
+                        continue;
+                    }
+
+                    // Process inline <think> tags if model outputs them inside text stream
+                    let mut remaining = &content[..];
+                    while !remaining.is_empty() {
+                        if !in_think_block {
+                            if let Some(pos) = remaining.find("<think>") {
+                                let before = &remaining[..pos];
+                                if !before.is_empty() {
+                                    full_text.push_str(before);
+                                    let _ = app_handle.emit("llm-token", TokenEvent { text: before.to_string() });
                                 }
+                                in_think_block = true;
+                                remaining = &remaining[pos + 7..];
+                            } else {
+                                full_text.push_str(remaining);
+                                let _ = app_handle.emit("llm-token", TokenEvent { text: remaining.to_string() });
+                                break;
                             }
-
-                            // Regular content with inline <think> tags parser
-                            if let Some(content) = delta.get("content").and_then(|v| v.as_str()) {
-                                if content.is_empty() {
-                                    continue;
+                        } else {
+                            if let Some(pos) = remaining.find("</think>") {
+                                let thought_part = &remaining[..pos];
+                                if !thought_part.is_empty() {
+                                    full_thought.push_str(thought_part);
+                                    let _ = app_handle.emit("llm-thought", ThoughtEvent { text: thought_part.to_string() });
                                 }
-
-                                let mut remaining = content;
-
-                                while !remaining.is_empty() {
-                                    if !in_think_block {
-                                        if let Some(pos) = remaining.find("<think>") {
-                                            let before = &remaining[..pos];
-                                            if !before.is_empty() {
-                                                full_text.push_str(before);
-                                                let _ = app_handle.emit("llm-token", TokenEvent {
-                                                    text: before.to_string(),
-                                                });
-                                            }
-                                            in_think_block = true;
-                                            remaining = &remaining[pos + 7..];
-                                        } else {
-                                            full_text.push_str(remaining);
-                                            let _ = app_handle.emit("llm-token", TokenEvent {
-                                                text: remaining.to_string(),
-                                            });
-                                            break;
-                                        }
-                                    } else {
-                                        if let Some(pos) = remaining.find("</think>") {
-                                            let thought_part = &remaining[..pos];
-                                            if !thought_part.is_empty() {
-                                                full_thought.push_str(thought_part);
-                                                let _ = app_handle.emit("llm-thought", ThoughtEvent {
-                                                    text: thought_part.to_string(),
-                                                });
-                                            }
-                                            in_think_block = false;
-                                            remaining = &remaining[pos + 8..];
-                                        } else {
-                                            full_thought.push_str(remaining);
-                                            let _ = app_handle.emit("llm-thought", ThoughtEvent {
-                                                text: remaining.to_string(),
-                                            });
-                                            break;
-                                        }
-                                    }
-                                }
+                                in_think_block = false;
+                                remaining = &remaining[pos + 8..];
+                            } else {
+                                full_thought.push_str(remaining);
+                                let _ = app_handle.emit("llm-thought", ThoughtEvent { text: remaining.to_string() });
+                                break;
                             }
                         }
                     }

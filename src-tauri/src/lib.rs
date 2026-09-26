@@ -76,6 +76,13 @@ pub fn run() {
             commands::delete_messages_after,
             commands::export_chat_jsonl,
             commands::import_chat_jsonl,
+            commands::fetch_openrouter_models,
+            commands::load_llm_presets,
+            commands::save_llm_preset,
+            commands::delete_llm_preset,
+            commands::search_hf_models,
+            commands::get_hf_model_files,
+            commands::download_gguf_model,
         ])
         .run(tauri::generate_context!())
         .expect("error while running OtakuSoul application");

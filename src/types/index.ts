@@ -43,6 +43,14 @@ export interface LlamaServerConfig {
   threads?: number;
   flash_attn: boolean;
   reasoning_mode?: boolean;
+  thinking_budget?: number;
+  batch_size?: number;
+  ubatch_size?: number;
+  cache_type_k?: string;
+  cache_type_v?: string;
+  mlock?: boolean;
+  no_mmap?: boolean;
+  cpu_moe?: boolean;
 }
 
 export interface ChatMessage {
@@ -54,14 +62,38 @@ export interface ChatMessage {
 export interface SamplingParams {
   temperature?: number;
   top_p?: number;
+  top_k?: number;
   min_p?: number;
   max_tokens?: number;
+  repeat_penalty?: number;
+  presence_penalty?: number;
+  frequency_penalty?: number;
+  dynatemp_range?: number;
+  dynatemp_exponent?: number;
+  dry_multiplier?: number;
+  dry_base?: number;
+  dry_allowed_length?: number;
+  dry_penalty_last_n?: number;
+  xtc_threshold?: number;
+  xtc_probability?: number;
+  stop?: string[];
 }
+
+export type LlmProviderType =
+  | 'local_llama'
+  | 'open_router'
+  | 'anthropic'
+  | 'open_ai'
+  | 'deep_seek'
+  | 'gemini'
+  | 'mistral'
+  | 'custom';
 
 export interface ChatRequest {
   endpoint_url: string;
   api_key?: string;
   model?: string;
+  provider?: LlmProviderType;
   messages: ChatMessage[];
   sampling?: SamplingParams;
   reasoning_mode?: boolean;
@@ -336,9 +368,11 @@ export interface AppSettings {
   server_config: LlamaServerConfig;
   sampling: SamplingParams;
   selected_backend: 'local' | 'cloud';
+  cloud_provider: LlmProviderType;
   cloud_endpoint: string;
   cloud_api_key: string;
   cloud_model: string;
+  active_preset_id?: string | null;
   reply_language: string;
   lorebook_scan_depth: number;
   active_character_id: string | null;
@@ -390,5 +424,57 @@ export interface HudPreset {
   icon: string;
   color: string;
   defaultVariables: StateVariable[];
+}
+
+// Phase 10: LLM-Provider & llama.cpp-Tuning
+export interface OpenRouterModelPricing {
+  prompt?: string;
+  completion?: string;
+  image?: string;
+  request?: string;
+}
+
+export interface OpenRouterModelInfo {
+  id: string;
+  name: string;
+  description?: string;
+  context_length: number;
+  pricing?: OpenRouterModelPricing;
+}
+
+export interface LlmPreset {
+  id: string;
+  name: string;
+  description: string;
+  is_builtin: boolean;
+  sampling: SamplingParams;
+}
+
+export interface HfModelSummary {
+  id: string;
+  author: string;
+  downloads: number;
+  likes: number;
+  pipeline_tag?: string | null;
+  last_modified?: string | null;
+}
+
+export interface HfGgufFile {
+  filename: string;
+  size_bytes: number;
+  size_formatted: string;
+  download_url: string;
+  quantization: string;
+}
+
+export interface DownloadProgressEvent {
+  filename: string;
+  downloaded_bytes: number;
+  total_bytes: number;
+  percent: number;
+  speed_mbps: number;
+  eta_seconds?: number | null;
+  finished: boolean;
+  error?: string | null;
 }
 

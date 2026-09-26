@@ -7,14 +7,22 @@ use crate::modules::inference::SamplingParams;
 use crate::modules::llama_manager::LlamaServerConfig;
 use crate::modules::paths::{resolve_app_paths, scan_available_characters, scan_available_models, scan_available_vrm_models};
 
+fn default_cloud_provider() -> String {
+    "open_router".to_string()
+}
+
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct AppSettings {
     pub server_config: LlamaServerConfig,
     pub sampling: SamplingParams,
     pub selected_backend: String, // "local" | "cloud"
+    #[serde(default = "default_cloud_provider")]
+    pub cloud_provider: String,
     pub cloud_endpoint: String,
     pub cloud_api_key: String,
     pub cloud_model: String,
+    #[serde(default)]
+    pub active_preset_id: Option<String>,
     pub reply_language: String,
     pub lorebook_scan_depth: u32,
     pub active_character_id: Option<String>,
@@ -41,9 +49,11 @@ impl Default for AppSettings {
             },
             sampling: SamplingParams::default(),
             selected_backend: "local".to_string(),
+            cloud_provider: "open_router".to_string(),
             cloud_endpoint: "https://openrouter.ai/api/v1/chat/completions".to_string(),
             cloud_api_key: String::new(),
             cloud_model: "anthropic/claude-3.5-sonnet".to_string(),
+            active_preset_id: Some("storytelling_kreativ".to_string()),
             reply_language: "Deutsch".to_string(),
             lorebook_scan_depth: 5,
             active_character_id: default_char_id,
