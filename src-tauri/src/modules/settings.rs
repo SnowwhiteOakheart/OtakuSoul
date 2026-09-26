@@ -42,10 +42,6 @@ fn default_true() -> bool {
     true
 }
 
-fn default_cloud_provider() -> String {
-    "open_router".to_string()
-}
-
 fn default_avatar_mode() -> String {
     "3d".to_string()
 }

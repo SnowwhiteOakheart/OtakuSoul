@@ -436,7 +436,33 @@ export interface AppSettings {
   active_vrm_path: string | null;
   global_lorebooks?: string[];
   scene_tension_enabled?: boolean;
-  avatar_mode?: '3d' | '2d';
+  avatar_mode?: '3d' | 'live2d' | '2d';
+}
+
+// Phase 14: Live2D & Emotion Classification
+export interface ScannedLive2d {
+  id: string;
+  name: string;
+  model_path: string;
+  preview_image?: string | null;
+  version: string;
+}
+
+export interface Live2dCatalogItem {
+  id: string;
+  name: string;
+  description: string;
+  url: string;
+  model_file: string;
+  is_installed: boolean;
+}
+
+export interface EmotionResult {
+  emotion: string;
+  vrm_expression: 'happy' | 'angry' | 'sad' | 'surprised' | 'relaxed' | 'neutral' | string;
+  live2d_expression: string;
+  confidence: number;
+  intensity: number;
 }
 
 export interface UserPersona {

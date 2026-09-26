@@ -46,6 +46,9 @@ import {
   VoiceConfig,
   KokoroDownloadProgress,
   KokoroInstallResult,
+  ScannedLive2d,
+  Live2dCatalogItem,
+  EmotionResult,
 } from '../types';
 
 export const api = {
@@ -701,5 +704,22 @@ export const api = {
   
   saveCharacterVoiceConfig: async (charId: string, config: VoiceConfig): Promise<void> => {
     return await invoke<void>('save_character_voice_config', { charId, config });
+  },
+
+  // Phase 14: Live2D & Emotion Classification
+  scanLive2dModels: async (): Promise<ScannedLive2d[]> => {
+    return await invoke<ScannedLive2d[]>('scan_live2d_models');
+  },
+
+  getLive2dCatalog: async (): Promise<Live2dCatalogItem[]> => {
+    return await invoke<Live2dCatalogItem[]>('get_live2d_catalog');
+  },
+
+  downloadLive2dModel: async (modelId: string): Promise<string> => {
+    return await invoke<string>('download_live2d_model', { modelId });
+  },
+
+  classifyTextEmotion: async (text: string): Promise<EmotionResult> => {
+    return await invoke<EmotionResult>('classify_text_emotion', { text });
   },
 };

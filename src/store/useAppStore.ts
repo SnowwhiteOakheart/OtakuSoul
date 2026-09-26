@@ -40,6 +40,8 @@ import {
   HfGgufFile,
   DownloadProgressEvent,
   VoiceConfig,
+  ScannedLive2d,
+  EmotionResult,
 } from '../types';
 import { soundFx } from '../services/soundFx';
 import { extractStateUpdates, applyStateUpdates } from '../utils/stateParser';
@@ -163,8 +165,12 @@ interface AppStoreState {
   scannedVrms: ScannedVrm[];
   activeVrmPath: string | null;
   setActiveVrmPath: (path: string | null) => void;
-  avatarMode: '3d' | '2d';
-  setAvatarMode: (mode: '3d' | '2d') => void;
+  scannedLive2ds: ScannedLive2d[];
+  refreshLive2dModels: () => Promise<void>;
+  avatarMode: '3d' | 'live2d' | '2d';
+  setAvatarMode: (mode: '3d' | 'live2d' | '2d') => void;
+  currentEmotion: EmotionResult;
+  setCurrentEmotion: (em: EmotionResult) => void;
   initApp: () => Promise<void>;
   saveCurrentSettings: () => Promise<void>;
 
@@ -364,11 +370,30 @@ export const useAppStore = create<AppStoreState>((set, get) => ({
     get().saveCurrentSettings();
   },
 
+  scannedLive2ds: [],
+  refreshLive2dModels: async () => {
+    try {
+      const models = await api.scanLive2dModels();
+      set({ scannedLive2ds: models });
+    } catch (e) {
+      console.error('Failed to scan Live2D models:', e);
+    }
+  },
+
   avatarMode: '3d',
   setAvatarMode: (mode) => {
     set({ avatarMode: mode });
     get().saveCurrentSettings();
   },
+
+  currentEmotion: {
+    emotion: 'neutral',
+    vrm_expression: 'relaxed',
+    live2d_expression: 'neutral_animation',
+    confidence: 1.0,
+    intensity: 0.5,
+  },
+  setCurrentEmotion: (currentEmotion) => set({ currentEmotion }),
 
   hardware: null,
   layerRecommendation: null,
@@ -594,9 +619,10 @@ export const useAppStore = create<AppStoreState>((set, get) => ({
         });
       }
 
-      // 5. Scan Characters & Lorebooks
+      // 5. Scan Characters, Lorebooks & Live2D Models
       await get().refreshCharacters();
       await get().refreshLorebooks();
+      await get().refreshLive2dModels();
 
       // If active character was saved in settings, restore it
       if (settings.active_character_id) {

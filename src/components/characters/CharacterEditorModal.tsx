@@ -16,7 +16,7 @@ export const CharacterEditorModal = ({
   onClose,
   onSaved,
 }: CharacterEditorModalProps) => {
-  const { refreshCharacters, allLorebooks, scannedVrms } = useAppStore();
+  const { refreshCharacters, allLorebooks, scannedVrms, scannedLive2ds } = useAppStore();
 
   const [activeTab, setActiveTab] = useState<'basics' | 'prompts' | 'greetings' | 'lorebooks' | 'raw'>('basics');
   const [isSaving, setIsSaving] = useState(false);
@@ -25,6 +25,9 @@ export const CharacterEditorModal = ({
   // Form State
   const [boundLorebooks, setBoundLorebooks] = useState<string[]>(character?.bound_lorebooks || []);
   const [vrmPath, setVrmPath] = useState<string>((character?.card.data.extensions?.sow_vrm as string) || '');
+  const [live2dModel, setLive2dModel] = useState<string>(
+    (character?.card.data.extensions?.sow_live2d as string) || ''
+  );
   const [name, setName] = useState(character?.card.data.name || '');
   const [title, setTitle] = useState(
     (character?.card.data.extensions?.sow_title as string) || character?.card.data.tags?.[0] || ''
@@ -109,6 +112,7 @@ export const CharacterEditorModal = ({
           ...(character?.card.data.extensions || {}),
           sow_title: title.trim() || undefined,
           sow_vrm: vrmPath || undefined,
+          sow_live2d: live2dModel || undefined,
         },
       },
     };
@@ -280,6 +284,22 @@ export const CharacterEditorModal = ({
                     {scannedVrms.map((vrm) => (
                       <option key={vrm.path} value={vrm.path}>
                         {vrm.name}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+
+                <div className="w-full mt-2 space-y-1.5 px-2">
+                  <label className="text-[11px] font-semibold text-slate-400">Live2D-Modell (2D)</label>
+                  <select
+                    value={live2dModel}
+                    onChange={(e) => setLive2dModel(e.target.value)}
+                    className="w-full bg-slate-950 border border-slate-700/80 rounded-lg px-2 py-1.5 text-xs text-slate-100 focus:outline-none focus:border-purple-500 transition-colors"
+                  >
+                    <option value="">-- Kein Live2D-Modell --</option>
+                    {scannedLive2ds.map((l2d) => (
+                      <option key={l2d.id} value={l2d.id}>
+                        {l2d.name} ({l2d.id})
                       </option>
                     ))}
                   </select>

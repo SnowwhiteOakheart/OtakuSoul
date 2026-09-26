@@ -123,6 +123,14 @@ export const ChatView: React.FC = () => {
           if (state.autoTtsEnabled && voiceConfig && voiceConfig.engine !== 'disabled') {
             streamingTts.flush(data.full_text, voiceConfig);
           }
+
+          // Trigger Phase 14 Emotion update for VRM & Live2D
+          try {
+            const detected = await api.classifyTextEmotion(data.full_text);
+            state.setCurrentEmotion(detected);
+          } catch (e) {
+            console.warn('Emotion classification failed:', e);
+          }
         }
       });
       if (!isSubscribed) {
@@ -180,6 +188,11 @@ export const ChatView: React.FC = () => {
   const handleSpeak = async (text: string) => {
     if (!activeVoiceConfig) return;
     try {
+      // Phase 14: update avatar emotion to match spoken message
+      api.classifyTextEmotion(text).then((res) => {
+        useAppStore.getState().setCurrentEmotion(res);
+      }).catch(() => {});
+
       const audioUrl = await api.synthesizeSpeech(text, activeVoiceConfig);
       await audioPlayer.playDataUrl(
         audioUrl,

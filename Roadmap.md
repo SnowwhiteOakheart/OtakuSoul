@@ -28,7 +28,7 @@
 | Soul Stage | 🟡 Mechanik | Würfel, Clocks, Kampf – **aber kein KI-Game-Master** |
 | Soul Companion | 🟡 Gerüst | Hormone + Safety-Banner – **alle 4 Tools sind simuliert** |
 | VRM-Avatar | ✅ gut | LipSync nur ohne echte Audioquelle |
-| Live2D | ❌ | nur Typfeld `sow_live2d`, kein Renderer eingebunden |
+| Live2D | ✅ solide | PixiJS + Cubism 4/2, 3-Wege-Umschaltung, LipSync & Motion-Trigger |
 | Chat-Verlauf | ❌ | nur im RAM, geht beim Neustart verloren |
 
 ---
@@ -133,14 +133,14 @@ weitere stark variierende oder schwere TTS-/RVC-Modelle werden über klar konfig
 - [x] **SoW System / Voice Call** – Zustände Listening/Transcribing/Thinking/Speaking, automatischer Turn-Wechsel, Push-to-talk und Unterbrechung durch den Nutzer
 - [x] **Echtes LipSync** – Amplitude aus dem TTS-Audio an VRM-Avatar (`aa` Blendshape) gekoppelt
 
-### Phase 14 – Avatare & Emotionen 🟡
+### Phase 14 – Avatare & Emotionen ✅ abgeschlossen
 
-- [ ] **Live2D-Renderer** einbinden (`pixi-live2d-display` ist installiert, aber ungenutzt; Cubism-Core-Lizenz beachten) (SoW: `create_live2d_widgets`)
-- [ ] **Motion Mapper** – Emotion → Live2D-Motion/Expression (SoW: `open_motion_mapper_dialog`)
-- [ ] **28-Emotionen-Klassifikator** – ONNX-Modell (z. B. GoEmotions) statt torch (SoW: Expression-System)
-- [ ] **Expression-Bilder & GIFs** als einfacher Avatar-Modus (SoW: `create_expression_images_widgets`)
-- [ ] **VRM-Emotionen & Motions** aus dem Klassifikator steuern; VRM-Modellauswahl pro Charakter
-- [ ] **Live2D-Downloader** portieren (SoW: `tools/fetch_live2d_models.py`)
+- [x] **Live2D-Renderer** einbinden (`Live2DViewer.tsx` via `pixi.js` + `pixi-live2d-display` mit Cubism 4 & 2 Runtime, Zoom, Pan, Mouse-Look & LipSync)
+- [x] **Motion Mapper & Live2D-Ausdrücke** – Emotion → Live2D-Motion/Expression (`joy_animation`, `amusement_animation` etc.)
+- [x] **28-Emotionen-Klassifikator** – GoEmotions-Mapping + deutsches/englisches Actions-/Affekt-Lexikon (`classify_text_emotion`)
+- [x] **Expression-Bilder & GIFs** als flexibler 2D-Avatar-Modus mit Emotions-Overlays
+- [x] **VRM-Emotionen & Motions** aus dem Klassifikator steuern; VRM- & Live2D-Modellauswahl pro Charakter
+- [x] **Live2D-Downloader & Scanner** portiert (`modules/live2d.rs`: Scan lokaler/gebündelter Modelle + Cubism Sample Download)
 
 ### Phase 15 – Soul Stage: KI-Game-Master 🟠
 

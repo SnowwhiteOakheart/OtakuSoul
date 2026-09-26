@@ -1,0 +1,180 @@
+{
+    "Version": 3,
+    "Name": "Senko",
+    "FileReferences": {
+        "Moc": "senko_normal.moc3",
+        "Textures": [
+            "senko_normal.4096/texture_00.png"
+        ],
+        "Physics": "senko.physics3.json",
+        "Motions": {
+            "Idle": [
+                {
+                    "Name": "Idle",
+                    "File": "motions/Idle.motion3.json",
+                    "Weight": 1
+                }
+            ],
+            "Tap": [
+                {
+                    "Name": "Anim",
+                    "File": "motions/Anim_1.motion3.json",
+                    "Weight": 1
+                }
+            ],
+            "Taphead": [
+                {
+                    "Name": "Sing",
+                    "File": "motions/Singing.motion3.json",
+                    "Weight": 1
+                },
+                {
+                    "Name": "Sleep",
+                    "File": "motions/Sleeping.motion3.json",
+                    "Weight": 1
+                }
+            ],
+            "Tick_5": [
+                {
+                    "File": "motions/Sleeping.motion3.json",
+                    "Weight": 1
+                }
+            ]
+        },
+        "Expressions": [
+            {
+                "Name": "admiration",
+                "File": "../../../../app/utils/emotions/live2d/expressions/admiration_animation.exp3.json"
+            },
+            {
+                "Name": "amusement",
+                "File": "../../../../app/utils/emotions/live2d/expressions/amusement_animation.exp3.json"
+            },
+            {
+                "Name": "anger",
+                "File": "../../../../app/utils/emotions/live2d/expressions/anger_animation.exp3.json"
+            },
+            {
+                "Name": "annoyance",
+                "File": "../../../../app/utils/emotions/live2d/expressions/annoyance_animation.exp3.json"
+            },
+            {
+                "Name": "approval",
+                "File": "../../../../app/utils/emotions/live2d/expressions/approval_animation.exp3.json"
+            },
+            {
+                "Name": "caring",
+                "File": "../../../../app/utils/emotions/live2d/expressions/caring_animation.exp3.json"
+            },
+            {
+                "Name": "confusion",
+                "File": "../../../../app/utils/emotions/live2d/expressions/confusion_animation.exp3.json"
+            },
+            {
+                "Name": "curiosity",
+                "File": "../../../../app/utils/emotions/live2d/expressions/curiosity_animation.exp3.json"
+            },
+            {
+                "Name": "desire",
+                "File": "../../../../app/utils/emotions/live2d/expressions/desire_animation.exp3.json"
+            },
+            {
+                "Name": "disappointment",
+                "File": "../../../../app/utils/emotions/live2d/expressions/disappointment_animation.exp3.json"
+            },
+            {
+                "Name": "disapproval",
+                "File": "../../../../app/utils/emotions/live2d/expressions/disapproval_animation.exp3.json"
+            },
+            {
+                "Name": "disgust",
+                "File": "../../../../app/utils/emotions/live2d/expressions/disgust_animation.exp3.json"
+            },
+            {
+                "Name": "embarrassment",
+                "File": "../../../../app/utils/emotions/live2d/expressions/embarrassment_animation.exp3.json"
+            },
+            {
+                "Name": "excitement",
+                "File": "../../../../app/utils/emotions/live2d/expressions/excitement_animation.exp3.json"
+            },
+            {
+                "Name": "fear",
+                "File": "../../../../app/utils/emotions/live2d/expressions/fear_animation.exp3.json"
+            },
+            {
+                "Name": "gratitude",
+                "File": "../../../../app/utils/emotions/live2d/expressions/gratitude_animation.exp3.json"
+            },
+            {
+                "Name": "grief",
+                "File": "../../../../app/utils/emotions/live2d/expressions/grief_animation.exp3.json"
+            },
+            {
+                "Name": "love",
+                "File": "../../../../app/utils/emotions/live2d/expressions/love_animation.exp3.json"
+            },
+            {
+                "Name": "nervousness",
+                "File": "../../../../app/utils/emotions/live2d/expressions/nervousness_animation.exp3.json"
+            },
+            {
+                "Name": "neutral",
+                "File": "../../../../app/utils/emotions/live2d/expressions/neutral_animation.exp3.json"
+            },
+            {
+                "Name": "optimism",
+                "File": "../../../../app/utils/emotions/live2d/expressions/optimism_animation.exp3.json"
+            },
+            {
+                "Name": "pride",
+                "File": "../../../../app/utils/emotions/live2d/expressions/pride_animation.exp3.json"
+            },
+            {
+                "Name": "realization",
+                "File": "../../../../app/utils/emotions/live2d/expressions/realization_animation.exp3.json"
+            },
+            {
+                "Name": "relief",
+                "File": "../../../../app/utils/emotions/live2d/expressions/relief_animation.exp3.json"
+            },
+            {
+                "Name": "remorse",
+                "File": "../../../../app/utils/emotions/live2d/expressions/remorse_animation.exp3.json"
+            },
+            {
+                "Name": "surprise",
+                "File": "../../../../app/utils/emotions/live2d/expressions/surprise_animation.exp3.json"
+            },
+            {
+                "Name": "joy",
+                "File": "../../../../app/utils/emotions/live2d/expressions/joy_animation.exp3.json"
+            },
+            {
+                "Name": "sadness",
+                "File": "../../../../app/utils/emotions/live2d/expressions/sadness_animation.exp3.json"
+            }
+        ]
+    },
+    "Groups": [
+        {
+            "Target": "Parameter",
+            "Name": "EyeBlink",
+            "Text": ""
+        },
+        {
+            "Target": "Parameter",
+            "Name": "LipSync",
+            "Text": ""
+        }
+    ],
+    "HitAreas": [
+        {
+            "Name": "head",
+            "Id": "head"
+        }
+    ],
+    "LipSync": true,
+    "AutoBreath": false,
+    "AnisoLevel": 2
+}
