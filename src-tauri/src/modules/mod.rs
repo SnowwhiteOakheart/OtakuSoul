@@ -12,3 +12,4 @@ pub mod settings;
 pub mod stage;
 pub mod llm_presets;
 pub mod models_hub;
+pub mod soul_memory_pipeline;

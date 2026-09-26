@@ -14,6 +14,10 @@ import {
   CognitiveOverview,
   PsychologyState,
   RelationshipState,
+  DiaryEntry,
+  MemoryBackupInfo,
+  SoulMemoryPipelineRequest,
+  SoulMemoryPipelineResult,
   DiceRollResult,
   StageState,
   WorldState,
@@ -161,6 +165,87 @@ export const api = {
 
   applyEmotionalDecay: async (charId: string): Promise<string | null> => {
     return await invoke<string | null>('apply_emotional_decay', { charId });
+  },
+
+  // Phase 11: Soul Memory 2.0 Cognitive Pipeline & Markdown Sync
+  triggerMemoryPipeline: async (
+    req: SoulMemoryPipelineRequest
+  ): Promise<SoulMemoryPipelineResult> => {
+    return await invoke<SoulMemoryPipelineResult>('trigger_memory_pipeline', {
+      req,
+    });
+  },
+
+  getCharacterMemoryMarkdown: async (charId: string): Promise<string> => {
+    return await invoke<string>('get_character_memory_markdown', { charId });
+  },
+
+  saveCharacterMemoryMarkdown: async (
+    charId: string,
+    markdown: string
+  ): Promise<void> => {
+    return await invoke<void>('save_character_memory_markdown', {
+      charId,
+      markdown,
+    });
+  },
+
+  getUserMemoryMarkdown: async (
+    charId: string,
+    userName: string
+  ): Promise<string> => {
+    return await invoke<string>('get_user_memory_markdown', {
+      charId,
+      userName,
+    });
+  },
+
+  saveUserMemoryMarkdown: async (
+    charId: string,
+    userName: string,
+    markdown: string
+  ): Promise<void> => {
+    return await invoke<void>('save_user_memory_markdown', {
+      charId,
+      userName,
+      markdown,
+    });
+  },
+
+  generateManualDiaryEntry: async (
+    req: SoulMemoryPipelineRequest
+  ): Promise<DiaryEntry> => {
+    return await invoke<DiaryEntry>('generate_manual_diary_entry', { req });
+  },
+
+  importSowMemoryFiles: async (
+    charId: string,
+    folderPath: string,
+    userName: string
+  ): Promise<number> => {
+    return await invoke<number>('import_sow_memory_files', {
+      charId,
+      folderPath,
+      userName,
+    });
+  },
+
+  backupMemoryState: async (
+    charId: string,
+    userName?: string
+  ): Promise<MemoryBackupInfo> => {
+    return await invoke<MemoryBackupInfo>('backup_memory_state', {
+      charId,
+      userName,
+    });
+  },
+
+  listMemoryBackups: async (charId: string): Promise<MemoryBackupInfo[]> => {
+    return await invoke<MemoryBackupInfo[]>('list_memory_backups', { charId });
+  },
+
+  restoreMemoryBackup: async (backupFilePath: string): Promise<void> => {
+    return await invoke<void>('restore_memory_backup', { backupFilePath });
   },
 
   // Phase 6: Soul Stage Tabletop RPG

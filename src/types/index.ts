@@ -166,7 +166,7 @@ export interface StateVariable {
   max_value?: number;
 }
 
-// Phase 5: Cognitive Soul Memory
+// Phase 5 & 11: Cognitive Soul Memory
 export interface PsychologyState {
   primary_emotion: string;
   intensity: number; // 1..5
@@ -174,16 +174,50 @@ export interface PsychologyState {
   emotional_decay_counter: number;
   active_agenda: string;
   immediate_focus: string;
+  core_identity?: string[];
+  cognitive_dissonance?: string;
   updated_at: number;
 }
 
 export interface RelationshipState {
   user_name: string;
+  role_in_story?: string;
+  known_attributes?: string;
   trust_level: string;
+  dynamic_description?: string;
   unspoken_tension: string;
   preferences_habits: string[];
   shared_milestones: string[];
   updated_at: number;
+}
+
+export interface MemoryBackupInfo {
+  filename: string;
+  timestamp: number;
+  date_formatted: string;
+  size_bytes: number;
+}
+
+export interface SoulMemoryPipelineRequest {
+  character_id: string;
+  user_name: string;
+  chat_id?: string;
+  endpoint_url: string;
+  api_key?: string;
+  model?: string;
+  provider?: LlmProviderType;
+  recent_turn_count?: number;
+  include_diary?: boolean;
+}
+
+export interface SoulMemoryPipelineResult {
+  no_change: boolean;
+  character_id: string;
+  psychology: PsychologyState;
+  relationship: RelationshipState;
+  topics_processed: string[];
+  diary_entry?: DiaryEntry | null;
+  healing_entries: string[];
 }
 
 export interface EpisodicMemory {

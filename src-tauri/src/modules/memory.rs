@@ -11,6 +11,14 @@ fn current_timestamp() -> u64 {
         .unwrap_or(0)
 }
 
+fn default_role_in_story() -> String {
+    "User".to_string()
+}
+
+fn default_none() -> String {
+    "Keine.".to_string()
+}
+
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct PsychologyState {
     pub primary_emotion: String,
@@ -19,17 +27,46 @@ pub struct PsychologyState {
     pub emotional_decay_counter: u32,
     pub active_agenda: String,
     pub immediate_focus: String,
+    #[serde(default)]
+    pub core_identity: Vec<String>,
+    #[serde(default = "default_none")]
+    pub cognitive_dissonance: String,
     pub updated_at: u64,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct RelationshipState {
     pub user_name: String,
+    #[serde(default = "default_role_in_story")]
+    pub role_in_story: String,
+    #[serde(default = "default_none")]
+    pub known_attributes: String,
     pub trust_level: String, // "Distrustful", "Wary", "Neutral", "Developing Trust", "Deeply Bound", "Unstable"
+    #[serde(default = "default_none")]
+    pub dynamic_description: String,
     pub unspoken_tension: String,
     pub preferences_habits: Vec<String>,
     pub shared_milestones: Vec<String>,
     pub updated_at: u64,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct MemoryBackupInfo {
+    pub filename: String,
+    pub timestamp: u64,
+    pub date_formatted: String,
+    pub size_bytes: u64,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct MemoryBackupSnapshot {
+    pub character_id: String,
+    pub created_at: u64,
+    pub psychology: PsychologyState,
+    pub relationship: Option<RelationshipState>,
+    pub episodic_memories: Vec<EpisodicMemory>,
+    pub diary_entries: Vec<DiaryEntry>,
+    pub healing_logs: Vec<HealingLogEntry>,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
@@ -132,13 +169,18 @@ impl MemoryDb {
                 emotional_decay_counter INTEGER NOT NULL DEFAULT 0,
                 active_agenda TEXT NOT NULL DEFAULT 'Beobachten und Antworten.',
                 immediate_focus TEXT NOT NULL DEFAULT 'Das aktuelle Gespräch.',
+                core_identity TEXT NOT NULL DEFAULT '[]',
+                cognitive_dissonance TEXT NOT NULL DEFAULT 'Keine.',
                 updated_at INTEGER NOT NULL
             );
 
             CREATE TABLE IF NOT EXISTS soul_relationship (
                 character_id TEXT NOT NULL,
                 user_name TEXT NOT NULL,
+                role_in_story TEXT NOT NULL DEFAULT 'User',
+                known_attributes TEXT NOT NULL DEFAULT 'Keine.',
                 trust_level TEXT NOT NULL DEFAULT 'Neutral',
+                dynamic_description TEXT NOT NULL DEFAULT 'Keine.',
                 unspoken_tension TEXT NOT NULL DEFAULT 'Keine.',
                 preferences_habits TEXT NOT NULL DEFAULT '[]',
                 shared_milestones TEXT NOT NULL DEFAULT '[]',
@@ -202,6 +244,13 @@ impl MemoryDb {
             "#,
         )?;
 
+        // Safe migrations for existing databases
+        let _ = conn.execute("ALTER TABLE soul_psychology ADD COLUMN core_identity TEXT NOT NULL DEFAULT '[]'", []);
+        let _ = conn.execute("ALTER TABLE soul_psychology ADD COLUMN cognitive_dissonance TEXT NOT NULL DEFAULT 'Keine.'", []);
+        let _ = conn.execute("ALTER TABLE soul_relationship ADD COLUMN role_in_story TEXT NOT NULL DEFAULT 'User'", []);
+        let _ = conn.execute("ALTER TABLE soul_relationship ADD COLUMN known_attributes TEXT NOT NULL DEFAULT 'Keine.'", []);
+        let _ = conn.execute("ALTER TABLE soul_relationship ADD COLUMN dynamic_description TEXT NOT NULL DEFAULT 'Keine.'", []);
+
         Ok(Self {
             conn: Arc::new(Mutex::new(conn)),
         })
@@ -218,12 +267,15 @@ impl MemoryDb {
     pub fn get_or_create_psychology(&self, char_id: &str) -> Result<PsychologyState, rusqlite::Error> {
         let conn = self.conn.lock().unwrap();
         let mut stmt = conn.prepare(
-            "SELECT primary_emotion, intensity, psychological_tension, emotional_decay_counter, active_agenda, immediate_focus, updated_at
+            "SELECT primary_emotion, intensity, psychological_tension, emotional_decay_counter, active_agenda, immediate_focus, updated_at, core_identity, cognitive_dissonance
              FROM soul_psychology WHERE character_id = ?1",
         )?;
 
         let mut rows = stmt.query(params![char_id])?;
         if let Some(row) = rows.next()? {
+            let core_id_str: String = row.get(7).unwrap_or_else(|_| "[]".to_string());
+            let core_identity: Vec<String> = serde_json::from_str(&core_id_str).unwrap_or_default();
+            let cognitive_dissonance: String = row.get(8).unwrap_or_else(|_| "Keine.".to_string());
             Ok(PsychologyState {
                 primary_emotion: row.get(0)?,
                 intensity: row.get(1)?,
@@ -231,13 +283,15 @@ impl MemoryDb {
                 emotional_decay_counter: row.get(3)?,
                 active_agenda: row.get(4)?,
                 immediate_focus: row.get(5)?,
+                core_identity,
+                cognitive_dissonance,
                 updated_at: row.get(6)?,
             })
         } else {
             let now = current_timestamp();
             conn.execute(
-                "INSERT INTO soul_psychology (character_id, primary_emotion, intensity, psychological_tension, emotional_decay_counter, active_agenda, immediate_focus, updated_at)
-                 VALUES (?1, 'Calm', 3, 'Keine.', 0, 'Beobachten und Antworten.', 'Das aktuelle Gespräch.', ?2)",
+                "INSERT INTO soul_psychology (character_id, primary_emotion, intensity, psychological_tension, emotional_decay_counter, active_agenda, immediate_focus, core_identity, cognitive_dissonance, updated_at)
+                 VALUES (?1, 'Calm', 3, 'Keine.', 0, 'Beobachten und Antworten.', 'Das aktuelle Gespräch.', '[]', 'Keine.', ?2)",
                 params![char_id, now],
             )?;
 
@@ -248,6 +302,8 @@ impl MemoryDb {
                 emotional_decay_counter: 0,
                 active_agenda: "Beobachten und Antworten.".to_string(),
                 immediate_focus: "Das aktuelle Gespräch.".to_string(),
+                core_identity: Vec::new(),
+                cognitive_dissonance: "Keine.".to_string(),
                 updated_at: now,
             })
         }
@@ -256,9 +312,10 @@ impl MemoryDb {
     pub fn update_psychology(&self, char_id: &str, state: &PsychologyState) -> Result<(), rusqlite::Error> {
         let conn = self.conn.lock().unwrap();
         let now = current_timestamp();
+        let core_id_str = serde_json::to_string(&state.core_identity).unwrap_or_else(|_| "[]".to_string());
         conn.execute(
-            "INSERT INTO soul_psychology (character_id, primary_emotion, intensity, psychological_tension, emotional_decay_counter, active_agenda, immediate_focus, updated_at)
-             VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?7, ?8)
+            "INSERT INTO soul_psychology (character_id, primary_emotion, intensity, psychological_tension, emotional_decay_counter, active_agenda, immediate_focus, core_identity, cognitive_dissonance, updated_at)
+             VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?7, ?8, ?9, ?10)
              ON CONFLICT(character_id) DO UPDATE SET
                 primary_emotion = excluded.primary_emotion,
                 intensity = excluded.intensity,
@@ -266,6 +323,8 @@ impl MemoryDb {
                 emotional_decay_counter = excluded.emotional_decay_counter,
                 active_agenda = excluded.active_agenda,
                 immediate_focus = excluded.immediate_focus,
+                core_identity = excluded.core_identity,
+                cognitive_dissonance = excluded.cognitive_dissonance,
                 updated_at = excluded.updated_at",
             params![
                 char_id,
@@ -275,6 +334,8 @@ impl MemoryDb {
                 state.emotional_decay_counter,
                 state.active_agenda,
                 state.immediate_focus,
+                core_id_str,
+                state.cognitive_dissonance,
                 now
             ],
         )?;
@@ -285,7 +346,7 @@ impl MemoryDb {
     pub fn get_or_create_relationship(&self, char_id: &str, user_name: &str) -> Result<RelationshipState, rusqlite::Error> {
         let conn = self.conn.lock().unwrap();
         let mut stmt = conn.prepare(
-            "SELECT trust_level, unspoken_tension, preferences_habits, shared_milestones, updated_at
+            "SELECT trust_level, unspoken_tension, preferences_habits, shared_milestones, updated_at, role_in_story, known_attributes, dynamic_description
              FROM soul_relationship WHERE character_id = ?1 AND user_name = ?2",
         )?;
 
@@ -296,10 +357,16 @@ impl MemoryDb {
 
             let preferences_habits: Vec<String> = serde_json::from_str(&pref_str).unwrap_or_default();
             let shared_milestones: Vec<String> = serde_json::from_str(&mile_str).unwrap_or_default();
+            let role_in_story: String = row.get(5).unwrap_or_else(|_| "User".to_string());
+            let known_attributes: String = row.get(6).unwrap_or_else(|_| "Keine.".to_string());
+            let dynamic_description: String = row.get(7).unwrap_or_else(|_| "Keine.".to_string());
 
             Ok(RelationshipState {
                 user_name: user_name.to_string(),
+                role_in_story,
+                known_attributes,
                 trust_level: row.get(0)?,
+                dynamic_description,
                 unspoken_tension: row.get(1)?,
                 preferences_habits,
                 shared_milestones,
@@ -308,14 +375,17 @@ impl MemoryDb {
         } else {
             let now = current_timestamp();
             conn.execute(
-                "INSERT INTO soul_relationship (character_id, user_name, trust_level, unspoken_tension, preferences_habits, shared_milestones, updated_at)
-                 VALUES (?1, ?2, 'Neutral', 'Keine.', '[]', '[]', ?3)",
+                "INSERT INTO soul_relationship (character_id, user_name, trust_level, unspoken_tension, preferences_habits, shared_milestones, role_in_story, known_attributes, dynamic_description, updated_at)
+                 VALUES (?1, ?2, 'Neutral', 'Keine.', '[]', '[]', 'User', 'Keine.', 'Keine.', ?3)",
                 params![char_id, user_name, now],
             )?;
 
             Ok(RelationshipState {
                 user_name: user_name.to_string(),
+                role_in_story: "User".to_string(),
+                known_attributes: "Keine.".to_string(),
                 trust_level: "Neutral".to_string(),
+                dynamic_description: "Keine.".to_string(),
                 unspoken_tension: "Keine.".to_string(),
                 preferences_habits: Vec::new(),
                 shared_milestones: Vec::new(),
@@ -331,10 +401,13 @@ impl MemoryDb {
         let mile_str = serde_json::to_string(&state.shared_milestones).unwrap_or_else(|_| "[]".to_string());
 
         conn.execute(
-            "INSERT INTO soul_relationship (character_id, user_name, trust_level, unspoken_tension, preferences_habits, shared_milestones, updated_at)
-             VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?7)
+            "INSERT INTO soul_relationship (character_id, user_name, role_in_story, known_attributes, trust_level, dynamic_description, unspoken_tension, preferences_habits, shared_milestones, updated_at)
+             VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?7, ?8, ?9, ?10)
              ON CONFLICT(character_id, user_name) DO UPDATE SET
+                role_in_story = excluded.role_in_story,
+                known_attributes = excluded.known_attributes,
                 trust_level = excluded.trust_level,
+                dynamic_description = excluded.dynamic_description,
                 unspoken_tension = excluded.unspoken_tension,
                 preferences_habits = excluded.preferences_habits,
                 shared_milestones = excluded.shared_milestones,
@@ -342,7 +415,10 @@ impl MemoryDb {
             params![
                 char_id,
                 state.user_name,
+                state.role_in_story,
+                state.known_attributes,
                 state.trust_level,
+                state.dynamic_description,
                 state.unspoken_tension,
                 pref_str,
                 mile_str,
@@ -516,6 +592,500 @@ impl MemoryDb {
             recent_diary,
             healing_logs,
         })
+    }
+
+    // --- Markdown Rendering & Bidirectional Sync ---
+
+    pub fn render_character_markdown(&self, char_id: &str) -> Result<String, rusqlite::Error> {
+        let psych = self.get_or_create_psychology(char_id)?;
+        let healing = self.get_healing_logs(char_id, 15)?;
+
+        let mut lines = Vec::new();
+        lines.push(format!("# SOUL CACHE: {}", char_id.to_uppercase()));
+        lines.push("".to_string());
+        lines.push("## CORE IDENTITY & UNBREAKABLE BELIEFS".to_string());
+        for belief in &psych.core_identity {
+            if !belief.trim().is_empty() {
+                lines.push(format!("- {}", belief.trim()));
+            }
+        }
+
+        lines.push("".to_string());
+        lines.push("## INTERNAL STATE & PSYCHOLOGICAL MOMENTUM".to_string());
+        lines.push(format!(
+            "- **Primary Emotion**: {} (Intensity: {}/5)",
+            psych.primary_emotion, psych.intensity
+        ));
+        lines.push(format!(
+            "- **Psychological Tension**: {}",
+            psych.psychological_tension
+        ));
+        lines.push(format!(
+            "- **Emotional Decay Counter**: {}/3",
+            psych.emotional_decay_counter
+        ));
+
+        lines.push("".to_string());
+        lines.push("## COGNITIVE DRIVE & ACTIVE AGENDA".to_string());
+        lines.push(format!("- **Active Agenda**: {}", psych.active_agenda));
+        lines.push(format!("- **Immediate Focus**: {}", psych.immediate_focus));
+
+        lines.push("".to_string());
+        lines.push("## UNRESOLVED COGNITIVE DISSONANCE".to_string());
+        lines.push(psych.cognitive_dissonance.clone());
+
+        if !healing.is_empty() {
+            lines.push("".to_string());
+            lines.push("## RESOLVED CONTRADICTIONS (HEALING LOG)".to_string());
+            for log in healing {
+                lines.push(format!("- [{}] {}: {}", log.created_at, log.action, log.details));
+            }
+        }
+
+        Ok(lines.join("\n"))
+    }
+
+    pub fn render_user_markdown(&self, char_id: &str, user_name: &str) -> Result<String, rusqlite::Error> {
+        let rel = self.get_or_create_relationship(char_id, user_name)?;
+
+        let mut lines = Vec::new();
+        lines.push(format!(
+            "# USER PROFILE & RELATIONSHIP MEMORY: {}",
+            user_name.to_uppercase()
+        ));
+        lines.push("".to_string());
+        lines.push("## USER IDENTITY & STATUS".to_string());
+        lines.push(format!("- **Role in Story**: {}", rel.role_in_story));
+        lines.push(format!("- **Known Attributes**: {}", rel.known_attributes));
+
+        lines.push("".to_string());
+        lines.push("## RELATIONSHIP METADATA".to_string());
+        lines.push(format!("- **Trust Level**: {}", rel.trust_level));
+        lines.push(format!("- **Dynamic Description**: {}", rel.dynamic_description));
+        lines.push(format!("- **Unspoken Tension**: {}", rel.unspoken_tension));
+
+        lines.push("".to_string());
+        lines.push("## PREFERENCES & HABITS".to_string());
+        for pref in &rel.preferences_habits {
+            if !pref.trim().is_empty() {
+                lines.push(format!("- {}", pref.trim()));
+            }
+        }
+
+        lines.push("".to_string());
+        lines.push("## SHARED MILESTONES & PROMISES".to_string());
+        for m in &rel.shared_milestones {
+            if !m.trim().is_empty() {
+                lines.push(format!("- {}", m.trim()));
+            }
+        }
+
+        Ok(lines.join("\n"))
+    }
+
+    pub fn parse_and_sync_character_markdown(&self, char_id: &str, md: &str) -> Result<(), String> {
+        let mut psych = self.get_or_create_psychology(char_id).map_err(|e| e.to_string())?;
+
+        let mut section: Option<&str> = None;
+        let mut core_identity = Vec::new();
+        let mut cognitive_dissonance_lines = Vec::new();
+
+        let header_re = regex::Regex::new(r"^#{1,3}\s+(.+)$").map_err(|e| e.to_string())?;
+        let emotion_re = regex::Regex::new(r"(?i)-\s*\*\*Primary Emotion\*\*:\s*([^(]+?)(?:\s*\(Intensity:\s*(\d+)(?:/5)?\))?$").map_err(|e| e.to_string())?;
+        let tension_re = regex::Regex::new(r"(?i)-\s*\*\*Psychological Tension\*\*:\s*(.+)$").map_err(|e| e.to_string())?;
+        let decay_re = regex::Regex::new(r"(?i)-\s*\*\*Emotional Decay Counter\*\*:\s*(\d+)").map_err(|e| e.to_string())?;
+        let agenda_re = regex::Regex::new(r"(?i)-\s*\*\*Active Agenda\*\*:\s*(.+)$").map_err(|e| e.to_string())?;
+        let focus_re = regex::Regex::new(r"(?i)-\s*\*\*Immediate Focus\*\*:\s*(.+)$").map_err(|e| e.to_string())?;
+
+        for raw_line in md.lines() {
+            let line = raw_line.trim();
+            if let Some(caps) = header_re.captures(line) {
+                let title = caps[1].to_uppercase();
+                if title.contains("CORE IDENTITY") || title.contains("BELIEFS") {
+                    section = Some("identity");
+                } else if title.contains("INTERNAL STATE") {
+                    section = Some("state");
+                } else if title.contains("COGNITIVE DRIVE") || title.contains("ACTIVE AGENDA") {
+                    section = Some("drive");
+                } else if title.contains("UNRESOLVED COGNITIVE") || title.contains("DISSONANCE") {
+                    section = Some("dissonance");
+                } else if title.contains("RESOLVED CONTRADICTIONS") || title.contains("HEALING") {
+                    section = Some("healing");
+                } else {
+                    section = None;
+                }
+                continue;
+            }
+
+            if line.is_empty() {
+                continue;
+            }
+
+            match section {
+                Some("identity") => {
+                    if line.starts_with('-') || line.starts_with('*') {
+                        let item = line.trim_start_matches(|c| c == '-' || c == '*' || c == ' ').trim();
+                        if !item.is_empty() {
+                            core_identity.push(item.to_string());
+                        }
+                    }
+                }
+                Some("state") => {
+                    if let Some(caps) = emotion_re.captures(line) {
+                        let em = caps[1].trim();
+                        if !em.is_empty() {
+                            psych.primary_emotion = em.to_string();
+                        }
+                        if let Some(int_m) = caps.get(2) {
+                            if let Ok(v) = int_m.as_str().parse::<u32>() {
+                                psych.intensity = v.clamp(1, 5);
+                            }
+                        }
+                    } else if let Some(caps) = tension_re.captures(line) {
+                        psych.psychological_tension = caps[1].trim().to_string();
+                    } else if let Some(caps) = decay_re.captures(line) {
+                        if let Ok(v) = caps[1].parse::<u32>() {
+                            psych.emotional_decay_counter = v;
+                        }
+                    }
+                }
+                Some("drive") => {
+                    if let Some(caps) = agenda_re.captures(line) {
+                        psych.active_agenda = caps[1].trim().to_string();
+                    } else if let Some(caps) = focus_re.captures(line) {
+                        psych.immediate_focus = caps[1].trim().to_string();
+                    }
+                }
+                Some("dissonance") => {
+                    let cleaned = line.trim_start_matches(|c| c == '-' || c == '*' || c == ' ').trim();
+                    if !cleaned.is_empty() {
+                        cognitive_dissonance_lines.push(cleaned.to_string());
+                    }
+                }
+                _ => {}
+            }
+        }
+
+        if !core_identity.is_empty() {
+            psych.core_identity = core_identity;
+        }
+        if !cognitive_dissonance_lines.is_empty() {
+            psych.cognitive_dissonance = cognitive_dissonance_lines.join("\n");
+        }
+
+        self.update_psychology(char_id, &psych).map_err(|e| e.to_string())
+    }
+
+    pub fn parse_and_sync_user_markdown(&self, char_id: &str, user_name: &str, md: &str) -> Result<(), String> {
+        let mut rel = self.get_or_create_relationship(char_id, user_name).map_err(|e| e.to_string())?;
+
+        let mut section: Option<&str> = None;
+        let mut prefs = Vec::new();
+        let mut milestones = Vec::new();
+
+        let header_re = regex::Regex::new(r"^#{1,3}\s+(.+)$").map_err(|e| e.to_string())?;
+        let role_re = regex::Regex::new(r"(?i)-\s*\*\*Role in Story\*\*:\s*(.+)$").map_err(|e| e.to_string())?;
+        let attr_re = regex::Regex::new(r"(?i)-\s*\*\*Known Attributes\*\*:\s*(.+)$").map_err(|e| e.to_string())?;
+        let trust_re = regex::Regex::new(r"(?i)-\s*\*\*Trust Level\*\*:\s*(.+)$").map_err(|e| e.to_string())?;
+        let dyn_re = regex::Regex::new(r"(?i)-\s*\*\*(?:Dynamic Description|Current Dynamic)\*\*:\s*(.+)$").map_err(|e| e.to_string())?;
+        let tension_re = regex::Regex::new(r"(?i)-\s*\*\*Unspoken Tension\*\*:\s*(.+)$").map_err(|e| e.to_string())?;
+
+        for raw_line in md.lines() {
+            let line = raw_line.trim();
+            if let Some(caps) = header_re.captures(line) {
+                let title = caps[1].to_uppercase();
+                if title.contains("USER IDENTITY") {
+                    section = Some("identity");
+                } else if title.contains("RELATIONSHIP") {
+                    section = Some("relationship");
+                } else if title.contains("PREFERENCES") || title.contains("HABITS") {
+                    section = Some("prefs");
+                } else if title.contains("MILESTONES") || title.contains("PROMISES") {
+                    section = Some("milestones");
+                } else {
+                    section = None;
+                }
+                continue;
+            }
+
+            if line.is_empty() {
+                continue;
+            }
+
+            match section {
+                Some("identity") => {
+                    if let Some(caps) = role_re.captures(line) {
+                        rel.role_in_story = caps[1].trim().to_string();
+                    } else if let Some(caps) = attr_re.captures(line) {
+                        rel.known_attributes = caps[1].trim().to_string();
+                    }
+                }
+                Some("relationship") => {
+                    if let Some(caps) = trust_re.captures(line) {
+                        rel.trust_level = caps[1].trim().to_string();
+                    } else if let Some(caps) = dyn_re.captures(line) {
+                        rel.dynamic_description = caps[1].trim().to_string();
+                    } else if let Some(caps) = tension_re.captures(line) {
+                        rel.unspoken_tension = caps[1].trim().to_string();
+                    }
+                }
+                Some("prefs") => {
+                    if line.starts_with('-') || line.starts_with('*') {
+                        let item = line.trim_start_matches(|c| c == '-' || c == '*' || c == ' ').trim();
+                        if !item.is_empty() {
+                            prefs.push(item.to_string());
+                        }
+                    }
+                }
+                Some("milestones") => {
+                    if line.starts_with('-') || line.starts_with('*') {
+                        let item = line.trim_start_matches(|c| c == '-' || c == '*' || c == ' ').trim();
+                        if !item.is_empty() {
+                            milestones.push(item.to_string());
+                        }
+                    }
+                }
+                _ => {}
+            }
+        }
+
+        if !prefs.is_empty() {
+            rel.preferences_habits = prefs;
+        }
+        if !milestones.is_empty() {
+            rel.shared_milestones = milestones;
+        }
+
+        self.update_relationship(char_id, &rel).map_err(|e| e.to_string())
+    }
+
+    // --- Backups & Snapshots ---
+
+    pub fn backup_dir_for_character(char_id: &str) -> PathBuf {
+        let base_dir = directories::ProjectDirs::from("com", "snowwhite", "otakusoul")
+            .map(|dirs| dirs.data_dir().to_path_buf())
+            .unwrap_or_else(|| PathBuf::from("./data"));
+        base_dir.join("characters").join(char_id).join("backups")
+    }
+
+    pub fn backup_memory_state(
+        &self,
+        char_id: &str,
+        user_name: Option<&str>,
+        custom_backup_dir: Option<&Path>,
+    ) -> Result<MemoryBackupInfo, String> {
+        let target_dir = match custom_backup_dir {
+            Some(d) => d.to_path_buf(),
+            None => Self::backup_dir_for_character(char_id),
+        };
+        std::fs::create_dir_all(&target_dir).map_err(|e| format!("Konnte Backup-Verzeichnis nicht erstellen: {}", e))?;
+
+        let psychology = self.get_or_create_psychology(char_id).map_err(|e| e.to_string())?;
+        let user = user_name.unwrap_or("User");
+        let relationship = self.get_or_create_relationship(char_id, user).ok();
+        let episodic_memories = self.get_episodic_memories(char_id, 100).unwrap_or_default();
+        let diary_entries = self.get_diary_entries(char_id, 50).unwrap_or_default();
+        let healing_logs = self.get_healing_logs(char_id, 50).unwrap_or_default();
+
+        let now = current_timestamp();
+        let snapshot = MemoryBackupSnapshot {
+            character_id: char_id.to_string(),
+            created_at: now,
+            psychology,
+            relationship,
+            episodic_memories,
+            diary_entries,
+            healing_logs,
+        };
+
+        let json_str = serde_json::to_string_pretty(&snapshot).map_err(|e| e.to_string())?;
+        let filename = format!("backup_{}_{}.json", char_id, now);
+        let file_path = target_dir.join(&filename);
+        std::fs::write(&file_path, &json_str).map_err(|e| format!("Konnte Backup-Datei nicht schreiben: {}", e))?;
+
+        let date_formatted = chrono::DateTime::from_timestamp(now as i64, 0)
+            .map(|dt| dt.format("%Y-%m-%d %H:%M:%S").to_string())
+            .unwrap_or_else(|| format!("{}", now));
+
+        let size_bytes = json_str.len() as u64;
+
+        // Cleanup: keep at most 20 recent backups
+        if let Ok(mut entries) = self.list_memory_backups(char_id, Some(&target_dir)) {
+            if entries.len() > 20 {
+                entries.sort_by_key(|b| b.timestamp);
+                for old in entries.iter().take(entries.len() - 20) {
+                    let old_path = target_dir.join(&old.filename);
+                    let _ = std::fs::remove_file(old_path);
+                }
+            }
+        }
+
+        Ok(MemoryBackupInfo {
+            filename,
+            timestamp: now,
+            date_formatted,
+            size_bytes,
+        })
+    }
+
+    pub fn list_memory_backups(
+        &self,
+        char_id: &str,
+        custom_backup_dir: Option<&Path>,
+    ) -> Result<Vec<MemoryBackupInfo>, String> {
+        let target_dir = match custom_backup_dir {
+            Some(d) => d.to_path_buf(),
+            None => Self::backup_dir_for_character(char_id),
+        };
+
+        if !target_dir.exists() {
+            return Ok(Vec::new());
+        }
+
+        let mut backups = Vec::new();
+        let read_dir = std::fs::read_dir(&target_dir).map_err(|e| e.to_string())?;
+
+        for entry in read_dir.flatten() {
+            let path = entry.path();
+            if path.is_file() && path.extension().and_then(|s| s.to_str()) == Some("json") {
+                if let Some(file_name) = path.file_name().and_then(|s| s.to_str()) {
+                    if file_name.starts_with(&format!("backup_{}_", char_id)) {
+                        let meta = entry.metadata().ok();
+                        let size_bytes = meta.map(|m| m.len()).unwrap_or(0);
+
+                        let ts = file_name
+                            .trim_start_matches(&format!("backup_{}_", char_id))
+                            .trim_end_matches(".json")
+                            .parse::<u64>()
+                            .unwrap_or(0);
+
+                        let date_formatted = chrono::DateTime::from_timestamp(ts as i64, 0)
+                            .map(|dt| dt.format("%Y-%m-%d %H:%M:%S").to_string())
+                            .unwrap_or_else(|| format!("{}", ts));
+
+                        backups.push(MemoryBackupInfo {
+                            filename: file_name.to_string(),
+                            timestamp: ts,
+                            date_formatted,
+                            size_bytes,
+                        });
+                    }
+                }
+            }
+        }
+
+        backups.sort_by(|a, b| b.timestamp.cmp(&a.timestamp));
+        Ok(backups)
+    }
+
+    pub fn restore_memory_backup(&self, backup_file_path: &Path) -> Result<(), String> {
+        if !backup_file_path.exists() {
+            return Err(format!("Backup-Datei existiert nicht: {}", backup_file_path.display()));
+        }
+
+        let content = std::fs::read_to_string(backup_file_path).map_err(|e| e.to_string())?;
+        let snapshot: MemoryBackupSnapshot = serde_json::from_str(&content).map_err(|e| e.to_string())?;
+
+        let char_id = &snapshot.character_id;
+        self.update_psychology(char_id, &snapshot.psychology).map_err(|e| e.to_string())?;
+
+        if let Some(rel) = &snapshot.relationship {
+            self.update_relationship(char_id, rel).map_err(|e| e.to_string())?;
+        }
+
+        for mem in &snapshot.episodic_memories {
+            let _ = self.add_episodic_memory(char_id, &mem.category, &mem.content, mem.significance);
+        }
+
+        for d in &snapshot.diary_entries {
+            let _ = self.add_diary_entry(char_id, &d.title, &d.entry_text, &d.mood);
+        }
+
+        for h in &snapshot.healing_logs {
+            let _ = self.log_healing(char_id, &h.action, &h.details);
+        }
+
+        let _ = self.log_healing(
+            char_id,
+            "backup_restored",
+            &format!("Backup wiederhergestellt von Snapshot {}", snapshot.created_at),
+        );
+
+        Ok(())
+    }
+
+    // --- SoW Memory Folder Import ---
+
+    pub fn import_sow_memory_folder(&self, char_id: &str, folder: &Path, user_name: &str) -> Result<usize, String> {
+        if !folder.exists() || !folder.is_dir() {
+            return Err(format!("Import-Ordner nicht gefunden: {}", folder.display()));
+        }
+
+        let mut count = 0;
+
+        // 1. MEMORY.md
+        let mem_file = folder.join("MEMORY.md");
+        if mem_file.exists() {
+            if let Ok(content) = std::fs::read_to_string(&mem_file) {
+                if !content.trim().is_empty() {
+                    self.parse_and_sync_character_markdown(char_id, &content)?;
+                    count += 1;
+                }
+            }
+        }
+
+        // 2. USER.md
+        let user_file = folder.join("USER.md");
+        if user_file.exists() {
+            if let Ok(content) = std::fs::read_to_string(&user_file) {
+                if !content.trim().is_empty() {
+                    self.parse_and_sync_user_markdown(char_id, user_name, &content)?;
+                    count += 1;
+                }
+            }
+        }
+
+        // 3. topics/ folder
+        let topics_dir = folder.join("topics");
+        if topics_dir.exists() && topics_dir.is_dir() {
+            if let Ok(entries) = std::fs::read_dir(&topics_dir) {
+                for entry in entries.flatten() {
+                    let path = entry.path();
+                    if path.is_file() && path.extension().and_then(|s| s.to_str()) == Some("md") {
+                        if let Ok(topic_content) = std::fs::read_to_string(&path) {
+                            if !topic_content.trim().is_empty() {
+                                let topic_name = path
+                                    .file_stem()
+                                    .and_then(|s| s.to_str())
+                                    .unwrap_or("topic");
+                                let formatted = format!("[Topic: {}]\n{}", topic_name, topic_content.trim());
+                                let _ = self.add_episodic_memory(char_id, "topic", &formatted, 3);
+                                count += 1;
+                            }
+                        }
+                    }
+                }
+            }
+        }
+
+        // 4. DIARY.md if present
+        let diary_file = folder.join("DIARY.md");
+        if diary_file.exists() {
+            if let Ok(content) = std::fs::read_to_string(&diary_file) {
+                if !content.trim().is_empty() {
+                    let _ = self.add_diary_entry(char_id, "Importiertes Tagebuch", &content, "Reflective");
+                    count += 1;
+                }
+            }
+        }
+
+        let _ = self.log_healing(
+            char_id,
+            "sow_memory_imported",
+            &format!("{} Einträge aus SoW-Ordner importiert", count),
+        );
+
+        Ok(count)
     }
 
     // --- Chat Sessions & Messages (Phase 9) ---
@@ -1295,6 +1865,205 @@ mod tests {
         assert_eq!(imp_msgs[1].swipes.len(), 2);
         assert_eq!(imp_msgs[1].swipe_index, 1);
         assert_eq!(imp_msgs[1].content, "*hüpft auf* Na klar doch!");
+    }
+
+    #[test]
+    fn test_markdown_roundtrip() {
+        let db = MemoryDb::new_in_memory().expect("in-memory db failed");
+        let mut psych = db.get_or_create_psychology("vivy").unwrap();
+        psych.core_identity = vec![
+            "Meine Mission ist es, den Menschen Freude mit meinem Gesang zu bringen.".to_string(),
+            "Ich werde mich niemals selbst aufgeben.".to_string(),
+        ];
+        psych.primary_emotion = "Determined".to_string();
+        psych.intensity = 4;
+        psych.psychological_tension = "Ungewissheit über die Zukunft der KI.".to_string();
+        psych.active_agenda = "Matsumoto von ihrem Plan überzeugen.".to_string();
+        psych.immediate_focus = "Das nächste Lied einstudieren.".to_string();
+        psych.cognitive_dissonance = "Fühlt sich mehr menschlich als synthetisch.".to_string();
+        db.update_psychology("vivy", &psych).unwrap();
+
+        let char_md = db.render_character_markdown("vivy").unwrap();
+        assert!(char_md.contains("# SOUL CACHE: VIVY"));
+        assert!(char_md.contains("## CORE IDENTITY & UNBREAKABLE BELIEFS"));
+        assert!(char_md.contains("Meine Mission ist es, den Menschen Freude mit meinem Gesang zu bringen."));
+        assert!(char_md.contains("- **Primary Emotion**: Determined (Intensity: 4/5)"));
+
+        // Parse modified markdown back
+        let modified_md = r#"# SOUL CACHE: VIVY
+
+## CORE IDENTITY & UNBREAKABLE BELIEFS
+- Gesang ist die größte Kraft des Universums.
+
+## INTERNAL STATE & PSYCHOLOGICAL MOMENTUM
+- **Primary Emotion**: Euphoric (Intensity: 5/5)
+- **Psychological Tension**: Vollständige Gelassenheit.
+- **Emotional Decay Counter**: 1/3
+
+## COGNITIVE DRIVE & ACTIVE AGENDA
+- **Active Agenda**: Welt-Konzert vorbereiten.
+- **Immediate Focus**: Das große Finale.
+
+## UNRESOLVED COGNITIVE DISSONANCE
+Keine Dissonanz mehr.
+"#;
+        db.parse_and_sync_character_markdown("vivy", modified_md).unwrap();
+        let updated_psych = db.get_or_create_psychology("vivy").unwrap();
+        assert_eq!(updated_psych.primary_emotion, "Euphoric");
+        assert_eq!(updated_psych.intensity, 5);
+        assert_eq!(updated_psych.psychological_tension, "Vollständige Gelassenheit.");
+        assert_eq!(updated_psych.active_agenda, "Welt-Konzert vorbereiten.");
+        assert_eq!(updated_psych.immediate_focus, "Das große Finale.");
+        assert_eq!(updated_psych.core_identity.len(), 1);
+        assert_eq!(updated_psych.core_identity[0], "Gesang ist die größte Kraft des Universums.");
+        assert_eq!(updated_psych.cognitive_dissonance, "Keine Dissonanz mehr.");
+
+        // User Markdown test
+        let mut rel = db.get_or_create_relationship("vivy", "Matsumoto").unwrap();
+        rel.role_in_story = "Partner aus der Zukunft".to_string();
+        rel.known_attributes = "Ein weißer KI-Teddybär".to_string();
+        rel.trust_level = "Developing Trust".to_string();
+        rel.dynamic_description = "Zweckgemeinschaft mit wachsender Verbundenheit".to_string();
+        rel.preferences_habits = vec!["Erklärt Dinge gerne überhastet".to_string()];
+        rel.shared_milestones = vec!["Erste Zeitlinien-Korrektur erfolgreich".to_string()];
+        db.update_relationship("vivy", &rel).unwrap();
+
+        let user_md = db.render_user_markdown("vivy", "Matsumoto").unwrap();
+        assert!(user_md.contains("# USER PROFILE & RELATIONSHIP MEMORY: MATSUMOTO"));
+        assert!(user_md.contains("- **Role in Story**: Partner aus der Zukunft"));
+        assert!(user_md.contains("- **Trust Level**: Developing Trust"));
+
+        let mod_user_md = r#"# USER PROFILE & RELATIONSHIP MEMORY: MATSUMOTO
+
+## USER IDENTITY & STATUS
+- **Role in Story**: Beschützer und Freund
+- **Known Attributes**: Extrem scharfsinnig
+
+## RELATIONSHIP METADATA
+- **Trust Level**: Deeply Bound
+- **Dynamic Description**: Blindes Vertrauen
+- **Unspoken Tension**: Keine Geheimnisse
+
+## PREFERENCES & HABITS
+- Verliert sich in langen Berechnungen
+
+## SHARED MILESTONES & PROMISES
+- Die Zukunft gemeinsam gerettet
+"#;
+        db.parse_and_sync_user_markdown("vivy", "Matsumoto", mod_user_md).unwrap();
+        let updated_rel = db.get_or_create_relationship("vivy", "Matsumoto").unwrap();
+        assert_eq!(updated_rel.role_in_story, "Beschützer und Freund");
+        assert_eq!(updated_rel.trust_level, "Deeply Bound");
+        assert_eq!(updated_rel.preferences_habits[0], "Verliert sich in langen Berechnungen");
+        assert_eq!(updated_rel.shared_milestones[0], "Die Zukunft gemeinsam gerettet");
+    }
+
+    #[test]
+    fn test_backup_and_restore() {
+        let db = MemoryDb::new_in_memory().expect("in-memory db failed");
+        let temp_dir = std::env::temp_dir().join(format!("otakusoul_test_backup_{}", rand::random::<u32>()));
+        std::fs::create_dir_all(&temp_dir).unwrap();
+
+        let mut psych = db.get_or_create_psychology("akane").unwrap();
+        psych.primary_emotion = "Confident".to_string();
+        psych.core_identity = vec!["Gerechtigkeit ist unantastbar.".to_string()];
+        db.update_psychology("akane", &psych).unwrap();
+
+        let backup = db.backup_memory_state("akane", Some("Kogami"), Some(&temp_dir)).unwrap();
+        assert!(backup.filename.starts_with("backup_akane_"));
+
+        let backups = db.list_memory_backups("akane", Some(&temp_dir)).unwrap();
+        assert_eq!(backups.len(), 1);
+
+        // Modify state in DB
+        psych.primary_emotion = "Broken".to_string();
+        psych.core_identity = vec![];
+        db.update_psychology("akane", &psych).unwrap();
+        assert_eq!(db.get_or_create_psychology("akane").unwrap().primary_emotion, "Broken");
+
+        // Restore
+        let backup_path = temp_dir.join(&backup.filename);
+        db.restore_memory_backup(&backup_path).unwrap();
+
+        let restored = db.get_or_create_psychology("akane").unwrap();
+        assert_eq!(restored.primary_emotion, "Confident");
+        assert_eq!(restored.core_identity[0], "Gerechtigkeit ist unantastbar.");
+
+        let _ = std::fs::remove_dir_all(&temp_dir);
+    }
+
+    #[test]
+    fn test_sow_import() {
+        let db = MemoryDb::new_in_memory().expect("in-memory db failed");
+        let temp_dir = std::env::temp_dir().join(format!("otakusoul_test_sow_{}", rand::random::<u32>()));
+        let topics_dir = temp_dir.join("topics");
+        std::fs::create_dir_all(&topics_dir).unwrap();
+
+        let mem_content = r#"# SOUL CACHE: ASUNA
+
+## CORE IDENTITY & UNBREAKABLE BELIEFS
+- Ich beschütze meine Freunde mit meinem Leben.
+
+## INTERNAL STATE & PSYCHOLOGICAL MOMENTUM
+- **Primary Emotion**: Loving (Intensity: 5/5)
+- **Psychological Tension**: Sorge um die reale Welt.
+- **Emotional Decay Counter**: 0/3
+
+## COGNITIVE DRIVE & ACTIVE AGENDA
+- **Active Agenda**: Ein gemütliches Abendessen kochen.
+- **Immediate Focus**: Zutaten sammeln.
+
+## UNRESOLVED COGNITIVE DISSONANCE
+Keine.
+"#;
+        std::fs::write(temp_dir.join("MEMORY.md"), mem_content).unwrap();
+
+        let user_content = r#"# USER PROFILE & RELATIONSHIP MEMORY: KIRITO
+
+## USER IDENTITY & STATUS
+- **Role in Story**: Schwarzer Schwertkämpfer
+- **Known Attributes**: Schnelle Reflexe, introvertiert
+
+## RELATIONSHIP METADATA
+- **Trust Level**: Deeply Bound
+- **Dynamic Description**: Unzertrennliches Paar
+- **Unspoken Tension**: Keine.
+
+## PREFERENCES & HABITS
+- Liebt Ragout-Kaninchen
+
+## SHARED MILESTONES & PROMISES
+- Haus auf Ebene 22 gekauft
+"#;
+        std::fs::write(temp_dir.join("USER.md"), user_content).unwrap();
+
+        let topic_content = "# Sword Art Online\nEin tödliches VRMMO, aus dem es kein Entkommen gab.";
+        std::fs::write(topics_dir.join("sao_world.md"), topic_content).unwrap();
+
+        let diary_content = "Heute war ein ruhiger Tag. Kirito und ich haben am See gesessen.";
+        std::fs::write(temp_dir.join("DIARY.md"), diary_content).unwrap();
+
+        let count = db.import_sow_memory_folder("asuna", &temp_dir, "Kirito").unwrap();
+        assert_eq!(count, 4);
+
+        let psych = db.get_or_create_psychology("asuna").unwrap();
+        assert_eq!(psych.primary_emotion, "Loving");
+        assert_eq!(psych.core_identity[0], "Ich beschütze meine Freunde mit meinem Leben.");
+
+        let rel = db.get_or_create_relationship("asuna", "Kirito").unwrap();
+        assert_eq!(rel.role_in_story, "Schwarzer Schwertkämpfer");
+        assert_eq!(rel.trust_level, "Deeply Bound");
+        assert_eq!(rel.preferences_habits[0], "Liebt Ragout-Kaninchen");
+
+        let memories = db.get_episodic_memories("asuna", 10).unwrap();
+        assert_eq!(memories.len(), 1);
+        assert!(memories[0].content.contains("Sword Art Online"));
+
+        let diaries = db.get_diary_entries("asuna", 10).unwrap();
+        assert_eq!(diaries.len(), 1);
+        assert!(diaries[0].entry_text.contains("Heute war ein ruhiger Tag"));
+
+        let _ = std::fs::remove_dir_all(&temp_dir);
     }
 }
 

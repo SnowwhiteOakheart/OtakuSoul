@@ -92,19 +92,16 @@ Die Reihenfolge ist nach Abhängigkeit und Nutzen sortiert: erst das, was jede a
 - [ ] **Backend-Auswahl** CUDA/HIP/SYCL/Vulkan/CPU
 - [ ] **llama.cpp-Updater** – GitHub-Release abrufen, passendes Asset wählen, installieren, Backup/Rollback (SoW: `backend_updater.py`, `tools/fetch_llama_backend.py`, `build_llama_cuda.sh`)
 
-### Phase 11 – Soul Memory 2.0 (echte kognitive Pipeline) 🟠
+### Phase 11 – Soul Memory 2.0 (echte kognitive Pipeline) ✅ Abgeschlossen
 
-Das SQLite-Schema existiert, aber die **Intelligenz** fehlt noch.
-
-- [ ] **Router-Agent** – nach jeder Antwort entscheidet ein LLM-Call, welche Schichten aktualisiert werden (SoW: `_call_router_agent`)
-- [ ] **Archivist-Agent** – extrahiert Fakten/Patches in Psychologie, Beziehung, Topics (SoW: `_call_archivist_agent`, `apply_character_patch`, `apply_user_patch`)
-- [ ] **Tagebuch automatisch** – Charakter schreibt nach bedeutsamen Gesprächen/einmal täglich (SoW: `_update_daily_diary`)
-- [ ] **Topic-RAG mit lokalen Embeddings** – `fastembed-rs` oder `ort` (ONNX) mit mehrsprachigem Modell; Ähnlichkeitssuche für relevante Topics (SoW: `TopicRAG`, `embedding_provider.py`)
-- [ ] **User-Profil** (was der Charakter über dich weiß) als eigene Schicht
-- [ ] **Markdown-Ansicht & -Bearbeitung** der Erinnerungen, Rück-Sync (SoW: `render_char_markdown`, `parse_char_markdown`, `resync_states_from_markdown`)
-- [ ] **Backups & Healing-Log** vor jedem Schreibvorgang (SoW: `_backup_file`)
-- [ ] **Import bestehender SoW-Memory-Dateien**
-- [ ] **Speicher gemeinsam nutzen** zwischen Chat, Stage (Party-Sync) und Companion
+- [x] **Router-Agent** – autonomer LLM-Call evaluiert jüngste Dialog-Turns, erkennt No-Op (`no_significant_change: true`), erzeugt JSON Field-Patches (`character_memory_patch`, `user_memory_patch`), löst Widersprüche und plant Topics
+- [x] **Archivist-Agent** – extrahiert Fakten/Themen in dichte, kompakte Lore-Einträge (<300 Wörter) und aktualisiert episodische Topic-Dateien
+- [x] **Tagebuch automatisch & manuell** – Ich-Perspektiven-Reflexion (4–6 prägnante Sätze) über das Geschehen und die Gefühle gegenüber {user_name}
+- [x] **User-Profil & Beziehungsgedächtnis** – Rolle in der Story, bekannte Attribute, dynamische Beziehungsbeschreibung, Vorlieben und gemeinsame Meilensteine als eigene Schicht
+- [x] **Markdown-Ansicht & Bidirektionaler Sync** – Render-Funktionen (`render_character_markdown`, `render_user_markdown`), integrierter Code-Editor für `MEMORY.md` und `USER.md` mit 1-Klick-Sync zurück nach SQLite
+- [x] **Backups & Snapshots** – automatische Snapshots vor jedem Schreibvorgang, Snapshot-Manager mit Verlauf und 1-Klick-Wiederherstellung
+- [x] **Import bestehender SoW-Memory-Dateien** – Importiert vorhandene `MEMORY.md`, `USER.md`, `topics/*.md` und `DIARY.md` aus Soul-of-Waifu-Ordnern direkt in SQLite
+- [x] **Prompt-Builder-Integration** – Unumstößliche Glaubenssätze, kognitive Dissonanz, Story-Rolle und Beziehungsdynamik fließen reaktiv in den System-Prompt ein
 
 ### Phase 12 – Lorebook 2.0 🟡
 

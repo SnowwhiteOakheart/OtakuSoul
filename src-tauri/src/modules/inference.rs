@@ -217,4 +217,70 @@ impl InferenceClient {
         let _ = app_handle.emit("llm-done", done_event.clone());
         Ok(done_event)
     }
+
+    /// Direct non-streaming completion for internal cognitive agents (Router, Archivist, Diary)
+    /// Does not emit UI stream events.
+    pub async fn generate_direct(&self, request: ChatRequest) -> Result<String, String> {
+        let provider = crate::modules::providers::ProviderRegistry::detect_provider(
+            &request.endpoint_url,
+            request.provider.as_ref(),
+        );
+
+        let client = reqwest::Client::new();
+        let req_builder = crate::modules::providers::ProviderRegistry::build_http_request(&client, &request)?;
+
+        let response = req_builder
+            .send()
+            .await
+            .map_err(|e| format!("Verbindungsfehler zu {}: {}", request.endpoint_url, e))?;
+
+        if !response.status().is_success() {
+            let status = response.status();
+            let err_text = response.text().await.unwrap_or_default();
+            return Err(format!("LLM-Server Fehler ({}): {}", status, err_text));
+        }
+
+        let mut stream = response.bytes_stream();
+        let mut full_text = String::new();
+        let mut buffer = String::new();
+
+        while let Some(chunk_res) = stream.next().await {
+            let chunk = chunk_res.map_err(|e| format!("Stream-Fehler: {}", e))?;
+            let chunk_str = String::from_utf8_lossy(&chunk);
+            buffer.push_str(&chunk_str);
+
+            while let Some(line_end) = buffer.find('\n') {
+                let line = buffer[..line_end].trim().to_string();
+                buffer.drain(..=line_end);
+
+                if line.is_empty() || line.starts_with(':') {
+                    continue;
+                }
+
+                let delta = crate::modules::providers::ProviderRegistry::parse_sse_line(&line, &provider);
+                if delta.is_done {
+                    break;
+                }
+
+                if let Some(content) = delta.text {
+                    full_text.push_str(&content);
+                }
+            }
+        }
+
+        // Clean out <think>...</think> tags if model produced them
+        let cleaned = if let (Some(start), Some(end)) = (full_text.find("<think>"), full_text.rfind("</think>")) {
+            if end > start {
+                let mut stripped = full_text[..start].to_string();
+                stripped.push_str(&full_text[end + 8..]);
+                stripped
+            } else {
+                full_text
+            }
+        } else {
+            full_text
+        };
+
+        Ok(cleaned.trim().to_string())
+    }
 }

@@ -83,7 +83,8 @@
 | `src-tauri/src/modules/settings.rs` | Persistente Konfiguration (`settings.json`) mit atomarem Speichern |
 | `src-tauri/src/modules/lorebook.rs` | Lorebook / World Info Keyword-Scanner |
 | `src-tauri/src/modules/prompt_builder.rs` | Dynamischer Prompt-Builder inkl. Seelen-Zustand |
-| `src-tauri/src/modules/memory.rs` | SQLite Kognitives Seelen-Gedächtnis & Emotional Decay |
+| `src-tauri/src/modules/memory.rs` | SQLite Kognitives Seelen-Gedächtnis, Markdown Sync (MEMORY.md/USER.md), Backups & SoW-Importer |
+| `src-tauri/src/modules/soul_memory_pipeline.rs` | Kognitive Pipeline: Router-Agent, Archivist-Agent, Diary-Agent, JSON-Patch-Parser & No-Op Detection |
 | `src-tauri/src/modules/stage.rs` | RPG Würfel-Engine, Kampagnen-Clocks & Taktischer Kampf |
 | `src-tauri/src/modules/companion.rs` | Neurohormone & Tool-Calling mit Sicherheitsabfrage |
 | `src-tauri/src/modules/providers.rs` | LLM Provider Abstraktion (OpenRouter, Anthropic Messages API, OpenAI, DeepSeek, Gemini, Mistral, Custom) |
@@ -159,7 +160,7 @@ Alle benötigten Daten sind eigenständig in diesem Projektverzeichnis gekapselt
   - **Reaktives State Parsing:** Regex-Extraktion von `<state>{...}</state>`, automatische Aktualisierung der HUD-Variablen und Tag-Stripping aus Chatblasen
   - **11 Rollenspiel-HUD-Presets:** Romance, RPG, Survival, Horror, Cyberpunk, Slice-of-Life, Detektiv, Space Opera, Cultivation, Comedy, Tabletop Tactical
   - **SillyTavern & SoW JSONL Import/Export:** Volle Kompatibilität inkl. aller Metadaten und Swipes-Historie
-- [x] **Phase 10: LLM-Provider & llama.cpp-Tuning**
+- [x] **Phase 10: LLM-Provider & llama.cpp-Tuning** (Commit `bf00643`)
   - **Provider-Abstraktion in Rust:** `LlmProviderType` und `ProviderRegistry` unterstützen LocalLlama, OpenRouter, Anthropic (natives Messages-API Format), OpenAI, DeepSeek, Gemini, Mistral & Custom OpenAI-kompatible Endpunkte.
   - **Natives Anthropic-Protokoll:** Eigene Header (`x-api-key`, `anthropic-version`), oberstes `system`-Prompt Feld (keine System-Rollen im Nachrichten-Array), rollen-alternierende Normalisierung und SSE-Event-Streaming für `content_block_delta`.
   - **OpenRouter Modellkatalog:** Automatisches Abrufen aller Modelle von OpenRouter mit Kontextlänge & Preisinformationen, Volltext-Suchfilter und 1-Klick-Übernahme.
@@ -168,8 +169,23 @@ Alle benötigten Daten sind eigenständig in diesem Projektverzeichnis gekapselt
   - **llama-server Hardware-Tuning:** Batch Size (`-b`), UBatch Size (`-ub`), KV-Cache Quantisierung (`--cache-type-k`, `--cache-type-v` z. B. `q8_0` für 50% VRAM-Ersparnis bei großen Kontexten), Memory-Lock (`--mlock`), no-mmap (`--no-mmap`), CPU MoE Offloading (`--cpu-moe`).
   - **Models Hub (Hugging Face):** Direkte GGUF-Suche via Hugging Face API, Repo-Dateien-Inspektion mit Quantisierungs-Erkennung (Q4_K_M, Q8_0 etc.), asynchroner Downloader mit Live-Fortschrittsbalken und Download-Geschwindigkeit in MB/s (`model-download-progress`).
   - **Moderne Einstellungs-Tabs:** Unterteilung in Server Tuning, Cloud Provider & OpenRouter Katalog, Sampler & Presets sowie Models Hub.
+- [x] **Phase 11: Soul Memory 2.0 (Kognitive Pipeline & Agenten)**
+  - **Autonome Kognitive Pipeline (`soul_memory_pipeline.rs`):**
+    - **Router-Agent:** Analysiert Konversationsabschnitte deterministisch, erkennt belanglose Turns via `{"no_significant_change": true}`, generiert partielle JSON-Field-Patches für Charakter- und Nutzerzustand, löst Widersprüche auf (`healing_log_add`) und plant Themen-Notizen (`topic_plan`).
+    - **Archivist-Agent:** Erstellt und komprimiert thematische Lore-Einträge (<300 Wörter) auf Basis des Topic-Plans in das episodische Gedächtnis.
+    - **Diary-Agent:** Verfasst intime Ich-Perspektiven-Tagebucheinträge (4–6 Sätze) über Gefühle gegenüber `{user_name}` ohne Rollenspiel-Fluff oder Dialogfetzen.
+  - **Bidirektionaler Markdown-Sync (`MEMORY.md` & `USER.md`):**
+    - Vollständiges Rendern des SQLite-Seelenzustands in sauberes, strukturiertes Markdown (`# SOUL CACHE: {CHAR}`, `# USER PROFILE & RELATIONSHIP MEMORY: {USER}`).
+    - Robuster Regex-basierter Markdown-Parser (`parse_and_sync_character_markdown`, `parse_and_sync_user_markdown`), der Änderungen am Markdown direkt in die SQLite-Tabellen synchronisiert.
+    - Integrierter Markdown-Editor mit Tab-Umschaltung und 1-Klick-Speicherung in `CognitiveMemoryDrawer.tsx`.
+  - **Rolling Snapshots & Backup-Manager:**
+    - Automatisches Erstellen von JSON-Snapshots vor jedem Patch-Vorgang in `characters/<char_id>/backups/`.
+    - Übersicht aller Backups mit Datum und Dateigröße sowie 1-Klick-Rollback.
+  - **Soul of Waifu Memory-Importer:**
+    - 1-Klick-Import vorhandener `MEMORY.md`, `USER.md`, `topics/*.md` und `DIARY.md` Dateien aus beliebigen SoW-Ordnern über den nativen Verzeichnisdialog.
+  - **Prompt-Builder-Erweiterung:** Kernidentität, ungelöste Dissonanzen, Story-Rolle und Beziehungsdynamik werden nun direkt in den Rollenspiel-Prompt injiziert.
 
-**Offene Phasen 11–18** (Soul Memory 2.0, Lorebook 2.0, Stimme, Live2D, Stage-GM, echter Companion, Ökosystem, i18n & Auslieferung) sind in [`Roadmap.md`](Roadmap.md) dokumentiert. **Vor neuen Features dort nachsehen und erledigte Punkte mit Commit-Hash abhaken.**
+**Offene Phasen 12–18** (Lorebook 2.0, Stimme, Live2D, Stage-GM, echter Companion, Ökosystem, i18n & Auslieferung) sind in [`Roadmap.md`](Roadmap.md) dokumentiert. **Vor neuen Features dort nachsehen und erledigte Punkte mit Commit-Hash abhaken.**
 
 ---
 

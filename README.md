@@ -104,8 +104,15 @@ npm run tauri build
   - LLM Presets System: 5 built-in presets (Storytelling/Kreativ, Standard, Logik, XTC Wild, Fast Chat) + custom user presets in `llm_presets.json`
   - llama-server Hardware Tuning: Batch (`-b`), UBatch (`-ub`), KV-Cache quantization (`q8_0`/`q4_0`), Flash Attention, RAM lock (`--mlock`), no-mmap, CPU MoE offload, thinking budget
   - Hugging Face Models Hub: In-app GGUF model search, quantization inspection (Q4_K_M, Q8_0 etc.), and async downloader with live progress and transfer speed tracking
-- [ ] **Phases 11–18: Remaining feature parity with Soul of Waifu**
-  - Provider abstraction & LLM presets, Soul Memory 2.0 agents, voice (TTS/STT), Live2D, AI Game Master, real companion tools, web client, Discord & packaging
+- [x] **Phase 11: Soul Memory 2.0 (Cognitive Pipeline & Agents)**
+  - Router Agent: Autonomous background reflection call analyzing dialogue batches, detecting `no_significant_change`, creating JSON field patches, resolving contradictions, and planning topics
+  - Archivist Agent: Compact lorebook authoring (<300 words) for episodic topics and world lore
+  - Diary Agent: First-person introspective diary generation recording feelings toward `{user_name}`
+  - Bidirectional Markdown Sync: Render SQLite state to `MEMORY.md` & `USER.md` with in-app editor and real-time synchronization back to database
+  - Snapshots & Backups: Automatic snapshots before patch application, snapshot manager with 1-click restore
+  - Soul of Waifu Importer: Direct 1-click folder import of legacy `MEMORY.md`, `USER.md`, `topics/*.md`, and `DIARY.md`
+- [ ] **Phases 12–18: Remaining feature parity with Soul of Waifu**
+  - Lorebook 2.0 (semantic RAG & multi-binding), voice (TTS/STT), Live2D, AI Game Master, real companion tools, web client, Discord & packaging
   - See **[Roadmap.md](Roadmap.md)** for the full, detailed plan (German)
 
 ---

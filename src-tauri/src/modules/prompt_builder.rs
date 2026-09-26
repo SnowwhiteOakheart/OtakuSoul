@@ -98,6 +98,12 @@ pub fn build_system_prompt(ctx: &PromptContext) -> String {
     // 6.5. Cognitive Soul Memory & Inner Psychology
     if let Some(cog) = &ctx.cognitive {
         let mut cog_str = String::from("## Innerer Geisteszustand & Kognitives Gedächtnis\n");
+        if !cog.psychology.core_identity.is_empty() {
+            cog_str.push_str("### Unumstößliche Glaubenssätze & Kernidentität:\n");
+            for belief in &cog.psychology.core_identity {
+                cog_str.push_str(&format!("- {}\n", belief));
+            }
+        }
         cog_str.push_str(&format!(
             "- **Emotion & Intensität**: {} (Intensität {} von 5)\n",
             cog.psychology.primary_emotion, cog.psychology.intensity
@@ -111,7 +117,17 @@ pub fn build_system_prompt(ctx: &PromptContext) -> String {
         if !cog.psychology.immediate_focus.trim().is_empty() {
             cog_str.push_str(&format!("- **Gedanklicher Fokus**: {}\n", cog.psychology.immediate_focus));
         }
+        if !cog.psychology.cognitive_dissonance.trim().is_empty() && cog.psychology.cognitive_dissonance != "Keine." {
+            cog_str.push_str(&format!("- **Kognitive Dissonanz**: {}\n", cog.psychology.cognitive_dissonance));
+        }
+        cog_str.push_str(&format!("- **Rolle von {}**: {}\n", ctx.user_name, cog.relationship.role_in_story));
+        if !cog.relationship.known_attributes.trim().is_empty() && cog.relationship.known_attributes != "Keine." {
+            cog_str.push_str(&format!("- **Bekannte Attribute über {}**: {}\n", ctx.user_name, cog.relationship.known_attributes));
+        }
         cog_str.push_str(&format!("- **Vertrauensstufe zu {}**: {}\n", ctx.user_name, cog.relationship.trust_level));
+        if !cog.relationship.dynamic_description.trim().is_empty() && cog.relationship.dynamic_description != "Keine." {
+            cog_str.push_str(&format!("- **Beziehungsdynamik**: {}\n", cog.relationship.dynamic_description));
+        }
         if !cog.relationship.unspoken_tension.trim().is_empty() && cog.relationship.unspoken_tension != "Keine." {
             cog_str.push_str(&format!("- **Ungesagte Spannungen**: {}\n", cog.relationship.unspoken_tension));
         }
