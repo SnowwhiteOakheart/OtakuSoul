@@ -1,6 +1,6 @@
 import React, { useEffect, useRef, useState } from 'react';
 import * as PIXI from 'pixi.js';
-import { Live2DModel } from 'pixi-live2d-display/cubism4';
+import { Live2DModel, ModelSettings } from 'pixi-live2d-display/cubism4';
 import { convertFileSrc } from '@tauri-apps/api/core';
 import { audioPlayer } from '../../services/audioPlayer';
 import { Loader2, Sparkles, RefreshCw } from 'lucide-react';
@@ -11,6 +11,89 @@ try {
 } catch (e) {
   console.warn('Live2D ticker already registered or failed:', e);
 }
+
+// Path normalization helper for resolving relative model assets
+function normalizePath(parts: string[]): string {
+  const stack: string[] = [];
+  for (const part of parts) {
+    if (!part || part === '.') continue;
+    if (part === '..') {
+      stack.pop();
+    } else {
+      stack.push(part);
+    }
+  }
+  return stack.join('/');
+}
+
+// Monkey-patch ModelSettings.prototype.resolveURL to correctly handle Tauri asset:// URLs
+ModelSettings.prototype.resolveURL = function (targetPath: string): string {
+  if (!targetPath) return targetPath;
+
+  // Don't modify absolute URLs or special protocols
+  if (
+    targetPath.startsWith('data:') ||
+    targetPath.startsWith('blob:') ||
+    targetPath.startsWith('http://') ||
+    targetPath.startsWith('https://') ||
+    targetPath.startsWith('asset://')
+  ) {
+    return targetPath;
+  }
+
+  const settingsUrl = this.url;
+  if (!settingsUrl) {
+    return targetPath;
+  }
+
+  // Handle Tauri asset URLs
+  const isAsset = settingsUrl.startsWith('asset://') || settingsUrl.startsWith('http://asset.localhost');
+  let basePath = settingsUrl;
+
+  if (isAsset) {
+    try {
+      basePath = decodeURIComponent(settingsUrl);
+    } catch {}
+
+    if (basePath.startsWith('asset://localhost/')) {
+      basePath = basePath.slice('asset://localhost/'.length);
+    } else if (basePath.startsWith('http://asset.localhost/')) {
+      basePath = basePath.slice('http://asset.localhost/'.length);
+    } else if (basePath.startsWith('asset://')) {
+      basePath = basePath.slice('asset://'.length);
+    }
+  }
+
+  // Ensure leading slash on Unix systems
+  if (!basePath.startsWith('/') && !/^[a-zA-Z]:/.test(basePath)) {
+    basePath = '/' + basePath;
+  }
+
+  // Extract directory path of the settings file
+  const lastSlash = basePath.lastIndexOf('/');
+  const baseDir = lastSlash !== -1 ? basePath.substring(0, lastSlash) : '';
+
+  // Handle GoEmotions expression paths from Soul-of-Waifu
+  // Format: ../../../../app/utils/emotions/live2d/expressions/xxx_animation.exp3.json
+  if (targetPath.includes('emotions/live2d/expressions/') || targetPath.endsWith('_animation.exp3.json')) {
+    const filename = targetPath.slice(targetPath.lastIndexOf('/') + 1);
+    const assetsMarker = '/assets/live2d';
+    const idx = baseDir.indexOf(assetsMarker);
+    if (idx !== -1) {
+      const rootAssets = baseDir.substring(0, idx) + '/assets';
+      const expPath = `${rootAssets}/emotions/live2d/expressions/${filename}`;
+      return convertFileSrc(expPath);
+    }
+    const otakusoulExpPath = `/home/deathtrap/development/OtakuSoul/assets/emotions/live2d/expressions/${filename}`;
+    return convertFileSrc(otakusoulExpPath);
+  }
+
+  // Standard relative file path resolution
+  const cleanTarget = targetPath.replace(/\\/g, '/');
+  const resolved = '/' + normalizePath([...baseDir.split('/'), ...cleanTarget.split('/')]);
+
+  return convertFileSrc(resolved);
+};
 
 interface Live2DViewerProps {
   modelPath: string; // Absolute path to .model3.json or .model.json
@@ -63,27 +146,22 @@ export const Live2DViewer: React.FC<Live2DViewerProps> = ({
     setLoading(true);
     setError(null);
 
-    const app = new PIXI.Application();
+    const app = new PIXI.Application({
+      resizeTo: container,
+      backgroundAlpha: 0,
+      antialias: true,
+      autoDensity: true,
+      resolution: window.devicePixelRatio || 1,
+    });
     appRef.current = app;
 
     let cleanupAudio: (() => void) | null = null;
 
     const init = async () => {
       try {
-        await app.init({
-          resizeTo: container,
-          backgroundAlpha: 0,
-          antialias: true,
-          autoDensity: true,
-          resolution: window.devicePixelRatio || 1,
-        });
+        if (isDisposed) return;
 
-        if (isDisposed) {
-          app.destroy(true, { children: true });
-          return;
-        }
-
-        container.appendChild(app.canvas);
+        container.appendChild(app.view as HTMLCanvasElement);
 
         // Convert filesystem path to Tauri Asset URL
         const assetUrl = convertFileSrc(modelPath);
@@ -94,8 +172,9 @@ export const Live2DViewer: React.FC<Live2DViewerProps> = ({
         });
 
         if (isDisposed) {
-          model.destroy();
-          app.destroy(true, { children: true });
+          try {
+            model.destroy();
+          } catch {}
           return;
         }
 
@@ -103,8 +182,8 @@ export const Live2DViewer: React.FC<Live2DViewerProps> = ({
 
         // Center and scale model appropriately
         const bounds = model.getBounds();
-        const containerWidth = container.clientWidth;
-        const containerHeight = container.clientHeight;
+        const containerWidth = container.clientWidth || 300;
+        const containerHeight = container.clientHeight || 500;
 
         const baseScale = Math.min(
           (containerWidth * 0.85) / bounds.width,
@@ -117,15 +196,6 @@ export const Live2DViewer: React.FC<Live2DViewerProps> = ({
         model.y = containerHeight / 2 + containerHeight * 0.05;
 
         (app.stage as any).addChild(model);
-
-        // Tap interaction: play a motion when user clicks on character
-        model.on('hit', (hitAreas: string[]) => {
-          if (hitAreas.includes('body') || hitAreas.includes('head')) {
-            try {
-              model.motion('Tap');
-            } catch {}
-          }
-        });
 
         // LipSync via Web Audio API amplitude
         cleanupAudio = audioPlayer.onAudioFrame((amplitude) => {
@@ -162,6 +232,33 @@ export const Live2DViewer: React.FC<Live2DViewerProps> = ({
     };
 
     void init();
+
+    // Click on canvas to trigger Tap motion
+    const handleCanvasClick = (e: MouseEvent) => {
+      if (!modelRef.current || !container) return;
+      if (isDraggingRef.current) return;
+      const rect = container.getBoundingClientRect();
+      const x = e.clientX - rect.left;
+      const y = e.clientY - rect.top;
+      try {
+        if (modelRef.current.hitTest) {
+          const hitAreas = modelRef.current.hitTest(x, y);
+          if (hitAreas && hitAreas.length > 0) {
+            modelRef.current.motion('Tap') || modelRef.current.motion('Idle');
+            return;
+          }
+        }
+        const bounds = modelRef.current.getBounds();
+        if (
+          x >= bounds.x &&
+          x <= bounds.x + bounds.width &&
+          y >= bounds.y &&
+          y <= bounds.y + bounds.height
+        ) {
+          modelRef.current.motion('Tap') || modelRef.current.motion('Idle');
+        }
+      } catch {}
+    };
 
     // Mouse tracking (look at cursor)
     const handleMouseMove = (e: MouseEvent) => {
@@ -206,6 +303,7 @@ export const Live2DViewer: React.FC<Live2DViewerProps> = ({
       modelRef.current.scale.y *= zoomFactor;
     };
 
+    container.addEventListener('click', handleCanvasClick);
     container.addEventListener('mousemove', handleMouseMove);
     container.addEventListener('mousedown', handleMouseDown);
     window.addEventListener('mouseup', handleMouseUp);
@@ -214,6 +312,7 @@ export const Live2DViewer: React.FC<Live2DViewerProps> = ({
     return () => {
       isDisposed = true;
       if (cleanupAudio) cleanupAudio();
+      container.removeEventListener('click', handleCanvasClick);
       container.removeEventListener('mousemove', handleMouseMove);
       container.removeEventListener('mousedown', handleMouseDown);
       window.removeEventListener('mouseup', handleMouseUp);
