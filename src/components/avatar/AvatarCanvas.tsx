@@ -1,4 +1,4 @@
-import { useState } from 'react';
+
 import { VrmViewer } from './VrmViewer';
 import { Box, Image, Sparkles } from 'lucide-react';
 import { CharacterProfile } from '../../types';
@@ -13,8 +13,7 @@ export const AvatarCanvas = ({
   character,
   isSpeaking = false,
 }: AvatarCanvasProps) => {
-  const [avatarMode, setAvatarMode] = useState<'3d' | '2d'>('3d');
-  const { activeVrmPath } = useAppStore();
+  const { activeVrmPath, avatarMode, setAvatarMode } = useAppStore();
 
   const vrmPath =
     (character?.card.data.extensions?.sow_vrm as string) ||

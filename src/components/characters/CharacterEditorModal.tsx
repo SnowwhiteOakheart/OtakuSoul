@@ -16,7 +16,7 @@ export const CharacterEditorModal = ({
   onClose,
   onSaved,
 }: CharacterEditorModalProps) => {
-  const { refreshCharacters, allLorebooks } = useAppStore();
+  const { refreshCharacters, allLorebooks, scannedVrms } = useAppStore();
 
   const [activeTab, setActiveTab] = useState<'basics' | 'prompts' | 'greetings' | 'lorebooks' | 'raw'>('basics');
   const [isSaving, setIsSaving] = useState(false);
@@ -24,6 +24,7 @@ export const CharacterEditorModal = ({
 
   // Form State
   const [boundLorebooks, setBoundLorebooks] = useState<string[]>(character?.bound_lorebooks || []);
+  const [vrmPath, setVrmPath] = useState<string>((character?.card.data.extensions?.sow_vrm as string) || '');
   const [name, setName] = useState(character?.card.data.name || '');
   const [title, setTitle] = useState(
     (character?.card.data.extensions?.sow_title as string) || character?.card.data.tags?.[0] || ''
@@ -107,6 +108,7 @@ export const CharacterEditorModal = ({
         extensions: {
           ...(character?.card.data.extensions || {}),
           sow_title: title.trim() || undefined,
+          sow_vrm: vrmPath || undefined,
         },
       },
     };
@@ -266,6 +268,22 @@ export const CharacterEditorModal = ({
                     Avatar entfernen
                   </button>
                 )}
+                
+                <div className="w-full mt-2 space-y-1.5 px-2">
+                  <label className="text-[11px] font-semibold text-slate-400">VRM-Modell (3D)</label>
+                  <select
+                    value={vrmPath}
+                    onChange={(e) => setVrmPath(e.target.value)}
+                    className="w-full bg-slate-950 border border-slate-700/80 rounded-lg px-2 py-1.5 text-xs text-slate-100 focus:outline-none focus:border-purple-500 transition-colors"
+                  >
+                    <option value="">-- Standard (aus Einstellungen) --</option>
+                    {scannedVrms.map((vrm) => (
+                      <option key={vrm.path} value={vrm.path}>
+                        {vrm.name}
+                      </option>
+                    ))}
+                  </select>
+                </div>
               </div>
 
               {/* Basic Fields */}

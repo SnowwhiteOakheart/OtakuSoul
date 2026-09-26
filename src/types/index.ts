@@ -436,6 +436,7 @@ export interface AppSettings {
   active_vrm_path: string | null;
   global_lorebooks?: string[];
   scene_tension_enabled?: boolean;
+  avatar_mode?: '3d' | '2d';
 }
 
 export interface UserPersona {

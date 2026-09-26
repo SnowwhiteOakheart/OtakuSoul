@@ -34,10 +34,20 @@ pub struct AppSettings {
     pub scene_tension_enabled: bool,
     #[serde(default)]
     pub hidden_character_ids: Vec<String>,
+    #[serde(default = "default_avatar_mode")]
+    pub avatar_mode: String,
 }
 
 fn default_true() -> bool {
     true
+}
+
+fn default_cloud_provider() -> String {
+    "open_router".to_string()
+}
+
+fn default_avatar_mode() -> String {
+    "3d".to_string()
 }
 
 impl Default for AppSettings {
@@ -72,6 +82,7 @@ impl Default for AppSettings {
             global_lorebooks: Vec::new(),
             scene_tension_enabled: true,
             hidden_character_ids: Vec::new(),
+            avatar_mode: "3d".to_string(),
         }
     }
 }

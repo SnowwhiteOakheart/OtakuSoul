@@ -163,6 +163,8 @@ interface AppStoreState {
   scannedVrms: ScannedVrm[];
   activeVrmPath: string | null;
   setActiveVrmPath: (path: string | null) => void;
+  avatarMode: '3d' | '2d';
+  setAvatarMode: (mode: '3d' | '2d') => void;
   initApp: () => Promise<void>;
   saveCurrentSettings: () => Promise<void>;
 
@@ -362,6 +364,12 @@ export const useAppStore = create<AppStoreState>((set, get) => ({
     get().saveCurrentSettings();
   },
 
+  avatarMode: '3d',
+  setAvatarMode: (mode) => {
+    set({ avatarMode: mode });
+    get().saveCurrentSettings();
+  },
+
   hardware: null,
   layerRecommendation: null,
 
@@ -547,6 +555,7 @@ export const useAppStore = create<AppStoreState>((set, get) => ({
         activeVrmPath: vrmPath,
         globalLorebookIds: settings.global_lorebooks || [],
         sceneTensionEnabled: settings.scene_tension_enabled !== false,
+        avatarMode: settings.avatar_mode || '3d',
       });
 
       // 3b. Load LLM Presets & listen to model downloads
@@ -620,6 +629,7 @@ export const useAppStore = create<AppStoreState>((set, get) => ({
         active_vrm_path: state.activeVrmPath,
         global_lorebooks: state.globalLorebookIds,
         scene_tension_enabled: state.sceneTensionEnabled,
+        avatar_mode: state.avatarMode,
       };
       await api.saveSettings(settings);
     } catch (e) {
