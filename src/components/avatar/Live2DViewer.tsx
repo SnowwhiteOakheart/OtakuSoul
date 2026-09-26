@@ -3,6 +3,7 @@ import * as PIXI from 'pixi.js';
 import { Live2DModel, ModelSettings } from 'pixi-live2d-display/cubism4';
 import { convertFileSrc } from '@tauri-apps/api/core';
 import { audioPlayer } from '../../services/audioPlayer';
+import { loadLive2DViewState, saveLive2DViewState } from '../../services/avatarViewState';
 import { Loader2, Sparkles, RefreshCw } from 'lucide-react';
 
 // Register PIXI ticker for Live2D animations
@@ -112,6 +113,7 @@ export const Live2DViewer: React.FC<Live2DViewerProps> = ({
   const isDraggingRef = useRef(false);
   const didDragRef = useRef(false);
   const dragStartRef = useRef({ x: 0, y: 0 });
+  const baseScaleRef = useRef(1);
 
   const modelRef = useRef<any>(null);
   const appRef = useRef<PIXI.Application | null>(null);
@@ -157,6 +159,27 @@ export const Live2DViewer: React.FC<Live2DViewerProps> = ({
     appRef.current = app;
 
     let cleanupAudio: (() => void) | null = null;
+    let saveTimer: number | null = null;
+
+    const saveViewState = () => {
+      const model = modelRef.current;
+      const width = container.clientWidth;
+      const height = container.clientHeight;
+      if (!model || width <= 0 || height <= 0 || baseScaleRef.current <= 0) return;
+      saveLive2DViewState(modelPath, {
+        xRatio: model.x / width,
+        yRatio: model.y / height,
+        zoom: model.scale.x / baseScaleRef.current,
+      });
+    };
+
+    const scheduleViewSave = () => {
+      if (saveTimer !== null) window.clearTimeout(saveTimer);
+      saveTimer = window.setTimeout(() => {
+        saveTimer = null;
+        saveViewState();
+      }, 150);
+    };
 
     const init = async () => {
       try {
@@ -190,11 +213,14 @@ export const Live2DViewer: React.FC<Live2DViewerProps> = ({
           (containerWidth * 0.85) / bounds.width,
           (containerHeight * 0.85) / bounds.height
         );
+        baseScaleRef.current = baseScale;
 
-        model.scale.set(baseScale);
+        const savedView = loadLive2DViewState(modelPath);
+
+        model.scale.set(baseScale * (savedView?.zoom ?? 1));
         model.anchor.set(0.5, 0.5);
-        model.x = containerWidth / 2;
-        model.y = containerHeight / 2 + containerHeight * 0.05;
+        model.x = containerWidth * (savedView?.xRatio ?? 0.5);
+        model.y = containerHeight * (savedView?.yRatio ?? 0.55);
 
         (app.stage as any).addChild(model);
 
@@ -306,6 +332,7 @@ export const Live2DViewer: React.FC<Live2DViewerProps> = ({
       // Browsers normally dispatch click immediately after pointerup. Clear the
       // guard on the next task as a fallback when a platform suppresses that click.
       if (didDragRef.current) {
+        scheduleViewSave();
         window.setTimeout(() => {
           didDragRef.current = false;
         }, 0);
@@ -316,8 +343,10 @@ export const Live2DViewer: React.FC<Live2DViewerProps> = ({
       e.preventDefault();
       if (!modelRef.current) return;
       const zoomFactor = e.deltaY < 0 ? 1.08 : 0.92;
-      modelRef.current.scale.x *= zoomFactor;
-      modelRef.current.scale.y *= zoomFactor;
+      const currentZoom = modelRef.current.scale.x / baseScaleRef.current;
+      const nextZoom = Math.min(8, Math.max(0.1, currentZoom * zoomFactor));
+      modelRef.current.scale.set(baseScaleRef.current * nextZoom);
+      scheduleViewSave();
     };
 
     container.addEventListener('click', handleCanvasClick);
@@ -329,6 +358,8 @@ export const Live2DViewer: React.FC<Live2DViewerProps> = ({
 
     return () => {
       isDisposed = true;
+      if (saveTimer !== null) window.clearTimeout(saveTimer);
+      saveViewState();
       if (cleanupAudio) cleanupAudio();
       container.removeEventListener('click', handleCanvasClick);
       container.removeEventListener('pointermove', handlePointerMove);
@@ -360,14 +391,10 @@ export const Live2DViewer: React.FC<Live2DViewerProps> = ({
   const handleResetView = () => {
     if (!modelRef.current || !containerRef.current) return;
     const container = containerRef.current;
-    const bounds = modelRef.current.getBounds();
-    const baseScale = Math.min(
-      (container.clientWidth * 0.85) / bounds.width,
-      (container.clientHeight * 0.85) / bounds.height
-    );
-    modelRef.current.scale.set(baseScale);
+    modelRef.current.scale.set(baseScaleRef.current);
     modelRef.current.x = container.clientWidth / 2;
     modelRef.current.y = container.clientHeight / 2 + container.clientHeight * 0.05;
+    saveLive2DViewState(modelPath, { xRatio: 0.5, yRatio: 0.55, zoom: 1 });
   };
 
   const handleTriggerRandomMotion = () => {

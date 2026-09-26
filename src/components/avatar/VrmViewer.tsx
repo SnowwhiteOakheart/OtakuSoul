@@ -4,8 +4,12 @@ import { GLTFLoader } from 'three/examples/jsm/loaders/GLTFLoader.js';
 import { OrbitControls } from 'three/examples/jsm/controls/OrbitControls.js';
 import { VRM, VRMLoaderPlugin, VRMUtils } from '@pixiv/three-vrm';
 import { api } from '../../services/api';
-import { Loader2, Smile, Frown, Angry, Sparkles, RefreshCcw } from 'lucide-react';
+import { Loader2, Smile, Frown, Angry, Sparkles, RefreshCcw, RotateCcw } from 'lucide-react';
 import { audioPlayer } from '../../services/audioPlayer';
+import { loadVrmViewState, saveVrmViewState } from '../../services/avatarViewState';
+
+const DEFAULT_CAMERA_POSITION: [number, number, number] = [0.0, 1.35, 1.0];
+const DEFAULT_CAMERA_TARGET: [number, number, number] = [0.0, 1.25, 0.0];
 
 interface VrmViewerProps {
   modelPath: string;
@@ -26,6 +30,7 @@ export const VrmViewer = ({
   const vrmRef = useRef<VRM | null>(null);
   const emotionRef = useRef(emotion);
   const isSpeakingRef = useRef(isSpeaking);
+  const resetViewRef = useRef<(() => void) | null>(null);
 
   useEffect(() => {
     emotionRef.current = currentEmotion;
@@ -59,7 +64,7 @@ export const VrmViewer = ({
       0.1,
       20.0
     );
-    camera.position.set(0.0, 1.35, 1.0);
+    camera.position.fromArray(DEFAULT_CAMERA_POSITION);
 
     const renderer = new THREE.WebGLRenderer({
       alpha: true,
@@ -75,13 +80,42 @@ export const VrmViewer = ({
 
     // Controls
     const controls = new OrbitControls(camera, renderer.domElement);
-    controls.target.set(0.0, 1.25, 0.0);
+    controls.target.fromArray(DEFAULT_CAMERA_TARGET);
     controls.enableDamping = true;
     controls.dampingFactor = 0.05;
     controls.minDistance = 0.4;
     controls.maxDistance = 2.5;
     controls.maxPolarAngle = Math.PI / 2 + 0.1;
+
+    const savedView = loadVrmViewState(modelPath);
+    if (savedView) {
+      camera.position.fromArray(savedView.camera);
+      controls.target.fromArray(savedView.target);
+    }
     controls.update();
+
+    let saveTimer: number | null = null;
+    const saveViewState = () => {
+      saveVrmViewState(modelPath, {
+        camera: [camera.position.x, camera.position.y, camera.position.z],
+        target: [controls.target.x, controls.target.y, controls.target.z],
+      });
+    };
+    const scheduleViewSave = () => {
+      if (saveTimer !== null) window.clearTimeout(saveTimer);
+      saveTimer = window.setTimeout(() => {
+        saveTimer = null;
+        saveViewState();
+      }, 200);
+    };
+    controls.addEventListener('change', scheduleViewSave);
+
+    resetViewRef.current = () => {
+      camera.position.fromArray(DEFAULT_CAMERA_POSITION);
+      controls.target.fromArray(DEFAULT_CAMERA_TARGET);
+      controls.update();
+      saveViewState();
+    };
 
     // 2. Lighting (Gentle anime lighting)
     const ambientLight = new THREE.AmbientLight(0xffffff, 0.85);
@@ -307,6 +341,11 @@ export const VrmViewer = ({
 
     return () => {
       isDisposed = true;
+      if (saveTimer !== null) window.clearTimeout(saveTimer);
+      saveViewState();
+      controls.removeEventListener('change', scheduleViewSave);
+      controls.dispose();
+      resetViewRef.current = null;
       cleanupAudio();
       cancelAnimationFrame(animationFrameId);
       window.removeEventListener('resize', handleResize);
@@ -337,6 +376,14 @@ export const VrmViewer = ({
           {error}
         </div>
       )}
+
+      <button
+        onClick={() => resetViewRef.current?.()}
+        className="absolute bottom-4 right-4 z-20 p-2 rounded-full bg-slate-900/80 border border-slate-700/60 text-slate-400 hover:text-purple-300 hover:bg-slate-800 backdrop-blur shadow-xl transition-colors"
+        title="3D-Ansicht zurücksetzen"
+      >
+        <RotateCcw className="w-3.5 h-3.5" />
+      </button>
 
       {/* Interactive Emotion Bar */}
       <div className="absolute bottom-4 left-1/2 -translate-x-1/2 flex items-center gap-1.5 p-1.5 rounded-full bg-slate-900/80 border border-slate-700/60 backdrop-blur z-20 shadow-xl">
