@@ -350,7 +350,39 @@ pub async fn list_available_voices(
     kokoro_voices_path: &str,
 ) -> Result<Vec<ScannedVoice>, String> {
     match engine {
-        "edge" => Ok(list_edge_tts_voices()),
+        "edge" => {
+            let url = format!(
+                "https://speech.platform.bing.com/consumer/speech/synthesize/readaloud/voices/list?trustedclienttoken={}",
+                EDGE_TTS_TRUSTED_CLIENT_TOKEN
+            );
+            match http_client(15)?.get(&url).send().await {
+                Ok(response) if response.status().is_success() => {
+                    let payload: serde_json::Value = response.json().await.unwrap_or_default();
+                    if let Some(arr) = payload.as_array() {
+                        let mut voices = Vec::new();
+                        for v in arr {
+                            if let (Some(id), Some(locale), Some(gender)) = (
+                                v.get("ShortName").and_then(|s| s.as_str()),
+                                v.get("Locale").and_then(|s| s.as_str()),
+                                v.get("Gender").and_then(|s| s.as_str())
+                            ) {
+                                // Extract a readable name from ShortName (e.g. "de-DE-KatjaNeural" -> "Katja")
+                                let name = id.split('-').last().unwrap_or(id).replace("Neural", "");
+                                voices.push(ScannedVoice {
+                                    id: id.to_string(),
+                                    name,
+                                    locale: locale.to_string(),
+                                    gender: gender.to_string(),
+                                });
+                            }
+                        }
+                        return Ok(voices);
+                    }
+                }
+                _ => {} // Fallback to hardcoded list on error
+            }
+            Ok(list_edge_tts_voices())
+        }
         "kokoro" => crate::modules::kokoro::list_voices(kokoro_voices_path),
         "elevenlabs" => {
             if elevenlabs_api_key.trim().is_empty() {
@@ -503,16 +535,27 @@ async fn synthesize_edge_tts_websocket(text: &str, voice_id: &str, rate: &str, p
             }
             Ok(Message::Text(txt)) => {
                 let txt_str: &str = &txt;
+                info!("Edge-TTS Message: {}", txt_str);
                 if txt_str.contains("Path:turn.end") {
                     break;
                 }
             }
-            Ok(Message::Close(_)) => break,
+            Ok(Message::Close(c)) => {
+                info!("Edge-TTS Closed: {:?}", c);
+                if let Some(close_frame) = c {
+                    if close_frame.reason.contains("Unsupported voice") {
+                        return Err(format!("Die ausgewählte Stimme wird von Microsoft nicht mehr unterstützt. Bitte wähle eine andere Stimme aus. (Details: {})", close_frame.reason));
+                    }
+                }
+                break;
+            }
             Err(e) => {
                 warn!("WebSocket-Fehler: {}", e);
                 break;
             }
-            _ => {}
+            _ => {
+                info!("Edge-TTS Other Message");
+            }
         }
     }
 
