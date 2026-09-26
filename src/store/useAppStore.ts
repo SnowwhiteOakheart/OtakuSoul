@@ -17,6 +17,10 @@ import {
   MemoryBackupInfo,
   SoulMemoryPipelineResult,
   StageState,
+  ScenePreview,
+  SceneDefinition,
+  SceneState,
+  StageTurnRequest,
   WorldState,
   CampaignClock,
   CombatCondition,
@@ -263,11 +267,28 @@ interface AppStoreState {
   restoreMemoryBackup: (backupFilePath: string) => Promise<void>;
   importSowFolder: (folderPath: string) => Promise<number>;
 
-  // Soul Stage Tabletop RPG (Phase 6)
+  // Soul Stage Tabletop RPG & Game Master (Phase 6 & 15)
   stageState: StageState | null;
+  stageScenes: ScenePreview[];
   lastDiceRoll: DiceRollResult | null;
   isRollingDice: boolean;
+  isProcessingStageTurn: boolean;
+  stageTurnMode: 'say' | 'do' | 'think' | 'whisper' | 'direct';
+  stageWhisperTarget: string;
+  stageForceActor: string;
   fetchStageState: () => Promise<void>;
+  fetchStageScenes: () => Promise<void>;
+  loadStageScene: (sceneId: string) => Promise<void>;
+  saveStageScene: (state: SceneState) => Promise<void>;
+  createStageScene: (definition: SceneDefinition) => Promise<SceneState | null>;
+  deleteStageScene: (sceneId: string) => Promise<void>;
+  exportStageMarkdown: (sceneId: string) => Promise<string | null>;
+  runStageTurn: (userInput: string, turnMode?: string, whisperTarget?: string, forceActor?: string) => Promise<void>;
+  undoStageTurn: () => Promise<void>;
+  restStageParty: (restType: 'short' | 'long') => Promise<void>;
+  setStageTurnMode: (mode: 'say' | 'do' | 'think' | 'whisper' | 'direct') => void;
+  setStageWhisperTarget: (target: string) => void;
+  setStageForceActor: (actor: string) => void;
   rollDice: (formula: string, targetDc?: number) => Promise<DiceRollResult | null>;
   updateWorldState: (world: WorldState) => Promise<void>;
   setClockProgress: (clockId: string, progress: number) => Promise<void>;
@@ -952,10 +973,15 @@ export const useAppStore = create<AppStoreState>((set, get) => ({
     }
   },
 
-  // Soul Stage (Phase 6)
+  // Soul Stage (Phase 6 & 15)
   stageState: null,
+  stageScenes: [],
   lastDiceRoll: null,
   isRollingDice: false,
+  isProcessingStageTurn: false,
+  stageTurnMode: 'say',
+  stageWhisperTarget: '',
+  stageForceActor: '',
 
   fetchStageState: async () => {
     try {
@@ -965,6 +991,118 @@ export const useAppStore = create<AppStoreState>((set, get) => ({
       console.error('Failed to fetch stage state:', e);
     }
   },
+
+  fetchStageScenes: async () => {
+    try {
+      const scenes = await api.listStageScenes();
+      set({ stageScenes: scenes });
+    } catch (e) {
+      console.error('Failed to fetch stage scenes:', e);
+    }
+  },
+
+  loadStageScene: async (sceneId: string) => {
+    try {
+      const sceneState = await api.loadStageScene(sceneId);
+      set({ stageState: sceneState });
+      await get().fetchStageScenes();
+    } catch (e) {
+      console.error('Failed to load stage scene:', e);
+      throw e;
+    }
+  },
+
+  saveStageScene: async (sceneState: SceneState) => {
+    try {
+      await api.saveStageScene(sceneState);
+      set({ stageState: sceneState });
+    } catch (e) {
+      console.error('Failed to save stage scene:', e);
+    }
+  },
+
+  createStageScene: async (definition: SceneDefinition) => {
+    try {
+      const sceneState = await api.createStageScene(definition);
+      set({ stageState: sceneState });
+      await get().fetchStageScenes();
+      return sceneState;
+    } catch (e) {
+      console.error('Failed to create stage scene:', e);
+      return null;
+    }
+  },
+
+  deleteStageScene: async (sceneId: string) => {
+    try {
+      await api.deleteStageScene(sceneId);
+      await get().fetchStageScenes();
+    } catch (e) {
+      console.error('Failed to delete stage scene:', e);
+    }
+  },
+
+  exportStageMarkdown: async (sceneId: string) => {
+    try {
+      return await api.exportStageMarkdown(sceneId);
+    } catch (e) {
+      console.error('Failed to export stage markdown:', e);
+      return null;
+    }
+  },
+
+  runStageTurn: async (userInput: string, turnMode?: string, whisperTarget?: string, forceActor?: string) => {
+    const current = get().stageState;
+    if (!current) return;
+    set({ isProcessingStageTurn: true });
+    try {
+      const mode = (turnMode || get().stageTurnMode) as any;
+      const target = whisperTarget !== undefined ? whisperTarget : (get().stageWhisperTarget || undefined);
+      const actor = forceActor !== undefined ? forceActor : (get().stageForceActor || undefined);
+      const req: StageTurnRequest = {
+        scene_id: current.definition.id,
+        user_input: userInput,
+        turn_mode: mode,
+        whisper_target: target || undefined,
+        force_next_actor: actor || undefined,
+      };
+      const updated = await api.runStageTurn(req);
+      set({ stageState: updated, isProcessingStageTurn: false });
+    } catch (e) {
+      console.error('Failed to run stage turn:', e);
+      set({ isProcessingStageTurn: false });
+      throw e;
+    }
+  },
+
+  undoStageTurn: async () => {
+    const current = get().stageState;
+    if (!current) return;
+    try {
+      const rolledBack = await api.undoStageTurn(current.definition.id);
+      set({ stageState: rolledBack });
+    } catch (e) {
+      console.error('Failed to undo stage turn:', e);
+    }
+  },
+
+  restStageParty: async (restType: 'short' | 'long') => {
+    const current = get().stageState;
+    if (!current) return;
+    set({ isProcessingStageTurn: true });
+    try {
+      const rested = await api.restStageParty(current.definition.id, restType);
+      set({ stageState: rested, isProcessingStageTurn: false });
+      soundFx.playDiceRoll();
+    } catch (e) {
+      console.error('Failed to rest party:', e);
+      set({ isProcessingStageTurn: false });
+    }
+  },
+
+  setStageTurnMode: (mode) => set({ stageTurnMode: mode }),
+  setStageWhisperTarget: (target) => set({ stageWhisperTarget: target }),
+  setStageForceActor: (actor) => set({ stageForceActor: actor }),
 
   rollDice: async (formula, targetDc) => {
     set({ isRollingDice: true });

@@ -347,10 +347,148 @@ export interface EncounterState {
   combat_log: string[];
 }
 
-export interface StageState {
+// Phase 15: Soul Stage (KI-Game-Master Orchestrator)
+export interface ScenePreview {
+  id: string;
+  title: string;
+  description: string;
+  party: string[];
+  location: string;
+  time_of_day: string;
+  gm_tone: string;
+  folder: string;
+  is_preset: boolean;
+  starting_bg: string;
+  last_played?: string | null;
+}
+
+export interface SceneDefinition {
+  id: string;
+  title: string;
+  description: string;
+  world_context: string;
+  starting_location: string;
+  time_of_day: string;
+  opening_narration: string;
+  first_message: string;
+  party: string[];
+  gm_tone: string;
+  narrator_style: string;
+  persona: string;
+  lorebook: string[];
+  solo_mode: boolean;
+  max_actor_depth: number;
+  dice_rolls_enabled: boolean;
+  starting_bg: string;
+  starting_ambient: string;
+  created_at: string;
+  last_played?: string | null;
+}
+
+export interface StoryArc {
+  id: string;
+  title: string;
+  description: string;
+  stage: number;
+  max_stage: number;
+  is_revealed: boolean;
+  is_resolved: boolean;
+}
+
+export interface InventoryItem {
+  id: string;
+  name: string;
+  description: string;
+  quantity: number;
+  item_type: string;
+}
+
+export interface TaggedChoice {
+  text: string;
+  badge?: string | null;
+  action_type?: string;
+}
+
+export interface DiceEventData {
+  type: 'dice_roll';
+  formula: string;
+  rolls: number[];
+  modifier: number;
+  total: number;
+  target_dc?: number | null;
+  passed?: boolean | null;
+  is_crit_success: boolean;
+  is_crit_fail: boolean;
+}
+
+export interface ClockUpdateData {
+  type: 'clock_update';
+  clock_id: string;
+  clock_name: string;
+  delta: number;
+  current: number;
+  max: number;
+}
+
+export interface RestEventData {
+  type: 'rest';
+  rest_type: string;
+  recovered_hp: number;
+  recovered_stress: number;
+  campfire_note: string;
+}
+
+export interface DiscoveryEventData {
+  type: 'discovery';
+  text: string;
+}
+
+export interface ConsequenceEventData {
+  type: 'consequence';
+  text: string;
+}
+
+export type StageEventCard =
+  | DiceEventData
+  | ClockUpdateData
+  | RestEventData
+  | DiscoveryEventData
+  | ConsequenceEventData;
+
+export interface SceneTurnMessage {
+  id: string;
+  sender_id: string;
+  sender_name: string;
+  sender_role: 'gm' | 'player' | 'companion' | 'npc' | string;
+  avatar_url?: string | null;
+  content: string;
+  turn_mode: 'say' | 'do' | 'think' | 'whisper' | 'direct' | string;
+  whisper_target?: string | null;
+  event_card?: StageEventCard | null;
+  timestamp: number;
+}
+
+export interface SceneState {
+  definition: SceneDefinition;
   world: WorldState;
   clocks: CampaignClock[];
-  encounter: EncounterState;
+  combat: EncounterState;
+  encounter?: EncounterState;
+  arcs: StoryArc[];
+  inventory: InventoryItem[];
+  chat_log: SceneTurnMessage[];
+  pending_choices: TaggedChoice[];
+  current_turn_actor: string;
+}
+
+export type StageState = SceneState;
+
+export interface StageTurnRequest {
+  scene_id: string;
+  user_input: string;
+  turn_mode: 'say' | 'do' | 'think' | 'whisper' | 'direct' | string;
+  whisper_target?: string | null;
+  force_next_actor?: string | null;
 }
 
 // Phase 7: Soul Companion & Tool Calling

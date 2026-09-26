@@ -21,6 +21,10 @@ import {
   SoulMemoryPipelineResult,
   DiceRollResult,
   StageState,
+  ScenePreview,
+  SceneDefinition,
+  SceneState,
+  StageTurnRequest,
   WorldState,
   CampaignClock,
   CombatCondition,
@@ -302,6 +306,45 @@ export const api = {
 
   getStageState: async (): Promise<StageState> => {
     return await invoke<StageState>('get_stage_state');
+  },
+
+  listStageScenes: async (): Promise<ScenePreview[]> => {
+    return await invoke<ScenePreview[]>('list_stage_scenes');
+  },
+
+  loadStageScene: async (sceneId: string): Promise<SceneState> => {
+    return await invoke<SceneState>('load_stage_scene', { sceneId });
+  },
+
+  saveStageScene: async (sceneState: SceneState): Promise<void> => {
+    return await invoke<void>('save_stage_scene', { sceneState });
+  },
+
+  createStageScene: async (definition: SceneDefinition): Promise<SceneState> => {
+    return await invoke<SceneState>('create_stage_scene', { definition });
+  },
+
+  deleteStageScene: async (sceneId: string): Promise<void> => {
+    return await invoke<void>('delete_stage_scene', { sceneId });
+  },
+
+  exportStageMarkdown: async (sceneId: string): Promise<string> => {
+    return await invoke<string>('export_stage_markdown', { sceneId });
+  },
+
+  runStageTurn: async (request: StageTurnRequest): Promise<SceneState> => {
+    return await invoke<SceneState>('run_stage_turn', { request });
+  },
+
+  undoStageTurn: async (sceneId: string): Promise<SceneState> => {
+    return await invoke<SceneState>('undo_stage_turn', { sceneId });
+  },
+
+  restStageParty: async (
+    sceneId: string,
+    restType: string
+  ): Promise<SceneState> => {
+    return await invoke<SceneState>('rest_stage_party', { sceneId, restType });
   },
 
   updateWorldState: async (world: WorldState): Promise<void> => {

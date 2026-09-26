@@ -1,0 +1,224 @@
+import React, { useState } from 'react';
+import { useAppStore } from '../../store/useAppStore';
+import {
+  MessageSquare,
+  Sword,
+  Brain,
+  Clapperboard,
+  Ear,
+  Send,
+  RotateCcw,
+  Sparkles,
+  Users,
+  Loader2,
+} from 'lucide-react';
+import { TaggedChoice } from '../../types';
+
+export const TurnControlBar: React.FC = () => {
+  const {
+    stageState,
+    stageTurnMode,
+    setStageTurnMode,
+    stageWhisperTarget,
+    setStageWhisperTarget,
+    stageForceActor,
+    setStageForceActor,
+    runStageTurn,
+    undoStageTurn,
+    isProcessingStageTurn,
+  } = useAppStore();
+
+  const [input, setInput] = useState('');
+
+  if (!stageState) return null;
+
+  const choices = stageState.pending_choices || [];
+  const party = stageState.definition.party || [];
+
+  const handleSend = async (e?: React.FormEvent) => {
+    if (e) e.preventDefault();
+    const trimmed = input.trim();
+    if (!trimmed || isProcessingStageTurn) return;
+
+    setInput('');
+    try {
+      await runStageTurn(trimmed);
+    } catch (err) {
+      console.error(err);
+    }
+  };
+
+  const handleChoiceClick = async (choice: TaggedChoice) => {
+    if (isProcessingStageTurn) return;
+    const mode = choice.action_type || 'say';
+    setStageTurnMode(mode as any);
+    try {
+      await runStageTurn(choice.text, mode);
+    } catch (err) {
+      console.error(err);
+    }
+  };
+
+  const handleKeyDown = (e: React.KeyboardEvent<HTMLTextAreaElement>) => {
+    if (e.key === 'Enter' && !e.shiftKey) {
+      e.preventDefault();
+      handleSend();
+    }
+  };
+
+  const modeButtons = [
+    { mode: 'say', label: 'Sagen', icon: MessageSquare, color: 'text-blue-400', desc: 'Wörtliche Rede deines Charakters' },
+    { mode: 'do', label: 'Tun', icon: Sword, color: 'text-amber-400', desc: 'Physische Handlung / Taktische Aktion' },
+    { mode: 'think', label: 'Denken', icon: Brain, color: 'text-purple-400', desc: 'Innere Gedanken & Monologe' },
+    { mode: 'direct', label: 'Regie', icon: Clapperboard, color: 'text-rose-400', desc: 'Metaspiel-Anweisung an den GM' },
+    { mode: 'whisper', label: 'Flüstern', icon: Ear, color: 'text-emerald-400', desc: 'Geheime Botschaft an ein Gruppenmitglied' },
+  ] as const;
+
+  return (
+    <div className="bg-slate-900/95 border-t border-slate-800 p-3 sm:p-4 backdrop-blur-md space-y-3">
+      {/* 1. Tagged Choices Pills */}
+      {choices.length > 0 && (
+        <div className="flex flex-wrap items-center gap-2 pt-0.5 pb-1">
+          <span className="text-[11px] font-bold text-slate-400 flex items-center gap-1 uppercase tracking-wider">
+            <Sparkles className="w-3 h-3 text-purple-400" />
+            Vorschläge:
+          </span>
+          {choices.map((choice, idx) => {
+            const isCombat = choice.action_type === 'do';
+            const isWhisper = choice.action_type === 'whisper';
+
+            return (
+              <button
+                key={idx}
+                onClick={() => handleChoiceClick(choice)}
+                disabled={isProcessingStageTurn}
+                className={`flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-medium border transition-all ${
+                  isCombat
+                    ? 'bg-amber-950/40 border-amber-600/50 hover:bg-amber-900/60 text-amber-200'
+                    : isWhisper
+                    ? 'bg-emerald-950/40 border-emerald-600/50 hover:bg-emerald-900/60 text-emerald-200'
+                    : 'bg-purple-950/40 border-purple-600/50 hover:bg-purple-900/60 text-purple-200'
+                } disabled:opacity-50`}
+              >
+                <span>{choice.text}</span>
+                {choice.badge && (
+                  <span className="text-[10px] px-1.5 py-0.2 rounded bg-slate-900 border border-slate-700 font-mono font-bold text-amber-300">
+                    {choice.badge}
+                  </span>
+                )}
+              </button>
+            );
+          })}
+        </div>
+      )}
+
+      {/* 2. Mode Selector & Next Actor dropdown */}
+      <div className="flex flex-wrap items-center justify-between gap-2 text-xs">
+        {/* Modes */}
+        <div className="flex items-center gap-1 p-1 rounded-xl bg-slate-950/80 border border-slate-800">
+          {modeButtons.map(({ mode, label, icon: Icon, color, desc }) => {
+            const isActive = stageTurnMode === mode;
+            return (
+              <button
+                key={mode}
+                onClick={() => setStageTurnMode(mode)}
+                title={desc}
+                className={`flex items-center gap-1.5 px-2.5 py-1 rounded-lg transition-all font-semibold ${
+                  isActive
+                    ? 'bg-purple-600 text-white shadow-md'
+                    : 'text-slate-400 hover:text-slate-200 hover:bg-slate-900'
+                }`}
+              >
+                <Icon className={`w-3.5 h-3.5 ${isActive ? 'text-white' : color}`} />
+                <span>{label}</span>
+              </button>
+            );
+          })}
+        </div>
+
+        {/* Whisper Target & Next Actor */}
+        <div className="flex items-center gap-2">
+          {stageTurnMode === 'whisper' && (
+            <div className="flex items-center gap-1.5 bg-slate-950 px-2.5 py-1 rounded-lg border border-slate-800">
+              <Ear className="w-3.5 h-3.5 text-emerald-400" />
+              <input
+                type="text"
+                placeholder="Ziel (z. B. Ayu)..."
+                value={stageWhisperTarget}
+                onChange={(e) => setStageWhisperTarget(e.target.value)}
+                className="bg-transparent text-xs text-emerald-300 focus:outline-none w-28"
+              />
+            </div>
+          )}
+
+          {party.length > 0 && (
+            <div className="flex items-center gap-1.5 bg-slate-950 px-2.5 py-1 rounded-lg border border-slate-800">
+              <Users className="w-3.5 h-3.5 text-slate-400" />
+              <select
+                value={stageForceActor}
+                onChange={(e) => setStageForceActor(e.target.value)}
+                className="bg-transparent text-xs text-slate-300 focus:outline-none"
+              >
+                <option value="">Nächster Sprecher: Automatisch</option>
+                {party.map((p) => (
+                  <option key={p} value={p}>
+                    Nächster: {p}
+                  </option>
+                ))}
+              </select>
+            </div>
+          )}
+
+          {/* Undo Turn Button */}
+          <button
+            onClick={() => undoStageTurn()}
+            disabled={isProcessingStageTurn}
+            className="flex items-center gap-1 px-2.5 py-1 rounded-lg bg-slate-800/80 hover:bg-slate-700 text-slate-300 hover:text-white border border-slate-700 transition disabled:opacity-50"
+            title="Letzten Zug zurücknehmen (Snapshot Undo)"
+          >
+            <RotateCcw className="w-3.5 h-3.5" />
+            <span className="hidden sm:inline">Rückgängig</span>
+          </button>
+        </div>
+      </div>
+
+      {/* 3. Text Input & Send */}
+      <form onSubmit={handleSend} className="relative flex items-end gap-2">
+        <textarea
+          rows={2}
+          value={input}
+          onChange={(e) => setInput(e.target.value)}
+          onKeyDown={handleKeyDown}
+          placeholder={
+            stageTurnMode === 'say'
+              ? 'Was sagst du? (Enter zum Senden, Shift+Enter für neue Zeile)'
+              : stageTurnMode === 'do'
+              ? 'Was tust du? (z.B. "Ich untersuche das versiegelte Tor auf Fallen")'
+              : stageTurnMode === 'think'
+              ? 'Deine geheimen Gedanken...'
+              : stageTurnMode === 'direct'
+              ? 'Anweisung an den Spielleiter (z.B. "Lass ein Gewitter aufziehen")'
+              : 'Flüstere heimlich deinem Gefährten zu...'
+          }
+          disabled={isProcessingStageTurn}
+          className="flex-1 bg-slate-950/90 border border-slate-700/80 rounded-xl px-3.5 py-2.5 text-xs text-slate-100 placeholder-slate-500 focus:outline-none focus:border-purple-500 resize-none shadow-inner"
+        />
+
+        <button
+          type="submit"
+          disabled={isProcessingStageTurn || !input.trim()}
+          className="h-10 px-4 rounded-xl bg-purple-600 hover:bg-purple-500 text-white font-semibold flex items-center justify-center gap-1.5 shadow-lg shadow-purple-950/50 transition disabled:opacity-40 disabled:hover:bg-purple-600"
+        >
+          {isProcessingStageTurn ? (
+            <Loader2 className="w-4 h-4 animate-spin" />
+          ) : (
+            <>
+              <Send className="w-4 h-4" />
+              <span className="hidden sm:inline text-xs">Zug senden</span>
+            </>
+          )}
+        </button>
+      </form>
+    </div>
+  );
+};

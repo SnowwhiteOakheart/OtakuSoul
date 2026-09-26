@@ -1,8 +1,12 @@
-import { useEffect, useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import { useAppStore } from '../../store/useAppStore';
 import { ClockWidget } from './ClockWidget';
 import { DiceRoller } from './DiceRoller';
 import { EncounterTracker } from './EncounterTracker';
+import { PartyHeader } from './PartyHeader';
+import { StageChatLog } from './StageChatLog';
+import { TurnControlBar } from './TurnControlBar';
+import { SceneLobbyModal } from './SceneLobbyModal';
 import { soundFx } from '../../services/soundFx';
 import {
   Compass,
@@ -13,9 +17,14 @@ import {
   Edit3,
   Check,
   Radio,
+  Download,
+  Scroll,
+  Swords,
+  BookOpen,
+  MapPin,
 } from 'lucide-react';
 
-export const StageView = () => {
+export const StageView: React.FC = () => {
   const {
     stageState,
     fetchStageState,
@@ -23,7 +32,11 @@ export const StageView = () => {
     setClockProgress,
     addClock,
     deleteClock,
+    exportStageMarkdown,
   } = useAppStore();
+
+  const [activeTab, setActiveTab] = useState<'adventure' | 'tactics'>('adventure');
+  const [showLobbyModal, setShowLobbyModal] = useState(false);
 
   const [isEditingWorld, setIsEditingWorld] = useState(false);
   const [locationInput, setLocationInput] = useState('');
@@ -95,229 +108,325 @@ export const StageView = () => {
     setNewClockName('');
   };
 
+  const handleExportMarkdown = async () => {
+    if (!stageState) return;
+    const md = await exportStageMarkdown(stageState.definition.id);
+    if (md) {
+      const blob = new Blob([md], { type: 'text/markdown;charset=utf-8;' });
+      const url = URL.createObjectURL(blob);
+      const link = document.createElement('a');
+      link.href = url;
+      link.download = `${stageState.definition.title.toLowerCase().replace(/\s+/g, '_')}_abenteuer.md`;
+      link.click();
+      URL.revokeObjectURL(url);
+    }
+  };
+
   const world = stageState?.world;
+  const currentScene = stageState?.definition;
 
   return (
-    <div className="flex-1 flex flex-col h-full bg-slate-950 overflow-y-auto p-4 lg:p-6 space-y-6">
-      {/* 1. World & Atmosphere Banner */}
-      <div className="p-4 sm:p-5 rounded-2xl bg-gradient-to-r from-slate-900/90 via-purple-950/20 to-slate-900/90 border border-slate-800 shadow-2xl backdrop-blur relative">
-        <div className="flex flex-wrap items-center justify-between gap-4 border-b border-slate-800/80 pb-3.5 mb-3.5">
-          <div className="flex items-center gap-3">
-            <div className="p-2.5 rounded-xl bg-purple-500/10 border border-purple-500/20 text-purple-400">
-              <Compass className="w-6 h-6" />
-            </div>
-            <div>
-              <h2 className="text-base font-bold text-slate-100 flex items-center gap-2">
-                Soul Stage: Spielleiter & Abenteuer-Bühne
-                <span className="text-[10px] px-2 py-0.5 rounded-full bg-purple-900/60 border border-purple-500/30 text-purple-300 font-mono">
-                  Tabletop Core
-                </span>
-              </h2>
-              <p className="text-xs text-slate-400">
-                Atmosphäre, Kampagnen-Clocks, Deterministische Würfel & Taktischer Kampf
-              </p>
-            </div>
+    <div className="flex-1 flex flex-col h-full bg-slate-950 overflow-hidden relative">
+      {/* 1. Universal Top Header Bar */}
+      <div className="bg-slate-900/90 border-b border-slate-800 px-4 py-2.5 flex flex-wrap items-center justify-between gap-3 shadow-md z-10 backdrop-blur-md">
+        {/* Left: Active Scene & Location Info */}
+        <div className="flex items-center gap-3">
+          <div className="p-2 rounded-xl bg-purple-500/10 border border-purple-500/20 text-purple-400">
+            <Compass className="w-5 h-5" />
           </div>
 
-          {/* Sound Synthesizer Controls */}
-          <div className="flex items-center gap-2">
-            <button
-              onClick={handleToggleAmbiance}
-              className={`flex items-center gap-2 px-3 py-1.5 rounded-xl text-xs font-semibold border transition ${
-                isAmbianceActive
-                  ? 'bg-amber-600/30 text-amber-200 border-amber-500/50 shadow-md shadow-amber-950/40'
-                  : 'bg-slate-800/80 text-slate-400 border-slate-700 hover:text-slate-200'
-              }`}
-            >
-              <Radio className={`w-3.5 h-3.5 ${isAmbianceActive ? 'animate-spin' : ''}`} />
-              <span>{isAmbianceActive ? 'Lagerfeuer-Atmosphäre Aktiv' : 'Atmosphäre Starten'}</span>
-              {isAmbianceActive && (
-                <span className="flex gap-0.5 items-end h-3">
-                  <span className="w-0.5 h-2 bg-amber-400 animate-pulse" />
-                  <span className="w-0.5 h-3 bg-amber-400 animate-pulse delay-75" />
-                  <span className="w-0.5 h-1.5 bg-amber-400 animate-pulse delay-150" />
+          <div>
+            <div className="flex items-center gap-2">
+              <h2 className="text-sm font-bold text-slate-100 truncate max-w-[220px] sm:max-w-md">
+                {currentScene?.title || 'Soul Stage: KI-Game-Master'}
+              </h2>
+              {currentScene?.gm_tone && (
+                <span className="text-[10px] px-2 py-0.2 rounded-full bg-purple-950/80 border border-purple-500/30 text-purple-300 font-mono">
+                  {currentScene.gm_tone}
                 </span>
               )}
-            </button>
-
-            <button
-              onClick={handleToggleMute}
-              className={`p-2 rounded-xl border transition ${
-                isMuted
-                  ? 'bg-rose-950/40 text-rose-400 border-rose-500/40'
-                  : 'bg-slate-800/80 text-slate-300 border-slate-700 hover:text-white'
-              }`}
-              title={isMuted ? 'Ton aktivieren' : 'Stummschalten'}
-            >
-              {isMuted ? <VolumeX className="w-4 h-4" /> : <Volume2 className="w-4 h-4" />}
-            </button>
-
-            <button
-              onClick={() => setIsEditingWorld(!isEditingWorld)}
-              className="p-2 rounded-xl bg-slate-800/80 hover:bg-slate-700 text-slate-300 border border-slate-700 transition"
-              title="Weltzustand bearbeiten"
-            >
-              <Edit3 className="w-4 h-4" />
-            </button>
+            </div>
+            <div className="flex items-center gap-2 text-xs text-slate-400">
+              <span className="flex items-center gap-1 truncate max-w-[180px]">
+                <MapPin className="w-3 h-3 text-slate-500" />
+                {world?.location || currentScene?.starting_location || 'Unbekannter Ort'}
+              </span>
+              <span>•</span>
+              <span className="text-purple-300">
+                {world?.time_of_day || currentScene?.time_of_day || 'Dämmerung'}
+              </span>
+            </div>
           </div>
         </div>
 
-        {/* World State Overview or Editor */}
-        {!isEditingWorld ? (
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3 text-xs">
-            <div className="p-3 rounded-xl bg-slate-950/50 border border-slate-800/60">
-              <span className="text-[11px] text-slate-400 block mb-0.5">Aktueller Ort</span>
-              <span className="font-bold text-slate-200 line-clamp-1">
-                {world?.location || 'Unbekannt'}
-              </span>
-            </div>
+        {/* Center: Tabs Switcher (Adventure vs Tactics) */}
+        <div className="flex items-center gap-1 p-1 rounded-xl bg-slate-950/80 border border-slate-800 text-xs">
+          <button
+            onClick={() => setActiveTab('adventure')}
+            className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg font-bold transition ${
+              activeTab === 'adventure'
+                ? 'bg-purple-600 text-white shadow-md'
+                : 'text-slate-400 hover:text-slate-200'
+            }`}
+          >
+            <Scroll className="w-3.5 h-3.5" />
+            <span>Abenteuer & Spielleiter</span>
+          </button>
 
-            <div className="p-3 rounded-xl bg-slate-950/50 border border-slate-800/60">
-              <span className="text-[11px] text-slate-400 block mb-0.5">Tageszeit & Wetter</span>
-              <span className="font-bold text-purple-200 line-clamp-1">
-                {world?.time_of_day} • {world?.weather}
-              </span>
-            </div>
+          <button
+            onClick={() => setActiveTab('tactics')}
+            className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg font-bold transition ${
+              activeTab === 'tactics'
+                ? 'bg-purple-600 text-white shadow-md'
+                : 'text-slate-400 hover:text-slate-200'
+            }`}
+          >
+            <Swords className="w-3.5 h-3.5" />
+            <span>Taktik, Clocks & Würfel</span>
+          </button>
+        </div>
 
-            <div className="p-3 rounded-xl bg-slate-950/50 border border-slate-800/60 flex items-center justify-between">
-              <div>
-                <span className="text-[11px] text-slate-400 block mb-0.5">Gefahrenstufe</span>
-                <span className="font-bold text-slate-200">Stufe {world?.danger_level} von 5</span>
-              </div>
-              <div className="flex gap-1 text-amber-500">
-                {Array.from({ length: world?.danger_level || 1 }).map((_, i) => (
-                  <Flame key={i} className="w-3.5 h-3.5 fill-amber-500/40" />
-                ))}
-              </div>
-            </div>
+        {/* Right: Scene Lobby, Export & Ambiance Controls */}
+        <div className="flex items-center gap-2">
+          <button
+            onClick={() => setShowLobbyModal(true)}
+            className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-purple-600/20 hover:bg-purple-600/30 text-purple-300 text-xs font-semibold border border-purple-500/30 transition"
+          >
+            <BookOpen className="w-3.5 h-3.5" />
+            <span>Szenen-Lobby</span>
+          </button>
 
-            <div className="p-3 rounded-xl bg-slate-950/50 border border-slate-800/60 sm:col-span-2 lg:col-span-1">
-              <span className="text-[11px] text-slate-400 block mb-0.5">Aktuelle Quest / Fokus</span>
-              <span className="font-semibold text-slate-300 line-clamp-1">
-                {world?.active_quest}
-              </span>
-            </div>
-          </div>
-        ) : (
-          <div className="p-4 rounded-xl bg-slate-950/80 border border-purple-500/40 space-y-3">
-            <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
-              <div>
-                <label className="text-[11px] text-slate-400 block mb-1">Ort</label>
-                <input
-                  type="text"
-                  value={locationInput}
-                  onChange={(e) => setLocationInput(e.target.value)}
-                  className="w-full px-3 py-1.5 bg-slate-900 border border-slate-700 rounded-lg text-xs text-slate-200 focus:outline-none focus:border-purple-500"
-                />
-              </div>
-              <div>
-                <label className="text-[11px] text-slate-400 block mb-1">Tageszeit</label>
-                <input
-                  type="text"
-                  value={timeInput}
-                  onChange={(e) => setTimeInput(e.target.value)}
-                  className="w-full px-3 py-1.5 bg-slate-900 border border-slate-700 rounded-lg text-xs text-slate-200 focus:outline-none focus:border-purple-500"
-                />
-              </div>
-              <div>
-                <label className="text-[11px] text-slate-400 block mb-1">Wetter</label>
-                <input
-                  type="text"
-                  value={weatherInput}
-                  onChange={(e) => setWeatherInput(e.target.value)}
-                  className="w-full px-3 py-1.5 bg-slate-900 border border-slate-700 rounded-lg text-xs text-slate-200 focus:outline-none focus:border-purple-500"
-                />
-              </div>
-            </div>
+          <button
+            onClick={handleExportMarkdown}
+            title="Abenteuer-Protokoll als Markdown exportieren"
+            className="p-2 rounded-xl bg-slate-800/80 hover:bg-slate-700 text-slate-300 hover:text-white border border-slate-700 transition"
+          >
+            <Download className="w-4 h-4" />
+          </button>
 
-            <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
-              <div className="sm:col-span-2">
-                <label className="text-[11px] text-slate-400 block mb-1">Quest / Ziel</label>
-                <input
-                  type="text"
-                  value={questInput}
-                  onChange={(e) => setQuestInput(e.target.value)}
-                  className="w-full px-3 py-1.5 bg-slate-900 border border-slate-700 rounded-lg text-xs text-slate-200 focus:outline-none focus:border-purple-500"
-                />
-              </div>
-              <div>
-                <label className="text-[11px] text-slate-400 block mb-1">
-                  Gefahrenstufe (1-5)
-                </label>
-                <input
-                  type="number"
-                  min={1}
-                  max={5}
-                  value={dangerInput}
-                  onChange={(e) => setDangerInput(parseInt(e.target.value) || 1)}
-                  className="w-full px-3 py-1.5 bg-slate-900 border border-slate-700 rounded-lg text-xs text-slate-200 focus:outline-none focus:border-purple-500"
-                />
-              </div>
-            </div>
+          {/* Sound Synthesizer Controls */}
+          <button
+            onClick={handleToggleAmbiance}
+            className={`flex items-center gap-1.5 px-2.5 py-1.5 rounded-xl text-xs font-semibold border transition ${
+              isAmbianceActive
+                ? 'bg-amber-600/30 text-amber-200 border-amber-500/50 shadow-md shadow-amber-950/40'
+                : 'bg-slate-800/80 text-slate-400 border-slate-700 hover:text-slate-200'
+            }`}
+            title="Lagerfeuer-Synthesizer ein-/ausschalten"
+          >
+            <Radio className={`w-3.5 h-3.5 ${isAmbianceActive ? 'animate-spin' : ''}`} />
+            <span className="hidden md:inline">
+              {isAmbianceActive ? 'Lagerfeuer Aktiv' : 'Atmosphäre'}
+            </span>
+          </button>
 
-            <div className="flex justify-end gap-2 pt-1">
-              <button
-                onClick={() => setIsEditingWorld(false)}
-                className="px-3 py-1.5 rounded-lg bg-slate-800 text-slate-300 text-xs"
-              >
-                Abbrechen
-              </button>
-              <button
-                onClick={handleSaveWorld}
-                className="px-4 py-1.5 rounded-lg bg-purple-600 hover:bg-purple-500 text-white text-xs font-semibold flex items-center gap-1"
-              >
-                <Check className="w-3.5 h-3.5" />
-                Übernehmen
-              </button>
-            </div>
-          </div>
-        )}
+          <button
+            onClick={handleToggleMute}
+            className={`p-2 rounded-xl border transition ${
+              isMuted
+                ? 'bg-rose-950/40 text-rose-400 border-rose-500/40'
+                : 'bg-slate-800/80 text-slate-300 border-slate-700 hover:text-white'
+            }`}
+            title={isMuted ? 'Ton aktivieren' : 'Stummschalten'}
+          >
+            {isMuted ? <VolumeX className="w-4 h-4" /> : <Volume2 className="w-4 h-4" />}
+          </button>
+        </div>
       </div>
 
-      {/* 2. Middle Grid: Campaign Clocks & Dice Roller */}
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-        {/* Left Column: Campaign Clocks */}
-        <div className="p-4 rounded-2xl bg-slate-900/80 border border-slate-800 shadow-xl space-y-4">
-          <div className="flex items-center justify-between border-b border-slate-800 pb-3">
-            <div>
-              <h3 className="text-sm font-bold text-slate-100">Kampagnen-Clocks (Spannungs-Uhren)</h3>
-              <p className="text-[11px] text-slate-400">
-                Klicke auf Segmente, um Fortschritt oder Bedrohung zu steigern
-              </p>
+      {/* 2. Main Body: Switchable Tab Views */}
+      {activeTab === 'adventure' ? (
+        <div className="flex-1 flex flex-col h-full overflow-hidden">
+          {/* Party Header Bar with HP & Stress */}
+          <PartyHeader />
+
+          {/* Interactive Chat Log */}
+          <StageChatLog />
+
+          {/* Turn Control Bar (Mode switcher, choice pills, inputs) */}
+          <TurnControlBar />
+        </div>
+      ) : (
+        /* Tactical Overview: Clocks, Dice & Encounters */
+        <div className="flex-1 overflow-y-auto p-4 lg:p-6 space-y-6">
+          {/* World & Atmosphere Banner */}
+          <div className="p-4 sm:p-5 rounded-2xl bg-gradient-to-r from-slate-900/90 via-purple-950/20 to-slate-900/90 border border-slate-800 shadow-2xl backdrop-blur relative">
+            <div className="flex flex-wrap items-center justify-between gap-4 border-b border-slate-800/80 pb-3 mb-3">
+              <div>
+                <h3 className="text-sm font-bold text-slate-100 flex items-center gap-2">
+                  Weltzustand & Atmosphäre
+                </h3>
+                <p className="text-xs text-slate-400">
+                  Wetter, Zeit und Gefahrenstufe beeinflussen Proben und Story-Ereignisse
+                </p>
+              </div>
+
+              <button
+                onClick={() => setIsEditingWorld(!isEditingWorld)}
+                className="p-2 rounded-xl bg-slate-800/80 hover:bg-slate-700 text-slate-300 border border-slate-700 transition"
+                title="Weltzustand bearbeiten"
+              >
+                <Edit3 className="w-4 h-4" />
+              </button>
             </div>
-            <button
-              onClick={() => setShowClockModal(true)}
-              className="px-3 py-1.5 rounded-lg bg-purple-600/30 hover:bg-purple-600/50 text-purple-200 text-xs font-semibold flex items-center gap-1.5 border border-purple-500/40 transition"
-            >
-              <Plus className="w-3.5 h-3.5" />
-              Neue Uhr
-            </button>
-          </div>
 
-          <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
-            {stageState?.clocks.map((clock) => (
-              <ClockWidget
-                key={clock.id}
-                clock={clock}
-                onUpdateProgress={(id, val) => setClockProgress(id, val)}
-                onDelete={(id) => deleteClock(id)}
-              />
-            ))}
+            {/* World State Display or Edit */}
+            {!isEditingWorld ? (
+              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3 text-xs">
+                <div className="p-3 rounded-xl bg-slate-950/50 border border-slate-800/60">
+                  <span className="text-[11px] text-slate-400 block mb-0.5">Aktueller Ort</span>
+                  <span className="font-bold text-slate-200 line-clamp-1">
+                    {world?.location || 'Unbekannt'}
+                  </span>
+                </div>
 
-            {(!stageState?.clocks || stageState.clocks.length === 0) && (
-              <div className="col-span-full p-8 text-center text-xs text-slate-500 italic">
-                Keine aktiven Kampagnen-Clocks vorhanden.
+                <div className="p-3 rounded-xl bg-slate-950/50 border border-slate-800/60">
+                  <span className="text-[11px] text-slate-400 block mb-0.5">Tageszeit & Wetter</span>
+                  <span className="font-bold text-purple-200 line-clamp-1">
+                    {world?.time_of_day} • {world?.weather}
+                  </span>
+                </div>
+
+                <div className="p-3 rounded-xl bg-slate-950/50 border border-slate-800/60 flex items-center justify-between">
+                  <div>
+                    <span className="text-[11px] text-slate-400 block mb-0.5">Gefahrenstufe</span>
+                    <span className="font-bold text-slate-200">Stufe {world?.danger_level} von 5</span>
+                  </div>
+                  <div className="flex gap-1 text-amber-500">
+                    {Array.from({ length: world?.danger_level || 1 }).map((_, i) => (
+                      <Flame key={i} className="w-3.5 h-3.5 fill-amber-500/40" />
+                    ))}
+                  </div>
+                </div>
+
+                <div className="p-3 rounded-xl bg-slate-950/50 border border-slate-800/60 sm:col-span-2 lg:col-span-1">
+                  <span className="text-[11px] text-slate-400 block mb-0.5">Aktuelle Quest / Fokus</span>
+                  <span className="font-semibold text-slate-300 line-clamp-1">
+                    {world?.active_quest}
+                  </span>
+                </div>
+              </div>
+            ) : (
+              <div className="p-4 rounded-xl bg-slate-950/80 border border-purple-500/40 space-y-3">
+                <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+                  <div>
+                    <label className="text-[11px] text-slate-400 block mb-1">Ort</label>
+                    <input
+                      type="text"
+                      value={locationInput}
+                      onChange={(e) => setLocationInput(e.target.value)}
+                      className="w-full px-3 py-1.5 bg-slate-900 border border-slate-700 rounded-lg text-xs text-slate-200 focus:outline-none focus:border-purple-500"
+                    />
+                  </div>
+                  <div>
+                    <label className="text-[11px] text-slate-400 block mb-1">Tageszeit</label>
+                    <input
+                      type="text"
+                      value={timeInput}
+                      onChange={(e) => setTimeInput(e.target.value)}
+                      className="w-full px-3 py-1.5 bg-slate-900 border border-slate-700 rounded-lg text-xs text-slate-200 focus:outline-none focus:border-purple-500"
+                    />
+                  </div>
+                  <div>
+                    <label className="text-[11px] text-slate-400 block mb-1">Wetter</label>
+                    <input
+                      type="text"
+                      value={weatherInput}
+                      onChange={(e) => setWeatherInput(e.target.value)}
+                      className="w-full px-3 py-1.5 bg-slate-900 border border-slate-700 rounded-lg text-xs text-slate-200 focus:outline-none focus:border-purple-500"
+                    />
+                  </div>
+                </div>
+
+                <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+                  <div className="sm:col-span-2">
+                    <label className="text-[11px] text-slate-400 block mb-1">Quest / Ziel</label>
+                    <input
+                      type="text"
+                      value={questInput}
+                      onChange={(e) => setQuestInput(e.target.value)}
+                      className="w-full px-3 py-1.5 bg-slate-900 border border-slate-700 rounded-lg text-xs text-slate-200 focus:outline-none focus:border-purple-500"
+                    />
+                  </div>
+                  <div>
+                    <label className="text-[11px] text-slate-400 block mb-1">
+                      Gefahrenstufe (1-5)
+                    </label>
+                    <input
+                      type="number"
+                      min={1}
+                      max={5}
+                      value={dangerInput}
+                      onChange={(e) => setDangerInput(parseInt(e.target.value) || 1)}
+                      className="w-full px-3 py-1.5 bg-slate-900 border border-slate-700 rounded-lg text-xs text-slate-200 focus:outline-none focus:border-purple-500"
+                    />
+                  </div>
+                </div>
+
+                <div className="flex justify-end gap-2 pt-1">
+                  <button
+                    onClick={() => setIsEditingWorld(false)}
+                    className="px-3 py-1.5 rounded-lg bg-slate-800 text-slate-300 text-xs"
+                  >
+                    Abbrechen
+                  </button>
+                  <button
+                    onClick={handleSaveWorld}
+                    className="px-4 py-1.5 rounded-lg bg-purple-600 hover:bg-purple-500 text-white text-xs font-semibold flex items-center gap-1"
+                  >
+                    <Check className="w-3.5 h-3.5" />
+                    Übernehmen
+                  </button>
+                </div>
               </div>
             )}
           </div>
+
+          {/* Clocks & Dice Roller */}
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+            <div className="p-4 rounded-2xl bg-slate-900/80 border border-slate-800 shadow-xl space-y-4">
+              <div className="flex items-center justify-between border-b border-slate-800 pb-3">
+                <div>
+                  <h3 className="text-sm font-bold text-slate-100">Kampagnen-Clocks (Spannungs-Uhren)</h3>
+                  <p className="text-[11px] text-slate-400">
+                    Klicke auf Segmente, um Fortschritt oder Bedrohung zu steigern
+                  </p>
+                </div>
+                <button
+                  onClick={() => setShowClockModal(true)}
+                  className="px-3 py-1.5 rounded-lg bg-purple-600/30 hover:bg-purple-600/50 text-purple-200 text-xs font-semibold flex items-center gap-1.5 border border-purple-500/40 transition"
+                >
+                  <Plus className="w-3.5 h-3.5" />
+                  Neue Uhr
+                </button>
+              </div>
+
+              <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
+                {stageState?.clocks.map((clock) => (
+                  <ClockWidget
+                    key={clock.id}
+                    clock={clock}
+                    onUpdateProgress={(id, val) => setClockProgress(id, val)}
+                    onDelete={(id) => deleteClock(id)}
+                  />
+                ))}
+
+                {(!stageState?.clocks || stageState.clocks.length === 0) && (
+                  <div className="col-span-full p-8 text-center text-xs text-slate-500 italic">
+                    Keine aktiven Kampagnen-Clocks vorhanden.
+                  </div>
+                )}
+              </div>
+            </div>
+
+            {/* Right Column: Dice Roller Station */}
+            <DiceRoller />
+          </div>
+
+          {/* Tactical Combat Encounter */}
+          <EncounterTracker />
         </div>
-
-        {/* Right Column: Dice Roller Station */}
-        <DiceRoller />
-      </div>
-
-      {/* 3. Bottom: Tactical Encounter & Combat Tracker */}
-      <EncounterTracker />
+      )}
 
       {/* Modal: New Clock */}
       {showClockModal && (
@@ -385,6 +494,12 @@ export const StageView = () => {
           </form>
         </div>
       )}
+
+      {/* Scene Lobby Modal */}
+      <SceneLobbyModal
+        isOpen={showLobbyModal}
+        onClose={() => setShowLobbyModal(false)}
+      />
     </div>
   );
 };

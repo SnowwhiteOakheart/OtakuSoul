@@ -429,8 +429,82 @@ pub fn roll_stage_dice(
 #[tauri::command]
 pub fn get_stage_state(
     state: State<'_, AppState>,
-) -> crate::modules::stage::StageState {
+) -> crate::modules::stage::SceneState {
     state.stage_engine.get_state()
+}
+
+#[tauri::command]
+pub fn list_stage_scenes() -> Result<Vec<crate::modules::stage::ScenePreview>, String> {
+    Ok(crate::modules::stage::scan_available_scenes())
+}
+
+#[tauri::command]
+pub fn load_stage_scene(
+    state: State<'_, AppState>,
+    scene_id: String,
+) -> Result<crate::modules::stage::SceneState, String> {
+    let scene_st = crate::modules::stage::load_scene_by_id(&scene_id)?;
+    state.stage_engine.set_state(scene_st.clone());
+    Ok(scene_st)
+}
+
+#[tauri::command]
+pub fn save_stage_scene(
+    state: State<'_, AppState>,
+    scene_state: crate::modules::stage::SceneState,
+) -> Result<(), String> {
+    crate::modules::stage::save_scene_state(&scene_state)?;
+    state.stage_engine.set_state(scene_state);
+    Ok(())
+}
+
+#[tauri::command]
+pub fn create_stage_scene(
+    state: State<'_, AppState>,
+    definition: crate::modules::stage::SceneDefinition,
+) -> Result<crate::modules::stage::SceneState, String> {
+    let scene_st = crate::modules::stage::create_custom_scene(definition)?;
+    state.stage_engine.set_state(scene_st.clone());
+    Ok(scene_st)
+}
+
+#[tauri::command]
+pub fn delete_stage_scene(
+    scene_id: String,
+) -> Result<(), String> {
+    crate::modules::stage::delete_scene(&scene_id)
+}
+
+#[tauri::command]
+pub fn export_stage_markdown(
+    scene_id: String,
+) -> Result<String, String> {
+    crate::modules::stage::export_scene_to_markdown(&scene_id)
+}
+
+#[tauri::command]
+pub async fn run_stage_turn(
+    state: State<'_, AppState>,
+    request: crate::modules::stage::StageTurnRequest,
+) -> Result<crate::modules::stage::SceneState, String> {
+    crate::modules::stage::execute_stage_turn(&state.stage_engine, &state.inference_client, request).await
+}
+
+#[tauri::command]
+pub fn undo_stage_turn(
+    state: State<'_, AppState>,
+    scene_id: String,
+) -> Result<crate::modules::stage::SceneState, String> {
+    state.stage_engine.undo_turn(&scene_id)
+}
+
+#[tauri::command]
+pub async fn rest_stage_party(
+    state: State<'_, AppState>,
+    scene_id: String,
+    rest_type: String,
+) -> Result<crate::modules::stage::SceneState, String> {
+    crate::modules::stage::execute_stage_rest(&state.stage_engine, &state.inference_client, &scene_id, &rest_type).await
 }
 
 #[tauri::command]
