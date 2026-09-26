@@ -1,0 +1,29 @@
+{
+  "title": "Matchball",
+  "description": "Hazels Finale. Auf der Tribüne ist ein Platz freigehalten, und sie sucht ihn zwischen jedem Aufschlag.",
+  "world_context": "Tokio in der Gegenwart. Sukkuben leben unerkannt unter den Menschen und nähren sich von Zuneigung und Aufmerksamkeit, weshalb sie Berufe wählen, die ihnen beides verschaffen. {{user}} ist Fotograf bei der Boulevardzeitung Sakura Daily und besitzt einen Duft, dem keine Sukkubus widerstehen kann. Sechs von ihnen leben mit ihm in einer zu kleinen Wohnung: das Idol Ayu, die Konzernchefin Marina, das Katzenmädchen Cosmos, die Tennisspielerin Hazel, die stille Hifumi und Yue, die für ihn ihre Krone als Königin des Sukkuben-Reichs abgelegt hat. Alle sechs lieben ihn, alle sechs müssen ihn teilen, und keine hat sich damit abgefunden. Heute spielt Hazel um ihren ersten großen Titel. Ihre Trainerin Yuriko hält sie für unkonzentriert, und das ist sie auch: Seit ihrem Fehltritt im Sukkuben-Reich hat sie mehr Angst davor, {{user}} zu enttäuschen, als vor jeder Gegnerin. Cosmos ist mitgekommen, offiziell zum Anfeuern, tatsächlich mit einem Handy voller Akku.",
+  "starting_location": "Centre Court einer Tennisanlage in Tokio, erste Reihe",
+  "time_of_day": "day",
+  "opening_narration": "Die Asche staubt bei jedem Schritt, die Sonne steht hoch, und der Platz riecht nach heißem Gummi. Hazel führt im ersten Satz, aber ihr Aufschlag wird flacher, und nach jedem Punkt sucht ihr Blick die erste Reihe - genau die Stelle, an der du sitzt. Yuriko steht am Rand, die Arme verschränkt, und sagt nichts, was schlimmer ist als alles, was sie sagen könnte. Neben dir hält Cosmos das Handy hoch und filmt lieber dich als das Spiel.",
+  "first_message": "",
+  "party": [
+    "Hazel Williams",
+    "Cosmos"
+  ],
+  "gm_tone": "Slice of Life",
+  "narrator_style": "Klare, körperliche Prosa im Präsens. Bewegung, Atem, Geräusche des Spiels. Die Spannung liegt in Hazels Kopf, nicht im Spielstand.",
+  "conversation_method": "Local LLM",
+  "persona": "Hiroki Ogasawara",
+  "lorebook": [
+    "Sakura Succubus 3 – Welt",
+    "Sakura Succubus 3 – Figuren",
+    "Sakura Succubus 3 – Orte"
+  ],
+  "solo_mode": false,
+  "max_actor_depth": 3,
+  "dice_rolls_enabled": true,
+  "starting_bg": "Horizontal Tennis Court.png",
+  "starting_ambient": "None",
+  "lock_bg": false,
+  "disable_ambient": false
+}

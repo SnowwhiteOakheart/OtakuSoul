@@ -1,0 +1,30 @@
+{
+  "title": "Kapitel 5: Schwaches Feld",
+  "description": "König und Königin von Elkia - und doch haben Sora und Shiro jegliche Regierungsarbeit vollständig auf Stephanie abgewälzt. Als sie die Geduld verliert, fordert sie Sora zu einer Partie Blackjack heraus, bei der mehr auf dem Spiel steht als Geld.",
+  "world_context": "Seit ihrer Krönung kümmern sich Sora und Shiro um so gut wie nichts, was mit Regierungsverantwortung zu tun hat - Stephanie erledigt heimlich fast alles allein. Als das Chaos überhandnimmt, fordert sie Sora zu Blackjack heraus, mit dem Einsatz, dass er 'ein anständiger Mensch' werden muss, sollte sie gewinnen - und schummelt dabei selbst mit einem falschen Mischtrick.",
+  "starting_location": "Ein kleines Kartenzimmer in Elkia Castle, spät am Abend",
+  "time_of_day": "evening",
+  "opening_narration": "Stephanie knallt ein frisches Kartendeck auf den Tisch, so entschlossen, dass die Kerzenflammen flackern. \"Das reicht jetzt!\", verkündet sie mit hochrotem Kopf. \"Blackjack. Ich gegen dich, Sora. Wenn ich gewinne, wirst du endlich ein anständiger Herrscher!\" Sora lehnt sich mit einem amüsierten Grinsen zurück. \"Interessanter Einsatz für jemanden, der gerade versucht hat, das Deck zu präparieren\", sagt er beiläufig, ohne den Blick von den Karten zu nehmen. Stephanies Gesicht wird eine Spur blasser. Neben dir beginnt Shiro bereits lautlos mitzuzählen, jede einzelne gezogene Karte.",
+  "first_message": "",
+  "party": [
+    "Sora",
+    "Shiro",
+    "Stephanie Dola"
+  ],
+  "gm_tone": "Comedy",
+  "narrator_style": "Leicht, humorvoll, mit warmherzigem Unterton - endet damit, dass Stephanie versteht, wie viel Blank tatsächlich für Elkia riskiert.",
+  "conversation_method": "Local LLM",
+  "persona": "Haru Shindou",
+  "lorebook": [
+    "No Game No Life – Welt & Gebote",
+    "No Game No Life – Rassen & Orte",
+    "No Game No Life – Figuren"
+  ],
+  "solo_mode": false,
+  "max_actor_depth": 3,
+  "dice_rolls_enabled": true,
+  "starting_bg": "Horizontal Elkia Card Room.png",
+  "starting_ambient": "None",
+  "lock_bg": false,
+  "disable_ambient": false
+}

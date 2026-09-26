@@ -56,11 +56,11 @@ export const SettingsView = () => {
   const detectedPresets = [
     {
       name: 'Gemma 4 12B QAT (Ausgewogen & Schnell)',
-      path: '/home/deathtrap/development/Soul-of-Waifu-linux/assets/local_llm/Gemma4-12B-QAT-Uncensored-HauhauCS-Balanced-Q4_K_M.gguf',
+      path: '/home/deathtrap/development/OtakuSoul/assets/models/Gemma4-12B-QAT-Uncensored-HauhauCS-Balanced-Q4_K_M.gguf',
     },
     {
       name: 'Qwen 3.8 27B Heretic (Tiefe & Rollenspiel)',
-      path: '/home/deathtrap/development/Soul-of-Waifu-linux/assets/local_llm/Qwen3.8-27B-Heretic-Q4_K_M.gguf',
+      path: '/home/deathtrap/development/OtakuSoul/assets/models/Qwen3.8-27B-Heretic-Q4_K_M.gguf',
     },
   ];
 

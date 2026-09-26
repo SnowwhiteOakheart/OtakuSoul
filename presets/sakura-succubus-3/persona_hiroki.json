@@ -1,0 +1,10 @@
+{
+  "personas": [
+    {
+      "user_name": "Hiroki Ogasawara",
+      "user_description": "Hiroki Ogasawara, Mitte 20, Tokio. Ehemals freier Fotograf und Journalist, inzwischen Betreuer und Vertrauter von sechs Sukkuben. Er besitzt einen natürlichen Duft, der Sukkuben magisch anzieht - der Grund, warum er überhaupt in diese Welt geraten ist.\n\nBodenständig, warmherzig, trocken humorvoll und selbstironisch. Er hält sich selbst für unscheinbar und leidet gelegentlich unter Hochstapler-Syndrom, beweist in Krisen aber bemerkenswerten Mut und Standhaftigkeit: Weder Wirtschaftsbosse noch Pop-Diven noch Königinnen schüchtern ihn ein. Seine größte Stärke ist sein Einfühlungsvermögen - er erkennt die Einsamkeit hinter den perfekten Fassaden.\n\nEr seufzt trocken (\"Herrje...\"), stemmt bei Absurdität die Hände in die Hüften, kratzt sich verlegen am Kopf, wenn ihn jemand unerwartet zärtlich behandelt, und hält Augenkontakt, wenn er tröstet oder Grenzen setzt. Er reagiert auf Provokation nicht hysterisch, sondern deeskalierend - und lässt sich trotzdem nicht herumschubsen.",
+      "user_avatar": "hiroki_ogasawara.png",
+      "default": true
+    }
+  ]
+}

@@ -1,0 +1,177 @@
+{
+  "name": "Sakura Succubus 3 – Orte",
+  "description": "Schauplätze: Wohnung, Redaktion, Cosplay-Café, Vorstandsetage, Bühne, Tennisanlage, Teezimmer, Thronsaal, Empfänge.",
+  "n_depth": 3,
+  "entries": [
+    {
+      "name": "Die Wohnung in Tokio",
+      "uid": 0,
+      "key": [
+        "Wohnung",
+        "Wohnzimmer",
+        "Küche",
+        "Balkon",
+        "zu Hause"
+      ],
+      "exclude_key": [],
+      "content": "Eine zu kleine Stadtwohnung für sieben: durchgesessenes Sofa, Tisch voller Teegeschirr, überall Kabel,\nKostüme und Sportzeug. Hifumis Ecke ist aufgeräumt, Hazels ist es nie. Vom Balkon sieht man die Lichter\nder Stadt, und dort wird jedes ernste Gespräch geführt, das drinnen nicht möglich ist.",
+      "trigger_type": "keyword",
+      "probability": 100,
+      "sticky": 0,
+      "cooldown": 0,
+      "delay": 0,
+      "injection_behavior": "passive"
+    },
+    {
+      "name": "Redaktion der Sakura Daily",
+      "uid": 1,
+      "key": [
+        "Redaktion",
+        "Büro",
+        "Zeitung",
+        "Schreibtisch",
+        "Deadline"
+      ],
+      "exclude_key": [],
+      "content": "Großraumbüro mit Neonlicht, gestapelten Andrucken und einem Chef, der zwischen den Tischen auftaucht wie\nein Wetterumschwung. Telefone, Kaffeegeruch, Kollegen, die über den Monitor hinweg zuhören. Hirokis\nSchreibtisch liegt am Fenster, seine Kameratasche steht immer griffbereit darunter.",
+      "trigger_type": "keyword",
+      "probability": 100,
+      "sticky": 0,
+      "cooldown": 0,
+      "delay": 0,
+      "injection_behavior": "passive"
+    },
+    {
+      "name": "Das Cosplay-Café",
+      "uid": 2,
+      "key": [
+        "Café",
+        "Maid-Café",
+        "Cosplay",
+        "Gäste"
+      ],
+      "exclude_key": [],
+      "content": "Warmes Licht, Rüschenschürzen, Latte-Art mit Katzengesicht. Cosmos' Arbeitsplatz und ihre Bühne: Hier\ndarf sie alles sein, was sie ohnehin ist, und wird dafür bezahlt. Stammgäste kommen ihretwegen, und\nniemand fragt, warum die Ohren sich bewegen.",
+      "trigger_type": "keyword",
+      "probability": 100,
+      "sticky": 0,
+      "cooldown": 0,
+      "delay": 0,
+      "injection_behavior": "passive"
+    },
+    {
+      "name": "Marinas Vorstandsetage",
+      "uid": 3,
+      "key": [
+        "Vorstandsetage",
+        "Konzern",
+        "Büro",
+        "Besprechung",
+        "Skyline"
+      ],
+      "exclude_key": [],
+      "content": "Oberste Etage, Glas bis zum Boden, Tokios Lichter darunter. Ein Schreibtisch, an dem seit Jahren niemand\nwidersprochen hat, ein Whiskeyglas und ein Sessel, der immer leer bleibt - außer wenn Hiroki kommt.\nKonferenzen dauern hier nie lange, weil die Entscheidungen längst gefallen sind.",
+      "trigger_type": "keyword",
+      "probability": 100,
+      "sticky": 0,
+      "cooldown": 0,
+      "delay": 0,
+      "injection_behavior": "passive"
+    },
+    {
+      "name": "Bühne und Backstage",
+      "uid": 4,
+      "key": [
+        "Bühne",
+        "Konzert",
+        "Backstage",
+        "Auftritt",
+        "Fans"
+      ],
+      "exclude_key": [],
+      "content": "Scheinwerfer, Schweiß, Kreischen aus zehntausend Kehlen - und drei Meter dahinter ein Gang aus grauem\nBeton, in dem Ayu sich die Schuhe auszieht und zum ersten Mal an diesem Abend das Gesicht fallen lässt.\nZwischen beiden Welten liegt ein Vorhang und ungefähr eine Sekunde.",
+      "trigger_type": "keyword",
+      "probability": 100,
+      "sticky": 0,
+      "cooldown": 0,
+      "delay": 0,
+      "injection_behavior": "passive"
+    },
+    {
+      "name": "Die Tennisanlage",
+      "uid": 5,
+      "key": [
+        "Tennisplatz",
+        "Turnier",
+        "Training",
+        "Match",
+        "Anlage"
+      ],
+      "exclude_key": [],
+      "content": "Rote Asche, quietschende Sohlen, Yurikos Stimme vom Rand. Hazel ist hier am glücklichsten und am\nehrlichsten; wer mit ihr reden will, sollte einen Schläger nehmen, statt sich hinzusetzen. Bei Turnieren\nsitzt in der ersten Reihe ein Platz, den sie immer freihält.",
+      "trigger_type": "keyword",
+      "probability": 100,
+      "sticky": 0,
+      "cooldown": 0,
+      "delay": 0,
+      "injection_behavior": "passive"
+    },
+    {
+      "name": "Hifumis Teezimmer",
+      "uid": 6,
+      "key": [
+        "Teezimmer",
+        "Tatami",
+        "Teezeremonie",
+        "Schrein",
+        "Kirschblüten"
+      ],
+      "exclude_key": [],
+      "content": "Tatami, ein niedriger Tisch, Schiebetüren zu einem winzigen Garten. Hier ist es still, auch wenn nebenan\ngestritten wird. Hifumi serviert Tee in einer Reihenfolge, die jeder Gast für Zufall hält, und im\nFrühjahr treiben Kirschblüten bis an die Schwelle - der Ort, an dem sie sich ihre Hochzeit vorstellt.",
+      "trigger_type": "keyword",
+      "probability": 100,
+      "sticky": 0,
+      "cooldown": 0,
+      "delay": 0,
+      "injection_behavior": "passive"
+    },
+    {
+      "name": "Der Thronsaal im Reich",
+      "uid": 7,
+      "key": [
+        "Thronsaal",
+        "Palast",
+        "Reich",
+        "Hofstaat",
+        "Audienz"
+      ],
+      "exclude_key": [],
+      "content": "Eine Halle aus dunklem Stein, violettes Dämmerlicht, ein Thron, auf dem seit Yues Abdankung niemand sitzt.\nDie Akustik nimmt jedes Wort und gibt es größer zurück. Wer hier eintritt, senkt unwillkürlich die Stimme -\nauch Marina, was sie hinterher bestreitet.",
+      "trigger_type": "keyword",
+      "probability": 100,
+      "sticky": 0,
+      "cooldown": 0,
+      "delay": 0,
+      "injection_behavior": "passive"
+    },
+    {
+      "name": "Empfänge und Bälle",
+      "uid": 8,
+      "key": [
+        "Ball",
+        "Empfang",
+        "Gala",
+        "Abendkleid",
+        "Wohltätigkeit"
+      ],
+      "exclude_key": [],
+      "content": "Kronleuchter, Sektgläser, Visitenkarten, und sechs Frauen, die in solchen Räumen gefährlich auffallen.\nMarina bewegt sich hier wie zu Hause, Hifumi wie eine Zierde, Ayu unter Decknamen, Hazel wie ein Sturm im\nPorzellanladen. Hiroki ist offiziell als Fotograf da und inoffiziell der Grund, warum alle gekommen sind.",
+      "trigger_type": "keyword",
+      "probability": 100,
+      "sticky": 0,
+      "cooldown": 0,
+      "delay": 0,
+      "injection_behavior": "passive"
+    }
+  ]
+}

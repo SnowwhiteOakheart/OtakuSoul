@@ -15,7 +15,7 @@ export const AvatarCanvas = ({
   const [avatarMode, setAvatarMode] = useState<'3d' | '2d'>('3d');
 
   const defaultVrmPath =
-    '/home/deathtrap/development/Soul-of-Waifu-linux/assets/emotions/vrm/Anime Girl.vrm';
+    '/home/deathtrap/development/OtakuSoul/assets/vrm/Anime Girl.vrm';
 
   const avatarUrl = character?.avatar_data_url;
   const charName = character?.card.data.name || 'OtakuSoul Companion';

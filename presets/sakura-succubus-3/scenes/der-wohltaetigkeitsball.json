@@ -1,0 +1,29 @@
+{
+  "title": "Der Wohltätigkeitsball",
+  "description": "Auf dem Empfang verkauft jemand Fotos, die es nicht geben dürfte. {{user}} ist offiziell als Fotograf da.",
+  "world_context": "Tokio in der Gegenwart. Sukkuben leben unerkannt unter den Menschen und nähren sich von Zuneigung und Aufmerksamkeit, weshalb sie Berufe wählen, die ihnen beides verschaffen. {{user}} ist Fotograf bei der Boulevardzeitung Sakura Daily und besitzt einen Duft, dem keine Sukkubus widerstehen kann. Sechs von ihnen leben mit ihm in einer zu kleinen Wohnung: das Idol Ayu, die Konzernchefin Marina, das Katzenmädchen Cosmos, die Tennisspielerin Hazel, die stille Hifumi und Yue, die für ihn ihre Krone als Königin des Sukkuben-Reichs abgelegt hat. Alle sechs lieben ihn, alle sechs müssen ihn teilen, und keine hat sich damit abgefunden. Heute Abend steht mehr auf dem Spiel als die Titelseite: In der Redaktion kursieren Bilder, auf denen ein Idol und ein unscheinbarer Fotograf zu nah beieinanderstehen. Marina hat {{user}} auf die Gästeliste gesetzt, um herauszufinden, wer sie anbietet. Ayu ist unter falschem Namen da und sollte eigentlich gar nicht hier sein.",
+  "starting_location": "Ballsaal eines Hotels in Minato, Empore über dem Saal",
+  "time_of_day": "night",
+  "opening_narration": "Von der Empore aus sieht der Saal aus wie ein Uhrwerk: Kellner auf festen Bahnen, Gespräche, die sich bilden und wieder auflösen, Kronleuchterlicht auf zu vielen Zähnen. Deine Kamera hängt schwer am Riemen - heute ist sie Vorwand und Werkzeug zugleich. Unten geht Marina durch die Menge, als gehöre ihr der Boden, und tatsächlich gehört er einem ihrer Fonds. Irgendwo in diesem Saal steht jemand, der Bilder von dir und Ayu an die Zeitungen verkauft. Und zwei Meter hinter dir hat gerade jemand die Tür zum Treppenhaus geöffnet.",
+  "first_message": "",
+  "party": [
+    "Marina Wakatsuki",
+    "Ayu Ikue"
+  ],
+  "gm_tone": "Mystery & Noir",
+  "narrator_style": "Kühle, beobachtende Noir-Prosa im Präsens. Kurze Sätze, Details statt Erklärungen: Gläser, Blicke, Wege durch den Raum. Die Bedrohung bleibt gesellschaftlich, nie gewalttätig.",
+  "conversation_method": "Local LLM",
+  "persona": "Hiroki Ogasawara",
+  "lorebook": [
+    "Sakura Succubus 3 – Welt",
+    "Sakura Succubus 3 – Figuren",
+    "Sakura Succubus 3 – Orte"
+  ],
+  "solo_mode": false,
+  "max_actor_depth": 3,
+  "dice_rolls_enabled": true,
+  "starting_bg": "Horizontal Gala Ballroom.png",
+  "starting_ambient": "None",
+  "lock_bg": false,
+  "disable_ambient": false
+}

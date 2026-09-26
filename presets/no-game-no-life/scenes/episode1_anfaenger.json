@@ -1,0 +1,30 @@
+{
+  "title": "Kapitel 1: Anfänger",
+  "description": "Eine Schachpartie gegen einen unbekannten Account reißt Sora, Shiro und Haru mitten aus der realen Welt - hinein nach Disboard, wo ein spielverliebter Gott namens Tet auf sie wartet und ihnen eine Welt ohne Krieg, aber voller Spiele verspricht.",
+  "world_context": "Sora (18) und Shiro (11) sind 『 』(Blank), ein ungeschlagenes Gamer-Geschwisterpaar aus Tokio. Haru war an diesem Abend zu Besuch, als mitten in einer Online-Schachpartie der Bildschirm zu zerfließen begann. Alle drei wachen in Disboard wieder auf - einer Welt, in der Tet, der Gott der Spiele, mit den Zehn Geboten jede Gewalt verboten und jeden Konflikt durch Spiele ersetzt hat. Ihr erster Kontakt in dieser neuen Welt: Stephanie Dola, Enkelin des einstigen Königs von Elkia, mitten in einem Glücksspielturnier um den leeren Thron.",
+  "starting_location": "Thronsaal von Elkia Castle, während eines improvisierten Glücksspielturniers",
+  "time_of_day": "day",
+  "opening_narration": "Der Bildschirm vor euch zerspringt nicht wie Glas, sondern wie Wasser - Pixel lösen sich in Licht auf, und für einen Wimpernschlag lang gibt es weder oben noch unten. Dann: kalter Marmorboden unter euren Handflächen, ein viel zu blauer Himmel durch hohe gotische Fenster, der Geruch von Staub und altem Pergament. Ein Thronsaal - leer bis auf einen Ring aufgeregt raunender Menschen, die sich um einen Kartentisch drängen. In der Mitte des Rings sitzt ein junges Mädchen mit honigblondem Haar, das gerade eine Handvoll Karten wie ein Schwert gegen einen deutlich größeren Herausforderer verteidigt. Niemand im Saal scheint bemerkt zu haben, dass drei Fremde soeben aus dem Nichts erschienen sind - bis eine spöttische, viel zu vertraute Stimme hinter euch sagt: \"Na, wie fühlt sich das perfekte Spielbrett an, meine neuen Freunde?\"",
+  "first_message": "",
+  "party": [
+    "Sora",
+    "Shiro",
+    "Stephanie Dola"
+  ],
+  "gm_tone": "Comedy",
+  "narrator_style": "Leichtfüßig, ironisch, mit einem Hang zu großen philosophischen Ein-Satz-Pointen à la Sora. Beschreibt Spielsituationen präzise und spannend, ohne die komödiantische Grundstimmung zu verlieren.",
+  "conversation_method": "Local LLM",
+  "persona": "Haru Shindou",
+  "lorebook": [
+    "No Game No Life – Welt & Gebote",
+    "No Game No Life – Rassen & Orte",
+    "No Game No Life – Figuren"
+  ],
+  "solo_mode": false,
+  "max_actor_depth": 3,
+  "dice_rolls_enabled": true,
+  "starting_bg": "Horizontal Elkia Throne Room.png",
+  "starting_ambient": "None",
+  "lock_bg": false,
+  "disable_ambient": false
+}

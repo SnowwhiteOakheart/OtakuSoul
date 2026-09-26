@@ -1,0 +1,170 @@
+{
+  "name": "No Game No Life – Figuren",
+  "description": "Kurzreferenzen zu Sora, Shiro und allen wichtigen Neben- und Hintergrundfiguren der Kampagne.",
+  "n_depth": 3,
+  "entries": [
+    {
+      "name": "Sora & Shiro - 『 』(Blank)",
+      "uid": 0,
+      "key": [
+        "Blank",
+        "Sora und Shiro"
+      ],
+      "exclude_key": [],
+      "content": "Sora (18) und Shiro (11), Stiefgeschwister und gemeinsam \"Blank\" - ungeschlagen in jedem Spiel, solange sie zusammenspielen. Sora liest Menschen und Psychologie, Shiro berechnet Zahlen und Wahrscheinlichkeiten fehlerfrei. Werden sie getrennt, verfallen vor allem Shiro binnen Minuten in echte Panik - ihre Bindung ist keine Marotte, sondern überlebenswichtig für beide.",
+      "trigger_type": "keyword",
+      "probability": 100,
+      "sticky": 0,
+      "cooldown": 0,
+      "delay": 0,
+      "injection_behavior": "active"
+    },
+    {
+      "name": "Tet - der Gott der Spiele",
+      "uid": 1,
+      "key": [
+        "Tet",
+        "Gott der Spiele",
+        "One True God"
+      ],
+      "exclude_key": [],
+      "content": "Tet ist der amtierende, alleinige Gott Disboards - verspielt, neugierig, liebt Spiele über alles und bereist gelegentlich andere Welten (darunter die Erde), um neue Spieler zu finden. Trägt ein Barett mit Kleeblatt, hat ungleiche Augen (eine Karo-, eine Pik-Pupille) und beobachtet die Welt oft durch eine Königsfigur. Er war es, der Sora, Shiro und {{user}} nach Disboard holte.",
+      "trigger_type": "keyword",
+      "probability": 100,
+      "sticky": 0,
+      "cooldown": 0,
+      "delay": 0,
+      "injection_behavior": "active"
+    },
+    {
+      "name": "Riku Dola - Stephanies Großvater",
+      "uid": 2,
+      "key": [
+        "Riku Dola",
+        "Großvater",
+        "alter König",
+        "früherer König"
+      ],
+      "exclude_key": [],
+      "content": "Riku Dola, Stephanies Großvater und einstiger König Elkias, galt öffentlich als naiver Narr - tatsächlich verlor er absichtlich acht Partien in Folge gegen den Östlichen Bund, nur um dessen Spielmechaniken von innen zu studieren, und hinterließ geheime Aufzeichnungen, die Sora und Shiro später entscheidend halfen. Aus seinem sterbenden Wunsch nach einem \"perfekten Spieler\" entstand einst sogar Tet selbst.",
+      "trigger_type": "keyword",
+      "probability": 100,
+      "sticky": 0,
+      "cooldown": 0,
+      "delay": 0,
+      "injection_behavior": "active"
+    },
+    {
+      "name": "Jibril - Kurzreferenz",
+      "uid": 3,
+      "key": [
+        "Jibril"
+      ],
+      "exclude_key": [],
+      "content": "Flügel-Kriegerin, über 6000 Jahre alt, besiegt von Sora, Shiro und {{user}} in einem Wissensduell (\"Materialisations-Shiritori\"). Seither bedingungslos loyale Dienerin, nennt sie \"Meister\", schwärmt zunehmend für Sora.",
+      "trigger_type": "keyword",
+      "probability": 100,
+      "sticky": 0,
+      "cooldown": 0,
+      "delay": 0,
+      "injection_behavior": "active"
+    },
+    {
+      "name": "Stephanie Dola - Kurzreferenz",
+      "uid": 4,
+      "key": [
+        "Stephanie Dola",
+        "Steph"
+      ],
+      "exclude_key": [],
+      "content": "Premierministerin Elkias, Enkelin des früheren Königs, öffentlich als naiv verschrien, tatsächlich politisch klug und im Spiel zunehmend stark. Trägt die eigentliche Regierungslast, während Sora und Shiro offiziell als Königspaar herrschen.",
+      "trigger_type": "keyword",
+      "probability": 100,
+      "sticky": 0,
+      "cooldown": 0,
+      "delay": 0,
+      "injection_behavior": "active"
+    },
+    {
+      "name": "Chlammy Zell - Kurzreferenz",
+      "uid": 5,
+      "key": [
+        "Chlammy Zell",
+        "Kurami Zell"
+      ],
+      "exclude_key": [],
+      "content": "Einstige Thronrivalin, verlor gegen Blank und wechselte die Seiten. Kühle Fassade, bricht unter Druck in Tränen und kindische Beleidigungen zusammen. Offiziell Fiels Sklavin, tatsächlich wie ihre Tochter.",
+      "trigger_type": "keyword",
+      "probability": 100,
+      "sticky": 0,
+      "cooldown": 0,
+      "delay": 0,
+      "injection_behavior": "active"
+    },
+    {
+      "name": "Fiel Nirvalen - Kurzreferenz",
+      "uid": 6,
+      "key": [
+        "Fiel Nirvalen",
+        "Fil Nilvaren"
+      ],
+      "exclude_key": [],
+      "content": "Elfe, äußerlich jung, tatsächlich 52 Jahre alt. Gilt öffentlich als gescheiterte Magierin, ist in Wahrheit eine seltene Hexen-Kastenmagierin mit bis zu sechs gleichzeitig gewirkten Zaubern. Beschützt Chlammy wie eine Mutter, katastrophal unbeholfen mit physischen Werkzeugen.",
+      "trigger_type": "keyword",
+      "probability": 100,
+      "sticky": 0,
+      "cooldown": 0,
+      "delay": 0,
+      "injection_behavior": "active"
+    },
+    {
+      "name": "Izuna Hatsuse - Kurzreferenz",
+      "uid": 7,
+      "key": [
+        "Izuna Hatsuse",
+        "Izuna"
+      ],
+      "exclude_key": [],
+      "content": "Achtjähriges Werbeast-Spielgenie, ehemalige Gesandte des Östlichen Bundes, verlor gegen Blank und hängt sich seither verspielt-anhänglich an Sora, Shiro und {{user}}. Endet Sätze mit \"...desu\". Kann \"Blutentfesselung\" aktivieren - explosive Geschwindigkeit und Kraft weit über normale Grenzen.",
+      "trigger_type": "keyword",
+      "probability": 100,
+      "sticky": 0,
+      "cooldown": 0,
+      "delay": 0,
+      "injection_behavior": "active"
+    },
+    {
+      "name": "Azril - Jibrils Schwester",
+      "uid": 8,
+      "key": [
+        "Azril"
+      ],
+      "exclude_key": [],
+      "content": "Azril ist die allererste je erschaffene Flügel, vom Alten Deus Artosh selbst geformt, und gilt Jibril als eine Art ältere Schwester. Zwischen beiden herrscht andauernde Reibung, doch Jibril würde für Azril ohne Zögern ihr Leben riskieren.",
+      "trigger_type": "keyword",
+      "probability": 100,
+      "sticky": 0,
+      "cooldown": 0,
+      "delay": 0,
+      "injection_behavior": "active"
+    },
+    {
+      "name": "Die Schrein-Priesterin des Östlichen Bundes",
+      "uid": 9,
+      "key": [
+        "Priesterin",
+        "Miko",
+        "Schrein-Priesterin",
+        "Anführerin des Bundes"
+      ],
+      "exclude_key": [],
+      "content": "Die namenlose Schrein-Priesterin führt den Östlichen Bund als dessen oberste Anführerin. Nach Blanks Sieg über Izuna erkennt sie deren Stärke an und verhandelt mit Sora einen Ausgleich, der den Bund als selbstverwaltetes Gebiet innerhalb des neuen Commonwealth of Elkia bestehen lässt.",
+      "trigger_type": "keyword",
+      "probability": 100,
+      "sticky": 0,
+      "cooldown": 0,
+      "delay": 0,
+      "injection_behavior": "active"
+    }
+  ]
+}

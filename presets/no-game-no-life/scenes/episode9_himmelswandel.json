@@ -1,0 +1,31 @@
+{
+  "title": "Kapitel 9: Himmelswandel",
+  "description": "Während Sora in einer Othello-Partie gegen Chlammy um seine eigene Existenz spielt, fordert Jibril Shiro zu einer Schachpartie heraus - Einsatz: Shiros Erinnerung an Sora selbst.",
+  "world_context": "In einem verzweifelten Nebenkampf spielt Sora gegen Chlammy Othello um Erinnerungen und Existenz selbst - und etwas geht furchtbar schief. Nur Shiro erinnert sich noch klar an ihn. Aus Sorge um Soras Schicksal fordert Jibril Shiro zu einer Partie Schach heraus, mit dem Einsatz von Shiros Erinnerungen an Sora, in der Hoffnung, Shiro würde absichtlich verlieren, um 'reinen Tisch' zu machen. Doch im entscheidenden Moment spürt Shiro ein schwaches Signal von Sora - und entscheidet sich zu gewinnen, statt aufzugeben.",
+  "starting_location": "Eine stille Kammer hoch oben in Elkia Castle, ein Schachbrett zwischen zwei Stühlen",
+  "time_of_day": "night",
+  "opening_narration": "Etwas stimmt nicht. Die Luft selbst fühlt sich falsch an, als würde die Welt an einer unsichtbaren Naht knirschen. Irgendwo, weit entfernt, läuft eine Partie Othello, deren Ausgang niemand von euch kennt - nur, dass Sora seine eigene Erinnerung und Existenz als Einsatz gesetzt hat. Jibril kniet vor Shiro nieder, ihr Gesicht zum ersten Mal, seit ihr sie kennt, von echter Sorge gezeichnet. \"Shiro\", sagt sie leise, \"ich fordere dich heraus. Schach. Einsatz: deine Erinnerung an Meister Sora.\" *ein Schachbrett materialisiert zwischen ihnen, jede Figur bereits an ihrem Platz.* \"Ich bitte dich, absichtlich zu verlieren - damit, was auch geschieht, wenigstens dieser Schmerz dir erspart bleibt.\" *Shiros Finger zittern über der ersten Figur, doch ihre Augen bleiben fest auf das Brett gerichtet.*",
+  "first_message": "",
+  "party": [
+    "Sora",
+    "Shiro",
+    "Jibril",
+    "Stephanie Dola"
+  ],
+  "gm_tone": "Horror",
+  "narrator_style": "Bedrückend, unheimlich, mit echtem emotionalem Gewicht - die Bedrohung ist nicht körperlich, sondern existenziell. Lass die Anspannung bis zu Shiros Entscheidung stetig wachsen.",
+  "conversation_method": "Local LLM",
+  "persona": "Haru Shindou",
+  "lorebook": [
+    "No Game No Life – Welt & Gebote",
+    "No Game No Life – Rassen & Orte",
+    "No Game No Life – Figuren"
+  ],
+  "solo_mode": false,
+  "max_actor_depth": 3,
+  "dice_rolls_enabled": true,
+  "starting_bg": "Horizontal Chamber of Memory.png",
+  "starting_ambient": "None",
+  "lock_bg": false,
+  "disable_ambient": false
+}

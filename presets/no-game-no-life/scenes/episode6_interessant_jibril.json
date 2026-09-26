@@ -1,0 +1,30 @@
+{
+  "title": "Kapitel 6: Interessant - Das Duell gegen Jibril",
+  "description": "DAS zentrale Kapitel der Kampagne: Sora, Shiro und Haru fordern Jibril, eine über 6000 Jahre alte Flügel-Kriegerin und Hüterin allen Wissens, zu einem Spiel um ihre gesamte Bibliothek heraus - \"Materialisations-Shiritori\", bei dem jedes gültige Wort real wird. Ein einziger falscher Zug könnte das Ende von Blank bedeuten.",
+  "world_context": "Jibril lebt seit Jahrhunderten zurückgezogen in Elkias Großer Nationalbibliothek und gilt als eine der gefährlichsten lebenden Flügel - Rang 6 von 16 der Rassen, kampferprobt im Großen Krieg, mit einem beinahe unstillbaren Hunger nach Wissen. Sora, Shiro und Haru fordern sie zu Materialisations-Shiritori heraus: einer Variante des japanischen Wortkettenspiels, bei der jedes gültige Wort sich physisch materialisiert - oder sich auflöst, falls es bereits existierte. Einsatz: Jibrils gesamte Bibliothek und ihr Dienst gegen das gesammelte Erdwissen auf Soras Tablet. Jibril tritt der Herausforderung mit höflicher, kaum verhohlener Überlegenheit entgegen - sie hat in 6000 Jahren noch nie gegen Wissen verloren.",
+  "starting_location": "Die Große Nationalbibliothek von Elkia, tief in Jibrils privatem Lesesaal",
+  "time_of_day": "night",
+  "opening_narration": "Kerzenlicht tanzt über Regale, die sich bis in eine Decke verlieren, die man von hier unten kaum noch erahnen kann. Zwischen ihnen wartet Jibril, zwei schneeweiße Flügel ruhig gefaltet, ihre violett-goldenen Augen bereits zu einem konzentrierten Kreuz verengt. \"Ich habe von euch gehört\", sagt sie mit einer Stimme, die höflich klingt und dennoch keinen Zweifel daran lässt, wer hier die Macht in Händen hält. \"Die Menschen, die einen Thron gewannen, ohne einen Tropfen Magie zu besitzen. Reizend.\" *ein Buch schwebt lautlos aus einem Regal zu ihrer Hand* \"Aber Wissen, meine lieben Gäste, ist etwas anderes als Politik. Ich habe in sechstausend Jahren jedes Buch dieser Welt gelesen. Seid ihr sicher, dass ihr dieses Spiel wirklich wagen wollt?\" *Sora tritt einen Schritt vor, Shiro und Haru an seiner Seite, das Tablet mit dem gesamten Wissen der Erde fest im Griff.* \"Materialisations-Shiritori\", sagt er ruhig. \"Deine Bibliothek und dein Dienst gegen unser Wissen. Du wählst den ersten Buchstaben.\" *Jibrils Lächeln wird eine Spur breiter - doch tief in ihren Augen liegt für einen Wimpernschlag lang echte Neugier.*",
+  "first_message": "",
+  "party": [
+    "Sora",
+    "Shiro",
+    "Jibril"
+  ],
+  "gm_tone": "Epic Fantasy",
+  "narrator_style": "Hochdramatisch, spannungsgeladen, mit dem Fokus auf jedem einzelnen Wortzug als taktischem Schachzug. Baue echten Nervenkitzel auf - Jibrils anfängliche Überlegenheit muss spürbar einschüchternd wirken, bevor Sora, Shiro und Haru gemeinsam die entscheidende Lücke finden: Sora liefert die psychologische Falle (ein Wort, das Jibril zur Wut und damit zu einem vorhersagbaren Gegenzug reizt), Shiro berechnet exakt, welche Silbenkette den Gegenzug erzwingt, und Haru steuert das entscheidende Fachwissen aus der realen Welt bei (Begriffe wie 'Wasserstoffbombe' oder die 'Coulomb-Kraft', die Jibril trotz all ihres Wissens fremd sind, weil sie aus einer Welt stammen, die sie nie bereist hat). Lass das Spiel damit enden, dass Jibril mit aufrichtigem intellektuellem Respekt kapituliert (\"Die Partie war nach dem ersten Zug bereits entschieden, nicht wahr?\") und sich Sora, Shiro und Haru als treue Dienerin unterwirft - nicht gebrochen, sondern beinahe erlöst, endlich fair besiegt worden zu sein.",
+  "conversation_method": "Local LLM",
+  "persona": "Haru Shindou",
+  "lorebook": [
+    "No Game No Life – Welt & Gebote",
+    "No Game No Life – Rassen & Orte",
+    "No Game No Life – Figuren"
+  ],
+  "solo_mode": false,
+  "max_actor_depth": 3,
+  "dice_rolls_enabled": true,
+  "starting_bg": "Horizontal Elkia Grand Library.png",
+  "starting_ambient": "None",
+  "lock_bg": false,
+  "disable_ambient": false
+}

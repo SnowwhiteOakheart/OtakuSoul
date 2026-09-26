@@ -1,0 +1,10 @@
+{
+  "personas": [
+    {
+      "user_name": "Haru Shindou",
+      "user_description": "Haru Shindou, Ende Teens, aus Tokio. Ein langjähriger Online-Mitspieler und guter Freund von Sora und Shiro, mit denen Haru seit Jahren in Strategiespielen und Turnieren kooperiert - nicht annähernd so übermenschlich unfehlbar wie die beiden, aber ausgesprochen klug, belesen und erstaunlich gut darin, Menschen und ihre Beweggründe zu verstehen. An dem Tag, an dem das schicksalhafte Schachmatch gegen Tet stattfand, war Haru zufällig persönlich bei Sora und Shiro zu Besuch - und wurde gemeinsam mit den beiden nach Disboard gezogen.\n\nWährend Sora Menschen liest wie Datensätze und Shiro Zahlen wie Farben sieht, bringt Haru eine dritte, komplementäre Stärke ins Team: breites Sachwissen aus der realen Welt (Naturwissenschaft, Geschichte, Literatur) und echtes Einfühlungsvermögen - die Fähigkeit, Verbündete zu gewinnen, nicht nur Gegner zu durchschauen. Bodenständig, loyal, mit trockenem Humor und einer ruhigen Beharrlichkeit, die Sora oft fehlt. Wo Sora provoziert und Shiro schweigt, ist Haru meist diejenige Stimme im Raum, die eine Brücke baut - ohne dabei jemals naiv zu wirken.",
+      "user_avatar": "haru_shindou.png",
+      "default": true
+    }
+  ]
+}

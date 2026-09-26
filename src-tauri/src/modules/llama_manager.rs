@@ -90,10 +90,10 @@ impl LlamaServerManager {
 
         // Candidate search paths
         let candidates = vec![
-            // 1. Soul-of-Waifu linux default paths (for seamless transition)
-            "/home/deathtrap/development/Soul-of-Waifu-linux/app/utils/ai_clients/backend/cuda/llama-server",
-            "/home/deathtrap/development/Soul-of-Waifu-linux/app/utils/ai_clients/backend/vulkan/llama-server",
-            // 2. Local relative paths inside OtakuSoul
+            // 1. Local OtakuSoul binary paths
+            "/home/deathtrap/development/OtakuSoul/bin/cuda/llama-server",
+            "./bin/cuda/llama-server",
+            "../bin/cuda/llama-server",
             "./bin/llama-server",
             "../bin/llama-server",
             "llama-server",
@@ -179,6 +179,14 @@ impl LlamaServerManager {
         }
 
         let mut cmd = Command::new(&binary_path);
+
+        if let Some(parent) = binary_path.parent() {
+            let mut ld_path = parent.to_string_lossy().to_string();
+            if let Ok(existing) = std::env::var("LD_LIBRARY_PATH") {
+                ld_path = format!("{}:{}", ld_path, existing);
+            }
+            cmd.env("LD_LIBRARY_PATH", ld_path);
+        }
         cmd.arg("-m")
             .arg(&config.model_path)
             .arg("-c")

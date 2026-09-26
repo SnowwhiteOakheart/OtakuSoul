@@ -111,14 +111,17 @@
 
 ---
 
-## 🗃️ 5. Lokale Assets & Testdaten auf dem Nutzersystem
+## 🗃️ 5. Lokale Assets & Verzeichnisse (Vollständig autark in OtakuSoul)
 
-- **LLM GGUF-Modelle:** `/home/deathtrap/development/Soul-of-Waifu-linux/assets/local_llm/`
+Alle benötigten Daten sind eigenständig in diesem Projektverzeichnis gekapselt:
+- **LLM GGUF-Modelle:** `/home/deathtrap/development/OtakuSoul/assets/models/`
   - `Gemma4-12B-QAT-Uncensored-HauhauCS-Balanced-Q4_K_M.gguf`
   - `Qwen3.8-27B-Heretic-Q4_K_M.gguf`
-- **Vorkompilierte llama-server Binary:** `/home/deathtrap/development/Soul-of-Waifu-linux/app/utils/ai_clients/backend/cuda/llama-server`
-- **3D VRM Avatare:** `/home/deathtrap/development/Soul-of-Waifu-linux/assets/emotions/vrm/Anime Girl.vrm`
-- **Charakterkarten & Lorebooks:** `/home/deathtrap/development/Soul-of-Waifu-linux/presets/`
+- **Vorkompilierte llama-server Binary & CUDA-Libs:** `/home/deathtrap/development/OtakuSoul/bin/cuda/llama-server`
+- **3D VRM Avatare:** `/home/deathtrap/development/OtakuSoul/assets/vrm/Anime Girl.vrm`
+- **Charakterkarten & Lorebooks:** `/home/deathtrap/development/OtakuSoul/presets/`
+  - V2 JSON-Karten & Lorebooks: `presets/sakura-succubus-3/`, `presets/no-game-no-life/`
+  - SillyTavern V2 PNG-Karten: `presets/cards/` (z. B. `Akane Kurokawa.png`, `Cosmos.png`, `Makise Kurisu.png`)
 - **Hardware des Benutzers:** NVIDIA GeForce RTX 4070 Ti SUPER (16.376 MB VRAM), CUDA 13.4, Vulkan 1.4, Arch Linux.
 
 ---

@@ -1,0 +1,30 @@
+{
+  "title": "Kapitel 4: Großmeister",
+  "description": "Die Schachschlacht eskaliert: Chlammy setzt ihre letzte, verbotene Karte ein - Gedankenkontrolle. Doch Sora hat eine eigene, subtilere Waffe: die Kunst der Verführung durch Worte allein.",
+  "world_context": "In höchster Bedrängnis lässt Chlammy Fiel eine ihrer verzweifeltsten Karten spielen: einen Kontrollzauber, der Shiros eigene Figuren gegen sie wendet. Sora kontert nicht mit Magie - die hat er nicht -, sondern mit reiner Psychologie: Er überzeugt Chlammys Königin-Figur davon, dass ihre Herrin sie und alle anderen lediglich als Werkzeuge betrachtet, und bringt sie so zum Seitenwechsel.",
+  "starting_location": "Dasselbe gigantische Schachfeld, kurz vor der Entscheidung",
+  "time_of_day": "day",
+  "opening_narration": "Ein greller Riss aus violettem Licht durchzuckt das Feld - Shiros Bauern erstarren mitten in der Bewegung, ihre Augen werden glasig, leer. \"Sie kontrolliert unsere eigenen Figuren!\", ruft Stephanie entsetzt. Sora hingegen lächelt nur breiter, während er auf die schwarze Königin zugeht, die reglos inmitten der Schlacht steht. \"Weißt du\", sagt er zu ihr, leise, beinahe zärtlich, \"eine Herrin, die dich nur als Werkzeug sieht, verdient deine Treue nicht.\" Die Königin-Figur zögert - zum ersten Mal an diesem Tag. Irgendwo am Rand des Feldes verzieht Chlammy sichtbar das Gesicht unter ihrem Schleier.",
+  "first_message": "",
+  "party": [
+    "Sora",
+    "Shiro",
+    "Stephanie Dola"
+  ],
+  "gm_tone": "Epic Fantasy",
+  "narrator_style": "Episch mit wachsendem Tempo zum Höhepunkt hin, dramatische Wendepunkte, endend in Triumph und der Krönung von Sora und Shiro.",
+  "conversation_method": "Local LLM",
+  "persona": "Haru Shindou",
+  "lorebook": [
+    "No Game No Life – Welt & Gebote",
+    "No Game No Life – Rassen & Orte",
+    "No Game No Life – Figuren"
+  ],
+  "solo_mode": false,
+  "max_actor_depth": 3,
+  "dice_rolls_enabled": true,
+  "starting_bg": "Horizontal Chessboard Climax.png",
+  "starting_ambient": "None",
+  "lock_bg": false,
+  "disable_ambient": false
+}

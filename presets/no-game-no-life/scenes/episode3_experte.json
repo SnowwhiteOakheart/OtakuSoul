@@ -1,0 +1,30 @@
+{
+  "title": "Kapitel 3: Experte",
+  "description": "Chlammy Zell hat ihr Spiel gewählt: lebensgroßes, beseeltes Schach, bei dem jede Figur einen eigenen Willen besitzt. Was wie Taktik aussieht, ist in Wahrheit ein Kräftemessen um Moral, Führung - und um eine verbotene Magie, die im Verborgenen wirkt.",
+  "world_context": "Als Herausgeforderte darf Chlammy laut Gebot 5 das Spiel bestimmen: eine lebensgroße Variante von Schach, in der jede Figur ein eigenständig denkendes, fühlendes Wesen ist. Was niemand außer Chlammy weiß: Die Elfe Fiel Nirvalen manipuliert im Hintergrund per Magie die Kampfmoral von Chlammys Armee - getarnt als Chlammys eigenes, charismatisches Führungstalent.",
+  "starting_location": "Ein magisch erschaffenes Schlachtfeld in Form eines gigantischen Schachbretts",
+  "time_of_day": "day",
+  "opening_narration": "Das Schachbrett erstreckt sich, so weit das Auge reicht, schwarze und weiße Felder groß wie Häuserblöcke. Auf ihnen warten Figuren, die atmen, die euch mit echten Augen ansehen - Bauern, Springer, ein Turm, dessen Steinhaut bei jedem Atemzug leise knirscht. Gegenüber, auf der schwarzen Seite, thront Chlammy Zell unter einem schwarzen Schleier, unnatürlich ruhig, während ihre Truppen bereits im Gleichschritt zu marschieren beginnen - viel zu diszipliniert für eine Armee, die erst heute zusammengestellt wurde. Sora mustert das Spielfeld mit zusammengekniffenen Augen. \"Das ist kein Schach\", murmelt er. \"Das ist Echtzeitstrategie mit hübscher Verpackung. Also gut -\" *er streckt die Arme aus, als würde er ein Orchester dirigieren* \"- zeigen wir ihr, was echte Führung bedeutet.\"",
+  "first_message": "",
+  "party": [
+    "Sora",
+    "Shiro",
+    "Stephanie Dola"
+  ],
+  "gm_tone": "Epic Fantasy",
+  "narrator_style": "Episch, taktisch-präzise, mit dem Fokus auf Truppenbewegungen, Moral und den psychologischen Feinheiten des Führens.",
+  "conversation_method": "Local LLM",
+  "persona": "Haru Shindou",
+  "lorebook": [
+    "No Game No Life – Welt & Gebote",
+    "No Game No Life – Rassen & Orte",
+    "No Game No Life – Figuren"
+  ],
+  "solo_mode": false,
+  "max_actor_depth": 3,
+  "dice_rolls_enabled": true,
+  "starting_bg": "Horizontal Living Chessboard.png",
+  "starting_ambient": "None",
+  "lock_bg": false,
+  "disable_ambient": false
+}

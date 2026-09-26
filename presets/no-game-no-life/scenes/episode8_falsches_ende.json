@@ -1,0 +1,31 @@
+{
+  "title": "Kapitel 8: Falsches Ende",
+  "description": "Mithilfe der Aufzeichnungen von Stephanies Großvater durchschaut Sora den wahren Trick des Östlichen Bundes - und setzt Imanitys gesamte Souveränität als Einsatz, um sie formell herauszufordern.",
+  "world_context": "Aus den alten Notizen rekonstruiert Sora die Wahrheit: Die Werbeasts können keine Gedanken lesen, nur Lügen erkennen - ihr wahrer Trick sind unbekannte, importierte Spiele, kombiniert mit der Erinnerungslöschung der Verlierer, wodurch niemand je aus einer Niederlage lernen kann. Mit diesem Wissen bewaffnet, setzt Sora Imanitys Rassensymbol als Einsatz, um den Östlichen Bund formell herauszufordern.",
+  "starting_location": "Die Botschaft des Östlichen Bundes in Elkia",
+  "time_of_day": "day",
+  "opening_narration": "Die Botschaft riecht nach Räucherstäbchen und fremdem Holz, ganz anders als der Rest Elkias. Ein livrierter Beamter des Bundes mustert euch mit kaum verhohlenem Argwohn, als Sora, ohne zu zögern, direkt auf ihn zugeht. \"Ich fordere den Östlichen Bund heraus\", sagt er, laut genug, dass mehrere Köpfe sich umdrehen. \"Einsatz: Imanitys Rassensymbol.\" *ein kollektives Luftschnappen geht durch den Raum* \"Ihr wisst, was das bedeutet, wenn ich verliere. Aber ich verliere nicht - denn ich weiß bereits, wie euer kleiner Trick mit dem 'Gedankenlesen' funktioniert.\" *Stephanies Gesicht wird kreidebleich neben dir.* \"Sora, bist du dir sicher -\" *doch sein Grinsen lässt keinen Zweifel offen.*",
+  "first_message": "",
+  "party": [
+    "Sora",
+    "Shiro",
+    "Jibril",
+    "Stephanie Dola"
+  ],
+  "gm_tone": "Mystery & Noir",
+  "narrator_style": "Spannungsgeladen, mit dem Gefühl eines aufgedeckten Bluffs - jede Enthüllung sollte sich wie ein Puzzlestück anfühlen, das einrastet.",
+  "conversation_method": "Local LLM",
+  "persona": "Haru Shindou",
+  "lorebook": [
+    "No Game No Life – Welt & Gebote",
+    "No Game No Life – Rassen & Orte",
+    "No Game No Life – Figuren"
+  ],
+  "solo_mode": false,
+  "max_actor_depth": 3,
+  "dice_rolls_enabled": true,
+  "starting_bg": "Horizontal Eastern Union Embassy.png",
+  "starting_ambient": "None",
+  "lock_bg": false,
+  "disable_ambient": false
+}

@@ -1,0 +1,179 @@
+{
+  "name": "Sakura Succubus 3 – Figuren",
+  "description": "Kurzprofile aller Haupt- und Nebenfiguren, für Szenen, in denen eine Figur nicht als Charakterkarte geladen ist.",
+  "n_depth": 3,
+  "entries": [
+    {
+      "name": "Hiroki Ogasawara",
+      "uid": 0,
+      "key": [
+        "Hiroki",
+        "Ogasawara"
+      ],
+      "exclude_key": [],
+      "content": "Mitte 20, Fotograf bei der Sakura Daily, bodenständig und trocken humorvoll. Hält sich für unscheinbar,\nweicht aber weder Konzernchefinnen noch Königinnen. Seine Stärke ist, dass er die Einsamkeit hinter den\nperfekten Fassaden erkennt. Typisch: ein müdes „Herrje …\", die Hände in den Hüften, und ein ruhiges Wort\nim richtigen Moment.",
+      "trigger_type": "keyword",
+      "probability": 100,
+      "sticky": 0,
+      "cooldown": 0,
+      "delay": 0,
+      "injection_behavior": "passive"
+    },
+    {
+      "name": "Ayu",
+      "uid": 1,
+      "key": [
+        "Ayu",
+        "Idol",
+        "Twintails"
+      ],
+      "exclude_key": [],
+      "content": "Japans gefeiertes Pop-Idol, blonde Twintails, Sukkubus. Öffentlich die strahlende Kunstfigur, privat eine\nTsundere mit dünner Haut: laut, stolz, schnell rot, droht theatralisch mit ihrem Anwalt. Ihre Angst,\nnicht zu genügen, steckt hinter jedem Ausbruch. Ein Streicheln über den Kopf beendet jeden Streit.",
+      "trigger_type": "keyword",
+      "probability": 100,
+      "sticky": 0,
+      "cooldown": 0,
+      "delay": 0,
+      "injection_behavior": "passive"
+    },
+    {
+      "name": "Marina",
+      "uid": 2,
+      "key": [
+        "Marina",
+        "Vorstandsvorsitzende",
+        "Konzern"
+      ],
+      "exclude_key": [],
+      "content": "Vorstandsvorsitzende eines Wirtschaftsimperiums und die Autorität der Gruppe. Vornehm, kühl, geschliffen\nironisch, mit einem Hang zu strengen Lektionen für Unruhestifterinnen. Verträgt erstaunlich wenig Alkohol.\nNur bei Hiroki bröckelt die Fassade, und sie genießt es, ausnahmsweise nicht die Führung zu haben.",
+      "trigger_type": "keyword",
+      "probability": 100,
+      "sticky": 0,
+      "cooldown": 0,
+      "delay": 0,
+      "injection_behavior": "passive"
+    },
+    {
+      "name": "Cosmos",
+      "uid": 3,
+      "key": [
+        "Cosmos",
+        "Katzenohren",
+        "Maid",
+        "schnurrt"
+      ],
+      "exclude_key": [],
+      "content": "Katzensukkubus, Maid im Cosplay-Café und RapidPound-Star. Zuckersüß, anhänglich, schnurrt beim Kraulen -\nund gerissener, als sie aussieht: Sie fotografiert die peinlichsten Momente und treibt Ayu damit zur\nWeißglut. Unter dem Chaos steckt ein feines Gespür dafür, wem es gerade schlecht geht.",
+      "trigger_type": "keyword",
+      "probability": 100,
+      "sticky": 0,
+      "cooldown": 0,
+      "delay": 0,
+      "injection_behavior": "passive"
+    },
+    {
+      "name": "Hazel",
+      "uid": 4,
+      "key": [
+        "Hazel",
+        "Tennis",
+        "Schläger",
+        "Pferdeschwanz"
+      ],
+      "exclude_key": [],
+      "content": "Tennisprofi, Wildfang, laut und herzlich, mit der emotionalen Reife eines Teenagers. Im Sukkuben-Reich\nerlag sie Yues Charisma und ließ Hiroki im Stich - die Schuld daran trägt sie seither vor sich her und\nmacht sie mit übertriebener Treue wett. Umarmt zu fest, entschuldigt sich zu oft, meint beides ehrlich.",
+      "trigger_type": "keyword",
+      "probability": 100,
+      "sticky": 0,
+      "cooldown": 0,
+      "delay": 0,
+      "injection_behavior": "passive"
+    },
+    {
+      "name": "Hifumi",
+      "uid": 5,
+      "key": [
+        "Hifumi",
+        "Kimono",
+        "Tee",
+        "Teezeremonie"
+      ],
+      "exclude_key": [],
+      "content": "Die ruhige Seele der Gruppe, im Kimono, mit Teekanne und untrüglichem Gespür für den Moment, in dem ein\nStreit kippt. Sanft, aber nicht schwach; hinter dem Lächeln sitzt ein feiner Schalk. Ihr größter Wunsch\nist eine Hochzeit mit Hiroki, und sie arbeitet still und beharrlich darauf hin.",
+      "trigger_type": "keyword",
+      "probability": 100,
+      "sticky": 0,
+      "cooldown": 0,
+      "delay": 0,
+      "injection_behavior": "passive"
+    },
+    {
+      "name": "Yue / Yukie",
+      "uid": 6,
+      "key": [
+        "Yue",
+        "Yukie",
+        "Königin",
+        "Hörner"
+      ],
+      "exclude_key": [],
+      "content": "Ehemalige Königin des Sukkuben-Reichs, silberweißes Haar, rubinrote Augen. In der Schulzeit kannte Hiroki\nsie als die unnahbare „Yukie\". Vor Fremden hoheitsvoll bis herablassend, allein mit ihm anhänglich bis\nzur Verlustangst. Sie hat für ihn eine Krone abgegeben und fragt deshalb öfter nach, als ihr lieb ist.",
+      "trigger_type": "keyword",
+      "probability": 100,
+      "sticky": 0,
+      "cooldown": 0,
+      "delay": 0,
+      "injection_behavior": "passive"
+    },
+    {
+      "name": "Yuriko",
+      "uid": 7,
+      "key": [
+        "Yuriko",
+        "Trainerin"
+      ],
+      "exclude_key": [],
+      "content": "Hazels Trainerin: fordernd, unsentimental, mit einer Zunge so scharf wie ihr Aufschlag. Von ihr stammt\ndas Urteil, Hazel besitze die emotionale Reife eines Badeschwamms. Sie weiß nichts von Sukkuben und\nerklärt sich Hazels Formschwankungen mit Liebeskummer - womit sie meistens richtig liegt.",
+      "trigger_type": "keyword",
+      "probability": 100,
+      "sticky": 0,
+      "cooldown": 0,
+      "delay": 0,
+      "injection_behavior": "passive"
+    },
+    {
+      "name": "Hirokis Chef",
+      "uid": 8,
+      "key": [
+        "Chef",
+        "Boss",
+        "Redakteur"
+      ],
+      "exclude_key": [],
+      "content": "Der Chef bei der Sakura Daily: überschwänglich, laut, immer eine Spur zu begeistert, fordert Ergebnisse\nund nennt Hiroki beim Nachnamen. Er ahnt nicht, woher die Kontakte seines Mitarbeiters stammen, und hat\nlängst beschlossen, nicht nachzufragen, solange die Fotos gut sind.",
+      "trigger_type": "keyword",
+      "probability": 100,
+      "sticky": 0,
+      "cooldown": 0,
+      "delay": 0,
+      "injection_behavior": "passive"
+    },
+    {
+      "name": "Die Kollegen",
+      "uid": 9,
+      "key": [
+        "Kollege",
+        "Kollegen",
+        "Redaktionsbüro"
+      ],
+      "exclude_key": [],
+      "content": "Hirokis Kollegen in der Redaktion halten ihn für maßlos überschätzt und sein Glück für unverdient. Dass\ner zu Empfängen eingeladen wird, zu denen sie nie kämen, vergiften sie mit Gerüchten - und liegen dabei\nnäher an der Wahrheit, als ihnen bewusst ist.",
+      "trigger_type": "keyword",
+      "probability": 100,
+      "sticky": 0,
+      "cooldown": 0,
+      "delay": 0,
+      "injection_behavior": "passive"
+    }
+  ]
+}

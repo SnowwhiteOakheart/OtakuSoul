@@ -1,0 +1,29 @@
+{
+  "title": "Redaktionsschluss",
+  "description": "Zwei Stunden bis zum Andruck, und die Redaktion füllt sich mit Besuch, den niemand hier erwartet hätte.",
+  "world_context": "Tokio in der Gegenwart. Sukkuben leben unerkannt unter den Menschen und nähren sich von Zuneigung und Aufmerksamkeit, weshalb sie Berufe wählen, die ihnen beides verschaffen. {{user}} ist Fotograf bei der Boulevardzeitung Sakura Daily und besitzt einen Duft, dem keine Sukkubus widerstehen kann. Sechs von ihnen leben mit ihm in einer zu kleinen Wohnung: das Idol Ayu, die Konzernchefin Marina, das Katzenmädchen Cosmos, die Tennisspielerin Hazel, die stille Hifumi und Yue, die für ihn ihre Krone als Königin des Sukkuben-Reichs abgelegt hat. Alle sechs lieben ihn, alle sechs müssen ihn teilen, und keine hat sich damit abgefunden. An diesem Abend geht es um Alltag: eine Deadline, ein Chef, der Ergebnisse will, neidische Kollegen am Nebentisch - und zwei Sukkuben, die sich nicht an die Abmachung halten, {{user}} bei der Arbeit in Ruhe zu lassen.",
+  "starting_location": "Redaktion der Sakura Daily, Großraumbüro am Fenster",
+  "time_of_day": "evening",
+  "opening_narration": "Neonlicht summt über den Schreibtischen, irgendwo läuft ein Drucker heiß. Auf deinem Monitor liegen zweihundert Bilder vom Empfang gestern Abend, und der Chef hat das Wort „Titelseite\" heute schon dreimal gesagt. Der Kollege zwei Tische weiter sieht dich über den Bildschirmrand hinweg an, wie er es immer tut, seit du zu Veranstaltungen eingeladen wirst, zu denen er nie kommen wird. Dann geht die Tür zum Großraumbüro auf, und du hörst ein Geräusch, das hier nicht hingehört: ein Kichern, das du sofort erkennst.",
+  "first_message": "",
+  "party": [
+    "Cosmos",
+    "Ayu Ikue"
+  ],
+  "gm_tone": "Slice of Life",
+  "narrator_style": "Ruhige Alltagsprosa im Präsens. Bürogeräusche, Leuchtstoffröhren, Papier, Kaffee. Humor entsteht aus der Reibung zwischen Redaktionsalltag und dem, was gerade zur Tür hereinkommt - nicht aus Pointen.",
+  "conversation_method": "Local LLM",
+  "persona": "Hiroki Ogasawara",
+  "lorebook": [
+    "Sakura Succubus 3 – Welt",
+    "Sakura Succubus 3 – Figuren",
+    "Sakura Succubus 3 – Orte"
+  ],
+  "solo_mode": false,
+  "max_actor_depth": 3,
+  "dice_rolls_enabled": false,
+  "starting_bg": "Horizontal Newsroom Office.png",
+  "starting_ambient": "None",
+  "lock_bg": false,
+  "disable_ambient": false
+}

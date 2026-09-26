@@ -197,7 +197,7 @@ mod tests {
 
     #[test]
     fn test_load_character_json() {
-        let path = Path::new("/home/deathtrap/development/Soul-of-Waifu-linux/presets/sakura-succubus-3/ayu_ikue.json");
+        let path = Path::new("/home/deathtrap/development/OtakuSoul/presets/sakura-succubus-3/ayu_ikue.json");
         if path.exists() {
             let profile = load_character_from_file(path).expect("Failed to load ayu_ikue.json");
             assert_eq!(profile.card.data.name, "Ayu Ikue");
@@ -208,7 +208,7 @@ mod tests {
 
     #[test]
     fn test_load_character_png() {
-        let path = Path::new("/home/deathtrap/development/Soul-of-Waifu-linux/app/utils/ai_clients/backend/_temp/gateway_cache/Akane Kurokawa.png");
+        let path = Path::new("/home/deathtrap/development/OtakuSoul/presets/cards/Akane Kurokawa.png");
         if path.exists() {
             let profile = load_character_from_file(path).expect("Failed to load Akane Kurokawa.png");
             assert_eq!(profile.card.data.name, "Akane Kurokawa");

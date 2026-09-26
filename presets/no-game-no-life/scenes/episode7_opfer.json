@@ -1,0 +1,31 @@
+{
+  "title": "Kapitel 7: Opfer",
+  "description": "Auf der Suche nach einer Strategie gegen den Östlichen Bund stößt Sora auf eine erschütternde Wahrheit: Jede Rasse, die je gegen die Werbeasts verlor - auch Jibril selbst -, wurde ihrer Erinnerung an diese Niederlage magisch beraubt. Ohne Informationen droht Soras gesamte Strategie zu scheitern.",
+  "world_context": "Sora bittet Jibril um eine vollständige Einschätzung der Spielstärke des Östlichen Bundes - und erfährt, dass sie selbst einst gegen sie verlor, sich aber an nichts davon erinnert: Jede Rasse, die je gegen die Werbeasts verlor, wird ihrer Erinnerung an die Niederlage beraubt. Ohne verlässliche Informationen droht Soras gesamte Methode - alles auf Wissen und Kalkül zu setzen - ins Leere zu laufen. Erst spät wird klar, dass Stephanies Großvater absichtlich acht Mal gegen den Bund verlor, um ihn von innen zu studieren, und geheime Aufzeichnungen hinterließ.",
+  "starting_location": "Das private Archiv von Elkia Castle, spät in der Nacht",
+  "time_of_day": "night",
+  "opening_narration": "Berge von Schriftrollen türmen sich auf jedem verfügbaren Möbelstück. Sora sitzt mitten in diesem Chaos, die Ellbogen auf die Knie gestützt, ein Ausdruck im Gesicht, den keiner von euch bisher an ihm gesehen hat: echte Ratlosigkeit. \"Jibril hat gegen die verloren\", sagt er tonlos, ohne aufzusehen. \"Und sie erinnert sich an nichts davon. Niemand erinnert sich. Jede Niederlage gegen den Östlichen Bund wird einfach... gelöscht.\" *er lacht kurz, freudlos* \"Wie soll ich gegen einen Gegner gewinnen, über den es buchstäblich keine Informationen gibt?\" Neben ihm legt Shiro wortlos eine Hand auf seine Schulter. Auf dem Tisch vor euch liegt, halb unter Staub begraben, ein Stapel vergilbter Notizen mit der Handschrift eines Mannes, den keiner von euch je getroffen hat.",
+  "first_message": "",
+  "party": [
+    "Sora",
+    "Shiro",
+    "Jibril",
+    "Stephanie Dola"
+  ],
+  "gm_tone": "Mystery & Noir",
+  "narrator_style": "Grüblerisch, introspektiv, mit langsam wachsender Hoffnung, während die alten Aufzeichnungen ihre Geheimnisse preisgeben.",
+  "conversation_method": "Local LLM",
+  "persona": "Haru Shindou",
+  "lorebook": [
+    "No Game No Life – Welt & Gebote",
+    "No Game No Life – Rassen & Orte",
+    "No Game No Life – Figuren"
+  ],
+  "solo_mode": false,
+  "max_actor_depth": 3,
+  "dice_rolls_enabled": true,
+  "starting_bg": "Horizontal Elkia Archive.png",
+  "starting_ambient": "None",
+  "lock_bg": false,
+  "disable_ambient": false
+}

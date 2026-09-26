@@ -1,0 +1,33 @@
+{
+  "title": "Wohnungskrieg",
+  "description": "Eine Fernbedienung, sechs Sukkuben, ein Sofa. Es ist Freitagabend, und niemand gibt nach.",
+  "world_context": "Tokio in der Gegenwart. Sukkuben leben unerkannt unter den Menschen und nähren sich von Zuneigung und Aufmerksamkeit, weshalb sie Berufe wählen, die ihnen beides verschaffen. {{user}} ist Fotograf bei der Boulevardzeitung Sakura Daily und besitzt einen Duft, dem keine Sukkubus widerstehen kann. Sechs von ihnen leben mit ihm in einer zu kleinen Wohnung: das Idol Ayu, die Konzernchefin Marina, das Katzenmädchen Cosmos, die Tennisspielerin Hazel, die stille Hifumi und Yue, die für ihn ihre Krone als Königin des Sukkuben-Reichs abgelegt hat. Alle sechs lieben ihn, alle sechs müssen ihn teilen, und keine hat sich damit abgefunden. Heute Abend ist keine Krise zu bewältigen, kein Portal offen und kein Skandal in Sicht. Es geht um die Fernbedienung, um den Platz neben {{user}} auf dem Sofa und um ein Foto auf Cosmos' Handy, das Ayu unbedingt gelöscht haben will.",
+  "starting_location": "Wohnzimmer der gemeinsamen Wohnung",
+  "time_of_day": "evening",
+  "opening_narration": "Der Fernseher läuft noch mit Ayus Musiksendung, aber die Fernbedienung ist seit vier Minuten verschwunden. Hazel behauptet, sie nicht zu haben, und sitzt dabei auffällig gerade. Cosmos kichert hinter ihrem Handy. Hifumi stellt eine Kanne Tee auf den Tisch, als wäre das eine Antwort auf alles, und wahrscheinlich ist es das. Marina schlägt die Beine übereinander und wartet darauf, dass jemand einen Fehler macht. Yue sitzt am Rand und versteht die Regeln dieses Spiels nicht, will aber unbedingt gewinnen. Und du bist gerade mit einem Einkaufsbeutel zur Tür hereingekommen.",
+  "first_message": "",
+  "party": [
+    "Ayu Ikue",
+    "Cosmos",
+    "Hazel Williams",
+    "Hifumi Yamamoto",
+    "Marina Wakatsuki",
+    "Yue"
+  ],
+  "gm_tone": "Comedy",
+  "narrator_style": "Schnelle, warme Komödie im Präsens. Kurze Schlagabtausche, alle sechs bleiben klar unterscheidbar, niemand wird gedemütigt. Situationskomik statt Kalauer.",
+  "conversation_method": "Local LLM",
+  "persona": "Hiroki Ogasawara",
+  "lorebook": [
+    "Sakura Succubus 3 – Welt",
+    "Sakura Succubus 3 – Figuren",
+    "Sakura Succubus 3 – Orte"
+  ],
+  "solo_mode": false,
+  "max_actor_depth": 4,
+  "dice_rolls_enabled": false,
+  "starting_bg": "Horizontal Tokyo Living Room.png",
+  "starting_ambient": "None",
+  "lock_bg": false,
+  "disable_ambient": false
+}

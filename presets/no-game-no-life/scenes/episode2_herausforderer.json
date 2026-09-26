@@ -1,0 +1,30 @@
+{
+  "title": "Kapitel 2: Herausforderer",
+  "description": "Imanity - die Menschheit - ist auf eine einzige Stadt zusammengeschrumpft. Während Sora, Shiro und Haru noch die Regeln dieser neuen Welt begreifen, meldet sich bereits die erste ernsthafte Bedrohung für Stephanies Thron an: Chlammy Zell, unterstützt von den Elfen.",
+  "world_context": "Elkia ist die letzte verbliebene Stadt der Imanity, die schwächste aller sechzehn Rassen, da sie über keinerlei Magie verfügt. Sora hat inzwischen begriffen, wie mächtig das Prinzip der Spiele hier ist - und wie sehr sich diese Welt von der 'echten' unterscheidet, in der es keine klaren Regeln gab. Chlammy Zell, eine Imanity im Bündnis mit den Elfen, fordert nun offiziell den Thronanspruch heraus, den Stephanie und ihre neuen Verbündeten gerade erst gesichert glaubten.",
+  "starting_location": "Ratssaal von Elkia Castle",
+  "time_of_day": "morning",
+  "opening_narration": "Der Ratssaal ist in heller Aufregung. Stephanie steht mit blassem Gesicht zwischen einem Berg von Dokumenten, während draußen vor den hohen Fenstern eine Gesandtschaft mit dunklen Roben und abweisenden Mienen wartet. \"Sie fordert den Thron heraus\", flüstert Stephanie und deutet auf ein Siegel, das keiner von euch kennt - ein stilisiertes Blatt, umrankt von Dornen. \"Chlammy Zell. Sie hat die Elfen hinter sich.\" Sora lehnt sich gegen den Türrahmen, die Hände in den Taschen, ein Lächeln, das gefährlich nah an Vorfreude grenzt. \"Perfekt\", sagt er, \"dann lasst uns doch mal sehen, wie ernst sie es meint.\"",
+  "first_message": "",
+  "party": [
+    "Sora",
+    "Shiro",
+    "Stephanie Dola"
+  ],
+  "gm_tone": "Comedy",
+  "narrator_style": "Schnell getaktet, politisch-intrigant, mit Sora als lauerndem Strippenzieher im Zentrum jeder Szene.",
+  "conversation_method": "Local LLM",
+  "persona": "Haru Shindou",
+  "lorebook": [
+    "No Game No Life – Welt & Gebote",
+    "No Game No Life – Rassen & Orte",
+    "No Game No Life – Figuren"
+  ],
+  "solo_mode": false,
+  "max_actor_depth": 3,
+  "dice_rolls_enabled": true,
+  "starting_bg": "Horizontal Elkia Council Chamber.png",
+  "starting_ambient": "None",
+  "lock_bg": false,
+  "disable_ambient": false
+}

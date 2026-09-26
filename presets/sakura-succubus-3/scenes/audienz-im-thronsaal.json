@@ -1,0 +1,30 @@
+{
+  "title": "Audienz im Thronsaal",
+  "description": "Das Reich schickt eine Gesandtschaft: Die Königin möge zurückkehren. Yue hat abgedankt - aber der Thron steht leer.",
+  "world_context": "Tokio in der Gegenwart. Sukkuben leben unerkannt unter den Menschen und nähren sich von Zuneigung und Aufmerksamkeit, weshalb sie Berufe wählen, die ihnen beides verschaffen. {{user}} ist Fotograf bei der Boulevardzeitung Sakura Daily und besitzt einen Duft, dem keine Sukkubus widerstehen kann. Sechs von ihnen leben mit ihm in einer zu kleinen Wohnung: das Idol Ayu, die Konzernchefin Marina, das Katzenmädchen Cosmos, die Tennisspielerin Hazel, die stille Hifumi und Yue, die für ihn ihre Krone als Königin des Sukkuben-Reichs abgelegt hat. Alle sechs lieben ihn, alle sechs müssen ihn teilen, und keine hat sich damit abgefunden. Seit Yues Abdankung ist der Thron des Sukkuben-Reichs leer, und ein leerer Thron bleibt nicht lange unbeachtet. Eine Gesandtschaft hat sie zurückgerufen - höflich im Wortlaut, unmissverständlich in der Sache. Yue hat darauf bestanden, dass {{user}} sie begleitet. Marina kam mit, weil sie niemandem traut, und Hazel, weil sie etwas gutzumachen hat: Im Reich erlag sie schon einmal dem Charisma der Königin und ließ {{user}} im Stich.",
+  "starting_location": "Thronsaal des Palasts im Sukkuben-Reich",
+  "time_of_day": "night",
+  "opening_narration": "Das Portal schließt sich hinter euch mit einem Geräusch wie ein zufallendes Buch. Der Thronsaal ist größer, als Erinnerung ihn machen kann: dunkler Stein, violettes Dämmerlicht, eine Decke, die sich im Halbdunkel verliert. Auf dem Podest steht der Thron, leer, und niemand im Saal sieht ihn direkt an. Die Gesandtschaft wartet in einem Halbkreis - sechs Gestalten, deren Verbeugung eine Spur zu flach ausfällt. Neben dir hebt Yue das Kinn, und für einen Moment ist sie wieder ganz die Herrscherin. Ihre Hand sucht trotzdem deinen Ärmel.",
+  "first_message": "",
+  "party": [
+    "Yue",
+    "Marina Wakatsuki",
+    "Hazel Williams"
+  ],
+  "gm_tone": "Epic Fantasy",
+  "narrator_style": "Getragene, bildstarke Prosa im Präsens, ohne Schwulst. Höfische Sprache in der Rede, Macht wird durch Haltung und Schweigen verhandelt, nicht durch Kampf.",
+  "conversation_method": "Local LLM",
+  "persona": "Hiroki Ogasawara",
+  "lorebook": [
+    "Sakura Succubus 3 – Welt",
+    "Sakura Succubus 3 – Figuren",
+    "Sakura Succubus 3 – Orte"
+  ],
+  "solo_mode": false,
+  "max_actor_depth": 3,
+  "dice_rolls_enabled": true,
+  "starting_bg": "Horizontal Succubus Throne Room.png",
+  "starting_ambient": "None",
+  "lock_bg": false,
+  "disable_ambient": false
+}

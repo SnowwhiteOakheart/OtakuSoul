@@ -23,8 +23,10 @@ src-tauri/gen/schemas/
 .env.*
 !.env.example
 
-# Large AI models & local cache
+# Large AI models & local binaries
+bin/
 models/
+assets/models/
 *.gguf
 *.bin
 *.pt

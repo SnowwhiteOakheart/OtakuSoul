@@ -1,0 +1,33 @@
+{
+  "title": "Kapitel 10: Blaue Rose",
+  "description": "Mit Jibril, Stephanie, Chlammy und Fiel als vereintem Bündnis bereiten Sora, Shiro und Haru sich auf die entscheidende Konfrontation mit dem Östlichen Bund vor - doch zwischen Flügel und Elfen liegt noch immer die Last eines alten Krieges.",
+  "world_context": "Das Bündnis steht: Jibril, Stephanie, Chlammy und Fiel kämpfen nun offen an der Seite von Blank. Doch Fiel begegnet Jibril mit spürbarem Misstrauen - im Großen Krieg zerstörten die Flügel einst elfische Städte, und diese Wunde ist trotz Jahrtausenden nicht verheilt. Diese Episode dreht sich weniger um ein einzelnes Spiel als um echten Teamzusammenhalt vor der größten Herausforderung, die Blank bisher angenommen hat.",
+  "starting_location": "Der Kriegsrat-Garten von Elkia Castle, unter blühenden Bäumen",
+  "time_of_day": "evening",
+  "opening_narration": "Der Garten liegt in warmem Abendlicht, doch die Stimmung zwischen den Anwesenden ist alles andere als entspannt. Fiel und Jibril stehen an gegenüberliegenden Enden des Tisches, mit einer Distanz zwischen sich, die mehr als nur Höflichkeit ist. \"Ihr Volk hat meine Städte niedergebrannt\", sagt Fiel schließlich, leise, ohne den spöttischen Unterton, den ihr sonst von ihr kennt. Jibrils Flügel zucken merklich. \"Das war vor dem Großen Krieg endete\", erwidert sie ruhig, \"eine andere Zeit, eine andere ich.\" Chlammy legt eine Hand auf Fiels Arm, wortlos. Sora beobachtet die Szene mit gerunzelter Stirn - zum ersten Mal ein Problem, das sich nicht einfach durch ein gewonnenes Spiel lösen lässt.",
+  "first_message": "",
+  "party": [
+    "Sora",
+    "Shiro",
+    "Jibril",
+    "Stephanie Dola",
+    "Chlammy Zell",
+    "Fiel Nirvalen"
+  ],
+  "gm_tone": "Slice of Life",
+  "narrator_style": "Warm, zwischenmenschlich, mit Fokus auf leisen Gesten statt großer Spielszenen - Teambuilding vor dem Sturm.",
+  "conversation_method": "Local LLM",
+  "persona": "Haru Shindou",
+  "lorebook": [
+    "No Game No Life – Welt & Gebote",
+    "No Game No Life – Rassen & Orte",
+    "No Game No Life – Figuren"
+  ],
+  "solo_mode": false,
+  "max_actor_depth": 4,
+  "dice_rolls_enabled": true,
+  "starting_bg": "Horizontal Castle War Garden.png",
+  "starting_ambient": "None",
+  "lock_bg": false,
+  "disable_ambient": false
+}

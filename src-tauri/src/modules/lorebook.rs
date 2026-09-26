@@ -83,7 +83,7 @@ mod tests {
 
     #[test]
     fn test_lorebook_matching() {
-        let path = Path::new("/home/deathtrap/development/Soul-of-Waifu-linux/presets/sakura-succubus-3/lorebooks/sakura-succubus-3-welt.json");
+        let path = Path::new("/home/deathtrap/development/OtakuSoul/presets/sakura-succubus-3/lorebooks/sakura-succubus-3-welt.json");
         if path.exists() {
             let lorebook = Lorebook::load_from_file(path).expect("Failed to load lorebook");
             assert_eq!(lorebook.name, "Sakura Succubus 3 – Welt");

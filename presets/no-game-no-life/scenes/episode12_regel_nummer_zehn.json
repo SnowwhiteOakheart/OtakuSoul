@@ -1,0 +1,33 @@
+{
+  "title": "Kapitel 12: Regel Nummer Zehn",
+  "description": "Izunas Blutentfesselung droht, Blank endgültig in die Enge zu treiben - doch der entscheidende Schuss kommt von unerwarteter Seite. Season-Finale: Sieg über den Östlichen Bund, ein gewagter Münzwurf gegen die Schrein-Priesterin, und die Geburt des Commonwealth of Elkia.",
+  "world_context": "Izuna, nun in voller Blutentfesselung, bewegt sich scheinbar schneller als das Spiel selbst es erlaubt und drängt Blank in die Defensive - doch Sora hatte längst einen letzten Trumpf zurückgehalten: einen Gefallen bei Stephanie, die im entscheidenden Moment den finalen Treffer landet. Mit Imanitys Sieg über den Östlichen Bund gesichert, verhandelt Sora anschließend direkt mit der Schrein-Priesterin - per Münzwurf, den er so präzise wirft, dass die Münze senkrecht auf ihrer Kante stehen bleibt, weder Kopf noch Zahl. Ein Unentschieden, das beiden Seiten Gesicht wahren lässt und zum neuen Commonwealth of Elkia führt - einem Bündnis aus Imanity und dem Östlichen Bund.",
+  "starting_location": "Das digitale Schlachtfeld, kurz vor dem Ende, danach der Thronsaal des Östlichen Bundes",
+  "time_of_day": "day",
+  "opening_narration": "Izuna ist kaum noch als das kindliche Mädchen von vorhin zu erkennen - ihre Bewegungen verschwimmen zu bloßen Lichtstreifen, jeder Schuss von euch verfehlt sie um Haaresbreite. Sora lacht, außer Atem, aber nicht besorgt. \"Wusstest du\", ruft er zwischen zwei hechtenden Ausweichmanövern, \"dass wir diesen Kampf schon vor zehn Minuten gewonnen haben?\" Im selben Moment senkt Izuna für den Bruchteil einer Sekunde die Deckung, geblendet von echter Spielfreude - und aus einem Winkel, den niemand erwartet hatte, feuert Stephanie den entscheidenden Schuss. \"Volltreffer!\", ruft sie, selbst überrascht von ihrem eigenen Mut. Das Feld löst sich in goldenes Licht auf. Imanitys Rassensymbol - und der Sieg über den Östlichen Bund - gehört Blank.",
+  "first_message": "",
+  "party": [
+    "Sora",
+    "Shiro",
+    "Jibril",
+    "Stephanie Dola",
+    "Chlammy Zell",
+    "Fiel Nirvalen"
+  ],
+  "gm_tone": "Epic Fantasy",
+  "narrator_style": "Triumphal, warm, mit einem ruhigen, versöhnlichen Ausklang nach dem Sieg - die Schrein-Priesterin sollte mit Würde und leiser Anerkennung für Sora dargestellt werden, nicht als besiegte Gegnerin. Lass das Kapitel mit einem Gefühl von 'gefundener Familie' enden: Sora, Shiro und Haru, umgeben von allen, die sie auf dem Weg gewonnen haben, mit dem gemeinsamen Ziel vor Augen, eines Tages alle sechzehn Rassen zu vereinen.",
+  "conversation_method": "Local LLM",
+  "persona": "Haru Shindou",
+  "lorebook": [
+    "No Game No Life – Welt & Gebote",
+    "No Game No Life – Rassen & Orte",
+    "No Game No Life – Figuren"
+  ],
+  "solo_mode": false,
+  "max_actor_depth": 4,
+  "dice_rolls_enabled": true,
+  "starting_bg": "Horizontal Eastern Union Throne Hall.png",
+  "starting_ambient": "None",
+  "lock_bg": false,
+  "disable_ambient": false
+}

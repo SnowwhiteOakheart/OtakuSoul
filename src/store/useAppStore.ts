@@ -143,7 +143,7 @@ export const useAppStore = create<AppStoreState>((set, get) => ({
   },
 
   serverConfig: {
-    model_path: '/home/deathtrap/development/Soul-of-Waifu-linux/assets/local_llm/Gemma4-12B-QAT-Uncensored-HauhauCS-Balanced-Q4_K_M.gguf',
+    model_path: '/home/deathtrap/development/OtakuSoul/assets/models/Gemma4-12B-QAT-Uncensored-HauhauCS-Balanced-Q4_K_M.gguf',
     port: 48596,
     context_size: 4096,
     gpu_layers: 99,
@@ -500,11 +500,12 @@ export const useAppStore = create<AppStoreState>((set, get) => ({
 
   loadPresetCharacters: async () => {
     const candidatePaths = [
-      '/home/deathtrap/development/Soul-of-Waifu-linux/presets/sakura-succubus-3/ayu_ikue.json',
-      '/home/deathtrap/development/Soul-of-Waifu-linux/presets/sakura-succubus-3/cosmos.json',
-      '/home/deathtrap/development/Soul-of-Waifu-linux/presets/sakura-succubus-3/hazel_williams.json',
-      '/home/deathtrap/development/Soul-of-Waifu-linux/app/utils/ai_clients/backend/_temp/gateway_cache/Akane Kurokawa.png',
-      '/home/deathtrap/development/Soul-of-Waifu-linux/app/utils/ai_clients/backend/_temp/gateway_cache/Makise Kurisu.png',
+      '/home/deathtrap/development/OtakuSoul/presets/sakura-succubus-3/ayu_ikue.json',
+      '/home/deathtrap/development/OtakuSoul/presets/sakura-succubus-3/cosmos.json',
+      '/home/deathtrap/development/OtakuSoul/presets/sakura-succubus-3/hazel_williams.json',
+      '/home/deathtrap/development/OtakuSoul/presets/cards/Akane Kurokawa.png',
+      '/home/deathtrap/development/OtakuSoul/presets/cards/Makise Kurisu.png',
+      '/home/deathtrap/development/OtakuSoul/presets/cards/Cosmos.png',
     ];
 
     const loaded: CharacterProfile[] = [];
@@ -527,7 +528,7 @@ export const useAppStore = create<AppStoreState>((set, get) => ({
     // Try loading default world lorebook
     try {
       const lore = await api.loadLorebook(
-        '/home/deathtrap/development/Soul-of-Waifu-linux/presets/sakura-succubus-3/lorebooks/sakura-succubus-3-welt.json'
+        '/home/deathtrap/development/OtakuSoul/presets/sakura-succubus-3/lorebooks/sakura-succubus-3-welt.json'
       );
       set({ activeLorebooks: [lore] });
     } catch (e) {

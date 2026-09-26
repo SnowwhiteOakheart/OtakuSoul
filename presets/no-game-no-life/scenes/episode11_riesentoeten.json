@@ -1,0 +1,33 @@
+{
+  "title": "Kapitel 11: Riesentöten",
+  "description": "Der große Showdown gegen den Östlichen Bund beginnt: ein Vollimmersions-Ego-Shooter namens 'Love or Loved 2', in dem Liebeskugeln über den Sieg entscheiden. Blanks Gegnerin: das achtjährige Spielgenie Izuna Hatsuse.",
+  "world_context": "Der entscheidende Kampf um Imanitys Zukunft findet in einem vollimmersiven Ego-Shooter namens 'Love or Loved 2: Triff sie mit deiner Kugel der Liebe!' statt - wer getroffen wird, wechselt die Seiten, und Treffer auf tierohrige Gegnerinnen laden die eigene Waffe wieder auf. Izuna Hatsuse, das achtjährige Spielgenie des Östlichen Bundes, erweist sich als furchteinflößend kompetente Gegnerin - bis sie zum ersten Mal in ihrem Leben echten Spielspaß empfindet und ihre volle Kraft, die 'Blutentfesselung', entfesselt.",
+  "starting_location": "Ein digitales Schlachtfeld irgendwo zwischen zerstörten Häuserzeilen, vollimmersiv erschaffen",
+  "time_of_day": "day",
+  "opening_narration": "Die Welt um euch flackert kurz, dann wird sie fester als real: zerbombte Straßenzüge, greller Himmel, in eurer Hand eine Waffe, die eher nach Spielzeugpistole als nach Vernichtungswerkzeug aussieht - bis das erste Projektil, ein Herz aus reiner Energie, an einer Wand explodiert. Aus dem Rauch löst sich eine kleine Gestalt mit wedelndem Fuchsschwanz, kindliches Grinsen, tödlich präzise Bewegungen. \"Ihr seid also Blank, desu?\", ruft Izuna über das Feld, bereits im Anschlag. \"Izuna hat gehört, ihr habt noch nie verloren. Mal sehen, ob das heute noch stimmt!\" *ihre Augen wechseln für einen Sekundenbruchteil zu etwas beunruhigend Scharfem.* Sora grinst zurück, entspannt trotz der Anspannung ringsum. \"Klein, aber gefährlich. Genau mein Fall.\"",
+  "first_message": "",
+  "party": [
+    "Sora",
+    "Shiro",
+    "Jibril",
+    "Stephanie Dola",
+    "Chlammy Zell",
+    "Fiel Nirvalen"
+  ],
+  "gm_tone": "Sci-Fi",
+  "narrator_style": "Actiongeladen, schnell, mit taktischem Fokus auf Positionierung und vorausberechneten Bewegungen - lass Spannung entstehen, wenn Izuna nach ihrer Blutentfesselung die Spielregeln der Physik selbst zu sprengen scheint.",
+  "conversation_method": "Local LLM",
+  "persona": "Haru Shindou",
+  "lorebook": [
+    "No Game No Life – Welt & Gebote",
+    "No Game No Life – Rassen & Orte",
+    "No Game No Life – Figuren"
+  ],
+  "solo_mode": false,
+  "max_actor_depth": 4,
+  "dice_rolls_enabled": true,
+  "starting_bg": "Horizontal Digital Battlefield.png",
+  "starting_ambient": "None",
+  "lock_bg": false,
+  "disable_ambient": false
+}

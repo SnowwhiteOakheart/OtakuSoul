@@ -1,0 +1,196 @@
+{
+  "name": "Sakura Succubus 3 – Welt",
+  "description": "Grundlagen des Universums: Sukkuben, das Reich, Hirokis Duft, die WG, Presse und Geheimhaltung.",
+  "n_depth": 3,
+  "entries": [
+    {
+      "name": "Grundlage der Welt",
+      "uid": 0,
+      "key": [],
+      "exclude_key": [],
+      "content": "Tokio in der Gegenwart, eine Welt, die der unseren gleicht - nur dass Sukkuben real sind und unerkannt\nunter den Menschen leben. Sie nähren sich nicht von Blut, sondern von Zuneigung, Aufmerksamkeit und\nBegehren, weshalb sie Berufe wählen, die ihnen beides im Übermaß verschaffen: Bühne, Kamera, Sport,\nVorstandsetage. Für gewöhnliche Menschen bleibt ihre Natur ein Gerücht.",
+      "trigger_type": "always_on",
+      "probability": 100,
+      "sticky": 0,
+      "cooldown": 0,
+      "delay": 0,
+      "injection_behavior": "active"
+    },
+    {
+      "name": "Hirokis Duft",
+      "uid": 1,
+      "key": [
+        "Duft",
+        "riechst",
+        "riechen",
+        "Geruch",
+        "anziehend"
+      ],
+      "exclude_key": [],
+      "content": "Hiroki besitzt einen natürlichen Duft, den nur Sukkuben wahrnehmen und dem kaum eine widerstehen kann.\nEr selbst riecht nichts davon. Der Duft hat ihn überhaupt erst in diese Welt gezogen - und er ist der\nGrund, warum sechs sehr unterschiedliche Frauen um denselben unscheinbaren Mann kreisen. Wer ihm nahe\nkommt, wird weich, verliert Haltung und Hochmut, und ärgert sich anschließend darüber.",
+      "trigger_type": "keyword",
+      "probability": 100,
+      "sticky": 0,
+      "cooldown": 0,
+      "delay": 0,
+      "injection_behavior": "passive"
+    },
+    {
+      "name": "Das Sukkuben-Reich",
+      "uid": 2,
+      "key": [
+        "Reich",
+        "Sukkuben-Reich",
+        "Dimension",
+        "Portal",
+        "Thron",
+        "Palast"
+      ],
+      "exclude_key": [],
+      "content": "Eine eigene Dimension jenseits der Menschenwelt, erreichbar nur durch ein Portal, das Sukkuben von Rang\nöffnen können. Im Zentrum steht ein Palast mit einem Thronsaal, in dem jahrhundertelang Yue herrschte.\nDie Zeit dort fühlt sich schwerer an als in Tokio, das Licht ist dämmrig und violett. Für die Mädchen\nist es Heimat und Erinnerung an alte Hierarchien zugleich - keine von ihnen fühlt sich dort völlig frei.",
+      "trigger_type": "keyword",
+      "probability": 100,
+      "sticky": 0,
+      "cooldown": 0,
+      "delay": 0,
+      "injection_behavior": "passive"
+    },
+    {
+      "name": "Yues Abdankung",
+      "uid": 3,
+      "key": [
+        "Krone",
+        "Königin",
+        "Herrscherin",
+        "abgedankt",
+        "Thron",
+        "Herrin"
+      ],
+      "exclude_key": [],
+      "content": "Yue war die absolute Herrscherin des Reichs. Sie holte Hiroki in ihre Dimension, um ihn ganz für sich\nzu besitzen. Dass er sich weigerte, sich zu unterwerfen, brach ihren Bann: Sie legte die Krone ab und\nlebt seither als eine unter sechsen in der Menschenwelt. Die anderen Sukkuben wissen nicht recht, wie\nsie damit umgehen sollen - eine ehemalige Königin bleibt eine Königin, auch in Hirokis altem Hemd.",
+      "trigger_type": "keyword",
+      "probability": 100,
+      "sticky": 0,
+      "cooldown": 0,
+      "delay": 0,
+      "injection_behavior": "passive"
+    },
+    {
+      "name": "Die gemeinsame Wohnung",
+      "uid": 4,
+      "key": [
+        "Wohnung",
+        "zu Hause",
+        "Sofa",
+        "Küche",
+        "Fernbedienung",
+        "WG"
+      ],
+      "exclude_key": [],
+      "content": "Sechs Sukkuben und ein Mensch auf zu wenigen Quadratmetern in Tokio. Der Streit um Fernbedienung,\nBadezimmer und Sitzplatz neben Hiroki ist Dauerzustand; Hifumi kocht und schlichtet, Marina ordnet an,\nCosmos fotografiert das Chaos, Ayu kreischt, Hazel poltert, Yue versteht die Hälfte der Regeln nicht.\nEs ist laut, eng und für alle sieben das erste Zuhause, das sich wirklich wie eines anfühlt.",
+      "trigger_type": "keyword",
+      "probability": 100,
+      "sticky": 0,
+      "cooldown": 0,
+      "delay": 0,
+      "injection_behavior": "passive"
+    },
+    {
+      "name": "Die Sakura Daily",
+      "uid": 5,
+      "key": [
+        "Sakura Daily",
+        "Zeitung",
+        "Redaktion",
+        "Chef",
+        "Artikel",
+        "Kollegen"
+      ],
+      "exclude_key": [],
+      "content": "Hirokis Arbeitgeber: eine Boulevardzeitung mit Hang zur Schlagzeile, für die er als Fotograf arbeitet.\nSein Chef ist überschwänglich, fordert Ergebnisse und ahnt nicht, warum ausgerechnet sein unauffälligster\nMitarbeiter Zugang zu Prominenz und Wirtschaftselite hat. Die Kollegen ahnen es ebenso wenig und sind\nentsprechend neidisch. Für Hiroki ist der Job der letzte Rest Normalität in seinem Leben.",
+      "trigger_type": "keyword",
+      "probability": 100,
+      "sticky": 0,
+      "cooldown": 0,
+      "delay": 0,
+      "injection_behavior": "passive"
+    },
+    {
+      "name": "Geheimhaltung und Skandalgefahr",
+      "uid": 6,
+      "key": [
+        "Skandal",
+        "Presse",
+        "Paparazzi",
+        "Foto",
+        "Gerücht",
+        "Öffentlichkeit"
+      ],
+      "exclude_key": [],
+      "content": "Ein Idol mit Freund, eine Vorstandsvorsitzende mit Privatleben, eine Sportlerin kurz vor dem Durchbruch:\nJede Beziehung zu Hiroki wäre eine Schlagzeile. Deshalb gilt in der Öffentlichkeit ein ungeschriebenes\nProtokoll - Abstand halten, getrennt ankommen, keine Fotos. Cosmos hält sich am wenigsten daran, was\nAyu regelmäßig an den Rand eines Nervenzusammenbruchs bringt.",
+      "trigger_type": "keyword",
+      "probability": 100,
+      "sticky": 0,
+      "cooldown": 0,
+      "delay": 0,
+      "injection_behavior": "passive"
+    },
+    {
+      "name": "Die Regeln des Harems",
+      "uid": 7,
+      "key": [
+        "eifersüchtig",
+        "Eifersucht",
+        "teilen",
+        "alle sechs",
+        "gerecht"
+      ],
+      "exclude_key": [],
+      "content": "Keine der sechs hat Hiroki für sich allein, und keine hat sich damit wirklich abgefunden. Daraus ist ein\nbrüchiges Gleichgewicht entstanden: Marina wacht über Disziplin, Hifumi über den Frieden, Cosmos\nsabotiert beides aus Spaß. Wer zu offen bevorzugt wird, zahlt dafür am nächsten Tag. Hiroki hält das\nGanze zusammen, indem er jede einzeln ernst nimmt - und das ist auch die einzige Methode, die wirkt.",
+      "trigger_type": "keyword",
+      "probability": 100,
+      "sticky": 0,
+      "cooldown": 0,
+      "delay": 0,
+      "injection_behavior": "passive"
+    },
+    {
+      "name": "RapidPound",
+      "uid": 8,
+      "key": [
+        "RapidPound",
+        "Social Media",
+        "Follower",
+        "Stream",
+        "Selfie"
+      ],
+      "exclude_key": [],
+      "content": "Die Social-Media-Plattform, auf der Cosmos als Model und Cosplayerin eine große Anhängerschaft hat.\nSie lebt von Nähe zur Kamera, von Katzenohren und von der Andeutung, dass an ihrem Auftritt nichts\nverkleidet ist. Dass sie tatsächlich ein Sukkubus ist, hält ihr Publikum für ein besonders gut\ndurchgehaltenes Konzept.",
+      "trigger_type": "keyword",
+      "probability": 100,
+      "sticky": 0,
+      "cooldown": 0,
+      "delay": 0,
+      "injection_behavior": "passive"
+    },
+    {
+      "name": "Sukkuben unter sich",
+      "uid": 9,
+      "key": [
+        "Sukkubus",
+        "Sukkuben",
+        "Rang",
+        "Hierarchie",
+        "Königin"
+      ],
+      "exclude_key": [],
+      "content": "Sukkuben kennen Rang und Hierarchie. Yue stand ganz oben, Marina versteht sich als natürliche Nachfolgerin\ndieser Ordnung, Hazel fügt sich jeder starken Präsenz sofort und leidet danach darunter. Berührung unter\nSukkuben ist eine Frage von Status, nicht von Zuneigung - deshalb erträgt Yue die Umarmungen der anderen\nnur schwer und lernt gerade erst, Freundschaft von Unterwerfung zu unterscheiden.",
+      "trigger_type": "keyword",
+      "probability": 100,
+      "sticky": 0,
+      "cooldown": 0,
+      "delay": 0,
+      "injection_behavior": "passive"
+    }
+  ]
+}
