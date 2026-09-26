@@ -1,9 +1,10 @@
-import React, { useState } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import { VrmViewer } from './VrmViewer';
 import { Live2DViewer } from './Live2DViewer';
 import { Box, Image, Sparkles, Smile, ChevronDown, Check } from 'lucide-react';
 import { CharacterProfile } from '../../types';
 import { useAppStore } from '../../store/useAppStore';
+import { selectCharacterPortrait } from '../../utils/characterPortraits';
 
 const ALL_GO_EMOTIONS = [
   'admiration', 'amusement', 'anger', 'annoyance', 'approval', 'caring',
@@ -17,6 +18,90 @@ interface AvatarCanvasProps {
   character: CharacterProfile | null;
   isSpeaking?: boolean;
 }
+
+interface MorphingPortraitProps {
+  src: string;
+  alt: string;
+  isSpeaking: boolean;
+}
+
+const MorphingPortrait: React.FC<MorphingPortraitProps> = ({ src, alt, isSpeaking }) => {
+  const [layers, setLayers] = useState<[string | null, string | null]>([src, null]);
+  const [visibleLayer, setVisibleLayer] = useState<0 | 1>(0);
+  const visibleLayerRef = useRef<0 | 1>(0);
+  const activeSourceRef = useRef(src);
+  const loadSequenceRef = useRef(0);
+  const clearTimerRef = useRef<number | null>(null);
+
+  useEffect(() => {
+    if (src === activeSourceRef.current) return;
+
+    const loadSequence = ++loadSequenceRef.current;
+    const preloader = new window.Image();
+
+    preloader.onload = () => {
+      if (loadSequence !== loadSequenceRef.current) return;
+
+      const nextLayer = (visibleLayerRef.current === 0 ? 1 : 0) as 0 | 1;
+      setLayers((current) => {
+        const next: [string | null, string | null] = [...current];
+        next[nextLayer] = src;
+        return next;
+      });
+
+      window.requestAnimationFrame(() => {
+        if (loadSequence !== loadSequenceRef.current) return;
+        visibleLayerRef.current = nextLayer;
+        activeSourceRef.current = src;
+        setVisibleLayer(nextLayer);
+
+        if (clearTimerRef.current !== null) window.clearTimeout(clearTimerRef.current);
+        clearTimerRef.current = window.setTimeout(() => {
+          setLayers((current) => {
+            const next: [string | null, string | null] = [...current];
+            next[nextLayer === 0 ? 1 : 0] = null;
+            return next;
+          });
+        }, 550);
+      });
+    };
+
+    preloader.src = src;
+
+    return () => {
+      preloader.onload = null;
+    };
+  }, [src]);
+
+  useEffect(() => () => {
+    if (clearTimerRef.current !== null) window.clearTimeout(clearTimerRef.current);
+  }, []);
+
+  return (
+    <div className="relative w-full max-w-sm aspect-[4/5] rounded-3xl overflow-hidden border-2 border-purple-500/40 shadow-2xl shadow-purple-500/10 transition-transform duration-700 hover:scale-[1.02]">
+      {layers.map((layerSource, index) => layerSource && (
+        <img
+          key={`${index}-${layerSource}`}
+          src={layerSource}
+          alt={index === visibleLayer ? alt : ''}
+          aria-hidden={index !== visibleLayer}
+          className={`absolute inset-0 w-full h-full object-cover transition-[opacity,filter,transform] duration-500 ease-out ${
+            index === visibleLayer
+              ? 'opacity-100 blur-0 scale-100'
+              : 'opacity-0 blur-sm scale-[1.03]'
+          } ${isSpeaking && index === visibleLayer ? 'brightness-105 scale-[1.02]' : ''}`}
+        />
+      ))}
+
+      {isSpeaking && (
+        <div className="absolute top-4 left-4 flex items-center gap-1.5 px-3 py-1 rounded-full bg-purple-900/80 border border-purple-500/60 text-purple-200 text-xs font-mono animate-pulse backdrop-blur">
+          <Sparkles className="w-3.5 h-3.5 text-pink-400 animate-spin" />
+          <span>Spricht...</span>
+        </div>
+      )}
+    </div>
+  );
+};
 
 export const AvatarCanvas: React.FC<AvatarCanvasProps> = ({
   character,
@@ -52,16 +137,12 @@ export const AvatarCanvas: React.FC<AvatarCanvasProps> = ({
 
   const live2dPath = matchedLive2d?.model_path || activeLive2dPath || '';
 
-  // 3. Resolve 2D Avatar URL or Emotion Expression Image / GIF
-  const expressionsMap =
-    (character?.card.data.extensions?.expressions as Record<string, string>) ||
-    (character?.card.data.extensions?.sow_expressions as Record<string, string>) ||
-    {};
-
-  const emotionImage =
-    expressionsMap[currentEmotion.emotion] ||
-    expressionsMap[currentEmotion.vrm_expression] ||
-    character?.avatar_data_url;
+  // 3. Resolve granular/canonical emotion portrait, then fall back to neutral/base avatar.
+  const emotionImage = selectCharacterPortrait(
+    character,
+    currentEmotion.emotion,
+    currentEmotion.vrm_expression
+  );
 
   const charName = character?.card.data.name || 'OtakuSoul Companion';
 
@@ -195,22 +276,7 @@ export const AvatarCanvas: React.FC<AvatarCanvasProps> = ({
         /* 2D Portrait / Expression Sprite Mode */
         <div className="relative w-full h-full flex flex-col items-center justify-center p-6 bg-gradient-to-b from-slate-900/60 via-purple-950/30 to-slate-950">
           {emotionImage ? (
-            <div className="relative group max-w-sm rounded-3xl overflow-hidden border-2 border-purple-500/40 shadow-2xl shadow-purple-500/10 transition-all duration-700 hover:scale-[1.02]">
-              <img
-                src={emotionImage}
-                alt={charName}
-                className={`w-full max-h-[70vh] object-cover transition-all duration-500 ${
-                  isSpeaking ? 'scale-[1.02] filter brightness-105' : ''
-                }`}
-              />
-              {/* Speaking audio wave indicator */}
-              {isSpeaking && (
-                <div className="absolute top-4 left-4 flex items-center gap-1.5 px-3 py-1 rounded-full bg-purple-900/80 border border-purple-500/60 text-purple-200 text-xs font-mono animate-pulse backdrop-blur">
-                  <Sparkles className="w-3.5 h-3.5 text-pink-400 animate-spin" />
-                  <span>Spricht...</span>
-                </div>
-              )}
-            </div>
+            <MorphingPortrait src={emotionImage} alt={charName} isSpeaking={isSpeaking} />
           ) : (
             <div className="w-48 h-48 rounded-full bg-gradient-to-tr from-purple-600 to-pink-600 flex items-center justify-center text-white text-5xl font-bold border-4 border-purple-500/50 shadow-2xl">
               {charName.charAt(0)}

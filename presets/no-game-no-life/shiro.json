@@ -25,7 +25,15 @@
     "creator": "SnowwhiteOakheart",
     "extensions": {
       "sow_title": "Die andere Hälfte von 『 』(Blank) - das lebende Kalkül",
-      "sow_avatar": "shiro.png"
+      "sow_avatar": "shiro.png",
+      "expressions": {
+        "neutral": "expressions/shiro/neutral.webp",
+        "happy": "expressions/shiro/happy.webp",
+        "sad": "expressions/shiro/sad.webp",
+        "angry": "expressions/shiro/angry.webp",
+        "surprised": "expressions/shiro/surprised.webp",
+        "relaxed": "expressions/shiro/relaxed.webp"
+      }
     }
   }
 }

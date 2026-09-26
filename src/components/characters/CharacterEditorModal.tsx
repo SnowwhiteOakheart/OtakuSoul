@@ -4,6 +4,13 @@ import { api } from '../../services/api';
 import { useAppStore } from '../../store/useAppStore';
 import { open } from '@tauri-apps/plugin-dialog';
 import { X, Save, Image, Plus, Trash2, Sparkles, User, FileText, Settings2, BookOpen } from 'lucide-react';
+import {
+  getPortraitExpressions,
+  PORTRAIT_MOODS,
+  PortraitMood,
+  resolveCharacterImagePath,
+  resolveCharacterImageSource,
+} from '../../utils/characterPortraits';
 
 interface CharacterEditorModalProps {
   character: CharacterProfile | null; // null means create new
@@ -18,7 +25,7 @@ export const CharacterEditorModal = ({
 }: CharacterEditorModalProps) => {
   const { refreshCharacters, allLorebooks, scannedVrms, scannedLive2ds } = useAppStore();
 
-  const [activeTab, setActiveTab] = useState<'basics' | 'prompts' | 'greetings' | 'lorebooks' | 'raw'>('basics');
+  const [activeTab, setActiveTab] = useState<'basics' | 'expressions' | 'prompts' | 'greetings' | 'lorebooks' | 'raw'>('basics');
   const [isSaving, setIsSaving] = useState(false);
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
 
@@ -33,6 +40,9 @@ export const CharacterEditorModal = ({
     (character?.card.data.extensions?.sow_title as string) || character?.card.data.tags?.[0] || ''
   );
   const [avatarDataUrl, setAvatarDataUrl] = useState<string | null>(character?.avatar_data_url || null);
+  const [expressionImages, setExpressionImages] = useState<Record<string, string>>(
+    () => ({ ...getPortraitExpressions(character) })
+  );
   const [description, setDescription] = useState(character?.card.data.description || '');
   const [personality, setPersonality] = useState(character?.card.data.personality || '');
   const [scenario, setScenario] = useState(character?.card.data.scenario || '');
@@ -46,28 +56,65 @@ export const CharacterEditorModal = ({
   const [tagsStr, setTagsStr] = useState(character?.card.data.tags?.join(', ') || '');
   const [newGreeting, setNewGreeting] = useState('');
 
-  const handlePickAvatar = async () => {
+  const fileToDataUrl = async (filePath: string): Promise<string> => {
+    const bytes = await api.readFileBinary(filePath);
+    let binaryString = '';
+    const chunkSize = 0x8000;
+    for (let offset = 0; offset < bytes.length; offset += chunkSize) {
+      binaryString += String.fromCharCode(...bytes.subarray(offset, offset + chunkSize));
+    }
+
+    const lowerPath = filePath.toLowerCase();
+    const mime = lowerPath.endsWith('.png')
+      ? 'image/png'
+      : lowerPath.endsWith('.webp')
+      ? 'image/webp'
+      : lowerPath.endsWith('.gif')
+      ? 'image/gif'
+      : 'image/jpeg';
+    return `data:${mime};base64,${btoa(binaryString)}`;
+  };
+
+  const pickImageAsDataUrl = async (): Promise<string | null> => {
     try {
       const selected = await open({
         multiple: false,
         filters: [
           {
-            name: 'Bilder (PNG, JPEG)',
-            extensions: ['png', 'jpg', 'jpeg'],
+            name: 'Bilder (PNG, JPEG, WebP, GIF)',
+            extensions: ['png', 'jpg', 'jpeg', 'webp', 'gif'],
           },
         ],
       });
 
       if (selected && typeof selected === 'string') {
-        const bytes = await api.readFileBinary(selected);
-        const binaryString = bytes.reduce((acc, byte) => acc + String.fromCharCode(byte), '');
-        const base64 = btoa(binaryString);
-        const mime = selected.toLowerCase().endsWith('.png') ? 'image/png' : 'image/jpeg';
-        setAvatarDataUrl(`data:${mime};base64,${base64}`);
+        return await fileToDataUrl(selected);
       }
     } catch (e) {
-      console.error('Failed to pick avatar image:', e);
+      console.error('Failed to pick character image:', e);
     }
+
+    return null;
+  };
+
+  const handlePickAvatar = async () => {
+    const image = await pickImageAsDataUrl();
+    if (image) setAvatarDataUrl(image);
+  };
+
+  const handlePickExpression = async (mood: PortraitMood) => {
+    const image = await pickImageAsDataUrl();
+    if (image) {
+      setExpressionImages((current) => ({ ...current, [mood]: image }));
+    }
+  };
+
+  const handleRemoveExpression = (mood: PortraitMood) => {
+    setExpressionImages((current) => {
+      const next = { ...current };
+      delete next[mood];
+      return next;
+    });
   };
 
   const handleAddGreeting = () => {
@@ -94,6 +141,23 @@ export const CharacterEditorModal = ({
       .map((t) => t.trim())
       .filter((t) => t.length > 0);
 
+    const cleanedExpressionImages = Object.fromEntries(
+      Object.entries(expressionImages).filter(([, value]) => Boolean(value))
+    );
+
+    // Relative preset paths would break after saving the card into the user directory.
+    // Embed those images so an edited/exported character remains self-contained.
+    try {
+      for (const [mood, imageSource] of Object.entries(cleanedExpressionImages)) {
+        const filePath = resolveCharacterImagePath(imageSource, character?.source_path);
+        if (filePath) cleanedExpressionImages[mood] = await fileToDataUrl(filePath);
+      }
+    } catch (e) {
+      setErrorMsg(`Emotionsbild konnte nicht eingebettet werden: ${e instanceof Error ? e.message : String(e)}`);
+      setIsSaving(false);
+      return;
+    }
+
     const updatedCard: CharacterCardV2 = {
       spec: 'chara_card_v2',
       spec_version: '2.0',
@@ -113,6 +177,9 @@ export const CharacterEditorModal = ({
           sow_title: title.trim() || undefined,
           sow_vrm: vrmPath || undefined,
           sow_live2d: live2dModel || undefined,
+          expressions: Object.keys(cleanedExpressionImages).length > 0
+            ? cleanedExpressionImages
+            : undefined,
         },
       },
     };
@@ -163,7 +230,7 @@ export const CharacterEditorModal = ({
         </div>
 
         {/* Tab Navigation */}
-        <div className="flex items-center gap-2 px-6 pt-3 border-b border-slate-800 bg-slate-900/50">
+        <div className="flex items-center gap-2 px-6 pt-3 border-b border-slate-800 bg-slate-900/50 overflow-x-auto">
           <button
             onClick={() => setActiveTab('basics')}
             className={`flex items-center gap-2 px-4 py-2 border-b-2 text-xs font-semibold transition-all ${
@@ -174,6 +241,17 @@ export const CharacterEditorModal = ({
           >
             <User className="w-3.5 h-3.5" />
             <span>Stammdaten & Avatar</span>
+          </button>
+          <button
+            onClick={() => setActiveTab('expressions')}
+            className={`flex shrink-0 items-center gap-2 px-4 py-2 border-b-2 text-xs font-semibold transition-all ${
+              activeTab === 'expressions'
+                ? 'border-purple-500 text-purple-300'
+                : 'border-transparent text-slate-400 hover:text-slate-200'
+            }`}
+          >
+            <Image className="w-3.5 h-3.5" />
+            <span>Emotionen ({Object.keys(expressionImages).length})</span>
           </button>
           <button
             onClick={() => setActiveTab('prompts')}
@@ -363,7 +441,77 @@ export const CharacterEditorModal = ({
             </div>
           )}
 
-          {/* TAB 2: Prompts & Personality */}
+          {/* TAB 2: Optional 2D expression portraits */}
+          {activeTab === 'expressions' && (
+            <div className="space-y-4">
+              <div className="p-3 rounded-xl border border-purple-500/30 bg-purple-500/10 text-xs text-purple-100">
+                Hinterlege nur die Stimmungen, für die du eigene Bilder verwenden möchtest. Fehlt ein Bild,
+                nutzt OtakuSoul automatisch „Neutral“ oder den normalen Avatar. Mit nur einem Avatar ändert
+                sich die Darstellung nicht.
+              </div>
+
+              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+                {PORTRAIT_MOODS.map((mood) => {
+                  const storedImage = expressionImages[mood.key];
+                  const previewImage = resolveCharacterImageSource(storedImage, character?.source_path);
+                  const fallbackImage = mood.key === 'neutral' ? avatarDataUrl : null;
+
+                  return (
+                    <div
+                      key={mood.key}
+                      className="rounded-2xl border border-slate-800 bg-slate-950/60 overflow-hidden"
+                    >
+                      <div className="relative aspect-[4/5] bg-slate-900 flex items-center justify-center overflow-hidden group">
+                        {previewImage || fallbackImage ? (
+                          <img
+                            src={previewImage || fallbackImage || undefined}
+                            alt={`${name || 'Charakter'} – ${mood.label}`}
+                            className={`w-full h-full object-cover ${!previewImage ? 'opacity-60' : ''}`}
+                          />
+                        ) : (
+                          <Image className="w-10 h-10 text-slate-600" />
+                        )}
+                        <button
+                          type="button"
+                          onClick={() => handlePickExpression(mood.key)}
+                          className="absolute inset-0 bg-black/60 opacity-0 group-hover:opacity-100 flex items-center justify-center text-xs font-semibold text-white transition-opacity"
+                        >
+                          {storedImage ? 'Bild ändern' : 'Bild auswählen'}
+                        </button>
+                        {!previewImage && fallbackImage && (
+                          <span className="absolute bottom-2 left-2 px-2 py-1 rounded-md bg-slate-950/80 text-[10px] text-slate-300">
+                            Standard-Avatar
+                          </span>
+                        )}
+                      </div>
+                      <div className="p-3">
+                        <div className="flex items-center justify-between gap-2">
+                          <div>
+                            <h3 className="text-xs font-bold text-slate-100">{mood.label}</h3>
+                            <p className="mt-0.5 text-[10px] leading-relaxed text-slate-500">
+                              {mood.description}
+                            </p>
+                          </div>
+                          {storedImage && (
+                            <button
+                              type="button"
+                              onClick={() => handleRemoveExpression(mood.key)}
+                              className="shrink-0 p-1.5 rounded-lg text-slate-500 hover:text-rose-400 hover:bg-rose-500/10 transition-colors"
+                              title={`${mood.label}-Bild entfernen`}
+                            >
+                              <Trash2 className="w-3.5 h-3.5" />
+                            </button>
+                          )}
+                        </div>
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+            </div>
+          )}
+
+          {/* TAB 3: Prompts & Personality */}
           {activeTab === 'prompts' && (
             <div className="space-y-4">
               <div>
@@ -433,7 +581,7 @@ export const CharacterEditorModal = ({
             </div>
           )}
 
-          {/* TAB 3: Greetings */}
+          {/* TAB 4: Greetings */}
           {activeTab === 'greetings' && (
             <div className="space-y-4">
               <div>
@@ -492,7 +640,7 @@ export const CharacterEditorModal = ({
             </div>
           )}
 
-          {/* TAB 4: Lorebooks Binding */}
+          {/* TAB 5: Lorebooks Binding */}
           {activeTab === 'lorebooks' && (
             <div className="space-y-4">
               <div className="p-3 bg-purple-500/10 border border-purple-500/30 rounded-xl text-xs text-purple-200 flex items-center justify-between">
@@ -560,7 +708,7 @@ export const CharacterEditorModal = ({
             </div>
           )}
 
-          {/* TAB 5: Raw JSON Preview */}
+          {/* TAB 6: Raw JSON Preview */}
           {activeTab === 'raw' && (
             <div>
               <pre className="p-4 bg-slate-950 border border-slate-800 rounded-xl font-mono text-xs text-purple-300 max-h-96 overflow-y-auto">
@@ -579,6 +727,15 @@ export const CharacterEditorModal = ({
                       system_prompt: systemPrompt || undefined,
                       creator_notes: creatorNotes || undefined,
                       tags: tagsStr.split(',').map((t) => t.trim()),
+                      extensions: {
+                        ...(character?.card.data.extensions || {}),
+                        sow_title: title || undefined,
+                        sow_vrm: vrmPath || undefined,
+                        sow_live2d: live2dModel || undefined,
+                        expressions: Object.keys(expressionImages).length > 0
+                          ? expressionImages
+                          : undefined,
+                      },
                     },
                   },
                   null,

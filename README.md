@@ -67,7 +67,7 @@ Wähle die Darstellung, die zu deinem Charakter passt:
 
 - **3D VRM** mit natürlicher Ruhepose, Emotion-Morphs, Physik und LipSync
 - **Live2D** mit Bewegungen, Expressions, Blicksteuerung, Zoom und freier Positionierung
-- **2D-Porträts** und emotionsabhängige Ausdrucksbilder
+- **2D-Porträts** mit optionalen Bildern für sechs Stimmungen und weichem Morph-/Crossfade-Wechsel
 - **28 Emotionen** mit deutsch- und englischsprachiger Erkennung
 
 Ansicht, Größe und Position werden automatisch pro Modell gespeichert. So erscheint ein Charakter beim nächsten Start genau dort, wo du ihn platziert hast.

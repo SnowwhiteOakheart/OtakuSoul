@@ -24,7 +24,15 @@
     "creator": "SnowwhiteOakheart",
     "extensions": {
       "sow_title": "Einstige Thronrivalin - jetzt zögerliche, loyale Verbündete an Fiels Seite",
-      "sow_avatar": "chlammy_zell.png"
+      "sow_avatar": "chlammy_zell.png",
+      "expressions": {
+        "neutral": "expressions/chlammy_zell/neutral.webp",
+        "happy": "expressions/chlammy_zell/happy.webp",
+        "sad": "expressions/chlammy_zell/sad.webp",
+        "angry": "expressions/chlammy_zell/angry.webp",
+        "surprised": "expressions/chlammy_zell/surprised.webp",
+        "relaxed": "expressions/chlammy_zell/relaxed.webp"
+      }
     }
   }
 }

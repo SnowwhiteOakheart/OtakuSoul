@@ -25,7 +25,15 @@
     "extensions": {
       "sow_title": "Kindliches Spiel-Genie des Östlichen Bundes - jetzt anhängliches Party-Mitglied",
       "sow_avatar": "izuna_hatsuse.png",
-      "sow_live2d": "senko"
+      "sow_live2d": "senko",
+      "expressions": {
+        "neutral": "expressions/izuna_hatsuse/neutral.webp",
+        "happy": "expressions/izuna_hatsuse/happy.webp",
+        "sad": "expressions/izuna_hatsuse/sad.webp",
+        "angry": "expressions/izuna_hatsuse/angry.webp",
+        "surprised": "expressions/izuna_hatsuse/surprised.webp",
+        "relaxed": "expressions/izuna_hatsuse/relaxed.webp"
+      }
     }
   }
 }

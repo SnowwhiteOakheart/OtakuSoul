@@ -129,6 +129,8 @@ export interface CharacterData {
     sow_avatar?: string;
     sow_live2d?: string;
     sow_vrm?: string;
+    expressions?: Record<string, string>;
+    sow_expressions?: Record<string, string>;
     [key: string]: unknown;
   };
 }

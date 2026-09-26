@@ -24,7 +24,15 @@
     "creator": "SnowwhiteOakheart",
     "extensions": {
       "sow_title": "Verkannte Hexen-Kastenmagierin - Chlammys heimliche Beschützerin",
-      "sow_avatar": "fiel_nirvalen.png"
+      "sow_avatar": "fiel_nirvalen.png",
+      "expressions": {
+        "neutral": "expressions/fiel_nirvalen/neutral.webp",
+        "happy": "expressions/fiel_nirvalen/happy.webp",
+        "sad": "expressions/fiel_nirvalen/sad.webp",
+        "angry": "expressions/fiel_nirvalen/angry.webp",
+        "surprised": "expressions/fiel_nirvalen/surprised.webp",
+        "relaxed": "expressions/fiel_nirvalen/relaxed.webp"
+      }
     }
   }
 }

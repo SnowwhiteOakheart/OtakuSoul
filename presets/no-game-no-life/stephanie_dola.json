@@ -24,7 +24,15 @@
     "creator": "SnowwhiteOakheart",
     "extensions": {
       "sow_title": "Premierministerin von Elkia - das Herz hinter dem Thron",
-      "sow_avatar": "stephanie_dola.png"
+      "sow_avatar": "stephanie_dola.png",
+      "expressions": {
+        "neutral": "expressions/stephanie_dola/neutral.webp",
+        "happy": "expressions/stephanie_dola/happy.webp",
+        "sad": "expressions/stephanie_dola/sad.webp",
+        "angry": "expressions/stephanie_dola/angry.webp",
+        "surprised": "expressions/stephanie_dola/surprised.webp",
+        "relaxed": "expressions/stephanie_dola/relaxed.webp"
+      }
     }
   }
 }

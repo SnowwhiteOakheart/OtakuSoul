@@ -24,7 +24,15 @@
     "creator": "SnowwhiteOakheart",
     "extensions": {
       "sow_title": "Die älteste Flügel-Kriegerin - jetzt treu ergebene Dienerin von Blank",
-      "sow_avatar": "jibril.png"
+      "sow_avatar": "jibril.png",
+      "expressions": {
+        "neutral": "expressions/jibril/neutral.webp",
+        "happy": "expressions/jibril/happy.webp",
+        "sad": "expressions/jibril/sad.webp",
+        "angry": "expressions/jibril/angry.webp",
+        "surprised": "expressions/jibril/surprised.webp",
+        "relaxed": "expressions/jibril/relaxed.webp"
+      }
     }
   }
 }

@@ -78,11 +78,17 @@ listed as an ally before they actually become one in the story.
 
 The world/premise entry is `always_on`, everything else is keyword-triggered.
 
-## Avatars
+## Avatars and expressions
 
-All 8 portraits are done - AI-generated original interpretations of each character's canonical design (see
-"About the pictures" below), resized to 700px wide to keep the repo lean. **[AVATAR-PROMPTS.md](AVATAR-PROMPTS.md)**
-has the generation prompt and save path used for each, if you want to regenerate one.
+All 8 base portraits are done - AI-generated original interpretations of each character's canonical design
+(see "About the pictures" below), resized to 700px wide to keep the repo lean.
+**[AVATAR-PROMPTS.md](AVATAR-PROMPTS.md)** has the generation prompt and save path used for each, if you want
+to regenerate one.
+
+The seven canon character cards additionally include six coordinated 2D portraits (`neutral`, `happy`,
+`sad`, `angry`, `surprised`, `relaxed`). OtakuSoul selects them from the detected dialogue emotion and
+crossfades between them. Haru remains a freely customizable player persona and therefore keeps a single base
+portrait. The generated expression sets live under `expressions/<character>/` as 640x800 WebP files.
 
 ## Backgrounds
 

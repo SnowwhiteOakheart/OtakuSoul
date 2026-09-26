@@ -25,7 +25,15 @@
     "creator": "SnowwhiteOakheart",
     "extensions": {
       "sow_title": "Die eine Hälfte von 『 』(Blank) - der ungeschlagene Stratege",
-      "sow_avatar": "sora.png"
+      "sow_avatar": "sora.png",
+      "expressions": {
+        "neutral": "expressions/sora/neutral.webp",
+        "happy": "expressions/sora/happy.webp",
+        "sad": "expressions/sora/sad.webp",
+        "angry": "expressions/sora/angry.webp",
+        "surprised": "expressions/sora/surprised.webp",
+        "relaxed": "expressions/sora/relaxed.webp"
+      }
     }
   }
 }
