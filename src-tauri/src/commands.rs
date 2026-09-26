@@ -963,3 +963,14 @@ pub fn classify_text_emotion(text: String) -> crate::modules::emotions::EmotionR
     crate::modules::emotions::classify_emotion(&text)
 }
 
+#[tauri::command]
+pub fn import_live2d_model(source_path: String) -> Result<crate::modules::live2d::ScannedLive2d, String> {
+    crate::modules::live2d::import_live2d_model(&source_path)
+}
+
+#[tauri::command]
+pub fn import_sow_live2d_models() -> Result<usize, String> {
+    crate::modules::live2d::import_sow_live2d_models()
+}
+
+

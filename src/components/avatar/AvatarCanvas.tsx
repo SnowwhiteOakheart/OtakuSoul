@@ -24,6 +24,7 @@ export const AvatarCanvas: React.FC<AvatarCanvasProps> = ({
 }) => {
   const {
     activeVrmPath,
+    activeLive2dPath,
     avatarMode,
     setAvatarMode,
     scannedLive2ds,
@@ -39,16 +40,17 @@ export const AvatarCanvas: React.FC<AvatarCanvasProps> = ({
     activeVrmPath ||
     '';
 
-  // 2. Resolve Live2D model path
+  // 2. Resolve Live2D model path (Character override or global setting fallback)
   const live2dKey = (character?.card.data.extensions?.sow_live2d as string) || '';
-  const matchedLive2d =
-    scannedLive2ds.find(
-      (m) =>
-        m.id.toLowerCase() === live2dKey.toLowerCase() ||
-        m.model_path.toLowerCase().includes(live2dKey.toLowerCase())
-    ) || scannedLive2ds[0];
+  const matchedLive2d = live2dKey
+    ? scannedLive2ds.find(
+        (m) =>
+          m.id.toLowerCase() === live2dKey.toLowerCase() ||
+          m.model_path.toLowerCase().includes(live2dKey.toLowerCase())
+      )
+    : scannedLive2ds.find((m) => m.model_path === activeLive2dPath) || scannedLive2ds[0];
 
-  const live2dPath = matchedLive2d?.model_path || '';
+  const live2dPath = matchedLive2d?.model_path || activeLive2dPath || '';
 
   // 3. Resolve 2D Avatar URL or Emotion Expression Image / GIF
   const expressionsMap =

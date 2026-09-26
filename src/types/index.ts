@@ -434,6 +434,7 @@ export interface AppSettings {
   active_character_id: string | null;
   active_persona_id: string | null;
   active_vrm_path: string | null;
+  active_live2d_path?: string | null;
   global_lorebooks?: string[];
   scene_tension_enabled?: boolean;
   avatar_mode?: '3d' | 'live2d' | '2d';

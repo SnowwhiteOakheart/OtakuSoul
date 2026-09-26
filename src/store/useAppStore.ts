@@ -166,6 +166,8 @@ interface AppStoreState {
   activeVrmPath: string | null;
   setActiveVrmPath: (path: string | null) => void;
   scannedLive2ds: ScannedLive2d[];
+  activeLive2dPath: string | null;
+  setActiveLive2dPath: (path: string | null) => void;
   refreshLive2dModels: () => Promise<void>;
   avatarMode: '3d' | 'live2d' | '2d';
   setAvatarMode: (mode: '3d' | 'live2d' | '2d') => void;
@@ -371,10 +373,18 @@ export const useAppStore = create<AppStoreState>((set, get) => ({
   },
 
   scannedLive2ds: [],
+  activeLive2dPath: null,
+  setActiveLive2dPath: (activeLive2dPath) => {
+    set({ activeLive2dPath });
+    get().saveCurrentSettings();
+  },
   refreshLive2dModels: async () => {
     try {
       const models = await api.scanLive2dModels();
       set({ scannedLive2ds: models });
+      if (!get().activeLive2dPath && models.length > 0) {
+        set({ activeLive2dPath: models[0].model_path });
+      }
     } catch (e) {
       console.error('Failed to scan Live2D models:', e);
     }
@@ -578,6 +588,7 @@ export const useAppStore = create<AppStoreState>((set, get) => ({
         replyLanguage: settings.reply_language || 'Deutsch',
         lorebookScanDepth: settings.lorebook_scan_depth || 5,
         activeVrmPath: vrmPath,
+        activeLive2dPath: settings.active_live2d_path || null,
         globalLorebookIds: settings.global_lorebooks || [],
         sceneTensionEnabled: settings.scene_tension_enabled !== false,
         avatarMode: settings.avatar_mode || '3d',
@@ -653,6 +664,7 @@ export const useAppStore = create<AppStoreState>((set, get) => ({
         active_character_id: state.activeCharacter?.id || null,
         active_persona_id: state.activePersona?.id || null,
         active_vrm_path: state.activeVrmPath,
+        active_live2d_path: state.activeLive2dPath,
         global_lorebooks: state.globalLorebookIds,
         scene_tension_enabled: state.sceneTensionEnabled,
         avatar_mode: state.avatarMode,

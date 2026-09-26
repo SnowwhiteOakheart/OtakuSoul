@@ -722,4 +722,12 @@ export const api = {
   classifyTextEmotion: async (text: string): Promise<EmotionResult> => {
     return await invoke<EmotionResult>('classify_text_emotion', { text });
   },
+
+  importLive2dModel: async (sourcePath: string): Promise<ScannedLive2d> => {
+    return await invoke<ScannedLive2d>('import_live2d_model', { sourcePath });
+  },
+
+  importSowLive2dModels: async (): Promise<number> => {
+    return await invoke<number>('import_sow_live2d_models');
+  },
 };

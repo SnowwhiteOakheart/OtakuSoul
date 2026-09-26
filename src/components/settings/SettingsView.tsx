@@ -23,8 +23,10 @@ import {
   Layers,
   Flame,
   Check,
+  Smile,
 } from 'lucide-react';
 import { LlmProviderType, LlmPreset } from '../../types';
+import { api } from '../../services/api';
 
 export const SettingsView = () => {
   const {
@@ -67,6 +69,10 @@ export const SettingsView = () => {
     scannedVrms,
     activeVrmPath,
     setActiveVrmPath,
+    scannedLive2ds,
+    activeLive2dPath,
+    setActiveLive2dPath,
+    refreshLive2dModels,
     sampling,
     setSampling,
     replyLanguage,
@@ -157,6 +163,52 @@ export const SettingsView = () => {
       }
     } catch (e) {
       console.error('Failed to browse VRM:', e);
+    }
+  };
+
+  const [isImportingSow, setIsImportingSow] = useState(false);
+  const [sowImportMsg, setSowImportMsg] = useState<string | null>(null);
+
+  const handleBrowseLive2d = async () => {
+    try {
+      const selected = await open({
+        multiple: false,
+        filters: [
+          {
+            name: 'Live2D Modelle (*.zip, *.model3.json, *.model.json)',
+            extensions: ['zip', 'json'],
+          },
+        ],
+      });
+
+      if (selected && typeof selected === 'string') {
+        const imported = await api.importLive2dModel(selected);
+        await refreshLive2dModels();
+        setActiveLive2dPath(imported.model_path);
+        setSowImportMsg(`Modell "${imported.name}" erfolgreich importiert!`);
+        setTimeout(() => setSowImportMsg(null), 4000);
+      }
+    } catch (e) {
+      console.error('Failed to import Live2D model:', e);
+      setSowImportMsg(`Fehler: ${e instanceof Error ? e.message : String(e)}`);
+      setTimeout(() => setSowImportMsg(null), 5000);
+    }
+  };
+
+  const handleImportSowLive2d = async () => {
+    setIsImportingSow(true);
+    setSowImportMsg(null);
+    try {
+      const count = await api.importSowLive2dModels();
+      await refreshLive2dModels();
+      setSowImportMsg(`${count} Live2D-Modelle aus Soul of Waifu importiert!`);
+      setTimeout(() => setSowImportMsg(null), 4000);
+    } catch (e) {
+      console.error('Failed to import SoW Live2D models:', e);
+      setSowImportMsg(`Fehler: ${e instanceof Error ? e.message : String(e)}`);
+      setTimeout(() => setSowImportMsg(null), 5000);
+    } finally {
+      setIsImportingSow(false);
     }
   };
 
@@ -1142,6 +1194,55 @@ export const SettingsView = () => {
                 >
                   <FolderOpen className="w-3.5 h-3.5" />
                   <span>Eigenen VRM wählen...</span>
+                </button>
+              </div>
+            </div>
+
+            {/* 2D Live2D Standard-Auswahl & Import */}
+            <div className="rounded-xl border border-slate-800 bg-slate-900/60 p-4 space-y-3">
+              <div className="flex items-center justify-between">
+                <h3 className="text-xs font-semibold text-slate-300 flex items-center gap-1.5">
+                  <Smile className="w-3.5 h-3.5 text-purple-400" />
+                  <span>2D Live2D Standardmodell</span>
+                </h3>
+                {sowImportMsg && (
+                  <span className="text-[11px] text-purple-300 font-mono animate-fade-in bg-purple-950/70 px-2 py-0.5 rounded border border-purple-500/40">
+                    {sowImportMsg}
+                  </span>
+                )}
+              </div>
+              <div className="flex flex-wrap gap-2 text-xs">
+                <select
+                  value={activeLive2dPath || ''}
+                  onChange={(e) => setActiveLive2dPath(e.target.value || null)}
+                  className="flex-1 min-w-[200px] bg-slate-950 border border-slate-800 rounded-lg px-3 py-2 text-slate-200 focus:outline-none focus:border-purple-500"
+                >
+                  {scannedLive2ds.map((l2d, idx) => (
+                    <option key={idx} value={l2d.model_path}>
+                      {l2d.name} ({l2d.id})
+                    </option>
+                  ))}
+                </select>
+
+                <button
+                  type="button"
+                  onClick={handleBrowseLive2d}
+                  className="px-3.5 py-2 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-200 font-medium flex items-center gap-1.5 transition-colors border border-slate-700"
+                  title="ZIP-Archiv oder .model3.json Datei eines Live2D-Modells importieren"
+                >
+                  <FolderOpen className="w-3.5 h-3.5 text-purple-400" />
+                  <span>Eigenes Live2D-Modell importieren...</span>
+                </button>
+
+                <button
+                  type="button"
+                  onClick={handleImportSowLive2d}
+                  disabled={isImportingSow}
+                  className="px-3.5 py-2 rounded-lg bg-purple-950/60 hover:bg-purple-900/80 text-purple-200 font-medium flex items-center gap-1.5 transition-colors border border-purple-700/60 disabled:opacity-50"
+                  title="Kopiert alle installierten Live2D-Modelle aus Soul-of-Waifu"
+                >
+                  <Sparkles className="w-3.5 h-3.5 text-pink-400" />
+                  <span>{isImportingSow ? 'Importiere...' : 'Aus Soul-of-Waifu importieren'}</span>
                 </button>
               </div>
             </div>

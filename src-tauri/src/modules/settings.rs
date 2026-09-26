@@ -29,6 +29,8 @@ pub struct AppSettings {
     pub active_persona_id: Option<String>,
     pub active_vrm_path: Option<String>,
     #[serde(default)]
+    pub active_live2d_path: Option<String>,
+    #[serde(default)]
     pub global_lorebooks: Vec<String>,
     #[serde(default = "default_true")]
     pub scene_tension_enabled: bool,
@@ -58,6 +60,9 @@ impl Default for AppSettings {
         let characters = scan_available_characters();
         let default_char_id = characters.first().map(|c| c.id.clone());
 
+        let live2ds = crate::modules::live2d::scan_available_live2d_models();
+        let default_live2d_path = live2ds.first().map(|l| l.model_path.clone());
+
         Self {
             server_config: LlamaServerConfig {
                 model_path: default_model_path,
@@ -75,6 +80,7 @@ impl Default for AppSettings {
             active_character_id: default_char_id,
             active_persona_id: None,
             active_vrm_path: default_vrm_path,
+            active_live2d_path: default_live2d_path,
             global_lorebooks: Vec::new(),
             scene_tension_enabled: true,
             hidden_character_ids: Vec::new(),

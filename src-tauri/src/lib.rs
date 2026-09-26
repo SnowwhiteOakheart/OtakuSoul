@@ -113,6 +113,8 @@ pub fn run() {
             commands::get_live2d_catalog,
             commands::download_live2d_model,
             commands::classify_text_emotion,
+            commands::import_live2d_model,
+            commands::import_sow_live2d_models,
         ])
         .run(tauri::generate_context!())
         .expect("error while running OtakuSoul application");
