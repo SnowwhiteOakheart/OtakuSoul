@@ -17,9 +17,14 @@ export interface HardwareInfo {
 
 export interface LayerRecommendation {
   recommended_layers: number;
+  recommended_context_size: number;
   fits_entirely_in_vram: boolean;
   estimated_vram_usage_mb: number;
   available_vram_mb: number;
+  estimated_model_vram_mb: number;
+  estimated_context_vram_mb: number;
+  runtime_overhead_mb: number;
+  profile_name: string;
   advice: string;
 }
 
@@ -550,6 +555,9 @@ export interface ScannedModel {
   name: string;
   path: string;
   size_mb: number;
+  runtime: 'standard' | 'prism';
+  recommended_context: number;
+  compatibility_note: string;
 }
 
 export interface ScannedVrm {
@@ -689,6 +697,9 @@ export interface HfGgufFile {
   size_formatted: string;
   download_url: string;
   quantization: string;
+  runtime: 'standard' | 'prism' | 'legacy';
+  recommended: boolean;
+  compatibility_note: string;
 }
 
 export interface DownloadProgressEvent {

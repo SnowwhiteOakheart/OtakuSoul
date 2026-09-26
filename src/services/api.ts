@@ -64,12 +64,18 @@ export const api = {
   getLayerRecommendation: async (
     modelSizeMb: number,
     totalLayers: number,
-    contextSize: number
+    contextSize: number,
+    modelPath?: string,
+    cacheTypeK?: string,
+    cacheTypeV?: string
   ): Promise<LayerRecommendation> => {
     return await invoke<LayerRecommendation>('get_layer_recommendation', {
       modelSizeMb,
       totalLayers,
       contextSize,
+      modelPath,
+      cacheTypeK,
+      cacheTypeV,
     });
   },
 

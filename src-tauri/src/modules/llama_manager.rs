@@ -103,8 +103,31 @@ impl LlamaServerManager {
         }
     }
 
-    /// Resolve llama-server binary location across default folders and system PATH
-    pub fn resolve_binary(&self, custom_path: Option<&str>) -> Result<PathBuf, String> {
+    fn requires_prism_runtime(model_path: &str) -> bool {
+        let name = Path::new(model_path)
+            .file_name()
+            .and_then(|name| name.to_str())
+            .unwrap_or(model_path)
+            .to_ascii_lowercase();
+        name.contains("pq2_0") || name.contains("ptq1_0")
+    }
+
+    fn is_deprecated_bonsai_pack(model_path: &str) -> bool {
+        Path::new(model_path)
+            .file_name()
+            .and_then(|name| name.to_str())
+            .map(|name| name.eq_ignore_ascii_case("Ternary-Bonsai-27B-Q2_0.gguf"))
+            .unwrap_or(false)
+    }
+
+    /// Resolve the correct llama-server binary for the selected model. Prism's PQ2_0
+    /// format intentionally lives beside the ordinary runtime so existing GGUFs keep
+    /// using upstream llama.cpp.
+    pub fn resolve_binary_for_model(
+        &self,
+        custom_path: Option<&str>,
+        model_path: &str,
+    ) -> Result<PathBuf, String> {
         if let Some(path_str) = custom_path {
             let path = PathBuf::from(path_str);
             if path.exists() {
@@ -115,11 +138,38 @@ impl LlamaServerManager {
         let app_paths = crate::modules::paths::resolve_app_paths();
         let bin_dir = PathBuf::from(&app_paths.bundled_bin_dir);
 
+        if Self::is_deprecated_bonsai_pack(model_path) {
+            return Err(
+                "Ternary-Bonsai-27B-Q2_0.gguf ist das veraltete Übergangsformat und wird bewusst nicht gestartet. Bitte Ternary-Bonsai-27B-PQ2_0.gguf (empfohlen) oder Ternary-Bonsai-27B-Q2_g64.gguf laden."
+                    .to_string(),
+            );
+        }
+
+        if Self::requires_prism_runtime(model_path) {
+            let bin_root = if bin_dir.file_name().and_then(|n| n.to_str()) == Some("cuda") {
+                bin_dir.parent().unwrap_or(&bin_dir).to_path_buf()
+            } else {
+                bin_dir.clone()
+            };
+            let prism_candidates = [
+                bin_root.join("prism-cuda").join("llama-server"),
+                bin_root.join("prism").join("llama-server"),
+                PathBuf::from("./bin/prism-cuda/llama-server"),
+                PathBuf::from("../bin/prism-cuda/llama-server"),
+            ];
+            if let Some(binary) = prism_candidates.into_iter().find(|path| path.is_file()) {
+                return Ok(binary);
+            }
+            return Err(
+                "Dieses PQ2_0/PTQ1_0-Modell benötigt die PrismML llama.cpp Runtime. Installiere sie mit ./tools/install_prism_runtime.sh; OtakuSoul wählt sie danach automatisch."
+                    .to_string(),
+            );
+        }
+
         #[allow(unused_mut)]
         let mut candidates = vec![
             bin_dir.join("llama-server"),
             bin_dir.join("cuda").join("llama-server"),
-            PathBuf::from("/home/deathtrap/development/OtakuSoul/bin/cuda/llama-server"),
             PathBuf::from("./bin/cuda/llama-server"),
             PathBuf::from("../bin/cuda/llama-server"),
             PathBuf::from("./bin/llama-server"),
@@ -171,10 +221,24 @@ impl LlamaServerManager {
         // If already running or starting, stop first
         self.stop().await?;
 
-        let binary_path = self.resolve_binary(config.binary_path.as_deref())?;
+        let binary_path = match self
+            .resolve_binary_for_model(config.binary_path.as_deref(), &config.model_path)
+        {
+            Ok(path) => path,
+            Err(message) => {
+                let mut status = self.status.write().await;
+                status.state = ServerState::Failed;
+                status.error_message = Some(message.clone());
+                return Err(message);
+            }
+        };
         let model_path = Path::new(&config.model_path);
         if !model_path.exists() {
-            return Err(format!("Modelldatei nicht gefunden: {}", config.model_path));
+            let message = format!("Modelldatei nicht gefunden: {}", config.model_path);
+            let mut status = self.status.write().await;
+            status.state = ServerState::Failed;
+            status.error_message = Some(message.clone());
+            return Err(message);
         }
 
         let model_name = model_path
@@ -338,7 +402,14 @@ impl LlamaServerManager {
                 if let Some(child_proc) = guard.as_mut() {
                     match child_proc.try_wait() {
                         Ok(Some(status)) => {
-                            let last_logs = self.logs.lock().await.iter().cloned().collect::<Vec<_>>().join("\n");
+                            let last_logs = self
+                                .logs
+                                .lock()
+                                .await
+                                .iter()
+                                .cloned()
+                                .collect::<Vec<_>>()
+                                .join("\n");
                             let err_msg = format!(
                                 "llama-server Prozess unerwartet beendet mit Status {}.\nLogs:\n{}",
                                 status, last_logs
@@ -370,7 +441,14 @@ impl LlamaServerManager {
             s.state = ServerState::Running;
             Ok(())
         } else {
-            let last_logs = self.logs.lock().await.iter().cloned().collect::<Vec<_>>().join("\n");
+            let last_logs = self
+                .logs
+                .lock()
+                .await
+                .iter()
+                .cloned()
+                .collect::<Vec<_>>()
+                .join("\n");
             let err_msg = format!(
                 "Timeout: llama-server hat nach 45s nicht geantwortet.\nLetzte Logs:\n{}",
                 last_logs
@@ -412,5 +490,36 @@ impl LlamaServerManager {
         s.state = ServerState::Stopped;
         s.pid = None;
         Ok(())
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::LlamaServerManager;
+
+    #[test]
+    fn routes_prism_formats_without_affecting_normal_ggufs() {
+        assert!(LlamaServerManager::requires_prism_runtime(
+            "/models/Ternary-Bonsai-27B-PQ2_0.gguf"
+        ));
+        assert!(LlamaServerManager::requires_prism_runtime(
+            "/models/Ternary-Bonsai-2-27B-PTQ1_0.gguf"
+        ));
+        assert!(!LlamaServerManager::requires_prism_runtime(
+            "/models/Qwen3-8B-Q4_K_M.gguf"
+        ));
+        assert!(!LlamaServerManager::requires_prism_runtime(
+            "/models/Ternary-Bonsai-27B-Q2_g64.gguf"
+        ));
+    }
+
+    #[test]
+    fn rejects_the_old_27b_transition_pack() {
+        assert!(LlamaServerManager::is_deprecated_bonsai_pack(
+            "/models/Ternary-Bonsai-27B-Q2_0.gguf"
+        ));
+        assert!(!LlamaServerManager::is_deprecated_bonsai_pack(
+            "/models/Ternary-Bonsai-27B-PQ2_0.gguf"
+        ));
     }
 }

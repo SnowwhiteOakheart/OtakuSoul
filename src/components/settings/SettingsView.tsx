@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import { useAppStore } from '../../store/useAppStore';
 import { open } from '@tauri-apps/plugin-dialog';
+import { openUrl } from '@tauri-apps/plugin-opener';
 import {
   Cpu,
   HardDrive,
@@ -37,6 +38,7 @@ export const SettingsView = () => {
     serverStatus,
     serverConfig,
     setServerConfig,
+    selectLocalModel,
     startServer,
     stopServer,
     selectedBackend,
@@ -59,6 +61,7 @@ export const SettingsView = () => {
     deleteLlmPreset,
     hfSearchResults,
     isSearchingHf,
+    hfError,
     searchHfModels,
     hfModelFiles,
     isLoadingHfFiles,
@@ -89,8 +92,10 @@ export const SettingsView = () => {
   const [openRouterSearch, setOpenRouterSearch] = useState('');
 
   // HuggingFace search
-  const [hfQuery, setHfQuery] = useState('Qwen2.5-7B-Instruct-GGUF');
+  const BONSAI_MODEL_ID = 'prism-ml/Ternary-Bonsai-27B-gguf';
+  const [hfQuery, setHfQuery] = useState('Ternary-Bonsai-27B-gguf');
   const [expandedModelId, setExpandedModelId] = useState<string | null>(null);
+  const [hubView, setHubView] = useState<'recommended' | 'installed' | 'popular' | 'search'>('recommended');
 
   // New preset modal state
   const [isCreatingPreset, setIsCreatingPreset] = useState(false);
@@ -109,16 +114,40 @@ export const SettingsView = () => {
     }
   }, [cloudProvider, cloudApiKey]);
 
+  useEffect(() => {
+    if (
+      activeTab === 'hub' &&
+      hubView === 'recommended' &&
+      !hfModelFiles[BONSAI_MODEL_ID] &&
+      !isLoadingHfFiles[BONSAI_MODEL_ID]
+    ) {
+      fetchHfModelFiles(BONSAI_MODEL_ID);
+    }
+  }, [activeTab, hubView]);
+
   const handleRecommendLayers = () => {
-    const isLarge = serverConfig.model_path.includes('27B') || serverConfig.model_path.includes('32B');
-    const estimatedMb = isLarge ? 16500 : 7500;
-    const layers = isLarge ? 64 : 40;
-    fetchLayerRecommendation(estimatedMb, layers, serverConfig.context_size);
+    const selectedModel = scannedModels.find((model) => model.path === serverConfig.model_path);
+    const modelName = (selectedModel?.name || serverConfig.model_path).toLowerCase();
+    const isBonsai = modelName.includes('ternary-bonsai');
+    const isLarge = modelName.includes('27b') || modelName.includes('32b');
+    const estimatedMb = selectedModel?.size_mb ?? (isLarge ? 16_500 : 7_500);
+    const layers = isBonsai || isLarge ? 64 : 40;
+    fetchLayerRecommendation(
+      estimatedMb,
+      layers,
+      serverConfig.context_size,
+      serverConfig.model_path,
+      serverConfig.cache_type_k ?? 'f16',
+      serverConfig.cache_type_v ?? 'f16'
+    );
   };
 
   const applyRecommendation = () => {
     if (layerRecommendation) {
-      setServerConfig({ gpu_layers: layerRecommendation.recommended_layers });
+      setServerConfig({
+        gpu_layers: layerRecommendation.recommended_layers,
+        context_size: layerRecommendation.recommended_context_size,
+      });
     }
   };
 
@@ -135,14 +164,18 @@ export const SettingsView = () => {
       });
 
       if (selected && typeof selected === 'string') {
-        const isLarge = selected.includes('27B') || selected.includes('32B');
-        setServerConfig({
-          model_path: selected,
-          gpu_layers: isLarge ? 50 : 99,
-        });
+        selectLocalModel(selected);
       }
     } catch (e) {
       console.error('Failed to browse model:', e);
+    }
+  };
+
+  const showBonsaiRecommendation = () => {
+    setHubView('recommended');
+    setExpandedModelId(BONSAI_MODEL_ID);
+    if (!hfModelFiles[BONSAI_MODEL_ID]) {
+      fetchHfModelFiles(BONSAI_MODEL_ID);
     }
   };
 
@@ -400,20 +433,13 @@ export const SettingsView = () => {
                 <div className="flex gap-2">
                   <select
                     value={serverConfig.model_path}
-                    onChange={(e) => {
-                      const path = e.target.value;
-                      const isLarge = path.includes('27B') || path.includes('32B');
-                      setServerConfig({
-                        model_path: path,
-                        gpu_layers: isLarge ? 50 : 99,
-                      });
-                    }}
+                    onChange={(e) => selectLocalModel(e.target.value)}
                     className="flex-1 bg-slate-950 border border-slate-800 rounded-lg px-3 py-2 text-xs font-mono text-slate-200 focus:outline-none focus:border-purple-500"
                   >
                     <option value="">-- Modell wählen oder Durchsuchen --</option>
                     {scannedModels.map((m, idx) => (
                       <option key={idx} value={m.path}>
-                        {m.name} ({(m.size_mb / 1024).toFixed(1)} GB)
+                        {m.name} ({(m.size_mb / 1024).toFixed(1)} GB · {m.runtime === 'prism' ? 'PrismML' : 'Standard'})
                       </option>
                     ))}
                   </select>
@@ -427,6 +453,18 @@ export const SettingsView = () => {
                     <span>Datei wählen...</span>
                   </button>
                 </div>
+                {(() => {
+                  const selectedModel = scannedModels.find((m) => m.path === serverConfig.model_path);
+                  if (!selectedModel) return null;
+                  return (
+                    <div className={`text-[11px] flex items-center gap-1.5 ${selectedModel.runtime === 'prism' ? 'text-cyan-300' : 'text-slate-500'}`}>
+                      <Check className="w-3 h-3" />
+                      <span>
+                        Runtime: {selectedModel.runtime === 'prism' ? 'PrismML (automatisch)' : 'Standard llama.cpp'} · {selectedModel.compatibility_note}
+                      </span>
+                    </div>
+                  );
+                })()}
               </div>
 
               {/* Core Parameters */}
@@ -444,6 +482,9 @@ export const SettingsView = () => {
                     <option value={8192}>8192 Tokens</option>
                     <option value={16384}>16384 Tokens</option>
                     <option value={32768}>32768 Tokens (KV-Quant empfohlen)</option>
+                    <option value={65536}>65536 Tokens</option>
+                    <option value={131072}>131072 Tokens (viel RAM/VRAM)</option>
+                    <option value={262144}>262144 Tokens (Modellmaximum, experimentell)</option>
                   </select>
                 </div>
 
@@ -591,8 +632,15 @@ export const SettingsView = () => {
                   <div className="text-[11px] text-slate-400">
                     {layerRecommendation
                       ? layerRecommendation.advice
-                      : 'Berechnet die optimale Layer-Anzahl für Deine GPU.'}
+                      : 'Berechnet Layer und Kontext anhand der echten Modellgröße und des KV-Cache-Typs.'}
                   </div>
+                  {layerRecommendation && (
+                    <div className="text-[10px] text-slate-500">
+                      {layerRecommendation.profile_name} · Modell {(layerRecommendation.estimated_model_vram_mb / 1024).toFixed(1)} GiB
+                      {' + '}KV {(layerRecommendation.estimated_context_vram_mb / 1024).toFixed(1)} GiB
+                      {' + '}Runtime {(layerRecommendation.runtime_overhead_mb / 1024).toFixed(1)} GiB
+                    </div>
+                  )}
                 </div>
 
                 <div className="flex gap-2">
@@ -609,7 +657,7 @@ export const SettingsView = () => {
                       onClick={applyRecommendation}
                       className="px-3 py-1.5 rounded bg-purple-600 hover:bg-purple-500 text-white text-xs font-medium transition-colors"
                     >
-                      Anwenden ({layerRecommendation.recommended_layers})
+                      Anwenden ({layerRecommendation.recommended_layers} Layer · {Math.round(layerRecommendation.recommended_context_size / 1024)}K)
                     </button>
                   )}
                 </div>
@@ -1264,20 +1312,55 @@ export const SettingsView = () => {
                 </p>
               </div>
 
+              <div className="flex flex-wrap gap-2 text-xs">
+                <button
+                  onClick={showBonsaiRecommendation}
+                  className={`px-3 py-1.5 rounded-lg border transition-colors ${hubView === 'recommended' ? 'border-purple-500 bg-purple-500/15 text-purple-200' : 'border-slate-700 bg-slate-950 text-slate-400 hover:text-slate-200'}`}
+                >
+                  ✨ Empfehlungen
+                </button>
+                <button
+                  onClick={() => setHubView('installed')}
+                  className={`px-3 py-1.5 rounded-lg border transition-colors ${hubView === 'installed' ? 'border-purple-500 bg-purple-500/15 text-purple-200' : 'border-slate-700 bg-slate-950 text-slate-400 hover:text-slate-200'}`}
+                >
+                  Meine Modelle ({scannedModels.length})
+                </button>
+                <button
+                  onClick={() => {
+                    setHubView('popular');
+                    searchHfModels('');
+                  }}
+                  className={`px-3 py-1.5 rounded-lg border transition-colors ${hubView === 'popular' ? 'border-purple-500 bg-purple-500/15 text-purple-200' : 'border-slate-700 bg-slate-950 text-slate-400 hover:text-slate-200'}`}
+                >
+                  Beliebt
+                </button>
+              </div>
+
               <div className="flex gap-2">
                 <div className="relative flex-1">
                   <Search className="w-4 h-4 absolute left-3 top-2.5 text-slate-500" />
                   <input
                     type="text"
                     value={hfQuery}
-                    onChange={(e) => setHfQuery(e.target.value)}
-                    onKeyDown={(e) => e.key === 'Enter' && searchHfModels(hfQuery)}
+                    onChange={(e) => {
+                      setHfQuery(e.target.value);
+                      setHubView('search');
+                    }}
+                    onKeyDown={(e) => {
+                      if (e.key === 'Enter') {
+                        setHubView('search');
+                        searchHfModels(hfQuery);
+                      }
+                    }}
                     placeholder="Modell suchen (z.B. Qwen2.5-7B, Llama-3.1-8B, Mistral, Heretic)..."
                     className="w-full bg-slate-950 border border-slate-800 rounded-lg pl-9 pr-3 py-2 text-xs text-slate-200 focus:outline-none focus:border-purple-500"
                   />
                 </div>
                 <button
-                  onClick={() => searchHfModels(hfQuery)}
+                  onClick={() => {
+                    setHubView('search');
+                    searchHfModels(hfQuery);
+                  }}
                   disabled={isSearchingHf || !hfQuery.trim()}
                   className="px-4 py-2 rounded-lg bg-emerald-600 hover:bg-emerald-500 disabled:opacity-50 text-white text-xs font-semibold flex items-center gap-1.5"
                 >
@@ -1286,6 +1369,118 @@ export const SettingsView = () => {
                 </button>
               </div>
             </div>
+
+            {hfError && (
+              <div className="p-3 rounded-lg bg-rose-950/40 border border-rose-900/60 text-rose-300 text-xs flex items-center gap-2">
+                <AlertTriangle className="w-4 h-4 shrink-0" />
+                <span>{hfError}</span>
+              </div>
+            )}
+
+            {hubView === 'recommended' && (() => {
+              const files = hfModelFiles[BONSAI_MODEL_ID] || [];
+              const recommendedFile = files.find((file) => file.recommended);
+              const installed = scannedModels.find((model) => model.name.toLowerCase().includes('ternary-bonsai-27b-pq2_0'));
+              const vramGb = (gpu?.total_vram_mb || 0) / 1024;
+              return (
+                <div className="rounded-2xl border border-purple-500/50 bg-gradient-to-br from-purple-950/60 via-slate-900/80 to-cyan-950/40 p-5 space-y-4 shadow-xl shadow-purple-950/20">
+                  <div className="flex flex-col md:flex-row md:items-start justify-between gap-4">
+                    <div className="space-y-2">
+                      <div className="flex flex-wrap items-center gap-2">
+                        <span className="px-2 py-0.5 rounded-full bg-emerald-500/20 text-emerald-300 text-[10px] font-bold border border-emerald-500/30">ERSTE WAHL</span>
+                        <span className="px-2 py-0.5 rounded-full bg-cyan-500/15 text-cyan-300 text-[10px] font-bold border border-cyan-500/30">PRISM PQ2_0</span>
+                        <span className="text-[10px] text-slate-400">Apache-2.0</span>
+                      </div>
+                      <h3 className="text-lg font-bold text-slate-100">Ternary Bonsai 27B</h3>
+                      <p className="text-xs text-slate-300 max-w-2xl leading-relaxed">
+                        Volles 27B-Reasoning bei nur etwa 7,2 GB Modellgröße. Unterstützt bis zu 262K Kontext; OtakuSoul startet sicher mit 32K und 4-Bit-KV-Cache.
+                      </p>
+                    </div>
+                    <div className="text-xs md:text-right space-y-1">
+                      <div className="text-emerald-300 font-semibold">
+                        {vramGb >= 10 ? `✓ Passt vollständig in ${vramGb.toFixed(0)} GB VRAM` : '✓ Läuft mit CPU/GPU-Offload'}
+                      </div>
+                      <div className="text-slate-400">ca. 8,4 GB Peak bei 4K · ca. 10,1 GB bei 100K + Q4 KV</div>
+                    </div>
+                  </div>
+
+                  <div className="grid grid-cols-2 md:grid-cols-4 gap-2 text-[11px]">
+                    {[['27B', 'Parameter'], ['~7,2 GB', 'Download'], ['32K', 'Startkontext'], ['262K', 'Maximum']].map(([value, label]) => (
+                      <div key={label} className="rounded-lg bg-slate-950/60 border border-slate-700/70 p-2 text-center">
+                        <div className="font-bold text-slate-100">{value}</div>
+                        <div className="text-slate-500">{label}</div>
+                      </div>
+                    ))}
+                  </div>
+
+                  <div className="flex flex-wrap items-center gap-2">
+                    {installed ? (
+                      <button
+                        onClick={() => {
+                          selectLocalModel(installed.path);
+                          setActiveTab('server');
+                        }}
+                        className="px-4 py-2 rounded-lg bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-semibold flex items-center gap-2"
+                      >
+                        <Check className="w-4 h-4" /> Installiert – auswählen
+                      </button>
+                    ) : recommendedFile ? (
+                      <button
+                        onClick={() => downloadGgufModel(recommendedFile.download_url, recommendedFile.filename)}
+                        className="px-4 py-2 rounded-lg bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-semibold flex items-center gap-2"
+                      >
+                        <Download className="w-4 h-4" /> Empfohlenes Modell laden & auswählen
+                      </button>
+                    ) : (
+                      <button
+                        onClick={showBonsaiRecommendation}
+                        disabled={isLoadingHfFiles[BONSAI_MODEL_ID]}
+                        className="px-4 py-2 rounded-lg bg-purple-600 hover:bg-purple-500 disabled:opacity-50 text-white text-xs font-semibold flex items-center gap-2"
+                      >
+                        <RefreshCw className={`w-4 h-4 ${isLoadingHfFiles[BONSAI_MODEL_ID] ? 'animate-spin' : ''}`} />
+                        {isLoadingHfFiles[BONSAI_MODEL_ID] ? 'Lade Modelldaten...' : 'Download vorbereiten'}
+                      </button>
+                    )}
+                    <button type="button" onClick={() => openUrl('https://huggingface.co/prism-ml/Ternary-Bonsai-27B-gguf')} className="px-3 py-2 text-xs text-cyan-300 hover:text-cyan-200">
+                      Modellseite öffnen ↗
+                    </button>
+                  </div>
+
+                  {files.length > 0 && !installed && (
+                    <div className="pt-3 border-t border-purple-500/20 text-[11px] text-slate-400">
+                      Gewählt: <span className="font-mono text-purple-200">{recommendedFile?.filename || 'PQ2_0 wird gesucht'}</span>. Die spezielle PrismML Runtime wird automatisch verwendet.
+                    </div>
+                  )}
+                </div>
+              );
+            })()}
+
+            {hubView === 'installed' && (
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                {scannedModels.map((model) => (
+                  <button
+                    key={model.path}
+                    onClick={() => {
+                      selectLocalModel(model.path);
+                      setActiveTab('server');
+                    }}
+                    className={`p-4 rounded-xl border text-left transition-all ${serverConfig.model_path === model.path ? 'border-emerald-500 bg-emerald-500/10' : 'border-slate-800 bg-slate-900/60 hover:border-slate-600'}`}
+                  >
+                    <div className="flex justify-between gap-3">
+                      <div className="font-semibold text-xs text-slate-200 break-all">{model.name}</div>
+                      {serverConfig.model_path === model.path && <Check className="w-4 h-4 text-emerald-400 shrink-0" />}
+                    </div>
+                    <div className="mt-2 flex flex-wrap gap-2 text-[10px]">
+                      <span className="px-2 py-0.5 rounded bg-slate-800 text-slate-300">{(model.size_mb / 1024).toFixed(1)} GB</span>
+                      <span className={`px-2 py-0.5 rounded ${model.runtime === 'prism' ? 'bg-cyan-500/15 text-cyan-300' : 'bg-purple-500/15 text-purple-300'}`}>
+                        {model.runtime === 'prism' ? 'PrismML' : 'llama.cpp'}
+                      </span>
+                    </div>
+                    <div className="mt-2 text-[10px] text-slate-500">Klicken zum Auswählen und Konfigurieren</div>
+                  </button>
+                ))}
+              </div>
+            )}
 
             {/* Active Downloads Section */}
             {Object.keys(downloadProgress).length > 0 && (
@@ -1336,6 +1531,7 @@ export const SettingsView = () => {
             )}
 
             {/* Search Results */}
+            {(hubView === 'search' || hubView === 'popular') && (
             <div className="space-y-3">
               {hfSearchResults.length === 0 ? (
                 <div className="text-center py-12 text-slate-600 text-xs">
@@ -1397,22 +1593,30 @@ export const SettingsView = () => {
                             <div className="divide-y divide-slate-800/80 rounded-lg border border-slate-800 bg-slate-950 overflow-hidden">
                               {files.map((file) => (
                                 <div key={file.filename} className="p-2.5 flex items-center justify-between text-xs hover:bg-slate-900/50">
-                                  <div className="space-y-0.5 truncate max-w-lg">
-                                    <div className="font-semibold text-slate-200 truncate">{file.filename}</div>
+                                  <div className="space-y-1 min-w-0 flex-1 pr-3">
+                                    <div className="font-semibold text-slate-200 break-all flex items-center gap-2">
+                                      <span>{file.filename}</span>
+                                      {file.recommended && <span className="shrink-0 px-1.5 py-0.5 rounded bg-emerald-500/20 text-emerald-300 text-[9px]">EMPFOHLEN</span>}
+                                    </div>
                                     <div className="flex items-center gap-2 text-[10px] font-mono">
                                       <span className="px-1.5 py-0.5 rounded bg-purple-500/20 text-purple-300 font-bold">
                                         {file.quantization}
                                       </span>
                                       <span className="text-slate-400">{file.size_formatted}</span>
+                                      <span className={file.runtime === 'prism' ? 'text-cyan-300' : file.runtime === 'legacy' ? 'text-rose-300' : 'text-slate-500'}>
+                                        {file.runtime === 'prism' ? 'PrismML Runtime' : file.runtime === 'legacy' ? 'Veraltet' : 'Standard Runtime'}
+                                      </span>
                                     </div>
+                                    <div className={`text-[10px] ${file.runtime === 'legacy' ? 'text-rose-300' : 'text-slate-500'}`}>{file.compatibility_note}</div>
                                   </div>
 
                                   <button
                                     onClick={() => downloadGgufModel(file.download_url, file.filename)}
-                                    className="px-3 py-1.5 rounded bg-emerald-600 hover:bg-emerald-500 text-white font-semibold text-xs flex items-center gap-1.5 transition-colors"
+                                    disabled={file.runtime === 'legacy'}
+                                    className="px-3 py-1.5 rounded bg-emerald-600 hover:bg-emerald-500 disabled:bg-slate-700 disabled:text-slate-500 text-white font-semibold text-xs flex items-center gap-1.5 transition-colors shrink-0"
                                   >
                                     <Download className="w-3.5 h-3.5" />
-                                    <span>Download</span>
+                                    <span>{file.runtime === 'legacy' ? 'Nicht verwenden' : 'Laden & auswählen'}</span>
                                   </button>
                                 </div>
                               ))}
@@ -1425,6 +1629,7 @@ export const SettingsView = () => {
                 })
               )}
             </div>
+            )}
           </div>
         )}
       </div>

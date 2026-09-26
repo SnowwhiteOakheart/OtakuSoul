@@ -22,6 +22,10 @@ pub struct HfGgufFile {
     pub size_formatted: String,
     pub download_url: String,
     pub quantization: String,
+    /// Runtime required to load this particular GGUF ("standard", "prism" or "legacy").
+    pub runtime: String,
+    pub recommended: bool,
+    pub compatibility_note: String,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
@@ -31,6 +35,8 @@ pub struct DownloadProgressEvent {
     pub total_bytes: u64,
     pub percent: f32,
     pub speed_mbps: f32,
+    pub finished: bool,
+    pub error: Option<String>,
 }
 
 fn format_bytes(bytes: u64) -> String {
@@ -50,11 +56,9 @@ fn format_bytes(bytes: u64) -> String {
 fn extract_quantization(filename: &str) -> String {
     let lower = filename.to_uppercase();
     let quants = [
-        "Q4_K_M", "Q4_K_S", "Q4_0", "Q4_1",
-        "Q5_K_M", "Q5_K_S", "Q5_0", "Q5_1",
-        "Q8_0", "Q6_K", "Q3_K_M", "Q3_K_S",
-        "Q2_K", "IQ4_XS", "IQ4_NL", "IQ3_M",
-        "BF16", "F16",
+        "PQ2_0", "PTQ1_0", "Q2_0_G64", "Q2_G64", "Q4_K_M", "Q4_K_S", "Q4_0", "Q4_1", "Q5_K_M",
+        "Q5_K_S", "Q5_0", "Q5_1", "Q8_0", "Q6_K", "Q3_K_M", "Q3_K_S", "Q2_K", "IQ4_XS", "IQ4_NL",
+        "IQ3_M", "BF16", "F16",
     ];
 
     for q in quants {
@@ -63,6 +67,44 @@ fn extract_quantization(filename: &str) -> String {
         }
     }
     "GGUF".to_string()
+}
+
+fn classify_gguf(model_id: &str, filename: &str) -> (String, bool, String) {
+    let model = model_id.to_ascii_lowercase();
+    let file = filename.to_ascii_lowercase();
+
+    if file.contains("pq2_0") || file.contains("ptq1_0") || model.contains("ternary-bonsai-2-") {
+        return (
+            "prism".to_string(),
+            file.contains("pq2_0") && !file.contains("mmproj") && !file.contains("dspark"),
+            "Benötigt die PrismML Runtime; OtakuSoul wählt sie automatisch.".to_string(),
+        );
+    }
+
+    // This one filename predates the upstream Q2_0 migration. It deliberately uses an
+    // incompatible layout and must not be confused with current, ordinary Q2_0 files.
+    if model == "prism-ml/ternary-bonsai-27b-gguf" && file.ends_with("ternary-bonsai-27b-q2_0.gguf")
+    {
+        return (
+            "legacy".to_string(),
+            false,
+            "Veraltetes Übergangsformat. Bitte PQ2_0 oder Q2_g64 wählen.".to_string(),
+        );
+    }
+
+    if file.contains("q2_g64") || file.contains("q2_0_g64") {
+        return (
+            "standard".to_string(),
+            false,
+            "Kompatibel mit aktuellem Standard-llama.cpp; etwas größer als PQ2_0.".to_string(),
+        );
+    }
+
+    (
+        "standard".to_string(),
+        false,
+        "Kompatibel mit der normalen OtakuSoul llama.cpp Runtime.".to_string(),
+    )
 }
 
 pub async fn search_hf_models(query: &str) -> Result<Vec<HfModelSummary>, String> {
@@ -92,11 +134,21 @@ pub async fn search_hf_models(query: &str) -> Result<Vec<HfModelSummary>, String
     if let Some(arr) = val.as_array() {
         for m in arr {
             if let Some(id) = m.get("id").and_then(|s| s.as_str()) {
-                let author = m.get("author").and_then(|s| s.as_str()).unwrap_or("HuggingFace").to_string();
+                let author = m
+                    .get("author")
+                    .and_then(|s| s.as_str())
+                    .unwrap_or("HuggingFace")
+                    .to_string();
                 let downloads = m.get("downloads").and_then(|d| d.as_u64()).unwrap_or(0);
                 let likes = m.get("likes").and_then(|l| l.as_u64()).unwrap_or(0);
-                let pipeline_tag = m.get("pipeline_tag").and_then(|p| p.as_str()).map(|s| s.to_string());
-                let last_modified = m.get("lastModified").and_then(|lm| lm.as_str()).map(|s| s.to_string());
+                let pipeline_tag = m
+                    .get("pipeline_tag")
+                    .and_then(|p| p.as_str())
+                    .map(|s| s.to_string());
+                let last_modified = m
+                    .get("lastModified")
+                    .and_then(|lm| lm.as_str())
+                    .map(|s| s.to_string());
 
                 models.push(HfModelSummary {
                     id: id.to_string(),
@@ -115,7 +167,7 @@ pub async fn search_hf_models(query: &str) -> Result<Vec<HfModelSummary>, String
 
 pub async fn get_hf_model_files(model_id: &str) -> Result<Vec<HfGgufFile>, String> {
     let client = reqwest::Client::new();
-    let url = format!("https://huggingface.co/api/models/{}", model_id);
+    let url = format!("https://huggingface.co/api/models/{}?blobs=true", model_id);
 
     let res = client
         .get(&url)
@@ -142,9 +194,19 @@ pub async fn get_hf_model_files(model_id: &str) -> Result<Vec<HfGgufFile>, Strin
                         "https://huggingface.co/{}/resolve/main/{}",
                         model_id, rfilename
                     );
-                    let size_bytes = s.get("size").and_then(|sz| sz.as_u64()).unwrap_or(0);
+                    let size_bytes = s
+                        .get("size")
+                        .and_then(|sz| sz.as_u64())
+                        .or_else(|| {
+                            s.get("lfs")
+                                .and_then(|l| l.get("size"))
+                                .and_then(|sz| sz.as_u64())
+                        })
+                        .unwrap_or(0);
                     let size_formatted = format_bytes(size_bytes);
                     let quantization = extract_quantization(rfilename);
+                    let (runtime, recommended, compatibility_note) =
+                        classify_gguf(model_id, rfilename);
 
                     files.push(HfGgufFile {
                         filename: rfilename.to_string(),
@@ -152,14 +214,21 @@ pub async fn get_hf_model_files(model_id: &str) -> Result<Vec<HfGgufFile>, Strin
                         size_formatted,
                         download_url,
                         quantization,
+                        runtime,
+                        recommended,
+                        compatibility_note,
                     });
                 }
             }
         }
     }
 
-    // Sort by quantization quality (Q4, Q5, Q8, etc.)
-    files.sort_by(|a, b| a.filename.cmp(&b.filename));
+    // Put the repository's recommended pack first, then keep the remaining list stable.
+    files.sort_by(|a, b| {
+        b.recommended
+            .cmp(&a.recommended)
+            .then_with(|| a.filename.cmp(&b.filename))
+    });
     Ok(files)
 }
 
@@ -186,8 +255,14 @@ pub async fn download_gguf_file<R: tauri::Runtime>(
     let target_dir = PathBuf::from(&paths.bundled_models_dir);
     std::fs::create_dir_all(&target_dir).map_err(|e| e.to_string())?;
 
-    let dest_path = target_dir.join(target_filename);
-    let mut file = tokio::fs::File::create(&dest_path)
+    let safe_filename = PathBuf::from(target_filename)
+        .file_name()
+        .and_then(|name| name.to_str())
+        .ok_or_else(|| "Ungültiger Modelldateiname".to_string())?
+        .to_string();
+    let dest_path = target_dir.join(&safe_filename);
+    let partial_path = target_dir.join(format!("{}.part", safe_filename));
+    let mut file = tokio::fs::File::create(&partial_path)
         .await
         .map_err(|e| format!("Fehler beim Erstellen der Zieldatei: {}", e))?;
 
@@ -197,7 +272,8 @@ pub async fn download_gguf_file<R: tauri::Runtime>(
     let mut last_emit = std::time::Instant::now();
 
     while let Some(chunk_res) = stream.next().await {
-        let chunk = chunk_res.map_err(|e| format!("Fehler beim Empfangen des Datenstroms: {}", e))?;
+        let chunk =
+            chunk_res.map_err(|e| format!("Fehler beim Empfangen des Datenstroms: {}", e))?;
         file.write_all(&chunk)
             .await
             .map_err(|e| format!("Schreibfehler: {}", e))?;
@@ -216,11 +292,13 @@ pub async fn download_gguf_file<R: tauri::Runtime>(
             let _ = app.emit(
                 "model-download-progress",
                 DownloadProgressEvent {
-                    filename: target_filename.to_string(),
+                    filename: safe_filename.clone(),
                     downloaded_bytes,
                     total_bytes,
                     percent,
                     speed_mbps,
+                    finished: false,
+                    error: None,
                 },
             );
 
@@ -228,17 +306,61 @@ pub async fn download_gguf_file<R: tauri::Runtime>(
         }
     }
 
+    file.flush()
+        .await
+        .map_err(|e| format!("Fehler beim Abschließen der Modelldatei: {}", e))?;
+    drop(file);
+    tokio::fs::rename(&partial_path, &dest_path)
+        .await
+        .map_err(|e| format!("Modelldatei konnte nicht aktiviert werden: {}", e))?;
+
     let _ = app.emit(
         "model-download-progress",
         DownloadProgressEvent {
-            filename: target_filename.to_string(),
+            filename: safe_filename,
             downloaded_bytes,
             total_bytes,
             percent: 100.0,
             speed_mbps: 0.0,
+            finished: true,
+            error: None,
         },
     );
 
     info!("GGUF-Download abgeschlossen: {:?}", dest_path);
     Ok(dest_path.to_string_lossy().to_string())
+}
+
+#[cfg(test)]
+mod tests {
+    use super::{classify_gguf, extract_quantization};
+
+    #[test]
+    fn identifies_bonsai_runtime_and_safe_fallbacks() {
+        let prism = classify_gguf(
+            "prism-ml/Ternary-Bonsai-27B-gguf",
+            "Ternary-Bonsai-27B-PQ2_0.gguf",
+        );
+        assert_eq!(prism.0, "prism");
+        assert!(prism.1);
+
+        let fallback = classify_gguf(
+            "prism-ml/Ternary-Bonsai-27B-gguf",
+            "Ternary-Bonsai-27B-Q2_g64.gguf",
+        );
+        assert_eq!(fallback.0, "standard");
+        assert!(!fallback.1);
+
+        let legacy = classify_gguf(
+            "prism-ml/Ternary-Bonsai-27B-gguf",
+            "Ternary-Bonsai-27B-Q2_0.gguf",
+        );
+        assert_eq!(legacy.0, "legacy");
+    }
+
+    #[test]
+    fn reports_prism_quantization_before_generic_q2() {
+        assert_eq!(extract_quantization("model-PQ2_0.gguf"), "PQ2_0");
+        assert_eq!(extract_quantization("model-Q2_g64.gguf"), "Q2_G64");
+    }
 }

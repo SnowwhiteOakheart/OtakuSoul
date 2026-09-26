@@ -184,12 +184,20 @@ interface AppStoreState {
   hardware: HardwareInfo | null;
   layerRecommendation: LayerRecommendation | null;
   fetchHardware: () => Promise<void>;
-  fetchLayerRecommendation: (modelSizeMb: number, totalLayers: number, contextSize: number) => Promise<void>;
+  fetchLayerRecommendation: (
+    modelSizeMb: number,
+    totalLayers: number,
+    contextSize: number,
+    modelPath?: string,
+    cacheTypeK?: string,
+    cacheTypeV?: string
+  ) => Promise<void>;
 
   // Server
   serverStatus: ServerStatus;
   serverConfig: LlamaServerConfig;
   setServerConfig: (config: Partial<LlamaServerConfig>) => void;
+  selectLocalModel: (path: string) => void;
   fetchServerStatus: () => Promise<void>;
   startServer: () => Promise<void>;
   stopServer: () => Promise<void>;
@@ -335,6 +343,7 @@ interface AppStoreState {
 
   hfSearchResults: HfModelSummary[];
   isSearchingHf: boolean;
+  hfError: string | null;
   searchHfModels: (query: string) => Promise<void>;
   hfModelFiles: Record<string, HfGgufFile[]>;
   isLoadingHfFiles: Record<string, boolean>;
@@ -438,9 +447,23 @@ export const useAppStore = create<AppStoreState>((set, get) => ({
     }
   },
 
-  fetchLayerRecommendation: async (modelSizeMb, totalLayers, contextSize) => {
+  fetchLayerRecommendation: async (
+    modelSizeMb,
+    totalLayers,
+    contextSize,
+    modelPath,
+    cacheTypeK,
+    cacheTypeV
+  ) => {
     try {
-      const rec = await api.getLayerRecommendation(modelSizeMb, totalLayers, contextSize);
+      const rec = await api.getLayerRecommendation(
+        modelSizeMb,
+        totalLayers,
+        contextSize,
+        modelPath,
+        cacheTypeK,
+        cacheTypeV
+      );
       set({ layerRecommendation: rec });
     } catch (e) {
       console.error('Failed to get layer recommendation:', e);
@@ -467,6 +490,39 @@ export const useAppStore = create<AppStoreState>((set, get) => ({
 
   setServerConfig: (config) => {
     set((state) => ({ serverConfig: { ...state.serverConfig, ...config } }));
+    get().saveCurrentSettings();
+  },
+
+  selectLocalModel: (path) => {
+    set((state) => {
+      const model = state.scannedModels.find((item) => item.path === path);
+      const isBonsai = model?.name.toLowerCase().includes('bonsai') ?? path.toLowerCase().includes('bonsai');
+      return {
+        selectedBackend: 'local',
+        serverConfig: {
+          ...state.serverConfig,
+          model_path: path,
+          gpu_layers: 99,
+          ...(isBonsai
+            ? {
+                context_size: model?.recommended_context || 32768,
+                cache_type_k: 'q4_0',
+                cache_type_v: 'q4_0',
+                flash_attn: true,
+                reasoning_mode: true,
+              }
+            : {}),
+        },
+        sampling: isBonsai
+          ? {
+              ...state.sampling,
+              temperature: 0.7,
+              top_p: 0.95,
+              top_k: 20,
+            }
+          : state.sampling,
+      };
+    });
     get().saveCurrentSettings();
   },
 
@@ -1569,15 +1625,18 @@ export const useAppStore = create<AppStoreState>((set, get) => ({
 
   hfSearchResults: [],
   isSearchingHf: false,
+  hfError: null,
   searchHfModels: async (query: string) => {
-    if (!query.trim()) return;
-    set({ isSearchingHf: true });
+    set({ isSearchingHf: true, hfError: null });
     try {
       const results = await api.searchHfModels(query);
       set({ hfSearchResults: results, isSearchingHf: false });
     } catch (e) {
       console.error('Failed to search HF models:', e);
-      set({ isSearchingHf: false });
+      set({
+        isSearchingHf: false,
+        hfError: e instanceof Error ? e.message : String(e),
+      });
     }
   },
 
@@ -1603,12 +1662,43 @@ export const useAppStore = create<AppStoreState>((set, get) => ({
 
   downloadProgress: {},
   downloadGgufModel: async (downloadUrl: string, filename: string) => {
+    set({ hfError: null });
     try {
-      await api.downloadGgufModel(downloadUrl, filename);
+      const modelPath = await api.downloadGgufModel(downloadUrl, filename);
       const models = await api.scanModels();
-      set({ scannedModels: models });
+      const isBonsai = filename.toLowerCase().includes('bonsai');
+      set((state) => ({
+        scannedModels: models,
+        selectedBackend: 'local',
+        serverConfig: {
+          ...state.serverConfig,
+          model_path: modelPath,
+          ...(isBonsai
+            ? {
+                context_size: 32768,
+                gpu_layers: 99,
+                cache_type_k: 'q4_0',
+                cache_type_v: 'q4_0',
+                flash_attn: true,
+                reasoning_mode: true,
+              }
+            : {}),
+        },
+        ...(isBonsai
+          ? {
+              sampling: {
+                ...state.sampling,
+                temperature: 0.7,
+                top_p: 0.95,
+                top_k: 20,
+              },
+            }
+          : {}),
+      }));
+      await get().saveCurrentSettings();
     } catch (e) {
       console.error('Failed to download GGUF model:', e);
+      set({ hfError: e instanceof Error ? e.message : String(e) });
     }
   },
 
@@ -2228,4 +2318,3 @@ export const useAppStore = create<AppStoreState>((set, get) => ({
     }
   },
 }));
-

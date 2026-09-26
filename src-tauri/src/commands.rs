@@ -1,4 +1,6 @@
-use crate::modules::hardware::{probe_hardware, recommend_gpu_layers, HardwareInfo, LayerRecommendation};
+use crate::modules::hardware::{
+    probe_hardware, recommend_gpu_layers, HardwareInfo, LayerRecommendation,
+};
 use crate::modules::inference::{ChatRequest, DoneEvent};
 use crate::modules::llama_manager::{LlamaServerConfig, ServerStatus};
 use crate::state::AppState;
@@ -14,8 +16,18 @@ pub fn get_layer_recommendation(
     model_size_mb: u64,
     total_layers: u32,
     context_size: u32,
+    model_path: Option<String>,
+    cache_type_k: Option<String>,
+    cache_type_v: Option<String>,
 ) -> LayerRecommendation {
-    recommend_gpu_layers(model_size_mb, total_layers, context_size)
+    recommend_gpu_layers(
+        model_size_mb,
+        total_layers,
+        context_size,
+        model_path.as_deref(),
+        cache_type_k.as_deref(),
+        cache_type_v.as_deref(),
+    )
 }
 
 #[tauri::command]
@@ -1046,5 +1058,3 @@ pub fn import_live2d_model(source_path: String) -> Result<crate::modules::live2d
 pub fn import_sow_live2d_models() -> Result<usize, String> {
     crate::modules::live2d::import_sow_live2d_models()
 }
-
-

@@ -25,6 +25,9 @@ pub struct ScannedModel {
     pub name: String,
     pub path: String,
     pub size_mb: u64,
+    pub runtime: String,
+    pub recommended_context: u32,
+    pub compatibility_note: String,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
@@ -36,11 +39,15 @@ pub struct ScannedVrm {
 
 /// Resolves standard base directories for OtakuSoul and creates required user directories
 pub fn resolve_app_paths() -> AppPaths {
-    let (config_dir, data_dir) = if let Some(proj_dirs) = ProjectDirs::from("com", "snowwhite", "otakusoul") {
-        (proj_dirs.config_dir().to_path_buf(), proj_dirs.data_dir().to_path_buf())
-    } else {
-        (PathBuf::from("./config"), PathBuf::from("./data"))
-    };
+    let (config_dir, data_dir) =
+        if let Some(proj_dirs) = ProjectDirs::from("com", "snowwhite", "otakusoul") {
+            (
+                proj_dirs.config_dir().to_path_buf(),
+                proj_dirs.data_dir().to_path_buf(),
+            )
+        } else {
+            (PathBuf::from("./config"), PathBuf::from("./data"))
+        };
 
     let characters_dir = data_dir.join("characters");
     let lorebooks_dir = data_dir.join("lorebooks");
@@ -69,7 +76,8 @@ pub fn resolve_app_paths() -> AppPaths {
     }
 
     let bundled_presets = find_existing_dir(&base_root, &["presets", "../presets"]);
-    let bundled_models = find_existing_dir(&base_root, &["assets/models", "../assets/models", "models"]);
+    let bundled_models =
+        find_existing_dir(&base_root, &["assets/models", "../assets/models", "models"]);
     let bundled_vrm = find_existing_dir(&base_root, &["assets/vrm", "../assets/vrm", "vrm"]);
     let bundled_bin = find_existing_dir(&base_root, &["bin/cuda", "bin", "../bin/cuda", "../bin"]);
 
@@ -152,13 +160,19 @@ pub fn scan_available_characters() -> Vec<CharacterProfile> {
                     continue;
                 }
 
-                let ext = path.extension().and_then(|s| s.to_str()).map(|s| s.to_lowercase());
+                let ext = path
+                    .extension()
+                    .and_then(|s| s.to_str())
+                    .map(|s| s.to_lowercase());
                 if ext != Some("png".to_string()) && ext != Some("json".to_string()) {
                     continue;
                 }
 
                 // Ignore lorebook and scene JSON files
-                let stem = path.file_stem().and_then(|s| s.to_str()).unwrap_or_default();
+                let stem = path
+                    .file_stem()
+                    .and_then(|s| s.to_str())
+                    .unwrap_or_default();
                 if stem.starts_with("persona_")
                     || stem.contains("lorebook")
                     || stem.contains("scene")
@@ -188,7 +202,8 @@ pub fn scan_available_characters() -> Vec<CharacterProfile> {
                         continue;
                     }
 
-                    if seen_identifiers.contains(&norm_id) || seen_identifiers.contains(&norm_name) {
+                    if seen_identifiers.contains(&norm_id) || seen_identifiers.contains(&norm_name)
+                    {
                         continue;
                     }
 
@@ -202,7 +217,13 @@ pub fn scan_available_characters() -> Vec<CharacterProfile> {
     }
 
     // Sort by name for clean presentation
-    profiles.sort_by(|a, b| a.card.data.name.to_lowercase().cmp(&b.card.data.name.to_lowercase()));
+    profiles.sort_by(|a, b| {
+        a.card
+            .data
+            .name
+            .to_lowercase()
+            .cmp(&b.card.data.name.to_lowercase())
+    });
     profiles
 }
 
@@ -225,18 +246,48 @@ pub fn scan_available_models() -> Vec<ScannedModel> {
             for entry in entries.flatten() {
                 let path = entry.path();
                 if path.is_file() && path.extension().and_then(|e| e.to_str()) == Some("gguf") {
-                    let name = path.file_stem().and_then(|s| s.to_str()).unwrap_or("Model").to_string();
-                    let size_mb = entry.metadata().map(|m| m.len() / (1024 * 1024)).unwrap_or(0);
+                    let name = path
+                        .file_stem()
+                        .and_then(|s| s.to_str())
+                        .unwrap_or("Model")
+                        .to_string();
+                    let size_mb = entry
+                        .metadata()
+                        .map(|m| m.len() / (1024 * 1024))
+                        .unwrap_or(0);
+                    let lower_name = name.to_ascii_lowercase();
+                    let is_prism = lower_name.contains("pq2_0") || lower_name.contains("ptq1_0");
+                    let is_bonsai = lower_name.contains("bonsai");
                     models.push(ScannedModel {
                         name,
                         path: path.to_string_lossy().to_string(),
                         size_mb,
+                        runtime: if is_prism { "prism" } else { "standard" }.to_string(),
+                        recommended_context: if is_bonsai { 32768 } else { 8192 },
+                        compatibility_note: if is_prism {
+                            "PrismML Runtime wird automatisch verwendet".to_string()
+                        } else {
+                            "Standard llama.cpp".to_string()
+                        },
                     });
                 }
             }
         }
     }
 
+    models.sort_by(|a, b| {
+        let a_recommended = a
+            .name
+            .to_ascii_lowercase()
+            .contains("ternary-bonsai-27b-pq2_0");
+        let b_recommended = b
+            .name
+            .to_ascii_lowercase()
+            .contains("ternary-bonsai-27b-pq2_0");
+        b_recommended
+            .cmp(&a_recommended)
+            .then_with(|| a.name.to_lowercase().cmp(&b.name.to_lowercase()))
+    });
     models
 }
 
@@ -259,8 +310,15 @@ pub fn scan_available_vrm_models() -> Vec<ScannedVrm> {
             for entry in entries.flatten() {
                 let path = entry.path();
                 if path.is_file() && path.extension().and_then(|e| e.to_str()) == Some("vrm") {
-                    let name = path.file_stem().and_then(|s| s.to_str()).unwrap_or("Avatar").to_string();
-                    let size_mb = entry.metadata().map(|m| m.len() / (1024 * 1024)).unwrap_or(0);
+                    let name = path
+                        .file_stem()
+                        .and_then(|s| s.to_str())
+                        .unwrap_or("Avatar")
+                        .to_string();
+                    let size_mb = entry
+                        .metadata()
+                        .map(|m| m.len() / (1024 * 1024))
+                        .unwrap_or(0);
                     vrms.push(ScannedVrm {
                         name,
                         path: path.to_string_lossy().to_string(),

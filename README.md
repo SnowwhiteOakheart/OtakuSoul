@@ -50,6 +50,22 @@ npm run tauri dev
 npm run tauri build
 ```
 
+### PrismML / Ternary Bonsai models (Linux)
+
+The compact `PQ2_0` and `PTQ1_0` Bonsai files need PrismML's llama.cpp fork. Install
+the matching runtime once; OtakuSoul keeps it separate and selects it automatically
+only for models that require it:
+
+```bash
+./tools/install_prism_runtime.sh
+```
+
+For `prism-ml/Ternary-Bonsai-27B-gguf`, choose
+`Ternary-Bonsai-27B-PQ2_0.gguf`. The similarly named plain `Q2_0` file is a
+deprecated transition format; `Q2_g64` is the slightly larger fallback for current
+upstream llama.cpp. A 32K context with `q4_0` KV cache is the safe OtakuSoul default;
+the model itself supports up to 262K when system memory allows it.
+
 ---
 
 ## 🗺️ Migration Roadmap & Features
