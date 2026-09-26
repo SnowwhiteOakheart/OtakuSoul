@@ -42,6 +42,7 @@ import {
   HfGgufFile,
   DownloadProgressEvent,
   ScannedVoice,
+  SttConfig,
   VoiceConfig,
 } from '../types';
 
@@ -656,12 +657,16 @@ export const api = {
     });
   },
   // Phase 13: Voice/TTS
-  listAvailableVoices: async (engine: string): Promise<ScannedVoice[]> => {
-    return await invoke<ScannedVoice[]>('list_available_voices', { engine });
+  listAvailableVoices: async (engine: string, elevenlabsApiKey = ''): Promise<ScannedVoice[]> => {
+    return await invoke<ScannedVoice[]>('list_available_voices', { engine, elevenlabsApiKey });
   },
   
   synthesizeSpeech: async (text: string, config: VoiceConfig): Promise<string> => {
     return await invoke<string>('synthesize_speech', { text, config });
+  },
+
+  transcribeSpeech: async (audioBase64: string, config: SttConfig): Promise<string> => {
+    return await invoke<string>('transcribe_speech', { audioBase64, config });
   },
   
   getCharacterVoiceConfig: async (charId: string): Promise<VoiceConfig> => {

@@ -113,17 +113,23 @@ pub fn load_app_settings() -> AppSettings {
 
 pub fn save_app_settings(settings: &AppSettings) -> Result<(), String> {
     let path = get_settings_file_path();
+    save_app_settings_to_path(settings, &path)?;
+    info!("Einstellungen erfolgreich in {:?} gespeichert.", path);
+    Ok(())
+}
+
+fn save_app_settings_to_path(settings: &AppSettings, path: &std::path::Path) -> Result<(), String> {
     if let Some(parent) = path.parent() {
-        let _ = fs::create_dir_all(parent);
+        fs::create_dir_all(parent)
+            .map_err(|e| format!("Einstellungsordner konnte nicht erstellt werden: {}", e))?;
     }
 
     let json = serde_json::to_string_pretty(settings)
         .map_err(|e| format!("Fehler bei der Serialisierung der Einstellungen: {}", e))?;
 
-    fs::write(&path, json)
+    fs::write(path, json)
         .map_err(|e| format!("Fehler beim Schreiben von {:?}: {}", path, e))?;
 
-    info!("Einstellungen erfolgreich in {:?} gespeichert.", path);
     Ok(())
 }
 
@@ -133,16 +139,25 @@ mod tests {
 
     #[test]
     fn test_settings_load_save() {
-        let mut settings = AppSettings::default();
-        settings.reply_language = "English".to_string();
-        let save_res = save_app_settings(&settings);
+        let test_dir = std::env::temp_dir().join(format!(
+            "otakusoul-settings-test-{}-{}",
+            std::process::id(),
+            std::time::SystemTime::now()
+                .duration_since(std::time::UNIX_EPOCH)
+                .unwrap()
+                .as_nanos()
+        ));
+        let path = test_dir.join("settings.json");
+        let settings = AppSettings {
+            reply_language: "English".to_string(),
+            ..Default::default()
+        };
+        let save_res = save_app_settings_to_path(&settings, &path);
         assert!(save_res.is_ok());
 
-        let loaded = load_app_settings();
+        let content = fs::read_to_string(&path).unwrap();
+        let loaded: AppSettings = serde_json::from_str(&content).unwrap();
         assert_eq!(loaded.reply_language, "English");
-
-        // Clean up test alteration
-        settings.reply_language = "Deutsch".to_string();
-        let _ = save_app_settings(&settings);
+        let _ = fs::remove_dir_all(test_dir);
     }
 }

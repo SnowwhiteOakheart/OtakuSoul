@@ -887,8 +887,11 @@ pub async fn download_gguf_model(
 // --- Voice / TTS Commands ---
 
 #[tauri::command]
-pub fn list_available_voices(engine: String) -> Vec<crate::modules::voice::ScannedVoice> {
-    crate::modules::voice::list_available_voices(&engine)
+pub async fn list_available_voices(
+    engine: String,
+    elevenlabs_api_key: String,
+) -> Result<Vec<crate::modules::voice::ScannedVoice>, String> {
+    crate::modules::voice::list_available_voices(&engine, &elevenlabs_api_key).await
 }
 
 #[tauri::command]
@@ -897,6 +900,14 @@ pub async fn synthesize_speech(
     config: crate::modules::voice::VoiceConfig,
 ) -> Result<String, String> {
     crate::modules::voice::synthesize_speech(&text, &config).await
+}
+
+#[tauri::command]
+pub async fn transcribe_speech(
+    audio_base64: String,
+    config: crate::modules::voice::SttConfig,
+) -> Result<String, String> {
+    crate::modules::voice::transcribe_speech(&audio_base64, &config).await
 }
 
 #[tauri::command]

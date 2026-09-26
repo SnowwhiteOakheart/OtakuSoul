@@ -126,6 +126,22 @@ pub fn recommend_gpu_layers(
         None => (0, 0),
     };
 
+    recommend_gpu_layers_for_vram(
+        model_size_mb,
+        total_model_layers,
+        context_size,
+        free_vram,
+        total_vram,
+    )
+}
+
+fn recommend_gpu_layers_for_vram(
+    model_size_mb: u64,
+    total_model_layers: u32,
+    context_size: u32,
+    free_vram: u64,
+    total_vram: u64,
+) -> LayerRecommendation {
     if total_vram == 0 {
         return LayerRecommendation {
             recommended_layers: 0,
@@ -196,9 +212,12 @@ mod tests {
 
     #[test]
     fn test_recommend_gpu_layers() {
-        let rec = recommend_gpu_layers(7500, 40, 4096);
+        let rec = recommend_gpu_layers_for_vram(7500, 40, 4096, 14_000, 16_000);
         println!("Layer recommendation: {} layers, fits: {}", rec.recommended_layers, rec.fits_entirely_in_vram);
         assert!(rec.recommended_layers > 0);
+        assert!(rec.fits_entirely_in_vram);
+
+        let cpu_only = recommend_gpu_layers_for_vram(7500, 40, 4096, 0, 0);
+        assert_eq!(cpu_only.recommended_layers, 0);
     }
 }
-

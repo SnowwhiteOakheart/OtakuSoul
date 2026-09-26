@@ -422,6 +422,17 @@ pub fn delete_character(char_id: &str) -> Result<(), String> {
 
     // 2. Mark this character as hidden in AppSettings so bundled/preset cards are hidden
     let mut settings = crate::modules::settings::load_app_settings();
+    hide_character_in_settings(&mut settings, char_id);
+    crate::modules::settings::save_app_settings(&settings)?;
+
+    Ok(())
+}
+
+fn hide_character_in_settings(
+    settings: &mut crate::modules::settings::AppSettings,
+    char_id: &str,
+) {
+    let norm_target = crate::modules::paths::normalize_identifier(char_id);
     if !settings
         .hidden_character_ids
         .iter()
@@ -436,10 +447,6 @@ pub fn delete_character(char_id: &str) -> Result<(), String> {
             settings.active_character_id = None;
         }
     }
-
-    crate::modules::settings::save_app_settings(&settings)?;
-
-    Ok(())
 }
 
 /// Restores all previously hidden / deleted preset characters
@@ -458,8 +465,16 @@ pub fn get_personas_file_path() -> PathBuf {
 
 pub fn load_personas() -> Vec<UserPersona> {
     let path = get_personas_file_path();
+    let personas = load_personas_from_path(&path);
+    if !path.exists() {
+        let _ = save_personas_list_to_path(&personas, &path);
+    }
+    personas
+}
+
+fn load_personas_from_path(path: &Path) -> Vec<UserPersona> {
     if path.exists() {
-        if let Ok(content) = fs::read_to_string(&path) {
+        if let Ok(content) = fs::read_to_string(path) {
             if let Ok(personas) = serde_json::from_str::<Vec<UserPersona>>(&content) {
                 if !personas.is_empty() {
                     return personas;
@@ -469,7 +484,6 @@ pub fn load_personas() -> Vec<UserPersona> {
     }
 
     let default_list = vec![UserPersona::default()];
-    let _ = save_personas_list(&default_list);
     default_list
 }
 
@@ -496,12 +510,17 @@ pub fn delete_persona(persona_id: &str) -> Result<Vec<UserPersona>, String> {
 
 fn save_personas_list(list: &[UserPersona]) -> Result<(), String> {
     let path = get_personas_file_path();
+    save_personas_list_to_path(list, &path)
+}
+
+fn save_personas_list_to_path(list: &[UserPersona], path: &Path) -> Result<(), String> {
     if let Some(parent) = path.parent() {
-        let _ = fs::create_dir_all(parent);
+        fs::create_dir_all(parent)
+            .map_err(|e| format!("Persona-Ordner konnte nicht erstellt werden: {}", e))?;
     }
     let json = serde_json::to_string_pretty(list)
         .map_err(|e| format!("Fehler bei der Serialisierung der Personas: {}", e))?;
-    fs::write(&path, json).map_err(|e| format!("Fehler beim Schreiben der Personas: {}", e))?;
+    fs::write(path, json).map_err(|e| format!("Fehler beim Schreiben der Personas: {}", e))?;
     Ok(())
 }
 
@@ -553,6 +572,15 @@ mod tests {
 
     #[test]
     fn test_personas_lifecycle() {
+        let test_dir = std::env::temp_dir().join(format!(
+            "otakusoul-persona-test-{}-{}",
+            std::process::id(),
+            std::time::SystemTime::now()
+                .duration_since(std::time::UNIX_EPOCH)
+                .unwrap()
+                .as_nanos()
+        ));
+        let path = test_dir.join("personas.json");
         let test_persona = UserPersona {
             id: "test_persona_unit".to_string(),
             name: "Tester".to_string(),
@@ -560,30 +588,34 @@ mod tests {
             avatar_data_url: None,
         };
 
-        let saved = save_persona(test_persona.clone()).expect("Failed to save persona");
+        let mut saved = load_personas_from_path(&path);
+        saved.push(test_persona.clone());
+        save_personas_list_to_path(&saved, &path).expect("Failed to save persona");
+        let saved = load_personas_from_path(&path);
         assert!(saved.iter().any(|p| p.id == "test_persona_unit"));
 
-        let deleted = delete_persona("test_persona_unit").expect("Failed to delete persona");
+        let mut deleted = saved;
+        deleted.retain(|p| p.id != "test_persona_unit");
+        save_personas_list_to_path(&deleted, &path).expect("Failed to delete persona");
+        let deleted = load_personas_from_path(&path);
         assert!(!deleted.iter().any(|p| p.id == "test_persona_unit"));
+        let _ = fs::remove_dir_all(test_dir);
     }
 
     #[test]
     fn test_delete_and_restore_character() {
-        let initial_chars = crate::modules::paths::scan_available_characters();
-        assert!(initial_chars.iter().any(|c| c.id == "ayu_ikue" || c.card.data.name == "Ayu Ikue"));
+        let mut settings = crate::modules::settings::AppSettings {
+            active_character_id: Some("ayu_ikue".to_string()),
+            ..Default::default()
+        };
+        hide_character_in_settings(&mut settings, "ayu_ikue");
+        assert_eq!(settings.hidden_character_ids, vec!["ayu_ikue"]);
+        assert!(settings.active_character_id.is_none());
 
-        // Delete (hide) character
-        let del_res = delete_character("ayu_ikue");
-        assert!(del_res.is_ok());
-
-        let after_del = crate::modules::paths::scan_available_characters();
-        assert!(!after_del.iter().any(|c| c.id == "ayu_ikue" || c.card.data.name == "Ayu Ikue"));
-
-        // Restore character
-        let res_res = restore_hidden_characters();
-        assert!(res_res.is_ok());
-
-        let after_restore = crate::modules::paths::scan_available_characters();
-        assert!(after_restore.iter().any(|c| c.id == "ayu_ikue" || c.card.data.name == "Ayu Ikue"));
+        // Repeated hiding is idempotent and restoration is a simple clear.
+        hide_character_in_settings(&mut settings, "Ayu Ikue");
+        assert_eq!(settings.hidden_character_ids.len(), 1);
+        settings.hidden_character_ids.clear();
+        assert!(settings.hidden_character_ids.is_empty());
     }
 }

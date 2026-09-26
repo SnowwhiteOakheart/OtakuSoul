@@ -103,6 +103,7 @@ pub fn run() {
             // Voice / TTS
             commands::list_available_voices,
             commands::synthesize_speech,
+            commands::transcribe_speech,
             commands::get_character_voice_config,
             commands::save_character_voice_config,
         ])

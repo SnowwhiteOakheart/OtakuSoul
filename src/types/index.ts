@@ -540,6 +540,30 @@ export interface DownloadProgressEvent {
 // Phase 13: Voice & TTS
 export type TtsEngine = 'edge' | 'elevenlabs' | 'openai' | 'disabled';
 export type TtsFilterMode = 'all' | 'dialogue_only' | 'strip_actions';
+export type SttEngine = 'native_whisper' | 'openai' | 'disabled';
+
+export interface RvcConfig {
+  enabled: boolean;
+  endpoint: string;
+  api_key: string;
+  model: string;
+  pitch: number;
+  index_rate: number;
+  protect: number;
+}
+
+export interface SttConfig {
+  engine: SttEngine;
+  whisper_model_path: string;
+  endpoint: string;
+  api_key: string;
+  model: string;
+  language: string;
+  prompt: string;
+  vad_threshold: number;
+  vad_silence_ms: number;
+  input_device_id: string;
+}
 
 export interface VoiceConfig {
   engine: TtsEngine;
@@ -553,6 +577,10 @@ export interface VoiceConfig {
   openai_endpoint: string;
   openai_api_key: string;
   openai_model: string;
+  openai_instructions: string;
+  output_device_id: string;
+  rvc: RvcConfig;
+  stt: SttConfig;
 }
 
 export interface ScannedVoice {

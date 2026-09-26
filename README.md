@@ -117,8 +117,14 @@ npm run tauri build
   - Injection Modes: Dedicated separation between passive background context (`## Weltwissen & Kontext`) and active high-priority acting rules (`## Wichtige Handlungs- & Regie-Anweisungen`)
   - Multi-Binding & Global Lorebooks: Unlimited lorebooks bound per character (`bound_lorebooks`) and universal global lorebooks active across all chats
   - Full-Featured Lorebook Manager: In-app editor view with entry search, filter pills, tag chips, and SillyTavern / World Info v2 JSON import and export
-- [ ] **Phases 13–18: Remaining feature parity with Soul of Waifu**
-  - Voice (TTS/STT), Live2D, AI Game Master (Soul Stage Orchestrator), real companion tools, web client, Discord & packaging
+- [x] **Phase 13: Voice, TTS/STT & Voice Call**
+  - Sentence-level streaming TTS with interruption-safe playback queue, output-device selection, Web Audio FFT LipSync and per-character voice profiles
+  - Edge-TTS, ElevenLabs and OpenAI-compatible local/cloud speech backends (Kokoro, Qwen3-TTS, XTTSv2, Silero and AllTalk via sidecars)
+  - Native offline Whisper transcription through `whisper-rs`/whisper.cpp plus OpenAI-compatible STT endpoints
+  - Microphone selection, local RMS voice-activity detection, push-to-talk and a Listening → Processing → Speaking voice-call state machine with user interruption
+  - Optional RVC post-processing with pitch, index-rate and protect controls through a provider-neutral sidecar contract
+- [ ] **Phases 14–18: Remaining feature parity with Soul of Waifu**
+  - Live2D, AI Game Master (Soul Stage Orchestrator), real companion tools, web client, Discord & packaging
   - See **[Roadmap.md](Roadmap.md)** for the full, detailed plan (German)
 
 ---

@@ -1,7 +1,9 @@
 use base64::Engine as _;
 use serde::{Deserialize, Serialize};
 use std::fs;
+use std::io::Cursor;
 use std::path::PathBuf;
+use std::time::Duration;
 use tracing::{info, warn};
 
 use crate::modules::paths::resolve_app_paths;
@@ -32,6 +34,90 @@ pub enum TtsFilterMode {
     StripActions,
 }
 
+#[derive(Debug, Clone, Default, Serialize, Deserialize, PartialEq)]
+pub enum SttEngine {
+    #[serde(rename = "native_whisper")]
+    NativeWhisper,
+    #[serde(rename = "openai")]
+    OpenAi,
+    #[serde(rename = "disabled")]
+    #[default]
+    Disabled,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct RvcConfig {
+    #[serde(default)]
+    pub enabled: bool,
+    #[serde(default)]
+    pub endpoint: String,
+    #[serde(default)]
+    pub api_key: String,
+    #[serde(default)]
+    pub model: String,
+    #[serde(default)]
+    pub pitch: i32,
+    #[serde(default = "default_rvc_index_rate")]
+    pub index_rate: f32,
+    #[serde(default = "default_rvc_protect")]
+    pub protect: f32,
+}
+
+impl Default for RvcConfig {
+    fn default() -> Self {
+        Self {
+            enabled: false,
+            endpoint: String::new(),
+            api_key: String::new(),
+            model: String::new(),
+            pitch: 0,
+            index_rate: default_rvc_index_rate(),
+            protect: default_rvc_protect(),
+        }
+    }
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct SttConfig {
+    #[serde(default)]
+    pub engine: SttEngine,
+    #[serde(default)]
+    pub whisper_model_path: String,
+    #[serde(default = "default_stt_endpoint")]
+    pub endpoint: String,
+    #[serde(default)]
+    pub api_key: String,
+    #[serde(default = "default_stt_model")]
+    pub model: String,
+    #[serde(default)]
+    pub language: String,
+    #[serde(default)]
+    pub prompt: String,
+    #[serde(default = "default_vad_threshold")]
+    pub vad_threshold: f32,
+    #[serde(default = "default_vad_silence_ms")]
+    pub vad_silence_ms: u32,
+    #[serde(default)]
+    pub input_device_id: String,
+}
+
+impl Default for SttConfig {
+    fn default() -> Self {
+        Self {
+            engine: SttEngine::Disabled,
+            whisper_model_path: String::new(),
+            endpoint: default_stt_endpoint(),
+            api_key: String::new(),
+            model: default_stt_model(),
+            language: String::new(),
+            prompt: String::new(),
+            vad_threshold: default_vad_threshold(),
+            vad_silence_ms: default_vad_silence_ms(),
+            input_device_id: String::new(),
+        }
+    }
+}
+
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct VoiceConfig {
     pub engine: TtsEngine,
@@ -54,6 +140,14 @@ pub struct VoiceConfig {
     pub openai_api_key: String,
     #[serde(default = "default_openai_model")]
     pub openai_model: String,
+    #[serde(default)]
+    pub openai_instructions: String,
+    #[serde(default)]
+    pub output_device_id: String,
+    #[serde(default)]
+    pub rvc: RvcConfig,
+    #[serde(default)]
+    pub stt: SttConfig,
 }
 
 fn default_rate() -> String { "+0%".to_string() }
@@ -62,6 +156,19 @@ fn default_volume() -> String { "+0%".to_string() }
 fn default_filter_mode() -> TtsFilterMode { TtsFilterMode::All }
 fn default_openai_endpoint() -> String { "http://localhost:8880/v1/audio/speech".to_string() }
 fn default_openai_model() -> String { "tts-1".to_string() }
+fn default_stt_endpoint() -> String { "http://localhost:8080/v1/audio/transcriptions".to_string() }
+fn default_stt_model() -> String { "whisper-1".to_string() }
+fn default_vad_threshold() -> f32 { 0.025 }
+fn default_vad_silence_ms() -> u32 { 900 }
+fn default_rvc_index_rate() -> f32 { 0.75 }
+fn default_rvc_protect() -> f32 { 0.33 }
+
+fn http_client(timeout_seconds: u64) -> Result<reqwest::Client, String> {
+    reqwest::Client::builder()
+        .timeout(Duration::from_secs(timeout_seconds))
+        .build()
+        .map_err(|e| format!("Audio-HTTP-Client konnte nicht erstellt werden: {}", e))
+}
 
 impl Default for VoiceConfig {
     fn default() -> Self {
@@ -77,6 +184,10 @@ impl Default for VoiceConfig {
             openai_endpoint: default_openai_endpoint(),
             openai_api_key: String::new(),
             openai_model: default_openai_model(),
+            openai_instructions: String::new(),
+            output_device_id: String::new(),
+            rvc: RvcConfig::default(),
+            stt: SttConfig::default(),
         }
     }
 }
@@ -221,27 +332,81 @@ pub fn list_edge_tts_voices() -> Vec<ScannedVoice> {
     ]
 }
 
-/// Returns available voices for a given engine
-pub fn list_available_voices(engine: &str) -> Vec<ScannedVoice> {
+/// Returns available voices for a given engine. ElevenLabs is queried live when
+/// an API key is available; callers can still enter an arbitrary voice ID.
+pub async fn list_available_voices(
+    engine: &str,
+    elevenlabs_api_key: &str,
+) -> Result<Vec<ScannedVoice>, String> {
     match engine {
-        "edge" => list_edge_tts_voices(),
+        "edge" => Ok(list_edge_tts_voices()),
         "elevenlabs" => {
-            // ElevenLabs voices are fetched via API at runtime by the frontend
-            // Return empty for now - the frontend uses the API key to fetch them
-            vec![]
+            if elevenlabs_api_key.trim().is_empty() {
+                return Ok(Vec::new());
+            }
+
+            let response = http_client(15)?
+                .get("https://api.elevenlabs.io/v1/voices")
+                .header("xi-api-key", elevenlabs_api_key)
+                .send()
+                .await
+                .map_err(|e| format!("ElevenLabs-Stimmen konnten nicht geladen werden: {}", e))?;
+
+            if !response.status().is_success() {
+                let status = response.status();
+                let body = response.text().await.unwrap_or_default();
+                return Err(format!("ElevenLabs API-Fehler {}: {}", status, body));
+            }
+
+            let payload: serde_json::Value = response
+                .json()
+                .await
+                .map_err(|e| format!("Ungültige ElevenLabs-Stimmenliste: {}", e))?;
+            let voices = payload["voices"]
+                .as_array()
+                .map(|items| {
+                    items
+                        .iter()
+                        .filter_map(|voice| {
+                            let id = voice["voice_id"].as_str()?.to_string();
+                            let name = voice["name"].as_str().unwrap_or(&id).to_string();
+                            let labels = voice["labels"].as_object();
+                            let locale = labels
+                                .and_then(|l| l.get("language"))
+                                .and_then(|v| v.as_str())
+                                .unwrap_or("multi")
+                                .to_string();
+                            let gender = labels
+                                .and_then(|l| l.get("gender"))
+                                .and_then(|v| v.as_str())
+                                .unwrap_or("Unknown")
+                                .to_string();
+                            Some(ScannedVoice { id, name, locale, gender })
+                        })
+                        .collect()
+                })
+                .unwrap_or_default();
+            Ok(voices)
         }
         "openai" => {
             // Standard OpenAI voices
-            vec![
+            Ok(vec![
                 ScannedVoice { id: "alloy".into(), name: "Alloy".into(), locale: "multi".into(), gender: "Neutral".into() },
+                ScannedVoice { id: "ash".into(), name: "Ash".into(), locale: "multi".into(), gender: "Neutral".into() },
+                ScannedVoice { id: "ballad".into(), name: "Ballad".into(), locale: "multi".into(), gender: "Neutral".into() },
+                ScannedVoice { id: "coral".into(), name: "Coral".into(), locale: "multi".into(), gender: "Neutral".into() },
                 ScannedVoice { id: "echo".into(), name: "Echo".into(), locale: "multi".into(), gender: "Male".into() },
                 ScannedVoice { id: "fable".into(), name: "Fable".into(), locale: "multi".into(), gender: "Male".into() },
                 ScannedVoice { id: "onyx".into(), name: "Onyx".into(), locale: "multi".into(), gender: "Male".into() },
                 ScannedVoice { id: "nova".into(), name: "Nova".into(), locale: "multi".into(), gender: "Female".into() },
+                ScannedVoice { id: "sage".into(), name: "Sage".into(), locale: "multi".into(), gender: "Neutral".into() },
                 ScannedVoice { id: "shimmer".into(), name: "Shimmer".into(), locale: "multi".into(), gender: "Female".into() },
-            ]
+                ScannedVoice { id: "verse".into(), name: "Verse".into(), locale: "multi".into(), gender: "Neutral".into() },
+                ScannedVoice { id: "marin".into(), name: "Marin".into(), locale: "multi".into(), gender: "Neutral".into() },
+                ScannedVoice { id: "cedar".into(), name: "Cedar".into(), locale: "multi".into(), gender: "Neutral".into() },
+            ])
         }
-        _ => vec![],
+        _ => Ok(Vec::new()),
     }
 }
 
@@ -251,15 +416,15 @@ pub fn list_available_voices(engine: &str) -> Vec<ScannedVoice> {
 
 /// Synthesizes speech using the Edge-TTS (Microsoft Cognitive Services) WebSocket endpoint.
 /// Returns base64-encoded MP3 audio as a data URL.
-pub async fn synthesize_edge_tts(text: &str, voice_id: &str, rate: &str, pitch: &str, _volume: &str) -> Result<String, String> {
+pub async fn synthesize_edge_tts(text: &str, voice_id: &str, rate: &str, pitch: &str, volume: &str) -> Result<String, String> {
     if text.trim().is_empty() {
         return Err("Kein Text zum Vorlesen vorhanden.".to_string());
     }
-    synthesize_edge_tts_websocket(text, voice_id, rate, pitch, _volume).await
+    synthesize_edge_tts_websocket(text, voice_id, rate, pitch, volume).await
 }
 
 /// Edge-TTS synthesis via the WebSocket protocol (same as the edge-tts Python library)
-async fn synthesize_edge_tts_websocket(text: &str, voice_id: &str, rate: &str, pitch: &str, _volume: &str) -> Result<String, String> {
+async fn synthesize_edge_tts_websocket(text: &str, voice_id: &str, rate: &str, pitch: &str, volume: &str) -> Result<String, String> {
     // Escape XML special characters
     let escaped_text = text
         .replace('&', "&amp;")
@@ -269,8 +434,8 @@ async fn synthesize_edge_tts_websocket(text: &str, voice_id: &str, rate: &str, p
         .replace('\'', "&apos;");
 
     let ssml = format!(
-        r#"<speak version='1.0' xmlns='http://www.w3.org/2001/10/synthesis' xml:lang='en-US'><voice name='{}'><prosody rate='{}' pitch='{}'>{}</prosody></voice></speak>"#,
-        voice_id, rate, pitch, escaped_text
+        r#"<speak version='1.0' xmlns='http://www.w3.org/2001/10/synthesis' xml:lang='en-US'><voice name='{}'><prosody rate='{}' pitch='{}' volume='{}'>{}</prosody></voice></speak>"#,
+        voice_id, rate, pitch, volume, escaped_text
     );
 
     let connection_id = uuid_v4().replace('-', "");
@@ -302,7 +467,7 @@ async fn synthesize_edge_tts_websocket(text: &str, voice_id: &str, rate: &str, p
         "X-Timestamp:{}\r\nContent-Type:application/json; charset=utf-8\r\nPath:speech.config\r\n\r\n{{\"context\":{{\"synthesis\":{{\"audio\":{{\"metadataoptions\":{{\"sentenceBoundaryEnabled\":\"false\",\"wordBoundaryEnabled\":\"false\"}},\"outputFormat\":\"audio-24khz-48kbitrate-mono-mp3\"}}}}}}}}",
         timestamp
     );
-    ws_stream.send(Message::Text(config_msg.into())).await
+    ws_stream.send(Message::Text(config_msg)).await
         .map_err(|e| format!("Fehler beim Senden der Konfiguration: {}", e))?;
 
     // Send SSML
@@ -311,7 +476,7 @@ async fn synthesize_edge_tts_websocket(text: &str, voice_id: &str, rate: &str, p
         "X-RequestId:{}\r\nContent-Type:application/ssml+xml\r\nX-Timestamp:{}\r\nPath:ssml\r\n\r\n{}",
         request_id, timestamp, ssml
     );
-    ws_stream.send(Message::Text(ssml_msg.into())).await
+    ws_stream.send(Message::Text(ssml_msg)).await
         .map_err(|e| format!("Fehler beim Senden der SSML-Nachricht: {}", e))?;
 
     // Collect audio data
@@ -372,7 +537,7 @@ pub async fn synthesize_elevenlabs(text: &str, voice_id: &str, api_key: &str) ->
     }
 
     let url = format!("https://api.elevenlabs.io/v1/text-to-speech/{}", voice_id);
-    let client = reqwest::Client::new();
+    let client = http_client(120)?;
     let body = serde_json::json!({
         "text": text,
         "model_id": "eleven_multilingual_v2",
@@ -408,18 +573,32 @@ pub async fn synthesize_elevenlabs(text: &str, voice_id: &str, api_key: &str) ->
 // OpenAI-compatible TTS Synthesis (works with OpenAI, Kokoro, AllTalk etc.)
 // ---------------------------------------------------------------------------
 
-pub async fn synthesize_openai_tts(text: &str, endpoint: &str, api_key: &str, model: &str, voice_id: &str) -> Result<String, String> {
+pub async fn synthesize_openai_tts(
+    text: &str,
+    endpoint: &str,
+    api_key: &str,
+    model: &str,
+    voice_id: &str,
+    rate: &str,
+    instructions: &str,
+) -> Result<String, String> {
     if text.trim().is_empty() {
         return Err("Kein Text zum Vorlesen vorhanden.".to_string());
     }
 
-    let client = reqwest::Client::new();
-    let body = serde_json::json!({
+    let client = http_client(120)?;
+    let rate_percent = rate.trim_end_matches('%').parse::<f32>().unwrap_or(0.0);
+    let speed = (1.0 + rate_percent / 100.0).clamp(0.25, 4.0);
+    let mut body = serde_json::json!({
         "model": model,
         "input": text,
         "voice": voice_id,
-        "response_format": "mp3"
+        "response_format": "mp3",
+        "speed": speed
     });
+    if !instructions.trim().is_empty() {
+        body["instructions"] = serde_json::Value::String(instructions.to_string());
+    }
 
     let mut req = client
         .post(endpoint)
@@ -439,10 +618,93 @@ pub async fn synthesize_openai_tts(text: &str, endpoint: &str, api_key: &str, mo
         return Err(format!("OpenAI-TTS API-Fehler {}: {}", status, err_text));
     }
 
+    let mime = response
+        .headers()
+        .get(reqwest::header::CONTENT_TYPE)
+        .and_then(|value| value.to_str().ok())
+        .unwrap_or("audio/mpeg")
+        .split(';')
+        .next()
+        .unwrap_or("audio/mpeg")
+        .to_string();
     let bytes = response.bytes().await
         .map_err(|e| format!("Fehler beim Empfangen der OpenAI-TTS-Audio-Daten: {}", e))?;
     let b64 = base64::prelude::BASE64_STANDARD.encode(&bytes);
-    Ok(format!("data:audio/mp3;base64,{}", b64))
+    Ok(format!("data:{};base64,{}", mime, b64))
+}
+
+// ---------------------------------------------------------------------------
+// Optional RVC post-processing
+// ---------------------------------------------------------------------------
+
+fn decode_audio_data_url(data_url: &str) -> Result<(String, Vec<u8>), String> {
+    let (metadata, encoded) = data_url
+        .split_once(',')
+        .ok_or_else(|| "Ungültige Audio-Data-URL.".to_string())?;
+    let mime = metadata
+        .strip_prefix("data:")
+        .and_then(|value| value.split(';').next())
+        .unwrap_or("audio/mpeg")
+        .to_string();
+    let bytes = base64::prelude::BASE64_STANDARD
+        .decode(encoded)
+        .map_err(|e| format!("Audio-Base64 konnte nicht dekodiert werden: {}", e))?;
+    Ok((mime, bytes))
+}
+
+async fn apply_rvc(data_url: &str, config: &RvcConfig) -> Result<String, String> {
+    if !config.enabled {
+        return Ok(data_url.to_string());
+    }
+    if config.endpoint.trim().is_empty() {
+        return Err("RVC ist aktiviert, aber kein RVC-Endpunkt konfiguriert.".to_string());
+    }
+
+    let (mime, audio) = decode_audio_data_url(data_url)?;
+    let extension = if mime.contains("wav") { "wav" } else { "mp3" };
+    let audio_part = reqwest::multipart::Part::bytes(audio)
+        .file_name(format!("speech.{}", extension))
+        .mime_str(&mime)
+        .map_err(|e| format!("Ungültiger RVC-Audiotyp: {}", e))?;
+    let form = reqwest::multipart::Form::new()
+        .part("audio", audio_part)
+        .text("model", config.model.clone())
+        .text("pitch", config.pitch.to_string())
+        .text("index_rate", config.index_rate.to_string())
+        .text("protect", config.protect.to_string());
+
+    let mut request = http_client(120)?.post(&config.endpoint).multipart(form);
+    if !config.api_key.trim().is_empty() {
+        request = request.bearer_auth(&config.api_key);
+    }
+    let response = request
+        .send()
+        .await
+        .map_err(|e| format!("RVC-Anfrage fehlgeschlagen: {}", e))?;
+    if !response.status().is_success() {
+        let status = response.status();
+        let body = response.text().await.unwrap_or_default();
+        return Err(format!("RVC-Endpunkt meldet {}: {}", status, body));
+    }
+
+    let result_mime = response
+        .headers()
+        .get(reqwest::header::CONTENT_TYPE)
+        .and_then(|value| value.to_str().ok())
+        .unwrap_or("audio/wav")
+        .split(';')
+        .next()
+        .unwrap_or("audio/wav")
+        .to_string();
+    let bytes = response
+        .bytes()
+        .await
+        .map_err(|e| format!("RVC-Audio konnte nicht gelesen werden: {}", e))?;
+    Ok(format!(
+        "data:{};base64,{}",
+        result_mime,
+        base64::prelude::BASE64_STANDARD.encode(bytes)
+    ))
 }
 
 // ---------------------------------------------------------------------------
@@ -456,7 +718,7 @@ pub async fn synthesize_speech(text: &str, config: &VoiceConfig) -> Result<Strin
         return Err("Nach dem Filtern ist kein vorlesesbarer Text übrig.".to_string());
     }
 
-    match config.engine {
+    let synthesized = match config.engine {
         TtsEngine::Edge => {
             synthesize_edge_tts(&cleaned, &config.voice_id, &config.rate, &config.pitch, &config.volume).await
         }
@@ -464,11 +726,211 @@ pub async fn synthesize_speech(text: &str, config: &VoiceConfig) -> Result<Strin
             synthesize_elevenlabs(&cleaned, &config.voice_id, &config.elevenlabs_api_key).await
         }
         TtsEngine::OpenAi => {
-            synthesize_openai_tts(&cleaned, &config.openai_endpoint, &config.openai_api_key, &config.openai_model, &config.voice_id).await
+            synthesize_openai_tts(
+                &cleaned,
+                &config.openai_endpoint,
+                &config.openai_api_key,
+                &config.openai_model,
+                &config.voice_id,
+                &config.rate,
+                &config.openai_instructions,
+            ).await
         }
         TtsEngine::Disabled => {
             Err("TTS ist für diesen Charakter deaktiviert.".to_string())
         }
+    }?;
+
+    apply_rvc(&synthesized, &config.rvc).await
+}
+
+// ---------------------------------------------------------------------------
+// Speech-to-text (native whisper.cpp or OpenAI-compatible endpoint)
+// ---------------------------------------------------------------------------
+
+fn decode_pcm_f32(audio_base64: &str) -> Result<Vec<f32>, String> {
+    let bytes = base64::prelude::BASE64_STANDARD
+        .decode(audio_base64)
+        .map_err(|e| format!("PCM-Audio konnte nicht dekodiert werden: {}", e))?;
+    if bytes.is_empty() || bytes.len() % 4 != 0 {
+        return Err("PCM-Audio muss 32-Bit-Float-Samples enthalten.".to_string());
+    }
+
+    const MAX_SAMPLES: usize = 16_000 * 120;
+    if bytes.len() / 4 > MAX_SAMPLES {
+        return Err("Die Aufnahme ist länger als 120 Sekunden.".to_string());
+    }
+
+    let samples: Vec<f32> = (0..bytes.len())
+        .step_by(4)
+        .map(|index| {
+            f32::from_le_bytes([
+                bytes[index],
+                bytes[index + 1],
+                bytes[index + 2],
+                bytes[index + 3],
+            ])
+        })
+        .collect();
+    if samples.iter().any(|sample| !sample.is_finite()) {
+        return Err("PCM-Audio enthält ungültige Samples.".to_string());
+    }
+    Ok(samples)
+}
+
+fn pcm_to_wav(samples: &[f32]) -> Result<Vec<u8>, String> {
+    let mut cursor = Cursor::new(Vec::new());
+    {
+        let spec = hound::WavSpec {
+            channels: 1,
+            sample_rate: 16_000,
+            bits_per_sample: 16,
+            sample_format: hound::SampleFormat::Int,
+        };
+        let mut writer = hound::WavWriter::new(&mut cursor, spec)
+            .map_err(|e| format!("WAV-Encoder konnte nicht gestartet werden: {}", e))?;
+        for sample in samples {
+            let value = (sample.clamp(-1.0, 1.0) * i16::MAX as f32) as i16;
+            writer
+                .write_sample(value)
+                .map_err(|e| format!("WAV-Sample konnte nicht geschrieben werden: {}", e))?;
+        }
+        writer
+            .finalize()
+            .map_err(|e| format!("WAV-Datei konnte nicht abgeschlossen werden: {}", e))?;
+    }
+    Ok(cursor.into_inner())
+}
+
+#[cfg(not(any(target_os = "android", target_os = "ios")))]
+fn transcribe_native_whisper(samples: Vec<f32>, config: SttConfig) -> Result<String, String> {
+    use whisper_rs::{FullParams, SamplingStrategy, WhisperContext, WhisperContextParameters};
+
+    if config.whisper_model_path.trim().is_empty() {
+        return Err("Bitte zuerst ein whisper.cpp-GGML/GGUF-Modell auswählen.".to_string());
+    }
+    if !std::path::Path::new(&config.whisper_model_path).is_file() {
+        return Err(format!(
+            "Whisper-Modell nicht gefunden: {}",
+            config.whisper_model_path
+        ));
+    }
+
+    let context = WhisperContext::new_with_params(
+        &config.whisper_model_path,
+        WhisperContextParameters::default(),
+    )
+    .map_err(|e| format!("Whisper-Modell konnte nicht geladen werden: {}", e))?;
+    let mut state = context
+        .create_state()
+        .map_err(|e| format!("Whisper-Zustand konnte nicht erstellt werden: {}", e))?;
+    let mut params = FullParams::new(SamplingStrategy::Greedy { best_of: 1 });
+    params.set_print_progress(false);
+    params.set_print_realtime(false);
+    params.set_print_timestamps(false);
+    params.set_print_special(false);
+    params.set_translate(false);
+    params.set_no_context(true);
+    params.set_n_threads(
+        std::thread::available_parallelism()
+            .map(|count| count.get().min(8) as i32)
+            .unwrap_or(4),
+    );
+    if !config.language.trim().is_empty() && config.language != "auto" {
+        params.set_language(Some(config.language.trim()));
+    }
+    if !config.prompt.trim().is_empty() {
+        params.set_initial_prompt(&config.prompt);
+    }
+
+    state
+        .full(params, &samples)
+        .map_err(|e| format!("Whisper-Transkription fehlgeschlagen: {}", e))?;
+    let segment_count = state.full_n_segments();
+    let mut transcript = String::new();
+    for index in 0..segment_count {
+        let segment = state
+            .get_segment(index)
+            .ok_or_else(|| format!("Whisper-Segment {} fehlt.", index))?;
+        let text = segment
+            .to_str()
+            .map_err(|e| format!("Whisper-Segment konnte nicht gelesen werden: {}", e))?;
+        transcript.push_str(text);
+    }
+    Ok(transcript.trim().to_string())
+}
+
+#[cfg(any(target_os = "android", target_os = "ios"))]
+fn transcribe_native_whisper(_samples: Vec<f32>, _config: SttConfig) -> Result<String, String> {
+    Err(
+        "Native Whisper-STT ist auf Mobile deaktiviert. Bitte einen OpenAI-kompatiblen STT-Endpunkt verwenden."
+            .to_string(),
+    )
+}
+
+async fn transcribe_openai_compatible(samples: &[f32], config: &SttConfig) -> Result<String, String> {
+    if config.endpoint.trim().is_empty() {
+        return Err("Kein STT-Endpunkt konfiguriert.".to_string());
+    }
+    let wav = pcm_to_wav(samples)?;
+    let audio_part = reqwest::multipart::Part::bytes(wav)
+        .file_name("recording.wav")
+        .mime_str("audio/wav")
+        .map_err(|e| format!("STT-Audiotyp konnte nicht gesetzt werden: {}", e))?;
+    let mut form = reqwest::multipart::Form::new()
+        .part("file", audio_part)
+        .text("model", config.model.clone());
+    if !config.language.trim().is_empty() && config.language != "auto" {
+        let language_field = if config.model == "gpt-transcribe" {
+            "languages[]"
+        } else {
+            "language"
+        };
+        form = form.text(language_field, config.language.clone());
+    }
+    if !config.prompt.trim().is_empty() {
+        form = form.text("prompt", config.prompt.clone());
+    }
+
+    let mut request = http_client(120)?.post(&config.endpoint).multipart(form);
+    if !config.api_key.trim().is_empty() {
+        request = request.bearer_auth(&config.api_key);
+    }
+    let response = request
+        .send()
+        .await
+        .map_err(|e| format!("STT-Anfrage fehlgeschlagen: {}", e))?;
+    let status = response.status();
+    let body = response
+        .text()
+        .await
+        .map_err(|e| format!("STT-Antwort konnte nicht gelesen werden: {}", e))?;
+    if !status.is_success() {
+        return Err(format!("STT-Endpunkt meldet {}: {}", status, body));
+    }
+    if let Ok(json) = serde_json::from_str::<serde_json::Value>(&body) {
+        if let Some(text) = json["text"].as_str() {
+            return Ok(text.trim().to_string());
+        }
+    }
+    Ok(body.trim().to_string())
+}
+
+pub async fn transcribe_speech(audio_base64: &str, config: &SttConfig) -> Result<String, String> {
+    let samples = decode_pcm_f32(audio_base64)?;
+    if samples.len() < 1_600 {
+        return Err("Die Aufnahme ist zu kurz für eine Transkription.".to_string());
+    }
+
+    match config.engine {
+        SttEngine::NativeWhisper => {
+            let owned_config = config.clone();
+            tokio::task::spawn_blocking(move || transcribe_native_whisper(samples, owned_config))
+                .await
+                .map_err(|e| format!("Whisper-Worker ist fehlgeschlagen: {}", e))?
+        }
+        SttEngine::OpenAi => transcribe_openai_compatible(&samples, config).await,
+        SttEngine::Disabled => Err("Spracherkennung ist deaktiviert.".to_string()),
     }
 }
 
@@ -482,13 +944,32 @@ fn get_voice_config_dir() -> PathBuf {
 }
 
 fn get_voice_config_path(char_id: &str) -> PathBuf {
-    get_voice_config_dir().join(format!("{}.json", char_id))
+    let safe_id: String = char_id
+        .chars()
+        .map(|character| {
+            if character.is_alphanumeric() || matches!(character, '-' | '_') {
+                character
+            } else {
+                '_'
+            }
+        })
+        .collect();
+    let safe_id = if safe_id.trim_matches('_').is_empty() {
+        "default"
+    } else {
+        &safe_id
+    };
+    get_voice_config_dir().join(format!("{}.json", safe_id))
 }
 
 pub fn load_character_voice_config(char_id: &str) -> VoiceConfig {
     let path = get_voice_config_path(char_id);
+    load_voice_config_from_path(&path)
+}
+
+fn load_voice_config_from_path(path: &std::path::Path) -> VoiceConfig {
     if path.exists() {
-        if let Ok(content) = fs::read_to_string(&path) {
+        if let Ok(content) = fs::read_to_string(path) {
             if let Ok(config) = serde_json::from_str::<VoiceConfig>(&content) {
                 return config;
             }
@@ -498,14 +979,21 @@ pub fn load_character_voice_config(char_id: &str) -> VoiceConfig {
 }
 
 pub fn save_character_voice_config(char_id: &str, config: &VoiceConfig) -> Result<(), String> {
-    let dir = get_voice_config_dir();
-    let _ = fs::create_dir_all(&dir);
     let path = get_voice_config_path(char_id);
+    save_voice_config_to_path(&path, config)?;
+    info!("Stimmen-Konfiguration für '{}' gespeichert in {:?}", char_id, path);
+    Ok(())
+}
+
+fn save_voice_config_to_path(path: &std::path::Path, config: &VoiceConfig) -> Result<(), String> {
+    if let Some(dir) = path.parent() {
+        fs::create_dir_all(dir)
+            .map_err(|e| format!("Stimmen-Konfigurationsordner konnte nicht erstellt werden: {}", e))?;
+    }
     let json = serde_json::to_string_pretty(config)
         .map_err(|e| format!("Fehler bei der Serialisierung der Stimmen-Konfiguration: {}", e))?;
-    fs::write(&path, json)
+    fs::write(path, json)
         .map_err(|e| format!("Fehler beim Schreiben der Stimmen-Konfiguration: {}", e))?;
-    info!("Stimmen-Konfiguration für '{}' gespeichert in {:?}", char_id, path);
     Ok(())
 }
 
@@ -603,30 +1091,64 @@ mod tests {
 
     #[test]
     fn test_voice_config_persistence() {
+        let test_dir = std::env::temp_dir().join(format!("otakusoul-voice-test-{}", uuid_v4()));
+        let path = test_dir.join("voice.json");
         let config = VoiceConfig {
             voice_id: "ja-JP-NanamiNeural".to_string(),
             ..Default::default()
         };
-        let save_res = save_character_voice_config("test_voice_unit", &config);
+        let save_res = save_voice_config_to_path(&path, &config);
         assert!(save_res.is_ok());
 
-        let loaded = load_character_voice_config("test_voice_unit");
+        let loaded = load_voice_config_from_path(&path);
         assert_eq!(loaded.voice_id, "ja-JP-NanamiNeural");
 
-        // Clean up
-        let path = get_voice_config_path("test_voice_unit");
-        let _ = fs::remove_file(&path);
+        let _ = fs::remove_dir_all(test_dir);
     }
 
-    #[test]
-    fn test_list_available_voices_edge() {
-        let voices = list_available_voices("edge");
+    #[tokio::test]
+    async fn test_list_available_voices_edge() {
+        let voices = list_available_voices("edge", "").await.unwrap();
         assert!(voices.len() > 10);
     }
 
-    #[test]
-    fn test_list_available_voices_openai() {
-        let voices = list_available_voices("openai");
+    #[tokio::test]
+    async fn test_list_available_voices_openai() {
+        let voices = list_available_voices("openai", "").await.unwrap();
         assert!(voices.iter().any(|v| v.id == "nova"));
+    }
+
+    #[test]
+    fn test_pcm_base64_roundtrip_and_wav_encoding() {
+        let samples = [0.0_f32, 0.25, -0.5, 1.0];
+        let bytes: Vec<u8> = samples.iter().flat_map(|sample| sample.to_le_bytes()).collect();
+        let encoded = base64::prelude::BASE64_STANDARD.encode(bytes);
+        let decoded = decode_pcm_f32(&encoded).unwrap();
+        assert_eq!(decoded, samples);
+
+        let wav = pcm_to_wav(&decoded).unwrap();
+        assert_eq!(&wav[0..4], b"RIFF");
+        assert_eq!(&wav[8..12], b"WAVE");
+    }
+
+    #[test]
+    fn test_voice_config_backward_compatible_defaults() {
+        let old_json = r#"{
+          "engine":"edge",
+          "voice_id":"de-DE-KatjaNeural",
+          "rate":"+0%",
+          "pitch":"+0Hz",
+          "volume":"+0%",
+          "filter_mode":"all",
+          "custom_regex":"",
+          "elevenlabs_api_key":"",
+          "openai_endpoint":"http://localhost:8880/v1/audio/speech",
+          "openai_api_key":"",
+          "openai_model":"tts-1"
+        }"#;
+        let config: VoiceConfig = serde_json::from_str(old_json).unwrap();
+        assert_eq!(config.stt.engine, SttEngine::Disabled);
+        assert!(!config.rvc.enabled);
+        assert!(config.output_device_id.is_empty());
     }
 }

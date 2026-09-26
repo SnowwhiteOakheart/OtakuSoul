@@ -90,6 +90,7 @@
 | `src-tauri/src/modules/providers.rs` | LLM Provider Abstraktion (OpenRouter, Anthropic Messages API, OpenAI, DeepSeek, Gemini, Mistral, Custom) |
 | `src-tauri/src/modules/llm_presets.rs` | LLM Sampler Presets Engine mit 5 Built-in Profilen & JSON-Persistenz |
 | `src-tauri/src/modules/models_hub.rs` | Hugging Face GGUF API-Suche, Quants-Inspektion & Async File Downloader |
+| `src-tauri/src/modules/voice.rs` | TTS-Provider, natives whisper.cpp-STT, OpenAI-kompatible Transkription, RVC-Sidecar & Stimmenprofile |
 | `src-tauri/src/state.rs` | Globaler Tokio/Tauri `AppState` |
 | `src-tauri/src/commands.rs` | Alle Tauri IPC Commands |
 | `src-tauri/src/lib.rs` | App Builder, Dialog-Plugin & Handler-Registrierung |
@@ -120,6 +121,11 @@
 | `src/components/companion/CompanionView.tsx` | Desktop-Agent Dashboard & Hormon-Monitor |
 | `src/components/companion/SafetyCountdownBanner.tsx` | 25s Human-in-the-Loop Sicherheitsbanner |
 | `src/components/settings/SettingsView.tsx` | Hardware-, Modell- und Server-Konfiguration mit Dateidialogen |
+| `src/components/voice/CharacterVoiceModal.tsx` | Charakterbezogene TTS/STT-, Audiogeräte-, VAD- und RVC-Konfiguration |
+| `src/components/voice/VoiceCallControls.tsx` | Push-to-talk und Voice-Call-Zustandsautomat mit Unterbrechung |
+| `src/services/audioPlayer.ts` | Unterbrechungssichere Web-Audio-Warteschlange, Geräteauswahl, Gain & FFT-Amplitude |
+| `src/services/streamingTts.ts` | Satzsegmentierung während des LLM-Streams und geordnete TTS-Synthese |
+| `src/services/voiceCapture.ts` | Mikrofonaufnahme, Resampling auf 16 kHz und lokale RMS-VAD |
 
 ---
 
@@ -204,8 +210,16 @@ Alle benötigten Daten sind eigenständig in diesem Projektverzeichnis gekapselt
   - **Eigenständiger Lorebook-Manager & Editor (`LorebookView.tsx`):**
     - Neuer Hauptreiter *Lorebooks* in der Navigation.
     - Volle CRUD-Funktionalität, Eintrags-Filter, Tag-Chips, SillyTavern- / World-Info-kompatibler JSON-Import und -Export.
+- [x] **Phase 13: Stimme, TTS/STT & Voice Call**
+  - **TTS-Streaming & Audio (`voice.rs`, `streamingTts.ts`, `audioPlayer.ts`):** Fertige Sätze werden bereits während der LLM-Ausgabe synthetisiert und in stabiler Reihenfolge abgespielt; Abbruch, Gain, Ausgabegerätewahl und FFT-LipSync sind integriert.
+  - **Provider:** Edge-TTS, ElevenLabs mit Live-Stimmenliste sowie OpenAI-kompatible Cloud-/Sidecar-Endpunkte. Kokoro, Qwen3-TTS, XTTSv2, Silero und AllTalk werden über diesen einheitlichen Sidecar-Vertrag angebunden, ohne Python zur Kernlaufzeit hinzuzufügen.
+  - **STT:** Offline-Transkription über `whisper-rs`/whisper.cpp mit frei wählbarem GGML/GGUF-Modell sowie OpenAI-kompatible `/v1/audio/transcriptions`-Endpunkte.
+  - **Voice Activity Detection:** Lokale RMS-VAD in der Web-Audio-Aufnahme mit einstellbarer Schwelle und Stillezeit; Mono-Resampling auf 16 kHz vor der Transkription.
+  - **Voice Call:** Zustände Listening → Transcribing → Thinking → Speaking, automatischer Turn-Wechsel, Push-to-talk und Unterbrechung laufender Generierung/Wiedergabe.
+  - **RVC:** Optionales Audio-Postprocessing über einen neutralen Multipart-Sidecar-Vertrag mit Modell, Pitch, Index-Rate und Protect.
+  - **Cross-Platform:** Ein-/Ausgabegerätewahl und macOS-Mikrofonbeschreibung in `Info.plist`; bestehende Konfigurationen werden durch Serde-Defaults migriert.
 
-**Offene Phasen 13–18** (Stimme, Live2D, Stage-GM, echter Companion, Ökosystem, i18n & Auslieferung) sind in [`Roadmap.md`](Roadmap.md) dokumentiert. **Vor neuen Features dort nachsehen und erledigte Punkte mit Commit-Hash abhaken.**
+**Offene Phasen 14–18** (Live2D, Stage-GM, echter Companion, Ökosystem, i18n & Auslieferung) sind in [`Roadmap.md`](Roadmap.md) dokumentiert. **Vor neuen Features dort nachsehen und erledigte Punkte mit Commit-Hash abhaken.**
 
 ---
 
@@ -219,4 +233,3 @@ Alle benötigten Daten sind eigenständig in diesem Projektverzeichnis gekapselt
 - **Streaming-Listener & React-Lifecycle:** Asynchrone Tauri-Listener (`listen(...)`) müssen zwingend mit einem `isSubscribed`-Guard gekapselt werden, damit bei unmounted Components / React StrictMode keine Geister-Listener verbleiben, die Tokens doppelt empfangen.
 - **Mobile Viewports (iOS/Android):** Alle UI-Container nutzen Flex/Grid und sind vorbereitet für Touch-Gesten und responsive Breakpoints (`sm:`, `lg:`).
 - **Tool Calling Erweiterung:** Neue Tools können direkt in `src-tauri/src/modules/companion.rs` in `execute_internal` registriert werden. Deklariere gefährliche Operationen in `is_dangerous`, damit der 25s Sicherheits-Countdown automatisch greift.
-

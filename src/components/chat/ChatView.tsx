@@ -2,7 +2,6 @@ import React, { useState, useEffect, useRef } from 'react';
 import { useAppStore } from '../../store/useAppStore';
 import { api } from '../../services/api';
 import { AdaptiveHud } from './AdaptiveHud';
-import { AvatarCanvas } from '../avatar/AvatarCanvas';
 import { RoleplayMessage } from './RoleplayMessage';
 import { ChatSidebar } from './ChatSidebar';
 import {
@@ -27,9 +26,15 @@ import {
   Volume2,
   VolumeX,
 } from 'lucide-react';
-import { audioPlayer } from '../../services/audioPlayer';
+import { audioPlayer, gainFromVoiceVolume } from '../../services/audioPlayer';
+import { streamingTts } from '../../services/streamingTts';
 
 import { CharacterVoiceModal } from '../voice/CharacterVoiceModal';
+import { VoiceCallControls } from '../voice/VoiceCallControls';
+
+const AvatarCanvas = React.lazy(() => import('../avatar/AvatarCanvas').then((module) => ({
+  default: module.AvatarCanvas,
+})));
 
 export const ChatView: React.FC = () => {
   const {
@@ -64,6 +69,7 @@ export const ChatView: React.FC = () => {
   const [showCurrentThought, setShowCurrentThought] = useState(true);
   const [showAvatar, setShowAvatar] = useState(true);
   const [showVoiceModal, setShowVoiceModal] = useState(false);
+  const [isAudioSpeaking, setIsAudioSpeaking] = useState(false);
   const [expandedThoughts, setExpandedThoughts] = useState<Record<string | number, boolean>>({});
 
   // Inline editing state
@@ -83,7 +89,14 @@ export const ChatView: React.FC = () => {
 
     const setup = async () => {
       const uToken = await api.onLlmToken((token) => {
-        if (isSubscribed) setStreamText((prev) => prev + token);
+        if (isSubscribed) {
+          setStreamText((prev) => prev + token);
+          const state = useAppStore.getState();
+          const voiceConfig = state.activeVoiceConfig;
+          if (state.autoTtsEnabled && voiceConfig && voiceConfig.engine !== 'disabled') {
+            streamingTts.push(token, voiceConfig);
+          }
+        }
       });
       if (!isSubscribed) {
         uToken();
@@ -106,13 +119,9 @@ export const ChatView: React.FC = () => {
           setStreamThought('');
           
           const state = useAppStore.getState();
-          if (state.autoTtsEnabled && state.activeVoiceConfig && data.full_text) {
-            try {
-              const audioUrl = await api.synthesizeSpeech(data.full_text, state.activeVoiceConfig);
-              audioPlayer.enqueue(audioUrl);
-            } catch (e) {
-              console.error('Auto-TTS failed:', e);
-            }
+          const voiceConfig = state.activeVoiceConfig;
+          if (state.autoTtsEnabled && voiceConfig && voiceConfig.engine !== 'disabled') {
+            streamingTts.flush(data.full_text, voiceConfig);
           }
         }
       });
@@ -128,8 +137,13 @@ export const ChatView: React.FC = () => {
     return () => {
       isSubscribed = false;
       cleanups.forEach((cleanup) => cleanup());
+      streamingTts.cancel();
     };
   }, []);
+
+  useEffect(() => audioPlayer.onPlaybackState((state) => {
+    setIsAudioSpeaking(state === 'playing');
+  }), []);
 
   useEffect(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
@@ -137,8 +151,14 @@ export const ChatView: React.FC = () => {
 
   const handleSend = () => {
     if (!input.trim() || isGenerating) return;
+    streamingTts.cancel();
     sendMessage(input);
     setInput('');
+  };
+
+  const handleAbort = async () => {
+    streamingTts.cancel();
+    await abortGeneration();
   };
 
   const toggleThought = (id: string | number) => {
@@ -161,7 +181,11 @@ export const ChatView: React.FC = () => {
     if (!activeVoiceConfig) return;
     try {
       const audioUrl = await api.synthesizeSpeech(text, activeVoiceConfig);
-      audioPlayer.playDataUrl(audioUrl);
+      await audioPlayer.playDataUrl(
+        audioUrl,
+        gainFromVoiceVolume(activeVoiceConfig.volume),
+        activeVoiceConfig.output_device_id,
+      );
     } catch (e) {
       console.error('Speech synthesis failed:', e);
     }
@@ -249,7 +273,11 @@ export const ChatView: React.FC = () => {
 
           {activeVoiceConfig && activeVoiceConfig.engine !== 'disabled' && (
             <button
-              onClick={() => setAutoTtsEnabled(!autoTtsEnabled)}
+              onClick={() => {
+                const enabled = !autoTtsEnabled;
+                setAutoTtsEnabled(enabled);
+                if (!enabled) streamingTts.cancel();
+              }}
               className={`flex items-center gap-1.5 px-2.5 py-1 rounded-lg text-xs transition-colors border ${
                 autoTtsEnabled
                   ? 'bg-emerald-950/40 text-emerald-300 border-emerald-500/40'
@@ -291,10 +319,12 @@ export const ChatView: React.FC = () => {
       <div className="flex-1 flex overflow-hidden">
         {showAvatar && (
           <div className="hidden md:flex w-5/12 lg:w-1/3 h-full">
-            <AvatarCanvas
-              character={activeCharacter}
-              isSpeaking={isGenerating && streamText.length > 0}
-            />
+            <React.Suspense fallback={<div className="flex-1 grid place-items-center text-xs text-purple-300">Avatar wird geladen…</div>}>
+              <AvatarCanvas
+                character={activeCharacter}
+                isSpeaking={isAudioSpeaking}
+              />
+            </React.Suspense>
           </div>
         )}
 
@@ -536,7 +566,7 @@ export const ChatView: React.FC = () => {
 
               {isGenerating ? (
                 <button
-                  onClick={abortGeneration}
+                  onClick={() => void handleAbort()}
                   className="p-2.5 rounded-xl bg-rose-600 hover:bg-rose-500 text-white transition-all shadow-md flex items-center justify-center"
                   title="Generierung abbrechen"
                 >
@@ -552,6 +582,14 @@ export const ChatView: React.FC = () => {
                   <Send className="w-4 h-4" />
                 </button>
               )}
+              <VoiceCallControls
+                config={activeVoiceConfig}
+                isGenerating={isGenerating}
+                onDraft={setInput}
+                onSend={sendMessage}
+                onAbort={abortGeneration}
+                onEnsureAutoTts={() => setAutoTtsEnabled(true)}
+              />
             </div>
           </div>
         </div>

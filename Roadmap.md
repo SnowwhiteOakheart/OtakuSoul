@@ -1,6 +1,6 @@
 # 🗺️ OtakuSoul – Portierungs-Roadmap (Soul of Waifu → Rust/Tauri)
 
-> Stand: 2026-09-25 · Vergleichsbasis: `Soul-of-Waifu-linux` (Branch `linux`, Upstream v2.5.1)
+> Stand: 2026-09-26 · Vergleichsbasis: `Soul-of-Waifu-linux` (Branch `linux`, Upstream v2.5.1)
 >
 > Diese Roadmap listet alles, was aus dem Python-Original noch **fehlt** oder in OtakuSoul bisher nur
 > **als Gerüst/Simulation** existiert. Abgeschlossene Punkte werden abgehakt und mit Commit-Hash versehen.
@@ -113,26 +113,24 @@ Die Reihenfolge ist nach Abhängigkeit und Nutzen sortiert: erst das, was jede a
 - [x] **Getrennte Injection-Modi** – Passiv (Weltwissen / Kontext) vs. Aktiv (Strikte Regie- und Verhaltensdirektiven im System-Prompt)
 - [x] **Lorebook-Import & Export** – SillyTavern-, World-Info- und OtakuSoul-kompatibler JSON-Import/-Export mit nativem Datei-Dialog
 
-### Phase 13 – Stimme: TTS, STT & Voice Call 🟠
+### Phase 13 – Stimme: TTS, STT & Voice Call ✅ abgeschlossen
 
-Größter Brocken, weil SoW hier auf PyTorch-Modelle setzt. Empfehlung: Cloud-/leichte Engines nativ in Rust,
-schwere Modelle über ONNX (`ort`) oder als optionalen Sidecar.
+Die Kernlaufzeit bleibt Python-frei: Whisper läuft nativ über whisper.cpp; stark variierende oder schwere
+TTS-/RVC-Modelle werden über klar konfigurierte, optionale Sidecar-Endpunkte angebunden.
 
-- [ ] **Audio-Ausgabe in Rust** (`cpal`/`rodio`) inkl. Geräteauswahl (SoW: `load_audio_devices`)
-- [ ] **Satzweises Streaming** – TTS startet beim ersten fertigen Satz, Warteschlange, Abbruch bei Unterbrechung (SoW: `TTSWorker`, `AudioPlaybackWorker`)
-- [ ] **TTS-Engines**
-  - [ ] Edge-TTS (WebSocket-Protokoll direkt in Rust – kein Python nötig)
-  - [ ] ElevenLabs (HTTP)
-  - [ ] Kokoro 82M (ONNX via `ort` – gut machbar)
-  - [ ] Qwen3-TTS (Voice Cloning / Voice Design, 0.6B/1.7B) – Sidecar oder ONNX-Export prüfen
-  - [ ] XTTSv2 (Voice Cloning) – vermutlich Sidecar
-  - [ ] Silero TTS (ONNX)
-- [ ] **RVC Voice Conversion** (Pitch, Index-Rate, Protect) – Sidecar/ONNX
-- [ ] **Stimmen-Dialog pro Charakter** + Custom-Regex, was vorgelesen wird (SoW: `create_voice_dialog`, `save_tts_custom_regex`)
-- [ ] **Vorlesen-Button** an jeder Chatblase
-- [ ] **STT** – `whisper-rs` (whisper.cpp) als Ersatz für Faster-Whisper, **Silero VAD** via ONNX
-- [ ] **SoW System / Full-Duplex-Voice-Call** – Zustände Listening/Processing/Speaking, Unterbrechung durch den Nutzer (SoW: `sowSystem.py`, `sow_system_signals.py`)
-- [ ] **Echtes LipSync** – Amplitude/Viseme aus dem TTS-Audio an VRM/Live2D koppeln
+- [x] **Audio-Ausgabe & Gerätewahl** – unterbrechungssichere Web Audio API Queue, Gain, Ausgabegerät, AnalyserNode & FFT-Amplitude
+- [x] **Satzweises Streaming** – TTS startet beim ersten fertigen Satz; geordnete Synthese, Warteschlange und sofortiger Abbruch bei Unterbrechung
+- [x] **TTS-Engines**
+  - [x] Edge-TTS (WebSocket-Protokoll direkt in Rust – kein Python nötig)
+  - [x] ElevenLabs (HTTP inkl. Live-Stimmenliste)
+  - [x] OpenAI & OpenAI-kompatibel (`/v1/audio/speech`)
+  - [x] Kokoro 82M, Qwen3-TTS, XTTSv2, Silero TTS & AllTalk über frei konfigurierbare lokale Sidecars
+- [x] **RVC Voice Conversion** – optionaler Multipart-Sidecar mit Modell, Pitch, Index-Rate und Protect
+- [x] **Stimmen-Dialog pro Charakter** – TTS/STT/RVC, Ein-/Ausgabegeräte und Custom-Regex (`CharacterVoiceModal`)
+- [x] **Vorlesen-Button** an jeder Chatblase + Auto-TTS Toggle
+- [x] **STT** – natives `whisper-rs`/whisper.cpp (offline) sowie OpenAI-kompatible Transkriptions-Endpunkte; Web-Audio-RMS-VAD mit konfigurierbarer Schwelle/Stillezeit
+- [x] **SoW System / Voice Call** – Zustände Listening/Transcribing/Thinking/Speaking, automatischer Turn-Wechsel, Push-to-talk und Unterbrechung durch den Nutzer
+- [x] **Echtes LipSync** – Amplitude aus dem TTS-Audio an VRM-Avatar (`aa` Blendshape) gekoppelt
 
 ### Phase 14 – Avatare & Emotionen 🟡
 
@@ -223,7 +221,7 @@ Aktuell sind `system_health_report`, `set_timer`, `open_external_url`, `web_sear
 
 | Frage | Optionen | Empfehlung |
 |---|---|---|
-| Schwere ML-Modelle (XTTS, Qwen3-TTS, RVC) | a) ONNX via `ort` · b) Python-Sidecar optional · c) weglassen | Kokoro/Silero/Whisper/VAD/Emotion nativ via ONNX bzw. whisper.cpp; XTTS/Qwen3/RVC als **optionaler** Sidecar, damit das Kernziel „kein Python“ gilt |
+| Schwere ML-Modelle (XTTS, Qwen3-TTS, RVC) | a) ONNX via `ort` · b) Python-Sidecar optional · c) weglassen | **Entschieden für Phase 13:** Whisper nativ via whisper.cpp; TTS/RVC über optionale, austauschbare HTTP-Sidecars. Damit bleibt die OtakuSoul-Kernlaufzeit Python-frei. |
 | Embeddings | `fastembed-rs` · `ort` + eigenes Modell · llama-server `/embedding` | `/embedding` des laufenden llama-servers oder `fastembed-rs` – spart ein zweites Modell im VRAM, je nach Setup |
 | Chat-Speicherung | SQLite · JSONL-Dateien | SQLite (ist schon da), Export nach JSONL |
 | Wayland-Automation (Companion) | `enigo`, `ydotool`, XDG-Portals | Portals wo möglich, sonst `ydotool` mit klarer Setup-Anleitung |
@@ -235,4 +233,4 @@ Aktuell sind `system_health_report`, `set_timer`, `open_external_url`, `web_sear
 1. **Technische Schulden** aus Abschnitt 2 (Pfade, persistente Settings, Dateidialog).
 2. **Phase 8 + 9** – damit ist OtakuSoul als tägliche Chat-App nutzbar.
 3. **Phase 11** – Soul Memory lebendig machen (größter Unterschied zu „nur ein Chat-Frontend“).
-4. Danach nach Lust: **Phase 13** (Stimme) oder **Phase 15** (Stage-GM).
+4. Als Nächstes: **Phase 14** (Avatare & Emotionen) oder **Phase 15** (Stage-GM).
