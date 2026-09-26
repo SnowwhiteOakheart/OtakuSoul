@@ -16,6 +16,7 @@ import {
   Tag,
   CheckCircle2,
   RotateCcw,
+  Compass,
 } from 'lucide-react';
 import { CharacterEditorModal } from './CharacterEditorModal';
 import { PersonaManagerModal } from './PersonaManagerModal';
@@ -172,6 +173,14 @@ export const CharacterLibraryView = () => {
           >
             <Users className="w-3.5 h-3.5 text-indigo-400" />
             <span>Personas</span>
+          </button>
+
+          <button
+            onClick={() => setActiveTab('hub')}
+            className="px-3 py-1.5 rounded-xl bg-purple-600/20 hover:bg-purple-600/30 text-purple-200 text-xs font-medium flex items-center gap-1.5 border border-purple-500/40 transition-colors shadow-sm"
+          >
+            <Compass className="w-3.5 h-3.5 text-purple-400" />
+            <span>Soul Hub</span>
           </button>
 
           <button

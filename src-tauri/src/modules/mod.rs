@@ -17,3 +17,4 @@ pub mod soul_memory_pipeline;
 pub mod voice;
 pub mod live2d;
 pub mod emotions;
+pub mod soul_hub;

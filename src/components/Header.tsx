@@ -13,6 +13,7 @@ import {
   Users,
   BookOpen,
   Info,
+  Compass,
 } from 'lucide-react';
 
 export const Header = () => {
@@ -31,16 +32,25 @@ export const Header = () => {
     initApp();
     fetchHardware();
     fetchServerStatus();
+
+    let isFetchingHw = false;
     const interval = setInterval(() => {
       fetchServerStatus();
-    }, 3000);
+      if (!isFetchingHw) {
+        isFetchingHw = true;
+        fetchHardware().finally(() => {
+          isFetchingHw = false;
+        });
+      }
+    }, 2000);
     return () => clearInterval(interval);
   }, []);
 
   const gpu = hardware?.gpus[0];
 
   return (
-    <header className="h-14 border-b border-slate-800 bg-slate-900/90 backdrop-blur px-4 flex items-center justify-between select-none z-50">
+    <>
+      <header className="relative h-14 border-b border-slate-800 bg-slate-900/90 backdrop-blur px-4 flex items-center justify-between select-none z-50">
       {/* Brand & Tabs */}
       <div className="flex items-center gap-6">
         <div className="flex items-center gap-2 cursor-pointer" onClick={() => setActiveTab('chat')}>
@@ -81,6 +91,18 @@ export const Header = () => {
           >
             <Users className="w-4 h-4" />
             <span>Charaktere</span>
+          </button>
+
+          <button
+            onClick={() => setActiveTab('hub')}
+            className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-sm transition-all ${
+              activeTab === 'hub'
+                ? 'bg-purple-600/20 text-purple-300 border border-purple-500/40 shadow-sm'
+                : 'text-slate-400 hover:text-slate-200 hover:bg-slate-800/60'
+            }`}
+          >
+            <Compass className="w-4 h-4 text-purple-400" />
+            <span>Soul Hub</span>
           </button>
 
           <button
@@ -137,11 +159,24 @@ export const Header = () => {
       <div className="flex items-center gap-3">
         {/* GPU VRAM Widget */}
         {gpu && gpu.total_vram_mb > 0 && (
-          <div className="flex items-center gap-2 px-2.5 py-1 rounded-lg bg-slate-800/70 border border-slate-700/60 text-xs text-slate-300 font-mono">
+          <div
+            title={`${gpu.name} – ${gpu.free_vram_mb.toLocaleString()} MB frei von ${gpu.total_vram_mb.toLocaleString()} MB`}
+            className="flex items-center gap-2 px-2.5 py-1 rounded-lg bg-slate-800/70 border border-slate-700/60 text-xs text-slate-300 font-mono transition-colors"
+          >
             <Cpu className="w-3.5 h-3.5 text-cyan-400" />
-            <span className="font-semibold text-slate-200">{gpu.name.split(' ')[2] || 'GPU'}</span>
+            <span className="font-semibold text-slate-200">
+              {gpu.name.replace(/^NVIDIA\s+GeForce\s+/i, '').replace(/^NVIDIA\s+/i, '') || 'GPU'}
+            </span>
             <span className="text-slate-400">|</span>
-            <span className="text-emerald-400 font-medium">
+            <span
+              className={`font-medium transition-colors ${
+                gpu.free_vram_mb / gpu.total_vram_mb < 0.15
+                  ? 'text-rose-400'
+                  : gpu.free_vram_mb / gpu.total_vram_mb < 0.35
+                  ? 'text-amber-400'
+                  : 'text-emerald-400'
+              }`}
+            >
               {(gpu.free_vram_mb / 1024).toFixed(1)}GB
             </span>
             <span className="text-slate-500">/</span>
@@ -192,8 +227,9 @@ export const Header = () => {
           <span className="hidden 2xl:inline">Über</span>
         </button>
       </div>
-
-      {showAbout && <AboutDialog onClose={() => setShowAbout(false)} />}
     </header>
-  );
+
+    {showAbout && <AboutDialog onClose={() => setShowAbout(false)} />}
+  </>
+);
 };

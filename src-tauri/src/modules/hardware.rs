@@ -107,8 +107,9 @@ fn largest_context_that_fits(max_tokens: u32, token_capacity: u64) -> u32 {
 }
 
 pub fn probe_hardware() -> HardwareInfo {
-    let mut sys = System::new_all();
-    sys.refresh_all();
+    let mut sys = System::new();
+    sys.refresh_memory();
+    sys.refresh_cpu_all();
 
     let os_name = System::name().unwrap_or_else(|| "Unknown OS".to_string());
     let os_version = System::os_version().unwrap_or_else(|| "".to_string());

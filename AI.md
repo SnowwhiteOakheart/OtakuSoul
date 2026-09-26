@@ -95,6 +95,7 @@
 | `src-tauri/src/modules/models_hub.rs` | Hugging Face GGUF API-Suche, Quants-Inspektion & Async File Downloader |
 | `src-tauri/src/modules/voice.rs` | TTS-Provider, natives whisper.cpp-STT, OpenAI-kompatible Transkription, RVC-Sidecar & Stimmenprofile |
 | `src-tauri/src/modules/kokoro.rs` | Native Offline-Kokoro-82M-Inferenz via ONNX Runtime, Engine-Cache, WAV-Encoding, Stimmen-Scan und atomarer Modell-Installer |
+| `src-tauri/src/modules/soul_hub.rs` | Soul Hub Backend (Soul Gateway, Chub AI Integration mit Lorebook-Extraktion, Lorebooks- & Szenarien-Registries) |
 | `src-tauri/src/state.rs` | Globaler Tokio/Tauri `AppState` |
 | `src-tauri/src/commands.rs` | Alle Tauri IPC Commands |
 | `src-tauri/src/lib.rs` | App Builder, Dialog-Plugin & Handler-Registrierung |
@@ -130,6 +131,8 @@
 | `src/components/stage/ClockWidget.tsx` | SVG Tortendiagramm für Spannungs-Uhren |
 | `src/components/stage/DiceRoller.tsx` | Interaktiver Würfelroller mit SG-Prüfung |
 | `src/components/stage/EncounterTracker.tsx` | Initiativleiste, Kampfbegegnung & HP-Tracker |
+| `src/components/stage/StageCampaignPanel.tsx` | Kampagnen-Übersicht, Inventar & Beziehungsübersicht |
+| `src/components/hub/SoulHubView.tsx` | 4-teiliger Community-Hub (Soul Gateway, Chub AI, Welt-Lorebooks, Soul Stage Szenarien) |
 | `src/components/companion/CompanionView.tsx` | Desktop-Agent Dashboard & Hormon-Monitor |
 | `src/components/companion/SafetyCountdownBanner.tsx` | 25s Human-in-the-Loop Sicherheitsbanner |
 | `src/components/settings/SettingsView.tsx` | Hardware-, Modell- und Server-Konfiguration mit Dateidialogen |
@@ -238,14 +241,28 @@ Alle benötigten Daten sind eigenständig in diesem Projektverzeichnis gekapselt
   - **Live2D Asset-Pipeline:** Asset-Ordner `assets/live2d/` für Built-in Modelle (z. B. Hiyori, Mao, etc. aus *Soul of Waifu*), Benutzer-Import aus externen Ordnern und Archiv-Dateien (`.zip`) direkt über die Einstellungen.
   - **Voice LipSync & Expression Engine:** Amplitudenbasierter LipSync über die AudioPlayer FFT-Analyse, natürliches Blinzeln und Maus-Blickverfolgung.
   - **Avatar-Modus-Persistenz:** Globale Voreinstellung (`vrm`, `live2d`, `portrait`) wird in `settings.json` dauerhaft gespeichert; zusätzlich kann pro Charakter ein individuelles Modell oder ein Fallback definiert werden.
-- [x] **Phase 15: Soul Stage – KI-Game-Master & Party HUD** (Commit `48edeb3`)
+- [x] **Phase 15: Soul Stage – KI-Game-Master, Party HUD & Szenenordner (Vollständige SoW-Referenzparität)**
   - **Two-Tier GM Pipeline (`stage.rs`):**
     - **Action Planner:** Analysiert Spieleraktionen deterministisch mit striktem JSON-Schema, kalkuliert Schwierigkeitsgrade (SG), führt Fähigkeitsproben durch, verwaltet Clocks und aktualisiert HP/MP der Party. Robuste JSON-Repair-Mechanik bei Provider-Formatabweichungen.
     - **Narrativer Storyteller:** Generiert atmosphärische Erzähltexte im Chat auf Basis des Planner-Ergebnisses unter Berücksichtigung von Würfelresultaten, Umgebung und Charakterzustand.
+    - **Multi-Actor Turn Loop & Lore-Injektion:** Ausführung von bis zu `max_actor_depth` aufeinanderfolgenden Gefährten-Reaktionen mit Party-Dialog-Ketten und automatischer Injektion aktiver Welt-Lorebooks (`evaluate_lorebooks`).
+  - **Szenenordner & Standard-Presets:**
+    - Verwaltung von Szenenordnern (`list_stage_folders`, `create_stage_folder`, `move_stage_scene_to_folder`, `delete_stage_folder`).
+    - Automatische Bereitstellung aller 12 Kapitel von *No Game No Life* im Ordner „No Game No Life“ inklusive zugehöriger Lorebooks und natürlicher Kapitelreihenfolge.
+  - **Szenen-Zuverlässigkeit & „Fortsetzen vs. Neu starten“:**
+    - Modale Abfrage beim Öffnen von Szenen mit bestehendem Fortschritt (`has_progress`).
+    - Rotierende `.json.bak`-Sicherheitskopien bei jedem Schreib- und Reset-Vorgang.
+  - **Nachrichtenwerkzeuge im Stage-Verlauf:**
+    - Inline-Bearbeitung (`editStageTurnMessage`), Löschen (`deleteStageTurnMessage`), Neugenerierung (`regenerateStageTurn`) und TTS-Vorlesen (`handleSpeak`).
+  - **Dynamische Bühnenatmosphäre & Background-Lock:**
+    - Bild-Auflösung über `get_stage_background_image` für Hintergründe wie *Elkia Throne Room*, *Library*, etc., mit weichem Backdrop-Overlay und fixierbarem Background-Lock (`lock_bg`).
+  - **JSON-Import & Export:**
+    - Beliebige Szenen-Dateien via JSON-Import direkt in Ordner importieren und als `.json` oder `.md` exportieren.
   - **Party HUD:** Unterstützt bis zu 4 Gruppenmitglieder mit visuellen Lebenspunkten (HP), Magie/Ausdauer (MP), Klassen/Rollen-Badges und Statuseffekten (`PartyHeader.tsx`).
-  - **Szenen-Lobby & Kampagnen-Manager:** `SceneLobbyModal.tsx` und `SceneCreateModal.tsx` zur Verwaltung persistenter `.json`-Szenen mit Zielen, Schwierigkeitsgrad und Genre-Presets.
   - **Rundensteuerung & Aktionskarten:** `TurnControlBar.tsx` mit Aktionen (Angriff, Skill, Zauber, Flucht, Rast) und interaktive Karten `StageEventCardView.tsx` für Choice-Events.
   - **Rest-Mechanik, Snapshots & Export:** Kurze und lange Rast zum Regenerieren von Ressourcen, Undo-Historie für GM-Turns und Markdown-Export des gesamten Abenteuer-Logs.
+- [x] **Phase 17 Teilziel: Soul Hub & Gateways**
+  - **4-teiliger Community-Hub (`SoulHubView.tsx`, `soul_hub.rs`):** Soul Gateway (kuratierte Charaktere), Chub AI API/CDN-Browser mit Lorebook-Extraktion (`character_book`), Welt-Lorebooks und Soul-Stage-Szenarien-Katalog mit 1-Klick-Import.
 
 **Offene Phasen 16–18** (Echter Desktop-Companion, Ökosystem & Plugins, i18n & Release-Builds) sind in [`Roadmap.md`](Roadmap.md) dokumentiert. **Vor neuen Features dort nachsehen und erledigte Punkte mit Commit-Hash abhaken.**
 

@@ -35,7 +35,8 @@ Ob ruhiger Alltagsdialog, langfristige Charakterentwicklung oder eine dramatisch
 | 🧠 **Soul Memory** | Charaktere bauen langfristige Erinnerungen auf, reflektieren Erlebnisse und entwickeln ihre Beziehung zum Nutzer weiter. Psychologie, episodisches Gedächtnis, Beziehung und Tagebuch greifen ineinander. |
 | ✨ **Lebendige Avatare** | VRM- und Live2D-Modelle reagieren mit Emotionen, Blickbewegungen, Blinzeln, Atmung und audio-gesteuertem LipSync. Position und Zoom bleiben pro Modell gespeichert. |
 | 🎭 **Charaktere ohne Grenzen** | Importiere Tavern-/SillyTavern-Character-Cards, Personas und Lorebooks. Verwalte mehrere Chats, Antwortvarianten, Autorenhinweise und reaktive HUD-Werte. |
-| 🎲 **Soul Stage** | Verwandle Gespräche in interaktive Abenteuer: Szenen, Gruppen, Würfelproben, Kampagnen-Uhren, Initiative, Zustände, Ruhephasen und ein KI-gestützter Game Master. |
+| 🌐 **Soul Hub** | Stöbere im integrierten Community-Hub: Soul Gateway, Chub AI Browser mit automatischer Lorebook-Extraktion, Welt-Lorebooks und Soul-Stage-Szenarien. |
+| 🎲 **Soul Stage** | Verwandle Gespräche in interaktive Abenteuer: Szenenordner (inkl. 12 Kapiteln *No Game No Life*), Multi-Akteur-Züge, Würfelproben, Kampagnen-Uhren, Initiative, dynamische Hintergründe mit Lock und zuverlässige Backups. |
 | 🎙️ **Stimme & Sprache** | Nutze Edge-TTS, lokales Kokoro, ElevenLabs oder OpenAI-kompatible Stimmen. Aktionen und Regieanweisungen lassen sich gezielt vom gesprochenen Dialog trennen. |
 | 🔐 **Local First** | Betreibe GGUF-Modelle direkt auf deinem Rechner. OtakuSoul erkennt Hardware und VRAM, wählt sinnvolle Laufzeitparameter und verwaltet den lokalen `llama-server`. |
 
@@ -76,15 +77,17 @@ Ansicht, Größe und Position werden automatisch pro Modell gespeichert. So ersc
 
 Mit **Soul Stage** wird aus Rollenspiel-Chat eine steuerbare Kampagne. Ein mehrstufiger Game-Master-Ablauf verbindet Erzählung und deterministische Mechanik: Würfelwürfe, Schwierigkeitsgrade und Zustandsänderungen werden nachvollziehbar ausgewertet, während die KI daraus eine zusammenhängende Szene gestaltet.
 
-Szenenbibliothek, Party-HUD, taktische Begegnungen, Kampagnen-Uhren und ein exportierbares Abenteuerprotokoll machen OtakuSoul zu einer flexiblen Bühne für Solo-Rollenspiel und charaktergetriebene Geschichten.
+Szenenordner (inklusive aller 12 Kapitel unseres *No Game No Life* Abenteuers), modale Spielstand-Wahl (Fortsetzen vs. Neu starten), rotierende Sicherheits-Backups, Inline-Nachrichtenbearbeitung, Multi-Akteur-Züge, atmosphärische Hintergründe mit Lock-Option, Party-HUD, taktische Begegnungen und ein exportierbares Abenteuerprotokoll machen OtakuSoul zu einer flexiblen Bühne für Solo-Rollenspiel und charaktergetriebene Geschichten.
 
 ## Offen für dein bestehendes Ökosystem
 
 OtakuSoul unterstützt unter anderem:
 
 - Tavern- und SillyTavern-Character-Card V2 als PNG oder JSON
+- Chub AI Kartenimport inkl. automatischer Extraktion eingebetteter Lorebooks (`character_book`)
 - SillyTavern- und Soul-of-Waifu-Chatimporte
-- Lorebooks und World-Info-Strukturen
+- Lorebooks und World-Info-Strukturen mit Chain-Dependencies und Tension-Trigger
+- Soul-Stage-Szenarien und Szenenordner (JSON-Import/Export)
 - GGUF-Modelle für lokale Inferenz
 - VRM 0.x/1.0 und Live2D Cubism 2/4
 - Edge-TTS, Kokoro, ElevenLabs und OpenAI-kompatible Sprachdienste

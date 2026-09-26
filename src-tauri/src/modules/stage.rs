@@ -1,10 +1,11 @@
+use base64::prelude::*;
 use chrono::Utc;
 use rand::Rng;
 use regex::Regex;
 use serde::{Deserialize, Serialize};
 use std::collections::{HashMap, VecDeque};
 use std::fs;
-use std::path::PathBuf;
+use std::path::{Path, PathBuf};
 use std::sync::RwLock;
 
 use crate::modules::inference::{ChatMessage, ChatRequest, InferenceClient, SamplingParams};
@@ -130,6 +131,50 @@ pub struct InventoryItem {
     pub description: String,
     pub quantity: u32,
     pub item_type: String, // "consumable" | "key" | "equipment"
+    #[serde(default)]
+    pub hp_restore: i32,
+    #[serde(default)]
+    pub stress_restore: i32,
+    #[serde(default)]
+    pub clears_condition: Option<String>,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct CampaignObjective {
+    pub id: String,
+    pub title: String,
+    #[serde(default)]
+    pub description: String,
+    #[serde(default)]
+    pub current: u32,
+    #[serde(default = "default_objective_max")]
+    pub max: u32,
+    #[serde(default = "default_objective_status")]
+    pub status: String,
+}
+
+fn default_objective_max() -> u32 { 1 }
+fn default_objective_status() -> String { "active".to_string() }
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct StageRelationship {
+    pub subject: String,
+    pub target: String,
+    #[serde(default)]
+    pub affinity: i32,
+    #[serde(default)]
+    pub tags: Vec<String>,
+    #[serde(default)]
+    pub role_view: String,
+    #[serde(default)]
+    pub last_shift_reason: String,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct ConsequenceEntry {
+    pub id: String,
+    pub text: String,
+    pub created_at: String,
 }
 
 // ==========================================
@@ -178,6 +223,21 @@ pub enum StageEventCard {
     Discovery { text: String },
     #[serde(rename = "consequence")]
     Consequence { text: String },
+    #[serde(rename = "item_use")]
+    ItemUse {
+        item_name: String,
+        hp_recovered: i32,
+        stress_recovered: i32,
+        cleared_condition: Option<String>,
+    },
+    #[serde(rename = "bond_milestone")]
+    BondMilestone {
+        companion: String,
+        affinity: i32,
+        milestone: i32,
+    },
+    #[serde(rename = "combat")]
+    Combat { action: String, text: String },
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
@@ -217,6 +277,7 @@ fn default_turn_mode() -> String {
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct SceneDefinition {
+    #[serde(default)]
     pub id: String,
     pub title: String,
     pub description: String,
@@ -250,6 +311,12 @@ pub struct SceneDefinition {
     pub starting_bg: String,
     #[serde(default)]
     pub starting_ambient: String,
+    #[serde(default)]
+    pub lock_bg: bool,
+    #[serde(default)]
+    pub disable_ambient: bool,
+    #[serde(default)]
+    pub folder: String,
     #[serde(default)]
     pub created_at: String,
     #[serde(default)]
@@ -285,20 +352,40 @@ pub struct ScenePreview {
     pub is_preset: bool,
     pub starting_bg: String,
     pub last_played: Option<String>,
+    #[serde(default)]
+    pub has_progress: bool,
+    #[serde(default)]
+    pub turn_count: usize,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct SceneState {
     pub definition: SceneDefinition,
     pub world: WorldState,
+    #[serde(default)]
     pub clocks: Vec<CampaignClock>,
     pub combat: EncounterState,
+    #[serde(default)]
     pub arcs: Vec<StoryArc>,
+    #[serde(default)]
     pub inventory: Vec<InventoryItem>,
+    #[serde(default)]
+    pub objectives: Vec<CampaignObjective>,
+    #[serde(default)]
+    pub relationships: Vec<StageRelationship>,
+    #[serde(default)]
+    pub consequence_ledger: Vec<ConsequenceEntry>,
+    #[serde(default)]
     pub chat_log: Vec<SceneTurnMessage>,
+    #[serde(default)]
     pub pending_choices: Vec<TaggedChoice>,
+    #[serde(default = "default_current_turn_actor")]
     pub current_turn_actor: String,
+    #[serde(default)]
+    pub current_bg: Option<String>,
 }
+
+fn default_current_turn_actor() -> String { "PLAYER".to_string() }
 
 // ==========================================
 // 4. GM Planner Schema & JSON Repair
@@ -320,8 +407,83 @@ pub struct PlanClockUpdate {
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct PlanResourceDelta {
     pub target: String,
+    #[serde(default)]
     pub hp_delta: i32,
+    #[serde(default)]
     pub stress_delta: i32,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct PlanArcUpdate {
+    pub id: String,
+    #[serde(default)]
+    pub stage_delta: i32,
+    #[serde(default)]
+    pub reveal: bool,
+    #[serde(default)]
+    pub resolve: bool,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct PlanObjectiveUpdate {
+    pub id: String,
+    #[serde(default)]
+    pub title: String,
+    #[serde(default)]
+    pub description: String,
+    #[serde(default)]
+    pub progress_delta: i32,
+    #[serde(default)]
+    pub max: Option<u32>,
+    #[serde(default)]
+    pub status: Option<String>,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct PlanInventoryAdd {
+    pub name: String,
+    #[serde(default)]
+    pub description: String,
+    #[serde(default = "default_inventory_quantity")]
+    pub quantity: u32,
+    #[serde(default = "default_inventory_type")]
+    pub item_type: String,
+    #[serde(default)]
+    pub hp_restore: i32,
+    #[serde(default)]
+    pub stress_restore: i32,
+    #[serde(default)]
+    pub clears_condition: Option<String>,
+}
+
+fn default_inventory_quantity() -> u32 { 1 }
+fn default_inventory_type() -> String { "key".to_string() }
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct PlanCombatant {
+    pub name: String,
+    #[serde(default = "default_enemy_hp")]
+    pub hp: i32,
+    #[serde(default = "default_enemy_role")]
+    pub role: String,
+}
+
+fn default_enemy_hp() -> i32 { 10 }
+fn default_enemy_role() -> String { "enemy".to_string() }
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct PlanCombatDelta {
+    pub target: String,
+    pub hp_delta: i32,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct PlanEncounterUpdate {
+    pub action: String,
+    #[serde(default)]
+    pub enemies: Vec<PlanCombatant>,
+    #[serde(default)]
+    pub hp_updates: Vec<PlanCombatDelta>,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize, Default)]
@@ -345,6 +507,16 @@ pub struct GmPlan {
     pub campaign_clock_updates: Vec<PlanClockUpdate>,
     #[serde(default)]
     pub resource_delta: Option<PlanResourceDelta>,
+    #[serde(default)]
+    pub story_arc_updates: Vec<PlanArcUpdate>,
+    #[serde(default)]
+    pub objective_updates: Vec<PlanObjectiveUpdate>,
+    #[serde(default)]
+    pub inventory_add: Vec<PlanInventoryAdd>,
+    #[serde(default)]
+    pub inventory_remove: Vec<String>,
+    #[serde(default)]
+    pub encounter: Option<PlanEncounterUpdate>,
     #[serde(default)]
     pub player_choices: Vec<TaggedChoice>,
     #[serde(default)]
@@ -509,6 +681,9 @@ impl StageEngine {
             narrator_style: "Atmosphärisch und detailliert.".to_string(),
             persona: "Hiroki".to_string(),
             lorebook: Vec::new(),
+            folder: "Eigene Szenen".to_string(),
+            lock_bg: false,
+            disable_ambient: false,
             solo_mode: false,
             max_actor_depth: 3,
             dice_rolls_enabled: true,
@@ -552,6 +727,9 @@ impl StageEngine {
                     description: "Stellt 25 HP wieder her.".to_string(),
                     quantity: 2,
                     item_type: "consumable".to_string(),
+                    hp_restore: 25,
+                    stress_restore: 0,
+                    clears_condition: None,
                 },
                 InventoryItem {
                     id: "item_2".to_string(),
@@ -559,8 +737,28 @@ impl StageEngine {
                     description: "Ein verzierter Schlüssel mit Sonnensymbol.".to_string(),
                     quantity: 1,
                     item_type: "key".to_string(),
+                    hp_restore: 0,
+                    stress_restore: 0,
+                    clears_condition: None,
                 },
             ],
+            objectives: vec![CampaignObjective {
+                id: "objective_1".to_string(),
+                title: "Das Grimoire untersuchen".to_string(),
+                description: "Finde heraus, was die Dimensionsrisse verursacht.".to_string(),
+                current: 0,
+                max: 3,
+                status: "active".to_string(),
+            }],
+            relationships: vec![StageRelationship {
+                subject: "Ayu Ikue".to_string(),
+                target: "Hiroki".to_string(),
+                affinity: 10,
+                tags: vec!["Gefährtin".to_string()],
+                role_view: "Vertrauter Verbündeter".to_string(),
+                last_shift_reason: String::new(),
+            }],
+            consequence_ledger: Vec::new(),
             chat_log: vec![initial_msg],
             pending_choices: vec![
                 TaggedChoice {
@@ -580,6 +778,7 @@ impl StageEngine {
                 },
             ],
             current_turn_actor: "PLAYER".to_string(),
+            current_bg: None,
         };
 
         Self {
@@ -623,6 +822,32 @@ impl StageEngine {
     // --- Encounter Lifecycle ---
     pub fn start_encounter(&self) {
         let mut st = self.state.write().unwrap();
+        if st.combat.combatants.is_empty() {
+            let mut rng = rand::thread_rng();
+            let player_name = if st.definition.persona.trim().is_empty() {
+                "Spieler".to_string()
+            } else {
+                st.definition.persona.clone()
+            };
+            st.combat.combatants.push(Combatant {
+                id: "player".to_string(), name: player_name, role: "player".to_string(),
+                hp: 50, max_hp: 50, stress: 0, max_stress: 100,
+                initiative: rng.gen_range(1..=20), conditions: Vec::new(),
+            });
+            let party = st.definition.party.clone();
+            for (index, name) in party.into_iter().enumerate() {
+                st.combat.combatants.push(Combatant {
+                    id: format!("companion_{}", index), name, role: "companion".to_string(),
+                    hp: 40, max_hp: 40, stress: 0, max_stress: 100,
+                    initiative: rng.gen_range(1..=20), conditions: Vec::new(),
+                });
+            }
+            st.combat.combatants.push(Combatant {
+                id: "enemy_1".to_string(), name: "Unbekannter Gegner".to_string(),
+                role: "enemy".to_string(), hp: 20, max_hp: 20, stress: 0,
+                max_stress: 0, initiative: rng.gen_range(1..=20), conditions: Vec::new(),
+            });
+        }
         st.combat.is_active = true;
         st.combat.round = 1;
         st.combat.current_turn_index = 0;
@@ -730,6 +955,88 @@ impl StageEngine {
         if let Some(msg) = log_msg {
             st.combat.combat_log.push(msg);
         }
+    }
+
+    pub fn delay_turn(&self) -> Result<SceneState, String> {
+        let mut st = self.state.write().unwrap();
+        if !st.combat.is_active || st.combat.combatants.len() < 2 {
+            return Err("Es läuft keine verschiebbare Kampfbegegnung.".to_string());
+        }
+        let index = st.combat.current_turn_index;
+        if index >= st.combat.combatants.len() || st.combat.combatants[index].role != "player" {
+            return Err("Verschieben ist nur im eigenen Zug möglich.".to_string());
+        }
+        if index + 1 >= st.combat.combatants.len() {
+            return Err("Der letzte Zug der Runde kann nicht weiter verschoben werden.".to_string());
+        }
+        let player_name = st.combat.combatants[index].name.clone();
+        st.combat.combatants.swap(index, index + 1);
+        let next_name = st.combat.combatants[index].name.clone();
+        st.current_turn_actor = next_name.clone();
+        st.combat.combat_log.push(format!(
+            "{} verschiebt den Zug. {} handelt zuerst.", player_name, next_name
+        ));
+        Ok(st.clone())
+    }
+
+    pub fn use_inventory_item(&self, scene_id: &str, item_id: &str) -> Result<SceneState, String> {
+        let current = self.get_state();
+        let mut st = if current.definition.id == scene_id {
+            current
+        } else {
+            load_scene_by_id(scene_id)?
+        };
+        self.push_snapshot(scene_id, st.clone());
+
+        let item_index = st.inventory.iter().position(|item| item.id == item_id)
+            .ok_or_else(|| "Gegenstand nicht gefunden.".to_string())?;
+        let item = st.inventory[item_index].clone();
+        if item.item_type != "consumable" {
+            return Err("Nur Verbrauchsgegenstände können direkt benutzt werden.".to_string());
+        }
+
+        let fallback_name = item.name.to_lowercase();
+        let hp_restore = if item.hp_restore != 0 { item.hp_restore }
+            else if fallback_name.contains("heil") || fallback_name.contains("trank") { 25 }
+            else if fallback_name.contains("bandage") { 10 } else { 0 };
+        let stress_restore = if item.stress_restore != 0 { item.stress_restore }
+            else if fallback_name.contains("brot") || fallback_name.contains("tee") { 10 } else { 0 };
+
+        let player = st.combat.combatants.iter_mut().find(|c| c.role == "player")
+            .ok_or_else(|| "Kein Spielerstatus für die Gegenstandswirkung vorhanden.".to_string())?;
+        let hp_before = player.hp;
+        let stress_before = player.stress;
+        player.hp = (player.hp + hp_restore).clamp(0, player.max_hp);
+        player.stress = (player.stress - stress_restore).clamp(0, player.max_stress);
+        let hp_recovered = player.hp - hp_before;
+        let stress_recovered = stress_before - player.stress;
+        let cleared_condition = item.clears_condition.as_ref().and_then(|condition| {
+            let before = player.conditions.len();
+            player.conditions.retain(|entry| !entry.name.eq_ignore_ascii_case(condition));
+            (player.conditions.len() < before).then(|| condition.clone())
+        });
+
+        if st.inventory[item_index].quantity > 1 {
+            st.inventory[item_index].quantity -= 1;
+        } else {
+            st.inventory.remove(item_index);
+        }
+
+        st.chat_log.push(SceneTurnMessage {
+            id: format!("msg_{}", Utc::now().timestamp_millis()),
+            sender_id: "system".to_string(), sender_name: "Inventar".to_string(),
+            sender_role: "gm".to_string(), avatar_url: None,
+            content: format!("{} wurde benutzt.", item.name), turn_mode: "do".to_string(),
+            whisper_target: None,
+            event_card: Some(StageEventCard::ItemUse {
+                item_name: item.name, hp_recovered, stress_recovered, cleared_condition,
+            }),
+            timestamp: Utc::now().timestamp() as u64,
+        });
+
+        self.set_state(st.clone());
+        save_scene_state(&st)?;
+        Ok(st)
     }
 
     // --- Snapshot & Undo ---
@@ -858,222 +1165,7 @@ pub fn roll_dice(formula_raw: &str, target_dc: Option<i32>) -> Result<DiceRollRe
 // 7. Scene Scanner & Persistence
 // ==========================================
 
-pub fn scan_available_scenes() -> Vec<ScenePreview> {
-    let mut results = Vec::new();
-    let paths = resolve_app_paths();
-
-    // 1. User scenes in data_dir/scenes
-    let user_scenes_dir = PathBuf::from(&paths.scenes_dir);
-    if user_scenes_dir.exists() {
-        if let Ok(entries) = fs::read_dir(&user_scenes_dir) {
-            for entry in entries.flatten() {
-                let p = entry.path();
-                if p.is_file() && p.extension().map_or(false, |ext| ext == "json") {
-                    if let Ok(content) = fs::read_to_string(&p) {
-                        if let Ok(state) = serde_json::from_str::<SceneState>(&content) {
-                            results.push(ScenePreview {
-                                id: state.definition.id.clone(),
-                                title: state.definition.title.clone(),
-                                description: state.definition.description.clone(),
-                                party: state.definition.party.clone(),
-                                location: state.world.location.clone(),
-                                time_of_day: state.world.time_of_day.clone(),
-                                gm_tone: state.definition.gm_tone.clone(),
-                                folder: "Eigene Szenen".to_string(),
-                                is_preset: false,
-                                starting_bg: state.definition.starting_bg.clone(),
-                                last_played: state.definition.last_played.clone(),
-                            });
-                        }
-                    }
-                }
-            }
-        }
-    }
-
-    // 2. Presets from presets/sakura-succubus-3/scenes and presets/no-game-no-life/scenes
-    let search_roots = [
-        PathBuf::from("presets"),
-        PathBuf::from("../presets"),
-        PathBuf::from("assets/presets"),
-        PathBuf::from("/home/deathtrap/development/OtakuSoul/presets"),
-    ];
-
-    let preset_folders = [
-        ("sakura-succubus-3", "Sakura Succubus 3"),
-        ("no-game-no-life", "No Game No Life"),
-    ];
-
-    for root in &search_roots {
-        for (folder_key, folder_label) in &preset_folders {
-            let scene_dir = root.join(folder_key).join("scenes");
-            if scene_dir.exists() {
-                if let Ok(entries) = fs::read_dir(&scene_dir) {
-                    for entry in entries.flatten() {
-                        let p = entry.path();
-                        if p.is_file() && p.extension().map_or(false, |ext| ext == "json") {
-                            if let Ok(content) = fs::read_to_string(&p) {
-                                if let Ok(def) = serde_json::from_str::<SceneDefinition>(&content) {
-                                    let id = format!("{}_{}", folder_key, p.file_stem().unwrap().to_string_lossy());
-                                    if !results.iter().any(|r| r.id == id || r.title == def.title) {
-                                        results.push(ScenePreview {
-                                            id,
-                                            title: def.title.clone(),
-                                            description: def.description.clone(),
-                                            party: def.party.clone(),
-                                            location: def.starting_location.clone(),
-                                            time_of_day: def.time_of_day.clone(),
-                                            gm_tone: def.gm_tone.clone(),
-                                            folder: folder_label.to_string(),
-                                            is_preset: true,
-                                            starting_bg: def.starting_bg.clone(),
-                                            last_played: def.last_played.clone(),
-                                        });
-                                    }
-                                }
-                            }
-                        }
-                    }
-                }
-            }
-        }
-    }
-
-    results.sort_by(|a, b| a.title.to_lowercase().cmp(&b.title.to_lowercase()));
-    results
-}
-
-pub fn load_scene_by_id(scene_id: &str) -> Result<SceneState, String> {
-    let paths = resolve_app_paths();
-    let user_scene_file = PathBuf::from(&paths.scenes_dir).join(format!("{}.json", scene_id));
-
-    // If active user state exists, load it
-    if user_scene_file.exists() {
-        let content = fs::read_to_string(&user_scene_file)
-            .map_err(|e| format!("Fehler beim Lesen der Szene: {}", e))?;
-        let state: SceneState = serde_json::from_str(&content)
-            .map_err(|e| format!("Fehler beim Parsen der Szene: {}", e))?;
-        return Ok(state);
-    }
-
-    // Otherwise find in presets
-    let search_roots = [
-        PathBuf::from("presets"),
-        PathBuf::from("../presets"),
-        PathBuf::from("/home/deathtrap/development/OtakuSoul/presets"),
-    ];
-
-    for root in &search_roots {
-        for folder in &["sakura-succubus-3", "no-game-no-life"] {
-            let scene_dir = root.join(folder).join("scenes");
-            if scene_dir.exists() {
-                if let Ok(entries) = fs::read_dir(&scene_dir) {
-                    for entry in entries.flatten() {
-                        let p = entry.path();
-                        let stem = p.file_stem().unwrap_or_default().to_string_lossy().to_string();
-                        let expected_id = format!("{}_{}", folder, stem);
-                        if expected_id == scene_id || stem == scene_id {
-                            let content = fs::read_to_string(&p)
-                                .map_err(|e| format!("Fehler beim Lesen der Preset-Szene: {}", e))?;
-                            let mut def: SceneDefinition = serde_json::from_str(&content)
-                                .map_err(|e| format!("Fehler beim Parsen der Preset-Szene: {}", e))?;
-                            def.id = scene_id.to_string();
-
-                            // Build fresh initial state from definition
-                            let initial_msg = SceneTurnMessage {
-                                id: format!("msg_{}", Utc::now().timestamp_millis()),
-                                sender_id: "gm".to_string(),
-                                sender_name: "Game Master".to_string(),
-                                sender_role: "gm".to_string(),
-                                avatar_url: None,
-                                content: if !def.opening_narration.is_empty() {
-                                    def.opening_narration.clone()
-                                } else {
-                                    def.description.clone()
-                                },
-                                turn_mode: "do".to_string(),
-                                whisper_target: None,
-                                event_card: None,
-                                timestamp: Utc::now().timestamp() as u64,
-                            };
-
-                            let world = WorldState {
-                                location: def.starting_location.clone(),
-                                time_of_day: def.time_of_day.clone(),
-                                weather: "Klar".to_string(),
-                                danger_level: 2,
-                                active_quest: def.description.clone(),
-                                key_facts: HashMap::new(),
-                            };
-
-                            let state = SceneState {
-                                definition: def,
-                                world,
-                                clocks: vec![CampaignClock {
-                                    id: "clock_tension".to_string(),
-                                    name: "Dramatische Spannung".to_string(),
-                                    current: 1,
-                                    max: 6,
-                                    clock_type: "danger".to_string(),
-                                }],
-                                combat: EncounterState::default(),
-                                arcs: Vec::new(),
-                                inventory: Vec::new(),
-                                chat_log: vec![initial_msg],
-                                pending_choices: vec![
-                                    TaggedChoice {
-                                        text: "Die Umgebung genau mustern".to_string(),
-                                        badge: Some("Wahrnehmung".to_string()),
-                                        action_type: "do".to_string(),
-                                    },
-                                    TaggedChoice {
-                                        text: "Einen Schritt vorwärts wagen".to_string(),
-                                        badge: None,
-                                        action_type: "do".to_string(),
-                                    },
-                                    TaggedChoice {
-                                        text: "Mit den Gefährten beraten".to_string(),
-                                        badge: None,
-                                        action_type: "say".to_string(),
-                                    },
-                                ],
-                                current_turn_actor: "PLAYER".to_string(),
-                            };
-
-                            let _ = save_scene_state(&state);
-                            return Ok(state);
-                        }
-                    }
-                }
-            }
-        }
-    }
-
-    Err(format!("Szene '{}' nicht gefunden.", scene_id))
-}
-
-pub fn save_scene_state(state: &SceneState) -> Result<(), String> {
-    let paths = resolve_app_paths();
-    let scenes_dir = PathBuf::from(&paths.scenes_dir);
-    let _ = fs::create_dir_all(&scenes_dir);
-
-    let target_file = scenes_dir.join(format!("{}.json", state.definition.id));
-    let json_data = serde_json::to_string_pretty(state)
-        .map_err(|e| format!("Fehler beim Serialisieren der Szene: {}", e))?;
-
-    fs::write(&target_file, json_data)
-        .map_err(|e| format!("Fehler beim Speichern der Szene in {:?}: {}", target_file, e))?;
-
-    Ok(())
-}
-
-pub fn create_custom_scene(mut def: SceneDefinition) -> Result<SceneState, String> {
-    if def.id.trim().is_empty() {
-        def.id = format!("custom_scene_{}", Utc::now().timestamp_millis());
-    }
-    def.created_at = Utc::now().to_rfc3339();
-    def.last_played = Some(Utc::now().to_rfc3339());
-
+pub fn build_initial_scene_state(def: &SceneDefinition) -> SceneState {
     let initial_msg = SceneTurnMessage {
         id: format!("msg_{}", Utc::now().timestamp_millis()),
         sender_id: "gm".to_string(),
@@ -1091,53 +1183,735 @@ pub fn create_custom_scene(mut def: SceneDefinition) -> Result<SceneState, Strin
         timestamp: Utc::now().timestamp() as u64,
     };
 
-    let state = SceneState {
+    let world = WorldState {
+        location: if !def.starting_location.is_empty() { def.starting_location.clone() } else { "Alte Zuflucht".to_string() },
+        time_of_day: if !def.time_of_day.is_empty() { def.time_of_day.clone() } else { "Dämmerung".to_string() },
+        weather: "Klar".to_string(),
+        danger_level: 2,
+        active_quest: def.description.clone(),
+        key_facts: HashMap::new(),
+    };
+
+    let persona_name = if def.persona.is_empty() { "Spieler".to_string() } else { def.persona.clone() };
+
+    SceneState {
         definition: def.clone(),
-        world: WorldState {
-            location: def.starting_location.clone(),
-            time_of_day: def.time_of_day.clone(),
-            weather: "Klar".to_string(),
-            danger_level: 2,
-            active_quest: def.description.clone(),
-            key_facts: HashMap::new(),
-        },
+        world,
         clocks: vec![CampaignClock {
             id: "clock_tension".to_string(),
-            name: "Dramatischer Fortschritt".to_string(),
-            current: 0,
+            name: "Dramatische Spannung".to_string(),
+            current: 1,
             max: 6,
-            clock_type: "progress".to_string(),
+            clock_type: "danger".to_string(),
         }],
         combat: EncounterState::default(),
         arcs: Vec::new(),
         inventory: Vec::new(),
+        objectives: vec![CampaignObjective {
+            id: "objective_main".to_string(),
+            title: if !def.title.is_empty() { def.title.clone() } else { "Abenteuer beginnen".to_string() },
+            description: def.description.clone(),
+            current: 0,
+            max: 1,
+            status: "active".to_string(),
+        }],
+        relationships: def.party.iter().map(|name| StageRelationship {
+            subject: name.clone(),
+            target: persona_name.clone(),
+            affinity: 0,
+            tags: vec!["Gefährte".to_string()],
+            role_view: "Gefährte".to_string(),
+            last_shift_reason: String::new(),
+        }).collect(),
+        consequence_ledger: Vec::new(),
         chat_log: vec![initial_msg],
         pending_choices: vec![
             TaggedChoice {
-                text: "Umschauen und orientieren".to_string(),
+                text: "Die Umgebung genau mustern".to_string(),
+                badge: Some("Wahrnehmung".to_string()),
+                action_type: "do".to_string(),
+            },
+            TaggedChoice {
+                text: "Einen Schritt vorwärts wagen".to_string(),
                 badge: None,
                 action_type: "do".to_string(),
             },
             TaggedChoice {
-                text: "Das Wort an die Gruppe richten".to_string(),
+                text: "Mit den Gefährten beraten".to_string(),
                 badge: None,
                 action_type: "say".to_string(),
             },
         ],
         current_turn_actor: "PLAYER".to_string(),
+        current_bg: if !def.starting_bg.is_empty() { Some(def.starting_bg.clone()) } else { None },
+    }
+}
+
+pub fn ensure_default_scene_folders() {
+    let paths = resolve_app_paths();
+    let scenes_dir = PathBuf::from(&paths.scenes_dir);
+    let _ = fs::create_dir_all(&scenes_dir);
+
+    let search_roots = [
+        PathBuf::from(&paths.bundled_presets_dir),
+        PathBuf::from("presets"),
+        PathBuf::from("../presets"),
+        PathBuf::from("/home/deathtrap/development/OtakuSoul/presets"),
+    ];
+
+    // 1. Ensure "No Game No Life" folder exists in scenes_dir with all 12 chapters
+    let ngnl_dir = scenes_dir.join("No Game No Life");
+    let needs_ngnl_copy = !ngnl_dir.exists()
+        || fs::read_dir(&ngnl_dir)
+            .map(|d| d.flatten().filter(|e| e.path().extension().map_or(false, |ext| ext == "json")).count() < 12)
+            .unwrap_or(true);
+
+    if needs_ngnl_copy {
+        let _ = fs::create_dir_all(&ngnl_dir);
+        for root in &search_roots {
+            let src_scenes = root.join("no-game-no-life").join("scenes");
+            if src_scenes.exists() {
+                if let Ok(entries) = fs::read_dir(&src_scenes) {
+                    for entry in entries.flatten() {
+                        let p = entry.path();
+                        if p.is_file() && p.extension().map_or(false, |ext| ext == "json") {
+                            let stem = p.file_stem().unwrap_or_default().to_string_lossy().to_string();
+                            let target_p = ngnl_dir.join(format!("{}.json", stem));
+                            if let Ok(content) = fs::read_to_string(&p) {
+                                if let Ok(mut def) = serde_json::from_str::<SceneDefinition>(&content) {
+                                    def.id = stem.clone();
+                                    def.folder = "No Game No Life".to_string();
+                                    let state = build_initial_scene_state(&def);
+                                    if let Ok(json_str) = serde_json::to_string_pretty(&state) {
+                                        let _ = fs::write(&target_p, json_str);
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+                break;
+            }
+        }
+    }
+
+    // 2. Ensure No Game No Life Lorebooks are copied to lorebooks_dir
+    let lorebooks_dir = PathBuf::from(&paths.lorebooks_dir);
+    let _ = fs::create_dir_all(&lorebooks_dir);
+    for root in &search_roots {
+        let src_lb = root.join("no-game-no-life").join("lorebooks");
+        if src_lb.exists() {
+            if let Ok(entries) = fs::read_dir(&src_lb) {
+                for entry in entries.flatten() {
+                    let p = entry.path();
+                    if p.is_file() && p.extension().map_or(false, |ext| ext == "json") {
+                        if let Some(filename) = p.file_name() {
+                            let target_lb = lorebooks_dir.join(filename);
+                            if !target_lb.exists() {
+                                let _ = fs::copy(&p, &target_lb);
+                            }
+                        }
+                    }
+                }
+            }
+            break;
+        }
+    }
+
+    // 3. Ensure Sakura Succubus 3 folder exists with presets
+    let ss3_dir = scenes_dir.join("Sakura Succubus 3");
+    if !ss3_dir.exists() {
+        for root in &search_roots {
+            let src_scenes = root.join("sakura-succubus-3").join("scenes");
+            if src_scenes.exists() {
+                let _ = fs::create_dir_all(&ss3_dir);
+                if let Ok(entries) = fs::read_dir(&src_scenes) {
+                    for entry in entries.flatten() {
+                        let p = entry.path();
+                        if p.is_file() && p.extension().map_or(false, |ext| ext == "json") {
+                            let stem = p.file_stem().unwrap_or_default().to_string_lossy().to_string();
+                            let target_p = ss3_dir.join(format!("{}.json", stem));
+                            if let Ok(content) = fs::read_to_string(&p) {
+                                if let Ok(mut def) = serde_json::from_str::<SceneDefinition>(&content) {
+                                    def.id = stem.clone();
+                                    def.folder = "Sakura Succubus 3".to_string();
+                                    let state = build_initial_scene_state(&def);
+                                    if let Ok(json_str) = serde_json::to_string_pretty(&state) {
+                                        let _ = fs::write(&target_p, json_str);
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+                break;
+            }
+        }
+    }
+}
+
+pub fn find_scene_path(scene_id: &str) -> Option<PathBuf> {
+    let paths = resolve_app_paths();
+    let scenes_dir = PathBuf::from(&paths.scenes_dir);
+
+    // 1. Direct file: scenes/{scene_id}.json
+    let direct = scenes_dir.join(format!("{}.json", scene_id));
+    if direct.exists() {
+        return Some(direct);
+    }
+
+    // 2. Subdirectories in scenes/
+    if let Ok(entries) = fs::read_dir(&scenes_dir) {
+        for entry in entries.flatten() {
+            let p = entry.path();
+            if p.is_dir() {
+                let candidate = p.join(format!("{}.json", scene_id));
+                if candidate.exists() {
+                    return Some(candidate);
+                }
+            }
+        }
+    }
+
+    // 3. Search in presets
+    let search_roots = [
+        PathBuf::from(&paths.bundled_presets_dir),
+        PathBuf::from("presets"),
+        PathBuf::from("../presets"),
+        PathBuf::from("/home/deathtrap/development/OtakuSoul/presets"),
+    ];
+
+    for root in &search_roots {
+        for folder in &["no-game-no-life", "sakura-succubus-3"] {
+            let scene_dir = root.join(folder).join("scenes");
+            if scene_dir.exists() {
+                let candidate = scene_dir.join(format!("{}.json", scene_id));
+                if candidate.exists() {
+                    return Some(candidate);
+                }
+                if let Ok(entries) = fs::read_dir(&scene_dir) {
+                    for entry in entries.flatten() {
+                        let p = entry.path();
+                        let stem = p.file_stem().unwrap_or_default().to_string_lossy();
+                        if stem == scene_id || format!("{}_{}", folder, stem) == scene_id {
+                            return Some(p);
+                        }
+                    }
+                }
+            }
+        }
+    }
+
+    None
+}
+
+fn parse_scene_file_preview(p: &Path, folder_label: &str, is_preset: bool) -> Option<ScenePreview> {
+    let content = fs::read_to_string(p).ok()?;
+    if let Ok(state) = serde_json::from_str::<SceneState>(&content) {
+        let has_progress = state.chat_log.len() > 1;
+        let turn_count = state.chat_log.len();
+        return Some(ScenePreview {
+            id: state.definition.id.clone(),
+            title: state.definition.title.clone(),
+            description: state.definition.description.clone(),
+            party: state.definition.party.clone(),
+            location: state.world.location.clone(),
+            time_of_day: state.world.time_of_day.clone(),
+            gm_tone: state.definition.gm_tone.clone(),
+            folder: if !state.definition.folder.is_empty() { state.definition.folder.clone() } else { folder_label.to_string() },
+            is_preset,
+            starting_bg: state.current_bg.clone().unwrap_or_else(|| state.definition.starting_bg.clone()),
+            last_played: state.definition.last_played.clone(),
+            has_progress,
+            turn_count,
+        });
+    }
+
+    if let Ok(def) = serde_json::from_str::<SceneDefinition>(&content) {
+        let stem = p.file_stem().unwrap_or_default().to_string_lossy().to_string();
+        let id = if def.id.is_empty() { stem } else { def.id.clone() };
+        return Some(ScenePreview {
+            id,
+            title: def.title.clone(),
+            description: def.description.clone(),
+            party: def.party.clone(),
+            location: def.starting_location.clone(),
+            time_of_day: def.time_of_day.clone(),
+            gm_tone: def.gm_tone.clone(),
+            folder: if !def.folder.is_empty() { def.folder.clone() } else { folder_label.to_string() },
+            is_preset,
+            starting_bg: def.starting_bg.clone(),
+            last_played: def.last_played.clone(),
+            has_progress: false,
+            turn_count: 0,
+        });
+    }
+
+    None
+}
+
+fn extract_sort_key(s: &str) -> (u32, String) {
+    let lower = s.to_lowercase();
+    if let Some(pos) = lower.find("kapitel ") {
+        let rest = &lower[pos + 8..];
+        let num_str: String = rest.chars().take_while(|c| c.is_ascii_digit()).collect();
+        if let Ok(num) = num_str.parse::<u32>() {
+            return (num, lower);
+        }
+    }
+    if let Some(pos) = lower.find("episode ") {
+        let rest = &lower[pos + 8..];
+        let num_str: String = rest.chars().take_while(|c| c.is_ascii_digit()).collect();
+        if let Ok(num) = num_str.parse::<u32>() {
+            return (num, lower);
+        }
+    }
+    if let Some(pos) = lower.find("episode") {
+        let rest = &lower[pos + 7..];
+        let num_str: String = rest.chars().take_while(|c| c.is_ascii_digit()).collect();
+        if let Ok(num) = num_str.parse::<u32>() {
+            return (num, lower);
+        }
+    }
+    (9999, lower)
+}
+
+pub fn scan_available_scenes() -> Vec<ScenePreview> {
+    ensure_default_scene_folders();
+    let mut results = Vec::new();
+    let paths = resolve_app_paths();
+    let user_scenes_dir = PathBuf::from(&paths.scenes_dir);
+
+    // 1. User scenes in data_dir/scenes (root & subfolders)
+    if user_scenes_dir.exists() {
+        if let Ok(entries) = fs::read_dir(&user_scenes_dir) {
+            for entry in entries.flatten() {
+                let p = entry.path();
+                if p.is_dir() {
+                    let folder_name = entry.file_name().to_string_lossy().to_string();
+                    if let Ok(sub_entries) = fs::read_dir(&p) {
+                        for sub_entry in sub_entries.flatten() {
+                            let sub_p = sub_entry.path();
+                            if sub_p.is_file() && sub_p.extension().map_or(false, |ext| ext == "json") {
+                                if let Some(preview) = parse_scene_file_preview(&sub_p, &folder_name, false) {
+                                    if !results.iter().any(|r: &ScenePreview| r.id == preview.id) {
+                                        results.push(preview);
+                                    }
+                                }
+                            }
+                        }
+                    }
+                } else if p.is_file() && p.extension().map_or(false, |ext| ext == "json") {
+                    if let Some(preview) = parse_scene_file_preview(&p, "Eigene Szenen", false) {
+                        if !results.iter().any(|r: &ScenePreview| r.id == preview.id) {
+                            results.push(preview);
+                        }
+                    }
+                }
+            }
+        }
+    }
+
+    // 2. Bundled presets fallback
+    let search_roots = [
+        PathBuf::from(&paths.bundled_presets_dir),
+        PathBuf::from("presets"),
+        PathBuf::from("../presets"),
+        PathBuf::from("/home/deathtrap/development/OtakuSoul/presets"),
+    ];
+
+    let preset_folders = [
+        ("sakura-succubus-3", "Sakura Succubus 3"),
+        ("no-game-no-life", "No Game No Life"),
+    ];
+
+    for root in &search_roots {
+        for (folder_key, folder_label) in &preset_folders {
+            let scene_dir = root.join(folder_key).join("scenes");
+            if scene_dir.exists() {
+                if let Ok(entries) = fs::read_dir(&scene_dir) {
+                    for entry in entries.flatten() {
+                        let p = entry.path();
+                        if p.is_file() && p.extension().map_or(false, |ext| ext == "json") {
+                            if let Some(preview) = parse_scene_file_preview(&p, folder_label, true) {
+                                if !results.iter().any(|r: &ScenePreview| r.id == preview.id || r.title == preview.title) {
+                                    results.push(preview);
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        }
+    }
+
+    // Sort by folder, then chapter number, then title
+    results.sort_by(|a, b| {
+        if a.folder != b.folder {
+            if a.folder == "No Game No Life" {
+                return std::cmp::Ordering::Less;
+            }
+            if b.folder == "No Game No Life" {
+                return std::cmp::Ordering::Greater;
+            }
+            a.folder.cmp(&b.folder)
+        } else {
+            let (num_a, name_a) = extract_sort_key(&a.title);
+            let (num_b, name_b) = extract_sort_key(&b.title);
+            if num_a != num_b {
+                num_a.cmp(&num_b)
+            } else {
+                name_a.cmp(&name_b)
+            }
+        }
+    });
+
+    results
+}
+
+pub fn load_scene_by_id(scene_id: &str) -> Result<SceneState, String> {
+    if let Some(path) = find_scene_path(scene_id) {
+        let content = fs::read_to_string(&path)
+            .map_err(|e| format!("Fehler beim Lesen der Szene: {}", e))?;
+        if let Ok(state) = serde_json::from_str::<SceneState>(&content) {
+            return Ok(state);
+        }
+        if let Ok(def) = serde_json::from_str::<SceneDefinition>(&content) {
+            let state = build_initial_scene_state(&def);
+            let _ = save_scene_state(&state);
+            return Ok(state);
+        }
+    }
+    Err(format!("Szene '{}' nicht gefunden.", scene_id))
+}
+
+pub fn save_scene_state(state: &SceneState) -> Result<(), String> {
+    let paths = resolve_app_paths();
+    let scenes_dir = PathBuf::from(&paths.scenes_dir);
+    let _ = fs::create_dir_all(&scenes_dir);
+
+    let target_file = if let Some(existing_path) = find_scene_path(&state.definition.id) {
+        if existing_path.starts_with(&scenes_dir) {
+            existing_path
+        } else {
+            let folder_dir = if !state.definition.folder.is_empty() && state.definition.folder != "Eigene Szenen" {
+                scenes_dir.join(&state.definition.folder)
+            } else {
+                scenes_dir.clone()
+            };
+            let _ = fs::create_dir_all(&folder_dir);
+            folder_dir.join(format!("{}.json", state.definition.id))
+        }
+    } else {
+        let folder_dir = if !state.definition.folder.is_empty() && state.definition.folder != "Eigene Szenen" {
+            scenes_dir.join(&state.definition.folder)
+        } else {
+            scenes_dir.clone()
+        };
+        let _ = fs::create_dir_all(&folder_dir);
+        folder_dir.join(format!("{}.json", state.definition.id))
     };
 
+    if target_file.exists() {
+        let bak_file = target_file.with_extension("json.bak");
+        let _ = fs::copy(&target_file, &bak_file);
+    }
+
+    let json_data = serde_json::to_string_pretty(state)
+        .map_err(|e| format!("Fehler beim Serialisieren der Szene: {}", e))?;
+
+    fs::write(&target_file, json_data)
+        .map_err(|e| format!("Fehler beim Speichern der Szene in {:?}: {}", target_file, e))?;
+
+    Ok(())
+}
+
+pub fn reset_stage_scene(scene_id: &str) -> Result<SceneState, String> {
+    let current_state = load_scene_by_id(scene_id)?;
+    let fresh_state = build_initial_scene_state(&current_state.definition);
+    save_scene_state(&fresh_state)?;
+    Ok(fresh_state)
+}
+
+pub fn list_stage_folders() -> Result<Vec<String>, String> {
+    ensure_default_scene_folders();
+    let paths = resolve_app_paths();
+    let scenes_dir = PathBuf::from(&paths.scenes_dir);
+    let mut folders = Vec::new();
+
+    folders.push("No Game No Life".to_string());
+    folders.push("Sakura Succubus 3".to_string());
+    folders.push("Eigene Szenen".to_string());
+
+    if let Ok(entries) = fs::read_dir(&scenes_dir) {
+        for entry in entries.flatten() {
+            let p = entry.path();
+            if p.is_dir() {
+                let name = entry.file_name().to_string_lossy().to_string();
+                if !folders.iter().any(|f| f.eq_ignore_ascii_case(&name)) {
+                    folders.push(name);
+                }
+            }
+        }
+    }
+
+    folders.sort();
+    Ok(folders)
+}
+
+pub fn create_stage_folder(folder_name: &str) -> Result<(), String> {
+    let clean = folder_name.trim();
+    if clean.is_empty() || clean.contains('/') || clean.contains('\\') || clean.contains("..") {
+        return Err("Ungültiger Ordnername.".to_string());
+    }
+    let paths = resolve_app_paths();
+    let target = PathBuf::from(&paths.scenes_dir).join(clean);
+    fs::create_dir_all(&target).map_err(|e| format!("Ordner konnte nicht erstellt werden: {}", e))?;
+    Ok(())
+}
+
+pub fn move_stage_scene_to_folder(scene_id: &str, target_folder: &str) -> Result<SceneState, String> {
+    let mut state = load_scene_by_id(scene_id)?;
+    let old_path = find_scene_path(scene_id);
+    let paths = resolve_app_paths();
+    let scenes_dir = PathBuf::from(&paths.scenes_dir);
+
+    let clean_folder = target_folder.trim();
+    let target_dir = if clean_folder.is_empty() || clean_folder == "Eigene Szenen" {
+        scenes_dir.clone()
+    } else {
+        scenes_dir.join(clean_folder)
+    };
+    fs::create_dir_all(&target_dir).map_err(|e| format!("Zielordner konnte nicht erstellt werden: {}", e))?;
+
+    state.definition.folder = if clean_folder.is_empty() { "Eigene Szenen".to_string() } else { clean_folder.to_string() };
+
+    let new_path = target_dir.join(format!("{}.json", scene_id));
+    let json_data = serde_json::to_string_pretty(&state)
+        .map_err(|e| format!("Fehler beim Serialisieren: {}", e))?;
+    fs::write(&new_path, json_data)
+        .map_err(|e| format!("Fehler beim Speichern in {:?}: {}", new_path, e))?;
+
+    if let Some(old) = old_path {
+        if old != new_path && old.starts_with(&scenes_dir) {
+            let _ = fs::remove_file(&old);
+            let old_bak = old.with_extension("json.bak");
+            if old_bak.exists() {
+                let _ = fs::remove_file(old_bak);
+            }
+        }
+    }
+
+    Ok(state)
+}
+
+pub fn delete_stage_folder(folder_name: &str) -> Result<(), String> {
+    let clean = folder_name.trim();
+    if clean == "No Game No Life" || clean == "Eigene Szenen" {
+        return Err("Dieser Standard-Ordner kann nicht gelöscht werden.".to_string());
+    }
+    let paths = resolve_app_paths();
+    let scenes_dir = PathBuf::from(&paths.scenes_dir);
+    let folder_path = scenes_dir.join(clean);
+    if !folder_path.exists() {
+        return Err("Ordner nicht gefunden.".to_string());
+    }
+
+    // Move any contained scenes to root scenes_dir
+    if let Ok(entries) = fs::read_dir(&folder_path) {
+        for entry in entries.flatten() {
+            let p = entry.path();
+            if p.is_file() && p.extension().map_or(false, |ext| ext == "json") {
+                if let Some(name) = p.file_name() {
+                    let dest = scenes_dir.join(name);
+                    let _ = fs::rename(&p, &dest);
+                }
+            }
+        }
+    }
+    let _ = fs::remove_dir_all(&folder_path);
+    Ok(())
+}
+
+pub fn import_stage_scene_json(json_content: &str, target_folder: Option<&str>) -> Result<SceneState, String> {
+    let clean_folder = target_folder.unwrap_or("Eigene Szenen");
+    if let Ok(mut state) = serde_json::from_str::<SceneState>(json_content) {
+        if state.definition.id.trim().is_empty() {
+            state.definition.id = format!("scene_{}", Utc::now().timestamp_millis());
+        }
+        state.definition.folder = clean_folder.to_string();
+        save_scene_state(&state)?;
+        return Ok(state);
+    }
+
+    if let Ok(mut def) = serde_json::from_str::<SceneDefinition>(json_content) {
+        if def.id.trim().is_empty() {
+            def.id = format!("scene_{}", Utc::now().timestamp_millis());
+        }
+        def.folder = clean_folder.to_string();
+        let state = build_initial_scene_state(&def);
+        save_scene_state(&state)?;
+        return Ok(state);
+    }
+
+    Err("Die Datei ist kein gültiges Szenen-Format (weder SceneState noch SceneDefinition).".to_string())
+}
+
+pub fn export_stage_scene_json(scene_id: &str) -> Result<String, String> {
+    let state = load_scene_by_id(scene_id)?;
+    serde_json::to_string_pretty(&state)
+        .map_err(|e| format!("Fehler beim Exportieren: {}", e))
+}
+
+pub fn create_custom_scene(mut def: SceneDefinition) -> Result<SceneState, String> {
+    if def.id.trim().is_empty() {
+        def.id = format!("custom_scene_{}", Utc::now().timestamp_millis());
+    }
+    def.created_at = Utc::now().to_rfc3339();
+    def.last_played = Some(Utc::now().to_rfc3339());
+    let state = build_initial_scene_state(&def);
     save_scene_state(&state)?;
     Ok(state)
 }
 
 pub fn delete_scene(scene_id: &str) -> Result<(), String> {
-    let paths = resolve_app_paths();
-    let target_file = PathBuf::from(&paths.scenes_dir).join(format!("{}.json", scene_id));
-    if target_file.exists() {
-        fs::remove_file(target_file).map_err(|e| format!("Fehler beim Löschen: {}", e))?;
+    if let Some(target_file) = find_scene_path(scene_id) {
+        let paths = resolve_app_paths();
+        let scenes_dir = PathBuf::from(&paths.scenes_dir);
+        if target_file.starts_with(&scenes_dir) {
+            let bak_file = target_file.with_extension("json.bak");
+            if bak_file.exists() {
+                let _ = fs::remove_file(bak_file);
+            }
+            fs::remove_file(target_file).map_err(|e| format!("Fehler beim Löschen: {}", e))?;
+        }
     }
     Ok(())
+}
+
+pub fn edit_stage_turn_message(
+    engine: &StageEngine,
+    scene_id: &str,
+    message_id: &str,
+    new_content: &str,
+) -> Result<SceneState, String> {
+    let mut state = engine.get_state();
+    if state.definition.id != scene_id {
+        state = load_scene_by_id(scene_id)?;
+    }
+    engine.push_snapshot(scene_id, state.clone());
+
+    if let Some(msg) = state.chat_log.iter_mut().find(|m| m.id == message_id) {
+        msg.content = new_content.to_string();
+        save_scene_state(&state)?;
+        engine.set_state(state.clone());
+        Ok(state)
+    } else {
+        Err(format!("Nachricht '{}' nicht gefunden.", message_id))
+    }
+}
+
+pub fn delete_stage_turn_message(
+    engine: &StageEngine,
+    scene_id: &str,
+    message_id: &str,
+) -> Result<SceneState, String> {
+    let mut state = engine.get_state();
+    if state.definition.id != scene_id {
+        state = load_scene_by_id(scene_id)?;
+    }
+    engine.push_snapshot(scene_id, state.clone());
+
+    state.chat_log.retain(|m| m.id != message_id);
+    save_scene_state(&state)?;
+    engine.set_state(state.clone());
+    Ok(state)
+}
+
+pub async fn regenerate_stage_turn(
+    engine: &StageEngine,
+    inference: &InferenceClient,
+    scene_id: &str,
+) -> Result<SceneState, String> {
+    let mut state = engine.get_state();
+    if state.definition.id != scene_id {
+        state = load_scene_by_id(scene_id)?;
+    }
+
+    let player_idx = state.chat_log.iter().rposition(|m| m.sender_role == "player");
+
+    if let Some(idx) = player_idx {
+        let player_msg = state.chat_log[idx].clone();
+        state.chat_log.truncate(idx);
+        save_scene_state(&state)?;
+        engine.set_state(state);
+
+        execute_stage_turn(
+            engine,
+            inference,
+            StageTurnRequest {
+                scene_id: scene_id.to_string(),
+                user_input: player_msg.content,
+                turn_mode: player_msg.turn_mode,
+                whisper_target: player_msg.whisper_target,
+                force_next_actor: None,
+            },
+        ).await
+    } else {
+        let fresh = reset_stage_scene(scene_id)?;
+        engine.set_state(fresh.clone());
+        Ok(fresh)
+    }
+}
+
+pub fn get_stage_background_image(name: &str) -> Result<String, String> {
+    let trimmed = name.trim();
+    if trimmed.is_empty() || trimmed.eq_ignore_ascii_case("none") {
+        return Ok(String::new());
+    }
+    if trimmed.starts_with("data:image/") || trimmed.starts_with("http://") || trimmed.starts_with("https://") {
+        return Ok(trimmed.to_string());
+    }
+
+    let paths = resolve_app_paths();
+    let search_dirs = [
+        PathBuf::from(&paths.bundled_presets_dir).join("no-game-no-life").join("backgrounds"),
+        PathBuf::from(&paths.bundled_presets_dir).join("sakura-succubus-3").join("backgrounds"),
+        PathBuf::from("presets/no-game-no-life/backgrounds"),
+        PathBuf::from("presets/sakura-succubus-3/backgrounds"),
+        PathBuf::from("/home/deathtrap/development/OtakuSoul/presets/no-game-no-life/backgrounds"),
+        PathBuf::from("/home/deathtrap/development/OtakuSoul/presets/sakura-succubus-3/backgrounds"),
+        PathBuf::from(&paths.data_dir).join("backgrounds"),
+        PathBuf::from("assets/backgrounds"),
+        PathBuf::from("../assets/backgrounds"),
+    ];
+
+    let candidates = [
+        trimmed.to_string(),
+        format!("{}.png", trimmed),
+        format!("{}.jpg", trimmed),
+        format!("{}.jpeg", trimmed),
+        format!("{}.webp", trimmed),
+    ];
+
+    for dir in &search_dirs {
+        for candidate in &candidates {
+            let file_path = dir.join(candidate);
+            if file_path.exists() && file_path.is_file() {
+                if let Ok(bytes) = fs::read(&file_path) {
+                    let ext = file_path.extension().map_or("png", |e| e.to_str().unwrap_or("png")).to_lowercase();
+                    let mime = match ext.as_str() {
+                        "jpg" | "jpeg" => "image/jpeg",
+                        "webp" => "image/webp",
+                        _ => "image/png",
+                    };
+                    return Ok(format!("data:{};base64,{}", mime, BASE64_STANDARD.encode(&bytes)));
+                }
+            }
+        }
+    }
+
+    Err(format!("Hintergrundbild '{}' nicht gefunden.", trimmed))
 }
 
 pub fn export_scene_to_markdown(scene_id: &str) -> Result<String, String> {
@@ -1146,6 +1920,31 @@ pub fn export_scene_to_markdown(scene_id: &str) -> Result<String, String> {
     md.push_str(&format!("**Ort:** {} | **Zeit:** {} | **Spielleiter-Ton:** {}\n\n", 
         state.world.location, state.world.time_of_day, state.definition.gm_tone));
     md.push_str(&format!("*{}*\n\n---\n\n", state.definition.description));
+
+    if !state.objectives.is_empty() {
+        md.push_str("## Kampagnenziele\n\n");
+        for objective in &state.objectives {
+            md.push_str(&format!("- [{}] **{}** — {}/{}: {}\n",
+                if objective.status == "completed" { "x" } else { " " },
+                objective.title, objective.current, objective.max, objective.description));
+        }
+        md.push('\n');
+    }
+    if !state.inventory.is_empty() {
+        md.push_str("## Inventar\n\n");
+        for item in &state.inventory {
+            md.push_str(&format!("- **{}** ×{} — {}\n", item.name, item.quantity, item.description));
+        }
+        md.push('\n');
+    }
+    if !state.consequence_ledger.is_empty() {
+        md.push_str("## Dauerhafte Konsequenzen\n\n");
+        for entry in &state.consequence_ledger {
+            md.push_str(&format!("- {}\n", entry.text));
+        }
+        md.push('\n');
+    }
+    md.push_str("## Abenteuer-Protokoll\n\n");
 
     for msg in &state.chat_log {
         let timestamp_str = chrono::DateTime::from_timestamp(msg.timestamp as i64, 0)
@@ -1185,11 +1984,14 @@ pub fn export_scene_to_markdown(scene_id: &str) -> Result<String, String> {
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct StageTurnRequest {
     pub scene_id: String,
-    pub player_input: String,
+    #[serde(alias = "player_input")]
+    pub user_input: String,
     #[serde(default = "default_turn_mode")]
     pub turn_mode: String, // "say" | "do" | "think" | "direct" | "whisper"
+    #[serde(default, alias = "target_actor")]
+    pub whisper_target: Option<String>,
     #[serde(default)]
-    pub target_actor: Option<String>,
+    pub force_next_actor: Option<String>,
 }
 
 pub async fn execute_stage_turn(
@@ -1232,7 +2034,7 @@ pub async fn execute_stage_turn(
     };
 
     // 1. Append Player Turn Message if non-empty
-    let clean_input = req.player_input.trim();
+    let clean_input = req.user_input.trim();
     if !clean_input.is_empty() {
         let player_msg = SceneTurnMessage {
             id: format!("msg_{}", Utc::now().timestamp_millis()),
@@ -1242,7 +2044,7 @@ pub async fn execute_stage_turn(
             avatar_url: None,
             content: clean_input.to_string(),
             turn_mode: req.turn_mode.clone(),
-            whisper_target: req.target_actor.clone(),
+            whisper_target: req.whisper_target.clone(),
             event_card: None,
             timestamp: Utc::now().timestamp() as u64,
         };
@@ -1256,6 +2058,26 @@ pub async fn execute_stage_turn(
         state.definition.party.join(", ")
     };
 
+    let clock_context = state.clocks.iter()
+        .map(|clock| format!("{} [{}]: {}/{}", clock.name, clock.id, clock.current, clock.max))
+        .collect::<Vec<_>>().join("; ");
+    let objective_context = state.objectives.iter()
+        .map(|objective| format!("{} [{}]: {}/{} ({})", objective.title, objective.id, objective.current, objective.max, objective.status))
+        .collect::<Vec<_>>().join("; ");
+    let arc_context = state.arcs.iter()
+        .map(|arc| format!("{} [{}]: {}/{}{}", arc.title, arc.id, arc.stage, arc.max_stage, if arc.is_revealed { " sichtbar" } else { " verborgen" }))
+        .collect::<Vec<_>>().join("; ");
+    let inventory_context = state.inventory.iter()
+        .map(|item| format!("{} x{} [{}]", item.name, item.quantity, item.id))
+        .collect::<Vec<_>>().join("; ");
+    let combat_context = if state.combat.is_active {
+        state.combat.combatants.iter()
+            .map(|combatant| format!("{} [{}]: {}/{} HP", combatant.name, combatant.role, combatant.hp, combatant.max_hp))
+            .collect::<Vec<_>>().join("; ")
+    } else {
+        "kein aktiver Kampf".to_string()
+    };
+
     let recent_history: Vec<String> = state
         .chat_log
         .iter()
@@ -1265,14 +2087,43 @@ pub async fn execute_stage_turn(
         .map(|m| format!("{}: {}", m.sender_name, m.content))
         .collect();
 
+    // Scan bound lorebooks for Stage-Lore
+    let mut active_lore_snippets = Vec::new();
+    if !state.definition.lorebook.is_empty() {
+        let all_lorebooks = crate::modules::lorebook::scan_available_lorebooks();
+        let text_to_scan = format!("{}\n{}", clean_input, recent_history.join("\n"));
+        for lb_name in &state.definition.lorebook {
+            if let Some(lb) = all_lorebooks.iter().find(|l| l.name.eq_ignore_ascii_case(lb_name) || l.id.eq_ignore_ascii_case(lb_name)) {
+                let triggered = crate::modules::lorebook::evaluate_lorebooks(&[lb.clone()], &text_to_scan, 0);
+                for entry in triggered.passive_entries.iter().chain(triggered.active_entries.iter()) {
+                    if !active_lore_snippets.iter().any(|s: &String| s.contains(&entry.name)) {
+                        active_lore_snippets.push(format!("[LORE: {}] {}", entry.name, entry.content));
+                    }
+                }
+            }
+        }
+    }
+    let lore_context = if active_lore_snippets.is_empty() {
+        "keine".to_string()
+    } else {
+        active_lore_snippets.join("\n")
+    };
+
     let planner_system_prompt = format!(
         r#"[SOUL STAGE — GAME MASTER PLANNER]
 Du bist der Spielleiter (Game Master) für ein immersives Tabletop-RPG im Genre/Ton "{tone}".
 Narrator-Stil: {narrator_style}
 Szenen-Kontext: {world_context}
+Stage-Lore / Weltwissen:
+{lore_context}
 Aktueller Ort: {location} ({time_of_day}, Wetter: {weather})
 Gruppe: {party}
 Spieler: {user_name}
+Kampagnen-Uhren: {clocks}
+Ziele: {objectives}
+Story-Arcs: {arcs}
+Inventar: {inventory}
+Kampf: {combat}
 
 AUFGABE:
 Analysiere die jüngste Aktion des Spielers und plane den nächsten dramatischen Beat.
@@ -1282,10 +2133,17 @@ Antworte AUSSCHLIESSLICH mit einem einzigen, gültigen JSON-Objekt im folgenden 
   "location": null,
   "time_of_day": null,
   "weather": null,
+  "bg_image": null,
+  "ambient_audio": null,
   "next_actor": "{first_party_or_player}",
   "dice_check": null,
   "campaign_clock_updates": [],
   "resource_delta": null,
+  "story_arc_updates": [],
+  "objective_updates": [],
+  "inventory_add": [],
+  "inventory_remove": [],
+  "encounter": null,
   "player_choices": [
     {{"text": "Aktion 1", "badge": "Wahrnehmung (DC 14)", "action_type": "do"}},
     {{"text": "Aktion 2", "badge": null, "action_type": "say"}},
@@ -1298,15 +2156,27 @@ Antworte AUSSCHLIESSLICH mit einem einzigen, gültigen JSON-Objekt im folgenden 
 REGELN:
 - dice_check: Wenn eine anspruchsvolle Probe nötig ist, gib z.B. {{"formula": "1d20+3", "dc": 14, "skill_name": "Wahrnehmung"}} an, sonst null.
 - next_actor: Wer soll nach der Spielleiter-Schilderung sprechen? Ein Gruppenmitglied aus [{party}] oder "PLAYER".
+- bg_image: Optional Name eines neuen passenden Hintergrundbildes (z.B. "Horizontal Elkia Grand Library.png") oder null.
+- resource_delta: Optional {{"target":"PLAYER oder Name", "hp_delta":-5, "stress_delta":10}}.
+- story_arc_updates: Optional {{"id":"arc-id", "stage_delta":1, "reveal":true, "resolve":false}}.
+- objective_updates: Optional {{"id":"objective-id", "title":"", "description":"", "progress_delta":1, "max":3, "status":"active|completed|failed"}}.
+- inventory_add: Optional Gegenstände mit name, description, quantity, item_type und optional hp_restore/stress_restore/clears_condition. inventory_remove enthält IDs oder Namen.
+- encounter: Nur bei Kampfänderungen: {{"action":"start|update|end", "enemies":[{{"name":"Gegner", "hp":12, "role":"enemy"}}], "hp_updates":[{{"target":"Name", "hp_delta":-4}}]}}.
 - Antworte NUR als reines JSON ohne Erklärungen oder Markdown davor/danach!"#,
         tone = state.definition.gm_tone,
         narrator_style = state.definition.narrator_style,
         world_context = state.definition.world_context,
+        lore_context = lore_context,
         location = state.world.location,
         time_of_day = state.world.time_of_day,
         weather = state.world.weather,
         party = party_list,
         user_name = user_name,
+        clocks = if clock_context.is_empty() { "keine" } else { &clock_context },
+        objectives = if objective_context.is_empty() { "keine" } else { &objective_context },
+        arcs = if arc_context.is_empty() { "keine" } else { &arc_context },
+        inventory = if inventory_context.is_empty() { "leer" } else { &inventory_context },
+        combat = combat_context,
         first_party_or_player = state.definition.party.first().cloned().unwrap_or_else(|| "PLAYER".to_string())
     );
 
@@ -1350,6 +2220,7 @@ REGELN:
     // 3. Resolve Mechanics (Dice, Clocks, Resources)
     let mut dice_outcome_text = String::new();
     let mut dice_event_card = None;
+    let mut secondary_event_cards: Vec<(String, StageEventCard)> = Vec::new();
 
     if let Some(check) = &gm_plan.dice_check {
         if state.definition.dice_rolls_enabled {
@@ -1380,19 +2251,25 @@ REGELN:
     }
 
     // Apply World updates from Plan
-    if let Some(loc) = gm_plan.location {
+    if let Some(loc) = &gm_plan.location {
         if !loc.trim().is_empty() {
-            state.world.location = loc;
+            state.world.location = loc.clone();
         }
     }
-    if let Some(tod) = gm_plan.time_of_day {
+    if let Some(tod) = &gm_plan.time_of_day {
         if !tod.trim().is_empty() {
-            state.world.time_of_day = tod;
+            state.world.time_of_day = tod.clone();
         }
     }
-    if let Some(wth) = gm_plan.weather {
+    if let Some(wth) = &gm_plan.weather {
         if !wth.trim().is_empty() {
-            state.world.weather = wth;
+            state.world.weather = wth.clone();
+        }
+    }
+    if let Some(bg) = &gm_plan.bg_image {
+        if !bg.trim().is_empty() && !state.definition.lock_bg {
+            state.definition.starting_bg = bg.clone();
+            state.current_bg = Some(bg.clone());
         }
     }
 
@@ -1401,6 +2278,152 @@ REGELN:
         if let Some(c) = state.clocks.iter_mut().find(|c| c.id == clk_up.id) {
             let new_val = (c.current as i32 + clk_up.delta).clamp(0, c.max as i32) as u32;
             c.current = new_val;
+            secondary_event_cards.push((
+                format!("Die Kampagnen-Uhr „{}“ verändert sich.", c.name),
+                StageEventCard::ClockUpdate(ClockUpdateData {
+                    clock_id: c.id.clone(), clock_name: c.name.clone(), delta: clk_up.delta,
+                    current: c.current, max: c.max,
+                }),
+            ));
+        }
+    }
+
+    if let Some(delta) = &gm_plan.resource_delta {
+        let target = delta.target.trim();
+        if let Some(combatant) = state.combat.combatants.iter_mut().find(|combatant| {
+            (target.eq_ignore_ascii_case("PLAYER") && combatant.role == "player")
+                || combatant.name.eq_ignore_ascii_case(target)
+                || combatant.id.eq_ignore_ascii_case(target)
+        }) {
+            combatant.hp = (combatant.hp + delta.hp_delta).clamp(0, combatant.max_hp);
+            combatant.stress = (combatant.stress + delta.stress_delta).clamp(0, combatant.max_stress);
+            state.combat.combat_log.push(format!(
+                "{}: HP {:+}, Stress {:+}", combatant.name, delta.hp_delta, delta.stress_delta
+            ));
+        }
+    }
+
+    for update in &gm_plan.story_arc_updates {
+        if let Some(arc) = state.arcs.iter_mut().find(|arc| arc.id == update.id) {
+            arc.stage = (arc.stage as i32 + update.stage_delta).clamp(0, arc.max_stage as i32) as u32;
+            arc.is_revealed |= update.reveal;
+            arc.is_resolved |= update.resolve || arc.stage >= arc.max_stage;
+            if update.reveal || update.resolve || update.stage_delta != 0 {
+                secondary_event_cards.push((
+                    format!("Story-Arc aktualisiert: {}", arc.title),
+                    StageEventCard::Discovery { text: format!(
+                        "{} — Fortschritt {}/{}{}", arc.title, arc.stage, arc.max_stage,
+                        if arc.is_resolved { " (abgeschlossen)" } else { "" }
+                    ) },
+                ));
+            }
+        }
+    }
+
+    for update in &gm_plan.objective_updates {
+        if let Some(objective) = state.objectives.iter_mut().find(|objective| objective.id == update.id) {
+            if !update.title.trim().is_empty() { objective.title = update.title.clone(); }
+            if !update.description.trim().is_empty() { objective.description = update.description.clone(); }
+            if let Some(maximum) = update.max { objective.max = maximum.max(1); }
+            objective.current = (objective.current as i32 + update.progress_delta)
+                .clamp(0, objective.max as i32) as u32;
+            if let Some(status) = &update.status { objective.status = status.clone(); }
+            if objective.current >= objective.max && objective.status == "active" {
+                objective.status = "completed".to_string();
+            }
+        } else if !update.title.trim().is_empty() {
+            let maximum = update.max.unwrap_or(1).max(1);
+            state.objectives.push(CampaignObjective {
+                id: update.id.clone(), title: update.title.clone(), description: update.description.clone(),
+                current: update.progress_delta.max(0).min(maximum as i32) as u32,
+                max: maximum, status: update.status.clone().unwrap_or_else(default_objective_status),
+            });
+        }
+    }
+
+    for addition in &gm_plan.inventory_add {
+        if let Some(existing) = state.inventory.iter_mut().find(|item| item.name.eq_ignore_ascii_case(&addition.name)) {
+            existing.quantity = existing.quantity.saturating_add(addition.quantity.max(1));
+        } else if !addition.name.trim().is_empty() {
+            state.inventory.push(InventoryItem {
+                id: format!("item_{}", Utc::now().timestamp_micros()), name: addition.name.clone(),
+                description: addition.description.clone(), quantity: addition.quantity.max(1),
+                item_type: addition.item_type.clone(), hp_restore: addition.hp_restore,
+                stress_restore: addition.stress_restore, clears_condition: addition.clears_condition.clone(),
+            });
+        }
+    }
+    for removal in &gm_plan.inventory_remove {
+        if let Some(index) = state.inventory.iter().position(|item| {
+            item.id.eq_ignore_ascii_case(removal) || item.name.eq_ignore_ascii_case(removal)
+        }) {
+            if state.inventory[index].quantity > 1 { state.inventory[index].quantity -= 1; }
+            else { state.inventory.remove(index); }
+        }
+    }
+
+    if let Some(encounter) = &gm_plan.encounter {
+        match encounter.action.as_str() {
+            "start" => {
+                state.combat.is_active = true;
+                state.combat.round = 1;
+                state.combat.current_turn_index = 0;
+                state.combat.combatants.retain(|combatant| combatant.role == "player" || combatant.role == "companion");
+                if !state.combat.combatants.iter().any(|combatant| combatant.role == "player") {
+                    state.combat.combatants.push(Combatant {
+                        id: "player".to_string(), name: user_name.clone(), role: "player".to_string(),
+                        hp: 50, max_hp: 50, stress: 0, max_stress: 100,
+                        initiative: rand::thread_rng().gen_range(1..=20), conditions: Vec::new(),
+                    });
+                }
+                for (index, enemy) in encounter.enemies.iter().enumerate() {
+                    state.combat.combatants.push(Combatant {
+                        id: format!("enemy_{}_{}", Utc::now().timestamp_millis(), index),
+                        name: enemy.name.clone(), role: enemy.role.clone(), hp: enemy.hp.max(1),
+                        max_hp: enemy.hp.max(1), stress: 0, max_stress: 0,
+                        initiative: rand::thread_rng().gen_range(1..=20), conditions: Vec::new(),
+                    });
+                }
+                state.combat.combatants.sort_by(|a, b| b.initiative.cmp(&a.initiative));
+                secondary_event_cards.push(("Eine Kampfbegegnung beginnt.".to_string(), StageEventCard::Combat {
+                    action: "started".to_string(), text: "Initiative wird gewürfelt — der Kampf beginnt!".to_string(),
+                }));
+            }
+            "end" => {
+                state.combat.is_active = false;
+                secondary_event_cards.push(("Die Kampfbegegnung endet.".to_string(), StageEventCard::Combat {
+                    action: "ended".to_string(), text: "Der Kampf ist beendet.".to_string(),
+                }));
+            }
+            _ => {}
+        }
+        for update in &encounter.hp_updates {
+            if let Some(target) = state.combat.combatants.iter_mut().find(|combatant| {
+                combatant.name.eq_ignore_ascii_case(&update.target) || combatant.id == update.target
+            }) {
+                target.hp = (target.hp + update.hp_delta).clamp(0, target.max_hp);
+            }
+        }
+        if state.combat.is_active && state.combat.combatants.iter()
+            .filter(|combatant| combatant.role == "enemy" || combatant.role == "boss")
+            .all(|combatant| combatant.hp == 0)
+        {
+            state.combat.is_active = false;
+        }
+    }
+
+    if let Some(discovery) = &gm_plan.discovery {
+        if !discovery.trim().is_empty() {
+            secondary_event_cards.push((discovery.clone(), StageEventCard::Discovery { text: discovery.clone() }));
+        }
+    }
+    if let Some(consequence) = &gm_plan.lasting_consequence {
+        if !consequence.trim().is_empty() {
+            state.consequence_ledger.push(ConsequenceEntry {
+                id: format!("consequence_{}", Utc::now().timestamp_millis()),
+                text: consequence.clone(), created_at: Utc::now().to_rfc3339(),
+            });
+            secondary_event_cards.push((consequence.clone(), StageEventCard::Consequence { text: consequence.clone() }));
         }
     }
 
@@ -1476,78 +2499,140 @@ REGELN:
     };
     state.chat_log.push(gm_turn_msg);
 
-    // 5. Next Actor Turn (Party Member reaction if selected)
-    let next_actor = gm_plan.next_actor.as_deref().unwrap_or("PLAYER");
-    if next_actor != "PLAYER" && state.definition.party.contains(&next_actor.to_string()) {
-        let all_chars = scan_available_characters();
-        let matched_char = all_chars.iter().find(|c| c.card.data.name.to_lowercase() == next_actor.to_lowercase());
+    for (index, (content, card)) in secondary_event_cards.into_iter().enumerate() {
+        state.chat_log.push(SceneTurnMessage {
+            id: format!("msg_{}_{}", Utc::now().timestamp_millis(), index),
+            sender_id: "system".to_string(), sender_name: "Kampagnen-Chronik".to_string(),
+            sender_role: "gm".to_string(), avatar_url: None, content,
+            turn_mode: "direct".to_string(), whisper_target: None,
+            event_card: Some(card), timestamp: Utc::now().timestamp() as u64,
+        });
+    }
 
-        let companion_system = if let Some(ch) = matched_char {
-            format!(
-                r#"Du bist {name}.
+    // 5. Next Actor Turn (Party Member reactions up to max_actor_depth)
+    let initial_next = req.force_next_actor.as_deref()
+        .filter(|actor| !actor.trim().is_empty())
+        .or(gm_plan.next_actor.as_deref())
+        .unwrap_or("PLAYER")
+        .to_string();
+
+    let max_depth = state.definition.max_actor_depth.max(1);
+    let mut current_actor = initial_next;
+    let mut actor_depth = 0;
+    let mut spoken_actors = std::collections::HashSet::new();
+
+    while current_actor != "PLAYER" && actor_depth < max_depth {
+        actor_depth += 1;
+        state.current_turn_actor = current_actor.clone();
+        spoken_actors.insert(current_actor.to_lowercase());
+
+        if state.combat.is_active {
+            if let Some(index) = state.combat.combatants.iter().position(|combatant| {
+                (current_actor == "PLAYER" && combatant.role == "player")
+                    || combatant.name.eq_ignore_ascii_case(&current_actor)
+            }) {
+                if index < state.combat.current_turn_index { state.combat.round += 1; }
+                state.combat.current_turn_index = index;
+            }
+        }
+
+        if state.definition.party.iter().any(|p| p.eq_ignore_ascii_case(&current_actor)) {
+            let all_chars = scan_available_characters();
+            let matched_char = all_chars.iter().find(|c| c.card.data.name.eq_ignore_ascii_case(&current_actor));
+
+            let lore_section = if !active_lore_snippets.is_empty() {
+                format!("\n\nAktive Welt- und Szenen-Informationen:\n{}", active_lore_snippets.join("\n---\n"))
+            } else {
+                String::new()
+            };
+
+            let companion_system = if let Some(ch) = matched_char {
+                format!(
+                    r#"Du bist {name}.
 Persönlichkeit: {personality}
 Hintergrund: {description}
-Szenen-Kontext: {world_context}
+Szenen-Kontext: {world_context}{lore_section}
 
-Reagiere nun aus der Ich-Perspektive auf das, was der Spielleiter und {user_name} soeben getan/gesagt haben.
-Bleibe absolut in deiner Rolle, nutze deine eigene Stimme und drücke deine echten Gefühle aus."#,
-                name = ch.card.data.name,
-                personality = ch.card.data.personality,
-                description = ch.card.data.description,
-                world_context = state.definition.world_context,
-                user_name = user_name
-            )
-        } else {
-            format!(
-                "Du bist {}. Reagiere aus deiner Sicht auf das Geschehen.",
-                next_actor
-            )
-        };
-
-        let companion_messages = vec![
-            ChatMessage {
-                role: "system".to_string(),
-                content: companion_system,
-            },
-            ChatMessage {
-                role: "user".to_string(),
-                content: format!(
-                    "Was der Spielleiter schilderte:\n\"{}\"\n\nReagiere als {}:",
-                    narration_content,
-                    next_actor
-                ),
-            },
-        ];
-
-        let comp_req = ChatRequest {
-            endpoint_url: endpoint_url.clone(),
-            api_key: api_key.clone(),
-            model: model_name.clone(),
-            messages: companion_messages,
-            sampling: Some(SamplingParams {
-                temperature: Some(0.8),
-                top_p: Some(0.95),
-                max_tokens: Some(800),
-                ..Default::default()
-            }),
-            reasoning_mode: Some(false),
-            provider: provider.clone(),
-        };
-
-        if let Ok(comp_text) = inference.generate_direct(comp_req).await {
-            let companion_msg = SceneTurnMessage {
-                id: format!("msg_{}", Utc::now().timestamp_millis()),
-                sender_id: next_actor.to_string(),
-                sender_name: next_actor.to_string(),
-                sender_role: "companion".to_string(),
-                avatar_url: matched_char.and_then(|c| c.avatar_data_url.clone()),
-                content: comp_text,
-                turn_mode: "say".to_string(),
-                whisper_target: None,
-                event_card: None,
-                timestamp: Utc::now().timestamp() as u64,
+Reagiere nun aus der Ich-Perspektive auf das, was der Spielleiter, {user_name} und eventuelle Gefährten soeben getan oder gesagt haben.
+Bleibe absolut in deiner Rolle, nutze deine eigene Stimme und drücke deine Gefühle lebendig und authentisch aus. Fasse dich prägnant."#,
+                    name = ch.card.data.name,
+                    personality = ch.card.data.personality,
+                    description = ch.card.data.description,
+                    world_context = state.definition.world_context,
+                    lore_section = lore_section,
+                    user_name = user_name
+                )
+            } else {
+                format!(
+                    "Du bist {}. Reagiere aus deiner Sicht auf das Geschehen.{lore_section}",
+                    current_actor,
+                    lore_section = lore_section
+                )
             };
-            state.chat_log.push(companion_msg);
+
+            let recent_history_dialogue: Vec<String> = state.chat_log.iter().rev().take(5).rev()
+                .map(|m| format!("{}: {}", m.sender_name, m.content))
+                .collect();
+            let history_text = recent_history_dialogue.join("\n\n");
+
+            let companion_messages = vec![
+                ChatMessage {
+                    role: "system".to_string(),
+                    content: companion_system,
+                },
+                ChatMessage {
+                    role: "user".to_string(),
+                    content: format!(
+                        "Aktueller Verlauf:\n{}\n\nReagiere als {}:",
+                        history_text,
+                        current_actor
+                    ),
+                },
+            ];
+
+            let comp_req = ChatRequest {
+                endpoint_url: endpoint_url.clone(),
+                api_key: api_key.clone(),
+                model: model_name.clone(),
+                messages: companion_messages,
+                sampling: Some(SamplingParams {
+                    temperature: Some(0.8),
+                    top_p: Some(0.95),
+                    max_tokens: Some(800),
+                    ..Default::default()
+                }),
+                reasoning_mode: Some(false),
+                provider: provider.clone(),
+            };
+
+            if let Ok(comp_text) = inference.generate_direct(comp_req).await {
+                let companion_msg = SceneTurnMessage {
+                    id: format!("msg_{}_{}", Utc::now().timestamp_millis(), actor_depth),
+                    sender_id: current_actor.clone(),
+                    sender_name: current_actor.clone(),
+                    sender_role: "companion".to_string(),
+                    avatar_url: matched_char.and_then(|c| c.avatar_data_url.clone()),
+                    content: comp_text,
+                    turn_mode: "say".to_string(),
+                    whisper_target: None,
+                    event_card: None,
+                    timestamp: Utc::now().timestamp() as u64,
+                };
+                state.chat_log.push(companion_msg);
+            }
+        }
+
+        // Determine if another party member should react
+        if actor_depth < max_depth {
+            if let Some(next_party_member) = state.definition.party.iter()
+                .find(|p| !spoken_actors.contains(&p.to_lowercase()))
+            {
+                current_actor = next_party_member.clone();
+            } else {
+                current_actor = "PLAYER".to_string();
+            }
+        } else {
+            current_actor = "PLAYER".to_string();
         }
     }
 
@@ -1612,6 +2697,43 @@ pub async fn execute_stage_rest(
         if c.role == "player" || c.role == "companion" {
             c.hp = (c.hp + hp_rec).min(c.max_hp);
             c.stress = (c.stress - stress_rec).max(0);
+            if rest_type == "long" {
+                c.conditions.clear();
+            }
+        }
+    }
+
+    let player_name = if state.definition.persona.is_empty() {
+        "Spieler".to_string()
+    } else {
+        state.definition.persona.clone()
+    };
+    let affinity_gain = if rest_type == "long" { 5 } else { 2 };
+    let mut bond_milestones = Vec::new();
+    for companion in state.definition.party.clone() {
+        let relationship_index = if let Some(index) = state.relationships.iter().position(|relationship| {
+            relationship.subject == companion && relationship.target == player_name
+        }) {
+            index
+        } else {
+            state.relationships.push(StageRelationship {
+                subject: companion.clone(), target: player_name.clone(), affinity: 0,
+                tags: Vec::new(), role_view: "Gefährte".to_string(), last_shift_reason: String::new(),
+            });
+            state.relationships.len() - 1
+        };
+        let relationship = &mut state.relationships[relationship_index];
+        let before = relationship.affinity;
+        relationship.affinity = (relationship.affinity + affinity_gain).clamp(-100, 100);
+        relationship.last_shift_reason = if rest_type == "long" {
+            "Gemeinsames Lagerfeuer".to_string()
+        } else {
+            "Gemeinsame Rast".to_string()
+        };
+        for milestone in [25, 50, 75] {
+            if before < milestone && relationship.affinity >= milestone {
+                bond_milestones.push((companion.clone(), relationship.affinity, milestone));
+            }
         }
     }
 
@@ -1635,6 +2757,18 @@ pub async fn execute_stage_rest(
         timestamp: Utc::now().timestamp() as u64,
     };
     state.chat_log.push(rest_msg);
+
+    for (index, (companion, affinity, milestone)) in bond_milestones.into_iter().enumerate() {
+        state.chat_log.push(SceneTurnMessage {
+            id: format!("msg_bond_{}_{}", Utc::now().timestamp_millis(), index),
+            sender_id: "system".to_string(), sender_name: "Beziehungs-Meilenstein".to_string(),
+            sender_role: "gm".to_string(), avatar_url: None,
+            content: format!("Die Bindung zu {} hat Stufe {} erreicht.", companion, milestone),
+            turn_mode: "direct".to_string(), whisper_target: None,
+            event_card: Some(StageEventCard::BondMilestone { companion, affinity, milestone }),
+            timestamp: Utc::now().timestamp() as u64,
+        });
+    }
 
     // Optional short campfire dialogue from companion
     if let Some(companion_name) = state.definition.party.first() {
@@ -1728,6 +2862,23 @@ mod tests {
     }
 
     #[test]
+    fn test_stage_turn_request_accepts_frontend_and_legacy_fields() {
+        let frontend: StageTurnRequest = serde_json::from_str(r#"{
+            "scene_id":"scene", "user_input":"Hallo", "turn_mode":"whisper",
+            "whisper_target":"Ayu", "force_next_actor":"Ayu"
+        }"#).unwrap();
+        assert_eq!(frontend.user_input, "Hallo");
+        assert_eq!(frontend.whisper_target.as_deref(), Some("Ayu"));
+        assert_eq!(frontend.force_next_actor.as_deref(), Some("Ayu"));
+
+        let legacy: StageTurnRequest = serde_json::from_str(r#"{
+            "scene_id":"scene", "player_input":"Alt", "target_actor":"NPC"
+        }"#).unwrap();
+        assert_eq!(legacy.user_input, "Alt");
+        assert_eq!(legacy.whisper_target.as_deref(), Some("NPC"));
+    }
+
+    #[test]
     fn test_stage_engine_clocks_and_combat() {
         let engine = StageEngine::new();
         let state = engine.get_state();
@@ -1753,6 +2904,10 @@ mod tests {
         assert_eq!(turn2.combat.current_turn_index, 1);
         assert_eq!(turn2.combat.combatants[1].name, "Hiroki");
 
+        let delayed = engine.delay_turn().unwrap();
+        assert_eq!(delayed.combat.combatants[1].name, "Schattenpirscher");
+        assert_eq!(delayed.combat.combatants[2].name, "Hiroki");
+
         // Damage calculation
         engine.apply_combatant_delta("comb_enemy_1", -10, 5);
         let dmg_st = engine.get_state();
@@ -1776,5 +2931,41 @@ mod tests {
         // Undo
         let reverted = engine.undo_turn(&initial_st.definition.id).unwrap();
         assert_eq!(reverted.world.location, "Alte Bibliothek des Ordens");
+    }
+
+    #[test]
+    fn test_folders_and_ngnl_default_presence() {
+        let folders = list_stage_folders().unwrap();
+        assert!(folders.contains(&"No Game No Life".to_string()));
+        assert!(folders.contains(&"Sakura Succubus 3".to_string()));
+
+        let scenes = scan_available_scenes();
+        let ngnl_scenes: Vec<_> = scenes.iter().filter(|s| s.folder == "No Game No Life").collect();
+        assert_eq!(ngnl_scenes.len(), 12, "Should have 12 No Game No Life episodes/chapters in folder");
+        // Check chapter ordering
+        assert!(ngnl_scenes[0].title.contains("Kapitel 1") || ngnl_scenes[0].title.contains("Episode 1") || ngnl_scenes[0].id.contains("episode1"));
+    }
+
+    #[test]
+    fn test_edit_and_delete_stage_message() {
+        let engine = StageEngine::new();
+        let st = engine.get_state();
+        let scene_id = &st.definition.id;
+
+        // Edit message
+        let edited = edit_stage_turn_message(&engine, scene_id, "msg_init", "Neuer Text für Begrüßung").unwrap();
+        assert_eq!(edited.chat_log[0].content, "Neuer Text für Begrüßung");
+
+        // Delete message
+        let deleted = delete_stage_turn_message(&engine, scene_id, "msg_init").unwrap();
+        assert!(deleted.chat_log.is_empty());
+    }
+
+    #[test]
+    fn test_get_stage_background_image() {
+        let bg = get_stage_background_image("Horizontal Elkia Grand Library.png");
+        assert!(bg.is_ok(), "Should find NGNL background image");
+        let data = bg.unwrap();
+        assert!(data.starts_with("data:image/"));
     }
 }

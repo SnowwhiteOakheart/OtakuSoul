@@ -160,8 +160,11 @@ async function resolvePromptWithLore(
 
 interface AppStoreState {
   // Navigation
-  activeTab: 'chat' | 'characters' | 'lorebooks' | 'stage' | 'companion' | 'settings';
-  setActiveTab: (tab: 'chat' | 'characters' | 'lorebooks' | 'stage' | 'companion' | 'settings') => void;
+  activeTab: 'chat' | 'characters' | 'lorebooks' | 'stage' | 'companion' | 'settings' | 'hub';
+  setActiveTab: (tab: 'chat' | 'characters' | 'lorebooks' | 'stage' | 'companion' | 'settings' | 'hub') => void;
+  hubSubTab: 'soul_gateway' | 'chub_ai' | 'lorebooks' | 'scenes';
+  setHubSubTab: (tab: 'soul_gateway' | 'chub_ai' | 'lorebooks' | 'scenes') => void;
+  openSoulHubTab: (tab: 'soul_gateway' | 'chub_ai' | 'lorebooks' | 'scenes') => void;
 
   // Paths & Lifecycle
   appPaths: AppPaths | null;
@@ -278,6 +281,8 @@ interface AppStoreState {
   // Soul Stage Tabletop RPG & Game Master (Phase 6 & 15)
   stageState: StageState | null;
   stageScenes: ScenePreview[];
+  stageFolders: string[];
+  selectedStageFolder: string;
   lastDiceRoll: DiceRollResult | null;
   isRollingDice: boolean;
   isProcessingStageTurn: boolean;
@@ -286,6 +291,17 @@ interface AppStoreState {
   stageForceActor: string;
   fetchStageState: () => Promise<void>;
   fetchStageScenes: () => Promise<void>;
+  fetchStageFolders: () => Promise<void>;
+  setSelectedStageFolder: (folder: string) => void;
+  createStageFolder: (folderName: string) => Promise<void>;
+  moveStageSceneToFolder: (sceneId: string, targetFolder: string) => Promise<void>;
+  deleteStageFolder: (folderName: string) => Promise<void>;
+  importStageSceneJson: (jsonContent: string, targetFolder?: string) => Promise<SceneState | null>;
+  exportStageSceneJson: (sceneId: string) => Promise<string | null>;
+  resetStageScene: (sceneId: string) => Promise<SceneState | null>;
+  editStageTurnMessage: (messageId: string, newContent: string) => Promise<void>;
+  deleteStageTurnMessage: (messageId: string) => Promise<void>;
+  regenerateStageTurn: () => Promise<void>;
   loadStageScene: (sceneId: string) => Promise<void>;
   saveStageScene: (state: SceneState) => Promise<void>;
   createStageScene: (definition: SceneDefinition) => Promise<SceneState | null>;
@@ -294,6 +310,8 @@ interface AppStoreState {
   runStageTurn: (userInput: string, turnMode?: string, whisperTarget?: string, forceActor?: string) => Promise<void>;
   undoStageTurn: () => Promise<void>;
   restStageParty: (restType: 'short' | 'long') => Promise<void>;
+  useStageInventoryItem: (itemId: string) => Promise<void>;
+  delayEncounterTurn: () => Promise<void>;
   setStageTurnMode: (mode: 'say' | 'do' | 'think' | 'whisper' | 'direct') => void;
   setStageWhisperTarget: (target: string) => void;
   setStageForceActor: (actor: string) => void;
@@ -392,6 +410,9 @@ interface AppStoreState {
 export const useAppStore = create<AppStoreState>((set, get) => ({
   activeTab: 'chat',
   setActiveTab: (activeTab) => set({ activeTab }),
+  hubSubTab: 'soul_gateway',
+  setHubSubTab: (hubSubTab) => set({ hubSubTab }),
+  openSoulHubTab: (hubSubTab) => set({ activeTab: 'hub', hubSubTab }),
 
   appPaths: null,
   scannedModels: [],
@@ -539,6 +560,7 @@ export const useAppStore = create<AppStoreState>((set, get) => ({
     try {
       await api.startLlamaServer(get().serverConfig);
       await get().fetchServerStatus();
+      await get().fetchHardware();
     } catch (e) {
       console.error('Failed to start server:', e);
     }
@@ -548,6 +570,7 @@ export const useAppStore = create<AppStoreState>((set, get) => ({
     try {
       await api.stopLlamaServer();
       await get().fetchServerStatus();
+      await get().fetchHardware();
     } catch (e) {
       console.error('Failed to stop server:', e);
     }
@@ -1032,12 +1055,130 @@ export const useAppStore = create<AppStoreState>((set, get) => ({
   // Soul Stage (Phase 6 & 15)
   stageState: null,
   stageScenes: [],
+  stageFolders: ['Alle', 'No Game No Life', 'Sakura Succubus 3', 'Eigene Szenen'],
+  selectedStageFolder: 'Alle',
   lastDiceRoll: null,
   isRollingDice: false,
   isProcessingStageTurn: false,
   stageTurnMode: 'say',
   stageWhisperTarget: '',
   stageForceActor: '',
+
+  setSelectedStageFolder: (folder: string) => set({ selectedStageFolder: folder }),
+
+  fetchStageFolders: async () => {
+    try {
+      const folders = await api.listStageFolders();
+      set({ stageFolders: folders });
+    } catch (e) {
+      console.error('Failed to fetch stage folders:', e);
+    }
+  },
+
+  createStageFolder: async (folderName: string) => {
+    try {
+      await api.createStageFolder(folderName);
+      await get().fetchStageFolders();
+    } catch (e) {
+      console.error('Failed to create stage folder:', e);
+      throw e;
+    }
+  },
+
+  moveStageSceneToFolder: async (sceneId: string, targetFolder: string) => {
+    try {
+      const updated = await api.moveStageSceneToFolder(sceneId, targetFolder);
+      set({ stageState: updated });
+      await get().fetchStageScenes();
+      await get().fetchStageFolders();
+    } catch (e) {
+      console.error('Failed to move scene to folder:', e);
+      throw e;
+    }
+  },
+
+  deleteStageFolder: async (folderName: string) => {
+    try {
+      await api.deleteStageFolder(folderName);
+      await get().fetchStageFolders();
+      await get().fetchStageScenes();
+    } catch (e) {
+      console.error('Failed to delete stage folder:', e);
+      throw e;
+    }
+  },
+
+  importStageSceneJson: async (jsonContent: string, targetFolder?: string) => {
+    try {
+      const imported = await api.importStageSceneJson(jsonContent, targetFolder);
+      set({ stageState: imported });
+      await get().fetchStageScenes();
+      await get().fetchStageFolders();
+      return imported;
+    } catch (e) {
+      console.error('Failed to import stage scene JSON:', e);
+      throw e;
+    }
+  },
+
+  exportStageSceneJson: async (sceneId: string) => {
+    try {
+      return await api.exportStageSceneJson(sceneId);
+    } catch (e) {
+      console.error('Failed to export stage scene JSON:', e);
+      return null;
+    }
+  },
+
+  resetStageScene: async (sceneId: string) => {
+    try {
+      const fresh = await api.resetStageScene(sceneId);
+      set({ stageState: fresh });
+      await get().fetchStageScenes();
+      return fresh;
+    } catch (e) {
+      console.error('Failed to reset stage scene:', e);
+      return null;
+    }
+  },
+
+  editStageTurnMessage: async (messageId: string, newContent: string) => {
+    const current = get().stageState;
+    if (!current) return;
+    try {
+      const updated = await api.editStageTurnMessage(current.definition.id, messageId, newContent);
+      set({ stageState: updated });
+    } catch (e) {
+      console.error('Failed to edit stage turn message:', e);
+      throw e;
+    }
+  },
+
+  deleteStageTurnMessage: async (messageId: string) => {
+    const current = get().stageState;
+    if (!current) return;
+    try {
+      const updated = await api.deleteStageTurnMessage(current.definition.id, messageId);
+      set({ stageState: updated });
+    } catch (e) {
+      console.error('Failed to delete stage turn message:', e);
+      throw e;
+    }
+  },
+
+  regenerateStageTurn: async () => {
+    const current = get().stageState;
+    if (!current) return;
+    set({ isProcessingStageTurn: true });
+    try {
+      const updated = await api.regenerateStageTurn(current.definition.id);
+      set({ stageState: updated, isProcessingStageTurn: false });
+    } catch (e) {
+      console.error('Failed to regenerate stage turn:', e);
+      set({ isProcessingStageTurn: false });
+      throw e;
+    }
+  },
 
   fetchStageState: async () => {
     try {
@@ -1153,6 +1294,27 @@ export const useAppStore = create<AppStoreState>((set, get) => ({
     } catch (e) {
       console.error('Failed to rest party:', e);
       set({ isProcessingStageTurn: false });
+    }
+  },
+
+  useStageInventoryItem: async (itemId: string) => {
+    const current = get().stageState;
+    if (!current) return;
+    try {
+      const updated = await api.useStageInventoryItem(current.definition.id, itemId);
+      set({ stageState: updated });
+      soundFx.playHealChime();
+    } catch (e) {
+      console.error('Failed to use inventory item:', e);
+    }
+  },
+
+  delayEncounterTurn: async () => {
+    try {
+      const updated = await api.delayEncounterTurn();
+      set({ stageState: updated });
+    } catch (e) {
+      console.error('Failed to delay encounter turn:', e);
     }
   },
 

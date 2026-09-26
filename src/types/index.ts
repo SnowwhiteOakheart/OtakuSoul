@@ -124,6 +124,7 @@ export interface CharacterData {
   character_version?: string;
   tags: string[];
   creator?: string;
+  character_book?: any;
   extensions: {
     sow_title?: string;
     sow_avatar?: string;
@@ -319,6 +320,7 @@ export interface WorldState {
   location: string;
   danger_level: number;
   active_quest: string;
+  key_facts: Record<string, string>;
 }
 
 export interface CampaignClock {
@@ -367,6 +369,8 @@ export interface ScenePreview {
   is_preset: boolean;
   starting_bg: string;
   last_played?: string | null;
+  has_progress?: boolean;
+  turn_count?: number;
 }
 
 export interface SceneDefinition {
@@ -383,6 +387,9 @@ export interface SceneDefinition {
   narrator_style: string;
   persona: string;
   lorebook: string[];
+  folder?: string;
+  lock_bg?: boolean;
+  disable_ambient?: boolean;
   solo_mode: boolean;
   max_actor_depth: number;
   dice_rolls_enabled: boolean;
@@ -408,6 +415,33 @@ export interface InventoryItem {
   description: string;
   quantity: number;
   item_type: string;
+  hp_restore?: number;
+  stress_restore?: number;
+  clears_condition?: string | null;
+}
+
+export interface CampaignObjective {
+  id: string;
+  title: string;
+  description: string;
+  current: number;
+  max: number;
+  status: 'active' | 'completed' | 'failed' | string;
+}
+
+export interface StageRelationship {
+  subject: string;
+  target: string;
+  affinity: number;
+  tags: string[];
+  role_view: string;
+  last_shift_reason: string;
+}
+
+export interface ConsequenceEntry {
+  id: string;
+  text: string;
+  created_at: string;
 }
 
 export interface TaggedChoice {
@@ -455,12 +489,36 @@ export interface ConsequenceEventData {
   text: string;
 }
 
+export interface ItemUseEventData {
+  type: 'item_use';
+  item_name: string;
+  hp_recovered: number;
+  stress_recovered: number;
+  cleared_condition?: string | null;
+}
+
+export interface BondMilestoneEventData {
+  type: 'bond_milestone';
+  companion: string;
+  affinity: number;
+  milestone: number;
+}
+
+export interface CombatEventData {
+  type: 'combat';
+  action: 'started' | 'reinforcement' | 'ended' | string;
+  text: string;
+}
+
 export type StageEventCard =
   | DiceEventData
   | ClockUpdateData
   | RestEventData
   | DiscoveryEventData
-  | ConsequenceEventData;
+  | ConsequenceEventData
+  | ItemUseEventData
+  | BondMilestoneEventData
+  | CombatEventData;
 
 export interface SceneTurnMessage {
   id: string;
@@ -480,12 +538,15 @@ export interface SceneState {
   world: WorldState;
   clocks: CampaignClock[];
   combat: EncounterState;
-  encounter?: EncounterState;
   arcs: StoryArc[];
   inventory: InventoryItem[];
+  objectives: CampaignObjective[];
+  relationships: StageRelationship[];
+  consequence_ledger: ConsequenceEntry[];
   chat_log: SceneTurnMessage[];
   pending_choices: TaggedChoice[];
   current_turn_actor: string;
+  current_bg?: string | null;
 }
 
 export type StageState = SceneState;
@@ -787,4 +848,69 @@ export interface ScannedVoice {
   name: string;
   locale: string;
   gender: string;
+}
+
+// Soul Hub Types (Soul Gateway, Chub AI, World Lorebooks, Stage Scenarios)
+export interface GatewayCharacterEntry {
+  name: string;
+  author: string;
+  download_url: string;
+}
+
+export interface GatewayLorebookEntry {
+  name: string;
+  author: string;
+  description: string;
+  entry_count: number;
+  download_url: string;
+}
+
+export interface GatewaySceneEntry {
+  id: string;
+  title: string;
+  author: string;
+  description: string;
+  starting_location: string;
+  download_url: string;
+}
+
+export interface ChubSearchItem {
+  id: number;
+  name: string;
+  full_path: string;
+  description?: string | null;
+  tagline?: string | null;
+  avatar_url?: string | null;
+  star_count: number;
+  n_favorites: number;
+  n_tokens: number;
+  n_chats: number;
+  topics: string[];
+  nsfw_image: boolean;
+}
+
+export interface ChubSearchResult {
+  items: ChubSearchItem[];
+  total_count?: number | null;
+  has_more: boolean;
+}
+
+export interface ChubCharacterDetail {
+  name: string;
+  tagline: string;
+  avatar_url: string;
+  star_count: number;
+  n_favorites: number;
+  n_tokens: number;
+  personality: string;
+  first_message: string;
+  scenario: string;
+  example_dialogs: string;
+  alternate_greetings: string[];
+  has_embedded_lorebook: boolean;
+}
+
+export interface CharacterImportResult {
+  profile: CharacterProfile;
+  imported_lorebook?: string | null;
 }

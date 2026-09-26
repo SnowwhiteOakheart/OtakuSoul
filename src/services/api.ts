@@ -53,6 +53,12 @@ import {
   ScannedLive2d,
   Live2dCatalogItem,
   EmotionResult,
+  GatewayCharacterEntry,
+  GatewayLorebookEntry,
+  GatewaySceneEntry,
+  ChubSearchResult,
+  ChubCharacterDetail,
+  CharacterImportResult,
 } from '../types';
 
 export const api = {
@@ -338,6 +344,50 @@ export const api = {
     return await invoke<string>('export_stage_markdown', { sceneId });
   },
 
+  listStageFolders: async (): Promise<string[]> => {
+    return await invoke<string[]>('stage_list_folders');
+  },
+
+  createStageFolder: async (folderName: string): Promise<void> => {
+    return await invoke<void>('stage_create_folder', { folderName });
+  },
+
+  moveStageSceneToFolder: async (sceneId: string, targetFolder: string): Promise<SceneState> => {
+    return await invoke<SceneState>('stage_move_scene_to_folder', { sceneId, targetFolder });
+  },
+
+  deleteStageFolder: async (folderName: string): Promise<void> => {
+    return await invoke<void>('stage_delete_folder', { folderName });
+  },
+
+  importStageSceneJson: async (jsonContent: string, targetFolder?: string): Promise<SceneState> => {
+    return await invoke<SceneState>('stage_import_scene_json', { jsonContent, targetFolder });
+  },
+
+  exportStageSceneJson: async (sceneId: string): Promise<string> => {
+    return await invoke<string>('stage_export_scene_json', { sceneId });
+  },
+
+  resetStageScene: async (sceneId: string): Promise<SceneState> => {
+    return await invoke<SceneState>('stage_reset_scene', { sceneId });
+  },
+
+  editStageTurnMessage: async (sceneId: string, messageId: string, newContent: string): Promise<SceneState> => {
+    return await invoke<SceneState>('stage_edit_message', { sceneId, messageId, newContent });
+  },
+
+  deleteStageTurnMessage: async (sceneId: string, messageId: string): Promise<SceneState> => {
+    return await invoke<SceneState>('stage_delete_message', { sceneId, messageId });
+  },
+
+  regenerateStageTurn: async (sceneId: string): Promise<SceneState> => {
+    return await invoke<SceneState>('stage_regenerate_turn', { sceneId });
+  },
+
+  getStageBackgroundImage: async (name: string): Promise<string> => {
+    return await invoke<string>('stage_get_background_image', { name });
+  },
+
   runStageTurn: async (request: StageTurnRequest): Promise<SceneState> => {
     return await invoke<SceneState>('run_stage_turn', { request });
   },
@@ -351,6 +401,14 @@ export const api = {
     restType: string
   ): Promise<SceneState> => {
     return await invoke<SceneState>('rest_stage_party', { sceneId, restType });
+  },
+
+  useStageInventoryItem: async (sceneId: string, itemId: string): Promise<SceneState> => {
+    return await invoke<SceneState>('use_stage_inventory_item', { sceneId, itemId });
+  },
+
+  delayEncounterTurn: async (): Promise<SceneState> => {
+    return await invoke<SceneState>('delay_encounter_turn');
   },
 
   updateWorldState: async (world: WorldState): Promise<void> => {
@@ -778,5 +836,80 @@ export const api = {
 
   importSowLive2dModels: async (): Promise<number> => {
     return await invoke<number>('import_sow_live2d_models');
+  },
+
+  // Soul Hub (Soul Gateway, Chub AI, World Lorebooks, Stage Scenarios)
+  fetchSoulGatewayRegistry: async (): Promise<GatewayCharacterEntry[]> => {
+    return await invoke<GatewayCharacterEntry[]>('fetch_soul_gateway_registry');
+  },
+
+  importSoulGatewayCharacter: async (
+    name: string,
+    author: string,
+    downloadUrl: string
+  ): Promise<CharacterImportResult> => {
+    return await invoke<CharacterImportResult>('import_soul_gateway_character', {
+      name,
+      author,
+      downloadUrl,
+    });
+  },
+
+  searchChubCharacters: async (
+    query: string,
+    page: number = 1,
+    first: number = 24,
+    sort: string = 'trending',
+    topics?: string[],
+    nsfw: boolean = false
+  ): Promise<ChubSearchResult> => {
+    return await invoke<ChubSearchResult>('search_chub_characters', {
+      query,
+      page,
+      first,
+      sort,
+      topics: topics && topics.length > 0 ? topics : null,
+      nsfw,
+    });
+  },
+
+  getChubCharacterDetails: async (fullPath: string): Promise<ChubCharacterDetail> => {
+    return await invoke<ChubCharacterDetail>('get_chub_character_details', { fullPath });
+  },
+
+  importChubCharacter: async (fullPath: string): Promise<CharacterImportResult> => {
+    return await invoke<CharacterImportResult>('import_chub_character', { fullPath });
+  },
+
+  importCharacterFromUrl: async (url: string): Promise<CharacterImportResult> => {
+    return await invoke<CharacterImportResult>('import_character_from_url', { url });
+  },
+
+  fetchLorebooksGatewayRegistry: async (): Promise<GatewayLorebookEntry[]> => {
+    return await invoke<GatewayLorebookEntry[]>('fetch_lorebooks_gateway_registry');
+  },
+
+  importLorebookFromGateway: async (
+    downloadUrl: string,
+    fallbackName: string
+  ): Promise<Lorebook> => {
+    return await invoke<Lorebook>('import_lorebook_from_gateway', {
+      downloadUrl,
+      fallbackName,
+    });
+  },
+
+  fetchStagesGatewayRegistry: async (): Promise<GatewaySceneEntry[]> => {
+    return await invoke<GatewaySceneEntry[]>('fetch_stages_gateway_registry');
+  },
+
+  importSceneFromGateway: async (
+    downloadUrl: string,
+    fallbackTitle: string
+  ): Promise<SceneState> => {
+    return await invoke<SceneState>('import_scene_from_gateway', {
+      downloadUrl,
+      fallbackTitle,
+    });
   },
 };

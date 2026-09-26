@@ -25,11 +25,12 @@
 | Lorebook 2.0 | ✅ vollständig | Editor, Multi-Binding, Trigger-Engine (OR/AND/NOT/Regex), Tension Accumulator, Chains |
 | Prompt Builder | ✅ solide | Dynamische Injektion von Kognition, Lorebooks, Direktiven und {{char}}/{{user}}-Makros |
 | Soul Memory 2.0 (SQLite) | ✅ vollständig | 4 Schichten, autonomer Router/Archivist/Diary-Agent, Markdown-Sync & Backups |
-| Soul Stage | ✅ vollständig | Zweistufiger KI-Game-Master (Planner→Executor), Szenen-Lobby, Party-HUD, Tagged Choices, Rast-System & Undo |
+| Soul Stage | 🟡 Kern vollständig | Zweistufiger KI-Game-Master, Szenen-Lobby, Party-/Kampagnen-HUD, Inventar, Rast/Bindungen, Taktik & Undo; erweiterte SoW-Parität siehe Phase 15 |
 | Soul Companion | 🟡 Gerüst | Neurohormone + 25s Safety-Banner – echte Tool-Ausführung folgt in Phase 16 |
 | VRM-Avatar (3D) | ✅ vollständig | Three.js VRM, Emotions-Morphs, Audio-FFT LipSync, Blinzeln, Atmung |
 | Live2D (2D) | ✅ vollständig | PixiJS + Cubism 4/2, 28-Emotionen-Klassifikator, Motion-Trigger, LipSync, Import & Downloader |
 | Chat-System | ✅ vollständig | SQLite Multi-Sessions, Swipes (< 1/3 >), Author's Note, Inline-Edit, JSONL Import/Export, 11 HUD-Presets |
+| Soul Hub & Gateways | ✅ vollständig | 4 Bereiche: Soul Gateway, Chub AI (Suche, Sortierung, Tags, NSFW, Import), Welt-Lorebooks, Soul-Stage-Szenarien |
 
 ---
 
@@ -142,7 +143,7 @@ weitere stark variierende oder schwere TTS-/RVC-Modelle werden über klar konfig
 - [x] **VRM-Emotionen & Motions** aus dem Klassifikator steuern; VRM- & Live2D-Modellauswahl pro Charakter
 - [x] **Live2D-Downloader & Scanner** portiert (`modules/live2d.rs`: Scan lokaler/gebündelter Modelle + Cubism Sample Download)
 
-### Phase 15 – Soul Stage: KI-Game-Master ✅ Abgeschlossen
+### Phase 15 – Soul Stage: KI-Game-Master 🟡 Kernumfang abgeschlossen
 
 Die Soul Stage Engine ist nun ein vollwertiges Tabletop-Rollenspiel-Erlebnis mit einem zweistufigen KI-Game-Master, automatischen Würfelprüfungen und reichhaltiger Benutzeroberfläche.
 
@@ -152,12 +153,27 @@ Die Soul Stage Engine ist nun ein vollwertiges Tabletop-Rollenspiel-Erlebnis mit
 - [x] **Turn-Control-Bar** – Modi 💬 Sagen, ⚔️ Tun, 💭 Denken, 🎬 Regie, 🤫 Flüstern; nächsten Sprecher wählen (`TurnControlBar.tsx`)
 - [x] **WorldState** – Tageszeit, Wetter, Ort, Gefahrenstufe, aktive Quest, Key-Facts
 - [x] **Story Arcs** – Fortschritt und Enthüllung von Arcs
+- [x] **Kampagnenziele & Chronik** – persistente Objectives, Key Facts und dauerhafte Konsequenzen mit eigener Kampagnenansicht (`StageCampaignPanel.tsx`)
 - [x] **Tagged Choices** – Klickbare Antwortoptionen mit Skill-/DC-Badges
-- [x] **Rast/Camp** – Kurze Rast (+15 LP, -10 Stress) und Lange Rast (+40 LP, -30 Stress, Zeitfortschritt & Lagerfeuer-Interlude)
+- [x] **Interaktives Inventar** – Verbrauchsgegenstände heilen LP/Stress, kurieren Zustände, werden verbraucht und erzeugen Event-Cards
+- [x] **Rast/Camp & Bindungen** – Kurze/Lange Rast, Zeitfortschritt, Lagerfeuer-Interlude, Affinitätszuwachs und Meilensteine bei 25/50/75
 - [x] **Event-Cards** im Chatverlauf – Würfelproben mit Erfolgs-/Patzer-Hervorhebung, Uhren-Updates, Entdeckungen, Konsequenzen und Rast-Karten (`StageEventCardView.tsx`)
 - [x] **Spielstände & Snapshots** – Szenen persistieren, automatische Snapshots für 1-Klick-Undo (`undo_stage_turn`)
 - [x] **Markdown-Export** – Vollständiges Abenteuer-Protokoll als `.md` exportieren (`export_stage_markdown`)
-- [x] **2 Ansichts-Modi** – 📜 *Abenteuer & Spielleiter* (Chat, Party-HUD, Controls) und ⚔️ *Taktik, Clocks & Würfel* (Kampf-Tracker, Kampagnen-Uhren, Würfelstation)
+- [x] **3 Ansichts-Modi** – 📜 *Abenteuer & Spielleiter*, ⚔️ *Taktik, Clocks & Würfel* sowie 🎒 *Kampagne & Inventar*
+- [x] **Taktischer Begegnungsmodus** – GM-gesteuerter Kampfbeginn/-fortschritt/-abschluss, Initiative, Gegner-LP, Schnellaktionen und Zug verschieben
+- [x] **Live-Zuganzeige** – zeigt Spielerzug bzw. laufende GM-Planung; erzwungener nächster Sprecher wird korrekt an Rust übertragen
+- [x] **Stage-Vertragsfixes** – Frontend/Rust-Feldnamen vereinheitlicht, Kampf-Tracker auf `combat` korrigiert, `key_facts` bei Weltänderungen erhalten und manuelle Würfe an den Stage-GM statt an den normalen Chat übergeben
+
+#### Erreichte SoW-Referenzparität (Abgeschlossen)
+
+- [x] **Mehrere Akteure pro GM-Zug & dynamische NPCs** – `max_actor_depth` Schleife mit sequentiellen Gefährten-Reaktionen, Party-Dialog-Ketten und Persönlichkeits-Overlays (`stage.rs`)
+- [x] **Stage-Lore & private Informationen** – Automatische Bindung von Lorebooks, Trigger-Evaluation über `evaluate_lorebooks` und Injektion in GM-Planner & Gefährten-Prompts
+- [x] **Stage-Nachrichtenwerkzeuge** – Bearbeiten (Inline-Editor), Löschen, Regenerieren und Vorlesen (TTS) per Hover-Leiste direkt im Stage-Chatverlauf (`StageChatLog.tsx`, `stage.rs`)
+- [x] **Szenen-Zuverlässigkeit** – Rotierende `.json.bak`-Sicherheitskopien, automatische Wiederherstellung und modales „Fortsetzen vs. Neu starten“-Fenster bei vorhandenem Fortschritt (`SceneLobbyModal.tsx`)
+- [x] **Dynamische Bühnenatmosphäre** – Dynamische Hintergrund-Backdrop-Layer (`bg_image` aus GM-Plan), Hintergrund-Auflösung über `get_stage_background_image`, Background-Lock-Toggle (`lock_bg`) in der Menüleiste (`StageView.tsx`)
+- [x] **Szenenordner & No Game No Life Defaults** – Ordner-Verwaltung (`list_stage_folders`, `create_stage_folder`, `move_stage_scene_to_folder`, `delete_stage_folder`), Ordner-Filter-Pills mit Szenen-Zähler, automatische Bereitstellung aller 12 Kapitel von *No Game No Life* im Ordner „No Game No Life“ in natürlicher Kapitelreihenfolge sowie *Sakura Succubus 3*
+- [x] **Szenen-JSON-Import/-Export** – Direkter JSON-Import mit Ordner-Zuweisung und 1-Klick-JSON-Export (`stage_import_scene_json`, `stage_export_scene_json`, `SceneLobbyModal.tsx`)
 
 ### Phase 16 – Soul Companion: echter Desktop-Agent 🟡
 
@@ -192,7 +208,7 @@ Aktuell sind `system_health_report`, `set_timer`, `open_external_url`, `web_sear
 - [ ] **Discord-Gateway** – `serenity`/`poise`: Nachrichten, Slash-Commands (ask/character/bind/unbind/reset/whoami/join/leave), Multi-User-Awareness, Vision für Bilder/GIFs, Voice-Channel-TTS, Cooldowns, Whitelist (SoW: `discord_manager.py`)
 - [ ] **Discord Rich Presence** (SoW: `discord_rpc.py`)
 - [ ] **Bildgenerierung** – A1111, ComfyUI (Workflow-Patching), DALL·E 3, NovelAI, FLUX; Kontext-Prompt aus Aussehen/Pose/Emotion/Szene (SoW: `image_generator.py`)
-- [ ] **Character Gateway / Hub** – Karten suchen & herunterladen (Chub, SoulGateway), Trending (SoW: `character_cards.py`, `open_characters_gateway`)
+- [x] **Soul Hub & Gateways** – Vollwertiger 4-teiliger Community-Hub mit Live-Suche, Tags, Sortierungen, NSFW-Filter, Chub AI API/CDN-Import inkl. automatischer Extraktion eingebetteter Lorebooks (`character_book`), URL-Direktimport, kuratiertem Soul Gateway, Welt-Lorebooks-Registry und Soul-Stage-Szenarien-Registry (`soul_hub.rs`, `SoulHubView.tsx`).
 - [ ] **KI-Charakterassistent** – geführter Wizard (Konzept → Persönlichkeit → Hintergrund → Beziehung → Felder) erzeugt eine Karte per LLM (SoW: `character_ai_assistant.py`)
 - [ ] **Profil-Backup & Restore** – ZIP-Export nach Gruppen, Manifest, Sicherheits-Snapshots mit Rotation, Rollback (SoW: `profile_backup.py`)
 

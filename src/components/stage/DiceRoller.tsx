@@ -3,7 +3,7 @@ import { useAppStore } from '../../store/useAppStore';
 import { Dices, Sparkles, AlertOctagon, Send, CheckCircle2, XCircle } from 'lucide-react';
 
 export const DiceRoller: React.FC = () => {
-  const { rollDice, lastDiceRoll, isRollingDice, sendMessage, setActiveTab } = useAppStore();
+  const { rollDice, lastDiceRoll, isRollingDice, runStageTurn, isProcessingStageTurn } = useAppStore();
   const [formula, setFormula] = useState('1d20+3');
   const [targetDc, setTargetDc] = useState<string>('15');
 
@@ -36,8 +36,7 @@ export const DiceRoller: React.FC = () => {
         : ` — Probe gegen SG ${dc_check.target_dc}: **FEHLGESCHLAGEN** (${dc_check.margin})`;
     }
 
-    sendMessage(text);
-    setActiveTab('chat');
+    runStageTurn(text, 'direct');
   };
 
   return (
@@ -180,6 +179,7 @@ export const DiceRoller: React.FC = () => {
 
           <button
             onClick={handleSendToChat}
+            disabled={isProcessingStageTurn}
             className="w-full mt-2 py-1.5 px-3 rounded-lg bg-slate-800/80 hover:bg-slate-700/80 text-purple-300 text-xs font-semibold flex items-center justify-center gap-1.5 border border-purple-500/20 transition"
           >
             <Send className="w-3.5 h-3.5" />

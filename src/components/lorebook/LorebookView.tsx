@@ -20,6 +20,7 @@ import {
   AlertTriangle,
   RotateCcw,
   Zap,
+  Compass,
 } from 'lucide-react';
 
 export const LorebookView: React.FC = () => {
@@ -39,6 +40,7 @@ export const LorebookView: React.FC = () => {
     resetTension,
     sceneTensionEnabled,
     setSceneTensionEnabled,
+    openSoulHubTab,
   } = useAppStore();
 
   const [searchQuery, setSearchQuery] = useState('');
@@ -268,6 +270,14 @@ export const LorebookView: React.FC = () => {
               <span>Import</span>
             </button>
           </div>
+
+          <button
+            onClick={() => openSoulHubTab('lorebooks')}
+            className="w-full py-1.5 px-3 rounded-lg bg-purple-600/15 hover:bg-purple-600/25 text-purple-300 border border-purple-500/30 text-xs font-medium flex items-center justify-center gap-1.5 transition-colors shadow-sm"
+          >
+            <Compass className="w-3.5 h-3.5 text-purple-400" />
+            <span>Welt-Lorebooks im Soul Hub</span>
+          </button>
 
           {/* Search */}
           <div className="relative">

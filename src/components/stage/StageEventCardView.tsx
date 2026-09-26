@@ -1,6 +1,6 @@
 import React from 'react';
 import { StageEventCard } from '../../types';
-import { Dices, Clock, Flame, Sparkles, AlertTriangle, CheckCircle2, XCircle } from 'lucide-react';
+import { Dices, Clock, Flame, Sparkles, AlertTriangle, CheckCircle2, XCircle, PackageOpen, HeartHandshake, Swords } from 'lucide-react';
 
 interface StageEventCardViewProps {
   card: StageEventCard;
@@ -183,6 +183,45 @@ export const StageEventCardView: React.FC<StageEventCardViewProps> = ({ card }) 
           <span className="text-xs font-bold text-rose-200">Konsequenz</span>
         </div>
         <p className="text-xs text-slate-300">{card.text}</p>
+      </div>
+    );
+  }
+
+  if (card.type === 'item_use') {
+    return (
+      <div className="my-2 p-3 rounded-xl bg-emerald-950/30 border border-emerald-500/40 shadow-md">
+        <div className="flex items-center gap-2 mb-1.5">
+          <PackageOpen className="w-4 h-4 text-emerald-400" />
+          <span className="text-xs font-bold text-emerald-200">{card.item_name} benutzt</span>
+        </div>
+        <div className="flex flex-wrap gap-2 text-[11px]">
+          {card.hp_recovered > 0 && <span className="px-2 py-0.5 rounded bg-emerald-900/60 text-emerald-200">+{card.hp_recovered} LP</span>}
+          {card.stress_recovered > 0 && <span className="px-2 py-0.5 rounded bg-cyan-900/60 text-cyan-200">-{card.stress_recovered} Stress</span>}
+          {card.cleared_condition && <span className="px-2 py-0.5 rounded bg-purple-900/60 text-purple-200">{card.cleared_condition} kuriert</span>}
+        </div>
+      </div>
+    );
+  }
+
+  if (card.type === 'bond_milestone') {
+    return (
+      <div className="my-2 p-3.5 rounded-xl bg-gradient-to-r from-pink-950/40 to-purple-950/30 border border-pink-500/40 shadow-lg">
+        <div className="flex items-center gap-2">
+          <HeartHandshake className="w-4 h-4 text-pink-400" />
+          <span className="text-xs font-bold text-pink-200">Bindungs-Meilenstein mit {card.companion}</span>
+        </div>
+        <p className="text-[11px] text-slate-300 mt-1">Nähe {card.affinity}/100 · Schwelle {card.milestone} erreicht</p>
+      </div>
+    );
+  }
+
+  if (card.type === 'combat') {
+    return (
+      <div className="my-2 p-3 rounded-xl bg-rose-950/30 border border-rose-500/40 shadow-md">
+        <div className="flex items-center gap-2">
+          <Swords className="w-4 h-4 text-rose-400" />
+          <span className="text-xs font-bold text-rose-200">{card.text}</span>
+        </div>
       </div>
     );
   }

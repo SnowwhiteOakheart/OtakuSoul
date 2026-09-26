@@ -239,18 +239,29 @@ impl Lorebook {
         let uid = val.get("uid").and_then(|v| v.as_u64());
 
         let extract_str_vec = |key: &str| -> Vec<String> {
-            val.get(key)
-                .and_then(|v| v.as_array())
-                .map(|arr| {
-                    arr.iter()
+            if let Some(v) = val.get(key) {
+                if let Some(arr) = v.as_array() {
+                    return arr.iter()
                         .filter_map(|x| x.as_str().map(|s| s.to_string()))
-                        .collect()
-                })
-                .unwrap_or_default()
+                        .collect();
+                } else if let Some(s) = v.as_str() {
+                    return s.split(',')
+                        .map(|p| p.trim().to_string())
+                        .filter(|p| !p.is_empty())
+                        .collect();
+                }
+            }
+            Vec::new()
         };
 
-        let key = extract_str_vec("key");
-        let secondary_keys = extract_str_vec("secondary_keys");
+        let mut key = extract_str_vec("key");
+        if key.is_empty() {
+            key = extract_str_vec("keys");
+        }
+        let mut secondary_keys = extract_str_vec("secondary_keys");
+        if secondary_keys.is_empty() {
+            secondary_keys = extract_str_vec("secondary_key");
+        }
         let exclude_key = extract_str_vec("exclude_key");
         let regex_keys = extract_str_vec("regex_keys");
 
@@ -626,6 +637,11 @@ pub fn list_all_lorebooks(user_lorebooks_dir: &Path, presets_dir: &Path) -> Vec<
 
     books.sort_by(|a, b| a.name.cmp(&b.name));
     books
+}
+
+pub fn scan_available_lorebooks() -> Vec<Lorebook> {
+    let paths = crate::modules::paths::resolve_app_paths();
+    list_all_lorebooks(Path::new(&paths.lorebooks_dir), Path::new(&paths.bundled_presets_dir))
 }
 
 #[cfg(test)]

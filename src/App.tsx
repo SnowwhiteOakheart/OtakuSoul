@@ -10,6 +10,7 @@ const LorebookView = lazy(() => import('./components/lorebook/LorebookView').the
 const SettingsView = lazy(() => import('./components/settings/SettingsView').then((module) => ({ default: module.SettingsView })));
 const StageView = lazy(() => import('./components/stage/StageView').then((module) => ({ default: module.StageView })));
 const CompanionView = lazy(() => import('./components/companion/CompanionView').then((module) => ({ default: module.CompanionView })));
+const SoulHubView = lazy(() => import('./components/hub/SoulHubView').then((module) => ({ default: module.SoulHubView })));
 
 export function App() {
   const { activeTab } = useAppStore();
@@ -21,6 +22,7 @@ export function App() {
         <Suspense fallback={<div className="flex-1 grid place-items-center text-sm text-purple-300">Ansicht wird geladen…</div>}>
           {activeTab === 'chat' && <ChatView />}
           {activeTab === 'characters' && <CharacterLibraryView />}
+          {activeTab === 'hub' && <SoulHubView />}
           {activeTab === 'lorebooks' && <LorebookView />}
           {activeTab === 'stage' && <StageView />}
           {activeTab === 'companion' && <CompanionView />}

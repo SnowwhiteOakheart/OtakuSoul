@@ -495,6 +495,90 @@ pub fn export_stage_markdown(
 }
 
 #[tauri::command]
+pub fn stage_list_folders() -> Result<Vec<String>, String> {
+    crate::modules::stage::list_stage_folders()
+}
+
+#[tauri::command]
+pub fn stage_create_folder(folder_name: String) -> Result<(), String> {
+    crate::modules::stage::create_stage_folder(&folder_name)
+}
+
+#[tauri::command]
+pub fn stage_move_scene_to_folder(
+    state: State<'_, AppState>,
+    scene_id: String,
+    target_folder: String,
+) -> Result<crate::modules::stage::SceneState, String> {
+    let res = crate::modules::stage::move_stage_scene_to_folder(&scene_id, &target_folder)?;
+    state.stage_engine.set_state(res.clone());
+    Ok(res)
+}
+
+#[tauri::command]
+pub fn stage_delete_folder(folder_name: String) -> Result<(), String> {
+    crate::modules::stage::delete_stage_folder(&folder_name)
+}
+
+#[tauri::command]
+pub fn stage_import_scene_json(
+    state: State<'_, AppState>,
+    json_content: String,
+    target_folder: Option<String>,
+) -> Result<crate::modules::stage::SceneState, String> {
+    let res = crate::modules::stage::import_stage_scene_json(&json_content, target_folder.as_deref())?;
+    state.stage_engine.set_state(res.clone());
+    Ok(res)
+}
+
+#[tauri::command]
+pub fn stage_export_scene_json(scene_id: String) -> Result<String, String> {
+    crate::modules::stage::export_stage_scene_json(&scene_id)
+}
+
+#[tauri::command]
+pub fn stage_reset_scene(
+    state: State<'_, AppState>,
+    scene_id: String,
+) -> Result<crate::modules::stage::SceneState, String> {
+    let res = crate::modules::stage::reset_stage_scene(&scene_id)?;
+    state.stage_engine.set_state(res.clone());
+    Ok(res)
+}
+
+#[tauri::command]
+pub fn stage_edit_message(
+    state: State<'_, AppState>,
+    scene_id: String,
+    message_id: String,
+    new_content: String,
+) -> Result<crate::modules::stage::SceneState, String> {
+    crate::modules::stage::edit_stage_turn_message(&state.stage_engine, &scene_id, &message_id, &new_content)
+}
+
+#[tauri::command]
+pub fn stage_delete_message(
+    state: State<'_, AppState>,
+    scene_id: String,
+    message_id: String,
+) -> Result<crate::modules::stage::SceneState, String> {
+    crate::modules::stage::delete_stage_turn_message(&state.stage_engine, &scene_id, &message_id)
+}
+
+#[tauri::command]
+pub async fn stage_regenerate_turn(
+    state: State<'_, AppState>,
+    scene_id: String,
+) -> Result<crate::modules::stage::SceneState, String> {
+    crate::modules::stage::regenerate_stage_turn(&state.stage_engine, &state.inference_client, &scene_id).await
+}
+
+#[tauri::command]
+pub fn stage_get_background_image(name: String) -> Result<String, String> {
+    crate::modules::stage::get_stage_background_image(&name)
+}
+
+#[tauri::command]
 pub async fn run_stage_turn(
     state: State<'_, AppState>,
     request: crate::modules::stage::StageTurnRequest,
@@ -520,11 +604,30 @@ pub async fn rest_stage_party(
 }
 
 #[tauri::command]
+pub fn use_stage_inventory_item(
+    state: State<'_, AppState>,
+    scene_id: String,
+    item_id: String,
+) -> Result<crate::modules::stage::SceneState, String> {
+    state.stage_engine.use_inventory_item(&scene_id, &item_id)
+}
+
+#[tauri::command]
+pub fn delay_encounter_turn(
+    state: State<'_, AppState>,
+) -> Result<crate::modules::stage::SceneState, String> {
+    let scene = state.stage_engine.delay_turn()?;
+    crate::modules::stage::save_scene_state(&scene)?;
+    Ok(scene)
+}
+
+#[tauri::command]
 pub fn update_world_state(
     state: State<'_, AppState>,
     world: crate::modules::stage::WorldState,
 ) -> Result<(), String> {
     state.stage_engine.update_world(world);
+    crate::modules::stage::save_scene_state(&state.stage_engine.get_state())?;
     Ok(())
 }
 
@@ -535,6 +638,7 @@ pub fn set_clock_progress(
     progress: u32,
 ) -> Result<(), String> {
     state.stage_engine.set_clock_progress(&clock_id, progress);
+    crate::modules::stage::save_scene_state(&state.stage_engine.get_state())?;
     Ok(())
 }
 
@@ -544,6 +648,7 @@ pub fn add_clock(
     clock: crate::modules::stage::CampaignClock,
 ) -> Result<(), String> {
     state.stage_engine.add_clock(clock);
+    crate::modules::stage::save_scene_state(&state.stage_engine.get_state())?;
     Ok(())
 }
 
@@ -553,6 +658,7 @@ pub fn delete_clock(
     clock_id: String,
 ) -> Result<(), String> {
     state.stage_engine.delete_clock(&clock_id);
+    crate::modules::stage::save_scene_state(&state.stage_engine.get_state())?;
     Ok(())
 }
 
@@ -561,6 +667,7 @@ pub fn start_encounter(
     state: State<'_, AppState>,
 ) -> Result<(), String> {
     state.stage_engine.start_encounter();
+    crate::modules::stage::save_scene_state(&state.stage_engine.get_state())?;
     Ok(())
 }
 
@@ -569,6 +676,7 @@ pub fn end_encounter(
     state: State<'_, AppState>,
 ) -> Result<(), String> {
     state.stage_engine.end_encounter();
+    crate::modules::stage::save_scene_state(&state.stage_engine.get_state())?;
     Ok(())
 }
 
@@ -577,6 +685,7 @@ pub fn next_encounter_turn(
     state: State<'_, AppState>,
 ) -> Result<(), String> {
     state.stage_engine.next_turn();
+    crate::modules::stage::save_scene_state(&state.stage_engine.get_state())?;
     Ok(())
 }
 
@@ -588,6 +697,7 @@ pub fn apply_combatant_delta(
     stress_delta: i32,
 ) -> Result<(), String> {
     state.stage_engine.apply_combatant_delta(&combatant_id, hp_delta, stress_delta);
+    crate::modules::stage::save_scene_state(&state.stage_engine.get_state())?;
     Ok(())
 }
 
@@ -598,6 +708,7 @@ pub fn add_combatant_condition(
     condition: crate::modules::stage::CombatCondition,
 ) -> Result<(), String> {
     state.stage_engine.add_condition(&combatant_id, condition);
+    crate::modules::stage::save_scene_state(&state.stage_engine.get_state())?;
     Ok(())
 }
 
@@ -1057,4 +1168,79 @@ pub fn import_live2d_model(source_path: String) -> Result<crate::modules::live2d
 #[tauri::command]
 pub fn import_sow_live2d_models() -> Result<usize, String> {
     crate::modules::live2d::import_sow_live2d_models()
+}
+
+// --- Soul Hub (Soul Gateway, Chub AI, World Lorebooks & Stage Scenarios) Commands ---
+
+#[tauri::command]
+pub async fn fetch_soul_gateway_registry() -> Result<Vec<crate::modules::soul_hub::GatewayCharacterEntry>, String> {
+    crate::modules::soul_hub::fetch_soul_gateway_registry().await
+}
+
+#[tauri::command]
+pub async fn import_soul_gateway_character(
+    name: String,
+    author: String,
+    download_url: String,
+) -> Result<crate::modules::soul_hub::CharacterImportResult, String> {
+    crate::modules::soul_hub::import_soul_gateway_character(&name, &author, &download_url).await
+}
+
+#[tauri::command]
+pub async fn search_chub_characters(
+    query: String,
+    page: u32,
+    first: u32,
+    sort: String,
+    topics: Option<Vec<String>>,
+    nsfw: bool,
+) -> Result<crate::modules::soul_hub::ChubSearchResult, String> {
+    crate::modules::soul_hub::search_chub_characters(&query, page, first, &sort, topics, nsfw).await
+}
+
+#[tauri::command]
+pub async fn get_chub_character_details(
+    full_path: String,
+) -> Result<crate::modules::soul_hub::ChubCharacterDetail, String> {
+    crate::modules::soul_hub::get_chub_character_details(&full_path).await
+}
+
+#[tauri::command]
+pub async fn import_chub_character(
+    full_path: String,
+) -> Result<crate::modules::soul_hub::CharacterImportResult, String> {
+    crate::modules::soul_hub::import_chub_character(&full_path).await
+}
+
+#[tauri::command]
+pub async fn import_character_from_url(
+    url: String,
+) -> Result<crate::modules::soul_hub::CharacterImportResult, String> {
+    crate::modules::soul_hub::import_character_from_url(&url).await
+}
+
+#[tauri::command]
+pub async fn fetch_lorebooks_gateway_registry() -> Result<Vec<crate::modules::soul_hub::GatewayLorebookEntry>, String> {
+    crate::modules::soul_hub::fetch_lorebooks_gateway_registry().await
+}
+
+#[tauri::command]
+pub async fn import_lorebook_from_gateway(
+    download_url: String,
+    fallback_name: String,
+) -> Result<crate::modules::lorebook::Lorebook, String> {
+    crate::modules::soul_hub::import_lorebook_from_gateway(&download_url, &fallback_name).await
+}
+
+#[tauri::command]
+pub async fn fetch_stages_gateway_registry() -> Result<Vec<crate::modules::soul_hub::GatewaySceneEntry>, String> {
+    crate::modules::soul_hub::fetch_stages_gateway_registry().await
+}
+
+#[tauri::command]
+pub async fn import_scene_from_gateway(
+    download_url: String,
+    fallback_title: String,
+) -> Result<crate::modules::stage::SceneState, String> {
+    crate::modules::soul_hub::import_scene_from_gateway(&download_url, &fallback_title).await
 }

@@ -1,4 +1,5 @@
 import { useEffect } from 'react';
+import { createPortal } from 'react-dom';
 import { BrainCircuit, Dice5, HeartHandshake, ShieldCheck, Sparkles, X } from 'lucide-react';
 import logoUrl from '../assets/brand/otakusoul-logo-wide.webp';
 
@@ -22,9 +23,11 @@ export function AboutDialog({ onClose }: AboutDialogProps) {
     return () => window.removeEventListener('keydown', handleKeyDown);
   }, [onClose]);
 
-  return (
+  if (typeof document === 'undefined') return null;
+
+  return createPortal(
     <div
-      className="fixed inset-0 z-[100] grid place-items-center overflow-y-auto bg-slate-950/80 p-5 backdrop-blur-md"
+      className="fixed inset-0 z-[9999] grid place-items-center overflow-y-auto bg-slate-950/85 p-5 backdrop-blur-md"
       role="dialog"
       aria-modal="true"
       aria-labelledby="about-title"
@@ -86,6 +89,7 @@ export function AboutDialog({ onClose }: AboutDialogProps) {
           </div>
         </div>
       </section>
-    </div>
+    </div>,
+    document.body
   );
 }

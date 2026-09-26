@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { useAppStore } from '../../store/useAppStore';
-import { Swords, Shield, Heart, Zap, SkipForward, Play, Square, Plus } from 'lucide-react';
+import { Swords, Shield, Heart, Zap, SkipForward, Play, Square, Plus, Crosshair, Wind, DoorOpen, Hourglass } from 'lucide-react';
 
 export const EncounterTracker: React.FC = () => {
   const {
@@ -10,15 +10,20 @@ export const EncounterTracker: React.FC = () => {
     nextEncounterTurn,
     applyCombatantDelta,
     addCombatantCondition,
+    runStageTurn,
+    delayEncounterTurn,
+    isProcessingStageTurn,
   } = useAppStore();
 
-  const encounter = stageState?.encounter;
+  const encounter = stageState?.combat;
   const [selectedCombatantId, setSelectedCombatantId] = useState<string | null>(null);
   const [newCondName, setNewCondName] = useState('Gelähmt');
   const [newCondRounds, setNewCondRounds] = useState(2);
   const [showCondModal, setShowCondModal] = useState(false);
 
   if (!encounter) return null;
+  const isPlayerTurn = encounter.is_active
+    && encounter.combatants[encounter.current_turn_index]?.role === 'player';
 
   const handleAddCondition = () => {
     if (!selectedCombatantId || !newCondName.trim()) return;
@@ -56,6 +61,37 @@ export const EncounterTracker: React.FC = () => {
         <div className="flex items-center gap-2">
           {encounter.is_active ? (
             <>
+              <button
+                onClick={() => runStageTurn('[Angriff] Ich greife mein Ziel an.', 'do')}
+                disabled={isProcessingStageTurn}
+                className="px-2.5 py-1.5 rounded-lg bg-rose-950/60 hover:bg-rose-900 text-rose-200 text-xs font-semibold flex items-center gap-1 border border-rose-500/30 disabled:opacity-40"
+              >
+                <Crosshair className="w-3.5 h-3.5" /> Angriff
+              </button>
+              <button
+                onClick={() => runStageTurn('[Ausweichen] Ich gehe in Deckung und bereite mich auf den Angriff vor.', 'do')}
+                disabled={isProcessingStageTurn}
+                className="px-2.5 py-1.5 rounded-lg bg-cyan-950/60 hover:bg-cyan-900 text-cyan-200 text-xs font-semibold flex items-center gap-1 border border-cyan-500/30 disabled:opacity-40"
+              >
+                <Wind className="w-3.5 h-3.5" /> Ausweichen
+              </button>
+              <button
+                onClick={() => runStageTurn('[Flucht] Ich versuche, aus dem Kampf zu entkommen.', 'do')}
+                disabled={isProcessingStageTurn}
+                className="px-2.5 py-1.5 rounded-lg bg-amber-950/60 hover:bg-amber-900 text-amber-200 text-xs font-semibold flex items-center gap-1 border border-amber-500/30 disabled:opacity-40"
+              >
+                <DoorOpen className="w-3.5 h-3.5" /> Flucht
+              </button>
+              {isPlayerTurn && (
+                <button
+                  onClick={() => delayEncounterTurn()}
+                  disabled={isProcessingStageTurn}
+                  title="Eigenen Zug um einen Platz nach hinten verschieben"
+                  className="px-2.5 py-1.5 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-200 text-xs font-semibold flex items-center gap-1 border border-slate-600 disabled:opacity-40"
+                >
+                  <Hourglass className="w-3.5 h-3.5" /> Verschieben
+                </button>
+              )}
               <button
                 onClick={() => nextEncounterTurn()}
                 className="px-3 py-1.5 rounded-lg bg-purple-600 hover:bg-purple-500 text-white text-xs font-semibold flex items-center gap-1.5 shadow transition active:scale-95"

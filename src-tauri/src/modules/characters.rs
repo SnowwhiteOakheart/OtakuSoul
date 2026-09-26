@@ -13,7 +13,7 @@ pub struct CharacterData {
     pub scenario: String,
     #[serde(alias = "first_message", default)]
     pub first_mes: String,
-    #[serde(alias = "example_messages", default)]
+    #[serde(alias = "example_messages", alias = "example_dialogs", default)]
     pub mes_example: String,
     #[serde(default)]
     pub alternate_greetings: Vec<String>,
@@ -24,6 +24,8 @@ pub struct CharacterData {
     #[serde(default)]
     pub tags: Vec<String>,
     pub creator: Option<String>,
+    #[serde(default)]
+    pub character_book: Option<serde_json::Value>,
     #[serde(default)]
     pub extensions: serde_json::Value,
 }
@@ -74,11 +76,29 @@ impl Default for UserPersona {
 }
 
 pub fn parse_character_json(content: &str) -> Result<CharacterCardV2, String> {
-    if let Ok(card_v2) = serde_json::from_str::<CharacterCardV2>(content) {
+    if let Ok(mut card_v2) = serde_json::from_str::<CharacterCardV2>(content) {
+        if card_v2.data.personality.trim().is_empty() {
+            if let Ok(val) = serde_json::from_str::<serde_json::Value>(content) {
+                if let Some(tp) = val.get("data").and_then(|d| d.get("tavern_personality")).and_then(|v| v.as_str()) {
+                    if !tp.trim().is_empty() {
+                        card_v2.data.personality = tp.to_string();
+                    }
+                }
+            }
+        }
         return Ok(card_v2);
     }
 
-    if let Ok(flat_data) = serde_json::from_str::<CharacterData>(content) {
+    if let Ok(mut flat_data) = serde_json::from_str::<CharacterData>(content) {
+        if flat_data.personality.trim().is_empty() {
+            if let Ok(val) = serde_json::from_str::<serde_json::Value>(content) {
+                if let Some(tp) = val.get("tavern_personality").and_then(|v| v.as_str()) {
+                    if !tp.trim().is_empty() {
+                        flat_data.personality = tp.to_string();
+                    }
+                }
+            }
+        }
         return Ok(CharacterCardV2 {
             spec: "chara_card_v2".to_string(),
             spec_version: "2.0".to_string(),
@@ -88,13 +108,91 @@ pub fn parse_character_json(content: &str) -> Result<CharacterCardV2, String> {
 
     if let Ok(val) = serde_json::from_str::<serde_json::Value>(content) {
         if let Some(inner_data) = val.get("data") {
-            if let Ok(data) = serde_json::from_value::<CharacterData>(inner_data.clone()) {
+            if let Ok(mut data) = serde_json::from_value::<CharacterData>(inner_data.clone()) {
+                if data.personality.trim().is_empty() {
+                    if let Some(tp) = inner_data.get("tavern_personality").and_then(|v| v.as_str()) {
+                        data.personality = tp.to_string();
+                    }
+                }
                 return Ok(CharacterCardV2 {
                     spec: "chara_card_v2".to_string(),
                     spec_version: "2.0".to_string(),
                     data,
                 });
             }
+        }
+
+        // Support Chub AI node object { "node": { "definition": { ... } } }
+        if let Some(node) = val.get("node") {
+            let def = node.get("definition").unwrap_or(&serde_json::Value::Null);
+            let name = node.get("name")
+                .or_else(|| def.get("name"))
+                .and_then(|v| v.as_str())
+                .unwrap_or("Unknown")
+                .to_string();
+            let desc = def.get("description")
+                .or_else(|| node.get("description"))
+                .and_then(|v| v.as_str())
+                .unwrap_or("")
+                .to_string();
+            let personality = {
+                let p1 = def.get("tavern_personality").and_then(|v| v.as_str()).unwrap_or("");
+                if !p1.trim().is_empty() {
+                    p1.to_string()
+                } else {
+                    def.get("personality").and_then(|v| v.as_str()).unwrap_or("").to_string()
+                }
+            };
+            let scenario = def.get("scenario").and_then(|v| v.as_str()).unwrap_or("").to_string();
+            let first_mes = def.get("first_message")
+                .or_else(|| def.get("first_mes"))
+                .and_then(|v| v.as_str())
+                .unwrap_or("")
+                .to_string();
+            let mes_example = def.get("example_dialogs")
+                .or_else(|| def.get("mes_example"))
+                .and_then(|v| v.as_str())
+                .unwrap_or("")
+                .to_string();
+            let creator_notes = node.get("tagline")
+                .or_else(|| def.get("creator_notes"))
+                .and_then(|v| v.as_str())
+                .unwrap_or("")
+                .to_string();
+            let system_prompt = def.get("system_prompt").and_then(|v| v.as_str()).map(|s| s.to_string());
+            let post_history = def.get("post_history_instructions").and_then(|v| v.as_str()).map(|s| s.to_string());
+            let alt_greetings = def.get("alternate_greetings")
+                .and_then(|v| v.as_array())
+                .map(|arr| arr.iter().filter_map(|x| x.as_str().map(|s| s.to_string())).collect())
+                .unwrap_or_default();
+            let tags = node.get("topics")
+                .and_then(|v| v.as_array())
+                .map(|arr| arr.iter().filter_map(|x| x.as_str().map(|s| s.to_string())).collect())
+                .unwrap_or_default();
+            let character_book = def.get("embedded_lorebook").cloned();
+            let extensions = def.get("extensions").cloned().unwrap_or(serde_json::json!({}));
+
+            return Ok(CharacterCardV2 {
+                spec: "chara_card_v2".to_string(),
+                spec_version: "2.0".to_string(),
+                data: CharacterData {
+                    name,
+                    description: desc,
+                    personality,
+                    scenario,
+                    first_mes,
+                    mes_example,
+                    alternate_greetings: alt_greetings,
+                    system_prompt,
+                    post_history_instructions: post_history,
+                    creator_notes: Some(creator_notes),
+                    character_version: None,
+                    tags,
+                    creator: node.get("fullPath").and_then(|v| v.as_str()).map(|s| s.split('/').next().unwrap_or("").to_string()),
+                    character_book,
+                    extensions,
+                },
+            });
         }
     }
 
@@ -261,11 +359,37 @@ pub fn load_character_from_file(path: &Path) -> Result<CharacterProfile, String>
         .map(|s| s.to_string_lossy().to_string())
         .unwrap_or_else(|| "character".to_string());
 
-    if extension == "json" {
+    let mut bound_lorebooks = Vec::new();
+    let card = if extension == "json" {
         let content = fs::read_to_string(path)
             .map_err(|e| format!("Fehler beim Lesen der JSON-Datei: {}", e))?;
-        let card = parse_character_json(&content)?;
+        parse_character_json(&content)?
+    } else if extension == "png" {
+        let bytes = fs::read(path).map_err(|e| format!("Fehler beim Lesen der PNG-Datei: {}", e))?;
+        let (card, _) = parse_character_png(&bytes)?;
+        card
+    } else {
+        return Err(format!("Nicht unterstütztes Dateiformat: .{}", extension));
+    };
 
+    if let Some(ext) = card.data.extensions.as_object() {
+        if let Some(lb) = ext.get("selected_lorebook").and_then(|v| v.as_str()) {
+            if !lb.trim().is_empty() && lb != "None" {
+                bound_lorebooks.push(lb.to_string());
+            }
+        }
+        if let Some(lbs) = ext.get("bound_lorebooks").and_then(|v| v.as_array()) {
+            for b in lbs {
+                if let Some(s) = b.as_str() {
+                    if !s.trim().is_empty() && !bound_lorebooks.contains(&s.to_string()) {
+                        bound_lorebooks.push(s.to_string());
+                    }
+                }
+            }
+        }
+    }
+
+    if extension == "json" {
         let mut avatar_data_url = None;
         let parent = path.parent().unwrap_or(Path::new("."));
         let png_candidate = parent.join(format!("{}.png", id));
@@ -283,22 +407,43 @@ pub fn load_character_from_file(path: &Path) -> Result<CharacterProfile, String>
             card,
             avatar_data_url,
             source_path: Some(path.to_string_lossy().to_string()),
-            bound_lorebooks: Vec::new(),
+            bound_lorebooks,
         })
-    } else if extension == "png" {
+    } else {
         let bytes = fs::read(path).map_err(|e| format!("Fehler beim Lesen der PNG-Datei: {}", e))?;
-        let (card, avatar_data_url) = parse_character_png(&bytes)?;
+        let (_, avatar_data_url) = parse_character_png(&bytes)?;
 
         Ok(CharacterProfile {
             id,
             card,
             avatar_data_url: Some(avatar_data_url),
             source_path: Some(path.to_string_lossy().to_string()),
-            bound_lorebooks: Vec::new(),
+            bound_lorebooks,
         })
-    } else {
-        Err(format!("Nicht unterstütztes Dateiformat: .{}", extension))
     }
+}
+
+pub fn extract_and_save_embedded_lorebook(card: &CharacterCardV2, char_name: &str) -> Option<String> {
+    let book_val = card.data.character_book.as_ref()
+        .or_else(|| card.data.extensions.get("character_book"))
+        .or_else(|| card.data.extensions.get("embedded_lorebook"))?;
+
+    let json_str = serde_json::to_string(book_val).ok()?;
+    let paths = resolve_app_paths();
+    let fallback_name = format!("Lore_{}", char_name);
+    if let Ok(lorebook) = crate::modules::lorebook::Lorebook::import_from_json_string(&json_str, Some(&fallback_name)) {
+        if !lorebook.entries.is_empty() {
+            let slug = if !lorebook.id.trim().is_empty() {
+                lorebook.id.clone()
+            } else {
+                lorebook.name.trim().to_lowercase().replace(|c: char| !c.is_alphanumeric() && c != '-' && c != '_', "_")
+            };
+            let target_path = PathBuf::from(&paths.lorebooks_dir).join(format!("{}.json", slug));
+            let _ = lorebook.save_to_file(&target_path);
+            return Some(lorebook.name);
+        }
+    }
+    None
 }
 
 /// Saves or updates a character profile in the user's data directory (~/.local/share/otakusoul/characters)
@@ -319,6 +464,14 @@ pub fn save_character_to_user_dir(profile: &CharacterProfile) -> Result<Characte
 
     let mut saved_profile = profile.clone();
     saved_profile.id = safe_stem;
+
+    // Ensure bound_lorebooks is updated in extensions
+    if let Some(ext) = saved_profile.card.data.extensions.as_object_mut() {
+        ext.insert("bound_lorebooks".to_string(), serde_json::to_value(&saved_profile.bound_lorebooks).unwrap_or(serde_json::Value::Null));
+        if let Some(first_lb) = saved_profile.bound_lorebooks.first() {
+            ext.insert("selected_lorebook".to_string(), serde_json::Value::String(first_lb.clone()));
+        }
+    }
 
     // If avatar data is present, write as SillyTavern V2 PNG
     if let Some(ref data_url) = profile.avatar_data_url {

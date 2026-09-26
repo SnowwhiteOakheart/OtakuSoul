@@ -7,6 +7,7 @@ import { PartyHeader } from './PartyHeader';
 import { StageChatLog } from './StageChatLog';
 import { TurnControlBar } from './TurnControlBar';
 import { SceneLobbyModal } from './SceneLobbyModal';
+import { StageCampaignPanel } from './StageCampaignPanel';
 import { soundFx } from '../../services/soundFx';
 import {
   Compass,
@@ -22,20 +23,29 @@ import {
   Swords,
   BookOpen,
   MapPin,
+  Backpack,
+  LoaderCircle,
+  UserRound,
+  Lock,
+  Unlock,
 } from 'lucide-react';
+import { api } from '../../services/api';
+import { SceneState } from '../../types';
 
 export const StageView: React.FC = () => {
   const {
     stageState,
     fetchStageState,
+    saveStageScene,
     updateWorldState,
     setClockProgress,
     addClock,
     deleteClock,
     exportStageMarkdown,
+    isProcessingStageTurn,
   } = useAppStore();
 
-  const [activeTab, setActiveTab] = useState<'adventure' | 'tactics'>('adventure');
+  const [activeTab, setActiveTab] = useState<'adventure' | 'tactics' | 'campaign'>('adventure');
   const [showLobbyModal, setShowLobbyModal] = useState(false);
 
   const [isEditingWorld, setIsEditingWorld] = useState(false);
@@ -44,6 +54,41 @@ export const StageView: React.FC = () => {
   const [timeInput, setTimeInput] = useState('');
   const [dangerInput, setDangerInput] = useState(2);
   const [questInput, setQuestInput] = useState('');
+
+  // Dynamic Background Image
+  const [bgDataUrl, setBgDataUrl] = useState<string | null>(null);
+  const activeBgName = stageState?.current_bg || stageState?.definition.starting_bg;
+
+  useEffect(() => {
+    let isMounted = true;
+    if (activeBgName && activeBgName.toLowerCase() !== 'none' && activeBgName.trim() !== '') {
+      api.getStageBackgroundImage(activeBgName)
+        .then((url) => {
+          if (isMounted) setBgDataUrl(url || null);
+        })
+        .catch(() => {
+          if (isMounted) setBgDataUrl(null);
+        });
+    } else {
+      setBgDataUrl(null);
+    }
+    return () => {
+      isMounted = false;
+    };
+  }, [activeBgName]);
+
+  const handleToggleLockBg = async () => {
+    if (!stageState) return;
+    const currentLock = !!stageState.definition.lock_bg;
+    const updatedState: SceneState = {
+      ...stageState,
+      definition: {
+        ...stageState.definition,
+        lock_bg: !currentLock,
+      },
+    };
+    await saveStageScene(updatedState);
+  };
 
   // Audio Ambiance state
   const [isAmbianceActive, setIsAmbianceActive] = useState(false);
@@ -76,6 +121,7 @@ export const StageView: React.FC = () => {
       time_of_day: timeInput.trim(),
       danger_level: dangerInput,
       active_quest: questInput.trim(),
+      key_facts: stageState?.world.key_facts || {},
     });
     setIsEditingWorld(false);
   };
@@ -127,6 +173,16 @@ export const StageView: React.FC = () => {
 
   return (
     <div className="flex-1 flex flex-col h-full bg-slate-950 overflow-hidden relative">
+      {/* Dynamic Background Image Layer with atmospheric tint */}
+      {bgDataUrl && (
+        <div
+          className="absolute inset-0 bg-cover bg-center transition-all duration-700 pointer-events-none z-0"
+          style={{ backgroundImage: `url(${bgDataUrl})` }}
+        >
+          <div className="absolute inset-0 bg-slate-950/85 backdrop-blur-[2px]" />
+        </div>
+      )}
+
       {/* 1. Universal Top Header Bar */}
       <div className="bg-slate-900/90 border-b border-slate-800 px-4 py-2.5 flex flex-wrap items-center justify-between gap-3 shadow-md z-10 backdrop-blur-md">
         {/* Left: Active Scene & Location Info */}
@@ -184,10 +240,34 @@ export const StageView: React.FC = () => {
             <Swords className="w-3.5 h-3.5" />
             <span>Taktik, Clocks & Würfel</span>
           </button>
+
+          <button
+            onClick={() => setActiveTab('campaign')}
+            className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg font-bold transition ${
+              activeTab === 'campaign'
+                ? 'bg-purple-600 text-white shadow-md'
+                : 'text-slate-400 hover:text-slate-200'
+            }`}
+          >
+            <Backpack className="w-3.5 h-3.5" />
+            <span>Kampagne & Inventar</span>
+          </button>
         </div>
 
         {/* Right: Scene Lobby, Export & Ambiance Controls */}
         <div className="flex items-center gap-2">
+          <div
+            className={`hidden xl:flex items-center gap-1.5 px-2.5 py-1.5 rounded-xl border text-[11px] font-semibold ${
+              isProcessingStageTurn
+                ? 'bg-purple-950/60 border-purple-500/40 text-purple-200'
+                : 'bg-slate-950 border-slate-700 text-slate-300'
+            }`}
+            title="Aktueller Zug"
+          >
+            {isProcessingStageTurn ? <LoaderCircle className="w-3.5 h-3.5 animate-spin" /> : <UserRound className="w-3.5 h-3.5 text-emerald-400" />}
+            <span className="max-w-28 truncate">{isProcessingStageTurn ? 'Spielleiter plant …' : `${stageState?.current_turn_actor === 'PLAYER' ? 'Du' : stageState?.current_turn_actor || 'Du'} bist am Zug`}</span>
+          </div>
+
           <button
             onClick={() => setShowLobbyModal(true)}
             className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-purple-600/20 hover:bg-purple-600/30 text-purple-300 text-xs font-semibold border border-purple-500/30 transition"
@@ -202,6 +282,18 @@ export const StageView: React.FC = () => {
             className="p-2 rounded-xl bg-slate-800/80 hover:bg-slate-700 text-slate-300 hover:text-white border border-slate-700 transition"
           >
             <Download className="w-4 h-4" />
+          </button>
+
+          <button
+            onClick={handleToggleLockBg}
+            title={stageState?.definition.lock_bg ? 'Hintergrund gesperrt (GM wechselt Bild nicht)' : 'Hintergrund dynamisch (GM kann wechseln)'}
+            className={`p-2 rounded-xl border transition ${
+              stageState?.definition.lock_bg
+                ? 'bg-amber-950/40 text-amber-300 border-amber-500/50 shadow-sm'
+                : 'bg-slate-800/80 text-slate-400 border-slate-700 hover:text-slate-200'
+            }`}
+          >
+            {stageState?.definition.lock_bg ? <Lock className="w-4 h-4" /> : <Unlock className="w-4 h-4" />}
           </button>
 
           {/* Sound Synthesizer Controls */}
@@ -246,7 +338,7 @@ export const StageView: React.FC = () => {
           {/* Turn Control Bar (Mode switcher, choice pills, inputs) */}
           <TurnControlBar />
         </div>
-      ) : (
+      ) : activeTab === 'tactics' ? (
         /* Tactical Overview: Clocks, Dice & Encounters */
         <div className="flex-1 overflow-y-auto p-4 lg:p-6 space-y-6">
           {/* World & Atmosphere Banner */}
@@ -425,6 +517,10 @@ export const StageView: React.FC = () => {
 
           {/* Tactical Combat Encounter */}
           <EncounterTracker />
+        </div>
+      ) : (
+        <div className="flex-1 overflow-y-auto p-4 lg:p-6">
+          <StageCampaignPanel />
         </div>
       )}
 
