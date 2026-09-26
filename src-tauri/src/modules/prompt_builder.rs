@@ -22,6 +22,10 @@ pub struct PromptContext {
     pub reply_language: Option<String>, // e.g. "Deutsch", "English"
     #[serde(default)]
     pub allow_reasoning: Option<bool>,
+    #[serde(default)]
+    pub author_note: Option<String>,
+    #[serde(default)]
+    pub author_note_depth: Option<u32>,
 }
 
 pub fn build_system_prompt(ctx: &PromptContext) -> String {
@@ -87,6 +91,7 @@ pub fn build_system_prompt(ctx: &PromptContext) -> String {
                 vars_str.push_str(&format!("- {}: {}\n", v.name, v.value));
             }
         }
+        vars_str.push_str("\nHinweis: Wenn sich Werte oder Emotionen im Gesprächsverlauf verändern, kannst du am Ende deiner Nachricht optional einen `<state>` Block im JSON-Format ausgeben, um Variablen zu aktualisieren. Beispiel: `<state>{\"Affection\": 55, \"Mood\": \"Glücklich\"}</state>`.");
         parts.push(vars_str);
     }
 
@@ -145,6 +150,16 @@ pub fn build_system_prompt(ctx: &PromptContext) -> String {
             "## Dialogbeispiele (Stilvorgabe)\n{}",
             replace_macros(&ctx.character.mes_example)
         ));
+    }
+
+    // 8.5 Author's Note (Regieanweisung)
+    if let Some(note) = &ctx.author_note {
+        if !note.trim().is_empty() {
+            parts.push(format!(
+                "## Author's Note (Wichtige Regieanweisung)\n{}",
+                replace_macros(note)
+            ));
+        }
     }
 
     // 9. Formatting & Roleplay Convention Directive

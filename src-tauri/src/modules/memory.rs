@@ -68,6 +68,37 @@ pub struct CognitiveOverview {
     pub healing_logs: Vec<HealingLogEntry>,
 }
 
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct ChatSession {
+    pub id: String,
+    pub character_id: String,
+    pub title: String,
+    pub created_at: u64,
+    pub updated_at: u64,
+    pub author_note: String,
+    pub author_note_depth: u32,
+    pub message_count: usize,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
+pub struct SwipeVariant {
+    pub content: String,
+    pub thought: Option<String>,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct StoredChatMessage {
+    pub id: String,
+    pub chat_id: String,
+    pub role: String, // "user" | "assistant" | "system"
+    pub content: String,
+    pub thought: Option<String>,
+    pub order_index: i32,
+    pub swipe_index: usize,
+    pub swipes: Vec<SwipeVariant>,
+    pub created_at: u64,
+}
+
 pub struct MemoryDb {
     conn: Arc<Mutex<Connection>>,
 }
@@ -143,6 +174,31 @@ impl MemoryDb {
                 details TEXT NOT NULL,
                 created_at INTEGER NOT NULL
             );
+
+            CREATE TABLE IF NOT EXISTS chat_sessions (
+                id TEXT PRIMARY KEY,
+                character_id TEXT NOT NULL,
+                title TEXT NOT NULL,
+                created_at INTEGER NOT NULL,
+                updated_at INTEGER NOT NULL,
+                author_note TEXT NOT NULL DEFAULT '',
+                author_note_depth INTEGER NOT NULL DEFAULT 2
+            );
+            CREATE INDEX IF NOT EXISTS idx_chat_char ON chat_sessions(character_id);
+
+            CREATE TABLE IF NOT EXISTS chat_messages (
+                id TEXT PRIMARY KEY,
+                chat_id TEXT NOT NULL,
+                role TEXT NOT NULL,
+                content TEXT NOT NULL,
+                thought TEXT,
+                order_index INTEGER NOT NULL,
+                swipe_index INTEGER NOT NULL DEFAULT 0,
+                swipes_json TEXT NOT NULL DEFAULT '[]',
+                created_at INTEGER NOT NULL,
+                FOREIGN KEY(chat_id) REFERENCES chat_sessions(id) ON DELETE CASCADE
+            );
+            CREATE INDEX IF NOT EXISTS idx_msg_chat ON chat_messages(chat_id, order_index);
             "#,
         )?;
 
@@ -461,6 +517,554 @@ impl MemoryDb {
             healing_logs,
         })
     }
+
+    // --- Chat Sessions & Messages (Phase 9) ---
+
+    pub fn create_chat_session(&self, character_id: &str, title: &str) -> Result<ChatSession, rusqlite::Error> {
+        let conn = self.conn.lock().unwrap();
+        let now = current_timestamp();
+        let id = format!("chat_{}_{:08x}", now, rand::random::<u32>());
+        let effective_title = if title.trim().is_empty() {
+            "Neuer Chat".to_string()
+        } else {
+            title.trim().to_string()
+        };
+
+        conn.execute(
+            "INSERT INTO chat_sessions (id, character_id, title, created_at, updated_at, author_note, author_note_depth)
+             VALUES (?1, ?2, ?3, ?4, ?4, '', 2)",
+            params![id, character_id, effective_title, now],
+        )?;
+
+        Ok(ChatSession {
+            id,
+            character_id: character_id.to_string(),
+            title: effective_title,
+            created_at: now,
+            updated_at: now,
+            author_note: String::new(),
+            author_note_depth: 2,
+            message_count: 0,
+        })
+    }
+
+    pub fn list_chat_sessions(&self, character_id: &str) -> Result<Vec<ChatSession>, rusqlite::Error> {
+        let conn = self.conn.lock().unwrap();
+        let mut stmt = conn.prepare(
+            "SELECT s.id, s.character_id, s.title, s.created_at, s.updated_at, s.author_note, s.author_note_depth,
+                    (SELECT COUNT(*) FROM chat_messages m WHERE m.chat_id = s.id) AS msg_count
+             FROM chat_sessions s
+             WHERE s.character_id = ?1
+             ORDER BY s.updated_at DESC",
+        )?;
+
+        let rows = stmt.query_map(params![character_id], |row| {
+            let count: i64 = row.get(7)?;
+            Ok(ChatSession {
+                id: row.get(0)?,
+                character_id: row.get(1)?,
+                title: row.get(2)?,
+                created_at: row.get(3)?,
+                updated_at: row.get(4)?,
+                author_note: row.get(5)?,
+                author_note_depth: row.get(6)?,
+                message_count: count as usize,
+            })
+        })?;
+
+        let mut sessions = Vec::new();
+        for r in rows {
+            sessions.push(r?);
+        }
+        Ok(sessions)
+    }
+
+    pub fn get_chat_session(&self, chat_id: &str) -> Result<Option<ChatSession>, rusqlite::Error> {
+        let conn = self.conn.lock().unwrap();
+        let mut stmt = conn.prepare(
+            "SELECT s.id, s.character_id, s.title, s.created_at, s.updated_at, s.author_note, s.author_note_depth,
+                    (SELECT COUNT(*) FROM chat_messages m WHERE m.chat_id = s.id) AS msg_count
+             FROM chat_sessions s
+             WHERE s.id = ?1",
+        )?;
+
+        let mut rows = stmt.query(params![chat_id])?;
+        if let Some(row) = rows.next()? {
+            let count: i64 = row.get(7)?;
+            Ok(Some(ChatSession {
+                id: row.get(0)?,
+                character_id: row.get(1)?,
+                title: row.get(2)?,
+                created_at: row.get(3)?,
+                updated_at: row.get(4)?,
+                author_note: row.get(5)?,
+                author_note_depth: row.get(6)?,
+                message_count: count as usize,
+            }))
+        } else {
+            Ok(None)
+        }
+    }
+
+    pub fn delete_chat_session(&self, chat_id: &str) -> Result<(), rusqlite::Error> {
+        let conn = self.conn.lock().unwrap();
+        conn.execute("DELETE FROM chat_messages WHERE chat_id = ?1", params![chat_id])?;
+        conn.execute("DELETE FROM chat_sessions WHERE id = ?1", params![chat_id])?;
+        Ok(())
+    }
+
+    pub fn rename_chat_session(&self, chat_id: &str, new_title: &str) -> Result<(), rusqlite::Error> {
+        let conn = self.conn.lock().unwrap();
+        let now = current_timestamp();
+        conn.execute(
+            "UPDATE chat_sessions SET title = ?1, updated_at = ?2 WHERE id = ?3",
+            params![new_title, now, chat_id],
+        )?;
+        Ok(())
+    }
+
+    pub fn update_chat_author_note(&self, chat_id: &str, author_note: &str, author_note_depth: u32) -> Result<(), rusqlite::Error> {
+        let conn = self.conn.lock().unwrap();
+        let now = current_timestamp();
+        conn.execute(
+            "UPDATE chat_sessions SET author_note = ?1, author_note_depth = ?2, updated_at = ?3 WHERE id = ?4",
+            params![author_note, author_note_depth, now, chat_id],
+        )?;
+        Ok(())
+    }
+
+    pub fn get_chat_messages(&self, chat_id: &str) -> Result<Vec<StoredChatMessage>, rusqlite::Error> {
+        let conn = self.conn.lock().unwrap();
+        let mut stmt = conn.prepare(
+            "SELECT id, chat_id, role, content, thought, order_index, swipe_index, swipes_json, created_at
+             FROM chat_messages
+             WHERE chat_id = ?1
+             ORDER BY order_index ASC",
+        )?;
+
+        let rows = stmt.query_map(params![chat_id], |row| {
+            let content: String = row.get(3)?;
+            let thought: Option<String> = row.get(4)?;
+            let swipe_idx: i64 = row.get(6)?;
+            let swipes_json: String = row.get(7)?;
+
+            let swipes: Vec<SwipeVariant> = serde_json::from_str(&swipes_json).unwrap_or_else(|_| {
+                vec![SwipeVariant {
+                    content: content.clone(),
+                    thought: thought.clone(),
+                }]
+            });
+
+            Ok(StoredChatMessage {
+                id: row.get(0)?,
+                chat_id: row.get(1)?,
+                role: row.get(2)?,
+                content,
+                thought,
+                order_index: row.get(5)?,
+                swipe_index: swipe_idx as usize,
+                swipes,
+                created_at: row.get(8)?,
+            })
+        })?;
+
+        let mut messages = Vec::new();
+        for r in rows {
+            messages.push(r?);
+        }
+        Ok(messages)
+    }
+
+    pub fn add_chat_message(
+        &self,
+        chat_id: &str,
+        role: &str,
+        content: &str,
+        thought: Option<&str>,
+    ) -> Result<StoredChatMessage, rusqlite::Error> {
+        let conn = self.conn.lock().unwrap();
+        let now = current_timestamp();
+        let id = format!("msg_{}_{:08x}", now, rand::random::<u32>());
+
+        let mut stmt = conn.prepare("SELECT COALESCE(MAX(order_index) + 1, 0) FROM chat_messages WHERE chat_id = ?1")?;
+        let next_order: i32 = stmt.query_row(params![chat_id], |row| row.get(0))?;
+
+        let swipes = vec![SwipeVariant {
+            content: content.to_string(),
+            thought: thought.map(|s| s.to_string()),
+        }];
+        let swipes_json = serde_json::to_string(&swipes).unwrap_or_else(|_| "[]".to_string());
+
+        conn.execute(
+            "INSERT INTO chat_messages (id, chat_id, role, content, thought, order_index, swipe_index, swipes_json, created_at)
+             VALUES (?1, ?2, ?3, ?4, ?5, ?6, 0, ?7, ?8)",
+            params![id, chat_id, role, content, thought, next_order, swipes_json, now],
+        )?;
+
+        conn.execute(
+            "UPDATE chat_sessions SET updated_at = ?1 WHERE id = ?2",
+            params![now, chat_id],
+        )?;
+
+        Ok(StoredChatMessage {
+            id,
+            chat_id: chat_id.to_string(),
+            role: role.to_string(),
+            content: content.to_string(),
+            thought: thought.map(|s| s.to_string()),
+            order_index: next_order,
+            swipe_index: 0,
+            swipes,
+            created_at: now,
+        })
+    }
+
+    pub fn update_chat_message(
+        &self,
+        msg_id: &str,
+        content: &str,
+        thought: Option<&str>,
+    ) -> Result<StoredChatMessage, rusqlite::Error> {
+        let conn = self.conn.lock().unwrap();
+        let now = current_timestamp();
+
+        let mut stmt = conn.prepare(
+            "SELECT chat_id, role, order_index, swipe_index, swipes_json, created_at FROM chat_messages WHERE id = ?1",
+        )?;
+        let (chat_id, role, order_index, swipe_idx, swipes_json, created_at): (String, String, i32, i64, String, u64) =
+            stmt.query_row(params![msg_id], |row| {
+                Ok((
+                    row.get(0)?,
+                    row.get(1)?,
+                    row.get(2)?,
+                    row.get(3)?,
+                    row.get(4)?,
+                    row.get(5)?,
+                ))
+            })?;
+
+        let mut swipes: Vec<SwipeVariant> = serde_json::from_str(&swipes_json).unwrap_or_default();
+        let cur_index = swipe_idx as usize;
+        let new_variant = SwipeVariant {
+            content: content.to_string(),
+            thought: thought.map(|s| s.to_string()),
+        };
+
+        if cur_index < swipes.len() {
+            swipes[cur_index] = new_variant;
+        } else {
+            swipes.push(new_variant);
+        }
+
+        let new_swipes_json = serde_json::to_string(&swipes).unwrap_or_else(|_| "[]".to_string());
+
+        conn.execute(
+            "UPDATE chat_messages SET content = ?1, thought = ?2, swipes_json = ?3 WHERE id = ?4",
+            params![content, thought, new_swipes_json, msg_id],
+        )?;
+
+        conn.execute(
+            "UPDATE chat_sessions SET updated_at = ?1 WHERE id = ?2",
+            params![now, chat_id],
+        )?;
+
+        Ok(StoredChatMessage {
+            id: msg_id.to_string(),
+            chat_id,
+            role,
+            content: content.to_string(),
+            thought: thought.map(|s| s.to_string()),
+            order_index,
+            swipe_index: cur_index,
+            swipes,
+            created_at,
+        })
+    }
+
+    pub fn add_message_swipe(
+        &self,
+        msg_id: &str,
+        content: &str,
+        thought: Option<&str>,
+    ) -> Result<StoredChatMessage, rusqlite::Error> {
+        let conn = self.conn.lock().unwrap();
+        let now = current_timestamp();
+
+        let mut stmt = conn.prepare(
+            "SELECT chat_id, role, order_index, swipes_json, created_at FROM chat_messages WHERE id = ?1",
+        )?;
+        let (chat_id, role, order_index, swipes_json, created_at): (String, String, i32, String, u64) =
+            stmt.query_row(params![msg_id], |row| {
+                Ok((
+                    row.get(0)?,
+                    row.get(1)?,
+                    row.get(2)?,
+                    row.get(3)?,
+                    row.get(4)?,
+                ))
+            })?;
+
+        let mut swipes: Vec<SwipeVariant> = serde_json::from_str(&swipes_json).unwrap_or_default();
+        swipes.push(SwipeVariant {
+            content: content.to_string(),
+            thought: thought.map(|s| s.to_string()),
+        });
+        let new_swipe_idx = swipes.len() - 1;
+        let new_swipes_json = serde_json::to_string(&swipes).unwrap_or_else(|_| "[]".to_string());
+
+        conn.execute(
+            "UPDATE chat_messages SET content = ?1, thought = ?2, swipe_index = ?3, swipes_json = ?4 WHERE id = ?5",
+            params![content, thought, new_swipe_idx as i64, new_swipes_json, msg_id],
+        )?;
+
+        conn.execute(
+            "UPDATE chat_sessions SET updated_at = ?1 WHERE id = ?2",
+            params![now, chat_id],
+        )?;
+
+        Ok(StoredChatMessage {
+            id: msg_id.to_string(),
+            chat_id,
+            role,
+            content: content.to_string(),
+            thought: thought.map(|s| s.to_string()),
+            order_index,
+            swipe_index: new_swipe_idx,
+            swipes,
+            created_at,
+        })
+    }
+
+    pub fn switch_message_swipe(
+        &self,
+        msg_id: &str,
+        new_swipe_index: usize,
+    ) -> Result<StoredChatMessage, rusqlite::Error> {
+        let conn = self.conn.lock().unwrap();
+        let mut stmt = conn.prepare(
+            "SELECT chat_id, role, order_index, swipes_json, created_at FROM chat_messages WHERE id = ?1",
+        )?;
+        let (chat_id, role, order_index, swipes_json, created_at): (String, String, i32, String, u64) =
+            stmt.query_row(params![msg_id], |row| {
+                Ok((
+                    row.get(0)?,
+                    row.get(1)?,
+                    row.get(2)?,
+                    row.get(3)?,
+                    row.get(4)?,
+                ))
+            })?;
+
+        let swipes: Vec<SwipeVariant> = serde_json::from_str(&swipes_json).unwrap_or_default();
+        if new_swipe_index >= swipes.len() {
+            return Err(rusqlite::Error::InvalidQuery);
+        }
+
+        let variant = &swipes[new_swipe_index];
+        conn.execute(
+            "UPDATE chat_messages SET content = ?1, thought = ?2, swipe_index = ?3 WHERE id = ?4",
+            params![variant.content, variant.thought, new_swipe_index as i64, msg_id],
+        )?;
+
+        Ok(StoredChatMessage {
+            id: msg_id.to_string(),
+            chat_id,
+            role,
+            content: variant.content.clone(),
+            thought: variant.thought.clone(),
+            order_index,
+            swipe_index: new_swipe_index,
+            swipes,
+            created_at,
+        })
+    }
+
+    pub fn delete_chat_message(&self, msg_id: &str) -> Result<(), rusqlite::Error> {
+        let conn = self.conn.lock().unwrap();
+        conn.execute("DELETE FROM chat_messages WHERE id = ?1", params![msg_id])?;
+        Ok(())
+    }
+
+    pub fn delete_messages_after(&self, chat_id: &str, order_index: i32) -> Result<(), rusqlite::Error> {
+        let conn = self.conn.lock().unwrap();
+        conn.execute(
+            "DELETE FROM chat_messages WHERE chat_id = ?1 AND order_index >= ?2",
+            params![chat_id, order_index],
+        )?;
+        Ok(())
+    }
+
+    pub fn export_chat_jsonl(&self, chat_id: &str, char_name: &str, user_name: &str) -> Result<String, rusqlite::Error> {
+        let session = match self.get_chat_session(chat_id)? {
+            Some(s) => s,
+            None => return Err(rusqlite::Error::QueryReturnedNoRows),
+        };
+        let messages = self.get_chat_messages(chat_id)?;
+
+        let mut lines = Vec::new();
+
+        // 1. SillyTavern Header Line
+        let header = serde_json::json!({
+            "user_name": user_name,
+            "character_name": char_name,
+            "create_date": session.created_at * 1000,
+            "chat_metadata": {
+                "title": session.title,
+                "author_note": session.author_note,
+                "author_note_depth": session.author_note_depth
+            }
+        });
+        lines.push(header.to_string());
+
+        // 2. Messages
+        for msg in messages {
+            let is_user = msg.role == "user";
+            let is_system = msg.role == "system";
+            let name = if is_user { user_name } else { char_name };
+
+            let swipe_texts: Vec<String> = msg.swipes.iter().map(|s| s.content.clone()).collect();
+            let swipe_variants: Vec<serde_json::Value> = msg.swipes.iter().map(|s| {
+                serde_json::json!({
+                    "content": s.content,
+                    "thought": s.thought
+                })
+            }).collect();
+
+            let msg_obj = serde_json::json!({
+                "name": name,
+                "role": msg.role,
+                "is_user": is_user,
+                "is_system": is_system,
+                "send_date": msg.created_at * 1000,
+                "mes": msg.content,
+                "extra": {
+                    "thought": msg.thought
+                },
+                "swipes": swipe_texts,
+                "swipe_variants": swipe_variants,
+                "swipe_id": msg.swipe_index
+            });
+            lines.push(msg_obj.to_string());
+        }
+
+        Ok(lines.join("\n"))
+    }
+
+    pub fn import_chat_jsonl(
+        &self,
+        character_id: &str,
+        jsonl_content: &str,
+        title_override: Option<&str>,
+    ) -> Result<ChatSession, rusqlite::Error> {
+        let raw_lines: Vec<&str> = jsonl_content.lines().map(|l| l.trim()).filter(|l| !l.is_empty()).collect();
+        if raw_lines.is_empty() {
+            return self.create_chat_session(character_id, title_override.unwrap_or("Importierter Chat"));
+        }
+
+        let mut initial_title = title_override.map(|s| s.to_string());
+        let mut author_note = String::new();
+        let mut author_note_depth: u32 = 2;
+        let mut start_idx = 0;
+
+        // Try parsing first line as header
+        if let Ok(first_val) = serde_json::from_str::<serde_json::Value>(raw_lines[0]) {
+            if first_val.get("mes").is_none() && (first_val.get("character_name").is_some() || first_val.get("chat_metadata").is_some()) {
+                start_idx = 1;
+                if initial_title.is_none() {
+                    if let Some(t) = first_val.pointer("/chat_metadata/title").and_then(|v| v.as_str()) {
+                        initial_title = Some(t.to_string());
+                    }
+                }
+                if let Some(an) = first_val.pointer("/chat_metadata/author_note").and_then(|v| v.as_str()) {
+                    author_note = an.to_string();
+                }
+                if let Some(d) = first_val.pointer("/chat_metadata/author_note_depth").and_then(|v| v.as_u64()) {
+                    author_note_depth = d as u32;
+                }
+            }
+        }
+
+        let title = initial_title.unwrap_or_else(|| "Importierter Chat".to_string());
+        let session = self.create_chat_session(character_id, &title)?;
+
+        if !author_note.is_empty() || author_note_depth != 2 {
+            self.update_chat_author_note(&session.id, &author_note, author_note_depth)?;
+        }
+
+        for line in &raw_lines[start_idx..] {
+            if let Ok(v) = serde_json::from_str::<serde_json::Value>(line) {
+                let content = v.get("mes")
+                    .or_else(|| v.get("content"))
+                    .and_then(|s| s.as_str())
+                    .unwrap_or("")
+                    .to_string();
+
+                if content.is_empty() {
+                    continue;
+                }
+
+                let role = if let Some(r) = v.get("role").and_then(|s| s.as_str()) {
+                    r.to_string()
+                } else if v.get("is_user").and_then(|b| b.as_bool()).unwrap_or(false) {
+                    "user".to_string()
+                } else if v.get("is_system").and_then(|b| b.as_bool()).unwrap_or(false) {
+                    "system".to_string()
+                } else {
+                    "assistant".to_string()
+                };
+
+                let thought = v.pointer("/extra/thought")
+                    .or_else(|| v.get("thought"))
+                    .and_then(|s| s.as_str())
+                    .map(|s| s.to_string());
+
+                // Read swipes
+                let mut parsed_swipes = Vec::new();
+                if let Some(arr) = v.get("swipe_variants").and_then(|a| a.as_array()) {
+                    for it in arr {
+                        if let Some(c) = it.get("content").and_then(|s| s.as_str()) {
+                            let th = it.get("thought").and_then(|s| s.as_str()).map(|s| s.to_string());
+                            parsed_swipes.push(SwipeVariant {
+                                content: c.to_string(),
+                                thought: th,
+                            });
+                        }
+                    }
+                } else if let Some(arr) = v.get("swipes").and_then(|a| a.as_array()) {
+                    for it in arr {
+                        if let Some(c) = it.as_str() {
+                            parsed_swipes.push(SwipeVariant {
+                                content: c.to_string(),
+                                thought: None,
+                            });
+                        }
+                    }
+                }
+
+                let swipe_idx = v.get("swipe_id")
+                    .or_else(|| v.get("swipe_index"))
+                    .and_then(|n| n.as_u64())
+                    .unwrap_or(0) as usize;
+
+                // Add message
+                let added = self.add_chat_message(&session.id, &role, &content, thought.as_deref())?;
+
+                if !parsed_swipes.is_empty() {
+                    let conn = self.conn.lock().unwrap();
+                    let safe_idx = if swipe_idx < parsed_swipes.len() { swipe_idx } else { 0 };
+                    let active_variant = &parsed_swipes[safe_idx];
+                    let swipes_json = serde_json::to_string(&parsed_swipes).unwrap_or_else(|_| "[]".to_string());
+                    conn.execute(
+                        "UPDATE chat_messages SET content = ?1, thought = ?2, swipe_index = ?3, swipes_json = ?4 WHERE id = ?5",
+                        params![active_variant.content, active_variant.thought, safe_idx as i64, swipes_json, added.id],
+                    )?;
+                }
+            }
+        }
+
+        // Return updated session with message count
+        self.get_chat_session(&session.id)?.ok_or(rusqlite::Error::QueryReturnedNoRows)
+    }
 }
 
 #[cfg(test)]
@@ -574,4 +1178,123 @@ mod tests {
         assert_eq!(overview.recent_memories.len(), 1);
         assert_eq!(overview.recent_diary.len(), 1);
     }
+
+    #[test]
+    fn test_chat_sessions_crud() {
+        let db = MemoryDb::new_in_memory().expect("in-memory db failed");
+        let session = db.create_chat_session("ayu", "Erstes Treffen").unwrap();
+        assert_eq!(session.title, "Erstes Treffen");
+        assert_eq!(session.character_id, "ayu");
+        assert_eq!(session.message_count, 0);
+
+        let list = db.list_chat_sessions("ayu").unwrap();
+        assert_eq!(list.len(), 1);
+        assert_eq!(list[0].id, session.id);
+
+        db.rename_chat_session(&session.id, "Umbenannter Chat").unwrap();
+        let loaded = db.get_chat_session(&session.id).unwrap().unwrap();
+        assert_eq!(loaded.title, "Umbenannter Chat");
+
+        db.update_chat_author_note(&session.id, "[Ayu ist schüchtern]", 3).unwrap();
+        let loaded2 = db.get_chat_session(&session.id).unwrap().unwrap();
+        assert_eq!(loaded2.author_note, "[Ayu ist schüchtern]");
+        assert_eq!(loaded2.author_note_depth, 3);
+
+        db.delete_chat_session(&session.id).unwrap();
+        let list_empty = db.list_chat_sessions("ayu").unwrap();
+        assert_eq!(list_empty.len(), 0);
+    }
+
+    #[test]
+    fn test_chat_messages_and_swipes() {
+        let db = MemoryDb::new_in_memory().expect("in-memory db failed");
+        let session = db.create_chat_session("ayu", "Test Chat").unwrap();
+
+        // 1. Add user message
+        let user_msg = db.add_chat_message(&session.id, "user", "Hallo Ayu!", None).unwrap();
+        assert_eq!(user_msg.role, "user");
+        assert_eq!(user_msg.content, "Hallo Ayu!");
+        assert_eq!(user_msg.order_index, 0);
+        assert_eq!(user_msg.swipes.len(), 1);
+
+        // 2. Add assistant response
+        let asst_msg = db.add_chat_message(
+            &session.id,
+            "assistant",
+            "*lächelt* Hallo Hiroki!",
+            Some("Erfreut über die Begrüßung"),
+        ).unwrap();
+        assert_eq!(asst_msg.role, "assistant");
+        assert_eq!(asst_msg.order_index, 1);
+        assert_eq!(asst_msg.swipe_index, 0);
+        assert_eq!(asst_msg.swipes.len(), 1);
+
+        // 3. Add swipe variant to assistant message
+        let swiped = db.add_message_swipe(
+            &asst_msg.id,
+            "*winkt fröhlich* Hey Hiroki, schön dich zu sehen!",
+            Some("Sehr enthusiastisch"),
+        ).unwrap();
+        assert_eq!(swiped.swipes.len(), 2);
+        assert_eq!(swiped.swipe_index, 1);
+        assert_eq!(swiped.content, "*winkt fröhlich* Hey Hiroki, schön dich zu sehen!");
+        assert_eq!(swiped.thought.as_deref(), Some("Sehr enthusiastisch"));
+
+        // 4. Switch back to swipe 0
+        let switched = db.switch_message_swipe(&asst_msg.id, 0).unwrap();
+        assert_eq!(switched.swipe_index, 0);
+        assert_eq!(switched.content, "*lächelt* Hallo Hiroki!");
+
+        // 5. Update active swipe inline
+        let updated = db.update_chat_message(&asst_msg.id, "*lächelt sanft* Hallo Hiroki!", None).unwrap();
+        assert_eq!(updated.content, "*lächelt sanft* Hallo Hiroki!");
+        assert_eq!(updated.swipes[0].content, "*lächelt sanft* Hallo Hiroki!");
+        assert_eq!(updated.swipes.len(), 2);
+
+        // 6. Check messages list
+        let msgs = db.get_chat_messages(&session.id).unwrap();
+        assert_eq!(msgs.len(), 2);
+
+        // 7. Check message count in session
+        let updated_sess = db.get_chat_session(&session.id).unwrap().unwrap();
+        assert_eq!(updated_sess.message_count, 2);
+
+        // 8. Delete message
+        db.delete_chat_message(&asst_msg.id).unwrap();
+        let msgs_after = db.get_chat_messages(&session.id).unwrap();
+        assert_eq!(msgs_after.len(), 1);
+    }
+
+    #[test]
+    fn test_chat_jsonl_export_and_import() {
+        let db = MemoryDb::new_in_memory().expect("in-memory db failed");
+        let session = db.create_chat_session("ayu", "Reise nach Kyoto").unwrap();
+        db.update_chat_author_note(&session.id, "[Wetter ist sonnig]", 2).unwrap();
+
+        db.add_chat_message(&session.id, "user", "Kommst du mit zum Schrein?", None).unwrap();
+        let asst = db.add_chat_message(&session.id, "assistant", "*nickt* Sehr gern!", Some("Aufgeregt")).unwrap();
+        db.add_message_swipe(&asst.id, "*hüpft auf* Na klar doch!", Some("Voller Energie")).unwrap();
+
+        let jsonl = db.export_chat_jsonl(&session.id, "Ayu", "Hiroki").unwrap();
+        assert!(jsonl.contains("Reise nach Kyoto"));
+        assert!(jsonl.contains("[Wetter ist sonnig]"));
+        assert!(jsonl.contains("Kommst du mit zum Schrein?"));
+        assert!(jsonl.contains("Sehr gern!"));
+        assert!(jsonl.contains("Na klar doch!"));
+
+        // Now import into new session
+        let imported = db.import_chat_jsonl("ayu", &jsonl, None).unwrap();
+        assert_eq!(imported.title, "Reise nach Kyoto");
+        assert_eq!(imported.author_note, "[Wetter ist sonnig]");
+        assert_eq!(imported.message_count, 2);
+
+        let imp_msgs = db.get_chat_messages(&imported.id).unwrap();
+        assert_eq!(imp_msgs.len(), 2);
+        assert_eq!(imp_msgs[0].role, "user");
+        assert_eq!(imp_msgs[1].role, "assistant");
+        assert_eq!(imp_msgs[1].swipes.len(), 2);
+        assert_eq!(imp_msgs[1].swipe_index, 1);
+        assert_eq!(imp_msgs[1].content, "*hüpft auf* Na klar doch!");
+    }
 }
+

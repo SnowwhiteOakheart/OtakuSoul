@@ -29,6 +29,8 @@ import {
   ScannedVrm,
   AppSettings,
   UserPersona,
+  ChatSession,
+  StoredChatMessage,
 } from '../types';
 
 export const api = {
@@ -334,6 +336,129 @@ export const api = {
 
   deletePersona: async (personaId: string): Promise<UserPersona[]> => {
     return await invoke<UserPersona[]>('delete_persona', { personaId });
+  },
+
+  // Phase 9: Vollwertiger Chat & Swipes
+  createChatSession: async (characterId: string, title: string): Promise<ChatSession> => {
+    return await invoke<ChatSession>('create_chat_session', { characterId, title });
+  },
+
+  listChatSessions: async (characterId: string): Promise<ChatSession[]> => {
+    return await invoke<ChatSession[]>('list_chat_sessions', { characterId });
+  },
+
+  getChatSession: async (chatId: string): Promise<ChatSession | null> => {
+    return await invoke<ChatSession | null>('get_chat_session', { chatId });
+  },
+
+  deleteChatSession: async (chatId: string): Promise<void> => {
+    return await invoke<void>('delete_chat_session', { chatId });
+  },
+
+  renameChatSession: async (chatId: string, newTitle: string): Promise<void> => {
+    return await invoke<void>('rename_chat_session', { chatId, newTitle });
+  },
+
+  updateChatAuthorNote: async (
+    chatId: string,
+    authorNote: string,
+    authorNoteDepth: number
+  ): Promise<void> => {
+    return await invoke<void>('update_chat_author_note', {
+      chatId,
+      authorNote,
+      authorNoteDepth,
+    });
+  },
+
+  getChatMessages: async (chatId: string): Promise<StoredChatMessage[]> => {
+    return await invoke<StoredChatMessage[]>('get_chat_messages', { chatId });
+  },
+
+  addChatMessage: async (
+    chatId: string,
+    role: string,
+    content: string,
+    thought?: string | null
+  ): Promise<StoredChatMessage> => {
+    return await invoke<StoredChatMessage>('add_chat_message', {
+      chatId,
+      role,
+      content,
+      thought: thought ?? null,
+    });
+  },
+
+  updateChatMessage: async (
+    msgId: string,
+    content: string,
+    thought?: string | null
+  ): Promise<StoredChatMessage> => {
+    return await invoke<StoredChatMessage>('update_chat_message', {
+      msgId,
+      content,
+      thought: thought ?? null,
+    });
+  },
+
+  addMessageSwipe: async (
+    msgId: string,
+    content: string,
+    thought?: string | null
+  ): Promise<StoredChatMessage> => {
+    return await invoke<StoredChatMessage>('add_message_swipe', {
+      msgId,
+      content,
+      thought: thought ?? null,
+    });
+  },
+
+  switchMessageSwipe: async (
+    msgId: string,
+    swipeIndex: number
+  ): Promise<StoredChatMessage> => {
+    return await invoke<StoredChatMessage>('switch_message_swipe', {
+      msgId,
+      swipeIndex,
+    });
+  },
+
+  deleteChatMessage: async (msgId: string): Promise<void> => {
+    return await invoke<void>('delete_chat_message', { msgId });
+  },
+
+  deleteMessagesAfter: async (
+    chatId: string,
+    orderIndex: number
+  ): Promise<void> => {
+    return await invoke<void>('delete_messages_after', {
+      chatId,
+      orderIndex,
+    });
+  },
+
+  exportChatJsonl: async (
+    chatId: string,
+    charName: string,
+    userName: string
+  ): Promise<string> => {
+    return await invoke<string>('export_chat_jsonl', {
+      chatId,
+      charName,
+      userName,
+    });
+  },
+
+  importChatJsonl: async (
+    characterId: string,
+    jsonlContent: string,
+    titleOverride?: string | null
+  ): Promise<ChatSession> => {
+    return await invoke<ChatSession>('import_chat_jsonl', {
+      characterId,
+      jsonlContent,
+      titleOverride: titleOverride ?? null,
+    });
   },
 
   // Streaming Listeners

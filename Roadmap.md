@@ -62,18 +62,18 @@ Die Reihenfolge ist nach Abhängigkeit und Nutzen sortiert: erst das, was jede a
 - [ ] **Port von `tools/import_character_cards.py`** als Rust-Command/CLI (Bulk-Import inkl. Live2D, Personas, Lorebooks, Szenen, Hintergründe, `--scene-group`)
 - [x] **User-Personas** – mehrere Personas anlegen, bearbeiten, löschen, Schnellwechsel im Chat & HUD (`PersonaManagerModal.tsx`).
 
-### Phase 9 – Vollwertiger Chat 🔴
+### Phase 9 – Vollwertiger Chat ✅ Kernfunktionen abgeschlossen
 
-- [ ] **Chat-Persistenz** – mehrere Chats pro Charakter in SQLite oder JSONL, Chat-Liste, Umbenennen, Löschen
-- [ ] **Chat-Import/Export** (SoW-Format + SillyTavern-JSONL)
-- [ ] **Nachricht bearbeiten / löschen / neu generieren**
-- [ ] **Swipes / Varianten** – mehrere Antworten pro Nachricht, Wechsel per Pfeil (SoW: `switch_message_variant`)
-- [ ] **Weiter-Generieren** (Continue) einer abgebrochenen Antwort
+- [x] **Chat-Persistenz** – mehrere Chats pro Charakter in SQLite (`chat_sessions`, `chat_messages`), Chat-Liste, Umbenennen, Löschen
+- [x] **Chat-Import/Export** (SillyTavern & SoW JSONL mit Metadaten und allen Swipes)
+- [x] **Nachricht bearbeiten / löschen / neu generieren** (Inline-Editing, Delete, Regenerate)
+- [x] **Swipes / Varianten** – SillyTavern-Style Antwortvarianten in `swipes_json`, Pagination `< 1/3 >`, Wechsel per Pfeil
+- [x] **Weiter-Generieren** (Continue) einer Nachricht
+- [x] **Author's Note** pro Chat mit konfigurierbarer Injektionstiefe (Depth-Slider & System-Prompt-Injektion)
+- [x] **State Variables aus LLM-Antworten parsen** – robuster `<state>`-JSON-Interceptor (`stateParser.ts`), Tag-Stripping aus Chatblasen + **11 Rollenspiel-HUD-Presets** (Romance, Fantasy RPG, Survival, Horror, Cyberpunk, Slice of Life, Detektiv, Space Opera, Cultivation, Comedy, Tabletop Tactical)
 - [ ] **Kontextfenster-Management** – Token-Zählung (`tiktoken-rs` oder `/tokenize` des llama-servers), Response-Reserve, älteste Nachrichten abschneiden (SoW: `PromptEngine._get_max_context_tokens`)
 - [ ] **Automatische Zusammenfassung** alter Nachrichten + Summary-Editor (SoW: `build_summary_prompt_blocks`, `open_summary_editor`, `save_interval_summary`)
-- [ ] **Author's Note** pro Chat mit Injektionstiefe (SoW: `_inject_chat_author_note`)
 - [ ] **System-Prompt-Editor** & Prompt-Vorlagen
-- [ ] **State Variables aus LLM-Antworten parsen** – robuster `<state>`-JSON-Interceptor (SoW: `extract_state_update`, `_sanitize_state_json`) + **11 HUD-Presets** (Romance, RPG, Survival, Horror, VN, …); Typ `list` im HUD ergänzen
 - [ ] **Datei-Anhänge** (Text, PDF, Bilder für Vision-Modelle) (SoW: `open_attach_file_dialog`)
 - [ ] **Chat-Übersetzung** einzelner Nachrichten (SoW: `translator.py`)
 - [ ] **Chat-Erscheinungsbild** – Hintergründe pro Chat, Schrift, Blasenfarben, Themes (SoW: `on_chat_appearance_changed`, `open_chat_background_changer`)

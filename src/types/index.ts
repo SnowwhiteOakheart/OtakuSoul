@@ -195,6 +195,8 @@ export interface PromptContext {
   cognitive?: CognitiveOverview;
   reply_language?: string;
   allow_reasoning?: boolean;
+  author_note?: string;
+  author_note_depth?: number;
 }
 
 // Phase 6: Soul Stage Tabletop RPG
@@ -350,3 +352,43 @@ export interface UserPersona {
   description: string;
   avatar_data_url?: string | null;
 }
+
+// Phase 9: Vollwertiger Chat, Swipes & HUD Presets
+export interface ChatSession {
+  id: string;
+  character_id: string;
+  title: string;
+  created_at: number;
+  updated_at: number;
+  author_note: string;
+  author_note_depth: number;
+  message_count: number;
+}
+
+export interface SwipeVariant {
+  content: string;
+  thought?: string | null;
+}
+
+export interface StoredChatMessage {
+  id: string;
+  chat_id: string;
+  role: 'user' | 'assistant' | 'system';
+  content: string;
+  thought?: string | null;
+  order_index: number;
+  swipe_index: number;
+  swipes: SwipeVariant[];
+  created_at: number;
+}
+
+export interface HudPreset {
+  id: string;
+  name: string;
+  category: string;
+  description: string;
+  icon: string;
+  color: string;
+  defaultVariables: StateVariable[];
+}
+

@@ -61,6 +61,21 @@ pub fn run() {
             commands::load_personas,
             commands::save_persona,
             commands::delete_persona,
+            commands::create_chat_session,
+            commands::list_chat_sessions,
+            commands::get_chat_session,
+            commands::delete_chat_session,
+            commands::rename_chat_session,
+            commands::update_chat_author_note,
+            commands::get_chat_messages,
+            commands::add_chat_message,
+            commands::update_chat_message,
+            commands::add_message_swipe,
+            commands::switch_message_swipe,
+            commands::delete_chat_message,
+            commands::delete_messages_after,
+            commands::export_chat_jsonl,
+            commands::import_chat_jsonl,
         ])
         .run(tauri::generate_context!())
         .expect("error while running OtakuSoul application");

@@ -90,8 +90,16 @@ npm run tauri build
   - Persistent settings (`settings.json`) with configurable sampler & language
   - SillyTavern V2 Character Library with gallery, search, tag filters, and live editor
   - PNG `chara` tEXt metadata injection & export, plus User-Persona management
-- [ ] **Phases 9–18: Remaining feature parity with Soul of Waifu**
-  - Persistent multi-chat, all cloud providers, Soul Memory 2.0 agents, voice (TTS/STT), Live2D, AI Game Master, real companion tools, web client, Discord & packaging
+- [x] **Phase 9: Full Chat System, Swipes & Roleplay HUD Presets**
+  - Multi-chat SQLite sessions per character (`chat_sessions`, `chat_messages`) with sidebar drawer
+  - SillyTavern-style answer swipes (`< 1/3 >` pagination, regenerate without losing variants)
+  - Inline message editing, delete, and continue generation
+  - Author's Note with configurable injection depth ($N$ messages from conversation end)
+  - Real-time `<state>` JSON tag extraction, tag-stripping, and automatic reactive HUD updates
+  - 11 Roleplay HUD Presets (Romance, RPG, Survival, Horror, Cyberpunk, Slice-of-Life, etc.)
+  - Full SillyTavern & SoW JSONL chat import and export
+- [ ] **Phases 10–18: Remaining feature parity with Soul of Waifu**
+  - Provider abstraction & LLM presets, Soul Memory 2.0 agents, voice (TTS/STT), Live2D, AI Game Master, real companion tools, web client, Discord & packaging
   - See **[Roadmap.md](Roadmap.md)** for the full, detailed plan (German)
 
 ---
