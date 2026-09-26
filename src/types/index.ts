@@ -536,3 +536,28 @@ export interface DownloadProgressEvent {
   error?: string | null;
 }
 
+
+// Phase 13: Voice & TTS
+export type TtsEngine = 'edge' | 'elevenlabs' | 'openai' | 'disabled';
+export type TtsFilterMode = 'all' | 'dialogue_only' | 'strip_actions';
+
+export interface VoiceConfig {
+  engine: TtsEngine;
+  voice_id: string;
+  rate: string;
+  pitch: string;
+  volume: string;
+  filter_mode: TtsFilterMode;
+  custom_regex: string;
+  elevenlabs_api_key: string;
+  openai_endpoint: string;
+  openai_api_key: string;
+  openai_model: string;
+}
+
+export interface ScannedVoice {
+  id: string;
+  name: string;
+  locale: string;
+  gender: string;
+}

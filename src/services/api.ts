@@ -41,6 +41,8 @@ import {
   HfModelSummary,
   HfGgufFile,
   DownloadProgressEvent,
+  ScannedVoice,
+  VoiceConfig,
 } from '../types';
 
 export const api = {
@@ -652,5 +654,21 @@ export const api = {
     return await listen<DoneEvent>('llm-done', (event) => {
       callback(event.payload);
     });
+  },
+  // Phase 13: Voice/TTS
+  listAvailableVoices: async (engine: string): Promise<ScannedVoice[]> => {
+    return await invoke<ScannedVoice[]>('list_available_voices', { engine });
+  },
+  
+  synthesizeSpeech: async (text: string, config: VoiceConfig): Promise<string> => {
+    return await invoke<string>('synthesize_speech', { text, config });
+  },
+  
+  getCharacterVoiceConfig: async (charId: string): Promise<VoiceConfig> => {
+    return await invoke<VoiceConfig>('get_character_voice_config', { charId });
+  },
+  
+  saveCharacterVoiceConfig: async (charId: string, config: VoiceConfig): Promise<void> => {
+    return await invoke<void>('save_character_voice_config', { charId, config });
   },
 };

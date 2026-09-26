@@ -1,4 +1,5 @@
 import React from 'react';
+import { Volume2 } from 'lucide-react';
 
 export type RoleplaySegmentType = 'action' | 'dialogue' | 'narration' | 'newline';
 
@@ -104,60 +105,73 @@ export function parseRoleplaySegments(input: string): RoleplaySegment[] {
 interface RoleplayMessageProps {
   content: string;
   isUser: boolean;
+  onSpeak?: () => void;
 }
 
-export const RoleplayMessage: React.FC<RoleplayMessageProps> = ({ content, isUser }) => {
+export const RoleplayMessage: React.FC<RoleplayMessageProps> = ({ content, isUser, onSpeak }) => {
   const segments = parseRoleplaySegments(content);
 
   return (
-    <div className="whitespace-pre-wrap leading-relaxed select-text font-sans">
-      {segments.map((seg, i) => {
-        if (seg.type === 'newline') {
-          return <br key={i} />;
-        }
+    <div className="relative group/roleplay">
+      <div className="whitespace-pre-wrap leading-relaxed select-text font-sans">
+        {segments.map((seg, i) => {
+          if (seg.type === 'newline') {
+            return <br key={i} />;
+          }
 
-        // Action styling (Italics & soft atmospheric violet/slate)
-        if (seg.type === 'action') {
+          // Action styling (Italics & soft atmospheric violet/slate)
+          if (seg.type === 'action') {
+            return (
+              <span
+                key={i}
+                className={`italic transition-colors ${
+                  isUser
+                    ? 'text-purple-200/85 font-normal'
+                    : 'text-purple-300/90 font-normal'
+                }`}
+              >
+                {seg.text}
+              </span>
+            );
+          }
+
+          // Spoken dialogue styling (Clear, prominent, warm speech)
+          if (seg.type === 'dialogue') {
+            return (
+              <span
+                key={i}
+                className={`transition-colors ${
+                  isUser
+                    ? 'text-white font-semibold'
+                    : 'text-amber-100/95 font-medium drop-shadow-[0_1px_2px_rgba(0,0,0,0.35)]'
+                }`}
+              >
+                {seg.text}
+              </span>
+            );
+          }
+
+          // Standard narrative text
           return (
             <span
               key={i}
-              className={`italic transition-colors ${
-                isUser
-                  ? 'text-purple-200/85 font-normal'
-                  : 'text-purple-300/90 font-normal'
-              }`}
+              className={isUser ? 'text-purple-50' : 'text-slate-200'}
             >
               {seg.text}
             </span>
           );
-        }
-
-        // Spoken dialogue styling (Clear, prominent, warm speech)
-        if (seg.type === 'dialogue') {
-          return (
-            <span
-              key={i}
-              className={`transition-colors ${
-                isUser
-                  ? 'text-white font-semibold'
-                  : 'text-amber-100/95 font-medium drop-shadow-[0_1px_2px_rgba(0,0,0,0.35)]'
-              }`}
-            >
-              {seg.text}
-            </span>
-          );
-        }
-
-        // Standard narrative text
-        return (
-          <span
-            key={i}
-            className={isUser ? 'text-purple-50' : 'text-slate-200'}
-          >
-            {seg.text}
-          </span>
-        );
-      })}
+        })}
+      </div>
+      
+      {!isUser && onSpeak && (
+        <button
+          onClick={onSpeak}
+          className="absolute -right-8 top-0 p-1.5 text-slate-500 hover:text-purple-400 bg-slate-900/50 hover:bg-slate-800 rounded-md opacity-0 group-hover/roleplay:opacity-100 transition-all shadow-sm border border-slate-800"
+          title="Vorlesen (TTS)"
+        >
+          <Volume2 className="w-4 h-4" />
+        </button>
+      )}
     </div>
   );
 };

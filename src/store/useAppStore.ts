@@ -39,6 +39,7 @@ import {
   HfModelSummary,
   HfGgufFile,
   DownloadProgressEvent,
+  VoiceConfig,
 } from '../types';
 import { soundFx } from '../services/soundFx';
 import { extractStateUpdates, applyStateUpdates } from '../utils/stateParser';
@@ -339,6 +340,13 @@ interface AppStoreState {
   continueChatMessage: (msgId: string) => Promise<void>;
   exportCurrentChat: () => Promise<string | null>;
   importChatJsonl: (jsonlContent: string, title?: string) => Promise<void>;
+
+  // Phase 13: Voice
+  autoTtsEnabled: boolean;
+  setAutoTtsEnabled: (enabled: boolean) => void;
+  activeVoiceConfig: VoiceConfig | null;
+  loadVoiceConfigForCharacter: (charId: string) => Promise<void>;
+  saveVoiceConfigForCharacter: (charId: string, config: VoiceConfig) => Promise<void>;
 }
 
 export const useAppStore = create<AppStoreState>((set, get) => ({
@@ -1213,6 +1221,7 @@ export const useAppStore = create<AppStoreState>((set, get) => ({
     get().saveCurrentSettings();
     await get().loadChatSessions(character.id);
     await get().fetchCognitiveOverview(character.id, get().activePersona.name);
+    await get().loadVoiceConfigForCharacter(character.id);
   },
 
   refreshCharacters: async () => {
@@ -2006,4 +2015,31 @@ export const useAppStore = create<AppStoreState>((set, get) => ({
       console.error('Failed to clear chat:', e);
     }
   },
+
+  // Phase 13: Voice
+  autoTtsEnabled: false,
+  setAutoTtsEnabled: (enabled) => set({ autoTtsEnabled: enabled }),
+  activeVoiceConfig: null,
+
+  loadVoiceConfigForCharacter: async (charId) => {
+    try {
+      const config = await api.getCharacterVoiceConfig(charId);
+      set({ activeVoiceConfig: config });
+    } catch (e) {
+      console.error('Failed to load voice config:', e);
+      set({ activeVoiceConfig: null });
+    }
+  },
+
+  saveVoiceConfigForCharacter: async (charId, config) => {
+    try {
+      await api.saveCharacterVoiceConfig(charId, config);
+      if (get().activeCharacter?.id === charId) {
+        set({ activeVoiceConfig: config });
+      }
+    } catch (e) {
+      console.error('Failed to save voice config:', e);
+    }
+  },
 }));
+

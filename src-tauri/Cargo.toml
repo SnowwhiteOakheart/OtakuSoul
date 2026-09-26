@@ -35,6 +35,7 @@ png = "0.17"
 urlencoding = "2.1"
 regex = "1.10"
 chrono = "0.4"
+tokio-tungstenite = { version = "0.24", features = ["native-tls"] }
 
 [target.'cfg(unix)'.dependencies]
 libc = "0.2"

@@ -5,6 +5,7 @@ import { OrbitControls } from 'three/examples/jsm/controls/OrbitControls.js';
 import { VRM, VRMLoaderPlugin, VRMUtils } from '@pixiv/three-vrm';
 import { api } from '../../services/api';
 import { Loader2, Smile, Frown, Angry, Sparkles, RefreshCcw } from 'lucide-react';
+import { audioPlayer } from '../../services/audioPlayer';
 
 interface VrmViewerProps {
   modelPath: string;
@@ -41,6 +42,11 @@ export const VrmViewer = ({
     let isDisposed = false;
     setLoading(true);
     setError(null);
+    
+    let currentAmplitude = 0;
+    const cleanupAudio = audioPlayer.onAudioFrame((amp) => {
+      currentAmplitude = amp;
+    });
 
     // 1. Scene, Camera, Renderer
     const scene = new THREE.Scene();
@@ -259,7 +265,9 @@ export const VrmViewer = ({
           em.setValue('relaxed', activeEmo === 'relaxed' ? 0.6 : 0.0);
 
           // D. Talking Viseme (LipSync)
-          if (isSpeakingRef.current) {
+          if (audioPlayer.isPlaying()) {
+            em.setValue('aa', currentAmplitude);
+          } else if (isSpeakingRef.current) {
             const talkWeight = (Math.sin(elapsed * 14.0) + 1.0) * 0.35;
             em.setValue('aa', talkWeight);
           } else {
@@ -288,6 +296,7 @@ export const VrmViewer = ({
 
     return () => {
       isDisposed = true;
+      cleanupAudio();
       cancelAnimationFrame(animationFrameId);
       window.removeEventListener('resize', handleResize);
       container.removeEventListener('mousemove', handleMouseMove);

@@ -100,6 +100,11 @@ pub fn run() {
             commands::search_hf_models,
             commands::get_hf_model_files,
             commands::download_gguf_model,
+            // Voice / TTS
+            commands::list_available_voices,
+            commands::synthesize_speech,
+            commands::get_character_voice_config,
+            commands::save_character_voice_config,
         ])
         .run(tauri::generate_context!())
         .expect("error while running OtakuSoul application");

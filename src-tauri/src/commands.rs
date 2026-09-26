@@ -884,3 +884,30 @@ pub async fn download_gguf_model(
     crate::modules::models_hub::download_gguf_file(&app, &download_url, &filename).await
 }
 
+// --- Voice / TTS Commands ---
+
+#[tauri::command]
+pub fn list_available_voices(engine: String) -> Vec<crate::modules::voice::ScannedVoice> {
+    crate::modules::voice::list_available_voices(&engine)
+}
+
+#[tauri::command]
+pub async fn synthesize_speech(
+    text: String,
+    config: crate::modules::voice::VoiceConfig,
+) -> Result<String, String> {
+    crate::modules::voice::synthesize_speech(&text, &config).await
+}
+
+#[tauri::command]
+pub fn get_character_voice_config(char_id: String) -> crate::modules::voice::VoiceConfig {
+    crate::modules::voice::load_character_voice_config(&char_id)
+}
+
+#[tauri::command]
+pub fn save_character_voice_config(
+    char_id: String,
+    config: crate::modules::voice::VoiceConfig,
+) -> Result<(), String> {
+    crate::modules::voice::save_character_voice_config(&char_id, &config)
+}

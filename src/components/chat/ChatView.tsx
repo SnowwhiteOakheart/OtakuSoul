@@ -24,7 +24,12 @@ import {
   Edit3,
   Check,
   X,
+  Volume2,
+  VolumeX,
 } from 'lucide-react';
+import { audioPlayer } from '../../services/audioPlayer';
+
+import { CharacterVoiceModal } from '../voice/CharacterVoiceModal';
 
 export const ChatView: React.FC = () => {
   const {
@@ -48,6 +53,9 @@ export const ChatView: React.FC = () => {
     continueChatMessage,
     editChatMessage,
     deleteChatMessage,
+    autoTtsEnabled,
+    setAutoTtsEnabled,
+    activeVoiceConfig,
   } = useAppStore();
 
   const [input, setInput] = useState('');
@@ -55,6 +63,7 @@ export const ChatView: React.FC = () => {
   const [streamThought, setStreamThought] = useState('');
   const [showCurrentThought, setShowCurrentThought] = useState(true);
   const [showAvatar, setShowAvatar] = useState(true);
+  const [showVoiceModal, setShowVoiceModal] = useState(false);
   const [expandedThoughts, setExpandedThoughts] = useState<Record<string | number, boolean>>({});
 
   // Inline editing state
@@ -91,10 +100,20 @@ export const ChatView: React.FC = () => {
         cleanups.push(uThought);
       }
 
-      const uDone = await api.onLlmDone(() => {
+      const uDone = await api.onLlmDone(async (data) => {
         if (isSubscribed) {
           setStreamText('');
           setStreamThought('');
+          
+          const state = useAppStore.getState();
+          if (state.autoTtsEnabled && state.activeVoiceConfig && data.full_text) {
+            try {
+              const audioUrl = await api.synthesizeSpeech(data.full_text, state.activeVoiceConfig);
+              audioPlayer.enqueue(audioUrl);
+            } catch (e) {
+              console.error('Auto-TTS failed:', e);
+            }
+          }
         }
       });
       if (!isSubscribed) {
@@ -136,6 +155,16 @@ export const ChatView: React.FC = () => {
       await editChatMessage(msgId, editContent.trim());
     }
     setEditingMsgId(null);
+  };
+
+  const handleSpeak = async (text: string) => {
+    if (!activeVoiceConfig) return;
+    try {
+      const audioUrl = await api.synthesizeSpeech(text, activeVoiceConfig);
+      audioPlayer.playDataUrl(audioUrl);
+    } catch (e) {
+      console.error('Speech synthesis failed:', e);
+    }
   };
 
   const currentSession = chatSessions.find((s) => s.id === activeChatId);
@@ -209,6 +238,29 @@ export const ChatView: React.FC = () => {
         </div>
 
         <div className="flex items-center gap-2">
+          <button
+            onClick={() => setShowVoiceModal(true)}
+            className="flex items-center gap-1.5 px-2.5 py-1 rounded-lg text-xs transition-colors border bg-slate-800/60 text-slate-400 border-slate-700/60 hover:text-slate-200"
+            title="Stimme & TTS anpassen"
+          >
+            <Volume2 className="w-3.5 h-3.5" />
+            <span className="hidden sm:inline">Stimme</span>
+          </button>
+
+          {activeVoiceConfig && activeVoiceConfig.engine !== 'disabled' && (
+            <button
+              onClick={() => setAutoTtsEnabled(!autoTtsEnabled)}
+              className={`flex items-center gap-1.5 px-2.5 py-1 rounded-lg text-xs transition-colors border ${
+                autoTtsEnabled
+                  ? 'bg-emerald-950/40 text-emerald-300 border-emerald-500/40'
+                  : 'bg-slate-800/60 text-slate-400 border-slate-700/60 hover:text-slate-200'
+              }`}
+              title={autoTtsEnabled ? 'Auto-TTS deaktivieren' : 'Auto-TTS aktivieren'}
+            >
+              {autoTtsEnabled ? <Volume2 className="w-3.5 h-3.5" /> : <VolumeX className="w-3.5 h-3.5" />}
+              <span className="hidden sm:inline">Auto-TTS</span>
+            </button>
+          )}
           <button
             onClick={() => setShowAvatar(!showAvatar)}
             className={`flex items-center gap-1.5 px-2.5 py-1 rounded-lg text-xs transition-colors border ${
@@ -354,7 +406,11 @@ export const ChatView: React.FC = () => {
                             : 'bg-slate-900 border border-slate-800 text-slate-100 shadow-sm'
                         }`}
                       >
-                        <RoleplayMessage content={msg.content} isUser={msg.role === 'user'} />
+                        <RoleplayMessage 
+                          content={msg.content} 
+                          isUser={msg.role === 'user'}
+                          onSpeak={msg.role !== 'user' && activeVoiceConfig?.engine !== 'disabled' ? () => handleSpeak(msg.content) : undefined}
+                        />
                       </div>
 
                       {/* Hover Action Buttons */}
@@ -448,7 +504,11 @@ export const ChatView: React.FC = () => {
                 {/* Live Streaming Text Bubble */}
                 {streamText && (
                   <div className="max-w-[85%] rounded-2xl px-4 py-2.5 text-sm leading-relaxed bg-slate-900 border border-purple-500/30 text-slate-100 shadow-md">
-                    <RoleplayMessage content={streamText} isUser={false} />
+                    <RoleplayMessage 
+                      content={streamText} 
+                      isUser={false} 
+                      onSpeak={activeVoiceConfig?.engine !== 'disabled' ? () => handleSpeak(streamText) : undefined}
+                    />
                   </div>
                 )}
               </div>
@@ -496,6 +556,9 @@ export const ChatView: React.FC = () => {
           </div>
         </div>
       </div>
+      {showVoiceModal && (
+        <CharacterVoiceModal onClose={() => setShowVoiceModal(false)} />
+      )}
     </div>
   );
 };
