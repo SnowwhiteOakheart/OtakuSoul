@@ -1,9 +1,13 @@
 use directories::ProjectDirs;
 use serde::{Deserialize, Serialize};
+use serde_json::{Map as JsonMap, Value as JsonValue};
+use std::collections::HashMap;
 use std::fs;
 use std::path::{Path, PathBuf};
 
-use crate::modules::characters::{load_character_from_file, CharacterProfile};
+use crate::modules::characters::{
+    load_character_from_file, parse_character_json, CharacterProfile,
+};
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct AppPaths {
@@ -133,12 +137,134 @@ fn load_hidden_character_ids() -> std::collections::HashSet<String> {
     std::collections::HashSet::new()
 }
 
+type BundledExpressionSets = HashMap<String, JsonMap<String, JsonValue>>;
+
+fn resolve_bundled_expression_set(
+    card_path: &Path,
+    expressions: &JsonMap<String, JsonValue>,
+) -> JsonMap<String, JsonValue> {
+    let parent = card_path.parent().unwrap_or_else(|| Path::new("."));
+
+    expressions
+        .iter()
+        .map(|(emotion, value)| {
+            let resolved = value.as_str().map(|source| {
+                let is_external = source.starts_with("data:")
+                    || source.starts_with("blob:")
+                    || source.starts_with("http://")
+                    || source.starts_with("https://")
+                    || source.starts_with("asset:");
+                let source_path = Path::new(source);
+
+                if is_external || source_path.is_absolute() {
+                    source.to_string()
+                } else {
+                    parent.join(source_path).to_string_lossy().to_string()
+                }
+            });
+
+            (
+                emotion.clone(),
+                resolved
+                    .map(JsonValue::String)
+                    .unwrap_or_else(|| value.clone()),
+            )
+        })
+        .collect()
+}
+
+/// Loads expression sets from bundled JSON cards once so older user copies of those cards can inherit
+/// newly shipped artwork without replacing any user-authored character data.
+fn collect_bundled_expression_sets(presets_dir: &Path) -> BundledExpressionSets {
+    let mut sets = HashMap::new();
+
+    let Ok(preset_folders) = fs::read_dir(presets_dir) else {
+        return sets;
+    };
+
+    for folder in preset_folders.flatten() {
+        let folder_path = folder.path();
+        if !folder_path.is_dir() {
+            continue;
+        }
+
+        let Ok(entries) = fs::read_dir(&folder_path) else {
+            continue;
+        };
+
+        for entry in entries.flatten() {
+            let card_path = entry.path();
+            if card_path.extension().and_then(|value| value.to_str()) != Some("json") {
+                continue;
+            }
+
+            let Ok(content) = fs::read_to_string(&card_path) else {
+                continue;
+            };
+            let Ok(card) = parse_character_json(&content) else {
+                continue;
+            };
+            let Some(expressions) = card
+                .data
+                .extensions
+                .get("expressions")
+                .and_then(JsonValue::as_object)
+                .filter(|values| !values.is_empty())
+            else {
+                continue;
+            };
+
+            let resolved = resolve_bundled_expression_set(&card_path, expressions);
+            if let Some(stem) = card_path.file_stem().and_then(|value| value.to_str()) {
+                sets.insert(normalize_identifier(stem), resolved.clone());
+            }
+            sets.insert(normalize_identifier(&card.data.name), resolved);
+        }
+    }
+
+    sets
+}
+
+fn apply_bundled_expression_fallback(
+    profile: &mut CharacterProfile,
+    bundled_sets: &BundledExpressionSets,
+) {
+    let extensions = &mut profile.card.data.extensions;
+    let has_expressions = ["expressions", "sow_expressions"].iter().any(|key| {
+        extensions
+            .get(key)
+            .and_then(JsonValue::as_object)
+            .map(|values| !values.is_empty())
+            .unwrap_or(false)
+    });
+    if has_expressions {
+        return;
+    }
+
+    let expressions = bundled_sets
+        .get(&normalize_identifier(&profile.id))
+        .or_else(|| bundled_sets.get(&normalize_identifier(&profile.card.data.name)))
+        .cloned();
+    let Some(expressions) = expressions else {
+        return;
+    };
+
+    if !extensions.is_object() {
+        *extensions = JsonValue::Object(JsonMap::new());
+    }
+    if let Some(values) = extensions.as_object_mut() {
+        values.insert("expressions".to_string(), JsonValue::Object(expressions));
+    }
+}
+
 /// Recursively scans for character cards (.png and .json) in presets and user directories
 pub fn scan_available_characters() -> Vec<CharacterProfile> {
     let paths = resolve_app_paths();
     let mut profiles = Vec::new();
     let mut seen_identifiers = std::collections::HashSet::new();
     let hidden = load_hidden_character_ids();
+    let bundled_expression_sets =
+        collect_bundled_expression_sets(Path::new(&paths.bundled_presets_dir));
 
     let scan_dirs = [
         PathBuf::from(&paths.characters_dir),
@@ -194,7 +320,7 @@ pub fn scan_available_characters() -> Vec<CharacterProfile> {
                     continue;
                 }
 
-                if let Ok(profile) = load_character_from_file(&path) {
+                if let Ok(mut profile) = load_character_from_file(&path) {
                     let norm_id = normalize_identifier(&profile.id);
                     let norm_name = normalize_identifier(&profile.card.data.name);
 
@@ -210,6 +336,7 @@ pub fn scan_available_characters() -> Vec<CharacterProfile> {
                     seen_identifiers.insert(norm_stem);
                     seen_identifiers.insert(norm_id);
                     seen_identifiers.insert(norm_name);
+                    apply_bundled_expression_fallback(&mut profile, &bundled_expression_sets);
                     profiles.push(profile);
                 }
             }
@@ -350,5 +477,55 @@ mod tests {
         // At least our bundled presets should be found
         println!("Scanned {} characters", chars.len());
         assert!(!chars.is_empty());
+    }
+
+    #[test]
+    fn test_bundled_expression_sets_resolve_to_absolute_paths() {
+        let paths = resolve_app_paths();
+        let sets = collect_bundled_expression_sets(Path::new(&paths.bundled_presets_dir));
+        let jibril = sets
+            .get("jibril")
+            .expect("Jibril preset should provide expressions");
+
+        assert_eq!(jibril.len(), 6);
+        for source in jibril.values().filter_map(JsonValue::as_str) {
+            assert!(Path::new(source).is_absolute(), "not absolute: {source}");
+            assert!(Path::new(source).exists(), "missing expression: {source}");
+        }
+    }
+
+    #[test]
+    fn test_missing_user_expressions_inherit_bundled_set() {
+        let paths = resolve_app_paths();
+        let preset_path = Path::new(&paths.bundled_presets_dir)
+            .join("no-game-no-life")
+            .join("jibril.json");
+        let mut profile = load_character_from_file(&preset_path).expect("load Jibril preset");
+        profile.source_path = Some("/tmp/user-characters/Jibril.png".to_string());
+        profile
+            .card
+            .data
+            .extensions
+            .as_object_mut()
+            .expect("extensions object")
+            .remove("expressions");
+
+        let sets = collect_bundled_expression_sets(Path::new(&paths.bundled_presets_dir));
+        apply_bundled_expression_fallback(&mut profile, &sets);
+
+        let inherited = profile
+            .card
+            .data
+            .extensions
+            .get("expressions")
+            .and_then(JsonValue::as_object)
+            .expect("runtime expression fallback");
+        assert_eq!(inherited.len(), 6);
+        assert!(inherited
+            .get("happy")
+            .and_then(JsonValue::as_str)
+            .map(Path::new)
+            .map(Path::exists)
+            .unwrap_or(false));
     }
 }
