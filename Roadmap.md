@@ -115,16 +115,17 @@ Die Reihenfolge ist nach Abhängigkeit und Nutzen sortiert: erst das, was jede a
 
 ### Phase 13 – Stimme: TTS, STT & Voice Call ✅ abgeschlossen
 
-Die Kernlaufzeit bleibt Python-frei: Whisper läuft nativ über whisper.cpp; stark variierende oder schwere
-TTS-/RVC-Modelle werden über klar konfigurierte, optionale Sidecar-Endpunkte angebunden.
+Die Kernlaufzeit bleibt Python-frei: Whisper läuft nativ über whisper.cpp, Kokoro 82M direkt über ONNX Runtime;
+weitere stark variierende oder schwere TTS-/RVC-Modelle werden über klar konfigurierte, optionale Sidecar-Endpunkte angebunden.
 
 - [x] **Audio-Ausgabe & Gerätewahl** – unterbrechungssichere Web Audio API Queue, Gain, Ausgabegerät, AnalyserNode & FFT-Amplitude
 - [x] **Satzweises Streaming** – TTS startet beim ersten fertigen Satz; geordnete Synthese, Warteschlange und sofortiger Abbruch bei Unterbrechung
 - [x] **TTS-Engines**
   - [x] Edge-TTS (WebSocket-Protokoll direkt in Rust – kein Python nötig)
+  - [x] Kokoro 82M nativ/offline (Rust + ONNX Runtime, gecachte Session, In-App-Installer mit SHA-256-Prüfung, acht US-/UK-Stimmen und eigene Modellpfade; englische G2P)
   - [x] ElevenLabs (HTTP inkl. Live-Stimmenliste)
   - [x] OpenAI & OpenAI-kompatibel (`/v1/audio/speech`)
-  - [x] Kokoro 82M, Qwen3-TTS, XTTSv2, Silero TTS & AllTalk über frei konfigurierbare lokale Sidecars
+  - [x] Qwen3-TTS, XTTSv2, Silero TTS & AllTalk über frei konfigurierbare lokale Sidecars
 - [x] **RVC Voice Conversion** – optionaler Multipart-Sidecar mit Modell, Pitch, Index-Rate und Protect
 - [x] **Stimmen-Dialog pro Charakter** – TTS/STT/RVC, Ein-/Ausgabegeräte und Custom-Regex (`CharacterVoiceModal`)
 - [x] **Vorlesen-Button** an jeder Chatblase + Auto-TTS Toggle
@@ -221,7 +222,7 @@ Aktuell sind `system_health_report`, `set_timer`, `open_external_url`, `web_sear
 
 | Frage | Optionen | Empfehlung |
 |---|---|---|
-| Schwere ML-Modelle (XTTS, Qwen3-TTS, RVC) | a) ONNX via `ort` · b) Python-Sidecar optional · c) weglassen | **Entschieden für Phase 13:** Whisper nativ via whisper.cpp; TTS/RVC über optionale, austauschbare HTTP-Sidecars. Damit bleibt die OtakuSoul-Kernlaufzeit Python-frei. |
+| Schwere ML-Modelle (Kokoro, XTTS, Qwen3-TTS, RVC) | a) ONNX via `ort` · b) Python-Sidecar optional · c) weglassen | **Entschieden für Phase 13:** Whisper nativ via whisper.cpp; Kokoro 82M nativ via ONNX Runtime; übrige TTS-/RVC-Systeme über optionale, austauschbare HTTP-Sidecars. Damit bleibt die OtakuSoul-Kernlaufzeit Python-frei. |
 | Embeddings | `fastembed-rs` · `ort` + eigenes Modell · llama-server `/embedding` | `/embedding` des laufenden llama-servers oder `fastembed-rs` – spart ein zweites Modell im VRAM, je nach Setup |
 | Chat-Speicherung | SQLite · JSONL-Dateien | SQLite (ist schon da), Export nach JSONL |
 | Wayland-Automation (Companion) | `enigo`, `ydotool`, XDG-Portals | Portals wo möglich, sonst `ydotool` mit klarer Setup-Anleitung |

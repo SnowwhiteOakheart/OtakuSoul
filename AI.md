@@ -91,6 +91,7 @@
 | `src-tauri/src/modules/llm_presets.rs` | LLM Sampler Presets Engine mit 5 Built-in Profilen & JSON-Persistenz |
 | `src-tauri/src/modules/models_hub.rs` | Hugging Face GGUF API-Suche, Quants-Inspektion & Async File Downloader |
 | `src-tauri/src/modules/voice.rs` | TTS-Provider, natives whisper.cpp-STT, OpenAI-kompatible Transkription, RVC-Sidecar & Stimmenprofile |
+| `src-tauri/src/modules/kokoro.rs` | Native Offline-Kokoro-82M-Inferenz via ONNX Runtime, Engine-Cache, WAV-Encoding, Stimmen-Scan und atomarer Modell-Installer |
 | `src-tauri/src/state.rs` | Globaler Tokio/Tauri `AppState` |
 | `src-tauri/src/commands.rs` | Alle Tauri IPC Commands |
 | `src-tauri/src/lib.rs` | App Builder, Dialog-Plugin & Handler-Registrierung |
@@ -141,6 +142,7 @@ Alle benötigten Daten sind eigenständig in diesem Projektverzeichnis gekapselt
   - V2 JSON-Karten & Lorebooks: `presets/sakura-succubus-3/`, `presets/no-game-no-life/`
   - SillyTavern V2 PNG-Karten: `presets/cards/` (15 Karten: Akane, Kurisu, Cosmos, Vivy, etc.)
 - **Benutzerverzeichnis (automatisch angelegt):** `~/.local/share/otakusoul/` (`characters/`, `lorebooks/`, `personas/`, `scenes/`, `.trash/`)
+  - Native Kokoro-Installation: `models/kokoro/model_quantized.onnx` plus `models/kokoro/voices/*.bin` unterhalb dieses Datenverzeichnisses
 - **Hardware des Benutzers:** NVIDIA GeForce RTX 4070 Ti SUPER (16.376 MB VRAM), CUDA 13.4, Vulkan 1.4, Arch Linux.
 
 ---
@@ -212,7 +214,8 @@ Alle benötigten Daten sind eigenständig in diesem Projektverzeichnis gekapselt
     - Volle CRUD-Funktionalität, Eintrags-Filter, Tag-Chips, SillyTavern- / World-Info-kompatibler JSON-Import und -Export.
 - [x] **Phase 13: Stimme, TTS/STT & Voice Call**
   - **TTS-Streaming & Audio (`voice.rs`, `streamingTts.ts`, `audioPlayer.ts`):** Fertige Sätze werden bereits während der LLM-Ausgabe synthetisiert und in stabiler Reihenfolge abgespielt; Abbruch, Gain, Ausgabegerätewahl und FFT-LipSync sind integriert.
-  - **Provider:** Edge-TTS, ElevenLabs mit Live-Stimmenliste sowie OpenAI-kompatible Cloud-/Sidecar-Endpunkte. Kokoro, Qwen3-TTS, XTTSv2, Silero und AllTalk werden über diesen einheitlichen Sidecar-Vertrag angebunden, ohne Python zur Kernlaufzeit hinzuzufügen.
+  - **Provider:** Edge-TTS, ElevenLabs mit Live-Stimmenliste sowie OpenAI-kompatible Cloud-/Sidecar-Endpunkte. Qwen3-TTS, XTTSv2, Silero und AllTalk werden über diesen einheitlichen Sidecar-Vertrag angebunden.
+  - **Kokoro nativ (`kokoro.rs`):** Kokoro 82M läuft Python-frei direkt in Rust über ONNX Runtime. Ein In-App-Installer lädt das SHA-256-verifizierte Quantmodell und acht englische Voicepacks atomar in das Benutzerdatenverzeichnis; eigene ONNX-/Voice-Pfade, Session-Caching, Geschwindigkeitssteuerung und 24-kHz-WAV-Ausgabe sind integriert. Die verwendete schlanke G2P-Pipeline ist englisch; Kokoro besitzt kein natives deutsches Profil.
   - **STT:** Offline-Transkription über `whisper-rs`/whisper.cpp mit frei wählbarem GGML/GGUF-Modell sowie OpenAI-kompatible `/v1/audio/transcriptions`-Endpunkte.
   - **Voice Activity Detection:** Lokale RMS-VAD in der Web-Audio-Aufnahme mit einstellbarer Schwelle und Stillezeit; Mono-Resampling auf 16 kHz vor der Transkription.
   - **Voice Call:** Zustände Listening → Transcribing → Thinking → Speaking, automatischer Turn-Wechsel, Push-to-talk und Unterbrechung laufender Generierung/Wiedergabe.

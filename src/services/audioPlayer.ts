@@ -22,7 +22,7 @@ export class AudioPlaybackManager {
   private audioContext: SinkAwareAudioContext | null = null;
   private analyser: AnalyserNode | null = null;
   private gainNode: GainNode | null = null;
-  private sourceNode: AudioBufferSourceNode | null = null;
+
   private queue: QueuedAudio[] = [];
   private processing = false;
   private playing = false;
@@ -50,6 +50,9 @@ export class AudioPlaybackManager {
     this.onStateCallbacks.forEach((callback) => callback(state));
   }
 
+  private audioElement: HTMLAudioElement | null = null;
+  private mediaSource: MediaElementAudioSourceNode | null = null;
+
   private async initAudioContext(outputDeviceId: string) {
     if (!this.audioContext || this.audioContext.state === 'closed') {
       const AudioContextClass = window.AudioContext ||
@@ -60,11 +63,21 @@ export class AudioPlaybackManager {
       this.analyser = this.audioContext.createAnalyser();
       this.analyser.fftSize = 256;
       this.gainNode = this.audioContext.createGain();
+      
+      this.audioElement = new Audio();
+      this.audioElement.crossOrigin = 'anonymous';
+      this.mediaSource = this.audioContext.createMediaElementSource(this.audioElement);
+      
+      this.mediaSource.connect(this.analyser);
       this.analyser.connect(this.gainNode);
       this.gainNode.connect(this.audioContext.destination);
     }
     if (outputDeviceId && this.audioContext.setSinkId) {
-      await this.audioContext.setSinkId(outputDeviceId);
+      try {
+        await this.audioContext.setSinkId(outputDeviceId);
+      } catch (e) {
+        console.warn('Audio-Gerät konnte nicht gesetzt werden:', e);
+      }
     }
     if (this.audioContext.state === 'suspended') {
       await this.audioContext.resume();
@@ -120,28 +133,28 @@ export class AudioPlaybackManager {
     const currentGeneration = this.generation;
     try {
       await this.initAudioContext(next.outputDeviceId);
-      const response = await fetch(next.dataUrl);
-      const encodedAudio = await response.arrayBuffer();
-      if (!this.audioContext || currentGeneration !== this.generation) return;
-      const buffer = await this.audioContext.decodeAudioData(encodedAudio);
-      if (currentGeneration !== this.generation) return;
+      if (!this.audioElement || currentGeneration !== this.generation) return;
 
-      const source = this.audioContext.createBufferSource();
-      source.buffer = buffer;
-      source.connect(this.analyser ?? this.audioContext.destination);
+      this.audioElement.src = next.dataUrl;
       if (this.gainNode) this.gainNode.gain.value = next.gain;
-      this.sourceNode = source;
-      this.playing = true;
-      this.processing = false;
-      this.setState('playing');
-      source.onended = () => {
-        if (this.sourceNode !== source || currentGeneration !== this.generation) return;
-        source.disconnect();
-        this.sourceNode = null;
+
+      this.audioElement.onended = () => {
+        if (currentGeneration !== this.generation) return;
         this.playing = false;
         void this.processQueue();
       };
-      source.start();
+      
+      this.audioElement.onerror = () => {
+        if (currentGeneration !== this.generation) return;
+        console.error('Audio-Wiedergabefehler:', this.audioElement?.error);
+        this.playing = false;
+        void this.processQueue();
+      };
+
+      await this.audioElement.play();
+      this.playing = true;
+      this.processing = false;
+      this.setState('playing');
       this.startAnalyserLoop();
     } catch (error) {
       console.error('Audio-Wiedergabe fehlgeschlagen:', error);
@@ -165,17 +178,14 @@ export class AudioPlaybackManager {
     this.generation += 1;
     this.queue = [];
     this.processing = false;
-    if (this.sourceNode) {
-      const source = this.sourceNode;
-      this.sourceNode = null;
-      source.onended = null;
-      try {
-        source.stop();
-      } catch {
-        // The source may already have ended.
-      }
-      source.disconnect();
+    
+    if (this.audioElement) {
+      this.audioElement.onended = null;
+      this.audioElement.onerror = null;
+      this.audioElement.pause();
+      this.audioElement.src = '';
     }
+    
     if (this.animationFrameId !== null) {
       cancelAnimationFrame(this.animationFrameId);
       this.animationFrameId = null;

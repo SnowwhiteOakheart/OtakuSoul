@@ -538,9 +538,28 @@ export interface DownloadProgressEvent {
 
 
 // Phase 13: Voice & TTS
-export type TtsEngine = 'edge' | 'elevenlabs' | 'openai' | 'disabled';
+export type TtsEngine = 'edge' | 'kokoro' | 'elevenlabs' | 'openai' | 'disabled';
 export type TtsFilterMode = 'all' | 'dialogue_only' | 'strip_actions';
 export type SttEngine = 'native_whisper' | 'openai' | 'disabled';
+
+export interface KokoroConfig {
+  model_path: string;
+  voices_path: string;
+}
+
+export interface KokoroInstallResult extends KokoroConfig {
+  installed_voices: ScannedVoice[];
+}
+
+export interface KokoroDownloadProgress {
+  filename: string;
+  file_index: number;
+  total_files: number;
+  downloaded_bytes: number;
+  total_bytes: number;
+  percent: number;
+  finished: boolean;
+}
 
 export interface RvcConfig {
   enabled: boolean;
@@ -578,6 +597,7 @@ export interface VoiceConfig {
   openai_api_key: string;
   openai_model: string;
   openai_instructions: string;
+  kokoro: KokoroConfig;
   output_device_id: string;
   rvc: RvcConfig;
   stt: SttConfig;

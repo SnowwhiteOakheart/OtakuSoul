@@ -44,6 +44,8 @@ import {
   ScannedVoice,
   SttConfig,
   VoiceConfig,
+  KokoroDownloadProgress,
+  KokoroInstallResult,
 } from '../types';
 
 export const api = {
@@ -657,8 +659,32 @@ export const api = {
     });
   },
   // Phase 13: Voice/TTS
-  listAvailableVoices: async (engine: string, elevenlabsApiKey = ''): Promise<ScannedVoice[]> => {
-    return await invoke<ScannedVoice[]>('list_available_voices', { engine, elevenlabsApiKey });
+  listAvailableVoices: async (
+    engine: string,
+    elevenlabsApiKey = '',
+    kokoroVoicesPath = '',
+  ): Promise<ScannedVoice[]> => {
+    return await invoke<ScannedVoice[]>('list_available_voices', {
+      engine,
+      elevenlabsApiKey,
+      kokoroVoicesPath,
+    });
+  },
+
+  getKokoroInstallation: async (): Promise<KokoroInstallResult | null> => {
+    return await invoke<KokoroInstallResult | null>('get_kokoro_installation');
+  },
+
+  installKokoroModel: async (): Promise<KokoroInstallResult> => {
+    return await invoke<KokoroInstallResult>('install_kokoro_model');
+  },
+
+  onKokoroDownloadProgress: async (
+    callback: (data: KokoroDownloadProgress) => void,
+  ): Promise<UnlistenFn> => {
+    return await listen<KokoroDownloadProgress>('kokoro-download-progress', (event) => {
+      callback(event.payload);
+    });
   },
   
   synthesizeSpeech: async (text: string, config: VoiceConfig): Promise<string> => {

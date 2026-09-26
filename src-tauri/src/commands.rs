@@ -890,8 +890,26 @@ pub async fn download_gguf_model(
 pub async fn list_available_voices(
     engine: String,
     elevenlabs_api_key: String,
+    kokoro_voices_path: String,
 ) -> Result<Vec<crate::modules::voice::ScannedVoice>, String> {
-    crate::modules::voice::list_available_voices(&engine, &elevenlabs_api_key).await
+    crate::modules::voice::list_available_voices(
+        &engine,
+        &elevenlabs_api_key,
+        &kokoro_voices_path,
+    )
+    .await
+}
+
+#[tauri::command]
+pub fn get_kokoro_installation() -> Option<crate::modules::kokoro::KokoroInstallResult> {
+    crate::modules::kokoro::detect_installation()
+}
+
+#[tauri::command]
+pub async fn install_kokoro_model(
+    app: tauri::AppHandle,
+) -> Result<crate::modules::kokoro::KokoroInstallResult, String> {
+    crate::modules::kokoro::install(&app).await
 }
 
 #[tauri::command]

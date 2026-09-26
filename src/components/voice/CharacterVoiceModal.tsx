@@ -1,9 +1,9 @@
 import { useEffect, useMemo, useState } from 'react';
 import { open } from '@tauri-apps/plugin-dialog';
-import { Headphones, Mic, Play, RefreshCw, Save, SlidersHorizontal, X } from 'lucide-react';
+import { Download, FolderOpen, Headphones, Mic, Play, RefreshCw, Save, SlidersHorizontal, X } from 'lucide-react';
 import { useAppStore } from '../../store/useAppStore';
 import { api } from '../../services/api';
-import { ScannedVoice, SttEngine, TtsEngine, TtsFilterMode, VoiceConfig } from '../../types';
+import { KokoroDownloadProgress, ScannedVoice, SttEngine, TtsEngine, TtsFilterMode, VoiceConfig } from '../../types';
 import { audioPlayer, gainFromVoiceVolume } from '../../services/audioPlayer';
 
 interface CharacterVoiceModalProps {
@@ -23,6 +23,10 @@ const DEFAULT_CONFIG: VoiceConfig = {
   openai_api_key: '',
   openai_model: 'tts-1',
   openai_instructions: '',
+  kokoro: {
+    model_path: '',
+    voices_path: '',
+  },
   output_device_id: '',
   rvc: {
     enabled: false,
@@ -60,6 +64,13 @@ function numericValue(value: string) {
   return Number.parseInt(value.replace(/[%+]|Hz/g, ''), 10) || 0;
 }
 
+function testText(config: VoiceConfig) {
+  if (config.engine !== 'kokoro') {
+    return 'Hallo! Wie geht es dir heute? Das ist ein Test meiner Stimme.';
+  }
+  return 'Hello! How are you today? This is a test of my voice.';
+}
+
 export function CharacterVoiceModal({ onClose }: CharacterVoiceModalProps) {
   const { activeCharacter, activeVoiceConfig, saveVoiceConfigForCharacter } = useAppStore();
   const [tab, setTab] = useState<VoiceTab>('tts');
@@ -68,6 +79,8 @@ export function CharacterVoiceModal({ onClose }: CharacterVoiceModalProps) {
   const [devices, setDevices] = useState<MediaDeviceInfo[]>([]);
   const [isLoadingVoices, setIsLoadingVoices] = useState(false);
   const [isTesting, setIsTesting] = useState(false);
+  const [isInstallingKokoro, setIsInstallingKokoro] = useState(false);
+  const [kokoroProgress, setKokoroProgress] = useState<KokoroDownloadProgress | null>(null);
   const [error, setError] = useState('');
 
   useEffect(() => {
@@ -81,13 +94,40 @@ export function CharacterVoiceModal({ onClose }: CharacterVoiceModalProps) {
     }
     const timeout = window.setTimeout(() => {
       setIsLoadingVoices(true);
-      api.listAvailableVoices(draft.engine, draft.elevenlabs_api_key)
+      api.listAvailableVoices(draft.engine, draft.elevenlabs_api_key, draft.kokoro.voices_path)
         .then(setAvailableVoices)
         .catch((reason) => setError(String(reason)))
         .finally(() => setIsLoadingVoices(false));
     }, draft.engine === 'elevenlabs' ? 450 : 0);
     return () => window.clearTimeout(timeout);
-  }, [draft.engine, draft.elevenlabs_api_key]);
+  }, [draft.engine, draft.elevenlabs_api_key, draft.kokoro.voices_path]);
+
+  useEffect(() => {
+    if (draft.engine !== 'kokoro' || draft.kokoro.model_path || draft.kokoro.voices_path) return;
+    void api.getKokoroInstallation().then((installation) => {
+      if (!installation) return;
+      setDraft((current) => current.engine === 'kokoro'
+        ? {
+            ...current,
+            voice_id: installation.installed_voices.some((voice) => voice.id === current.voice_id)
+              ? current.voice_id
+              : installation.installed_voices[0]?.id ?? 'af_heart',
+            kokoro: {
+              model_path: installation.model_path,
+              voices_path: installation.voices_path,
+            },
+          }
+        : current);
+    }).catch(() => undefined);
+  }, [draft.engine, draft.kokoro.model_path, draft.kokoro.voices_path]);
+
+  useEffect(() => {
+    let unlisten: (() => void) | undefined;
+    void api.onKokoroDownloadProgress(setKokoroProgress).then((cleanup) => {
+      unlisten = cleanup;
+    });
+    return () => unlisten?.();
+  }, []);
 
   useEffect(() => {
     void navigator.mediaDevices?.enumerateDevices().then(setDevices).catch(() => undefined);
@@ -106,6 +146,21 @@ export function CharacterVoiceModal({ onClose }: CharacterVoiceModalProps) {
 
   const updateRvc = <K extends keyof VoiceConfig['rvc']>(key: K, value: VoiceConfig['rvc'][K]) => {
     setDraft((current) => ({ ...current, rvc: { ...current.rvc, [key]: value } }));
+  };
+
+  const updateKokoro = <K extends keyof VoiceConfig['kokoro']>(key: K, value: VoiceConfig['kokoro'][K]) => {
+    setDraft((current) => ({ ...current, kokoro: { ...current.kokoro, [key]: value } }));
+  };
+
+  const changeEngine = (engine: TtsEngine) => {
+    setDraft((current) => {
+      let voiceId = current.voice_id;
+      if (engine === 'kokoro' && !/^[a-z]{2}_/i.test(voiceId)) voiceId = 'af_heart';
+      if (engine === 'edge' && !voiceId.endsWith('Neural')) voiceId = 'de-DE-KatjaNeural';
+      if (engine === 'openai' && (voiceId.endsWith('Neural') || /^[a-z]{2}_/i.test(voiceId))) voiceId = 'nova';
+      return { ...current, engine, voice_id: voiceId };
+    });
+    setError('');
   };
 
   const refreshDevices = async () => {
@@ -128,6 +183,46 @@ export function CharacterVoiceModal({ onClose }: CharacterVoiceModalProps) {
     if (typeof selected === 'string') updateStt('whisper_model_path', selected);
   };
 
+  const selectKokoroModel = async () => {
+    const selected = await open({
+      multiple: false,
+      directory: false,
+      filters: [{ name: 'Kokoro ONNX-Modell', extensions: ['onnx'] }],
+    });
+    if (typeof selected === 'string') updateKokoro('model_path', selected);
+  };
+
+  const selectKokoroVoices = async () => {
+    const selected = await open({ multiple: false, directory: true });
+    if (typeof selected === 'string') updateKokoro('voices_path', selected);
+  };
+
+  const installKokoro = async () => {
+    setIsInstallingKokoro(true);
+    setKokoroProgress(null);
+    setError('');
+    try {
+      const installation = await api.installKokoroModel();
+      setAvailableVoices(installation.installed_voices);
+      setDraft((current) => ({
+        ...current,
+        voice_id: installation.installed_voices.some((voice) => voice.id === current.voice_id)
+          ? current.voice_id
+          : installation.installed_voices.find((voice) => voice.id === 'af_heart')?.id
+            ?? installation.installed_voices[0]?.id
+            ?? 'af_heart',
+        kokoro: {
+          model_path: installation.model_path,
+          voices_path: installation.voices_path,
+        },
+      }));
+    } catch (reason) {
+      setError(String(reason));
+    } finally {
+      setIsInstallingKokoro(false);
+    }
+  };
+
   const handleSave = async () => {
     if (!activeCharacter) return;
     setError('');
@@ -144,7 +239,7 @@ export function CharacterVoiceModal({ onClose }: CharacterVoiceModalProps) {
     setError('');
     try {
       const audioUrl = await api.synthesizeSpeech(
-        'Hallo! Wie geht es dir heute? Das ist ein Test meiner Stimme.',
+        testText(draft),
         draft,
       );
       await audioPlayer.playDataUrl(
@@ -197,9 +292,10 @@ export function CharacterVoiceModal({ onClose }: CharacterVoiceModalProps) {
               <div className="grid sm:grid-cols-2 gap-4">
                 <label>
                   <span className={labelClass}>TTS-Engine</span>
-                  <select value={draft.engine} onChange={(event) => update('engine', event.target.value as TtsEngine)} className={fieldClass}>
+                  <select value={draft.engine} onChange={(event) => changeEngine(event.target.value as TtsEngine)} className={fieldClass}>
                     <option value="disabled">Deaktiviert</option>
                     <option value="edge">Edge-TTS</option>
+                    <option value="kokoro">Kokoro 82M (nativ & offline)</option>
                     <option value="elevenlabs">ElevenLabs</option>
                     <option value="openai">OpenAI-kompatibel / lokaler Sidecar</option>
                   </select>
@@ -224,6 +320,57 @@ export function CharacterVoiceModal({ onClose }: CharacterVoiceModalProps) {
                     </label>
                   )}
 
+                  {draft.engine === 'kokoro' && (
+                    <div className="space-y-4 rounded-lg border border-emerald-500/25 bg-emerald-950/10 p-4">
+                      <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-3">
+                        <div>
+                          <p className="text-sm font-medium text-emerald-200">Native Kokoro-ONNX-Inferenz</p>
+                          <p className="text-xs text-slate-400 mt-1">Nach der einmaligen Installation läuft die Synthese vollständig offline und ohne Python. Das Standardpaket enthält das quantisierte 82M-Modell und acht US-/UK-Stimmen (~97 MB).</p>
+                        </div>
+                        <button
+                          type="button"
+                          onClick={() => void installKokoro()}
+                          disabled={isInstallingKokoro}
+                          className="shrink-0 flex items-center justify-center gap-2 px-3 py-2 rounded-lg bg-emerald-600 hover:bg-emerald-500 disabled:opacity-50 text-white text-xs font-medium"
+                        >
+                          <Download className="w-4 h-4" />
+                          {isInstallingKokoro ? 'Installiert…' : 'Standardpaket installieren'}
+                        </button>
+                      </div>
+
+                      {kokoroProgress && (isInstallingKokoro || kokoroProgress.finished) && (
+                        <div className="space-y-1.5">
+                          <div className="flex justify-between text-[11px] text-slate-400">
+                            <span className="truncate pr-3">{kokoroProgress.filename}</span>
+                            <span>{kokoroProgress.file_index}/{kokoroProgress.total_files}</span>
+                          </div>
+                          <div className="h-1.5 rounded-full bg-slate-800 overflow-hidden">
+                            <div className="h-full bg-emerald-500 transition-all" style={{ width: `${Math.min(100, kokoroProgress.percent)}%` }} />
+                          </div>
+                        </div>
+                      )}
+
+                      <div className="space-y-3">
+                        <label>
+                          <span className={labelClass}>ONNX-Modell</span>
+                          <div className="flex gap-2">
+                            <input value={draft.kokoro.model_path} onChange={(event) => updateKokoro('model_path', event.target.value)} className={fieldClass} placeholder="model_quantized.onnx" />
+                            <button type="button" onClick={() => void selectKokoroModel()} className="px-3 rounded-lg border border-emerald-500/40 text-emerald-200 hover:bg-emerald-950/40" title="ONNX-Modell auswählen"><FolderOpen className="w-4 h-4" /></button>
+                          </div>
+                        </label>
+                        <label>
+                          <span className={labelClass}>Stimmenordner</span>
+                          <div className="flex gap-2">
+                            <input value={draft.kokoro.voices_path} onChange={(event) => updateKokoro('voices_path', event.target.value)} className={fieldClass} placeholder="voices/ mit af_heart.bin …" />
+                            <button type="button" onClick={() => void selectKokoroVoices()} className="px-3 rounded-lg border border-emerald-500/40 text-emerald-200 hover:bg-emerald-950/40" title="Stimmenordner auswählen"><FolderOpen className="w-4 h-4" /></button>
+                          </div>
+                        </label>
+                      </div>
+
+                      <p className="text-[11px] text-amber-300/80">Diese native Rust-Integration verwendet Kokoros englische G2P-Pipeline. Deutsch wird nur angenähert ausgesprochen; beste Qualität liefern englische Texte.</p>
+                    </div>
+                  )}
+
                   <div className="grid sm:grid-cols-2 gap-4">
                     <label>
                       <span className={labelClass}>Gefundene Stimme {isLoadingVoices && '– lädt…'}</span>
@@ -236,7 +383,7 @@ export function CharacterVoiceModal({ onClose }: CharacterVoiceModalProps) {
                     </label>
                     <label>
                       <span className={labelClass}>Voice-ID (manuell)</span>
-                      <input value={draft.voice_id} onChange={(event) => update('voice_id', event.target.value)} className={fieldClass} placeholder="de-DE-KatjaNeural" />
+                      <input value={draft.voice_id} onChange={(event) => update('voice_id', event.target.value)} className={fieldClass} placeholder={draft.engine === 'kokoro' ? 'af_heart' : 'de-DE-KatjaNeural'} />
                     </label>
                   </div>
 
@@ -266,10 +413,14 @@ export function CharacterVoiceModal({ onClose }: CharacterVoiceModalProps) {
                     ] as const).map(([key, label, suffix, min, max]) => (
                       <label key={key}>
                         <span className={`${labelClass} flex justify-between`}><span>{label}</span><span>{draft[key]}</span></span>
-                        <input type="range" min={min} max={max} value={numericValue(draft[key])} onChange={(event) => update(key, signedValue(Number(event.target.value), suffix))} className="w-full accent-purple-500" />
+                        <input type="range" min={min} max={max} value={numericValue(draft[key])} onChange={(event) => update(key, signedValue(Number(event.target.value), suffix))} disabled={draft.engine === 'kokoro' && key === 'pitch'} className="w-full accent-purple-500 disabled:opacity-35" />
                       </label>
                     ))}
                   </div>
+
+                  {draft.engine === 'kokoro' && (
+                    <p className="text-[11px] text-slate-500">Kokoro übernimmt die Geschwindigkeit nativ. Lautstärke wird im Audioplayer angewendet; die Tonhöhenregelung ist für Kokoro nicht verfügbar.</p>
+                  )}
 
                   <div className="grid sm:grid-cols-2 gap-4">
                     <label>

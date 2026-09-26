@@ -102,6 +102,8 @@ pub fn run() {
             commands::download_gguf_model,
             // Voice / TTS
             commands::list_available_voices,
+            commands::get_kokoro_installation,
+            commands::install_kokoro_model,
             commands::synthesize_speech,
             commands::transcribe_speech,
             commands::get_character_voice_config,

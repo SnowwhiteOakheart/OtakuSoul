@@ -119,7 +119,8 @@ npm run tauri build
   - Full-Featured Lorebook Manager: In-app editor view with entry search, filter pills, tag chips, and SillyTavern / World Info v2 JSON import and export
 - [x] **Phase 13: Voice, TTS/STT & Voice Call**
   - Sentence-level streaming TTS with interruption-safe playback queue, output-device selection, Web Audio FFT LipSync and per-character voice profiles
-  - Edge-TTS, ElevenLabs and OpenAI-compatible local/cloud speech backends (Kokoro, Qwen3-TTS, XTTSv2, Silero and AllTalk via sidecars)
+  - Edge-TTS, ElevenLabs and OpenAI-compatible local/cloud speech backends (Qwen3-TTS, XTTSv2, Silero and AllTalk via sidecars)
+  - Native offline Kokoro 82M through Rust + ONNX Runtime, including an in-app installer for the verified quantized model and eight US/UK voices, custom model/voice paths and a cached inference session (English G2P; no native German profile)
   - Native offline Whisper transcription through `whisper-rs`/whisper.cpp plus OpenAI-compatible STT endpoints
   - Microphone selection, local RMS voice-activity detection, push-to-talk and a Listening → Processing → Speaking voice-call state machine with user interruption
   - Optional RVC post-processing with pitch, index-rate and protect controls through a provider-neutral sidecar contract

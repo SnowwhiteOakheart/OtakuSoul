@@ -21,6 +21,8 @@ const EDGE_TTS_USER_AGENT: &str = "Mozilla/5.0 (Windows NT 10.0; Win64; x64) \
 pub enum TtsEngine {
     #[serde(rename = "edge")]
     Edge,
+    #[serde(rename = "kokoro")]
+    Kokoro,
     #[serde(rename = "elevenlabs")]
     ElevenLabs,
     #[serde(rename = "openai")]
@@ -148,6 +150,8 @@ pub struct VoiceConfig {
     #[serde(default)]
     pub openai_instructions: String,
     #[serde(default)]
+    pub kokoro: crate::modules::kokoro::KokoroConfig,
+    #[serde(default)]
     pub output_device_id: String,
     #[serde(default)]
     pub rvc: RvcConfig,
@@ -190,6 +194,7 @@ impl Default for VoiceConfig {
             openai_api_key: String::new(),
             openai_model: default_openai_model(),
             openai_instructions: String::new(),
+            kokoro: crate::modules::kokoro::KokoroConfig::default(),
             output_device_id: String::new(),
             rvc: RvcConfig::default(),
             stt: SttConfig::default(),
@@ -342,9 +347,11 @@ pub fn list_edge_tts_voices() -> Vec<ScannedVoice> {
 pub async fn list_available_voices(
     engine: &str,
     elevenlabs_api_key: &str,
+    kokoro_voices_path: &str,
 ) -> Result<Vec<ScannedVoice>, String> {
     match engine {
         "edge" => Ok(list_edge_tts_voices()),
+        "kokoro" => crate::modules::kokoro::list_voices(kokoro_voices_path),
         "elevenlabs" => {
             if elevenlabs_api_key.trim().is_empty() {
                 return Ok(Vec::new());
@@ -663,7 +670,7 @@ pub async fn synthesize_openai_tts(
         "model": model,
         "input": text,
         "voice": voice_id,
-        "response_format": "mp3",
+        "response_format": "wav",
         "speed": speed
     });
     if !instructions.trim().is_empty() {
@@ -791,6 +798,15 @@ pub async fn synthesize_speech(text: &str, config: &VoiceConfig) -> Result<Strin
     let synthesized = match config.engine {
         TtsEngine::Edge => {
             synthesize_edge_tts(&cleaned, &config.voice_id, &config.rate, &config.pitch, &config.volume).await
+        }
+        TtsEngine::Kokoro => {
+            crate::modules::kokoro::synthesize(
+                &cleaned,
+                &config.voice_id,
+                &config.rate,
+                &config.kokoro,
+            )
+            .await
         }
         TtsEngine::ElevenLabs => {
             synthesize_elevenlabs(&cleaned, &config.voice_id, &config.elevenlabs_api_key).await
@@ -1236,13 +1252,13 @@ mod tests {
 
     #[tokio::test]
     async fn test_list_available_voices_edge() {
-        let voices = list_available_voices("edge", "").await.unwrap();
+        let voices = list_available_voices("edge", "", "").await.unwrap();
         assert!(voices.len() > 10);
     }
 
     #[tokio::test]
     async fn test_list_available_voices_openai() {
-        let voices = list_available_voices("openai", "").await.unwrap();
+        let voices = list_available_voices("openai", "", "").await.unwrap();
         assert!(voices.iter().any(|v| v.id == "nova"));
     }
 
@@ -1278,5 +1294,7 @@ mod tests {
         assert_eq!(config.stt.engine, SttEngine::Disabled);
         assert!(!config.rvc.enabled);
         assert!(config.output_device_id.is_empty());
+        assert!(config.kokoro.model_path.is_empty());
+        assert!(config.kokoro.voices_path.is_empty());
     }
 }

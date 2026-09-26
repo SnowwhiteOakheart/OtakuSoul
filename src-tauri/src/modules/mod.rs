@@ -2,6 +2,7 @@ pub mod characters;
 pub mod companion;
 pub mod hardware;
 pub mod inference;
+pub mod kokoro;
 pub mod llama_manager;
 pub mod lorebook;
 pub mod memory;
