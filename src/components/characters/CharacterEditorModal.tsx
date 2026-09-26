@@ -3,7 +3,7 @@ import { CharacterProfile, CharacterCardV2 } from '../../types';
 import { api } from '../../services/api';
 import { useAppStore } from '../../store/useAppStore';
 import { open } from '@tauri-apps/plugin-dialog';
-import { X, Save, Image, Plus, Trash2, Sparkles, User, FileText, Settings2 } from 'lucide-react';
+import { X, Save, Image, Plus, Trash2, Sparkles, User, FileText, Settings2, BookOpen } from 'lucide-react';
 
 interface CharacterEditorModalProps {
   character: CharacterProfile | null; // null means create new
@@ -16,13 +16,14 @@ export const CharacterEditorModal = ({
   onClose,
   onSaved,
 }: CharacterEditorModalProps) => {
-  const { refreshCharacters } = useAppStore();
+  const { refreshCharacters, allLorebooks } = useAppStore();
 
-  const [activeTab, setActiveTab] = useState<'basics' | 'prompts' | 'greetings' | 'raw'>('basics');
+  const [activeTab, setActiveTab] = useState<'basics' | 'prompts' | 'greetings' | 'lorebooks' | 'raw'>('basics');
   const [isSaving, setIsSaving] = useState(false);
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
 
   // Form State
+  const [boundLorebooks, setBoundLorebooks] = useState<string[]>(character?.bound_lorebooks || []);
   const [name, setName] = useState(character?.card.data.name || '');
   const [title, setTitle] = useState(
     (character?.card.data.extensions?.sow_title as string) || character?.card.data.tags?.[0] || ''
@@ -115,7 +116,7 @@ export const CharacterEditorModal = ({
       card: updatedCard,
       avatar_data_url: avatarDataUrl || undefined,
       source_path: character?.source_path,
-      bound_lorebooks: character?.bound_lorebooks || [],
+      bound_lorebooks: boundLorebooks,
     };
 
     try {
@@ -189,6 +190,17 @@ export const CharacterEditorModal = ({
           >
             <Sparkles className="w-3.5 h-3.5" />
             <span>Begrüßungen ({alternateGreetings.length + 1})</span>
+          </button>
+          <button
+            onClick={() => setActiveTab('lorebooks')}
+            className={`flex items-center gap-2 px-4 py-2 border-b-2 text-xs font-semibold transition-all ${
+              activeTab === 'lorebooks'
+                ? 'border-purple-500 text-purple-300'
+                : 'border-transparent text-slate-400 hover:text-slate-200'
+            }`}
+          >
+            <BookOpen className="w-3.5 h-3.5" />
+            <span>Lorebooks ({boundLorebooks.length})</span>
           </button>
           <button
             onClick={() => setActiveTab('raw')}
@@ -442,7 +454,75 @@ export const CharacterEditorModal = ({
             </div>
           )}
 
-          {/* TAB 4: Raw JSON Preview */}
+          {/* TAB 4: Lorebooks Binding */}
+          {activeTab === 'lorebooks' && (
+            <div className="space-y-4">
+              <div className="p-3 bg-purple-500/10 border border-purple-500/30 rounded-xl text-xs text-purple-200 flex items-center justify-between">
+                <div>
+                  <span className="font-bold">Multi-Lorebook Binding:</span> Wähle aus, welche Lorebooks aktiv mit diesem Charakter verknüpft sein sollen.
+                </div>
+                <span className="font-mono text-purple-300 font-bold">{boundLorebooks.length} gebunden</span>
+              </div>
+
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                {allLorebooks.map((lb) => {
+                  const idOrPath = lb.id || lb.file_path || lb.name;
+                  const isBound =
+                    boundLorebooks.includes(idOrPath) ||
+                    (lb.file_path ? boundLorebooks.includes(lb.file_path) : false) ||
+                    (lb.id ? boundLorebooks.includes(lb.id) : false);
+
+                  return (
+                    <div
+                      key={idOrPath}
+                      onClick={() => {
+                        if (isBound) {
+                          setBoundLorebooks(
+                            boundLorebooks.filter(
+                              (x) => x !== lb.id && x !== lb.file_path && x !== idOrPath
+                            )
+                          );
+                        } else {
+                          setBoundLorebooks([...boundLorebooks, lb.id || idOrPath]);
+                        }
+                      }}
+                      className={`p-3.5 rounded-xl border cursor-pointer transition-all ${
+                        isBound
+                          ? 'bg-purple-600/15 border-purple-500/60 shadow-sm'
+                          : 'bg-slate-950/60 border-slate-800 hover:border-slate-700'
+                      }`}
+                    >
+                      <div className="flex items-start justify-between gap-2 mb-1.5">
+                        <div className="flex items-center gap-2">
+                          <input
+                            type="checkbox"
+                            checked={isBound}
+                            readOnly
+                            className="rounded bg-slate-900 border-slate-700 text-purple-600 focus:ring-0 pointer-events-none"
+                          />
+                          <span className="text-xs font-bold text-slate-100">{lb.name}</span>
+                        </div>
+                        <span className="px-1.5 py-0.5 rounded text-[10px] bg-slate-800 text-slate-400 font-mono border border-slate-700">
+                          {lb.entries.length} Einträge
+                        </span>
+                      </div>
+                      <p className="text-[11px] text-slate-400 line-clamp-2">
+                        {lb.description || 'Keine Beschreibung.'}
+                      </p>
+                    </div>
+                  );
+                })}
+
+                {allLorebooks.length === 0 && (
+                  <div className="col-span-2 p-8 text-center text-xs text-slate-500">
+                    Noch keine Lorebooks vorhanden. Erstelle oder importiere welche im Lorebook-Tab.
+                  </div>
+                )}
+              </div>
+            </div>
+          )}
+
+          {/* TAB 5: Raw JSON Preview */}
           {activeTab === 'raw' && (
             <div>
               <pre className="p-4 bg-slate-950 border border-slate-800 rounded-xl font-mono text-xs text-purple-300 max-h-96 overflow-y-auto">

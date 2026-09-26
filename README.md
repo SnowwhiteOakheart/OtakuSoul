@@ -110,9 +110,15 @@ npm run tauri build
   - Diary Agent: First-person introspective diary generation recording feelings toward `{user_name}`
   - Bidirectional Markdown Sync: Render SQLite state to `MEMORY.md` & `USER.md` with in-app editor and real-time synchronization back to database
   - Snapshots & Backups: Automatic snapshots before patch application, snapshot manager with 1-click restore
-  - Soul of Waifu Importer: Direct 1-click folder import of legacy `MEMORY.md`, `USER.md`, `topics/*.md`, and `DIARY.md`
-- [ ] **Phases 12–18: Remaining feature parity with Soul of Waifu**
-  - Lorebook 2.0 (semantic RAG & multi-binding), voice (TTS/STT), Live2D, AI Game Master, real companion tools, web client, Discord & packaging
+- [x] **Phase 12: Lorebook 2.0 (Editor, Multi-Binding, Scene Tension & Chain Dependencies)**
+  - Advanced Trigger Engine: Keyword matching (OR), Secondary Keys (AND condition), Exclude Keys (NOT condition), Regex patterns, Word Boundaries (`\b`), Case-Sensitivity, and Always-On
+  - Scene Tension Accumulator: Dynamic tension score tracking dialogue stress & danger keywords; triggers crisis/tension lorebook events at thresholds (`tension_threshold`) and vents tension
+  - Chain Dependencies: Unlocks connected lorebook entries (`chain_activates`) or enforces strict prerequisites (`chain_requires`)
+  - Injection Modes: Dedicated separation between passive background context (`## Weltwissen & Kontext`) and active high-priority acting rules (`## Wichtige Handlungs- & Regie-Anweisungen`)
+  - Multi-Binding & Global Lorebooks: Unlimited lorebooks bound per character (`bound_lorebooks`) and universal global lorebooks active across all chats
+  - Full-Featured Lorebook Manager: In-app editor view with entry search, filter pills, tag chips, and SillyTavern / World Info v2 JSON import and export
+- [ ] **Phases 13–18: Remaining feature parity with Soul of Waifu**
+  - Voice (TTS/STT), Live2D, AI Game Master (Soul Stage Orchestrator), real companion tools, web client, Discord & packaging
   - See **[Roadmap.md](Roadmap.md)** for the full, detailed plan (German)
 
 ---

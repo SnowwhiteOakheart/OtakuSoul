@@ -146,17 +146,38 @@ export interface LorebookEntry {
   uid?: number;
   name: string;
   key: string[];
+  secondary_keys?: string[];
   exclude_key: string[];
+  regex_keys?: string[];
   content: string;
-  trigger_type: string;
+  trigger_type: string; // 'keyword' | 'regex' | 'always_on' | 'tension'
   probability?: number;
-  injection_behavior?: string;
+  priority?: number;
+  enabled?: boolean;
+  injection_behavior?: string; // 'passive' | 'active'
+  case_sensitive?: boolean;
+  match_whole_words?: boolean;
+  chain_requires?: string[];
+  chain_activates?: string[];
+  tension_threshold?: number;
 }
 
 export interface Lorebook {
+  id?: string;
   name: string;
   description: string;
+  scan_depth?: number;
+  is_global?: boolean;
+  file_path?: string;
   entries: LorebookEntry[];
+}
+
+export interface EvaluatedLoreResult {
+  passive_entries: LorebookEntry[];
+  active_entries: LorebookEntry[];
+  activated_entry_names: string[];
+  triggered_tension_events: string[];
+  new_tension: number;
 }
 
 export interface StateVariable {
@@ -257,6 +278,7 @@ export interface PromptContext {
   user_name: string;
   character: CharacterData;
   active_lore: LorebookEntry[];
+  active_directives?: LorebookEntry[];
   state_variables: StateVariable[];
   cognitive?: CognitiveOverview;
   reply_language?: string;
@@ -412,6 +434,8 @@ export interface AppSettings {
   active_character_id: string | null;
   active_persona_id: string | null;
   active_vrm_path: string | null;
+  global_lorebooks?: string[];
+  scene_tension_enabled?: boolean;
 }
 
 export interface UserPersona {

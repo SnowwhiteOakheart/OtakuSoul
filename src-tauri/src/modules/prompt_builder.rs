@@ -16,6 +16,8 @@ pub struct PromptContext {
     pub user_name: String,
     pub character: CharacterData,
     pub active_lore: Vec<LorebookEntry>,
+    #[serde(default)]
+    pub active_directives: Vec<LorebookEntry>,
     pub state_variables: Vec<StateVariable>,
     #[serde(default)]
     pub cognitive: Option<crate::modules::memory::CognitiveOverview>,
@@ -68,10 +70,39 @@ pub fn build_system_prompt(ctx: &PromptContext) -> String {
         ));
     }
 
-    // 5. Active Lorebook Entries
-    if !ctx.active_lore.is_empty() {
+    // 5. Active Lorebook Directives (High-Priority Action & Behavior Directives)
+    let mut direct_entries: Vec<&LorebookEntry> = Vec::new();
+    let mut passive_entries: Vec<&LorebookEntry> = Vec::new();
+
+    for entry in &ctx.active_lore {
+        if entry.injection_behavior.to_lowercase() == "active"
+            || entry.injection_behavior.to_lowercase() == "directive"
+        {
+            direct_entries.push(entry);
+        } else {
+            passive_entries.push(entry);
+        }
+    }
+    for entry in &ctx.active_directives {
+        direct_entries.push(entry);
+    }
+
+    if !direct_entries.is_empty() {
+        let mut dir_str = String::from("## Wichtige Handlungs- & Regie-Anweisungen (Lore-Direktiven)\nFolge diesen Verhaltens- und Situationsregeln in deiner Antwort strikt:\n");
+        for entry in &direct_entries {
+            dir_str.push_str(&format!(
+                "- **{}**: {}\n",
+                entry.name,
+                replace_macros(&entry.content)
+            ));
+        }
+        parts.push(dir_str);
+    }
+
+    // 5.5. Passive Lorebook Entries (World Context)
+    if !passive_entries.is_empty() {
         let mut lore_str = String::from("## Weltwissen & Kontext (Lorebook)\n");
-        for entry in &ctx.active_lore {
+        for entry in &passive_entries {
             lore_str.push_str(&format!(
                 "- **{}**: {}\n",
                 entry.name,

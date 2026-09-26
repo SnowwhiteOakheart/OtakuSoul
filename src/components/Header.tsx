@@ -9,6 +9,7 @@ import {
   AlertCircle,
   Loader2,
   Users,
+  BookOpen,
 } from 'lucide-react';
 
 export const Header = () => {
@@ -71,6 +72,18 @@ export const Header = () => {
           >
             <Users className="w-4 h-4" />
             <span>Charaktere</span>
+          </button>
+
+          <button
+            onClick={() => setActiveTab('lorebooks')}
+            className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-sm transition-all ${
+              activeTab === 'lorebooks'
+                ? 'bg-purple-600/20 text-purple-300 border border-purple-500/40 shadow-sm'
+                : 'text-slate-400 hover:text-slate-200 hover:bg-slate-800/60'
+            }`}
+          >
+            <BookOpen className="w-4 h-4" />
+            <span>Lorebooks</span>
           </button>
 
           <button

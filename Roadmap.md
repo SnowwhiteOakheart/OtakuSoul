@@ -103,15 +103,15 @@ Die Reihenfolge ist nach Abhängigkeit und Nutzen sortiert: erst das, was jede a
 - [x] **Import bestehender SoW-Memory-Dateien** – Importiert vorhandene `MEMORY.md`, `USER.md`, `topics/*.md` und `DIARY.md` aus Soul-of-Waifu-Ordnern direkt in SQLite
 - [x] **Prompt-Builder-Integration** – Unumstößliche Glaubenssätze, kognitive Dissonanz, Story-Rolle und Beziehungsdynamik fließen reaktiv in den System-Prompt ein
 
-### Phase 12 – Lorebook 2.0 🟡
+### Phase 12 – Lorebook 2.0 ✅ Abgeschlossen
 
-- [ ] **Lorebook-Editor** (Einträge anlegen, Keys, Regex, Priorität, Position)
-- [ ] **Multi-Binding** mehrerer Lorebooks pro Charakter + globale/geteilte Lorebooks (SoW: `create_multi_lorebook_section`, `load_shared_lorebooks`)
-- [ ] **Semantisches Matching** über Embeddings (teilt die Infrastruktur mit Phase 11)
-- [ ] **Scene Tension Accumulator** – Spannung aufbauen, Zufallsereignisse auslösen
-- [ ] **Chain Dependencies** – Einträge schalten andere (verzögert) frei
-- [ ] **Injection-Modi** passiv (Hintergrundwissen) / aktiv (Systemanweisung)
-- [ ] **Lorebook-Import aus dem Hub**
+- [x] **Lorebook-Editor** – Vollständiger Editor für Lorebooks und Einträge (Name, Content, Primär-/Sekundärschlüssel, Exclude-Keys, Regex, Priorität, Wahrscheinlichkeit, Wortgrenzen, Case-Sensitivity)
+- [x] **Multi-Binding & globale Lorebooks** – Beliebig viele Lorebooks an Charaktere binden (`bound_lorebooks`) sowie globale Universum-Lorebooks für alle Chats (`is_global` / `global_lorebooks`)
+- [x] **Erweiterte Trigger-Engine** – Primärschlüssel (ODER), Sekundärschlüssel (UND), Ausschlusswörter (NICHT), Wortgrenzen-Regex (`\b`), Reguläre Ausdrücke und Always-On
+- [x] **Scene Tension Accumulator** – Dynamischer Spannungsaufbau im Gespräch mit Auslösung von Krisen-/Zufallsevents bei Schwellenwert (`tension_threshold`) und Spannungsabbau
+- [x] **Chain Dependencies** – Einträge schalten andere frei (`chain_activates`) oder verlangen erfüllte Vorbedingungen (`chain_requires`)
+- [x] **Getrennte Injection-Modi** – Passiv (Weltwissen / Kontext) vs. Aktiv (Strikte Regie- und Verhaltensdirektiven im System-Prompt)
+- [x] **Lorebook-Import & Export** – SillyTavern-, World-Info- und OtakuSoul-kompatibler JSON-Import/-Export mit nativem Datei-Dialog
 
 ### Phase 13 – Stimme: TTS, STT & Voice Call 🟠
 

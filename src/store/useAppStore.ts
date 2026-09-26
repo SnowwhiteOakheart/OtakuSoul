@@ -8,6 +8,7 @@ import {
   LayerRecommendation,
   CharacterProfile,
   Lorebook,
+  LorebookEntry,
   StateVariable,
   CognitiveOverview,
   PsychologyState,
@@ -43,10 +44,117 @@ import { soundFx } from '../services/soundFx';
 import { extractStateUpdates, applyStateUpdates } from '../utils/stateParser';
 import { HUD_PRESETS } from '../constants/hudPresets';
 
+async function resolvePromptWithLore(
+  state: AppStoreState,
+  recentMessages: ChatMessage[],
+  latestUserText?: string,
+): Promise<string> {
+  const {
+    activeCharacter,
+    activePersona,
+    stateVariables,
+    cognitiveOverview,
+    replyLanguage,
+    serverConfig,
+    chatSessions,
+    activeChatId,
+    lorebookScanDepth,
+    allLorebooks,
+    activeLorebooks,
+    globalLorebookIds,
+    currentTension,
+    sceneTensionEnabled,
+  } = state;
+
+  if (!activeCharacter) return '';
+
+  const activeSession = chatSessions.find((s) => s.id === activeChatId);
+  const scanDepth = Math.max(1, lorebookScanDepth || 5);
+  const recentContext = recentMessages
+    .slice(-scanDepth)
+    .map((m) => m.content)
+    .join(' ');
+
+  // 1. Gather all candidate lorebooks (bound to character or global)
+  const boundSet = new Set(activeCharacter.bound_lorebooks || []);
+  const globalSet = new Set(globalLorebookIds || []);
+
+  let candidateLorebooks = allLorebooks.filter(
+    (lb) =>
+      (lb.id && boundSet.has(lb.id)) ||
+      (lb.file_path && boundSet.has(lb.file_path)) ||
+      lb.is_global ||
+      (lb.id && globalSet.has(lb.id)) ||
+      (lb.file_path && globalSet.has(lb.file_path))
+  );
+
+  if (candidateLorebooks.length === 0) {
+    candidateLorebooks = activeLorebooks.length > 0 ? activeLorebooks : allLorebooks;
+  }
+
+  // 2. Scene Tension Accumulator
+  let effectiveTension = currentTension;
+  if (sceneTensionEnabled) {
+    let tensionDelta = 2; // base increment per turn
+    if (latestUserText) {
+      const dangerRegex =
+        /\b(gefahr|kampf|angriff|monster|schrei|wache|feind|dunkelheit|schwert|blut|waffe|flucht|falle|bedrohung|boss|attack|danger|enemy|fight|threat|kill|trap)\b/i;
+      if (dangerRegex.test(latestUserText)) {
+        tensionDelta += 10;
+      }
+    }
+    effectiveTension = Math.min(100, Math.max(0, currentTension + tensionDelta));
+  }
+
+  // 3. Evaluate lorebooks
+  let passiveEntries: LorebookEntry[] = [];
+  let activeDirectives: LorebookEntry[] = [];
+
+  if (candidateLorebooks.length > 0) {
+    try {
+      const evalRes = await api.evaluateMultiLorebooks(
+        candidateLorebooks,
+        recentContext,
+        effectiveTension
+      );
+      passiveEntries = evalRes.passive_entries;
+      activeDirectives = evalRes.active_entries;
+
+      if (evalRes.triggered_tension_events.length > 0) {
+        soundFx.playWarning();
+        state.setCurrentTension(evalRes.new_tension);
+      } else if (sceneTensionEnabled) {
+        state.setCurrentTension(effectiveTension);
+      }
+    } catch (e) {
+      console.warn('Failed evaluateMultiLorebooks, falling back:', e);
+      for (const lb of candidateLorebooks) {
+        const entries = await api.evaluateLorebookContext(lb, recentContext);
+        passiveEntries.push(...entries);
+      }
+    }
+  }
+
+  // 4. Assemble system prompt
+  return await api.assemblePrompt({
+    char_name: activeCharacter.card.data.name,
+    user_name: activePersona.name,
+    character: activeCharacter.card.data,
+    active_lore: passiveEntries,
+    active_directives: activeDirectives,
+    state_variables: stateVariables,
+    cognitive: cognitiveOverview || undefined,
+    reply_language: replyLanguage || 'Deutsch',
+    allow_reasoning: serverConfig.reasoning_mode,
+    author_note: activeSession?.author_note,
+    author_note_depth: activeSession?.author_note_depth,
+  });
+}
+
 interface AppStoreState {
   // Navigation
-  activeTab: 'chat' | 'characters' | 'stage' | 'companion' | 'settings';
-  setActiveTab: (tab: 'chat' | 'characters' | 'stage' | 'companion' | 'settings') => void;
+  activeTab: 'chat' | 'characters' | 'lorebooks' | 'stage' | 'companion' | 'settings';
+  setActiveTab: (tab: 'chat' | 'characters' | 'lorebooks' | 'stage' | 'companion' | 'settings') => void;
 
   // Paths & Lifecycle
   appPaths: AppPaths | null;
@@ -71,10 +179,27 @@ interface AppStoreState {
   startServer: () => Promise<void>;
   stopServer: () => Promise<void>;
 
-  // Characters & Lorebooks (Phase 3 & 8)
+  // Characters & Lorebooks (Phase 3, 8 & 12)
   activeCharacter: CharacterProfile | null;
   availableCharacters: CharacterProfile[];
   activeLorebooks: Lorebook[];
+  allLorebooks: Lorebook[];
+  activeLorebook: Lorebook | null;
+  currentTension: number;
+  globalLorebookIds: string[];
+  sceneTensionEnabled: boolean;
+  setCurrentTension: (val: number) => void;
+  adjustTension: (delta: number) => void;
+  resetTension: () => void;
+  setSceneTensionEnabled: (enabled: boolean) => void;
+  refreshLorebooks: () => Promise<void>;
+  selectLorebook: (lb: Lorebook | null) => void;
+  saveLorebook: (lb: Lorebook) => Promise<string>;
+  deleteLorebook: (filePath: string) => Promise<void>;
+  importLorebook: (sourcePath: string) => Promise<Lorebook>;
+  exportLorebook: (lb: Lorebook, targetPath: string) => Promise<void>;
+  toggleGlobalLorebook: (lorebookId: string) => Promise<void>;
+  bindLorebookToCharacter: (charId: string, lorebookId: string, bound: boolean) => Promise<void>;
   stateVariables: StateVariable[];
   selectCharacter: (character: CharacterProfile) => Promise<void>;
   refreshCharacters: () => Promise<void>;
@@ -411,6 +536,8 @@ export const useAppStore = create<AppStoreState>((set, get) => ({
         replyLanguage: settings.reply_language || 'Deutsch',
         lorebookScanDepth: settings.lorebook_scan_depth || 5,
         activeVrmPath: vrmPath,
+        globalLorebookIds: settings.global_lorebooks || [],
+        sceneTensionEnabled: settings.scene_tension_enabled !== false,
       });
 
       // 3b. Load LLM Presets & listen to model downloads
@@ -449,8 +576,9 @@ export const useAppStore = create<AppStoreState>((set, get) => ({
         });
       }
 
-      // 5. Scan Characters
+      // 5. Scan Characters & Lorebooks
       await get().refreshCharacters();
+      await get().refreshLorebooks();
 
       // If active character was saved in settings, restore it
       if (settings.active_character_id) {
@@ -481,6 +609,8 @@ export const useAppStore = create<AppStoreState>((set, get) => ({
         active_character_id: state.activeCharacter?.id || null,
         active_persona_id: state.activePersona?.id || null,
         active_vrm_path: state.activeVrmPath,
+        global_lorebooks: state.globalLorebookIds,
+        scene_tension_enabled: state.sceneTensionEnabled,
       };
       await api.saveSettings(settings);
     } catch (e) {
@@ -949,10 +1079,117 @@ export const useAppStore = create<AppStoreState>((set, get) => ({
     }
   },
 
-  // Characters & Lorebooks (Phase 3 & 8)
+  // Characters & Lorebooks (Phase 3, 8 & 12)
   activeCharacter: null,
   availableCharacters: [],
   activeLorebooks: [],
+  allLorebooks: [],
+  activeLorebook: null,
+  currentTension: 0,
+  globalLorebookIds: [],
+  sceneTensionEnabled: true,
+
+  setCurrentTension: (currentTension) =>
+    set({ currentTension: Math.min(100, Math.max(0, currentTension)) }),
+  adjustTension: (delta) =>
+    set((state) => ({
+      currentTension: Math.min(100, Math.max(0, state.currentTension + delta)),
+    })),
+  resetTension: () => set({ currentTension: 0 }),
+  setSceneTensionEnabled: (sceneTensionEnabled) => {
+    set({ sceneTensionEnabled });
+    get().saveCurrentSettings();
+  },
+
+  refreshLorebooks: async () => {
+    try {
+      const books = await api.listAllLorebooks();
+      set({ allLorebooks: books });
+      if (!get().activeLorebook && books.length > 0) {
+        set({ activeLorebook: books[0] });
+      }
+    } catch (e) {
+      console.error('Failed to list lorebooks:', e);
+    }
+  },
+
+  selectLorebook: (lb) => set({ activeLorebook: lb }),
+
+  saveLorebook: async (lb) => {
+    try {
+      const path = await api.saveLorebook(lb);
+      await get().refreshLorebooks();
+      const updated = get().allLorebooks.find((b) => b.file_path === path || b.id === lb.id);
+      if (updated) {
+        set({ activeLorebook: updated });
+      }
+      return path;
+    } catch (e) {
+      console.error('Failed to save lorebook:', e);
+      throw e;
+    }
+  },
+
+  deleteLorebook: async (filePath) => {
+    try {
+      await api.deleteLorebook(filePath);
+      await get().refreshLorebooks();
+      const remaining = get().allLorebooks;
+      set({ activeLorebook: remaining.length > 0 ? remaining[0] : null });
+    } catch (e) {
+      console.error('Failed to delete lorebook:', e);
+      throw e;
+    }
+  },
+
+  importLorebook: async (sourcePath) => {
+    try {
+      const imported = await api.importLorebookFile(sourcePath);
+      await get().refreshLorebooks();
+      set({ activeLorebook: imported });
+      return imported;
+    } catch (e) {
+      console.error('Failed to import lorebook:', e);
+      throw e;
+    }
+  },
+
+  exportLorebook: async (lb, targetPath) => {
+    try {
+      await api.exportLorebookFile(lb, targetPath);
+    } catch (e) {
+      console.error('Failed to export lorebook:', e);
+      throw e;
+    }
+  },
+
+  toggleGlobalLorebook: async (lorebookId) => {
+    const current = get().globalLorebookIds;
+    const exists = current.includes(lorebookId);
+    const updated = exists ? current.filter((id) => id !== lorebookId) : [...current, lorebookId];
+    set({ globalLorebookIds: updated });
+    await get().saveCurrentSettings();
+  },
+
+  bindLorebookToCharacter: async (charId, lorebookId, bound) => {
+    const char = get().availableCharacters.find((c) => c.id === charId);
+    if (!char) return;
+    const currentBound = char.bound_lorebooks || [];
+    const updatedBound = bound
+      ? Array.from(new Set([...currentBound, lorebookId]))
+      : currentBound.filter((id) => id !== lorebookId);
+
+    const updatedProfile: CharacterProfile = {
+      ...char,
+      bound_lorebooks: updatedBound,
+    };
+    await api.saveCharacterCard(updatedProfile);
+    await get().refreshCharacters();
+    if (get().activeCharacter?.id === charId) {
+      set({ activeCharacter: updatedProfile });
+    }
+  },
+
   stateVariables: [
     { name: 'Affection', value: '45', var_type: 'progress', max_value: 100 },
     { name: 'Energy', value: '80', var_type: 'progress', max_value: 100 },
@@ -1375,18 +1612,15 @@ export const useAppStore = create<AppStoreState>((set, get) => ({
       cloudModel,
       cloudProvider,
       activeCharacter,
-      activeLorebooks,
-      stateVariables,
-      activePersona,
-      replyLanguage,
       sampling,
-      lorebookScanDepth,
       chatSessions,
     } = get();
 
     if (!activeChatId || !activeCharacter) return;
     const targetMsg = storedMessages.find((m) => m.id === msgId);
     if (!targetMsg) return;
+
+    const activeSession = chatSessions.find((s) => s.id === activeChatId);
 
     // Messages before this message
     const priorStored = storedMessages.filter((m) => m.order_index < targetMsg.order_index);
@@ -1398,34 +1632,7 @@ export const useAppStore = create<AppStoreState>((set, get) => ({
 
     set({ isGenerating: true, streamingText: '', streamingThought: '' });
 
-    const activeSession = chatSessions.find((s) => s.id === activeChatId);
-
-    // Build context
-    const scanDepth = Math.max(1, lorebookScanDepth || 5);
-    const recentContext = priorFlat
-      .slice(-scanDepth)
-      .map((m) => m.content)
-      .join(' ');
-
-    const matchedLore = [];
-    for (const lb of activeLorebooks) {
-      const entries = await api.evaluateLorebookContext(lb, recentContext);
-      matchedLore.push(...entries);
-    }
-
-    const promptText = await api.assemblePrompt({
-      char_name: activeCharacter.card.data.name,
-      user_name: activePersona.name,
-      character: activeCharacter.card.data,
-      active_lore: matchedLore,
-      state_variables: stateVariables,
-      cognitive: get().cognitiveOverview || undefined,
-      reply_language: replyLanguage || 'Deutsch',
-      allow_reasoning: serverConfig.reasoning_mode,
-      author_note: activeSession?.author_note,
-      author_note_depth: activeSession?.author_note_depth,
-    });
-
+    const promptText = await resolvePromptWithLore(get(), priorFlat);
     const systemPromptMsg: ChatMessage = { role: 'system', content: promptText };
 
     const payloadMessages = [systemPromptMsg, ...priorFlat];
@@ -1503,13 +1710,7 @@ export const useAppStore = create<AppStoreState>((set, get) => ({
       cloudModel,
       cloudProvider,
       activeCharacter,
-      activeLorebooks,
-      stateVariables,
-      activePersona,
-      replyLanguage,
       sampling,
-      lorebookScanDepth,
-      chatSessions,
     } = get();
 
     if (!activeChatId || !activeCharacter) return;
@@ -1526,33 +1727,7 @@ export const useAppStore = create<AppStoreState>((set, get) => ({
 
     set({ isGenerating: true, streamingText: '', streamingThought: '' });
 
-    const activeSession = chatSessions.find((s) => s.id === activeChatId);
-
-    const scanDepth = Math.max(1, lorebookScanDepth || 5);
-    const recentContext = historyFlat
-      .slice(-scanDepth)
-      .map((m) => m.content)
-      .join(' ');
-
-    const matchedLore = [];
-    for (const lb of activeLorebooks) {
-      const entries = await api.evaluateLorebookContext(lb, recentContext);
-      matchedLore.push(...entries);
-    }
-
-    const promptText = await api.assemblePrompt({
-      char_name: activeCharacter.card.data.name,
-      user_name: activePersona.name,
-      character: activeCharacter.card.data,
-      active_lore: matchedLore,
-      state_variables: stateVariables,
-      cognitive: get().cognitiveOverview || undefined,
-      reply_language: replyLanguage || 'Deutsch',
-      allow_reasoning: serverConfig.reasoning_mode,
-      author_note: activeSession?.author_note,
-      author_note_depth: activeSession?.author_note_depth,
-    });
-
+    const promptText = await resolvePromptWithLore(get(), historyFlat);
     const systemPromptMsg: ChatMessage = { role: 'system', content: promptText };
     const continueInstruction: ChatMessage = {
       role: 'system',
@@ -1646,18 +1821,13 @@ export const useAppStore = create<AppStoreState>((set, get) => ({
     let { activeChatId } = get();
     const {
       activeCharacter,
-      activePersona,
       selectedBackend,
       serverConfig,
       cloudEndpoint,
       cloudApiKey,
       cloudModel,
       cloudProvider,
-      activeLorebooks,
-      stateVariables,
-      replyLanguage,
       sampling,
-      lorebookScanDepth,
       chatSessions,
     } = get();
 
@@ -1695,31 +1865,7 @@ export const useAppStore = create<AppStoreState>((set, get) => ({
     // 2. Build context-aware system prompt
     let systemPromptMsg: ChatMessage | null = null;
     if (activeCharacter) {
-      const scanDepth = Math.max(1, lorebookScanDepth || 5);
-      const recentContext = updatedFlat
-        .slice(-scanDepth)
-        .map((m) => m.content)
-        .join(' ');
-
-      const matchedLore = [];
-      for (const lb of activeLorebooks) {
-        const entries = await api.evaluateLorebookContext(lb, recentContext);
-        matchedLore.push(...entries);
-      }
-
-      const promptText = await api.assemblePrompt({
-        char_name: activeCharacter.card.data.name,
-        user_name: activePersona.name,
-        character: activeCharacter.card.data,
-        active_lore: matchedLore,
-        state_variables: stateVariables,
-        cognitive: get().cognitiveOverview || undefined,
-        reply_language: replyLanguage || 'Deutsch',
-        allow_reasoning: serverConfig.reasoning_mode,
-        author_note: activeSession?.author_note,
-        author_note_depth: activeSession?.author_note_depth,
-      });
-
+      const promptText = await resolvePromptWithLore(get(), updatedFlat, content);
       systemPromptMsg = { role: 'system', content: promptText };
     }
 

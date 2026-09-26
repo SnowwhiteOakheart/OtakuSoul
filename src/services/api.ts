@@ -10,6 +10,7 @@ import {
   CharacterProfile,
   Lorebook,
   LorebookEntry,
+  EvaluatedLoreResult,
   PromptContext,
   CognitiveOverview,
   PsychologyState,
@@ -91,6 +92,26 @@ export const api = {
     return await invoke<Lorebook>('load_lorebook', { filePath });
   },
 
+  listAllLorebooks: async (): Promise<Lorebook[]> => {
+    return await invoke<Lorebook[]>('list_all_lorebooks');
+  },
+
+  saveLorebook: async (lorebook: Lorebook): Promise<string> => {
+    return await invoke<string>('save_lorebook', { lorebook });
+  },
+
+  deleteLorebook: async (filePath: string): Promise<void> => {
+    return await invoke<void>('delete_lorebook', { filePath });
+  },
+
+  importLorebookFile: async (sourcePath: string): Promise<Lorebook> => {
+    return await invoke<Lorebook>('import_lorebook_file', { sourcePath });
+  },
+
+  exportLorebookFile: async (lorebook: Lorebook, targetPath: string): Promise<void> => {
+    return await invoke<void>('export_lorebook_file', { lorebook, targetPath });
+  },
+
   evaluateLorebookContext: async (
     lorebook: Lorebook,
     context: string
@@ -98,6 +119,18 @@ export const api = {
     return await invoke<LorebookEntry[]>('evaluate_lorebook_context', {
       lorebook,
       context,
+    });
+  },
+
+  evaluateMultiLorebooks: async (
+    lorebooks: Lorebook[],
+    context: string,
+    currentTension: number
+  ): Promise<EvaluatedLoreResult> => {
+    return await invoke<EvaluatedLoreResult>('evaluate_multi_lorebooks', {
+      lorebooks,
+      context,
+      currentTension,
     });
   },
 

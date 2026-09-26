@@ -169,7 +169,7 @@ Alle benötigten Daten sind eigenständig in diesem Projektverzeichnis gekapselt
   - **llama-server Hardware-Tuning:** Batch Size (`-b`), UBatch Size (`-ub`), KV-Cache Quantisierung (`--cache-type-k`, `--cache-type-v` z. B. `q8_0` für 50% VRAM-Ersparnis bei großen Kontexten), Memory-Lock (`--mlock`), no-mmap (`--no-mmap`), CPU MoE Offloading (`--cpu-moe`).
   - **Models Hub (Hugging Face):** Direkte GGUF-Suche via Hugging Face API, Repo-Dateien-Inspektion mit Quantisierungs-Erkennung (Q4_K_M, Q8_0 etc.), asynchroner Downloader mit Live-Fortschrittsbalken und Download-Geschwindigkeit in MB/s (`model-download-progress`).
   - **Moderne Einstellungs-Tabs:** Unterteilung in Server Tuning, Cloud Provider & OpenRouter Katalog, Sampler & Presets sowie Models Hub.
-- [x] **Phase 11: Soul Memory 2.0 (Kognitive Pipeline & Agenten)**
+- [x] **Phase 11: Soul Memory 2.0 (Kognitive Pipeline & Agenten)** (Commit `436469c`)
   - **Autonome Kognitive Pipeline (`soul_memory_pipeline.rs`):**
     - **Router-Agent:** Analysiert Konversationsabschnitte deterministisch, erkennt belanglose Turns via `{"no_significant_change": true}`, generiert partielle JSON-Field-Patches für Charakter- und Nutzerzustand, löst Widersprüche auf (`healing_log_add`) und plant Themen-Notizen (`topic_plan`).
     - **Archivist-Agent:** Erstellt und komprimiert thematische Lore-Einträge (<300 Wörter) auf Basis des Topic-Plans in das episodische Gedächtnis.
@@ -184,8 +184,28 @@ Alle benötigten Daten sind eigenständig in diesem Projektverzeichnis gekapselt
   - **Soul of Waifu Memory-Importer:**
     - 1-Klick-Import vorhandener `MEMORY.md`, `USER.md`, `topics/*.md` und `DIARY.md` Dateien aus beliebigen SoW-Ordnern über den nativen Verzeichnisdialog.
   - **Prompt-Builder-Erweiterung:** Kernidentität, ungelöste Dissonanzen, Story-Rolle und Beziehungsdynamik werden nun direkt in den Rollenspiel-Prompt injiziert.
+- [x] **Phase 12: Lorebook 2.0 (Editor, Multi-Binding, Scene Tension & Chain Dependencies)**
+  - **Erweiterte Trigger-Engine (`lorebook.rs`):**
+    - Primärschlüssel (ODER), Sekundärschlüssel (UND-Bedingung), Ausschlusswörter (NOT-Bedingung), Reguläre Ausdrücke (`regex_keys`), Wortgrenzen-Regex (`\b`), Case-Sensitivity Toggle und Always-On.
+    - **Wahrscheinlichkeits-Roll:** Prozentuale Auslöserate (`probability: 0..100%`) und Prioritäts-Sortierung (`priority: i32`, höhere Werte zuerst).
+  - **Scene Tension Accumulator:**
+    - Dynamische Szenenspannung wächst pro Turn (+2) und bei Konflikt-/Gefahren-Keywords (+10) bis 100%.
+    - Bei Erreichen des Schwellenwerts (`tension_threshold`) triggern spezielle Zufalls-/Krisen-Lorebook-Einträge und bauen Spannung ab (-25).
+    - Interaktiver Tension-Gauge im UI mit Live-Anzeige, Schwellenwerten und manuellem Reset.
+  - **Chain Dependencies:**
+    - `chain_activates`: Zwingt abhängige Folge-Einträge zur gemeinsamen Aktivierung.
+    - `chain_requires`: Filtert Einträge heraus, falls deren Voraussetzungen nicht aktiv sind.
+  - **Getrennte Injektions-Modi im System-Prompt (`prompt_builder.rs`):**
+    - `passive`: Fließt als Hintergrundwissen in `## Weltwissen & Kontext (Lorebook)` ein.
+    - `active` / `directive`: Fließt als strikte Handlungsregel in `## Wichtige Handlungs- & Regie-Anweisungen (Lore-Direktiven)` ein.
+  - **Multi-Binding & globale Lorebooks:**
+    - Beliebig viele Lorebooks können einzelnen Charakteren zugewiesen werden (`bound_lorebooks` im Charakter-Editor).
+    - Universelle Lorebooks können als `global` markiert werden und sind automatisch in jedem Chat aktiv.
+  - **Eigenständiger Lorebook-Manager & Editor (`LorebookView.tsx`):**
+    - Neuer Hauptreiter *Lorebooks* in der Navigation.
+    - Volle CRUD-Funktionalität, Eintrags-Filter, Tag-Chips, SillyTavern- / World-Info-kompatibler JSON-Import und -Export.
 
-**Offene Phasen 12–18** (Lorebook 2.0, Stimme, Live2D, Stage-GM, echter Companion, Ökosystem, i18n & Auslieferung) sind in [`Roadmap.md`](Roadmap.md) dokumentiert. **Vor neuen Features dort nachsehen und erledigte Punkte mit Commit-Hash abhaken.**
+**Offene Phasen 13–18** (Stimme, Live2D, Stage-GM, echter Companion, Ökosystem, i18n & Auslieferung) sind in [`Roadmap.md`](Roadmap.md) dokumentiert. **Vor neuen Features dort nachsehen und erledigte Punkte mit Commit-Hash abhaken.**
 
 ---
 

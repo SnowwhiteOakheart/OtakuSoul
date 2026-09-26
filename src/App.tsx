@@ -1,6 +1,7 @@
 import { Header } from './components/Header';
 import { ChatView } from './components/chat/ChatView';
 import { CharacterLibraryView } from './components/characters/CharacterLibraryView';
+import { LorebookView } from './components/lorebook/LorebookView';
 import { SettingsView } from './components/settings/SettingsView';
 import { StageView } from './components/stage/StageView';
 import { CompanionView } from './components/companion/CompanionView';
@@ -17,6 +18,7 @@ export function App() {
       <main className="flex-1 flex overflow-hidden">
         {activeTab === 'chat' && <ChatView />}
         {activeTab === 'characters' && <CharacterLibraryView />}
+        {activeTab === 'lorebooks' && <LorebookView />}
         {activeTab === 'stage' && <StageView />}
         {activeTab === 'companion' && <CompanionView />}
         {activeTab === 'settings' && <SettingsView />}
