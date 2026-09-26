@@ -205,6 +205,7 @@ interface AppStoreState {
   refreshCharacters: () => Promise<void>;
   loadPresetCharacters: () => Promise<void>;
   deleteCharacter: (charId: string) => Promise<void>;
+  restoreHiddenCharacters: () => Promise<void>;
   updateStateVariable: (name: string, value: string) => void;
 
   // Personas
@@ -1256,6 +1257,16 @@ export const useAppStore = create<AppStoreState>((set, get) => ({
       }
     } catch (e) {
       console.error('Failed to delete character:', e);
+      throw e;
+    }
+  },
+
+  restoreHiddenCharacters: async () => {
+    try {
+      await api.restoreHiddenCharacters();
+      await get().refreshCharacters();
+    } catch (e) {
+      console.error('Failed to restore hidden characters:', e);
       throw e;
     }
   },

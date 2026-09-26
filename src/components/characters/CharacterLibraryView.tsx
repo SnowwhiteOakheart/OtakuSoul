@@ -15,6 +15,7 @@ import {
   Sparkles,
   Tag,
   CheckCircle2,
+  RotateCcw,
 } from 'lucide-react';
 import { CharacterEditorModal } from './CharacterEditorModal';
 import { PersonaManagerModal } from './PersonaManagerModal';
@@ -26,6 +27,7 @@ export const CharacterLibraryView = () => {
     selectCharacter,
     refreshCharacters,
     deleteCharacter,
+    restoreHiddenCharacters,
     setActiveTab,
     activePersona,
   } = useAppStore();
@@ -178,6 +180,24 @@ export const CharacterLibraryView = () => {
           >
             <Upload className="w-3.5 h-3.5 text-cyan-400" />
             <span>Karte importieren...</span>
+          </button>
+
+          <button
+            onClick={async () => {
+              try {
+                await restoreHiddenCharacters();
+                setStatusNotice('Alle ausgeblendeten Presets wurden wiederhergestellt.');
+                setTimeout(() => setStatusNotice(null), 4000);
+              } catch (e) {
+                setStatusNotice(`Fehler beim Wiederherstellen: ${e instanceof Error ? e.message : String(e)}`);
+                setTimeout(() => setStatusNotice(null), 5000);
+              }
+            }}
+            title="Ausgeblendete Standard-Charaktere wiederherstellen"
+            className="px-3 py-1.5 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-200 text-xs font-medium flex items-center gap-1.5 border border-slate-700 transition-colors shadow-sm"
+          >
+            <RotateCcw className="w-3.5 h-3.5 text-amber-400" />
+            <span>Presets wiederherstellen</span>
           </button>
 
           <button

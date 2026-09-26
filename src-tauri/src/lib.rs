@@ -74,6 +74,7 @@ pub fn run() {
             commands::save_character_card,
             commands::export_character_card,
             commands::delete_character,
+            commands::restore_hidden_characters,
             commands::load_personas,
             commands::save_persona,
             commands::delete_persona,

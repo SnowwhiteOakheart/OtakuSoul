@@ -32,6 +32,8 @@ pub struct AppSettings {
     pub global_lorebooks: Vec<String>,
     #[serde(default = "default_true")]
     pub scene_tension_enabled: bool,
+    #[serde(default)]
+    pub hidden_character_ids: Vec<String>,
 }
 
 fn default_true() -> bool {
@@ -69,6 +71,7 @@ impl Default for AppSettings {
             active_vrm_path: default_vrm_path,
             global_lorebooks: Vec::new(),
             scene_tension_enabled: true,
+            hidden_character_ids: Vec::new(),
         }
     }
 }

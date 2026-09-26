@@ -628,6 +628,11 @@ pub fn delete_character(char_id: String) -> Result<(), String> {
 }
 
 #[tauri::command]
+pub fn restore_hidden_characters() -> Result<(), String> {
+    crate::modules::characters::restore_hidden_characters()
+}
+
+#[tauri::command]
 pub fn load_personas() -> Vec<crate::modules::characters::UserPersona> {
     crate::modules::characters::load_personas()
 }

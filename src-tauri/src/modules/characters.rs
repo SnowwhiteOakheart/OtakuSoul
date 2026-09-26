@@ -375,41 +375,78 @@ pub fn export_character_card(profile: &CharacterProfile, target_path: &Path, exp
     Ok(())
 }
 
-/// Deletes a character by moving it to the trash folder (prevents accidental loss)
+/// Deletes a character: moves user-created files to the trash folder, and hides preset characters
 pub fn delete_character(char_id: &str) -> Result<(), String> {
     let paths = resolve_app_paths();
     let char_dir = PathBuf::from(&paths.characters_dir);
     let trash_dir = PathBuf::from(&paths.trash_dir);
+    let _ = fs::create_dir_all(&trash_dir);
 
-    let candidates = [
-        char_dir.join(format!("{}.png", char_id)),
-        char_dir.join(format!("{}.json", char_id)),
-    ];
-
-    let mut found = false;
+    let norm_target = crate::modules::paths::normalize_identifier(char_id);
     let timestamp = std::time::SystemTime::now()
         .duration_since(std::time::UNIX_EPOCH)
         .map(|d| d.as_secs())
         .unwrap_or(0);
 
+    // 1. Move any matching files in the user's characters_dir to trash
+    if char_dir.exists() && char_dir.is_dir() {
+        if let Ok(entries) = fs::read_dir(&char_dir) {
+            for entry in entries.flatten() {
+                let p = entry.path();
+                if !p.is_file() {
+                    continue;
+                }
+                let stem = p.file_stem().and_then(|s| s.to_str()).unwrap_or_default();
+                let norm_stem = crate::modules::paths::normalize_identifier(stem);
+
+                if stem == char_id || norm_stem == norm_target {
+                    let file_name = p.file_name().unwrap().to_string_lossy();
+                    let trash_target = trash_dir.join(format!("{}_{}", timestamp, file_name));
+                    let _ = fs::rename(&p, &trash_target);
+                }
+            }
+        }
+    }
+
+    let candidates = [
+        char_dir.join(format!("{}.png", char_id)),
+        char_dir.join(format!("{}.json", char_id)),
+    ];
     for candidate in &candidates {
         if candidate.exists() {
             let file_name = candidate.file_name().unwrap().to_string_lossy();
             let trash_target = trash_dir.join(format!("{}_{}", timestamp, file_name));
-            fs::rename(candidate, &trash_target)
-                .map_err(|e| format!("Fehler beim Verschieben in den Papierkorb: {}", e))?;
-            found = true;
+            let _ = fs::rename(candidate, &trash_target);
         }
     }
 
-    if !found {
-        return Err(format!(
-            "Charakter '{}' wurde im Benutzerverzeichnis nicht gefunden (oder ist ein schreibgeschütztes Preset).",
-            char_id
-        ));
+    // 2. Mark this character as hidden in AppSettings so bundled/preset cards are hidden
+    let mut settings = crate::modules::settings::load_app_settings();
+    if !settings
+        .hidden_character_ids
+        .iter()
+        .any(|id| id == char_id || crate::modules::paths::normalize_identifier(id) == norm_target)
+    {
+        settings.hidden_character_ids.push(char_id.to_string());
     }
 
+    // If active character was this one, reset it
+    if let Some(ref active_id) = settings.active_character_id {
+        if active_id == char_id || crate::modules::paths::normalize_identifier(active_id) == norm_target {
+            settings.active_character_id = None;
+        }
+    }
+
+    crate::modules::settings::save_app_settings(&settings)?;
+
     Ok(())
+}
+
+/// Restores all previously hidden / deleted preset characters
+pub fn restore_hidden_characters() -> Result<(), String> {
+    let mut settings = crate::modules::settings::load_app_settings();
+    settings.hidden_character_ids.clear();
+    crate::modules::settings::save_app_settings(&settings)
 }
 
 // --- User Personas Support ---
@@ -528,5 +565,25 @@ mod tests {
 
         let deleted = delete_persona("test_persona_unit").expect("Failed to delete persona");
         assert!(!deleted.iter().any(|p| p.id == "test_persona_unit"));
+    }
+
+    #[test]
+    fn test_delete_and_restore_character() {
+        let initial_chars = crate::modules::paths::scan_available_characters();
+        assert!(initial_chars.iter().any(|c| c.id == "ayu_ikue" || c.card.data.name == "Ayu Ikue"));
+
+        // Delete (hide) character
+        let del_res = delete_character("ayu_ikue");
+        assert!(del_res.is_ok());
+
+        let after_del = crate::modules::paths::scan_available_characters();
+        assert!(!after_del.iter().any(|c| c.id == "ayu_ikue" || c.card.data.name == "Ayu Ikue"));
+
+        // Restore character
+        let res_res = restore_hidden_characters();
+        assert!(res_res.is_ok());
+
+        let after_restore = crate::modules::paths::scan_available_characters();
+        assert!(after_restore.iter().any(|c| c.id == "ayu_ikue" || c.card.data.name == "Ayu Ikue"));
     }
 }

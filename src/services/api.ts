@@ -449,6 +449,10 @@ export const api = {
     return await invoke<void>('delete_character', { charId });
   },
 
+  restoreHiddenCharacters: async (): Promise<void> => {
+    return await invoke<void>('restore_hidden_characters');
+  },
+
   loadPersonas: async (): Promise<UserPersona[]> => {
     return await invoke<UserPersona[]>('load_personas');
   },

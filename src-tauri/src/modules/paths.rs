@@ -99,17 +99,44 @@ fn find_existing_dir(base: &Path, candidates: &[&str]) -> PathBuf {
     base.join(candidates[0])
 }
 
+/// Helper to normalize strings for robust deduplication (collapses case and non-alphanumeric chars)
+pub fn normalize_identifier(s: &str) -> String {
+    s.trim()
+        .to_lowercase()
+        .chars()
+        .filter(|c| c.is_alphanumeric())
+        .collect()
+}
+
+/// Reads hidden character identifiers from settings.json without triggering full settings initialization
+fn load_hidden_character_ids() -> std::collections::HashSet<String> {
+    let path = PathBuf::from(resolve_app_paths().config_dir).join("settings.json");
+    if let Ok(content) = fs::read_to_string(&path) {
+        if let Ok(val) = serde_json::from_str::<serde_json::Value>(&content) {
+            if let Some(hidden) = val.get("hidden_character_ids").and_then(|v| v.as_array()) {
+                return hidden
+                    .iter()
+                    .filter_map(|v| v.as_str())
+                    .map(normalize_identifier)
+                    .collect();
+            }
+        }
+    }
+    std::collections::HashSet::new()
+}
+
 /// Recursively scans for character cards (.png and .json) in presets and user directories
 pub fn scan_available_characters() -> Vec<CharacterProfile> {
     let paths = resolve_app_paths();
     let mut profiles = Vec::new();
-    let mut seen_ids = std::collections::HashSet::new();
+    let mut seen_identifiers = std::collections::HashSet::new();
+    let hidden = load_hidden_character_ids();
 
     let scan_dirs = [
         PathBuf::from(&paths.characters_dir),
-        PathBuf::from(&paths.bundled_presets_dir).join("cards"),
         PathBuf::from(&paths.bundled_presets_dir).join("sakura-succubus-3"),
         PathBuf::from(&paths.bundled_presets_dir).join("no-game-no-life"),
+        PathBuf::from(&paths.bundled_presets_dir).join("cards"),
         PathBuf::from(&paths.bundled_presets_dir),
     ];
 
@@ -144,12 +171,30 @@ pub fn scan_available_characters() -> Vec<CharacterProfile> {
                     continue;
                 }
 
-                if seen_ids.contains(stem) {
+                let norm_stem = normalize_identifier(stem);
+                if hidden.contains(&norm_stem) {
+                    continue;
+                }
+
+                if seen_identifiers.contains(&norm_stem) {
                     continue;
                 }
 
                 if let Ok(profile) = load_character_from_file(&path) {
-                    seen_ids.insert(profile.id.clone());
+                    let norm_id = normalize_identifier(&profile.id);
+                    let norm_name = normalize_identifier(&profile.card.data.name);
+
+                    if hidden.contains(&norm_id) || hidden.contains(&norm_name) {
+                        continue;
+                    }
+
+                    if seen_identifiers.contains(&norm_id) || seen_identifiers.contains(&norm_name) {
+                        continue;
+                    }
+
+                    seen_identifiers.insert(norm_stem);
+                    seen_identifiers.insert(norm_id);
+                    seen_identifiers.insert(norm_name);
                     profiles.push(profile);
                 }
             }
