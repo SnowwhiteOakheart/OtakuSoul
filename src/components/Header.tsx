@@ -1,5 +1,7 @@
-import { useEffect } from 'react';
+import { useEffect, useState } from 'react';
 import { useAppStore } from '../store/useAppStore';
+import brandIconUrl from '../assets/brand/otakusoul-icon.png';
+import { AboutDialog } from './AboutDialog';
 import {
   Cpu,
   MessageSquare,
@@ -10,9 +12,11 @@ import {
   Loader2,
   Users,
   BookOpen,
+  Info,
 } from 'lucide-react';
 
 export const Header = () => {
+  const [showAbout, setShowAbout] = useState(false);
   const {
     activeTab,
     setActiveTab,
@@ -40,6 +44,11 @@ export const Header = () => {
       {/* Brand & Tabs */}
       <div className="flex items-center gap-6">
         <div className="flex items-center gap-2 cursor-pointer" onClick={() => setActiveTab('chat')}>
+          <img
+            src={brandIconUrl}
+            alt=""
+            className="h-8 w-8 rounded-lg object-cover shadow-md shadow-purple-950/70"
+          />
           <span className="text-xl font-bold bg-gradient-to-r from-purple-400 via-pink-400 to-indigo-400 bg-clip-text text-transparent tracking-wide">
             OtakuSoul
           </span>
@@ -171,7 +180,20 @@ export const Header = () => {
             </>
           )}
         </div>
+
+        <button
+          type="button"
+          onClick={() => setShowAbout(true)}
+          className="flex items-center gap-1.5 rounded-lg border border-slate-700/60 bg-slate-800/70 p-1.5 text-xs text-slate-400 transition-colors hover:border-purple-500/40 hover:text-purple-200"
+          title="Über OtakuSoul"
+          aria-label="Über OtakuSoul"
+        >
+          <Info className="h-4 w-4" />
+          <span className="hidden 2xl:inline">Über</span>
+        </button>
       </div>
+
+      {showAbout && <AboutDialog onClose={() => setShowAbout(false)} />}
     </header>
   );
 };

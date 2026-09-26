@@ -1,157 +1,145 @@
-# 🌌 OtakuSoul
+<p align="center">
+  <img src="src/assets/brand/otakusoul-logo-wide.webp" alt="OtakuSoul – Infinite Worlds" width="100%" />
+</p>
 
-> **Next-Generation Desktop & Mobile AI Companion, Tabletop RPG Engine & Cognitive Architecture**  
-> Built with **Rust (Tauri v2)** + **React 19 / TypeScript / WebGL (Three.js VRM & Live2D)**.
+<p align="center">
+  <strong>Persönliche KI-Charaktere. Lebendige Avatare. Erinnerungen, die bleiben.</strong>
+</p>
 
----
-
-## 🌟 Vision & Architecture
-
-OtakuSoul is a ground-up high-performance rewrite and evolution of Souls of Waifu, designed to eliminate the Python runtime overhead and deliver a unified cross-platform experience across **Linux**, **Windows**, **macOS**, and future **iOS & Android** platforms.
-
-### Core Stack
-- **Backend / Orchestrator:** Rust (Tauri v2 + Tokio async runtime)
-  - Native hardware & VRAM probing (dynamically calculates optimal `n_gpu_layers` and context limits).
-  - Managed `llama-server` process with guaranteed termination (`PR_SET_PDEATHSIG` zero-zombie orphan prevention).
-  - Multi-provider Cloud fallback (OpenRouter, DeepSeek, Claude, OpenAI, Gemini).
-  - High-performance cognitive Soul Memory powered by SQLite (Psychology, Relationships, Episodic Memory, Diary, Emotional Decay).
-  - Deterministic Soul Stage tabletop RPG engine (dice roller with DC checks, campaign clocks, tactical combat).
-  - Biometric neurohormonal simulation (Dopamine, Cortisol, Oxytocin, Fatigue) & 25s Human-in-the-Loop tool safety.
-  - Native SillyTavern / Tavern Card V2 parser (JSON & embedded binary PNG chunks).
-- **Frontend / Visualization:** React 19 + TypeScript + Vite + Tailwind CSS v4
-  - 3D VRM rendering via `@pixiv/three-vrm` and Three.js with emotion morph targets, idle breathing, blinking, and LipSync.
-  - 2D Live2D rendering via PixiJS.
-  - Procedural Web Audio synthesizer (dice rolls, critical fanfares, buzzers, and campfire atmosphere).
-  - Cyberpunk / Anime Glassmorphism responsive UI with Adaptive Stat Variable HUD and Cognitive Soul Drawer.
+<p align="center">
+  <a href="https://github.com/SnowwhiteOakheart/OtakuSoul"><img alt="OtakuSoul" src="https://img.shields.io/badge/OtakuSoul-0.1.0-8b5cf6?style=for-the-badge" /></a>
+  <img alt="Tauri 2" src="https://img.shields.io/badge/Tauri-2-24c8db?style=for-the-badge&logo=tauri&logoColor=white" />
+  <img alt="Rust" src="https://img.shields.io/badge/Rust-native-b7410e?style=for-the-badge&logo=rust&logoColor=white" />
+  <img alt="React 19" src="https://img.shields.io/badge/React-19-149eca?style=for-the-badge&logo=react&logoColor=white" />
+  <img alt="GPLv3" src="https://img.shields.io/badge/Lizenz-GPLv3-22c55e?style=for-the-badge" />
+</p>
 
 ---
 
-## 🚀 Getting Started
+## Mehr als ein Chatbot
 
-### Prerequisites
-- **Rust:** 1.78+ (`rustup update`)
-- **Node.js:** 20+ (`node -v`)
-- **System libraries (Linux):** `webkit2gtk-4.1`, `gtk3`, `libsoup-3.0`, `librsvg-2.0`
+**OtakuSoul** ist eine immersive Desktop-Plattform für Menschen, die mit KI-Charakteren nicht nur Nachrichten austauschen, sondern gemeinsame Geschichten und Beziehungen entwickeln möchten.
 
-### Development
+Deine Charaktere können sich erinnern, ihre Gefühle und Beziehungen verändern, mit einer eigenen Stimme sprechen und als **3D-VRM**, **Live2D-Modell** oder klassisches Porträt sichtbar werden. Lokale GGUF-Modelle geben dir maximale Kontrolle und Privatsphäre; Cloud-Anbieter stehen bereit, wenn du mehr Reichweite oder spezialisierte Modelle brauchst.
+
+Ob ruhiger Alltagsdialog, langfristige Charakterentwicklung oder eine dramatische Kampagne mit Würfeln, Zuständen und Konsequenzen: OtakuSoul verbindet all diese Ebenen in einer einzigen Anwendung.
+
+<p align="center">
+  <img src="src/assets/brand/otakusoul-icon.png" alt="OtakuSoul Sternen- und Orbit-Signet" width="220" />
+</p>
+
+## Eine Seele für jede Geschichte
+
+| | Erlebnis |
+|---|---|
+| 🧠 **Soul Memory** | Charaktere bauen langfristige Erinnerungen auf, reflektieren Erlebnisse und entwickeln ihre Beziehung zum Nutzer weiter. Psychologie, episodisches Gedächtnis, Beziehung und Tagebuch greifen ineinander. |
+| ✨ **Lebendige Avatare** | VRM- und Live2D-Modelle reagieren mit Emotionen, Blickbewegungen, Blinzeln, Atmung und audio-gesteuertem LipSync. Position und Zoom bleiben pro Modell gespeichert. |
+| 🎭 **Charaktere ohne Grenzen** | Importiere Tavern-/SillyTavern-Character-Cards, Personas und Lorebooks. Verwalte mehrere Chats, Antwortvarianten, Autorenhinweise und reaktive HUD-Werte. |
+| 🎲 **Soul Stage** | Verwandle Gespräche in interaktive Abenteuer: Szenen, Gruppen, Würfelproben, Kampagnen-Uhren, Initiative, Zustände, Ruhephasen und ein KI-gestützter Game Master. |
+| 🎙️ **Stimme & Sprache** | Nutze Edge-TTS, lokales Kokoro, ElevenLabs oder OpenAI-kompatible Stimmen. Aktionen und Regieanweisungen lassen sich gezielt vom gesprochenen Dialog trennen. |
+| 🔐 **Local First** | Betreibe GGUF-Modelle direkt auf deinem Rechner. OtakuSoul erkennt Hardware und VRAM, wählt sinnvolle Laufzeitparameter und verwaltet den lokalen `llama-server`. |
+
+## Charaktere, die sich entwickeln
+
+OtakuSoul behandelt eine Figur nicht als austauschbaren Prompt. Jede Unterhaltung kann Spuren hinterlassen:
+
+- **Psychologie** hält emotionale Muster, Bedürfnisse und innere Konflikte fest.
+- **Beziehungen** verändern sich durch Vertrauen, Nähe, Spannung und gemeinsam Erlebtes.
+- **Episodische Erinnerungen** bewahren bedeutende Momente, ohne den Kontext mit jeder Nachricht neu aufzublähen.
+- **Tagebucheinträge** lassen Charaktere Erlebnisse aus ihrer eigenen Perspektive reflektieren.
+- **Lorebooks** bringen Personen, Orte, Regeln und Weltwissen genau dann in den Kontext, wenn sie gebraucht werden.
+
+Ein integrierter Memory-Inspector macht diese Ebenen sichtbar und editierbar. Backups und Wiederherstellung geben dir Kontrolle über die Entwicklung deiner Figuren.
+
+## Deine Welt, dein Modell
+
+### Lokal
+
+OtakuSoul startet und überwacht einen lokalen `llama-server`, erkennt verfügbare CPU-, RAM- und GPU-Ressourcen und hilft bei einer passenden Konfiguration. Der integrierte Modell-Hub unterstützt die Suche und den Download von GGUF-Modellen sowie die Erkennung gängiger Quantisierungen.
+
+### Cloud
+
+Für andere Anforderungen stehen mehrere Provider bereit, darunter OpenRouter, Anthropic, OpenAI, DeepSeek, Gemini, Mistral und benutzerdefinierte OpenAI-kompatible Endpunkte. Presets und erweiterte Sampling-Optionen erlauben den Wechsel zwischen schnellen Chats, kreativem Storytelling und fokussierter Logik.
+
+## Avatare mit Ausdruck
+
+Wähle die Darstellung, die zu deinem Charakter passt:
+
+- **3D VRM** mit natürlicher Ruhepose, Emotion-Morphs, Physik und LipSync
+- **Live2D** mit Bewegungen, Expressions, Blicksteuerung, Zoom und freier Positionierung
+- **2D-Porträts** und emotionsabhängige Ausdrucksbilder
+- **28 Emotionen** mit deutsch- und englischsprachiger Erkennung
+
+Ansicht, Größe und Position werden automatisch pro Modell gespeichert. So erscheint ein Charakter beim nächsten Start genau dort, wo du ihn platziert hast.
+
+## Geschichten werden zum Spiel
+
+Mit **Soul Stage** wird aus Rollenspiel-Chat eine steuerbare Kampagne. Ein mehrstufiger Game-Master-Ablauf verbindet Erzählung und deterministische Mechanik: Würfelwürfe, Schwierigkeitsgrade und Zustandsänderungen werden nachvollziehbar ausgewertet, während die KI daraus eine zusammenhängende Szene gestaltet.
+
+Szenenbibliothek, Party-HUD, taktische Begegnungen, Kampagnen-Uhren und ein exportierbares Abenteuerprotokoll machen OtakuSoul zu einer flexiblen Bühne für Solo-Rollenspiel und charaktergetriebene Geschichten.
+
+## Offen für dein bestehendes Ökosystem
+
+OtakuSoul unterstützt unter anderem:
+
+- Tavern- und SillyTavern-Character-Card V2 als PNG oder JSON
+- SillyTavern- und Soul-of-Waifu-Chatimporte
+- Lorebooks und World-Info-Strukturen
+- GGUF-Modelle für lokale Inferenz
+- VRM 0.x/1.0 und Live2D Cubism 2/4
+- Edge-TTS, Kokoro, ElevenLabs und OpenAI-kompatible Sprachdienste
+- lokale Whisper- und OpenAI-kompatible Transkription
+
+## Schnellstart für Entwickler
+
+### Voraussetzungen
+
+- Node.js 20 oder neuer
+- Rust 1.78 oder neuer
+- Linux: WebKitGTK 4.1, GTK 3, libsoup 3 und librsvg 2
+
+### Entwicklungsmodus
 
 ```bash
-# Install frontend dependencies
 npm install
-
-# Run in desktop development mode
 npm run tauri dev
 ```
 
-### Production Build
+### Produktions-Build
 
 ```bash
-# Build desktop executable & installers
 npm run tauri build
 ```
 
-### PrismML / Ternary Bonsai models (Linux)
+### Optionale PrismML-/Bonsai-Laufzeit unter Linux
 
-The compact `PQ2_0` and `PTQ1_0` Bonsai files need PrismML's llama.cpp fork. Install
-the matching runtime once; OtakuSoul keeps it separate and selects it automatically
-only for models that require it:
+Kompakte `PQ2_0`- und `PTQ1_0`-Modelle benötigen die separate PrismML-Laufzeit. OtakuSoul hält sie von der normalen llama.cpp-Installation getrennt und wählt sie nur für passende Modelle aus:
 
 ```bash
 ./tools/install_prism_runtime.sh
 ```
 
-For `prism-ml/Ternary-Bonsai-27B-gguf`, choose
-`Ternary-Bonsai-27B-PQ2_0.gguf`. The similarly named plain `Q2_0` file is a
-deprecated transition format; `Q2_g64` is the slightly larger fallback for current
-upstream llama.cpp. A 32K context with `q4_0` KV cache is the safe OtakuSoul default;
-the model itself supports up to 262K when system memory allows it.
+## Technologie
 
----
+- **Desktop:** Tauri 2
+- **Backend:** Rust, Tokio, SQLite und reqwest
+- **Frontend:** React 19, TypeScript, Vite und Tailwind CSS 4
+- **Avatare:** Three.js, `@pixiv/three-vrm`, PixiJS und Live2D Cubism
+- **Lokale KI:** llama.cpp-kompatibler Server und GGUF
+- **Audio:** Web Audio, Edge-TTS, Kokoro und whisper.cpp
 
-## 🗺️ Migration Roadmap & Features
+Die native Rust-Basis hält die Anwendung kompakt und reaktionsschnell, während die WebGL-Oberfläche Raum für ausdrucksstarke Avatare und ein modernes, atmosphärisches Interface schafft.
 
-- [x] **Phase 1: Architecture & Foundation Setup**
-  - Tauri v2 + React 19 + TypeScript + Tailwind CSS v4
-  - Cross-platform dependency tree & Cargo workspace configuration
-  - Private GitHub repository bootstrap ([SnowwhiteOakheart/OtakuSoul](https://github.com/SnowwhiteOakheart/OtakuSoul))
-- [x] **Phase 2: Hardware Probing & LLM Process Orchestrator**
-  - Native VRAM/RAM probing for NVIDIA GPUs (RTX 4070 Ti SUPER), Vulkan & Apple Silicon
-  - `llama-server` child process manager with lifecycle & `/health` monitoring
-  - SSE streaming proxy with `<think>` reasoning token separation
-- [x] **Phase 3: Character Cards (V2) & Lorebooks Engine**
-  - PNG chunk & JSON parser for Tavern/SillyTavern V2 cards
-  - Dynamic Lorebook situational injector & token budget manager
-  - Reactive Stat Variables & Adaptive HUD
-- [x] **Phase 4: 3D VRM & 2D Live2D Avatar Engine**
-  - WebGL Three.js VRM player with eye blinking, idle breathing, and emotion morphing
-  - Audio-driven mouth LipSync matching
-  - Offline binary model loader (CORS-free)
-- [x] **Phase 5: Kognitive Soul Memory (SQLite)**
-  - 4 Layers: Psychology, Relationship, Episodic Archive, Diary
-  - Mathematical emotional decay & memory deduplication with significance boosting
-  - Full-featured Soul Memory Inspector drawer in the HUD
-- [x] **Phase 6: Soul Stage Tabletop RPG & Procedural SFX**
-  - WorldState & AI Game Master atmosphere controls
-  - Deterministic dice roller (d4 to d100) with DC checks & critical detection
-  - Blades in the Dark circular campaign clocks
-  - Tactical encounter mode with initiative queue, HP/stress bars, and status effects
-  - Procedural Web Audio synthesizer (zero external sound files)
-- [x] **Phase 7: Soul Companion & Tool Calling**
-  - Neurohormonal simulation (Dopamine, Cortisol, Oxytocin, Fatigue)
-  - Tool calling engine with Human-in-the-Loop 25s safety countdown banner
-  - Full companion desktop dashboard & audit execution log
-- [x] **Phase 8: Data Foundation & Character Library**
-  - Native file dialogs (`tauri-plugin-dialog`) for GGUF models, VRMs, PNG and JSON cards
-  - Standard user directories (`~/.local/share/otakusoul`) and dynamic asset scanning
-  - Persistent settings (`settings.json`) with configurable sampler & language
-  - SillyTavern V2 Character Library with gallery, search, tag filters, and live editor
-  - PNG `chara` tEXt metadata injection & export, plus User-Persona management
-- [x] **Phase 9: Full Chat System, Swipes & Roleplay HUD Presets**
-  - Multi-chat SQLite sessions per character (`chat_sessions`, `chat_messages`) with sidebar drawer
-  - SillyTavern-style answer swipes (`< 1/3 >` pagination, regenerate without losing variants)
-  - Inline message editing, delete, and continue generation
-  - Author's Note with configurable injection depth ($N$ messages from conversation end)
-  - Real-time `<state>` JSON tag extraction, tag-stripping, and automatic reactive HUD updates
-  - 11 Roleplay HUD Presets (Romance, RPG, Survival, Horror, Cyberpunk, Slice-of-Life, etc.)
-  - Full SillyTavern & SoW JSONL chat import and export
-- [x] **Phase 10: LLM Providers, Presets, llama.cpp Tuning & Models Hub**
-  - Provider Abstraction: Local llama-server, OpenRouter (live catalog search), Anthropic (native Messages API with SSE parser), OpenAI, DeepSeek, Gemini, Mistral, and Custom endpoints
-  - Advanced Samplers: Dynamic Temperature (`dynatemp`), DRY, XTC, Min-P, Top-P, Top-K, Repeat Penalty, and Stop Strings
-  - LLM Presets System: 5 built-in presets (Storytelling/Kreativ, Standard, Logik, XTC Wild, Fast Chat) + custom user presets in `llm_presets.json`
-  - llama-server Hardware Tuning: Batch (`-b`), UBatch (`-ub`), KV-Cache quantization (`q8_0`/`q4_0`), Flash Attention, RAM lock (`--mlock`), no-mmap, CPU MoE offload, thinking budget
-  - Hugging Face Models Hub: In-app GGUF model search, quantization inspection (Q4_K_M, Q8_0 etc.), and async downloader with live progress and transfer speed tracking
-- [x] **Phase 11: Soul Memory 2.0 (Cognitive Pipeline & Agents)**
-  - Router Agent: Autonomous background reflection call analyzing dialogue batches, detecting `no_significant_change`, creating JSON field patches, resolving contradictions, and planning topics
-  - Archivist Agent: Compact lorebook authoring (<300 words) for episodic topics and world lore
-  - Diary Agent: First-person introspective diary generation recording feelings toward `{user_name}`
-  - Bidirectional Markdown Sync: Render SQLite state to `MEMORY.md` & `USER.md` with in-app editor and real-time synchronization back to database
-  - Snapshots & Backups: Automatic snapshots before patch application, snapshot manager with 1-click restore
-- [x] **Phase 12: Lorebook 2.0 (Editor, Multi-Binding, Scene Tension & Chain Dependencies)**
-  - Advanced Trigger Engine: Keyword matching (OR), Secondary Keys (AND condition), Exclude Keys (NOT condition), Regex patterns, Word Boundaries (`\b`), Case-Sensitivity, and Always-On
-  - Scene Tension Accumulator: Dynamic tension score tracking dialogue stress & danger keywords; triggers crisis/tension lorebook events at thresholds (`tension_threshold`) and vents tension
-  - Chain Dependencies: Unlocks connected lorebook entries (`chain_activates`) or enforces strict prerequisites (`chain_requires`)
-  - Injection Modes: Dedicated separation between passive background context (`## Weltwissen & Kontext`) and active high-priority acting rules (`## Wichtige Handlungs- & Regie-Anweisungen`)
-  - Multi-Binding & Global Lorebooks: Unlimited lorebooks bound per character (`bound_lorebooks`) and universal global lorebooks active across all chats
-  - Full-Featured Lorebook Manager: In-app editor view with entry search, filter pills, tag chips, and SillyTavern / World Info v2 JSON import and export
-- [x] **Phase 14: Avatars & 28-Emotion Classifier (Live2D, VRM, LipSync & Downloader)**
-  - Dual Avatar Engine: 3D VRM (Three.js) & 2D Live2D (PixiJS + Cubism 4/2) with smooth zooming, panning, and mouse-look tracking
-  - 28-State Emotion Classifier: Sentiment mapping for both English and German dialogue/actions mapped to dynamic avatar expressions
-  - Audio-driven mouth LipSync matching for both VRM morphs and Live2D audio parameters
-  - In-App Live2D Model Importer (ZIP archive & folder import) and bundled model catalog
-  - Per-character 3D VRM and 2D Live2D model selection with persistent preference saving
-- [x] **Phase 15: Soul Stage (AI Game Master Orchestrator, Party HUD, Scenes & Turn Controls)**
-  - Two-tier GM orchestration pipeline (Planner → Mechanics & Dice → Executor → Actor Turn) with resilient JSON auto-repair
-  - Full Scene Library with preset integration (*Sakura Succubus 3*, *No Game No Life*) and interactive custom scene creation wizard
-  - Party HUD with real-time HP & Stress bars, active condition countdown badges, and Quick / Long Rest (Campfire) recovery
-  - Interactive Turn Control Bar with 5 narrative modes (💬 Say, ⚔️ Do, 💭 Think, 🎬 Direct, 🤫 Whisper), dynamic tagged choices, next-actor routing, and 1-click snapshot undo
-  - Inline Event Cards for deterministic dice checks (with crit animations and DC margin), clock updates, discoveries, consequences, and markdown adventure log export
-  - Switchable view modes: 📜 *Adventure & Game Master* (story log & controls) and ⚔️ *Tactics, Clocks & Dice* (clocks & encounter tracker)
-- [ ] **Phases 16–18: Remaining feature parity with Soul of Waifu**
-  - Real companion desktop tools & OS automation, local web client, Discord gateway, packaging & distribution
-  - See **[Roadmap.md](Roadmap.md)** for the full, detailed plan (German)
+## Projektstatus
 
----
+OtakuSoul befindet sich in aktiver Entwicklung. Datenformate, Bedienabläufe und einzelne Schnittstellen können sich bis zu einer stabilen Veröffentlichung noch verändern. Backups wichtiger Charaktere und Erinnerungen werden empfohlen.
 
-## 📄 License
+Beiträge, Fehlermeldungen und nachvollziehbare Verbesserungsvorschläge sind willkommen.
 
-GPLv3 © SnowwhiteOakheart
+## Lizenz
+
+OtakuSoul ist freie Software unter der **GNU General Public License v3.0**.
+
+Entwickelt von **SnowwhiteOakheart**.
+
+<p align="center"><em>Infinite Worlds. One Soul.</em></p>
