@@ -1,5 +1,6 @@
 import { Header } from './components/Header';
 import { ChatView } from './components/chat/ChatView';
+import { CharacterLibraryView } from './components/characters/CharacterLibraryView';
 import { SettingsView } from './components/settings/SettingsView';
 import { StageView } from './components/stage/StageView';
 import { CompanionView } from './components/companion/CompanionView';
@@ -15,6 +16,7 @@ export function App() {
       <Header />
       <main className="flex-1 flex overflow-hidden">
         {activeTab === 'chat' && <ChatView />}
+        {activeTab === 'characters' && <CharacterLibraryView />}
         {activeTab === 'stage' && <StageView />}
         {activeTab === 'companion' && <CompanionView />}
         {activeTab === 'settings' && <SettingsView />}

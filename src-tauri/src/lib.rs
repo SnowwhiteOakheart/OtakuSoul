@@ -11,6 +11,7 @@ pub fn run() {
 
     tauri::Builder::default()
         .plugin(tauri_plugin_opener::init())
+        .plugin(tauri_plugin_dialog::init())
         .manage(AppState::new())
         .invoke_handler(tauri::generate_handler![
             commands::get_hardware_info,
@@ -48,6 +49,18 @@ pub fn run() {
             commands::request_tool_call,
             commands::resolve_tool_call,
             commands::update_companion_settings,
+            commands::get_app_paths,
+            commands::scan_characters,
+            commands::scan_models,
+            commands::scan_vrm_models,
+            commands::load_settings,
+            commands::save_settings,
+            commands::save_character_card,
+            commands::export_character_card,
+            commands::delete_character,
+            commands::load_personas,
+            commands::save_persona,
+            commands::delete_persona,
         ])
         .run(tauri::generate_context!())
         .expect("error while running OtakuSoul application");

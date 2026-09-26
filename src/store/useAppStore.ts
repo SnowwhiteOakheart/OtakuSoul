@@ -21,13 +21,28 @@ import {
   ToolExecutionResult,
   CompanionSettings,
   CompanionState,
+  AppPaths,
+  ScannedModel,
+  ScannedVrm,
+  SamplingParams,
+  UserPersona,
+  AppSettings,
 } from '../types';
 import { soundFx } from '../services/soundFx';
 
 interface AppStoreState {
   // Navigation
-  activeTab: 'chat' | 'stage' | 'companion' | 'settings';
-  setActiveTab: (tab: 'chat' | 'stage' | 'companion' | 'settings') => void;
+  activeTab: 'chat' | 'characters' | 'stage' | 'companion' | 'settings';
+  setActiveTab: (tab: 'chat' | 'characters' | 'stage' | 'companion' | 'settings') => void;
+
+  // Paths & Lifecycle
+  appPaths: AppPaths | null;
+  scannedModels: ScannedModel[];
+  scannedVrms: ScannedVrm[];
+  activeVrmPath: string | null;
+  setActiveVrmPath: (path: string | null) => void;
+  initApp: () => Promise<void>;
+  saveCurrentSettings: () => Promise<void>;
 
   // Hardware
   hardware: HardwareInfo | null;
@@ -43,16 +58,31 @@ interface AppStoreState {
   startServer: () => Promise<void>;
   stopServer: () => Promise<void>;
 
-  // Characters & Lorebooks (Phase 3)
+  // Characters & Lorebooks (Phase 3 & 8)
   activeCharacter: CharacterProfile | null;
   availableCharacters: CharacterProfile[];
   activeLorebooks: Lorebook[];
   stateVariables: StateVariable[];
-  userPersona: { name: string; description: string };
-  setUserPersona: (persona: { name: string; description: string }) => void;
   selectCharacter: (character: CharacterProfile) => Promise<void>;
+  refreshCharacters: () => Promise<void>;
   loadPresetCharacters: () => Promise<void>;
+  deleteCharacter: (charId: string) => Promise<void>;
   updateStateVariable: (name: string, value: string) => void;
+
+  // Personas
+  personas: UserPersona[];
+  activePersona: UserPersona;
+  selectPersona: (persona: UserPersona) => void;
+  savePersona: (persona: UserPersona) => Promise<void>;
+  deletePersona: (personaId: string) => Promise<void>;
+
+  // Settings & Sampler
+  sampling: SamplingParams;
+  setSampling: (sampling: Partial<SamplingParams>) => void;
+  replyLanguage: string;
+  setReplyLanguage: (lang: string) => void;
+  lorebookScanDepth: number;
+  setLorebookScanDepth: (depth: number) => void;
 
   // Cognitive Soul Memory (Phase 5)
   cognitiveOverview: CognitiveOverview | null;
@@ -112,6 +142,15 @@ export const useAppStore = create<AppStoreState>((set, get) => ({
   activeTab: 'chat',
   setActiveTab: (activeTab) => set({ activeTab }),
 
+  appPaths: null,
+  scannedModels: [],
+  scannedVrms: [],
+  activeVrmPath: null,
+  setActiveVrmPath: (activeVrmPath) => {
+    set({ activeVrmPath });
+    get().saveCurrentSettings();
+  },
+
   hardware: null,
   layerRecommendation: null,
 
@@ -143,7 +182,7 @@ export const useAppStore = create<AppStoreState>((set, get) => ({
   },
 
   serverConfig: {
-    model_path: '/home/deathtrap/development/OtakuSoul/assets/models/Gemma4-12B-QAT-Uncensored-HauhauCS-Balanced-Q4_K_M.gguf',
+    model_path: '',
     port: 48596,
     context_size: 4096,
     gpu_layers: 99,
@@ -151,8 +190,10 @@ export const useAppStore = create<AppStoreState>((set, get) => ({
     reasoning_mode: false,
   },
 
-  setServerConfig: (config) =>
-    set((state) => ({ serverConfig: { ...state.serverConfig, ...config } })),
+  setServerConfig: (config) => {
+    set((state) => ({ serverConfig: { ...state.serverConfig, ...config } }));
+    get().saveCurrentSettings();
+  },
 
   fetchServerStatus: async () => {
     try {
@@ -164,16 +205,11 @@ export const useAppStore = create<AppStoreState>((set, get) => ({
   },
 
   startServer: async () => {
-    const { serverConfig } = get();
     try {
-      set((state) => ({
-        serverStatus: { ...state.serverStatus, state: 'starting', error_message: null },
-      }));
-      await api.startLlamaServer(serverConfig);
+      await api.startLlamaServer(get().serverConfig);
       await get().fetchServerStatus();
     } catch (e) {
-      console.error('Start server error:', e);
-      await get().fetchServerStatus();
+      console.error('Failed to start server:', e);
     }
   },
 
@@ -182,46 +218,183 @@ export const useAppStore = create<AppStoreState>((set, get) => ({
       await api.stopLlamaServer();
       await get().fetchServerStatus();
     } catch (e) {
-      console.error('Stop server error:', e);
+      console.error('Failed to stop server:', e);
     }
   },
 
-  // Phase 3: Characters & Lorebooks
-  activeCharacter: null,
-  availableCharacters: [],
-  activeLorebooks: [],
-  stateVariables: [
-    { name: 'Zuneigung', value: '45', var_type: 'progress', max_value: 100 },
-    { name: 'Stimmung', value: 'Stolz / Leicht Verlegen', var_type: 'str' },
-    { name: 'Energie', value: '85', var_type: 'progress', max_value: 100 },
+  // Personas
+  personas: [
+    {
+      id: 'default_user',
+      name: 'User',
+      description: 'Ein wissbegieriger Abenteurer und Gesprächspartner.',
+    },
   ],
-  userPersona: {
-    name: 'Hiroki',
-    description: 'Bodenständiger junger Mann mit einem für Sukkuben unwiderstehlichen Duft.',
+  activePersona: {
+    id: 'default_user',
+    name: 'User',
+    description: 'Ein wissbegieriger Abenteurer und Gesprächspartner.',
   },
 
-  setUserPersona: (userPersona) => set({ userPersona }),
-
-  updateStateVariable: (name, value) => {
-    set((state) => ({
-      stateVariables: state.stateVariables.map((v) =>
-        v.name === name ? { ...v, value } : v
-      ),
-    }));
+  selectPersona: (persona) => {
+    set({ activePersona: persona });
+    get().saveCurrentSettings();
   },
 
-  // Phase 5: Cognitive Soul Memory
+  savePersona: async (persona) => {
+    try {
+      const updated = await api.savePersona(persona);
+      set({ personas: updated });
+      if (get().activePersona.id === persona.id) {
+        set({ activePersona: persona });
+      }
+    } catch (e) {
+      console.error('Failed to save persona:', e);
+    }
+  },
+
+  deletePersona: async (personaId) => {
+    try {
+      const updated = await api.deletePersona(personaId);
+      set({ personas: updated });
+      if (get().activePersona.id === personaId) {
+        set({ activePersona: updated[0] });
+      }
+    } catch (e) {
+      console.error('Failed to delete persona:', e);
+    }
+  },
+
+  // Sampler & Settings
+  sampling: {
+    temperature: 0.7,
+    top_p: 0.9,
+    min_p: 0.05,
+    max_tokens: 2048,
+  },
+  setSampling: (sampling) => {
+    set((state) => ({ sampling: { ...state.sampling, ...sampling } }));
+    get().saveCurrentSettings();
+  },
+
+  replyLanguage: 'Deutsch',
+  setReplyLanguage: (replyLanguage) => {
+    set({ replyLanguage });
+    get().saveCurrentSettings();
+  },
+
+  lorebookScanDepth: 5,
+  setLorebookScanDepth: (lorebookScanDepth) => {
+    set({ lorebookScanDepth });
+    get().saveCurrentSettings();
+  },
+
+  initApp: async () => {
+    try {
+      // 1. Get resolved paths
+      const paths = await api.getAppPaths();
+      set({ appPaths: paths });
+
+      // 2. Load persistent settings
+      const settings = await api.loadSettings();
+
+      // 3. Scan models and VRMs
+      const models = await api.scanModels();
+      const vrms = await api.scanVrmModels();
+      set({ scannedModels: models, scannedVrms: vrms });
+
+      // If settings model path is empty or not in scan, choose first available
+      let modelPath = settings.server_config.model_path;
+      if (!modelPath && models.length > 0) {
+        modelPath = models[0].path;
+      }
+
+      let vrmPath = settings.active_vrm_path;
+      if (!vrmPath && vrms.length > 0) {
+        vrmPath = vrms[0].path;
+      }
+
+      set({
+        serverConfig: {
+          ...settings.server_config,
+          model_path: modelPath,
+        },
+        sampling: settings.sampling || {
+          temperature: 0.7,
+          top_p: 0.9,
+          min_p: 0.05,
+          max_tokens: 2048,
+        },
+        selectedBackend: settings.selected_backend || 'local',
+        cloudEndpoint: settings.cloud_endpoint || 'https://openrouter.ai/api/v1/chat/completions',
+        cloudApiKey: settings.cloud_api_key || '',
+        cloudModel: settings.cloud_model || 'anthropic/claude-3.5-sonnet',
+        replyLanguage: settings.reply_language || 'Deutsch',
+        lorebookScanDepth: settings.lorebook_scan_depth || 5,
+        activeVrmPath: vrmPath,
+      });
+
+      // 4. Load Personas
+      const loadedPersonas = await api.loadPersonas();
+      if (loadedPersonas.length > 0) {
+        const foundPersona = loadedPersonas.find((p) => p.id === settings.active_persona_id);
+        set({
+          personas: loadedPersonas,
+          activePersona: foundPersona || loadedPersonas[0],
+        });
+      }
+
+      // 5. Scan Characters
+      await get().refreshCharacters();
+
+      // If active character was saved in settings, restore it
+      if (settings.active_character_id) {
+        const char = get().availableCharacters.find((c) => c.id === settings.active_character_id);
+        if (char) {
+          await get().selectCharacter(char);
+        }
+      }
+    } catch (e) {
+      console.error('Failed to initialize app state:', e);
+    }
+  },
+
+  saveCurrentSettings: async () => {
+    try {
+      const state = get();
+      const settings: AppSettings = {
+        server_config: state.serverConfig,
+        sampling: state.sampling,
+        selected_backend: state.selectedBackend,
+        cloud_endpoint: state.cloudEndpoint,
+        cloud_api_key: state.cloudApiKey,
+        cloud_model: state.cloudModel,
+        reply_language: state.replyLanguage,
+        lorebook_scan_depth: state.lorebookScanDepth,
+        active_character_id: state.activeCharacter?.id || null,
+        active_persona_id: state.activePersona?.id || null,
+        active_vrm_path: state.activeVrmPath,
+      };
+      await api.saveSettings(settings);
+    } catch (e) {
+      console.error('Failed to save settings:', e);
+    }
+  },
+
+  // Cognitive Soul Memory (Phase 5)
   cognitiveOverview: null,
   isMemoryLoading: false,
 
-  fetchCognitiveOverview: async (charId?: string, userName?: string) => {
-    const activeChar = charId || get().activeCharacter?.id;
-    const user = userName || get().userPersona.name;
-    if (!activeChar) return;
+  fetchCognitiveOverview: async (charId, userName) => {
+    const activeChar = get().activeCharacter;
+    const cid = charId || activeChar?.id;
+    const uid = userName || get().activePersona.name;
+
+    if (!cid) return;
 
     set({ isMemoryLoading: true });
     try {
-      const overview = await api.getCognitiveOverview(activeChar, user);
+      const overview = await api.getCognitiveOverview(cid, uid);
       set({ cognitiveOverview: overview, isMemoryLoading: false });
     } catch (e) {
       console.error('Failed to fetch cognitive overview:', e);
@@ -229,44 +402,44 @@ export const useAppStore = create<AppStoreState>((set, get) => ({
     }
   },
 
-  updatePsychology: async (psych: PsychologyState) => {
-    const activeChar = get().activeCharacter?.id;
-    if (!activeChar) return;
+  updatePsychology: async (psych) => {
+    const cid = get().activeCharacter?.id;
+    if (!cid) return;
     try {
-      await api.updatePsychology(activeChar, psych);
+      await api.updatePsychology(cid, psych);
       await get().fetchCognitiveOverview();
     } catch (e) {
       console.error('Failed to update psychology:', e);
     }
   },
 
-  updateRelationship: async (rel: RelationshipState) => {
-    const activeChar = get().activeCharacter?.id;
-    if (!activeChar) return;
+  updateRelationship: async (rel) => {
+    const cid = get().activeCharacter?.id;
+    if (!cid) return;
     try {
-      await api.updateRelationship(activeChar, rel);
+      await api.updateRelationship(cid, rel);
       await get().fetchCognitiveOverview();
     } catch (e) {
       console.error('Failed to update relationship:', e);
     }
   },
 
-  addManualMemory: async (category: string, content: string, significance: number) => {
-    const activeChar = get().activeCharacter?.id;
-    if (!activeChar) return;
+  addManualMemory: async (category, content, significance) => {
+    const cid = get().activeCharacter?.id;
+    if (!cid) return;
     try {
-      await api.addEpisodicMemory(activeChar, category, content, significance);
+      await api.addEpisodicMemory(cid, category, content, significance);
       await get().fetchCognitiveOverview();
     } catch (e) {
-      console.error('Failed to add memory:', e);
+      console.error('Failed to add episodic memory:', e);
     }
   },
 
-  addManualDiary: async (title: string, entryText: string, mood: string) => {
-    const activeChar = get().activeCharacter?.id;
-    if (!activeChar) return;
+  addManualDiary: async (title, entryText, mood) => {
+    const cid = get().activeCharacter?.id;
+    if (!cid) return;
     try {
-      await api.addDiaryEntry(activeChar, title, entryText, mood);
+      await api.addDiaryEntry(cid, title, entryText, mood);
       await get().fetchCognitiveOverview();
     } catch (e) {
       console.error('Failed to add diary entry:', e);
@@ -274,17 +447,20 @@ export const useAppStore = create<AppStoreState>((set, get) => ({
   },
 
   triggerEmotionalDecay: async () => {
-    const activeChar = get().activeCharacter?.id;
-    if (!activeChar) return;
+    const cid = get().activeCharacter?.id;
+    if (!cid) return;
     try {
-      await api.applyEmotionalDecay(activeChar);
+      const log = await api.applyEmotionalDecay(cid);
+      if (log) {
+        console.info('Emotional decay tick applied:', log);
+      }
       await get().fetchCognitiveOverview();
     } catch (e) {
       console.error('Failed to apply emotional decay:', e);
     }
   },
 
-  // Phase 6: Soul Stage Tabletop RPG
+  // Soul Stage (Phase 6)
   stageState: null,
   lastDiceRoll: null,
   isRollingDice: false,
@@ -298,30 +474,26 @@ export const useAppStore = create<AppStoreState>((set, get) => ({
     }
   },
 
-  rollDice: async (formula: string, targetDc?: number) => {
+  rollDice: async (formula, targetDc) => {
     set({ isRollingDice: true });
     soundFx.playDiceRoll();
-
     try {
-      await new Promise((res) => setTimeout(res, 260));
       const res = await api.rollStageDice(formula, targetDc);
-
+      set({ lastDiceRoll: res, isRollingDice: false });
       if (res.is_critical_success) {
         soundFx.playCriticalSuccess();
       } else if (res.is_critical_failure) {
         soundFx.playCriticalFailure();
       }
-
-      set({ lastDiceRoll: res, isRollingDice: false });
       return res;
     } catch (e) {
-      console.error('Dice roll error:', e);
+      console.error('Failed to roll dice:', e);
       set({ isRollingDice: false });
       return null;
     }
   },
 
-  updateWorldState: async (world: WorldState) => {
+  updateWorldState: async (world) => {
     try {
       await api.updateWorldState(world);
       await get().fetchStageState();
@@ -330,7 +502,7 @@ export const useAppStore = create<AppStoreState>((set, get) => ({
     }
   },
 
-  setClockProgress: async (clockId: string, progress: number) => {
+  setClockProgress: async (clockId, progress) => {
     try {
       await api.setClockProgress(clockId, progress);
       await get().fetchStageState();
@@ -339,7 +511,7 @@ export const useAppStore = create<AppStoreState>((set, get) => ({
     }
   },
 
-  addClock: async (clock: CampaignClock) => {
+  addClock: async (clock) => {
     try {
       await api.addClock(clock);
       await get().fetchStageState();
@@ -348,7 +520,7 @@ export const useAppStore = create<AppStoreState>((set, get) => ({
     }
   },
 
-  deleteClock: async (clockId: string) => {
+  deleteClock: async (clockId) => {
     try {
       await api.deleteClock(clockId);
       await get().fetchStageState();
@@ -359,8 +531,8 @@ export const useAppStore = create<AppStoreState>((set, get) => ({
 
   startEncounter: async () => {
     try {
-      soundFx.playAttackHit();
       await api.startEncounter();
+      soundFx.playAttackHit();
       await get().fetchStageState();
     } catch (e) {
       console.error('Failed to start encounter:', e);
@@ -385,13 +557,8 @@ export const useAppStore = create<AppStoreState>((set, get) => ({
     }
   },
 
-  applyCombatantDelta: async (combatantId: string, hpDelta: number, stressDelta: number) => {
+  applyCombatantDelta: async (combatantId, hpDelta, stressDelta) => {
     try {
-      if (hpDelta < 0) {
-        soundFx.playAttackHit();
-      } else if (hpDelta > 0) {
-        soundFx.playHealChime();
-      }
       await api.applyCombatantDelta(combatantId, hpDelta, stressDelta);
       await get().fetchStageState();
     } catch (e) {
@@ -399,7 +566,7 @@ export const useAppStore = create<AppStoreState>((set, get) => ({
     }
   },
 
-  addCombatantCondition: async (combatantId: string, condition: CombatCondition) => {
+  addCombatantCondition: async (combatantId, condition) => {
     try {
       await api.addCombatantCondition(combatantId, condition);
       await get().fetchStageState();
@@ -408,7 +575,7 @@ export const useAppStore = create<AppStoreState>((set, get) => ({
     }
   },
 
-  // Phase 7: Soul Companion & Tool Calling
+  // Soul Companion (Phase 7)
   companionState: null,
 
   fetchCompanionState: async () => {
@@ -420,12 +587,12 @@ export const useAppStore = create<AppStoreState>((set, get) => ({
     }
   },
 
-  applyHormoneInteraction: async (interactionType: string) => {
+  applyHormoneInteraction: async (interactionType) => {
     try {
-      const hormones = await api.applyHormoneInteraction(interactionType);
+      const updatedHormones = await api.applyHormoneInteraction(interactionType);
       set((state) => ({
         companionState: state.companionState
-          ? { ...state.companionState, hormones }
+          ? { ...state.companionState, hormones: updatedHormones }
           : null,
       }));
     } catch (e) {
@@ -433,20 +600,20 @@ export const useAppStore = create<AppStoreState>((set, get) => ({
     }
   },
 
-  setHormones: async (dopamine: number, cortisol: number, oxytocin: number, fatigue: number) => {
+  setHormones: async (dopamine, cortisol, oxytocin, fatigue) => {
     try {
-      const hormones = await api.setHormones(dopamine, cortisol, oxytocin, fatigue);
+      const updatedHormones = await api.setHormones(dopamine, cortisol, oxytocin, fatigue);
       set((state) => ({
         companionState: state.companionState
-          ? { ...state.companionState, hormones }
+          ? { ...state.companionState, hormones: updatedHormones }
           : null,
       }));
     } catch (e) {
-      console.error('Failed to set hormones:', e);
+      console.error('Failed to set hormones directly:', e);
     }
   },
 
-  requestToolCall: async (toolName: string, args: Record<string, any>) => {
+  requestToolCall: async (toolName, args) => {
     try {
       const req = await api.requestToolCall(toolName, args);
       await get().fetchCompanionState();
@@ -457,13 +624,8 @@ export const useAppStore = create<AppStoreState>((set, get) => ({
     }
   },
 
-  resolveToolCall: async (callId: string, approved: boolean) => {
+  resolveToolCall: async (callId, approved) => {
     try {
-      if (approved) {
-        soundFx.playHealChime();
-      } else {
-        soundFx.playCriticalFailure();
-      }
       const res = await api.resolveToolCall(callId, approved);
       await get().fetchCompanionState();
       return res;
@@ -473,7 +635,7 @@ export const useAppStore = create<AppStoreState>((set, get) => ({
     }
   },
 
-  updateCompanionSettings: async (settings: CompanionSettings) => {
+  updateCompanionSettings: async (settings) => {
     try {
       await api.updateCompanionSettings(settings);
       await get().fetchCompanionState();
@@ -482,7 +644,24 @@ export const useAppStore = create<AppStoreState>((set, get) => ({
     }
   },
 
-  selectCharacter: async (character: CharacterProfile) => {
+  // Characters & Lorebooks (Phase 3 & 8)
+  activeCharacter: null,
+  availableCharacters: [],
+  activeLorebooks: [],
+  stateVariables: [
+    { name: 'Affection', value: '45', var_type: 'progress', max_value: 100 },
+    { name: 'Energy', value: '80', var_type: 'progress', max_value: 100 },
+    { name: 'Mood', value: 'Glücklich', var_type: 'str' },
+  ],
+
+  updateStateVariable: (name, value) =>
+    set((state) => ({
+      stateVariables: state.stateVariables.map((v) =>
+        v.name === name ? { ...v, value } : v
+      ),
+    })),
+
+  selectCharacter: async (character) => {
     set({
       activeCharacter: character,
       messages: [
@@ -494,56 +673,76 @@ export const useAppStore = create<AppStoreState>((set, get) => ({
       streamingText: '',
       streamingThought: '',
     });
-    // Load cognitive overview for newly selected character
-    await get().fetchCognitiveOverview(character.id, get().userPersona.name);
+    get().saveCurrentSettings();
+    await get().fetchCognitiveOverview(character.id, get().activePersona.name);
+  },
+
+  refreshCharacters: async () => {
+    try {
+      const chars = await api.scanCharacters();
+      if (chars.length > 0) {
+        set({ availableCharacters: chars });
+        if (!get().activeCharacter) {
+          get().selectCharacter(chars[0]);
+        }
+      }
+    } catch (e) {
+      console.error('Failed to scan characters:', e);
+    }
   },
 
   loadPresetCharacters: async () => {
-    const candidatePaths = [
-      '/home/deathtrap/development/OtakuSoul/presets/sakura-succubus-3/ayu_ikue.json',
-      '/home/deathtrap/development/OtakuSoul/presets/sakura-succubus-3/cosmos.json',
-      '/home/deathtrap/development/OtakuSoul/presets/sakura-succubus-3/hazel_williams.json',
-      '/home/deathtrap/development/OtakuSoul/presets/cards/Akane Kurokawa.png',
-      '/home/deathtrap/development/OtakuSoul/presets/cards/Makise Kurisu.png',
-      '/home/deathtrap/development/OtakuSoul/presets/cards/Cosmos.png',
-    ];
+    await get().refreshCharacters();
 
-    const loaded: CharacterProfile[] = [];
-    for (const p of candidatePaths) {
+    // Try loading default world lorebook if presets dir available
+    const paths = get().appPaths;
+    if (paths) {
+      const candidateLorebook = `${paths.bundled_presets_dir}/sakura-succubus-3/lorebooks/sakura-succubus-3-welt.json`;
       try {
-        const char = await api.loadCharacterCard(p);
-        loaded.push(char);
-      } catch (err) {
-        console.warn(`Could not load character from ${p}:`, err);
+        const lore = await api.loadLorebook(candidateLorebook);
+        set({ activeLorebooks: [lore] });
+      } catch (e) {
+        console.warn('Could not load default lorebook:', e);
       }
     }
+  },
 
-    if (loaded.length > 0) {
-      set({ availableCharacters: loaded });
-      if (!get().activeCharacter) {
-        get().selectCharacter(loaded[0]);
-      }
-    }
-
-    // Try loading default world lorebook
+  deleteCharacter: async (charId) => {
     try {
-      const lore = await api.loadLorebook(
-        '/home/deathtrap/development/OtakuSoul/presets/sakura-succubus-3/lorebooks/sakura-succubus-3-welt.json'
-      );
-      set({ activeLorebooks: [lore] });
+      await api.deleteCharacter(charId);
+      await get().refreshCharacters();
+      if (get().activeCharacter?.id === charId) {
+        const remaining = get().availableCharacters;
+        if (remaining.length > 0) {
+          get().selectCharacter(remaining[0]);
+        }
+      }
     } catch (e) {
-      console.warn('Could not load default lorebook:', e);
+      console.error('Failed to delete character:', e);
+      throw e;
     }
   },
 
   selectedBackend: 'local',
-  setSelectedBackend: (selectedBackend) => set({ selectedBackend }),
+  setSelectedBackend: (selectedBackend) => {
+    set({ selectedBackend });
+    get().saveCurrentSettings();
+  },
   cloudEndpoint: 'https://openrouter.ai/api/v1/chat/completions',
-  setCloudEndpoint: (cloudEndpoint) => set({ cloudEndpoint }),
+  setCloudEndpoint: (cloudEndpoint) => {
+    set({ cloudEndpoint });
+    get().saveCurrentSettings();
+  },
   cloudApiKey: '',
-  setCloudApiKey: (cloudApiKey) => set({ cloudApiKey }),
+  setCloudApiKey: (cloudApiKey) => {
+    set({ cloudApiKey });
+    get().saveCurrentSettings();
+  },
   cloudModel: 'anthropic/claude-3.5-sonnet',
-  setCloudModel: (cloudModel) => set({ cloudModel }),
+  setCloudModel: (cloudModel) => {
+    set({ cloudModel });
+    get().saveCurrentSettings();
+  },
 
   messages: [],
   streamingText: '',
@@ -561,7 +760,10 @@ export const useAppStore = create<AppStoreState>((set, get) => ({
       activeCharacter,
       activeLorebooks,
       stateVariables,
-      userPersona,
+      activePersona,
+      replyLanguage,
+      sampling,
+      lorebookScanDepth,
     } = get();
 
     if (!content.trim()) return;
@@ -579,22 +781,27 @@ export const useAppStore = create<AppStoreState>((set, get) => ({
     // Build context-aware system prompt if active character is set
     let systemPromptMsg: ChatMessage | null = null;
     if (activeCharacter) {
-      // Evaluate matching lorebook entries against full conversation context
-      const fullContext = updatedMessages.map((m) => m.content).join(' ');
+      // Evaluate matching lorebook entries against only the recent messages (Scan-Depth)
+      const scanDepth = Math.max(1, lorebookScanDepth || 5);
+      const recentContext = updatedMessages
+        .slice(-scanDepth)
+        .map((m) => m.content)
+        .join(' ');
+
       const matchedLore = [];
       for (const lb of activeLorebooks) {
-        const entries = await api.evaluateLorebookContext(lb, fullContext);
+        const entries = await api.evaluateLorebookContext(lb, recentContext);
         matchedLore.push(...entries);
       }
 
       const promptText = await api.assemblePrompt({
         char_name: activeCharacter.card.data.name,
-        user_name: userPersona.name,
+        user_name: activePersona.name,
         character: activeCharacter.card.data,
         active_lore: matchedLore,
         state_variables: stateVariables,
         cognitive: get().cognitiveOverview || undefined,
-        reply_language: 'Deutsch',
+        reply_language: replyLanguage || 'Deutsch',
         allow_reasoning: serverConfig.reasoning_mode,
       });
 
@@ -618,9 +825,10 @@ export const useAppStore = create<AppStoreState>((set, get) => ({
         messages: payloadMessages,
         reasoning_mode: serverConfig.reasoning_mode,
         sampling: {
-          temperature: 0.7,
-          min_p: 0.05,
-          max_tokens: 2048,
+          temperature: sampling.temperature ?? 0.7,
+          min_p: sampling.min_p ?? 0.05,
+          top_p: sampling.top_p ?? 0.9,
+          max_tokens: sampling.max_tokens ?? 2048,
         },
       });
 
@@ -651,7 +859,7 @@ export const useAppStore = create<AppStoreState>((set, get) => ({
           ...state.messages,
           {
             role: 'assistant',
-            content: `⚠️ Fehler bei der Anfrage: ${e}`,
+            content: `⚠️ Inferenz-Fehler: ${e instanceof Error ? e.message : String(e)}`,
           },
         ],
         streamingText: '',
@@ -666,21 +874,24 @@ export const useAppStore = create<AppStoreState>((set, get) => ({
       await api.abortChatGeneration();
       set({ isGenerating: false });
     } catch (e) {
-      console.error('Abort error:', e);
+      console.error('Failed to abort generation:', e);
     }
   },
 
   clearChat: () => {
-    const { activeCharacter } = get();
+    const char = get().activeCharacter;
     set({
-      messages: [
-        {
-          role: 'assistant',
-          content: activeCharacter?.card.data.first_mes || 'Chat zurückgesetzt. Womit fangen wir an?',
-        },
-      ],
+      messages: char
+        ? [
+            {
+              role: 'assistant',
+              content: char.card.data.first_mes || `Hallo, ich bin ${char.card.data.name}!`,
+            },
+          ]
+        : [],
       streamingText: '',
       streamingThought: '',
+      isGenerating: false,
     });
   },
 }));

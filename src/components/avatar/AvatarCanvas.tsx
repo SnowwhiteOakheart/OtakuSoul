@@ -2,6 +2,7 @@ import { useState } from 'react';
 import { VrmViewer } from './VrmViewer';
 import { Box, Image, Sparkles } from 'lucide-react';
 import { CharacterProfile } from '../../types';
+import { useAppStore } from '../../store/useAppStore';
 
 interface AvatarCanvasProps {
   character: CharacterProfile | null;
@@ -13,9 +14,12 @@ export const AvatarCanvas = ({
   isSpeaking = false,
 }: AvatarCanvasProps) => {
   const [avatarMode, setAvatarMode] = useState<'3d' | '2d'>('3d');
+  const { activeVrmPath } = useAppStore();
 
-  const defaultVrmPath =
-    '/home/deathtrap/development/OtakuSoul/assets/vrm/Anime Girl.vrm';
+  const vrmPath =
+    (character?.card.data.extensions?.sow_vrm as string) ||
+    activeVrmPath ||
+    '';
 
   const avatarUrl = character?.avatar_data_url;
   const charName = character?.card.data.name || 'OtakuSoul Companion';
@@ -50,7 +54,7 @@ export const AvatarCanvas = ({
 
       {/* Main Avatar Display */}
       {avatarMode === '3d' ? (
-        <VrmViewer modelPath={defaultVrmPath} isSpeaking={isSpeaking} />
+        <VrmViewer modelPath={vrmPath} isSpeaking={isSpeaking} />
       ) : (
         <div className="relative w-full h-full flex flex-col items-center justify-center p-6 bg-gradient-to-b from-slate-900/60 via-purple-950/30 to-slate-950">
           {avatarUrl ? (

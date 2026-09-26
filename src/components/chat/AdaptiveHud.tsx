@@ -12,6 +12,8 @@ export const AdaptiveHud = () => {
     activeLorebooks,
     serverConfig,
     setServerConfig,
+    setActiveTab,
+    activePersona,
   } = useAppStore();
 
   const [showSelector, setShowSelector] = useState(false);
@@ -98,12 +100,34 @@ export const AdaptiveHud = () => {
                 </div>
               ))}
             </div>
+            <div className="pt-1.5 border-t border-slate-800">
+              <button
+                onClick={() => {
+                  setShowSelector(false);
+                  setActiveTab('characters');
+                }}
+                className="w-full py-1.5 px-2 rounded-lg bg-purple-600/20 hover:bg-purple-600/30 text-purple-300 border border-purple-500/30 text-[11px] font-semibold flex items-center justify-center gap-1.5 transition-colors"
+              >
+                <Users className="w-3.5 h-3.5" />
+                <span>Alle Charaktere in Bibliothek anzeigen...</span>
+              </button>
+            </div>
           </div>
         )}
       </div>
 
       {/* Middle/Right: Adaptive State Variables HUD */}
-      <div className="flex items-center gap-4 text-xs font-mono">
+      <div className="flex items-center gap-3 text-xs font-mono">
+        {/* Persona Badge */}
+        <div
+          onClick={() => setActiveTab('characters')}
+          className="cursor-pointer hidden sm:flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-indigo-950/40 border border-indigo-500/30 text-indigo-300 text-[11px] hover:border-indigo-400 transition-colors"
+          title="User-Persona (klicken zum Wechseln in der Bibliothek)"
+        >
+          <span className="text-slate-400">Du:</span>
+          <span className="font-semibold text-indigo-200">{activePersona.name}</span>
+        </div>
+
         {/* Lorebook Badge */}
         {activeLorebooks.length > 0 && (
           <div className="hidden lg:flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-slate-800/70 border border-slate-700/60 text-slate-300 text-[11px]">

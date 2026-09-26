@@ -1,7 +1,9 @@
 use base64::prelude::*;
 use serde::{Deserialize, Serialize};
 use std::fs;
-use std::path::Path;
+use std::path::{Path, PathBuf};
+
+use crate::modules::paths::resolve_app_paths;
 
 #[derive(Debug, Clone, Serialize, Deserialize, Default)]
 pub struct CharacterData {
@@ -52,9 +54,26 @@ pub struct CharacterProfile {
     pub bound_lorebooks: Vec<String>,
 }
 
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct UserPersona {
+    pub id: String,
+    pub name: String,
+    pub description: String,
+    pub avatar_data_url: Option<String>,
+}
+
+impl Default for UserPersona {
+    fn default() -> Self {
+        Self {
+            id: "default_user".to_string(),
+            name: "User".to_string(),
+            description: "Ein wissbegieriger Abenteurer und Gesprächspartner.".to_string(),
+            avatar_data_url: None,
+        }
+    }
+}
+
 pub fn parse_character_json(content: &str) -> Result<CharacterCardV2, String> {
-    // Some character cards have the top level { "spec": "chara_card_v2", "data": { ... } }
-    // while older V1 formats are just a flat dictionary.
     if let Ok(card_v2) = serde_json::from_str::<CharacterCardV2>(content) {
         return Ok(card_v2);
     }
@@ -67,7 +86,6 @@ pub fn parse_character_json(content: &str) -> Result<CharacterCardV2, String> {
         });
     }
 
-    // Try unwrapping if it's wrapped in { "data": { ... } } without spec
     if let Ok(val) = serde_json::from_str::<serde_json::Value>(content) {
         if let Some(inner_data) = val.get("data") {
             if let Ok(data) = serde_json::from_value::<CharacterData>(inner_data.clone()) {
@@ -85,7 +103,6 @@ pub fn parse_character_json(content: &str) -> Result<CharacterCardV2, String> {
 
 /// Extracts SillyTavern / Tavern V2 text chunk from a PNG binary
 pub fn parse_character_png(bytes: &[u8]) -> Result<(CharacterCardV2, String), String> {
-    // 1. Verify PNG magic header [137, 80, 78, 71, 13, 10, 26, 10]
     if bytes.len() < 8 || &bytes[0..8] != b"\x89PNG\r\n\x1a\n" {
         return Err("Die Datei ist kein gültiges PNG-Bild".to_string());
     }
@@ -105,9 +122,7 @@ pub fn parse_character_png(bytes: &[u8]) -> Result<(CharacterCardV2, String), St
         let chunk_data = &bytes[cursor..cursor + length];
         cursor += length + 4; // Skip data + 4 bytes CRC
 
-        // Search for tEXt chunk
         if chunk_type == b"tEXt" {
-            // tEXt format: keyword\0text
             if let Some(null_pos) = chunk_data.iter().position(|&b| b == 0) {
                 let keyword = String::from_utf8_lossy(&chunk_data[..null_pos]);
                 if keyword == "chara" || keyword == "ccv3" {
@@ -134,6 +149,102 @@ pub fn parse_character_png(bytes: &[u8]) -> Result<(CharacterCardV2, String), St
     Ok((card, avatar_data_url))
 }
 
+/// Injects CharacterCardV2 metadata into a PNG as a SillyTavern-compatible 'chara' tEXt chunk
+pub fn inject_character_metadata_png(base_png: &[u8], card: &CharacterCardV2) -> Result<Vec<u8>, String> {
+    if base_png.len() < 8 || &base_png[0..8] != b"\x89PNG\r\n\x1a\n" {
+        return Err("Ungültiger PNG-Header".to_string());
+    }
+
+    let card_json = serde_json::to_string(card)
+        .map_err(|e| format!("Fehler beim Serialisieren der Karte: {}", e))?;
+    let base64_payload = BASE64_STANDARD.encode(card_json.as_bytes());
+
+    let mut text_chunk_data = Vec::new();
+    text_chunk_data.extend_from_slice(b"chara\0");
+    text_chunk_data.extend_from_slice(base64_payload.as_bytes());
+
+    let mut type_and_data = Vec::with_capacity(4 + text_chunk_data.len());
+    type_and_data.extend_from_slice(b"tEXt");
+    type_and_data.extend_from_slice(&text_chunk_data);
+    let crc = crc32fast::hash(&type_and_data);
+
+    let mut new_png = Vec::new();
+    new_png.extend_from_slice(b"\x89PNG\r\n\x1a\n");
+
+    let mut cursor = 8;
+    let mut inserted = false;
+
+    while cursor + 8 <= base_png.len() {
+        let length = u32::from_be_bytes(base_png[cursor..cursor + 4].try_into().unwrap()) as usize;
+        let chunk_type = &base_png[cursor + 4..cursor + 8];
+        cursor += 8;
+
+        if cursor + length + 4 > base_png.len() {
+            break;
+        }
+
+        let chunk_data = &base_png[cursor..cursor + length];
+        let chunk_crc = &base_png[cursor + length..cursor + length + 4];
+        cursor += length + 4;
+
+        // Skip existing chara or ccv3 tEXt chunks
+        if chunk_type == b"tEXt" {
+            if let Some(null_pos) = chunk_data.iter().position(|&b| b == 0) {
+                let kw = &chunk_data[..null_pos];
+                if kw == b"chara" || kw == b"ccv3" {
+                    continue;
+                }
+            }
+        }
+
+        // Copy existing chunk
+        new_png.extend_from_slice(&(length as u32).to_be_bytes());
+        new_png.extend_from_slice(chunk_type);
+        new_png.extend_from_slice(chunk_data);
+        new_png.extend_from_slice(chunk_crc);
+
+        // Inject new chara tEXt chunk immediately after IHDR
+        if chunk_type == b"IHDR" && !inserted {
+            new_png.extend_from_slice(&(text_chunk_data.len() as u32).to_be_bytes());
+            new_png.extend_from_slice(&type_and_data);
+            new_png.extend_from_slice(&crc.to_be_bytes());
+            inserted = true;
+        }
+    }
+
+    if !inserted {
+        return Err("IHDR-Chunk im PNG nicht gefunden".to_string());
+    }
+
+    Ok(new_png)
+}
+
+fn get_placeholder_png() -> Vec<u8> {
+    // Minimal 1x1 RGBA PNG
+    let mut out = Vec::new();
+    out.extend_from_slice(b"\x89PNG\r\n\x1a\n");
+    let ihdr_data = [0, 0, 0, 1, 0, 0, 0, 1, 8, 6, 0, 0, 0];
+    let ihdr_len = (ihdr_data.len() as u32).to_be_bytes();
+    let mut ihdr_full = Vec::from(b"IHDR" as &[u8]);
+    ihdr_full.extend_from_slice(&ihdr_data);
+    let ihdr_crc = crc32fast::hash(&ihdr_full).to_be_bytes();
+    out.extend_from_slice(&ihdr_len);
+    out.extend_from_slice(&ihdr_full);
+    out.extend_from_slice(&ihdr_crc);
+
+    let idat_data = [0x78, 0x9c, 0x63, 0x54, 0x33, 0xda, 0xff, 0x00, 0x04, 0x8a, 0x02, 0xec];
+    let idat_len = (idat_data.len() as u32).to_be_bytes();
+    let mut idat_full = Vec::from(b"IDAT" as &[u8]);
+    idat_full.extend_from_slice(&idat_data);
+    let idat_crc = crc32fast::hash(&idat_full).to_be_bytes();
+    out.extend_from_slice(&idat_len);
+    out.extend_from_slice(&idat_full);
+    out.extend_from_slice(&idat_crc);
+
+    out.extend_from_slice(&[0, 0, 0, 0, b'I', b'E', b'N', b'D', 0xae, 0x42, 0x60, 0x82]);
+    out
+}
+
 pub fn load_character_from_file(path: &Path) -> Result<CharacterProfile, String> {
     if !path.exists() {
         return Err(format!("Datei nicht gefunden: {:?}", path));
@@ -155,7 +266,6 @@ pub fn load_character_from_file(path: &Path) -> Result<CharacterProfile, String>
             .map_err(|e| format!("Fehler beim Lesen der JSON-Datei: {}", e))?;
         let card = parse_character_json(&content)?;
 
-        // Check if an avatar with matching filename exists in same directory
         let mut avatar_data_url = None;
         let parent = path.parent().unwrap_or(Path::new("."));
         let png_candidate = parent.join(format!("{}.png", id));
@@ -191,30 +301,232 @@ pub fn load_character_from_file(path: &Path) -> Result<CharacterProfile, String>
     }
 }
 
+/// Saves or updates a character profile in the user's data directory (~/.local/share/otakusoul/characters)
+pub fn save_character_to_user_dir(profile: &CharacterProfile) -> Result<CharacterProfile, String> {
+    let paths = resolve_app_paths();
+    let char_dir = PathBuf::from(paths.characters_dir);
+    let _ = fs::create_dir_all(&char_dir);
+
+    let safe_name = profile.card.data.name.replace(['/', '\\', ':', '*', '?', '"', '<', '>', '|'], "_");
+    let safe_stem = if safe_name.trim().is_empty() {
+        profile.id.clone()
+    } else {
+        safe_name
+    };
+
+    let target_png = char_dir.join(format!("{}.png", safe_stem));
+    let target_json = char_dir.join(format!("{}.json", safe_stem));
+
+    let mut saved_profile = profile.clone();
+    saved_profile.id = safe_stem;
+
+    // If avatar data is present, write as SillyTavern V2 PNG
+    if let Some(ref data_url) = profile.avatar_data_url {
+        let base_bytes = if let Some(stripped) = data_url.strip_prefix("data:image/png;base64,") {
+            BASE64_STANDARD.decode(stripped).unwrap_or_else(|_| get_placeholder_png())
+        } else if let Some(stripped) = data_url.strip_prefix("data:image/jpeg;base64,") {
+            let _ = stripped;
+            get_placeholder_png()
+        } else {
+            get_placeholder_png()
+        };
+
+        let enriched_png = inject_character_metadata_png(&base_bytes, &profile.card)?;
+        fs::write(&target_png, enriched_png)
+            .map_err(|e| format!("Fehler beim Schreiben von {:?}: {}", target_png, e))?;
+
+        saved_profile.source_path = Some(target_png.to_string_lossy().to_string());
+    } else {
+        // Save as JSON
+        let json_text = serde_json::to_string_pretty(&profile.card)
+            .map_err(|e| format!("Fehler bei der Serialisierung: {}", e))?;
+        fs::write(&target_json, json_text)
+            .map_err(|e| format!("Fehler beim Schreiben von {:?}: {}", target_json, e))?;
+
+        saved_profile.source_path = Some(target_json.to_string_lossy().to_string());
+    }
+
+    Ok(saved_profile)
+}
+
+/// Exports a character card to an arbitrary destination chosen by the user
+pub fn export_character_card(profile: &CharacterProfile, target_path: &Path, export_as_png: bool) -> Result<(), String> {
+    if export_as_png {
+        let base_bytes = if let Some(ref data_url) = profile.avatar_data_url {
+            if let Some(stripped) = data_url.strip_prefix("data:image/png;base64,") {
+                BASE64_STANDARD.decode(stripped).unwrap_or_else(|_| get_placeholder_png())
+            } else {
+                get_placeholder_png()
+            }
+        } else {
+            get_placeholder_png()
+        };
+
+        let enriched_png = inject_character_metadata_png(&base_bytes, &profile.card)?;
+        fs::write(target_path, enriched_png)
+            .map_err(|e| format!("Fehler beim Exportieren des PNGs: {}", e))?;
+    } else {
+        let json_text = serde_json::to_string_pretty(&profile.card)
+            .map_err(|e| format!("Fehler beim Serialisieren des JSONs: {}", e))?;
+        fs::write(target_path, json_text)
+            .map_err(|e| format!("Fehler beim Exportieren des JSONs: {}", e))?;
+    }
+
+    Ok(())
+}
+
+/// Deletes a character by moving it to the trash folder (prevents accidental loss)
+pub fn delete_character(char_id: &str) -> Result<(), String> {
+    let paths = resolve_app_paths();
+    let char_dir = PathBuf::from(&paths.characters_dir);
+    let trash_dir = PathBuf::from(&paths.trash_dir);
+
+    let candidates = [
+        char_dir.join(format!("{}.png", char_id)),
+        char_dir.join(format!("{}.json", char_id)),
+    ];
+
+    let mut found = false;
+    let timestamp = std::time::SystemTime::now()
+        .duration_since(std::time::UNIX_EPOCH)
+        .map(|d| d.as_secs())
+        .unwrap_or(0);
+
+    for candidate in &candidates {
+        if candidate.exists() {
+            let file_name = candidate.file_name().unwrap().to_string_lossy();
+            let trash_target = trash_dir.join(format!("{}_{}", timestamp, file_name));
+            fs::rename(candidate, &trash_target)
+                .map_err(|e| format!("Fehler beim Verschieben in den Papierkorb: {}", e))?;
+            found = true;
+        }
+    }
+
+    if !found {
+        return Err(format!(
+            "Charakter '{}' wurde im Benutzerverzeichnis nicht gefunden (oder ist ein schreibgeschütztes Preset).",
+            char_id
+        ));
+    }
+
+    Ok(())
+}
+
+// --- User Personas Support ---
+
+pub fn get_personas_file_path() -> PathBuf {
+    let paths = resolve_app_paths();
+    PathBuf::from(paths.personas_dir).join("personas.json")
+}
+
+pub fn load_personas() -> Vec<UserPersona> {
+    let path = get_personas_file_path();
+    if path.exists() {
+        if let Ok(content) = fs::read_to_string(&path) {
+            if let Ok(personas) = serde_json::from_str::<Vec<UserPersona>>(&content) {
+                if !personas.is_empty() {
+                    return personas;
+                }
+            }
+        }
+    }
+
+    let default_list = vec![UserPersona::default()];
+    let _ = save_personas_list(&default_list);
+    default_list
+}
+
+pub fn save_persona(persona: UserPersona) -> Result<Vec<UserPersona>, String> {
+    let mut list = load_personas();
+    if let Some(idx) = list.iter().position(|p| p.id == persona.id) {
+        list[idx] = persona;
+    } else {
+        list.push(persona);
+    }
+    save_personas_list(&list)?;
+    Ok(list)
+}
+
+pub fn delete_persona(persona_id: &str) -> Result<Vec<UserPersona>, String> {
+    let mut list = load_personas();
+    list.retain(|p| p.id != persona_id);
+    if list.is_empty() {
+        list.push(UserPersona::default());
+    }
+    save_personas_list(&list)?;
+    Ok(list)
+}
+
+fn save_personas_list(list: &[UserPersona]) -> Result<(), String> {
+    let path = get_personas_file_path();
+    if let Some(parent) = path.parent() {
+        let _ = fs::create_dir_all(parent);
+    }
+    let json = serde_json::to_string_pretty(list)
+        .map_err(|e| format!("Fehler bei der Serialisierung der Personas: {}", e))?;
+    fs::write(&path, json).map_err(|e| format!("Fehler beim Schreiben der Personas: {}", e))?;
+    Ok(())
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
 
     #[test]
-    fn test_load_character_json() {
-        let path = Path::new("/home/deathtrap/development/OtakuSoul/presets/sakura-succubus-3/ayu_ikue.json");
-        if path.exists() {
-            let profile = load_character_from_file(path).expect("Failed to load ayu_ikue.json");
+    fn test_png_metadata_injection_and_roundtrip() {
+        let dummy_png = get_placeholder_png();
+        let card = CharacterCardV2 {
+            spec: "chara_card_v2".to_string(),
+            spec_version: "2.0".to_string(),
+            data: CharacterData {
+                name: "Test Character".to_string(),
+                description: "A test description".to_string(),
+                personality: "Cheerful".to_string(),
+                ..Default::default()
+            },
+        };
+
+        let enriched = inject_character_metadata_png(&dummy_png, &card)
+            .expect("Injection into PNG failed");
+        let (extracted_card, _) = parse_character_png(&enriched)
+            .expect("Extraction from enriched PNG failed");
+
+        assert_eq!(extracted_card.data.name, "Test Character");
+        assert_eq!(extracted_card.data.personality, "Cheerful");
+    }
+
+    #[test]
+    fn test_load_character_relative_paths() {
+        let manifest_dir = std::env::var("CARGO_MANIFEST_DIR").unwrap_or_else(|_| ".".to_string());
+        let root = Path::new(&manifest_dir).parent().unwrap_or(Path::new("."));
+
+        let json_path = root.join("presets/sakura-succubus-3/ayu_ikue.json");
+        if json_path.exists() {
+            let profile = load_character_from_file(&json_path).expect("Failed to load ayu_ikue.json");
             assert_eq!(profile.card.data.name, "Ayu Ikue");
-            assert!(!profile.card.data.personality.is_empty());
-            println!("Loaded character JSON: {}", profile.card.data.name);
+        }
+
+        let png_path = root.join("presets/cards/Akane Kurokawa.png");
+        if png_path.exists() {
+            let profile = load_character_from_file(&png_path).expect("Failed to load Akane Kurokawa.png");
+            assert_eq!(profile.card.data.name, "Akane Kurokawa");
+            assert!(profile.avatar_data_url.is_some());
         }
     }
 
     #[test]
-    fn test_load_character_png() {
-        let path = Path::new("/home/deathtrap/development/OtakuSoul/presets/cards/Akane Kurokawa.png");
-        if path.exists() {
-            let profile = load_character_from_file(path).expect("Failed to load Akane Kurokawa.png");
-            assert_eq!(profile.card.data.name, "Akane Kurokawa");
-            assert!(profile.avatar_data_url.is_some());
-            println!("Loaded character PNG: {}", profile.card.data.name);
-        }
+    fn test_personas_lifecycle() {
+        let test_persona = UserPersona {
+            id: "test_persona_unit".to_string(),
+            name: "Tester".to_string(),
+            description: "A unit test persona".to_string(),
+            avatar_data_url: None,
+        };
+
+        let saved = save_persona(test_persona.clone()).expect("Failed to save persona");
+        assert!(saved.iter().any(|p| p.id == "test_persona_unit"));
+
+        let deleted = delete_persona("test_persona_unit").expect("Failed to delete persona");
+        assert!(!deleted.iter().any(|p| p.id == "test_persona_unit"));
     }
 }
-

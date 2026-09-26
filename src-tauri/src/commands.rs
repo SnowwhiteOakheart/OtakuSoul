@@ -310,5 +310,78 @@ pub fn update_companion_settings(
     Ok(())
 }
 
+// --- Technical Debt & Phase 8: Data Foundation, Settings & Character Library Commands ---
 
+#[tauri::command]
+pub fn get_app_paths() -> crate::modules::paths::AppPaths {
+    crate::modules::paths::resolve_app_paths()
+}
 
+#[tauri::command]
+pub fn scan_characters() -> Vec<crate::modules::characters::CharacterProfile> {
+    crate::modules::paths::scan_available_characters()
+}
+
+#[tauri::command]
+pub fn scan_models() -> Vec<crate::modules::paths::ScannedModel> {
+    crate::modules::paths::scan_available_models()
+}
+
+#[tauri::command]
+pub fn scan_vrm_models() -> Vec<crate::modules::paths::ScannedVrm> {
+    crate::modules::paths::scan_available_vrm_models()
+}
+
+#[tauri::command]
+pub fn load_settings() -> crate::modules::settings::AppSettings {
+    crate::modules::settings::load_app_settings()
+}
+
+#[tauri::command]
+pub fn save_settings(settings: crate::modules::settings::AppSettings) -> Result<(), String> {
+    crate::modules::settings::save_app_settings(&settings)
+}
+
+#[tauri::command]
+pub fn save_character_card(
+    profile: crate::modules::characters::CharacterProfile,
+) -> Result<crate::modules::characters::CharacterProfile, String> {
+    crate::modules::characters::save_character_to_user_dir(&profile)
+}
+
+#[tauri::command]
+pub fn export_character_card(
+    profile: crate::modules::characters::CharacterProfile,
+    target_path: String,
+    export_as_png: bool,
+) -> Result<(), String> {
+    crate::modules::characters::export_character_card(
+        &profile,
+        std::path::Path::new(&target_path),
+        export_as_png,
+    )
+}
+
+#[tauri::command]
+pub fn delete_character(char_id: String) -> Result<(), String> {
+    crate::modules::characters::delete_character(&char_id)
+}
+
+#[tauri::command]
+pub fn load_personas() -> Vec<crate::modules::characters::UserPersona> {
+    crate::modules::characters::load_personas()
+}
+
+#[tauri::command]
+pub fn save_persona(
+    persona: crate::modules::characters::UserPersona,
+) -> Result<Vec<crate::modules::characters::UserPersona>, String> {
+    crate::modules::characters::save_persona(persona)
+}
+
+#[tauri::command]
+pub fn delete_persona(
+    persona_id: String,
+) -> Result<Vec<crate::modules::characters::UserPersona>, String> {
+    crate::modules::characters::delete_persona(&persona_id)
+}

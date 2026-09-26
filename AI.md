@@ -78,7 +78,9 @@
 | `src-tauri/src/modules/hardware.rs` | Hardware-Probe, NVIDIA VRAM/RAM Ermittlung & Layer-Rechner |
 | `src-tauri/src/modules/llama_manager.rs` | `llama-server` Prozessmanager, Zombie-Schutz, `/health` Polling |
 | `src-tauri/src/modules/inference.rs` | SSE Token-Streaming & `<think>` Gedanken-Trennung |
-| `src-tauri/src/modules/characters.rs` | SillyTavern V2 Character Card Parser (PNG/JSON) |
+| `src-tauri/src/modules/characters.rs` | SillyTavern V2 Character Card Parser, PNG tEXt Chunk Injector/Exporter & Personas |
+| `src-tauri/src/modules/paths.rs` | Standardpfade (`directories::ProjectDirs`), Asset-Scans (Karten, Modelle, VRM) |
+| `src-tauri/src/modules/settings.rs` | Persistente Konfiguration (`settings.json`) mit atomarem Speichern |
 | `src-tauri/src/modules/lorebook.rs` | Lorebook / World Info Keyword-Scanner |
 | `src-tauri/src/modules/prompt_builder.rs` | Dynamischer Prompt-Builder inkl. Seelen-Zustand |
 | `src-tauri/src/modules/memory.rs` | SQLite Kognitives Seelen-Gedächtnis & Emotional Decay |
@@ -86,7 +88,7 @@
 | `src-tauri/src/modules/companion.rs` | Neurohormone & Tool-Calling mit Sicherheitsabfrage |
 | `src-tauri/src/state.rs` | Globaler Tokio/Tauri `AppState` |
 | `src-tauri/src/commands.rs` | Alle Tauri IPC Commands |
-| `src-tauri/src/lib.rs` | App Builder & Handler-Registrierung |
+| `src-tauri/src/lib.rs` | App Builder, Dialog-Plugin & Handler-Registrierung |
 
 ### Frontend (`src/`)
 | Pfad | Zweck |
@@ -94,12 +96,15 @@
 | `src/types/index.ts` | Shared TypeScript Typdefinitionen |
 | `src/services/api.ts` | Getypte Wrapper für alle Tauri IPC-Commands |
 | `src/services/soundFx.ts` | Autarker Web Audio SFX-Synthesizer |
-| `src/store/useAppStore.ts` | Zentraler Zustand State Store |
-| `src/components/Header.tsx` | VRAM-Monitor & Server-Status Header |
+| `src/store/useAppStore.ts` | Zentraler Zustand State Store mit initApp, dyn. Pfaden & Scans |
+| `src/components/Header.tsx` | VRAM-Monitor, Server-Status Header & Tab-Navigation |
 | `src/components/chat/ChatView.tsx` | Split-Screen Chat & 3D Avatar |
 | `src/components/chat/RoleplayMessage.tsx` | Trennung von Handlungen (*...*) und gesprochenem Wort ("...") |
-| `src/components/chat/AdaptiveHud.tsx` | Charakter-Switcher & Zuneigungs-/Statusleiste |
+| `src/components/chat/AdaptiveHud.tsx` | Charakter-Switcher, Persona-Badge & Zuneigungs-/Statusleiste |
 | `src/components/chat/CognitiveMemoryDrawer.tsx` | Seelenspeicher-Inspektor (SQLite) |
+| `src/components/characters/CharacterLibraryView.tsx` | Charakterbibliothek mit Kachel-Galerie, Suche & Tag-Filtern |
+| `src/components/characters/CharacterEditorModal.tsx` | SillyTavern V2 Editor mit PNG/JSON Export & Avatar-Picker |
+| `src/components/characters/PersonaManagerModal.tsx` | User-Personas Verwaltung ({{user}}-Makro) |
 | `src/components/avatar/VrmViewer.tsx` | Three.js 3D VRM Player mit LipSync |
 | `src/components/stage/StageView.tsx` | Tabletop RPG Dashboard & World State |
 | `src/components/stage/ClockWidget.tsx` | SVG Tortendiagramm für Spannungs-Uhren |
@@ -107,21 +112,22 @@
 | `src/components/stage/EncounterTracker.tsx` | Initiativleiste, Kampfbegegnung & HP-Tracker |
 | `src/components/companion/CompanionView.tsx` | Desktop-Agent Dashboard & Hormon-Monitor |
 | `src/components/companion/SafetyCountdownBanner.tsx` | 25s Human-in-the-Loop Sicherheitsbanner |
-| `src/components/settings/SettingsView.tsx` | Hardware-, Modell- und Server-Konfiguration |
+| `src/components/settings/SettingsView.tsx` | Hardware-, Modell- und Server-Konfiguration mit Dateidialogen |
 
 ---
 
 ## 🗃️ 5. Lokale Assets & Verzeichnisse (Vollständig autark in OtakuSoul)
 
 Alle benötigten Daten sind eigenständig in diesem Projektverzeichnis gekapselt:
-- **LLM GGUF-Modelle:** `/home/deathtrap/development/OtakuSoul/assets/models/`
+- **LLM GGUF-Modelle:** `assets/models/` (im Repo per `.gitignore` ignoriert, lokal vorhanden)
   - `Gemma4-12B-QAT-Uncensored-HauhauCS-Balanced-Q4_K_M.gguf`
   - `Qwen3.8-27B-Heretic-Q4_K_M.gguf`
-- **Vorkompilierte llama-server Binary & CUDA-Libs:** `/home/deathtrap/development/OtakuSoul/bin/cuda/llama-server`
-- **3D VRM Avatare:** `/home/deathtrap/development/OtakuSoul/assets/vrm/Anime Girl.vrm`
-- **Charakterkarten & Lorebooks:** `/home/deathtrap/development/OtakuSoul/presets/`
+- **Vorkompilierte llama-server Binary & CUDA-Libs:** `bin/cuda/llama-server`
+- **3D VRM Avatare:** `assets/vrm/` (u. a. `Anime Girl.vrm`, `Mikku.vrm`, `2B.vrm`)
+- **Charakterkarten & Lorebooks:** `presets/`
   - V2 JSON-Karten & Lorebooks: `presets/sakura-succubus-3/`, `presets/no-game-no-life/`
-  - SillyTavern V2 PNG-Karten: `presets/cards/` (z. B. `Akane Kurokawa.png`, `Cosmos.png`, `Makise Kurisu.png`)
+  - SillyTavern V2 PNG-Karten: `presets/cards/` (15 Karten: Akane, Kurisu, Cosmos, Vivy, etc.)
+- **Benutzerverzeichnis (automatisch angelegt):** `~/.local/share/otakusoul/` (`characters/`, `lorebooks/`, `personas/`, `scenes/`, `.trash/`)
 - **Hardware des Benutzers:** NVIDIA GeForce RTX 4070 Ti SUPER (16.376 MB VRAM), CUDA 13.4, Vulkan 1.4, Arch Linux.
 
 ---
@@ -135,8 +141,12 @@ Alle benötigten Daten sind eigenständig in diesem Projektverzeichnis gekapselt
 - [x] **Phase 5: Kognitive Soul Memory mit SQLite & Emotional Decay** (Commit `05d9fa4`)
 - [x] **Phase 6: Soul Stage Tabletop RPG & Procedural Web Audio SFX** (Commit `59f3792`)
 - [x] **Phase 7: Soul Companion, Neurohormone & 25s Tool Safety** (Commit `aa9a8e5`)
+- [x] **Technische Schulden & Phase 8: Datenfundament & Charakterbibliothek**
+  - Native Dateidialoge (`tauri-plugin-dialog`), dynamische Pfade & Asset-Scans
+  - Persistente `settings.json`, anpassbares Sampling & konfigurierbare Antwortsprache
+  - SillyTavern V2 PNG tEXt Chunk Injection & Export, Charakter-Editor, Galerie-Bibliothek, User-Personas
 
-**Offene Phasen 8–18** (Datenfundament, vollwertiger Chat, Provider, Soul Memory 2.0, Lorebook 2.0, Stimme, Live2D, Stage-GM, echter Companion, Ökosystem, i18n & Auslieferung) sowie bekannte technische Schulden sind in [`Roadmap.md`](Roadmap.md) dokumentiert. **Vor neuen Features dort nachsehen und erledigte Punkte mit Commit-Hash abhaken.**
+**Offene Phasen 9–18** (Vollwertiger Chat mit Persistenz & Swipes, Provider-Abstraktion, Soul Memory 2.0, Lorebook 2.0, Stimme, Live2D, Stage-GM, echter Companion, Ökosystem, i18n & Auslieferung) sind in [`Roadmap.md`](Roadmap.md) dokumentiert. **Vor neuen Features dort nachsehen und erledigte Punkte mit Commit-Hash abhaken.**
 
 ---
 

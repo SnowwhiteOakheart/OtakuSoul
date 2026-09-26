@@ -84,8 +84,14 @@ npm run tauri build
   - Neurohormonal simulation (Dopamine, Cortisol, Oxytocin, Fatigue)
   - Tool calling engine with Human-in-the-Loop 25s safety countdown banner
   - Full companion desktop dashboard & audit execution log
-- [ ] **Phases 8–18: Remaining feature parity with Soul of Waifu**
-  - Character library, persistent chats, all cloud providers, Soul Memory agents, TTS/STT, Live2D, AI Game Master, real companion tools, web client, Discord & more
+- [x] **Phase 8: Data Foundation & Character Library**
+  - Native file dialogs (`tauri-plugin-dialog`) for GGUF models, VRMs, PNG and JSON cards
+  - Standard user directories (`~/.local/share/otakusoul`) and dynamic asset scanning
+  - Persistent settings (`settings.json`) with configurable sampler & language
+  - SillyTavern V2 Character Library with gallery, search, tag filters, and live editor
+  - PNG `chara` tEXt metadata injection & export, plus User-Persona management
+- [ ] **Phases 9–18: Remaining feature parity with Soul of Waifu**
+  - Persistent multi-chat, all cloud providers, Soul Memory 2.0 agents, voice (TTS/STT), Live2D, AI Game Master, real companion tools, web client, Discord & packaging
   - See **[Roadmap.md](Roadmap.md)** for the full, detailed plan (German)
 
 ---

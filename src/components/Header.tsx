@@ -8,6 +8,7 @@ import {
   Settings,
   AlertCircle,
   Loader2,
+  Users,
 } from 'lucide-react';
 
 export const Header = () => {
@@ -18,9 +19,11 @@ export const Header = () => {
     fetchHardware,
     serverStatus,
     fetchServerStatus,
+    initApp,
   } = useAppStore();
 
   useEffect(() => {
+    initApp();
     fetchHardware();
     fetchServerStatus();
     const interval = setInterval(() => {
@@ -56,6 +59,18 @@ export const Header = () => {
           >
             <MessageSquare className="w-4 h-4" />
             <span>Chat</span>
+          </button>
+
+          <button
+            onClick={() => setActiveTab('characters')}
+            className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-sm transition-all ${
+              activeTab === 'characters'
+                ? 'bg-purple-600/20 text-purple-300 border border-purple-500/40 shadow-sm'
+                : 'text-slate-400 hover:text-slate-200 hover:bg-slate-800/60'
+            }`}
+          >
+            <Users className="w-4 h-4" />
+            <span>Charaktere</span>
           </button>
 
           <button

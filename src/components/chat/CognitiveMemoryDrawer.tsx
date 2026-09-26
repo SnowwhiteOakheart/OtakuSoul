@@ -27,7 +27,7 @@ export const CognitiveMemoryDrawer: React.FC<CognitiveMemoryDrawerProps> = ({
 }) => {
   const {
     activeCharacter,
-    userPersona,
+    activePersona,
     cognitiveOverview,
     isMemoryLoading,
     fetchCognitiveOverview,
@@ -301,7 +301,7 @@ export const CognitiveMemoryDrawer: React.FC<CognitiveMemoryDrawerProps> = ({
             <div className="space-y-4">
               <div className="p-4 rounded-xl bg-slate-800/40 border border-slate-700/60 space-y-3">
                 <div className="text-xs font-semibold text-slate-400 uppercase tracking-wider">
-                  Beziehungsprofil mit {userPersona.name}
+                  Beziehungsprofil mit {activePersona.name}
                 </div>
                 <div className="flex flex-wrap gap-2">
                   {[
@@ -346,7 +346,7 @@ export const CognitiveMemoryDrawer: React.FC<CognitiveMemoryDrawerProps> = ({
               {/* Preferences & Habits */}
               <div className="p-4 rounded-xl bg-slate-800/40 border border-slate-700/60 space-y-3">
                 <div className="text-xs font-semibold text-slate-400 uppercase tracking-wider">
-                  Bekannte Vorlieben & Gewohnheiten von {userPersona.name}
+                  Bekannte Vorlieben & Gewohnheiten von {activePersona.name}
                 </div>
                 <div className="flex flex-wrap gap-2">
                   {rel.preferences_habits.map((item, idx) => (

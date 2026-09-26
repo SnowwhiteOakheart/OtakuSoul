@@ -303,5 +303,50 @@ export interface CompanionState {
   settings: CompanionSettings;
 }
 
+// Phase 8: Paths, Settings, Scans & Personas
+export interface AppPaths {
+  config_dir: string;
+  data_dir: string;
+  characters_dir: string;
+  lorebooks_dir: string;
+  personas_dir: string;
+  scenes_dir: string;
+  trash_dir: string;
+  bundled_presets_dir: string;
+  bundled_models_dir: string;
+  bundled_vrm_dir: string;
+  bundled_bin_dir: string;
+}
 
+export interface ScannedModel {
+  name: string;
+  path: string;
+  size_mb: number;
+}
 
+export interface ScannedVrm {
+  name: string;
+  path: string;
+  size_mb: number;
+}
+
+export interface AppSettings {
+  server_config: LlamaServerConfig;
+  sampling: SamplingParams;
+  selected_backend: 'local' | 'cloud';
+  cloud_endpoint: string;
+  cloud_api_key: string;
+  cloud_model: string;
+  reply_language: string;
+  lorebook_scan_depth: number;
+  active_character_id: string | null;
+  active_persona_id: string | null;
+  active_vrm_path: string | null;
+}
+
+export interface UserPersona {
+  id: string;
+  name: string;
+  description: string;
+  avatar_data_url?: string | null;
+}

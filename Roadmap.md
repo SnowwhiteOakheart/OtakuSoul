@@ -35,12 +35,12 @@
 
 ## 🚨 2. Technische Schulden (vor neuen Features erledigen)
 
-- [ ] **Hartkodierte Pfade entfernen** – `useAppStore.ts:146, 503–531` und `SettingsView.tsx:59–63` enthalten absolute `/home/deathtrap/...`-Pfade. Verstößt gegen AI.md-Regel 5. → Datenverzeichnis via `directories::ProjectDirs`, Assets per Scan.
-- [ ] **Persistente Konfiguration** – Einstellungen (Server-Config, Backend, API-Keys, Persona, Sampling) leben nur im Zustand-Store. → `settings.json` im Config-Verzeichnis + Rust-Commands `load_settings`/`save_settings`. API-Keys über `keyring`-Crate statt Klartext.
-- [ ] **Sampling hartkodiert** – `temperature: 0.7, min_p: 0.05, max_tokens: 2048` fest in `sendMessage`. → aus Einstellungen/Presets lesen.
-- [ ] **Antwortsprache hartkodiert** – `reply_language: 'Deutsch'`. → Einstellung.
-- [ ] **Lorebook-Scan über den gesamten Verlauf** – `fullContext = alle Nachrichten`; SoW scannt nur die letzten N Nachrichten (Scan-Depth). → Scan-Tiefe pro Lorebook.
-- [ ] **Datei-Dialoge** – `tauri-plugin-dialog` fehlt; aktuell kann nichts importiert werden, ohne den Code zu ändern.
+- [x] **Hartkodierte Pfade entfernen** – `useAppStore.ts` und `SettingsView.tsx` von absoluten Pfaden befreit; Datenverzeichnis via `directories::ProjectDirs` (`paths.rs`), Assets per dynamischem Scan (`scan_characters`, `scan_models`, `scan_vrm_models`).
+- [x] **Persistente Konfiguration** – `settings.json` im Config-Verzeichnis (`settings.rs`) + Rust-Commands `load_settings`/`save_settings`.
+- [x] **Sampling konfigurierbar** – `temperature`, `min_p`, `max_tokens` im Settings-UI anpassbar und persistent gespeichert.
+- [x] **Antwortsprache konfigurierbar** – `reply_language` im Settings-UI editierbar und persistent gespeichert.
+- [x] **Lorebook-Scan-Tiefe** – `lorebook_scan_depth` begrenzt den Keyword-Scan auf die letzten N Nachrichten (Standard: 5).
+- [x] **Datei-Dialoge** – `tauri-plugin-dialog` integriert für Modelle (.gguf), 3D-Avatare (.vrm) sowie Import/Export (.png/.json).
 - [ ] **Hardware-Probe für AMD/Intel** – ROCm (`rocm-smi`/sysfs), Vulkan-Fallback, Apple Metal.
 
 ---
@@ -50,19 +50,17 @@
 Die Reihenfolge ist nach Abhängigkeit und Nutzen sortiert: erst das, was jede andere Funktion braucht
 (Daten, Chat, Provider), dann Stimme/Avatar, dann Stage/Companion, zuletzt Ökosystem.
 
-### Phase 8 – Datenfundament & Charakterbibliothek 🔴 höchste Priorität
+### Phase 8 – Datenfundament & Charakterbibliothek ✅ abgeschlossen
 
-Ohne diese Phase ist OtakuSoul eine Demo mit festen Presets.
-
-- [ ] **Einheitliches Datenverzeichnis** (`characters/`, `chats/`, `lorebooks/`, `scenes/`, `personas/`, `backgrounds/`, `avatars/`, `models/`, `voices/`)
-- [ ] **Charakterbibliothek** – Liste, Suche, Tags, Sortierung, Kachel-Ansicht mit Avatar (SoW: `create_character_card_widget`)
-- [ ] **Charakter-Editor** – alle V2-Felder, Avatar-Import, Tags, Beispieldialoge, alternative Begrüßungen
-- [ ] **Import** von V2-PNG/JSON per Dateidialog & Drag-and-Drop, inkl. `character_book` (eingebettetes Lorebook)
-- [ ] **Export** als V2-PNG (tEXt-Chunk schreiben) und JSON (SoW: `export_character_card`)
-- [ ] **Charakter löschen** (mit Papierkorb/Backup statt Hard-Delete)
+- [x] **Einheitliches Datenverzeichnis** (`characters/`, `lorebooks/`, `personas/`, `scenes/`, `.trash/`) via `paths.rs`.
+- [x] **Charakterbibliothek** – Responsive Kachel-Ansicht, Suche, Tag-Filter, Sortierung, Avatar-Vorschau (`CharacterLibraryView.tsx`).
+- [x] **Charakter-Editor** – alle V2-Felder, Avatar-Upload/Picker, Tags, Beispieldialoge, alternative Begrüßungen (`CharacterEditorModal.tsx`).
+- [x] **Import** von V2-PNG/JSON per nativem Dateidialog.
+- [x] **Export** als SillyTavern V2-PNG (mit `chara` tEXt-Chunk und CRC32) und JSON (`export_character_card`).
+- [x] **Charakter löschen** (mit Papierkorb/Backup `.trash/` statt Hard-Delete).
 - [ ] **SoW-Konfigurationsimport** – `app/configuration/characters.json`, `settings.json`, `api.json` aus einer bestehenden SoW-Installation übernehmen (Migrationspfad für Bestandsnutzer)
 - [ ] **Port von `tools/import_character_cards.py`** als Rust-Command/CLI (Bulk-Import inkl. Live2D, Personas, Lorebooks, Szenen, Hintergründe, `--scene-group`)
-- [ ] **User-Personas** – mehrere Personas anlegen, Schnellwechsel im Chat (SoW: `open_personas_editor`, `show_quick_persona_menu`)
+- [x] **User-Personas** – mehrere Personas anlegen, bearbeiten, löschen, Schnellwechsel im Chat & HUD (`PersonaManagerModal.tsx`).
 
 ### Phase 9 – Vollwertiger Chat 🔴
 

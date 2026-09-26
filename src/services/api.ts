@@ -24,6 +24,11 @@ import {
   ToolExecutionResult,
   CompanionSettings,
   CompanionState,
+  AppPaths,
+  ScannedModel,
+  ScannedVrm,
+  AppSettings,
+  UserPersona,
 } from '../types';
 
 export const api = {
@@ -270,6 +275,65 @@ export const api = {
     settings: CompanionSettings
   ): Promise<void> => {
     return await invoke<void>('update_companion_settings', { settings });
+  },
+
+  // Technical Debt & Phase 8: Data Foundation, Settings & Character Library
+  getAppPaths: async (): Promise<AppPaths> => {
+    return await invoke<AppPaths>('get_app_paths');
+  },
+
+  scanCharacters: async (): Promise<CharacterProfile[]> => {
+    return await invoke<CharacterProfile[]>('scan_characters');
+  },
+
+  scanModels: async (): Promise<ScannedModel[]> => {
+    return await invoke<ScannedModel[]>('scan_models');
+  },
+
+  scanVrmModels: async (): Promise<ScannedVrm[]> => {
+    return await invoke<ScannedVrm[]>('scan_vrm_models');
+  },
+
+  loadSettings: async (): Promise<AppSettings> => {
+    return await invoke<AppSettings>('load_settings');
+  },
+
+  saveSettings: async (settings: AppSettings): Promise<void> => {
+    return await invoke<void>('save_settings', { settings });
+  },
+
+  saveCharacterCard: async (
+    profile: CharacterProfile
+  ): Promise<CharacterProfile> => {
+    return await invoke<CharacterProfile>('save_character_card', { profile });
+  },
+
+  exportCharacterCard: async (
+    profile: CharacterProfile,
+    targetPath: string,
+    exportAsPng: boolean
+  ): Promise<void> => {
+    return await invoke<void>('export_character_card', {
+      profile,
+      targetPath,
+      exportAsPng,
+    });
+  },
+
+  deleteCharacter: async (charId: string): Promise<void> => {
+    return await invoke<void>('delete_character', { charId });
+  },
+
+  loadPersonas: async (): Promise<UserPersona[]> => {
+    return await invoke<UserPersona[]>('load_personas');
+  },
+
+  savePersona: async (persona: UserPersona): Promise<UserPersona[]> => {
+    return await invoke<UserPersona[]>('save_persona', { persona });
+  },
+
+  deletePersona: async (personaId: string): Promise<UserPersona[]> => {
+    return await invoke<UserPersona[]>('delete_persona', { personaId });
   },
 
   // Streaming Listeners

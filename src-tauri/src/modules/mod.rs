@@ -1,9 +1,11 @@
 pub mod characters;
+pub mod companion;
 pub mod hardware;
 pub mod inference;
 pub mod llama_manager;
 pub mod lorebook;
 pub mod memory;
+pub mod paths;
 pub mod prompt_builder;
+pub mod settings;
 pub mod stage;
-pub mod companion;
