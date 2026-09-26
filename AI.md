@@ -45,10 +45,11 @@
 +-------------------------------------------------------------------------------+
 | FRONTEND: React 19 + TypeScript + Vite 8 + Tailwind CSS v4                   |
 | ├─ Avatar Engine: Three.js + @pixiv/three-vrm (LipSync, Blinzeln, Atmung)     |
-| ├─ 2D Engine: PixiJS Live2D Display                                          |
-| ├─ Audio Synthesizer: Procedural Web Audio API (Würfel, Fanfaren, Lagerfeuer)|
+| ├─ 2D Engine: PixiJS Live2D Cubism Display (Auto-Blink, Web Audio LipSync)    |
+| ├─ Audio Synthesizer: Procedural Web Audio API & AudioPlayer (SFX & TTS)      |
+| ├─ Stage Engine: Two-Tier GM Orchestrator, Party HUD, Scenes Lobby & Dices   |
 | ├─ State Management: Zustand (useAppStore.ts)                                 |
-| ├─ UI Views: ChatView, StageView, CompanionView, SettingsView                |
+| ├─ UI Views: ChatView, StageView, CompanionView, SettingsView, LorebookView   |
 | └─ Safety: Human-in-the-Loop 25s Countdown Banner                            |
 +-------------------------------------------------------------------------------+
                                       ▲
@@ -60,10 +61,12 @@
 | ├─ llama_manager.rs: Child-Prozesssteuerung mit PR_SET_PDEATHSIG              |
 | ├─ inference.rs: SSE Streaming Proxy mit <think> Reasoning Filter             |
 | ├─ characters.rs: SillyTavern V2 Parser (PNG tEXt Chunks & JSON)              |
-| ├─ lorebook.rs: Regex- & Keyword-Kontextaktivierung                           |
+| ├─ paths.rs: Standardpfade, Asset-Scans (Karten, GGUF, VRM, Live2D)           |
+| ├─ lorebook.rs: Regex-, Keyword-, Tension- & Chain-Kontextaktivierung         |
 | ├─ prompt_builder.rs: System-Prompt Generator mit {{char}}/{{user}} Makros   |
 | ├─ memory.rs: SQLite Soul Memory (4 Layer, Emotional Decay, Deduplizierung)   |
-| ├─ stage.rs: Tabletop RPG Engine (d20/d100/2d6, DC-Check, Clocks, Kampf)      |
+| ├─ stage.rs: Two-Tier GM Engine (Action-Planner, Storyteller, Rest, Dice)     |
+| ├─ voice.rs / kokoro.rs: TTS/STT, Edge-TTS, Kokoro ONNX, Whisper STT & RVC    |
 | └─ companion.rs: Neurohormone (Dopamin, Cortisol, Oxytocin) & Tool Calling   |
 +-------------------------------------------------------------------------------+
 ```
@@ -79,13 +82,13 @@
 | `src-tauri/src/modules/llama_manager.rs` | `llama-server` Prozessmanager, Zombie-Schutz, `/health` Polling |
 | `src-tauri/src/modules/inference.rs` | SSE Token-Streaming & `<think>` Gedanken-Trennung |
 | `src-tauri/src/modules/characters.rs` | SillyTavern V2 Character Card Parser, PNG tEXt Chunk Injector/Exporter & Personas |
-| `src-tauri/src/modules/paths.rs` | Standardpfade (`directories::ProjectDirs`), Asset-Scans (Karten, Modelle, VRM) |
+| `src-tauri/src/modules/paths.rs` | Standardpfade (`directories::ProjectDirs`), Asset-Scans (Karten, Modelle, VRM, Live2D) |
 | `src-tauri/src/modules/settings.rs` | Persistente Konfiguration (`settings.json`) mit atomarem Speichern |
 | `src-tauri/src/modules/lorebook.rs` | Lorebook / World Info Keyword-Scanner |
 | `src-tauri/src/modules/prompt_builder.rs` | Dynamischer Prompt-Builder inkl. Seelen-Zustand |
 | `src-tauri/src/modules/memory.rs` | SQLite Kognitives Seelen-Gedächtnis, Markdown Sync (MEMORY.md/USER.md), Backups & SoW-Importer |
 | `src-tauri/src/modules/soul_memory_pipeline.rs` | Kognitive Pipeline: Router-Agent, Archivist-Agent, Diary-Agent, JSON-Patch-Parser & No-Op Detection |
-| `src-tauri/src/modules/stage.rs` | RPG Würfel-Engine, Kampagnen-Clocks & Taktischer Kampf |
+| `src-tauri/src/modules/stage.rs` | Tabletop RPG Engine (Two-Tier GM Pipeline: Action Planner & Storyteller, Szenen-Manager, Party HUD, Rest-Mechanik, d20/d100/2d6, DC-Check, Clocks, Kampf & Markdown-Export) |
 | `src-tauri/src/modules/companion.rs` | Neurohormone & Tool-Calling mit Sicherheitsabfrage |
 | `src-tauri/src/modules/providers.rs` | LLM Provider Abstraktion (OpenRouter, Anthropic Messages API, OpenAI, DeepSeek, Gemini, Mistral, Custom) |
 | `src-tauri/src/modules/llm_presets.rs` | LLM Sampler Presets Engine mit 5 Built-in Profilen & JSON-Persistenz |
@@ -114,8 +117,16 @@
 | `src/components/characters/CharacterLibraryView.tsx` | Charakterbibliothek mit Kachel-Galerie, Suche & Tag-Filtern |
 | `src/components/characters/CharacterEditorModal.tsx` | SillyTavern V2 Editor mit PNG/JSON Export & Avatar-Picker |
 | `src/components/characters/PersonaManagerModal.tsx` | User-Personas Verwaltung ({{user}}-Makro) |
+| `src/components/lorebook/LorebookView.tsx` | Lorebook-Manager & Editor mit JSON-Import/Export, Filtern und Tag-Verwaltung |
 | `src/components/avatar/VrmViewer.tsx` | Three.js 3D VRM Player mit LipSync |
-| `src/components/stage/StageView.tsx` | Tabletop RPG Dashboard & World State |
+| `src/components/avatar/Live2DViewer.tsx` | PixiJS Live2D Cubism Viewer mit automatischer Skalierung, Blinzeln und Voice-LipSync via AudioPlayer FFT |
+| `src/components/stage/StageView.tsx` | Tabletop RPG Dashboard, Two-Tier GM Feed, Würfel-Integration & Welten-Zustand |
+| `src/components/stage/PartyHeader.tsx` | Party HUD mit HP-, MP-, Level- und Zustands-Badges für bis zu 4 Charaktere |
+| `src/components/stage/SceneLobbyModal.tsx` | Szenen-Lobby zur Auswahl, Neuanlage und Löschung von RPG-Szenen |
+| `src/components/stage/SceneCreateModal.tsx` | Erstellungs-Modal für Szenen (Titel, Genre, Ziel, Schwierigkeit, Party-Auswahl) |
+| `src/components/stage/StageChatLog.tsx` | Ereignis- & Narrations-Feed des GM mit Würfelwürfen und Aktions-Karten |
+| `src/components/stage/StageEventCardView.tsx` | Interaktive Aktions- und Entscheidungskarten für Spielerzüge |
+| `src/components/stage/TurnControlBar.tsx` | Runden- & Aktionsleiste (Angriff, Fertigkeit, Zauber, Rast, Flucht) |
 | `src/components/stage/ClockWidget.tsx` | SVG Tortendiagramm für Spannungs-Uhren |
 | `src/components/stage/DiceRoller.tsx` | Interaktiver Würfelroller mit SG-Prüfung |
 | `src/components/stage/EncounterTracker.tsx` | Initiativleiste, Kampfbegegnung & HP-Tracker |
@@ -222,7 +233,21 @@ Alle benötigten Daten sind eigenständig in diesem Projektverzeichnis gekapselt
   - **RVC:** Optionales Audio-Postprocessing über einen neutralen Multipart-Sidecar-Vertrag mit Modell, Pitch, Index-Rate und Protect.
   - **Cross-Platform:** Ein-/Ausgabegerätewahl und macOS-Mikrofonbeschreibung in `Info.plist`; bestehende Konfigurationen werden durch Serde-Defaults migriert.
 
-**Offene Phasen 14–18** (Live2D, Stage-GM, echter Companion, Ökosystem, i18n & Auslieferung) sind in [`Roadmap.md`](Roadmap.md) dokumentiert. **Vor neuen Features dort nachsehen und erledigte Punkte mit Commit-Hash abhaken.**
+- [x] **Phase 14: Avatare, Live2D & Expression-Engine** (Commit `ae2f489`, `c33721f`, `01f8cc5`)
+  - **PixiJS & Live2D-Integration:** PixiJS v7 & `pixi-live2d-display-cubism4` mit Cubism 4 Core (`live2dcubismcore.min.js`), asynchronem Model-Loading und Canvas-Mounting.
+  - **Live2D Asset-Pipeline:** Asset-Ordner `assets/live2d/` für Built-in Modelle (z. B. Hiyori, Mao, etc. aus *Soul of Waifu*), Benutzer-Import aus externen Ordnern und Archiv-Dateien (`.zip`) direkt über die Einstellungen.
+  - **Voice LipSync & Expression Engine:** Amplitudenbasierter LipSync über die AudioPlayer FFT-Analyse, natürliches Blinzeln und Maus-Blickverfolgung.
+  - **Avatar-Modus-Persistenz:** Globale Voreinstellung (`vrm`, `live2d`, `portrait`) wird in `settings.json` dauerhaft gespeichert; zusätzlich kann pro Charakter ein individuelles Modell oder ein Fallback definiert werden.
+- [x] **Phase 15: Soul Stage – KI-Game-Master & Party HUD** (Commit `48edeb3`)
+  - **Two-Tier GM Pipeline (`stage.rs`):**
+    - **Action Planner:** Analysiert Spieleraktionen deterministisch mit striktem JSON-Schema, kalkuliert Schwierigkeitsgrade (SG), führt Fähigkeitsproben durch, verwaltet Clocks und aktualisiert HP/MP der Party. Robuste JSON-Repair-Mechanik bei Provider-Formatabweichungen.
+    - **Narrativer Storyteller:** Generiert atmosphärische Erzähltexte im Chat auf Basis des Planner-Ergebnisses unter Berücksichtigung von Würfelresultaten, Umgebung und Charakterzustand.
+  - **Party HUD:** Unterstützt bis zu 4 Gruppenmitglieder mit visuellen Lebenspunkten (HP), Magie/Ausdauer (MP), Klassen/Rollen-Badges und Statuseffekten (`PartyHeader.tsx`).
+  - **Szenen-Lobby & Kampagnen-Manager:** `SceneLobbyModal.tsx` und `SceneCreateModal.tsx` zur Verwaltung persistenter `.json`-Szenen mit Zielen, Schwierigkeitsgrad und Genre-Presets.
+  - **Rundensteuerung & Aktionskarten:** `TurnControlBar.tsx` mit Aktionen (Angriff, Skill, Zauber, Flucht, Rast) und interaktive Karten `StageEventCardView.tsx` für Choice-Events.
+  - **Rest-Mechanik, Snapshots & Export:** Kurze und lange Rast zum Regenerieren von Ressourcen, Undo-Historie für GM-Turns und Markdown-Export des gesamten Abenteuer-Logs.
+
+**Offene Phasen 16–18** (Echter Desktop-Companion, Ökosystem & Plugins, i18n & Release-Builds) sind in [`Roadmap.md`](Roadmap.md) dokumentiert. **Vor neuen Features dort nachsehen und erledigte Punkte mit Commit-Hash abhaken.**
 
 ---
 

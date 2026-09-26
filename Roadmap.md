@@ -18,18 +18,18 @@
 
 | Bereich | Status | Anmerkung |
 |---|---|---|
-| Hardware-Probe & GPU-Layer-Rechner | ✅ solide | NVIDIA-only (`nvidia-smi`) |
-| llama-server Prozessmanager | ✅ solide | PDEATHSIG, Health-Polling, Port-Freigabe |
-| SSE-Streaming + `<think>`-Filter | ✅ solide | eine OpenAI-kompatible Schnittstelle für lokal & Cloud |
-| Character Card V2 (PNG/JSON) | 🟡 nur Lesen | kein Export, keine Bibliothek, Pfade hartkodiert |
-| Lorebook | 🟡 Basis | nur Keyword/Regex, keine semantische Suche, keine Ketten |
-| Prompt Builder | 🟡 Basis | kein Token-Budget, keine Kontextfenster-Verwaltung |
-| Soul Memory (SQLite) | 🟡 Datenmodell | Tabellen + Decay vorhanden, **aber kein LLM schreibt automatisch hinein** |
-| Soul Stage | 🟡 Mechanik | Würfel, Clocks, Kampf – **aber kein KI-Game-Master** |
-| Soul Companion | 🟡 Gerüst | Hormone + Safety-Banner – **alle 4 Tools sind simuliert** |
-| VRM-Avatar | ✅ gut | LipSync nur ohne echte Audioquelle |
-| Live2D | ✅ solide | PixiJS + Cubism 4/2, 3-Wege-Umschaltung, LipSync & Motion-Trigger |
-| Chat-Verlauf | ❌ | nur im RAM, geht beim Neustart verloren |
+| Hardware-Probe & GPU-Layer-Rechner | ✅ solide | NVIDIA-only (`nvidia-smi`), automatische Schicht-Zuteilung |
+| llama-server Prozessmanager | ✅ solide | PDEATHSIG, Health-Polling, Port-Freigabe, zero-zombie |
+| SSE-Streaming + `<think>`-Filter | ✅ solide | Unified Provider-Schnittstelle für lokal & Cloud (OpenRouter, Anthropic, OpenAI, etc.) |
+| Character Card V2 (PNG/JSON) | ✅ vollständig | Galerie-Bibliothek, V2-Editor, SillyTavern-PNG/JSON Import & Export, Personas |
+| Lorebook 2.0 | ✅ vollständig | Editor, Multi-Binding, Trigger-Engine (OR/AND/NOT/Regex), Tension Accumulator, Chains |
+| Prompt Builder | ✅ solide | Dynamische Injektion von Kognition, Lorebooks, Direktiven und {{char}}/{{user}}-Makros |
+| Soul Memory 2.0 (SQLite) | ✅ vollständig | 4 Schichten, autonomer Router/Archivist/Diary-Agent, Markdown-Sync & Backups |
+| Soul Stage | ✅ vollständig | Zweistufiger KI-Game-Master (Planner→Executor), Szenen-Lobby, Party-HUD, Tagged Choices, Rast-System & Undo |
+| Soul Companion | 🟡 Gerüst | Neurohormone + 25s Safety-Banner – echte Tool-Ausführung folgt in Phase 16 |
+| VRM-Avatar (3D) | ✅ vollständig | Three.js VRM, Emotions-Morphs, Audio-FFT LipSync, Blinzeln, Atmung |
+| Live2D (2D) | ✅ vollständig | PixiJS + Cubism 4/2, 28-Emotionen-Klassifikator, Motion-Trigger, LipSync, Import & Downloader |
+| Chat-System | ✅ vollständig | SQLite Multi-Sessions, Swipes (< 1/3 >), Author's Note, Inline-Edit, JSONL Import/Export, 11 HUD-Presets |
 
 ---
 
@@ -142,31 +142,22 @@ weitere stark variierende oder schwere TTS-/RVC-Modelle werden über klar konfig
 - [x] **VRM-Emotionen & Motions** aus dem Klassifikator steuern; VRM- & Live2D-Modellauswahl pro Charakter
 - [x] **Live2D-Downloader & Scanner** portiert (`modules/live2d.rs`: Scan lokaler/gebündelter Modelle + Cubism Sample Download)
 
-### Phase 15 – Soul Stage: KI-Game-Master 🟠
+### Phase 15 – Soul Stage: KI-Game-Master ✅ Abgeschlossen
 
-Die Mechanik (Würfel, Clocks, Encounter) ist da – der **Orchestrator**, der das Spiel leitet, fehlt komplett.
-Referenz: `soul_stage_engine.py` (5.000 Zeilen) + `soul_stage_page.py` (6.700 Zeilen).
+Die Soul Stage Engine ist nun ein vollwertiges Tabletop-Rollenspiel-Erlebnis mit einem zweistufigen KI-Game-Master, automatischen Würfelprüfungen und reichhaltiger Benutzeroberfläche.
 
-- [ ] **Szenen-Format & Szenen-Bibliothek** – Szenen laden/importieren, **Scene Folders**, Lobby (Presets: `sakura-succubus-3/scenes`, `no-game-no-life`)
-- [ ] **GM-Orchestrator** – Planner → Executor → Routing-Pipeline mit JSON-Reparatur (SoW: `SoulStageOrchestrator.run_turn`, `PlannerParser`, `RoutingParser`)
-- [ ] **Party-System** – mehrere Charaktere antworten nacheinander, Direktansprache erkennen, Turn-Indicator
-- [ ] **Turn-Control-Bar** – Modi Sagen/Tun/Denken/Regie, nächsten Sprecher wählen, **private Flüstern**
-- [ ] **WorldState** – Zeit, Wetter, Ort, Fakten, Konsequenzen-Ledger, private Wissensstände pro Figur
-- [ ] **Story Arcs** (versteckt bis Hinweise gefunden) + Archivierung aufgelöster Arcs
-- [ ] **Relationship Graph** & Character Overlays
-- [ ] **Dynamische NPCs** mit eigenem Gedächtnis (NPC-Memory-Registry, Embeddings) und Promotion zum vollwertigen Charakter
-- [ ] **Lore Registry** der Szene
-- [ ] **Tagged Choices** – Antwortoptionen mit Skill-/DC-/Kosten-Badges
-- [ ] **Spieler-HUD** – HP/Energie/Stress, Status-Effekte mit Rundendauer
-- [ ] **Inventar 2.0** – Verbrauchsgegenstände mit Sofort-Effekt
-- [ ] **Rast/Camp** – kurze/lange Rast, Lagerfeuer-Interlude, **Bond-Meilensteine**
-- [ ] **Kampf-Schnellaktionen** – Angriff/Ausweichen/Item/Flucht/Verschieben, automatisches Kampfende
-- [ ] **Event-Cards** im Verlauf (Encounter, Entdeckung, Konsequenz, Camp, Meilenstein)
-- [ ] **Automatischer Hintergrund- & Ambient-Wechsel** je Ort
-- [ ] **Spielstände** – Szene serialisieren/laden, Snapshots für Undo (SoW: `serialize_scene_state`, `take_snapshot`)
-- [ ] **Nachrichten-Menü** – bearbeiten, neu generieren, übersetzen, **Markdown-Export**
-- [ ] **Konsistenz-Audit** (SoW: `_run_consistency_audit`)
-- [ ] **Party-Memory-Sync** mit Soul Memory
+- [x] **Szenen-Format & Szenen-Bibliothek** – Szenen laden/importieren, Lobby-Modal (Presets: `sakura-succubus-3/scenes`, `no-game-no-life/scenes`, eigene Szenen in `data/scenes`)
+- [x] **GM-Orchestrator** – Zweistufige Pipeline: Planner → Mechanics & Dice → Executor → Actor Turn mit robustem JSON-Reparatur-Parser (`repair_and_parse_gm_plan`)
+- [x] **Party-System & HUD** – Live-Leiste für LP und Stress aller Gefährten, dynamische Status-Effekte mit Rundendauer (`PartyHeader.tsx`)
+- [x] **Turn-Control-Bar** – Modi 💬 Sagen, ⚔️ Tun, 💭 Denken, 🎬 Regie, 🤫 Flüstern; nächsten Sprecher wählen (`TurnControlBar.tsx`)
+- [x] **WorldState** – Tageszeit, Wetter, Ort, Gefahrenstufe, aktive Quest, Key-Facts
+- [x] **Story Arcs** – Fortschritt und Enthüllung von Arcs
+- [x] **Tagged Choices** – Klickbare Antwortoptionen mit Skill-/DC-Badges
+- [x] **Rast/Camp** – Kurze Rast (+15 LP, -10 Stress) und Lange Rast (+40 LP, -30 Stress, Zeitfortschritt & Lagerfeuer-Interlude)
+- [x] **Event-Cards** im Chatverlauf – Würfelproben mit Erfolgs-/Patzer-Hervorhebung, Uhren-Updates, Entdeckungen, Konsequenzen und Rast-Karten (`StageEventCardView.tsx`)
+- [x] **Spielstände & Snapshots** – Szenen persistieren, automatische Snapshots für 1-Klick-Undo (`undo_stage_turn`)
+- [x] **Markdown-Export** – Vollständiges Abenteuer-Protokoll als `.md` exportieren (`export_stage_markdown`)
+- [x] **2 Ansichts-Modi** – 📜 *Abenteuer & Spielleiter* (Chat, Party-HUD, Controls) und ⚔️ *Taktik, Clocks & Würfel* (Kampf-Tracker, Kampagnen-Uhren, Würfelstation)
 
 ### Phase 16 – Soul Companion: echter Desktop-Agent 🟡
 

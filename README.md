@@ -117,15 +117,21 @@ npm run tauri build
   - Injection Modes: Dedicated separation between passive background context (`## Weltwissen & Kontext`) and active high-priority acting rules (`## Wichtige Handlungs- & Regie-Anweisungen`)
   - Multi-Binding & Global Lorebooks: Unlimited lorebooks bound per character (`bound_lorebooks`) and universal global lorebooks active across all chats
   - Full-Featured Lorebook Manager: In-app editor view with entry search, filter pills, tag chips, and SillyTavern / World Info v2 JSON import and export
-- [x] **Phase 13: Voice, TTS/STT & Voice Call**
-  - Sentence-level streaming TTS with interruption-safe playback queue, output-device selection, Web Audio FFT LipSync and per-character voice profiles
-  - Edge-TTS, ElevenLabs and OpenAI-compatible local/cloud speech backends (Qwen3-TTS, XTTSv2, Silero and AllTalk via sidecars)
-  - Native offline Kokoro 82M through Rust + ONNX Runtime, including an in-app installer for the verified quantized model and eight US/UK voices, custom model/voice paths and a cached inference session (English G2P; no native German profile)
-  - Native offline Whisper transcription through `whisper-rs`/whisper.cpp plus OpenAI-compatible STT endpoints
-  - Microphone selection, local RMS voice-activity detection, push-to-talk and a Listening → Processing → Speaking voice-call state machine with user interruption
-  - Optional RVC post-processing with pitch, index-rate and protect controls through a provider-neutral sidecar contract
-- [ ] **Phases 14–18: Remaining feature parity with Soul of Waifu**
-  - Live2D, AI Game Master (Soul Stage Orchestrator), real companion tools, web client, Discord & packaging
+- [x] **Phase 14: Avatars & 28-Emotion Classifier (Live2D, VRM, LipSync & Downloader)**
+  - Dual Avatar Engine: 3D VRM (Three.js) & 2D Live2D (PixiJS + Cubism 4/2) with smooth zooming, panning, and mouse-look tracking
+  - 28-State Emotion Classifier: Sentiment mapping for both English and German dialogue/actions mapped to dynamic avatar expressions
+  - Audio-driven mouth LipSync matching for both VRM morphs and Live2D audio parameters
+  - In-App Live2D Model Importer (ZIP archive & folder import) and bundled model catalog
+  - Per-character 3D VRM and 2D Live2D model selection with persistent preference saving
+- [x] **Phase 15: Soul Stage (AI Game Master Orchestrator, Party HUD, Scenes & Turn Controls)**
+  - Two-tier GM orchestration pipeline (Planner → Mechanics & Dice → Executor → Actor Turn) with resilient JSON auto-repair
+  - Full Scene Library with preset integration (*Sakura Succubus 3*, *No Game No Life*) and interactive custom scene creation wizard
+  - Party HUD with real-time HP & Stress bars, active condition countdown badges, and Quick / Long Rest (Campfire) recovery
+  - Interactive Turn Control Bar with 5 narrative modes (💬 Say, ⚔️ Do, 💭 Think, 🎬 Direct, 🤫 Whisper), dynamic tagged choices, next-actor routing, and 1-click snapshot undo
+  - Inline Event Cards for deterministic dice checks (with crit animations and DC margin), clock updates, discoveries, consequences, and markdown adventure log export
+  - Switchable view modes: 📜 *Adventure & Game Master* (story log & controls) and ⚔️ *Tactics, Clocks & Dice* (clocks & encounter tracker)
+- [ ] **Phases 16–18: Remaining feature parity with Soul of Waifu**
+  - Real companion desktop tools & OS automation, local web client, Discord gateway, packaging & distribution
   - See **[Roadmap.md](Roadmap.md)** for the full, detailed plan (German)
 
 ---
