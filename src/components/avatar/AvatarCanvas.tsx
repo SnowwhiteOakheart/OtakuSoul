@@ -84,7 +84,7 @@ const MorphingPortrait: React.FC<MorphingPortraitProps> = ({ src, alt, isSpeakin
   }, []);
 
   return (
-    <div className="relative w-full max-w-sm aspect-[4/5] rounded-3xl overflow-hidden border-2 border-purple-500/40 shadow-2xl shadow-purple-500/10 transition-transform duration-700 hover:scale-[1.02]">
+    <div className="relative w-full max-w-sm aspect-[4/5] rounded-3xl overflow-hidden border-2 border-accent-500/40 shadow-2xl shadow-accent-500/10 transition-transform duration-700 hover:scale-[1.02]">
       {layers.map((layerSource, index) => layerSource && (
         <img
           key={`${index}-${layerSource}`}
@@ -100,8 +100,8 @@ const MorphingPortrait: React.FC<MorphingPortraitProps> = ({ src, alt, isSpeakin
       ))}
 
       {isSpeaking && (
-        <div className="absolute top-4 left-4 flex items-center gap-1.5 px-3 py-1 rounded-full bg-purple-900/80 border border-purple-500/60 text-purple-200 text-xs font-mono animate-pulse backdrop-blur">
-          <Sparkles className="w-3.5 h-3.5 text-pink-400 animate-spin" />
+        <div className="absolute top-4 left-4 flex items-center gap-1.5 px-3 py-1 rounded-full bg-accent-900/80 border border-accent-500/60 text-accent-200 text-xs font-mono animate-pulse backdrop-blur">
+          <Sparkles className="w-3.5 h-3.5 text-accent2-400 animate-spin" />
           <span>Spricht...</span>
         </div>
       )}
@@ -174,17 +174,17 @@ export const AvatarCanvas: React.FC<AvatarCanvasProps> = ({
   };
 
   return (
-    <div className="relative w-full h-full flex flex-col items-center justify-center overflow-hidden border-r border-slate-800 bg-slate-950/80">
+    <div className="relative w-full h-full flex flex-col items-center justify-center overflow-hidden border-r border-slate-800 bg-app/80">
       {/* Top Controls: 3-way Mode Selector & Emotion Badge */}
       <div className="absolute top-3 right-3 z-30 flex items-center gap-2">
         {/* Emotion Pill / Tester Dropdown */}
         <div className="relative">
           <button
             onClick={() => setShowEmotionMenu(!showEmotionMenu)}
-            className="flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-slate-900/80 border border-slate-700/60 text-xs backdrop-blur shadow-md hover:bg-slate-800 text-purple-300 font-mono transition-all"
+            className="flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-slate-900/80 border border-slate-700/60 text-xs backdrop-blur shadow-md hover:bg-slate-800 text-accent-300 font-mono transition-all"
             title="Emotionen ansehen / manuell testen"
           >
-            <span className="w-2 h-2 rounded-full bg-purple-400 animate-pulse" />
+            <span className="w-2 h-2 rounded-full bg-accent-400 animate-pulse" />
             <span className="capitalize">{currentEmotion.emotion}</span>
             <ChevronDown className="w-3 h-3 text-slate-400" />
           </button>
@@ -200,12 +200,12 @@ export const AvatarCanvas: React.FC<AvatarCanvasProps> = ({
                   onClick={() => handleSelectManualEmotion(em)}
                   className={`w-full flex items-center justify-between px-2.5 py-1.5 rounded-lg text-left transition-colors ${
                     currentEmotion.emotion === em
-                      ? 'bg-purple-600/30 text-purple-200 font-medium'
+                      ? 'bg-accent-600/30 text-accent-200 font-medium'
                       : 'text-slate-300 hover:bg-slate-800'
                   }`}
                 >
                   <span className="capitalize">{em}</span>
-                  {currentEmotion.emotion === em && <Check className="w-3.5 h-3.5 text-purple-400" />}
+                  {currentEmotion.emotion === em && <Check className="w-3.5 h-3.5 text-accent-400" />}
                 </button>
               ))}
             </div>
@@ -218,7 +218,7 @@ export const AvatarCanvas: React.FC<AvatarCanvasProps> = ({
             onClick={() => setAvatarMode('3d')}
             className={`flex items-center gap-1 px-2.5 py-1 rounded-md text-[11px] font-medium transition-all ${
               avatarMode === '3d'
-                ? 'bg-purple-600 text-white shadow-sm'
+                ? 'bg-accent-600 text-white shadow-sm'
                 : 'text-slate-400 hover:text-slate-200'
             }`}
             title="3D VRM-Avatar aktivieren"
@@ -231,7 +231,7 @@ export const AvatarCanvas: React.FC<AvatarCanvasProps> = ({
             onClick={() => setAvatarMode('live2d')}
             className={`flex items-center gap-1 px-2.5 py-1 rounded-md text-[11px] font-medium transition-all ${
               avatarMode === 'live2d'
-                ? 'bg-purple-600 text-white shadow-sm'
+                ? 'bg-accent-600 text-white shadow-sm'
                 : 'text-slate-400 hover:text-slate-200'
             }`}
             title="2D Live2D-Avatar aktivieren"
@@ -244,7 +244,7 @@ export const AvatarCanvas: React.FC<AvatarCanvasProps> = ({
             onClick={() => setAvatarMode('2d')}
             className={`flex items-center gap-1 px-2.5 py-1 rounded-md text-[11px] font-medium transition-all ${
               avatarMode === '2d'
-                ? 'bg-purple-600 text-white shadow-sm'
+                ? 'bg-accent-600 text-white shadow-sm'
                 : 'text-slate-400 hover:text-slate-200'
             }`}
             title="2D Porträt-Bild aktivieren"
@@ -275,7 +275,7 @@ export const AvatarCanvas: React.FC<AvatarCanvasProps> = ({
           </Suspense>
         ) : (
           <div className="flex flex-col items-center justify-center p-6 text-center text-slate-400">
-            <Smile className="w-12 h-12 text-purple-400/50 mb-2" />
+            <Smile className="w-12 h-12 text-accent-400/50 mb-2" />
             <p className="text-sm font-semibold text-slate-200">Kein Live2D-Modell gefunden</p>
             <p className="text-xs text-slate-500 mt-1 max-w-xs">
               Wähle in der Charakter-Bibliothek ein Live2D-Modell für diesen Charakter aus.
@@ -284,18 +284,18 @@ export const AvatarCanvas: React.FC<AvatarCanvasProps> = ({
         )
       ) : (
         /* 2D Portrait / Expression Sprite Mode */
-        <div className="relative w-full h-full flex flex-col items-center justify-center p-6 bg-gradient-to-b from-slate-900/60 via-purple-950/30 to-slate-950">
+        <div className="relative w-full h-full flex flex-col items-center justify-center p-6 bg-gradient-to-b from-slate-900/60 via-accent-950/30 to-app">
           {emotionImage ? (
             <MorphingPortrait src={emotionImage} alt={charName} isSpeaking={isSpeaking} />
           ) : (
-            <div className="w-48 h-48 rounded-full bg-gradient-to-tr from-purple-600 to-pink-600 flex items-center justify-center text-white text-5xl font-bold border-4 border-purple-500/50 shadow-2xl">
+            <div className="w-48 h-48 rounded-full bg-gradient-to-tr from-accent-600 to-accent2-600 flex items-center justify-center text-white text-5xl font-bold border-4 border-accent-500/50 shadow-2xl">
               {charName.charAt(0)}
             </div>
           )}
 
           <div className="mt-4 text-center">
             <h3 className="text-lg font-bold text-slate-100">{charName}</h3>
-            <p className="text-xs text-purple-300/80 font-mono mt-0.5">
+            <p className="text-xs text-accent-300/80 font-mono mt-0.5">
               {character?.card.data.personality || '2D Anime Avatar Mode'}
             </p>
           </div>

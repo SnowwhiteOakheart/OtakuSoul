@@ -209,9 +209,9 @@ export const CharacterEditorModal = ({
     <div className="fixed inset-0 z-50 bg-black/80 backdrop-blur-sm flex items-center justify-center p-4">
       <div className="bg-slate-900 border border-slate-700/80 rounded-2xl w-full max-w-4xl max-h-[92vh] flex flex-col shadow-2xl overflow-hidden">
         {/* Header */}
-        <div className="px-6 py-4 border-b border-slate-800 flex items-center justify-between bg-slate-950/60">
+        <div className="px-6 py-4 border-b border-slate-800 flex items-center justify-between bg-app/60">
           <div className="flex items-center gap-3">
-            <div className="w-9 h-9 rounded-lg bg-purple-600/20 border border-purple-500/30 flex items-center justify-center text-purple-400">
+            <div className="w-9 h-9 rounded-lg bg-accent-600/20 border border-accent-500/30 flex items-center justify-center text-accent-400">
               <Sparkles className="w-5 h-5" />
             </div>
             <div>
@@ -235,7 +235,7 @@ export const CharacterEditorModal = ({
             onClick={() => setActiveTab('basics')}
             className={`flex items-center gap-2 px-4 py-2 border-b-2 text-xs font-semibold transition-all ${
               activeTab === 'basics'
-                ? 'border-purple-500 text-purple-300'
+                ? 'border-accent-500 text-accent-300'
                 : 'border-transparent text-slate-400 hover:text-slate-200'
             }`}
           >
@@ -246,7 +246,7 @@ export const CharacterEditorModal = ({
             onClick={() => setActiveTab('expressions')}
             className={`flex shrink-0 items-center gap-2 px-4 py-2 border-b-2 text-xs font-semibold transition-all ${
               activeTab === 'expressions'
-                ? 'border-purple-500 text-purple-300'
+                ? 'border-accent-500 text-accent-300'
                 : 'border-transparent text-slate-400 hover:text-slate-200'
             }`}
           >
@@ -257,7 +257,7 @@ export const CharacterEditorModal = ({
             onClick={() => setActiveTab('prompts')}
             className={`flex items-center gap-2 px-4 py-2 border-b-2 text-xs font-semibold transition-all ${
               activeTab === 'prompts'
-                ? 'border-purple-500 text-purple-300'
+                ? 'border-accent-500 text-accent-300'
                 : 'border-transparent text-slate-400 hover:text-slate-200'
             }`}
           >
@@ -268,7 +268,7 @@ export const CharacterEditorModal = ({
             onClick={() => setActiveTab('greetings')}
             className={`flex items-center gap-2 px-4 py-2 border-b-2 text-xs font-semibold transition-all ${
               activeTab === 'greetings'
-                ? 'border-purple-500 text-purple-300'
+                ? 'border-accent-500 text-accent-300'
                 : 'border-transparent text-slate-400 hover:text-slate-200'
             }`}
           >
@@ -279,7 +279,7 @@ export const CharacterEditorModal = ({
             onClick={() => setActiveTab('lorebooks')}
             className={`flex items-center gap-2 px-4 py-2 border-b-2 text-xs font-semibold transition-all ${
               activeTab === 'lorebooks'
-                ? 'border-purple-500 text-purple-300'
+                ? 'border-accent-500 text-accent-300'
                 : 'border-transparent text-slate-400 hover:text-slate-200'
             }`}
           >
@@ -290,7 +290,7 @@ export const CharacterEditorModal = ({
             onClick={() => setActiveTab('raw')}
             className={`flex items-center gap-2 px-4 py-2 border-b-2 text-xs font-semibold transition-all ${
               activeTab === 'raw'
-                ? 'border-purple-500 text-purple-300'
+                ? 'border-accent-500 text-accent-300'
                 : 'border-transparent text-slate-400 hover:text-slate-200'
             }`}
           >
@@ -312,7 +312,7 @@ export const CharacterEditorModal = ({
             <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
               {/* Avatar Column */}
               <div className="flex flex-col items-center gap-3">
-                <div className="w-44 h-44 rounded-2xl bg-slate-950 border-2 border-dashed border-slate-700/80 flex items-center justify-center overflow-hidden relative group">
+                <div className="w-44 h-44 rounded-2xl bg-app border-2 border-dashed border-slate-700/80 flex items-center justify-center overflow-hidden relative group">
                   {avatarDataUrl ? (
                     <img
                       src={avatarDataUrl}
@@ -356,7 +356,7 @@ export const CharacterEditorModal = ({
                   <select
                     value={vrmPath}
                     onChange={(e) => setVrmPath(e.target.value)}
-                    className="w-full bg-slate-950 border border-slate-700/80 rounded-lg px-2 py-1.5 text-xs text-slate-100 focus:outline-none focus:border-purple-500 transition-colors"
+                    className="w-full bg-app border border-slate-700/80 rounded-lg px-2 py-1.5 text-xs text-slate-100 focus:outline-none focus:border-accent-500 transition-colors"
                   >
                     <option value="">-- Standard (aus Einstellungen) --</option>
                     {scannedVrms.map((vrm) => (
@@ -372,7 +372,7 @@ export const CharacterEditorModal = ({
                   <select
                     value={live2dModel}
                     onChange={(e) => setLive2dModel(e.target.value)}
-                    className="w-full bg-slate-950 border border-slate-700/80 rounded-lg px-2 py-1.5 text-xs text-slate-100 focus:outline-none focus:border-purple-500 transition-colors"
+                    className="w-full bg-app border border-slate-700/80 rounded-lg px-2 py-1.5 text-xs text-slate-100 focus:outline-none focus:border-accent-500 transition-colors"
                   >
                     <option value="">-- Kein Live2D-Modell --</option>
                     {scannedLive2ds.map((l2d) => (
@@ -395,7 +395,7 @@ export const CharacterEditorModal = ({
                     value={name}
                     onChange={(e) => setName(e.target.value)}
                     placeholder="z. B. Makise Kurisu"
-                    className="w-full px-3 py-2 bg-slate-950 border border-slate-800 rounded-xl text-slate-200 placeholder-slate-500 focus:outline-none focus:border-purple-500"
+                    className="w-full px-3 py-2 bg-app border border-slate-800 rounded-xl text-slate-200 placeholder-slate-500 focus:outline-none focus:border-accent-500"
                   />
                 </div>
 
@@ -408,7 +408,7 @@ export const CharacterEditorModal = ({
                     value={title}
                     onChange={(e) => setTitle(e.target.value)}
                     placeholder="z. B. Geniale Neurowissenschaftlerin"
-                    className="w-full px-3 py-2 bg-slate-950 border border-slate-800 rounded-xl text-slate-200 placeholder-slate-500 focus:outline-none focus:border-purple-500"
+                    className="w-full px-3 py-2 bg-app border border-slate-800 rounded-xl text-slate-200 placeholder-slate-500 focus:outline-none focus:border-accent-500"
                   />
                 </div>
 
@@ -421,7 +421,7 @@ export const CharacterEditorModal = ({
                     value={tagsStr}
                     onChange={(e) => setTagsStr(e.target.value)}
                     placeholder="Anime, Tsundere, Sci-Fi, Steins;Gate"
-                    className="w-full px-3 py-2 bg-slate-950 border border-slate-800 rounded-xl text-slate-200 placeholder-slate-500 focus:outline-none focus:border-purple-500"
+                    className="w-full px-3 py-2 bg-app border border-slate-800 rounded-xl text-slate-200 placeholder-slate-500 focus:outline-none focus:border-accent-500"
                   />
                 </div>
 
@@ -434,7 +434,7 @@ export const CharacterEditorModal = ({
                     value={creatorNotes}
                     onChange={(e) => setCreatorNotes(e.target.value)}
                     placeholder="Optionale Notizen des Autors"
-                    className="w-full px-3 py-2 bg-slate-950 border border-slate-800 rounded-xl text-slate-200 placeholder-slate-500 focus:outline-none focus:border-purple-500"
+                    className="w-full px-3 py-2 bg-app border border-slate-800 rounded-xl text-slate-200 placeholder-slate-500 focus:outline-none focus:border-accent-500"
                   />
                 </div>
               </div>
@@ -444,7 +444,7 @@ export const CharacterEditorModal = ({
           {/* TAB 2: Optional 2D expression portraits */}
           {activeTab === 'expressions' && (
             <div className="space-y-4">
-              <div className="p-3 rounded-xl border border-purple-500/30 bg-purple-500/10 text-xs text-purple-100">
+              <div className="p-3 rounded-xl border border-accent-500/30 bg-accent-500/10 text-xs text-accent-100">
                 Hinterlege nur die Stimmungen, für die du eigene Bilder verwenden möchtest. Fehlt ein Bild,
                 nutzt OtakuSoul automatisch „Neutral“ oder den normalen Avatar. Mit nur einem Avatar ändert
                 sich die Darstellung nicht.
@@ -459,7 +459,7 @@ export const CharacterEditorModal = ({
                   return (
                     <div
                       key={mood.key}
-                      className="rounded-2xl border border-slate-800 bg-slate-950/60 overflow-hidden"
+                      className="rounded-2xl border border-slate-800 bg-app/60 overflow-hidden"
                     >
                       <div className="relative aspect-[4/5] bg-slate-900 flex items-center justify-center overflow-hidden group">
                         {previewImage || fallbackImage ? (
@@ -479,7 +479,7 @@ export const CharacterEditorModal = ({
                           {storedImage ? 'Bild ändern' : 'Bild auswählen'}
                         </button>
                         {!previewImage && fallbackImage && (
-                          <span className="absolute bottom-2 left-2 px-2 py-1 rounded-md bg-slate-950/80 text-[10px] text-slate-300">
+                          <span className="absolute bottom-2 left-2 px-2 py-1 rounded-md bg-app/80 text-[10px] text-slate-300">
                             Standard-Avatar
                           </span>
                         )}
@@ -523,7 +523,7 @@ export const CharacterEditorModal = ({
                   value={description}
                   onChange={(e) => setDescription(e.target.value)}
                   placeholder="Aussehen, Herkunft, Kleidung, Hintergrundgeschichte..."
-                  className="w-full px-3 py-2 bg-slate-950 border border-slate-800 rounded-xl text-slate-200 placeholder-slate-500 focus:outline-none focus:border-purple-500 resize-y"
+                  className="w-full px-3 py-2 bg-app border border-slate-800 rounded-xl text-slate-200 placeholder-slate-500 focus:outline-none focus:border-accent-500 resize-y"
                 />
               </div>
 
@@ -536,7 +536,7 @@ export const CharacterEditorModal = ({
                   value={personality}
                   onChange={(e) => setPersonality(e.target.value)}
                   placeholder="Charakterzüge, Manierismen, Stärken, Schwächen..."
-                  className="w-full px-3 py-2 bg-slate-950 border border-slate-800 rounded-xl text-slate-200 placeholder-slate-500 focus:outline-none focus:border-purple-500 resize-y"
+                  className="w-full px-3 py-2 bg-app border border-slate-800 rounded-xl text-slate-200 placeholder-slate-500 focus:outline-none focus:border-accent-500 resize-y"
                 />
               </div>
 
@@ -549,7 +549,7 @@ export const CharacterEditorModal = ({
                   value={scenario}
                   onChange={(e) => setScenario(e.target.value)}
                   placeholder="Der aktuelle Ort und die Ausgangssituation des Rollenspiels..."
-                  className="w-full px-3 py-2 bg-slate-950 border border-slate-800 rounded-xl text-slate-200 placeholder-slate-500 focus:outline-none focus:border-purple-500 resize-y"
+                  className="w-full px-3 py-2 bg-app border border-slate-800 rounded-xl text-slate-200 placeholder-slate-500 focus:outline-none focus:border-accent-500 resize-y"
                 />
               </div>
 
@@ -562,7 +562,7 @@ export const CharacterEditorModal = ({
                   value={mesExample}
                   onChange={(e) => setMesExample(e.target.value)}
                   placeholder="<START>&#10;{{user}}: Hallo Kurisu!&#10;{{char}}: *sieht von ihren Papieren auf* Was gibt es denn schon wieder?"
-                  className="w-full px-3 py-2 bg-slate-950 border border-slate-800 rounded-xl text-slate-200 font-mono text-xs placeholder-slate-500 focus:outline-none focus:border-purple-500 resize-y"
+                  className="w-full px-3 py-2 bg-app border border-slate-800 rounded-xl text-slate-200 font-mono text-xs placeholder-slate-500 focus:outline-none focus:border-accent-500 resize-y"
                 />
               </div>
 
@@ -575,7 +575,7 @@ export const CharacterEditorModal = ({
                   value={systemPrompt}
                   onChange={(e) => setSystemPrompt(e.target.value)}
                   placeholder="Überschreibt oder ergänzt die Standard-Verhaltensregeln für diese Figur..."
-                  className="w-full px-3 py-2 bg-slate-950 border border-slate-800 rounded-xl text-slate-200 font-mono text-xs placeholder-slate-500 focus:outline-none focus:border-purple-500 resize-y"
+                  className="w-full px-3 py-2 bg-app border border-slate-800 rounded-xl text-slate-200 font-mono text-xs placeholder-slate-500 focus:outline-none focus:border-accent-500 resize-y"
                 />
               </div>
             </div>
@@ -593,7 +593,7 @@ export const CharacterEditorModal = ({
                   value={firstMes}
                   onChange={(e) => setFirstMes(e.target.value)}
                   placeholder="*betritt den Raum und blickt dich neugierig an* Guten Tag..."
-                  className="w-full px-3 py-2 bg-slate-950 border border-slate-800 rounded-xl text-slate-200 placeholder-slate-500 focus:outline-none focus:border-purple-500 resize-y"
+                  className="w-full px-3 py-2 bg-app border border-slate-800 rounded-xl text-slate-200 placeholder-slate-500 focus:outline-none focus:border-accent-500 resize-y"
                 />
               </div>
 
@@ -605,7 +605,7 @@ export const CharacterEditorModal = ({
                   {alternateGreetings.map((greeting, idx) => (
                     <div
                       key={idx}
-                      className="p-3 bg-slate-950 border border-slate-800 rounded-xl flex items-start justify-between gap-3 text-xs"
+                      className="p-3 bg-app border border-slate-800 rounded-xl flex items-start justify-between gap-3 text-xs"
                     >
                       <span className="text-slate-300 flex-1 whitespace-pre-wrap">{greeting}</span>
                       <button
@@ -625,12 +625,12 @@ export const CharacterEditorModal = ({
                     value={newGreeting}
                     onChange={(e) => setNewGreeting(e.target.value)}
                     placeholder="Neue alternative Begrüßung eingeben..."
-                    className="flex-1 px-3 py-2 bg-slate-950 border border-slate-800 rounded-xl text-slate-200 text-xs placeholder-slate-500 focus:outline-none focus:border-purple-500 resize-y"
+                    className="flex-1 px-3 py-2 bg-app border border-slate-800 rounded-xl text-slate-200 text-xs placeholder-slate-500 focus:outline-none focus:border-accent-500 resize-y"
                   />
                   <button
                     type="button"
                     onClick={handleAddGreeting}
-                    className="px-4 bg-purple-600/30 hover:bg-purple-600/50 text-purple-300 border border-purple-500/40 rounded-xl flex items-center gap-1.5 text-xs font-semibold transition-colors"
+                    className="px-4 bg-accent-600/30 hover:bg-accent-600/50 text-accent-300 border border-accent-500/40 rounded-xl flex items-center gap-1.5 text-xs font-semibold transition-colors"
                   >
                     <Plus className="w-4 h-4" />
                     <span>Hinzufügen</span>
@@ -643,11 +643,11 @@ export const CharacterEditorModal = ({
           {/* TAB 5: Lorebooks Binding */}
           {activeTab === 'lorebooks' && (
             <div className="space-y-4">
-              <div className="p-3 bg-purple-500/10 border border-purple-500/30 rounded-xl text-xs text-purple-200 flex items-center justify-between">
+              <div className="p-3 bg-accent-500/10 border border-accent-500/30 rounded-xl text-xs text-accent-200 flex items-center justify-between">
                 <div>
                   <span className="font-bold">Multi-Lorebook Binding:</span> Wähle aus, welche Lorebooks aktiv mit diesem Charakter verknüpft sein sollen.
                 </div>
-                <span className="font-mono text-purple-300 font-bold">{boundLorebooks.length} gebunden</span>
+                <span className="font-mono text-accent-300 font-bold">{boundLorebooks.length} gebunden</span>
               </div>
 
               <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
@@ -674,8 +674,8 @@ export const CharacterEditorModal = ({
                       }}
                       className={`p-3.5 rounded-xl border cursor-pointer transition-all ${
                         isBound
-                          ? 'bg-purple-600/15 border-purple-500/60 shadow-sm'
-                          : 'bg-slate-950/60 border-slate-800 hover:border-slate-700'
+                          ? 'bg-accent-600/15 border-accent-500/60 shadow-sm'
+                          : 'bg-app/60 border-slate-800 hover:border-slate-700'
                       }`}
                     >
                       <div className="flex items-start justify-between gap-2 mb-1.5">
@@ -684,7 +684,7 @@ export const CharacterEditorModal = ({
                             type="checkbox"
                             checked={isBound}
                             readOnly
-                            className="rounded bg-slate-900 border-slate-700 text-purple-600 focus:ring-0 pointer-events-none"
+                            className="rounded bg-slate-900 border-slate-700 text-accent-600 focus:ring-0 pointer-events-none"
                           />
                           <span className="text-xs font-bold text-slate-100">{lb.name}</span>
                         </div>
@@ -711,7 +711,7 @@ export const CharacterEditorModal = ({
           {/* TAB 6: Raw JSON Preview */}
           {activeTab === 'raw' && (
             <div>
-              <pre className="p-4 bg-slate-950 border border-slate-800 rounded-xl font-mono text-xs text-purple-300 max-h-96 overflow-y-auto">
+              <pre className="p-4 bg-app border border-slate-800 rounded-xl font-mono text-xs text-accent-300 max-h-96 overflow-y-auto">
                 {JSON.stringify(
                   {
                     spec: 'chara_card_v2',
@@ -747,7 +747,7 @@ export const CharacterEditorModal = ({
         </div>
 
         {/* Modal Footer */}
-        <div className="px-6 py-4 border-t border-slate-800 bg-slate-950/80 flex items-center justify-between">
+        <div className="px-6 py-4 border-t border-slate-800 bg-app/80 flex items-center justify-between">
           <button
             type="button"
             onClick={onClose}
@@ -759,7 +759,7 @@ export const CharacterEditorModal = ({
             type="button"
             onClick={handleSave}
             disabled={isSaving}
-            className="px-5 py-2 rounded-xl bg-purple-600 hover:bg-purple-500 text-white font-semibold text-xs flex items-center gap-2 shadow-lg shadow-purple-900/30 transition-all disabled:opacity-50"
+            className="px-5 py-2 rounded-xl bg-accent-600 hover:bg-accent-500 text-white font-semibold text-xs flex items-center gap-2 shadow-lg shadow-accent-900/30 transition-all disabled:opacity-50"
           >
             <Save className="w-4 h-4" />
             <span>{isSaving ? 'Wird gespeichert...' : 'Charakter speichern'}</span>

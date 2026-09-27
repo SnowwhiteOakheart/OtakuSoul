@@ -246,15 +246,15 @@ export const SceneLobbyModal: React.FC<SceneLobbyModalProps> = ({
       <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/80 backdrop-blur-md p-4 overflow-y-auto">
         <div className="w-full max-w-5xl bg-slate-900 border border-slate-700/80 rounded-2xl shadow-2xl overflow-hidden my-6 flex flex-col max-h-[88vh]">
           {/* Header */}
-          <div className="flex items-center justify-between p-4 sm:p-5 border-b border-slate-800 bg-slate-950/80">
+          <div className="flex items-center justify-between p-4 sm:p-5 border-b border-slate-800 bg-app/80">
             <div className="flex items-center gap-3">
-              <div className="p-2.5 rounded-xl bg-purple-500/10 border border-purple-500/20 text-purple-400">
+              <div className="p-2.5 rounded-xl bg-accent-500/10 border border-accent-500/20 text-accent-400">
                 <Compass className="w-6 h-6" />
               </div>
               <div>
                 <h3 className="text-base font-bold text-slate-100 flex items-center gap-2">
                   Soul Stage — Szenen & Ordner
-                  <span className="text-[10px] px-2 py-0.5 rounded-full bg-purple-900/60 border border-purple-500/30 text-purple-300 font-mono">
+                  <span className="text-[10px] px-2 py-0.5 rounded-full bg-accent-900/60 border border-accent-500/30 text-accent-300 font-mono">
                     {stageScenes.length} Abenteuer
                   </span>
                 </h3>
@@ -278,7 +278,7 @@ export const SceneLobbyModal: React.FC<SceneLobbyModalProps> = ({
                 title="Szenen-JSON importieren"
                 className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-200 border border-slate-700 text-xs font-semibold transition"
               >
-                <Upload className="w-3.5 h-3.5 text-purple-400" />
+                <Upload className="w-3.5 h-3.5 text-accent-400" />
                 <span>JSON Importieren</span>
               </button>
 
@@ -295,7 +295,7 @@ export const SceneLobbyModal: React.FC<SceneLobbyModalProps> = ({
 
               <button
                 onClick={() => setShowCreateModal(true)}
-                className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-purple-600 hover:bg-purple-500 text-white text-xs font-semibold shadow-md shadow-purple-950/40 transition"
+                className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-accent-600 hover:bg-accent-500 text-white text-xs font-semibold shadow-md shadow-accent-950/40 transition"
               >
                 <Plus className="w-3.5 h-3.5" />
                 <span>Neue Szene</span>
@@ -311,10 +311,10 @@ export const SceneLobbyModal: React.FC<SceneLobbyModalProps> = ({
           </div>
 
           {/* Folder Pills Bar */}
-          <div className="px-4 py-2.5 bg-slate-950/90 border-b border-slate-800/90 flex items-center justify-between gap-2 overflow-x-auto">
+          <div className="px-4 py-2.5 bg-app/90 border-b border-slate-800/90 flex items-center justify-between gap-2 overflow-x-auto">
             <div className="flex items-center gap-2 overflow-x-auto pb-1 sm:pb-0 scrollbar-none">
               <span className="text-[11px] font-semibold text-slate-400 uppercase tracking-wider flex items-center gap-1 mr-1 flex-shrink-0">
-                <Folder className="w-3.5 h-3.5 text-purple-400" /> Ordner:
+                <Folder className="w-3.5 h-3.5 text-accent-400" /> Ordner:
               </span>
               {allFolders.map((fName) => {
                 const count = scenesInFolder(fName).length;
@@ -329,7 +329,7 @@ export const SceneLobbyModal: React.FC<SceneLobbyModalProps> = ({
                       isSelected
                         ? isNgnl
                           ? 'bg-amber-600 text-white shadow-sm shadow-amber-900/40'
-                          : 'bg-purple-600 text-white shadow-sm shadow-purple-900/40'
+                          : 'bg-accent-600 text-white shadow-sm shadow-accent-900/40'
                         : isNgnl
                         ? 'bg-amber-950/30 text-amber-300 hover:bg-amber-900/40 border border-amber-500/30'
                         : 'bg-slate-900 text-slate-300 hover:bg-slate-800 border border-slate-800'
@@ -352,7 +352,7 @@ export const SceneLobbyModal: React.FC<SceneLobbyModalProps> = ({
               <button
                 onClick={() => setShowNewFolderModal(true)}
                 title="Neuen Szenenordner erstellen"
-                className="flex items-center gap-1 px-2.5 py-1 rounded-xl bg-slate-900/80 hover:bg-purple-900/40 text-purple-300 border border-purple-500/30 text-xs font-semibold transition flex-shrink-0"
+                className="flex items-center gap-1 px-2.5 py-1 rounded-xl bg-slate-900/80 hover:bg-accent-900/40 text-accent-300 border border-accent-500/30 text-xs font-semibold transition flex-shrink-0"
               >
                 <FolderPlus className="w-3.5 h-3.5" />
                 <span>+ Ordner</span>
@@ -374,13 +374,13 @@ export const SceneLobbyModal: React.FC<SceneLobbyModalProps> = ({
           </div>
 
           {/* Filters & Search */}
-          <div className="flex flex-wrap items-center justify-between gap-3 p-3.5 border-b border-slate-800 bg-slate-950/40">
-            <div className="flex items-center gap-1.5 p-1 rounded-xl bg-slate-950 border border-slate-800 text-xs">
+          <div className="flex flex-wrap items-center justify-between gap-3 p-3.5 border-b border-slate-800 bg-app/40">
+            <div className="flex items-center gap-1.5 p-1 rounded-xl bg-app border border-slate-800 text-xs">
               <button
                 onClick={() => setFilterType('all')}
                 className={`px-3 py-1 rounded-lg font-medium transition ${
                   filterType === 'all'
-                    ? 'bg-purple-600 text-white'
+                    ? 'bg-accent-600 text-white'
                     : 'text-slate-400 hover:text-slate-200'
                 }`}
               >
@@ -390,7 +390,7 @@ export const SceneLobbyModal: React.FC<SceneLobbyModalProps> = ({
                 onClick={() => setFilterType('presets')}
                 className={`px-3 py-1 rounded-lg font-medium transition ${
                   filterType === 'presets'
-                    ? 'bg-purple-600 text-white'
+                    ? 'bg-accent-600 text-white'
                     : 'text-slate-400 hover:text-slate-200'
                 }`}
               >
@@ -400,7 +400,7 @@ export const SceneLobbyModal: React.FC<SceneLobbyModalProps> = ({
                 onClick={() => setFilterType('custom')}
                 className={`px-3 py-1 rounded-lg font-medium transition ${
                   filterType === 'custom'
-                    ? 'bg-purple-600 text-white'
+                    ? 'bg-accent-600 text-white'
                     : 'text-slate-400 hover:text-slate-200'
                 }`}
               >
@@ -415,7 +415,7 @@ export const SceneLobbyModal: React.FC<SceneLobbyModalProps> = ({
                 value={search}
                 onChange={(e) => setSearch(e.target.value)}
                 placeholder="Szene, Kapitel oder Ort durchsuchen..."
-                className="w-full pl-8 pr-3 py-1.5 bg-slate-950 border border-slate-800 rounded-xl text-xs text-slate-200 placeholder-slate-500 focus:outline-none focus:border-purple-500"
+                className="w-full pl-8 pr-3 py-1.5 bg-app border border-slate-800 rounded-xl text-xs text-slate-200 placeholder-slate-500 focus:outline-none focus:border-accent-500"
               />
             </div>
           </div>
@@ -433,26 +433,26 @@ export const SceneLobbyModal: React.FC<SceneLobbyModalProps> = ({
                   onClick={() => handleSceneClick(sc)}
                   className={`group relative flex flex-col justify-between p-4 rounded-2xl border transition-all cursor-pointer ${
                     isCurrent
-                      ? 'bg-purple-950/20 border-purple-500/60 shadow-lg shadow-purple-950/30 ring-1 ring-purple-500/40'
-                      : 'bg-slate-950/50 border-slate-800/80 hover:bg-slate-800/40 hover:border-slate-700'
+                      ? 'bg-accent-950/20 border-accent-500/60 shadow-lg shadow-accent-950/30 ring-1 ring-accent-500/40'
+                      : 'bg-app/50 border-slate-800/80 hover:bg-slate-800/40 hover:border-slate-700'
                   }`}
                 >
                   <div>
                     {/* Top Row: Badges */}
                     <div className="flex items-center justify-between gap-2 mb-2">
                       <div className="flex flex-wrap items-center gap-1.5">
-                        <span className="text-[10px] px-2 py-0.5 rounded-full bg-slate-900 border border-slate-700 text-purple-300 font-semibold flex items-center gap-1">
+                        <span className="text-[10px] px-2 py-0.5 rounded-full bg-slate-900 border border-slate-700 text-accent-300 font-semibold flex items-center gap-1">
                           <Film className="w-3 h-3" />
                           {sc.is_preset ? 'Offizielles Preset' : 'Eigene Szene'}
                         </span>
                         {sc.folder && (
-                          <span className="text-[10px] px-2 py-0.5 rounded-full bg-slate-900 border border-purple-900/60 text-amber-300 font-medium flex items-center gap-1">
+                          <span className="text-[10px] px-2 py-0.5 rounded-full bg-slate-900 border border-accent-900/60 text-amber-300 font-medium flex items-center gap-1">
                             <Folder className="w-2.5 h-2.5" />
                             {sc.folder}
                           </span>
                         )}
                         {sc.gm_tone && (
-                          <span className="text-[10px] px-2 py-0.5 rounded-full bg-purple-950/60 border border-purple-500/30 text-purple-300 font-mono">
+                          <span className="text-[10px] px-2 py-0.5 rounded-full bg-accent-950/60 border border-accent-500/30 text-accent-300 font-mono">
                             {sc.gm_tone}
                           </span>
                         )}
@@ -474,7 +474,7 @@ export const SceneLobbyModal: React.FC<SceneLobbyModalProps> = ({
                     </div>
 
                     {/* Title & Description */}
-                    <h4 className="text-sm font-bold text-slate-100 group-hover:text-purple-300 transition-colors mb-1">
+                    <h4 className="text-sm font-bold text-slate-100 group-hover:text-accent-300 transition-colors mb-1">
                       {sc.title}
                     </h4>
                     <p className="text-xs text-slate-400 line-clamp-2 mb-3">
@@ -507,8 +507,8 @@ export const SceneLobbyModal: React.FC<SceneLobbyModalProps> = ({
                       }}
                       className={`flex items-center gap-1.5 px-3 py-1 rounded-lg text-xs font-semibold transition ${
                         isCurrent
-                          ? 'bg-purple-600/30 text-purple-300 border border-purple-500/40'
-                          : 'bg-purple-600 hover:bg-purple-500 text-white'
+                          ? 'bg-accent-600/30 text-accent-300 border border-accent-500/40'
+                          : 'bg-accent-600 hover:bg-accent-500 text-white'
                       }`}
                     >
                       <Play className="w-3 h-3" />
@@ -548,7 +548,7 @@ export const SceneLobbyModal: React.FC<SceneLobbyModalProps> = ({
                             onClick={(e) => handleExportJson(e, sc.id, sc.title)}
                             className="w-full text-left flex items-center gap-2 px-2.5 py-1.5 rounded-lg hover:bg-slate-800 text-slate-300 text-xs transition"
                           >
-                            <Download className="w-3.5 h-3.5 text-purple-400" />
+                            <Download className="w-3.5 h-3.5 text-accent-400" />
                             <span>JSON exportieren</span>
                           </button>
 
@@ -556,7 +556,7 @@ export const SceneLobbyModal: React.FC<SceneLobbyModalProps> = ({
                             onClick={(e) => handleExportMarkdown(e, sc.id, sc.title)}
                             className="w-full text-left flex items-center gap-2 px-2.5 py-1.5 rounded-lg hover:bg-slate-800 text-slate-300 text-xs transition"
                           >
-                            <Download className="w-3.5 h-3.5 text-purple-400" />
+                            <Download className="w-3.5 h-3.5 text-accent-400" />
                             <span>Markdown exportieren</span>
                           </button>
 
@@ -591,7 +591,7 @@ export const SceneLobbyModal: React.FC<SceneLobbyModalProps> = ({
                 <p>Keine Rollenspiel-Szenen in diesem Ordner gefunden.</p>
                 <button
                   onClick={() => setShowCreateModal(true)}
-                  className="px-3 py-1.5 rounded-xl bg-purple-600 text-white text-xs font-semibold inline-flex items-center gap-1.5"
+                  className="px-3 py-1.5 rounded-xl bg-accent-600 text-white text-xs font-semibold inline-flex items-center gap-1.5"
                 >
                   <Plus className="w-3.5 h-3.5" />
                   Neue Szene erstellen
@@ -605,9 +605,9 @@ export const SceneLobbyModal: React.FC<SceneLobbyModalProps> = ({
       {/* Fortsetzen vs. Neu starten Modal */}
       {sceneToResume && (
         <div className="fixed inset-0 z-60 flex items-center justify-center bg-black/85 backdrop-blur-md p-4">
-          <div className="w-full max-w-md bg-slate-900 border border-purple-500/50 rounded-2xl p-5 shadow-2xl space-y-4">
+          <div className="w-full max-w-md bg-slate-900 border border-accent-500/50 rounded-2xl p-5 shadow-2xl space-y-4">
             <div className="flex items-center gap-3">
-              <div className="p-2.5 rounded-xl bg-purple-600/20 text-purple-400">
+              <div className="p-2.5 rounded-xl bg-accent-600/20 text-accent-400">
                 <History className="w-6 h-6" />
               </div>
               <div>
@@ -640,7 +640,7 @@ export const SceneLobbyModal: React.FC<SceneLobbyModalProps> = ({
 
               <button
                 onClick={handleResumeConfirmed}
-                className="px-4 py-1.5 rounded-xl bg-purple-600 hover:bg-purple-500 text-white text-xs font-semibold flex items-center gap-1.5 shadow-md shadow-purple-950/40 transition"
+                className="px-4 py-1.5 rounded-xl bg-accent-600 hover:bg-accent-500 text-white text-xs font-semibold flex items-center gap-1.5 shadow-md shadow-accent-950/40 transition"
               >
                 <Play className="w-3.5 h-3.5" />
                 <span>Fortsetzen</span>
@@ -655,7 +655,7 @@ export const SceneLobbyModal: React.FC<SceneLobbyModalProps> = ({
         <div className="fixed inset-0 z-60 flex items-center justify-center bg-black/85 backdrop-blur-md p-4">
           <div className="w-full max-w-sm bg-slate-900 border border-slate-700 rounded-2xl p-5 shadow-2xl space-y-4">
             <div className="flex items-center gap-2">
-              <FolderPlus className="w-5 h-5 text-purple-400" />
+              <FolderPlus className="w-5 h-5 text-accent-400" />
               <h4 className="text-sm font-bold text-slate-100">Neuen Szenenordner erstellen</h4>
             </div>
 
@@ -666,7 +666,7 @@ export const SceneLobbyModal: React.FC<SceneLobbyModalProps> = ({
               onChange={(e) => setNewFolderName(e.target.value)}
               onKeyDown={(e) => e.key === 'Enter' && handleCreateFolder()}
               placeholder="z.B. No Game No Life, Fantasy Kampagne..."
-              className="w-full px-3 py-2 bg-slate-950 border border-slate-800 rounded-xl text-xs text-slate-200 placeholder-slate-500 focus:outline-none focus:border-purple-500"
+              className="w-full px-3 py-2 bg-app border border-slate-800 rounded-xl text-xs text-slate-200 placeholder-slate-500 focus:outline-none focus:border-accent-500"
             />
 
             <div className="flex items-center justify-end gap-2">
@@ -681,7 +681,7 @@ export const SceneLobbyModal: React.FC<SceneLobbyModalProps> = ({
               </button>
               <button
                 onClick={handleCreateFolder}
-                className="px-3.5 py-1.5 rounded-xl bg-purple-600 hover:bg-purple-500 text-white text-xs font-semibold transition"
+                className="px-3.5 py-1.5 rounded-xl bg-accent-600 hover:bg-accent-500 text-white text-xs font-semibold transition"
               >
                 Ordner anlegen
               </button>
@@ -695,7 +695,7 @@ export const SceneLobbyModal: React.FC<SceneLobbyModalProps> = ({
         <div className="fixed inset-0 z-60 flex items-center justify-center bg-black/85 backdrop-blur-md p-4">
           <div className="w-full max-w-sm bg-slate-900 border border-slate-700 rounded-2xl p-5 shadow-2xl space-y-4">
             <div className="flex items-center gap-2">
-              <Layers className="w-5 h-5 text-purple-400" />
+              <Layers className="w-5 h-5 text-accent-400" />
               <div>
                 <h4 className="text-sm font-bold text-slate-100">In Ordner verschieben</h4>
                 <p className="text-[11px] text-slate-400 line-clamp-1">{movingScene.title}</p>
@@ -711,16 +711,16 @@ export const SceneLobbyModal: React.FC<SceneLobbyModalProps> = ({
                   onClick={() => handleConfirmMove(f)}
                   className={`w-full text-left px-3 py-2 rounded-xl text-xs flex items-center justify-between border transition ${
                     (movingScene.folder || 'Eigene Szenen').toLowerCase() === f.toLowerCase()
-                      ? 'bg-purple-950/40 border-purple-500/50 text-purple-300 font-semibold'
-                      : 'bg-slate-950 hover:bg-slate-800/80 border-slate-800 text-slate-200'
+                      ? 'bg-accent-950/40 border-accent-500/50 text-accent-300 font-semibold'
+                      : 'bg-app hover:bg-slate-800/80 border-slate-800 text-slate-200'
                   }`}
                 >
                   <span className="flex items-center gap-2">
-                    <Folder className="w-3.5 h-3.5 text-purple-400" />
+                    <Folder className="w-3.5 h-3.5 text-accent-400" />
                     <span>{f}</span>
                   </span>
                   {(movingScene.folder || 'Eigene Szenen').toLowerCase() === f.toLowerCase() && (
-                    <Check className="w-3.5 h-3.5 text-purple-400" />
+                    <Check className="w-3.5 h-3.5 text-accent-400" />
                   )}
                 </button>
               ))}

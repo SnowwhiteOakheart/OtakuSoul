@@ -71,7 +71,7 @@ export const FloatingCompanionOverlay: React.FC = () => {
   return (
     <div className="w-screen h-screen bg-transparent flex flex-col justify-end items-end p-4 select-none pointer-events-auto">
       {/* Floating Container */}
-      <div className="w-80 rounded-3xl bg-slate-950/85 backdrop-blur-xl border border-cyan-500/30 shadow-2xl p-4 flex flex-col gap-3 text-slate-100 relative group animate-in fade-in zoom-in-95 duration-300">
+      <div className="w-80 rounded-3xl bg-app/85 backdrop-blur-xl border border-cyan-500/30 shadow-2xl p-4 flex flex-col gap-3 text-slate-100 relative group animate-in fade-in zoom-in-95 duration-300">
         {/* Top Control Bar */}
         <div className="flex items-center justify-between pb-2 border-b border-slate-800/80">
           <div className="flex items-center gap-2">
@@ -129,8 +129,8 @@ export const FloatingCompanionOverlay: React.FC = () => {
               <span className="text-rose-300">{Math.round(hormones.cortisol)}%</span>
             </div>
             <div className="p-1.5 rounded-xl bg-slate-900/90 border border-slate-800 flex flex-col items-center">
-              <Heart className="w-3 h-3 text-pink-400 fill-pink-400/40 mb-0.5" />
-              <span className="text-pink-300">{Math.round(hormones.oxytocin)}%</span>
+              <Heart className="w-3 h-3 text-accent2-400 fill-accent2-400/40 mb-0.5" />
+              <span className="text-accent2-300">{Math.round(hormones.oxytocin)}%</span>
             </div>
             <div className="p-1.5 rounded-xl bg-slate-900/90 border border-slate-800 flex flex-col items-center">
               <Moon className="w-3 h-3 text-indigo-400 mb-0.5" />
@@ -143,7 +143,7 @@ export const FloatingCompanionOverlay: React.FC = () => {
         <div className="grid grid-cols-3 gap-2 pt-1">
           <button
             onClick={handlePet}
-            className="py-1.5 px-2 rounded-xl bg-pink-950/40 hover:bg-pink-900/50 border border-pink-500/30 text-pink-300 text-[11px] font-medium flex items-center justify-center gap-1 transition active:scale-95"
+            className="py-1.5 px-2 rounded-xl bg-accent2-950/40 hover:bg-accent2-900/50 border border-accent2-500/30 text-accent2-300 text-[11px] font-medium flex items-center justify-center gap-1 transition active:scale-95"
           >
             <Smile className="w-3 h-3" />
             <span>Kraulen</span>

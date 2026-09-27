@@ -69,7 +69,7 @@ export const TurnControlBar: React.FC = () => {
   const modeButtons = [
     { mode: 'say', label: 'Sagen', icon: MessageSquare, color: 'text-blue-400', desc: 'Wörtliche Rede deines Charakters' },
     { mode: 'do', label: 'Tun', icon: Sword, color: 'text-amber-400', desc: 'Physische Handlung / Taktische Aktion' },
-    { mode: 'think', label: 'Denken', icon: Brain, color: 'text-purple-400', desc: 'Innere Gedanken & Monologe' },
+    { mode: 'think', label: 'Denken', icon: Brain, color: 'text-accent-400', desc: 'Innere Gedanken & Monologe' },
     { mode: 'direct', label: 'Regie', icon: Clapperboard, color: 'text-rose-400', desc: 'Metaspiel-Anweisung an den GM' },
     { mode: 'whisper', label: 'Flüstern', icon: Ear, color: 'text-emerald-400', desc: 'Geheime Botschaft an ein Gruppenmitglied' },
   ] as const;
@@ -80,7 +80,7 @@ export const TurnControlBar: React.FC = () => {
       {choices.length > 0 && (
         <div className="flex flex-wrap items-center gap-2 pt-0.5 pb-1">
           <span className="text-[11px] font-bold text-slate-400 flex items-center gap-1 uppercase tracking-wider">
-            <Sparkles className="w-3 h-3 text-purple-400" />
+            <Sparkles className="w-3 h-3 text-accent-400" />
             Vorschläge:
           </span>
           {choices.map((choice, idx) => {
@@ -97,7 +97,7 @@ export const TurnControlBar: React.FC = () => {
                     ? 'bg-amber-950/40 border-amber-600/50 hover:bg-amber-900/60 text-amber-200'
                     : isWhisper
                     ? 'bg-emerald-950/40 border-emerald-600/50 hover:bg-emerald-900/60 text-emerald-200'
-                    : 'bg-purple-950/40 border-purple-600/50 hover:bg-purple-900/60 text-purple-200'
+                    : 'bg-accent-950/40 border-accent-600/50 hover:bg-accent-900/60 text-accent-200'
                 } disabled:opacity-50`}
               >
                 <span>{choice.text}</span>
@@ -115,7 +115,7 @@ export const TurnControlBar: React.FC = () => {
       {/* 2. Mode Selector & Next Actor dropdown */}
       <div className="flex flex-wrap items-center justify-between gap-2 text-xs">
         {/* Modes */}
-        <div className="flex items-center gap-1 p-1 rounded-xl bg-slate-950/80 border border-slate-800">
+        <div className="flex items-center gap-1 p-1 rounded-xl bg-app/80 border border-slate-800">
           {modeButtons.map(({ mode, label, icon: Icon, color, desc }) => {
             const isActive = stageTurnMode === mode;
             return (
@@ -125,7 +125,7 @@ export const TurnControlBar: React.FC = () => {
                 title={desc}
                 className={`flex items-center gap-1.5 px-2.5 py-1 rounded-lg transition-all font-semibold ${
                   isActive
-                    ? 'bg-purple-600 text-white shadow-md'
+                    ? 'bg-accent-600 text-white shadow-md'
                     : 'text-slate-400 hover:text-slate-200 hover:bg-slate-900'
                 }`}
               >
@@ -139,7 +139,7 @@ export const TurnControlBar: React.FC = () => {
         {/* Whisper Target & Next Actor */}
         <div className="flex items-center gap-2">
           {stageTurnMode === 'whisper' && (
-            <div className="flex items-center gap-1.5 bg-slate-950 px-2.5 py-1 rounded-lg border border-slate-800">
+            <div className="flex items-center gap-1.5 bg-app px-2.5 py-1 rounded-lg border border-slate-800">
               <Ear className="w-3.5 h-3.5 text-emerald-400" />
               <input
                 type="text"
@@ -152,7 +152,7 @@ export const TurnControlBar: React.FC = () => {
           )}
 
           {party.length > 0 && (
-            <div className="flex items-center gap-1.5 bg-slate-950 px-2.5 py-1 rounded-lg border border-slate-800">
+            <div className="flex items-center gap-1.5 bg-app px-2.5 py-1 rounded-lg border border-slate-800">
               <Users className="w-3.5 h-3.5 text-slate-400" />
               <select
                 value={stageForceActor}
@@ -201,13 +201,13 @@ export const TurnControlBar: React.FC = () => {
               : 'Flüstere heimlich deinem Gefährten zu...'
           }
           disabled={isProcessingStageTurn}
-          className="flex-1 bg-slate-950/90 border border-slate-700/80 rounded-xl px-3.5 py-2.5 text-xs text-slate-100 placeholder-slate-500 focus:outline-none focus:border-purple-500 resize-none shadow-inner"
+          className="flex-1 bg-app/90 border border-slate-700/80 rounded-xl px-3.5 py-2.5 text-xs text-slate-100 placeholder-slate-500 focus:outline-none focus:border-accent-500 resize-none shadow-inner"
         />
 
         <button
           type="submit"
           disabled={isProcessingStageTurn || !input.trim()}
-          className="h-10 px-4 rounded-xl bg-purple-600 hover:bg-purple-500 text-white font-semibold flex items-center justify-center gap-1.5 shadow-lg shadow-purple-950/50 transition disabled:opacity-40 disabled:hover:bg-purple-600"
+          className="h-10 px-4 rounded-xl bg-accent-600 hover:bg-accent-500 text-white font-semibold flex items-center justify-center gap-1.5 shadow-lg shadow-accent-950/50 transition disabled:opacity-40 disabled:hover:bg-accent-600"
         >
           {isProcessingStageTurn ? (
             <Loader2 className="w-4 h-4 animate-spin" />

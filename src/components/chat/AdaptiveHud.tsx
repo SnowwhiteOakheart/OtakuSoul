@@ -68,10 +68,10 @@ export const AdaptiveHud = () => {
             <img
               src={activeCharacter.avatar_data_url}
               alt={data.name}
-              className="w-10 h-10 rounded-full object-cover border-2 border-purple-500/60 shadow-md group-hover:border-purple-400 transition-colors"
+              className="w-10 h-10 rounded-full object-cover border-2 border-accent-500/60 shadow-md group-hover:border-accent-400 transition-colors"
             />
           ) : (
-            <div className="w-10 h-10 rounded-full bg-gradient-to-tr from-purple-600 to-pink-600 flex items-center justify-center text-white font-bold border-2 border-purple-500/60 shadow-md">
+            <div className="w-10 h-10 rounded-full bg-gradient-to-tr from-accent-600 to-accent2-600 flex items-center justify-center text-white font-bold border-2 border-accent-500/60 shadow-md">
               {data.name.charAt(0)}
             </div>
           )}
@@ -81,10 +81,10 @@ export const AdaptiveHud = () => {
         <div>
           <button
             onClick={() => setShowSelector(!showSelector)}
-            className="flex items-center gap-1.5 font-bold text-sm text-slate-100 hover:text-purple-300 transition-colors group"
+            className="flex items-center gap-1.5 font-bold text-sm text-slate-100 hover:text-accent-300 transition-colors group"
           >
             <span>{data.name}</span>
-            <ChevronDown className="w-3.5 h-3.5 text-slate-400 group-hover:text-purple-300 transition-transform" />
+            <ChevronDown className="w-3.5 h-3.5 text-slate-400 group-hover:text-accent-300 transition-transform" />
           </button>
           <div className="text-[11px] text-slate-400 line-clamp-1">{title}</div>
         </div>
@@ -106,7 +106,7 @@ export const AdaptiveHud = () => {
                   }}
                   className={`flex items-center gap-2.5 p-2 rounded-lg cursor-pointer transition-colors ${
                     activeCharacter.id === char.id
-                      ? 'bg-purple-600/30 text-purple-200 border border-purple-500/40'
+                      ? 'bg-accent-600/30 text-accent-200 border border-accent-500/40'
                       : 'hover:bg-slate-800/80 text-slate-300'
                   }`}
                 >
@@ -117,7 +117,7 @@ export const AdaptiveHud = () => {
                       className="w-8 h-8 rounded-full object-cover"
                     />
                   ) : (
-                    <div className="w-8 h-8 rounded-full bg-purple-700 flex items-center justify-center text-xs font-bold">
+                    <div className="w-8 h-8 rounded-full bg-accent-700 flex items-center justify-center text-xs font-bold">
                       {char.card.data.name.charAt(0)}
                     </div>
                   )}
@@ -136,7 +136,7 @@ export const AdaptiveHud = () => {
                   setShowSelector(false);
                   setActiveTab('characters');
                 }}
-                className="w-full py-1.5 px-2 rounded-lg bg-purple-600/20 hover:bg-purple-600/30 text-purple-300 border border-purple-500/30 text-[11px] font-semibold flex items-center justify-center gap-1.5 transition-colors"
+                className="w-full py-1.5 px-2 rounded-lg bg-accent-600/20 hover:bg-accent-600/30 text-accent-300 border border-accent-500/30 text-[11px] font-semibold flex items-center justify-center gap-1.5 transition-colors"
               >
                 <Users className="w-3.5 h-3.5" />
                 <span>Alle Charaktere in Bibliothek anzeigen...</span>
@@ -179,16 +179,16 @@ export const AdaptiveHud = () => {
                 className="flex items-center gap-2 px-2.5 py-1 rounded-lg bg-slate-800/60 border border-slate-700/60"
               >
                 {v.name === 'Zuneigung' ? (
-                  <Heart className="w-3.5 h-3.5 text-pink-400 fill-pink-400/40" />
+                  <Heart className="w-3.5 h-3.5 text-accent2-400 fill-accent2-400/40" />
                 ) : (
                   <Zap className="w-3.5 h-3.5 text-cyan-400" />
                 )}
                 <span className="text-slate-300 text-[11px] font-sans">{v.name}:</span>
-                <div className="w-16 bg-slate-950 rounded-full h-1.5 overflow-hidden">
+                <div className="w-16 bg-app rounded-full h-1.5 overflow-hidden">
                   <div
                     className={`h-1.5 rounded-full transition-all duration-500 ${
                       v.name === 'Zuneigung'
-                        ? 'bg-gradient-to-r from-pink-500 to-rose-400'
+                        ? 'bg-gradient-to-r from-accent2-500 to-rose-400'
                         : 'bg-gradient-to-r from-cyan-500 to-indigo-400'
                     }`}
                     style={{ width: `${percent}%` }}
@@ -206,9 +206,9 @@ export const AdaptiveHud = () => {
               key={i}
               className="hidden md:flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-slate-800/60 border border-slate-700/60 text-[11px]"
             >
-              <Smile className="w-3.5 h-3.5 text-purple-400" />
+              <Smile className="w-3.5 h-3.5 text-accent-400" />
               <span className="text-slate-400 font-sans">{v.name}:</span>
-              <span className="text-purple-200 font-medium">{v.value}</span>
+              <span className="text-accent-200 font-medium">{v.value}</span>
             </div>
           );
         })}
@@ -237,10 +237,10 @@ export const AdaptiveHud = () => {
         {/* Cognitive Soul Memory Drawer Trigger */}
         <button
           onClick={() => setShowMemoryDrawer(true)}
-          className="flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-purple-950/50 border border-purple-500/40 text-purple-300 hover:bg-purple-900/60 hover:text-purple-200 transition text-[11px] font-medium shadow-sm cursor-pointer"
+          className="flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-accent-950/50 border border-accent-500/40 text-accent-300 hover:bg-accent-900/60 hover:text-accent-200 transition text-[11px] font-medium shadow-sm cursor-pointer"
           title="Kognitiven Seelenspeicher öffnen"
         >
-          <Brain className="w-3.5 h-3.5 text-purple-400" />
+          <Brain className="w-3.5 h-3.5 text-accent-400" />
           <span>Seelenspeicher</span>
         </button>
 

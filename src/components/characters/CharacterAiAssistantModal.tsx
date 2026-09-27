@@ -166,9 +166,9 @@ export const CharacterAiAssistantModal: React.FC = () => {
     <div className="fixed inset-0 z-50 bg-black/80 backdrop-blur-md flex items-center justify-center p-4">
       <div className="bg-slate-900 border border-slate-700/80 rounded-2xl w-full max-w-3xl max-h-[90vh] flex flex-col shadow-2xl overflow-hidden">
         {/* Header */}
-        <div className="px-6 py-4 border-b border-slate-800 flex items-center justify-between bg-slate-950/70">
+        <div className="px-6 py-4 border-b border-slate-800 flex items-center justify-between bg-app/70">
           <div className="flex items-center gap-3">
-            <div className="w-9 h-9 rounded-xl bg-gradient-to-tr from-indigo-600 to-purple-500 border border-indigo-400/40 flex items-center justify-center text-white shadow-lg shadow-indigo-500/20">
+            <div className="w-9 h-9 rounded-xl bg-gradient-to-tr from-indigo-600 to-accent-500 border border-indigo-400/40 flex items-center justify-center text-white shadow-lg shadow-indigo-500/20">
               <Sparkles className="w-5 h-5 animate-pulse" />
             </div>
             <div>
@@ -192,7 +192,7 @@ export const CharacterAiAssistantModal: React.FC = () => {
         </div>
 
         {/* Step Progress Bar */}
-        <div className="px-6 py-3 bg-slate-950/40 border-b border-slate-800/80">
+        <div className="px-6 py-3 bg-app/40 border-b border-slate-800/80">
           <div className="flex items-center justify-between">
             {[
               { num: 1, label: 'Konzept', icon: User },
@@ -256,7 +256,7 @@ export const CharacterAiAssistantModal: React.FC = () => {
                   value={wizardInput.name}
                   onChange={(e) => setWizardInput({ ...wizardInput, name: e.target.value })}
                   placeholder="z. B. Seraphina, Kira, Ray, Dr. Vane..."
-                  className="w-full bg-slate-950 border border-slate-700/80 rounded-xl px-3.5 py-2.5 text-slate-100 placeholder-slate-500 focus:outline-none focus:border-indigo-500"
+                  className="w-full bg-app border border-slate-700/80 rounded-xl px-3.5 py-2.5 text-slate-100 placeholder-slate-500 focus:outline-none focus:border-indigo-500"
                 />
               </div>
 
@@ -269,7 +269,7 @@ export const CharacterAiAssistantModal: React.FC = () => {
                   value={wizardInput.concept}
                   onChange={(e) => setWizardInput({ ...wizardInput, concept: e.target.value })}
                   placeholder="z. B. Eine einsame Hackerin in einer Cyberpunk-Metropole, die nach ihrer Vergangenheit sucht..."
-                  className="w-full bg-slate-950 border border-slate-700/80 rounded-xl px-3.5 py-2 text-slate-100 placeholder-slate-500 focus:outline-none focus:border-indigo-500 text-xs"
+                  className="w-full bg-app border border-slate-700/80 rounded-xl px-3.5 py-2 text-slate-100 placeholder-slate-500 focus:outline-none focus:border-indigo-500 text-xs"
                 />
               </div>
 
@@ -301,7 +301,7 @@ export const CharacterAiAssistantModal: React.FC = () => {
                   value={wizardInput.archetype}
                   onChange={(e) => setWizardInput({ ...wizardInput, archetype: e.target.value })}
                   placeholder="Eigener Archetyp (z. B. Melancholische KI, Zeitreisende Forscherin...)"
-                  className="w-full bg-slate-950 border border-slate-700/80 rounded-xl px-3.5 py-2 text-slate-100 placeholder-slate-500 focus:outline-none focus:border-indigo-500 text-xs"
+                  className="w-full bg-app border border-slate-700/80 rounded-xl px-3.5 py-2 text-slate-100 placeholder-slate-500 focus:outline-none focus:border-indigo-500 text-xs"
                 />
               </div>
             </div>
@@ -319,11 +319,11 @@ export const CharacterAiAssistantModal: React.FC = () => {
                   value={wizardInput.visual_style}
                   onChange={(e) => setWizardInput({ ...wizardInput, visual_style: e.target.value })}
                   placeholder="z. B. Silbernes langes Haar im Zopf, bernsteinfarbene Augen, schlanke Statur, schwarzer Cyber-Trenchcoat mit leuchtenden Neon-Nähten, metallische Ohrstecker..."
-                  className="w-full bg-slate-950 border border-slate-700/80 rounded-xl p-3 text-slate-100 placeholder-slate-500 focus:outline-none focus:border-indigo-500 resize-none text-xs leading-relaxed"
+                  className="w-full bg-app border border-slate-700/80 rounded-xl p-3 text-slate-100 placeholder-slate-500 focus:outline-none focus:border-indigo-500 resize-none text-xs leading-relaxed"
                 />
               </div>
 
-              <div className="p-3 bg-slate-950/60 border border-slate-800 rounded-xl">
+              <div className="p-3 bg-app/60 border border-slate-800 rounded-xl">
                 <span className="text-xs font-medium text-indigo-300 block mb-1">💡 Tipp:</span>
                 <p className="text-xs text-slate-400 leading-relaxed">
                   Details wie Farben, Kleidung und besondere Merkmale (z.B. Narben, Tattoos, Glitzer, Bandagen) werden auch für Bildgenerierung und VRM-Vorschläge verwendet!
@@ -346,7 +346,7 @@ export const CharacterAiAssistantModal: React.FC = () => {
                     setWizardInput({ ...wizardInput, personality_traits: e.target.value })
                   }
                   placeholder="z. B. Nach außen hin kühl und distanziert, im Inneren fürsorglich und loyal. Trinkt obsessiv schwarzen Kaffee. Neigt zu trockenem Sarkasmus, wird jedoch schnell verlegen, wenn man ihr Komplimente macht..."
-                  className="w-full bg-slate-950 border border-slate-700/80 rounded-xl p-3 text-slate-100 placeholder-slate-500 focus:outline-none focus:border-indigo-500 resize-none text-xs leading-relaxed"
+                  className="w-full bg-app border border-slate-700/80 rounded-xl p-3 text-slate-100 placeholder-slate-500 focus:outline-none focus:border-indigo-500 resize-none text-xs leading-relaxed"
                 />
               </div>
             </div>
@@ -366,7 +366,7 @@ export const CharacterAiAssistantModal: React.FC = () => {
                     setWizardInput({ ...wizardInput, world_background: e.target.value })
                   }
                   placeholder="z. B. Eine von Konzernen beherrschte Metropole im Jahr 2088. Floh aus einem Forschungslabor und lebt seither im Untergrund..."
-                  className="w-full bg-slate-950 border border-slate-700/80 rounded-xl p-3 text-slate-100 placeholder-slate-500 focus:outline-none focus:border-indigo-500 resize-none text-xs leading-relaxed"
+                  className="w-full bg-app border border-slate-700/80 rounded-xl p-3 text-slate-100 placeholder-slate-500 focus:outline-none focus:border-indigo-500 resize-none text-xs leading-relaxed"
                 />
               </div>
 
@@ -381,7 +381,7 @@ export const CharacterAiAssistantModal: React.FC = () => {
                     setWizardInput({ ...wizardInput, relationship_to_user: e.target.value })
                   }
                   placeholder="z. B. Neuer Geschäftspartner, alter Vertrauter, unerwarteter Retter, mysteriöser Auftraggeber..."
-                  className="w-full bg-slate-950 border border-slate-700/80 rounded-xl px-3.5 py-2.5 text-slate-100 placeholder-slate-500 focus:outline-none focus:border-indigo-500 text-xs"
+                  className="w-full bg-app border border-slate-700/80 rounded-xl px-3.5 py-2.5 text-slate-100 placeholder-slate-500 focus:outline-none focus:border-indigo-500 text-xs"
                 />
               </div>
             </div>
@@ -401,7 +401,7 @@ export const CharacterAiAssistantModal: React.FC = () => {
                     setWizardInput({ ...wizardInput, greeting_scenario: e.target.value })
                   }
                   placeholder="z. B. Ein verregneter Abend in einer verlassenen Gasse oder einer versteckten Bar. {{char}} wartet auf ein Zeichen von {{user}}..."
-                  className="w-full bg-slate-950 border border-slate-700/80 rounded-xl p-3 text-slate-100 placeholder-slate-500 focus:outline-none focus:border-indigo-500 resize-none text-xs leading-relaxed"
+                  className="w-full bg-app border border-slate-700/80 rounded-xl p-3 text-slate-100 placeholder-slate-500 focus:outline-none focus:border-indigo-500 resize-none text-xs leading-relaxed"
                 />
               </div>
 
@@ -416,7 +416,7 @@ export const CharacterAiAssistantModal: React.FC = () => {
                   type="button"
                   onClick={handleGenerate}
                   disabled={isGenerating || !wizardInput.name.trim()}
-                  className="flex items-center gap-2 px-4 py-2 rounded-xl bg-gradient-to-r from-indigo-600 to-purple-600 hover:from-indigo-500 hover:to-purple-500 text-white font-medium text-xs shadow-lg shadow-indigo-600/30 disabled:opacity-50 transition"
+                  className="flex items-center gap-2 px-4 py-2 rounded-xl bg-gradient-to-r from-indigo-600 to-accent-600 hover:from-indigo-500 hover:to-accent-500 text-white font-medium text-xs shadow-lg shadow-indigo-600/30 disabled:opacity-50 transition"
                 >
                   {isGenerating ? (
                     <>
@@ -480,7 +480,7 @@ export const CharacterAiAssistantModal: React.FC = () => {
                     rows={4}
                     value={generatedDraft.description}
                     onChange={(e) => updateDraftField('description', e.target.value)}
-                    className="w-full bg-slate-950 border border-slate-800 rounded-xl p-2.5 text-xs text-slate-200 focus:outline-none focus:border-indigo-500 resize-none leading-relaxed"
+                    className="w-full bg-app border border-slate-800 rounded-xl p-2.5 text-xs text-slate-200 focus:outline-none focus:border-indigo-500 resize-none leading-relaxed"
                   />
                 </div>
 
@@ -492,7 +492,7 @@ export const CharacterAiAssistantModal: React.FC = () => {
                     rows={4}
                     value={generatedDraft.personality}
                     onChange={(e) => updateDraftField('personality', e.target.value)}
-                    className="w-full bg-slate-950 border border-slate-800 rounded-xl p-2.5 text-xs text-slate-200 focus:outline-none focus:border-indigo-500 resize-none leading-relaxed"
+                    className="w-full bg-app border border-slate-800 rounded-xl p-2.5 text-xs text-slate-200 focus:outline-none focus:border-indigo-500 resize-none leading-relaxed"
                   />
                 </div>
               </div>
@@ -505,7 +505,7 @@ export const CharacterAiAssistantModal: React.FC = () => {
                   rows={2}
                   value={generatedDraft.scenario}
                   onChange={(e) => updateDraftField('scenario', e.target.value)}
-                  className="w-full bg-slate-950 border border-slate-800 rounded-xl p-2.5 text-xs text-slate-200 focus:outline-none focus:border-indigo-500 resize-none leading-relaxed"
+                  className="w-full bg-app border border-slate-800 rounded-xl p-2.5 text-xs text-slate-200 focus:outline-none focus:border-indigo-500 resize-none leading-relaxed"
                 />
               </div>
 
@@ -517,7 +517,7 @@ export const CharacterAiAssistantModal: React.FC = () => {
                   rows={3}
                   value={generatedDraft.first_mes}
                   onChange={(e) => updateDraftField('first_mes', e.target.value)}
-                  className="w-full bg-slate-950 border border-slate-800 rounded-xl p-2.5 text-xs text-slate-200 focus:outline-none focus:border-indigo-500 resize-none leading-relaxed font-mono text-[11px]"
+                  className="w-full bg-app border border-slate-800 rounded-xl p-2.5 text-xs text-slate-200 focus:outline-none focus:border-indigo-500 resize-none leading-relaxed font-mono text-[11px]"
                 />
               </div>
 
@@ -529,7 +529,7 @@ export const CharacterAiAssistantModal: React.FC = () => {
                   rows={3}
                   value={generatedDraft.system_prompt}
                   onChange={(e) => updateDraftField('system_prompt', e.target.value)}
-                  className="w-full bg-slate-950 border border-slate-800 rounded-xl p-2.5 text-xs text-slate-200 focus:outline-none focus:border-indigo-500 resize-none leading-relaxed font-mono text-[11px]"
+                  className="w-full bg-app border border-slate-800 rounded-xl p-2.5 text-xs text-slate-200 focus:outline-none focus:border-indigo-500 resize-none leading-relaxed font-mono text-[11px]"
                 />
               </div>
 
@@ -541,7 +541,7 @@ export const CharacterAiAssistantModal: React.FC = () => {
                   rows={3}
                   value={generatedDraft.mes_example}
                   onChange={(e) => updateDraftField('mes_example', e.target.value)}
-                  className="w-full bg-slate-950 border border-slate-800 rounded-xl p-2.5 text-xs text-slate-200 focus:outline-none focus:border-indigo-500 resize-none leading-relaxed font-mono text-[11px]"
+                  className="w-full bg-app border border-slate-800 rounded-xl p-2.5 text-xs text-slate-200 focus:outline-none focus:border-indigo-500 resize-none leading-relaxed font-mono text-[11px]"
                 />
               </div>
             </div>
@@ -549,7 +549,7 @@ export const CharacterAiAssistantModal: React.FC = () => {
         </div>
 
         {/* Modal Footer */}
-        <div className="px-6 py-4 bg-slate-950/70 border-t border-slate-800 flex items-center justify-between">
+        <div className="px-6 py-4 bg-app/70 border-t border-slate-800 flex items-center justify-between">
           <div>
             {step > 1 && step <= 5 && (
               <button
@@ -597,7 +597,7 @@ export const CharacterAiAssistantModal: React.FC = () => {
                 type="button"
                 onClick={handleGenerate}
                 disabled={isGenerating || !wizardInput.name.trim()}
-                className="flex items-center gap-2 px-4 py-2 rounded-xl bg-gradient-to-r from-indigo-600 to-purple-600 hover:from-indigo-500 hover:to-purple-500 text-white font-medium text-xs shadow-lg shadow-indigo-600/30 disabled:opacity-50 transition"
+                className="flex items-center gap-2 px-4 py-2 rounded-xl bg-gradient-to-r from-indigo-600 to-accent-600 hover:from-indigo-500 hover:to-accent-500 text-white font-medium text-xs shadow-lg shadow-indigo-600/30 disabled:opacity-50 transition"
               >
                 {isGenerating ? (
                   <>

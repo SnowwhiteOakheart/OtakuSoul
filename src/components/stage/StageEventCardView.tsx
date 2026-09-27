@@ -23,7 +23,7 @@ export const StageEventCardView: React.FC<StageEventCardViewProps> = ({ card }) 
             ? card.passed
               ? 'bg-blue-950/30 border-blue-500/40'
               : 'bg-amber-950/30 border-amber-500/40'
-            : 'bg-purple-950/30 border-purple-500/40'
+            : 'bg-accent-950/30 border-accent-500/40'
         }`}
       >
         <div className="flex items-center justify-between gap-2 mb-2">
@@ -34,7 +34,7 @@ export const StageEventCardView: React.FC<StageEventCardViewProps> = ({ card }) 
                   ? 'bg-emerald-500/20 text-emerald-400'
                   : isFumble
                   ? 'bg-rose-500/20 text-rose-400'
-                  : 'bg-purple-500/20 text-purple-300'
+                  : 'bg-accent-500/20 text-accent-300'
               }`}
             >
               <Dices className="w-4 h-4 animate-bounce" />
@@ -49,10 +49,10 @@ export const StageEventCardView: React.FC<StageEventCardViewProps> = ({ card }) 
             <span
               className={`text-sm font-black px-2.5 py-0.5 rounded-lg font-mono ${
                 isCrit
-                  ? 'bg-emerald-500 text-slate-950 ring-2 ring-emerald-300'
+                  ? 'bg-emerald-500 text-app ring-2 ring-emerald-300'
                   : isFumble
                   ? 'bg-rose-500 text-white ring-2 ring-rose-300'
-                  : 'bg-slate-800 text-purple-300 border border-purple-500/30'
+                  : 'bg-slate-800 text-accent-300 border border-accent-500/30'
               }`}
             >
               Gesamt: {card.total}
@@ -151,7 +151,7 @@ export const StageEventCardView: React.FC<StageEventCardViewProps> = ({ card }) 
           <span className="px-2 py-0.5 rounded bg-emerald-950/70 border border-emerald-500/40 text-emerald-300 font-semibold text-[11px]">
             +{card.recovered_hp} LP regeneriert
           </span>
-          <span className="px-2 py-0.5 rounded bg-purple-950/70 border border-purple-500/40 text-purple-300 font-semibold text-[11px]">
+          <span className="px-2 py-0.5 rounded bg-accent-950/70 border border-accent-500/40 text-accent-300 font-semibold text-[11px]">
             -{card.recovered_stress} Stress abgebaut
           </span>
         </div>
@@ -161,12 +161,12 @@ export const StageEventCardView: React.FC<StageEventCardViewProps> = ({ card }) 
 
   if (card.type === 'discovery') {
     return (
-      <div className="my-2 p-3.5 rounded-xl bg-gradient-to-r from-purple-950/40 to-slate-900 border border-purple-500/40 shadow-lg">
+      <div className="my-2 p-3.5 rounded-xl bg-gradient-to-r from-accent-950/40 to-slate-900 border border-accent-500/40 shadow-lg">
         <div className="flex items-center gap-2 mb-1.5">
-          <div className="p-1.5 rounded-lg bg-purple-500/20 text-purple-300">
+          <div className="p-1.5 rounded-lg bg-accent-500/20 text-accent-300">
             <Sparkles className="w-4 h-4" />
           </div>
-          <span className="text-xs font-bold text-purple-200">Entdeckung</span>
+          <span className="text-xs font-bold text-accent-200">Entdeckung</span>
         </div>
         <p className="text-xs text-slate-300">{card.text}</p>
       </div>
@@ -197,7 +197,7 @@ export const StageEventCardView: React.FC<StageEventCardViewProps> = ({ card }) 
         <div className="flex flex-wrap gap-2 text-[11px]">
           {card.hp_recovered > 0 && <span className="px-2 py-0.5 rounded bg-emerald-900/60 text-emerald-200">+{card.hp_recovered} LP</span>}
           {card.stress_recovered > 0 && <span className="px-2 py-0.5 rounded bg-cyan-900/60 text-cyan-200">-{card.stress_recovered} Stress</span>}
-          {card.cleared_condition && <span className="px-2 py-0.5 rounded bg-purple-900/60 text-purple-200">{card.cleared_condition} kuriert</span>}
+          {card.cleared_condition && <span className="px-2 py-0.5 rounded bg-accent-900/60 text-accent-200">{card.cleared_condition} kuriert</span>}
         </div>
       </div>
     );
@@ -205,10 +205,10 @@ export const StageEventCardView: React.FC<StageEventCardViewProps> = ({ card }) 
 
   if (card.type === 'bond_milestone') {
     return (
-      <div className="my-2 p-3.5 rounded-xl bg-gradient-to-r from-pink-950/40 to-purple-950/30 border border-pink-500/40 shadow-lg">
+      <div className="my-2 p-3.5 rounded-xl bg-gradient-to-r from-accent2-950/40 to-accent-950/30 border border-accent2-500/40 shadow-lg">
         <div className="flex items-center gap-2">
-          <HeartHandshake className="w-4 h-4 text-pink-400" />
-          <span className="text-xs font-bold text-pink-200">Bindungs-Meilenstein mit {card.companion}</span>
+          <HeartHandshake className="w-4 h-4 text-accent2-400" />
+          <span className="text-xs font-bold text-accent2-200">Bindungs-Meilenstein mit {card.companion}</span>
         </div>
         <p className="text-[11px] text-slate-300 mt-1">Nähe {card.affinity}/100 · Schwelle {card.milestone} erreicht</p>
       </div>

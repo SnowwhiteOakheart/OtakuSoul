@@ -93,7 +93,7 @@ export const LogViewerModal: React.FC = () => {
     <div className="fixed inset-0 z-50 bg-black/80 backdrop-blur-md flex items-center justify-center p-4">
       <div className="bg-slate-900 border border-slate-700/80 rounded-2xl w-full max-w-4xl h-[85vh] flex flex-col shadow-2xl overflow-hidden">
         {/* Header */}
-        <div className="px-6 py-4 border-b border-slate-800 flex items-center justify-between bg-slate-950/70">
+        <div className="px-6 py-4 border-b border-slate-800 flex items-center justify-between bg-app/70">
           <div className="flex items-center gap-3">
             <div className="w-9 h-9 rounded-xl bg-slate-800 border border-slate-700 flex items-center justify-center text-cyan-400 shadow-md">
               <Terminal className="w-5 h-5" />
@@ -149,7 +149,7 @@ export const LogViewerModal: React.FC = () => {
         </div>
 
         {/* Toolbar & Filter Bar */}
-        <div className="px-6 py-3 bg-slate-950/50 border-b border-slate-800/80 flex flex-wrap items-center justify-between gap-3">
+        <div className="px-6 py-3 bg-app/50 border-b border-slate-800/80 flex flex-wrap items-center justify-between gap-3">
           {/* Level Filter Chips */}
           <div className="flex items-center gap-1.5">
             {(['ALL', 'INFO', 'WARN', 'ERROR', 'DEBUG'] as const).map((lvl) => (
@@ -193,7 +193,7 @@ export const LogViewerModal: React.FC = () => {
         </div>
 
         {/* Console Log Area */}
-        <div className="flex-1 overflow-y-auto p-4 bg-slate-950 font-mono text-[11px] leading-relaxed select-text space-y-1">
+        <div className="flex-1 overflow-y-auto p-4 bg-app font-mono text-[11px] leading-relaxed select-text space-y-1">
           {filteredLogs.length === 0 ? (
             <div className="py-20 text-center text-slate-600">{t('logger.noLogs')}</div>
           ) : (

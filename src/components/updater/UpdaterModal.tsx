@@ -47,9 +47,9 @@ export const UpdaterModal: React.FC = () => {
     <div className="fixed inset-0 z-50 bg-black/80 backdrop-blur-md flex items-center justify-center p-4">
       <div className="bg-slate-900 border border-slate-700/80 rounded-2xl w-full max-w-lg shadow-2xl overflow-hidden flex flex-col">
         {/* Header */}
-        <div className="px-6 py-4 border-b border-slate-800 flex items-center justify-between bg-slate-950/70">
+        <div className="px-6 py-4 border-b border-slate-800 flex items-center justify-between bg-app/70">
           <div className="flex items-center gap-3">
-            <div className="w-9 h-9 rounded-xl bg-purple-600/20 border border-purple-500/40 flex items-center justify-center text-purple-400 shadow-md">
+            <div className="w-9 h-9 rounded-xl bg-accent-600/20 border border-accent-500/40 flex items-center justify-center text-accent-400 shadow-md">
               <Package className="w-5 h-5" />
             </div>
             <div>
@@ -72,12 +72,12 @@ export const UpdaterModal: React.FC = () => {
           <div
             className={`p-4 rounded-xl border flex items-start gap-3.5 transition ${
               hasUpdate
-                ? 'bg-purple-950/30 border-purple-500/40'
+                ? 'bg-accent-950/30 border-accent-500/40'
                 : 'bg-emerald-950/20 border-emerald-500/30'
             }`}
           >
             {hasUpdate ? (
-              <Sparkles className="w-6 h-6 text-purple-400 shrink-0 mt-0.5 animate-pulse" />
+              <Sparkles className="w-6 h-6 text-accent-400 shrink-0 mt-0.5 animate-pulse" />
             ) : (
               <CheckCircle2 className="w-6 h-6 text-emerald-400 shrink-0 mt-0.5" />
             )}
@@ -95,7 +95,7 @@ export const UpdaterModal: React.FC = () => {
 
           {/* Versions Grid */}
           <div className="grid grid-cols-2 gap-3">
-            <div className="bg-slate-950 border border-slate-800 rounded-xl p-3">
+            <div className="bg-app border border-slate-800 rounded-xl p-3">
               <span className="text-[10px] uppercase font-bold text-slate-500 block mb-1">
                 {t('updater.current')}
               </span>
@@ -104,11 +104,11 @@ export const UpdaterModal: React.FC = () => {
               </span>
             </div>
 
-            <div className="bg-slate-950 border border-slate-800 rounded-xl p-3">
+            <div className="bg-app border border-slate-800 rounded-xl p-3">
               <span className="text-[10px] uppercase font-bold text-slate-500 block mb-1">
                 {t('updater.latest')}
               </span>
-              <span className="font-mono text-sm font-bold text-purple-300">
+              <span className="font-mono text-sm font-bold text-accent-300">
                 v{updateInfo?.latest_version || '0.1.0'}
               </span>
             </div>
@@ -120,7 +120,7 @@ export const UpdaterModal: React.FC = () => {
               <span className="text-xs font-semibold text-slate-400 block">
                 {t('updater.releaseNotes')}:
               </span>
-              <div className="bg-slate-950 border border-slate-800 rounded-xl p-3.5 max-h-40 overflow-y-auto text-xs text-slate-300 whitespace-pre-wrap leading-relaxed font-sans">
+              <div className="bg-app border border-slate-800 rounded-xl p-3.5 max-h-40 overflow-y-auto text-xs text-slate-300 whitespace-pre-wrap leading-relaxed font-sans">
                 {updateInfo.release_notes}
               </div>
             </div>
@@ -135,7 +135,7 @@ export const UpdaterModal: React.FC = () => {
         </div>
 
         {/* Footer */}
-        <div className="px-6 py-4 bg-slate-950/70 border-t border-slate-800 flex items-center justify-between">
+        <div className="px-6 py-4 bg-app/70 border-t border-slate-800 flex items-center justify-between">
           <button
             onClick={handleCheck}
             disabled={isChecking}
@@ -148,7 +148,7 @@ export const UpdaterModal: React.FC = () => {
           {hasUpdate ? (
             <button
               onClick={handleOpenReleaseUrl}
-              className="flex items-center gap-2 px-4 py-2 rounded-xl bg-purple-600 hover:bg-purple-500 text-white text-xs font-medium shadow-md shadow-purple-600/30 transition"
+              className="flex items-center gap-2 px-4 py-2 rounded-xl bg-accent-600 hover:bg-accent-500 text-white text-xs font-medium shadow-md shadow-accent-600/30 transition"
             >
               <Download className="w-4 h-4" />
               <span>{t('updater.openDownload')}</span>

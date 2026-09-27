@@ -284,7 +284,7 @@ export const IntegrationsView: React.FC = () => {
   };
 
   return (
-    <div className="flex-1 flex flex-col h-full bg-slate-950 overflow-hidden">
+    <div className="flex-1 flex flex-col h-full bg-app overflow-hidden">
       {/* Top Header */}
       <div className="px-6 py-4 border-b border-slate-800 bg-slate-900/60 backdrop-blur flex items-center justify-between gap-4 select-none">
         <div className="flex items-center gap-3">
@@ -305,7 +305,7 @@ export const IntegrationsView: React.FC = () => {
         </div>
 
         {/* Tab Navigation */}
-        <div className="flex items-center p-1 bg-slate-950/80 border border-slate-800 rounded-xl">
+        <div className="flex items-center p-1 bg-app/80 border border-slate-800 rounded-xl">
           <button
             onClick={() => setActiveTab('web')}
             className={`flex items-center gap-2 px-3 py-1.5 rounded-lg text-xs font-medium transition ${
@@ -340,7 +340,7 @@ export const IntegrationsView: React.FC = () => {
             onClick={() => setActiveTab('image')}
             className={`flex items-center gap-2 px-3 py-1.5 rounded-lg text-xs font-medium transition ${
               activeTab === 'image'
-                ? 'bg-purple-600 text-white shadow-sm'
+                ? 'bg-accent-600 text-white shadow-sm'
                 : 'text-slate-400 hover:text-slate-200'
             }`}
           >
@@ -448,7 +448,7 @@ export const IntegrationsView: React.FC = () => {
 
                 {/* Connection URL Box */}
                 {webServerStatus?.is_running && webServerStatus.connection_url && (
-                  <div className="bg-slate-950 border border-cyan-500/30 rounded-xl p-4 space-y-2">
+                  <div className="bg-app border border-cyan-500/30 rounded-xl p-4 space-y-2">
                     <span className="text-[11px] font-bold text-cyan-400 uppercase tracking-wider">
                       Verbindungs-Adresse (WLAN)
                     </span>
@@ -495,7 +495,7 @@ export const IntegrationsView: React.FC = () => {
                       onChange={(e) =>
                         setLocalWebConfig({ ...localWebConfig, port: parseInt(e.target.value) || 8088 })
                       }
-                      className="w-full bg-slate-950 border border-slate-700 rounded-xl px-3 py-2 text-xs text-slate-100 font-mono"
+                      className="w-full bg-app border border-slate-700 rounded-xl px-3 py-2 text-xs text-slate-100 font-mono"
                     />
                   </div>
 
@@ -508,7 +508,7 @@ export const IntegrationsView: React.FC = () => {
                         type="text"
                         readOnly
                         value={localWebConfig.auth_token}
-                        className="flex-1 bg-slate-950 border border-slate-700 rounded-xl px-3 py-2 text-xs text-slate-300 font-mono"
+                        className="flex-1 bg-app border border-slate-700 rounded-xl px-3 py-2 text-xs text-slate-300 font-mono"
                       />
                       <button
                         onClick={regenerateWebServerToken}
@@ -563,7 +563,7 @@ export const IntegrationsView: React.FC = () => {
                   />
                 </div>
               ) : (
-                <div className="w-48 h-48 rounded-2xl bg-slate-950 border border-dashed border-slate-800 flex flex-col items-center justify-center p-4 text-slate-500">
+                <div className="w-48 h-48 rounded-2xl bg-app border border-dashed border-slate-800 flex flex-col items-center justify-center p-4 text-slate-500">
                   <Smartphone className="w-8 h-8 mb-2 opacity-40" />
                   <span className="text-xs">Server gestoppt</span>
                   <span className="text-[10px] text-slate-600 mt-1">Starte den Server für den QR-Code</span>
@@ -609,7 +609,7 @@ export const IntegrationsView: React.FC = () => {
               </div>
 
               {/* Status Preview Card */}
-              <div className="bg-slate-950 border border-indigo-500/30 rounded-xl p-4 space-y-3">
+              <div className="bg-app border border-indigo-500/30 rounded-xl p-4 space-y-3">
                 <div className="flex items-center gap-3">
                   <div className="w-12 h-12 rounded-xl bg-indigo-600/30 border border-indigo-400/40 flex items-center justify-center text-indigo-300 font-bold text-lg">
                     {activeCharacter?.card.data.name?.charAt(0) || 'O'}
@@ -637,7 +637,7 @@ export const IntegrationsView: React.FC = () => {
             <div className="bg-slate-900/80 border border-slate-800 rounded-2xl p-6 shadow-xl space-y-5">
               <div className="flex items-center justify-between">
                 <div className="flex items-center gap-3">
-                  <div className="w-10 h-10 rounded-xl bg-purple-500/20 border border-purple-500/40 flex items-center justify-center text-purple-400">
+                  <div className="w-10 h-10 rounded-xl bg-accent-500/20 border border-accent-500/40 flex items-center justify-center text-accent-400">
                     <Bot className="w-5 h-5" />
                   </div>
                   <div>
@@ -671,7 +671,7 @@ export const IntegrationsView: React.FC = () => {
                   ) : (
                     <button
                       onClick={startDiscordBot}
-                      className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-purple-600 hover:bg-purple-500 text-white text-xs font-medium shadow transition"
+                      className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-accent-600 hover:bg-accent-500 text-white text-xs font-medium shadow transition"
                     >
                       <Play className="w-3 h-3 fill-current" />
                       <span>Bot starten</span>
@@ -694,7 +694,7 @@ export const IntegrationsView: React.FC = () => {
                         setLocalBotConfig({ ...localBotConfig, bot_token: e.target.value })
                       }
                       placeholder="MTAx..."
-                      className="flex-1 bg-slate-950 border border-slate-700 rounded-xl px-3 py-2 text-xs text-slate-100 font-mono"
+                      className="flex-1 bg-app border border-slate-700 rounded-xl px-3 py-2 text-xs text-slate-100 font-mono"
                     />
                     <button
                       type="button"
@@ -717,7 +717,7 @@ export const IntegrationsView: React.FC = () => {
                       onChange={(e) =>
                         setLocalBotConfig({ ...localBotConfig, command_prefix: e.target.value })
                       }
-                      className="w-full bg-slate-950 border border-slate-700 rounded-xl px-3 py-2 text-xs text-slate-100 font-mono"
+                      className="w-full bg-app border border-slate-700 rounded-xl px-3 py-2 text-xs text-slate-100 font-mono"
                     />
                   </div>
 
@@ -731,7 +731,7 @@ export const IntegrationsView: React.FC = () => {
                       onChange={(e) =>
                         setLocalBotConfig({ ...localBotConfig, cooldown_secs: parseInt(e.target.value) || 2 })
                       }
-                      className="w-full bg-slate-950 border border-slate-700 rounded-xl px-3 py-2 text-xs text-slate-100 font-mono"
+                      className="w-full bg-app border border-slate-700 rounded-xl px-3 py-2 text-xs text-slate-100 font-mono"
                     />
                   </div>
                 </div>
@@ -748,9 +748,9 @@ export const IntegrationsView: React.FC = () => {
               </div>
 
               {/* Bot Command Cheatsheet */}
-              <div className="bg-slate-950/60 border border-slate-800 rounded-xl p-3 text-xs space-y-1.5">
+              <div className="bg-app/60 border border-slate-800 rounded-xl p-3 text-xs space-y-1.5">
                 <span className="font-bold text-slate-300 block mb-1">Verfügbare Befehle:</span>
-                <div className="font-mono text-[11px] text-purple-300 space-y-1">
+                <div className="font-mono text-[11px] text-accent-300 space-y-1">
                   <div><span className="text-slate-200">!ask &lt;Text&gt;</span> – Chatte mit dem aktuellen Charakter</div>
                   <div><span className="text-slate-200">!character &lt;Name&gt;</span> – Wechselt den aktiven Charakter</div>
                   <div><span className="text-slate-200">!status</span> – Zeigt aktuellen Charakter & Emotion</div>
@@ -772,7 +772,7 @@ export const IntegrationsView: React.FC = () => {
               <div className="bg-slate-900/80 border border-slate-800 rounded-2xl p-6 shadow-xl space-y-4">
                 <div className="flex items-center justify-between">
                   <div className="flex items-center gap-3">
-                    <div className="w-10 h-10 rounded-xl bg-purple-500/20 border border-purple-500/40 flex items-center justify-center text-purple-400">
+                    <div className="w-10 h-10 rounded-xl bg-accent-500/20 border border-accent-500/40 flex items-center justify-center text-accent-400">
                       <Palette className="w-5 h-5" />
                     </div>
                     <div>
@@ -805,7 +805,7 @@ export const IntegrationsView: React.FC = () => {
                           provider: e.target.value,
                         })
                       }
-                      className="w-full bg-slate-950 border border-slate-700 rounded-xl px-3 py-2 text-xs text-slate-100"
+                      className="w-full bg-app border border-slate-700 rounded-xl px-3 py-2 text-xs text-slate-100"
                     >
                       <option value="automatic1111">Automatic1111 (SD WebUI)</option>
                       <option value="comfy_ui">ComfyUI</option>
@@ -829,7 +829,7 @@ export const IntegrationsView: React.FC = () => {
                             width: parseInt(e.target.value) || 512,
                           })
                         }
-                        className="bg-slate-950 border border-slate-700 rounded-xl px-2 py-2 text-xs text-slate-100 font-mono text-center"
+                        className="bg-app border border-slate-700 rounded-xl px-2 py-2 text-xs text-slate-100 font-mono text-center"
                         placeholder="Breite"
                       />
                       <input
@@ -841,7 +841,7 @@ export const IntegrationsView: React.FC = () => {
                             height: parseInt(e.target.value) || 768,
                           })
                         }
-                        className="bg-slate-950 border border-slate-700 rounded-xl px-2 py-2 text-xs text-slate-100 font-mono text-center"
+                        className="bg-app border border-slate-700 rounded-xl px-2 py-2 text-xs text-slate-100 font-mono text-center"
                         placeholder="Höhe"
                       />
                     </div>
@@ -859,7 +859,7 @@ export const IntegrationsView: React.FC = () => {
                       setLocalImgConfig({ ...localImgConfig, api_url: e.target.value })
                     }
                     placeholder="http://127.0.0.1:7860"
-                    className="w-full bg-slate-950 border border-slate-700 rounded-xl px-3 py-2 text-xs text-slate-100 font-mono"
+                    className="w-full bg-app border border-slate-700 rounded-xl px-3 py-2 text-xs text-slate-100 font-mono"
                   />
                 </div>
 
@@ -878,7 +878,7 @@ export const IntegrationsView: React.FC = () => {
                         })
                       }
                       placeholder="sk-..."
-                      className="flex-1 bg-slate-950 border border-slate-700 rounded-xl px-3 py-2 text-xs text-slate-100 font-mono"
+                      className="flex-1 bg-app border border-slate-700 rounded-xl px-3 py-2 text-xs text-slate-100 font-mono"
                     />
                     <button
                       type="button"
@@ -906,7 +906,7 @@ export const IntegrationsView: React.FC = () => {
                           steps: parseInt(e.target.value) || 28,
                         })
                       }
-                      className="w-full accent-purple-500"
+                      className="w-full accent-accent-500"
                     />
                   </div>
 
@@ -926,7 +926,7 @@ export const IntegrationsView: React.FC = () => {
                           cfg_scale: parseFloat(e.target.value) || 7.0,
                         })
                       }
-                      className="w-full accent-purple-500"
+                      className="w-full accent-accent-500"
                     />
                   </div>
                 </div>
@@ -936,13 +936,13 @@ export const IntegrationsView: React.FC = () => {
               <div className="bg-slate-900/80 border border-slate-800 rounded-2xl p-6 shadow-xl space-y-4">
                 <div className="flex items-center justify-between">
                   <div className="flex items-center gap-2">
-                    <Wand2 className="w-4 h-4 text-purple-400" />
+                    <Wand2 className="w-4 h-4 text-accent-400" />
                     <h2 className="text-sm font-bold text-slate-100">Live-Synthesizer Studio</h2>
                   </div>
 
                   <button
                     onClick={handleBuildPromptFromContext}
-                    className="flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-purple-600/20 hover:bg-purple-600/30 text-purple-300 text-xs border border-purple-500/40 transition"
+                    className="flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-accent-600/20 hover:bg-accent-600/30 text-accent-300 text-xs border border-accent-500/40 transition"
                     title="Baut einen Bild-Prompt aus dem aktuellen Charakter & Emotion"
                   >
                     <Sparkles className="w-3.5 h-3.5" />
@@ -959,7 +959,7 @@ export const IntegrationsView: React.FC = () => {
                     value={testPrompt}
                     onChange={(e) => setTestPrompt(e.target.value)}
                     placeholder="1girl, anime masterpiece, silver hair, cyber jacket, smiling..."
-                    className="w-full bg-slate-950 border border-slate-700 rounded-xl p-3 text-xs text-slate-100 focus:outline-none focus:border-purple-500 resize-none font-mono"
+                    className="w-full bg-app border border-slate-700 rounded-xl p-3 text-xs text-slate-100 focus:outline-none focus:border-accent-500 resize-none font-mono"
                   />
                 </div>
 
@@ -972,14 +972,14 @@ export const IntegrationsView: React.FC = () => {
                     value={testNegative}
                     onChange={(e) => setTestNegative(e.target.value)}
                     placeholder="low quality, bad hands, blurry..."
-                    className="w-full bg-slate-950 border border-slate-700 rounded-xl p-2.5 text-xs text-slate-300 focus:outline-none focus:border-purple-500 resize-none font-mono"
+                    className="w-full bg-app border border-slate-700 rounded-xl p-2.5 text-xs text-slate-300 focus:outline-none focus:border-accent-500 resize-none font-mono"
                   />
                 </div>
 
                 <button
                   onClick={handleGenerateImage}
                   disabled={isGeneratingImage || !testPrompt.trim()}
-                  className="w-full py-2.5 rounded-xl bg-gradient-to-r from-purple-600 to-indigo-600 hover:from-purple-500 hover:to-indigo-500 text-white font-medium text-xs shadow-lg shadow-purple-600/30 disabled:opacity-50 flex items-center justify-center gap-2 transition"
+                  className="w-full py-2.5 rounded-xl bg-gradient-to-r from-accent-600 to-indigo-600 hover:from-accent-500 hover:to-indigo-500 text-white font-medium text-xs shadow-lg shadow-accent-600/30 disabled:opacity-50 flex items-center justify-center gap-2 transition"
                 >
                   {isGeneratingImage ? (
                     <>
@@ -1000,7 +1000,7 @@ export const IntegrationsView: React.FC = () => {
             <div className="bg-slate-900/80 border border-slate-800 rounded-2xl p-6 shadow-xl space-y-4">
               <div className="flex items-center justify-between">
                 <div className="flex items-center gap-2">
-                  <ImageIcon className="w-4 h-4 text-purple-400" />
+                  <ImageIcon className="w-4 h-4 text-accent-400" />
                   <h3 className="text-sm font-bold text-slate-100">
                     Generierte Bilder-Galerie ({generatedImages.length})
                   </h3>
@@ -1024,10 +1024,10 @@ export const IntegrationsView: React.FC = () => {
                   {generatedImages.map((img, idx) => (
                     <div
                       key={idx}
-                      className="group relative bg-slate-950 border border-slate-800 rounded-xl overflow-hidden shadow-md flex flex-col p-3 space-y-2"
+                      className="group relative bg-app border border-slate-800 rounded-xl overflow-hidden shadow-md flex flex-col p-3 space-y-2"
                     >
                       <div className="w-full aspect-[2/3] bg-slate-900 rounded-lg flex items-center justify-center border border-slate-800">
-                        <ImageIcon className="w-8 h-8 text-purple-400 opacity-60" />
+                        <ImageIcon className="w-8 h-8 text-accent-400 opacity-60" />
                       </div>
                       <div className="text-[11px] font-mono text-slate-200 truncate">
                         {img.file_name}
@@ -1071,7 +1071,7 @@ export const IntegrationsView: React.FC = () => {
                   value={backupLabel}
                   onChange={(e) => setBackupLabel(e.target.value)}
                   placeholder="z. B. Vor Update, Cyberpunk Stage Setup..."
-                  className="w-full bg-slate-950 border border-slate-700 rounded-xl px-3 py-2 text-xs text-slate-100"
+                  className="w-full bg-app border border-slate-700 rounded-xl px-3 py-2 text-xs text-slate-100"
                 />
               </div>
 
@@ -1098,7 +1098,7 @@ export const IntegrationsView: React.FC = () => {
                       onChange={(e) =>
                         setBackupGroups({ ...backupGroups, [item.key]: e.target.checked })
                       }
-                      className="rounded bg-slate-950 border-slate-700 text-emerald-600 focus:ring-0"
+                      className="rounded bg-app border-slate-700 text-emerald-600 focus:ring-0"
                     />
                     <span>{item.label}</span>
                   </label>
@@ -1162,7 +1162,7 @@ export const IntegrationsView: React.FC = () => {
                         className={`p-4 rounded-xl border flex flex-col md:flex-row items-start md:items-center justify-between gap-3 transition ${
                           isSafety
                             ? 'bg-amber-950/20 border-amber-500/30'
-                            : 'bg-slate-950 border-slate-800/80'
+                            : 'bg-app border-slate-800/80'
                         }`}
                       >
                         <div className="space-y-1">

@@ -125,8 +125,8 @@ export const RoleplayMessage: React.FC<RoleplayMessageProps> = ({ content, isUse
                 key={i}
                 className={`italic transition-colors ${
                   isUser
-                    ? 'text-purple-200/85 font-normal'
-                    : 'text-purple-300/90 font-normal'
+                    ? 'text-accent-200/85 font-normal'
+                    : 'text-accent-300/90 font-normal'
                 }`}
               >
                 {seg.text}
@@ -154,7 +154,7 @@ export const RoleplayMessage: React.FC<RoleplayMessageProps> = ({ content, isUse
           return (
             <span
               key={i}
-              className={isUser ? 'text-purple-50' : 'text-slate-200'}
+              className={isUser ? 'text-accent-50' : 'text-slate-200'}
             >
               {seg.text}
             </span>
@@ -165,7 +165,7 @@ export const RoleplayMessage: React.FC<RoleplayMessageProps> = ({ content, isUse
       {!isUser && onSpeak && (
         <button
           onClick={onSpeak}
-          className="absolute -right-8 top-0 p-1.5 text-slate-500 hover:text-purple-400 bg-slate-900/50 hover:bg-slate-800 rounded-md opacity-0 group-hover/roleplay:opacity-100 transition-all shadow-sm border border-slate-800"
+          className="absolute -right-8 top-0 p-1.5 text-slate-500 hover:text-accent-400 bg-slate-900/50 hover:bg-slate-800 rounded-md opacity-0 group-hover/roleplay:opacity-100 transition-all shadow-sm border border-slate-800"
           title="Vorlesen (TTS)"
         >
           <Volume2 className="w-4 h-4" />

@@ -412,7 +412,7 @@ export const Live2DViewer: React.FC<Live2DViewerProps> = ({
   };
 
   return (
-    <div className="relative w-full h-full flex flex-col items-center justify-center overflow-hidden bg-slate-950/60 select-none">
+    <div className="relative w-full h-full flex flex-col items-center justify-center overflow-hidden bg-app/60 select-none">
       {/* 2D PixiJS Canvas Container */}
       <div
         ref={containerRef}
@@ -421,7 +421,7 @@ export const Live2DViewer: React.FC<Live2DViewerProps> = ({
 
       {/* Loading Overlay */}
       {loading && (
-        <div className="absolute inset-0 z-20 flex flex-col items-center justify-center bg-slate-950/70 backdrop-blur-sm gap-2 text-purple-400">
+        <div className="absolute inset-0 z-20 flex flex-col items-center justify-center bg-app/70 backdrop-blur-sm gap-2 text-accent-400">
           <Loader2 className="w-8 h-8 animate-spin" />
           <span className="text-xs font-medium text-slate-300">
             Live2D-Modell wird geladen...
@@ -441,14 +441,14 @@ export const Live2DViewer: React.FC<Live2DViewerProps> = ({
       <div className="absolute bottom-3 right-3 z-20 flex items-center gap-1.5 bg-slate-900/80 p-1 rounded-xl border border-slate-700/60 backdrop-blur shadow-lg text-slate-300">
         <button
           onClick={handleTriggerRandomMotion}
-          className="p-1.5 hover:text-purple-400 hover:bg-slate-800 rounded-lg transition-colors text-xs flex items-center gap-1"
+          className="p-1.5 hover:text-accent-400 hover:bg-slate-800 rounded-lg transition-colors text-xs flex items-center gap-1"
           title="Animation abspielen"
         >
           <Sparkles className="w-3.5 h-3.5" />
         </button>
         <button
           onClick={handleResetView}
-          className="p-1.5 hover:text-purple-400 hover:bg-slate-800 rounded-lg transition-colors text-xs"
+          className="p-1.5 hover:text-accent-400 hover:bg-slate-800 rounded-lg transition-colors text-xs"
           title="Ansicht zurücksetzen"
         >
           <RefreshCw className="w-3.5 h-3.5" />
@@ -457,8 +457,8 @@ export const Live2DViewer: React.FC<Live2DViewerProps> = ({
 
       {/* Current Emotion Indicator Top-Left */}
       {emotion && emotion !== 'neutral' && (
-        <div className="absolute top-3 left-3 z-20 px-2.5 py-1 bg-purple-950/60 border border-purple-500/30 rounded-lg backdrop-blur text-[11px] text-purple-300 font-mono shadow-md flex items-center gap-1.5">
-          <span className="w-2 h-2 rounded-full bg-purple-400 animate-pulse" />
+        <div className="absolute top-3 left-3 z-20 px-2.5 py-1 bg-accent-950/60 border border-accent-500/30 rounded-lg backdrop-blur text-[11px] text-accent-300 font-mono shadow-md flex items-center gap-1.5">
+          <span className="w-2 h-2 rounded-full bg-accent-400 animate-pulse" />
           <span className="capitalize">{emotion}</span>
         </div>
       )}

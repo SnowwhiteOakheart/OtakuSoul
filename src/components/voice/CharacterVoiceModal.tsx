@@ -53,7 +53,7 @@ const DEFAULT_CONFIG: VoiceConfig = {
 
 type VoiceTab = 'tts' | 'stt' | 'rvc';
 
-const fieldClass = 'w-full bg-slate-950 border border-slate-800 rounded-lg p-2.5 text-sm text-slate-200 outline-none focus:border-purple-500/60';
+const fieldClass = 'w-full bg-app border border-slate-800 rounded-lg p-2.5 text-sm text-slate-200 outline-none focus:border-accent-500/60';
 const labelClass = 'block text-xs font-medium text-slate-300 mb-1';
 
 function signedValue(value: number, suffix: '%' | 'Hz') {
@@ -277,7 +277,7 @@ export function CharacterVoiceModal({ onClose }: CharacterVoiceModalProps) {
               key={id}
               onClick={() => setTab(id)}
               className={`flex items-center gap-2 px-3 py-2.5 text-xs border-b-2 transition-colors ${
-                tab === id ? 'border-purple-400 text-purple-200' : 'border-transparent text-slate-500 hover:text-slate-300'
+                tab === id ? 'border-accent-400 text-accent-200' : 'border-transparent text-slate-500 hover:text-slate-300'
               }`}
             >
               <Icon className="w-3.5 h-3.5" />
@@ -388,7 +388,7 @@ export function CharacterVoiceModal({ onClose }: CharacterVoiceModalProps) {
                   </div>
 
                   {draft.engine === 'openai' && (
-                    <div className="space-y-4 rounded-lg border border-slate-800 bg-slate-950/40 p-4">
+                    <div className="space-y-4 rounded-lg border border-slate-800 bg-app/40 p-4">
                       <p className="text-xs text-slate-400">Unterstützt OpenAI sowie OpenAI-kompatible Server für Kokoro, Qwen3-TTS, XTTSv2, Silero und AllTalk.</p>
                       <label>
                         <span className={labelClass}>Speech-Endpunkt</span>
@@ -413,7 +413,7 @@ export function CharacterVoiceModal({ onClose }: CharacterVoiceModalProps) {
                     ] as const).map(([key, label, suffix, min, max]) => (
                       <label key={key}>
                         <span className={`${labelClass} flex justify-between`}><span>{label}</span><span>{draft[key]}</span></span>
-                        <input type="range" min={min} max={max} value={numericValue(draft[key])} onChange={(event) => update(key, signedValue(Number(event.target.value), suffix))} disabled={draft.engine === 'kokoro' && key === 'pitch'} className="w-full accent-purple-500 disabled:opacity-35" />
+                        <input type="range" min={min} max={max} value={numericValue(draft[key])} onChange={(event) => update(key, signedValue(Number(event.target.value), suffix))} disabled={draft.engine === 'kokoro' && key === 'pitch'} className="w-full accent-accent-500 disabled:opacity-35" />
                       </label>
                     ))}
                   </div>
@@ -468,13 +468,13 @@ export function CharacterVoiceModal({ onClose }: CharacterVoiceModalProps) {
                   <span className={labelClass}>whisper.cpp-Modell (.bin/.ggml/.gguf)</span>
                   <div className="flex gap-2">
                     <input value={draft.stt.whisper_model_path} onChange={(event) => updateStt('whisper_model_path', event.target.value)} className={fieldClass} placeholder="ggml-small.bin" />
-                    <button onClick={() => void selectWhisperModel()} className="px-3 rounded-lg border border-purple-500/40 text-purple-200 hover:bg-purple-950/40">Wählen</button>
+                    <button onClick={() => void selectWhisperModel()} className="px-3 rounded-lg border border-accent-500/40 text-accent-200 hover:bg-accent-950/40">Wählen</button>
                   </div>
                 </label>
               )}
 
               {draft.stt.engine === 'openai' && (
-                <div className="space-y-4 rounded-lg border border-slate-800 bg-slate-950/40 p-4">
+                <div className="space-y-4 rounded-lg border border-slate-800 bg-app/40 p-4">
                   <p className="text-xs text-slate-400">Funktioniert mit OpenAI und lokalen whisper.cpp/Faster-Whisper-Servern, die <code>/v1/audio/transcriptions</code> anbieten.</p>
                   <label><span className={labelClass}>Transkriptions-Endpunkt</span><input value={draft.stt.endpoint} onChange={(event) => updateStt('endpoint', event.target.value)} className={fieldClass} /></label>
                   <div className="grid sm:grid-cols-2 gap-4">
@@ -502,9 +502,9 @@ export function CharacterVoiceModal({ onClose }: CharacterVoiceModalProps) {
 
           {tab === 'rvc' && (
             <>
-              <label className="flex items-center justify-between rounded-lg border border-slate-800 bg-slate-950/50 p-3">
+              <label className="flex items-center justify-between rounded-lg border border-slate-800 bg-app/50 p-3">
                 <span><span className="block text-sm text-slate-200">RVC Voice Conversion</span><span className="block text-xs text-slate-500">Wendet nach jeder TTS-Ausgabe ein optionales Stimmenmodell an.</span></span>
-                <input type="checkbox" checked={draft.rvc.enabled} onChange={(event) => updateRvc('enabled', event.target.checked)} className="w-4 h-4 accent-purple-500" />
+                <input type="checkbox" checked={draft.rvc.enabled} onChange={(event) => updateRvc('enabled', event.target.checked)} className="w-4 h-4 accent-accent-500" />
               </label>
               {draft.rvc.enabled && (
                 <>
@@ -515,9 +515,9 @@ export function CharacterVoiceModal({ onClose }: CharacterVoiceModalProps) {
                     <label><span className={labelClass}>API-Key (optional)</span><input type="password" value={draft.rvc.api_key} onChange={(event) => updateRvc('api_key', event.target.value)} className={fieldClass} /></label>
                   </div>
                   <div className="grid sm:grid-cols-3 gap-4">
-                    <label><span className={`${labelClass} flex justify-between`}><span>Pitch</span><span>{draft.rvc.pitch}</span></span><input type="range" min="-24" max="24" value={draft.rvc.pitch} onChange={(event) => updateRvc('pitch', Number(event.target.value))} className="w-full accent-purple-500" /></label>
-                    <label><span className={`${labelClass} flex justify-between`}><span>Index Rate</span><span>{draft.rvc.index_rate.toFixed(2)}</span></span><input type="range" min="0" max="1" step="0.05" value={draft.rvc.index_rate} onChange={(event) => updateRvc('index_rate', Number(event.target.value))} className="w-full accent-purple-500" /></label>
-                    <label><span className={`${labelClass} flex justify-between`}><span>Protect</span><span>{draft.rvc.protect.toFixed(2)}</span></span><input type="range" min="0" max="0.5" step="0.01" value={draft.rvc.protect} onChange={(event) => updateRvc('protect', Number(event.target.value))} className="w-full accent-purple-500" /></label>
+                    <label><span className={`${labelClass} flex justify-between`}><span>Pitch</span><span>{draft.rvc.pitch}</span></span><input type="range" min="-24" max="24" value={draft.rvc.pitch} onChange={(event) => updateRvc('pitch', Number(event.target.value))} className="w-full accent-accent-500" /></label>
+                    <label><span className={`${labelClass} flex justify-between`}><span>Index Rate</span><span>{draft.rvc.index_rate.toFixed(2)}</span></span><input type="range" min="0" max="1" step="0.05" value={draft.rvc.index_rate} onChange={(event) => updateRvc('index_rate', Number(event.target.value))} className="w-full accent-accent-500" /></label>
+                    <label><span className={`${labelClass} flex justify-between`}><span>Protect</span><span>{draft.rvc.protect.toFixed(2)}</span></span><input type="range" min="0" max="0.5" step="0.01" value={draft.rvc.protect} onChange={(event) => updateRvc('protect', Number(event.target.value))} className="w-full accent-accent-500" /></label>
                   </div>
                 </>
               )}
@@ -533,7 +533,7 @@ export function CharacterVoiceModal({ onClose }: CharacterVoiceModalProps) {
           </button>
           <div className="flex gap-3">
             <button onClick={onClose} className="px-4 py-2 hover:bg-slate-800 text-slate-300 rounded-lg">Abbrechen</button>
-            <button onClick={() => void handleSave()} className="flex items-center gap-2 px-4 py-2 bg-purple-600 hover:bg-purple-500 text-white rounded-lg shadow-lg shadow-purple-500/20"><Save className="w-4 h-4" />Speichern</button>
+            <button onClick={() => void handleSave()} className="flex items-center gap-2 px-4 py-2 bg-accent-600 hover:bg-accent-500 text-white rounded-lg shadow-lg shadow-accent-500/20"><Save className="w-4 h-4" />Speichern</button>
           </div>
         </div>
       </div>

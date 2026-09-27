@@ -103,7 +103,7 @@ export const ChatSidebar: React.FC<ChatSidebarProps> = ({ isOpen, onClose }) => 
       {/* Sidebar Header */}
       <div className="p-3 border-b border-slate-800 flex items-center justify-between">
         <div className="flex items-center gap-2">
-          <MessageSquare className="w-4 h-4 text-purple-400" />
+          <MessageSquare className="w-4 h-4 text-accent-400" />
           <span className="font-semibold text-sm">Gesprächs-Manager</span>
         </div>
         <button
@@ -116,12 +116,12 @@ export const ChatSidebar: React.FC<ChatSidebarProps> = ({ isOpen, onClose }) => 
       </div>
 
       {/* Sub Tabs */}
-      <div className="grid grid-cols-3 p-1.5 gap-1 bg-slate-950/60 border-b border-slate-800/80 text-xs">
+      <div className="grid grid-cols-3 p-1.5 gap-1 bg-app/60 border-b border-slate-800/80 text-xs">
         <button
           onClick={() => setActiveTab('chats')}
           className={`py-1.5 px-2 rounded-md font-medium transition-all ${
             activeTab === 'chats'
-              ? 'bg-purple-600/30 text-purple-300 border border-purple-500/40 shadow-sm'
+              ? 'bg-accent-600/30 text-accent-300 border border-accent-500/40 shadow-sm'
               : 'text-slate-400 hover:text-slate-200 hover:bg-slate-800/40'
           }`}
         >
@@ -131,7 +131,7 @@ export const ChatSidebar: React.FC<ChatSidebarProps> = ({ isOpen, onClose }) => 
           onClick={() => setActiveTab('author_note')}
           className={`py-1.5 px-2 rounded-md font-medium transition-all ${
             activeTab === 'author_note'
-              ? 'bg-purple-600/30 text-purple-300 border border-purple-500/40 shadow-sm'
+              ? 'bg-accent-600/30 text-accent-300 border border-accent-500/40 shadow-sm'
               : 'text-slate-400 hover:text-slate-200 hover:bg-slate-800/40'
           }`}
         >
@@ -141,7 +141,7 @@ export const ChatSidebar: React.FC<ChatSidebarProps> = ({ isOpen, onClose }) => 
           onClick={() => setActiveTab('presets')}
           className={`py-1.5 px-2 rounded-md font-medium transition-all ${
             activeTab === 'presets'
-              ? 'bg-purple-600/30 text-purple-300 border border-purple-500/40 shadow-sm'
+              ? 'bg-accent-600/30 text-accent-300 border border-accent-500/40 shadow-sm'
               : 'text-slate-400 hover:text-slate-200 hover:bg-slate-800/40'
           }`}
         >
@@ -158,7 +158,7 @@ export const ChatSidebar: React.FC<ChatSidebarProps> = ({ isOpen, onClose }) => 
             </span>
             <button
               onClick={() => createNewChat()}
-              className="flex items-center gap-1.5 px-3 py-1 bg-purple-600 hover:bg-purple-500 text-white rounded-lg text-xs font-medium transition-all shadow-md"
+              className="flex items-center gap-1.5 px-3 py-1 bg-accent-600 hover:bg-accent-500 text-white rounded-lg text-xs font-medium transition-all shadow-md"
             >
               <Plus className="w-3.5 h-3.5" />
               <span>Neuer Chat</span>
@@ -180,8 +180,8 @@ export const ChatSidebar: React.FC<ChatSidebarProps> = ({ isOpen, onClose }) => 
                     key={session.id}
                     className={`group relative rounded-xl p-2.5 transition-all border ${
                       isActive
-                        ? 'bg-purple-950/40 border-purple-500/50 text-white shadow-sm'
-                        : 'bg-slate-950/40 border-slate-800/60 text-slate-300 hover:bg-slate-800/50 hover:border-slate-700'
+                        ? 'bg-accent-950/40 border-accent-500/50 text-white shadow-sm'
+                        : 'bg-app/40 border-slate-800/60 text-slate-300 hover:bg-slate-800/50 hover:border-slate-700'
                     }`}
                   >
                     {isEditing ? (
@@ -195,7 +195,7 @@ export const ChatSidebar: React.FC<ChatSidebarProps> = ({ isOpen, onClose }) => 
                             if (e.key === 'Escape') setEditingChatId(null);
                           }}
                           autoFocus
-                          className="flex-1 bg-slate-900 border border-purple-500/60 rounded px-2 py-1 text-xs text-white focus:outline-none"
+                          className="flex-1 bg-slate-900 border border-accent-500/60 rounded px-2 py-1 text-xs text-white focus:outline-none"
                         />
                         <button
                           onClick={() => handleSaveRename(session.id)}
@@ -226,7 +226,7 @@ export const ChatSidebar: React.FC<ChatSidebarProps> = ({ isOpen, onClose }) => 
                         <div className="text-[10px] text-slate-500 flex items-center justify-between">
                           <span>{new Date(session.updated_at * 1000).toLocaleDateString()}</span>
                           {session.author_note && (
-                            <span className="text-purple-400 flex items-center gap-0.5">
+                            <span className="text-accent-400 flex items-center gap-0.5">
                               <Bookmark className="w-2.5 h-2.5" /> Note
                             </span>
                           )}
@@ -242,7 +242,7 @@ export const ChatSidebar: React.FC<ChatSidebarProps> = ({ isOpen, onClose }) => 
                             e.stopPropagation();
                             handleStartRename(session);
                           }}
-                          className="p-1 text-slate-400 hover:text-purple-300 transition-colors"
+                          className="p-1 text-slate-400 hover:text-accent-300 transition-colors"
                           title="Umbenennen"
                         >
                           <Edit2 className="w-3 h-3" />
@@ -268,14 +268,14 @@ export const ChatSidebar: React.FC<ChatSidebarProps> = ({ isOpen, onClose }) => 
           </div>
 
           {/* Import / Export Buttons */}
-          <div className="p-3 border-t border-slate-800 bg-slate-950/80 flex items-center gap-2">
+          <div className="p-3 border-t border-slate-800 bg-app/80 flex items-center gap-2">
             <button
               onClick={handleExport}
               disabled={!activeChatId}
               className="flex-1 flex items-center justify-center gap-1.5 py-1.5 px-2 bg-slate-800 hover:bg-slate-700 disabled:opacity-40 text-xs font-medium rounded-lg text-slate-200 transition-colors"
               title="Aktuellen Chat als SillyTavern JSONL exportieren"
             >
-              <FileDown className="w-3.5 h-3.5 text-purple-400" />
+              <FileDown className="w-3.5 h-3.5 text-accent-400" />
               <span>Exportieren</span>
             </button>
 
@@ -298,7 +298,7 @@ export const ChatSidebar: React.FC<ChatSidebarProps> = ({ isOpen, onClose }) => 
       {activeTab === 'author_note' && (
         <div className="flex-1 flex flex-col p-4 overflow-y-auto space-y-4">
           <div>
-            <div className="flex items-center gap-1.5 text-purple-400 mb-1">
+            <div className="flex items-center gap-1.5 text-accent-400 mb-1">
               <Bookmark className="w-4 h-4" />
               <h3 className="text-xs font-semibold uppercase tracking-wider">Author's Note</h3>
             </div>
@@ -314,14 +314,14 @@ export const ChatSidebar: React.FC<ChatSidebarProps> = ({ isOpen, onClose }) => 
               onChange={(e) => setAuthorNoteInput(e.target.value)}
               placeholder="z. B. [Ayu wirkt besonders nachdenklich und spricht leiser...]"
               rows={5}
-              className="w-full bg-slate-950/80 border border-slate-700/80 rounded-xl p-3 text-xs text-slate-100 placeholder-slate-500 focus:outline-none focus:border-purple-500 resize-none"
+              className="w-full bg-app/80 border border-slate-700/80 rounded-xl p-3 text-xs text-slate-100 placeholder-slate-500 focus:outline-none focus:border-accent-500 resize-none"
             />
           </div>
 
           <div className="space-y-2">
             <div className="flex items-center justify-between">
               <label className="text-xs font-medium text-slate-300">Injektionstiefe (Depth)</label>
-              <span className="text-xs font-mono text-purple-400">{authorNoteDepthInput}</span>
+              <span className="text-xs font-mono text-accent-400">{authorNoteDepthInput}</span>
             </div>
             <input
               type="range"
@@ -329,7 +329,7 @@ export const ChatSidebar: React.FC<ChatSidebarProps> = ({ isOpen, onClose }) => 
               max={6}
               value={authorNoteDepthInput}
               onChange={(e) => setAuthorNoteDepthInput(parseInt(e.target.value, 10))}
-              className="w-full accent-purple-500 cursor-pointer"
+              className="w-full accent-accent-500 cursor-pointer"
             />
             <p className="text-[11px] text-slate-500">
               0 = direkt im System-Prompt. 2 = 2 Nachrichten vor Ende der Historie (SillyTavern Standard).
@@ -338,7 +338,7 @@ export const ChatSidebar: React.FC<ChatSidebarProps> = ({ isOpen, onClose }) => 
 
           <button
             onClick={handleSaveAuthorNote}
-            className="w-full py-2 bg-purple-600 hover:bg-purple-500 text-white rounded-xl text-xs font-medium transition-all shadow-md flex items-center justify-center gap-1.5"
+            className="w-full py-2 bg-accent-600 hover:bg-accent-500 text-white rounded-xl text-xs font-medium transition-all shadow-md flex items-center justify-center gap-1.5"
           >
             <Check className="w-4 h-4" />
             <span>Author's Note Speichern</span>
@@ -350,7 +350,7 @@ export const ChatSidebar: React.FC<ChatSidebarProps> = ({ isOpen, onClose }) => 
       {activeTab === 'presets' && (
         <div className="flex-1 flex flex-col p-3 overflow-y-auto space-y-2">
           <div className="mb-2">
-            <div className="flex items-center gap-1.5 text-purple-400 mb-1">
+            <div className="flex items-center gap-1.5 text-accent-400 mb-1">
               <Sliders className="w-4 h-4" />
               <h3 className="text-xs font-semibold uppercase tracking-wider">HUD Status-Presets</h3>
             </div>
@@ -364,16 +364,16 @@ export const ChatSidebar: React.FC<ChatSidebarProps> = ({ isOpen, onClose }) => 
               <div
                 key={preset.id}
                 onClick={() => applyHudPreset(preset.id)}
-                className="group p-2.5 rounded-xl border border-slate-800/80 bg-slate-950/60 hover:bg-slate-800/50 hover:border-purple-500/40 cursor-pointer transition-all"
+                className="group p-2.5 rounded-xl border border-slate-800/80 bg-app/60 hover:bg-slate-800/50 hover:border-accent-500/40 cursor-pointer transition-all"
               >
                 <div className="flex items-center justify-between mb-1">
                   <div className="flex items-center gap-2">
                     <span className={`w-2 h-2 rounded-full bg-gradient-to-r ${preset.color}`} />
-                    <span className="font-semibold text-xs text-white group-hover:text-purple-300 transition-colors">
+                    <span className="font-semibold text-xs text-white group-hover:text-accent-300 transition-colors">
                       {preset.name}
                     </span>
                   </div>
-                  <ChevronRight className="w-3.5 h-3.5 text-slate-500 group-hover:text-purple-400 transition-colors" />
+                  <ChevronRight className="w-3.5 h-3.5 text-slate-500 group-hover:text-accent-400 transition-colors" />
                 </div>
                 <p className="text-[11px] text-slate-400 line-clamp-2 leading-relaxed mb-1.5">
                   {preset.description}

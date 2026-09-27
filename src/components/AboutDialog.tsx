@@ -27,7 +27,7 @@ export function AboutDialog({ onClose }: AboutDialogProps) {
 
   return createPortal(
     <div
-      className="fixed inset-0 z-[9999] grid place-items-center overflow-y-auto bg-slate-950/85 p-5 backdrop-blur-md"
+      className="fixed inset-0 z-[9999] grid place-items-center overflow-y-auto bg-app/85 p-5 backdrop-blur-md"
       role="dialog"
       aria-modal="true"
       aria-labelledby="about-title"
@@ -35,11 +35,11 @@ export function AboutDialog({ onClose }: AboutDialogProps) {
         if (event.target === event.currentTarget) onClose();
       }}
     >
-      <section className="relative max-h-[calc(100vh-2.5rem)] w-full max-w-3xl overflow-y-auto rounded-3xl border border-purple-400/25 bg-slate-950 shadow-2xl shadow-purple-950/60">
+      <section className="relative max-h-[calc(100vh-2.5rem)] w-full max-w-3xl overflow-y-auto rounded-3xl border border-accent-400/25 bg-app shadow-2xl shadow-accent-950/60">
         <button
           type="button"
           onClick={onClose}
-          className="absolute right-4 top-4 z-10 rounded-full border border-white/10 bg-slate-950/70 p-2 text-slate-300 backdrop-blur transition hover:border-purple-400/40 hover:text-white"
+          className="absolute right-4 top-4 z-10 rounded-full border border-white/10 bg-app/70 p-2 text-slate-300 backdrop-blur transition hover:border-accent-400/40 hover:text-white"
           aria-label="Über-Dialog schließen"
         >
           <X className="h-4 w-4" />
@@ -52,13 +52,13 @@ export function AboutDialog({ onClose }: AboutDialogProps) {
         />
 
         <div className="relative space-y-5 p-6 sm:p-8">
-          <div className="pointer-events-none absolute inset-x-0 top-0 h-px bg-gradient-to-r from-transparent via-purple-400/70 to-transparent" />
+          <div className="pointer-events-none absolute inset-x-0 top-0 h-px bg-gradient-to-r from-transparent via-accent-400/70 to-transparent" />
           <div>
             <div className="flex flex-wrap items-center gap-3">
               <h2 id="about-title" className="text-2xl font-semibold tracking-wide text-white">
                 OtakuSoul
               </h2>
-              <span className="rounded-full border border-purple-400/30 bg-purple-500/10 px-2.5 py-1 font-mono text-[11px] text-purple-200">
+              <span className="rounded-full border border-accent-400/30 bg-accent-500/10 px-2.5 py-1 font-mono text-[11px] text-accent-200">
                 v0.1.0
               </span>
             </div>
@@ -74,7 +74,7 @@ export function AboutDialog({ onClose }: AboutDialogProps) {
                 key={label}
                 className="flex items-center gap-2.5 rounded-xl border border-slate-800 bg-slate-900/70 px-3 py-2.5 text-xs text-slate-200"
               >
-                <Icon className="h-4 w-4 text-purple-300" />
+                <Icon className="h-4 w-4 text-accent-300" />
                 <span>{label}</span>
               </div>
             ))}

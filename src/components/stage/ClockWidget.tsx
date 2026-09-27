@@ -45,8 +45,8 @@ export const ClockWidget: React.FC<ClockWidgetProps> = ({
     }
     if (clock_type === 'mystery') {
       return isComplete
-        ? 'fill-purple-500 stroke-purple-400'
-        : 'fill-purple-500/80 stroke-purple-400/80';
+        ? 'fill-accent-500 stroke-accent-400'
+        : 'fill-accent-500/80 stroke-accent-400/80';
     }
     return isComplete
       ? 'fill-amber-500 stroke-amber-400'
@@ -82,7 +82,7 @@ export const ClockWidget: React.FC<ClockWidgetProps> = ({
             cx={center}
             cy={center}
             r={radius}
-            className="fill-slate-950 stroke-slate-700/50 stroke-2"
+            className="fill-app stroke-slate-700/50 stroke-2"
           />
 
           {/* Wedges */}
@@ -105,7 +105,7 @@ export const ClockWidget: React.FC<ClockWidgetProps> = ({
             cx={center}
             cy={center}
             r={12}
-            className="fill-slate-950 stroke-slate-700/80 stroke-2 pointer-events-none"
+            className="fill-app stroke-slate-700/80 stroke-2 pointer-events-none"
           />
         </svg>
 

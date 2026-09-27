@@ -7,7 +7,7 @@ export const HUD_PRESETS: HudPreset[] = [
     category: 'Romance',
     description: 'Verfolge Zuneigung, Stimmung, Vertrauen und Beziehungsintensität.',
     icon: 'Heart',
-    color: 'from-pink-500 to-rose-600',
+    color: 'from-accent2-500 to-rose-600',
     defaultVariables: [
       { name: 'Affection', value: '50', var_type: 'progress', max_value: 100 },
       { name: 'Mood', value: 'Glücklich', var_type: 'str' },
@@ -51,7 +51,7 @@ export const HUD_PRESETS: HudPreset[] = [
     category: 'Horror',
     description: 'Psychologischer Horror mit Geistiger Gesundheit, Angstlevel und Herzfrequenz.',
     icon: 'Ghost',
-    color: 'from-purple-600 to-indigo-900',
+    color: 'from-accent-600 to-indigo-900',
     defaultVariables: [
       { name: 'Sanity', value: '80', var_type: 'progress', max_value: 100 },
       { name: 'Angst', value: '25', var_type: 'progress', max_value: 100 },
@@ -138,7 +138,7 @@ export const HUD_PRESETS: HudPreset[] = [
     category: 'Casual',
     description: 'Spaß-Barometer, Chaos-Grad, Glück und die allgemeine Stimmung.',
     icon: 'Sparkles',
-    color: 'from-fuchsia-500 to-pink-600',
+    color: 'from-fuchsia-500 to-accent2-600',
     defaultVariables: [
       { name: 'Spaß-Faktor', value: '90', var_type: 'progress', max_value: 100 },
       { name: 'Chaos-Level', value: '4', var_type: 'int', max_value: 10 },
@@ -152,7 +152,7 @@ export const HUD_PRESETS: HudPreset[] = [
     category: 'RPG',
     description: 'Rüstungsklasse, Trefferwürfel, Zauberplätze, Inspiration und Initiative.',
     icon: 'Dice5',
-    color: 'from-violet-600 to-purple-800',
+    color: 'from-violet-600 to-accent-800',
     defaultVariables: [
       { name: 'Rüstungsklasse (AC)', value: '16', var_type: 'int' },
       { name: 'Trefferwürfel', value: '4d8', var_type: 'str' },

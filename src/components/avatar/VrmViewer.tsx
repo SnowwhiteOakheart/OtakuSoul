@@ -358,15 +358,15 @@ export const VrmViewer = ({
   }, [modelPath]);
 
   return (
-    <div className="relative w-full h-full flex flex-col items-center justify-center overflow-hidden bg-gradient-to-b from-slate-900/40 via-purple-950/20 to-slate-950">
+    <div className="relative w-full h-full flex flex-col items-center justify-center overflow-hidden bg-gradient-to-b from-slate-900/40 via-accent-950/20 to-app">
       {/* 3D Canvas Container */}
       <div ref={containerRef} className="w-full h-full cursor-grab active:cursor-grabbing" />
 
       {/* Loading Overlay */}
       {loading && (
-        <div className="absolute inset-0 flex flex-col items-center justify-center bg-slate-950/80 backdrop-blur z-20 space-y-2">
-          <Loader2 className="w-8 h-8 text-purple-400 animate-spin" />
-          <span className="text-xs text-purple-300 font-mono">Lade 3D VRM Avatar...</span>
+        <div className="absolute inset-0 flex flex-col items-center justify-center bg-app/80 backdrop-blur z-20 space-y-2">
+          <Loader2 className="w-8 h-8 text-accent-400 animate-spin" />
+          <span className="text-xs text-accent-300 font-mono">Lade 3D VRM Avatar...</span>
         </div>
       )}
 
@@ -379,7 +379,7 @@ export const VrmViewer = ({
 
       <button
         onClick={() => resetViewRef.current?.()}
-        className="absolute bottom-4 right-4 z-20 p-2 rounded-full bg-slate-900/80 border border-slate-700/60 text-slate-400 hover:text-purple-300 hover:bg-slate-800 backdrop-blur shadow-xl transition-colors"
+        className="absolute bottom-4 right-4 z-20 p-2 rounded-full bg-slate-900/80 border border-slate-700/60 text-slate-400 hover:text-accent-300 hover:bg-slate-800 backdrop-blur shadow-xl transition-colors"
         title="3D-Ansicht zurücksetzen"
       >
         <RotateCcw className="w-3.5 h-3.5" />
@@ -391,7 +391,7 @@ export const VrmViewer = ({
           onClick={() => setCurrentEmotion('neutral')}
           className={`px-2.5 py-1 rounded-full text-[11px] font-medium transition-all ${
             currentEmotion === 'neutral'
-              ? 'bg-purple-600 text-white shadow-sm'
+              ? 'bg-accent-600 text-white shadow-sm'
               : 'text-slate-400 hover:text-slate-200'
           }`}
           title="Neutral"
@@ -404,12 +404,12 @@ export const VrmViewer = ({
           onClick={() => setCurrentEmotion('happy')}
           className={`px-2.5 py-1 rounded-full text-[11px] font-medium transition-all ${
             currentEmotion === 'happy'
-              ? 'bg-pink-600 text-white shadow-sm'
+              ? 'bg-accent2-600 text-white shadow-sm'
               : 'text-slate-400 hover:text-slate-200'
           }`}
           title="Glücklich"
         >
-          <Smile className="w-3 h-3 inline mr-1 text-pink-300" />
+          <Smile className="w-3 h-3 inline mr-1 text-accent2-300" />
           <span>Glücklich</span>
         </button>
 

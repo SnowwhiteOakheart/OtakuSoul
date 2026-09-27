@@ -187,7 +187,7 @@ export const CompanionView: React.FC = () => {
   };
 
   return (
-    <div className="flex-1 flex flex-col h-full bg-slate-950 overflow-y-auto p-4 lg:p-6 space-y-6 relative text-slate-100">
+    <div className="flex-1 flex flex-col h-full bg-app overflow-y-auto p-4 lg:p-6 space-y-6 relative text-slate-100">
       {/* Global Safety Countdown Banner */}
       <SafetyCountdownBanner />
 
@@ -215,8 +215,8 @@ export const CompanionView: React.FC = () => {
             <Activity className="w-3.5 h-3.5 text-cyan-400" />
             <span>Gemüt: <strong>{hormones?.mood_label || 'Aktiv'}</strong></span>
           </span>
-          <span className="px-3 py-1 rounded-xl bg-slate-900 border border-slate-800 text-xs font-mono text-purple-300 flex items-center gap-1.5 shadow-sm">
-            <Sparkles className="w-3.5 h-3.5 text-purple-400" />
+          <span className="px-3 py-1 rounded-xl bg-slate-900 border border-slate-800 text-xs font-mono text-accent-300 flex items-center gap-1.5 shadow-sm">
+            <Sparkles className="w-3.5 h-3.5 text-accent-400" />
             <span>Emotion: <strong>{emotion?.current || 'warm'}</strong></span>
           </span>
         </div>
@@ -240,11 +240,11 @@ export const CompanionView: React.FC = () => {
           onClick={() => setActiveSubTab('thoughts')}
           className={`px-3.5 py-1.5 rounded-xl border flex items-center gap-2 transition ${
             activeSubTab === 'thoughts'
-              ? 'bg-purple-950/60 border-purple-500/50 text-purple-300 shadow-sm'
+              ? 'bg-accent-950/60 border-accent-500/50 text-accent-300 shadow-sm'
               : 'bg-slate-900/40 border-slate-800 text-slate-400 hover:text-slate-200'
           }`}
         >
-          <Sparkles className="w-3.5 h-3.5 text-purple-400" />
+          <Sparkles className="w-3.5 h-3.5 text-accent-400" />
           <span>Gedankenspeicher ({thoughts.length})</span>
         </button>
 
@@ -305,7 +305,7 @@ export const CompanionView: React.FC = () => {
             <div className="flex items-center justify-between border-b border-slate-800 pb-3">
               <div>
                 <h3 className="text-sm font-bold text-slate-100 flex items-center gap-2">
-                  <Activity className="w-4 h-4 text-pink-400" />
+                  <Activity className="w-4 h-4 text-accent2-400" />
                   Neurohormoneller Bio-Monitor
                 </h3>
                 <p className="text-[11px] text-slate-400">
@@ -333,7 +333,7 @@ export const CompanionView: React.FC = () => {
             {hormones && (
               <div className="grid grid-cols-2 gap-3.5">
                 {/* Dopamine */}
-                <div className="p-3.5 rounded-xl bg-slate-950/60 border border-slate-800 space-y-2">
+                <div className="p-3.5 rounded-xl bg-app/60 border border-slate-800 space-y-2">
                   <div className="flex justify-between items-center text-xs">
                     <span className="text-slate-300 font-semibold flex items-center gap-1.5">
                       <Zap className="w-3.5 h-3.5 text-amber-400" />
@@ -351,7 +351,7 @@ export const CompanionView: React.FC = () => {
                 </div>
 
                 {/* Cortisol */}
-                <div className="p-3.5 rounded-xl bg-slate-950/60 border border-slate-800 space-y-2">
+                <div className="p-3.5 rounded-xl bg-app/60 border border-slate-800 space-y-2">
                   <div className="flex justify-between items-center text-xs">
                     <span className="text-slate-300 font-semibold flex items-center gap-1.5">
                       <Flame className="w-3.5 h-3.5 text-rose-400" />
@@ -369,17 +369,17 @@ export const CompanionView: React.FC = () => {
                 </div>
 
                 {/* Oxytocin */}
-                <div className="p-3.5 rounded-xl bg-slate-950/60 border border-slate-800 space-y-2">
+                <div className="p-3.5 rounded-xl bg-app/60 border border-slate-800 space-y-2">
                   <div className="flex justify-between items-center text-xs">
                     <span className="text-slate-300 font-semibold flex items-center gap-1.5">
-                      <Heart className="w-3.5 h-3.5 text-pink-400 fill-pink-400/40" />
+                      <Heart className="w-3.5 h-3.5 text-accent2-400 fill-accent2-400/40" />
                       Oxytocin
                     </span>
-                    <span className="font-mono text-pink-300 font-bold">{Math.round(hormones.oxytocin)}%</span>
+                    <span className="font-mono text-accent2-300 font-bold">{Math.round(hormones.oxytocin)}%</span>
                   </div>
                   <div className="w-full bg-slate-900 rounded-full h-2 overflow-hidden">
                     <div
-                      className="h-2 bg-gradient-to-r from-pink-500 to-rose-400 rounded-full transition-all duration-500"
+                      className="h-2 bg-gradient-to-r from-accent2-500 to-rose-400 rounded-full transition-all duration-500"
                       style={{ width: `${hormones.oxytocin}%` }}
                     />
                   </div>
@@ -387,7 +387,7 @@ export const CompanionView: React.FC = () => {
                 </div>
 
                 {/* Fatigue */}
-                <div className="p-3.5 rounded-xl bg-slate-950/60 border border-slate-800 space-y-2">
+                <div className="p-3.5 rounded-xl bg-app/60 border border-slate-800 space-y-2">
                   <div className="flex justify-between items-center text-xs">
                     <span className="text-slate-300 font-semibold flex items-center gap-1.5">
                       <Moon className="w-3.5 h-3.5 text-indigo-400" />
@@ -397,7 +397,7 @@ export const CompanionView: React.FC = () => {
                   </div>
                   <div className="w-full bg-slate-900 rounded-full h-2 overflow-hidden">
                     <div
-                      className="h-2 bg-gradient-to-r from-indigo-500 to-purple-500 rounded-full transition-all duration-500"
+                      className="h-2 bg-gradient-to-r from-indigo-500 to-accent-500 rounded-full transition-all duration-500"
                       style={{ width: `${hormones.fatigue}%` }}
                     />
                   </div>
@@ -414,7 +414,7 @@ export const CompanionView: React.FC = () => {
               <div className="flex flex-wrap gap-2 text-xs">
                 <button
                   onClick={() => applyHormoneInteraction('compliment')}
-                  className="px-3 py-1.5 rounded-lg bg-pink-900/40 hover:bg-pink-800/50 text-pink-300 border border-pink-500/30 flex items-center gap-1.5 transition active:scale-95"
+                  className="px-3 py-1.5 rounded-lg bg-accent2-900/40 hover:bg-accent2-800/50 text-accent2-300 border border-accent2-500/30 flex items-center gap-1.5 transition active:scale-95"
                 >
                   <Smile className="w-3.5 h-3.5" />
                   Kompliment (+Oxytocin)
@@ -448,7 +448,7 @@ export const CompanionView: React.FC = () => {
           <div className="p-5 rounded-2xl bg-slate-900/80 border border-slate-800 shadow-xl space-y-4">
             <div className="border-b border-slate-800 pb-3">
               <h3 className="text-sm font-bold text-slate-100 flex items-center gap-2">
-                <Sparkles className="w-4 h-4 text-purple-400" />
+                <Sparkles className="w-4 h-4 text-accent-400" />
                 10-Emotionen-Zustandsmatrix
               </h3>
               <p className="text-[11px] text-slate-400">
@@ -477,8 +477,8 @@ export const CompanionView: React.FC = () => {
                     key={emo.name}
                     className={`px-3 py-1.5 rounded-xl border text-xs font-medium flex items-center justify-between gap-2 transition ${
                       isCurrent
-                        ? 'bg-purple-900/60 border-purple-500 text-purple-200 shadow-md shadow-purple-950/40 ring-1 ring-purple-400'
-                        : 'bg-slate-950/50 border-slate-800 text-slate-400'
+                        ? 'bg-accent-900/60 border-accent-500 text-accent-200 shadow-md shadow-accent-950/40 ring-1 ring-accent-400'
+                        : 'bg-app/50 border-slate-800 text-slate-400'
                     }`}
                   >
                     <span>{emo.label}</span>
@@ -536,7 +536,7 @@ export const CompanionView: React.FC = () => {
                     max="100"
                     value={sliderOxytocin}
                     onChange={(e) => setSliderOxytocin(parseInt(e.target.value))}
-                    className="w-full accent-pink-400"
+                    className="w-full accent-accent2-400"
                   />
                 </div>
 
@@ -573,7 +573,7 @@ export const CompanionView: React.FC = () => {
             <div className="flex items-center justify-between border-b border-slate-800 pb-2.5">
               <div>
                 <h3 className="text-sm font-bold text-slate-100 flex items-center gap-2">
-                  <Sparkles className="w-4 h-4 text-purple-400" />
+                  <Sparkles className="w-4 h-4 text-accent-400" />
                   Scratchpad & Gedankenfluss
                 </h3>
                 <p className="text-[11px] text-slate-400">
@@ -597,11 +597,11 @@ export const CompanionView: React.FC = () => {
                 value={newThoughtInput}
                 onChange={(e) => setNewThoughtInput(e.target.value)}
                 placeholder="Neuen Gedanken oder inneren Monolog hinzufügen..."
-                className="flex-1 px-3 py-1.5 bg-slate-950 border border-slate-700 rounded-xl text-xs text-slate-200 focus:outline-none focus:border-purple-500"
+                className="flex-1 px-3 py-1.5 bg-app border border-slate-700 rounded-xl text-xs text-slate-200 focus:outline-none focus:border-accent-500"
               />
               <button
                 type="submit"
-                className="px-4 py-1.5 rounded-xl bg-purple-600 hover:bg-purple-500 text-white text-xs font-bold transition flex items-center gap-1.5"
+                className="px-4 py-1.5 rounded-xl bg-accent-600 hover:bg-accent-500 text-white text-xs font-bold transition flex items-center gap-1.5"
               >
                 <Plus className="w-3.5 h-3.5" />
                 Eintragen
@@ -617,7 +617,7 @@ export const CompanionView: React.FC = () => {
                 className="p-3.5 rounded-2xl bg-slate-900/60 border border-slate-800/80 text-xs flex items-start justify-between gap-4 shadow-sm"
               >
                 <div className="space-y-1">
-                  <span className="text-[10px] text-purple-400 font-mono font-bold block">
+                  <span className="text-[10px] text-accent-400 font-mono font-bold block">
                     💭 Innerer Gedanke
                   </span>
                   <p className="text-slate-200 italic leading-relaxed">
@@ -660,13 +660,13 @@ export const CompanionView: React.FC = () => {
                 value={goalSummaryInput}
                 onChange={(e) => setGoalSummaryInput(e.target.value)}
                 placeholder="Versprechen (z. B. 'Dich an das Teekochen erinnern')..."
-                className="flex-1 min-w-[240px] px-3 py-1.5 bg-slate-950 border border-slate-700 rounded-xl text-xs text-slate-200 focus:outline-none focus:border-amber-500"
+                className="flex-1 min-w-[240px] px-3 py-1.5 bg-app border border-slate-700 rounded-xl text-xs text-slate-200 focus:outline-none focus:border-amber-500"
               />
 
               <select
                 value={goalDueMinutes}
                 onChange={(e) => setGoalDueMinutes(parseInt(e.target.value))}
-                className="px-3 py-1.5 bg-slate-950 border border-slate-700 rounded-xl text-xs text-slate-300 focus:outline-none"
+                className="px-3 py-1.5 bg-app border border-slate-700 rounded-xl text-xs text-slate-300 focus:outline-none"
               >
                 <option value={15}>In 15 Minuten</option>
                 <option value={30}>In 30 Minuten</option>
@@ -696,7 +696,7 @@ export const CompanionView: React.FC = () => {
                   className={`p-3.5 rounded-2xl border text-xs flex items-center justify-between gap-4 transition shadow-sm ${
                     isPending
                       ? 'bg-slate-900/80 border-amber-500/30'
-                      : 'bg-slate-950/40 border-slate-800 text-slate-500'
+                      : 'bg-app/40 border-slate-800 text-slate-500'
                   }`}
                 >
                   <div className="space-y-1">
@@ -799,7 +799,7 @@ export const CompanionView: React.FC = () => {
                         setToolArgSecondary('');
                       }
                     }}
-                    className="w-full px-3 py-2 bg-slate-950 border border-slate-700 rounded-xl text-xs text-slate-200 focus:outline-none focus:border-emerald-500 font-mono"
+                    className="w-full px-3 py-2 bg-app border border-slate-700 rounded-xl text-xs text-slate-200 focus:outline-none focus:border-emerald-500 font-mono"
                   >
                     <option value="web_search">🔍 Websuche via DuckDuckGo (Sicher ✓)</option>
                     <option value="open_external_url">🌐 URL im Browser öffnen (⚠️ Bestätigung)</option>
@@ -833,7 +833,7 @@ export const CompanionView: React.FC = () => {
                         className={`px-3 py-1 rounded-lg border text-xs font-mono transition ${
                           codeLanguage === 'powershell'
                             ? 'bg-cyan-950 border-cyan-500 text-cyan-300'
-                            : 'bg-slate-950 border-slate-700 text-slate-400 hover:text-slate-200'
+                            : 'bg-app border-slate-700 text-slate-400 hover:text-slate-200'
                         }`}
                       >
                         PowerShell (Windows)
@@ -847,7 +847,7 @@ export const CompanionView: React.FC = () => {
                         className={`px-3 py-1 rounded-lg border text-xs font-mono transition ${
                           codeLanguage === 'bash'
                             ? 'bg-cyan-950 border-cyan-500 text-cyan-300'
-                            : 'bg-slate-950 border-slate-700 text-slate-400 hover:text-slate-200'
+                            : 'bg-app border-slate-700 text-slate-400 hover:text-slate-200'
                         }`}
                       >
                         Bash (Linux / macOS)
@@ -861,7 +861,7 @@ export const CompanionView: React.FC = () => {
                         className={`px-3 py-1 rounded-lg border text-xs font-mono transition ${
                           codeLanguage === 'cmd'
                             ? 'bg-cyan-950 border-cyan-500 text-cyan-300'
-                            : 'bg-slate-950 border-slate-700 text-slate-400 hover:text-slate-200'
+                            : 'bg-app border-slate-700 text-slate-400 hover:text-slate-200'
                         }`}
                       >
                         Batch / CMD (Windows)
@@ -875,7 +875,7 @@ export const CompanionView: React.FC = () => {
                         className={`px-3 py-1 rounded-lg border text-xs font-mono transition ${
                           codeLanguage === 'python'
                             ? 'bg-cyan-950 border-cyan-500 text-cyan-300'
-                            : 'bg-slate-950 border-slate-700 text-slate-400 hover:text-slate-200'
+                            : 'bg-app border-slate-700 text-slate-400 hover:text-slate-200'
                         }`}
                       >
                         Python 3 (Optional)
@@ -895,14 +895,14 @@ export const CompanionView: React.FC = () => {
                         rows={4}
                         value={toolArgPrimary}
                         onChange={(e) => setToolArgPrimary(e.target.value)}
-                        className="w-full px-3 py-2 bg-slate-950 border border-slate-700 rounded-xl text-xs font-mono text-slate-200 focus:outline-none focus:border-emerald-500"
+                        className="w-full px-3 py-2 bg-app border border-slate-700 rounded-xl text-xs font-mono text-slate-200 focus:outline-none focus:border-emerald-500"
                       />
                     ) : (
                       <input
                         type="text"
                         value={toolArgPrimary}
                         onChange={(e) => setToolArgPrimary(e.target.value)}
-                        className="w-full px-3 py-2 bg-slate-950 border border-slate-700 rounded-xl text-xs font-mono text-slate-200 focus:outline-none focus:border-emerald-500"
+                        className="w-full px-3 py-2 bg-app border border-slate-700 rounded-xl text-xs font-mono text-slate-200 focus:outline-none focus:border-emerald-500"
                       />
                     )}
                   </div>
@@ -918,7 +918,7 @@ export const CompanionView: React.FC = () => {
                       type="text"
                       value={toolArgSecondary}
                       onChange={(e) => setToolArgSecondary(e.target.value)}
-                      className="w-full px-3 py-2 bg-slate-950 border border-slate-700 rounded-xl text-xs font-mono text-slate-200 focus:outline-none focus:border-emerald-500"
+                      className="w-full px-3 py-2 bg-app border border-slate-700 rounded-xl text-xs font-mono text-slate-200 focus:outline-none focus:border-emerald-500"
                     />
                   </div>
                 )}
@@ -969,14 +969,14 @@ export const CompanionView: React.FC = () => {
 
               {environmentSnapshot ? (
                 <div className="grid grid-cols-2 gap-3 text-xs font-mono">
-                  <div className="p-3 rounded-xl bg-slate-950 border border-slate-800">
+                  <div className="p-3 rounded-xl bg-app border border-slate-800">
                     <span className="text-[10px] text-slate-500 block">CPU Auslastung</span>
                     <span className="text-slate-100 font-bold text-sm">
                       {environmentSnapshot.cpu_usage_percent.toFixed(1)}%
                     </span>
                   </div>
 
-                  <div className="p-3 rounded-xl bg-slate-950 border border-slate-800">
+                  <div className="p-3 rounded-xl bg-app border border-slate-800">
                     <span className="text-[10px] text-slate-500 block">RAM Belegung</span>
                     <span className="text-slate-100 font-bold text-sm">
                       {environmentSnapshot.ram_percent.toFixed(1)}%
@@ -986,7 +986,7 @@ export const CompanionView: React.FC = () => {
                     </span>
                   </div>
 
-                  <div className="p-3 rounded-xl bg-slate-950 border border-slate-800">
+                  <div className="p-3 rounded-xl bg-app border border-slate-800">
                     <span className="text-[10px] text-slate-500 block">Festplatte Frei</span>
                     <span className="text-slate-100 font-bold text-sm">
                       {environmentSnapshot.disk_free_gb.toFixed(1)} GB
@@ -996,7 +996,7 @@ export const CompanionView: React.FC = () => {
                     </span>
                   </div>
 
-                  <div className="p-3 rounded-xl bg-slate-950 border border-slate-800">
+                  <div className="p-3 rounded-xl bg-app border border-slate-800">
                     <span className="text-[10px] text-slate-500 block">GPU & Temperatur</span>
                     <span className="text-slate-100 font-bold text-sm">
                       {environmentSnapshot.gpu_name || 'NVIDIA GPU'}
@@ -1012,7 +1012,7 @@ export const CompanionView: React.FC = () => {
                 </div>
               )}
 
-              <div className="p-3 rounded-xl bg-slate-950/70 border border-slate-800/80 text-[11px] font-mono text-slate-300">
+              <div className="p-3 rounded-xl bg-app/70 border border-slate-800/80 text-[11px] font-mono text-slate-300">
                 <span className="text-slate-500 block mb-0.5">Aktives Desktop-Fenster:</span>
                 <span className="text-cyan-300 font-bold">"{currentWindowTitle}"</span>
               </div>
@@ -1037,7 +1037,7 @@ export const CompanionView: React.FC = () => {
               {history.map((item) => (
                 <div
                   key={item.call_id}
-                  className="p-3 rounded-xl bg-slate-950/60 border border-slate-800 text-xs flex items-start justify-between gap-3"
+                  className="p-3 rounded-xl bg-app/60 border border-slate-800 text-xs flex items-start justify-between gap-3"
                 >
                   <div className="space-y-1">
                     <div className="flex items-center gap-2">
@@ -1057,7 +1057,7 @@ export const CompanionView: React.FC = () => {
                         {item.success ? 'Erfolgreich' : 'Abgewiesen'}
                       </span>
                     </div>
-                    <pre className="text-[11px] text-slate-300 font-mono whitespace-pre-wrap bg-slate-950 p-2 rounded-lg max-h-36 overflow-y-auto">
+                    <pre className="text-[11px] text-slate-300 font-mono whitespace-pre-wrap bg-app p-2 rounded-lg max-h-36 overflow-y-auto">
                       {item.output}
                     </pre>
                   </div>
@@ -1102,7 +1102,7 @@ export const CompanionView: React.FC = () => {
                   className={`p-4 rounded-xl border text-xs space-y-2 transition ${
                     srv.enabled
                       ? 'bg-indigo-950/30 border-indigo-500/40'
-                      : 'bg-slate-950/60 border-slate-800 text-slate-400'
+                      : 'bg-app/60 border-slate-800 text-slate-400'
                   }`}
                 >
                   <div className="flex items-center justify-between">
@@ -1143,7 +1143,7 @@ export const CompanionView: React.FC = () => {
               {companionPlugins.map((plg) => (
                 <div
                   key={plg.id}
-                  className="p-3.5 rounded-xl bg-slate-950 border border-slate-800 text-xs flex items-center justify-between"
+                  className="p-3.5 rounded-xl bg-app border border-slate-800 text-xs flex items-center justify-between"
                 >
                   <div>
                     <span className="font-bold text-slate-200">{plg.name}</span>
@@ -1179,7 +1179,7 @@ export const CompanionView: React.FC = () => {
           </div>
 
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            <div className="p-4 rounded-xl bg-slate-950 border border-slate-800 space-y-3">
+            <div className="p-4 rounded-xl bg-app border border-slate-800 space-y-3">
               <h4 className="text-xs font-bold text-slate-200">Overlay-Steuerung</h4>
               <p className="text-xs text-slate-400 leading-relaxed">
                 Öffnet oder schließt das transparente Desktop-Begleiter-Fenster. Das Fenster bleibt stets im Vordergrund und zeigt den Avatar, Sprechblasen und Schnellaktionen.
@@ -1202,7 +1202,7 @@ export const CompanionView: React.FC = () => {
               </div>
             </div>
 
-            <div className="p-4 rounded-xl bg-slate-950 border border-slate-800 space-y-3">
+            <div className="p-4 rounded-xl bg-app border border-slate-800 space-y-3">
               <h4 className="text-xs font-bold text-slate-200">Click-Through Modus</h4>
               <p className="text-xs text-slate-400 leading-relaxed">
                 Wenn aktiviert, werden Mausklicks durch das Overlay hindurch auf darunterliegende Fenster übertragen.

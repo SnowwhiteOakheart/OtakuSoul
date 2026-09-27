@@ -145,23 +145,23 @@ export const CharacterLibraryView = () => {
   };
 
   return (
-    <div className="flex-1 flex flex-col h-full bg-slate-950 overflow-hidden">
+    <div className="flex-1 flex flex-col h-full bg-app overflow-hidden">
       {/* Top Header Bar */}
       <div className="px-6 py-4 border-b border-slate-800 bg-slate-900/60 backdrop-blur flex items-center justify-between gap-4 select-none">
         <div className="flex items-center gap-3">
-          <div className="w-10 h-10 rounded-xl bg-purple-600/20 border border-purple-500/30 flex items-center justify-center text-purple-400 shadow-sm">
+          <div className="w-10 h-10 rounded-xl bg-accent-600/20 border border-accent-500/30 flex items-center justify-center text-accent-400 shadow-sm">
             <Users className="w-5 h-5" />
           </div>
           <div>
             <div className="flex items-center gap-2">
               <h1 className="text-base font-bold text-slate-100">Charakterbibliothek</h1>
-              <span className="text-xs px-2 py-0.5 rounded-full bg-purple-500/20 text-purple-300 font-mono">
+              <span className="text-xs px-2 py-0.5 rounded-full bg-accent-500/20 text-accent-300 font-mono">
                 {availableCharacters.length} Karten
               </span>
             </div>
             <p className="text-xs text-slate-400">
               SillyTavern V2 kompatibel · Aktive Persona:{' '}
-              <span className="text-purple-300 font-medium">{activePersona.name}</span>
+              <span className="text-accent-300 font-medium">{activePersona.name}</span>
             </p>
           </div>
         </div>
@@ -178,9 +178,9 @@ export const CharacterLibraryView = () => {
 
           <button
             onClick={() => setActiveTab('hub')}
-            className="px-3 py-1.5 rounded-xl bg-purple-600/20 hover:bg-purple-600/30 text-purple-200 text-xs font-medium flex items-center gap-1.5 border border-purple-500/40 transition-colors shadow-sm"
+            className="px-3 py-1.5 rounded-xl bg-accent-600/20 hover:bg-accent-600/30 text-accent-200 text-xs font-medium flex items-center gap-1.5 border border-accent-500/40 transition-colors shadow-sm"
           >
-            <Compass className="w-3.5 h-3.5 text-purple-400" />
+            <Compass className="w-3.5 h-3.5 text-accent-400" />
             <span>Soul Hub</span>
           </button>
 
@@ -212,7 +212,7 @@ export const CharacterLibraryView = () => {
 
           <button
             onClick={() => setCharacterWizardOpen(true)}
-            className="px-3 py-1.5 rounded-xl bg-gradient-to-r from-indigo-600/30 to-purple-600/30 hover:from-indigo-600/50 hover:to-purple-600/50 text-indigo-200 text-xs font-medium flex items-center gap-1.5 border border-indigo-500/40 transition-colors shadow-sm"
+            className="px-3 py-1.5 rounded-xl bg-gradient-to-r from-indigo-600/30 to-accent-600/30 hover:from-indigo-600/50 hover:to-accent-600/50 text-indigo-200 text-xs font-medium flex items-center gap-1.5 border border-indigo-500/40 transition-colors shadow-sm"
             title="Geführter 5-Schritte KI-Charakterassistent"
           >
             <Sparkles className="w-3.5 h-3.5 text-indigo-400" />
@@ -224,7 +224,7 @@ export const CharacterLibraryView = () => {
               setEditingCharacter(null);
               setIsEditorOpen(true);
             }}
-            className="px-3.5 py-1.5 rounded-xl bg-purple-600 hover:bg-purple-500 text-white text-xs font-semibold flex items-center gap-1.5 shadow-md shadow-purple-900/30 transition-all"
+            className="px-3.5 py-1.5 rounded-xl bg-accent-600 hover:bg-accent-500 text-white text-xs font-semibold flex items-center gap-1.5 shadow-md shadow-accent-900/30 transition-all"
           >
             <Plus className="w-4 h-4" />
             <span>Neuer Charakter</span>
@@ -234,8 +234,8 @@ export const CharacterLibraryView = () => {
 
       {/* Notice Banner */}
       {statusNotice && (
-        <div className="px-6 py-2 bg-purple-950/70 border-b border-purple-500/40 text-purple-200 text-xs flex items-center gap-2">
-          <Sparkles className="w-4 h-4 text-purple-400" />
+        <div className="px-6 py-2 bg-accent-950/70 border-b border-accent-500/40 text-accent-200 text-xs flex items-center gap-2">
+          <Sparkles className="w-4 h-4 text-accent-400" />
           <span>{statusNotice}</span>
         </div>
       )}
@@ -250,7 +250,7 @@ export const CharacterLibraryView = () => {
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
             placeholder="Charaktere, Tags oder Eigenschaften suchen..."
-            className="w-full pl-9 pr-4 py-1.5 bg-slate-900 border border-slate-800 rounded-xl text-xs text-slate-200 placeholder-slate-500 focus:outline-none focus:border-purple-500 transition-colors"
+            className="w-full pl-9 pr-4 py-1.5 bg-slate-900 border border-slate-800 rounded-xl text-xs text-slate-200 placeholder-slate-500 focus:outline-none focus:border-accent-500 transition-colors"
           />
         </div>
 
@@ -263,7 +263,7 @@ export const CharacterLibraryView = () => {
               onClick={() => setSelectedTag(tag)}
               className={`px-2.5 py-1 rounded-lg text-xs font-medium whitespace-nowrap transition-colors ${
                 selectedTag === tag
-                  ? 'bg-purple-600/30 text-purple-300 border border-purple-500/50 shadow-sm'
+                  ? 'bg-accent-600/30 text-accent-300 border border-accent-500/50 shadow-sm'
                   : 'bg-slate-900/70 text-slate-400 hover:text-slate-200 hover:bg-slate-800 border border-slate-800/60'
               }`}
             >
@@ -294,14 +294,14 @@ export const CharacterLibraryView = () => {
               return (
                 <div
                   key={char.id}
-                  className={`group rounded-2xl border flex flex-col overflow-hidden bg-slate-900/70 transition-all duration-200 hover:border-purple-500/60 hover:shadow-xl hover:shadow-purple-950/20 ${
+                  className={`group rounded-2xl border flex flex-col overflow-hidden bg-slate-900/70 transition-all duration-200 hover:border-accent-500/60 hover:shadow-xl hover:shadow-accent-950/20 ${
                     isActive
-                      ? 'border-purple-500/80 shadow-md shadow-purple-950/40 ring-1 ring-purple-500/50'
+                      ? 'border-accent-500/80 shadow-md shadow-accent-950/40 ring-1 ring-accent-500/50'
                       : 'border-slate-800'
                   }`}
                 >
                   {/* Avatar Image Header */}
-                  <div className="aspect-[4/5] w-full bg-slate-950 relative overflow-hidden flex items-center justify-center">
+                  <div className="aspect-[4/5] w-full bg-app relative overflow-hidden flex items-center justify-center">
                     {char.avatar_data_url ? (
                       <img
                         src={char.avatar_data_url}
@@ -309,17 +309,17 @@ export const CharacterLibraryView = () => {
                         className="w-full h-full object-cover transition-transform duration-300 group-hover:scale-105"
                       />
                     ) : (
-                      <div className="w-20 h-20 rounded-full bg-gradient-to-tr from-purple-600 to-indigo-600 flex items-center justify-center text-white font-bold text-2xl shadow-inner">
+                      <div className="w-20 h-20 rounded-full bg-gradient-to-tr from-accent-600 to-indigo-600 flex items-center justify-center text-white font-bold text-2xl shadow-inner">
                         {data.name.charAt(0)}
                       </div>
                     )}
 
                     {/* Gradient Overlay */}
-                    <div className="absolute inset-0 bg-gradient-to-t from-slate-950 via-slate-950/20 to-transparent" />
+                    <div className="absolute inset-0 bg-gradient-to-t from-app via-app/20 to-transparent" />
 
                     {/* Active Pill Badge */}
                     {isActive && (
-                      <div className="absolute top-2.5 left-2.5 px-2 py-0.5 rounded-full bg-emerald-500/90 text-slate-950 text-[10px] font-bold flex items-center gap-1 shadow-md">
+                      <div className="absolute top-2.5 left-2.5 px-2 py-0.5 rounded-full bg-emerald-500/90 text-app text-[10px] font-bold flex items-center gap-1 shadow-md">
                         <CheckCircle2 className="w-3 h-3" />
                         <span>Aktiv</span>
                       </div>
@@ -332,7 +332,7 @@ export const CharacterLibraryView = () => {
                           setEditingCharacter(char);
                           setIsEditorOpen(true);
                         }}
-                        className="p-1.5 rounded-lg bg-slate-900/80 hover:bg-purple-600 text-slate-200 hover:text-white backdrop-blur shadow-sm transition-colors"
+                        className="p-1.5 rounded-lg bg-slate-900/80 hover:bg-accent-600 text-slate-200 hover:text-white backdrop-blur shadow-sm transition-colors"
                         title="Charakter bearbeiten"
                       >
                         <Edit className="w-3.5 h-3.5" />
@@ -355,7 +355,7 @@ export const CharacterLibraryView = () => {
 
                     {/* Bottom Info on Image */}
                     <div className="absolute bottom-2.5 left-3 right-3">
-                      <div className="text-sm font-bold text-slate-100 line-clamp-1 group-hover:text-purple-300 transition-colors">
+                      <div className="text-sm font-bold text-slate-100 line-clamp-1 group-hover:text-accent-300 transition-colors">
                         {data.name}
                       </div>
                       <div className="text-[11px] text-slate-400 line-clamp-1">{title}</div>
@@ -387,8 +387,8 @@ export const CharacterLibraryView = () => {
                       onClick={() => handleSelectAndChat(char)}
                       className={`w-full py-1.5 rounded-xl font-semibold text-xs flex items-center justify-center gap-1.5 transition-all shadow-sm ${
                         isActive
-                          ? 'bg-purple-600 hover:bg-purple-500 text-white shadow-purple-900/40'
-                          : 'bg-slate-800 hover:bg-purple-600/30 text-slate-300 hover:text-purple-200 border border-slate-700/80 hover:border-purple-500/50'
+                          ? 'bg-accent-600 hover:bg-accent-500 text-white shadow-accent-900/40'
+                          : 'bg-slate-800 hover:bg-accent-600/30 text-slate-300 hover:text-accent-200 border border-slate-700/80 hover:border-accent-500/50'
                       }`}
                     >
                       <MessageSquare className="w-3.5 h-3.5" />

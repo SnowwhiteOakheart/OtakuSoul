@@ -96,7 +96,7 @@ export const StageChatLog: React.FC = () => {
         );
       case 'think':
         return (
-          <span className="flex items-center gap-1 text-[10px] font-semibold text-purple-400 bg-purple-950/60 px-2 py-0.5 rounded-full border border-purple-500/30">
+          <span className="flex items-center gap-1 text-[10px] font-semibold text-accent-400 bg-accent-950/60 px-2 py-0.5 rounded-full border border-accent-500/30">
             <Brain className="w-2.5 h-2.5" /> Denkt
           </span>
         );
@@ -130,21 +130,21 @@ export const StageChatLog: React.FC = () => {
           return (
             <div
               key={msg.id}
-              className="group relative p-4 sm:p-5 rounded-2xl bg-gradient-to-br from-slate-900/90 via-purple-950/25 to-slate-900/90 border border-purple-500/30 shadow-xl backdrop-blur space-y-2.5"
+              className="group relative p-4 sm:p-5 rounded-2xl bg-gradient-to-br from-slate-900/90 via-accent-950/25 to-slate-900/90 border border-accent-500/30 shadow-xl backdrop-blur space-y-2.5"
             >
               {/* Floating Action Bar on Hover */}
-              <div className="absolute top-3 right-3 opacity-0 group-hover:opacity-100 transition-opacity flex items-center gap-1 bg-slate-950/90 border border-slate-700/80 rounded-xl px-1.5 py-1 shadow-lg backdrop-blur">
+              <div className="absolute top-3 right-3 opacity-0 group-hover:opacity-100 transition-opacity flex items-center gap-1 bg-app/90 border border-slate-700/80 rounded-xl px-1.5 py-1 shadow-lg backdrop-blur">
                 <button
                   onClick={() => handleSpeak(msg.content)}
                   title="Vorlesen (TTS)"
-                  className="p-1 rounded-lg text-slate-400 hover:text-purple-300 hover:bg-slate-800 transition"
+                  className="p-1 rounded-lg text-slate-400 hover:text-accent-300 hover:bg-slate-800 transition"
                 >
                   <Volume2 className="w-3.5 h-3.5" />
                 </button>
                 <button
                   onClick={() => handleStartEdit(msg.id, msg.content)}
                   title="Nachricht bearbeiten"
-                  className="p-1 rounded-lg text-slate-400 hover:text-purple-300 hover:bg-slate-800 transition"
+                  className="p-1 rounded-lg text-slate-400 hover:text-accent-300 hover:bg-slate-800 transition"
                 >
                   <Edit3 className="w-3.5 h-3.5" />
                 </button>
@@ -166,12 +166,12 @@ export const StageChatLog: React.FC = () => {
                 </button>
               </div>
 
-              <div className="flex items-center justify-between border-b border-purple-500/20 pb-2">
+              <div className="flex items-center justify-between border-b border-accent-500/20 pb-2">
                 <div className="flex items-center gap-2">
-                  <div className="p-1.5 rounded-lg bg-purple-500/20 text-purple-300">
+                  <div className="p-1.5 rounded-lg bg-accent-500/20 text-accent-300">
                     <Compass className="w-4 h-4" />
                   </div>
-                  <span className="text-xs font-bold text-purple-200 uppercase tracking-wider">
+                  <span className="text-xs font-bold text-accent-200 uppercase tracking-wider">
                     {msg.sender_name || 'Game Master'}
                   </span>
                 </div>
@@ -191,7 +191,7 @@ export const StageChatLog: React.FC = () => {
                     value={editDraft}
                     onChange={(e) => setEditDraft(e.target.value)}
                     rows={4}
-                    className="w-full p-2.5 rounded-xl bg-slate-950 border border-purple-500/50 text-xs text-slate-100 focus:outline-none focus:border-purple-400 resize-y"
+                    className="w-full p-2.5 rounded-xl bg-app border border-accent-500/50 text-xs text-slate-100 focus:outline-none focus:border-accent-400 resize-y"
                   />
                   <div className="flex items-center justify-end gap-2">
                     <button
@@ -202,7 +202,7 @@ export const StageChatLog: React.FC = () => {
                     </button>
                     <button
                       onClick={() => handleSaveEdit(msg.id)}
-                      className="px-3 py-1 rounded-lg bg-purple-600 hover:bg-purple-500 text-white text-xs font-semibold flex items-center gap-1 transition"
+                      className="px-3 py-1 rounded-lg bg-accent-600 hover:bg-accent-500 text-white text-xs font-semibold flex items-center gap-1 transition"
                     >
                       <Check className="w-3 h-3" /> Speichern
                     </button>
@@ -247,19 +247,19 @@ export const StageChatLog: React.FC = () => {
               <div
                 className={`absolute -top-3 ${
                   isPlayer ? 'left-2' : 'right-2'
-                } opacity-0 group-hover:opacity-100 transition-opacity flex items-center gap-1 bg-slate-950/95 border border-slate-700/80 rounded-xl px-1.5 py-0.5 shadow-lg backdrop-blur z-20`}
+                } opacity-0 group-hover:opacity-100 transition-opacity flex items-center gap-1 bg-app/95 border border-slate-700/80 rounded-xl px-1.5 py-0.5 shadow-lg backdrop-blur z-20`}
               >
                 <button
                   onClick={() => handleSpeak(msg.content)}
                   title="Vorlesen (TTS)"
-                  className="p-1 rounded-lg text-slate-400 hover:text-purple-300 hover:bg-slate-800 transition"
+                  className="p-1 rounded-lg text-slate-400 hover:text-accent-300 hover:bg-slate-800 transition"
                 >
                   <Volume2 className="w-3 h-3" />
                 </button>
                 <button
                   onClick={() => handleStartEdit(msg.id, msg.content)}
                   title="Nachricht bearbeiten"
-                  className="p-1 rounded-lg text-slate-400 hover:text-purple-300 hover:bg-slate-800 transition"
+                  className="p-1 rounded-lg text-slate-400 hover:text-accent-300 hover:bg-slate-800 transition"
                 >
                   <Edit3 className="w-3 h-3" />
                 </button>
@@ -282,13 +282,13 @@ export const StageChatLog: React.FC = () => {
               </div>
 
               {isEditing ? (
-                <div className="p-3 rounded-2xl bg-slate-900 border border-purple-500/50 space-y-2">
+                <div className="p-3 rounded-2xl bg-slate-900 border border-accent-500/50 space-y-2">
                   <textarea
                     autoFocus
                     value={editDraft}
                     onChange={(e) => setEditDraft(e.target.value)}
                     rows={3}
-                    className="w-full p-2 rounded-xl bg-slate-950 border border-slate-700 text-xs text-slate-100 focus:outline-none focus:border-purple-400 resize-y"
+                    className="w-full p-2 rounded-xl bg-app border border-slate-700 text-xs text-slate-100 focus:outline-none focus:border-accent-400 resize-y"
                   />
                   <div className="flex items-center justify-end gap-2">
                     <button
@@ -299,7 +299,7 @@ export const StageChatLog: React.FC = () => {
                     </button>
                     <button
                       onClick={() => handleSaveEdit(msg.id)}
-                      className="px-3 py-1 rounded-lg bg-purple-600 hover:bg-purple-500 text-white text-xs font-semibold flex items-center gap-1 transition"
+                      className="px-3 py-1 rounded-lg bg-accent-600 hover:bg-accent-500 text-white text-xs font-semibold flex items-center gap-1 transition"
                     >
                       <Check className="w-3 h-3" /> Speichern
                     </button>
@@ -311,7 +311,7 @@ export const StageChatLog: React.FC = () => {
                     isPlayer
                       ? 'bg-blue-600/20 border border-blue-500/40 text-blue-100 rounded-tr-sm'
                       : isCompanion
-                      ? 'bg-purple-900/30 border border-purple-500/40 text-purple-100 rounded-tl-sm'
+                      ? 'bg-accent-900/30 border border-accent-500/40 text-accent-100 rounded-tl-sm'
                       : 'bg-slate-800/80 border border-slate-700 text-slate-200 rounded-tl-sm'
                   }`}
                 >
@@ -328,7 +328,7 @@ export const StageChatLog: React.FC = () => {
 
       {/* Processing Turn Indicator */}
       {isProcessingStageTurn && (
-        <div className="flex items-center gap-2 p-3.5 rounded-xl bg-purple-950/30 border border-purple-500/30 animate-pulse text-xs text-purple-300">
+        <div className="flex items-center gap-2 p-3.5 rounded-xl bg-accent-950/30 border border-accent-500/30 animate-pulse text-xs text-accent-300">
           <Bot className="w-4 h-4 animate-spin" />
           <span>Der Spielleiter berechnet Mechaniken und webt die nächste Erzählung...</span>
         </div>

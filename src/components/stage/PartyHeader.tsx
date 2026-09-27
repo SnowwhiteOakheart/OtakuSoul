@@ -47,7 +47,7 @@ export const PartyHeader: React.FC = () => {
         {/* Party members avatars and stats */}
         <div className="flex flex-wrap items-center gap-3">
           <div className="text-[11px] font-bold text-slate-400 uppercase tracking-wider flex items-center gap-1.5 mr-1">
-            <Shield className="w-3.5 h-3.5 text-purple-400" />
+            <Shield className="w-3.5 h-3.5 text-accent-400" />
             Gruppe:
           </div>
 
@@ -60,13 +60,13 @@ export const PartyHeader: React.FC = () => {
             return (
               <div
                 key={member.id}
-                className="flex items-center gap-2.5 px-3 py-1.5 rounded-xl bg-slate-950/60 border border-slate-800 shadow-sm"
+                className="flex items-center gap-2.5 px-3 py-1.5 rounded-xl bg-app/60 border border-slate-800 shadow-sm"
               >
                 <div
                   className={`w-7 h-7 rounded-lg flex items-center justify-center font-bold text-xs ${
                     isPlayer
                       ? 'bg-blue-600/30 text-blue-300 border border-blue-500/40'
-                      : 'bg-purple-600/30 text-purple-300 border border-purple-500/40'
+                      : 'bg-accent-600/30 text-accent-300 border border-accent-500/40'
                   }`}
                 >
                   {isPlayer ? <User className="w-3.5 h-3.5" /> : member.name.charAt(0)}
@@ -99,10 +99,10 @@ export const PartyHeader: React.FC = () => {
 
                   {/* Stress Bar */}
                   <div className="flex items-center gap-1.5">
-                    <Zap className="w-2.5 h-2.5 text-purple-400" />
+                    <Zap className="w-2.5 h-2.5 text-accent-400" />
                     <div className="w-full bg-slate-800 rounded-full h-1 overflow-hidden">
                       <div
-                        className="bg-purple-500 h-1 rounded-full transition-all duration-300"
+                        className="bg-accent-500 h-1 rounded-full transition-all duration-300"
                         style={{ width: `${stressPercent}%` }}
                       />
                     </div>

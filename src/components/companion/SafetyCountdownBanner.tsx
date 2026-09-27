@@ -57,9 +57,9 @@ export const SafetyCountdownBanner: React.FC = () => {
             </div>
           </div>
 
-          <div className="p-2.5 rounded-xl bg-slate-950 border border-slate-800 text-xs font-mono space-y-1">
+          <div className="p-2.5 rounded-xl bg-app border border-slate-800 text-xs font-mono space-y-1">
             <div className="text-slate-300 flex items-center gap-1.5">
-              <Terminal className="w-3.5 h-3.5 text-purple-400" />
+              <Terminal className="w-3.5 h-3.5 text-accent-400" />
               <span>Tool: <strong>{pendingCall.tool_name}</strong></span>
             </div>
             <pre className="text-[11px] text-slate-400 overflow-x-auto whitespace-pre-wrap">
@@ -68,7 +68,7 @@ export const SafetyCountdownBanner: React.FC = () => {
           </div>
 
           {/* Countdown Progress Bar */}
-          <div className="w-full bg-slate-950 rounded-full h-1.5 overflow-hidden">
+          <div className="w-full bg-app rounded-full h-1.5 overflow-hidden">
             <div
               className="h-1.5 bg-gradient-to-r from-amber-500 via-rose-500 to-rose-600 transition-all duration-1000 ease-linear rounded-full"
               style={{ width: `${percent}%` }}

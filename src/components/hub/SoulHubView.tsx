@@ -394,7 +394,7 @@ export const SoulHubView = () => {
   }, [gatewayScenes, searchQuery]);
 
   return (
-    <div className="flex-1 flex flex-col h-full bg-slate-950 overflow-hidden select-none">
+    <div className="flex-1 flex flex-col h-full bg-app overflow-hidden select-none">
       {/* Top Banner Notice */}
       {statusNotice && (
         <div
@@ -434,13 +434,13 @@ export const SoulHubView = () => {
       {/* Main Header */}
       <div className="px-6 py-4 border-b border-slate-800 bg-slate-900/60 backdrop-blur flex items-center justify-between gap-4">
         <div className="flex items-center gap-3">
-          <div className="w-10 h-10 rounded-xl bg-purple-600/20 border border-purple-500/30 flex items-center justify-center text-purple-400 shadow-sm">
+          <div className="w-10 h-10 rounded-xl bg-accent-600/20 border border-accent-500/30 flex items-center justify-center text-accent-400 shadow-sm">
             <Compass className="w-5 h-5" />
           </div>
           <div>
             <div className="flex items-center gap-2">
               <h1 className="text-base font-bold text-slate-100">Soul Hub</h1>
-              <span className="text-xs px-2 py-0.5 rounded-full bg-purple-500/20 text-purple-300 font-mono">
+              <span className="text-xs px-2 py-0.5 rounded-full bg-accent-500/20 text-accent-300 font-mono">
                 Gateway & Community
               </span>
             </div>
@@ -467,7 +467,7 @@ export const SoulHubView = () => {
               }
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
-              className="w-full pl-9 pr-8 py-1.5 rounded-xl bg-slate-950/80 border border-slate-800 text-xs text-slate-200 placeholder-slate-500 focus:outline-none focus:border-purple-500/50 transition-colors"
+              className="w-full pl-9 pr-8 py-1.5 rounded-xl bg-app/80 border border-slate-800 text-xs text-slate-200 placeholder-slate-500 focus:outline-none focus:border-accent-500/50 transition-colors"
             />
             {searchQuery && (
               <button
@@ -510,11 +510,11 @@ export const SoulHubView = () => {
             onClick={() => setHubSubTab('soul_gateway')}
             className={`flex items-center gap-2 px-4 py-3 text-xs font-semibold border-b-2 transition-all ${
               hubSubTab === 'soul_gateway'
-                ? 'border-purple-500 text-purple-300'
+                ? 'border-accent-500 text-accent-300'
                 : 'border-transparent text-slate-400 hover:text-slate-200 hover:border-slate-700'
             }`}
           >
-            <Sparkles className="w-3.5 h-3.5 text-purple-400" />
+            <Sparkles className="w-3.5 h-3.5 text-accent-400" />
             <span>Soul Gateway</span>
             <span className="px-1.5 py-0.2 rounded-full bg-slate-800 text-[10px] text-slate-400 font-mono">
               {gatewayCharacters.length > 0 ? gatewayCharacters.length : '✦'}
@@ -525,7 +525,7 @@ export const SoulHubView = () => {
             onClick={() => setHubSubTab('chub_ai')}
             className={`flex items-center gap-2 px-4 py-3 text-xs font-semibold border-b-2 transition-all ${
               hubSubTab === 'chub_ai'
-                ? 'border-purple-500 text-purple-300'
+                ? 'border-accent-500 text-accent-300'
                 : 'border-transparent text-slate-400 hover:text-slate-200 hover:border-slate-700'
             }`}
           >
@@ -540,7 +540,7 @@ export const SoulHubView = () => {
             onClick={() => setHubSubTab('lorebooks')}
             className={`flex items-center gap-2 px-4 py-3 text-xs font-semibold border-b-2 transition-all ${
               hubSubTab === 'lorebooks'
-                ? 'border-purple-500 text-purple-300'
+                ? 'border-accent-500 text-accent-300'
                 : 'border-transparent text-slate-400 hover:text-slate-200 hover:border-slate-700'
             }`}
           >
@@ -555,7 +555,7 @@ export const SoulHubView = () => {
             onClick={() => setHubSubTab('scenes')}
             className={`flex items-center gap-2 px-4 py-3 text-xs font-semibold border-b-2 transition-all ${
               hubSubTab === 'scenes'
-                ? 'border-purple-500 text-purple-300'
+                ? 'border-accent-500 text-accent-300'
                 : 'border-transparent text-slate-400 hover:text-slate-200 hover:border-slate-700'
             }`}
           >
@@ -571,12 +571,12 @@ export const SoulHubView = () => {
         {hubSubTab === 'chub_ai' && (
           <div className="flex items-center gap-3 py-2">
             {/* Sort Buttons */}
-            <div className="flex items-center gap-1 bg-slate-950/70 p-1 rounded-xl border border-slate-800 text-[11px]">
+            <div className="flex items-center gap-1 bg-app/70 p-1 rounded-xl border border-slate-800 text-[11px]">
               <button
                 onClick={() => setChubSort('trending')}
                 className={`flex items-center gap-1 px-2.5 py-1 rounded-lg transition-colors ${
                   chubSort === 'trending'
-                    ? 'bg-purple-600/30 text-purple-200 border border-purple-500/40 font-semibold'
+                    ? 'bg-accent-600/30 text-accent-200 border border-accent-500/40 font-semibold'
                     : 'text-slate-400 hover:text-slate-200'
                 }`}
               >
@@ -587,7 +587,7 @@ export const SoulHubView = () => {
                 onClick={() => setChubSort('popular')}
                 className={`flex items-center gap-1 px-2.5 py-1 rounded-lg transition-colors ${
                   chubSort === 'popular'
-                    ? 'bg-purple-600/30 text-purple-200 border border-purple-500/40 font-semibold'
+                    ? 'bg-accent-600/30 text-accent-200 border border-accent-500/40 font-semibold'
                     : 'text-slate-400 hover:text-slate-200'
                 }`}
               >
@@ -598,7 +598,7 @@ export const SoulHubView = () => {
                 onClick={() => setChubSort('favorites')}
                 className={`flex items-center gap-1 px-2.5 py-1 rounded-lg transition-colors ${
                   chubSort === 'favorites'
-                    ? 'bg-purple-600/30 text-purple-200 border border-purple-500/40 font-semibold'
+                    ? 'bg-accent-600/30 text-accent-200 border border-accent-500/40 font-semibold'
                     : 'text-slate-400 hover:text-slate-200'
                 }`}
               >
@@ -609,7 +609,7 @@ export const SoulHubView = () => {
                 onClick={() => setChubSort('recent')}
                 className={`flex items-center gap-1 px-2.5 py-1 rounded-lg transition-colors ${
                   chubSort === 'recent'
-                    ? 'bg-purple-600/30 text-purple-200 border border-purple-500/40 font-semibold'
+                    ? 'bg-accent-600/30 text-accent-200 border border-accent-500/40 font-semibold'
                     : 'text-slate-400 hover:text-slate-200'
                 }`}
               >
@@ -622,7 +622,7 @@ export const SoulHubView = () => {
             <select
               value={chubTag}
               onChange={(e) => setChubTag(e.target.value)}
-              className="bg-slate-950/80 border border-slate-800 rounded-xl px-2.5 py-1 text-xs text-slate-300 focus:outline-none focus:border-purple-500"
+              className="bg-app/80 border border-slate-800 rounded-xl px-2.5 py-1 text-xs text-slate-300 focus:outline-none focus:border-accent-500"
             >
               {HUB_TAGS.map((t) => (
                 <option key={t.id} value={t.id}>
@@ -632,7 +632,7 @@ export const SoulHubView = () => {
             </select>
 
             {/* NSFW Toggle */}
-            <label className="flex items-center gap-1.5 cursor-pointer bg-slate-950/80 px-2.5 py-1 rounded-xl border border-slate-800 text-xs">
+            <label className="flex items-center gap-1.5 cursor-pointer bg-app/80 px-2.5 py-1 rounded-xl border border-slate-800 text-xs">
               <input
                 type="checkbox"
                 checked={chubNsfw}
@@ -656,7 +656,7 @@ export const SoulHubView = () => {
           <div>
             {isGatewayLoading ? (
               <div className="flex flex-col items-center justify-center py-20 text-slate-400 gap-3">
-                <Loader2 className="w-8 h-8 text-purple-400 animate-spin" />
+                <Loader2 className="w-8 h-8 text-accent-400 animate-spin" />
                 <p className="text-sm">Kuratierte Soul Gateway Karten werden geladen…</p>
               </div>
             ) : gatewayError ? (
@@ -680,18 +680,18 @@ export const SoulHubView = () => {
                 {filteredGatewayCharacters.map((char) => (
                   <div
                     key={char.name}
-                    className="group relative rounded-2xl bg-slate-900/60 border border-slate-800/80 hover:border-purple-500/50 transition-all p-3 flex flex-col justify-between overflow-hidden shadow-sm hover:shadow-purple-950/20"
+                    className="group relative rounded-2xl bg-slate-900/60 border border-slate-800/80 hover:border-accent-500/50 transition-all p-3 flex flex-col justify-between overflow-hidden shadow-sm hover:shadow-accent-950/20"
                   >
                     <div>
                       {/* Avatar preview */}
-                      <div className="aspect-[3/4] w-full rounded-xl bg-slate-950 overflow-hidden relative mb-2.5 border border-slate-800">
+                      <div className="aspect-[3/4] w-full rounded-xl bg-app overflow-hidden relative mb-2.5 border border-slate-800">
                         <img
                           src={char.download_url}
                           alt={char.name}
                           loading="lazy"
                           className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
                         />
-                        <div className="absolute top-2 right-2 px-1.5 py-0.5 rounded-md bg-black/60 backdrop-blur text-[10px] text-purple-300 font-mono border border-white/10">
+                        <div className="absolute top-2 right-2 px-1.5 py-0.5 rounded-md bg-black/60 backdrop-blur text-[10px] text-accent-300 font-mono border border-white/10">
                           {char.author}
                         </div>
                       </div>
@@ -700,14 +700,14 @@ export const SoulHubView = () => {
                         {char.name}
                       </h3>
                       <p className="text-[11px] text-slate-400 truncate">
-                        Ersteller: <span className="text-purple-300">{char.author}</span>
+                        Ersteller: <span className="text-accent-300">{char.author}</span>
                       </p>
                     </div>
 
                     <button
                       onClick={() => handleImportSoulGateway(char)}
                       disabled={importingId === char.name}
-                      className="mt-3 w-full py-1.5 px-3 rounded-xl bg-purple-600 hover:bg-purple-500 disabled:bg-purple-900/50 text-white text-xs font-semibold flex items-center justify-center gap-1.5 transition-colors shadow-sm"
+                      className="mt-3 w-full py-1.5 px-3 rounded-xl bg-accent-600 hover:bg-accent-500 disabled:bg-accent-900/50 text-white text-xs font-semibold flex items-center justify-center gap-1.5 transition-colors shadow-sm"
                     >
                       {importingId === char.name ? (
                         <>
@@ -765,7 +765,7 @@ export const SoulHubView = () => {
                     >
                       <div>
                         {/* Avatar */}
-                        <div className="aspect-[3/4] w-full rounded-xl bg-slate-950 overflow-hidden relative mb-2.5 border border-slate-800">
+                        <div className="aspect-[3/4] w-full rounded-xl bg-app overflow-hidden relative mb-2.5 border border-slate-800">
                           {item.avatar_url ? (
                             <img
                               src={item.avatar_url}
@@ -816,7 +816,7 @@ export const SoulHubView = () => {
                             handleImportChub(item.full_path);
                           }}
                           disabled={importingId === item.full_path}
-                          className="flex-1 py-1 px-2 rounded-xl bg-cyan-600 hover:bg-cyan-500 disabled:bg-cyan-900/50 text-slate-950 font-bold text-[11px] flex items-center justify-center gap-1 transition-colors shadow-sm"
+                          className="flex-1 py-1 px-2 rounded-xl bg-cyan-600 hover:bg-cyan-500 disabled:bg-cyan-900/50 text-app font-bold text-[11px] flex items-center justify-center gap-1 transition-colors shadow-sm"
                         >
                           {importingId === item.full_path ? (
                             <>
@@ -932,7 +932,7 @@ export const SoulHubView = () => {
                     <button
                       onClick={() => handleImportLorebook(lb)}
                       disabled={importingId === lb.name}
-                      className="mt-4 w-full py-2 px-4 rounded-xl bg-amber-600 hover:bg-amber-500 disabled:bg-amber-900/50 text-slate-950 font-bold text-xs flex items-center justify-center gap-2 transition-colors shadow-sm"
+                      className="mt-4 w-full py-2 px-4 rounded-xl bg-amber-600 hover:bg-amber-500 disabled:bg-amber-900/50 text-app font-bold text-xs flex items-center justify-center gap-2 transition-colors shadow-sm"
                     >
                       {importingId === lb.name ? (
                         <>
@@ -1015,7 +1015,7 @@ export const SoulHubView = () => {
                     <button
                       onClick={() => handleImportScene(scene)}
                       disabled={importingId === scene.title}
-                      className="mt-4 w-full py-2 px-4 rounded-xl bg-emerald-600 hover:bg-emerald-500 disabled:bg-emerald-900/50 text-slate-950 font-bold text-xs flex items-center justify-center gap-2 transition-colors shadow-sm"
+                      className="mt-4 w-full py-2 px-4 rounded-xl bg-emerald-600 hover:bg-emerald-500 disabled:bg-emerald-900/50 text-app font-bold text-xs flex items-center justify-center gap-2 transition-colors shadow-sm"
                     >
                       {importingId === scene.title ? (
                         <>
@@ -1063,7 +1063,7 @@ export const SoulHubView = () => {
             <div className="flex-1 overflow-y-auto p-6 space-y-4 text-xs">
               <div className="flex flex-col sm:flex-row gap-5">
                 {/* Avatar */}
-                <div className="w-36 h-48 shrink-0 rounded-2xl bg-slate-950 border border-slate-800 overflow-hidden relative">
+                <div className="w-36 h-48 shrink-0 rounded-2xl bg-app border border-slate-800 overflow-hidden relative">
                   {selectedChubDetail.item.avatar_url ? (
                     <img
                       src={selectedChubDetail.item.avatar_url}
@@ -1121,7 +1121,7 @@ export const SoulHubView = () => {
               ) : selectedChubDetail.detail ? (
                 <div className="space-y-4 pt-2">
                   {selectedChubDetail.detail.first_message && (
-                    <div className="rounded-xl bg-slate-950/70 border border-slate-800/80 p-3 space-y-1">
+                    <div className="rounded-xl bg-app/70 border border-slate-800/80 p-3 space-y-1">
                       <div className="font-semibold text-slate-300 flex items-center gap-1.5">
                         <MessageSquare className="w-3.5 h-3.5 text-cyan-400" />
                         Erste Nachricht (Greeting):
@@ -1133,7 +1133,7 @@ export const SoulHubView = () => {
                   )}
 
                   {selectedChubDetail.detail.personality && (
-                    <div className="rounded-xl bg-slate-950/70 border border-slate-800/80 p-3 space-y-1">
+                    <div className="rounded-xl bg-app/70 border border-slate-800/80 p-3 space-y-1">
                       <div className="font-semibold text-slate-300">Persönlichkeit:</div>
                       <p className="text-slate-400 whitespace-pre-wrap leading-relaxed max-h-28 overflow-y-auto">
                         {selectedChubDetail.detail.personality}
@@ -1142,7 +1142,7 @@ export const SoulHubView = () => {
                   )}
 
                   {selectedChubDetail.detail.scenario && (
-                    <div className="rounded-xl bg-slate-950/70 border border-slate-800/80 p-3 space-y-1">
+                    <div className="rounded-xl bg-app/70 border border-slate-800/80 p-3 space-y-1">
                       <div className="font-semibold text-slate-300">Szenario:</div>
                       <p className="text-slate-400 whitespace-pre-wrap leading-relaxed max-h-24 overflow-y-auto">
                         {selectedChubDetail.detail.scenario}
@@ -1154,7 +1154,7 @@ export const SoulHubView = () => {
             </div>
 
             {/* Modal Footer */}
-            <div className="px-6 py-4 border-t border-slate-800 bg-slate-950/50 flex items-center justify-between">
+            <div className="px-6 py-4 border-t border-slate-800 bg-app/50 flex items-center justify-between">
               <span className="text-[11px] text-slate-500 font-mono">
                 {selectedChubDetail.item.full_path}
               </span>
@@ -1168,7 +1168,7 @@ export const SoulHubView = () => {
                 <button
                   onClick={() => handleImportChub(selectedChubDetail.item.full_path)}
                   disabled={importingId === selectedChubDetail.item.full_path}
-                  className="px-5 py-2 rounded-xl bg-cyan-500 hover:bg-cyan-400 disabled:bg-cyan-900/50 text-slate-950 font-bold text-xs flex items-center gap-1.5 transition-colors shadow-sm"
+                  className="px-5 py-2 rounded-xl bg-cyan-500 hover:bg-cyan-400 disabled:bg-cyan-900/50 text-app font-bold text-xs flex items-center gap-1.5 transition-colors shadow-sm"
                 >
                   {importingId === selectedChubDetail.item.full_path ? (
                     <>
@@ -1217,7 +1217,7 @@ export const SoulHubView = () => {
                 placeholder="https://chub.ai/characters/... oder https://.../card.png"
                 value={urlInput}
                 onChange={(e) => setUrlInput(e.target.value)}
-                className="w-full px-3 py-2 rounded-xl bg-slate-950 border border-slate-800 text-xs text-slate-200 placeholder-slate-600 focus:outline-none focus:border-cyan-500 font-mono"
+                className="w-full px-3 py-2 rounded-xl bg-app border border-slate-800 text-xs text-slate-200 placeholder-slate-600 focus:outline-none focus:border-cyan-500 font-mono"
               />
             </div>
 
@@ -1231,7 +1231,7 @@ export const SoulHubView = () => {
               <button
                 onClick={handleImportUrl}
                 disabled={isUrlImporting || !urlInput.trim()}
-                className="px-4 py-2 rounded-xl bg-cyan-500 hover:bg-cyan-400 disabled:bg-cyan-900/50 text-slate-950 font-bold text-xs flex items-center gap-1.5 transition-colors"
+                className="px-4 py-2 rounded-xl bg-cyan-500 hover:bg-cyan-400 disabled:bg-cyan-900/50 text-app font-bold text-xs flex items-center gap-1.5 transition-colors"
               >
                 {isUrlImporting ? (
                   <>

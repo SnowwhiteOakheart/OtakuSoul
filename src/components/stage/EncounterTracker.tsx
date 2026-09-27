@@ -94,7 +94,7 @@ export const EncounterTracker: React.FC = () => {
               )}
               <button
                 onClick={() => nextEncounterTurn()}
-                className="px-3 py-1.5 rounded-lg bg-purple-600 hover:bg-purple-500 text-white text-xs font-semibold flex items-center gap-1.5 shadow transition active:scale-95"
+                className="px-3 py-1.5 rounded-lg bg-accent-600 hover:bg-accent-500 text-white text-xs font-semibold flex items-center gap-1.5 shadow transition active:scale-95"
               >
                 <SkipForward className="w-3.5 h-3.5" />
                 Nächster Zug
@@ -130,7 +130,7 @@ export const EncounterTracker: React.FC = () => {
             c.role === 'player'
               ? 'bg-cyan-950 text-cyan-300 border-cyan-500/40'
               : c.role === 'companion'
-              ? 'bg-purple-950 text-purple-300 border-purple-500/40'
+              ? 'bg-accent-950 text-accent-300 border-accent-500/40'
               : c.role === 'boss'
               ? 'bg-amber-950 text-amber-300 border-amber-500/40 font-bold'
               : 'bg-rose-950 text-rose-300 border-rose-500/40';
@@ -140,14 +140,14 @@ export const EncounterTracker: React.FC = () => {
               key={c.id}
               className={`p-3.5 rounded-xl border transition-all ${
                 isCurrentTurn
-                  ? 'bg-purple-950/30 border-purple-500/80 shadow-md shadow-purple-950/40 ring-1 ring-purple-500/50'
-                  : 'bg-slate-950/40 border-slate-800/80 hover:border-slate-700'
+                  ? 'bg-accent-950/30 border-accent-500/80 shadow-md shadow-accent-950/40 ring-1 ring-accent-500/50'
+                  : 'bg-app/40 border-slate-800/80 hover:border-slate-700'
               }`}
             >
               <div className="flex flex-wrap items-center justify-between gap-2 mb-2">
                 <div className="flex items-center gap-2">
                   {isCurrentTurn && (
-                    <span className="w-2.5 h-2.5 rounded-full bg-purple-400 animate-ping" />
+                    <span className="w-2.5 h-2.5 rounded-full bg-accent-400 animate-ping" />
                   )}
                   <h4 className="text-xs font-bold text-slate-100 flex items-center gap-2">
                     {c.name}
@@ -251,9 +251,9 @@ export const EncounterTracker: React.FC = () => {
                   {c.conditions.map((cond, cIdx) => (
                     <span
                       key={cIdx}
-                      className="px-2 py-0.5 rounded bg-purple-900/40 border border-purple-500/30 text-purple-300 text-[10px] font-medium flex items-center gap-1"
+                      className="px-2 py-0.5 rounded bg-accent-900/40 border border-accent-500/30 text-accent-300 text-[10px] font-medium flex items-center gap-1"
                     >
-                      <Shield className="w-3 h-3 text-purple-400" />
+                      <Shield className="w-3 h-3 text-accent-400" />
                       {cond.name} ({cond.rounds_remaining} Rd.)
                     </span>
                   ))}
@@ -266,7 +266,7 @@ export const EncounterTracker: React.FC = () => {
 
       {/* Combat Log */}
       {encounter.combat_log.length > 0 && (
-        <div className="p-3 rounded-xl bg-slate-950/80 border border-slate-800 space-y-1">
+        <div className="p-3 rounded-xl bg-app/80 border border-slate-800 space-y-1">
           <div className="text-[11px] font-semibold text-slate-400 uppercase tracking-wider">
             Kampfprotokoll
           </div>
@@ -295,7 +295,7 @@ export const EncounterTracker: React.FC = () => {
                 value={newCondName}
                 onChange={(e) => setNewCondName(e.target.value)}
                 placeholder="Vergiftet, Gelähmt, Gesegnet..."
-                className="w-full px-3 py-1.5 bg-slate-950 border border-slate-700 rounded-lg text-xs text-slate-100 focus:outline-none focus:border-purple-500"
+                className="w-full px-3 py-1.5 bg-app border border-slate-700 rounded-lg text-xs text-slate-100 focus:outline-none focus:border-accent-500"
               />
             </div>
             <div>
@@ -306,7 +306,7 @@ export const EncounterTracker: React.FC = () => {
                 max={10}
                 value={newCondRounds}
                 onChange={(e) => setNewCondRounds(parseInt(e.target.value) || 1)}
-                className="w-full px-3 py-1.5 bg-slate-950 border border-slate-700 rounded-lg text-xs text-slate-100 focus:outline-none focus:border-purple-500"
+                className="w-full px-3 py-1.5 bg-app border border-slate-700 rounded-lg text-xs text-slate-100 focus:outline-none focus:border-accent-500"
               />
             </div>
             <div className="flex justify-end gap-2 pt-1">
@@ -318,7 +318,7 @@ export const EncounterTracker: React.FC = () => {
               </button>
               <button
                 onClick={handleAddCondition}
-                className="px-3 py-1.5 rounded-lg bg-purple-600 hover:bg-purple-500 text-white text-xs font-semibold"
+                className="px-3 py-1.5 rounded-lg bg-accent-600 hover:bg-accent-500 text-white text-xs font-semibold"
               >
                 Hinzufügen
               </button>

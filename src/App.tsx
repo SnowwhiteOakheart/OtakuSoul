@@ -32,10 +32,10 @@ export function App() {
   }
 
   return (
-    <div className="flex flex-col w-screen h-screen bg-slate-950 text-slate-100 overflow-hidden font-sans relative">
+    <div className="flex flex-col w-screen h-screen bg-app text-slate-100 overflow-hidden font-sans relative">
       <Header />
       <main className="flex-1 flex overflow-hidden">
-        <Suspense fallback={<div className="flex-1 grid place-items-center text-sm text-purple-300">Ansicht wird geladen…</div>}>
+        <Suspense fallback={<div className="flex-1 grid place-items-center text-sm text-accent-300">Ansicht wird geladen…</div>}>
           {activeTab === 'chat' && <ChatView />}
           {activeTab === 'characters' && <CharacterLibraryView />}
           {activeTab === 'hub' && <SoulHubView />}

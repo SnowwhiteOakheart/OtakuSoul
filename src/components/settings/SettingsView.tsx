@@ -278,13 +278,13 @@ export const SettingsView = () => {
   );
 
   return (
-    <div className="flex-1 overflow-y-auto p-6 bg-slate-950 space-y-6">
+    <div className="flex-1 overflow-y-auto p-6 bg-app space-y-6">
       <div className="max-w-5xl mx-auto space-y-6">
         {/* Header */}
         <div className="flex items-center justify-between border-b border-slate-800 pb-4">
           <div>
             <h1 className="text-xl font-bold text-slate-100 flex items-center gap-2">
-              <Cpu className="w-5 h-5 text-purple-400" />
+              <Cpu className="w-5 h-5 text-accent-400" />
               Einstellungen & KI-Orchestrierung
             </h1>
             <p className="text-xs text-slate-400 mt-1">
@@ -309,7 +309,7 @@ export const SettingsView = () => {
             onClick={() => setActiveTab('general')}
             className={`flex items-center gap-2 px-4 py-2.5 text-xs font-medium border-b-2 transition-colors ${
               activeTab === 'general'
-                ? 'border-purple-500 text-purple-400 bg-purple-500/10 rounded-t-lg'
+                ? 'border-accent-500 text-accent-400 bg-accent-500/10 rounded-t-lg'
                 : 'border-transparent text-slate-400 hover:text-slate-200'
             }`}
           >
@@ -321,7 +321,7 @@ export const SettingsView = () => {
             onClick={() => setActiveTab('server')}
             className={`flex items-center gap-2 px-4 py-2.5 text-xs font-medium border-b-2 transition-colors ${
               activeTab === 'server'
-                ? 'border-purple-500 text-purple-400 bg-purple-500/10 rounded-t-lg'
+                ? 'border-accent-500 text-accent-400 bg-accent-500/10 rounded-t-lg'
                 : 'border-transparent text-slate-400 hover:text-slate-200'
             }`}
           >
@@ -333,7 +333,7 @@ export const SettingsView = () => {
             onClick={() => setActiveTab('providers')}
             className={`flex items-center gap-2 px-4 py-2.5 text-xs font-medium border-b-2 transition-colors ${
               activeTab === 'providers'
-                ? 'border-purple-500 text-purple-400 bg-purple-500/10 rounded-t-lg'
+                ? 'border-accent-500 text-accent-400 bg-accent-500/10 rounded-t-lg'
                 : 'border-transparent text-slate-400 hover:text-slate-200'
             }`}
           >
@@ -345,7 +345,7 @@ export const SettingsView = () => {
             onClick={() => setActiveTab('sampler')}
             className={`flex items-center gap-2 px-4 py-2.5 text-xs font-medium border-b-2 transition-colors ${
               activeTab === 'sampler'
-                ? 'border-purple-500 text-purple-400 bg-purple-500/10 rounded-t-lg'
+                ? 'border-accent-500 text-accent-400 bg-accent-500/10 rounded-t-lg'
                 : 'border-transparent text-slate-400 hover:text-slate-200'
             }`}
           >
@@ -357,7 +357,7 @@ export const SettingsView = () => {
             onClick={() => setActiveTab('hub')}
             className={`flex items-center gap-2 px-4 py-2.5 text-xs font-medium border-b-2 transition-colors ${
               activeTab === 'hub'
-                ? 'border-purple-500 text-purple-400 bg-purple-500/10 rounded-t-lg'
+                ? 'border-accent-500 text-accent-400 bg-accent-500/10 rounded-t-lg'
                 : 'border-transparent text-slate-400 hover:text-slate-200'
             }`}
           >
@@ -373,7 +373,7 @@ export const SettingsView = () => {
             <div className="rounded-xl border border-slate-800 bg-slate-900/60 p-5 space-y-4">
               <div>
                 <h2 className="text-sm font-semibold text-slate-200 flex items-center gap-2">
-                  <Palette className="w-4 h-4 text-purple-400" />
+                  <Palette className="w-4 h-4 text-accent-400" />
                   {t('settings.theme')}
                 </h2>
                 <p className="text-xs text-slate-400 mt-0.5">
@@ -432,14 +432,14 @@ export const SettingsView = () => {
                       onClick={() => setTheme(th.id)}
                       className={`relative flex flex-col items-start p-3.5 rounded-xl border text-left transition-all ${
                         isSelected
-                          ? 'border-purple-500/80 bg-purple-950/20 shadow-lg shadow-purple-950/30'
-                          : 'border-slate-800 bg-slate-950/60 hover:border-slate-700 hover:bg-slate-900/60'
+                          ? 'border-accent-500/80 bg-accent-950/20 shadow-lg shadow-accent-950/30'
+                          : 'border-slate-800 bg-app/60 hover:border-slate-700 hover:bg-slate-900/60'
                       }`}
                     >
                       <div className="flex items-center justify-between w-full">
                         <span className="font-semibold text-xs text-slate-200">{th.name}</span>
                         {isSelected && (
-                          <div className="w-4 h-4 rounded-full bg-purple-500/20 text-purple-400 flex items-center justify-center">
+                          <div className="w-4 h-4 rounded-full bg-accent-500/20 text-accent-400 flex items-center justify-center">
                             <Check className="w-3 h-3 stroke-[3]" />
                           </div>
                         )}
@@ -497,7 +497,7 @@ export const SettingsView = () => {
                       className={`flex items-center justify-between p-3 rounded-xl border text-left transition-all ${
                         isSelected
                           ? 'border-cyan-500/80 bg-cyan-950/20 text-cyan-300 shadow-sm'
-                          : 'border-slate-800 bg-slate-950/60 text-slate-300 hover:border-slate-700 hover:bg-slate-900/60'
+                          : 'border-slate-800 bg-app/60 text-slate-300 hover:border-slate-700 hover:bg-slate-900/60'
                       }`}
                     >
                       <div>
@@ -527,7 +527,7 @@ export const SettingsView = () => {
                 <select
                   value={replyLanguage || 'de'}
                   onChange={(e) => setReplyLanguage(e.target.value)}
-                  className="w-full px-3 py-2 rounded-lg bg-slate-950 border border-slate-800 text-xs text-slate-200 focus:outline-none focus:border-purple-500"
+                  className="w-full px-3 py-2 rounded-lg bg-app border border-slate-800 text-xs text-slate-200 focus:outline-none focus:border-accent-500"
                 >
                   <option value="de">Deutsch (Standard)</option>
                   <option value="en">English (US)</option>
@@ -564,15 +564,15 @@ export const SettingsView = () => {
                 <button
                   type="button"
                   onClick={() => setIsUpdaterOpen(true)}
-                  className="flex items-center gap-2 px-3.5 py-2 rounded-lg bg-purple-600/20 hover:bg-purple-600/30 text-purple-300 text-xs font-medium transition-colors border border-purple-500/40"
+                  className="flex items-center gap-2 px-3.5 py-2 rounded-lg bg-accent-600/20 hover:bg-accent-600/30 text-accent-300 text-xs font-medium transition-colors border border-accent-500/40"
                 >
-                  <Sparkles className="w-4 h-4 text-purple-400" />
+                  <Sparkles className="w-4 h-4 text-accent-400" />
                   <span>{t('header.update')}</span>
                 </button>
               </div>
 
-              <div className="p-3 rounded-lg bg-slate-950/80 border border-slate-800/80 text-[11px] text-slate-400 font-mono space-y-1">
-                <div>OtakuSoul Version: <span className="text-purple-300 font-semibold">v0.1.0</span></div>
+              <div className="p-3 rounded-lg bg-app/80 border border-slate-800/80 text-[11px] text-slate-400 font-mono space-y-1">
+                <div>OtakuSoul Version: <span className="text-accent-300 font-semibold">v0.1.0</span></div>
                 <div>Lokales Anwendungsdatenverzeichnis: <span className="text-slate-300">~/.local/share/otakusoul</span></div>
                 <div>Logdatei: <span className="text-slate-300">~/.local/share/otakusoul/logs/otakusoul.log</span></div>
               </div>
@@ -592,7 +592,7 @@ export const SettingsView = () => {
 
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-xs font-mono">
                 {/* CPU & RAM */}
-                <div className="p-3 rounded-lg bg-slate-950/60 border border-slate-800/80 space-y-2">
+                <div className="p-3 rounded-lg bg-app/60 border border-slate-800/80 space-y-2">
                   <div className="text-slate-400 flex items-center justify-between">
                     <span>CPU:</span>
                     <span className="text-slate-200 font-semibold">{hardware?.cpu_name || 'Ermittle...'}</span>
@@ -606,7 +606,7 @@ export const SettingsView = () => {
                 </div>
 
                 {/* GPU & VRAM */}
-                <div className="p-3 rounded-lg bg-slate-950/60 border border-slate-800/80 space-y-2">
+                <div className="p-3 rounded-lg bg-app/60 border border-slate-800/80 space-y-2">
                   <div className="text-slate-400 flex items-center justify-between">
                     <span>GPU:</span>
                     <span className="text-cyan-300 font-semibold">{gpu?.name || 'Keine dedizierte GPU gefunden'}</span>
@@ -633,7 +633,7 @@ export const SettingsView = () => {
             <div className="rounded-xl border border-slate-800 bg-slate-900/60 p-4 space-y-4">
               <div className="flex items-center justify-between">
                 <h2 className="text-sm font-semibold text-slate-200 flex items-center gap-2">
-                  <Cpu className="w-4 h-4 text-purple-400" />
+                  <Cpu className="w-4 h-4 text-accent-400" />
                   Lokaler llama-server Manager
                 </h2>
 
@@ -670,7 +670,7 @@ export const SettingsView = () => {
                   <select
                     value={serverConfig.model_path}
                     onChange={(e) => selectLocalModel(e.target.value)}
-                    className="flex-1 bg-slate-950 border border-slate-800 rounded-lg px-3 py-2 text-xs font-mono text-slate-200 focus:outline-none focus:border-purple-500"
+                    className="flex-1 bg-app border border-slate-800 rounded-lg px-3 py-2 text-xs font-mono text-slate-200 focus:outline-none focus:border-accent-500"
                   >
                     <option value="">-- Modell wählen oder Durchsuchen --</option>
                     {scannedModels.map((m, idx) => (
@@ -711,7 +711,7 @@ export const SettingsView = () => {
                   <select
                     value={serverConfig.context_size}
                     onChange={(e) => setServerConfig({ context_size: parseInt(e.target.value) })}
-                    className="w-full bg-slate-950 border border-slate-800 rounded-lg px-3 py-1.5 text-slate-200 font-mono focus:outline-none focus:border-purple-500"
+                    className="w-full bg-app border border-slate-800 rounded-lg px-3 py-1.5 text-slate-200 font-mono focus:outline-none focus:border-accent-500"
                   >
                     <option value={2048}>2048 Tokens</option>
                     <option value={4096}>4096 Tokens</option>
@@ -736,7 +736,7 @@ export const SettingsView = () => {
                     max="99"
                     value={serverConfig.gpu_layers}
                     onChange={(e) => setServerConfig({ gpu_layers: parseInt(e.target.value) })}
-                    className="w-full accent-purple-500"
+                    className="w-full accent-accent-500"
                   />
                   <div className="flex justify-between text-[10px] text-slate-500">
                     <span>0 (Nur CPU)</span>
@@ -752,13 +752,13 @@ export const SettingsView = () => {
                     type="number"
                     value={serverConfig.port}
                     onChange={(e) => setServerConfig({ port: parseInt(e.target.value) || 48596 })}
-                    className="w-full bg-slate-950 border border-slate-800 rounded-lg px-3 py-1.5 text-slate-200 font-mono focus:outline-none focus:border-purple-500"
+                    className="w-full bg-app border border-slate-800 rounded-lg px-3 py-1.5 text-slate-200 font-mono focus:outline-none focus:border-accent-500"
                   />
                 </div>
               </div>
 
               {/* Advanced Server Tuning Section */}
-              <div className="p-3.5 rounded-lg bg-slate-950/40 border border-slate-800/80 space-y-3">
+              <div className="p-3.5 rounded-lg bg-app/40 border border-slate-800/80 space-y-3">
                 <div className="text-xs font-semibold text-slate-300 flex items-center gap-1.5">
                   <Zap className="w-3.5 h-3.5 text-amber-400" />
                   <span>Hardware & VRAM Tuning (llama.cpp Flags)</span>
@@ -771,7 +771,7 @@ export const SettingsView = () => {
                     <select
                       value={serverConfig.batch_size ?? 2048}
                       onChange={(e) => setServerConfig({ batch_size: parseInt(e.target.value) })}
-                      className="w-full bg-slate-950 border border-slate-800 rounded px-2.5 py-1 text-slate-200 font-mono"
+                      className="w-full bg-app border border-slate-800 rounded px-2.5 py-1 text-slate-200 font-mono"
                     >
                       <option value={512}>512 (Minimal VRAM)</option>
                       <option value={1024}>1024 (Ausgewogen)</option>
@@ -786,7 +786,7 @@ export const SettingsView = () => {
                     <select
                       value={serverConfig.ubatch_size ?? 512}
                       onChange={(e) => setServerConfig({ ubatch_size: parseInt(e.target.value) })}
-                      className="w-full bg-slate-950 border border-slate-800 rounded px-2.5 py-1 text-slate-200 font-mono"
+                      className="w-full bg-app border border-slate-800 rounded px-2.5 py-1 text-slate-200 font-mono"
                     >
                       <option value={256}>256</option>
                       <option value={512}>512 (Standard)</option>
@@ -805,7 +805,7 @@ export const SettingsView = () => {
                           cache_type_v: e.target.value,
                         })
                       }
-                      className="w-full bg-slate-950 border border-slate-800 rounded px-2.5 py-1 text-slate-200 font-mono"
+                      className="w-full bg-app border border-slate-800 rounded px-2.5 py-1 text-slate-200 font-mono"
                     >
                       <option value="f16">f16 (Standard Präzision)</option>
                       <option value="q8_0">q8_0 (~50% VRAM Ersparnis)</option>
@@ -821,7 +821,7 @@ export const SettingsView = () => {
                       type="checkbox"
                       checked={serverConfig.flash_attn}
                       onChange={(e) => setServerConfig({ flash_attn: e.target.checked })}
-                      className="rounded border-slate-700 bg-slate-900 text-purple-600 focus:ring-0"
+                      className="rounded border-slate-700 bg-slate-900 text-accent-600 focus:ring-0"
                     />
                     <span className="text-slate-300">Flash Attention (-fa)</span>
                   </label>
@@ -831,7 +831,7 @@ export const SettingsView = () => {
                       type="checkbox"
                       checked={serverConfig.mlock ?? false}
                       onChange={(e) => setServerConfig({ mlock: e.target.checked })}
-                      className="rounded border-slate-700 bg-slate-900 text-purple-600 focus:ring-0"
+                      className="rounded border-slate-700 bg-slate-900 text-accent-600 focus:ring-0"
                     />
                     <span className="text-slate-300">Lock RAM (--mlock)</span>
                   </label>
@@ -841,7 +841,7 @@ export const SettingsView = () => {
                       type="checkbox"
                       checked={serverConfig.cpu_moe ?? false}
                       onChange={(e) => setServerConfig({ cpu_moe: e.target.checked })}
-                      className="rounded border-slate-700 bg-slate-900 text-purple-600 focus:ring-0"
+                      className="rounded border-slate-700 bg-slate-900 text-accent-600 focus:ring-0"
                     />
                     <span className="text-slate-300">CPU-MoE Offload</span>
                   </label>
@@ -851,7 +851,7 @@ export const SettingsView = () => {
                       type="checkbox"
                       checked={serverConfig.reasoning_mode ?? false}
                       onChange={(e) => setServerConfig({ reasoning_mode: e.target.checked })}
-                      className="rounded border-slate-700 bg-slate-900 text-purple-600 focus:ring-0"
+                      className="rounded border-slate-700 bg-slate-900 text-accent-600 focus:ring-0"
                     />
                     <span className="text-slate-300">Reasoning/Denkmodus</span>
                   </label>
@@ -859,10 +859,10 @@ export const SettingsView = () => {
               </div>
 
               {/* Layer Recommendation Box */}
-              <div className="p-3 rounded-lg bg-purple-950/20 border border-purple-900/40 flex items-center justify-between">
+              <div className="p-3 rounded-lg bg-accent-950/20 border border-accent-900/40 flex items-center justify-between">
                 <div className="space-y-0.5">
-                  <div className="text-xs font-semibold text-purple-300 flex items-center gap-1.5">
-                    <Wand2 className="w-3.5 h-3.5 text-purple-400" />
+                  <div className="text-xs font-semibold text-accent-300 flex items-center gap-1.5">
+                    <Wand2 className="w-3.5 h-3.5 text-accent-400" />
                     <span>Automatische GPU-VRAM-Kalkulation</span>
                   </div>
                   <div className="text-[11px] text-slate-400">
@@ -883,7 +883,7 @@ export const SettingsView = () => {
                   <button
                     type="button"
                     onClick={handleRecommendLayers}
-                    className="px-3 py-1.5 rounded bg-purple-900/40 hover:bg-purple-900/60 text-purple-200 text-xs font-medium border border-purple-700/50 transition-colors"
+                    className="px-3 py-1.5 rounded bg-accent-900/40 hover:bg-accent-900/60 text-accent-200 text-xs font-medium border border-accent-700/50 transition-colors"
                   >
                     Kalkulieren
                   </button>
@@ -891,7 +891,7 @@ export const SettingsView = () => {
                     <button
                       type="button"
                       onClick={applyRecommendation}
-                      className="px-3 py-1.5 rounded bg-purple-600 hover:bg-purple-500 text-white text-xs font-medium transition-colors"
+                      className="px-3 py-1.5 rounded bg-accent-600 hover:bg-accent-500 text-white text-xs font-medium transition-colors"
                     >
                       Anwenden ({layerRecommendation.recommended_layers} Layer · {Math.round(layerRecommendation.recommended_context_size / 1024)}K)
                     </button>
@@ -934,20 +934,20 @@ export const SettingsView = () => {
               )}
 
               {/* Server Live Logs */}
-              <div className="border border-slate-800 rounded-lg overflow-hidden bg-slate-950">
+              <div className="border border-slate-800 rounded-lg overflow-hidden bg-app">
                 <button
                   onClick={() => setShowLogs(!showLogs)}
                   className="w-full flex items-center justify-between px-3 py-2 bg-slate-900/80 text-xs font-semibold text-slate-300 hover:bg-slate-800/80 transition-colors"
                 >
                   <div className="flex items-center gap-2">
-                    <Terminal className="w-3.5 h-3.5 text-purple-400" />
+                    <Terminal className="w-3.5 h-3.5 text-accent-400" />
                     <span>Live Server-Log Konsole ({serverStatus.recent_logs.length} Einträge)</span>
                   </div>
                   <span className="text-[10px] text-slate-500">{showLogs ? 'Einklappen' : 'Ausklappen'}</span>
                 </button>
 
                 {showLogs && (
-                  <div className="p-3 font-mono text-[11px] text-slate-300 h-44 overflow-y-auto space-y-0.5 bg-slate-950/90 leading-tight">
+                  <div className="p-3 font-mono text-[11px] text-slate-300 h-44 overflow-y-auto space-y-0.5 bg-app/90 leading-tight">
                     {serverStatus.recent_logs.length === 0 ? (
                       <div className="text-slate-600 italic">Noch keine Logs empfangen...</div>
                     ) : (
@@ -970,7 +970,7 @@ export const SettingsView = () => {
             {/* Backend Switch */}
             <div className="rounded-xl border border-slate-800 bg-slate-900/60 p-4 space-y-3">
               <h2 className="text-sm font-semibold text-slate-200 flex items-center gap-2">
-                <Layers className="w-4 h-4 text-purple-400" />
+                <Layers className="w-4 h-4 text-accent-400" />
                 Aktiver Inferenz-Modus
               </h2>
               <div className="grid grid-cols-2 gap-3 text-xs">
@@ -978,8 +978,8 @@ export const SettingsView = () => {
                   onClick={() => setSelectedBackend('local')}
                   className={`p-3 rounded-lg border text-left transition-all ${
                     selectedBackend === 'local'
-                      ? 'border-purple-500 bg-purple-500/10 text-purple-200'
-                      : 'border-slate-800 bg-slate-950/60 text-slate-400 hover:border-slate-700'
+                      ? 'border-accent-500 bg-accent-500/10 text-accent-200'
+                      : 'border-slate-800 bg-app/60 text-slate-400 hover:border-slate-700'
                   }`}
                 >
                   <div className="font-semibold flex items-center gap-1.5">
@@ -995,8 +995,8 @@ export const SettingsView = () => {
                   onClick={() => setSelectedBackend('cloud')}
                   className={`p-3 rounded-lg border text-left transition-all ${
                     selectedBackend === 'cloud'
-                      ? 'border-purple-500 bg-purple-500/10 text-purple-200'
-                      : 'border-slate-800 bg-slate-950/60 text-slate-400 hover:border-slate-700'
+                      ? 'border-accent-500 bg-accent-500/10 text-accent-200'
+                      : 'border-slate-800 bg-app/60 text-slate-400 hover:border-slate-700'
                   }`}
                 >
                   <div className="font-semibold flex items-center gap-1.5">
@@ -1024,7 +1024,7 @@ export const SettingsView = () => {
                   <select
                     value={cloudProvider}
                     onChange={(e) => setCloudProvider(e.target.value as LlmProviderType)}
-                    className="w-full bg-slate-950 border border-slate-800 rounded-lg px-3 py-2 text-slate-200 focus:outline-none focus:border-purple-500"
+                    className="w-full bg-app border border-slate-800 rounded-lg px-3 py-2 text-slate-200 focus:outline-none focus:border-accent-500"
                   >
                     <option value="open_router">OpenRouter (Große Modellauswahl)</option>
                     <option value="anthropic">Anthropic Claude (Native Messages API)</option>
@@ -1044,7 +1044,7 @@ export const SettingsView = () => {
                     value={cloudApiKey}
                     onChange={(e) => setCloudApiKey(e.target.value)}
                     placeholder="sk-or-... oder sk-ant-..."
-                    className="w-full bg-slate-950 border border-slate-800 rounded-lg px-3 py-2 text-slate-200 font-mono focus:outline-none focus:border-purple-500"
+                    className="w-full bg-app border border-slate-800 rounded-lg px-3 py-2 text-slate-200 font-mono focus:outline-none focus:border-accent-500"
                   />
                 </div>
               </div>
@@ -1057,7 +1057,7 @@ export const SettingsView = () => {
                     type="text"
                     value={cloudEndpoint}
                     onChange={(e) => setCloudEndpoint(e.target.value)}
-                    className="w-full bg-slate-950 border border-slate-800 rounded-lg px-3 py-2 text-slate-200 font-mono focus:outline-none focus:border-purple-500"
+                    className="w-full bg-app border border-slate-800 rounded-lg px-3 py-2 text-slate-200 font-mono focus:outline-none focus:border-accent-500"
                   />
                 </div>
 
@@ -1068,7 +1068,7 @@ export const SettingsView = () => {
                     type="text"
                     value={cloudModel}
                     onChange={(e) => setCloudModel(e.target.value)}
-                    className="w-full bg-slate-950 border border-slate-800 rounded-lg px-3 py-2 text-slate-200 font-mono focus:outline-none focus:border-purple-500"
+                    className="w-full bg-app border border-slate-800 rounded-lg px-3 py-2 text-slate-200 font-mono focus:outline-none focus:border-accent-500"
                   />
                 </div>
               </div>
@@ -1079,7 +1079,7 @@ export const SettingsView = () => {
                   <div className="flex items-center justify-between">
                     <div>
                       <h3 className="text-xs font-semibold text-slate-200 flex items-center gap-1.5">
-                        <Sparkles className="w-3.5 h-3.5 text-purple-400" />
+                        <Sparkles className="w-3.5 h-3.5 text-accent-400" />
                         <span>OpenRouter Modellkatalog</span>
                       </h3>
                       <p className="text-[11px] text-slate-400">
@@ -1107,23 +1107,23 @@ export const SettingsView = () => {
                           value={openRouterSearch}
                           onChange={(e) => setOpenRouterSearch(e.target.value)}
                           placeholder="Modell suchen (z.B. claude, deepseek, llama, qwen, wizard)..."
-                          className="w-full bg-slate-950 border border-slate-800 rounded-lg pl-8 pr-3 py-1.5 text-xs text-slate-200 focus:outline-none focus:border-purple-500"
+                          className="w-full bg-app border border-slate-800 rounded-lg pl-8 pr-3 py-1.5 text-xs text-slate-200 focus:outline-none focus:border-accent-500"
                         />
                       </div>
 
-                      <div className="h-48 overflow-y-auto rounded-lg border border-slate-800 bg-slate-950 divide-y divide-slate-800/60 text-xs">
+                      <div className="h-48 overflow-y-auto rounded-lg border border-slate-800 bg-app divide-y divide-slate-800/60 text-xs">
                         {filteredOpenRouterModels.slice(0, 50).map((m) => (
                           <div
                             key={m.id}
                             onClick={() => setCloudModel(m.id)}
                             className={`p-2.5 flex items-center justify-between cursor-pointer hover:bg-slate-900 transition-colors ${
-                              cloudModel === m.id ? 'bg-purple-950/40 text-purple-300' : 'text-slate-300'
+                              cloudModel === m.id ? 'bg-accent-950/40 text-accent-300' : 'text-slate-300'
                             }`}
                           >
                             <div className="space-y-0.5">
                               <div className="font-semibold flex items-center gap-1.5">
                                 <span>{m.name}</span>
-                                {cloudModel === m.id && <Check className="w-3.5 h-3.5 text-purple-400" />}
+                                {cloudModel === m.id && <Check className="w-3.5 h-3.5 text-accent-400" />}
                               </div>
                               <div className="font-mono text-[10px] text-slate-500">{m.id}</div>
                             </div>
@@ -1150,7 +1150,7 @@ export const SettingsView = () => {
               <div className="flex items-center justify-between">
                 <div>
                   <h2 className="text-sm font-semibold text-slate-200 flex items-center gap-2">
-                    <Sliders className="w-4 h-4 text-purple-400" />
+                    <Sliders className="w-4 h-4 text-accent-400" />
                     Sampler & Preset-Profile
                   </h2>
                   <p className="text-xs text-slate-400 mt-0.5">
@@ -1160,7 +1160,7 @@ export const SettingsView = () => {
 
                 <button
                   onClick={() => setIsCreatingPreset(true)}
-                  className="px-3 py-1.5 rounded-lg bg-purple-600 hover:bg-purple-500 text-white text-xs font-semibold flex items-center gap-1.5"
+                  className="px-3 py-1.5 rounded-lg bg-accent-600 hover:bg-accent-500 text-white text-xs font-semibold flex items-center gap-1.5"
                 >
                   <Plus className="w-3.5 h-3.5" />
                   <span>Als neues Preset speichern</span>
@@ -1176,8 +1176,8 @@ export const SettingsView = () => {
                       key={p.id}
                       className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg border text-xs cursor-pointer transition-all ${
                         isActive
-                          ? 'border-purple-500 bg-purple-500/20 text-purple-200'
-                          : 'border-slate-800 bg-slate-950/60 text-slate-400 hover:border-slate-700'
+                          ? 'border-accent-500 bg-accent-500/20 text-accent-200'
+                          : 'border-slate-800 bg-app/60 text-slate-400 hover:border-slate-700'
                       }`}
                     >
                       <span onClick={() => applyLlmPreset(p.id)} className="font-medium">
@@ -1201,22 +1201,22 @@ export const SettingsView = () => {
 
               {/* Modal / Inline form to save custom preset */}
               {isCreatingPreset && (
-                <div className="p-3 rounded-lg border border-purple-800/60 bg-purple-950/30 space-y-2 text-xs">
-                  <div className="font-semibold text-purple-200">Neues Preset anlegen</div>
+                <div className="p-3 rounded-lg border border-accent-800/60 bg-accent-950/30 space-y-2 text-xs">
+                  <div className="font-semibold text-accent-200">Neues Preset anlegen</div>
                   <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
                     <input
                       type="text"
                       placeholder="Preset Name (z.B. Mein Slow-Burn Preset)..."
                       value={newPresetName}
                       onChange={(e) => setNewPresetName(e.target.value)}
-                      className="bg-slate-950 border border-slate-800 rounded px-2.5 py-1.5 text-slate-200"
+                      className="bg-app border border-slate-800 rounded px-2.5 py-1.5 text-slate-200"
                     />
                     <input
                       type="text"
                       placeholder="Beschreibung..."
                       value={newPresetDesc}
                       onChange={(e) => setNewPresetDesc(e.target.value)}
-                      className="bg-slate-950 border border-slate-800 rounded px-2.5 py-1.5 text-slate-200"
+                      className="bg-app border border-slate-800 rounded px-2.5 py-1.5 text-slate-200"
                     />
                   </div>
                   <div className="flex justify-end gap-2 pt-1">
@@ -1228,7 +1228,7 @@ export const SettingsView = () => {
                     </button>
                     <button
                       onClick={handleSaveCustomPreset}
-                      className="px-3 py-1 rounded bg-purple-600 text-white font-medium"
+                      className="px-3 py-1 rounded bg-accent-600 text-white font-medium"
                     >
                       Speichern
                     </button>
@@ -1246,10 +1246,10 @@ export const SettingsView = () => {
 
               <div className="grid grid-cols-1 md:grid-cols-3 gap-4 text-xs">
                 {/* Temperature */}
-                <div className="p-3 rounded-lg bg-slate-950/40 border border-slate-800/80 space-y-1.5">
+                <div className="p-3 rounded-lg bg-app/40 border border-slate-800/80 space-y-1.5">
                   <div className="flex justify-between">
                     <span className="text-slate-300 font-medium">Temperature:</span>
-                    <span className="font-mono text-purple-300 font-bold">{sampling.temperature ?? 0.7}</span>
+                    <span className="font-mono text-accent-300 font-bold">{sampling.temperature ?? 0.7}</span>
                   </div>
                   <input
                     type="range"
@@ -1258,13 +1258,13 @@ export const SettingsView = () => {
                     step="0.05"
                     value={sampling.temperature ?? 0.7}
                     onChange={(e) => setSampling({ temperature: parseFloat(e.target.value) })}
-                    className="w-full accent-purple-500"
+                    className="w-full accent-accent-500"
                   />
                   <div className="text-[10px] text-slate-500">Niedrig: Präzise · Hoch: Kreativ</div>
                 </div>
 
                 {/* Min-P */}
-                <div className="p-3 rounded-lg bg-slate-950/40 border border-slate-800/80 space-y-1.5">
+                <div className="p-3 rounded-lg bg-app/40 border border-slate-800/80 space-y-1.5">
                   <div className="flex justify-between">
                     <span className="text-slate-300 font-medium">Min-P Sampler:</span>
                     <span className="font-mono text-cyan-300 font-bold">{sampling.min_p ?? 0.05}</span>
@@ -1282,7 +1282,7 @@ export const SettingsView = () => {
                 </div>
 
                 {/* Top-P */}
-                <div className="p-3 rounded-lg bg-slate-950/40 border border-slate-800/80 space-y-1.5">
+                <div className="p-3 rounded-lg bg-app/40 border border-slate-800/80 space-y-1.5">
                   <div className="flex justify-between">
                     <span className="text-slate-300 font-medium">Top-P (Nucleus):</span>
                     <span className="font-mono text-emerald-300 font-bold">{sampling.top_p ?? 0.9}</span>
@@ -1302,7 +1302,7 @@ export const SettingsView = () => {
 
               <div className="grid grid-cols-1 md:grid-cols-3 gap-4 text-xs">
                 {/* Max Tokens */}
-                <div className="p-3 rounded-lg bg-slate-950/40 border border-slate-800/80 space-y-1.5">
+                <div className="p-3 rounded-lg bg-app/40 border border-slate-800/80 space-y-1.5">
                   <div className="flex justify-between">
                     <span className="text-slate-300 font-medium">Max Output Tokens:</span>
                     <span className="font-mono text-emerald-300 font-bold">{sampling.max_tokens ?? 2048}</span>
@@ -1320,7 +1320,7 @@ export const SettingsView = () => {
                 </div>
 
                 {/* Repeat Penalty */}
-                <div className="p-3 rounded-lg bg-slate-950/40 border border-slate-800/80 space-y-1.5">
+                <div className="p-3 rounded-lg bg-app/40 border border-slate-800/80 space-y-1.5">
                   <div className="flex justify-between">
                     <span className="text-slate-300 font-medium">Repeat Penalty:</span>
                     <span className="font-mono text-amber-300 font-bold">{sampling.repeat_penalty ?? 1.1}</span>
@@ -1338,7 +1338,7 @@ export const SettingsView = () => {
                 </div>
 
                 {/* Top-K */}
-                <div className="p-3 rounded-lg bg-slate-950/40 border border-slate-800/80 space-y-1.5">
+                <div className="p-3 rounded-lg bg-app/40 border border-slate-800/80 space-y-1.5">
                   <div className="flex justify-between">
                     <span className="text-slate-300 font-medium">Top-K:</span>
                     <span className="font-mono text-indigo-300 font-bold">{sampling.top_k ?? 40}</span>
@@ -1366,7 +1366,7 @@ export const SettingsView = () => {
 
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-xs">
                 {/* DRY (Don't Repeat Yourself) Multiplier */}
-                <div className="p-3 rounded-lg bg-slate-950/40 border border-slate-800/80 space-y-1.5">
+                <div className="p-3 rounded-lg bg-app/40 border border-slate-800/80 space-y-1.5">
                   <div className="flex justify-between">
                     <span className="text-slate-300 font-medium">DRY Multiplier:</span>
                     <span className="font-mono text-rose-300 font-bold">{sampling.dry_multiplier ?? 0.8}</span>
@@ -1386,7 +1386,7 @@ export const SettingsView = () => {
                 </div>
 
                 {/* XTC (Exclude Top Choices) Threshold */}
-                <div className="p-3 rounded-lg bg-slate-950/40 border border-slate-800/80 space-y-1.5">
+                <div className="p-3 rounded-lg bg-app/40 border border-slate-800/80 space-y-1.5">
                   <div className="flex justify-between">
                     <span className="text-slate-300 font-medium">XTC Threshold:</span>
                     <span className="font-mono text-cyan-300 font-bold">{sampling.xtc_threshold ?? 0.1}</span>
@@ -1408,10 +1408,10 @@ export const SettingsView = () => {
 
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-xs">
                 {/* Dynatemp Range */}
-                <div className="p-3 rounded-lg bg-slate-950/40 border border-slate-800/80 space-y-1.5">
+                <div className="p-3 rounded-lg bg-app/40 border border-slate-800/80 space-y-1.5">
                   <div className="flex justify-between">
                     <span className="text-slate-300 font-medium">Dynamic Temperature Range:</span>
-                    <span className="font-mono text-purple-300 font-bold">{sampling.dynatemp_range ?? 0.0}</span>
+                    <span className="font-mono text-accent-300 font-bold">{sampling.dynatemp_range ?? 0.0}</span>
                   </div>
                   <input
                     type="range"
@@ -1420,7 +1420,7 @@ export const SettingsView = () => {
                     step="0.05"
                     value={sampling.dynatemp_range ?? 0.0}
                     onChange={(e) => setSampling({ dynatemp_range: parseFloat(e.target.value) })}
-                    className="w-full accent-purple-500"
+                    className="w-full accent-accent-500"
                   />
                   <div className="text-[10px] text-slate-500">
                     Schwankt dynamisch zwischen Temp - Range und Temp + Range (0 = Aus).
@@ -1428,7 +1428,7 @@ export const SettingsView = () => {
                 </div>
 
                 {/* Reply Language & Lorebook Depth */}
-                <div className="p-3 rounded-lg bg-slate-950/40 border border-slate-800/80 space-y-2">
+                <div className="p-3 rounded-lg bg-app/40 border border-slate-800/80 space-y-2">
                   <div className="flex items-center justify-between">
                     <span className="text-slate-300 font-medium">Antwortsprache:</span>
                     <input
@@ -1456,14 +1456,14 @@ export const SettingsView = () => {
             {/* 3D Avatar (VRM) Standard-Auswahl */}
             <div className="rounded-xl border border-slate-800 bg-slate-900/60 p-4 space-y-3">
               <h3 className="text-xs font-semibold text-slate-300 flex items-center gap-1.5">
-                <Box className="w-3.5 h-3.5 text-pink-400" />
+                <Box className="w-3.5 h-3.5 text-accent2-400" />
                 <span>3D Avatar (VRM) Standardmodell</span>
               </h3>
               <div className="flex gap-2 text-xs">
                 <select
                   value={activeVrmPath || ''}
                   onChange={(e) => setActiveVrmPath(e.target.value || null)}
-                  className="flex-1 bg-slate-950 border border-slate-800 rounded-lg px-3 py-2 text-slate-200 focus:outline-none focus:border-purple-500"
+                  className="flex-1 bg-app border border-slate-800 rounded-lg px-3 py-2 text-slate-200 focus:outline-none focus:border-accent-500"
                 >
                   {scannedVrms.map((vrm, idx) => (
                     <option key={idx} value={vrm.path}>
@@ -1486,11 +1486,11 @@ export const SettingsView = () => {
             <div className="rounded-xl border border-slate-800 bg-slate-900/60 p-4 space-y-3">
               <div className="flex items-center justify-between">
                 <h3 className="text-xs font-semibold text-slate-300 flex items-center gap-1.5">
-                  <Smile className="w-3.5 h-3.5 text-purple-400" />
+                  <Smile className="w-3.5 h-3.5 text-accent-400" />
                   <span>2D Live2D Standardmodell</span>
                 </h3>
                 {sowImportMsg && (
-                  <span className="text-[11px] text-purple-300 font-mono animate-fade-in bg-purple-950/70 px-2 py-0.5 rounded border border-purple-500/40">
+                  <span className="text-[11px] text-accent-300 font-mono animate-fade-in bg-accent-950/70 px-2 py-0.5 rounded border border-accent-500/40">
                     {sowImportMsg}
                   </span>
                 )}
@@ -1499,7 +1499,7 @@ export const SettingsView = () => {
                 <select
                   value={activeLive2dPath || ''}
                   onChange={(e) => setActiveLive2dPath(e.target.value || null)}
-                  className="flex-1 min-w-[200px] bg-slate-950 border border-slate-800 rounded-lg px-3 py-2 text-slate-200 focus:outline-none focus:border-purple-500"
+                  className="flex-1 min-w-[200px] bg-app border border-slate-800 rounded-lg px-3 py-2 text-slate-200 focus:outline-none focus:border-accent-500"
                 >
                   {scannedLive2ds.map((l2d, idx) => (
                     <option key={idx} value={l2d.model_path}>
@@ -1514,7 +1514,7 @@ export const SettingsView = () => {
                   className="px-3.5 py-2 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-200 font-medium flex items-center gap-1.5 transition-colors border border-slate-700"
                   title="ZIP-Archiv oder .model3.json Datei eines Live2D-Modells importieren"
                 >
-                  <FolderOpen className="w-3.5 h-3.5 text-purple-400" />
+                  <FolderOpen className="w-3.5 h-3.5 text-accent-400" />
                   <span>Eigenes Live2D-Modell importieren...</span>
                 </button>
 
@@ -1522,10 +1522,10 @@ export const SettingsView = () => {
                   type="button"
                   onClick={handleImportSowLive2d}
                   disabled={isImportingSow}
-                  className="px-3.5 py-2 rounded-lg bg-purple-950/60 hover:bg-purple-900/80 text-purple-200 font-medium flex items-center gap-1.5 transition-colors border border-purple-700/60 disabled:opacity-50"
+                  className="px-3.5 py-2 rounded-lg bg-accent-950/60 hover:bg-accent-900/80 text-accent-200 font-medium flex items-center gap-1.5 transition-colors border border-accent-700/60 disabled:opacity-50"
                   title="Kopiert alle installierten Live2D-Modelle aus Soul-of-Waifu"
                 >
-                  <Sparkles className="w-3.5 h-3.5 text-pink-400" />
+                  <Sparkles className="w-3.5 h-3.5 text-accent2-400" />
                   <span>{isImportingSow ? 'Importiere...' : 'Aus Soul-of-Waifu importieren'}</span>
                 </button>
               </div>
@@ -1551,13 +1551,13 @@ export const SettingsView = () => {
               <div className="flex flex-wrap gap-2 text-xs">
                 <button
                   onClick={showBonsaiRecommendation}
-                  className={`px-3 py-1.5 rounded-lg border transition-colors ${hubView === 'recommended' ? 'border-purple-500 bg-purple-500/15 text-purple-200' : 'border-slate-700 bg-slate-950 text-slate-400 hover:text-slate-200'}`}
+                  className={`px-3 py-1.5 rounded-lg border transition-colors ${hubView === 'recommended' ? 'border-accent-500 bg-accent-500/15 text-accent-200' : 'border-slate-700 bg-app text-slate-400 hover:text-slate-200'}`}
                 >
                   ✨ Empfehlungen
                 </button>
                 <button
                   onClick={() => setHubView('installed')}
-                  className={`px-3 py-1.5 rounded-lg border transition-colors ${hubView === 'installed' ? 'border-purple-500 bg-purple-500/15 text-purple-200' : 'border-slate-700 bg-slate-950 text-slate-400 hover:text-slate-200'}`}
+                  className={`px-3 py-1.5 rounded-lg border transition-colors ${hubView === 'installed' ? 'border-accent-500 bg-accent-500/15 text-accent-200' : 'border-slate-700 bg-app text-slate-400 hover:text-slate-200'}`}
                 >
                   Meine Modelle ({scannedModels.length})
                 </button>
@@ -1566,7 +1566,7 @@ export const SettingsView = () => {
                     setHubView('popular');
                     searchHfModels('');
                   }}
-                  className={`px-3 py-1.5 rounded-lg border transition-colors ${hubView === 'popular' ? 'border-purple-500 bg-purple-500/15 text-purple-200' : 'border-slate-700 bg-slate-950 text-slate-400 hover:text-slate-200'}`}
+                  className={`px-3 py-1.5 rounded-lg border transition-colors ${hubView === 'popular' ? 'border-accent-500 bg-accent-500/15 text-accent-200' : 'border-slate-700 bg-app text-slate-400 hover:text-slate-200'}`}
                 >
                   Beliebt
                 </button>
@@ -1589,7 +1589,7 @@ export const SettingsView = () => {
                       }
                     }}
                     placeholder="Modell suchen (z.B. Qwen2.5-7B, Llama-3.1-8B, Mistral, Heretic)..."
-                    className="w-full bg-slate-950 border border-slate-800 rounded-lg pl-9 pr-3 py-2 text-xs text-slate-200 focus:outline-none focus:border-purple-500"
+                    className="w-full bg-app border border-slate-800 rounded-lg pl-9 pr-3 py-2 text-xs text-slate-200 focus:outline-none focus:border-accent-500"
                   />
                 </div>
                 <button
@@ -1619,7 +1619,7 @@ export const SettingsView = () => {
               const installed = scannedModels.find((model) => model.name.toLowerCase().includes('ternary-bonsai-27b-pq2_0'));
               const vramGb = (gpu?.total_vram_mb || 0) / 1024;
               return (
-                <div className="rounded-2xl border border-purple-500/50 bg-gradient-to-br from-purple-950/60 via-slate-900/80 to-cyan-950/40 p-5 space-y-4 shadow-xl shadow-purple-950/20">
+                <div className="rounded-2xl border border-accent-500/50 bg-gradient-to-br from-accent-950/60 via-slate-900/80 to-cyan-950/40 p-5 space-y-4 shadow-xl shadow-accent-950/20">
                   <div className="flex flex-col md:flex-row md:items-start justify-between gap-4">
                     <div className="space-y-2">
                       <div className="flex flex-wrap items-center gap-2">
@@ -1642,7 +1642,7 @@ export const SettingsView = () => {
 
                   <div className="grid grid-cols-2 md:grid-cols-4 gap-2 text-[11px]">
                     {[['27B', 'Parameter'], ['~7,2 GB', 'Download'], ['32K', 'Startkontext'], ['262K', 'Maximum']].map(([value, label]) => (
-                      <div key={label} className="rounded-lg bg-slate-950/60 border border-slate-700/70 p-2 text-center">
+                      <div key={label} className="rounded-lg bg-app/60 border border-slate-700/70 p-2 text-center">
                         <div className="font-bold text-slate-100">{value}</div>
                         <div className="text-slate-500">{label}</div>
                       </div>
@@ -1671,7 +1671,7 @@ export const SettingsView = () => {
                       <button
                         onClick={showBonsaiRecommendation}
                         disabled={isLoadingHfFiles[BONSAI_MODEL_ID]}
-                        className="px-4 py-2 rounded-lg bg-purple-600 hover:bg-purple-500 disabled:opacity-50 text-white text-xs font-semibold flex items-center gap-2"
+                        className="px-4 py-2 rounded-lg bg-accent-600 hover:bg-accent-500 disabled:opacity-50 text-white text-xs font-semibold flex items-center gap-2"
                       >
                         <RefreshCw className={`w-4 h-4 ${isLoadingHfFiles[BONSAI_MODEL_ID] ? 'animate-spin' : ''}`} />
                         {isLoadingHfFiles[BONSAI_MODEL_ID] ? 'Lade Modelldaten...' : 'Download vorbereiten'}
@@ -1683,8 +1683,8 @@ export const SettingsView = () => {
                   </div>
 
                   {files.length > 0 && !installed && (
-                    <div className="pt-3 border-t border-purple-500/20 text-[11px] text-slate-400">
-                      Gewählt: <span className="font-mono text-purple-200">{recommendedFile?.filename || 'PQ2_0 wird gesucht'}</span>. Die spezielle PrismML Runtime wird automatisch verwendet.
+                    <div className="pt-3 border-t border-accent-500/20 text-[11px] text-slate-400">
+                      Gewählt: <span className="font-mono text-accent-200">{recommendedFile?.filename || 'PQ2_0 wird gesucht'}</span>. Die spezielle PrismML Runtime wird automatisch verwendet.
                     </div>
                   )}
                 </div>
@@ -1708,7 +1708,7 @@ export const SettingsView = () => {
                     </div>
                     <div className="mt-2 flex flex-wrap gap-2 text-[10px]">
                       <span className="px-2 py-0.5 rounded bg-slate-800 text-slate-300">{(model.size_mb / 1024).toFixed(1)} GB</span>
-                      <span className={`px-2 py-0.5 rounded ${model.runtime === 'prism' ? 'bg-cyan-500/15 text-cyan-300' : 'bg-purple-500/15 text-purple-300'}`}>
+                      <span className={`px-2 py-0.5 rounded ${model.runtime === 'prism' ? 'bg-cyan-500/15 text-cyan-300' : 'bg-accent-500/15 text-accent-300'}`}>
                         {model.runtime === 'prism' ? 'PrismML' : 'llama.cpp'}
                       </span>
                     </div>
@@ -1728,7 +1728,7 @@ export const SettingsView = () => {
 
                 <div className="space-y-2">
                   {Object.values(downloadProgress).map((prog) => (
-                    <div key={prog.filename} className="p-3 rounded-lg bg-slate-950 border border-slate-800 space-y-1.5 text-xs">
+                    <div key={prog.filename} className="p-3 rounded-lg bg-app border border-slate-800 space-y-1.5 text-xs">
                       <div className="flex justify-between items-center">
                         <span className="font-semibold text-slate-200 truncate max-w-md">{prog.filename}</span>
                         <div className="flex items-center gap-2">
@@ -1826,7 +1826,7 @@ export const SettingsView = () => {
                               Keine .gguf Dateien in diesem Repository gefunden.
                             </div>
                           ) : (
-                            <div className="divide-y divide-slate-800/80 rounded-lg border border-slate-800 bg-slate-950 overflow-hidden">
+                            <div className="divide-y divide-slate-800/80 rounded-lg border border-slate-800 bg-app overflow-hidden">
                               {files.map((file) => (
                                 <div key={file.filename} className="p-2.5 flex items-center justify-between text-xs hover:bg-slate-900/50">
                                   <div className="space-y-1 min-w-0 flex-1 pr-3">
@@ -1835,7 +1835,7 @@ export const SettingsView = () => {
                                       {file.recommended && <span className="shrink-0 px-1.5 py-0.5 rounded bg-emerald-500/20 text-emerald-300 text-[9px]">EMPFOHLEN</span>}
                                     </div>
                                     <div className="flex items-center gap-2 text-[10px] font-mono">
-                                      <span className="px-1.5 py-0.5 rounded bg-purple-500/20 text-purple-300 font-bold">
+                                      <span className="px-1.5 py-0.5 rounded bg-accent-500/20 text-accent-300 font-bold">
                                         {file.quantization}
                                       </span>
                                       <span className="text-slate-400">{file.size_formatted}</span>

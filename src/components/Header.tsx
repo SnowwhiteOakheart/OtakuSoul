@@ -64,12 +64,12 @@ export const Header = () => {
           <img
             src={brandIconUrl}
             alt=""
-            className="h-8 w-8 rounded-lg object-cover shadow-md shadow-purple-950/70"
+            className="h-8 w-8 rounded-lg object-cover shadow-md shadow-accent-950/70"
           />
-          <span className="text-xl font-bold bg-gradient-to-r from-purple-400 via-pink-400 to-indigo-400 bg-clip-text text-transparent tracking-wide">
+          <span className="text-xl font-bold bg-gradient-to-r from-accent-400 via-accent2-400 to-indigo-400 bg-clip-text text-transparent tracking-wide">
             OtakuSoul
           </span>
-          <span className="text-xs px-1.5 py-0.5 rounded bg-purple-500/20 text-purple-300 border border-purple-500/30 font-mono">
+          <span className="text-xs px-1.5 py-0.5 rounded bg-accent-500/20 text-accent-300 border border-accent-500/30 font-mono">
             {t('header.version')}
           </span>
         </div>
@@ -80,7 +80,7 @@ export const Header = () => {
             onClick={() => setActiveTab('chat')}
             className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-sm transition-all ${
               activeTab === 'chat'
-                ? 'bg-purple-600/20 text-purple-300 border border-purple-500/40 shadow-sm'
+                ? 'bg-accent-600/20 text-accent-300 border border-accent-500/40 shadow-sm'
                 : 'text-slate-400 hover:text-slate-200 hover:bg-slate-800/60'
             }`}
           >
@@ -92,7 +92,7 @@ export const Header = () => {
             onClick={() => setActiveTab('characters')}
             className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-sm transition-all ${
               activeTab === 'characters'
-                ? 'bg-purple-600/20 text-purple-300 border border-purple-500/40 shadow-sm'
+                ? 'bg-accent-600/20 text-accent-300 border border-accent-500/40 shadow-sm'
                 : 'text-slate-400 hover:text-slate-200 hover:bg-slate-800/60'
             }`}
           >
@@ -104,11 +104,11 @@ export const Header = () => {
             onClick={() => setActiveTab('hub')}
             className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-sm transition-all ${
               activeTab === 'hub'
-                ? 'bg-purple-600/20 text-purple-300 border border-purple-500/40 shadow-sm'
+                ? 'bg-accent-600/20 text-accent-300 border border-accent-500/40 shadow-sm'
                 : 'text-slate-400 hover:text-slate-200 hover:bg-slate-800/60'
             }`}
           >
-            <Compass className="w-4 h-4 text-purple-400" />
+            <Compass className="w-4 h-4 text-accent-400" />
             <span>{t('nav.hub')}</span>
           </button>
 
@@ -116,7 +116,7 @@ export const Header = () => {
             onClick={() => setActiveTab('lorebooks')}
             className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-sm transition-all ${
               activeTab === 'lorebooks'
-                ? 'bg-purple-600/20 text-purple-300 border border-purple-500/40 shadow-sm'
+                ? 'bg-accent-600/20 text-accent-300 border border-accent-500/40 shadow-sm'
                 : 'text-slate-400 hover:text-slate-200 hover:bg-slate-800/60'
             }`}
           >
@@ -128,7 +128,7 @@ export const Header = () => {
             onClick={() => setActiveTab('stage')}
             className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-sm transition-all ${
               activeTab === 'stage'
-                ? 'bg-purple-600/20 text-purple-300 border border-purple-500/40 shadow-sm'
+                ? 'bg-accent-600/20 text-accent-300 border border-accent-500/40 shadow-sm'
                 : 'text-slate-400 hover:text-slate-200 hover:bg-slate-800/60'
             }`}
           >
@@ -140,7 +140,7 @@ export const Header = () => {
             onClick={() => setActiveTab('companion')}
             className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-sm transition-all ${
               activeTab === 'companion'
-                ? 'bg-purple-600/20 text-purple-300 border border-purple-500/40 shadow-sm'
+                ? 'bg-accent-600/20 text-accent-300 border border-accent-500/40 shadow-sm'
                 : 'text-slate-400 hover:text-slate-200 hover:bg-slate-800/60'
             }`}
           >
@@ -152,7 +152,7 @@ export const Header = () => {
             onClick={() => setActiveTab('integrations')}
             className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-sm transition-all ${
               activeTab === 'integrations'
-                ? 'bg-purple-600/20 text-purple-300 border border-purple-500/40 shadow-sm'
+                ? 'bg-accent-600/20 text-accent-300 border border-accent-500/40 shadow-sm'
                 : 'text-slate-400 hover:text-slate-200 hover:bg-slate-800/60'
             }`}
           >
@@ -164,7 +164,7 @@ export const Header = () => {
             onClick={() => setActiveTab('settings')}
             className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-sm transition-all ${
               activeTab === 'settings'
-                ? 'bg-purple-600/20 text-purple-300 border border-purple-500/40 shadow-sm'
+                ? 'bg-accent-600/20 text-accent-300 border border-accent-500/40 shadow-sm'
                 : 'text-slate-400 hover:text-slate-200 hover:bg-slate-800/60'
             }`}
           >
@@ -239,7 +239,7 @@ export const Header = () => {
         <button
           type="button"
           onClick={() => setIsLogViewerOpen(true)}
-          className="flex items-center gap-1.5 rounded-lg border border-slate-700/60 bg-slate-800/70 p-1.5 text-xs text-slate-400 transition-colors hover:border-purple-500/40 hover:text-purple-200"
+          className="flex items-center gap-1.5 rounded-lg border border-slate-700/60 bg-slate-800/70 p-1.5 text-xs text-slate-400 transition-colors hover:border-accent-500/40 hover:text-accent-200"
           title={t('header.logs')}
           aria-label={t('header.logs')}
         >
@@ -250,18 +250,18 @@ export const Header = () => {
         <button
           type="button"
           onClick={() => setIsUpdaterOpen(true)}
-          className="flex items-center gap-1.5 rounded-lg border border-slate-700/60 bg-slate-800/70 p-1.5 text-xs text-slate-400 transition-colors hover:border-purple-500/40 hover:text-purple-200"
+          className="flex items-center gap-1.5 rounded-lg border border-slate-700/60 bg-slate-800/70 p-1.5 text-xs text-slate-400 transition-colors hover:border-accent-500/40 hover:text-accent-200"
           title={t('header.update')}
           aria-label={t('header.update')}
         >
-          <Sparkles className="h-4 w-4 text-purple-400" />
+          <Sparkles className="h-4 w-4 text-accent-400" />
         </button>
 
         {/* About Dialog Button */}
         <button
           type="button"
           onClick={() => setShowAbout(true)}
-          className="flex items-center gap-1.5 rounded-lg border border-slate-700/60 bg-slate-800/70 p-1.5 text-xs text-slate-400 transition-colors hover:border-purple-500/40 hover:text-purple-200"
+          className="flex items-center gap-1.5 rounded-lg border border-slate-700/60 bg-slate-800/70 p-1.5 text-xs text-slate-400 transition-colors hover:border-accent-500/40 hover:text-accent-200"
           title={t('header.about')}
           aria-label={t('header.about')}
         >
