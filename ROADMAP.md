@@ -5,7 +5,9 @@
 > `cargo clippy`, `tsc`, Vitest/Cargo-Tests und eine Sichtprüfung der Oberfläche bei 1280×840 und 960×640 (Mindestgröße).
 > Abgeschlossene Feature-Phasen stehen in `Roadmap_abgeschlossen.md`.
 
-**Gesamtbild:** Funktional ist das Projekt weit. `tsc` läuft sauber, 16 Vitest- und 91 Cargo-Tests sind grün.
+**Fortschritt:** P0 und die Abhängigkeiten sind erledigt (siehe unten).
+
+**Gesamtbild (Ausgangslage):** Funktional ist das Projekt weit. `tsc` läuft sauber, 16 Vitest- und 91 Cargo-Tests sind grün.
 Die Schwächen liegen vor allem hier:
 
 1. **Ein echter Laufzeit-Bug:** Das Web-Fetch-Tool des Companions stürzt ab.
@@ -14,74 +16,47 @@ Die Schwächen liegen vor allem hier:
 
 ---
 
-## 🔥 P0 – Kritisch (sofort)
+## 🔥 P0 – Kritisch (sofort) ✅ erledigt
 
-- [ ] **Panic im Companion-Web-Fetch beheben.** In `src-tauri/src/modules/companion_tools.rs:530` nutzt der Regex
-  `<(script|style|…)[^>]*>.*?</\1>` eine Rückreferenz (`\1`). Die unterstützt das `regex`-Crate nicht, daher panict `Regex::new(..).unwrap()`
-  bei **jedem** Aufruf. `cargo clippy` bricht hier mit `invalid_regex` ab.
-  → Den Regex pro Tag aufteilen, z. B. `(?is)<script[^>]*>.*?</script>|<style…>…`, oder einen HTML-Parser wie `scraper` verwenden.
-  Alle Regexe per `LazyLock` einmalig kompilieren und einen Test ergänzen.
-- [ ] **CSP aktivieren.** In `tauri.conf.json` steht `"csp": null` und `assetProtocol.scope: ["**"]`. Damit kann der Webview
-  jede Datei des Systems lesen. Scope auf App-Daten- und Asset-Verzeichnisse begrenzen und eine restriktive CSP setzen.
-- [ ] **API-Keys nicht im Klartext speichern.** `cloud_api_key` (und Discord-Bot-Token u. ä.) liegen unverschlüsselt in
-  `settings.json`. → Schlüsselbund des Betriebssystems über das Crate `keyring` nutzen (Linux Secret Service, macOS Keychain, Windows Credential Manager).
-- [ ] **Mobiler Webserver:** Er lauscht standardmäßig auf `0.0.0.0` über HTTP, und der Token steht als Query-Parameter in der URL
-  (landet dann in Verlauf und Logs). → Standardmäßig aus bzw. auf `127.0.0.1`; Token nach dem ersten Aufruf per
-  Header oder Cookie übertragen; Vergleich in konstanter Zeit (`subtle`); Warnhinweis in der UI.
-- [ ] **Sicherheitslücke in `pixi-live2d-display` beheben.** `npm audit` meldet 2 kritische Lücken über die transitive
-  Abhängigkeit `gh-pages`. Siehe P1 „Live2D-Stack“.
+- [x] **Panic im Companion-Web-Fetch behoben.** Der Regex mit Rückreferenz `\1` wurde in Einzel-Alternativen aufgeteilt, alle Regexe
+  sind per `LazyLock` vorkompiliert, die Logik steckt testbar in `html_to_text()`. Zusätzlich behoben: Die Vorschau schnitt
+  Bytes statt Zeichen ab (`&text[..3000]`) und panicte bei Umlauten und Emoji. Derselbe Fehler steckte in `DiscordBotManager::split_message`.
+- [x] **CSP aktiv, Asset-Scope eingeschränkt.** Strikte `csp` und `devCsp` ohne `unsafe-eval`. Der statische Scope ist leer, zur Laufzeit
+  werden nur App-Daten-, Konfigurations- und gebündelte Asset-Verzeichnisse freigegeben (`allow_app_asset_dirs` in `lib.rs`).
+  Über den Dialog gewählte Dateien gibt das Dialog-Plugin selbst frei.
+- [x] **API-Keys im Schlüsselbund.** Neues Modul `secrets.rs` (`keyring` 4). Betroffen sind Cloud-Key, Voice-Keys (ElevenLabs, OpenAI,
+  RVC, STT je Charakter), Discord-Bot-Token und der Key des Bildgenerators. Vorhandene Klartext-Keys werden beim ersten Laden migriert.
+  Ohne Secret Service bleibt als Fallback die Datei, mit Warnung im Log.
+- [x] **Mobiler Webserver abgesichert.** Der Token war vorher **auf jeder Installation identisch** (Xorshift mit festem Seed).
+  Jetzt: 256-Bit-Token aus CSPRNG, vorhersagbare Alt-Tokens werden automatisch ersetzt, Vergleich in konstanter Zeit,
+  der Client sendet den Token per Header und entfernt ihn aus der Adresszeile, dazu ein Warnhinweis in der UI bei LAN-Betrieb.
+- [x] **Sicherheitslücke in `pixi-live2d-display` beseitigt.** Das Paket ist ersetzt, `npm audit` meldet 0 Lücken.
+- [x] *Zusätzlich gefunden:* Das **Profil-Backup** sicherte weder Einstellungen noch Soul Memory (falsche Pfade und Dateinamen).
+  Die Datenbank wird jetzt per `VACUUM INTO` konsistent gesichert und beim nächsten Start wiederhergestellt statt im laufenden Betrieb.
+- [x] *Zusätzlich gefunden:* Ein fest eingetragener Pfad `/home/deathtrap/...` im Live2D-Viewer wurde entfernt.
 
 ---
 
-## 📦 P1 – Abhängigkeiten auf aktuellen Stand bringen
+## 📦 P1 – Abhängigkeiten ✅ erledigt (alles auf aktuellem Stand)
 
-### Frontend (npm)
+- [x] Tauri 2.12 (npm und Cargo), plugin-dialog 2.8, plugin-opener 2.6.
+- [x] **Live2D-Stack modernisiert:** `pixi-live2d-display` (tot, pixi 6) → **`untitled-pixi-live2d-engine` 1.4** mit **pixi.js 8.21**
+  (Cubism 3–5). Cubism Core auf 5.1 aktualisiert (offizielle Live2D-Quelle). Die Core wird erst bei Bedarf im Viewer geladen statt blockierend
+  im `<head>`, `live2d.min.js` (Cubism 2, ungenutzt) ist entfernt. Alle 7 mitgelieferten Modelle wurden getestet.
+  *Zusätzlich behoben:* Live2D-Emotionen wurden nie angewendet, weil der Viewer `joy_animation` statt `joy` anforderte.
+- [x] TypeScript 7.0 (Go-Compiler, etwa 10× schneller), `target` ES2022, `noUncheckedIndexedAccess` aktiv.
+- [x] `@types/*` nach `devDependencies` verschoben, Vite-Template-Reste entfernt.
+- [x] Crates: reqwest 0.13 (rustls), rusqlite 0.40, sysinfo 0.39, zip 8, tokio-tungstenite 0.30, rand 0.10, png 0.18, base64 0.23, sha2 0.11.
+- [x] Doppelte `src-tauri/Cargo.lock` entfernt.
+- [x] Rust-Edition **2024**, `rust-version = "1.88"`.
+- [x] Vendorte Alt-Kopien in `assets/emotions/vrm/modules/` gelöscht (die FBX-Animationen bleiben).
 
-| Paket | Ist | Aktuell | Aufwand / Hinweis |
-|---|---|---|---|
-| `@tauri-apps/api`, `@tauri-apps/cli` | 2.11 | 2.12 | trivial, `npm update` |
-| `@tauri-apps/plugin-dialog` | 2.7.3 | 2.8.0 | trivial |
-| `@tauri-apps/plugin-opener` | 2.5.5 | 2.6.0 | trivial |
-| `typescript` | 6.0.3 | **7.0.2** | Major (Go-basierter Compiler). Build testen, `tsconfig` prüfen |
-| `pixi.js` | 6.5.10 | **8.21.0** | **blockiert** durch `pixi-live2d-display@0.4.0`, das nur pixi 6 unterstützt |
+### CI → lokale Checks
 
-- [ ] Tauri-Pakete (npm und Cargo gemeinsam) auf 2.12 / plugin-dialog 2.8 / plugin-opener 2.6 anheben.
-- [ ] **Live2D-Stack modernisieren.** `pixi-live2d-display` wird nicht mehr gepflegt, zieht die verwundbare Abhängigkeit `gh-pages` nach sich
-  und hält pixi.js auf Version 6 fest. → Umstieg auf einen gepflegten Fork mit pixi-v8-Support
-  (z. B. `pixi-live2d-display-lipsyncpatch` / `untitled-pixi-live2d-engine`) oder direkt auf das Cubism 5 Web SDK.
-  Dabei `public/live2d/live2d.min.js` (Cubism 2) nur behalten, wenn Cubism-2-Modelle wirklich gebraucht werden.
-  Beide Skripte werden aktuell **synchron im `<head>`** von `index.html` geladen und blockieren den Start. Sie sollten erst im Live2D-Viewer nachgeladen werden.
-- [ ] `@types/canvas-confetti` und `@types/three` von `dependencies` nach `devDependencies` verschieben.
-- [ ] Ungenutzte Vite-Template-Reste entfernen: `public/tauri.svg`, `public/vite.svg`, `src/assets/react.svg`.
+GitHub Actions wurden bewusst entfernt (Commit `11597c2`). Stattdessen gibt es jetzt:
 
-### Backend (Cargo)
-
-| Crate | Ist | Aktuell | Hinweis |
-|---|---|---|---|
-| `tauri` / `tauri-build` | 2.11 / 2.6 | 2.12 / 2.7 | kompatibel, `cargo update` |
-| `reqwest` | 0.12 | **0.13** | Features prüfen (`rustls` ist jetzt Default) |
-| `rusqlite` | 0.32 | **0.40** | mehrere Breaking Changes, SQL-Layer testen |
-| `sysinfo` | 0.33 | **0.39** | API-Änderungen in `hardware.rs` |
-| `zip` | 2.4 | **8.6** | API weitgehend stabil, Profil-Backup testen |
-| `tokio-tungstenite` | 0.24 | **0.30** | Discord-Gateway |
-| `rand` | 0.8 | **0.10** | `thread_rng()` → `rng()`, `gen_range` → `random_range` |
-| `png` | 0.17 | 0.18 | Card-Export (tEXt-Chunk) |
-| `base64` | 0.22 | 0.23 | – |
-| `sha2` | 0.10 | 0.11 | – |
-
-- [ ] Crates schrittweise aktualisieren, jeweils mit `cargo test` und manuellem Rauchtest der betroffenen Funktion.
-- [ ] **Doppelte `Cargo.lock` entfernen.** Die Workspace-Wurzel hat eine eigene `Cargo.lock`; `src-tauri/Cargo.lock` ist veraltet und wird ignoriert.
-- [ ] Rust-Edition `2021` → `2024` (in Rust 1.85+ verfügbar), dazu `rust-version` im Manifest festlegen.
-- [ ] **Veraltete Kopien vendorter Bibliotheken löschen.** `assets/emotions/vrm/modules/` enthält Three.js r177 und three-vrm 3.4.1
-  (npm: three 0.186 / three-vrm 3.5). Nichts in `src/` oder `src-tauri/` verweist darauf, es sind Altlasten aus dem Python-Port.
-
-### CI
-
-- [ ] GitHub Actions aktualisieren: `actions/checkout@v4` → aktuelle Major, `actions/setup-node@v4` → aktuelle Major,
-  Node 22 → **24 LTS**, Runner `ubuntu-22.04` → `ubuntu-24.04`.
-- [ ] Der Cache-Pfad `src-tauri/target/` ist falsch, das Workspace-Target liegt unter `target/`. Alternativ `Swatinem/rust-cache` nutzen.
-- [ ] CI um folgende Schritte erweitern: `cargo clippy -- -D warnings`, `cargo fmt --check`, `npm audit --audit-level=high`, `tsc --noEmit`.
-- [ ] Dependabot oder Renovate für npm, Cargo und Actions einrichten.
+- [x] `npm run check`: `tsc` + Vitest + `cargo clippy -- -D warnings` + `cargo test`. Clippy ist komplett warnungsfrei (vorher 50 Warnungen und 1 Fehler).
+- [ ] `cargo fmt` einmalig über das ganze Projekt laufen lassen (692 Abweichungen), danach `cargo fmt --check` in `npm run check` aufnehmen.
 
 ---
 
