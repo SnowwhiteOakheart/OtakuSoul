@@ -62,9 +62,12 @@ impl DiscordRpcClient {
         *self.current_activity.write().await = Some(act);
     }
 
-    /// Spawns the background RPC heartbeat task
+    /// Spawns the background RPC heartbeat task.
+    ///
+    /// Runs during `AppState::new()`, before Tauri's runtime is entered, so it must use
+    /// `tauri::async_runtime::spawn` – `tokio::spawn` panics there ("no reactor running").
     pub fn start_background_worker(self: Arc<Self>) {
-        tokio::spawn(async move {
+        tauri::async_runtime::spawn(async move {
             let mut last_activity_sent: Option<String> = None;
 
             loop {
