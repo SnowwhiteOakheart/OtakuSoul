@@ -17,12 +17,12 @@ import {
   Save,
   FolderDown,
   RotateCcw,
-  CheckCircle2,
   Trash2,
   Sliders,
 } from 'lucide-react';
-import { translate } from '../../i18n';
-import { confirmDialog } from '../ui/feedback';
+import { translate, useTranslation, type TranslationKey } from '../../i18n';
+import { confirmDialog, toast } from '../ui/feedback';
+import { errorMessage } from '../../utils/errors';
 import { ModalOverlay } from '../ui/ModalOverlay';
 
 interface CognitiveMemoryDrawerProps {
@@ -64,6 +64,7 @@ export const CognitiveMemoryDrawer: React.FC<CognitiveMemoryDrawerProps> = ({
     restoreMemoryBackup,
     importSowFolder,
   } = useAppStore();
+  const { t } = useTranslation();
 
   const [activeTab, setActiveTab] = useState<
     'psychology' | 'relationship' | 'markdown' | 'memories' | 'diary' | 'healing' | 'backups'
@@ -86,7 +87,6 @@ export const CognitiveMemoryDrawer: React.FC<CognitiveMemoryDrawerProps> = ({
   const [mdMode, setMdMode] = useState<'character' | 'user'>('character');
   const [localMdContent, setLocalMdContent] = useState('');
   const [mdSaveSuccess, setMdSaveSuccess] = useState(false);
-  const [statusMessage, setStatusMessage] = useState<string | null>(null);
 
   useEffect(() => {
     if (isOpen && activeCharacter) {
@@ -110,17 +110,15 @@ export const CognitiveMemoryDrawer: React.FC<CognitiveMemoryDrawerProps> = ({
   const psych = cognitiveOverview?.psychology;
   const rel = cognitiveOverview?.relationship;
 
-  const showStatus = (msg: string) => {
-    setStatusMessage(msg);
-    setTimeout(() => setStatusMessage(null), 4000);
-  };
+  const showStatus = (msg: string) => toast.success(msg);
+  const showError = (msg: string) => toast.error(msg);
 
   const handleAddMemory = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!newMemContent.trim()) return;
     await addManualMemory(newMemCategory, newMemContent.trim(), newMemSignificance);
     setNewMemContent('');
-    showStatus('Erinnerung gespeichert.');
+    showStatus(translate('memory.memorySaved'));
   };
 
   const handleAddDiary = async (e: React.FormEvent) => {
@@ -129,13 +127,13 @@ export const CognitiveMemoryDrawer: React.FC<CognitiveMemoryDrawerProps> = ({
     await addManualDiary(newDiaryTitle.trim(), newDiaryText.trim(), newDiaryMood);
     setNewDiaryTitle('');
     setNewDiaryText('');
-    showStatus('Tagebucheintrag gespeichert.');
+    showStatus(translate('memory.diarySaved'));
   };
 
   const handleGenerateDiary = async () => {
     const entry = await generateManualDiary();
     if (entry) {
-      showStatus('Neuer Tagebucheintrag erfolgreich generiert!');
+      showStatus(translate('memory.diaryGenerated'));
     }
   };
 
@@ -148,7 +146,7 @@ export const CognitiveMemoryDrawer: React.FC<CognitiveMemoryDrawerProps> = ({
     };
     await updatePsychology(updated);
     setNewBeliefInput('');
-    showStatus('Kern-Glaubenssatz hinzugefügt.');
+    showStatus(translate('memory.beliefAdded'));
   };
 
   const handleRemoveBelief = async (index: number) => {
@@ -159,7 +157,7 @@ export const CognitiveMemoryDrawer: React.FC<CognitiveMemoryDrawerProps> = ({
       core_identity: currentBeliefs.filter((_, i) => i !== index),
     };
     await updatePsychology(updated);
-    showStatus('Glaubenssatz entfernt.');
+    showStatus(translate('memory.beliefRemoved'));
   };
 
   const handleAddPref = async () => {
@@ -191,9 +189,9 @@ export const CognitiveMemoryDrawer: React.FC<CognitiveMemoryDrawerProps> = ({
       }
       setMdSaveSuccess(true);
       setTimeout(() => setMdSaveSuccess(false), 3000);
-      showStatus('Markdown erfolgreich mit SQLite synchronisiert!');
+      showStatus(translate('memory.mdSyncedStatus'));
     } catch (e) {
-      showStatus(`Fehler beim Speichern: ${e}`);
+      showError(translate('memory.saveFailed', { error: errorMessage(e) }));
     }
   };
 
@@ -204,16 +202,21 @@ export const CognitiveMemoryDrawer: React.FC<CognitiveMemoryDrawerProps> = ({
     } else {
       setLocalMdContent(res.userMd);
     }
-    showStatus('Markdown aus Datenbank neu geladen.');
+    showStatus(translate('memory.mdReloadedStatus'));
   };
 
   const handleTriggerReflection = async () => {
     const res = await triggerMemoryPipeline();
     if (res) {
       if (res.no_change) {
-        showStatus('Reflexion abgeschlossen: Keine signifikanten Änderungen.');
+        showStatus(translate('memory.reflectNoChange'));
       } else {
-        showStatus(`Reflexion erfolgreich: ${res.topics_processed.length} Themen & ${res.healing_entries.length} Widersprüche verarbeitet.`);
+        showStatus(
+          translate('memory.reflectDone', {
+            topics: res.topics_processed.length,
+            conflicts: res.healing_entries.length,
+          })
+        );
       }
     }
   };
@@ -223,21 +226,21 @@ export const CognitiveMemoryDrawer: React.FC<CognitiveMemoryDrawerProps> = ({
       const selected = await open({
         directory: true,
         multiple: false,
-        title: 'Wähle den Soul of Waifu Memory-Ordner (.soul/.../memory)',
+        title: translate('memory.sowDialogTitle'),
       });
       if (selected && typeof selected === 'string') {
         const count = await importSowFolder(selected);
-        showStatus(`${count} Einträge aus Soul of Waifu importiert!`);
+        showStatus(translate('memory.sowImported', { count }));
       }
     } catch (e) {
-      showStatus(`Import fehlgeschlagen: ${e}`);
+      showError(translate('memory.importFailed', { error: errorMessage(e) }));
     }
   };
 
   const handleCreateBackup = async () => {
     const b = await createMemoryBackup();
     if (b) {
-      showStatus(`Snapshot ${b.filename} erstellt.`);
+      showStatus(translate('memory.snapshotCreated', { name: b.filename }));
     }
   };
 
@@ -254,14 +257,14 @@ export const CognitiveMemoryDrawer: React.FC<CognitiveMemoryDrawerProps> = ({
       if (!b) return;
       // We pass the filename or character backup path
       await restoreMemoryBackup(filename);
-      showStatus(`Snapshot ${filename} wiederhergestellt!`);
+      showStatus(translate('memory.snapshotRestored', { name: filename }));
     } catch (e) {
-      showStatus(`Fehler bei Wiederherstellung: ${e}`);
+      showError(translate('memory.restoreFailed', { error: errorMessage(e) }));
     }
   };
 
   return (
-    <ModalOverlay onClose={onClose} className="fixed inset-0 z-50 flex justify-end bg-black/60 backdrop-blur-sm transition-opacity">
+    <ModalOverlay onClose={onClose} aria-labelledby="memory-drawer-title" className="fixed inset-0 z-50 flex justify-end bg-black/60 backdrop-blur-sm transition-opacity">
       <div className="w-full max-w-3xl bg-slate-900 border-l border-slate-700/70 shadow-2xl flex flex-col h-full animate-in slide-in-from-right duration-200">
         {/* Drawer Header */}
         <div className="p-4 border-b border-slate-800 flex items-center justify-between bg-app/80">
@@ -270,15 +273,13 @@ export const CognitiveMemoryDrawer: React.FC<CognitiveMemoryDrawerProps> = ({
               <Brain className="w-5 h-5" />
             </div>
             <div>
-              <h2 className="text-base font-bold text-slate-100 flex items-center gap-2">
+              <h2 id="memory-drawer-title" className="text-base font-bold text-slate-100 flex items-center gap-2">
                 Soul Memory 2.0
                 <span className="text-xs px-2 py-0.5 rounded-full bg-accent-900/50 text-accent-300 font-normal border border-accent-500/30">
                   {charName}
                 </span>
               </h2>
-              <p className="text-xs text-slate-400">
-                Autonome Kognition, Router-Agent, Markdown-Sync & Lore-Archiv
-              </p>
+              <p className="text-xs text-slate-400">{t('memory.subtitle')}</p>
             </div>
           </div>
 
@@ -287,21 +288,24 @@ export const CognitiveMemoryDrawer: React.FC<CognitiveMemoryDrawerProps> = ({
               onClick={handleTriggerReflection}
               disabled={isReflecting}
               className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-linear-to-r from-accent-600 to-indigo-600 hover:from-accent-500 hover:to-indigo-500 text-white text-xs font-semibold shadow-lg shadow-accent-900/30 transition disabled:opacity-50"
-              title="Autonome Seelen-Reflexion durchführen"
+              title={t('memory.reflectHint')}
             >
               <Sparkles className={`w-3.5 h-3.5 ${isReflecting ? 'animate-spin' : ''}`} />
-              {isReflecting ? 'Reflektiert...' : 'Reflexion starten'}
+              {isReflecting ? t('memory.reflecting') : t('memory.reflect')}
             </button>
             <button
               onClick={() => fetchCognitiveOverview()}
               disabled={isMemoryLoading}
-              title="Aktualisieren"
+              title={t('memory.refresh')}
+              aria-label={t('memory.refresh')}
               className="p-2 rounded-lg bg-slate-800 text-slate-400 hover:text-slate-200 hover:bg-slate-700 transition"
             >
               <RefreshCw className={`w-4 h-4 ${isMemoryLoading ? 'animate-spin' : ''}`} />
             </button>
             <button
               onClick={onClose}
+              title={t('common.close')}
+              aria-label={t('common.close')}
               className="p-2 rounded-lg bg-slate-800 text-slate-400 hover:text-slate-200 hover:bg-slate-700 transition"
             >
               <X className="w-4 h-4" />
@@ -309,33 +313,27 @@ export const CognitiveMemoryDrawer: React.FC<CognitiveMemoryDrawerProps> = ({
           </div>
         </div>
 
-        {/* Global Status / Notification Banner */}
-        {statusMessage && (
-          <div className="px-4 py-2 bg-accent-950/80 border-b border-accent-800/60 text-xs text-accent-200 flex items-center gap-2">
-            <CheckCircle2 className="w-3.5 h-3.5 text-accent-400 shrink-0" />
-            <span>{statusMessage}</span>
-          </div>
-        )}
-
         {/* Automation Settings Bar */}
         <div className="px-4 py-2 bg-app/50 border-b border-slate-800/80 flex items-center justify-between text-xs text-slate-400">
           <div className="flex items-center gap-2">
             <Sliders className="w-3.5 h-3.5 text-slate-500" />
-            <span>Automatische Reflexion:</span>
+            <span>{t('memory.autoReflection')}</span>
             <button
               onClick={() => setAutoReflectionEnabled(!autoReflectionEnabled)}
+              aria-pressed={autoReflectionEnabled}
               className={`px-2 py-0.5 rounded text-xs font-medium transition ${
                 autoReflectionEnabled
                   ? 'bg-emerald-950/80 text-emerald-300 border border-emerald-500/30'
                   : 'bg-slate-800 text-slate-400 border border-slate-700'
               }`}
             >
-              {autoReflectionEnabled ? 'Aktiviert' : 'Deaktiviert'}
+              {autoReflectionEnabled ? t('memory.enabled') : t('memory.disabled')}
             </button>
             {autoReflectionEnabled && (
               <span className="flex items-center gap-1 text-xs text-slate-400">
-                alle
+                {t('memory.every')}
                 <select
+                  aria-label={t('memory.thresholdLabel')}
                   value={autoReflectionThreshold}
                   onChange={(e) => setAutoReflectionThreshold(Number(e.target.value))}
                   className="bg-slate-900 border border-slate-700 rounded px-1.5 py-0.5 text-slate-200 text-xs focus:outline-hidden"
@@ -345,7 +343,7 @@ export const CognitiveMemoryDrawer: React.FC<CognitiveMemoryDrawerProps> = ({
                   <option value={8}>8</option>
                   <option value={10}>10</option>
                 </select>
-                Nachrichten
+                {t('memory.messages')}
               </span>
             )}
           </div>
@@ -353,90 +351,104 @@ export const CognitiveMemoryDrawer: React.FC<CognitiveMemoryDrawerProps> = ({
           {lastReflectionResult && (
             <div className="text-xs text-slate-400 italic truncate max-w-xs">
               {lastReflectionResult.no_change
-                ? 'Zuletzt: Keine Änderungen'
-                : `Zuletzt: ${lastReflectionResult.psychology.primary_emotion}`}
+                ? t('memory.lastNoChange')
+                : t('memory.lastEmotion', { emotion: lastReflectionResult.psychology.primary_emotion })}
             </div>
           )}
         </div>
 
         {/* Tab Navigation */}
-        <div className="flex border-b border-slate-800 px-4 bg-app/30 text-xs font-medium overflow-x-auto scrollbar-none">
+        <div role="tablist" aria-label={t('memory.tabs')} className="flex border-b border-slate-800 px-4 bg-app/30 text-xs font-medium overflow-x-auto scrollbar-none">
           <button
+            role="tab"
+            aria-selected={activeTab === 'psychology'}
             onClick={() => setActiveTab('psychology')}
-            className={`py-3 px-3 border-b-2 transition flex items-center gap-1.5 shrink-0 ${
+            className={`py-3 px-3 border-b-2 transition flex items-center gap-1.5 shrink-0 whitespace-nowrap outline-hidden focus-visible:bg-slate-800/60 ${
               activeTab === 'psychology'
                 ? 'border-accent-500 text-accent-300 font-semibold'
                 : 'border-transparent text-slate-400 hover:text-slate-200'
             }`}
           >
             <Brain className="w-3.5 h-3.5" />
-            Geist & Psyche
+            {t('memory.tabPsychology')}
           </button>
           <button
+            role="tab"
+            aria-selected={activeTab === 'relationship'}
             onClick={() => setActiveTab('relationship')}
-            className={`py-3 px-3 border-b-2 transition flex items-center gap-1.5 shrink-0 ${
+            className={`py-3 px-3 border-b-2 transition flex items-center gap-1.5 shrink-0 whitespace-nowrap outline-hidden focus-visible:bg-slate-800/60 ${
               activeTab === 'relationship'
                 ? 'border-accent-500 text-accent-300 font-semibold'
                 : 'border-transparent text-slate-400 hover:text-slate-200'
             }`}
           >
             <Heart className="w-3.5 h-3.5" />
-            Beziehung
+            {t('memory.tabRelationship')}
           </button>
           <button
+            role="tab"
+            aria-selected={activeTab === 'markdown'}
             onClick={() => setActiveTab('markdown')}
-            className={`py-3 px-3 border-b-2 transition flex items-center gap-1.5 shrink-0 ${
+            className={`py-3 px-3 border-b-2 transition flex items-center gap-1.5 shrink-0 whitespace-nowrap outline-hidden focus-visible:bg-slate-800/60 ${
               activeTab === 'markdown'
                 ? 'border-accent-500 text-accent-300 font-semibold'
                 : 'border-transparent text-slate-400 hover:text-slate-200'
             }`}
           >
             <FileCode className="w-3.5 h-3.5" />
-            Markdown Editor
+            {t('memory.tabMarkdown')}
           </button>
           <button
+            role="tab"
+            aria-selected={activeTab === 'memories'}
             onClick={() => setActiveTab('memories')}
-            className={`py-3 px-3 border-b-2 transition flex items-center gap-1.5 shrink-0 ${
+            className={`py-3 px-3 border-b-2 transition flex items-center gap-1.5 shrink-0 whitespace-nowrap outline-hidden focus-visible:bg-slate-800/60 ${
               activeTab === 'memories'
                 ? 'border-accent-500 text-accent-300 font-semibold'
                 : 'border-transparent text-slate-400 hover:text-slate-200'
             }`}
           >
             <Bookmark className="w-3.5 h-3.5" />
-            Episoden & Topics ({cognitiveOverview?.recent_memories.length || 0})
+            {t('memory.tabMemories', { count: cognitiveOverview?.recent_memories.length || 0 })}
           </button>
           <button
+            role="tab"
+            aria-selected={activeTab === 'diary'}
             onClick={() => setActiveTab('diary')}
-            className={`py-3 px-3 border-b-2 transition flex items-center gap-1.5 shrink-0 ${
+            className={`py-3 px-3 border-b-2 transition flex items-center gap-1.5 shrink-0 whitespace-nowrap outline-hidden focus-visible:bg-slate-800/60 ${
               activeTab === 'diary'
                 ? 'border-accent-500 text-accent-300 font-semibold'
                 : 'border-transparent text-slate-400 hover:text-slate-200'
             }`}
           >
             <BookHeart className="w-3.5 h-3.5" />
-            Tagebuch ({cognitiveOverview?.recent_diary.length || 0})
+            {t('memory.tabDiary', { count: cognitiveOverview?.recent_diary.length || 0 })}
           </button>
           <button
+            role="tab"
+            aria-selected={activeTab === 'healing'}
             onClick={() => setActiveTab('healing')}
-            className={`py-3 px-3 border-b-2 transition flex items-center gap-1.5 shrink-0 ${
+            className={`py-3 px-3 border-b-2 transition flex items-center gap-1.5 shrink-0 whitespace-nowrap outline-hidden focus-visible:bg-slate-800/60 ${
               activeTab === 'healing'
                 ? 'border-accent-500 text-accent-300 font-semibold'
                 : 'border-transparent text-slate-400 hover:text-slate-200'
             }`}
           >
             <Clock className="w-3.5 h-3.5" />
-            Heilungs-Log ({cognitiveOverview?.healing_logs.length || 0})
+            {t('memory.tabHealing', { count: cognitiveOverview?.healing_logs.length || 0 })}
           </button>
           <button
+            role="tab"
+            aria-selected={activeTab === 'backups'}
             onClick={() => setActiveTab('backups')}
-            className={`py-3 px-3 border-b-2 transition flex items-center gap-1.5 shrink-0 ${
+            className={`py-3 px-3 border-b-2 transition flex items-center gap-1.5 shrink-0 whitespace-nowrap outline-hidden focus-visible:bg-slate-800/60 ${
               activeTab === 'backups'
                 ? 'border-accent-500 text-accent-300 font-semibold'
                 : 'border-transparent text-slate-400 hover:text-slate-200'
             }`}
           >
             <RotateCcw className="w-3.5 h-3.5" />
-            Snapshots & SoW ({memoryBackups.length})
+            {t('memory.tabBackups', { count: memoryBackups.length })}
           </button>
         </div>
 
@@ -450,10 +462,10 @@ export const CognitiveMemoryDrawer: React.FC<CognitiveMemoryDrawerProps> = ({
                 <div className="flex items-center justify-between">
                   <span className="text-xs font-semibold text-slate-300 uppercase tracking-wider flex items-center gap-1.5">
                     <Shield className="w-3.5 h-3.5 text-indigo-400" />
-                    Unumstößliche Glaubenssätze & Kernidentität
+                    {t('memory.beliefsTitle')}
                   </span>
                   <span className="text-xs text-slate-400">
-                    {psych.core_identity?.length || 0} Leitsätze
+                    {t('memory.beliefCount', { count: psych.core_identity?.length || 0 })}
                   </span>
                 </div>
 
@@ -467,7 +479,8 @@ export const CognitiveMemoryDrawer: React.FC<CognitiveMemoryDrawerProps> = ({
                       <button
                         onClick={() => handleRemoveBelief(idx)}
                         className="text-slate-500 hover:text-rose-400 transition p-1"
-                        title="Glaubenssatz entfernen"
+                        title={t('memory.removeBelief')}
+                        aria-label={t('memory.removeBelief')}
                       >
                         <Trash2 className="w-3.5 h-3.5" />
                       </button>
@@ -475,7 +488,7 @@ export const CognitiveMemoryDrawer: React.FC<CognitiveMemoryDrawerProps> = ({
                   ))}
                   {(!psych.core_identity || psych.core_identity.length === 0) && (
                     <div className="text-xs text-slate-500 italic p-2">
-                      Noch keine unumstößlichen Glaubenssätze registriert.
+                      {t('memory.noBeliefs')}
                     </div>
                   )}
                 </div>
@@ -486,7 +499,8 @@ export const CognitiveMemoryDrawer: React.FC<CognitiveMemoryDrawerProps> = ({
                     value={newBeliefInput}
                     onChange={(e) => setNewBeliefInput(e.target.value)}
                     onKeyDown={(e) => e.key === 'Enter' && handleAddBelief()}
-                    placeholder="Neuen Leitsatz eintragen (z.B. 'Ich lüge niemals meine Freunde an')..."
+                    placeholder={t('memory.beliefPlaceholder')}
+                    aria-label={t('memory.beliefPlaceholder')}
                     className="flex-1 px-3 py-1.5 bg-slate-900/90 border border-slate-700 rounded-lg text-xs text-slate-200 focus:outline-hidden focus:border-accent-500"
                   />
                   <button
@@ -494,7 +508,7 @@ export const CognitiveMemoryDrawer: React.FC<CognitiveMemoryDrawerProps> = ({
                     className="px-3 py-1.5 rounded-lg bg-indigo-600 hover:bg-indigo-500 text-white text-xs font-medium flex items-center gap-1"
                   >
                     <Plus className="w-3.5 h-3.5" />
-                    Hinzufügen
+                    {t('memory.add')}
                   </button>
                 </div>
               </div>
@@ -503,14 +517,14 @@ export const CognitiveMemoryDrawer: React.FC<CognitiveMemoryDrawerProps> = ({
               <div className="p-4 rounded-xl bg-slate-800/40 border border-slate-700/60 space-y-3">
                 <div className="flex items-center justify-between">
                   <span className="text-xs font-semibold text-slate-400 uppercase tracking-wider">
-                    Primäre Emotion & Intensität
+                    {t('memory.emotionTitle')}
                   </span>
                   <button
                     onClick={() => triggerEmotionalDecay()}
                     className="flex items-center gap-1 text-xs px-2.5 py-1 rounded bg-accent-600/20 text-accent-300 border border-accent-500/30 hover:bg-accent-600/30 transition"
                   >
                     <RefreshCw className="w-3 h-3" />
-                    Emotional Decay auslösen
+                    {t('memory.triggerDecay')}
                   </button>
                 </div>
 
@@ -520,7 +534,7 @@ export const CognitiveMemoryDrawer: React.FC<CognitiveMemoryDrawerProps> = ({
                     <div>
                       <div className="text-sm font-bold text-slate-100">{psych.primary_emotion}</div>
                       <div className="text-xs text-slate-400">
-                        Decay-Zähler: {psych.emotional_decay_counter}/2 Runden
+                        {t('memory.decayCounter', { count: psych.emotional_decay_counter })}
                       </div>
                     </div>
                   </div>
@@ -530,7 +544,9 @@ export const CognitiveMemoryDrawer: React.FC<CognitiveMemoryDrawerProps> = ({
                       <button
                         key={level}
                         onClick={() => updatePsychology({ ...psych, intensity: level })}
-                        title={`Intensitätsstufe ${level}`}
+                        title={t('memory.intensity', { level })}
+                        aria-label={t('memory.intensity', { level })}
+                        aria-pressed={level <= psych.intensity}
                         className={`w-6 h-6 rounded flex items-center justify-center text-xs font-bold transition ${
                           level <= psych.intensity
                             ? 'bg-amber-500 text-app shadow-sm'
@@ -547,64 +563,68 @@ export const CognitiveMemoryDrawer: React.FC<CognitiveMemoryDrawerProps> = ({
               {/* Psychological Tension */}
               <div className="p-4 rounded-xl bg-slate-800/40 border border-slate-700/60 space-y-2">
                 <label className="text-xs font-semibold text-slate-400 uppercase tracking-wider block">
-                  Innere Anspannung & Konflikte
+                  {t('memory.tension')}
                 </label>
                 <input
+                  aria-label={t('memory.tension')}
                   type="text"
                   value={psych.psychological_tension}
                   onChange={(e) =>
                     updatePsychology({ ...psych, psychological_tension: e.target.value })
                   }
                   className="w-full px-3 py-2 bg-slate-900/80 border border-slate-700 rounded-lg text-sm text-slate-200 focus:outline-hidden focus:border-accent-500"
-                  placeholder="Keine inneren Konflikte bekannt."
+                  placeholder={t('memory.tensionPlaceholder')}
                 />
               </div>
 
               {/* Cognitive Dissonance */}
               <div className="p-4 rounded-xl bg-slate-800/40 border border-slate-700/60 space-y-2">
                 <label className="text-xs font-semibold text-slate-400 uppercase tracking-wider block">
-                  Kognitive Dissonanz (Aktive Widersprüche)
+                  {t('memory.dissonance')}
                 </label>
                 <textarea
+                  aria-label={t('memory.dissonance')}
                   rows={2}
-                  value={psych.cognitive_dissonance || 'Keine.'}
+                  value={psych.cognitive_dissonance ?? ''}
                   onChange={(e) =>
                     updatePsychology({ ...psych, cognitive_dissonance: e.target.value })
                   }
                   className="w-full px-3 py-2 bg-slate-900/80 border border-slate-700 rounded-lg text-xs text-slate-200 focus:outline-hidden focus:border-accent-500"
-                  placeholder="Beschreibe ungelöste emotionale oder sachliche Widersprüche..."
+                  placeholder={t('memory.dissonancePlaceholder')}
                 />
               </div>
 
               {/* Active Agenda */}
               <div className="p-4 rounded-xl bg-slate-800/40 border border-slate-700/60 space-y-2">
                 <label className="text-xs font-semibold text-slate-400 uppercase tracking-wider block">
-                  Aktive unbewusste Agenda
+                  {t('memory.agenda')}
                 </label>
                 <input
+                  aria-label={t('memory.agenda')}
                   type="text"
                   value={psych.active_agenda}
                   onChange={(e) =>
                     updatePsychology({ ...psych, active_agenda: e.target.value })
                   }
                   className="w-full px-3 py-2 bg-slate-900/80 border border-slate-700 rounded-lg text-sm text-slate-200 focus:outline-hidden focus:border-accent-500"
-                  placeholder="Was möchte die Figur derzeit unbewusst erreichen?"
+                  placeholder={t('memory.agendaPlaceholder')}
                 />
               </div>
 
               {/* Immediate Focus */}
               <div className="p-4 rounded-xl bg-slate-800/40 border border-slate-700/60 space-y-2">
                 <label className="text-xs font-semibold text-slate-400 uppercase tracking-wider block">
-                  Gedanklicher Hauptfokus
+                  {t('memory.focus')}
                 </label>
                 <input
+                  aria-label={t('memory.focus')}
                   type="text"
                   value={psych.immediate_focus}
                   onChange={(e) =>
                     updatePsychology({ ...psych, immediate_focus: e.target.value })
                   }
                   className="w-full px-3 py-2 bg-slate-900/80 border border-slate-700 rounded-lg text-sm text-slate-200 focus:outline-hidden focus:border-accent-500"
-                  placeholder="Worauf ist ihr Geist derzeit zentriert?"
+                  placeholder={t('memory.focusPlaceholder')}
                 />
               </div>
             </div>
@@ -616,14 +636,15 @@ export const CognitiveMemoryDrawer: React.FC<CognitiveMemoryDrawerProps> = ({
               {/* User Identity & Role in Story */}
               <div className="p-4 rounded-xl bg-slate-800/40 border border-slate-700/60 space-y-3">
                 <span className="text-xs font-semibold text-slate-400 uppercase tracking-wider block">
-                  Rolle & Attribute von {rel.user_name}
+                  {t('memory.roleTitle', { name: rel.user_name })}
                 </span>
                 <div className="grid grid-cols-2 gap-3">
                   <div>
-                    <label className="text-xs text-slate-400 block mb-1">Rolle in der Story</label>
+                    <label htmlFor="mem-role" className="text-xs text-slate-400 block mb-1">{t('memory.roleInStory')}</label>
                     <input
+                      id="mem-role"
                       type="text"
-                      value={rel.role_in_story || 'User'}
+                      value={rel.role_in_story ?? ''}
                       onChange={(e) =>
                         updateRelationship({ ...rel, role_in_story: e.target.value })
                       }
@@ -631,10 +652,12 @@ export const CognitiveMemoryDrawer: React.FC<CognitiveMemoryDrawerProps> = ({
                     />
                   </div>
                   <div>
-                    <label className="text-xs text-slate-400 block mb-1">Bekannte Attribute</label>
+                    <label htmlFor="mem-attributes" className="text-xs text-slate-400 block mb-1">{t('memory.knownAttributes')}</label>
                     <input
+                      id="mem-attributes"
                       type="text"
-                      value={rel.known_attributes || 'Keine.'}
+                      placeholder={t('memory.none')}
+                      value={rel.known_attributes ?? ''}
                       onChange={(e) =>
                         updateRelationship({ ...rel, known_attributes: e.target.value })
                       }
@@ -647,7 +670,7 @@ export const CognitiveMemoryDrawer: React.FC<CognitiveMemoryDrawerProps> = ({
               {/* Trust Level & Dynamic Description */}
               <div className="p-4 rounded-xl bg-slate-800/40 border border-slate-700/60 space-y-3">
                 <span className="text-xs font-semibold text-slate-400 uppercase tracking-wider block">
-                  Vertrauensstufe & Dynamik
+                  {t('memory.trustTitle')}
                 </span>
                 <div className="grid grid-cols-3 gap-2">
                   {[
@@ -661,40 +684,43 @@ export const CognitiveMemoryDrawer: React.FC<CognitiveMemoryDrawerProps> = ({
                     <button
                       key={lvl}
                       onClick={() => updateRelationship({ ...rel, trust_level: lvl })}
+                      aria-pressed={rel.trust_level === lvl}
                       className={`px-2.5 py-1.5 rounded-lg text-xs font-medium border transition ${
                         rel.trust_level === lvl
                           ? 'bg-accent-600/30 text-accent-200 border-accent-500'
                           : 'bg-slate-900/60 text-slate-400 border-slate-800 hover:border-slate-700'
                       }`}
                     >
-                      {lvl}
+                      {t(`memory.trust.${lvl}` as TranslationKey)}
                     </button>
                   ))}
                 </div>
 
                 <div>
-                  <label className="text-xs text-slate-400 block mb-1">Beziehungsdynamik</label>
+                  <label htmlFor="mem-dynamic" className="text-xs text-slate-400 block mb-1">{t('memory.dynamic')}</label>
                   <input
+                    id="mem-dynamic"
                     type="text"
-                    value={rel.dynamic_description || 'Keine.'}
+                    value={rel.dynamic_description ?? ''}
                     onChange={(e) =>
                       updateRelationship({ ...rel, dynamic_description: e.target.value })
                     }
                     className="w-full px-3 py-1.5 bg-slate-900 border border-slate-700 rounded-lg text-xs text-slate-200 focus:outline-hidden focus:border-accent-500"
-                    placeholder="Wie nimmt sie die Beziehung wahr?..."
+                    placeholder={t('memory.dynamicPlaceholder')}
                   />
                 </div>
 
                 <div>
-                  <label className="text-xs text-slate-400 block mb-1">Ungesagte Spannungen</label>
+                  <label htmlFor="mem-unspoken" className="text-xs text-slate-400 block mb-1">{t('memory.unspoken')}</label>
                   <input
+                    id="mem-unspoken"
                     type="text"
                     value={rel.unspoken_tension}
                     onChange={(e) =>
                       updateRelationship({ ...rel, unspoken_tension: e.target.value })
                     }
                     className="w-full px-3 py-1.5 bg-slate-900 border border-slate-700 rounded-lg text-xs text-slate-200 focus:outline-hidden focus:border-accent-500"
-                    placeholder="Was behält sie für sich?..."
+                    placeholder={t('memory.unspokenPlaceholder')}
                   />
                 </div>
               </div>
@@ -702,7 +728,7 @@ export const CognitiveMemoryDrawer: React.FC<CognitiveMemoryDrawerProps> = ({
               {/* Preferences & Habits */}
               <div className="p-4 rounded-xl bg-slate-800/40 border border-slate-700/60 space-y-3">
                 <span className="text-xs font-semibold text-slate-400 uppercase tracking-wider block">
-                  Vorlieben & Gewohnheiten ({rel.preferences_habits.length})
+                  {t('memory.preferences', { count: rel.preferences_habits.length })}
                 </span>
                 <div className="flex flex-wrap gap-1.5">
                   {rel.preferences_habits.map((pref, i) => (
@@ -718,6 +744,7 @@ export const CognitiveMemoryDrawer: React.FC<CognitiveMemoryDrawerProps> = ({
                             preferences_habits: rel.preferences_habits.filter((_, idx) => idx !== i),
                           })
                         }
+                        aria-label={t('memory.removeItem', { item: pref })}
                         className="text-slate-500 hover:text-rose-400 transition"
                       >
                         ×
@@ -731,7 +758,8 @@ export const CognitiveMemoryDrawer: React.FC<CognitiveMemoryDrawerProps> = ({
                     value={newPrefInput}
                     onChange={(e) => setNewPrefInput(e.target.value)}
                     onKeyDown={(e) => e.key === 'Enter' && handleAddPref()}
-                    placeholder="Neue Vorliebe hinzufügen..."
+                    placeholder={t('memory.preferencePlaceholder')}
+                    aria-label={t('memory.preferencePlaceholder')}
                     className="flex-1 px-3 py-1.5 bg-slate-900/80 border border-slate-700 rounded-lg text-xs text-slate-200 focus:outline-hidden focus:border-accent-500"
                   />
                   <button
@@ -739,7 +767,7 @@ export const CognitiveMemoryDrawer: React.FC<CognitiveMemoryDrawerProps> = ({
                     className="px-3 py-1.5 rounded-lg bg-accent-600 hover:bg-accent-500 text-white text-xs font-medium flex items-center gap-1"
                   >
                     <Plus className="w-3.5 h-3.5" />
-                    Hinzufügen
+                    {t('memory.add')}
                   </button>
                 </div>
               </div>
@@ -747,7 +775,7 @@ export const CognitiveMemoryDrawer: React.FC<CognitiveMemoryDrawerProps> = ({
               {/* Shared Milestones */}
               <div className="p-4 rounded-xl bg-slate-800/40 border border-slate-700/60 space-y-3">
                 <span className="text-xs font-semibold text-slate-400 uppercase tracking-wider block">
-                  Gemeinsame Meilensteine & Versprechen ({rel.shared_milestones.length})
+                  {t('memory.milestones', { count: rel.shared_milestones.length })}
                 </span>
                 <div className="space-y-1.5">
                   {rel.shared_milestones.map((m, i) => (
@@ -763,6 +791,7 @@ export const CognitiveMemoryDrawer: React.FC<CognitiveMemoryDrawerProps> = ({
                             shared_milestones: rel.shared_milestones.filter((_, idx) => idx !== i),
                           })
                         }
+                        aria-label={t('memory.removeItem', { item: m })}
                         className="text-slate-500 hover:text-rose-400 transition"
                       >
                         ×
@@ -776,7 +805,8 @@ export const CognitiveMemoryDrawer: React.FC<CognitiveMemoryDrawerProps> = ({
                     value={newMilestoneInput}
                     onChange={(e) => setNewMilestoneInput(e.target.value)}
                     onKeyDown={(e) => e.key === 'Enter' && handleAddMilestone()}
-                    placeholder="Gemeinsamen Meilenstein festhalten..."
+                    placeholder={t('memory.milestonePlaceholder')}
+                    aria-label={t('memory.milestonePlaceholder')}
                     className="flex-1 px-3 py-1.5 bg-slate-900/80 border border-slate-700 rounded-lg text-xs text-slate-200 focus:outline-hidden focus:border-accent-500"
                   />
                   <button
@@ -784,7 +814,7 @@ export const CognitiveMemoryDrawer: React.FC<CognitiveMemoryDrawerProps> = ({
                     className="px-3 py-1.5 rounded-lg bg-accent-600 hover:bg-accent-500 text-white text-xs font-medium flex items-center gap-1"
                   >
                     <Plus className="w-3.5 h-3.5" />
-                    Hinzufügen
+                    {t('memory.add')}
                   </button>
                 </div>
               </div>
@@ -814,7 +844,7 @@ export const CognitiveMemoryDrawer: React.FC<CognitiveMemoryDrawerProps> = ({
                         : 'bg-slate-800 text-slate-400 border-slate-700 hover:text-slate-200'
                     }`}
                   >
-                    USER.md ({rel?.user_name || 'User'})
+                    USER.md ({rel?.user_name || t('memory.mdUser')})
                   </button>
                 </div>
 
@@ -822,10 +852,10 @@ export const CognitiveMemoryDrawer: React.FC<CognitiveMemoryDrawerProps> = ({
                   <button
                     onClick={handleReloadMarkdown}
                     className="flex items-center gap-1 text-xs px-2.5 py-1.5 rounded bg-slate-800 text-slate-300 hover:bg-slate-700 transition"
-                    title="Aktualisieren aus SQLite"
+                    title={t('memory.mdReloadHint')}
                   >
                     <RefreshCw className="w-3.5 h-3.5" />
-                    Neu laden
+                    {t('memory.mdReload')}
                   </button>
                   <button
                     onClick={handleSaveMarkdown}
@@ -836,13 +866,13 @@ export const CognitiveMemoryDrawer: React.FC<CognitiveMemoryDrawerProps> = ({
                     }`}
                   >
                     <Save className="w-3.5 h-3.5" />
-                    {mdSaveSuccess ? 'Gespeichert!' : 'In SQLite synchronisieren'}
+                    {mdSaveSuccess ? t('memory.mdSaved') : t('memory.mdSync')}
                   </button>
                 </div>
               </div>
 
               <div className="text-xs text-slate-400">
-                Änderungen am Markdown-Format werden beim Klick auf "In SQLite synchronisieren" geparst und aktualisieren die Tabellen.
+                {t('memory.mdHint')}
               </div>
 
               <textarea
@@ -850,7 +880,8 @@ export const CognitiveMemoryDrawer: React.FC<CognitiveMemoryDrawerProps> = ({
                 onChange={(e) => setLocalMdContent(e.target.value)}
                 rows={18}
                 className="w-full flex-1 p-3 bg-app font-mono text-xs text-slate-200 border border-slate-800 rounded-xl focus:outline-hidden focus:border-accent-500 leading-relaxed resize-y"
-                placeholder="# Lade Markdown..."
+                placeholder={t('memory.mdLoading')}
+                aria-label={t('memory.tabMarkdown')}
               />
             </div>
           )}
@@ -864,32 +895,33 @@ export const CognitiveMemoryDrawer: React.FC<CognitiveMemoryDrawerProps> = ({
               >
                 <div className="text-xs font-bold text-slate-200 flex items-center gap-1.5">
                   <Sparkles className="w-3.5 h-3.5 text-amber-400" />
-                  Neues Wissen / Notiz manuell einspeisen
+                  {t('memory.addKnowledge')}
                 </div>
                 <div className="flex gap-2">
                   <select
+                    aria-label={t('memory.category')}
                     value={newMemCategory}
                     onChange={(e) => setNewMemCategory(e.target.value as any)}
                     className="bg-slate-900 border border-slate-700 text-xs text-slate-300 rounded px-2 py-1.5 focus:outline-hidden"
                   >
-                    <option value="fact">Fakt (fact)</option>
-                    <option value="topic">Thema (topic)</option>
-                    <option value="secret">Geheimnis (secret)</option>
-                    <option value="promise">Versprechen (promise)</option>
-                    <option value="event">Ereignis (event)</option>
-                    <option value="location">Ort (location)</option>
+                    {(['fact', 'topic', 'secret', 'promise', 'event', 'location'] as const).map((cat) => (
+                      <option key={cat} value={cat}>
+                        {t(`memory.cat.${cat}`)}
+                      </option>
+                    ))}
                   </select>
 
                   <select
+                    aria-label={t('memory.significance')}
                     value={newMemSignificance}
                     onChange={(e) => setNewMemSignificance(Number(e.target.value))}
                     className="bg-slate-900 border border-slate-700 text-xs text-slate-300 rounded px-2 py-1.5 focus:outline-hidden"
                   >
-                    <option value={5}>★ 5 (Höchste Prio)</option>
-                    <option value={4}>★ 4 (Sehr wichtig)</option>
-                    <option value={3}>★ 3 (Normal)</option>
-                    <option value={2}>★ 2 (Gering)</option>
-                    <option value={1}>★ 1 (Flüchtig)</option>
+                    {([5, 4, 3, 2, 1] as const).map((level) => (
+                      <option key={level} value={level}>
+                        {t(`memory.sig${level}`)}
+                      </option>
+                    ))}
                   </select>
                 </div>
 
@@ -898,14 +930,15 @@ export const CognitiveMemoryDrawer: React.FC<CognitiveMemoryDrawerProps> = ({
                     type="text"
                     value={newMemContent}
                     onChange={(e) => setNewMemContent(e.target.value)}
-                    placeholder="Z. B.: Hiroki hat versprochen, im Sommer ans Meer zu fahren."
+                    placeholder={t('memory.memoryPlaceholder')}
+                    aria-label={t('memory.addKnowledge')}
                     className="flex-1 px-3 py-1.5 bg-slate-900/90 border border-slate-700 rounded-lg text-xs text-slate-200 focus:outline-hidden focus:border-accent-500"
                   />
                   <button
                     type="submit"
                     className="px-3 py-1.5 rounded-lg bg-accent-600 hover:bg-accent-500 text-white text-xs font-semibold"
                   >
-                    Speichern
+                    {t('memory.save')}
                   </button>
                 </div>
               </form>
@@ -919,7 +952,9 @@ export const CognitiveMemoryDrawer: React.FC<CognitiveMemoryDrawerProps> = ({
                     <div className="space-y-1">
                       <div className="flex items-center gap-2">
                         <span className="text-[11px] uppercase font-bold px-2 py-0.5 rounded bg-accent-900/60 text-accent-300 border border-accent-500/30">
-                          {mem.category}
+                          {(['fact', 'topic', 'secret', 'promise', 'event', 'location'] as string[]).includes(mem.category)
+                            ? t(`memory.cat.${mem.category}` as TranslationKey)
+                            : mem.category}
                         </span>
                         <span className="text-amber-400 text-xs font-mono">
                           {'★'.repeat(mem.significance)}
@@ -933,7 +968,7 @@ export const CognitiveMemoryDrawer: React.FC<CognitiveMemoryDrawerProps> = ({
                 {(!cognitiveOverview?.recent_memories ||
                   cognitiveOverview.recent_memories.length === 0) && (
                   <div className="p-8 text-center text-xs text-slate-500 italic">
-                    Noch keine episodischen Erinnerungen in SQLite gespeichert.
+                    {t('memory.noMemories')}
                   </div>
                 )}
               </div>
@@ -946,13 +981,13 @@ export const CognitiveMemoryDrawer: React.FC<CognitiveMemoryDrawerProps> = ({
               <div className="flex items-center justify-between p-3 rounded-xl bg-accent2-950/20 border border-accent2-900/40">
                 <div className="text-xs text-accent2-300 flex items-center gap-1.5">
                   <Sparkles className="w-4 h-4 text-accent2-400" />
-                  Autonome Ich-Perspektiven Reflexion über den Chat
+                  {t('memory.diaryIntro')}
                 </div>
                 <button
                   onClick={handleGenerateDiary}
                   className="px-3 py-1 rounded-lg bg-accent2-600 hover:bg-accent2-500 text-white text-xs font-semibold transition"
                 >
-                  Neuen Tagebucheintrag generieren
+                  {t('memory.generateDiary')}
                 </button>
               </div>
 
@@ -962,40 +997,43 @@ export const CognitiveMemoryDrawer: React.FC<CognitiveMemoryDrawerProps> = ({
               >
                 <div className="text-xs font-bold text-slate-200 flex items-center gap-1.5">
                   <BookHeart className="w-3.5 h-3.5 text-accent2-400" />
-                  Eintrag manuell verfassen
+                  {t('memory.writeDiary')}
                 </div>
                 <div className="flex gap-2">
                   <input
                     type="text"
                     value={newDiaryTitle}
                     onChange={(e) => setNewDiaryTitle(e.target.value)}
-                    placeholder="Titel des Eintrags..."
+                    placeholder={t('memory.diaryTitlePlaceholder')}
+                    aria-label={t('memory.diaryTitlePlaceholder')}
                     className="flex-1 px-3 py-1.5 bg-slate-900 border border-slate-700 rounded-lg text-xs text-slate-200 focus:outline-hidden focus:border-accent-500"
                   />
                   <select
+                    aria-label={t('memory.mood')}
                     value={newDiaryMood}
                     onChange={(e) => setNewDiaryMood(e.target.value)}
                     className="bg-slate-900 border border-slate-700 text-xs text-slate-300 rounded px-2 py-1.5 focus:outline-hidden"
                   >
-                    <option value="Reflective">Reflective</option>
-                    <option value="Happy">Happy</option>
-                    <option value="Melancholy">Melancholy</option>
-                    <option value="Flustered">Flustered</option>
-                    <option value="Excited">Excited</option>
+                    {(['Reflective', 'Happy', 'Melancholy', 'Flustered', 'Excited'] as const).map((mood) => (
+                      <option key={mood} value={mood}>
+                        {t(`memory.mood.${mood}`)}
+                      </option>
+                    ))}
                   </select>
                 </div>
                 <textarea
                   rows={2}
                   value={newDiaryText}
                   onChange={(e) => setNewDiaryText(e.target.value)}
-                  placeholder="Was geht {charName} durch den Kopf?..."
+                  placeholder={t('memory.diaryTextPlaceholder', { name: charName })}
+                  aria-label={t('memory.writeDiary')}
                   className="w-full px-3 py-1.5 bg-slate-900 border border-slate-700 rounded-lg text-xs text-slate-200 focus:outline-hidden focus:border-accent-500"
                 />
                 <button
                   type="submit"
                   className="px-3 py-1.5 rounded-lg bg-accent2-600 hover:bg-accent2-500 text-white text-xs font-semibold"
                 >
-                  Tagebucheintrag speichern
+                  {t('memory.saveDiary')}
                 </button>
               </form>
 
@@ -1020,7 +1058,7 @@ export const CognitiveMemoryDrawer: React.FC<CognitiveMemoryDrawerProps> = ({
                 {(!cognitiveOverview?.recent_diary ||
                   cognitiveOverview.recent_diary.length === 0) && (
                   <div className="p-8 text-center text-xs text-slate-500 italic">
-                    Das Tagebuch ist noch leer.
+                    {t('memory.diaryEmpty')}
                   </div>
                 )}
               </div>
@@ -1031,7 +1069,7 @@ export const CognitiveMemoryDrawer: React.FC<CognitiveMemoryDrawerProps> = ({
           {activeTab === 'healing' && (
             <div className="space-y-3">
               <div className="text-xs text-slate-400">
-                Audit-Protokoll automatischer emotionaler Abkühlung (Decay) und vom Router Agent aufgelöster Widersprüche:
+                {t('memory.healingIntro')}
               </div>
 
               {cognitiveOverview?.healing_logs.map((log) => (
@@ -1055,7 +1093,7 @@ export const CognitiveMemoryDrawer: React.FC<CognitiveMemoryDrawerProps> = ({
               {(!cognitiveOverview?.healing_logs ||
                 cognitiveOverview.healing_logs.length === 0) && (
                 <div className="p-8 text-center text-xs text-slate-500 italic">
-                  Noch keine Heilungs- oder Widerspruchs-Ereignisse protokolliert.
+                  {t('memory.healingEmpty')}
                 </div>
               )}
             </div>
@@ -1066,30 +1104,28 @@ export const CognitiveMemoryDrawer: React.FC<CognitiveMemoryDrawerProps> = ({
             <div className="space-y-4">
               <div className="flex items-center justify-between p-3.5 rounded-xl bg-slate-800/40 border border-slate-700/60">
                 <div>
-                  <h3 className="text-xs font-bold text-slate-200">Soul of Waifu Gedächtnis-Import</h3>
-                  <p className="text-xs text-slate-400">
-                    Liest vorhandene MEMORY.md, USER.md und topics/*.md aus einem SoW-Ordner ein.
-                  </p>
+                  <h3 className="text-xs font-bold text-slate-200">{t('memory.sowTitle')}</h3>
+                  <p className="text-xs text-slate-400">{t('memory.sowText')}</p>
                 </div>
                 <button
                   onClick={handleImportSow}
                   className="px-3 py-1.5 rounded-lg bg-accent-600 hover:bg-accent-500 text-white text-xs font-semibold flex items-center gap-1.5 transition"
                 >
                   <FolderDown className="w-3.5 h-3.5" />
-                  SoW-Ordner wählen...
+                  {t('memory.sowPick')}
                 </button>
               </div>
 
               <div className="flex items-center justify-between">
                 <span className="text-xs font-bold text-slate-300 uppercase tracking-wider">
-                  Gespeicherte Snapshots ({memoryBackups.length})
+                  {t('memory.snapshots', { count: memoryBackups.length })}
                 </span>
                 <button
                   onClick={handleCreateBackup}
                   className="px-3 py-1 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-200 text-xs font-medium flex items-center gap-1 transition"
                 >
                   <Plus className="w-3.5 h-3.5" />
-                  Snapshot jetzt anlegen
+                  {t('memory.createSnapshot')}
                 </button>
               </div>
 
@@ -1110,17 +1146,17 @@ export const CognitiveMemoryDrawer: React.FC<CognitiveMemoryDrawerProps> = ({
                     <button
                       onClick={() => handleRestoreBackup(b.filename)}
                       className="px-2.5 py-1 rounded bg-slate-700 hover:bg-accent-600 text-slate-200 text-xs font-medium transition flex items-center gap-1"
-                      title="Diesen Snapshot wiederherstellen"
+                      title={t('memory.restoreSnapshot')}
                     >
                       <RotateCcw className="w-3 h-3" />
-                      Wiederherstellen
+                      {t('memory.restore')}
                     </button>
                   </div>
                 ))}
 
                 {memoryBackups.length === 0 && !isLoadingBackups && (
                   <div className="p-8 text-center text-xs text-slate-500 italic">
-                    Noch keine Snapshots gespeichert. Vor jeder autonomen Reflexion wird automatisch ein Backup angelegt.
+                    {t('memory.noSnapshots')}
                   </div>
                 )}
               </div>

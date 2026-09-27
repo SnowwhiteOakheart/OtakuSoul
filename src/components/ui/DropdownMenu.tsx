@@ -4,6 +4,10 @@ import { Check, type LucideIcon } from 'lucide-react';
 export interface DropdownMenuItem {
   label: string;
   icon?: LucideIcon;
+  /** Custom leading visual (e.g. an avatar) instead of an icon. */
+  leading?: React.ReactNode;
+  /** Secondary line under the label. */
+  description?: string;
   onSelect: () => void;
   hint?: string;
   /** Set on every item to make the menu a single-choice list (menuitemradio). */
@@ -120,8 +124,11 @@ export const DropdownMenu: React.FC<DropdownMenuProps> = ({
                 }}
                 className="w-full flex items-center gap-2.5 rounded-lg px-3 py-2 text-left text-sm text-slate-300 outline-hidden hover:bg-slate-800 hover:text-slate-100 focus-visible:bg-slate-800 focus-visible:text-slate-100"
               >
-                {Icon && <Icon className="w-4 h-4 shrink-0 text-slate-400" />}
-                <span className="flex-1">{item.label}</span>
+                {item.leading ?? (Icon && <Icon className="w-4 h-4 shrink-0 text-slate-400" />)}
+                <span className="flex-1 min-w-0">
+                  <span className="block truncate">{item.label}</span>
+                  {item.description && <span className="block truncate text-xs text-slate-500">{item.description}</span>}
+                </span>
                 {item.checked && <Check className="w-3.5 h-3.5 shrink-0 text-accent-400" />}
               </button>
             );

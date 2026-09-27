@@ -40,3 +40,14 @@ describe('i18n', () => {
     expect(t('non.existent.key.xyz', 'de')).toBe('non.existent.key.xyz');
   });
 });
+
+describe('tPlural', () => {
+  it('picks the right plural form per language', async () => {
+    const { tPlural } = await import('../i18n');
+    expect(tPlural('chat.messageCount', 1, 'de')).toBe('1 Nachricht');
+    expect(tPlural('chat.messageCount', 5, 'de')).toBe('5 Nachrichten');
+    expect(tPlural('chat.messageCount', 1, 'ru')).toBe('1 сообщение');
+    expect(tPlural('chat.messageCount', 3, 'ru')).toBe('3 сообщения');
+    expect(tPlural('chat.messageCount', 11, 'ru')).toBe('11 сообщений');
+  });
+});

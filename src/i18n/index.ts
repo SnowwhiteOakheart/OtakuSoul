@@ -23,6 +23,18 @@ export function t(key: TranslationKey | string, lang: SupportedLanguage = 'de', 
   return interpolate(text, vars);
 }
 
+/**
+ * Plural-aware translation: looks up `${base}_${category}` where category comes from
+ * Intl.PluralRules (de/en: one/other, ru: one/few/many/other) and falls back to `_other`.
+ * `{{count}}` is filled in automatically.
+ */
+export function tPlural(base: string, count: number, lang: SupportedLanguage = 'de', vars?: TranslationVars): string {
+  const category = new Intl.PluralRules(lang).select(count);
+  const dict = LOCALES[lang] as Record<string, string>;
+  const key = `${base}_${category}` in dict ? `${base}_${category}` : `${base}_other`;
+  return t(key, lang, { count, ...vars });
+}
+
 /** Localized name of a GoEmotions label ("joy" → "Freude"); unknown labels are returned unchanged. */
 export function emotionLabel(emotion: string, lang: SupportedLanguage = 'de'): string {
   const key = `emotion.${emotion}`;
@@ -41,5 +53,7 @@ export function useTranslation() {
   const appLanguage = useAppStore((s) => s.appLanguage) || 'de';
   const translateKey = (key: TranslationKey, vars?: TranslationVars): string => t(key, appLanguage, vars);
   const translateEmotion = (emotion: string): string => emotionLabel(emotion, appLanguage);
-  return { t: translateKey, tEmotion: translateEmotion, currentLanguage: appLanguage };
+  const translatePlural = (base: string, count: number, vars?: TranslationVars): string =>
+    tPlural(base, count, appLanguage, vars);
+  return { t: translateKey, tEmotion: translateEmotion, tPlural: translatePlural, currentLanguage: appLanguage };
 }

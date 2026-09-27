@@ -3,6 +3,10 @@ import { useAppStore } from '../../store/useAppStore';
 import { api } from '../../services/api';
 import { Heart, Zap, Smile, Users, ChevronDown, BookOpen, Brain, Sparkles, Camera, Loader2 } from 'lucide-react';
 import { CognitiveMemoryDrawer } from './CognitiveMemoryDrawer';
+import { translate, useTranslation } from '../../i18n';
+import { toast } from '../ui/feedback';
+import { DropdownMenu } from '../ui/DropdownMenu';
+import { errorMessage } from '../../utils/errors';
 
 export const AdaptiveHud = () => {
   const {
@@ -20,16 +24,14 @@ export const AdaptiveHud = () => {
     imageGenConfig,
   } = useAppStore();
 
-  const [showSelector, setShowSelector] = useState(false);
+  const { t } = useTranslation();
   const [showMemoryDrawer, setShowMemoryDrawer] = useState(false);
   const [isGeneratingImage, setIsGeneratingImage] = useState(false);
-  const [imageNotice, setImageNotice] = useState<string | null>(null);
 
   const handleGenerateSituationalImage = async () => {
     if (!activeCharacter) return;
     setIsGeneratingImage(true);
     try {
-      setImageNotice('Generiere Bild...');
       const prompt = await api.buildCharacterImagePrompt(
         activeCharacter.card.data.name,
         activeCharacter.card.data.description,
@@ -38,12 +40,10 @@ export const AdaptiveHud = () => {
         undefined
       );
       await generateImageAction(prompt, undefined, imageGenConfig);
-      setImageNotice('Bild generiert!');
-      setTimeout(() => setImageNotice(null), 3000);
-    } catch (e: any) {
+      toast.success(translate('hud.imageDone'));
+    } catch (e) {
       console.error('Failed to generate situational image:', e);
-      setImageNotice('Fehler');
-      setTimeout(() => setImageNotice(null), 3000);
+      toast.error(translate('hud.imageFailed', { error: errorMessage(e) }));
     } finally {
       setIsGeneratingImage(false);
     }
@@ -54,21 +54,18 @@ export const AdaptiveHud = () => {
   }
 
   const { data } = activeCharacter.card;
-  const title = (data.extensions?.sow_title as string) || data.tags?.[0] || 'AI Companion';
+  const title = (data.extensions?.sow_title as string) || data.tags?.[0] || t('library.defaultTitle');
 
   return (
     <div className="border-b border-slate-800/80 bg-slate-900/60 backdrop-blur px-4 py-2.5 flex items-center justify-between gap-4 z-40">
       {/* Left: Character Info & Quick Switcher */}
       <div className="flex items-center gap-3 relative">
-        <div
-          onClick={() => setShowSelector(!showSelector)}
-          className="cursor-pointer relative group"
-        >
+        <div className="relative shrink-0" aria-hidden>
           {activeCharacter.avatar_data_url ? (
             <img
               src={activeCharacter.avatar_data_url}
               alt={data.name}
-              className="w-10 h-10 rounded-full object-cover border-2 border-accent-500/60 shadow-md group-hover:border-accent-400 transition-colors"
+              className="w-10 h-10 rounded-full object-cover border-2 border-accent-500/60 shadow-md"
             />
           ) : (
             <div className="w-10 h-10 rounded-full bg-linear-to-tr from-accent-600 to-accent2-600 flex items-center justify-center text-white font-bold border-2 border-accent-500/60 shadow-md">
@@ -78,91 +75,58 @@ export const AdaptiveHud = () => {
           <div className="absolute bottom-0 right-0 w-3 h-3 bg-emerald-500 rounded-full border-2 border-slate-900" />
         </div>
 
-        <div>
-          <button
-            onClick={() => setShowSelector(!showSelector)}
-            className="flex items-center gap-1.5 font-bold text-sm text-slate-100 hover:text-accent-300 transition-colors group"
-          >
-            <span>{data.name}</span>
-            <ChevronDown className="w-3.5 h-3.5 text-slate-400 group-hover:text-accent-300 transition-transform" />
-          </button>
+        <div className="min-w-0">
+          <DropdownMenu
+            align="left"
+            triggerLabel={t('hud.switchCharacter')}
+            triggerClassName="flex items-center gap-1.5 font-bold text-sm text-slate-100 hover:text-accent-300 transition-colors rounded outline-hidden focus-visible:ring-2 focus-visible:ring-accent-400"
+            trigger={
+              <>
+                <span className="truncate max-w-48">{data.name}</span>
+                <ChevronDown className="w-3.5 h-3.5 text-slate-400" />
+              </>
+            }
+            heading={t('hud.availableCharacters')}
+            menuClassName="w-72 max-h-80 overflow-y-auto"
+            items={[
+              ...availableCharacters.map((char) => ({
+                label: char.card.data.name,
+                description: char.card.data.personality || t('hud.noDescription'),
+                checked: activeCharacter.id === char.id,
+                leading: char.avatar_data_url ? (
+                  <img src={char.avatar_data_url} alt="" className="w-8 h-8 rounded-full object-cover shrink-0" />
+                ) : (
+                  <span className="w-8 h-8 rounded-full bg-accent-700 grid place-items-center text-xs font-bold shrink-0">
+                    {char.card.data.name.charAt(0)}
+                  </span>
+                ),
+                onSelect: () => selectCharacter(char),
+              })),
+              { label: t('hud.openLibrary'), icon: Users, onSelect: () => setActiveTab('characters') },
+            ]}
+          />
           <div className="text-xs text-slate-400 line-clamp-1">{title}</div>
         </div>
-
-        {/* Character Switcher Popover */}
-        {showSelector && (
-          <div className="absolute top-12 left-0 w-72 rounded-xl bg-slate-900/95 border border-slate-700 shadow-2xl p-2 z-50 backdrop-blur space-y-1">
-            <div className="text-xs font-semibold text-slate-400 px-2 py-1 flex items-center gap-1 border-b border-slate-800">
-              <Users className="w-3.5 h-3.5" />
-              <span>Verfügbare Charaktere</span>
-            </div>
-            <div className="max-h-60 overflow-y-auto space-y-1">
-              {availableCharacters.map((char) => (
-                <div
-                  key={char.id}
-                  onClick={() => {
-                    selectCharacter(char);
-                    setShowSelector(false);
-                  }}
-                  className={`flex items-center gap-2.5 p-2 rounded-lg cursor-pointer transition-colors ${
-                    activeCharacter.id === char.id
-                      ? 'bg-accent-600/30 text-accent-200 border border-accent-500/40'
-                      : 'hover:bg-slate-800/80 text-slate-300'
-                  }`}
-                >
-                  {char.avatar_data_url ? (
-                    <img
-                      src={char.avatar_data_url}
-                      alt={char.card.data.name}
-                      className="w-8 h-8 rounded-full object-cover"
-                    />
-                  ) : (
-                    <div className="w-8 h-8 rounded-full bg-accent-700 flex items-center justify-center text-xs font-bold">
-                      {char.card.data.name.charAt(0)}
-                    </div>
-                  )}
-                  <div className="overflow-hidden">
-                    <div className="text-xs font-semibold truncate">{char.card.data.name}</div>
-                    <div className="text-[11px] text-slate-400 truncate">
-                      {char.card.data.personality || 'Keine Beschreibung'}
-                    </div>
-                  </div>
-                </div>
-              ))}
-            </div>
-            <div className="pt-1.5 border-t border-slate-800">
-              <button
-                onClick={() => {
-                  setShowSelector(false);
-                  setActiveTab('characters');
-                }}
-                className="w-full py-1.5 px-2 rounded-lg bg-accent-600/20 hover:bg-accent-600/30 text-accent-300 border border-accent-500/30 text-xs font-semibold flex items-center justify-center gap-1.5 transition-colors"
-              >
-                <Users className="w-3.5 h-3.5" />
-                <span>Alle Charaktere in Bibliothek anzeigen...</span>
-              </button>
-            </div>
-          </div>
-        )}
       </div>
 
       {/* Middle/Right: Adaptive State Variables HUD */}
       <div className="flex items-center gap-3 text-xs font-mono">
         {/* Persona Badge */}
-        <div
+        <button
+          type="button"
           onClick={() => setActiveTab('characters')}
-          className="cursor-pointer hidden sm:flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-indigo-950/40 border border-indigo-500/30 text-indigo-300 text-xs hover:border-indigo-400 transition-colors"
-          title="User-Persona (klicken zum Wechseln in der Bibliothek)"
+          className="cursor-pointer hidden sm:flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-indigo-950/40 border border-indigo-500/30 text-indigo-300 text-xs hover:border-indigo-400 transition-colors whitespace-nowrap outline-hidden focus-visible:ring-2 focus-visible:ring-accent-400"
+          title={t('hud.personaHint')}
         >
-          <span className="text-slate-400">Du:</span>
+          <span className="text-slate-400">{t('hud.you')}</span>
           <span className="font-semibold text-indigo-200">{activePersona.name}</span>
-        </div>
+        </button>
 
         {/* Lorebook Badge */}
         {activeLorebooks.length > 0 && (
           <div className="hidden lg:flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-slate-800/70 border border-slate-700/60 text-slate-300 text-xs">
             <BookOpen className="w-3 h-3 text-amber-400" />
-            <span>Lorebook Aktiv</span>
+            <span className="whitespace-nowrap">{t('hud.lorebookActive')}</span>
           </div>
         )}
 
@@ -216,47 +180,46 @@ export const AdaptiveHud = () => {
         {/* Quick Reasoning Mode Toggle */}
         <button
           onClick={() => setServerConfig({ reasoning_mode: !serverConfig.reasoning_mode })}
-          className={`flex items-center gap-1.5 px-2.5 py-1 rounded-lg border text-xs font-medium transition cursor-pointer ${
+          aria-pressed={serverConfig.reasoning_mode}
+          className={`flex items-center gap-1.5 px-2.5 py-1 rounded-lg border text-xs font-medium transition cursor-pointer whitespace-nowrap outline-hidden focus-visible:ring-2 focus-visible:ring-accent-400 ${
             serverConfig.reasoning_mode
               ? 'bg-amber-950/50 border-amber-500/50 text-amber-300 hover:bg-amber-900/60'
               : 'bg-slate-800/60 border-slate-700/60 text-slate-400 hover:text-slate-200'
           }`}
-          title={
-            serverConfig.reasoning_mode
-              ? 'Reasoning-Modus ist AN (Modell denkt intern in <think>-Tags nach)'
-              : 'Reasoning-Modus ist AUS (Sofortiges Rollenspiel ohne Denkpause)'
-          }
+          title={serverConfig.reasoning_mode ? t('hud.reasoningOnHint') : t('hud.reasoningOffHint')}
         >
           <Sparkles className={`w-3.5 h-3.5 ${serverConfig.reasoning_mode ? 'text-amber-400' : 'text-slate-500'}`} />
-          <span className="hidden sm:inline">Reasoning:</span>
+          <span className="hidden sm:inline">{t('hud.reasoning')}</span>
           <span className={serverConfig.reasoning_mode ? 'text-amber-300 font-bold' : 'text-slate-400'}>
-            {serverConfig.reasoning_mode ? 'An' : 'Aus'}
+            {serverConfig.reasoning_mode ? t('hud.on') : t('hud.off')}
           </span>
         </button>
 
         {/* Cognitive Soul Memory Drawer Trigger */}
         <button
           onClick={() => setShowMemoryDrawer(true)}
-          className="flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-accent-950/50 border border-accent-500/40 text-accent-300 hover:bg-accent-900/60 hover:text-accent-200 transition text-xs font-medium shadow-sm cursor-pointer"
-          title="Kognitiven Seelenspeicher öffnen"
+          className="flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-accent-950/50 border border-accent-500/40 text-accent-300 hover:bg-accent-900/60 hover:text-accent-200 transition text-xs font-medium shadow-sm cursor-pointer whitespace-nowrap outline-hidden focus-visible:ring-2 focus-visible:ring-accent-400"
+          title={t('hud.memoryHint')}
+          aria-label={t('hud.memoryHint')}
         >
           <Brain className="w-3.5 h-3.5 text-accent-400" />
-          <span>Seelenspeicher</span>
+          <span className="hidden md:inline">{t('hud.memory')}</span>
         </button>
 
         {/* Quick Situational Image Generator */}
         <button
           onClick={handleGenerateSituationalImage}
           disabled={isGeneratingImage}
-          className="flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-indigo-950/50 border border-indigo-500/40 text-indigo-300 hover:bg-indigo-900/60 hover:text-indigo-200 transition text-xs font-medium shadow-sm cursor-pointer disabled:opacity-50"
-          title="Situationsbild des aktuellen Charakters generieren"
+          className="flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-indigo-950/50 border border-indigo-500/40 text-indigo-300 hover:bg-indigo-900/60 hover:text-indigo-200 transition text-xs font-medium shadow-sm cursor-pointer disabled:opacity-50 whitespace-nowrap outline-hidden focus-visible:ring-2 focus-visible:ring-accent-400"
+          title={isGeneratingImage ? t('hud.generatingImage') : t('hud.photoHint')}
+          aria-label={t('hud.photoHint')}
         >
           {isGeneratingImage ? (
             <Loader2 className="w-3.5 h-3.5 text-indigo-400 animate-spin" />
           ) : (
             <Camera className="w-3.5 h-3.5 text-indigo-400" />
           )}
-          <span className="hidden lg:inline">{imageNotice || 'Foto'}</span>
+          <span className="hidden lg:inline">{t('hud.photo')}</span>
         </button>
       </div>
 
