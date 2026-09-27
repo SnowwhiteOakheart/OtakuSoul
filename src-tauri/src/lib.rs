@@ -41,7 +41,27 @@ pub fn run() {
     // Initialize tracing subscriber for clean logs
     let _ = tracing_subscriber::fmt().try_init();
 
-    tauri::Builder::default()
+    let builder = tauri::Builder::default();
+
+    // Must be registered first: a second launch hands over to the running instance instead
+    // of starting another llama-server that would compete for VRAM.
+    #[cfg(desktop)]
+    let builder = builder
+        .plugin(tauri_plugin_single_instance::init(|app, _argv, _cwd| {
+            use tauri::Manager;
+            if let Some(window) = app.get_webview_window("main") {
+                let _ = window.unminimize();
+                let _ = window.show();
+                let _ = window.set_focus();
+            }
+        }))
+        .plugin(
+            tauri_plugin_window_state::Builder::default()
+                .with_denylist(&["companion_overlay"])
+                .build(),
+        );
+
+    builder
         .plugin(tauri_plugin_opener::init())
         .plugin(tauri_plugin_dialog::init())
         .manage(AppState::new())
