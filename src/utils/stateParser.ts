@@ -19,7 +19,7 @@ export function extractStateUpdates(text: string): ParsedStateResult {
   let found = false;
 
   while ((match = stateRegex.exec(text)) !== null) {
-    const jsonStr = match[1].trim();
+    const jsonStr = (match[1] ?? '').trim();
     if (jsonStr) {
       try {
         const parsed = JSON.parse(jsonStr);
@@ -60,11 +60,9 @@ export function applyStateUpdates(
       (v) => v.name.toLowerCase() === key.toLowerCase()
     );
 
-    if (existingIndex >= 0) {
-      result[existingIndex] = {
-        ...result[existingIndex],
-        value: valStr,
-      };
+    const existing = result[existingIndex];
+    if (existing) {
+      result[existingIndex] = { ...existing, value: valStr };
     } else {
       let varType: 'int' | 'str' | 'bool' | 'progress' = 'str';
       if (typeof rawVal === 'boolean') {

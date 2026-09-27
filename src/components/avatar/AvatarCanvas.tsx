@@ -1,10 +1,16 @@
-import React, { useEffect, useRef, useState } from 'react';
+import React, { lazy, Suspense, useEffect, useRef, useState } from 'react';
 import { VrmViewer } from './VrmViewer';
-import { Live2DViewer } from './Live2DViewer';
+import { loadCubismCore } from '../../services/live2dRuntime';
 import { Box, Image, Sparkles, Smile, ChevronDown, Check } from 'lucide-react';
 import { CharacterProfile } from '../../types';
 import { useAppStore } from '../../store/useAppStore';
 import { selectCharacterPortrait } from '../../utils/characterPortraits';
+
+const Live2DViewer = lazy(() =>
+  loadCubismCore()
+    .then(() => import('./Live2DViewer'))
+    .then((module) => ({ default: module.Live2DViewer }))
+);
 
 const ALL_GO_EMOTIONS = [
   'admiration', 'amusement', 'anger', 'annoyance', 'approval', 'caring',
@@ -258,11 +264,15 @@ export const AvatarCanvas: React.FC<AvatarCanvasProps> = ({
         />
       ) : avatarMode === 'live2d' ? (
         live2dPath ? (
-          <Live2DViewer
-            modelPath={live2dPath}
-            emotion={currentEmotion.emotion}
-            isSpeaking={isSpeaking}
-          />
+          <Suspense
+            fallback={<div className="flex-1 grid place-items-center text-sm text-slate-400">Live2D wird geladen…</div>}
+          >
+            <Live2DViewer
+              modelPath={live2dPath}
+              emotion={currentEmotion.emotion}
+              isSpeaking={isSpeaking}
+            />
+          </Suspense>
         ) : (
           <div className="flex flex-col items-center justify-center p-6 text-center text-slate-400">
             <Smile className="w-12 h-12 text-purple-400/50 mb-2" />

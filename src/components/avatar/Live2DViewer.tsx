@@ -1,17 +1,16 @@
 import React, { useEffect, useRef, useState } from 'react';
-import * as PIXI from 'pixi.js';
-import { Live2DModel, ModelSettings } from 'pixi-live2d-display/cubism4';
+import { Application, extensions } from 'pixi.js';
+// Lets pixi.js compile shaders without `eval`, so the CSP can forbid 'unsafe-eval'.
+import 'pixi.js/unsafe-eval';
+import { Live2DModel, Live2DPlugin, ModelSettings } from 'untitled-pixi-live2d-engine/cubism';
 import { convertFileSrc } from '@tauri-apps/api/core';
+import { useAppStore } from '../../store/useAppStore';
 import { audioPlayer } from '../../services/audioPlayer';
 import { loadLive2DViewState, saveLive2DViewState } from '../../services/avatarViewState';
 import { Loader2, Sparkles, RefreshCw } from 'lucide-react';
 
-// Register PIXI ticker for Live2D animations
-try {
-  Live2DModel.registerTicker(PIXI.Ticker as any);
-} catch (e) {
-  console.warn('Live2D ticker already registered or failed:', e);
-}
+// The Live2D render pipe must be registered before any renderer is created.
+extensions.add(Live2DPlugin);
 
 // Path normalization helper for resolving relative model assets
 function normalizePath(parts: string[]): string {
@@ -85,8 +84,13 @@ ModelSettings.prototype.resolveURL = function (targetPath: string): string {
       const expPath = `${rootAssets}/emotions/live2d/expressions/${filename}`;
       return convertFileSrc(expPath);
     }
-    const otakusoulExpPath = `/home/deathtrap/development/OtakuSoul/assets/emotions/live2d/expressions/${filename}`;
-    return convertFileSrc(otakusoulExpPath);
+    // Model lives outside the bundled assets (e.g. user data dir): use the bundled emotion set.
+    const bundledVrmDir = useAppStore.getState().appPaths?.bundled_vrm_dir?.replace(/\\/g, '/');
+    if (bundledVrmDir) {
+      const bundledAssets = bundledVrmDir.replace(/\/vrm\/?$/, '');
+      return convertFileSrc(`${bundledAssets}/emotions/live2d/expressions/${filename}`);
+    }
+    return targetPath;
   }
 
   // Standard relative file path resolution
@@ -94,6 +98,29 @@ ModelSettings.prototype.resolveURL = function (targetPath: string): string {
   const resolved = '/' + normalizePath([...baseDir.split('/'), ...cleanTarget.split('/')]);
 
   return convertFileSrc(resolved);
+};
+
+/**
+ * Applies a GoEmotions label. Imported Soul-of-Waifu models name their expressions after the
+ * emotion ("joy"), older exports use "joy_animation"; a motion group of the same name is the fallback.
+ */
+const applyEmotion = async (model: Live2DModel, emotion: string) => {
+  try {
+    if (await model.expression(emotion)) return;
+    if (await model.expression(`${emotion}_animation`)) return;
+    await model.motion(emotion);
+  } catch (err) {
+    console.warn('Could not set expression on Live2D model:', err);
+  }
+};
+
+/** Plays the "Tap" motion group, or "Idle" for models without one. */
+const playTapMotion = async (model: Live2DModel) => {
+  try {
+    if (!(await model.motion('Tap'))) await model.motion('Idle');
+  } catch (e) {
+    console.warn('Motion error:', e);
+  }
 };
 
 interface Live2DViewerProps {
@@ -115,8 +142,8 @@ export const Live2DViewer: React.FC<Live2DViewerProps> = ({
   const dragStartRef = useRef({ x: 0, y: 0 });
   const baseScaleRef = useRef(1);
 
-  const modelRef = useRef<any>(null);
-  const appRef = useRef<PIXI.Application | null>(null);
+  const modelRef = useRef<Live2DModel | null>(null);
+  const appRef = useRef<Application | null>(null);
   const currentEmotionRef = useRef(emotion);
   currentEmotionRef.current = emotion;
 
@@ -125,20 +152,7 @@ export const Live2DViewer: React.FC<Live2DViewerProps> = ({
     if (!modelRef.current) return;
     const model = modelRef.current;
     
-    // Try setting expression on model
-    try {
-      const expName = `${emotion}_animation`;
-      if (model.expression) {
-        model.expression(expName).catch(() => {
-          // If named expression file not embedded, fallback to standard group
-          try {
-            model.motion(emotion).catch(() => {});
-          } catch {}
-        });
-      }
-    } catch (err) {
-      console.warn('Could not set expression on Live2D model:', err);
-    }
+    void applyEmotion(model, emotion);
   }, [emotion]);
 
   useEffect(() => {
@@ -149,14 +163,16 @@ export const Live2DViewer: React.FC<Live2DViewerProps> = ({
     setLoading(true);
     setError(null);
 
-    const app = new PIXI.Application({
+    const app = new Application();
+    appRef.current = app;
+    const appReady = app.init({
       resizeTo: container,
       backgroundAlpha: 0,
       antialias: true,
       autoDensity: true,
+      preference: 'webgl',
       resolution: window.devicePixelRatio || 1,
     });
-    appRef.current = app;
 
     let cleanupAudio: (() => void) | null = null;
     let saveTimer: number | null = null;
@@ -183,16 +199,19 @@ export const Live2DViewer: React.FC<Live2DViewerProps> = ({
 
     const init = async () => {
       try {
+        await appReady;
         if (isDisposed) return;
 
-        container.appendChild(app.view as HTMLCanvasElement);
+        container.appendChild(app.canvas);
 
         // Convert filesystem path to Tauri Asset URL
         const assetUrl = convertFileSrc(modelPath);
 
         // Load the Live2D model
+        // Pointer handling (drag, zoom, tap, look-at) is done by the listeners below.
         const model = await Live2DModel.from(assetUrl, {
-          autoInteract: false,
+          autoHitTest: false,
+          autoFocus: false,
         });
 
         if (isDisposed) {
@@ -222,26 +241,22 @@ export const Live2DViewer: React.FC<Live2DViewerProps> = ({
         model.x = containerWidth * (savedView?.xRatio ?? 0.5);
         model.y = containerHeight * (savedView?.yRatio ?? 0.55);
 
-        (app.stage as any).addChild(model);
+        app.stage.addChild(model);
 
         // LipSync via Web Audio API amplitude
         cleanupAudio = audioPlayer.onAudioFrame((amplitude) => {
-          if (!model || !model.internalModel?.coreModel) return;
+          const core = model.internalModel?.coreModel as
+            | { setParameterValueById?: (id: string, value: number) => void }
+            | undefined;
+          if (!core) return;
           try {
-            const mouthValue = Math.min(1.0, amplitude * 2.2);
-            const core = model.internalModel.coreModel as any;
-            // Cubism 3/4 parameter
-            core.setParameterValueById?.('ParamMouthOpenY', mouthValue);
-            // Cubism 2 parameter fallback
-            core.setParamFloat?.('PARAM_MOUTH_OPEN_Y', mouthValue);
+            core.setParameterValueById?.('ParamMouthOpenY', Math.min(1.0, amplitude * 2.2));
           } catch {}
         });
 
         // Set initial expression
         if (currentEmotionRef.current && currentEmotionRef.current !== 'neutral') {
-          try {
-            model.expression?.(`${currentEmotionRef.current}_animation`);
-          } catch {}
+          void applyEmotion(model, currentEmotionRef.current);
         }
 
         setLoading(false);
@@ -273,21 +288,12 @@ export const Live2DViewer: React.FC<Live2DViewerProps> = ({
       const x = e.clientX - rect.left;
       const y = e.clientY - rect.top;
       try {
-        if (modelRef.current.hitTest) {
-          const hitAreas = modelRef.current.hitTest(x, y);
-          if (hitAreas && hitAreas.length > 0) {
-            modelRef.current.motion('Tap') || modelRef.current.motion('Idle');
-            return;
-          }
-        }
-        const bounds = modelRef.current.getBounds();
-        if (
-          x >= bounds.x &&
-          x <= bounds.x + bounds.width &&
-          y >= bounds.y &&
-          y <= bounds.y + bounds.height
-        ) {
-          modelRef.current.motion('Tap') || modelRef.current.motion('Idle');
+        const model = modelRef.current;
+        const bounds = model.getBounds();
+        const insideBounds =
+          x >= bounds.x && x <= bounds.x + bounds.width && y >= bounds.y && y <= bounds.y + bounds.height;
+        if (model.hitTest(x, y).length > 0 || insideBounds) {
+          void playTapMotion(model);
         }
       } catch {}
     };
@@ -375,12 +381,15 @@ export const Live2DViewer: React.FC<Live2DViewerProps> = ({
         modelRef.current = null;
       }
 
-      if (appRef.current) {
-        try {
-          appRef.current.destroy(true, { children: true });
-        } catch {}
-        appRef.current = null;
-      }
+      // pixi v8 cannot destroy an application whose async init is still running.
+      void appReady
+        .catch(() => {})
+        .then(() => {
+          try {
+            app.destroy({ removeView: true }, { children: true });
+          } catch {}
+        });
+      appRef.current = null;
 
       while (container.firstChild) {
         container.removeChild(container.firstChild);
@@ -399,11 +408,7 @@ export const Live2DViewer: React.FC<Live2DViewerProps> = ({
 
   const handleTriggerRandomMotion = () => {
     if (!modelRef.current) return;
-    try {
-      modelRef.current.motion('Tap') || modelRef.current.motion('Idle');
-    } catch (e) {
-      console.warn('Motion error:', e);
-    }
+    void playTapMotion(modelRef.current);
   };
 
   return (

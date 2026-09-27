@@ -177,11 +177,10 @@ export const LorebookView: React.FC = () => {
   // Toggle entry enabled inline
   const handleToggleEntryEnabled = (idxInActive: number) => {
     if (!activeLorebook) return;
+    const target = activeLorebook.entries[idxInActive];
+    if (!target) return;
     const updatedEntries = [...activeLorebook.entries];
-    updatedEntries[idxInActive] = {
-      ...updatedEntries[idxInActive],
-      enabled: !updatedEntries[idxInActive].enabled,
-    };
+    updatedEntries[idxInActive] = { ...target, enabled: !target.enabled };
     selectLorebook({
       ...activeLorebook,
       entries: updatedEntries,

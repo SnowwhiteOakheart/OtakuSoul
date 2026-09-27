@@ -34,8 +34,7 @@ export function parseRoleplaySegments(input: string): RoleplaySegment[] {
   const isQuoteEnd = (char: string) =>
     char === '"' || char === '”' || char === '“' || char === '»';
 
-  for (let i = 0; i < input.length; i++) {
-    const char = input[i];
+  for (const char of input) {
 
     // Preserving newlines
     if (char === '\n') {

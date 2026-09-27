@@ -13,13 +13,13 @@ describe('i18n Dictionary & Translation Helper', () => {
       expect(entry, `Entry for key "${key}" should exist`).toBeDefined();
 
       for (const lang of supportedLanguages) {
-        const text = entry[lang];
+        const text = entry?.[lang];
         expect(
           typeof text,
           `Translation for key "${key}" in lang "${lang}" should be a string`
         ).toBe('string');
         expect(
-          text.trim().length,
+          (text ?? "").trim().length,
           `Translation for key "${key}" in lang "${lang}" should not be empty`
         ).toBeGreaterThan(0);
       }

@@ -24,7 +24,7 @@ function resampleMono(input: Float32Array, sourceRate: number, targetRate = 16_0
     const left = Math.floor(position);
     const right = Math.min(left + 1, input.length - 1);
     const fraction = position - left;
-    output[index] = input[left] * (1 - fraction) + input[right] * fraction;
+    output[index] = input[left]! * (1 - fraction) + input[right]! * fraction;
   }
   return output;
 }

@@ -524,8 +524,9 @@ export const useAppStore = create<AppStoreState>((set, get) => ({
     try {
       const models = await api.scanLive2dModels();
       set({ scannedLive2ds: models });
-      if (!get().activeLive2dPath && models.length > 0) {
-        set({ activeLive2dPath: models[0].model_path });
+      const firstModel = models[0];
+      if (!get().activeLive2dPath && firstModel) {
+        set({ activeLive2dPath: firstModel.model_path });
       }
     } catch (e) {
       console.error('Failed to scan Live2D models:', e);
@@ -750,13 +751,13 @@ export const useAppStore = create<AppStoreState>((set, get) => ({
 
       // If settings model path is empty or not in scan, choose first available
       let modelPath = settings.server_config.model_path;
-      if (!modelPath && models.length > 0) {
-        modelPath = models[0].path;
+      if (!modelPath) {
+        modelPath = models[0]?.path ?? modelPath;
       }
 
       let vrmPath = settings.active_vrm_path;
-      if (!vrmPath && vrms.length > 0) {
-        vrmPath = vrms[0].path;
+      if (!vrmPath) {
+        vrmPath = vrms[0]?.path ?? vrmPath;
       }
 
       set({
@@ -1878,10 +1879,11 @@ export const useAppStore = create<AppStoreState>((set, get) => ({
   refreshCharacters: async () => {
     try {
       const chars = await api.scanCharacters();
-      if (chars.length > 0) {
+      const firstChar = chars[0];
+      if (firstChar) {
         set({ availableCharacters: chars });
         if (!get().activeCharacter) {
-          get().selectCharacter(chars[0]);
+          get().selectCharacter(firstChar);
         }
       }
     } catch (e) {
@@ -1910,9 +1912,9 @@ export const useAppStore = create<AppStoreState>((set, get) => ({
       await api.deleteCharacter(charId);
       await get().refreshCharacters();
       if (get().activeCharacter?.id === charId) {
-        const remaining = get().availableCharacters;
-        if (remaining.length > 0) {
-          get().selectCharacter(remaining[0]);
+        const nextCharacter = get().availableCharacters[0];
+        if (nextCharacter) {
+          get().selectCharacter(nextCharacter);
         }
       }
     } catch (e) {
@@ -2149,8 +2151,8 @@ export const useAppStore = create<AppStoreState>((set, get) => ({
       } else {
         set({ chatSessions: sessions });
         const currentActive = sessions.find((s) => s.id === get().activeChatId);
-        const targetId = currentActive ? currentActive.id : sessions[0].id;
-        await get().switchChatSession(targetId);
+        const targetId = currentActive?.id ?? sessions[0]?.id;
+        if (targetId) await get().switchChatSession(targetId);
       }
     } catch (e) {
       console.error('Failed to load chat sessions:', e);
