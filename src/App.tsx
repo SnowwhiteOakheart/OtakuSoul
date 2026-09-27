@@ -1,5 +1,6 @@
 import { lazy, Suspense } from 'react';
 import { Header } from './components/Header';
+import { Sidebar } from './components/Sidebar';
 import { SafetyCountdownBanner } from './components/companion/SafetyCountdownBanner';
 import { useAppStore } from './store/useAppStore';
 import { useTranslation } from './i18n';
@@ -38,7 +39,9 @@ export function App() {
   return (
     <div className="flex flex-col w-screen h-screen bg-app text-slate-100 overflow-hidden font-sans relative">
       <Header />
-      <main className="flex-1 flex overflow-hidden">
+      <div className="flex-1 flex min-h-0">
+      <Sidebar />
+      <main className="flex-1 flex min-w-0 overflow-hidden">
         <ErrorBoundary resetKey={activeTab}>
           <Suspense fallback={<div className="flex-1 grid place-items-center text-sm text-accent-300">{t('common.loadingView')}</div>}>
             {activeTab === 'chat' && <ChatView />}
@@ -52,6 +55,7 @@ export function App() {
           </Suspense>
         </ErrorBoundary>
       </main>
+      </div>
       <SafetyCountdownBanner />
       <Suspense fallback={null}>
         <CharacterAiAssistantModal />

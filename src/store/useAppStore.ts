@@ -174,10 +174,12 @@ async function resolvePromptWithLore(
   });
 }
 
+export type AppTab = 'chat' | 'characters' | 'lorebooks' | 'stage' | 'companion' | 'settings' | 'hub' | 'integrations';
+
 interface AppStoreState {
   // Navigation
-  activeTab: 'chat' | 'characters' | 'lorebooks' | 'stage' | 'companion' | 'settings' | 'hub' | 'integrations';
-  setActiveTab: (tab: 'chat' | 'characters' | 'lorebooks' | 'stage' | 'companion' | 'settings' | 'hub' | 'integrations') => void;
+  activeTab: AppTab;
+  setActiveTab: (tab: AppTab) => void;
   hubSubTab: 'soul_gateway' | 'chub_ai' | 'lorebooks' | 'scenes';
   setHubSubTab: (tab: 'soul_gateway' | 'chub_ai' | 'lorebooks' | 'scenes') => void;
   openSoulHubTab: (tab: 'soul_gateway' | 'chub_ai' | 'lorebooks' | 'scenes') => void;
