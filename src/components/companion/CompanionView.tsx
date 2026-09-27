@@ -58,7 +58,7 @@ export const CompanionView: React.FC = () => {
   const [selectedTool, setSelectedTool] = useState<string>('web_search');
   const [toolArgPrimary, setToolArgPrimary] = useState<string>('OtakuSoul Three.js VRM LipSync');
   const [toolArgSecondary, setToolArgSecondary] = useState<string>('');
-  const [codeLanguage, setCodeLanguage] = useState<'python' | 'bash'>('python');
+  const [codeLanguage, setCodeLanguage] = useState<'powershell' | 'bash' | 'cmd' | 'python'>('powershell');
 
   // Thoughts Form
   const [newThoughtInput, setNewThoughtInput] = useState<string>('');
@@ -821,30 +821,64 @@ export const CompanionView: React.FC = () => {
                 {selectedTool === 'execute_code' && (
                   <div>
                     <label className="text-[11px] font-semibold text-slate-400 block mb-1">
-                      Interpreter-Sprache
+                      Interpreter-Sprache (Multiplattform)
                     </label>
-                    <div className="flex gap-2">
+                    <div className="flex flex-wrap gap-2">
                       <button
                         type="button"
-                        onClick={() => setCodeLanguage('python')}
+                        onClick={() => {
+                          setCodeLanguage('powershell');
+                          setToolArgPrimary('Write-Output "Hallo aus der OtakuSoul Sandbox!"\nGet-Date');
+                        }}
                         className={`px-3 py-1 rounded-lg border text-xs font-mono transition ${
-                          codeLanguage === 'python'
-                            ? 'bg-emerald-950 border-emerald-500 text-emerald-300'
-                            : 'bg-slate-950 border-slate-700 text-slate-400'
+                          codeLanguage === 'powershell'
+                            ? 'bg-cyan-950 border-cyan-500 text-cyan-300'
+                            : 'bg-slate-950 border-slate-700 text-slate-400 hover:text-slate-200'
                         }`}
                       >
-                        Python 3
+                        PowerShell (Windows)
                       </button>
                       <button
                         type="button"
-                        onClick={() => setCodeLanguage('bash')}
+                        onClick={() => {
+                          setCodeLanguage('bash');
+                          setToolArgPrimary('echo "Hallo aus der OtakuSoul Sandbox!"\nuname -a');
+                        }}
                         className={`px-3 py-1 rounded-lg border text-xs font-mono transition ${
                           codeLanguage === 'bash'
-                            ? 'bg-emerald-950 border-emerald-500 text-emerald-300'
-                            : 'bg-slate-950 border-slate-700 text-slate-400'
+                            ? 'bg-cyan-950 border-cyan-500 text-cyan-300'
+                            : 'bg-slate-950 border-slate-700 text-slate-400 hover:text-slate-200'
                         }`}
                       >
-                        Bash
+                        Bash (Linux / macOS)
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setCodeLanguage('cmd');
+                          setToolArgPrimary('@echo off\necho Hallo aus der OtakuSoul Sandbox!\nver');
+                        }}
+                        className={`px-3 py-1 rounded-lg border text-xs font-mono transition ${
+                          codeLanguage === 'cmd'
+                            ? 'bg-cyan-950 border-cyan-500 text-cyan-300'
+                            : 'bg-slate-950 border-slate-700 text-slate-400 hover:text-slate-200'
+                        }`}
+                      >
+                        Batch / CMD (Windows)
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setCodeLanguage('python');
+                          setToolArgPrimary('print("Hallo aus der OtakuSoul Sandbox!")\nimport sys\nprint("Python Version:", sys.version)');
+                        }}
+                        className={`px-3 py-1 rounded-lg border text-xs font-mono transition ${
+                          codeLanguage === 'python'
+                            ? 'bg-cyan-950 border-cyan-500 text-cyan-300'
+                            : 'bg-slate-950 border-slate-700 text-slate-400 hover:text-slate-200'
+                        }`}
+                      >
+                        Python 3 (Optional)
                       </button>
                     </div>
                   </div>

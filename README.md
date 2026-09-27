@@ -91,7 +91,7 @@ Mit **Soul Companion** wird dein Lieblingscharakter zu einem echten Assistenten 
 - **Schwebendes Overlay:** Ein rahmenloses, transparentes Fenster (`always_on_top`) begleitet dich beim Arbeiten oder Spielen, inklusive nativer Click-Through-Umschaltung.
 - **Emotionen & Biorhythmus:** Neurohormone (Dopamin, Cortisol, Oxytocin, Erschöpfung) modellieren Laune, Müdigkeit und Einsamkeit, aus denen fließend 10 Emotionen abgeleitet werden.
 - **Gedankenspeicher & Ziele:** Dein Begleiter führt ein persistentes Scratchpad für eigene Überlegungen und erinnert dich an Versprechen und Verabredungen.
-- **Echte Werkzeuge & Schutz:** Websuche (DuckDuckGo), Screenshot-Erfassung (`xcap`), Zwischenablage, MPRIS-Mediensteuerung, App-Verwaltung, isolierte Skript-Sandbox und Datei-Organisation – geschützt durch einen 25s Human-in-the-Loop Countdown-Banner für sensible Aktionen und automatischen Datenschutzfilter für Passwörter & Banking.
+- **Echte Werkzeuge & Schutz:** Websuche (DuckDuckGo), Screenshot-Erfassung (`xcap`), Zwischenablage, MPRIS-Mediensteuerung, App-Verwaltung, isolierte Multiplattform-Skript-Sandbox (PowerShell, Bash, Batch, optional Python 3) und Datei-Organisation – geschützt durch einen 25s Human-in-the-Loop Countdown-Banner für sensible Aktionen und automatischen Datenschutzfilter für Passwörter & Banking.
 - **Model Context Protocol (MCP) & Plugins:** Verbinde beliebige MCP-Server (stdio oder HTTP/SSE) und führe benutzerdefinierte Skripte direkt als Tools aus.
 
 ## Offen für dein bestehendes Ökosystem

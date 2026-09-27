@@ -547,7 +547,7 @@ impl CompanionTools {
         Ok(format!("=== Seite: {} ===\nURL: {}\n\n{}", title, full_url, preview))
     }
 
-    /// Execute Python or Bash script inside sandboxed folder with timeout
+    /// Execute PowerShell, Bash, Batch, or optional Python script inside sandboxed folder with timeout
     pub async fn execute_code_sandboxed(
         language: &str,
         code: &str,
@@ -565,10 +565,47 @@ impl CompanionTools {
 
         let timeout_s = timeout_seconds.clamp(1, 60);
         let lang = language.to_lowercase().trim().to_string();
-        let (ext, cmd_bin) = match lang.as_str() {
-            "python" | "py" => (".py", "python3"),
-            "bash" | "sh" | "shell" => (".sh", "bash"),
-            other => return Err(format!("Nicht unterstützte Skriptsprache: '{}'. Erlaubt: python, bash.", other)),
+
+        let (ext, program, args_prefix): (&str, &str, Vec<&str>) = match lang.as_str() {
+            "powershell" | "pwsh" | "ps1" | "ps" => {
+                #[cfg(target_os = "windows")]
+                {
+                    (".ps1", "powershell.exe", vec!["-NoProfile", "-NonInteractive", "-ExecutionPolicy", "Bypass", "-File"])
+                }
+                #[cfg(not(target_os = "windows"))]
+                {
+                    (".ps1", "pwsh", vec!["-NoProfile", "-NonInteractive", "-File"])
+                }
+            }
+            "bash" | "sh" | "shell" | "zsh" => {
+                (".sh", "bash", vec![])
+            }
+            "batch" | "cmd" | "bat" => {
+                #[cfg(target_os = "windows")]
+                {
+                    (".bat", "cmd.exe", vec!["/C"])
+                }
+                #[cfg(not(target_os = "windows"))]
+                {
+                    return Err("Windows-Batchdateien (.bat / cmd) werden auf Linux/macOS nicht nativ unterstützt. Bitte verwende 'bash' oder 'powershell' (pwsh).".to_string());
+                }
+            }
+            "python" | "py" | "python3" => {
+                #[cfg(target_os = "windows")]
+                {
+                    (".py", "python", vec![])
+                }
+                #[cfg(not(target_os = "windows"))]
+                {
+                    (".py", "python3", vec![])
+                }
+            }
+            other => {
+                return Err(format!(
+                    "Nicht unterstützte Skriptsprache: '{}'. Unterstützt: powershell, bash, cmd (batch), python (optional).",
+                    other
+                ));
+            }
         };
 
         let script_file = sandbox_dir.join(format!("_script_{}{}", rand::random::<u32>(), ext));
@@ -576,11 +613,58 @@ impl CompanionTools {
             .await
             .map_err(|e| format!("Skriptdatei konnte nicht geschrieben werden: {}", e))?;
 
+        let script_str = script_file.to_string_lossy().to_string();
+
         let execution = async {
-            let mut cmd = Command::new(cmd_bin);
-            cmd.arg(&script_file);
+            let mut cmd = Command::new(program);
+            for arg in &args_prefix {
+                cmd.arg(arg);
+            }
+            cmd.arg(&script_str);
             cmd.current_dir(sandbox_dir);
-            cmd.output().await
+
+            match cmd.output().await {
+                Ok(out) => Ok((out, program.to_string())),
+                Err(e) if e.kind() == std::io::ErrorKind::NotFound => {
+                    // Fallback-Logik für Interpreter je nach Plattform & Sprache
+                    if lang == "python" || lang == "py" || lang == "python3" {
+                        let alt_prog = if program == "python3" { "python" } else { "python3" };
+                        let mut alt_cmd = Command::new(alt_prog);
+                        alt_cmd.arg(&script_str);
+                        alt_cmd.current_dir(sandbox_dir);
+                        if let Ok(alt_out) = alt_cmd.output().await {
+                            return Ok((alt_out, alt_prog.to_string()));
+                        }
+                        Err(format!(
+                            "Python ist auf diesem System nicht im PATH verfügbar (Python ist optional). Unter Windows kannst du PowerShell ('powershell') oder Batch ('cmd') verwenden, unter Linux/macOS 'bash'."
+                        ))
+                    } else if lang == "powershell" || lang == "pwsh" || lang == "ps1" || lang == "ps" {
+                        #[cfg(not(target_os = "windows"))]
+                        {
+                            Err("PowerShell ('pwsh') ist auf diesem Unix-System nicht installiert. Unter Linux/macOS empfehlen wir standardmäßig 'bash'.".to_string())
+                        }
+                        #[cfg(target_os = "windows")]
+                        {
+                            // Fallback powershell.exe -> pwsh.exe
+                            let mut alt_cmd = Command::new("pwsh.exe");
+                            for arg in &args_prefix {
+                                alt_cmd.arg(arg);
+                            }
+                            alt_cmd.arg(&script_str);
+                            alt_cmd.current_dir(sandbox_dir);
+                            if let Ok(alt_out) = alt_cmd.output().await {
+                                return Ok((alt_out, "pwsh.exe".to_string()));
+                            }
+                            Err(format!("PowerShell konnte nicht gestartet werden: {}", e))
+                        }
+                    } else if (lang == "bash" || lang == "sh" || lang == "shell") && cfg!(target_os = "windows") {
+                        Err("Bash wurde auf diesem Windows-System nicht gefunden (z. B. Git Bash). Unter Windows bitte nativ PowerShell ('powershell') oder Batch ('cmd') verwenden.".to_string())
+                    } else {
+                        Err(format!("Der Skript-Interpreter '{}' wurde nicht gefunden: {}", program, e))
+                    }
+                }
+                Err(e) => Err(format!("Fehler beim Starten des Skript-Interpreters '{}': {}", program, e)),
+            }
         };
 
         let result = tokio::time::timeout(Duration::from_secs(timeout_s), execution).await;
@@ -589,18 +673,24 @@ impl CompanionTools {
         let _ = tokio::fs::remove_file(&script_file).await;
 
         match result {
-            Ok(Ok(output)) => {
+            Ok(Ok((output, actual_prog))) => {
                 let stdout = String::from_utf8_lossy(&output.stdout).trim().to_string();
                 let stderr = String::from_utf8_lossy(&output.stderr).trim().to_string();
                 let exit_code = output.status.code().unwrap_or(-1);
 
-                let mut out_str = format!("Exit Code: {}\nArbeitsverzeichnis: {:?}\n\nSTDOUT:\n{}", exit_code, sandbox_dir, if stdout.is_empty() { "(Keine Ausgabe)" } else { &stdout });
+                let mut out_str = format!(
+                    "Interpreter: {}\nExit Code: {}\nArbeitsverzeichnis: {:?}\n\nSTDOUT:\n{}",
+                    actual_prog,
+                    exit_code,
+                    sandbox_dir,
+                    if stdout.is_empty() { "(Keine Ausgabe)" } else { &stdout }
+                );
                 if !stderr.is_empty() {
                     out_str.push_str(&format!("\n\nSTDERR:\n{}", stderr));
                 }
                 Ok(out_str)
             }
-            Ok(Err(e)) => Err(format!("Fehler beim Starten des Skript-Interpreters '{}': {}", cmd_bin, e)),
+            Ok(Err(err_msg)) => Err(err_msg),
             Err(_) => Err(format!("Skript-Ausführung überschritt das Timeout von {} Sekunden und wurde beendet.", timeout_s)),
         }
     }

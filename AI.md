@@ -291,7 +291,7 @@ Alle benötigten Daten sind eigenständig in diesem Projektverzeichnis gekapselt
     - Applikationssteuerung (`launch`, `focus`, `close`, `list` mit Aliassuche).
     - GUI-Automatisierung für Klicks, Texteingaben, Tastenkombinationen und Scrollen.
     - Autonomer Webseiten-Reader (`fetch_web_content`) mit Tag-Bereinigung.
-    - Sandboxed Skript-Ausführung (Python 3 & Bash mit Timeout 20s–60s) in isoliertem Arbeitsordner.
+    - Sandboxed Skript-Ausführung (Multiplattform: native PowerShell & Batch unter Windows, Bash unter Linux/macOS, optionales Python 3 mit konfigurierbarem Timeout 20s–60s) im isolierten Verzeichnis.
     - Dateimanager (Suchen, Listen, Vorschau, Kategorisierung) mit absolutem Schreibschutz für Systemverzeichnisse (`/bin`, `/etc`, etc.).
     - System-Vitals-Watchdog mit CPU-, RAM-, Disk- und GPU-Werten (`nvidia-smi`).
   - **Model Context Protocol (MCP) Client & Plugins (`mcp_client.rs`):**

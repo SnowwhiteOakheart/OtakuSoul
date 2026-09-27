@@ -192,7 +192,7 @@ Die Soul Stage Engine ist nun ein vollwertiges Tabletop-Rollenspiel-Erlebnis mit
   - [x] App-Steuerung (`launch`, `focus`, `close`, `list` mit Desktop-Aliasen)
   - [x] GUI-Action (Mausklicks, Tippen, Hotkeys, Scrollen via `ydotool` / `xdotool` / PowerShell)
   - [x] Autonomer Webseiten-Reader (`fetch_web_content` via `reqwest` & Tag-Stripper)
-  - [x] Sandboxed Code-Ausführung (Python 3 & Bash mit konfigurierbarem Timeout 20s–60s und isoliertem Verzeichnis)
+  - [x] Sandboxed Code-Ausführung (Multiplattform: native PowerShell & Batch unter Windows, Bash unter Linux/macOS, optionales Python 3 mit konfigurierbarem Timeout 20s–60s im isolierten Verzeichnis)
   - [x] File Organizer (Dateien listen, suchen, anzeigen & nach Kategorien organisieren mit Systempfad-Schutz)
   - [x] System-Vitals-Watchdog (Live-Snapshot mit CPU, RAM, Disks, GPU Temp/Util via `nvidia-smi`, Uptime)
 - [x] **Plugin-System** – Erweiterbares JSON-Plugin-Manifest-System (`companion/plugins/*.json`) für benutzerdefinierte Skripte & Binaries mit parametrisierter Ausführung.

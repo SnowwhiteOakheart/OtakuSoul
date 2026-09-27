@@ -767,7 +767,8 @@ impl CompanionEngine {
                 }
             }
             "execute_code" => {
-                let language = arguments.get("language").and_then(|v| v.as_str()).unwrap_or("python");
+                let default_lang = if cfg!(target_os = "windows") { "powershell" } else { "bash" };
+                let language = arguments.get("language").and_then(|v| v.as_str()).unwrap_or(default_lang);
                 let code = arguments.get("code").and_then(|v| v.as_str()).unwrap_or("");
                 let timeout_s = arguments.get("timeout_seconds").and_then(|v| v.as_u64()).unwrap_or(20);
                 let res = Self::run_async(CompanionTools::execute_code_sandboxed(language, code, timeout_s, &sandbox_dir));
@@ -1021,5 +1022,30 @@ mod tests {
         assert!(extracted_en.is_some());
         let (_, mins_en) = extracted_en.unwrap();
         assert_eq!(mins_en, 720); // 12 hours
+    }
+
+    #[tokio::test]
+    async fn test_sandboxed_code_execution_languages() {
+        let temp_dir = std::env::temp_dir().join("otakusoul_test_sandbox");
+
+        // 1. Empty code check
+        let empty_res = CompanionTools::execute_code_sandboxed("bash", "   ", 5, &temp_dir).await;
+        assert!(empty_res.is_err());
+        assert!(empty_res.unwrap_err().contains("darf nicht leer sein"));
+
+        // 2. Unsupported language check
+        let unsupported_res = CompanionTools::execute_code_sandboxed("ruby", "puts 'hello'", 5, &temp_dir).await;
+        assert!(unsupported_res.is_err());
+        assert!(unsupported_res.unwrap_err().contains("Nicht unterstützte Skriptsprache"));
+
+        // 3. Execution on Unix (bash)
+        #[cfg(not(target_os = "windows"))]
+        {
+            let bash_res = CompanionTools::execute_code_sandboxed("bash", "echo 'otakusoul_sandbox_ok'", 5, &temp_dir).await;
+            assert!(bash_res.is_ok(), "Bash execution failed: {:?}", bash_res);
+            let out = bash_res.unwrap();
+            assert!(out.contains("otakusoul_sandbox_ok"));
+            assert!(out.contains("Exit Code: 0"));
+        }
     }
 }
