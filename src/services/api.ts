@@ -33,6 +33,11 @@ import {
   ToolExecutionResult,
   CompanionSettings,
   CompanionState,
+  Goal,
+  EnvironmentSnapshot,
+  McpServerConfig,
+  McpToolInfo,
+  CompanionPlugin,
   AppPaths,
   ScannedModel,
   ScannedVrm,
@@ -515,6 +520,81 @@ export const api = {
     settings: CompanionSettings
   ): Promise<void> => {
     return await invoke<void>('update_companion_settings', { settings });
+  },
+
+  addCompanionThought: async (thought: string): Promise<void> => {
+    return await invoke<void>('add_companion_thought', { thought });
+  },
+
+  clearCompanionThoughts: async (): Promise<void> => {
+    return await invoke<void>('clear_companion_thoughts');
+  },
+
+  addCompanionGoal: async (summary: string, dueMinutes: number): Promise<Goal> => {
+    return await invoke<Goal>('add_companion_goal', { summary, dueMinutes });
+  },
+
+  markCompanionGoalCompleted: async (goalId: string): Promise<void> => {
+    return await invoke<void>('mark_companion_goal_completed', { goalId });
+  },
+
+  deleteCompanionGoal: async (goalId: string): Promise<void> => {
+    return await invoke<void>('delete_companion_goal', { goalId });
+  },
+
+  getCompanionEnvironmentSnapshot: async (): Promise<EnvironmentSnapshot> => {
+    return await invoke<EnvironmentSnapshot>('get_companion_environment_snapshot');
+  },
+
+  detectDesktopWindow: async (): Promise<string> => {
+    return await invoke<string>('detect_desktop_window');
+  },
+
+  listMcpServers: async (): Promise<McpServerConfig[]> => {
+    return await invoke<McpServerConfig[]>('list_mcp_servers');
+  },
+
+  saveMcpServers: async (servers: McpServerConfig[]): Promise<void> => {
+    return await invoke<void>('save_mcp_servers', { servers });
+  },
+
+  toggleMcpServer: async (serverId: string, enabled: boolean): Promise<McpServerConfig[]> => {
+    return await invoke<McpServerConfig[]>('toggle_mcp_server', { serverId, enabled });
+  },
+
+  fetchMcpServerTools: async (serverId: string): Promise<McpToolInfo[]> => {
+    return await invoke<McpToolInfo[]>('fetch_mcp_server_tools', { serverId });
+  },
+
+  callMcpTool: async (
+    serverId: string,
+    toolName: string,
+    args: Record<string, any>
+  ): Promise<string> => {
+    return await invoke<string>('call_mcp_tool', { serverId, toolName, arguments: args });
+  },
+
+  listCompanionPlugins: async (): Promise<CompanionPlugin[]> => {
+    return await invoke<CompanionPlugin[]>('list_companion_plugins');
+  },
+
+  saveCompanionPlugin: async (plugin: CompanionPlugin): Promise<void> => {
+    return await invoke<void>('save_companion_plugin', { plugin });
+  },
+
+  executeCompanionPlugin: async (
+    pluginId: string,
+    args: Record<string, any>
+  ): Promise<string> => {
+    return await invoke<string>('execute_companion_plugin', { pluginId, arguments: args });
+  },
+
+  toggleCompanionOverlay: async (enable: boolean, clickThrough: boolean = false): Promise<boolean> => {
+    return await invoke<boolean>('toggle_companion_overlay', { enable, clickThrough });
+  },
+
+  evaluateCompanionProactive: async (): Promise<[string, string] | null> => {
+    return await invoke<[string, string] | null>('evaluate_companion_proactive');
   },
 
   // Technical Debt & Phase 8: Data Foundation, Settings & Character Library

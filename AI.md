@@ -50,6 +50,7 @@
 | ├─ Stage Engine: Two-Tier GM Orchestrator, Party HUD, Scenes Lobby & Dices   |
 | ├─ State Management: Zustand (useAppStore.ts)                                 |
 | ├─ UI Views: ChatView, StageView, CompanionView, SettingsView, LorebookView   |
+| ├─ Overlay: FloatingCompanionOverlay (Transparent Always-On-Top Desktop Widget)|
 | └─ Safety: Human-in-the-Loop 25s Countdown Banner                            |
 +-------------------------------------------------------------------------------+
                                       ▲
@@ -67,7 +68,9 @@
 | ├─ memory.rs: SQLite Soul Memory (4 Layer, Emotional Decay, Deduplizierung)   |
 | ├─ stage.rs: Two-Tier GM Engine (Action-Planner, Storyteller, Rest, Dice)     |
 | ├─ voice.rs / kokoro.rs: TTS/STT, Edge-TTS, Kokoro ONNX, Whisper STT & RVC    |
-| └─ companion.rs: Neurohormone (Dopamin, Cortisol, Oxytocin) & Tool Calling   |
+| ├─ companion.rs: Neurohormone, EmotionState, Scratchpad & Goals-Manager      |
+| ├─ companion_tools.rs: Echte Tools (Web, Screen, Clip, MPRIS, GUI, Sandbox)   |
+| └─ mcp_client.rs: Standard MCP JSON-RPC 2.0 Client & Plugin-Loader           |
 +-------------------------------------------------------------------------------+
 ```
 
@@ -89,7 +92,9 @@
 | `src-tauri/src/modules/memory.rs` | SQLite Kognitives Seelen-Gedächtnis, Markdown Sync (MEMORY.md/USER.md), Backups & SoW-Importer |
 | `src-tauri/src/modules/soul_memory_pipeline.rs` | Kognitive Pipeline: Router-Agent, Archivist-Agent, Diary-Agent, JSON-Patch-Parser & No-Op Detection |
 | `src-tauri/src/modules/stage.rs` | Tabletop RPG Engine (Two-Tier GM Pipeline: Action Planner & Storyteller, Szenen-Manager, Party HUD, Rest-Mechanik, d20/d100/2d6, DC-Check, Clocks, Kampf & Markdown-Export) |
-| `src-tauri/src/modules/companion.rs` | Neurohormone & Tool-Calling mit Sicherheitsabfrage |
+| `src-tauri/src/modules/companion.rs` | Neurohormone (EMA), EmotionState, Schlaf/Einsamkeit, Scratchpad & Goals mit Safety-Countdown |
+| `src-tauri/src/modules/companion_tools.rs` | Echte Desktop-Tools: DuckDuckGo-Suche, URL-Opener, xcap Screenshot, Clipboard, MPRIS, GUI-Actions, Web-Reader, Sandboxing & File-Organizer |
+| `src-tauri/src/modules/mcp_client.rs` | Model Context Protocol (MCP) JSON-RPC 2.0 Client (stdio & HTTP/SSE) & Skript-/Binary-Pluginloader |
 | `src-tauri/src/modules/providers.rs` | LLM Provider Abstraktion (OpenRouter, Anthropic Messages API, OpenAI, DeepSeek, Gemini, Mistral, Custom) |
 | `src-tauri/src/modules/llm_presets.rs` | LLM Sampler Presets Engine mit 5 Built-in Profilen & JSON-Persistenz |
 | `src-tauri/src/modules/models_hub.rs` | Hugging Face GGUF API-Suche, Quants-Inspektion & Async File Downloader |
@@ -133,7 +138,8 @@
 | `src/components/stage/EncounterTracker.tsx` | Initiativleiste, Kampfbegegnung & HP-Tracker |
 | `src/components/stage/StageCampaignPanel.tsx` | Kampagnen-Übersicht, Inventar & Beziehungsübersicht |
 | `src/components/hub/SoulHubView.tsx` | 4-teiliger Community-Hub (Soul Gateway, Chub AI, Welt-Lorebooks, Soul Stage Szenarien) |
-| `src/components/companion/CompanionView.tsx` | Desktop-Agent Dashboard & Hormon-Monitor |
+| `src/components/companion/CompanionView.tsx` | Desktop-Agent Dashboard (6 Tabs: Bio, Scratchpad, Ziele, Tools, MCP/Plugins, Overlay) |
+| `src/components/companion/FloatingCompanionOverlay.tsx` | Transparentes, rahmenloses Floating-Companion-Widget mit Sprechblase, Mini-Gauges & Click-Through |
 | `src/components/companion/SafetyCountdownBanner.tsx` | 25s Human-in-the-Loop Sicherheitsbanner |
 | `src/components/settings/SettingsView.tsx` | Hardware-, Modell- und Server-Konfiguration mit Dateidialogen |
 | `src/components/voice/CharacterVoiceModal.tsx` | Charakterbezogene TTS/STT-, Audiogeräte-, VAD- und RVC-Konfiguration |
@@ -261,10 +267,43 @@ Alle benötigten Daten sind eigenständig in diesem Projektverzeichnis gekapselt
   - **Party HUD:** Unterstützt bis zu 4 Gruppenmitglieder mit visuellen Lebenspunkten (HP), Magie/Ausdauer (MP), Klassen/Rollen-Badges und Statuseffekten (`PartyHeader.tsx`).
   - **Rundensteuerung & Aktionskarten:** `TurnControlBar.tsx` mit Aktionen (Angriff, Skill, Zauber, Flucht, Rast) und interaktive Karten `StageEventCardView.tsx` für Choice-Events.
   - **Rest-Mechanik, Snapshots & Export:** Kurze und lange Rast zum Regenerieren von Ressourcen, Undo-Historie für GM-Turns und Markdown-Export des gesamten Abenteuer-Logs.
+- [x] **Phase 16: Soul Companion – Echter Desktop-Agent, MCP & Werkzeuge**
+  - **Transparentes Overlay-Fenster (`FloatingCompanionOverlay.tsx`):**
+    - Rahmenloses, immer im Vordergrund schwebendes Desktop-Widget (`always_on_top`, `transparent`, `decorations: false`).
+    - Nativ umschaltbarer Click-Through-Modus via Tauri IPC (`set_ignore_cursor_events`), Mini-Hormon-Anzeigen, Zuneigungs- und Stimmungsanzeige sowie Schnellaktions-Dock (Kraulen, Screenshot, Zwischenablage).
+  - **Companion-LLM-Schleife & Proaktivität (`companion.rs`):**
+    - Proaktive Trigger-Evaluation (`evaluate_companion_proactive`), Begrüßung beim Anwendungsstart, Heartbeat-Intervall und Idle/AFK-Erkennung.
+  - **OS Event-Bus & Fenstererkennung:**
+    - `detect_desktop_window` liest das aktive Fenster über X11 (`xdotool`, `xprop`), Wayland oder Windows PowerShell aus.
+    - Robuster Datenschutz-Ausschlussfilter (`is_sensitive_window`) schützt Passwörter, Online-Banking und Inkognito-Browserfenster vor Inferenz und Logging.
+  - **Neurohormone, EmotionState, Scratchpad & Goals:**
+    - 4 Neurohormone (Dopamin, Cortisol, Oxytocin, Erschöpfung) mit minütlichem Zerfall/Erholung, Schlafstatus (`is_sleeping`) und Einsamkeits-Modellierung.
+    - 10 diskrete Emotionen (`neutral`, `curious`, `warm`, `amused`, `concerned`, `playful`, `relaxed`, `sleepy`, `melancholy`, `excited`) über exponentiellen gleitenden Durchschnitt (EMA, $\alpha = 0.30$).
+    - Persistentes Scratchpad (`scratchpad.json`) für fortlaufende innere Monologe des Begleiters.
+    - Goals & Versprechen-Manager (`goals.json`) mit DE/EN Regex-Extraktion von Zusagen ("ich verspreche", "erinnere mich morgen", etc.), Fälligkeitserkennung und automatischem Retention-Cleanup (7 Tage für erledigte, 30 Tage für abgelaufene).
+  - **Echte Desktop-Tools (`companion_tools.rs`):**
+    - Websuche via DuckDuckGo HTML / Instant Answer.
+    - System-Webbrowser-Aufruf (`xdg-open` / `open` / `start`).
+    - System- und Hardware-Überwachung via `sysinfo::System`.
+    - Vollbild- & Monitor-Screenshots via `xcap` als Base64-PNG.
+    - Zwischenablage lesen und schreiben via `arboard::Clipboard` mit Linux-Fallbacks (`wl-paste`, `xclip`, `xsel`).
+    - MPRIS Mediensteuerung via `playerctl` (`play-pause`, `next`, `previous`, `stop`).
+    - Applikationssteuerung (`launch`, `focus`, `close`, `list` mit Aliassuche).
+    - GUI-Automatisierung für Klicks, Texteingaben, Tastenkombinationen und Scrollen.
+    - Autonomer Webseiten-Reader (`fetch_web_content`) mit Tag-Bereinigung.
+    - Sandboxed Skript-Ausführung (Python 3 & Bash mit Timeout 20s–60s) in isoliertem Arbeitsordner.
+    - Dateimanager (Suchen, Listen, Vorschau, Kategorisierung) mit absolutem Schreibschutz für Systemverzeichnisse (`/bin`, `/etc`, etc.).
+    - System-Vitals-Watchdog mit CPU-, RAM-, Disk- und GPU-Werten (`nvidia-smi`).
+  - **Model Context Protocol (MCP) Client & Plugins (`mcp_client.rs`):**
+    - JSON-RPC 2.0 Client für stdio und HTTP/SSE MCP-Server (`initialize`, `tools/list`, `tools/call`).
+    - Persistente Server-Verwaltung in `mcp_servers.json`.
+    - JSON-basiertes Skript- und Plugin-System (`companion/plugins/*.json`).
+  - **Desktop-Werkbank & Dashboard (`CompanionView.tsx`):**
+    - 6 modulare Ansichten: Bio-Monitor, Gedankenspeicher, Versprechen & Ziele, Desktop-Werkbank, MCP & Plugins, Desktop-Overlay.
 - [x] **Phase 17 Teilziel: Soul Hub & Gateways**
   - **4-teiliger Community-Hub (`SoulHubView.tsx`, `soul_hub.rs`):** Soul Gateway (kuratierte Charaktere), Chub AI API/CDN-Browser mit Lorebook-Extraktion (`character_book`), Welt-Lorebooks und Soul-Stage-Szenarien-Katalog mit 1-Klick-Import.
 
-**Offene Phasen 16–18** (Echter Desktop-Companion, Ökosystem & Plugins, i18n & Release-Builds) sind in [`Roadmap.md`](Roadmap.md) dokumentiert. **Vor neuen Features dort nachsehen und erledigte Punkte mit Commit-Hash abhaken.**
+**Offene Phasen 17–18** (Web-Client, Discord-Gateway, i18n & Release-Builds) sind in [`Roadmap.md`](Roadmap.md) dokumentiert. **Vor neuen Features dort nachsehen und erledigte Punkte mit Commit-Hash abhaken.**
 
 ---
 

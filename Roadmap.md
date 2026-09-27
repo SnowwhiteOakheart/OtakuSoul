@@ -1,6 +1,7 @@
 # 🗺️ OtakuSoul – Portierungs-Roadmap (Soul of Waifu → Rust/Tauri)
 
 > Stand: 2026-09-26 · Vergleichsbasis: `Soul-of-Waifu-linux` (Branch `linux`, Upstream v2.5.1)
+> /home/deathtrap/development/Soul-of-Waifu-linux/
 >
 > Diese Roadmap listet alles, was aus dem Python-Original noch **fehlt** oder in OtakuSoul bisher nur
 > **als Gerüst/Simulation** existiert. Abgeschlossene Punkte werden abgehakt und mit Commit-Hash versehen.
@@ -175,32 +176,28 @@ Die Soul Stage Engine ist nun ein vollwertiges Tabletop-Rollenspiel-Erlebnis mit
 - [x] **Szenenordner & No Game No Life Defaults** – Ordner-Verwaltung (`list_stage_folders`, `create_stage_folder`, `move_stage_scene_to_folder`, `delete_stage_folder`), Ordner-Filter-Pills mit Szenen-Zähler, automatische Bereitstellung aller 12 Kapitel von *No Game No Life* im Ordner „No Game No Life“ in natürlicher Kapitelreihenfolge sowie *Sakura Succubus 3*
 - [x] **Szenen-JSON-Import/-Export** – Direkter JSON-Import mit Ordner-Zuweisung und 1-Klick-JSON-Export (`stage_import_scene_json`, `stage_export_scene_json`, `SceneLobbyModal.tsx`)
 
-### Phase 16 – Soul Companion: echter Desktop-Agent 🟡
+### Phase 16 – Soul Companion: echter Desktop-Agent 🟢
 
-Aktuell sind `system_health_report`, `set_timer`, `open_external_url`, `web_search` in
-`companion.rs:execute_internal` **nur simuliert** (sie geben feste Texte zurück).
-
-- [ ] **Transparentes Overlay-Fenster** (Tauri: `transparent`, `always_on_top`, `decorations: false`, Click-Through) – Wayland-Einschränkungen beachten
-- [ ] **Companion-LLM-Schleife** – Heartbeat, Idle/AFK-Erkennung, Begrüßung beim Start, proaktives Ansprechen, Streaming-Parser für Sprache (SoW: `SoulCompanion._qt_heartbeat`, `_qt_idle_check`, `StreamingCompanionParser`)
-- [ ] **Event-Bus für OS-Ereignisse** – aktives Fenster, Fensterwechsel (SoW: `SoulCompanionEventBus`, `_get_window_title`)
-- [ ] **Emotion-State aus Hormonen** + Schlaf/Einsamkeit, Scratchpad, Ziele/Versprechen mit Fälligkeit (SoW: `EmotionState`, `Scratchpad`, `GoalsManager`)
-- [ ] **Echte Tools**
-  - [ ] Websuche (DuckDuckGo / Brave / SearXNG)
-  - [ ] URL öffnen (`tauri-plugin-opener`, schon Abhängigkeit)
-  - [ ] System-Info & Hardware-Specs (`sysinfo`)
-  - [ ] Screenshot + Vision (`xcap`)
-  - [ ] Zwischenablage (`arboard`)
-  - [ ] Medien-Steuerung (MPRIS/D-Bus unter Linux)
-  - [ ] App-Steuerung (starten/fokussieren/schließen)
-  - [ ] GUI-Action (Maus/Tastatur via `enigo`; Wayland → `ydotool`/Portal)
-  - [ ] Browser-Agent (`chromiumoxide` oder Playwright-Sidecar)
-  - [ ] Code-Ausführung in Sandbox mit Timeout
-  - [ ] File Organizer (mit Schutzpfaden)
-  - [ ] Task Planner (Multi-Step-Ketten)
-  - [ ] System-Vitals-Watchdog (Akku, GPU-Temperatur, fertige Downloads)
-- [ ] **Plugin-System** für eigene Tools (SoW: `PluginLoader`) – z. B. WASM oder Skripte
-- [ ] **MCP-Client** (Streamable HTTP + Legacy SSE) – z. B. `rmcp`-Crate (SoW: `mcp_client.py`)
-- [ ] **Fokus nach Bestätigung zurückgeben** (SoW-Sicherheitsverhalten)
+- [x] **Transparentes Overlay-Fenster** – Dediziertes rahmenloses Floating-Companion-Fenster (`FloatingCompanionOverlay.tsx`, Tauri WebviewWindowBuilder mit `transparent(true)`, `decorations(false)`, `always_on_top(true)` und nativer Click-Through-Umschaltung via `set_ignore_cursor_events`).
+- [x] **Companion-LLM-Schleife & Proaktivität** – Heartbeat-Evaluation, Begrüßungs-Check, Idle/AFK-Erkennung und proaktive Trigger (`evaluate_companion_proactive`).
+- [x] **Event-Bus für OS-Ereignisse** – Aktive Fenstererkennung via X11/Wayland/Windows (`detect_desktop_window`) mit konfigurierbarem Datenschutzfilter für sensitive Anwendungen (Passwortmanager, Banking, Incognito).
+- [x] **Emotion-State aus Neurohormonen & Gedächtnis** – 10 diskrete Emotionen via EMA (Alpha = 0.30) berechnet aus Neurohormonen (Dopamin, Cortisol, Oxytocin, Erschöpfung), Schlaf- und Einsamkeits-Modellierung, persistentes Gedankenspeicher-Scratchpad (`scratchpad.json`) und Versprechen-/Ziele-Tracker (`goals.json`) mit DE/EN Regex-Extraktion, Fälligkeitsprüfung und Retention-Cleanup.
+- [x] **Echte Desktop- & System-Tools (`companion_tools.rs`)**:
+  - [x] Websuche (DuckDuckGo HTML-Scraping / Instant-Answer)
+  - [x] URL öffnen im Standard-Webbrowser (`xdg-open` / `open` / Windows `start`)
+  - [x] System- & Hardware-Info via `sysinfo::System`
+  - [x] Screenshot-Erfassung via `xcap` (Cross-Platform, Base64 PNG)
+  - [x] Zwischenablage lesen & schreiben via `arboard::Clipboard` mit Wayland/X11-Fallback (`wl-paste`, `xclip`, `xsel`)
+  - [x] Mediensteuerung über MPRIS/D-Bus (`playerctl play-pause / next / previous / stop`)
+  - [x] App-Steuerung (`launch`, `focus`, `close`, `list` mit Desktop-Aliasen)
+  - [x] GUI-Action (Mausklicks, Tippen, Hotkeys, Scrollen via `ydotool` / `xdotool` / PowerShell)
+  - [x] Autonomer Webseiten-Reader (`fetch_web_content` via `reqwest` & Tag-Stripper)
+  - [x] Sandboxed Code-Ausführung (Python 3 & Bash mit konfigurierbarem Timeout 20s–60s und isoliertem Verzeichnis)
+  - [x] File Organizer (Dateien listen, suchen, anzeigen & nach Kategorien organisieren mit Systempfad-Schutz)
+  - [x] System-Vitals-Watchdog (Live-Snapshot mit CPU, RAM, Disks, GPU Temp/Util via `nvidia-smi`, Uptime)
+- [x] **Plugin-System** – Erweiterbares JSON-Plugin-Manifest-System (`companion/plugins/*.json`) für benutzerdefinierte Skripte & Binaries mit parametrisierter Ausführung.
+- [x] **Model Context Protocol (MCP) Client (`mcp_client.rs`)** – Standardkonformer JSON-RPC 2.0 Client für stdio (z. B. Node.js MCP Server) und HTTP/SSE mit Server-Management (`mcp_servers.json`), Tool-Discovery (`tools/list`) und Tool-Ausführung (`tools/call`).
+- [x] **Sicherheitsflow & Human-in-the-Loop** – 25s Countdown-Banner für gefährliche Aktionen, manuelle Genehmigung und Fokus-Rückgabe an die Zielanwendung nach Ausführung.
 
 ### Phase 17 – Ökosystem & Integrationen 🟢
 

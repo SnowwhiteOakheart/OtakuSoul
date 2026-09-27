@@ -559,7 +559,7 @@ export interface StageTurnRequest {
   force_next_actor?: string | null;
 }
 
-// Phase 7: Soul Companion & Tool Calling
+// Phase 7 & 16: Soul Companion, Neurohormones, Goals, Scratchpad, MCP & Desktop Agent
 export interface Neurohormones {
   dopamine: number;
   cortisol: number;
@@ -567,6 +567,28 @@ export interface Neurohormones {
   fatigue: number;
   mood_label: string;
   energy_level: number;
+}
+
+export interface EmotionState {
+  current: string;
+  last_updated: number;
+  ema_scores: Record<string, number>;
+  history: Array<[string, number]>;
+}
+
+export interface ScratchpadEntry {
+  id: string;
+  thought: string;
+  ts: number;
+}
+
+export interface Goal {
+  id: string;
+  summary: string;
+  due_at: string;
+  status: 'pending' | 'completed';
+  created_at: string;
+  completed_at?: string | null;
 }
 
 export interface ToolCallRequest {
@@ -590,13 +612,69 @@ export interface CompanionSettings {
   auto_approve_safe_tools: boolean;
   countdown_seconds: number;
   enable_neurohormones: boolean;
+  proactive_interval_seconds?: number;
+  enable_proactive_speaking?: boolean;
 }
 
 export interface CompanionState {
   hormones: Neurohormones;
+  emotion?: EmotionState;
+  scratchpad?: ScratchpadEntry[];
+  goals?: Goal[];
   pending_tool_calls: ToolCallRequest[];
   tool_history: ToolExecutionResult[];
   settings: CompanionSettings;
+  active_window_title?: string;
+  is_afk?: boolean;
+  overlay_active?: boolean;
+  last_spoke_at?: number;
+}
+
+export interface EnvironmentSnapshot {
+  cpu_usage_percent: number;
+  ram_used_mb: number;
+  ram_total_mb: number;
+  ram_percent: number;
+  disk_free_gb: number;
+  disk_total_gb: number;
+  disk_percent: number;
+  battery_percent?: number | null;
+  battery_charging?: boolean | null;
+  gpu_name?: string | null;
+  gpu_temp_c?: number | null;
+  gpu_util_percent?: number | null;
+  gpu_vram_used_mb?: number | null;
+  gpu_vram_total_mb?: number | null;
+  uptime_seconds: number;
+  active_processes_count: number;
+}
+
+export interface McpServerConfig {
+  id: string;
+  name: string;
+  transport: 'stdio' | 'http' | 'sse';
+  command?: string | null;
+  args?: string[] | null;
+  env?: Record<string, string> | null;
+  url?: string | null;
+  enabled: boolean;
+}
+
+export interface McpToolInfo {
+  server_id: string;
+  name: string;
+  description: string;
+  input_schema: Record<string, any>;
+}
+
+export interface CompanionPlugin {
+  id: string;
+  name: string;
+  description: string;
+  command: string;
+  args: string[];
+  requires_approval: boolean;
+  parameters_schema: Record<string, any>;
 }
 
 // Phase 8: Paths, Settings, Scans & Personas

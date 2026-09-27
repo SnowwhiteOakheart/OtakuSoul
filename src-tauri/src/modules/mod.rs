@@ -18,3 +18,5 @@ pub mod voice;
 pub mod live2d;
 pub mod emotions;
 pub mod soul_hub;
+pub mod companion_tools;
+pub mod mcp_client;

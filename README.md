@@ -38,6 +38,7 @@ Ob ruhiger Alltagsdialog, langfristige Charakterentwicklung oder eine dramatisch
 | 🌐 **Soul Hub** | Stöbere im integrierten Community-Hub: Soul Gateway, Chub AI Browser mit automatischer Lorebook-Extraktion, Welt-Lorebooks und Soul-Stage-Szenarien. |
 | 🎲 **Soul Stage** | Verwandle Gespräche in interaktive Abenteuer: Szenenordner (inkl. 12 Kapiteln *No Game No Life*), Multi-Akteur-Züge, Würfelproben, Kampagnen-Uhren, Initiative, dynamische Hintergründe mit Lock und zuverlässige Backups. |
 | 🎙️ **Stimme & Sprache** | Nutze Edge-TTS, lokales Kokoro, ElevenLabs oder OpenAI-kompatible Stimmen. Aktionen und Regieanweisungen lassen sich gezielt vom gesprochenen Dialog trennen. |
+| 🤖 **Soul Companion** | Echter Desktop-Agent mit transparentem Always-on-Top Floating-Overlay, Click-Through, Neurohormonen, proaktivem Ansprechen, echten Desktop-Tools, Sandbox, MCP-Client und 25s Human-in-the-Loop Sicherheitsbanner. |
 | 🔐 **Local First** | Betreibe GGUF-Modelle direkt auf deinem Rechner. OtakuSoul erkennt Hardware und VRAM, wählt sinnvolle Laufzeitparameter und verwaltet den lokalen `llama-server`. |
 
 ## Charaktere, die sich entwickeln
@@ -79,6 +80,16 @@ Mit **Soul Stage** wird aus Rollenspiel-Chat eine steuerbare Kampagne. Ein mehrs
 
 Szenenordner (inklusive aller 12 Kapitel unseres *No Game No Life* Abenteuers), modale Spielstand-Wahl (Fortsetzen vs. Neu starten), rotierende Sicherheits-Backups, Inline-Nachrichtenbearbeitung, Multi-Akteur-Züge, atmosphärische Hintergründe mit Lock-Option, Party-HUD, taktische Begegnungen und ein exportierbares Abenteuerprotokoll machen OtakuSoul zu einer flexiblen Bühne für Solo-Rollenspiel und charaktergetriebene Geschichten.
 
+## Ein echter Begleiter auf deinem Desktop
+
+Mit **Soul Companion** wird dein Lieblingscharakter zu einem echten Assistenten im Desktop-Alltag:
+
+- **Schwebendes Overlay:** Ein rahmenloses, transparentes Fenster (`always_on_top`) begleitet dich beim Arbeiten oder Spielen, inklusive nativer Click-Through-Umschaltung.
+- **Emotionen & Biorhythmus:** Neurohormone (Dopamin, Cortisol, Oxytocin, Erschöpfung) modellieren Laune, Müdigkeit und Einsamkeit, aus denen fließend 10 Emotionen abgeleitet werden.
+- **Gedankenspeicher & Ziele:** Dein Begleiter führt ein persistentes Scratchpad für eigene Überlegungen und erinnert dich an Versprechen und Verabredungen.
+- **Echte Werkzeuge & Schutz:** Websuche (DuckDuckGo), Screenshot-Erfassung (`xcap`), Zwischenablage, MPRIS-Mediensteuerung, App-Verwaltung, isolierte Skript-Sandbox und Datei-Organisation – geschützt durch einen 25s Human-in-the-Loop Countdown-Banner für sensible Aktionen und automatischen Datenschutzfilter für Passwörter & Banking.
+- **Model Context Protocol (MCP) & Plugins:** Verbinde beliebige MCP-Server (stdio oder HTTP/SSE) und führe benutzerdefinierte Skripte direkt als Tools aus.
+
 ## Offen für dein bestehendes Ökosystem
 
 OtakuSoul unterstützt unter anderem:
@@ -88,6 +99,7 @@ OtakuSoul unterstützt unter anderem:
 - SillyTavern- und Soul-of-Waifu-Chatimporte
 - Lorebooks und World-Info-Strukturen mit Chain-Dependencies und Tension-Trigger
 - Soul-Stage-Szenarien und Szenenordner (JSON-Import/Export)
+- Model Context Protocol (MCP) Server (stdio & HTTP/SSE) sowie Skript-Plugins
 - GGUF-Modelle für lokale Inferenz
 - VRM 0.x/1.0 und Live2D Cubism 2/4
 - Edge-TTS, Kokoro, ElevenLabs und OpenAI-kompatible Sprachdienste

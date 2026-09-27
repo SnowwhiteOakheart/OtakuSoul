@@ -11,9 +11,21 @@ const SettingsView = lazy(() => import('./components/settings/SettingsView').the
 const StageView = lazy(() => import('./components/stage/StageView').then((module) => ({ default: module.StageView })));
 const CompanionView = lazy(() => import('./components/companion/CompanionView').then((module) => ({ default: module.CompanionView })));
 const SoulHubView = lazy(() => import('./components/hub/SoulHubView').then((module) => ({ default: module.SoulHubView })));
+const FloatingCompanionOverlay = lazy(() => import('./components/companion/FloatingCompanionOverlay').then((module) => ({ default: module.FloatingCompanionOverlay })));
 
 export function App() {
   const { activeTab } = useAppStore();
+  const isOverlayMode = typeof window !== 'undefined' && window.location.search.includes('overlay=true');
+
+  if (isOverlayMode) {
+    return (
+      <div className="w-screen h-screen bg-transparent overflow-hidden font-sans">
+        <Suspense fallback={null}>
+          <FloatingCompanionOverlay />
+        </Suspense>
+      </div>
+    );
+  }
 
   return (
     <div className="flex flex-col w-screen h-screen bg-slate-950 text-slate-100 overflow-hidden font-sans relative">
