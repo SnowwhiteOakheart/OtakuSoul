@@ -8,6 +8,7 @@ import { useAppStore } from '../../store/useAppStore';
 import { audioPlayer } from '../../services/audioPlayer';
 import { loadLive2DViewState, saveLive2DViewState } from '../../services/avatarViewState';
 import { Loader2, Sparkles, RefreshCw } from 'lucide-react';
+import { translate, useTranslation } from '../../i18n';
 
 // The Live2D render pipe must be registered before any renderer is created.
 extensions.add(Live2DPlugin);
@@ -134,6 +135,7 @@ export const Live2DViewer: React.FC<Live2DViewerProps> = ({
   emotion = 'neutral',
   isSpeaking: _isSpeaking = false,
 }) => {
+  const { t, tEmotion } = useTranslation();
   const containerRef = useRef<HTMLDivElement>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -266,7 +268,7 @@ export const Live2DViewer: React.FC<Live2DViewerProps> = ({
           setError(
             err instanceof Error
               ? err.message
-              : 'Live2D-Modell konnte nicht geladen werden.'
+              : translate('avatar.live2dLoadFailed')
           );
           setLoading(false);
         }
@@ -423,16 +425,14 @@ export const Live2DViewer: React.FC<Live2DViewerProps> = ({
       {loading && (
         <div className="absolute inset-0 z-20 flex flex-col items-center justify-center bg-app/70 backdrop-blur-sm gap-2 text-accent-400">
           <Loader2 className="w-8 h-8 animate-spin" />
-          <span className="text-xs font-medium text-slate-300">
-            Live2D-Modell wird geladen...
-          </span>
+          <span className="text-xs font-medium text-slate-300">{t('avatar.live2dModelLoading')}</span>
         </div>
       )}
 
       {/* Error Message */}
       {error && !loading && (
         <div className="absolute inset-x-6 top-6 z-20 p-3 bg-rose-500/10 border border-rose-500/30 rounded-xl text-xs text-rose-300 backdrop-blur-md">
-          <p className="font-semibold mb-1">Live2D-Fehler</p>
+          <p className="font-semibold mb-1">{t('avatar.live2dError')}</p>
           <p>{error}</p>
         </div>
       )}
@@ -441,15 +441,17 @@ export const Live2DViewer: React.FC<Live2DViewerProps> = ({
       <div className="absolute bottom-3 right-3 z-20 flex items-center gap-1.5 bg-slate-900/80 p-1 rounded-xl border border-slate-700/60 backdrop-blur shadow-lg text-slate-300">
         <button
           onClick={handleTriggerRandomMotion}
-          className="p-1.5 hover:text-accent-400 hover:bg-slate-800 rounded-lg transition-colors text-xs flex items-center gap-1"
-          title="Animation abspielen"
+          className="p-1.5 hover:text-accent-400 hover:bg-slate-800 rounded-lg transition-colors text-xs flex items-center gap-1 outline-hidden focus-visible:ring-2 focus-visible:ring-accent-400"
+          title={t('avatar.playMotion')}
+          aria-label={t('avatar.playMotion')}
         >
           <Sparkles className="w-3.5 h-3.5" />
         </button>
         <button
           onClick={handleResetView}
-          className="p-1.5 hover:text-accent-400 hover:bg-slate-800 rounded-lg transition-colors text-xs"
-          title="Ansicht zurücksetzen"
+          className="p-1.5 hover:text-accent-400 hover:bg-slate-800 rounded-lg transition-colors text-xs outline-hidden focus-visible:ring-2 focus-visible:ring-accent-400"
+          title={t('avatar.resetView')}
+          aria-label={t('avatar.resetView')}
         >
           <RefreshCw className="w-3.5 h-3.5" />
         </button>
@@ -459,7 +461,7 @@ export const Live2DViewer: React.FC<Live2DViewerProps> = ({
       {emotion && emotion !== 'neutral' && (
         <div className="absolute top-3 left-3 z-20 px-2.5 py-1 bg-accent-950/60 border border-accent-500/30 rounded-lg backdrop-blur text-xs text-accent-300 font-mono shadow-md flex items-center gap-1.5">
           <span className="w-2 h-2 rounded-full bg-accent-400 animate-pulse" />
-          <span className="capitalize">{emotion}</span>
+          <span>{tEmotion(emotion)}</span>
         </div>
       )}
     </div>

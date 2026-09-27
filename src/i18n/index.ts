@@ -23,6 +23,12 @@ export function t(key: TranslationKey | string, lang: SupportedLanguage = 'de', 
   return interpolate(text, vars);
 }
 
+/** Localized name of a GoEmotions label ("joy" → "Freude"); unknown labels are returned unchanged. */
+export function emotionLabel(emotion: string, lang: SupportedLanguage = 'de'): string {
+  const key = `emotion.${emotion}`;
+  return key in de ? t(key, lang) : emotion;
+}
+
 /** Translates with the current app language, for code outside React components (store actions, services). */
 export function translate(key: TranslationKey, vars?: TranslationVars): string {
   return t(key, useAppStore.getState().appLanguage || 'de', vars);
@@ -34,5 +40,6 @@ export function translate(key: TranslationKey, vars?: TranslationVars): string {
 export function useTranslation() {
   const appLanguage = useAppStore((s) => s.appLanguage) || 'de';
   const translateKey = (key: TranslationKey, vars?: TranslationVars): string => t(key, appLanguage, vars);
-  return { t: translateKey, currentLanguage: appLanguage };
+  const translateEmotion = (emotion: string): string => emotionLabel(emotion, appLanguage);
+  return { t: translateKey, tEmotion: translateEmotion, currentLanguage: appLanguage };
 }

@@ -18,7 +18,11 @@ import {
   Eye,
   EyeOff,
   MessageSquare,
+  MessageCircle,
   RotateCcw,
+  Settings,
+  Users,
+  PlugZap,
   FastForward,
   Edit3,
   Check,
@@ -31,14 +35,21 @@ import { streamingTts } from '../../services/streamingTts';
 
 import { CharacterVoiceModal } from '../voice/CharacterVoiceModal';
 import { VoiceCallControls } from '../voice/VoiceCallControls';
-import { translate } from '../../i18n';
+import { translate, useTranslation } from '../../i18n';
 import { confirmDialog } from '../ui/feedback';
+import { EmptyState } from '../ui/EmptyState';
 
 const AvatarCanvas = React.lazy(() => import('../avatar/AvatarCanvas').then((module) => ({
   default: module.AvatarCanvas,
 })));
 
+const TOOLBAR_TOGGLE =
+  'flex items-center gap-1.5 px-2.5 py-1 rounded-lg text-xs transition-colors border outline-hidden focus-visible:ring-2 focus-visible:ring-accent-400';
+const BUBBLE_ACTION =
+  'p-1 hover:text-accent-300 disabled:opacity-40 transition-colors flex items-center gap-1 rounded outline-hidden focus-visible:ring-2 focus-visible:ring-accent-400';
+
 export const ChatView: React.FC = () => {
+  const { t } = useTranslation();
   const {
     messages,
     storedMessages,
@@ -63,6 +74,7 @@ export const ChatView: React.FC = () => {
     autoTtsEnabled,
     setAutoTtsEnabled,
     activeVoiceConfig,
+    setActiveTab,
   } = useAppStore();
 
   const [input, setInput] = useState('');
@@ -166,6 +178,16 @@ export const ChatView: React.FC = () => {
     setInput('');
   };
 
+  const handleClearSession = async () => {
+    const confirmed = await confirmDialog({
+      title: translate('confirm.clearSessionTitle'),
+      message: translate('confirm.clearSessionText'),
+      confirmLabel: translate('common.delete'),
+      tone: 'danger',
+    });
+    if (confirmed) clearChat();
+  };
+
   const handleAbort = async () => {
     streamingTts.cancel();
     await abortGeneration();
@@ -222,7 +244,7 @@ export const ChatView: React.FC = () => {
   }));
 
   return (
-    <div className="flex-1 flex flex-col h-[calc(100vh-3.5rem)] bg-app overflow-hidden relative">
+    <div className="flex-1 flex flex-col h-full min-h-0 bg-app overflow-hidden relative">
       {/* Slide-out Chat Sidebar */}
       <ChatSidebar isOpen={chatSidebarOpen} onClose={() => setChatSidebarOpen(false)} />
 
@@ -232,21 +254,27 @@ export const ChatView: React.FC = () => {
           {/* Chat Sessions Sidebar Toggle */}
           <button
             onClick={() => setChatSidebarOpen(!chatSidebarOpen)}
-            className={`flex items-center gap-1.5 px-2.5 py-1 rounded-lg text-xs font-medium border transition-all ${
+            aria-expanded={chatSidebarOpen}
+            className={`flex items-center gap-1.5 px-2.5 py-1 rounded-lg text-xs font-medium border transition-all outline-hidden focus-visible:ring-2 focus-visible:ring-accent-400 ${
               chatSidebarOpen
                 ? 'bg-accent-600/30 text-accent-300 border-accent-500/50'
                 : 'bg-slate-800/80 text-slate-300 border-slate-700/60 hover:text-white hover:bg-slate-700/80'
             }`}
-            title="Gespräche, Author's Note & HUD-Presets öffnen"
+            title={t('chat.sessionsTooltip')}
           >
             <MessageSquare className="w-3.5 h-3.5 text-accent-400" />
-            <span className="font-semibold">{currentSession?.title || 'Gespräche'}</span>
+            <span className="font-semibold max-w-40 truncate">{currentSession?.title || t('chat.sessions')}</span>
           </button>
 
           {/* Backend Selector */}
-          <div className="flex items-center bg-slate-800/80 p-0.5 rounded-lg border border-slate-700/60 text-xs font-medium">
+          <div
+            role="group"
+            aria-label={t('chat.backendLabel')}
+            className="flex items-center bg-slate-800/80 p-0.5 rounded-lg border border-slate-700/60 text-xs font-medium"
+          >
             <button
               onClick={() => setSelectedBackend('local')}
+              aria-pressed={selectedBackend === 'local'}
               className={`flex items-center gap-1.5 px-2.5 py-1 rounded-md transition-all ${
                 selectedBackend === 'local'
                   ? 'bg-accent-600 text-white shadow-sm'
@@ -254,10 +282,11 @@ export const ChatView: React.FC = () => {
               }`}
             >
               <Cpu className="w-3.5 h-3.5" />
-              <span>Lokales LLM</span>
+              <span className="whitespace-nowrap">{t('chat.localLlm')}</span>
             </button>
             <button
               onClick={() => setSelectedBackend('cloud')}
+              aria-pressed={selectedBackend === 'cloud'}
               className={`flex items-center gap-1.5 px-2.5 py-1 rounded-md transition-all ${
                 selectedBackend === 'cloud'
                   ? 'bg-accent-600 text-white shadow-sm'
@@ -265,25 +294,31 @@ export const ChatView: React.FC = () => {
               }`}
             >
               <Cloud className="w-3.5 h-3.5" />
-              <span>Cloud API</span>
+              <span className="whitespace-nowrap">{t('chat.cloudApi')}</span>
             </button>
           </div>
 
           {selectedBackend === 'local' && serverStatus.state !== 'running' && (
-            <span className="text-xs text-amber-400 bg-amber-500/10 border border-amber-500/30 px-2 py-0.5 rounded-md hidden md:inline">
-              Lokaler Server ist offline. Bitte in Einstellungen starten!
-            </span>
+            <button
+              onClick={() => setActiveTab('settings')}
+              title={t('chat.openSettings')}
+              className="hidden lg:flex items-center gap-1.5 text-xs text-amber-300 bg-amber-500/10 border border-amber-500/30 px-2 py-0.5 rounded-md whitespace-nowrap hover:bg-amber-500/20 outline-hidden focus-visible:ring-2 focus-visible:ring-amber-400"
+            >
+              <PlugZap className="w-3.5 h-3.5" />
+              {t('chat.serverOffline')}
+            </button>
           )}
         </div>
 
         <div className="flex items-center gap-2">
           <button
             onClick={() => setShowVoiceModal(true)}
-            className="flex items-center gap-1.5 px-2.5 py-1 rounded-lg text-xs transition-colors border bg-slate-800/60 text-slate-400 border-slate-700/60 hover:text-slate-200"
-            title="Stimme & TTS anpassen"
+            className={`${TOOLBAR_TOGGLE} bg-slate-800/60 text-slate-400 border-slate-700/60 hover:text-slate-200`}
+            title={t('chat.voiceTooltip')}
+            aria-label={t('chat.voiceTooltip')}
           >
             <Volume2 className="w-3.5 h-3.5" />
-            <span className="hidden sm:inline">Stimme</span>
+            <span className="hidden xl:inline">{t('chat.voice')}</span>
           </button>
 
           {activeVoiceConfig && activeVoiceConfig.engine !== 'disabled' && (
@@ -293,34 +328,40 @@ export const ChatView: React.FC = () => {
                 setAutoTtsEnabled(enabled);
                 if (!enabled) streamingTts.cancel();
               }}
-              className={`flex items-center gap-1.5 px-2.5 py-1 rounded-lg text-xs transition-colors border ${
+              aria-pressed={autoTtsEnabled}
+              className={`${TOOLBAR_TOGGLE} ${
                 autoTtsEnabled
                   ? 'bg-emerald-950/40 text-emerald-300 border-emerald-500/40'
                   : 'bg-slate-800/60 text-slate-400 border-slate-700/60 hover:text-slate-200'
               }`}
-              title={autoTtsEnabled ? 'Auto-TTS deaktivieren' : 'Auto-TTS aktivieren'}
+              title={autoTtsEnabled ? t('chat.autoTtsOn') : t('chat.autoTtsOff')}
+              aria-label={t('chat.autoTts')}
             >
               {autoTtsEnabled ? <Volume2 className="w-3.5 h-3.5" /> : <VolumeX className="w-3.5 h-3.5" />}
-              <span className="hidden sm:inline">Auto-TTS</span>
+              <span className="hidden xl:inline">{t('chat.autoTts')}</span>
             </button>
           )}
           <button
             onClick={() => setShowAvatar(!showAvatar)}
-            className={`flex items-center gap-1.5 px-2.5 py-1 rounded-lg text-xs transition-colors border ${
+            aria-pressed={showAvatar}
+            aria-label={t('chat.avatar')}
+            className={`${TOOLBAR_TOGGLE} ${
               showAvatar
                 ? 'bg-accent-950/40 text-accent-300 border-accent-500/40'
                 : 'bg-slate-800/60 text-slate-400 border-slate-700/60 hover:text-slate-200'
             }`}
-            title={showAvatar ? 'Avatar verbergen' : 'Avatar anzeigen'}
+            title={showAvatar ? t('chat.hideAvatar') : t('chat.showAvatar')}
           >
             {showAvatar ? <Eye className="w-3.5 h-3.5" /> : <EyeOff className="w-3.5 h-3.5" />}
-            <span className="hidden sm:inline">Avatar</span>
+            <span className="hidden xl:inline">{t('chat.avatar')}</span>
           </button>
 
           <button
-            onClick={clearChat}
-            className="text-slate-500 hover:text-slate-300 p-1.5 rounded hover:bg-slate-800/50 transition-colors"
-            title="Chat-Sitzung löschen"
+            onClick={handleClearSession}
+            disabled={!activeChatId}
+            className="text-slate-500 hover:text-rose-400 p-1.5 rounded hover:bg-slate-800/50 transition-colors disabled:opacity-30 outline-hidden focus-visible:ring-2 focus-visible:ring-accent-400"
+            title={t('chat.deleteSession')}
+            aria-label={t('chat.deleteSession')}
           >
             <Trash2 className="w-4 h-4" />
           </button>
@@ -334,7 +375,7 @@ export const ChatView: React.FC = () => {
       <div className="flex-1 flex overflow-hidden">
         {showAvatar && (
           <div className="hidden md:flex w-5/12 lg:w-1/3 h-full">
-            <React.Suspense fallback={<div className="flex-1 grid place-items-center text-xs text-accent-300">Avatar wird geladen…</div>}>
+            <React.Suspense fallback={<div className="flex-1 grid place-items-center text-xs text-accent-300">{t('chat.avatarLoading')}</div>}>
               <AvatarCanvas
                 character={activeCharacter}
                 isSpeaking={isAudioSpeaking}
@@ -346,7 +387,58 @@ export const ChatView: React.FC = () => {
         {/* Chat Area */}
         <div className="flex-1 flex flex-col h-full overflow-hidden bg-app">
           {/* Messages Stream Area */}
-          <div className="flex-1 overflow-y-auto p-4 space-y-4">
+          <div className="flex-1 overflow-y-auto p-4 space-y-4 select-text" aria-live="polite">
+            {displayList.length === 0 && !isGenerating && (
+              !activeCharacter ? (
+                <EmptyState
+                  icon={Users}
+                  title={t('chat.noCharacterTitle')}
+                  description={t('chat.noCharacterText')}
+                  className="h-full"
+                  actions={
+                    <button
+                      onClick={() => setActiveTab('characters')}
+                      className="px-3.5 py-1.5 rounded-xl bg-accent-600 hover:bg-accent-500 text-white text-xs font-semibold flex items-center gap-1.5"
+                    >
+                      <Users className="w-4 h-4" />
+                      {t('chat.toLibrary')}
+                    </button>
+                  }
+                />
+              ) : selectedBackend === 'local' && serverStatus.state !== 'running' ? (
+                <EmptyState
+                  icon={PlugZap}
+                  title={t('chat.serverOfflineTitle')}
+                  description={t('chat.serverOfflineText', { name: activeCharacter.card.data.name })}
+                  className="h-full"
+                  actions={
+                    <>
+                      <button
+                        onClick={() => setActiveTab('settings')}
+                        className="px-3.5 py-1.5 rounded-xl bg-accent-600 hover:bg-accent-500 text-white text-xs font-semibold flex items-center gap-1.5"
+                      >
+                        <Settings className="w-4 h-4" />
+                        {t('chat.openSettings')}
+                      </button>
+                      <button
+                        onClick={() => setSelectedBackend('cloud')}
+                        className="px-3 py-1.5 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-200 text-xs font-medium flex items-center gap-1.5 border border-slate-700"
+                      >
+                        <Cloud className="w-3.5 h-3.5" />
+                        {t('chat.useCloud')}
+                      </button>
+                    </>
+                  }
+                />
+              ) : (
+                <EmptyState
+                  icon={MessageCircle}
+                  title={t('chat.startTitle')}
+                  description={t('chat.startText', { name: activeCharacter.card.data.name })}
+                  className="h-full"
+                />
+              )
+            )}
             {displayList.map((msg, idx) => {
               const isAssistant = msg.role === 'assistant';
               const isEditing = editingMsgId === msg.id;
@@ -362,7 +454,7 @@ export const ChatView: React.FC = () => {
                   {/* Sender Header + Swipes Navigation */}
                   <div className="flex items-center gap-2 mb-1 px-1">
                     <span className="text-xs font-semibold text-slate-400">
-                      {msg.role === 'user' ? 'Du' : activeCharacter?.card.data.name || 'OtakuSoul'}
+                      {msg.role === 'user' ? t('chat.you') : activeCharacter?.card.data.name || 'OtakuSoul'}
                     </span>
 
                     {/* SillyTavern Swipes Pagination for Assistant */}
@@ -372,18 +464,23 @@ export const ChatView: React.FC = () => {
                           onClick={() => switchMessageSwipe(msg.id, msg.swipe_index - 1)}
                           disabled={msg.swipe_index <= 0 || isGenerating}
                           className="hover:text-white disabled:opacity-30 disabled:cursor-not-allowed transition-colors"
-                          title="Vorherige Antwort-Variante"
+                          title={t('chat.prevSwipe')}
+                          aria-label={t('chat.prevSwipe')}
                         >
                           <ChevronLeft className="w-3 h-3" />
                         </button>
-                        <span className="font-mono">
+                        <span
+                          className="font-mono"
+                          aria-label={t('chat.swipeCounter', { current: msg.swipe_index + 1, total: msg.swipes.length })}
+                        >
                           {msg.swipe_index + 1} / {msg.swipes.length}
                         </span>
                         <button
                           onClick={() => switchMessageSwipe(msg.id, msg.swipe_index + 1)}
                           disabled={msg.swipe_index >= msg.swipes.length - 1 || isGenerating}
                           className="hover:text-white disabled:opacity-30 disabled:cursor-not-allowed transition-colors"
-                          title="Nächste Antwort-Variante"
+                          title={t('chat.nextSwipe')}
+                          aria-label={t('chat.nextSwipe')}
                         >
                           <ChevronRight className="w-3 h-3" />
                         </button>
@@ -396,11 +493,12 @@ export const ChatView: React.FC = () => {
                     <div className="mb-2 max-w-[85%] rounded-lg border border-accent-500/20 bg-accent-950/20 text-xs overflow-hidden">
                       <button
                         onClick={() => toggleThought(msg.id || idx)}
+                        aria-expanded={!!expandedThoughts[msg.id || idx]}
                         className="w-full flex items-center justify-between px-3 py-1.5 text-accent-300 hover:bg-accent-900/30 transition-colors"
                       >
                         <div className="flex items-center gap-1.5">
                           <Brain className="w-3.5 h-3.5 text-accent-400" />
-                          <span className="font-mono">Gedankengang (Reasoning)</span>
+                          <span className="font-mono">{t('chat.reasoning')}</span>
                         </div>
                         {expandedThoughts[msg.id || idx] ? (
                           <ChevronDown className="w-3.5 h-3.5" />
@@ -422,6 +520,8 @@ export const ChatView: React.FC = () => {
                       <textarea
                         value={editContent}
                         onChange={(e) => setEditContent(e.target.value)}
+                        aria-label={t('chat.editMessage')}
+                        autoFocus
                         rows={4}
                         className="w-full bg-slate-900 border border-accent-500 rounded-2xl p-3 text-sm text-slate-100 focus:outline-hidden resize-none"
                       />
@@ -431,14 +531,14 @@ export const ChatView: React.FC = () => {
                           className="flex items-center gap-1 px-3 py-1 bg-accent-600 hover:bg-accent-500 text-white rounded-lg text-xs font-medium transition-colors"
                         >
                           <Check className="w-3.5 h-3.5" />
-                          <span>Speichern</span>
+                          <span>{t('chat.save')}</span>
                         </button>
                         <button
                           onClick={() => setEditingMsgId(null)}
                           className="flex items-center gap-1 px-3 py-1 bg-slate-800 hover:bg-slate-700 text-slate-300 rounded-lg text-xs transition-colors"
                         >
                           <X className="w-3.5 h-3.5" />
-                          <span>Abbrechen</span>
+                          <span>{t('common.cancel')}</span>
                         </button>
                       </div>
                     </div>
@@ -462,34 +562,37 @@ export const ChatView: React.FC = () => {
                       <div
                         className={`absolute -bottom-3 ${
                           msg.role === 'user' ? 'right-2' : 'left-2'
-                        } hidden group-hover/bubble:flex items-center gap-1 bg-slate-900/95 border border-slate-700/80 rounded-lg px-1.5 py-0.5 shadow-lg z-20 text-[11px] text-slate-400`}
+                        } hidden group-hover/bubble:flex group-focus-within/bubble:flex items-center gap-1 bg-slate-900/95 border border-slate-700/80 rounded-lg px-1.5 py-0.5 shadow-lg z-20 text-[11px] text-slate-400`}
                       >
                         {isAssistant && (
                           <>
                             <button
                               onClick={() => regenerateMessageSwipe(msg.id)}
                               disabled={isGenerating}
-                              className="p-1 hover:text-accent-300 disabled:opacity-40 transition-colors flex items-center gap-1"
-                              title="Neu generieren (Neue Swipe-Variante anlegen)"
+                              className={BUBBLE_ACTION}
+                              title={t('chat.regenerateHint')}
+                              aria-label={t('chat.regenerate')}
                             >
                               <RotateCcw className="w-3 h-3" />
-                              <span className="hidden sm:inline">Swipe</span>
+                              <span className="hidden sm:inline">{t('chat.regenerate')}</span>
                             </button>
                             <button
                               onClick={() => continueChatMessage(msg.id)}
                               disabled={isGenerating}
-                              className="p-1 hover:text-accent-300 disabled:opacity-40 transition-colors flex items-center gap-1"
-                              title="Fortsetzen (Nachricht weiter generieren)"
+                              className={BUBBLE_ACTION}
+                              title={t('chat.continueHint')}
+                              aria-label={t('chat.continue')}
                             >
                               <FastForward className="w-3 h-3" />
-                              <span className="hidden sm:inline">Weiter</span>
+                              <span className="hidden sm:inline">{t('chat.continue')}</span>
                             </button>
                           </>
                         )}
                         <button
                           onClick={() => handleStartEdit(msg.id, msg.content)}
-                          className="p-1 hover:text-accent-300 transition-colors"
-                          title="Nachricht bearbeiten"
+                          className={BUBBLE_ACTION}
+                          title={t('chat.editMessage')}
+                          aria-label={t('chat.editMessage')}
                         >
                           <Edit3 className="w-3 h-3" />
                         </button>
@@ -503,8 +606,9 @@ export const ChatView: React.FC = () => {
                             });
                             if (confirmed) deleteChatMessage(msg.id);
                           }}
-                          className="p-1 hover:text-rose-400 transition-colors"
-                          title="Nachricht löschen"
+                          className={`${BUBBLE_ACTION} hover:text-rose-400`}
+                          title={t('chat.deleteMessage')}
+                          aria-label={t('chat.deleteMessage')}
                         >
                           <Trash2 className="w-3 h-3" />
                         </button>
@@ -521,7 +625,7 @@ export const ChatView: React.FC = () => {
                 <div className="flex items-center gap-2 mb-1 px-1">
                   <span className="text-xs font-semibold text-accent-400 flex items-center gap-1">
                     <Sparkles className="w-3 h-3 animate-spin" />
-                    {activeCharacter?.card.data.name || 'OtakuSoul'} denkt nach...
+                    {t('chat.thinking', { name: activeCharacter?.card.data.name || 'OtakuSoul' })}
                   </span>
                 </div>
 
@@ -530,11 +634,12 @@ export const ChatView: React.FC = () => {
                   <div className="mb-2 max-w-[85%] rounded-lg border border-accent-500/40 bg-accent-950/30 text-xs overflow-hidden animate-pulse">
                     <button
                       onClick={() => setShowCurrentThought(!showCurrentThought)}
+                      aria-expanded={showCurrentThought}
                       className="w-full flex items-center justify-between px-3 py-1.5 text-accent-300"
                     >
                       <div className="flex items-center gap-1.5">
                         <Brain className="w-3.5 h-3.5 text-accent-400 animate-pulse" />
-                        <span className="font-mono font-medium">Live Reasoning...</span>
+                        <span className="font-mono font-medium">{t('chat.liveReasoning')}</span>
                       </div>
                       {showCurrentThought ? (
                         <ChevronDown className="w-3.5 h-3.5" />
@@ -578,7 +683,8 @@ export const ChatView: React.FC = () => {
                     handleSend();
                   }
                 }}
-                placeholder="Schreibe eine Nachricht..."
+                placeholder={t('chat.inputPlaceholder')}
+                aria-label={t('chat.inputLabel')}
                 className="flex-1 bg-app/80 border border-slate-700/80 rounded-xl px-4 py-2.5 text-sm text-slate-100 placeholder-slate-500 focus:outline-hidden focus:border-accent-500 focus:ring-1 focus:ring-accent-500 resize-none max-h-32 transition-colors"
                 rows={1}
               />
@@ -587,7 +693,8 @@ export const ChatView: React.FC = () => {
                 <button
                   onClick={() => void handleAbort()}
                   className="p-2.5 rounded-xl bg-rose-600 hover:bg-rose-500 text-white transition-all shadow-md flex items-center justify-center"
-                  title="Generierung abbrechen"
+                  title={t('chat.abort')}
+                  aria-label={t('chat.abort')}
                 >
                   <Square className="w-4 h-4 fill-white" />
                 </button>
@@ -596,7 +703,8 @@ export const ChatView: React.FC = () => {
                   onClick={handleSend}
                   disabled={!input.trim()}
                   className="p-2.5 rounded-xl bg-accent-600 hover:bg-accent-500 disabled:opacity-40 disabled:cursor-not-allowed text-white transition-all shadow-md flex items-center justify-center"
-                  title="Nachricht senden"
+                  title={t('chat.send')}
+                  aria-label={t('chat.send')}
                 >
                   <Send className="w-4 h-4" />
                 </button>

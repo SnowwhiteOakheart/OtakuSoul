@@ -7,6 +7,7 @@ import { api } from '../../services/api';
 import { Loader2, Smile, Frown, Angry, Sparkles, RefreshCcw, RotateCcw } from 'lucide-react';
 import { audioPlayer } from '../../services/audioPlayer';
 import { loadVrmViewState, saveVrmViewState } from '../../services/avatarViewState';
+import { translate, useTranslation } from '../../i18n';
 
 const DEFAULT_CAMERA_POSITION: [number, number, number] = [0.0, 1.35, 1.0];
 const DEFAULT_CAMERA_TARGET: [number, number, number] = [0.0, 1.25, 0.0];
@@ -22,6 +23,7 @@ export const VrmViewer = ({
   emotion = 'neutral',
   isSpeaking = false,
 }: VrmViewerProps) => {
+  const { t } = useTranslation();
   const containerRef = useRef<HTMLDivElement>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -150,7 +152,7 @@ export const VrmViewer = ({
             if (isDisposed) return;
             const vrm = gltf.userData.vrm as VRM;
             if (!vrm) {
-              setError('Keine gültige VRM-Struktur in der Datei gefunden');
+              setError(translate('avatar.vrmInvalid'));
               setLoading(false);
               return;
             }
@@ -366,7 +368,7 @@ export const VrmViewer = ({
       {loading && (
         <div className="absolute inset-0 flex flex-col items-center justify-center bg-app/80 backdrop-blur z-20 space-y-2">
           <Loader2 className="w-8 h-8 text-accent-400 animate-spin" />
-          <span className="text-xs text-accent-300 font-mono">Lade 3D VRM Avatar...</span>
+          <span className="text-xs text-accent-300 font-mono">{t('avatar.vrmLoading')}</span>
         </div>
       )}
 
@@ -380,76 +382,91 @@ export const VrmViewer = ({
       <button
         onClick={() => resetViewRef.current?.()}
         className="absolute bottom-4 right-4 z-20 p-2 rounded-full bg-slate-900/80 border border-slate-700/60 text-slate-400 hover:text-accent-300 hover:bg-slate-800 backdrop-blur shadow-xl transition-colors"
-        title="3D-Ansicht zurücksetzen"
+        title={t('avatar.resetView')}
+        aria-label={t('avatar.resetView')}
       >
         <RotateCcw className="w-3.5 h-3.5" />
       </button>
 
       {/* Interactive Emotion Bar */}
-      <div className="absolute bottom-4 left-1/2 -translate-x-1/2 flex items-center gap-1.5 p-1.5 rounded-full bg-slate-900/80 border border-slate-700/60 backdrop-blur z-20 shadow-xl">
+      <div
+        role="group"
+        aria-label={t('avatar.quickEmotions')}
+        className="absolute bottom-4 left-1/2 -translate-x-1/2 flex items-center gap-1.5 p-1.5 rounded-full bg-slate-900/80 border border-slate-700/60 backdrop-blur z-20 shadow-xl"
+      >
         <button
+          title={t('avatar.quickNeutral')}
+          aria-label={t('avatar.quickNeutral')}
           onClick={() => setCurrentEmotion('neutral')}
-          className={`px-2.5 py-1 rounded-full text-xs font-medium transition-all ${
+          aria-pressed={currentEmotion === 'neutral'}
+          className={`px-2.5 py-1 rounded-full text-xs font-medium whitespace-nowrap transition-all outline-hidden focus-visible:ring-2 focus-visible:ring-accent-400 ${
             currentEmotion === 'neutral'
               ? 'bg-accent-600 text-white shadow-sm'
               : 'text-slate-400 hover:text-slate-200'
           }`}
-          title="Neutral"
         >
-          <RefreshCcw className="w-3 h-3 inline mr-1" />
-          <span>Neutral</span>
+          <RefreshCcw className="w-3 h-3 inline 2xl:mr-1" />
+          <span className="hidden 2xl:inline">{t('avatar.quickNeutral')}</span>
         </button>
 
         <button
+          title={t('avatar.quickHappy')}
+          aria-label={t('avatar.quickHappy')}
           onClick={() => setCurrentEmotion('happy')}
-          className={`px-2.5 py-1 rounded-full text-xs font-medium transition-all ${
+          aria-pressed={currentEmotion === 'happy'}
+          className={`px-2.5 py-1 rounded-full text-xs font-medium whitespace-nowrap transition-all outline-hidden focus-visible:ring-2 focus-visible:ring-accent-400 ${
             currentEmotion === 'happy'
               ? 'bg-accent2-600 text-white shadow-sm'
               : 'text-slate-400 hover:text-slate-200'
           }`}
-          title="Glücklich"
         >
-          <Smile className="w-3 h-3 inline mr-1 text-accent2-300" />
-          <span>Glücklich</span>
+          <Smile className="w-3 h-3 inline 2xl:mr-1 text-accent2-300" />
+          <span className="hidden 2xl:inline">{t('avatar.quickHappy')}</span>
         </button>
 
         <button
+          title={t('avatar.quickAngry')}
+          aria-label={t('avatar.quickAngry')}
           onClick={() => setCurrentEmotion('angry')}
-          className={`px-2.5 py-1 rounded-full text-xs font-medium transition-all ${
+          aria-pressed={currentEmotion === 'angry'}
+          className={`px-2.5 py-1 rounded-full text-xs font-medium whitespace-nowrap transition-all outline-hidden focus-visible:ring-2 focus-visible:ring-accent-400 ${
             currentEmotion === 'angry'
               ? 'bg-red-600 text-white shadow-sm'
               : 'text-slate-400 hover:text-slate-200'
           }`}
-          title="Wütend / Tsundere"
         >
-          <Angry className="w-3 h-3 inline mr-1 text-red-300" />
-          <span>Wütend</span>
+          <Angry className="w-3 h-3 inline 2xl:mr-1 text-red-300" />
+          <span className="hidden 2xl:inline">{t('avatar.quickAngry')}</span>
         </button>
 
         <button
+          title={t('avatar.quickSad')}
+          aria-label={t('avatar.quickSad')}
           onClick={() => setCurrentEmotion('sad')}
-          className={`px-2.5 py-1 rounded-full text-xs font-medium transition-all ${
+          aria-pressed={currentEmotion === 'sad'}
+          className={`px-2.5 py-1 rounded-full text-xs font-medium whitespace-nowrap transition-all outline-hidden focus-visible:ring-2 focus-visible:ring-accent-400 ${
             currentEmotion === 'sad'
               ? 'bg-indigo-600 text-white shadow-sm'
               : 'text-slate-400 hover:text-slate-200'
           }`}
-          title="Traurig / Verlegen"
         >
-          <Frown className="w-3 h-3 inline mr-1 text-indigo-300" />
-          <span>Traurig</span>
+          <Frown className="w-3 h-3 inline 2xl:mr-1 text-indigo-300" />
+          <span className="hidden 2xl:inline">{t('avatar.quickSad')}</span>
         </button>
 
         <button
+          title={t('avatar.quickRelaxed')}
+          aria-label={t('avatar.quickRelaxed')}
           onClick={() => setCurrentEmotion('relaxed')}
-          className={`px-2.5 py-1 rounded-full text-xs font-medium transition-all ${
+          aria-pressed={currentEmotion === 'relaxed'}
+          className={`px-2.5 py-1 rounded-full text-xs font-medium whitespace-nowrap transition-all outline-hidden focus-visible:ring-2 focus-visible:ring-accent-400 ${
             currentEmotion === 'relaxed'
               ? 'bg-emerald-600 text-white shadow-sm'
               : 'text-slate-400 hover:text-slate-200'
           }`}
-          title="Entspannt"
         >
-          <Sparkles className="w-3 h-3 inline mr-1 text-emerald-300" />
-          <span>Sanft</span>
+          <Sparkles className="w-3 h-3 inline 2xl:mr-1 text-emerald-300" />
+          <span className="hidden 2xl:inline">{t('avatar.quickRelaxed')}</span>
         </button>
       </div>
     </div>
