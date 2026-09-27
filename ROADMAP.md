@@ -1,0 +1,227 @@
+# 🗺️ OtakuSoul – Verbesserungs-Roadmap
+
+> Stand: 2026-09-27 · Basis: Commit `8507fb8` (main)
+> Grundlage: Code-Review von `src/` und `src-tauri/`, `npm outdated`, `cargo outdated`, `npm audit`,
+> `cargo clippy`, `tsc`, Vitest/Cargo-Tests und eine Sichtprüfung der Oberfläche bei 1280×840 und 960×640 (Mindestgröße).
+> Abgeschlossene Feature-Phasen stehen in `Roadmap_abgeschlossen.md`.
+
+**Gesamtbild:** Funktional ist das Projekt weit. `tsc` läuft sauber, 16 Vitest- und 91 Cargo-Tests sind grün.
+Die Schwächen liegen vor allem hier:
+
+1. **Ein echter Laufzeit-Bug:** Das Web-Fetch-Tool des Companions stürzt ab.
+2. **Veraltete Abhängigkeiten:** Einige Pakete sind hinterher, das Live2D-Paket ist ein Blocker mit Sicherheitslücke.
+3. **Uneinheitliche Oberfläche:** i18n greift kaum, Themes wirken nur teilweise, es gibt keine Barrierefreiheit, der Header läuft über.
+
+---
+
+## 🔥 P0 – Kritisch (sofort)
+
+- [ ] **Panic im Companion-Web-Fetch beheben.** In `src-tauri/src/modules/companion_tools.rs:530` nutzt der Regex
+  `<(script|style|…)[^>]*>.*?</\1>` eine Rückreferenz (`\1`). Die unterstützt das `regex`-Crate nicht, daher panict `Regex::new(..).unwrap()`
+  bei **jedem** Aufruf. `cargo clippy` bricht hier mit `invalid_regex` ab.
+  → Den Regex pro Tag aufteilen, z. B. `(?is)<script[^>]*>.*?</script>|<style…>…`, oder einen HTML-Parser wie `scraper` verwenden.
+  Alle Regexe per `LazyLock` einmalig kompilieren und einen Test ergänzen.
+- [ ] **CSP aktivieren.** In `tauri.conf.json` steht `"csp": null` und `assetProtocol.scope: ["**"]`. Damit kann der Webview
+  jede Datei des Systems lesen. Scope auf App-Daten- und Asset-Verzeichnisse begrenzen und eine restriktive CSP setzen.
+- [ ] **API-Keys nicht im Klartext speichern.** `cloud_api_key` (und Discord-Bot-Token u. ä.) liegen unverschlüsselt in
+  `settings.json`. → Schlüsselbund des Betriebssystems über das Crate `keyring` nutzen (Linux Secret Service, macOS Keychain, Windows Credential Manager).
+- [ ] **Mobiler Webserver:** Er lauscht standardmäßig auf `0.0.0.0` über HTTP, und der Token steht als Query-Parameter in der URL
+  (landet dann in Verlauf und Logs). → Standardmäßig aus bzw. auf `127.0.0.1`; Token nach dem ersten Aufruf per
+  Header oder Cookie übertragen; Vergleich in konstanter Zeit (`subtle`); Warnhinweis in der UI.
+- [ ] **Sicherheitslücke in `pixi-live2d-display` beheben.** `npm audit` meldet 2 kritische Lücken über die transitive
+  Abhängigkeit `gh-pages`. Siehe P1 „Live2D-Stack“.
+
+---
+
+## 📦 P1 – Abhängigkeiten auf aktuellen Stand bringen
+
+### Frontend (npm)
+
+| Paket | Ist | Aktuell | Aufwand / Hinweis |
+|---|---|---|---|
+| `@tauri-apps/api`, `@tauri-apps/cli` | 2.11 | 2.12 | trivial, `npm update` |
+| `@tauri-apps/plugin-dialog` | 2.7.3 | 2.8.0 | trivial |
+| `@tauri-apps/plugin-opener` | 2.5.5 | 2.6.0 | trivial |
+| `typescript` | 6.0.3 | **7.0.2** | Major (Go-basierter Compiler). Build testen, `tsconfig` prüfen |
+| `pixi.js` | 6.5.10 | **8.21.0** | **blockiert** durch `pixi-live2d-display@0.4.0`, das nur pixi 6 unterstützt |
+
+- [ ] Tauri-Pakete (npm und Cargo gemeinsam) auf 2.12 / plugin-dialog 2.8 / plugin-opener 2.6 anheben.
+- [ ] **Live2D-Stack modernisieren.** `pixi-live2d-display` wird nicht mehr gepflegt, zieht die verwundbare Abhängigkeit `gh-pages` nach sich
+  und hält pixi.js auf Version 6 fest. → Umstieg auf einen gepflegten Fork mit pixi-v8-Support
+  (z. B. `pixi-live2d-display-lipsyncpatch` / `untitled-pixi-live2d-engine`) oder direkt auf das Cubism 5 Web SDK.
+  Dabei `public/live2d/live2d.min.js` (Cubism 2) nur behalten, wenn Cubism-2-Modelle wirklich gebraucht werden.
+  Beide Skripte werden aktuell **synchron im `<head>`** von `index.html` geladen und blockieren den Start. Sie sollten erst im Live2D-Viewer nachgeladen werden.
+- [ ] `@types/canvas-confetti` und `@types/three` von `dependencies` nach `devDependencies` verschieben.
+- [ ] Ungenutzte Vite-Template-Reste entfernen: `public/tauri.svg`, `public/vite.svg`, `src/assets/react.svg`.
+
+### Backend (Cargo)
+
+| Crate | Ist | Aktuell | Hinweis |
+|---|---|---|---|
+| `tauri` / `tauri-build` | 2.11 / 2.6 | 2.12 / 2.7 | kompatibel, `cargo update` |
+| `reqwest` | 0.12 | **0.13** | Features prüfen (`rustls` ist jetzt Default) |
+| `rusqlite` | 0.32 | **0.40** | mehrere Breaking Changes, SQL-Layer testen |
+| `sysinfo` | 0.33 | **0.39** | API-Änderungen in `hardware.rs` |
+| `zip` | 2.4 | **8.6** | API weitgehend stabil, Profil-Backup testen |
+| `tokio-tungstenite` | 0.24 | **0.30** | Discord-Gateway |
+| `rand` | 0.8 | **0.10** | `thread_rng()` → `rng()`, `gen_range` → `random_range` |
+| `png` | 0.17 | 0.18 | Card-Export (tEXt-Chunk) |
+| `base64` | 0.22 | 0.23 | – |
+| `sha2` | 0.10 | 0.11 | – |
+
+- [ ] Crates schrittweise aktualisieren, jeweils mit `cargo test` und manuellem Rauchtest der betroffenen Funktion.
+- [ ] **Doppelte `Cargo.lock` entfernen.** Die Workspace-Wurzel hat eine eigene `Cargo.lock`; `src-tauri/Cargo.lock` ist veraltet und wird ignoriert.
+- [ ] Rust-Edition `2021` → `2024` (in Rust 1.85+ verfügbar), dazu `rust-version` im Manifest festlegen.
+- [ ] **Veraltete Kopien vendorter Bibliotheken löschen.** `assets/emotions/vrm/modules/` enthält Three.js r177 und three-vrm 3.4.1
+  (npm: three 0.186 / three-vrm 3.5). Nichts in `src/` oder `src-tauri/` verweist darauf, es sind Altlasten aus dem Python-Port.
+
+### CI
+
+- [ ] GitHub Actions aktualisieren: `actions/checkout@v4` → aktuelle Major, `actions/setup-node@v4` → aktuelle Major,
+  Node 22 → **24 LTS**, Runner `ubuntu-22.04` → `ubuntu-24.04`.
+- [ ] Der Cache-Pfad `src-tauri/target/` ist falsch, das Workspace-Target liegt unter `target/`. Alternativ `Swatinem/rust-cache` nutzen.
+- [ ] CI um folgende Schritte erweitern: `cargo clippy -- -D warnings`, `cargo fmt --check`, `npm audit --audit-level=high`, `tsc --noEmit`.
+- [ ] Dependabot oder Renovate für npm, Cargo und Actions einrichten.
+
+---
+
+## 🎨 P1 – Oberfläche & Usability
+
+### Navigation / Header (`src/components/Header.tsx`)
+
+- [ ] **Der Header läuft über.** Schon bei 1280 px brechen „Soul Hub“ und „Soul Stage“ zweizeilig um. Bei der Mindestbreite von 960 px
+  sind *Einstellungen*, der Serverstatus und die Aktionsknöpfe nicht erreichbar. Beim Tab-Wechsel verschiebt sich außerdem der Inhalt,
+  und das Logo wird abgeschnitten.
+  → **Vorschlag:** schmale, einklappbare **Seitenleiste links** (Icon + Label, eingeklappt nur Icon + Tooltip) statt 8 Tabs oben.
+  Der Header behält dann nur Branding, Status und globale Aktionen. Mindestens aber `whitespace-nowrap` setzen und
+  unter ca. 1200 px auf reine Icons mit Tooltip umschalten.
+- [ ] **Navigation logisch gruppieren:** *Spielen* (Chat, Soul Stage, Companion) · *Bibliothek* (Charaktere, Lorebooks, Soul Hub) ·
+  *System* (Integrationen, Einstellungen).
+- [ ] Die 8 fast identischen Tab-Buttons in eine `NAV_ITEMS`-Konfiguration mit `.map()` überführen.
+- [ ] Tastaturkürzel für die Navigation (`Strg+1…8`, `Strg+,` für Einstellungen) und eine **Befehlspalette** (`Strg+K`).
+- [ ] Das Status-Pill („Server gestoppt“) ist ein `<div onClick>`. → Echten `<button>` verwenden und einen klaren Handlungsaufruf anbieten („Server starten“).
+- [ ] **Hardware-Polling alle 2 s** startet jedes Mal `nvidia-smi` als Prozess. → Intervall auf 5–10 s erhöhen, bei unsichtbarem Fenster
+  pausieren (`document.visibilityState`), oder den Status per Tauri-Event aus Rust pushen.
+
+### Internationalisierung
+
+- [ ] **i18n greift kaum.** Nur 4 von 36 Komponenten nutzen `useTranslation` (Header, Settings, LogViewer, Updater).
+  Wer in den Einstellungen *English* oder *Русский* wählt, sieht trotzdem fast alles auf Deutsch: Chat, Stage, Lorebooks, Hub,
+  Companion, Modals, `confirm()`-Dialoge, Ladetexte (z. B. „Ansicht wird geladen…“ in `App.tsx`) und Rust-Fehlermeldungen.
+  → Alle UI-Texte in Wörterbücher überführen. Das eine große `DICTIONARY`-Objekt in `src/i18n/index.ts` in JSON-Dateien pro Sprache
+  und Bereich aufteilen, optional mit `i18next` / `react-i18next` (Pluralisierung, Interpolation, Fallback).
+- [ ] Einen Test ergänzen, der fehlende Übersetzungsschlüssel meldet.
+- [ ] Rust-Fehler als Fehlercodes zurückgeben und im Frontend übersetzen, statt deutschen Klartext aus `format!()` anzuzeigen.
+- [ ] `<html lang="de">` beim Sprachwechsel dynamisch setzen.
+
+### Design-System & Themes
+
+- [ ] **Themes wirken nur teilweise.** `App.css` definiert `--theme-accent`, es wird aber nur 6-mal verwendet, während im Code
+  **777 Mal** `purple-/violet-/fuchsia-*` fest verdrahtet ist. Wählt man „Cyberpunk“ oder „Emerald“, bleiben Buttons, Tabs und Rahmen lila.
+  → In Tailwind v4 per `@theme` semantische Tokens definieren (`--color-accent`, `--color-surface`, `--color-border`, `--color-muted` …)
+  und die festen Farbklassen auf `bg-accent`, `text-accent` usw. umstellen.
+- [ ] **Wiederverwendbare UI-Bausteine** anlegen (`src/components/ui/`): `Button` (primary/secondary/ghost/danger), `IconButton`,
+  `Modal`/`Dialog`, `Tabs`, `Select`, `Toggle`, `Slider`, `EmptyState`, `Toast`, `ConfirmDialog`, `Tooltip`.
+  Heute wird jedes der 377 `<button>`-Elemente mit langen, kopierten Klassenketten gestaltet.
+- [ ] **Zu kleine Schrift:** 333 Stellen mit `text-[9px]`, `text-[10px]` oder `text-[11px]`. Auf HiDPI- und Linux-Systemen schwer lesbar.
+  → Untergrenze 12 px (`text-xs`) für Text, 11 px höchstens für Badges.
+- [ ] Veraltete Tailwind-v3-Klassen modernisieren: `bg-gradient-to-*` → `bg-linear-to-*`, `flex-shrink-0` → `shrink-0`, `flex-grow` → `grow` (48 Stellen).
+- [ ] Emojis in UI-Texten (24 Stellen) durch `lucide-react`-Icons ersetzen, damit alles konsistent gerendert wird (Linux-Schriftfallback).
+- [ ] Einen **hellen Modus** bzw. einen Theme passend zu `prefers-color-scheme` anbieten. Aktuell gibt es nur dunkle Themes.
+- [ ] `body { select-none }` global verhindert, dass man Chat-Nachrichten, Logs oder Fehlermeldungen kopieren kann.
+  → Nur auf Chrome-Elemente (Header, Buttons) beschränken, Inhaltsbereiche selektierbar machen.
+
+### Dialoge, Feedback & Zustände
+
+- [ ] **Modals sind nicht barrierefrei:** 18 Overlays mit `fixed inset-0`, aber nur 1× `role="dialog"`, 2× Escape-Behandlung und kein Fokus-Trap.
+  → Gemeinsame `Modal`-Komponente auf Basis von `<dialog>` oder Radix/Headless UI: Escape schließt, Fokus wird gefangen und
+  zurückgegeben, `aria-modal`, Klick auf den Hintergrund konfigurierbar.
+- [ ] **Native `confirm()`/`alert()` ersetzen** (20 Stellen, z. B. `ChatView.tsx:496`, `ChatSidebar.tsx:253`, `SceneLobbyModal.tsx:141`)
+  durch einen gestalteten `ConfirmDialog`. Das passt besser zum Look und lässt sich übersetzen. Bei destruktiven Aktionen zusätzlich **„Rückgängig“-Toast** statt Rückfrage.
+- [ ] **Globales Toast-/Benachrichtigungssystem** für Erfolg und Fehler, statt verstreuter Inline-Banner und `console.error`.
+- [ ] **Leere Zustände verbessern.**
+  - *Chat* ohne Charakter zeigt eine leere dunkle Fläche. → Onboarding-Karte: „Charakter wählen / importieren / Server starten“.
+  - *Charakterbibliothek* zeigt „Keine Charaktere gefunden – passe deine Suche an“, auch wenn gar keine Suche aktiv ist.
+    → Zwischen „leer“ (mit großem CTA „Ersten Charakter erstellen / importieren“) und „keine Treffer“ unterscheiden.
+- [ ] **Ersteinrichtungs-Assistent** (First-Run): Sprache → Modellquelle (lokales GGUF herunterladen oder Cloud-Key) → erster Charakter.
+  Heute landet man auf einer leeren Chat-Ansicht mit dem Hinweis „Lokaler Server ist offline“.
+- [ ] Die Toolbar der Charakterbibliothek hat 6 gleich gewichtete Buttons. → Primäraktion hervorheben, den Rest in ein „Mehr“-Menü verschieben.
+- [ ] **Error Boundary** um jede lazy geladene Ansicht, damit ein Fehler in einer Ansicht nicht die ganze App weiß schaltet.
+- [ ] Skelett-Loader statt reinem Text beim Laden von Ansichten und Listen.
+
+### Barrierefreiheit (a11y)
+
+- [ ] Nur 5 `aria-label` bei rund 377 Buttons, viele davon reine Icon-Buttons. → Jedem Icon-Button ein `aria-label` geben.
+- [ ] Sichtbare Fokus-Ringe (`focus-visible:ring-…`) einheitlich über die `Button`-Komponente. `outline-none` kommt 118-mal vor.
+- [ ] 11 `<img>` ohne `alt`.
+- [ ] Klickbare `<div>` (z. B. Logo und Status im Header) in `<button>` umwandeln.
+- [ ] Kontrast prüfen: `text-slate-500` auf `slate-950` erreicht bei kleiner Schrift das WCAG-AA-Kontrastverhältnis nicht.
+- [ ] `prefers-reduced-motion` respektieren (Pulse-Animationen, Konfetti, Avatar-Idle).
+
+### Fenster & Desktop-Integration
+
+- [ ] `tauri-plugin-window-state` einbinden, damit Fenstergröße und -position gespeichert werden.
+- [ ] `tauri-plugin-single-instance`, um doppelte Starts (und doppelte llama-server-Prozesse) zu verhindern.
+- [ ] Tray-Icon für den Companion (minimieren in den Tray statt beenden).
+- [ ] **Updater:** Aktuell wird nur geprüft und auf die GitHub-Release-Seite verlinkt. → `tauri-plugin-updater` mit signierten Updates nutzen.
+
+---
+
+## 🏗️ P2 – Code-Architektur & Wartbarkeit
+
+### Frontend
+
+- [ ] **`useAppStore.ts` hat 3.023 Zeilen.** → In Zustand-Slices aufteilen (`chatSlice`, `characterSlice`, `stageSlice`, `companionSlice`,
+  `settingsSlice`, `voiceSlice` …).
+- [ ] **Unnötige Re-Renders:** 29 Komponenten holen den ganzen Store (`const { … } = useAppStore()`), nur eine nutzt einen Selektor.
+  Jeder Status-Poll (alle 2 s) rendert dadurch fast die gesamte App neu. → Selektoren mit `useShallow` verwenden.
+- [ ] Riesige Komponenten aufteilen: `SettingsView.tsx` (1.874 Z.), `SoulHubView.tsx` (1.255), `CompanionView.tsx` (1.230),
+  `IntegrationsView.tsx` (1.213), `CognitiveMemoryDrawer.tsx` (1.126), `LorebookView.tsx` (1.025).
+- [ ] `src/types/index.ts` (1.138 Z.): Typen aus Rust generieren (`specta` + `tauri-specta` oder `ts-rs`), damit Frontend und Backend nicht auseinanderlaufen.
+  Gleichzeitig erhält man typisierte `invoke`-Aufrufe statt manueller Wrapper in `api.ts` (1.179 Z.).
+- [ ] 30× `any` bzw. `as any` beseitigen, 185× `console.*` durch den vorhandenen Logger ersetzen.
+- [ ] `tsconfig`: `target`/`lib` von ES2020 auf ES2022+ anheben, `noUncheckedIndexedAccess` aktivieren.
+- [ ] ESLint (flat config) + `eslint-plugin-react-hooks` + `jsx-a11y` + Prettier einrichten. Aktuell gibt es keinen Linter.
+- [ ] React 19 nutzen: `useActionState` / `useOptimistic` für Chat-Senden und Formulare, `use()` für Ladezustände.
+- [ ] Routing: Optional die Ansichten über einen leichten Router (z. B. TanStack Router) abbilden, damit Deep-Links
+  (Overlay, mobiler Webclient) und „Zurück“ funktionieren, statt `window.location.search.includes('overlay=true')`.
+
+### Backend
+
+- [ ] 50 Clippy-Warnungen beheben (`map_or`, fehlende `Default`-Impls, `sort_by_key`, unnötige Klone …) und danach `-D warnings` in der CI erzwingen.
+- [ ] 221× `unwrap()` im Rust-Code prüfen. In Command-Pfaden durch `?` und einen gemeinsamen Fehlertyp (`thiserror`) ersetzen,
+  damit das Frontend strukturierte Fehler bekommt und die App nicht abstürzt (siehe P0-Regex).
+- [ ] `commands.rs` (1.697 Z.) nach Domänen aufteilen (`commands/chat.rs`, `commands/stage.rs` …); `stage.rs` (2.971 Z.) und `memory.rs` (2.069 Z.) ebenfalls modularisieren.
+- [ ] Regexe per `std::sync::LazyLock` statt `Regex::new` pro Aufruf.
+- [ ] `tracing-subscriber` mit `env-filter` und Log-Rotation (`tracing-appender`) konfigurieren.
+- [ ] Datenbank-Migrationen versionieren (`rusqlite_migration` oder `PRAGMA user_version`), bevor das rusqlite-Upgrade kommt.
+
+### Tests
+
+- [ ] Frontend-Abdeckung ausbauen: Aktuell gibt es nur 3 Testdateien (i18n, soundFx, stateParser). Tests für Store-Slices, `api.ts`-Mocks
+  und Kernkomponenten mit `@testing-library/react` ergänzen.
+- [ ] E2E-Rauchtest mit WebdriverIO + `tauri-driver` (App starten, Charakter importieren, Chat senden gegen einen Mock-Provider).
+- [ ] Rust: Tests für `companion_tools` (Web-Fetch, Shell-Freigaben), `web_server` (Auth) und `profile_backup` (Round-Trip).
+
+---
+
+## ✨ P3 – Nice-to-have
+
+- [ ] Hardware-Probe für AMD (ROCm/sysfs), Intel und Apple Metal. Heute gibt es nur `nvidia-smi` (offen aus der alten Roadmap).
+- [ ] Offene Chat-Funktionen aus `Roadmap_abgeschlossen.md` (Phase 9): Kontextfenster-Management mit Token-Zählung,
+  automatische Zusammenfassung, System-Prompt-Editor, Datei-Anhänge und Vision, Übersetzung.
+- [ ] Migrationsimport aus einer bestehenden Soul-of-Waifu-Installation.
+- [ ] Virtualisierte Listen (`@tanstack/react-virtual`) für lange Chats, große Charakter- und Lorebook-Bibliotheken.
+- [ ] Bundle-Analyse (`rollup-plugin-visualizer`); `chunkSizeWarningLimit: 800` in `vite.config.ts` nur als Übergang.
+
+---
+
+## ✅ Empfohlene Reihenfolge
+
+1. **P0 komplett**: Regex-Bug, CSP/Scope, Schlüsselbund, Webserver-Absicherung.
+2. **Tauri-Minor-Updates + CI-Modernisierung + Clippy-Bereinigung.** Geringes Risiko, schafft ein Sicherheitsnetz.
+3. **Design-Tokens + UI-Bausteine** (`Button`, `Modal`, `ConfirmDialog`, `Toast`, `EmptyState`), danach **Navigation neu**.
+4. **i18n flächendeckend** (lässt sich gut mit Schritt 3 kombinieren, weil ohnehin jede Komponente angefasst wird).
+5. **Store-Slices + Selektoren**, Komponenten aufteilen.
+6. **Große Upgrades:** Live2D-Stack/pixi v8, rusqlite, reqwest, TypeScript 7.
+7. P3 nach Bedarf.

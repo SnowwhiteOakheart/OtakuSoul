@@ -218,9 +218,7 @@ Die Soul Stage Engine ist nun ein vollwertiges Tabletop-Rollenspiel-Erlebnis mit
   - Linux: `install.sh` (Binary, 512x512 Icon, `.desktop`-Menüeintrag), `.deb`, `AppImage`, Arch AUR `PKGBUILD`.
   - Windows: `install.ps1` (PowerShell-Installer nach `%LOCALAPPDATA%`, Startmenü- & Desktop-Verknüpfungen mit `.ico`), NSIS-Setup `.exe`.
   - macOS: `install-macos.sh` (Installation nach `/Applications/OtakuSoul.app`, Quarantäne-Bereinigung), `.dmg` Disk Image Installer.
-- [x] **CI / CD Pipelines** – GitHub Actions Workflows:
-  - `.github/workflows/ci.yml`: Automatische Tests (`npm run test`, `npm run build`, `cargo test`) bei Push & Pull Request.
-  - `.github/workflows/release.yml`: Multi-Plattform Release Matrix (Ubuntu AppImage & deb, Windows x64 MSI/NSIS, macOS DMG).
+- [x] **Lokale Verifikation & Packaging** – Tests (`npm run test`, `cargo test`) und Paketierungs-Builds laufen lokal (keine automatischen GitHub Actions).
 - [x] **Frontend-Tests (Vitest)** – 16 Unit-Tests (`npm run test`) für Wörterbuch-Vollständigkeit (`src/test/i18n.test.ts`), State-Tags-Parser & Roleplay-Splitter (`src/test/stateParser.test.ts`), und Sound-Synthesizer (`src/test/soundFx.test.ts`).
 - [x] **Mobile Readiness** – Responsives Web-Interface via integriertem `axum` Web-Server (Phase 17) für Smartphones & Tablets; Desktop Tauri-Core bereit für spätere native Mobile-Targets.
 

@@ -344,9 +344,7 @@ Alle benötigten Daten sind eigenständig in diesem Projektverzeichnis gekapselt
     - **Linux:** Universeller Installer `install.sh` (installiert Binary nach `~/.local/bin`, 512x512 Icon & `.desktop`-Menüeintrag), `.deb`, `AppImage`, Arch Linux AUR (`packaging/aur/PKGBUILD`).
     - **Windows:** PowerShell-Installer `install.ps1` (installiert nach `%LOCALAPPDATA%\Programs\OtakuSoul\`, erstellt Startmenü- und Desktop-Verknüpfungen mit `.ico`), NSIS-Setup `.exe`.
     - **macOS:** macOS-Installer `install-macos.sh` (Installation nach `/Applications/OtakuSoul.app`, Quarantäne-Entfernung), `.dmg` Disk Image.
-    - **CI/CD Pipelines:**
-      - GitHub Actions CI Pipeline (`.github/workflows/ci.yml`) für Node.js/Vitest & Rust/Cargo Checks.
-      - GitHub Actions Release Workflow (`.github/workflows/release.yml`) für Ubuntu (AppImage, deb), Windows (MSI, NSIS) und macOS (DMG).
+    - Lokale Paketierungs-Skripte in `packaging/scripts/` (keine CI-Ausführung auf GitHub).
 
 **Alle 18 Phasen der Roadmap sind vollständig abgeschlossen.**
 
