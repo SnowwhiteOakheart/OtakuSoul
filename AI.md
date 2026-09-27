@@ -340,12 +340,13 @@ Alle benötigten Daten sind eigenständig in diesem Projektverzeichnis gekapselt
     - Interaktiver Update-Dialog mit Versionsvergleich, Release-Notes-Vorschau und 1-Klick-Link zu den Downloads.
   - **Frontend-Unit-Tests (Vitest, `npm run test`):**
     - 16 Tests in 3 Test-Suites (`i18n.test.ts`, `stateParser.test.ts`, `soundFx.test.ts`).
-  - **Packaging & CI/CD Pipelines:**
-    - XDG Desktop Entry (`packaging/desktop/otakusoul.desktop`).
-    - Arch Linux AUR PKGBUILD Template (`packaging/aur/PKGBUILD`).
-    - Linux Packaging Skript (`packaging/scripts/build-linux-packages.sh`).
-    - GitHub Actions CI Pipeline (`.github/workflows/ci.yml`) für Node.js/Vitest & Rust/Cargo Checks.
-    - GitHub Actions Release Workflow (`.github/workflows/release.yml`) für Ubuntu (AppImage, deb), Windows (MSI, NSIS) und macOS (DMG).
+  - **Packaging & Multiplattform-Installer:**
+    - **Linux:** Universeller Installer `install.sh` (installiert Binary nach `~/.local/bin`, 512x512 Icon & `.desktop`-Menüeintrag), `.deb`, `AppImage`, Arch Linux AUR (`packaging/aur/PKGBUILD`).
+    - **Windows:** PowerShell-Installer `install.ps1` (installiert nach `%LOCALAPPDATA%\Programs\OtakuSoul\`, erstellt Startmenü- und Desktop-Verknüpfungen mit `.ico`), NSIS-Setup `.exe`.
+    - **macOS:** macOS-Installer `install-macos.sh` (Installation nach `/Applications/OtakuSoul.app`, Quarantäne-Entfernung), `.dmg` Disk Image.
+    - **CI/CD Pipelines:**
+      - GitHub Actions CI Pipeline (`.github/workflows/ci.yml`) für Node.js/Vitest & Rust/Cargo Checks.
+      - GitHub Actions Release Workflow (`.github/workflows/release.yml`) für Ubuntu (AppImage, deb), Windows (MSI, NSIS) und macOS (DMG).
 
 **Alle 18 Phasen der Roadmap sind vollständig abgeschlossen.**
 

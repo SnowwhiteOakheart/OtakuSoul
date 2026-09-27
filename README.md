@@ -114,6 +114,37 @@ OtakuSoul unterstützt unter anderem:
 - Edge-TTS, Kokoro, ElevenLabs und OpenAI-kompatible Sprachdienste
 - lokale Whisper- und OpenAI-kompatible Transkription
 
+## Installation & Start
+
+Wähle die passende Installationsmethode für dein Betriebssystem:
+
+### 🐧 Linux
+- **Ein-Klick-Installer & Launcher-Setup:**
+  ```bash
+  chmod +x install.sh && ./install.sh
+  ```
+  Installiert OtakuSoul nach `~/.local/bin/otakusoul`, richtet das 512x512 App-Icon ein, legt die `.desktop`-Verknüpfung für dein Anwendungsmenü (GNOME, KDE, XFCE etc.) an und macht es sofort über das Startmenü oder per CLI-Befehl `otakusoul` startbar.
+- **Paket-Installationen:**
+  - **Debian / Ubuntu:** `sudo dpkg -i OtakuSoul_0.1.0_amd64.deb`
+  - **Arch Linux (AUR):** `cd packaging/aur && makepkg -si`
+  - **Portables AppImage:** `chmod +x OtakuSoul_0.1.0_amd64.AppImage && ./OtakuSoul_0.1.0_amd64.AppImage`
+
+### 🪟 Windows (10 / 11)
+- **PowerShell Installer & Shortcut-Setup:**
+  ```powershell
+  powershell -ExecutionPolicy Bypass -File .\install.ps1
+  ```
+  Installiert OtakuSoul nach `%LOCALAPPDATA%\Programs\OtakuSoul\`, erstellt Verknüpfungen mit dem nativen App-Icon im Windows-Startmenü sowie auf dem Desktop und bietet den Direktstart an.
+- **NSIS Setup (.exe):** Führe den grafischen Installer `OtakuSoul_0.1.0_x64-setup.exe` aus.
+
+### 🍏 macOS (Intel & Apple Silicon)
+- **macOS Installer & App-Setup:**
+  ```bash
+  chmod +x install-macos.sh && ./install-macos.sh
+  ```
+  Installiert `OtakuSoul.app` nach `/Applications`, bereinigt Gatekeeper-Quarantäne-Attribute und macht OtakuSoul über Launchpad, Spotlight und Dock startbar.
+- **DMG Installer:** Die Datei `OtakuSoul_0.1.0_universal.dmg` öffnen und OtakuSoul in den `Applications`-Ordner ziehen.
+
 ## Schnellstart für Entwickler
 
 ### Voraussetzungen

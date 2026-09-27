@@ -30,12 +30,40 @@
   "bundle": {
     "active": true,
     "targets": "all",
+    "category": "Game",
+    "shortDescription": "Local Anime AI & Roleplay Studio",
+    "longDescription": "OtakuSoul is an immersive desktop platform for AI character interactions, 3D VRM and Live2D avatars, long-term memory, voice synthesis, tabletop roleplay campaigns and desktop companion assistant capabilities with local llama.cpp acceleration.",
+    "copyright": "Copyright 2026 SnowwhiteOakheart",
     "icon": [
       "icons/32x32.png",
       "icons/128x128.png",
       "icons/128x128@2x.png",
       "icons/icon.icns",
       "icons/icon.ico"
-    ]
+    ],
+    "windows": {
+      "nsis": {
+        "installMode": "currentUser",
+        "installerIcon": "icons/icon.ico",
+        "headerImage": "icons/Square150x150Logo.png"
+      }
+    },
+    "linux": {
+      "deb": {
+        "depends": [
+          "webkit2gtk-4.1",
+          "libgtk-3-0",
+          "libayatana-appindicator3-1"
+        ],
+        "section": "games"
+      },
+      "appimage": {
+        "bundleMediaFramework": false
+      }
+    },
+    "macOS": {
+      "frameworks": [],
+      "minimumSystemVersion": "10.15"
+    }
   }
 }

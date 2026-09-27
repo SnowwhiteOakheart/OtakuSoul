@@ -214,7 +214,10 @@ Die Soul Stage Engine ist nun ein vollwertiges Tabletop-Rollenspiel-Erlebnis mit
 - [x] **Themes & UI-Politur** – 5 Farbwelten (`obsidian` [Default], `cyberpunk`, `sakura`, `midnight`, `emerald`), dynamisches DOM-Attribut `data-theme`, CSS-Theme-Variablen in `src/App.css`, Persistierung in App-Settings.
 - [x] **Updater-Dialog** – `src-tauri/src/modules/updater.rs`, Backend-Command `check_for_updates` mit GitHub Releases SemVer-Vergleich, Modal `src/components/updater/UpdaterModal.tsx` mit Versionsvergleich & Release-Notes.
 - [x] **Logging & Log-Viewer** – Datei-Logger (`src-tauri/src/modules/logger.rs`) mit In-Memory-Ringpuffer (1000 Einträge), Dateipersistenz in `~/.local/share/otakusoul/logs/otakusoul.log`, Commands `get_app_logs`, `clear_app_logs`, `export_app_logs`, Modal `src/components/logging/LogViewerModal.tsx` mit Level-Filtern und Suchfunktion.
-- [x] **Paketierung & Linux-Auslieferung** – XDG Desktop-Entry (`packaging/desktop/otakusoul.desktop`), Arch Linux AUR PKGBUILD Template (`packaging/aur/PKGBUILD`), Hilfsskript `packaging/scripts/build-linux-packages.sh`.
+- [x] **Paketierung & Installer für Linux, Windows & macOS** – Universelle Ein-Klick-Installer & Launcher:
+  - Linux: `install.sh` (Binary, 512x512 Icon, `.desktop`-Menüeintrag), `.deb`, `AppImage`, Arch AUR `PKGBUILD`.
+  - Windows: `install.ps1` (PowerShell-Installer nach `%LOCALAPPDATA%`, Startmenü- & Desktop-Verknüpfungen mit `.ico`), NSIS-Setup `.exe`.
+  - macOS: `install-macos.sh` (Installation nach `/Applications/OtakuSoul.app`, Quarantäne-Bereinigung), `.dmg` Disk Image Installer.
 - [x] **CI / CD Pipelines** – GitHub Actions Workflows:
   - `.github/workflows/ci.yml`: Automatische Tests (`npm run test`, `npm run build`, `cargo test`) bei Push & Pull Request.
   - `.github/workflows/release.yml`: Multi-Plattform Release Matrix (Ubuntu AppImage & deb, Windows x64 MSI/NSIS, macOS DMG).
