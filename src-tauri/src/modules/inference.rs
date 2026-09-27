@@ -94,6 +94,12 @@ pub struct InferenceClient {
     abort_flag: Arc<AtomicBool>,
 }
 
+impl Default for InferenceClient {
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
 impl InferenceClient {
     pub fn new() -> Self {
         Self {
@@ -160,12 +166,11 @@ impl InferenceClient {
                     break;
                 }
 
-                if let Some(th) = delta.thought {
-                    if !th.is_empty() {
+                if let Some(th) = delta.thought
+                    && !th.is_empty() {
                         full_thought.push_str(&th);
                         let _ = app_handle.emit("llm-thought", ThoughtEvent { text: th });
                     }
-                }
 
                 if let Some(content) = delta.text {
                     if content.is_empty() {

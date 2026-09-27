@@ -18,9 +18,16 @@ pub struct AppState {
     pub web_server: Arc<WebServerManager>,
 }
 
+impl Default for AppState {
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
 impl AppState {
     pub fn new() -> Self {
         let db_path = MemoryDb::default_path();
+        MemoryDb::apply_pending_restore(&db_path);
         let memory_db = MemoryDb::new(&db_path).unwrap_or_else(|e| {
             tracing::warn!(
                 "Could not open SQLite database at {:?}: {}. Falling back to in-memory DB.",

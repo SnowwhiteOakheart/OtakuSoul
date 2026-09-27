@@ -1,7 +1,32 @@
 use serde::{Deserialize, Serialize};
+use regex::Regex;
 use std::path::{Path, PathBuf};
+use std::sync::LazyLock;
 use std::time::Duration;
 use tokio::process::Command;
+
+static TITLE_RE: LazyLock<Regex> = LazyLock::new(|| Regex::new(r"(?is)<title[^>]*>(.*?)</title>").unwrap());
+// The `regex` crate has no backreferences, so every stripped block element gets its own alternative.
+static BLOCK_RE: LazyLock<Regex> = LazyLock::new(|| {
+    Regex::new(
+        r"(?is)<script\b[^>]*>.*?</script>|<style\b[^>]*>.*?</style>|<nav\b[^>]*>.*?</nav>|<header\b[^>]*>.*?</header>|<footer\b[^>]*>.*?</footer>|<noscript\b[^>]*>.*?</noscript>|<!--.*?-->",
+    )
+    .unwrap()
+});
+static TAG_RE: LazyLock<Regex> = LazyLock::new(|| Regex::new(r"<[^>]+>").unwrap());
+static SPACE_RE: LazyLock<Regex> = LazyLock::new(|| Regex::new(r"\s+").unwrap());
+
+/// Extracts the page title and the visible body text from raw HTML.
+fn html_to_text(html: &str) -> (Option<String>, String) {
+    let title = TITLE_RE
+        .captures(html)
+        .map(|c| SPACE_RE.replace_all(c[1].trim(), " ").to_string())
+        .filter(|t| !t.is_empty());
+    let cleaned = BLOCK_RE.replace_all(html, " ");
+    let text = TAG_RE.replace_all(&cleaned, " ");
+    let text = SPACE_RE.replace_all(&text, " ").trim().to_string();
+    (title, text)
+}
 
 /// System snapshot of CPU, RAM, Disk, GPU and Battery.
 #[derive(Debug, Clone, Serialize, Deserialize)]
@@ -214,13 +239,11 @@ impl CompanionTools {
     /// Read plain text from system clipboard using arboard with CLI tool fallbacks
     pub fn read_clipboard() -> Result<String, String> {
         // Try arboard first
-        if let Ok(mut clipboard) = arboard::Clipboard::new() {
-            if let Ok(text) = clipboard.get_text() {
-                if !text.trim().is_empty() {
+        if let Ok(mut clipboard) = arboard::Clipboard::new()
+            && let Ok(text) = clipboard.get_text()
+                && !text.trim().is_empty() {
                     return Ok(text);
                 }
-            }
-        }
 
         // Fallbacks for Linux Wayland & X11
         #[cfg(not(any(target_os = "windows", target_os = "macos")))]
@@ -228,38 +251,32 @@ impl CompanionTools {
             if let Ok(output) = std::process::Command::new("wl-paste")
                 .args(["--no-newline", "--type", "text/plain"])
                 .output()
-            {
-                if output.status.success() {
+                && output.status.success() {
                     let text = String::from_utf8_lossy(&output.stdout).trim().to_string();
                     if !text.is_empty() {
                         return Ok(text);
                     }
                 }
-            }
 
             if let Ok(output) = std::process::Command::new("xclip")
                 .args(["-selection", "clipboard", "-o"])
                 .output()
-            {
-                if output.status.success() {
+                && output.status.success() {
                     let text = String::from_utf8_lossy(&output.stdout).trim().to_string();
                     if !text.is_empty() {
                         return Ok(text);
                     }
                 }
-            }
 
             if let Ok(output) = std::process::Command::new("xsel")
                 .args(["--clipboard", "--output"])
                 .output()
-            {
-                if output.status.success() {
+                && output.status.success() {
                     let text = String::from_utf8_lossy(&output.stdout).trim().to_string();
                     if !text.is_empty() {
                         return Ok(text);
                     }
                 }
-            }
         }
 
         Ok("(Die Zwischenablage ist aktuell leer)".to_string())
@@ -335,7 +352,7 @@ impl CompanionTools {
                 let mut sys = sysinfo::System::new_all();
                 sys.refresh_all();
                 let mut app_names = std::collections::BTreeSet::new();
-                for (_pid, proc) in sys.processes() {
+                for proc in sys.processes().values() {
                     let name = proc.name().to_string_lossy().to_string();
                     if !name.starts_with('[') && !name.starts_with("kworker") && !name.starts_with("systemd") {
                         app_names.insert(name);
@@ -397,11 +414,10 @@ impl CompanionTools {
                         .output()
                         .await;
 
-                    if let Ok(out) = res {
-                        if out.status.success() {
+                    if let Ok(out) = res
+                        && out.status.success() {
                             return Ok(format!("Fenster '{}' in den Vordergrund geholt.", tgt));
                         }
-                    }
 
                     // Fallback to xdotool
                     let xdo = Command::new("xdotool")
@@ -409,11 +425,10 @@ impl CompanionTools {
                         .output()
                         .await;
 
-                    if let Ok(out) = xdo {
-                        if out.status.success() {
+                    if let Ok(out) = xdo
+                        && out.status.success() {
                             return Ok(format!("Fenster '{}' via xdotool fokussiert.", tgt));
                         }
-                    }
                 }
                 Ok(format!("Fensterfokus für '{}' angefordert.", tgt))
             }
@@ -434,21 +449,18 @@ impl CompanionTools {
 
                 #[cfg(not(target_os = "windows"))]
                 {
-                    if let Ok(status) = Command::new("wtype").args(["--", text]).status().await {
-                        if status.success() {
+                    if let Ok(status) = Command::new("wtype").args(["--", text]).status().await
+                        && status.success() {
                             return Ok(format!("Text erfolgreich getippt (wtype): \"{}\"", text));
                         }
-                    }
-                    if let Ok(status) = Command::new("ydotool").args(["type", "--", text]).status().await {
-                        if status.success() {
+                    if let Ok(status) = Command::new("ydotool").args(["type", "--", text]).status().await
+                        && status.success() {
                             return Ok(format!("Text erfolgreich getippt (ydotool): \"{}\"", text));
                         }
-                    }
-                    if let Ok(status) = Command::new("xdotool").args(["type", "--delay", "10", "--", text]).status().await {
-                        if status.success() {
+                    if let Ok(status) = Command::new("xdotool").args(["type", "--delay", "10", "--", text]).status().await
+                        && status.success() {
                             return Ok(format!("Text erfolgreich getippt (xdotool): \"{}\"", text));
                         }
-                    }
                 }
                 Ok(format!("Text-Eingabe \"{}\" ausgeführt.", text))
             }
@@ -519,27 +531,14 @@ impl CompanionTools {
 
         let html = resp.text().await.map_err(|e| format!("Inhalt konnte nicht geladen werden: {}", e))?;
 
-        // Extract title
-        let title_re = regex::Regex::new(r"(?i)<title[^>]*>([\s\S]*?)</title>").unwrap();
-        let title = title_re
-            .captures(&html)
-            .map(|c| c[1].trim().to_string())
-            .unwrap_or_else(|| "Kein Seitentitel".to_string());
+        let (title, norm_text) = html_to_text(&html);
+        let title = title.unwrap_or_else(|| "Kein Seitentitel".to_string());
 
-        // Remove script, style, header, footer, nav
-        let clean_re = regex::Regex::new(r"(?is)<(script|style|nav|header|footer|noscript)[^>]*>.*?</\1>").unwrap();
-        let cleaned = clean_re.replace_all(&html, " ");
-
-        // Strip remaining HTML tags
-        let tag_re = regex::Regex::new(r"<[^>]+>").unwrap();
-        let text = tag_re.replace_all(&cleaned, " ");
-
-        // Normalize whitespaces
-        let space_re = regex::Regex::new(r"\s+").unwrap();
-        let norm_text = space_re.replace_all(&text, " ").trim().to_string();
-
-        let preview = if norm_text.len() > 3000 {
-            format!("{}...\n\n[Inhalt gekürzt, {} Zeichen Gesamt]", &norm_text[..3000], norm_text.len())
+        const PREVIEW_CHARS: usize = 3000;
+        let total_chars = norm_text.chars().count();
+        let preview = if total_chars > PREVIEW_CHARS {
+            let cut: String = norm_text.chars().take(PREVIEW_CHARS).collect();
+            format!("{}...\n\n[Inhalt gekürzt, {} Zeichen Gesamt]", cut, total_chars)
         } else {
             norm_text
         };
@@ -635,9 +634,7 @@ impl CompanionTools {
                         if let Ok(alt_out) = alt_cmd.output().await {
                             return Ok((alt_out, alt_prog.to_string()));
                         }
-                        Err(format!(
-                            "Python ist auf diesem System nicht im PATH verfügbar (Python ist optional). Unter Windows kannst du PowerShell ('powershell') oder Batch ('cmd') verwenden, unter Linux/macOS 'bash'."
-                        ))
+                        Err("Python ist auf diesem System nicht im PATH verfügbar (Python ist optional). Unter Windows kannst du PowerShell ('powershell') oder Batch ('cmd') verwenden, unter Linux/macOS 'bash'.".to_string())
                     } else if lang == "powershell" || lang == "pwsh" || lang == "ps1" || lang == "ps" {
                         #[cfg(not(target_os = "windows"))]
                         {
@@ -892,8 +889,7 @@ impl CompanionTools {
                 "--format=csv,noheader,nounits",
             ])
             .output()
-        {
-            if output.status.success() {
+            && output.status.success() {
                 let stdout = String::from_utf8_lossy(&output.stdout);
                 if let Some(line) = stdout.lines().next() {
                     let parts: Vec<&str> = line.split(',').map(|s| s.trim()).collect();
@@ -906,7 +902,6 @@ impl CompanionTools {
                     }
                 }
             }
-        }
 
         EnvironmentSnapshot {
             cpu_usage_percent,
@@ -963,5 +958,28 @@ impl CompanionTools {
             }
         }
         false
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::html_to_text;
+
+    #[test]
+    fn html_to_text_strips_blocks_tags_and_whitespace() {
+        let html = r#"<html><head><title> Grüße
+            aus Tokyo </title><style>body{color:red}</style><script>var x = "<p>";</script></head>
+            <body><nav>Menü</nav><header>Kopf</header><!-- hidden --><h1>Hallo</h1>
+            <p>Welt  mit <b>Umlauten</b> äöü 🎌</p><footer>Fuß</footer><noscript>JS</noscript></body></html>"#;
+        let (title, text) = html_to_text(html);
+        assert_eq!(title.as_deref(), Some("Grüße aus Tokyo"));
+        assert_eq!(text, "Grüße aus Tokyo Hallo Welt mit Umlauten äöü 🎌");
+    }
+
+    #[test]
+    fn html_to_text_without_title() {
+        let (title, text) = html_to_text("<p>nur Text</p>");
+        assert!(title.is_none());
+        assert_eq!(text, "nur Text");
     }
 }

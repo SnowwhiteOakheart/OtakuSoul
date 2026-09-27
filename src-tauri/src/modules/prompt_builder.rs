@@ -200,14 +200,13 @@ pub fn build_system_prompt(ctx: &PromptContext) -> String {
     }
 
     // 8.5 Author's Note (Regieanweisung)
-    if let Some(note) = &ctx.author_note {
-        if !note.trim().is_empty() {
+    if let Some(note) = &ctx.author_note
+        && !note.trim().is_empty() {
             parts.push(format!(
                 "## Author's Note (Wichtige Regieanweisung)\n{}",
                 replace_macros(note)
             ));
         }
-    }
 
     // 9. Formatting & Roleplay Convention Directive
     let mut formatting_rules = vec![

@@ -3,7 +3,9 @@ use serde::{Deserialize, Serialize};
 
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq, Eq)]
 #[serde(rename_all = "snake_case")]
+#[derive(Default)]
 pub enum LlmProviderType {
+    #[default]
     LocalLlama,
     OpenRouter,
     Anthropic,
@@ -14,11 +16,6 @@ pub enum LlmProviderType {
     Custom,
 }
 
-impl Default for LlmProviderType {
-    fn default() -> Self {
-        LlmProviderType::LocalLlama
-    }
-}
 
 impl LlmProviderType {
     pub fn default_endpoint(&self, local_port: u16) -> String {
@@ -129,11 +126,10 @@ impl ProviderRegistry {
             .header("anthropic-version", "2023-06-01")
             .header("content-type", "application/json");
 
-        if let Some(key) = &request.api_key {
-            if !key.is_empty() {
+        if let Some(key) = &request.api_key
+            && !key.is_empty() {
                 req_builder = req_builder.header("x-api-key", key);
             }
-        }
 
         // Separate system messages from conversation history
         let mut system_parts = Vec::new();
@@ -235,11 +231,10 @@ impl ProviderRegistry {
             .post(&request.endpoint_url)
             .header("content-type", "application/json");
 
-        if let Some(key) = &request.api_key {
-            if !key.is_empty() {
+        if let Some(key) = &request.api_key
+            && !key.is_empty() {
                 req_builder = req_builder.header("Authorization", format!("Bearer {}", key));
             }
-        }
 
         if *provider == LlmProviderType::OpenRouter {
             req_builder = req_builder
@@ -352,15 +347,14 @@ impl ProviderRegistry {
                                 is_done: false,
                             };
                         }
-                    } else if delta_type == "thinking_delta" {
-                        if let Some(th) = delta.get("thinking").and_then(|s| s.as_str()) {
+                    } else if delta_type == "thinking_delta"
+                        && let Some(th) = delta.get("thinking").and_then(|s| s.as_str()) {
                             return ParsedDelta {
                                 text: None,
                                 thought: Some(th.to_string()),
                                 is_done: false,
                             };
                         }
-                    }
                 }
             } else if event_type == "message_stop" {
                 return ParsedDelta {
@@ -389,9 +383,9 @@ impl ProviderRegistry {
             };
         }
 
-        if let Ok(v) = serde_json::from_str::<serde_json::Value>(json_str) {
-            if let Some(choices) = v.get("choices").and_then(|c| c.as_array()) {
-                if let Some(first) = choices.first() {
+        if let Ok(v) = serde_json::from_str::<serde_json::Value>(json_str)
+            && let Some(choices) = v.get("choices").and_then(|c| c.as_array())
+                && let Some(first) = choices.first() {
                     let mut delta_res = ParsedDelta::default();
                     if let Some(delta) = first.get("delta") {
                         if let Some(content) = delta.get("content").and_then(|c| c.as_str()) {
@@ -405,15 +399,12 @@ impl ProviderRegistry {
                             delta_res.thought = Some(thought.to_string());
                         }
                     }
-                    if let Some(finish) = first.get("finish_reason").and_then(|f| f.as_str()) {
-                        if !finish.is_empty() {
+                    if let Some(finish) = first.get("finish_reason").and_then(|f| f.as_str())
+                        && !finish.is_empty() {
                             delta_res.is_done = true;
                         }
-                    }
                     return delta_res;
                 }
-            }
-        }
 
         ParsedDelta::default()
     }
@@ -423,11 +414,10 @@ impl ProviderRegistry {
 pub async fn fetch_openrouter_models(api_key: Option<&str>) -> Result<Vec<OpenRouterModelInfo>, String> {
     let client = reqwest::Client::new();
     let mut req = client.get("https://openrouter.ai/api/v1/models");
-    if let Some(key) = api_key {
-        if !key.is_empty() {
+    if let Some(key) = api_key
+        && !key.is_empty() {
             req = req.header("Authorization", format!("Bearer {}", key));
         }
-    }
 
     let res = req
         .send()
@@ -505,11 +495,11 @@ mod tests {
         let line = r#"data: {"type":"content_block_delta","index":0,"delta":{"type":"text_delta","text":"Hallo Hiroki!"}}"#;
         let delta = ProviderRegistry::parse_sse_line(line, &LlmProviderType::Anthropic);
         assert_eq!(delta.text.as_deref(), Some("Hallo Hiroki!"));
-        assert_eq!(delta.is_done, false);
+        assert!(!delta.is_done);
 
         let stop = r#"data: {"type":"message_stop"}"#;
         let delta_stop = ProviderRegistry::parse_sse_line(stop, &LlmProviderType::Anthropic);
-        assert_eq!(delta_stop.is_done, true);
+        assert!(delta_stop.is_done);
     }
 
     #[test]
@@ -518,6 +508,6 @@ mod tests {
         let delta = ProviderRegistry::parse_sse_line(line, &LlmProviderType::LocalLlama);
         assert_eq!(delta.text.as_deref(), Some("Guten Morgen"));
         assert_eq!(delta.thought.as_deref(), Some("Denke nach"));
-        assert_eq!(delta.is_done, false);
+        assert!(!delta.is_done);
     }
 }

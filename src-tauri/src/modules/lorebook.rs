@@ -1,4 +1,4 @@
-use rand::Rng;
+use rand::RngExt;
 use regex::Regex;
 use serde::{Deserialize, Serialize};
 use std::collections::{HashMap, HashSet};
@@ -337,7 +337,7 @@ impl Lorebook {
 
     /// Backwards compatible simple scan
     pub fn scan_and_activate(&self, context: &str) -> Vec<LorebookEntry> {
-        let res = evaluate_lorebooks(&[self.clone()], context, 0);
+        let res = evaluate_lorebooks(std::slice::from_ref(self), context, 0);
         let mut all = res.passive_entries;
         all.extend(res.active_entries);
         all
@@ -390,7 +390,7 @@ pub fn evaluate_lorebooks(
     }
 
     let mut initially_activated: Vec<LorebookEntry> = Vec::new();
-    let mut rng = rand::thread_rng();
+    let mut rng = rand::rng();
 
     for entry in &candidate_entries {
         // 1. Check exclude keys first (NOT logic)
@@ -402,8 +402,8 @@ pub fn evaluate_lorebooks(
         }
 
         // 2. Check tension threshold (Tension Event Trigger)
-        if let Some(threshold) = entry.tension_threshold {
-            if threshold > 0 && current_tension >= threshold {
+        if let Some(threshold) = entry.tension_threshold
+            && threshold > 0 && current_tension >= threshold {
                 // Tension event triggered!
                 triggered_tension_events.push(entry.name.clone());
                 // Release tension by 25 points per triggered event
@@ -411,16 +411,14 @@ pub fn evaluate_lorebooks(
                 initially_activated.push(entry.clone());
                 continue;
             }
-        }
 
         // 3. Always-on trigger
         let trigger_lower = entry.trigger_type.to_lowercase();
         if trigger_lower == "always_on" || (entry.key.is_empty() && entry.regex_keys.is_empty() && entry.trigger_type != "tension") {
-            if let Some(prob) = entry.probability {
-                if prob < 100 && rng.gen_range(1..=100) > prob {
+            if let Some(prob) = entry.probability
+                && prob < 100 && rng.random_range(1..=100) > prob {
                     continue;
                 }
-            }
             initially_activated.push(entry.clone());
             continue;
         }
@@ -437,12 +435,11 @@ pub fn evaluate_lorebooks(
             } else {
                 Regex::new(&format!("(?i){}", pat_str))
             };
-            if let Ok(re) = re_res {
-                if re.is_match(context) {
+            if let Ok(re) = re_res
+                && re.is_match(context) {
                     regex_matched = true;
                     break;
                 }
-            }
         }
 
         // 5. Keyword matching (Primary OR logic)
@@ -464,11 +461,10 @@ pub fn evaluate_lorebooks(
 
         // 7. Probability roll
         if matched {
-            if let Some(prob) = entry.probability {
-                if prob < 100 && rng.gen_range(1..=100) > prob {
+            if let Some(prob) = entry.probability
+                && prob < 100 && rng.random_range(1..=100) > prob {
                     continue;
                 }
-            }
             initially_activated.push(entry.clone());
         }
     }
@@ -506,15 +502,13 @@ pub fn evaluate_lorebooks(
                         active_uids.insert(u);
                     }
                 }
-            } else if let Ok(uid_num) = target.trim().parse::<u64>() {
-                if let Some(target_entry) = uid_to_entry.get(&uid_num) {
-                    if !active_uids.contains(&uid_num) {
+            } else if let Ok(uid_num) = target.trim().parse::<u64>()
+                && let Some(target_entry) = uid_to_entry.get(&uid_num)
+                    && !active_uids.contains(&uid_num) {
                         chained_additions.push(target_entry.clone());
                         active_uids.insert(uid_num);
                         active_names.insert(target_entry.name.to_lowercase());
                     }
-                }
-            }
         }
     }
     initially_activated.extend(chained_additions);
@@ -532,11 +526,10 @@ pub fn evaluate_lorebooks(
                 if active_names.contains(&req_lower) {
                     return true;
                 }
-                if let Ok(uid_num) = req.trim().parse::<u64>() {
-                    if active_uids.contains(&uid_num) {
+                if let Ok(uid_num) = req.trim().parse::<u64>()
+                    && active_uids.contains(&uid_num) {
                         return true;
                     }
-                }
                 false
             })
         })
@@ -562,7 +555,7 @@ pub fn evaluate_lorebooks(
 
     let mut sorted_entries: Vec<LorebookEntry> = deduped_map.into_values().collect();
     // Sort by priority descending (higher numbers first)
-    sorted_entries.sort_by(|a, b| b.priority.cmp(&a.priority));
+    sorted_entries.sort_by_key(|e| std::cmp::Reverse(e.priority));
 
     let activated_entry_names: Vec<String> = sorted_entries.iter().map(|e| e.name.clone()).collect();
 
@@ -595,45 +588,38 @@ pub fn list_all_lorebooks(user_lorebooks_dir: &Path, presets_dir: &Path) -> Vec<
     let mut seen_ids = HashSet::new();
 
     // 1. Scan user lorebooks directory
-    if user_lorebooks_dir.exists() {
-        if let Ok(entries) = fs::read_dir(user_lorebooks_dir) {
+    if user_lorebooks_dir.exists()
+        && let Ok(entries) = fs::read_dir(user_lorebooks_dir) {
             for entry in entries.flatten() {
                 let path = entry.path();
-                if path.extension().and_then(|s| s.to_str()) == Some("json") {
-                    if let Ok(book) = Lorebook::load_from_file(&path) {
-                        if !seen_ids.contains(&book.id) {
+                if path.extension().and_then(|s| s.to_str()) == Some("json")
+                    && let Ok(book) = Lorebook::load_from_file(&path)
+                        && !seen_ids.contains(&book.id) {
                             seen_ids.insert(book.id.clone());
                             books.push(book);
                         }
-                    }
-                }
             }
         }
-    }
 
     // 2. Scan bundled presets directory
-    if presets_dir.exists() {
-        if let Ok(preset_dirs) = fs::read_dir(presets_dir) {
+    if presets_dir.exists()
+        && let Ok(preset_dirs) = fs::read_dir(presets_dir) {
             for preset_entry in preset_dirs.flatten() {
                 let lb_dir = preset_entry.path().join("lorebooks");
-                if lb_dir.exists() {
-                    if let Ok(lb_files) = fs::read_dir(lb_dir) {
+                if lb_dir.exists()
+                    && let Ok(lb_files) = fs::read_dir(lb_dir) {
                         for file_entry in lb_files.flatten() {
                             let path = file_entry.path();
-                            if path.extension().and_then(|s| s.to_str()) == Some("json") {
-                                if let Ok(book) = Lorebook::load_from_file(&path) {
-                                    if !seen_ids.contains(&book.id) {
+                            if path.extension().and_then(|s| s.to_str()) == Some("json")
+                                && let Ok(book) = Lorebook::load_from_file(&path)
+                                    && !seen_ids.contains(&book.id) {
                                         seen_ids.insert(book.id.clone());
                                         books.push(book);
                                     }
-                                }
-                            }
                         }
                     }
-                }
             }
         }
-    }
 
     books.sort_by(|a, b| a.name.cmp(&b.name));
     books
@@ -661,10 +647,12 @@ mod tests {
 
     #[test]
     fn test_secondary_keys_and_logic() {
-        let mut entry = LorebookEntry::default();
-        entry.name = "Alchemie-Labor".to_string();
-        entry.key = vec!["Trank".to_string(), "Elixier".to_string()];
-        entry.secondary_keys = vec!["Brauen".to_string(), "Kessel".to_string()];
+        let entry = LorebookEntry {
+            name: "Alchemie-Labor".to_string(),
+            key: vec!["Trank".to_string(), "Elixier".to_string()],
+            secondary_keys: vec!["Brauen".to_string(), "Kessel".to_string()],
+            ..Default::default()
+        };
 
         let book = Lorebook {
             id: "test".to_string(),
@@ -674,12 +662,12 @@ mod tests {
         };
 
         // Context only has primary key "Trank" -> should NOT activate
-        let res1 = evaluate_lorebooks(&[book.clone()], "Ich nehme einen roten Trank.", 0);
+        let res1 = evaluate_lorebooks(std::slice::from_ref(&book), "Ich nehme einen roten Trank.", 0);
         assert!(res1.passive_entries.is_empty());
 
         // Context has primary "Trank" AND secondary "Kessel" -> SHOULD activate
         let res2 = evaluate_lorebooks(
-            &[book.clone()],
+            std::slice::from_ref(&book),
             "Ich bereite den Trank im großen Kessel zu.",
             0,
         );
@@ -689,10 +677,12 @@ mod tests {
 
     #[test]
     fn test_regex_and_exclude_keys() {
-        let mut entry = LorebookEntry::default();
-        entry.name = "Drachenkunde".to_string();
-        entry.regex_keys = vec![r"\b(Drache|Wyrm|Lindwurm)\b".to_string()];
-        entry.exclude_key = vec!["Friedlich".to_string()];
+        let entry = LorebookEntry {
+            name: "Drachenkunde".to_string(),
+            regex_keys: vec![r"\b(Drache|Wyrm|Lindwurm)\b".to_string()],
+            exclude_key: vec!["Friedlich".to_string()],
+            ..Default::default()
+        };
 
         let book = Lorebook {
             id: "test".to_string(),
@@ -702,7 +692,7 @@ mod tests {
         };
 
         // Matches regex "Drache"
-        let res1 = evaluate_lorebooks(&[book.clone()], "Ein riesiger Drache kreist am Himmel!", 0);
+        let res1 = evaluate_lorebooks(std::slice::from_ref(&book), "Ein riesiger Drache kreist am Himmel!", 0);
         assert_eq!(res1.passive_entries.len(), 1);
 
         // Matches regex "Drache" BUT has exclude key "Friedlich" -> excluded
@@ -716,10 +706,12 @@ mod tests {
 
     #[test]
     fn test_tension_accumulator_trigger() {
-        let mut entry = LorebookEntry::default();
-        entry.name = "Plötzlicher Überfall".to_string();
-        entry.trigger_type = "tension".to_string();
-        entry.tension_threshold = Some(70);
+        let entry = LorebookEntry {
+            name: "Plötzlicher Überfall".to_string(),
+            trigger_type: "tension".to_string(),
+            tension_threshold: Some(70),
+            ..Default::default()
+        };
 
         let book = Lorebook {
             id: "test".to_string(),
@@ -729,7 +721,7 @@ mod tests {
         };
 
         // Tension 50 < 70 -> no trigger
-        let res1 = evaluate_lorebooks(&[book.clone()], "Es ist ruhig im Wald.", 50);
+        let res1 = evaluate_lorebooks(std::slice::from_ref(&book), "Es ist ruhig im Wald.", 50);
         assert_eq!(res1.triggered_tension_events.len(), 0);
         assert_eq!(res1.new_tension, 50);
 
@@ -742,14 +734,18 @@ mod tests {
 
     #[test]
     fn test_chain_dependencies() {
-        let mut entry_a = LorebookEntry::default();
-        entry_a.name = "Geheimgang".to_string();
-        entry_a.key = vec!["Geheimgang".to_string()];
-        entry_a.chain_activates = vec!["Schatzkammer".to_string()];
+        let entry_a = LorebookEntry {
+            name: "Geheimgang".to_string(),
+            key: vec!["Geheimgang".to_string()],
+            chain_activates: vec!["Schatzkammer".to_string()],
+            ..Default::default()
+        };
 
-        let mut entry_b = LorebookEntry::default();
-        entry_b.name = "Schatzkammer".to_string();
-        entry_b.chain_requires = vec!["Geheimgang".to_string()];
+        let entry_b = LorebookEntry {
+            name: "Schatzkammer".to_string(),
+            chain_requires: vec!["Geheimgang".to_string()],
+            ..Default::default()
+        };
 
         let book = Lorebook {
             id: "test".to_string(),
@@ -766,15 +762,19 @@ mod tests {
 
     #[test]
     fn test_active_vs_passive_injection() {
-        let mut entry_passive = LorebookEntry::default();
-        entry_passive.name = "Weltgeschichte".to_string();
-        entry_passive.key = vec!["Geschichte".to_string()];
-        entry_passive.injection_behavior = "passive".to_string();
+        let entry_passive = LorebookEntry {
+            name: "Weltgeschichte".to_string(),
+            key: vec!["Geschichte".to_string()],
+            injection_behavior: "passive".to_string(),
+            ..Default::default()
+        };
 
-        let mut entry_active = LorebookEntry::default();
-        entry_active.name = "Wichtige Verhaltensregel".to_string();
-        entry_active.key = vec!["Regel".to_string()];
-        entry_active.injection_behavior = "active".to_string();
+        let entry_active = LorebookEntry {
+            name: "Wichtige Verhaltensregel".to_string(),
+            key: vec!["Regel".to_string()],
+            injection_behavior: "active".to_string(),
+            ..Default::default()
+        };
 
         let book = Lorebook {
             id: "test".to_string(),

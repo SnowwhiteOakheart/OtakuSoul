@@ -309,12 +309,11 @@ pub async fn search_chub_characters(
         sort_val
     );
 
-    if let Some(t_list) = topics {
-        if !t_list.is_empty() {
+    if let Some(t_list) = topics
+        && !t_list.is_empty() {
             let joined = t_list.join(",");
             url.push_str(&format!("&topics={}", urlencoding::encode(&joined)));
         }
-    }
 
     let res = client
         .get(&url)
@@ -523,11 +522,11 @@ pub async fn import_chub_character(full_path: &str) -> Result<CharacterImportRes
         .send()
         .await;
 
-    if let Ok(resp) = cdn_result {
-        if resp.status().is_success() {
-            if let Ok(bytes) = resp.bytes().await {
-                if bytes.len() >= 8 && &bytes[0..8] == b"\x89PNG\r\n\x1a\n" {
-                    if let Ok((mut card, avatar_data_url)) = parse_character_png(&bytes) {
+    if let Ok(resp) = cdn_result
+        && resp.status().is_success()
+            && let Ok(bytes) = resp.bytes().await
+                && bytes.len() >= 8 && &bytes[0..8] == b"\x89PNG\r\n\x1a\n"
+                    && let Ok((mut card, avatar_data_url)) = parse_character_png(&bytes) {
                         info!("[SoulHub] Successfully downloaded V2 card from CDN for {}", clean_path);
 
                         let imported_lorebook = extract_and_save_embedded_lorebook(&card, &card.data.name);
@@ -553,10 +552,6 @@ pub async fn import_chub_character(full_path: &str) -> Result<CharacterImportRes
                             imported_lorebook,
                         });
                     }
-                }
-            }
-        }
-    }
 
     // 2. Fallback: Query Chub API node and rebuild CharacterCardV2 locally
     info!("[SoulHub] CDN unavailable; reconstructing character from Chub API node for {}", clean_path);
@@ -590,18 +585,12 @@ pub async fn import_chub_character(full_path: &str) -> Result<CharacterImportRes
         .unwrap_or("");
 
     let avatar_bytes = if !avatar_url.is_empty() {
-        if let Ok(img_resp) = client.get(avatar_url).send().await {
-            if img_resp.status().is_success() {
-                if let Ok(b) = img_resp.bytes().await {
-                    convert_image_bytes_to_png(&b).unwrap_or_else(|_| get_placeholder_png())
-                } else {
-                    get_placeholder_png()
-                }
-            } else {
-                get_placeholder_png()
-            }
-        } else {
-            get_placeholder_png()
+        match client.get(avatar_url).send().await {
+            Ok(img_resp) if img_resp.status().is_success() => match img_resp.bytes().await {
+                Ok(b) => convert_image_bytes_to_png(&b).unwrap_or_else(|_| get_placeholder_png()),
+                Err(_) => get_placeholder_png(),
+            },
+            _ => get_placeholder_png(),
         }
     } else {
         get_placeholder_png()

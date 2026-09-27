@@ -58,8 +58,8 @@ pub fn get_recent_logs(max_lines: Option<usize>) -> Vec<LogEntry> {
     let limit = max_lines.unwrap_or(200);
 
     // If memory buffer has logs, return the slice
-    if let Ok(buffer) = LOG_BUFFER.lock() {
-        if !buffer.is_empty() {
+    if let Ok(buffer) = LOG_BUFFER.lock()
+        && !buffer.is_empty() {
             let start = if buffer.len() > limit {
                 buffer.len() - limit
             } else {
@@ -67,18 +67,13 @@ pub fn get_recent_logs(max_lines: Option<usize>) -> Vec<LogEntry> {
             };
             return buffer[start..].to_vec();
         }
-    }
 
     // Fallback: Read from file if memory buffer was empty
     let path = get_log_file_path();
     if let Ok(file) = fs::File::open(&path) {
         let reader = BufReader::new(file);
-        let mut lines = Vec::new();
-        for line_res in reader.lines() {
-            if let Ok(line) = line_res {
-                lines.push(line);
-            }
-        }
+        // map_while stops at the first read error instead of looping forever on it.
+        let lines: Vec<String> = reader.lines().map_while(Result::ok).collect();
 
         let start = if lines.len() > limit {
             lines.len() - limit

@@ -155,17 +155,15 @@ pub fn load_llm_presets(custom_path: Option<&Path>) -> Vec<LlmPreset> {
 
     let mut presets = get_default_presets();
 
-    if path.exists() {
-        if let Ok(content) = std::fs::read_to_string(&path) {
-            if let Ok(user_presets) = serde_json::from_str::<Vec<LlmPreset>>(&content) {
+    if path.exists()
+        && let Ok(content) = std::fs::read_to_string(&path)
+            && let Ok(user_presets) = serde_json::from_str::<Vec<LlmPreset>>(&content) {
                 for up in user_presets {
                     if !presets.iter().any(|p| p.id == up.id) {
                         presets.push(up);
                     }
                 }
             }
-        }
-    }
 
     presets
 }

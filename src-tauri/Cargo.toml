@@ -3,7 +3,8 @@ name = "otakusoul"
 version = "0.1.0"
 description = "OtakuSoul - AI Companion, Tabletop RPG & Soul Memory Platform"
 authors = ["SnowwhiteOakheart"]
-edition = "2021"
+edition = "2024"
+rust-version = "1.88"
 
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
@@ -12,39 +13,40 @@ name = "otakusoul_lib"
 crate-type = ["staticlib", "cdylib", "rlib"]
 
 [build-dependencies]
-tauri-build = { version = "2", features = [] }
+tauri-build = { version = "2.7", features = [] }
 
 [dependencies]
-tauri = { version = "2", features = ["protocol-asset"] }
-tauri-plugin-opener = "2"
-tauri-plugin-dialog = "2"
+tauri = { version = "2.12", features = ["protocol-asset"] }
+tauri-plugin-opener = "2.6"
+tauri-plugin-dialog = "2.8"
 crc32fast = "1.5"
 serde = { version = "1", features = ["derive"] }
 serde_json = "1"
 tokio = { version = "1", features = ["full"] }
-reqwest = { version = "0.12", features = ["json", "stream", "multipart"] }
+reqwest = { version = "0.13", features = ["json", "stream", "multipart"] }
 futures-util = "0.3"
-sysinfo = "0.33"
+sysinfo = "0.39"
 directories = "6.0"
-rusqlite = { version = "0.32", features = ["bundled"] }
+rusqlite = { version = "0.40", features = ["bundled", "fallible_uint"] }
 tracing = "0.1"
 tracing-subscriber = "0.3"
-rand = "0.8"
-base64 = "0.22"
-png = "0.17"
+rand = "0.10"
+base64 = "0.23"
+png = "0.18"
 urlencoding = "2.1"
 regex = "1.10"
 chrono = "0.4"
-sha2 = "0.10"
-tokio-tungstenite = { version = "0.24", features = ["native-tls"] }
+sha2 = "0.11"
+tokio-tungstenite = { version = "0.30", features = ["native-tls"] }
 hound = "3.5"
 kokoro-en = { version = "0.1.5", default-features = false, features = ["misaki-lean"] }
-zip = { version = "2.2", default-features = false, features = ["deflate"] }
+zip = { version = "8", default-features = false, features = ["deflate"] }
 image = { version = "0.25", default-features = false, features = ["png", "jpeg", "webp"] }
 arboard = "3.6.1"
 xcap = "0.9.8"
 axum = { version = "0.8", features = ["ws"] }
 qrcode = { version = "0.14.1", default-features = false, features = ["svg"] }
+keyring = "4"
 
 [target.'cfg(not(any(target_os = "android", target_os = "ios")))'.dependencies]
 whisper-rs = { version = "0.16", features = ["tracing_backend"] }

@@ -85,6 +85,12 @@ pub struct LlamaServerManager {
     logs: Arc<Mutex<VecDeque<String>>>,
 }
 
+impl Default for LlamaServerManager {
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
 impl LlamaServerManager {
     pub fn new() -> Self {
         let default_status = ServerStatus {
@@ -316,16 +322,14 @@ impl LlamaServerManager {
         if let Some(ub) = config.ubatch_size {
             cmd.arg("-ub").arg(ub.to_string());
         }
-        if let Some(ref k) = config.cache_type_k {
-            if !k.is_empty() {
+        if let Some(ref k) = config.cache_type_k
+            && !k.is_empty() {
                 cmd.arg("--cache-type-k").arg(k);
             }
-        }
-        if let Some(ref v) = config.cache_type_v {
-            if !v.is_empty() {
+        if let Some(ref v) = config.cache_type_v
+            && !v.is_empty() {
                 cmd.arg("--cache-type-v").arg(v);
             }
-        }
         if config.mlock {
             cmd.arg("--mlock");
         }
@@ -427,12 +431,11 @@ impl LlamaServerManager {
                 }
             }
 
-            if let Ok(resp) = client.get(&health_url).send().await {
-                if resp.status().is_success() {
+            if let Ok(resp) = client.get(&health_url).send().await
+                && resp.status().is_success() {
                     healthy = true;
                     break;
                 }
-            }
         }
 
         if healthy {

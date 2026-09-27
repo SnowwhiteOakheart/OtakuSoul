@@ -77,28 +77,22 @@ impl Default for UserPersona {
 
 pub fn parse_character_json(content: &str) -> Result<CharacterCardV2, String> {
     if let Ok(mut card_v2) = serde_json::from_str::<CharacterCardV2>(content) {
-        if card_v2.data.personality.trim().is_empty() {
-            if let Ok(val) = serde_json::from_str::<serde_json::Value>(content) {
-                if let Some(tp) = val.get("data").and_then(|d| d.get("tavern_personality")).and_then(|v| v.as_str()) {
-                    if !tp.trim().is_empty() {
+        if card_v2.data.personality.trim().is_empty()
+            && let Ok(val) = serde_json::from_str::<serde_json::Value>(content)
+                && let Some(tp) = val.get("data").and_then(|d| d.get("tavern_personality")).and_then(|v| v.as_str())
+                    && !tp.trim().is_empty() {
                         card_v2.data.personality = tp.to_string();
                     }
-                }
-            }
-        }
         return Ok(card_v2);
     }
 
     if let Ok(mut flat_data) = serde_json::from_str::<CharacterData>(content) {
-        if flat_data.personality.trim().is_empty() {
-            if let Ok(val) = serde_json::from_str::<serde_json::Value>(content) {
-                if let Some(tp) = val.get("tavern_personality").and_then(|v| v.as_str()) {
-                    if !tp.trim().is_empty() {
+        if flat_data.personality.trim().is_empty()
+            && let Ok(val) = serde_json::from_str::<serde_json::Value>(content)
+                && let Some(tp) = val.get("tavern_personality").and_then(|v| v.as_str())
+                    && !tp.trim().is_empty() {
                         flat_data.personality = tp.to_string();
                     }
-                }
-            }
-        }
         return Ok(CharacterCardV2 {
             spec: "chara_card_v2".to_string(),
             spec_version: "2.0".to_string(),
@@ -107,20 +101,18 @@ pub fn parse_character_json(content: &str) -> Result<CharacterCardV2, String> {
     }
 
     if let Ok(val) = serde_json::from_str::<serde_json::Value>(content) {
-        if let Some(inner_data) = val.get("data") {
-            if let Ok(mut data) = serde_json::from_value::<CharacterData>(inner_data.clone()) {
-                if data.personality.trim().is_empty() {
-                    if let Some(tp) = inner_data.get("tavern_personality").and_then(|v| v.as_str()) {
+        if let Some(inner_data) = val.get("data")
+            && let Ok(mut data) = serde_json::from_value::<CharacterData>(inner_data.clone()) {
+                if data.personality.trim().is_empty()
+                    && let Some(tp) = inner_data.get("tavern_personality").and_then(|v| v.as_str()) {
                         data.personality = tp.to_string();
                     }
-                }
                 return Ok(CharacterCardV2 {
                     spec: "chara_card_v2".to_string(),
                     spec_version: "2.0".to_string(),
                     data,
                 });
             }
-        }
 
         // Support Chub AI node object { "node": { "definition": { ... } } }
         if let Some(node) = val.get("node") {
@@ -220,21 +212,19 @@ pub fn parse_character_png(bytes: &[u8]) -> Result<(CharacterCardV2, String), St
         let chunk_data = &bytes[cursor..cursor + length];
         cursor += length + 4; // Skip data + 4 bytes CRC
 
-        if chunk_type == b"tEXt" {
-            if let Some(null_pos) = chunk_data.iter().position(|&b| b == 0) {
+        if chunk_type == b"tEXt"
+            && let Some(null_pos) = chunk_data.iter().position(|&b| b == 0) {
                 let keyword = String::from_utf8_lossy(&chunk_data[..null_pos]);
                 if keyword == "chara" || keyword == "ccv3" {
                     let base64_text = String::from_utf8_lossy(&chunk_data[null_pos + 1..]);
                     let trimmed = base64_text.trim();
-                    if let Ok(decoded_bytes) = BASE64_STANDARD.decode(trimmed) {
-                        if let Ok(json_str) = String::from_utf8(decoded_bytes) {
+                    if let Ok(decoded_bytes) = BASE64_STANDARD.decode(trimmed)
+                        && let Ok(json_str) = String::from_utf8(decoded_bytes) {
                             chara_json_opt = Some(json_str);
                             break;
                         }
-                    }
                 }
             }
-        }
     }
 
     let chara_json = chara_json_opt.ok_or_else(|| {
@@ -286,14 +276,13 @@ pub fn inject_character_metadata_png(base_png: &[u8], card: &CharacterCardV2) ->
         cursor += length + 4;
 
         // Skip existing chara or ccv3 tEXt chunks
-        if chunk_type == b"tEXt" {
-            if let Some(null_pos) = chunk_data.iter().position(|&b| b == 0) {
+        if chunk_type == b"tEXt"
+            && let Some(null_pos) = chunk_data.iter().position(|&b| b == 0) {
                 let kw = &chunk_data[..null_pos];
                 if kw == b"chara" || kw == b"ccv3" {
                     continue;
                 }
             }
-        }
 
         // Copy existing chunk
         new_png.extend_from_slice(&(length as u32).to_be_bytes());
@@ -373,18 +362,16 @@ pub fn load_character_from_file(path: &Path) -> Result<CharacterProfile, String>
     };
 
     if let Some(ext) = card.data.extensions.as_object() {
-        if let Some(lb) = ext.get("selected_lorebook").and_then(|v| v.as_str()) {
-            if !lb.trim().is_empty() && lb != "None" {
+        if let Some(lb) = ext.get("selected_lorebook").and_then(|v| v.as_str())
+            && !lb.trim().is_empty() && lb != "None" {
                 bound_lorebooks.push(lb.to_string());
             }
-        }
         if let Some(lbs) = ext.get("bound_lorebooks").and_then(|v| v.as_array()) {
             for b in lbs {
-                if let Some(s) = b.as_str() {
-                    if !s.trim().is_empty() && !bound_lorebooks.contains(&s.to_string()) {
+                if let Some(s) = b.as_str()
+                    && !s.trim().is_empty() && !bound_lorebooks.contains(&s.to_string()) {
                         bound_lorebooks.push(s.to_string());
                     }
-                }
             }
         }
     }
@@ -393,14 +380,13 @@ pub fn load_character_from_file(path: &Path) -> Result<CharacterProfile, String>
         let mut avatar_data_url = None;
         let parent = path.parent().unwrap_or(Path::new("."));
         let png_candidate = parent.join(format!("{}.png", id));
-        if png_candidate.exists() {
-            if let Ok(png_bytes) = fs::read(&png_candidate) {
+        if png_candidate.exists()
+            && let Ok(png_bytes) = fs::read(&png_candidate) {
                 avatar_data_url = Some(format!(
                     "data:image/png;base64,{}",
                     BASE64_STANDARD.encode(&png_bytes)
                 ));
             }
-        }
 
         Ok(CharacterProfile {
             id,
@@ -431,8 +417,8 @@ pub fn extract_and_save_embedded_lorebook(card: &CharacterCardV2, char_name: &st
     let json_str = serde_json::to_string(book_val).ok()?;
     let paths = resolve_app_paths();
     let fallback_name = format!("Lore_{}", char_name);
-    if let Ok(lorebook) = crate::modules::lorebook::Lorebook::import_from_json_string(&json_str, Some(&fallback_name)) {
-        if !lorebook.entries.is_empty() {
+    if let Ok(lorebook) = crate::modules::lorebook::Lorebook::import_from_json_string(&json_str, Some(&fallback_name))
+        && !lorebook.entries.is_empty() {
             let slug = if !lorebook.id.trim().is_empty() {
                 lorebook.id.clone()
             } else {
@@ -442,7 +428,6 @@ pub fn extract_and_save_embedded_lorebook(card: &CharacterCardV2, char_name: &st
             let _ = lorebook.save_to_file(&target_path);
             return Some(lorebook.name);
         }
-    }
     None
 }
 
@@ -542,8 +527,8 @@ pub fn delete_character(char_id: &str) -> Result<(), String> {
         .unwrap_or(0);
 
     // 1. Move any matching files in the user's characters_dir to trash
-    if char_dir.exists() && char_dir.is_dir() {
-        if let Ok(entries) = fs::read_dir(&char_dir) {
+    if char_dir.exists() && char_dir.is_dir()
+        && let Ok(entries) = fs::read_dir(&char_dir) {
             for entry in entries.flatten() {
                 let p = entry.path();
                 if !p.is_file() {
@@ -559,7 +544,6 @@ pub fn delete_character(char_id: &str) -> Result<(), String> {
                 }
             }
         }
-    }
 
     let candidates = [
         char_dir.join(format!("{}.png", char_id)),
@@ -595,11 +579,10 @@ fn hide_character_in_settings(
     }
 
     // If active character was this one, reset it
-    if let Some(ref active_id) = settings.active_character_id {
-        if active_id == char_id || crate::modules::paths::normalize_identifier(active_id) == norm_target {
+    if let Some(ref active_id) = settings.active_character_id
+        && (active_id == char_id || crate::modules::paths::normalize_identifier(active_id) == norm_target) {
             settings.active_character_id = None;
         }
-    }
 }
 
 /// Restores all previously hidden / deleted preset characters
@@ -626,15 +609,12 @@ pub fn load_personas() -> Vec<UserPersona> {
 }
 
 fn load_personas_from_path(path: &Path) -> Vec<UserPersona> {
-    if path.exists() {
-        if let Ok(content) = fs::read_to_string(path) {
-            if let Ok(personas) = serde_json::from_str::<Vec<UserPersona>>(&content) {
-                if !personas.is_empty() {
+    if path.exists()
+        && let Ok(content) = fs::read_to_string(path)
+            && let Ok(personas) = serde_json::from_str::<Vec<UserPersona>>(&content)
+                && !personas.is_empty() {
                     return personas;
                 }
-            }
-        }
-    }
 
     let default_list = vec![UserPersona::default()];
     default_list

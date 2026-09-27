@@ -304,6 +304,12 @@ pub struct CompanionEngine {
     mcp_manager: McpManager,
 }
 
+impl Default for CompanionEngine {
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
 impl CompanionEngine {
     pub fn new() -> Self {
         let app_paths = paths::resolve_app_paths();
@@ -439,7 +445,7 @@ impl CompanionEngine {
         let due_dt = now_dt + chrono::Duration::minutes(due_minutes.max(1));
 
         let goal = Goal {
-            id: format!("goal_{}", &uuid_short()),
+            id: format!("goal_{}", uuid_short()),
             summary: summary.trim().to_string(),
             due_at: due_dt.to_rfc3339(),
             status: "pending".to_string(),
@@ -503,11 +509,10 @@ impl CompanionEngine {
                 if let Ok(dt) = chrono::DateTime::parse_from_rfc3339(g.completed_at.as_deref().unwrap_or("")) {
                     return dt > completed_cutoff;
                 }
-            } else if g.status == "pending" {
-                if let Ok(dt) = chrono::DateTime::parse_from_rfc3339(&g.created_at) {
+            } else if g.status == "pending"
+                && let Ok(dt) = chrono::DateTime::parse_from_rfc3339(&g.created_at) {
                     return dt > stale_cutoff;
                 }
-            }
             true
         });
     }
@@ -598,11 +603,7 @@ impl CompanionEngine {
     ) -> Result<ToolExecutionResult, String> {
         let req_opt = {
             let mut st = self.state.write().unwrap();
-            if let Some(pos) = st.pending_tool_calls.iter().position(|c| c.id == call_id) {
-                Some(st.pending_tool_calls.remove(pos))
-            } else {
-                None
-            }
+            st.pending_tool_calls.iter().position(|c| c.id == call_id).map(|pos| st.pending_tool_calls.remove(pos))
         };
 
         let req = req_opt.ok_or_else(|| format!("Kein anhängiger Tool-Call mit ID '{}' gefunden.", call_id))?;
@@ -840,18 +841,15 @@ impl CompanionEngine {
 
         #[cfg(not(any(target_os = "windows", target_os = "macos")))]
         {
-            if let Ok(out) = std::process::Command::new("xdotool").args(["getactivewindow", "getwindowname"]).output() {
-                if out.status.success() {
+            if let Ok(out) = std::process::Command::new("xdotool").args(["getactivewindow", "getwindowname"]).output()
+                && out.status.success() {
                     title = String::from_utf8_lossy(&out.stdout).trim().to_string();
                 }
-            }
-            if title.is_empty() {
-                if let Ok(out) = std::process::Command::new("kdotool").args(["getactivewindow", "getwindowname"]).output() {
-                    if out.status.success() {
+            if title.is_empty()
+                && let Ok(out) = std::process::Command::new("kdotool").args(["getactivewindow", "getwindowname"]).output()
+                    && out.status.success() {
                         title = String::from_utf8_lossy(&out.stdout).trim().to_string();
                     }
-                }
-            }
         }
 
         // Privacy filter

@@ -270,11 +270,10 @@ pub fn clean_text_for_tts(raw: &str, filter_mode: &TtsFilterMode, custom_regex: 
     };
 
     // 7. Apply custom regex exclusion if set
-    if !custom_regex.is_empty() {
-        if let Ok(custom_re) = regex::Regex::new(custom_regex) {
+    if !custom_regex.is_empty()
+        && let Ok(custom_re) = regex::Regex::new(custom_regex) {
             text = custom_re.replace_all(&text, "").to_string();
         }
-    }
 
     // 8. Never pass Markdown asterisks to a speech engine. In "Alles"
     // mode their content remains, but Edge-TTS must not pronounce "Stern".
@@ -376,7 +375,7 @@ pub async fn list_available_voices(
                                 v.get("Gender").and_then(|s| s.as_str())
                             ) {
                                 // Extract a readable name from ShortName (e.g. "de-DE-KatjaNeural" -> "Katja")
-                                let name = id.split('-').last().unwrap_or(id).replace("Neural", "");
+                                let name = id.split('-').next_back().unwrap_or(id).replace("Neural", "");
                                 voices.push(ScannedVoice {
                                     id: id.to_string(),
                                     name,
@@ -511,7 +510,7 @@ async fn synthesize_edge_tts_websocket(text: &str, voice_id: &str, rate: &str, p
         "X-Timestamp:{}\r\nContent-Type:application/json; charset=utf-8\r\nPath:speech.config\r\n\r\n{{\"context\":{{\"synthesis\":{{\"audio\":{{\"metadataoptions\":{{\"sentenceBoundaryEnabled\":\"false\",\"wordBoundaryEnabled\":\"false\"}},\"outputFormat\":\"audio-24khz-48kbitrate-mono-mp3\"}}}}}}}}",
         timestamp
     );
-    ws_stream.send(Message::Text(config_msg)).await
+    ws_stream.send(Message::Text(config_msg.into())).await
         .map_err(|e| format!("Fehler beim Senden der Konfiguration: {}", e))?;
 
     // Send SSML
@@ -520,7 +519,7 @@ async fn synthesize_edge_tts_websocket(text: &str, voice_id: &str, rate: &str, p
         "X-RequestId:{}\r\nContent-Type:application/ssml+xml\r\nX-Timestamp:{}\r\nPath:ssml\r\n\r\n{}",
         request_id, timestamp, ssml
     );
-    ws_stream.send(Message::Text(ssml_msg)).await
+    ws_stream.send(Message::Text(ssml_msg.into())).await
         .map_err(|e| format!("Fehler beim Senden der SSML-Nachricht: {}", e))?;
 
     // Collect audio data
@@ -551,11 +550,10 @@ async fn synthesize_edge_tts_websocket(text: &str, voice_id: &str, rate: &str, p
             }
             Ok(Message::Close(c)) => {
                 info!("Edge-TTS Closed: {:?}", c);
-                if let Some(close_frame) = c {
-                    if close_frame.reason.contains("Unsupported voice") {
+                if let Some(close_frame) = c
+                    && close_frame.reason.contains("Unsupported voice") {
                         return Err(format!("Die ausgewählte Stimme wird von Microsoft nicht mehr unterstützt. Bitte wähle eine andere Stimme aus. (Details: {})", close_frame.reason));
                     }
-                }
                 break;
             }
             Err(e) => {
@@ -650,7 +648,7 @@ fn generate_edge_sec_ms_gec(unix_timestamp: i64) -> String {
     let windows_file_time = (rounded_timestamp + WINDOWS_EPOCH_OFFSET_SECONDS)
         * HUNDRED_NANOSECONDS_PER_SECOND;
     let value = format!("{windows_file_time}{EDGE_TTS_TRUSTED_CLIENT_TOKEN}");
-    format!("{:X}", Sha256::digest(value.as_bytes()))
+    Sha256::digest(value.as_bytes()).iter().map(|b| format!("{:02X}", b)).collect()
 }
 
 // ---------------------------------------------------------------------------
@@ -1046,11 +1044,10 @@ async fn transcribe_openai_compatible(samples: &[f32], config: &SttConfig) -> Re
     if !status.is_success() {
         return Err(format!("STT-Endpunkt meldet {}: {}", status, body));
     }
-    if let Ok(json) = serde_json::from_str::<serde_json::Value>(&body) {
-        if let Some(text) = json["text"].as_str() {
+    if let Ok(json) = serde_json::from_str::<serde_json::Value>(&body)
+        && let Some(text) = json["text"].as_str() {
             return Ok(text.trim().to_string());
         }
-    }
     Ok(body.trim().to_string())
 }
 
@@ -1102,23 +1099,49 @@ fn get_voice_config_path(char_id: &str) -> PathBuf {
 
 pub fn load_character_voice_config(char_id: &str) -> VoiceConfig {
     let path = get_voice_config_path(char_id);
-    load_voice_config_from_path(&path)
+    let mut config = load_voice_config_from_path(&path);
+    let prefix = voice_secret_prefix(&path);
+    let mut needs_migration = false;
+    for (name, value) in voice_secret_fields(&mut config) {
+        needs_migration |= crate::modules::secrets::hydrate(&format!("{}/{}", prefix, name), value);
+    }
+    if needs_migration {
+        let _ = save_character_voice_config(char_id, &config);
+    }
+    config
+}
+
+fn voice_secret_prefix(path: &std::path::Path) -> String {
+    let stem = path.file_stem().map(|s| s.to_string_lossy().to_string()).unwrap_or_default();
+    format!("voice/{}", stem)
+}
+
+fn voice_secret_fields(config: &mut VoiceConfig) -> [(&'static str, &mut String); 4] {
+    [
+        ("elevenlabs_api_key", &mut config.elevenlabs_api_key),
+        ("openai_api_key", &mut config.openai_api_key),
+        ("rvc_api_key", &mut config.rvc.api_key),
+        ("stt_api_key", &mut config.stt.api_key),
+    ]
 }
 
 fn load_voice_config_from_path(path: &std::path::Path) -> VoiceConfig {
-    if path.exists() {
-        if let Ok(content) = fs::read_to_string(path) {
-            if let Ok(config) = serde_json::from_str::<VoiceConfig>(&content) {
+    if path.exists()
+        && let Ok(content) = fs::read_to_string(path)
+            && let Ok(config) = serde_json::from_str::<VoiceConfig>(&content) {
                 return config;
             }
-        }
-    }
     VoiceConfig::default()
 }
 
 pub fn save_character_voice_config(char_id: &str, config: &VoiceConfig) -> Result<(), String> {
     let path = get_voice_config_path(char_id);
-    save_voice_config_to_path(&path, config)?;
+    let prefix = voice_secret_prefix(&path);
+    let mut on_disk = config.clone();
+    for (name, value) in voice_secret_fields(&mut on_disk) {
+        crate::modules::secrets::externalize(&format!("{}/{}", prefix, name), value);
+    }
+    save_voice_config_to_path(&path, &on_disk)?;
     info!("Stimmen-Konfiguration für '{}' gespeichert in {:?}", char_id, path);
     Ok(())
 }
@@ -1140,9 +1163,7 @@ fn save_voice_config_to_path(path: &std::path::Path, config: &VoiceConfig) -> Re
 // ---------------------------------------------------------------------------
 
 fn uuid_v4() -> String {
-    use rand::Rng;
-    let mut rng = rand::thread_rng();
-    let bytes: [u8; 16] = rng.gen();
+    let bytes: [u8; 16] = rand::random();
     format!(
         "{:08x}-{:04x}-4{:03x}-{:04x}-{:012x}",
         u32::from_be_bytes([bytes[0], bytes[1], bytes[2], bytes[3]]),

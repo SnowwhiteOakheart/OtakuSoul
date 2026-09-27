@@ -177,9 +177,9 @@ impl McpManager {
             let line_res = tokio::time::timeout(std::time::Duration::from_secs(5), reader.next_line()).await;
             let _ = child.kill().await;
 
-            if let Ok(Ok(Some(line))) = line_res {
-                if let Ok(val) = serde_json::from_str::<serde_json::Value>(&line) {
-                    if let Some(tools_arr) = val.pointer("/result/tools").and_then(|v| v.as_array()) {
+            if let Ok(Ok(Some(line))) = line_res
+                && let Ok(val) = serde_json::from_str::<serde_json::Value>(&line)
+                    && let Some(tools_arr) = val.pointer("/result/tools").and_then(|v| v.as_array()) {
                         let mut result = Vec::new();
                         for t in tools_arr {
                             result.push(McpToolInfo {
@@ -191,8 +191,6 @@ impl McpManager {
                         }
                         return Ok(result);
                     }
-                }
-            }
         }
 
         Ok(Vec::new())
@@ -282,13 +280,11 @@ impl McpManager {
         if let Ok(entries) = std::fs::read_dir(&self.plugins_dir) {
             for entry in entries.flatten() {
                 let path = entry.path();
-                if path.extension().and_then(|s| s.to_str()) == Some("json") {
-                    if let Ok(content) = std::fs::read_to_string(&path) {
-                        if let Ok(plugin) = serde_json::from_str::<CompanionPlugin>(&content) {
+                if path.extension().and_then(|s| s.to_str()) == Some("json")
+                    && let Ok(content) = std::fs::read_to_string(&path)
+                        && let Ok(plugin) = serde_json::from_str::<CompanionPlugin>(&content) {
                             plugins.push(plugin);
                         }
-                    }
-                }
             }
         }
         plugins

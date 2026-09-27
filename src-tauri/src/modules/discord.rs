@@ -215,6 +215,8 @@ impl DiscordRpcClient {
 // 2. DISCORD GATEWAY & BOT
 // ============================================================================
 
+const DISCORD_TOKEN_ACCOUNT: &str = "discord_bot_token";
+
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct DiscordBotConfig {
     pub enabled: bool,
@@ -251,6 +253,12 @@ pub struct DiscordBotManager {
     start_time: Arc<RwLock<Option<Instant>>>,
 }
 
+impl Default for DiscordBotManager {
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
 impl DiscordBotManager {
     pub fn new() -> Self {
         Self {
@@ -264,25 +272,32 @@ impl DiscordBotManager {
     pub fn load_config() -> DiscordBotConfig {
         let paths = resolve_app_paths();
         let path = PathBuf::from(&paths.data_dir).join("discord_bot_config.json");
-        if path.exists() {
-            if let Ok(content) = fs::read_to_string(&path) {
-                if let Ok(cfg) = serde_json::from_str::<DiscordBotConfig>(&content) {
+        if path.exists()
+            && let Ok(content) = fs::read_to_string(&path)
+                && let Ok(mut cfg) = serde_json::from_str::<DiscordBotConfig>(&content) {
+                    if crate::modules::secrets::hydrate(DISCORD_TOKEN_ACCOUNT, &mut cfg.bot_token) {
+                        let _ = Self::write_config(&cfg);
+                    }
                     return cfg;
                 }
-            }
-        }
         DiscordBotConfig::default()
     }
 
     pub async fn save_config(&self, config: DiscordBotConfig) -> Result<(), String> {
-        let paths = resolve_app_paths();
-        let path = PathBuf::from(&paths.data_dir).join("discord_bot_config.json");
-        let content = serde_json::to_string_pretty(&config)
-            .map_err(|e| format!("Fehler beim Serialisieren der Discord-Konfiguration: {}", e))?;
-        fs::write(&path, content)
-            .map_err(|e| format!("Fehler beim Speichern der Discord-Konfiguration: {}", e))?;
+        Self::write_config(&config)?;
         *self.config.write().await = config;
         Ok(())
+    }
+
+    fn write_config(config: &DiscordBotConfig) -> Result<(), String> {
+        let paths = resolve_app_paths();
+        let path = PathBuf::from(&paths.data_dir).join("discord_bot_config.json");
+        let mut on_disk = config.clone();
+        crate::modules::secrets::externalize(DISCORD_TOKEN_ACCOUNT, &mut on_disk.bot_token);
+        let content = serde_json::to_string_pretty(&on_disk)
+            .map_err(|e| format!("Fehler beim Serialisieren der Discord-Konfiguration: {}", e))?;
+        fs::write(&path, content)
+            .map_err(|e| format!("Fehler beim Speichern der Discord-Konfiguration: {}", e))
     }
 
     pub async fn get_status(&self) -> DiscordBotStatus {
@@ -425,8 +440,7 @@ impl DiscordBotManager {
         let channel_id = data["channel_id"].as_str().unwrap_or("");
         let author_name = data["author"]["username"].as_str().unwrap_or("User");
 
-        if content.starts_with(prefix) {
-            let cmd_text = &content[prefix.len()..];
+        if let Some(cmd_text) = content.strip_prefix(prefix) {
             let mut parts = cmd_text.splitn(2, ' ');
             let command = parts.next().unwrap_or("").to_lowercase();
             let args = parts.next().unwrap_or("").trim();
@@ -448,7 +462,7 @@ impl DiscordBotManager {
                 "reset" => {
                     "🔄 Chat-Gedächtnis für diese Sitzung wurde zurückgesetzt.".to_string()
                 }
-                "help" | _ => {
+                _ => {
                     format!(
                         "🌸 **OtakuSoul Discord Bot Befehle:**\n• `{}ask <text>` - Mit deinem Charakter chatten\n• `{}character` - Aktiven Charakter anzeigen\n• `{}status` - Systemstatus prüfen\n• `{}reset` - Konversation neustarten",
                         prefix, prefix, prefix, prefix
@@ -482,7 +496,16 @@ impl DiscordBotManager {
         let mut chunks = Vec::new();
         let mut rem = text;
         while rem.len() > limit {
-            let cut = rem[..limit].rfind('\n').unwrap_or_else(|| rem[..limit].rfind(' ').unwrap_or(limit));
+            // Never cut inside a multi-byte UTF-8 character (umlauts, emoji, CJK).
+            let mut boundary = limit;
+            while !rem.is_char_boundary(boundary) {
+                boundary -= 1;
+            }
+            let window = &rem[..boundary];
+            let cut = match window.rfind('\n').or_else(|| window.rfind(' ')) {
+                Some(pos) if pos > 0 => pos,
+                _ => boundary,
+            };
             chunks.push(rem[..cut].to_string());
             rem = rem[cut..].trim_start();
         }
@@ -490,5 +513,25 @@ impl DiscordBotManager {
             chunks.push(rem.to_string());
         }
         chunks
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::DiscordBotManager;
+
+    #[test]
+    fn split_message_respects_utf8_boundaries() {
+        let text = "ä".repeat(1500); // 3000 bytes, no whitespace
+        let chunks = DiscordBotManager::split_message(&text, 2000);
+        assert_eq!(chunks.concat(), text);
+        assert!(chunks.iter().all(|c| c.len() <= 2000));
+    }
+
+    #[test]
+    fn split_message_prefers_line_breaks() {
+        let text = format!("{}\n{}", "a".repeat(1500), "b".repeat(1500));
+        let chunks = DiscordBotManager::split_message(&text, 2000);
+        assert_eq!(chunks, vec!["a".repeat(1500), "b".repeat(1500)]);
     }
 }

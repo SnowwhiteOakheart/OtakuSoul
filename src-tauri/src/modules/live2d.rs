@@ -109,21 +109,19 @@ pub fn scan_available_live2d_models() -> Vec<ScannedLive2d> {
     // 2. Bundled assets directory relative to workspace root
     let current_dir = std::env::current_dir().unwrap_or_else(|_| PathBuf::from("."));
     let mut base_root = current_dir.clone();
-    if base_root.ends_with("src-tauri") {
-        if let Some(parent) = base_root.parent() {
+    if base_root.ends_with("src-tauri")
+        && let Some(parent) = base_root.parent() {
             base_root = parent.to_path_buf();
         }
-    }
     search_dirs.push(base_root.join("assets").join("live2d"));
     search_dirs.push(base_root.join("..").join("assets").join("live2d"));
 
     // 3. Fallback: check relative to exe
-    if let Ok(exe) = std::env::current_exe() {
-        if let Some(exe_dir) = exe.parent() {
+    if let Ok(exe) = std::env::current_exe()
+        && let Some(exe_dir) = exe.parent() {
             search_dirs.push(exe_dir.join("assets").join("live2d"));
             search_dirs.push(exe_dir.join("..").join("assets").join("live2d"));
         }
-    }
 
     // 4. Soul of Waifu local installation if available
     let sow_live2d = PathBuf::from("/home/deathtrap/development/Soul-of-Waifu-linux/assets/emotions/live2d");
@@ -144,18 +142,17 @@ pub fn scan_available_live2d_models() -> Vec<ScannedLive2d> {
                 let path = entry.path();
                 if path.is_dir() {
                     // Check for *.model3.json (Cubism 3/4) or *.model.json (Cubism 2)
-                    if let Some(model_info) = inspect_live2d_dir(&path) {
-                        if !seen_ids.contains(&model_info.id) {
+                    if let Some(model_info) = inspect_live2d_dir(&path)
+                        && !seen_ids.contains(&model_info.id) {
                             seen_ids.insert(model_info.id.clone());
                             found_models.push(model_info);
                         }
-                    }
                 }
             }
         }
     }
 
-    found_models.sort_by(|a, b| a.name.to_lowercase().cmp(&b.name.to_lowercase()));
+    found_models.sort_by_key(|a| a.name.to_lowercase());
     found_models
 }
 
@@ -394,15 +391,14 @@ pub fn import_sow_live2d_models() -> Result<usize, String> {
     let mut imported = 0;
     for entry in entries.flatten() {
         let p = entry.path();
-        if p.is_dir() {
-            if let Some(folder_name) = p.file_name() {
+        if p.is_dir()
+            && let Some(folder_name) = p.file_name() {
                 let target = dest_base.join(folder_name);
                 if !target.exists() {
                     let _ = copy_dir_recursive(&p, &target);
                     imported += 1;
                 }
             }
-        }
     }
 
     Ok(imported)

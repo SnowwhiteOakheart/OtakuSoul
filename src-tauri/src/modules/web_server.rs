@@ -15,7 +15,7 @@ use qrcode::render::svg;
 use qrcode::QrCode;
 use serde::{Deserialize, Serialize};
 use tokio::sync::{oneshot, RwLock};
-use tracing::{error, info};
+use tracing::{error, info, warn};
 
 use crate::modules::paths::resolve_app_paths;
 
@@ -39,8 +39,25 @@ impl Default for WebServerConfig {
 }
 
 impl WebServerConfig {
+    /// 256-bit token from a CSPRNG.
     pub fn generate_token() -> String {
-        format!("{:016x}{:016x}", fastrand_u64(), fastrand_u64())
+        // ThreadRng is a CSPRNG that is periodically reseeded from the OS.
+        let mut bytes = [0u8; 32];
+        rand::fill(&mut bytes);
+        bytes.iter().map(|b| format!("{:02x}", b)).collect()
+    }
+
+    /// Earlier versions derived tokens from a fixed-seed xorshift, so every install produced
+    /// the same, publicly computable sequence. Such tokens must be replaced.
+    fn is_legacy_predictable_token(token: &str) -> bool {
+        let mut state: u64 = 12345678901234567;
+        let mut next = || {
+            state ^= state << 13;
+            state ^= state >> 7;
+            state ^= state << 17;
+            state
+        };
+        (0..64).any(|_| format!("{:016x}{:016x}", next(), next()) == token)
     }
 }
 
@@ -89,6 +106,12 @@ pub struct WebServerManager {
     shutdown_tx: Arc<tokio::sync::Mutex<Option<oneshot::Sender<()>>>>,
 }
 
+impl Default for WebServerManager {
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
 impl WebServerManager {
     pub fn new() -> Self {
         Self {
@@ -101,13 +124,16 @@ impl WebServerManager {
     pub fn load_config() -> WebServerConfig {
         let paths = resolve_app_paths();
         let path = PathBuf::from(&paths.data_dir).join("web_server_config.json");
-        if path.exists() {
-            if let Ok(content) = fs::read_to_string(&path) {
-                if let Ok(cfg) = serde_json::from_str::<WebServerConfig>(&content) {
+        if path.exists()
+            && let Ok(content) = fs::read_to_string(&path)
+                && let Ok(mut cfg) = serde_json::from_str::<WebServerConfig>(&content) {
+                    if cfg.auth_token.len() < 32 || WebServerConfig::is_legacy_predictable_token(&cfg.auth_token) {
+                        warn!("Unsicheres Web-Server-Token erkannt, es wurde neu erzeugt.");
+                        cfg.auth_token = WebServerConfig::generate_token();
+                        let _ = Self::save_config_internal(&cfg);
+                    }
                     return cfg;
                 }
-            }
-        }
         let default_cfg = WebServerConfig::default();
         let _ = Self::save_config_internal(&default_cfg);
         default_cfg
@@ -138,13 +164,11 @@ impl WebServerManager {
 
     pub fn detect_local_ip() -> String {
         // Query outbound routing IP without transmitting packets
-        if let Ok(socket) = UdpSocket::bind("0.0.0.0:0") {
-            if socket.connect("8.8.8.8:80").is_ok() {
-                if let Ok(addr) = socket.local_addr() {
+        if let Ok(socket) = UdpSocket::bind("0.0.0.0:0")
+            && socket.connect("8.8.8.8:80").is_ok()
+                && let Ok(addr) = socket.local_addr() {
                     return addr.ip().to_string();
                 }
-            }
-        }
         "127.0.0.1".to_string()
     }
 
@@ -251,20 +275,22 @@ struct AuthParams {
     token: Option<String>,
 }
 
+/// Compares without an early exit so response timing does not leak the token prefix.
+fn constant_time_eq(a: &[u8], b: &[u8]) -> bool {
+    if a.len() != b.len() {
+        return false;
+    }
+    a.iter().zip(b).fold(0u8, |acc, (x, y)| acc | (x ^ y)) == 0
+}
+
 fn check_auth(headers: &HeaderMap, params: &AuthParams, expected_token: &str) -> bool {
-    if let Some(header_val) = headers.get("X-Otaku-Token") {
-        if let Ok(str_val) = header_val.to_str() {
-            if str_val.trim() == expected_token {
-                return true;
-            }
-        }
+    if expected_token.is_empty() {
+        return false;
     }
-    if let Some(ref q_token) = params.token {
-        if q_token.trim() == expected_token {
-            return true;
-        }
-    }
-    false
+    let header_token = headers.get("X-Otaku-Token").and_then(|v| v.to_str().ok());
+    // The query parameter is only needed for the WebSocket handshake, where browsers cannot set headers.
+    let provided = header_token.or(params.token.as_deref()).map(str::trim).unwrap_or("");
+    constant_time_eq(provided.as_bytes(), expected_token.as_bytes())
 }
 
 async fn handle_index() -> Html<&'static str> {
@@ -285,7 +311,7 @@ async fn handle_status(
 
     let resp = MobileStatusResponse {
         character_name: char_name,
-        emotion: emotion,
+        emotion,
         mood_label: "Aktiv & Verbunden".to_string(),
         dopamine: 75.0,
         oxytocin: 85.0,
@@ -350,12 +376,11 @@ async fn handle_ws_socket(mut socket: WebSocket, ctx: AppStateContext) {
     while let Some(msg_res) = socket.recv().await {
         if let Ok(msg) = msg_res {
             if let WsMessage::Text(text) = msg {
-                if let Ok(val) = serde_json::from_str::<serde_json::Value>(&text) {
-                    if val.get("type").and_then(|v| v.as_str()) == Some("ping") {
+                if let Ok(val) = serde_json::from_str::<serde_json::Value>(&text)
+                    && val.get("type").and_then(|v| v.as_str()) == Some("ping") {
                         let pong = serde_json::json!({"type": "pong"}).to_string();
                         let _ = socket.send(WsMessage::Text(pong.into())).await;
                     }
-                }
             } else if let WsMessage::Close(_) = msg {
                 break;
             }
@@ -363,17 +388,6 @@ async fn handle_ws_socket(mut socket: WebSocket, ctx: AppStateContext) {
             break;
         }
     }
-}
-
-fn fastrand_u64() -> u64 {
-    use std::sync::atomic::{AtomicU64, Ordering};
-    static SEED: AtomicU64 = AtomicU64::new(12345678901234567);
-    let mut s = SEED.load(Ordering::Relaxed);
-    s ^= s << 13;
-    s ^= s >> 7;
-    s ^= s << 17;
-    SEED.store(s, Ordering::Relaxed);
-    s
 }
 
 // ============================================================================
@@ -462,7 +476,10 @@ const MOBILE_CLIENT_HTML: &str = r#"<!DOCTYPE html>
     let token = urlParams.get('token') || localStorage.getItem('otaku_token') || '';
     if (urlParams.get('token')) {
       localStorage.setItem('otaku_token', token);
+      // Keep the token out of the address bar and browser history.
+      history.replaceState(null, '', window.location.pathname);
     }
+    const authHeaders = () => ({ 'X-Otaku-Token': token });
 
     let isRecording = false;
     let mediaRecorder = null;
@@ -470,7 +487,7 @@ const MOBILE_CLIENT_HTML: &str = r#"<!DOCTYPE html>
 
     async function fetchStatus() {
       try {
-        const res = await fetch(`/api/status?token=${encodeURIComponent(token)}`);
+        const res = await fetch('/api/status', { headers: authHeaders() });
         if (res.ok) {
           const data = await res.json();
           document.getElementById('charName').textContent = data.character_name;
@@ -491,9 +508,9 @@ const MOBILE_CLIENT_HTML: &str = r#"<!DOCTYPE html>
       appendMessage(text, 'user');
 
       try {
-        const res = await fetch(`/api/chat?token=${encodeURIComponent(token)}`, {
+        const res = await fetch('/api/chat', {
           method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
+          headers: { 'Content-Type': 'application/json', ...authHeaders() },
           body: JSON.stringify({ message: text })
         });
         if (res.ok) {
@@ -568,3 +585,41 @@ const MOBILE_CLIENT_HTML: &str = r#"<!DOCTYPE html>
 </body>
 </html>
 "#;
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn generated_tokens_are_long_and_unique() {
+        let a = WebServerConfig::generate_token();
+        let b = WebServerConfig::generate_token();
+        assert_eq!(a.len(), 64);
+        assert_ne!(a, b);
+        assert!(!WebServerConfig::is_legacy_predictable_token(&a));
+    }
+
+    #[test]
+    fn detects_legacy_fixed_seed_token() {
+        let mut s: u64 = 12345678901234567;
+        let mut next = || {
+            s ^= s << 13;
+            s ^= s >> 7;
+            s ^= s << 17;
+            s
+        };
+        let first_legacy_token = format!("{:016x}{:016x}", next(), next());
+        assert!(WebServerConfig::is_legacy_predictable_token(&first_legacy_token));
+    }
+
+    #[test]
+    fn auth_accepts_header_and_rejects_wrong_or_empty() {
+        let mut headers = HeaderMap::new();
+        headers.insert("X-Otaku-Token", "secret".parse().unwrap());
+        let none = AuthParams { token: None };
+        assert!(check_auth(&headers, &none, "secret"));
+        assert!(!check_auth(&headers, &none, "other"));
+        assert!(!check_auth(&HeaderMap::new(), &AuthParams { token: Some(String::new()) }, ""));
+        assert!(check_auth(&HeaderMap::new(), &AuthParams { token: Some("secret".into()) }, "secret"));
+    }
+}

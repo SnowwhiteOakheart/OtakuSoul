@@ -188,8 +188,8 @@ pub async fn get_hf_model_files(model_id: &str) -> Result<Vec<HfGgufFile>, Strin
     let mut files = Vec::new();
     if let Some(siblings) = val.get("siblings").and_then(|s| s.as_array()) {
         for s in siblings {
-            if let Some(rfilename) = s.get("rfilename").and_then(|f| f.as_str()) {
-                if rfilename.ends_with(".gguf") {
+            if let Some(rfilename) = s.get("rfilename").and_then(|f| f.as_str())
+                && rfilename.ends_with(".gguf") {
                     let download_url = format!(
                         "https://huggingface.co/{}/resolve/main/{}",
                         model_id, rfilename
@@ -219,7 +219,6 @@ pub async fn get_hf_model_files(model_id: &str) -> Result<Vec<HfGgufFile>, Strin
                         compatibility_note,
                     });
                 }
-            }
         }
     }
 

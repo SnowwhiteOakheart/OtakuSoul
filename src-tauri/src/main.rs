@@ -6,11 +6,13 @@ fn main() {
     {
         // WebKitGTK compatibility on Linux / NVIDIA
         if std::env::var("WEBKIT_DISABLE_DMABUF_RENDERER").is_err() {
-            std::env::set_var("WEBKIT_DISABLE_DMABUF_RENDERER", "1");
+            // SAFETY: runs first thing in main, before Tauri or tokio spawn any threads.
+            unsafe { std::env::set_var("WEBKIT_DISABLE_DMABUF_RENDERER", "1") };
         }
         // Fallback to XWayland to prevent GDK protocol error 71 with WebKitGTK
         if std::env::var("WAYLAND_DISPLAY").is_ok() && std::env::var("GDK_BACKEND").is_err() {
-            std::env::set_var("GDK_BACKEND", "x11");
+            // SAFETY: see above, still single-threaded.
+            unsafe { std::env::set_var("GDK_BACKEND", "x11") };
         }
     }
 

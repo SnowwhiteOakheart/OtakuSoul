@@ -105,11 +105,10 @@ async fn load_engine(config: &KokoroConfig) -> Result<Arc<KokoroTts>, String> {
     let (model_path, voices_path) = validate_paths(config)?;
     let mut cached = cache().lock().await;
 
-    if let Some(entry) = cached.as_ref() {
-        if entry.model_path == model_path && entry.voices_path == voices_path {
+    if let Some(entry) = cached.as_ref()
+        && entry.model_path == model_path && entry.voices_path == voices_path {
             return Ok(Arc::clone(&entry.engine));
         }
-    }
 
     let engine = KokoroTts::new(&model_path, &voices_path)
         .await
@@ -302,7 +301,7 @@ async fn file_sha256(path: &Path) -> Result<String, String> {
         }
         hasher.update(&buffer[..count]);
     }
-    Ok(format!("{:X}", hasher.finalize()))
+    Ok(upper_hex(&hasher.finalize()))
 }
 
 async fn download_file<R: tauri::Runtime>(
@@ -387,7 +386,7 @@ async fn download_file<R: tauri::Runtime>(
     drop(file);
 
     if let Some(expected) = expected_sha256 {
-        let actual = format!("{:X}", hasher.finalize());
+        let actual = upper_hex(&hasher.finalize());
         if actual != expected {
             return Err(format!(
                 "Prüfsumme für {filename} stimmt nicht (erwartet {expected}, erhalten {actual})."
@@ -472,6 +471,10 @@ pub async fn install<R: tauri::Runtime>(
     detect_installation().ok_or_else(|| {
         "Kokoro wurde heruntergeladen, die Installation konnte aber nicht erkannt werden.".to_string()
     })
+}
+
+fn upper_hex(bytes: &[u8]) -> String {
+    bytes.iter().map(|b| format!("{:02X}", b)).collect()
 }
 
 #[cfg(test)]

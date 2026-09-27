@@ -9,6 +9,8 @@ use tracing::info;
 
 use crate::modules::paths::resolve_app_paths;
 
+const IMAGE_GEN_KEY_ACCOUNT: &str = "image_gen_api_key";
+
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct ImageGenConfig {
     pub provider: String, // "Automatic1111", "ComfyUI", "DALL-E 3", "NovelAI", "FLUX"
@@ -77,20 +79,23 @@ impl ImageGenerator {
     pub fn load_config() -> ImageGenConfig {
         let paths = resolve_app_paths();
         let config_path = PathBuf::from(&paths.data_dir).join("image_gen_config.json");
-        if config_path.exists() {
-            if let Ok(content) = fs::read_to_string(&config_path) {
-                if let Ok(cfg) = serde_json::from_str::<ImageGenConfig>(&content) {
+        if config_path.exists()
+            && let Ok(content) = fs::read_to_string(&config_path)
+                && let Ok(mut cfg) = serde_json::from_str::<ImageGenConfig>(&content) {
+                    if crate::modules::secrets::hydrate_opt(IMAGE_GEN_KEY_ACCOUNT, &mut cfg.api_key) {
+                        let _ = Self::save_config(&cfg);
+                    }
                     return cfg;
                 }
-            }
-        }
         ImageGenConfig::default()
     }
 
     pub fn save_config(config: &ImageGenConfig) -> Result<(), String> {
         let paths = resolve_app_paths();
         let config_path = PathBuf::from(&paths.data_dir).join("image_gen_config.json");
-        let json_str = serde_json::to_string_pretty(config)
+        let mut on_disk = config.clone();
+        crate::modules::secrets::externalize_opt(IMAGE_GEN_KEY_ACCOUNT, &mut on_disk.api_key);
+        let json_str = serde_json::to_string_pretty(&on_disk)
             .map_err(|e| format!("Fehler beim Serialisieren der Bildgenerierungs-Konfiguration: {}", e))?;
         fs::write(&config_path, json_str)
             .map_err(|e| format!("Fehler beim Speichern der Bildgenerierungs-Konfiguration: {}", e))?;
@@ -140,18 +145,16 @@ impl ImageGenerator {
         }
 
         // Scene context or location
-        if let Some(scene) = scene_context {
-            if !scene.trim().is_empty() {
+        if let Some(scene) = scene_context
+            && !scene.trim().is_empty() {
                 prompt_parts.push(format!("location: {}, scenic background", scene.trim()));
             }
-        }
 
         // Extra user prompt
-        if let Some(extra) = user_prompt {
-            if !extra.trim().is_empty() {
+        if let Some(extra) = user_prompt
+            && !extra.trim().is_empty() {
                 prompt_parts.push(extra.trim().to_string());
             }
-        }
 
         prompt_parts.join(", ")
     }
@@ -274,11 +277,10 @@ impl ImageGenerator {
         });
 
         let mut req = client.post(&url).json(&payload);
-        if let Some(ref key) = config.api_key {
-            if !key.is_empty() {
+        if let Some(ref key) = config.api_key
+            && !key.is_empty() {
                 req = req.header(AUTHORIZATION, format!("Bearer {}", key));
             }
-        }
 
         let resp = req.send().await
             .map_err(|e| format!("Fehler beim Verbinden mit Automatic1111 unter {}: {}", url, e))?;
@@ -413,28 +415,24 @@ impl ImageGenerator {
             tokio::time::sleep(Duration::from_millis(1500)).await;
             attempts += 1;
 
-            if let Ok(h_resp) = client.get(&history_url).send().await {
-                if let Ok(h_json) = h_resp.json::<serde_json::Value>().await {
-                    if let Some(item) = h_json.get(prompt_id) {
-                        if let Some(outputs) = item.get("outputs") {
+            if let Ok(h_resp) = client.get(&history_url).send().await
+                && let Ok(h_json) = h_resp.json::<serde_json::Value>().await
+                    && let Some(item) = h_json.get(prompt_id)
+                        && let Some(outputs) = item.get("outputs") {
                             // Find node with images
                             for (_node_id, node_data) in outputs.as_object().into_iter().flatten() {
-                                if let Some(imgs) = node_data.get("images").and_then(|i| i.as_array()) {
-                                    if let Some(first_img) = imgs.first() {
+                                if let Some(imgs) = node_data.get("images").and_then(|i| i.as_array())
+                                    && let Some(first_img) = imgs.first() {
                                         final_filename = first_img["filename"].as_str().unwrap_or("").to_string();
                                         final_subfolder = first_img["subfolder"].as_str().unwrap_or("").to_string();
                                         final_type = first_img["type"].as_str().unwrap_or("output").to_string();
                                         break;
                                     }
-                                }
                             }
                             if !final_filename.is_empty() {
                                 break;
                             }
                         }
-                    }
-                }
-            }
         }
 
         if final_filename.is_empty() {
@@ -563,14 +561,13 @@ impl ImageGenerator {
             .map_err(|e| format!("Fehler beim Lesen der NovelAI Bilddaten: {}", e))?;
 
         // NovelAI returns a zip archive containing image_0.png
-        if let Ok(mut archive) = zip::ZipArchive::new(std::io::Cursor::new(&bytes)) {
-            if let Ok(mut file) = archive.by_name("image_0.png") {
+        if let Ok(mut archive) = zip::ZipArchive::new(std::io::Cursor::new(&bytes))
+            && let Ok(mut file) = archive.by_name("image_0.png") {
                 let mut img_buf = Vec::new();
                 std::io::Read::read_to_end(&mut file, &mut img_buf)
                     .map_err(|e| format!("Fehler beim Extrahieren aus NovelAI Zip: {}", e))?;
                 return Ok(img_buf);
             }
-        }
 
         Ok(bytes.to_vec())
     }

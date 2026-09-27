@@ -112,7 +112,7 @@ pub fn probe_hardware() -> HardwareInfo {
     sys.refresh_cpu_all();
 
     let os_name = System::name().unwrap_or_else(|| "Unknown OS".to_string());
-    let os_version = System::os_version().unwrap_or_else(|| "".to_string());
+    let os_version = System::os_version().unwrap_or_default();
     let cpu_name = sys
         .cpus()
         .first()
@@ -132,8 +132,7 @@ pub fn probe_hardware() -> HardwareInfo {
             "--format=csv,noheader,nounits",
         ])
         .output()
-    {
-        if output.status.success() {
+        && output.status.success() {
             let stdout = String::from_utf8_lossy(&output.stdout);
             for line in stdout.lines() {
                 let parts: Vec<&str> = line.split(',').map(|s| s.trim()).collect();
@@ -151,7 +150,6 @@ pub fn probe_hardware() -> HardwareInfo {
                 }
             }
         }
-    }
 
     // 2. macOS Apple Silicon unified memory detection
     #[cfg(target_os = "macos")]
@@ -226,6 +224,7 @@ fn actual_model_size_mb(fallback_mb: u64, model_path: Option<&str>) -> u64 {
         .unwrap_or(fallback_mb)
 }
 
+#[allow(clippy::too_many_arguments)]
 fn recommend_gpu_layers_for_vram(
     model_size_mb: u64,
     total_model_layers: u32,

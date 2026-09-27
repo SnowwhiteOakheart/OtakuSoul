@@ -263,6 +263,26 @@ impl MemoryDb {
         base_dir.join("otakusoul.db")
     }
 
+    /// Where a restored database waits until the next start, because the live file is open.
+    pub fn pending_restore_path() -> PathBuf {
+        Self::default_path().with_extension("db.restore")
+    }
+
+    /// Swaps in a database restored from a profile backup. Must run before the DB is opened.
+    pub fn apply_pending_restore(db_path: &Path) {
+        let pending = db_path.with_extension("db.restore");
+        if !pending.exists() {
+            return;
+        }
+        for suffix in ["-wal", "-shm"] {
+            let _ = std::fs::remove_file(format!("{}{}", db_path.display(), suffix));
+        }
+        match std::fs::rename(&pending, db_path) {
+            Ok(()) => tracing::info!("Soul-Memory-Datenbank aus Backup übernommen: {:?}", db_path),
+            Err(e) => tracing::warn!("Wiederhergestellte Datenbank konnte nicht übernommen werden: {}", e),
+        }
+    }
+
     // --- Psychology ---
     pub fn get_or_create_psychology(&self, char_id: &str) -> Result<PsychologyState, rusqlite::Error> {
         let conn = self.conn.lock().unwrap();
@@ -724,7 +744,7 @@ impl MemoryDb {
             match section {
                 Some("identity") => {
                     if line.starts_with('-') || line.starts_with('*') {
-                        let item = line.trim_start_matches(|c| c == '-' || c == '*' || c == ' ').trim();
+                        let item = line.trim_start_matches(['-', '*', ' ']).trim();
                         if !item.is_empty() {
                             core_identity.push(item.to_string());
                         }
@@ -736,18 +756,16 @@ impl MemoryDb {
                         if !em.is_empty() {
                             psych.primary_emotion = em.to_string();
                         }
-                        if let Some(int_m) = caps.get(2) {
-                            if let Ok(v) = int_m.as_str().parse::<u32>() {
+                        if let Some(int_m) = caps.get(2)
+                            && let Ok(v) = int_m.as_str().parse::<u32>() {
                                 psych.intensity = v.clamp(1, 5);
                             }
-                        }
                     } else if let Some(caps) = tension_re.captures(line) {
                         psych.psychological_tension = caps[1].trim().to_string();
-                    } else if let Some(caps) = decay_re.captures(line) {
-                        if let Ok(v) = caps[1].parse::<u32>() {
+                    } else if let Some(caps) = decay_re.captures(line)
+                        && let Ok(v) = caps[1].parse::<u32>() {
                             psych.emotional_decay_counter = v;
                         }
-                    }
                 }
                 Some("drive") => {
                     if let Some(caps) = agenda_re.captures(line) {
@@ -757,7 +775,7 @@ impl MemoryDb {
                     }
                 }
                 Some("dissonance") => {
-                    let cleaned = line.trim_start_matches(|c| c == '-' || c == '*' || c == ' ').trim();
+                    let cleaned = line.trim_start_matches(['-', '*', ' ']).trim();
                     if !cleaned.is_empty() {
                         cognitive_dissonance_lines.push(cleaned.to_string());
                     }
@@ -831,20 +849,19 @@ impl MemoryDb {
                 }
                 Some("prefs") => {
                     if line.starts_with('-') || line.starts_with('*') {
-                        let item = line.trim_start_matches(|c| c == '-' || c == '*' || c == ' ').trim();
+                        let item = line.trim_start_matches(['-', '*', ' ']).trim();
                         if !item.is_empty() {
                             prefs.push(item.to_string());
                         }
                     }
                 }
-                Some("milestones") => {
-                    if line.starts_with('-') || line.starts_with('*') {
-                        let item = line.trim_start_matches(|c| c == '-' || c == '*' || c == ' ').trim();
+                Some("milestones")
+                    if (line.starts_with('-') || line.starts_with('*')) => {
+                        let item = line.trim_start_matches(['-', '*', ' ']).trim();
                         if !item.is_empty() {
                             milestones.push(item.to_string());
                         }
                     }
-                }
                 _ => {}
             }
         }
@@ -910,15 +927,14 @@ impl MemoryDb {
         let size_bytes = json_str.len() as u64;
 
         // Cleanup: keep at most 20 recent backups
-        if let Ok(mut entries) = self.list_memory_backups(char_id, Some(&target_dir)) {
-            if entries.len() > 20 {
+        if let Ok(mut entries) = self.list_memory_backups(char_id, Some(&target_dir))
+            && entries.len() > 20 {
                 entries.sort_by_key(|b| b.timestamp);
                 for old in entries.iter().take(entries.len() - 20) {
                     let old_path = target_dir.join(&old.filename);
                     let _ = std::fs::remove_file(old_path);
                 }
             }
-        }
 
         Ok(MemoryBackupInfo {
             filename,
@@ -947,9 +963,9 @@ impl MemoryDb {
 
         for entry in read_dir.flatten() {
             let path = entry.path();
-            if path.is_file() && path.extension().and_then(|s| s.to_str()) == Some("json") {
-                if let Some(file_name) = path.file_name().and_then(|s| s.to_str()) {
-                    if file_name.starts_with(&format!("backup_{}_", char_id)) {
+            if path.is_file() && path.extension().and_then(|s| s.to_str()) == Some("json")
+                && let Some(file_name) = path.file_name().and_then(|s| s.to_str())
+                    && file_name.starts_with(&format!("backup_{}_", char_id)) {
                         let meta = entry.metadata().ok();
                         let size_bytes = meta.map(|m| m.len()).unwrap_or(0);
 
@@ -970,11 +986,9 @@ impl MemoryDb {
                             size_bytes,
                         });
                     }
-                }
-            }
         }
 
-        backups.sort_by(|a, b| b.timestamp.cmp(&a.timestamp));
+        backups.sort_by_key(|b| std::cmp::Reverse(b.timestamp));
         Ok(backups)
     }
 
@@ -1025,35 +1039,31 @@ impl MemoryDb {
 
         // 1. MEMORY.md
         let mem_file = folder.join("MEMORY.md");
-        if mem_file.exists() {
-            if let Ok(content) = std::fs::read_to_string(&mem_file) {
-                if !content.trim().is_empty() {
+        if mem_file.exists()
+            && let Ok(content) = std::fs::read_to_string(&mem_file)
+                && !content.trim().is_empty() {
                     self.parse_and_sync_character_markdown(char_id, &content)?;
                     count += 1;
                 }
-            }
-        }
 
         // 2. USER.md
         let user_file = folder.join("USER.md");
-        if user_file.exists() {
-            if let Ok(content) = std::fs::read_to_string(&user_file) {
-                if !content.trim().is_empty() {
+        if user_file.exists()
+            && let Ok(content) = std::fs::read_to_string(&user_file)
+                && !content.trim().is_empty() {
                     self.parse_and_sync_user_markdown(char_id, user_name, &content)?;
                     count += 1;
                 }
-            }
-        }
 
         // 3. topics/ folder
         let topics_dir = folder.join("topics");
-        if topics_dir.exists() && topics_dir.is_dir() {
-            if let Ok(entries) = std::fs::read_dir(&topics_dir) {
+        if topics_dir.exists() && topics_dir.is_dir()
+            && let Ok(entries) = std::fs::read_dir(&topics_dir) {
                 for entry in entries.flatten() {
                     let path = entry.path();
-                    if path.is_file() && path.extension().and_then(|s| s.to_str()) == Some("md") {
-                        if let Ok(topic_content) = std::fs::read_to_string(&path) {
-                            if !topic_content.trim().is_empty() {
+                    if path.is_file() && path.extension().and_then(|s| s.to_str()) == Some("md")
+                        && let Ok(topic_content) = std::fs::read_to_string(&path)
+                            && !topic_content.trim().is_empty() {
                                 let topic_name = path
                                     .file_stem()
                                     .and_then(|s| s.to_str())
@@ -1062,22 +1072,17 @@ impl MemoryDb {
                                 let _ = self.add_episodic_memory(char_id, "topic", &formatted, 3);
                                 count += 1;
                             }
-                        }
-                    }
                 }
             }
-        }
 
         // 4. DIARY.md if present
         let diary_file = folder.join("DIARY.md");
-        if diary_file.exists() {
-            if let Ok(content) = std::fs::read_to_string(&diary_file) {
-                if !content.trim().is_empty() {
+        if diary_file.exists()
+            && let Ok(content) = std::fs::read_to_string(&diary_file)
+                && !content.trim().is_empty() {
                     let _ = self.add_diary_entry(char_id, "Importiertes Tagebuch", &content, "Reflective");
                     count += 1;
                 }
-            }
-        }
 
         let _ = self.log_healing(
             char_id,
@@ -1537,14 +1542,13 @@ impl MemoryDb {
         let mut start_idx = 0;
 
         // Try parsing first line as header
-        if let Ok(first_val) = serde_json::from_str::<serde_json::Value>(raw_lines[0]) {
-            if first_val.get("mes").is_none() && (first_val.get("character_name").is_some() || first_val.get("chat_metadata").is_some()) {
+        if let Ok(first_val) = serde_json::from_str::<serde_json::Value>(raw_lines[0])
+            && first_val.get("mes").is_none() && (first_val.get("character_name").is_some() || first_val.get("chat_metadata").is_some()) {
                 start_idx = 1;
-                if initial_title.is_none() {
-                    if let Some(t) = first_val.pointer("/chat_metadata/title").and_then(|v| v.as_str()) {
+                if initial_title.is_none()
+                    && let Some(t) = first_val.pointer("/chat_metadata/title").and_then(|v| v.as_str()) {
                         initial_title = Some(t.to_string());
                     }
-                }
                 if let Some(an) = first_val.pointer("/chat_metadata/author_note").and_then(|v| v.as_str()) {
                     author_note = an.to_string();
                 }
@@ -1552,7 +1556,6 @@ impl MemoryDb {
                     author_note_depth = d as u32;
                 }
             }
-        }
 
         let title = initial_title.unwrap_or_else(|| "Importierter Chat".to_string());
         let session = self.create_chat_session(character_id, &title)?;

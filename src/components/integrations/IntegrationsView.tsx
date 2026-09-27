@@ -31,6 +31,7 @@ import {
   Clock,
   Layers,
   Wand2,
+  AlertTriangle,
 } from 'lucide-react';
 
 const DEFAULT_WEB_CONFIG: WebServerConfig = {
@@ -433,6 +434,17 @@ export const IntegrationsView: React.FC = () => {
                     )}
                   </div>
                 </div>
+
+                {webServerStatus?.is_running && localWebConfig.host !== '127.0.0.1' && localWebConfig.host !== 'localhost' && (
+                  <div className="flex items-start gap-2 rounded-xl border border-amber-500/30 bg-amber-500/10 p-3 text-xs text-amber-200">
+                    <AlertTriangle className="w-4 h-4 shrink-0 mt-0.5" />
+                    <p>
+                      Der Server ist für alle Geräte im Netzwerk erreichbar und nutzt unverschlüsseltes HTTP.
+                      Nur in vertrauenswürdigen Netzwerken (Heim-WLAN) verwenden und die Verbindungs-Adresse nicht weitergeben –
+                      sie enthält den Zugangs-Token.
+                    </p>
+                  </div>
+                )}
 
                 {/* Connection URL Box */}
                 {webServerStatus?.is_running && webServerStatus.connection_url && (

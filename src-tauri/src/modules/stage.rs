@@ -1,6 +1,6 @@
 use base64::prelude::*;
 use chrono::Utc;
-use rand::Rng;
+use rand::RngExt;
 use regex::Regex;
 use serde::{Deserialize, Serialize};
 use std::collections::{HashMap, VecDeque};
@@ -546,8 +546,8 @@ pub fn repair_and_parse_gm_plan(raw: &str) -> GmPlan {
     }
 
     // Extract outer curly braces
-    if let (Some(start), Some(end)) = (text.find('{'), text.rfind('}')) {
-        if start < end {
+    if let (Some(start), Some(end)) = (text.find('{'), text.rfind('}'))
+        && start < end {
             let candidate = &text[start..=end];
             // Remove trailing commas before closing braces/brackets
             let re_commas = Regex::new(r",\s*([\]\}])").unwrap();
@@ -557,7 +557,6 @@ pub fn repair_and_parse_gm_plan(raw: &str) -> GmPlan {
                 return plan;
             }
         }
-    }
 
     // Attempt token repair: count unbalanced braces
     let mut balanced = text.to_string();
@@ -604,6 +603,12 @@ pub fn repair_and_parse_gm_plan(raw: &str) -> GmPlan {
 pub struct StageEngine {
     state: RwLock<SceneState>,
     snapshots: RwLock<HashMap<String, VecDeque<SceneState>>>,
+}
+
+impl Default for StageEngine {
+    fn default() -> Self {
+        Self::new()
+    }
 }
 
 impl StageEngine {
@@ -664,8 +669,10 @@ impl StageEngine {
             },
         ];
 
-        let mut encounter = EncounterState::default();
-        encounter.combatants = initial_combatants;
+        let encounter = EncounterState {
+            combatants: initial_combatants,
+            ..Default::default()
+        };
 
         let initial_def = SceneDefinition {
             id: "default_scene".to_string(),
@@ -823,7 +830,7 @@ impl StageEngine {
     pub fn start_encounter(&self) {
         let mut st = self.state.write().unwrap();
         if st.combat.combatants.is_empty() {
-            let mut rng = rand::thread_rng();
+            let mut rng = rand::rng();
             let player_name = if st.definition.persona.trim().is_empty() {
                 "Spieler".to_string()
             } else {
@@ -832,26 +839,26 @@ impl StageEngine {
             st.combat.combatants.push(Combatant {
                 id: "player".to_string(), name: player_name, role: "player".to_string(),
                 hp: 50, max_hp: 50, stress: 0, max_stress: 100,
-                initiative: rng.gen_range(1..=20), conditions: Vec::new(),
+                initiative: rng.random_range(1..=20), conditions: Vec::new(),
             });
             let party = st.definition.party.clone();
             for (index, name) in party.into_iter().enumerate() {
                 st.combat.combatants.push(Combatant {
                     id: format!("companion_{}", index), name, role: "companion".to_string(),
                     hp: 40, max_hp: 40, stress: 0, max_stress: 100,
-                    initiative: rng.gen_range(1..=20), conditions: Vec::new(),
+                    initiative: rng.random_range(1..=20), conditions: Vec::new(),
                 });
             }
             st.combat.combatants.push(Combatant {
                 id: "enemy_1".to_string(), name: "Unbekannter Gegner".to_string(),
                 role: "enemy".to_string(), hp: 20, max_hp: 20, stress: 0,
-                max_stress: 0, initiative: rng.gen_range(1..=20), conditions: Vec::new(),
+                max_stress: 0, initiative: rng.random_range(1..=20), conditions: Vec::new(),
             });
         }
         st.combat.is_active = true;
         st.combat.round = 1;
         st.combat.current_turn_index = 0;
-        st.combat.combatants.sort_by(|a, b| b.initiative.cmp(&a.initiative));
+        st.combat.combatants.sort_by_key(|c| std::cmp::Reverse(c.initiative));
         let active_name = st
             .combat
             .combatants
@@ -1042,7 +1049,7 @@ impl StageEngine {
     // --- Snapshot & Undo ---
     pub fn push_snapshot(&self, scene_id: &str, state: SceneState) {
         let mut snaps = self.snapshots.write().unwrap();
-        let queue = snaps.entry(scene_id.to_string()).or_insert_with(VecDeque::new);
+        let queue = snaps.entry(scene_id.to_string()).or_default();
         queue.push_back(state);
         if queue.len() > 10 {
             queue.pop_front();
@@ -1051,13 +1058,12 @@ impl StageEngine {
 
     pub fn undo_turn(&self, scene_id: &str) -> Result<SceneState, String> {
         let mut snaps = self.snapshots.write().unwrap();
-        if let Some(queue) = snaps.get_mut(scene_id) {
-            if let Some(previous_state) = queue.pop_back() {
+        if let Some(queue) = snaps.get_mut(scene_id)
+            && let Some(previous_state) = queue.pop_back() {
                 self.set_state(previous_state.clone());
                 let _ = save_scene_state(&previous_state);
                 return Ok(previous_state);
             }
-        }
         Err("Kein früherer Zustand zum Wiederherstellen vorhanden.".to_string())
     }
 }
@@ -1084,7 +1090,7 @@ pub fn roll_dice(formula_raw: &str, target_dc: Option<i32>) -> Result<DiceRollRe
         (clean.as_str(), 0)
     };
 
-    let parts: Vec<&str> = base_part.split(|c| c == 'd' || c == 'D').collect();
+    let parts: Vec<&str> = base_part.split(['d', 'D']).collect();
     if parts.len() != 2 {
         return Err(format!("Ungültiges Würfelformat: '{}'. Erwartet XdY z.B. 1d20 oder 2d6+3", clean));
     }
@@ -1100,16 +1106,16 @@ pub fn roll_dice(formula_raw: &str, target_dc: Option<i32>) -> Result<DiceRollRe
     if dice_count == 0 || dice_count > 100 {
         return Err("Würfelanzahl muss zwischen 1 und 100 liegen.".to_string());
     }
-    if die_faces < 2 || die_faces > 1000 {
+    if !(2..=1000).contains(&die_faces) {
         return Err("Seitenzahl muss zwischen 2 und 1000 liegen.".to_string());
     }
 
-    let mut rng = rand::thread_rng();
+    let mut rng = rand::rng();
     let mut individual_rolls = Vec::with_capacity(dice_count as usize);
     let mut rolls_sum: i32 = 0;
 
     for _ in 0..dice_count {
-        let roll: u32 = rng.gen_range(1..=die_faces);
+        let roll: u32 = rng.random_range(1..=die_faces);
         rolls_sum += roll as i32;
         individual_rolls.push(roll);
     }
@@ -1263,7 +1269,7 @@ pub fn ensure_default_scene_folders() {
     let ngnl_dir = scenes_dir.join("No Game No Life");
     let needs_ngnl_copy = !ngnl_dir.exists()
         || fs::read_dir(&ngnl_dir)
-            .map(|d| d.flatten().filter(|e| e.path().extension().map_or(false, |ext| ext == "json")).count() < 12)
+            .map(|d| d.flatten().filter(|e| e.path().extension().is_some_and(|ext| ext == "json")).count() < 12)
             .unwrap_or(true);
 
     if needs_ngnl_copy {
@@ -1274,11 +1280,11 @@ pub fn ensure_default_scene_folders() {
                 if let Ok(entries) = fs::read_dir(&src_scenes) {
                     for entry in entries.flatten() {
                         let p = entry.path();
-                        if p.is_file() && p.extension().map_or(false, |ext| ext == "json") {
+                        if p.is_file() && p.extension().is_some_and(|ext| ext == "json") {
                             let stem = p.file_stem().unwrap_or_default().to_string_lossy().to_string();
                             let target_p = ngnl_dir.join(format!("{}.json", stem));
-                            if let Ok(content) = fs::read_to_string(&p) {
-                                if let Ok(mut def) = serde_json::from_str::<SceneDefinition>(&content) {
+                            if let Ok(content) = fs::read_to_string(&p)
+                                && let Ok(mut def) = serde_json::from_str::<SceneDefinition>(&content) {
                                     def.id = stem.clone();
                                     def.folder = "No Game No Life".to_string();
                                     let state = build_initial_scene_state(&def);
@@ -1286,7 +1292,6 @@ pub fn ensure_default_scene_folders() {
                                         let _ = fs::write(&target_p, json_str);
                                     }
                                 }
-                            }
                         }
                     }
                 }
@@ -1304,14 +1309,13 @@ pub fn ensure_default_scene_folders() {
             if let Ok(entries) = fs::read_dir(&src_lb) {
                 for entry in entries.flatten() {
                     let p = entry.path();
-                    if p.is_file() && p.extension().map_or(false, |ext| ext == "json") {
-                        if let Some(filename) = p.file_name() {
+                    if p.is_file() && p.extension().is_some_and(|ext| ext == "json")
+                        && let Some(filename) = p.file_name() {
                             let target_lb = lorebooks_dir.join(filename);
                             if !target_lb.exists() {
                                 let _ = fs::copy(&p, &target_lb);
                             }
                         }
-                    }
                 }
             }
             break;
@@ -1328,11 +1332,11 @@ pub fn ensure_default_scene_folders() {
                 if let Ok(entries) = fs::read_dir(&src_scenes) {
                     for entry in entries.flatten() {
                         let p = entry.path();
-                        if p.is_file() && p.extension().map_or(false, |ext| ext == "json") {
+                        if p.is_file() && p.extension().is_some_and(|ext| ext == "json") {
                             let stem = p.file_stem().unwrap_or_default().to_string_lossy().to_string();
                             let target_p = ss3_dir.join(format!("{}.json", stem));
-                            if let Ok(content) = fs::read_to_string(&p) {
-                                if let Ok(mut def) = serde_json::from_str::<SceneDefinition>(&content) {
+                            if let Ok(content) = fs::read_to_string(&p)
+                                && let Ok(mut def) = serde_json::from_str::<SceneDefinition>(&content) {
                                     def.id = stem.clone();
                                     def.folder = "Sakura Succubus 3".to_string();
                                     let state = build_initial_scene_state(&def);
@@ -1340,7 +1344,6 @@ pub fn ensure_default_scene_folders() {
                                         let _ = fs::write(&target_p, json_str);
                                     }
                                 }
-                            }
                         }
                     }
                 }
@@ -1483,8 +1486,8 @@ pub fn scan_available_scenes() -> Vec<ScenePreview> {
     let user_scenes_dir = PathBuf::from(&paths.scenes_dir);
 
     // 1. User scenes in data_dir/scenes (root & subfolders)
-    if user_scenes_dir.exists() {
-        if let Ok(entries) = fs::read_dir(&user_scenes_dir) {
+    if user_scenes_dir.exists()
+        && let Ok(entries) = fs::read_dir(&user_scenes_dir) {
             for entry in entries.flatten() {
                 let p = entry.path();
                 if p.is_dir() {
@@ -1492,25 +1495,20 @@ pub fn scan_available_scenes() -> Vec<ScenePreview> {
                     if let Ok(sub_entries) = fs::read_dir(&p) {
                         for sub_entry in sub_entries.flatten() {
                             let sub_p = sub_entry.path();
-                            if sub_p.is_file() && sub_p.extension().map_or(false, |ext| ext == "json") {
-                                if let Some(preview) = parse_scene_file_preview(&sub_p, &folder_name, false) {
-                                    if !results.iter().any(|r: &ScenePreview| r.id == preview.id) {
+                            if sub_p.is_file() && sub_p.extension().is_some_and(|ext| ext == "json")
+                                && let Some(preview) = parse_scene_file_preview(&sub_p, &folder_name, false)
+                                    && !results.iter().any(|r: &ScenePreview| r.id == preview.id) {
                                         results.push(preview);
                                     }
-                                }
-                            }
                         }
                     }
-                } else if p.is_file() && p.extension().map_or(false, |ext| ext == "json") {
-                    if let Some(preview) = parse_scene_file_preview(&p, "Eigene Szenen", false) {
-                        if !results.iter().any(|r: &ScenePreview| r.id == preview.id) {
+                } else if p.is_file() && p.extension().is_some_and(|ext| ext == "json")
+                    && let Some(preview) = parse_scene_file_preview(&p, "Eigene Szenen", false)
+                        && !results.iter().any(|r: &ScenePreview| r.id == preview.id) {
                             results.push(preview);
                         }
-                    }
-                }
             }
         }
-    }
 
     // 2. Bundled presets fallback
     let search_roots = [
@@ -1528,20 +1526,17 @@ pub fn scan_available_scenes() -> Vec<ScenePreview> {
     for root in &search_roots {
         for (folder_key, folder_label) in &preset_folders {
             let scene_dir = root.join(folder_key).join("scenes");
-            if scene_dir.exists() {
-                if let Ok(entries) = fs::read_dir(&scene_dir) {
+            if scene_dir.exists()
+                && let Ok(entries) = fs::read_dir(&scene_dir) {
                     for entry in entries.flatten() {
                         let p = entry.path();
-                        if p.is_file() && p.extension().map_or(false, |ext| ext == "json") {
-                            if let Some(preview) = parse_scene_file_preview(&p, folder_label, true) {
-                                if !results.iter().any(|r: &ScenePreview| r.id == preview.id || r.title == preview.title) {
+                        if p.is_file() && p.extension().is_some_and(|ext| ext == "json")
+                            && let Some(preview) = parse_scene_file_preview(&p, folder_label, true)
+                                && !results.iter().any(|r: &ScenePreview| r.id == preview.id || r.title == preview.title) {
                                     results.push(preview);
                                 }
-                            }
-                        }
                     }
                 }
-            }
         }
     }
 
@@ -1692,15 +1687,14 @@ pub fn move_stage_scene_to_folder(scene_id: &str, target_folder: &str) -> Result
     fs::write(&new_path, json_data)
         .map_err(|e| format!("Fehler beim Speichern in {:?}: {}", new_path, e))?;
 
-    if let Some(old) = old_path {
-        if old != new_path && old.starts_with(&scenes_dir) {
+    if let Some(old) = old_path
+        && old != new_path && old.starts_with(&scenes_dir) {
             let _ = fs::remove_file(&old);
             let old_bak = old.with_extension("json.bak");
             if old_bak.exists() {
                 let _ = fs::remove_file(old_bak);
             }
         }
-    }
 
     Ok(state)
 }
@@ -1721,12 +1715,11 @@ pub fn delete_stage_folder(folder_name: &str) -> Result<(), String> {
     if let Ok(entries) = fs::read_dir(&folder_path) {
         for entry in entries.flatten() {
             let p = entry.path();
-            if p.is_file() && p.extension().map_or(false, |ext| ext == "json") {
-                if let Some(name) = p.file_name() {
+            if p.is_file() && p.extension().is_some_and(|ext| ext == "json")
+                && let Some(name) = p.file_name() {
                     let dest = scenes_dir.join(name);
                     let _ = fs::rename(&p, &dest);
                 }
-            }
         }
     }
     let _ = fs::remove_dir_all(&folder_path);
@@ -1897,8 +1890,8 @@ pub fn get_stage_background_image(name: &str) -> Result<String, String> {
     for dir in &search_dirs {
         for candidate in &candidates {
             let file_path = dir.join(candidate);
-            if file_path.exists() && file_path.is_file() {
-                if let Ok(bytes) = fs::read(&file_path) {
+            if file_path.exists() && file_path.is_file()
+                && let Ok(bytes) = fs::read(&file_path) {
                     let ext = file_path.extension().map_or("png", |e| e.to_str().unwrap_or("png")).to_lowercase();
                     let mime = match ext.as_str() {
                         "jpg" | "jpeg" => "image/jpeg",
@@ -1907,7 +1900,6 @@ pub fn get_stage_background_image(name: &str) -> Result<String, String> {
                     };
                     return Ok(format!("data:{};base64,{}", mime, BASE64_STANDARD.encode(&bytes)));
                 }
-            }
         }
     }
 
@@ -2094,7 +2086,7 @@ pub async fn execute_stage_turn(
         let text_to_scan = format!("{}\n{}", clean_input, recent_history.join("\n"));
         for lb_name in &state.definition.lorebook {
             if let Some(lb) = all_lorebooks.iter().find(|l| l.name.eq_ignore_ascii_case(lb_name) || l.id.eq_ignore_ascii_case(lb_name)) {
-                let triggered = crate::modules::lorebook::evaluate_lorebooks(&[lb.clone()], &text_to_scan, 0);
+                let triggered = crate::modules::lorebook::evaluate_lorebooks(std::slice::from_ref(lb), &text_to_scan, 0);
                 for entry in triggered.passive_entries.iter().chain(triggered.active_entries.iter()) {
                     if !active_lore_snippets.iter().any(|s: &String| s.contains(&entry.name)) {
                         active_lore_snippets.push(format!("[LORE: {}] {}", entry.name, entry.content));
@@ -2222,10 +2214,10 @@ REGELN:
     let mut dice_event_card = None;
     let mut secondary_event_cards: Vec<(String, StageEventCard)> = Vec::new();
 
-    if let Some(check) = &gm_plan.dice_check {
-        if state.definition.dice_rolls_enabled {
-            if let Ok(roll) = roll_dice(&check.formula, Some(check.dc)) {
-                let passed = roll.dc_check.as_ref().map_or(false, |d| d.passed);
+    if let Some(check) = &gm_plan.dice_check
+        && state.definition.dice_rolls_enabled
+            && let Ok(roll) = roll_dice(&check.formula, Some(check.dc)) {
+                let passed = roll.dc_check.as_ref().is_some_and(|d| d.passed);
                 dice_outcome_text = format!(
                     "\n[WÜRFELPROBE {}: Formel {}, Wurf={}, Summe={}. DC={}. Ergebnis: {}]",
                     check.skill_name.to_uppercase(),
@@ -2247,31 +2239,25 @@ REGELN:
                     is_crit_fail: roll.is_critical_failure,
                 }));
             }
-        }
-    }
 
     // Apply World updates from Plan
-    if let Some(loc) = &gm_plan.location {
-        if !loc.trim().is_empty() {
+    if let Some(loc) = &gm_plan.location
+        && !loc.trim().is_empty() {
             state.world.location = loc.clone();
         }
-    }
-    if let Some(tod) = &gm_plan.time_of_day {
-        if !tod.trim().is_empty() {
+    if let Some(tod) = &gm_plan.time_of_day
+        && !tod.trim().is_empty() {
             state.world.time_of_day = tod.clone();
         }
-    }
-    if let Some(wth) = &gm_plan.weather {
-        if !wth.trim().is_empty() {
+    if let Some(wth) = &gm_plan.weather
+        && !wth.trim().is_empty() {
             state.world.weather = wth.clone();
         }
-    }
-    if let Some(bg) = &gm_plan.bg_image {
-        if !bg.trim().is_empty() && !state.definition.lock_bg {
+    if let Some(bg) = &gm_plan.bg_image
+        && !bg.trim().is_empty() && !state.definition.lock_bg {
             state.definition.starting_bg = bg.clone();
             state.current_bg = Some(bg.clone());
         }
-    }
 
     // Apply Clock updates
     for clk_up in &gm_plan.campaign_clock_updates {
@@ -2373,7 +2359,7 @@ REGELN:
                     state.combat.combatants.push(Combatant {
                         id: "player".to_string(), name: user_name.clone(), role: "player".to_string(),
                         hp: 50, max_hp: 50, stress: 0, max_stress: 100,
-                        initiative: rand::thread_rng().gen_range(1..=20), conditions: Vec::new(),
+                        initiative: rand::rng().random_range(1..=20), conditions: Vec::new(),
                     });
                 }
                 for (index, enemy) in encounter.enemies.iter().enumerate() {
@@ -2381,10 +2367,10 @@ REGELN:
                         id: format!("enemy_{}_{}", Utc::now().timestamp_millis(), index),
                         name: enemy.name.clone(), role: enemy.role.clone(), hp: enemy.hp.max(1),
                         max_hp: enemy.hp.max(1), stress: 0, max_stress: 0,
-                        initiative: rand::thread_rng().gen_range(1..=20), conditions: Vec::new(),
+                        initiative: rand::rng().random_range(1..=20), conditions: Vec::new(),
                     });
                 }
-                state.combat.combatants.sort_by(|a, b| b.initiative.cmp(&a.initiative));
+                state.combat.combatants.sort_by_key(|c| std::cmp::Reverse(c.initiative));
                 secondary_event_cards.push(("Eine Kampfbegegnung beginnt.".to_string(), StageEventCard::Combat {
                     action: "started".to_string(), text: "Initiative wird gewürfelt — der Kampf beginnt!".to_string(),
                 }));
@@ -2412,20 +2398,18 @@ REGELN:
         }
     }
 
-    if let Some(discovery) = &gm_plan.discovery {
-        if !discovery.trim().is_empty() {
+    if let Some(discovery) = &gm_plan.discovery
+        && !discovery.trim().is_empty() {
             secondary_event_cards.push((discovery.clone(), StageEventCard::Discovery { text: discovery.clone() }));
         }
-    }
-    if let Some(consequence) = &gm_plan.lasting_consequence {
-        if !consequence.trim().is_empty() {
+    if let Some(consequence) = &gm_plan.lasting_consequence
+        && !consequence.trim().is_empty() {
             state.consequence_ledger.push(ConsequenceEntry {
                 id: format!("consequence_{}", Utc::now().timestamp_millis()),
                 text: consequence.clone(), created_at: Utc::now().to_rfc3339(),
             });
             secondary_event_cards.push((consequence.clone(), StageEventCard::Consequence { text: consequence.clone() }));
         }
-    }
 
     // 4. GM Executor: Generate Narrative prose
     let executor_system_prompt = format!(
@@ -2526,15 +2510,14 @@ REGELN:
         state.current_turn_actor = current_actor.clone();
         spoken_actors.insert(current_actor.to_lowercase());
 
-        if state.combat.is_active {
-            if let Some(index) = state.combat.combatants.iter().position(|combatant| {
+        if state.combat.is_active
+            && let Some(index) = state.combat.combatants.iter().position(|combatant| {
                 (current_actor == "PLAYER" && combatant.role == "player")
                     || combatant.name.eq_ignore_ascii_case(&current_actor)
             }) {
                 if index < state.combat.current_turn_index { state.combat.round += 1; }
                 state.combat.current_turn_index = index;
             }
-        }
 
         if state.definition.party.iter().any(|p| p.eq_ignore_ascii_case(&current_actor)) {
             let all_chars = scan_available_characters();

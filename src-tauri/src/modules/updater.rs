@@ -33,8 +33,8 @@ pub async fn check_for_app_updates() -> Result<UpdateInfo, String> {
 
     match res {
         Ok(response) => {
-            if response.status().is_success() {
-                if let Ok(rel) = response.json::<GitHubReleaseResponse>().await {
+            if response.status().is_success()
+                && let Ok(rel) = response.json::<GitHubReleaseResponse>().await {
                     let clean_tag = rel.tag_name.trim_start_matches('v').to_string();
                     let has_update = is_version_newer(&clean_tag, &current_version);
                     return Ok(UpdateInfo {
@@ -46,7 +46,6 @@ pub async fn check_for_app_updates() -> Result<UpdateInfo, String> {
                         published_at: rel.published_at,
                     });
                 }
-            }
         }
         Err(e) => {
             tracing::warn!("Update-Prüfung fehlgeschlagen: {}", e);

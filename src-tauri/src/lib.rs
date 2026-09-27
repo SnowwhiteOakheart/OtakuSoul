@@ -4,6 +4,38 @@ pub mod state;
 
 use state::AppState;
 
+/// The asset protocol scope is empty in `tauri.conf.json`; only the app's own data and
+/// bundled asset directories are opened here. Files picked through the dialog plugin are
+/// added to the scope by the plugin itself.
+fn allow_app_asset_dirs(app: &tauri::App) {
+    use std::path::PathBuf;
+    use tauri::Manager;
+
+    let paths = modules::paths::resolve_app_paths();
+    let mut dirs: Vec<PathBuf> = vec![
+        PathBuf::from(&paths.data_dir),
+        PathBuf::from(&paths.config_dir),
+        PathBuf::from(&paths.bundled_presets_dir),
+    ];
+    if let Some(assets_root) = PathBuf::from(&paths.bundled_vrm_dir).parent() {
+        dirs.push(assets_root.to_path_buf());
+    }
+    if let Ok(resource_dir) = app.path().resource_dir() {
+        dirs.push(resource_dir);
+    }
+    if let Some(exe_dir) = std::env::current_exe().ok().and_then(|p| p.parent().map(PathBuf::from)) {
+        dirs.push(exe_dir.join("assets"));
+        dirs.push(exe_dir.join("..").join("assets"));
+    }
+
+    let scope = app.asset_protocol_scope();
+    for dir in dirs.into_iter().filter(|d| d.is_dir()) {
+        if let Err(e) = scope.allow_directory(&dir, true) {
+            tracing::warn!("Asset-Verzeichnis {:?} konnte nicht freigegeben werden: {}", dir, e);
+        }
+    }
+}
+
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
 pub fn run() {
     // Initialize tracing subscriber for clean logs
@@ -13,6 +45,10 @@ pub fn run() {
         .plugin(tauri_plugin_opener::init())
         .plugin(tauri_plugin_dialog::init())
         .manage(AppState::new())
+        .setup(|app| {
+            allow_app_asset_dirs(app);
+            Ok(())
+        })
         .invoke_handler(tauri::generate_handler![
             commands::get_hardware_info,
             commands::get_layer_recommendation,

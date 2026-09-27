@@ -209,15 +209,13 @@ pub fn extract_json_object(raw: &str) -> Option<String> {
     let mut text = raw.trim();
 
     // Strip markdown codeblock ```json ... ``` or ``` ... ```
-    if let Some(start) = text.find("```") {
-        if let Some(end) = text.rfind("```") {
-            if end > start {
+    if let Some(start) = text.find("```")
+        && let Some(end) = text.rfind("```")
+            && end > start {
                 let inner = &text[start + 3..end];
                 let inner_trimmed = inner.trim_start_matches("json").trim();
                 text = inner_trimmed;
             }
-        }
-    }
 
     let first_brace = text.find('{')?;
     let last_brace = text.rfind('}')?;
@@ -406,19 +404,17 @@ pub async fn execute_soul_memory_pipeline(
         }
 
         if let Some(ist) = cp.internal_state {
-            if let Some(em) = ist.primary_emotion {
-                if !em.trim().is_empty() {
+            if let Some(em) = ist.primary_emotion
+                && !em.trim().is_empty() {
                     updated_psych.primary_emotion = em.trim().to_string();
                 }
-            }
             if let Some(intensity) = ist.intensity {
                 updated_psych.intensity = intensity.clamp(1, 5);
             }
-            if let Some(tens) = ist.psychological_tension {
-                if !tens.trim().is_empty() {
+            if let Some(tens) = ist.psychological_tension
+                && !tens.trim().is_empty() {
                     updated_psych.psychological_tension = tens.trim().to_string();
                 }
-            }
             if ist.emotion_active == Some(false) {
                 // Advance emotional decay
                 updated_psych.emotional_decay_counter += 1;
@@ -432,23 +428,20 @@ pub async fn execute_soul_memory_pipeline(
         }
 
         if let Some(drive) = cp.cognitive_drive {
-            if let Some(agenda) = drive.active_agenda {
-                if !agenda.trim().is_empty() {
+            if let Some(agenda) = drive.active_agenda
+                && !agenda.trim().is_empty() {
                     updated_psych.active_agenda = agenda.trim().to_string();
                 }
-            }
-            if let Some(focus) = drive.immediate_focus {
-                if !focus.trim().is_empty() {
+            if let Some(focus) = drive.immediate_focus
+                && !focus.trim().is_empty() {
                     updated_psych.immediate_focus = focus.trim().to_string();
                 }
-            }
         }
 
-        if let Some(dissonance) = cp.cognitive_dissonance {
-            if !dissonance.trim().is_empty() {
+        if let Some(dissonance) = cp.cognitive_dissonance
+            && !dissonance.trim().is_empty() {
                 updated_psych.cognitive_dissonance = dissonance.trim().to_string();
             }
-        }
 
         state.memory_db.update_psychology(char_id, &updated_psych).map_err(|e| e.to_string())?;
     }
@@ -456,34 +449,29 @@ pub async fn execute_soul_memory_pipeline(
     // 7. Apply user_memory_patch
     if let Some(up) = parsed_router.user_memory_patch {
         if let Some(uis) = up.user_identity_status {
-            if let Some(role) = uis.role_in_story {
-                if !role.trim().is_empty() {
+            if let Some(role) = uis.role_in_story
+                && !role.trim().is_empty() {
                     updated_rel.role_in_story = role.trim().to_string();
                 }
-            }
-            if let Some(attrs) = uis.known_attributes {
-                if !attrs.trim().is_empty() {
+            if let Some(attrs) = uis.known_attributes
+                && !attrs.trim().is_empty() {
                     updated_rel.known_attributes = attrs.trim().to_string();
                 }
-            }
         }
 
         if let Some(meta) = up.relationship_metadata {
-            if let Some(trust) = meta.trust_level {
-                if !trust.trim().is_empty() {
+            if let Some(trust) = meta.trust_level
+                && !trust.trim().is_empty() {
                     updated_rel.trust_level = trust.trim().to_string();
                 }
-            }
-            if let Some(dyn_desc) = meta.dynamic_description {
-                if !dyn_desc.trim().is_empty() {
+            if let Some(dyn_desc) = meta.dynamic_description
+                && !dyn_desc.trim().is_empty() {
                     updated_rel.dynamic_description = dyn_desc.trim().to_string();
                 }
-            }
-            if let Some(tension) = meta.unspoken_tension {
-                if !tension.trim().is_empty() {
+            if let Some(tension) = meta.unspoken_tension
+                && !tension.trim().is_empty() {
                     updated_rel.unspoken_tension = tension.trim().to_string();
                 }
-            }
         }
 
         if !up.preferences_habits_remove.is_empty() {
@@ -588,8 +576,8 @@ pub async fn execute_soul_memory_pipeline(
 
         if let Ok(diary_raw) = state.inference_client.generate_direct(diary_req).await {
             let diary_text = diary_raw.trim();
-            if !diary_text.is_empty() {
-                if let Ok(id) = state.memory_db.add_diary_entry(
+            if !diary_text.is_empty()
+                && let Ok(id) = state.memory_db.add_diary_entry(
                     char_id,
                     "Innere Reflexion",
                     diary_text,
@@ -606,7 +594,6 @@ pub async fn execute_soul_memory_pipeline(
                             .unwrap_or(0),
                     });
                 }
-            }
         }
     }
 

@@ -5,7 +5,10 @@ use tracing::{info, warn};
 
 use crate::modules::inference::SamplingParams;
 use crate::modules::llama_manager::LlamaServerConfig;
+use crate::modules::secrets;
 use crate::modules::paths::{resolve_app_paths, scan_available_characters, scan_available_models, scan_available_vrm_models};
+
+const CLOUD_API_KEY_ACCOUNT: &str = "cloud_api_key";
 
 fn default_cloud_provider() -> String {
     "open_router".to_string()
@@ -110,9 +113,12 @@ pub fn get_settings_file_path() -> PathBuf {
 
 pub fn load_app_settings() -> AppSettings {
     let path = get_settings_file_path();
-    if path.exists() {
-        if let Ok(content) = fs::read_to_string(&path) {
+    if path.exists()
+        && let Ok(content) = fs::read_to_string(&path) {
             if let Ok(mut settings) = serde_json::from_str::<AppSettings>(&content) {
+                if secrets::hydrate(CLOUD_API_KEY_ACCOUNT, &mut settings.cloud_api_key) {
+                    let _ = save_app_settings(&settings);
+                }
                 // If model path or vrm path is empty, try populating from scan
                 if settings.server_config.model_path.is_empty() {
                     let models = scan_available_models();
@@ -131,7 +137,6 @@ pub fn load_app_settings() -> AppSettings {
                 warn!("settings.json ist beschädigt, erstelle neue Standardkonfiguration.");
             }
         }
-    }
 
     let defaults = AppSettings::default();
     let _ = save_app_settings(&defaults);
@@ -140,7 +145,9 @@ pub fn load_app_settings() -> AppSettings {
 
 pub fn save_app_settings(settings: &AppSettings) -> Result<(), String> {
     let path = get_settings_file_path();
-    save_app_settings_to_path(settings, &path)?;
+    let mut on_disk = settings.clone();
+    secrets::externalize(CLOUD_API_KEY_ACCOUNT, &mut on_disk.cloud_api_key);
+    save_app_settings_to_path(&on_disk, &path)?;
     info!("Einstellungen erfolgreich in {:?} gespeichert.", path);
     Ok(())
 }

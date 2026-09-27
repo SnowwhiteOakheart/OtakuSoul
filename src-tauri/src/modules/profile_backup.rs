@@ -3,14 +3,16 @@ use std::io::{Read, Write};
 use std::path::{Path, PathBuf};
 use chrono::Utc;
 use serde::{Deserialize, Serialize};
-use tracing::info;
+use tracing::{info, warn};
 use zip::write::SimpleFileOptions;
 use zip::{ZipArchive, ZipWriter};
 
+use crate::modules::memory::MemoryDb;
 use crate::modules::paths::resolve_app_paths;
 
 const SCHEMA_VERSION: u32 = 1;
 const SAFETY_ROTATION_KEEP: usize = 5;
+const MEMORY_DB_ENTRY: &str = "memory/otakusoul.db";
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct BackupGroupSelection {
@@ -91,12 +93,11 @@ impl ProfileBackupManager {
                 
                 if let Ok(mut src_file) = File::open(&entry_path) {
                     let mut buffer = Vec::new();
-                    if src_file.read_to_end(&mut buffer).is_ok() {
-                        if zip.start_file(&zip_entry_name, options).is_ok() {
+                    if src_file.read_to_end(&mut buffer).is_ok()
+                        && zip.start_file(&zip_entry_name, options).is_ok() {
                             let _ = zip.write_all(&buffer);
                             *added_files += 1;
                         }
-                    }
                 }
             }
         }
@@ -110,17 +111,15 @@ impl ProfileBackupManager {
         zip_entry_name: &str,
         added_files: &mut usize,
     ) {
-        if source_file.exists() && source_file.is_file() {
-            if let Ok(mut src_file) = File::open(source_file) {
+        if source_file.exists() && source_file.is_file()
+            && let Ok(mut src_file) = File::open(source_file) {
                 let mut buffer = Vec::new();
-                if src_file.read_to_end(&mut buffer).is_ok() {
-                    if zip.start_file(zip_entry_name, options).is_ok() {
+                if src_file.read_to_end(&mut buffer).is_ok()
+                    && zip.start_file(zip_entry_name, options).is_ok() {
                         let _ = zip.write_all(&buffer);
                         *added_files += 1;
                     }
-                }
             }
-        }
     }
 
     /// Creates a ZIP profile backup with the given group selections.
@@ -170,12 +169,22 @@ impl ProfileBackupManager {
             let _ = Self::add_dir_to_zip_archive(&mut zip, options, &scenes_dir, "scenes", &mut added_files);
         }
 
-        // 5. Soul Memory (SQLite database & markdown logs)
+        // 5. Soul Memory (SQLite database with chats, memories and relationships)
         if selection.soul_memory {
-            Self::add_file_to_zip_archive(&mut zip, options, &data_dir.join("memory.db"), "memory/memory.db", &mut added_files);
-            Self::add_file_to_zip_archive(&mut zip, options, &data_dir.join("MEMORY.md"), "memory/MEMORY.md", &mut added_files);
-            Self::add_file_to_zip_archive(&mut zip, options, &data_dir.join("USER.md"), "memory/USER.md", &mut added_files);
-            let _ = Self::add_dir_to_zip_archive(&mut zip, options, &data_dir.join("topics"), "memory/topics", &mut added_files);
+            let db_path = MemoryDb::default_path();
+            if db_path.exists() {
+                // VACUUM INTO yields a consistent snapshot even while the app holds the DB open.
+                let snapshot = backups_dir.join(format!(".{}.db.tmp", timestamp));
+                let _ = fs::remove_file(&snapshot);
+                let snapshot_result = rusqlite::Connection::open(&db_path).and_then(|conn| {
+                    conn.execute("VACUUM INTO ?1", [snapshot.to_string_lossy().as_ref()])
+                });
+                match snapshot_result {
+                    Ok(_) => Self::add_file_to_zip_archive(&mut zip, options, &snapshot, MEMORY_DB_ENTRY, &mut added_files),
+                    Err(e) => warn!("Datenbank-Snapshot für das Backup fehlgeschlagen: {}", e),
+                }
+                let _ = fs::remove_file(&snapshot);
+            }
         }
 
         // 6. Soul Companion (scratchpad, goals, plugins, mcp_servers)
@@ -184,11 +193,12 @@ impl ProfileBackupManager {
             let _ = Self::add_dir_to_zip_archive(&mut zip, options, &comp_dir, "companion", &mut added_files);
         }
 
-        // 7. Settings & Presets
+        // 7. Settings, presets & voice configs (API keys live in the OS keyring and are not included)
         if selection.settings {
-            Self::add_file_to_zip_archive(&mut zip, options, &data_dir.join("settings.json"), "settings/settings.json", &mut added_files);
-            Self::add_file_to_zip_archive(&mut zip, options, &data_dir.join("llm_presets.json"), "settings/llm_presets.json", &mut added_files);
-            Self::add_file_to_zip_archive(&mut zip, options, &data_dir.join("voice_config.json"), "settings/voice_config.json", &mut added_files);
+            let config_dir = PathBuf::from(&paths.config_dir);
+            Self::add_file_to_zip_archive(&mut zip, options, &config_dir.join("settings.json"), "settings/settings.json", &mut added_files);
+            Self::add_file_to_zip_archive(&mut zip, options, &config_dir.join("llm_presets.json"), "settings/llm_presets.json", &mut added_files);
+            let _ = Self::add_dir_to_zip_archive(&mut zip, options, &config_dir.join("voice_configs"), "settings/voice_configs", &mut added_files);
         }
 
         // Write manifest
@@ -238,7 +248,7 @@ impl ProfileBackupManager {
         if let Ok(entries) = fs::read_dir(&backups_dir) {
             for entry in entries.flatten() {
                 let path = entry.path();
-                if path.is_file() && path.extension().map_or(false, |ext| ext == "zip") {
+                if path.is_file() && path.extension().is_some_and(|ext| ext == "zip") {
                     let filename = path.file_name().unwrap_or_default().to_string_lossy().to_string();
                     let is_safety = filename.starts_with("pre_restore_");
                     let size_bytes = fs::metadata(&path).map(|m| m.len()).unwrap_or(0);
@@ -298,6 +308,7 @@ impl ProfileBackupManager {
         let paths = resolve_app_paths();
 
         let mut restored_count = 0usize;
+        let mut pending_db_restore = false;
 
         for i in 0..archive.len() {
             let mut file = archive.by_index(i).map_err(|e| format!("Fehler beim Lesen von ZIP-Eintrag {}: {}", i, e))?;
@@ -330,15 +341,16 @@ impl ProfileBackupManager {
             } else if entry_str.starts_with("scenes/") && selection.soul_stage {
                 let sub = entry_str.trim_start_matches("scenes/");
                 Some(scenes_dir.join(sub))
-            } else if entry_str.starts_with("memory/") && selection.soul_memory {
-                let sub = entry_str.trim_start_matches("memory/");
-                Some(data_dir.join(sub))
+            } else if entry_str == MEMORY_DB_ENTRY && selection.soul_memory {
+                // The live DB is open; it is swapped in on the next start (see MemoryDb::apply_pending_restore).
+                pending_db_restore = true;
+                Some(MemoryDb::pending_restore_path())
             } else if entry_str.starts_with("companion/") && selection.companion {
                 let sub = entry_str.trim_start_matches("companion/");
                 Some(data_dir.join("companion").join(sub))
             } else if entry_str.starts_with("settings/") && selection.settings {
                 let sub = entry_str.trim_start_matches("settings/");
-                Some(data_dir.join(sub))
+                Some(PathBuf::from(&paths.config_dir).join(sub))
             } else {
                 None
             };
@@ -362,7 +374,14 @@ impl ProfileBackupManager {
         }
 
         info!("Backup '{}' erfolgreich wiederhergestellt ({} Dateien).", filename, restored_count);
-        Ok(format!("Erfolgreich {} Dateien aus dem Backup wiederhergestellt.", restored_count))
+        if pending_db_restore {
+            Ok(format!(
+                "Erfolgreich {} Dateien aus dem Backup wiederhergestellt. Die Soul-Memory-Datenbank wird beim nächsten Start von OtakuSoul übernommen – bitte die App neu starten.",
+                restored_count
+            ))
+        } else {
+            Ok(format!("Erfolgreich {} Dateien aus dem Backup wiederhergestellt.", restored_count))
+        }
     }
 
     /// Deletes a backup ZIP file.
@@ -388,18 +407,17 @@ impl ProfileBackupManager {
                 let path = entry.path();
                 if path.is_file() {
                     let name = path.file_name().unwrap_or_default().to_string_lossy().to_string();
-                    if name.starts_with("pre_restore_") && name.ends_with(".zip") {
-                        if let Ok(meta) = fs::metadata(&path) {
+                    if name.starts_with("pre_restore_") && name.ends_with(".zip")
+                        && let Ok(meta) = fs::metadata(&path) {
                             let mtime = meta.modified().unwrap_or(std::time::SystemTime::UNIX_EPOCH);
                             safety_files.push((path, mtime));
                         }
-                    }
                 }
             }
         }
 
         // Sort newest first
-        safety_files.sort_by(|a, b| b.1.cmp(&a.1));
+        safety_files.sort_by_key(|f| std::cmp::Reverse(f.1));
 
         if safety_files.len() > SAFETY_ROTATION_KEEP {
             for (old_path, _) in &safety_files[SAFETY_ROTATION_KEEP..] {
@@ -413,8 +431,8 @@ impl ProfileBackupManager {
 /// Simple recursive directory crawler
 fn walkdir(dir: &Path) -> Result<Vec<PathBuf>, String> {
     let mut files = Vec::new();
-    if dir.is_dir() {
-        if let Ok(entries) = fs::read_dir(dir) {
+    if dir.is_dir()
+        && let Ok(entries) = fs::read_dir(dir) {
             for entry in entries.flatten() {
                 let path = entry.path();
                 if path.is_dir() {
@@ -425,7 +443,6 @@ fn walkdir(dir: &Path) -> Result<Vec<PathBuf>, String> {
                 }
             }
         }
-    }
     Ok(files)
 }
 
