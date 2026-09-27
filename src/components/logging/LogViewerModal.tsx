@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { useAppStore } from '../../store/useAppStore';
-import { useTranslation } from '../../i18n';
+import { translate, useTranslation } from '../../i18n';
 import {
   X,
   RefreshCw,
@@ -11,6 +11,8 @@ import {
   Copy,
   Check,
 } from 'lucide-react';
+import { confirmDialog } from '../ui/feedback';
+import { ModalOverlay } from '../ui/ModalOverlay';
 
 export const LogViewerModal: React.FC = () => {
   const { isLogViewerOpen, setIsLogViewerOpen, logs, fetchLogs, clearLogs, exportLogs } =
@@ -48,9 +50,13 @@ export const LogViewerModal: React.FC = () => {
   };
 
   const handleClear = async () => {
-    if (window.confirm('Möchtest du das gesamte Systemprotokoll leeren?')) {
-      await clearLogs();
-    }
+    const confirmed = await confirmDialog({
+      title: translate('confirm.clearLogsTitle'),
+      message: translate('confirm.clearLogsText'),
+      confirmLabel: translate('logger.clear'),
+      tone: 'danger',
+    });
+    if (confirmed) await clearLogs();
   };
 
   const handleExport = async () => {
@@ -90,7 +96,7 @@ export const LogViewerModal: React.FC = () => {
   });
 
   return (
-    <div className="fixed inset-0 z-50 bg-black/80 backdrop-blur-md flex items-center justify-center p-4">
+    <ModalOverlay onClose={() => setIsLogViewerOpen(false)} className="fixed inset-0 z-50 bg-black/80 backdrop-blur-md flex items-center justify-center p-4">
       <div className="bg-slate-900 border border-slate-700/80 rounded-2xl w-full max-w-4xl h-[85vh] flex flex-col shadow-2xl overflow-hidden">
         {/* Header */}
         <div className="px-6 py-4 border-b border-slate-800 flex items-center justify-between bg-app/70">
@@ -241,6 +247,6 @@ export const LogViewerModal: React.FC = () => {
           <div ref={bottomRef} />
         </div>
       </div>
-    </div>
+    </ModalOverlay>
   );
 };

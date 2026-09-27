@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { useAppStore } from '../../store/useAppStore';
 import { SceneDefinition, CharacterProfile } from '../../types';
 import { X, Sparkles, MapPin, Sun, UserCheck } from 'lucide-react';
+import { ModalOverlay } from '../ui/ModalOverlay';
 
 interface SceneCreateModalProps {
   isOpen: boolean;
@@ -82,7 +83,7 @@ export const SceneCreateModal: React.FC<SceneCreateModalProps> = ({
   };
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/75 backdrop-blur-sm p-4 overflow-y-auto">
+    <ModalOverlay onClose={onClose} className="fixed inset-0 z-50 flex items-center justify-center bg-black/75 backdrop-blur-sm p-4 overflow-y-auto">
       <div className="w-full max-w-2xl bg-slate-900 border border-slate-700/80 rounded-2xl shadow-2xl overflow-hidden my-8">
         {/* Header */}
         <div className="flex items-center justify-between p-4 sm:p-5 border-b border-slate-800 bg-app/60">
@@ -309,6 +310,6 @@ export const SceneCreateModal: React.FC<SceneCreateModalProps> = ({
           </div>
         </form>
       </div>
-    </div>
+    </ModalOverlay>
   );
 };

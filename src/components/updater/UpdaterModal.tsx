@@ -11,6 +11,7 @@ import {
   Package,
   Calendar,
 } from 'lucide-react';
+import { ModalOverlay } from '../ui/ModalOverlay';
 
 export const UpdaterModal: React.FC = () => {
   const { isUpdaterOpen, setIsUpdaterOpen, updateInfo, checkForUpdates } = useAppStore();
@@ -44,7 +45,7 @@ export const UpdaterModal: React.FC = () => {
   const hasUpdate = updateInfo?.has_update || false;
 
   return (
-    <div className="fixed inset-0 z-50 bg-black/80 backdrop-blur-md flex items-center justify-center p-4">
+    <ModalOverlay onClose={() => setIsUpdaterOpen(false)} className="fixed inset-0 z-50 bg-black/80 backdrop-blur-md flex items-center justify-center p-4">
       <div className="bg-slate-900 border border-slate-700/80 rounded-2xl w-full max-w-lg shadow-2xl overflow-hidden flex flex-col">
         {/* Header */}
         <div className="px-6 py-4 border-b border-slate-800 flex items-center justify-between bg-app/70">
@@ -163,6 +164,6 @@ export const UpdaterModal: React.FC = () => {
           )}
         </div>
       </div>
-    </div>
+    </ModalOverlay>
   );
 };

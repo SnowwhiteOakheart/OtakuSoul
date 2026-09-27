@@ -14,6 +14,8 @@ import {
   Sliders,
   ChevronRight,
 } from 'lucide-react';
+import { translate } from '../../i18n';
+import { confirmDialog } from '../ui/feedback';
 
 interface ChatSidebarProps {
   isOpen: boolean;
@@ -248,11 +250,15 @@ export const ChatSidebar: React.FC<ChatSidebarProps> = ({ isOpen, onClose }) => 
                           <Edit2 className="w-3 h-3" />
                         </button>
                         <button
-                          onClick={(e) => {
+                          onClick={async (e) => {
                             e.stopPropagation();
-                            if (confirm(`Chat "${session.title}" wirklich löschen?`)) {
-                              deleteChatSession(session.id);
-                            }
+                            const confirmed = await confirmDialog({
+                              title: translate('confirm.deleteChatTitle', { title: session.title }),
+                              message: translate('confirm.deleteChatText'),
+                              confirmLabel: translate('common.delete'),
+                              tone: 'danger',
+                            });
+                            if (confirmed) deleteChatSession(session.id);
                           }}
                           className="p-1 text-slate-400 hover:text-rose-400 transition-colors"
                           title="Löschen"

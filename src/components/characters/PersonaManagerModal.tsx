@@ -2,6 +2,7 @@ import { useState } from 'react';
 import { useAppStore } from '../../store/useAppStore';
 import { UserPersona } from '../../types';
 import { X, UserPlus, Check, Trash2, User } from 'lucide-react';
+import { ModalOverlay } from '../ui/ModalOverlay';
 
 interface PersonaManagerModalProps {
   onClose: () => void;
@@ -42,7 +43,7 @@ export const PersonaManagerModal = ({ onClose }: PersonaManagerModalProps) => {
   };
 
   return (
-    <div className="fixed inset-0 z-50 bg-black/80 backdrop-blur-sm flex items-center justify-center p-4">
+    <ModalOverlay onClose={onClose} className="fixed inset-0 z-50 bg-black/80 backdrop-blur-sm flex items-center justify-center p-4">
       <div className="bg-slate-900 border border-slate-700/80 rounded-2xl w-full max-w-xl max-h-[85vh] flex flex-col shadow-2xl overflow-hidden">
         {/* Header */}
         <div className="px-6 py-4 border-b border-slate-800 flex items-center justify-between bg-app/60">
@@ -197,6 +198,6 @@ export const PersonaManagerModal = ({ onClose }: PersonaManagerModalProps) => {
           </button>
         </div>
       </div>
-    </div>
+    </ModalOverlay>
   );
 };

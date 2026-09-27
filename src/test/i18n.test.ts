@@ -1,53 +1,42 @@
 import { describe, it, expect } from 'vitest';
-import { DICTIONARY, t, SupportedLanguage } from '../i18n';
+import { LOCALES, t, SupportedLanguage } from '../i18n';
 
-describe('i18n Dictionary & Translation Helper', () => {
-  const supportedLanguages: SupportedLanguage[] = ['de', 'en', 'ru'];
+describe('i18n', () => {
+  const languages = Object.keys(LOCALES) as SupportedLanguage[];
 
-  it('contains valid translation entries for all keys across de, en, ru', () => {
-    const keys = Object.keys(DICTIONARY);
+  it('has a non-empty translation for every key in every language', () => {
+    const keys = Object.keys(LOCALES.de);
     expect(keys.length).toBeGreaterThan(30);
-
-    for (const key of keys) {
-      const entry = DICTIONARY[key];
-      expect(entry, `Entry for key "${key}" should exist`).toBeDefined();
-
-      for (const lang of supportedLanguages) {
-        const text = entry?.[lang];
-        expect(
-          typeof text,
-          `Translation for key "${key}" in lang "${lang}" should be a string`
-        ).toBe('string');
-        expect(
-          (text ?? "").trim().length,
-          `Translation for key "${key}" in lang "${lang}" should not be empty`
-        ).toBeGreaterThan(0);
+    for (const lang of languages) {
+      for (const key of keys) {
+        const text = (LOCALES[lang] as Record<string, string>)[key];
+        expect(text?.trim(), `"${key}" is empty in "${lang}"`).toBeTruthy();
       }
     }
   });
 
-  it('translates navigation keys correctly', () => {
-    expect(t('nav.chat', 'de')).toBe('Chat');
+  it('keeps placeholders identical across languages', () => {
+    const placeholders = (text: string) => (text.match(/\{\{\w+\}\}/g) ?? []).sort().join(',');
+    for (const [key, text] of Object.entries(LOCALES.de)) {
+      for (const lang of languages) {
+        const translated = (LOCALES[lang] as Record<string, string>)[key] ?? '';
+        expect(placeholders(translated), `placeholders of "${key}" in "${lang}"`).toBe(placeholders(text));
+      }
+    }
+  });
+
+  it('translates navigation keys', () => {
     expect(t('nav.characters', 'de')).toBe('Charaktere');
     expect(t('nav.characters', 'en')).toBe('Characters');
     expect(t('nav.characters', 'ru')).toBe('Персонажи');
-    expect(t('nav.hub', 'en')).toBe('Soul Hub');
   });
 
-  it('translates header and settings keys correctly', () => {
-    expect(t('header.logs', 'de')).toBe('System-Logs');
-    expect(t('header.logs', 'en')).toBe('System Logs');
-    expect(t('header.logs', 'ru')).toBe('Системные логи');
-
-    expect(t('header.update', 'de')).toBe('Updates prüfen');
-    expect(t('header.update', 'en')).toBe('Check Updates');
-
-    expect(t('settings.appearance', 'de')).toBe('Erscheinungsbild & Theme');
-    expect(t('settings.appearance', 'en')).toBe('Appearance & Theme');
+  it('interpolates placeholders', () => {
+    expect(t('header.version', 'de', {})).toBe(t('header.version', 'de'));
+    expect(t('unknown {{x}}', 'de', { x: 1 })).toBe('unknown 1');
   });
 
-  it('falls back gracefully to key name if not found in dictionary', () => {
-    const missing = t('non.existent.key.xyz', 'de');
-    expect(missing).toBe('non.existent.key.xyz');
+  it('falls back to the key for unknown keys', () => {
+    expect(t('non.existent.key.xyz', 'de')).toBe('non.existent.key.xyz');
   });
 });

@@ -23,6 +23,9 @@ import {
   Layers,
   History,
 } from 'lucide-react';
+import { translate } from '../../i18n';
+import { confirmDialog, toast } from '../ui/feedback';
+import { ModalOverlay } from '../ui/ModalOverlay';
 
 interface SceneLobbyModalProps {
   isOpen: boolean;
@@ -138,15 +141,25 @@ export const SceneLobbyModal: React.FC<SceneLobbyModalProps> = ({
   const handleDelete = async (e: React.MouseEvent, sceneId: string) => {
     e.stopPropagation();
     setActiveMenuSceneId(null);
-    if (confirm('Möchtest du dieses Szenario wirklich löschen?')) {
-      await deleteStageScene(sceneId);
-    }
+    const confirmed = await confirmDialog({
+      title: translate('confirm.deleteSceneTitle'),
+      message: translate('confirm.deleteSceneText'),
+      confirmLabel: translate('common.delete'),
+      tone: 'danger',
+    });
+    if (confirmed) await deleteStageScene(sceneId);
   };
 
   const handleResetScene = async (e: React.MouseEvent, sceneId: string) => {
     e.stopPropagation();
     setActiveMenuSceneId(null);
-    if (confirm('Möchtest du dieses Abenteuer wirklich auf den Anfangszustand zurücksetzen? Ein Backup deiner bisherigen Züge wird sicherheitshalber gespeichert.')) {
+    const confirmed = await confirmDialog({
+      title: translate('confirm.resetSceneTitle'),
+      message: translate('confirm.resetSceneText'),
+      confirmLabel: translate('confirm.reset'),
+      tone: 'danger',
+    });
+    if (confirmed) {
       await resetStageScene(sceneId);
       if (currentSceneId === sceneId) {
         await loadStageScene(sceneId);
@@ -193,7 +206,7 @@ export const SceneLobbyModal: React.FC<SceneLobbyModalProps> = ({
       setShowNewFolderModal(false);
       setSelectedStageFolder(trimmed);
     } catch (err: any) {
-      alert(`Fehler beim Erstellen des Ordners: ${err}`);
+      toast.error(translate('toast.folderCreateFailed', { error: String(err) }));
     }
   };
 
@@ -201,12 +214,18 @@ export const SceneLobbyModal: React.FC<SceneLobbyModalProps> = ({
     if (selectedStageFolder === 'Alle' || selectedStageFolder === 'No Game No Life' || selectedStageFolder === 'Eigene Szenen') {
       return;
     }
-    if (confirm(`Möchtest du den Ordner „${selectedStageFolder}“ wirklich löschen? Die enthaltenen Szenen werden nach „Eigene Szenen“ verschoben.`)) {
+    const confirmed = await confirmDialog({
+      title: translate('confirm.deleteFolderTitle', { name: selectedStageFolder }),
+      message: translate('confirm.deleteFolderText'),
+      confirmLabel: translate('common.delete'),
+      tone: 'danger',
+    });
+    if (confirmed) {
       try {
         await deleteStageFolder(selectedStageFolder);
         setSelectedStageFolder('Alle');
       } catch (err: any) {
-        alert(`Fehler: ${err}`);
+        toast.error(translate('toast.folderDeleteFailed', { error: String(err) }));
       }
     }
   };
@@ -218,9 +237,9 @@ export const SceneLobbyModal: React.FC<SceneLobbyModalProps> = ({
       const text = await file.text();
       const targetFolder = selectedStageFolder === 'Alle' ? 'Eigene Szenen' : selectedStageFolder;
       await importStageSceneJson(text, targetFolder);
-      alert(`Szene erfolgreich in „${targetFolder}“ importiert!`);
+      toast.success(translate('toast.sceneImported', { folder: targetFolder }));
     } catch (err: any) {
-      alert(`Fehler beim Importieren: ${err}`);
+      toast.error(translate('toast.sceneImportFailed', { error: String(err) }));
     } finally {
       if (fileInputRef.current) {
         fileInputRef.current.value = '';
@@ -234,7 +253,7 @@ export const SceneLobbyModal: React.FC<SceneLobbyModalProps> = ({
       await moveStageSceneToFolder(movingScene.id, targetFolder);
       setMovingScene(null);
     } catch (err: any) {
-      alert(`Fehler beim Verschieben: ${err}`);
+      toast.error(translate('toast.sceneMoveFailed', { error: String(err) }));
     }
   };
 
@@ -243,7 +262,7 @@ export const SceneLobbyModal: React.FC<SceneLobbyModalProps> = ({
 
   return (
     <>
-      <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/80 backdrop-blur-md p-4 overflow-y-auto">
+      <ModalOverlay onClose={onClose} className="fixed inset-0 z-50 flex items-center justify-center bg-black/80 backdrop-blur-md p-4 overflow-y-auto">
         <div className="w-full max-w-5xl bg-slate-900 border border-slate-700/80 rounded-2xl shadow-2xl overflow-hidden my-6 flex flex-col max-h-[88vh]">
           {/* Header */}
           <div className="flex items-center justify-between p-4 sm:p-5 border-b border-slate-800 bg-app/80">
@@ -600,11 +619,11 @@ export const SceneLobbyModal: React.FC<SceneLobbyModalProps> = ({
             )}
           </div>
         </div>
-      </div>
+      </ModalOverlay>
 
       {/* Fortsetzen vs. Neu starten Modal */}
       {sceneToResume && (
-        <div className="fixed inset-0 z-60 flex items-center justify-center bg-black/85 backdrop-blur-md p-4">
+        <ModalOverlay onClose={() => setSceneToResume(null)} className="fixed inset-0 z-60 flex items-center justify-center bg-black/85 backdrop-blur-md p-4">
           <div className="w-full max-w-md bg-slate-900 border border-accent-500/50 rounded-2xl p-5 shadow-2xl space-y-4">
             <div className="flex items-center gap-3">
               <div className="p-2.5 rounded-xl bg-accent-600/20 text-accent-400">
@@ -647,12 +666,12 @@ export const SceneLobbyModal: React.FC<SceneLobbyModalProps> = ({
               </button>
             </div>
           </div>
-        </div>
+        </ModalOverlay>
       )}
 
       {/* Neuer Ordner Dialog */}
       {showNewFolderModal && (
-        <div className="fixed inset-0 z-60 flex items-center justify-center bg-black/85 backdrop-blur-md p-4">
+        <ModalOverlay onClose={() => setShowNewFolderModal(false)} className="fixed inset-0 z-60 flex items-center justify-center bg-black/85 backdrop-blur-md p-4">
           <div className="w-full max-w-sm bg-slate-900 border border-slate-700 rounded-2xl p-5 shadow-2xl space-y-4">
             <div className="flex items-center gap-2">
               <FolderPlus className="w-5 h-5 text-accent-400" />
@@ -687,12 +706,12 @@ export const SceneLobbyModal: React.FC<SceneLobbyModalProps> = ({
               </button>
             </div>
           </div>
-        </div>
+        </ModalOverlay>
       )}
 
       {/* In Ordner verschieben Dialog */}
       {movingScene && (
-        <div className="fixed inset-0 z-60 flex items-center justify-center bg-black/85 backdrop-blur-md p-4">
+        <ModalOverlay onClose={() => setMovingScene(null)} className="fixed inset-0 z-60 flex items-center justify-center bg-black/85 backdrop-blur-md p-4">
           <div className="w-full max-w-sm bg-slate-900 border border-slate-700 rounded-2xl p-5 shadow-2xl space-y-4">
             <div className="flex items-center gap-2">
               <Layers className="w-5 h-5 text-accent-400" />
@@ -735,7 +754,7 @@ export const SceneLobbyModal: React.FC<SceneLobbyModalProps> = ({
               </button>
             </div>
           </div>
-        </div>
+        </ModalOverlay>
       )}
 
       {/* Creation Modal */}

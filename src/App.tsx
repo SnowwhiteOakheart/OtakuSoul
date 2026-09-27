@@ -2,6 +2,9 @@ import { lazy, Suspense } from 'react';
 import { Header } from './components/Header';
 import { SafetyCountdownBanner } from './components/companion/SafetyCountdownBanner';
 import { useAppStore } from './store/useAppStore';
+import { useTranslation } from './i18n';
+import { ErrorBoundary } from './components/ui/ErrorBoundary';
+import { FeedbackHost } from './components/ui/feedback';
 import './App.css';
 
 const ChatView = lazy(() => import('./components/chat/ChatView').then((module) => ({ default: module.ChatView })));
@@ -18,7 +21,8 @@ const LogViewerModal = lazy(() => import('./components/logging/LogViewerModal').
 const UpdaterModal = lazy(() => import('./components/updater/UpdaterModal').then((module) => ({ default: module.UpdaterModal })));
 
 export function App() {
-  const { activeTab } = useAppStore();
+  const activeTab = useAppStore((s) => s.activeTab);
+  const { t } = useTranslation();
   const isOverlayMode = typeof window !== 'undefined' && window.location.search.includes('overlay=true');
 
   if (isOverlayMode) {
@@ -35,16 +39,18 @@ export function App() {
     <div className="flex flex-col w-screen h-screen bg-app text-slate-100 overflow-hidden font-sans relative">
       <Header />
       <main className="flex-1 flex overflow-hidden">
-        <Suspense fallback={<div className="flex-1 grid place-items-center text-sm text-accent-300">Ansicht wird geladen…</div>}>
-          {activeTab === 'chat' && <ChatView />}
-          {activeTab === 'characters' && <CharacterLibraryView />}
-          {activeTab === 'hub' && <SoulHubView />}
-          {activeTab === 'lorebooks' && <LorebookView />}
-          {activeTab === 'stage' && <StageView />}
-          {activeTab === 'companion' && <CompanionView />}
-          {activeTab === 'integrations' && <IntegrationsView />}
-          {activeTab === 'settings' && <SettingsView />}
-        </Suspense>
+        <ErrorBoundary resetKey={activeTab}>
+          <Suspense fallback={<div className="flex-1 grid place-items-center text-sm text-accent-300">{t('common.loadingView')}</div>}>
+            {activeTab === 'chat' && <ChatView />}
+            {activeTab === 'characters' && <CharacterLibraryView />}
+            {activeTab === 'hub' && <SoulHubView />}
+            {activeTab === 'lorebooks' && <LorebookView />}
+            {activeTab === 'stage' && <StageView />}
+            {activeTab === 'companion' && <CompanionView />}
+            {activeTab === 'integrations' && <IntegrationsView />}
+            {activeTab === 'settings' && <SettingsView />}
+          </Suspense>
+        </ErrorBoundary>
       </main>
       <SafetyCountdownBanner />
       <Suspense fallback={null}>
@@ -52,6 +58,7 @@ export function App() {
         <LogViewerModal />
         <UpdaterModal />
       </Suspense>
+      <FeedbackHost />
     </div>
   );
 }

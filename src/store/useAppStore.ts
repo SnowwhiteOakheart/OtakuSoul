@@ -790,6 +790,7 @@ export const useAppStore = create<AppStoreState>((set, get) => ({
 
       if (typeof document !== 'undefined') {
         document.documentElement.setAttribute('data-theme', settings.theme || 'obsidian');
+        document.documentElement.lang = settings.app_language || 'de';
       }
 
       // 3b. Load LLM Presets & listen to model downloads
@@ -2964,6 +2965,9 @@ export const useAppStore = create<AppStoreState>((set, get) => ({
   appLanguage: 'de',
   setAppLanguage: (lang) => {
     set({ appLanguage: lang });
+    if (typeof document !== 'undefined') {
+      document.documentElement.lang = lang;
+    }
     get().saveCurrentSettings();
   },
 

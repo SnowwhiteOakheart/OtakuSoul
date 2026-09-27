@@ -5,6 +5,7 @@ import { useAppStore } from '../../store/useAppStore';
 import { api } from '../../services/api';
 import { KokoroDownloadProgress, ScannedVoice, SttEngine, TtsEngine, TtsFilterMode, VoiceConfig } from '../../types';
 import { audioPlayer, gainFromVoiceVolume } from '../../services/audioPlayer';
+import { ModalOverlay } from '../ui/ModalOverlay';
 
 interface CharacterVoiceModalProps {
   onClose: () => void;
@@ -255,7 +256,7 @@ export function CharacterVoiceModal({ onClose }: CharacterVoiceModalProps) {
   };
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/65 backdrop-blur-sm p-4">
+    <ModalOverlay onClose={onClose} className="fixed inset-0 z-50 flex items-center justify-center bg-black/65 backdrop-blur-sm p-4">
       <div className="bg-slate-900 border border-slate-700/60 rounded-xl shadow-2xl w-full max-w-3xl max-h-[92vh] flex flex-col overflow-hidden">
         <div className="p-4 border-b border-slate-800 flex justify-between items-center">
           <div>
@@ -537,6 +538,6 @@ export function CharacterVoiceModal({ onClose }: CharacterVoiceModalProps) {
           </div>
         </div>
       </div>
-    </div>
+    </ModalOverlay>
   );
 }

@@ -1,7 +1,7 @@
-import { useEffect } from 'react';
 import { createPortal } from 'react-dom';
 import { BrainCircuit, Dice5, HeartHandshake, ShieldCheck, Sparkles, X } from 'lucide-react';
 import logoUrl from '../assets/brand/otakusoul-logo-wide.webp';
+import { ModalOverlay } from './ui/ModalOverlay';
 
 interface AboutDialogProps {
   onClose: () => void;
@@ -15,25 +15,14 @@ const highlights = [
 ];
 
 export function AboutDialog({ onClose }: AboutDialogProps) {
-  useEffect(() => {
-    const handleKeyDown = (event: KeyboardEvent) => {
-      if (event.key === 'Escape') onClose();
-    };
-    window.addEventListener('keydown', handleKeyDown);
-    return () => window.removeEventListener('keydown', handleKeyDown);
-  }, [onClose]);
-
   if (typeof document === 'undefined') return null;
 
   return createPortal(
-    <div
-      className="fixed inset-0 z-[9999] grid place-items-center overflow-y-auto bg-app/85 p-5 backdrop-blur-md"
-      role="dialog"
-      aria-modal="true"
+    <ModalOverlay
+      onClose={onClose}
+      closeOnBackdrop
       aria-labelledby="about-title"
-      onMouseDown={(event) => {
-        if (event.target === event.currentTarget) onClose();
-      }}
+      className="fixed inset-0 z-[9999] grid place-items-center overflow-y-auto bg-app/85 p-5 backdrop-blur-md"
     >
       <section className="relative max-h-[calc(100vh-2.5rem)] w-full max-w-3xl overflow-y-auto rounded-3xl border border-accent-400/25 bg-app shadow-2xl shadow-accent-950/60">
         <button
@@ -89,7 +78,7 @@ export function AboutDialog({ onClose }: AboutDialogProps) {
           </div>
         </div>
       </section>
-    </div>,
+    </ModalOverlay>,
     document.body
   );
 }

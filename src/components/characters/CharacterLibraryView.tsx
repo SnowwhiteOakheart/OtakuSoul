@@ -20,6 +20,8 @@ import {
 } from 'lucide-react';
 import { CharacterEditorModal } from './CharacterEditorModal';
 import { PersonaManagerModal } from './PersonaManagerModal';
+import { translate } from '../../i18n';
+import { confirmDialog } from '../ui/feedback';
 
 export const CharacterLibraryView = () => {
   const {
@@ -125,9 +127,13 @@ export const CharacterLibraryView = () => {
   };
 
   const handleDeleteCard = async (char: CharacterProfile) => {
-    if (!window.confirm(`Möchtest du den Charakter "${char.card.data.name}" wirklich in den Papierkorb verschieben?`)) {
-      return;
-    }
+    const confirmed = await confirmDialog({
+      title: translate('confirm.trashCharacterTitle', { name: char.card.data.name }),
+      message: translate('confirm.trashCharacterText'),
+      confirmLabel: translate('confirm.moveToTrash'),
+      tone: 'danger',
+    });
+    if (!confirmed) return;
 
     try {
       await deleteCharacter(char.id);

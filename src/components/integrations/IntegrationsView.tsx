@@ -33,6 +33,8 @@ import {
   Wand2,
   AlertTriangle,
 } from 'lucide-react';
+import { translate } from '../../i18n';
+import { confirmDialog } from '../ui/feedback';
 
 const DEFAULT_WEB_CONFIG: WebServerConfig = {
   enabled: false,
@@ -253,16 +255,15 @@ export const IntegrationsView: React.FC = () => {
   };
 
   const handleRestoreBackup = async (filename: string) => {
-    if (
-      !window.confirm(
-        `Möchtest du das Backup "${filename}" wirklich wiederherstellen? OtakuSoul erstellt automatisch vorab einen Sicherheits-Snapshot.`
-      )
-    ) {
-      return;
-    }
+    const confirmed = await confirmDialog({
+      title: translate('confirm.restoreBackupTitle', { name: filename }),
+      message: translate('confirm.restoreBackupText'),
+      confirmLabel: translate('confirm.restore'),
+    });
+    if (!confirmed) return;
     try {
-      const snap = await restoreBackup(filename);
-      setStatusNotice(`Wiederherstellung erfolgreich! (Sicherheits-Snapshot: ${snap})`);
+      const resultMessage = await restoreBackup(filename);
+      setStatusNotice(resultMessage ?? 'Wiederherstellung erfolgreich.');
       setTimeout(() => setStatusNotice(null), 5000);
     } catch (e: any) {
       setStatusNotice(`Wiederherstellung fehlgeschlagen: ${e?.message || e}`);
@@ -271,9 +272,13 @@ export const IntegrationsView: React.FC = () => {
   };
 
   const handleDeleteBackup = async (filename: string) => {
-    if (!window.confirm(`Möchtest du das Backup "${filename}" unwiderruflich löschen?`)) {
-      return;
-    }
+    const confirmed = await confirmDialog({
+      title: translate('confirm.deleteBackupTitle', { name: filename }),
+      message: translate('confirm.cannotUndo'),
+      confirmLabel: translate('common.delete'),
+      tone: 'danger',
+    });
+    if (!confirmed) return;
     try {
       await deleteBackup(filename);
       setStatusNotice(`Backup "${filename}" gelöscht.`);

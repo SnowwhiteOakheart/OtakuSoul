@@ -22,6 +22,9 @@ import {
   Zap,
   Compass,
 } from 'lucide-react';
+import { translate } from '../../i18n';
+import { confirmDialog } from '../ui/feedback';
+import { ModalOverlay } from '../ui/ModalOverlay';
 
 export const LorebookView: React.FC = () => {
   const {
@@ -164,7 +167,13 @@ export const LorebookView: React.FC = () => {
   // Delete active lorebook
   const handleDeleteActiveLorebook = async () => {
     if (!activeLorebook || !activeLorebook.file_path) return;
-    if (!confirm(`Lorebook "${activeLorebook.name}" wirklich unwiderruflich löschen?`)) return;
+    const confirmed = await confirmDialog({
+      title: translate('confirm.deleteLorebookTitle', { name: activeLorebook.name }),
+      message: translate('confirm.cannotUndo'),
+      confirmLabel: translate('common.delete'),
+      tone: 'danger',
+    });
+    if (!confirmed) return;
 
     try {
       await deleteLorebook(activeLorebook.file_path);
@@ -724,7 +733,7 @@ const EntryEditorModal: React.FC<EntryEditorModalProps> = ({ initialEntry, isNew
   };
 
   return (
-    <div className="fixed inset-0 z-50 bg-black/80 backdrop-blur-sm flex items-center justify-center p-4">
+    <ModalOverlay onClose={onClose} className="fixed inset-0 z-50 bg-black/80 backdrop-blur-sm flex items-center justify-center p-4">
       <div className="bg-slate-900 border border-slate-700/80 rounded-2xl w-full max-w-3xl max-h-[92vh] flex flex-col shadow-2xl overflow-hidden animate-in fade-in zoom-in-95">
         {/* Header */}
         <div className="px-6 py-4 border-b border-slate-800 flex items-center justify-between bg-app/60">
@@ -1019,6 +1028,6 @@ const EntryEditorModal: React.FC<EntryEditorModalProps> = ({ initialEntry, isNew
           </button>
         </div>
       </div>
-    </div>
+    </ModalOverlay>
   );
 };

@@ -21,6 +21,9 @@ import {
   Trash2,
   Sliders,
 } from 'lucide-react';
+import { translate } from '../../i18n';
+import { confirmDialog } from '../ui/feedback';
+import { ModalOverlay } from '../ui/ModalOverlay';
 
 interface CognitiveMemoryDrawerProps {
   isOpen: boolean;
@@ -239,9 +242,13 @@ export const CognitiveMemoryDrawer: React.FC<CognitiveMemoryDrawerProps> = ({
   };
 
   const handleRestoreBackup = async (filename: string) => {
-    if (!confirm(`Möchtest du den Snapshot '${filename}' wirklich wiederherstellen? Aktuelle Daten werden überschrieben.`)) {
-      return;
-    }
+    const confirmed = await confirmDialog({
+      title: translate('confirm.restoreSnapshotTitle', { name: filename }),
+      message: translate('confirm.restoreSnapshotText'),
+      confirmLabel: translate('confirm.restore'),
+      tone: 'danger',
+    });
+    if (!confirmed) return;
     try {
       const b = memoryBackups.find((m) => m.filename === filename);
       if (!b) return;
@@ -254,7 +261,7 @@ export const CognitiveMemoryDrawer: React.FC<CognitiveMemoryDrawerProps> = ({
   };
 
   return (
-    <div className="fixed inset-0 z-50 flex justify-end bg-black/60 backdrop-blur-sm transition-opacity">
+    <ModalOverlay onClose={onClose} className="fixed inset-0 z-50 flex justify-end bg-black/60 backdrop-blur-sm transition-opacity">
       <div className="w-full max-w-3xl bg-slate-900 border-l border-slate-700/70 shadow-2xl flex flex-col h-full animate-in slide-in-from-right duration-200">
         {/* Drawer Header */}
         <div className="p-4 border-b border-slate-800 flex items-center justify-between bg-app/80">
@@ -1121,6 +1128,6 @@ export const CognitiveMemoryDrawer: React.FC<CognitiveMemoryDrawerProps> = ({
           )}
         </div>
       </div>
-    </div>
+    </ModalOverlay>
   );
 };

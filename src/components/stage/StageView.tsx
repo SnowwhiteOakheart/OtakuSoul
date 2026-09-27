@@ -31,6 +31,7 @@ import {
 } from 'lucide-react';
 import { api } from '../../services/api';
 import { SceneState } from '../../types';
+import { ModalOverlay } from '../ui/ModalOverlay';
 
 export const StageView: React.FC = () => {
   const {
@@ -526,7 +527,7 @@ export const StageView: React.FC = () => {
 
       {/* Modal: New Clock */}
       {showClockModal && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm p-4">
+        <ModalOverlay onClose={() => setShowClockModal(false)} className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm p-4">
           <form
             onSubmit={handleCreateClock}
             className="w-full max-w-sm p-4 rounded-2xl bg-slate-900 border border-slate-700 shadow-2xl space-y-3"
@@ -588,7 +589,7 @@ export const StageView: React.FC = () => {
               </button>
             </div>
           </form>
-        </div>
+        </ModalOverlay>
       )}
 
       {/* Scene Lobby Modal */}

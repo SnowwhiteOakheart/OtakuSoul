@@ -31,6 +31,8 @@ import { streamingTts } from '../../services/streamingTts';
 
 import { CharacterVoiceModal } from '../voice/CharacterVoiceModal';
 import { VoiceCallControls } from '../voice/VoiceCallControls';
+import { translate } from '../../i18n';
+import { confirmDialog } from '../ui/feedback';
 
 const AvatarCanvas = React.lazy(() => import('../avatar/AvatarCanvas').then((module) => ({
   default: module.AvatarCanvas,
@@ -492,10 +494,14 @@ export const ChatView: React.FC = () => {
                           <Edit3 className="w-3 h-3" />
                         </button>
                         <button
-                          onClick={() => {
-                            if (confirm('Diese Nachricht wirklich löschen?')) {
-                              deleteChatMessage(msg.id);
-                            }
+                          onClick={async () => {
+                            const confirmed = await confirmDialog({
+                              title: translate('confirm.deleteMessageTitle'),
+                              message: translate('confirm.deleteMessageText'),
+                              confirmLabel: translate('common.delete'),
+                              tone: 'danger',
+                            });
+                            if (confirmed) deleteChatMessage(msg.id);
                           }}
                           className="p-1 hover:text-rose-400 transition-colors"
                           title="Nachricht löschen"

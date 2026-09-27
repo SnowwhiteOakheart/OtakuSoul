@@ -16,6 +16,8 @@ import {
   Check,
   X,
 } from 'lucide-react';
+import { translate } from '../../i18n';
+import { confirmDialog, toast } from '../ui/feedback';
 
 export const StageChatLog: React.FC = () => {
   const {
@@ -49,16 +51,21 @@ export const StageChatLog: React.FC = () => {
       await editStageTurnMessage(id, editDraft.trim());
       setEditingMessageId(null);
     } catch (err: any) {
-      alert(`Fehler beim Bearbeiten: ${err}`);
+      toast.error(translate('toast.editFailed', { error: String(err) }));
     }
   };
 
   const handleDeleteMessage = async (id: string) => {
-    if (confirm('Möchtest du diese Nachricht wirklich aus dem Abenteuer entfernen?')) {
+    const confirmed = await confirmDialog({
+      title: translate('confirm.deleteStageMessageTitle'),
+      confirmLabel: translate('common.delete'),
+      tone: 'danger',
+    });
+    if (confirmed) {
       try {
         await deleteStageTurnMessage(id);
       } catch (err: any) {
-        alert(`Fehler beim Löschen: ${err}`);
+        toast.error(translate('toast.deleteFailed', { error: String(err) }));
       }
     }
   };
@@ -67,7 +74,7 @@ export const StageChatLog: React.FC = () => {
     try {
       await regenerateStageTurn();
     } catch (err: any) {
-      alert(`Fehler bei der Neugenerierung: ${err}`);
+      toast.error(translate('toast.regenerateFailed', { error: String(err) }));
     }
   };
 

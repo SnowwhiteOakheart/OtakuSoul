@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { useAppStore } from '../../store/useAppStore';
 import { Swords, Shield, Heart, Zap, SkipForward, Play, Square, Plus, Crosshair, Wind, DoorOpen, Hourglass } from 'lucide-react';
+import { ModalOverlay } from '../ui/ModalOverlay';
 
 export const EncounterTracker: React.FC = () => {
   const {
@@ -285,7 +286,7 @@ export const EncounterTracker: React.FC = () => {
 
       {/* Add Condition Modal */}
       {showCondModal && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm p-4">
+        <ModalOverlay onClose={() => setShowCondModal(false)} className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm p-4">
           <div className="w-full max-w-sm p-4 rounded-2xl bg-slate-900 border border-slate-700 shadow-2xl space-y-3">
             <h4 className="text-xs font-bold text-slate-100">Zustand hinzufügen</h4>
             <div>
@@ -324,7 +325,7 @@ export const EncounterTracker: React.FC = () => {
               </button>
             </div>
           </div>
-        </div>
+        </ModalOverlay>
       )}
     </div>
   );
