@@ -1,8 +1,10 @@
 import React, { useState } from 'react';
 import { useAppStore } from '../../store/useAppStore';
 import { Dices, Sparkles, AlertOctagon, Send, CheckCircle2, XCircle } from 'lucide-react';
+import { translate, useTranslation } from '../../i18n';
 
 export const DiceRoller: React.FC = () => {
+  const { t } = useTranslation();
   const { rollDice, lastDiceRoll, isRollingDice, runStageTurn, isProcessingStageTurn } = useAppStore();
   const [formula, setFormula] = useState('1d20+3');
   const [targetDc, setTargetDc] = useState<string>('15');
@@ -20,20 +22,19 @@ export const DiceRoller: React.FC = () => {
     const { formula, sum, individual_rolls, is_critical_success, is_critical_failure, dc_check } =
       lastDiceRoll;
 
-    let text = `🎲 **Würfelwurf [${formula}]**: **${sum}** (Würfel: [${individual_rolls.join(
-      ', '
-    )}])`;
+    let text = translate('stage.rollMessage', { formula, sum, rolls: individual_rolls.join(', ') });
 
     if (is_critical_success) {
-      text += ' ✨ **KRITISCHER ERFOLG!**';
+      text += translate('stage.rollMessageCrit');
     } else if (is_critical_failure) {
-      text += ' 💀 **PATZER!**';
+      text += translate('stage.rollMessageFumble');
     }
 
     if (dc_check) {
-      text += dc_check.passed
-        ? ` — Probe gegen SG ${dc_check.target_dc}: **BESTANDEN** (+${dc_check.margin})`
-        : ` — Probe gegen SG ${dc_check.target_dc}: **FEHLGESCHLAGEN** (${dc_check.margin})`;
+      text += translate(dc_check.passed ? 'stage.rollMessagePassed' : 'stage.rollMessageFailed', {
+        dc: dc_check.target_dc,
+        margin: dc_check.margin,
+      });
     }
 
     runStageTurn(text, 'direct');
@@ -47,16 +48,14 @@ export const DiceRoller: React.FC = () => {
             <Dices className="w-5 h-5" />
           </div>
           <div>
-            <h3 className="text-sm font-bold text-slate-100">Soul Stage Würfelstation</h3>
-            <p className="text-xs text-slate-400">
-              Deterministischer Würfelroller mit Audio-Synthese & SG-Prüfung
-            </p>
+            <h3 className="text-sm font-bold text-slate-100">{t('stage.diceTitle')}</h3>
+            <p className="text-xs text-slate-400">{t('stage.diceIntro')}</p>
           </div>
         </div>
       </div>
 
       {/* Quick Dice Bar */}
-      <div className="flex flex-wrap gap-1.5">
+      <div role="group" aria-label={t('stage.quickDice')} className="flex flex-wrap gap-1.5">
         {standardDice.map((d) => (
           <button
             key={d}
@@ -79,10 +78,11 @@ export const DiceRoller: React.FC = () => {
       {/* Inputs */}
       <div className="grid grid-cols-1 sm:grid-cols-3 gap-2">
         <div className="sm:col-span-2">
-          <label className="text-xs font-semibold text-slate-400 uppercase tracking-wider block mb-1">
-            Formel (z.B. 1d20+4, 2d6-1)
+          <label htmlFor="dice-formula" className="text-xs font-semibold text-slate-400 uppercase tracking-wider block mb-1">
+            {t('stage.formula')}
           </label>
           <input
+            id="dice-formula"
             type="text"
             value={formula}
             onChange={(e) => setFormula(e.target.value)}
@@ -92,10 +92,11 @@ export const DiceRoller: React.FC = () => {
         </div>
 
         <div>
-          <label className="text-xs font-semibold text-slate-400 uppercase tracking-wider block mb-1">
-            Ziel-SG (Optional)
+          <label htmlFor="dice-dc" className="text-xs font-semibold text-slate-400 uppercase tracking-wider block mb-1">
+            {t('stage.targetDc')}
           </label>
           <input
+            id="dice-dc"
             type="number"
             value={targetDc}
             onChange={(e) => setTargetDc(e.target.value)}
@@ -115,7 +116,7 @@ export const DiceRoller: React.FC = () => {
         }`}
       >
         <Dices className={`w-4 h-4 ${isRollingDice ? 'animate-spin' : ''}`} />
-        <span>{isRollingDice ? 'Würfelt...' : 'Würfeln'}</span>
+        <span>{isRollingDice ? t('stage.rolling') : t('stage.roll')}</span>
       </button>
 
       {/* Result Display Banner */}
@@ -131,7 +132,7 @@ export const DiceRoller: React.FC = () => {
         >
           <div className="flex items-center justify-between">
             <span className="text-xs font-mono text-slate-400">
-              {lastDiceRoll.formula} ➔ Würfel: [{lastDiceRoll.individual_rolls.join(', ')}]
+              {lastDiceRoll.formula} ➔ {t('stage.diceBreakdown', { rolls: lastDiceRoll.individual_rolls.join(', ') })}
               {lastDiceRoll.modifier !== 0 &&
                 ` ${lastDiceRoll.modifier > 0 ? '+' : ''}${lastDiceRoll.modifier}`}
             </span>
@@ -140,13 +141,13 @@ export const DiceRoller: React.FC = () => {
             {lastDiceRoll.is_critical_success && (
               <span className="px-2 py-0.5 rounded-full bg-amber-500/20 border border-amber-400/50 text-amber-300 text-xs font-bold flex items-center gap-1">
                 <Sparkles className="w-3 h-3 text-amber-400" />
-                KRITISCHER ERFOLG!
+                {t('stage.critSuccess')}
               </span>
             )}
             {lastDiceRoll.is_critical_failure && (
               <span className="px-2 py-0.5 rounded-full bg-rose-500/20 border border-rose-400/50 text-rose-300 text-xs font-bold flex items-center gap-1">
                 <AlertOctagon className="w-3 h-3 text-rose-400" />
-                PATZER!
+                {t('stage.critFail')}
               </span>
             )}
           </div>
@@ -156,7 +157,7 @@ export const DiceRoller: React.FC = () => {
               <span className="text-3xl font-extrabold font-mono text-slate-100">
                 {lastDiceRoll.sum}
               </span>
-              <span className="text-xs text-slate-400">Gesamtergebnis</span>
+              <span className="text-xs text-slate-400">{t('stage.total')}</span>
             </div>
 
             {/* DC evaluation */}
@@ -165,12 +166,12 @@ export const DiceRoller: React.FC = () => {
                 {lastDiceRoll.dc_check.passed ? (
                   <span className="text-emerald-400 flex items-center gap-1 bg-emerald-950/40 border border-emerald-500/40 px-2 py-0.5 rounded-md">
                     <CheckCircle2 className="w-3.5 h-3.5" />
-                    SG {lastDiceRoll.dc_check.target_dc} Bestanden (+{lastDiceRoll.dc_check.margin})
+                    {t('stage.dcPassed', { dc: lastDiceRoll.dc_check.target_dc, margin: lastDiceRoll.dc_check.margin })}
                   </span>
                 ) : (
                   <span className="text-rose-400 flex items-center gap-1 bg-rose-950/40 border border-rose-500/40 px-2 py-0.5 rounded-md">
                     <XCircle className="w-3.5 h-3.5" />
-                    SG {lastDiceRoll.dc_check.target_dc} Fehlgeschlagen ({lastDiceRoll.dc_check.margin})
+                    {t('stage.dcFailed', { dc: lastDiceRoll.dc_check.target_dc, margin: lastDiceRoll.dc_check.margin })}
                   </span>
                 )}
               </div>
@@ -183,7 +184,7 @@ export const DiceRoller: React.FC = () => {
             className="w-full mt-2 py-1.5 px-3 rounded-lg bg-slate-800/80 hover:bg-slate-700/80 text-accent-300 text-xs font-semibold flex items-center justify-center gap-1.5 border border-accent-500/20 transition"
           >
             <Send className="w-3.5 h-3.5" />
-            <span>Ergebnis an Spielleiter / Chat übergeben</span>
+            <span>{t('stage.sendRoll')}</span>
           </button>
         </div>
       )}

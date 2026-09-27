@@ -11,11 +11,13 @@ import {
   Sparkles,
   TriangleAlert,
 } from 'lucide-react';
+import { useTranslation } from '../../i18n';
 
 const progressWidth = (current: number, max: number) =>
   `${Math.min(100, Math.round((current / Math.max(1, max)) * 100))}%`;
 
 export const StageCampaignPanel: React.FC = () => {
+  const { t } = useTranslation();
   const { stageState, useStageInventoryItem } = useAppStore();
 
   if (!stageState) return null;
@@ -29,8 +31,8 @@ export const StageCampaignPanel: React.FC = () => {
         <div className="flex items-center gap-2">
           <Backpack className="w-5 h-5 text-amber-400" />
           <div>
-            <h3 className="text-sm font-bold text-slate-100">Inventar</h3>
-            <p className="text-xs text-slate-400">Verbrauchsgegenstände wirken sofort und werden gespeichert.</p>
+            <h3 className="text-sm font-bold text-slate-100">{t('stage.inventory')}</h3>
+            <p className="text-xs text-slate-400">{t('stage.inventoryIntro')}</p>
           </div>
         </div>
 
@@ -52,7 +54,7 @@ export const StageCampaignPanel: React.FC = () => {
                       onClick={() => useStageInventoryItem(item.id)}
                       className="mt-2 px-2.5 py-1 rounded-lg bg-emerald-950/70 hover:bg-emerald-900 text-emerald-300 border border-emerald-500/30 text-xs font-semibold transition"
                     >
-                      Benutzen
+                      {t('stage.useItem')}
                     </button>
                   )}
                 </div>
@@ -60,7 +62,7 @@ export const StageCampaignPanel: React.FC = () => {
             ))}
           </div>
         ) : (
-          <p className="p-4 rounded-xl bg-app/40 border border-dashed border-slate-800 text-xs text-slate-500">Das Inventar ist leer.</p>
+          <p className="p-4 rounded-xl bg-app/40 border border-dashed border-slate-800 text-xs text-slate-500">{t('stage.inventoryEmpty')}</p>
         )}
       </section>
 
@@ -68,8 +70,8 @@ export const StageCampaignPanel: React.FC = () => {
         <div className="flex items-center gap-2">
           <ScrollText className="w-5 h-5 text-cyan-400" />
           <div>
-            <h3 className="text-sm font-bold text-slate-100">Ziele & Story-Arcs</h3>
-            <p className="text-xs text-slate-400">Der Spielleiter aktualisiert Fortschritt und Enthüllungen.</p>
+            <h3 className="text-sm font-bold text-slate-100">{t('stage.objectives')}</h3>
+            <p className="text-xs text-slate-400">{t('stage.objectivesIntro')}</p>
           </div>
         </div>
 
@@ -101,7 +103,7 @@ export const StageCampaignPanel: React.FC = () => {
           ))}
 
           {!objectives.length && !arcs.some((arc) => arc.is_revealed) && (
-            <p className="text-xs text-slate-500">Noch keine sichtbaren Kampagnenziele.</p>
+            <p className="text-xs text-slate-500">{t('stage.noObjectives')}</p>
           )}
         </div>
       </section>
@@ -110,8 +112,8 @@ export const StageCampaignPanel: React.FC = () => {
         <div className="flex items-center gap-2">
           <HeartHandshake className="w-5 h-5 text-accent2-400" />
           <div>
-            <h3 className="text-sm font-bold text-slate-100">Beziehungen</h3>
-            <p className="text-xs text-slate-400">Rasten vertieft Bindungen und löst Meilensteine aus.</p>
+            <h3 className="text-sm font-bold text-slate-100">{t('stage.relationships')}</h3>
+            <p className="text-xs text-slate-400">{t('stage.relationshipsIntro')}</p>
           </div>
         </div>
         {relationships.length ? relationships.map((relationship) => (
@@ -127,15 +129,15 @@ export const StageCampaignPanel: React.FC = () => {
               <p className="text-xs text-slate-500 mt-1.5">{relationship.role_view}{relationship.last_shift_reason ? ` · ${relationship.last_shift_reason}` : ''}</p>
             )}
           </div>
-        )) : <p className="text-xs text-slate-500">Noch keine Beziehungen erfasst.</p>}
+        )) : <p className="text-xs text-slate-500">{t('stage.noRelationships')}</p>}
       </section>
 
       <section className="p-4 rounded-2xl bg-slate-900/80 border border-slate-800 shadow-xl space-y-3">
         <div className="flex items-center gap-2">
           <TriangleAlert className="w-5 h-5 text-rose-400" />
           <div>
-            <h3 className="text-sm font-bold text-slate-100">Chronik & Fakten</h3>
-            <p className="text-xs text-slate-400">Dauerhafte Folgen und kanonische Weltinformationen.</p>
+            <h3 className="text-sm font-bold text-slate-100">{t('stage.chronicle')}</h3>
+            <p className="text-xs text-slate-400">{t('stage.chronicleIntro')}</p>
           </div>
         </div>
         <div className="space-y-2">
@@ -148,7 +150,7 @@ export const StageCampaignPanel: React.FC = () => {
               <span className="text-slate-400">{value}</span>
             </div>
           ))}
-          {!consequences.length && !facts.length && <p className="text-xs text-slate-500">Die Chronik enthält noch keine Einträge.</p>}
+          {!consequences.length && !facts.length && <p className="text-xs text-slate-500">{t('stage.chronicleEmpty')}</p>}
         </div>
       </section>
     </div>

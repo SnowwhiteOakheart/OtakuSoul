@@ -24,6 +24,8 @@ interface DropdownMenuProps {
   /** Optional heading shown above the items. */
   heading?: string;
   menuClassName?: string;
+  /** Open above the trigger, e.g. for menus near the bottom of a card. */
+  placement?: 'bottom' | 'top';
 }
 
 /** Small accessible menu: arrow keys move, Escape/outside click close, focus returns to the trigger. */
@@ -35,6 +37,7 @@ export const DropdownMenu: React.FC<DropdownMenuProps> = ({
   align = 'right',
   heading,
   menuClassName = '',
+  placement = 'bottom',
 }) => {
   const [open, setOpen] = useState(false);
   const rootRef = useRef<HTMLDivElement>(null);
@@ -86,7 +89,10 @@ export const DropdownMenu: React.FC<DropdownMenuProps> = ({
         aria-controls={open ? menuId : undefined}
         aria-label={triggerLabel}
         title={triggerLabel}
-        onClick={() => setOpen((prev) => !prev)}
+        onClick={(event) => {
+          event.stopPropagation();
+          setOpen((prev) => !prev);
+        }}
         className={triggerClassName}
       >
         {trigger}
@@ -96,8 +102,9 @@ export const DropdownMenu: React.FC<DropdownMenuProps> = ({
           id={menuId}
           role="menu"
           onKeyDown={handleMenuKeyDown}
+          onClick={(event) => event.stopPropagation()}
           aria-label={heading ?? triggerLabel}
-          className={`absolute top-full mt-1.5 z-40 min-w-56 rounded-xl border border-slate-700 bg-slate-900 p-1 shadow-2xl ${
+          className={`absolute ${placement === 'top' ? 'bottom-full mb-1.5' : 'top-full mt-1.5'} z-40 min-w-56 rounded-xl border border-slate-700 bg-slate-900 p-1 shadow-2xl ${
             align === 'right' ? 'right-0' : 'left-0'
           } ${menuClassName}`}
         >

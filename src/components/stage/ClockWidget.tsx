@@ -1,6 +1,7 @@
 import React from 'react';
 import { CampaignClock } from '../../types';
 import { Trash2 } from 'lucide-react';
+import { useTranslation, type TranslationKey } from '../../i18n';
 
 interface ClockWidgetProps {
   clock: CampaignClock;
@@ -13,6 +14,7 @@ export const ClockWidget: React.FC<ClockWidgetProps> = ({
   onUpdateProgress,
   onDelete,
 }) => {
+  const { t } = useTranslation();
   const { id, name, current, max, clock_type } = clock;
   const isComplete = current >= max;
 
@@ -69,8 +71,9 @@ export const ClockWidget: React.FC<ClockWidgetProps> = ({
     >
       <button
         onClick={() => onDelete(id)}
-        title="Uhr löschen"
-        className="absolute top-2.5 right-2.5 text-slate-500 hover:text-rose-400 opacity-0 group-hover:opacity-100 transition p-1"
+        title={t('stage.deleteClock', { name })}
+        aria-label={t('stage.deleteClock', { name })}
+        className="absolute top-2.5 right-2.5 text-slate-500 hover:text-rose-400 opacity-0 group-hover:opacity-100 focus-visible:opacity-100 transition p-1 rounded outline-hidden focus-visible:ring-2 focus-visible:ring-rose-400"
       >
         <Trash2 className="w-3.5 h-3.5" />
       </button>
@@ -93,6 +96,7 @@ export const ClockWidget: React.FC<ClockWidgetProps> = ({
                 key={idx}
                 d={getWedgePath(idx, max)}
                 onClick={() => handleWedgeClick(idx)}
+                aria-hidden
                 className={`cursor-pointer transition-all stroke-[1.5] ${getClockColor(
                   filled
                 )} hover:opacity-90`}
@@ -117,6 +121,30 @@ export const ClockWidget: React.FC<ClockWidgetProps> = ({
         </div>
       </div>
 
+      {/* Keyboard alternative to clicking SVG wedges */}
+      <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 group-focus-within:opacity-100 transition-opacity">
+        <button
+          type="button"
+          onClick={() => onUpdateProgress(id, Math.max(0, current - 1))}
+          disabled={current <= 0}
+          aria-label={t('stage.clockDecrease', { name })}
+          title={t('stage.clockDecrease', { name })}
+          className="w-6 h-6 rounded bg-slate-800 text-slate-300 hover:bg-slate-700 disabled:opacity-30 text-sm leading-none outline-hidden focus-visible:ring-2 focus-visible:ring-accent-400"
+        >
+          −
+        </button>
+        <button
+          type="button"
+          onClick={() => onUpdateProgress(id, Math.min(max, current + 1))}
+          disabled={current >= max}
+          aria-label={t('stage.clockIncrease', { name })}
+          title={t('stage.clockIncrease', { name })}
+          className="w-6 h-6 rounded bg-slate-800 text-slate-300 hover:bg-slate-700 disabled:opacity-30 text-sm leading-none outline-hidden focus-visible:ring-2 focus-visible:ring-accent-400"
+        >
+          +
+        </button>
+      </div>
+
       <div className="text-center mt-1">
         <h4 className="text-xs font-semibold text-slate-200 line-clamp-1">{name}</h4>
         <span
@@ -126,7 +154,7 @@ export const ClockWidget: React.FC<ClockWidgetProps> = ({
               : 'text-slate-400'
           }`}
         >
-          {isComplete ? '⚠️ AUSGELÖST!' : `${clock_type}`}
+          {isComplete ? `⚠️ ${t('stage.clockTriggered')}` : t(`stage.clockType.${clock_type}` as TranslationKey)}
         </span>
       </div>
     </div>

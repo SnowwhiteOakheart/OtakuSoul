@@ -3,6 +3,7 @@ import { useAppStore } from '../../store/useAppStore';
 import { SceneDefinition, CharacterProfile } from '../../types';
 import { X, Sparkles, MapPin, Sun, UserCheck } from 'lucide-react';
 import { ModalOverlay } from '../ui/ModalOverlay';
+import { translate, useTranslation } from '../../i18n';
 
 interface SceneCreateModalProps {
   isOpen: boolean;
@@ -15,18 +16,20 @@ export const SceneCreateModal: React.FC<SceneCreateModalProps> = ({
   onClose,
   onCreated,
 }) => {
+  const { t } = useTranslation();
   const { availableCharacters, createStageScene } = useAppStore();
 
   const [title, setTitle] = useState('');
   const [description, setDescription] = useState('');
   const [worldContext, setWorldContext] = useState('');
-  const [startingLocation, setStartingLocation] = useState('Alte Bibliothek des Ordens');
-  const [timeOfDay, setTimeOfDay] = useState('Dämmerung');
+  // Defaults become scene content for the game master, so they follow the UI language.
+  const [startingLocation, setStartingLocation] = useState(() => translate('sceneNew.startLocationDefault'));
+  const [timeOfDay, setTimeOfDay] = useState(() => translate('sceneNew.time.dusk'));
   const [openingNarration, setOpeningNarration] = useState('');
   const [selectedParty, setSelectedParty] = useState<string[]>([]);
   const [gmTone, setGmTone] = useState('Epic Fantasy');
-  const [narratorStyle, setNarratorStyle] = useState('Atmosphärisch, lebendig und detailreich.');
-  const [persona, setPersona] = useState('Abenteurer');
+  const [narratorStyle, setNarratorStyle] = useState(() => translate('sceneNew.narratorStyleDefault'));
+  const [persona, setPersona] = useState(() => translate('sceneNew.personaDefault'));
   const [diceEnabled, setDiceEnabled] = useState(true);
   const [isSubmitting, setIsSubmitting] = useState(false);
 
@@ -53,7 +56,7 @@ export const SceneCreateModal: React.FC<SceneCreateModalProps> = ({
       time_of_day: timeOfDay.trim(),
       opening_narration:
         openingNarration.trim() ||
-        `Die Gefährten erreichen ${startingLocation.trim()}. Ein neuer Pfad öffnet sich vor euch.`,
+        translate('sceneNew.defaultOpening', { location: startingLocation.trim() }),
       first_message: '',
       party: selectedParty,
       gm_tone: gmTone,
@@ -83,7 +86,7 @@ export const SceneCreateModal: React.FC<SceneCreateModalProps> = ({
   };
 
   return (
-    <ModalOverlay onClose={onClose} className="fixed inset-0 z-50 flex items-center justify-center bg-black/75 backdrop-blur-sm p-4 overflow-y-auto">
+    <ModalOverlay onClose={onClose} aria-labelledby="scene-create-title" className="fixed inset-0 z-50 flex items-center justify-center bg-black/75 backdrop-blur-sm p-4 overflow-y-auto">
       <div className="w-full max-w-2xl bg-slate-900 border border-slate-700/80 rounded-2xl shadow-2xl overflow-hidden my-8">
         {/* Header */}
         <div className="flex items-center justify-between p-4 sm:p-5 border-b border-slate-800 bg-app/60">
@@ -92,14 +95,14 @@ export const SceneCreateModal: React.FC<SceneCreateModalProps> = ({
               <Sparkles className="w-5 h-5" />
             </div>
             <div>
-              <h3 className="text-base font-bold text-slate-100">Neue Rollenspiel-Szene erstellen</h3>
-              <p className="text-xs text-slate-400">
-                Erstelle ein maßgeschneidertes Kampagnen-Szenario für deinen KI-Game-Master
-              </p>
+              <h3 id="scene-create-title" className="text-base font-bold text-slate-100">{t('sceneNew.title')}</h3>
+              <p className="text-xs text-slate-400">{t('sceneNew.intro')}</p>
             </div>
           </div>
           <button
             onClick={onClose}
+            title={t('common.close')}
+            aria-label={t('common.close')}
             className="p-1.5 rounded-lg text-slate-400 hover:text-white hover:bg-slate-800 transition"
           >
             <X className="w-5 h-5" />
@@ -111,28 +114,34 @@ export const SceneCreateModal: React.FC<SceneCreateModalProps> = ({
           {/* Title & Location */}
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             <div>
-              <label className="font-semibold text-slate-300 block mb-1">
-                Titel der Szene <span className="text-rose-400">*</span>
+              <label htmlFor="scene-title" className="font-semibold text-slate-300 block mb-1">
+                {t('sceneNew.sceneTitle')}{' '}
+                <span className="text-rose-400" title={t('sceneNew.required')} aria-hidden>
+                  *
+                </span>
               </label>
               <input
+                id="scene-title"
+                data-autofocus
                 type="text"
                 required
                 value={title}
                 onChange={(e) => setTitle(e.target.value)}
-                placeholder="z. B. Audienz im Thronsaal, Das Portal von Disbord..."
+                placeholder={t('sceneNew.titlePlaceholder')}
                 className="w-full px-3 py-2 bg-app border border-slate-700 rounded-xl text-slate-100 placeholder-slate-500 focus:outline-hidden focus:border-accent-500"
               />
             </div>
 
             <div>
-              <label className="font-semibold text-slate-300 block mb-1">Startort</label>
+              <label htmlFor="scene-location" className="font-semibold text-slate-300 block mb-1">{t('sceneNew.startLocation')}</label>
               <div className="relative">
-                <MapPin className="w-4 h-4 text-slate-400 absolute left-3 top-2.5" />
+                <MapPin className="w-4 h-4 text-slate-400 absolute left-3 top-2.5" aria-hidden />
                 <input
+                  id="scene-location"
                   type="text"
                   value={startingLocation}
                   onChange={(e) => setStartingLocation(e.target.value)}
-                  placeholder="Thronsaal, Verlies, Taverne..."
+                  placeholder={t('sceneNew.locationPlaceholder')}
                   className="w-full pl-9 pr-3 py-2 bg-app border border-slate-700 rounded-xl text-slate-100 placeholder-slate-500 focus:outline-hidden focus:border-accent-500"
                 />
               </div>
@@ -142,30 +151,32 @@ export const SceneCreateModal: React.FC<SceneCreateModalProps> = ({
           {/* Description & Time */}
           <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
             <div className="sm:col-span-2">
-              <label className="font-semibold text-slate-300 block mb-1">Kurzbeschreibung</label>
+              <label htmlFor="scene-description" className="font-semibold text-slate-300 block mb-1">{t('sceneNew.description')}</label>
               <input
+                id="scene-description"
                 type="text"
                 value={description}
                 onChange={(e) => setDescription(e.target.value)}
-                placeholder="Worum geht es in dieser Szene?"
+                placeholder={t('sceneNew.descriptionPlaceholder')}
                 className="w-full px-3 py-2 bg-app border border-slate-700 rounded-xl text-slate-100 placeholder-slate-500 focus:outline-hidden focus:border-accent-500"
               />
             </div>
 
             <div>
-              <label className="font-semibold text-slate-300 block mb-1">Tageszeit</label>
+              <label htmlFor="scene-time" className="font-semibold text-slate-300 block mb-1">{t('sceneNew.timeOfDay')}</label>
               <div className="relative">
-                <Sun className="w-4 h-4 text-slate-400 absolute left-3 top-2.5" />
+                <Sun className="w-4 h-4 text-slate-400 absolute left-3 top-2.5" aria-hidden />
                 <select
+                  id="scene-time"
                   value={timeOfDay}
                   onChange={(e) => setTimeOfDay(e.target.value)}
                   className="w-full pl-9 pr-3 py-2 bg-app border border-slate-700 rounded-xl text-slate-100 focus:outline-hidden focus:border-accent-500"
                 >
-                  <option value="Morgen">Morgen</option>
-                  <option value="Mittag">Mittag</option>
-                  <option value="Dämmerung">Dämmerung</option>
-                  <option value="Abend">Abend</option>
-                  <option value="Mitternacht">Mitternacht</option>
+                  {(['morning', 'noon', 'dusk', 'evening', 'midnight'] as const).map((time) => (
+                    <option key={time} value={t(`sceneNew.time.${time}`)}>
+                      {t(`sceneNew.time.${time}`)}
+                    </option>
+                  ))}
                 </select>
               </div>
             </div>
@@ -173,41 +184,43 @@ export const SceneCreateModal: React.FC<SceneCreateModalProps> = ({
 
           {/* World Context */}
           <div>
-            <label className="font-semibold text-slate-300 block mb-1">
-              Welt-Kontext / Lore (für den Spielleiter)
+            <label htmlFor="scene-world" className="font-semibold text-slate-300 block mb-1">
+              {t('sceneNew.worldContext')}
             </label>
             <textarea
+              id="scene-world"
               rows={2}
               value={worldContext}
               onChange={(e) => setWorldContext(e.target.value)}
-              placeholder="Welche Weltregeln, Konflikte oder Geheimnisse gelten in diesem Moment?"
+              placeholder={t('sceneNew.worldContextPlaceholder')}
               className="w-full px-3 py-2 bg-app border border-slate-700 rounded-xl text-slate-100 placeholder-slate-500 focus:outline-hidden focus:border-accent-500 resize-none"
             />
           </div>
 
           {/* Opening Narration */}
           <div>
-            <label className="font-semibold text-slate-300 block mb-1">
-              Eröffnungsnarration (Start-Schilderung des Spielleiters)
+            <label htmlFor="scene-opening" className="font-semibold text-slate-300 block mb-1">
+              {t('sceneNew.opening')}
             </label>
             <textarea
+              id="scene-opening"
               rows={3}
               value={openingNarration}
               onChange={(e) => setOpeningNarration(e.target.value)}
-              placeholder="Wie beginnt die Szene? (Leer lassen für automatische Einleitung)"
+              placeholder={t('sceneNew.openingPlaceholder')}
               className="w-full px-3 py-2 bg-app border border-slate-700 rounded-xl text-slate-100 placeholder-slate-500 focus:outline-hidden focus:border-accent-500 resize-none"
             />
           </div>
 
           {/* Party Members selection */}
           <div>
-            <label className="font-semibold text-slate-300 block mb-1.5 flex items-center justify-between">
-              <span>Gruppenmitglieder (Gefährten)</span>
+            <div className="font-semibold text-slate-300 mb-1.5 flex items-center justify-between">
+              <span id="scene-party-label">{t('sceneNew.party')}</span>
               <span className="text-xs text-accent-400 font-normal">
-                {selectedParty.length} ausgewählt
+                {t('sceneNew.selectedCount', { count: selectedParty.length })}
               </span>
-            </label>
-            <div className="flex flex-wrap gap-2 p-3 bg-app/60 border border-slate-800 rounded-xl max-h-32 overflow-y-auto">
+            </div>
+            <div role="group" aria-labelledby="scene-party-label" className="flex flex-wrap gap-2 p-3 bg-app/60 border border-slate-800 rounded-xl max-h-32 overflow-y-auto">
               {availableCharacters.map((char: CharacterProfile) => {
                 const charName = char.card.data.name || char.id;
                 const isSelected = selectedParty.includes(charName);
@@ -216,6 +229,7 @@ export const SceneCreateModal: React.FC<SceneCreateModalProps> = ({
                     type="button"
                     key={char.id}
                     onClick={() => togglePartyMember(charName)}
+                    aria-pressed={isSelected}
                     className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg border transition ${
                       isSelected
                         ? 'bg-accent-600/30 border-accent-500 text-accent-200 font-semibold'
@@ -229,7 +243,7 @@ export const SceneCreateModal: React.FC<SceneCreateModalProps> = ({
               })}
               {availableCharacters.length === 0 && (
                 <span className="text-slate-500 text-xs italic">
-                  Keine Charaktere in der Bibliothek gefunden.
+                  {t('sceneNew.noCharacters')}
                 </span>
               )}
             </div>
@@ -238,39 +252,42 @@ export const SceneCreateModal: React.FC<SceneCreateModalProps> = ({
           {/* GM Tone & Narrator Style */}
           <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
             <div>
-              <label className="font-semibold text-slate-300 block mb-1">GM Tonfall</label>
+              <label htmlFor="scene-tone" className="font-semibold text-slate-300 block mb-1">{t('sceneNew.gmTone')}</label>
               <select
+                id="scene-tone"
                 value={gmTone}
                 onChange={(e) => setGmTone(e.target.value)}
                 className="w-full px-3 py-2 bg-app border border-slate-700 rounded-xl text-slate-100 focus:outline-hidden focus:border-accent-500"
               >
-                <option value="Epic Fantasy">Epic High Fantasy</option>
-                <option value="Dark Fantasy">Dark & Gritty Fantasy</option>
-                <option value="Sci-Fi Cyberpunk">Cyberpunk / Sci-Fi</option>
-                <option value="Anime Comedy">Anime Comedy & Harem</option>
-                <option value="Eldritch Mystery">Eldritch Mystery & Horror</option>
-                <option value="Isekai Adventure">Isekai Abenteuer</option>
+                <option value="Epic Fantasy">{t('sceneNew.tone.epic')}</option>
+                <option value="Dark Fantasy">{t('sceneNew.tone.dark')}</option>
+                <option value="Sci-Fi Cyberpunk">{t('sceneNew.tone.scifi')}</option>
+                <option value="Anime Comedy">{t('sceneNew.tone.comedy')}</option>
+                <option value="Eldritch Mystery">{t('sceneNew.tone.eldritch')}</option>
+                <option value="Isekai Adventure">{t('sceneNew.tone.isekai')}</option>
               </select>
             </div>
 
             <div>
-              <label className="font-semibold text-slate-300 block mb-1">Erzählstil</label>
+              <label htmlFor="scene-style" className="font-semibold text-slate-300 block mb-1">{t('sceneNew.narratorStyle')}</label>
               <input
+                id="scene-style"
                 type="text"
                 value={narratorStyle}
                 onChange={(e) => setNarratorStyle(e.target.value)}
-                placeholder="Atmosphärisch, dramatisch..."
+                placeholder={t('sceneNew.narratorStylePlaceholder')}
                 className="w-full px-3 py-2 bg-app border border-slate-700 rounded-xl text-slate-100 focus:outline-hidden focus:border-accent-500"
               />
             </div>
 
             <div>
-              <label className="font-semibold text-slate-300 block mb-1">Spieler-Persona Name</label>
+              <label htmlFor="scene-persona" className="font-semibold text-slate-300 block mb-1">{t('sceneNew.persona')}</label>
               <input
+                id="scene-persona"
                 type="text"
                 value={persona}
                 onChange={(e) => setPersona(e.target.value)}
-                placeholder="z. B. Hiroki, Sora, Spieler..."
+                placeholder={t('sceneNew.personaPlaceholder')}
                 className="w-full px-3 py-2 bg-app border border-slate-700 rounded-xl text-slate-100 focus:outline-hidden focus:border-accent-500"
               />
             </div>
@@ -286,7 +303,7 @@ export const SceneCreateModal: React.FC<SceneCreateModalProps> = ({
               className="w-4 h-4 accent-accent-600 rounded"
             />
             <label htmlFor="diceToggle" className="cursor-pointer text-xs text-slate-300 font-medium">
-              Deterministische Würfelproben (DC Checks) für diese Szene aktivieren
+              {t('sceneNew.dice')}
             </label>
           </div>
 
@@ -297,7 +314,7 @@ export const SceneCreateModal: React.FC<SceneCreateModalProps> = ({
               onClick={onClose}
               className="px-4 py-2 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-300 font-semibold transition"
             >
-              Abbrechen
+              {t('common.cancel')}
             </button>
             <button
               type="submit"
@@ -305,7 +322,7 @@ export const SceneCreateModal: React.FC<SceneCreateModalProps> = ({
               className="px-5 py-2 rounded-xl bg-accent-600 hover:bg-accent-500 text-white font-semibold flex items-center gap-1.5 shadow-lg shadow-accent-950/50 transition disabled:opacity-50"
             >
               <Sparkles className="w-4 h-4" />
-              <span>{isSubmitting ? 'Wird erstellt...' : 'Szene starten'}</span>
+              <span>{isSubmitting ? t('sceneNew.creating') : t('sceneNew.start')}</span>
             </button>
           </div>
         </form>

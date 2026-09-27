@@ -16,10 +16,11 @@ import {
   Check,
   X,
 } from 'lucide-react';
-import { translate } from '../../i18n';
+import { translate, useTranslation } from '../../i18n';
 import { confirmDialog, toast } from '../ui/feedback';
 
 export const StageChatLog: React.FC = () => {
+  const { t, currentLanguage } = useTranslation();
   const {
     stageState,
     isProcessingStageTurn,
@@ -82,7 +83,7 @@ export const StageChatLog: React.FC = () => {
     if ('speechSynthesis' in window) {
       window.speechSynthesis.cancel();
       const utterance = new SpeechSynthesisUtterance(text);
-      utterance.lang = 'de-DE';
+      utterance.lang = { de: 'de-DE', en: 'en-US', ru: 'ru-RU' }[currentLanguage];
       window.speechSynthesis.speak(utterance);
     }
   };
@@ -92,31 +93,32 @@ export const StageChatLog: React.FC = () => {
       case 'say':
         return (
           <span className="flex items-center gap-1 text-[11px] font-semibold text-blue-400 bg-blue-950/60 px-2 py-0.5 rounded-full border border-blue-500/30">
-            <MessageSquare className="w-2.5 h-2.5" /> Sagt
+            <MessageSquare className="w-2.5 h-2.5" /> {t('stage.badgeSay')}
           </span>
         );
       case 'do':
         return (
           <span className="flex items-center gap-1 text-[11px] font-semibold text-amber-400 bg-amber-950/60 px-2 py-0.5 rounded-full border border-amber-500/30">
-            <Sword className="w-2.5 h-2.5" /> Handelt
+            <Sword className="w-2.5 h-2.5" /> {t('stage.badgeDo')}
           </span>
         );
       case 'think':
         return (
           <span className="flex items-center gap-1 text-[11px] font-semibold text-accent-400 bg-accent-950/60 px-2 py-0.5 rounded-full border border-accent-500/30">
-            <Brain className="w-2.5 h-2.5" /> Denkt
+            <Brain className="w-2.5 h-2.5" /> {t('stage.badgeThink')}
           </span>
         );
       case 'direct':
         return (
           <span className="flex items-center gap-1 text-[11px] font-semibold text-rose-400 bg-rose-950/60 px-2 py-0.5 rounded-full border border-rose-500/30">
-            <Clapperboard className="w-2.5 h-2.5" /> Regie
+            <Clapperboard className="w-2.5 h-2.5" /> {t('stage.badgeDirect')}
           </span>
         );
       case 'whisper':
         return (
           <span className="flex items-center gap-1 text-[11px] font-semibold text-emerald-400 bg-emerald-950/60 px-2 py-0.5 rounded-full border border-emerald-500/30">
-            <Ear className="w-2.5 h-2.5" /> Flüstert {whisperTarget ? `an ${whisperTarget}` : ''}
+            <Ear className="w-2.5 h-2.5" />{' '}
+            {whisperTarget ? t('stage.badgeWhisperTo', { name: whisperTarget }) : t('stage.badgeWhisper')}
           </span>
         );
       default:
@@ -143,14 +145,16 @@ export const StageChatLog: React.FC = () => {
               <div className="absolute top-3 right-3 opacity-0 group-hover:opacity-100 transition-opacity flex items-center gap-1 bg-app/90 border border-slate-700/80 rounded-xl px-1.5 py-1 shadow-lg backdrop-blur">
                 <button
                   onClick={() => handleSpeak(msg.content)}
-                  title="Vorlesen (TTS)"
+                  title={t('stage.speak')}
+                  aria-label={t('stage.speak')}
                   className="p-1 rounded-lg text-slate-400 hover:text-accent-300 hover:bg-slate-800 transition"
                 >
                   <Volume2 className="w-3.5 h-3.5" />
                 </button>
                 <button
                   onClick={() => handleStartEdit(msg.id, msg.content)}
-                  title="Nachricht bearbeiten"
+                  title={t('stage.editMessage')}
+                  aria-label={t('stage.editMessage')}
                   className="p-1 rounded-lg text-slate-400 hover:text-accent-300 hover:bg-slate-800 transition"
                 >
                   <Edit3 className="w-3.5 h-3.5" />
@@ -158,7 +162,8 @@ export const StageChatLog: React.FC = () => {
                 {isLastMessage && (
                   <button
                     onClick={handleRegenerate}
-                    title="Zug neu generieren"
+                    title={t('stage.regenerateTurn')}
+                    aria-label={t('stage.regenerateTurn')}
                     className="p-1 rounded-lg text-slate-400 hover:text-amber-300 hover:bg-slate-800 transition"
                   >
                     <RotateCcw className="w-3.5 h-3.5" />
@@ -166,7 +171,8 @@ export const StageChatLog: React.FC = () => {
                 )}
                 <button
                   onClick={() => handleDeleteMessage(msg.id)}
-                  title="Nachricht löschen"
+                  title={t('stage.deleteMessage')}
+                  aria-label={t('stage.deleteMessage')}
                   className="p-1 rounded-lg text-slate-400 hover:text-rose-400 hover:bg-slate-800 transition"
                 >
                   <Trash2 className="w-3.5 h-3.5" />
@@ -205,13 +211,13 @@ export const StageChatLog: React.FC = () => {
                       onClick={() => setEditingMessageId(null)}
                       className="px-2.5 py-1 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-300 text-xs flex items-center gap-1 transition"
                     >
-                      <X className="w-3 h-3" /> Abbrechen
+                      <X className="w-3 h-3" /> {t('common.cancel')}
                     </button>
                     <button
                       onClick={() => handleSaveEdit(msg.id)}
                       className="px-3 py-1 rounded-lg bg-accent-600 hover:bg-accent-500 text-white text-xs font-semibold flex items-center gap-1 transition"
                     >
-                      <Check className="w-3 h-3" /> Speichern
+                      <Check className="w-3 h-3" /> {t('stage.save')}
                     </button>
                   </div>
                 </div>
@@ -258,14 +264,16 @@ export const StageChatLog: React.FC = () => {
               >
                 <button
                   onClick={() => handleSpeak(msg.content)}
-                  title="Vorlesen (TTS)"
+                  title={t('stage.speak')}
+                  aria-label={t('stage.speak')}
                   className="p-1 rounded-lg text-slate-400 hover:text-accent-300 hover:bg-slate-800 transition"
                 >
                   <Volume2 className="w-3 h-3" />
                 </button>
                 <button
                   onClick={() => handleStartEdit(msg.id, msg.content)}
-                  title="Nachricht bearbeiten"
+                  title={t('stage.editMessage')}
+                  aria-label={t('stage.editMessage')}
                   className="p-1 rounded-lg text-slate-400 hover:text-accent-300 hover:bg-slate-800 transition"
                 >
                   <Edit3 className="w-3 h-3" />
@@ -273,7 +281,8 @@ export const StageChatLog: React.FC = () => {
                 {isLastMessage && (
                   <button
                     onClick={handleRegenerate}
-                    title="Zug neu generieren"
+                    title={t('stage.regenerateTurn')}
+                    aria-label={t('stage.regenerateTurn')}
                     className="p-1 rounded-lg text-slate-400 hover:text-amber-300 hover:bg-slate-800 transition"
                   >
                     <RotateCcw className="w-3 h-3" />
@@ -281,7 +290,8 @@ export const StageChatLog: React.FC = () => {
                 )}
                 <button
                   onClick={() => handleDeleteMessage(msg.id)}
-                  title="Nachricht löschen"
+                  title={t('stage.deleteMessage')}
+                  aria-label={t('stage.deleteMessage')}
                   className="p-1 rounded-lg text-slate-400 hover:text-rose-400 hover:bg-slate-800 transition"
                 >
                   <Trash2 className="w-3 h-3" />
@@ -302,13 +312,13 @@ export const StageChatLog: React.FC = () => {
                       onClick={() => setEditingMessageId(null)}
                       className="px-2.5 py-1 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-300 text-xs flex items-center gap-1 transition"
                     >
-                      <X className="w-3 h-3" /> Abbrechen
+                      <X className="w-3 h-3" /> {t('common.cancel')}
                     </button>
                     <button
                       onClick={() => handleSaveEdit(msg.id)}
                       className="px-3 py-1 rounded-lg bg-accent-600 hover:bg-accent-500 text-white text-xs font-semibold flex items-center gap-1 transition"
                     >
-                      <Check className="w-3 h-3" /> Speichern
+                      <Check className="w-3 h-3" /> {t('stage.save')}
                     </button>
                   </div>
                 </div>
@@ -337,7 +347,7 @@ export const StageChatLog: React.FC = () => {
       {isProcessingStageTurn && (
         <div className="flex items-center gap-2 p-3.5 rounded-xl bg-accent-950/30 border border-accent-500/30 animate-pulse text-xs text-accent-300">
           <Bot className="w-4 h-4 animate-spin" />
-          <span>Der Spielleiter berechnet Mechaniken und webt die nächste Erzählung...</span>
+          <span>{t('stage.gmThinking')}</span>
         </div>
       )}
 

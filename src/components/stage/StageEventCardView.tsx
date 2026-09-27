@@ -1,12 +1,14 @@
 import React from 'react';
 import { StageEventCard } from '../../types';
 import { Dices, Clock, Flame, Sparkles, AlertTriangle, CheckCircle2, XCircle, PackageOpen, HeartHandshake, Swords } from 'lucide-react';
+import { useTranslation } from '../../i18n';
 
 interface StageEventCardViewProps {
   card: StageEventCard;
 }
 
 export const StageEventCardView: React.FC<StageEventCardViewProps> = ({ card }) => {
+  const { t } = useTranslation();
   if (card.type === 'dice_roll') {
     const isCrit = card.is_crit_success;
     const isFumble = card.is_crit_fail;
@@ -40,7 +42,7 @@ export const StageEventCardView: React.FC<StageEventCardViewProps> = ({ card }) 
               <Dices className="w-4 h-4 animate-bounce" />
             </div>
             <div>
-              <span className="text-xs font-bold text-slate-200">Würfelprobe: {card.formula}</span>
+              <span className="text-xs font-bold text-slate-200">{t('stage.cardDiceCheck', { formula: card.formula })}</span>
             </div>
           </div>
 
@@ -55,7 +57,7 @@ export const StageEventCardView: React.FC<StageEventCardViewProps> = ({ card }) 
                   : 'bg-slate-800 text-accent-300 border border-accent-500/30'
               }`}
             >
-              Gesamt: {card.total}
+              {t('stage.cardTotal', { total: card.total })}
             </span>
           </div>
         </div>
@@ -63,7 +65,7 @@ export const StageEventCardView: React.FC<StageEventCardViewProps> = ({ card }) 
         {/* Dice breakdown & DC */}
         <div className="flex flex-wrap items-center justify-between gap-2 pt-2 border-t border-slate-800/60 text-xs">
           <div className="flex items-center gap-1.5 text-slate-400 text-xs">
-            <span>Würfel:</span>
+            <span>{t('stage.cardDice')}</span>
             <div className="flex gap-1">
               {card.rolls.map((roll, idx) => (
                 <span
@@ -83,14 +85,14 @@ export const StageEventCardView: React.FC<StageEventCardViewProps> = ({ card }) 
 
           {hasDc && (
             <div className="flex items-center gap-1.5">
-              <span className="text-slate-400 text-xs">Schwierigkeit (DC {card.target_dc}):</span>
+              <span className="text-slate-400 text-xs">{t('stage.cardDifficulty', { dc: card.target_dc ?? '' })}</span>
               {card.passed ? (
                 <span className="flex items-center gap-1 px-2 py-0.5 rounded-md bg-emerald-900/60 border border-emerald-500/40 text-emerald-300 font-bold text-xs">
-                  <CheckCircle2 className="w-3 h-3" /> Erfolg
+                  <CheckCircle2 className="w-3 h-3" /> {t('stage.cardSuccess')}
                 </span>
               ) : (
                 <span className="flex items-center gap-1 px-2 py-0.5 rounded-md bg-rose-900/60 border border-rose-500/40 text-rose-300 font-bold text-xs">
-                  <XCircle className="w-3 h-3" /> Fehlgeschlagen
+                  <XCircle className="w-3 h-3" /> {t('stage.cardFailed')}
                 </span>
               )}
             </div>
@@ -111,7 +113,7 @@ export const StageEventCardView: React.FC<StageEventCardViewProps> = ({ card }) 
               <Clock className="w-4 h-4" />
             </div>
             <div>
-              <span className="text-xs font-bold text-slate-200">Uhr-Fortschritt: {card.clock_name}</span>
+              <span className="text-xs font-bold text-slate-200">{t('stage.cardClock', { name: card.clock_name })}</span>
             </div>
           </div>
           <span
@@ -121,7 +123,11 @@ export const StageEventCardView: React.FC<StageEventCardViewProps> = ({ card }) 
                 : 'bg-blue-500/20 text-blue-300 border border-blue-500/30'
             }`}
           >
-            {card.delta > 0 ? `+${card.delta}` : card.delta} Segmente ({card.current}/{card.max})
+            {t('stage.cardClockDelta', {
+              delta: card.delta > 0 ? `+${card.delta}` : card.delta,
+              current: card.current,
+              max: card.max,
+            })}
           </span>
         </div>
 
@@ -143,7 +149,7 @@ export const StageEventCardView: React.FC<StageEventCardViewProps> = ({ card }) 
             <Flame className="w-4 h-4 animate-pulse" />
           </div>
           <span className="text-xs font-bold text-amber-200">
-            {card.rest_type === 'long' ? 'Lange Rast vollendet' : 'Kurze Rast am Lager'}
+            {card.rest_type === 'long' ? t('stage.cardLongRest') : t('stage.cardShortRest')}
           </span>
         </div>
         <p className="text-xs text-slate-300 mb-2">{card.campfire_note}</p>
@@ -166,7 +172,7 @@ export const StageEventCardView: React.FC<StageEventCardViewProps> = ({ card }) 
           <div className="p-1.5 rounded-lg bg-accent-500/20 text-accent-300">
             <Sparkles className="w-4 h-4" />
           </div>
-          <span className="text-xs font-bold text-accent-200">Entdeckung</span>
+          <span className="text-xs font-bold text-accent-200">{t('stage.cardDiscovery')}</span>
         </div>
         <p className="text-xs text-slate-300">{card.text}</p>
       </div>
@@ -180,7 +186,7 @@ export const StageEventCardView: React.FC<StageEventCardViewProps> = ({ card }) 
           <div className="p-1.5 rounded-lg bg-rose-500/20 text-rose-400">
             <AlertTriangle className="w-4 h-4" />
           </div>
-          <span className="text-xs font-bold text-rose-200">Konsequenz</span>
+          <span className="text-xs font-bold text-rose-200">{t('stage.cardConsequence')}</span>
         </div>
         <p className="text-xs text-slate-300">{card.text}</p>
       </div>
@@ -192,12 +198,12 @@ export const StageEventCardView: React.FC<StageEventCardViewProps> = ({ card }) 
       <div className="my-2 p-3 rounded-xl bg-emerald-950/30 border border-emerald-500/40 shadow-md">
         <div className="flex items-center gap-2 mb-1.5">
           <PackageOpen className="w-4 h-4 text-emerald-400" />
-          <span className="text-xs font-bold text-emerald-200">{card.item_name} benutzt</span>
+          <span className="text-xs font-bold text-emerald-200">{t('stage.cardItemUsed', { item: card.item_name })}</span>
         </div>
         <div className="flex flex-wrap gap-2 text-xs">
-          {card.hp_recovered > 0 && <span className="px-2 py-0.5 rounded bg-emerald-900/60 text-emerald-200">+{card.hp_recovered} LP</span>}
-          {card.stress_recovered > 0 && <span className="px-2 py-0.5 rounded bg-cyan-900/60 text-cyan-200">-{card.stress_recovered} Stress</span>}
-          {card.cleared_condition && <span className="px-2 py-0.5 rounded bg-accent-900/60 text-accent-200">{card.cleared_condition} kuriert</span>}
+          {card.hp_recovered > 0 && <span className="px-2 py-0.5 rounded bg-emerald-900/60 text-emerald-200">{t('stage.cardHp', { value: card.hp_recovered })}</span>}
+          {card.stress_recovered > 0 && <span className="px-2 py-0.5 rounded bg-cyan-900/60 text-cyan-200">{t('stage.cardStress', { value: card.stress_recovered })}</span>}
+          {card.cleared_condition && <span className="px-2 py-0.5 rounded bg-accent-900/60 text-accent-200">{t('stage.cardCured', { condition: card.cleared_condition })}</span>}
         </div>
       </div>
     );
@@ -208,9 +214,11 @@ export const StageEventCardView: React.FC<StageEventCardViewProps> = ({ card }) 
       <div className="my-2 p-3.5 rounded-xl bg-linear-to-r from-accent2-950/40 to-accent-950/30 border border-accent2-500/40 shadow-lg">
         <div className="flex items-center gap-2">
           <HeartHandshake className="w-4 h-4 text-accent2-400" />
-          <span className="text-xs font-bold text-accent2-200">Bindungs-Meilenstein mit {card.companion}</span>
+          <span className="text-xs font-bold text-accent2-200">{t('stage.cardBond', { name: card.companion })}</span>
         </div>
-        <p className="text-xs text-slate-300 mt-1">Nähe {card.affinity}/100 · Schwelle {card.milestone} erreicht</p>
+        <p className="text-xs text-slate-300 mt-1">
+          {t('stage.cardBondText', { affinity: card.affinity, milestone: card.milestone })}
+        </p>
       </div>
     );
   }

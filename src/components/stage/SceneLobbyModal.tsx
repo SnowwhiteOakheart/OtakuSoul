@@ -23,7 +23,8 @@ import {
   Layers,
   History,
 } from 'lucide-react';
-import { translate } from '../../i18n';
+import { translate, useTranslation } from '../../i18n';
+import { DropdownMenu } from '../ui/DropdownMenu';
 import { confirmDialog, toast } from '../ui/feedback';
 import { ModalOverlay } from '../ui/ModalOverlay';
 
@@ -36,6 +37,10 @@ export const SceneLobbyModal: React.FC<SceneLobbyModalProps> = ({
   isOpen,
   onClose,
 }) => {
+  const { t } = useTranslation();
+  // 'Alle' and 'Eigene Szenen' are folder identifiers shared with the backend; only their label is translated.
+  const folderLabel = (folder: string) =>
+    folder === 'Alle' ? t('lobby.folderAll') : folder === 'Eigene Szenen' ? t('lobby.folderCustom') : folder;
   const {
     stageScenes,
     fetchStageScenes,
@@ -63,7 +68,6 @@ export const SceneLobbyModal: React.FC<SceneLobbyModalProps> = ({
   const [newFolderName, setNewFolderName] = useState('');
   const [sceneToResume, setSceneToResume] = useState<ScenePreview | null>(null);
   const [movingScene, setMovingScene] = useState<ScenePreview | null>(null);
-  const [activeMenuSceneId, setActiveMenuSceneId] = useState<string | null>(null);
 
   const fileInputRef = useRef<HTMLInputElement>(null);
 
@@ -138,9 +142,7 @@ export const SceneLobbyModal: React.FC<SceneLobbyModalProps> = ({
     }
   };
 
-  const handleDelete = async (e: React.MouseEvent, sceneId: string) => {
-    e.stopPropagation();
-    setActiveMenuSceneId(null);
+  const handleDelete = async (sceneId: string) => {
     const confirmed = await confirmDialog({
       title: translate('confirm.deleteSceneTitle'),
       message: translate('confirm.deleteSceneText'),
@@ -150,9 +152,7 @@ export const SceneLobbyModal: React.FC<SceneLobbyModalProps> = ({
     if (confirmed) await deleteStageScene(sceneId);
   };
 
-  const handleResetScene = async (e: React.MouseEvent, sceneId: string) => {
-    e.stopPropagation();
-    setActiveMenuSceneId(null);
+  const handleResetScene = async (sceneId: string) => {
     const confirmed = await confirmDialog({
       title: translate('confirm.resetSceneTitle'),
       message: translate('confirm.resetSceneText'),
@@ -167,9 +167,7 @@ export const SceneLobbyModal: React.FC<SceneLobbyModalProps> = ({
     }
   };
 
-  const handleExportMarkdown = async (e: React.MouseEvent, sceneId: string, title: string) => {
-    e.stopPropagation();
-    setActiveMenuSceneId(null);
+  const handleExportMarkdown = async (sceneId: string, title: string) => {
     const md = await exportStageMarkdown(sceneId);
     if (md) {
       const blob = new Blob([md], { type: 'text/markdown;charset=utf-8;' });
@@ -182,9 +180,7 @@ export const SceneLobbyModal: React.FC<SceneLobbyModalProps> = ({
     }
   };
 
-  const handleExportJson = async (e: React.MouseEvent, sceneId: string, title: string) => {
-    e.stopPropagation();
-    setActiveMenuSceneId(null);
+  const handleExportJson = async (sceneId: string, title: string) => {
     const json = await exportStageSceneJson(sceneId);
     if (json) {
       const blob = new Blob([json], { type: 'application/json;charset=utf-8;' });
@@ -262,7 +258,7 @@ export const SceneLobbyModal: React.FC<SceneLobbyModalProps> = ({
 
   return (
     <>
-      <ModalOverlay onClose={onClose} className="fixed inset-0 z-50 flex items-center justify-center bg-black/80 backdrop-blur-md p-4 overflow-y-auto">
+      <ModalOverlay onClose={onClose} aria-labelledby="scene-lobby-title" className="fixed inset-0 z-50 flex items-center justify-center bg-black/80 backdrop-blur-md p-4 overflow-y-auto">
         <div className="w-full max-w-5xl bg-slate-900 border border-slate-700/80 rounded-2xl shadow-2xl overflow-hidden my-6 flex flex-col max-h-[88vh]">
           {/* Header */}
           <div className="flex items-center justify-between p-4 sm:p-5 border-b border-slate-800 bg-app/80">
@@ -271,15 +267,13 @@ export const SceneLobbyModal: React.FC<SceneLobbyModalProps> = ({
                 <Compass className="w-6 h-6" />
               </div>
               <div>
-                <h3 className="text-base font-bold text-slate-100 flex items-center gap-2">
-                  Soul Stage — Szenen & Ordner
-                  <span className="text-[11px] px-2 py-0.5 rounded-full bg-accent-900/60 border border-accent-500/30 text-accent-300 font-mono">
-                    {stageScenes.length} Abenteuer
+                <h3 id="scene-lobby-title" className="text-base font-bold text-slate-100 flex items-center gap-2">
+                  {t('lobby.title')}
+                  <span className="text-[11px] px-2 py-0.5 rounded-full bg-accent-900/60 border border-accent-500/30 text-accent-300 font-mono whitespace-nowrap">
+                    {t('lobby.adventureCount', { count: stageScenes.length })}
                   </span>
                 </h3>
-                <p className="text-xs text-slate-400">
-                  Wähle ein RPG-Szenario, verwalte deine Szenenordner oder starte No Game No Life
-                </p>
+                <p className="text-xs text-slate-400">{t('lobby.intro')}</p>
               </div>
             </div>
 
@@ -289,16 +283,18 @@ export const SceneLobbyModal: React.FC<SceneLobbyModalProps> = ({
                 ref={fileInputRef}
                 accept=".json"
                 className="hidden"
+                aria-hidden
+                tabIndex={-1}
                 onChange={handleImportJsonFile}
               />
 
               <button
                 onClick={() => fileInputRef.current?.click()}
-                title="Szenen-JSON importieren"
+                title={t('lobby.importJsonHint')}
                 className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-200 border border-slate-700 text-xs font-semibold transition"
               >
                 <Upload className="w-3.5 h-3.5 text-accent-400" />
-                <span>JSON Importieren</span>
+                <span className="whitespace-nowrap">{t('lobby.importJson')}</span>
               </button>
 
               <button
@@ -309,7 +305,7 @@ export const SceneLobbyModal: React.FC<SceneLobbyModalProps> = ({
                 className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-emerald-600/20 hover:bg-emerald-600/30 text-emerald-300 border border-emerald-500/40 text-xs font-semibold shadow-sm transition"
               >
                 <Compass className="w-3.5 h-3.5 text-emerald-400" />
-                <span>Im Soul Hub stöbern</span>
+                <span className="whitespace-nowrap">{t('lobby.browseHub')}</span>
               </button>
 
               <button
@@ -317,11 +313,13 @@ export const SceneLobbyModal: React.FC<SceneLobbyModalProps> = ({
                 className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-accent-600 hover:bg-accent-500 text-white text-xs font-semibold shadow-md shadow-accent-950/40 transition"
               >
                 <Plus className="w-3.5 h-3.5" />
-                <span>Neue Szene</span>
+                <span className="whitespace-nowrap">{t('lobby.newScene')}</span>
               </button>
 
               <button
                 onClick={onClose}
+                title={t('common.close')}
+                aria-label={t('common.close')}
                 className="p-1.5 rounded-xl text-slate-400 hover:text-white hover:bg-slate-800 transition"
               >
                 <X className="w-5 h-5" />
@@ -333,7 +331,7 @@ export const SceneLobbyModal: React.FC<SceneLobbyModalProps> = ({
           <div className="px-4 py-2.5 bg-app/90 border-b border-slate-800/90 flex items-center justify-between gap-2 overflow-x-auto">
             <div className="flex items-center gap-2 overflow-x-auto pb-1 sm:pb-0 scrollbar-none">
               <span className="text-xs font-semibold text-slate-400 uppercase tracking-wider flex items-center gap-1 mr-1 shrink-0">
-                <Folder className="w-3.5 h-3.5 text-accent-400" /> Ordner:
+                <Folder className="w-3.5 h-3.5 text-accent-400" /> {t('lobby.folders')}
               </span>
               {allFolders.map((fName) => {
                 const count = scenesInFolder(fName).length;
@@ -344,6 +342,7 @@ export const SceneLobbyModal: React.FC<SceneLobbyModalProps> = ({
                   <button
                     key={fName}
                     onClick={() => setSelectedStageFolder(fName)}
+                    aria-pressed={isSelected}
                     className={`flex items-center gap-1.5 px-3 py-1 rounded-xl text-xs font-medium whitespace-nowrap transition ${
                       isSelected
                         ? isNgnl
@@ -354,7 +353,7 @@ export const SceneLobbyModal: React.FC<SceneLobbyModalProps> = ({
                         : 'bg-slate-900 text-slate-300 hover:bg-slate-800 border border-slate-800'
                     }`}
                   >
-                    <span>{fName}</span>
+                    <span>{folderLabel(fName)}</span>
                     <span
                       className={`text-[11px] px-1.5 py-0.2 rounded-full ${
                         isSelected
@@ -370,11 +369,11 @@ export const SceneLobbyModal: React.FC<SceneLobbyModalProps> = ({
 
               <button
                 onClick={() => setShowNewFolderModal(true)}
-                title="Neuen Szenenordner erstellen"
+                title={t('lobby.newFolderHint')}
                 className="flex items-center gap-1 px-2.5 py-1 rounded-xl bg-slate-900/80 hover:bg-accent-900/40 text-accent-300 border border-accent-500/30 text-xs font-semibold transition shrink-0"
               >
                 <FolderPlus className="w-3.5 h-3.5" />
-                <span>+ Ordner</span>
+                <span>{t('lobby.newFolder')}</span>
               </button>
             </div>
 
@@ -383,47 +382,50 @@ export const SceneLobbyModal: React.FC<SceneLobbyModalProps> = ({
               selectedStageFolder !== 'Eigene Szenen' && (
                 <button
                   onClick={handleDeleteCurrentFolder}
-                  title="Aktuellen Ordner löschen"
+                  title={t('lobby.deleteFolderHint')}
                   className="px-2 py-1 rounded-lg bg-rose-950/40 hover:bg-rose-900/60 text-rose-300 border border-rose-500/30 text-xs flex items-center gap-1 transition shrink-0"
                 >
                   <Trash2 className="w-3 h-3" />
-                  <span>Ordner löschen</span>
+                  <span className="whitespace-nowrap">{t('lobby.deleteFolder')}</span>
                 </button>
               )}
           </div>
 
           {/* Filters & Search */}
           <div className="flex flex-wrap items-center justify-between gap-3 p-3.5 border-b border-slate-800 bg-app/40">
-            <div className="flex items-center gap-1.5 p-1 rounded-xl bg-app border border-slate-800 text-xs">
+            <div role="group" aria-label={t('lobby.filter')} className="flex items-center gap-1.5 p-1 rounded-xl bg-app border border-slate-800 text-xs">
               <button
                 onClick={() => setFilterType('all')}
-                className={`px-3 py-1 rounded-lg font-medium transition ${
+                aria-pressed={filterType === 'all'}
+                className={`px-3 py-1 rounded-lg font-medium transition whitespace-nowrap outline-hidden focus-visible:ring-2 focus-visible:ring-accent-400 ${
                   filterType === 'all'
                     ? 'bg-accent-600 text-white'
                     : 'text-slate-400 hover:text-slate-200'
                 }`}
               >
-                Alle Filter ({filteredScenes.length})
+                {t('lobby.filterAll', { count: filteredScenes.length })}
               </button>
               <button
                 onClick={() => setFilterType('presets')}
-                className={`px-3 py-1 rounded-lg font-medium transition ${
+                aria-pressed={filterType === 'presets'}
+                className={`px-3 py-1 rounded-lg font-medium transition whitespace-nowrap outline-hidden focus-visible:ring-2 focus-visible:ring-accent-400 ${
                   filterType === 'presets'
                     ? 'bg-accent-600 text-white'
                     : 'text-slate-400 hover:text-slate-200'
                 }`}
               >
-                Presets ({filteredScenes.filter((s) => s.is_preset).length})
+                {t('lobby.filterPresets', { count: filteredScenes.filter((s) => s.is_preset).length })}
               </button>
               <button
                 onClick={() => setFilterType('custom')}
-                className={`px-3 py-1 rounded-lg font-medium transition ${
+                aria-pressed={filterType === 'custom'}
+                className={`px-3 py-1 rounded-lg font-medium transition whitespace-nowrap outline-hidden focus-visible:ring-2 focus-visible:ring-accent-400 ${
                   filterType === 'custom'
                     ? 'bg-accent-600 text-white'
                     : 'text-slate-400 hover:text-slate-200'
                 }`}
               >
-                Eigene ({filteredScenes.filter((s) => !s.is_preset).length})
+                {t('lobby.filterCustom', { count: filteredScenes.filter((s) => !s.is_preset).length })}
               </button>
             </div>
 
@@ -433,7 +435,8 @@ export const SceneLobbyModal: React.FC<SceneLobbyModalProps> = ({
                 type="text"
                 value={search}
                 onChange={(e) => setSearch(e.target.value)}
-                placeholder="Szene, Kapitel oder Ort durchsuchen..."
+                placeholder={t('lobby.search')}
+                aria-label={t('lobby.search')}
                 className="w-full pl-8 pr-3 py-1.5 bg-app border border-slate-800 rounded-xl text-xs text-slate-200 placeholder-slate-500 focus:outline-hidden focus:border-accent-500"
               />
             </div>
@@ -444,7 +447,6 @@ export const SceneLobbyModal: React.FC<SceneLobbyModalProps> = ({
             {filteredScenes.map((sc) => {
               const isCurrent = currentSceneId === sc.id;
               const hasProgress = sc.has_progress || (sc.turn_count && sc.turn_count > 1);
-              const isMenuOpen = activeMenuSceneId === sc.id;
 
               return (
                 <div
@@ -462,12 +464,12 @@ export const SceneLobbyModal: React.FC<SceneLobbyModalProps> = ({
                       <div className="flex flex-wrap items-center gap-1.5">
                         <span className="text-[11px] px-2 py-0.5 rounded-full bg-slate-900 border border-slate-700 text-accent-300 font-semibold flex items-center gap-1">
                           <Film className="w-3 h-3" />
-                          {sc.is_preset ? 'Offizielles Preset' : 'Eigene Szene'}
+                          {sc.is_preset ? t('lobby.officialPreset') : t('lobby.customScene')}
                         </span>
                         {sc.folder && (
                           <span className="text-[11px] px-2 py-0.5 rounded-full bg-slate-900 border border-accent-900/60 text-amber-300 font-medium flex items-center gap-1">
                             <Folder className="w-2.5 h-2.5" />
-                            {sc.folder}
+                            {folderLabel(sc.folder)}
                           </span>
                         )}
                         {sc.gm_tone && (
@@ -481,12 +483,12 @@ export const SceneLobbyModal: React.FC<SceneLobbyModalProps> = ({
                         {hasProgress && (
                           <span className="flex items-center gap-1 px-2 py-0.5 rounded-full bg-blue-950/70 border border-blue-500/40 text-blue-300 text-[11px] font-semibold">
                             <History className="w-2.5 h-2.5" />
-                            {sc.turn_count || 1} Züge
+                            {t('lobby.turns', { count: sc.turn_count || 1 })}
                           </span>
                         )}
                         {isCurrent && (
                           <span className="flex items-center gap-1 px-2 py-0.5 rounded-full bg-emerald-950/80 border border-emerald-500/40 text-emerald-300 text-[11px] font-bold">
-                            <Check className="w-3 h-3" /> Aktiv
+                            <Check className="w-3 h-3" /> {t('lobby.active')}
                           </span>
                         )}
                       </div>
@@ -511,7 +513,7 @@ export const SceneLobbyModal: React.FC<SceneLobbyModalProps> = ({
                       {sc.party && sc.party.length > 0 && (
                         <div className="flex items-center gap-1.5">
                           <Users className="w-3.5 h-3.5 text-slate-500 shrink-0" />
-                          <span className="truncate">Gruppe: {sc.party.join(', ')}</span>
+                          <span className="truncate">{t('lobby.party', { names: sc.party.join(', ') })}</span>
                         </div>
                       )}
                     </div>
@@ -531,7 +533,7 @@ export const SceneLobbyModal: React.FC<SceneLobbyModalProps> = ({
                       }`}
                     >
                       <Play className="w-3 h-3" />
-                      <span>{isCurrent ? 'Aktives Abenteuer' : hasProgress ? 'Fortsetzen / Öffnen' : 'Szene Betreten'}</span>
+                      <span>{isCurrent ? t('lobby.activeAdventure') : hasProgress ? t('lobby.continue') : t('lobby.enter')}</span>
                     </button>
 
                     <div className="relative flex items-center gap-1">
@@ -540,64 +542,28 @@ export const SceneLobbyModal: React.FC<SceneLobbyModalProps> = ({
                           e.stopPropagation();
                           setMovingScene(sc);
                         }}
-                        title="In Ordner verschieben"
+                        title={t('lobby.moveToFolder')}
+                        aria-label={t('lobby.moveToFolder')}
                         className="p-1.5 rounded-lg bg-slate-900 hover:bg-slate-800 text-slate-400 hover:text-slate-200 border border-slate-800 transition"
                       >
                         <Layers className="w-3.5 h-3.5" />
                       </button>
 
-                      <button
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          setActiveMenuSceneId(isMenuOpen ? null : sc.id);
-                        }}
-                        title="Weitere Aktionen"
-                        className="p-1.5 rounded-lg bg-slate-900 hover:bg-slate-800 text-slate-400 hover:text-slate-200 border border-slate-800 transition"
-                      >
-                        <MoreVertical className="w-3.5 h-3.5" />
-                      </button>
-
-                      {/* Dropdown Menu */}
-                      {isMenuOpen && (
-                        <div
-                          onClick={(e) => e.stopPropagation()}
-                          className="absolute right-0 bottom-full mb-2 w-48 bg-slate-900 border border-slate-700 rounded-xl shadow-2xl p-1.5 z-30 space-y-1"
-                        >
-                          <button
-                            onClick={(e) => handleExportJson(e, sc.id, sc.title)}
-                            className="w-full text-left flex items-center gap-2 px-2.5 py-1.5 rounded-lg hover:bg-slate-800 text-slate-300 text-xs transition"
-                          >
-                            <Download className="w-3.5 h-3.5 text-accent-400" />
-                            <span>JSON exportieren</span>
-                          </button>
-
-                          <button
-                            onClick={(e) => handleExportMarkdown(e, sc.id, sc.title)}
-                            className="w-full text-left flex items-center gap-2 px-2.5 py-1.5 rounded-lg hover:bg-slate-800 text-slate-300 text-xs transition"
-                          >
-                            <Download className="w-3.5 h-3.5 text-accent-400" />
-                            <span>Markdown exportieren</span>
-                          </button>
-
-                          <button
-                            onClick={(e) => handleResetScene(e, sc.id)}
-                            className="w-full text-left flex items-center gap-2 px-2.5 py-1.5 rounded-lg hover:bg-slate-800 text-amber-300 text-xs transition"
-                          >
-                            <RotateCcw className="w-3.5 h-3.5 text-amber-400" />
-                            <span>Auf Anfang zurücksetzen</span>
-                          </button>
-
-                          {!sc.is_preset && (
-                            <button
-                              onClick={(e) => handleDelete(e, sc.id)}
-                              className="w-full text-left flex items-center gap-2 px-2.5 py-1.5 rounded-lg hover:bg-rose-950/60 text-rose-300 text-xs transition"
-                            >
-                              <Trash2 className="w-3.5 h-3.5 text-rose-400" />
-                              <span>Szene löschen</span>
-                            </button>
-                          )}
-                        </div>
-                      )}
+                      <DropdownMenu
+                        placement="top"
+                        triggerLabel={t('lobby.moreActions', { title: sc.title })}
+                        trigger={<MoreVertical className="w-3.5 h-3.5" />}
+                        triggerClassName="p-1.5 rounded-lg bg-slate-900 hover:bg-slate-800 text-slate-400 hover:text-slate-200 border border-slate-800 transition outline-hidden focus-visible:ring-2 focus-visible:ring-accent-400"
+                        menuClassName="min-w-48"
+                        items={[
+                          { label: t('lobby.exportJson'), icon: Download, onSelect: () => handleExportJson(sc.id, sc.title) },
+                          { label: t('lobby.exportMd'), icon: Download, onSelect: () => handleExportMarkdown(sc.id, sc.title) },
+                          { label: t('lobby.reset'), icon: RotateCcw, onSelect: () => handleResetScene(sc.id) },
+                          ...(!sc.is_preset
+                            ? [{ label: t('lobby.deleteScene'), icon: Trash2, onSelect: () => handleDelete(sc.id) }]
+                            : []),
+                        ]}
+                      />
                     </div>
                   </div>
                 </div>
@@ -607,13 +573,13 @@ export const SceneLobbyModal: React.FC<SceneLobbyModalProps> = ({
             {filteredScenes.length === 0 && (
               <div className="col-span-full p-12 text-center text-xs text-slate-500 space-y-2">
                 <BookOpen className="w-8 h-8 text-slate-600 mx-auto" />
-                <p>Keine Rollenspiel-Szenen in diesem Ordner gefunden.</p>
+                <p>{t('lobby.empty')}</p>
                 <button
                   onClick={() => setShowCreateModal(true)}
                   className="px-3 py-1.5 rounded-xl bg-accent-600 text-white text-xs font-semibold inline-flex items-center gap-1.5"
                 >
                   <Plus className="w-3.5 h-3.5" />
-                  Neue Szene erstellen
+                  {t('lobby.createScene')}
                 </button>
               </div>
             )}
@@ -632,13 +598,13 @@ export const SceneLobbyModal: React.FC<SceneLobbyModalProps> = ({
               <div>
                 <h4 className="text-sm font-bold text-slate-100">{sceneToResume.title}</h4>
                 <p className="text-xs text-slate-400">
-                  Gespeicherter Fortschritt ({sceneToResume.turn_count || 1} Züge vorhanden)
+                  {t('lobby.savedProgress', { count: sceneToResume.turn_count || 1 })}
                 </p>
               </div>
             </div>
 
             <p className="text-xs text-slate-300 leading-relaxed">
-              Möchtest du dieses Abenteuer an der zuletzt gespielten Stelle <strong>fortsetzen</strong> oder von vorne <strong>neu starten</strong>? Ein automatisches Backup deiner bisherigen Züge wird immer aufbewahrt.
+              {t('lobby.resumeQuestion')}
             </p>
 
             <div className="flex items-center justify-end gap-2 pt-2">
@@ -646,7 +612,7 @@ export const SceneLobbyModal: React.FC<SceneLobbyModalProps> = ({
                 onClick={() => setSceneToResume(null)}
                 className="px-3 py-1.5 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-300 text-xs font-medium transition"
               >
-                Abbrechen
+                {t('common.cancel')}
               </button>
 
               <button
@@ -654,15 +620,16 @@ export const SceneLobbyModal: React.FC<SceneLobbyModalProps> = ({
                 className="px-3 py-1.5 rounded-xl bg-amber-600/20 hover:bg-amber-600/30 text-amber-300 border border-amber-500/40 text-xs font-semibold flex items-center gap-1.5 transition"
               >
                 <RotateCcw className="w-3.5 h-3.5 text-amber-400" />
-                <span>Neu starten</span>
+                <span>{t('lobby.restart')}</span>
               </button>
 
               <button
+                data-autofocus
                 onClick={handleResumeConfirmed}
                 className="px-4 py-1.5 rounded-xl bg-accent-600 hover:bg-accent-500 text-white text-xs font-semibold flex items-center gap-1.5 shadow-md shadow-accent-950/40 transition"
               >
                 <Play className="w-3.5 h-3.5" />
-                <span>Fortsetzen</span>
+                <span>{t('lobby.continue')}</span>
               </button>
             </div>
           </div>
@@ -675,7 +642,7 @@ export const SceneLobbyModal: React.FC<SceneLobbyModalProps> = ({
           <div className="w-full max-w-sm bg-slate-900 border border-slate-700 rounded-2xl p-5 shadow-2xl space-y-4">
             <div className="flex items-center gap-2">
               <FolderPlus className="w-5 h-5 text-accent-400" />
-              <h4 className="text-sm font-bold text-slate-100">Neuen Szenenordner erstellen</h4>
+              <h4 className="text-sm font-bold text-slate-100">{t('lobby.newFolderTitle')}</h4>
             </div>
 
             <input
@@ -684,7 +651,8 @@ export const SceneLobbyModal: React.FC<SceneLobbyModalProps> = ({
               value={newFolderName}
               onChange={(e) => setNewFolderName(e.target.value)}
               onKeyDown={(e) => e.key === 'Enter' && handleCreateFolder()}
-              placeholder="z.B. No Game No Life, Fantasy Kampagne..."
+              placeholder={t('lobby.folderPlaceholder')}
+              aria-label={t('lobby.newFolderTitle')}
               className="w-full px-3 py-2 bg-app border border-slate-800 rounded-xl text-xs text-slate-200 placeholder-slate-500 focus:outline-hidden focus:border-accent-500"
             />
 
@@ -696,13 +664,13 @@ export const SceneLobbyModal: React.FC<SceneLobbyModalProps> = ({
                 }}
                 className="px-3 py-1.5 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-300 text-xs font-medium transition"
               >
-                Abbrechen
+                {t('common.cancel')}
               </button>
               <button
                 onClick={handleCreateFolder}
                 className="px-3.5 py-1.5 rounded-xl bg-accent-600 hover:bg-accent-500 text-white text-xs font-semibold transition"
               >
-                Ordner anlegen
+                {t('lobby.createFolder')}
               </button>
             </div>
           </div>
@@ -716,12 +684,12 @@ export const SceneLobbyModal: React.FC<SceneLobbyModalProps> = ({
             <div className="flex items-center gap-2">
               <Layers className="w-5 h-5 text-accent-400" />
               <div>
-                <h4 className="text-sm font-bold text-slate-100">In Ordner verschieben</h4>
+                <h4 className="text-sm font-bold text-slate-100">{t('lobby.moveToFolder')}</h4>
                 <p className="text-xs text-slate-400 line-clamp-1">{movingScene.title}</p>
               </div>
             </div>
 
-            <p className="text-xs text-slate-300">Wähle den Zielordner für dieses Abenteuer:</p>
+            <p className="text-xs text-slate-300">{t('lobby.moveIntro')}</p>
 
             <div className="max-h-48 overflow-y-auto space-y-1.5">
               {stageFolders.filter((f) => f !== 'Alle').map((f) => (
@@ -736,7 +704,7 @@ export const SceneLobbyModal: React.FC<SceneLobbyModalProps> = ({
                 >
                   <span className="flex items-center gap-2">
                     <Folder className="w-3.5 h-3.5 text-accent-400" />
-                    <span>{f}</span>
+                    <span>{folderLabel(f)}</span>
                   </span>
                   {(movingScene.folder || 'Eigene Szenen').toLowerCase() === f.toLowerCase() && (
                     <Check className="w-3.5 h-3.5 text-accent-400" />
@@ -750,7 +718,7 @@ export const SceneLobbyModal: React.FC<SceneLobbyModalProps> = ({
                 onClick={() => setMovingScene(null)}
                 className="px-3 py-1.5 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-300 text-xs font-medium transition"
               >
-                Abbrechen
+                {t('common.cancel')}
               </button>
             </div>
           </div>

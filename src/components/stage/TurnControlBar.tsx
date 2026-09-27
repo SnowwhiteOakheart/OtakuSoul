@@ -13,8 +13,10 @@ import {
   Loader2,
 } from 'lucide-react';
 import { TaggedChoice } from '../../types';
+import { useTranslation, type TranslationKey } from '../../i18n';
 
 export const TurnControlBar: React.FC = () => {
+  const { t } = useTranslation();
   const {
     stageState,
     stageTurnMode,
@@ -67,12 +69,20 @@ export const TurnControlBar: React.FC = () => {
   };
 
   const modeButtons = [
-    { mode: 'say', label: 'Sagen', icon: MessageSquare, color: 'text-blue-400', desc: 'Wörtliche Rede deines Charakters' },
-    { mode: 'do', label: 'Tun', icon: Sword, color: 'text-amber-400', desc: 'Physische Handlung / Taktische Aktion' },
-    { mode: 'think', label: 'Denken', icon: Brain, color: 'text-accent-400', desc: 'Innere Gedanken & Monologe' },
-    { mode: 'direct', label: 'Regie', icon: Clapperboard, color: 'text-rose-400', desc: 'Metaspiel-Anweisung an den GM' },
-    { mode: 'whisper', label: 'Flüstern', icon: Ear, color: 'text-emerald-400', desc: 'Geheime Botschaft an ein Gruppenmitglied' },
+    { mode: 'say', label: t('stage.modeSay'), icon: MessageSquare, color: 'text-blue-400', desc: t('stage.modeSayHint') },
+    { mode: 'do', label: t('stage.modeDo'), icon: Sword, color: 'text-amber-400', desc: t('stage.modeDoHint') },
+    { mode: 'think', label: t('stage.modeThink'), icon: Brain, color: 'text-accent-400', desc: t('stage.modeThinkHint') },
+    { mode: 'direct', label: t('stage.modeDirect'), icon: Clapperboard, color: 'text-rose-400', desc: t('stage.modeDirectHint') },
+    { mode: 'whisper', label: t('stage.modeWhisper'), icon: Ear, color: 'text-emerald-400', desc: t('stage.modeWhisperHint') },
   ] as const;
+
+  const placeholders: Record<string, TranslationKey> = {
+    say: 'stage.placeholderSay',
+    do: 'stage.placeholderDo',
+    think: 'stage.placeholderThink',
+    direct: 'stage.placeholderDirect',
+    whisper: 'stage.placeholderWhisper',
+  };
 
   return (
     <div className="bg-slate-900/95 border-t border-slate-800 p-3 sm:p-4 backdrop-blur-md space-y-3">
@@ -81,7 +91,7 @@ export const TurnControlBar: React.FC = () => {
         <div className="flex flex-wrap items-center gap-2 pt-0.5 pb-1">
           <span className="text-xs font-bold text-slate-400 flex items-center gap-1 uppercase tracking-wider">
             <Sparkles className="w-3 h-3 text-accent-400" />
-            Vorschläge:
+            {t('stage.suggestions')}
           </span>
           {choices.map((choice, idx) => {
             const isCombat = choice.action_type === 'do';
@@ -115,7 +125,7 @@ export const TurnControlBar: React.FC = () => {
       {/* 2. Mode Selector & Next Actor dropdown */}
       <div className="flex flex-wrap items-center justify-between gap-2 text-xs">
         {/* Modes */}
-        <div className="flex items-center gap-1 p-1 rounded-xl bg-app/80 border border-slate-800">
+        <div role="group" aria-label={t('stage.modeLabel')} className="flex items-center gap-1 p-1 rounded-xl bg-app/80 border border-slate-800">
           {modeButtons.map(({ mode, label, icon: Icon, color, desc }) => {
             const isActive = stageTurnMode === mode;
             return (
@@ -123,7 +133,8 @@ export const TurnControlBar: React.FC = () => {
                 key={mode}
                 onClick={() => setStageTurnMode(mode)}
                 title={desc}
-                className={`flex items-center gap-1.5 px-2.5 py-1 rounded-lg transition-all font-semibold ${
+                aria-pressed={isActive}
+                className={`flex items-center gap-1.5 px-2.5 py-1 rounded-lg transition-all font-semibold whitespace-nowrap outline-hidden focus-visible:ring-2 focus-visible:ring-accent-400 ${
                   isActive
                     ? 'bg-accent-600 text-white shadow-md'
                     : 'text-slate-400 hover:text-slate-200 hover:bg-slate-900'
@@ -143,7 +154,8 @@ export const TurnControlBar: React.FC = () => {
               <Ear className="w-3.5 h-3.5 text-emerald-400" />
               <input
                 type="text"
-                placeholder="Ziel (z. B. Ayu)..."
+                placeholder={t('stage.whisperTarget')}
+                aria-label={t('stage.whisperTarget')}
                 value={stageWhisperTarget}
                 onChange={(e) => setStageWhisperTarget(e.target.value)}
                 className="bg-transparent text-xs text-emerald-300 focus:outline-hidden w-28"
@@ -155,14 +167,15 @@ export const TurnControlBar: React.FC = () => {
             <div className="flex items-center gap-1.5 bg-app px-2.5 py-1 rounded-lg border border-slate-800">
               <Users className="w-3.5 h-3.5 text-slate-400" />
               <select
+                aria-label={t('stage.nextSpeaker')}
                 value={stageForceActor}
                 onChange={(e) => setStageForceActor(e.target.value)}
                 className="bg-transparent text-xs text-slate-300 focus:outline-hidden"
               >
-                <option value="">Nächster Sprecher: Automatisch</option>
+                <option value="">{t('stage.nextAuto')}</option>
                 {party.map((p) => (
                   <option key={p} value={p}>
-                    Nächster: {p}
+                    {t('stage.nextActor', { name: p })}
                   </option>
                 ))}
               </select>
@@ -174,10 +187,11 @@ export const TurnControlBar: React.FC = () => {
             onClick={() => undoStageTurn()}
             disabled={isProcessingStageTurn}
             className="flex items-center gap-1 px-2.5 py-1 rounded-lg bg-slate-800/80 hover:bg-slate-700 text-slate-300 hover:text-white border border-slate-700 transition disabled:opacity-50"
-            title="Letzten Zug zurücknehmen (Snapshot Undo)"
+            title={t('stage.undoHint')}
+            aria-label={t('stage.undoHint')}
           >
             <RotateCcw className="w-3.5 h-3.5" />
-            <span className="hidden sm:inline">Rückgängig</span>
+            <span className="hidden sm:inline">{t('stage.undo')}</span>
           </button>
         </div>
       </div>
@@ -189,17 +203,8 @@ export const TurnControlBar: React.FC = () => {
           value={input}
           onChange={(e) => setInput(e.target.value)}
           onKeyDown={handleKeyDown}
-          placeholder={
-            stageTurnMode === 'say'
-              ? 'Was sagst du? (Enter zum Senden, Shift+Enter für neue Zeile)'
-              : stageTurnMode === 'do'
-              ? 'Was tust du? (z.B. "Ich untersuche das versiegelte Tor auf Fallen")'
-              : stageTurnMode === 'think'
-              ? 'Deine geheimen Gedanken...'
-              : stageTurnMode === 'direct'
-              ? 'Anweisung an den Spielleiter (z.B. "Lass ein Gewitter aufziehen")'
-              : 'Flüstere heimlich deinem Gefährten zu...'
-          }
+          placeholder={t(placeholders[stageTurnMode] ?? 'stage.placeholderSay')}
+          aria-label={t('stage.inputLabel')}
           disabled={isProcessingStageTurn}
           className="flex-1 bg-app/90 border border-slate-700/80 rounded-xl px-3.5 py-2.5 text-xs text-slate-100 placeholder-slate-500 focus:outline-hidden focus:border-accent-500 resize-none shadow-inner"
         />
@@ -207,6 +212,7 @@ export const TurnControlBar: React.FC = () => {
         <button
           type="submit"
           disabled={isProcessingStageTurn || !input.trim()}
+          aria-label={t('stage.sendTurn')}
           className="h-10 px-4 rounded-xl bg-accent-600 hover:bg-accent-500 text-white font-semibold flex items-center justify-center gap-1.5 shadow-lg shadow-accent-950/50 transition disabled:opacity-40 disabled:hover:bg-accent-600"
         >
           {isProcessingStageTurn ? (
@@ -214,7 +220,7 @@ export const TurnControlBar: React.FC = () => {
           ) : (
             <>
               <Send className="w-4 h-4" />
-              <span className="hidden sm:inline text-xs">Zug senden</span>
+              <span className="hidden sm:inline text-xs">{t('stage.sendTurn')}</span>
             </>
           )}
         </button>

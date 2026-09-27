@@ -2,8 +2,10 @@ import React, { useState } from 'react';
 import { useAppStore } from '../../store/useAppStore';
 import { Swords, Shield, Heart, Zap, SkipForward, Play, Square, Plus, Crosshair, Wind, DoorOpen, Hourglass } from 'lucide-react';
 import { ModalOverlay } from '../ui/ModalOverlay';
+import { translate, useTranslation, type TranslationKey } from '../../i18n';
 
 export const EncounterTracker: React.FC = () => {
+  const { t } = useTranslation();
   const {
     stageState,
     startEncounter,
@@ -18,7 +20,7 @@ export const EncounterTracker: React.FC = () => {
 
   const encounter = stageState?.combat;
   const [selectedCombatantId, setSelectedCombatantId] = useState<string | null>(null);
-  const [newCondName, setNewCondName] = useState('Gelähmt');
+  const [newCondName, setNewCondName] = useState(() => translate('stage.conditionDefault'));
   const [newCondRounds, setNewCondRounds] = useState(2);
   const [showCondModal, setShowCondModal] = useState(false);
 
@@ -45,16 +47,14 @@ export const EncounterTracker: React.FC = () => {
           </div>
           <div>
             <h3 className="text-sm font-bold text-slate-100 flex items-center gap-2">
-              Taktischer Kampfmodus
+              {t('stage.combatTitle')}
               {encounter.is_active && (
-                <span className="px-2 py-0.5 rounded-full bg-rose-950 border border-rose-500/50 text-rose-300 text-xs animate-pulse">
-                  Runde {encounter.round}
+                <span className="px-2 py-0.5 rounded-full bg-rose-950 border border-rose-500/50 text-rose-300 text-xs animate-pulse motion-reduce:animate-none">
+                  {t('stage.round', { round: encounter.round })}
                 </span>
               )}
             </h3>
-            <p className="text-xs text-slate-400">
-              Initiativleiste, Hitpoints, Stress & Statuszustände
-            </p>
+            <p className="text-xs text-slate-400">{t('stage.combatIntro')}</p>
           </div>
         </div>
 
@@ -63,34 +63,34 @@ export const EncounterTracker: React.FC = () => {
           {encounter.is_active ? (
             <>
               <button
-                onClick={() => runStageTurn('[Angriff] Ich greife mein Ziel an.', 'do')}
+                onClick={() => runStageTurn(translate('stage.attackAction'), 'do')}
                 disabled={isProcessingStageTurn}
                 className="px-2.5 py-1.5 rounded-lg bg-rose-950/60 hover:bg-rose-900 text-rose-200 text-xs font-semibold flex items-center gap-1 border border-rose-500/30 disabled:opacity-40"
               >
-                <Crosshair className="w-3.5 h-3.5" /> Angriff
+                <Crosshair className="w-3.5 h-3.5" /> {t('stage.attack')}
               </button>
               <button
-                onClick={() => runStageTurn('[Ausweichen] Ich gehe in Deckung und bereite mich auf den Angriff vor.', 'do')}
+                onClick={() => runStageTurn(translate('stage.dodgeAction'), 'do')}
                 disabled={isProcessingStageTurn}
                 className="px-2.5 py-1.5 rounded-lg bg-cyan-950/60 hover:bg-cyan-900 text-cyan-200 text-xs font-semibold flex items-center gap-1 border border-cyan-500/30 disabled:opacity-40"
               >
-                <Wind className="w-3.5 h-3.5" /> Ausweichen
+                <Wind className="w-3.5 h-3.5" /> {t('stage.dodge')}
               </button>
               <button
-                onClick={() => runStageTurn('[Flucht] Ich versuche, aus dem Kampf zu entkommen.', 'do')}
+                onClick={() => runStageTurn(translate('stage.fleeAction'), 'do')}
                 disabled={isProcessingStageTurn}
                 className="px-2.5 py-1.5 rounded-lg bg-amber-950/60 hover:bg-amber-900 text-amber-200 text-xs font-semibold flex items-center gap-1 border border-amber-500/30 disabled:opacity-40"
               >
-                <DoorOpen className="w-3.5 h-3.5" /> Flucht
+                <DoorOpen className="w-3.5 h-3.5" /> {t('stage.flee')}
               </button>
               {isPlayerTurn && (
                 <button
                   onClick={() => delayEncounterTurn()}
                   disabled={isProcessingStageTurn}
-                  title="Eigenen Zug um einen Platz nach hinten verschieben"
+                  title={t('stage.delayHint')}
                   className="px-2.5 py-1.5 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-200 text-xs font-semibold flex items-center gap-1 border border-slate-600 disabled:opacity-40"
                 >
-                  <Hourglass className="w-3.5 h-3.5" /> Verschieben
+                  <Hourglass className="w-3.5 h-3.5" /> {t('stage.delay')}
                 </button>
               )}
               <button
@@ -98,14 +98,14 @@ export const EncounterTracker: React.FC = () => {
                 className="px-3 py-1.5 rounded-lg bg-accent-600 hover:bg-accent-500 text-white text-xs font-semibold flex items-center gap-1.5 shadow transition active:scale-95"
               >
                 <SkipForward className="w-3.5 h-3.5" />
-                Nächster Zug
+                {t('stage.nextTurn')}
               </button>
               <button
                 onClick={() => endEncounter()}
                 className="px-3 py-1.5 rounded-lg bg-slate-800 hover:bg-slate-700 text-rose-300 text-xs font-semibold flex items-center gap-1.5 border border-rose-500/30 transition"
               >
                 <Square className="w-3.5 h-3.5" />
-                Kampf beenden
+                {t('stage.endCombat')}
               </button>
             </>
           ) : (
@@ -114,7 +114,7 @@ export const EncounterTracker: React.FC = () => {
               className="px-4 py-2 rounded-xl bg-linear-to-r from-rose-600 to-amber-600 hover:from-rose-500 hover:to-amber-500 text-white text-xs font-bold flex items-center gap-2 shadow-lg shadow-rose-900/30 transition active:scale-95"
             >
               <Play className="w-4 h-4 fill-white" />
-              Kampfbegegnung starten
+              {t('stage.startCombat')}
             </button>
           )}
         </div>
@@ -155,11 +155,11 @@ export const EncounterTracker: React.FC = () => {
                     <span
                       className={`text-[11px] uppercase font-mono px-2 py-0.5 rounded-full border ${roleBadgeColor}`}
                     >
-                      {c.role}
+                      {t(`stage.role.${c.role}` as TranslationKey)}
                     </span>
                   </h4>
                   <span className="text-xs font-mono text-slate-400">
-                    Ini: <strong>{c.initiative}</strong>
+                    {t('stage.initiative', { value: c.initiative })}
                   </span>
                 </div>
 
@@ -167,21 +167,24 @@ export const EncounterTracker: React.FC = () => {
                 <div className="flex items-center gap-1.5 text-xs">
                   <button
                     onClick={() => applyCombatantDelta(c.id, -5, 0)}
-                    title="5 Schaden zufügen"
+                    title={t('stage.damage', { name: c.name })}
+                    aria-label={t('stage.damage', { name: c.name })}
                     className="px-2 py-0.5 rounded bg-rose-900/40 hover:bg-rose-800 text-rose-300 border border-rose-700/50 font-mono text-xs"
                   >
                     -5 HP
                   </button>
                   <button
                     onClick={() => applyCombatantDelta(c.id, 5, 0)}
-                    title="5 HP heilen"
+                    title={t('stage.heal', { name: c.name })}
+                    aria-label={t('stage.heal', { name: c.name })}
                     className="px-2 py-0.5 rounded bg-emerald-900/40 hover:bg-emerald-800 text-emerald-300 border border-emerald-700/50 font-mono text-xs"
                   >
                     +5 HP
                   </button>
                   <button
                     onClick={() => applyCombatantDelta(c.id, 0, 10)}
-                    title="10 Stress hinzufügen"
+                    title={t('stage.addStress', { name: c.name })}
+                    aria-label={t('stage.addStress', { name: c.name })}
                     className="px-2 py-0.5 rounded bg-amber-900/40 hover:bg-amber-800 text-amber-300 border border-amber-700/50 font-mono text-xs"
                   >
                     +10 Stress
@@ -191,10 +194,11 @@ export const EncounterTracker: React.FC = () => {
                       setSelectedCombatantId(c.id);
                       setShowCondModal(true);
                     }}
-                    title="Zustand hinzufügen"
+                    title={t('stage.addConditionFor', { name: c.name })}
+                    aria-label={t('stage.addConditionFor', { name: c.name })}
                     className="px-2 py-0.5 rounded bg-slate-800 hover:bg-slate-700 text-slate-300 border border-slate-700 font-mono text-xs flex items-center gap-0.5"
                   >
-                    <Plus className="w-3 h-3" /> Zustand
+                    <Plus className="w-3 h-3" /> {t('stage.condition')}
                   </button>
                 </div>
               </div>
@@ -206,7 +210,7 @@ export const EncounterTracker: React.FC = () => {
                   <div className="flex justify-between text-xs">
                     <span className="text-slate-400 flex items-center gap-1">
                       <Heart className="w-3 h-3 text-rose-400 fill-rose-400/40" />
-                      Trefferpunkte (HP)
+                      {t('stage.hitPoints')}
                     </span>
                     <span className="font-mono text-slate-200">
                       {c.hp} / {c.max_hp}
@@ -231,7 +235,7 @@ export const EncounterTracker: React.FC = () => {
                   <div className="flex justify-between text-xs">
                     <span className="text-slate-400 flex items-center gap-1">
                       <Zap className="w-3 h-3 text-cyan-400" />
-                      Stress / Willenskraft
+                      {t('stage.stressWill')}
                     </span>
                     <span className="font-mono text-slate-200">
                       {c.stress} / {c.max_stress}
@@ -255,7 +259,7 @@ export const EncounterTracker: React.FC = () => {
                       className="px-2 py-0.5 rounded bg-accent-900/40 border border-accent-500/30 text-accent-300 text-[11px] font-medium flex items-center gap-1"
                     >
                       <Shield className="w-3 h-3 text-accent-400" />
-                      {cond.name} ({cond.rounds_remaining} Rd.)
+                      {t('stage.conditionShort', { name: cond.name, rounds: cond.rounds_remaining })}
                     </span>
                   ))}
                 </div>
@@ -269,7 +273,7 @@ export const EncounterTracker: React.FC = () => {
       {encounter.combat_log.length > 0 && (
         <div className="p-3 rounded-xl bg-app/80 border border-slate-800 space-y-1">
           <div className="text-xs font-semibold text-slate-400 uppercase tracking-wider">
-            Kampfprotokoll
+            {t('stage.combatLog')}
           </div>
           <div className="max-h-28 overflow-y-auto space-y-1 text-xs font-mono text-slate-300">
             {encounter.combat_log
@@ -286,22 +290,25 @@ export const EncounterTracker: React.FC = () => {
 
       {/* Add Condition Modal */}
       {showCondModal && (
-        <ModalOverlay onClose={() => setShowCondModal(false)} className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm p-4">
+        <ModalOverlay onClose={() => setShowCondModal(false)} aria-labelledby="add-condition-title" className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm p-4">
           <div className="w-full max-w-sm p-4 rounded-2xl bg-slate-900 border border-slate-700 shadow-2xl space-y-3">
-            <h4 className="text-xs font-bold text-slate-100">Zustand hinzufügen</h4>
+            <h4 id="add-condition-title" className="text-xs font-bold text-slate-100">{t('stage.addCondition')}</h4>
             <div>
-              <label className="text-xs text-slate-400 block mb-1">Name des Zustands</label>
+              <label htmlFor="condition-name" className="text-xs text-slate-400 block mb-1">{t('stage.conditionName')}</label>
               <input
+                id="condition-name"
+                data-autofocus
                 type="text"
                 value={newCondName}
                 onChange={(e) => setNewCondName(e.target.value)}
-                placeholder="Vergiftet, Gelähmt, Gesegnet..."
+                placeholder={t('stage.conditionPlaceholder')}
                 className="w-full px-3 py-1.5 bg-app border border-slate-700 rounded-lg text-xs text-slate-100 focus:outline-hidden focus:border-accent-500"
               />
             </div>
             <div>
-              <label className="text-xs text-slate-400 block mb-1">Dauer (Runden)</label>
+              <label htmlFor="condition-rounds" className="text-xs text-slate-400 block mb-1">{t('stage.conditionDuration')}</label>
               <input
+                id="condition-rounds"
                 type="number"
                 min={1}
                 max={10}
@@ -315,13 +322,13 @@ export const EncounterTracker: React.FC = () => {
                 onClick={() => setShowCondModal(false)}
                 className="px-3 py-1.5 rounded-lg bg-slate-800 text-slate-300 text-xs"
               >
-                Abbrechen
+                {t('common.cancel')}
               </button>
               <button
                 onClick={handleAddCondition}
                 className="px-3 py-1.5 rounded-lg bg-accent-600 hover:bg-accent-500 text-white text-xs font-semibold"
               >
-                Hinzufügen
+                {t('stage.add')}
               </button>
             </div>
           </div>

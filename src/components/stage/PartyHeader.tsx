@@ -1,8 +1,10 @@
 import React from 'react';
 import { useAppStore } from '../../store/useAppStore';
 import { Heart, Zap, Flame, Shield, User, Coffee } from 'lucide-react';
+import { useTranslation } from '../../i18n';
 
 export const PartyHeader: React.FC = () => {
+  const { t } = useTranslation();
   const { stageState, restStageParty, isProcessingStageTurn } = useAppStore();
 
   if (!stageState) return null;
@@ -48,7 +50,7 @@ export const PartyHeader: React.FC = () => {
         <div className="flex flex-wrap items-center gap-3">
           <div className="text-xs font-bold text-slate-400 uppercase tracking-wider flex items-center gap-1.5 mr-1">
             <Shield className="w-3.5 h-3.5 text-accent-400" />
-            Gruppe:
+            {t('stage.party')}
           </div>
 
           {displayParty.map((member) => {
@@ -81,7 +83,14 @@ export const PartyHeader: React.FC = () => {
                   </div>
 
                   {/* HP Bar */}
-                  <div className="flex items-center gap-1.5">
+                  <div
+                    className="flex items-center gap-1.5"
+                    role="meter"
+                    aria-label={t('stage.hp', { current: member.hp, max: member.max_hp })}
+                    aria-valuenow={member.hp}
+                    aria-valuemin={0}
+                    aria-valuemax={member.max_hp}
+                  >
                     <Heart className="w-2.5 h-2.5 text-rose-400" />
                     <div className="w-full bg-slate-800 rounded-full h-1.5 overflow-hidden">
                       <div
@@ -98,7 +107,14 @@ export const PartyHeader: React.FC = () => {
                   </div>
 
                   {/* Stress Bar */}
-                  <div className="flex items-center gap-1.5">
+                  <div
+                    className="flex items-center gap-1.5"
+                    role="meter"
+                    aria-label={t('stage.stress', { current: member.stress, max: member.max_stress })}
+                    aria-valuenow={member.stress}
+                    aria-valuemin={0}
+                    aria-valuemax={member.max_stress}
+                  >
                     <Zap className="w-2.5 h-2.5 text-accent-400" />
                     <div className="w-full bg-slate-800 rounded-full h-1 overflow-hidden">
                       <div
@@ -116,7 +132,7 @@ export const PartyHeader: React.FC = () => {
                       <span
                         key={idx}
                         className="px-1.5 py-0.2 rounded bg-amber-950/80 border border-amber-500/30 text-[11px] text-amber-300 font-medium"
-                        title={`${cond.name} (${cond.rounds_remaining} Runden)`}
+                        title={t('stage.conditionRounds', { name: cond.name, rounds: cond.rounds_remaining })}
                       >
                         {cond.name}
                       </span>
@@ -134,20 +150,20 @@ export const PartyHeader: React.FC = () => {
             onClick={() => restStageParty('short')}
             disabled={isProcessingStageTurn}
             className="flex items-center gap-1.5 px-3 py-1 rounded-lg bg-slate-800/80 hover:bg-slate-700 text-slate-200 text-xs font-medium border border-slate-700/80 transition disabled:opacity-50"
-            title="Kurze Rast: +15 LP, -10 Stress"
+            title={t('stage.shortRestHint')}
           >
             <Coffee className="w-3.5 h-3.5 text-amber-400" />
-            <span>Kurze Rast</span>
+            <span className="whitespace-nowrap">{t('stage.shortRest')}</span>
           </button>
 
           <button
             onClick={() => restStageParty('long')}
             disabled={isProcessingStageTurn}
             className="flex items-center gap-1.5 px-3 py-1 rounded-lg bg-amber-950/40 hover:bg-amber-900/60 text-amber-200 text-xs font-medium border border-amber-600/40 transition disabled:opacity-50"
-            title="Lange Rast (Lagerfeuer): +40 LP, -30 Stress, Tageszeit schreitet fort"
+            title={t('stage.longRestHint')}
           >
             <Flame className="w-3.5 h-3.5 text-amber-400" />
-            <span>Lange Rast</span>
+            <span className="whitespace-nowrap">{t('stage.longRest')}</span>
           </button>
         </div>
       </div>

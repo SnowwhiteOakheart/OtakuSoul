@@ -32,8 +32,11 @@ import {
 import { api } from '../../services/api';
 import { SceneState } from '../../types';
 import { ModalOverlay } from '../ui/ModalOverlay';
+import { translate, useTranslation } from '../../i18n';
+import { confirmDialog } from '../ui/feedback';
 
 export const StageView: React.FC = () => {
+  const { t } = useTranslation();
   const {
     stageState,
     fetchStageState,
@@ -97,7 +100,7 @@ export const StageView: React.FC = () => {
 
   // New Clock Modal
   const [showClockModal, setShowClockModal] = useState(false);
-  const [newClockName, setNewClockName] = useState('Verstärkung naht');
+  const [newClockName, setNewClockName] = useState(() => translate('stage.clockNameDefault'));
   const [newClockMax, setNewClockMax] = useState(6);
   const [newClockType, setNewClockType] = useState<'danger' | 'progress' | 'mystery'>('danger');
 
@@ -195,7 +198,7 @@ export const StageView: React.FC = () => {
           <div>
             <div className="flex items-center gap-2">
               <h2 className="text-sm font-bold text-slate-100 truncate max-w-[220px] sm:max-w-md">
-                {currentScene?.title || 'Soul Stage: KI-Game-Master'}
+                {currentScene?.title || t('stage.defaultTitle')}
               </h2>
               {currentScene?.gm_tone && (
                 <span className="text-[11px] px-2 py-0.2 rounded-full bg-accent-950/80 border border-accent-500/30 text-accent-300 font-mono">
@@ -206,52 +209,58 @@ export const StageView: React.FC = () => {
             <div className="flex items-center gap-2 text-xs text-slate-400">
               <span className="flex items-center gap-1 truncate max-w-[180px]">
                 <MapPin className="w-3 h-3 text-slate-500" />
-                {world?.location || currentScene?.starting_location || 'Unbekannter Ort'}
+                {world?.location || currentScene?.starting_location || t('stage.unknownLocation')}
               </span>
               <span>•</span>
               <span className="text-accent-300">
-                {world?.time_of_day || currentScene?.time_of_day || 'Dämmerung'}
+                {world?.time_of_day || currentScene?.time_of_day || t('stage.defaultTime')}
               </span>
             </div>
           </div>
         </div>
 
         {/* Center: Tabs Switcher (Adventure vs Tactics) */}
-        <div className="flex items-center gap-1 p-1 rounded-xl bg-app/80 border border-slate-800 text-xs">
+        <div role="tablist" aria-label={t('stage.views')} className="flex items-center gap-1 p-1 rounded-xl bg-app/80 border border-slate-800 text-xs">
           <button
+            role="tab"
+            aria-selected={activeTab === 'adventure'}
             onClick={() => setActiveTab('adventure')}
-            className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg font-bold transition ${
+            className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg font-bold transition whitespace-nowrap outline-hidden focus-visible:ring-2 focus-visible:ring-accent-400 ${
               activeTab === 'adventure'
                 ? 'bg-accent-600 text-white shadow-md'
                 : 'text-slate-400 hover:text-slate-200'
             }`}
           >
             <Scroll className="w-3.5 h-3.5" />
-            <span>Abenteuer & Spielleiter</span>
+            <span>{t('stage.tabAdventure')}</span>
           </button>
 
           <button
+            role="tab"
+            aria-selected={activeTab === 'tactics'}
             onClick={() => setActiveTab('tactics')}
-            className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg font-bold transition ${
+            className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg font-bold transition whitespace-nowrap outline-hidden focus-visible:ring-2 focus-visible:ring-accent-400 ${
               activeTab === 'tactics'
                 ? 'bg-accent-600 text-white shadow-md'
                 : 'text-slate-400 hover:text-slate-200'
             }`}
           >
             <Swords className="w-3.5 h-3.5" />
-            <span>Taktik, Clocks & Würfel</span>
+            <span>{t('stage.tabTactics')}</span>
           </button>
 
           <button
+            role="tab"
+            aria-selected={activeTab === 'campaign'}
             onClick={() => setActiveTab('campaign')}
-            className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg font-bold transition ${
+            className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg font-bold transition whitespace-nowrap outline-hidden focus-visible:ring-2 focus-visible:ring-accent-400 ${
               activeTab === 'campaign'
                 ? 'bg-accent-600 text-white shadow-md'
                 : 'text-slate-400 hover:text-slate-200'
             }`}
           >
             <Backpack className="w-3.5 h-3.5" />
-            <span>Kampagne & Inventar</span>
+            <span>{t('stage.tabCampaign')}</span>
           </button>
         </div>
 
@@ -263,10 +272,17 @@ export const StageView: React.FC = () => {
                 ? 'bg-accent-950/60 border-accent-500/40 text-accent-200'
                 : 'bg-app border-slate-700 text-slate-300'
             }`}
-            title="Aktueller Zug"
+            title={t('stage.currentTurn')}
+            aria-live="polite"
           >
             {isProcessingStageTurn ? <LoaderCircle className="w-3.5 h-3.5 animate-spin" /> : <UserRound className="w-3.5 h-3.5 text-emerald-400" />}
-            <span className="max-w-28 truncate">{isProcessingStageTurn ? 'Spielleiter plant …' : `${stageState?.current_turn_actor === 'PLAYER' ? 'Du' : stageState?.current_turn_actor || 'Du'} bist am Zug`}</span>
+            <span className="max-w-32 truncate">
+              {isProcessingStageTurn
+                ? t('stage.gmPlanning')
+                : !stageState?.current_turn_actor || stageState.current_turn_actor === 'PLAYER'
+                  ? t('stage.yourTurn')
+                  : t('stage.actorTurn', { name: stageState.current_turn_actor })}
+            </span>
           </div>
 
           <button
@@ -274,12 +290,13 @@ export const StageView: React.FC = () => {
             className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-accent-600/20 hover:bg-accent-600/30 text-accent-300 text-xs font-semibold border border-accent-500/30 transition"
           >
             <BookOpen className="w-3.5 h-3.5" />
-            <span>Szenen-Lobby</span>
+            <span className="whitespace-nowrap">{t('stage.sceneLobby')}</span>
           </button>
 
           <button
             onClick={handleExportMarkdown}
-            title="Abenteuer-Protokoll als Markdown exportieren"
+            title={t('stage.exportMd')}
+            aria-label={t('stage.exportMd')}
             className="p-2 rounded-xl bg-slate-800/80 hover:bg-slate-700 text-slate-300 hover:text-white border border-slate-700 transition"
           >
             <Download className="w-4 h-4" />
@@ -287,7 +304,9 @@ export const StageView: React.FC = () => {
 
           <button
             onClick={handleToggleLockBg}
-            title={stageState?.definition.lock_bg ? 'Hintergrund gesperrt (GM wechselt Bild nicht)' : 'Hintergrund dynamisch (GM kann wechseln)'}
+            title={stageState?.definition.lock_bg ? t('stage.bgLocked') : t('stage.bgDynamic')}
+            aria-label={stageState?.definition.lock_bg ? t('stage.bgLocked') : t('stage.bgDynamic')}
+            aria-pressed={!!stageState?.definition.lock_bg}
             className={`p-2 rounded-xl border transition ${
               stageState?.definition.lock_bg
                 ? 'bg-amber-950/40 text-amber-300 border-amber-500/50 shadow-sm'
@@ -305,11 +324,12 @@ export const StageView: React.FC = () => {
                 ? 'bg-amber-600/30 text-amber-200 border-amber-500/50 shadow-md shadow-amber-950/40'
                 : 'bg-slate-800/80 text-slate-400 border-slate-700 hover:text-slate-200'
             }`}
-            title="Lagerfeuer-Synthesizer ein-/ausschalten"
+            title={t('stage.ambianceToggle')}
+            aria-pressed={isAmbianceActive}
           >
             <Radio className={`w-3.5 h-3.5 ${isAmbianceActive ? 'animate-spin' : ''}`} />
             <span className="hidden md:inline">
-              {isAmbianceActive ? 'Lagerfeuer Aktiv' : 'Atmosphäre'}
+              {isAmbianceActive ? t('stage.ambianceOn') : t('stage.ambiance')}
             </span>
           </button>
 
@@ -320,7 +340,8 @@ export const StageView: React.FC = () => {
                 ? 'bg-rose-950/40 text-rose-400 border-rose-500/40'
                 : 'bg-slate-800/80 text-slate-300 border-slate-700 hover:text-white'
             }`}
-            title={isMuted ? 'Ton aktivieren' : 'Stummschalten'}
+            title={isMuted ? t('stage.unmute') : t('stage.mute')}
+            aria-label={isMuted ? t('stage.unmute') : t('stage.mute')}
           >
             {isMuted ? <VolumeX className="w-4 h-4" /> : <Volume2 className="w-4 h-4" />}
           </button>
@@ -347,17 +368,17 @@ export const StageView: React.FC = () => {
             <div className="flex flex-wrap items-center justify-between gap-4 border-b border-slate-800/80 pb-3 mb-3">
               <div>
                 <h3 className="text-sm font-bold text-slate-100 flex items-center gap-2">
-                  Weltzustand & Atmosphäre
+                  {t('stage.worldTitle')}
                 </h3>
-                <p className="text-xs text-slate-400">
-                  Wetter, Zeit und Gefahrenstufe beeinflussen Proben und Story-Ereignisse
-                </p>
+                <p className="text-xs text-slate-400">{t('stage.worldIntro')}</p>
               </div>
 
               <button
                 onClick={() => setIsEditingWorld(!isEditingWorld)}
                 className="p-2 rounded-xl bg-slate-800/80 hover:bg-slate-700 text-slate-300 border border-slate-700 transition"
-                title="Weltzustand bearbeiten"
+                title={t('stage.editWorld')}
+                aria-label={t('stage.editWorld')}
+                aria-expanded={isEditingWorld}
               >
                 <Edit3 className="w-4 h-4" />
               </button>
@@ -367,14 +388,14 @@ export const StageView: React.FC = () => {
             {!isEditingWorld ? (
               <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3 text-xs">
                 <div className="p-3 rounded-xl bg-app/50 border border-slate-800/60">
-                  <span className="text-xs text-slate-400 block mb-0.5">Aktueller Ort</span>
+                  <span className="text-xs text-slate-400 block mb-0.5">{t('stage.currentLocation')}</span>
                   <span className="font-bold text-slate-200 line-clamp-1">
-                    {world?.location || 'Unbekannt'}
+                    {world?.location || t('stage.unknown')}
                   </span>
                 </div>
 
                 <div className="p-3 rounded-xl bg-app/50 border border-slate-800/60">
-                  <span className="text-xs text-slate-400 block mb-0.5">Tageszeit & Wetter</span>
+                  <span className="text-xs text-slate-400 block mb-0.5">{t('stage.timeWeather')}</span>
                   <span className="font-bold text-accent-200 line-clamp-1">
                     {world?.time_of_day} • {world?.weather}
                   </span>
@@ -382,8 +403,8 @@ export const StageView: React.FC = () => {
 
                 <div className="p-3 rounded-xl bg-app/50 border border-slate-800/60 flex items-center justify-between">
                   <div>
-                    <span className="text-xs text-slate-400 block mb-0.5">Gefahrenstufe</span>
-                    <span className="font-bold text-slate-200">Stufe {world?.danger_level} von 5</span>
+                    <span className="text-xs text-slate-400 block mb-0.5">{t('stage.dangerLevel')}</span>
+                    <span className="font-bold text-slate-200">{t('stage.dangerValue', { level: world?.danger_level ?? 1 })}</span>
                   </div>
                   <div className="flex gap-1 text-amber-500">
                     {Array.from({ length: world?.danger_level || 1 }).map((_, i) => (
@@ -393,7 +414,7 @@ export const StageView: React.FC = () => {
                 </div>
 
                 <div className="p-3 rounded-xl bg-app/50 border border-slate-800/60 sm:col-span-2 lg:col-span-1">
-                  <span className="text-xs text-slate-400 block mb-0.5">Aktuelle Quest / Fokus</span>
+                  <span className="text-xs text-slate-400 block mb-0.5">{t('stage.currentQuest')}</span>
                   <span className="font-semibold text-slate-300 line-clamp-1">
                     {world?.active_quest}
                   </span>
@@ -403,8 +424,9 @@ export const StageView: React.FC = () => {
               <div className="p-4 rounded-xl bg-app/80 border border-accent-500/40 space-y-3">
                 <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
                   <div>
-                    <label className="text-xs text-slate-400 block mb-1">Ort</label>
+                    <label htmlFor="world-location" className="text-xs text-slate-400 block mb-1">{t('stage.location')}</label>
                     <input
+                      id="world-location"
                       type="text"
                       value={locationInput}
                       onChange={(e) => setLocationInput(e.target.value)}
@@ -412,8 +434,9 @@ export const StageView: React.FC = () => {
                     />
                   </div>
                   <div>
-                    <label className="text-xs text-slate-400 block mb-1">Tageszeit</label>
+                    <label htmlFor="world-time" className="text-xs text-slate-400 block mb-1">{t('stage.timeOfDay')}</label>
                     <input
+                      id="world-time"
                       type="text"
                       value={timeInput}
                       onChange={(e) => setTimeInput(e.target.value)}
@@ -421,8 +444,9 @@ export const StageView: React.FC = () => {
                     />
                   </div>
                   <div>
-                    <label className="text-xs text-slate-400 block mb-1">Wetter</label>
+                    <label htmlFor="world-weather" className="text-xs text-slate-400 block mb-1">{t('stage.weather')}</label>
                     <input
+                      id="world-weather"
                       type="text"
                       value={weatherInput}
                       onChange={(e) => setWeatherInput(e.target.value)}
@@ -433,8 +457,9 @@ export const StageView: React.FC = () => {
 
                 <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
                   <div className="sm:col-span-2">
-                    <label className="text-xs text-slate-400 block mb-1">Quest / Ziel</label>
+                    <label htmlFor="world-quest" className="text-xs text-slate-400 block mb-1">{t('stage.quest')}</label>
                     <input
+                      id="world-quest"
                       type="text"
                       value={questInput}
                       onChange={(e) => setQuestInput(e.target.value)}
@@ -442,10 +467,11 @@ export const StageView: React.FC = () => {
                     />
                   </div>
                   <div>
-                    <label className="text-xs text-slate-400 block mb-1">
-                      Gefahrenstufe (1-5)
+                    <label htmlFor="world-danger" className="text-xs text-slate-400 block mb-1">
+                      {t('stage.dangerInput')}
                     </label>
                     <input
+                      id="world-danger"
                       type="number"
                       min={1}
                       max={5}
@@ -461,14 +487,14 @@ export const StageView: React.FC = () => {
                     onClick={() => setIsEditingWorld(false)}
                     className="px-3 py-1.5 rounded-lg bg-slate-800 text-slate-300 text-xs"
                   >
-                    Abbrechen
+                    {t('common.cancel')}
                   </button>
                   <button
                     onClick={handleSaveWorld}
                     className="px-4 py-1.5 rounded-lg bg-accent-600 hover:bg-accent-500 text-white text-xs font-semibold flex items-center gap-1"
                   >
                     <Check className="w-3.5 h-3.5" />
-                    Übernehmen
+                    {t('stage.apply')}
                   </button>
                 </div>
               </div>
@@ -480,17 +506,15 @@ export const StageView: React.FC = () => {
             <div className="p-4 rounded-2xl bg-slate-900/80 border border-slate-800 shadow-xl space-y-4">
               <div className="flex items-center justify-between border-b border-slate-800 pb-3">
                 <div>
-                  <h3 className="text-sm font-bold text-slate-100">Kampagnen-Clocks (Spannungs-Uhren)</h3>
-                  <p className="text-xs text-slate-400">
-                    Klicke auf Segmente, um Fortschritt oder Bedrohung zu steigern
-                  </p>
+                  <h3 className="text-sm font-bold text-slate-100">{t('stage.clocksTitle')}</h3>
+                  <p className="text-xs text-slate-400">{t('stage.clocksIntro')}</p>
                 </div>
                 <button
                   onClick={() => setShowClockModal(true)}
                   className="px-3 py-1.5 rounded-lg bg-accent-600/30 hover:bg-accent-600/50 text-accent-200 text-xs font-semibold flex items-center gap-1.5 border border-accent-500/40 transition"
                 >
                   <Plus className="w-3.5 h-3.5" />
-                  Neue Uhr
+                  {t('stage.newClock')}
                 </button>
               </div>
 
@@ -500,13 +524,20 @@ export const StageView: React.FC = () => {
                     key={clock.id}
                     clock={clock}
                     onUpdateProgress={(id, val) => setClockProgress(id, val)}
-                    onDelete={(id) => deleteClock(id)}
+                    onDelete={async (id) => {
+                      const confirmed = await confirmDialog({
+                        title: translate('confirm.deleteClockTitle', { name: clock.name }),
+                        confirmLabel: translate('common.delete'),
+                        tone: 'danger',
+                      });
+                      if (confirmed) deleteClock(id);
+                    }}
                   />
                 ))}
 
                 {(!stageState?.clocks || stageState.clocks.length === 0) && (
                   <div className="col-span-full p-8 text-center text-xs text-slate-500 italic">
-                    Keine aktiven Kampagnen-Clocks vorhanden.
+                    {t('stage.noClocks')}
                   </div>
                 )}
               </div>
@@ -527,48 +558,53 @@ export const StageView: React.FC = () => {
 
       {/* Modal: New Clock */}
       {showClockModal && (
-        <ModalOverlay onClose={() => setShowClockModal(false)} className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm p-4">
+        <ModalOverlay onClose={() => setShowClockModal(false)} aria-labelledby="new-clock-title" className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm p-4">
           <form
             onSubmit={handleCreateClock}
             className="w-full max-w-sm p-4 rounded-2xl bg-slate-900 border border-slate-700 shadow-2xl space-y-3"
           >
-            <h4 className="text-xs font-bold text-slate-100">Neue Kampagnen-Uhr anlegen</h4>
+            <h4 id="new-clock-title" className="text-xs font-bold text-slate-100">{t('stage.createClockTitle')}</h4>
             <div>
-              <label className="text-xs text-slate-400 block mb-1">Name der Uhr</label>
+              <label htmlFor="clock-name" className="text-xs text-slate-400 block mb-1">{t('stage.clockName')}</label>
               <input
+                id="clock-name"
+                data-autofocus
                 type="text"
                 value={newClockName}
                 onChange={(e) => setNewClockName(e.target.value)}
-                placeholder="Verstärkung der Wachen, Giftwirkung..."
+                placeholder={t('stage.clockNamePlaceholder')}
                 className="w-full px-3 py-1.5 bg-app border border-slate-700 rounded-lg text-xs text-slate-100 focus:outline-hidden focus:border-accent-500"
               />
             </div>
 
             <div className="grid grid-cols-2 gap-2">
               <div>
-                <label className="text-xs text-slate-400 block mb-1">Segmente</label>
+                <label htmlFor="clock-segments" className="text-xs text-slate-400 block mb-1">{t('stage.segments')}</label>
                 <select
+                  id="clock-segments"
                   value={newClockMax}
                   onChange={(e) => setNewClockMax(Number(e.target.value))}
                   className="w-full px-2 py-1.5 bg-app border border-slate-700 rounded-lg text-xs text-slate-200 focus:outline-hidden"
                 >
-                  <option value={4}>4 Segmente</option>
-                  <option value={6}>6 Segmente</option>
-                  <option value={8}>8 Segmente</option>
-                  <option value={12}>12 Segmente</option>
+                  {[4, 6, 8, 12].map((count) => (
+                    <option key={count} value={count}>
+                      {t('stage.segmentCount', { count })}
+                    </option>
+                  ))}
                 </select>
               </div>
 
               <div>
-                <label className="text-xs text-slate-400 block mb-1">Typ</label>
+                <label htmlFor="clock-type" className="text-xs text-slate-400 block mb-1">{t('stage.clockType')}</label>
                 <select
+                  id="clock-type"
                   value={newClockType}
                   onChange={(e) => setNewClockType(e.target.value as any)}
                   className="w-full px-2 py-1.5 bg-app border border-slate-700 rounded-lg text-xs text-slate-200 focus:outline-hidden"
                 >
-                  <option value="danger">Gefahr (Rot)</option>
-                  <option value="progress">Fortschritt (Gold)</option>
-                  <option value="mystery">Mysterium (Lila)</option>
+                  <option value="danger">{t('stage.clockDanger')}</option>
+                  <option value="progress">{t('stage.clockProgress')}</option>
+                  <option value="mystery">{t('stage.clockMystery')}</option>
                 </select>
               </div>
             </div>
@@ -579,13 +615,13 @@ export const StageView: React.FC = () => {
                 onClick={() => setShowClockModal(false)}
                 className="px-3 py-1.5 rounded-lg bg-slate-800 text-slate-300 text-xs"
               >
-                Abbrechen
+                {t('common.cancel')}
               </button>
               <button
                 type="submit"
                 className="px-3 py-1.5 rounded-lg bg-accent-600 hover:bg-accent-500 text-white text-xs font-semibold"
               >
-                Uhr Erstellen
+                {t('stage.createClock')}
               </button>
             </div>
           </form>
