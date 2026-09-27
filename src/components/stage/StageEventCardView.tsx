@@ -62,7 +62,7 @@ export const StageEventCardView: React.FC<StageEventCardViewProps> = ({ card }) 
 
         {/* Dice breakdown & DC */}
         <div className="flex flex-wrap items-center justify-between gap-2 pt-2 border-t border-slate-800/60 text-xs">
-          <div className="flex items-center gap-1.5 text-slate-400 text-[11px]">
+          <div className="flex items-center gap-1.5 text-slate-400 text-xs">
             <span>Würfel:</span>
             <div className="flex gap-1">
               {card.rolls.map((roll, idx) => (
@@ -83,13 +83,13 @@ export const StageEventCardView: React.FC<StageEventCardViewProps> = ({ card }) 
 
           {hasDc && (
             <div className="flex items-center gap-1.5">
-              <span className="text-slate-400 text-[11px]">Schwierigkeit (DC {card.target_dc}):</span>
+              <span className="text-slate-400 text-xs">Schwierigkeit (DC {card.target_dc}):</span>
               {card.passed ? (
-                <span className="flex items-center gap-1 px-2 py-0.5 rounded-md bg-emerald-900/60 border border-emerald-500/40 text-emerald-300 font-bold text-[11px]">
+                <span className="flex items-center gap-1 px-2 py-0.5 rounded-md bg-emerald-900/60 border border-emerald-500/40 text-emerald-300 font-bold text-xs">
                   <CheckCircle2 className="w-3 h-3" /> Erfolg
                 </span>
               ) : (
-                <span className="flex items-center gap-1 px-2 py-0.5 rounded-md bg-rose-900/60 border border-rose-500/40 text-rose-300 font-bold text-[11px]">
+                <span className="flex items-center gap-1 px-2 py-0.5 rounded-md bg-rose-900/60 border border-rose-500/40 text-rose-300 font-bold text-xs">
                   <XCircle className="w-3 h-3" /> Fehlgeschlagen
                 </span>
               )}
@@ -127,7 +127,7 @@ export const StageEventCardView: React.FC<StageEventCardViewProps> = ({ card }) 
 
         <div className="w-full bg-slate-800 rounded-full h-2 overflow-hidden border border-slate-700/60">
           <div
-            className="bg-gradient-to-r from-amber-500 to-rose-500 h-2 rounded-full transition-all duration-500"
+            className="bg-linear-to-r from-amber-500 to-rose-500 h-2 rounded-full transition-all duration-500"
             style={{ width: `${progressPercent}%` }}
           />
         </div>
@@ -137,7 +137,7 @@ export const StageEventCardView: React.FC<StageEventCardViewProps> = ({ card }) 
 
   if (card.type === 'rest') {
     return (
-      <div className="my-2 p-3.5 rounded-xl bg-gradient-to-r from-amber-950/40 via-orange-950/30 to-slate-900/80 border border-amber-500/40 shadow-lg">
+      <div className="my-2 p-3.5 rounded-xl bg-linear-to-r from-amber-950/40 via-orange-950/30 to-slate-900/80 border border-amber-500/40 shadow-lg">
         <div className="flex items-center gap-2 mb-1.5">
           <div className="p-1.5 rounded-lg bg-amber-500/20 text-amber-300">
             <Flame className="w-4 h-4 animate-pulse" />
@@ -148,10 +148,10 @@ export const StageEventCardView: React.FC<StageEventCardViewProps> = ({ card }) 
         </div>
         <p className="text-xs text-slate-300 mb-2">{card.campfire_note}</p>
         <div className="flex flex-wrap gap-2 text-xs">
-          <span className="px-2 py-0.5 rounded bg-emerald-950/70 border border-emerald-500/40 text-emerald-300 font-semibold text-[11px]">
+          <span className="px-2 py-0.5 rounded bg-emerald-950/70 border border-emerald-500/40 text-emerald-300 font-semibold text-xs">
             +{card.recovered_hp} LP regeneriert
           </span>
-          <span className="px-2 py-0.5 rounded bg-accent-950/70 border border-accent-500/40 text-accent-300 font-semibold text-[11px]">
+          <span className="px-2 py-0.5 rounded bg-accent-950/70 border border-accent-500/40 text-accent-300 font-semibold text-xs">
             -{card.recovered_stress} Stress abgebaut
           </span>
         </div>
@@ -161,7 +161,7 @@ export const StageEventCardView: React.FC<StageEventCardViewProps> = ({ card }) 
 
   if (card.type === 'discovery') {
     return (
-      <div className="my-2 p-3.5 rounded-xl bg-gradient-to-r from-accent-950/40 to-slate-900 border border-accent-500/40 shadow-lg">
+      <div className="my-2 p-3.5 rounded-xl bg-linear-to-r from-accent-950/40 to-slate-900 border border-accent-500/40 shadow-lg">
         <div className="flex items-center gap-2 mb-1.5">
           <div className="p-1.5 rounded-lg bg-accent-500/20 text-accent-300">
             <Sparkles className="w-4 h-4" />
@@ -194,7 +194,7 @@ export const StageEventCardView: React.FC<StageEventCardViewProps> = ({ card }) 
           <PackageOpen className="w-4 h-4 text-emerald-400" />
           <span className="text-xs font-bold text-emerald-200">{card.item_name} benutzt</span>
         </div>
-        <div className="flex flex-wrap gap-2 text-[11px]">
+        <div className="flex flex-wrap gap-2 text-xs">
           {card.hp_recovered > 0 && <span className="px-2 py-0.5 rounded bg-emerald-900/60 text-emerald-200">+{card.hp_recovered} LP</span>}
           {card.stress_recovered > 0 && <span className="px-2 py-0.5 rounded bg-cyan-900/60 text-cyan-200">-{card.stress_recovered} Stress</span>}
           {card.cleared_condition && <span className="px-2 py-0.5 rounded bg-accent-900/60 text-accent-200">{card.cleared_condition} kuriert</span>}
@@ -205,12 +205,12 @@ export const StageEventCardView: React.FC<StageEventCardViewProps> = ({ card }) 
 
   if (card.type === 'bond_milestone') {
     return (
-      <div className="my-2 p-3.5 rounded-xl bg-gradient-to-r from-accent2-950/40 to-accent-950/30 border border-accent2-500/40 shadow-lg">
+      <div className="my-2 p-3.5 rounded-xl bg-linear-to-r from-accent2-950/40 to-accent-950/30 border border-accent2-500/40 shadow-lg">
         <div className="flex items-center gap-2">
           <HeartHandshake className="w-4 h-4 text-accent2-400" />
           <span className="text-xs font-bold text-accent2-200">Bindungs-Meilenstein mit {card.companion}</span>
         </div>
-        <p className="text-[11px] text-slate-300 mt-1">Nähe {card.affinity}/100 · Schwelle {card.milestone} erreicht</p>
+        <p className="text-xs text-slate-300 mt-1">Nähe {card.affinity}/100 · Schwelle {card.milestone} erreicht</p>
       </div>
     );
   }

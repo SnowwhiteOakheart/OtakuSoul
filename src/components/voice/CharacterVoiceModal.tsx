@@ -54,7 +54,7 @@ const DEFAULT_CONFIG: VoiceConfig = {
 
 type VoiceTab = 'tts' | 'stt' | 'rvc';
 
-const fieldClass = 'w-full bg-app border border-slate-800 rounded-lg p-2.5 text-sm text-slate-200 outline-none focus:border-accent-500/60';
+const fieldClass = 'w-full bg-app border border-slate-800 rounded-lg p-2.5 text-sm text-slate-200 outline-hidden focus:border-accent-500/60';
 const labelClass = 'block text-xs font-medium text-slate-300 mb-1';
 
 function signedValue(value: number, suffix: '%' | 'Hz') {
@@ -341,7 +341,7 @@ export function CharacterVoiceModal({ onClose }: CharacterVoiceModalProps) {
 
                       {kokoroProgress && (isInstallingKokoro || kokoroProgress.finished) && (
                         <div className="space-y-1.5">
-                          <div className="flex justify-between text-[11px] text-slate-400">
+                          <div className="flex justify-between text-xs text-slate-400">
                             <span className="truncate pr-3">{kokoroProgress.filename}</span>
                             <span>{kokoroProgress.file_index}/{kokoroProgress.total_files}</span>
                           </div>
@@ -368,7 +368,7 @@ export function CharacterVoiceModal({ onClose }: CharacterVoiceModalProps) {
                         </label>
                       </div>
 
-                      <p className="text-[11px] text-amber-300/80">Diese native Rust-Integration verwendet Kokoros englische G2P-Pipeline. Deutsch wird nur angenähert ausgesprochen; beste Qualität liefern englische Texte.</p>
+                      <p className="text-xs text-amber-300/80">Diese native Rust-Integration verwendet Kokoros englische G2P-Pipeline. Deutsch wird nur angenähert ausgesprochen; beste Qualität liefern englische Texte.</p>
                     </div>
                   )}
 
@@ -420,7 +420,7 @@ export function CharacterVoiceModal({ onClose }: CharacterVoiceModalProps) {
                   </div>
 
                   {draft.engine === 'kokoro' && (
-                    <p className="text-[11px] text-slate-500">Kokoro übernimmt die Geschwindigkeit nativ. Lautstärke wird im Audioplayer angewendet; die Tonhöhenregelung ist für Kokoro nicht verfügbar.</p>
+                    <p className="text-xs text-slate-500">Kokoro übernimmt die Geschwindigkeit nativ. Lautstärke wird im Audioplayer angewendet; die Tonhöhenregelung ist für Kokoro nicht verfügbar.</p>
                   )}
 
                   <div className="grid sm:grid-cols-2 gap-4">

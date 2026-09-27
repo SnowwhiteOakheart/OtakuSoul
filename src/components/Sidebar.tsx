@@ -125,7 +125,7 @@ export const Sidebar = () => {
                   aria-current={isActive ? 'page' : undefined}
                   aria-label={collapsed ? t(label) : undefined}
                   title={collapsed ? `${t(label)} (${shortcut})` : shortcut}
-                  className={`relative w-full flex items-center gap-3 rounded-lg px-2.5 py-2 text-sm whitespace-nowrap outline-none transition-colors focus-visible:ring-2 focus-visible:ring-accent-400 ${
+                  className={`relative w-full flex items-center gap-3 rounded-lg px-2.5 py-2 text-sm whitespace-nowrap outline-hidden transition-colors focus-visible:ring-2 focus-visible:ring-accent-400 ${
                     isActive
                       ? 'bg-accent-600/20 text-accent-200'
                       : 'text-slate-400 hover:bg-slate-800/70 hover:text-slate-100'
@@ -149,7 +149,7 @@ export const Sidebar = () => {
           onClick={toggleCollapsed}
           aria-label={collapsed ? t('nav.expand') : t('nav.collapse')}
           title={collapsed ? t('nav.expand') : t('nav.collapse')}
-          className="w-full flex items-center gap-3 rounded-lg px-2.5 py-2 text-sm text-slate-500 outline-none hover:bg-slate-800/70 hover:text-slate-200 focus-visible:ring-2 focus-visible:ring-accent-400"
+          className="w-full flex items-center gap-3 rounded-lg px-2.5 py-2 text-sm text-slate-500 outline-hidden hover:bg-slate-800/70 hover:text-slate-200 focus-visible:ring-2 focus-visible:ring-accent-400"
         >
           {collapsed ? <ChevronsRight className="w-[18px] h-[18px] shrink-0" /> : <ChevronsLeft className="w-[18px] h-[18px] shrink-0" />}
           {!collapsed && <span className="truncate">{t('nav.collapse')}</span>}

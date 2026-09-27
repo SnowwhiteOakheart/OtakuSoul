@@ -174,12 +174,32 @@
 
   body {
     background-color: var(--theme-bg);
-    @apply text-slate-100 font-sans antialiased overflow-hidden select-none;
+    @apply text-slate-100 font-sans antialiased overflow-hidden;
     margin: 0;
     padding: 0;
     width: 100vw;
     height: 100vh;
     transition: background-color 0.25s ease-in-out;
+  }
+
+  /* Chrome elements are not selectable; chat text, logs and error messages stay copyable. */
+  button,
+  [role='button'],
+  nav,
+  header,
+  label {
+    user-select: none;
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    *,
+    ::before,
+    ::after {
+      animation-duration: 0.01ms !important;
+      animation-iteration-count: 1 !important;
+      transition-duration: 0.01ms !important;
+      scroll-behavior: auto !important;
+    }
   }
 
   /* Custom sleek scrollbars */

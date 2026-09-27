@@ -218,7 +218,7 @@ export const CharacterLibraryView = () => {
 
           <button
             onClick={() => setCharacterWizardOpen(true)}
-            className="px-3 py-1.5 rounded-xl bg-gradient-to-r from-indigo-600/30 to-accent-600/30 hover:from-indigo-600/50 hover:to-accent-600/50 text-indigo-200 text-xs font-medium flex items-center gap-1.5 border border-indigo-500/40 transition-colors shadow-sm"
+            className="px-3 py-1.5 rounded-xl bg-linear-to-r from-indigo-600/30 to-accent-600/30 hover:from-indigo-600/50 hover:to-accent-600/50 text-indigo-200 text-xs font-medium flex items-center gap-1.5 border border-indigo-500/40 transition-colors shadow-sm"
             title="Geführter 5-Schritte KI-Charakterassistent"
           >
             <Sparkles className="w-3.5 h-3.5 text-indigo-400" />
@@ -256,7 +256,7 @@ export const CharacterLibraryView = () => {
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
             placeholder="Charaktere, Tags oder Eigenschaften suchen..."
-            className="w-full pl-9 pr-4 py-1.5 bg-slate-900 border border-slate-800 rounded-xl text-xs text-slate-200 placeholder-slate-500 focus:outline-none focus:border-accent-500 transition-colors"
+            className="w-full pl-9 pr-4 py-1.5 bg-slate-900 border border-slate-800 rounded-xl text-xs text-slate-200 placeholder-slate-500 focus:outline-hidden focus:border-accent-500 transition-colors"
           />
         </div>
 
@@ -285,7 +285,7 @@ export const CharacterLibraryView = () => {
           <div className="h-64 flex flex-col items-center justify-center text-center text-slate-500 text-xs">
             <Users className="w-12 h-12 text-slate-700 mb-3" />
             <p className="font-semibold text-slate-400">Keine Charaktere gefunden</p>
-            <p className="text-[11px] mt-1">
+            <p className="text-xs mt-1">
               Passe deine Suche an oder importiere eine neue Charakterkarte (.png / .json).
             </p>
           </div>
@@ -315,17 +315,17 @@ export const CharacterLibraryView = () => {
                         className="w-full h-full object-cover transition-transform duration-300 group-hover:scale-105"
                       />
                     ) : (
-                      <div className="w-20 h-20 rounded-full bg-gradient-to-tr from-accent-600 to-indigo-600 flex items-center justify-center text-white font-bold text-2xl shadow-inner">
+                      <div className="w-20 h-20 rounded-full bg-linear-to-tr from-accent-600 to-indigo-600 flex items-center justify-center text-white font-bold text-2xl shadow-inner">
                         {data.name.charAt(0)}
                       </div>
                     )}
 
                     {/* Gradient Overlay */}
-                    <div className="absolute inset-0 bg-gradient-to-t from-app via-app/20 to-transparent" />
+                    <div className="absolute inset-0 bg-linear-to-t from-app via-app/20 to-transparent" />
 
                     {/* Active Pill Badge */}
                     {isActive && (
-                      <div className="absolute top-2.5 left-2.5 px-2 py-0.5 rounded-full bg-emerald-500/90 text-app text-[10px] font-bold flex items-center gap-1 shadow-md">
+                      <div className="absolute top-2.5 left-2.5 px-2 py-0.5 rounded-full bg-emerald-500/90 text-app text-[11px] font-bold flex items-center gap-1 shadow-md">
                         <CheckCircle2 className="w-3 h-3" />
                         <span>Aktiv</span>
                       </div>
@@ -364,13 +364,13 @@ export const CharacterLibraryView = () => {
                       <div className="text-sm font-bold text-slate-100 line-clamp-1 group-hover:text-accent-300 transition-colors">
                         {data.name}
                       </div>
-                      <div className="text-[11px] text-slate-400 line-clamp-1">{title}</div>
+                      <div className="text-xs text-slate-400 line-clamp-1">{title}</div>
                     </div>
                   </div>
 
                   {/* Body Content */}
                   <div className="p-3.5 flex-1 flex flex-col justify-between gap-3 text-xs">
-                    <p className="text-slate-400 text-[11px] line-clamp-2">
+                    <p className="text-slate-400 text-xs line-clamp-2">
                       {data.description || data.personality || 'Keine Beschreibung angegeben.'}
                     </p>
 
@@ -380,7 +380,7 @@ export const CharacterLibraryView = () => {
                         {data.tags.slice(0, 3).map((t, idx) => (
                           <span
                             key={idx}
-                            className="text-[10px] px-1.5 py-0.5 rounded bg-slate-800 text-slate-400 border border-slate-700/60"
+                            className="text-[11px] px-1.5 py-0.5 rounded bg-slate-800 text-slate-400 border border-slate-700/60"
                           >
                             {t}
                           </span>

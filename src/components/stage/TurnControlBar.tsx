@@ -79,7 +79,7 @@ export const TurnControlBar: React.FC = () => {
       {/* 1. Tagged Choices Pills */}
       {choices.length > 0 && (
         <div className="flex flex-wrap items-center gap-2 pt-0.5 pb-1">
-          <span className="text-[11px] font-bold text-slate-400 flex items-center gap-1 uppercase tracking-wider">
+          <span className="text-xs font-bold text-slate-400 flex items-center gap-1 uppercase tracking-wider">
             <Sparkles className="w-3 h-3 text-accent-400" />
             Vorschläge:
           </span>
@@ -102,7 +102,7 @@ export const TurnControlBar: React.FC = () => {
               >
                 <span>{choice.text}</span>
                 {choice.badge && (
-                  <span className="text-[10px] px-1.5 py-0.2 rounded bg-slate-900 border border-slate-700 font-mono font-bold text-amber-300">
+                  <span className="text-[11px] px-1.5 py-0.2 rounded bg-slate-900 border border-slate-700 font-mono font-bold text-amber-300">
                     {choice.badge}
                   </span>
                 )}
@@ -146,7 +146,7 @@ export const TurnControlBar: React.FC = () => {
                 placeholder="Ziel (z. B. Ayu)..."
                 value={stageWhisperTarget}
                 onChange={(e) => setStageWhisperTarget(e.target.value)}
-                className="bg-transparent text-xs text-emerald-300 focus:outline-none w-28"
+                className="bg-transparent text-xs text-emerald-300 focus:outline-hidden w-28"
               />
             </div>
           )}
@@ -157,7 +157,7 @@ export const TurnControlBar: React.FC = () => {
               <select
                 value={stageForceActor}
                 onChange={(e) => setStageForceActor(e.target.value)}
-                className="bg-transparent text-xs text-slate-300 focus:outline-none"
+                className="bg-transparent text-xs text-slate-300 focus:outline-hidden"
               >
                 <option value="">Nächster Sprecher: Automatisch</option>
                 {party.map((p) => (
@@ -201,7 +201,7 @@ export const TurnControlBar: React.FC = () => {
               : 'Flüstere heimlich deinem Gefährten zu...'
           }
           disabled={isProcessingStageTurn}
-          className="flex-1 bg-app/90 border border-slate-700/80 rounded-xl px-3.5 py-2.5 text-xs text-slate-100 placeholder-slate-500 focus:outline-none focus:border-accent-500 resize-none shadow-inner"
+          className="flex-1 bg-app/90 border border-slate-700/80 rounded-xl px-3.5 py-2.5 text-xs text-slate-100 placeholder-slate-500 focus:outline-hidden focus:border-accent-500 resize-none shadow-inner"
         />
 
         <button

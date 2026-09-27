@@ -85,7 +85,7 @@ export const ModalOverlay: React.FC<ModalOverlayProps> = ({
       role="dialog"
       aria-modal="true"
       tabIndex={-1}
-      className={`outline-none ${className ?? ''}`}
+      className={`outline-hidden ${className ?? ''}`}
       onMouseDown={(event) => {
         if (closeOnBackdrop && event.target === event.currentTarget) onCloseRef.current?.();
         onMouseDown?.(event);

@@ -107,7 +107,7 @@ export const LogViewerModal: React.FC = () => {
             <div>
               <div className="flex items-center gap-2">
                 <h2 className="text-base font-bold text-slate-100">{t('logger.title')}</h2>
-                <span className="text-[10px] uppercase font-mono px-2 py-0.5 rounded-full bg-slate-800 text-slate-400 border border-slate-700">
+                <span className="text-[11px] uppercase font-mono px-2 py-0.5 rounded-full bg-slate-800 text-slate-400 border border-slate-700">
                   {logs.length} Einträge
                 </span>
               </div>
@@ -182,7 +182,7 @@ export const LogViewerModal: React.FC = () => {
                 value={searchTerm}
                 onChange={(e) => setSearchTerm(e.target.value)}
                 placeholder={t('logger.searchPlaceholder')}
-                className="bg-slate-900 border border-slate-700/80 rounded-lg pl-8 pr-3 py-1 text-xs text-slate-100 placeholder-slate-500 focus:outline-none focus:border-indigo-500 w-48 sm:w-64 font-sans"
+                className="bg-slate-900 border border-slate-700/80 rounded-lg pl-8 pr-3 py-1 text-xs text-slate-100 placeholder-slate-500 focus:outline-hidden focus:border-indigo-500 w-48 sm:w-64 font-sans"
               />
             </div>
 
@@ -199,7 +199,7 @@ export const LogViewerModal: React.FC = () => {
         </div>
 
         {/* Console Log Area */}
-        <div className="flex-1 overflow-y-auto p-4 bg-app font-mono text-[11px] leading-relaxed select-text space-y-1">
+        <div className="flex-1 overflow-y-auto p-4 bg-app font-mono text-xs leading-relaxed select-text space-y-1">
           {filteredLogs.length === 0 ? (
             <div className="py-20 text-center text-slate-600">{t('logger.noLogs')}</div>
           ) : (
@@ -224,7 +224,7 @@ export const LogViewerModal: React.FC = () => {
                   <span className="text-slate-600 select-none shrink-0">{log.timestamp}</span>
 
                   <span
-                    className={`font-bold shrink-0 px-1 rounded text-[10px] ${
+                    className={`font-bold shrink-0 px-1 rounded text-[11px] ${
                       isError
                         ? 'bg-rose-500/20 text-rose-400'
                         : isWarn

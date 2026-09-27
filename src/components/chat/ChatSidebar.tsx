@@ -197,7 +197,7 @@ export const ChatSidebar: React.FC<ChatSidebarProps> = ({ isOpen, onClose }) => 
                             if (e.key === 'Escape') setEditingChatId(null);
                           }}
                           autoFocus
-                          className="flex-1 bg-slate-900 border border-accent-500/60 rounded px-2 py-1 text-xs text-white focus:outline-none"
+                          className="flex-1 bg-slate-900 border border-accent-500/60 rounded px-2 py-1 text-xs text-white focus:outline-hidden"
                         />
                         <button
                           onClick={() => handleSaveRename(session.id)}
@@ -221,11 +221,11 @@ export const ChatSidebar: React.FC<ChatSidebarProps> = ({ isOpen, onClose }) => 
                           <span className="font-semibold text-xs truncate max-w-[170px]">
                             {session.title}
                           </span>
-                          <span className="text-[10px] bg-slate-800/80 px-1.5 py-0.5 rounded text-slate-400">
+                          <span className="text-[11px] bg-slate-800/80 px-1.5 py-0.5 rounded text-slate-400">
                             {session.message_count} {session.message_count === 1 ? 'Nachricht' : 'Nachrichten'}
                           </span>
                         </div>
-                        <div className="text-[10px] text-slate-500 flex items-center justify-between">
+                        <div className="text-[11px] text-slate-500 flex items-center justify-between">
                           <span>{new Date(session.updated_at * 1000).toLocaleDateString()}</span>
                           {session.author_note && (
                             <span className="text-accent-400 flex items-center gap-0.5">
@@ -320,7 +320,7 @@ export const ChatSidebar: React.FC<ChatSidebarProps> = ({ isOpen, onClose }) => 
               onChange={(e) => setAuthorNoteInput(e.target.value)}
               placeholder="z. B. [Ayu wirkt besonders nachdenklich und spricht leiser...]"
               rows={5}
-              className="w-full bg-app/80 border border-slate-700/80 rounded-xl p-3 text-xs text-slate-100 placeholder-slate-500 focus:outline-none focus:border-accent-500 resize-none"
+              className="w-full bg-app/80 border border-slate-700/80 rounded-xl p-3 text-xs text-slate-100 placeholder-slate-500 focus:outline-hidden focus:border-accent-500 resize-none"
             />
           </div>
 
@@ -337,7 +337,7 @@ export const ChatSidebar: React.FC<ChatSidebarProps> = ({ isOpen, onClose }) => 
               onChange={(e) => setAuthorNoteDepthInput(parseInt(e.target.value, 10))}
               className="w-full accent-accent-500 cursor-pointer"
             />
-            <p className="text-[11px] text-slate-500">
+            <p className="text-xs text-slate-500">
               0 = direkt im System-Prompt. 2 = 2 Nachrichten vor Ende der Historie (SillyTavern Standard).
             </p>
           </div>
@@ -374,21 +374,21 @@ export const ChatSidebar: React.FC<ChatSidebarProps> = ({ isOpen, onClose }) => 
               >
                 <div className="flex items-center justify-between mb-1">
                   <div className="flex items-center gap-2">
-                    <span className={`w-2 h-2 rounded-full bg-gradient-to-r ${preset.color}`} />
+                    <span className={`w-2 h-2 rounded-full bg-linear-to-r ${preset.color}`} />
                     <span className="font-semibold text-xs text-white group-hover:text-accent-300 transition-colors">
                       {preset.name}
                     </span>
                   </div>
                   <ChevronRight className="w-3.5 h-3.5 text-slate-500 group-hover:text-accent-400 transition-colors" />
                 </div>
-                <p className="text-[11px] text-slate-400 line-clamp-2 leading-relaxed mb-1.5">
+                <p className="text-xs text-slate-400 line-clamp-2 leading-relaxed mb-1.5">
                   {preset.description}
                 </p>
                 <div className="flex flex-wrap gap-1">
                   {preset.defaultVariables.map((v) => (
                     <span
                       key={v.name}
-                      className="text-[9px] px-1.5 py-0.5 rounded bg-slate-900 border border-slate-800 text-slate-400"
+                      className="text-[11px] px-1.5 py-0.5 rounded bg-slate-900 border border-slate-800 text-slate-400"
                     >
                       {v.name}: {v.value}
                     </span>

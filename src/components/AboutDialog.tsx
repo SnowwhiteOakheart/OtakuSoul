@@ -41,13 +41,13 @@ export function AboutDialog({ onClose }: AboutDialogProps) {
         />
 
         <div className="relative space-y-5 p-6 sm:p-8">
-          <div className="pointer-events-none absolute inset-x-0 top-0 h-px bg-gradient-to-r from-transparent via-accent-400/70 to-transparent" />
+          <div className="pointer-events-none absolute inset-x-0 top-0 h-px bg-linear-to-r from-transparent via-accent-400/70 to-transparent" />
           <div>
             <div className="flex flex-wrap items-center gap-3">
               <h2 id="about-title" className="text-2xl font-semibold tracking-wide text-white">
                 OtakuSoul
               </h2>
-              <span className="rounded-full border border-accent-400/30 bg-accent-500/10 px-2.5 py-1 font-mono text-[11px] text-accent-200">
+              <span className="rounded-full border border-accent-400/30 bg-accent-500/10 px-2.5 py-1 font-mono text-xs text-accent-200">
                 v0.1.0
               </span>
             </div>

@@ -97,7 +97,7 @@ export const UpdaterModal: React.FC = () => {
           {/* Versions Grid */}
           <div className="grid grid-cols-2 gap-3">
             <div className="bg-app border border-slate-800 rounded-xl p-3">
-              <span className="text-[10px] uppercase font-bold text-slate-500 block mb-1">
+              <span className="text-[11px] uppercase font-bold text-slate-500 block mb-1">
                 {t('updater.current')}
               </span>
               <span className="font-mono text-sm font-bold text-slate-200">
@@ -106,7 +106,7 @@ export const UpdaterModal: React.FC = () => {
             </div>
 
             <div className="bg-app border border-slate-800 rounded-xl p-3">
-              <span className="text-[10px] uppercase font-bold text-slate-500 block mb-1">
+              <span className="text-[11px] uppercase font-bold text-slate-500 block mb-1">
                 {t('updater.latest')}
               </span>
               <span className="font-mono text-sm font-bold text-accent-300">

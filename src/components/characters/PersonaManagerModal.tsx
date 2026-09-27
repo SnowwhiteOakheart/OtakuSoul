@@ -53,7 +53,7 @@ export const PersonaManagerModal = ({ onClose }: PersonaManagerModalProps) => {
             </div>
             <div>
               <h2 className="text-sm font-bold text-slate-100">User-Personas verwalten</h2>
-              <p className="text-[11px] text-slate-400">
+              <p className="text-xs text-slate-400">
                 Wähle deine Identität für das Rollenspiel (&#123;&#123;user&#125;&#125;-Makro)
               </p>
             </div>
@@ -91,19 +91,19 @@ export const PersonaManagerModal = ({ onClose }: PersonaManagerModalProps) => {
                   }`}
                 >
                   <div className="flex items-center gap-3">
-                    <div className="w-8 h-8 rounded-full bg-gradient-to-tr from-indigo-600 to-accent-600 flex items-center justify-center text-white font-bold text-xs">
+                    <div className="w-8 h-8 rounded-full bg-linear-to-tr from-indigo-600 to-accent-600 flex items-center justify-center text-white font-bold text-xs">
                       {persona.name.charAt(0).toUpperCase()}
                     </div>
                     <div>
                       <div className="font-bold text-slate-100 flex items-center gap-2">
                         <span>{persona.name}</span>
                         {isActive && (
-                          <span className="text-[10px] px-1.5 py-0.5 rounded bg-accent-500/30 text-accent-300 border border-accent-500/40">
+                          <span className="text-[11px] px-1.5 py-0.5 rounded bg-accent-500/30 text-accent-300 border border-accent-500/40">
                             Aktiv
                           </span>
                         )}
                       </div>
-                      <div className="text-[11px] text-slate-400 line-clamp-1">
+                      <div className="text-xs text-slate-400 line-clamp-1">
                         {persona.description}
                       </div>
                     </div>
@@ -146,17 +146,17 @@ export const PersonaManagerModal = ({ onClose }: PersonaManagerModalProps) => {
             <div className="p-4 bg-app border border-slate-800 rounded-xl space-y-3">
               <div className="font-semibold text-slate-200">Neue Persona anlegen</div>
               <div>
-                <label className="block text-[11px] text-slate-400 mb-1">Name *</label>
+                <label className="block text-xs text-slate-400 mb-1">Name *</label>
                 <input
                   type="text"
                   value={name}
                   onChange={(e) => setName(e.target.value)}
                   placeholder="z. B. Hiroki Ogasawara"
-                  className="w-full px-3 py-1.5 bg-slate-900 border border-slate-700 rounded-lg text-slate-100 placeholder-slate-500 focus:outline-none focus:border-accent-500"
+                  className="w-full px-3 py-1.5 bg-slate-900 border border-slate-700 rounded-lg text-slate-100 placeholder-slate-500 focus:outline-hidden focus:border-accent-500"
                 />
               </div>
               <div>
-                <label className="block text-[11px] text-slate-400 mb-1">
+                <label className="block text-xs text-slate-400 mb-1">
                   Beschreibung (Wer bist du im Rollenspiel?)
                 </label>
                 <textarea
@@ -164,7 +164,7 @@ export const PersonaManagerModal = ({ onClose }: PersonaManagerModalProps) => {
                   value={description}
                   onChange={(e) => setDescription(e.target.value)}
                   placeholder="Fotograf, ruhige Art, mag Grüntee..."
-                  className="w-full px-3 py-1.5 bg-slate-900 border border-slate-700 rounded-lg text-slate-100 placeholder-slate-500 focus:outline-none focus:border-accent-500 resize-none"
+                  className="w-full px-3 py-1.5 bg-slate-900 border border-slate-700 rounded-lg text-slate-100 placeholder-slate-500 focus:outline-hidden focus:border-accent-500 resize-none"
                 />
               </div>
               <div className="flex justify-end gap-2 pt-1">

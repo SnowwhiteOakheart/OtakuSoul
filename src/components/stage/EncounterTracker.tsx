@@ -47,12 +47,12 @@ export const EncounterTracker: React.FC = () => {
             <h3 className="text-sm font-bold text-slate-100 flex items-center gap-2">
               Taktischer Kampfmodus
               {encounter.is_active && (
-                <span className="px-2 py-0.5 rounded-full bg-rose-950 border border-rose-500/50 text-rose-300 text-[11px] animate-pulse">
+                <span className="px-2 py-0.5 rounded-full bg-rose-950 border border-rose-500/50 text-rose-300 text-xs animate-pulse">
                   Runde {encounter.round}
                 </span>
               )}
             </h3>
-            <p className="text-[11px] text-slate-400">
+            <p className="text-xs text-slate-400">
               Initiativleiste, Hitpoints, Stress & Statuszustände
             </p>
           </div>
@@ -111,7 +111,7 @@ export const EncounterTracker: React.FC = () => {
           ) : (
             <button
               onClick={() => startEncounter()}
-              className="px-4 py-2 rounded-xl bg-gradient-to-r from-rose-600 to-amber-600 hover:from-rose-500 hover:to-amber-500 text-white text-xs font-bold flex items-center gap-2 shadow-lg shadow-rose-900/30 transition active:scale-95"
+              className="px-4 py-2 rounded-xl bg-linear-to-r from-rose-600 to-amber-600 hover:from-rose-500 hover:to-amber-500 text-white text-xs font-bold flex items-center gap-2 shadow-lg shadow-rose-900/30 transition active:scale-95"
             >
               <Play className="w-4 h-4 fill-white" />
               Kampfbegegnung starten
@@ -153,12 +153,12 @@ export const EncounterTracker: React.FC = () => {
                   <h4 className="text-xs font-bold text-slate-100 flex items-center gap-2">
                     {c.name}
                     <span
-                      className={`text-[10px] uppercase font-mono px-2 py-0.5 rounded-full border ${roleBadgeColor}`}
+                      className={`text-[11px] uppercase font-mono px-2 py-0.5 rounded-full border ${roleBadgeColor}`}
                     >
                       {c.role}
                     </span>
                   </h4>
-                  <span className="text-[11px] font-mono text-slate-400">
+                  <span className="text-xs font-mono text-slate-400">
                     Ini: <strong>{c.initiative}</strong>
                   </span>
                 </div>
@@ -168,21 +168,21 @@ export const EncounterTracker: React.FC = () => {
                   <button
                     onClick={() => applyCombatantDelta(c.id, -5, 0)}
                     title="5 Schaden zufügen"
-                    className="px-2 py-0.5 rounded bg-rose-900/40 hover:bg-rose-800 text-rose-300 border border-rose-700/50 font-mono text-[11px]"
+                    className="px-2 py-0.5 rounded bg-rose-900/40 hover:bg-rose-800 text-rose-300 border border-rose-700/50 font-mono text-xs"
                   >
                     -5 HP
                   </button>
                   <button
                     onClick={() => applyCombatantDelta(c.id, 5, 0)}
                     title="5 HP heilen"
-                    className="px-2 py-0.5 rounded bg-emerald-900/40 hover:bg-emerald-800 text-emerald-300 border border-emerald-700/50 font-mono text-[11px]"
+                    className="px-2 py-0.5 rounded bg-emerald-900/40 hover:bg-emerald-800 text-emerald-300 border border-emerald-700/50 font-mono text-xs"
                   >
                     +5 HP
                   </button>
                   <button
                     onClick={() => applyCombatantDelta(c.id, 0, 10)}
                     title="10 Stress hinzufügen"
-                    className="px-2 py-0.5 rounded bg-amber-900/40 hover:bg-amber-800 text-amber-300 border border-amber-700/50 font-mono text-[11px]"
+                    className="px-2 py-0.5 rounded bg-amber-900/40 hover:bg-amber-800 text-amber-300 border border-amber-700/50 font-mono text-xs"
                   >
                     +10 Stress
                   </button>
@@ -192,7 +192,7 @@ export const EncounterTracker: React.FC = () => {
                       setShowCondModal(true);
                     }}
                     title="Zustand hinzufügen"
-                    className="px-2 py-0.5 rounded bg-slate-800 hover:bg-slate-700 text-slate-300 border border-slate-700 font-mono text-[11px] flex items-center gap-0.5"
+                    className="px-2 py-0.5 rounded bg-slate-800 hover:bg-slate-700 text-slate-300 border border-slate-700 font-mono text-xs flex items-center gap-0.5"
                   >
                     <Plus className="w-3 h-3" /> Zustand
                   </button>
@@ -203,7 +203,7 @@ export const EncounterTracker: React.FC = () => {
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 text-xs">
                 {/* HP */}
                 <div className="space-y-1">
-                  <div className="flex justify-between text-[11px]">
+                  <div className="flex justify-between text-xs">
                     <span className="text-slate-400 flex items-center gap-1">
                       <Heart className="w-3 h-3 text-rose-400 fill-rose-400/40" />
                       Trefferpunkte (HP)
@@ -228,7 +228,7 @@ export const EncounterTracker: React.FC = () => {
 
                 {/* Stress */}
                 <div className="space-y-1">
-                  <div className="flex justify-between text-[11px]">
+                  <div className="flex justify-between text-xs">
                     <span className="text-slate-400 flex items-center gap-1">
                       <Zap className="w-3 h-3 text-cyan-400" />
                       Stress / Willenskraft
@@ -239,7 +239,7 @@ export const EncounterTracker: React.FC = () => {
                   </div>
                   <div className="w-full bg-slate-900 rounded-full h-1.5 overflow-hidden">
                     <div
-                      className="h-1.5 rounded-full bg-gradient-to-r from-cyan-500 to-indigo-500 transition-all duration-300"
+                      className="h-1.5 rounded-full bg-linear-to-r from-cyan-500 to-indigo-500 transition-all duration-300"
                       style={{ width: `${Math.min(100, stressPercent)}%` }}
                     />
                   </div>
@@ -252,7 +252,7 @@ export const EncounterTracker: React.FC = () => {
                   {c.conditions.map((cond, cIdx) => (
                     <span
                       key={cIdx}
-                      className="px-2 py-0.5 rounded bg-accent-900/40 border border-accent-500/30 text-accent-300 text-[10px] font-medium flex items-center gap-1"
+                      className="px-2 py-0.5 rounded bg-accent-900/40 border border-accent-500/30 text-accent-300 text-[11px] font-medium flex items-center gap-1"
                     >
                       <Shield className="w-3 h-3 text-accent-400" />
                       {cond.name} ({cond.rounds_remaining} Rd.)
@@ -268,7 +268,7 @@ export const EncounterTracker: React.FC = () => {
       {/* Combat Log */}
       {encounter.combat_log.length > 0 && (
         <div className="p-3 rounded-xl bg-app/80 border border-slate-800 space-y-1">
-          <div className="text-[11px] font-semibold text-slate-400 uppercase tracking-wider">
+          <div className="text-xs font-semibold text-slate-400 uppercase tracking-wider">
             Kampfprotokoll
           </div>
           <div className="max-h-28 overflow-y-auto space-y-1 text-xs font-mono text-slate-300">
@@ -290,24 +290,24 @@ export const EncounterTracker: React.FC = () => {
           <div className="w-full max-w-sm p-4 rounded-2xl bg-slate-900 border border-slate-700 shadow-2xl space-y-3">
             <h4 className="text-xs font-bold text-slate-100">Zustand hinzufügen</h4>
             <div>
-              <label className="text-[11px] text-slate-400 block mb-1">Name des Zustands</label>
+              <label className="text-xs text-slate-400 block mb-1">Name des Zustands</label>
               <input
                 type="text"
                 value={newCondName}
                 onChange={(e) => setNewCondName(e.target.value)}
                 placeholder="Vergiftet, Gelähmt, Gesegnet..."
-                className="w-full px-3 py-1.5 bg-app border border-slate-700 rounded-lg text-xs text-slate-100 focus:outline-none focus:border-accent-500"
+                className="w-full px-3 py-1.5 bg-app border border-slate-700 rounded-lg text-xs text-slate-100 focus:outline-hidden focus:border-accent-500"
               />
             </div>
             <div>
-              <label className="text-[11px] text-slate-400 block mb-1">Dauer (Runden)</label>
+              <label className="text-xs text-slate-400 block mb-1">Dauer (Runden)</label>
               <input
                 type="number"
                 min={1}
                 max={10}
                 value={newCondRounds}
                 onChange={(e) => setNewCondRounds(parseInt(e.target.value) || 1)}
-                className="w-full px-3 py-1.5 bg-app border border-slate-700 rounded-lg text-xs text-slate-100 focus:outline-none focus:border-accent-500"
+                className="w-full px-3 py-1.5 bg-app border border-slate-700 rounded-lg text-xs text-slate-100 focus:outline-hidden focus:border-accent-500"
               />
             </div>
             <div className="flex justify-end gap-2 pt-1">

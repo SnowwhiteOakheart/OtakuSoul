@@ -91,31 +91,31 @@ export const StageChatLog: React.FC = () => {
     switch (mode) {
       case 'say':
         return (
-          <span className="flex items-center gap-1 text-[10px] font-semibold text-blue-400 bg-blue-950/60 px-2 py-0.5 rounded-full border border-blue-500/30">
+          <span className="flex items-center gap-1 text-[11px] font-semibold text-blue-400 bg-blue-950/60 px-2 py-0.5 rounded-full border border-blue-500/30">
             <MessageSquare className="w-2.5 h-2.5" /> Sagt
           </span>
         );
       case 'do':
         return (
-          <span className="flex items-center gap-1 text-[10px] font-semibold text-amber-400 bg-amber-950/60 px-2 py-0.5 rounded-full border border-amber-500/30">
+          <span className="flex items-center gap-1 text-[11px] font-semibold text-amber-400 bg-amber-950/60 px-2 py-0.5 rounded-full border border-amber-500/30">
             <Sword className="w-2.5 h-2.5" /> Handelt
           </span>
         );
       case 'think':
         return (
-          <span className="flex items-center gap-1 text-[10px] font-semibold text-accent-400 bg-accent-950/60 px-2 py-0.5 rounded-full border border-accent-500/30">
+          <span className="flex items-center gap-1 text-[11px] font-semibold text-accent-400 bg-accent-950/60 px-2 py-0.5 rounded-full border border-accent-500/30">
             <Brain className="w-2.5 h-2.5" /> Denkt
           </span>
         );
       case 'direct':
         return (
-          <span className="flex items-center gap-1 text-[10px] font-semibold text-rose-400 bg-rose-950/60 px-2 py-0.5 rounded-full border border-rose-500/30">
+          <span className="flex items-center gap-1 text-[11px] font-semibold text-rose-400 bg-rose-950/60 px-2 py-0.5 rounded-full border border-rose-500/30">
             <Clapperboard className="w-2.5 h-2.5" /> Regie
           </span>
         );
       case 'whisper':
         return (
-          <span className="flex items-center gap-1 text-[10px] font-semibold text-emerald-400 bg-emerald-950/60 px-2 py-0.5 rounded-full border border-emerald-500/30">
+          <span className="flex items-center gap-1 text-[11px] font-semibold text-emerald-400 bg-emerald-950/60 px-2 py-0.5 rounded-full border border-emerald-500/30">
             <Ear className="w-2.5 h-2.5" /> Flüstert {whisperTarget ? `an ${whisperTarget}` : ''}
           </span>
         );
@@ -137,7 +137,7 @@ export const StageChatLog: React.FC = () => {
           return (
             <div
               key={msg.id}
-              className="group relative p-4 sm:p-5 rounded-2xl bg-gradient-to-br from-slate-900/90 via-accent-950/25 to-slate-900/90 border border-accent-500/30 shadow-xl backdrop-blur space-y-2.5"
+              className="group relative p-4 sm:p-5 rounded-2xl bg-linear-to-br from-slate-900/90 via-accent-950/25 to-slate-900/90 border border-accent-500/30 shadow-xl backdrop-blur space-y-2.5"
             >
               {/* Floating Action Bar on Hover */}
               <div className="absolute top-3 right-3 opacity-0 group-hover:opacity-100 transition-opacity flex items-center gap-1 bg-app/90 border border-slate-700/80 rounded-xl px-1.5 py-1 shadow-lg backdrop-blur">
@@ -182,7 +182,7 @@ export const StageChatLog: React.FC = () => {
                     {msg.sender_name || 'Game Master'}
                   </span>
                 </div>
-                <span className="text-[10px] text-slate-500 font-mono pr-20 group-hover:pr-24 transition-all">
+                <span className="text-[11px] text-slate-500 font-mono pr-20 group-hover:pr-24 transition-all">
                   {new Date(msg.timestamp * 1000).toLocaleTimeString([], {
                     hour: '2-digit',
                     minute: '2-digit',
@@ -198,7 +198,7 @@ export const StageChatLog: React.FC = () => {
                     value={editDraft}
                     onChange={(e) => setEditDraft(e.target.value)}
                     rows={4}
-                    className="w-full p-2.5 rounded-xl bg-app border border-accent-500/50 text-xs text-slate-100 focus:outline-none focus:border-accent-400 resize-y"
+                    className="w-full p-2.5 rounded-xl bg-app border border-accent-500/50 text-xs text-slate-100 focus:outline-hidden focus:border-accent-400 resize-y"
                   />
                   <div className="flex items-center justify-end gap-2">
                     <button
@@ -240,7 +240,7 @@ export const StageChatLog: React.FC = () => {
                 {msg.sender_name}
               </span>
               {getModeBadge(msg.turn_mode, msg.whisper_target)}
-              <span className="text-[10px] text-slate-500 font-mono">
+              <span className="text-[11px] text-slate-500 font-mono">
                 {new Date(msg.timestamp * 1000).toLocaleTimeString([], {
                   hour: '2-digit',
                   minute: '2-digit',
@@ -295,7 +295,7 @@ export const StageChatLog: React.FC = () => {
                     value={editDraft}
                     onChange={(e) => setEditDraft(e.target.value)}
                     rows={3}
-                    className="w-full p-2 rounded-xl bg-app border border-slate-700 text-xs text-slate-100 focus:outline-none focus:border-accent-400 resize-y"
+                    className="w-full p-2 rounded-xl bg-app border border-slate-700 text-xs text-slate-100 focus:outline-hidden focus:border-accent-400 resize-y"
                   />
                   <div className="flex items-center justify-end gap-2">
                     <button

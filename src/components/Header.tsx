@@ -10,7 +10,7 @@ const SERVER_POLL_MS = 3000;
 const HARDWARE_POLL_MS = 10000;
 
 const ACTION_BUTTON_CLASS =
-  'flex items-center gap-1.5 rounded-lg border border-slate-700/60 bg-slate-800/70 p-1.5 text-xs text-slate-400 outline-none transition-colors hover:border-accent-500/40 hover:text-accent-200 focus-visible:ring-2 focus-visible:ring-accent-400';
+  'flex items-center gap-1.5 rounded-lg border border-slate-700/60 bg-slate-800/70 p-1.5 text-xs text-slate-400 outline-hidden transition-colors hover:border-accent-500/40 hover:text-accent-200 focus-visible:ring-2 focus-visible:ring-accent-400';
 
 export const Header = () => {
   const [showAbout, setShowAbout] = useState(false);
@@ -66,10 +66,10 @@ export const Header = () => {
           type="button"
           onClick={() => setActiveTab('chat')}
           aria-label={t('header.home')}
-          className="flex items-center gap-2 rounded-lg outline-none focus-visible:ring-2 focus-visible:ring-accent-400"
+          className="flex items-center gap-2 rounded-lg outline-hidden focus-visible:ring-2 focus-visible:ring-accent-400"
         >
           <img src={brandIconUrl} alt="" className="h-8 w-8 rounded-lg object-cover shadow-md shadow-accent-950/70" />
-          <span className="text-xl font-bold bg-gradient-to-r from-accent-400 via-accent2-400 to-indigo-400 bg-clip-text text-transparent tracking-wide whitespace-nowrap">
+          <span className="text-xl font-bold bg-linear-to-r from-accent-400 via-accent2-400 to-indigo-400 bg-clip-text text-transparent tracking-wide whitespace-nowrap">
             OtakuSoul
           </span>
           <span className="text-xs px-1.5 py-0.5 rounded bg-accent-500/20 text-accent-300 border border-accent-500/30 font-mono">
@@ -111,7 +111,7 @@ export const Header = () => {
             type="button"
             onClick={() => setActiveTab('settings')}
             title={t('header.openServerSettings')}
-            className="flex items-center gap-2 px-2.5 py-1 rounded-lg bg-slate-800/70 border border-slate-700/60 text-xs font-mono whitespace-nowrap outline-none transition-colors hover:border-slate-600 focus-visible:ring-2 focus-visible:ring-accent-400"
+            className="flex items-center gap-2 px-2.5 py-1 rounded-lg bg-slate-800/70 border border-slate-700/60 text-xs font-mono whitespace-nowrap outline-hidden transition-colors hover:border-slate-600 focus-visible:ring-2 focus-visible:ring-accent-400"
           >
             {serverStatus.state === 'running' && (
               <>

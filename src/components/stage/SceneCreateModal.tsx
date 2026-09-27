@@ -120,7 +120,7 @@ export const SceneCreateModal: React.FC<SceneCreateModalProps> = ({
                 value={title}
                 onChange={(e) => setTitle(e.target.value)}
                 placeholder="z. B. Audienz im Thronsaal, Das Portal von Disbord..."
-                className="w-full px-3 py-2 bg-app border border-slate-700 rounded-xl text-slate-100 placeholder-slate-500 focus:outline-none focus:border-accent-500"
+                className="w-full px-3 py-2 bg-app border border-slate-700 rounded-xl text-slate-100 placeholder-slate-500 focus:outline-hidden focus:border-accent-500"
               />
             </div>
 
@@ -133,7 +133,7 @@ export const SceneCreateModal: React.FC<SceneCreateModalProps> = ({
                   value={startingLocation}
                   onChange={(e) => setStartingLocation(e.target.value)}
                   placeholder="Thronsaal, Verlies, Taverne..."
-                  className="w-full pl-9 pr-3 py-2 bg-app border border-slate-700 rounded-xl text-slate-100 placeholder-slate-500 focus:outline-none focus:border-accent-500"
+                  className="w-full pl-9 pr-3 py-2 bg-app border border-slate-700 rounded-xl text-slate-100 placeholder-slate-500 focus:outline-hidden focus:border-accent-500"
                 />
               </div>
             </div>
@@ -148,7 +148,7 @@ export const SceneCreateModal: React.FC<SceneCreateModalProps> = ({
                 value={description}
                 onChange={(e) => setDescription(e.target.value)}
                 placeholder="Worum geht es in dieser Szene?"
-                className="w-full px-3 py-2 bg-app border border-slate-700 rounded-xl text-slate-100 placeholder-slate-500 focus:outline-none focus:border-accent-500"
+                className="w-full px-3 py-2 bg-app border border-slate-700 rounded-xl text-slate-100 placeholder-slate-500 focus:outline-hidden focus:border-accent-500"
               />
             </div>
 
@@ -159,7 +159,7 @@ export const SceneCreateModal: React.FC<SceneCreateModalProps> = ({
                 <select
                   value={timeOfDay}
                   onChange={(e) => setTimeOfDay(e.target.value)}
-                  className="w-full pl-9 pr-3 py-2 bg-app border border-slate-700 rounded-xl text-slate-100 focus:outline-none focus:border-accent-500"
+                  className="w-full pl-9 pr-3 py-2 bg-app border border-slate-700 rounded-xl text-slate-100 focus:outline-hidden focus:border-accent-500"
                 >
                   <option value="Morgen">Morgen</option>
                   <option value="Mittag">Mittag</option>
@@ -181,7 +181,7 @@ export const SceneCreateModal: React.FC<SceneCreateModalProps> = ({
               value={worldContext}
               onChange={(e) => setWorldContext(e.target.value)}
               placeholder="Welche Weltregeln, Konflikte oder Geheimnisse gelten in diesem Moment?"
-              className="w-full px-3 py-2 bg-app border border-slate-700 rounded-xl text-slate-100 placeholder-slate-500 focus:outline-none focus:border-accent-500 resize-none"
+              className="w-full px-3 py-2 bg-app border border-slate-700 rounded-xl text-slate-100 placeholder-slate-500 focus:outline-hidden focus:border-accent-500 resize-none"
             />
           </div>
 
@@ -195,7 +195,7 @@ export const SceneCreateModal: React.FC<SceneCreateModalProps> = ({
               value={openingNarration}
               onChange={(e) => setOpeningNarration(e.target.value)}
               placeholder="Wie beginnt die Szene? (Leer lassen für automatische Einleitung)"
-              className="w-full px-3 py-2 bg-app border border-slate-700 rounded-xl text-slate-100 placeholder-slate-500 focus:outline-none focus:border-accent-500 resize-none"
+              className="w-full px-3 py-2 bg-app border border-slate-700 rounded-xl text-slate-100 placeholder-slate-500 focus:outline-hidden focus:border-accent-500 resize-none"
             />
           </div>
 
@@ -203,7 +203,7 @@ export const SceneCreateModal: React.FC<SceneCreateModalProps> = ({
           <div>
             <label className="font-semibold text-slate-300 block mb-1.5 flex items-center justify-between">
               <span>Gruppenmitglieder (Gefährten)</span>
-              <span className="text-[11px] text-accent-400 font-normal">
+              <span className="text-xs text-accent-400 font-normal">
                 {selectedParty.length} ausgewählt
               </span>
             </label>
@@ -242,7 +242,7 @@ export const SceneCreateModal: React.FC<SceneCreateModalProps> = ({
               <select
                 value={gmTone}
                 onChange={(e) => setGmTone(e.target.value)}
-                className="w-full px-3 py-2 bg-app border border-slate-700 rounded-xl text-slate-100 focus:outline-none focus:border-accent-500"
+                className="w-full px-3 py-2 bg-app border border-slate-700 rounded-xl text-slate-100 focus:outline-hidden focus:border-accent-500"
               >
                 <option value="Epic Fantasy">Epic High Fantasy</option>
                 <option value="Dark Fantasy">Dark & Gritty Fantasy</option>
@@ -260,7 +260,7 @@ export const SceneCreateModal: React.FC<SceneCreateModalProps> = ({
                 value={narratorStyle}
                 onChange={(e) => setNarratorStyle(e.target.value)}
                 placeholder="Atmosphärisch, dramatisch..."
-                className="w-full px-3 py-2 bg-app border border-slate-700 rounded-xl text-slate-100 focus:outline-none focus:border-accent-500"
+                className="w-full px-3 py-2 bg-app border border-slate-700 rounded-xl text-slate-100 focus:outline-hidden focus:border-accent-500"
               />
             </div>
 
@@ -271,7 +271,7 @@ export const SceneCreateModal: React.FC<SceneCreateModalProps> = ({
                 value={persona}
                 onChange={(e) => setPersona(e.target.value)}
                 placeholder="z. B. Hiroki, Sora, Spieler..."
-                className="w-full px-3 py-2 bg-app border border-slate-700 rounded-xl text-slate-100 focus:outline-none focus:border-accent-500"
+                className="w-full px-3 py-2 bg-app border border-slate-700 rounded-xl text-slate-100 focus:outline-hidden focus:border-accent-500"
               />
             </div>
           </div>

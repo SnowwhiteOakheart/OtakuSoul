@@ -358,7 +358,7 @@ export const VrmViewer = ({
   }, [modelPath]);
 
   return (
-    <div className="relative w-full h-full flex flex-col items-center justify-center overflow-hidden bg-gradient-to-b from-slate-900/40 via-accent-950/20 to-app">
+    <div className="relative w-full h-full flex flex-col items-center justify-center overflow-hidden bg-linear-to-b from-slate-900/40 via-accent-950/20 to-app">
       {/* 3D Canvas Container */}
       <div ref={containerRef} className="w-full h-full cursor-grab active:cursor-grabbing" />
 
@@ -389,7 +389,7 @@ export const VrmViewer = ({
       <div className="absolute bottom-4 left-1/2 -translate-x-1/2 flex items-center gap-1.5 p-1.5 rounded-full bg-slate-900/80 border border-slate-700/60 backdrop-blur z-20 shadow-xl">
         <button
           onClick={() => setCurrentEmotion('neutral')}
-          className={`px-2.5 py-1 rounded-full text-[11px] font-medium transition-all ${
+          className={`px-2.5 py-1 rounded-full text-xs font-medium transition-all ${
             currentEmotion === 'neutral'
               ? 'bg-accent-600 text-white shadow-sm'
               : 'text-slate-400 hover:text-slate-200'
@@ -402,7 +402,7 @@ export const VrmViewer = ({
 
         <button
           onClick={() => setCurrentEmotion('happy')}
-          className={`px-2.5 py-1 rounded-full text-[11px] font-medium transition-all ${
+          className={`px-2.5 py-1 rounded-full text-xs font-medium transition-all ${
             currentEmotion === 'happy'
               ? 'bg-accent2-600 text-white shadow-sm'
               : 'text-slate-400 hover:text-slate-200'
@@ -415,7 +415,7 @@ export const VrmViewer = ({
 
         <button
           onClick={() => setCurrentEmotion('angry')}
-          className={`px-2.5 py-1 rounded-full text-[11px] font-medium transition-all ${
+          className={`px-2.5 py-1 rounded-full text-xs font-medium transition-all ${
             currentEmotion === 'angry'
               ? 'bg-red-600 text-white shadow-sm'
               : 'text-slate-400 hover:text-slate-200'
@@ -428,7 +428,7 @@ export const VrmViewer = ({
 
         <button
           onClick={() => setCurrentEmotion('sad')}
-          className={`px-2.5 py-1 rounded-full text-[11px] font-medium transition-all ${
+          className={`px-2.5 py-1 rounded-full text-xs font-medium transition-all ${
             currentEmotion === 'sad'
               ? 'bg-indigo-600 text-white shadow-sm'
               : 'text-slate-400 hover:text-slate-200'
@@ -441,7 +441,7 @@ export const VrmViewer = ({
 
         <button
           onClick={() => setCurrentEmotion('relaxed')}
-          className={`px-2.5 py-1 rounded-full text-[11px] font-medium transition-all ${
+          className={`px-2.5 py-1 rounded-full text-xs font-medium transition-all ${
             currentEmotion === 'relaxed'
               ? 'bg-emerald-600 text-white shadow-sm'
               : 'text-slate-400 hover:text-slate-200'

@@ -293,15 +293,12 @@ export const IntegrationsView: React.FC = () => {
       {/* Top Header */}
       <div className="px-6 py-4 border-b border-slate-800 bg-slate-900/60 backdrop-blur flex items-center justify-between gap-4 select-none">
         <div className="flex items-center gap-3">
-          <div className="w-10 h-10 rounded-xl bg-gradient-to-tr from-cyan-600/30 to-indigo-600/30 border border-cyan-500/40 flex items-center justify-center text-cyan-300 shadow-sm">
+          <div className="w-10 h-10 rounded-xl bg-linear-to-tr from-cyan-600/30 to-indigo-600/30 border border-cyan-500/40 flex items-center justify-center text-cyan-300 shadow-sm">
             <Layers className="w-5 h-5" />
           </div>
           <div>
             <div className="flex items-center gap-2">
               <h1 className="text-base font-bold text-slate-100">Ökosystem & Integrationen</h1>
-              <span className="text-xs px-2 py-0.5 rounded-full bg-cyan-500/20 text-cyan-300 font-mono">
-                Phase 17
-              </span>
             </div>
             <p className="text-xs text-slate-400">
               Mobiler Web-Client, Discord RPC & Bot, KI-Bildgenerierung und Profil-Backups
@@ -363,7 +360,7 @@ export const IntegrationsView: React.FC = () => {
           >
             <Database className="w-3.5 h-3.5" />
             <span>Profil-Backup</span>
-            <span className="text-[10px] px-1.5 py-0.2 rounded-full bg-emerald-950 text-emerald-300 font-mono">
+            <span className="text-[11px] px-1.5 py-0.2 rounded-full bg-emerald-950 text-emerald-300 font-mono">
               {backups.length}
             </span>
           </button>
@@ -404,7 +401,7 @@ export const IntegrationsView: React.FC = () => {
                       <div className="flex items-center gap-2">
                         <h2 className="text-sm font-bold text-slate-100">Lokaler Axum Web-Server</h2>
                         <span
-                          className={`text-[10px] font-bold px-2 py-0.5 rounded-full uppercase tracking-wider border ${
+                          className={`text-[11px] font-bold px-2 py-0.5 rounded-full uppercase tracking-wider border ${
                             webServerStatus?.is_running
                               ? 'bg-emerald-500/20 text-emerald-300 border-emerald-500/30'
                               : 'bg-slate-800 text-slate-400 border-slate-700'
@@ -454,7 +451,7 @@ export const IntegrationsView: React.FC = () => {
                 {/* Connection URL Box */}
                 {webServerStatus?.is_running && webServerStatus.connection_url && (
                   <div className="bg-app border border-cyan-500/30 rounded-xl p-4 space-y-2">
-                    <span className="text-[11px] font-bold text-cyan-400 uppercase tracking-wider">
+                    <span className="text-xs font-bold text-cyan-400 uppercase tracking-wider">
                       Verbindungs-Adresse (WLAN)
                     </span>
                     <div className="flex items-center gap-2">
@@ -545,10 +542,10 @@ export const IntegrationsView: React.FC = () => {
               <div className="bg-slate-900/40 border border-slate-800/80 rounded-2xl p-5 space-y-3 text-xs text-slate-400">
                 <div className="flex items-center gap-2 font-semibold text-slate-200">
                   <Shield className="w-4 h-4 text-emerald-400" />
-                  <span>Integrierter Rebinding-Schutz & Token-Authentifizierung</span>
+                  <span>Token-Authentifizierung</span>
                 </div>
                 <p className="leading-relaxed">
-                  Der integrierte Axum Webserver prüft den HTTP Host-Header gegen DNS-Rebinding-Angriffe und verlangt bei jedem Zugriff ein kryptografisches Token. Der Web-Client läuft autark in jedem modernen mobilen Browser (iOS Safari, Android Chrome/Firefox) und bietet Echtzeit-Chat mit Streaming, Sprachausgabe (TTS) und STT-Upload.
+                  Jeder Zugriff erfordert ein zufällig erzeugtes 256-Bit-Token, das in der Verbindungs-Adresse und im QR-Code enthalten ist. Wer die Adresse kennt, kann chatten – teile sie nur mit deinen eigenen Geräten und erzeuge bei Bedarf ein neues Token. Der Web-Client läuft in jedem modernen mobilen Browser (iOS Safari, Android Chrome/Firefox).
                 </p>
               </div>
             </div>
@@ -571,7 +568,7 @@ export const IntegrationsView: React.FC = () => {
                 <div className="w-48 h-48 rounded-2xl bg-app border border-dashed border-slate-800 flex flex-col items-center justify-center p-4 text-slate-500">
                   <Smartphone className="w-8 h-8 mb-2 opacity-40" />
                   <span className="text-xs">Server gestoppt</span>
-                  <span className="text-[10px] text-slate-600 mt-1">Starte den Server für den QR-Code</span>
+                  <span className="text-[11px] text-slate-600 mt-1">Starte den Server für den QR-Code</span>
                 </div>
               )}
 
@@ -609,7 +606,7 @@ export const IntegrationsView: React.FC = () => {
                     onChange={(e) => setDiscordRpcEnabled(e.target.checked)}
                     className="sr-only peer"
                   />
-                  <div className="w-11 h-6 bg-slate-800 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-slate-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-indigo-600"></div>
+                  <div className="w-11 h-6 bg-slate-800 peer-focus:outline-hidden rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-slate-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-indigo-600"></div>
                 </label>
               </div>
 
@@ -624,7 +621,7 @@ export const IntegrationsView: React.FC = () => {
                     <div className="text-indigo-300">
                       Spielt mit {activeCharacter?.card.data.name || 'einem Charakter'}
                     </div>
-                    <div className="text-slate-400 text-[11px]">
+                    <div className="text-slate-400 text-xs">
                       Emotion: {currentEmotion?.emotion || 'neutral'} · Im Chat
                     </div>
                   </div>
@@ -633,7 +630,7 @@ export const IntegrationsView: React.FC = () => {
 
               <div className="text-xs text-slate-400 space-y-2">
                 <p className="leading-relaxed">
-                  Verbindet sich nativ über den lokalen Discord IPC Socket (<code className="font-mono text-[11px] text-slate-300">/run/user/$UID/discord-ipc-0</code> bzw. Windows Named Pipe). Kein externer Bot-Account für Rich Presence erforderlich.
+                  Verbindet sich nativ über den lokalen Discord IPC Socket (<code className="font-mono text-xs text-slate-300">/run/user/$UID/discord-ipc-0</code> bzw. Windows Named Pipe). Kein externer Bot-Account für Rich Presence erforderlich.
                 </p>
               </div>
             </div>
@@ -649,7 +646,7 @@ export const IntegrationsView: React.FC = () => {
                     <div className="flex items-center gap-2">
                       <h2 className="text-sm font-bold text-slate-100">Discord Gateway Bot</h2>
                       <span
-                        className={`text-[10px] font-bold px-2 py-0.5 rounded-full uppercase tracking-wider border ${
+                        className={`text-[11px] font-bold px-2 py-0.5 rounded-full uppercase tracking-wider border ${
                           discordBotStatus?.is_running
                             ? 'bg-emerald-500/20 text-emerald-300 border-emerald-500/30'
                             : 'bg-slate-800 text-slate-400 border-slate-700'
@@ -755,7 +752,7 @@ export const IntegrationsView: React.FC = () => {
               {/* Bot Command Cheatsheet */}
               <div className="bg-app/60 border border-slate-800 rounded-xl p-3 text-xs space-y-1.5">
                 <span className="font-bold text-slate-300 block mb-1">Verfügbare Befehle:</span>
-                <div className="font-mono text-[11px] text-accent-300 space-y-1">
+                <div className="font-mono text-xs text-accent-300 space-y-1">
                   <div><span className="text-slate-200">!ask &lt;Text&gt;</span> – Chatte mit dem aktuellen Charakter</div>
                   <div><span className="text-slate-200">!character &lt;Name&gt;</span> – Wechselt den aktiven Charakter</div>
                   <div><span className="text-slate-200">!status</span> – Zeigt aktuellen Charakter & Emotion</div>
@@ -964,7 +961,7 @@ export const IntegrationsView: React.FC = () => {
                     value={testPrompt}
                     onChange={(e) => setTestPrompt(e.target.value)}
                     placeholder="1girl, anime masterpiece, silver hair, cyber jacket, smiling..."
-                    className="w-full bg-app border border-slate-700 rounded-xl p-3 text-xs text-slate-100 focus:outline-none focus:border-accent-500 resize-none font-mono"
+                    className="w-full bg-app border border-slate-700 rounded-xl p-3 text-xs text-slate-100 focus:outline-hidden focus:border-accent-500 resize-none font-mono"
                   />
                 </div>
 
@@ -977,14 +974,14 @@ export const IntegrationsView: React.FC = () => {
                     value={testNegative}
                     onChange={(e) => setTestNegative(e.target.value)}
                     placeholder="low quality, bad hands, blurry..."
-                    className="w-full bg-app border border-slate-700 rounded-xl p-2.5 text-xs text-slate-300 focus:outline-none focus:border-accent-500 resize-none font-mono"
+                    className="w-full bg-app border border-slate-700 rounded-xl p-2.5 text-xs text-slate-300 focus:outline-hidden focus:border-accent-500 resize-none font-mono"
                   />
                 </div>
 
                 <button
                   onClick={handleGenerateImage}
                   disabled={isGeneratingImage || !testPrompt.trim()}
-                  className="w-full py-2.5 rounded-xl bg-gradient-to-r from-accent-600 to-indigo-600 hover:from-accent-500 hover:to-indigo-500 text-white font-medium text-xs shadow-lg shadow-accent-600/30 disabled:opacity-50 flex items-center justify-center gap-2 transition"
+                  className="w-full py-2.5 rounded-xl bg-linear-to-r from-accent-600 to-indigo-600 hover:from-accent-500 hover:to-indigo-500 text-white font-medium text-xs shadow-lg shadow-accent-600/30 disabled:opacity-50 flex items-center justify-center gap-2 transition"
                 >
                   {isGeneratingImage ? (
                     <>
@@ -1034,10 +1031,10 @@ export const IntegrationsView: React.FC = () => {
                       <div className="w-full aspect-[2/3] bg-slate-900 rounded-lg flex items-center justify-center border border-slate-800">
                         <ImageIcon className="w-8 h-8 text-accent-400 opacity-60" />
                       </div>
-                      <div className="text-[11px] font-mono text-slate-200 truncate">
+                      <div className="text-xs font-mono text-slate-200 truncate">
                         {img.file_name}
                       </div>
-                      <div className="text-[10px] text-slate-500">
+                      <div className="text-[11px] text-slate-500">
                         {(img.size_bytes / 1024).toFixed(1)} KB · {img.created_at}
                       </div>
                     </div>
@@ -1128,7 +1125,7 @@ export const IntegrationsView: React.FC = () => {
                 )}
               </button>
 
-              <div className="p-3 bg-emerald-950/30 border border-emerald-500/30 rounded-xl text-[11px] text-emerald-300 leading-relaxed">
+              <div className="p-3 bg-emerald-950/30 border border-emerald-500/30 rounded-xl text-xs text-emerald-300 leading-relaxed">
                 🛡️ <strong>Schutzgarantie:</strong> Vor jeder Wiederherstellung wird automatisch ein präventiver Snapshot angelegt. Es werden stets bis zu 5 Sicherheits-Snapshots aufbewahrt.
               </div>
             </div>
@@ -1176,17 +1173,17 @@ export const IntegrationsView: React.FC = () => {
                               {b.filename}
                             </span>
                             {isSafety ? (
-                              <span className="text-[10px] px-2 py-0.5 rounded-full bg-amber-500/20 text-amber-300 border border-amber-500/40 flex items-center gap-1">
+                              <span className="text-[11px] px-2 py-0.5 rounded-full bg-amber-500/20 text-amber-300 border border-amber-500/40 flex items-center gap-1">
                                 <Shield className="w-3 h-3" />
                                 <span>Sicherheits-Snapshot</span>
                               </span>
                             ) : (
-                              <span className="text-[10px] px-2 py-0.5 rounded-full bg-emerald-500/20 text-emerald-300 border border-emerald-500/40">
+                              <span className="text-[11px] px-2 py-0.5 rounded-full bg-emerald-500/20 text-emerald-300 border border-emerald-500/40">
                                 Manuelles Backup
                               </span>
                             )}
                           </div>
-                          <div className="flex items-center gap-4 text-[11px] text-slate-400">
+                          <div className="flex items-center gap-4 text-xs text-slate-400">
                             <span className="flex items-center gap-1">
                               <Clock className="w-3 h-3" />
                               {b.created_at}

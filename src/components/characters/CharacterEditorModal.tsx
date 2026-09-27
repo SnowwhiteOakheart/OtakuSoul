@@ -346,18 +346,18 @@ export const CharacterEditorModal = ({
                   <button
                     type="button"
                     onClick={() => setAvatarDataUrl(null)}
-                    className="text-[11px] text-rose-400 hover:underline"
+                    className="text-xs text-rose-400 hover:underline"
                   >
                     Avatar entfernen
                   </button>
                 )}
                 
                 <div className="w-full mt-2 space-y-1.5 px-2">
-                  <label className="text-[11px] font-semibold text-slate-400">VRM-Modell (3D)</label>
+                  <label className="text-xs font-semibold text-slate-400">VRM-Modell (3D)</label>
                   <select
                     value={vrmPath}
                     onChange={(e) => setVrmPath(e.target.value)}
-                    className="w-full bg-app border border-slate-700/80 rounded-lg px-2 py-1.5 text-xs text-slate-100 focus:outline-none focus:border-accent-500 transition-colors"
+                    className="w-full bg-app border border-slate-700/80 rounded-lg px-2 py-1.5 text-xs text-slate-100 focus:outline-hidden focus:border-accent-500 transition-colors"
                   >
                     <option value="">-- Standard (aus Einstellungen) --</option>
                     {scannedVrms.map((vrm) => (
@@ -369,11 +369,11 @@ export const CharacterEditorModal = ({
                 </div>
 
                 <div className="w-full mt-2 space-y-1.5 px-2">
-                  <label className="text-[11px] font-semibold text-slate-400">Live2D-Modell (2D)</label>
+                  <label className="text-xs font-semibold text-slate-400">Live2D-Modell (2D)</label>
                   <select
                     value={live2dModel}
                     onChange={(e) => setLive2dModel(e.target.value)}
-                    className="w-full bg-app border border-slate-700/80 rounded-lg px-2 py-1.5 text-xs text-slate-100 focus:outline-none focus:border-accent-500 transition-colors"
+                    className="w-full bg-app border border-slate-700/80 rounded-lg px-2 py-1.5 text-xs text-slate-100 focus:outline-hidden focus:border-accent-500 transition-colors"
                   >
                     <option value="">-- Kein Live2D-Modell --</option>
                     {scannedLive2ds.map((l2d) => (
@@ -396,7 +396,7 @@ export const CharacterEditorModal = ({
                     value={name}
                     onChange={(e) => setName(e.target.value)}
                     placeholder="z. B. Makise Kurisu"
-                    className="w-full px-3 py-2 bg-app border border-slate-800 rounded-xl text-slate-200 placeholder-slate-500 focus:outline-none focus:border-accent-500"
+                    className="w-full px-3 py-2 bg-app border border-slate-800 rounded-xl text-slate-200 placeholder-slate-500 focus:outline-hidden focus:border-accent-500"
                   />
                 </div>
 
@@ -409,7 +409,7 @@ export const CharacterEditorModal = ({
                     value={title}
                     onChange={(e) => setTitle(e.target.value)}
                     placeholder="z. B. Geniale Neurowissenschaftlerin"
-                    className="w-full px-3 py-2 bg-app border border-slate-800 rounded-xl text-slate-200 placeholder-slate-500 focus:outline-none focus:border-accent-500"
+                    className="w-full px-3 py-2 bg-app border border-slate-800 rounded-xl text-slate-200 placeholder-slate-500 focus:outline-hidden focus:border-accent-500"
                   />
                 </div>
 
@@ -422,7 +422,7 @@ export const CharacterEditorModal = ({
                     value={tagsStr}
                     onChange={(e) => setTagsStr(e.target.value)}
                     placeholder="Anime, Tsundere, Sci-Fi, Steins;Gate"
-                    className="w-full px-3 py-2 bg-app border border-slate-800 rounded-xl text-slate-200 placeholder-slate-500 focus:outline-none focus:border-accent-500"
+                    className="w-full px-3 py-2 bg-app border border-slate-800 rounded-xl text-slate-200 placeholder-slate-500 focus:outline-hidden focus:border-accent-500"
                   />
                 </div>
 
@@ -435,7 +435,7 @@ export const CharacterEditorModal = ({
                     value={creatorNotes}
                     onChange={(e) => setCreatorNotes(e.target.value)}
                     placeholder="Optionale Notizen des Autors"
-                    className="w-full px-3 py-2 bg-app border border-slate-800 rounded-xl text-slate-200 placeholder-slate-500 focus:outline-none focus:border-accent-500"
+                    className="w-full px-3 py-2 bg-app border border-slate-800 rounded-xl text-slate-200 placeholder-slate-500 focus:outline-hidden focus:border-accent-500"
                   />
                 </div>
               </div>
@@ -480,7 +480,7 @@ export const CharacterEditorModal = ({
                           {storedImage ? 'Bild ändern' : 'Bild auswählen'}
                         </button>
                         {!previewImage && fallbackImage && (
-                          <span className="absolute bottom-2 left-2 px-2 py-1 rounded-md bg-app/80 text-[10px] text-slate-300">
+                          <span className="absolute bottom-2 left-2 px-2 py-1 rounded-md bg-app/80 text-[11px] text-slate-300">
                             Standard-Avatar
                           </span>
                         )}
@@ -489,7 +489,7 @@ export const CharacterEditorModal = ({
                         <div className="flex items-center justify-between gap-2">
                           <div>
                             <h3 className="text-xs font-bold text-slate-100">{mood.label}</h3>
-                            <p className="mt-0.5 text-[10px] leading-relaxed text-slate-500">
+                            <p className="mt-0.5 text-[11px] leading-relaxed text-slate-500">
                               {mood.description}
                             </p>
                           </div>
@@ -524,7 +524,7 @@ export const CharacterEditorModal = ({
                   value={description}
                   onChange={(e) => setDescription(e.target.value)}
                   placeholder="Aussehen, Herkunft, Kleidung, Hintergrundgeschichte..."
-                  className="w-full px-3 py-2 bg-app border border-slate-800 rounded-xl text-slate-200 placeholder-slate-500 focus:outline-none focus:border-accent-500 resize-y"
+                  className="w-full px-3 py-2 bg-app border border-slate-800 rounded-xl text-slate-200 placeholder-slate-500 focus:outline-hidden focus:border-accent-500 resize-y"
                 />
               </div>
 
@@ -537,7 +537,7 @@ export const CharacterEditorModal = ({
                   value={personality}
                   onChange={(e) => setPersonality(e.target.value)}
                   placeholder="Charakterzüge, Manierismen, Stärken, Schwächen..."
-                  className="w-full px-3 py-2 bg-app border border-slate-800 rounded-xl text-slate-200 placeholder-slate-500 focus:outline-none focus:border-accent-500 resize-y"
+                  className="w-full px-3 py-2 bg-app border border-slate-800 rounded-xl text-slate-200 placeholder-slate-500 focus:outline-hidden focus:border-accent-500 resize-y"
                 />
               </div>
 
@@ -550,7 +550,7 @@ export const CharacterEditorModal = ({
                   value={scenario}
                   onChange={(e) => setScenario(e.target.value)}
                   placeholder="Der aktuelle Ort und die Ausgangssituation des Rollenspiels..."
-                  className="w-full px-3 py-2 bg-app border border-slate-800 rounded-xl text-slate-200 placeholder-slate-500 focus:outline-none focus:border-accent-500 resize-y"
+                  className="w-full px-3 py-2 bg-app border border-slate-800 rounded-xl text-slate-200 placeholder-slate-500 focus:outline-hidden focus:border-accent-500 resize-y"
                 />
               </div>
 
@@ -563,7 +563,7 @@ export const CharacterEditorModal = ({
                   value={mesExample}
                   onChange={(e) => setMesExample(e.target.value)}
                   placeholder="<START>&#10;{{user}}: Hallo Kurisu!&#10;{{char}}: *sieht von ihren Papieren auf* Was gibt es denn schon wieder?"
-                  className="w-full px-3 py-2 bg-app border border-slate-800 rounded-xl text-slate-200 font-mono text-xs placeholder-slate-500 focus:outline-none focus:border-accent-500 resize-y"
+                  className="w-full px-3 py-2 bg-app border border-slate-800 rounded-xl text-slate-200 font-mono text-xs placeholder-slate-500 focus:outline-hidden focus:border-accent-500 resize-y"
                 />
               </div>
 
@@ -576,7 +576,7 @@ export const CharacterEditorModal = ({
                   value={systemPrompt}
                   onChange={(e) => setSystemPrompt(e.target.value)}
                   placeholder="Überschreibt oder ergänzt die Standard-Verhaltensregeln für diese Figur..."
-                  className="w-full px-3 py-2 bg-app border border-slate-800 rounded-xl text-slate-200 font-mono text-xs placeholder-slate-500 focus:outline-none focus:border-accent-500 resize-y"
+                  className="w-full px-3 py-2 bg-app border border-slate-800 rounded-xl text-slate-200 font-mono text-xs placeholder-slate-500 focus:outline-hidden focus:border-accent-500 resize-y"
                 />
               </div>
             </div>
@@ -594,7 +594,7 @@ export const CharacterEditorModal = ({
                   value={firstMes}
                   onChange={(e) => setFirstMes(e.target.value)}
                   placeholder="*betritt den Raum und blickt dich neugierig an* Guten Tag..."
-                  className="w-full px-3 py-2 bg-app border border-slate-800 rounded-xl text-slate-200 placeholder-slate-500 focus:outline-none focus:border-accent-500 resize-y"
+                  className="w-full px-3 py-2 bg-app border border-slate-800 rounded-xl text-slate-200 placeholder-slate-500 focus:outline-hidden focus:border-accent-500 resize-y"
                 />
               </div>
 
@@ -626,7 +626,7 @@ export const CharacterEditorModal = ({
                     value={newGreeting}
                     onChange={(e) => setNewGreeting(e.target.value)}
                     placeholder="Neue alternative Begrüßung eingeben..."
-                    className="flex-1 px-3 py-2 bg-app border border-slate-800 rounded-xl text-slate-200 text-xs placeholder-slate-500 focus:outline-none focus:border-accent-500 resize-y"
+                    className="flex-1 px-3 py-2 bg-app border border-slate-800 rounded-xl text-slate-200 text-xs placeholder-slate-500 focus:outline-hidden focus:border-accent-500 resize-y"
                   />
                   <button
                     type="button"
@@ -689,11 +689,11 @@ export const CharacterEditorModal = ({
                           />
                           <span className="text-xs font-bold text-slate-100">{lb.name}</span>
                         </div>
-                        <span className="px-1.5 py-0.5 rounded text-[10px] bg-slate-800 text-slate-400 font-mono border border-slate-700">
+                        <span className="px-1.5 py-0.5 rounded text-[11px] bg-slate-800 text-slate-400 font-mono border border-slate-700">
                           {lb.entries.length} Einträge
                         </span>
                       </div>
-                      <p className="text-[11px] text-slate-400 line-clamp-2">
+                      <p className="text-xs text-slate-400 line-clamp-2">
                         {lb.description || 'Keine Beschreibung.'}
                       </p>
                     </div>

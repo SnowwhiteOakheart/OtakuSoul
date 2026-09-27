@@ -48,7 +48,7 @@ export const DiceRoller: React.FC = () => {
           </div>
           <div>
             <h3 className="text-sm font-bold text-slate-100">Soul Stage Würfelstation</h3>
-            <p className="text-[11px] text-slate-400">
+            <p className="text-xs text-slate-400">
               Deterministischer Würfelroller mit Audio-Synthese & SG-Prüfung
             </p>
           </div>
@@ -79,7 +79,7 @@ export const DiceRoller: React.FC = () => {
       {/* Inputs */}
       <div className="grid grid-cols-1 sm:grid-cols-3 gap-2">
         <div className="sm:col-span-2">
-          <label className="text-[11px] font-semibold text-slate-400 uppercase tracking-wider block mb-1">
+          <label className="text-xs font-semibold text-slate-400 uppercase tracking-wider block mb-1">
             Formel (z.B. 1d20+4, 2d6-1)
           </label>
           <input
@@ -87,12 +87,12 @@ export const DiceRoller: React.FC = () => {
             value={formula}
             onChange={(e) => setFormula(e.target.value)}
             placeholder="1d20+4"
-            className="w-full px-3 py-1.5 bg-app border border-slate-700 rounded-lg text-sm font-mono text-slate-100 focus:outline-none focus:border-accent-500"
+            className="w-full px-3 py-1.5 bg-app border border-slate-700 rounded-lg text-sm font-mono text-slate-100 focus:outline-hidden focus:border-accent-500"
           />
         </div>
 
         <div>
-          <label className="text-[11px] font-semibold text-slate-400 uppercase tracking-wider block mb-1">
+          <label className="text-xs font-semibold text-slate-400 uppercase tracking-wider block mb-1">
             Ziel-SG (Optional)
           </label>
           <input
@@ -100,7 +100,7 @@ export const DiceRoller: React.FC = () => {
             value={targetDc}
             onChange={(e) => setTargetDc(e.target.value)}
             placeholder="15"
-            className="w-full px-3 py-1.5 bg-app border border-slate-700 rounded-lg text-sm font-mono text-slate-100 focus:outline-none focus:border-accent-500"
+            className="w-full px-3 py-1.5 bg-app border border-slate-700 rounded-lg text-sm font-mono text-slate-100 focus:outline-hidden focus:border-accent-500"
           />
         </div>
       </div>
@@ -111,7 +111,7 @@ export const DiceRoller: React.FC = () => {
         className={`w-full py-2.5 rounded-xl font-bold text-sm shadow-lg transition flex items-center justify-center gap-2 ${
           isRollingDice
             ? 'bg-accent-700/50 text-accent-300 cursor-not-allowed'
-            : 'bg-gradient-to-r from-accent-600 to-accent2-600 hover:from-accent-500 hover:to-accent2-500 text-white shadow-accent-500/20 active:scale-[0.99]'
+            : 'bg-linear-to-r from-accent-600 to-accent2-600 hover:from-accent-500 hover:to-accent2-500 text-white shadow-accent-500/20 active:scale-[0.99]'
         }`}
       >
         <Dices className={`w-4 h-4 ${isRollingDice ? 'animate-spin' : ''}`} />
@@ -138,13 +138,13 @@ export const DiceRoller: React.FC = () => {
 
             {/* Critical Banners */}
             {lastDiceRoll.is_critical_success && (
-              <span className="px-2 py-0.5 rounded-full bg-amber-500/20 border border-amber-400/50 text-amber-300 text-[11px] font-bold flex items-center gap-1">
+              <span className="px-2 py-0.5 rounded-full bg-amber-500/20 border border-amber-400/50 text-amber-300 text-xs font-bold flex items-center gap-1">
                 <Sparkles className="w-3 h-3 text-amber-400" />
                 KRITISCHER ERFOLG!
               </span>
             )}
             {lastDiceRoll.is_critical_failure && (
-              <span className="px-2 py-0.5 rounded-full bg-rose-500/20 border border-rose-400/50 text-rose-300 text-[11px] font-bold flex items-center gap-1">
+              <span className="px-2 py-0.5 rounded-full bg-rose-500/20 border border-rose-400/50 text-rose-300 text-xs font-bold flex items-center gap-1">
                 <AlertOctagon className="w-3 h-3 text-rose-400" />
                 PATZER!
               </span>

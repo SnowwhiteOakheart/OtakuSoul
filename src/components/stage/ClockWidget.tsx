@@ -111,7 +111,7 @@ export const ClockWidget: React.FC<ClockWidgetProps> = ({
 
         {/* Center label */}
         <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
-          <span className="text-[11px] font-mono font-bold text-slate-200">
+          <span className="text-xs font-mono font-bold text-slate-200">
             {current}/{max}
           </span>
         </div>
@@ -120,7 +120,7 @@ export const ClockWidget: React.FC<ClockWidgetProps> = ({
       <div className="text-center mt-1">
         <h4 className="text-xs font-semibold text-slate-200 line-clamp-1">{name}</h4>
         <span
-          className={`text-[10px] font-mono uppercase tracking-wider ${
+          className={`text-[11px] font-mono uppercase tracking-wider ${
             isComplete
               ? 'text-rose-400 font-bold animate-pulse'
               : 'text-slate-400'

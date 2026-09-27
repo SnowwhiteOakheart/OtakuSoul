@@ -457,7 +457,7 @@ export const Live2DViewer: React.FC<Live2DViewerProps> = ({
 
       {/* Current Emotion Indicator Top-Left */}
       {emotion && emotion !== 'neutral' && (
-        <div className="absolute top-3 left-3 z-20 px-2.5 py-1 bg-accent-950/60 border border-accent-500/30 rounded-lg backdrop-blur text-[11px] text-accent-300 font-mono shadow-md flex items-center gap-1.5">
+        <div className="absolute top-3 left-3 z-20 px-2.5 py-1 bg-accent-950/60 border border-accent-500/30 rounded-lg backdrop-blur text-xs text-accent-300 font-mono shadow-md flex items-center gap-1.5">
           <span className="w-2 h-2 rounded-full bg-accent-400 animate-pulse" />
           <span className="capitalize">{emotion}</span>
         </div>

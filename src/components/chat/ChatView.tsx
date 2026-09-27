@@ -367,7 +367,7 @@ export const ChatView: React.FC = () => {
 
                     {/* SillyTavern Swipes Pagination for Assistant */}
                     {hasMultipleSwipes && (
-                      <div className="flex items-center bg-slate-900 border border-accent-500/30 rounded-md text-[10px] text-accent-300 px-1 py-0.5 gap-1">
+                      <div className="flex items-center bg-slate-900 border border-accent-500/30 rounded-md text-[11px] text-accent-300 px-1 py-0.5 gap-1">
                         <button
                           onClick={() => switchMessageSwipe(msg.id, msg.swipe_index - 1)}
                           disabled={msg.swipe_index <= 0 || isGenerating}
@@ -409,7 +409,7 @@ export const ChatView: React.FC = () => {
                         )}
                       </button>
                       {expandedThoughts[msg.id || idx] && (
-                        <div className="p-3 border-t border-accent-500/20 text-slate-300 font-mono text-[11px] whitespace-pre-wrap leading-relaxed max-h-60 overflow-y-auto">
+                        <div className="p-3 border-t border-accent-500/20 text-slate-300 font-mono text-xs whitespace-pre-wrap leading-relaxed max-h-60 overflow-y-auto">
                           {msg.thought}
                         </div>
                       )}
@@ -423,7 +423,7 @@ export const ChatView: React.FC = () => {
                         value={editContent}
                         onChange={(e) => setEditContent(e.target.value)}
                         rows={4}
-                        className="w-full bg-slate-900 border border-accent-500 rounded-2xl p-3 text-sm text-slate-100 focus:outline-none resize-none"
+                        className="w-full bg-slate-900 border border-accent-500 rounded-2xl p-3 text-sm text-slate-100 focus:outline-hidden resize-none"
                       />
                       <div className="flex items-center justify-end gap-1.5">
                         <button
@@ -447,7 +447,7 @@ export const ChatView: React.FC = () => {
                       <div
                         className={`rounded-2xl px-4 py-2.5 text-sm leading-relaxed ${
                           msg.role === 'user'
-                            ? 'bg-gradient-to-r from-accent-600 to-indigo-600 text-white shadow-md'
+                            ? 'bg-linear-to-r from-accent-600 to-indigo-600 text-white shadow-md'
                             : 'bg-slate-900 border border-slate-800 text-slate-100 shadow-sm'
                         }`}
                       >
@@ -462,7 +462,7 @@ export const ChatView: React.FC = () => {
                       <div
                         className={`absolute -bottom-3 ${
                           msg.role === 'user' ? 'right-2' : 'left-2'
-                        } hidden group-hover/bubble:flex items-center gap-1 bg-slate-900/95 border border-slate-700/80 rounded-lg px-1.5 py-0.5 shadow-lg z-20 text-[10px] text-slate-400`}
+                        } hidden group-hover/bubble:flex items-center gap-1 bg-slate-900/95 border border-slate-700/80 rounded-lg px-1.5 py-0.5 shadow-lg z-20 text-[11px] text-slate-400`}
                       >
                         {isAssistant && (
                           <>
@@ -543,7 +543,7 @@ export const ChatView: React.FC = () => {
                       )}
                     </button>
                     {showCurrentThought && (
-                      <div className="p-3 border-t border-accent-500/20 text-slate-300 font-mono text-[11px] whitespace-pre-wrap leading-relaxed max-h-60 overflow-y-auto">
+                      <div className="p-3 border-t border-accent-500/20 text-slate-300 font-mono text-xs whitespace-pre-wrap leading-relaxed max-h-60 overflow-y-auto">
                         {streamThought}
                       </div>
                     )}
@@ -579,7 +579,7 @@ export const ChatView: React.FC = () => {
                   }
                 }}
                 placeholder="Schreibe eine Nachricht..."
-                className="flex-1 bg-app/80 border border-slate-700/80 rounded-xl px-4 py-2.5 text-sm text-slate-100 placeholder-slate-500 focus:outline-none focus:border-accent-500 focus:ring-1 focus:ring-accent-500 resize-none max-h-32 transition-colors"
+                className="flex-1 bg-app/80 border border-slate-700/80 rounded-xl px-4 py-2.5 text-sm text-slate-100 placeholder-slate-500 focus:outline-hidden focus:border-accent-500 focus:ring-1 focus:ring-accent-500 resize-none max-h-32 transition-colors"
                 rows={1}
               />
 

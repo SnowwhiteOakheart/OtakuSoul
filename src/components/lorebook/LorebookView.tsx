@@ -249,7 +249,7 @@ export const LorebookView: React.FC = () => {
               </div>
               <div>
                 <h1 className="text-sm font-bold text-slate-100">Lorebook 2.0</h1>
-                <p className="text-[10px] text-slate-400">{allLorebooks.length} Bücher verfügbar</p>
+                <p className="text-[11px] text-slate-400">{allLorebooks.length} Bücher verfügbar</p>
               </div>
             </div>
             <button
@@ -295,7 +295,7 @@ export const LorebookView: React.FC = () => {
               placeholder="Lorebooks suchen..."
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
-              className="w-full bg-app border border-slate-800 rounded-lg pl-8 pr-3 py-1.5 text-xs text-slate-200 focus:outline-none focus:border-indigo-500/60"
+              className="w-full bg-app border border-slate-800 rounded-lg pl-8 pr-3 py-1.5 text-xs text-slate-200 focus:outline-hidden focus:border-indigo-500/60"
             />
           </div>
         </div>
@@ -322,17 +322,17 @@ export const LorebookView: React.FC = () => {
                   </span>
                   <div className="flex items-center gap-1 shrink-0">
                     {global && (
-                      <span className="px-1.5 py-0.5 rounded text-[9px] font-mono bg-amber-500/20 text-amber-300 border border-amber-500/30 flex items-center gap-0.5">
+                      <span className="px-1.5 py-0.5 rounded text-[11px] font-mono bg-amber-500/20 text-amber-300 border border-amber-500/30 flex items-center gap-0.5">
                         <Globe className="w-2.5 h-2.5" />
                         <span>Global</span>
                       </span>
                     )}
-                    <span className="px-1.5 py-0.5 rounded text-[9px] font-mono bg-slate-800 text-slate-400 border border-slate-700">
+                    <span className="px-1.5 py-0.5 rounded text-[11px] font-mono bg-slate-800 text-slate-400 border border-slate-700">
                       {lb.entries.length} Einträge
                     </span>
                   </div>
                 </div>
-                <p className="text-[11px] text-slate-400 line-clamp-2">{lb.description || 'Keine Beschreibung.'}</p>
+                <p className="text-xs text-slate-400 line-clamp-2">{lb.description || 'Keine Beschreibung.'}</p>
               </div>
             );
           })}
@@ -434,13 +434,13 @@ export const LorebookView: React.FC = () => {
                 <div>
                   <div className="flex items-center gap-2">
                     <span className="text-xs font-bold text-slate-200">Scene Tension Accumulator</span>
-                    <span className={`text-[10px] font-mono px-1.5 py-0.2 rounded font-bold ${
+                    <span className={`text-[11px] font-mono px-1.5 py-0.2 rounded font-bold ${
                       currentTension > 60 ? 'bg-rose-500/20 text-rose-300' : 'bg-slate-800 text-slate-300'
                     }`}>
                       {currentTension}%
                     </span>
                   </div>
-                  <p className="text-[10px] text-slate-400">
+                  <p className="text-[11px] text-slate-400">
                     Spannung steigt bei Gefahr/Konflikt und triggert dramatische Spannungs-Events.
                   </p>
                 </div>
@@ -452,32 +452,32 @@ export const LorebookView: React.FC = () => {
                   <div
                     className={`h-full transition-all duration-300 ${
                       currentTension > 60
-                        ? 'bg-gradient-to-r from-amber-500 to-rose-500'
-                        : 'bg-gradient-to-r from-cyan-500 to-indigo-500'
+                        ? 'bg-linear-to-r from-amber-500 to-rose-500'
+                        : 'bg-linear-to-r from-cyan-500 to-indigo-500'
                     }`}
                     style={{ width: `${currentTension}%` }}
                   />
                 </div>
                 <button
                   onClick={() => adjustTension(10)}
-                  className="px-2 py-0.5 rounded bg-slate-800 hover:bg-slate-700 text-slate-300 text-[10px] border border-slate-700"
+                  className="px-2 py-0.5 rounded bg-slate-800 hover:bg-slate-700 text-slate-300 text-[11px] border border-slate-700"
                 >
                   +10
                 </button>
                 <button
                   onClick={() => adjustTension(-10)}
-                  className="px-2 py-0.5 rounded bg-slate-800 hover:bg-slate-700 text-slate-300 text-[10px] border border-slate-700"
+                  className="px-2 py-0.5 rounded bg-slate-800 hover:bg-slate-700 text-slate-300 text-[11px] border border-slate-700"
                 >
                   -10
                 </button>
                 <button
                   onClick={resetTension}
-                  className="px-2 py-0.5 rounded bg-slate-800 hover:bg-slate-700 text-slate-400 text-[10px] border border-slate-700"
+                  className="px-2 py-0.5 rounded bg-slate-800 hover:bg-slate-700 text-slate-400 text-[11px] border border-slate-700"
                   title="Auf 0 zurücksetzen"
                 >
                   Reset
                 </button>
-                <label className="flex items-center gap-1.5 ml-2 cursor-pointer text-[11px] text-slate-400 select-none">
+                <label className="flex items-center gap-1.5 ml-2 cursor-pointer text-xs text-slate-400 select-none">
                   <input
                     type="checkbox"
                     checked={sceneTensionEnabled}
@@ -500,7 +500,7 @@ export const LorebookView: React.FC = () => {
                   placeholder="Einträge filtern..."
                   value={entrySearchQuery}
                   onChange={(e) => setEntrySearchQuery(e.target.value)}
-                  className="w-full bg-app border border-slate-800 rounded-lg pl-8 pr-3 py-1.5 text-xs text-slate-200 focus:outline-none focus:border-indigo-500/60"
+                  className="w-full bg-app border border-slate-800 rounded-lg pl-8 pr-3 py-1.5 text-xs text-slate-200 focus:outline-hidden focus:border-indigo-500/60"
                 />
               </div>
 
@@ -510,7 +510,7 @@ export const LorebookView: React.FC = () => {
                   <button
                     key={filter}
                     onClick={() => setTriggerFilter(filter)}
-                    className={`px-2.5 py-1 rounded-lg text-[11px] font-medium transition-colors ${
+                    className={`px-2.5 py-1 rounded-lg text-xs font-medium transition-colors ${
                       triggerFilter === filter
                         ? 'bg-indigo-600/20 text-indigo-300 border border-indigo-500/40'
                         : 'text-slate-400 hover:text-slate-200 hover:bg-slate-800'
@@ -584,13 +584,13 @@ export const LorebookView: React.FC = () => {
                     <h3 className="text-sm font-bold text-slate-100">{entry.name}</h3>
 
                     {/* Trigger Badge */}
-                    <span className="px-2 py-0.5 rounded text-[10px] font-mono bg-slate-800 text-slate-300 border border-slate-700">
+                    <span className="px-2 py-0.5 rounded text-[11px] font-mono bg-slate-800 text-slate-300 border border-slate-700">
                       {entry.trigger_type}
                     </span>
 
                     {/* Behavior Badge */}
                     <span
-                      className={`px-2 py-0.5 rounded text-[10px] font-medium border ${
+                      className={`px-2 py-0.5 rounded text-[11px] font-medium border ${
                         entry.injection_behavior === 'active' || entry.injection_behavior === 'directive'
                           ? 'bg-accent-500/20 border-accent-500/40 text-accent-300'
                           : 'bg-slate-800 text-slate-400 border-slate-700'
@@ -602,7 +602,7 @@ export const LorebookView: React.FC = () => {
                     </span>
 
                     {/* Priority & Probability */}
-                    <span className="text-[10px] text-slate-400">
+                    <span className="text-[11px] text-slate-400">
                       Prio: {entry.priority ?? 10} | {entry.probability ?? 100}%
                     </span>
                   </div>
@@ -628,27 +628,27 @@ export const LorebookView: React.FC = () => {
                 {/* Keys & Filters Tags */}
                 <div className="flex flex-wrap items-center gap-1.5 mb-2">
                   {entry.key.map((k) => (
-                    <span key={k} className="px-2 py-0.5 rounded text-[10px] bg-indigo-500/15 text-indigo-300 border border-indigo-500/30">
+                    <span key={k} className="px-2 py-0.5 rounded text-[11px] bg-indigo-500/15 text-indigo-300 border border-indigo-500/30">
                       {k}
                     </span>
                   ))}
                   {entry.secondary_keys && entry.secondary_keys.length > 0 && (
-                    <span className="px-2 py-0.5 rounded text-[10px] bg-cyan-500/15 text-cyan-300 border border-cyan-500/30" title="Sekundär (UND-Bedingung)">
+                    <span className="px-2 py-0.5 rounded text-[11px] bg-cyan-500/15 text-cyan-300 border border-cyan-500/30" title="Sekundär (UND-Bedingung)">
                       + {entry.secondary_keys.join(', ')}
                     </span>
                   )}
                   {entry.exclude_key && entry.exclude_key.length > 0 && (
-                    <span className="px-2 py-0.5 rounded text-[10px] bg-rose-500/15 text-rose-300 border border-rose-500/30" title="Ausschluss">
+                    <span className="px-2 py-0.5 rounded text-[11px] bg-rose-500/15 text-rose-300 border border-rose-500/30" title="Ausschluss">
                       NOT {entry.exclude_key.join(', ')}
                     </span>
                   )}
                   {entry.tension_threshold && (
-                    <span className="px-2 py-0.5 rounded text-[10px] bg-amber-500/20 text-amber-300 border border-amber-500/40 flex items-center gap-1">
+                    <span className="px-2 py-0.5 rounded text-[11px] bg-amber-500/20 text-amber-300 border border-amber-500/40 flex items-center gap-1">
                       <Flame className="w-2.5 h-2.5" /> ab {entry.tension_threshold}%
                     </span>
                   )}
                   {entry.chain_activates && entry.chain_activates.length > 0 && (
-                    <span className="px-2 py-0.5 rounded text-[10px] bg-emerald-500/15 text-emerald-300 border border-emerald-500/30 flex items-center gap-1">
+                    <span className="px-2 py-0.5 rounded text-[11px] bg-emerald-500/15 text-emerald-300 border border-emerald-500/30 flex items-center gap-1">
                       <Zap className="w-2.5 h-2.5" /> aktiviert: {entry.chain_activates.join(', ')}
                     </span>
                   )}
@@ -745,7 +745,7 @@ const EntryEditorModal: React.FC<EntryEditorModalProps> = ({ initialEntry, isNew
               <h2 className="text-sm font-bold text-slate-100">
                 {isNew ? 'Neuen Lorebook-Eintrag anlegen' : `Eintrag bearbeiten: ${entry.name}`}
               </h2>
-              <p className="text-[10px] text-slate-400">Konfiguriere Trigger, Injektions-Modus und Logik</p>
+              <p className="text-[11px] text-slate-400">Konfiguriere Trigger, Injektions-Modus und Logik</p>
             </div>
           </div>
           <button onClick={onClose} className="p-1.5 rounded-lg text-slate-400 hover:text-slate-100 hover:bg-slate-800">
@@ -758,12 +758,12 @@ const EntryEditorModal: React.FC<EntryEditorModalProps> = ({ initialEntry, isNew
           {/* Row 1: Name & Enabled */}
           <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
             <div className="md:col-span-2 space-y-1">
-              <label className="text-[11px] font-semibold text-slate-300">Name des Eintrags</label>
+              <label className="text-xs font-semibold text-slate-300">Name des Eintrags</label>
               <input
                 type="text"
                 value={entry.name}
                 onChange={(e) => setEntry({ ...entry, name: e.target.value })}
-                className="w-full bg-app border border-slate-800 rounded-lg px-3 py-2 text-xs text-slate-100 focus:outline-none focus:border-indigo-500"
+                className="w-full bg-app border border-slate-800 rounded-lg px-3 py-2 text-xs text-slate-100 focus:outline-hidden focus:border-indigo-500"
               />
             </div>
             <div className="space-y-1 flex flex-col justify-end">
@@ -782,7 +782,7 @@ const EntryEditorModal: React.FC<EntryEditorModalProps> = ({ initialEntry, isNew
           {/* Row 2: Injection Mode & Trigger Type */}
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4 p-3.5 bg-app/60 rounded-xl border border-slate-800/80">
             <div className="space-y-1.5">
-              <label className="text-[11px] font-semibold text-slate-200 flex items-center gap-1.5">
+              <label className="text-xs font-semibold text-slate-200 flex items-center gap-1.5">
                 <Sliders className="w-3.5 h-3.5 text-indigo-400" />
                 <span>Injektions-Verhalten</span>
               </label>
@@ -797,7 +797,7 @@ const EntryEditorModal: React.FC<EntryEditorModalProps> = ({ initialEntry, isNew
                   }`}
                 >
                   <div className="font-medium text-xs">Passiv: Weltwissen</div>
-                  <div className="text-[10px] text-slate-400 mt-0.5">Als Kontext-Wissen</div>
+                  <div className="text-[11px] text-slate-400 mt-0.5">Als Kontext-Wissen</div>
                 </button>
                 <button
                   type="button"
@@ -809,20 +809,20 @@ const EntryEditorModal: React.FC<EntryEditorModalProps> = ({ initialEntry, isNew
                   }`}
                 >
                   <div className="font-medium text-xs">Aktiv: Regie-Direktive</div>
-                  <div className="text-[10px] text-slate-400 mt-0.5">Strikte Handlungsregel</div>
+                  <div className="text-[11px] text-slate-400 mt-0.5">Strikte Handlungsregel</div>
                 </button>
               </div>
             </div>
 
             <div className="space-y-1.5">
-              <label className="text-[11px] font-semibold text-slate-200 flex items-center gap-1.5">
+              <label className="text-xs font-semibold text-slate-200 flex items-center gap-1.5">
                 <Zap className="w-3.5 h-3.5 text-amber-400" />
                 <span>Trigger-Typ</span>
               </label>
               <select
                 value={entry.trigger_type}
                 onChange={(e) => setEntry({ ...entry, trigger_type: e.target.value })}
-                className="w-full bg-slate-900 border border-slate-800 rounded-lg px-3 py-2 text-xs text-slate-200 focus:outline-none focus:border-indigo-500"
+                className="w-full bg-slate-900 border border-slate-800 rounded-lg px-3 py-2 text-xs text-slate-200 focus:outline-hidden focus:border-indigo-500"
               >
                 <option value="keyword">Schlüsselwörter (Keyword)</option>
                 <option value="regex">Regulärer Ausdruck (Regex)</option>
@@ -836,7 +836,7 @@ const EntryEditorModal: React.FC<EntryEditorModalProps> = ({ initialEntry, isNew
           {entry.trigger_type === 'keyword' && (
             <div className="space-y-3">
               <div className="space-y-1">
-                <label className="text-[11px] font-semibold text-slate-300">
+                <label className="text-xs font-semibold text-slate-300">
                   Primäre Schlüsselwörter (Komma-getrennt)
                 </label>
                 <input
@@ -844,13 +844,13 @@ const EntryEditorModal: React.FC<EntryEditorModalProps> = ({ initialEntry, isNew
                   value={primaryKeyInput}
                   onChange={(e) => setPrimaryKeyInput(e.target.value)}
                   placeholder="z. B. Schloss, Portal, König"
-                  className="w-full bg-app border border-slate-800 rounded-lg px-3 py-2 text-xs text-slate-100 focus:outline-none focus:border-indigo-500"
+                  className="w-full bg-app border border-slate-800 rounded-lg px-3 py-2 text-xs text-slate-100 focus:outline-hidden focus:border-indigo-500"
                 />
               </div>
 
               <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
                 <div className="space-y-1">
-                  <label className="text-[11px] font-semibold text-cyan-300">
+                  <label className="text-xs font-semibold text-cyan-300">
                     Sekundäre Schlüsselwörter (UND-Bedingung)
                   </label>
                   <input
@@ -858,11 +858,11 @@ const EntryEditorModal: React.FC<EntryEditorModalProps> = ({ initialEntry, isNew
                     value={secondaryKeyInput}
                     onChange={(e) => setSecondaryKeyInput(e.target.value)}
                     placeholder="Mindestens eines muss vorhanden sein..."
-                    className="w-full bg-app border border-slate-800 rounded-lg px-3 py-2 text-xs text-slate-100 focus:outline-none focus:border-indigo-500"
+                    className="w-full bg-app border border-slate-800 rounded-lg px-3 py-2 text-xs text-slate-100 focus:outline-hidden focus:border-indigo-500"
                   />
                 </div>
                 <div className="space-y-1">
-                  <label className="text-[11px] font-semibold text-rose-300">
+                  <label className="text-xs font-semibold text-rose-300">
                     Ausschluss-Wörter (NOT-Bedingung)
                   </label>
                   <input
@@ -870,7 +870,7 @@ const EntryEditorModal: React.FC<EntryEditorModalProps> = ({ initialEntry, isNew
                     value={excludeKeyInput}
                     onChange={(e) => setExcludeKeyInput(e.target.value)}
                     placeholder="Wird ignoriert falls vorhanden..."
-                    className="w-full bg-app border border-slate-800 rounded-lg px-3 py-2 text-xs text-slate-100 focus:outline-none focus:border-indigo-500"
+                    className="w-full bg-app border border-slate-800 rounded-lg px-3 py-2 text-xs text-slate-100 focus:outline-hidden focus:border-indigo-500"
                   />
                 </div>
               </div>
@@ -879,20 +879,20 @@ const EntryEditorModal: React.FC<EntryEditorModalProps> = ({ initialEntry, isNew
 
           {entry.trigger_type === 'regex' && (
             <div className="space-y-1">
-              <label className="text-[11px] font-semibold text-slate-300">Reguläre Ausdrücke (Regex-Patterns)</label>
+              <label className="text-xs font-semibold text-slate-300">Reguläre Ausdrücke (Regex-Patterns)</label>
               <input
                 type="text"
                 value={regexKeyInput}
                 onChange={(e) => setRegexKeyInput(e.target.value)}
                 placeholder="z. B. \b(Drache|Wyrm|Lindwurm)\b"
-                className="w-full bg-app border border-slate-800 rounded-lg px-3 py-2 text-xs font-mono text-slate-100 focus:outline-none focus:border-indigo-500"
+                className="w-full bg-app border border-slate-800 rounded-lg px-3 py-2 text-xs font-mono text-slate-100 focus:outline-hidden focus:border-indigo-500"
               />
             </div>
           )}
 
           {entry.trigger_type === 'tension' && (
             <div className="space-y-1 p-3 bg-amber-500/10 border border-amber-500/30 rounded-xl">
-              <label className="text-[11px] font-bold text-amber-300 flex items-center gap-1.5">
+              <label className="text-xs font-bold text-amber-300 flex items-center gap-1.5">
                 <Flame className="w-3.5 h-3.5" />
                 <span>Spannungs-Schwellenwert (0 - 100%)</span>
               </label>
@@ -902,9 +902,9 @@ const EntryEditorModal: React.FC<EntryEditorModalProps> = ({ initialEntry, isNew
                 max={100}
                 value={entry.tension_threshold || 60}
                 onChange={(e) => setEntry({ ...entry, tension_threshold: parseInt(e.target.value) || 60 })}
-                className="w-full bg-app border border-slate-800 rounded-lg px-3 py-2 text-xs text-slate-100 focus:outline-none focus:border-amber-500"
+                className="w-full bg-app border border-slate-800 rounded-lg px-3 py-2 text-xs text-slate-100 focus:outline-hidden focus:border-amber-500"
               />
-              <p className="text-[10px] text-amber-400/80">
+              <p className="text-[11px] text-amber-400/80">
                 Dieser Eintrag löst automatisch aus, sobald die aktuelle Szenenspannung diesen Wert erreicht oder überschreitet.
               </p>
             </div>
@@ -913,7 +913,7 @@ const EntryEditorModal: React.FC<EntryEditorModalProps> = ({ initialEntry, isNew
           {/* Row 4: Priority, Probability, Boundary Check */}
           <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
             <div className="space-y-1">
-              <label className="text-[11px] font-semibold text-slate-300">Priorität (Zahl)</label>
+              <label className="text-xs font-semibold text-slate-300">Priorität (Zahl)</label>
               <input
                 type="number"
                 value={entry.priority ?? 10}
@@ -923,7 +923,7 @@ const EntryEditorModal: React.FC<EntryEditorModalProps> = ({ initialEntry, isNew
             </div>
 
             <div className="space-y-1">
-              <label className="text-[11px] font-semibold text-slate-300">Wahrscheinlichkeit %</label>
+              <label className="text-xs font-semibold text-slate-300">Wahrscheinlichkeit %</label>
               <input
                 type="number"
                 min={1}
@@ -942,7 +942,7 @@ const EntryEditorModal: React.FC<EntryEditorModalProps> = ({ initialEntry, isNew
                 onChange={(e) => setEntry({ ...entry, match_whole_words: e.target.checked })}
                 className="rounded bg-app border-slate-700 text-indigo-600 focus:ring-0"
               />
-              <label htmlFor="wholeWords" className="text-[11px] text-slate-300 cursor-pointer">
+              <label htmlFor="wholeWords" className="text-xs text-slate-300 cursor-pointer">
                 Ganze Wörter (\b)
               </label>
             </div>
@@ -955,7 +955,7 @@ const EntryEditorModal: React.FC<EntryEditorModalProps> = ({ initialEntry, isNew
                 onChange={(e) => setEntry({ ...entry, case_sensitive: e.target.checked })}
                 className="rounded bg-app border-slate-700 text-indigo-600 focus:ring-0"
               />
-              <label htmlFor="caseSens" className="text-[11px] text-slate-300 cursor-pointer">
+              <label htmlFor="caseSens" className="text-xs text-slate-300 cursor-pointer">
                 Groß/Klein beachten
               </label>
             </div>
@@ -963,13 +963,13 @@ const EntryEditorModal: React.FC<EntryEditorModalProps> = ({ initialEntry, isNew
 
           {/* Row 5: Chain Dependencies */}
           <div className="p-3 bg-app/60 rounded-xl border border-slate-800 space-y-2">
-            <h4 className="text-[11px] font-bold text-slate-200 flex items-center gap-1.5">
+            <h4 className="text-xs font-bold text-slate-200 flex items-center gap-1.5">
               <Layers className="w-3.5 h-3.5 text-indigo-400" />
               <span>Ketten-Abhängigkeiten (Chain Dependencies)</span>
             </h4>
             <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
               <div className="space-y-1">
-                <label className="text-[10px] text-slate-400">Voraussetzung (Erfordert diese Einträge):</label>
+                <label className="text-[11px] text-slate-400">Voraussetzung (Erfordert diese Einträge):</label>
                 <input
                   type="text"
                   value={chainRequiresInput}
@@ -979,7 +979,7 @@ const EntryEditorModal: React.FC<EntryEditorModalProps> = ({ initialEntry, isNew
                 />
               </div>
               <div className="space-y-1">
-                <label className="text-[10px] text-slate-400">Folge-Aktivierung (Aktiviert diese Einträge mit):</label>
+                <label className="text-[11px] text-slate-400">Folge-Aktivierung (Aktiviert diese Einträge mit):</label>
                 <input
                   type="text"
                   value={chainActivatesInput}
@@ -994,10 +994,10 @@ const EntryEditorModal: React.FC<EntryEditorModalProps> = ({ initialEntry, isNew
           {/* Row 6: Lore Content Area */}
           <div className="space-y-1.5">
             <div className="flex items-center justify-between">
-              <label className="text-[11px] font-semibold text-slate-200">
+              <label className="text-xs font-semibold text-slate-200">
                 Inhalt des Lorebook-Eintrags (Markdown)
               </label>
-              <span className="text-[10px] text-slate-400 font-mono">
+              <span className="text-[11px] text-slate-400 font-mono">
                 Unterstützt {'{{char}}'} & {'{{user}}'}
               </span>
             </div>
@@ -1006,7 +1006,7 @@ const EntryEditorModal: React.FC<EntryEditorModalProps> = ({ initialEntry, isNew
               value={entry.content}
               onChange={(e) => setEntry({ ...entry, content: e.target.value })}
               placeholder="Fließtext, Geschichte, Geografie, Verhaltensregeln oder Anweisungen..."
-              className="w-full bg-app border border-slate-800 rounded-xl p-3 text-xs text-slate-100 font-mono focus:outline-none focus:border-indigo-500 leading-relaxed"
+              className="w-full bg-app border border-slate-800 rounded-xl p-3 text-xs text-slate-100 font-mono focus:outline-hidden focus:border-indigo-500 leading-relaxed"
             />
           </div>
         </div>

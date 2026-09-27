@@ -172,7 +172,7 @@ export function VoiceCallControls({
   return (
     <div className="relative flex items-center gap-1">
       {(state !== 'idle' || callActive) && (
-        <div className="hidden sm:flex items-center gap-1.5 px-2 py-1 rounded-lg border border-cyan-500/30 bg-cyan-950/30 text-[10px] text-cyan-200">
+        <div className="hidden sm:flex items-center gap-1.5 px-2 py-1 rounded-lg border border-cyan-500/30 bg-cyan-950/30 text-[11px] text-cyan-200">
           {busy ? <Loader2 className="w-3 h-3 animate-spin" /> : <Radio className="w-3 h-3" />}
           <span>{STATE_LABELS[state]}</span>
           {state === 'listening' && (
@@ -210,7 +210,7 @@ export function VoiceCallControls({
         {callActive ? <PhoneOff className="w-4 h-4" /> : <Phone className="w-4 h-4" />}
       </button>
       {error && (
-        <div className="absolute bottom-full right-0 mb-2 w-72 rounded-lg border border-rose-500/40 bg-rose-950/95 p-2 text-[11px] text-rose-200 shadow-xl">
+        <div className="absolute bottom-full right-0 mb-2 w-72 rounded-lg border border-rose-500/40 bg-rose-950/95 p-2 text-xs text-rose-200 shadow-xl">
           {error}
         </div>
       )}

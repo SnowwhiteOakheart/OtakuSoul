@@ -105,13 +105,13 @@ export const FloatingCompanionOverlay: React.FC = () => {
 
         {/* Speech Bubble */}
         <div className="p-3 rounded-2xl bg-cyan-950/30 border border-cyan-500/20 text-xs text-cyan-100/90 leading-relaxed shadow-inner">
-          <div className="flex items-center gap-1.5 text-[10px] text-cyan-400 font-mono mb-1">
+          <div className="flex items-center gap-1.5 text-[11px] text-cyan-400 font-mono mb-1">
             <MessageSquare className="w-3 h-3" />
             <span>Gefühl: <strong>{emotion}</strong> • {hormones?.mood_label || 'Aktiv'}</span>
           </div>
           <p className="italic">"{bubbleText}"</p>
           {recentThought && (
-            <div className="mt-2 pt-1.5 border-t border-cyan-500/10 text-[10px] text-slate-400">
+            <div className="mt-2 pt-1.5 border-t border-cyan-500/10 text-[11px] text-slate-400">
               💭 <em>{recentThought}</em>
             </div>
           )}
@@ -119,7 +119,7 @@ export const FloatingCompanionOverlay: React.FC = () => {
 
         {/* Hormone Mini Gauges */}
         {hormones && (
-          <div className="grid grid-cols-4 gap-1.5 text-[10px] font-mono">
+          <div className="grid grid-cols-4 gap-1.5 text-[11px] font-mono">
             <div className="p-1.5 rounded-xl bg-slate-900/90 border border-slate-800 flex flex-col items-center">
               <Zap className="w-3 h-3 text-amber-400 mb-0.5" />
               <span className="text-amber-300">{Math.round(hormones.dopamine)}%</span>
@@ -143,21 +143,21 @@ export const FloatingCompanionOverlay: React.FC = () => {
         <div className="grid grid-cols-3 gap-2 pt-1">
           <button
             onClick={handlePet}
-            className="py-1.5 px-2 rounded-xl bg-accent2-950/40 hover:bg-accent2-900/50 border border-accent2-500/30 text-accent2-300 text-[11px] font-medium flex items-center justify-center gap-1 transition active:scale-95"
+            className="py-1.5 px-2 rounded-xl bg-accent2-950/40 hover:bg-accent2-900/50 border border-accent2-500/30 text-accent2-300 text-xs font-medium flex items-center justify-center gap-1 transition active:scale-95"
           >
             <Smile className="w-3 h-3" />
             <span>Kraulen</span>
           </button>
           <button
             onClick={handleAskScreen}
-            className="py-1.5 px-2 rounded-xl bg-cyan-950/40 hover:bg-cyan-900/50 border border-cyan-500/30 text-cyan-300 text-[11px] font-medium flex items-center justify-center gap-1 transition active:scale-95"
+            className="py-1.5 px-2 rounded-xl bg-cyan-950/40 hover:bg-cyan-900/50 border border-cyan-500/30 text-cyan-300 text-xs font-medium flex items-center justify-center gap-1 transition active:scale-95"
           >
             <Camera className="w-3 h-3" />
             <span>Screen</span>
           </button>
           <button
             onClick={handleReadClipboard}
-            className="py-1.5 px-2 rounded-xl bg-indigo-950/40 hover:bg-indigo-900/50 border border-indigo-500/30 text-indigo-300 text-[11px] font-medium flex items-center justify-center gap-1 transition active:scale-95"
+            className="py-1.5 px-2 rounded-xl bg-indigo-950/40 hover:bg-indigo-900/50 border border-indigo-500/30 text-indigo-300 text-xs font-medium flex items-center justify-center gap-1 transition active:scale-95"
           >
             <Clipboard className="w-3 h-3" />
             <span>Clip</span>

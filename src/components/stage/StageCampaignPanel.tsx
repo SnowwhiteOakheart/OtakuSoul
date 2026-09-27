@@ -30,7 +30,7 @@ export const StageCampaignPanel: React.FC = () => {
           <Backpack className="w-5 h-5 text-amber-400" />
           <div>
             <h3 className="text-sm font-bold text-slate-100">Inventar</h3>
-            <p className="text-[11px] text-slate-400">Verbrauchsgegenstände wirken sofort und werden gespeichert.</p>
+            <p className="text-xs text-slate-400">Verbrauchsgegenstände wirken sofort und werden gespeichert.</p>
           </div>
         </div>
 
@@ -44,13 +44,13 @@ export const StageCampaignPanel: React.FC = () => {
                 <div className="min-w-0 flex-1">
                   <div className="flex items-center justify-between gap-2">
                     <span className="text-xs font-bold text-slate-200 truncate">{item.name}</span>
-                    <span className="text-[10px] font-mono text-amber-300">×{item.quantity}</span>
+                    <span className="text-[11px] font-mono text-amber-300">×{item.quantity}</span>
                   </div>
-                  <p className="text-[11px] text-slate-500 mt-0.5 line-clamp-2">{item.description}</p>
+                  <p className="text-xs text-slate-500 mt-0.5 line-clamp-2">{item.description}</p>
                   {item.item_type === 'consumable' && (
                     <button
                       onClick={() => useStageInventoryItem(item.id)}
-                      className="mt-2 px-2.5 py-1 rounded-lg bg-emerald-950/70 hover:bg-emerald-900 text-emerald-300 border border-emerald-500/30 text-[11px] font-semibold transition"
+                      className="mt-2 px-2.5 py-1 rounded-lg bg-emerald-950/70 hover:bg-emerald-900 text-emerald-300 border border-emerald-500/30 text-xs font-semibold transition"
                     >
                       Benutzen
                     </button>
@@ -69,7 +69,7 @@ export const StageCampaignPanel: React.FC = () => {
           <ScrollText className="w-5 h-5 text-cyan-400" />
           <div>
             <h3 className="text-sm font-bold text-slate-100">Ziele & Story-Arcs</h3>
-            <p className="text-[11px] text-slate-400">Der Spielleiter aktualisiert Fortschritt und Enthüllungen.</p>
+            <p className="text-xs text-slate-400">Der Spielleiter aktualisiert Fortschritt und Enthüllungen.</p>
           </div>
         </div>
 
@@ -83,9 +83,9 @@ export const StageCampaignPanel: React.FC = () => {
                 </span>
                 <span className="font-mono text-slate-400">{objective.current}/{objective.max}</span>
               </div>
-              {objective.description && <p className="text-[11px] text-slate-500 mt-1">{objective.description}</p>}
+              {objective.description && <p className="text-xs text-slate-500 mt-1">{objective.description}</p>}
               <div className="mt-2 h-1.5 rounded-full bg-slate-800 overflow-hidden">
-                <div className="h-full bg-gradient-to-r from-cyan-500 to-accent-500" style={{ width: progressWidth(objective.current, objective.max) }} />
+                <div className="h-full bg-linear-to-r from-cyan-500 to-accent-500" style={{ width: progressWidth(objective.current, objective.max) }} />
               </div>
             </div>
           ))}
@@ -96,7 +96,7 @@ export const StageCampaignPanel: React.FC = () => {
                 <span className="font-semibold text-accent-200 flex items-center gap-1.5"><Sparkles className="w-3.5 h-3.5" />{arc.title}</span>
                 <span className="font-mono text-accent-300">{arc.stage}/{arc.max_stage}</span>
               </div>
-              <p className="text-[11px] text-slate-400 mt-1">{arc.description}</p>
+              <p className="text-xs text-slate-400 mt-1">{arc.description}</p>
             </div>
           ))}
 
@@ -111,7 +111,7 @@ export const StageCampaignPanel: React.FC = () => {
           <HeartHandshake className="w-5 h-5 text-accent2-400" />
           <div>
             <h3 className="text-sm font-bold text-slate-100">Beziehungen</h3>
-            <p className="text-[11px] text-slate-400">Rasten vertieft Bindungen und löst Meilensteine aus.</p>
+            <p className="text-xs text-slate-400">Rasten vertieft Bindungen und löst Meilensteine aus.</p>
           </div>
         </div>
         {relationships.length ? relationships.map((relationship) => (
@@ -121,10 +121,10 @@ export const StageCampaignPanel: React.FC = () => {
               <span className="font-mono text-accent2-300">{relationship.affinity}/100</span>
             </div>
             <div className="mt-2 h-1.5 rounded-full bg-slate-800 overflow-hidden">
-              <div className="h-full bg-gradient-to-r from-accent2-600 to-fuchsia-400" style={{ width: `${Math.max(0, relationship.affinity)}%` }} />
+              <div className="h-full bg-linear-to-r from-accent2-600 to-fuchsia-400" style={{ width: `${Math.max(0, relationship.affinity)}%` }} />
             </div>
             {(relationship.role_view || relationship.last_shift_reason) && (
-              <p className="text-[11px] text-slate-500 mt-1.5">{relationship.role_view}{relationship.last_shift_reason ? ` · ${relationship.last_shift_reason}` : ''}</p>
+              <p className="text-xs text-slate-500 mt-1.5">{relationship.role_view}{relationship.last_shift_reason ? ` · ${relationship.last_shift_reason}` : ''}</p>
             )}
           </div>
         )) : <p className="text-xs text-slate-500">Noch keine Beziehungen erfasst.</p>}
@@ -135,7 +135,7 @@ export const StageCampaignPanel: React.FC = () => {
           <TriangleAlert className="w-5 h-5 text-rose-400" />
           <div>
             <h3 className="text-sm font-bold text-slate-100">Chronik & Fakten</h3>
-            <p className="text-[11px] text-slate-400">Dauerhafte Folgen und kanonische Weltinformationen.</p>
+            <p className="text-xs text-slate-400">Dauerhafte Folgen und kanonische Weltinformationen.</p>
           </div>
         </div>
         <div className="space-y-2">

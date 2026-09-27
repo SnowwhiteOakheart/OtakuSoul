@@ -286,7 +286,7 @@ export const CognitiveMemoryDrawer: React.FC<CognitiveMemoryDrawerProps> = ({
             <button
               onClick={handleTriggerReflection}
               disabled={isReflecting}
-              className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-gradient-to-r from-accent-600 to-indigo-600 hover:from-accent-500 hover:to-indigo-500 text-white text-xs font-semibold shadow-lg shadow-accent-900/30 transition disabled:opacity-50"
+              className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-linear-to-r from-accent-600 to-indigo-600 hover:from-accent-500 hover:to-indigo-500 text-white text-xs font-semibold shadow-lg shadow-accent-900/30 transition disabled:opacity-50"
               title="Autonome Seelen-Reflexion durchführen"
             >
               <Sparkles className={`w-3.5 h-3.5 ${isReflecting ? 'animate-spin' : ''}`} />
@@ -324,7 +324,7 @@ export const CognitiveMemoryDrawer: React.FC<CognitiveMemoryDrawerProps> = ({
             <span>Automatische Reflexion:</span>
             <button
               onClick={() => setAutoReflectionEnabled(!autoReflectionEnabled)}
-              className={`px-2 py-0.5 rounded text-[11px] font-medium transition ${
+              className={`px-2 py-0.5 rounded text-xs font-medium transition ${
                 autoReflectionEnabled
                   ? 'bg-emerald-950/80 text-emerald-300 border border-emerald-500/30'
                   : 'bg-slate-800 text-slate-400 border border-slate-700'
@@ -333,12 +333,12 @@ export const CognitiveMemoryDrawer: React.FC<CognitiveMemoryDrawerProps> = ({
               {autoReflectionEnabled ? 'Aktiviert' : 'Deaktiviert'}
             </button>
             {autoReflectionEnabled && (
-              <span className="flex items-center gap-1 text-[11px] text-slate-400">
+              <span className="flex items-center gap-1 text-xs text-slate-400">
                 alle
                 <select
                   value={autoReflectionThreshold}
                   onChange={(e) => setAutoReflectionThreshold(Number(e.target.value))}
-                  className="bg-slate-900 border border-slate-700 rounded px-1.5 py-0.5 text-slate-200 text-xs focus:outline-none"
+                  className="bg-slate-900 border border-slate-700 rounded px-1.5 py-0.5 text-slate-200 text-xs focus:outline-hidden"
                 >
                   <option value={3}>3</option>
                   <option value={5}>5</option>
@@ -351,7 +351,7 @@ export const CognitiveMemoryDrawer: React.FC<CognitiveMemoryDrawerProps> = ({
           </div>
 
           {lastReflectionResult && (
-            <div className="text-[11px] text-slate-400 italic truncate max-w-xs">
+            <div className="text-xs text-slate-400 italic truncate max-w-xs">
               {lastReflectionResult.no_change
                 ? 'Zuletzt: Keine Änderungen'
                 : `Zuletzt: ${lastReflectionResult.psychology.primary_emotion}`}
@@ -452,7 +452,7 @@ export const CognitiveMemoryDrawer: React.FC<CognitiveMemoryDrawerProps> = ({
                     <Shield className="w-3.5 h-3.5 text-indigo-400" />
                     Unumstößliche Glaubenssätze & Kernidentität
                   </span>
-                  <span className="text-[11px] text-slate-400">
+                  <span className="text-xs text-slate-400">
                     {psych.core_identity?.length || 0} Leitsätze
                   </span>
                 </div>
@@ -487,7 +487,7 @@ export const CognitiveMemoryDrawer: React.FC<CognitiveMemoryDrawerProps> = ({
                     onChange={(e) => setNewBeliefInput(e.target.value)}
                     onKeyDown={(e) => e.key === 'Enter' && handleAddBelief()}
                     placeholder="Neuen Leitsatz eintragen (z.B. 'Ich lüge niemals meine Freunde an')..."
-                    className="flex-1 px-3 py-1.5 bg-slate-900/90 border border-slate-700 rounded-lg text-xs text-slate-200 focus:outline-none focus:border-accent-500"
+                    className="flex-1 px-3 py-1.5 bg-slate-900/90 border border-slate-700 rounded-lg text-xs text-slate-200 focus:outline-hidden focus:border-accent-500"
                   />
                   <button
                     onClick={handleAddBelief}
@@ -519,7 +519,7 @@ export const CognitiveMemoryDrawer: React.FC<CognitiveMemoryDrawerProps> = ({
                     <Flame className="w-5 h-5 text-amber-400" />
                     <div>
                       <div className="text-sm font-bold text-slate-100">{psych.primary_emotion}</div>
-                      <div className="text-[11px] text-slate-400">
+                      <div className="text-xs text-slate-400">
                         Decay-Zähler: {psych.emotional_decay_counter}/2 Runden
                       </div>
                     </div>
@@ -555,7 +555,7 @@ export const CognitiveMemoryDrawer: React.FC<CognitiveMemoryDrawerProps> = ({
                   onChange={(e) =>
                     updatePsychology({ ...psych, psychological_tension: e.target.value })
                   }
-                  className="w-full px-3 py-2 bg-slate-900/80 border border-slate-700 rounded-lg text-sm text-slate-200 focus:outline-none focus:border-accent-500"
+                  className="w-full px-3 py-2 bg-slate-900/80 border border-slate-700 rounded-lg text-sm text-slate-200 focus:outline-hidden focus:border-accent-500"
                   placeholder="Keine inneren Konflikte bekannt."
                 />
               </div>
@@ -571,7 +571,7 @@ export const CognitiveMemoryDrawer: React.FC<CognitiveMemoryDrawerProps> = ({
                   onChange={(e) =>
                     updatePsychology({ ...psych, cognitive_dissonance: e.target.value })
                   }
-                  className="w-full px-3 py-2 bg-slate-900/80 border border-slate-700 rounded-lg text-xs text-slate-200 focus:outline-none focus:border-accent-500"
+                  className="w-full px-3 py-2 bg-slate-900/80 border border-slate-700 rounded-lg text-xs text-slate-200 focus:outline-hidden focus:border-accent-500"
                   placeholder="Beschreibe ungelöste emotionale oder sachliche Widersprüche..."
                 />
               </div>
@@ -587,7 +587,7 @@ export const CognitiveMemoryDrawer: React.FC<CognitiveMemoryDrawerProps> = ({
                   onChange={(e) =>
                     updatePsychology({ ...psych, active_agenda: e.target.value })
                   }
-                  className="w-full px-3 py-2 bg-slate-900/80 border border-slate-700 rounded-lg text-sm text-slate-200 focus:outline-none focus:border-accent-500"
+                  className="w-full px-3 py-2 bg-slate-900/80 border border-slate-700 rounded-lg text-sm text-slate-200 focus:outline-hidden focus:border-accent-500"
                   placeholder="Was möchte die Figur derzeit unbewusst erreichen?"
                 />
               </div>
@@ -603,7 +603,7 @@ export const CognitiveMemoryDrawer: React.FC<CognitiveMemoryDrawerProps> = ({
                   onChange={(e) =>
                     updatePsychology({ ...psych, immediate_focus: e.target.value })
                   }
-                  className="w-full px-3 py-2 bg-slate-900/80 border border-slate-700 rounded-lg text-sm text-slate-200 focus:outline-none focus:border-accent-500"
+                  className="w-full px-3 py-2 bg-slate-900/80 border border-slate-700 rounded-lg text-sm text-slate-200 focus:outline-hidden focus:border-accent-500"
                   placeholder="Worauf ist ihr Geist derzeit zentriert?"
                 />
               </div>
@@ -620,25 +620,25 @@ export const CognitiveMemoryDrawer: React.FC<CognitiveMemoryDrawerProps> = ({
                 </span>
                 <div className="grid grid-cols-2 gap-3">
                   <div>
-                    <label className="text-[11px] text-slate-400 block mb-1">Rolle in der Story</label>
+                    <label className="text-xs text-slate-400 block mb-1">Rolle in der Story</label>
                     <input
                       type="text"
                       value={rel.role_in_story || 'User'}
                       onChange={(e) =>
                         updateRelationship({ ...rel, role_in_story: e.target.value })
                       }
-                      className="w-full px-3 py-1.5 bg-slate-900 border border-slate-700 rounded-lg text-xs text-slate-200 focus:outline-none focus:border-accent-500"
+                      className="w-full px-3 py-1.5 bg-slate-900 border border-slate-700 rounded-lg text-xs text-slate-200 focus:outline-hidden focus:border-accent-500"
                     />
                   </div>
                   <div>
-                    <label className="text-[11px] text-slate-400 block mb-1">Bekannte Attribute</label>
+                    <label className="text-xs text-slate-400 block mb-1">Bekannte Attribute</label>
                     <input
                       type="text"
                       value={rel.known_attributes || 'Keine.'}
                       onChange={(e) =>
                         updateRelationship({ ...rel, known_attributes: e.target.value })
                       }
-                      className="w-full px-3 py-1.5 bg-slate-900 border border-slate-700 rounded-lg text-xs text-slate-200 focus:outline-none focus:border-accent-500"
+                      className="w-full px-3 py-1.5 bg-slate-900 border border-slate-700 rounded-lg text-xs text-slate-200 focus:outline-hidden focus:border-accent-500"
                     />
                   </div>
                 </div>
@@ -673,27 +673,27 @@ export const CognitiveMemoryDrawer: React.FC<CognitiveMemoryDrawerProps> = ({
                 </div>
 
                 <div>
-                  <label className="text-[11px] text-slate-400 block mb-1">Beziehungsdynamik</label>
+                  <label className="text-xs text-slate-400 block mb-1">Beziehungsdynamik</label>
                   <input
                     type="text"
                     value={rel.dynamic_description || 'Keine.'}
                     onChange={(e) =>
                       updateRelationship({ ...rel, dynamic_description: e.target.value })
                     }
-                    className="w-full px-3 py-1.5 bg-slate-900 border border-slate-700 rounded-lg text-xs text-slate-200 focus:outline-none focus:border-accent-500"
+                    className="w-full px-3 py-1.5 bg-slate-900 border border-slate-700 rounded-lg text-xs text-slate-200 focus:outline-hidden focus:border-accent-500"
                     placeholder="Wie nimmt sie die Beziehung wahr?..."
                   />
                 </div>
 
                 <div>
-                  <label className="text-[11px] text-slate-400 block mb-1">Ungesagte Spannungen</label>
+                  <label className="text-xs text-slate-400 block mb-1">Ungesagte Spannungen</label>
                   <input
                     type="text"
                     value={rel.unspoken_tension}
                     onChange={(e) =>
                       updateRelationship({ ...rel, unspoken_tension: e.target.value })
                     }
-                    className="w-full px-3 py-1.5 bg-slate-900 border border-slate-700 rounded-lg text-xs text-slate-200 focus:outline-none focus:border-accent-500"
+                    className="w-full px-3 py-1.5 bg-slate-900 border border-slate-700 rounded-lg text-xs text-slate-200 focus:outline-hidden focus:border-accent-500"
                     placeholder="Was behält sie für sich?..."
                   />
                 </div>
@@ -732,7 +732,7 @@ export const CognitiveMemoryDrawer: React.FC<CognitiveMemoryDrawerProps> = ({
                     onChange={(e) => setNewPrefInput(e.target.value)}
                     onKeyDown={(e) => e.key === 'Enter' && handleAddPref()}
                     placeholder="Neue Vorliebe hinzufügen..."
-                    className="flex-1 px-3 py-1.5 bg-slate-900/80 border border-slate-700 rounded-lg text-xs text-slate-200 focus:outline-none focus:border-accent-500"
+                    className="flex-1 px-3 py-1.5 bg-slate-900/80 border border-slate-700 rounded-lg text-xs text-slate-200 focus:outline-hidden focus:border-accent-500"
                   />
                   <button
                     onClick={handleAddPref}
@@ -777,7 +777,7 @@ export const CognitiveMemoryDrawer: React.FC<CognitiveMemoryDrawerProps> = ({
                     onChange={(e) => setNewMilestoneInput(e.target.value)}
                     onKeyDown={(e) => e.key === 'Enter' && handleAddMilestone()}
                     placeholder="Gemeinsamen Meilenstein festhalten..."
-                    className="flex-1 px-3 py-1.5 bg-slate-900/80 border border-slate-700 rounded-lg text-xs text-slate-200 focus:outline-none focus:border-accent-500"
+                    className="flex-1 px-3 py-1.5 bg-slate-900/80 border border-slate-700 rounded-lg text-xs text-slate-200 focus:outline-hidden focus:border-accent-500"
                   />
                   <button
                     onClick={handleAddMilestone}
@@ -841,7 +841,7 @@ export const CognitiveMemoryDrawer: React.FC<CognitiveMemoryDrawerProps> = ({
                 </div>
               </div>
 
-              <div className="text-[11px] text-slate-400">
+              <div className="text-xs text-slate-400">
                 Änderungen am Markdown-Format werden beim Klick auf "In SQLite synchronisieren" geparst und aktualisieren die Tabellen.
               </div>
 
@@ -849,7 +849,7 @@ export const CognitiveMemoryDrawer: React.FC<CognitiveMemoryDrawerProps> = ({
                 value={localMdContent}
                 onChange={(e) => setLocalMdContent(e.target.value)}
                 rows={18}
-                className="w-full flex-1 p-3 bg-app font-mono text-xs text-slate-200 border border-slate-800 rounded-xl focus:outline-none focus:border-accent-500 leading-relaxed resize-y"
+                className="w-full flex-1 p-3 bg-app font-mono text-xs text-slate-200 border border-slate-800 rounded-xl focus:outline-hidden focus:border-accent-500 leading-relaxed resize-y"
                 placeholder="# Lade Markdown..."
               />
             </div>
@@ -870,7 +870,7 @@ export const CognitiveMemoryDrawer: React.FC<CognitiveMemoryDrawerProps> = ({
                   <select
                     value={newMemCategory}
                     onChange={(e) => setNewMemCategory(e.target.value as any)}
-                    className="bg-slate-900 border border-slate-700 text-xs text-slate-300 rounded px-2 py-1.5 focus:outline-none"
+                    className="bg-slate-900 border border-slate-700 text-xs text-slate-300 rounded px-2 py-1.5 focus:outline-hidden"
                   >
                     <option value="fact">Fakt (fact)</option>
                     <option value="topic">Thema (topic)</option>
@@ -883,7 +883,7 @@ export const CognitiveMemoryDrawer: React.FC<CognitiveMemoryDrawerProps> = ({
                   <select
                     value={newMemSignificance}
                     onChange={(e) => setNewMemSignificance(Number(e.target.value))}
-                    className="bg-slate-900 border border-slate-700 text-xs text-slate-300 rounded px-2 py-1.5 focus:outline-none"
+                    className="bg-slate-900 border border-slate-700 text-xs text-slate-300 rounded px-2 py-1.5 focus:outline-hidden"
                   >
                     <option value={5}>★ 5 (Höchste Prio)</option>
                     <option value={4}>★ 4 (Sehr wichtig)</option>
@@ -899,7 +899,7 @@ export const CognitiveMemoryDrawer: React.FC<CognitiveMemoryDrawerProps> = ({
                     value={newMemContent}
                     onChange={(e) => setNewMemContent(e.target.value)}
                     placeholder="Z. B.: Hiroki hat versprochen, im Sommer ans Meer zu fahren."
-                    className="flex-1 px-3 py-1.5 bg-slate-900/90 border border-slate-700 rounded-lg text-xs text-slate-200 focus:outline-none focus:border-accent-500"
+                    className="flex-1 px-3 py-1.5 bg-slate-900/90 border border-slate-700 rounded-lg text-xs text-slate-200 focus:outline-hidden focus:border-accent-500"
                   />
                   <button
                     type="submit"
@@ -918,7 +918,7 @@ export const CognitiveMemoryDrawer: React.FC<CognitiveMemoryDrawerProps> = ({
                   >
                     <div className="space-y-1">
                       <div className="flex items-center gap-2">
-                        <span className="text-[10px] uppercase font-bold px-2 py-0.5 rounded bg-accent-900/60 text-accent-300 border border-accent-500/30">
+                        <span className="text-[11px] uppercase font-bold px-2 py-0.5 rounded bg-accent-900/60 text-accent-300 border border-accent-500/30">
                           {mem.category}
                         </span>
                         <span className="text-amber-400 text-xs font-mono">
@@ -970,12 +970,12 @@ export const CognitiveMemoryDrawer: React.FC<CognitiveMemoryDrawerProps> = ({
                     value={newDiaryTitle}
                     onChange={(e) => setNewDiaryTitle(e.target.value)}
                     placeholder="Titel des Eintrags..."
-                    className="flex-1 px-3 py-1.5 bg-slate-900 border border-slate-700 rounded-lg text-xs text-slate-200 focus:outline-none focus:border-accent-500"
+                    className="flex-1 px-3 py-1.5 bg-slate-900 border border-slate-700 rounded-lg text-xs text-slate-200 focus:outline-hidden focus:border-accent-500"
                   />
                   <select
                     value={newDiaryMood}
                     onChange={(e) => setNewDiaryMood(e.target.value)}
-                    className="bg-slate-900 border border-slate-700 text-xs text-slate-300 rounded px-2 py-1.5 focus:outline-none"
+                    className="bg-slate-900 border border-slate-700 text-xs text-slate-300 rounded px-2 py-1.5 focus:outline-hidden"
                   >
                     <option value="Reflective">Reflective</option>
                     <option value="Happy">Happy</option>
@@ -989,7 +989,7 @@ export const CognitiveMemoryDrawer: React.FC<CognitiveMemoryDrawerProps> = ({
                   value={newDiaryText}
                   onChange={(e) => setNewDiaryText(e.target.value)}
                   placeholder="Was geht {charName} durch den Kopf?..."
-                  className="w-full px-3 py-1.5 bg-slate-900 border border-slate-700 rounded-lg text-xs text-slate-200 focus:outline-none focus:border-accent-500"
+                  className="w-full px-3 py-1.5 bg-slate-900 border border-slate-700 rounded-lg text-xs text-slate-200 focus:outline-hidden focus:border-accent-500"
                 />
                 <button
                   type="submit"
@@ -1007,7 +1007,7 @@ export const CognitiveMemoryDrawer: React.FC<CognitiveMemoryDrawerProps> = ({
                   >
                     <div className="flex items-center justify-between">
                       <h4 className="text-xs font-bold text-slate-200">{entry.title}</h4>
-                      <span className="text-[10px] px-2 py-0.5 rounded-full bg-accent2-900/40 text-accent2-300 border border-accent2-500/30">
+                      <span className="text-[11px] px-2 py-0.5 rounded-full bg-accent2-900/40 text-accent2-300 border border-accent2-500/30">
                         {entry.mood}
                       </span>
                     </div>
@@ -1043,10 +1043,10 @@ export const CognitiveMemoryDrawer: React.FC<CognitiveMemoryDrawerProps> = ({
                     <Shield className="w-3.5 h-3.5 text-cyan-400 shrink-0" />
                     <div>
                       <div className="font-semibold text-slate-200">{log.action}</div>
-                      <div className="text-slate-400 text-[11px] leading-relaxed">{log.details}</div>
+                      <div className="text-slate-400 text-xs leading-relaxed">{log.details}</div>
                     </div>
                   </div>
-                  <span className="text-[10px] font-mono text-slate-500 shrink-0">
+                  <span className="text-[11px] font-mono text-slate-500 shrink-0">
                     {new Date(log.created_at * 1000).toLocaleTimeString()}
                   </span>
                 </div>
@@ -1067,7 +1067,7 @@ export const CognitiveMemoryDrawer: React.FC<CognitiveMemoryDrawerProps> = ({
               <div className="flex items-center justify-between p-3.5 rounded-xl bg-slate-800/40 border border-slate-700/60">
                 <div>
                   <h3 className="text-xs font-bold text-slate-200">Soul of Waifu Gedächtnis-Import</h3>
-                  <p className="text-[11px] text-slate-400">
+                  <p className="text-xs text-slate-400">
                     Liest vorhandene MEMORY.md, USER.md und topics/*.md aus einem SoW-Ordner ein.
                   </p>
                 </div>
@@ -1100,10 +1100,10 @@ export const CognitiveMemoryDrawer: React.FC<CognitiveMemoryDrawerProps> = ({
                     className="p-3 rounded-xl bg-slate-800/40 border border-slate-700/60 flex items-center justify-between text-xs"
                   >
                     <div>
-                      <div className="font-semibold text-slate-200 font-mono text-[11px]">
+                      <div className="font-semibold text-slate-200 font-mono text-xs">
                         {b.filename}
                       </div>
-                      <div className="text-slate-400 text-[10px]">
+                      <div className="text-slate-400 text-[11px]">
                         {b.date_formatted} • {Math.round(b.size_bytes / 1024)} KB
                       </div>
                     </div>

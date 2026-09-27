@@ -99,14 +99,14 @@ export const FeedbackHost: React.FC = () => {
             <div className="flex justify-end gap-2">
               <button
                 onClick={() => settleConfirm(false)}
-                className="px-4 py-2 rounded-xl text-sm text-slate-300 hover:bg-slate-800 focus-visible:ring-2 focus-visible:ring-accent-400 outline-none"
+                className="px-4 py-2 rounded-xl text-sm text-slate-300 hover:bg-slate-800 focus-visible:ring-2 focus-visible:ring-accent-400 outline-hidden"
               >
                 {pendingConfirm.cancelLabel ?? t('common.cancel')}
               </button>
               <button
                 data-autofocus
                 onClick={() => settleConfirm(true)}
-                className={`px-4 py-2 rounded-xl text-sm font-semibold text-white focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:ring-offset-slate-900 outline-none ${
+                className={`px-4 py-2 rounded-xl text-sm font-semibold text-white focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:ring-offset-slate-900 outline-hidden ${
                   pendingConfirm.tone === 'danger'
                     ? 'bg-rose-600 hover:bg-rose-500 focus-visible:ring-rose-400'
                     : 'bg-accent-600 hover:bg-accent-500 focus-visible:ring-accent-400'

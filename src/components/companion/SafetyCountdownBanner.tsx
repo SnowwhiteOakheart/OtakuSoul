@@ -46,7 +46,7 @@ export const SafetyCountdownBanner: React.FC = () => {
           <div className="flex items-center justify-between">
             <h3 className="text-sm font-bold text-slate-100 flex items-center gap-1.5">
               <span>Sicherheitsabfrage: Tool-Aufruf</span>
-              <span className="text-[10px] px-2 py-0.5 rounded-full bg-amber-950 text-amber-300 border border-amber-500/40 font-mono">
+              <span className="text-[11px] px-2 py-0.5 rounded-full bg-amber-950 text-amber-300 border border-amber-500/40 font-mono">
                 Human-in-the-Loop
               </span>
             </h3>
@@ -62,7 +62,7 @@ export const SafetyCountdownBanner: React.FC = () => {
               <Terminal className="w-3.5 h-3.5 text-accent-400" />
               <span>Tool: <strong>{pendingCall.tool_name}</strong></span>
             </div>
-            <pre className="text-[11px] text-slate-400 overflow-x-auto whitespace-pre-wrap">
+            <pre className="text-xs text-slate-400 overflow-x-auto whitespace-pre-wrap">
               {JSON.stringify(pendingCall.arguments, null, 2)}
             </pre>
           </div>
@@ -70,7 +70,7 @@ export const SafetyCountdownBanner: React.FC = () => {
           {/* Countdown Progress Bar */}
           <div className="w-full bg-app rounded-full h-1.5 overflow-hidden">
             <div
-              className="h-1.5 bg-gradient-to-r from-amber-500 via-rose-500 to-rose-600 transition-all duration-1000 ease-linear rounded-full"
+              className="h-1.5 bg-linear-to-r from-amber-500 via-rose-500 to-rose-600 transition-all duration-1000 ease-linear rounded-full"
               style={{ width: `${percent}%` }}
             />
           </div>
@@ -86,7 +86,7 @@ export const SafetyCountdownBanner: React.FC = () => {
             </button>
             <button
               onClick={() => resolveToolCall(pendingCall.id, true)}
-              className="px-4 py-1.5 rounded-xl bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-500 hover:to-teal-500 text-white text-xs font-bold shadow-lg shadow-emerald-950/40 transition flex items-center gap-1.5 active:scale-95"
+              className="px-4 py-1.5 rounded-xl bg-linear-to-r from-emerald-600 to-teal-600 hover:from-emerald-500 hover:to-teal-500 text-white text-xs font-bold shadow-lg shadow-emerald-950/40 transition flex items-center gap-1.5 active:scale-95"
             >
               <Check className="w-3.5 h-3.5" />
               Freigeben ({secondsRemaining}s)

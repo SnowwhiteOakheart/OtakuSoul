@@ -198,7 +198,7 @@ export const StageView: React.FC = () => {
                 {currentScene?.title || 'Soul Stage: KI-Game-Master'}
               </h2>
               {currentScene?.gm_tone && (
-                <span className="text-[10px] px-2 py-0.2 rounded-full bg-accent-950/80 border border-accent-500/30 text-accent-300 font-mono">
+                <span className="text-[11px] px-2 py-0.2 rounded-full bg-accent-950/80 border border-accent-500/30 text-accent-300 font-mono">
                   {currentScene.gm_tone}
                 </span>
               )}
@@ -258,7 +258,7 @@ export const StageView: React.FC = () => {
         {/* Right: Scene Lobby, Export & Ambiance Controls */}
         <div className="flex items-center gap-2">
           <div
-            className={`hidden xl:flex items-center gap-1.5 px-2.5 py-1.5 rounded-xl border text-[11px] font-semibold ${
+            className={`hidden xl:flex items-center gap-1.5 px-2.5 py-1.5 rounded-xl border text-xs font-semibold ${
               isProcessingStageTurn
                 ? 'bg-accent-950/60 border-accent-500/40 text-accent-200'
                 : 'bg-app border-slate-700 text-slate-300'
@@ -343,7 +343,7 @@ export const StageView: React.FC = () => {
         /* Tactical Overview: Clocks, Dice & Encounters */
         <div className="flex-1 overflow-y-auto p-4 lg:p-6 space-y-6">
           {/* World & Atmosphere Banner */}
-          <div className="p-4 sm:p-5 rounded-2xl bg-gradient-to-r from-slate-900/90 via-accent-950/20 to-slate-900/90 border border-slate-800 shadow-2xl backdrop-blur relative">
+          <div className="p-4 sm:p-5 rounded-2xl bg-linear-to-r from-slate-900/90 via-accent-950/20 to-slate-900/90 border border-slate-800 shadow-2xl backdrop-blur relative">
             <div className="flex flex-wrap items-center justify-between gap-4 border-b border-slate-800/80 pb-3 mb-3">
               <div>
                 <h3 className="text-sm font-bold text-slate-100 flex items-center gap-2">
@@ -367,14 +367,14 @@ export const StageView: React.FC = () => {
             {!isEditingWorld ? (
               <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3 text-xs">
                 <div className="p-3 rounded-xl bg-app/50 border border-slate-800/60">
-                  <span className="text-[11px] text-slate-400 block mb-0.5">Aktueller Ort</span>
+                  <span className="text-xs text-slate-400 block mb-0.5">Aktueller Ort</span>
                   <span className="font-bold text-slate-200 line-clamp-1">
                     {world?.location || 'Unbekannt'}
                   </span>
                 </div>
 
                 <div className="p-3 rounded-xl bg-app/50 border border-slate-800/60">
-                  <span className="text-[11px] text-slate-400 block mb-0.5">Tageszeit & Wetter</span>
+                  <span className="text-xs text-slate-400 block mb-0.5">Tageszeit & Wetter</span>
                   <span className="font-bold text-accent-200 line-clamp-1">
                     {world?.time_of_day} • {world?.weather}
                   </span>
@@ -382,7 +382,7 @@ export const StageView: React.FC = () => {
 
                 <div className="p-3 rounded-xl bg-app/50 border border-slate-800/60 flex items-center justify-between">
                   <div>
-                    <span className="text-[11px] text-slate-400 block mb-0.5">Gefahrenstufe</span>
+                    <span className="text-xs text-slate-400 block mb-0.5">Gefahrenstufe</span>
                     <span className="font-bold text-slate-200">Stufe {world?.danger_level} von 5</span>
                   </div>
                   <div className="flex gap-1 text-amber-500">
@@ -393,7 +393,7 @@ export const StageView: React.FC = () => {
                 </div>
 
                 <div className="p-3 rounded-xl bg-app/50 border border-slate-800/60 sm:col-span-2 lg:col-span-1">
-                  <span className="text-[11px] text-slate-400 block mb-0.5">Aktuelle Quest / Fokus</span>
+                  <span className="text-xs text-slate-400 block mb-0.5">Aktuelle Quest / Fokus</span>
                   <span className="font-semibold text-slate-300 line-clamp-1">
                     {world?.active_quest}
                   </span>
@@ -403,46 +403,46 @@ export const StageView: React.FC = () => {
               <div className="p-4 rounded-xl bg-app/80 border border-accent-500/40 space-y-3">
                 <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
                   <div>
-                    <label className="text-[11px] text-slate-400 block mb-1">Ort</label>
+                    <label className="text-xs text-slate-400 block mb-1">Ort</label>
                     <input
                       type="text"
                       value={locationInput}
                       onChange={(e) => setLocationInput(e.target.value)}
-                      className="w-full px-3 py-1.5 bg-slate-900 border border-slate-700 rounded-lg text-xs text-slate-200 focus:outline-none focus:border-accent-500"
+                      className="w-full px-3 py-1.5 bg-slate-900 border border-slate-700 rounded-lg text-xs text-slate-200 focus:outline-hidden focus:border-accent-500"
                     />
                   </div>
                   <div>
-                    <label className="text-[11px] text-slate-400 block mb-1">Tageszeit</label>
+                    <label className="text-xs text-slate-400 block mb-1">Tageszeit</label>
                     <input
                       type="text"
                       value={timeInput}
                       onChange={(e) => setTimeInput(e.target.value)}
-                      className="w-full px-3 py-1.5 bg-slate-900 border border-slate-700 rounded-lg text-xs text-slate-200 focus:outline-none focus:border-accent-500"
+                      className="w-full px-3 py-1.5 bg-slate-900 border border-slate-700 rounded-lg text-xs text-slate-200 focus:outline-hidden focus:border-accent-500"
                     />
                   </div>
                   <div>
-                    <label className="text-[11px] text-slate-400 block mb-1">Wetter</label>
+                    <label className="text-xs text-slate-400 block mb-1">Wetter</label>
                     <input
                       type="text"
                       value={weatherInput}
                       onChange={(e) => setWeatherInput(e.target.value)}
-                      className="w-full px-3 py-1.5 bg-slate-900 border border-slate-700 rounded-lg text-xs text-slate-200 focus:outline-none focus:border-accent-500"
+                      className="w-full px-3 py-1.5 bg-slate-900 border border-slate-700 rounded-lg text-xs text-slate-200 focus:outline-hidden focus:border-accent-500"
                     />
                   </div>
                 </div>
 
                 <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
                   <div className="sm:col-span-2">
-                    <label className="text-[11px] text-slate-400 block mb-1">Quest / Ziel</label>
+                    <label className="text-xs text-slate-400 block mb-1">Quest / Ziel</label>
                     <input
                       type="text"
                       value={questInput}
                       onChange={(e) => setQuestInput(e.target.value)}
-                      className="w-full px-3 py-1.5 bg-slate-900 border border-slate-700 rounded-lg text-xs text-slate-200 focus:outline-none focus:border-accent-500"
+                      className="w-full px-3 py-1.5 bg-slate-900 border border-slate-700 rounded-lg text-xs text-slate-200 focus:outline-hidden focus:border-accent-500"
                     />
                   </div>
                   <div>
-                    <label className="text-[11px] text-slate-400 block mb-1">
+                    <label className="text-xs text-slate-400 block mb-1">
                       Gefahrenstufe (1-5)
                     </label>
                     <input
@@ -451,7 +451,7 @@ export const StageView: React.FC = () => {
                       max={5}
                       value={dangerInput}
                       onChange={(e) => setDangerInput(parseInt(e.target.value) || 1)}
-                      className="w-full px-3 py-1.5 bg-slate-900 border border-slate-700 rounded-lg text-xs text-slate-200 focus:outline-none focus:border-accent-500"
+                      className="w-full px-3 py-1.5 bg-slate-900 border border-slate-700 rounded-lg text-xs text-slate-200 focus:outline-hidden focus:border-accent-500"
                     />
                   </div>
                 </div>
@@ -481,7 +481,7 @@ export const StageView: React.FC = () => {
               <div className="flex items-center justify-between border-b border-slate-800 pb-3">
                 <div>
                   <h3 className="text-sm font-bold text-slate-100">Kampagnen-Clocks (Spannungs-Uhren)</h3>
-                  <p className="text-[11px] text-slate-400">
+                  <p className="text-xs text-slate-400">
                     Klicke auf Segmente, um Fortschritt oder Bedrohung zu steigern
                   </p>
                 </div>
@@ -534,23 +534,23 @@ export const StageView: React.FC = () => {
           >
             <h4 className="text-xs font-bold text-slate-100">Neue Kampagnen-Uhr anlegen</h4>
             <div>
-              <label className="text-[11px] text-slate-400 block mb-1">Name der Uhr</label>
+              <label className="text-xs text-slate-400 block mb-1">Name der Uhr</label>
               <input
                 type="text"
                 value={newClockName}
                 onChange={(e) => setNewClockName(e.target.value)}
                 placeholder="Verstärkung der Wachen, Giftwirkung..."
-                className="w-full px-3 py-1.5 bg-app border border-slate-700 rounded-lg text-xs text-slate-100 focus:outline-none focus:border-accent-500"
+                className="w-full px-3 py-1.5 bg-app border border-slate-700 rounded-lg text-xs text-slate-100 focus:outline-hidden focus:border-accent-500"
               />
             </div>
 
             <div className="grid grid-cols-2 gap-2">
               <div>
-                <label className="text-[11px] text-slate-400 block mb-1">Segmente</label>
+                <label className="text-xs text-slate-400 block mb-1">Segmente</label>
                 <select
                   value={newClockMax}
                   onChange={(e) => setNewClockMax(Number(e.target.value))}
-                  className="w-full px-2 py-1.5 bg-app border border-slate-700 rounded-lg text-xs text-slate-200 focus:outline-none"
+                  className="w-full px-2 py-1.5 bg-app border border-slate-700 rounded-lg text-xs text-slate-200 focus:outline-hidden"
                 >
                   <option value={4}>4 Segmente</option>
                   <option value={6}>6 Segmente</option>
@@ -560,11 +560,11 @@ export const StageView: React.FC = () => {
               </div>
 
               <div>
-                <label className="text-[11px] text-slate-400 block mb-1">Typ</label>
+                <label className="text-xs text-slate-400 block mb-1">Typ</label>
                 <select
                   value={newClockType}
                   onChange={(e) => setNewClockType(e.target.value as any)}
-                  className="w-full px-2 py-1.5 bg-app border border-slate-700 rounded-lg text-xs text-slate-200 focus:outline-none"
+                  className="w-full px-2 py-1.5 bg-app border border-slate-700 rounded-lg text-xs text-slate-200 focus:outline-hidden"
                 >
                   <option value="danger">Gefahr (Rot)</option>
                   <option value="progress">Fortschritt (Gold)</option>

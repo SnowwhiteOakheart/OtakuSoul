@@ -46,7 +46,7 @@ export const PartyHeader: React.FC = () => {
       <div className="flex flex-wrap items-center justify-between gap-3">
         {/* Party members avatars and stats */}
         <div className="flex flex-wrap items-center gap-3">
-          <div className="text-[11px] font-bold text-slate-400 uppercase tracking-wider flex items-center gap-1.5 mr-1">
+          <div className="text-xs font-bold text-slate-400 uppercase tracking-wider flex items-center gap-1.5 mr-1">
             <Shield className="w-3.5 h-3.5 text-accent-400" />
             Gruppe:
           </div>
@@ -75,7 +75,7 @@ export const PartyHeader: React.FC = () => {
                 <div className="flex flex-col gap-1 min-w-[120px]">
                   <div className="flex items-center justify-between text-xs font-semibold">
                     <span className="text-slate-200 truncate max-w-[90px]">{member.name}</span>
-                    <span className="text-[10px] text-slate-400 font-mono">
+                    <span className="text-[11px] text-slate-400 font-mono">
                       {member.hp}/{member.max_hp}
                     </span>
                   </div>
@@ -115,7 +115,7 @@ export const PartyHeader: React.FC = () => {
                     {member.conditions.map((cond, idx) => (
                       <span
                         key={idx}
-                        className="px-1.5 py-0.2 rounded bg-amber-950/80 border border-amber-500/30 text-[9px] text-amber-300 font-medium"
+                        className="px-1.5 py-0.2 rounded bg-amber-950/80 border border-amber-500/30 text-[11px] text-amber-300 font-medium"
                         title={`${cond.name} (${cond.rounds_remaining} Runden)`}
                       >
                         {cond.name}

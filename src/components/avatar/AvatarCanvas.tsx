@@ -191,7 +191,7 @@ export const AvatarCanvas: React.FC<AvatarCanvasProps> = ({
 
           {showEmotionMenu && (
             <div className="absolute right-0 top-full mt-1.5 w-48 max-h-60 overflow-y-auto bg-slate-900/95 border border-slate-700 rounded-xl p-1 shadow-2xl backdrop-blur-xl z-50 text-xs">
-              <div className="px-2 py-1 text-[10px] font-semibold text-slate-400 uppercase tracking-wider border-b border-slate-800 mb-1">
+              <div className="px-2 py-1 text-[11px] font-semibold text-slate-400 uppercase tracking-wider border-b border-slate-800 mb-1">
                 28 GoEmotions testen
               </div>
               {ALL_GO_EMOTIONS.map((em) => (
@@ -216,7 +216,7 @@ export const AvatarCanvas: React.FC<AvatarCanvasProps> = ({
         <div className="flex items-center bg-slate-900/80 p-0.5 rounded-lg border border-slate-700/60 text-xs backdrop-blur shadow-md">
           <button
             onClick={() => setAvatarMode('3d')}
-            className={`flex items-center gap-1 px-2.5 py-1 rounded-md text-[11px] font-medium transition-all ${
+            className={`flex items-center gap-1 px-2.5 py-1 rounded-md text-xs font-medium transition-all ${
               avatarMode === '3d'
                 ? 'bg-accent-600 text-white shadow-sm'
                 : 'text-slate-400 hover:text-slate-200'
@@ -229,7 +229,7 @@ export const AvatarCanvas: React.FC<AvatarCanvasProps> = ({
 
           <button
             onClick={() => setAvatarMode('live2d')}
-            className={`flex items-center gap-1 px-2.5 py-1 rounded-md text-[11px] font-medium transition-all ${
+            className={`flex items-center gap-1 px-2.5 py-1 rounded-md text-xs font-medium transition-all ${
               avatarMode === 'live2d'
                 ? 'bg-accent-600 text-white shadow-sm'
                 : 'text-slate-400 hover:text-slate-200'
@@ -242,7 +242,7 @@ export const AvatarCanvas: React.FC<AvatarCanvasProps> = ({
 
           <button
             onClick={() => setAvatarMode('2d')}
-            className={`flex items-center gap-1 px-2.5 py-1 rounded-md text-[11px] font-medium transition-all ${
+            className={`flex items-center gap-1 px-2.5 py-1 rounded-md text-xs font-medium transition-all ${
               avatarMode === '2d'
                 ? 'bg-accent-600 text-white shadow-sm'
                 : 'text-slate-400 hover:text-slate-200'
@@ -284,11 +284,11 @@ export const AvatarCanvas: React.FC<AvatarCanvasProps> = ({
         )
       ) : (
         /* 2D Portrait / Expression Sprite Mode */
-        <div className="relative w-full h-full flex flex-col items-center justify-center p-6 bg-gradient-to-b from-slate-900/60 via-accent-950/30 to-app">
+        <div className="relative w-full h-full flex flex-col items-center justify-center p-6 bg-linear-to-b from-slate-900/60 via-accent-950/30 to-app">
           {emotionImage ? (
             <MorphingPortrait src={emotionImage} alt={charName} isSpeaking={isSpeaking} />
           ) : (
-            <div className="w-48 h-48 rounded-full bg-gradient-to-tr from-accent-600 to-accent2-600 flex items-center justify-center text-white text-5xl font-bold border-4 border-accent-500/50 shadow-2xl">
+            <div className="w-48 h-48 rounded-full bg-linear-to-tr from-accent-600 to-accent2-600 flex items-center justify-center text-white text-5xl font-bold border-4 border-accent-500/50 shadow-2xl">
               {charName.charAt(0)}
             </div>
           )}

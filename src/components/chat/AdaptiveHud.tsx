@@ -71,7 +71,7 @@ export const AdaptiveHud = () => {
               className="w-10 h-10 rounded-full object-cover border-2 border-accent-500/60 shadow-md group-hover:border-accent-400 transition-colors"
             />
           ) : (
-            <div className="w-10 h-10 rounded-full bg-gradient-to-tr from-accent-600 to-accent2-600 flex items-center justify-center text-white font-bold border-2 border-accent-500/60 shadow-md">
+            <div className="w-10 h-10 rounded-full bg-linear-to-tr from-accent-600 to-accent2-600 flex items-center justify-center text-white font-bold border-2 border-accent-500/60 shadow-md">
               {data.name.charAt(0)}
             </div>
           )}
@@ -86,13 +86,13 @@ export const AdaptiveHud = () => {
             <span>{data.name}</span>
             <ChevronDown className="w-3.5 h-3.5 text-slate-400 group-hover:text-accent-300 transition-transform" />
           </button>
-          <div className="text-[11px] text-slate-400 line-clamp-1">{title}</div>
+          <div className="text-xs text-slate-400 line-clamp-1">{title}</div>
         </div>
 
         {/* Character Switcher Popover */}
         {showSelector && (
           <div className="absolute top-12 left-0 w-72 rounded-xl bg-slate-900/95 border border-slate-700 shadow-2xl p-2 z-50 backdrop-blur space-y-1">
-            <div className="text-[11px] font-semibold text-slate-400 px-2 py-1 flex items-center gap-1 border-b border-slate-800">
+            <div className="text-xs font-semibold text-slate-400 px-2 py-1 flex items-center gap-1 border-b border-slate-800">
               <Users className="w-3.5 h-3.5" />
               <span>Verfügbare Charaktere</span>
             </div>
@@ -123,7 +123,7 @@ export const AdaptiveHud = () => {
                   )}
                   <div className="overflow-hidden">
                     <div className="text-xs font-semibold truncate">{char.card.data.name}</div>
-                    <div className="text-[10px] text-slate-400 truncate">
+                    <div className="text-[11px] text-slate-400 truncate">
                       {char.card.data.personality || 'Keine Beschreibung'}
                     </div>
                   </div>
@@ -136,7 +136,7 @@ export const AdaptiveHud = () => {
                   setShowSelector(false);
                   setActiveTab('characters');
                 }}
-                className="w-full py-1.5 px-2 rounded-lg bg-accent-600/20 hover:bg-accent-600/30 text-accent-300 border border-accent-500/30 text-[11px] font-semibold flex items-center justify-center gap-1.5 transition-colors"
+                className="w-full py-1.5 px-2 rounded-lg bg-accent-600/20 hover:bg-accent-600/30 text-accent-300 border border-accent-500/30 text-xs font-semibold flex items-center justify-center gap-1.5 transition-colors"
               >
                 <Users className="w-3.5 h-3.5" />
                 <span>Alle Charaktere in Bibliothek anzeigen...</span>
@@ -151,7 +151,7 @@ export const AdaptiveHud = () => {
         {/* Persona Badge */}
         <div
           onClick={() => setActiveTab('characters')}
-          className="cursor-pointer hidden sm:flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-indigo-950/40 border border-indigo-500/30 text-indigo-300 text-[11px] hover:border-indigo-400 transition-colors"
+          className="cursor-pointer hidden sm:flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-indigo-950/40 border border-indigo-500/30 text-indigo-300 text-xs hover:border-indigo-400 transition-colors"
           title="User-Persona (klicken zum Wechseln in der Bibliothek)"
         >
           <span className="text-slate-400">Du:</span>
@@ -160,7 +160,7 @@ export const AdaptiveHud = () => {
 
         {/* Lorebook Badge */}
         {activeLorebooks.length > 0 && (
-          <div className="hidden lg:flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-slate-800/70 border border-slate-700/60 text-slate-300 text-[11px]">
+          <div className="hidden lg:flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-slate-800/70 border border-slate-700/60 text-slate-300 text-xs">
             <BookOpen className="w-3 h-3 text-amber-400" />
             <span>Lorebook Aktiv</span>
           </div>
@@ -183,18 +183,18 @@ export const AdaptiveHud = () => {
                 ) : (
                   <Zap className="w-3.5 h-3.5 text-cyan-400" />
                 )}
-                <span className="text-slate-300 text-[11px] font-sans">{v.name}:</span>
+                <span className="text-slate-300 text-xs font-sans">{v.name}:</span>
                 <div className="w-16 bg-app rounded-full h-1.5 overflow-hidden">
                   <div
                     className={`h-1.5 rounded-full transition-all duration-500 ${
                       v.name === 'Zuneigung'
-                        ? 'bg-gradient-to-r from-accent2-500 to-rose-400'
-                        : 'bg-gradient-to-r from-cyan-500 to-indigo-400'
+                        ? 'bg-linear-to-r from-accent2-500 to-rose-400'
+                        : 'bg-linear-to-r from-cyan-500 to-indigo-400'
                     }`}
                     style={{ width: `${percent}%` }}
                   />
                 </div>
-                <span className="text-[11px] font-semibold text-slate-200">
+                <span className="text-xs font-semibold text-slate-200">
                   {val}/{max}
                 </span>
               </div>
@@ -204,7 +204,7 @@ export const AdaptiveHud = () => {
           return (
             <div
               key={i}
-              className="hidden md:flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-slate-800/60 border border-slate-700/60 text-[11px]"
+              className="hidden md:flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-slate-800/60 border border-slate-700/60 text-xs"
             >
               <Smile className="w-3.5 h-3.5 text-accent-400" />
               <span className="text-slate-400 font-sans">{v.name}:</span>
@@ -216,7 +216,7 @@ export const AdaptiveHud = () => {
         {/* Quick Reasoning Mode Toggle */}
         <button
           onClick={() => setServerConfig({ reasoning_mode: !serverConfig.reasoning_mode })}
-          className={`flex items-center gap-1.5 px-2.5 py-1 rounded-lg border text-[11px] font-medium transition cursor-pointer ${
+          className={`flex items-center gap-1.5 px-2.5 py-1 rounded-lg border text-xs font-medium transition cursor-pointer ${
             serverConfig.reasoning_mode
               ? 'bg-amber-950/50 border-amber-500/50 text-amber-300 hover:bg-amber-900/60'
               : 'bg-slate-800/60 border-slate-700/60 text-slate-400 hover:text-slate-200'
@@ -237,7 +237,7 @@ export const AdaptiveHud = () => {
         {/* Cognitive Soul Memory Drawer Trigger */}
         <button
           onClick={() => setShowMemoryDrawer(true)}
-          className="flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-accent-950/50 border border-accent-500/40 text-accent-300 hover:bg-accent-900/60 hover:text-accent-200 transition text-[11px] font-medium shadow-sm cursor-pointer"
+          className="flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-accent-950/50 border border-accent-500/40 text-accent-300 hover:bg-accent-900/60 hover:text-accent-200 transition text-xs font-medium shadow-sm cursor-pointer"
           title="Kognitiven Seelenspeicher öffnen"
         >
           <Brain className="w-3.5 h-3.5 text-accent-400" />
@@ -248,7 +248,7 @@ export const AdaptiveHud = () => {
         <button
           onClick={handleGenerateSituationalImage}
           disabled={isGeneratingImage}
-          className="flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-indigo-950/50 border border-indigo-500/40 text-indigo-300 hover:bg-indigo-900/60 hover:text-indigo-200 transition text-[11px] font-medium shadow-sm cursor-pointer disabled:opacity-50"
+          className="flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-indigo-950/50 border border-indigo-500/40 text-indigo-300 hover:bg-indigo-900/60 hover:text-indigo-200 transition text-xs font-medium shadow-sm cursor-pointer disabled:opacity-50"
           title="Situationsbild des aktuellen Charakters generieren"
         >
           {isGeneratingImage ? (

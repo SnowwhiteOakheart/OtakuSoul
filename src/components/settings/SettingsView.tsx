@@ -444,7 +444,7 @@ export const SettingsView = () => {
                           </div>
                         )}
                       </div>
-                      <span className="text-[11px] text-slate-400 mt-1 mb-3">{th.desc}</span>
+                      <span className="text-xs text-slate-400 mt-1 mb-3">{th.desc}</span>
                       
                       {/* Farbmuster */}
                       <div className="flex items-center gap-1.5 mt-auto">
@@ -502,7 +502,7 @@ export const SettingsView = () => {
                     >
                       <div>
                         <div className="font-semibold text-xs text-slate-200">{l.label}</div>
-                        <div className="text-[10px] text-slate-400">{l.sub}</div>
+                        <div className="text-[11px] text-slate-400">{l.sub}</div>
                       </div>
                       {isSelected && <Check className="w-4 h-4 text-cyan-400" />}
                     </button>
@@ -527,7 +527,7 @@ export const SettingsView = () => {
                 <select
                   value={replyLanguage || 'de'}
                   onChange={(e) => setReplyLanguage(e.target.value)}
-                  className="w-full px-3 py-2 rounded-lg bg-app border border-slate-800 text-xs text-slate-200 focus:outline-none focus:border-accent-500"
+                  className="w-full px-3 py-2 rounded-lg bg-app border border-slate-800 text-xs text-slate-200 focus:outline-hidden focus:border-accent-500"
                 >
                   <option value="de">Deutsch (Standard)</option>
                   <option value="en">English (US)</option>
@@ -571,7 +571,7 @@ export const SettingsView = () => {
                 </button>
               </div>
 
-              <div className="p-3 rounded-lg bg-app/80 border border-slate-800/80 text-[11px] text-slate-400 font-mono space-y-1">
+              <div className="p-3 rounded-lg bg-app/80 border border-slate-800/80 text-xs text-slate-400 font-mono space-y-1">
                 <div>OtakuSoul Version: <span className="text-accent-300 font-semibold">v0.1.0</span></div>
                 <div>Lokales Anwendungsdatenverzeichnis: <span className="text-slate-300">~/.local/share/otakusoul</span></div>
                 <div>Logdatei: <span className="text-slate-300">~/.local/share/otakusoul/logs/otakusoul.log</span></div>
@@ -621,7 +621,7 @@ export const SettingsView = () => {
                   {/* Progress bar */}
                   <div className="w-full bg-slate-800 rounded-full h-2 overflow-hidden mt-1">
                     <div
-                      className="bg-gradient-to-r from-emerald-500 to-cyan-500 h-2 rounded-full transition-all duration-500"
+                      className="bg-linear-to-r from-emerald-500 to-cyan-500 h-2 rounded-full transition-all duration-500"
                       style={{ width: `${vramPercent}%` }}
                     />
                   </div>
@@ -670,7 +670,7 @@ export const SettingsView = () => {
                   <select
                     value={serverConfig.model_path}
                     onChange={(e) => selectLocalModel(e.target.value)}
-                    className="flex-1 bg-app border border-slate-800 rounded-lg px-3 py-2 text-xs font-mono text-slate-200 focus:outline-none focus:border-accent-500"
+                    className="flex-1 bg-app border border-slate-800 rounded-lg px-3 py-2 text-xs font-mono text-slate-200 focus:outline-hidden focus:border-accent-500"
                   >
                     <option value="">-- Modell wählen oder Durchsuchen --</option>
                     {scannedModels.map((m, idx) => (
@@ -693,7 +693,7 @@ export const SettingsView = () => {
                   const selectedModel = scannedModels.find((m) => m.path === serverConfig.model_path);
                   if (!selectedModel) return null;
                   return (
-                    <div className={`text-[11px] flex items-center gap-1.5 ${selectedModel.runtime === 'prism' ? 'text-cyan-300' : 'text-slate-500'}`}>
+                    <div className={`text-xs flex items-center gap-1.5 ${selectedModel.runtime === 'prism' ? 'text-cyan-300' : 'text-slate-500'}`}>
                       <Check className="w-3 h-3" />
                       <span>
                         Runtime: {selectedModel.runtime === 'prism' ? 'PrismML (automatisch)' : 'Standard llama.cpp'} · {selectedModel.compatibility_note}
@@ -711,7 +711,7 @@ export const SettingsView = () => {
                   <select
                     value={serverConfig.context_size}
                     onChange={(e) => setServerConfig({ context_size: parseInt(e.target.value) })}
-                    className="w-full bg-app border border-slate-800 rounded-lg px-3 py-1.5 text-slate-200 font-mono focus:outline-none focus:border-accent-500"
+                    className="w-full bg-app border border-slate-800 rounded-lg px-3 py-1.5 text-slate-200 font-mono focus:outline-hidden focus:border-accent-500"
                   >
                     <option value={2048}>2048 Tokens</option>
                     <option value={4096}>4096 Tokens</option>
@@ -738,7 +738,7 @@ export const SettingsView = () => {
                     onChange={(e) => setServerConfig({ gpu_layers: parseInt(e.target.value) })}
                     className="w-full accent-accent-500"
                   />
-                  <div className="flex justify-between text-[10px] text-slate-500">
+                  <div className="flex justify-between text-[11px] text-slate-500">
                     <span>0 (Nur CPU)</span>
                     <span>50 (Teil-Offload)</span>
                     <span>99 (Max VRAM)</span>
@@ -752,7 +752,7 @@ export const SettingsView = () => {
                     type="number"
                     value={serverConfig.port}
                     onChange={(e) => setServerConfig({ port: parseInt(e.target.value) || 48596 })}
-                    className="w-full bg-app border border-slate-800 rounded-lg px-3 py-1.5 text-slate-200 font-mono focus:outline-none focus:border-accent-500"
+                    className="w-full bg-app border border-slate-800 rounded-lg px-3 py-1.5 text-slate-200 font-mono focus:outline-hidden focus:border-accent-500"
                   />
                 </div>
               </div>
@@ -865,13 +865,13 @@ export const SettingsView = () => {
                     <Wand2 className="w-3.5 h-3.5 text-accent-400" />
                     <span>Automatische GPU-VRAM-Kalkulation</span>
                   </div>
-                  <div className="text-[11px] text-slate-400">
+                  <div className="text-xs text-slate-400">
                     {layerRecommendation
                       ? layerRecommendation.advice
                       : 'Berechnet Layer und Kontext anhand der echten Modellgröße und des KV-Cache-Typs.'}
                   </div>
                   {layerRecommendation && (
-                    <div className="text-[10px] text-slate-500">
+                    <div className="text-[11px] text-slate-500">
                       {layerRecommendation.profile_name} · Modell {(layerRecommendation.estimated_model_vram_mb / 1024).toFixed(1)} GiB
                       {' + '}KV {(layerRecommendation.estimated_context_vram_mb / 1024).toFixed(1)} GiB
                       {' + '}Runtime {(layerRecommendation.runtime_overhead_mb / 1024).toFixed(1)} GiB
@@ -929,7 +929,7 @@ export const SettingsView = () => {
                     <AlertTriangle className="w-3.5 h-3.5" />
                     Fehler beim Starten:
                   </div>
-                  <div className="font-mono text-[11px] whitespace-pre-wrap">{serverStatus.error_message}</div>
+                  <div className="font-mono text-xs whitespace-pre-wrap">{serverStatus.error_message}</div>
                 </div>
               )}
 
@@ -943,11 +943,11 @@ export const SettingsView = () => {
                     <Terminal className="w-3.5 h-3.5 text-accent-400" />
                     <span>Live Server-Log Konsole ({serverStatus.recent_logs.length} Einträge)</span>
                   </div>
-                  <span className="text-[10px] text-slate-500">{showLogs ? 'Einklappen' : 'Ausklappen'}</span>
+                  <span className="text-[11px] text-slate-500">{showLogs ? 'Einklappen' : 'Ausklappen'}</span>
                 </button>
 
                 {showLogs && (
-                  <div className="p-3 font-mono text-[11px] text-slate-300 h-44 overflow-y-auto space-y-0.5 bg-app/90 leading-tight">
+                  <div className="p-3 font-mono text-xs text-slate-300 h-44 overflow-y-auto space-y-0.5 bg-app/90 leading-tight">
                     {serverStatus.recent_logs.length === 0 ? (
                       <div className="text-slate-600 italic">Noch keine Logs empfangen...</div>
                     ) : (
@@ -986,7 +986,7 @@ export const SettingsView = () => {
                     <Cpu className="w-3.5 h-3.5" />
                     <span>Lokaler llama-server</span>
                   </div>
-                  <div className="text-[11px] text-slate-500 mt-1">
+                  <div className="text-xs text-slate-500 mt-1">
                     Volle Privatsphäre, 100% offline, GPU-beschleunigt.
                   </div>
                 </button>
@@ -1003,7 +1003,7 @@ export const SettingsView = () => {
                     <Key className="w-3.5 h-3.5 text-amber-400" />
                     <span>Cloud-Provider Routing</span>
                   </div>
-                  <div className="text-[11px] text-slate-500 mt-1">
+                  <div className="text-xs text-slate-500 mt-1">
                     OpenRouter, Claude 3.5 Sonnet, GPT-4o, DeepSeek V3.
                   </div>
                 </button>
@@ -1024,7 +1024,7 @@ export const SettingsView = () => {
                   <select
                     value={cloudProvider}
                     onChange={(e) => setCloudProvider(e.target.value as LlmProviderType)}
-                    className="w-full bg-app border border-slate-800 rounded-lg px-3 py-2 text-slate-200 focus:outline-none focus:border-accent-500"
+                    className="w-full bg-app border border-slate-800 rounded-lg px-3 py-2 text-slate-200 focus:outline-hidden focus:border-accent-500"
                   >
                     <option value="open_router">OpenRouter (Große Modellauswahl)</option>
                     <option value="anthropic">Anthropic Claude (Native Messages API)</option>
@@ -1044,7 +1044,7 @@ export const SettingsView = () => {
                     value={cloudApiKey}
                     onChange={(e) => setCloudApiKey(e.target.value)}
                     placeholder="sk-or-... oder sk-ant-..."
-                    className="w-full bg-app border border-slate-800 rounded-lg px-3 py-2 text-slate-200 font-mono focus:outline-none focus:border-accent-500"
+                    className="w-full bg-app border border-slate-800 rounded-lg px-3 py-2 text-slate-200 font-mono focus:outline-hidden focus:border-accent-500"
                   />
                 </div>
               </div>
@@ -1057,7 +1057,7 @@ export const SettingsView = () => {
                     type="text"
                     value={cloudEndpoint}
                     onChange={(e) => setCloudEndpoint(e.target.value)}
-                    className="w-full bg-app border border-slate-800 rounded-lg px-3 py-2 text-slate-200 font-mono focus:outline-none focus:border-accent-500"
+                    className="w-full bg-app border border-slate-800 rounded-lg px-3 py-2 text-slate-200 font-mono focus:outline-hidden focus:border-accent-500"
                   />
                 </div>
 
@@ -1068,7 +1068,7 @@ export const SettingsView = () => {
                     type="text"
                     value={cloudModel}
                     onChange={(e) => setCloudModel(e.target.value)}
-                    className="w-full bg-app border border-slate-800 rounded-lg px-3 py-2 text-slate-200 font-mono focus:outline-none focus:border-accent-500"
+                    className="w-full bg-app border border-slate-800 rounded-lg px-3 py-2 text-slate-200 font-mono focus:outline-hidden focus:border-accent-500"
                   />
                 </div>
               </div>
@@ -1082,7 +1082,7 @@ export const SettingsView = () => {
                         <Sparkles className="w-3.5 h-3.5 text-accent-400" />
                         <span>OpenRouter Modellkatalog</span>
                       </h3>
-                      <p className="text-[11px] text-slate-400">
+                      <p className="text-xs text-slate-400">
                         Durchsuche über 200 Modelle und übernimm sie mit 1 Klick.
                       </p>
                     </div>
@@ -1107,7 +1107,7 @@ export const SettingsView = () => {
                           value={openRouterSearch}
                           onChange={(e) => setOpenRouterSearch(e.target.value)}
                           placeholder="Modell suchen (z.B. claude, deepseek, llama, qwen, wizard)..."
-                          className="w-full bg-app border border-slate-800 rounded-lg pl-8 pr-3 py-1.5 text-xs text-slate-200 focus:outline-none focus:border-accent-500"
+                          className="w-full bg-app border border-slate-800 rounded-lg pl-8 pr-3 py-1.5 text-xs text-slate-200 focus:outline-hidden focus:border-accent-500"
                         />
                       </div>
 
@@ -1125,10 +1125,10 @@ export const SettingsView = () => {
                                 <span>{m.name}</span>
                                 {cloudModel === m.id && <Check className="w-3.5 h-3.5 text-accent-400" />}
                               </div>
-                              <div className="font-mono text-[10px] text-slate-500">{m.id}</div>
+                              <div className="font-mono text-[11px] text-slate-500">{m.id}</div>
                             </div>
 
-                            <div className="text-right font-mono text-[11px] text-slate-400">
+                            <div className="text-right font-mono text-xs text-slate-400">
                               <span>{(m.context_length / 1024).toFixed(0)}k Context</span>
                             </div>
                           </div>
@@ -1260,7 +1260,7 @@ export const SettingsView = () => {
                     onChange={(e) => setSampling({ temperature: parseFloat(e.target.value) })}
                     className="w-full accent-accent-500"
                   />
-                  <div className="text-[10px] text-slate-500">Niedrig: Präzise · Hoch: Kreativ</div>
+                  <div className="text-[11px] text-slate-500">Niedrig: Präzise · Hoch: Kreativ</div>
                 </div>
 
                 {/* Min-P */}
@@ -1278,7 +1278,7 @@ export const SettingsView = () => {
                     onChange={(e) => setSampling({ min_p: parseFloat(e.target.value) })}
                     className="w-full accent-cyan-500"
                   />
-                  <div className="text-[10px] text-slate-500">Filtert unpassende Tokens dynamisch</div>
+                  <div className="text-[11px] text-slate-500">Filtert unpassende Tokens dynamisch</div>
                 </div>
 
                 {/* Top-P */}
@@ -1296,7 +1296,7 @@ export const SettingsView = () => {
                     onChange={(e) => setSampling({ top_p: parseFloat(e.target.value) })}
                     className="w-full accent-emerald-500"
                   />
-                  <div className="text-[10px] text-slate-500">Kumulative Wahrscheinlichkeitsschwelle</div>
+                  <div className="text-[11px] text-slate-500">Kumulative Wahrscheinlichkeitsschwelle</div>
                 </div>
               </div>
 
@@ -1316,7 +1316,7 @@ export const SettingsView = () => {
                     onChange={(e) => setSampling({ max_tokens: parseInt(e.target.value) })}
                     className="w-full accent-emerald-500"
                   />
-                  <div className="text-[10px] text-slate-500">Maximale Antwortlänge</div>
+                  <div className="text-[11px] text-slate-500">Maximale Antwortlänge</div>
                 </div>
 
                 {/* Repeat Penalty */}
@@ -1334,7 +1334,7 @@ export const SettingsView = () => {
                     onChange={(e) => setSampling({ repeat_penalty: parseFloat(e.target.value) })}
                     className="w-full accent-amber-500"
                   />
-                  <div className="text-[10px] text-slate-500">Verhindert Wort-Wiederholungen</div>
+                  <div className="text-[11px] text-slate-500">Verhindert Wort-Wiederholungen</div>
                 </div>
 
                 {/* Top-K */}
@@ -1352,7 +1352,7 @@ export const SettingsView = () => {
                     onChange={(e) => setSampling({ top_k: parseInt(e.target.value) })}
                     className="w-full accent-indigo-500"
                   />
-                  <div className="text-[10px] text-slate-500">0 = deaktiviert</div>
+                  <div className="text-[11px] text-slate-500">0 = deaktiviert</div>
                 </div>
               </div>
             </div>
@@ -1380,7 +1380,7 @@ export const SettingsView = () => {
                     onChange={(e) => setSampling({ dry_multiplier: parseFloat(e.target.value) })}
                     className="w-full accent-rose-500"
                   />
-                  <div className="text-[10px] text-slate-500">
+                  <div className="text-[11px] text-slate-500">
                     Unterdrückt repetitive Schleifen basierend auf N-Grammen (0 = Aus).
                   </div>
                 </div>
@@ -1400,7 +1400,7 @@ export const SettingsView = () => {
                     onChange={(e) => setSampling({ xtc_threshold: parseFloat(e.target.value) })}
                     className="w-full accent-cyan-500"
                   />
-                  <div className="text-[10px] text-slate-500">
+                  <div className="text-[11px] text-slate-500">
                     Verhindert klischeehafte Phrasen und fördert unerwartete Wortwahl.
                   </div>
                 </div>
@@ -1422,7 +1422,7 @@ export const SettingsView = () => {
                     onChange={(e) => setSampling({ dynatemp_range: parseFloat(e.target.value) })}
                     className="w-full accent-accent-500"
                   />
-                  <div className="text-[10px] text-slate-500">
+                  <div className="text-[11px] text-slate-500">
                     Schwankt dynamisch zwischen Temp - Range und Temp + Range (0 = Aus).
                   </div>
                 </div>
@@ -1463,7 +1463,7 @@ export const SettingsView = () => {
                 <select
                   value={activeVrmPath || ''}
                   onChange={(e) => setActiveVrmPath(e.target.value || null)}
-                  className="flex-1 bg-app border border-slate-800 rounded-lg px-3 py-2 text-slate-200 focus:outline-none focus:border-accent-500"
+                  className="flex-1 bg-app border border-slate-800 rounded-lg px-3 py-2 text-slate-200 focus:outline-hidden focus:border-accent-500"
                 >
                   {scannedVrms.map((vrm, idx) => (
                     <option key={idx} value={vrm.path}>
@@ -1490,7 +1490,7 @@ export const SettingsView = () => {
                   <span>2D Live2D Standardmodell</span>
                 </h3>
                 {sowImportMsg && (
-                  <span className="text-[11px] text-accent-300 font-mono animate-fade-in bg-accent-950/70 px-2 py-0.5 rounded border border-accent-500/40">
+                  <span className="text-xs text-accent-300 font-mono animate-fade-in bg-accent-950/70 px-2 py-0.5 rounded border border-accent-500/40">
                     {sowImportMsg}
                   </span>
                 )}
@@ -1499,7 +1499,7 @@ export const SettingsView = () => {
                 <select
                   value={activeLive2dPath || ''}
                   onChange={(e) => setActiveLive2dPath(e.target.value || null)}
-                  className="flex-1 min-w-[200px] bg-app border border-slate-800 rounded-lg px-3 py-2 text-slate-200 focus:outline-none focus:border-accent-500"
+                  className="flex-1 min-w-[200px] bg-app border border-slate-800 rounded-lg px-3 py-2 text-slate-200 focus:outline-hidden focus:border-accent-500"
                 >
                   {scannedLive2ds.map((l2d, idx) => (
                     <option key={idx} value={l2d.model_path}>
@@ -1589,7 +1589,7 @@ export const SettingsView = () => {
                       }
                     }}
                     placeholder="Modell suchen (z.B. Qwen2.5-7B, Llama-3.1-8B, Mistral, Heretic)..."
-                    className="w-full bg-app border border-slate-800 rounded-lg pl-9 pr-3 py-2 text-xs text-slate-200 focus:outline-none focus:border-accent-500"
+                    className="w-full bg-app border border-slate-800 rounded-lg pl-9 pr-3 py-2 text-xs text-slate-200 focus:outline-hidden focus:border-accent-500"
                   />
                 </div>
                 <button
@@ -1619,13 +1619,13 @@ export const SettingsView = () => {
               const installed = scannedModels.find((model) => model.name.toLowerCase().includes('ternary-bonsai-27b-pq2_0'));
               const vramGb = (gpu?.total_vram_mb || 0) / 1024;
               return (
-                <div className="rounded-2xl border border-accent-500/50 bg-gradient-to-br from-accent-950/60 via-slate-900/80 to-cyan-950/40 p-5 space-y-4 shadow-xl shadow-accent-950/20">
+                <div className="rounded-2xl border border-accent-500/50 bg-linear-to-br from-accent-950/60 via-slate-900/80 to-cyan-950/40 p-5 space-y-4 shadow-xl shadow-accent-950/20">
                   <div className="flex flex-col md:flex-row md:items-start justify-between gap-4">
                     <div className="space-y-2">
                       <div className="flex flex-wrap items-center gap-2">
-                        <span className="px-2 py-0.5 rounded-full bg-emerald-500/20 text-emerald-300 text-[10px] font-bold border border-emerald-500/30">ERSTE WAHL</span>
-                        <span className="px-2 py-0.5 rounded-full bg-cyan-500/15 text-cyan-300 text-[10px] font-bold border border-cyan-500/30">PRISM PQ2_0</span>
-                        <span className="text-[10px] text-slate-400">Apache-2.0</span>
+                        <span className="px-2 py-0.5 rounded-full bg-emerald-500/20 text-emerald-300 text-[11px] font-bold border border-emerald-500/30">ERSTE WAHL</span>
+                        <span className="px-2 py-0.5 rounded-full bg-cyan-500/15 text-cyan-300 text-[11px] font-bold border border-cyan-500/30">PRISM PQ2_0</span>
+                        <span className="text-[11px] text-slate-400">Apache-2.0</span>
                       </div>
                       <h3 className="text-lg font-bold text-slate-100">Ternary Bonsai 27B</h3>
                       <p className="text-xs text-slate-300 max-w-2xl leading-relaxed">
@@ -1640,7 +1640,7 @@ export const SettingsView = () => {
                     </div>
                   </div>
 
-                  <div className="grid grid-cols-2 md:grid-cols-4 gap-2 text-[11px]">
+                  <div className="grid grid-cols-2 md:grid-cols-4 gap-2 text-xs">
                     {[['27B', 'Parameter'], ['~7,2 GB', 'Download'], ['32K', 'Startkontext'], ['262K', 'Maximum']].map(([value, label]) => (
                       <div key={label} className="rounded-lg bg-app/60 border border-slate-700/70 p-2 text-center">
                         <div className="font-bold text-slate-100">{value}</div>
@@ -1683,7 +1683,7 @@ export const SettingsView = () => {
                   </div>
 
                   {files.length > 0 && !installed && (
-                    <div className="pt-3 border-t border-accent-500/20 text-[11px] text-slate-400">
+                    <div className="pt-3 border-t border-accent-500/20 text-xs text-slate-400">
                       Gewählt: <span className="font-mono text-accent-200">{recommendedFile?.filename || 'PQ2_0 wird gesucht'}</span>. Die spezielle PrismML Runtime wird automatisch verwendet.
                     </div>
                   )}
@@ -1706,13 +1706,13 @@ export const SettingsView = () => {
                       <div className="font-semibold text-xs text-slate-200 break-all">{model.name}</div>
                       {serverConfig.model_path === model.path && <Check className="w-4 h-4 text-emerald-400 shrink-0" />}
                     </div>
-                    <div className="mt-2 flex flex-wrap gap-2 text-[10px]">
+                    <div className="mt-2 flex flex-wrap gap-2 text-[11px]">
                       <span className="px-2 py-0.5 rounded bg-slate-800 text-slate-300">{(model.size_mb / 1024).toFixed(1)} GB</span>
                       <span className={`px-2 py-0.5 rounded ${model.runtime === 'prism' ? 'bg-cyan-500/15 text-cyan-300' : 'bg-accent-500/15 text-accent-300'}`}>
                         {model.runtime === 'prism' ? 'PrismML' : 'llama.cpp'}
                       </span>
                     </div>
-                    <div className="mt-2 text-[10px] text-slate-500">Klicken zum Auswählen und Konfigurieren</div>
+                    <div className="mt-2 text-[11px] text-slate-500">Klicken zum Auswählen und Konfigurieren</div>
                   </button>
                 ))}
               </div>
@@ -1734,11 +1734,11 @@ export const SettingsView = () => {
                         <div className="flex items-center gap-2">
                           <span className="font-mono text-cyan-400">{prog.speed_mbps.toFixed(1)} MB/s</span>
                           {prog.finished ? (
-                            <span className="px-2 py-0.5 rounded bg-emerald-500/20 text-emerald-400 text-[10px] font-bold">
+                            <span className="px-2 py-0.5 rounded bg-emerald-500/20 text-emerald-400 text-[11px] font-bold">
                               Fertig
                             </span>
                           ) : (
-                            <span className="px-2 py-0.5 rounded bg-amber-500/20 text-amber-400 text-[10px] font-bold">
+                            <span className="px-2 py-0.5 rounded bg-amber-500/20 text-amber-400 text-[11px] font-bold">
                               {prog.percent.toFixed(1)}%
                             </span>
                           )}
@@ -1754,7 +1754,7 @@ export const SettingsView = () => {
                         />
                       </div>
 
-                      <div className="flex justify-between text-[10px] text-slate-500 font-mono">
+                      <div className="flex justify-between text-[11px] text-slate-500 font-mono">
                         <span>
                           {(prog.downloaded_bytes / (1024 * 1024)).toFixed(1)} MB / {(prog.total_bytes / (1024 * 1024)).toFixed(1)} MB
                         </span>
@@ -1785,9 +1785,9 @@ export const SettingsView = () => {
                         <div className="space-y-0.5">
                           <div className="font-semibold text-slate-200 text-xs flex items-center gap-2">
                             <span>{model.id}</span>
-                            <span className="text-[10px] text-slate-500">von {model.author}</span>
+                            <span className="text-[11px] text-slate-500">von {model.author}</span>
                           </div>
-                          <div className="text-[11px] text-slate-400 flex items-center gap-3">
+                          <div className="text-xs text-slate-400 flex items-center gap-3">
                             <span>Downloads: {model.downloads.toLocaleString()}</span>
                             <span>Likes: {model.likes.toLocaleString()}</span>
                             {model.last_modified && (
@@ -1832,9 +1832,9 @@ export const SettingsView = () => {
                                   <div className="space-y-1 min-w-0 flex-1 pr-3">
                                     <div className="font-semibold text-slate-200 break-all flex items-center gap-2">
                                       <span>{file.filename}</span>
-                                      {file.recommended && <span className="shrink-0 px-1.5 py-0.5 rounded bg-emerald-500/20 text-emerald-300 text-[9px]">EMPFOHLEN</span>}
+                                      {file.recommended && <span className="shrink-0 px-1.5 py-0.5 rounded bg-emerald-500/20 text-emerald-300 text-[11px]">EMPFOHLEN</span>}
                                     </div>
-                                    <div className="flex items-center gap-2 text-[10px] font-mono">
+                                    <div className="flex items-center gap-2 text-[11px] font-mono">
                                       <span className="px-1.5 py-0.5 rounded bg-accent-500/20 text-accent-300 font-bold">
                                         {file.quantization}
                                       </span>
@@ -1843,7 +1843,7 @@ export const SettingsView = () => {
                                         {file.runtime === 'prism' ? 'PrismML Runtime' : file.runtime === 'legacy' ? 'Veraltet' : 'Standard Runtime'}
                                       </span>
                                     </div>
-                                    <div className={`text-[10px] ${file.runtime === 'legacy' ? 'text-rose-300' : 'text-slate-500'}`}>{file.compatibility_note}</div>
+                                    <div className={`text-[11px] ${file.runtime === 'legacy' ? 'text-rose-300' : 'text-slate-500'}`}>{file.compatibility_note}</div>
                                   </div>
 
                                   <button
