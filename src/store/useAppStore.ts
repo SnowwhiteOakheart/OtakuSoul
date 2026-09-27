@@ -174,6 +174,21 @@ async function resolvePromptWithLore(
   });
 }
 
+/**
+ * The reply language is written verbatim into the system prompt, so it must be a language
+ * name. Older settings UI versions stored ISO codes ("en"), which the model then saw as-is.
+ */
+const REPLY_LANGUAGE_BY_CODE: Record<string, string> = {
+  de: 'Deutsch',
+  en: 'English',
+  ru: 'Русский',
+  ja: '日本語',
+  fr: 'Français',
+  es: 'Español',
+};
+export const normalizeReplyLanguage = (value: string | null | undefined): string =>
+  (value && (REPLY_LANGUAGE_BY_CODE[value] ?? value)) || 'Deutsch';
+
 export type AppTab = 'chat' | 'characters' | 'lorebooks' | 'stage' | 'companion' | 'settings' | 'hub' | 'integrations';
 
 interface AppStoreState {
@@ -779,7 +794,7 @@ export const useAppStore = create<AppStoreState>((set, get) => ({
         cloudApiKey: settings.cloud_api_key || '',
         cloudModel: settings.cloud_model || 'anthropic/claude-3.5-sonnet',
         activePresetId: settings.active_preset_id || null,
-        replyLanguage: settings.reply_language || 'Deutsch',
+        replyLanguage: normalizeReplyLanguage(settings.reply_language),
         lorebookScanDepth: settings.lorebook_scan_depth || 5,
         activeVrmPath: vrmPath,
         activeLive2dPath: settings.active_live2d_path || null,

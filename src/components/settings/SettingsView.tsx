@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { useAppStore } from '../../store/useAppStore';
-import { useTranslation, SupportedLanguage } from '../../i18n';
+import { translate, useTranslation, SupportedLanguage } from '../../i18n';
 import { open } from '@tauri-apps/plugin-dialog';
 import { openUrl } from '@tauri-apps/plugin-opener';
 import {
@@ -31,9 +31,12 @@ import {
 } from 'lucide-react';
 import { LlmProviderType, LlmPreset } from '../../types';
 import { api } from '../../services/api';
+import { confirmDialog, toast } from '../ui/feedback';
+import { errorMessage } from '../../utils/errors';
 
 export const SettingsView = () => {
   const { t } = useTranslation();
+  const appPaths = useAppStore((s) => s.appPaths);
   const {
     theme,
     setTheme,
@@ -167,7 +170,7 @@ export const SettingsView = () => {
         multiple: false,
         filters: [
           {
-            name: 'GGUF Sprachmodelle',
+            name: translate('settings.fileFilterGguf'),
             extensions: ['gguf'],
           },
         ],
@@ -195,7 +198,7 @@ export const SettingsView = () => {
         multiple: false,
         filters: [
           {
-            name: 'VRM 3D Avatare',
+            name: translate('settings.fileFilterVrm'),
             extensions: ['vrm'],
           },
         ],
@@ -210,7 +213,6 @@ export const SettingsView = () => {
   };
 
   const [isImportingSow, setIsImportingSow] = useState(false);
-  const [sowImportMsg, setSowImportMsg] = useState<string | null>(null);
 
   const handleBrowseLive2d = async () => {
     try {
@@ -218,7 +220,7 @@ export const SettingsView = () => {
         multiple: false,
         filters: [
           {
-            name: 'Live2D Modelle (*.zip, *.model3.json, *.model.json)',
+            name: translate('settings.fileFilterLive2d'),
             extensions: ['zip', 'json'],
           },
         ],
@@ -228,28 +230,23 @@ export const SettingsView = () => {
         const imported = await api.importLive2dModel(selected);
         await refreshLive2dModels();
         setActiveLive2dPath(imported.model_path);
-        setSowImportMsg(`Modell "${imported.name}" erfolgreich importiert!`);
-        setTimeout(() => setSowImportMsg(null), 4000);
+        toast.success(translate('settings.live2dImported', { name: imported.name }));
       }
     } catch (e) {
       console.error('Failed to import Live2D model:', e);
-      setSowImportMsg(`Fehler: ${e instanceof Error ? e.message : String(e)}`);
-      setTimeout(() => setSowImportMsg(null), 5000);
+      toast.error(translate('settings.importFailed', { error: errorMessage(e) }));
     }
   };
 
   const handleImportSowLive2d = async () => {
     setIsImportingSow(true);
-    setSowImportMsg(null);
     try {
       const count = await api.importSowLive2dModels();
       await refreshLive2dModels();
-      setSowImportMsg(`${count} Live2D-Modelle aus Soul of Waifu importiert!`);
-      setTimeout(() => setSowImportMsg(null), 4000);
+      toast.success(translate('settings.sowLive2dImported', { count }));
     } catch (e) {
       console.error('Failed to import SoW Live2D models:', e);
-      setSowImportMsg(`Fehler: ${e instanceof Error ? e.message : String(e)}`);
-      setTimeout(() => setSowImportMsg(null), 5000);
+      toast.error(translate('settings.importFailed', { error: errorMessage(e) }));
     } finally {
       setIsImportingSow(false);
     }
@@ -261,7 +258,7 @@ export const SettingsView = () => {
     const newPreset: LlmPreset = {
       id: presetId,
       name: newPresetName.trim(),
-      description: newPresetDesc.trim() || 'Benutzerdefiniertes Preset',
+      description: newPresetDesc.trim() || translate('settings.customPresetDesc'),
       is_builtin: false,
       sampling: { ...sampling },
     };
@@ -285,11 +282,9 @@ export const SettingsView = () => {
           <div>
             <h1 className="text-xl font-bold text-slate-100 flex items-center gap-2">
               <Cpu className="w-5 h-5 text-accent-400" />
-              Einstellungen & KI-Orchestrierung
+              {t('settings.title')}
             </h1>
-            <p className="text-xs text-slate-400 mt-1">
-              llama-server Hardwaretuning, Multi-Provider Routing, Sampler-Presets & Hugging Face GGUF Hub.
-            </p>
+            <p className="text-xs text-slate-400 mt-1">{t('settings.subtitle')}</p>
           </div>
           <button
             onClick={() => {
@@ -299,15 +294,17 @@ export const SettingsView = () => {
             className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-slate-800 hover:bg-slate-700 text-xs text-slate-300 transition-colors"
           >
             <RefreshCw className="w-3.5 h-3.5" />
-            <span>Aktualisieren</span>
+            <span>{t('settings.refresh')}</span>
           </button>
         </div>
 
         {/* Sub-Tabs Navigation */}
-        <div className="flex border-b border-slate-800 gap-2">
+        <div role="tablist" aria-label={t('settings.tabs')} className="flex border-b border-slate-800 gap-2 overflow-x-auto">
           <button
+            role="tab"
+            aria-selected={activeTab === 'general'}
             onClick={() => setActiveTab('general')}
-            className={`flex items-center gap-2 px-4 py-2.5 text-xs font-medium border-b-2 transition-colors ${
+            className={`flex items-center gap-2 px-4 py-2.5 text-xs font-medium border-b-2 transition-colors whitespace-nowrap outline-hidden focus-visible:ring-2 focus-visible:ring-accent-400 ${
               activeTab === 'general'
                 ? 'border-accent-500 text-accent-400 bg-accent-500/10 rounded-t-lg'
                 : 'border-transparent text-slate-400 hover:text-slate-200'
@@ -318,51 +315,59 @@ export const SettingsView = () => {
           </button>
 
           <button
+            role="tab"
+            aria-selected={activeTab === 'server'}
             onClick={() => setActiveTab('server')}
-            className={`flex items-center gap-2 px-4 py-2.5 text-xs font-medium border-b-2 transition-colors ${
+            className={`flex items-center gap-2 px-4 py-2.5 text-xs font-medium border-b-2 transition-colors whitespace-nowrap outline-hidden focus-visible:ring-2 focus-visible:ring-accent-400 ${
               activeTab === 'server'
                 ? 'border-accent-500 text-accent-400 bg-accent-500/10 rounded-t-lg'
                 : 'border-transparent text-slate-400 hover:text-slate-200'
             }`}
           >
             <Cpu className="w-4 h-4" />
-            <span>llama-server & Tuning</span>
+            <span>{t('settings.tabServer')}</span>
           </button>
 
           <button
+            role="tab"
+            aria-selected={activeTab === 'providers'}
             onClick={() => setActiveTab('providers')}
-            className={`flex items-center gap-2 px-4 py-2.5 text-xs font-medium border-b-2 transition-colors ${
+            className={`flex items-center gap-2 px-4 py-2.5 text-xs font-medium border-b-2 transition-colors whitespace-nowrap outline-hidden focus-visible:ring-2 focus-visible:ring-accent-400 ${
               activeTab === 'providers'
                 ? 'border-accent-500 text-accent-400 bg-accent-500/10 rounded-t-lg'
                 : 'border-transparent text-slate-400 hover:text-slate-200'
             }`}
           >
             <Key className="w-4 h-4" />
-            <span>Cloud-Provider & Modelle</span>
+            <span>{t('settings.tabProviders')}</span>
           </button>
 
           <button
+            role="tab"
+            aria-selected={activeTab === 'sampler'}
             onClick={() => setActiveTab('sampler')}
-            className={`flex items-center gap-2 px-4 py-2.5 text-xs font-medium border-b-2 transition-colors ${
+            className={`flex items-center gap-2 px-4 py-2.5 text-xs font-medium border-b-2 transition-colors whitespace-nowrap outline-hidden focus-visible:ring-2 focus-visible:ring-accent-400 ${
               activeTab === 'sampler'
                 ? 'border-accent-500 text-accent-400 bg-accent-500/10 rounded-t-lg'
                 : 'border-transparent text-slate-400 hover:text-slate-200'
             }`}
           >
             <Sliders className="w-4 h-4" />
-            <span>Sampler & Presets</span>
+            <span>{t('settings.tabSampler')}</span>
           </button>
 
           <button
+            role="tab"
+            aria-selected={activeTab === 'hub'}
             onClick={() => setActiveTab('hub')}
-            className={`flex items-center gap-2 px-4 py-2.5 text-xs font-medium border-b-2 transition-colors ${
+            className={`flex items-center gap-2 px-4 py-2.5 text-xs font-medium border-b-2 transition-colors whitespace-nowrap outline-hidden focus-visible:ring-2 focus-visible:ring-accent-400 ${
               activeTab === 'hub'
                 ? 'border-accent-500 text-accent-400 bg-accent-500/10 rounded-t-lg'
                 : 'border-transparent text-slate-400 hover:text-slate-200'
             }`}
           >
             <Download className="w-4 h-4" />
-            <span>Models Hub (GGUF)</span>
+            <span>{t('settings.tabHub')}</span>
           </button>
         </div>
 
@@ -376,9 +381,7 @@ export const SettingsView = () => {
                   <Palette className="w-4 h-4 text-accent-400" />
                   {t('settings.theme')}
                 </h2>
-                <p className="text-xs text-slate-400 mt-0.5">
-                  Wähle das Farbschema für die Benutzeroberfläche. Änderungen werden sofort aktiv.
-                </p>
+                <p className="text-xs text-slate-400 mt-0.5">{t('settings.themeIntro')}</p>
               </div>
 
               <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
@@ -386,7 +389,7 @@ export const SettingsView = () => {
                   {
                     id: 'obsidian',
                     name: 'Obsidian',
-                    desc: 'Dunkel & Lila Neon (Standard)',
+                    desc: t('settings.theme.obsidian'),
                     primary: '#a855f7',
                     accent: '#ec4899',
                     bg: '#0f172a',
@@ -394,7 +397,7 @@ export const SettingsView = () => {
                   {
                     id: 'cyberpunk',
                     name: 'Cyberpunk',
-                    desc: 'High-Tech Gelb, Cyan & Pink',
+                    desc: t('settings.theme.cyberpunk'),
                     primary: '#facc15',
                     accent: '#06b6d4',
                     bg: '#0c0a1a',
@@ -402,7 +405,7 @@ export const SettingsView = () => {
                   {
                     id: 'sakura',
                     name: 'Sakura Blossom',
-                    desc: 'Sanfte Kirschblüte & Rosé',
+                    desc: t('settings.theme.sakura'),
                     primary: '#f472b6',
                     accent: '#fb7185',
                     bg: '#160c1c',
@@ -410,7 +413,7 @@ export const SettingsView = () => {
                   {
                     id: 'midnight',
                     name: 'Midnight OLED',
-                    desc: 'Tiefes Schwarz & Sky Blue',
+                    desc: t('settings.theme.midnight'),
                     primary: '#38bdf8',
                     accent: '#818cf8',
                     bg: '#000000',
@@ -418,7 +421,7 @@ export const SettingsView = () => {
                   {
                     id: 'emerald',
                     name: 'Emerald Matrix',
-                    desc: 'Smaragdgrün & Terminal Dark',
+                    desc: t('settings.theme.emerald'),
                     primary: '#10b981',
                     accent: '#34d399',
                     bg: '#02180e',
@@ -430,6 +433,7 @@ export const SettingsView = () => {
                       key={th.id}
                       type="button"
                       onClick={() => setTheme(th.id)}
+                      aria-pressed={isSelected}
                       className={`relative flex flex-col items-start p-3.5 rounded-xl border text-left transition-all ${
                         isSelected
                           ? 'border-accent-500/80 bg-accent-950/20 shadow-lg shadow-accent-950/30'
@@ -451,17 +455,17 @@ export const SettingsView = () => {
                         <div
                           className="w-5 h-5 rounded-full border border-white/10"
                           style={{ backgroundColor: th.bg }}
-                          title="Hintergrund"
+                          title={t('settings.swatchBg')}
                         />
                         <div
                           className="w-5 h-5 rounded-full border border-white/10"
                           style={{ backgroundColor: th.primary }}
-                          title="Primärfarbe"
+                          title={t('settings.swatchPrimary')}
                         />
                         <div
                           className="w-5 h-5 rounded-full border border-white/10"
                           style={{ backgroundColor: th.accent }}
-                          title="Akzentfarbe"
+                          title={t('settings.swatchAccent')}
                         />
                       </div>
                     </button>
@@ -477,16 +481,14 @@ export const SettingsView = () => {
                   <Globe className="w-4 h-4 text-cyan-400" />
                   {t('settings.language')}
                 </h2>
-                <p className="text-xs text-slate-400 mt-0.5">
-                  Sprache aller Texte, Menüs und Schaltflächen in OtakuSoul.
-                </p>
+                <p className="text-xs text-slate-400 mt-0.5">{t('settings.languageIntro')}</p>
               </div>
 
               <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
                 {[
-                  { id: 'de', label: 'Deutsch', sub: 'Standard' },
-                  { id: 'en', label: 'English', sub: 'International' },
-                  { id: 'ru', label: 'Русский', sub: 'Russian' },
+                  { id: 'de', label: 'Deutsch', sub: t('settings.langDeSub') },
+                  { id: 'en', label: 'English', sub: t('settings.langEnSub') },
+                  { id: 'ru', label: 'Русский', sub: t('settings.langRuSub') },
                 ].map((l) => {
                   const isSelected = (appLanguage || 'de') === l.id;
                   return (
@@ -494,6 +496,8 @@ export const SettingsView = () => {
                       key={l.id}
                       type="button"
                       onClick={() => setAppLanguage(l.id as SupportedLanguage)}
+                      aria-pressed={isSelected}
+                      lang={l.id}
                       className={`flex items-center justify-between p-3 rounded-xl border text-left transition-all ${
                         isSelected
                           ? 'border-cyan-500/80 bg-cyan-950/20 text-cyan-300 shadow-sm'
@@ -516,25 +520,25 @@ export const SettingsView = () => {
               <div>
                 <h2 className="text-sm font-semibold text-slate-200 flex items-center gap-2">
                   <Sparkles className="w-4 h-4 text-amber-400" />
-                  Bevorzugte KI-Antwortsprache
+                  {t('settings.replyLanguage')}
                 </h2>
-                <p className="text-xs text-slate-400 mt-0.5">
-                  Gibt dem KI-Modell die Standardsprache für Dialoge und Szenenbeschreibungen vor.
-                </p>
+                <p className="text-xs text-slate-400 mt-0.5">{t('settings.replyLanguageIntro')}</p>
               </div>
 
               <div className="max-w-xs">
+                {/* The value is written verbatim into the system prompt ("Antworte auf **Deutsch**"), so store language names, not codes. */}
                 <select
-                  value={replyLanguage || 'de'}
+                  aria-label={t('settings.replyLanguage')}
+                  value={replyLanguage || 'Deutsch'}
                   onChange={(e) => setReplyLanguage(e.target.value)}
                   className="w-full px-3 py-2 rounded-lg bg-app border border-slate-800 text-xs text-slate-200 focus:outline-hidden focus:border-accent-500"
                 >
-                  <option value="de">Deutsch (Standard)</option>
-                  <option value="en">English (US)</option>
-                  <option value="ru">Русский</option>
-                  <option value="ja">日本語 (Japanese)</option>
-                  <option value="fr">Français</option>
-                  <option value="es">Español</option>
+                  <option value="Deutsch">Deutsch</option>
+                  <option value="English">English</option>
+                  <option value="Русский">Русский</option>
+                  <option value="日本語">日本語</option>
+                  <option value="Français">Français</option>
+                  <option value="Español">Español</option>
                 </select>
               </div>
             </div>
@@ -544,11 +548,9 @@ export const SettingsView = () => {
               <div>
                 <h2 className="text-sm font-semibold text-slate-200 flex items-center gap-2">
                   <Terminal className="w-4 h-4 text-emerald-400" />
-                  System, Logs & Updates
+                  {t('settings.systemTitle')}
                 </h2>
-                <p className="text-xs text-slate-400 mt-0.5">
-                  Fehlerdiagnose, Anwendungs-Logs und Prüfung auf neue Releases.
-                </p>
+                <p className="text-xs text-slate-400 mt-0.5">{t('settings.systemIntro')}</p>
               </div>
 
               <div className="flex flex-wrap items-center gap-3">
@@ -558,7 +560,7 @@ export const SettingsView = () => {
                   className="flex items-center gap-2 px-3.5 py-2 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-200 text-xs font-medium transition-colors border border-slate-700/60"
                 >
                   <Terminal className="w-4 h-4 text-cyan-400" />
-                  <span>{t('header.logs')} öffnen</span>
+                  <span>{t('settings.openLogs')}</span>
                 </button>
 
                 <button
@@ -572,9 +574,91 @@ export const SettingsView = () => {
               </div>
 
               <div className="p-3 rounded-lg bg-app/80 border border-slate-800/80 text-xs text-slate-400 font-mono space-y-1">
-                <div>OtakuSoul Version: <span className="text-accent-300 font-semibold">v0.1.0</span></div>
-                <div>Lokales Anwendungsdatenverzeichnis: <span className="text-slate-300">~/.local/share/otakusoul</span></div>
-                <div>Logdatei: <span className="text-slate-300">~/.local/share/otakusoul/logs/otakusoul.log</span></div>
+                <div>
+                  {t('settings.version')}: <span className="text-accent-300 font-semibold">{t('header.version')}</span>
+                </div>
+                <div className="select-text break-all">
+                  {t('settings.dataDir')}: <span className="text-slate-300">{appPaths?.data_dir ?? '…'}</span>
+                </div>
+                <div className="select-text break-all">
+                  {t('settings.configDir')}: <span className="text-slate-300">{appPaths?.config_dir ?? '…'}</span>
+                </div>
+              </div>
+            </div>
+            {/* 4. Standard-Avatare (VRM & Live2D) */}
+            <h2 className="text-sm font-semibold text-slate-200 pt-2">{t('settings.avatarDefaults')}</h2>
+            {/* 3D Avatar (VRM) Standard-Auswahl */}
+            <div className="rounded-xl border border-slate-800 bg-slate-900/60 p-4 space-y-3">
+              <h3 className="text-xs font-semibold text-slate-300 flex items-center gap-1.5">
+                <Box className="w-3.5 h-3.5 text-accent2-400" />
+                <span>{t('settings.vrmDefault')}</span>
+              </h3>
+              <div className="flex gap-2 text-xs">
+                <select
+                  aria-label={t('settings.vrmDefault')}
+                  value={activeVrmPath || ''}
+                  onChange={(e) => setActiveVrmPath(e.target.value || null)}
+                  className="flex-1 bg-app border border-slate-800 rounded-lg px-3 py-2 text-slate-200 focus:outline-hidden focus:border-accent-500"
+                >
+                  {scannedVrms.map((vrm, idx) => (
+                    <option key={idx} value={vrm.path}>
+                      {vrm.name} ({vrm.size_mb.toFixed(0)} MB)
+                    </option>
+                  ))}
+                </select>
+                <button
+                  type="button"
+                  onClick={handleBrowseVrm}
+                  className="px-3.5 py-2 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-200 font-medium flex items-center gap-1.5 transition-colors border border-slate-700"
+                >
+                  <FolderOpen className="w-3.5 h-3.5" />
+                  <span className="whitespace-nowrap">{t('settings.chooseVrm')}</span>
+                </button>
+              </div>
+            </div>
+
+            {/* 2D Live2D Standard-Auswahl & Import */}
+            <div className="rounded-xl border border-slate-800 bg-slate-900/60 p-4 space-y-3">
+              <div className="flex items-center justify-between">
+                <h3 className="text-xs font-semibold text-slate-300 flex items-center gap-1.5">
+                  <Smile className="w-3.5 h-3.5 text-accent-400" />
+                  <span>{t('settings.live2dDefault')}</span>
+                </h3>
+              </div>
+              <div className="flex flex-wrap gap-2 text-xs">
+                <select
+                  aria-label={t('settings.live2dDefault')}
+                  value={activeLive2dPath || ''}
+                  onChange={(e) => setActiveLive2dPath(e.target.value || null)}
+                  className="flex-1 min-w-[200px] bg-app border border-slate-800 rounded-lg px-3 py-2 text-slate-200 focus:outline-hidden focus:border-accent-500"
+                >
+                  {scannedLive2ds.map((l2d, idx) => (
+                    <option key={idx} value={l2d.model_path}>
+                      {l2d.name} ({l2d.id})
+                    </option>
+                  ))}
+                </select>
+
+                <button
+                  type="button"
+                  onClick={handleBrowseLive2d}
+                  className="px-3.5 py-2 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-200 font-medium flex items-center gap-1.5 transition-colors border border-slate-700"
+                  title={t('settings.importLive2dHint')}
+                >
+                  <FolderOpen className="w-3.5 h-3.5 text-accent-400" />
+                  <span className="whitespace-nowrap">{t('settings.importLive2d')}</span>
+                </button>
+
+                <button
+                  type="button"
+                  onClick={handleImportSowLive2d}
+                  disabled={isImportingSow}
+                  className="px-3.5 py-2 rounded-lg bg-accent-950/60 hover:bg-accent-900/80 text-accent-200 font-medium flex items-center gap-1.5 transition-colors border border-accent-700/60 disabled:opacity-50"
+                  title={t('settings.importSowLive2dHint')}
+                >
+                  <Sparkles className="w-3.5 h-3.5 text-accent2-400" />
+                  <span className="whitespace-nowrap">{isImportingSow ? t('settings.importing') : t('settings.importSowLive2d')}</span>
+                </button>
               </div>
             </div>
           </div>
@@ -587,7 +671,7 @@ export const SettingsView = () => {
             <div className="rounded-xl border border-slate-800 bg-slate-900/60 p-4 space-y-4">
               <h2 className="text-sm font-semibold text-slate-200 flex items-center gap-2">
                 <HardDrive className="w-4 h-4 text-cyan-400" />
-                Erkannte Systemressourcen
+                {t('settings.hardwareTitle')}
               </h2>
 
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-xs font-mono">
@@ -595,12 +679,15 @@ export const SettingsView = () => {
                 <div className="p-3 rounded-lg bg-app/60 border border-slate-800/80 space-y-2">
                   <div className="text-slate-400 flex items-center justify-between">
                     <span>CPU:</span>
-                    <span className="text-slate-200 font-semibold">{hardware?.cpu_name || 'Ermittle...'}</span>
+                    <span className="text-slate-200 font-semibold">{hardware?.cpu_name || t('settings.detecting')}</span>
                   </div>
                   <div className="text-slate-400 flex items-center justify-between">
                     <span>RAM:</span>
                     <span className="text-slate-200">
-                      {hardware ? (hardware.available_ram_mb / 1024).toFixed(1) : 0} GB frei / {hardware ? (hardware.total_ram_mb / 1024).toFixed(1) : 0} GB
+                      {t('settings.freeOf', {
+                        free: hardware ? (hardware.available_ram_mb / 1024).toFixed(1) : 0,
+                        total: hardware ? (hardware.total_ram_mb / 1024).toFixed(1) : 0,
+                      })}
                     </span>
                   </div>
                 </div>
@@ -609,17 +696,27 @@ export const SettingsView = () => {
                 <div className="p-3 rounded-lg bg-app/60 border border-slate-800/80 space-y-2">
                   <div className="text-slate-400 flex items-center justify-between">
                     <span>GPU:</span>
-                    <span className="text-cyan-300 font-semibold">{gpu?.name || 'Keine dedizierte GPU gefunden'}</span>
+                    <span className="text-cyan-300 font-semibold">{gpu?.name || t('settings.noGpu')}</span>
                   </div>
                   <div className="text-slate-400 flex items-center justify-between">
                     <span>VRAM:</span>
                     <span className="text-emerald-400 font-medium">
-                      {gpu ? (gpu.free_vram_mb / 1024).toFixed(1) : 0} GB frei / {gpu ? (gpu.total_vram_mb / 1024).toFixed(1) : 0} GB
+                      {t('settings.freeOf', {
+                        free: gpu ? (gpu.free_vram_mb / 1024).toFixed(1) : 0,
+                        total: gpu ? (gpu.total_vram_mb / 1024).toFixed(1) : 0,
+                      })}
                     </span>
                   </div>
 
                   {/* Progress bar */}
-                  <div className="w-full bg-slate-800 rounded-full h-2 overflow-hidden mt-1">
+                  <div
+                    role="progressbar"
+                    aria-label={t('settings.vramUsage')}
+                    aria-valuenow={Math.round(vramPercent)}
+                    aria-valuemin={0}
+                    aria-valuemax={100}
+                    className="w-full bg-slate-800 rounded-full h-2 overflow-hidden mt-1"
+                  >
                     <div
                       className="bg-linear-to-r from-emerald-500 to-cyan-500 h-2 rounded-full transition-all duration-500"
                       style={{ width: `${vramPercent}%` }}
@@ -634,30 +731,30 @@ export const SettingsView = () => {
               <div className="flex items-center justify-between">
                 <h2 className="text-sm font-semibold text-slate-200 flex items-center gap-2">
                   <Cpu className="w-4 h-4 text-accent-400" />
-                  Lokaler llama-server Manager
+                  {t('settings.serverTitle')}
                 </h2>
 
                 <div className="flex items-center gap-2">
                   {serverStatus.state === 'running' && (
                     <span className="flex items-center gap-1.5 text-xs text-emerald-400 bg-emerald-500/10 border border-emerald-500/30 px-2.5 py-1 rounded-full font-mono">
                       <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse" />
-                      Aktiv (PID {serverStatus.pid} auf Port {serverStatus.port})
+                      {t('settings.serverRunning', { pid: serverStatus.pid ?? '–', port: serverStatus.port })}
                     </span>
                   )}
                   {serverStatus.state === 'starting' && (
                     <span className="flex items-center gap-1.5 text-xs text-amber-400 bg-amber-500/10 border border-amber-500/30 px-2.5 py-1 rounded-full font-mono">
                       <RefreshCw className="w-3 h-3 animate-spin" />
-                      Startet...
+                      {t('settings.serverStarting')}
                     </span>
                   )}
                   {serverStatus.state === 'stopped' && (
                     <span className="text-xs text-slate-400 bg-slate-800 px-2.5 py-1 rounded-full font-mono">
-                      Gestoppt
+                      {t('settings.serverStopped')}
                     </span>
                   )}
                   {serverStatus.state === 'failed' && (
                     <span className="text-xs text-rose-400 bg-rose-500/10 border border-rose-500/30 px-2.5 py-1 rounded-full font-mono">
-                      Fehlgeschlagen
+                      {t('settings.serverFailed')}
                     </span>
                   )}
                 </div>
@@ -665,17 +762,20 @@ export const SettingsView = () => {
 
               {/* Model File Selection */}
               <div className="space-y-1.5">
-                <label className="text-xs font-medium text-slate-300">GGUF Modellpfad:</label>
+                <label htmlFor="settings-model" className="text-xs font-medium text-slate-300">
+                  {t('settings.modelPath')}
+                </label>
                 <div className="flex gap-2">
                   <select
+                    id="settings-model"
                     value={serverConfig.model_path}
                     onChange={(e) => selectLocalModel(e.target.value)}
                     className="flex-1 bg-app border border-slate-800 rounded-lg px-3 py-2 text-xs font-mono text-slate-200 focus:outline-hidden focus:border-accent-500"
                   >
-                    <option value="">-- Modell wählen oder Durchsuchen --</option>
+                    <option value="">{t('settings.modelPlaceholder')}</option>
                     {scannedModels.map((m, idx) => (
                       <option key={idx} value={m.path}>
-                        {m.name} ({(m.size_mb / 1024).toFixed(1)} GB · {m.runtime === 'prism' ? 'PrismML' : 'Standard'})
+                        {m.name} ({(m.size_mb / 1024).toFixed(1)} GB · {m.runtime === 'prism' ? 'PrismML' : t('settings.runtimeStandard')})
                       </option>
                     ))}
                   </select>
@@ -686,7 +786,7 @@ export const SettingsView = () => {
                     className="px-3.5 py-2 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-200 text-xs font-medium flex items-center gap-1.5 transition-colors border border-slate-700"
                   >
                     <FolderOpen className="w-3.5 h-3.5" />
-                    <span>Datei wählen...</span>
+                    <span className="whitespace-nowrap">{t('settings.browseFile')}</span>
                   </button>
                 </div>
                 {(() => {
@@ -696,7 +796,10 @@ export const SettingsView = () => {
                     <div className={`text-xs flex items-center gap-1.5 ${selectedModel.runtime === 'prism' ? 'text-cyan-300' : 'text-slate-500'}`}>
                       <Check className="w-3 h-3" />
                       <span>
-                        Runtime: {selectedModel.runtime === 'prism' ? 'PrismML (automatisch)' : 'Standard llama.cpp'} · {selectedModel.compatibility_note}
+                        {t('settings.runtimeInfo', {
+                          runtime: selectedModel.runtime === 'prism' ? t('settings.runtimePrism') : t('settings.runtimeLlama'),
+                          note: selectedModel.compatibility_note,
+                        })}
                       </span>
                     </div>
                   );
@@ -707,30 +810,42 @@ export const SettingsView = () => {
               <div className="grid grid-cols-1 md:grid-cols-3 gap-4 text-xs">
                 {/* Context Size */}
                 <div className="space-y-1">
-                  <label className="text-slate-300 font-medium">Context Size (-c):</label>
+                  <label htmlFor="settings-ctx" className="text-slate-300 font-medium">
+                    {t('settings.contextSize')}
+                  </label>
                   <select
+                    id="settings-ctx"
                     value={serverConfig.context_size}
                     onChange={(e) => setServerConfig({ context_size: parseInt(e.target.value) })}
                     className="w-full bg-app border border-slate-800 rounded-lg px-3 py-1.5 text-slate-200 font-mono focus:outline-hidden focus:border-accent-500"
                   >
-                    <option value={2048}>2048 Tokens</option>
-                    <option value={4096}>4096 Tokens</option>
-                    <option value={8192}>8192 Tokens</option>
-                    <option value={16384}>16384 Tokens</option>
-                    <option value={32768}>32768 Tokens (KV-Quant empfohlen)</option>
-                    <option value={65536}>65536 Tokens</option>
-                    <option value={131072}>131072 Tokens (viel RAM/VRAM)</option>
-                    <option value={262144}>262144 Tokens (Modellmaximum, experimentell)</option>
+                    {[2048, 4096, 8192, 16384, 32768, 65536, 131072, 262144].map((size) => (
+                      <option key={size} value={size}>
+                        {t(
+                          size === 32768
+                            ? 'settings.ctx32k'
+                            : size === 131072
+                              ? 'settings.ctx128k'
+                              : size === 262144
+                                ? 'settings.ctx256k'
+                                : 'settings.tokens',
+                          { count: size }
+                        )}
+                      </option>
+                    ))}
                   </select>
                 </div>
 
                 {/* GPU Layers */}
                 <div className="space-y-1">
                   <div className="flex justify-between items-center">
-                    <label className="text-slate-300 font-medium">GPU Layers (-ngl):</label>
+                    <label htmlFor="settings-ngl" className="text-slate-300 font-medium">
+                      {t('settings.gpuLayers')}
+                    </label>
                     <span className="font-mono text-cyan-400 font-bold">{serverConfig.gpu_layers}</span>
                   </div>
                   <input
+                    id="settings-ngl"
                     type="range"
                     min="0"
                     max="99"
@@ -739,16 +854,19 @@ export const SettingsView = () => {
                     className="w-full accent-accent-500"
                   />
                   <div className="flex justify-between text-[11px] text-slate-500">
-                    <span>0 (Nur CPU)</span>
-                    <span>50 (Teil-Offload)</span>
-                    <span>99 (Max VRAM)</span>
+                    <span>{t('settings.gpuLayersCpu')}</span>
+                    <span>{t('settings.gpuLayersPartial')}</span>
+                    <span>{t('settings.gpuLayersMax')}</span>
                   </div>
                 </div>
 
                 {/* Port */}
                 <div className="space-y-1">
-                  <label className="text-slate-300 font-medium">Port:</label>
+                  <label htmlFor="settings-port" className="text-slate-300 font-medium">
+                    {t('settings.port')}
+                  </label>
                   <input
+                    id="settings-port"
                     type="number"
                     value={serverConfig.port}
                     onChange={(e) => setServerConfig({ port: parseInt(e.target.value) || 48596 })}
@@ -761,43 +879,52 @@ export const SettingsView = () => {
               <div className="p-3.5 rounded-lg bg-app/40 border border-slate-800/80 space-y-3">
                 <div className="text-xs font-semibold text-slate-300 flex items-center gap-1.5">
                   <Zap className="w-3.5 h-3.5 text-amber-400" />
-                  <span>Hardware & VRAM Tuning (llama.cpp Flags)</span>
+                  <span>{t('settings.tuningTitle')}</span>
                 </div>
 
                 <div className="grid grid-cols-1 md:grid-cols-3 gap-3 text-xs">
                   {/* Batch Size */}
                   <div className="space-y-1">
-                    <label className="text-slate-400">Batch Size (-b):</label>
+                    <label htmlFor="settings-batch" className="text-slate-400">
+                      {t('settings.batchSize')}
+                    </label>
                     <select
+                      id="settings-batch"
                       value={serverConfig.batch_size ?? 2048}
                       onChange={(e) => setServerConfig({ batch_size: parseInt(e.target.value) })}
                       className="w-full bg-app border border-slate-800 rounded px-2.5 py-1 text-slate-200 font-mono"
                     >
-                      <option value={512}>512 (Minimal VRAM)</option>
-                      <option value={1024}>1024 (Ausgewogen)</option>
-                      <option value={2048}>2048 (Schnelle Prompts)</option>
-                      <option value={4096}>4096 (High-End)</option>
+                      <option value={512}>{t('settings.batch512')}</option>
+                      <option value={1024}>{t('settings.batch1024')}</option>
+                      <option value={2048}>{t('settings.batch2048')}</option>
+                      <option value={4096}>{t('settings.batch4096')}</option>
                     </select>
                   </div>
 
                   {/* UBatch Size */}
                   <div className="space-y-1">
-                    <label className="text-slate-400">UBatch Size (-ub):</label>
+                    <label htmlFor="settings-ubatch" className="text-slate-400">
+                      {t('settings.ubatchSize')}
+                    </label>
                     <select
+                      id="settings-ubatch"
                       value={serverConfig.ubatch_size ?? 512}
                       onChange={(e) => setServerConfig({ ubatch_size: parseInt(e.target.value) })}
                       className="w-full bg-app border border-slate-800 rounded px-2.5 py-1 text-slate-200 font-mono"
                     >
                       <option value={256}>256</option>
-                      <option value={512}>512 (Standard)</option>
+                      <option value={512}>{t('settings.defaultSuffix', { value: 512 })}</option>
                       <option value={1024}>1024</option>
                     </select>
                   </div>
 
                   {/* KV Cache K Quantization */}
                   <div className="space-y-1">
-                    <label className="text-slate-400">KV Cache Quant (K/V):</label>
+                    <label htmlFor="settings-kv" className="text-slate-400">
+                      {t('settings.kvCache')}
+                    </label>
                     <select
+                      id="settings-kv"
                       value={serverConfig.cache_type_k ?? 'f16'}
                       onChange={(e) =>
                         setServerConfig({
@@ -807,9 +934,9 @@ export const SettingsView = () => {
                       }
                       className="w-full bg-app border border-slate-800 rounded px-2.5 py-1 text-slate-200 font-mono"
                     >
-                      <option value="f16">f16 (Standard Präzision)</option>
-                      <option value="q8_0">q8_0 (~50% VRAM Ersparnis)</option>
-                      <option value="q4_0">q4_0 (~70% VRAM Ersparnis)</option>
+                      <option value="f16">{t('settings.kvF16')}</option>
+                      <option value="q8_0">{t('settings.kvQ8')}</option>
+                      <option value="q4_0">{t('settings.kvQ4')}</option>
                     </select>
                   </div>
                 </div>
@@ -823,7 +950,7 @@ export const SettingsView = () => {
                       onChange={(e) => setServerConfig({ flash_attn: e.target.checked })}
                       className="rounded border-slate-700 bg-slate-900 text-accent-600 focus:ring-0"
                     />
-                    <span className="text-slate-300">Flash Attention (-fa)</span>
+                    <span className="text-slate-300">{t('settings.flashAttn')}</span>
                   </label>
 
                   <label className="flex items-center gap-2 cursor-pointer">
@@ -833,7 +960,7 @@ export const SettingsView = () => {
                       onChange={(e) => setServerConfig({ mlock: e.target.checked })}
                       className="rounded border-slate-700 bg-slate-900 text-accent-600 focus:ring-0"
                     />
-                    <span className="text-slate-300">Lock RAM (--mlock)</span>
+                    <span className="text-slate-300">{t('settings.mlock')}</span>
                   </label>
 
                   <label className="flex items-center gap-2 cursor-pointer">
@@ -843,7 +970,7 @@ export const SettingsView = () => {
                       onChange={(e) => setServerConfig({ cpu_moe: e.target.checked })}
                       className="rounded border-slate-700 bg-slate-900 text-accent-600 focus:ring-0"
                     />
-                    <span className="text-slate-300">CPU-MoE Offload</span>
+                    <span className="text-slate-300">{t('settings.cpuMoe')}</span>
                   </label>
 
                   <label className="flex items-center gap-2 cursor-pointer">
@@ -853,7 +980,7 @@ export const SettingsView = () => {
                       onChange={(e) => setServerConfig({ reasoning_mode: e.target.checked })}
                       className="rounded border-slate-700 bg-slate-900 text-accent-600 focus:ring-0"
                     />
-                    <span className="text-slate-300">Reasoning/Denkmodus</span>
+                    <span className="text-slate-300">{t('settings.reasoningMode')}</span>
                   </label>
                 </div>
               </div>
@@ -863,18 +990,21 @@ export const SettingsView = () => {
                 <div className="space-y-0.5">
                   <div className="text-xs font-semibold text-accent-300 flex items-center gap-1.5">
                     <Wand2 className="w-3.5 h-3.5 text-accent-400" />
-                    <span>Automatische GPU-VRAM-Kalkulation</span>
+                    <span>{t('settings.autoVram')}</span>
                   </div>
                   <div className="text-xs text-slate-400">
                     {layerRecommendation
                       ? layerRecommendation.advice
-                      : 'Berechnet Layer und Kontext anhand der echten Modellgröße und des KV-Cache-Typs.'}
+                      : t('settings.autoVramIntro')}
                   </div>
                   {layerRecommendation && (
                     <div className="text-[11px] text-slate-500">
-                      {layerRecommendation.profile_name} · Modell {(layerRecommendation.estimated_model_vram_mb / 1024).toFixed(1)} GiB
-                      {' + '}KV {(layerRecommendation.estimated_context_vram_mb / 1024).toFixed(1)} GiB
-                      {' + '}Runtime {(layerRecommendation.runtime_overhead_mb / 1024).toFixed(1)} GiB
+                      {t('settings.vramBreakdown', {
+                        profile: layerRecommendation.profile_name,
+                        model: (layerRecommendation.estimated_model_vram_mb / 1024).toFixed(1),
+                        kv: (layerRecommendation.estimated_context_vram_mb / 1024).toFixed(1),
+                        runtime: (layerRecommendation.runtime_overhead_mb / 1024).toFixed(1),
+                      })}
                     </div>
                   )}
                 </div>
@@ -885,7 +1015,7 @@ export const SettingsView = () => {
                     onClick={handleRecommendLayers}
                     className="px-3 py-1.5 rounded bg-accent-900/40 hover:bg-accent-900/60 text-accent-200 text-xs font-medium border border-accent-700/50 transition-colors"
                   >
-                    Kalkulieren
+                    {t('settings.calculate')}
                   </button>
                   {layerRecommendation && (
                     <button
@@ -893,7 +1023,10 @@ export const SettingsView = () => {
                       onClick={applyRecommendation}
                       className="px-3 py-1.5 rounded bg-accent-600 hover:bg-accent-500 text-white text-xs font-medium transition-colors"
                     >
-                      Anwenden ({layerRecommendation.recommended_layers} Layer · {Math.round(layerRecommendation.recommended_context_size / 1024)}K)
+                      {t('settings.applyRecommendation', {
+                        layers: layerRecommendation.recommended_layers,
+                        ctx: Math.round(layerRecommendation.recommended_context_size / 1024),
+                      })}
                     </button>
                   )}
                 </div>
@@ -905,10 +1038,11 @@ export const SettingsView = () => {
                   type="button"
                   disabled={serverStatus.state === 'running' || serverStatus.state === 'starting' || !serverConfig.model_path}
                   onClick={startServer}
+                  title={!serverConfig.model_path ? t('settings.startDisabledHint') : undefined}
                   className="flex-1 py-2.5 px-4 rounded-lg bg-emerald-600 hover:bg-emerald-500 disabled:opacity-50 text-white text-xs font-semibold flex items-center justify-center gap-2 transition-colors shadow-lg shadow-emerald-950/40"
                 >
                   <Play className="w-4 h-4 fill-white" />
-                  <span>llama-server Starten</span>
+                  <span>{t('settings.startServer')}</span>
                 </button>
 
                 <button
@@ -918,7 +1052,7 @@ export const SettingsView = () => {
                   className="py-2.5 px-6 rounded-lg bg-rose-600/80 hover:bg-rose-600 disabled:opacity-50 text-white text-xs font-semibold flex items-center justify-center gap-2 transition-colors"
                 >
                   <Square className="w-4 h-4 fill-white" />
-                  <span>Beenden</span>
+                  <span>{t('settings.stopServer')}</span>
                 </button>
               </div>
 
@@ -927,9 +1061,9 @@ export const SettingsView = () => {
                 <div className="p-3 rounded-lg bg-rose-950/40 border border-rose-900/60 text-rose-300 text-xs space-y-1">
                   <div className="font-semibold flex items-center gap-1.5">
                     <AlertTriangle className="w-3.5 h-3.5" />
-                    Fehler beim Starten:
+                    {t('settings.startError')}
                   </div>
-                  <div className="font-mono text-xs whitespace-pre-wrap">{serverStatus.error_message}</div>
+                  <div className="font-mono text-xs whitespace-pre-wrap select-text">{serverStatus.error_message}</div>
                 </div>
               )}
 
@@ -937,19 +1071,20 @@ export const SettingsView = () => {
               <div className="border border-slate-800 rounded-lg overflow-hidden bg-app">
                 <button
                   onClick={() => setShowLogs(!showLogs)}
+                  aria-expanded={showLogs}
                   className="w-full flex items-center justify-between px-3 py-2 bg-slate-900/80 text-xs font-semibold text-slate-300 hover:bg-slate-800/80 transition-colors"
                 >
                   <div className="flex items-center gap-2">
                     <Terminal className="w-3.5 h-3.5 text-accent-400" />
-                    <span>Live Server-Log Konsole ({serverStatus.recent_logs.length} Einträge)</span>
+                    <span>{t('settings.serverLog', { count: serverStatus.recent_logs.length })}</span>
                   </div>
-                  <span className="text-[11px] text-slate-500">{showLogs ? 'Einklappen' : 'Ausklappen'}</span>
+                  <span className="text-[11px] text-slate-500">{showLogs ? t('settings.collapse') : t('settings.expand')}</span>
                 </button>
 
                 {showLogs && (
-                  <div className="p-3 font-mono text-xs text-slate-300 h-44 overflow-y-auto space-y-0.5 bg-app/90 leading-tight">
+                  <div className="p-3 font-mono text-xs text-slate-300 h-44 overflow-y-auto space-y-0.5 bg-app/90 leading-tight select-text">
                     {serverStatus.recent_logs.length === 0 ? (
-                      <div className="text-slate-600 italic">Noch keine Logs empfangen...</div>
+                      <div className="text-slate-500 italic">{t('settings.noLogs')}</div>
                     ) : (
                       serverStatus.recent_logs.map((log, idx) => (
                         <div key={idx} className="whitespace-pre-wrap hover:bg-slate-900/40 py-0.5 px-1 rounded">
@@ -971,12 +1106,13 @@ export const SettingsView = () => {
             <div className="rounded-xl border border-slate-800 bg-slate-900/60 p-4 space-y-3">
               <h2 className="text-sm font-semibold text-slate-200 flex items-center gap-2">
                 <Layers className="w-4 h-4 text-accent-400" />
-                Aktiver Inferenz-Modus
+                {t('settings.backendTitle')}
               </h2>
               <div className="grid grid-cols-2 gap-3 text-xs">
                 <button
                   onClick={() => setSelectedBackend('local')}
-                  className={`p-3 rounded-lg border text-left transition-all ${
+                  aria-pressed={selectedBackend === 'local'}
+                  className={`p-3 rounded-lg border text-left transition-all outline-hidden focus-visible:ring-2 focus-visible:ring-accent-400 ${
                     selectedBackend === 'local'
                       ? 'border-accent-500 bg-accent-500/10 text-accent-200'
                       : 'border-slate-800 bg-app/60 text-slate-400 hover:border-slate-700'
@@ -984,16 +1120,15 @@ export const SettingsView = () => {
                 >
                   <div className="font-semibold flex items-center gap-1.5">
                     <Cpu className="w-3.5 h-3.5" />
-                    <span>Lokaler llama-server</span>
+                    <span>{t('settings.backendLocal')}</span>
                   </div>
-                  <div className="text-xs text-slate-500 mt-1">
-                    Volle Privatsphäre, 100% offline, GPU-beschleunigt.
-                  </div>
+                  <div className="text-xs text-slate-400 mt-1">{t('settings.backendLocalHint')}</div>
                 </button>
 
                 <button
                   onClick={() => setSelectedBackend('cloud')}
-                  className={`p-3 rounded-lg border text-left transition-all ${
+                  aria-pressed={selectedBackend === 'cloud'}
+                  className={`p-3 rounded-lg border text-left transition-all outline-hidden focus-visible:ring-2 focus-visible:ring-accent-400 ${
                     selectedBackend === 'cloud'
                       ? 'border-accent-500 bg-accent-500/10 text-accent-200'
                       : 'border-slate-800 bg-app/60 text-slate-400 hover:border-slate-700'
@@ -1001,11 +1136,9 @@ export const SettingsView = () => {
                 >
                   <div className="font-semibold flex items-center gap-1.5">
                     <Key className="w-3.5 h-3.5 text-amber-400" />
-                    <span>Cloud-Provider Routing</span>
+                    <span>{t('settings.backendCloud')}</span>
                   </div>
-                  <div className="text-xs text-slate-500 mt-1">
-                    OpenRouter, Claude 3.5 Sonnet, GPT-4o, DeepSeek V3.
-                  </div>
+                  <div className="text-xs text-slate-400 mt-1">{t('settings.backendCloudHint')}</div>
                 </button>
               </div>
             </div>
@@ -1014,46 +1147,60 @@ export const SettingsView = () => {
             <div className="rounded-xl border border-slate-800 bg-slate-900/60 p-4 space-y-4">
               <h2 className="text-sm font-semibold text-slate-200 flex items-center gap-2">
                 <Key className="w-4 h-4 text-amber-400" />
-                Provider & Endpunkt Konfiguration
+                {t('settings.providerTitle')}
               </h2>
 
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-xs">
                 {/* Provider Type */}
                 <div className="space-y-1.5">
-                  <label className="text-slate-300 font-medium">Provider Protokoll:</label>
+                  <label htmlFor="settings-provider" className="text-slate-300 font-medium">
+                    {t('settings.providerProtocol')}
+                  </label>
                   <select
+                    id="settings-provider"
                     value={cloudProvider}
                     onChange={(e) => setCloudProvider(e.target.value as LlmProviderType)}
                     className="w-full bg-app border border-slate-800 rounded-lg px-3 py-2 text-slate-200 focus:outline-hidden focus:border-accent-500"
                   >
-                    <option value="open_router">OpenRouter (Große Modellauswahl)</option>
-                    <option value="anthropic">Anthropic Claude (Native Messages API)</option>
-                    <option value="open_ai">OpenAI (GPT-4o, o1, o3)</option>
-                    <option value="deep_seek">DeepSeek (V3, R1)</option>
-                    <option value="gemini">Google Gemini (OpenAI-kompatibel)</option>
-                    <option value="mistral">Mistral AI</option>
-                    <option value="custom">Benutzerdefinierter OpenAI-Endpunkt</option>
+                    <option value="open_router">{t('settings.providerOpenRouter')}</option>
+                    <option value="anthropic">{t('settings.providerAnthropic')}</option>
+                    <option value="open_ai">{t('settings.providerOpenAi')}</option>
+                    <option value="deep_seek">{t('settings.providerDeepSeek')}</option>
+                    <option value="gemini">{t('settings.providerGemini')}</option>
+                    <option value="mistral">{t('settings.providerMistral')}</option>
+                    <option value="custom">{t('settings.providerCustom')}</option>
                   </select>
                 </div>
 
                 {/* API Key */}
                 <div className="space-y-1.5">
-                  <label className="text-slate-300 font-medium">API Key:</label>
+                  <label htmlFor="settings-apikey" className="text-slate-300 font-medium">
+                    {t('settings.apiKey')}
+                  </label>
                   <input
+                    id="settings-apikey"
                     type="password"
+                    autoComplete="off"
                     value={cloudApiKey}
                     onChange={(e) => setCloudApiKey(e.target.value)}
-                    placeholder="sk-or-... oder sk-ant-..."
+                    placeholder={t('settings.apiKeyPlaceholder')}
+                    aria-describedby="settings-apikey-hint"
                     className="w-full bg-app border border-slate-800 rounded-lg px-3 py-2 text-slate-200 font-mono focus:outline-hidden focus:border-accent-500"
                   />
+                  <p id="settings-apikey-hint" className="text-xs text-slate-500">
+                    {t('settings.apiKeyHint')}
+                  </p>
                 </div>
               </div>
 
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-xs">
                 {/* Endpoint URL */}
                 <div className="space-y-1.5">
-                  <label className="text-slate-300 font-medium">Endpunkt URL:</label>
+                  <label htmlFor="settings-endpoint" className="text-slate-300 font-medium">
+                    {t('settings.endpoint')}
+                  </label>
                   <input
+                    id="settings-endpoint"
                     type="text"
                     value={cloudEndpoint}
                     onChange={(e) => setCloudEndpoint(e.target.value)}
@@ -1063,8 +1210,11 @@ export const SettingsView = () => {
 
                 {/* Model Identifier */}
                 <div className="space-y-1.5">
-                  <label className="text-slate-300 font-medium">Modell Identifier:</label>
+                  <label htmlFor="settings-modelid" className="text-slate-300 font-medium">
+                    {t('settings.modelId')}
+                  </label>
                   <input
+                    id="settings-modelid"
                     type="text"
                     value={cloudModel}
                     onChange={(e) => setCloudModel(e.target.value)}
@@ -1080,11 +1230,9 @@ export const SettingsView = () => {
                     <div>
                       <h3 className="text-xs font-semibold text-slate-200 flex items-center gap-1.5">
                         <Sparkles className="w-3.5 h-3.5 text-accent-400" />
-                        <span>OpenRouter Modellkatalog</span>
+                        <span>{t('settings.orCatalog')}</span>
                       </h3>
-                      <p className="text-xs text-slate-400">
-                        Durchsuche über 200 Modelle und übernimm sie mit 1 Klick.
-                      </p>
+                      <p className="text-xs text-slate-400">{t('settings.orCatalogIntro')}</p>
                     </div>
 
                     <button
@@ -1094,7 +1242,7 @@ export const SettingsView = () => {
                       className="px-3 py-1.5 rounded-lg bg-slate-800 hover:bg-slate-700 text-xs font-medium text-slate-200 flex items-center gap-1.5"
                     >
                       <RefreshCw className={`w-3.5 h-3.5 ${isLoadingOpenRouterModels ? 'animate-spin' : ''}`} />
-                      <span>{openRouterModels.length > 0 ? 'Aktualisieren' : 'Katalog laden'}</span>
+                      <span>{openRouterModels.length > 0 ? t('settings.refresh') : t('settings.orLoad')}</span>
                     </button>
                   </div>
 
@@ -1106,17 +1254,20 @@ export const SettingsView = () => {
                           type="text"
                           value={openRouterSearch}
                           onChange={(e) => setOpenRouterSearch(e.target.value)}
-                          placeholder="Modell suchen (z.B. claude, deepseek, llama, qwen, wizard)..."
+                          placeholder={t('settings.orSearch')}
+                          aria-label={t('settings.orSearch')}
                           className="w-full bg-app border border-slate-800 rounded-lg pl-8 pr-3 py-1.5 text-xs text-slate-200 focus:outline-hidden focus:border-accent-500"
                         />
                       </div>
 
                       <div className="h-48 overflow-y-auto rounded-lg border border-slate-800 bg-app divide-y divide-slate-800/60 text-xs">
                         {filteredOpenRouterModels.slice(0, 50).map((m) => (
-                          <div
+                          <button
+                            type="button"
                             key={m.id}
                             onClick={() => setCloudModel(m.id)}
-                            className={`p-2.5 flex items-center justify-between cursor-pointer hover:bg-slate-900 transition-colors ${
+                            aria-pressed={cloudModel === m.id}
+                            className={`w-full text-left p-2.5 flex items-center justify-between cursor-pointer hover:bg-slate-900 transition-colors outline-hidden focus-visible:bg-slate-900 ${
                               cloudModel === m.id ? 'bg-accent-950/40 text-accent-300' : 'text-slate-300'
                             }`}
                           >
@@ -1129,9 +1280,9 @@ export const SettingsView = () => {
                             </div>
 
                             <div className="text-right font-mono text-xs text-slate-400">
-                              <span>{(m.context_length / 1024).toFixed(0)}k Context</span>
+                              <span>{t('settings.orContext', { size: (m.context_length / 1024).toFixed(0) })}</span>
                             </div>
-                          </div>
+                          </button>
                         ))}
                       </div>
                     </div>
@@ -1151,11 +1302,9 @@ export const SettingsView = () => {
                 <div>
                   <h2 className="text-sm font-semibold text-slate-200 flex items-center gap-2">
                     <Sliders className="w-4 h-4 text-accent-400" />
-                    Sampler & Preset-Profile
+                    {t('settings.presetsTitle')}
                   </h2>
-                  <p className="text-xs text-slate-400 mt-0.5">
-                    Wähle aus Standard-Profilen oder erstelle eigene Preset-Konfigurationen.
-                  </p>
+                  <p className="text-xs text-slate-400 mt-0.5">{t('settings.presetsIntro')}</p>
                 </div>
 
                 <button
@@ -1163,33 +1312,48 @@ export const SettingsView = () => {
                   className="px-3 py-1.5 rounded-lg bg-accent-600 hover:bg-accent-500 text-white text-xs font-semibold flex items-center gap-1.5"
                 >
                   <Plus className="w-3.5 h-3.5" />
-                  <span>Als neues Preset speichern</span>
+                  <span className="whitespace-nowrap">{t('settings.saveAsPreset')}</span>
                 </button>
               </div>
 
               {/* Preset Selector Badges */}
-              <div className="flex flex-wrap gap-2 pt-1">
+              <div role="group" aria-label={t('settings.presetList')} className="flex flex-wrap gap-2 pt-1">
                 {llmPresets.map((p) => {
                   const isActive = activePresetId === p.id;
                   return (
                     <div
                       key={p.id}
-                      className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg border text-xs cursor-pointer transition-all ${
+                      className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg border text-xs transition-all ${
                         isActive
                           ? 'border-accent-500 bg-accent-500/20 text-accent-200'
                           : 'border-slate-800 bg-app/60 text-slate-400 hover:border-slate-700'
                       }`}
                     >
-                      <span onClick={() => applyLlmPreset(p.id)} className="font-medium">
+                      <button
+                        type="button"
+                        onClick={() => applyLlmPreset(p.id)}
+                        aria-pressed={isActive}
+                        title={p.description}
+                        aria-label={t('settings.applyPreset', { name: p.name })}
+                        className="font-medium rounded outline-hidden focus-visible:ring-2 focus-visible:ring-accent-400"
+                      >
                         {p.name}
-                      </span>
+                      </button>
                       {!p.is_builtin && (
                         <button
-                          onClick={(e) => {
+                          onClick={async (e) => {
                             e.stopPropagation();
-                            deleteLlmPreset(p.id);
+                            const confirmed = await confirmDialog({
+                              title: translate('confirm.deletePresetTitle', { name: p.name }),
+                              message: translate('confirm.cannotUndo'),
+                              confirmLabel: translate('common.delete'),
+                              tone: 'danger',
+                            });
+                            if (confirmed) deleteLlmPreset(p.id);
                           }}
-                          className="hover:text-rose-400 ml-1"
+                          title={t('settings.deletePreset', { name: p.name })}
+                          aria-label={t('settings.deletePreset', { name: p.name })}
+                          className="hover:text-rose-400 ml-1 rounded outline-hidden focus-visible:ring-2 focus-visible:ring-rose-400"
                         >
                           <Trash2 className="w-3 h-3" />
                         </button>
@@ -1202,18 +1366,21 @@ export const SettingsView = () => {
               {/* Modal / Inline form to save custom preset */}
               {isCreatingPreset && (
                 <div className="p-3 rounded-lg border border-accent-800/60 bg-accent-950/30 space-y-2 text-xs">
-                  <div className="font-semibold text-accent-200">Neues Preset anlegen</div>
+                  <div className="font-semibold text-accent-200">{t('settings.newPreset')}</div>
                   <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
                     <input
                       type="text"
-                      placeholder="Preset Name (z.B. Mein Slow-Burn Preset)..."
+                      placeholder={t('settings.presetName')}
+                      aria-label={t('settings.presetName')}
+                      autoFocus
                       value={newPresetName}
                       onChange={(e) => setNewPresetName(e.target.value)}
                       className="bg-app border border-slate-800 rounded px-2.5 py-1.5 text-slate-200"
                     />
                     <input
                       type="text"
-                      placeholder="Beschreibung..."
+                      placeholder={t('settings.presetDesc')}
+                      aria-label={t('settings.presetDesc')}
                       value={newPresetDesc}
                       onChange={(e) => setNewPresetDesc(e.target.value)}
                       className="bg-app border border-slate-800 rounded px-2.5 py-1.5 text-slate-200"
@@ -1224,13 +1391,14 @@ export const SettingsView = () => {
                       onClick={() => setIsCreatingPreset(false)}
                       className="px-2.5 py-1 rounded bg-slate-800 text-slate-300"
                     >
-                      Abbrechen
+                      {t('common.cancel')}
                     </button>
                     <button
                       onClick={handleSaveCustomPreset}
-                      className="px-3 py-1 rounded bg-accent-600 text-white font-medium"
+                      disabled={!newPresetName.trim()}
+                      className="px-3 py-1 rounded bg-accent-600 text-white font-medium disabled:opacity-50"
                     >
-                      Speichern
+                      {t('settings.save')}
                     </button>
                   </div>
                 </div>
@@ -1241,7 +1409,7 @@ export const SettingsView = () => {
             <div className="rounded-xl border border-slate-800 bg-slate-900/60 p-4 space-y-4">
               <h3 className="text-xs font-semibold text-slate-300 flex items-center gap-1.5">
                 <Sliders className="w-3.5 h-3.5 text-cyan-400" />
-                <span>Klassische Sampling-Parameter</span>
+                <span>{t('settings.classicSampling')}</span>
               </h3>
 
               <div className="grid grid-cols-1 md:grid-cols-3 gap-4 text-xs">
@@ -1260,7 +1428,7 @@ export const SettingsView = () => {
                     onChange={(e) => setSampling({ temperature: parseFloat(e.target.value) })}
                     className="w-full accent-accent-500"
                   />
-                  <div className="text-[11px] text-slate-500">Niedrig: Präzise · Hoch: Kreativ</div>
+                  <div className="text-[11px] text-slate-400">{t('settings.temperatureHint')}</div>
                 </div>
 
                 {/* Min-P */}
@@ -1278,7 +1446,7 @@ export const SettingsView = () => {
                     onChange={(e) => setSampling({ min_p: parseFloat(e.target.value) })}
                     className="w-full accent-cyan-500"
                   />
-                  <div className="text-[11px] text-slate-500">Filtert unpassende Tokens dynamisch</div>
+                  <div className="text-[11px] text-slate-400">{t('settings.minPHint')}</div>
                 </div>
 
                 {/* Top-P */}
@@ -1296,7 +1464,7 @@ export const SettingsView = () => {
                     onChange={(e) => setSampling({ top_p: parseFloat(e.target.value) })}
                     className="w-full accent-emerald-500"
                   />
-                  <div className="text-[11px] text-slate-500">Kumulative Wahrscheinlichkeitsschwelle</div>
+                  <div className="text-[11px] text-slate-400">{t('settings.topPHint')}</div>
                 </div>
               </div>
 
@@ -1304,7 +1472,7 @@ export const SettingsView = () => {
                 {/* Max Tokens */}
                 <div className="p-3 rounded-lg bg-app/40 border border-slate-800/80 space-y-1.5">
                   <div className="flex justify-between">
-                    <span className="text-slate-300 font-medium">Max Output Tokens:</span>
+                    <span className="text-slate-300 font-medium">{t('settings.maxTokens')}</span>
                     <span className="font-mono text-emerald-300 font-bold">{sampling.max_tokens ?? 2048}</span>
                   </div>
                   <input
@@ -1316,7 +1484,7 @@ export const SettingsView = () => {
                     onChange={(e) => setSampling({ max_tokens: parseInt(e.target.value) })}
                     className="w-full accent-emerald-500"
                   />
-                  <div className="text-[11px] text-slate-500">Maximale Antwortlänge</div>
+                  <div className="text-[11px] text-slate-400">{t('settings.maxTokensHint')}</div>
                 </div>
 
                 {/* Repeat Penalty */}
@@ -1334,7 +1502,7 @@ export const SettingsView = () => {
                     onChange={(e) => setSampling({ repeat_penalty: parseFloat(e.target.value) })}
                     className="w-full accent-amber-500"
                   />
-                  <div className="text-[11px] text-slate-500">Verhindert Wort-Wiederholungen</div>
+                  <div className="text-[11px] text-slate-400">{t('settings.repeatPenaltyHint')}</div>
                 </div>
 
                 {/* Top-K */}
@@ -1352,7 +1520,7 @@ export const SettingsView = () => {
                     onChange={(e) => setSampling({ top_k: parseInt(e.target.value) })}
                     className="w-full accent-indigo-500"
                   />
-                  <div className="text-[11px] text-slate-500">0 = deaktiviert</div>
+                  <div className="text-[11px] text-slate-400">{t('settings.topKHint')}</div>
                 </div>
               </div>
             </div>
@@ -1361,7 +1529,7 @@ export const SettingsView = () => {
             <div className="rounded-xl border border-slate-800 bg-slate-900/60 p-4 space-y-4">
               <h3 className="text-xs font-semibold text-slate-300 flex items-center gap-1.5">
                 <Flame className="w-3.5 h-3.5 text-rose-400" />
-                <span>Erweiterte Sampler (DRY, XTC & Dynamic Temperature)</span>
+                <span>{t('settings.advancedSamplers')}</span>
               </h3>
 
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-xs">
@@ -1381,7 +1549,7 @@ export const SettingsView = () => {
                     className="w-full accent-rose-500"
                   />
                   <div className="text-[11px] text-slate-500">
-                    Unterdrückt repetitive Schleifen basierend auf N-Grammen (0 = Aus).
+                    {t('settings.dryHint')}
                   </div>
                 </div>
 
@@ -1401,7 +1569,7 @@ export const SettingsView = () => {
                     className="w-full accent-cyan-500"
                   />
                   <div className="text-[11px] text-slate-500">
-                    Verhindert klischeehafte Phrasen und fördert unerwartete Wortwahl.
+                    {t('settings.xtcHint')}
                   </div>
                 </div>
               </div>
@@ -1423,24 +1591,18 @@ export const SettingsView = () => {
                     className="w-full accent-accent-500"
                   />
                   <div className="text-[11px] text-slate-500">
-                    Schwankt dynamisch zwischen Temp - Range und Temp + Range (0 = Aus).
+                    {t('settings.dynatempHint')}
                   </div>
                 </div>
 
                 {/* Reply Language & Lorebook Depth */}
                 <div className="p-3 rounded-lg bg-app/40 border border-slate-800/80 space-y-2">
-                  <div className="flex items-center justify-between">
-                    <span className="text-slate-300 font-medium">Antwortsprache:</span>
+                  <div className="flex items-center justify-between gap-2">
+                    <label htmlFor="settings-lore-depth" className="text-slate-300 font-medium">
+                      {t('settings.lorebookDepth')}
+                    </label>
                     <input
-                      type="text"
-                      value={replyLanguage}
-                      onChange={(e) => setReplyLanguage(e.target.value)}
-                      className="bg-slate-900 border border-slate-700 rounded px-2 py-0.5 text-slate-200 text-xs w-32"
-                    />
-                  </div>
-                  <div className="flex items-center justify-between">
-                    <span className="text-slate-300 font-medium">Lorebook Scan-Tiefe:</span>
-                    <input
+                      id="settings-lore-depth"
                       type="number"
                       min="1"
                       max="30"
@@ -1453,83 +1615,6 @@ export const SettingsView = () => {
               </div>
             </div>
 
-            {/* 3D Avatar (VRM) Standard-Auswahl */}
-            <div className="rounded-xl border border-slate-800 bg-slate-900/60 p-4 space-y-3">
-              <h3 className="text-xs font-semibold text-slate-300 flex items-center gap-1.5">
-                <Box className="w-3.5 h-3.5 text-accent2-400" />
-                <span>3D Avatar (VRM) Standardmodell</span>
-              </h3>
-              <div className="flex gap-2 text-xs">
-                <select
-                  value={activeVrmPath || ''}
-                  onChange={(e) => setActiveVrmPath(e.target.value || null)}
-                  className="flex-1 bg-app border border-slate-800 rounded-lg px-3 py-2 text-slate-200 focus:outline-hidden focus:border-accent-500"
-                >
-                  {scannedVrms.map((vrm, idx) => (
-                    <option key={idx} value={vrm.path}>
-                      {vrm.name} ({vrm.size_mb.toFixed(0)} MB)
-                    </option>
-                  ))}
-                </select>
-                <button
-                  type="button"
-                  onClick={handleBrowseVrm}
-                  className="px-3.5 py-2 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-200 font-medium flex items-center gap-1.5 transition-colors border border-slate-700"
-                >
-                  <FolderOpen className="w-3.5 h-3.5" />
-                  <span>Eigenen VRM wählen...</span>
-                </button>
-              </div>
-            </div>
-
-            {/* 2D Live2D Standard-Auswahl & Import */}
-            <div className="rounded-xl border border-slate-800 bg-slate-900/60 p-4 space-y-3">
-              <div className="flex items-center justify-between">
-                <h3 className="text-xs font-semibold text-slate-300 flex items-center gap-1.5">
-                  <Smile className="w-3.5 h-3.5 text-accent-400" />
-                  <span>2D Live2D Standardmodell</span>
-                </h3>
-                {sowImportMsg && (
-                  <span className="text-xs text-accent-300 font-mono animate-fade-in bg-accent-950/70 px-2 py-0.5 rounded border border-accent-500/40">
-                    {sowImportMsg}
-                  </span>
-                )}
-              </div>
-              <div className="flex flex-wrap gap-2 text-xs">
-                <select
-                  value={activeLive2dPath || ''}
-                  onChange={(e) => setActiveLive2dPath(e.target.value || null)}
-                  className="flex-1 min-w-[200px] bg-app border border-slate-800 rounded-lg px-3 py-2 text-slate-200 focus:outline-hidden focus:border-accent-500"
-                >
-                  {scannedLive2ds.map((l2d, idx) => (
-                    <option key={idx} value={l2d.model_path}>
-                      {l2d.name} ({l2d.id})
-                    </option>
-                  ))}
-                </select>
-
-                <button
-                  type="button"
-                  onClick={handleBrowseLive2d}
-                  className="px-3.5 py-2 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-200 font-medium flex items-center gap-1.5 transition-colors border border-slate-700"
-                  title="ZIP-Archiv oder .model3.json Datei eines Live2D-Modells importieren"
-                >
-                  <FolderOpen className="w-3.5 h-3.5 text-accent-400" />
-                  <span>Eigenes Live2D-Modell importieren...</span>
-                </button>
-
-                <button
-                  type="button"
-                  onClick={handleImportSowLive2d}
-                  disabled={isImportingSow}
-                  className="px-3.5 py-2 rounded-lg bg-accent-950/60 hover:bg-accent-900/80 text-accent-200 font-medium flex items-center gap-1.5 transition-colors border border-accent-700/60 disabled:opacity-50"
-                  title="Kopiert alle installierten Live2D-Modelle aus Soul-of-Waifu"
-                >
-                  <Sparkles className="w-3.5 h-3.5 text-accent2-400" />
-                  <span>{isImportingSow ? 'Importiere...' : 'Aus Soul-of-Waifu importieren'}</span>
-                </button>
-              </div>
-            </div>
           </div>
         )}
 
@@ -1541,34 +1626,36 @@ export const SettingsView = () => {
               <div>
                 <h2 className="text-sm font-semibold text-slate-200 flex items-center gap-2">
                   <Download className="w-4 h-4 text-emerald-400" />
-                  Hugging Face GGUF Download Manager
+                  {t('settings.hubTitle')}
                 </h2>
-                <p className="text-xs text-slate-400 mt-0.5">
-                  Suche Sprachmodelle direkt auf Hugging Face und lade sie in Deinen lokalen <code>assets/models</code> Ordner.
-                </p>
+                <p className="text-xs text-slate-400 mt-0.5">{t('settings.hubIntro')}</p>
               </div>
 
-              <div className="flex flex-wrap gap-2 text-xs">
+              <div role="group" aria-label={t('settings.hubViews')} className="flex flex-wrap gap-2 text-xs">
                 <button
                   onClick={showBonsaiRecommendation}
-                  className={`px-3 py-1.5 rounded-lg border transition-colors ${hubView === 'recommended' ? 'border-accent-500 bg-accent-500/15 text-accent-200' : 'border-slate-700 bg-app text-slate-400 hover:text-slate-200'}`}
+                  aria-pressed={hubView === 'recommended'}
+                  className={`px-3 py-1.5 rounded-lg border transition-colors whitespace-nowrap outline-hidden focus-visible:ring-2 focus-visible:ring-accent-400 ${hubView === 'recommended' ? 'border-accent-500 bg-accent-500/15 text-accent-200' : 'border-slate-700 bg-app text-slate-400 hover:text-slate-200'}`}
                 >
-                  ✨ Empfehlungen
+                  <Sparkles className="w-3.5 h-3.5 inline mr-1" />
+                  {t('settings.hubRecommended')}
                 </button>
                 <button
                   onClick={() => setHubView('installed')}
-                  className={`px-3 py-1.5 rounded-lg border transition-colors ${hubView === 'installed' ? 'border-accent-500 bg-accent-500/15 text-accent-200' : 'border-slate-700 bg-app text-slate-400 hover:text-slate-200'}`}
+                  aria-pressed={hubView === 'installed'}
+                  className={`px-3 py-1.5 rounded-lg border transition-colors whitespace-nowrap outline-hidden focus-visible:ring-2 focus-visible:ring-accent-400 ${hubView === 'installed' ? 'border-accent-500 bg-accent-500/15 text-accent-200' : 'border-slate-700 bg-app text-slate-400 hover:text-slate-200'}`}
                 >
-                  Meine Modelle ({scannedModels.length})
+                  {t('settings.hubInstalled', { count: scannedModels.length })}
                 </button>
                 <button
                   onClick={() => {
                     setHubView('popular');
                     searchHfModels('');
                   }}
-                  className={`px-3 py-1.5 rounded-lg border transition-colors ${hubView === 'popular' ? 'border-accent-500 bg-accent-500/15 text-accent-200' : 'border-slate-700 bg-app text-slate-400 hover:text-slate-200'}`}
+                  aria-pressed={hubView === 'popular'}
+                  className={`px-3 py-1.5 rounded-lg border transition-colors whitespace-nowrap outline-hidden focus-visible:ring-2 focus-visible:ring-accent-400 ${hubView === 'popular' ? 'border-accent-500 bg-accent-500/15 text-accent-200' : 'border-slate-700 bg-app text-slate-400 hover:text-slate-200'}`}
                 >
-                  Beliebt
+                  {t('settings.hubPopular')}
                 </button>
               </div>
 
@@ -1588,7 +1675,8 @@ export const SettingsView = () => {
                         searchHfModels(hfQuery);
                       }
                     }}
-                    placeholder="Modell suchen (z.B. Qwen2.5-7B, Llama-3.1-8B, Mistral, Heretic)..."
+                    placeholder={t('settings.hubSearchPlaceholder')}
+                    aria-label={t('settings.hubSearch')}
                     className="w-full bg-app border border-slate-800 rounded-lg pl-9 pr-3 py-2 text-xs text-slate-200 focus:outline-hidden focus:border-accent-500"
                   />
                 </div>
@@ -1601,15 +1689,15 @@ export const SettingsView = () => {
                   className="px-4 py-2 rounded-lg bg-emerald-600 hover:bg-emerald-500 disabled:opacity-50 text-white text-xs font-semibold flex items-center gap-1.5"
                 >
                   <Search className="w-3.5 h-3.5" />
-                  <span>{isSearchingHf ? 'Suche...' : 'Modelle suchen'}</span>
+                  <span className="whitespace-nowrap">{isSearchingHf ? t('settings.hubSearching') : t('settings.hubSearch')}</span>
                 </button>
               </div>
             </div>
 
             {hfError && (
-              <div className="p-3 rounded-lg bg-rose-950/40 border border-rose-900/60 text-rose-300 text-xs flex items-center gap-2">
+              <div role="alert" className="p-3 rounded-lg bg-rose-950/40 border border-rose-900/60 text-rose-300 text-xs flex items-center gap-2">
                 <AlertTriangle className="w-4 h-4 shrink-0" />
-                <span>{hfError}</span>
+                <span className="select-text">{hfError}</span>
               </div>
             )}
 
@@ -1623,25 +1711,30 @@ export const SettingsView = () => {
                   <div className="flex flex-col md:flex-row md:items-start justify-between gap-4">
                     <div className="space-y-2">
                       <div className="flex flex-wrap items-center gap-2">
-                        <span className="px-2 py-0.5 rounded-full bg-emerald-500/20 text-emerald-300 text-[11px] font-bold border border-emerald-500/30">ERSTE WAHL</span>
+                        <span className="px-2 py-0.5 rounded-full bg-emerald-500/20 text-emerald-300 text-[11px] font-bold border border-emerald-500/30 uppercase">{t('settings.bonsaiFirstChoice')}</span>
                         <span className="px-2 py-0.5 rounded-full bg-cyan-500/15 text-cyan-300 text-[11px] font-bold border border-cyan-500/30">PRISM PQ2_0</span>
                         <span className="text-[11px] text-slate-400">Apache-2.0</span>
                       </div>
                       <h3 className="text-lg font-bold text-slate-100">Ternary Bonsai 27B</h3>
                       <p className="text-xs text-slate-300 max-w-2xl leading-relaxed">
-                        Volles 27B-Reasoning bei nur etwa 7,2 GB Modellgröße. Unterstützt bis zu 262K Kontext; OtakuSoul startet sicher mit 32K und 4-Bit-KV-Cache.
+                        {t('settings.bonsaiText')}
                       </p>
                     </div>
                     <div className="text-xs md:text-right space-y-1">
                       <div className="text-emerald-300 font-semibold">
-                        {vramGb >= 10 ? `✓ Passt vollständig in ${vramGb.toFixed(0)} GB VRAM` : '✓ Läuft mit CPU/GPU-Offload'}
+                        {vramGb >= 10 ? t('settings.bonsaiFits', { vram: vramGb.toFixed(0) }) : t('settings.bonsaiOffload')}
                       </div>
-                      <div className="text-slate-400">ca. 8,4 GB Peak bei 4K · ca. 10,1 GB bei 100K + Q4 KV</div>
+                      <div className="text-slate-400">{t('settings.bonsaiPeak')}</div>
                     </div>
                   </div>
 
                   <div className="grid grid-cols-2 md:grid-cols-4 gap-2 text-xs">
-                    {[['27B', 'Parameter'], ['~7,2 GB', 'Download'], ['32K', 'Startkontext'], ['262K', 'Maximum']].map(([value, label]) => (
+                    {[
+                      ['27B', t('settings.statParams')],
+                      ['~7,2 GB', t('settings.statDownload')],
+                      ['32K', t('settings.statStartCtx')],
+                      ['262K', t('settings.statMax')],
+                    ].map(([value, label]) => (
                       <div key={label} className="rounded-lg bg-app/60 border border-slate-700/70 p-2 text-center">
                         <div className="font-bold text-slate-100">{value}</div>
                         <div className="text-slate-500">{label}</div>
@@ -1658,14 +1751,14 @@ export const SettingsView = () => {
                         }}
                         className="px-4 py-2 rounded-lg bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-semibold flex items-center gap-2"
                       >
-                        <Check className="w-4 h-4" /> Installiert – auswählen
+                        <Check className="w-4 h-4" /> {t('settings.installedSelect')}
                       </button>
                     ) : recommendedFile ? (
                       <button
                         onClick={() => downloadGgufModel(recommendedFile.download_url, recommendedFile.filename)}
                         className="px-4 py-2 rounded-lg bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-semibold flex items-center gap-2"
                       >
-                        <Download className="w-4 h-4" /> Empfohlenes Modell laden & auswählen
+                        <Download className="w-4 h-4" /> {t('settings.downloadRecommended')}
                       </button>
                     ) : (
                       <button
@@ -1674,23 +1767,26 @@ export const SettingsView = () => {
                         className="px-4 py-2 rounded-lg bg-accent-600 hover:bg-accent-500 disabled:opacity-50 text-white text-xs font-semibold flex items-center gap-2"
                       >
                         <RefreshCw className={`w-4 h-4 ${isLoadingHfFiles[BONSAI_MODEL_ID] ? 'animate-spin' : ''}`} />
-                        {isLoadingHfFiles[BONSAI_MODEL_ID] ? 'Lade Modelldaten...' : 'Download vorbereiten'}
+                        {isLoadingHfFiles[BONSAI_MODEL_ID] ? t('settings.loadingModelData') : t('settings.prepareDownload')}
                       </button>
                     )}
                     <button type="button" onClick={() => openUrl('https://huggingface.co/prism-ml/Ternary-Bonsai-27B-gguf')} className="px-3 py-2 text-xs text-cyan-300 hover:text-cyan-200">
-                      Modellseite öffnen ↗
+                      {t('settings.openModelPage')}
                     </button>
                   </div>
 
                   {files.length > 0 && !installed && (
                     <div className="pt-3 border-t border-accent-500/20 text-xs text-slate-400">
-                      Gewählt: <span className="font-mono text-accent-200">{recommendedFile?.filename || 'PQ2_0 wird gesucht'}</span>. Die spezielle PrismML Runtime wird automatisch verwendet.
+                      {t('settings.bonsaiSelected', { file: recommendedFile?.filename || t('settings.bonsaiSearching') })}
                     </div>
                   )}
                 </div>
               );
             })()}
 
+            {hubView === 'installed' && scannedModels.length === 0 && (
+              <div className="text-center py-10 text-sm text-slate-400">{t('settings.noInstalledModels')}</div>
+            )}
             {hubView === 'installed' && (
               <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
                 {scannedModels.map((model) => (
@@ -1712,7 +1808,7 @@ export const SettingsView = () => {
                         {model.runtime === 'prism' ? 'PrismML' : 'llama.cpp'}
                       </span>
                     </div>
-                    <div className="mt-2 text-[11px] text-slate-500">Klicken zum Auswählen und Konfigurieren</div>
+                    <div className="mt-2 text-[11px] text-slate-400">{t('settings.clickToSelect')}</div>
                   </button>
                 ))}
               </div>
@@ -1723,7 +1819,7 @@ export const SettingsView = () => {
               <div className="rounded-xl border border-slate-800 bg-slate-900/60 p-4 space-y-3">
                 <h3 className="text-xs font-semibold text-slate-200 flex items-center gap-1.5">
                   <Download className="w-3.5 h-3.5 text-cyan-400" />
-                  <span>Laufende / Abgeschlossene Downloads</span>
+                  <span>{t('settings.downloads')}</span>
                 </h3>
 
                 <div className="space-y-2">
@@ -1735,7 +1831,7 @@ export const SettingsView = () => {
                           <span className="font-mono text-cyan-400">{prog.speed_mbps.toFixed(1)} MB/s</span>
                           {prog.finished ? (
                             <span className="px-2 py-0.5 rounded bg-emerald-500/20 text-emerald-400 text-[11px] font-bold">
-                              Fertig
+                              {t('settings.downloadDone')}
                             </span>
                           ) : (
                             <span className="px-2 py-0.5 rounded bg-amber-500/20 text-amber-400 text-[11px] font-bold">
@@ -1745,7 +1841,14 @@ export const SettingsView = () => {
                         </div>
                       </div>
 
-                      <div className="w-full bg-slate-800 rounded-full h-1.5 overflow-hidden">
+                      <div
+                        role="progressbar"
+                        aria-label={t('settings.downloadProgress', { file: prog.filename })}
+                        aria-valuenow={Math.round(prog.percent)}
+                        aria-valuemin={0}
+                        aria-valuemax={100}
+                        className="w-full bg-slate-800 rounded-full h-1.5 overflow-hidden"
+                      >
                         <div
                           className={`h-1.5 rounded-full transition-all duration-300 ${
                             prog.finished ? 'bg-emerald-500' : 'bg-cyan-500'
@@ -1758,7 +1861,7 @@ export const SettingsView = () => {
                         <span>
                           {(prog.downloaded_bytes / (1024 * 1024)).toFixed(1)} MB / {(prog.total_bytes / (1024 * 1024)).toFixed(1)} MB
                         </span>
-                        {prog.eta_seconds && prog.eta_seconds > 0 && <span>ETA: ~{prog.eta_seconds}s</span>}
+                        {prog.eta_seconds && prog.eta_seconds > 0 && <span>{t('settings.eta', { seconds: prog.eta_seconds })}</span>}
                       </div>
                     </div>
                   ))}
@@ -1770,9 +1873,7 @@ export const SettingsView = () => {
             {(hubView === 'search' || hubView === 'popular') && (
             <div className="space-y-3">
               {hfSearchResults.length === 0 ? (
-                <div className="text-center py-12 text-slate-600 text-xs">
-                  Gib einen Suchbegriff ein, um GGUF-Modelle auf Hugging Face zu finden.
-                </div>
+                <div className="text-center py-12 text-slate-400 text-sm">{t('settings.hubEmpty')}</div>
               ) : (
                 hfSearchResults.map((model) => {
                   const isExpanded = expandedModelId === model.id;
@@ -1785,13 +1886,13 @@ export const SettingsView = () => {
                         <div className="space-y-0.5">
                           <div className="font-semibold text-slate-200 text-xs flex items-center gap-2">
                             <span>{model.id}</span>
-                            <span className="text-[11px] text-slate-500">von {model.author}</span>
+                            <span className="text-[11px] text-slate-500">{t('settings.by', { author: model.author })}</span>
                           </div>
                           <div className="text-xs text-slate-400 flex items-center gap-3">
-                            <span>Downloads: {model.downloads.toLocaleString()}</span>
-                            <span>Likes: {model.likes.toLocaleString()}</span>
+                            <span>{t('settings.hfDownloads', { count: model.downloads.toLocaleString() })}</span>
+                            <span>{t('settings.hfLikes', { count: model.likes.toLocaleString() })}</span>
                             {model.last_modified && (
-                              <span>Update: {model.last_modified.slice(0, 10)}</span>
+                              <span>{t('settings.hfUpdated', { date: model.last_modified.slice(0, 10) })}</span>
                             )}
                           </div>
                         </div>
@@ -1807,9 +1908,10 @@ export const SettingsView = () => {
                               }
                             }
                           }}
-                          className="px-3 py-1.5 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-200 text-xs font-medium flex items-center gap-1.5 transition-colors"
+                          aria-expanded={isExpanded}
+                          className="px-3 py-1.5 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-200 text-xs font-medium flex items-center gap-1.5 transition-colors whitespace-nowrap"
                         >
-                          <span>{isExpanded ? 'Dateien schließen' : 'GGUF-Dateien anzeigen'}</span>
+                          <span>{isExpanded ? t('settings.hideFiles') : t('settings.showFiles')}</span>
                         </button>
                       </div>
 
@@ -1819,11 +1921,11 @@ export const SettingsView = () => {
                           {isLoadingFiles ? (
                             <div className="py-4 text-center text-xs text-slate-400 flex items-center justify-center gap-2">
                               <RefreshCw className="w-3.5 h-3.5 animate-spin" />
-                              <span>Lade Dateiliste von Hugging Face...</span>
+                              <span>{t('settings.loadingFiles')}</span>
                             </div>
                           ) : files.length === 0 ? (
                             <div className="py-2 text-center text-xs text-slate-500">
-                              Keine .gguf Dateien in diesem Repository gefunden.
+                              {t('settings.noGgufFiles')}
                             </div>
                           ) : (
                             <div className="divide-y divide-slate-800/80 rounded-lg border border-slate-800 bg-app overflow-hidden">
@@ -1832,7 +1934,7 @@ export const SettingsView = () => {
                                   <div className="space-y-1 min-w-0 flex-1 pr-3">
                                     <div className="font-semibold text-slate-200 break-all flex items-center gap-2">
                                       <span>{file.filename}</span>
-                                      {file.recommended && <span className="shrink-0 px-1.5 py-0.5 rounded bg-emerald-500/20 text-emerald-300 text-[11px]">EMPFOHLEN</span>}
+                                      {file.recommended && <span className="shrink-0 px-1.5 py-0.5 rounded bg-emerald-500/20 text-emerald-300 text-[11px] uppercase">{t('settings.recommended')}</span>}
                                     </div>
                                     <div className="flex items-center gap-2 text-[11px] font-mono">
                                       <span className="px-1.5 py-0.5 rounded bg-accent-500/20 text-accent-300 font-bold">
@@ -1840,7 +1942,11 @@ export const SettingsView = () => {
                                       </span>
                                       <span className="text-slate-400">{file.size_formatted}</span>
                                       <span className={file.runtime === 'prism' ? 'text-cyan-300' : file.runtime === 'legacy' ? 'text-rose-300' : 'text-slate-500'}>
-                                        {file.runtime === 'prism' ? 'PrismML Runtime' : file.runtime === 'legacy' ? 'Veraltet' : 'Standard Runtime'}
+                                        {file.runtime === 'prism'
+                                          ? t('settings.runtimePrismLabel')
+                                          : file.runtime === 'legacy'
+                                            ? t('settings.runtimeLegacy')
+                                            : t('settings.runtimeStandardLabel')}
                                       </span>
                                     </div>
                                     <div className={`text-[11px] ${file.runtime === 'legacy' ? 'text-rose-300' : 'text-slate-500'}`}>{file.compatibility_note}</div>
@@ -1852,7 +1958,7 @@ export const SettingsView = () => {
                                     className="px-3 py-1.5 rounded bg-emerald-600 hover:bg-emerald-500 disabled:bg-slate-700 disabled:text-slate-500 text-white font-semibold text-xs flex items-center gap-1.5 transition-colors shrink-0"
                                   >
                                     <Download className="w-3.5 h-3.5" />
-                                    <span>{file.runtime === 'legacy' ? 'Nicht verwenden' : 'Laden & auswählen'}</span>
+                                    <span className="whitespace-nowrap">{file.runtime === 'legacy' ? t('settings.doNotUse') : t('settings.downloadSelect')}</span>
                                   </button>
                                 </div>
                               ))}
