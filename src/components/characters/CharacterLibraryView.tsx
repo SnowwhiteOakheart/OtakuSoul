@@ -1,4 +1,5 @@
 import { useState, useMemo } from 'react';
+import { useShallow } from 'zustand/react/shallow';
 import { useAppStore } from '../../store/useAppStore';
 import { CharacterProfile } from '../../types';
 import { api } from '../../services/api';
@@ -17,13 +18,27 @@ import {
   CheckCircle2,
   RotateCcw,
   Compass,
+  MoreHorizontal,
+  SearchX,
+  UserPlus,
 } from 'lucide-react';
 import { CharacterEditorModal } from './CharacterEditorModal';
 import { PersonaManagerModal } from './PersonaManagerModal';
-import { translate } from '../../i18n';
-import { confirmDialog } from '../ui/feedback';
+import { translate, useTranslation } from '../../i18n';
+import { confirmDialog, toast } from '../ui/feedback';
+import { DropdownMenu } from '../ui/DropdownMenu';
+import { EmptyState } from '../ui/EmptyState';
+import { errorMessage } from '../../utils/errors';
+
+const SECONDARY_BUTTON =
+  'px-3 py-1.5 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-200 text-xs font-medium flex items-center gap-1.5 border border-slate-700 transition-colors whitespace-nowrap outline-hidden focus-visible:ring-2 focus-visible:ring-accent-400';
+const PRIMARY_BUTTON =
+  'px-3.5 py-1.5 rounded-xl bg-accent-600 hover:bg-accent-500 text-white text-xs font-semibold flex items-center gap-1.5 shadow-md shadow-accent-900/30 transition-all whitespace-nowrap outline-hidden focus-visible:ring-2 focus-visible:ring-accent-300';
+const CARD_ACTION_BUTTON =
+  'p-1.5 rounded-lg bg-slate-900/80 text-slate-200 hover:text-white backdrop-blur shadow-sm transition-colors outline-hidden focus-visible:ring-2 focus-visible:ring-accent-400';
 
 export const CharacterLibraryView = () => {
+  const { t } = useTranslation();
   const {
     availableCharacters,
     activeCharacter,
@@ -34,70 +49,72 @@ export const CharacterLibraryView = () => {
     setActiveTab,
     activePersona,
     setCharacterWizardOpen,
-  } = useAppStore();
+  } = useAppStore(
+    useShallow((s) => ({
+      availableCharacters: s.availableCharacters,
+      activeCharacter: s.activeCharacter,
+      selectCharacter: s.selectCharacter,
+      refreshCharacters: s.refreshCharacters,
+      deleteCharacter: s.deleteCharacter,
+      restoreHiddenCharacters: s.restoreHiddenCharacters,
+      setActiveTab: s.setActiveTab,
+      activePersona: s.activePersona,
+      setCharacterWizardOpen: s.setCharacterWizardOpen,
+    }))
+  );
 
   const [searchQuery, setSearchQuery] = useState('');
-  const [selectedTag, setSelectedTag] = useState<string>('Alle');
+  // null = no tag filter
+  const [selectedTag, setSelectedTag] = useState<string | null>(null);
   const [editingCharacter, setEditingCharacter] = useState<CharacterProfile | null>(null);
   const [isEditorOpen, setIsEditorOpen] = useState(false);
   const [isPersonaModalOpen, setIsPersonaModalOpen] = useState(false);
-  const [statusNotice, setStatusNotice] = useState<string | null>(null);
 
-  // Extract all unique tags
   const allTags = useMemo(() => {
     const set = new Set<string>();
     for (const char of availableCharacters) {
-      if (char.card.data.tags) {
-        for (const t of char.card.data.tags) {
-          if (t.trim()) set.add(t.trim());
-        }
+      for (const tag of char.card.data.tags ?? []) {
+        if (tag.trim()) set.add(tag.trim());
       }
     }
-    return ['Alle', ...Array.from(set).slice(0, 12)];
+    return Array.from(set).slice(0, 12);
   }, [availableCharacters]);
 
-  // Filtered characters
   const filteredCharacters = useMemo(() => {
+    const query = searchQuery.toLowerCase();
     return availableCharacters.filter((char) => {
       const { data } = char.card;
       const matchesSearch =
-        data.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-        data.description.toLowerCase().includes(searchQuery.toLowerCase()) ||
-        data.personality.toLowerCase().includes(searchQuery.toLowerCase()) ||
-        (data.tags && data.tags.some((t) => t.toLowerCase().includes(searchQuery.toLowerCase())));
-
-      const matchesTag =
-        selectedTag === 'Alle' || (data.tags && data.tags.includes(selectedTag));
-
+        data.name.toLowerCase().includes(query) ||
+        data.description.toLowerCase().includes(query) ||
+        data.personality.toLowerCase().includes(query) ||
+        (data.tags ?? []).some((tag) => tag.toLowerCase().includes(query));
+      const matchesTag = selectedTag === null || (data.tags ?? []).includes(selectedTag);
       return matchesSearch && matchesTag;
     });
   }, [availableCharacters, searchQuery, selectedTag]);
+
+  const openEditor = (character: CharacterProfile | null) => {
+    setEditingCharacter(character);
+    setIsEditorOpen(true);
+  };
 
   const handleImportCard = async () => {
     try {
       const selected = await open({
         multiple: false,
-        filters: [
-          {
-            name: 'SillyTavern V2 Charakterkarten',
-            extensions: ['png', 'json'],
-          },
-        ],
+        filters: [{ name: translate('library.fileFilterCards'), extensions: ['png', 'json'] }],
       });
-
       if (selected && typeof selected === 'string') {
         const loaded = await api.loadCharacterCard(selected);
-        // Persist to user characters directory
         const saved = await api.saveCharacterCard(loaded);
         await refreshCharacters();
         await selectCharacter(saved);
-        setStatusNotice(`Charakter "${saved.card.data.name}" erfolgreich importiert!`);
-        setTimeout(() => setStatusNotice(null), 4000);
+        toast.success(translate('library.imported', { name: saved.card.data.name }));
       }
     } catch (e) {
       console.error('Failed to import character card:', e);
-      setStatusNotice(`Fehler beim Import: ${e instanceof Error ? e.message : String(e)}`);
-      setTimeout(() => setStatusNotice(null), 5000);
+      toast.error(translate('library.importFailed', { error: errorMessage(e) }));
     }
   };
 
@@ -108,21 +125,18 @@ export const CharacterLibraryView = () => {
         defaultPath: defaultFileName,
         filters: [
           {
-            name: format === 'png' ? 'SillyTavern V2 PNG Karte' : 'SillyTavern V2 JSON',
+            name: translate(format === 'png' ? 'library.fileFilterPng' : 'library.fileFilterJson'),
             extensions: [format],
           },
         ],
       });
-
       if (targetPath) {
         await api.exportCharacterCard(char, targetPath, format === 'png');
-        setStatusNotice(`"${char.card.data.name}" exportiert nach ${targetPath}`);
-        setTimeout(() => setStatusNotice(null), 4000);
+        toast.success(translate('library.exported', { name: char.card.data.name, path: targetPath }));
       }
     } catch (e) {
       console.error('Failed to export character card:', e);
-      setStatusNotice(`Export fehlgeschlagen: ${e instanceof Error ? e.message : String(e)}`);
-      setTimeout(() => setStatusNotice(null), 5000);
+      toast.error(translate('library.exportFailed', { error: errorMessage(e) }));
     }
   };
 
@@ -134,14 +148,20 @@ export const CharacterLibraryView = () => {
       tone: 'danger',
     });
     if (!confirmed) return;
-
     try {
       await deleteCharacter(char.id);
-      setStatusNotice(`"${char.card.data.name}" wurde in den Papierkorb verschoben.`);
-      setTimeout(() => setStatusNotice(null), 4000);
+      toast.success(translate('library.trashed', { name: char.card.data.name }));
     } catch (e) {
-      setStatusNotice(`Löschen nicht möglich: ${e instanceof Error ? e.message : String(e)}`);
-      setTimeout(() => setStatusNotice(null), 5000);
+      toast.error(translate('toast.deleteFailed', { error: errorMessage(e) }));
+    }
+  };
+
+  const handleRestorePresets = async () => {
+    try {
+      await restoreHiddenCharacters();
+      toast.success(translate('library.presetsRestored'));
+    } catch (e) {
+      toast.error(translate('library.restoreFailed', { error: errorMessage(e) }));
     }
   };
 
@@ -150,130 +170,94 @@ export const CharacterLibraryView = () => {
     setActiveTab('chat');
   };
 
+  const resetFilters = () => {
+    setSearchQuery('');
+    setSelectedTag(null);
+  };
+
   return (
     <div className="flex-1 flex flex-col h-full bg-app overflow-hidden">
       {/* Top Header Bar */}
       <div className="px-6 py-4 border-b border-slate-800 bg-slate-900/60 backdrop-blur flex items-center justify-between gap-4 select-none">
-        <div className="flex items-center gap-3">
-          <div className="w-10 h-10 rounded-xl bg-accent-600/20 border border-accent-500/30 flex items-center justify-center text-accent-400 shadow-sm">
+        <div className="flex items-center gap-3 min-w-0">
+          <div className="w-10 h-10 shrink-0 rounded-xl bg-accent-600/20 border border-accent-500/30 flex items-center justify-center text-accent-400 shadow-sm">
             <Users className="w-5 h-5" />
           </div>
-          <div>
+          <div className="min-w-0">
             <div className="flex items-center gap-2">
-              <h1 className="text-base font-bold text-slate-100">Charakterbibliothek</h1>
-              <span className="text-xs px-2 py-0.5 rounded-full bg-accent-500/20 text-accent-300 font-mono">
-                {availableCharacters.length} Karten
+              <h1 className="text-base font-bold text-slate-100 whitespace-nowrap">{t('library.title')}</h1>
+              <span className="text-xs px-2 py-0.5 rounded-full bg-accent-500/20 text-accent-300 font-mono whitespace-nowrap">
+                {t('library.cardCount', { count: availableCharacters.length })}
               </span>
             </div>
-            <p className="text-xs text-slate-400">
-              SillyTavern V2 kompatibel · Aktive Persona:{' '}
-              <span className="text-accent-300 font-medium">{activePersona.name}</span>
+            <p className="text-xs text-slate-400 truncate">
+              {t('library.subtitle')} <span className="text-accent-300 font-medium">{activePersona.name}</span>
             </p>
           </div>
         </div>
 
-        {/* Action Buttons */}
-        <div className="flex items-center gap-2">
-          <button
-            onClick={() => setIsPersonaModalOpen(true)}
-            className="px-3 py-1.5 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-200 text-xs font-medium flex items-center gap-1.5 border border-slate-700 transition-colors shadow-sm"
-          >
-            <Users className="w-3.5 h-3.5 text-indigo-400" />
-            <span>Personas</span>
-          </button>
-
-          <button
-            onClick={() => setActiveTab('hub')}
-            className="px-3 py-1.5 rounded-xl bg-accent-600/20 hover:bg-accent-600/30 text-accent-200 text-xs font-medium flex items-center gap-1.5 border border-accent-500/40 transition-colors shadow-sm"
-          >
-            <Compass className="w-3.5 h-3.5 text-accent-400" />
-            <span>Soul Hub</span>
-          </button>
-
-          <button
-            onClick={handleImportCard}
-            className="px-3 py-1.5 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-200 text-xs font-medium flex items-center gap-1.5 border border-slate-700 transition-colors shadow-sm"
-          >
+        <div className="flex items-center gap-2 shrink-0">
+          <button onClick={handleImportCard} title={t('library.importHint')} className={SECONDARY_BUTTON}>
             <Upload className="w-3.5 h-3.5 text-cyan-400" />
-            <span>Karte importieren...</span>
+            <span>{t('library.import')}</span>
           </button>
-
-          <button
-            onClick={async () => {
-              try {
-                await restoreHiddenCharacters();
-                setStatusNotice('Alle ausgeblendeten Presets wurden wiederhergestellt.');
-                setTimeout(() => setStatusNotice(null), 4000);
-              } catch (e) {
-                setStatusNotice(`Fehler beim Wiederherstellen: ${e instanceof Error ? e.message : String(e)}`);
-                setTimeout(() => setStatusNotice(null), 5000);
-              }
-            }}
-            title="Ausgeblendete Standard-Charaktere wiederherstellen"
-            className="px-3 py-1.5 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-200 text-xs font-medium flex items-center gap-1.5 border border-slate-700 transition-colors shadow-sm"
-          >
-            <RotateCcw className="w-3.5 h-3.5 text-amber-400" />
-            <span>Presets wiederherstellen</span>
-          </button>
-
           <button
             onClick={() => setCharacterWizardOpen(true)}
-            className="px-3 py-1.5 rounded-xl bg-linear-to-r from-indigo-600/30 to-accent-600/30 hover:from-indigo-600/50 hover:to-accent-600/50 text-indigo-200 text-xs font-medium flex items-center gap-1.5 border border-indigo-500/40 transition-colors shadow-sm"
-            title="Geführter 5-Schritte KI-Charakterassistent"
+            title={t('library.aiAssistantHint')}
+            className={SECONDARY_BUTTON}
           >
             <Sparkles className="w-3.5 h-3.5 text-indigo-400" />
-            <span>KI-Assistent</span>
+            <span>{t('library.aiAssistant')}</span>
           </button>
-
-          <button
-            onClick={() => {
-              setEditingCharacter(null);
-              setIsEditorOpen(true);
-            }}
-            className="px-3.5 py-1.5 rounded-xl bg-accent-600 hover:bg-accent-500 text-white text-xs font-semibold flex items-center gap-1.5 shadow-md shadow-accent-900/30 transition-all"
-          >
+          <DropdownMenu
+            triggerLabel={t('library.more')}
+            trigger={<MoreHorizontal className="w-4 h-4" />}
+            triggerClassName={`${SECONDARY_BUTTON} px-2`}
+            items={[
+              { label: t('library.personas'), icon: Users, onSelect: () => setIsPersonaModalOpen(true) },
+              { label: t('library.browseHub'), icon: Compass, onSelect: () => setActiveTab('hub') },
+              { label: t('library.restorePresets'), icon: RotateCcw, onSelect: handleRestorePresets },
+            ]}
+          />
+          <button onClick={() => openEditor(null)} className={PRIMARY_BUTTON}>
             <Plus className="w-4 h-4" />
-            <span>Neuer Charakter</span>
+            <span>{t('library.newCharacter')}</span>
           </button>
         </div>
       </div>
 
-      {/* Notice Banner */}
-      {statusNotice && (
-        <div className="px-6 py-2 bg-accent-950/70 border-b border-accent-500/40 text-accent-200 text-xs flex items-center gap-2">
-          <Sparkles className="w-4 h-4 text-accent-400" />
-          <span>{statusNotice}</span>
-        </div>
-      )}
-
       {/* Filter & Search Bar */}
       <div className="px-6 py-3 border-b border-slate-800/80 bg-slate-900/30 flex flex-col md:flex-row items-center justify-between gap-3">
-        {/* Search Input */}
         <div className="relative w-full md:w-80">
-          <Search className="w-4 h-4 text-slate-400 absolute left-3 top-1/2 -translate-y-1/2" />
+          <Search className="w-4 h-4 text-slate-400 absolute left-3 top-1/2 -translate-y-1/2" aria-hidden />
           <input
-            type="text"
+            type="search"
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
-            placeholder="Charaktere, Tags oder Eigenschaften suchen..."
+            aria-label={t('library.searchLabel')}
+            placeholder={t('library.searchPlaceholder')}
             className="w-full pl-9 pr-4 py-1.5 bg-slate-900 border border-slate-800 rounded-xl text-xs text-slate-200 placeholder-slate-500 focus:outline-hidden focus:border-accent-500 transition-colors"
           />
         </div>
 
-        {/* Tag Filter Chips */}
-        <div className="flex items-center gap-1.5 overflow-x-auto w-full md:w-auto pb-1 md:pb-0">
-          <Tag className="w-3.5 h-3.5 text-slate-500 ml-1 mr-0.5 shrink-0" />
-          {allTags.map((tag) => (
+        <div
+          role="group"
+          aria-label={t('library.tagFilter')}
+          className="flex items-center gap-1.5 overflow-x-auto w-full md:w-auto pb-1 md:pb-0"
+        >
+          <Tag className="w-3.5 h-3.5 text-slate-500 ml-1 mr-0.5 shrink-0" aria-hidden />
+          {[null, ...allTags].map((tag) => (
             <button
-              key={tag}
+              key={tag ?? '__all__'}
               onClick={() => setSelectedTag(tag)}
-              className={`px-2.5 py-1 rounded-lg text-xs font-medium whitespace-nowrap transition-colors ${
+              aria-pressed={selectedTag === tag}
+              className={`px-2.5 py-1 rounded-lg text-xs font-medium whitespace-nowrap transition-colors outline-hidden focus-visible:ring-2 focus-visible:ring-accent-400 ${
                 selectedTag === tag
                   ? 'bg-accent-600/30 text-accent-300 border border-accent-500/50 shadow-sm'
                   : 'bg-slate-900/70 text-slate-400 hover:text-slate-200 hover:bg-slate-800 border border-slate-800/60'
               }`}
             >
-              {tag}
+              {tag ?? t('library.allTags')}
             </button>
           ))}
         </div>
@@ -281,21 +265,46 @@ export const CharacterLibraryView = () => {
 
       {/* Character Cards Grid */}
       <div className="flex-1 overflow-y-auto p-6">
-        {filteredCharacters.length === 0 ? (
-          <div className="h-64 flex flex-col items-center justify-center text-center text-slate-500 text-xs">
-            <Users className="w-12 h-12 text-slate-700 mb-3" />
-            <p className="font-semibold text-slate-400">Keine Charaktere gefunden</p>
-            <p className="text-xs mt-1">
-              Passe deine Suche an oder importiere eine neue Charakterkarte (.png / .json).
-            </p>
-          </div>
+        {availableCharacters.length === 0 ? (
+          <EmptyState
+            icon={UserPlus}
+            title={t('library.emptyTitle')}
+            description={t('library.emptyText')}
+            actions={
+              <>
+                <button onClick={() => openEditor(null)} className={PRIMARY_BUTTON}>
+                  <Plus className="w-4 h-4" />
+                  <span>{t('library.newCharacter')}</span>
+                </button>
+                <button onClick={handleImportCard} className={SECONDARY_BUTTON}>
+                  <Upload className="w-3.5 h-3.5 text-cyan-400" />
+                  <span>{t('library.import')}</span>
+                </button>
+                <button onClick={() => setActiveTab('hub')} className={SECONDARY_BUTTON}>
+                  <Compass className="w-3.5 h-3.5 text-accent-400" />
+                  <span>{t('library.browseHub')}</span>
+                </button>
+              </>
+            }
+          />
+        ) : filteredCharacters.length === 0 ? (
+          <EmptyState
+            icon={SearchX}
+            title={t('library.noMatchesTitle')}
+            description={t('library.noMatchesText')}
+            actions={
+              <button onClick={resetFilters} className={SECONDARY_BUTTON}>
+                <RotateCcw className="w-3.5 h-3.5" />
+                <span>{t('library.resetFilters')}</span>
+              </button>
+            }
+          />
         ) : (
           <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-5">
             {filteredCharacters.map((char) => {
               const { data } = char.card;
               const isActive = activeCharacter?.id === char.id;
-              const title =
-                (data.extensions?.sow_title as string) || data.tags?.[0] || 'AI Companion';
+              const title = (data.extensions?.sow_title as string) || data.tags?.[0] || t('library.defaultTitle');
 
               return (
                 <div
@@ -320,46 +329,43 @@ export const CharacterLibraryView = () => {
                       </div>
                     )}
 
-                    {/* Gradient Overlay */}
                     <div className="absolute inset-0 bg-linear-to-t from-app via-app/20 to-transparent" />
 
-                    {/* Active Pill Badge */}
                     {isActive && (
-                      <div className="absolute top-2.5 left-2.5 px-2 py-0.5 rounded-full bg-emerald-500/90 text-app text-[11px] font-bold flex items-center gap-1 shadow-md">
+                      <div className="absolute top-2.5 left-2.5 px-2 py-0.5 rounded-full bg-emerald-500/90 text-app text-xs font-bold flex items-center gap-1 shadow-md">
                         <CheckCircle2 className="w-3 h-3" />
-                        <span>Aktiv</span>
+                        <span>{t('library.active')}</span>
                       </div>
                     )}
 
-                    {/* Overlay Action Buttons on Hover */}
-                    <div className="absolute top-2.5 right-2.5 flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
+                    {/* Card actions: shown on hover and on keyboard focus */}
+                    <div className="absolute top-2.5 right-2.5 flex items-center gap-1 opacity-0 group-hover:opacity-100 group-focus-within:opacity-100 transition-opacity">
                       <button
-                        onClick={() => {
-                          setEditingCharacter(char);
-                          setIsEditorOpen(true);
-                        }}
-                        className="p-1.5 rounded-lg bg-slate-900/80 hover:bg-accent-600 text-slate-200 hover:text-white backdrop-blur shadow-sm transition-colors"
-                        title="Charakter bearbeiten"
+                        onClick={() => openEditor(char)}
+                        className={`${CARD_ACTION_BUTTON} hover:bg-accent-600`}
+                        title={t('library.edit', { name: data.name })}
+                        aria-label={t('library.edit', { name: data.name })}
                       >
                         <Edit className="w-3.5 h-3.5" />
                       </button>
                       <button
                         onClick={() => handleExportCard(char, 'png')}
-                        className="p-1.5 rounded-lg bg-slate-900/80 hover:bg-cyan-600 text-slate-200 hover:text-white backdrop-blur shadow-sm transition-colors"
-                        title="Als V2 PNG exportieren"
+                        className={`${CARD_ACTION_BUTTON} hover:bg-cyan-600`}
+                        title={t('library.exportPng', { name: data.name })}
+                        aria-label={t('library.exportPng', { name: data.name })}
                       >
                         <Download className="w-3.5 h-3.5" />
                       </button>
                       <button
                         onClick={() => handleDeleteCard(char)}
-                        className="p-1.5 rounded-lg bg-slate-900/80 hover:bg-rose-600 text-slate-200 hover:text-white backdrop-blur shadow-sm transition-colors"
-                        title="Löschen"
+                        className={`${CARD_ACTION_BUTTON} hover:bg-rose-600`}
+                        title={t('library.delete', { name: data.name })}
+                        aria-label={t('library.delete', { name: data.name })}
                       >
                         <Trash2 className="w-3.5 h-3.5" />
                       </button>
                     </div>
 
-                    {/* Bottom Info on Image */}
                     <div className="absolute bottom-2.5 left-3 right-3">
                       <div className="text-sm font-bold text-slate-100 line-clamp-1 group-hover:text-accent-300 transition-colors">
                         {data.name}
@@ -368,37 +374,34 @@ export const CharacterLibraryView = () => {
                     </div>
                   </div>
 
-                  {/* Body Content */}
                   <div className="p-3.5 flex-1 flex flex-col justify-between gap-3 text-xs">
                     <p className="text-slate-400 text-xs line-clamp-2">
-                      {data.description || data.personality || 'Keine Beschreibung angegeben.'}
+                      {data.description || data.personality || t('library.noDescription')}
                     </p>
 
-                    {/* Tags */}
                     {data.tags && data.tags.length > 0 && (
                       <div className="flex flex-wrap gap-1">
-                        {data.tags.slice(0, 3).map((t, idx) => (
+                        {data.tags.slice(0, 3).map((tag, idx) => (
                           <span
                             key={idx}
                             className="text-[11px] px-1.5 py-0.5 rounded bg-slate-800 text-slate-400 border border-slate-700/60"
                           >
-                            {t}
+                            {tag}
                           </span>
                         ))}
                       </div>
                     )}
 
-                    {/* Primary Action Button */}
                     <button
                       onClick={() => handleSelectAndChat(char)}
-                      className={`w-full py-1.5 rounded-xl font-semibold text-xs flex items-center justify-center gap-1.5 transition-all shadow-sm ${
+                      className={`w-full py-1.5 rounded-xl font-semibold text-xs flex items-center justify-center gap-1.5 transition-all shadow-sm outline-hidden focus-visible:ring-2 focus-visible:ring-accent-400 ${
                         isActive
                           ? 'bg-accent-600 hover:bg-accent-500 text-white shadow-accent-900/40'
                           : 'bg-slate-800 hover:bg-accent-600/30 text-slate-300 hover:text-accent-200 border border-slate-700/80 hover:border-accent-500/50'
                       }`}
                     >
                       <MessageSquare className="w-3.5 h-3.5" />
-                      <span>{isActive ? 'Im Chat öffnen' : 'Auswählen & Chatten'}</span>
+                      <span>{isActive ? t('library.openChat') : t('library.selectAndChat')}</span>
                     </button>
                   </div>
                 </div>
@@ -408,7 +411,6 @@ export const CharacterLibraryView = () => {
         )}
       </div>
 
-      {/* Editor Modal */}
       {isEditorOpen && (
         <CharacterEditorModal
           character={editingCharacter}
@@ -419,10 +421,7 @@ export const CharacterLibraryView = () => {
         />
       )}
 
-      {/* Persona Manager Modal */}
-      {isPersonaModalOpen && (
-        <PersonaManagerModal onClose={() => setIsPersonaModalOpen(false)} />
-      )}
+      {isPersonaModalOpen && <PersonaManagerModal onClose={() => setIsPersonaModalOpen(false)} />}
     </div>
   );
 };
