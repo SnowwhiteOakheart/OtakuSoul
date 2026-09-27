@@ -725,6 +725,8 @@ export interface AppSettings {
   global_lorebooks?: string[];
   scene_tension_enabled?: boolean;
   avatar_mode?: '3d' | 'live2d' | '2d';
+  app_language?: 'de' | 'en' | 'ru';
+  theme?: 'obsidian' | 'cyberpunk' | 'sakura' | 'midnight' | 'emerald' | string;
 }
 
 // Phase 14: Live2D & Emotion Classification
@@ -1116,3 +1118,21 @@ export interface CharacterDraft {
   system_prompt: string;
   tags: string[];
 }
+
+// Phase 18: Logging & Updater
+export interface LogEntry {
+  timestamp: string;
+  level: 'INFO' | 'WARN' | 'ERROR' | 'DEBUG' | string;
+  target: string;
+  message: string;
+}
+
+export interface UpdateInfo {
+  current_version: string;
+  latest_version: string;
+  has_update: boolean;
+  release_notes?: string | null;
+  release_url: string;
+  published_at?: string | null;
+}
+

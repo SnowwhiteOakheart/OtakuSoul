@@ -322,10 +322,32 @@ Alle benötigten Daten sind eigenständig in diesem Projektverzeichnis gekapselt
     - Direkte LLM-Synthese in standardkonformes SillyTavern V2 Format (`generate_character_draft_llm`), Review-Editor und Speichern in die Bibliothek.
   - **Profil-Backup & Wiederherstellung (`profile_backup.rs`):**
     - Portables ZIP-Backup mit Gruppen-Auswahl (Charaktere, Lorebooks, Personas, Seelengedächtnis, Soul Stage, Companion, Settings) und `manifest.json`.
-    - 5-fache rotierende Sicherheits-Snapshot-Erstellung (`pre_restore_...`) vor jeder Wiederherstellung verhindert jeden Datenverlust.
-    - Selektiver Rollback und Löschverwaltung.
+- [x] **Phase 18: UI-Politur, i18n & Auslieferung**
+  - **Internationalisierung (i18n, `src/i18n/index.ts`):**
+    - Typsicheres Dreisprachen-System mit vollständiger Abdeckung für `de` (Deutsch), `en` (English) und `ru` (Русский).
+    - Reaktiv über `useTranslation()`-Hook und Zustand-Integration (`appLanguage`).
+    - Nahtlose Umschaltung im Header und in den Einstellungen (`SettingsView.tsx`).
+  - **Theme-System & UI-Politur (`src/App.css`, `useAppStore.ts`):**
+    - 5 Farbwelten: `obsidian` (Standard, Dark Purple & Slate), `cyberpunk` (High-Tech Yellow, Pink & Cyan), `sakura` (Kirschblüte & Rosé), `midnight` (Tiefschwarz OLED & Sky Blue), `emerald` (Smaragdgrün Matrix & Dark Terminal).
+    - Sofortige reaktive DOM-Umschaltung über das HTML-Attribut `data-theme` und CSS-Theme-Variablen.
+    - Benutzerdefinierte schlanke Scrollbars in der gesamten Desktop-App.
+  - **System-Logging & Log-Viewer (`logger.rs`, `LogViewerModal.tsx`):**
+    - Dateipersistenz in `~/.local/share/otakusoul/logs/otakusoul.log` mit In-Memory-Ringpuffer (1000 Einträge).
+    - Backend-Commands: `get_app_logs`, `clear_app_logs`, `export_app_logs`.
+    - Vollwertiges Diagnose-Modal mit Monospace-Konsole, Level-Filtern (`ALL`, `INFO`, `WARN`, `ERROR`, `DEBUG`), Textsuche, Auto-Scroll, Log-Export und Zwischenablage-Kopie.
+  - **Auto-Updater Dialog (`updater.rs`, `UpdaterModal.tsx`):**
+    - Abfrage der offiziellen GitHub Releases API mit SemVer-Vergleich (`check_for_updates`).
+    - Interaktiver Update-Dialog mit Versionsvergleich, Release-Notes-Vorschau und 1-Klick-Link zu den Downloads.
+  - **Frontend-Unit-Tests (Vitest, `npm run test`):**
+    - 16 Tests in 3 Test-Suites (`i18n.test.ts`, `stateParser.test.ts`, `soundFx.test.ts`).
+  - **Packaging & CI/CD Pipelines:**
+    - XDG Desktop Entry (`packaging/desktop/otakusoul.desktop`).
+    - Arch Linux AUR PKGBUILD Template (`packaging/aur/PKGBUILD`).
+    - Linux Packaging Skript (`packaging/scripts/build-linux-packages.sh`).
+    - GitHub Actions CI Pipeline (`.github/workflows/ci.yml`) für Node.js/Vitest & Rust/Cargo Checks.
+    - GitHub Actions Release Workflow (`.github/workflows/release.yml`) für Ubuntu (AppImage, deb), Windows (MSI, NSIS) und macOS (DMG).
 
-**Offene Phase 18** (UI-Politur, i18n & Release-Builds) ist in [`Roadmap.md`](Roadmap.md) dokumentiert. **Vor neuen Features dort nachsehen und erledigte Punkte mit Commit-Hash abhaken.**
+**Alle 18 Phasen der Roadmap sind vollständig abgeschlossen.**
 
 ---
 

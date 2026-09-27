@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react';
 import { useAppStore } from '../../store/useAppStore';
+import { useTranslation, SupportedLanguage } from '../../i18n';
 import { open } from '@tauri-apps/plugin-dialog';
 import { openUrl } from '@tauri-apps/plugin-opener';
 import {
@@ -25,12 +26,21 @@ import {
   Flame,
   Check,
   Smile,
+  Palette,
+  Globe,
 } from 'lucide-react';
 import { LlmProviderType, LlmPreset } from '../../types';
 import { api } from '../../services/api';
 
 export const SettingsView = () => {
+  const { t } = useTranslation();
   const {
+    theme,
+    setTheme,
+    appLanguage,
+    setAppLanguage,
+    setIsLogViewerOpen,
+    setIsUpdaterOpen,
     hardware,
     fetchHardware,
     layerRecommendation,
@@ -85,7 +95,7 @@ export const SettingsView = () => {
     initApp,
   } = useAppStore();
 
-  const [activeTab, setActiveTab] = useState<'server' | 'providers' | 'sampler' | 'hub'>('server');
+  const [activeTab, setActiveTab] = useState<'general' | 'server' | 'providers' | 'sampler' | 'hub'>('general');
   const [showLogs, setShowLogs] = useState(true);
 
   // OpenRouter search filter
@@ -296,6 +306,18 @@ export const SettingsView = () => {
         {/* Sub-Tabs Navigation */}
         <div className="flex border-b border-slate-800 gap-2">
           <button
+            onClick={() => setActiveTab('general')}
+            className={`flex items-center gap-2 px-4 py-2.5 text-xs font-medium border-b-2 transition-colors ${
+              activeTab === 'general'
+                ? 'border-purple-500 text-purple-400 bg-purple-500/10 rounded-t-lg'
+                : 'border-transparent text-slate-400 hover:text-slate-200'
+            }`}
+          >
+            <Palette className="w-4 h-4" />
+            <span>{t('settings.appearance')}</span>
+          </button>
+
+          <button
             onClick={() => setActiveTab('server')}
             className={`flex items-center gap-2 px-4 py-2.5 text-xs font-medium border-b-2 transition-colors ${
               activeTab === 'server'
@@ -343,6 +365,220 @@ export const SettingsView = () => {
             <span>Models Hub (GGUF)</span>
           </button>
         </div>
+
+        {/* TAB 0: ALLGEMEIN & THEMES */}
+        {activeTab === 'general' && (
+          <div className="space-y-6">
+            {/* 1. Theme-Auswahl */}
+            <div className="rounded-xl border border-slate-800 bg-slate-900/60 p-5 space-y-4">
+              <div>
+                <h2 className="text-sm font-semibold text-slate-200 flex items-center gap-2">
+                  <Palette className="w-4 h-4 text-purple-400" />
+                  {t('settings.theme')}
+                </h2>
+                <p className="text-xs text-slate-400 mt-0.5">
+                  Wähle das Farbschema für die Benutzeroberfläche. Änderungen werden sofort aktiv.
+                </p>
+              </div>
+
+              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
+                {[
+                  {
+                    id: 'obsidian',
+                    name: 'Obsidian',
+                    desc: 'Dunkel & Lila Neon (Standard)',
+                    primary: '#a855f7',
+                    accent: '#ec4899',
+                    bg: '#0f172a',
+                  },
+                  {
+                    id: 'cyberpunk',
+                    name: 'Cyberpunk',
+                    desc: 'High-Tech Gelb, Cyan & Pink',
+                    primary: '#facc15',
+                    accent: '#06b6d4',
+                    bg: '#0c0a1a',
+                  },
+                  {
+                    id: 'sakura',
+                    name: 'Sakura Blossom',
+                    desc: 'Sanfte Kirschblüte & Rosé',
+                    primary: '#f472b6',
+                    accent: '#fb7185',
+                    bg: '#160c1c',
+                  },
+                  {
+                    id: 'midnight',
+                    name: 'Midnight OLED',
+                    desc: 'Tiefes Schwarz & Sky Blue',
+                    primary: '#38bdf8',
+                    accent: '#818cf8',
+                    bg: '#000000',
+                  },
+                  {
+                    id: 'emerald',
+                    name: 'Emerald Matrix',
+                    desc: 'Smaragdgrün & Terminal Dark',
+                    primary: '#10b981',
+                    accent: '#34d399',
+                    bg: '#02180e',
+                  },
+                ].map((th) => {
+                  const isSelected = (theme || 'obsidian') === th.id;
+                  return (
+                    <button
+                      key={th.id}
+                      type="button"
+                      onClick={() => setTheme(th.id)}
+                      className={`relative flex flex-col items-start p-3.5 rounded-xl border text-left transition-all ${
+                        isSelected
+                          ? 'border-purple-500/80 bg-purple-950/20 shadow-lg shadow-purple-950/30'
+                          : 'border-slate-800 bg-slate-950/60 hover:border-slate-700 hover:bg-slate-900/60'
+                      }`}
+                    >
+                      <div className="flex items-center justify-between w-full">
+                        <span className="font-semibold text-xs text-slate-200">{th.name}</span>
+                        {isSelected && (
+                          <div className="w-4 h-4 rounded-full bg-purple-500/20 text-purple-400 flex items-center justify-center">
+                            <Check className="w-3 h-3 stroke-[3]" />
+                          </div>
+                        )}
+                      </div>
+                      <span className="text-[11px] text-slate-400 mt-1 mb-3">{th.desc}</span>
+                      
+                      {/* Farbmuster */}
+                      <div className="flex items-center gap-1.5 mt-auto">
+                        <div
+                          className="w-5 h-5 rounded-full border border-white/10"
+                          style={{ backgroundColor: th.bg }}
+                          title="Hintergrund"
+                        />
+                        <div
+                          className="w-5 h-5 rounded-full border border-white/10"
+                          style={{ backgroundColor: th.primary }}
+                          title="Primärfarbe"
+                        />
+                        <div
+                          className="w-5 h-5 rounded-full border border-white/10"
+                          style={{ backgroundColor: th.accent }}
+                          title="Akzentfarbe"
+                        />
+                      </div>
+                    </button>
+                  );
+                })}
+              </div>
+            </div>
+
+            {/* 2. Sprachauswahl UI */}
+            <div className="rounded-xl border border-slate-800 bg-slate-900/60 p-5 space-y-4">
+              <div>
+                <h2 className="text-sm font-semibold text-slate-200 flex items-center gap-2">
+                  <Globe className="w-4 h-4 text-cyan-400" />
+                  {t('settings.language')}
+                </h2>
+                <p className="text-xs text-slate-400 mt-0.5">
+                  Sprache aller Texte, Menüs und Schaltflächen in OtakuSoul.
+                </p>
+              </div>
+
+              <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+                {[
+                  { id: 'de', label: 'Deutsch', sub: 'Standard' },
+                  { id: 'en', label: 'English', sub: 'International' },
+                  { id: 'ru', label: 'Русский', sub: 'Russian' },
+                ].map((l) => {
+                  const isSelected = (appLanguage || 'de') === l.id;
+                  return (
+                    <button
+                      key={l.id}
+                      type="button"
+                      onClick={() => setAppLanguage(l.id as SupportedLanguage)}
+                      className={`flex items-center justify-between p-3 rounded-xl border text-left transition-all ${
+                        isSelected
+                          ? 'border-cyan-500/80 bg-cyan-950/20 text-cyan-300 shadow-sm'
+                          : 'border-slate-800 bg-slate-950/60 text-slate-300 hover:border-slate-700 hover:bg-slate-900/60'
+                      }`}
+                    >
+                      <div>
+                        <div className="font-semibold text-xs text-slate-200">{l.label}</div>
+                        <div className="text-[10px] text-slate-400">{l.sub}</div>
+                      </div>
+                      {isSelected && <Check className="w-4 h-4 text-cyan-400" />}
+                    </button>
+                  );
+                })}
+              </div>
+            </div>
+
+            {/* 3. Antwort-Sprache (Roleplay default reply language) */}
+            <div className="rounded-xl border border-slate-800 bg-slate-900/60 p-5 space-y-4">
+              <div>
+                <h2 className="text-sm font-semibold text-slate-200 flex items-center gap-2">
+                  <Sparkles className="w-4 h-4 text-amber-400" />
+                  Bevorzugte KI-Antwortsprache
+                </h2>
+                <p className="text-xs text-slate-400 mt-0.5">
+                  Gibt dem KI-Modell die Standardsprache für Dialoge und Szenenbeschreibungen vor.
+                </p>
+              </div>
+
+              <div className="max-w-xs">
+                <select
+                  value={replyLanguage || 'de'}
+                  onChange={(e) => setReplyLanguage(e.target.value)}
+                  className="w-full px-3 py-2 rounded-lg bg-slate-950 border border-slate-800 text-xs text-slate-200 focus:outline-none focus:border-purple-500"
+                >
+                  <option value="de">Deutsch (Standard)</option>
+                  <option value="en">English (US)</option>
+                  <option value="ru">Русский</option>
+                  <option value="ja">日本語 (Japanese)</option>
+                  <option value="fr">Français</option>
+                  <option value="es">Español</option>
+                </select>
+              </div>
+            </div>
+
+            {/* 4. System-Diagnose & Updates */}
+            <div className="rounded-xl border border-slate-800 bg-slate-900/60 p-5 space-y-4">
+              <div>
+                <h2 className="text-sm font-semibold text-slate-200 flex items-center gap-2">
+                  <Terminal className="w-4 h-4 text-emerald-400" />
+                  System, Logs & Updates
+                </h2>
+                <p className="text-xs text-slate-400 mt-0.5">
+                  Fehlerdiagnose, Anwendungs-Logs und Prüfung auf neue Releases.
+                </p>
+              </div>
+
+              <div className="flex flex-wrap items-center gap-3">
+                <button
+                  type="button"
+                  onClick={() => setIsLogViewerOpen(true)}
+                  className="flex items-center gap-2 px-3.5 py-2 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-200 text-xs font-medium transition-colors border border-slate-700/60"
+                >
+                  <Terminal className="w-4 h-4 text-cyan-400" />
+                  <span>{t('header.logs')} öffnen</span>
+                </button>
+
+                <button
+                  type="button"
+                  onClick={() => setIsUpdaterOpen(true)}
+                  className="flex items-center gap-2 px-3.5 py-2 rounded-lg bg-purple-600/20 hover:bg-purple-600/30 text-purple-300 text-xs font-medium transition-colors border border-purple-500/40"
+                >
+                  <Sparkles className="w-4 h-4 text-purple-400" />
+                  <span>{t('header.update')}</span>
+                </button>
+              </div>
+
+              <div className="p-3 rounded-lg bg-slate-950/80 border border-slate-800/80 text-[11px] text-slate-400 font-mono space-y-1">
+                <div>OtakuSoul Version: <span className="text-purple-300 font-semibold">v0.1.0</span></div>
+                <div>Lokales Anwendungsdatenverzeichnis: <span className="text-slate-300">~/.local/share/otakusoul</span></div>
+                <div>Logdatei: <span className="text-slate-300">~/.local/share/otakusoul/logs/otakusoul.log</span></div>
+              </div>
+            </div>
+          </div>
+        )}
 
         {/* TAB 1: SERVER & HARDWARE TUNING */}
         {activeTab === 'server' && (

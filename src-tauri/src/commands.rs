@@ -1673,3 +1673,25 @@ pub async fn generate_character_draft_llm(
     crate::modules::characters::parse_character_wizard_draft(&raw)
 }
 
+// Phase 18: Logging & Updater Commands
+#[tauri::command]
+pub fn get_app_logs(max_lines: Option<usize>) -> Result<Vec<crate::modules::logger::LogEntry>, String> {
+    Ok(crate::modules::logger::get_recent_logs(max_lines))
+}
+
+#[tauri::command]
+pub fn clear_app_logs() -> Result<(), String> {
+    crate::modules::logger::clear_app_logs()
+}
+
+#[tauri::command]
+pub fn export_app_logs() -> Result<String, String> {
+    crate::modules::logger::export_app_logs()
+}
+
+#[tauri::command]
+pub async fn check_for_updates() -> Result<crate::modules::updater::UpdateInfo, String> {
+    crate::modules::updater::check_for_app_updates().await
+}
+
+

@@ -38,6 +38,10 @@ pub struct AppSettings {
     pub hidden_character_ids: Vec<String>,
     #[serde(default = "default_avatar_mode")]
     pub avatar_mode: String,
+    #[serde(default = "default_app_language")]
+    pub app_language: String,
+    #[serde(default = "default_theme")]
+    pub theme: String,
 }
 
 fn default_true() -> bool {
@@ -46,6 +50,14 @@ fn default_true() -> bool {
 
 fn default_avatar_mode() -> String {
     "3d".to_string()
+}
+
+fn default_app_language() -> String {
+    "de".to_string()
+}
+
+fn default_theme() -> String {
+    "obsidian".to_string()
 }
 
 impl Default for AppSettings {
@@ -85,6 +97,8 @@ impl Default for AppSettings {
             scene_tension_enabled: true,
             hidden_character_ids: Vec::new(),
             avatar_mode: "3d".to_string(),
+            app_language: "de".to_string(),
+            theme: "obsidian".to_string(),
         }
     }
 }

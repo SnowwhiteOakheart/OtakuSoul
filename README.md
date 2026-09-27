@@ -41,6 +41,7 @@ Ob ruhiger Alltagsdialog, langfristige Charakterentwicklung oder eine dramatisch
 | 🤖 **Soul Companion** | Echter Desktop-Agent mit transparentem Always-on-Top Floating-Overlay, Click-Through, Neurohormonen, proaktivem Ansprechen, echten Desktop-Tools, Sandbox, MCP-Client und 25s Human-in-the-Loop Sicherheitsbanner. |
 | 📱 **Mobiler Web-Client** | Chatte vom Smartphone oder Tablet im selben WLAN: Autarker Axum-Server, Token-Auth, DNS-Rebinding-Schutz, Streaming und QR-Code-Direktscan. |
 | 🎮 **Discord & Medien** | Discord Rich Presence (RPC) und nativer Gateway-Bot (`!ask`, `!character`, `!status`), sowie KI-Bildgenerierung (A1111, ComfyUI, DALL-E 3, NovelAI, FLUX) direkt aus dem Chat. |
+| 🌍 **i18n, Themes & Diagnose** | Dreisprachig (`de`, `en`, `ru`), 5 lebendige Themes (Obsidian, Cyberpunk, Sakura, Midnight, Emerald), rotierender File-Logger, Live-Log-Viewer und Update-Checker. |
 | 💾 **Profil-Backups** | Portabler ZIP-Export mit Gruppen-Auswahl und 5-facher automatischer Sicherheits-Snapshot-Rotation vor jedem Restore. |
 | 🔐 **Local First** | Betreibe GGUF-Modelle direkt auf deinem Rechner. OtakuSoul erkennt Hardware und VRAM, wählt sinnvolle Laufzeitparameter und verwaltet den lokalen `llama-server`. |
 
@@ -128,10 +129,24 @@ npm install
 npm run tauri dev
 ```
 
-### Produktions-Build
+### Tests ausführen
 
 ```bash
+# Frontend Unit-Tests (Vitest)
+npm run test
+
+# Backend Tests (Cargo)
+cd src-tauri && cargo test
+```
+
+### Produktions-Build & Paketierung
+
+```bash
+# Standard Tauri Build
 npm run tauri build
+
+# Linux Pakete (AppImage, deb)
+./packaging/scripts/build-linux-packages.sh
 ```
 
 ### Optionale PrismML-/Bonsai-Laufzeit unter Linux

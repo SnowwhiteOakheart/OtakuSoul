@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react';
 import { useAppStore } from '../store/useAppStore';
+import { useTranslation } from '../i18n';
 import brandIconUrl from '../assets/brand/otakusoul-icon.png';
 import { AboutDialog } from './AboutDialog';
 import {
@@ -15,10 +16,13 @@ import {
   Info,
   Compass,
   Layers,
+  Terminal,
+  Sparkles,
 } from 'lucide-react';
 
 export const Header = () => {
   const [showAbout, setShowAbout] = useState(false);
+  const { t } = useTranslation();
   const {
     activeTab,
     setActiveTab,
@@ -27,6 +31,8 @@ export const Header = () => {
     serverStatus,
     fetchServerStatus,
     initApp,
+    setIsLogViewerOpen,
+    setIsUpdaterOpen,
   } = useAppStore();
 
   useEffect(() => {
@@ -64,7 +70,7 @@ export const Header = () => {
             OtakuSoul
           </span>
           <span className="text-xs px-1.5 py-0.5 rounded bg-purple-500/20 text-purple-300 border border-purple-500/30 font-mono">
-            v0.1.0
+            {t('header.version')}
           </span>
         </div>
 
@@ -79,7 +85,7 @@ export const Header = () => {
             }`}
           >
             <MessageSquare className="w-4 h-4" />
-            <span>Chat</span>
+            <span>{t('nav.chat')}</span>
           </button>
 
           <button
@@ -91,7 +97,7 @@ export const Header = () => {
             }`}
           >
             <Users className="w-4 h-4" />
-            <span>Charaktere</span>
+            <span>{t('nav.characters')}</span>
           </button>
 
           <button
@@ -103,7 +109,7 @@ export const Header = () => {
             }`}
           >
             <Compass className="w-4 h-4 text-purple-400" />
-            <span>Soul Hub</span>
+            <span>{t('nav.hub')}</span>
           </button>
 
           <button
@@ -115,7 +121,7 @@ export const Header = () => {
             }`}
           >
             <BookOpen className="w-4 h-4" />
-            <span>Lorebooks</span>
+            <span>{t('nav.lorebooks')}</span>
           </button>
 
           <button
@@ -127,7 +133,7 @@ export const Header = () => {
             }`}
           >
             <Dice5 className="w-4 h-4" />
-            <span>Soul Stage</span>
+            <span>{t('nav.stage')}</span>
           </button>
 
           <button
@@ -139,7 +145,7 @@ export const Header = () => {
             }`}
           >
             <Bot className="w-4 h-4" />
-            <span>Companion</span>
+            <span>{t('nav.companion')}</span>
           </button>
 
           <button
@@ -151,7 +157,7 @@ export const Header = () => {
             }`}
           >
             <Layers className="w-4 h-4" />
-            <span>Integrationen</span>
+            <span>{t('nav.integrations')}</span>
           </button>
 
           <button
@@ -163,13 +169,13 @@ export const Header = () => {
             }`}
           >
             <Settings className="w-4 h-4" />
-            <span>Einstellungen</span>
+            <span>{t('nav.settings')}</span>
           </button>
         </nav>
       </div>
 
-      {/* Hardware & Server Status Widgets */}
-      <div className="flex items-center gap-3">
+      {/* Hardware & Server Status Widgets & Actions */}
+      <div className="flex items-center gap-2.5">
         {/* GPU VRAM Widget */}
         {gpu && gpu.total_vram_mb > 0 && (
           <div
@@ -205,7 +211,7 @@ export const Header = () => {
           {serverStatus.state === 'running' && (
             <>
               <div className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse" />
-              <span className="text-emerald-400 font-medium">LLM Online</span>
+              <span className="text-emerald-400 font-medium">{t('header.serverRunning')}</span>
               <span className="text-slate-500 text-[10px]">:{serverStatus.port}</span>
             </>
           )}
@@ -218,7 +224,7 @@ export const Header = () => {
           {serverStatus.state === 'stopped' && (
             <>
               <div className="w-2 h-2 rounded-full bg-slate-500" />
-              <span className="text-slate-400">LLM Offline</span>
+              <span className="text-slate-400">{t('header.serverStopped')}</span>
             </>
           )}
           {serverStatus.state === 'failed' && (
@@ -229,15 +235,38 @@ export const Header = () => {
           )}
         </div>
 
+        {/* Log Viewer Button */}
+        <button
+          type="button"
+          onClick={() => setIsLogViewerOpen(true)}
+          className="flex items-center gap-1.5 rounded-lg border border-slate-700/60 bg-slate-800/70 p-1.5 text-xs text-slate-400 transition-colors hover:border-purple-500/40 hover:text-purple-200"
+          title={t('header.logs')}
+          aria-label={t('header.logs')}
+        >
+          <Terminal className="h-4 w-4" />
+        </button>
+
+        {/* Update Checker Button */}
+        <button
+          type="button"
+          onClick={() => setIsUpdaterOpen(true)}
+          className="flex items-center gap-1.5 rounded-lg border border-slate-700/60 bg-slate-800/70 p-1.5 text-xs text-slate-400 transition-colors hover:border-purple-500/40 hover:text-purple-200"
+          title={t('header.update')}
+          aria-label={t('header.update')}
+        >
+          <Sparkles className="h-4 w-4 text-purple-400" />
+        </button>
+
+        {/* About Dialog Button */}
         <button
           type="button"
           onClick={() => setShowAbout(true)}
           className="flex items-center gap-1.5 rounded-lg border border-slate-700/60 bg-slate-800/70 p-1.5 text-xs text-slate-400 transition-colors hover:border-purple-500/40 hover:text-purple-200"
-          title="Über OtakuSoul"
-          aria-label="Über OtakuSoul"
+          title={t('header.about')}
+          aria-label={t('header.about')}
         >
           <Info className="h-4 w-4" />
-          <span className="hidden 2xl:inline">Über</span>
+          <span className="hidden 2xl:inline">{t('header.about')}</span>
         </button>
       </div>
     </header>

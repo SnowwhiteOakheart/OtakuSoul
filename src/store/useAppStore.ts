@@ -60,6 +60,8 @@ import {
   WebServerConfig,
   WebServerStatus,
   CharacterDraft,
+  LogEntry,
+  UpdateInfo,
 } from '../types';
 import { soundFx } from '../services/soundFx';
 import { extractStateUpdates, applyStateUpdates } from '../utils/stateParser';
@@ -478,6 +480,22 @@ interface AppStoreState {
   characterWizardOpen: boolean;
   setCharacterWizardOpen: (open: boolean) => void;
   createCharacterFromDraft: (draft: CharacterDraft) => Promise<CharacterProfile | null>;
+
+  // Phase 18: i18n, Themes, Logging & Updater
+  appLanguage: 'de' | 'en' | 'ru';
+  setAppLanguage: (lang: 'de' | 'en' | 'ru') => void;
+  theme: string;
+  setTheme: (theme: string) => void;
+  isLogViewerOpen: boolean;
+  setIsLogViewerOpen: (open: boolean) => void;
+  isUpdaterOpen: boolean;
+  setIsUpdaterOpen: (open: boolean) => void;
+  logs: LogEntry[];
+  fetchLogs: (maxLines?: number) => Promise<void>;
+  clearLogs: () => Promise<void>;
+  exportLogs: () => Promise<string>;
+  updateInfo: UpdateInfo | null;
+  checkForUpdates: () => Promise<UpdateInfo | null>;
 }
 
 export const useAppStore = create<AppStoreState>((set, get) => ({
@@ -765,7 +783,13 @@ export const useAppStore = create<AppStoreState>((set, get) => ({
         globalLorebookIds: settings.global_lorebooks || [],
         sceneTensionEnabled: settings.scene_tension_enabled !== false,
         avatarMode: settings.avatar_mode || '3d',
+        appLanguage: settings.app_language || 'de',
+        theme: settings.theme || 'obsidian',
       });
+
+      if (typeof document !== 'undefined') {
+        document.documentElement.setAttribute('data-theme', settings.theme || 'obsidian');
+      }
 
       // 3b. Load LLM Presets & listen to model downloads
       try {
@@ -854,6 +878,8 @@ export const useAppStore = create<AppStoreState>((set, get) => ({
         global_lorebooks: state.globalLorebookIds,
         scene_tension_enabled: state.sceneTensionEnabled,
         avatar_mode: state.avatarMode,
+        app_language: state.appLanguage,
+        theme: state.theme,
       };
       await api.saveSettings(settings);
     } catch (e) {
@@ -2931,4 +2957,67 @@ export const useAppStore = create<AppStoreState>((set, get) => ({
       return null;
     }
   },
+
+  // Phase 18: i18n, Themes, Logging & Updates
+  appLanguage: 'de',
+  setAppLanguage: (lang) => {
+    set({ appLanguage: lang });
+    get().saveCurrentSettings();
+  },
+
+  theme: 'obsidian',
+  setTheme: (theme) => {
+    set({ theme });
+    if (typeof document !== 'undefined') {
+      document.documentElement.setAttribute('data-theme', theme);
+    }
+    get().saveCurrentSettings();
+  },
+
+  isLogViewerOpen: false,
+  setIsLogViewerOpen: (isLogViewerOpen) => set({ isLogViewerOpen }),
+
+  isUpdaterOpen: false,
+  setIsUpdaterOpen: (isUpdaterOpen) => set({ isUpdaterOpen }),
+
+  logs: [],
+  fetchLogs: async (maxLines) => {
+    try {
+      const logs = await api.getAppLogs(maxLines);
+      set({ logs });
+    } catch (e) {
+      console.error('Failed to fetch app logs:', e);
+    }
+  },
+
+  clearLogs: async () => {
+    try {
+      await api.clearAppLogs();
+      set({ logs: [] });
+    } catch (e) {
+      console.error('Failed to clear app logs:', e);
+    }
+  },
+
+  exportLogs: async () => {
+    try {
+      return await api.exportAppLogs();
+    } catch (e) {
+      console.error('Failed to export app logs:', e);
+      return '';
+    }
+  },
+
+  updateInfo: null,
+  checkForUpdates: async () => {
+    try {
+      const info = await api.checkForUpdates();
+      set({ updateInfo: info });
+      return info;
+    } catch (e) {
+      console.error('Failed to check for updates:', e);
+      return null;
+    }
+  },
 }));
+

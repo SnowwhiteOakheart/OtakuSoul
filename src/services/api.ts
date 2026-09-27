@@ -76,6 +76,8 @@ import {
   WebServerStatus,
   CharacterWizardInput,
   CharacterDraft,
+  LogEntry,
+  UpdateInfo,
 } from '../types';
 
 export const api = {
@@ -1155,5 +1157,23 @@ export const api = {
       provider: provider || null,
     });
   },
+
+  // Phase 18: Logging & Updater
+  getAppLogs: async (maxLines?: number): Promise<LogEntry[]> => {
+    return await invoke<LogEntry[]>('get_app_logs', { maxLines: maxLines || null });
+  },
+
+  clearAppLogs: async (): Promise<void> => {
+    return await invoke<void>('clear_app_logs');
+  },
+
+  exportAppLogs: async (): Promise<string> => {
+    return await invoke<string>('export_app_logs');
+  },
+
+  checkForUpdates: async (): Promise<UpdateInfo> => {
+    return await invoke<UpdateInfo>('check_for_updates');
+  },
 };
+
 

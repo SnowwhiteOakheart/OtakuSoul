@@ -1,0 +1,12 @@
+[Desktop Entry]
+Name=OtakuSoul
+GenericName=Local Anime AI & Roleplay Studio
+Comment=AI-powered anime companion and visual novel roleplay studio with local llama.cpp acceleration
+Exec=otakusoul %U
+Icon=otakusoul
+Terminal=false
+Type=Application
+Categories=Game;RolePlaying;AudioVideo;Utility;
+Keywords=anime;ai;roleplay;companion;vrm;live2d;llm;waifu;otaku;
+MimeType=x-scheme-handler/otakusoul;
+StartupWMClass=otakusoul

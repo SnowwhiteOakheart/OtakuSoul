@@ -24,3 +24,6 @@ pub mod profile_backup;
 pub mod image_generator;
 pub mod discord;
 pub mod web_server;
+pub mod logger;
+pub mod updater;
+

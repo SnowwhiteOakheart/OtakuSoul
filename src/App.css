@@ -3,13 +3,62 @@
 @layer base {
   :root {
     color-scheme: dark;
+    --theme-bg: #020617;
+    --theme-accent: #a855f7;
+  }
+
+  /* Theme definitions */
+  [data-theme="obsidian"] {
+    --theme-bg: #020617;
+    --theme-accent: #a855f7;
+  }
+
+  [data-theme="cyberpunk"] {
+    --theme-bg: #090614;
+    --theme-accent: #facc15;
+  }
+
+  [data-theme="sakura"] {
+    --theme-bg: #0f0a14;
+    --theme-accent: #f472b6;
+  }
+
+  [data-theme="midnight"] {
+    --theme-bg: #000000;
+    --theme-accent: #38bdf8;
+  }
+
+  [data-theme="emerald"] {
+    --theme-bg: #02120a;
+    --theme-accent: #10b981;
   }
 
   body {
-    @apply bg-slate-950 text-slate-100 font-sans antialiased overflow-hidden select-none;
+    background-color: var(--theme-bg);
+    @apply text-slate-100 font-sans antialiased overflow-hidden select-none;
     margin: 0;
     padding: 0;
     width: 100vw;
     height: 100vh;
+    transition: background-color 0.25s ease-in-out;
+  }
+
+  /* Custom sleek scrollbars */
+  ::-webkit-scrollbar {
+    width: 6px;
+    height: 6px;
+  }
+
+  ::-webkit-scrollbar-track {
+    background: transparent;
+  }
+
+  ::-webkit-scrollbar-thumb {
+    background: rgba(148, 163, 184, 0.2);
+    border-radius: 9999px;
+  }
+
+  ::-webkit-scrollbar-thumb:hover {
+    background: rgba(148, 163, 184, 0.4);
   }
 }

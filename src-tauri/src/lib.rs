@@ -193,6 +193,11 @@ pub fn run() {
             commands::parse_character_wizard_draft_cmd,
             commands::create_character_from_draft,
             commands::generate_character_draft_llm,
+            // Phase 18: Logging & Updates
+            commands::get_app_logs,
+            commands::clear_app_logs,
+            commands::export_app_logs,
+            commands::check_for_updates,
         ])
         .run(tauri::generate_context!())
         .expect("error while running OtakuSoul application");

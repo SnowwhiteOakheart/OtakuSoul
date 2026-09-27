@@ -1,0 +1,22 @@
+# Maintainer: SnowwhiteOakheart <snowwhiteoakheart@example.com>
+pkgname=otakusoul-bin
+pkgver=0.1.0
+pkgrel=1
+pkgdesc="AI-powered anime companion and visual novel roleplay studio with local llama.cpp acceleration"
+arch=('x86_64')
+url="https://github.com/SnowwhiteOakheart/OtakuSoul"
+license=('MIT')
+depends=('webkit2gtk-4.1' 'gtk3' 'libappindicator-gtk3')
+optdepends=(
+    'cuda: NVIDIA GPU hardware acceleration support'
+    'vulkan-icd-loader: Vulkan graphics and compute support'
+)
+provides=('otakusoul')
+conflicts=('otakusoul')
+source=("https://github.com/SnowwhiteOakheart/OtakuSoul/releases/download/v${pkgver}/OtakuSoul_${pkgver}_amd64.deb")
+sha256sums=('SKIP')
+
+package() {
+    tar -xf data.tar.* -C "${pkgdir}/"
+    install -Dm644 "${pkgdir}/usr/share/applications/otakusoul.desktop" "${pkgdir}/usr/share/applications/otakusoul.desktop"
+}

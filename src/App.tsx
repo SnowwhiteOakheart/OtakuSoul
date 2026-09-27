@@ -14,6 +14,8 @@ const SoulHubView = lazy(() => import('./components/hub/SoulHubView').then((modu
 const IntegrationsView = lazy(() => import('./components/integrations/IntegrationsView').then((module) => ({ default: module.IntegrationsView })));
 const FloatingCompanionOverlay = lazy(() => import('./components/companion/FloatingCompanionOverlay').then((module) => ({ default: module.FloatingCompanionOverlay })));
 const CharacterAiAssistantModal = lazy(() => import('./components/characters/CharacterAiAssistantModal').then((module) => ({ default: module.CharacterAiAssistantModal })));
+const LogViewerModal = lazy(() => import('./components/logging/LogViewerModal').then((module) => ({ default: module.LogViewerModal })));
+const UpdaterModal = lazy(() => import('./components/updater/UpdaterModal').then((module) => ({ default: module.UpdaterModal })));
 
 export function App() {
   const { activeTab } = useAppStore();
@@ -47,6 +49,8 @@ export function App() {
       <SafetyCountdownBanner />
       <Suspense fallback={null}>
         <CharacterAiAssistantModal />
+        <LogViewerModal />
+        <UpdaterModal />
       </Suspense>
     </div>
   );
