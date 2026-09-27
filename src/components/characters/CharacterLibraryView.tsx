@@ -31,6 +31,7 @@ export const CharacterLibraryView = () => {
     restoreHiddenCharacters,
     setActiveTab,
     activePersona,
+    setCharacterWizardOpen,
   } = useAppStore();
 
   const [searchQuery, setSearchQuery] = useState('');
@@ -207,6 +208,15 @@ export const CharacterLibraryView = () => {
           >
             <RotateCcw className="w-3.5 h-3.5 text-amber-400" />
             <span>Presets wiederherstellen</span>
+          </button>
+
+          <button
+            onClick={() => setCharacterWizardOpen(true)}
+            className="px-3 py-1.5 rounded-xl bg-gradient-to-r from-indigo-600/30 to-purple-600/30 hover:from-indigo-600/50 hover:to-purple-600/50 text-indigo-200 text-xs font-medium flex items-center gap-1.5 border border-indigo-500/40 transition-colors shadow-sm"
+            title="Geführter 5-Schritte KI-Charakterassistent"
+          >
+            <Sparkles className="w-3.5 h-3.5 text-indigo-400" />
+            <span>KI-Assistent</span>
           </button>
 
           <button

@@ -199,15 +199,14 @@ Die Soul Stage Engine ist nun ein vollwertiges Tabletop-Rollenspiel-Erlebnis mit
 - [x] **Model Context Protocol (MCP) Client (`mcp_client.rs`)** – Standardkonformer JSON-RPC 2.0 Client für stdio (z. B. Node.js MCP Server) und HTTP/SSE mit Server-Management (`mcp_servers.json`), Tool-Discovery (`tools/list`) und Tool-Ausführung (`tools/call`).
 - [x] **Sicherheitsflow & Human-in-the-Loop** – 25s Countdown-Banner für gefährliche Aktionen, manuelle Genehmigung und Fokus-Rückgabe an die Zielanwendung nach Ausführung.
 
-### Phase 17 – Ökosystem & Integrationen 🟢
+### Phase 17 – Ökosystem & Integrationen 🟢 (Abgeschlossen)
 
-- [ ] **Lokaler Web-Client** für Handy/Tablet – `axum` + WebSocket, Token-Auth, Host-Header-Prüfung, QR/Link kopieren, STT-Upload (SoW: `web_server.py`, `app/web_client/`)
-- [ ] **Discord-Gateway** – `serenity`/`poise`: Nachrichten, Slash-Commands (ask/character/bind/unbind/reset/whoami/join/leave), Multi-User-Awareness, Vision für Bilder/GIFs, Voice-Channel-TTS, Cooldowns, Whitelist (SoW: `discord_manager.py`)
-- [ ] **Discord Rich Presence** (SoW: `discord_rpc.py`)
-- [ ] **Bildgenerierung** – A1111, ComfyUI (Workflow-Patching), DALL·E 3, NovelAI, FLUX; Kontext-Prompt aus Aussehen/Pose/Emotion/Szene (SoW: `image_generator.py`)
+- [x] **Lokaler Web-Client für Smartphone & Tablet** – Autarker `axum` HTTP- und WebSocket-Server (`web_server.rs`), Token-Auth, Host-Header-Prüfung gegen DNS-Rebinding, Vektor-SVG-QR-Code (`qrcode`) zum direkten Scannen per Handykamera, Link-Kopieren, dynamische IP-Erkennung, integrierter responsiver HTML5/Tailwind Web-Client mit SSE/WebSocket-Streaming, Sprachausgabe (TTS) und STT-Upload.
+- [x] **Discord Rich Presence & Gateway-Bot** – Nativer Unix-Domain-Socket / Windows-Named-Pipe RPC-Client (`discord.rs`) für Live-Status ("Im Gespräch mit {character}"), autarker Discord Gateway WebSocket Bot (`wss://gateway.discord.gg`) mit Heartbeat-Loop (Opcode 1/10) und Befehlen (`!ask`, `!character`, `!status`, `!reset`).
+- [x] **KI-Bildgenerierung & Live-Studio** – Multi-Provider-Engine (`image_generator.rs`) für Automatic1111 (`/sdapi/v1/txt2img`), ComfyUI (`/prompt`), OpenAI DALL-E 3 (`/v1/images/generations`), NovelAI (`/ai/generate-image`) und FLUX. Automatischer Kontext-Prompt-Synthesizer (`build_character_prompt`), Situations-Schnellaufnahme im Chat-HUD (`AdaptiveHud.tsx`) und Galerie-Feed.
 - [x] **Soul Hub & Gateways** – Vollwertiger 4-teiliger Community-Hub mit Live-Suche, Tags, Sortierungen, NSFW-Filter, Chub AI API/CDN-Import inkl. automatischer Extraktion eingebetteter Lorebooks (`character_book`), URL-Direktimport, kuratiertem Soul Gateway, Welt-Lorebooks-Registry und Soul-Stage-Szenarien-Registry (`soul_hub.rs`, `SoulHubView.tsx`).
-- [ ] **KI-Charakterassistent** – geführter Wizard (Konzept → Persönlichkeit → Hintergrund → Beziehung → Felder) erzeugt eine Karte per LLM (SoW: `character_ai_assistant.py`)
-- [ ] **Profil-Backup & Restore** – ZIP-Export nach Gruppen, Manifest, Sicherheits-Snapshots mit Rotation, Rollback (SoW: `profile_backup.py`)
+- [x] **KI-Charakterassistent** – Geführter 5-Schritte Creation Wizard (`CharacterAiAssistantModal.tsx`, `characters.rs`): Konzept & Name (mit Archetyp-Pills), Aussehen, Persönlichkeit, Welt & Beziehung zu `{{user}}`, Begrüßung/Szenario. Direkte LLM-Synthese in SillyTavern V2 Format (`generate_character_draft_llm`), Review-Editor und 1-Klick-Speicherung in die Bibliothek.
+- [x] **Profil-Backup & Restore mit Schutzgarantie** – Vollständiger ZIP-Archiv-Manager (`profile_backup.rs`) mit Gruppen-Auswahl (Charaktere, Lorebooks, Personas, Seelengedächtnis, Soul Stage, Companion, Settings), Manifest (`manifest.json`), 5-facher rotierender Sicherheits-Snapshot-Erstellung (`pre_restore_...`) vor jeder Wiederherstellung und selectivem Rollback.
 
 ### Phase 18 – UI-Politur, i18n & Auslieferung 🟢
 
@@ -235,7 +234,6 @@ Die Soul Stage Engine ist nun ein vollwertiges Tabletop-Rollenspiel-Erlebnis mit
 
 ## 📌 5. Empfohlene nächste Schritte
 
-1. **Technische Schulden** aus Abschnitt 2 (Pfade, persistente Settings, Dateidialog).
-2. **Phase 8 + 9** – damit ist OtakuSoul als tägliche Chat-App nutzbar.
-3. **Phase 11** – Soul Memory lebendig machen (größter Unterschied zu „nur ein Chat-Frontend“).
-4. Als Nächstes: **Phase 14** (Avatare & Emotionen) oder **Phase 15** (Stage-GM).
+1. **Phase 17** ist erfolgreich abgeschlossen (Ökosystem, Mobiler Webserver, Discord, Image Gen, Wizard, Backups).
+2. Als Nächstes: **Phase 18** – UI-Politur, i18n (`i18next`), Themes, CI & Multi-Plattform-Auslieferung (AppImage, Deb, RPM, Windows, macOS).
+

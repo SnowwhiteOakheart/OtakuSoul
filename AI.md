@@ -300,10 +300,32 @@ Alle benötigten Daten sind eigenständig in diesem Projektverzeichnis gekapselt
     - JSON-basiertes Skript- und Plugin-System (`companion/plugins/*.json`).
   - **Desktop-Werkbank & Dashboard (`CompanionView.tsx`):**
     - 6 modulare Ansichten: Bio-Monitor, Gedankenspeicher, Versprechen & Ziele, Desktop-Werkbank, MCP & Plugins, Desktop-Overlay.
-- [x] **Phase 17 Teilziel: Soul Hub & Gateways**
-  - **4-teiliger Community-Hub (`SoulHubView.tsx`, `soul_hub.rs`):** Soul Gateway (kuratierte Charaktere), Chub AI API/CDN-Browser mit Lorebook-Extraktion (`character_book`), Welt-Lorebooks und Soul-Stage-Szenarien-Katalog mit 1-Klick-Import.
+- [x] **Phase 17: Ökosystem & Integrationen**
+  - **Lokaler Web-Client für Smartphone & Tablet (`web_server.rs`, `IntegrationsView.tsx`):**
+    - Autarker Axum HTTP- und WebSocket-Server auf Port 8088 (0.0.0.0 Bind für lokales WLAN).
+    - Host-Header-Validierung schützt zuverlässig vor DNS-Rebinding-Angriffen im Heimnetzwerk.
+    - Token-basierte Authentifizierung mit kryptografischer Token-Generierung und Widerruf.
+    - Dynamische lokale IP-Erkennung via UDP-Routing-Probe und Vektor-SVG-QR-Code-Erzeugung (`qrcode`) zum direkten Scannen mit der Handykamera.
+    - Vollwertiger, responsiver mobiler HTML5/Tailwind Web-Client für iOS Safari und Android Browser mit Live-Streaming, Speech Synthesis (TTS) und STT-Upload.
+  - **Discord Rich Presence & Gateway-Bot (`discord.rs`):**
+    - Nativer Unix-Domain-Socket / Windows-Named-Pipe RPC-Client für Discord Rich Presence („Im Gespräch mit {character}“, State, Emotion und Zeitstempel).
+    - Autarker Discord Gateway Bot (`wss://gateway.discord.gg`) mit Heartbeat-Schleife (Opcode 1/10) und Befehls-Dispatcher für `!ask`, `!character`, `!status`, `!reset`.
+  - **KI-Bildgenerierung & Live-Studio (`image_generator.rs`):**
+    - Multi-Provider-Engine für Automatic1111 (`/sdapi/v1/txt2img`), ComfyUI (`/prompt` Polling), OpenAI DALL-E 3 (`/v1/images/generations`), NovelAI (`/ai/generate-image`) und FLUX.
+    - Dynamischer Kontext-Prompt-Synthesizer (`build_character_prompt`) synthetisiert visuelle Attribute (Haare, Augen, Kleidung, Emotion, Szene) des Charakters.
+    - Chat-Integration via Kamera-Schnellaufnahme im Chat-HUD (`AdaptiveHud.tsx`).
+    - Lokale Galerie-Verwaltung in `~/.local/share/otakusoul/generated_images/`.
+  - **Soul Hub & Gateways (`soul_hub.rs`, `SoulHubView.tsx`):**
+    - 4-teiliger Community-Hub mit Live-Suche, Tags, NSFW-Filtern und 1-Klick-Import für kuratierte Charaktere (Soul Gateway), Chub AI (API v4 / CDN mit automatischer Lorebook-Extraktion), Welt-Lorebooks und Soul-Stage-Szenarien.
+  - **KI-Charakterassistent (`CharacterAiAssistantModal.tsx`, `characters.rs`):**
+    - Geführter 5-Schritte Creation Wizard: Konzept & Name (mit Archetyp-Pills: Tsundere, Kuudere, Netrunner, etc.), Aussehen, Wesenszüge, Welt & Beziehung zu `{{user}}`, Begrüßung/Szenario.
+    - Direkte LLM-Synthese in standardkonformes SillyTavern V2 Format (`generate_character_draft_llm`), Review-Editor und Speichern in die Bibliothek.
+  - **Profil-Backup & Wiederherstellung (`profile_backup.rs`):**
+    - Portables ZIP-Backup mit Gruppen-Auswahl (Charaktere, Lorebooks, Personas, Seelengedächtnis, Soul Stage, Companion, Settings) und `manifest.json`.
+    - 5-fache rotierende Sicherheits-Snapshot-Erstellung (`pre_restore_...`) vor jeder Wiederherstellung verhindert jeden Datenverlust.
+    - Selektiver Rollback und Löschverwaltung.
 
-**Offene Phasen 17–18** (Web-Client, Discord-Gateway, i18n & Release-Builds) sind in [`Roadmap.md`](Roadmap.md) dokumentiert. **Vor neuen Features dort nachsehen und erledigte Punkte mit Commit-Hash abhaken.**
+**Offene Phase 18** (UI-Politur, i18n & Release-Builds) ist in [`Roadmap.md`](Roadmap.md) dokumentiert. **Vor neuen Features dort nachsehen und erledigte Punkte mit Commit-Hash abhaken.**
 
 ---
 

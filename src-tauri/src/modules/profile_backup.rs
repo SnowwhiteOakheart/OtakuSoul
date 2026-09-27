@@ -1,0 +1,445 @@
+use std::fs::{self, File};
+use std::io::{Read, Write};
+use std::path::{Path, PathBuf};
+use chrono::Utc;
+use serde::{Deserialize, Serialize};
+use tracing::info;
+use zip::write::SimpleFileOptions;
+use zip::{ZipArchive, ZipWriter};
+
+use crate::modules::paths::resolve_app_paths;
+
+const SCHEMA_VERSION: u32 = 1;
+const SAFETY_ROTATION_KEEP: usize = 5;
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct BackupGroupSelection {
+    pub characters: bool,
+    pub lorebooks: bool,
+    pub personas: bool,
+    pub soul_memory: bool,
+    pub soul_stage: bool,
+    pub companion: bool,
+    pub settings: bool,
+}
+
+impl Default for BackupGroupSelection {
+    fn default() -> Self {
+        Self {
+            characters: true,
+            lorebooks: true,
+            personas: true,
+            soul_memory: true,
+            soul_stage: true,
+            companion: true,
+            settings: true,
+        }
+    }
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct BackupManifest {
+    pub schema_version: u32,
+    pub app_version: String,
+    pub created_at: String,
+    pub groups: BackupGroupSelection,
+    pub files_count: usize,
+    pub description: Option<String>,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct BackupEntryInfo {
+    pub id: String,
+    pub filename: String,
+    pub file_path: String,
+    pub size_bytes: u64,
+    pub created_at: String,
+    pub is_safety_snapshot: bool,
+    pub manifest: Option<BackupManifest>,
+}
+
+pub struct ProfileBackupManager;
+
+impl ProfileBackupManager {
+    pub fn get_backups_dir() -> PathBuf {
+        let paths = resolve_app_paths();
+        let dir = PathBuf::from(&paths.data_dir).join("backups");
+        if !dir.exists() {
+            let _ = fs::create_dir_all(&dir);
+        }
+        dir
+    }
+
+    fn add_dir_to_zip_archive<W: Write + std::io::Seek>(
+        zip: &mut ZipWriter<W>,
+        options: SimpleFileOptions,
+        source_dir: &Path,
+        zip_prefix: &str,
+        added_files: &mut usize,
+    ) -> Result<(), String> {
+        if !source_dir.exists() {
+            return Ok(());
+        }
+        let walker = walkdir(source_dir)?;
+        for entry_path in walker {
+            if entry_path.is_file() {
+                let rel_path = match entry_path.strip_prefix(source_dir) {
+                    Ok(p) => p,
+                    Err(_) => continue,
+                };
+                let zip_entry_name = format!("{}/{}", zip_prefix, rel_path.to_string_lossy().replace('\\', "/"));
+                
+                if let Ok(mut src_file) = File::open(&entry_path) {
+                    let mut buffer = Vec::new();
+                    if src_file.read_to_end(&mut buffer).is_ok() {
+                        if zip.start_file(&zip_entry_name, options).is_ok() {
+                            let _ = zip.write_all(&buffer);
+                            *added_files += 1;
+                        }
+                    }
+                }
+            }
+        }
+        Ok(())
+    }
+
+    fn add_file_to_zip_archive<W: Write + std::io::Seek>(
+        zip: &mut ZipWriter<W>,
+        options: SimpleFileOptions,
+        source_file: &Path,
+        zip_entry_name: &str,
+        added_files: &mut usize,
+    ) {
+        if source_file.exists() && source_file.is_file() {
+            if let Ok(mut src_file) = File::open(source_file) {
+                let mut buffer = Vec::new();
+                if src_file.read_to_end(&mut buffer).is_ok() {
+                    if zip.start_file(zip_entry_name, options).is_ok() {
+                        let _ = zip.write_all(&buffer);
+                        *added_files += 1;
+                    }
+                }
+            }
+        }
+    }
+
+    /// Creates a ZIP profile backup with the given group selections.
+    pub fn create_backup(
+        selection: BackupGroupSelection,
+        description: Option<String>,
+        is_safety: bool,
+    ) -> Result<BackupEntryInfo, String> {
+        let backups_dir = Self::get_backups_dir();
+        let timestamp = Utc::now().format("%Y%m%d_%H%M%S").to_string();
+        let prefix = if is_safety { "pre_restore_" } else { "otakusoul_backup_" };
+        let filename = format!("{}{}.zip", prefix, timestamp);
+        let backup_path = backups_dir.join(&filename);
+
+        let file = File::create(&backup_path).map_err(|e| format!("Fehler beim Erstellen der Backup-Datei: {}", e))?;
+        let mut zip = ZipWriter::new(file);
+        let options = SimpleFileOptions::default()
+            .compression_method(zip::CompressionMethod::Deflated)
+            .unix_permissions(0o755);
+
+        let paths = resolve_app_paths();
+        let mut added_files = 0usize;
+
+        let data_dir = PathBuf::from(&paths.data_dir);
+        let characters_dir = PathBuf::from(&paths.characters_dir);
+        let lorebooks_dir = PathBuf::from(&paths.lorebooks_dir);
+        let personas_dir = PathBuf::from(&paths.personas_dir);
+        let scenes_dir = PathBuf::from(&paths.scenes_dir);
+
+        // 1. Characters
+        if selection.characters {
+            let _ = Self::add_dir_to_zip_archive(&mut zip, options, &characters_dir, "characters", &mut added_files);
+        }
+
+        // 2. Lorebooks
+        if selection.lorebooks {
+            let _ = Self::add_dir_to_zip_archive(&mut zip, options, &lorebooks_dir, "lorebooks", &mut added_files);
+        }
+
+        // 3. Personas
+        if selection.personas {
+            let _ = Self::add_dir_to_zip_archive(&mut zip, options, &personas_dir, "personas", &mut added_files);
+        }
+
+        // 4. Soul Stage Scenes & Folders
+        if selection.soul_stage {
+            let _ = Self::add_dir_to_zip_archive(&mut zip, options, &scenes_dir, "scenes", &mut added_files);
+        }
+
+        // 5. Soul Memory (SQLite database & markdown logs)
+        if selection.soul_memory {
+            Self::add_file_to_zip_archive(&mut zip, options, &data_dir.join("memory.db"), "memory/memory.db", &mut added_files);
+            Self::add_file_to_zip_archive(&mut zip, options, &data_dir.join("MEMORY.md"), "memory/MEMORY.md", &mut added_files);
+            Self::add_file_to_zip_archive(&mut zip, options, &data_dir.join("USER.md"), "memory/USER.md", &mut added_files);
+            let _ = Self::add_dir_to_zip_archive(&mut zip, options, &data_dir.join("topics"), "memory/topics", &mut added_files);
+        }
+
+        // 6. Soul Companion (scratchpad, goals, plugins, mcp_servers)
+        if selection.companion {
+            let comp_dir = data_dir.join("companion");
+            let _ = Self::add_dir_to_zip_archive(&mut zip, options, &comp_dir, "companion", &mut added_files);
+        }
+
+        // 7. Settings & Presets
+        if selection.settings {
+            Self::add_file_to_zip_archive(&mut zip, options, &data_dir.join("settings.json"), "settings/settings.json", &mut added_files);
+            Self::add_file_to_zip_archive(&mut zip, options, &data_dir.join("llm_presets.json"), "settings/llm_presets.json", &mut added_files);
+            Self::add_file_to_zip_archive(&mut zip, options, &data_dir.join("voice_config.json"), "settings/voice_config.json", &mut added_files);
+        }
+
+        // Write manifest
+        let manifest = BackupManifest {
+            schema_version: SCHEMA_VERSION,
+            app_version: env!("CARGO_PKG_VERSION").to_string(),
+            created_at: Utc::now().to_rfc3339(),
+            groups: selection.clone(),
+            files_count: added_files,
+            description,
+        };
+
+        let manifest_bytes = serde_json::to_vec_pretty(&manifest)
+            .map_err(|e| format!("Fehler beim Serialisieren des Manifests: {}", e))?;
+        zip.start_file("manifest.json", options)
+            .map_err(|e| format!("Fehler beim Schreiben von manifest.json: {}", e))?;
+        zip.write_all(&manifest_bytes)
+            .map_err(|e| format!("Fehler beim Speichern von manifest.json: {}", e))?;
+
+        zip.finish().map_err(|e| format!("Fehler beim Finalisieren des ZIP-Archivs: {}", e))?;
+
+        info!("Backup erfolgreich erstellt: {:?} mit {} Dateien", backup_path, added_files);
+
+        // If it's a safety snapshot, maintain rotation (keep last 5)
+        if is_safety {
+            Self::rotate_safety_backups();
+        }
+
+        let metadata = fs::metadata(&backup_path).map_err(|e| e.to_string())?;
+
+        Ok(BackupEntryInfo {
+            id: filename.clone(),
+            filename,
+            file_path: backup_path.to_string_lossy().to_string(),
+            size_bytes: metadata.len(),
+            created_at: manifest.created_at.clone(),
+            is_safety_snapshot: is_safety,
+            manifest: Some(manifest),
+        })
+    }
+
+    /// Lists all backup ZIP files in the backup directory.
+    pub fn list_backups() -> Vec<BackupEntryInfo> {
+        let backups_dir = Self::get_backups_dir();
+        let mut list = Vec::new();
+
+        if let Ok(entries) = fs::read_dir(&backups_dir) {
+            for entry in entries.flatten() {
+                let path = entry.path();
+                if path.is_file() && path.extension().map_or(false, |ext| ext == "zip") {
+                    let filename = path.file_name().unwrap_or_default().to_string_lossy().to_string();
+                    let is_safety = filename.starts_with("pre_restore_");
+                    let size_bytes = fs::metadata(&path).map(|m| m.len()).unwrap_or(0);
+
+                    // Try to read manifest from ZIP
+                    let manifest = Self::read_manifest_from_zip(&path);
+                    let created_at = manifest.as_ref().map(|m| m.created_at.clone()).unwrap_or_else(|| {
+                        fs::metadata(&path)
+                            .and_then(|m| m.created().or_else(|_| m.modified()))
+                            .map(|t| chrono::DateTime::<Utc>::from(t).to_rfc3339())
+                            .unwrap_or_else(|_| Utc::now().to_rfc3339())
+                    });
+
+                    list.push(BackupEntryInfo {
+                        id: filename.clone(),
+                        filename,
+                        file_path: path.to_string_lossy().to_string(),
+                        size_bytes,
+                        created_at,
+                        is_safety_snapshot: is_safety,
+                        manifest,
+                    });
+                }
+            }
+        }
+
+        // Sort newest first
+        list.sort_by(|a, b| b.created_at.cmp(&a.created_at));
+        list
+    }
+
+    /// Reads manifest.json from a backup ZIP archive if present.
+    fn read_manifest_from_zip(zip_path: &Path) -> Option<BackupManifest> {
+        let file = File::open(zip_path).ok()?;
+        let mut archive = ZipArchive::new(file).ok()?;
+        let mut manifest_file = archive.by_name("manifest.json").ok()?;
+        let mut content = String::new();
+        manifest_file.read_to_string(&mut content).ok()?;
+        serde_json::from_str::<BackupManifest>(&content).ok()
+    }
+
+    /// Restores data from a backup ZIP file, creating a safety snapshot first.
+    pub fn restore_backup(filename: &str, groups: Option<BackupGroupSelection>) -> Result<String, String> {
+        let backups_dir = Self::get_backups_dir();
+        let backup_path = backups_dir.join(filename);
+        if !backup_path.exists() {
+            return Err(format!("Backup-Datei '{}' existiert nicht.", filename));
+        }
+
+        info!("Erstelle präventiven Sicherheits-Snapshot vor der Wiederherstellung...");
+        let _ = Self::create_backup(BackupGroupSelection::default(), Some("Pre-restore safety snapshot".into()), true);
+
+        let file = File::open(&backup_path).map_err(|e| format!("Fehler beim Öffnen des Backups: {}", e))?;
+        let mut archive = ZipArchive::new(file).map_err(|e| format!("Ungültiges ZIP-Archiv: {}", e))?;
+
+        let selection = groups.unwrap_or_default();
+        let paths = resolve_app_paths();
+
+        let mut restored_count = 0usize;
+
+        for i in 0..archive.len() {
+            let mut file = archive.by_index(i).map_err(|e| format!("Fehler beim Lesen von ZIP-Eintrag {}: {}", i, e))?;
+            let entry_name = match file.enclosed_name() {
+                Some(p) => p.to_path_buf(),
+                None => continue,
+            };
+
+            let entry_str = entry_name.to_string_lossy();
+            if entry_str == "manifest.json" {
+                continue;
+            }
+
+            let data_dir = PathBuf::from(&paths.data_dir);
+            let characters_dir = PathBuf::from(&paths.characters_dir);
+            let lorebooks_dir = PathBuf::from(&paths.lorebooks_dir);
+            let personas_dir = PathBuf::from(&paths.personas_dir);
+            let scenes_dir = PathBuf::from(&paths.scenes_dir);
+
+            // Determine destination target based on top-level zip folder
+            let target_path: Option<PathBuf> = if entry_str.starts_with("characters/") && selection.characters {
+                let sub = entry_str.trim_start_matches("characters/");
+                Some(characters_dir.join(sub))
+            } else if entry_str.starts_with("lorebooks/") && selection.lorebooks {
+                let sub = entry_str.trim_start_matches("lorebooks/");
+                Some(lorebooks_dir.join(sub))
+            } else if entry_str.starts_with("personas/") && selection.personas {
+                let sub = entry_str.trim_start_matches("personas/");
+                Some(personas_dir.join(sub))
+            } else if entry_str.starts_with("scenes/") && selection.soul_stage {
+                let sub = entry_str.trim_start_matches("scenes/");
+                Some(scenes_dir.join(sub))
+            } else if entry_str.starts_with("memory/") && selection.soul_memory {
+                let sub = entry_str.trim_start_matches("memory/");
+                Some(data_dir.join(sub))
+            } else if entry_str.starts_with("companion/") && selection.companion {
+                let sub = entry_str.trim_start_matches("companion/");
+                Some(data_dir.join("companion").join(sub))
+            } else if entry_str.starts_with("settings/") && selection.settings {
+                let sub = entry_str.trim_start_matches("settings/");
+                Some(data_dir.join(sub))
+            } else {
+                None
+            };
+
+            if let Some(dest) = target_path {
+                if file.is_dir() {
+                    let _ = fs::create_dir_all(&dest);
+                } else {
+                    if let Some(parent) = dest.parent() {
+                        let _ = fs::create_dir_all(parent);
+                    }
+                    if let Ok(mut out_file) = File::create(&dest) {
+                        let mut buffer = Vec::new();
+                        if file.read_to_end(&mut buffer).is_ok() {
+                            let _ = out_file.write_all(&buffer);
+                            restored_count += 1;
+                        }
+                    }
+                }
+            }
+        }
+
+        info!("Backup '{}' erfolgreich wiederhergestellt ({} Dateien).", filename, restored_count);
+        Ok(format!("Erfolgreich {} Dateien aus dem Backup wiederhergestellt.", restored_count))
+    }
+
+    /// Deletes a backup ZIP file.
+    pub fn delete_backup(filename: &str) -> Result<bool, String> {
+        let backups_dir = Self::get_backups_dir();
+        let backup_path = backups_dir.join(filename);
+        if backup_path.exists() {
+            fs::remove_file(&backup_path).map_err(|e| format!("Fehler beim Löschen des Backups: {}", e))?;
+            info!("Backup '{}' gelöscht.", filename);
+            Ok(true)
+        } else {
+            Err(format!("Backup '{}' nicht gefunden.", filename))
+        }
+    }
+
+    /// Rotates safety snapshots, keeping only the newest 5.
+    fn rotate_safety_backups() {
+        let backups_dir = Self::get_backups_dir();
+        let mut safety_files = Vec::new();
+
+        if let Ok(entries) = fs::read_dir(&backups_dir) {
+            for entry in entries.flatten() {
+                let path = entry.path();
+                if path.is_file() {
+                    let name = path.file_name().unwrap_or_default().to_string_lossy().to_string();
+                    if name.starts_with("pre_restore_") && name.ends_with(".zip") {
+                        if let Ok(meta) = fs::metadata(&path) {
+                            let mtime = meta.modified().unwrap_or(std::time::SystemTime::UNIX_EPOCH);
+                            safety_files.push((path, mtime));
+                        }
+                    }
+                }
+            }
+        }
+
+        // Sort newest first
+        safety_files.sort_by(|a, b| b.1.cmp(&a.1));
+
+        if safety_files.len() > SAFETY_ROTATION_KEEP {
+            for (old_path, _) in &safety_files[SAFETY_ROTATION_KEEP..] {
+                let _ = fs::remove_file(old_path);
+                info!("Altes Sicherheits-Snapshot rotiert/gelöscht: {:?}", old_path);
+            }
+        }
+    }
+}
+
+/// Simple recursive directory crawler
+fn walkdir(dir: &Path) -> Result<Vec<PathBuf>, String> {
+    let mut files = Vec::new();
+    if dir.is_dir() {
+        if let Ok(entries) = fs::read_dir(dir) {
+            for entry in entries.flatten() {
+                let path = entry.path();
+                if path.is_dir() {
+                    let mut sub = walkdir(&path)?;
+                    files.append(&mut sub);
+                } else {
+                    files.push(path);
+                }
+            }
+        }
+    }
+    Ok(files)
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn test_backup_group_selection_defaults() {
+        let sel = BackupGroupSelection::default();
+        assert!(sel.characters);
+        assert!(sel.lorebooks);
+        assert!(sel.soul_memory);
+        assert!(sel.soul_stage);
+        assert!(sel.settings);
+    }
+}

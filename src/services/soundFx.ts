@@ -276,6 +276,18 @@ class SoundFxSynthesizer {
     });
   }
 
+  public playSave() {
+    this.playMessageSent();
+  }
+
+  public playStart() {
+    this.playCriticalSuccess();
+  }
+
+  public playLevelUp() {
+    this.playCriticalSuccess();
+  }
+
   /// Procedural Campfire Ambiance: Low wind drone + random crackle pops
   public toggleCampfireAmbiance(): boolean {
     if (this.ambianceNode) {

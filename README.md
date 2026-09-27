@@ -34,11 +34,14 @@ Ob ruhiger Alltagsdialog, langfristige Charakterentwicklung oder eine dramatisch
 |---|---|
 | 🧠 **Soul Memory** | Charaktere bauen langfristige Erinnerungen auf, reflektieren Erlebnisse und entwickeln ihre Beziehung zum Nutzer weiter. Psychologie, episodisches Gedächtnis, Beziehung und Tagebuch greifen ineinander. |
 | ✨ **Lebendige Avatare** | VRM- und Live2D-Modelle reagieren mit Emotionen, Blickbewegungen, Blinzeln, Atmung und audio-gesteuertem LipSync. Position und Zoom bleiben pro Modell gespeichert. |
-| 🎭 **Charaktere ohne Grenzen** | Importiere Tavern-/SillyTavern-Character-Cards, Personas und Lorebooks. Verwalte mehrere Chats, Antwortvarianten, Autorenhinweise und reaktive HUD-Werte. |
-| 🌐 **Soul Hub** | Stöbere im integrierten Community-Hub: Soul Gateway, Chub AI Browser mit automatischer Lorebook-Extraktion, Welt-Lorebooks und Soul-Stage-Szenarien. |
+| 🎭 **Charaktere & KI-Assistent** | Importiere Tavern-/SillyTavern-Character-Cards, Personas und Lorebooks. Erstelle neue Figuren mit dem geführten 5-Schritte KI-Wizard. |
+| 🌐 **Soul Hub & Gateways** | Stöbere im integrierten Community-Hub: Soul Gateway, Chub AI Browser mit automatischer Lorebook-Extraktion, Welt-Lorebooks und Soul-Stage-Szenarien. |
 | 🎲 **Soul Stage** | Verwandle Gespräche in interaktive Abenteuer: Szenenordner (inkl. 12 Kapiteln *No Game No Life*), Multi-Akteur-Züge, Würfelproben, Kampagnen-Uhren, Initiative, dynamische Hintergründe mit Lock und zuverlässige Backups. |
 | 🎙️ **Stimme & Sprache** | Nutze Edge-TTS, lokales Kokoro, ElevenLabs oder OpenAI-kompatible Stimmen. Aktionen und Regieanweisungen lassen sich gezielt vom gesprochenen Dialog trennen. |
 | 🤖 **Soul Companion** | Echter Desktop-Agent mit transparentem Always-on-Top Floating-Overlay, Click-Through, Neurohormonen, proaktivem Ansprechen, echten Desktop-Tools, Sandbox, MCP-Client und 25s Human-in-the-Loop Sicherheitsbanner. |
+| 📱 **Mobiler Web-Client** | Chatte vom Smartphone oder Tablet im selben WLAN: Autarker Axum-Server, Token-Auth, DNS-Rebinding-Schutz, Streaming und QR-Code-Direktscan. |
+| 🎮 **Discord & Medien** | Discord Rich Presence (RPC) und nativer Gateway-Bot (`!ask`, `!character`, `!status`), sowie KI-Bildgenerierung (A1111, ComfyUI, DALL-E 3, NovelAI, FLUX) direkt aus dem Chat. |
+| 💾 **Profil-Backups** | Portabler ZIP-Export mit Gruppen-Auswahl und 5-facher automatischer Sicherheits-Snapshot-Rotation vor jedem Restore. |
 | 🔐 **Local First** | Betreibe GGUF-Modelle direkt auf deinem Rechner. OtakuSoul erkennt Hardware und VRAM, wählt sinnvolle Laufzeitparameter und verwaltet den lokalen `llama-server`. |
 
 ## Charaktere, die sich entwickeln
@@ -95,11 +98,16 @@ Mit **Soul Companion** wird dein Lieblingscharakter zu einem echten Assistenten 
 OtakuSoul unterstützt unter anderem:
 
 - Tavern- und SillyTavern-Character-Card V2 als PNG oder JSON
+- Geführter 5-Schritte KI-Charakterassistent (Wizard) zur automatischen Kartengenerierung
 - Chub AI Kartenimport inkl. automatischer Extraktion eingebetteter Lorebooks (`character_book`)
 - SillyTavern- und Soul-of-Waifu-Chatimporte
 - Lorebooks und World-Info-Strukturen mit Chain-Dependencies und Tension-Trigger
 - Soul-Stage-Szenarien und Szenenordner (JSON-Import/Export)
 - Model Context Protocol (MCP) Server (stdio & HTTP/SSE) sowie Skript-Plugins
+- Lokaler Axum Webserver für mobile Endgeräte (iOS Safari / Android) mit QR-Code
+- Discord Rich Presence (RPC) und Discord Gateway WebSocket Bot
+- KI-Bildgenerierung via Automatic1111, ComfyUI, DALL-E 3, NovelAI und FLUX
+- Vollständige ZIP-Profil-Sicherung & Restore mit 5-facher Sicherheits-Snapshot-Rotation
 - GGUF-Modelle für lokale Inferenz
 - VRM 0.x/1.0 und Live2D Cubism 2/4
 - Edge-TTS, Kokoro, ElevenLabs und OpenAI-kompatible Sprachdienste

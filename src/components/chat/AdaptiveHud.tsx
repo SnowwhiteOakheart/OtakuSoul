@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { useAppStore } from '../../store/useAppStore';
-import { Heart, Zap, Smile, Users, ChevronDown, BookOpen, Brain, Sparkles } from 'lucide-react';
+import { api } from '../../services/api';
+import { Heart, Zap, Smile, Users, ChevronDown, BookOpen, Brain, Sparkles, Camera, Loader2 } from 'lucide-react';
 import { CognitiveMemoryDrawer } from './CognitiveMemoryDrawer';
 
 export const AdaptiveHud = () => {
@@ -14,10 +15,39 @@ export const AdaptiveHud = () => {
     setServerConfig,
     setActiveTab,
     activePersona,
+    currentEmotion,
+    generateImageAction,
+    imageGenConfig,
   } = useAppStore();
 
   const [showSelector, setShowSelector] = useState(false);
   const [showMemoryDrawer, setShowMemoryDrawer] = useState(false);
+  const [isGeneratingImage, setIsGeneratingImage] = useState(false);
+  const [imageNotice, setImageNotice] = useState<string | null>(null);
+
+  const handleGenerateSituationalImage = async () => {
+    if (!activeCharacter) return;
+    setIsGeneratingImage(true);
+    try {
+      setImageNotice('Generiere Bild...');
+      const prompt = await api.buildCharacterImagePrompt(
+        activeCharacter.card.data.name,
+        activeCharacter.card.data.description,
+        currentEmotion?.emotion,
+        'masterpiece, anime aesthetic, situational roleplay portrait, expressive eyes',
+        undefined
+      );
+      await generateImageAction(prompt, undefined, imageGenConfig);
+      setImageNotice('Bild generiert!');
+      setTimeout(() => setImageNotice(null), 3000);
+    } catch (e: any) {
+      console.error('Failed to generate situational image:', e);
+      setImageNotice('Fehler');
+      setTimeout(() => setImageNotice(null), 3000);
+    } finally {
+      setIsGeneratingImage(false);
+    }
+  };
 
   if (!activeCharacter) {
     return null;
@@ -212,6 +242,21 @@ export const AdaptiveHud = () => {
         >
           <Brain className="w-3.5 h-3.5 text-purple-400" />
           <span>Seelenspeicher</span>
+        </button>
+
+        {/* Quick Situational Image Generator */}
+        <button
+          onClick={handleGenerateSituationalImage}
+          disabled={isGeneratingImage}
+          className="flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-indigo-950/50 border border-indigo-500/40 text-indigo-300 hover:bg-indigo-900/60 hover:text-indigo-200 transition text-[11px] font-medium shadow-sm cursor-pointer disabled:opacity-50"
+          title="Situationsbild des aktuellen Charakters generieren"
+        >
+          {isGeneratingImage ? (
+            <Loader2 className="w-3.5 h-3.5 text-indigo-400 animate-spin" />
+          ) : (
+            <Camera className="w-3.5 h-3.5 text-indigo-400" />
+          )}
+          <span className="hidden lg:inline">{imageNotice || 'Foto'}</span>
         </button>
       </div>
 

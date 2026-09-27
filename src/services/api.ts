@@ -64,6 +64,18 @@ import {
   ChubSearchResult,
   ChubCharacterDetail,
   CharacterImportResult,
+  BackupGroupSelection,
+  BackupEntryInfo,
+  ImageGenConfig,
+  GeneratedImageResult,
+  GeneratedImageInfo,
+  DiscordRpcActivity,
+  DiscordBotConfig,
+  DiscordBotStatus,
+  WebServerConfig,
+  WebServerStatus,
+  CharacterWizardInput,
+  CharacterDraft,
 } from '../types';
 
 export const api = {
@@ -992,4 +1004,156 @@ export const api = {
       fallbackTitle,
     });
   },
+
+  // Phase 17: Backups
+  createProfileBackup: async (
+    selection: BackupGroupSelection,
+    description?: string
+  ): Promise<BackupEntryInfo> => {
+    return await invoke<BackupEntryInfo>('create_profile_backup', { selection, description: description || null });
+  },
+
+  listProfileBackups: async (): Promise<BackupEntryInfo[]> => {
+    return await invoke<BackupEntryInfo[]>('list_profile_backups');
+  },
+
+  restoreProfileBackup: async (
+    filename: string,
+    groups?: BackupGroupSelection
+  ): Promise<string> => {
+    return await invoke<string>('restore_profile_backup', { filename, groups: groups || null });
+  },
+
+  deleteProfileBackup: async (filename: string): Promise<boolean> => {
+    return await invoke<boolean>('delete_profile_backup', { filename });
+  },
+
+  // Phase 17: Image Generation
+  getImageGenConfig: async (): Promise<ImageGenConfig> => {
+    return await invoke<ImageGenConfig>('get_image_gen_config');
+  },
+
+  saveImageGenConfig: async (config: ImageGenConfig): Promise<void> => {
+    return await invoke<void>('save_image_gen_config', { config });
+  },
+
+  buildCharacterImagePrompt: async (
+    characterName: string,
+    characterDescription?: string | null,
+    emotion?: string | null,
+    sceneContext?: string | null,
+    userPrompt?: string | null
+  ): Promise<string> => {
+    return await invoke<string>('build_character_image_prompt', {
+      characterName,
+      characterDescription: characterDescription || null,
+      emotion: emotion || null,
+      sceneContext: sceneContext || null,
+      userPrompt: userPrompt || null,
+    });
+  },
+
+  generateImageAction: async (
+    prompt: string,
+    negative?: string | null,
+    customConfig?: ImageGenConfig | null
+  ): Promise<GeneratedImageResult> => {
+    return await invoke<GeneratedImageResult>('generate_image_action', {
+      prompt,
+      negative: negative || null,
+      customConfig: customConfig || null,
+    });
+  },
+
+  listGeneratedImages: async (): Promise<GeneratedImageInfo[]> => {
+    return await invoke<GeneratedImageInfo[]>('list_generated_images');
+  },
+
+  // Phase 17: Discord RPC & Bot
+  setDiscordRpcEnabled: async (enabled: boolean): Promise<void> => {
+    return await invoke<void>('set_discord_rpc_enabled', { enabled });
+  },
+
+  getDiscordRpcEnabled: async (): Promise<boolean> => {
+    return await invoke<boolean>('get_discord_rpc_enabled');
+  },
+
+  updateDiscordRpcActivity: async (activity: DiscordRpcActivity): Promise<void> => {
+    return await invoke<void>('update_discord_rpc_activity', { activity });
+  },
+
+  getDiscordBotConfig: async (): Promise<DiscordBotConfig> => {
+    return await invoke<DiscordBotConfig>('get_discord_bot_config');
+  },
+
+  saveDiscordBotConfig: async (config: DiscordBotConfig): Promise<void> => {
+    return await invoke<void>('save_discord_bot_config', { config });
+  },
+
+  startDiscordBot: async (): Promise<void> => {
+    return await invoke<void>('start_discord_bot');
+  },
+
+  stopDiscordBot: async (): Promise<void> => {
+    return await invoke<void>('stop_discord_bot');
+  },
+
+  getDiscordBotStatus: async (): Promise<DiscordBotStatus> => {
+    return await invoke<DiscordBotStatus>('get_discord_bot_status');
+  },
+
+  // Phase 17: Web Server (Mobile Client)
+  getWebServerConfig: async (): Promise<WebServerConfig> => {
+    return await invoke<WebServerConfig>('get_web_server_config');
+  },
+
+  saveWebServerConfig: async (config: WebServerConfig): Promise<void> => {
+    return await invoke<void>('save_web_server_config', { config });
+  },
+
+  startWebServer: async (): Promise<void> => {
+    return await invoke<void>('start_web_server');
+  },
+
+  stopWebServer: async (): Promise<void> => {
+    return await invoke<void>('stop_web_server');
+  },
+
+  getWebServerStatus: async (): Promise<WebServerStatus> => {
+    return await invoke<WebServerStatus>('get_web_server_status');
+  },
+
+  regenerateWebServerToken: async (): Promise<string> => {
+    return await invoke<string>('regenerate_web_server_token');
+  },
+
+  // Phase 17: AI Character Assistant
+  buildCharacterWizardPrompt: async (input: CharacterWizardInput): Promise<string> => {
+    return await invoke<string>('build_character_wizard_prompt_cmd', { input });
+  },
+
+  parseCharacterWizardDraft: async (rawText: string): Promise<CharacterDraft> => {
+    return await invoke<CharacterDraft>('parse_character_wizard_draft_cmd', { rawText });
+  },
+
+  createCharacterFromDraft: async (draft: CharacterDraft): Promise<CharacterProfile> => {
+    return await invoke<CharacterProfile>('create_character_from_draft', { draft });
+  },
+
+  generateCharacterDraftLlm: async (
+    input: CharacterWizardInput,
+    endpointUrl: string,
+    apiKey?: string,
+    model?: string,
+    provider?: string
+  ): Promise<CharacterDraft> => {
+    return await invoke<CharacterDraft>('generate_character_draft_llm', {
+      input,
+      endpointUrl,
+      apiKey: apiKey || null,
+      model: model || null,
+      provider: provider || null,
+    });
+  },
 };
+

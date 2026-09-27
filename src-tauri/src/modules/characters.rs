@@ -677,6 +677,88 @@ fn save_personas_list_to_path(list: &[UserPersona], path: &Path) -> Result<(), S
     Ok(())
 }
 
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct CharacterWizardInput {
+    pub name: String,
+    pub concept: String,
+    pub archetype: String,
+    pub visual_style: String,
+    pub personality_traits: String,
+    pub world_background: String,
+    pub relationship_to_user: String,
+    pub greeting_scenario: String,
+    pub target_language: Option<String>,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize, Default)]
+pub struct CharacterDraft {
+    pub name: String,
+    pub description: String,
+    pub personality: String,
+    pub scenario: String,
+    pub first_mes: String,
+    pub mes_example: String,
+    pub system_prompt: String,
+    pub tags: Vec<String>,
+}
+
+pub fn build_character_wizard_prompt(input: &CharacterWizardInput) -> String {
+    let lang = input.target_language.as_deref().unwrap_or("Deutsch");
+    format!(
+r#"Du bist ein meisterhafter KI-Autor für Rollenspiel-Charaktere und SillyTavern V2 Character Cards.
+Erstelle auf Basis der folgenden Benutzer-Eckdaten eine tiefgründige, lebendige und konsistente Charakterkarte in {lang}.
+
+ECKDATEN:
+- Name: {name}
+- Konzept: {concept}
+- Archetyp: {archetype}
+- Visuelles Erscheinungsbild: {visual}
+- Persönlichkeit & Eigenschaften: {personality}
+- Welt & Hintergrund: {world}
+- Beziehung zu {{{{user}}}}: {relationship}
+- Einstiegsszenario: {scenario}
+
+FORMAT-ANFORDERUNGEN:
+Antworte AUSSCHLIESSLICH mit einem einzigen validen JSON-Objekt im folgenden Format (ohne Erklärungen, ohne Code-Fences):
+{{
+  "name": "{name}",
+  "description": "<Detaillierte visuelle Beschreibung: Kleidung, Haare, Augen, Körperbau, Alter, soziale Rolle>",
+  "personality": "<Ausführliche Persönlichkeit: Wesenszüge, Macken, Ängste, Sehnsüchte, Tonalität, Sprechmuster>",
+  "scenario": "<Aktueller Handlungsrahmen, in dem {{{{char}}}} auf {{{{user}}}} trifft>",
+  "first_mes": "<Atmosphärische erste Nachricht von {{{{char}}}}, inklusive *Handlungen* und \"gesprochenem Dialog\">",
+  "mes_example": "<START>\\n{{{{user}}}}: Hallo!\\n{{{{char}}}}: *mustert dich neugierig* Schön, dich zu sehen.",
+  "system_prompt": "Schreibe als {name}. Bleibe stets in deiner Rolle. Nutze *...* für Handlungen und Sinneswahrnehmungen.",
+  "tags": ["Anime", "{archetype}", "Rollenspiel"]
+}}
+"#,
+        lang = lang,
+        name = input.name,
+        concept = input.concept,
+        archetype = input.archetype,
+        visual = input.visual_style,
+        personality = input.personality_traits,
+        world = input.world_background,
+        relationship = input.relationship_to_user,
+        scenario = input.greeting_scenario,
+    )
+}
+
+pub fn parse_character_wizard_draft(raw_text: &str) -> Result<CharacterDraft, String> {
+    let cleaned = raw_text.trim();
+    let json_candidate = if let Some(start) = cleaned.find('{') {
+        if let Some(end) = cleaned.rfind('}') {
+            &cleaned[start..=end]
+        } else {
+            cleaned
+        }
+    } else {
+        cleaned
+    };
+
+    serde_json::from_str::<CharacterDraft>(json_candidate)
+        .map_err(|e| format!("Fehler beim Parsen des Charakter-Drafts: {}", e))
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;

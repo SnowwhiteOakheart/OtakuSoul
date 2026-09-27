@@ -1410,3 +1410,266 @@ pub async fn import_scene_from_gateway(
 ) -> Result<crate::modules::stage::SceneState, String> {
     crate::modules::soul_hub::import_scene_from_gateway(&download_url, &fallback_title).await
 }
+
+// --- Phase 17: Ecosystem, Backups, Image Generation, Discord & Web Client ---
+
+#[tauri::command]
+pub fn create_profile_backup(
+    selection: crate::modules::profile_backup::BackupGroupSelection,
+    description: Option<String>,
+) -> Result<crate::modules::profile_backup::BackupEntryInfo, String> {
+    crate::modules::profile_backup::ProfileBackupManager::create_backup(selection, description, false)
+}
+
+#[tauri::command]
+pub fn list_profile_backups() -> Result<Vec<crate::modules::profile_backup::BackupEntryInfo>, String> {
+    Ok(crate::modules::profile_backup::ProfileBackupManager::list_backups())
+}
+
+#[tauri::command]
+pub fn restore_profile_backup(
+    filename: String,
+    groups: Option<crate::modules::profile_backup::BackupGroupSelection>,
+) -> Result<String, String> {
+    crate::modules::profile_backup::ProfileBackupManager::restore_backup(&filename, groups)
+}
+
+#[tauri::command]
+pub fn delete_profile_backup(filename: String) -> Result<bool, String> {
+    crate::modules::profile_backup::ProfileBackupManager::delete_backup(&filename)
+}
+
+#[tauri::command]
+pub fn get_image_gen_config() -> Result<crate::modules::image_generator::ImageGenConfig, String> {
+    Ok(crate::modules::image_generator::ImageGenerator::load_config())
+}
+
+#[tauri::command]
+pub fn save_image_gen_config(
+    config: crate::modules::image_generator::ImageGenConfig,
+) -> Result<(), String> {
+    crate::modules::image_generator::ImageGenerator::save_config(&config)
+}
+
+#[tauri::command]
+pub fn build_character_image_prompt(
+    character_name: String,
+    character_description: Option<String>,
+    emotion: Option<String>,
+    scene_context: Option<String>,
+    user_prompt: Option<String>,
+) -> Result<String, String> {
+    Ok(crate::modules::image_generator::ImageGenerator::build_character_prompt(
+        &character_name,
+        character_description.as_deref(),
+        emotion.as_deref(),
+        scene_context.as_deref(),
+        user_prompt.as_deref(),
+    ))
+}
+
+#[tauri::command]
+pub async fn generate_image_action(
+    prompt: String,
+    negative: Option<String>,
+    custom_config: Option<crate::modules::image_generator::ImageGenConfig>,
+) -> Result<crate::modules::image_generator::GeneratedImageResult, String> {
+    crate::modules::image_generator::ImageGenerator::generate_image(&prompt, negative.as_deref(), custom_config).await
+}
+
+#[tauri::command]
+pub fn list_generated_images() -> Result<Vec<crate::modules::image_generator::GeneratedImageInfo>, String> {
+    Ok(crate::modules::image_generator::ImageGenerator::list_generated_images())
+}
+
+#[tauri::command]
+pub fn set_discord_rpc_enabled(
+    state: State<'_, AppState>,
+    enabled: bool,
+) -> Result<(), String> {
+    state.discord_rpc.set_enabled(enabled);
+    Ok(())
+}
+
+#[tauri::command]
+pub fn get_discord_rpc_enabled(
+    state: State<'_, AppState>,
+) -> Result<bool, String> {
+    Ok(state.discord_rpc.is_enabled())
+}
+
+#[tauri::command]
+pub async fn update_discord_rpc_activity(
+    state: State<'_, AppState>,
+    activity: crate::modules::discord::DiscordRpcActivity,
+) -> Result<(), String> {
+    state.discord_rpc.update_activity(activity).await;
+    Ok(())
+}
+
+#[tauri::command]
+pub async fn get_discord_bot_config(
+    _state: State<'_, AppState>,
+) -> Result<crate::modules::discord::DiscordBotConfig, String> {
+    Ok(crate::modules::discord::DiscordBotManager::load_config())
+}
+
+#[tauri::command]
+pub async fn save_discord_bot_config(
+    state: State<'_, AppState>,
+    config: crate::modules::discord::DiscordBotConfig,
+) -> Result<(), String> {
+    state.discord_bot.save_config(config).await
+}
+
+#[tauri::command]
+pub async fn start_discord_bot(
+    state: State<'_, AppState>,
+) -> Result<(), String> {
+    state.discord_bot.start_bot().await
+}
+
+#[tauri::command]
+pub async fn stop_discord_bot(
+    state: State<'_, AppState>,
+) -> Result<(), String> {
+    state.discord_bot.stop_bot().await
+}
+
+#[tauri::command]
+pub async fn get_discord_bot_status(
+    state: State<'_, AppState>,
+) -> Result<crate::modules::discord::DiscordBotStatus, String> {
+    Ok(state.discord_bot.get_status().await)
+}
+
+#[tauri::command]
+pub fn get_web_server_config(
+    _state: State<'_, AppState>,
+) -> Result<crate::modules::web_server::WebServerConfig, String> {
+    Ok(crate::modules::web_server::WebServerManager::load_config())
+}
+
+#[tauri::command]
+pub async fn save_web_server_config(
+    state: State<'_, AppState>,
+    config: crate::modules::web_server::WebServerConfig,
+) -> Result<(), String> {
+    state.web_server.save_config(config).await
+}
+
+#[tauri::command]
+pub async fn start_web_server(
+    state: State<'_, AppState>,
+) -> Result<(), String> {
+    state.web_server.start_server().await
+}
+
+#[tauri::command]
+pub async fn stop_web_server(
+    state: State<'_, AppState>,
+) -> Result<(), String> {
+    state.web_server.stop_server().await
+}
+
+#[tauri::command]
+pub async fn get_web_server_status(
+    state: State<'_, AppState>,
+) -> Result<crate::modules::web_server::WebServerStatus, String> {
+    Ok(state.web_server.get_status().await)
+}
+
+#[tauri::command]
+pub async fn regenerate_web_server_token(
+    state: State<'_, AppState>,
+) -> Result<String, String> {
+    state.web_server.regenerate_token().await
+}
+
+#[tauri::command]
+pub fn build_character_wizard_prompt_cmd(
+    input: crate::modules::characters::CharacterWizardInput,
+) -> Result<String, String> {
+    Ok(crate::modules::characters::build_character_wizard_prompt(&input))
+}
+
+#[tauri::command]
+pub fn parse_character_wizard_draft_cmd(
+    raw_text: String,
+) -> Result<crate::modules::characters::CharacterDraft, String> {
+    crate::modules::characters::parse_character_wizard_draft(&raw_text)
+}
+
+#[tauri::command]
+pub fn create_character_from_draft(
+    draft: crate::modules::characters::CharacterDraft,
+) -> Result<crate::modules::characters::CharacterProfile, String> {
+    let paths = crate::modules::paths::resolve_app_paths();
+    let sanitized_name = draft.name.chars()
+        .map(|c| if c.is_alphanumeric() || c == '_' || c == '-' { c } else { '_' })
+        .collect::<String>();
+    let filename = format!("{}.json", sanitized_name);
+    let target_path = std::path::PathBuf::from(&paths.characters_dir).join(&filename);
+
+    let card = crate::modules::characters::CharacterCardV2 {
+        spec: "chara_card_v2".to_string(),
+        spec_version: "2.0".to_string(),
+        data: crate::modules::characters::CharacterData {
+            name: draft.name.clone(),
+            description: draft.description,
+            personality: draft.personality,
+            scenario: draft.scenario,
+            first_mes: draft.first_mes,
+            mes_example: draft.mes_example,
+            system_prompt: Some(draft.system_prompt),
+            tags: draft.tags,
+            creator: Some("OtakuSoul AI Assistant".to_string()),
+            ..Default::default()
+        },
+    };
+
+    let json_bytes = serde_json::to_vec_pretty(&card)
+        .map_err(|e| format!("Fehler beim Serialisieren des Charakters: {}", e))?;
+    std::fs::write(&target_path, json_bytes)
+        .map_err(|e| format!("Fehler beim Speichern der Charakterdatei: {}", e))?;
+
+    crate::modules::characters::load_character_from_file(&target_path)
+}
+
+#[tauri::command]
+pub async fn generate_character_draft_llm(
+    state: State<'_, AppState>,
+    input: crate::modules::characters::CharacterWizardInput,
+    endpoint_url: String,
+    api_key: Option<String>,
+    model: Option<String>,
+    provider: Option<crate::modules::providers::LlmProviderType>,
+) -> Result<crate::modules::characters::CharacterDraft, String> {
+    let prompt = crate::modules::characters::build_character_wizard_prompt(&input);
+    let req = crate::modules::inference::ChatRequest {
+        endpoint_url,
+        api_key,
+        model,
+        messages: vec![
+            crate::modules::inference::ChatMessage {
+                role: "system".to_string(),
+                content: "Du bist ein erfahrener Rollenspiel- und KI-Charakter-Autor. Du generierst konsistente, psychologisch vielschichtige Charakter-Profile im SillyTavern V2 Format. Antworte AUSSCHLIESSLICH im geforderten JSON-Format.".to_string(),
+            },
+            crate::modules::inference::ChatMessage {
+                role: "user".to_string(),
+                content: prompt,
+            },
+        ],
+        sampling: Some(crate::modules::inference::SamplingParams {
+            temperature: Some(0.7),
+            max_tokens: Some(2500),
+            ..Default::default()
+        }),
+        reasoning_mode: Some(false),
+        provider,
+    };
+
+    let raw = state.inference_client.generate_direct(req).await?;
+    crate::modules::characters::parse_character_wizard_draft(&raw)
+}
+

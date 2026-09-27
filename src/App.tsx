@@ -11,7 +11,9 @@ const SettingsView = lazy(() => import('./components/settings/SettingsView').the
 const StageView = lazy(() => import('./components/stage/StageView').then((module) => ({ default: module.StageView })));
 const CompanionView = lazy(() => import('./components/companion/CompanionView').then((module) => ({ default: module.CompanionView })));
 const SoulHubView = lazy(() => import('./components/hub/SoulHubView').then((module) => ({ default: module.SoulHubView })));
+const IntegrationsView = lazy(() => import('./components/integrations/IntegrationsView').then((module) => ({ default: module.IntegrationsView })));
 const FloatingCompanionOverlay = lazy(() => import('./components/companion/FloatingCompanionOverlay').then((module) => ({ default: module.FloatingCompanionOverlay })));
+const CharacterAiAssistantModal = lazy(() => import('./components/characters/CharacterAiAssistantModal').then((module) => ({ default: module.CharacterAiAssistantModal })));
 
 export function App() {
   const { activeTab } = useAppStore();
@@ -38,10 +40,14 @@ export function App() {
           {activeTab === 'lorebooks' && <LorebookView />}
           {activeTab === 'stage' && <StageView />}
           {activeTab === 'companion' && <CompanionView />}
+          {activeTab === 'integrations' && <IntegrationsView />}
           {activeTab === 'settings' && <SettingsView />}
         </Suspense>
       </main>
       <SafetyCountdownBanner />
+      <Suspense fallback={null}>
+        <CharacterAiAssistantModal />
+      </Suspense>
     </div>
   );
 }

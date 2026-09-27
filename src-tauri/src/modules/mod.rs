@@ -20,3 +20,7 @@ pub mod emotions;
 pub mod soul_hub;
 pub mod companion_tools;
 pub mod mcp_client;
+pub mod profile_backup;
+pub mod image_generator;
+pub mod discord;
+pub mod web_server;

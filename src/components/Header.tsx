@@ -14,6 +14,7 @@ import {
   BookOpen,
   Info,
   Compass,
+  Layers,
 } from 'lucide-react';
 
 export const Header = () => {
@@ -139,6 +140,18 @@ export const Header = () => {
           >
             <Bot className="w-4 h-4" />
             <span>Companion</span>
+          </button>
+
+          <button
+            onClick={() => setActiveTab('integrations')}
+            className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-sm transition-all ${
+              activeTab === 'integrations'
+                ? 'bg-purple-600/20 text-purple-300 border border-purple-500/40 shadow-sm'
+                : 'text-slate-400 hover:text-slate-200 hover:bg-slate-800/60'
+            }`}
+          >
+            <Layers className="w-4 h-4" />
+            <span>Integrationen</span>
           </button>
 
           <button

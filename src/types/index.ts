@@ -992,3 +992,127 @@ export interface CharacterImportResult {
   profile: CharacterProfile;
   imported_lorebook?: string | null;
 }
+
+// --- Phase 17: Ecosystem, Backups, Image Generation, Discord & Web Client ---
+
+export interface BackupGroupSelection {
+  characters: boolean;
+  lorebooks: boolean;
+  personas: boolean;
+  soul_memory: boolean;
+  soul_stage: boolean;
+  companion: boolean;
+  settings: boolean;
+}
+
+export interface BackupManifest {
+  schema_version: number;
+  app_version: string;
+  created_at: string;
+  groups: BackupGroupSelection;
+  files_count: number;
+  description?: string | null;
+}
+
+export interface BackupEntryInfo {
+  id: string;
+  filename: string;
+  file_path: string;
+  size_bytes: number;
+  created_at: string;
+  is_safety_snapshot: boolean;
+  manifest?: BackupManifest | null;
+}
+
+export interface ImageGenConfig {
+  provider: string;
+  api_url: string;
+  api_key?: string | null;
+  positive_prompt_prefix: string;
+  negative_prompt: string;
+  width: number;
+  height: number;
+  steps: number;
+  cfg_scale: number;
+  sampler_name: string;
+  seed: number;
+}
+
+export interface GeneratedImageResult {
+  file_name: string;
+  file_path: string;
+  base64_data_url: string;
+  prompt_used: string;
+  negative_used: string;
+  width: number;
+  height: number;
+  created_at: string;
+}
+
+export interface GeneratedImageInfo {
+  file_name: string;
+  file_path: string;
+  size_bytes: number;
+  created_at: string;
+}
+
+export interface DiscordRpcActivity {
+  details: string;
+  state: string;
+  character_name?: string | null;
+  start_timestamp?: number | null;
+}
+
+export interface DiscordBotConfig {
+  enabled: boolean;
+  bot_token: string;
+  command_prefix: string;
+  allowed_channels: string[];
+  cooldown_secs: number;
+}
+
+export interface DiscordBotStatus {
+  is_running: boolean;
+  bot_user?: string | null;
+  connected_guilds: number;
+  uptime_secs: number;
+}
+
+export interface WebServerConfig {
+  enabled: boolean;
+  port: number;
+  host: string;
+  auth_token: string;
+}
+
+export interface WebServerStatus {
+  is_running: boolean;
+  port: number;
+  local_ip: string;
+  connection_url: string;
+  qr_code_svg: string;
+  auth_token: string;
+}
+
+export interface CharacterWizardInput {
+  name: string;
+  concept: string;
+  archetype: string;
+  visual_style: string;
+  personality_traits: string;
+  world_background: string;
+  relationship_to_user: string;
+  greeting_scenario: string;
+  target_language?: string | null;
+}
+
+export interface CharacterDraft {
+  name: string;
+  description: string;
+  personality: string;
+  scenario: string;
+  first_mes: string;
+  mes_example: string;
+  system_prompt: string;
+  tags: string[];
+}
