@@ -17,16 +17,17 @@ import {
   Sliders,
   Layers,
   Sparkles,
-  AlertTriangle,
   RotateCcw,
   Zap,
   Compass,
 } from 'lucide-react';
-import { translate } from '../../i18n';
-import { confirmDialog } from '../ui/feedback';
 import { ModalOverlay } from '../ui/ModalOverlay';
+import { translate, useTranslation } from '../../i18n';
+import { confirmDialog, toast } from '../ui/feedback';
+import { errorMessage } from '../../utils/errors';
 
 export const LorebookView: React.FC = () => {
+  const { t } = useTranslation();
   const {
     allLorebooks,
     activeLorebook,
@@ -51,12 +52,8 @@ export const LorebookView: React.FC = () => {
   const [triggerFilter, setTriggerFilter] = useState<'all' | 'keyword' | 'regex' | 'always_on' | 'tension'>('all');
   const [editingEntry, setEditingEntry] = useState<{ entry: LorebookEntry; isNew: boolean } | null>(null);
   const [isSavingBook, setIsSavingBook] = useState(false);
-  const [statusMessage, setStatusMessage] = useState<{ text: string; type: 'success' | 'error' } | null>(null);
-
-  const showStatus = (text: string, type: 'success' | 'error' = 'success') => {
-    setStatusMessage({ text, type });
-    setTimeout(() => setStatusMessage(null), 3500);
-  };
+  const showStatus = (text: string, type: 'success' | 'error' = 'success') =>
+    type === 'success' ? toast.success(text) : toast.error(text);
 
   // Filtered lorebooks for left sidebar
   const filteredLorebooks = allLorebooks.filter((lb) =>
@@ -89,18 +86,18 @@ export const LorebookView: React.FC = () => {
   const handleCreateNewLorebook = () => {
     const newBook: Lorebook = {
       id: `lorebook_${Date.now()}`,
-      name: 'Neues Lorebook',
-      description: 'Beschreibung des Universums oder der Schauplätze...',
+      name: t('lore.newBookName'),
+      description: t('lore.newBookDesc'),
       scan_depth: 5,
       is_global: false,
       entries: [
         {
-          name: 'Erster Eintrag',
-          key: ['Schlüsselwort'],
+          name: t('lore.firstEntry'),
+          key: [t('lore.keywordExample')],
           secondary_keys: [],
           exclude_key: [],
           regex_keys: [],
-          content: 'Details über dieses Thema...',
+          content: t('lore.firstEntryContent'),
           trigger_type: 'keyword',
           probability: 100,
           priority: 10,
@@ -127,9 +124,9 @@ export const LorebookView: React.FC = () => {
       if (!selected || typeof selected !== 'string') return;
 
       const imported = await importLorebook(selected);
-      showStatus(`Lorebook "${imported.name}" erfolgreich importiert!`);
+      showStatus(translate('lore.imported', { name: imported.name }));
     } catch (e) {
-      showStatus(`Import fehlgeschlagen: ${e instanceof Error ? e.message : String(e)}`, 'error');
+      showStatus(translate('lore.importFailed', { error: errorMessage(e) }), 'error');
     }
   };
 
@@ -144,9 +141,9 @@ export const LorebookView: React.FC = () => {
       if (!target) return;
 
       await exportLorebook(activeLorebook, target);
-      showStatus(`Lorebook erfolgreich exportiert!`);
+      showStatus(translate('lore.exported'));
     } catch (e) {
-      showStatus(`Export fehlgeschlagen: ${e instanceof Error ? e.message : String(e)}`, 'error');
+      showStatus(translate('lore.exportFailed', { error: errorMessage(e) }), 'error');
     }
   };
 
@@ -156,9 +153,9 @@ export const LorebookView: React.FC = () => {
     setIsSavingBook(true);
     try {
       await saveLorebook(activeLorebook);
-      showStatus(`Lorebook "${activeLorebook.name}" gespeichert!`);
+      showStatus(translate('lore.saved', { name: activeLorebook.name }));
     } catch (e) {
-      showStatus(`Speichern fehlgeschlagen: ${e instanceof Error ? e.message : String(e)}`, 'error');
+      showStatus(translate('lore.saveFailed', { error: errorMessage(e) }), 'error');
     } finally {
       setIsSavingBook(false);
     }
@@ -177,9 +174,9 @@ export const LorebookView: React.FC = () => {
 
     try {
       await deleteLorebook(activeLorebook.file_path);
-      showStatus(`Lorebook gelöscht.`);
+      showStatus(translate('lore.deleted'));
     } catch (e) {
-      showStatus(`Löschen fehlgeschlagen: ${e instanceof Error ? e.message : String(e)}`, 'error');
+      showStatus(translate('lore.deleteFailed', { error: errorMessage(e) }), 'error');
     }
   };
 
@@ -213,8 +210,15 @@ export const LorebookView: React.FC = () => {
   };
 
   // Delete an entry
-  const handleDeleteEntry = (entryName: string) => {
+  const handleDeleteEntry = async (entryName: string) => {
     if (!activeLorebook) return;
+    const confirmed = await confirmDialog({
+      title: translate('confirm.deleteEntryTitle', { name: entryName }),
+      message: translate('confirm.deleteEntryText'),
+      confirmLabel: translate('common.delete'),
+      tone: 'danger',
+    });
+    if (!confirmed) return;
     const updatedEntries = activeLorebook.entries.filter((e) => e.name !== entryName);
     selectLorebook({
       ...activeLorebook,
@@ -224,20 +228,6 @@ export const LorebookView: React.FC = () => {
 
   return (
     <div className="flex-1 flex overflow-hidden bg-app text-slate-100">
-      {/* Toast Notification */}
-      {statusMessage && (
-        <div
-          className={`fixed bottom-6 right-6 z-50 px-4 py-2.5 rounded-xl border text-xs shadow-2xl flex items-center gap-2 backdrop-blur animate-in fade-in slide-in-from-bottom-2 ${
-            statusMessage.type === 'success'
-              ? 'bg-emerald-950/80 border-emerald-500/50 text-emerald-200'
-              : 'bg-rose-950/80 border-rose-500/50 text-rose-200'
-          }`}
-        >
-          {statusMessage.type === 'success' ? <Check className="w-4 h-4 text-emerald-400" /> : <AlertTriangle className="w-4 h-4 text-rose-400" />}
-          <span>{statusMessage.text}</span>
-        </div>
-      )}
-
       {/* LEFT SIDEBAR: Lorebooks List */}
       <div className="w-80 border-r border-slate-800 bg-slate-900/50 flex flex-col">
         {/* Header */}
@@ -248,13 +238,13 @@ export const LorebookView: React.FC = () => {
                 <BookOpen className="w-4 h-4" />
               </div>
               <div>
-                <h1 className="text-sm font-bold text-slate-100">Lorebook 2.0</h1>
+                <h1 className="text-sm font-bold text-slate-100">{t('lore.title')}</h1>
                 <p className="text-[11px] text-slate-400">{allLorebooks.length} Bücher verfügbar</p>
               </div>
             </div>
             <button
               onClick={refreshLorebooks}
-              title="Aktualisieren"
+              title={t('lore.refresh')}
               className="p-1.5 rounded-lg text-slate-400 hover:text-slate-100 hover:bg-slate-800 transition-colors"
             >
               <RotateCcw className="w-3.5 h-3.5" />
@@ -268,14 +258,14 @@ export const LorebookView: React.FC = () => {
               className="px-3 py-1.5 rounded-lg bg-indigo-600 hover:bg-indigo-500 text-white text-xs font-medium flex items-center justify-center gap-1.5 shadow transition-colors"
             >
               <Plus className="w-3.5 h-3.5" />
-              <span>Neu</span>
+              <span>{t('lore.new')}</span>
             </button>
             <button
               onClick={handleImport}
               className="px-3 py-1.5 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-200 text-xs font-medium flex items-center justify-center gap-1.5 border border-slate-700 transition-colors"
             >
               <Upload className="w-3.5 h-3.5" />
-              <span>Import</span>
+              <span>{t('lore.import')}</span>
             </button>
           </div>
 
@@ -284,7 +274,7 @@ export const LorebookView: React.FC = () => {
             className="w-full py-1.5 px-3 rounded-lg bg-accent-600/15 hover:bg-accent-600/25 text-accent-300 border border-accent-500/30 text-xs font-medium flex items-center justify-center gap-1.5 transition-colors shadow-sm"
           >
             <Compass className="w-3.5 h-3.5 text-accent-400" />
-            <span>Welt-Lorebooks im Soul Hub</span>
+            <span>{t('lore.hub')}</span>
           </button>
 
           {/* Search */}
@@ -292,7 +282,7 @@ export const LorebookView: React.FC = () => {
             <Search className="w-3.5 h-3.5 absolute left-3 top-2.5 text-slate-500" />
             <input
               type="text"
-              placeholder="Lorebooks suchen..."
+              placeholder={t('lore.search')}
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
               className="w-full bg-app border border-slate-800 rounded-lg pl-8 pr-3 py-1.5 text-xs text-slate-200 focus:outline-hidden focus:border-indigo-500/60"
@@ -324,7 +314,7 @@ export const LorebookView: React.FC = () => {
                     {global && (
                       <span className="px-1.5 py-0.5 rounded text-[11px] font-mono bg-amber-500/20 text-amber-300 border border-amber-500/30 flex items-center gap-0.5">
                         <Globe className="w-2.5 h-2.5" />
-                        <span>Global</span>
+                        <span>{t('lore.global')}</span>
                       </span>
                     )}
                     <span className="px-1.5 py-0.5 rounded text-[11px] font-mono bg-slate-800 text-slate-400 border border-slate-700">
@@ -338,7 +328,7 @@ export const LorebookView: React.FC = () => {
           })}
 
           {filteredLorebooks.length === 0 && (
-            <div className="p-8 text-center text-xs text-slate-500">Keine Lorebooks gefunden.</div>
+            <div className="p-8 text-center text-xs text-slate-500">{t('lore.noBooks')}</div>
           )}
         </div>
       </div>
@@ -364,7 +354,7 @@ export const LorebookView: React.FC = () => {
                 <input
                   type="text"
                   value={activeLorebook.description}
-                  placeholder="Thema oder Beschreibung hinzufügen..."
+                  placeholder={t('lore.descPlaceholder')}
                   onChange={(e) =>
                     selectLorebook({
                       ...activeLorebook,
@@ -384,7 +374,7 @@ export const LorebookView: React.FC = () => {
                       ? 'bg-amber-500/20 border-amber-500/50 text-amber-300'
                       : 'bg-slate-800/80 border-slate-700 text-slate-300 hover:bg-slate-800'
                   }`}
-                  title="Wenn aktiv, wird dieses Lorebook in jedem Chat für alle Charaktere geladen."
+                  title={t('lore.globalHint')}
                 >
                   <Globe className="w-3.5 h-3.5" />
                   <span>{isGlobalBook(activeLorebook) ? 'Global aktiv' : 'Als Global setzen'}</span>
@@ -395,7 +385,7 @@ export const LorebookView: React.FC = () => {
                   className="px-3 py-1.5 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-300 border border-slate-700 text-xs font-medium flex items-center gap-1.5 transition-colors"
                 >
                   <Download className="w-3.5 h-3.5" />
-                  <span>Export</span>
+                  <span>{t('lore.export')}</span>
                 </button>
 
                 <button
@@ -411,7 +401,7 @@ export const LorebookView: React.FC = () => {
                   <button
                     onClick={handleDeleteActiveLorebook}
                     className="p-1.5 rounded-lg bg-rose-500/10 hover:bg-rose-500/20 border border-rose-500/30 text-rose-400 transition-colors"
-                    title="Lorebook löschen"
+                    title={t('lore.deleteBook')}
                   >
                     <Trash2 className="w-4 h-4" />
                   </button>
@@ -433,7 +423,7 @@ export const LorebookView: React.FC = () => {
                 </div>
                 <div>
                   <div className="flex items-center gap-2">
-                    <span className="text-xs font-bold text-slate-200">Scene Tension Accumulator</span>
+                    <span className="text-xs font-bold text-slate-200">{t('lore.tensionTitle')}</span>
                     <span className={`text-[11px] font-mono px-1.5 py-0.2 rounded font-bold ${
                       currentTension > 60 ? 'bg-rose-500/20 text-rose-300' : 'bg-slate-800 text-slate-300'
                     }`}>
@@ -441,7 +431,7 @@ export const LorebookView: React.FC = () => {
                     </span>
                   </div>
                   <p className="text-[11px] text-slate-400">
-                    Spannung steigt bei Gefahr/Konflikt und triggert dramatische Spannungs-Events.
+                    {t('lore.tensionIntro')}
                   </p>
                 </div>
               </div>
@@ -473,9 +463,9 @@ export const LorebookView: React.FC = () => {
                 <button
                   onClick={resetTension}
                   className="px-2 py-0.5 rounded bg-slate-800 hover:bg-slate-700 text-slate-400 text-[11px] border border-slate-700"
-                  title="Auf 0 zurücksetzen"
+                  title={t('lore.tensionReset')}
                 >
-                  Reset
+                  {t('lore.reset')}
                 </button>
                 <label className="flex items-center gap-1.5 ml-2 cursor-pointer text-xs text-slate-400 select-none">
                   <input
@@ -484,7 +474,7 @@ export const LorebookView: React.FC = () => {
                     onChange={(e) => setSceneTensionEnabled(e.target.checked)}
                     className="rounded bg-slate-900 border-slate-700 text-indigo-600 focus:ring-0"
                   />
-                  <span>Aktiv</span>
+                  <span>{t('lore.active')}</span>
                 </label>
               </div>
             </div>
@@ -497,7 +487,7 @@ export const LorebookView: React.FC = () => {
                 <Search className="w-3.5 h-3.5 absolute left-3 top-2.5 text-slate-500" />
                 <input
                   type="text"
-                  placeholder="Einträge filtern..."
+                  placeholder={t('lore.filterEntries')}
                   value={entrySearchQuery}
                   onChange={(e) => setEntrySearchQuery(e.target.value)}
                   className="w-full bg-app border border-slate-800 rounded-lg pl-8 pr-3 py-1.5 text-xs text-slate-200 focus:outline-hidden focus:border-indigo-500/60"
@@ -505,26 +495,29 @@ export const LorebookView: React.FC = () => {
               </div>
 
               {/* Filter Pills */}
-              <div className="flex items-center gap-1">
+              <div role="group" aria-label={t('lore.filterLabel')} className="flex items-center gap-1">
                 {(['all', 'keyword', 'regex', 'always_on', 'tension'] as const).map((filter) => (
                   <button
                     key={filter}
                     onClick={() => setTriggerFilter(filter)}
+                    aria-pressed={triggerFilter === filter}
                     className={`px-2.5 py-1 rounded-lg text-xs font-medium transition-colors ${
                       triggerFilter === filter
                         ? 'bg-indigo-600/20 text-indigo-300 border border-indigo-500/40'
                         : 'text-slate-400 hover:text-slate-200 hover:bg-slate-800'
                     }`}
                   >
-                    {filter === 'all'
-                      ? 'Alle'
-                      : filter === 'keyword'
-                      ? 'Keywords'
-                      : filter === 'regex'
-                      ? 'Regex'
-                      : filter === 'always_on'
-                      ? 'Immer aktiv'
-                      : 'Tension'}
+                    {t(
+                      filter === 'all'
+                        ? 'lore.filterAll'
+                        : filter === 'keyword'
+                          ? 'lore.filterKeyword'
+                          : filter === 'regex'
+                            ? 'lore.filterRegex'
+                            : filter === 'always_on'
+                              ? 'lore.filterAlways'
+                              : 'lore.filterTension'
+                    )}
                   </button>
                 ))}
               </div>
@@ -534,7 +527,7 @@ export const LorebookView: React.FC = () => {
               onClick={() =>
                 setEditingEntry({
                   entry: {
-                    name: 'Neuer Lore-Eintrag',
+                    name: t('lore.newEntryName'),
                     key: [],
                     secondary_keys: [],
                     exclude_key: [],
@@ -557,7 +550,7 @@ export const LorebookView: React.FC = () => {
               className="px-3 py-1.5 rounded-lg bg-indigo-600 hover:bg-indigo-500 text-white text-xs font-medium flex items-center gap-1.5 shadow transition-colors"
             >
               <Plus className="w-3.5 h-3.5" />
-              <span>Eintrag hinzufügen</span>
+              <span>{t('lore.addEntry')}</span>
             </button>
           </div>
 
@@ -597,13 +590,13 @@ export const LorebookView: React.FC = () => {
                       }`}
                     >
                       {entry.injection_behavior === 'active' || entry.injection_behavior === 'directive'
-                        ? '⚡ Aktiv: Regie-Direktive'
-                        : 'Passiv: Weltwissen'}
+                        ? t('lore.badgeActive')
+                        : t('lore.passive')}
                     </span>
 
                     {/* Priority & Probability */}
                     <span className="text-[11px] text-slate-400">
-                      Prio: {entry.priority ?? 10} | {entry.probability ?? 100}%
+                      {t('lore.badgePriority', { priority: entry.priority ?? 10, probability: entry.probability ?? 100 })}
                     </span>
                   </div>
 
@@ -611,14 +604,14 @@ export const LorebookView: React.FC = () => {
                     <button
                       onClick={() => setEditingEntry({ entry: { ...entry }, isNew: false })}
                       className="p-1.5 rounded-lg text-slate-400 hover:text-indigo-300 hover:bg-slate-800 transition-colors"
-                      title="Bearbeiten"
+                      title={t('lore.edit')}
                     >
                       <Edit3 className="w-3.5 h-3.5" />
                     </button>
                     <button
                       onClick={() => handleDeleteEntry(entry.name)}
                       className="p-1.5 rounded-lg text-slate-500 hover:text-rose-400 hover:bg-rose-500/10 transition-colors"
-                      title="Löschen"
+                      title={t('lore.delete')}
                     >
                       <Trash2 className="w-3.5 h-3.5" />
                     </button>
@@ -633,23 +626,23 @@ export const LorebookView: React.FC = () => {
                     </span>
                   ))}
                   {entry.secondary_keys && entry.secondary_keys.length > 0 && (
-                    <span className="px-2 py-0.5 rounded text-[11px] bg-cyan-500/15 text-cyan-300 border border-cyan-500/30" title="Sekundär (UND-Bedingung)">
+                    <span className="px-2 py-0.5 rounded text-[11px] bg-cyan-500/15 text-cyan-300 border border-cyan-500/30" title={t('lore.secondaryHint')}>
                       + {entry.secondary_keys.join(', ')}
                     </span>
                   )}
                   {entry.exclude_key && entry.exclude_key.length > 0 && (
-                    <span className="px-2 py-0.5 rounded text-[11px] bg-rose-500/15 text-rose-300 border border-rose-500/30" title="Ausschluss">
-                      NOT {entry.exclude_key.join(', ')}
+                    <span className="px-2 py-0.5 rounded text-[11px] bg-rose-500/15 text-rose-300 border border-rose-500/30" title={t('lore.excludeHint')}>
+                      {t('lore.badgeNot', { keys: entry.exclude_key.join(', ') })}
                     </span>
                   )}
                   {entry.tension_threshold && (
                     <span className="px-2 py-0.5 rounded text-[11px] bg-amber-500/20 text-amber-300 border border-amber-500/40 flex items-center gap-1">
-                      <Flame className="w-2.5 h-2.5" /> ab {entry.tension_threshold}%
+                      <Flame className="w-2.5 h-2.5" /> {t('lore.badgeFrom', { value: entry.tension_threshold })}
                     </span>
                   )}
                   {entry.chain_activates && entry.chain_activates.length > 0 && (
                     <span className="px-2 py-0.5 rounded text-[11px] bg-emerald-500/15 text-emerald-300 border border-emerald-500/30 flex items-center gap-1">
-                      <Zap className="w-2.5 h-2.5" /> aktiviert: {entry.chain_activates.join(', ')}
+                      <Zap className="w-2.5 h-2.5" /> {t('lore.badgeActivates', { names: entry.chain_activates.join(', ') })}
                     </span>
                   )}
                 </div>
@@ -663,7 +656,7 @@ export const LorebookView: React.FC = () => {
 
             {filteredEntries.length === 0 && (
               <div className="p-12 text-center text-xs text-slate-500">
-                Keine Einträge für diese Filterkriterien gefunden.
+                {t('lore.noEntries')}
               </div>
             )}
           </div>
@@ -671,15 +664,15 @@ export const LorebookView: React.FC = () => {
       ) : (
         <div className="flex-1 flex flex-col items-center justify-center p-8 text-center text-slate-500 space-y-3">
           <BookOpen className="w-12 h-12 text-slate-700" />
-          <h2 className="text-base font-semibold text-slate-300">Kein Lorebook ausgewählt</h2>
+          <h2 className="text-base font-semibold text-slate-300">{t('lore.noneSelected')}</h2>
           <p className="text-xs text-slate-500 max-w-sm">
-            Wähle ein Lorebook aus der Seitenleiste oder erstelle ein neues Universum, um Weltwissen und Regie-Anweisungen zu verwalten.
+            {t('lore.noneSelectedText')}
           </p>
           <button
             onClick={handleCreateNewLorebook}
             className="px-4 py-2 rounded-xl bg-indigo-600 hover:bg-indigo-500 text-white text-xs font-semibold shadow transition-colors"
           >
-            Neues Lorebook anlegen
+            {t('lore.createBook')}
           </button>
         </div>
       )}
@@ -705,6 +698,7 @@ interface EntryEditorModalProps {
 }
 
 const EntryEditorModal: React.FC<EntryEditorModalProps> = ({ initialEntry, isNew, onSave, onClose }) => {
+  const { t } = useTranslation();
   const [entry, setEntry] = useState<LorebookEntry>({ ...initialEntry });
   const [primaryKeyInput, setPrimaryKeyInput] = useState((initialEntry.key || []).join(', '));
   const [secondaryKeyInput, setSecondaryKeyInput] = useState((initialEntry.secondary_keys || []).join(', '));
@@ -743,9 +737,9 @@ const EntryEditorModal: React.FC<EntryEditorModalProps> = ({ initialEntry, isNew
             </div>
             <div>
               <h2 className="text-sm font-bold text-slate-100">
-                {isNew ? 'Neuen Lorebook-Eintrag anlegen' : `Eintrag bearbeiten: ${entry.name}`}
+                {isNew ? t('lore.editorNew') : t('lore.editorEdit', { name: entry.name })}
               </h2>
-              <p className="text-[11px] text-slate-400">Konfiguriere Trigger, Injektions-Modus und Logik</p>
+              <p className="text-[11px] text-slate-400">{t('lore.editorIntro')}</p>
             </div>
           </div>
           <button onClick={onClose} className="p-1.5 rounded-lg text-slate-400 hover:text-slate-100 hover:bg-slate-800">
@@ -758,7 +752,7 @@ const EntryEditorModal: React.FC<EntryEditorModalProps> = ({ initialEntry, isNew
           {/* Row 1: Name & Enabled */}
           <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
             <div className="md:col-span-2 space-y-1">
-              <label className="text-xs font-semibold text-slate-300">Name des Eintrags</label>
+              <label className="text-xs font-semibold text-slate-300">{t('lore.entryName')}</label>
               <input
                 type="text"
                 value={entry.name}
@@ -774,7 +768,7 @@ const EntryEditorModal: React.FC<EntryEditorModalProps> = ({ initialEntry, isNew
                   onChange={(e) => setEntry({ ...entry, enabled: e.target.checked })}
                   className="rounded bg-slate-900 border-slate-700 text-indigo-600 focus:ring-0"
                 />
-                <span className="font-semibold text-slate-200">Eintrag aktiv</span>
+                <span className="font-semibold text-slate-200">{t('lore.entryActive')}</span>
               </label>
             </div>
           </div>
@@ -784,7 +778,7 @@ const EntryEditorModal: React.FC<EntryEditorModalProps> = ({ initialEntry, isNew
             <div className="space-y-1.5">
               <label className="text-xs font-semibold text-slate-200 flex items-center gap-1.5">
                 <Sliders className="w-3.5 h-3.5 text-indigo-400" />
-                <span>Injektions-Verhalten</span>
+                <span>{t('lore.injection')}</span>
               </label>
               <div className="grid grid-cols-2 gap-2">
                 <button
@@ -796,8 +790,8 @@ const EntryEditorModal: React.FC<EntryEditorModalProps> = ({ initialEntry, isNew
                       : 'bg-slate-900 border-slate-800 text-slate-400 hover:text-slate-200'
                   }`}
                 >
-                  <div className="font-medium text-xs">Passiv: Weltwissen</div>
-                  <div className="text-[11px] text-slate-400 mt-0.5">Als Kontext-Wissen</div>
+                  <div className="font-medium text-xs">{t('lore.passive')}</div>
+                  <div className="text-[11px] text-slate-400 mt-0.5">{t('lore.passiveHint')}</div>
                 </button>
                 <button
                   type="button"
@@ -808,8 +802,8 @@ const EntryEditorModal: React.FC<EntryEditorModalProps> = ({ initialEntry, isNew
                       : 'bg-slate-900 border-slate-800 text-slate-400 hover:text-slate-200'
                   }`}
                 >
-                  <div className="font-medium text-xs">Aktiv: Regie-Direktive</div>
-                  <div className="text-[11px] text-slate-400 mt-0.5">Strikte Handlungsregel</div>
+                  <div className="font-medium text-xs">{t('lore.activeDirective')}</div>
+                  <div className="text-[11px] text-slate-400 mt-0.5">{t('lore.activeHint')}</div>
                 </button>
               </div>
             </div>
@@ -817,17 +811,17 @@ const EntryEditorModal: React.FC<EntryEditorModalProps> = ({ initialEntry, isNew
             <div className="space-y-1.5">
               <label className="text-xs font-semibold text-slate-200 flex items-center gap-1.5">
                 <Zap className="w-3.5 h-3.5 text-amber-400" />
-                <span>Trigger-Typ</span>
+                <span>{t('lore.triggerType')}</span>
               </label>
               <select
                 value={entry.trigger_type}
                 onChange={(e) => setEntry({ ...entry, trigger_type: e.target.value })}
                 className="w-full bg-slate-900 border border-slate-800 rounded-lg px-3 py-2 text-xs text-slate-200 focus:outline-hidden focus:border-indigo-500"
               >
-                <option value="keyword">Schlüsselwörter (Keyword)</option>
-                <option value="regex">Regulärer Ausdruck (Regex)</option>
-                <option value="always_on">Immer aktiv (Always-On)</option>
-                <option value="tension">Spannungs-Event (Scene Tension)</option>
+                <option value="keyword">{t('lore.triggerKeyword')}</option>
+                <option value="regex">{t('lore.triggerRegex')}</option>
+                <option value="always_on">{t('lore.triggerAlways')}</option>
+                <option value="tension">{t('lore.triggerTension')}</option>
               </select>
             </div>
           </div>
@@ -837,13 +831,13 @@ const EntryEditorModal: React.FC<EntryEditorModalProps> = ({ initialEntry, isNew
             <div className="space-y-3">
               <div className="space-y-1">
                 <label className="text-xs font-semibold text-slate-300">
-                  Primäre Schlüsselwörter (Komma-getrennt)
+                  {t('lore.primaryKeys')}
                 </label>
                 <input
                   type="text"
                   value={primaryKeyInput}
                   onChange={(e) => setPrimaryKeyInput(e.target.value)}
-                  placeholder="z. B. Schloss, Portal, König"
+                  placeholder={t('lore.primaryKeysPlaceholder')}
                   className="w-full bg-app border border-slate-800 rounded-lg px-3 py-2 text-xs text-slate-100 focus:outline-hidden focus:border-indigo-500"
                 />
               </div>
@@ -851,25 +845,25 @@ const EntryEditorModal: React.FC<EntryEditorModalProps> = ({ initialEntry, isNew
               <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
                 <div className="space-y-1">
                   <label className="text-xs font-semibold text-cyan-300">
-                    Sekundäre Schlüsselwörter (UND-Bedingung)
+                    {t('lore.secondaryKeys')}
                   </label>
                   <input
                     type="text"
                     value={secondaryKeyInput}
                     onChange={(e) => setSecondaryKeyInput(e.target.value)}
-                    placeholder="Mindestens eines muss vorhanden sein..."
+                    placeholder={t('lore.secondaryKeysPlaceholder')}
                     className="w-full bg-app border border-slate-800 rounded-lg px-3 py-2 text-xs text-slate-100 focus:outline-hidden focus:border-indigo-500"
                   />
                 </div>
                 <div className="space-y-1">
                   <label className="text-xs font-semibold text-rose-300">
-                    Ausschluss-Wörter (NOT-Bedingung)
+                    {t('lore.excludeKeys')}
                   </label>
                   <input
                     type="text"
                     value={excludeKeyInput}
                     onChange={(e) => setExcludeKeyInput(e.target.value)}
-                    placeholder="Wird ignoriert falls vorhanden..."
+                    placeholder={t('lore.excludeKeysPlaceholder')}
                     className="w-full bg-app border border-slate-800 rounded-lg px-3 py-2 text-xs text-slate-100 focus:outline-hidden focus:border-indigo-500"
                   />
                 </div>
@@ -879,7 +873,7 @@ const EntryEditorModal: React.FC<EntryEditorModalProps> = ({ initialEntry, isNew
 
           {entry.trigger_type === 'regex' && (
             <div className="space-y-1">
-              <label className="text-xs font-semibold text-slate-300">Reguläre Ausdrücke (Regex-Patterns)</label>
+              <label className="text-xs font-semibold text-slate-300">{t('lore.regexKeys')}</label>
               <input
                 type="text"
                 value={regexKeyInput}
@@ -894,7 +888,7 @@ const EntryEditorModal: React.FC<EntryEditorModalProps> = ({ initialEntry, isNew
             <div className="space-y-1 p-3 bg-amber-500/10 border border-amber-500/30 rounded-xl">
               <label className="text-xs font-bold text-amber-300 flex items-center gap-1.5">
                 <Flame className="w-3.5 h-3.5" />
-                <span>Spannungs-Schwellenwert (0 - 100%)</span>
+                <span>{t('lore.tensionThreshold')}</span>
               </label>
               <input
                 type="number"
@@ -905,7 +899,7 @@ const EntryEditorModal: React.FC<EntryEditorModalProps> = ({ initialEntry, isNew
                 className="w-full bg-app border border-slate-800 rounded-lg px-3 py-2 text-xs text-slate-100 focus:outline-hidden focus:border-amber-500"
               />
               <p className="text-[11px] text-amber-400/80">
-                Dieser Eintrag löst automatisch aus, sobald die aktuelle Szenenspannung diesen Wert erreicht oder überschreitet.
+                {t('lore.tensionThresholdHint')}
               </p>
             </div>
           )}
@@ -913,7 +907,7 @@ const EntryEditorModal: React.FC<EntryEditorModalProps> = ({ initialEntry, isNew
           {/* Row 4: Priority, Probability, Boundary Check */}
           <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
             <div className="space-y-1">
-              <label className="text-xs font-semibold text-slate-300">Priorität (Zahl)</label>
+              <label className="text-xs font-semibold text-slate-300">{t('lore.priority')}</label>
               <input
                 type="number"
                 value={entry.priority ?? 10}
@@ -923,7 +917,7 @@ const EntryEditorModal: React.FC<EntryEditorModalProps> = ({ initialEntry, isNew
             </div>
 
             <div className="space-y-1">
-              <label className="text-xs font-semibold text-slate-300">Wahrscheinlichkeit %</label>
+              <label className="text-xs font-semibold text-slate-300">{t('lore.probability')}</label>
               <input
                 type="number"
                 min={1}
@@ -943,7 +937,7 @@ const EntryEditorModal: React.FC<EntryEditorModalProps> = ({ initialEntry, isNew
                 className="rounded bg-app border-slate-700 text-indigo-600 focus:ring-0"
               />
               <label htmlFor="wholeWords" className="text-xs text-slate-300 cursor-pointer">
-                Ganze Wörter (\b)
+                {t('lore.wholeWords')}
               </label>
             </div>
 
@@ -956,7 +950,7 @@ const EntryEditorModal: React.FC<EntryEditorModalProps> = ({ initialEntry, isNew
                 className="rounded bg-app border-slate-700 text-indigo-600 focus:ring-0"
               />
               <label htmlFor="caseSens" className="text-xs text-slate-300 cursor-pointer">
-                Groß/Klein beachten
+                {t('lore.caseSensitive')}
               </label>
             </div>
           </div>
@@ -965,26 +959,26 @@ const EntryEditorModal: React.FC<EntryEditorModalProps> = ({ initialEntry, isNew
           <div className="p-3 bg-app/60 rounded-xl border border-slate-800 space-y-2">
             <h4 className="text-xs font-bold text-slate-200 flex items-center gap-1.5">
               <Layers className="w-3.5 h-3.5 text-indigo-400" />
-              <span>Ketten-Abhängigkeiten (Chain Dependencies)</span>
+              <span>{t('lore.chains')}</span>
             </h4>
             <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
               <div className="space-y-1">
-                <label className="text-[11px] text-slate-400">Voraussetzung (Erfordert diese Einträge):</label>
+                <label className="text-[11px] text-slate-400">{t('lore.chainRequires')}</label>
                 <input
                   type="text"
                   value={chainRequiresInput}
                   onChange={(e) => setChainRequiresInput(e.target.value)}
-                  placeholder="Namen oder UIDs..."
+                  placeholder={t('lore.chainPlaceholder')}
                   className="w-full bg-app border border-slate-800 rounded-lg px-2.5 py-1 text-xs text-slate-200"
                 />
               </div>
               <div className="space-y-1">
-                <label className="text-[11px] text-slate-400">Folge-Aktivierung (Aktiviert diese Einträge mit):</label>
+                <label className="text-[11px] text-slate-400">{t('lore.chainActivates')}</label>
                 <input
                   type="text"
                   value={chainActivatesInput}
                   onChange={(e) => setChainActivatesInput(e.target.value)}
-                  placeholder="Namen oder UIDs..."
+                  placeholder={t('lore.chainPlaceholder')}
                   className="w-full bg-app border border-slate-800 rounded-lg px-2.5 py-1 text-xs text-slate-200"
                 />
               </div>
@@ -995,7 +989,7 @@ const EntryEditorModal: React.FC<EntryEditorModalProps> = ({ initialEntry, isNew
           <div className="space-y-1.5">
             <div className="flex items-center justify-between">
               <label className="text-xs font-semibold text-slate-200">
-                Inhalt des Lorebook-Eintrags (Markdown)
+                {t('lore.content')}
               </label>
               <span className="text-[11px] text-slate-400 font-mono">
                 Unterstützt {'{{char}}'} & {'{{user}}'}
@@ -1005,7 +999,7 @@ const EntryEditorModal: React.FC<EntryEditorModalProps> = ({ initialEntry, isNew
               rows={6}
               value={entry.content}
               onChange={(e) => setEntry({ ...entry, content: e.target.value })}
-              placeholder="Fließtext, Geschichte, Geografie, Verhaltensregeln oder Anweisungen..."
+              placeholder={t('lore.contentPlaceholder')}
               className="w-full bg-app border border-slate-800 rounded-xl p-3 text-xs text-slate-100 font-mono focus:outline-hidden focus:border-indigo-500 leading-relaxed"
             />
           </div>
@@ -1017,14 +1011,14 @@ const EntryEditorModal: React.FC<EntryEditorModalProps> = ({ initialEntry, isNew
             onClick={onClose}
             className="px-4 py-1.5 rounded-xl text-slate-400 hover:text-slate-100 hover:bg-slate-800 text-xs font-medium transition-colors"
           >
-            Abbrechen
+            {t('common.cancel')}
           </button>
           <button
             onClick={handleSave}
             disabled={!entry.name.trim()}
             className="px-5 py-1.5 rounded-xl bg-indigo-600 hover:bg-indigo-500 text-white text-xs font-semibold shadow transition-colors disabled:opacity-50"
           >
-            Eintrag übernehmen
+            {t('lore.saveEntry')}
           </button>
         </div>
       </div>

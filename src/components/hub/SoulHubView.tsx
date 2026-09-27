@@ -30,6 +30,8 @@ import {
   RotateCcw,
 } from 'lucide-react';
 import { ModalOverlay } from '../ui/ModalOverlay';
+import { translate, useTranslation } from '../../i18n';
+import { errorMessage } from '../../utils/errors';
 
 const HUB_TAGS = [
   { id: '', label: 'Alle Tags' },
@@ -51,6 +53,7 @@ const HUB_TAGS = [
 ];
 
 export const SoulHubView = () => {
+  const { t } = useTranslation();
   const {
     hubSubTab,
     setHubSubTab,
@@ -211,10 +214,10 @@ export const SoulHubView = () => {
 
       setStatusNotice({
         type: 'success',
-        text: `"${res.profile.card.data.name}" wurde importiert!${
-          res.imported_lorebook ? ` Eingebettetes Lorebook "${res.imported_lorebook}" verknüpft.` : ''
-        }`,
-        actionText: 'Im Chat öffnen',
+        text: res.imported_lorebook
+          ? translate('hub.importedCharLorebook', { name: res.profile.card.data.name, lorebook: res.imported_lorebook })
+          : translate('hub.importedChar', { name: res.profile.card.data.name }),
+        actionText: translate('hub.openInChat'),
         onAction: async () => {
           await selectCharacter(res.profile);
           setActiveTab('chat');
@@ -224,7 +227,7 @@ export const SoulHubView = () => {
       console.error('Soul Gateway import failed:', e);
       setStatusNotice({
         type: 'error',
-        text: `Import fehlgeschlagen: ${e instanceof Error ? e.message : String(e)}`,
+        text: translate('hub.importFailed', { error: errorMessage(e) }),
       });
     } finally {
       setImportingId(null);
@@ -262,10 +265,10 @@ export const SoulHubView = () => {
       setSelectedChubDetail(null);
       setStatusNotice({
         type: 'success',
-        text: `"${res.profile.card.data.name}" erfolgreich aus Chub AI importiert!${
-          res.imported_lorebook ? ` Eingebettetes Lorebook "${res.imported_lorebook}" wurde integriert.` : ''
-        }`,
-        actionText: 'Jetzt chatten',
+        text: res.imported_lorebook
+          ? translate('hub.importedCharLorebook', { name: res.profile.card.data.name, lorebook: res.imported_lorebook })
+          : translate('hub.importedChar', { name: res.profile.card.data.name }),
+        actionText: translate('hub.chatNow'),
         onAction: async () => {
           await selectCharacter(res.profile);
           setActiveTab('chat');
@@ -275,7 +278,7 @@ export const SoulHubView = () => {
       console.error('Chub AI import failed:', e);
       setStatusNotice({
         type: 'error',
-        text: `Chub AI Import fehlgeschlagen: ${e instanceof Error ? e.message : String(e)}`,
+        text: translate('hub.importFailed', { error: errorMessage(e) }),
       });
     } finally {
       setImportingId(null);
@@ -295,10 +298,10 @@ export const SoulHubView = () => {
       setUrlInput('');
       setStatusNotice({
         type: 'success',
-        text: `Charakter "${res.profile.card.data.name}" wurde importiert!${
-          res.imported_lorebook ? ` Lorebook "${res.imported_lorebook}" verknüpft.` : ''
-        }`,
-        actionText: 'Im Chat öffnen',
+        text: res.imported_lorebook
+          ? translate('hub.importedCharLorebook', { name: res.profile.card.data.name, lorebook: res.imported_lorebook })
+          : translate('hub.importedChar', { name: res.profile.card.data.name }),
+        actionText: translate('hub.openInChat'),
         onAction: async () => {
           await selectCharacter(res.profile);
           setActiveTab('chat');
@@ -308,7 +311,7 @@ export const SoulHubView = () => {
       console.error('URL import failed:', e);
       setStatusNotice({
         type: 'error',
-        text: `Import fehlgeschlagen: ${e instanceof Error ? e.message : String(e)}`,
+        text: translate('hub.importFailed', { error: errorMessage(e) }),
       });
     } finally {
       setIsUrlImporting(false);
@@ -322,15 +325,15 @@ export const SoulHubView = () => {
       await refreshLorebooks();
       setStatusNotice({
         type: 'success',
-        text: `Welt-Lorebook "${res.name}" mit ${res.entries.length} Einträgen importiert!`,
-        actionText: 'In Lorebooks ansehen',
+        text: translate('hub.importedLorebook', { name: res.name, count: res.entries.length }),
+        actionText: translate('hub.viewLorebooks'),
         onAction: () => setActiveTab('lorebooks'),
       });
     } catch (e) {
       console.error('Lorebook import failed:', e);
       setStatusNotice({
         type: 'error',
-        text: `Lorebook-Import fehlgeschlagen: ${e instanceof Error ? e.message : String(e)}`,
+        text: translate('hub.importFailed', { error: errorMessage(e) }),
       });
     } finally {
       setImportingId(null);
@@ -344,8 +347,8 @@ export const SoulHubView = () => {
       await fetchStageScenes();
       setStatusNotice({
         type: 'success',
-        text: `Soul-Stage-Szenario "${res.definition.title}" wurde hinzugefügt!`,
-        actionText: 'In Soul Stage starten',
+        text: translate('hub.importedScene', { name: res.definition.title }),
+        actionText: translate('hub.startInStage'),
         onAction: async () => {
           await loadStageScene(res.definition.id);
           setActiveTab('stage');
@@ -355,7 +358,7 @@ export const SoulHubView = () => {
       console.error('Scene import failed:', e);
       setStatusNotice({
         type: 'error',
-        text: `Szenario-Import fehlgeschlagen: ${e instanceof Error ? e.message : String(e)}`,
+        text: translate('hub.importFailed', { error: errorMessage(e) }),
       });
     } finally {
       setImportingId(null);
@@ -442,11 +445,11 @@ export const SoulHubView = () => {
             <div className="flex items-center gap-2">
               <h1 className="text-base font-bold text-slate-100">Soul Hub</h1>
               <span className="text-xs px-2 py-0.5 rounded-full bg-accent-500/20 text-accent-300 font-mono">
-                Gateway & Community
+                {t('hub.subtitleBadge')}
               </span>
             </div>
             <p className="text-xs text-slate-400">
-              Kuratierte Waifus, Chub AI Kartenarchiv, Welt-Lorebooks & Soul-Stage-Szenarien.
+              {t('hub.intro')}
             </p>
           </div>
         </div>
@@ -457,15 +460,24 @@ export const SoulHubView = () => {
             <Search className="w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" />
             <input
               type="text"
-              placeholder={
+              placeholder={t(
                 hubSubTab === 'chub_ai'
-                  ? 'Chub AI durchsuchen...'
+                  ? 'hub.searchChub'
                   : hubSubTab === 'soul_gateway'
-                  ? 'Kuratierte Waifus filtern...'
-                  : hubSubTab === 'lorebooks'
-                  ? 'Lorebooks suchen...'
-                  : 'Szenarien suchen...'
-              }
+                    ? 'hub.searchGateway'
+                    : hubSubTab === 'lorebooks'
+                      ? 'hub.searchLorebooks'
+                      : 'hub.searchScenes'
+              )}
+              aria-label={t(
+                hubSubTab === 'chub_ai'
+                  ? 'hub.searchChub'
+                  : hubSubTab === 'soul_gateway'
+                    ? 'hub.searchGateway'
+                    : hubSubTab === 'lorebooks'
+                      ? 'hub.searchLorebooks'
+                      : 'hub.searchScenes'
+              )}
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
               className="w-full pl-9 pr-8 py-1.5 rounded-xl bg-app/80 border border-slate-800 text-xs text-slate-200 placeholder-slate-500 focus:outline-hidden focus:border-accent-500/50 transition-colors"
@@ -473,6 +485,8 @@ export const SoulHubView = () => {
             {searchQuery && (
               <button
                 onClick={() => setSearchQuery('')}
+                aria-label={t('hub.clearSearch')}
+                title={t('hub.clearSearch')}
                 className="absolute right-2.5 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-200"
               >
                 <X className="w-3.5 h-3.5" />
@@ -483,10 +497,10 @@ export const SoulHubView = () => {
           <button
             onClick={() => setIsUrlModalOpen(true)}
             className="px-3 py-1.5 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-200 text-xs font-medium flex items-center gap-1.5 border border-slate-700 transition-colors shadow-sm"
-            title="Direkten Chub AI Link oder PNG-URL importieren"
+            title={t('hub.importUrlHint')}
           >
             <LinkIcon className="w-3.5 h-3.5 text-cyan-400" />
-            <span>URL importieren</span>
+            <span>{t('hub.importUrl')}</span>
           </button>
 
           <button
@@ -496,7 +510,7 @@ export const SoulHubView = () => {
               else if (hubSubTab === 'lorebooks') loadLorebooks();
               else if (hubSubTab === 'scenes') loadScenes();
             }}
-            title="Neu laden"
+            title={t('hub.reload')}
             className="p-1.5 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-300 border border-slate-700 transition-colors"
           >
             <RotateCcw className="w-4 h-4" />
@@ -533,7 +547,7 @@ export const SoulHubView = () => {
             <Globe className="w-3.5 h-3.5 text-cyan-400" />
             <span>Chub AI</span>
             <span className="px-1.5 py-0.2 rounded-full bg-cyan-950/60 text-cyan-400 border border-cyan-800/40 text-[11px] font-mono">
-              Online
+              {t('hub.online')}
             </span>
           </button>
 
@@ -546,7 +560,7 @@ export const SoulHubView = () => {
             }`}
           >
             <BookOpen className="w-3.5 h-3.5 text-amber-400" />
-            <span>Welt-Lorebooks</span>
+            <span>{t('hub.tabLorebooks')}</span>
             <span className="px-1.5 py-0.2 rounded-full bg-slate-800 text-[11px] text-slate-400 font-mono">
               {gatewayLorebooks.length > 0 ? gatewayLorebooks.length : '✦'}
             </span>
@@ -561,7 +575,7 @@ export const SoulHubView = () => {
             }`}
           >
             <Dice5 className="w-3.5 h-3.5 text-emerald-400" />
-            <span>Soul-Stage-Szenarien</span>
+            <span>{t('hub.tabScenes')}</span>
             <span className="px-1.5 py-0.2 rounded-full bg-slate-800 text-[11px] text-slate-400 font-mono">
               {gatewayScenes.length > 0 ? gatewayScenes.length : '✦'}
             </span>
@@ -582,7 +596,7 @@ export const SoulHubView = () => {
                 }`}
               >
                 <Flame className="w-3 h-3 text-amber-400" />
-                <span>Trending</span>
+                <span>{t('hub.sortTrending')}</span>
               </button>
               <button
                 onClick={() => setChubSort('popular')}
@@ -593,7 +607,7 @@ export const SoulHubView = () => {
                 }`}
               >
                 <Download className="w-3 h-3 text-cyan-400" />
-                <span>Beliebt</span>
+                <span>{t('hub.sortPopular')}</span>
               </button>
               <button
                 onClick={() => setChubSort('favorites')}
@@ -604,7 +618,7 @@ export const SoulHubView = () => {
                 }`}
               >
                 <Star className="w-3 h-3 text-yellow-400" />
-                <span>Favoriten</span>
+                <span>{t('hub.sortFavorites')}</span>
               </button>
               <button
                 onClick={() => setChubSort('recent')}
@@ -615,7 +629,7 @@ export const SoulHubView = () => {
                 }`}
               >
                 <Clock className="w-3 h-3 text-emerald-400" />
-                <span>Neueste</span>
+                <span>{t('hub.sortRecent')}</span>
               </button>
             </div>
 
@@ -625,9 +639,9 @@ export const SoulHubView = () => {
               onChange={(e) => setChubTag(e.target.value)}
               className="bg-app/80 border border-slate-800 rounded-xl px-2.5 py-1 text-xs text-slate-300 focus:outline-hidden focus:border-accent-500"
             >
-              {HUB_TAGS.map((t) => (
-                <option key={t.id} value={t.id}>
-                  {t.label}
+              {HUB_TAGS.map((tag) => (
+                <option key={tag.id} value={tag.id}>
+                  {tag.id ? tag.label : t('hub.allTags')}
                 </option>
               ))}
             </select>
@@ -658,23 +672,23 @@ export const SoulHubView = () => {
             {isGatewayLoading ? (
               <div className="flex flex-col items-center justify-center py-20 text-slate-400 gap-3">
                 <Loader2 className="w-8 h-8 text-accent-400 animate-spin" />
-                <p className="text-sm">Kuratierte Soul Gateway Karten werden geladen…</p>
+                <p className="text-sm">{t('hub.loadingGateway')}</p>
               </div>
             ) : gatewayError ? (
               <div className="flex flex-col items-center justify-center py-20 text-rose-300 gap-3">
                 <AlertCircle className="w-8 h-8 text-rose-400" />
-                <p className="text-sm">Fehler beim Laden: {gatewayError}</p>
+                <p className="text-sm">{t('hub.loadError', { error: gatewayError ?? '' })}</p>
                 <button
                   onClick={loadSoulGateway}
                   className="px-4 py-1.5 rounded-lg bg-slate-800 hover:bg-slate-700 text-xs text-slate-200 border border-slate-700"
                 >
-                  Erneut versuchen
+                  {t('common.retry')}
                 </button>
               </div>
             ) : filteredGatewayCharacters.length === 0 ? (
               <div className="flex flex-col items-center justify-center py-20 text-slate-500 gap-2">
                 <Users className="w-8 h-8" />
-                <p className="text-sm">Keine Charaktere für diese Suche gefunden.</p>
+                <p className="text-sm">{t('hub.noResults')}</p>
               </div>
             ) : (
               <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-4">
@@ -713,7 +727,7 @@ export const SoulHubView = () => {
                       {importingId === char.name ? (
                         <>
                           <Loader2 className="w-3.5 h-3.5 animate-spin" />
-                          <span>Importiere…</span>
+                          <span>{t('hub.importing')}</span>
                         </>
                       ) : (
                         <>
@@ -737,23 +751,23 @@ export const SoulHubView = () => {
             {isChubLoading && chubItems.length === 0 ? (
               <div className="flex flex-col items-center justify-center py-20 text-slate-400 gap-3">
                 <Loader2 className="w-8 h-8 text-cyan-400 animate-spin" />
-                <p className="text-sm">Chub AI Charakterbibliothek wird geladen…</p>
+                <p className="text-sm">{t('hub.loadingChub')}</p>
               </div>
             ) : chubError && chubItems.length === 0 ? (
               <div className="flex flex-col items-center justify-center py-20 text-rose-300 gap-3">
                 <AlertCircle className="w-8 h-8 text-rose-400" />
-                <p className="text-sm">Fehler beim Laden von Chub AI: {chubError}</p>
+                <p className="text-sm">{t('hub.chubLoadError', { error: chubError ?? '' })}</p>
                 <button
                   onClick={() => loadChubCharacters(1, false)}
                   className="px-4 py-1.5 rounded-lg bg-slate-800 hover:bg-slate-700 text-xs text-slate-200 border border-slate-700"
                 >
-                  Erneut versuchen
+                  {t('common.retry')}
                 </button>
               </div>
             ) : chubItems.length === 0 ? (
               <div className="flex flex-col items-center justify-center py-20 text-slate-500 gap-2">
                 <Globe className="w-8 h-8" />
-                <p className="text-sm">Keine Charaktere gefunden.</p>
+                <p className="text-sm">{t('hub.noCharacters')}</p>
               </div>
             ) : (
               <div>
@@ -806,7 +820,7 @@ export const SoulHubView = () => {
                           {item.name}
                         </h3>
                         <p className="text-xs text-slate-400 line-clamp-2 mt-0.5">
-                          {item.tagline || item.description || 'Keine Beschreibung verfügbar.'}
+                          {item.tagline || item.description || t('hub.noDescription')}
                         </p>
                       </div>
 
@@ -822,7 +836,7 @@ export const SoulHubView = () => {
                           {importingId === item.full_path ? (
                             <>
                               <Loader2 className="w-3 h-3 animate-spin" />
-                              <span>Importiere…</span>
+                              <span>{t('hub.importing')}</span>
                             </>
                           ) : (
                             <>
@@ -837,7 +851,7 @@ export const SoulHubView = () => {
                             handleOpenChubDetail(item);
                           }}
                           className="p-1 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-300 border border-slate-700 transition-colors"
-                          title="Details ansehen"
+                          title={t('hub.details')}
                         >
                           <ExternalLink className="w-3.5 h-3.5" />
                         </button>
@@ -857,7 +871,7 @@ export const SoulHubView = () => {
                       {isChubLoading ? (
                         <>
                           <Loader2 className="w-4 h-4 animate-spin text-cyan-400" />
-                          <span>Lade weitere Karten…</span>
+                          <span>{t('hub.loadingMore')}</span>
                         </>
                       ) : (
                         <>
@@ -881,23 +895,23 @@ export const SoulHubView = () => {
             {isLorebooksLoading ? (
               <div className="flex flex-col items-center justify-center py-20 text-slate-400 gap-3">
                 <Loader2 className="w-8 h-8 text-amber-400 animate-spin" />
-                <p className="text-sm">Welt-Lorebooks werden geladen…</p>
+                <p className="text-sm">{t('hub.loadingLorebooks')}</p>
               </div>
             ) : lorebooksError ? (
               <div className="flex flex-col items-center justify-center py-20 text-rose-300 gap-3">
                 <AlertCircle className="w-8 h-8 text-rose-400" />
-                <p className="text-sm">Fehler beim Laden: {lorebooksError}</p>
+                <p className="text-sm">{t('hub.loadError', { error: lorebooksError ?? '' })}</p>
                 <button
                   onClick={loadLorebooks}
                   className="px-4 py-1.5 rounded-lg bg-slate-800 hover:bg-slate-700 text-xs text-slate-200 border border-slate-700"
                 >
-                  Erneut versuchen
+                  {t('common.retry')}
                 </button>
               </div>
             ) : filteredLorebooks.length === 0 ? (
               <div className="flex flex-col items-center justify-center py-20 text-slate-500 gap-2">
                 <BookOpen className="w-8 h-8" />
-                <p className="text-sm">Keine Welt-Lorebooks gefunden.</p>
+                <p className="text-sm">{t('hub.noLorebooks')}</p>
               </div>
             ) : (
               <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
@@ -922,7 +936,7 @@ export const SoulHubView = () => {
                       </div>
 
                       <p className="text-xs text-slate-400 leading-relaxed mb-3">
-                        {lb.description || 'Keine Beschreibung verfügbar.'}
+                        {lb.description || t('hub.noDescription')}
                       </p>
 
                       <div className="text-xs text-slate-500">
@@ -938,12 +952,12 @@ export const SoulHubView = () => {
                       {importingId === lb.name ? (
                         <>
                           <Loader2 className="w-3.5 h-3.5 animate-spin" />
-                          <span>Importiere Lorebook…</span>
+                          <span>{t('hub.importingLorebook')}</span>
                         </>
                       ) : (
                         <>
                           <Download className="w-3.5 h-3.5" />
-                          <span>Lorebook importieren</span>
+                          <span>{t('hub.importLorebook')}</span>
                         </>
                       )}
                     </button>
@@ -962,23 +976,23 @@ export const SoulHubView = () => {
             {isScenesLoading ? (
               <div className="flex flex-col items-center justify-center py-20 text-slate-400 gap-3">
                 <Loader2 className="w-8 h-8 text-emerald-400 animate-spin" />
-                <p className="text-sm">Soul-Stage-Szenarien werden geladen…</p>
+                <p className="text-sm">{t('hub.loadingScenes')}</p>
               </div>
             ) : scenesError ? (
               <div className="flex flex-col items-center justify-center py-20 text-rose-300 gap-3">
                 <AlertCircle className="w-8 h-8 text-rose-400" />
-                <p className="text-sm">Fehler beim Laden: {scenesError}</p>
+                <p className="text-sm">{t('hub.loadError', { error: scenesError ?? '' })}</p>
                 <button
                   onClick={loadScenes}
                   className="px-4 py-1.5 rounded-lg bg-slate-800 hover:bg-slate-700 text-xs text-slate-200 border border-slate-700"
                 >
-                  Erneut versuchen
+                  {t('common.retry')}
                 </button>
               </div>
             ) : filteredScenes.length === 0 ? (
               <div className="flex flex-col items-center justify-center py-20 text-slate-500 gap-2">
                 <Dice5 className="w-8 h-8" />
-                <p className="text-sm">Keine Szenarien gefunden.</p>
+                <p className="text-sm">{t('hub.noScenes')}</p>
               </div>
             ) : (
               <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
@@ -1000,7 +1014,7 @@ export const SoulHubView = () => {
                       </div>
 
                       <p className="text-xs text-slate-400 leading-relaxed mb-3">
-                        {scene.description || 'Keine Beschreibung verfügbar.'}
+                        {scene.description || t('hub.noDescription')}
                       </p>
 
                       <div className="flex items-center justify-between text-xs text-slate-500">
@@ -1021,12 +1035,12 @@ export const SoulHubView = () => {
                       {importingId === scene.title ? (
                         <>
                           <Loader2 className="w-3.5 h-3.5 animate-spin" />
-                          <span>Importiere Szenario…</span>
+                          <span>{t('hub.importingScene')}</span>
                         </>
                       ) : (
                         <>
                           <Download className="w-3.5 h-3.5" />
-                          <span>Szenario importieren</span>
+                          <span>{t('hub.importScene')}</span>
                         </>
                       )}
                     </button>
@@ -1087,18 +1101,18 @@ export const SoulHubView = () => {
                     {selectedChubDetail.item.star_count > 0 && (
                       <span className="flex items-center gap-1 px-2 py-0.5 rounded-full bg-yellow-500/20 text-yellow-300 border border-yellow-500/30 text-[11px]">
                         <Star className="w-3 h-3 fill-yellow-400" />
-                        {selectedChubDetail.item.star_count} Sterne
+                        {t('hub.stars', { count: selectedChubDetail.item.star_count })}
                       </span>
                     )}
                     {selectedChubDetail.item.n_tokens > 0 && (
                       <span className="px-2 py-0.5 rounded-full bg-cyan-500/20 text-cyan-300 border border-cyan-500/30 text-[11px] font-mono">
-                        {selectedChubDetail.item.n_tokens} Tokens
+                        {t('hub.tokens', { count: selectedChubDetail.item.n_tokens })}
                       </span>
                     )}
                     {selectedChubDetail.detail?.has_embedded_lorebook && (
                       <span className="flex items-center gap-1 px-2 py-0.5 rounded-full bg-amber-500/20 text-amber-300 border border-amber-500/30 text-[11px]">
                         <BookOpen className="w-3 h-3" />
-                        Eingebettetes Lorebook
+                        {t('hub.embeddedLorebook')}
                       </span>
                     )}
                   </div>
@@ -1117,7 +1131,7 @@ export const SoulHubView = () => {
               {selectedChubDetail.isLoading ? (
                 <div className="py-8 flex items-center justify-center gap-2 text-slate-400">
                   <Loader2 className="w-4 h-4 animate-spin text-cyan-400" />
-                  <span>Vollständige Kartendetails werden geladen…</span>
+                  <span>{t('hub.loadingDetails')}</span>
                 </div>
               ) : selectedChubDetail.detail ? (
                 <div className="space-y-4 pt-2">
@@ -1125,7 +1139,7 @@ export const SoulHubView = () => {
                     <div className="rounded-xl bg-app/70 border border-slate-800/80 p-3 space-y-1">
                       <div className="font-semibold text-slate-300 flex items-center gap-1.5">
                         <MessageSquare className="w-3.5 h-3.5 text-cyan-400" />
-                        Erste Nachricht (Greeting):
+                        {t('hub.firstMessage')}
                       </div>
                       <p className="text-slate-400 whitespace-pre-wrap leading-relaxed max-h-36 overflow-y-auto">
                         {selectedChubDetail.detail.first_message}
@@ -1135,7 +1149,7 @@ export const SoulHubView = () => {
 
                   {selectedChubDetail.detail.personality && (
                     <div className="rounded-xl bg-app/70 border border-slate-800/80 p-3 space-y-1">
-                      <div className="font-semibold text-slate-300">Persönlichkeit:</div>
+                      <div className="font-semibold text-slate-300">{t('hub.personality')}</div>
                       <p className="text-slate-400 whitespace-pre-wrap leading-relaxed max-h-28 overflow-y-auto">
                         {selectedChubDetail.detail.personality}
                       </p>
@@ -1144,7 +1158,7 @@ export const SoulHubView = () => {
 
                   {selectedChubDetail.detail.scenario && (
                     <div className="rounded-xl bg-app/70 border border-slate-800/80 p-3 space-y-1">
-                      <div className="font-semibold text-slate-300">Szenario:</div>
+                      <div className="font-semibold text-slate-300">{t('hub.scenario')}</div>
                       <p className="text-slate-400 whitespace-pre-wrap leading-relaxed max-h-24 overflow-y-auto">
                         {selectedChubDetail.detail.scenario}
                       </p>
@@ -1164,7 +1178,7 @@ export const SoulHubView = () => {
                   onClick={() => setSelectedChubDetail(null)}
                   className="px-4 py-2 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-300 text-xs font-medium transition-colors"
                 >
-                  Schließen
+                  {t('common.close')}
                 </button>
                 <button
                   onClick={() => handleImportChub(selectedChubDetail.item.full_path)}
@@ -1174,12 +1188,12 @@ export const SoulHubView = () => {
                   {importingId === selectedChubDetail.item.full_path ? (
                     <>
                       <Loader2 className="w-3.5 h-3.5 animate-spin" />
-                      <span>Importiere…</span>
+                      <span>{t('hub.importing')}</span>
                     </>
                   ) : (
                     <>
                       <Download className="w-3.5 h-3.5" />
-                      <span>In Bibliothek importieren</span>
+                      <span>{t('hub.importToLibrary')}</span>
                     </>
                   )}
                 </button>
@@ -1198,7 +1212,7 @@ export const SoulHubView = () => {
             <div className="flex items-center justify-between">
               <div className="flex items-center gap-2.5">
                 <LinkIcon className="w-5 h-5 text-cyan-400" />
-                <h3 className="font-bold text-sm text-slate-100">Karte aus Link importieren</h3>
+                <h3 className="font-bold text-sm text-slate-100">{t('hub.urlTitle')}</h3>
               </div>
               <button
                 onClick={() => setIsUrlModalOpen(false)}
@@ -1209,13 +1223,15 @@ export const SoulHubView = () => {
             </div>
 
             <p className="text-xs text-slate-400">
-              Füge einen Link zu einem Chub AI Charakter (z. B. <code>https://chub.ai/characters/author/name</code>) oder einen direkten Link zu einer V2-PNG-Karte ein.
+              {t('hub.urlIntro')}
             </p>
 
             <div className="space-y-1.5">
               <input
-                type="text"
-                placeholder="https://chub.ai/characters/... oder https://.../card.png"
+                type="url"
+                data-autofocus
+                aria-label={t('hub.urlLabel')}
+                placeholder={t('hub.urlPlaceholder')}
                 value={urlInput}
                 onChange={(e) => setUrlInput(e.target.value)}
                 className="w-full px-3 py-2 rounded-xl bg-app border border-slate-800 text-xs text-slate-200 placeholder-slate-600 focus:outline-hidden focus:border-cyan-500 font-mono"
@@ -1227,7 +1243,7 @@ export const SoulHubView = () => {
                 onClick={() => setIsUrlModalOpen(false)}
                 className="px-4 py-2 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-300 text-xs font-medium transition-colors"
               >
-                Abbrechen
+                {t('common.cancel')}
               </button>
               <button
                 onClick={handleImportUrl}
@@ -1237,12 +1253,12 @@ export const SoulHubView = () => {
                 {isUrlImporting ? (
                   <>
                     <Loader2 className="w-3.5 h-3.5 animate-spin" />
-                    <span>Importiere…</span>
+                    <span>{t('hub.importing')}</span>
                   </>
                 ) : (
                   <>
                     <Download className="w-3.5 h-3.5" />
-                    <span>Jetzt importieren</span>
+                    <span>{t('hub.importNow')}</span>
                   </>
                 )}
               </button>
