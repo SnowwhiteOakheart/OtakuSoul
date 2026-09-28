@@ -8,7 +8,7 @@
 **Fortschritt:** P0, Abhängigkeiten, Navigation samt Befehlspalette, i18n, Dialoge/Feedback, Barrierefreiheit und Fenster-Plugins sind erledigt.
 Offen sind vor allem Ersteinrichtung, Design-Bausteine, Store-/Komponenten-Aufteilung, Rust-Fehlertypen und Tests.
 
-**Gesamtbild (Ausgangslage):** Funktional ist das Projekt weit. `tsc` läuft sauber, 56 Vitest- sowie 104 aktive Cargo-Tests sind grün
+**Gesamtbild (Ausgangslage):** Funktional ist das Projekt weit. `tsc` läuft sauber, 63 Vitest- sowie 104 aktive Cargo-Tests sind grün
 (zwei weitere Cargo-Tests benötigen Netzwerk bzw. lokale Modelldateien und bleiben standardmäßig ignoriert).
 Die Schwächen liegen vor allem hier:
 
@@ -104,10 +104,10 @@ GitHub Actions wurden bewusst entfernt (Commit `11597c2`). Stattdessen gibt es j
   **777 Mal** `purple-/violet-/fuchsia-*` fest verdrahtet ist. Wählt man „Cyberpunk“ oder „Emerald“, bleiben Buttons, Tabs und Rahmen lila.
   → In Tailwind v4 per `@theme` semantische Tokens definieren (`--color-accent`, `--color-surface`, `--color-border`, `--color-muted` …)
   und die festen Farbklassen auf `bg-accent`, `text-accent` usw. umstellen.
-- [ ] *(teilweise: `ModalOverlay`, `confirmDialog`, `toast`, `DropdownMenu`, `EmptyState`, `ErrorBoundary`, `pressable` gibt es;
-  offen: `Button`, `IconButton`, `Tabs`, `Select`, `Toggle`, `Slider`, `Tooltip`)* **Wiederverwendbare UI-Bausteine** anlegen (`src/components/ui/`): `Button` (primary/secondary/ghost/danger), `IconButton`,
+- [x] **Wiederverwendbare UI-Bausteine** unter `src/components/ui/`: `Button` (primary/secondary/ghost/danger), `IconButton`,
   `Modal`/`Dialog`, `Tabs`, `Select`, `Toggle`, `Slider`, `EmptyState`, `Toast`, `ConfirmDialog`, `Tooltip`.
-  Heute wird jedes der 377 `<button>`-Elemente mit langen, kopierten Klassenketten gestaltet.
+  Alle neuen Primitive sind typisiert, theme-fähig und barrierefrei getestet; `SettingsView` nutzt bereits gemeinsame `Button`- und
+  `Tabs`-Komponenten. Bestehende Fachansichten können schrittweise migriert werden.
 - [x] **Zu kleine Schrift:** 9/10 px sind komplett entfernt, 11 px nur noch für Badges (~135 Stellen). Ursprünglich 333 Stellen mit `text-[9px]`, `text-[10px]` oder `text-[11px]`. Auf HiDPI- und Linux-Systemen schwer lesbar.
   → Untergrenze 12 px (`text-xs`) für Text, 11 px höchstens für Badges.
 - [x] Veraltete Tailwind-v3-Klassen modernisieren: `bg-gradient-to-*` → `bg-linear-to-*`, `flex-shrink-0` → `shrink-0`, `flex-grow` → `grow` (48 Stellen).
@@ -191,7 +191,7 @@ GitHub Actions wurden bewusst entfernt (Commit `11597c2`). Stattdessen gibt es j
 ### Tests
 
 - [ ] *(teilweise: Store-Tests mit API-Mock, Komponenten-Tests mit Testing Library/jsdom für Dialog, Menü, ErrorBoundary,
-  Bestätigungsdialog, `pressable`, Befehlspalette und den Einrichtungsassistenten – 56 Tests in 9 Suites; offen: Chat, Stage, Charakter-Editor)* Frontend-Abdeckung ausbauen: Tests für Store-Slices, `api.ts`-Mocks
+  Bestätigungsdialog, `pressable`, UI-Primitive, Befehlspalette und den Einrichtungsassistenten – 63 Tests in 10 Suites; offen: Chat, Stage, Charakter-Editor)* Frontend-Abdeckung ausbauen: Tests für Store-Slices, `api.ts`-Mocks
   und Kernkomponenten mit `@testing-library/react` ergänzen.
 - [ ] E2E-Rauchtest mit WebdriverIO + `tauri-driver` (App starten, Charakter importieren, Chat senden gegen einen Mock-Provider).
 - [x] Rust: Tests für `companion_tools`, `web_server` (Auth) und `profile_backup` (Round-Trip inkl. Datenbank, Gruppenauswahl, Rotation) vorhanden.

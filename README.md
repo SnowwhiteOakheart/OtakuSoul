@@ -193,6 +193,7 @@ Kompakte `PQ2_0`- und `PTQ1_0`-Modelle benötigen die separate PrismML-Laufzeit.
 - **Desktop:** Tauri 2
 - **Backend:** Rust, Tokio, SQLite und reqwest
 - **Frontend:** React 19, TypeScript, Vite und Tailwind CSS 4
+- **UI-System:** Theme-fähige, barrierefrei getestete Primitive für Buttons, Tabs, Auswahlfelder, Schalter, Slider, Dialoge und Feedback
 - **Avatare:** Three.js, `@pixiv/three-vrm`, PixiJS und Live2D Cubism
 - **Lokale KI:** llama.cpp-kompatibler Server und GGUF
 - **Audio:** Web Audio, Edge-TTS, Kokoro und whisper.cpp

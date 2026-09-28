@@ -7,6 +7,7 @@ import { ServerSettings } from './sections/ServerSettings';
 import { ProviderSettings } from './sections/ProviderSettings';
 import { SamplerSettings } from './sections/SamplerSettings';
 import { ModelHubSettings } from './sections/ModelHubSettings';
+import { Button, Tabs, type TabItem } from '../ui';
 
 export const SettingsView = () => {
   const { t } = useTranslation();
@@ -15,6 +16,13 @@ export const SettingsView = () => {
   const [activeTab, setActiveTab] = useState<SettingsSection>(
     () => useAppStore.getState().consumePendingSettingsSection() ?? 'general'
   );
+  const settingsTabs: TabItem<SettingsSection>[] = [
+    { value: 'general', label: t('settings.appearance'), icon: Palette, panelId: 'settings-panel-general' },
+    { value: 'server', label: t('settings.tabServer'), icon: Cpu, panelId: 'settings-panel-server' },
+    { value: 'providers', label: t('settings.tabProviders'), icon: Key, panelId: 'settings-panel-providers' },
+    { value: 'sampler', label: t('settings.tabSampler'), icon: Sliders, panelId: 'settings-panel-sampler' },
+    { value: 'hub', label: t('settings.tabHub'), icon: Download, panelId: 'settings-panel-hub' },
+  ];
 
   return (
     <div className="flex-1 overflow-y-auto p-6 bg-app space-y-6">
@@ -28,96 +36,38 @@ export const SettingsView = () => {
             </h1>
             <p className="text-xs text-slate-400 mt-1">{t('settings.subtitle')}</p>
           </div>
-          <button
+          <Button
+            variant="secondary"
+            size="sm"
             onClick={() => {
               fetchHardware();
               initApp();
             }}
-            className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-slate-800 hover:bg-slate-700 text-xs text-slate-300 transition-colors"
           >
             <RefreshCw className="w-3.5 h-3.5" />
             <span>{t('settings.refresh')}</span>
-          </button>
+          </Button>
         </div>
 
-        {/* Sub-Tabs Navigation */}
-        <div role="tablist" aria-label={t('settings.tabs')} className="flex border-b border-slate-800 gap-2 overflow-x-auto">
-          <button
-            role="tab"
-            aria-selected={activeTab === 'general'}
-            onClick={() => setActiveTab('general')}
-            className={`flex items-center gap-2 px-4 py-2.5 text-xs font-medium border-b-2 transition-colors whitespace-nowrap outline-hidden focus-visible:ring-2 focus-visible:ring-accent-400 ${
-              activeTab === 'general'
-                ? 'border-accent-500 text-accent-400 bg-accent-500/10 rounded-t-lg'
-                : 'border-transparent text-slate-400 hover:text-slate-200'
-            }`}
-          >
-            <Palette className="w-4 h-4" />
-            <span>{t('settings.appearance')}</span>
-          </button>
+        <Tabs
+          idPrefix="settings"
+          ariaLabel={t('settings.tabs')}
+          items={settingsTabs}
+          value={activeTab}
+          onValueChange={setActiveTab}
+        />
 
-          <button
-            role="tab"
-            aria-selected={activeTab === 'server'}
-            onClick={() => setActiveTab('server')}
-            className={`flex items-center gap-2 px-4 py-2.5 text-xs font-medium border-b-2 transition-colors whitespace-nowrap outline-hidden focus-visible:ring-2 focus-visible:ring-accent-400 ${
-              activeTab === 'server'
-                ? 'border-accent-500 text-accent-400 bg-accent-500/10 rounded-t-lg'
-                : 'border-transparent text-slate-400 hover:text-slate-200'
-            }`}
-          >
-            <Cpu className="w-4 h-4" />
-            <span>{t('settings.tabServer')}</span>
-          </button>
-
-          <button
-            role="tab"
-            aria-selected={activeTab === 'providers'}
-            onClick={() => setActiveTab('providers')}
-            className={`flex items-center gap-2 px-4 py-2.5 text-xs font-medium border-b-2 transition-colors whitespace-nowrap outline-hidden focus-visible:ring-2 focus-visible:ring-accent-400 ${
-              activeTab === 'providers'
-                ? 'border-accent-500 text-accent-400 bg-accent-500/10 rounded-t-lg'
-                : 'border-transparent text-slate-400 hover:text-slate-200'
-            }`}
-          >
-            <Key className="w-4 h-4" />
-            <span>{t('settings.tabProviders')}</span>
-          </button>
-
-          <button
-            role="tab"
-            aria-selected={activeTab === 'sampler'}
-            onClick={() => setActiveTab('sampler')}
-            className={`flex items-center gap-2 px-4 py-2.5 text-xs font-medium border-b-2 transition-colors whitespace-nowrap outline-hidden focus-visible:ring-2 focus-visible:ring-accent-400 ${
-              activeTab === 'sampler'
-                ? 'border-accent-500 text-accent-400 bg-accent-500/10 rounded-t-lg'
-                : 'border-transparent text-slate-400 hover:text-slate-200'
-            }`}
-          >
-            <Sliders className="w-4 h-4" />
-            <span>{t('settings.tabSampler')}</span>
-          </button>
-
-          <button
-            role="tab"
-            aria-selected={activeTab === 'hub'}
-            onClick={() => setActiveTab('hub')}
-            className={`flex items-center gap-2 px-4 py-2.5 text-xs font-medium border-b-2 transition-colors whitespace-nowrap outline-hidden focus-visible:ring-2 focus-visible:ring-accent-400 ${
-              activeTab === 'hub'
-                ? 'border-accent-500 text-accent-400 bg-accent-500/10 rounded-t-lg'
-                : 'border-transparent text-slate-400 hover:text-slate-200'
-            }`}
-          >
-            <Download className="w-4 h-4" />
-            <span>{t('settings.tabHub')}</span>
-          </button>
+        <div
+          id={`settings-panel-${activeTab}`}
+          role="tabpanel"
+          aria-labelledby={`settings-tab-${activeTab}`}
+        >
+          {activeTab === 'general' && <GeneralSettings />}
+          {activeTab === 'server' && <ServerSettings />}
+          {activeTab === 'providers' && <ProviderSettings />}
+          {activeTab === 'sampler' && <SamplerSettings />}
+          {activeTab === 'hub' && <ModelHubSettings onNavigate={setActiveTab} />}
         </div>
-
-        {activeTab === 'general' && <GeneralSettings />}
-        {activeTab === 'server' && <ServerSettings />}
-        {activeTab === 'providers' && <ProviderSettings />}
-        {activeTab === 'sampler' && <SamplerSettings />}
-        {activeTab === 'hub' && <ModelHubSettings onNavigate={setActiveTab} />}
       </div>
     </div>
   );

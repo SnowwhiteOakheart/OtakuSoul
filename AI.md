@@ -115,6 +115,7 @@
 | `src/components/Header.tsx` | VRAM-Monitor, Server-Status und globale Aktionen |
 | `src/components/Sidebar.tsx` / `src/components/navigation.ts` | Gruppierte Hauptnavigation, Tastaturkürzel und gemeinsame Navigationskonfiguration |
 | `src/components/CommandPalette.tsx` | Durchsuchbare globale Befehlspalette (`Strg/Cmd+K`) für Ansichten, Logs und Updates |
+| `src/components/ui/` | Theme-fähige UI-Primitive: Button, IconButton, Tabs, Select, Toggle, Slider, Tooltip, Dialoge und Feedback |
 | `src/components/chat/ChatView.tsx` | Split-Screen Chat & 3D Avatar mit Swipes `< 1/3 >`, Inline-Edit, Continue & Regenerate |
 | `src/components/chat/ChatSidebar.tsx` | Slide-out Drawer: Multi-Chat Sitzungen, Author's Note mit Tiefe, 11 HUD-Presets & JSONL Import/Export |
 | `src/components/chat/RoleplayMessage.tsx` | Trennung von Handlungen (*...*) und gesprochenem Wort ("...") |
@@ -336,6 +337,9 @@ Alle benötigten Daten sind eigenständig in diesem Projektverzeichnis gekapselt
   - **Navigation & Befehlspalette (`Sidebar.tsx`, `CommandPalette.tsx`, `navigation.ts`):**
     - Gruppierte, einklappbare Seitenleiste und eine durchsuchbare globale Palette für alle Ansichten sowie Logs und Updates.
     - Einheitliche `NAV_GROUPS`-Quelle, globale Kürzel (`Strg/Cmd+K`, `Strg+1…8`) und vollständige Tastaturbedienung.
+  - **UI-Primitive (`src/components/ui/`):**
+    - Einheitliche Varianten für Buttons und Icon-Buttons sowie zugängliche Tabs, Selects, Toggles, Slider und Tooltips.
+    - `SettingsView` nutzt die gemeinsamen Button- und Tabs-Komponenten; 7 gezielte Tests sichern Semantik und Interaktion ab.
   - **System-Logging & Log-Viewer (`logger.rs`, `LogViewerModal.tsx`):**
     - Dateipersistenz in `~/.local/share/otakusoul/logs/otakusoul.log` mit In-Memory-Ringpuffer (1000 Einträge).
     - Backend-Commands: `get_app_logs`, `clear_app_logs`, `export_app_logs`.
@@ -344,7 +348,7 @@ Alle benötigten Daten sind eigenständig in diesem Projektverzeichnis gekapselt
     - Abfrage der offiziellen GitHub Releases API mit SemVer-Vergleich (`check_for_updates`).
     - Interaktiver Update-Dialog mit Versionsvergleich, Release-Notes-Vorschau und 1-Klick-Link zu den Downloads.
   - **Frontend-Unit-Tests (Vitest, `npm run test`):**
-    - 56 Tests in 9 Test-Suites für i18n, Store-Slices, zentrale UI-Bausteine, Befehlspalette, Onboarding,
+    - 63 Tests in 10 Test-Suites für i18n, Store-Slices, zentrale UI-Bausteine, Befehlspalette, Onboarding,
       Lorebooks, Soul Hub, Soul Memory, State Parsing und Soundeffekte.
   - **Packaging & Multiplattform-Installer:**
     - **Linux:** Universeller Installer `install.sh` (installiert Binary nach `~/.local/bin`, 512x512 Icon & `.desktop`-Menüeintrag), `.deb`, `AppImage`, Arch Linux AUR (`packaging/aur/PKGBUILD`).
