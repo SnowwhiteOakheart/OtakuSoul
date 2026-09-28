@@ -7,37 +7,28 @@ import {
   Plus,
   Trash2,
   Download,
-  Upload,
   Search,
   Globe,
   Flame,
   Check,
-  X,
-  Edit3,
-  Sliders,
-  Layers,
-  Sparkles,
-  RotateCcw,
-  Zap,
-  Compass,
 } from 'lucide-react';
-import { ModalOverlay } from '../ui/ModalOverlay';
+import { EntryEditorModal } from './EntryEditorModal';
+import { EntryCard } from './EntryCard';
+import { LorebookSidebar } from './LorebookSidebar';
+import { isGlobalLorebook } from './isGlobalLorebook';
 import { translate, useTranslation } from '../../i18n';
 import { confirmDialog, toast } from '../ui/feedback';
 import { errorMessage } from '../../utils/errors';
-import { pressable } from '../../utils/pressable';
 
 export const LorebookView: React.FC = () => {
   const { t } = useTranslation();
   const {
-    allLorebooks,
     activeLorebook,
     selectLorebook,
     saveLorebook,
     deleteLorebook,
     importLorebook,
     exportLorebook,
-    refreshLorebooks,
     toggleGlobalLorebook,
     globalLorebookIds,
     currentTension,
@@ -45,27 +36,18 @@ export const LorebookView: React.FC = () => {
     resetTension,
     sceneTensionEnabled,
     setSceneTensionEnabled,
-    openSoulHubTab,
   } = useStoreFields(
-    'allLorebooks', 'activeLorebook', 'selectLorebook', 'saveLorebook', 'deleteLorebook',
-    'importLorebook', 'exportLorebook', 'refreshLorebooks', 'toggleGlobalLorebook',
-    'globalLorebookIds', 'currentTension', 'adjustTension', 'resetTension', 'sceneTensionEnabled',
-    'setSceneTensionEnabled', 'openSoulHubTab',
-  );
+    'activeLorebook', 'selectLorebook', 'saveLorebook', 'deleteLorebook',
+    'importLorebook', 'exportLorebook', 'toggleGlobalLorebook', 'globalLorebookIds',
+    'currentTension', 'adjustTension', 'resetTension', 'sceneTensionEnabled',
+    'setSceneTensionEnabled', );
 
-  const [searchQuery, setSearchQuery] = useState('');
   const [entrySearchQuery, setEntrySearchQuery] = useState('');
   const [triggerFilter, setTriggerFilter] = useState<'all' | 'keyword' | 'regex' | 'always_on' | 'tension'>('all');
   const [editingEntry, setEditingEntry] = useState<{ entry: LorebookEntry; isNew: boolean } | null>(null);
   const [isSavingBook, setIsSavingBook] = useState(false);
   const showStatus = (text: string, type: 'success' | 'error' = 'success') =>
     type === 'success' ? toast.success(text) : toast.error(text);
-
-  // Filtered lorebooks for left sidebar
-  const filteredLorebooks = allLorebooks.filter((lb) =>
-    lb.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-    lb.description.toLowerCase().includes(searchQuery.toLowerCase())
-  );
 
   // Filtered entries of active lorebook
   const activeEntries = activeLorebook?.entries || [];
@@ -80,13 +62,6 @@ export const LorebookView: React.FC = () => {
 
     return matchesSearch && matchesFilter;
   });
-
-  const isGlobalBook = (lb: Lorebook) => {
-    if (lb.is_global) return true;
-    if (lb.id && globalLorebookIds.includes(lb.id)) return true;
-    if (lb.file_path && globalLorebookIds.includes(lb.file_path)) return true;
-    return false;
-  };
 
   // Create brand new Lorebook
   const handleCreateNewLorebook = () => {
@@ -186,16 +161,12 @@ export const LorebookView: React.FC = () => {
     }
   };
 
-  // Toggle entry enabled inline
-  const handleToggleEntryEnabled = (idxInActive: number) => {
+  // Toggle by identity: the list may be filtered, so its index does not match the lorebook.
+  const handleToggleEntry = (target: LorebookEntry) => {
     if (!activeLorebook) return;
-    const target = activeLorebook.entries[idxInActive];
-    if (!target) return;
-    const updatedEntries = [...activeLorebook.entries];
-    updatedEntries[idxInActive] = { ...target, enabled: !target.enabled };
     selectLorebook({
       ...activeLorebook,
-      entries: updatedEntries,
+      entries: activeLorebook.entries.map((e) => (e === target ? { ...e, enabled: !e.enabled } : e)),
     });
   };
 
@@ -234,110 +205,7 @@ export const LorebookView: React.FC = () => {
 
   return (
     <div className="flex-1 flex overflow-hidden bg-app text-slate-100">
-      {/* LEFT SIDEBAR: Lorebooks List */}
-      <div className="w-80 border-r border-slate-800 bg-slate-900/50 flex flex-col">
-        {/* Header */}
-        <div className="p-4 border-b border-slate-800 space-y-3">
-          <div className="flex items-center justify-between">
-            <div className="flex items-center gap-2">
-              <div className="w-8 h-8 rounded-lg bg-indigo-500/20 border border-indigo-500/30 flex items-center justify-center text-indigo-400">
-                <BookOpen className="w-4 h-4" />
-              </div>
-              <div>
-                <h1 className="text-sm font-bold text-slate-100">{t('lore.title')}</h1>
-                <p className="text-[11px] text-slate-400">{allLorebooks.length} Bücher verfügbar</p>
-              </div>
-            </div>
-            <button
-              onClick={refreshLorebooks}
-              title={t('lore.refresh')}
-              className="p-1.5 rounded-lg text-slate-400 hover:text-slate-100 hover:bg-slate-800 transition-colors"
-            >
-              <RotateCcw className="w-3.5 h-3.5" />
-            </button>
-          </div>
-
-          {/* Action Buttons */}
-          <div className="grid grid-cols-2 gap-2">
-            <button
-              onClick={handleCreateNewLorebook}
-              className="px-3 py-1.5 rounded-lg bg-indigo-600 hover:bg-indigo-500 text-white text-xs font-medium flex items-center justify-center gap-1.5 shadow transition-colors"
-            >
-              <Plus className="w-3.5 h-3.5" />
-              <span>{t('lore.new')}</span>
-            </button>
-            <button
-              onClick={handleImport}
-              className="px-3 py-1.5 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-200 text-xs font-medium flex items-center justify-center gap-1.5 border border-slate-700 transition-colors"
-            >
-              <Upload className="w-3.5 h-3.5" />
-              <span>{t('lore.import')}</span>
-            </button>
-          </div>
-
-          <button
-            onClick={() => openSoulHubTab('lorebooks')}
-            className="w-full py-1.5 px-3 rounded-lg bg-accent-600/15 hover:bg-accent-600/25 text-accent-300 border border-accent-500/30 text-xs font-medium flex items-center justify-center gap-1.5 transition-colors shadow-sm"
-          >
-            <Compass className="w-3.5 h-3.5 text-accent-400" />
-            <span>{t('lore.hub')}</span>
-          </button>
-
-          {/* Search */}
-          <div className="relative">
-            <Search className="w-3.5 h-3.5 absolute left-3 top-2.5 text-slate-500" />
-            <input
-              type="text"
-              placeholder={t('lore.search')}
-              value={searchQuery}
-              onChange={(e) => setSearchQuery(e.target.value)}
-              className="w-full bg-app border border-slate-800 rounded-lg pl-8 pr-3 py-1.5 text-xs text-slate-200 focus:outline-hidden focus:border-indigo-500/60"
-            />
-          </div>
-        </div>
-
-        {/* List of Lorebooks */}
-        <div className="flex-1 overflow-y-auto p-2 space-y-1">
-          {filteredLorebooks.map((lb) => {
-            const isSelected = activeLorebook?.id === lb.id || activeLorebook?.name === lb.name;
-            const global = isGlobalBook(lb);
-
-            return (
-              <div
-                key={lb.id || lb.name}
-                {...pressable(() => selectLorebook(lb))}
-                className={`p-3 rounded-xl border text-left cursor-pointer transition-all ${
-                  isSelected
-                    ? 'bg-indigo-600/15 border-indigo-500/50 shadow-sm'
-                    : 'bg-slate-900/60 border-slate-800/80 hover:bg-slate-800/50 hover:border-slate-700/80'
-                }`}
-              >
-                <div className="flex items-start justify-between gap-2 mb-1">
-                  <span className={`text-xs font-semibold line-clamp-1 ${isSelected ? 'text-indigo-300' : 'text-slate-200'}`}>
-                    {lb.name}
-                  </span>
-                  <div className="flex items-center gap-1 shrink-0">
-                    {global && (
-                      <span className="px-1.5 py-0.5 rounded text-[11px] font-mono bg-amber-500/20 text-amber-300 border border-amber-500/30 flex items-center gap-0.5">
-                        <Globe className="w-2.5 h-2.5" />
-                        <span>{t('lore.global')}</span>
-                      </span>
-                    )}
-                    <span className="px-1.5 py-0.5 rounded text-[11px] font-mono bg-slate-800 text-slate-400 border border-slate-700">
-                      {lb.entries.length} Einträge
-                    </span>
-                  </div>
-                </div>
-                <p className="text-xs text-slate-400 line-clamp-2">{lb.description || 'Keine Beschreibung.'}</p>
-              </div>
-            );
-          })}
-
-          {filteredLorebooks.length === 0 && (
-            <div className="p-8 text-center text-xs text-slate-500">{t('lore.noBooks')}</div>
-          )}
-        </div>
-      </div>
+      <LorebookSidebar onCreate={handleCreateNewLorebook} onImport={() => void handleImport()} />
 
       {/* RIGHT MAIN PANEL: Lorebook Editor & Entries */}
       {activeLorebook ? (
@@ -376,14 +244,14 @@ export const LorebookView: React.FC = () => {
                 <button
                   onClick={() => activeLorebook.id && toggleGlobalLorebook(activeLorebook.id)}
                   className={`px-3 py-1.5 rounded-lg border text-xs font-medium flex items-center gap-1.5 transition-colors ${
-                    isGlobalBook(activeLorebook)
+                    isGlobalLorebook(activeLorebook, globalLorebookIds)
                       ? 'bg-amber-500/20 border-amber-500/50 text-amber-300'
                       : 'bg-slate-800/80 border-slate-700 text-slate-300 hover:bg-slate-800'
                   }`}
                   title={t('lore.globalHint')}
                 >
                   <Globe className="w-3.5 h-3.5" />
-                  <span>{isGlobalBook(activeLorebook) ? 'Global aktiv' : 'Als Global setzen'}</span>
+                  <span>{isGlobalLorebook(activeLorebook, globalLorebookIds) ? t('lore.globalActive') : t('lore.setGlobal')}</span>
                 </button>
 
                 <button
@@ -400,7 +268,7 @@ export const LorebookView: React.FC = () => {
                   className="px-4 py-1.5 rounded-lg bg-indigo-600 hover:bg-indigo-500 text-white text-xs font-semibold flex items-center gap-1.5 shadow transition-colors disabled:opacity-50"
                 >
                   <Check className="w-3.5 h-3.5" />
-                  <span>{isSavingBook ? 'Speichert...' : 'Speichern'}</span>
+                  <span>{isSavingBook ? t('common.saving') : t('common.save')}</span>
                 </button>
 
                 {activeLorebook.file_path && (
@@ -494,6 +362,7 @@ export const LorebookView: React.FC = () => {
                 <input
                   type="text"
                   placeholder={t('lore.filterEntries')}
+                  aria-label={t('lore.filterEntries')}
                   value={entrySearchQuery}
                   onChange={(e) => setEntrySearchQuery(e.target.value)}
                   className="w-full bg-app border border-slate-800 rounded-lg pl-8 pr-3 py-1.5 text-xs text-slate-200 focus:outline-hidden focus:border-indigo-500/60"
@@ -563,101 +432,13 @@ export const LorebookView: React.FC = () => {
           {/* Entries Grid */}
           <div className="flex-1 overflow-y-auto p-5 space-y-3">
             {filteredEntries.map((entry, idx) => (
-              <div
+              <EntryCard
                 key={entry.name + idx}
-                className={`p-4 rounded-xl border transition-all ${
-                  entry.enabled
-                    ? 'bg-slate-900/60 border-slate-800 hover:border-slate-700/90'
-                    : 'bg-app/40 border-slate-900 opacity-60'
-                }`}
-              >
-                <div className="flex items-start justify-between gap-3 mb-2">
-                  <div className="flex items-center gap-2.5">
-                    <input
-                      type="checkbox"
-                      checked={entry.enabled}
-                      onChange={() => handleToggleEntryEnabled(idx)}
-                      className="rounded bg-app border-slate-700 text-indigo-600 focus:ring-0 cursor-pointer"
-                      title={entry.enabled ? 'Aktiv (klicken zum Deaktivieren)' : 'Deaktiviert'}
-                    />
-                    <h3 className="text-sm font-bold text-slate-100">{entry.name}</h3>
-
-                    {/* Trigger Badge */}
-                    <span className="px-2 py-0.5 rounded text-[11px] font-mono bg-slate-800 text-slate-300 border border-slate-700">
-                      {entry.trigger_type}
-                    </span>
-
-                    {/* Behavior Badge */}
-                    <span
-                      className={`px-2 py-0.5 rounded text-[11px] font-medium border ${
-                        entry.injection_behavior === 'active' || entry.injection_behavior === 'directive'
-                          ? 'bg-accent-500/20 border-accent-500/40 text-accent-300'
-                          : 'bg-slate-800 text-slate-400 border-slate-700'
-                      }`}
-                    >
-                      {entry.injection_behavior === 'active' || entry.injection_behavior === 'directive'
-                        ? t('lore.badgeActive')
-                        : t('lore.passive')}
-                    </span>
-
-                    {/* Priority & Probability */}
-                    <span className="text-[11px] text-slate-400">
-                      {t('lore.badgePriority', { priority: entry.priority ?? 10, probability: entry.probability ?? 100 })}
-                    </span>
-                  </div>
-
-                  <div className="flex items-center gap-1">
-                    <button
-                      onClick={() => setEditingEntry({ entry: { ...entry }, isNew: false })}
-                      className="p-1.5 rounded-lg text-slate-400 hover:text-indigo-300 hover:bg-slate-800 transition-colors"
-                      title={t('lore.edit')}
-                    >
-                      <Edit3 className="w-3.5 h-3.5" />
-                    </button>
-                    <button
-                      onClick={() => handleDeleteEntry(entry.name)}
-                      className="p-1.5 rounded-lg text-slate-500 hover:text-rose-400 hover:bg-rose-500/10 transition-colors"
-                      title={t('lore.delete')}
-                    >
-                      <Trash2 className="w-3.5 h-3.5" />
-                    </button>
-                  </div>
-                </div>
-
-                {/* Keys & Filters Tags */}
-                <div className="flex flex-wrap items-center gap-1.5 mb-2">
-                  {entry.key.map((k) => (
-                    <span key={k} className="px-2 py-0.5 rounded text-[11px] bg-indigo-500/15 text-indigo-300 border border-indigo-500/30">
-                      {k}
-                    </span>
-                  ))}
-                  {entry.secondary_keys && entry.secondary_keys.length > 0 && (
-                    <span className="px-2 py-0.5 rounded text-[11px] bg-cyan-500/15 text-cyan-300 border border-cyan-500/30" title={t('lore.secondaryHint')}>
-                      + {entry.secondary_keys.join(', ')}
-                    </span>
-                  )}
-                  {entry.exclude_key && entry.exclude_key.length > 0 && (
-                    <span className="px-2 py-0.5 rounded text-[11px] bg-rose-500/15 text-rose-300 border border-rose-500/30" title={t('lore.excludeHint')}>
-                      {t('lore.badgeNot', { keys: entry.exclude_key.join(', ') })}
-                    </span>
-                  )}
-                  {entry.tension_threshold && (
-                    <span className="px-2 py-0.5 rounded text-[11px] bg-amber-500/20 text-amber-300 border border-amber-500/40 flex items-center gap-1">
-                      <Flame className="w-2.5 h-2.5" /> {t('lore.badgeFrom', { value: entry.tension_threshold })}
-                    </span>
-                  )}
-                  {entry.chain_activates && entry.chain_activates.length > 0 && (
-                    <span className="px-2 py-0.5 rounded text-[11px] bg-emerald-500/15 text-emerald-300 border border-emerald-500/30 flex items-center gap-1">
-                      <Zap className="w-2.5 h-2.5" /> {t('lore.badgeActivates', { names: entry.chain_activates.join(', ') })}
-                    </span>
-                  )}
-                </div>
-
-                {/* Content preview */}
-                <p className="text-xs text-slate-300/90 whitespace-pre-wrap line-clamp-3 bg-app/40 p-2.5 rounded-lg border border-slate-800/60 font-sans">
-                  {entry.content}
-                </p>
-              </div>
+                entry={entry}
+                onToggle={() => handleToggleEntry(entry)}
+                onEdit={() => setEditingEntry({ entry: { ...entry }, isNew: false })}
+                onDelete={() => void handleDeleteEntry(entry.name)}
+              />
             ))}
 
             {filteredEntries.length === 0 && (
@@ -693,341 +474,5 @@ export const LorebookView: React.FC = () => {
         />
       )}
     </div>
-  );
-};
-
-interface EntryEditorModalProps {
-  initialEntry: LorebookEntry;
-  isNew: boolean;
-  onSave: (entry: LorebookEntry) => void;
-  onClose: () => void;
-}
-
-const EntryEditorModal: React.FC<EntryEditorModalProps> = ({ initialEntry, isNew, onSave, onClose }) => {
-  const { t } = useTranslation();
-  const [entry, setEntry] = useState<LorebookEntry>({ ...initialEntry });
-  const [primaryKeyInput, setPrimaryKeyInput] = useState((initialEntry.key || []).join(', '));
-  const [secondaryKeyInput, setSecondaryKeyInput] = useState((initialEntry.secondary_keys || []).join(', '));
-  const [excludeKeyInput, setExcludeKeyInput] = useState((initialEntry.exclude_key || []).join(', '));
-  const [regexKeyInput, setRegexKeyInput] = useState((initialEntry.regex_keys || []).join(', '));
-  const [chainActivatesInput, setChainActivatesInput] = useState((initialEntry.chain_activates || []).join(', '));
-  const [chainRequiresInput, setChainRequiresInput] = useState((initialEntry.chain_requires || []).join(', '));
-
-  const handleSave = () => {
-    const parseList = (str: string) =>
-      str
-        .split(',')
-        .map((s) => s.trim())
-        .filter((s) => s.length > 0);
-
-    const updated: LorebookEntry = {
-      ...entry,
-      key: parseList(primaryKeyInput),
-      secondary_keys: parseList(secondaryKeyInput),
-      exclude_key: parseList(excludeKeyInput),
-      regex_keys: parseList(regexKeyInput),
-      chain_activates: parseList(chainActivatesInput),
-      chain_requires: parseList(chainRequiresInput),
-    };
-    onSave(updated);
-  };
-
-  return (
-    <ModalOverlay onClose={onClose} className="fixed inset-0 z-50 bg-black/80 backdrop-blur-sm flex items-center justify-center p-4">
-      <div className="bg-slate-900 border border-slate-700/80 rounded-2xl w-full max-w-3xl max-h-[92vh] flex flex-col shadow-2xl overflow-hidden animate-in fade-in zoom-in-95">
-        {/* Header */}
-        <div className="px-6 py-4 border-b border-slate-800 flex items-center justify-between bg-app/60">
-          <div className="flex items-center gap-2.5">
-            <div className="w-8 h-8 rounded-lg bg-indigo-500/20 border border-indigo-500/30 flex items-center justify-center text-indigo-400">
-              <Sparkles className="w-4 h-4" />
-            </div>
-            <div>
-              <h2 className="text-sm font-bold text-slate-100">
-                {isNew ? t('lore.editorNew') : t('lore.editorEdit', { name: entry.name })}
-              </h2>
-              <p className="text-[11px] text-slate-400">{t('lore.editorIntro')}</p>
-            </div>
-          </div>
-          <button onClick={onClose} className="p-1.5 rounded-lg text-slate-400 hover:text-slate-100 hover:bg-slate-800">
-            <X className="w-4 h-4" />
-          </button>
-        </div>
-
-        {/* Form Body */}
-        <div className="flex-1 overflow-y-auto p-6 space-y-5 text-xs text-slate-300">
-          {/* Row 1: Name & Enabled */}
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-            <div className="md:col-span-2 space-y-1">
-              <label className="text-xs font-semibold text-slate-300">{t('lore.entryName')}</label>
-              <input
-                type="text"
-                value={entry.name}
-                onChange={(e) => setEntry({ ...entry, name: e.target.value })}
-                className="w-full bg-app border border-slate-800 rounded-lg px-3 py-2 text-xs text-slate-100 focus:outline-hidden focus:border-indigo-500"
-              />
-            </div>
-            <div className="space-y-1 flex flex-col justify-end">
-              <label className="flex items-center gap-2 p-2 bg-app border border-slate-800 rounded-lg cursor-pointer select-none">
-                <input
-                  type="checkbox"
-                  checked={entry.enabled}
-                  onChange={(e) => setEntry({ ...entry, enabled: e.target.checked })}
-                  className="rounded bg-slate-900 border-slate-700 text-indigo-600 focus:ring-0"
-                />
-                <span className="font-semibold text-slate-200">{t('lore.entryActive')}</span>
-              </label>
-            </div>
-          </div>
-
-          {/* Row 2: Injection Mode & Trigger Type */}
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4 p-3.5 bg-app/60 rounded-xl border border-slate-800/80">
-            <div className="space-y-1.5">
-              <label className="text-xs font-semibold text-slate-200 flex items-center gap-1.5">
-                <Sliders className="w-3.5 h-3.5 text-indigo-400" />
-                <span>{t('lore.injection')}</span>
-              </label>
-              <div className="grid grid-cols-2 gap-2">
-                <button
-                  type="button"
-                  onClick={() => setEntry({ ...entry, injection_behavior: 'passive' })}
-                  className={`px-3 py-2 rounded-lg border text-left transition-all ${
-                    entry.injection_behavior === 'passive'
-                      ? 'bg-indigo-600/20 border-indigo-500 text-indigo-200 font-semibold'
-                      : 'bg-slate-900 border-slate-800 text-slate-400 hover:text-slate-200'
-                  }`}
-                >
-                  <div className="font-medium text-xs">{t('lore.passive')}</div>
-                  <div className="text-[11px] text-slate-400 mt-0.5">{t('lore.passiveHint')}</div>
-                </button>
-                <button
-                  type="button"
-                  onClick={() => setEntry({ ...entry, injection_behavior: 'active' })}
-                  className={`px-3 py-2 rounded-lg border text-left transition-all ${
-                    entry.injection_behavior === 'active' || entry.injection_behavior === 'directive'
-                      ? 'bg-accent-600/20 border-accent-500 text-accent-200 font-semibold'
-                      : 'bg-slate-900 border-slate-800 text-slate-400 hover:text-slate-200'
-                  }`}
-                >
-                  <div className="font-medium text-xs">{t('lore.activeDirective')}</div>
-                  <div className="text-[11px] text-slate-400 mt-0.5">{t('lore.activeHint')}</div>
-                </button>
-              </div>
-            </div>
-
-            <div className="space-y-1.5">
-              <label className="text-xs font-semibold text-slate-200 flex items-center gap-1.5">
-                <Zap className="w-3.5 h-3.5 text-amber-400" />
-                <span>{t('lore.triggerType')}</span>
-              </label>
-              <select
-                value={entry.trigger_type}
-                onChange={(e) => setEntry({ ...entry, trigger_type: e.target.value })}
-                className="w-full bg-slate-900 border border-slate-800 rounded-lg px-3 py-2 text-xs text-slate-200 focus:outline-hidden focus:border-indigo-500"
-              >
-                <option value="keyword">{t('lore.triggerKeyword')}</option>
-                <option value="regex">{t('lore.triggerRegex')}</option>
-                <option value="always_on">{t('lore.triggerAlways')}</option>
-                <option value="tension">{t('lore.triggerTension')}</option>
-              </select>
-            </div>
-          </div>
-
-          {/* Row 3: Keywords & Trigger Inputs */}
-          {entry.trigger_type === 'keyword' && (
-            <div className="space-y-3">
-              <div className="space-y-1">
-                <label className="text-xs font-semibold text-slate-300">
-                  {t('lore.primaryKeys')}
-                </label>
-                <input
-                  type="text"
-                  value={primaryKeyInput}
-                  onChange={(e) => setPrimaryKeyInput(e.target.value)}
-                  placeholder={t('lore.primaryKeysPlaceholder')}
-                  className="w-full bg-app border border-slate-800 rounded-lg px-3 py-2 text-xs text-slate-100 focus:outline-hidden focus:border-indigo-500"
-                />
-              </div>
-
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-                <div className="space-y-1">
-                  <label className="text-xs font-semibold text-cyan-300">
-                    {t('lore.secondaryKeys')}
-                  </label>
-                  <input
-                    type="text"
-                    value={secondaryKeyInput}
-                    onChange={(e) => setSecondaryKeyInput(e.target.value)}
-                    placeholder={t('lore.secondaryKeysPlaceholder')}
-                    className="w-full bg-app border border-slate-800 rounded-lg px-3 py-2 text-xs text-slate-100 focus:outline-hidden focus:border-indigo-500"
-                  />
-                </div>
-                <div className="space-y-1">
-                  <label className="text-xs font-semibold text-rose-300">
-                    {t('lore.excludeKeys')}
-                  </label>
-                  <input
-                    type="text"
-                    value={excludeKeyInput}
-                    onChange={(e) => setExcludeKeyInput(e.target.value)}
-                    placeholder={t('lore.excludeKeysPlaceholder')}
-                    className="w-full bg-app border border-slate-800 rounded-lg px-3 py-2 text-xs text-slate-100 focus:outline-hidden focus:border-indigo-500"
-                  />
-                </div>
-              </div>
-            </div>
-          )}
-
-          {entry.trigger_type === 'regex' && (
-            <div className="space-y-1">
-              <label className="text-xs font-semibold text-slate-300">{t('lore.regexKeys')}</label>
-              <input
-                type="text"
-                value={regexKeyInput}
-                onChange={(e) => setRegexKeyInput(e.target.value)}
-                placeholder={t('lore.regexPlaceholder', { example: '\\b(Drache|Wyrm|Lindwurm)\\b' })}
-                className="w-full bg-app border border-slate-800 rounded-lg px-3 py-2 text-xs font-mono text-slate-100 focus:outline-hidden focus:border-indigo-500"
-              />
-            </div>
-          )}
-
-          {entry.trigger_type === 'tension' && (
-            <div className="space-y-1 p-3 bg-amber-500/10 border border-amber-500/30 rounded-xl">
-              <label className="text-xs font-bold text-amber-300 flex items-center gap-1.5">
-                <Flame className="w-3.5 h-3.5" />
-                <span>{t('lore.tensionThreshold')}</span>
-              </label>
-              <input
-                type="number"
-                min={1}
-                max={100}
-                value={entry.tension_threshold || 60}
-                onChange={(e) => setEntry({ ...entry, tension_threshold: parseInt(e.target.value) || 60 })}
-                className="w-full bg-app border border-slate-800 rounded-lg px-3 py-2 text-xs text-slate-100 focus:outline-hidden focus:border-amber-500"
-              />
-              <p className="text-[11px] text-amber-400/80">
-                {t('lore.tensionThresholdHint')}
-              </p>
-            </div>
-          )}
-
-          {/* Row 4: Priority, Probability, Boundary Check */}
-          <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
-            <div className="space-y-1">
-              <label className="text-xs font-semibold text-slate-300">{t('lore.priority')}</label>
-              <input
-                type="number"
-                value={entry.priority ?? 10}
-                onChange={(e) => setEntry({ ...entry, priority: parseInt(e.target.value) || 10 })}
-                className="w-full bg-app border border-slate-800 rounded-lg px-3 py-1.5 text-xs text-slate-100"
-              />
-            </div>
-
-            <div className="space-y-1">
-              <label className="text-xs font-semibold text-slate-300">{t('lore.probability')}</label>
-              <input
-                type="number"
-                min={1}
-                max={100}
-                value={entry.probability ?? 100}
-                onChange={(e) => setEntry({ ...entry, probability: parseInt(e.target.value) || 100 })}
-                className="w-full bg-app border border-slate-800 rounded-lg px-3 py-1.5 text-xs text-slate-100"
-              />
-            </div>
-
-            <div className="flex items-center gap-1.5 pt-5 cursor-pointer">
-              <input
-                type="checkbox"
-                id="wholeWords"
-                checked={entry.match_whole_words || false}
-                onChange={(e) => setEntry({ ...entry, match_whole_words: e.target.checked })}
-                className="rounded bg-app border-slate-700 text-indigo-600 focus:ring-0"
-              />
-              <label htmlFor="wholeWords" className="text-xs text-slate-300 cursor-pointer">
-                {t('lore.wholeWords')}
-              </label>
-            </div>
-
-            <div className="flex items-center gap-1.5 pt-5 cursor-pointer">
-              <input
-                type="checkbox"
-                id="caseSens"
-                checked={entry.case_sensitive || false}
-                onChange={(e) => setEntry({ ...entry, case_sensitive: e.target.checked })}
-                className="rounded bg-app border-slate-700 text-indigo-600 focus:ring-0"
-              />
-              <label htmlFor="caseSens" className="text-xs text-slate-300 cursor-pointer">
-                {t('lore.caseSensitive')}
-              </label>
-            </div>
-          </div>
-
-          {/* Row 5: Chain Dependencies */}
-          <div className="p-3 bg-app/60 rounded-xl border border-slate-800 space-y-2">
-            <h4 className="text-xs font-bold text-slate-200 flex items-center gap-1.5">
-              <Layers className="w-3.5 h-3.5 text-indigo-400" />
-              <span>{t('lore.chains')}</span>
-            </h4>
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-              <div className="space-y-1">
-                <label className="text-[11px] text-slate-400">{t('lore.chainRequires')}</label>
-                <input
-                  type="text"
-                  value={chainRequiresInput}
-                  onChange={(e) => setChainRequiresInput(e.target.value)}
-                  placeholder={t('lore.chainPlaceholder')}
-                  className="w-full bg-app border border-slate-800 rounded-lg px-2.5 py-1 text-xs text-slate-200"
-                />
-              </div>
-              <div className="space-y-1">
-                <label className="text-[11px] text-slate-400">{t('lore.chainActivates')}</label>
-                <input
-                  type="text"
-                  value={chainActivatesInput}
-                  onChange={(e) => setChainActivatesInput(e.target.value)}
-                  placeholder={t('lore.chainPlaceholder')}
-                  className="w-full bg-app border border-slate-800 rounded-lg px-2.5 py-1 text-xs text-slate-200"
-                />
-              </div>
-            </div>
-          </div>
-
-          {/* Row 6: Lore Content Area */}
-          <div className="space-y-1.5">
-            <div className="flex items-center justify-between">
-              <label className="text-xs font-semibold text-slate-200">
-                {t('lore.content')}
-              </label>
-              <span className="text-[11px] text-slate-400 font-mono">
-                {t('lore.supportsMacros', { macros: '{{char}} & {{user}}' })}
-              </span>
-            </div>
-            <textarea
-              rows={6}
-              value={entry.content}
-              onChange={(e) => setEntry({ ...entry, content: e.target.value })}
-              placeholder={t('lore.contentPlaceholder')}
-              className="w-full bg-app border border-slate-800 rounded-xl p-3 text-xs text-slate-100 font-mono focus:outline-hidden focus:border-indigo-500 leading-relaxed"
-            />
-          </div>
-        </div>
-
-        {/* Footer */}
-        <div className="px-6 py-3.5 border-t border-slate-800 bg-app/60 flex items-center justify-end gap-2.5">
-          <button
-            onClick={onClose}
-            className="px-4 py-1.5 rounded-xl text-slate-400 hover:text-slate-100 hover:bg-slate-800 text-xs font-medium transition-colors"
-          >
-            {t('common.cancel')}
-          </button>
-          <button
-            onClick={handleSave}
-            disabled={!entry.name.trim()}
-            className="px-5 py-1.5 rounded-xl bg-indigo-600 hover:bg-indigo-500 text-white text-xs font-semibold shadow transition-colors disabled:opacity-50"
-          >
-            {t('lore.saveEntry')}
-          </button>
-        </div>
-      </div>
-    </ModalOverlay>
   );
 };

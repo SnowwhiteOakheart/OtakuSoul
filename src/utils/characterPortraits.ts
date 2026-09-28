@@ -1,13 +1,14 @@
 import { convertFileSrc } from '@tauri-apps/api/core';
 import { CharacterProfile } from '../types';
 
+/** Expression slots a character can have a portrait for; labels are the `portrait.<key>` translations. */
 export const PORTRAIT_MOODS = [
-  { key: 'neutral', label: 'Neutral', description: 'Ruhiger Standardausdruck' },
-  { key: 'happy', label: 'Fröhlich', description: 'Freude, Zuneigung und Begeisterung' },
-  { key: 'sad', label: 'Traurig', description: 'Trauer, Angst und Enttäuschung' },
-  { key: 'angry', label: 'Wütend', description: 'Ärger, Ablehnung und Ekel' },
-  { key: 'surprised', label: 'Überrascht', description: 'Überraschung, Neugier und Erkenntnis' },
-  { key: 'relaxed', label: 'Entspannt', description: 'Gelassenheit und leise Zwischentöne' },
+  { key: 'neutral' },
+  { key: 'happy' },
+  { key: 'sad' },
+  { key: 'angry' },
+  { key: 'surprised' },
+  { key: 'relaxed' },
 ] as const;
 
 export type PortraitMood = (typeof PORTRAIT_MOODS)[number]['key'];

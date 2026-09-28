@@ -1,3 +1,4 @@
+import { translate } from '../i18n';
 export interface VoiceCaptureResult {
   audioBase64: string;
   durationMs: number;
@@ -56,9 +57,9 @@ export class VoiceCapture {
   private options: VoiceCaptureOptions = {};
 
   public async start(options: VoiceCaptureOptions = {}) {
-    if (this.active) throw new Error('Eine Mikrofonaufnahme läuft bereits.');
+    if (this.active) throw new Error(translate('errors.recordingActive'));
     if (!navigator.mediaDevices?.getUserMedia) {
-      throw new Error('Mikrofonzugriff wird von diesem System nicht unterstützt.');
+      throw new Error(translate('errors.micUnsupported'));
     }
 
     this.options = options;

@@ -161,8 +161,9 @@ GitHub Actions wurden bewusst entfernt (Commit `11597c2`). Stattdessen gibt es j
 - [x] **Unnötige Re-Renders:** → Alle Komponenten abonnieren nur noch ihre Felder (`useStoreFields(...)` bzw. Selektoren).
   *Ursprünglich:* 29 Komponenten holen den ganzen Store (`const { … } = useAppStore()`), nur eine nutzt einen Selektor.
   Jeder Status-Poll (alle 2 s) rendert dadurch fast die gesamte App neu. → Selektoren mit `useShallow` verwenden.
-- [ ] *(teilweise: `SettingsView` → `settings/sections/`, `SoulHubView` → `hub/tabs/` mit eigenem Hub-Store, `CompanionView` → `companion/tabs/`, `IntegrationsView` → `integrations/tabs/`, `CognitiveMemoryDrawer` → `chat/memory/`)* Riesige Komponenten aufteilen: `SettingsView.tsx` (1.874 Z.), `SoulHubView.tsx` (1.255), `CompanionView.tsx` (1.230),
-  `IntegrationsView.tsx` (1.213), `CognitiveMemoryDrawer.tsx` (1.126), `LorebookView.tsx` (1.025).
+- [x] Riesige Komponenten aufgeteilt: `SettingsView` → `settings/sections/`, `SoulHubView` → `hub/tabs/` (mit eigenem Hub-Store),
+  `CompanionView` → `companion/tabs/`, `IntegrationsView` → `integrations/tabs/`, `CognitiveMemoryDrawer` → `chat/memory/`,
+  `LorebookView` → Seitenleiste, Eintragskarte und Eintragsdialog. Keine Datei liegt mehr über 800 Zeilen.
 - [ ] `src/types/index.ts` (1.138 Z.): Typen aus Rust generieren (`specta` + `tauri-specta` oder `ts-rs`), damit Frontend und Backend nicht auseinanderlaufen.
   Gleichzeitig erhält man typisierte `invoke`-Aufrufe statt manueller Wrapper in `api.ts` (1.179 Z.).
 - [ ] `any` beseitigen (oxlint warnt; von 35 auf 18 reduziert), 185× `console.*` durch den vorhandenen Logger ersetzen.

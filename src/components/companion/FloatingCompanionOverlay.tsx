@@ -89,7 +89,9 @@ export const FloatingCompanionOverlay: React.FC = () => {
           <div className="flex items-center gap-1">
             <button
               onClick={toggleClickThrough}
-              title={clickThrough ? 'Click-Through aktiv' : 'Click-Through umschalten'}
+              title={t(clickThrough ? 'overlay.clickThroughOn' : 'overlay.clickThroughOff')}
+              aria-label={t(clickThrough ? 'overlay.clickThroughOn' : 'overlay.clickThroughOff')}
+              aria-pressed={clickThrough}
               className={`p-1 rounded-lg border text-xs transition ${
                 clickThrough
                   ? 'bg-amber-950/80 border-amber-500/60 text-amber-300'

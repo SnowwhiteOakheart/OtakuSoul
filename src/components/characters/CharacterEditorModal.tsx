@@ -135,7 +135,7 @@ export const CharacterEditorModal = ({
 
   const handleSave = async () => {
     if (!name.trim()) {
-      setErrorMsg('Bitte gib dem Charakter einen Namen.');
+      setErrorMsg(translate('editor.nameRequired'));
       return;
     }
 

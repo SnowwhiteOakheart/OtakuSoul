@@ -4,6 +4,7 @@ import { UserPersona } from '../../types';
 import { X, UserPlus, Check, Trash2, User } from 'lucide-react';
 import { ModalOverlay } from '../ui/ModalOverlay';
 import { translate, useTranslation } from '../../i18n';
+import { errorMessage } from '../../utils/errors';
 import { confirmDialog } from '../ui/feedback';
 
 interface PersonaManagerModalProps {
@@ -43,7 +44,7 @@ export const PersonaManagerModal = ({ onClose }: PersonaManagerModalProps) => {
       setErrorMsg(null);
     } catch (e) {
       console.error('Failed to create persona:', e);
-      setErrorMsg('Fehler beim Erstellen der Persona.');
+      setErrorMsg(translate('persona.createFailed', { error: errorMessage(e) }));
     }
   };
 

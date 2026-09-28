@@ -1,3 +1,4 @@
+import { translate } from '../i18n';
 let cubismCorePromise: Promise<void> | null = null;
 
 /**
@@ -18,7 +19,7 @@ export const loadCubismCore = (): Promise<void> => {
       script.onerror = () => {
         cubismCorePromise = null;
         script.remove();
-        reject(new Error('Live2D Cubism Core konnte nicht geladen werden.'));
+        reject(new Error(translate('errors.live2dCoreMissing')));
       };
       document.head.appendChild(script);
     });

@@ -1,3 +1,4 @@
+import { translate } from '../i18n';
 export type AudioPlaybackState = 'idle' | 'loading' | 'playing';
 
 interface QueuedAudio {
@@ -57,7 +58,7 @@ export class AudioPlaybackManager {
     if (!this.audioContext || this.audioContext.state === 'closed') {
       const AudioContextClass = window.AudioContext ||
         (window as typeof window & { webkitAudioContext?: typeof AudioContext }).webkitAudioContext;
-      if (!AudioContextClass) throw new Error('Web Audio wird von diesem System nicht unterstützt.');
+      if (!AudioContextClass) throw new Error(translate('errors.webAudioUnsupported'));
 
       this.audioContext = new AudioContextClass() as SinkAwareAudioContext;
       this.analyser = this.audioContext.createAnalyser();
