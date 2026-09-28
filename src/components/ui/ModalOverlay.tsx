@@ -37,7 +37,11 @@ export const ModalOverlay: React.FC<ModalOverlayProps> = ({
     const dialog = ref.current;
     if (!dialog) return;
     const previouslyFocused = document.activeElement as HTMLElement | null;
-    dialogStack.push(dialog);
+    // Effects run child-first, so a parent dialog mounting together with a nested one must go
+    // below it in the stack rather than on top.
+    const firstNested = dialogStack.findIndex((open) => dialog.contains(open));
+    if (firstNested === -1) dialogStack.push(dialog);
+    else dialogStack.splice(firstNested, 0, dialog);
 
     const initial =
       dialog.querySelector<HTMLElement>('[data-autofocus], [autofocus]') ??

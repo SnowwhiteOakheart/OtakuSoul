@@ -185,10 +185,12 @@ GitHub Actions wurden bewusst entfernt (Commit `11597c2`). Stattdessen gibt es j
 
 ### Tests
 
-- [ ] Frontend-Abdeckung ausbauen: Aktuell gibt es nur 3 Testdateien (i18n, soundFx, stateParser). Tests für Store-Slices, `api.ts`-Mocks
+- [ ] *(teilweise: Store-Tests mit API-Mock, Komponenten-Tests mit Testing Library/jsdom für Dialog, Menü, ErrorBoundary,
+  Bestätigungsdialog, `pressable` und den Einrichtungsassistenten – 47 Tests; offen: Chat, Stage, Charakter-Editor)* Frontend-Abdeckung ausbauen: Aktuell gibt es nur 3 Testdateien (i18n, soundFx, stateParser). Tests für Store-Slices, `api.ts`-Mocks
   und Kernkomponenten mit `@testing-library/react` ergänzen.
 - [ ] E2E-Rauchtest mit WebdriverIO + `tauri-driver` (App starten, Charakter importieren, Chat senden gegen einen Mock-Provider).
-- [ ] *(teilweise: `companion_tools`, `web_server`-Token, Discord-Split)* Rust: Tests für `companion_tools` (Web-Fetch, Shell-Freigaben), `web_server` (Auth) und `profile_backup` (Round-Trip).
+- [x] Rust: Tests für `companion_tools`, `web_server` (Auth) und `profile_backup` (Round-Trip inkl. Datenbank, Gruppenauswahl, Rotation) vorhanden.
+  *Ursprünglich:* Tests für `companion_tools` (Web-Fetch, Shell-Freigaben), `web_server` (Auth) und `profile_backup` (Round-Trip).
 
 ---
 

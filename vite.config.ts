@@ -1,3 +1,4 @@
+/// <reference types="vitest/config" />
 import { defineConfig } from "vite";
 import react from "@vitejs/plugin-react";
 import tailwindcss from "@tailwindcss/vite";
@@ -8,6 +9,10 @@ const host = process.env.TAURI_DEV_HOST;
 // https://vite.dev/config/
 export default defineConfig(() => ({
   plugins: [react(), tailwindcss()],
+  test: {
+    // Component tests opt into jsdom with `// @vitest-environment jsdom`; the rest stays on fast node.
+    setupFiles: ['src/test/setup.ts'],
+  },
   build: {
     // The isolated Three.js/VRM avatar chunk is loaded only when the avatar is visible.
     chunkSizeWarningLimit: 800,
