@@ -190,6 +190,8 @@ const REPLY_LANGUAGE_BY_CODE: Record<string, string> = {
 export const normalizeReplyLanguage = (value: string | null | undefined): string =>
   (value && (REPLY_LANGUAGE_BY_CODE[value] ?? value)) || 'Deutsch';
 
+export type SettingsSection = 'general' | 'server' | 'providers' | 'sampler' | 'hub';
+
 export type AppTab = 'chat' | 'characters' | 'lorebooks' | 'stage' | 'companion' | 'settings' | 'hub' | 'integrations';
 
 interface AppStoreState {
@@ -504,6 +506,13 @@ interface AppStoreState {
   setAppLanguage: (lang: 'de' | 'en' | 'ru') => void;
   theme: string;
   setTheme: (theme: string) => void;
+  /** False only on a fresh install; shows the first-run wizard. */
+  onboardingCompleted: boolean;
+  completeOnboarding: () => void;
+  /** Settings section to open next time the settings view mounts. */
+  pendingSettingsSection: SettingsSection | null;
+  openSettingsSection: (section: SettingsSection) => void;
+  consumePendingSettingsSection: () => SettingsSection | null;
   isLogViewerOpen: boolean;
   setIsLogViewerOpen: (open: boolean) => void;
   isUpdaterOpen: boolean;
@@ -804,6 +813,7 @@ export const useAppStore = create<AppStoreState>((set, get) => ({
         avatarMode: settings.avatar_mode || '3d',
         appLanguage: settings.app_language || 'de',
         theme: settings.theme || 'obsidian',
+        onboardingCompleted: settings.onboarding_completed !== false,
       });
 
       if (typeof document !== 'undefined') {
@@ -900,6 +910,7 @@ export const useAppStore = create<AppStoreState>((set, get) => ({
         avatar_mode: state.avatarMode,
         app_language: state.appLanguage,
         theme: state.theme,
+        onboarding_completed: state.onboardingCompleted,
       };
       await api.saveSettings(settings);
     } catch (e) {
@@ -2996,6 +3007,21 @@ export const useAppStore = create<AppStoreState>((set, get) => ({
       document.documentElement.setAttribute('data-theme', theme);
     }
     get().saveCurrentSettings();
+  },
+
+  // Starts as completed so the wizard never flashes before the settings are loaded.
+  onboardingCompleted: true,
+  completeOnboarding: () => {
+    set({ onboardingCompleted: true });
+    get().saveCurrentSettings();
+  },
+
+  pendingSettingsSection: null,
+  openSettingsSection: (section) => set({ pendingSettingsSection: section, activeTab: 'settings' }),
+  consumePendingSettingsSection: () => {
+    const section = get().pendingSettingsSection;
+    if (section) set({ pendingSettingsSection: null });
+    return section;
   },
 
   isLogViewerOpen: false,

@@ -19,10 +19,12 @@ const IntegrationsView = lazy(() => import('./components/integrations/Integratio
 const FloatingCompanionOverlay = lazy(() => import('./components/companion/FloatingCompanionOverlay').then((module) => ({ default: module.FloatingCompanionOverlay })));
 const CharacterAiAssistantModal = lazy(() => import('./components/characters/CharacterAiAssistantModal').then((module) => ({ default: module.CharacterAiAssistantModal })));
 const LogViewerModal = lazy(() => import('./components/logging/LogViewerModal').then((module) => ({ default: module.LogViewerModal })));
+const FirstRunWizard = lazy(() => import('./components/onboarding/FirstRunWizard').then((module) => ({ default: module.FirstRunWizard })));
 const UpdaterModal = lazy(() => import('./components/updater/UpdaterModal').then((module) => ({ default: module.UpdaterModal })));
 
 export function App() {
   const activeTab = useAppStore((s) => s.activeTab);
+  const onboardingCompleted = useAppStore((s) => s.onboardingCompleted);
   const { t } = useTranslation();
   const isOverlayMode = typeof window !== 'undefined' && window.location.search.includes('overlay=true');
 
@@ -61,6 +63,7 @@ export function App() {
         <CharacterAiAssistantModal />
         <LogViewerModal />
         <UpdaterModal />
+        {!onboardingCompleted && <FirstRunWizard />}
       </Suspense>
       <FeedbackHost />
     </div>

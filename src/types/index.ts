@@ -727,6 +727,7 @@ export interface AppSettings {
   avatar_mode?: '3d' | 'live2d' | '2d';
   app_language?: 'de' | 'en' | 'ru';
   theme?: 'obsidian' | 'cyberpunk' | 'sakura' | 'midnight' | 'emerald' | string;
+  onboarding_completed?: boolean;
 }
 
 // Phase 14: Live2D & Emotion Classification

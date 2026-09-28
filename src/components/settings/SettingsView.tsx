@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { useAppStore } from '../../store/useAppStore';
+import { useAppStore, type SettingsSection } from '../../store/useAppStore';
 import { translate, useTranslation, SupportedLanguage } from '../../i18n';
 import { open } from '@tauri-apps/plugin-dialog';
 import { openUrl } from '@tauri-apps/plugin-opener';
@@ -33,6 +33,7 @@ import { LlmProviderType, LlmPreset } from '../../types';
 import { api } from '../../services/api';
 import { confirmDialog, toast } from '../ui/feedback';
 import { errorMessage } from '../../utils/errors';
+import { APP_THEMES } from './themes';
 
 export const SettingsView = () => {
   const { t } = useTranslation();
@@ -98,7 +99,15 @@ export const SettingsView = () => {
     initApp,
   } = useAppStore();
 
-  const [activeTab, setActiveTab] = useState<'general' | 'server' | 'providers' | 'sampler' | 'hub'>('general');
+  const [activeTab, setActiveTab] = useState<SettingsSection>(
+    () => useAppStore.getState().pendingSettingsSection ?? 'general'
+  );
+  // Other views (e.g. the first-run wizard) can ask for a specific section while this view is open.
+  const pendingSection = useAppStore((state) => state.pendingSettingsSection);
+  useEffect(() => {
+    const section = useAppStore.getState().consumePendingSettingsSection();
+    if (section) setActiveTab(section);
+  }, [pendingSection]);
   const [showLogs, setShowLogs] = useState(true);
 
   // OpenRouter search filter
@@ -385,48 +394,7 @@ export const SettingsView = () => {
               </div>
 
               <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
-                {[
-                  {
-                    id: 'obsidian',
-                    name: 'Obsidian',
-                    desc: t('settings.theme.obsidian'),
-                    primary: '#a855f7',
-                    accent: '#ec4899',
-                    bg: '#0f172a',
-                  },
-                  {
-                    id: 'cyberpunk',
-                    name: 'Cyberpunk',
-                    desc: t('settings.theme.cyberpunk'),
-                    primary: '#facc15',
-                    accent: '#06b6d4',
-                    bg: '#0c0a1a',
-                  },
-                  {
-                    id: 'sakura',
-                    name: 'Sakura Blossom',
-                    desc: t('settings.theme.sakura'),
-                    primary: '#f472b6',
-                    accent: '#fb7185',
-                    bg: '#160c1c',
-                  },
-                  {
-                    id: 'midnight',
-                    name: 'Midnight OLED',
-                    desc: t('settings.theme.midnight'),
-                    primary: '#38bdf8',
-                    accent: '#818cf8',
-                    bg: '#000000',
-                  },
-                  {
-                    id: 'emerald',
-                    name: 'Emerald Matrix',
-                    desc: t('settings.theme.emerald'),
-                    primary: '#10b981',
-                    accent: '#34d399',
-                    bg: '#02180e',
-                  },
-                ].map((th) => {
+                {APP_THEMES.map((th) => {
                   const isSelected = (theme || 'obsidian') === th.id;
                   return (
                     <button
@@ -448,7 +416,7 @@ export const SettingsView = () => {
                           </div>
                         )}
                       </div>
-                      <span className="text-xs text-slate-400 mt-1 mb-3">{th.desc}</span>
+                      <span className="text-xs text-slate-400 mt-1 mb-3">{t(`settings.theme.${th.id}`)}</span>
                       
                       {/* Farbmuster */}
                       <div className="flex items-center gap-1.5 mt-auto">
