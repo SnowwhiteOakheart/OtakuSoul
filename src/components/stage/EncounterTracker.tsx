@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { useStoreFields } from '../../store/useAppStore';
-import { Swords, Shield, Heart, Zap, SkipForward, Play, Square, Plus, Crosshair, Wind, DoorOpen, Hourglass } from 'lucide-react';
+import { ArrowRight, Swords, Shield, Heart, Zap, SkipForward, Play, Square, Plus, Crosshair, Wind, DoorOpen, Hourglass } from 'lucide-react';
 import { ModalOverlay } from '../ui/ModalOverlay';
 import { translate, useTranslation, type TranslationKey } from '../../i18n';
 
@@ -283,8 +283,9 @@ export const EncounterTracker: React.FC = () => {
               .slice(-5)
               .reverse()
               .map((log, idx) => (
-                <div key={idx} className="leading-snug text-slate-400">
-                  ➔ {log}
+                <div key={idx} className="flex items-start gap-1 leading-snug text-slate-400">
+                  <ArrowRight className="mt-0.5 h-3 w-3 shrink-0" aria-hidden />
+                  <span>{log}</span>
                 </div>
               ))}
           </div>

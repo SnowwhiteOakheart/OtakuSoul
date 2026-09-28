@@ -2,7 +2,7 @@ import { useState } from 'react';
 import { useStoreFields } from '../../../store/useAppStore';
 import { translate, useTranslation, type TranslationKey } from '../../../i18n';
 import { toast } from '../../ui/feedback';
-import { Sparkles } from 'lucide-react';
+import { Sparkles, Star } from 'lucide-react';
 
 type MemoryCategory = 'fact' | 'secret' | 'promise' | 'event' | 'location';
 
@@ -95,8 +95,10 @@ export const MemoriesTab = () => {
                       ? t(`memory.cat.${mem.category}` as TranslationKey)
                       : mem.category}
                   </span>
-                  <span className="text-amber-400 text-xs font-mono">
-                    {'★'.repeat(mem.significance)}
+                  <span className="flex items-center text-amber-400" aria-label={`${t('memory.significance')}: ${mem.significance}`}>
+                    {Array.from({ length: mem.significance }, (_, index) => (
+                      <Star key={index} className="h-3 w-3 fill-current" aria-hidden />
+                    ))}
                   </span>
                 </div>
                 <p className="text-xs text-slate-200 leading-relaxed whitespace-pre-wrap">{mem.content}</p>

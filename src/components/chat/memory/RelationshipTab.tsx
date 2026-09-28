@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { useStoreFields } from '../../../store/useAppStore';
 import { useTranslation, type TranslationKey } from '../../../i18n';
-import { Plus } from 'lucide-react';
+import { Check, Plus, X } from 'lucide-react';
 
 export const RelationshipTab = () => {
   const { t } = useTranslation();
@@ -189,7 +189,10 @@ export const RelationshipTab = () => {
                 key={i}
                 className="flex items-center justify-between p-2 rounded-lg bg-slate-900/60 border border-slate-800 text-xs text-slate-300"
               >
-                <span>✓ {m}</span>
+                <span className="flex items-center gap-1.5">
+                  <Check className="h-3.5 w-3.5 text-emerald-400" aria-hidden />
+                  {m}
+                </span>
                 <button
                   onClick={() =>
                     updateRelationship({
@@ -200,7 +203,7 @@ export const RelationshipTab = () => {
                   aria-label={t('memory.removeItem', { item: m })}
                   className="text-slate-500 hover:text-rose-400 transition"
                 >
-                  ×
+                  <X className="h-3.5 w-3.5" aria-hidden />
                 </button>
               </div>
             ))}

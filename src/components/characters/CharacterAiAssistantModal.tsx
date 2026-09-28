@@ -18,6 +18,7 @@ import {
   Heart,
   Globe,
   MessageSquare,
+  Lightbulb,
 } from 'lucide-react';
 import { ModalOverlay } from '../ui/ModalOverlay';
 import { translate, useTranslation, type TranslationKey } from '../../i18n';
@@ -341,7 +342,10 @@ export const CharacterAiAssistantModal: React.FC = () => {
               </div>
 
               <div className="p-3 bg-app/60 border border-slate-800 rounded-xl">
-                <span className="text-xs font-medium text-indigo-300 block mb-1">{t('wizard.tip')}</span>
+                <span className="mb-1 flex items-center gap-1.5 text-xs font-medium text-indigo-300">
+                  <Lightbulb className="h-3.5 w-3.5" aria-hidden />
+                  {t('wizard.tip')}
+                </span>
                 <p className="text-xs text-slate-400 leading-relaxed">
                   {t('wizard.tipText')}
                 </p>

@@ -5,6 +5,7 @@ import {
   Sparkles,
   Trash2,
   Plus,
+  Brain,
 } from 'lucide-react';
 
 export const ThoughtsTab: React.FC = () => {
@@ -75,7 +76,8 @@ export const ThoughtsTab: React.FC = () => {
             className="p-3.5 rounded-2xl bg-slate-900/60 border border-slate-800/80 text-xs flex items-start justify-between gap-4 shadow-sm"
           >
             <div className="space-y-1">
-              <span className="text-[11px] text-accent-400 font-mono font-bold block">
+              <span className="flex items-center gap-1 text-[11px] text-accent-400 font-mono font-bold">
+                <Brain className="h-3 w-3" aria-hidden />
                 {t('comp.innerThought')}
               </span>
               <p className="text-slate-200 italic leading-relaxed">

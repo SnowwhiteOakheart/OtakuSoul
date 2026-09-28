@@ -340,6 +340,8 @@ Alle benötigten Daten sind eigenständig in diesem Projektverzeichnis gekapselt
   - **UI-Primitive (`src/components/ui/`):**
     - Einheitliche Varianten für Buttons und Icon-Buttons sowie zugängliche Tabs, Selects, Toggles, Slider und Tooltips.
     - `SettingsView` nutzt die gemeinsamen Button- und Tabs-Komponenten; 7 gezielte Tests sichern Semantik und Interaktion ab.
+    - Sichtbare UI-Symbole werden konsistent über `lucide-react` gerendert; plattformabhängige Emoji-Präfixe sind aus Komponenten
+      und allen drei Übersetzungsdateien entfernt.
   - **System-Logging & Log-Viewer (`logger.rs`, `LogViewerModal.tsx`):**
     - Dateipersistenz in `~/.local/share/otakusoul/logs/otakusoul.log` mit In-Memory-Ringpuffer (1000 Einträge).
     - Backend-Commands: `get_app_logs`, `clear_app_logs`, `export_app_logs`.

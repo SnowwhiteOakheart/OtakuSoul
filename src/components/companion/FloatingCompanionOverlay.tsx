@@ -11,6 +11,7 @@ import {
   X,
   Eye,
   Smile,
+  Brain,
 } from 'lucide-react';
 import { useTranslation } from '../../i18n';
 
@@ -45,7 +46,7 @@ export const FloatingCompanionOverlay: React.FC = () => {
 
   const handlePet = async () => {
     await applyHormoneInteraction('compliment');
-    setBubbleText('Das tut gut! Ich bin gerne an deiner Seite. ✨');
+    setBubbleText('Das tut gut! Ich bin gerne an deiner Seite.');
   };
 
   const handleAskScreen = async () => {
@@ -121,8 +122,9 @@ export const FloatingCompanionOverlay: React.FC = () => {
           </div>
           <p className="italic">"{bubbleText}"</p>
           {recentThought && (
-            <div className="mt-2 pt-1.5 border-t border-cyan-500/10 text-[11px] text-slate-400">
-              💭 <em>{recentThought}</em>
+            <div className="mt-2 flex items-start gap-1.5 border-t border-cyan-500/10 pt-1.5 text-[11px] text-slate-400">
+              <Brain className="mt-0.5 h-3 w-3 shrink-0" aria-hidden />
+              <em>{recentThought}</em>
             </div>
           )}
         </div>

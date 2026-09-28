@@ -622,7 +622,7 @@ export const createChatSlice: SliceCreator<ChatSlice> = (set, get) => ({
           ...state.messages,
           {
             role: 'assistant',
-            content: `⚠️ Inferenz-Fehler: ${e instanceof Error ? e.message : String(e)}`,
+            content: translate('chat.inferenceError', { error: e instanceof Error ? e.message : String(e) }),
           },
         ],
         streamingText: '',

@@ -11,6 +11,14 @@ import {
   Download,
   Database,
   Clock,
+  BookOpen,
+  Bot,
+  Brain,
+  Settings,
+  Swords,
+  User,
+  Users,
+  type LucideIcon,
 } from 'lucide-react';
 import type { BackupGroupSelection } from '../../../types';
 
@@ -112,14 +120,14 @@ export const BackupTab: React.FC = () => {
             {t('int.backupGroups')}
           </span>
           {([
-            { key: 'characters', label: t('int.group.characters') },
-            { key: 'lorebooks', label: t('int.group.lorebooks') },
-            { key: 'personas', label: t('int.group.personas') },
-            { key: 'soul_memory', label: t('int.group.memory') },
-            { key: 'soul_stage', label: t('int.group.stage') },
-            { key: 'companion', label: t('int.group.companion') },
-            { key: 'settings', label: t('int.group.settings') },
-          ] satisfies { key: keyof BackupGroupSelection; label: string }[]).map((item) => (
+            { key: 'characters', label: t('int.group.characters'), icon: Users },
+            { key: 'lorebooks', label: t('int.group.lorebooks'), icon: BookOpen },
+            { key: 'personas', label: t('int.group.personas'), icon: User },
+            { key: 'soul_memory', label: t('int.group.memory'), icon: Brain },
+            { key: 'soul_stage', label: t('int.group.stage'), icon: Swords },
+            { key: 'companion', label: t('int.group.companion'), icon: Bot },
+            { key: 'settings', label: t('int.group.settings'), icon: Settings },
+          ] satisfies { key: keyof BackupGroupSelection; label: string; icon: LucideIcon }[]).map((item) => (
             <label
               key={item.key}
               className="flex items-center gap-2.5 text-xs text-slate-300 cursor-pointer select-none"
@@ -132,6 +140,7 @@ export const BackupTab: React.FC = () => {
                 }
                 className="rounded bg-app border-slate-700 text-emerald-600 focus:ring-0"
               />
+              <item.icon className="h-3.5 w-3.5 shrink-0 text-slate-500" aria-hidden />
               <span>{item.label}</span>
             </label>
           ))}
@@ -155,8 +164,9 @@ export const BackupTab: React.FC = () => {
           )}
         </button>
 
-        <div className="p-3 bg-emerald-950/30 border border-emerald-500/30 rounded-xl text-xs text-emerald-300 leading-relaxed">
-          🛡️ <strong>{t('int.guarantee')}</strong> {t('int.guaranteeText')}
+        <div className="flex items-start gap-2 p-3 bg-emerald-950/30 border border-emerald-500/30 rounded-xl text-xs text-emerald-300 leading-relaxed">
+          <Shield className="mt-0.5 h-4 w-4 shrink-0" aria-hidden />
+          <span><strong>{t('int.guarantee')}</strong> {t('int.guaranteeText')}</span>
         </div>
       </div>
 

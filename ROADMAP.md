@@ -111,7 +111,8 @@ GitHub Actions wurden bewusst entfernt (Commit `11597c2`). Stattdessen gibt es j
 - [x] **Zu kleine Schrift:** 9/10 px sind komplett entfernt, 11 px nur noch für Badges (~135 Stellen). Ursprünglich 333 Stellen mit `text-[9px]`, `text-[10px]` oder `text-[11px]`. Auf HiDPI- und Linux-Systemen schwer lesbar.
   → Untergrenze 12 px (`text-xs`) für Text, 11 px höchstens für Badges.
 - [x] Veraltete Tailwind-v3-Klassen modernisieren: `bg-gradient-to-*` → `bg-linear-to-*`, `flex-shrink-0` → `shrink-0`, `flex-grow` → `grow` (48 Stellen).
-- [ ] Emojis in UI-Texten (24 Stellen, in den Wörterbüchern noch ~34) durch `lucide-react`-Icons ersetzen, damit alles konsistent gerendert wird (Linux-Schriftfallback).
+- [x] Emojis in UI-Texten und Wörterbüchern durch `lucide-react`-Icons bzw. klare Textkennzeichnungen ersetzt.
+  Status, Gedanken, Tipps, Backup-Gruppen, Bewertungen, Warnungen und Pfeile rendern damit auf Linux, Windows und macOS konsistent.
 - [ ] Einen **hellen Modus** bzw. einen Theme passend zu `prefers-color-scheme` anbieten. Aktuell gibt es nur dunkle Themes.
 - [x] `body { select-none }` global verhindert, dass man Chat-Nachrichten, Logs oder Fehlermeldungen kopieren kann.
   → Nur auf Chrome-Elemente (Header, Buttons) beschränken, Inhaltsbereiche selektierbar machen.

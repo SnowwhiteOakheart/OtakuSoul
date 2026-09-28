@@ -44,15 +44,15 @@ export const EntryCard = ({ entry, onToggle, onEdit, onDelete }: EntryCardProps)
 
           {/* Behavior Badge */}
           <span
-            className={`px-2 py-0.5 rounded text-[11px] font-medium border ${
+            className={`inline-flex items-center gap-1 px-2 py-0.5 rounded text-[11px] font-medium border ${
               entry.injection_behavior === 'active' || entry.injection_behavior === 'directive'
                 ? 'bg-accent-500/20 border-accent-500/40 text-accent-300'
                 : 'bg-slate-800 text-slate-400 border-slate-700'
             }`}
           >
-            {entry.injection_behavior === 'active' || entry.injection_behavior === 'directive'
-              ? t('lore.badgeActive')
-              : t('lore.passive')}
+            {entry.injection_behavior === 'active' || entry.injection_behavior === 'directive' ? (
+              <><Zap className="h-3 w-3" aria-hidden />{t('lore.badgeActive')}</>
+            ) : t('lore.passive')}
           </span>
 
           {/* Priority & Probability */}

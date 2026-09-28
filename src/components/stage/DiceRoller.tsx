@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { useStoreFields } from '../../store/useAppStore';
-import { Dices, Sparkles, AlertOctagon, Send, CheckCircle2, XCircle } from 'lucide-react';
+import { ArrowRight, Dices, Sparkles, AlertOctagon, Send, CheckCircle2, XCircle } from 'lucide-react';
 import { translate, useTranslation } from '../../i18n';
 
 export const DiceRoller: React.FC = () => {
@@ -133,8 +133,10 @@ export const DiceRoller: React.FC = () => {
           }`}
         >
           <div className="flex items-center justify-between">
-            <span className="text-xs font-mono text-slate-400">
-              {lastDiceRoll.formula} ➔ {t('stage.diceBreakdown', { rolls: lastDiceRoll.individual_rolls.join(', ') })}
+            <span className="flex items-center gap-1 text-xs font-mono text-slate-400">
+              {lastDiceRoll.formula}
+              <ArrowRight className="h-3 w-3 shrink-0" aria-hidden />
+              {t('stage.diceBreakdown', { rolls: lastDiceRoll.individual_rolls.join(', ') })}
               {lastDiceRoll.modifier !== 0 &&
                 ` ${lastDiceRoll.modifier > 0 ? '+' : ''}${lastDiceRoll.modifier}`}
             </span>

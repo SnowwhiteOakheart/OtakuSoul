@@ -1,6 +1,6 @@
 import React from 'react';
 import { CampaignClock } from '../../types';
-import { Trash2 } from 'lucide-react';
+import { AlertTriangle, Trash2 } from 'lucide-react';
 import { useTranslation, type TranslationKey } from '../../i18n';
 
 interface ClockWidgetProps {
@@ -154,7 +154,12 @@ export const ClockWidget: React.FC<ClockWidgetProps> = ({
               : 'text-slate-400'
           }`}
         >
-          {isComplete ? `⚠️ ${t('stage.clockTriggered')}` : t(`stage.clockType.${clock_type}` as TranslationKey)}
+          {isComplete ? (
+            <span className="inline-flex items-center gap-1">
+              <AlertTriangle className="h-3 w-3" aria-hidden />
+              {t('stage.clockTriggered')}
+            </span>
+          ) : t(`stage.clockType.${clock_type}` as TranslationKey)}
         </span>
       </div>
     </div>
