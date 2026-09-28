@@ -1024,7 +1024,7 @@ pub fn load_settings() -> crate::modules::settings::AppSettings {
 
 #[tauri::command]
 pub fn save_settings(settings: crate::modules::settings::AppSettings) -> Result<(), String> {
-    crate::modules::settings::save_app_settings(&settings)
+    crate::modules::settings::save_frontend_settings(settings)
 }
 
 #[tauri::command]

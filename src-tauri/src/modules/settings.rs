@@ -47,6 +47,10 @@ pub struct AppSettings {
     pub app_language: String,
     #[serde(default = "default_theme")]
     pub theme: String,
+    /// False only on a fresh install, so the first-run wizard shows once. Settings files
+    /// from before the wizard existed count as already set up.
+    #[serde(default = "default_true")]
+    pub onboarding_completed: bool,
 }
 
 fn default_true() -> bool {
@@ -104,6 +108,7 @@ impl Default for AppSettings {
             avatar_mode: "3d".to_string(),
             app_language: "de".to_string(),
             theme: "obsidian".to_string(),
+            onboarding_completed: false,
         }
     }
 }
@@ -155,6 +160,22 @@ pub fn save_app_settings(settings: &AppSettings) -> Result<(), String> {
     Ok(())
 }
 
+/// Saves settings coming from the frontend. The frontend does not know the hidden character
+/// list (it is managed by the backend), so the stored list is carried over instead of being
+/// reset, which would bring deleted characters back.
+pub fn save_frontend_settings(mut settings: AppSettings) -> Result<(), String> {
+    settings.hidden_character_ids = stored_hidden_character_ids(&get_settings_file_path());
+    save_app_settings(&settings)
+}
+
+fn stored_hidden_character_ids(path: &std::path::Path) -> Vec<String> {
+    fs::read_to_string(path)
+        .ok()
+        .and_then(|content| serde_json::from_str::<serde_json::Value>(&content).ok())
+        .and_then(|value| serde_json::from_value(value.get("hidden_character_ids")?.clone()).ok())
+        .unwrap_or_default()
+}
+
 fn save_app_settings_to_path(settings: &AppSettings, path: &std::path::Path) -> Result<(), String> {
     if let Some(parent) = path.parent() {
         fs::create_dir_all(parent)
@@ -195,5 +216,35 @@ mod tests {
         let loaded: AppSettings = serde_json::from_str(&content).unwrap();
         assert_eq!(loaded.reply_language, "English");
         let _ = fs::remove_dir_all(test_dir);
+    }
+
+    #[test]
+    fn test_stored_hidden_character_ids() {
+        let test_dir =
+            std::env::temp_dir().join(format!("otakusoul-hidden-test-{}", std::process::id()));
+        let path = test_dir.join("settings.json");
+        assert!(stored_hidden_character_ids(&path).is_empty());
+
+        let settings = AppSettings {
+            hidden_character_ids: vec!["ayu_ikue".to_string()],
+            ..Default::default()
+        };
+        save_app_settings_to_path(&settings, &path).unwrap();
+        assert_eq!(stored_hidden_character_ids(&path), vec!["ayu_ikue"]);
+        let _ = fs::remove_dir_all(test_dir);
+    }
+
+    #[test]
+    fn test_onboarding_flag_defaults() {
+        assert!(!AppSettings::default().onboarding_completed);
+
+        // A settings file written before the wizard existed means the user is already set up.
+        let mut legacy = serde_json::to_value(AppSettings::default()).unwrap();
+        legacy
+            .as_object_mut()
+            .unwrap()
+            .remove("onboarding_completed");
+        let loaded: AppSettings = serde_json::from_value(legacy).unwrap();
+        assert!(loaded.onboarding_completed);
     }
 }
