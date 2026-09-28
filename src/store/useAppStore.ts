@@ -190,6 +190,19 @@ const REPLY_LANGUAGE_BY_CODE: Record<string, string> = {
 export const normalizeReplyLanguage = (value: string | null | undefined): string =>
   (value && (REPLY_LANGUAGE_BY_CODE[value] ?? value)) || 'Deutsch';
 
+/** Default endpoint and model per cloud provider. Keep in sync with `providers.rs`. */
+export const CLOUD_PROVIDER_DEFAULTS: Partial<Record<LlmProviderType, { endpoint: string; model: string }>> = {
+  open_router: { endpoint: 'https://openrouter.ai/api/v1/chat/completions', model: 'anthropic/claude-sonnet-5' },
+  anthropic: { endpoint: 'https://api.anthropic.com/v1/messages', model: 'claude-sonnet-5' },
+  open_ai: { endpoint: 'https://api.openai.com/v1/chat/completions', model: 'gpt-4o' },
+  deep_seek: { endpoint: 'https://api.deepseek.com/chat/completions', model: 'deepseek-chat' },
+  gemini: {
+    endpoint: 'https://generativelanguage.googleapis.com/v1beta/openai/chat/completions',
+    model: 'gemini-pro-latest',
+  },
+  mistral: { endpoint: 'https://api.mistral.ai/v1/chat/completions', model: 'mistral-large-latest' },
+};
+
 export type SettingsSection = 'general' | 'server' | 'providers' | 'sampler' | 'hub';
 
 export type AppTab = 'chat' | 'characters' | 'lorebooks' | 'stage' | 'companion' | 'settings' | 'hub' | 'integrations';
@@ -802,7 +815,7 @@ export const useAppStore = create<AppStoreState>((set, get) => ({
         cloudProvider: settings.cloud_provider || 'open_router',
         cloudEndpoint: settings.cloud_endpoint || 'https://openrouter.ai/api/v1/chat/completions',
         cloudApiKey: settings.cloud_api_key || '',
-        cloudModel: settings.cloud_model || 'anthropic/claude-3.5-sonnet',
+        cloudModel: settings.cloud_model || CLOUD_PROVIDER_DEFAULTS.open_router!.model,
         activePresetId: settings.active_preset_id || null,
         replyLanguage: normalizeReplyLanguage(settings.reply_language),
         lorebookScanDepth: settings.lorebook_scan_depth || 5,
@@ -1978,7 +1991,7 @@ export const useAppStore = create<AppStoreState>((set, get) => ({
     set({ cloudApiKey });
     get().saveCurrentSettings();
   },
-  cloudModel: 'anthropic/claude-3.5-sonnet',
+  cloudModel: CLOUD_PROVIDER_DEFAULTS.open_router!.model,
   setCloudModel: (cloudModel) => {
     set({ cloudModel });
     get().saveCurrentSettings();
@@ -1987,24 +2000,12 @@ export const useAppStore = create<AppStoreState>((set, get) => ({
   // Phase 10: LLM Provider, Presets & Models Hub
   cloudProvider: 'open_router',
   setCloudProvider: (cloudProvider) => {
-    let endpoint = get().cloudEndpoint;
-    let model = get().cloudModel;
-    if (cloudProvider === 'anthropic') {
-      endpoint = 'https://api.anthropic.com/v1/messages';
-      model = 'claude-3-5-sonnet-20241022';
-    } else if (cloudProvider === 'open_router') {
-      endpoint = 'https://openrouter.ai/api/v1/chat/completions';
-      model = 'anthropic/claude-3.5-sonnet';
-    } else if (cloudProvider === 'open_ai') {
-      endpoint = 'https://api.openai.com/v1/chat/completions';
-      model = 'gpt-4o';
-    } else if (cloudProvider === 'deep_seek') {
-      endpoint = 'https://api.deepseek.com/v1/chat/completions';
-      model = 'deepseek-chat';
-    } else if (cloudProvider === 'local_llama') {
-      endpoint = `http://127.0.0.1:${get().serverConfig.port}/v1/chat/completions`;
-    }
-    set({ cloudProvider, cloudEndpoint: endpoint, cloudModel: model });
+    const defaults = CLOUD_PROVIDER_DEFAULTS[cloudProvider];
+    const endpoint =
+      cloudProvider === 'local_llama'
+        ? `http://127.0.0.1:${get().serverConfig.port}/v1/chat/completions`
+        : defaults?.endpoint ?? get().cloudEndpoint;
+    set({ cloudProvider, cloudEndpoint: endpoint, cloudModel: defaults?.model ?? get().cloudModel });
     get().saveCurrentSettings();
   },
 

@@ -94,7 +94,7 @@ impl Default for AppSettings {
             cloud_provider: "open_router".to_string(),
             cloud_endpoint: "https://openrouter.ai/api/v1/chat/completions".to_string(),
             cloud_api_key: String::new(),
-            cloud_model: "anthropic/claude-3.5-sonnet".to_string(),
+            cloud_model: "anthropic/claude-sonnet-5".to_string(),
             active_preset_id: Some("storytelling_kreativ".to_string()),
             reply_language: "Deutsch".to_string(),
             lorebook_scan_depth: 5,

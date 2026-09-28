@@ -40,11 +40,11 @@ impl LlmProviderType {
     pub fn default_model(&self) -> &'static str {
         match self {
             LlmProviderType::LocalLlama => "local",
-            LlmProviderType::OpenRouter => "anthropic/claude-3.5-sonnet",
-            LlmProviderType::Anthropic => "claude-3-5-sonnet-20241022",
+            LlmProviderType::OpenRouter => "anthropic/claude-sonnet-5",
+            LlmProviderType::Anthropic => "claude-sonnet-5",
             LlmProviderType::OpenAi => "gpt-4o",
             LlmProviderType::DeepSeek => "deepseek-chat",
-            LlmProviderType::Gemini => "gemini-1.5-pro-latest",
+            LlmProviderType::Gemini => "gemini-pro-latest",
             LlmProviderType::Mistral => "mistral-large-latest",
             LlmProviderType::Custom => "default",
         }
