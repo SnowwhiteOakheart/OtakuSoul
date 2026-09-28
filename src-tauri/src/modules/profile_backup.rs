@@ -8,7 +8,7 @@ use zip::write::SimpleFileOptions;
 use zip::{ZipArchive, ZipWriter};
 
 use crate::modules::memory::MemoryDb;
-use crate::modules::paths::resolve_app_paths;
+use crate::modules::paths::{AppPaths, resolve_app_paths};
 
 const SCHEMA_VERSION: u32 = 1;
 const SAFETY_ROTATION_KEEP: usize = 5;
@@ -61,6 +61,24 @@ pub struct BackupEntryInfo {
 }
 
 pub struct ProfileBackupManager;
+
+/// Where backups read from and write to. Production uses the app directories; tests point
+/// this at a temporary folder so they never touch real user data.
+struct BackupLocations {
+    paths: AppPaths,
+    backups_dir: PathBuf,
+    memory_db: PathBuf,
+}
+
+impl BackupLocations {
+    fn current() -> Self {
+        Self {
+            paths: resolve_app_paths(),
+            backups_dir: ProfileBackupManager::get_backups_dir(),
+            memory_db: MemoryDb::default_path(),
+        }
+    }
+}
 
 impl ProfileBackupManager {
     pub fn get_backups_dir() -> PathBuf {
@@ -136,7 +154,21 @@ impl ProfileBackupManager {
         description: Option<String>,
         is_safety: bool,
     ) -> Result<BackupEntryInfo, String> {
-        let backups_dir = Self::get_backups_dir();
+        Self::create_backup_at(
+            &BackupLocations::current(),
+            selection,
+            description,
+            is_safety,
+        )
+    }
+
+    fn create_backup_at(
+        loc: &BackupLocations,
+        selection: BackupGroupSelection,
+        description: Option<String>,
+        is_safety: bool,
+    ) -> Result<BackupEntryInfo, String> {
+        let backups_dir = &loc.backups_dir;
         let timestamp = Utc::now().format("%Y%m%d_%H%M%S").to_string();
         let prefix = if is_safety {
             "pre_restore_"
@@ -153,7 +185,7 @@ impl ProfileBackupManager {
             .compression_method(zip::CompressionMethod::Deflated)
             .unix_permissions(0o755);
 
-        let paths = resolve_app_paths();
+        let paths = &loc.paths;
         let mut added_files = 0usize;
 
         let data_dir = PathBuf::from(&paths.data_dir);
@@ -208,12 +240,12 @@ impl ProfileBackupManager {
 
         // 5. Soul Memory (SQLite database with chats, memories and relationships)
         if selection.soul_memory {
-            let db_path = MemoryDb::default_path();
+            let db_path = &loc.memory_db;
             if db_path.exists() {
                 // VACUUM INTO yields a consistent snapshot even while the app holds the DB open.
                 let snapshot = backups_dir.join(format!(".{}.db.tmp", timestamp));
                 let _ = fs::remove_file(&snapshot);
-                let snapshot_result = rusqlite::Connection::open(&db_path).and_then(|conn| {
+                let snapshot_result = rusqlite::Connection::open(db_path).and_then(|conn| {
                     conn.execute("VACUUM INTO ?1", [snapshot.to_string_lossy().as_ref()])
                 });
                 match snapshot_result {
@@ -295,7 +327,7 @@ impl ProfileBackupManager {
 
         // If it's a safety snapshot, maintain rotation (keep last 5)
         if is_safety {
-            Self::rotate_safety_backups();
+            Self::rotate_safety_backups(backups_dir);
         }
 
         let metadata = fs::metadata(&backup_path).map_err(|e| e.to_string())?;
@@ -373,14 +405,23 @@ impl ProfileBackupManager {
         filename: &str,
         groups: Option<BackupGroupSelection>,
     ) -> Result<String, String> {
-        let backups_dir = Self::get_backups_dir();
+        Self::restore_backup_at(&BackupLocations::current(), filename, groups)
+    }
+
+    fn restore_backup_at(
+        loc: &BackupLocations,
+        filename: &str,
+        groups: Option<BackupGroupSelection>,
+    ) -> Result<String, String> {
+        let backups_dir = &loc.backups_dir;
         let backup_path = backups_dir.join(filename);
         if !backup_path.exists() {
             return Err(format!("Backup-Datei '{}' existiert nicht.", filename));
         }
 
         info!("Erstelle präventiven Sicherheits-Snapshot vor der Wiederherstellung...");
-        let _ = Self::create_backup(
+        let _ = Self::create_backup_at(
+            loc,
             BackupGroupSelection::default(),
             Some("Pre-restore safety snapshot".into()),
             true,
@@ -392,7 +433,7 @@ impl ProfileBackupManager {
             ZipArchive::new(file).map_err(|e| format!("Ungültiges ZIP-Archiv: {}", e))?;
 
         let selection = groups.unwrap_or_default();
-        let paths = resolve_app_paths();
+        let paths = &loc.paths;
 
         let mut restored_count = 0usize;
         let mut pending_db_restore = false;
@@ -434,7 +475,7 @@ impl ProfileBackupManager {
                 } else if entry_str == MEMORY_DB_ENTRY && selection.soul_memory {
                     // The live DB is open; it is swapped in on the next start (see MemoryDb::apply_pending_restore).
                     pending_db_restore = true;
-                    Some(MemoryDb::pending_restore_path())
+                    Some(loc.memory_db.with_extension("db.restore"))
                 } else if entry_str.starts_with("companion/") && selection.companion {
                     let sub = entry_str.trim_start_matches("companion/");
                     Some(data_dir.join("companion").join(sub))
@@ -495,11 +536,10 @@ impl ProfileBackupManager {
     }
 
     /// Rotates safety snapshots, keeping only the newest 5.
-    fn rotate_safety_backups() {
-        let backups_dir = Self::get_backups_dir();
+    fn rotate_safety_backups(backups_dir: &Path) {
         let mut safety_files = Vec::new();
 
-        if let Ok(entries) = fs::read_dir(&backups_dir) {
+        if let Ok(entries) = fs::read_dir(backups_dir) {
             for entry in entries.flatten() {
                 let path = entry.path();
                 if path.is_file() {
@@ -565,5 +605,159 @@ mod tests {
         assert!(sel.soul_memory);
         assert!(sel.soul_stage);
         assert!(sel.settings);
+    }
+
+    fn temp_locations(name: &str) -> (PathBuf, BackupLocations) {
+        let root = std::env::temp_dir().join(format!(
+            "otakusoul-backup-test-{}-{}",
+            name,
+            std::process::id()
+        ));
+        let _ = fs::remove_dir_all(&root);
+        let dir = |sub: &str| {
+            let path = root.join(sub);
+            fs::create_dir_all(&path).unwrap();
+            path.to_string_lossy().to_string()
+        };
+        let paths = AppPaths {
+            config_dir: dir("config"),
+            data_dir: dir("data"),
+            characters_dir: dir("data/characters"),
+            lorebooks_dir: dir("data/lorebooks"),
+            personas_dir: dir("data/personas"),
+            scenes_dir: dir("data/scenes"),
+            trash_dir: dir("data/trash"),
+            bundled_presets_dir: String::new(),
+            bundled_models_dir: String::new(),
+            bundled_vrm_dir: String::new(),
+            bundled_bin_dir: String::new(),
+        };
+        let loc = BackupLocations {
+            backups_dir: PathBuf::from(dir("data/backups")),
+            memory_db: root.join("data/otakusoul.db"),
+            paths,
+        };
+        (root, loc)
+    }
+
+    #[test]
+    fn backup_round_trip_restores_files_settings_and_database() {
+        let (root, loc) = temp_locations("roundtrip");
+        let character = PathBuf::from(&loc.paths.characters_dir).join("ayu/card.json");
+        fs::create_dir_all(character.parent().unwrap()).unwrap();
+        fs::write(&character, r#"{"name":"Ayu"}"#).unwrap();
+        let settings = PathBuf::from(&loc.paths.config_dir).join("settings.json");
+        fs::write(&settings, r#"{"theme":"sakura"}"#).unwrap();
+        let conn = rusqlite::Connection::open(&loc.memory_db).unwrap();
+        conn.execute_batch(
+            "CREATE TABLE memories (text TEXT); INSERT INTO memories VALUES ('erster Kuss');",
+        )
+        .unwrap();
+        drop(conn);
+
+        let backup = ProfileBackupManager::create_backup_at(
+            &loc,
+            BackupGroupSelection::default(),
+            None,
+            false,
+        )
+        .unwrap();
+        let manifest = backup.manifest.unwrap();
+        assert_eq!(manifest.schema_version, SCHEMA_VERSION);
+        assert_eq!(manifest.files_count, 3);
+
+        fs::remove_dir_all(character.parent().unwrap()).unwrap();
+        fs::write(&settings, r#"{"theme":"obsidian"}"#).unwrap();
+
+        ProfileBackupManager::restore_backup_at(&loc, &backup.filename, None).unwrap();
+
+        assert_eq!(fs::read_to_string(&character).unwrap(), r#"{"name":"Ayu"}"#);
+        assert_eq!(
+            fs::read_to_string(&settings).unwrap(),
+            r#"{"theme":"sakura"}"#
+        );
+        // The live database is only swapped in on the next start.
+        let restored =
+            rusqlite::Connection::open(loc.memory_db.with_extension("db.restore")).unwrap();
+        let text: String = restored
+            .query_row("SELECT text FROM memories", [], |row| row.get(0))
+            .unwrap();
+        assert_eq!(text, "erster Kuss");
+        // A safety snapshot of the pre-restore state was taken.
+        assert!(
+            fs::read_dir(&loc.backups_dir)
+                .unwrap()
+                .flatten()
+                .any(|e| e.file_name().to_string_lossy().starts_with("pre_restore_"))
+        );
+
+        let _ = fs::remove_dir_all(root);
+    }
+
+    #[test]
+    fn restore_respects_group_selection() {
+        let (root, loc) = temp_locations("groups");
+        let lorebook = PathBuf::from(&loc.paths.lorebooks_dir).join("welt.json");
+        let persona = PathBuf::from(&loc.paths.personas_dir).join("ich.json");
+        fs::write(&lorebook, "lore").unwrap();
+        fs::write(&persona, "persona").unwrap();
+        let backup = ProfileBackupManager::create_backup_at(
+            &loc,
+            BackupGroupSelection::default(),
+            None,
+            false,
+        )
+        .unwrap();
+        fs::remove_file(&lorebook).unwrap();
+        fs::remove_file(&persona).unwrap();
+
+        let only_lorebooks = BackupGroupSelection {
+            characters: false,
+            lorebooks: true,
+            personas: false,
+            soul_memory: false,
+            soul_stage: false,
+            companion: false,
+            settings: false,
+        };
+        ProfileBackupManager::restore_backup_at(&loc, &backup.filename, Some(only_lorebooks))
+            .unwrap();
+
+        assert!(lorebook.exists());
+        assert!(!persona.exists());
+        let _ = fs::remove_dir_all(root);
+    }
+
+    #[test]
+    fn safety_snapshots_are_rotated() {
+        let (root, loc) = temp_locations("rotation");
+        for i in 0..(SAFETY_ROTATION_KEEP + 3) {
+            fs::write(loc.backups_dir.join(format!("pre_restore_{i:02}.zip")), b"").unwrap();
+        }
+        fs::write(loc.backups_dir.join("otakusoul_backup_keep.zip"), b"").unwrap();
+
+        ProfileBackupManager::rotate_safety_backups(&loc.backups_dir);
+
+        let names: Vec<String> = fs::read_dir(&loc.backups_dir)
+            .unwrap()
+            .flatten()
+            .map(|e| e.file_name().to_string_lossy().to_string())
+            .collect();
+        assert_eq!(
+            names
+                .iter()
+                .filter(|n| n.starts_with("pre_restore_"))
+                .count(),
+            SAFETY_ROTATION_KEEP
+        );
+        assert!(names.contains(&"otakusoul_backup_keep.zip".to_string()));
+        let _ = fs::remove_dir_all(root);
+    }
+
+    #[test]
+    fn restore_of_missing_backup_fails() {
+        let (root, loc) = temp_locations("missing");
+        assert!(ProfileBackupManager::restore_backup_at(&loc, "gibt-es-nicht.zip", None).is_err());
+        let _ = fs::remove_dir_all(root);
     }
 }
