@@ -1,6 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import { useAppStore } from '../../store/useAppStore';
 import { SafetyCountdownBanner } from './SafetyCountdownBanner';
+import { LOCALES, useTranslation, type TranslationKey } from '../../i18n';
 import {
   Bot,
   Activity,
@@ -29,6 +30,8 @@ import {
 } from 'lucide-react';
 
 export const CompanionView: React.FC = () => {
+  const { t } = useTranslation();
+  const appPaths = useAppStore((s) => s.appPaths);
   const {
     companionState,
     fetchCompanionState,
@@ -199,10 +202,10 @@ export const CompanionView: React.FC = () => {
           </div>
           <div>
             <h2 className="text-base font-bold text-slate-100 flex items-center gap-2">
-              Soul Companion: Desktop-Agent & Neurohormonales Bio-System
+              {t('comp.title')}
             </h2>
             <p className="text-xs text-slate-400">
-              Biometrisches Hormonsystem • 10 Emotionen • Scratchpad • Fällige Versprechen • Echte System-Tools • MCP-Client
+              {t('comp.subtitle')}
             </p>
           </div>
         </div>
@@ -210,11 +213,17 @@ export const CompanionView: React.FC = () => {
         <div className="flex items-center gap-2.5 flex-wrap">
           <span className="px-3 py-1 rounded-xl bg-slate-900 border border-slate-800 text-xs font-mono text-cyan-300 flex items-center gap-1.5 shadow-sm">
             <Activity className="w-3.5 h-3.5 text-cyan-400" />
-            <span>Gemüt: <strong>{hormones?.mood_label || 'Aktiv'}</strong></span>
+            <span>{t('comp.mood')} <strong>{hormones?.mood_label || t('comp.active')}</strong></span>
           </span>
           <span className="px-3 py-1 rounded-xl bg-slate-900 border border-slate-800 text-xs font-mono text-accent-300 flex items-center gap-1.5 shadow-sm">
             <Sparkles className="w-3.5 h-3.5 text-accent-400" />
-            <span>Emotion: <strong>{emotion?.current || 'warm'}</strong></span>
+            <span>{t('comp.emotion')} <strong>
+                {(() => {
+                  const current = emotion?.current || 'warm';
+                  const key = `comp.emo.${current}`;
+                  return key in LOCALES.de ? t(key as TranslationKey) : current;
+                })()}
+              </strong></span>
           </span>
         </div>
       </div>
@@ -230,7 +239,7 @@ export const CompanionView: React.FC = () => {
           }`}
         >
           <Activity className="w-3.5 h-3.5 text-cyan-400" />
-          <span>Bio-Monitor & Gemüt</span>
+          <span>{t('comp.tabBio')}</span>
         </button>
 
         <button
@@ -266,7 +275,7 @@ export const CompanionView: React.FC = () => {
           }`}
         >
           <Terminal className="w-3.5 h-3.5 text-emerald-400" />
-          <span>Desktop-Werkbank (Echte Tools)</span>
+          <span>{t('comp.tabTools')}</span>
         </button>
 
         <button
@@ -278,7 +287,7 @@ export const CompanionView: React.FC = () => {
           }`}
         >
           <Layers className="w-3.5 h-3.5 text-indigo-400" />
-          <span>MCP-Server & Plugins</span>
+          <span>{t('comp.tabMcp')}</span>
         </button>
 
         <button
@@ -290,7 +299,7 @@ export const CompanionView: React.FC = () => {
           }`}
         >
           <Tv className="w-3.5 h-3.5 text-blue-400" />
-          <span>Desktop-Overlay</span>
+          <span>{t('comp.tabOverlay')}</span>
         </button>
       </div>
 
@@ -303,10 +312,10 @@ export const CompanionView: React.FC = () => {
               <div>
                 <h3 className="text-sm font-bold text-slate-100 flex items-center gap-2">
                   <Activity className="w-4 h-4 text-accent2-400" />
-                  Neurohormoneller Bio-Monitor
+                  {t('comp.bioTitle')}
                 </h3>
                 <p className="text-xs text-slate-400">
-                  Dopamin, Cortisol, Oxytocin und Schlafdruck/Erschöpfung
+                  {t('comp.bioIntro')}
                 </p>
               </div>
               <div className="flex items-center gap-2">
@@ -315,12 +324,12 @@ export const CompanionView: React.FC = () => {
                 </span>
                 {hormones && hormones.fatigue >= 95 && (
                   <span className="text-xs font-mono text-indigo-300 px-2 py-0.5 rounded bg-indigo-950 border border-indigo-500/40">
-                    Schlafmodus zZz
+                    {t('comp.sleeping')}
                   </span>
                 )}
                 {hormones && hormones.oxytocin <= 25 && (
                   <span className="text-xs font-mono text-rose-300 px-2 py-0.5 rounded bg-rose-950 border border-rose-500/40">
-                    Einsam
+                    {t('comp.lonely')}
                   </span>
                 )}
               </div>
@@ -334,7 +343,7 @@ export const CompanionView: React.FC = () => {
                   <div className="flex justify-between items-center text-xs">
                     <span className="text-slate-300 font-semibold flex items-center gap-1.5">
                       <Zap className="w-3.5 h-3.5 text-amber-400" />
-                      Dopamin
+                      {t('comp.dopamine')}
                     </span>
                     <span className="font-mono text-amber-300 font-bold">{Math.round(hormones.dopamine)}%</span>
                   </div>
@@ -344,7 +353,7 @@ export const CompanionView: React.FC = () => {
                       style={{ width: `${hormones.dopamine}%` }}
                     />
                   </div>
-                  <span className="text-[11px] text-slate-500 block">Antrieb, Motivation & Neugier</span>
+                  <span className="text-[11px] text-slate-500 block">{t('comp.dopamineHint')}</span>
                 </div>
 
                 {/* Cortisol */}
@@ -352,7 +361,7 @@ export const CompanionView: React.FC = () => {
                   <div className="flex justify-between items-center text-xs">
                     <span className="text-slate-300 font-semibold flex items-center gap-1.5">
                       <Flame className="w-3.5 h-3.5 text-rose-400" />
-                      Cortisol
+                      {t('comp.cortisol')}
                     </span>
                     <span className="font-mono text-rose-300 font-bold">{Math.round(hormones.cortisol)}%</span>
                   </div>
@@ -362,7 +371,7 @@ export const CompanionView: React.FC = () => {
                       style={{ width: `${hormones.cortisol}%` }}
                     />
                   </div>
-                  <span className="text-[11px] text-slate-500 block">Stress, Alarm & Anspannung</span>
+                  <span className="text-[11px] text-slate-500 block">{t('comp.cortisolHint')}</span>
                 </div>
 
                 {/* Oxytocin */}
@@ -370,7 +379,7 @@ export const CompanionView: React.FC = () => {
                   <div className="flex justify-between items-center text-xs">
                     <span className="text-slate-300 font-semibold flex items-center gap-1.5">
                       <Heart className="w-3.5 h-3.5 text-accent2-400 fill-accent2-400/40" />
-                      Oxytocin
+                      {t('comp.oxytocin')}
                     </span>
                     <span className="font-mono text-accent2-300 font-bold">{Math.round(hormones.oxytocin)}%</span>
                   </div>
@@ -380,7 +389,7 @@ export const CompanionView: React.FC = () => {
                       style={{ width: `${hormones.oxytocin}%` }}
                     />
                   </div>
-                  <span className="text-[11px] text-slate-500 block">Bindung, Zärtlichkeit & Vertrauen</span>
+                  <span className="text-[11px] text-slate-500 block">{t('comp.oxytocinHint')}</span>
                 </div>
 
                 {/* Fatigue */}
@@ -388,7 +397,7 @@ export const CompanionView: React.FC = () => {
                   <div className="flex justify-between items-center text-xs">
                     <span className="text-slate-300 font-semibold flex items-center gap-1.5">
                       <Moon className="w-3.5 h-3.5 text-indigo-400" />
-                      Erschöpfung
+                      {t('comp.fatigue')}
                     </span>
                     <span className="font-mono text-indigo-300 font-bold">{Math.round(hormones.fatigue)}%</span>
                   </div>
@@ -398,7 +407,7 @@ export const CompanionView: React.FC = () => {
                       style={{ width: `${hormones.fatigue}%` }}
                     />
                   </div>
-                  <span className="text-[11px] text-slate-500 block">Körperlicher Schlafdruck</span>
+                  <span className="text-[11px] text-slate-500 block">{t('comp.fatigueHint')}</span>
                 </div>
               </div>
             )}
@@ -406,7 +415,7 @@ export const CompanionView: React.FC = () => {
             {/* Quick Impulses */}
             <div className="pt-2 border-t border-slate-800/80 space-y-2.5">
               <span className="text-xs font-semibold text-slate-400 uppercase tracking-wider block">
-                Biometrische Impulse senden
+                {t('comp.impulses')}
               </span>
               <div className="flex flex-wrap gap-2 text-xs">
                 <button
@@ -414,28 +423,28 @@ export const CompanionView: React.FC = () => {
                   className="px-3 py-1.5 rounded-lg bg-accent2-900/40 hover:bg-accent2-800/50 text-accent2-300 border border-accent2-500/30 flex items-center gap-1.5 transition active:scale-95"
                 >
                   <Smile className="w-3.5 h-3.5" />
-                  Kompliment (+Oxytocin)
+                  {t('comp.compliment')}
                 </button>
                 <button
                   onClick={() => applyHormoneInteraction('challenge')}
                   className="px-3 py-1.5 rounded-lg bg-amber-900/40 hover:bg-amber-800/50 text-amber-300 border border-amber-500/30 flex items-center gap-1.5 transition active:scale-95"
                 >
                   <Zap className="w-3.5 h-3.5" />
-                  Herausforderung (+Dopamin)
+                  {t('comp.challenge')}
                 </button>
                 <button
                   onClick={() => applyHormoneInteraction('conflict')}
                   className="px-3 py-1.5 rounded-lg bg-rose-900/40 hover:bg-rose-800/50 text-rose-300 border border-rose-500/30 flex items-center gap-1.5 transition active:scale-95"
                 >
                   <Flame className="w-3.5 h-3.5" />
-                  Konflikt (+Cortisol)
+                  {t('comp.conflict')}
                 </button>
                 <button
                   onClick={() => applyHormoneInteraction('rest')}
                   className="px-3 py-1.5 rounded-lg bg-indigo-900/40 hover:bg-indigo-800/50 text-indigo-300 border border-indigo-500/30 flex items-center gap-1.5 transition active:scale-95"
                 >
                   <Moon className="w-3.5 h-3.5" />
-                  Ausruhen & Schlafen
+                  {t('comp.rest')}
                 </button>
               </div>
             </div>
@@ -446,26 +455,26 @@ export const CompanionView: React.FC = () => {
             <div className="border-b border-slate-800 pb-3">
               <h3 className="text-sm font-bold text-slate-100 flex items-center gap-2">
                 <Sparkles className="w-4 h-4 text-accent-400" />
-                10-Emotionen-Zustandsmatrix
+                {t('comp.matrix')}
               </h3>
               <p className="text-xs text-slate-400">
-                Deterministische EMA-Berechnung aus den Neurohormonen (Alpha = 0.30)
+                {t('comp.matrixIntro')}
               </p>
             </div>
 
             {/* Emotion Badges */}
             <div className="flex flex-wrap gap-2">
               {[
-                { name: 'neutral', label: 'Neutral' },
-                { name: 'curious', label: 'Neugierig' },
-                { name: 'warm', label: 'Warmherzig' },
-                { name: 'amused', label: 'Amüsiert' },
-                { name: 'concerned', label: 'Besorgt' },
-                { name: 'playful', label: 'Verspielt' },
-                { name: 'relaxed', label: 'Entspannt' },
-                { name: 'sleepy', label: 'Schläfrig' },
-                { name: 'melancholy', label: 'Melancholisch' },
-                { name: 'excited', label: 'Begeistert' },
+                { name: 'neutral', label: t('comp.emo.neutral') },
+                { name: 'curious', label: t('comp.emo.curious') },
+                { name: 'warm', label: t('comp.emo.warm') },
+                { name: 'amused', label: t('comp.emo.amused') },
+                { name: 'concerned', label: t('comp.emo.concerned') },
+                { name: 'playful', label: t('comp.emo.playful') },
+                { name: 'relaxed', label: t('comp.emo.relaxed') },
+                { name: 'sleepy', label: t('comp.emo.sleepy') },
+                { name: 'melancholy', label: t('comp.emo.melancholy') },
+                { name: 'excited', label: t('comp.emo.excited') },
               ].map((emo) => {
                 const isCurrent = emotion?.current === emo.name;
                 const score = emotion?.ema_scores?.[emo.name] || 0;
@@ -490,7 +499,7 @@ export const CompanionView: React.FC = () => {
             {/* Hormone Sliders */}
             <div className="pt-2 border-t border-slate-800 space-y-3">
               <span className="text-xs font-semibold text-slate-400 uppercase tracking-wider flex items-center justify-between">
-                <span>Manuelle Pegel-Justierung</span>
+                <span>{t('comp.manual')}</span>
                 <Sliders className="w-3.5 h-3.5 text-slate-400" />
               </span>
 
@@ -556,7 +565,7 @@ export const CompanionView: React.FC = () => {
                 onClick={handleApplySliders}
                 className="w-full py-1.5 rounded-xl bg-slate-800 hover:bg-slate-700 text-xs font-semibold text-slate-200 transition"
               >
-                Pegel übernehmen
+                {t('comp.applyLevels')}
               </button>
             </div>
           </div>
@@ -571,10 +580,10 @@ export const CompanionView: React.FC = () => {
               <div>
                 <h3 className="text-sm font-bold text-slate-100 flex items-center gap-2">
                   <Sparkles className="w-4 h-4 text-accent-400" />
-                  Scratchpad & Gedankenfluss
+                  {t('comp.scratchpad')}
                 </h3>
                 <p className="text-xs text-slate-400">
-                  Episodische innere Gedanken, Selbstreflexionen und Monologe des Begleiters
+                  {t('comp.scratchpadIntro')}
                 </p>
               </div>
 
@@ -583,7 +592,7 @@ export const CompanionView: React.FC = () => {
                 className="px-2.5 py-1 rounded-lg bg-rose-950/60 hover:bg-rose-900 border border-rose-500/40 text-rose-300 text-xs flex items-center gap-1.5 transition"
               >
                 <Trash2 className="w-3.5 h-3.5" />
-                Gedankenspeicher leeren
+                {t('comp.clearThoughts')}
               </button>
             </div>
 
@@ -593,7 +602,7 @@ export const CompanionView: React.FC = () => {
                 type="text"
                 value={newThoughtInput}
                 onChange={(e) => setNewThoughtInput(e.target.value)}
-                placeholder="Neuen Gedanken oder inneren Monolog hinzufügen..."
+                placeholder={t('comp.thoughtPlaceholder')}
                 className="flex-1 px-3 py-1.5 bg-app border border-slate-700 rounded-xl text-xs text-slate-200 focus:outline-hidden focus:border-accent-500"
               />
               <button
@@ -601,7 +610,7 @@ export const CompanionView: React.FC = () => {
                 className="px-4 py-1.5 rounded-xl bg-accent-600 hover:bg-accent-500 text-white text-xs font-bold transition flex items-center gap-1.5"
               >
                 <Plus className="w-3.5 h-3.5" />
-                Eintragen
+                {t('comp.addThought')}
               </button>
             </form>
           </div>
@@ -615,7 +624,7 @@ export const CompanionView: React.FC = () => {
               >
                 <div className="space-y-1">
                   <span className="text-[11px] text-accent-400 font-mono font-bold block">
-                    💭 Innerer Gedanke
+                    {t('comp.innerThought')}
                   </span>
                   <p className="text-slate-200 italic leading-relaxed">
                     "{item.thought}"
@@ -629,7 +638,7 @@ export const CompanionView: React.FC = () => {
 
             {thoughts.length === 0 && (
               <div className="p-12 text-center text-xs text-slate-500 italic rounded-2xl border border-slate-800 bg-slate-900/30">
-                Noch keine Gedanken im Scratchpad vorhanden.
+                {t('comp.noThoughts')}
               </div>
             )}
           </div>
@@ -643,10 +652,10 @@ export const CompanionView: React.FC = () => {
             <div className="border-b border-slate-800 pb-2.5">
               <h3 className="text-sm font-bold text-slate-100 flex items-center gap-2">
                 <Target className="w-4 h-4 text-amber-400" />
-                Goals & Promises Manager
+                {t('comp.goals')}
               </h3>
               <p className="text-xs text-slate-400">
-                Verbindliche Versprechen und Aufgaben mit automatischer Fälligkeitserinnerung
+                {t('comp.goalsIntro')}
               </p>
             </div>
 
@@ -656,7 +665,7 @@ export const CompanionView: React.FC = () => {
                 type="text"
                 value={goalSummaryInput}
                 onChange={(e) => setGoalSummaryInput(e.target.value)}
-                placeholder="Versprechen (z. B. 'Dich an das Teekochen erinnern')..."
+                placeholder={t('comp.promisePlaceholder')}
                 className="flex-1 min-w-[240px] px-3 py-1.5 bg-app border border-slate-700 rounded-xl text-xs text-slate-200 focus:outline-hidden focus:border-amber-500"
               />
 
@@ -665,12 +674,12 @@ export const CompanionView: React.FC = () => {
                 onChange={(e) => setGoalDueMinutes(parseInt(e.target.value))}
                 className="px-3 py-1.5 bg-app border border-slate-700 rounded-xl text-xs text-slate-300 focus:outline-hidden"
               >
-                <option value={15}>In 15 Minuten</option>
-                <option value={30}>In 30 Minuten</option>
-                <option value={60}>In 1 Stunde</option>
-                <option value={120}>In 2 Stunden</option>
-                <option value={240}>Heute Abend (4h)</option>
-                <option value={720}>Morgen (12h)</option>
+                <option value={15}>{t('comp.in15')}</option>
+                <option value={30}>{t('comp.in30')}</option>
+                <option value={60}>{t('comp.in60')}</option>
+                <option value={120}>{t('comp.in120')}</option>
+                <option value={240}>{t('comp.tonight')}</option>
+                <option value={720}>{t('comp.tomorrow')}</option>
               </select>
 
               <button
@@ -678,7 +687,7 @@ export const CompanionView: React.FC = () => {
                 className="px-4 py-1.5 rounded-xl bg-amber-600 hover:bg-amber-500 text-white text-xs font-bold transition flex items-center gap-1.5"
               >
                 <Plus className="w-3.5 h-3.5" />
-                Versprechen anlegen
+                {t('comp.addPromise')}
               </button>
             </form>
           </div>
@@ -721,7 +730,7 @@ export const CompanionView: React.FC = () => {
                         className="px-3 py-1 rounded-lg bg-emerald-950/80 hover:bg-emerald-900 border border-emerald-500/40 text-emerald-300 text-xs flex items-center gap-1 transition"
                       >
                         <Check className="w-3.5 h-3.5" />
-                        Erledigt
+                        {t('comp.done')}
                       </button>
                     )}
                     <button
@@ -737,7 +746,7 @@ export const CompanionView: React.FC = () => {
 
             {goals.length === 0 && (
               <div className="p-12 text-center text-xs text-slate-500 italic rounded-2xl border border-slate-800 bg-slate-900/30">
-                Keine aktiven Versprechen oder Ziele vorhanden.
+                {t('comp.noGoals')}
               </div>
             )}
           </div>
@@ -753,17 +762,17 @@ export const CompanionView: React.FC = () => {
               <div className="border-b border-slate-800 pb-3">
                 <h3 className="text-sm font-bold text-slate-100 flex items-center gap-2">
                   <Terminal className="w-4 h-4 text-emerald-400" />
-                  Echte System-Tools ausführen
+                  {t('comp.toolsTitle')}
                 </h3>
                 <p className="text-xs text-slate-400">
-                  Websuche, Screenshot, Clipboard, App-Steuerung, Sandbox-Code und File Organizer
+                  {t('comp.toolsIntro')}
                 </p>
               </div>
 
               <form onSubmit={handleRunTool} className="space-y-3.5">
                 <div>
                   <label className="text-xs font-semibold text-slate-400 block mb-1">
-                    Werkzeug auswählen
+                    {t('comp.chooseTool')}
                   </label>
                   <select
                     value={selectedTool}
@@ -798,27 +807,27 @@ export const CompanionView: React.FC = () => {
                     }}
                     className="w-full px-3 py-2 bg-app border border-slate-700 rounded-xl text-xs text-slate-200 focus:outline-hidden focus:border-emerald-500 font-mono"
                   >
-                    <option value="web_search">🔍 Websuche via DuckDuckGo (Sicher ✓)</option>
-                    <option value="open_external_url">🌐 URL im Browser öffnen (⚠️ Bestätigung)</option>
-                    <option value="get_system_info">💻 System- & Hardware-Info (Sicher ✓)</option>
-                    <option value="get_environment_snapshot">📊 Vitals Snapshot (CPU, RAM, GPU, Disks) (Sicher ✓)</option>
-                    <option value="take_screenshot">📸 Screenshot erfassen (Sicher ✓)</option>
-                    <option value="read_clipboard">📋 Zwischenablage lesen (Sicher ✓)</option>
-                    <option value="media_control">🎵 Mediensteuerung (MPRIS / playerctl) (Sicher ✓)</option>
-                    <option value="app_control">🚀 App-Steuerung (launch, focus, close) (⚠️ Bestätigung)</option>
-                    <option value="gui_action">🖱️ GUI-Action (Tippen, Hotkey, Klick) (⚠️ Bestätigung)</option>
-                    <option value="browse_web">📰 Webseiten-Inhalt lesen & extrahieren (Sicher ✓)</option>
-                    <option value="execute_code">🐍 Sandbox Code-Ausführung (⚠️ Bestätigung)</option>
-                    <option value="file_organizer">📁 File Organizer (list, preview, organize) (⚠️ Bestätigung bei organize)</option>
-                    <option value="plan_and_execute">🗺️ Task Planner & Execution (Sicher ✓)</option>
-                    <option value="set_timer">⏱️ System-Timer stellen (Sicher ✓)</option>
+                    <option value="web_search">{t('comp.tool.search')}</option>
+                    <option value="open_external_url">{t('comp.tool.openUrl')}</option>
+                    <option value="get_system_info">{t('comp.tool.sysinfo')}</option>
+                    <option value="get_environment_snapshot">{t('comp.tool.vitals')}</option>
+                    <option value="take_screenshot">{t('comp.tool.screenshot')}</option>
+                    <option value="read_clipboard">{t('comp.tool.clipboard')}</option>
+                    <option value="media_control">{t('comp.tool.media')}</option>
+                    <option value="app_control">{t('comp.tool.app')}</option>
+                    <option value="gui_action">{t('comp.tool.gui')}</option>
+                    <option value="browse_web">{t('comp.tool.read')}</option>
+                    <option value="execute_code">{t('comp.tool.code')}</option>
+                    <option value="file_organizer">{t('comp.tool.files')}</option>
+                    <option value="plan_and_execute">{t('comp.tool.planner')}</option>
+                    <option value="set_timer">{t('comp.tool.timer')}</option>
                   </select>
                 </div>
 
                 {selectedTool === 'execute_code' && (
                   <div>
                     <label className="text-xs font-semibold text-slate-400 block mb-1">
-                      Interpreter-Sprache (Multiplattform)
+                      {t('comp.interpreter')}
                     </label>
                     <div className="flex flex-wrap gap-2">
                       <button
@@ -875,7 +884,7 @@ export const CompanionView: React.FC = () => {
                             : 'bg-app border-slate-700 text-slate-400 hover:text-slate-200'
                         }`}
                       >
-                        Python 3 (Optional)
+                        {t('comp.python')}
                       </button>
                     </div>
                   </div>
@@ -909,7 +918,7 @@ export const CompanionView: React.FC = () => {
                 {(selectedTool === 'app_control' || selectedTool === 'gui_action' || selectedTool === 'file_organizer' || selectedTool === 'set_timer') && (
                   <div>
                     <label className="text-xs font-semibold text-slate-400 block mb-1">
-                      Zweit-Parameter (Ziel / Ordner / Text)
+                      {t('comp.secondParam')}
                     </label>
                     <input
                       type="text"
@@ -925,7 +934,7 @@ export const CompanionView: React.FC = () => {
                   className="w-full py-2.5 rounded-xl bg-linear-to-r from-emerald-600 to-cyan-600 hover:from-emerald-500 hover:to-cyan-500 text-white text-xs font-bold shadow-lg shadow-emerald-950/40 transition flex items-center justify-center gap-1.5 active:scale-95"
                 >
                   <Play className="w-3.5 h-3.5 fill-white" />
-                  Werkzeug ausführen
+                  {t('comp.runTool')}
                 </button>
               </form>
 
@@ -938,12 +947,12 @@ export const CompanionView: React.FC = () => {
                     onChange={handleToggleAutoApprove}
                     className="rounded border-slate-700 text-emerald-600 focus:ring-0"
                   />
-                  <span>Sichere Tools ohne Nachfrage genehmigen</span>
+                  <span>{t('comp.autoApprove')}</span>
                 </label>
 
                 <span className="text-xs text-slate-400 flex items-center gap-1 font-mono">
                   <Clock className="w-3 h-3" />
-                  <span>25s Schutz-Countdown</span>
+                  <span>{t('comp.countdown')}</span>
                 </span>
               </div>
             </div>
@@ -953,12 +962,12 @@ export const CompanionView: React.FC = () => {
               <div className="flex items-center justify-between border-b border-slate-800 pb-3">
                 <h3 className="text-sm font-bold text-slate-100 flex items-center gap-2">
                   <Cpu className="w-4 h-4 text-cyan-400" />
-                  System-Vitals & Hardware-Monitor
+                  {t('comp.vitalsTitle')}
                 </h3>
                 <button
                   onClick={fetchEnvironmentSnapshot}
                   className="p-1.5 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-300 transition"
-                  title="Neu laden"
+                  title={t('comp.reload')}
                 >
                   <RefreshCw className="w-3.5 h-3.5" />
                 </button>
@@ -967,14 +976,14 @@ export const CompanionView: React.FC = () => {
               {environmentSnapshot ? (
                 <div className="grid grid-cols-2 gap-3 text-xs font-mono">
                   <div className="p-3 rounded-xl bg-app border border-slate-800">
-                    <span className="text-[11px] text-slate-500 block">CPU Auslastung</span>
+                    <span className="text-[11px] text-slate-500 block">{t('comp.cpu')}</span>
                     <span className="text-slate-100 font-bold text-sm">
                       {environmentSnapshot.cpu_usage_percent.toFixed(1)}%
                     </span>
                   </div>
 
                   <div className="p-3 rounded-xl bg-app border border-slate-800">
-                    <span className="text-[11px] text-slate-500 block">RAM Belegung</span>
+                    <span className="text-[11px] text-slate-500 block">{t('comp.ram')}</span>
                     <span className="text-slate-100 font-bold text-sm">
                       {environmentSnapshot.ram_percent.toFixed(1)}%
                     </span>
@@ -984,7 +993,7 @@ export const CompanionView: React.FC = () => {
                   </div>
 
                   <div className="p-3 rounded-xl bg-app border border-slate-800">
-                    <span className="text-[11px] text-slate-500 block">Festplatte Frei</span>
+                    <span className="text-[11px] text-slate-500 block">{t('comp.disk')}</span>
                     <span className="text-slate-100 font-bold text-sm">
                       {environmentSnapshot.disk_free_gb.toFixed(1)} GB
                     </span>
@@ -994,23 +1003,23 @@ export const CompanionView: React.FC = () => {
                   </div>
 
                   <div className="p-3 rounded-xl bg-app border border-slate-800">
-                    <span className="text-[11px] text-slate-500 block">GPU & Temperatur</span>
+                    <span className="text-[11px] text-slate-500 block">{t('comp.gpu')}</span>
                     <span className="text-slate-100 font-bold text-sm">
                       {environmentSnapshot.gpu_name || 'NVIDIA GPU'}
                     </span>
                     <span className="text-[11px] text-emerald-400 block">
-                      {environmentSnapshot.gpu_temp_c ? `${environmentSnapshot.gpu_temp_c}°C` : 'Aktiv'} • VRAM {environmentSnapshot.gpu_vram_used_mb || 0}MB
+                      {environmentSnapshot.gpu_temp_c ? `${environmentSnapshot.gpu_temp_c}°C` : t('comp.active')} • VRAM {environmentSnapshot.gpu_vram_used_mb || 0}MB
                     </span>
                   </div>
                 </div>
               ) : (
                 <div className="p-8 text-center text-xs text-slate-500 italic">
-                  Vitals werden geladen...
+                  {t('comp.vitalsLoading')}
                 </div>
               )}
 
               <div className="p-3 rounded-xl bg-app/70 border border-slate-800/80 text-xs font-mono text-slate-300">
-                <span className="text-slate-500 block mb-0.5">Aktives Desktop-Fenster:</span>
+                <span className="text-slate-500 block mb-0.5">{t('comp.activeWindow')}</span>
                 <span className="text-cyan-300 font-bold">"{currentWindowTitle}"</span>
               </div>
             </div>
@@ -1022,7 +1031,7 @@ export const CompanionView: React.FC = () => {
               <div className="flex items-center gap-2">
                 <Shield className="w-4 h-4 text-emerald-400" />
                 <h3 className="text-xs font-bold text-slate-200 uppercase tracking-wider">
-                  Tool-Ausführungs- & Audit-Protokoll
+                  {t('comp.audit')}
                 </h3>
               </div>
               <span className="text-xs text-slate-500 font-mono">
@@ -1067,7 +1076,7 @@ export const CompanionView: React.FC = () => {
 
               {history.length === 0 && (
                 <div className="p-8 text-center text-xs text-slate-500 italic">
-                  Noch keine Tool-Aktionen ausgeführt.
+                  {t('comp.noAudit')}
                 </div>
               )}
             </div>
@@ -1084,10 +1093,10 @@ export const CompanionView: React.FC = () => {
               <div>
                 <h3 className="text-sm font-bold text-slate-100 flex items-center gap-2">
                   <Layers className="w-4 h-4 text-indigo-400" />
-                  Model Context Protocol (MCP) Server
+                  {t('comp.mcpTitle')}
                 </h3>
                 <p className="text-xs text-slate-400">
-                  Standardisiertes JSON-RPC 2.0 Protokoll für externe Tool-Integrationen
+                  {t('comp.mcpIntro')}
                 </p>
               </div>
             </div>
@@ -1112,7 +1121,7 @@ export const CompanionView: React.FC = () => {
                           : 'bg-slate-800 text-slate-400 border border-slate-700'
                       }`}
                     >
-                      {srv.enabled ? 'Aktiv' : 'Inaktiv'}
+                      {srv.enabled ? t('comp.active') : t('comp.inactive')}
                     </button>
                   </div>
 
@@ -1129,10 +1138,10 @@ export const CompanionView: React.FC = () => {
             <div className="border-b border-slate-800 pb-3">
               <h3 className="text-sm font-bold text-slate-100 flex items-center gap-2">
                 <Terminal className="w-4 h-4 text-cyan-400" />
-                Benutzerdefinierte Plugins
+                {t('comp.plugins')}
               </h3>
               <p className="text-xs text-slate-400">
-                Eigene Skripte und Erweiterungen in ~/.local/share/otakusoul/companion/plugins/
+                {t('comp.pluginsDir', { path: `${appPaths?.data_dir ?? '…'}/companion/plugins/` })}
               </p>
             </div>
 
@@ -1154,7 +1163,7 @@ export const CompanionView: React.FC = () => {
 
               {companionPlugins.length === 0 && (
                 <div className="p-8 text-center text-xs text-slate-500 italic">
-                  Keine zusätzlichen Plugins installiert. Eigene .json Manifeste können jederzeit hinzugefügt werden.
+                  {t('comp.noPlugins')}
                 </div>
               )}
             </div>
@@ -1168,18 +1177,18 @@ export const CompanionView: React.FC = () => {
           <div className="border-b border-slate-800 pb-3">
             <h3 className="text-sm font-bold text-slate-100 flex items-center gap-2">
               <Tv className="w-4 h-4 text-blue-400" />
-              Transparentes Floating Desktop-Overlay
+              {t('comp.overlayTitle')}
             </h3>
             <p className="text-xs text-slate-400">
-              Der Begleiter schwebt als transparentes, dekorationsfreies Fenster über deinem Desktop (Always-on-top)
+              {t('comp.overlayIntro')}
             </p>
           </div>
 
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <div className="p-4 rounded-xl bg-app border border-slate-800 space-y-3">
-              <h4 className="text-xs font-bold text-slate-200">Overlay-Steuerung</h4>
+              <h4 className="text-xs font-bold text-slate-200">{t('comp.overlayControl')}</h4>
               <p className="text-xs text-slate-400 leading-relaxed">
-                Öffnet oder schließt das transparente Desktop-Begleiter-Fenster. Das Fenster bleibt stets im Vordergrund und zeigt den Avatar, Sprechblasen und Schnellaktionen.
+                {t('comp.overlayText')}
               </p>
 
               <div className="flex gap-2 pt-2">
@@ -1188,21 +1197,21 @@ export const CompanionView: React.FC = () => {
                   className="px-4 py-2 rounded-xl bg-cyan-600 hover:bg-cyan-500 text-white text-xs font-bold transition flex items-center gap-1.5"
                 >
                   <Eye className="w-3.5 h-3.5" />
-                  Overlay starten
+                  {t('comp.overlayStart')}
                 </button>
                 <button
                   onClick={() => toggleCompanionOverlay(false)}
                   className="px-4 py-2 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-300 text-xs font-semibold transition"
                 >
-                  Schließen
+                  {t('common.close')}
                 </button>
               </div>
             </div>
 
             <div className="p-4 rounded-xl bg-app border border-slate-800 space-y-3">
-              <h4 className="text-xs font-bold text-slate-200">Click-Through Modus</h4>
+              <h4 className="text-xs font-bold text-slate-200">{t('comp.clickThrough')}</h4>
               <p className="text-xs text-slate-400 leading-relaxed">
-                Wenn aktiviert, werden Mausklicks durch das Overlay hindurch auf darunterliegende Fenster übertragen.
+                {t('comp.clickThroughText')}
               </p>
 
               <label className="flex items-center gap-2 cursor-pointer text-xs text-slate-300 pt-2">
@@ -1216,7 +1225,7 @@ export const CompanionView: React.FC = () => {
                   }}
                   className="rounded border-slate-700 text-cyan-600 focus:ring-0"
                 />
-                <span>Mausklicks durchlassen (Click-Through)</span>
+                <span>{t('comp.clickThroughToggle')}</span>
               </label>
             </div>
           </div>
