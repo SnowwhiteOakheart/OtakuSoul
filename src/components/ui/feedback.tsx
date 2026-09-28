@@ -15,10 +15,17 @@ interface ConfirmOptions {
 
 type ToastKind = 'success' | 'error' | 'info';
 
+/** Optional follow-up for a toast, e.g. "Open in chat" after an import. */
+export interface ToastAction {
+  label: string;
+  onClick: () => void;
+}
+
 interface ToastItem {
   id: number;
   kind: ToastKind;
   message: string;
+  action?: ToastAction;
 }
 
 interface FeedbackState {
@@ -46,17 +53,18 @@ let nextToastId = 1;
 const dismissToast = (id: number) =>
   useFeedbackStore.setState((state) => ({ toasts: state.toasts.filter((item) => item.id !== id) }));
 
-const pushToast = (kind: ToastKind, message: string) => {
+const pushToast = (kind: ToastKind, message: string, action?: ToastAction) => {
   const id = nextToastId++;
-  useFeedbackStore.setState((state) => ({ toasts: [...state.toasts.slice(-4), { id, kind, message }] }));
-  window.setTimeout(() => dismissToast(id), kind === 'error' ? 8000 : 4000);
+  useFeedbackStore.setState((state) => ({ toasts: [...state.toasts.slice(-4), { id, kind, message, action }] }));
+  // Errors and toasts with a follow-up action stay longer so there is time to read or act.
+  window.setTimeout(() => dismissToast(id), kind === 'error' || action ? 8000 : 4000);
 };
 
 /** Non-blocking notifications; replaces `window.alert`. */
 export const toast = {
-  success: (message: string) => pushToast('success', message),
-  error: (message: string) => pushToast('error', message),
-  info: (message: string) => pushToast('info', message),
+  success: (message: string, action?: ToastAction) => pushToast('success', message, action),
+  error: (message: string, action?: ToastAction) => pushToast('error', message, action),
+  info: (message: string, action?: ToastAction) => pushToast('info', message, action),
 };
 
 const TOAST_STYLES: Record<ToastKind, { icon: React.ElementType; className: string }> = {
@@ -132,7 +140,20 @@ export const FeedbackHost: React.FC = () => {
               className={`pointer-events-auto flex items-start gap-2.5 rounded-xl border bg-slate-900/95 px-3.5 py-3 text-sm shadow-xl backdrop-blur ${className}`}
             >
               <Icon className="w-4 h-4 shrink-0 mt-0.5" />
-              <p className="flex-1 select-text break-words">{item.message}</p>
+              <div className="flex-1 min-w-0 space-y-2">
+                <p className="select-text break-words">{item.message}</p>
+                {item.action && (
+                  <button
+                    onClick={() => {
+                      dismissToast(item.id);
+                      item.action?.onClick();
+                    }}
+                    className="rounded-lg bg-white/10 px-2.5 py-1 text-xs font-semibold text-white hover:bg-white/20 outline-hidden focus-visible:ring-2 focus-visible:ring-accent-400"
+                  >
+                    {item.action.label} →
+                  </button>
+                )}
+              </div>
               <button
                 onClick={() => dismissToast(item.id)}
                 aria-label={t('common.close')}

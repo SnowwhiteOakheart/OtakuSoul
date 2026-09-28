@@ -1617,4 +1617,13 @@ export const ru: TranslationDictionary = {
   "onboarding.summaryNone": "Ещё не выбран",
   "onboarding.startServer": "Сразу запустить локальный сервер",
   "onboarding.finish": "Поехали",
+  "hub.creator": "Автор",
+  "hub.author": "Автор",
+  "hub.startLocation": "Старт",
+  "hub.import": "Импорт",
+  "hub.loadMorePage": "Загрузить ещё (страница {{page}})",
+  "hub.entryCount_one": "{{count}} запись",
+  "hub.entryCount_few": "{{count}} записи",
+  "hub.entryCount_many": "{{count}} записей",
+  "hub.entryCount_other": "{{count}} записи",
 };

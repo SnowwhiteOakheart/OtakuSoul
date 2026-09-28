@@ -1617,4 +1617,13 @@ export const en: TranslationDictionary = {
   "onboarding.summaryNone": "Not chosen yet",
   "onboarding.startServer": "Start the local server right away",
   "onboarding.finish": "Let's go",
+  "hub.creator": "Creator",
+  "hub.author": "Author",
+  "hub.startLocation": "Start",
+  "hub.import": "Import",
+  "hub.loadMorePage": "Load more cards (page {{page}})",
+  "hub.entryCount_one": "{{count}} entry",
+  "hub.entryCount_few": "{{count}} entries",
+  "hub.entryCount_many": "{{count}} entries",
+  "hub.entryCount_other": "{{count}} entries",
 };

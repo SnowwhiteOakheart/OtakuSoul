@@ -1619,4 +1619,13 @@ export const de = {
   "onboarding.summaryNone": "Noch nicht gewählt",
   "onboarding.startServer": "Lokalen Server gleich starten",
   "onboarding.finish": "Los geht's",
+  "hub.creator": "Ersteller",
+  "hub.author": "Autor",
+  "hub.startLocation": "Start",
+  "hub.import": "Importieren",
+  "hub.loadMorePage": "Mehr Karten laden (Seite {{page}})",
+  "hub.entryCount_one": "{{count}} Eintrag",
+  "hub.entryCount_few": "{{count}} Einträge",
+  "hub.entryCount_many": "{{count}} Einträge",
+  "hub.entryCount_other": "{{count}} Einträge",
 } as const;
