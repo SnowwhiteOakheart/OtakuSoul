@@ -366,7 +366,7 @@ export function CharacterVoiceModal({ onClose }: CharacterVoiceModalProps) {
                         <label>
                           <span className={labelClass}>{t('voiceCfg.voicesDir')}</span>
                           <div className="flex gap-2">
-                            <input value={draft.kokoro.voices_path} onChange={(event) => updateKokoro('voices_path', event.target.value)} className={fieldClass} placeholder="voices/ mit af_heart.bin …" />
+                            <input value={draft.kokoro.voices_path} onChange={(event) => updateKokoro('voices_path', event.target.value)} className={fieldClass} placeholder="voices/ (af_heart.bin …)" />
                             <button type="button" onClick={() => void selectKokoroVoices()} className="px-3 rounded-lg border border-emerald-500/40 text-emerald-200 hover:bg-emerald-950/40" title={t('voiceCfg.chooseVoicesDir')}><FolderOpen className="w-4 h-4" /></button>
                           </div>
                         </label>

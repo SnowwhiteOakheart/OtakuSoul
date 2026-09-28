@@ -14,7 +14,7 @@ import {
   Sliders,
   ChevronRight,
 } from 'lucide-react';
-import { translate, useTranslation } from '../../i18n';
+import { translate, useTranslation, type TranslationKey } from '../../i18n';
 import { confirmDialog, toast } from '../ui/feedback';
 import { errorMessage } from '../../utils/errors';
 
@@ -407,7 +407,7 @@ export const ChatSidebar: React.FC<ChatSidebarProps> = ({ isOpen, onClose }) => 
                 key={preset.id}
                 onClick={() => {
                   applyHudPreset(preset.id);
-                  toast.success(translate('chatSidebar.presetApplied', { name: preset.name }));
+                  toast.success(translate('chatSidebar.presetApplied', { name: t(`hudPreset.${preset.id}` as TranslationKey) }));
                 }}
                 className="group w-full text-left p-2.5 rounded-xl border border-slate-800/80 bg-app/60 hover:bg-slate-800/50 hover:border-accent-500/40 cursor-pointer transition-all outline-hidden focus-visible:ring-2 focus-visible:ring-accent-400"
               >
@@ -415,13 +415,13 @@ export const ChatSidebar: React.FC<ChatSidebarProps> = ({ isOpen, onClose }) => 
                   <div className="flex items-center gap-2">
                     <span className={`w-2 h-2 rounded-full bg-linear-to-r ${preset.color}`} />
                     <span className="font-semibold text-xs text-white group-hover:text-accent-300 transition-colors">
-                      {preset.name}
+                      {t(`hudPreset.${preset.id}` as TranslationKey)}
                     </span>
                   </div>
                   <ChevronRight className="w-3.5 h-3.5 text-slate-500 group-hover:text-accent-400 transition-colors" />
                 </div>
                 <p className="text-xs text-slate-400 line-clamp-2 leading-relaxed mb-1.5">
-                  {preset.description}
+                  {t(`hudPreset.${preset.id}Desc` as TranslationKey)}
                 </p>
                 <div className="flex flex-wrap gap-1">
                   {preset.defaultVariables.map((v) => (

@@ -1,4 +1,5 @@
 import { create } from 'zustand';
+import { translate } from '../i18n';
 import { api } from '../services/api';
 import {
   HardwareInfo,
@@ -2158,7 +2159,7 @@ export const useAppStore = create<AppStoreState>((set, get) => ({
     try {
       const sessions = await api.listChatSessions(charId);
       if (sessions.length === 0) {
-        const newSession = await api.createChatSession(charId, 'Neuer Chat');
+        const newSession = await api.createChatSession(charId, translate('chat.newChatTitle'));
         const char = get().activeCharacter;
         if (char?.card.data.first_mes) {
           await api.addChatMessage(newSession.id, 'assistant', char.card.data.first_mes);
@@ -2203,7 +2204,7 @@ export const useAppStore = create<AppStoreState>((set, get) => ({
     if (!char) return null;
 
     try {
-      const sessionTitle = title || `Gespräch ${get().chatSessions.length + 1}`;
+      const sessionTitle = title || translate('chat.defaultSessionTitle', { n: get().chatSessions.length + 1 });
       const session = await api.createChatSession(char.id, sessionTitle);
 
       if (char.card.data.first_mes) {
