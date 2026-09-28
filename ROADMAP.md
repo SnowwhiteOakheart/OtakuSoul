@@ -1,11 +1,12 @@
 # 🗺️ OtakuSoul – Verbesserungs-Roadmap
 
-> Stand: 2026-09-27 · Basis: Commit `8507fb8` (main)
+> Stand: 2026-09-28 (zuletzt aktualisiert) · Ursprüngliche Analyse: Commit `8507fb8` (main)
 > Grundlage: Code-Review von `src/` und `src-tauri/`, `npm outdated`, `cargo outdated`, `npm audit`,
 > `cargo clippy`, `tsc`, Vitest/Cargo-Tests und eine Sichtprüfung der Oberfläche bei 1280×840 und 960×640 (Mindestgröße).
 > Abgeschlossene Feature-Phasen stehen in `Roadmap_abgeschlossen.md`.
 
-**Fortschritt:** P0 und die Abhängigkeiten sind erledigt (siehe unten).
+**Fortschritt:** P0, Abhängigkeiten, Navigation, i18n, Dialoge/Feedback, Barrierefreiheit und Fenster-Plugins sind erledigt.
+Offen sind vor allem Ersteinrichtung, Design-Bausteine, Store-/Komponenten-Aufteilung, Rust-Fehlertypen und Tests.
 
 **Gesamtbild (Ausgangslage):** Funktional ist das Projekt weit. `tsc` läuft sauber, 16 Vitest- und 91 Cargo-Tests sind grün.
 Die Schwächen liegen vor allem hier:
@@ -55,8 +56,8 @@ Die Schwächen liegen vor allem hier:
 
 GitHub Actions wurden bewusst entfernt (Commit `11597c2`). Stattdessen gibt es jetzt:
 
-- [x] `npm run check`: `tsc` + Vitest + `cargo clippy -- -D warnings` + `cargo test`. Clippy ist komplett warnungsfrei (vorher 50 Warnungen und 1 Fehler).
-- [ ] `cargo fmt` einmalig über das ganze Projekt laufen lassen (692 Abweichungen), danach `cargo fmt --check` in `npm run check` aufnehmen.
+- [x] `npm run check`: oxlint + `tsc` + Vitest + `cargo fmt --check` + `cargo clippy -- -D warnings` + `cargo test`. Clippy ist komplett warnungsfrei (vorher 50 Warnungen und 1 Fehler).
+- [x] `cargo fmt` einmalig über das ganze Projekt, `cargo fmt --check` ist Teil von `npm run check`.
 
 ---
 
@@ -64,81 +65,89 @@ GitHub Actions wurden bewusst entfernt (Commit `11597c2`). Stattdessen gibt es j
 
 ### Navigation / Header (`src/components/Header.tsx`)
 
-- [ ] **Der Header läuft über.** Schon bei 1280 px brechen „Soul Hub“ und „Soul Stage“ zweizeilig um. Bei der Mindestbreite von 960 px
+- [x] **Der Header läuft über.** → Erledigt: einklappbare Seitenleiste (`Sidebar.tsx`), der Header zeigt nur noch Branding, Status und globale Aktionen.
+  *Ursprünglicher Befund:* Schon bei 1280 px brechen „Soul Hub“ und „Soul Stage“ zweizeilig um. Bei der Mindestbreite von 960 px
   sind *Einstellungen*, der Serverstatus und die Aktionsknöpfe nicht erreichbar. Beim Tab-Wechsel verschiebt sich außerdem der Inhalt,
   und das Logo wird abgeschnitten.
   → **Vorschlag:** schmale, einklappbare **Seitenleiste links** (Icon + Label, eingeklappt nur Icon + Tooltip) statt 8 Tabs oben.
   Der Header behält dann nur Branding, Status und globale Aktionen. Mindestens aber `whitespace-nowrap` setzen und
   unter ca. 1200 px auf reine Icons mit Tooltip umschalten.
-- [ ] **Navigation logisch gruppieren:** *Spielen* (Chat, Soul Stage, Companion) · *Bibliothek* (Charaktere, Lorebooks, Soul Hub) ·
+- [x] **Navigation logisch gruppieren:** *Spielen* (Chat, Soul Stage, Companion) · *Bibliothek* (Charaktere, Lorebooks, Soul Hub) ·
   *System* (Integrationen, Einstellungen).
-- [ ] Die 8 fast identischen Tab-Buttons in eine `NAV_ITEMS`-Konfiguration mit `.map()` überführen.
-- [ ] Tastaturkürzel für die Navigation (`Strg+1…8`, `Strg+,` für Einstellungen) und eine **Befehlspalette** (`Strg+K`).
-- [ ] Das Status-Pill („Server gestoppt“) ist ein `<div onClick>`. → Echten `<button>` verwenden und einen klaren Handlungsaufruf anbieten („Server starten“).
-- [ ] **Hardware-Polling alle 2 s** startet jedes Mal `nvidia-smi` als Prozess. → Intervall auf 5–10 s erhöhen, bei unsichtbarem Fenster
-  pausieren (`document.visibilityState`), oder den Status per Tauri-Event aus Rust pushen.
+- [x] Die 8 fast identischen Tab-Buttons in eine `NAV_GROUPS`-Konfiguration mit `.map()` überführen.
+- [x] Tastaturkürzel für die Navigation (`Strg+1…8`, `Strg+,` für Einstellungen).
+- [ ] **Befehlspalette** (`Strg+K`).
+- [x] Das Status-Pill („Server gestoppt“) ist ein `<div onClick>`. → Echten `<button>` verwenden und einen klaren Handlungsaufruf anbieten („Server starten“).
+- [x] **Hardware-Polling alle 2 s** startete jedes Mal `nvidia-smi` als Prozess. → Jetzt alle 10 s, pausiert bei verstecktem Fenster.
 
 ### Internationalisierung
 
-- [ ] **i18n greift kaum.** Nur 4 von 36 Komponenten nutzen `useTranslation` (Header, Settings, LogViewer, Updater).
+- [x] **i18n greift kaum.** → Erledigt: alle Komponenten übersetzt (de/en/ru, ~1.540 Schlüssel), Wörterbücher pro Sprache in
+  `src/i18n/locales/`, typisiert gegen Deutsch als Referenz, mit Interpolation und Pluralformen (`Intl.PluralRules`).
+  *Ursprünglicher Befund:* Nur 4 von 36 Komponenten nutzen `useTranslation` (Header, Settings, LogViewer, Updater).
   Wer in den Einstellungen *English* oder *Русский* wählt, sieht trotzdem fast alles auf Deutsch: Chat, Stage, Lorebooks, Hub,
   Companion, Modals, `confirm()`-Dialoge, Ladetexte (z. B. „Ansicht wird geladen…“ in `App.tsx`) und Rust-Fehlermeldungen.
   → Alle UI-Texte in Wörterbücher überführen. Das eine große `DICTIONARY`-Objekt in `src/i18n/index.ts` in JSON-Dateien pro Sprache
   und Bereich aufteilen, optional mit `i18next` / `react-i18next` (Pluralisierung, Interpolation, Fallback).
-- [ ] Einen Test ergänzen, der fehlende Übersetzungsschlüssel meldet.
+- [x] Einen Test ergänzen, der fehlende Übersetzungsschlüssel meldet (plus Platzhalter- und Pluraltests).
 - [ ] Rust-Fehler als Fehlercodes zurückgeben und im Frontend übersetzen, statt deutschen Klartext aus `format!()` anzuzeigen.
-- [ ] `<html lang="de">` beim Sprachwechsel dynamisch setzen.
+- [x] `<html lang="de">` beim Sprachwechsel dynamisch setzen.
 
 ### Design-System & Themes
 
-- [ ] **Themes wirken nur teilweise.** `App.css` definiert `--theme-accent`, es wird aber nur 6-mal verwendet, während im Code
+- [x] **Themes wirken nur teilweise.** → Erledigt: `@theme`-Tokens `accent`/`accent2`/`app`, fest verdrahtete Lila-Töne umgestellt
+  (ein Rest von ~25 bewusst farbigen Stellen, z. B. Emotionen, bleibt).
+  *Ursprünglicher Befund:* `App.css` definiert `--theme-accent`, es wird aber nur 6-mal verwendet, während im Code
   **777 Mal** `purple-/violet-/fuchsia-*` fest verdrahtet ist. Wählt man „Cyberpunk“ oder „Emerald“, bleiben Buttons, Tabs und Rahmen lila.
   → In Tailwind v4 per `@theme` semantische Tokens definieren (`--color-accent`, `--color-surface`, `--color-border`, `--color-muted` …)
   und die festen Farbklassen auf `bg-accent`, `text-accent` usw. umstellen.
-- [ ] **Wiederverwendbare UI-Bausteine** anlegen (`src/components/ui/`): `Button` (primary/secondary/ghost/danger), `IconButton`,
+- [ ] *(teilweise: `ModalOverlay`, `confirmDialog`, `toast`, `DropdownMenu`, `EmptyState`, `ErrorBoundary`, `pressable` gibt es;
+  offen: `Button`, `IconButton`, `Tabs`, `Select`, `Toggle`, `Slider`, `Tooltip`)* **Wiederverwendbare UI-Bausteine** anlegen (`src/components/ui/`): `Button` (primary/secondary/ghost/danger), `IconButton`,
   `Modal`/`Dialog`, `Tabs`, `Select`, `Toggle`, `Slider`, `EmptyState`, `Toast`, `ConfirmDialog`, `Tooltip`.
   Heute wird jedes der 377 `<button>`-Elemente mit langen, kopierten Klassenketten gestaltet.
-- [ ] **Zu kleine Schrift:** 333 Stellen mit `text-[9px]`, `text-[10px]` oder `text-[11px]`. Auf HiDPI- und Linux-Systemen schwer lesbar.
+- [x] **Zu kleine Schrift:** 9/10 px sind komplett entfernt, 11 px nur noch für Badges (~135 Stellen). Ursprünglich 333 Stellen mit `text-[9px]`, `text-[10px]` oder `text-[11px]`. Auf HiDPI- und Linux-Systemen schwer lesbar.
   → Untergrenze 12 px (`text-xs`) für Text, 11 px höchstens für Badges.
-- [ ] Veraltete Tailwind-v3-Klassen modernisieren: `bg-gradient-to-*` → `bg-linear-to-*`, `flex-shrink-0` → `shrink-0`, `flex-grow` → `grow` (48 Stellen).
-- [ ] Emojis in UI-Texten (24 Stellen) durch `lucide-react`-Icons ersetzen, damit alles konsistent gerendert wird (Linux-Schriftfallback).
+- [x] Veraltete Tailwind-v3-Klassen modernisieren: `bg-gradient-to-*` → `bg-linear-to-*`, `flex-shrink-0` → `shrink-0`, `flex-grow` → `grow` (48 Stellen).
+- [ ] Emojis in UI-Texten (24 Stellen, in den Wörterbüchern noch ~34) durch `lucide-react`-Icons ersetzen, damit alles konsistent gerendert wird (Linux-Schriftfallback).
 - [ ] Einen **hellen Modus** bzw. einen Theme passend zu `prefers-color-scheme` anbieten. Aktuell gibt es nur dunkle Themes.
-- [ ] `body { select-none }` global verhindert, dass man Chat-Nachrichten, Logs oder Fehlermeldungen kopieren kann.
+- [x] `body { select-none }` global verhindert, dass man Chat-Nachrichten, Logs oder Fehlermeldungen kopieren kann.
   → Nur auf Chrome-Elemente (Header, Buttons) beschränken, Inhaltsbereiche selektierbar machen.
 
 ### Dialoge, Feedback & Zustände
 
-- [ ] **Modals sind nicht barrierefrei:** 18 Overlays mit `fixed inset-0`, aber nur 1× `role="dialog"`, 2× Escape-Behandlung und kein Fokus-Trap.
+- [x] **Modals sind nicht barrierefrei:** → `ModalOverlay` mit Fokus-Trap, Escape, Fokus-Rückgabe und Dialog-Stapel. 18 Overlays mit `fixed inset-0`, aber nur 1× `role="dialog"`, 2× Escape-Behandlung und kein Fokus-Trap.
   → Gemeinsame `Modal`-Komponente auf Basis von `<dialog>` oder Radix/Headless UI: Escape schließt, Fokus wird gefangen und
   zurückgegeben, `aria-modal`, Klick auf den Hintergrund konfigurierbar.
-- [ ] **Native `confirm()`/`alert()` ersetzen** (20 Stellen, z. B. `ChatView.tsx:496`, `ChatSidebar.tsx:253`, `SceneLobbyModal.tsx:141`)
+- [x] **Native `confirm()`/`alert()` ersetzen** (keine Vorkommen mehr; „Rückgängig“-Toast noch offen) (20 Stellen, z. B. `ChatView.tsx:496`, `ChatSidebar.tsx:253`, `SceneLobbyModal.tsx:141`)
   durch einen gestalteten `ConfirmDialog`. Das passt besser zum Look und lässt sich übersetzen. Bei destruktiven Aktionen zusätzlich **„Rückgängig“-Toast** statt Rückfrage.
-- [ ] **Globales Toast-/Benachrichtigungssystem** für Erfolg und Fehler, statt verstreuter Inline-Banner und `console.error`.
-- [ ] **Leere Zustände verbessern.**
+- [x] **Globales Toast-/Benachrichtigungssystem** für Erfolg und Fehler, statt verstreuter Inline-Banner und `console.error`.
+- [x] **Leere Zustände verbessern.**
   - *Chat* ohne Charakter zeigt eine leere dunkle Fläche. → Onboarding-Karte: „Charakter wählen / importieren / Server starten“.
   - *Charakterbibliothek* zeigt „Keine Charaktere gefunden – passe deine Suche an“, auch wenn gar keine Suche aktiv ist.
     → Zwischen „leer“ (mit großem CTA „Ersten Charakter erstellen / importieren“) und „keine Treffer“ unterscheiden.
-- [ ] **Ersteinrichtungs-Assistent** (First-Run): Sprache → Modellquelle (lokales GGUF herunterladen oder Cloud-Key) → erster Charakter.
+- [ ] *(in Arbeit)* **Ersteinrichtungs-Assistent** (First-Run): Sprache → Modellquelle (lokales GGUF herunterladen oder Cloud-Key) → erster Charakter.
   Heute landet man auf einer leeren Chat-Ansicht mit dem Hinweis „Lokaler Server ist offline“.
-- [ ] Die Toolbar der Charakterbibliothek hat 6 gleich gewichtete Buttons. → Primäraktion hervorheben, den Rest in ein „Mehr“-Menü verschieben.
-- [ ] **Error Boundary** um jede lazy geladene Ansicht, damit ein Fehler in einer Ansicht nicht die ganze App weiß schaltet.
+- [x] Die Toolbar der Charakterbibliothek hat 6 gleich gewichtete Buttons. → Primäraktion hervorheben, den Rest in ein „Mehr“-Menü verschieben.
+- [x] **Error Boundary** um jede lazy geladene Ansicht, damit ein Fehler in einer Ansicht nicht die ganze App weiß schaltet.
 - [ ] Skelett-Loader statt reinem Text beim Laden von Ansichten und Listen.
 
 ### Barrierefreiheit (a11y)
 
-- [ ] Nur 5 `aria-label` bei rund 377 Buttons, viele davon reine Icon-Buttons. → Jedem Icon-Button ein `aria-label` geben.
-- [ ] Sichtbare Fokus-Ringe (`focus-visible:ring-…`) einheitlich über die `Button`-Komponente. `outline-none` kommt 118-mal vor.
-- [ ] 11 `<img>` ohne `alt`.
-- [ ] Klickbare `<div>` (z. B. Logo und Status im Header) in `<button>` umwandeln.
+- [x] Nur 5 `aria-label` bei rund 377 Buttons (jetzt über 150, alle Icon-Buttons beschriftet), viele davon reine Icon-Buttons. → Jedem Icon-Button ein `aria-label` geben.
+- [x] Sichtbare Fokus-Ringe (`focus-visible:ring-…`) einheitlich über die `Button`-Komponente. `outline-none` kommt 118-mal vor.
+- [x] 11 `<img>` ohne `alt`.
+- [x] Klickbare `<div>` (z. B. Logo und Status im Header) in `<button>` umwandeln. Karten mit eigenen Buttons nutzen `pressable()`,
+  oxlint (`jsx-a11y`) meldet neue Fälle.
 - [ ] Kontrast prüfen: `text-slate-500` auf `slate-950` erreicht bei kleiner Schrift das WCAG-AA-Kontrastverhältnis nicht.
-- [ ] `prefers-reduced-motion` respektieren (Pulse-Animationen, Konfetti, Avatar-Idle).
+- [x] `prefers-reduced-motion` respektieren (Pulse-Animationen, Konfetti, Avatar-Idle).
 
 ### Fenster & Desktop-Integration
 
-- [ ] `tauri-plugin-window-state` einbinden, damit Fenstergröße und -position gespeichert werden.
-- [ ] `tauri-plugin-single-instance`, um doppelte Starts (und doppelte llama-server-Prozesse) zu verhindern.
+- [x] `tauri-plugin-window-state` einbinden, damit Fenstergröße und -position gespeichert werden.
+- [x] `tauri-plugin-single-instance`, um doppelte Starts (und doppelte llama-server-Prozesse) zu verhindern.
 - [ ] Tray-Icon für den Companion (minimieren in den Tray statt beenden).
 - [ ] **Updater:** Aktuell wird nur geprüft und auf die GitHub-Release-Seite verlinkt. → `tauri-plugin-updater` mit signierten Updates nutzen.
+  *(Benötigt einen eigenen Signaturschlüssel des Projektinhabers.)*
 
 ---
 
@@ -146,28 +155,29 @@ GitHub Actions wurden bewusst entfernt (Commit `11597c2`). Stattdessen gibt es j
 
 ### Frontend
 
-- [ ] **`useAppStore.ts` hat 3.023 Zeilen.** → In Zustand-Slices aufteilen (`chatSlice`, `characterSlice`, `stageSlice`, `companionSlice`,
+- [ ] **`useAppStore.ts` hat 3.047 Zeilen.** → In Zustand-Slices aufteilen (`chatSlice`, `characterSlice`, `stageSlice`, `companionSlice`,
   `settingsSlice`, `voiceSlice` …).
-- [ ] **Unnötige Re-Renders:** 29 Komponenten holen den ganzen Store (`const { … } = useAppStore()`), nur eine nutzt einen Selektor.
+- [ ] *(teilweise: Header/Sidebar/App nutzen Selektoren, 26 Stellen holen noch den ganzen Store)* **Unnötige Re-Renders:** 29 Komponenten holen den ganzen Store (`const { … } = useAppStore()`), nur eine nutzt einen Selektor.
   Jeder Status-Poll (alle 2 s) rendert dadurch fast die gesamte App neu. → Selektoren mit `useShallow` verwenden.
 - [ ] Riesige Komponenten aufteilen: `SettingsView.tsx` (1.874 Z.), `SoulHubView.tsx` (1.255), `CompanionView.tsx` (1.230),
   `IntegrationsView.tsx` (1.213), `CognitiveMemoryDrawer.tsx` (1.126), `LorebookView.tsx` (1.025).
 - [ ] `src/types/index.ts` (1.138 Z.): Typen aus Rust generieren (`specta` + `tauri-specta` oder `ts-rs`), damit Frontend und Backend nicht auseinanderlaufen.
   Gleichzeitig erhält man typisierte `invoke`-Aufrufe statt manueller Wrapper in `api.ts` (1.179 Z.).
-- [ ] 30× `any` bzw. `as any` beseitigen, 185× `console.*` durch den vorhandenen Logger ersetzen.
-- [ ] `tsconfig`: `target`/`lib` von ES2020 auf ES2022+ anheben, `noUncheckedIndexedAccess` aktivieren.
-- [ ] ESLint (flat config) + `eslint-plugin-react-hooks` + `jsx-a11y` + Prettier einrichten. Aktuell gibt es keinen Linter.
+- [ ] 26× `any` bzw. `as any` beseitigen (oxlint warnt), 185× `console.*` durch den vorhandenen Logger ersetzen.
+- [x] `tsconfig`: `target`/`lib` von ES2020 auf ES2022+ anheben, `noUncheckedIndexedAccess` aktivieren.
+- [x] Linter eingerichtet: **oxlint** mit React-Hooks-, `jsx-a11y`- und TypeScript-Regeln (typescript-eslint unterstützt TS 7 noch nicht).
+  Offene Warnungen: `any`, Effekt-Abhängigkeiten, `setState` in Effekten. Prettier fehlt noch.
 - [ ] React 19 nutzen: `useActionState` / `useOptimistic` für Chat-Senden und Formulare, `use()` für Ladezustände.
 - [ ] Routing: Optional die Ansichten über einen leichten Router (z. B. TanStack Router) abbilden, damit Deep-Links
   (Overlay, mobiler Webclient) und „Zurück“ funktionieren, statt `window.location.search.includes('overlay=true')`.
 
 ### Backend
 
-- [ ] 50 Clippy-Warnungen beheben (`map_or`, fehlende `Default`-Impls, `sort_by_key`, unnötige Klone …) und danach `-D warnings` in der CI erzwingen.
+- [x] 50 Clippy-Warnungen beheben (`map_or`, fehlende `Default`-Impls, `sort_by_key`, unnötige Klone …) und danach `-D warnings` in der CI erzwingen.
 - [ ] 221× `unwrap()` im Rust-Code prüfen. In Command-Pfaden durch `?` und einen gemeinsamen Fehlertyp (`thiserror`) ersetzen,
   damit das Frontend strukturierte Fehler bekommt und die App nicht abstürzt (siehe P0-Regex).
 - [ ] `commands.rs` (1.697 Z.) nach Domänen aufteilen (`commands/chat.rs`, `commands/stage.rs` …); `stage.rs` (2.971 Z.) und `memory.rs` (2.069 Z.) ebenfalls modularisieren.
-- [ ] Regexe per `std::sync::LazyLock` statt `Regex::new` pro Aufruf.
+- [ ] *(teilweise: `companion_tools`)* Regexe per `std::sync::LazyLock` statt `Regex::new` pro Aufruf. Offen in `memory.rs`, `voice.rs`, `emotions.rs`, `stage.rs`, `companion.rs`.
 - [ ] `tracing-subscriber` mit `env-filter` und Log-Rotation (`tracing-appender`) konfigurieren.
 - [ ] Datenbank-Migrationen versionieren (`rusqlite_migration` oder `PRAGMA user_version`), bevor das rusqlite-Upgrade kommt.
 
@@ -176,7 +186,7 @@ GitHub Actions wurden bewusst entfernt (Commit `11597c2`). Stattdessen gibt es j
 - [ ] Frontend-Abdeckung ausbauen: Aktuell gibt es nur 3 Testdateien (i18n, soundFx, stateParser). Tests für Store-Slices, `api.ts`-Mocks
   und Kernkomponenten mit `@testing-library/react` ergänzen.
 - [ ] E2E-Rauchtest mit WebdriverIO + `tauri-driver` (App starten, Charakter importieren, Chat senden gegen einen Mock-Provider).
-- [ ] Rust: Tests für `companion_tools` (Web-Fetch, Shell-Freigaben), `web_server` (Auth) und `profile_backup` (Round-Trip).
+- [ ] *(teilweise: `companion_tools`, `web_server`-Token, Discord-Split)* Rust: Tests für `companion_tools` (Web-Fetch, Shell-Freigaben), `web_server` (Auth) und `profile_backup` (Round-Trip).
 
 ---
 
@@ -193,10 +203,10 @@ GitHub Actions wurden bewusst entfernt (Commit `11597c2`). Stattdessen gibt es j
 
 ## ✅ Empfohlene Reihenfolge
 
-1. **P0 komplett**: Regex-Bug, CSP/Scope, Schlüsselbund, Webserver-Absicherung.
-2. **Tauri-Minor-Updates + CI-Modernisierung + Clippy-Bereinigung.** Geringes Risiko, schafft ein Sicherheitsnetz.
-3. **Design-Tokens + UI-Bausteine** (`Button`, `Modal`, `ConfirmDialog`, `Toast`, `EmptyState`), danach **Navigation neu**.
-4. **i18n flächendeckend** (lässt sich gut mit Schritt 3 kombinieren, weil ohnehin jede Komponente angefasst wird).
+1. ✅ **P0 komplett**: Regex-Bug, CSP/Scope, Schlüsselbund, Webserver-Absicherung.
+2. ✅ **Tauri-Minor-Updates + lokale Checks + Clippy-Bereinigung.** Geringes Risiko, schafft ein Sicherheitsnetz.
+3. ✅ *(Bausteine teilweise)* **Design-Tokens + UI-Bausteine** (`Button`, `Modal`, `ConfirmDialog`, `Toast`, `EmptyState`), danach **Navigation neu**.
+4. ✅ **i18n flächendeckend** (lässt sich gut mit Schritt 3 kombinieren, weil ohnehin jede Komponente angefasst wird).
 5. **Store-Slices + Selektoren**, Komponenten aufteilen.
-6. **Große Upgrades:** Live2D-Stack/pixi v8, rusqlite, reqwest, TypeScript 7.
+6. ✅ **Große Upgrades:** Live2D-Stack/pixi v8, rusqlite, reqwest, TypeScript 7.
 7. P3 nach Bedarf.
