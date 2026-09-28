@@ -5,8 +5,10 @@ use tracing::{info, warn};
 
 use crate::modules::inference::SamplingParams;
 use crate::modules::llama_manager::LlamaServerConfig;
+use crate::modules::paths::{
+    resolve_app_paths, scan_available_characters, scan_available_models, scan_available_vrm_models,
+};
 use crate::modules::secrets;
-use crate::modules::paths::{resolve_app_paths, scan_available_characters, scan_available_models, scan_available_vrm_models};
 
 const CLOUD_API_KEY_ACCOUNT: &str = "cloud_api_key";
 
@@ -114,29 +116,30 @@ pub fn get_settings_file_path() -> PathBuf {
 pub fn load_app_settings() -> AppSettings {
     let path = get_settings_file_path();
     if path.exists()
-        && let Ok(content) = fs::read_to_string(&path) {
-            if let Ok(mut settings) = serde_json::from_str::<AppSettings>(&content) {
-                if secrets::hydrate(CLOUD_API_KEY_ACCOUNT, &mut settings.cloud_api_key) {
-                    let _ = save_app_settings(&settings);
-                }
-                // If model path or vrm path is empty, try populating from scan
-                if settings.server_config.model_path.is_empty() {
-                    let models = scan_available_models();
-                    if let Some(first_model) = models.first() {
-                        settings.server_config.model_path = first_model.path.clone();
-                    }
-                }
-                if settings.active_vrm_path.is_none() {
-                    let vrms = scan_available_vrm_models();
-                    if let Some(first_vrm) = vrms.first() {
-                        settings.active_vrm_path = Some(first_vrm.path.clone());
-                    }
-                }
-                return settings;
-            } else {
-                warn!("settings.json ist beschädigt, erstelle neue Standardkonfiguration.");
+        && let Ok(content) = fs::read_to_string(&path)
+    {
+        if let Ok(mut settings) = serde_json::from_str::<AppSettings>(&content) {
+            if secrets::hydrate(CLOUD_API_KEY_ACCOUNT, &mut settings.cloud_api_key) {
+                let _ = save_app_settings(&settings);
             }
+            // If model path or vrm path is empty, try populating from scan
+            if settings.server_config.model_path.is_empty() {
+                let models = scan_available_models();
+                if let Some(first_model) = models.first() {
+                    settings.server_config.model_path = first_model.path.clone();
+                }
+            }
+            if settings.active_vrm_path.is_none() {
+                let vrms = scan_available_vrm_models();
+                if let Some(first_vrm) = vrms.first() {
+                    settings.active_vrm_path = Some(first_vrm.path.clone());
+                }
+            }
+            return settings;
+        } else {
+            warn!("settings.json ist beschädigt, erstelle neue Standardkonfiguration.");
         }
+    }
 
     let defaults = AppSettings::default();
     let _ = save_app_settings(&defaults);
@@ -161,8 +164,7 @@ fn save_app_settings_to_path(settings: &AppSettings, path: &std::path::Path) -> 
     let json = serde_json::to_string_pretty(settings)
         .map_err(|e| format!("Fehler bei der Serialisierung der Einstellungen: {}", e))?;
 
-    fs::write(path, json)
-        .map_err(|e| format!("Fehler beim Schreiben von {:?}: {}", path, e))?;
+    fs::write(path, json).map_err(|e| format!("Fehler beim Schreiben von {:?}: {}", path, e))?;
 
     Ok(())
 }

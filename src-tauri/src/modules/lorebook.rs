@@ -129,7 +129,8 @@ impl Lorebook {
         let content = fs::read_to_string(path)
             .map_err(|e| format!("Fehler beim Laden des Lorebooks {:?}: {}", path, e))?;
 
-        let mut book = Self::import_from_json_string(&content, path.file_stem().and_then(|s| s.to_str()))?;
+        let mut book =
+            Self::import_from_json_string(&content, path.file_stem().and_then(|s| s.to_str()))?;
         book.file_path = Some(path.to_string_lossy().to_string());
         if book.id.is_empty() {
             book.id = path
@@ -151,7 +152,10 @@ impl Lorebook {
     }
 
     /// Import JSON that can be standard OtakuSoul format, or SillyTavern format with entries array or map
-    pub fn import_from_json_string(content: &str, fallback_name: Option<&str>) -> Result<Self, String> {
+    pub fn import_from_json_string(
+        content: &str,
+        fallback_name: Option<&str>,
+    ) -> Result<Self, String> {
         let val: serde_json::Value = serde_json::from_str(content)
             .map_err(|e| format!("Ungültiges JSON-Format für Lorebook: {}", e))?;
 
@@ -241,11 +245,13 @@ impl Lorebook {
         let extract_str_vec = |key: &str| -> Vec<String> {
             if let Some(v) = val.get(key) {
                 if let Some(arr) = v.as_array() {
-                    return arr.iter()
+                    return arr
+                        .iter()
                         .filter_map(|x| x.as_str().map(|s| s.to_string()))
                         .collect();
                 } else if let Some(s) = v.as_str() {
-                    return s.split(',')
+                    return s
+                        .split(',')
                         .map(|p| p.trim().to_string())
                         .filter(|p| !p.is_empty())
                         .collect();
@@ -269,7 +275,11 @@ impl Lorebook {
             .get("trigger_type")
             .and_then(|v| v.as_str())
             .unwrap_or_else(|| {
-                if val.get("constant").and_then(|v| v.as_bool()).unwrap_or(false) {
+                if val
+                    .get("constant")
+                    .and_then(|v| v.as_bool())
+                    .unwrap_or(false)
+                {
                     "always_on"
                 } else {
                     "keyword"
@@ -292,9 +302,7 @@ impl Lorebook {
         let enabled = val
             .get("enabled")
             .and_then(|v| v.as_bool())
-            .or_else(|| {
-                val.get("disable").and_then(|d| d.as_bool().map(|b| !b))
-            })
+            .or_else(|| val.get("disable").and_then(|d| d.as_bool().map(|b| !b)))
             .unwrap_or(true);
 
         let injection_behavior = val
@@ -394,31 +402,40 @@ pub fn evaluate_lorebooks(
 
     for entry in &candidate_entries {
         // 1. Check exclude keys first (NOT logic)
-        let is_excluded = entry.exclude_key.iter().any(|ex| {
-            matches_keyword(context, ex, entry.case_sensitive, entry.match_whole_words)
-        });
+        let is_excluded = entry
+            .exclude_key
+            .iter()
+            .any(|ex| matches_keyword(context, ex, entry.case_sensitive, entry.match_whole_words));
         if is_excluded {
             continue;
         }
 
         // 2. Check tension threshold (Tension Event Trigger)
         if let Some(threshold) = entry.tension_threshold
-            && threshold > 0 && current_tension >= threshold {
-                // Tension event triggered!
-                triggered_tension_events.push(entry.name.clone());
-                // Release tension by 25 points per triggered event
-                new_tension = new_tension.saturating_sub(25);
-                initially_activated.push(entry.clone());
-                continue;
-            }
+            && threshold > 0
+            && current_tension >= threshold
+        {
+            // Tension event triggered!
+            triggered_tension_events.push(entry.name.clone());
+            // Release tension by 25 points per triggered event
+            new_tension = new_tension.saturating_sub(25);
+            initially_activated.push(entry.clone());
+            continue;
+        }
 
         // 3. Always-on trigger
         let trigger_lower = entry.trigger_type.to_lowercase();
-        if trigger_lower == "always_on" || (entry.key.is_empty() && entry.regex_keys.is_empty() && entry.trigger_type != "tension") {
+        if trigger_lower == "always_on"
+            || (entry.key.is_empty()
+                && entry.regex_keys.is_empty()
+                && entry.trigger_type != "tension")
+        {
             if let Some(prob) = entry.probability
-                && prob < 100 && rng.random_range(1..=100) > prob {
-                    continue;
-                }
+                && prob < 100
+                && rng.random_range(1..=100) > prob
+            {
+                continue;
+            }
             initially_activated.push(entry.clone());
             continue;
         }
@@ -436,16 +453,18 @@ pub fn evaluate_lorebooks(
                 Regex::new(&format!("(?i){}", pat_str))
             };
             if let Ok(re) = re_res
-                && re.is_match(context) {
-                    regex_matched = true;
-                    break;
-                }
+                && re.is_match(context)
+            {
+                regex_matched = true;
+                break;
+            }
         }
 
         // 5. Keyword matching (Primary OR logic)
-        let primary_matched = entry.key.iter().any(|k| {
-            matches_keyword(context, k, entry.case_sensitive, entry.match_whole_words)
-        });
+        let primary_matched = entry
+            .key
+            .iter()
+            .any(|k| matches_keyword(context, k, entry.case_sensitive, entry.match_whole_words));
 
         let mut matched = regex_matched || primary_matched;
 
@@ -462,9 +481,11 @@ pub fn evaluate_lorebooks(
         // 7. Probability roll
         if matched {
             if let Some(prob) = entry.probability
-                && prob < 100 && rng.random_range(1..=100) > prob {
-                    continue;
-                }
+                && prob < 100
+                && rng.random_range(1..=100) > prob
+            {
+                continue;
+            }
             initially_activated.push(entry.clone());
         }
     }
@@ -485,10 +506,7 @@ pub fn evaluate_lorebooks(
         .iter()
         .map(|e| e.name.to_lowercase())
         .collect();
-    let mut active_uids: HashSet<u64> = initially_activated
-        .iter()
-        .filter_map(|e| e.uid)
-        .collect();
+    let mut active_uids: HashSet<u64> = initially_activated.iter().filter_map(|e| e.uid).collect();
 
     let mut chained_additions = Vec::new();
     for entry in &initially_activated {
@@ -504,11 +522,12 @@ pub fn evaluate_lorebooks(
                 }
             } else if let Ok(uid_num) = target.trim().parse::<u64>()
                 && let Some(target_entry) = uid_to_entry.get(&uid_num)
-                    && !active_uids.contains(&uid_num) {
-                        chained_additions.push(target_entry.clone());
-                        active_uids.insert(uid_num);
-                        active_names.insert(target_entry.name.to_lowercase());
-                    }
+                && !active_uids.contains(&uid_num)
+            {
+                chained_additions.push(target_entry.clone());
+                active_uids.insert(uid_num);
+                active_names.insert(target_entry.name.to_lowercase());
+            }
         }
     }
     initially_activated.extend(chained_additions);
@@ -527,9 +546,10 @@ pub fn evaluate_lorebooks(
                     return true;
                 }
                 if let Ok(uid_num) = req.trim().parse::<u64>()
-                    && active_uids.contains(&uid_num) {
-                        return true;
-                    }
+                    && active_uids.contains(&uid_num)
+                {
+                    return true;
+                }
                 false
             })
         })
@@ -557,7 +577,8 @@ pub fn evaluate_lorebooks(
     // Sort by priority descending (higher numbers first)
     sorted_entries.sort_by_key(|e| std::cmp::Reverse(e.priority));
 
-    let activated_entry_names: Vec<String> = sorted_entries.iter().map(|e| e.name.clone()).collect();
+    let activated_entry_names: Vec<String> =
+        sorted_entries.iter().map(|e| e.name.clone()).collect();
 
     // 10. Split into Passive and Active/Directive entries
     let mut passive_entries = Vec::new();
@@ -589,37 +610,42 @@ pub fn list_all_lorebooks(user_lorebooks_dir: &Path, presets_dir: &Path) -> Vec<
 
     // 1. Scan user lorebooks directory
     if user_lorebooks_dir.exists()
-        && let Ok(entries) = fs::read_dir(user_lorebooks_dir) {
-            for entry in entries.flatten() {
-                let path = entry.path();
-                if path.extension().and_then(|s| s.to_str()) == Some("json")
-                    && let Ok(book) = Lorebook::load_from_file(&path)
-                        && !seen_ids.contains(&book.id) {
-                            seen_ids.insert(book.id.clone());
-                            books.push(book);
-                        }
+        && let Ok(entries) = fs::read_dir(user_lorebooks_dir)
+    {
+        for entry in entries.flatten() {
+            let path = entry.path();
+            if path.extension().and_then(|s| s.to_str()) == Some("json")
+                && let Ok(book) = Lorebook::load_from_file(&path)
+                && !seen_ids.contains(&book.id)
+            {
+                seen_ids.insert(book.id.clone());
+                books.push(book);
             }
         }
+    }
 
     // 2. Scan bundled presets directory
     if presets_dir.exists()
-        && let Ok(preset_dirs) = fs::read_dir(presets_dir) {
-            for preset_entry in preset_dirs.flatten() {
-                let lb_dir = preset_entry.path().join("lorebooks");
-                if lb_dir.exists()
-                    && let Ok(lb_files) = fs::read_dir(lb_dir) {
-                        for file_entry in lb_files.flatten() {
-                            let path = file_entry.path();
-                            if path.extension().and_then(|s| s.to_str()) == Some("json")
-                                && let Ok(book) = Lorebook::load_from_file(&path)
-                                    && !seen_ids.contains(&book.id) {
-                                        seen_ids.insert(book.id.clone());
-                                        books.push(book);
-                                    }
-                        }
+        && let Ok(preset_dirs) = fs::read_dir(presets_dir)
+    {
+        for preset_entry in preset_dirs.flatten() {
+            let lb_dir = preset_entry.path().join("lorebooks");
+            if lb_dir.exists()
+                && let Ok(lb_files) = fs::read_dir(lb_dir)
+            {
+                for file_entry in lb_files.flatten() {
+                    let path = file_entry.path();
+                    if path.extension().and_then(|s| s.to_str()) == Some("json")
+                        && let Ok(book) = Lorebook::load_from_file(&path)
+                        && !seen_ids.contains(&book.id)
+                    {
+                        seen_ids.insert(book.id.clone());
+                        books.push(book);
                     }
+                }
             }
         }
+    }
 
     books.sort_by(|a, b| a.name.cmp(&b.name));
     books
@@ -627,7 +653,10 @@ pub fn list_all_lorebooks(user_lorebooks_dir: &Path, presets_dir: &Path) -> Vec<
 
 pub fn scan_available_lorebooks() -> Vec<Lorebook> {
     let paths = crate::modules::paths::resolve_app_paths();
-    list_all_lorebooks(Path::new(&paths.lorebooks_dir), Path::new(&paths.bundled_presets_dir))
+    list_all_lorebooks(
+        Path::new(&paths.lorebooks_dir),
+        Path::new(&paths.bundled_presets_dir),
+    )
 }
 
 #[cfg(test)]
@@ -662,7 +691,11 @@ mod tests {
         };
 
         // Context only has primary key "Trank" -> should NOT activate
-        let res1 = evaluate_lorebooks(std::slice::from_ref(&book), "Ich nehme einen roten Trank.", 0);
+        let res1 = evaluate_lorebooks(
+            std::slice::from_ref(&book),
+            "Ich nehme einen roten Trank.",
+            0,
+        );
         assert!(res1.passive_entries.is_empty());
 
         // Context has primary "Trank" AND secondary "Kessel" -> SHOULD activate
@@ -692,7 +725,11 @@ mod tests {
         };
 
         // Matches regex "Drache"
-        let res1 = evaluate_lorebooks(std::slice::from_ref(&book), "Ein riesiger Drache kreist am Himmel!", 0);
+        let res1 = evaluate_lorebooks(
+            std::slice::from_ref(&book),
+            "Ein riesiger Drache kreist am Himmel!",
+            0,
+        );
         assert_eq!(res1.passive_entries.len(), 1);
 
         // Matches regex "Drache" BUT has exclude key "Friedlich" -> excluded
@@ -756,8 +793,14 @@ mod tests {
 
         let res = evaluate_lorebooks(&[book], "Wir entdecken einen alten Geheimgang.", 0);
         assert_eq!(res.activated_entry_names.len(), 2);
-        assert!(res.activated_entry_names.contains(&"Geheimgang".to_string()));
-        assert!(res.activated_entry_names.contains(&"Schatzkammer".to_string()));
+        assert!(
+            res.activated_entry_names
+                .contains(&"Geheimgang".to_string())
+        );
+        assert!(
+            res.activated_entry_names
+                .contains(&"Schatzkammer".to_string())
+        );
     }
 
     #[test]

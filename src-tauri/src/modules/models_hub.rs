@@ -189,36 +189,36 @@ pub async fn get_hf_model_files(model_id: &str) -> Result<Vec<HfGgufFile>, Strin
     if let Some(siblings) = val.get("siblings").and_then(|s| s.as_array()) {
         for s in siblings {
             if let Some(rfilename) = s.get("rfilename").and_then(|f| f.as_str())
-                && rfilename.ends_with(".gguf") {
-                    let download_url = format!(
-                        "https://huggingface.co/{}/resolve/main/{}",
-                        model_id, rfilename
-                    );
-                    let size_bytes = s
-                        .get("size")
-                        .and_then(|sz| sz.as_u64())
-                        .or_else(|| {
-                            s.get("lfs")
-                                .and_then(|l| l.get("size"))
-                                .and_then(|sz| sz.as_u64())
-                        })
-                        .unwrap_or(0);
-                    let size_formatted = format_bytes(size_bytes);
-                    let quantization = extract_quantization(rfilename);
-                    let (runtime, recommended, compatibility_note) =
-                        classify_gguf(model_id, rfilename);
+                && rfilename.ends_with(".gguf")
+            {
+                let download_url = format!(
+                    "https://huggingface.co/{}/resolve/main/{}",
+                    model_id, rfilename
+                );
+                let size_bytes = s
+                    .get("size")
+                    .and_then(|sz| sz.as_u64())
+                    .or_else(|| {
+                        s.get("lfs")
+                            .and_then(|l| l.get("size"))
+                            .and_then(|sz| sz.as_u64())
+                    })
+                    .unwrap_or(0);
+                let size_formatted = format_bytes(size_bytes);
+                let quantization = extract_quantization(rfilename);
+                let (runtime, recommended, compatibility_note) = classify_gguf(model_id, rfilename);
 
-                    files.push(HfGgufFile {
-                        filename: rfilename.to_string(),
-                        size_bytes,
-                        size_formatted,
-                        download_url,
-                        quantization,
-                        runtime,
-                        recommended,
-                        compatibility_note,
-                    });
-                }
+                files.push(HfGgufFile {
+                    filename: rfilename.to_string(),
+                    size_bytes,
+                    size_formatted,
+                    download_url,
+                    quantization,
+                    runtime,
+                    recommended,
+                    compatibility_note,
+                });
+            }
         }
     }
 

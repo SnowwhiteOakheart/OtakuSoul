@@ -211,11 +211,12 @@ pub fn extract_json_object(raw: &str) -> Option<String> {
     // Strip markdown codeblock ```json ... ``` or ``` ... ```
     if let Some(start) = text.find("```")
         && let Some(end) = text.rfind("```")
-            && end > start {
-                let inner = &text[start + 3..end];
-                let inner_trimmed = inner.trim_start_matches("json").trim();
-                text = inner_trimmed;
-            }
+        && end > start
+    {
+        let inner = &text[start + 3..end];
+        let inner_trimmed = inner.trim_start_matches("json").trim();
+        text = inner_trimmed;
+    }
 
     let first_brace = text.find('{')?;
     let last_brace = text.rfind('}')?;
@@ -227,11 +228,16 @@ pub fn extract_json_object(raw: &str) -> Option<String> {
 }
 
 pub fn parse_router_json(raw: &str) -> Result<RouterResponse, String> {
-    let json_str = extract_json_object(raw)
-        .ok_or_else(|| "Konnte kein valides JSON-Objekt in der Router-Antwort finden.".to_string())?;
+    let json_str = extract_json_object(raw).ok_or_else(|| {
+        "Konnte kein valides JSON-Objekt in der Router-Antwort finden.".to_string()
+    })?;
 
-    serde_json::from_str::<RouterResponse>(&json_str)
-        .map_err(|e| format!("Fehler beim Parsen der Router-JSON: {} (Inhalt: {})", e, json_str))
+    serde_json::from_str::<RouterResponse>(&json_str).map_err(|e| {
+        format!(
+            "Fehler beim Parsen der Router-JSON: {} (Inhalt: {})",
+            e, json_str
+        )
+    })
 }
 
 fn remove_matching(list: &mut Vec<String>, patterns: &[String]) -> usize {
@@ -296,9 +302,15 @@ pub async fn execute_soul_memory_pipeline(
         state.memory_db.get_chat_messages(cid).unwrap_or_default()
     } else {
         // Find most recent session for character
-        let sessions = state.memory_db.list_chat_sessions(char_id).unwrap_or_default();
+        let sessions = state
+            .memory_db
+            .list_chat_sessions(char_id)
+            .unwrap_or_default();
         if let Some(first) = sessions.first() {
-            state.memory_db.get_chat_messages(&first.id).unwrap_or_default()
+            state
+                .memory_db
+                .get_chat_messages(&first.id)
+                .unwrap_or_default()
         } else {
             Vec::new()
         }
@@ -371,11 +383,19 @@ pub async fn execute_soul_memory_pipeline(
     let parsed_router = parse_router_json(&router_raw)?;
 
     // 4. Check for No-Op
-    let current_psych = state.memory_db.get_or_create_psychology(char_id).map_err(|e| e.to_string())?;
-    let current_rel = state.memory_db.get_or_create_relationship(char_id, user_name).map_err(|e| e.to_string())?;
+    let current_psych = state
+        .memory_db
+        .get_or_create_psychology(char_id)
+        .map_err(|e| e.to_string())?;
+    let current_rel = state
+        .memory_db
+        .get_or_create_relationship(char_id, user_name)
+        .map_err(|e| e.to_string())?;
 
     if parsed_router.no_significant_change == Some(true) {
-        info!("[SoulMemory] Router meldete 'no_significant_change': Keine Änderungen erforderlich.");
+        info!(
+            "[SoulMemory] Router meldete 'no_significant_change': Keine Änderungen erforderlich."
+        );
         return Ok(SoulMemoryPipelineResult {
             no_change: true,
             character_id: char_id.to_string(),
@@ -388,7 +408,9 @@ pub async fn execute_soul_memory_pipeline(
     }
 
     // 5. Create automatic snapshot backup before applying patches
-    let _ = state.memory_db.backup_memory_state(char_id, Some(user_name), None);
+    let _ = state
+        .memory_db
+        .backup_memory_state(char_id, Some(user_name), None);
 
     let mut updated_psych = current_psych.clone();
     let mut updated_rel = current_rel.clone();
@@ -405,16 +427,18 @@ pub async fn execute_soul_memory_pipeline(
 
         if let Some(ist) = cp.internal_state {
             if let Some(em) = ist.primary_emotion
-                && !em.trim().is_empty() {
-                    updated_psych.primary_emotion = em.trim().to_string();
-                }
+                && !em.trim().is_empty()
+            {
+                updated_psych.primary_emotion = em.trim().to_string();
+            }
             if let Some(intensity) = ist.intensity {
                 updated_psych.intensity = intensity.clamp(1, 5);
             }
             if let Some(tens) = ist.psychological_tension
-                && !tens.trim().is_empty() {
-                    updated_psych.psychological_tension = tens.trim().to_string();
-                }
+                && !tens.trim().is_empty()
+            {
+                updated_psych.psychological_tension = tens.trim().to_string();
+            }
             if ist.emotion_active == Some(false) {
                 // Advance emotional decay
                 updated_psych.emotional_decay_counter += 1;
@@ -429,73 +453,103 @@ pub async fn execute_soul_memory_pipeline(
 
         if let Some(drive) = cp.cognitive_drive {
             if let Some(agenda) = drive.active_agenda
-                && !agenda.trim().is_empty() {
-                    updated_psych.active_agenda = agenda.trim().to_string();
-                }
+                && !agenda.trim().is_empty()
+            {
+                updated_psych.active_agenda = agenda.trim().to_string();
+            }
             if let Some(focus) = drive.immediate_focus
-                && !focus.trim().is_empty() {
-                    updated_psych.immediate_focus = focus.trim().to_string();
-                }
+                && !focus.trim().is_empty()
+            {
+                updated_psych.immediate_focus = focus.trim().to_string();
+            }
         }
 
         if let Some(dissonance) = cp.cognitive_dissonance
-            && !dissonance.trim().is_empty() {
-                updated_psych.cognitive_dissonance = dissonance.trim().to_string();
-            }
+            && !dissonance.trim().is_empty()
+        {
+            updated_psych.cognitive_dissonance = dissonance.trim().to_string();
+        }
 
-        state.memory_db.update_psychology(char_id, &updated_psych).map_err(|e| e.to_string())?;
+        state
+            .memory_db
+            .update_psychology(char_id, &updated_psych)
+            .map_err(|e| e.to_string())?;
     }
 
     // 7. Apply user_memory_patch
     if let Some(up) = parsed_router.user_memory_patch {
         if let Some(uis) = up.user_identity_status {
             if let Some(role) = uis.role_in_story
-                && !role.trim().is_empty() {
-                    updated_rel.role_in_story = role.trim().to_string();
-                }
+                && !role.trim().is_empty()
+            {
+                updated_rel.role_in_story = role.trim().to_string();
+            }
             if let Some(attrs) = uis.known_attributes
-                && !attrs.trim().is_empty() {
-                    updated_rel.known_attributes = attrs.trim().to_string();
-                }
+                && !attrs.trim().is_empty()
+            {
+                updated_rel.known_attributes = attrs.trim().to_string();
+            }
         }
 
         if let Some(meta) = up.relationship_metadata {
             if let Some(trust) = meta.trust_level
-                && !trust.trim().is_empty() {
-                    updated_rel.trust_level = trust.trim().to_string();
-                }
+                && !trust.trim().is_empty()
+            {
+                updated_rel.trust_level = trust.trim().to_string();
+            }
             if let Some(dyn_desc) = meta.dynamic_description
-                && !dyn_desc.trim().is_empty() {
-                    updated_rel.dynamic_description = dyn_desc.trim().to_string();
-                }
+                && !dyn_desc.trim().is_empty()
+            {
+                updated_rel.dynamic_description = dyn_desc.trim().to_string();
+            }
             if let Some(tension) = meta.unspoken_tension
-                && !tension.trim().is_empty() {
-                    updated_rel.unspoken_tension = tension.trim().to_string();
-                }
+                && !tension.trim().is_empty()
+            {
+                updated_rel.unspoken_tension = tension.trim().to_string();
+            }
         }
 
         if !up.preferences_habits_remove.is_empty() {
-            remove_matching(&mut updated_rel.preferences_habits, &up.preferences_habits_remove);
+            remove_matching(
+                &mut updated_rel.preferences_habits,
+                &up.preferences_habits_remove,
+            );
         }
         if !up.preferences_habits_add.is_empty() {
-            add_unique(&mut updated_rel.preferences_habits, &up.preferences_habits_add, 25);
+            add_unique(
+                &mut updated_rel.preferences_habits,
+                &up.preferences_habits_add,
+                25,
+            );
         }
 
         if !up.shared_milestones_promises_remove.is_empty() {
-            remove_matching(&mut updated_rel.shared_milestones, &up.shared_milestones_promises_remove);
+            remove_matching(
+                &mut updated_rel.shared_milestones,
+                &up.shared_milestones_promises_remove,
+            );
         }
         if !up.shared_milestones_promises_add.is_empty() {
-            add_unique(&mut updated_rel.shared_milestones, &up.shared_milestones_promises_add, 25);
+            add_unique(
+                &mut updated_rel.shared_milestones,
+                &up.shared_milestones_promises_add,
+                25,
+            );
         }
 
-        state.memory_db.update_relationship(char_id, &updated_rel).map_err(|e| e.to_string())?;
+        state
+            .memory_db
+            .update_relationship(char_id, &updated_rel)
+            .map_err(|e| e.to_string())?;
     }
 
     // 8. Healing Log Entries
     for entry in &parsed_router.healing_log_add {
         let text = entry.trim();
         if !text.is_empty() {
-            let _ = state.memory_db.log_healing(char_id, "contradiction_resolved", text);
+            let _ = state
+                .memory_db
+                .log_healing(char_id, "contradiction_resolved", text);
             healing_entries.push(text.to_string());
         }
     }
@@ -504,7 +558,10 @@ pub async fn execute_soul_memory_pipeline(
     let mut topics_processed = Vec::new();
     if let Some(plan) = parsed_router.topic_plan {
         for action in plan.actions {
-            info!("[SoulMemory] Archivist Agent für Thema '{}' ({}) ausführen...", action.filename, action.action);
+            info!(
+                "[SoulMemory] Archivist Agent für Thema '{}' ({}) ausführen...",
+                action.filename, action.action
+            );
             let arch_sys = ARCHIVIST_SYSTEM_PROMPT
                 .replace("{character}", char_id)
                 .replace("{filename}", &action.filename)
@@ -521,8 +578,14 @@ pub async fn execute_soul_memory_pipeline(
                 api_key: req.api_key.clone(),
                 model: req.model.clone(),
                 messages: vec![
-                    ChatMessage { role: "system".to_string(), content: arch_sys },
-                    ChatMessage { role: "user".to_string(), content: arch_user },
+                    ChatMessage {
+                        role: "system".to_string(),
+                        content: arch_sys,
+                    },
+                    ChatMessage {
+                        role: "user".to_string(),
+                        content: arch_user,
+                    },
                 ],
                 sampling: Some(SamplingParams {
                     temperature: Some(0.3),
@@ -537,7 +600,10 @@ pub async fn execute_soul_memory_pipeline(
                 let trimmed = arch_raw.trim();
                 if !trimmed.is_empty() {
                     let formatted_topic = format!("[Thema: {}]\n{}", action.filename, trimmed);
-                    let _ = state.memory_db.add_episodic_memory(char_id, "topic", &formatted_topic, 4);
+                    let _ =
+                        state
+                            .memory_db
+                            .add_episodic_memory(char_id, "topic", &formatted_topic, 4);
                     topics_processed.push(action.filename);
                 }
             }
@@ -562,8 +628,14 @@ pub async fn execute_soul_memory_pipeline(
             api_key: req.api_key.clone(),
             model: req.model.clone(),
             messages: vec![
-                ChatMessage { role: "system".to_string(), content: diary_sys },
-                ChatMessage { role: "user".to_string(), content: diary_user },
+                ChatMessage {
+                    role: "system".to_string(),
+                    content: diary_sys,
+                },
+                ChatMessage {
+                    role: "user".to_string(),
+                    content: diary_user,
+                },
             ],
             sampling: Some(SamplingParams {
                 temperature: Some(0.6),
@@ -582,18 +654,19 @@ pub async fn execute_soul_memory_pipeline(
                     "Innere Reflexion",
                     diary_text,
                     &updated_psych.primary_emotion,
-                ) {
-                    diary_result = Some(DiaryEntry {
-                        id,
-                        title: "Innere Reflexion".to_string(),
-                        entry_text: diary_text.to_string(),
-                        mood: updated_psych.primary_emotion.clone(),
-                        created_at: std::time::SystemTime::now()
-                            .duration_since(std::time::UNIX_EPOCH)
-                            .map(|d| d.as_secs())
-                            .unwrap_or(0),
-                    });
-                }
+                )
+            {
+                diary_result = Some(DiaryEntry {
+                    id,
+                    title: "Innere Reflexion".to_string(),
+                    entry_text: diary_text.to_string(),
+                    mood: updated_psych.primary_emotion.clone(),
+                    created_at: std::time::SystemTime::now()
+                        .duration_since(std::time::UNIX_EPOCH)
+                        .map(|d| d.as_secs())
+                        .unwrap_or(0),
+                });
+            }
         }
     }
 
@@ -618,7 +691,10 @@ mod tests {
         assert_eq!(extract_json_object(plain).unwrap(), plain);
 
         let with_markdown = "Here is the response:\n```json\n{\"no_significant_change\": false}\n```\nHope it helps!";
-        assert_eq!(extract_json_object(with_markdown).unwrap(), "{\"no_significant_change\": false}");
+        assert_eq!(
+            extract_json_object(with_markdown).unwrap(),
+            "{\"no_significant_change\": false}"
+        );
 
         let invalid = "There is no json here at all";
         assert!(extract_json_object(invalid).is_none());
@@ -679,12 +755,21 @@ mod tests {
         let parsed = parse_router_json(raw).unwrap();
         assert_eq!(parsed.no_significant_change, Some(false));
         let cp = parsed.character_memory_patch.unwrap();
-        assert_eq!(cp.core_identity_add[0], "Vertraut Hiroki mehr als jedem anderen");
+        assert_eq!(
+            cp.core_identity_add[0],
+            "Vertraut Hiroki mehr als jedem anderen"
+        );
         assert_eq!(cp.core_identity_remove[0], "Misstrauisch gegenüber Fremden");
-        assert_eq!(cp.internal_state.unwrap().primary_emotion.unwrap(), "Joyful");
+        assert_eq!(
+            cp.internal_state.unwrap().primary_emotion.unwrap(),
+            "Joyful"
+        );
 
         let up = parsed.user_memory_patch.unwrap();
-        assert_eq!(up.relationship_metadata.unwrap().trust_level.unwrap(), "Deeply Bound");
+        assert_eq!(
+            up.relationship_metadata.unwrap().trust_level.unwrap(),
+            "Deeply Bound"
+        );
         assert_eq!(up.preferences_habits_add[0], "Mag Dango");
         assert_eq!(parsed.healing_log_add.len(), 1);
         assert_eq!(parsed.topic_plan.unwrap().actions.len(), 1);

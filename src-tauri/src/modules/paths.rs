@@ -6,7 +6,7 @@ use std::fs;
 use std::path::{Path, PathBuf};
 
 use crate::modules::characters::{
-    load_character_from_file, parse_character_json, CharacterProfile,
+    CharacterProfile, load_character_from_file, parse_character_json,
 };
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
@@ -74,9 +74,10 @@ pub fn resolve_app_paths() -> AppPaths {
 
     // If running inside src-tauri, parent is workspace root
     if base_root.ends_with("src-tauri")
-        && let Some(parent) = base_root.parent() {
-            base_root = parent.to_path_buf();
-        }
+        && let Some(parent) = base_root.parent()
+    {
+        base_root = parent.to_path_buf();
+    }
 
     let bundled_presets = find_existing_dir(&base_root, &["presets", "../presets"]);
     let bundled_models =
@@ -124,13 +125,14 @@ fn load_hidden_character_ids() -> std::collections::HashSet<String> {
     let path = PathBuf::from(resolve_app_paths().config_dir).join("settings.json");
     if let Ok(content) = fs::read_to_string(&path)
         && let Ok(val) = serde_json::from_str::<serde_json::Value>(&content)
-            && let Some(hidden) = val.get("hidden_character_ids").and_then(|v| v.as_array()) {
-                return hidden
-                    .iter()
-                    .filter_map(|v| v.as_str())
-                    .map(normalize_identifier)
-                    .collect();
-            }
+        && let Some(hidden) = val.get("hidden_character_ids").and_then(|v| v.as_array())
+    {
+        return hidden
+            .iter()
+            .filter_map(|v| v.as_str())
+            .map(normalize_identifier)
+            .collect();
+    }
     std::collections::HashSet::new()
 }
 
@@ -518,11 +520,13 @@ mod tests {
             .and_then(JsonValue::as_object)
             .expect("runtime expression fallback");
         assert_eq!(inherited.len(), 6);
-        assert!(inherited
-            .get("happy")
-            .and_then(JsonValue::as_str)
-            .map(Path::new)
-            .map(Path::exists)
-            .unwrap_or(false));
+        assert!(
+            inherited
+                .get("happy")
+                .and_then(JsonValue::as_str)
+                .map(Path::new)
+                .map(Path::exists)
+                .unwrap_or(false)
+        );
     }
 }

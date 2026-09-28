@@ -1,8 +1,8 @@
+use chrono::Utc;
+use serde::{Deserialize, Serialize};
 use std::fs::{self, File};
 use std::io::{Read, Write};
 use std::path::{Path, PathBuf};
-use chrono::Utc;
-use serde::{Deserialize, Serialize};
 use tracing::{info, warn};
 use zip::write::SimpleFileOptions;
 use zip::{ZipArchive, ZipWriter};
@@ -89,15 +89,20 @@ impl ProfileBackupManager {
                     Ok(p) => p,
                     Err(_) => continue,
                 };
-                let zip_entry_name = format!("{}/{}", zip_prefix, rel_path.to_string_lossy().replace('\\', "/"));
-                
+                let zip_entry_name = format!(
+                    "{}/{}",
+                    zip_prefix,
+                    rel_path.to_string_lossy().replace('\\', "/")
+                );
+
                 if let Ok(mut src_file) = File::open(&entry_path) {
                     let mut buffer = Vec::new();
                     if src_file.read_to_end(&mut buffer).is_ok()
-                        && zip.start_file(&zip_entry_name, options).is_ok() {
-                            let _ = zip.write_all(&buffer);
-                            *added_files += 1;
-                        }
+                        && zip.start_file(&zip_entry_name, options).is_ok()
+                    {
+                        let _ = zip.write_all(&buffer);
+                        *added_files += 1;
+                    }
                 }
             }
         }
@@ -111,15 +116,18 @@ impl ProfileBackupManager {
         zip_entry_name: &str,
         added_files: &mut usize,
     ) {
-        if source_file.exists() && source_file.is_file()
-            && let Ok(mut src_file) = File::open(source_file) {
-                let mut buffer = Vec::new();
-                if src_file.read_to_end(&mut buffer).is_ok()
-                    && zip.start_file(zip_entry_name, options).is_ok() {
-                        let _ = zip.write_all(&buffer);
-                        *added_files += 1;
-                    }
+        if source_file.exists()
+            && source_file.is_file()
+            && let Ok(mut src_file) = File::open(source_file)
+        {
+            let mut buffer = Vec::new();
+            if src_file.read_to_end(&mut buffer).is_ok()
+                && zip.start_file(zip_entry_name, options).is_ok()
+            {
+                let _ = zip.write_all(&buffer);
+                *added_files += 1;
             }
+        }
     }
 
     /// Creates a ZIP profile backup with the given group selections.
@@ -130,11 +138,16 @@ impl ProfileBackupManager {
     ) -> Result<BackupEntryInfo, String> {
         let backups_dir = Self::get_backups_dir();
         let timestamp = Utc::now().format("%Y%m%d_%H%M%S").to_string();
-        let prefix = if is_safety { "pre_restore_" } else { "otakusoul_backup_" };
+        let prefix = if is_safety {
+            "pre_restore_"
+        } else {
+            "otakusoul_backup_"
+        };
         let filename = format!("{}{}.zip", prefix, timestamp);
         let backup_path = backups_dir.join(&filename);
 
-        let file = File::create(&backup_path).map_err(|e| format!("Fehler beim Erstellen der Backup-Datei: {}", e))?;
+        let file = File::create(&backup_path)
+            .map_err(|e| format!("Fehler beim Erstellen der Backup-Datei: {}", e))?;
         let mut zip = ZipWriter::new(file);
         let options = SimpleFileOptions::default()
             .compression_method(zip::CompressionMethod::Deflated)
@@ -151,22 +164,46 @@ impl ProfileBackupManager {
 
         // 1. Characters
         if selection.characters {
-            let _ = Self::add_dir_to_zip_archive(&mut zip, options, &characters_dir, "characters", &mut added_files);
+            let _ = Self::add_dir_to_zip_archive(
+                &mut zip,
+                options,
+                &characters_dir,
+                "characters",
+                &mut added_files,
+            );
         }
 
         // 2. Lorebooks
         if selection.lorebooks {
-            let _ = Self::add_dir_to_zip_archive(&mut zip, options, &lorebooks_dir, "lorebooks", &mut added_files);
+            let _ = Self::add_dir_to_zip_archive(
+                &mut zip,
+                options,
+                &lorebooks_dir,
+                "lorebooks",
+                &mut added_files,
+            );
         }
 
         // 3. Personas
         if selection.personas {
-            let _ = Self::add_dir_to_zip_archive(&mut zip, options, &personas_dir, "personas", &mut added_files);
+            let _ = Self::add_dir_to_zip_archive(
+                &mut zip,
+                options,
+                &personas_dir,
+                "personas",
+                &mut added_files,
+            );
         }
 
         // 4. Soul Stage Scenes & Folders
         if selection.soul_stage {
-            let _ = Self::add_dir_to_zip_archive(&mut zip, options, &scenes_dir, "scenes", &mut added_files);
+            let _ = Self::add_dir_to_zip_archive(
+                &mut zip,
+                options,
+                &scenes_dir,
+                "scenes",
+                &mut added_files,
+            );
         }
 
         // 5. Soul Memory (SQLite database with chats, memories and relationships)
@@ -180,7 +217,13 @@ impl ProfileBackupManager {
                     conn.execute("VACUUM INTO ?1", [snapshot.to_string_lossy().as_ref()])
                 });
                 match snapshot_result {
-                    Ok(_) => Self::add_file_to_zip_archive(&mut zip, options, &snapshot, MEMORY_DB_ENTRY, &mut added_files),
+                    Ok(_) => Self::add_file_to_zip_archive(
+                        &mut zip,
+                        options,
+                        &snapshot,
+                        MEMORY_DB_ENTRY,
+                        &mut added_files,
+                    ),
                     Err(e) => warn!("Datenbank-Snapshot für das Backup fehlgeschlagen: {}", e),
                 }
                 let _ = fs::remove_file(&snapshot);
@@ -190,15 +233,39 @@ impl ProfileBackupManager {
         // 6. Soul Companion (scratchpad, goals, plugins, mcp_servers)
         if selection.companion {
             let comp_dir = data_dir.join("companion");
-            let _ = Self::add_dir_to_zip_archive(&mut zip, options, &comp_dir, "companion", &mut added_files);
+            let _ = Self::add_dir_to_zip_archive(
+                &mut zip,
+                options,
+                &comp_dir,
+                "companion",
+                &mut added_files,
+            );
         }
 
         // 7. Settings, presets & voice configs (API keys live in the OS keyring and are not included)
         if selection.settings {
             let config_dir = PathBuf::from(&paths.config_dir);
-            Self::add_file_to_zip_archive(&mut zip, options, &config_dir.join("settings.json"), "settings/settings.json", &mut added_files);
-            Self::add_file_to_zip_archive(&mut zip, options, &config_dir.join("llm_presets.json"), "settings/llm_presets.json", &mut added_files);
-            let _ = Self::add_dir_to_zip_archive(&mut zip, options, &config_dir.join("voice_configs"), "settings/voice_configs", &mut added_files);
+            Self::add_file_to_zip_archive(
+                &mut zip,
+                options,
+                &config_dir.join("settings.json"),
+                "settings/settings.json",
+                &mut added_files,
+            );
+            Self::add_file_to_zip_archive(
+                &mut zip,
+                options,
+                &config_dir.join("llm_presets.json"),
+                "settings/llm_presets.json",
+                &mut added_files,
+            );
+            let _ = Self::add_dir_to_zip_archive(
+                &mut zip,
+                options,
+                &config_dir.join("voice_configs"),
+                "settings/voice_configs",
+                &mut added_files,
+            );
         }
 
         // Write manifest
@@ -218,9 +285,13 @@ impl ProfileBackupManager {
         zip.write_all(&manifest_bytes)
             .map_err(|e| format!("Fehler beim Speichern von manifest.json: {}", e))?;
 
-        zip.finish().map_err(|e| format!("Fehler beim Finalisieren des ZIP-Archivs: {}", e))?;
+        zip.finish()
+            .map_err(|e| format!("Fehler beim Finalisieren des ZIP-Archivs: {}", e))?;
 
-        info!("Backup erfolgreich erstellt: {:?} mit {} Dateien", backup_path, added_files);
+        info!(
+            "Backup erfolgreich erstellt: {:?} mit {} Dateien",
+            backup_path, added_files
+        );
 
         // If it's a safety snapshot, maintain rotation (keep last 5)
         if is_safety {
@@ -249,18 +320,25 @@ impl ProfileBackupManager {
             for entry in entries.flatten() {
                 let path = entry.path();
                 if path.is_file() && path.extension().is_some_and(|ext| ext == "zip") {
-                    let filename = path.file_name().unwrap_or_default().to_string_lossy().to_string();
+                    let filename = path
+                        .file_name()
+                        .unwrap_or_default()
+                        .to_string_lossy()
+                        .to_string();
                     let is_safety = filename.starts_with("pre_restore_");
                     let size_bytes = fs::metadata(&path).map(|m| m.len()).unwrap_or(0);
 
                     // Try to read manifest from ZIP
                     let manifest = Self::read_manifest_from_zip(&path);
-                    let created_at = manifest.as_ref().map(|m| m.created_at.clone()).unwrap_or_else(|| {
-                        fs::metadata(&path)
-                            .and_then(|m| m.created().or_else(|_| m.modified()))
-                            .map(|t| chrono::DateTime::<Utc>::from(t).to_rfc3339())
-                            .unwrap_or_else(|_| Utc::now().to_rfc3339())
-                    });
+                    let created_at = manifest
+                        .as_ref()
+                        .map(|m| m.created_at.clone())
+                        .unwrap_or_else(|| {
+                            fs::metadata(&path)
+                                .and_then(|m| m.created().or_else(|_| m.modified()))
+                                .map(|t| chrono::DateTime::<Utc>::from(t).to_rfc3339())
+                                .unwrap_or_else(|_| Utc::now().to_rfc3339())
+                        });
 
                     list.push(BackupEntryInfo {
                         id: filename.clone(),
@@ -291,7 +369,10 @@ impl ProfileBackupManager {
     }
 
     /// Restores data from a backup ZIP file, creating a safety snapshot first.
-    pub fn restore_backup(filename: &str, groups: Option<BackupGroupSelection>) -> Result<String, String> {
+    pub fn restore_backup(
+        filename: &str,
+        groups: Option<BackupGroupSelection>,
+    ) -> Result<String, String> {
         let backups_dir = Self::get_backups_dir();
         let backup_path = backups_dir.join(filename);
         if !backup_path.exists() {
@@ -299,10 +380,16 @@ impl ProfileBackupManager {
         }
 
         info!("Erstelle präventiven Sicherheits-Snapshot vor der Wiederherstellung...");
-        let _ = Self::create_backup(BackupGroupSelection::default(), Some("Pre-restore safety snapshot".into()), true);
+        let _ = Self::create_backup(
+            BackupGroupSelection::default(),
+            Some("Pre-restore safety snapshot".into()),
+            true,
+        );
 
-        let file = File::open(&backup_path).map_err(|e| format!("Fehler beim Öffnen des Backups: {}", e))?;
-        let mut archive = ZipArchive::new(file).map_err(|e| format!("Ungültiges ZIP-Archiv: {}", e))?;
+        let file = File::open(&backup_path)
+            .map_err(|e| format!("Fehler beim Öffnen des Backups: {}", e))?;
+        let mut archive =
+            ZipArchive::new(file).map_err(|e| format!("Ungültiges ZIP-Archiv: {}", e))?;
 
         let selection = groups.unwrap_or_default();
         let paths = resolve_app_paths();
@@ -311,7 +398,9 @@ impl ProfileBackupManager {
         let mut pending_db_restore = false;
 
         for i in 0..archive.len() {
-            let mut file = archive.by_index(i).map_err(|e| format!("Fehler beim Lesen von ZIP-Eintrag {}: {}", i, e))?;
+            let mut file = archive
+                .by_index(i)
+                .map_err(|e| format!("Fehler beim Lesen von ZIP-Eintrag {}: {}", i, e))?;
             let entry_name = match file.enclosed_name() {
                 Some(p) => p.to_path_buf(),
                 None => continue,
@@ -329,31 +418,32 @@ impl ProfileBackupManager {
             let scenes_dir = PathBuf::from(&paths.scenes_dir);
 
             // Determine destination target based on top-level zip folder
-            let target_path: Option<PathBuf> = if entry_str.starts_with("characters/") && selection.characters {
-                let sub = entry_str.trim_start_matches("characters/");
-                Some(characters_dir.join(sub))
-            } else if entry_str.starts_with("lorebooks/") && selection.lorebooks {
-                let sub = entry_str.trim_start_matches("lorebooks/");
-                Some(lorebooks_dir.join(sub))
-            } else if entry_str.starts_with("personas/") && selection.personas {
-                let sub = entry_str.trim_start_matches("personas/");
-                Some(personas_dir.join(sub))
-            } else if entry_str.starts_with("scenes/") && selection.soul_stage {
-                let sub = entry_str.trim_start_matches("scenes/");
-                Some(scenes_dir.join(sub))
-            } else if entry_str == MEMORY_DB_ENTRY && selection.soul_memory {
-                // The live DB is open; it is swapped in on the next start (see MemoryDb::apply_pending_restore).
-                pending_db_restore = true;
-                Some(MemoryDb::pending_restore_path())
-            } else if entry_str.starts_with("companion/") && selection.companion {
-                let sub = entry_str.trim_start_matches("companion/");
-                Some(data_dir.join("companion").join(sub))
-            } else if entry_str.starts_with("settings/") && selection.settings {
-                let sub = entry_str.trim_start_matches("settings/");
-                Some(PathBuf::from(&paths.config_dir).join(sub))
-            } else {
-                None
-            };
+            let target_path: Option<PathBuf> =
+                if entry_str.starts_with("characters/") && selection.characters {
+                    let sub = entry_str.trim_start_matches("characters/");
+                    Some(characters_dir.join(sub))
+                } else if entry_str.starts_with("lorebooks/") && selection.lorebooks {
+                    let sub = entry_str.trim_start_matches("lorebooks/");
+                    Some(lorebooks_dir.join(sub))
+                } else if entry_str.starts_with("personas/") && selection.personas {
+                    let sub = entry_str.trim_start_matches("personas/");
+                    Some(personas_dir.join(sub))
+                } else if entry_str.starts_with("scenes/") && selection.soul_stage {
+                    let sub = entry_str.trim_start_matches("scenes/");
+                    Some(scenes_dir.join(sub))
+                } else if entry_str == MEMORY_DB_ENTRY && selection.soul_memory {
+                    // The live DB is open; it is swapped in on the next start (see MemoryDb::apply_pending_restore).
+                    pending_db_restore = true;
+                    Some(MemoryDb::pending_restore_path())
+                } else if entry_str.starts_with("companion/") && selection.companion {
+                    let sub = entry_str.trim_start_matches("companion/");
+                    Some(data_dir.join("companion").join(sub))
+                } else if entry_str.starts_with("settings/") && selection.settings {
+                    let sub = entry_str.trim_start_matches("settings/");
+                    Some(PathBuf::from(&paths.config_dir).join(sub))
+                } else {
+                    None
+                };
 
             if let Some(dest) = target_path {
                 if file.is_dir() {
@@ -373,14 +463,20 @@ impl ProfileBackupManager {
             }
         }
 
-        info!("Backup '{}' erfolgreich wiederhergestellt ({} Dateien).", filename, restored_count);
+        info!(
+            "Backup '{}' erfolgreich wiederhergestellt ({} Dateien).",
+            filename, restored_count
+        );
         if pending_db_restore {
             Ok(format!(
                 "Erfolgreich {} Dateien aus dem Backup wiederhergestellt. Die Soul-Memory-Datenbank wird beim nächsten Start von OtakuSoul übernommen – bitte die App neu starten.",
                 restored_count
             ))
         } else {
-            Ok(format!("Erfolgreich {} Dateien aus dem Backup wiederhergestellt.", restored_count))
+            Ok(format!(
+                "Erfolgreich {} Dateien aus dem Backup wiederhergestellt.",
+                restored_count
+            ))
         }
     }
 
@@ -389,7 +485,8 @@ impl ProfileBackupManager {
         let backups_dir = Self::get_backups_dir();
         let backup_path = backups_dir.join(filename);
         if backup_path.exists() {
-            fs::remove_file(&backup_path).map_err(|e| format!("Fehler beim Löschen des Backups: {}", e))?;
+            fs::remove_file(&backup_path)
+                .map_err(|e| format!("Fehler beim Löschen des Backups: {}", e))?;
             info!("Backup '{}' gelöscht.", filename);
             Ok(true)
         } else {
@@ -406,12 +503,18 @@ impl ProfileBackupManager {
             for entry in entries.flatten() {
                 let path = entry.path();
                 if path.is_file() {
-                    let name = path.file_name().unwrap_or_default().to_string_lossy().to_string();
-                    if name.starts_with("pre_restore_") && name.ends_with(".zip")
-                        && let Ok(meta) = fs::metadata(&path) {
-                            let mtime = meta.modified().unwrap_or(std::time::SystemTime::UNIX_EPOCH);
-                            safety_files.push((path, mtime));
-                        }
+                    let name = path
+                        .file_name()
+                        .unwrap_or_default()
+                        .to_string_lossy()
+                        .to_string();
+                    if name.starts_with("pre_restore_")
+                        && name.ends_with(".zip")
+                        && let Ok(meta) = fs::metadata(&path)
+                    {
+                        let mtime = meta.modified().unwrap_or(std::time::SystemTime::UNIX_EPOCH);
+                        safety_files.push((path, mtime));
+                    }
                 }
             }
         }
@@ -422,7 +525,10 @@ impl ProfileBackupManager {
         if safety_files.len() > SAFETY_ROTATION_KEEP {
             for (old_path, _) in &safety_files[SAFETY_ROTATION_KEEP..] {
                 let _ = fs::remove_file(old_path);
-                info!("Altes Sicherheits-Snapshot rotiert/gelöscht: {:?}", old_path);
+                info!(
+                    "Altes Sicherheits-Snapshot rotiert/gelöscht: {:?}",
+                    old_path
+                );
             }
         }
     }
@@ -432,17 +538,18 @@ impl ProfileBackupManager {
 fn walkdir(dir: &Path) -> Result<Vec<PathBuf>, String> {
     let mut files = Vec::new();
     if dir.is_dir()
-        && let Ok(entries) = fs::read_dir(dir) {
-            for entry in entries.flatten() {
-                let path = entry.path();
-                if path.is_dir() {
-                    let mut sub = walkdir(&path)?;
-                    files.append(&mut sub);
-                } else {
-                    files.push(path);
-                }
+        && let Ok(entries) = fs::read_dir(dir)
+    {
+        for entry in entries.flatten() {
+            let path = entry.path();
+            if path.is_dir() {
+                let mut sub = walkdir(&path)?;
+                files.append(&mut sub);
+            } else {
+                files.push(path);
             }
         }
+    }
     Ok(files)
 }
 

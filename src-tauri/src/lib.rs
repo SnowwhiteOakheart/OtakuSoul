@@ -23,7 +23,10 @@ fn allow_app_asset_dirs(app: &tauri::App) {
     if let Ok(resource_dir) = app.path().resource_dir() {
         dirs.push(resource_dir);
     }
-    if let Some(exe_dir) = std::env::current_exe().ok().and_then(|p| p.parent().map(PathBuf::from)) {
+    if let Some(exe_dir) = std::env::current_exe()
+        .ok()
+        .and_then(|p| p.parent().map(PathBuf::from))
+    {
         dirs.push(exe_dir.join("assets"));
         dirs.push(exe_dir.join("..").join("assets"));
     }
@@ -31,7 +34,11 @@ fn allow_app_asset_dirs(app: &tauri::App) {
     let scope = app.asset_protocol_scope();
     for dir in dirs.into_iter().filter(|d| d.is_dir()) {
         if let Err(e) = scope.allow_directory(&dir, true) {
-            tracing::warn!("Asset-Verzeichnis {:?} konnte nicht freigegeben werden: {}", dir, e);
+            tracing::warn!(
+                "Asset-Verzeichnis {:?} konnte nicht freigegeben werden: {}",
+                dir,
+                e
+            );
         }
     }
 }

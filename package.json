@@ -11,7 +11,7 @@
     "tauri:linux": "GDK_BACKEND=x11 WEBKIT_DISABLE_DMABUF_RENDERER=1 tauri dev",
     "check": "npm run check:web && npm run check:rust",
     "check:web": "tsc --noEmit && vitest run",
-    "check:rust": "cargo clippy --manifest-path src-tauri/Cargo.toml --all-targets -- -D warnings && cargo test --manifest-path src-tauri/Cargo.toml"
+    "check:rust": "cargo fmt --manifest-path src-tauri/Cargo.toml --check && cargo clippy --manifest-path src-tauri/Cargo.toml --all-targets -- -D warnings && cargo test --manifest-path src-tauri/Cargo.toml"
   },
   "dependencies": {
     "@pixi/sound": "^6.0.1",

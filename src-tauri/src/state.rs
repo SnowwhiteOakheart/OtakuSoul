@@ -1,11 +1,11 @@
-use std::sync::Arc;
+use crate::modules::companion::CompanionEngine;
+use crate::modules::discord::{DiscordBotManager, DiscordRpcClient};
 use crate::modules::inference::InferenceClient;
 use crate::modules::llama_manager::LlamaServerManager;
 use crate::modules::memory::MemoryDb;
 use crate::modules::stage::StageEngine;
-use crate::modules::companion::CompanionEngine;
-use crate::modules::discord::{DiscordRpcClient, DiscordBotManager};
 use crate::modules::web_server::WebServerManager;
+use std::sync::Arc;
 
 pub struct AppState {
     pub llama_manager: Arc<LlamaServerManager>,

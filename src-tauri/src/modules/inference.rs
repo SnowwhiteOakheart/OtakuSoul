@@ -1,7 +1,7 @@
 use futures_util::StreamExt;
 use serde::{Deserialize, Serialize};
-use std::sync::atomic::{AtomicBool, Ordering};
 use std::sync::Arc;
+use std::sync::atomic::{AtomicBool, Ordering};
 use tauri::Emitter;
 use tracing::info;
 
@@ -124,7 +124,8 @@ impl InferenceClient {
         );
 
         let client = reqwest::Client::new();
-        let req_builder = crate::modules::providers::ProviderRegistry::build_http_request(&client, &request)?;
+        let req_builder =
+            crate::modules::providers::ProviderRegistry::build_http_request(&client, &request)?;
 
         let response = req_builder
             .send()
@@ -161,16 +162,18 @@ impl InferenceClient {
                     continue;
                 }
 
-                let delta = crate::modules::providers::ProviderRegistry::parse_sse_line(&line, &provider);
+                let delta =
+                    crate::modules::providers::ProviderRegistry::parse_sse_line(&line, &provider);
                 if delta.is_done {
                     break;
                 }
 
                 if let Some(th) = delta.thought
-                    && !th.is_empty() {
-                        full_thought.push_str(&th);
-                        let _ = app_handle.emit("llm-thought", ThoughtEvent { text: th });
-                    }
+                    && !th.is_empty()
+                {
+                    full_thought.push_str(&th);
+                    let _ = app_handle.emit("llm-thought", ThoughtEvent { text: th });
+                }
 
                 if let Some(content) = delta.text {
                     if content.is_empty() {
@@ -185,13 +188,23 @@ impl InferenceClient {
                                 let before = &remaining[..pos];
                                 if !before.is_empty() {
                                     full_text.push_str(before);
-                                    let _ = app_handle.emit("llm-token", TokenEvent { text: before.to_string() });
+                                    let _ = app_handle.emit(
+                                        "llm-token",
+                                        TokenEvent {
+                                            text: before.to_string(),
+                                        },
+                                    );
                                 }
                                 in_think_block = true;
                                 remaining = &remaining[pos + 7..];
                             } else {
                                 full_text.push_str(remaining);
-                                let _ = app_handle.emit("llm-token", TokenEvent { text: remaining.to_string() });
+                                let _ = app_handle.emit(
+                                    "llm-token",
+                                    TokenEvent {
+                                        text: remaining.to_string(),
+                                    },
+                                );
                                 break;
                             }
                         } else {
@@ -199,13 +212,23 @@ impl InferenceClient {
                                 let thought_part = &remaining[..pos];
                                 if !thought_part.is_empty() {
                                     full_thought.push_str(thought_part);
-                                    let _ = app_handle.emit("llm-thought", ThoughtEvent { text: thought_part.to_string() });
+                                    let _ = app_handle.emit(
+                                        "llm-thought",
+                                        ThoughtEvent {
+                                            text: thought_part.to_string(),
+                                        },
+                                    );
                                 }
                                 in_think_block = false;
                                 remaining = &remaining[pos + 8..];
                             } else {
                                 full_thought.push_str(remaining);
-                                let _ = app_handle.emit("llm-thought", ThoughtEvent { text: remaining.to_string() });
+                                let _ = app_handle.emit(
+                                    "llm-thought",
+                                    ThoughtEvent {
+                                        text: remaining.to_string(),
+                                    },
+                                );
                                 break;
                             }
                         }
@@ -232,7 +255,8 @@ impl InferenceClient {
         );
 
         let client = reqwest::Client::new();
-        let req_builder = crate::modules::providers::ProviderRegistry::build_http_request(&client, &request)?;
+        let req_builder =
+            crate::modules::providers::ProviderRegistry::build_http_request(&client, &request)?;
 
         let response = req_builder
             .send()
@@ -262,7 +286,8 @@ impl InferenceClient {
                     continue;
                 }
 
-                let delta = crate::modules::providers::ProviderRegistry::parse_sse_line(&line, &provider);
+                let delta =
+                    crate::modules::providers::ProviderRegistry::parse_sse_line(&line, &provider);
                 if delta.is_done {
                     break;
                 }
@@ -274,7 +299,9 @@ impl InferenceClient {
         }
 
         // Clean out <think>...</think> tags if model produced them
-        let cleaned = if let (Some(start), Some(end)) = (full_text.find("<think>"), full_text.rfind("</think>")) {
+        let cleaned = if let (Some(start), Some(end)) =
+            (full_text.find("<think>"), full_text.rfind("</think>"))
+        {
             if end > start {
                 let mut stripped = full_text[..start].to_string();
                 stripped.push_str(&full_text[end + 8..]);

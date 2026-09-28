@@ -323,13 +323,15 @@ impl LlamaServerManager {
             cmd.arg("-ub").arg(ub.to_string());
         }
         if let Some(ref k) = config.cache_type_k
-            && !k.is_empty() {
-                cmd.arg("--cache-type-k").arg(k);
-            }
+            && !k.is_empty()
+        {
+            cmd.arg("--cache-type-k").arg(k);
+        }
         if let Some(ref v) = config.cache_type_v
-            && !v.is_empty() {
-                cmd.arg("--cache-type-v").arg(v);
-            }
+            && !v.is_empty()
+        {
+            cmd.arg("--cache-type-v").arg(v);
+        }
         if config.mlock {
             cmd.arg("--mlock");
         }
@@ -432,10 +434,11 @@ impl LlamaServerManager {
             }
 
             if let Ok(resp) = client.get(&health_url).send().await
-                && resp.status().is_success() {
-                    healthy = true;
-                    break;
-                }
+                && resp.status().is_success()
+            {
+                healthy = true;
+                break;
+            }
         }
 
         if healthy {

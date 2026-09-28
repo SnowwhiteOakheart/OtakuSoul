@@ -34,18 +34,19 @@ pub async fn check_for_app_updates() -> Result<UpdateInfo, String> {
     match res {
         Ok(response) => {
             if response.status().is_success()
-                && let Ok(rel) = response.json::<GitHubReleaseResponse>().await {
-                    let clean_tag = rel.tag_name.trim_start_matches('v').to_string();
-                    let has_update = is_version_newer(&clean_tag, &current_version);
-                    return Ok(UpdateInfo {
-                        current_version,
-                        latest_version: clean_tag,
-                        has_update,
-                        release_notes: rel.body,
-                        release_url: rel.html_url,
-                        published_at: rel.published_at,
-                    });
-                }
+                && let Ok(rel) = response.json::<GitHubReleaseResponse>().await
+            {
+                let clean_tag = rel.tag_name.trim_start_matches('v').to_string();
+                let has_update = is_version_newer(&clean_tag, &current_version);
+                return Ok(UpdateInfo {
+                    current_version,
+                    latest_version: clean_tag,
+                    has_update,
+                    release_notes: rel.body,
+                    release_url: rel.html_url,
+                    published_at: rel.published_at,
+                });
+            }
         }
         Err(e) => {
             tracing::warn!("Update-Prüfung fehlgeschlagen: {}", e);
@@ -66,7 +67,11 @@ pub async fn check_for_app_updates() -> Result<UpdateInfo, String> {
 fn is_version_newer(latest: &str, current: &str) -> bool {
     let parse_semver = |s: &str| -> Vec<u32> {
         s.split('.')
-            .map(|part| part.chars().take_while(|c| c.is_ascii_digit()).collect::<String>())
+            .map(|part| {
+                part.chars()
+                    .take_while(|c| c.is_ascii_digit())
+                    .collect::<String>()
+            })
             .filter_map(|part| part.parse::<u32>().ok())
             .collect()
     };

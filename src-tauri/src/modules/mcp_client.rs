@@ -52,7 +52,9 @@ impl McpManager {
 
         let initial_servers = if servers_file.exists() {
             match std::fs::read_to_string(&servers_file) {
-                Ok(content) => serde_json::from_str(&content).unwrap_or_else(|_| Self::default_servers()),
+                Ok(content) => {
+                    serde_json::from_str(&content).unwrap_or_else(|_| Self::default_servers())
+                }
                 Err(_) => Self::default_servers(),
             }
         } else {
@@ -77,7 +79,11 @@ impl McpManager {
                 name: "Filesystem MCP".to_string(),
                 transport: "stdio".to_string(),
                 command: Some("npx".to_string()),
-                args: Some(vec!["-y".to_string(), "@modelcontextprotocol/server-filesystem".to_string(), "/home/deathtrap/development".to_string()]),
+                args: Some(vec![
+                    "-y".to_string(),
+                    "@modelcontextprotocol/server-filesystem".to_string(),
+                    "/home/deathtrap/development".to_string(),
+                ]),
                 env: None,
                 url: None,
                 enabled: false,
@@ -87,8 +93,14 @@ impl McpManager {
                 name: "Brave Search MCP".to_string(),
                 transport: "stdio".to_string(),
                 command: Some("npx".to_string()),
-                args: Some(vec!["-y".to_string(), "@modelcontextprotocol/server-brave-search".to_string()]),
-                env: Some(HashMap::from([("BRAVE_API_KEY".to_string(), "".to_string())])),
+                args: Some(vec![
+                    "-y".to_string(),
+                    "@modelcontextprotocol/server-brave-search".to_string(),
+                ]),
+                env: Some(HashMap::from([(
+                    "BRAVE_API_KEY".to_string(),
+                    "".to_string(),
+                )])),
                 url: None,
                 enabled: false,
             },
@@ -124,7 +136,8 @@ impl McpManager {
             list.iter().find(|s| s.id == server_id).cloned()
         };
 
-        let server = server.ok_or_else(|| format!("MCP-Server mit ID '{}' nicht gefunden.", server_id))?;
+        let server =
+            server.ok_or_else(|| format!("MCP-Server mit ID '{}' nicht gefunden.", server_id))?;
         if !server.enabled {
             return Ok(Vec::new());
         }
@@ -139,7 +152,12 @@ impl McpManager {
                 .stdout(std::process::Stdio::piped())
                 .stderr(std::process::Stdio::null())
                 .spawn()
-                .map_err(|e| format!("MCP Server-Prozess '{}' konnte nicht gestartet werden: {}", cmd_str, e))?;
+                .map_err(|e| {
+                    format!(
+                        "MCP Server-Prozess '{}' konnte nicht gestartet werden: {}",
+                        cmd_str, e
+                    )
+                })?;
 
             let mut stdin = child.stdin.take().ok_or("Konnte stdin nicht öffnen.")?;
             let stdout = child.stdout.take().ok_or("Konnte stdout nicht öffnen.")?;
@@ -157,11 +175,14 @@ impl McpManager {
                 }
             });
 
-            stdin.write_all(format!("{}\n", init_req).as_bytes()).await
+            stdin
+                .write_all(format!("{}\n", init_req).as_bytes())
+                .await
                 .map_err(|e| format!("Fehler beim Senden von initialize: {}", e))?;
 
             // Read initialize response
-            let _ = tokio::time::timeout(std::time::Duration::from_secs(4), reader.next_line()).await;
+            let _ =
+                tokio::time::timeout(std::time::Duration::from_secs(4), reader.next_line()).await;
 
             // 2. tools/list Request
             let tools_req = serde_json::json!({
@@ -171,26 +192,41 @@ impl McpManager {
                 "params": {}
             });
 
-            stdin.write_all(format!("{}\n", tools_req).as_bytes()).await
+            stdin
+                .write_all(format!("{}\n", tools_req).as_bytes())
+                .await
                 .map_err(|e| format!("Fehler beim Senden von tools/list: {}", e))?;
 
-            let line_res = tokio::time::timeout(std::time::Duration::from_secs(5), reader.next_line()).await;
+            let line_res =
+                tokio::time::timeout(std::time::Duration::from_secs(5), reader.next_line()).await;
             let _ = child.kill().await;
 
             if let Ok(Ok(Some(line))) = line_res
                 && let Ok(val) = serde_json::from_str::<serde_json::Value>(&line)
-                    && let Some(tools_arr) = val.pointer("/result/tools").and_then(|v| v.as_array()) {
-                        let mut result = Vec::new();
-                        for t in tools_arr {
-                            result.push(McpToolInfo {
-                                server_id: server_id.to_string(),
-                                name: t.get("name").and_then(|v| v.as_str()).unwrap_or("").to_string(),
-                                description: t.get("description").and_then(|v| v.as_str()).unwrap_or("").to_string(),
-                                input_schema: t.get("inputSchema").cloned().unwrap_or(serde_json::json!({})),
-                            });
-                        }
-                        return Ok(result);
-                    }
+                && let Some(tools_arr) = val.pointer("/result/tools").and_then(|v| v.as_array())
+            {
+                let mut result = Vec::new();
+                for t in tools_arr {
+                    result.push(McpToolInfo {
+                        server_id: server_id.to_string(),
+                        name: t
+                            .get("name")
+                            .and_then(|v| v.as_str())
+                            .unwrap_or("")
+                            .to_string(),
+                        description: t
+                            .get("description")
+                            .and_then(|v| v.as_str())
+                            .unwrap_or("")
+                            .to_string(),
+                        input_schema: t
+                            .get("inputSchema")
+                            .cloned()
+                            .unwrap_or(serde_json::json!({})),
+                    });
+                }
+                return Ok(result);
+            }
         }
 
         Ok(Vec::new())
@@ -235,7 +271,9 @@ impl McpManager {
                 "clientInfo": { "name": "OtakuSoul", "version": "0.1.0" }
             }
         });
-        stdin.write_all(format!("{}\n", init_req).as_bytes()).await
+        stdin
+            .write_all(format!("{}\n", init_req).as_bytes())
+            .await
             .map_err(|e| format!("Fehler beim Senden von initialize: {}", e))?;
         let _ = tokio::time::timeout(std::time::Duration::from_secs(4), reader.next_line()).await;
 
@@ -250,10 +288,13 @@ impl McpManager {
             }
         });
 
-        stdin.write_all(format!("{}\n", call_req).as_bytes()).await
+        stdin
+            .write_all(format!("{}\n", call_req).as_bytes())
+            .await
             .map_err(|e| format!("Fehler beim Senden von tools/call: {}", e))?;
 
-        let line_res = tokio::time::timeout(std::time::Duration::from_secs(20), reader.next_line()).await;
+        let line_res =
+            tokio::time::timeout(std::time::Duration::from_secs(20), reader.next_line()).await;
         let _ = child.kill().await;
 
         match line_res {
@@ -264,7 +305,8 @@ impl McpManager {
                     return Err(format!("MCP Fehler: {}", err));
                 }
                 if let Some(content) = val.pointer("/result/content") {
-                    return Ok(serde_json::to_string_pretty(content).unwrap_or_else(|_| content.to_string()));
+                    return Ok(serde_json::to_string_pretty(content)
+                        .unwrap_or_else(|_| content.to_string()));
                 }
                 Ok(line)
             }
@@ -282,9 +324,10 @@ impl McpManager {
                 let path = entry.path();
                 if path.extension().and_then(|s| s.to_str()) == Some("json")
                     && let Ok(content) = std::fs::read_to_string(&path)
-                        && let Ok(plugin) = serde_json::from_str::<CompanionPlugin>(&content) {
-                            plugins.push(plugin);
-                        }
+                    && let Ok(plugin) = serde_json::from_str::<CompanionPlugin>(&content)
+                {
+                    plugins.push(plugin);
+                }
             }
         }
         plugins
@@ -324,9 +367,18 @@ impl McpManager {
         let stderr = String::from_utf8_lossy(&output.stderr).trim().to_string();
 
         if output.status.success() {
-            Ok(if stdout.is_empty() { "Plugin erfolgreich ausgeführt (keine Ausgabe).".to_string() } else { stdout })
+            Ok(if stdout.is_empty() {
+                "Plugin erfolgreich ausgeführt (keine Ausgabe).".to_string()
+            } else {
+                stdout
+            })
         } else {
-            Err(format!("Plugin fehlgeschlagen (Exit Code: {}):\nSTDOUT: {}\nSTDERR: {}", output.status.code().unwrap_or(-1), stdout, stderr))
+            Err(format!(
+                "Plugin fehlgeschlagen (Exit Code: {}):\nSTDOUT: {}\nSTDERR: {}",
+                output.status.code().unwrap_or(-1),
+                stdout,
+                stderr
+            ))
         }
     }
 }

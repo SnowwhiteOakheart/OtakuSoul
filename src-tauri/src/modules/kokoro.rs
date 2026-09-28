@@ -80,14 +80,24 @@ fn validate_paths(config: &KokoroConfig) -> Result<(PathBuf, PathBuf), String> {
         );
     }
 
-    let model_path = fs::canonicalize(&config.model_path)
-        .map_err(|e| format!("Kokoro-Modell '{}' ist nicht lesbar: {e}", config.model_path))?;
-    if !model_path.is_file() || model_path.extension().and_then(|value| value.to_str()) != Some("onnx") {
+    let model_path = fs::canonicalize(&config.model_path).map_err(|e| {
+        format!(
+            "Kokoro-Modell '{}' ist nicht lesbar: {e}",
+            config.model_path
+        )
+    })?;
+    if !model_path.is_file()
+        || model_path.extension().and_then(|value| value.to_str()) != Some("onnx")
+    {
         return Err("Das Kokoro-Modell muss eine vorhandene .onnx-Datei sein.".to_string());
     }
 
-    let voices_path = fs::canonicalize(&config.voices_path)
-        .map_err(|e| format!("Kokoro-Stimmenpfad '{}' ist nicht lesbar: {e}", config.voices_path))?;
+    let voices_path = fs::canonicalize(&config.voices_path).map_err(|e| {
+        format!(
+            "Kokoro-Stimmenpfad '{}' ist nicht lesbar: {e}",
+            config.voices_path
+        )
+    })?;
     if !voices_path.is_dir()
         && (!voices_path.is_file()
             || voices_path.extension().and_then(|value| value.to_str()) != Some("bin"))
@@ -106,9 +116,11 @@ async fn load_engine(config: &KokoroConfig) -> Result<Arc<KokoroTts>, String> {
     let mut cached = cache().lock().await;
 
     if let Some(entry) = cached.as_ref()
-        && entry.model_path == model_path && entry.voices_path == voices_path {
-            return Ok(Arc::clone(&entry.engine));
-        }
+        && entry.model_path == model_path
+        && entry.voices_path == voices_path
+    {
+        return Ok(Arc::clone(&entry.engine));
+    }
 
     let engine = KokoroTts::new(&model_path, &voices_path)
         .await
@@ -286,16 +298,21 @@ pub fn detect_installation() -> Option<KokoroInstallResult> {
 async fn file_sha256(path: &Path) -> Result<String, String> {
     use tokio::io::AsyncReadExt;
 
-    let mut file = tokio::fs::File::open(path)
-        .await
-        .map_err(|e| format!("Datei '{}' konnte nicht geprüft werden: {e}", path.display()))?;
+    let mut file = tokio::fs::File::open(path).await.map_err(|e| {
+        format!(
+            "Datei '{}' konnte nicht geprüft werden: {e}",
+            path.display()
+        )
+    })?;
     let mut hasher = Sha256::new();
     let mut buffer = vec![0_u8; 1024 * 1024];
     loop {
-        let count = file
-            .read(&mut buffer)
-            .await
-            .map_err(|e| format!("Datei '{}' konnte nicht geprüft werden: {e}", path.display()))?;
+        let count = file.read(&mut buffer).await.map_err(|e| {
+            format!(
+                "Datei '{}' konnte nicht geprüft werden: {e}",
+                path.display()
+            )
+        })?;
         if count == 0 {
             break;
         }
@@ -317,7 +334,10 @@ async fn download_file<R: tauri::Runtime>(
         let valid = if let Some(expected) = expected_sha256 {
             file_sha256(target).await? == expected
         } else {
-            target.metadata().map(|value| value.len() > 1_024).unwrap_or(false)
+            target
+                .metadata()
+                .map(|value| value.len() > 1_024)
+                .unwrap_or(false)
         };
         if valid {
             return Ok(());
@@ -345,7 +365,10 @@ async fn download_file<R: tauri::Runtime>(
     let total_bytes = response.content_length().unwrap_or(0);
     let part_path = target.with_extension(format!(
         "{}.part",
-        target.extension().and_then(|value| value.to_str()).unwrap_or("download")
+        target
+            .extension()
+            .and_then(|value| value.to_str())
+            .unwrap_or("download")
     ));
     let mut file = tokio::fs::File::create(&part_path)
         .await
@@ -469,7 +492,8 @@ pub async fn install<R: tauri::Runtime>(
     );
 
     detect_installation().ok_or_else(|| {
-        "Kokoro wurde heruntergeladen, die Installation konnte aber nicht erkannt werden.".to_string()
+        "Kokoro wurde heruntergeladen, die Installation konnte aber nicht erkannt werden."
+            .to_string()
     })
 }
 
@@ -502,10 +526,7 @@ mod tests {
             .duration_since(std::time::UNIX_EPOCH)
             .unwrap()
             .as_nanos();
-        let test_dir = std::env::temp_dir().join(format!(
-            "otakusoul-kokoro-voices-{}",
-            unique
-        ));
+        let test_dir = std::env::temp_dir().join(format!("otakusoul-kokoro-voices-{}", unique));
         fs::create_dir_all(&test_dir).unwrap();
         fs::write(test_dir.join("af_heart.bin"), [0_u8; 8]).unwrap();
         fs::write(test_dir.join("jm_kumo.bin"), [0_u8; 8]).unwrap();

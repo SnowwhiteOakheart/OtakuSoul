@@ -159,18 +159,42 @@ pub struct VoiceConfig {
     pub stt: SttConfig,
 }
 
-fn default_rate() -> String { "+0%".to_string() }
-fn default_pitch() -> String { "+0Hz".to_string() }
-fn default_volume() -> String { "+0%".to_string() }
-fn default_filter_mode() -> TtsFilterMode { TtsFilterMode::StripActions }
-fn default_openai_endpoint() -> String { "http://localhost:8880/v1/audio/speech".to_string() }
-fn default_openai_model() -> String { "tts-1".to_string() }
-fn default_stt_endpoint() -> String { "http://localhost:8080/v1/audio/transcriptions".to_string() }
-fn default_stt_model() -> String { "whisper-1".to_string() }
-fn default_vad_threshold() -> f32 { 0.025 }
-fn default_vad_silence_ms() -> u32 { 900 }
-fn default_rvc_index_rate() -> f32 { 0.75 }
-fn default_rvc_protect() -> f32 { 0.33 }
+fn default_rate() -> String {
+    "+0%".to_string()
+}
+fn default_pitch() -> String {
+    "+0Hz".to_string()
+}
+fn default_volume() -> String {
+    "+0%".to_string()
+}
+fn default_filter_mode() -> TtsFilterMode {
+    TtsFilterMode::StripActions
+}
+fn default_openai_endpoint() -> String {
+    "http://localhost:8880/v1/audio/speech".to_string()
+}
+fn default_openai_model() -> String {
+    "tts-1".to_string()
+}
+fn default_stt_endpoint() -> String {
+    "http://localhost:8080/v1/audio/transcriptions".to_string()
+}
+fn default_stt_model() -> String {
+    "whisper-1".to_string()
+}
+fn default_vad_threshold() -> f32 {
+    0.025
+}
+fn default_vad_silence_ms() -> u32 {
+    900
+}
+fn default_rvc_index_rate() -> f32 {
+    0.75
+}
+fn default_rvc_protect() -> f32 {
+    0.33
+}
 
 fn http_client(timeout_seconds: u64) -> Result<reqwest::Client, String> {
     reqwest::Client::builder()
@@ -245,9 +269,9 @@ pub fn clean_text_for_tts(raw: &str, filter_mode: &TtsFilterMode, custom_regex: 
         TtsFilterMode::All => text,
         TtsFilterMode::DialogueOnly => {
             // Extract only text within quotes: "…", „…", »…«, 「…」
-            let dialogue_re = regex::Regex::new(
-                r#"(?:["„»「]([^""\u{300C}\u{300D}»«]+)[""«」\u{300D}])"#
-            ).unwrap();
+            let dialogue_re =
+                regex::Regex::new(r#"(?:["„»「]([^""\u{300C}\u{300D}»«]+)[""«」\u{300D}])"#)
+                    .unwrap();
             let matches: Vec<String> = dialogue_re
                 .captures_iter(&text)
                 .filter_map(|cap| cap.get(1).map(|m| m.as_str().to_string()))
@@ -271,9 +295,10 @@ pub fn clean_text_for_tts(raw: &str, filter_mode: &TtsFilterMode, custom_regex: 
 
     // 7. Apply custom regex exclusion if set
     if !custom_regex.is_empty()
-        && let Ok(custom_re) = regex::Regex::new(custom_regex) {
-            text = custom_re.replace_all(&text, "").to_string();
-        }
+        && let Ok(custom_re) = regex::Regex::new(custom_regex)
+    {
+        text = custom_re.replace_all(&text, "").to_string();
+    }
 
     // 8. Never pass Markdown asterisks to a speech engine. In "Alles"
     // mode their content remains, but Edge-TTS must not pronounce "Stern".
@@ -293,60 +318,300 @@ pub fn clean_text_for_tts(raw: &str, filter_mode: &TtsFilterMode, custom_regex: 
 pub fn list_edge_tts_voices() -> Vec<ScannedVoice> {
     vec![
         // German voices
-        ScannedVoice { id: "de-DE-KatjaNeural".into(), name: "Katja".into(), locale: "de-DE".into(), gender: "Female".into() },
-        ScannedVoice { id: "de-DE-ConradNeural".into(), name: "Conrad".into(), locale: "de-DE".into(), gender: "Male".into() },
-        ScannedVoice { id: "de-DE-AmalaNeural".into(), name: "Amala".into(), locale: "de-DE".into(), gender: "Female".into() },
-        ScannedVoice { id: "de-DE-BerndNeural".into(), name: "Bernd".into(), locale: "de-DE".into(), gender: "Male".into() },
-        ScannedVoice { id: "de-DE-ChristophNeural".into(), name: "Christoph".into(), locale: "de-DE".into(), gender: "Male".into() },
-        ScannedVoice { id: "de-DE-ElkeNeural".into(), name: "Elke".into(), locale: "de-DE".into(), gender: "Female".into() },
-        ScannedVoice { id: "de-DE-GiselaNeural".into(), name: "Gisela (Kind)".into(), locale: "de-DE".into(), gender: "Female".into() },
-        ScannedVoice { id: "de-DE-KasperNeural".into(), name: "Kasper".into(), locale: "de-DE".into(), gender: "Male".into() },
-        ScannedVoice { id: "de-DE-KillianNeural".into(), name: "Killian".into(), locale: "de-DE".into(), gender: "Male".into() },
-        ScannedVoice { id: "de-DE-KlarissaNeural".into(), name: "Klarissa".into(), locale: "de-DE".into(), gender: "Female".into() },
-        ScannedVoice { id: "de-DE-KlausNeural".into(), name: "Klaus".into(), locale: "de-DE".into(), gender: "Male".into() },
-        ScannedVoice { id: "de-DE-LouisaNeural".into(), name: "Louisa".into(), locale: "de-DE".into(), gender: "Female".into() },
-        ScannedVoice { id: "de-DE-MajaNeural".into(), name: "Maja".into(), locale: "de-DE".into(), gender: "Female".into() },
-        ScannedVoice { id: "de-DE-RalfNeural".into(), name: "Ralf".into(), locale: "de-DE".into(), gender: "Male".into() },
-        ScannedVoice { id: "de-DE-TanjaNeural".into(), name: "Tanja".into(), locale: "de-DE".into(), gender: "Female".into() },
-        ScannedVoice { id: "de-DE-SeraphinaMultilingualNeural".into(), name: "Seraphina (Multilingual)".into(), locale: "de-DE".into(), gender: "Female".into() },
-        ScannedVoice { id: "de-DE-FlorianMultilingualNeural".into(), name: "Florian (Multilingual)".into(), locale: "de-DE".into(), gender: "Male".into() },
-        ScannedVoice { id: "de-AT-IngridNeural".into(), name: "Ingrid (AT)".into(), locale: "de-AT".into(), gender: "Female".into() },
-        ScannedVoice { id: "de-AT-JonasNeural".into(), name: "Jonas (AT)".into(), locale: "de-AT".into(), gender: "Male".into() },
+        ScannedVoice {
+            id: "de-DE-KatjaNeural".into(),
+            name: "Katja".into(),
+            locale: "de-DE".into(),
+            gender: "Female".into(),
+        },
+        ScannedVoice {
+            id: "de-DE-ConradNeural".into(),
+            name: "Conrad".into(),
+            locale: "de-DE".into(),
+            gender: "Male".into(),
+        },
+        ScannedVoice {
+            id: "de-DE-AmalaNeural".into(),
+            name: "Amala".into(),
+            locale: "de-DE".into(),
+            gender: "Female".into(),
+        },
+        ScannedVoice {
+            id: "de-DE-BerndNeural".into(),
+            name: "Bernd".into(),
+            locale: "de-DE".into(),
+            gender: "Male".into(),
+        },
+        ScannedVoice {
+            id: "de-DE-ChristophNeural".into(),
+            name: "Christoph".into(),
+            locale: "de-DE".into(),
+            gender: "Male".into(),
+        },
+        ScannedVoice {
+            id: "de-DE-ElkeNeural".into(),
+            name: "Elke".into(),
+            locale: "de-DE".into(),
+            gender: "Female".into(),
+        },
+        ScannedVoice {
+            id: "de-DE-GiselaNeural".into(),
+            name: "Gisela (Kind)".into(),
+            locale: "de-DE".into(),
+            gender: "Female".into(),
+        },
+        ScannedVoice {
+            id: "de-DE-KasperNeural".into(),
+            name: "Kasper".into(),
+            locale: "de-DE".into(),
+            gender: "Male".into(),
+        },
+        ScannedVoice {
+            id: "de-DE-KillianNeural".into(),
+            name: "Killian".into(),
+            locale: "de-DE".into(),
+            gender: "Male".into(),
+        },
+        ScannedVoice {
+            id: "de-DE-KlarissaNeural".into(),
+            name: "Klarissa".into(),
+            locale: "de-DE".into(),
+            gender: "Female".into(),
+        },
+        ScannedVoice {
+            id: "de-DE-KlausNeural".into(),
+            name: "Klaus".into(),
+            locale: "de-DE".into(),
+            gender: "Male".into(),
+        },
+        ScannedVoice {
+            id: "de-DE-LouisaNeural".into(),
+            name: "Louisa".into(),
+            locale: "de-DE".into(),
+            gender: "Female".into(),
+        },
+        ScannedVoice {
+            id: "de-DE-MajaNeural".into(),
+            name: "Maja".into(),
+            locale: "de-DE".into(),
+            gender: "Female".into(),
+        },
+        ScannedVoice {
+            id: "de-DE-RalfNeural".into(),
+            name: "Ralf".into(),
+            locale: "de-DE".into(),
+            gender: "Male".into(),
+        },
+        ScannedVoice {
+            id: "de-DE-TanjaNeural".into(),
+            name: "Tanja".into(),
+            locale: "de-DE".into(),
+            gender: "Female".into(),
+        },
+        ScannedVoice {
+            id: "de-DE-SeraphinaMultilingualNeural".into(),
+            name: "Seraphina (Multilingual)".into(),
+            locale: "de-DE".into(),
+            gender: "Female".into(),
+        },
+        ScannedVoice {
+            id: "de-DE-FlorianMultilingualNeural".into(),
+            name: "Florian (Multilingual)".into(),
+            locale: "de-DE".into(),
+            gender: "Male".into(),
+        },
+        ScannedVoice {
+            id: "de-AT-IngridNeural".into(),
+            name: "Ingrid (AT)".into(),
+            locale: "de-AT".into(),
+            gender: "Female".into(),
+        },
+        ScannedVoice {
+            id: "de-AT-JonasNeural".into(),
+            name: "Jonas (AT)".into(),
+            locale: "de-AT".into(),
+            gender: "Male".into(),
+        },
         // Japanese voices
-        ScannedVoice { id: "ja-JP-NanamiNeural".into(), name: "Nanami".into(), locale: "ja-JP".into(), gender: "Female".into() },
-        ScannedVoice { id: "ja-JP-KeitaNeural".into(), name: "Keita".into(), locale: "ja-JP".into(), gender: "Male".into() },
-        ScannedVoice { id: "ja-JP-AoiNeural".into(), name: "Aoi".into(), locale: "ja-JP".into(), gender: "Female".into() },
-        ScannedVoice { id: "ja-JP-DaichiNeural".into(), name: "Daichi".into(), locale: "ja-JP".into(), gender: "Male".into() },
-        ScannedVoice { id: "ja-JP-MayuNeural".into(), name: "Mayu".into(), locale: "ja-JP".into(), gender: "Female".into() },
-        ScannedVoice { id: "ja-JP-NaokiNeural".into(), name: "Naoki".into(), locale: "ja-JP".into(), gender: "Male".into() },
-        ScannedVoice { id: "ja-JP-ShioriNeural".into(), name: "Shiori".into(), locale: "ja-JP".into(), gender: "Female".into() },
-        ScannedVoice { id: "ja-JP-MasaruMultilingualNeural".into(), name: "Masaru (Multilingual)".into(), locale: "ja-JP".into(), gender: "Male".into() },
+        ScannedVoice {
+            id: "ja-JP-NanamiNeural".into(),
+            name: "Nanami".into(),
+            locale: "ja-JP".into(),
+            gender: "Female".into(),
+        },
+        ScannedVoice {
+            id: "ja-JP-KeitaNeural".into(),
+            name: "Keita".into(),
+            locale: "ja-JP".into(),
+            gender: "Male".into(),
+        },
+        ScannedVoice {
+            id: "ja-JP-AoiNeural".into(),
+            name: "Aoi".into(),
+            locale: "ja-JP".into(),
+            gender: "Female".into(),
+        },
+        ScannedVoice {
+            id: "ja-JP-DaichiNeural".into(),
+            name: "Daichi".into(),
+            locale: "ja-JP".into(),
+            gender: "Male".into(),
+        },
+        ScannedVoice {
+            id: "ja-JP-MayuNeural".into(),
+            name: "Mayu".into(),
+            locale: "ja-JP".into(),
+            gender: "Female".into(),
+        },
+        ScannedVoice {
+            id: "ja-JP-NaokiNeural".into(),
+            name: "Naoki".into(),
+            locale: "ja-JP".into(),
+            gender: "Male".into(),
+        },
+        ScannedVoice {
+            id: "ja-JP-ShioriNeural".into(),
+            name: "Shiori".into(),
+            locale: "ja-JP".into(),
+            gender: "Female".into(),
+        },
+        ScannedVoice {
+            id: "ja-JP-MasaruMultilingualNeural".into(),
+            name: "Masaru (Multilingual)".into(),
+            locale: "ja-JP".into(),
+            gender: "Male".into(),
+        },
         // English voices
-        ScannedVoice { id: "en-US-JennyNeural".into(), name: "Jenny".into(), locale: "en-US".into(), gender: "Female".into() },
-        ScannedVoice { id: "en-US-GuyNeural".into(), name: "Guy".into(), locale: "en-US".into(), gender: "Male".into() },
-        ScannedVoice { id: "en-US-AriaNeural".into(), name: "Aria".into(), locale: "en-US".into(), gender: "Female".into() },
-        ScannedVoice { id: "en-US-DavisNeural".into(), name: "Davis".into(), locale: "en-US".into(), gender: "Male".into() },
-        ScannedVoice { id: "en-US-SaraNeural".into(), name: "Sara".into(), locale: "en-US".into(), gender: "Female".into() },
-        ScannedVoice { id: "en-US-TonyNeural".into(), name: "Tony".into(), locale: "en-US".into(), gender: "Male".into() },
-        ScannedVoice { id: "en-US-NancyNeural".into(), name: "Nancy".into(), locale: "en-US".into(), gender: "Female".into() },
-        ScannedVoice { id: "en-US-AvaMultilingualNeural".into(), name: "Ava (Multilingual)".into(), locale: "en-US".into(), gender: "Female".into() },
-        ScannedVoice { id: "en-US-AndrewMultilingualNeural".into(), name: "Andrew (Multilingual)".into(), locale: "en-US".into(), gender: "Male".into() },
-        ScannedVoice { id: "en-US-EmmaMultilingualNeural".into(), name: "Emma (Multilingual)".into(), locale: "en-US".into(), gender: "Female".into() },
-        ScannedVoice { id: "en-US-BrianMultilingualNeural".into(), name: "Brian (Multilingual)".into(), locale: "en-US".into(), gender: "Male".into() },
-        ScannedVoice { id: "en-GB-SoniaNeural".into(), name: "Sonia (GB)".into(), locale: "en-GB".into(), gender: "Female".into() },
-        ScannedVoice { id: "en-GB-RyanNeural".into(), name: "Ryan (GB)".into(), locale: "en-GB".into(), gender: "Male".into() },
+        ScannedVoice {
+            id: "en-US-JennyNeural".into(),
+            name: "Jenny".into(),
+            locale: "en-US".into(),
+            gender: "Female".into(),
+        },
+        ScannedVoice {
+            id: "en-US-GuyNeural".into(),
+            name: "Guy".into(),
+            locale: "en-US".into(),
+            gender: "Male".into(),
+        },
+        ScannedVoice {
+            id: "en-US-AriaNeural".into(),
+            name: "Aria".into(),
+            locale: "en-US".into(),
+            gender: "Female".into(),
+        },
+        ScannedVoice {
+            id: "en-US-DavisNeural".into(),
+            name: "Davis".into(),
+            locale: "en-US".into(),
+            gender: "Male".into(),
+        },
+        ScannedVoice {
+            id: "en-US-SaraNeural".into(),
+            name: "Sara".into(),
+            locale: "en-US".into(),
+            gender: "Female".into(),
+        },
+        ScannedVoice {
+            id: "en-US-TonyNeural".into(),
+            name: "Tony".into(),
+            locale: "en-US".into(),
+            gender: "Male".into(),
+        },
+        ScannedVoice {
+            id: "en-US-NancyNeural".into(),
+            name: "Nancy".into(),
+            locale: "en-US".into(),
+            gender: "Female".into(),
+        },
+        ScannedVoice {
+            id: "en-US-AvaMultilingualNeural".into(),
+            name: "Ava (Multilingual)".into(),
+            locale: "en-US".into(),
+            gender: "Female".into(),
+        },
+        ScannedVoice {
+            id: "en-US-AndrewMultilingualNeural".into(),
+            name: "Andrew (Multilingual)".into(),
+            locale: "en-US".into(),
+            gender: "Male".into(),
+        },
+        ScannedVoice {
+            id: "en-US-EmmaMultilingualNeural".into(),
+            name: "Emma (Multilingual)".into(),
+            locale: "en-US".into(),
+            gender: "Female".into(),
+        },
+        ScannedVoice {
+            id: "en-US-BrianMultilingualNeural".into(),
+            name: "Brian (Multilingual)".into(),
+            locale: "en-US".into(),
+            gender: "Male".into(),
+        },
+        ScannedVoice {
+            id: "en-GB-SoniaNeural".into(),
+            name: "Sonia (GB)".into(),
+            locale: "en-GB".into(),
+            gender: "Female".into(),
+        },
+        ScannedVoice {
+            id: "en-GB-RyanNeural".into(),
+            name: "Ryan (GB)".into(),
+            locale: "en-GB".into(),
+            gender: "Male".into(),
+        },
         // Korean voices
-        ScannedVoice { id: "ko-KR-SunHiNeural".into(), name: "Sun-Hi".into(), locale: "ko-KR".into(), gender: "Female".into() },
-        ScannedVoice { id: "ko-KR-InJoonNeural".into(), name: "InJoon".into(), locale: "ko-KR".into(), gender: "Male".into() },
+        ScannedVoice {
+            id: "ko-KR-SunHiNeural".into(),
+            name: "Sun-Hi".into(),
+            locale: "ko-KR".into(),
+            gender: "Female".into(),
+        },
+        ScannedVoice {
+            id: "ko-KR-InJoonNeural".into(),
+            name: "InJoon".into(),
+            locale: "ko-KR".into(),
+            gender: "Male".into(),
+        },
         // Chinese voices
-        ScannedVoice { id: "zh-CN-XiaoxiaoNeural".into(), name: "Xiaoxiao".into(), locale: "zh-CN".into(), gender: "Female".into() },
-        ScannedVoice { id: "zh-CN-YunxiNeural".into(), name: "Yunxi".into(), locale: "zh-CN".into(), gender: "Male".into() },
+        ScannedVoice {
+            id: "zh-CN-XiaoxiaoNeural".into(),
+            name: "Xiaoxiao".into(),
+            locale: "zh-CN".into(),
+            gender: "Female".into(),
+        },
+        ScannedVoice {
+            id: "zh-CN-YunxiNeural".into(),
+            name: "Yunxi".into(),
+            locale: "zh-CN".into(),
+            gender: "Male".into(),
+        },
         // French voices
-        ScannedVoice { id: "fr-FR-DeniseNeural".into(), name: "Denise".into(), locale: "fr-FR".into(), gender: "Female".into() },
-        ScannedVoice { id: "fr-FR-HenriNeural".into(), name: "Henri".into(), locale: "fr-FR".into(), gender: "Male".into() },
+        ScannedVoice {
+            id: "fr-FR-DeniseNeural".into(),
+            name: "Denise".into(),
+            locale: "fr-FR".into(),
+            gender: "Female".into(),
+        },
+        ScannedVoice {
+            id: "fr-FR-HenriNeural".into(),
+            name: "Henri".into(),
+            locale: "fr-FR".into(),
+            gender: "Male".into(),
+        },
         // Spanish voices
-        ScannedVoice { id: "es-ES-ElviraNeural".into(), name: "Elvira".into(), locale: "es-ES".into(), gender: "Female".into() },
-        ScannedVoice { id: "es-ES-AlvaroNeural".into(), name: "Alvaro".into(), locale: "es-ES".into(), gender: "Male".into() },
+        ScannedVoice {
+            id: "es-ES-ElviraNeural".into(),
+            name: "Elvira".into(),
+            locale: "es-ES".into(),
+            gender: "Female".into(),
+        },
+        ScannedVoice {
+            id: "es-ES-AlvaroNeural".into(),
+            name: "Alvaro".into(),
+            locale: "es-ES".into(),
+            gender: "Male".into(),
+        },
     ]
 }
 
@@ -372,10 +637,14 @@ pub async fn list_available_voices(
                             if let (Some(id), Some(locale), Some(gender)) = (
                                 v.get("ShortName").and_then(|s| s.as_str()),
                                 v.get("Locale").and_then(|s| s.as_str()),
-                                v.get("Gender").and_then(|s| s.as_str())
+                                v.get("Gender").and_then(|s| s.as_str()),
                             ) {
                                 // Extract a readable name from ShortName (e.g. "de-DE-KatjaNeural" -> "Katja")
-                                let name = id.split('-').next_back().unwrap_or(id).replace("Neural", "");
+                                let name = id
+                                    .split('-')
+                                    .next_back()
+                                    .unwrap_or(id)
+                                    .replace("Neural", "");
                                 voices.push(ScannedVoice {
                                     id: id.to_string(),
                                     name,
@@ -433,7 +702,12 @@ pub async fn list_available_voices(
                                 .and_then(|v| v.as_str())
                                 .unwrap_or("Unknown")
                                 .to_string();
-                            Some(ScannedVoice { id, name, locale, gender })
+                            Some(ScannedVoice {
+                                id,
+                                name,
+                                locale,
+                                gender,
+                            })
                         })
                         .collect()
                 })
@@ -443,19 +717,84 @@ pub async fn list_available_voices(
         "openai" => {
             // Standard OpenAI voices
             Ok(vec![
-                ScannedVoice { id: "alloy".into(), name: "Alloy".into(), locale: "multi".into(), gender: "Neutral".into() },
-                ScannedVoice { id: "ash".into(), name: "Ash".into(), locale: "multi".into(), gender: "Neutral".into() },
-                ScannedVoice { id: "ballad".into(), name: "Ballad".into(), locale: "multi".into(), gender: "Neutral".into() },
-                ScannedVoice { id: "coral".into(), name: "Coral".into(), locale: "multi".into(), gender: "Neutral".into() },
-                ScannedVoice { id: "echo".into(), name: "Echo".into(), locale: "multi".into(), gender: "Male".into() },
-                ScannedVoice { id: "fable".into(), name: "Fable".into(), locale: "multi".into(), gender: "Male".into() },
-                ScannedVoice { id: "onyx".into(), name: "Onyx".into(), locale: "multi".into(), gender: "Male".into() },
-                ScannedVoice { id: "nova".into(), name: "Nova".into(), locale: "multi".into(), gender: "Female".into() },
-                ScannedVoice { id: "sage".into(), name: "Sage".into(), locale: "multi".into(), gender: "Neutral".into() },
-                ScannedVoice { id: "shimmer".into(), name: "Shimmer".into(), locale: "multi".into(), gender: "Female".into() },
-                ScannedVoice { id: "verse".into(), name: "Verse".into(), locale: "multi".into(), gender: "Neutral".into() },
-                ScannedVoice { id: "marin".into(), name: "Marin".into(), locale: "multi".into(), gender: "Neutral".into() },
-                ScannedVoice { id: "cedar".into(), name: "Cedar".into(), locale: "multi".into(), gender: "Neutral".into() },
+                ScannedVoice {
+                    id: "alloy".into(),
+                    name: "Alloy".into(),
+                    locale: "multi".into(),
+                    gender: "Neutral".into(),
+                },
+                ScannedVoice {
+                    id: "ash".into(),
+                    name: "Ash".into(),
+                    locale: "multi".into(),
+                    gender: "Neutral".into(),
+                },
+                ScannedVoice {
+                    id: "ballad".into(),
+                    name: "Ballad".into(),
+                    locale: "multi".into(),
+                    gender: "Neutral".into(),
+                },
+                ScannedVoice {
+                    id: "coral".into(),
+                    name: "Coral".into(),
+                    locale: "multi".into(),
+                    gender: "Neutral".into(),
+                },
+                ScannedVoice {
+                    id: "echo".into(),
+                    name: "Echo".into(),
+                    locale: "multi".into(),
+                    gender: "Male".into(),
+                },
+                ScannedVoice {
+                    id: "fable".into(),
+                    name: "Fable".into(),
+                    locale: "multi".into(),
+                    gender: "Male".into(),
+                },
+                ScannedVoice {
+                    id: "onyx".into(),
+                    name: "Onyx".into(),
+                    locale: "multi".into(),
+                    gender: "Male".into(),
+                },
+                ScannedVoice {
+                    id: "nova".into(),
+                    name: "Nova".into(),
+                    locale: "multi".into(),
+                    gender: "Female".into(),
+                },
+                ScannedVoice {
+                    id: "sage".into(),
+                    name: "Sage".into(),
+                    locale: "multi".into(),
+                    gender: "Neutral".into(),
+                },
+                ScannedVoice {
+                    id: "shimmer".into(),
+                    name: "Shimmer".into(),
+                    locale: "multi".into(),
+                    gender: "Female".into(),
+                },
+                ScannedVoice {
+                    id: "verse".into(),
+                    name: "Verse".into(),
+                    locale: "multi".into(),
+                    gender: "Neutral".into(),
+                },
+                ScannedVoice {
+                    id: "marin".into(),
+                    name: "Marin".into(),
+                    locale: "multi".into(),
+                    gender: "Neutral".into(),
+                },
+                ScannedVoice {
+                    id: "cedar".into(),
+                    name: "Cedar".into(),
+                    locale: "multi".into(),
+                    gender: "Neutral".into(),
+                },
             ])
         }
         _ => Ok(Vec::new()),
@@ -468,7 +807,13 @@ pub async fn list_available_voices(
 
 /// Synthesizes speech using the Edge-TTS (Microsoft Cognitive Services) WebSocket endpoint.
 /// Returns base64-encoded MP3 audio as a data URL.
-pub async fn synthesize_edge_tts(text: &str, voice_id: &str, rate: &str, pitch: &str, volume: &str) -> Result<String, String> {
+pub async fn synthesize_edge_tts(
+    text: &str,
+    voice_id: &str,
+    rate: &str,
+    pitch: &str,
+    volume: &str,
+) -> Result<String, String> {
     if text.trim().is_empty() {
         return Err("Kein Text zum Vorlesen vorhanden.".to_string());
     }
@@ -476,7 +821,13 @@ pub async fn synthesize_edge_tts(text: &str, voice_id: &str, rate: &str, pitch: 
 }
 
 /// Edge-TTS synthesis via the WebSocket protocol (same as the edge-tts Python library)
-async fn synthesize_edge_tts_websocket(text: &str, voice_id: &str, rate: &str, pitch: &str, volume: &str) -> Result<String, String> {
+async fn synthesize_edge_tts_websocket(
+    text: &str,
+    voice_id: &str,
+    rate: &str,
+    pitch: &str,
+    volume: &str,
+) -> Result<String, String> {
     // Escape XML special characters
     let escaped_text = text
         .replace('&', "&amp;")
@@ -505,12 +856,15 @@ async fn synthesize_edge_tts_websocket(text: &str, voice_id: &str, rate: &str, p
         .map_err(|e| format!("WebSocket-Verbindung fehlgeschlagen: {}", e))?;
 
     // Send speech config
-    let timestamp = chrono::Utc::now().format("%a %b %d %Y %H:%M:%S GMT+0000 (Coordinated Universal Time)");
+    let timestamp =
+        chrono::Utc::now().format("%a %b %d %Y %H:%M:%S GMT+0000 (Coordinated Universal Time)");
     let config_msg = format!(
         "X-Timestamp:{}\r\nContent-Type:application/json; charset=utf-8\r\nPath:speech.config\r\n\r\n{{\"context\":{{\"synthesis\":{{\"audio\":{{\"metadataoptions\":{{\"sentenceBoundaryEnabled\":\"false\",\"wordBoundaryEnabled\":\"false\"}},\"outputFormat\":\"audio-24khz-48kbitrate-mono-mp3\"}}}}}}}}",
         timestamp
     );
-    ws_stream.send(Message::Text(config_msg.into())).await
+    ws_stream
+        .send(Message::Text(config_msg.into()))
+        .await
         .map_err(|e| format!("Fehler beim Senden der Konfiguration: {}", e))?;
 
     // Send SSML
@@ -519,7 +873,9 @@ async fn synthesize_edge_tts_websocket(text: &str, voice_id: &str, rate: &str, p
         "X-RequestId:{}\r\nContent-Type:application/ssml+xml\r\nX-Timestamp:{}\r\nPath:ssml\r\n\r\n{}",
         request_id, timestamp, ssml
     );
-    ws_stream.send(Message::Text(ssml_msg.into())).await
+    ws_stream
+        .send(Message::Text(ssml_msg.into()))
+        .await
         .map_err(|e| format!("Fehler beim Senden der SSML-Nachricht: {}", e))?;
 
     // Collect audio data
@@ -535,7 +891,10 @@ async fn synthesize_edge_tts_websocket(text: &str, voice_id: &str, rate: &str, p
                     let header_len = u16::from_be_bytes([data[0], data[1]]) as usize;
                     if header_len + 2 <= data.len() {
                         let header = &data[2..2 + header_len];
-                        if header.windows(header_marker.len()).any(|w| w == header_marker) {
+                        if header
+                            .windows(header_marker.len())
+                            .any(|w| w == header_marker)
+                        {
                             audio_data.extend_from_slice(&data[2 + header_len..]);
                         }
                     }
@@ -551,9 +910,13 @@ async fn synthesize_edge_tts_websocket(text: &str, voice_id: &str, rate: &str, p
             Ok(Message::Close(c)) => {
                 info!("Edge-TTS Closed: {:?}", c);
                 if let Some(close_frame) = c
-                    && close_frame.reason.contains("Unsupported voice") {
-                        return Err(format!("Die ausgewählte Stimme wird von Microsoft nicht mehr unterstützt. Bitte wähle eine andere Stimme aus. (Details: {})", close_frame.reason));
-                    }
+                    && close_frame.reason.contains("Unsupported voice")
+                {
+                    return Err(format!(
+                        "Die ausgewählte Stimme wird von Microsoft nicht mehr unterstützt. Bitte wähle eine andere Stimme aus. (Details: {})",
+                        close_frame.reason
+                    ));
+                }
                 break;
             }
             Err(e) => {
@@ -572,7 +935,10 @@ async fn synthesize_edge_tts_websocket(text: &str, voice_id: &str, rate: &str, p
         return Err("Keine Audio-Daten von Edge-TTS empfangen.".to_string());
     }
 
-    info!("Edge-TTS: {} Bytes Audio-Daten empfangen.", audio_data.len());
+    info!(
+        "Edge-TTS: {} Bytes Audio-Daten empfangen.",
+        audio_data.len()
+    );
     let b64 = base64::prelude::BASE64_STANDARD.encode(&audio_data);
     Ok(format!("data:audio/mp3;base64,{}", b64))
 }
@@ -582,7 +948,7 @@ fn build_edge_tts_request(
 ) -> Result<tokio_tungstenite::tungstenite::http::Request<()>, String> {
     use tokio_tungstenite::tungstenite::client::IntoClientRequest;
     use tokio_tungstenite::tungstenite::http::header::{
-        HeaderValue, ACCEPT_ENCODING, ACCEPT_LANGUAGE, CACHE_CONTROL, COOKIE, ORIGIN, PRAGMA,
+        ACCEPT_ENCODING, ACCEPT_LANGUAGE, CACHE_CONTROL, COOKIE, HeaderValue, ORIGIN, PRAGMA,
         USER_AGENT,
     };
 
@@ -593,10 +959,9 @@ fn build_edge_tts_request(
         .into_client_request()
         .map_err(|e| format!("WebSocket-Anfrage konnte nicht erstellt werden: {}", e))?;
 
-    request.headers_mut().insert(
-        USER_AGENT,
-        HeaderValue::from_static(EDGE_TTS_USER_AGENT),
-    );
+    request
+        .headers_mut()
+        .insert(USER_AGENT, HeaderValue::from_static(EDGE_TTS_USER_AGENT));
     request
         .headers_mut()
         .insert(PRAGMA, HeaderValue::from_static("no-cache"));
@@ -611,10 +976,9 @@ fn build_edge_tts_request(
         ACCEPT_ENCODING,
         HeaderValue::from_static("gzip, deflate, br, zstd"),
     );
-    request.headers_mut().insert(
-        ACCEPT_LANGUAGE,
-        HeaderValue::from_static("en-US,en;q=0.9"),
-    );
+    request
+        .headers_mut()
+        .insert(ACCEPT_LANGUAGE, HeaderValue::from_static("en-US,en;q=0.9"));
     let muid = uuid_v4().replace('-', "").to_uppercase();
     request.headers_mut().insert(
         COOKIE,
@@ -643,19 +1007,25 @@ fn generate_edge_sec_ms_gec(unix_timestamp: i64) -> String {
     const FIVE_MINUTES_SECONDS: i64 = 300;
     const HUNDRED_NANOSECONDS_PER_SECOND: i64 = 10_000_000;
 
-    let rounded_timestamp =
-        unix_timestamp - unix_timestamp.rem_euclid(FIVE_MINUTES_SECONDS);
-    let windows_file_time = (rounded_timestamp + WINDOWS_EPOCH_OFFSET_SECONDS)
-        * HUNDRED_NANOSECONDS_PER_SECOND;
+    let rounded_timestamp = unix_timestamp - unix_timestamp.rem_euclid(FIVE_MINUTES_SECONDS);
+    let windows_file_time =
+        (rounded_timestamp + WINDOWS_EPOCH_OFFSET_SECONDS) * HUNDRED_NANOSECONDS_PER_SECOND;
     let value = format!("{windows_file_time}{EDGE_TTS_TRUSTED_CLIENT_TOKEN}");
-    Sha256::digest(value.as_bytes()).iter().map(|b| format!("{:02X}", b)).collect()
+    Sha256::digest(value.as_bytes())
+        .iter()
+        .map(|b| format!("{:02X}", b))
+        .collect()
 }
 
 // ---------------------------------------------------------------------------
 // ElevenLabs Synthesis
 // ---------------------------------------------------------------------------
 
-pub async fn synthesize_elevenlabs(text: &str, voice_id: &str, api_key: &str) -> Result<String, String> {
+pub async fn synthesize_elevenlabs(
+    text: &str,
+    voice_id: &str,
+    api_key: &str,
+) -> Result<String, String> {
     if text.trim().is_empty() {
         return Err("Kein Text zum Vorlesen vorhanden.".to_string());
     }
@@ -690,7 +1060,9 @@ pub async fn synthesize_elevenlabs(text: &str, voice_id: &str, api_key: &str) ->
         return Err(format!("ElevenLabs API-Fehler {}: {}", status, err_text));
     }
 
-    let bytes = response.bytes().await
+    let bytes = response
+        .bytes()
+        .await
         .map_err(|e| format!("Fehler beim Empfangen der ElevenLabs-Audio-Daten: {}", e))?;
     let b64 = base64::prelude::BASE64_STANDARD.encode(&bytes);
     Ok(format!("data:audio/mp3;base64,{}", b64))
@@ -736,7 +1108,9 @@ pub async fn synthesize_openai_tts(
         req = req.header("Authorization", format!("Bearer {}", api_key));
     }
 
-    let response = req.send().await
+    let response = req
+        .send()
+        .await
         .map_err(|e| format!("OpenAI-TTS-Anfrage fehlgeschlagen: {}", e))?;
 
     if !response.status().is_success() {
@@ -754,7 +1128,9 @@ pub async fn synthesize_openai_tts(
         .next()
         .unwrap_or("audio/mpeg")
         .to_string();
-    let bytes = response.bytes().await
+    let bytes = response
+        .bytes()
+        .await
         .map_err(|e| format!("Fehler beim Empfangen der OpenAI-TTS-Audio-Daten: {}", e))?;
     let b64 = base64::prelude::BASE64_STANDARD.encode(&bytes);
     Ok(format!("data:{};base64,{}", mime, b64))
@@ -847,7 +1223,14 @@ pub async fn synthesize_speech(text: &str, config: &VoiceConfig) -> Result<Strin
 
     let synthesized = match config.engine {
         TtsEngine::Edge => {
-            synthesize_edge_tts(&cleaned, &config.voice_id, &config.rate, &config.pitch, &config.volume).await
+            synthesize_edge_tts(
+                &cleaned,
+                &config.voice_id,
+                &config.rate,
+                &config.pitch,
+                &config.volume,
+            )
+            .await
         }
         TtsEngine::Kokoro => {
             crate::modules::kokoro::synthesize(
@@ -870,11 +1253,10 @@ pub async fn synthesize_speech(text: &str, config: &VoiceConfig) -> Result<Strin
                 &config.voice_id,
                 &config.rate,
                 &config.openai_instructions,
-            ).await
+            )
+            .await
         }
-        TtsEngine::Disabled => {
-            Err("TTS ist für diesen Charakter deaktiviert.".to_string())
-        }
+        TtsEngine::Disabled => Err("TTS ist für diesen Charakter deaktiviert.".to_string()),
     }?;
 
     apply_rvc(&synthesized, &config.rvc).await
@@ -1004,7 +1386,10 @@ fn transcribe_native_whisper(_samples: Vec<f32>, _config: SttConfig) -> Result<S
     )
 }
 
-async fn transcribe_openai_compatible(samples: &[f32], config: &SttConfig) -> Result<String, String> {
+async fn transcribe_openai_compatible(
+    samples: &[f32],
+    config: &SttConfig,
+) -> Result<String, String> {
     if config.endpoint.trim().is_empty() {
         return Err("Kein STT-Endpunkt konfiguriert.".to_string());
     }
@@ -1045,9 +1430,10 @@ async fn transcribe_openai_compatible(samples: &[f32], config: &SttConfig) -> Re
         return Err(format!("STT-Endpunkt meldet {}: {}", status, body));
     }
     if let Ok(json) = serde_json::from_str::<serde_json::Value>(&body)
-        && let Some(text) = json["text"].as_str() {
-            return Ok(text.trim().to_string());
-        }
+        && let Some(text) = json["text"].as_str()
+    {
+        return Ok(text.trim().to_string());
+    }
     Ok(body.trim().to_string())
 }
 
@@ -1112,7 +1498,10 @@ pub fn load_character_voice_config(char_id: &str) -> VoiceConfig {
 }
 
 fn voice_secret_prefix(path: &std::path::Path) -> String {
-    let stem = path.file_stem().map(|s| s.to_string_lossy().to_string()).unwrap_or_default();
+    let stem = path
+        .file_stem()
+        .map(|s| s.to_string_lossy().to_string())
+        .unwrap_or_default();
     format!("voice/{}", stem)
 }
 
@@ -1128,9 +1517,10 @@ fn voice_secret_fields(config: &mut VoiceConfig) -> [(&'static str, &mut String)
 fn load_voice_config_from_path(path: &std::path::Path) -> VoiceConfig {
     if path.exists()
         && let Ok(content) = fs::read_to_string(path)
-            && let Ok(config) = serde_json::from_str::<VoiceConfig>(&content) {
-                return config;
-            }
+        && let Ok(config) = serde_json::from_str::<VoiceConfig>(&content)
+    {
+        return config;
+    }
     VoiceConfig::default()
 }
 
@@ -1142,17 +1532,28 @@ pub fn save_character_voice_config(char_id: &str, config: &VoiceConfig) -> Resul
         crate::modules::secrets::externalize(&format!("{}/{}", prefix, name), value);
     }
     save_voice_config_to_path(&path, &on_disk)?;
-    info!("Stimmen-Konfiguration für '{}' gespeichert in {:?}", char_id, path);
+    info!(
+        "Stimmen-Konfiguration für '{}' gespeichert in {:?}",
+        char_id, path
+    );
     Ok(())
 }
 
 fn save_voice_config_to_path(path: &std::path::Path, config: &VoiceConfig) -> Result<(), String> {
     if let Some(dir) = path.parent() {
-        fs::create_dir_all(dir)
-            .map_err(|e| format!("Stimmen-Konfigurationsordner konnte nicht erstellt werden: {}", e))?;
+        fs::create_dir_all(dir).map_err(|e| {
+            format!(
+                "Stimmen-Konfigurationsordner konnte nicht erstellt werden: {}",
+                e
+            )
+        })?;
     }
-    let json = serde_json::to_string_pretty(config)
-        .map_err(|e| format!("Fehler bei der Serialisierung der Stimmen-Konfiguration: {}", e))?;
+    let json = serde_json::to_string_pretty(config).map_err(|e| {
+        format!(
+            "Fehler bei der Serialisierung der Stimmen-Konfiguration: {}",
+            e
+        )
+    })?;
     fs::write(path, json)
         .map_err(|e| format!("Fehler beim Schreiben der Stimmen-Konfiguration: {}", e))?;
     Ok(())
@@ -1170,7 +1571,9 @@ fn uuid_v4() -> String {
         u16::from_be_bytes([bytes[4], bytes[5]]),
         u16::from_be_bytes([bytes[6], bytes[7]]) & 0x0FFF,
         (u16::from_be_bytes([bytes[8], bytes[9]]) & 0x3FFF) | 0x8000,
-        u64::from_be_bytes([0, 0, bytes[10], bytes[11], bytes[12], bytes[13], bytes[14], bytes[15]])
+        u64::from_be_bytes([
+            0, 0, bytes[10], bytes[11], bytes[12], bytes[13], bytes[14], bytes[15]
+        ])
     )
 }
 
@@ -1279,12 +1682,14 @@ mod tests {
             headers.get("origin").unwrap(),
             "chrome-extension://jdiccldimpdaibmpdkjnbmckianbfold"
         );
-        assert!(headers
-            .get("cookie")
-            .unwrap()
-            .to_str()
-            .unwrap()
-            .starts_with("muid="));
+        assert!(
+            headers
+                .get("cookie")
+                .unwrap()
+                .to_str()
+                .unwrap()
+                .starts_with("muid=")
+        );
         assert!(!headers.contains_key("sec-websocket-protocol"));
     }
 
@@ -1361,7 +1766,10 @@ mod tests {
     #[test]
     fn test_pcm_base64_roundtrip_and_wav_encoding() {
         let samples = [0.0_f32, 0.25, -0.5, 1.0];
-        let bytes: Vec<u8> = samples.iter().flat_map(|sample| sample.to_le_bytes()).collect();
+        let bytes: Vec<u8> = samples
+            .iter()
+            .flat_map(|sample| sample.to_le_bytes())
+            .collect();
         let encoded = base64::prelude::BASE64_STANDARD.encode(bytes);
         let decoded = decode_pcm_f32(&encoded).unwrap();
         assert_eq!(decoded, samples);

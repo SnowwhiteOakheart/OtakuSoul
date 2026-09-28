@@ -1,10 +1,10 @@
+use chrono::Utc;
+use reqwest::header::{AUTHORIZATION, CONTENT_TYPE};
+use serde::{Deserialize, Serialize};
 use std::fs::{self, File};
 use std::io::Write;
 use std::path::PathBuf;
 use std::time::Duration;
-use chrono::Utc;
-use reqwest::header::{AUTHORIZATION, CONTENT_TYPE};
-use serde::{Deserialize, Serialize};
 use tracing::info;
 
 use crate::modules::paths::resolve_app_paths;
@@ -81,12 +81,13 @@ impl ImageGenerator {
         let config_path = PathBuf::from(&paths.data_dir).join("image_gen_config.json");
         if config_path.exists()
             && let Ok(content) = fs::read_to_string(&config_path)
-                && let Ok(mut cfg) = serde_json::from_str::<ImageGenConfig>(&content) {
-                    if crate::modules::secrets::hydrate_opt(IMAGE_GEN_KEY_ACCOUNT, &mut cfg.api_key) {
-                        let _ = Self::save_config(&cfg);
-                    }
-                    return cfg;
-                }
+            && let Ok(mut cfg) = serde_json::from_str::<ImageGenConfig>(&content)
+        {
+            if crate::modules::secrets::hydrate_opt(IMAGE_GEN_KEY_ACCOUNT, &mut cfg.api_key) {
+                let _ = Self::save_config(&cfg);
+            }
+            return cfg;
+        }
         ImageGenConfig::default()
     }
 
@@ -95,10 +96,18 @@ impl ImageGenerator {
         let config_path = PathBuf::from(&paths.data_dir).join("image_gen_config.json");
         let mut on_disk = config.clone();
         crate::modules::secrets::externalize_opt(IMAGE_GEN_KEY_ACCOUNT, &mut on_disk.api_key);
-        let json_str = serde_json::to_string_pretty(&on_disk)
-            .map_err(|e| format!("Fehler beim Serialisieren der Bildgenerierungs-Konfiguration: {}", e))?;
-        fs::write(&config_path, json_str)
-            .map_err(|e| format!("Fehler beim Speichern der Bildgenerierungs-Konfiguration: {}", e))?;
+        let json_str = serde_json::to_string_pretty(&on_disk).map_err(|e| {
+            format!(
+                "Fehler beim Serialisieren der Bildgenerierungs-Konfiguration: {}",
+                e
+            )
+        })?;
+        fs::write(&config_path, json_str).map_err(|e| {
+            format!(
+                "Fehler beim Speichern der Bildgenerierungs-Konfiguration: {}",
+                e
+            )
+        })?;
         Ok(())
     }
 
@@ -124,9 +133,15 @@ impl ImageGenerator {
         if let Some(emo) = emotion {
             let emo_tag = match emo.to_lowercase().as_str() {
                 "curious" => "curious expression, tilted head, wide eyes, looking at viewer",
-                "warm" | "affection" => "gentle smile, blushing cheeks, warm gaze, loving expression",
-                "amused" | "playful" => "playful grin, laughing, mischievous expression, energetic pose",
-                "concerned" | "anxious" => "worried expression, slight frown, furrowed eyebrows, concerned gaze",
+                "warm" | "affection" => {
+                    "gentle smile, blushing cheeks, warm gaze, loving expression"
+                }
+                "amused" | "playful" => {
+                    "playful grin, laughing, mischievous expression, energetic pose"
+                }
+                "concerned" | "anxious" => {
+                    "worried expression, slight frown, furrowed eyebrows, concerned gaze"
+                }
                 "relaxed" => "relaxed posture, serene smile, peaceful atmosphere, soft lighting",
                 "sleepy" => "sleepy eyes, yawning, tired, cozy atmosphere, relaxed",
                 "melancholy" | "sad" => "melancholy, looking down, solemn expression, sad gaze",
@@ -146,15 +161,17 @@ impl ImageGenerator {
 
         // Scene context or location
         if let Some(scene) = scene_context
-            && !scene.trim().is_empty() {
-                prompt_parts.push(format!("location: {}, scenic background", scene.trim()));
-            }
+            && !scene.trim().is_empty()
+        {
+            prompt_parts.push(format!("location: {}, scenic background", scene.trim()));
+        }
 
         // Extra user prompt
         if let Some(extra) = user_prompt
-            && !extra.trim().is_empty() {
-                prompt_parts.push(extra.trim().to_string());
-            }
+            && !extra.trim().is_empty()
+        {
+            prompt_parts.push(extra.trim().to_string());
+        }
 
         prompt_parts.join(", ")
     }
@@ -165,25 +182,61 @@ impl ImageGenerator {
         let lower = desc.to_lowercase();
 
         // Common hair colors
-        for color in &["black hair", "white hair", "silver hair", "blonde hair", "brown hair", "pink hair", "blue hair", "purple hair", "red hair", "green hair"] {
+        for color in &[
+            "black hair",
+            "white hair",
+            "silver hair",
+            "blonde hair",
+            "brown hair",
+            "pink hair",
+            "blue hair",
+            "purple hair",
+            "red hair",
+            "green hair",
+        ] {
             if lower.contains(color) {
                 traits.push(*color);
             }
         }
         // Hair length
-        for len in &["long hair", "short hair", "twintails", "ponytail", "braid", "bob cut"] {
+        for len in &[
+            "long hair",
+            "short hair",
+            "twintails",
+            "ponytail",
+            "braid",
+            "bob cut",
+        ] {
             if lower.contains(len) {
                 traits.push(*len);
             }
         }
         // Eye colors
-        for eye in &["blue eyes", "red eyes", "amber eyes", "golden eyes", "green eyes", "purple eyes", "brown eyes"] {
+        for eye in &[
+            "blue eyes",
+            "red eyes",
+            "amber eyes",
+            "golden eyes",
+            "green eyes",
+            "purple eyes",
+            "brown eyes",
+        ] {
             if lower.contains(eye) {
                 traits.push(*eye);
             }
         }
         // Clothing / Archetype markers
-        for cloth in &["school uniform", "sailor uniform", "maid outfit", "kimono", "hoodie", "dress", "cyberpunk clothing", "knight armor", "sweater"] {
+        for cloth in &[
+            "school uniform",
+            "sailor uniform",
+            "maid outfit",
+            "kimono",
+            "hoodie",
+            "dress",
+            "cyberpunk clothing",
+            "knight armor",
+            "sweater",
+        ] {
             if lower.contains(cloth) {
                 traits.push(*cloth);
             }
@@ -201,21 +254,18 @@ impl ImageGenerator {
         let config = custom_config.unwrap_or_else(Self::load_config);
         let negative_prompt = negative.unwrap_or(&config.negative_prompt);
 
-        info!("Starte Bildgenerierung mit Provider: [{}] | Prompt: {}", config.provider, prompt);
+        info!(
+            "Starte Bildgenerierung mit Provider: [{}] | Prompt: {}",
+            config.provider, prompt
+        );
 
         let image_bytes = match config.provider.as_str() {
             "Automatic1111" | "SD WebUI" | "Forge" => {
                 Self::generate_automatic1111(&config, prompt, negative_prompt).await?
             }
-            "ComfyUI" => {
-                Self::generate_comfyui(&config, prompt, negative_prompt).await?
-            }
-            "DALL-E 3" | "OpenAI" => {
-                Self::generate_dalle(&config, prompt).await?
-            }
-            "NovelAI" => {
-                Self::generate_novelai(&config, prompt, negative_prompt).await?
-            }
+            "ComfyUI" => Self::generate_comfyui(&config, prompt, negative_prompt).await?,
+            "DALL-E 3" | "OpenAI" => Self::generate_dalle(&config, prompt).await?,
+            "NovelAI" => Self::generate_novelai(&config, prompt, negative_prompt).await?,
             _ => {
                 // Fallback to Automatic1111 API format
                 Self::generate_automatic1111(&config, prompt, negative_prompt).await?
@@ -233,7 +283,8 @@ impl ImageGenerator {
         file.write_all(&image_bytes)
             .map_err(|e| format!("Fehler beim Schreiben der Bilddatei: {}", e))?;
 
-        let base64_str = base64::Engine::encode(&base64::engine::general_purpose::STANDARD, &image_bytes);
+        let base64_str =
+            base64::Engine::encode(&base64::engine::general_purpose::STANDARD, &image_bytes);
         let base64_data_url = format!("data:image/png;base64,{}", base64_str);
 
         info!("Bild erfolgreich gespeichert unter: {:?}", file_path);
@@ -278,29 +329,38 @@ impl ImageGenerator {
 
         let mut req = client.post(&url).json(&payload);
         if let Some(ref key) = config.api_key
-            && !key.is_empty() {
-                req = req.header(AUTHORIZATION, format!("Bearer {}", key));
-            }
+            && !key.is_empty()
+        {
+            req = req.header(AUTHORIZATION, format!("Bearer {}", key));
+        }
 
-        let resp = req.send().await
-            .map_err(|e| format!("Fehler beim Verbinden mit Automatic1111 unter {}: {}", url, e))?;
+        let resp = req.send().await.map_err(|e| {
+            format!(
+                "Fehler beim Verbinden mit Automatic1111 unter {}: {}",
+                url, e
+            )
+        })?;
 
         if !resp.status().is_success() {
             let err_text = resp.text().await.unwrap_or_default();
             return Err(format!("Automatic1111 Serverfehler: {}", err_text));
         }
 
-        let json_resp: serde_json::Value = resp.json().await
+        let json_resp: serde_json::Value = resp
+            .json()
+            .await
             .map_err(|e| format!("Fehler beim Parsen der A1111 Antwort: {}", e))?;
 
-        let images = json_resp["images"].as_array()
+        let images = json_resp["images"]
+            .as_array()
             .ok_or_else(|| "A1111 lieferte kein 'images' Array zurück.".to_string())?;
 
         if images.is_empty() {
             return Err("A1111 lieferte ein leeres 'images' Array.".to_string());
         }
 
-        let b64_img = images[0].as_str()
+        let b64_img = images[0]
+            .as_str()
             .ok_or_else(|| "Ungültiges Base64 Bild in A1111 Antwort.".to_string())?;
 
         let img_bytes = base64::Engine::decode(&base64::engine::general_purpose::STANDARD, b64_img)
@@ -324,7 +384,11 @@ impl ImageGenerator {
 
         // Basic default ComfyUI workflow for Text-to-Image
         let client_id = format!("otakusoul_{}", fastrand::u32(10000..99999));
-        let seed = if config.seed == -1 { fastrand::i64(1..999999999999999) } else { config.seed };
+        let seed = if config.seed == -1 {
+            fastrand::i64(1..999999999999999)
+        } else {
+            config.seed
+        };
 
         let workflow = serde_json::json!({
             "prompt": {
@@ -390,7 +454,11 @@ impl ImageGenerator {
         });
 
         let prompt_url = format!("{}/prompt", base_url);
-        let resp = client.post(&prompt_url).json(&workflow).send().await
+        let resp = client
+            .post(&prompt_url)
+            .json(&workflow)
+            .send()
+            .await
             .map_err(|e| format!("Fehler beim Senden an ComfyUI unter {}: {}", prompt_url, e))?;
 
         if !resp.status().is_success() {
@@ -398,10 +466,13 @@ impl ImageGenerator {
             return Err(format!("ComfyUI Fehler bei /prompt: {}", err));
         }
 
-        let json_resp: serde_json::Value = resp.json().await
+        let json_resp: serde_json::Value = resp
+            .json()
+            .await
             .map_err(|e| format!("Ungültiges JSON von ComfyUI: {}", e))?;
 
-        let prompt_id = json_resp["prompt_id"].as_str()
+        let prompt_id = json_resp["prompt_id"]
+            .as_str()
             .ok_or_else(|| "ComfyUI lieferte keine prompt_id.".to_string())?;
 
         // Poll history endpoint until prompt_id is present
@@ -417,26 +488,31 @@ impl ImageGenerator {
 
             if let Ok(h_resp) = client.get(&history_url).send().await
                 && let Ok(h_json) = h_resp.json::<serde_json::Value>().await
-                    && let Some(item) = h_json.get(prompt_id)
-                        && let Some(outputs) = item.get("outputs") {
-                            // Find node with images
-                            for (_node_id, node_data) in outputs.as_object().into_iter().flatten() {
-                                if let Some(imgs) = node_data.get("images").and_then(|i| i.as_array())
-                                    && let Some(first_img) = imgs.first() {
-                                        final_filename = first_img["filename"].as_str().unwrap_or("").to_string();
-                                        final_subfolder = first_img["subfolder"].as_str().unwrap_or("").to_string();
-                                        final_type = first_img["type"].as_str().unwrap_or("output").to_string();
-                                        break;
-                                    }
-                            }
-                            if !final_filename.is_empty() {
-                                break;
-                            }
-                        }
+                && let Some(item) = h_json.get(prompt_id)
+                && let Some(outputs) = item.get("outputs")
+            {
+                // Find node with images
+                for (_node_id, node_data) in outputs.as_object().into_iter().flatten() {
+                    if let Some(imgs) = node_data.get("images").and_then(|i| i.as_array())
+                        && let Some(first_img) = imgs.first()
+                    {
+                        final_filename = first_img["filename"].as_str().unwrap_or("").to_string();
+                        final_subfolder = first_img["subfolder"].as_str().unwrap_or("").to_string();
+                        final_type = first_img["type"].as_str().unwrap_or("output").to_string();
+                        break;
+                    }
+                }
+                if !final_filename.is_empty() {
+                    break;
+                }
+            }
         }
 
         if final_filename.is_empty() {
-            return Err(format!("Timeout beim Warten auf ComfyUI Inferenz (Prompt ID: {}).", prompt_id));
+            return Err(format!(
+                "Timeout beim Warten auf ComfyUI Inferenz (Prompt ID: {}).",
+                prompt_id
+            ));
         }
 
         // Fetch image via /view
@@ -448,20 +524,22 @@ impl ImageGenerator {
             urlencoding::encode(&final_type)
         );
 
-        let img_resp = client.get(&view_url).send().await
+        let img_resp = client
+            .get(&view_url)
+            .send()
+            .await
             .map_err(|e| format!("Fehler beim Herunterladen des Bildes aus ComfyUI: {}", e))?;
 
-        let bytes = img_resp.bytes().await
+        let bytes = img_resp
+            .bytes()
+            .await
             .map_err(|e| format!("Fehler beim Lesen der Bild-Bytes von ComfyUI: {}", e))?;
 
         Ok(bytes.to_vec())
     }
 
     /// OpenAI DALL-E 3 API
-    async fn generate_dalle(
-        config: &ImageGenConfig,
-        prompt: &str,
-    ) -> Result<Vec<u8>, String> {
+    async fn generate_dalle(config: &ImageGenConfig, prompt: &str) -> Result<Vec<u8>, String> {
         let api_key = config.api_key.as_deref().unwrap_or("");
         if api_key.is_empty() {
             return Err("DALL-E 3 erfordert einen OpenAI API Key.".to_string());
@@ -488,11 +566,13 @@ impl ImageGenerator {
             "response_format": "b64_json"
         });
 
-        let resp = client.post(&url)
+        let resp = client
+            .post(&url)
             .header(AUTHORIZATION, format!("Bearer {}", api_key))
             .header(CONTENT_TYPE, "application/json")
             .json(&payload)
-            .send().await
+            .send()
+            .await
             .map_err(|e| format!("Fehler beim Verbinden mit DALL-E API: {}", e))?;
 
         if !resp.status().is_success() {
@@ -500,10 +580,13 @@ impl ImageGenerator {
             return Err(format!("DALL-E API Fehler: {}", err));
         }
 
-        let json_resp: serde_json::Value = resp.json().await
+        let json_resp: serde_json::Value = resp
+            .json()
+            .await
             .map_err(|e| format!("Ungültige DALL-E Antwort: {}", e))?;
 
-        let b64 = json_resp["data"][0]["b64_json"].as_str()
+        let b64 = json_resp["data"][0]["b64_json"]
+            .as_str()
             .ok_or_else(|| "DALL-E lieferte kein 'b64_json' Feld zurück.".to_string())?;
 
         let bytes = base64::Engine::decode(&base64::engine::general_purpose::STANDARD, b64)
@@ -545,11 +628,13 @@ impl ImageGenerator {
             }
         });
 
-        let resp = client.post(url)
+        let resp = client
+            .post(url)
             .header(AUTHORIZATION, format!("Bearer {}", api_key))
             .header(CONTENT_TYPE, "application/json")
             .json(&payload)
-            .send().await
+            .send()
+            .await
             .map_err(|e| format!("Fehler bei NovelAI Anfrage: {}", e))?;
 
         if !resp.status().is_success() {
@@ -557,17 +642,20 @@ impl ImageGenerator {
             return Err(format!("NovelAI Fehler: {}", err));
         }
 
-        let bytes = resp.bytes().await
+        let bytes = resp
+            .bytes()
+            .await
             .map_err(|e| format!("Fehler beim Lesen der NovelAI Bilddaten: {}", e))?;
 
         // NovelAI returns a zip archive containing image_0.png
         if let Ok(mut archive) = zip::ZipArchive::new(std::io::Cursor::new(&bytes))
-            && let Ok(mut file) = archive.by_name("image_0.png") {
-                let mut img_buf = Vec::new();
-                std::io::Read::read_to_end(&mut file, &mut img_buf)
-                    .map_err(|e| format!("Fehler beim Extrahieren aus NovelAI Zip: {}", e))?;
-                return Ok(img_buf);
-            }
+            && let Ok(mut file) = archive.by_name("image_0.png")
+        {
+            let mut img_buf = Vec::new();
+            std::io::Read::read_to_end(&mut file, &mut img_buf)
+                .map_err(|e| format!("Fehler beim Extrahieren aus NovelAI Zip: {}", e))?;
+            return Ok(img_buf);
+        }
 
         Ok(bytes.to_vec())
     }
@@ -581,9 +669,17 @@ impl ImageGenerator {
             for entry in entries.flatten() {
                 let path = entry.path();
                 if path.is_file() {
-                    let ext = path.extension().unwrap_or_default().to_string_lossy().to_lowercase();
+                    let ext = path
+                        .extension()
+                        .unwrap_or_default()
+                        .to_string_lossy()
+                        .to_lowercase();
                     if ext == "png" || ext == "jpg" || ext == "jpeg" || ext == "webp" {
-                        let file_name = path.file_name().unwrap_or_default().to_string_lossy().to_string();
+                        let file_name = path
+                            .file_name()
+                            .unwrap_or_default()
+                            .to_string_lossy()
+                            .to_string();
                         let size_bytes = fs::metadata(&path).map(|m| m.len()).unwrap_or(0);
                         let created_at = fs::metadata(&path)
                             .and_then(|m| m.created().or_else(|_| m.modified()))

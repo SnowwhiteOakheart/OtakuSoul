@@ -45,10 +45,7 @@ pub fn log_event(level: &str, target: &str, message: &str) {
     if let Ok(mut file) = OpenOptions::new().create(true).append(true).open(&path) {
         let line = format!(
             "[{}] [{}] [{}] {}\n",
-            timestamp,
-            entry.level,
-            entry.target,
-            entry.message
+            timestamp, entry.level, entry.target, entry.message
         );
         let _ = file.write_all(line.as_bytes());
     }
@@ -59,14 +56,15 @@ pub fn get_recent_logs(max_lines: Option<usize>) -> Vec<LogEntry> {
 
     // If memory buffer has logs, return the slice
     if let Ok(buffer) = LOG_BUFFER.lock()
-        && !buffer.is_empty() {
-            let start = if buffer.len() > limit {
-                buffer.len() - limit
-            } else {
-                0
-            };
-            return buffer[start..].to_vec();
-        }
+        && !buffer.is_empty()
+    {
+        let start = if buffer.len() > limit {
+            buffer.len() - limit
+        } else {
+            0
+        };
+        return buffer[start..].to_vec();
+    }
 
     // Fallback: Read from file if memory buffer was empty
     let path = get_log_file_path();
@@ -81,10 +79,7 @@ pub fn get_recent_logs(max_lines: Option<usize>) -> Vec<LogEntry> {
             0
         };
 
-        lines[start..]
-            .iter()
-            .map(|l| parse_log_line(l))
-            .collect()
+        lines[start..].iter().map(|l| parse_log_line(l)).collect()
     } else {
         Vec::new()
     }
@@ -96,8 +91,7 @@ pub fn clear_app_logs() -> Result<(), String> {
     }
     let path = get_log_file_path();
     if path.exists() {
-        fs::write(&path, "")
-            .map_err(|e| format!("Fehler beim Leeren der Logdatei: {}", e))?;
+        fs::write(&path, "").map_err(|e| format!("Fehler beim Leeren der Logdatei: {}", e))?;
     }
     log_event("INFO", "logger", "Logdatei wurde geleert.");
     Ok(())
@@ -106,8 +100,7 @@ pub fn clear_app_logs() -> Result<(), String> {
 pub fn export_app_logs() -> Result<String, String> {
     let path = get_log_file_path();
     if path.exists() {
-        fs::read_to_string(&path)
-            .map_err(|e| format!("Fehler beim Lesen der Logdatei: {}", e))
+        fs::read_to_string(&path).map_err(|e| format!("Fehler beim Lesen der Logdatei: {}", e))
     } else {
         Ok(String::new())
     }

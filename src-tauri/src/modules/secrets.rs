@@ -17,7 +17,10 @@ fn entry(account: &str) -> Option<keyring::Entry> {
         Ok(entry) => Some(entry),
         Err(e) => {
             if !STORE_WARNING_SHOWN.swap(true, Ordering::Relaxed) {
-                warn!("Kein Schlüsselbund verfügbar, Zugangsdaten bleiben in den Konfigurationsdateien: {}", e);
+                warn!(
+                    "Kein Schlüsselbund verfügbar, Zugangsdaten bleiben in den Konfigurationsdateien: {}",
+                    e
+                );
             }
             None
         }
@@ -32,13 +35,19 @@ pub fn externalize(account: &str, value: &mut String) {
     if value.is_empty() {
         match entry.delete_credential() {
             Ok(()) | Err(keyring::Error::NoEntry) => {}
-            Err(e) => warn!("Zugangsdaten '{}' konnten nicht gelöscht werden: {}", account, e),
+            Err(e) => warn!(
+                "Zugangsdaten '{}' konnten nicht gelöscht werden: {}",
+                account, e
+            ),
         }
         return;
     }
     match entry.set_password(value) {
         Ok(()) => value.clear(),
-        Err(e) => warn!("Zugangsdaten '{}' konnten nicht im Schlüsselbund gespeichert werden: {}", account, e),
+        Err(e) => warn!(
+            "Zugangsdaten '{}' konnten nicht im Schlüsselbund gespeichert werden: {}",
+            account, e
+        ),
     }
 }
 
@@ -59,7 +68,10 @@ pub fn hydrate(account: &str, value: &mut String) -> bool {
         match entry.get_password() {
             Ok(secret) => *value = secret,
             Err(keyring::Error::NoEntry) => {}
-            Err(e) => warn!("Zugangsdaten '{}' konnten nicht gelesen werden: {}", account, e),
+            Err(e) => warn!(
+                "Zugangsdaten '{}' konnten nicht gelesen werden: {}",
+                account, e
+            ),
         }
     }
     false

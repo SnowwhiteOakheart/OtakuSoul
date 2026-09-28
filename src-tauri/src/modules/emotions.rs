@@ -151,25 +151,59 @@ fn extract_explicit_emotion(text: &str) -> Option<String> {
 fn score_action_segment(action: &str, scores: &mut std::collections::HashMap<&'static str, f32>) {
     let weight = 3.0; // Asterisk actions are weighted heavily
 
-    if action.contains("lächel") || action.contains("grins") || action.contains("smile") || action.contains("smirk") {
+    if action.contains("lächel")
+        || action.contains("grins")
+        || action.contains("smile")
+        || action.contains("smirk")
+    {
         *scores.entry("joy").or_insert(0.0) += weight;
     }
-    if action.contains("kicher") || action.contains("lachen") || action.contains("lacht") || action.contains("giggle") || action.contains("chuckle") {
+    if action.contains("kicher")
+        || action.contains("lachen")
+        || action.contains("lacht")
+        || action.contains("giggle")
+        || action.contains("chuckle")
+    {
         *scores.entry("amusement").or_insert(0.0) += weight;
     }
-    if action.contains("erröt") || action.contains("rot werd") || action.contains("wird rot") || action.contains("verlegen") || action.contains("blush") || action.contains("embarrass") {
+    if action.contains("erröt")
+        || action.contains("rot werd")
+        || action.contains("wird rot")
+        || action.contains("verlegen")
+        || action.contains("blush")
+        || action.contains("embarrass")
+    {
         *scores.entry("embarrassment").or_insert(0.0) += weight;
     }
-    if action.contains("wein") || action.contains("träne") || action.contains("cry") || action.contains("tear") || action.contains("schluchz") {
+    if action.contains("wein")
+        || action.contains("träne")
+        || action.contains("cry")
+        || action.contains("tear")
+        || action.contains("schluchz")
+    {
         *scores.entry("sadness").or_insert(0.0) += weight;
     }
-    if action.contains("wütend") || action.contains("knurr") || action.contains("funkel") || action.contains("angry") || action.contains("frown") {
+    if action.contains("wütend")
+        || action.contains("knurr")
+        || action.contains("funkel")
+        || action.contains("angry")
+        || action.contains("frown")
+    {
         *scores.entry("anger").or_insert(0.0) += weight;
     }
-    if action.contains("überrascht") || action.contains("augen weit") || action.contains("gasp") || action.contains("keuch") {
+    if action.contains("überrascht")
+        || action.contains("augen weit")
+        || action.contains("gasp")
+        || action.contains("keuch")
+    {
         *scores.entry("surprise").or_insert(0.0) += weight;
     }
-    if action.contains("umarm") || action.contains("streichel") || action.contains("kuschel") || action.contains("hug") || action.contains("cuddle") {
+    if action.contains("umarm")
+        || action.contains("streichel")
+        || action.contains("kuschel")
+        || action.contains("hug")
+        || action.contains("cuddle")
+    {
         *scores.entry("love").or_insert(0.0) += weight;
     }
     if action.contains("zwinker") || action.contains("wink") {
@@ -178,56 +212,118 @@ fn score_action_segment(action: &str, scores: &mut std::collections::HashMap<&'s
     if action.contains("seufz") || action.contains("sigh") {
         *scores.entry("relief").or_insert(0.0) += weight;
     }
-    if action.contains("zitter") || action.contains("schauder") || action.contains("tremble") || action.contains("shiver") {
+    if action.contains("zitter")
+        || action.contains("schauder")
+        || action.contains("tremble")
+        || action.contains("shiver")
+    {
         *scores.entry("fear").or_insert(0.0) += weight;
     }
 }
 
 fn score_text_tokens(text: &str, scores: &mut std::collections::HashMap<&'static str, f32>) {
     // Joy / Amusement
-    if text.contains("haha") || text.contains("hehe") || text.contains("hihi") || text.contains("lol") || text.contains("xd") || text.contains("^-^") || text.contains("^^") {
+    if text.contains("haha")
+        || text.contains("hehe")
+        || text.contains("hihi")
+        || text.contains("lol")
+        || text.contains("xd")
+        || text.contains("^-^")
+        || text.contains("^^")
+    {
         *scores.entry("amusement").or_insert(0.0) += 2.0;
     }
-    if text.contains("freue") || text.contains("wunderbar") || text.contains("toll") || text.contains("glücklich") || text.contains("happy") || text.contains("yay") {
+    if text.contains("freue")
+        || text.contains("wunderbar")
+        || text.contains("toll")
+        || text.contains("glücklich")
+        || text.contains("happy")
+        || text.contains("yay")
+    {
         *scores.entry("joy").or_insert(0.0) += 1.5;
     }
 
     // Love / Caring
-    if text.contains("ich liebe dich") || text.contains("hab dich lieb") || text.contains("love you") || text.contains("<3") || text.contains("liebling") || text.contains("schatz") {
+    if text.contains("ich liebe dich")
+        || text.contains("hab dich lieb")
+        || text.contains("love you")
+        || text.contains("<3")
+        || text.contains("liebling")
+        || text.contains("schatz")
+    {
         *scores.entry("love").or_insert(0.0) += 2.5;
     }
-    if text.contains("pass auf dich auf") || text.contains("sorge") || text.contains("beschützen") || text.contains("care") {
+    if text.contains("pass auf dich auf")
+        || text.contains("sorge")
+        || text.contains("beschützen")
+        || text.contains("care")
+    {
         *scores.entry("caring").or_insert(0.0) += 1.5;
     }
 
     // Gratitude / Admiration
-    if text.contains("danke") || text.contains("vielen dank") || text.contains("thank") || text.contains("dankbar") {
+    if text.contains("danke")
+        || text.contains("vielen dank")
+        || text.contains("thank")
+        || text.contains("dankbar")
+    {
         *scores.entry("gratitude").or_insert(0.0) += 2.0;
     }
-    if text.contains("beeindruckend") || text.contains("großartig") || text.contains("faszinierend") || text.contains("amazing") || text.contains("wow") {
+    if text.contains("beeindruckend")
+        || text.contains("großartig")
+        || text.contains("faszinierend")
+        || text.contains("amazing")
+        || text.contains("wow")
+    {
         *scores.entry("admiration").or_insert(0.0) += 1.5;
     }
 
     // Anger / Annoyance
-    if text.contains("verdammt") || text.contains("hasserfüllt") || text.contains("scheiße") || text.contains("idiot") || text.contains("nerv") || text.contains("shut up") {
+    if text.contains("verdammt")
+        || text.contains("hasserfüllt")
+        || text.contains("scheiße")
+        || text.contains("idiot")
+        || text.contains("nerv")
+        || text.contains("shut up")
+    {
         *scores.entry("anger").or_insert(0.0) += 2.0;
     }
 
     // Sadness / Grief
-    if text.contains("traurig") || text.contains("schade") || text.contains("tut mir leid") || text.contains("einsam") || text.contains("sad") || text.contains(":(") {
+    if text.contains("traurig")
+        || text.contains("schade")
+        || text.contains("tut mir leid")
+        || text.contains("einsam")
+        || text.contains("sad")
+        || text.contains(":(")
+    {
         *scores.entry("sadness").or_insert(0.0) += 1.8;
     }
 
     // Surprise / Curiosity
-    if text.contains("was?!") || text.contains("wie bitte?") || text.contains("wirklich?!") || text.contains("o_o") || text.contains("omg") {
+    if text.contains("was?!")
+        || text.contains("wie bitte?")
+        || text.contains("wirklich?!")
+        || text.contains("o_o")
+        || text.contains("omg")
+    {
         *scores.entry("surprise").or_insert(0.0) += 2.0;
     }
-    if text.contains("warum?") || text.contains("wieso?") || text.contains("neugierig") || text.contains("interessant") {
+    if text.contains("warum?")
+        || text.contains("wieso?")
+        || text.contains("neugierig")
+        || text.contains("interessant")
+    {
         *scores.entry("curiosity").or_insert(0.0) += 1.2;
     }
 
     // Embarrassment / Nervousness
-    if text.contains("peinlich") || text.contains("nervös") || text.contains("uhm") || text.contains("äh...") || text.contains("stotter") {
+    if text.contains("peinlich")
+        || text.contains("nervös")
+        || text.contains("uhm")
+        || text.contains("äh...")
+        || text.contains("stotter")
+    {
         *scores.entry("embarrassment").or_insert(0.0) += 1.8;
     }
 }
@@ -246,14 +342,18 @@ mod tests {
 
     #[test]
     fn test_roleplay_asterisk_laughter() {
-        let result = classify_emotion("*kichert leise und zwinkert dir zu* Du bist wirklich unverbesserlich!");
+        let result = classify_emotion(
+            "*kichert leise und zwinkert dir zu* Du bist wirklich unverbesserlich!",
+        );
         assert_eq!(result.emotion, "amusement");
         assert_eq!(result.vrm_expression, "happy");
     }
 
     #[test]
     fn test_blush_action() {
-        let result = classify_emotion("*wird rot und schaut verlegen zur Seite* D-das hättest du nicht sagen müssen...");
+        let result = classify_emotion(
+            "*wird rot und schaut verlegen zur Seite* D-das hättest du nicht sagen müssen...",
+        );
         assert_eq!(result.emotion, "embarrassment");
     }
 

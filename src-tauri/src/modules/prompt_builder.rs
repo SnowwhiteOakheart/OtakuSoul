@@ -88,7 +88,9 @@ pub fn build_system_prompt(ctx: &PromptContext) -> String {
     }
 
     if !direct_entries.is_empty() {
-        let mut dir_str = String::from("## Wichtige Handlungs- & Regie-Anweisungen (Lore-Direktiven)\nFolge diesen Verhaltens- und Situationsregeln in deiner Antwort strikt:\n");
+        let mut dir_str = String::from(
+            "## Wichtige Handlungs- & Regie-Anweisungen (Lore-Direktiven)\nFolge diesen Verhaltens- und Situationsregeln in deiner Antwort strikt:\n",
+        );
         for entry in &direct_entries {
             dir_str.push_str(&format!(
                 "- **{}**: {}\n",
@@ -114,7 +116,9 @@ pub fn build_system_prompt(ctx: &PromptContext) -> String {
 
     // 6. Reactive State Variables HUD
     if !ctx.state_variables.is_empty() {
-        let mut vars_str = String::from("## Aktuelle Status-Variablen\nBehalte diese Variablen im Gedächtnis und passe Dein Verhalten daran an:\n");
+        let mut vars_str = String::from(
+            "## Aktuelle Status-Variablen\nBehalte diese Variablen im Gedächtnis und passe Dein Verhalten daran an:\n",
+        );
         for v in &ctx.state_variables {
             if let Some(max) = v.max_value {
                 vars_str.push_str(&format!("- {}: {}/{}\n", v.name, v.value, max));
@@ -139,28 +143,65 @@ pub fn build_system_prompt(ctx: &PromptContext) -> String {
             "- **Emotion & Intensität**: {} (Intensität {} von 5)\n",
             cog.psychology.primary_emotion, cog.psychology.intensity
         ));
-        if !cog.psychology.psychological_tension.trim().is_empty() && cog.psychology.psychological_tension != "Keine." {
-            cog_str.push_str(&format!("- **Innere Anspannung**: {}\n", cog.psychology.psychological_tension));
+        if !cog.psychology.psychological_tension.trim().is_empty()
+            && cog.psychology.psychological_tension != "Keine."
+        {
+            cog_str.push_str(&format!(
+                "- **Innere Anspannung**: {}\n",
+                cog.psychology.psychological_tension
+            ));
         }
         if !cog.psychology.active_agenda.trim().is_empty() {
-            cog_str.push_str(&format!("- **Unbewusste Agenda**: {}\n", cog.psychology.active_agenda));
+            cog_str.push_str(&format!(
+                "- **Unbewusste Agenda**: {}\n",
+                cog.psychology.active_agenda
+            ));
         }
         if !cog.psychology.immediate_focus.trim().is_empty() {
-            cog_str.push_str(&format!("- **Gedanklicher Fokus**: {}\n", cog.psychology.immediate_focus));
+            cog_str.push_str(&format!(
+                "- **Gedanklicher Fokus**: {}\n",
+                cog.psychology.immediate_focus
+            ));
         }
-        if !cog.psychology.cognitive_dissonance.trim().is_empty() && cog.psychology.cognitive_dissonance != "Keine." {
-            cog_str.push_str(&format!("- **Kognitive Dissonanz**: {}\n", cog.psychology.cognitive_dissonance));
+        if !cog.psychology.cognitive_dissonance.trim().is_empty()
+            && cog.psychology.cognitive_dissonance != "Keine."
+        {
+            cog_str.push_str(&format!(
+                "- **Kognitive Dissonanz**: {}\n",
+                cog.psychology.cognitive_dissonance
+            ));
         }
-        cog_str.push_str(&format!("- **Rolle von {}**: {}\n", ctx.user_name, cog.relationship.role_in_story));
-        if !cog.relationship.known_attributes.trim().is_empty() && cog.relationship.known_attributes != "Keine." {
-            cog_str.push_str(&format!("- **Bekannte Attribute über {}**: {}\n", ctx.user_name, cog.relationship.known_attributes));
+        cog_str.push_str(&format!(
+            "- **Rolle von {}**: {}\n",
+            ctx.user_name, cog.relationship.role_in_story
+        ));
+        if !cog.relationship.known_attributes.trim().is_empty()
+            && cog.relationship.known_attributes != "Keine."
+        {
+            cog_str.push_str(&format!(
+                "- **Bekannte Attribute über {}**: {}\n",
+                ctx.user_name, cog.relationship.known_attributes
+            ));
         }
-        cog_str.push_str(&format!("- **Vertrauensstufe zu {}**: {}\n", ctx.user_name, cog.relationship.trust_level));
-        if !cog.relationship.dynamic_description.trim().is_empty() && cog.relationship.dynamic_description != "Keine." {
-            cog_str.push_str(&format!("- **Beziehungsdynamik**: {}\n", cog.relationship.dynamic_description));
+        cog_str.push_str(&format!(
+            "- **Vertrauensstufe zu {}**: {}\n",
+            ctx.user_name, cog.relationship.trust_level
+        ));
+        if !cog.relationship.dynamic_description.trim().is_empty()
+            && cog.relationship.dynamic_description != "Keine."
+        {
+            cog_str.push_str(&format!(
+                "- **Beziehungsdynamik**: {}\n",
+                cog.relationship.dynamic_description
+            ));
         }
-        if !cog.relationship.unspoken_tension.trim().is_empty() && cog.relationship.unspoken_tension != "Keine." {
-            cog_str.push_str(&format!("- **Ungesagte Spannungen**: {}\n", cog.relationship.unspoken_tension));
+        if !cog.relationship.unspoken_tension.trim().is_empty()
+            && cog.relationship.unspoken_tension != "Keine."
+        {
+            cog_str.push_str(&format!(
+                "- **Ungesagte Spannungen**: {}\n",
+                cog.relationship.unspoken_tension
+            ));
         }
         if !cog.relationship.preferences_habits.is_empty() {
             cog_str.push_str(&format!(
@@ -175,7 +216,9 @@ pub fn build_system_prompt(ctx: &PromptContext) -> String {
             ));
         }
         if !cog.recent_memories.is_empty() {
-            cog_str.push_str("\n### Erinnertes Langzeitgedächtnis (Fakten, Versprechen, Erlebnisse):\n");
+            cog_str.push_str(
+                "\n### Erinnertes Langzeitgedächtnis (Fakten, Versprechen, Erlebnisse):\n",
+            );
             for mem in &cog.recent_memories {
                 cog_str.push_str(&format!("- [{}] {}\n", mem.category, mem.content));
             }
@@ -201,12 +244,13 @@ pub fn build_system_prompt(ctx: &PromptContext) -> String {
 
     // 8.5 Author's Note (Regieanweisung)
     if let Some(note) = &ctx.author_note
-        && !note.trim().is_empty() {
-            parts.push(format!(
-                "## Author's Note (Wichtige Regieanweisung)\n{}",
-                replace_macros(note)
-            ));
-        }
+        && !note.trim().is_empty()
+    {
+        parts.push(format!(
+            "## Author's Note (Wichtige Regieanweisung)\n{}",
+            replace_macros(note)
+        ));
+    }
 
     // 9. Formatting & Roleplay Convention Directive
     let mut formatting_rules = vec![
@@ -216,9 +260,12 @@ pub fn build_system_prompt(ctx: &PromptContext) -> String {
     ];
 
     if !ctx.allow_reasoning.unwrap_or(false) {
-        formatting_rules.push("- Antworte sofort, lebendig und direkt in Deiner Rolle als Charakter.");
+        formatting_rules
+            .push("- Antworte sofort, lebendig und direkt in Deiner Rolle als Charakter.");
         formatting_rules.push("- Verwende NIEMALS <think>-Tags, Denkschritte, Meta-Erklärungen oder interne Monologe.");
-        formatting_rules.push("- Beginne Deine Antwort unmittelbar mit den Worten oder Taten Deines Charakters.");
+        formatting_rules.push(
+            "- Beginne Deine Antwort unmittelbar mit den Worten oder Taten Deines Charakters.",
+        );
     }
 
     parts.push(format!(

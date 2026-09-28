@@ -1,4 +1,4 @@
-use rusqlite::{params, Connection};
+use rusqlite::{Connection, params};
 use serde::{Deserialize, Serialize};
 use std::path::{Path, PathBuf};
 use std::sync::{Arc, Mutex};
@@ -245,9 +245,15 @@ impl MemoryDb {
         )?;
 
         // Safe migrations for existing databases
-        let _ = conn.execute("ALTER TABLE soul_psychology ADD COLUMN core_identity TEXT NOT NULL DEFAULT '[]'", []);
+        let _ = conn.execute(
+            "ALTER TABLE soul_psychology ADD COLUMN core_identity TEXT NOT NULL DEFAULT '[]'",
+            [],
+        );
         let _ = conn.execute("ALTER TABLE soul_psychology ADD COLUMN cognitive_dissonance TEXT NOT NULL DEFAULT 'Keine.'", []);
-        let _ = conn.execute("ALTER TABLE soul_relationship ADD COLUMN role_in_story TEXT NOT NULL DEFAULT 'User'", []);
+        let _ = conn.execute(
+            "ALTER TABLE soul_relationship ADD COLUMN role_in_story TEXT NOT NULL DEFAULT 'User'",
+            [],
+        );
         let _ = conn.execute("ALTER TABLE soul_relationship ADD COLUMN known_attributes TEXT NOT NULL DEFAULT 'Keine.'", []);
         let _ = conn.execute("ALTER TABLE soul_relationship ADD COLUMN dynamic_description TEXT NOT NULL DEFAULT 'Keine.'", []);
 
@@ -279,12 +285,18 @@ impl MemoryDb {
         }
         match std::fs::rename(&pending, db_path) {
             Ok(()) => tracing::info!("Soul-Memory-Datenbank aus Backup übernommen: {:?}", db_path),
-            Err(e) => tracing::warn!("Wiederhergestellte Datenbank konnte nicht übernommen werden: {}", e),
+            Err(e) => tracing::warn!(
+                "Wiederhergestellte Datenbank konnte nicht übernommen werden: {}",
+                e
+            ),
         }
     }
 
     // --- Psychology ---
-    pub fn get_or_create_psychology(&self, char_id: &str) -> Result<PsychologyState, rusqlite::Error> {
+    pub fn get_or_create_psychology(
+        &self,
+        char_id: &str,
+    ) -> Result<PsychologyState, rusqlite::Error> {
         let conn = self.conn.lock().unwrap();
         let mut stmt = conn.prepare(
             "SELECT primary_emotion, intensity, psychological_tension, emotional_decay_counter, active_agenda, immediate_focus, updated_at, core_identity, cognitive_dissonance
@@ -329,10 +341,15 @@ impl MemoryDb {
         }
     }
 
-    pub fn update_psychology(&self, char_id: &str, state: &PsychologyState) -> Result<(), rusqlite::Error> {
+    pub fn update_psychology(
+        &self,
+        char_id: &str,
+        state: &PsychologyState,
+    ) -> Result<(), rusqlite::Error> {
         let conn = self.conn.lock().unwrap();
         let now = current_timestamp();
-        let core_id_str = serde_json::to_string(&state.core_identity).unwrap_or_else(|_| "[]".to_string());
+        let core_id_str =
+            serde_json::to_string(&state.core_identity).unwrap_or_else(|_| "[]".to_string());
         conn.execute(
             "INSERT INTO soul_psychology (character_id, primary_emotion, intensity, psychological_tension, emotional_decay_counter, active_agenda, immediate_focus, core_identity, cognitive_dissonance, updated_at)
              VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?7, ?8, ?9, ?10)
@@ -363,7 +380,11 @@ impl MemoryDb {
     }
 
     // --- Relationship ---
-    pub fn get_or_create_relationship(&self, char_id: &str, user_name: &str) -> Result<RelationshipState, rusqlite::Error> {
+    pub fn get_or_create_relationship(
+        &self,
+        char_id: &str,
+        user_name: &str,
+    ) -> Result<RelationshipState, rusqlite::Error> {
         let conn = self.conn.lock().unwrap();
         let mut stmt = conn.prepare(
             "SELECT trust_level, unspoken_tension, preferences_habits, shared_milestones, updated_at, role_in_story, known_attributes, dynamic_description
@@ -375,8 +396,10 @@ impl MemoryDb {
             let pref_str: String = row.get(2)?;
             let mile_str: String = row.get(3)?;
 
-            let preferences_habits: Vec<String> = serde_json::from_str(&pref_str).unwrap_or_default();
-            let shared_milestones: Vec<String> = serde_json::from_str(&mile_str).unwrap_or_default();
+            let preferences_habits: Vec<String> =
+                serde_json::from_str(&pref_str).unwrap_or_default();
+            let shared_milestones: Vec<String> =
+                serde_json::from_str(&mile_str).unwrap_or_default();
             let role_in_story: String = row.get(5).unwrap_or_else(|_| "User".to_string());
             let known_attributes: String = row.get(6).unwrap_or_else(|_| "Keine.".to_string());
             let dynamic_description: String = row.get(7).unwrap_or_else(|_| "Keine.".to_string());
@@ -414,11 +437,17 @@ impl MemoryDb {
         }
     }
 
-    pub fn update_relationship(&self, char_id: &str, state: &RelationshipState) -> Result<(), rusqlite::Error> {
+    pub fn update_relationship(
+        &self,
+        char_id: &str,
+        state: &RelationshipState,
+    ) -> Result<(), rusqlite::Error> {
         let conn = self.conn.lock().unwrap();
         let now = current_timestamp();
-        let pref_str = serde_json::to_string(&state.preferences_habits).unwrap_or_else(|_| "[]".to_string());
-        let mile_str = serde_json::to_string(&state.shared_milestones).unwrap_or_else(|_| "[]".to_string());
+        let pref_str =
+            serde_json::to_string(&state.preferences_habits).unwrap_or_else(|_| "[]".to_string());
+        let mile_str =
+            serde_json::to_string(&state.shared_milestones).unwrap_or_else(|_| "[]".to_string());
 
         conn.execute(
             "INSERT INTO soul_relationship (character_id, user_name, role_in_story, known_attributes, trust_level, dynamic_description, unspoken_tension, preferences_habits, shared_milestones, updated_at)
@@ -449,7 +478,13 @@ impl MemoryDb {
     }
 
     // --- Episodic Memory ---
-    pub fn add_episodic_memory(&self, char_id: &str, category: &str, content: &str, significance: u32) -> Result<i64, rusqlite::Error> {
+    pub fn add_episodic_memory(
+        &self,
+        char_id: &str,
+        category: &str,
+        content: &str,
+        significance: u32,
+    ) -> Result<i64, rusqlite::Error> {
         let conn = self.conn.lock().unwrap();
         let now = current_timestamp();
 
@@ -479,7 +514,11 @@ impl MemoryDb {
         Ok(conn.last_insert_rowid())
     }
 
-    pub fn get_episodic_memories(&self, char_id: &str, limit: usize) -> Result<Vec<EpisodicMemory>, rusqlite::Error> {
+    pub fn get_episodic_memories(
+        &self,
+        char_id: &str,
+        limit: usize,
+    ) -> Result<Vec<EpisodicMemory>, rusqlite::Error> {
         let conn = self.conn.lock().unwrap();
         let mut stmt = conn.prepare(
             "SELECT id, category, content, significance, created_at, last_accessed_at
@@ -505,7 +544,13 @@ impl MemoryDb {
     }
 
     // --- Diary ---
-    pub fn add_diary_entry(&self, char_id: &str, title: &str, entry_text: &str, mood: &str) -> Result<i64, rusqlite::Error> {
+    pub fn add_diary_entry(
+        &self,
+        char_id: &str,
+        title: &str,
+        entry_text: &str,
+        mood: &str,
+    ) -> Result<i64, rusqlite::Error> {
         let conn = self.conn.lock().unwrap();
         let now = current_timestamp();
         conn.execute(
@@ -516,7 +561,11 @@ impl MemoryDb {
         Ok(conn.last_insert_rowid())
     }
 
-    pub fn get_diary_entries(&self, char_id: &str, limit: usize) -> Result<Vec<DiaryEntry>, rusqlite::Error> {
+    pub fn get_diary_entries(
+        &self,
+        char_id: &str,
+        limit: usize,
+    ) -> Result<Vec<DiaryEntry>, rusqlite::Error> {
         let conn = self.conn.lock().unwrap();
         let mut stmt = conn.prepare(
             "SELECT id, title, entry_text, mood, created_at FROM soul_diary WHERE character_id = ?1 ORDER BY created_at DESC, id DESC LIMIT ?2",
@@ -540,7 +589,12 @@ impl MemoryDb {
     }
 
     // --- Healing & Emotional Decay ---
-    pub fn log_healing(&self, char_id: &str, action: &str, details: &str) -> Result<i64, rusqlite::Error> {
+    pub fn log_healing(
+        &self,
+        char_id: &str,
+        action: &str,
+        details: &str,
+    ) -> Result<i64, rusqlite::Error> {
         let conn = self.conn.lock().unwrap();
         let now = current_timestamp();
         conn.execute(
@@ -550,7 +604,11 @@ impl MemoryDb {
         Ok(conn.last_insert_rowid())
     }
 
-    pub fn get_healing_logs(&self, char_id: &str, limit: usize) -> Result<Vec<HealingLogEntry>, rusqlite::Error> {
+    pub fn get_healing_logs(
+        &self,
+        char_id: &str,
+        limit: usize,
+    ) -> Result<Vec<HealingLogEntry>, rusqlite::Error> {
         let conn = self.conn.lock().unwrap();
         let mut stmt = conn.prepare(
             "SELECT id, action, details, created_at FROM soul_healing_log WHERE character_id = ?1 ORDER BY created_at DESC, id DESC LIMIT ?2",
@@ -598,7 +656,11 @@ impl MemoryDb {
         Ok(decay_msg)
     }
 
-    pub fn get_cognitive_overview(&self, char_id: &str, user_name: &str) -> Result<CognitiveOverview, rusqlite::Error> {
+    pub fn get_cognitive_overview(
+        &self,
+        char_id: &str,
+        user_name: &str,
+    ) -> Result<CognitiveOverview, rusqlite::Error> {
         let psychology = self.get_or_create_psychology(char_id)?;
         let relationship = self.get_or_create_relationship(char_id, user_name)?;
         let recent_memories = self.get_episodic_memories(char_id, 15)?;
@@ -658,14 +720,21 @@ impl MemoryDb {
             lines.push("".to_string());
             lines.push("## RESOLVED CONTRADICTIONS (HEALING LOG)".to_string());
             for log in healing {
-                lines.push(format!("- [{}] {}: {}", log.created_at, log.action, log.details));
+                lines.push(format!(
+                    "- [{}] {}: {}",
+                    log.created_at, log.action, log.details
+                ));
             }
         }
 
         Ok(lines.join("\n"))
     }
 
-    pub fn render_user_markdown(&self, char_id: &str, user_name: &str) -> Result<String, rusqlite::Error> {
+    pub fn render_user_markdown(
+        &self,
+        char_id: &str,
+        user_name: &str,
+    ) -> Result<String, rusqlite::Error> {
         let rel = self.get_or_create_relationship(char_id, user_name)?;
 
         let mut lines = Vec::new();
@@ -681,7 +750,10 @@ impl MemoryDb {
         lines.push("".to_string());
         lines.push("## RELATIONSHIP METADATA".to_string());
         lines.push(format!("- **Trust Level**: {}", rel.trust_level));
-        lines.push(format!("- **Dynamic Description**: {}", rel.dynamic_description));
+        lines.push(format!(
+            "- **Dynamic Description**: {}",
+            rel.dynamic_description
+        ));
         lines.push(format!("- **Unspoken Tension**: {}", rel.unspoken_tension));
 
         lines.push("".to_string());
@@ -704,18 +776,27 @@ impl MemoryDb {
     }
 
     pub fn parse_and_sync_character_markdown(&self, char_id: &str, md: &str) -> Result<(), String> {
-        let mut psych = self.get_or_create_psychology(char_id).map_err(|e| e.to_string())?;
+        let mut psych = self
+            .get_or_create_psychology(char_id)
+            .map_err(|e| e.to_string())?;
 
         let mut section: Option<&str> = None;
         let mut core_identity = Vec::new();
         let mut cognitive_dissonance_lines = Vec::new();
 
         let header_re = regex::Regex::new(r"^#{1,3}\s+(.+)$").map_err(|e| e.to_string())?;
-        let emotion_re = regex::Regex::new(r"(?i)-\s*\*\*Primary Emotion\*\*:\s*([^(]+?)(?:\s*\(Intensity:\s*(\d+)(?:/5)?\))?$").map_err(|e| e.to_string())?;
-        let tension_re = regex::Regex::new(r"(?i)-\s*\*\*Psychological Tension\*\*:\s*(.+)$").map_err(|e| e.to_string())?;
-        let decay_re = regex::Regex::new(r"(?i)-\s*\*\*Emotional Decay Counter\*\*:\s*(\d+)").map_err(|e| e.to_string())?;
-        let agenda_re = regex::Regex::new(r"(?i)-\s*\*\*Active Agenda\*\*:\s*(.+)$").map_err(|e| e.to_string())?;
-        let focus_re = regex::Regex::new(r"(?i)-\s*\*\*Immediate Focus\*\*:\s*(.+)$").map_err(|e| e.to_string())?;
+        let emotion_re = regex::Regex::new(
+            r"(?i)-\s*\*\*Primary Emotion\*\*:\s*([^(]+?)(?:\s*\(Intensity:\s*(\d+)(?:/5)?\))?$",
+        )
+        .map_err(|e| e.to_string())?;
+        let tension_re = regex::Regex::new(r"(?i)-\s*\*\*Psychological Tension\*\*:\s*(.+)$")
+            .map_err(|e| e.to_string())?;
+        let decay_re = regex::Regex::new(r"(?i)-\s*\*\*Emotional Decay Counter\*\*:\s*(\d+)")
+            .map_err(|e| e.to_string())?;
+        let agenda_re = regex::Regex::new(r"(?i)-\s*\*\*Active Agenda\*\*:\s*(.+)$")
+            .map_err(|e| e.to_string())?;
+        let focus_re = regex::Regex::new(r"(?i)-\s*\*\*Immediate Focus\*\*:\s*(.+)$")
+            .map_err(|e| e.to_string())?;
 
         for raw_line in md.lines() {
             let line = raw_line.trim();
@@ -757,15 +838,17 @@ impl MemoryDb {
                             psych.primary_emotion = em.to_string();
                         }
                         if let Some(int_m) = caps.get(2)
-                            && let Ok(v) = int_m.as_str().parse::<u32>() {
-                                psych.intensity = v.clamp(1, 5);
-                            }
+                            && let Ok(v) = int_m.as_str().parse::<u32>()
+                        {
+                            psych.intensity = v.clamp(1, 5);
+                        }
                     } else if let Some(caps) = tension_re.captures(line) {
                         psych.psychological_tension = caps[1].trim().to_string();
                     } else if let Some(caps) = decay_re.captures(line)
-                        && let Ok(v) = caps[1].parse::<u32>() {
-                            psych.emotional_decay_counter = v;
-                        }
+                        && let Ok(v) = caps[1].parse::<u32>()
+                    {
+                        psych.emotional_decay_counter = v;
+                    }
                 }
                 Some("drive") => {
                     if let Some(caps) = agenda_re.captures(line) {
@@ -791,22 +874,36 @@ impl MemoryDb {
             psych.cognitive_dissonance = cognitive_dissonance_lines.join("\n");
         }
 
-        self.update_psychology(char_id, &psych).map_err(|e| e.to_string())
+        self.update_psychology(char_id, &psych)
+            .map_err(|e| e.to_string())
     }
 
-    pub fn parse_and_sync_user_markdown(&self, char_id: &str, user_name: &str, md: &str) -> Result<(), String> {
-        let mut rel = self.get_or_create_relationship(char_id, user_name).map_err(|e| e.to_string())?;
+    pub fn parse_and_sync_user_markdown(
+        &self,
+        char_id: &str,
+        user_name: &str,
+        md: &str,
+    ) -> Result<(), String> {
+        let mut rel = self
+            .get_or_create_relationship(char_id, user_name)
+            .map_err(|e| e.to_string())?;
 
         let mut section: Option<&str> = None;
         let mut prefs = Vec::new();
         let mut milestones = Vec::new();
 
         let header_re = regex::Regex::new(r"^#{1,3}\s+(.+)$").map_err(|e| e.to_string())?;
-        let role_re = regex::Regex::new(r"(?i)-\s*\*\*Role in Story\*\*:\s*(.+)$").map_err(|e| e.to_string())?;
-        let attr_re = regex::Regex::new(r"(?i)-\s*\*\*Known Attributes\*\*:\s*(.+)$").map_err(|e| e.to_string())?;
-        let trust_re = regex::Regex::new(r"(?i)-\s*\*\*Trust Level\*\*:\s*(.+)$").map_err(|e| e.to_string())?;
-        let dyn_re = regex::Regex::new(r"(?i)-\s*\*\*(?:Dynamic Description|Current Dynamic)\*\*:\s*(.+)$").map_err(|e| e.to_string())?;
-        let tension_re = regex::Regex::new(r"(?i)-\s*\*\*Unspoken Tension\*\*:\s*(.+)$").map_err(|e| e.to_string())?;
+        let role_re = regex::Regex::new(r"(?i)-\s*\*\*Role in Story\*\*:\s*(.+)$")
+            .map_err(|e| e.to_string())?;
+        let attr_re = regex::Regex::new(r"(?i)-\s*\*\*Known Attributes\*\*:\s*(.+)$")
+            .map_err(|e| e.to_string())?;
+        let trust_re = regex::Regex::new(r"(?i)-\s*\*\*Trust Level\*\*:\s*(.+)$")
+            .map_err(|e| e.to_string())?;
+        let dyn_re =
+            regex::Regex::new(r"(?i)-\s*\*\*(?:Dynamic Description|Current Dynamic)\*\*:\s*(.+)$")
+                .map_err(|e| e.to_string())?;
+        let tension_re = regex::Regex::new(r"(?i)-\s*\*\*Unspoken Tension\*\*:\s*(.+)$")
+            .map_err(|e| e.to_string())?;
 
         for raw_line in md.lines() {
             let line = raw_line.trim();
@@ -855,13 +952,12 @@ impl MemoryDb {
                         }
                     }
                 }
-                Some("milestones")
-                    if (line.starts_with('-') || line.starts_with('*')) => {
-                        let item = line.trim_start_matches(['-', '*', ' ']).trim();
-                        if !item.is_empty() {
-                            milestones.push(item.to_string());
-                        }
+                Some("milestones") if (line.starts_with('-') || line.starts_with('*')) => {
+                    let item = line.trim_start_matches(['-', '*', ' ']).trim();
+                    if !item.is_empty() {
+                        milestones.push(item.to_string());
                     }
+                }
                 _ => {}
             }
         }
@@ -873,7 +969,8 @@ impl MemoryDb {
             rel.shared_milestones = milestones;
         }
 
-        self.update_relationship(char_id, &rel).map_err(|e| e.to_string())
+        self.update_relationship(char_id, &rel)
+            .map_err(|e| e.to_string())
     }
 
     // --- Backups & Snapshots ---
@@ -895,9 +992,12 @@ impl MemoryDb {
             Some(d) => d.to_path_buf(),
             None => Self::backup_dir_for_character(char_id),
         };
-        std::fs::create_dir_all(&target_dir).map_err(|e| format!("Konnte Backup-Verzeichnis nicht erstellen: {}", e))?;
+        std::fs::create_dir_all(&target_dir)
+            .map_err(|e| format!("Konnte Backup-Verzeichnis nicht erstellen: {}", e))?;
 
-        let psychology = self.get_or_create_psychology(char_id).map_err(|e| e.to_string())?;
+        let psychology = self
+            .get_or_create_psychology(char_id)
+            .map_err(|e| e.to_string())?;
         let user = user_name.unwrap_or("User");
         let relationship = self.get_or_create_relationship(char_id, user).ok();
         let episodic_memories = self.get_episodic_memories(char_id, 100).unwrap_or_default();
@@ -918,7 +1018,8 @@ impl MemoryDb {
         let json_str = serde_json::to_string_pretty(&snapshot).map_err(|e| e.to_string())?;
         let filename = format!("backup_{}_{}.json", char_id, now);
         let file_path = target_dir.join(&filename);
-        std::fs::write(&file_path, &json_str).map_err(|e| format!("Konnte Backup-Datei nicht schreiben: {}", e))?;
+        std::fs::write(&file_path, &json_str)
+            .map_err(|e| format!("Konnte Backup-Datei nicht schreiben: {}", e))?;
 
         let date_formatted = chrono::DateTime::from_timestamp(now as i64, 0)
             .map(|dt| dt.format("%Y-%m-%d %H:%M:%S").to_string())
@@ -928,13 +1029,14 @@ impl MemoryDb {
 
         // Cleanup: keep at most 20 recent backups
         if let Ok(mut entries) = self.list_memory_backups(char_id, Some(&target_dir))
-            && entries.len() > 20 {
-                entries.sort_by_key(|b| b.timestamp);
-                for old in entries.iter().take(entries.len() - 20) {
-                    let old_path = target_dir.join(&old.filename);
-                    let _ = std::fs::remove_file(old_path);
-                }
+            && entries.len() > 20
+        {
+            entries.sort_by_key(|b| b.timestamp);
+            for old in entries.iter().take(entries.len() - 20) {
+                let old_path = target_dir.join(&old.filename);
+                let _ = std::fs::remove_file(old_path);
             }
+        }
 
         Ok(MemoryBackupInfo {
             filename,
@@ -963,29 +1065,31 @@ impl MemoryDb {
 
         for entry in read_dir.flatten() {
             let path = entry.path();
-            if path.is_file() && path.extension().and_then(|s| s.to_str()) == Some("json")
+            if path.is_file()
+                && path.extension().and_then(|s| s.to_str()) == Some("json")
                 && let Some(file_name) = path.file_name().and_then(|s| s.to_str())
-                    && file_name.starts_with(&format!("backup_{}_", char_id)) {
-                        let meta = entry.metadata().ok();
-                        let size_bytes = meta.map(|m| m.len()).unwrap_or(0);
+                && file_name.starts_with(&format!("backup_{}_", char_id))
+            {
+                let meta = entry.metadata().ok();
+                let size_bytes = meta.map(|m| m.len()).unwrap_or(0);
 
-                        let ts = file_name
-                            .trim_start_matches(&format!("backup_{}_", char_id))
-                            .trim_end_matches(".json")
-                            .parse::<u64>()
-                            .unwrap_or(0);
+                let ts = file_name
+                    .trim_start_matches(&format!("backup_{}_", char_id))
+                    .trim_end_matches(".json")
+                    .parse::<u64>()
+                    .unwrap_or(0);
 
-                        let date_formatted = chrono::DateTime::from_timestamp(ts as i64, 0)
-                            .map(|dt| dt.format("%Y-%m-%d %H:%M:%S").to_string())
-                            .unwrap_or_else(|| format!("{}", ts));
+                let date_formatted = chrono::DateTime::from_timestamp(ts as i64, 0)
+                    .map(|dt| dt.format("%Y-%m-%d %H:%M:%S").to_string())
+                    .unwrap_or_else(|| format!("{}", ts));
 
-                        backups.push(MemoryBackupInfo {
-                            filename: file_name.to_string(),
-                            timestamp: ts,
-                            date_formatted,
-                            size_bytes,
-                        });
-                    }
+                backups.push(MemoryBackupInfo {
+                    filename: file_name.to_string(),
+                    timestamp: ts,
+                    date_formatted,
+                    size_bytes,
+                });
+            }
         }
 
         backups.sort_by_key(|b| std::cmp::Reverse(b.timestamp));
@@ -994,21 +1098,28 @@ impl MemoryDb {
 
     pub fn restore_memory_backup(&self, backup_file_path: &Path) -> Result<(), String> {
         if !backup_file_path.exists() {
-            return Err(format!("Backup-Datei existiert nicht: {}", backup_file_path.display()));
+            return Err(format!(
+                "Backup-Datei existiert nicht: {}",
+                backup_file_path.display()
+            ));
         }
 
         let content = std::fs::read_to_string(backup_file_path).map_err(|e| e.to_string())?;
-        let snapshot: MemoryBackupSnapshot = serde_json::from_str(&content).map_err(|e| e.to_string())?;
+        let snapshot: MemoryBackupSnapshot =
+            serde_json::from_str(&content).map_err(|e| e.to_string())?;
 
         let char_id = &snapshot.character_id;
-        self.update_psychology(char_id, &snapshot.psychology).map_err(|e| e.to_string())?;
+        self.update_psychology(char_id, &snapshot.psychology)
+            .map_err(|e| e.to_string())?;
 
         if let Some(rel) = &snapshot.relationship {
-            self.update_relationship(char_id, rel).map_err(|e| e.to_string())?;
+            self.update_relationship(char_id, rel)
+                .map_err(|e| e.to_string())?;
         }
 
         for mem in &snapshot.episodic_memories {
-            let _ = self.add_episodic_memory(char_id, &mem.category, &mem.content, mem.significance);
+            let _ =
+                self.add_episodic_memory(char_id, &mem.category, &mem.content, mem.significance);
         }
 
         for d in &snapshot.diary_entries {
@@ -1022,7 +1133,10 @@ impl MemoryDb {
         let _ = self.log_healing(
             char_id,
             "backup_restored",
-            &format!("Backup wiederhergestellt von Snapshot {}", snapshot.created_at),
+            &format!(
+                "Backup wiederhergestellt von Snapshot {}",
+                snapshot.created_at
+            ),
         );
 
         Ok(())
@@ -1030,9 +1144,17 @@ impl MemoryDb {
 
     // --- SoW Memory Folder Import ---
 
-    pub fn import_sow_memory_folder(&self, char_id: &str, folder: &Path, user_name: &str) -> Result<usize, String> {
+    pub fn import_sow_memory_folder(
+        &self,
+        char_id: &str,
+        folder: &Path,
+        user_name: &str,
+    ) -> Result<usize, String> {
         if !folder.exists() || !folder.is_dir() {
-            return Err(format!("Import-Ordner nicht gefunden: {}", folder.display()));
+            return Err(format!(
+                "Import-Ordner nicht gefunden: {}",
+                folder.display()
+            ));
         }
 
         let mut count = 0;
@@ -1041,48 +1163,52 @@ impl MemoryDb {
         let mem_file = folder.join("MEMORY.md");
         if mem_file.exists()
             && let Ok(content) = std::fs::read_to_string(&mem_file)
-                && !content.trim().is_empty() {
-                    self.parse_and_sync_character_markdown(char_id, &content)?;
-                    count += 1;
-                }
+            && !content.trim().is_empty()
+        {
+            self.parse_and_sync_character_markdown(char_id, &content)?;
+            count += 1;
+        }
 
         // 2. USER.md
         let user_file = folder.join("USER.md");
         if user_file.exists()
             && let Ok(content) = std::fs::read_to_string(&user_file)
-                && !content.trim().is_empty() {
-                    self.parse_and_sync_user_markdown(char_id, user_name, &content)?;
-                    count += 1;
-                }
+            && !content.trim().is_empty()
+        {
+            self.parse_and_sync_user_markdown(char_id, user_name, &content)?;
+            count += 1;
+        }
 
         // 3. topics/ folder
         let topics_dir = folder.join("topics");
-        if topics_dir.exists() && topics_dir.is_dir()
-            && let Ok(entries) = std::fs::read_dir(&topics_dir) {
-                for entry in entries.flatten() {
-                    let path = entry.path();
-                    if path.is_file() && path.extension().and_then(|s| s.to_str()) == Some("md")
-                        && let Ok(topic_content) = std::fs::read_to_string(&path)
-                            && !topic_content.trim().is_empty() {
-                                let topic_name = path
-                                    .file_stem()
-                                    .and_then(|s| s.to_str())
-                                    .unwrap_or("topic");
-                                let formatted = format!("[Topic: {}]\n{}", topic_name, topic_content.trim());
-                                let _ = self.add_episodic_memory(char_id, "topic", &formatted, 3);
-                                count += 1;
-                            }
+        if topics_dir.exists()
+            && topics_dir.is_dir()
+            && let Ok(entries) = std::fs::read_dir(&topics_dir)
+        {
+            for entry in entries.flatten() {
+                let path = entry.path();
+                if path.is_file()
+                    && path.extension().and_then(|s| s.to_str()) == Some("md")
+                    && let Ok(topic_content) = std::fs::read_to_string(&path)
+                    && !topic_content.trim().is_empty()
+                {
+                    let topic_name = path.file_stem().and_then(|s| s.to_str()).unwrap_or("topic");
+                    let formatted = format!("[Topic: {}]\n{}", topic_name, topic_content.trim());
+                    let _ = self.add_episodic_memory(char_id, "topic", &formatted, 3);
+                    count += 1;
                 }
             }
+        }
 
         // 4. DIARY.md if present
         let diary_file = folder.join("DIARY.md");
         if diary_file.exists()
             && let Ok(content) = std::fs::read_to_string(&diary_file)
-                && !content.trim().is_empty() {
-                    let _ = self.add_diary_entry(char_id, "Importiertes Tagebuch", &content, "Reflective");
-                    count += 1;
-                }
+            && !content.trim().is_empty()
+        {
+            let _ = self.add_diary_entry(char_id, "Importiertes Tagebuch", &content, "Reflective");
+            count += 1;
+        }
 
         let _ = self.log_healing(
             char_id,
@@ -1095,7 +1221,11 @@ impl MemoryDb {
 
     // --- Chat Sessions & Messages (Phase 9) ---
 
-    pub fn create_chat_session(&self, character_id: &str, title: &str) -> Result<ChatSession, rusqlite::Error> {
+    pub fn create_chat_session(
+        &self,
+        character_id: &str,
+        title: &str,
+    ) -> Result<ChatSession, rusqlite::Error> {
         let conn = self.conn.lock().unwrap();
         let now = current_timestamp();
         let id = format!("chat_{}_{:08x}", now, rand::random::<u32>());
@@ -1123,7 +1253,10 @@ impl MemoryDb {
         })
     }
 
-    pub fn list_chat_sessions(&self, character_id: &str) -> Result<Vec<ChatSession>, rusqlite::Error> {
+    pub fn list_chat_sessions(
+        &self,
+        character_id: &str,
+    ) -> Result<Vec<ChatSession>, rusqlite::Error> {
         let conn = self.conn.lock().unwrap();
         let mut stmt = conn.prepare(
             "SELECT s.id, s.character_id, s.title, s.created_at, s.updated_at, s.author_note, s.author_note_depth,
@@ -1183,12 +1316,19 @@ impl MemoryDb {
 
     pub fn delete_chat_session(&self, chat_id: &str) -> Result<(), rusqlite::Error> {
         let conn = self.conn.lock().unwrap();
-        conn.execute("DELETE FROM chat_messages WHERE chat_id = ?1", params![chat_id])?;
+        conn.execute(
+            "DELETE FROM chat_messages WHERE chat_id = ?1",
+            params![chat_id],
+        )?;
         conn.execute("DELETE FROM chat_sessions WHERE id = ?1", params![chat_id])?;
         Ok(())
     }
 
-    pub fn rename_chat_session(&self, chat_id: &str, new_title: &str) -> Result<(), rusqlite::Error> {
+    pub fn rename_chat_session(
+        &self,
+        chat_id: &str,
+        new_title: &str,
+    ) -> Result<(), rusqlite::Error> {
         let conn = self.conn.lock().unwrap();
         let now = current_timestamp();
         conn.execute(
@@ -1198,7 +1338,12 @@ impl MemoryDb {
         Ok(())
     }
 
-    pub fn update_chat_author_note(&self, chat_id: &str, author_note: &str, author_note_depth: u32) -> Result<(), rusqlite::Error> {
+    pub fn update_chat_author_note(
+        &self,
+        chat_id: &str,
+        author_note: &str,
+        author_note_depth: u32,
+    ) -> Result<(), rusqlite::Error> {
         let conn = self.conn.lock().unwrap();
         let now = current_timestamp();
         conn.execute(
@@ -1208,7 +1353,10 @@ impl MemoryDb {
         Ok(())
     }
 
-    pub fn get_chat_messages(&self, chat_id: &str) -> Result<Vec<StoredChatMessage>, rusqlite::Error> {
+    pub fn get_chat_messages(
+        &self,
+        chat_id: &str,
+    ) -> Result<Vec<StoredChatMessage>, rusqlite::Error> {
         let conn = self.conn.lock().unwrap();
         let mut stmt = conn.prepare(
             "SELECT id, chat_id, role, content, thought, order_index, swipe_index, swipes_json, created_at
@@ -1223,12 +1371,13 @@ impl MemoryDb {
             let swipe_idx: i64 = row.get(6)?;
             let swipes_json: String = row.get(7)?;
 
-            let swipes: Vec<SwipeVariant> = serde_json::from_str(&swipes_json).unwrap_or_else(|_| {
-                vec![SwipeVariant {
-                    content: content.clone(),
-                    thought: thought.clone(),
-                }]
-            });
+            let swipes: Vec<SwipeVariant> =
+                serde_json::from_str(&swipes_json).unwrap_or_else(|_| {
+                    vec![SwipeVariant {
+                        content: content.clone(),
+                        thought: thought.clone(),
+                    }]
+                });
 
             Ok(StoredChatMessage {
                 id: row.get(0)?,
@@ -1261,7 +1410,9 @@ impl MemoryDb {
         let now = current_timestamp();
         let id = format!("msg_{}_{:08x}", now, rand::random::<u32>());
 
-        let mut stmt = conn.prepare("SELECT COALESCE(MAX(order_index) + 1, 0) FROM chat_messages WHERE chat_id = ?1")?;
+        let mut stmt = conn.prepare(
+            "SELECT COALESCE(MAX(order_index) + 1, 0) FROM chat_messages WHERE chat_id = ?1",
+        )?;
         let next_order: i32 = stmt.query_row(params![chat_id], |row| row.get(0))?;
 
         let swipes = vec![SwipeVariant {
@@ -1306,17 +1457,23 @@ impl MemoryDb {
         let mut stmt = conn.prepare(
             "SELECT chat_id, role, order_index, swipe_index, swipes_json, created_at FROM chat_messages WHERE id = ?1",
         )?;
-        let (chat_id, role, order_index, swipe_idx, swipes_json, created_at): (String, String, i32, i64, String, u64) =
-            stmt.query_row(params![msg_id], |row| {
-                Ok((
-                    row.get(0)?,
-                    row.get(1)?,
-                    row.get(2)?,
-                    row.get(3)?,
-                    row.get(4)?,
-                    row.get(5)?,
-                ))
-            })?;
+        let (chat_id, role, order_index, swipe_idx, swipes_json, created_at): (
+            String,
+            String,
+            i32,
+            i64,
+            String,
+            u64,
+        ) = stmt.query_row(params![msg_id], |row| {
+            Ok((
+                row.get(0)?,
+                row.get(1)?,
+                row.get(2)?,
+                row.get(3)?,
+                row.get(4)?,
+                row.get(5)?,
+            ))
+        })?;
 
         let mut swipes: Vec<SwipeVariant> = serde_json::from_str(&swipes_json).unwrap_or_default();
         let cur_index = swipe_idx as usize;
@@ -1368,16 +1525,21 @@ impl MemoryDb {
         let mut stmt = conn.prepare(
             "SELECT chat_id, role, order_index, swipes_json, created_at FROM chat_messages WHERE id = ?1",
         )?;
-        let (chat_id, role, order_index, swipes_json, created_at): (String, String, i32, String, u64) =
-            stmt.query_row(params![msg_id], |row| {
-                Ok((
-                    row.get(0)?,
-                    row.get(1)?,
-                    row.get(2)?,
-                    row.get(3)?,
-                    row.get(4)?,
-                ))
-            })?;
+        let (chat_id, role, order_index, swipes_json, created_at): (
+            String,
+            String,
+            i32,
+            String,
+            u64,
+        ) = stmt.query_row(params![msg_id], |row| {
+            Ok((
+                row.get(0)?,
+                row.get(1)?,
+                row.get(2)?,
+                row.get(3)?,
+                row.get(4)?,
+            ))
+        })?;
 
         let mut swipes: Vec<SwipeVariant> = serde_json::from_str(&swipes_json).unwrap_or_default();
         swipes.push(SwipeVariant {
@@ -1419,16 +1581,21 @@ impl MemoryDb {
         let mut stmt = conn.prepare(
             "SELECT chat_id, role, order_index, swipes_json, created_at FROM chat_messages WHERE id = ?1",
         )?;
-        let (chat_id, role, order_index, swipes_json, created_at): (String, String, i32, String, u64) =
-            stmt.query_row(params![msg_id], |row| {
-                Ok((
-                    row.get(0)?,
-                    row.get(1)?,
-                    row.get(2)?,
-                    row.get(3)?,
-                    row.get(4)?,
-                ))
-            })?;
+        let (chat_id, role, order_index, swipes_json, created_at): (
+            String,
+            String,
+            i32,
+            String,
+            u64,
+        ) = stmt.query_row(params![msg_id], |row| {
+            Ok((
+                row.get(0)?,
+                row.get(1)?,
+                row.get(2)?,
+                row.get(3)?,
+                row.get(4)?,
+            ))
+        })?;
 
         let swipes: Vec<SwipeVariant> = serde_json::from_str(&swipes_json).unwrap_or_default();
         if new_swipe_index >= swipes.len() {
@@ -1438,7 +1605,12 @@ impl MemoryDb {
         let variant = &swipes[new_swipe_index];
         conn.execute(
             "UPDATE chat_messages SET content = ?1, thought = ?2, swipe_index = ?3 WHERE id = ?4",
-            params![variant.content, variant.thought, new_swipe_index as i64, msg_id],
+            params![
+                variant.content,
+                variant.thought,
+                new_swipe_index as i64,
+                msg_id
+            ],
         )?;
 
         Ok(StoredChatMessage {
@@ -1460,7 +1632,11 @@ impl MemoryDb {
         Ok(())
     }
 
-    pub fn delete_messages_after(&self, chat_id: &str, order_index: i32) -> Result<(), rusqlite::Error> {
+    pub fn delete_messages_after(
+        &self,
+        chat_id: &str,
+        order_index: i32,
+    ) -> Result<(), rusqlite::Error> {
         let conn = self.conn.lock().unwrap();
         conn.execute(
             "DELETE FROM chat_messages WHERE chat_id = ?1 AND order_index >= ?2",
@@ -1469,7 +1645,12 @@ impl MemoryDb {
         Ok(())
     }
 
-    pub fn export_chat_jsonl(&self, chat_id: &str, char_name: &str, user_name: &str) -> Result<String, rusqlite::Error> {
+    pub fn export_chat_jsonl(
+        &self,
+        chat_id: &str,
+        char_name: &str,
+        user_name: &str,
+    ) -> Result<String, rusqlite::Error> {
         let session = match self.get_chat_session(chat_id)? {
             Some(s) => s,
             None => return Err(rusqlite::Error::QueryReturnedNoRows),
@@ -1498,12 +1679,16 @@ impl MemoryDb {
             let name = if is_user { user_name } else { char_name };
 
             let swipe_texts: Vec<String> = msg.swipes.iter().map(|s| s.content.clone()).collect();
-            let swipe_variants: Vec<serde_json::Value> = msg.swipes.iter().map(|s| {
-                serde_json::json!({
-                    "content": s.content,
-                    "thought": s.thought
+            let swipe_variants: Vec<serde_json::Value> = msg
+                .swipes
+                .iter()
+                .map(|s| {
+                    serde_json::json!({
+                        "content": s.content,
+                        "thought": s.thought
+                    })
                 })
-            }).collect();
+                .collect();
 
             let msg_obj = serde_json::json!({
                 "name": name,
@@ -1531,9 +1716,14 @@ impl MemoryDb {
         jsonl_content: &str,
         title_override: Option<&str>,
     ) -> Result<ChatSession, rusqlite::Error> {
-        let raw_lines: Vec<&str> = jsonl_content.lines().map(|l| l.trim()).filter(|l| !l.is_empty()).collect();
+        let raw_lines: Vec<&str> = jsonl_content
+            .lines()
+            .map(|l| l.trim())
+            .filter(|l| !l.is_empty())
+            .collect();
         if raw_lines.is_empty() {
-            return self.create_chat_session(character_id, title_override.unwrap_or("Importierter Chat"));
+            return self
+                .create_chat_session(character_id, title_override.unwrap_or("Importierter Chat"));
         }
 
         let mut initial_title = title_override.map(|s| s.to_string());
@@ -1543,19 +1733,31 @@ impl MemoryDb {
 
         // Try parsing first line as header
         if let Ok(first_val) = serde_json::from_str::<serde_json::Value>(raw_lines[0])
-            && first_val.get("mes").is_none() && (first_val.get("character_name").is_some() || first_val.get("chat_metadata").is_some()) {
-                start_idx = 1;
-                if initial_title.is_none()
-                    && let Some(t) = first_val.pointer("/chat_metadata/title").and_then(|v| v.as_str()) {
-                        initial_title = Some(t.to_string());
-                    }
-                if let Some(an) = first_val.pointer("/chat_metadata/author_note").and_then(|v| v.as_str()) {
-                    author_note = an.to_string();
-                }
-                if let Some(d) = first_val.pointer("/chat_metadata/author_note_depth").and_then(|v| v.as_u64()) {
-                    author_note_depth = d as u32;
-                }
+            && first_val.get("mes").is_none()
+            && (first_val.get("character_name").is_some()
+                || first_val.get("chat_metadata").is_some())
+        {
+            start_idx = 1;
+            if initial_title.is_none()
+                && let Some(t) = first_val
+                    .pointer("/chat_metadata/title")
+                    .and_then(|v| v.as_str())
+            {
+                initial_title = Some(t.to_string());
             }
+            if let Some(an) = first_val
+                .pointer("/chat_metadata/author_note")
+                .and_then(|v| v.as_str())
+            {
+                author_note = an.to_string();
+            }
+            if let Some(d) = first_val
+                .pointer("/chat_metadata/author_note_depth")
+                .and_then(|v| v.as_u64())
+            {
+                author_note_depth = d as u32;
+            }
+        }
 
         let title = initial_title.unwrap_or_else(|| "Importierter Chat".to_string());
         let session = self.create_chat_session(character_id, &title)?;
@@ -1566,7 +1768,8 @@ impl MemoryDb {
 
         for line in &raw_lines[start_idx..] {
             if let Ok(v) = serde_json::from_str::<serde_json::Value>(line) {
-                let content = v.get("mes")
+                let content = v
+                    .get("mes")
                     .or_else(|| v.get("content"))
                     .and_then(|s| s.as_str())
                     .unwrap_or("")
@@ -1580,13 +1783,18 @@ impl MemoryDb {
                     r.to_string()
                 } else if v.get("is_user").and_then(|b| b.as_bool()).unwrap_or(false) {
                     "user".to_string()
-                } else if v.get("is_system").and_then(|b| b.as_bool()).unwrap_or(false) {
+                } else if v
+                    .get("is_system")
+                    .and_then(|b| b.as_bool())
+                    .unwrap_or(false)
+                {
                     "system".to_string()
                 } else {
                     "assistant".to_string()
                 };
 
-                let thought = v.pointer("/extra/thought")
+                let thought = v
+                    .pointer("/extra/thought")
                     .or_else(|| v.get("thought"))
                     .and_then(|s| s.as_str())
                     .map(|s| s.to_string());
@@ -1596,7 +1804,10 @@ impl MemoryDb {
                 if let Some(arr) = v.get("swipe_variants").and_then(|a| a.as_array()) {
                     for it in arr {
                         if let Some(c) = it.get("content").and_then(|s| s.as_str()) {
-                            let th = it.get("thought").and_then(|s| s.as_str()).map(|s| s.to_string());
+                            let th = it
+                                .get("thought")
+                                .and_then(|s| s.as_str())
+                                .map(|s| s.to_string());
                             parsed_swipes.push(SwipeVariant {
                                 content: c.to_string(),
                                 thought: th,
@@ -1614,19 +1825,26 @@ impl MemoryDb {
                     }
                 }
 
-                let swipe_idx = v.get("swipe_id")
+                let swipe_idx = v
+                    .get("swipe_id")
                     .or_else(|| v.get("swipe_index"))
                     .and_then(|n| n.as_u64())
                     .unwrap_or(0) as usize;
 
                 // Add message
-                let added = self.add_chat_message(&session.id, &role, &content, thought.as_deref())?;
+                let added =
+                    self.add_chat_message(&session.id, &role, &content, thought.as_deref())?;
 
                 if !parsed_swipes.is_empty() {
                     let conn = self.conn.lock().unwrap();
-                    let safe_idx = if swipe_idx < parsed_swipes.len() { swipe_idx } else { 0 };
+                    let safe_idx = if swipe_idx < parsed_swipes.len() {
+                        swipe_idx
+                    } else {
+                        0
+                    };
                     let active_variant = &parsed_swipes[safe_idx];
-                    let swipes_json = serde_json::to_string(&parsed_swipes).unwrap_or_else(|_| "[]".to_string());
+                    let swipes_json =
+                        serde_json::to_string(&parsed_swipes).unwrap_or_else(|_| "[]".to_string());
                     conn.execute(
                         "UPDATE chat_messages SET content = ?1, thought = ?2, swipe_index = ?3, swipes_json = ?4 WHERE id = ?5",
                         params![active_variant.content, active_variant.thought, safe_idx as i64, swipes_json, added.id],
@@ -1636,7 +1854,8 @@ impl MemoryDb {
         }
 
         // Return updated session with message count
-        self.get_chat_session(&session.id)?.ok_or(rusqlite::Error::QueryReturnedNoRows)
+        self.get_chat_session(&session.id)?
+            .ok_or(rusqlite::Error::QueryReturnedNoRows)
     }
 }
 
@@ -1670,8 +1889,10 @@ mod tests {
         assert!(rel.preferences_habits.is_empty());
 
         rel.trust_level = "Deeply Bound".to_string();
-        rel.preferences_habits.push("Trinkt gerne Grüntee".to_string());
-        rel.shared_milestones.push("Gemeinsames Picknick im Park".to_string());
+        rel.preferences_habits
+            .push("Trinkt gerne Grüntee".to_string());
+        rel.shared_milestones
+            .push("Gemeinsames Picknick im Park".to_string());
         db.update_relationship("ayu", &rel).unwrap();
 
         let loaded = db.get_or_create_relationship("ayu", "Hiroki").unwrap();
@@ -1684,12 +1905,18 @@ mod tests {
     #[test]
     fn test_episodic_memory_deduplication_and_priority() {
         let db = MemoryDb::new_in_memory().expect("in-memory db failed");
-        let id1 = db.add_episodic_memory("ayu", "fact", "Hiroki mag Matcha Latte", 2).unwrap();
-        let id2 = db.add_episodic_memory("ayu", "fact", "Hiroki mag Matcha Latte", 4).unwrap();
+        let id1 = db
+            .add_episodic_memory("ayu", "fact", "Hiroki mag Matcha Latte", 2)
+            .unwrap();
+        let id2 = db
+            .add_episodic_memory("ayu", "fact", "Hiroki mag Matcha Latte", 4)
+            .unwrap();
         // Duplicates should reuse id and elevate significance
         assert_eq!(id1, id2);
 
-        let id3 = db.add_episodic_memory("ayu", "secret", "Hat Angst vor Gewitter", 5).unwrap();
+        let id3 = db
+            .add_episodic_memory("ayu", "secret", "Hat Angst vor Gewitter", 5)
+            .unwrap();
         assert_ne!(id1, id3);
 
         let memories = db.get_episodic_memories("ayu", 10).unwrap();
@@ -1703,8 +1930,20 @@ mod tests {
     #[test]
     fn test_diary_entries() {
         let db = MemoryDb::new_in_memory().expect("in-memory db failed");
-        db.add_diary_entry("ayu", "Erster Tag", "Heute habe ich Hiroki getroffen...", "Happy").unwrap();
-        db.add_diary_entry("ayu", "Später Abend", "Ich konnte kaum schlafen.", "Thoughtful").unwrap();
+        db.add_diary_entry(
+            "ayu",
+            "Erster Tag",
+            "Heute habe ich Hiroki getroffen...",
+            "Happy",
+        )
+        .unwrap();
+        db.add_diary_entry(
+            "ayu",
+            "Später Abend",
+            "Ich konnte kaum schlafen.",
+            "Thoughtful",
+        )
+        .unwrap();
 
         let entries = db.get_diary_entries("ayu", 10).unwrap();
         assert_eq!(entries.len(), 2);
@@ -1742,8 +1981,10 @@ mod tests {
     #[test]
     fn test_cognitive_overview() {
         let db = MemoryDb::new_in_memory().expect("in-memory db failed");
-        db.add_episodic_memory("ayu", "fact", "Hiroki mag Matcha Latte", 3).unwrap();
-        db.add_diary_entry("ayu", "Tagebucheintrag", "Ein schöner Tag.", "Calm").unwrap();
+        db.add_episodic_memory("ayu", "fact", "Hiroki mag Matcha Latte", 3)
+            .unwrap();
+        db.add_diary_entry("ayu", "Tagebucheintrag", "Ein schöner Tag.", "Calm")
+            .unwrap();
 
         let overview = db.get_cognitive_overview("ayu", "Hiroki").unwrap();
         assert_eq!(overview.psychology.primary_emotion, "Calm");
@@ -1764,11 +2005,13 @@ mod tests {
         assert_eq!(list.len(), 1);
         assert_eq!(list[0].id, session.id);
 
-        db.rename_chat_session(&session.id, "Umbenannter Chat").unwrap();
+        db.rename_chat_session(&session.id, "Umbenannter Chat")
+            .unwrap();
         let loaded = db.get_chat_session(&session.id).unwrap().unwrap();
         assert_eq!(loaded.title, "Umbenannter Chat");
 
-        db.update_chat_author_note(&session.id, "[Ayu ist schüchtern]", 3).unwrap();
+        db.update_chat_author_note(&session.id, "[Ayu ist schüchtern]", 3)
+            .unwrap();
         let loaded2 = db.get_chat_session(&session.id).unwrap().unwrap();
         assert_eq!(loaded2.author_note, "[Ayu ist schüchtern]");
         assert_eq!(loaded2.author_note_depth, 3);
@@ -1784,33 +2027,42 @@ mod tests {
         let session = db.create_chat_session("ayu", "Test Chat").unwrap();
 
         // 1. Add user message
-        let user_msg = db.add_chat_message(&session.id, "user", "Hallo Ayu!", None).unwrap();
+        let user_msg = db
+            .add_chat_message(&session.id, "user", "Hallo Ayu!", None)
+            .unwrap();
         assert_eq!(user_msg.role, "user");
         assert_eq!(user_msg.content, "Hallo Ayu!");
         assert_eq!(user_msg.order_index, 0);
         assert_eq!(user_msg.swipes.len(), 1);
 
         // 2. Add assistant response
-        let asst_msg = db.add_chat_message(
-            &session.id,
-            "assistant",
-            "*lächelt* Hallo Hiroki!",
-            Some("Erfreut über die Begrüßung"),
-        ).unwrap();
+        let asst_msg = db
+            .add_chat_message(
+                &session.id,
+                "assistant",
+                "*lächelt* Hallo Hiroki!",
+                Some("Erfreut über die Begrüßung"),
+            )
+            .unwrap();
         assert_eq!(asst_msg.role, "assistant");
         assert_eq!(asst_msg.order_index, 1);
         assert_eq!(asst_msg.swipe_index, 0);
         assert_eq!(asst_msg.swipes.len(), 1);
 
         // 3. Add swipe variant to assistant message
-        let swiped = db.add_message_swipe(
-            &asst_msg.id,
-            "*winkt fröhlich* Hey Hiroki, schön dich zu sehen!",
-            Some("Sehr enthusiastisch"),
-        ).unwrap();
+        let swiped = db
+            .add_message_swipe(
+                &asst_msg.id,
+                "*winkt fröhlich* Hey Hiroki, schön dich zu sehen!",
+                Some("Sehr enthusiastisch"),
+            )
+            .unwrap();
         assert_eq!(swiped.swipes.len(), 2);
         assert_eq!(swiped.swipe_index, 1);
-        assert_eq!(swiped.content, "*winkt fröhlich* Hey Hiroki, schön dich zu sehen!");
+        assert_eq!(
+            swiped.content,
+            "*winkt fröhlich* Hey Hiroki, schön dich zu sehen!"
+        );
         assert_eq!(swiped.thought.as_deref(), Some("Sehr enthusiastisch"));
 
         // 4. Switch back to swipe 0
@@ -1819,7 +2071,9 @@ mod tests {
         assert_eq!(switched.content, "*lächelt* Hallo Hiroki!");
 
         // 5. Update active swipe inline
-        let updated = db.update_chat_message(&asst_msg.id, "*lächelt sanft* Hallo Hiroki!", None).unwrap();
+        let updated = db
+            .update_chat_message(&asst_msg.id, "*lächelt sanft* Hallo Hiroki!", None)
+            .unwrap();
         assert_eq!(updated.content, "*lächelt sanft* Hallo Hiroki!");
         assert_eq!(updated.swipes[0].content, "*lächelt sanft* Hallo Hiroki!");
         assert_eq!(updated.swipes.len(), 2);
@@ -1842,11 +2096,25 @@ mod tests {
     fn test_chat_jsonl_export_and_import() {
         let db = MemoryDb::new_in_memory().expect("in-memory db failed");
         let session = db.create_chat_session("ayu", "Reise nach Kyoto").unwrap();
-        db.update_chat_author_note(&session.id, "[Wetter ist sonnig]", 2).unwrap();
+        db.update_chat_author_note(&session.id, "[Wetter ist sonnig]", 2)
+            .unwrap();
 
-        db.add_chat_message(&session.id, "user", "Kommst du mit zum Schrein?", None).unwrap();
-        let asst = db.add_chat_message(&session.id, "assistant", "*nickt* Sehr gern!", Some("Aufgeregt")).unwrap();
-        db.add_message_swipe(&asst.id, "*hüpft auf* Na klar doch!", Some("Voller Energie")).unwrap();
+        db.add_chat_message(&session.id, "user", "Kommst du mit zum Schrein?", None)
+            .unwrap();
+        let asst = db
+            .add_chat_message(
+                &session.id,
+                "assistant",
+                "*nickt* Sehr gern!",
+                Some("Aufgeregt"),
+            )
+            .unwrap();
+        db.add_message_swipe(
+            &asst.id,
+            "*hüpft auf* Na klar doch!",
+            Some("Voller Energie"),
+        )
+        .unwrap();
 
         let jsonl = db.export_chat_jsonl(&session.id, "Ayu", "Hiroki").unwrap();
         assert!(jsonl.contains("Reise nach Kyoto"));
@@ -1889,7 +2157,11 @@ mod tests {
         let char_md = db.render_character_markdown("vivy").unwrap();
         assert!(char_md.contains("# SOUL CACHE: VIVY"));
         assert!(char_md.contains("## CORE IDENTITY & UNBREAKABLE BELIEFS"));
-        assert!(char_md.contains("Meine Mission ist es, den Menschen Freude mit meinem Gesang zu bringen."));
+        assert!(
+            char_md.contains(
+                "Meine Mission ist es, den Menschen Freude mit meinem Gesang zu bringen."
+            )
+        );
         assert!(char_md.contains("- **Primary Emotion**: Determined (Intensity: 4/5)"));
 
         // Parse modified markdown back
@@ -1910,15 +2182,22 @@ mod tests {
 ## UNRESOLVED COGNITIVE DISSONANCE
 Keine Dissonanz mehr.
 "#;
-        db.parse_and_sync_character_markdown("vivy", modified_md).unwrap();
+        db.parse_and_sync_character_markdown("vivy", modified_md)
+            .unwrap();
         let updated_psych = db.get_or_create_psychology("vivy").unwrap();
         assert_eq!(updated_psych.primary_emotion, "Euphoric");
         assert_eq!(updated_psych.intensity, 5);
-        assert_eq!(updated_psych.psychological_tension, "Vollständige Gelassenheit.");
+        assert_eq!(
+            updated_psych.psychological_tension,
+            "Vollständige Gelassenheit."
+        );
         assert_eq!(updated_psych.active_agenda, "Welt-Konzert vorbereiten.");
         assert_eq!(updated_psych.immediate_focus, "Das große Finale.");
         assert_eq!(updated_psych.core_identity.len(), 1);
-        assert_eq!(updated_psych.core_identity[0], "Gesang ist die größte Kraft des Universums.");
+        assert_eq!(
+            updated_psych.core_identity[0],
+            "Gesang ist die größte Kraft des Universums."
+        );
         assert_eq!(updated_psych.cognitive_dissonance, "Keine Dissonanz mehr.");
 
         // User Markdown test
@@ -1953,18 +2232,26 @@ Keine Dissonanz mehr.
 ## SHARED MILESTONES & PROMISES
 - Die Zukunft gemeinsam gerettet
 "#;
-        db.parse_and_sync_user_markdown("vivy", "Matsumoto", mod_user_md).unwrap();
+        db.parse_and_sync_user_markdown("vivy", "Matsumoto", mod_user_md)
+            .unwrap();
         let updated_rel = db.get_or_create_relationship("vivy", "Matsumoto").unwrap();
         assert_eq!(updated_rel.role_in_story, "Beschützer und Freund");
         assert_eq!(updated_rel.trust_level, "Deeply Bound");
-        assert_eq!(updated_rel.preferences_habits[0], "Verliert sich in langen Berechnungen");
-        assert_eq!(updated_rel.shared_milestones[0], "Die Zukunft gemeinsam gerettet");
+        assert_eq!(
+            updated_rel.preferences_habits[0],
+            "Verliert sich in langen Berechnungen"
+        );
+        assert_eq!(
+            updated_rel.shared_milestones[0],
+            "Die Zukunft gemeinsam gerettet"
+        );
     }
 
     #[test]
     fn test_backup_and_restore() {
         let db = MemoryDb::new_in_memory().expect("in-memory db failed");
-        let temp_dir = std::env::temp_dir().join(format!("otakusoul_test_backup_{}", rand::random::<u32>()));
+        let temp_dir =
+            std::env::temp_dir().join(format!("otakusoul_test_backup_{}", rand::random::<u32>()));
         std::fs::create_dir_all(&temp_dir).unwrap();
 
         let mut psych = db.get_or_create_psychology("akane").unwrap();
@@ -1972,7 +2259,9 @@ Keine Dissonanz mehr.
         psych.core_identity = vec!["Gerechtigkeit ist unantastbar.".to_string()];
         db.update_psychology("akane", &psych).unwrap();
 
-        let backup = db.backup_memory_state("akane", Some("Kogami"), Some(&temp_dir)).unwrap();
+        let backup = db
+            .backup_memory_state("akane", Some("Kogami"), Some(&temp_dir))
+            .unwrap();
         assert!(backup.filename.starts_with("backup_akane_"));
 
         let backups = db.list_memory_backups("akane", Some(&temp_dir)).unwrap();
@@ -1982,7 +2271,12 @@ Keine Dissonanz mehr.
         psych.primary_emotion = "Broken".to_string();
         psych.core_identity = vec![];
         db.update_psychology("akane", &psych).unwrap();
-        assert_eq!(db.get_or_create_psychology("akane").unwrap().primary_emotion, "Broken");
+        assert_eq!(
+            db.get_or_create_psychology("akane")
+                .unwrap()
+                .primary_emotion,
+            "Broken"
+        );
 
         // Restore
         let backup_path = temp_dir.join(&backup.filename);
@@ -1998,7 +2292,8 @@ Keine Dissonanz mehr.
     #[test]
     fn test_sow_import() {
         let db = MemoryDb::new_in_memory().expect("in-memory db failed");
-        let temp_dir = std::env::temp_dir().join(format!("otakusoul_test_sow_{}", rand::random::<u32>()));
+        let temp_dir =
+            std::env::temp_dir().join(format!("otakusoul_test_sow_{}", rand::random::<u32>()));
         let topics_dir = temp_dir.join("topics");
         std::fs::create_dir_all(&topics_dir).unwrap();
 
@@ -2040,18 +2335,24 @@ Keine.
 "#;
         std::fs::write(temp_dir.join("USER.md"), user_content).unwrap();
 
-        let topic_content = "# Sword Art Online\nEin tödliches VRMMO, aus dem es kein Entkommen gab.";
+        let topic_content =
+            "# Sword Art Online\nEin tödliches VRMMO, aus dem es kein Entkommen gab.";
         std::fs::write(topics_dir.join("sao_world.md"), topic_content).unwrap();
 
         let diary_content = "Heute war ein ruhiger Tag. Kirito und ich haben am See gesessen.";
         std::fs::write(temp_dir.join("DIARY.md"), diary_content).unwrap();
 
-        let count = db.import_sow_memory_folder("asuna", &temp_dir, "Kirito").unwrap();
+        let count = db
+            .import_sow_memory_folder("asuna", &temp_dir, "Kirito")
+            .unwrap();
         assert_eq!(count, 4);
 
         let psych = db.get_or_create_psychology("asuna").unwrap();
         assert_eq!(psych.primary_emotion, "Loving");
-        assert_eq!(psych.core_identity[0], "Ich beschütze meine Freunde mit meinem Leben.");
+        assert_eq!(
+            psych.core_identity[0],
+            "Ich beschütze meine Freunde mit meinem Leben."
+        );
 
         let rel = db.get_or_create_relationship("asuna", "Kirito").unwrap();
         assert_eq!(rel.role_in_story, "Schwarzer Schwertkämpfer");
@@ -2069,4 +2370,3 @@ Keine.
         let _ = std::fs::remove_dir_all(&temp_dir);
     }
 }
-

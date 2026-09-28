@@ -170,10 +170,22 @@ impl Default for EmotionState {
 impl EmotionState {
     pub fn set(&mut self, emotion: &str) {
         let valid = [
-            "neutral", "curious", "warm", "amused", "concerned",
-            "playful", "relaxed", "sleepy", "melancholy", "excited",
+            "neutral",
+            "curious",
+            "warm",
+            "amused",
+            "concerned",
+            "playful",
+            "relaxed",
+            "sleepy",
+            "melancholy",
+            "excited",
         ];
-        let chosen = if valid.contains(&emotion) { emotion } else { "neutral" };
+        let chosen = if valid.contains(&emotion) {
+            emotion
+        } else {
+            "neutral"
+        };
         if chosen != self.current {
             self.history.push((self.current.clone(), self.last_updated));
             if self.history.len() > 25 {
@@ -191,15 +203,64 @@ impl EmotionState {
         }
 
         let raw_scores: [(&str, f32); 10] = [
-            ("melancholy", if h.is_lonely() { (100.0 - h.oxytocin) * 0.016 } else { 0.0 }),
+            (
+                "melancholy",
+                if h.is_lonely() {
+                    (100.0 - h.oxytocin) * 0.016
+                } else {
+                    0.0
+                },
+            ),
             ("concerned", h.cortisol * 0.014),
             ("curious", h.dopamine * 0.011),
-            ("warm", if !h.is_lonely() { h.oxytocin * 0.009 } else { 0.0 }),
-            ("excited", if h.dopamine > 50.0 && h.oxytocin > 50.0 { (h.dopamine + h.oxytocin) * 0.007 } else { 0.0 }),
-            ("relaxed", if h.dopamine < 30.0 { (100.0 - h.dopamine) * 0.008 } else { 0.0 }),
-            ("playful", if h.dopamine > 50.0 { h.dopamine * 0.006 + (100.0 - h.cortisol) * 0.004 } else { 0.0 }),
-            ("sleepy", if h.fatigue > 80.0 { (h.fatigue - 70.0) * 0.03 } else { 0.0 }),
-            ("amused", if h.dopamine > 60.0 && h.cortisol < 30.0 { 0.25 } else { 0.0 }),
+            (
+                "warm",
+                if !h.is_lonely() {
+                    h.oxytocin * 0.009
+                } else {
+                    0.0
+                },
+            ),
+            (
+                "excited",
+                if h.dopamine > 50.0 && h.oxytocin > 50.0 {
+                    (h.dopamine + h.oxytocin) * 0.007
+                } else {
+                    0.0
+                },
+            ),
+            (
+                "relaxed",
+                if h.dopamine < 30.0 {
+                    (100.0 - h.dopamine) * 0.008
+                } else {
+                    0.0
+                },
+            ),
+            (
+                "playful",
+                if h.dopamine > 50.0 {
+                    h.dopamine * 0.006 + (100.0 - h.cortisol) * 0.004
+                } else {
+                    0.0
+                },
+            ),
+            (
+                "sleepy",
+                if h.fatigue > 80.0 {
+                    (h.fatigue - 70.0) * 0.03
+                } else {
+                    0.0
+                },
+            ),
+            (
+                "amused",
+                if h.dopamine > 60.0 && h.cortisol < 30.0 {
+                    0.25
+                } else {
+                    0.0
+                },
+            ),
             ("neutral", 0.25),
         ];
 
@@ -398,7 +459,13 @@ impl CompanionEngine {
         st.hormones.clone()
     }
 
-    pub fn set_hormone_values(&self, dopamine: f32, cortisol: f32, oxytocin: f32, fatigue: f32) -> Neurohormones {
+    pub fn set_hormone_values(
+        &self,
+        dopamine: f32,
+        cortisol: f32,
+        oxytocin: f32,
+        fatigue: f32,
+    ) -> Neurohormones {
         let mut st = self.state.write().unwrap();
         st.hormones.dopamine = dopamine.clamp(0.0, 100.0);
         st.hormones.cortisol = cortisol.clamp(0.0, 100.0);
@@ -506,13 +573,16 @@ impl CompanionEngine {
 
         goals.retain(|g| {
             if g.status == "completed" {
-                if let Ok(dt) = chrono::DateTime::parse_from_rfc3339(g.completed_at.as_deref().unwrap_or("")) {
+                if let Ok(dt) =
+                    chrono::DateTime::parse_from_rfc3339(g.completed_at.as_deref().unwrap_or(""))
+                {
                     return dt > completed_cutoff;
                 }
             } else if g.status == "pending"
-                && let Ok(dt) = chrono::DateTime::parse_from_rfc3339(&g.created_at) {
-                    return dt > stale_cutoff;
-                }
+                && let Ok(dt) = chrono::DateTime::parse_from_rfc3339(&g.created_at)
+            {
+                return dt > stale_cutoff;
+            }
             true
         });
     }
@@ -521,8 +591,10 @@ impl CompanionEngine {
     pub fn extract_promise_from_text(text: &str) -> Option<(String, i64)> {
         let lower = text.to_lowercase();
         // Negation patterns
-        if lower.contains("nicht sicher") || lower.contains("kann nicht versprechen")
-            || lower.contains("not sure") || lower.contains("can't promise")
+        if lower.contains("nicht sicher")
+            || lower.contains("kann nicht versprechen")
+            || lower.contains("not sure")
+            || lower.contains("can't promise")
         {
             return None;
         }
@@ -535,7 +607,9 @@ impl CompanionEngine {
         ];
 
         let matched = patterns.iter().any(|pat| {
-            regex::Regex::new(pat).map(|r| r.is_match(text)).unwrap_or(false)
+            regex::Regex::new(pat)
+                .map(|r| r.is_match(text))
+                .unwrap_or(false)
         });
 
         if !matched {
@@ -565,7 +639,8 @@ impl CompanionEngine {
         let is_dangerous = matches!(
             tool_name,
             "open_external_url" | "execute_code" | "app_control" | "gui_action"
-        ) || (tool_name == "file_organizer" && arguments.get("action").and_then(|v| v.as_str()) == Some("organize"));
+        ) || (tool_name == "file_organizer"
+            && arguments.get("action").and_then(|v| v.as_str()) == Some("organize"));
 
         let auto_approve = {
             let st = self.state.read().unwrap();
@@ -578,13 +653,18 @@ impl CompanionEngine {
             tool_name: tool_name.to_string(),
             arguments,
             requires_confirmation: !auto_approve,
-            status: if auto_approve { "approved".to_string() } else { "pending".to_string() },
+            status: if auto_approve {
+                "approved".to_string()
+            } else {
+                "pending".to_string()
+            },
             created_at: current_timestamp(),
         };
 
         if auto_approve {
             // Execute immediately
-            let exec_result = self.execute_internal_sync(&request.id, &request.tool_name, &request.arguments);
+            let exec_result =
+                self.execute_internal_sync(&request.id, &request.tool_name, &request.arguments);
             let mut st = self.state.write().unwrap();
             st.tool_history.insert(0, exec_result);
         } else {
@@ -603,10 +683,14 @@ impl CompanionEngine {
     ) -> Result<ToolExecutionResult, String> {
         let req_opt = {
             let mut st = self.state.write().unwrap();
-            st.pending_tool_calls.iter().position(|c| c.id == call_id).map(|pos| st.pending_tool_calls.remove(pos))
+            st.pending_tool_calls
+                .iter()
+                .position(|c| c.id == call_id)
+                .map(|pos| st.pending_tool_calls.remove(pos))
         };
 
-        let req = req_opt.ok_or_else(|| format!("Kein anhängiger Tool-Call mit ID '{}' gefunden.", call_id))?;
+        let req = req_opt
+            .ok_or_else(|| format!("Kein anhängiger Tool-Call mit ID '{}' gefunden.", call_id))?;
 
         if !approved {
             let result = ToolExecutionResult {
@@ -633,7 +717,9 @@ impl CompanionEngine {
         if let Ok(handle) = tokio::runtime::Handle::try_current() {
             tokio::task::block_in_place(|| handle.block_on(fut))
         } else {
-            tokio::runtime::Runtime::new().expect("Tokio runtime could not be started").block_on(fut)
+            tokio::runtime::Runtime::new()
+                .expect("Tokio runtime could not be started")
+                .block_on(fut)
         }
     }
 
@@ -681,18 +767,30 @@ impl CompanionEngine {
                 }
             }
             "set_timer" => {
-                let seconds = arguments.get("seconds").and_then(|v| v.as_u64()).unwrap_or(60);
-                let label = arguments.get("label").and_then(|v| v.as_str()).unwrap_or("Erinnerung");
+                let seconds = arguments
+                    .get("seconds")
+                    .and_then(|v| v.as_u64())
+                    .unwrap_or(60);
+                let label = arguments
+                    .get("label")
+                    .and_then(|v| v.as_str())
+                    .unwrap_or("Erinnerung");
                 ToolExecutionResult {
                     call_id: call_id.to_string(),
                     tool_name: tool_name.to_string(),
                     success: true,
-                    output: format!("Timer '{}' für {} Sekunden erfolgreich gestellt.", label, seconds),
+                    output: format!(
+                        "Timer '{}' für {} Sekunden erfolgreich gestellt.",
+                        label, seconds
+                    ),
                     executed_at: now,
                 }
             }
             "open_external_url" => {
-                let url = arguments.get("url").and_then(|v| v.as_str()).unwrap_or("https://github.com");
+                let url = arguments
+                    .get("url")
+                    .and_then(|v| v.as_str())
+                    .unwrap_or("https://github.com");
                 let res = Self::run_async(CompanionTools::open_external_url(url));
                 ToolExecutionResult {
                     call_id: call_id.to_string(),
@@ -703,7 +801,10 @@ impl CompanionEngine {
                 }
             }
             "web_search" => {
-                let query = arguments.get("query").and_then(|v| v.as_str()).unwrap_or("OtakuSoul");
+                let query = arguments
+                    .get("query")
+                    .and_then(|v| v.as_str())
+                    .unwrap_or("OtakuSoul");
                 let res = Self::run_async(CompanionTools::web_search(query));
                 ToolExecutionResult {
                     call_id: call_id.to_string(),
@@ -719,12 +820,22 @@ impl CompanionEngine {
                     call_id: call_id.to_string(),
                     tool_name: tool_name.to_string(),
                     success: res.is_ok(),
-                    output: res.map(|b64| format!("[Screenshot erfolgreich erfasst, Daten-Länge: {} Zeichen]", b64.len())).unwrap_or_else(|e| e),
+                    output: res
+                        .map(|b64| {
+                            format!(
+                                "[Screenshot erfolgreich erfasst, Daten-Länge: {} Zeichen]",
+                                b64.len()
+                            )
+                        })
+                        .unwrap_or_else(|e| e),
                     executed_at: now,
                 }
             }
             "media_control" => {
-                let action = arguments.get("action").and_then(|v| v.as_str()).unwrap_or("play-pause");
+                let action = arguments
+                    .get("action")
+                    .and_then(|v| v.as_str())
+                    .unwrap_or("play-pause");
                 let res = Self::run_async(CompanionTools::media_control(action));
                 ToolExecutionResult {
                     call_id: call_id.to_string(),
@@ -735,8 +846,15 @@ impl CompanionEngine {
                 }
             }
             "app_control" => {
-                let action = arguments.get("action").and_then(|v| v.as_str()).unwrap_or("list");
-                let target = arguments.get("target").or_else(|| arguments.get("app")).and_then(|v| v.as_str()).unwrap_or("");
+                let action = arguments
+                    .get("action")
+                    .and_then(|v| v.as_str())
+                    .unwrap_or("list");
+                let target = arguments
+                    .get("target")
+                    .or_else(|| arguments.get("app"))
+                    .and_then(|v| v.as_str())
+                    .unwrap_or("");
                 let res = Self::run_async(CompanionTools::app_control(action, target));
                 ToolExecutionResult {
                     call_id: call_id.to_string(),
@@ -768,11 +886,26 @@ impl CompanionEngine {
                 }
             }
             "execute_code" => {
-                let default_lang = if cfg!(target_os = "windows") { "powershell" } else { "bash" };
-                let language = arguments.get("language").and_then(|v| v.as_str()).unwrap_or(default_lang);
+                let default_lang = if cfg!(target_os = "windows") {
+                    "powershell"
+                } else {
+                    "bash"
+                };
+                let language = arguments
+                    .get("language")
+                    .and_then(|v| v.as_str())
+                    .unwrap_or(default_lang);
                 let code = arguments.get("code").and_then(|v| v.as_str()).unwrap_or("");
-                let timeout_s = arguments.get("timeout_seconds").and_then(|v| v.as_u64()).unwrap_or(20);
-                let res = Self::run_async(CompanionTools::execute_code_sandboxed(language, code, timeout_s, &sandbox_dir));
+                let timeout_s = arguments
+                    .get("timeout_seconds")
+                    .and_then(|v| v.as_u64())
+                    .unwrap_or(20);
+                let res = Self::run_async(CompanionTools::execute_code_sandboxed(
+                    language,
+                    code,
+                    timeout_s,
+                    &sandbox_dir,
+                ));
                 ToolExecutionResult {
                     call_id: call_id.to_string(),
                     tool_name: tool_name.to_string(),
@@ -782,8 +915,15 @@ impl CompanionEngine {
                 }
             }
             "file_organizer" => {
-                let action = arguments.get("action").and_then(|v| v.as_str()).unwrap_or("list");
-                let folder = arguments.get("target_folder").or_else(|| arguments.get("folder")).and_then(|v| v.as_str()).unwrap_or("desktop");
+                let action = arguments
+                    .get("action")
+                    .and_then(|v| v.as_str())
+                    .unwrap_or("list");
+                let folder = arguments
+                    .get("target_folder")
+                    .or_else(|| arguments.get("folder"))
+                    .and_then(|v| v.as_str())
+                    .unwrap_or("desktop");
                 let query = arguments.get("query").and_then(|v| v.as_str());
                 let res = Self::run_async(CompanionTools::file_organizer(action, folder, query));
                 ToolExecutionResult {
@@ -800,7 +940,10 @@ impl CompanionEngine {
                     call_id: call_id.to_string(),
                     tool_name: tool_name.to_string(),
                     success: true,
-                    output: format!("Aufgabenplan für '{}' wurde vorbereitet und in Arbeitsschritte gegliedert.", goal),
+                    output: format!(
+                        "Aufgabenplan für '{}' wurde vorbereitet und in Arbeitsschritte gegliedert.",
+                        goal
+                    ),
                     executed_at: now,
                 }
             }
@@ -809,7 +952,11 @@ impl CompanionEngine {
                 if let Some(pos) = tool_name.find("__") {
                     let server_id = &tool_name[..pos];
                     let raw_tool = &tool_name[pos + 2..];
-                    let mcp_res = Self::run_async(self.mcp_manager.call_mcp_tool(server_id, raw_tool, arguments.clone()));
+                    let mcp_res = Self::run_async(self.mcp_manager.call_mcp_tool(
+                        server_id,
+                        raw_tool,
+                        arguments.clone(),
+                    ));
                     ToolExecutionResult {
                         call_id: call_id.to_string(),
                         tool_name: tool_name.to_string(),
@@ -822,7 +969,10 @@ impl CompanionEngine {
                         call_id: call_id.to_string(),
                         tool_name: tool_name.to_string(),
                         success: false,
-                        output: format!("Unbekanntes oder nicht implementiertes Tool: '{}'", tool_name),
+                        output: format!(
+                            "Unbekanntes oder nicht implementiertes Tool: '{}'",
+                            tool_name
+                        ),
                         executed_at: now,
                     }
                 }
@@ -841,21 +991,35 @@ impl CompanionEngine {
 
         #[cfg(not(any(target_os = "windows", target_os = "macos")))]
         {
-            if let Ok(out) = std::process::Command::new("xdotool").args(["getactivewindow", "getwindowname"]).output()
-                && out.status.success() {
-                    title = String::from_utf8_lossy(&out.stdout).trim().to_string();
-                }
+            if let Ok(out) = std::process::Command::new("xdotool")
+                .args(["getactivewindow", "getwindowname"])
+                .output()
+                && out.status.success()
+            {
+                title = String::from_utf8_lossy(&out.stdout).trim().to_string();
+            }
             if title.is_empty()
-                && let Ok(out) = std::process::Command::new("kdotool").args(["getactivewindow", "getwindowname"]).output()
-                    && out.status.success() {
-                        title = String::from_utf8_lossy(&out.stdout).trim().to_string();
-                    }
+                && let Ok(out) = std::process::Command::new("kdotool")
+                    .args(["getactivewindow", "getwindowname"])
+                    .output()
+                && out.status.success()
+            {
+                title = String::from_utf8_lossy(&out.stdout).trim().to_string();
+            }
         }
 
         // Privacy filter
         let privacy_keywords = [
-            "password", "passwort", "banking", "incognito", "privat",
-            "login", "signin", "auth", "secret", "credit card",
+            "password",
+            "passwort",
+            "banking",
+            "incognito",
+            "privat",
+            "login",
+            "signin",
+            "auth",
+            "secret",
+            "credit card",
         ];
 
         let lower = title.to_lowercase();
@@ -995,7 +1159,10 @@ mod tests {
         engine.add_thought("Die Sonne scheint heute besonders hell.");
         let state = engine.get_state();
         assert!(!state.scratchpad.is_empty());
-        assert_eq!(state.scratchpad[0].thought, "Die Sonne scheint heute besonders hell.");
+        assert_eq!(
+            state.scratchpad[0].thought,
+            "Die Sonne scheint heute besonders hell."
+        );
 
         let goal = engine.add_promise("Erinnere mich an den Tee", 5);
         assert_eq!(goal.status, "pending");
@@ -1004,7 +1171,11 @@ mod tests {
 
         engine.mark_goal_completed(&goal.id).unwrap();
         let updated_state = engine.get_state().goals;
-        assert!(updated_state.iter().any(|g| g.id == goal.id && g.status == "completed"));
+        assert!(
+            updated_state
+                .iter()
+                .any(|g| g.id == goal.id && g.status == "completed")
+        );
     }
 
     #[test]
@@ -1032,14 +1203,25 @@ mod tests {
         assert!(empty_res.unwrap_err().contains("darf nicht leer sein"));
 
         // 2. Unsupported language check
-        let unsupported_res = CompanionTools::execute_code_sandboxed("ruby", "puts 'hello'", 5, &temp_dir).await;
+        let unsupported_res =
+            CompanionTools::execute_code_sandboxed("ruby", "puts 'hello'", 5, &temp_dir).await;
         assert!(unsupported_res.is_err());
-        assert!(unsupported_res.unwrap_err().contains("Nicht unterstützte Skriptsprache"));
+        assert!(
+            unsupported_res
+                .unwrap_err()
+                .contains("Nicht unterstützte Skriptsprache")
+        );
 
         // 3. Execution on Unix (bash)
         #[cfg(not(target_os = "windows"))]
         {
-            let bash_res = CompanionTools::execute_code_sandboxed("bash", "echo 'otakusoul_sandbox_ok'", 5, &temp_dir).await;
+            let bash_res = CompanionTools::execute_code_sandboxed(
+                "bash",
+                "echo 'otakusoul_sandbox_ok'",
+                5,
+                &temp_dir,
+            )
+            .await;
             assert!(bash_res.is_ok(), "Bash execution failed: {:?}", bash_res);
             let out = bash_res.unwrap();
             assert!(out.contains("otakusoul_sandbox_ok"));

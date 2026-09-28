@@ -110,21 +110,24 @@ pub fn scan_available_live2d_models() -> Vec<ScannedLive2d> {
     let current_dir = std::env::current_dir().unwrap_or_else(|_| PathBuf::from("."));
     let mut base_root = current_dir.clone();
     if base_root.ends_with("src-tauri")
-        && let Some(parent) = base_root.parent() {
-            base_root = parent.to_path_buf();
-        }
+        && let Some(parent) = base_root.parent()
+    {
+        base_root = parent.to_path_buf();
+    }
     search_dirs.push(base_root.join("assets").join("live2d"));
     search_dirs.push(base_root.join("..").join("assets").join("live2d"));
 
     // 3. Fallback: check relative to exe
     if let Ok(exe) = std::env::current_exe()
-        && let Some(exe_dir) = exe.parent() {
-            search_dirs.push(exe_dir.join("assets").join("live2d"));
-            search_dirs.push(exe_dir.join("..").join("assets").join("live2d"));
-        }
+        && let Some(exe_dir) = exe.parent()
+    {
+        search_dirs.push(exe_dir.join("assets").join("live2d"));
+        search_dirs.push(exe_dir.join("..").join("assets").join("live2d"));
+    }
 
     // 4. Soul of Waifu local installation if available
-    let sow_live2d = PathBuf::from("/home/deathtrap/development/Soul-of-Waifu-linux/assets/emotions/live2d");
+    let sow_live2d =
+        PathBuf::from("/home/deathtrap/development/Soul-of-Waifu-linux/assets/emotions/live2d");
     if sow_live2d.exists() {
         search_dirs.push(sow_live2d);
     }
@@ -143,10 +146,11 @@ pub fn scan_available_live2d_models() -> Vec<ScannedLive2d> {
                 if path.is_dir() {
                     // Check for *.model3.json (Cubism 3/4) or *.model.json (Cubism 2)
                     if let Some(model_info) = inspect_live2d_dir(&path)
-                        && !seen_ids.contains(&model_info.id) {
-                            seen_ids.insert(model_info.id.clone());
-                            found_models.push(model_info);
-                        }
+                        && !seen_ids.contains(&model_info.id)
+                    {
+                        seen_ids.insert(model_info.id.clone());
+                        found_models.push(model_info);
+                    }
                 }
             }
         }
@@ -222,7 +226,10 @@ pub async fn download_live2d_model(model_id: &str) -> Result<String, String> {
     fs::create_dir_all(&target_dir)
         .map_err(|e| format!("Zielverzeichnis konnte nicht erstellt werden: {}", e))?;
 
-    info!("Lade Live2D-Modell herunter: {} von {}", item.name, item.url);
+    info!(
+        "Lade Live2D-Modell herunter: {} von {}",
+        item.name, item.url
+    );
 
     let client = reqwest::Client::builder()
         .timeout(std::time::Duration::from_secs(60))
@@ -237,7 +244,10 @@ pub async fn download_live2d_model(model_id: &str) -> Result<String, String> {
             .map_err(|e| format!("Download fehlgeschlagen: {}", e))?;
 
         if !resp.status().is_success() {
-            return Err(format!("Download-Server antwortete mit Status {}", resp.status()));
+            return Err(format!(
+                "Download-Server antwortete mit Status {}",
+                resp.status()
+            ));
         }
 
         let bytes = resp
@@ -257,7 +267,9 @@ pub async fn download_live2d_model(model_id: &str) -> Result<String, String> {
 
             let enclosed = file.enclosed_name();
             if let Some(enclosed_path) = enclosed {
-                let relative = enclosed_path.strip_prefix("runtime/").unwrap_or(&enclosed_path);
+                let relative = enclosed_path
+                    .strip_prefix("runtime/")
+                    .unwrap_or(&enclosed_path);
                 if relative.as_os_str().is_empty() {
                     continue;
                 }
@@ -269,14 +281,18 @@ pub async fn download_live2d_model(model_id: &str) -> Result<String, String> {
                     if let Some(p) = outpath.parent() {
                         let _ = fs::create_dir_all(p);
                     }
-                    let mut outfile = fs::File::create(&outpath)
-                        .map_err(|e| format!("Datei {:?} konnte nicht erstellt werden: {}", outpath, e))?;
+                    let mut outfile = fs::File::create(&outpath).map_err(|e| {
+                        format!("Datei {:?} konnte nicht erstellt werden: {}", outpath, e)
+                    })?;
                     std::io::copy(&mut file, &mut outfile)
                         .map_err(|e| format!("Fehler beim Schreiben von {:?}: {}", outpath, e))?;
                 }
             }
         }
-        info!("Live2D-Modell '{}' erfolgreich nach {:?} entpackt.", item.name, target_dir);
+        info!(
+            "Live2D-Modell '{}' erfolgreich nach {:?} entpackt.",
+            item.name, target_dir
+        );
     } else {
         // Single file / raw github
         warn!("Direkter Download von Einzeldateien noch nicht voll implementiert.");
@@ -310,21 +326,29 @@ pub fn import_live2d_model(source_path: &str) -> Result<ScannedLive2d, String> {
         .map_err(|e| format!("Zielordner konnte nicht erstellt werden: {}", e))?;
 
     if src.is_file() {
-        let ext = src.extension().and_then(|e| e.to_str()).unwrap_or("").to_lowercase();
+        let ext = src
+            .extension()
+            .and_then(|e| e.to_str())
+            .unwrap_or("")
+            .to_lowercase();
         if ext == "zip" {
             // Extract zip
-            let model_name = src.file_stem().and_then(|s| s.to_str()).unwrap_or("imported_model");
+            let model_name = src
+                .file_stem()
+                .and_then(|s| s.to_str())
+                .unwrap_or("imported_model");
             let target_dir = dest_base.join(model_name);
             fs::create_dir_all(&target_dir)
                 .map_err(|e| format!("Verzeichnis konnte nicht erstellt werden: {}", e))?;
 
             let file = fs::File::open(&src)
                 .map_err(|e| format!("ZIP konnte nicht geöffnet werden: {}", e))?;
-            let mut archive = zip::ZipArchive::new(file)
-                .map_err(|e| format!("ZIP-Archiv fehlerhaft: {}", e))?;
+            let mut archive =
+                zip::ZipArchive::new(file).map_err(|e| format!("ZIP-Archiv fehlerhaft: {}", e))?;
 
             for i in 0..archive.len() {
-                let mut f = archive.by_index(i)
+                let mut f = archive
+                    .by_index(i)
                     .map_err(|e| format!("Fehler beim Lesen des Eintrags: {}", e))?;
                 if let Some(enclosed) = f.enclosed_name() {
                     let relative = enclosed.strip_prefix("runtime/").unwrap_or(&enclosed);
@@ -348,10 +372,15 @@ pub fn import_live2d_model(source_path: &str) -> Result<ScannedLive2d, String> {
 
             inspect_live2d_dir(&target_dir)
                 .ok_or_else(|| "Im ZIP-Archiv wurde keine gültige .model3.json oder .model.json Datei gefunden.".to_string())
-        } else if ext == "json" && (source_path.ends_with(".model3.json") || source_path.ends_with(".model.json")) {
+        } else if ext == "json"
+            && (source_path.ends_with(".model3.json") || source_path.ends_with(".model.json"))
+        {
             // User selected the model JSON directly -> copy its directory
             if let Some(parent) = src.parent() {
-                let folder_name = parent.file_name().and_then(|s| s.to_str()).unwrap_or("imported_model");
+                let folder_name = parent
+                    .file_name()
+                    .and_then(|s| s.to_str())
+                    .unwrap_or("imported_model");
                 let target_dir = dest_base.join(folder_name);
                 copy_dir_recursive(parent, &target_dir)?;
                 inspect_live2d_dir(&target_dir)
@@ -363,7 +392,10 @@ pub fn import_live2d_model(source_path: &str) -> Result<ScannedLive2d, String> {
             Err("Nicht unterstütztes Dateiformat. Bitte wähle eine .zip-Datei oder eine *.model3.json/*.model.json Datei.".to_string())
         }
     } else if src.is_dir() {
-        let folder_name = src.file_name().and_then(|s| s.to_str()).unwrap_or("imported_model");
+        let folder_name = src
+            .file_name()
+            .and_then(|s| s.to_str())
+            .unwrap_or("imported_model");
         let target_dir = dest_base.join(folder_name);
         copy_dir_recursive(&src, &target_dir)?;
         inspect_live2d_dir(&target_dir)
@@ -380,7 +412,8 @@ pub fn import_sow_live2d_models() -> Result<usize, String> {
     fs::create_dir_all(&dest_base)
         .map_err(|e| format!("Zielordner konnte nicht erstellt werden: {}", e))?;
 
-    let sow_live2d = PathBuf::from("/home/deathtrap/development/Soul-of-Waifu-linux/assets/emotions/live2d");
+    let sow_live2d =
+        PathBuf::from("/home/deathtrap/development/Soul-of-Waifu-linux/assets/emotions/live2d");
     if !sow_live2d.exists() || !sow_live2d.is_dir() {
         return Err("Soul-of-Waifu Live2D-Verzeichnis wurde unter /home/deathtrap/development/Soul-of-Waifu-linux/assets/emotions/live2d nicht gefunden.".to_string());
     }
@@ -392,13 +425,14 @@ pub fn import_sow_live2d_models() -> Result<usize, String> {
     for entry in entries.flatten() {
         let p = entry.path();
         if p.is_dir()
-            && let Some(folder_name) = p.file_name() {
-                let target = dest_base.join(folder_name);
-                if !target.exists() {
-                    let _ = copy_dir_recursive(&p, &target);
-                    imported += 1;
-                }
+            && let Some(folder_name) = p.file_name()
+        {
+            let target = dest_base.join(folder_name);
+            if !target.exists() {
+                let _ = copy_dir_recursive(&p, &target);
+                imported += 1;
             }
+        }
     }
 
     Ok(imported)
@@ -417,13 +451,16 @@ fn copy_dir_recursive(src: &Path, dst: &Path) -> Result<(), String> {
         if path.is_dir() {
             copy_dir_recursive(&path, &target)?;
         } else {
-            fs::copy(&path, &target)
-                .map_err(|e| format!("Fehler beim Kopieren von {:?} nach {:?}: {}", path, target, e))?;
+            fs::copy(&path, &target).map_err(|e| {
+                format!(
+                    "Fehler beim Kopieren von {:?} nach {:?}: {}",
+                    path, target, e
+                )
+            })?;
         }
     }
     Ok(())
 }
-
 
 #[cfg(test)]
 mod tests {

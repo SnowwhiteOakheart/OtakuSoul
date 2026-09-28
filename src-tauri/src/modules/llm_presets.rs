@@ -16,7 +16,8 @@ pub fn get_default_presets() -> Vec<LlmPreset> {
         LlmPreset {
             id: "roleplay_balanced".to_string(),
             name: "Ausgewogenes Rollenspiel (Standard)".to_string(),
-            description: "Optimal für immersive Dialoge und lebendige Reaktionen ohne Repetition.".to_string(),
+            description: "Optimal für immersive Dialoge und lebendige Reaktionen ohne Repetition."
+                .to_string(),
             is_builtin: true,
             sampling: SamplingParams {
                 temperature: Some(0.8),
@@ -41,7 +42,9 @@ pub fn get_default_presets() -> Vec<LlmPreset> {
         LlmPreset {
             id: "storytelling_creative".to_string(),
             name: "Storytelling & Kreativ".to_string(),
-            description: "Höhere Varianz mit Dynamic Temperature und DRY für abwechslungsreiche Prosa.".to_string(),
+            description:
+                "Höhere Varianz mit Dynamic Temperature und DRY für abwechslungsreiche Prosa."
+                    .to_string(),
             is_builtin: true,
             sampling: SamplingParams {
                 temperature: Some(1.15),
@@ -66,7 +69,9 @@ pub fn get_default_presets() -> Vec<LlmPreset> {
         LlmPreset {
             id: "tactical_logic".to_string(),
             name: "Taktisch & Präzise (Stage GM)".to_string(),
-            description: "Niedrige Temperatur für verlässliche Würfelprüfungen, Logik und Kampfregeln.".to_string(),
+            description:
+                "Niedrige Temperatur für verlässliche Würfelprüfungen, Logik und Kampfregeln."
+                    .to_string(),
             is_builtin: true,
             sampling: SamplingParams {
                 temperature: Some(0.35),
@@ -91,7 +96,9 @@ pub fn get_default_presets() -> Vec<LlmPreset> {
         LlmPreset {
             id: "uncensored_xtc".to_string(),
             name: "Unzensiert & Wild (XTC Explorer)".to_string(),
-            description: "Nutzt XTC (Exclude Top Choices) für überraschende, originelle Wortwahlen.".to_string(),
+            description:
+                "Nutzt XTC (Exclude Top Choices) für überraschende, originelle Wortwahlen."
+                    .to_string(),
             is_builtin: true,
             sampling: SamplingParams {
                 temperature: Some(1.25),
@@ -157,18 +164,22 @@ pub fn load_llm_presets(custom_path: Option<&Path>) -> Vec<LlmPreset> {
 
     if path.exists()
         && let Ok(content) = std::fs::read_to_string(&path)
-            && let Ok(user_presets) = serde_json::from_str::<Vec<LlmPreset>>(&content) {
-                for up in user_presets {
-                    if !presets.iter().any(|p| p.id == up.id) {
-                        presets.push(up);
-                    }
-                }
+        && let Ok(user_presets) = serde_json::from_str::<Vec<LlmPreset>>(&content)
+    {
+        for up in user_presets {
+            if !presets.iter().any(|p| p.id == up.id) {
+                presets.push(up);
             }
+        }
+    }
 
     presets
 }
 
-pub fn save_llm_preset(preset: LlmPreset, custom_path: Option<&Path>) -> Result<Vec<LlmPreset>, String> {
+pub fn save_llm_preset(
+    preset: LlmPreset,
+    custom_path: Option<&Path>,
+) -> Result<Vec<LlmPreset>, String> {
     let path = custom_path
         .map(|p| p.to_path_buf())
         .unwrap_or_else(default_presets_path);
@@ -189,13 +200,15 @@ pub fn save_llm_preset(preset: LlmPreset, custom_path: Option<&Path>) -> Result<
     let json = serde_json::to_string_pretty(&user_only)
         .map_err(|e| format!("Fehler beim Serialisieren der Presets: {}", e))?;
 
-    std::fs::write(&path, json)
-        .map_err(|e| format!("Fehler beim Speichern der Presets: {}", e))?;
+    std::fs::write(&path, json).map_err(|e| format!("Fehler beim Speichern der Presets: {}", e))?;
 
     Ok(current)
 }
 
-pub fn delete_llm_preset(preset_id: &str, custom_path: Option<&Path>) -> Result<Vec<LlmPreset>, String> {
+pub fn delete_llm_preset(
+    preset_id: &str,
+    custom_path: Option<&Path>,
+) -> Result<Vec<LlmPreset>, String> {
     let path = custom_path
         .map(|p| p.to_path_buf())
         .unwrap_or_else(default_presets_path);
@@ -207,8 +220,7 @@ pub fn delete_llm_preset(preset_id: &str, custom_path: Option<&Path>) -> Result<
     let json = serde_json::to_string_pretty(&user_only)
         .map_err(|e| format!("Fehler beim Serialisieren der Presets: {}", e))?;
 
-    std::fs::write(&path, json)
-        .map_err(|e| format!("Fehler beim Speichern der Presets: {}", e))?;
+    std::fs::write(&path, json).map_err(|e| format!("Fehler beim Speichern der Presets: {}", e))?;
 
     Ok(current)
 }

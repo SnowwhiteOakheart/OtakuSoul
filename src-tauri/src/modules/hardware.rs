@@ -132,24 +132,25 @@ pub fn probe_hardware() -> HardwareInfo {
             "--format=csv,noheader,nounits",
         ])
         .output()
-        && output.status.success() {
-            let stdout = String::from_utf8_lossy(&output.stdout);
-            for line in stdout.lines() {
-                let parts: Vec<&str> = line.split(',').map(|s| s.trim()).collect();
-                if parts.len() >= 3 {
-                    let name = parts[0].to_string();
-                    let total_vram = parts[1].parse::<u64>().unwrap_or(0);
-                    let free_vram = parts[2].parse::<u64>().unwrap_or(0);
+        && output.status.success()
+    {
+        let stdout = String::from_utf8_lossy(&output.stdout);
+        for line in stdout.lines() {
+            let parts: Vec<&str> = line.split(',').map(|s| s.trim()).collect();
+            if parts.len() >= 3 {
+                let name = parts[0].to_string();
+                let total_vram = parts[1].parse::<u64>().unwrap_or(0);
+                let free_vram = parts[2].parse::<u64>().unwrap_or(0);
 
-                    gpus.push(GpuInfo {
-                        name,
-                        vendor: "NVIDIA".to_string(),
-                        total_vram_mb: total_vram,
-                        free_vram_mb: free_vram,
-                    });
-                }
+                gpus.push(GpuInfo {
+                    name,
+                    vendor: "NVIDIA".to_string(),
+                    total_vram_mb: total_vram,
+                    free_vram_mb: free_vram,
+                });
             }
         }
+    }
 
     // 2. macOS Apple Silicon unified memory detection
     #[cfg(target_os = "macos")]

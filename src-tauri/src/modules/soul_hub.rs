@@ -6,15 +6,14 @@ use std::path::{Path, PathBuf};
 use tracing::info;
 
 use crate::modules::characters::{
-    extract_and_save_embedded_lorebook, inject_character_metadata_png, parse_character_json,
-    parse_character_png, save_character_to_user_dir, CharacterProfile,
+    CharacterProfile, extract_and_save_embedded_lorebook, inject_character_metadata_png,
+    parse_character_json, parse_character_png, save_character_to_user_dir,
 };
 use crate::modules::lorebook::Lorebook;
 use crate::modules::paths::resolve_app_paths;
-use crate::modules::stage::{create_custom_scene, save_scene_state, SceneDefinition, SceneState};
+use crate::modules::stage::{SceneDefinition, SceneState, create_custom_scene, save_scene_state};
 
-const BROWSER_USER_AGENT: &str =
-    "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Safari/537.36";
+const BROWSER_USER_AGENT: &str = "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Safari/537.36";
 
 const SOUL_GATEWAY_REGISTRY_URL: &str =
     "https://raw.githubusercontent.com/SnowwhiteOakheart/sow-data/main/soul_registry.json";
@@ -122,8 +121,12 @@ fn ensure_unique_character_name(base_name: &str, char_dir: &Path) -> String {
         }
     };
 
-    while char_dir.join(format!("{}.png", safe_stem(&candidate))).exists()
-        || char_dir.join(format!("{}.json", safe_stem(&candidate))).exists()
+    while char_dir
+        .join(format!("{}.png", safe_stem(&candidate)))
+        .exists()
+        || char_dir
+            .join(format!("{}.json", safe_stem(&candidate)))
+            .exists()
     {
         candidate = format!("{}_{}", base_name, suffix);
         suffix += 1;
@@ -157,7 +160,9 @@ fn get_placeholder_png() -> Vec<u8> {
     out.extend_from_slice(&ihdr_full);
     out.extend_from_slice(&ihdr_crc);
 
-    let idat_data = [0x78, 0x9c, 0x63, 0x54, 0x33, 0xda, 0xff, 0x00, 0x04, 0x8a, 0x02, 0xec];
+    let idat_data = [
+        0x78, 0x9c, 0x63, 0x54, 0x33, 0xda, 0xff, 0x00, 0x04, 0x8a, 0x02, 0xec,
+    ];
     let idat_len = (idat_data.len() as u32).to_be_bytes();
     let mut idat_full = Vec::from(b"IDAT" as &[u8]);
     idat_full.extend_from_slice(&idat_data);
@@ -225,10 +230,18 @@ pub async fn import_soul_gateway_character(
         .header("Accept", "image/png,image/*,*/*")
         .send()
         .await
-        .map_err(|e| format!("Fehler beim Herunterladen der Charakterkarte von {}: {}", download_url, e))?;
+        .map_err(|e| {
+            format!(
+                "Fehler beim Herunterladen der Charakterkarte von {}: {}",
+                download_url, e
+            )
+        })?;
 
     if !res.status().is_success() {
-        return Err(format!("Download fehlgeschlagen mit Status {}", res.status()));
+        return Err(format!(
+            "Download fehlgeschlagen mit Status {}",
+            res.status()
+        ));
     }
 
     let bytes = res
@@ -310,10 +323,11 @@ pub async fn search_chub_characters(
     );
 
     if let Some(t_list) = topics
-        && !t_list.is_empty() {
-            let joined = t_list.join(",");
-            url.push_str(&format!("&topics={}", urlencoding::encode(&joined)));
-        }
+        && !t_list.is_empty()
+    {
+        let joined = t_list.join(",");
+        url.push_str(&format!("&topics={}", urlencoding::encode(&joined)));
+    }
 
     let res = client
         .get(&url)
@@ -353,23 +367,44 @@ pub async fn search_chub_characters(
     let mut items = Vec::new();
     for n in &nodes {
         let id = n.get("id").and_then(|v| v.as_u64()).unwrap_or(0);
-        let name = n.get("name").and_then(|v| v.as_str()).unwrap_or("Unknown").to_string();
+        let name = n
+            .get("name")
+            .and_then(|v| v.as_str())
+            .unwrap_or("Unknown")
+            .to_string();
         let full_path = match n.get("fullPath").and_then(|v| v.as_str()) {
             Some(p) => p.to_string(),
             None => continue,
         };
-        let description = n.get("description").and_then(|v| v.as_str()).map(|s| s.to_string());
-        let tagline = n.get("tagline").and_then(|v| v.as_str()).map(|s| s.to_string());
-        let avatar_url = n.get("avatar_url").and_then(|v| v.as_str()).map(|s| s.to_string());
+        let description = n
+            .get("description")
+            .and_then(|v| v.as_str())
+            .map(|s| s.to_string());
+        let tagline = n
+            .get("tagline")
+            .and_then(|v| v.as_str())
+            .map(|s| s.to_string());
+        let avatar_url = n
+            .get("avatar_url")
+            .and_then(|v| v.as_str())
+            .map(|s| s.to_string());
         let star_count = n.get("starCount").and_then(|v| v.as_u64()).unwrap_or(0) as u32;
         let n_favorites = n.get("n_favorites").and_then(|v| v.as_u64()).unwrap_or(0) as u32;
         let n_tokens = n.get("nTokens").and_then(|v| v.as_u64()).unwrap_or(0) as u32;
         let n_chats = n.get("nChats").and_then(|v| v.as_u64()).unwrap_or(0) as u32;
-        let topics = n.get("topics")
+        let topics = n
+            .get("topics")
             .and_then(|v| v.as_array())
-            .map(|arr| arr.iter().filter_map(|x| x.as_str().map(|s| s.to_string())).collect())
+            .map(|arr| {
+                arr.iter()
+                    .filter_map(|x| x.as_str().map(|s| s.to_string()))
+                    .collect()
+            })
             .unwrap_or_default();
-        let nsfw_image = n.get("nsfw_image").and_then(|v| v.as_bool()).unwrap_or(false);
+        let nsfw_image = n
+            .get("nsfw_image")
+            .and_then(|v| v.as_bool())
+            .unwrap_or(false);
 
         items.push(ChubSearchItem {
             id,
@@ -412,7 +447,12 @@ pub async fn get_chub_character_details(full_path: &str) -> Result<ChubCharacter
         .header("Accept", "application/json, text/plain, */*")
         .send()
         .await
-        .map_err(|e| format!("Fehler beim Abrufen der Charakterdetails für {}: {}", full_path, e))?;
+        .map_err(|e| {
+            format!(
+                "Fehler beim Abrufen der Charakterdetails für {}: {}",
+                full_path, e
+            )
+        })?;
 
     if !res.status().is_success() {
         return Err(format!("Chub API meldete Status {}", res.status()));
@@ -451,15 +491,24 @@ pub async fn get_chub_character_details(full_path: &str) -> Result<ChubCharacter
         .to_string();
 
     let star_count = node.get("starCount").and_then(|v| v.as_u64()).unwrap_or(0) as u32;
-    let n_favorites = node.get("n_favorites").and_then(|v| v.as_u64()).unwrap_or(0) as u32;
+    let n_favorites = node
+        .get("n_favorites")
+        .and_then(|v| v.as_u64())
+        .unwrap_or(0) as u32;
     let n_tokens = node.get("nTokens").and_then(|v| v.as_u64()).unwrap_or(0) as u32;
 
     let personality = {
-        let tp = def.get("tavern_personality").and_then(|v| v.as_str()).unwrap_or("");
+        let tp = def
+            .get("tavern_personality")
+            .and_then(|v| v.as_str())
+            .unwrap_or("");
         if !tp.trim().is_empty() {
             tp.to_string()
         } else {
-            def.get("personality").and_then(|v| v.as_str()).unwrap_or("").to_string()
+            def.get("personality")
+                .and_then(|v| v.as_str())
+                .unwrap_or("")
+                .to_string()
         }
     };
 
@@ -470,7 +519,11 @@ pub async fn get_chub_character_details(full_path: &str) -> Result<ChubCharacter
         .unwrap_or("")
         .to_string();
 
-    let scenario = def.get("scenario").and_then(|v| v.as_str()).unwrap_or("").to_string();
+    let scenario = def
+        .get("scenario")
+        .and_then(|v| v.as_str())
+        .unwrap_or("")
+        .to_string();
 
     let example_dialogs = def
         .get("example_dialogs")
@@ -482,11 +535,18 @@ pub async fn get_chub_character_details(full_path: &str) -> Result<ChubCharacter
     let alternate_greetings = def
         .get("alternate_greetings")
         .and_then(|v| v.as_array())
-        .map(|arr| arr.iter().filter_map(|x| x.as_str().map(|s| s.to_string())).collect())
+        .map(|arr| {
+            arr.iter()
+                .filter_map(|x| x.as_str().map(|s| s.to_string()))
+                .collect()
+        })
         .unwrap_or_default();
 
     let has_embedded_lorebook = def.get("embedded_lorebook").is_some()
-        || def.get("extensions").and_then(|e| e.get("character_book")).is_some();
+        || def
+            .get("extensions")
+            .and_then(|e| e.get("character_book"))
+            .is_some();
 
     Ok(ChubCharacterDetail {
         name,
@@ -513,7 +573,10 @@ pub async fn import_chub_character(full_path: &str) -> Result<CharacterImportRes
     let _ = fs::create_dir_all(&char_dir);
 
     // 1. Try downloading pre-built SillyTavern V2 card PNG from CDN
-    let cdn_url = format!("https://avatars.charhub.io/avatars/{}/chara_card_v2.png", clean_path);
+    let cdn_url = format!(
+        "https://avatars.charhub.io/avatars/{}/chara_card_v2.png",
+        clean_path
+    );
     info!("[SoulHub] Attempting CDN download from {}", cdn_url);
 
     let cdn_result = client
@@ -524,44 +587,60 @@ pub async fn import_chub_character(full_path: &str) -> Result<CharacterImportRes
 
     if let Ok(resp) = cdn_result
         && resp.status().is_success()
-            && let Ok(bytes) = resp.bytes().await
-                && bytes.len() >= 8 && &bytes[0..8] == b"\x89PNG\r\n\x1a\n"
-                    && let Ok((mut card, avatar_data_url)) = parse_character_png(&bytes) {
-                        info!("[SoulHub] Successfully downloaded V2 card from CDN for {}", clean_path);
+        && let Ok(bytes) = resp.bytes().await
+        && bytes.len() >= 8
+        && &bytes[0..8] == b"\x89PNG\r\n\x1a\n"
+        && let Ok((mut card, avatar_data_url)) = parse_character_png(&bytes)
+    {
+        info!(
+            "[SoulHub] Successfully downloaded V2 card from CDN for {}",
+            clean_path
+        );
 
-                        let imported_lorebook = extract_and_save_embedded_lorebook(&card, &card.data.name);
-                        let mut bound_lorebooks = Vec::new();
-                        if let Some(ref lb_name) = imported_lorebook {
-                            bound_lorebooks.push(lb_name.clone());
-                        }
+        let imported_lorebook = extract_and_save_embedded_lorebook(&card, &card.data.name);
+        let mut bound_lorebooks = Vec::new();
+        if let Some(ref lb_name) = imported_lorebook {
+            bound_lorebooks.push(lb_name.clone());
+        }
 
-                        let unique_name = ensure_unique_character_name(&card.data.name, &char_dir);
-                        card.data.name = unique_name;
+        let unique_name = ensure_unique_character_name(&card.data.name, &char_dir);
+        card.data.name = unique_name;
 
-                        let profile = CharacterProfile {
-                            id: card.data.name.clone(),
-                            card,
-                            avatar_data_url: Some(avatar_data_url),
-                            source_path: None,
-                            bound_lorebooks,
-                        };
+        let profile = CharacterProfile {
+            id: card.data.name.clone(),
+            card,
+            avatar_data_url: Some(avatar_data_url),
+            source_path: None,
+            bound_lorebooks,
+        };
 
-                        let saved = save_character_to_user_dir(&profile)?;
-                        return Ok(CharacterImportResult {
-                            profile: saved,
-                            imported_lorebook,
-                        });
-                    }
+        let saved = save_character_to_user_dir(&profile)?;
+        return Ok(CharacterImportResult {
+            profile: saved,
+            imported_lorebook,
+        });
+    }
 
     // 2. Fallback: Query Chub API node and rebuild CharacterCardV2 locally
-    info!("[SoulHub] CDN unavailable; reconstructing character from Chub API node for {}", clean_path);
-    let api_url = format!("https://gateway.chub.ai/api/characters/{}?full=true", clean_path);
+    info!(
+        "[SoulHub] CDN unavailable; reconstructing character from Chub API node for {}",
+        clean_path
+    );
+    let api_url = format!(
+        "https://gateway.chub.ai/api/characters/{}?full=true",
+        clean_path
+    );
     let api_res = client
         .get(&api_url)
         .header("Accept", "application/json, text/plain, */*")
         .send()
         .await
-        .map_err(|e| format!("Fehler beim Abrufen der API-Daten für {}: {}", clean_path, e))?;
+        .map_err(|e| {
+            format!(
+                "Fehler beim Abrufen der API-Daten für {}: {}",
+                clean_path, e
+            )
+        })?;
 
     if !api_res.status().is_success() {
         return Err(format!(
@@ -607,7 +686,10 @@ pub async fn import_chub_character(full_path: &str) -> Result<CharacterImportRes
 
     // Inject V2 metadata chunk into avatar PNG
     let enriched_png = inject_character_metadata_png(&avatar_bytes, &card)?;
-    let avatar_data_url = format!("data:image/png;base64,{}", BASE64_STANDARD.encode(&enriched_png));
+    let avatar_data_url = format!(
+        "data:image/png;base64,{}",
+        BASE64_STANDARD.encode(&enriched_png)
+    );
 
     let profile = CharacterProfile {
         id: card.data.name.clone(),
@@ -683,8 +765,9 @@ pub async fn import_character_from_url(url: &str) -> Result<CharacterImportResul
         })
     } else {
         // Attempt JSON parsing
-        let text = String::from_utf8(bytes.to_vec())
-            .map_err(|_| "Datei ist weder ein valides PNG noch eine UTF-8 JSON-Datei".to_string())?;
+        let text = String::from_utf8(bytes.to_vec()).map_err(|_| {
+            "Datei ist weder ein valides PNG noch eine UTF-8 JSON-Datei".to_string()
+        })?;
         let mut card = parse_character_json(&text)?;
         let imported_lorebook = extract_and_save_embedded_lorebook(&card, &card.data.name);
         let mut bound_lorebooks = Vec::new();
@@ -743,7 +826,11 @@ pub async fn fetch_lorebooks_gateway_registry() -> Result<Vec<GatewayLorebookEnt
             b.get("author").and_then(|v| v.as_str()),
             b.get("download_url").and_then(|v| v.as_str()),
         ) {
-            let description = b.get("description").and_then(|v| v.as_str()).unwrap_or("").to_string();
+            let description = b
+                .get("description")
+                .and_then(|v| v.as_str())
+                .unwrap_or("")
+                .to_string();
             let entry_count = b.get("entry_count").and_then(|v| v.as_u64()).unwrap_or(0) as u32;
 
             results.push(GatewayLorebookEntry {
@@ -789,10 +876,15 @@ pub async fn import_lorebook_from_gateway(
     let mut candidate = lorebook.name.clone();
     let mut suffix = 1;
     let safe_slug = |n: &str| {
-        n.trim().to_lowercase().replace(|c: char| !c.is_alphanumeric() && c != '-' && c != '_', "_")
+        n.trim()
+            .to_lowercase()
+            .replace(|c: char| !c.is_alphanumeric() && c != '-' && c != '_', "_")
     };
 
-    while lore_dir.join(format!("{}.json", safe_slug(&candidate))).exists() {
+    while lore_dir
+        .join(format!("{}.json", safe_slug(&candidate)))
+        .exists()
+    {
         candidate = format!("{}_{}", lorebook.name, suffix);
         suffix += 1;
     }
@@ -838,8 +930,16 @@ pub async fn fetch_stages_gateway_registry() -> Result<Vec<GatewaySceneEntry>, S
             s.get("author").and_then(|v| v.as_str()),
             s.get("download_url").and_then(|v| v.as_str()),
         ) {
-            let id = s.get("id").and_then(|v| v.as_str()).unwrap_or("").to_string();
-            let description = s.get("description").and_then(|v| v.as_str()).unwrap_or("").to_string();
+            let id = s
+                .get("id")
+                .and_then(|v| v.as_str())
+                .unwrap_or("")
+                .to_string();
+            let description = s
+                .get("description")
+                .and_then(|v| v.as_str())
+                .unwrap_or("")
+                .to_string();
             let starting_location = s
                 .get("starting_location")
                 .and_then(|v| v.as_str())
@@ -907,33 +1007,105 @@ pub async fn import_scene_from_gateway(
         suffix += 1;
     }
 
-    let description = val.get("description").and_then(|v| v.as_str()).unwrap_or("").to_string();
-    let world_context = val.get("world_context").and_then(|v| v.as_str()).unwrap_or("").to_string();
-    let starting_location = val.get("starting_location").and_then(|v| v.as_str()).unwrap_or("Startgebiet").to_string();
-    let time_of_day = val.get("time_of_day").and_then(|v| v.as_str()).unwrap_or("Dämmerung").to_string();
-    let opening_narration = val.get("opening_narration").and_then(|v| v.as_str()).unwrap_or("").to_string();
-    let first_message = val.get("first_message").and_then(|v| v.as_str()).unwrap_or("").to_string();
+    let description = val
+        .get("description")
+        .and_then(|v| v.as_str())
+        .unwrap_or("")
+        .to_string();
+    let world_context = val
+        .get("world_context")
+        .and_then(|v| v.as_str())
+        .unwrap_or("")
+        .to_string();
+    let starting_location = val
+        .get("starting_location")
+        .and_then(|v| v.as_str())
+        .unwrap_or("Startgebiet")
+        .to_string();
+    let time_of_day = val
+        .get("time_of_day")
+        .and_then(|v| v.as_str())
+        .unwrap_or("Dämmerung")
+        .to_string();
+    let opening_narration = val
+        .get("opening_narration")
+        .and_then(|v| v.as_str())
+        .unwrap_or("")
+        .to_string();
+    let first_message = val
+        .get("first_message")
+        .and_then(|v| v.as_str())
+        .unwrap_or("")
+        .to_string();
     let party = val
         .get("party")
         .and_then(|v| v.as_array())
-        .map(|arr| arr.iter().filter_map(|x| x.as_str().map(|s| s.to_string())).collect())
+        .map(|arr| {
+            arr.iter()
+                .filter_map(|x| x.as_str().map(|s| s.to_string()))
+                .collect()
+        })
         .unwrap_or_default();
-    let gm_tone = val.get("gm_tone").and_then(|v| v.as_str()).unwrap_or("Epic Fantasy").to_string();
-    let narrator_style = val.get("narrator_style").and_then(|v| v.as_str()).unwrap_or("Getragene, bildstarke Prosa im Präsens.").to_string();
-    let persona = val.get("persona").and_then(|v| v.as_str()).unwrap_or("None").to_string();
+    let gm_tone = val
+        .get("gm_tone")
+        .and_then(|v| v.as_str())
+        .unwrap_or("Epic Fantasy")
+        .to_string();
+    let narrator_style = val
+        .get("narrator_style")
+        .and_then(|v| v.as_str())
+        .unwrap_or("Getragene, bildstarke Prosa im Präsens.")
+        .to_string();
+    let persona = val
+        .get("persona")
+        .and_then(|v| v.as_str())
+        .unwrap_or("None")
+        .to_string();
     let lorebook = val
         .get("lorebook")
         .and_then(|v| v.as_array())
-        .map(|arr| arr.iter().filter_map(|x| x.as_str().map(|s| s.to_string())).collect())
+        .map(|arr| {
+            arr.iter()
+                .filter_map(|x| x.as_str().map(|s| s.to_string()))
+                .collect()
+        })
         .unwrap_or_default();
-    let solo_mode = val.get("solo_mode").and_then(|v| v.as_bool()).unwrap_or(false);
-    let max_actor_depth = val.get("max_actor_depth").and_then(|v| v.as_u64()).map(|n| n as u32).unwrap_or(3);
-    let dice_rolls_enabled = val.get("dice_rolls_enabled").and_then(|v| v.as_bool()).unwrap_or(true);
-    let starting_bg = val.get("starting_bg").and_then(|v| v.as_str()).unwrap_or("").to_string();
-    let starting_ambient = val.get("starting_ambient").and_then(|v| v.as_str()).unwrap_or("").to_string();
-    let disable_ambient = val.get("disable_ambient").and_then(|v| v.as_bool()).unwrap_or(false);
-    let lock_bg = val.get("lock_bg").and_then(|v| v.as_bool()).unwrap_or(false);
-    let folder = val.get("folder").and_then(|v| v.as_str()).unwrap_or("Soul Hub").to_string();
+    let solo_mode = val
+        .get("solo_mode")
+        .and_then(|v| v.as_bool())
+        .unwrap_or(false);
+    let max_actor_depth = val
+        .get("max_actor_depth")
+        .and_then(|v| v.as_u64())
+        .map(|n| n as u32)
+        .unwrap_or(3);
+    let dice_rolls_enabled = val
+        .get("dice_rolls_enabled")
+        .and_then(|v| v.as_bool())
+        .unwrap_or(true);
+    let starting_bg = val
+        .get("starting_bg")
+        .and_then(|v| v.as_str())
+        .unwrap_or("")
+        .to_string();
+    let starting_ambient = val
+        .get("starting_ambient")
+        .and_then(|v| v.as_str())
+        .unwrap_or("")
+        .to_string();
+    let disable_ambient = val
+        .get("disable_ambient")
+        .and_then(|v| v.as_bool())
+        .unwrap_or(false);
+    let lock_bg = val
+        .get("lock_bg")
+        .and_then(|v| v.as_bool())
+        .unwrap_or(false);
+    let folder = val
+        .get("folder")
+        .and_then(|v| v.as_str())
+        .unwrap_or("Soul Hub")
+        .to_string();
 
     let def = SceneDefinition {
         id,

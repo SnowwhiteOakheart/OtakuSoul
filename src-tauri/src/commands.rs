@@ -1,5 +1,5 @@
 use crate::modules::hardware::{
-    probe_hardware, recommend_gpu_layers, HardwareInfo, LayerRecommendation,
+    HardwareInfo, LayerRecommendation, probe_hardware, recommend_gpu_layers,
 };
 use crate::modules::inference::{ChatRequest, DoneEvent};
 use crate::modules::llama_manager::{LlamaServerConfig, ServerStatus};
@@ -64,7 +64,9 @@ pub fn abort_chat_generation(state: State<'_, AppState>) -> Result<(), String> {
 }
 
 #[tauri::command]
-pub fn load_character_card(file_path: String) -> Result<crate::modules::characters::CharacterProfile, String> {
+pub fn load_character_card(
+    file_path: String,
+) -> Result<crate::modules::characters::CharacterProfile, String> {
     crate::modules::characters::load_character_from_file(std::path::Path::new(&file_path))
 }
 
@@ -93,7 +95,11 @@ pub fn save_lorebook(mut lorebook: crate::modules::lorebook::Lorebook) -> Result
             let slug = if !lorebook.id.trim().is_empty() {
                 lorebook.id.clone()
             } else {
-                lorebook.name.trim().to_lowercase().replace(|c: char| !c.is_alphanumeric() && c != '-' && c != '_', "_")
+                lorebook
+                    .name
+                    .trim()
+                    .to_lowercase()
+                    .replace(|c: char| !c.is_alphanumeric() && c != '-' && c != '_', "_")
             };
             std::path::PathBuf::from(&paths.lorebooks_dir).join(format!("{}.json", slug))
         }
@@ -101,14 +107,22 @@ pub fn save_lorebook(mut lorebook: crate::modules::lorebook::Lorebook) -> Result
         let slug = if !lorebook.id.trim().is_empty() {
             lorebook.id.clone()
         } else {
-            lorebook.name.trim().to_lowercase().replace(|c: char| !c.is_alphanumeric() && c != '-' && c != '_', "_")
+            lorebook
+                .name
+                .trim()
+                .to_lowercase()
+                .replace(|c: char| !c.is_alphanumeric() && c != '-' && c != '_', "_")
         };
         std::path::PathBuf::from(&paths.lorebooks_dir).join(format!("{}.json", slug))
     };
 
     lorebook.file_path = Some(target_path.to_string_lossy().to_string());
     if lorebook.id.is_empty() {
-        lorebook.id = target_path.file_stem().and_then(|s| s.to_str()).unwrap_or("lorebook").to_string();
+        lorebook.id = target_path
+            .file_stem()
+            .and_then(|s| s.to_str())
+            .unwrap_or("lorebook")
+            .to_string();
     }
 
     lorebook.save_to_file(&target_path)?;
@@ -125,12 +139,17 @@ pub fn delete_lorebook(file_path: String) -> Result<(), String> {
 }
 
 #[tauri::command]
-pub fn import_lorebook_file(source_path: String) -> Result<crate::modules::lorebook::Lorebook, String> {
+pub fn import_lorebook_file(
+    source_path: String,
+) -> Result<crate::modules::lorebook::Lorebook, String> {
     let p = std::path::Path::new(&source_path);
     let mut book = crate::modules::lorebook::Lorebook::load_from_file(p)?;
     let paths = crate::modules::paths::resolve_app_paths();
 
-    let slug = p.file_stem().and_then(|s| s.to_str()).unwrap_or("imported_lorebook");
+    let slug = p
+        .file_stem()
+        .and_then(|s| s.to_str())
+        .unwrap_or("imported_lorebook");
     let target = std::path::PathBuf::from(&paths.lorebooks_dir).join(format!("{}.json", slug));
     book.file_path = Some(target.to_string_lossy().to_string());
     book.id = slug.to_string();
@@ -139,7 +158,10 @@ pub fn import_lorebook_file(source_path: String) -> Result<crate::modules::loreb
 }
 
 #[tauri::command]
-pub fn export_lorebook_file(lorebook: crate::modules::lorebook::Lorebook, target_path: String) -> Result<(), String> {
+pub fn export_lorebook_file(
+    lorebook: crate::modules::lorebook::Lorebook,
+    target_path: String,
+) -> Result<(), String> {
     lorebook.save_to_file(std::path::Path::new(&target_path))
 }
 
@@ -157,7 +179,11 @@ pub fn evaluate_multi_lorebooks(
     context: String,
     current_tension: u32,
 ) -> Result<crate::modules::lorebook::EvaluatedLoreResult, String> {
-    Ok(crate::modules::lorebook::evaluate_lorebooks(&lorebooks, &context, current_tension))
+    Ok(crate::modules::lorebook::evaluate_lorebooks(
+        &lorebooks,
+        &context,
+        current_tension,
+    ))
 }
 
 #[tauri::command]
@@ -167,7 +193,8 @@ pub fn assemble_prompt(context: crate::modules::prompt_builder::PromptContext) -
 
 #[tauri::command]
 pub fn read_file_binary(file_path: String) -> Result<Vec<u8>, String> {
-    std::fs::read(&file_path).map_err(|e| format!("Fehler beim Lesen der Datei {:?}: {}", file_path, e))
+    std::fs::read(&file_path)
+        .map_err(|e| format!("Fehler beim Lesen der Datei {:?}: {}", file_path, e))
 }
 
 // --- Phase 5: Cognitive Soul Memory Commands ---
@@ -310,14 +337,23 @@ pub async fn generate_manual_diary_entry(
 ) -> Result<crate::modules::memory::DiaryEntry, String> {
     let char_id = &req.character_id;
     let user_name = &req.user_name;
-    let psych = state.memory_db.get_or_create_psychology(char_id).map_err(|e| e.to_string())?;
+    let psych = state
+        .memory_db
+        .get_or_create_psychology(char_id)
+        .map_err(|e| e.to_string())?;
 
     let messages = if let Some(cid) = &req.chat_id {
         state.memory_db.get_chat_messages(cid).unwrap_or_default()
     } else {
-        let sessions = state.memory_db.list_chat_sessions(char_id).unwrap_or_default();
+        let sessions = state
+            .memory_db
+            .list_chat_sessions(char_id)
+            .unwrap_or_default();
         if let Some(first) = sessions.first() {
-            state.memory_db.get_chat_messages(&first.id).unwrap_or_default()
+            state
+                .memory_db
+                .get_chat_messages(&first.id)
+                .unwrap_or_default()
         } else {
             Vec::new()
         }
@@ -348,8 +384,14 @@ pub async fn generate_manual_diary_entry(
         api_key: req.api_key.clone(),
         model: req.model.clone(),
         messages: vec![
-            crate::modules::inference::ChatMessage { role: "system".to_string(), content: diary_sys },
-            crate::modules::inference::ChatMessage { role: "user".to_string(), content: diary_user },
+            crate::modules::inference::ChatMessage {
+                role: "system".to_string(),
+                content: diary_sys,
+            },
+            crate::modules::inference::ChatMessage {
+                role: "user".to_string(),
+                content: diary_user,
+            },
         ],
         sampling: Some(crate::modules::inference::SamplingParams {
             temperature: Some(0.6),
@@ -366,12 +408,15 @@ pub async fn generate_manual_diary_entry(
         return Err("LLM hat leeren Tagebucheintrag generiert.".to_string());
     }
 
-    let id = state.memory_db.add_diary_entry(
-        char_id,
-        "Innere Reflexion",
-        diary_text,
-        &psych.primary_emotion,
-    ).map_err(|e| e.to_string())?;
+    let id = state
+        .memory_db
+        .add_diary_entry(
+            char_id,
+            "Innere Reflexion",
+            diary_text,
+            &psych.primary_emotion,
+        )
+        .map_err(|e| e.to_string())?;
 
     Ok(crate::modules::memory::DiaryEntry {
         id,
@@ -392,9 +437,11 @@ pub fn import_sow_memory_files(
     folder_path: String,
     user_name: String,
 ) -> Result<usize, String> {
-    state
-        .memory_db
-        .import_sow_memory_folder(&char_id, std::path::Path::new(&folder_path), &user_name)
+    state.memory_db.import_sow_memory_folder(
+        &char_id,
+        std::path::Path::new(&folder_path),
+        &user_name,
+    )
 }
 
 #[tauri::command]
@@ -413,9 +460,7 @@ pub fn list_memory_backups(
     state: State<'_, AppState>,
     char_id: String,
 ) -> Result<Vec<crate::modules::memory::MemoryBackupInfo>, String> {
-    state
-        .memory_db
-        .list_memory_backups(&char_id, None)
+    state.memory_db.list_memory_backups(&char_id, None)
 }
 
 #[tauri::command]
@@ -439,9 +484,7 @@ pub fn roll_stage_dice(
 }
 
 #[tauri::command]
-pub fn get_stage_state(
-    state: State<'_, AppState>,
-) -> crate::modules::stage::SceneState {
+pub fn get_stage_state(state: State<'_, AppState>) -> crate::modules::stage::SceneState {
     state.stage_engine.get_state()
 }
 
@@ -481,16 +524,12 @@ pub fn create_stage_scene(
 }
 
 #[tauri::command]
-pub fn delete_stage_scene(
-    scene_id: String,
-) -> Result<(), String> {
+pub fn delete_stage_scene(scene_id: String) -> Result<(), String> {
     crate::modules::stage::delete_scene(&scene_id)
 }
 
 #[tauri::command]
-pub fn export_stage_markdown(
-    scene_id: String,
-) -> Result<String, String> {
+pub fn export_stage_markdown(scene_id: String) -> Result<String, String> {
     crate::modules::stage::export_scene_to_markdown(&scene_id)
 }
 
@@ -526,7 +565,8 @@ pub fn stage_import_scene_json(
     json_content: String,
     target_folder: Option<String>,
 ) -> Result<crate::modules::stage::SceneState, String> {
-    let res = crate::modules::stage::import_stage_scene_json(&json_content, target_folder.as_deref())?;
+    let res =
+        crate::modules::stage::import_stage_scene_json(&json_content, target_folder.as_deref())?;
     state.stage_engine.set_state(res.clone());
     Ok(res)
 }
@@ -553,7 +593,12 @@ pub fn stage_edit_message(
     message_id: String,
     new_content: String,
 ) -> Result<crate::modules::stage::SceneState, String> {
-    crate::modules::stage::edit_stage_turn_message(&state.stage_engine, &scene_id, &message_id, &new_content)
+    crate::modules::stage::edit_stage_turn_message(
+        &state.stage_engine,
+        &scene_id,
+        &message_id,
+        &new_content,
+    )
 }
 
 #[tauri::command]
@@ -570,7 +615,12 @@ pub async fn stage_regenerate_turn(
     state: State<'_, AppState>,
     scene_id: String,
 ) -> Result<crate::modules::stage::SceneState, String> {
-    crate::modules::stage::regenerate_stage_turn(&state.stage_engine, &state.inference_client, &scene_id).await
+    crate::modules::stage::regenerate_stage_turn(
+        &state.stage_engine,
+        &state.inference_client,
+        &scene_id,
+    )
+    .await
 }
 
 #[tauri::command]
@@ -583,7 +633,8 @@ pub async fn run_stage_turn(
     state: State<'_, AppState>,
     request: crate::modules::stage::StageTurnRequest,
 ) -> Result<crate::modules::stage::SceneState, String> {
-    crate::modules::stage::execute_stage_turn(&state.stage_engine, &state.inference_client, request).await
+    crate::modules::stage::execute_stage_turn(&state.stage_engine, &state.inference_client, request)
+        .await
 }
 
 #[tauri::command]
@@ -600,7 +651,13 @@ pub async fn rest_stage_party(
     scene_id: String,
     rest_type: String,
 ) -> Result<crate::modules::stage::SceneState, String> {
-    crate::modules::stage::execute_stage_rest(&state.stage_engine, &state.inference_client, &scene_id, &rest_type).await
+    crate::modules::stage::execute_stage_rest(
+        &state.stage_engine,
+        &state.inference_client,
+        &scene_id,
+        &rest_type,
+    )
+    .await
 }
 
 #[tauri::command]
@@ -653,37 +710,28 @@ pub fn add_clock(
 }
 
 #[tauri::command]
-pub fn delete_clock(
-    state: State<'_, AppState>,
-    clock_id: String,
-) -> Result<(), String> {
+pub fn delete_clock(state: State<'_, AppState>, clock_id: String) -> Result<(), String> {
     state.stage_engine.delete_clock(&clock_id);
     crate::modules::stage::save_scene_state(&state.stage_engine.get_state())?;
     Ok(())
 }
 
 #[tauri::command]
-pub fn start_encounter(
-    state: State<'_, AppState>,
-) -> Result<(), String> {
+pub fn start_encounter(state: State<'_, AppState>) -> Result<(), String> {
     state.stage_engine.start_encounter();
     crate::modules::stage::save_scene_state(&state.stage_engine.get_state())?;
     Ok(())
 }
 
 #[tauri::command]
-pub fn end_encounter(
-    state: State<'_, AppState>,
-) -> Result<(), String> {
+pub fn end_encounter(state: State<'_, AppState>) -> Result<(), String> {
     state.stage_engine.end_encounter();
     crate::modules::stage::save_scene_state(&state.stage_engine.get_state())?;
     Ok(())
 }
 
 #[tauri::command]
-pub fn next_encounter_turn(
-    state: State<'_, AppState>,
-) -> Result<(), String> {
+pub fn next_encounter_turn(state: State<'_, AppState>) -> Result<(), String> {
     state.stage_engine.next_turn();
     crate::modules::stage::save_scene_state(&state.stage_engine.get_state())?;
     Ok(())
@@ -696,7 +744,9 @@ pub fn apply_combatant_delta(
     hp_delta: i32,
     stress_delta: i32,
 ) -> Result<(), String> {
-    state.stage_engine.apply_combatant_delta(&combatant_id, hp_delta, stress_delta);
+    state
+        .stage_engine
+        .apply_combatant_delta(&combatant_id, hp_delta, stress_delta);
     crate::modules::stage::save_scene_state(&state.stage_engine.get_state())?;
     Ok(())
 }
@@ -726,7 +776,9 @@ pub fn apply_hormone_interaction(
     state: State<'_, AppState>,
     interaction_type: String,
 ) -> Result<crate::modules::companion::Neurohormones, String> {
-    Ok(state.companion_engine.apply_hormone_interaction(&interaction_type))
+    Ok(state
+        .companion_engine
+        .apply_hormone_interaction(&interaction_type))
 }
 
 #[tauri::command]
@@ -737,7 +789,9 @@ pub fn set_hormones(
     oxytocin: f32,
     fatigue: f32,
 ) -> Result<crate::modules::companion::Neurohormones, String> {
-    Ok(state.companion_engine.set_hormone_values(dopamine, cortisol, oxytocin, fatigue))
+    Ok(state
+        .companion_engine
+        .set_hormone_values(dopamine, cortisol, oxytocin, fatigue))
 }
 
 #[tauri::command]
@@ -746,7 +800,9 @@ pub fn request_tool_call(
     tool_name: String,
     arguments: serde_json::Value,
 ) -> Result<crate::modules::companion::ToolCallRequest, String> {
-    state.companion_engine.request_tool_call(&tool_name, arguments)
+    state
+        .companion_engine
+        .request_tool_call(&tool_name, arguments)
 }
 
 #[tauri::command]
@@ -768,18 +824,13 @@ pub fn update_companion_settings(
 }
 
 #[tauri::command]
-pub fn add_companion_thought(
-    state: State<'_, AppState>,
-    thought: String,
-) -> Result<(), String> {
+pub fn add_companion_thought(state: State<'_, AppState>, thought: String) -> Result<(), String> {
     state.companion_engine.add_thought(&thought);
     Ok(())
 }
 
 #[tauri::command]
-pub fn clear_companion_thoughts(
-    state: State<'_, AppState>,
-) -> Result<(), String> {
+pub fn clear_companion_thoughts(state: State<'_, AppState>) -> Result<(), String> {
     state.companion_engine.clear_thoughts();
     Ok(())
 }
@@ -802,22 +853,18 @@ pub fn mark_companion_goal_completed(
 }
 
 #[tauri::command]
-pub fn delete_companion_goal(
-    state: State<'_, AppState>,
-    goal_id: String,
-) -> Result<(), String> {
+pub fn delete_companion_goal(state: State<'_, AppState>, goal_id: String) -> Result<(), String> {
     state.companion_engine.delete_goal(&goal_id)
 }
 
 #[tauri::command]
-pub fn get_companion_environment_snapshot() -> crate::modules::companion_tools::EnvironmentSnapshot {
+pub fn get_companion_environment_snapshot() -> crate::modules::companion_tools::EnvironmentSnapshot
+{
     crate::modules::companion_tools::CompanionTools::get_environment_snapshot()
 }
 
 #[tauri::command]
-pub fn detect_desktop_window(
-    state: State<'_, AppState>,
-) -> String {
+pub fn detect_desktop_window(state: State<'_, AppState>) -> String {
     let title = state.companion_engine.detect_active_window();
     state.companion_engine.set_active_window(&title);
     title
@@ -844,7 +891,10 @@ pub fn toggle_mcp_server(
     server_id: String,
     enabled: bool,
 ) -> Result<Vec<crate::modules::mcp_client::McpServerConfig>, String> {
-    state.companion_engine.mcp().toggle_server(&server_id, enabled)
+    state
+        .companion_engine
+        .mcp()
+        .toggle_server(&server_id, enabled)
 }
 
 #[tauri::command]
@@ -852,7 +902,11 @@ pub async fn fetch_mcp_server_tools(
     state: State<'_, AppState>,
     server_id: String,
 ) -> Result<Vec<crate::modules::mcp_client::McpToolInfo>, String> {
-    state.companion_engine.mcp().fetch_server_tools(&server_id).await
+    state
+        .companion_engine
+        .mcp()
+        .fetch_server_tools(&server_id)
+        .await
 }
 
 #[tauri::command]
@@ -862,7 +916,11 @@ pub async fn call_mcp_tool(
     tool_name: String,
     arguments: serde_json::Value,
 ) -> Result<String, String> {
-    state.companion_engine.mcp().call_mcp_tool(&server_id, &tool_name, arguments).await
+    state
+        .companion_engine
+        .mcp()
+        .call_mcp_tool(&server_id, &tool_name, arguments)
+        .await
 }
 
 #[tauri::command]
@@ -886,7 +944,11 @@ pub async fn execute_companion_plugin(
     plugin_id: String,
     arguments: serde_json::Value,
 ) -> Result<String, String> {
-    state.companion_engine.mcp().execute_plugin(&plugin_id, arguments).await
+    state
+        .companion_engine
+        .mcp()
+        .execute_plugin(&plugin_id, arguments)
+        .await
 }
 
 #[tauri::command]
@@ -919,7 +981,9 @@ pub async fn toggle_companion_overlay(
         .always_on_top(true)
         .shadow(false);
 
-        let window = builder.build().map_err(|e| format!("Fehler beim Erstellen des Overlay-Fensters: {}", e))?;
+        let window = builder
+            .build()
+            .map_err(|e| format!("Fehler beim Erstellen des Overlay-Fensters: {}", e))?;
         let _ = window.set_ignore_cursor_events(click_through);
     }
     state.companion_engine.set_overlay_active(enable);
@@ -927,9 +991,7 @@ pub async fn toggle_companion_overlay(
 }
 
 #[tauri::command]
-pub fn evaluate_companion_proactive(
-    state: State<'_, AppState>,
-) -> Option<(String, String)> {
+pub fn evaluate_companion_proactive(state: State<'_, AppState>) -> Option<(String, String)> {
     state.companion_engine.evaluate_proactive_opportunity()
 }
 
@@ -1051,10 +1113,7 @@ pub fn get_chat_session(
 }
 
 #[tauri::command]
-pub fn delete_chat_session(
-    state: State<'_, AppState>,
-    chat_id: String,
-) -> Result<(), String> {
+pub fn delete_chat_session(state: State<'_, AppState>, chat_id: String) -> Result<(), String> {
     state
         .memory_db
         .delete_chat_session(&chat_id)
@@ -1150,10 +1209,7 @@ pub fn switch_message_swipe(
 }
 
 #[tauri::command]
-pub fn delete_chat_message(
-    state: State<'_, AppState>,
-    msg_id: String,
-) -> Result<(), String> {
+pub fn delete_chat_message(state: State<'_, AppState>, msg_id: String) -> Result<(), String> {
     state
         .memory_db
         .delete_chat_message(&msg_id)
@@ -1255,12 +1311,8 @@ pub async fn list_available_voices(
     elevenlabs_api_key: String,
     kokoro_voices_path: String,
 ) -> Result<Vec<crate::modules::voice::ScannedVoice>, String> {
-    crate::modules::voice::list_available_voices(
-        &engine,
-        &elevenlabs_api_key,
-        &kokoro_voices_path,
-    )
-    .await
+    crate::modules::voice::list_available_voices(&engine, &elevenlabs_api_key, &kokoro_voices_path)
+        .await
 }
 
 #[tauri::command]
@@ -1327,7 +1379,9 @@ pub fn classify_text_emotion(text: String) -> crate::modules::emotions::EmotionR
 }
 
 #[tauri::command]
-pub fn import_live2d_model(source_path: String) -> Result<crate::modules::live2d::ScannedLive2d, String> {
+pub fn import_live2d_model(
+    source_path: String,
+) -> Result<crate::modules::live2d::ScannedLive2d, String> {
     crate::modules::live2d::import_live2d_model(&source_path)
 }
 
@@ -1339,7 +1393,8 @@ pub fn import_sow_live2d_models() -> Result<usize, String> {
 // --- Soul Hub (Soul Gateway, Chub AI, World Lorebooks & Stage Scenarios) Commands ---
 
 #[tauri::command]
-pub async fn fetch_soul_gateway_registry() -> Result<Vec<crate::modules::soul_hub::GatewayCharacterEntry>, String> {
+pub async fn fetch_soul_gateway_registry()
+-> Result<Vec<crate::modules::soul_hub::GatewayCharacterEntry>, String> {
     crate::modules::soul_hub::fetch_soul_gateway_registry().await
 }
 
@@ -1386,7 +1441,8 @@ pub async fn import_character_from_url(
 }
 
 #[tauri::command]
-pub async fn fetch_lorebooks_gateway_registry() -> Result<Vec<crate::modules::soul_hub::GatewayLorebookEntry>, String> {
+pub async fn fetch_lorebooks_gateway_registry()
+-> Result<Vec<crate::modules::soul_hub::GatewayLorebookEntry>, String> {
     crate::modules::soul_hub::fetch_lorebooks_gateway_registry().await
 }
 
@@ -1399,7 +1455,8 @@ pub async fn import_lorebook_from_gateway(
 }
 
 #[tauri::command]
-pub async fn fetch_stages_gateway_registry() -> Result<Vec<crate::modules::soul_hub::GatewaySceneEntry>, String> {
+pub async fn fetch_stages_gateway_registry()
+-> Result<Vec<crate::modules::soul_hub::GatewaySceneEntry>, String> {
     crate::modules::soul_hub::fetch_stages_gateway_registry().await
 }
 
@@ -1418,11 +1475,16 @@ pub fn create_profile_backup(
     selection: crate::modules::profile_backup::BackupGroupSelection,
     description: Option<String>,
 ) -> Result<crate::modules::profile_backup::BackupEntryInfo, String> {
-    crate::modules::profile_backup::ProfileBackupManager::create_backup(selection, description, false)
+    crate::modules::profile_backup::ProfileBackupManager::create_backup(
+        selection,
+        description,
+        false,
+    )
 }
 
 #[tauri::command]
-pub fn list_profile_backups() -> Result<Vec<crate::modules::profile_backup::BackupEntryInfo>, String> {
+pub fn list_profile_backups() -> Result<Vec<crate::modules::profile_backup::BackupEntryInfo>, String>
+{
     Ok(crate::modules::profile_backup::ProfileBackupManager::list_backups())
 }
 
@@ -1459,13 +1521,15 @@ pub fn build_character_image_prompt(
     scene_context: Option<String>,
     user_prompt: Option<String>,
 ) -> Result<String, String> {
-    Ok(crate::modules::image_generator::ImageGenerator::build_character_prompt(
-        &character_name,
-        character_description.as_deref(),
-        emotion.as_deref(),
-        scene_context.as_deref(),
-        user_prompt.as_deref(),
-    ))
+    Ok(
+        crate::modules::image_generator::ImageGenerator::build_character_prompt(
+            &character_name,
+            character_description.as_deref(),
+            emotion.as_deref(),
+            scene_context.as_deref(),
+            user_prompt.as_deref(),
+        ),
+    )
 }
 
 #[tauri::command]
@@ -1474,27 +1538,28 @@ pub async fn generate_image_action(
     negative: Option<String>,
     custom_config: Option<crate::modules::image_generator::ImageGenConfig>,
 ) -> Result<crate::modules::image_generator::GeneratedImageResult, String> {
-    crate::modules::image_generator::ImageGenerator::generate_image(&prompt, negative.as_deref(), custom_config).await
+    crate::modules::image_generator::ImageGenerator::generate_image(
+        &prompt,
+        negative.as_deref(),
+        custom_config,
+    )
+    .await
 }
 
 #[tauri::command]
-pub fn list_generated_images() -> Result<Vec<crate::modules::image_generator::GeneratedImageInfo>, String> {
+pub fn list_generated_images()
+-> Result<Vec<crate::modules::image_generator::GeneratedImageInfo>, String> {
     Ok(crate::modules::image_generator::ImageGenerator::list_generated_images())
 }
 
 #[tauri::command]
-pub fn set_discord_rpc_enabled(
-    state: State<'_, AppState>,
-    enabled: bool,
-) -> Result<(), String> {
+pub fn set_discord_rpc_enabled(state: State<'_, AppState>, enabled: bool) -> Result<(), String> {
     state.discord_rpc.set_enabled(enabled);
     Ok(())
 }
 
 #[tauri::command]
-pub fn get_discord_rpc_enabled(
-    state: State<'_, AppState>,
-) -> Result<bool, String> {
+pub fn get_discord_rpc_enabled(state: State<'_, AppState>) -> Result<bool, String> {
     Ok(state.discord_rpc.is_enabled())
 }
 
@@ -1523,16 +1588,12 @@ pub async fn save_discord_bot_config(
 }
 
 #[tauri::command]
-pub async fn start_discord_bot(
-    state: State<'_, AppState>,
-) -> Result<(), String> {
+pub async fn start_discord_bot(state: State<'_, AppState>) -> Result<(), String> {
     state.discord_bot.start_bot().await
 }
 
 #[tauri::command]
-pub async fn stop_discord_bot(
-    state: State<'_, AppState>,
-) -> Result<(), String> {
+pub async fn stop_discord_bot(state: State<'_, AppState>) -> Result<(), String> {
     state.discord_bot.stop_bot().await
 }
 
@@ -1559,16 +1620,12 @@ pub async fn save_web_server_config(
 }
 
 #[tauri::command]
-pub async fn start_web_server(
-    state: State<'_, AppState>,
-) -> Result<(), String> {
+pub async fn start_web_server(state: State<'_, AppState>) -> Result<(), String> {
     state.web_server.start_server().await
 }
 
 #[tauri::command]
-pub async fn stop_web_server(
-    state: State<'_, AppState>,
-) -> Result<(), String> {
+pub async fn stop_web_server(state: State<'_, AppState>) -> Result<(), String> {
     state.web_server.stop_server().await
 }
 
@@ -1580,9 +1637,7 @@ pub async fn get_web_server_status(
 }
 
 #[tauri::command]
-pub async fn regenerate_web_server_token(
-    state: State<'_, AppState>,
-) -> Result<String, String> {
+pub async fn regenerate_web_server_token(state: State<'_, AppState>) -> Result<String, String> {
     state.web_server.regenerate_token().await
 }
 
@@ -1590,7 +1645,9 @@ pub async fn regenerate_web_server_token(
 pub fn build_character_wizard_prompt_cmd(
     input: crate::modules::characters::CharacterWizardInput,
 ) -> Result<String, String> {
-    Ok(crate::modules::characters::build_character_wizard_prompt(&input))
+    Ok(crate::modules::characters::build_character_wizard_prompt(
+        &input,
+    ))
 }
 
 #[tauri::command]
@@ -1605,8 +1662,16 @@ pub fn create_character_from_draft(
     draft: crate::modules::characters::CharacterDraft,
 ) -> Result<crate::modules::characters::CharacterProfile, String> {
     let paths = crate::modules::paths::resolve_app_paths();
-    let sanitized_name = draft.name.chars()
-        .map(|c| if c.is_alphanumeric() || c == '_' || c == '-' { c } else { '_' })
+    let sanitized_name = draft
+        .name
+        .chars()
+        .map(|c| {
+            if c.is_alphanumeric() || c == '_' || c == '-' {
+                c
+            } else {
+                '_'
+            }
+        })
         .collect::<String>();
     let filename = format!("{}.json", sanitized_name);
     let target_path = std::path::PathBuf::from(&paths.characters_dir).join(&filename);
@@ -1675,7 +1740,9 @@ pub async fn generate_character_draft_llm(
 
 // Phase 18: Logging & Updater Commands
 #[tauri::command]
-pub fn get_app_logs(max_lines: Option<usize>) -> Result<Vec<crate::modules::logger::LogEntry>, String> {
+pub fn get_app_logs(
+    max_lines: Option<usize>,
+) -> Result<Vec<crate::modules::logger::LogEntry>, String> {
     Ok(crate::modules::logger::get_recent_logs(max_lines))
 }
 
@@ -1693,5 +1760,3 @@ pub fn export_app_logs() -> Result<String, String> {
 pub async fn check_for_updates() -> Result<crate::modules::updater::UpdateInfo, String> {
     crate::modules::updater::check_for_app_updates().await
 }
-
-

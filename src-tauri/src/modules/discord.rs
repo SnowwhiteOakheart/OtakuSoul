@@ -1,13 +1,13 @@
-use std::env;
-use std::fs;
-use std::path::PathBuf;
-use std::sync::atomic::{AtomicBool, Ordering};
-use std::sync::Arc;
-use std::time::{Duration, Instant, SystemTime, UNIX_EPOCH};
 use chrono::Utc;
 use futures_util::{SinkExt, StreamExt};
 use serde::{Deserialize, Serialize};
-use tokio::sync::{mpsc, Mutex, RwLock};
+use std::env;
+use std::fs;
+use std::path::PathBuf;
+use std::sync::Arc;
+use std::sync::atomic::{AtomicBool, Ordering};
+use std::time::{Duration, Instant, SystemTime, UNIX_EPOCH};
+use tokio::sync::{Mutex, RwLock, mpsc};
 use tokio_tungstenite::connect_async;
 use tokio_tungstenite::tungstenite::Message;
 use tracing::{debug, info, warn};
@@ -37,7 +37,10 @@ pub struct DiscordRpcClient {
 
 impl DiscordRpcClient {
     pub fn new(client_id: Option<String>) -> Self {
-        let start = SystemTime::now().duration_since(UNIX_EPOCH).unwrap_or_default().as_secs();
+        let start = SystemTime::now()
+            .duration_since(UNIX_EPOCH)
+            .unwrap_or_default()
+            .as_secs();
         Self {
             client_id: client_id.unwrap_or_else(|| DEFAULT_DISCORD_CLIENT_ID.to_string()),
             enabled: Arc::new(AtomicBool::new(false)),
@@ -88,13 +91,19 @@ impl DiscordRpcClient {
                     },
                 };
 
-                let act_key = format!("{}:{}:{:?}", activity.details, activity.state, activity.character_name);
+                let act_key = format!(
+                    "{}:{}:{:?}",
+                    activity.details, activity.state, activity.character_name
+                );
                 if last_activity_sent.as_deref() == Some(&act_key) {
                     continue;
                 }
 
                 if let Err(e) = self.send_ipc_activity(&activity).await {
-                    debug!("Discord RPC IPC-Sendefehler (Discord eventuell nicht gestartet): {}", e);
+                    debug!(
+                        "Discord RPC IPC-Sendefehler (Discord eventuell nicht gestartet): {}",
+                        e
+                    );
                 } else {
                     last_activity_sent = Some(act_key);
                 }
@@ -107,14 +116,19 @@ impl DiscordRpcClient {
         use tokio::net::UnixStream;
 
         let socket_path = Self::find_unix_socket()?;
-        let mut stream = UnixStream::connect(&socket_path).await
-            .map_err(|e| format!("Kann nicht mit Discord IPC-Socket verbinden ({:?}): {}", socket_path, e))?;
+        let mut stream = UnixStream::connect(&socket_path).await.map_err(|e| {
+            format!(
+                "Kann nicht mit Discord IPC-Socket verbinden ({:?}): {}",
+                socket_path, e
+            )
+        })?;
 
         // 1. Handshake (Opcode 0)
         let handshake_payload = serde_json::json!({
             "v": 1,
             "client_id": self.client_id
-        }).to_string();
+        })
+        .to_string();
 
         Self::write_ipc_frame(&mut stream, 0, &handshake_payload).await?;
 
@@ -122,7 +136,10 @@ impl DiscordRpcClient {
         let _ = Self::read_ipc_frame(&mut stream).await?;
 
         // 2. Set Activity (Opcode 1)
-        let char_text = activity.character_name.as_deref().unwrap_or("OtakuSoul Companion");
+        let char_text = activity
+            .character_name
+            .as_deref()
+            .unwrap_or("OtakuSoul Companion");
         let start = activity.start_timestamp.unwrap_or(self.start_time);
 
         let activity_payload = serde_json::json!({
@@ -144,7 +161,8 @@ impl DiscordRpcClient {
                 }
             },
             "nonce": format!("nonce_{}", Utc::now().timestamp_millis())
-        }).to_string();
+        })
+        .to_string();
 
         Self::write_ipc_frame(&mut stream, 1, &activity_payload).await?;
 
@@ -182,7 +200,11 @@ impl DiscordRpcClient {
     }
 
     #[cfg(unix)]
-    async fn write_ipc_frame(stream: &mut tokio::net::UnixStream, opcode: u32, payload: &str) -> Result<(), String> {
+    async fn write_ipc_frame(
+        stream: &mut tokio::net::UnixStream,
+        opcode: u32,
+        payload: &str,
+    ) -> Result<(), String> {
         use tokio::io::AsyncWriteExt;
         let bytes = payload.as_bytes();
         let len = bytes.len() as u32;
@@ -201,13 +223,19 @@ impl DiscordRpcClient {
     async fn read_ipc_frame(stream: &mut tokio::net::UnixStream) -> Result<(u32, String), String> {
         use tokio::io::AsyncReadExt;
         let mut header = [0u8; 8];
-        stream.read_exact(&mut header).await.map_err(|e| e.to_string())?;
+        stream
+            .read_exact(&mut header)
+            .await
+            .map_err(|e| e.to_string())?;
 
         let opcode = u32::from_le_bytes(header[0..4].try_into().unwrap());
         let len = u32::from_le_bytes(header[4..8].try_into().unwrap()) as usize;
 
         let mut buf = vec![0u8; len];
-        stream.read_exact(&mut buf).await.map_err(|e| e.to_string())?;
+        stream
+            .read_exact(&mut buf)
+            .await
+            .map_err(|e| e.to_string())?;
 
         let text = String::from_utf8_lossy(&buf).to_string();
         Ok((opcode, text))
@@ -277,12 +305,13 @@ impl DiscordBotManager {
         let path = PathBuf::from(&paths.data_dir).join("discord_bot_config.json");
         if path.exists()
             && let Ok(content) = fs::read_to_string(&path)
-                && let Ok(mut cfg) = serde_json::from_str::<DiscordBotConfig>(&content) {
-                    if crate::modules::secrets::hydrate(DISCORD_TOKEN_ACCOUNT, &mut cfg.bot_token) {
-                        let _ = Self::write_config(&cfg);
-                    }
-                    return cfg;
-                }
+            && let Ok(mut cfg) = serde_json::from_str::<DiscordBotConfig>(&content)
+        {
+            if crate::modules::secrets::hydrate(DISCORD_TOKEN_ACCOUNT, &mut cfg.bot_token) {
+                let _ = Self::write_config(&cfg);
+            }
+            return cfg;
+        }
         DiscordBotConfig::default()
     }
 
@@ -305,10 +334,19 @@ impl DiscordBotManager {
 
     pub async fn get_status(&self) -> DiscordBotStatus {
         let running = self.is_running.load(Ordering::Relaxed);
-        let uptime = self.start_time.read().await.map(|t| t.elapsed().as_secs()).unwrap_or(0);
+        let uptime = self
+            .start_time
+            .read()
+            .await
+            .map(|t| t.elapsed().as_secs())
+            .unwrap_or(0);
         DiscordBotStatus {
             is_running: running,
-            bot_user: if running { Some("OtakuSoul Bot".into()) } else { None },
+            bot_user: if running {
+                Some("OtakuSoul Bot".into())
+            } else {
+                None
+            },
             connected_guilds: if running { 1 } else { 0 },
             uptime_secs: uptime,
         }
@@ -410,7 +448,10 @@ impl DiscordBotManager {
                         }
                     }
                     Err(e) => {
-                        warn!("Fehler beim Verbinden mit Discord Gateway: {}. Erneuter Versuch in 10s...", e);
+                        warn!(
+                            "Fehler beim Verbinden mit Discord Gateway: {}. Erneuter Versuch in 10s...",
+                            e
+                        );
                     }
                 }
 
@@ -457,14 +498,16 @@ impl DiscordBotManager {
                     }
                 }
                 "character" => {
-                    "Aktiver Charakter: **OtakuSoul Companion** (Status: Verbunden und aktiv)".to_string()
+                    "Aktiver Charakter: **OtakuSoul Companion** (Status: Verbunden und aktiv)"
+                        .to_string()
                 }
                 "status" => {
-                    format!("✨ **OtakuSoul System Status:**\n• Bot: Online\n• Angesprochen von: {}\n• Latenz: Normal", author_name)
+                    format!(
+                        "✨ **OtakuSoul System Status:**\n• Bot: Online\n• Angesprochen von: {}\n• Latenz: Normal",
+                        author_name
+                    )
                 }
-                "reset" => {
-                    "🔄 Chat-Gedächtnis für diese Sitzung wurde zurückgesetzt.".to_string()
-                }
+                "reset" => "🔄 Chat-Gedächtnis für diese Sitzung wurde zurückgesetzt.".to_string(),
                 _ => {
                     format!(
                         "🌸 **OtakuSoul Discord Bot Befehle:**\n• `{}ask <text>` - Mit deinem Charakter chatten\n• `{}character` - Aktiven Charakter anzeigen\n• `{}status` - Systemstatus prüfen\n• `{}reset` - Konversation neustarten",
@@ -479,16 +522,21 @@ impl DiscordBotManager {
 
     async fn send_discord_message(token: &str, channel_id: &str, text: &str) {
         let client = reqwest::Client::new();
-        let url = format!("https://discord.com/api/v10/channels/{}/messages", channel_id);
+        let url = format!(
+            "https://discord.com/api/v10/channels/{}/messages",
+            channel_id
+        );
 
         let chunks = Self::split_message(text, 1900);
         for chunk in chunks {
             let payload = serde_json::json!({ "content": chunk });
-            let _ = client.post(&url)
+            let _ = client
+                .post(&url)
                 .header("Authorization", format!("Bot {}", token))
                 .header("Content-Type", "application/json")
                 .json(&payload)
-                .send().await;
+                .send()
+                .await;
         }
     }
 

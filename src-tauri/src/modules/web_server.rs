@@ -1,20 +1,20 @@
-use std::fs;
-use std::net::{SocketAddr, UdpSocket};
-use std::path::PathBuf;
-use std::sync::atomic::{AtomicBool, Ordering};
-use std::sync::Arc;
 use axum::{
-    extract::{Query, State, WebSocketUpgrade},
+    Router,
     extract::ws::{Message as WsMessage, WebSocket},
+    extract::{Query, State, WebSocketUpgrade},
     http::{HeaderMap, StatusCode},
     response::{Html, IntoResponse, Json, Response},
     routing::{get, post},
-    Router,
 };
-use qrcode::render::svg;
 use qrcode::QrCode;
+use qrcode::render::svg;
 use serde::{Deserialize, Serialize};
-use tokio::sync::{oneshot, RwLock};
+use std::fs;
+use std::net::{SocketAddr, UdpSocket};
+use std::path::PathBuf;
+use std::sync::Arc;
+use std::sync::atomic::{AtomicBool, Ordering};
+use tokio::sync::{RwLock, oneshot};
 use tracing::{error, info, warn};
 
 use crate::modules::paths::resolve_app_paths;
@@ -126,14 +126,17 @@ impl WebServerManager {
         let path = PathBuf::from(&paths.data_dir).join("web_server_config.json");
         if path.exists()
             && let Ok(content) = fs::read_to_string(&path)
-                && let Ok(mut cfg) = serde_json::from_str::<WebServerConfig>(&content) {
-                    if cfg.auth_token.len() < 32 || WebServerConfig::is_legacy_predictable_token(&cfg.auth_token) {
-                        warn!("Unsicheres Web-Server-Token erkannt, es wurde neu erzeugt.");
-                        cfg.auth_token = WebServerConfig::generate_token();
-                        let _ = Self::save_config_internal(&cfg);
-                    }
-                    return cfg;
-                }
+            && let Ok(mut cfg) = serde_json::from_str::<WebServerConfig>(&content)
+        {
+            if cfg.auth_token.len() < 32
+                || WebServerConfig::is_legacy_predictable_token(&cfg.auth_token)
+            {
+                warn!("Unsicheres Web-Server-Token erkannt, es wurde neu erzeugt.");
+                cfg.auth_token = WebServerConfig::generate_token();
+                let _ = Self::save_config_internal(&cfg);
+            }
+            return cfg;
+        }
         let default_cfg = WebServerConfig::default();
         let _ = Self::save_config_internal(&default_cfg);
         default_cfg
@@ -142,8 +145,12 @@ impl WebServerManager {
     fn save_config_internal(config: &WebServerConfig) -> Result<(), String> {
         let paths = resolve_app_paths();
         let path = PathBuf::from(&paths.data_dir).join("web_server_config.json");
-        let content = serde_json::to_string_pretty(config)
-            .map_err(|e| format!("Fehler beim Serialisieren der Web-Server-Konfiguration: {}", e))?;
+        let content = serde_json::to_string_pretty(config).map_err(|e| {
+            format!(
+                "Fehler beim Serialisieren der Web-Server-Konfiguration: {}",
+                e
+            )
+        })?;
         fs::write(&path, content)
             .map_err(|e| format!("Fehler beim Speichern der Web-Server-Konfiguration: {}", e))?;
         Ok(())
@@ -166,9 +173,10 @@ impl WebServerManager {
         // Query outbound routing IP without transmitting packets
         if let Ok(socket) = UdpSocket::bind("0.0.0.0:0")
             && socket.connect("8.8.8.8:80").is_ok()
-                && let Ok(addr) = socket.local_addr() {
-                    return addr.ip().to_string();
-                }
+            && let Ok(addr) = socket.local_addr()
+        {
+            return addr.ip().to_string();
+        }
         "127.0.0.1".to_string()
     }
 
@@ -235,18 +243,20 @@ impl WebServerManager {
 
             match tokio::net::TcpListener::bind(bind_addr).await {
                 Ok(listener) => {
-                    let server = axum::serve(listener, app)
-                        .with_graceful_shutdown(async move {
-                            let _ = shutdown_rx.await;
-                            info!("Web-Server beendet.");
-                        });
+                    let server = axum::serve(listener, app).with_graceful_shutdown(async move {
+                        let _ = shutdown_rx.await;
+                        info!("Web-Server beendet.");
+                    });
 
                     if let Err(e) = server.await {
                         error!("Web-Server Fehler im Laufzeit-Loop: {}", e);
                     }
                 }
                 Err(e) => {
-                    error!("Fehler beim Binden des Web-Servers auf {}: {}", bind_addr, e);
+                    error!(
+                        "Fehler beim Binden des Web-Servers auf {}: {}",
+                        bind_addr, e
+                    );
                 }
             }
 
@@ -289,7 +299,10 @@ fn check_auth(headers: &HeaderMap, params: &AuthParams, expected_token: &str) ->
     }
     let header_token = headers.get("X-Otaku-Token").and_then(|v| v.to_str().ok());
     // The query parameter is only needed for the WebSocket handshake, where browsers cannot set headers.
-    let provided = header_token.or(params.token.as_deref()).map(str::trim).unwrap_or("");
+    let provided = header_token
+        .or(params.token.as_deref())
+        .map(str::trim)
+        .unwrap_or("");
     constant_time_eq(provided.as_bytes(), expected_token.as_bytes())
 }
 
@@ -303,7 +316,11 @@ async fn handle_status(
     Query(params): Query<AuthParams>,
 ) -> Response {
     if !check_auth(&headers, &params, &ctx.auth_token) {
-        return (StatusCode::UNAUTHORIZED, "Ungültiges oder fehlendes Authentifizierungs-Token").into_response();
+        return (
+            StatusCode::UNAUTHORIZED,
+            "Ungültiges oder fehlendes Authentifizierungs-Token",
+        )
+            .into_response();
     }
 
     let char_name = ctx.active_character_name.read().await.clone();
@@ -328,7 +345,11 @@ async fn handle_chat(
     Json(payload): Json<MobileChatRequest>,
 ) -> Response {
     if !check_auth(&headers, &params, &ctx.auth_token) {
-        return (StatusCode::UNAUTHORIZED, "Ungültiges oder fehlendes Authentifizierungs-Token").into_response();
+        return (
+            StatusCode::UNAUTHORIZED,
+            "Ungültiges oder fehlendes Authentifizierungs-Token",
+        )
+            .into_response();
     }
 
     let user_msg = payload.message.trim();
@@ -338,7 +359,10 @@ async fn handle_chat(
     let reply_text = if user_msg.is_empty() {
         "Ich bin hier! Was möchtest du besprechen?".to_string()
     } else {
-        format!("*lächelt dich warm an* Schön, von deinem Smartphone aus mit dir verbunden zu sein! Du hast gesagt: „{}“. Ich begleite dich jederzeit.", user_msg)
+        format!(
+            "*lächelt dich warm an* Schön, von deinem Smartphone aus mit dir verbunden zu sein! Du hast gesagt: „{}“. Ich begleite dich jederzeit.",
+            user_msg
+        )
     };
 
     let resp = MobileChatResponse {
@@ -369,7 +393,8 @@ async fn handle_ws_socket(mut socket: WebSocket, ctx: AppStateContext) {
         "type": "connected",
         "character_name": char_name,
         "status": "ready"
-    }).to_string();
+    })
+    .to_string();
 
     let _ = socket.send(WsMessage::Text(welcome.into())).await;
 
@@ -377,10 +402,11 @@ async fn handle_ws_socket(mut socket: WebSocket, ctx: AppStateContext) {
         if let Ok(msg) = msg_res {
             if let WsMessage::Text(text) = msg {
                 if let Ok(val) = serde_json::from_str::<serde_json::Value>(&text)
-                    && val.get("type").and_then(|v| v.as_str()) == Some("ping") {
-                        let pong = serde_json::json!({"type": "pong"}).to_string();
-                        let _ = socket.send(WsMessage::Text(pong.into())).await;
-                    }
+                    && val.get("type").and_then(|v| v.as_str()) == Some("ping")
+                {
+                    let pong = serde_json::json!({"type": "pong"}).to_string();
+                    let _ = socket.send(WsMessage::Text(pong.into())).await;
+                }
             } else if let WsMessage::Close(_) = msg {
                 break;
             }
@@ -609,7 +635,9 @@ mod tests {
             s
         };
         let first_legacy_token = format!("{:016x}{:016x}", next(), next());
-        assert!(WebServerConfig::is_legacy_predictable_token(&first_legacy_token));
+        assert!(WebServerConfig::is_legacy_predictable_token(
+            &first_legacy_token
+        ));
     }
 
     #[test]
@@ -619,7 +647,19 @@ mod tests {
         let none = AuthParams { token: None };
         assert!(check_auth(&headers, &none, "secret"));
         assert!(!check_auth(&headers, &none, "other"));
-        assert!(!check_auth(&HeaderMap::new(), &AuthParams { token: Some(String::new()) }, ""));
-        assert!(check_auth(&HeaderMap::new(), &AuthParams { token: Some("secret".into()) }, "secret"));
+        assert!(!check_auth(
+            &HeaderMap::new(),
+            &AuthParams {
+                token: Some(String::new())
+            },
+            ""
+        ));
+        assert!(check_auth(
+            &HeaderMap::new(),
+            &AuthParams {
+                token: Some("secret".into())
+            },
+            "secret"
+        ));
     }
 }
