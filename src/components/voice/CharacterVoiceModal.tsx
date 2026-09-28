@@ -6,6 +6,7 @@ import { api } from '../../services/api';
 import { KokoroDownloadProgress, ScannedVoice, SttEngine, TtsEngine, TtsFilterMode, VoiceConfig } from '../../types';
 import { audioPlayer, gainFromVoiceVolume } from '../../services/audioPlayer';
 import { ModalOverlay } from '../ui/ModalOverlay';
+import { translate, useTranslation } from '../../i18n';
 
 interface CharacterVoiceModalProps {
   onClose: () => void;
@@ -67,12 +68,13 @@ function numericValue(value: string) {
 
 function testText(config: VoiceConfig) {
   if (config.engine !== 'kokoro') {
-    return 'Hallo! Wie geht es dir heute? Das ist ein Test meiner Stimme.';
+    return translate('voiceCfg.testText');
   }
   return 'Hello! How are you today? This is a test of my voice.';
 }
 
 export function CharacterVoiceModal({ onClose }: CharacterVoiceModalProps) {
+  const { t } = useTranslation();
   const { activeCharacter, activeVoiceConfig, saveVoiceConfigForCharacter } = useAppStore();
   const [tab, setTab] = useState<VoiceTab>('tts');
   const [draft, setDraft] = useState<VoiceConfig>(activeVoiceConfig ?? DEFAULT_CONFIG);
@@ -171,7 +173,7 @@ export function CharacterVoiceModal({ onClose }: CharacterVoiceModalProps) {
       stream.getTracks().forEach((track) => track.stop());
       setDevices(await navigator.mediaDevices.enumerateDevices());
     } catch (reason) {
-      setError(`Audiogeräte konnten nicht freigegeben werden: ${String(reason)}`);
+      setError(translate('voiceCfg.devicesFailed', { error: String(reason) }));
     }
   };
 
@@ -188,7 +190,7 @@ export function CharacterVoiceModal({ onClose }: CharacterVoiceModalProps) {
     const selected = await open({
       multiple: false,
       directory: false,
-      filters: [{ name: 'Kokoro ONNX-Modell', extensions: ['onnx'] }],
+      filters: [{ name: translate('voiceCfg.onnxFilter'), extensions: ['onnx'] }],
     });
     if (typeof selected === 'string') updateKokoro('model_path', selected);
   };
@@ -256,26 +258,28 @@ export function CharacterVoiceModal({ onClose }: CharacterVoiceModalProps) {
   };
 
   return (
-    <ModalOverlay onClose={onClose} className="fixed inset-0 z-50 flex items-center justify-center bg-black/65 backdrop-blur-sm p-4">
+    <ModalOverlay onClose={onClose} aria-labelledby="voice-config-title" className="fixed inset-0 z-50 flex items-center justify-center bg-black/65 backdrop-blur-sm p-4">
       <div className="bg-slate-900 border border-slate-700/60 rounded-xl shadow-2xl w-full max-w-3xl max-h-[92vh] flex flex-col overflow-hidden">
         <div className="p-4 border-b border-slate-800 flex justify-between items-center">
           <div>
-            <h2 className="text-xl font-semibold text-slate-100">Stimme & Voice Call</h2>
-            <p className="text-xs text-slate-500 mt-0.5">{activeCharacter?.card.data.name ?? 'Charakter'}</p>
+            <h2 id="voice-config-title" className="text-xl font-semibold text-slate-100">{t('voiceCfg.title')}</h2>
+            <p className="text-xs text-slate-500 mt-0.5">{activeCharacter?.card.data.name ?? t('voiceCfg.characterFallback')}</p>
           </div>
-          <button onClick={onClose} className="p-2 hover:bg-slate-800 rounded-lg text-slate-400">
+          <button onClick={onClose} title={t('common.close')} aria-label={t('common.close')} className="p-2 hover:bg-slate-800 rounded-lg text-slate-400">
             <X className="w-5 h-5" />
           </button>
         </div>
 
-        <div className="flex border-b border-slate-800 px-4 gap-1">
+        <div role="tablist" aria-label={t('voiceCfg.tabs')} className="flex border-b border-slate-800 px-4 gap-1">
           {([
-            ['tts', Headphones, 'Sprachausgabe'],
-            ['stt', Mic, 'Spracherkennung'],
+            ['tts', Headphones, t('voiceCfg.tabTts')],
+            ['stt', Mic, t('voiceCfg.tabStt')],
             ['rvc', SlidersHorizontal, 'RVC'],
           ] as const).map(([id, Icon, label]) => (
             <button
               key={id}
+              role="tab"
+              aria-selected={tab === id}
               onClick={() => setTab(id)}
               className={`flex items-center gap-2 px-3 py-2.5 text-xs border-b-2 transition-colors ${
                 tab === id ? 'border-accent-400 text-accent-200' : 'border-transparent text-slate-500 hover:text-slate-300'
@@ -292,21 +296,21 @@ export function CharacterVoiceModal({ onClose }: CharacterVoiceModalProps) {
             <>
               <div className="grid sm:grid-cols-2 gap-4">
                 <label>
-                  <span className={labelClass}>TTS-Engine</span>
+                  <span className={labelClass}>{t('voiceCfg.ttsEngine')}</span>
                   <select value={draft.engine} onChange={(event) => changeEngine(event.target.value as TtsEngine)} className={fieldClass}>
-                    <option value="disabled">Deaktiviert</option>
+                    <option value="disabled">{t('voiceCfg.disabled')}</option>
                     <option value="edge">Edge-TTS</option>
-                    <option value="kokoro">Kokoro 82M (nativ & offline)</option>
+                    <option value="kokoro">{t('voiceCfg.kokoro')}</option>
                     <option value="elevenlabs">ElevenLabs</option>
-                    <option value="openai">OpenAI-kompatibel / lokaler Sidecar</option>
+                    <option value="openai">{t('voiceCfg.openaiCompatible')}</option>
                   </select>
                 </label>
                 <label>
-                  <span className={labelClass}>Ausgabegerät</span>
+                  <span className={labelClass}>{t('voiceCfg.outputDevice')}</span>
                   <select value={draft.output_device_id} onChange={(event) => update('output_device_id', event.target.value)} className={fieldClass}>
-                    <option value="">Systemstandard</option>
+                    <option value="">{t('voiceCfg.systemDefault')}</option>
                     {outputDevices.map((device, index) => (
-                      <option key={device.deviceId} value={device.deviceId}>{device.label || `Ausgabe ${index + 1}`}</option>
+                      <option key={device.deviceId} value={device.deviceId}>{device.label || t('voiceCfg.outputN', { n: index + 1 })}</option>
                     ))}
                   </select>
                 </label>
@@ -316,7 +320,7 @@ export function CharacterVoiceModal({ onClose }: CharacterVoiceModalProps) {
                 <>
                   {draft.engine === 'elevenlabs' && (
                     <label>
-                      <span className={labelClass}>ElevenLabs API-Key</span>
+                      <span className={labelClass}>{t('voiceCfg.elevenKey')}</span>
                       <input type="password" value={draft.elevenlabs_api_key} onChange={(event) => update('elevenlabs_api_key', event.target.value)} className={fieldClass} placeholder="xi-api-key" />
                     </label>
                   )}
@@ -325,8 +329,8 @@ export function CharacterVoiceModal({ onClose }: CharacterVoiceModalProps) {
                     <div className="space-y-4 rounded-lg border border-emerald-500/25 bg-emerald-950/10 p-4">
                       <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-3">
                         <div>
-                          <p className="text-sm font-medium text-emerald-200">Native Kokoro-ONNX-Inferenz</p>
-                          <p className="text-xs text-slate-400 mt-1">Nach der einmaligen Installation läuft die Synthese vollständig offline und ohne Python. Das Standardpaket enthält das quantisierte 82M-Modell und acht US-/UK-Stimmen (~97 MB).</p>
+                          <p className="text-sm font-medium text-emerald-200">{t('voiceCfg.kokoroTitle')}</p>
+                          <p className="text-xs text-slate-400 mt-1">{t('voiceCfg.kokoroText')}</p>
                         </div>
                         <button
                           type="button"
@@ -335,7 +339,7 @@ export function CharacterVoiceModal({ onClose }: CharacterVoiceModalProps) {
                           className="shrink-0 flex items-center justify-center gap-2 px-3 py-2 rounded-lg bg-emerald-600 hover:bg-emerald-500 disabled:opacity-50 text-white text-xs font-medium"
                         >
                           <Download className="w-4 h-4" />
-                          {isInstallingKokoro ? 'Installiert…' : 'Standardpaket installieren'}
+                          {isInstallingKokoro ? t('voiceCfg.installing') : t('voiceCfg.installDefault')}
                         </button>
                       </div>
 
@@ -353,64 +357,64 @@ export function CharacterVoiceModal({ onClose }: CharacterVoiceModalProps) {
 
                       <div className="space-y-3">
                         <label>
-                          <span className={labelClass}>ONNX-Modell</span>
+                          <span className={labelClass}>{t('voiceCfg.onnxModel')}</span>
                           <div className="flex gap-2">
                             <input value={draft.kokoro.model_path} onChange={(event) => updateKokoro('model_path', event.target.value)} className={fieldClass} placeholder="model_quantized.onnx" />
-                            <button type="button" onClick={() => void selectKokoroModel()} className="px-3 rounded-lg border border-emerald-500/40 text-emerald-200 hover:bg-emerald-950/40" title="ONNX-Modell auswählen"><FolderOpen className="w-4 h-4" /></button>
+                            <button type="button" onClick={() => void selectKokoroModel()} className="px-3 rounded-lg border border-emerald-500/40 text-emerald-200 hover:bg-emerald-950/40" title={t('voiceCfg.chooseOnnx')}><FolderOpen className="w-4 h-4" /></button>
                           </div>
                         </label>
                         <label>
-                          <span className={labelClass}>Stimmenordner</span>
+                          <span className={labelClass}>{t('voiceCfg.voicesDir')}</span>
                           <div className="flex gap-2">
                             <input value={draft.kokoro.voices_path} onChange={(event) => updateKokoro('voices_path', event.target.value)} className={fieldClass} placeholder="voices/ mit af_heart.bin …" />
-                            <button type="button" onClick={() => void selectKokoroVoices()} className="px-3 rounded-lg border border-emerald-500/40 text-emerald-200 hover:bg-emerald-950/40" title="Stimmenordner auswählen"><FolderOpen className="w-4 h-4" /></button>
+                            <button type="button" onClick={() => void selectKokoroVoices()} className="px-3 rounded-lg border border-emerald-500/40 text-emerald-200 hover:bg-emerald-950/40" title={t('voiceCfg.chooseVoicesDir')}><FolderOpen className="w-4 h-4" /></button>
                           </div>
                         </label>
                       </div>
 
-                      <p className="text-xs text-amber-300/80">Diese native Rust-Integration verwendet Kokoros englische G2P-Pipeline. Deutsch wird nur angenähert ausgesprochen; beste Qualität liefern englische Texte.</p>
+                      <p className="text-xs text-amber-300/80">{t('voiceCfg.kokoroNote')}</p>
                     </div>
                   )}
 
                   <div className="grid sm:grid-cols-2 gap-4">
                     <label>
-                      <span className={labelClass}>Gefundene Stimme {isLoadingVoices && '– lädt…'}</span>
+                      <span className={labelClass}>{t('voiceCfg.foundVoice')} {isLoadingVoices && t('voiceCfg.loading')}</span>
                       <select value={draft.voice_id} onChange={(event) => update('voice_id', event.target.value)} className={fieldClass}>
-                        <option value={draft.voice_id}>{draft.voice_id || 'Stimme auswählen'}</option>
+                        <option value={draft.voice_id}>{draft.voice_id || t('voiceCfg.chooseVoice')}</option>
                         {availableVoices.filter((voice) => voice.id !== draft.voice_id).map((voice) => (
                           <option key={voice.id} value={voice.id}>{voice.name} · {voice.locale} · {voice.gender}</option>
                         ))}
                       </select>
                     </label>
                     <label>
-                      <span className={labelClass}>Voice-ID (manuell)</span>
+                      <span className={labelClass}>{t('voiceCfg.voiceId')}</span>
                       <input value={draft.voice_id} onChange={(event) => update('voice_id', event.target.value)} className={fieldClass} placeholder={draft.engine === 'kokoro' ? 'af_heart' : 'de-DE-KatjaNeural'} />
                     </label>
                   </div>
 
                   {draft.engine === 'openai' && (
                     <div className="space-y-4 rounded-lg border border-slate-800 bg-app/40 p-4">
-                      <p className="text-xs text-slate-400">Unterstützt OpenAI sowie OpenAI-kompatible Server für Kokoro, Qwen3-TTS, XTTSv2, Silero und AllTalk.</p>
+                      <p className="text-xs text-slate-400">{t('voiceCfg.openaiText')}</p>
                       <label>
-                        <span className={labelClass}>Speech-Endpunkt</span>
+                        <span className={labelClass}>{t('voiceCfg.speechEndpoint')}</span>
                         <input value={draft.openai_endpoint} onChange={(event) => update('openai_endpoint', event.target.value)} className={fieldClass} placeholder="http://localhost:8880/v1/audio/speech" />
                       </label>
                       <div className="grid sm:grid-cols-2 gap-4">
-                        <label><span className={labelClass}>Modell</span><input value={draft.openai_model} onChange={(event) => update('openai_model', event.target.value)} className={fieldClass} placeholder="tts-1" /></label>
-                        <label><span className={labelClass}>API-Key (optional)</span><input type="password" value={draft.openai_api_key} onChange={(event) => update('openai_api_key', event.target.value)} className={fieldClass} /></label>
+                        <label><span className={labelClass}>{t('voiceCfg.model')}</span><input value={draft.openai_model} onChange={(event) => update('openai_model', event.target.value)} className={fieldClass} placeholder="tts-1" /></label>
+                        <label><span className={labelClass}>{t('voiceCfg.apiKeyOptional')}</span><input type="password" value={draft.openai_api_key} onChange={(event) => update('openai_api_key', event.target.value)} className={fieldClass} /></label>
                       </div>
                       <label>
-                        <span className={labelClass}>Stimm-Anweisungen (für unterstützte Modelle)</span>
-                        <textarea value={draft.openai_instructions} onChange={(event) => update('openai_instructions', event.target.value)} className={`${fieldClass} min-h-20 resize-y`} placeholder="Warm, ruhig, leicht verspielt; kurze natürliche Pausen." />
+                        <span className={labelClass}>{t('voiceCfg.instructions')}</span>
+                        <textarea value={draft.openai_instructions} onChange={(event) => update('openai_instructions', event.target.value)} className={`${fieldClass} min-h-20 resize-y`} placeholder={t('voiceCfg.instructionsPlaceholder')} />
                       </label>
                     </div>
                   )}
 
                   <div className="grid sm:grid-cols-3 gap-4">
                     {([
-                      ['rate', 'Geschwindigkeit', '%', -50, 50],
-                      ['pitch', 'Tonhöhe', 'Hz', -20, 20],
-                      ['volume', 'Lautstärke', '%', -100, 100],
+                      ['rate', t('voiceCfg.rate'), '%', -50, 50],
+                      ['pitch', t('voiceCfg.pitch'), 'Hz', -20, 20],
+                      ['volume', t('voiceCfg.volume'), '%', -100, 100],
                     ] as const).map(([key, label, suffix, min, max]) => (
                       <label key={key}>
                         <span className={`${labelClass} flex justify-between`}><span>{label}</span><span>{draft[key]}</span></span>
@@ -420,19 +424,19 @@ export function CharacterVoiceModal({ onClose }: CharacterVoiceModalProps) {
                   </div>
 
                   {draft.engine === 'kokoro' && (
-                    <p className="text-xs text-slate-500">Kokoro übernimmt die Geschwindigkeit nativ. Lautstärke wird im Audioplayer angewendet; die Tonhöhenregelung ist für Kokoro nicht verfügbar.</p>
+                    <p className="text-xs text-slate-500">{t('voiceCfg.kokoroRateNote')}</p>
                   )}
 
                   <div className="grid sm:grid-cols-2 gap-4">
                     <label>
-                      <span className={labelClass}>Vorlesefilter</span>
+                      <span className={labelClass}>{t('voiceCfg.filter')}</span>
                       <select value={draft.filter_mode} onChange={(event) => update('filter_mode', event.target.value as TtsFilterMode)} className={fieldClass}>
-                        <option value="all">Alles vorlesen</option>
-                        <option value="dialogue_only">Nur Dialog in Anführungszeichen</option>
-                        <option value="strip_actions">*Aktionen* entfernen</option>
+                        <option value="all">{t('voiceCfg.filterAll')}</option>
+                        <option value="dialogue_only">{t('voiceCfg.filterDialogue')}</option>
+                        <option value="strip_actions">{t('voiceCfg.filterActions')}</option>
                       </select>
                     </label>
-                    <label><span className={labelClass}>Zusätzlicher Ausschluss-RegEx</span><input value={draft.custom_regex} onChange={(event) => update('custom_regex', event.target.value)} className={fieldClass} placeholder="\[System:.*?\]" /></label>
+                    <label><span className={labelClass}>{t('voiceCfg.customRegex')}</span><input value={draft.custom_regex} onChange={(event) => update('custom_regex', event.target.value)} className={fieldClass} placeholder="\[System:.*?\]" /></label>
                   </div>
                 </>
               )}
@@ -443,44 +447,44 @@ export function CharacterVoiceModal({ onClose }: CharacterVoiceModalProps) {
             <>
               <div className="grid sm:grid-cols-2 gap-4">
                 <label>
-                  <span className={labelClass}>STT-Engine</span>
+                  <span className={labelClass}>{t('voiceCfg.sttEngine')}</span>
                   <select value={draft.stt.engine} onChange={(event) => updateStt('engine', event.target.value as SttEngine)} className={fieldClass}>
-                    <option value="disabled">Deaktiviert</option>
-                    <option value="native_whisper">Native whisper.cpp (offline)</option>
-                    <option value="openai">OpenAI-kompatibler Transkriptions-Endpunkt</option>
+                    <option value="disabled">{t('voiceCfg.disabled')}</option>
+                    <option value="native_whisper">{t('voiceCfg.nativeWhisper')}</option>
+                    <option value="openai">{t('voiceCfg.openaiStt')}</option>
                   </select>
                 </label>
                 <label>
-                  <span className={labelClass}>Mikrofon</span>
+                  <span className={labelClass}>{t('voiceCfg.microphone')}</span>
                   <div className="flex gap-2">
                     <select value={draft.stt.input_device_id} onChange={(event) => updateStt('input_device_id', event.target.value)} className={fieldClass}>
-                      <option value="">Systemstandard</option>
+                      <option value="">{t('voiceCfg.systemDefault')}</option>
                       {inputDevices.map((device, index) => (
-                        <option key={device.deviceId} value={device.deviceId}>{device.label || `Mikrofon ${index + 1}`}</option>
+                        <option key={device.deviceId} value={device.deviceId}>{device.label || t('voiceCfg.micN', { n: index + 1 })}</option>
                       ))}
                     </select>
-                    <button onClick={() => void refreshDevices()} className="px-3 rounded-lg border border-slate-700 text-slate-300 hover:bg-slate-800" title="Berechtigung anfragen und Geräte neu laden"><RefreshCw className="w-4 h-4" /></button>
+                    <button onClick={() => void refreshDevices()} className="px-3 rounded-lg border border-slate-700 text-slate-300 hover:bg-slate-800" title={t('voiceCfg.refreshDevices')}><RefreshCw className="w-4 h-4" /></button>
                   </div>
                 </label>
               </div>
 
               {draft.stt.engine === 'native_whisper' && (
                 <label>
-                  <span className={labelClass}>whisper.cpp-Modell (.bin/.ggml/.gguf)</span>
+                  <span className={labelClass}>{t('voiceCfg.whisperModel')}</span>
                   <div className="flex gap-2">
                     <input value={draft.stt.whisper_model_path} onChange={(event) => updateStt('whisper_model_path', event.target.value)} className={fieldClass} placeholder="ggml-small.bin" />
-                    <button onClick={() => void selectWhisperModel()} className="px-3 rounded-lg border border-accent-500/40 text-accent-200 hover:bg-accent-950/40">Wählen</button>
+                    <button onClick={() => void selectWhisperModel()} className="px-3 rounded-lg border border-accent-500/40 text-accent-200 hover:bg-accent-950/40">{t('voiceCfg.choose')}</button>
                   </div>
                 </label>
               )}
 
               {draft.stt.engine === 'openai' && (
                 <div className="space-y-4 rounded-lg border border-slate-800 bg-app/40 p-4">
-                  <p className="text-xs text-slate-400">Funktioniert mit OpenAI und lokalen whisper.cpp/Faster-Whisper-Servern, die <code>/v1/audio/transcriptions</code> anbieten.</p>
-                  <label><span className={labelClass}>Transkriptions-Endpunkt</span><input value={draft.stt.endpoint} onChange={(event) => updateStt('endpoint', event.target.value)} className={fieldClass} /></label>
+                  <p className="text-xs text-slate-400">{t('voiceCfg.sttText')}</p>
+                  <label><span className={labelClass}>{t('voiceCfg.sttEndpoint')}</span><input value={draft.stt.endpoint} onChange={(event) => updateStt('endpoint', event.target.value)} className={fieldClass} /></label>
                   <div className="grid sm:grid-cols-2 gap-4">
-                    <label><span className={labelClass}>Modell</span><input value={draft.stt.model} onChange={(event) => updateStt('model', event.target.value)} className={fieldClass} /></label>
-                    <label><span className={labelClass}>API-Key (optional)</span><input type="password" value={draft.stt.api_key} onChange={(event) => updateStt('api_key', event.target.value)} className={fieldClass} /></label>
+                    <label><span className={labelClass}>{t('voiceCfg.model')}</span><input value={draft.stt.model} onChange={(event) => updateStt('model', event.target.value)} className={fieldClass} /></label>
+                    <label><span className={labelClass}>{t('voiceCfg.apiKeyOptional')}</span><input type="password" value={draft.stt.api_key} onChange={(event) => updateStt('api_key', event.target.value)} className={fieldClass} /></label>
                   </div>
                 </div>
               )}
@@ -488,14 +492,14 @@ export function CharacterVoiceModal({ onClose }: CharacterVoiceModalProps) {
               {draft.stt.engine !== 'disabled' && (
                 <>
                   <div className="grid sm:grid-cols-2 gap-4">
-                    <label><span className={labelClass}>Sprache (leer = Auto-Erkennung)</span><input value={draft.stt.language} onChange={(event) => updateStt('language', event.target.value)} className={fieldClass} placeholder="de" /></label>
-                    <label><span className={labelClass}>Whisper-Kontext / Schreibweisen</span><input value={draft.stt.prompt} onChange={(event) => updateStt('prompt', event.target.value)} className={fieldClass} placeholder="OtakuSoul, Charakternamen…" /></label>
+                    <label><span className={labelClass}>{t('voiceCfg.sttLanguage')}</span><input value={draft.stt.language} onChange={(event) => updateStt('language', event.target.value)} className={fieldClass} placeholder="de" /></label>
+                    <label><span className={labelClass}>{t('voiceCfg.sttPrompt')}</span><input value={draft.stt.prompt} onChange={(event) => updateStt('prompt', event.target.value)} className={fieldClass} placeholder={t('voiceCfg.sttPromptPlaceholder')} /></label>
                   </div>
                   <div className="grid sm:grid-cols-2 gap-4">
-                    <label><span className={`${labelClass} flex justify-between`}><span>VAD-Empfindlichkeit</span><span>{draft.stt.vad_threshold.toFixed(3)}</span></span><input type="range" min="0.005" max="0.12" step="0.005" value={draft.stt.vad_threshold} onChange={(event) => updateStt('vad_threshold', Number(event.target.value))} className="w-full accent-cyan-500" /></label>
-                    <label><span className={`${labelClass} flex justify-between`}><span>Sprechende nach Stille</span><span>{draft.stt.vad_silence_ms} ms</span></span><input type="range" min="300" max="2500" step="100" value={draft.stt.vad_silence_ms} onChange={(event) => updateStt('vad_silence_ms', Number(event.target.value))} className="w-full accent-cyan-500" /></label>
+                    <label><span className={`${labelClass} flex justify-between`}><span>{t('voiceCfg.vad')}</span><span>{draft.stt.vad_threshold.toFixed(3)}</span></span><input type="range" min="0.005" max="0.12" step="0.005" value={draft.stt.vad_threshold} onChange={(event) => updateStt('vad_threshold', Number(event.target.value))} className="w-full accent-cyan-500" /></label>
+                    <label><span className={`${labelClass} flex justify-between`}><span>{t('voiceCfg.vadSilence')}</span><span>{draft.stt.vad_silence_ms} ms</span></span><input type="range" min="300" max="2500" step="100" value={draft.stt.vad_silence_ms} onChange={(event) => updateStt('vad_silence_ms', Number(event.target.value))} className="w-full accent-cyan-500" /></label>
                   </div>
-                  <p className="text-xs text-slate-500">Die Web-Audio-VAD erkennt Sprache lokal und sendet nur abgeschlossene Äußerungen an Whisper. Push-to-talk und Voice Call erscheinen danach neben dem Chat-Eingabefeld.</p>
+                  <p className="text-xs text-slate-500">{t('voiceCfg.vadText')}</p>
                 </>
               )}
             </>
@@ -504,16 +508,16 @@ export function CharacterVoiceModal({ onClose }: CharacterVoiceModalProps) {
           {tab === 'rvc' && (
             <>
               <label className="flex items-center justify-between rounded-lg border border-slate-800 bg-app/50 p-3">
-                <span><span className="block text-sm text-slate-200">RVC Voice Conversion</span><span className="block text-xs text-slate-500">Wendet nach jeder TTS-Ausgabe ein optionales Stimmenmodell an.</span></span>
+                <span><span className="block text-sm text-slate-200">{t('voiceCfg.rvcTitle')}</span><span className="block text-xs text-slate-500">{t('voiceCfg.rvcText')}</span></span>
                 <input type="checkbox" checked={draft.rvc.enabled} onChange={(event) => updateRvc('enabled', event.target.checked)} className="w-4 h-4 accent-accent-500" />
               </label>
               {draft.rvc.enabled && (
                 <>
-                  <p className="text-xs text-slate-400">Erwarteter Sidecar-Vertrag: Multipart POST mit <code>audio</code>, <code>model</code>, <code>pitch</code>, <code>index_rate</code> und <code>protect</code>; Antwort ist WAV oder MP3.</p>
-                  <label><span className={labelClass}>RVC-Endpunkt</span><input value={draft.rvc.endpoint} onChange={(event) => updateRvc('endpoint', event.target.value)} className={fieldClass} placeholder="http://localhost:7865/v1/voice-conversion" /></label>
+                  <p className="text-xs text-slate-400">{t('voiceCfg.rvcContract')}</p>
+                  <label><span className={labelClass}>{t('voiceCfg.rvcEndpoint')}</span><input value={draft.rvc.endpoint} onChange={(event) => updateRvc('endpoint', event.target.value)} className={fieldClass} placeholder="http://localhost:7865/v1/voice-conversion" /></label>
                   <div className="grid sm:grid-cols-2 gap-4">
-                    <label><span className={labelClass}>Modell / Stimme</span><input value={draft.rvc.model} onChange={(event) => updateRvc('model', event.target.value)} className={fieldClass} /></label>
-                    <label><span className={labelClass}>API-Key (optional)</span><input type="password" value={draft.rvc.api_key} onChange={(event) => updateRvc('api_key', event.target.value)} className={fieldClass} /></label>
+                    <label><span className={labelClass}>{t('voiceCfg.rvcModel')}</span><input value={draft.rvc.model} onChange={(event) => updateRvc('model', event.target.value)} className={fieldClass} /></label>
+                    <label><span className={labelClass}>{t('voiceCfg.apiKeyOptional')}</span><input type="password" value={draft.rvc.api_key} onChange={(event) => updateRvc('api_key', event.target.value)} className={fieldClass} /></label>
                   </div>
                   <div className="grid sm:grid-cols-3 gap-4">
                     <label><span className={`${labelClass} flex justify-between`}><span>Pitch</span><span>{draft.rvc.pitch}</span></span><input type="range" min="-24" max="24" value={draft.rvc.pitch} onChange={(event) => updateRvc('pitch', Number(event.target.value))} className="w-full accent-accent-500" /></label>
@@ -530,11 +534,11 @@ export function CharacterVoiceModal({ onClose }: CharacterVoiceModalProps) {
 
         <div className="p-4 border-t border-slate-800 flex justify-between bg-slate-900">
           <button onClick={() => void handleTest()} disabled={draft.engine === 'disabled' || isTesting} className="flex items-center gap-2 px-4 py-2 bg-slate-800 hover:bg-slate-700 text-slate-200 rounded-lg disabled:opacity-50">
-            <Play className="w-4 h-4" />{isTesting ? 'Testet…' : 'TTS testen'}
+            <Play className="w-4 h-4" />{isTesting ? t('voiceCfg.testing') : t('voiceCfg.test')}
           </button>
           <div className="flex gap-3">
-            <button onClick={onClose} className="px-4 py-2 hover:bg-slate-800 text-slate-300 rounded-lg">Abbrechen</button>
-            <button onClick={() => void handleSave()} className="flex items-center gap-2 px-4 py-2 bg-accent-600 hover:bg-accent-500 text-white rounded-lg shadow-lg shadow-accent-500/20"><Save className="w-4 h-4" />Speichern</button>
+            <button onClick={onClose} className="px-4 py-2 hover:bg-slate-800 text-slate-300 rounded-lg">{t('common.cancel')}</button>
+            <button onClick={() => void handleSave()} className="flex items-center gap-2 px-4 py-2 bg-accent-600 hover:bg-accent-500 text-white rounded-lg shadow-lg shadow-accent-500/20"><Save className="w-4 h-4" />{t('voiceCfg.save')}</button>
           </div>
         </div>
       </div>
