@@ -5,6 +5,7 @@ import { api } from '../../services/api';
 import { audioPlayer } from '../../services/audioPlayer';
 import { streamingTts } from '../../services/streamingTts';
 import { VoiceCapture, VoiceCaptureResult } from '../../services/voiceCapture';
+import { translate, type TranslationKey } from '../../i18n';
 
 type VoiceCallState = 'idle' | 'listening' | 'transcribing' | 'thinking' | 'speaking' | 'error';
 
@@ -17,13 +18,13 @@ interface VoiceCallControlsProps {
   onEnsureAutoTts: () => void;
 }
 
-const STATE_LABELS: Record<VoiceCallState, string> = {
-  idle: 'Bereit',
-  listening: 'Hört zu…',
-  transcribing: 'Transkribiert…',
-  thinking: 'Verarbeitet…',
-  speaking: 'Spricht…',
-  error: 'Sprachfehler',
+const STATE_LABELS: Record<VoiceCallState, TranslationKey> = {
+  idle: 'voice.state.idle',
+  listening: 'voice.state.listening',
+  transcribing: 'voice.state.transcribing',
+  thinking: 'voice.state.thinking',
+  speaking: 'voice.state.speaking',
+  error: 'voice.state.error',
 };
 
 export function VoiceCallControls({
@@ -64,7 +65,7 @@ export function VoiceCallControls({
 
   const beginListening = async (continuous: boolean) => {
     if (!config || config.stt.engine === 'disabled') {
-      fail('Bitte zuerst STT in den Stimmen-Einstellungen konfigurieren.');
+      fail(translate('voice.needStt'));
       return;
     }
     setError('');
@@ -96,7 +97,7 @@ export function VoiceCallControls({
     setState('transcribing');
     try {
       const transcript = await api.transcribeSpeech(recording.audioBase64, config.stt);
-      if (!transcript.trim()) throw new Error('Whisper hat keinen gesprochenen Text erkannt.');
+      if (!transcript.trim()) throw new Error(translate('voice.noSpeech'));
       if (!autoSend) {
         onDraft(transcript.trim());
         resetToIdle();
@@ -147,7 +148,7 @@ export function VoiceCallControls({
       return;
     }
     if (!config || config.stt.engine === 'disabled' || config.engine === 'disabled') {
-      fail('Voice Call benötigt eine konfigurierte STT- und TTS-Engine.');
+      fail(translate('voice.callNeedsEngines'));
       return;
     }
     updateCallActive(true);
@@ -174,7 +175,7 @@ export function VoiceCallControls({
       {(state !== 'idle' || callActive) && (
         <div className="hidden sm:flex items-center gap-1.5 px-2 py-1 rounded-lg border border-cyan-500/30 bg-cyan-950/30 text-[11px] text-cyan-200">
           {busy ? <Loader2 className="w-3 h-3 animate-spin" /> : <Radio className="w-3 h-3" />}
-          <span>{STATE_LABELS[state]}</span>
+          <span>{translate(STATE_LABELS[state])}</span>
           {state === 'listening' && (
             <span className="w-12 h-1 rounded-full bg-slate-800 overflow-hidden">
               <span
@@ -193,7 +194,8 @@ export function VoiceCallControls({
             ? 'bg-rose-600 border-rose-400 text-white animate-pulse'
             : 'bg-slate-800 border-slate-700 text-slate-300 hover:text-white'
         }`}
-        title={captureRef.current.isActive() ? 'Aufnahme stoppen und transkribieren' : 'Spracheingabe starten'}
+        title={translate(captureRef.current.isActive() ? 'voice.stopRecording' : 'voice.startRecording')}
+        aria-label={translate(captureRef.current.isActive() ? 'voice.stopRecording' : 'voice.startRecording')}
       >
         {state === 'listening' && !callActive ? <MicOff className="w-4 h-4" /> : <Mic className="w-4 h-4" />}
       </button>
@@ -205,12 +207,14 @@ export function VoiceCallControls({
             ? 'bg-cyan-600 border-cyan-400 text-white shadow-md shadow-cyan-500/20'
             : 'bg-slate-800 border-slate-700 text-slate-300 hover:text-cyan-200'
         }`}
-        title={callActive ? 'Voice Call beenden' : 'Voice Call starten'}
+        title={translate(callActive ? 'voice.endCall' : 'voice.startCall')}
+        aria-label={translate(callActive ? 'voice.endCall' : 'voice.startCall')}
+        aria-pressed={callActive}
       >
         {callActive ? <PhoneOff className="w-4 h-4" /> : <Phone className="w-4 h-4" />}
       </button>
       {error && (
-        <div className="absolute bottom-full right-0 mb-2 w-72 rounded-lg border border-rose-500/40 bg-rose-950/95 p-2 text-xs text-rose-200 shadow-xl">
+        <div role="alert" className="absolute bottom-full right-0 mb-2 w-72 rounded-lg border border-rose-500/40 bg-rose-950/95 p-2 text-xs text-rose-200 shadow-xl">
           {error}
         </div>
       )}

@@ -12,8 +12,10 @@ import {
   Eye,
   Smile,
 } from 'lucide-react';
+import { useTranslation } from '../../i18n';
 
 export const FloatingCompanionOverlay: React.FC = () => {
+  const { t, tEmotion } = useTranslation();
   const {
     companionState,
     fetchCompanionState,
@@ -95,7 +97,8 @@ export const FloatingCompanionOverlay: React.FC = () => {
             </button>
             <button
               onClick={handleClose}
-              title="Overlay schließen"
+              title={t('overlay.close')}
+              aria-label={t('overlay.close')}
               className="p-1 rounded-lg bg-slate-900 hover:bg-rose-950/60 border border-slate-700 hover:border-rose-500/50 text-slate-400 hover:text-rose-300 transition"
             >
               <X className="w-3.5 h-3.5" />
@@ -107,7 +110,9 @@ export const FloatingCompanionOverlay: React.FC = () => {
         <div className="p-3 rounded-2xl bg-cyan-950/30 border border-cyan-500/20 text-xs text-cyan-100/90 leading-relaxed shadow-inner">
           <div className="flex items-center gap-1.5 text-[11px] text-cyan-400 font-mono mb-1">
             <MessageSquare className="w-3 h-3" />
-            <span>Gefühl: <strong>{emotion}</strong> • {hormones?.mood_label || 'Aktiv'}</span>
+            <span>
+              {t('overlay.feeling')} <strong>{tEmotion(emotion)}</strong> • {hormones?.mood_label || t('overlay.active')}
+            </span>
           </div>
           <p className="italic">"{bubbleText}"</p>
           {recentThought && (

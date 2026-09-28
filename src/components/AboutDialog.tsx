@@ -2,19 +2,21 @@ import { createPortal } from 'react-dom';
 import { BrainCircuit, Dice5, HeartHandshake, ShieldCheck, Sparkles, X } from 'lucide-react';
 import logoUrl from '../assets/brand/otakusoul-logo-wide.webp';
 import { ModalOverlay } from './ui/ModalOverlay';
+import { useTranslation, type TranslationKey } from '../i18n';
 
 interface AboutDialogProps {
   onClose: () => void;
 }
 
-const highlights = [
-  { icon: BrainCircuit, label: 'Lokale & Cloud-KI' },
-  { icon: HeartHandshake, label: 'Kognitives Soul Memory' },
-  { icon: Sparkles, label: 'VRM & Live2D Avatare' },
-  { icon: Dice5, label: 'Soul Stage Rollenspiel' },
+const highlights: { icon: typeof BrainCircuit; label: TranslationKey }[] = [
+  { icon: BrainCircuit, label: 'about.localCloudAi' },
+  { icon: HeartHandshake, label: 'about.soulMemory' },
+  { icon: Sparkles, label: 'about.avatars' },
+  { icon: Dice5, label: 'about.stage' },
 ];
 
 export function AboutDialog({ onClose }: AboutDialogProps) {
+  const { t } = useTranslation();
   if (typeof document === 'undefined') return null;
 
   return createPortal(
@@ -29,7 +31,7 @@ export function AboutDialog({ onClose }: AboutDialogProps) {
           type="button"
           onClick={onClose}
           className="absolute right-4 top-4 z-10 rounded-full border border-white/10 bg-app/70 p-2 text-slate-300 backdrop-blur transition hover:border-accent-400/40 hover:text-white"
-          aria-label="Über-Dialog schließen"
+          aria-label={t('about.close')}
         >
           <X className="h-4 w-4" />
         </button>
@@ -48,12 +50,11 @@ export function AboutDialog({ onClose }: AboutDialogProps) {
                 OtakuSoul
               </h2>
               <span className="rounded-full border border-accent-400/30 bg-accent-500/10 px-2.5 py-1 font-mono text-xs text-accent-200">
-                v0.1.0
+                {t('header.version')}
               </span>
             </div>
             <p className="mt-2 max-w-2xl text-sm leading-6 text-slate-300">
-              Eine immersive Desktop-Plattform für persönliche KI-Charaktere, lebendige Avatare,
-              langfristige Erinnerungen und gemeinsam erzählte Welten.
+              {t('about.text')}
             </p>
           </div>
 
@@ -64,13 +65,13 @@ export function AboutDialog({ onClose }: AboutDialogProps) {
                 className="flex items-center gap-2.5 rounded-xl border border-slate-800 bg-slate-900/70 px-3 py-2.5 text-xs text-slate-200"
               >
                 <Icon className="h-4 w-4 text-accent-300" />
-                <span>{label}</span>
+                <span>{t(label)}</span>
               </div>
             ))}
           </div>
 
           <div className="flex flex-col gap-3 border-t border-slate-800 pt-5 text-xs text-slate-400 sm:flex-row sm:items-center sm:justify-between">
-            <span>Entwickelt von SnowwhiteOakheart</span>
+            <span>{t('about.developedBy', { author: 'SnowwhiteOakheart' })}</span>
             <span className="inline-flex items-center gap-1.5">
               <ShieldCheck className="h-3.5 w-3.5 text-emerald-400" />
               Open Source · GPLv3

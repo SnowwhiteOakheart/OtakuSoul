@@ -3,12 +3,15 @@ import { useAppStore } from '../../store/useAppStore';
 import { UserPersona } from '../../types';
 import { X, UserPlus, Check, Trash2, User } from 'lucide-react';
 import { ModalOverlay } from '../ui/ModalOverlay';
+import { translate, useTranslation } from '../../i18n';
+import { confirmDialog } from '../ui/feedback';
 
 interface PersonaManagerModalProps {
   onClose: () => void;
 }
 
 export const PersonaManagerModal = ({ onClose }: PersonaManagerModalProps) => {
+  const { t } = useTranslation();
   const { personas, activePersona, selectPersona, savePersona, deletePersona } = useAppStore();
 
   const [isCreating, setIsCreating] = useState(false);
@@ -18,14 +21,14 @@ export const PersonaManagerModal = ({ onClose }: PersonaManagerModalProps) => {
 
   const handleCreatePersona = async () => {
     if (!name.trim()) {
-      setErrorMsg('Bitte gib einen Persona-Namen ein.');
+      setErrorMsg(t('persona.nameRequired'));
       return;
     }
 
     const newPersona: UserPersona = {
       id: `persona_${Date.now()}`,
       name: name.trim(),
-      description: description.trim() || 'Ein aufmerksamer Gesprächspartner.',
+      description: description.trim() || t('persona.defaultDesc'),
       avatar_data_url: null,
     };
 
@@ -52,9 +55,9 @@ export const PersonaManagerModal = ({ onClose }: PersonaManagerModalProps) => {
               <User className="w-4 h-4" />
             </div>
             <div>
-              <h2 className="text-sm font-bold text-slate-100">User-Personas verwalten</h2>
+              <h2 className="text-sm font-bold text-slate-100">{t('persona.title')}</h2>
               <p className="text-xs text-slate-400">
-                Wähle deine Identität für das Rollenspiel (&#123;&#123;user&#125;&#125;-Makro)
+                {t('persona.intro', { macro: '{{user}}' })}
               </p>
             </div>
           </div>
@@ -99,7 +102,7 @@ export const PersonaManagerModal = ({ onClose }: PersonaManagerModalProps) => {
                         <span>{persona.name}</span>
                         {isActive && (
                           <span className="text-[11px] px-1.5 py-0.5 rounded bg-accent-500/30 text-accent-300 border border-accent-500/40">
-                            Aktiv
+                            {t('persona.active')}
                           </span>
                         )}
                       </div>
@@ -115,14 +118,22 @@ export const PersonaManagerModal = ({ onClose }: PersonaManagerModalProps) => {
                         onClick={() => selectPersona(persona)}
                         className="px-2.5 py-1 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-300 hover:text-white transition-colors"
                       >
-                        Aktivieren
+                        {t('persona.activate')}
                       </button>
                     )}
                     {personas.length > 1 && (
                       <button
-                        onClick={() => deletePersona(persona.id)}
+                        onClick={async () => {
+                          const confirmed = await confirmDialog({
+                            title: translate('confirm.deletePersonaTitle', { name: persona.name }),
+                            confirmLabel: translate('common.delete'),
+                            tone: 'danger',
+                          });
+                          if (confirmed) deletePersona(persona.id);
+                        }}
+                        aria-label={t('persona.delete')}
                         className="p-1 rounded text-slate-500 hover:text-rose-400 hover:bg-slate-800 transition-colors"
-                        title="Persona löschen"
+                        title={t('persona.delete')}
                       >
                         <Trash2 className="w-3.5 h-3.5" />
                       </button>
@@ -140,30 +151,30 @@ export const PersonaManagerModal = ({ onClose }: PersonaManagerModalProps) => {
               className="w-full py-2.5 rounded-xl border border-dashed border-slate-700 hover:border-accent-500 text-slate-400 hover:text-accent-300 flex items-center justify-center gap-2 transition-colors font-medium"
             >
               <UserPlus className="w-4 h-4" />
-              <span>Neue Persona erstellen</span>
+              <span>{t('persona.create')}</span>
             </button>
           ) : (
             <div className="p-4 bg-app border border-slate-800 rounded-xl space-y-3">
-              <div className="font-semibold text-slate-200">Neue Persona anlegen</div>
+              <div className="font-semibold text-slate-200">{t('persona.createTitle')}</div>
               <div>
-                <label className="block text-xs text-slate-400 mb-1">Name *</label>
+                <label className="block text-xs text-slate-400 mb-1">{t('persona.name')}</label>
                 <input
                   type="text"
                   value={name}
                   onChange={(e) => setName(e.target.value)}
-                  placeholder="z. B. Hiroki Ogasawara"
+                  placeholder={t('persona.namePlaceholder')}
                   className="w-full px-3 py-1.5 bg-slate-900 border border-slate-700 rounded-lg text-slate-100 placeholder-slate-500 focus:outline-hidden focus:border-accent-500"
                 />
               </div>
               <div>
                 <label className="block text-xs text-slate-400 mb-1">
-                  Beschreibung (Wer bist du im Rollenspiel?)
+                  {t('persona.description')}
                 </label>
                 <textarea
                   rows={2}
                   value={description}
                   onChange={(e) => setDescription(e.target.value)}
-                  placeholder="Fotograf, ruhige Art, mag Grüntee..."
+                  placeholder={t('persona.descPlaceholder')}
                   className="w-full px-3 py-1.5 bg-slate-900 border border-slate-700 rounded-lg text-slate-100 placeholder-slate-500 focus:outline-hidden focus:border-accent-500 resize-none"
                 />
               </div>
@@ -173,7 +184,7 @@ export const PersonaManagerModal = ({ onClose }: PersonaManagerModalProps) => {
                   onClick={() => setIsCreating(false)}
                   className="px-3 py-1 text-slate-400 hover:text-slate-200 rounded"
                 >
-                  Abbrechen
+                  {t('common.cancel')}
                 </button>
                 <button
                   type="button"
@@ -181,7 +192,7 @@ export const PersonaManagerModal = ({ onClose }: PersonaManagerModalProps) => {
                   className="px-3.5 py-1 bg-accent-600 hover:bg-accent-500 text-white rounded-lg font-medium flex items-center gap-1.5 shadow-sm"
                 >
                   <Check className="w-3.5 h-3.5" />
-                  <span>Erstellen</span>
+                  <span>{t('persona.createButton')}</span>
                 </button>
               </div>
             </div>
@@ -194,7 +205,7 @@ export const PersonaManagerModal = ({ onClose }: PersonaManagerModalProps) => {
             onClick={onClose}
             className="px-4 py-1.5 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-200 text-xs font-medium transition-colors"
           >
-            Fertig
+            {t('persona.done')}
           </button>
         </div>
       </div>

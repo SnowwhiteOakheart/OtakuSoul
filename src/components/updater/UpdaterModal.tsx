@@ -55,7 +55,7 @@ export const UpdaterModal: React.FC = () => {
             </div>
             <div>
               <h2 className="text-base font-bold text-slate-100">{t('updater.title')}</h2>
-              <p className="text-xs text-slate-400">GitHub Releases & Versionsprüfung</p>
+              <p className="text-xs text-slate-400">{t('updater.subtitle')}</p>
             </div>
           </div>
 
@@ -143,7 +143,7 @@ export const UpdaterModal: React.FC = () => {
             className="flex items-center gap-2 px-3 py-1.5 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-200 text-xs font-medium border border-slate-700 transition"
           >
             <RefreshCw className={`w-3.5 h-3.5 ${isChecking ? 'animate-spin' : ''}`} />
-            <span>{isChecking ? t('updater.checking') : 'Erneut prüfen'}</span>
+            <span>{isChecking ? t('updater.checking') : t('updater.checkAgain')}</span>
           </button>
 
           {hasUpdate ? (

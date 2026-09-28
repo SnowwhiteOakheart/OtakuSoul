@@ -1,8 +1,10 @@
 import React, { useEffect, useState } from 'react';
 import { useAppStore } from '../../store/useAppStore';
 import { ShieldAlert, Check, X, Clock, Terminal } from 'lucide-react';
+import { useTranslation } from '../../i18n';
 
 export const SafetyCountdownBanner: React.FC = () => {
+  const { t } = useTranslation();
   const { companionState, resolveToolCall } = useAppStore();
   const pendingCall = companionState?.pending_tool_calls?.[0];
 
@@ -45,9 +47,9 @@ export const SafetyCountdownBanner: React.FC = () => {
         <div className="flex-1 space-y-2">
           <div className="flex items-center justify-between">
             <h3 className="text-sm font-bold text-slate-100 flex items-center gap-1.5">
-              <span>Sicherheitsabfrage: Tool-Aufruf</span>
+              <span>{t('safety.title')}</span>
               <span className="text-[11px] px-2 py-0.5 rounded-full bg-amber-950 text-amber-300 border border-amber-500/40 font-mono">
-                Human-in-the-Loop
+                {t('safety.hitl')}
               </span>
             </h3>
 
@@ -60,7 +62,9 @@ export const SafetyCountdownBanner: React.FC = () => {
           <div className="p-2.5 rounded-xl bg-app border border-slate-800 text-xs font-mono space-y-1">
             <div className="text-slate-300 flex items-center gap-1.5">
               <Terminal className="w-3.5 h-3.5 text-accent-400" />
-              <span>Tool: <strong>{pendingCall.tool_name}</strong></span>
+              <span>
+                {t('safety.tool')} <strong>{pendingCall.tool_name}</strong>
+              </span>
             </div>
             <pre className="text-xs text-slate-400 overflow-x-auto whitespace-pre-wrap">
               {JSON.stringify(pendingCall.arguments, null, 2)}
@@ -82,14 +86,14 @@ export const SafetyCountdownBanner: React.FC = () => {
               className="px-3.5 py-1.5 rounded-xl bg-slate-800 hover:bg-rose-950 hover:text-rose-300 hover:border-rose-500/50 text-slate-300 text-xs font-semibold border border-slate-700 transition flex items-center gap-1.5 active:scale-95"
             >
               <X className="w-3.5 h-3.5" />
-              Ablehnen
+              {t('safety.deny')}
             </button>
             <button
               onClick={() => resolveToolCall(pendingCall.id, true)}
               className="px-4 py-1.5 rounded-xl bg-linear-to-r from-emerald-600 to-teal-600 hover:from-emerald-500 hover:to-teal-500 text-white text-xs font-bold shadow-lg shadow-emerald-950/40 transition flex items-center gap-1.5 active:scale-95"
             >
               <Check className="w-3.5 h-3.5" />
-              Freigeben ({secondsRemaining}s)
+              {t('safety.approve', { seconds: secondsRemaining })}
             </button>
           </div>
         </div>
