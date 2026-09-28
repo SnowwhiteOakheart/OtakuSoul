@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import { useAppStore } from '../../store/useAppStore';
+import { useAppStore, useStoreFields } from '../../store/useAppStore';
 import { SafetyCountdownBanner } from './SafetyCountdownBanner';
 import { LOCALES, useTranslation, type TranslationKey } from '../../i18n';
 import {
@@ -53,7 +53,13 @@ export const CompanionView: React.FC = () => {
     fetchCompanionPlugins,
     toggleCompanionOverlay,
     detectDesktopWindow,
-  } = useAppStore();
+  } = useStoreFields(
+    'companionState', 'fetchCompanionState', 'applyHormoneInteraction', 'setHormones',
+    'requestToolCall', 'updateCompanionSettings', 'addCompanionThought', 'clearCompanionThoughts',
+    'addCompanionGoal', 'markCompanionGoalCompleted', 'deleteCompanionGoal', 'environmentSnapshot',
+    'fetchEnvironmentSnapshot', 'mcpServers', 'fetchMcpServers', 'toggleMcpServer',
+    'companionPlugins', 'fetchCompanionPlugins', 'toggleCompanionOverlay', 'detectDesktopWindow',
+  );
 
   const [activeSubTab, setActiveSubTab] = useState<'monitor' | 'thoughts' | 'goals' | 'tools' | 'mcp' | 'overlay'>('monitor');
 

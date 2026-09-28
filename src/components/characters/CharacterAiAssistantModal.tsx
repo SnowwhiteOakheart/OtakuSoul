@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { useAppStore } from '../../store/useAppStore';
+import { useStoreFields } from '../../store/useAppStore';
 import { api } from '../../services/api';
 import { CharacterDraft, CharacterWizardInput } from '../../types';
 import {
@@ -55,7 +55,10 @@ export const CharacterAiAssistantModal: React.FC = () => {
     cloudModel,
     cloudProvider,
     replyLanguage,
-  } = useAppStore();
+  } = useStoreFields(
+    'characterWizardOpen', 'setCharacterWizardOpen', 'createCharacterFromDraft', 'selectedBackend',
+    'serverConfig', 'cloudEndpoint', 'cloudApiKey', 'cloudModel', 'cloudProvider', 'replyLanguage',
+  );
 
   const [step, setStep] = useState<number>(1);
   const [wizardInput, setWizardInput] = useState<CharacterWizardInput>({

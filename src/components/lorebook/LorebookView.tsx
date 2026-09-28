@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { useAppStore } from '../../store/useAppStore';
+import { useStoreFields } from '../../store/useAppStore';
 import { Lorebook, LorebookEntry } from '../../types';
 import { open, save } from '@tauri-apps/plugin-dialog';
 import {
@@ -46,7 +46,12 @@ export const LorebookView: React.FC = () => {
     sceneTensionEnabled,
     setSceneTensionEnabled,
     openSoulHubTab,
-  } = useAppStore();
+  } = useStoreFields(
+    'allLorebooks', 'activeLorebook', 'selectLorebook', 'saveLorebook', 'deleteLorebook',
+    'importLorebook', 'exportLorebook', 'refreshLorebooks', 'toggleGlobalLorebook',
+    'globalLorebookIds', 'currentTension', 'adjustTension', 'resetTension', 'sceneTensionEnabled',
+    'setSceneTensionEnabled', 'openSoulHubTab',
+  );
 
   const [searchQuery, setSearchQuery] = useState('');
   const [entrySearchQuery, setEntrySearchQuery] = useState('');

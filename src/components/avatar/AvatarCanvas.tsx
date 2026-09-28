@@ -3,7 +3,7 @@ import { VrmViewer } from './VrmViewer';
 import { loadCubismCore } from '../../services/live2dRuntime';
 import { Box, Image, Sparkles, Smile, ChevronDown } from 'lucide-react';
 import { CharacterProfile } from '../../types';
-import { useAppStore } from '../../store/useAppStore';
+import { useStoreFields } from '../../store/useAppStore';
 import { selectCharacterPortrait } from '../../utils/characterPortraits';
 import { translate, useTranslation } from '../../i18n';
 import { DropdownMenu } from '../ui/DropdownMenu';
@@ -123,7 +123,10 @@ export const AvatarCanvas: React.FC<AvatarCanvasProps> = ({
     scannedLive2ds,
     currentEmotion,
     setCurrentEmotion,
-  } = useAppStore();
+  } = useStoreFields(
+    'activeVrmPath', 'activeLive2dPath', 'avatarMode', 'setAvatarMode', 'scannedLive2ds',
+    'currentEmotion', 'setCurrentEmotion',
+  );
   const { t, tEmotion } = useTranslation();
 
   // 1. Resolve VRM path (Character override or global setting)

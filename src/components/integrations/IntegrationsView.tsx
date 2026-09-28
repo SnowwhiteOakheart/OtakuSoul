@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { useAppStore } from '../../store/useAppStore';
+import { useStoreFields } from '../../store/useAppStore';
 import { api } from '../../services/api';
 import {
   ImageGenConfig,
@@ -99,7 +99,14 @@ export const IntegrationsView: React.FC = () => {
 
     activeCharacter,
     currentEmotion,
-  } = useAppStore();
+  } = useStoreFields(
+    'backups', 'fetchBackups', 'createBackup', 'restoreBackup', 'deleteBackup', 'imageGenConfig',
+    'saveImageGenConfig', 'generateImageAction', 'generatedImages', 'fetchGeneratedImages',
+    'discordRpcEnabled', 'setDiscordRpcEnabled', 'discordBotConfig', 'discordBotStatus',
+    'saveDiscordBotConfig', 'startDiscordBot', 'stopDiscordBot', 'webServerConfig',
+    'webServerStatus', 'saveWebServerConfig', 'startWebServer', 'stopWebServer',
+    'regenerateWebServerToken', 'activeCharacter', 'currentEmotion',
+  );
 
   const [activeTab, setActiveTab] = useState<'web' | 'discord' | 'image' | 'backup'>('web');
   const [copiedUrl, setCopiedUrl] = useState(false);

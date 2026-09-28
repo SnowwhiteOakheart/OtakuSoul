@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { useAppStore } from '../../store/useAppStore';
+import { useStoreFields } from '../../store/useAppStore';
 import { useTranslation } from '../../i18n';
 import { openUrl } from '@tauri-apps/plugin-opener';
 import {
@@ -14,7 +14,9 @@ import {
 import { ModalOverlay } from '../ui/ModalOverlay';
 
 export const UpdaterModal: React.FC = () => {
-  const { isUpdaterOpen, setIsUpdaterOpen, updateInfo, checkForUpdates } = useAppStore();
+  const { isUpdaterOpen, setIsUpdaterOpen, updateInfo, checkForUpdates } = useStoreFields(
+    'isUpdaterOpen', 'setIsUpdaterOpen', 'updateInfo', 'checkForUpdates',
+  );
   const { t } = useTranslation();
 
   const [isChecking, setIsChecking] = useState(false);

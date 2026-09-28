@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import { useAppStore } from '../../store/useAppStore';
+import { useStoreFields } from '../../store/useAppStore';
 import { ClockWidget } from './ClockWidget';
 import { DiceRoller } from './DiceRoller';
 import { EncounterTracker } from './EncounterTracker';
@@ -47,7 +47,10 @@ export const StageView: React.FC = () => {
     deleteClock,
     exportStageMarkdown,
     isProcessingStageTurn,
-  } = useAppStore();
+  } = useStoreFields(
+    'stageState', 'fetchStageState', 'saveStageScene', 'updateWorldState', 'setClockProgress',
+    'addClock', 'deleteClock', 'exportStageMarkdown', 'isProcessingStageTurn',
+  );
 
   const [activeTab, setActiveTab] = useState<'adventure' | 'tactics' | 'campaign'>('adventure');
   const [showLobbyModal, setShowLobbyModal] = useState(false);

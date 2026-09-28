@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import { useAppStore } from '../../store/useAppStore';
+import { useStoreFields } from '../../store/useAppStore';
 import { HUD_PRESETS } from '../../constants/hudPresets';
 import {
   Plus,
@@ -37,7 +37,11 @@ export const ChatSidebar: React.FC<ChatSidebarProps> = ({ isOpen, onClose }) => 
     applyHudPreset,
     exportCurrentChat,
     importChatJsonl,
-  } = useAppStore();
+  } = useStoreFields(
+    'activeCharacter', 'chatSessions', 'activeChatId', 'switchChatSession', 'createNewChat',
+    'renameChatSession', 'deleteChatSession', 'updateAuthorNote', 'applyHudPreset',
+    'exportCurrentChat', 'importChatJsonl',
+  );
 
   const [editingChatId, setEditingChatId] = useState<string | null>(null);
   const [editTitle, setEditTitle] = useState('');

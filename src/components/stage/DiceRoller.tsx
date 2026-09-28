@@ -1,11 +1,13 @@
 import React, { useState } from 'react';
-import { useAppStore } from '../../store/useAppStore';
+import { useStoreFields } from '../../store/useAppStore';
 import { Dices, Sparkles, AlertOctagon, Send, CheckCircle2, XCircle } from 'lucide-react';
 import { translate, useTranslation } from '../../i18n';
 
 export const DiceRoller: React.FC = () => {
   const { t } = useTranslation();
-  const { rollDice, lastDiceRoll, isRollingDice, runStageTurn, isProcessingStageTurn } = useAppStore();
+  const { rollDice, lastDiceRoll, isRollingDice, runStageTurn, isProcessingStageTurn } = useStoreFields(
+    'rollDice', 'lastDiceRoll', 'isRollingDice', 'runStageTurn', 'isProcessingStageTurn',
+  );
   const [formula, setFormula] = useState('1d20+3');
   const [targetDc, setTargetDc] = useState<string>('15');
 

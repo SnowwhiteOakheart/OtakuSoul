@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { useAppStore } from '../../store/useAppStore';
+import { useStoreFields } from '../../store/useAppStore';
 import { open } from '@tauri-apps/plugin-dialog';
 import {
   Brain,
@@ -63,7 +63,16 @@ export const CognitiveMemoryDrawer: React.FC<CognitiveMemoryDrawerProps> = ({
     createMemoryBackup,
     restoreMemoryBackup,
     importSowFolder,
-  } = useAppStore();
+  } = useStoreFields(
+    'activeCharacter', 'cognitiveOverview', 'isMemoryLoading', 'isReflecting',
+    'lastReflectionResult', 'characterMarkdown', 'userMarkdown', 'memoryBackups',
+    'isLoadingBackups', 'autoReflectionEnabled', 'autoReflectionThreshold',
+    'setAutoReflectionEnabled', 'setAutoReflectionThreshold', 'fetchCognitiveOverview',
+    'updatePsychology', 'updateRelationship', 'addManualMemory', 'addManualDiary',
+    'triggerEmotionalDecay', 'triggerMemoryPipeline', 'fetchMemoryMarkdown',
+    'saveCharacterMarkdown', 'saveUserMarkdown', 'generateManualDiary', 'fetchMemoryBackups',
+    'createMemoryBackup', 'restoreMemoryBackup', 'importSowFolder',
+  );
   const { t } = useTranslation();
 
   const [activeTab, setActiveTab] = useState<

@@ -1,5 +1,5 @@
 import React, { useEffect, useState, useRef } from 'react';
-import { useAppStore } from '../../store/useAppStore';
+import { useStoreFields } from '../../store/useAppStore';
 import { ScenePreview } from '../../types';
 import { SceneCreateModal } from './SceneCreateModal';
 import {
@@ -60,7 +60,12 @@ export const SceneLobbyModal: React.FC<SceneLobbyModalProps> = ({
     deleteStageScene,
     exportStageMarkdown,
     openSoulHubTab,
-  } = useAppStore();
+  } = useStoreFields(
+    'stageScenes', 'fetchStageScenes', 'stageFolders', 'fetchStageFolders', 'selectedStageFolder',
+    'setSelectedStageFolder', 'createStageFolder', 'moveStageSceneToFolder', 'deleteStageFolder',
+    'importStageSceneJson', 'exportStageSceneJson', 'resetStageScene', 'stageState',
+    'loadStageScene', 'deleteStageScene', 'exportStageMarkdown', 'openSoulHubTab',
+  );
 
   const [search, setSearch] = useState('');
   const [filterType, setFilterType] = useState<'all' | 'presets' | 'custom'>('all');

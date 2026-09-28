@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useState } from 'react';
 import { open } from '@tauri-apps/plugin-dialog';
 import { Download, FolderOpen, Headphones, Mic, Play, RefreshCw, Save, SlidersHorizontal, X } from 'lucide-react';
-import { useAppStore } from '../../store/useAppStore';
+import { useStoreFields } from '../../store/useAppStore';
 import { api } from '../../services/api';
 import { KokoroDownloadProgress, ScannedVoice, SttEngine, TtsEngine, TtsFilterMode, VoiceConfig } from '../../types';
 import { audioPlayer, gainFromVoiceVolume } from '../../services/audioPlayer';
@@ -75,7 +75,9 @@ function testText(config: VoiceConfig) {
 
 export function CharacterVoiceModal({ onClose }: CharacterVoiceModalProps) {
   const { t } = useTranslation();
-  const { activeCharacter, activeVoiceConfig, saveVoiceConfigForCharacter } = useAppStore();
+  const { activeCharacter, activeVoiceConfig, saveVoiceConfigForCharacter } = useStoreFields(
+    'activeCharacter', 'activeVoiceConfig', 'saveVoiceConfigForCharacter',
+  );
   const [tab, setTab] = useState<VoiceTab>('tts');
   const [draft, setDraft] = useState<VoiceConfig>(activeVoiceConfig ?? DEFAULT_CONFIG);
   const [availableVoices, setAvailableVoices] = useState<ScannedVoice[]>([]);

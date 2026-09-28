@@ -1,5 +1,5 @@
 import { useState, useEffect, useMemo } from 'react';
-import { useAppStore } from '../../store/useAppStore';
+import { useStoreFields } from '../../store/useAppStore';
 import { api } from '../../services/api';
 import {
   GatewayCharacterEntry,
@@ -64,7 +64,10 @@ export const SoulHubView = () => {
     fetchStageScenes,
     selectCharacter,
     loadStageScene,
-  } = useAppStore();
+  } = useStoreFields(
+    'hubSubTab', 'setHubSubTab', 'setActiveTab', 'refreshCharacters', 'refreshLorebooks',
+    'fetchStageScenes', 'selectCharacter', 'loadStageScene',
+  );
 
   const [searchQuery, setSearchQuery] = useState('');
   const [statusNotice, setStatusNotice] = useState<{

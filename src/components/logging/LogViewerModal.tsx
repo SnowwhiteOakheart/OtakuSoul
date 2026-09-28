@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { useAppStore } from '../../store/useAppStore';
+import { useStoreFields } from '../../store/useAppStore';
 import { translate, useTranslation } from '../../i18n';
 import {
   X,
@@ -15,8 +15,9 @@ import { confirmDialog } from '../ui/feedback';
 import { ModalOverlay } from '../ui/ModalOverlay';
 
 export const LogViewerModal: React.FC = () => {
-  const { isLogViewerOpen, setIsLogViewerOpen, logs, fetchLogs, clearLogs, exportLogs } =
-    useAppStore();
+  const { isLogViewerOpen, setIsLogViewerOpen, logs, fetchLogs, clearLogs, exportLogs } = useStoreFields(
+    'isLogViewerOpen', 'setIsLogViewerOpen', 'logs', 'fetchLogs', 'clearLogs', 'exportLogs',
+  );
   const { t } = useTranslation();
 
   const [levelFilter, setLevelFilter] = useState<'ALL' | 'INFO' | 'WARN' | 'ERROR' | 'DEBUG'>(

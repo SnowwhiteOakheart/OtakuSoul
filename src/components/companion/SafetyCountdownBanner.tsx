@@ -1,11 +1,11 @@
 import React, { useEffect, useState } from 'react';
-import { useAppStore } from '../../store/useAppStore';
+import { useStoreFields } from '../../store/useAppStore';
 import { ShieldAlert, Check, X, Clock, Terminal } from 'lucide-react';
 import { useTranslation } from '../../i18n';
 
 export const SafetyCountdownBanner: React.FC = () => {
   const { t } = useTranslation();
-  const { companionState, resolveToolCall } = useAppStore();
+  const { companionState, resolveToolCall } = useStoreFields('companionState', 'resolveToolCall');
   const pendingCall = companionState?.pending_tool_calls?.[0];
 
   const totalSeconds = companionState?.settings?.countdown_seconds || 25;

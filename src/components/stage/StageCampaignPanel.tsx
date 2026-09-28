@@ -1,5 +1,5 @@
 import React from 'react';
-import { useAppStore } from '../../store/useAppStore';
+import { useStoreFields } from '../../store/useAppStore';
 import {
   Backpack,
   CheckCircle2,
@@ -18,7 +18,7 @@ const progressWidth = (current: number, max: number) =>
 
 export const StageCampaignPanel: React.FC = () => {
   const { t } = useTranslation();
-  const { stageState, consumeStageInventoryItem } = useAppStore();
+  const { stageState, consumeStageInventoryItem } = useStoreFields('stageState', 'consumeStageInventoryItem');
 
   if (!stageState) return null;
 

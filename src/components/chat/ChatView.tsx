@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { useAppStore } from '../../store/useAppStore';
+import { useAppStore, useStoreFields } from '../../store/useAppStore';
 import { api } from '../../services/api';
 import { AdaptiveHud } from './AdaptiveHud';
 import { RoleplayMessage } from './RoleplayMessage';
@@ -75,7 +75,14 @@ export const ChatView: React.FC = () => {
     setAutoTtsEnabled,
     activeVoiceConfig,
     setActiveTab,
-  } = useAppStore();
+  } = useStoreFields(
+    'messages', 'storedMessages', 'sendMessage', 'isGenerating', 'abortGeneration', 'clearChat',
+    'selectedBackend', 'setSelectedBackend', 'serverStatus', 'activeCharacter',
+    'loadPresetCharacters', 'chatSidebarOpen', 'setChatSidebarOpen', 'chatSessions',
+    'activeChatId', 'switchMessageSwipe', 'regenerateMessageSwipe', 'continueChatMessage',
+    'editChatMessage', 'deleteChatMessage', 'autoTtsEnabled', 'setAutoTtsEnabled',
+    'activeVoiceConfig', 'setActiveTab',
+  );
 
   const [input, setInput] = useState('');
   const [streamText, setStreamText] = useState('');

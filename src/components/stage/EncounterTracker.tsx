@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { useAppStore } from '../../store/useAppStore';
+import { useStoreFields } from '../../store/useAppStore';
 import { Swords, Shield, Heart, Zap, SkipForward, Play, Square, Plus, Crosshair, Wind, DoorOpen, Hourglass } from 'lucide-react';
 import { ModalOverlay } from '../ui/ModalOverlay';
 import { translate, useTranslation, type TranslationKey } from '../../i18n';
@@ -16,7 +16,10 @@ export const EncounterTracker: React.FC = () => {
     runStageTurn,
     delayEncounterTurn,
     isProcessingStageTurn,
-  } = useAppStore();
+  } = useStoreFields(
+    'stageState', 'startEncounter', 'endEncounter', 'nextEncounterTurn', 'applyCombatantDelta',
+    'addCombatantCondition', 'runStageTurn', 'delayEncounterTurn', 'isProcessingStageTurn',
+  );
 
   const encounter = stageState?.combat;
   const [selectedCombatantId, setSelectedCombatantId] = useState<string | null>(null);

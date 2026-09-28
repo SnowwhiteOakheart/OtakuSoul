@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import { useAppStore } from '../../store/useAppStore';
+import { useStoreFields } from '../../store/useAppStore';
 import {
   Heart,
   Zap,
@@ -23,7 +23,10 @@ export const FloatingCompanionOverlay: React.FC = () => {
     requestToolCall,
     toggleCompanionOverlay,
     activeCharacter,
-  } = useAppStore();
+  } = useStoreFields(
+    'companionState', 'fetchCompanionState', 'applyHormoneInteraction', 'requestToolCall',
+    'toggleCompanionOverlay', 'activeCharacter',
+  );
 
   const [clickThrough, setClickThrough] = useState(false);
   const [bubbleText, setBubbleText] = useState<string>('Hallo! Ich begleite dich bei deiner Arbeit.');

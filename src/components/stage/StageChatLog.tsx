@@ -1,5 +1,5 @@
 import React, { useEffect, useRef, useState } from 'react';
-import { useAppStore } from '../../store/useAppStore';
+import { useStoreFields } from '../../store/useAppStore';
 import { StageEventCardView } from './StageEventCardView';
 import {
   Compass,
@@ -27,7 +27,10 @@ export const StageChatLog: React.FC = () => {
     editStageTurnMessage,
     deleteStageTurnMessage,
     regenerateStageTurn,
-  } = useAppStore();
+  } = useStoreFields(
+    'stageState', 'isProcessingStageTurn', 'editStageTurnMessage', 'deleteStageTurnMessage',
+    'regenerateStageTurn',
+  );
 
   const bottomRef = useRef<HTMLDivElement>(null);
   const [editingMessageId, setEditingMessageId] = useState<string | null>(null);

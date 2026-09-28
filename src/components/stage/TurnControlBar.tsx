@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { useAppStore } from '../../store/useAppStore';
+import { useStoreFields } from '../../store/useAppStore';
 import {
   MessageSquare,
   Sword,
@@ -28,7 +28,11 @@ export const TurnControlBar: React.FC = () => {
     runStageTurn,
     undoStageTurn,
     isProcessingStageTurn,
-  } = useAppStore();
+  } = useStoreFields(
+    'stageState', 'stageTurnMode', 'setStageTurnMode', 'stageWhisperTarget',
+    'setStageWhisperTarget', 'stageForceActor', 'setStageForceActor', 'runStageTurn',
+    'undoStageTurn', 'isProcessingStageTurn',
+  );
 
   const [input, setInput] = useState('');
 

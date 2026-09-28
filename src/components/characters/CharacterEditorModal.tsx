@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { CharacterProfile, CharacterCardV2 } from '../../types';
 import { api } from '../../services/api';
-import { useAppStore } from '../../store/useAppStore';
+import { useStoreFields } from '../../store/useAppStore';
 import { open } from '@tauri-apps/plugin-dialog';
 import { X, Save, Image, Plus, Trash2, Sparkles, User, FileText, Settings2, BookOpen } from 'lucide-react';
 import {
@@ -27,7 +27,9 @@ export const CharacterEditorModal = ({
   onSaved,
 }: CharacterEditorModalProps) => {
   const { t } = useTranslation();
-  const { refreshCharacters, allLorebooks, scannedVrms, scannedLive2ds } = useAppStore();
+  const { refreshCharacters, allLorebooks, scannedVrms, scannedLive2ds } = useStoreFields(
+    'refreshCharacters', 'allLorebooks', 'scannedVrms', 'scannedLive2ds',
+  );
 
   const [activeTab, setActiveTab] = useState<'basics' | 'expressions' | 'prompts' | 'greetings' | 'lorebooks' | 'raw'>('basics');
   const [isSaving, setIsSaving] = useState(false);

@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { useAppStore } from '../../store/useAppStore';
+import { useStoreFields } from '../../store/useAppStore';
 import { UserPersona } from '../../types';
 import { X, UserPlus, Check, Trash2, User } from 'lucide-react';
 import { ModalOverlay } from '../ui/ModalOverlay';
@@ -12,7 +12,9 @@ interface PersonaManagerModalProps {
 
 export const PersonaManagerModal = ({ onClose }: PersonaManagerModalProps) => {
   const { t } = useTranslation();
-  const { personas, activePersona, selectPersona, savePersona, deletePersona } = useAppStore();
+  const { personas, activePersona, selectPersona, savePersona, deletePersona } = useStoreFields(
+    'personas', 'activePersona', 'selectPersona', 'savePersona', 'deletePersona',
+  );
 
   const [isCreating, setIsCreating] = useState(false);
   const [name, setName] = useState('');

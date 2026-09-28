@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { useAppStore, type SettingsSection } from '../../store/useAppStore';
+import { useAppStore, type SettingsSection, useStoreFields } from '../../store/useAppStore';
 import { translate, useTranslation, SupportedLanguage } from '../../i18n';
 import { open } from '@tauri-apps/plugin-dialog';
 import { openUrl } from '@tauri-apps/plugin-opener';
@@ -97,7 +97,20 @@ export const SettingsView = () => {
     lorebookScanDepth,
     setLorebookScanDepth,
     initApp,
-  } = useAppStore();
+  } = useStoreFields(
+    'theme', 'setTheme', 'appLanguage', 'setAppLanguage', 'setIsLogViewerOpen', 'setIsUpdaterOpen',
+    'hardware', 'fetchHardware', 'layerRecommendation', 'fetchLayerRecommendation', 'serverStatus',
+    'serverConfig', 'setServerConfig', 'selectLocalModel', 'startServer', 'stopServer',
+    'selectedBackend', 'setSelectedBackend', 'cloudProvider', 'setCloudProvider', 'cloudEndpoint',
+    'setCloudEndpoint', 'cloudApiKey', 'setCloudApiKey', 'cloudModel', 'setCloudModel',
+    'openRouterModels', 'isLoadingOpenRouterModels', 'fetchOpenRouterModels', 'llmPresets',
+    'activePresetId', 'applyLlmPreset', 'saveLlmPreset', 'deleteLlmPreset', 'hfSearchResults',
+    'isSearchingHf', 'hfError', 'searchHfModels', 'hfModelFiles', 'isLoadingHfFiles',
+    'fetchHfModelFiles', 'downloadProgress', 'downloadGgufModel', 'scannedModels', 'scannedVrms',
+    'activeVrmPath', 'setActiveVrmPath', 'scannedLive2ds', 'activeLive2dPath',
+    'setActiveLive2dPath', 'refreshLive2dModels', 'sampling', 'setSampling', 'replyLanguage',
+    'setReplyLanguage', 'lorebookScanDepth', 'setLorebookScanDepth', 'initApp',
+  );
 
   const [activeTab, setActiveTab] = useState<SettingsSection>(
     () => useAppStore.getState().pendingSettingsSection ?? 'general'

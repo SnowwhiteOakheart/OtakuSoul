@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { useAppStore } from '../../store/useAppStore';
+import { useStoreFields } from '../../store/useAppStore';
 import { api } from '../../services/api';
 import { Heart, Zap, Smile, Users, ChevronDown, BookOpen, Brain, Sparkles, Camera, Loader2 } from 'lucide-react';
 import { CognitiveMemoryDrawer } from './CognitiveMemoryDrawer';
@@ -22,7 +22,11 @@ export const AdaptiveHud = () => {
     currentEmotion,
     generateImageAction,
     imageGenConfig,
-  } = useAppStore();
+  } = useStoreFields(
+    'activeCharacter', 'availableCharacters', 'selectCharacter', 'stateVariables',
+    'activeLorebooks', 'serverConfig', 'setServerConfig', 'setActiveTab', 'activePersona',
+    'currentEmotion', 'generateImageAction', 'imageGenConfig',
+  );
 
   const { t } = useTranslation();
   const [showMemoryDrawer, setShowMemoryDrawer] = useState(false);

@@ -1,11 +1,13 @@
 import React from 'react';
-import { useAppStore } from '../../store/useAppStore';
+import { useStoreFields } from '../../store/useAppStore';
 import { Heart, Zap, Flame, Shield, User, Coffee } from 'lucide-react';
 import { useTranslation } from '../../i18n';
 
 export const PartyHeader: React.FC = () => {
   const { t } = useTranslation();
-  const { stageState, restStageParty, isProcessingStageTurn } = useAppStore();
+  const { stageState, restStageParty, isProcessingStageTurn } = useStoreFields(
+    'stageState', 'restStageParty', 'isProcessingStageTurn',
+  );
 
   if (!stageState) return null;
 

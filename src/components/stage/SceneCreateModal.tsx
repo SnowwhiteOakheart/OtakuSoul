@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { useAppStore } from '../../store/useAppStore';
+import { useStoreFields } from '../../store/useAppStore';
 import { SceneDefinition, CharacterProfile } from '../../types';
 import { X, Sparkles, MapPin, Sun, UserCheck } from 'lucide-react';
 import { ModalOverlay } from '../ui/ModalOverlay';
@@ -17,7 +17,7 @@ export const SceneCreateModal: React.FC<SceneCreateModalProps> = ({
   onCreated,
 }) => {
   const { t } = useTranslation();
-  const { availableCharacters, createStageScene } = useAppStore();
+  const { availableCharacters, createStageScene } = useStoreFields('availableCharacters', 'createStageScene');
 
   const [title, setTitle] = useState('');
   const [description, setDescription] = useState('');

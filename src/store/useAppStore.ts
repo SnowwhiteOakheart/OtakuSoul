@@ -1,4 +1,5 @@
 import { create } from 'zustand';
+import { useShallow } from 'zustand/react/shallow';
 import { createAppSlice } from './slices/appSlice';
 import { createAvatarSlice } from './slices/avatarSlice';
 import { createLlmSlice } from './slices/llmSlice';
@@ -27,3 +28,19 @@ export const useAppStore = create<AppStoreState>()((...args) => ({
   ...createChatSlice(...args),
   ...createEcosystemSlice(...args),
 }));
+
+/**
+ * Subscribes to just the named fields, so a component only re-renders when one of them
+ * changes (instead of on every store update, e.g. each streamed token).
+ *
+ * `const { messages, sendMessage } = useStoreFields('messages', 'sendMessage');`
+ */
+export function useStoreFields<K extends keyof AppStoreState>(...keys: K[]): Pick<AppStoreState, K> {
+  return useAppStore(
+    useShallow((state) => {
+      const picked = {} as Pick<AppStoreState, K>;
+      for (const key of keys) picked[key] = state[key];
+      return picked;
+    })
+  );
+}
