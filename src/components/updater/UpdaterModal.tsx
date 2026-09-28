@@ -17,7 +17,7 @@ export const UpdaterModal: React.FC = () => {
   const { isUpdaterOpen, setIsUpdaterOpen, updateInfo, checkForUpdates } = useStoreFields(
     'isUpdaterOpen', 'setIsUpdaterOpen', 'updateInfo', 'checkForUpdates',
   );
-  const { t } = useTranslation();
+  const { t, currentLanguage } = useTranslation();
 
   const [isChecking, setIsChecking] = useState(false);
 
@@ -132,7 +132,7 @@ export const UpdaterModal: React.FC = () => {
           {updateInfo?.published_at && (
             <div className="flex items-center gap-1.5 text-xs text-slate-500">
               <Calendar className="w-3.5 h-3.5" />
-              <span>Veröffentlicht am {new Date(updateInfo.published_at).toLocaleDateString()}</span>
+              <span>{t('updater.publishedOn', { date: new Date(updateInfo.published_at).toLocaleDateString(currentLanguage) })}</span>
             </div>
           )}
         </div>

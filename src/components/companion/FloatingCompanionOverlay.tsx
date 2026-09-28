@@ -154,7 +154,7 @@ export const FloatingCompanionOverlay: React.FC = () => {
             className="py-1.5 px-2 rounded-xl bg-accent2-950/40 hover:bg-accent2-900/50 border border-accent2-500/30 text-accent2-300 text-xs font-medium flex items-center justify-center gap-1 transition active:scale-95"
           >
             <Smile className="w-3 h-3" />
-            <span>Kraulen</span>
+            <span>{t('comp.pet')}</span>
           </button>
           <button
             onClick={handleAskScreen}

@@ -67,7 +67,7 @@ const DEFAULT_IMG_CONFIG: ImageGenConfig = {
 };
 
 export const IntegrationsView: React.FC = () => {
-  const { t } = useTranslation();
+  const { t, tEmotion } = useTranslation();
   const {
     // Phase 17 Store items
     backups,
@@ -614,10 +614,10 @@ export const IntegrationsView: React.FC = () => {
                   <div className="text-xs">
                     <div className="font-bold text-slate-200">OtakuSoul</div>
                     <div className="text-indigo-300">
-                      Spielt mit {activeCharacter?.card.data.name || 'einem Charakter'}
+                      {t('int.discordPlaying', { name: activeCharacter?.card.data.name || t('int.discordSomeone') })}
                     </div>
                     <div className="text-slate-400 text-xs">
-                      Emotion: {currentEmotion?.emotion || 'neutral'} · Im Chat
+                      {t('int.discordEmotion', { emotion: tEmotion(currentEmotion?.emotion || 'neutral') })}
                     </div>
                   </div>
                 </div>
@@ -999,7 +999,7 @@ export const IntegrationsView: React.FC = () => {
                 <div className="flex items-center gap-2">
                   <ImageIcon className="w-4 h-4 text-accent-400" />
                   <h3 className="text-sm font-bold text-slate-100">
-                    Generierte Bilder-Galerie ({generatedImages.length})
+                    {t('int.galleryTitle', { count: generatedImages.length })}
                   </h3>
                 </div>
 
@@ -1131,7 +1131,7 @@ export const IntegrationsView: React.FC = () => {
                 <div className="flex items-center gap-2">
                   <Database className="w-4 h-4 text-emerald-400" />
                   <h3 className="text-sm font-bold text-slate-100">
-                    Vorhandene Sicherungen ({backups.length})
+                    {t('int.existingBackups', { count: backups.length })}
                   </h3>
                 </div>
 

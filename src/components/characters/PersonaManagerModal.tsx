@@ -82,7 +82,7 @@ export const PersonaManagerModal = ({ onClose }: PersonaManagerModalProps) => {
           {/* List of existing personas */}
           <div className="space-y-2">
             <label className="font-semibold text-slate-300 block mb-1">
-              Verfügbare Personas ({personas.length})
+              {t('persona.available', { count: personas.length })}
             </label>
             {personas.map((persona) => {
               const isActive = activePersona.id === persona.id;

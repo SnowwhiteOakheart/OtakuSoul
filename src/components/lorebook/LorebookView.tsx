@@ -884,7 +884,7 @@ const EntryEditorModal: React.FC<EntryEditorModalProps> = ({ initialEntry, isNew
                 type="text"
                 value={regexKeyInput}
                 onChange={(e) => setRegexKeyInput(e.target.value)}
-                placeholder="z. B. \b(Drache|Wyrm|Lindwurm)\b"
+                placeholder={t('lore.regexPlaceholder', { example: '\\b(Drache|Wyrm|Lindwurm)\\b' })}
                 className="w-full bg-app border border-slate-800 rounded-lg px-3 py-2 text-xs font-mono text-slate-100 focus:outline-hidden focus:border-indigo-500"
               />
             </div>
@@ -998,7 +998,7 @@ const EntryEditorModal: React.FC<EntryEditorModalProps> = ({ initialEntry, isNew
                 {t('lore.content')}
               </label>
               <span className="text-[11px] text-slate-400 font-mono">
-                Unterstützt {'{{char}}'} & {'{{user}}'}
+                {t('lore.supportsMacros', { macros: '{{char}} & {{user}}' })}
               </span>
             </div>
             <textarea
