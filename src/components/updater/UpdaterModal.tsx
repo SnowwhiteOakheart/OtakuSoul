@@ -19,6 +19,12 @@ export const UpdaterModal: React.FC = () => {
 
   const [isChecking, setIsChecking] = useState(false);
 
+  const handleCheck = async () => {
+    setIsChecking(true);
+    await checkForUpdates();
+    setIsChecking(false);
+  };
+
   useEffect(() => {
     if (isUpdaterOpen && !updateInfo) {
       handleCheck();
@@ -26,12 +32,6 @@ export const UpdaterModal: React.FC = () => {
   }, [isUpdaterOpen]);
 
   if (!isUpdaterOpen) return null;
-
-  const handleCheck = async () => {
-    setIsChecking(true);
-    await checkForUpdates();
-    setIsChecking(false);
-  };
 
   const handleOpenReleaseUrl = async () => {
     const url = updateInfo?.release_url || 'https://github.com/SnowwhiteOakheart/OtakuSoul/releases';

@@ -101,6 +101,7 @@ export const DropdownMenu: React.FC<DropdownMenuProps> = ({
         <div
           id={menuId}
           role="menu"
+          tabIndex={-1}
           onKeyDown={handleMenuKeyDown}
           onClick={(event) => event.stopPropagation()}
           aria-label={heading ?? triggerLabel}

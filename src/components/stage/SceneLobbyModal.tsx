@@ -27,6 +27,7 @@ import { translate, useTranslation } from '../../i18n';
 import { DropdownMenu } from '../ui/DropdownMenu';
 import { confirmDialog, toast } from '../ui/feedback';
 import { ModalOverlay } from '../ui/ModalOverlay';
+import { pressable } from '../../utils/pressable';
 
 interface SceneLobbyModalProps {
   isOpen: boolean;
@@ -451,7 +452,7 @@ export const SceneLobbyModal: React.FC<SceneLobbyModalProps> = ({
               return (
                 <div
                   key={sc.id}
-                  onClick={() => handleSceneClick(sc)}
+                  {...pressable(() => handleSceneClick(sc))}
                   className={`group relative flex flex-col justify-between p-4 rounded-2xl border transition-all cursor-pointer ${
                     isCurrent
                       ? 'bg-accent-950/20 border-accent-500/60 shadow-lg shadow-accent-950/30 ring-1 ring-accent-500/40'

@@ -1265,6 +1265,7 @@ export const SettingsView = () => {
                           <button
                             type="button"
                             key={m.id}
+                            aria-label={m.name}
                             onClick={() => setCloudModel(m.id)}
                             aria-pressed={cloudModel === m.id}
                             className={`w-full text-left p-2.5 flex items-center justify-between cursor-pointer hover:bg-slate-900 transition-colors outline-hidden focus-visible:bg-slate-900 ${

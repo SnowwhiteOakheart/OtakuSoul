@@ -18,7 +18,7 @@ const progressWidth = (current: number, max: number) =>
 
 export const StageCampaignPanel: React.FC = () => {
   const { t } = useTranslation();
-  const { stageState, useStageInventoryItem } = useAppStore();
+  const { stageState, consumeStageInventoryItem } = useAppStore();
 
   if (!stageState) return null;
 
@@ -51,7 +51,7 @@ export const StageCampaignPanel: React.FC = () => {
                   <p className="text-xs text-slate-500 mt-0.5 line-clamp-2">{item.description}</p>
                   {item.item_type === 'consumable' && (
                     <button
-                      onClick={() => useStageInventoryItem(item.id)}
+                      onClick={() => consumeStageInventoryItem(item.id)}
                       className="mt-2 px-2.5 py-1 rounded-lg bg-emerald-950/70 hover:bg-emerald-900 text-emerald-300 border border-emerald-500/30 text-xs font-semibold transition"
                     >
                       {t('stage.useItem')}

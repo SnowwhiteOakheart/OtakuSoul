@@ -10,7 +10,8 @@
     "tauri": "tauri",
     "tauri:linux": "GDK_BACKEND=x11 WEBKIT_DISABLE_DMABUF_RENDERER=1 tauri dev",
     "check": "npm run check:web && npm run check:rust",
-    "check:web": "tsc --noEmit && vitest run",
+    "lint": "oxlint",
+    "check:web": "oxlint && tsc --noEmit && vitest run",
     "check:rust": "cargo fmt --manifest-path src-tauri/Cargo.toml --check && cargo clippy --manifest-path src-tauri/Cargo.toml --all-targets -- -D warnings && cargo test --manifest-path src-tauri/Cargo.toml"
   },
   "dependencies": {
@@ -35,6 +36,7 @@
     "@types/react-dom": "^19.1.6",
     "@types/three": "^0.186.0",
     "@vitejs/plugin-react": "^6.0.2",
+    "oxlint": "^1.86.0",
     "typescript": "~7.0.2",
     "vite": "^8.0.16",
     "vitest": "^5.0.2"

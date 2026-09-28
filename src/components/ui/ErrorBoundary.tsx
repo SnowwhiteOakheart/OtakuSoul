@@ -10,25 +10,25 @@ interface ErrorBoundaryProps {
 
 interface ErrorBoundaryState {
   error: Error | null;
+  resetKey: unknown;
 }
 
 /** Keeps a crash in one view from blanking the whole window. */
 export class ErrorBoundary extends React.Component<ErrorBoundaryProps, ErrorBoundaryState> {
-  state: ErrorBoundaryState = { error: null };
+  state: ErrorBoundaryState = { error: null, resetKey: this.props.resetKey };
 
-  static getDerivedStateFromError(error: Error): ErrorBoundaryState {
+  static getDerivedStateFromError(error: Error): Partial<ErrorBoundaryState> {
     return { error };
+  }
+
+  static getDerivedStateFromProps(props: ErrorBoundaryProps, state: ErrorBoundaryState): Partial<ErrorBoundaryState> | null {
+    return props.resetKey === state.resetKey ? null : { error: null, resetKey: props.resetKey };
   }
 
   componentDidCatch(error: Error, info: React.ErrorInfo) {
     console.error('View crashed:', error, info.componentStack);
   }
 
-  componentDidUpdate(prevProps: ErrorBoundaryProps) {
-    if (this.state.error && prevProps.resetKey !== this.props.resetKey) {
-      this.setState({ error: null });
-    }
-  }
 
   render() {
     const { error } = this.state;

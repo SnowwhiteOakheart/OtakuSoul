@@ -120,7 +120,7 @@ export const CharacterLibraryView = () => {
 
   const handleExportCard = async (char: CharacterProfile, format: 'png' | 'json') => {
     try {
-      const defaultFileName = `${char.card.data.name.replace(/[^a-zA-Z0-9_\-]/g, '_')}.${format}`;
+      const defaultFileName = `${char.card.data.name.replace(/[^a-zA-Z0-9_-]/g, '_')}.${format}`;
       const targetPath = await save({
         defaultPath: defaultFileName,
         filters: [

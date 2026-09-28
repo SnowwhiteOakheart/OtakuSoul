@@ -25,6 +25,7 @@ import { ModalOverlay } from '../ui/ModalOverlay';
 import { translate, useTranslation } from '../../i18n';
 import { confirmDialog, toast } from '../ui/feedback';
 import { errorMessage } from '../../utils/errors';
+import { pressable } from '../../utils/pressable';
 
 export const LorebookView: React.FC = () => {
   const { t } = useTranslation();
@@ -299,7 +300,7 @@ export const LorebookView: React.FC = () => {
             return (
               <div
                 key={lb.id || lb.name}
-                onClick={() => selectLorebook(lb)}
+                {...pressable(() => selectLorebook(lb))}
                 className={`p-3 rounded-xl border text-left cursor-pointer transition-all ${
                   isSelected
                     ? 'bg-indigo-600/15 border-indigo-500/50 shadow-sm'

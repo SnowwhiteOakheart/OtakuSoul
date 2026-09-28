@@ -341,7 +341,9 @@ class SoundFxSynthesizer {
         try {
           droneOsc.stop();
           droneOsc.disconnect();
-        } catch (_) {}
+        } catch {
+          // Already stopped.
+        }
       },
     };
     this.isAmbiancePlaying = true;

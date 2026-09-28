@@ -194,8 +194,8 @@ export function VoiceCallControls({
             ? 'bg-rose-600 border-rose-400 text-white animate-pulse'
             : 'bg-slate-800 border-slate-700 text-slate-300 hover:text-white'
         }`}
-        title={translate(captureRef.current.isActive() ? 'voice.stopRecording' : 'voice.startRecording')}
-        aria-label={translate(captureRef.current.isActive() ? 'voice.stopRecording' : 'voice.startRecording')}
+        title={translate(state === 'listening' && !callActive ? 'voice.stopRecording' : 'voice.startRecording')}
+        aria-label={translate(state === 'listening' && !callActive ? 'voice.stopRecording' : 'voice.startRecording')}
       >
         {state === 'listening' && !callActive ? <MicOff className="w-4 h-4" /> : <Mic className="w-4 h-4" />}
       </button>

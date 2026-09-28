@@ -128,7 +128,7 @@ export const CharacterAiAssistantModal: React.FC = () => {
           tags: [wizardInput.archetype, 'Original'].filter(Boolean) as string[],
         });
         setStep(6);
-      } catch (err2) {
+      } catch {
         setErrorMsg(t('wizard.promptFailed'));
       }
     } finally {
@@ -211,10 +211,14 @@ export const CharacterAiAssistantModal: React.FC = () => {
               const isActive = step === s.num;
               const isDone = step > s.num;
               return (
-                <div
+                <button
+                  type="button"
                   key={s.num}
-                  onClick={() => !isGenerating && (s.num <= 5 || generatedDraft) && setStep(s.num)}
-                  className={`flex items-center gap-1.5 cursor-pointer transition select-none ${
+                  onClick={() => setStep(s.num)}
+                  disabled={isGenerating || (s.num > 5 && !generatedDraft)}
+                  aria-current={isActive ? 'step' : undefined}
+                  aria-label={s.label}
+                  className={`flex items-center gap-1.5 cursor-pointer transition select-none rounded-md disabled:cursor-default ${
                     isActive
                       ? 'text-indigo-400 font-semibold'
                       : isDone
@@ -222,7 +226,7 @@ export const CharacterAiAssistantModal: React.FC = () => {
                       : 'text-slate-500 hover:text-slate-400'
                   }`}
                 >
-                  <div
+                  <span
                     className={`w-6 h-6 rounded-full flex items-center justify-center text-xs border ${
                       isActive
                         ? 'bg-indigo-600 border-indigo-400 text-white shadow-md shadow-indigo-600/30'
@@ -232,9 +236,9 @@ export const CharacterAiAssistantModal: React.FC = () => {
                     }`}
                   >
                     {isDone ? <Check className="w-3.5 h-3.5" /> : <Icon className="w-3 h-3" />}
-                  </div>
+                  </span>
                   <span className="hidden sm:inline text-xs">{s.label}</span>
-                </div>
+                </button>
               );
             })}
           </div>

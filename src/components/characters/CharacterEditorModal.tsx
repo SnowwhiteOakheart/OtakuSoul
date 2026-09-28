@@ -142,8 +142,8 @@ export const CharacterEditorModal = ({
 
     const tags = tagsStr
       .split(',')
-      .map((t) => t.trim())
-      .filter((t) => t.length > 0);
+      .map((tag) => tag.trim())
+      .filter((tag) => tag.length > 0);
 
     const cleanedExpressionImages = Object.fromEntries(
       Object.entries(expressionImages).filter(([, value]) => Boolean(value))
@@ -676,20 +676,9 @@ export const CharacterEditorModal = ({
                     (lb.id ? boundLorebooks.includes(lb.id) : false);
 
                   return (
-                    <div
+                    <label
                       key={idOrPath}
-                      onClick={() => {
-                        if (isBound) {
-                          setBoundLorebooks(
-                            boundLorebooks.filter(
-                              (x) => x !== lb.id && x !== lb.file_path && x !== idOrPath
-                            )
-                          );
-                        } else {
-                          setBoundLorebooks([...boundLorebooks, lb.id || idOrPath]);
-                        }
-                      }}
-                      className={`p-3.5 rounded-xl border cursor-pointer transition-all ${
+                      className={`block p-3.5 rounded-xl border cursor-pointer transition-all has-[:focus-visible]:ring-2 has-[:focus-visible]:ring-accent-500/60 ${
                         isBound
                           ? 'bg-accent-600/15 border-accent-500/60 shadow-sm'
                           : 'bg-app/60 border-slate-800 hover:border-slate-700'
@@ -700,8 +689,18 @@ export const CharacterEditorModal = ({
                           <input
                             type="checkbox"
                             checked={isBound}
-                            readOnly
-                            className="rounded bg-slate-900 border-slate-700 text-accent-600 focus:ring-0 pointer-events-none"
+                            onChange={() => {
+                              if (isBound) {
+                                setBoundLorebooks(
+                                  boundLorebooks.filter(
+                                    (x) => x !== lb.id && x !== lb.file_path && x !== idOrPath
+                                  )
+                                );
+                              } else {
+                                setBoundLorebooks([...boundLorebooks, lb.id || idOrPath]);
+                              }
+                            }}
+                            className="rounded bg-slate-900 border-slate-700 text-accent-600 focus:ring-0"
                           />
                           <span className="text-xs font-bold text-slate-100">{lb.name}</span>
                         </div>
@@ -712,7 +711,7 @@ export const CharacterEditorModal = ({
                       <p className="text-xs text-slate-400 line-clamp-2">
                         {lb.description || t('editor.noDescription')}
                       </p>
-                    </div>
+                    </label>
                   );
                 })}
 
@@ -743,7 +742,7 @@ export const CharacterEditorModal = ({
                       alternate_greetings: alternateGreetings,
                       system_prompt: systemPrompt || undefined,
                       creator_notes: creatorNotes || undefined,
-                      tags: tagsStr.split(',').map((t) => t.trim()),
+                      tags: tagsStr.split(',').map((tag) => tag.trim()),
                       extensions: {
                         ...(character?.card.data.extensions || {}),
                         sow_title: title || undefined,

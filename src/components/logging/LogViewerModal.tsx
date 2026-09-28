@@ -29,6 +29,12 @@ export const LogViewerModal: React.FC = () => {
 
   const bottomRef = useRef<HTMLDivElement>(null);
 
+  const handleRefresh = async () => {
+    setIsLoading(true);
+    await fetchLogs(300);
+    setIsLoading(false);
+  };
+
   useEffect(() => {
     if (isLogViewerOpen) {
       handleRefresh();
@@ -42,12 +48,6 @@ export const LogViewerModal: React.FC = () => {
   }, [logs, autoScroll]);
 
   if (!isLogViewerOpen) return null;
-
-  const handleRefresh = async () => {
-    setIsLoading(true);
-    await fetchLogs(300);
-    setIsLoading(false);
-  };
 
   const handleClear = async () => {
     const confirmed = await confirmDialog({

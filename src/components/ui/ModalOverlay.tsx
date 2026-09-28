@@ -1,4 +1,4 @@
-import React, { useEffect, useRef } from 'react';
+import React, { useEffect, useLayoutEffect, useRef } from 'react';
 
 const FOCUSABLE =
   'a[href], button:not([disabled]), input:not([disabled]):not([type="hidden"]), select:not([disabled]), textarea:not([disabled]), [tabindex]:not([tabindex="-1"])';
@@ -29,7 +29,9 @@ export const ModalOverlay: React.FC<ModalOverlayProps> = ({
 }) => {
   const ref = useRef<HTMLDivElement>(null);
   const onCloseRef = useRef(onClose);
-  onCloseRef.current = onClose;
+  useLayoutEffect(() => {
+    onCloseRef.current = onClose;
+  });
 
   useEffect(() => {
     const dialog = ref.current;
@@ -80,6 +82,7 @@ export const ModalOverlay: React.FC<ModalOverlayProps> = ({
   }, []);
 
   return (
+    // oxlint-disable-next-line jsx-a11y/no-noninteractive-element-interactions -- backdrop click closes the dialog; keyboard users have Escape
     <div
       ref={ref}
       role="dialog"

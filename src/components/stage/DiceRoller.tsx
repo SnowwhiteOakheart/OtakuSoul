@@ -19,10 +19,10 @@ export const DiceRoller: React.FC = () => {
 
   const handleSendToChat = () => {
     if (!lastDiceRoll) return;
-    const { formula, sum, individual_rolls, is_critical_success, is_critical_failure, dc_check } =
+    const { formula: rolledFormula, sum, individual_rolls, is_critical_success, is_critical_failure, dc_check } =
       lastDiceRoll;
 
-    let text = translate('stage.rollMessage', { formula, sum, rolls: individual_rolls.join(', ') });
+    let text = translate('stage.rollMessage', { formula: rolledFormula, sum, rolls: individual_rolls.join(', ') });
 
     if (is_critical_success) {
       text += translate('stage.rollMessageCrit');

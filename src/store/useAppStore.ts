@@ -344,7 +344,7 @@ interface AppStoreState {
   runStageTurn: (userInput: string, turnMode?: string, whisperTarget?: string, forceActor?: string) => Promise<void>;
   undoStageTurn: () => Promise<void>;
   restStageParty: (restType: 'short' | 'long') => Promise<void>;
-  useStageInventoryItem: (itemId: string) => Promise<void>;
+  consumeStageInventoryItem: (itemId: string) => Promise<void>;
   delayEncounterTurn: () => Promise<void>;
   setStageTurnMode: (mode: 'say' | 'do' | 'think' | 'whisper' | 'direct') => void;
   setStageWhisperTarget: (target: string) => void;
@@ -828,8 +828,8 @@ export const useAppStore = create<AppStoreState>((set, get) => ({
             },
           }));
           if (prog.finished) {
-            api.scanModels().then((models) => {
-              set({ scannedModels: models });
+            api.scanModels().then((scanned) => {
+              set({ scannedModels: scanned });
             });
           }
         });
@@ -1429,7 +1429,7 @@ export const useAppStore = create<AppStoreState>((set, get) => ({
     }
   },
 
-  useStageInventoryItem: async (itemId: string) => {
+  consumeStageInventoryItem: async (itemId: string) => {
     const current = get().stageState;
     if (!current) return;
     try {

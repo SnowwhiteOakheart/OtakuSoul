@@ -32,6 +32,7 @@ import {
 import { ModalOverlay } from '../ui/ModalOverlay';
 import { translate, useTranslation } from '../../i18n';
 import { errorMessage } from '../../utils/errors';
+import { pressable } from '../../utils/pressable';
 
 const HUB_TAGS = [
   { id: '', label: 'Alle Tags' },
@@ -775,7 +776,7 @@ export const SoulHubView = () => {
                   {chubItems.map((item) => (
                     <div
                       key={item.full_path}
-                      onClick={() => handleOpenChubDetail(item)}
+                      {...pressable(() => handleOpenChubDetail(item))}
                       className="group cursor-pointer rounded-2xl bg-slate-900/60 border border-slate-800/80 hover:border-cyan-500/50 transition-all p-3 flex flex-col justify-between overflow-hidden shadow-sm hover:shadow-cyan-950/20"
                     >
                       <div>

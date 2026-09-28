@@ -1,4 +1,4 @@
-import React, { useEffect, useRef, useState } from 'react';
+import React, { useEffect, useLayoutEffect, useRef, useState } from 'react';
 import { Application, extensions } from 'pixi.js';
 // Lets pixi.js compile shaders without `eval`, so the CSP can forbid 'unsafe-eval'.
 import 'pixi.js/unsafe-eval';
@@ -147,7 +147,9 @@ export const Live2DViewer: React.FC<Live2DViewerProps> = ({
   const modelRef = useRef<Live2DModel | null>(null);
   const appRef = useRef<Application | null>(null);
   const currentEmotionRef = useRef(emotion);
-  currentEmotionRef.current = emotion;
+  useLayoutEffect(() => {
+    currentEmotionRef.current = emotion;
+  }, [emotion]);
 
   // React to emotion changes
   useEffect(() => {
