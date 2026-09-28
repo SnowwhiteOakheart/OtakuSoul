@@ -5,10 +5,11 @@
 > `cargo clippy`, `tsc`, Vitest/Cargo-Tests und eine Sichtprüfung der Oberfläche bei 1280×840 und 960×640 (Mindestgröße).
 > Abgeschlossene Feature-Phasen stehen in `Roadmap_abgeschlossen.md`.
 
-**Fortschritt:** P0, Abhängigkeiten, Navigation, i18n, Dialoge/Feedback, Barrierefreiheit und Fenster-Plugins sind erledigt.
+**Fortschritt:** P0, Abhängigkeiten, Navigation samt Befehlspalette, i18n, Dialoge/Feedback, Barrierefreiheit und Fenster-Plugins sind erledigt.
 Offen sind vor allem Ersteinrichtung, Design-Bausteine, Store-/Komponenten-Aufteilung, Rust-Fehlertypen und Tests.
 
-**Gesamtbild (Ausgangslage):** Funktional ist das Projekt weit. `tsc` läuft sauber, 16 Vitest- und 91 Cargo-Tests sind grün.
+**Gesamtbild (Ausgangslage):** Funktional ist das Projekt weit. `tsc` läuft sauber, 56 Vitest- sowie 104 aktive Cargo-Tests sind grün
+(zwei weitere Cargo-Tests benötigen Netzwerk bzw. lokale Modelldateien und bleiben standardmäßig ignoriert).
 Die Schwächen liegen vor allem hier:
 
 1. **Ein echter Laufzeit-Bug:** Das Web-Fetch-Tool des Companions stürzt ab.
@@ -76,7 +77,9 @@ GitHub Actions wurden bewusst entfernt (Commit `11597c2`). Stattdessen gibt es j
   *System* (Integrationen, Einstellungen).
 - [x] Die 8 fast identischen Tab-Buttons in eine `NAV_GROUPS`-Konfiguration mit `.map()` überführen.
 - [x] Tastaturkürzel für die Navigation (`Strg+1…8`, `Strg+,` für Einstellungen).
-- [ ] **Befehlspalette** (`Strg+K`).
+- [x] **Befehlspalette** (`Strg+K` / `Cmd+K`): durchsuchbare Ansichten und globale Aktionen, Maus- und
+  Pfeiltastensteuerung, Fokus-Trap sowie ein kompakter Einstieg im Header. Seitenleiste und Palette teilen sich dieselbe
+  `NAV_GROUPS`-Konfiguration.
 - [x] Das Status-Pill („Server gestoppt“) ist ein `<div onClick>`. → Echten `<button>` verwenden und einen klaren Handlungsaufruf anbieten („Server starten“).
 - [x] **Hardware-Polling alle 2 s** startete jedes Mal `nvidia-smi` als Prozess. → Jetzt alle 10 s, pausiert bei verstecktem Fenster.
 
@@ -166,10 +169,11 @@ GitHub Actions wurden bewusst entfernt (Commit `11597c2`). Stattdessen gibt es j
   `LorebookView` → Seitenleiste, Eintragskarte und Eintragsdialog. Keine Datei liegt mehr über 800 Zeilen.
 - [ ] `src/types/index.ts` (1.138 Z.): Typen aus Rust generieren (`specta` + `tauri-specta` oder `ts-rs`), damit Frontend und Backend nicht auseinanderlaufen.
   Gleichzeitig erhält man typisierte `invoke`-Aufrufe statt manueller Wrapper in `api.ts` (1.179 Z.).
-- [ ] `any` beseitigen (oxlint warnt; von 35 auf 18 reduziert), 185× `console.*` durch den vorhandenen Logger ersetzen.
+- [ ] `any` ist vollständig beseitigt (35 → 0); offen: 180× `console.*` durch den vorhandenen Logger ersetzen.
 - [x] `tsconfig`: `target`/`lib` von ES2020 auf ES2022+ anheben, `noUncheckedIndexedAccess` aktivieren.
 - [x] Linter eingerichtet: **oxlint** mit React-Hooks-, `jsx-a11y`- und TypeScript-Regeln (typescript-eslint unterstützt TS 7 noch nicht).
-  Offene Warnungen: `any`, Effekt-Abhängigkeiten, `setState` in Effekten. Prettier fehlt noch.
+  Oxlint läuft ohne Warnungen; unsichere `any`-Typen, Effekt-Abhängigkeiten und unnötige synchrone Effekt-Updates sind bereinigt.
+  Prettier fehlt noch.
 - [ ] React 19 nutzen: `useActionState` / `useOptimistic` für Chat-Senden und Formulare, `use()` für Ladezustände.
 - [ ] Routing: Optional die Ansichten über einen leichten Router (z. B. TanStack Router) abbilden, damit Deep-Links
   (Overlay, mobiler Webclient) und „Zurück“ funktionieren, statt `window.location.search.includes('overlay=true')`.
@@ -187,10 +191,11 @@ GitHub Actions wurden bewusst entfernt (Commit `11597c2`). Stattdessen gibt es j
 ### Tests
 
 - [ ] *(teilweise: Store-Tests mit API-Mock, Komponenten-Tests mit Testing Library/jsdom für Dialog, Menü, ErrorBoundary,
-  Bestätigungsdialog, `pressable` und den Einrichtungsassistenten – 47 Tests; offen: Chat, Stage, Charakter-Editor)* Frontend-Abdeckung ausbauen: Aktuell gibt es nur 3 Testdateien (i18n, soundFx, stateParser). Tests für Store-Slices, `api.ts`-Mocks
+  Bestätigungsdialog, `pressable`, Befehlspalette und den Einrichtungsassistenten – 56 Tests in 9 Suites; offen: Chat, Stage, Charakter-Editor)* Frontend-Abdeckung ausbauen: Tests für Store-Slices, `api.ts`-Mocks
   und Kernkomponenten mit `@testing-library/react` ergänzen.
 - [ ] E2E-Rauchtest mit WebdriverIO + `tauri-driver` (App starten, Charakter importieren, Chat senden gegen einen Mock-Provider).
 - [x] Rust: Tests für `companion_tools`, `web_server` (Auth) und `profile_backup` (Round-Trip inkl. Datenbank, Gruppenauswahl, Rotation) vorhanden.
+  Der Stage-Test für Nachrichtenbearbeitung/-löschung nutzt einen injizierten No-op-Speicher und berührt kein echtes App-Datenverzeichnis mehr.
   *Ursprünglich:* Tests für `companion_tools` (Web-Fetch, Shell-Freigaben), `web_server` (Auth) und `profile_backup` (Round-Trip).
 
 ---

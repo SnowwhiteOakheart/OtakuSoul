@@ -43,7 +43,12 @@ export const DropdownMenu: React.FC<DropdownMenuProps> = ({
   const rootRef = useRef<HTMLDivElement>(null);
   const triggerRef = useRef<HTMLButtonElement>(null);
   const itemRefs = useRef<(HTMLButtonElement | null)[]>([]);
+  const itemsRef = useRef(items);
   const menuId = useId();
+
+  useEffect(() => {
+    itemsRef.current = items;
+  }, [items]);
 
   const close = (restoreFocus: boolean) => {
     setOpen(false);
@@ -52,7 +57,7 @@ export const DropdownMenu: React.FC<DropdownMenuProps> = ({
 
   useEffect(() => {
     if (!open) return;
-    const checkedIndex = items.findIndex((item) => item.checked);
+    const checkedIndex = itemsRef.current.findIndex((item) => item.checked);
     itemRefs.current[Math.max(checkedIndex, 0)]?.focus();
     const handlePointerDown = (event: MouseEvent) => {
       if (!rootRef.current?.contains(event.target as Node)) setOpen(false);

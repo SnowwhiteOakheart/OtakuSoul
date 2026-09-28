@@ -63,22 +63,20 @@ export const StageView: React.FC = () => {
   const [questInput, setQuestInput] = useState('');
 
   // Dynamic Background Image
-  const [bgDataUrl, setBgDataUrl] = useState<string | null>(null);
+  const [loadedBackground, setLoadedBackground] = useState<{ name: string; url: string | null } | null>(null);
   const activeBgName = stageState?.current_bg || stageState?.definition.starting_bg;
+  const bgDataUrl = activeBgName && loadedBackground?.name === activeBgName ? loadedBackground.url : null;
 
   useEffect(() => {
+    if (!activeBgName || activeBgName.toLowerCase() === 'none' || activeBgName.trim() === '') return;
     let isMounted = true;
-    if (activeBgName && activeBgName.toLowerCase() !== 'none' && activeBgName.trim() !== '') {
-      api.getStageBackgroundImage(activeBgName)
-        .then((url) => {
-          if (isMounted) setBgDataUrl(url || null);
-        })
-        .catch(() => {
-          if (isMounted) setBgDataUrl(null);
-        });
-    } else {
-      setBgDataUrl(null);
-    }
+    api.getStageBackgroundImage(activeBgName)
+      .then((url) => {
+        if (isMounted) setLoadedBackground({ name: activeBgName, url: url || null });
+      })
+      .catch(() => {
+        if (isMounted) setLoadedBackground({ name: activeBgName, url: null });
+      });
     return () => {
       isMounted = false;
     };
@@ -111,15 +109,16 @@ export const StageView: React.FC = () => {
     fetchStageState();
   }, [fetchStageState]);
 
-  useEffect(() => {
-    if (stageState?.world) {
+  const handleToggleWorldEditor = () => {
+    if (!isEditingWorld && stageState?.world) {
       setLocationInput(stageState.world.location);
       setWeatherInput(stageState.world.weather);
       setTimeInput(stageState.world.time_of_day);
       setDangerInput(stageState.world.danger_level);
       setQuestInput(stageState.world.active_quest);
     }
-  }, [stageState?.world]);
+    setIsEditingWorld((current) => !current);
+  };
 
   const handleSaveWorld = () => {
     updateWorldState({
@@ -377,7 +376,7 @@ export const StageView: React.FC = () => {
               </div>
 
               <button
-                onClick={() => setIsEditingWorld(!isEditingWorld)}
+                onClick={handleToggleWorldEditor}
                 className="p-2 rounded-xl bg-slate-800/80 hover:bg-slate-700 text-slate-300 border border-slate-700 transition"
                 title={t('stage.editWorld')}
                 aria-label={t('stage.editWorld')}
@@ -602,7 +601,7 @@ export const StageView: React.FC = () => {
                 <select
                   id="clock-type"
                   value={newClockType}
-                  onChange={(e) => setNewClockType(e.target.value as any)}
+                  onChange={(e) => setNewClockType(e.target.value as typeof newClockType)}
                   className="w-full px-2 py-1.5 bg-app border border-slate-700 rounded-lg text-xs text-slate-200 focus:outline-hidden"
                 >
                   <option value="danger">{t('stage.clockDanger')}</option>

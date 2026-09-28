@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useCallback, useState, useEffect, useRef } from 'react';
 import { useStoreFields } from '../../store/useAppStore';
 import { translate, useTranslation } from '../../i18n';
 import {
@@ -30,17 +30,18 @@ export const LogViewerModal: React.FC = () => {
 
   const bottomRef = useRef<HTMLDivElement>(null);
 
-  const handleRefresh = async () => {
+  const handleRefresh = useCallback(async () => {
     setIsLoading(true);
     await fetchLogs(300);
     setIsLoading(false);
-  };
+  }, [fetchLogs]);
 
   useEffect(() => {
     if (isLogViewerOpen) {
+      // oxlint-disable-next-line react/set-state-in-effect -- Opening the modal starts its async refresh state.
       handleRefresh();
     }
-  }, [isLogViewerOpen]);
+  }, [handleRefresh, isLogViewerOpen]);
 
   useEffect(() => {
     if (autoScroll && bottomRef.current) {

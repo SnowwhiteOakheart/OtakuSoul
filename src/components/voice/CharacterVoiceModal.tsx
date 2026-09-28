@@ -88,13 +88,14 @@ export function CharacterVoiceModal({ onClose }: CharacterVoiceModalProps) {
   const [kokoroProgress, setKokoroProgress] = useState<KokoroDownloadProgress | null>(null);
   const [error, setError] = useState('');
 
+  /* oxlint-disable react/set-state-in-effect -- A newly loaded character voice profile replaces the modal draft. */
   useEffect(() => {
     if (activeVoiceConfig) setDraft(activeVoiceConfig);
   }, [activeVoiceConfig]);
+  /* oxlint-enable react/set-state-in-effect */
 
   useEffect(() => {
     if (draft.engine === 'disabled') {
-      setAvailableVoices([]);
       return;
     }
     const timeout = window.setTimeout(() => {

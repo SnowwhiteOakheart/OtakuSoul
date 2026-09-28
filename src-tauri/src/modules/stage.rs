@@ -1995,6 +1995,16 @@ pub fn edit_stage_turn_message(
     message_id: &str,
     new_content: &str,
 ) -> Result<SceneState, String> {
+    edit_stage_turn_message_with_saver(engine, scene_id, message_id, new_content, save_scene_state)
+}
+
+fn edit_stage_turn_message_with_saver(
+    engine: &StageEngine,
+    scene_id: &str,
+    message_id: &str,
+    new_content: &str,
+    save: impl FnOnce(&SceneState) -> Result<(), String>,
+) -> Result<SceneState, String> {
     let mut state = engine.get_state();
     if state.definition.id != scene_id {
         state = load_scene_by_id(scene_id)?;
@@ -2003,7 +2013,7 @@ pub fn edit_stage_turn_message(
 
     if let Some(msg) = state.chat_log.iter_mut().find(|m| m.id == message_id) {
         msg.content = new_content.to_string();
-        save_scene_state(&state)?;
+        save(&state)?;
         engine.set_state(state.clone());
         Ok(state)
     } else {
@@ -2016,6 +2026,15 @@ pub fn delete_stage_turn_message(
     scene_id: &str,
     message_id: &str,
 ) -> Result<SceneState, String> {
+    delete_stage_turn_message_with_saver(engine, scene_id, message_id, save_scene_state)
+}
+
+fn delete_stage_turn_message_with_saver(
+    engine: &StageEngine,
+    scene_id: &str,
+    message_id: &str,
+    save: impl FnOnce(&SceneState) -> Result<(), String>,
+) -> Result<SceneState, String> {
     let mut state = engine.get_state();
     if state.definition.id != scene_id {
         state = load_scene_by_id(scene_id)?;
@@ -2023,7 +2042,7 @@ pub fn delete_stage_turn_message(
     engine.push_snapshot(scene_id, state.clone());
 
     state.chat_log.retain(|m| m.id != message_id);
-    save_scene_state(&state)?;
+    save(&state)?;
     engine.set_state(state.clone());
     Ok(state)
 }
@@ -3470,13 +3489,20 @@ mod tests {
         let scene_id = &st.definition.id;
 
         // Edit message
-        let edited =
-            edit_stage_turn_message(&engine, scene_id, "msg_init", "Neuer Text für Begrüßung")
-                .unwrap();
+        let edited = edit_stage_turn_message_with_saver(
+            &engine,
+            scene_id,
+            "msg_init",
+            "Neuer Text für Begrüßung",
+            |_| Ok(()),
+        )
+        .unwrap();
         assert_eq!(edited.chat_log[0].content, "Neuer Text für Begrüßung");
 
         // Delete message
-        let deleted = delete_stage_turn_message(&engine, scene_id, "msg_init").unwrap();
+        let deleted =
+            delete_stage_turn_message_with_saver(&engine, scene_id, "msg_init", |_| Ok(()))
+                .unwrap();
         assert!(deleted.chat_log.is_empty());
     }
 

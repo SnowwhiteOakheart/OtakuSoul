@@ -109,6 +109,9 @@ export interface DoneEvent {
   full_thought: string;
 }
 
+export type JsonValue = string | number | boolean | null | JsonValue[] | { [key: string]: JsonValue };
+export type JsonObject = Record<string, JsonValue>;
+
 // Phase 3: Character Cards, Lorebooks & State Variables
 export interface CharacterData {
   name: string;
@@ -124,7 +127,7 @@ export interface CharacterData {
   character_version?: string;
   tags: string[];
   creator?: string;
-  character_book?: any;
+  character_book?: JsonValue;
   extensions: {
     sow_title?: string;
     sow_avatar?: string;
@@ -594,7 +597,7 @@ export interface Goal {
 export interface ToolCallRequest {
   id: string;
   tool_name: string;
-  arguments: Record<string, any>;
+  arguments: JsonObject;
   requires_confirmation: boolean;
   status: 'pending' | 'approved' | 'rejected' | 'executed';
   created_at: number;
@@ -664,7 +667,7 @@ export interface McpToolInfo {
   server_id: string;
   name: string;
   description: string;
-  input_schema: Record<string, any>;
+  input_schema: JsonObject;
 }
 
 export interface CompanionPlugin {
@@ -674,7 +677,7 @@ export interface CompanionPlugin {
   command: string;
   args: string[];
   requires_approval: boolean;
-  parameters_schema: Record<string, any>;
+  parameters_schema: JsonObject;
 }
 
 // Phase 8: Paths, Settings, Scans & Personas
@@ -750,7 +753,7 @@ export interface Live2dCatalogItem {
 
 export interface EmotionResult {
   emotion: string;
-  vrm_expression: 'happy' | 'angry' | 'sad' | 'surprised' | 'relaxed' | 'neutral' | string;
+  vrm_expression: 'happy' | 'angry' | 'sad' | 'surprised' | 'relaxed' | 'neutral';
   live2d_expression: string;
   confidence: number;
   intensity: number;
@@ -1136,4 +1139,3 @@ export interface UpdateInfo {
   release_url: string;
   published_at?: string | null;
 }
-

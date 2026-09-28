@@ -255,7 +255,7 @@ export const AvatarCanvas: React.FC<AvatarCanvasProps> = ({
       {avatarMode === '3d' ? (
         <VrmViewer
           modelPath={vrmPath}
-          emotion={currentEmotion.vrm_expression as any}
+          emotion={currentEmotion.vrm_expression}
           isSpeaking={isSpeaking}
         />
       ) : avatarMode === 'live2d' ? (

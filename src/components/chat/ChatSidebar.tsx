@@ -52,12 +52,14 @@ export const ChatSidebar: React.FC<ChatSidebarProps> = ({ isOpen, onClose }) => 
 
   // Sync author note inputs when active chat changes
   const activeSession = chatSessions.find((s) => s.id === activeChatId);
+  /* oxlint-disable react/set-state-in-effect -- The editable draft intentionally follows the externally selected chat. */
   React.useEffect(() => {
     if (activeSession) {
       setAuthorNoteInput(activeSession.author_note || '');
       setAuthorNoteDepthInput(activeSession.author_note_depth || 2);
     }
-  }, [activeSession?.id, activeSession?.author_note, activeSession?.author_note_depth]);
+  }, [activeSession]);
+  /* oxlint-enable react/set-state-in-effect */
 
   useEffect(() => {
     if (!isOpen) return;

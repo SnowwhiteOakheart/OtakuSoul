@@ -160,7 +160,7 @@ export const CharacterAiAssistantModal: React.FC = () => {
     }
   };
 
-  const updateDraftField = (field: keyof CharacterDraft, value: any) => {
+  const updateDraftField = <K extends keyof CharacterDraft>(field: K, value: CharacterDraft[K]) => {
     if (!generatedDraft) return;
     setGeneratedDraft({
       ...generatedDraft,

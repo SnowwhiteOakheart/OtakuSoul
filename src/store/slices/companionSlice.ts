@@ -8,6 +8,7 @@ import type {
   EnvironmentSnapshot,
   McpServerConfig,
   CompanionPlugin,
+  JsonObject,
 } from '../../types';
 import type { SliceCreator } from '../storeTypes';
 
@@ -17,7 +18,7 @@ export interface CompanionSlice {
   fetchCompanionState: () => Promise<void>;
   applyHormoneInteraction: (interactionType: string) => Promise<void>;
   setHormones: (dopamine: number, cortisol: number, oxytocin: number, fatigue: number) => Promise<void>;
-  requestToolCall: (toolName: string, args: Record<string, any>) => Promise<ToolCallRequest | null>;
+  requestToolCall: (toolName: string, args: JsonObject) => Promise<ToolCallRequest | null>;
   resolveToolCall: (callId: string, approved: boolean) => Promise<ToolExecutionResult | null>;
   updateCompanionSettings: (settings: CompanionSettings) => Promise<void>;
   addCompanionThought: (thought: string) => Promise<void>;
@@ -34,7 +35,7 @@ export interface CompanionSlice {
   companionPlugins: CompanionPlugin[];
   fetchCompanionPlugins: () => Promise<void>;
   saveCompanionPlugin: (plugin: CompanionPlugin) => Promise<void>;
-  executeCompanionPlugin: (pluginId: string, args: Record<string, any>) => Promise<string | null>;
+  executeCompanionPlugin: (pluginId: string, args: JsonObject) => Promise<string | null>;
   toggleCompanionOverlay: (enable: boolean, clickThrough?: boolean) => Promise<boolean>;
   detectDesktopWindow: () => Promise<string>;
 }

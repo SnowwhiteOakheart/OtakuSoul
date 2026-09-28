@@ -17,6 +17,13 @@ export const en: TranslationDictionary = {
   "nav.main": "Main navigation",
   "nav.shortcut": "Ctrl+{{key}}",
 
+  "palette.title": "Command palette",
+  "palette.open": "Open command palette (Ctrl+K)",
+  "palette.searchLabel": "Search commands",
+  "palette.placeholder": "Search views or commands…",
+  "palette.noResults": "No matching commands found.",
+  "palette.actions": "Actions",
+
   "header.version": "v0.1.0",
   "header.logs": "System Logs",
   "header.update": "Check Updates",

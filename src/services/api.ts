@@ -78,6 +78,7 @@ import {
   CharacterDraft,
   LogEntry,
   UpdateInfo,
+  JsonObject,
 } from '../types';
 
 export const api = {
@@ -512,7 +513,7 @@ export const api = {
 
   requestToolCall: async (
     toolName: string,
-    args: Record<string, any>
+    args: JsonObject
   ): Promise<ToolCallRequest> => {
     return await invoke<ToolCallRequest>('request_tool_call', {
       toolName,
@@ -583,7 +584,7 @@ export const api = {
   callMcpTool: async (
     serverId: string,
     toolName: string,
-    args: Record<string, any>
+    args: JsonObject
   ): Promise<string> => {
     return await invoke<string>('call_mcp_tool', { serverId, toolName, arguments: args });
   },
@@ -598,7 +599,7 @@ export const api = {
 
   executeCompanionPlugin: async (
     pluginId: string,
-    args: Record<string, any>
+    args: JsonObject
   ): Promise<string> => {
     return await invoke<string>('execute_companion_plugin', { pluginId, arguments: args });
   },
@@ -1175,5 +1176,3 @@ export const api = {
     return await invoke<UpdateInfo>('check_for_updates');
   },
 };
-
-

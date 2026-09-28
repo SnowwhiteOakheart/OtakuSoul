@@ -31,7 +31,7 @@ export const ProviderSettings = () => {
     if (openRouterModels.length === 0 && cloudProvider === 'open_router' && cloudApiKey) {
       fetchOpenRouterModels(cloudApiKey);
     }
-  }, [cloudProvider, cloudApiKey]);
+  }, [cloudApiKey, cloudProvider, fetchOpenRouterModels, openRouterModels.length]);
 
   const filteredOpenRouterModels = openRouterModels.filter(
     (m) =>

@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState } from 'react';
 import { useAppStore, type SettingsSection, useStoreFields } from '../../store/useAppStore';
 import { useTranslation } from '../../i18n';
 import { Cpu, RefreshCw, Palette, Key, Sliders, Download } from 'lucide-react';
@@ -13,14 +13,8 @@ export const SettingsView = () => {
   const { fetchHardware, initApp } = useStoreFields('fetchHardware', 'initApp');
 
   const [activeTab, setActiveTab] = useState<SettingsSection>(
-    () => useAppStore.getState().pendingSettingsSection ?? 'general'
+    () => useAppStore.getState().consumePendingSettingsSection() ?? 'general'
   );
-  // Other views (e.g. the first-run wizard) can ask for a specific section while this view is open.
-  const pendingSection = useAppStore((state) => state.pendingSettingsSection);
-  useEffect(() => {
-    const section = useAppStore.getState().consumePendingSettingsSection();
-    if (section) setActiveTab(section);
-  }, [pendingSection]);
 
   return (
     <div className="flex-1 overflow-y-auto p-6 bg-app space-y-6">

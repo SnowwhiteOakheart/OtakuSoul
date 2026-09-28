@@ -19,6 +19,13 @@ export const de = {
   "nav.main": "Hauptnavigation",
   "nav.shortcut": "Strg+{{key}}",
 
+  "palette.title": "Befehlspalette",
+  "palette.open": "Befehlspalette öffnen (Strg+K)",
+  "palette.searchLabel": "Befehle durchsuchen",
+  "palette.placeholder": "Ansicht oder Befehl suchen…",
+  "palette.noResults": "Keine passenden Befehle gefunden.",
+  "palette.actions": "Aktionen",
+
   "header.version": "v0.1.0",
   "header.logs": "System-Logs",
   "header.update": "Updates prüfen",

@@ -57,7 +57,9 @@ export const TurnControlBar: React.FC = () => {
   const handleChoiceClick = async (choice: TaggedChoice) => {
     if (isProcessingStageTurn) return;
     const mode = choice.action_type || 'say';
-    setStageTurnMode(mode as any);
+    if (mode === 'say' || mode === 'do' || mode === 'think' || mode === 'whisper' || mode === 'direct') {
+      setStageTurnMode(mode);
+    }
     try {
       await runStageTurn(choice.text, mode);
     } catch (err) {

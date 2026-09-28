@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useCallback, useState, useEffect } from 'react';
 import { useStoreFields } from '../../store/useAppStore';
 import { useTranslation } from '../../i18n';
 import { openUrl } from '@tauri-apps/plugin-opener';
@@ -21,17 +21,18 @@ export const UpdaterModal: React.FC = () => {
 
   const [isChecking, setIsChecking] = useState(false);
 
-  const handleCheck = async () => {
+  const handleCheck = useCallback(async () => {
     setIsChecking(true);
     await checkForUpdates();
     setIsChecking(false);
-  };
+  }, [checkForUpdates]);
 
   useEffect(() => {
     if (isUpdaterOpen && !updateInfo) {
+      // oxlint-disable-next-line react/set-state-in-effect -- Opening the modal starts its async update check state.
       handleCheck();
     }
-  }, [isUpdaterOpen]);
+  }, [handleCheck, isUpdaterOpen, updateInfo]);
 
   if (!isUpdaterOpen) return null;
 

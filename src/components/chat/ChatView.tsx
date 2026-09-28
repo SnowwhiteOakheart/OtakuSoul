@@ -101,7 +101,7 @@ export const ChatView: React.FC = () => {
 
   useEffect(() => {
     loadPresetCharacters();
-  }, []);
+  }, [loadPresetCharacters]);
 
   // Setup live streaming listeners with bulletproof subscription lifecycle
   useEffect(() => {

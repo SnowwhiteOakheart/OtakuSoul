@@ -17,6 +17,13 @@ export const ru: TranslationDictionary = {
   "nav.main": "Основная навигация",
   "nav.shortcut": "Ctrl+{{key}}",
 
+  "palette.title": "Палитра команд",
+  "palette.open": "Открыть палитру команд (Ctrl+K)",
+  "palette.searchLabel": "Поиск команд",
+  "palette.placeholder": "Найти раздел или команду…",
+  "palette.noResults": "Подходящие команды не найдены.",
+  "palette.actions": "Действия",
+
   "header.version": "v0.1.0",
   "header.logs": "Системные логи",
   "header.update": "Проверить обновления",

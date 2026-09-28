@@ -3,7 +3,7 @@ import { useAppStore } from '../store/useAppStore';
 import { useTranslation } from '../i18n';
 import brandIconUrl from '../assets/brand/otakusoul-icon.png';
 import { AboutDialog } from './AboutDialog';
-import { Cpu, AlertCircle, Loader2, Info, Terminal, Sparkles } from 'lucide-react';
+import { Cpu, AlertCircle, Loader2, Info, Terminal, Sparkles, Command } from 'lucide-react';
 
 /** Server state changes quickly while starting; VRAM only matters as a rough gauge. */
 const SERVER_POLL_MS = 3000;
@@ -12,7 +12,11 @@ const HARDWARE_POLL_MS = 10000;
 const ACTION_BUTTON_CLASS =
   'flex items-center gap-1.5 rounded-lg border border-slate-700/60 bg-slate-800/70 p-1.5 text-xs text-slate-400 outline-hidden transition-colors hover:border-accent-500/40 hover:text-accent-200 focus-visible:ring-2 focus-visible:ring-accent-400';
 
-export const Header = () => {
+interface HeaderProps {
+  onOpenCommandPalette: () => void;
+}
+
+export const Header = ({ onOpenCommandPalette }: HeaderProps) => {
   const [showAbout, setShowAbout] = useState(false);
   const { t } = useTranslation();
   const setActiveTab = useAppStore((s) => s.setActiveTab);
@@ -55,7 +59,7 @@ export const Header = () => {
       clearInterval(serverInterval);
       document.removeEventListener('visibilitychange', handleVisibility);
     };
-  }, []);
+  }, [fetchHardware, fetchServerStatus, initApp]);
 
   const gpu = hardware?.gpus[0];
 
@@ -138,6 +142,16 @@ export const Header = () => {
                 <span className="text-rose-400 font-medium">{t('header.serverFailed')}</span>
               </>
             )}
+          </button>
+
+          <button
+            type="button"
+            onClick={onOpenCommandPalette}
+            className={ACTION_BUTTON_CLASS}
+            title={t('palette.open')}
+            aria-label={t('palette.open')}
+          >
+            <Command className="h-4 w-4" />
           </button>
 
           <button

@@ -11,6 +11,8 @@ import { DropdownMenu } from '../components/ui/DropdownMenu';
 import { ErrorBoundary } from '../components/ui/ErrorBoundary';
 import { FeedbackHost, confirmDialog } from '../components/ui/feedback';
 import { pressable } from '../utils/pressable';
+import { CommandPalette } from '../components/CommandPalette';
+import { useAppStore } from '../store/useAppStore';
 
 describe('ModalOverlay', () => {
   // jsdom has no layout, so every element reports offsetParent === null (treated as hidden).
@@ -206,5 +208,48 @@ describe('pressable', () => {
 
     await user.click(card);
     expect(onPress).toHaveBeenCalledTimes(3);
+  });
+});
+
+describe('CommandPalette', () => {
+  const Harness = () => {
+    const [open, setOpen] = useState(false);
+    return (
+      <CommandPalette
+        open={open}
+        onOpen={() => setOpen(true)}
+        onClose={() => setOpen(false)}
+      />
+    );
+  };
+
+  it('opens with Ctrl+K, filters commands and runs the selected result', async () => {
+    const user = userEvent.setup();
+    useAppStore.setState({ activeTab: 'chat' });
+    render(<Harness />);
+
+    await user.keyboard('{Control>}k{/Control}');
+    expect(screen.getByRole('dialog', { name: 'Befehlspalette' })).toBeInTheDocument();
+
+    const search = screen.getByRole('combobox', { name: 'Befehle durchsuchen' });
+    await user.type(search, 'Einstellungen');
+    expect(screen.getAllByRole('option')).toHaveLength(1);
+    await user.keyboard('{Enter}');
+
+    expect(useAppStore.getState().activeTab).toBe('settings');
+    expect(screen.queryByRole('dialog')).not.toBeInTheDocument();
+  });
+
+  it('supports arrow navigation and Escape', async () => {
+    const user = userEvent.setup();
+    render(<Harness />);
+
+    await user.keyboard('{Control>}k{/Control}');
+    const options = screen.getAllByRole('option');
+    expect(options[0]).toHaveAttribute('aria-selected', 'true');
+    await user.keyboard('{ArrowDown}');
+    expect(options[1]).toHaveAttribute('aria-selected', 'true');
+    await user.keyboard('{Escape}');
+    expect(screen.queryByRole('dialog')).not.toBeInTheDocument();
   });
 });

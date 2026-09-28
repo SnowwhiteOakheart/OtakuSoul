@@ -273,7 +273,7 @@ export const createStageSlice: SliceCreator<StageSlice> = (set, get) => ({
     if (!current) return;
     set({ isProcessingStageTurn: true });
     try {
-      const mode = (turnMode || get().stageTurnMode) as any;
+      const mode = turnMode || get().stageTurnMode;
       const target = whisperTarget !== undefined ? whisperTarget : (get().stageWhisperTarget || undefined);
       const actor = forceActor !== undefined ? forceActor : (get().stageForceActor || undefined);
       const req: StageTurnRequest = {

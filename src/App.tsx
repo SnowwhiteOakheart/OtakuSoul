@@ -1,4 +1,4 @@
-import { lazy, Suspense } from 'react';
+import { lazy, Suspense, useState } from 'react';
 import { Header } from './components/Header';
 import { Sidebar } from './components/Sidebar';
 import { SafetyCountdownBanner } from './components/companion/SafetyCountdownBanner';
@@ -6,6 +6,7 @@ import { useAppStore } from './store/useAppStore';
 import { useTranslation } from './i18n';
 import { ErrorBoundary } from './components/ui/ErrorBoundary';
 import { FeedbackHost } from './components/ui/feedback';
+import { CommandPalette } from './components/CommandPalette';
 import './App.css';
 
 const ChatView = lazy(() => import('./components/chat/ChatView').then((module) => ({ default: module.ChatView })));
@@ -23,6 +24,7 @@ const FirstRunWizard = lazy(() => import('./components/onboarding/FirstRunWizard
 const UpdaterModal = lazy(() => import('./components/updater/UpdaterModal').then((module) => ({ default: module.UpdaterModal })));
 
 export function App() {
+  const [isCommandPaletteOpen, setIsCommandPaletteOpen] = useState(false);
   const activeTab = useAppStore((s) => s.activeTab);
   const onboardingCompleted = useAppStore((s) => s.onboardingCompleted);
   const { t } = useTranslation();
@@ -40,7 +42,7 @@ export function App() {
 
   return (
     <div className="flex flex-col w-screen h-screen bg-app text-slate-100 overflow-hidden font-sans relative">
-      <Header />
+      <Header onOpenCommandPalette={() => setIsCommandPaletteOpen(true)} />
       <div className="flex-1 flex min-h-0">
       <Sidebar />
       <main className="flex-1 flex min-w-0 overflow-hidden">
@@ -66,6 +68,11 @@ export function App() {
         {!onboardingCompleted && <FirstRunWizard />}
       </Suspense>
       <FeedbackHost />
+      <CommandPalette
+        open={isCommandPaletteOpen}
+        onOpen={() => setIsCommandPaletteOpen(true)}
+        onClose={() => setIsCommandPaletteOpen(false)}
+      />
     </div>
   );
 }

@@ -2,22 +2,19 @@ import React, { useEffect, useState } from 'react';
 import { useStoreFields } from '../../store/useAppStore';
 import { ShieldAlert, Check, X, Clock, Terminal } from 'lucide-react';
 import { useTranslation } from '../../i18n';
+import type { ToolCallRequest, ToolExecutionResult } from '../../types';
 
-export const SafetyCountdownBanner: React.FC = () => {
+interface SafetyCountdownProps {
+  pendingCall: ToolCallRequest;
+  totalSeconds: number;
+  resolveToolCall: (callId: string, approved: boolean) => Promise<ToolExecutionResult | null>;
+}
+
+const SafetyCountdown = ({ pendingCall, totalSeconds, resolveToolCall }: SafetyCountdownProps) => {
   const { t } = useTranslation();
-  const { companionState, resolveToolCall } = useStoreFields('companionState', 'resolveToolCall');
-  const pendingCall = companionState?.pending_tool_calls?.[0];
-
-  const totalSeconds = companionState?.settings?.countdown_seconds || 25;
   const [secondsRemaining, setSecondsRemaining] = useState(totalSeconds);
 
   useEffect(() => {
-    if (!pendingCall) {
-      setSecondsRemaining(totalSeconds);
-      return;
-    }
-
-    setSecondsRemaining(totalSeconds);
     const interval = setInterval(() => {
       setSecondsRemaining((prev) => {
         if (prev <= 1) {
@@ -31,9 +28,7 @@ export const SafetyCountdownBanner: React.FC = () => {
     }, 1000);
 
     return () => clearInterval(interval);
-  }, [pendingCall?.id, totalSeconds, resolveToolCall]);
-
-  if (!pendingCall) return null;
+  }, [pendingCall.id, resolveToolCall]);
 
   const percent = Math.round((secondsRemaining / totalSeconds) * 100);
 
@@ -99,5 +94,21 @@ export const SafetyCountdownBanner: React.FC = () => {
         </div>
       </div>
     </div>
+  );
+};
+
+export const SafetyCountdownBanner: React.FC = () => {
+  const { companionState, resolveToolCall } = useStoreFields('companionState', 'resolveToolCall');
+  const pendingCall = companionState?.pending_tool_calls?.[0];
+  if (!pendingCall) return null;
+
+  const totalSeconds = companionState?.settings?.countdown_seconds || 25;
+  return (
+    <SafetyCountdown
+      key={`${pendingCall.id}-${totalSeconds}`}
+      pendingCall={pendingCall}
+      totalSeconds={totalSeconds}
+      resolveToolCall={resolveToolCall}
+    />
   );
 };

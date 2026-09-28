@@ -11,6 +11,7 @@ import {
   Cpu,
   RefreshCw,
 } from 'lucide-react';
+import type { JsonObject } from '../../../types';
 
 export const ToolWorkbenchTab: React.FC = () => {
   const { t } = useTranslation();
@@ -45,7 +46,7 @@ export const ToolWorkbenchTab: React.FC = () => {
 
   const handleRunTool = async (e: React.FormEvent) => {
     e.preventDefault();
-    let args: Record<string, any> = {};
+    let args: JsonObject = {};
 
     switch (selectedTool) {
       case 'web_search':

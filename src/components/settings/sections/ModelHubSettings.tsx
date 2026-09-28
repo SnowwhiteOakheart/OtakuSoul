@@ -38,7 +38,7 @@ export const ModelHubSettings = ({ onNavigate }: { onNavigate: (section: Setting
     ) {
       fetchHfModelFiles(BONSAI_MODEL_ID);
     }
-  }, [hubView]);
+  }, [fetchHfModelFiles, hfModelFiles, hubView, isLoadingHfFiles]);
 
   const showBonsaiRecommendation = () => {
     setHubView('recommended');
