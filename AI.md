@@ -342,6 +342,8 @@ Alle benötigten Daten sind eigenständig in diesem Projektverzeichnis gekapselt
     - `SettingsView` nutzt die gemeinsamen Button- und Tabs-Komponenten; 7 gezielte Tests sichern Semantik und Interaktion ab.
     - Sichtbare UI-Symbole werden konsistent über `lucide-react` gerendert; plattformabhängige Emoji-Präfixe sind aus Komponenten
       und allen drei Übersetzungsdateien entfernt.
+    - Die fünf Akzent-Themes unterstützen einen getrennt persistierten Darstellungsmodus (`system`, `light`, `dark`). Der Systemmodus
+      folgt `prefers-color-scheme` auch bei Änderungen während der Laufzeit; der helle Modus kehrt die semantische Oberflächenskala um.
   - **System-Logging & Log-Viewer (`logger.rs`, `LogViewerModal.tsx`):**
     - Dateipersistenz in `~/.local/share/otakusoul/logs/otakusoul.log` mit In-Memory-Ringpuffer (1000 Einträge).
     - Backend-Commands: `get_app_logs`, `clear_app_logs`, `export_app_logs`.

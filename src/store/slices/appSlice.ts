@@ -7,6 +7,7 @@ import type {
   UpdateInfo,
 } from '../../types';
 import type { SliceCreator } from '../storeTypes';
+import { normalizeColorMode, syncColorMode, type ColorModePreference } from '../../services/theme';
 
 /** Navigation, app lifecycle (init/save settings), language, theme, onboarding, logs and updater. */
 export interface AppSlice {
@@ -22,6 +23,8 @@ export interface AppSlice {
   setAppLanguage: (lang: 'de' | 'en' | 'ru') => void;
   theme: string;
   setTheme: (theme: string) => void;
+  colorMode: ColorModePreference;
+  setColorMode: (mode: ColorModePreference) => void;
   /** False only on a fresh install; shows the first-run wizard. */
   onboardingCompleted: boolean;
   completeOnboarding: () => void;
@@ -79,6 +82,8 @@ export const createAppSlice: SliceCreator<AppSlice> = (set, get) => ({
         vrmPath = vrms[0]?.path ?? vrmPath;
       }
 
+      const colorMode = normalizeColorMode(settings.color_mode);
+
       set({
         serverConfig: {
           ...settings.server_config,
@@ -105,6 +110,7 @@ export const createAppSlice: SliceCreator<AppSlice> = (set, get) => ({
         avatarMode: settings.avatar_mode || '3d',
         appLanguage: settings.app_language || 'de',
         theme: settings.theme || 'obsidian',
+        colorMode,
         onboardingCompleted: settings.onboarding_completed !== false,
       });
 
@@ -112,6 +118,7 @@ export const createAppSlice: SliceCreator<AppSlice> = (set, get) => ({
         document.documentElement.setAttribute('data-theme', settings.theme || 'obsidian');
         document.documentElement.lang = settings.app_language || 'de';
       }
+      syncColorMode(colorMode);
 
       // 3b. Load LLM Presets & listen to model downloads
       try {
@@ -202,6 +209,7 @@ export const createAppSlice: SliceCreator<AppSlice> = (set, get) => ({
         avatar_mode: state.avatarMode,
         app_language: state.appLanguage,
         theme: state.theme,
+        color_mode: state.colorMode,
         onboarding_completed: state.onboardingCompleted,
       };
       await api.saveSettings(settings);
@@ -227,6 +235,14 @@ export const createAppSlice: SliceCreator<AppSlice> = (set, get) => ({
     if (typeof document !== 'undefined') {
       document.documentElement.setAttribute('data-theme', theme);
     }
+    get().saveCurrentSettings();
+  },
+
+  colorMode: 'system',
+
+  setColorMode: (colorMode) => {
+    set({ colorMode });
+    syncColorMode(colorMode);
     get().saveCurrentSettings();
   },
 

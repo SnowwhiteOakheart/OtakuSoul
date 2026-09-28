@@ -730,6 +730,7 @@ export interface AppSettings {
   avatar_mode?: '3d' | 'live2d' | '2d';
   app_language?: 'de' | 'en' | 'ru';
   theme?: 'obsidian' | 'cyberpunk' | 'sakura' | 'midnight' | 'emerald' | string;
+  color_mode?: 'system' | 'light' | 'dark';
   onboarding_completed?: boolean;
 }
 

@@ -66,12 +66,14 @@ describe('settings persistence', () => {
   it('saves the current choices including the onboarding flag', async () => {
     const store = useAppStore.getState();
     store.setTheme('sakura');
+    store.setColorMode('light');
     store.setReplyLanguage('English');
     store.completeOnboarding();
     await vi.waitFor(() => expect(api.saveSettings).toHaveBeenCalled());
 
     const saved = lastSavedSettings();
     expect(saved.theme).toBe('sakura');
+    expect(saved.color_mode).toBe('light');
     expect(saved.reply_language).toBe('English');
     expect(saved.onboarding_completed).toBe(true);
   });

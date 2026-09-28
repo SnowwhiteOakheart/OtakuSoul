@@ -113,7 +113,8 @@ GitHub Actions wurden bewusst entfernt (Commit `11597c2`). Stattdessen gibt es j
 - [x] Veraltete Tailwind-v3-Klassen modernisieren: `bg-gradient-to-*` → `bg-linear-to-*`, `flex-shrink-0` → `shrink-0`, `flex-grow` → `grow` (48 Stellen).
 - [x] Emojis in UI-Texten und Wörterbüchern durch `lucide-react`-Icons bzw. klare Textkennzeichnungen ersetzt.
   Status, Gedanken, Tipps, Backup-Gruppen, Bewertungen, Warnungen und Pfeile rendern damit auf Linux, Windows und macOS konsistent.
-- [ ] Einen **hellen Modus** bzw. einen Theme passend zu `prefers-color-scheme` anbieten. Aktuell gibt es nur dunkle Themes.
+- [x] **Heller Modus und System-Theme:** Separate Auswahl `System / Hell / Dunkel`, persistiert in den App-Einstellungen.
+  `System` reagiert live auf `prefers-color-scheme`; alle fünf Akzent-Themes besitzen in beiden Modi lesbare Oberflächen und Auswahlzustände.
 - [x] `body { select-none }` global verhindert, dass man Chat-Nachrichten, Logs oder Fehlermeldungen kopieren kann.
   → Nur auf Chrome-Elemente (Header, Buttons) beschränken, Inhaltsbereiche selektierbar machen.
 

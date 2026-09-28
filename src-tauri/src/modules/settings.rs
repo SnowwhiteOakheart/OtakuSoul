@@ -47,6 +47,8 @@ pub struct AppSettings {
     pub app_language: String,
     #[serde(default = "default_theme")]
     pub theme: String,
+    #[serde(default = "default_color_mode")]
+    pub color_mode: String,
     /// False only on a fresh install, so the first-run wizard shows once. Settings files
     /// from before the wizard existed count as already set up.
     #[serde(default = "default_true")]
@@ -67,6 +69,10 @@ fn default_app_language() -> String {
 
 fn default_theme() -> String {
     "obsidian".to_string()
+}
+
+fn default_color_mode() -> String {
+    "system".to_string()
 }
 
 impl Default for AppSettings {
@@ -108,6 +114,7 @@ impl Default for AppSettings {
             avatar_mode: "3d".to_string(),
             app_language: "de".to_string(),
             theme: "obsidian".to_string(),
+            color_mode: "system".to_string(),
             onboarding_completed: false,
         }
     }
@@ -246,5 +253,13 @@ mod tests {
             .remove("onboarding_completed");
         let loaded: AppSettings = serde_json::from_value(legacy).unwrap();
         assert!(loaded.onboarding_completed);
+    }
+
+    #[test]
+    fn test_color_mode_defaults_for_legacy_settings() {
+        let mut legacy = serde_json::to_value(AppSettings::default()).unwrap();
+        legacy.as_object_mut().unwrap().remove("color_mode");
+        let loaded: AppSettings = serde_json::from_value(legacy).unwrap();
+        assert_eq!(loaded.color_mode, "system");
     }
 }

@@ -34,12 +34,16 @@
     color-scheme: dark;
     --theme-bg: #020617;
     --theme-accent: #a855f7;
+    --theme-accent2: #ec4899;
+    --scrollbar-thumb: rgba(148, 163, 184, 0.2);
+    --scrollbar-thumb-hover: rgba(148, 163, 184, 0.4);
   }
 
   /* Theme definitions: background plus the accent/accent2 scales used by all components. */
   [data-theme="obsidian"] {
     --theme-bg: #020617;
     --theme-accent: #a855f7;
+    --theme-accent2: #ec4899;
     --color-accent-50: var(--color-purple-50);
     --color-accent-100: var(--color-purple-100);
     --color-accent-200: var(--color-purple-200);
@@ -67,6 +71,7 @@
   [data-theme="cyberpunk"] {
     --theme-bg: #090614;
     --theme-accent: #facc15;
+    --theme-accent2: #06b6d4;
     --color-accent-50: var(--color-yellow-50);
     --color-accent-100: var(--color-yellow-100);
     --color-accent-200: var(--color-yellow-200);
@@ -94,6 +99,7 @@
   [data-theme="sakura"] {
     --theme-bg: #0f0a14;
     --theme-accent: #f472b6;
+    --theme-accent2: #fb7185;
     --color-accent-50: var(--color-pink-50);
     --color-accent-100: var(--color-pink-100);
     --color-accent-200: var(--color-pink-200);
@@ -121,6 +127,7 @@
   [data-theme="midnight"] {
     --theme-bg: #000000;
     --theme-accent: #38bdf8;
+    --theme-accent2: #818cf8;
     --color-accent-50: var(--color-sky-50);
     --color-accent-100: var(--color-sky-100);
     --color-accent-200: var(--color-sky-200);
@@ -148,6 +155,7 @@
   [data-theme="emerald"] {
     --theme-bg: #02120a;
     --theme-accent: #10b981;
+    --theme-accent2: #14b8a6;
     --color-accent-50: var(--color-emerald-50);
     --color-accent-100: var(--color-emerald-100);
     --color-accent-200: var(--color-emerald-200);
@@ -170,6 +178,68 @@
     --color-accent2-800: var(--color-teal-800);
     --color-accent2-900: var(--color-teal-900);
     --color-accent2-950: var(--color-teal-950);
+  }
+
+  [data-color-mode="dark"] {
+    color-scheme: dark;
+  }
+
+  /* Existing components use the slate scale semantically: low numbers are text,
+     high numbers are surfaces. Reversing that scale preserves those roles in light mode. */
+  [data-color-mode="light"] {
+    color-scheme: light;
+    --theme-bg: #f8fafc;
+    --color-slate-50: #020617;
+    --color-slate-100: #0f172a;
+    --color-slate-200: #1e293b;
+    --color-slate-300: #334155;
+    --color-slate-400: #475569;
+    --color-slate-500: #64748b;
+    --color-slate-600: #94a3b8;
+    --color-slate-700: #cbd5e1;
+    --color-slate-800: #e2e8f0;
+    --color-slate-900: #f1f5f9;
+    --color-slate-950: #f8fafc;
+    --scrollbar-thumb: rgba(71, 85, 105, 0.24);
+    --scrollbar-thumb-hover: rgba(71, 85, 105, 0.42);
+    --color-accent-50: color-mix(in oklab, var(--theme-accent) 35%, black);
+    --color-accent-100: color-mix(in oklab, var(--theme-accent) 45%, black);
+    --color-accent-200: color-mix(in oklab, var(--theme-accent) 55%, black);
+    --color-accent-300: color-mix(in oklab, var(--theme-accent) 65%, black);
+    --color-accent-400: color-mix(in oklab, var(--theme-accent) 80%, black);
+    --color-accent-500: color-mix(in oklab, var(--theme-accent) 80%, black);
+    --color-accent-600: color-mix(in oklab, var(--theme-accent) 65%, black);
+    --color-accent-700: color-mix(in oklab, var(--theme-accent) 30%, white);
+    --color-accent-800: color-mix(in oklab, var(--theme-accent) 20%, white);
+    --color-accent-900: color-mix(in oklab, var(--theme-accent) 12%, white);
+    --color-accent-950: color-mix(in oklab, var(--theme-accent) 6%, white);
+    --color-accent2-50: color-mix(in oklab, var(--theme-accent2) 35%, black);
+    --color-accent2-100: color-mix(in oklab, var(--theme-accent2) 45%, black);
+    --color-accent2-200: color-mix(in oklab, var(--theme-accent2) 55%, black);
+    --color-accent2-300: color-mix(in oklab, var(--theme-accent2) 65%, black);
+    --color-accent2-400: color-mix(in oklab, var(--theme-accent2) 80%, black);
+    --color-accent2-500: color-mix(in oklab, var(--theme-accent2) 80%, black);
+    --color-accent2-600: color-mix(in oklab, var(--theme-accent2) 65%, black);
+    --color-accent2-700: color-mix(in oklab, var(--theme-accent2) 30%, white);
+    --color-accent2-800: color-mix(in oklab, var(--theme-accent2) 20%, white);
+    --color-accent2-900: color-mix(in oklab, var(--theme-accent2) 12%, white);
+    --color-accent2-950: color-mix(in oklab, var(--theme-accent2) 6%, white);
+  }
+
+  [data-color-mode="light"][data-theme="cyberpunk"] {
+    --theme-bg: #f8fafc;
+  }
+
+  [data-color-mode="light"][data-theme="sakura"] {
+    --theme-bg: #fff7fb;
+  }
+
+  [data-color-mode="light"][data-theme="midnight"] {
+    --theme-bg: #f7fbff;
+  }
+
+  [data-color-mode="light"][data-theme="emerald"] {
+    --theme-bg: #f5fbf7;
   }
 
   body {
@@ -213,11 +283,11 @@
   }
 
   ::-webkit-scrollbar-thumb {
-    background: rgba(148, 163, 184, 0.2);
+    background: var(--scrollbar-thumb);
     border-radius: 9999px;
   }
 
   ::-webkit-scrollbar-thumb:hover {
-    background: rgba(148, 163, 184, 0.4);
+    background: var(--scrollbar-thumb-hover);
   }
 }

@@ -15,16 +15,26 @@ import {
   Smile,
   Palette,
   Globe,
+  Monitor,
+  Moon,
+  Sun,
 } from 'lucide-react';
+import type { ColorModePreference } from '../../../services/theme';
+
+const COLOR_MODES: { id: ColorModePreference; icon: typeof Monitor }[] = [
+  { id: 'system', icon: Monitor },
+  { id: 'light', icon: Sun },
+  { id: 'dark', icon: Moon },
+];
 
 export const GeneralSettings = () => {
   const { t } = useTranslation();
   const {
-    appPaths, theme, setTheme, appLanguage, setAppLanguage, setIsLogViewerOpen, setIsUpdaterOpen,
+    appPaths, theme, setTheme, colorMode, setColorMode, appLanguage, setAppLanguage, setIsLogViewerOpen, setIsUpdaterOpen,
     scannedVrms, activeVrmPath, setActiveVrmPath, scannedLive2ds, activeLive2dPath,
     setActiveLive2dPath, refreshLive2dModels, replyLanguage, setReplyLanguage,
   } = useStoreFields(
-    'appPaths', 'theme', 'setTheme', 'appLanguage', 'setAppLanguage', 'setIsLogViewerOpen', 'setIsUpdaterOpen',
+    'appPaths', 'theme', 'setTheme', 'colorMode', 'setColorMode', 'appLanguage', 'setAppLanguage', 'setIsLogViewerOpen', 'setIsUpdaterOpen',
     'scannedVrms', 'activeVrmPath', 'setActiveVrmPath', 'scannedLive2ds', 'activeLive2dPath',
     'setActiveLive2dPath', 'refreshLive2dModels', 'replyLanguage', 'setReplyLanguage',
   );
@@ -99,6 +109,34 @@ export const GeneralSettings = () => {
             {t('settings.theme')}
           </h2>
           <p className="text-xs text-slate-400 mt-0.5">{t('settings.themeIntro')}</p>
+        </div>
+
+        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 border-y border-slate-800 py-3">
+          <div>
+            <h3 className="text-xs font-semibold text-slate-200">{t('settings.colorMode')}</h3>
+            <p className="text-xs text-slate-400 mt-0.5">{t('settings.colorModeIntro')}</p>
+          </div>
+          <div role="group" aria-label={t('settings.colorMode')} className="grid grid-cols-3 shrink-0 rounded-lg border border-slate-700 bg-app/70 p-1">
+            {COLOR_MODES.map(({ id, icon: Icon }) => {
+              const selected = colorMode === id;
+              return (
+                <button
+                  key={id}
+                  type="button"
+                  aria-pressed={selected}
+                  onClick={() => setColorMode(id)}
+                  className={`h-8 min-w-24 px-3 rounded-md flex items-center justify-center gap-1.5 text-xs font-medium transition-colors ${
+                    selected
+                      ? 'bg-accent-600 text-white shadow-sm'
+                      : 'text-slate-400 hover:bg-slate-800 hover:text-slate-200'
+                  }`}
+                >
+                  <Icon className="w-3.5 h-3.5" />
+                  <span>{t(`settings.colorMode.${id}`)}</span>
+                </button>
+              );
+            })}
+          </div>
         </div>
 
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
