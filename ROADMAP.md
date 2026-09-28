@@ -155,8 +155,9 @@ GitHub Actions wurden bewusst entfernt (Commit `11597c2`). Stattdessen gibt es j
 
 ### Frontend
 
-- [ ] **`useAppStore.ts` hat 3.047 Zeilen.** → In Zustand-Slices aufteilen (`chatSlice`, `characterSlice`, `stageSlice`, `companionSlice`,
-  `settingsSlice`, `voiceSlice` …).
+- [x] **`useAppStore.ts` hatte 3.047 Zeilen.** → Aufgeteilt in 10 Slices unter `src/store/slices/` (app, avatar, llm, character,
+  lorebook, memory, stage, companion, chat, ecosystem), gemeinsame Helfer in `helpers.ts`, Typen in `storeTypes.ts`.
+  `useAppStore` bleibt der einzige Einstiegspunkt.
 - [ ] *(teilweise: Header/Sidebar/App nutzen Selektoren, 26 Stellen holen noch den ganzen Store)* **Unnötige Re-Renders:** 29 Komponenten holen den ganzen Store (`const { … } = useAppStore()`), nur eine nutzt einen Selektor.
   Jeder Status-Poll (alle 2 s) rendert dadurch fast die gesamte App neu. → Selektoren mit `useShallow` verwenden.
 - [ ] Riesige Komponenten aufteilen: `SettingsView.tsx` (1.874 Z.), `SoulHubView.tsx` (1.255), `CompanionView.tsx` (1.230),
