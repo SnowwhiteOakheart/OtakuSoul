@@ -207,7 +207,7 @@ export const SceneLobbyModal: React.FC<SceneLobbyModalProps> = ({
       setNewFolderName('');
       setShowNewFolderModal(false);
       setSelectedStageFolder(trimmed);
-    } catch (err: any) {
+    } catch (err) {
       toast.error(translate('toast.folderCreateFailed', { error: String(err) }));
     }
   };
@@ -226,7 +226,7 @@ export const SceneLobbyModal: React.FC<SceneLobbyModalProps> = ({
       try {
         await deleteStageFolder(selectedStageFolder);
         setSelectedStageFolder('Alle');
-      } catch (err: any) {
+      } catch (err) {
         toast.error(translate('toast.folderDeleteFailed', { error: String(err) }));
       }
     }
@@ -240,7 +240,7 @@ export const SceneLobbyModal: React.FC<SceneLobbyModalProps> = ({
       const targetFolder = selectedStageFolder === 'Alle' ? 'Eigene Szenen' : selectedStageFolder;
       await importStageSceneJson(text, targetFolder);
       toast.success(translate('toast.sceneImported', { folder: targetFolder }));
-    } catch (err: any) {
+    } catch (err) {
       toast.error(translate('toast.sceneImportFailed', { error: String(err) }));
     } finally {
       if (fileInputRef.current) {
@@ -254,7 +254,7 @@ export const SceneLobbyModal: React.FC<SceneLobbyModalProps> = ({
     try {
       await moveStageSceneToFolder(movingScene.id, targetFolder);
       setMovingScene(null);
-    } catch (err: any) {
+    } catch (err) {
       toast.error(translate('toast.sceneMoveFailed', { error: String(err) }));
     }
   };

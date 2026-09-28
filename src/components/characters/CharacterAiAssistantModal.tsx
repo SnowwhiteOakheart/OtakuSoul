@@ -114,7 +114,7 @@ export const CharacterAiAssistantModal: React.FC = () => {
       );
       setGeneratedDraft(draft);
       setStep(6); // Step 6 = Review & Fine-tune
-    } catch (e: any) {
+    } catch (e) {
       console.warn('Direct LLM generation failed, providing fallback via prompt:', e);
       try {
         await api.buildCharacterWizardPrompt(wizardInput);
@@ -155,7 +155,7 @@ export const CharacterAiAssistantModal: React.FC = () => {
     try {
       await createCharacterFromDraft(generatedDraft);
       setCharacterWizardOpen(false);
-    } catch (e: any) {
+    } catch (e) {
       setErrorMsg(translate('wizard.saveFailed', { error: errorMessage(e) }));
     }
   };

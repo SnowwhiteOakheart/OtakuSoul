@@ -54,7 +54,7 @@ export const StageChatLog: React.FC = () => {
     try {
       await editStageTurnMessage(id, editDraft.trim());
       setEditingMessageId(null);
-    } catch (err: any) {
+    } catch (err) {
       toast.error(translate('toast.editFailed', { error: String(err) }));
     }
   };
@@ -68,7 +68,7 @@ export const StageChatLog: React.FC = () => {
     if (confirmed) {
       try {
         await deleteStageTurnMessage(id);
-      } catch (err: any) {
+      } catch (err) {
         toast.error(translate('toast.deleteFailed', { error: String(err) }));
       }
     }
@@ -77,7 +77,7 @@ export const StageChatLog: React.FC = () => {
   const handleRegenerate = async () => {
     try {
       await regenerateStageTurn();
-    } catch (err: any) {
+    } catch (err) {
       toast.error(translate('toast.regenerateFailed', { error: String(err) }));
     }
   };

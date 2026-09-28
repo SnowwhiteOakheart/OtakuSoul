@@ -161,11 +161,11 @@ GitHub Actions wurden bewusst entfernt (Commit `11597c2`). Stattdessen gibt es j
 - [x] **Unnötige Re-Renders:** → Alle Komponenten abonnieren nur noch ihre Felder (`useStoreFields(...)` bzw. Selektoren).
   *Ursprünglich:* 29 Komponenten holen den ganzen Store (`const { … } = useAppStore()`), nur eine nutzt einen Selektor.
   Jeder Status-Poll (alle 2 s) rendert dadurch fast die gesamte App neu. → Selektoren mit `useShallow` verwenden.
-- [ ] *(teilweise: `SettingsView` → `settings/sections/`, `SoulHubView` → `hub/tabs/` mit eigenem Hub-Store, `CompanionView` → `companion/tabs/`)* Riesige Komponenten aufteilen: `SettingsView.tsx` (1.874 Z.), `SoulHubView.tsx` (1.255), `CompanionView.tsx` (1.230),
+- [ ] *(teilweise: `SettingsView` → `settings/sections/`, `SoulHubView` → `hub/tabs/` mit eigenem Hub-Store, `CompanionView` → `companion/tabs/`, `IntegrationsView` → `integrations/tabs/`)* Riesige Komponenten aufteilen: `SettingsView.tsx` (1.874 Z.), `SoulHubView.tsx` (1.255), `CompanionView.tsx` (1.230),
   `IntegrationsView.tsx` (1.213), `CognitiveMemoryDrawer.tsx` (1.126), `LorebookView.tsx` (1.025).
 - [ ] `src/types/index.ts` (1.138 Z.): Typen aus Rust generieren (`specta` + `tauri-specta` oder `ts-rs`), damit Frontend und Backend nicht auseinanderlaufen.
   Gleichzeitig erhält man typisierte `invoke`-Aufrufe statt manueller Wrapper in `api.ts` (1.179 Z.).
-- [ ] 26× `any` bzw. `as any` beseitigen (oxlint warnt), 185× `console.*` durch den vorhandenen Logger ersetzen.
+- [ ] `any` beseitigen (oxlint warnt; von 35 auf 18 reduziert), 185× `console.*` durch den vorhandenen Logger ersetzen.
 - [x] `tsconfig`: `target`/`lib` von ES2020 auf ES2022+ anheben, `noUncheckedIndexedAccess` aktivieren.
 - [x] Linter eingerichtet: **oxlint** mit React-Hooks-, `jsx-a11y`- und TypeScript-Regeln (typescript-eslint unterstützt TS 7 noch nicht).
   Offene Warnungen: `any`, Effekt-Abhängigkeiten, `setState` in Effekten. Prettier fehlt noch.
