@@ -33,8 +33,9 @@ import {
   Wand2,
   AlertTriangle,
 } from 'lucide-react';
-import { translate } from '../../i18n';
-import { confirmDialog } from '../ui/feedback';
+import { translate, useTranslation } from '../../i18n';
+import { confirmDialog, toast } from '../ui/feedback';
+import { errorMessage } from '../../utils/errors';
 
 const DEFAULT_WEB_CONFIG: WebServerConfig = {
   enabled: false,
@@ -66,6 +67,7 @@ const DEFAULT_IMG_CONFIG: ImageGenConfig = {
 };
 
 export const IntegrationsView: React.FC = () => {
+  const { t } = useTranslation();
   const {
     // Phase 17 Store items
     backups,
@@ -103,7 +105,6 @@ export const IntegrationsView: React.FC = () => {
   const [copiedUrl, setCopiedUrl] = useState(false);
   const [showBotToken, setShowBotToken] = useState(false);
   const [showImgApiKey, setShowImgApiKey] = useState(false);
-  const [statusNotice, setStatusNotice] = useState<string | null>(null);
 
   // Local loading states
   const [isBackupLoading, setIsBackupLoading] = useState(false);
@@ -167,37 +168,33 @@ export const IntegrationsView: React.FC = () => {
   const handleSaveWebConfig = async () => {
     try {
       await saveWebServerConfig(localWebConfig);
-      setStatusNotice('Web-Server-Konfiguration gespeichert.');
-      setTimeout(() => setStatusNotice(null), 3000);
+      toast.success(t('int.webSaved'));
     } catch (e: any) {
-      setStatusNotice(`Fehler: ${e?.message || e}`);
+      toast.error(t('int.error', { error: errorMessage(e) }));
     }
   };
 
   const handleSaveBotConfig = async () => {
     try {
       await saveDiscordBotConfig(localBotConfig);
-      setStatusNotice('Discord-Bot-Konfiguration gespeichert.');
-      setTimeout(() => setStatusNotice(null), 3000);
+      toast.success(t('int.botSaved'));
     } catch (e: any) {
-      setStatusNotice(`Fehler: ${e?.message || e}`);
+      toast.error(t('int.error', { error: errorMessage(e) }));
     }
   };
 
   const handleSaveImgConfig = async () => {
     try {
       await saveImageGenConfig(localImgConfig);
-      setStatusNotice('Bildgenerierungs-Einstellungen gespeichert.');
-      setTimeout(() => setStatusNotice(null), 3000);
+      toast.success(t('int.imageSaved'));
     } catch (e: any) {
-      setStatusNotice(`Fehler: ${e?.message || e}`);
+      toast.error(t('int.error', { error: errorMessage(e) }));
     }
   };
 
   const handleBuildPromptFromContext = async () => {
     if (!activeCharacter) {
-      setStatusNotice('Kein aktiver Charakter ausgewählt.');
-      setTimeout(() => setStatusNotice(null), 3000);
+      toast.info(t('int.noCharacter'));
       return;
     }
     try {
@@ -209,31 +206,27 @@ export const IntegrationsView: React.FC = () => {
         testPrompt || undefined
       );
       setTestPrompt(p);
-      setStatusNotice('Prompt aus Charakter & Emotion synthetisiert!');
-      setTimeout(() => setStatusNotice(null), 3000);
+      toast.success(t('int.promptBuilt'));
     } catch (e: any) {
-      setStatusNotice(`Fehler: ${e?.message || e}`);
+      toast.error(t('int.error', { error: errorMessage(e) }));
     }
   };
 
   const handleGenerateImage = async () => {
     if (!testPrompt.trim()) {
-      setStatusNotice('Bitte gib einen Prompt ein.');
-      setTimeout(() => setStatusNotice(null), 3000);
+      toast.info(t('int.enterPrompt'));
       return;
     }
     setIsGeneratingImage(true);
     try {
       const res = await generateImageAction(testPrompt, testNegative || undefined, localImgConfig);
       if (res) {
-        setStatusNotice(`Bild erfolgreich generiert: ${res.file_name}!`);
+        toast.success(t('int.imageDone', { file: res.file_name }));
       } else {
-        setStatusNotice('Bildgenerierung abgeschlossen.');
+        toast.success(t('int.imageFinished'));
       }
-      setTimeout(() => setStatusNotice(null), 4000);
     } catch (e: any) {
-      setStatusNotice(`Bildgenerierung fehlgeschlagen: ${e?.message || e}`);
-      setTimeout(() => setStatusNotice(null), 6000);
+      toast.error(t('int.imageFailed', { error: errorMessage(e) }));
     } finally {
       setIsGeneratingImage(false);
     }
@@ -244,11 +237,9 @@ export const IntegrationsView: React.FC = () => {
     try {
       const entry = await createBackup(backupGroups, backupLabel || undefined);
       setBackupLabel('');
-      setStatusNotice(`Backup erfolgreich erstellt: ${entry?.filename || 'ZIP Archiv'}`);
-      setTimeout(() => setStatusNotice(null), 4000);
+      toast.success(t('int.backupCreated', { file: entry?.filename || t('int.zipArchive') }));
     } catch (e: any) {
-      setStatusNotice(`Backup-Fehler: ${e?.message || e}`);
-      setTimeout(() => setStatusNotice(null), 5000);
+      toast.error(t('int.backupFailed', { error: errorMessage(e) }));
     } finally {
       setIsBackupLoading(false);
     }
@@ -263,11 +254,9 @@ export const IntegrationsView: React.FC = () => {
     if (!confirmed) return;
     try {
       const resultMessage = await restoreBackup(filename);
-      setStatusNotice(resultMessage ?? 'Wiederherstellung erfolgreich.');
-      setTimeout(() => setStatusNotice(null), 5000);
+      toast.success(resultMessage ?? t('int.restored'));
     } catch (e: any) {
-      setStatusNotice(`Wiederherstellung fehlgeschlagen: ${e?.message || e}`);
-      setTimeout(() => setStatusNotice(null), 6000);
+      toast.error(t('int.restoreFailed', { error: errorMessage(e) }));
     }
   };
 
@@ -281,10 +270,9 @@ export const IntegrationsView: React.FC = () => {
     if (!confirmed) return;
     try {
       await deleteBackup(filename);
-      setStatusNotice(`Backup "${filename}" gelöscht.`);
-      setTimeout(() => setStatusNotice(null), 3000);
+      toast.success(t('int.backupDeleted', { file: filename }));
     } catch (e: any) {
-      setStatusNotice(`Löschen fehlgeschlagen: ${e?.message || e}`);
+      toast.error(t('int.deleteFailed', { error: errorMessage(e) }));
     }
   };
 
@@ -298,34 +286,38 @@ export const IntegrationsView: React.FC = () => {
           </div>
           <div>
             <div className="flex items-center gap-2">
-              <h1 className="text-base font-bold text-slate-100">Ökosystem & Integrationen</h1>
+              <h1 className="text-base font-bold text-slate-100">{t('int.title')}</h1>
             </div>
             <p className="text-xs text-slate-400">
-              Mobiler Web-Client, Discord RPC & Bot, KI-Bildgenerierung und Profil-Backups
+              {t('int.subtitle')}
             </p>
           </div>
         </div>
 
         {/* Tab Navigation */}
-        <div className="flex items-center p-1 bg-app/80 border border-slate-800 rounded-xl">
+        <div role="tablist" aria-label={t('int.tabs')} className="flex items-center p-1 bg-app/80 border border-slate-800 rounded-xl">
           <button
+            role="tab"
+            aria-selected={activeTab === 'web'}
             onClick={() => setActiveTab('web')}
-            className={`flex items-center gap-2 px-3 py-1.5 rounded-lg text-xs font-medium transition ${
+            className={`flex items-center gap-2 px-3 py-1.5 rounded-lg text-xs font-medium whitespace-nowrap transition outline-hidden focus-visible:ring-2 focus-visible:ring-accent-400 ${
               activeTab === 'web'
                 ? 'bg-cyan-600 text-white shadow-sm'
                 : 'text-slate-400 hover:text-slate-200'
             }`}
           >
             <Smartphone className="w-3.5 h-3.5" />
-            <span>Mobiler Web-Client</span>
+            <span>{t('int.tabWeb')}</span>
             {webServerStatus?.is_running && (
               <span className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse" />
             )}
           </button>
 
           <button
+            role="tab"
+            aria-selected={activeTab === 'discord'}
             onClick={() => setActiveTab('discord')}
-            className={`flex items-center gap-2 px-3 py-1.5 rounded-lg text-xs font-medium transition ${
+            className={`flex items-center gap-2 px-3 py-1.5 rounded-lg text-xs font-medium whitespace-nowrap transition outline-hidden focus-visible:ring-2 focus-visible:ring-accent-400 ${
               activeTab === 'discord'
                 ? 'bg-indigo-600 text-white shadow-sm'
                 : 'text-slate-400 hover:text-slate-200'
@@ -339,27 +331,31 @@ export const IntegrationsView: React.FC = () => {
           </button>
 
           <button
+            role="tab"
+            aria-selected={activeTab === 'image'}
             onClick={() => setActiveTab('image')}
-            className={`flex items-center gap-2 px-3 py-1.5 rounded-lg text-xs font-medium transition ${
+            className={`flex items-center gap-2 px-3 py-1.5 rounded-lg text-xs font-medium whitespace-nowrap transition outline-hidden focus-visible:ring-2 focus-visible:ring-accent-400 ${
               activeTab === 'image'
                 ? 'bg-accent-600 text-white shadow-sm'
                 : 'text-slate-400 hover:text-slate-200'
             }`}
           >
             <Palette className="w-3.5 h-3.5" />
-            <span>Bildgenerierung</span>
+            <span>{t('int.tabImage')}</span>
           </button>
 
           <button
+            role="tab"
+            aria-selected={activeTab === 'backup'}
             onClick={() => setActiveTab('backup')}
-            className={`flex items-center gap-2 px-3 py-1.5 rounded-lg text-xs font-medium transition ${
+            className={`flex items-center gap-2 px-3 py-1.5 rounded-lg text-xs font-medium whitespace-nowrap transition outline-hidden focus-visible:ring-2 focus-visible:ring-accent-400 ${
               activeTab === 'backup'
                 ? 'bg-emerald-600 text-white shadow-sm'
                 : 'text-slate-400 hover:text-slate-200'
             }`}
           >
             <Database className="w-3.5 h-3.5" />
-            <span>Profil-Backup</span>
+            <span>{t('int.tabBackup')}</span>
             <span className="text-[11px] px-1.5 py-0.2 rounded-full bg-emerald-950 text-emerald-300 font-mono">
               {backups.length}
             </span>
@@ -368,12 +364,6 @@ export const IntegrationsView: React.FC = () => {
       </div>
 
       {/* Notice Banner */}
-      {statusNotice && (
-        <div className="px-6 py-2 bg-slate-900 border-b border-slate-800 text-cyan-200 text-xs flex items-center gap-2">
-          <Sparkles className="w-4 h-4 text-cyan-400" />
-          <span>{statusNotice}</span>
-        </div>
-      )}
 
       {/* Content Area */}
       <div className="flex-1 overflow-y-auto p-6 space-y-6 text-sm">
@@ -399,7 +389,7 @@ export const IntegrationsView: React.FC = () => {
                     </div>
                     <div>
                       <div className="flex items-center gap-2">
-                        <h2 className="text-sm font-bold text-slate-100">Lokaler Axum Web-Server</h2>
+                        <h2 className="text-sm font-bold text-slate-100">{t('int.webTitle')}</h2>
                         <span
                           className={`text-[11px] font-bold px-2 py-0.5 rounded-full uppercase tracking-wider border ${
                             webServerStatus?.is_running
@@ -407,11 +397,11 @@ export const IntegrationsView: React.FC = () => {
                               : 'bg-slate-800 text-slate-400 border-slate-700'
                           }`}
                         >
-                          {webServerStatus?.is_running ? 'Aktiv / Läuft' : 'Gestoppt'}
+                          {webServerStatus?.is_running ? t('int.running') : t('int.stopped')}
                         </span>
                       </div>
                       <p className="text-xs text-slate-400">
-                        Chatte vom Smartphone, Tablet oder Laptop im selben WLAN ohne App-Installation
+                        {t('int.webIntro')}
                       </p>
                     </div>
                   </div>
@@ -423,7 +413,7 @@ export const IntegrationsView: React.FC = () => {
                         className="flex items-center gap-1.5 px-4 py-2 rounded-xl bg-rose-600 hover:bg-rose-500 text-white font-medium text-xs shadow-md shadow-rose-600/20 transition"
                       >
                         <Square className="w-3.5 h-3.5 fill-current" />
-                        <span>Server stoppen</span>
+                        <span>{t('int.stopServer')}</span>
                       </button>
                     ) : (
                       <button
@@ -431,7 +421,7 @@ export const IntegrationsView: React.FC = () => {
                         className="flex items-center gap-1.5 px-4 py-2 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white font-medium text-xs shadow-md shadow-emerald-600/20 transition"
                       >
                         <Play className="w-3.5 h-3.5 fill-current" />
-                        <span>Server starten</span>
+                        <span>{t('int.startServer')}</span>
                       </button>
                     )}
                   </div>
@@ -441,9 +431,7 @@ export const IntegrationsView: React.FC = () => {
                   <div className="flex items-start gap-2 rounded-xl border border-amber-500/30 bg-amber-500/10 p-3 text-xs text-amber-200">
                     <AlertTriangle className="w-4 h-4 shrink-0 mt-0.5" />
                     <p>
-                      Der Server ist für alle Geräte im Netzwerk erreichbar und nutzt unverschlüsseltes HTTP.
-                      Nur in vertrauenswürdigen Netzwerken (Heim-WLAN) verwenden und die Verbindungs-Adresse nicht weitergeben –
-                      sie enthält den Zugangs-Token.
+                      {t('int.webWarning')}
                     </p>
                   </div>
                 )}
@@ -452,7 +440,7 @@ export const IntegrationsView: React.FC = () => {
                 {webServerStatus?.is_running && webServerStatus.connection_url && (
                   <div className="bg-app border border-cyan-500/30 rounded-xl p-4 space-y-2">
                     <span className="text-xs font-bold text-cyan-400 uppercase tracking-wider">
-                      Verbindungs-Adresse (WLAN)
+                      {t('int.connectionUrl')}
                     </span>
                     <div className="flex items-center gap-2">
                       <input
@@ -477,7 +465,7 @@ export const IntegrationsView: React.FC = () => {
                         target="_blank"
                         rel="noreferrer"
                         className="p-2 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-300 border border-slate-700"
-                        title="Im Browser öffnen"
+                        title={t('int.openBrowser')}
                       >
                         <ExternalLink className="w-4 h-4" />
                       </a>
@@ -489,7 +477,7 @@ export const IntegrationsView: React.FC = () => {
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4 pt-2">
                   <div>
                     <label className="block text-xs font-semibold text-slate-300 mb-1.5">
-                      Port
+                      {t('int.port')}
                     </label>
                     <input
                       type="number"
@@ -503,7 +491,7 @@ export const IntegrationsView: React.FC = () => {
 
                   <div>
                     <label className="block text-xs font-semibold text-slate-300 mb-1.5">
-                      Sicherheitstoken (Auth-Token)
+                      {t('int.authToken')}
                     </label>
                     <div className="flex items-center gap-2">
                       <input
@@ -514,7 +502,7 @@ export const IntegrationsView: React.FC = () => {
                       />
                       <button
                         onClick={regenerateWebServerToken}
-                        title="Neues Token generieren"
+                        title={t('int.newToken')}
                         className="p-2 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-300 border border-slate-700"
                       >
                         <RefreshCw className="w-4 h-4" />
@@ -525,7 +513,7 @@ export const IntegrationsView: React.FC = () => {
 
                 <div className="flex items-center justify-between pt-2 border-t border-slate-800/80">
                   <div className="text-xs text-slate-400">
-                    Host: <span className="font-mono text-slate-200">{localWebConfig.host}</span> (Lokales WLAN)
+                    {t('int.host')} <span className="font-mono text-slate-200">{localWebConfig.host}</span> {t('int.localWifi')}
                   </div>
 
                   <button
@@ -533,7 +521,7 @@ export const IntegrationsView: React.FC = () => {
                     className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-200 text-xs font-medium border border-slate-700 transition"
                   >
                     <Save className="w-3.5 h-3.5" />
-                    <span>Konfiguration speichern</span>
+                    <span>{t('int.saveConfig')}</span>
                   </button>
                 </div>
               </div>
@@ -542,10 +530,10 @@ export const IntegrationsView: React.FC = () => {
               <div className="bg-slate-900/40 border border-slate-800/80 rounded-2xl p-5 space-y-3 text-xs text-slate-400">
                 <div className="flex items-center gap-2 font-semibold text-slate-200">
                   <Shield className="w-4 h-4 text-emerald-400" />
-                  <span>Token-Authentifizierung</span>
+                  <span>{t('int.tokenTitle')}</span>
                 </div>
                 <p className="leading-relaxed">
-                  Jeder Zugriff erfordert ein zufällig erzeugtes 256-Bit-Token, das in der Verbindungs-Adresse und im QR-Code enthalten ist. Wer die Adresse kennt, kann chatten – teile sie nur mit deinen eigenen Geräten und erzeuge bei Bedarf ein neues Token. Der Web-Client läuft in jedem modernen mobilen Browser (iOS Safari, Android Chrome/Firefox).
+                  {t('int.tokenText')}
                 </p>
               </div>
             </div>
@@ -554,7 +542,7 @@ export const IntegrationsView: React.FC = () => {
             <div className="bg-slate-900/80 border border-slate-800 rounded-2xl p-6 shadow-xl flex flex-col items-center justify-center text-center space-y-4">
               <div className="flex items-center gap-2 text-slate-200 font-bold text-xs uppercase tracking-wider">
                 <QrCode className="w-4 h-4 text-cyan-400" />
-                <span>Smartphone Schnellzugriff</span>
+                <span>{t('int.qrTitle')}</span>
               </div>
 
               {webServerStatus?.is_running && webServerStatus.qr_code_svg ? (
@@ -567,13 +555,13 @@ export const IntegrationsView: React.FC = () => {
               ) : (
                 <div className="w-48 h-48 rounded-2xl bg-app border border-dashed border-slate-800 flex flex-col items-center justify-center p-4 text-slate-500">
                   <Smartphone className="w-8 h-8 mb-2 opacity-40" />
-                  <span className="text-xs">Server gestoppt</span>
-                  <span className="text-[11px] text-slate-600 mt-1">Starte den Server für den QR-Code</span>
+                  <span className="text-xs">{t('int.serverStopped')}</span>
+                  <span className="text-[11px] text-slate-600 mt-1">{t('int.qrHint')}</span>
                 </div>
               )}
 
               <div className="text-xs text-slate-400 leading-relaxed max-w-xs">
-                Öffne die Kamera auf deinem Smartphone oder Tablet und scanne den QR-Code, um dich direkt mit OtakuSoul zu verbinden.
+                {t('int.qrText')}
               </div>
             </div>
           </div>
@@ -592,9 +580,9 @@ export const IntegrationsView: React.FC = () => {
                     <Gamepad2 className="w-5 h-5" />
                   </div>
                   <div>
-                    <h2 className="text-sm font-bold text-slate-100">Discord Rich Presence (RPC)</h2>
+                    <h2 className="text-sm font-bold text-slate-100">{t('int.rpcTitle')}</h2>
                     <p className="text-xs text-slate-400">
-                      Zeige deinen Freunden auf Discord deinen aktuellen Status
+                      {t('int.rpcIntro')}
                     </p>
                   </div>
                 </div>
@@ -630,7 +618,7 @@ export const IntegrationsView: React.FC = () => {
 
               <div className="text-xs text-slate-400 space-y-2">
                 <p className="leading-relaxed">
-                  Verbindet sich nativ über den lokalen Discord IPC Socket (<code className="font-mono text-xs text-slate-300">/run/user/$UID/discord-ipc-0</code> bzw. Windows Named Pipe). Kein externer Bot-Account für Rich Presence erforderlich.
+                  {t('int.rpcText1')}<code className="font-mono text-xs text-slate-300">/run/user/$UID/discord-ipc-0</code> {t('int.rpcText2')}
                 </p>
               </div>
             </div>
@@ -644,7 +632,7 @@ export const IntegrationsView: React.FC = () => {
                   </div>
                   <div>
                     <div className="flex items-center gap-2">
-                      <h2 className="text-sm font-bold text-slate-100">Discord Gateway Bot</h2>
+                      <h2 className="text-sm font-bold text-slate-100">{t('int.botTitle')}</h2>
                       <span
                         className={`text-[11px] font-bold px-2 py-0.5 rounded-full uppercase tracking-wider border ${
                           discordBotStatus?.is_running
@@ -656,7 +644,7 @@ export const IntegrationsView: React.FC = () => {
                       </span>
                     </div>
                     <p className="text-xs text-slate-400">
-                      Bringe deine Charaktere direkt auf deinen Discord-Server
+                      {t('int.botIntro')}
                     </p>
                   </div>
                 </div>
@@ -668,7 +656,7 @@ export const IntegrationsView: React.FC = () => {
                       className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-rose-600 hover:bg-rose-500 text-white text-xs font-medium shadow transition"
                     >
                       <Square className="w-3 h-3 fill-current" />
-                      <span>Stoppen</span>
+                      <span>{t('int.stop')}</span>
                     </button>
                   ) : (
                     <button
@@ -676,7 +664,7 @@ export const IntegrationsView: React.FC = () => {
                       className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-accent-600 hover:bg-accent-500 text-white text-xs font-medium shadow transition"
                     >
                       <Play className="w-3 h-3 fill-current" />
-                      <span>Bot starten</span>
+                      <span>{t('int.startBot')}</span>
                     </button>
                   )}
                 </div>
@@ -686,7 +674,7 @@ export const IntegrationsView: React.FC = () => {
               <div className="space-y-3">
                 <div>
                   <label className="block text-xs font-semibold text-slate-300 mb-1">
-                    Discord Bot Token
+                    {t('int.botToken')}
                   </label>
                   <div className="flex items-center gap-2">
                     <input
@@ -711,7 +699,7 @@ export const IntegrationsView: React.FC = () => {
                 <div className="grid grid-cols-2 gap-3">
                   <div>
                     <label className="block text-xs font-semibold text-slate-300 mb-1">
-                      Befehls-Präfix
+                      {t('int.prefix')}
                     </label>
                     <input
                       type="text"
@@ -725,7 +713,7 @@ export const IntegrationsView: React.FC = () => {
 
                   <div>
                     <label className="block text-xs font-semibold text-slate-300 mb-1">
-                      Cooldown (Sekunden)
+                      {t('int.cooldown')}
                     </label>
                     <input
                       type="number"
@@ -744,19 +732,19 @@ export const IntegrationsView: React.FC = () => {
                     className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-200 text-xs font-medium border border-slate-700 transition"
                   >
                     <Save className="w-3.5 h-3.5" />
-                    <span>Bot-Konfiguration speichern</span>
+                    <span>{t('int.saveBot')}</span>
                   </button>
                 </div>
               </div>
 
               {/* Bot Command Cheatsheet */}
               <div className="bg-app/60 border border-slate-800 rounded-xl p-3 text-xs space-y-1.5">
-                <span className="font-bold text-slate-300 block mb-1">Verfügbare Befehle:</span>
+                <span className="font-bold text-slate-300 block mb-1">{t('int.commands')}</span>
                 <div className="font-mono text-xs text-accent-300 space-y-1">
-                  <div><span className="text-slate-200">!ask &lt;Text&gt;</span> – Chatte mit dem aktuellen Charakter</div>
-                  <div><span className="text-slate-200">!character &lt;Name&gt;</span> – Wechselt den aktiven Charakter</div>
-                  <div><span className="text-slate-200">!status</span> – Zeigt aktuellen Charakter & Emotion</div>
-                  <div><span className="text-slate-200">!reset</span> – Setzt die Konversation zurück</div>
+                  <div><span className="text-slate-200">!ask &lt;Text&gt;</span> {t('int.cmdAsk')}</div>
+                  <div><span className="text-slate-200">!character &lt;Name&gt;</span> {t('int.cmdCharacter')}</div>
+                  <div><span className="text-slate-200">!status</span> {t('int.cmdStatus')}</div>
+                  <div><span className="text-slate-200">!reset</span> {t('int.cmdReset')}</div>
                 </div>
               </div>
             </div>
@@ -778,7 +766,7 @@ export const IntegrationsView: React.FC = () => {
                       <Palette className="w-5 h-5" />
                     </div>
                     <div>
-                      <h2 className="text-sm font-bold text-slate-100">KI-Bildgenerator Konfiguration</h2>
+                      <h2 className="text-sm font-bold text-slate-100">{t('int.imageTitle')}</h2>
                       <p className="text-xs text-slate-400">
                         Automatic1111, ComfyUI, DALL-E 3, NovelAI & FLUX
                       </p>
@@ -790,14 +778,14 @@ export const IntegrationsView: React.FC = () => {
                     className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-200 text-xs font-medium border border-slate-700 transition"
                   >
                     <Save className="w-3.5 h-3.5" />
-                    <span>Speichern</span>
+                    <span>{t('int.save')}</span>
                   </button>
                 </div>
 
                 <div className="grid grid-cols-2 gap-3">
                   <div>
                     <label className="block text-xs font-semibold text-slate-300 mb-1">
-                      Provider
+                      {t('int.provider')}
                     </label>
                     <select
                       value={localImgConfig.provider}
@@ -819,7 +807,7 @@ export const IntegrationsView: React.FC = () => {
 
                   <div>
                     <label className="block text-xs font-semibold text-slate-300 mb-1">
-                      Auflösung
+                      {t('int.resolution')}
                     </label>
                     <div className="grid grid-cols-2 gap-2">
                       <input
@@ -832,7 +820,7 @@ export const IntegrationsView: React.FC = () => {
                           })
                         }
                         className="bg-app border border-slate-700 rounded-xl px-2 py-2 text-xs text-slate-100 font-mono text-center"
-                        placeholder="Breite"
+                        placeholder={t('int.width')}
                       />
                       <input
                         type="number"
@@ -844,7 +832,7 @@ export const IntegrationsView: React.FC = () => {
                           })
                         }
                         className="bg-app border border-slate-700 rounded-xl px-2 py-2 text-xs text-slate-100 font-mono text-center"
-                        placeholder="Höhe"
+                        placeholder={t('int.height')}
                       />
                     </div>
                   </div>
@@ -852,7 +840,7 @@ export const IntegrationsView: React.FC = () => {
 
                 <div>
                   <label className="block text-xs font-semibold text-slate-300 mb-1">
-                    API-Endpoint URL
+                    {t('int.endpoint')}
                   </label>
                   <input
                     type="text"
@@ -867,7 +855,7 @@ export const IntegrationsView: React.FC = () => {
 
                 <div>
                   <label className="block text-xs font-semibold text-slate-300 mb-1">
-                    API-Key (falls erforderlich)
+                    {t('int.apiKey')}
                   </label>
                   <div className="flex items-center gap-2">
                     <input
@@ -939,22 +927,22 @@ export const IntegrationsView: React.FC = () => {
                 <div className="flex items-center justify-between">
                   <div className="flex items-center gap-2">
                     <Wand2 className="w-4 h-4 text-accent-400" />
-                    <h2 className="text-sm font-bold text-slate-100">Live-Synthesizer Studio</h2>
+                    <h2 className="text-sm font-bold text-slate-100">{t('int.studio')}</h2>
                   </div>
 
                   <button
                     onClick={handleBuildPromptFromContext}
                     className="flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-accent-600/20 hover:bg-accent-600/30 text-accent-300 text-xs border border-accent-500/40 transition"
-                    title="Baut einen Bild-Prompt aus dem aktuellen Charakter & Emotion"
+                    title={t('int.promptFromCharHint')}
                   >
                     <Sparkles className="w-3.5 h-3.5" />
-                    <span>Prompt aus Charakter</span>
+                    <span>{t('int.promptFromChar')}</span>
                   </button>
                 </div>
 
                 <div>
                   <label className="block text-xs font-semibold text-slate-300 mb-1">
-                    Positiver Prompt
+                    {t('int.positive')}
                   </label>
                   <textarea
                     rows={4}
@@ -967,7 +955,7 @@ export const IntegrationsView: React.FC = () => {
 
                 <div>
                   <label className="block text-xs font-semibold text-slate-300 mb-1">
-                    Negativer Prompt
+                    {t('int.negative')}
                   </label>
                   <textarea
                     rows={2}
@@ -986,12 +974,12 @@ export const IntegrationsView: React.FC = () => {
                   {isGeneratingImage ? (
                     <>
                       <RefreshCw className="w-4 h-4 animate-spin" />
-                      <span>Generiere Bild...</span>
+                      <span>{t('int.generating')}</span>
                     </>
                   ) : (
                     <>
                       <ImageIcon className="w-4 h-4" />
-                      <span>Bild jetzt generieren</span>
+                      <span>{t('int.generate')}</span>
                     </>
                   )}
                 </button>
@@ -1011,7 +999,7 @@ export const IntegrationsView: React.FC = () => {
                 <button
                   onClick={fetchGeneratedImages}
                   className="p-1.5 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-300 text-xs"
-                  title="Galerie aktualisieren"
+                  title={t('int.refreshGallery')}
                 >
                   <RefreshCw className="w-3.5 h-3.5" />
                 </button>
@@ -1019,7 +1007,7 @@ export const IntegrationsView: React.FC = () => {
 
               {generatedImages.length === 0 ? (
                 <div className="py-12 text-center text-slate-500 text-xs">
-                  Noch keine Bilder generiert. Nutze das Studio oben, um dein erstes Charakterbild zu rendern!
+                  {t('int.noImages')}
                 </div>
               ) : (
                 <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 gap-4">
@@ -1057,38 +1045,38 @@ export const IntegrationsView: React.FC = () => {
                   <Database className="w-5 h-5" />
                 </div>
                 <div>
-                  <h2 className="text-sm font-bold text-slate-100">Neues Backup erstellen</h2>
+                  <h2 className="text-sm font-bold text-slate-100">{t('int.newBackup')}</h2>
                   <p className="text-xs text-slate-400">
-                    Sichere deine Daten in ein portables ZIP-Archiv
+                    {t('int.newBackupIntro')}
                   </p>
                 </div>
               </div>
 
               <div>
                 <label className="block text-xs font-semibold text-slate-300 mb-1.5">
-                  Backup-Name / Notiz (optional)
+                  {t('int.backupNote')}
                 </label>
                 <input
                   type="text"
                   value={backupLabel}
                   onChange={(e) => setBackupLabel(e.target.value)}
-                  placeholder="z. B. Vor Update, Cyberpunk Stage Setup..."
+                  placeholder={t('int.backupNotePlaceholder')}
                   className="w-full bg-app border border-slate-700 rounded-xl px-3 py-2 text-xs text-slate-100"
                 />
               </div>
 
               <div className="space-y-2">
                 <span className="block text-xs font-semibold text-slate-300">
-                  Zu sichernde Bereiche:
+                  {t('int.backupGroups')}
                 </span>
                 {[
-                  { key: 'characters', label: '🎭 Charaktere' },
-                  { key: 'lorebooks', label: '📜 Lorebooks' },
-                  { key: 'personas', label: '👤 User-Personas' },
-                  { key: 'soul_memory', label: '🧠 Seelen-Gedächtnis & Psychologie' },
-                  { key: 'soul_stage', label: '⚔️ Soul Stage Kampagnen & Szenarien' },
-                  { key: 'companion', label: '🤖 Desktop-Companion & Plugins' },
-                  { key: 'settings', label: '⚙️ App-Einstellungen' },
+                  { key: 'characters', label: t('int.group.characters') },
+                  { key: 'lorebooks', label: t('int.group.lorebooks') },
+                  { key: 'personas', label: t('int.group.personas') },
+                  { key: 'soul_memory', label: t('int.group.memory') },
+                  { key: 'soul_stage', label: t('int.group.stage') },
+                  { key: 'companion', label: t('int.group.companion') },
+                  { key: 'settings', label: t('int.group.settings') },
                 ].map((item) => (
                   <label
                     key={item.key}
@@ -1115,18 +1103,18 @@ export const IntegrationsView: React.FC = () => {
                 {isBackupLoading ? (
                   <>
                     <RefreshCw className="w-4 h-4 animate-spin" />
-                    <span>Erstelle ZIP-Backup...</span>
+                    <span>{t('int.creatingBackup')}</span>
                   </>
                 ) : (
                   <>
                     <Download className="w-4 h-4" />
-                    <span>Backup jetzt anlegen</span>
+                    <span>{t('int.createBackup')}</span>
                   </>
                 )}
               </button>
 
               <div className="p-3 bg-emerald-950/30 border border-emerald-500/30 rounded-xl text-xs text-emerald-300 leading-relaxed">
-                🛡️ <strong>Schutzgarantie:</strong> Vor jeder Wiederherstellung wird automatisch ein präventiver Snapshot angelegt. Es werden stets bis zu 5 Sicherheits-Snapshots aufbewahrt.
+                🛡️ <strong>{t('int.guarantee')}</strong> {t('int.guaranteeText')}
               </div>
             </div>
 
@@ -1143,7 +1131,7 @@ export const IntegrationsView: React.FC = () => {
                 <button
                   onClick={fetchBackups}
                   className="p-1.5 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-300 text-xs"
-                  title="Liste aktualisieren"
+                  title={t('int.refreshList')}
                 >
                   <RefreshCw className="w-3.5 h-3.5" />
                 </button>
@@ -1151,7 +1139,7 @@ export const IntegrationsView: React.FC = () => {
 
               {backups.length === 0 ? (
                 <div className="py-12 text-center text-slate-500 text-xs">
-                  Keine Backups gefunden. Lege links deine erste Sicherung an!
+                  {t('int.noBackups')}
                 </div>
               ) : (
                 <div className="space-y-3">
@@ -1175,11 +1163,11 @@ export const IntegrationsView: React.FC = () => {
                             {isSafety ? (
                               <span className="text-[11px] px-2 py-0.5 rounded-full bg-amber-500/20 text-amber-300 border border-amber-500/40 flex items-center gap-1">
                                 <Shield className="w-3 h-3" />
-                                <span>Sicherheits-Snapshot</span>
+                                <span>{t('int.safetySnapshot')}</span>
                               </span>
                             ) : (
                               <span className="text-[11px] px-2 py-0.5 rounded-full bg-emerald-500/20 text-emerald-300 border border-emerald-500/40">
-                                Manuelles Backup
+                                {t('int.manualBackup')}
                               </span>
                             )}
                           </div>
@@ -1203,12 +1191,12 @@ export const IntegrationsView: React.FC = () => {
                             className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-emerald-600/20 hover:bg-emerald-600/30 text-emerald-300 text-xs font-medium border border-emerald-500/40 transition"
                           >
                             <RefreshCw className="w-3.5 h-3.5" />
-                            <span>Wiederherstellen</span>
+                            <span>{t('int.restore')}</span>
                           </button>
                           <button
                             onClick={() => handleDeleteBackup(b.filename)}
                             className="p-1.5 rounded-lg bg-slate-800 hover:bg-rose-500/20 text-slate-400 hover:text-rose-300 border border-slate-700 transition"
-                            title="Backup löschen"
+                            title={t('int.deleteBackup')}
                           >
                             <Trash2 className="w-3.5 h-3.5" />
                           </button>
