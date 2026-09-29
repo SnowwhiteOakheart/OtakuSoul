@@ -14,7 +14,7 @@ jobs:
       fail-fast: false
       matrix:
         include:
-          - platform: 'ubuntu-22.04'
+          - platform: 'ubuntu-24.04'
             args: '--bundles appimage,deb'
           - platform: 'windows-latest'
             args: '--bundles nsis'
@@ -39,7 +39,7 @@ jobs:
           workspaces: './src-tauri -> target'
 
       - name: Install Linux Dependencies
-        if: matrix.platform == 'ubuntu-22.04'
+        if: matrix.platform == 'ubuntu-24.04'
         run: |
           sudo apt-get update
           sudo apt-get install -y \
@@ -72,5 +72,5 @@ jobs:
           releaseBody: 'OtakuSoul Release v__VERSION__. Herunterladen und starten:\n- Windows: `OtakuSoul_..._x64-setup.exe`\n- Linux: `OtakuSoul_..._amd64.AppImage` (oder `.deb`)'
           releaseDraft: false
           prerelease: false
-          uploadUpdaterJson: true
+          includeUpdaterJson: true
           args: ${{ matrix.args }}
