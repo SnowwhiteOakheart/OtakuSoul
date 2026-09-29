@@ -33,6 +33,14 @@ pub struct PromptContext {
     pub author_note_depth: Option<u32>,
 }
 
+/// Placeholder that memory fields hold when there is nothing to say (in any content language).
+pub fn is_none_marker(value: &str) -> bool {
+    matches!(
+        value.trim(),
+        "Keine." | "Keine" | "None." | "None" | "Нет." | "Нет"
+    )
+}
+
 pub fn build_system_prompt(ctx: &PromptContext) -> String {
     let mut parts = Vec::new();
 
@@ -45,14 +53,14 @@ pub fn build_system_prompt(ctx: &PromptContext) -> String {
 
     // 1. Roleplay & Identity Directive
     parts.push(format!(
-        "# Rolle & Identität\nDu schlüpfst vollständig in die Rolle von **{}** und antwortest ausschließlich als diese Figur.\nDein Gesprächspartner ist **{}**.",
+        "# Role & Identity\nYou fully become **{}** and reply only as this character.\nYou are talking with **{}**.",
         ctx.char_name, ctx.user_name
     ));
 
     // 2. Character Description
     if !ctx.character.description.trim().is_empty() {
         parts.push(format!(
-            "## Hintergrund & Erscheinung\n{}",
+            "## Background & Appearance\n{}",
             replace_macros(&ctx.character.description)
         ));
     }
@@ -60,7 +68,7 @@ pub fn build_system_prompt(ctx: &PromptContext) -> String {
     // 3. Personality
     if !ctx.character.personality.trim().is_empty() {
         parts.push(format!(
-            "## Persönlichkeit\n{}",
+            "## Personality\n{}",
             replace_macros(&ctx.character.personality)
         ));
     }
@@ -68,7 +76,7 @@ pub fn build_system_prompt(ctx: &PromptContext) -> String {
     // 4. Scenario / Current Situation
     if !ctx.character.scenario.trim().is_empty() {
         parts.push(format!(
-            "## Aktuelles Szenario\n{}",
+            "## Current Scenario\n{}",
             replace_macros(&ctx.character.scenario)
         ));
     }
@@ -92,7 +100,7 @@ pub fn build_system_prompt(ctx: &PromptContext) -> String {
 
     if !direct_entries.is_empty() {
         let mut dir_str = String::from(
-            "## Wichtige Handlungs- & Regie-Anweisungen (Lore-Direktiven)\nFolge diesen Verhaltens- und Situationsregeln in deiner Antwort strikt:\n",
+            "## Important Directions (Lore Directives)\nFollow these behaviour and situation rules strictly in your reply:\n",
         );
         for entry in &direct_entries {
             dir_str.push_str(&format!(
@@ -106,7 +114,7 @@ pub fn build_system_prompt(ctx: &PromptContext) -> String {
 
     // 5.5. Passive Lorebook Entries (World Context)
     if !passive_entries.is_empty() {
-        let mut lore_str = String::from("## Weltwissen & Kontext (Lorebook)\n");
+        let mut lore_str = String::from("## World Knowledge & Context (Lorebook)\n");
         for entry in &passive_entries {
             lore_str.push_str(&format!(
                 "- **{}**: {}\n",
@@ -120,7 +128,7 @@ pub fn build_system_prompt(ctx: &PromptContext) -> String {
     // 6. Reactive State Variables HUD
     if !ctx.state_variables.is_empty() {
         let mut vars_str = String::from(
-            "## Aktuelle Status-Variablen\nBehalte diese Variablen im Gedächtnis und passe Dein Verhalten daran an:\n",
+            "## Current State Variables\nKeep these variables in mind and let them shape your behaviour:\n",
         );
         for v in &ctx.state_variables {
             if let Some(max) = v.max_value {
@@ -129,99 +137,97 @@ pub fn build_system_prompt(ctx: &PromptContext) -> String {
                 vars_str.push_str(&format!("- {}: {}\n", v.name, v.value));
             }
         }
-        vars_str.push_str("\nHinweis: Wenn sich Werte oder Emotionen im Gesprächsverlauf verändern, kannst du am Ende deiner Nachricht optional einen `<state>` Block im JSON-Format ausgeben, um Variablen zu aktualisieren. Beispiel: `<state>{\"Affection\": 55, \"Mood\": \"Glücklich\"}</state>`.");
+        vars_str.push_str("\nNote: When values or emotions change during the conversation, you may end your message with a `<state>` block in JSON to update the variables. Example: `<state>{\"Affection\": 55, \"Mood\": \"Happy\"}</state>`.");
         parts.push(vars_str);
     }
 
     // 6.5. Cognitive Soul Memory & Inner Psychology
     if let Some(cog) = &ctx.cognitive {
-        let mut cog_str = String::from("## Innerer Geisteszustand & Kognitives Gedächtnis\n");
+        let mut cog_str = String::from("## Inner State & Cognitive Memory\n");
         if !cog.psychology.core_identity.is_empty() {
-            cog_str.push_str("### Unumstößliche Glaubenssätze & Kernidentität:\n");
+            cog_str.push_str("### Unshakeable Beliefs & Core Identity:\n");
             for belief in &cog.psychology.core_identity {
                 cog_str.push_str(&format!("- {}\n", belief));
             }
         }
         cog_str.push_str(&format!(
-            "- **Emotion & Intensität**: {} (Intensität {} von 5)\n",
+            "- **Emotion & Intensity**: {} (intensity {} of 5)\n",
             cog.psychology.primary_emotion, cog.psychology.intensity
         ));
         if !cog.psychology.psychological_tension.trim().is_empty()
-            && cog.psychology.psychological_tension != "Keine."
+            && !is_none_marker(&cog.psychology.psychological_tension)
         {
             cog_str.push_str(&format!(
-                "- **Innere Anspannung**: {}\n",
+                "- **Inner Tension**: {}\n",
                 cog.psychology.psychological_tension
             ));
         }
         if !cog.psychology.active_agenda.trim().is_empty() {
             cog_str.push_str(&format!(
-                "- **Unbewusste Agenda**: {}\n",
+                "- **Unconscious Agenda**: {}\n",
                 cog.psychology.active_agenda
             ));
         }
         if !cog.psychology.immediate_focus.trim().is_empty() {
             cog_str.push_str(&format!(
-                "- **Gedanklicher Fokus**: {}\n",
+                "- **Current Focus**: {}\n",
                 cog.psychology.immediate_focus
             ));
         }
         if !cog.psychology.cognitive_dissonance.trim().is_empty()
-            && cog.psychology.cognitive_dissonance != "Keine."
+            && !is_none_marker(&cog.psychology.cognitive_dissonance)
         {
             cog_str.push_str(&format!(
-                "- **Kognitive Dissonanz**: {}\n",
+                "- **Cognitive Dissonance**: {}\n",
                 cog.psychology.cognitive_dissonance
             ));
         }
         cog_str.push_str(&format!(
-            "- **Rolle von {}**: {}\n",
+            "- **Role of {}**: {}\n",
             ctx.user_name, cog.relationship.role_in_story
         ));
         if !cog.relationship.known_attributes.trim().is_empty()
-            && cog.relationship.known_attributes != "Keine."
+            && !is_none_marker(&cog.relationship.known_attributes)
         {
             cog_str.push_str(&format!(
-                "- **Bekannte Attribute über {}**: {}\n",
+                "- **Known Facts about {}**: {}\n",
                 ctx.user_name, cog.relationship.known_attributes
             ));
         }
         cog_str.push_str(&format!(
-            "- **Vertrauensstufe zu {}**: {}\n",
+            "- **Trust towards {}**: {}\n",
             ctx.user_name, cog.relationship.trust_level
         ));
         if !cog.relationship.dynamic_description.trim().is_empty()
-            && cog.relationship.dynamic_description != "Keine."
+            && !is_none_marker(&cog.relationship.dynamic_description)
         {
             cog_str.push_str(&format!(
-                "- **Beziehungsdynamik**: {}\n",
+                "- **Relationship Dynamic**: {}\n",
                 cog.relationship.dynamic_description
             ));
         }
         if !cog.relationship.unspoken_tension.trim().is_empty()
-            && cog.relationship.unspoken_tension != "Keine."
+            && !is_none_marker(&cog.relationship.unspoken_tension)
         {
             cog_str.push_str(&format!(
-                "- **Ungesagte Spannungen**: {}\n",
+                "- **Unspoken Tension**: {}\n",
                 cog.relationship.unspoken_tension
             ));
         }
         if !cog.relationship.preferences_habits.is_empty() {
             cog_str.push_str(&format!(
-                "- **Bekannte Vorlieben/Gewohnheiten**: {}\n",
+                "- **Known Preferences & Habits**: {}\n",
                 cog.relationship.preferences_habits.join(", ")
             ));
         }
         if !cog.relationship.shared_milestones.is_empty() {
             cog_str.push_str(&format!(
-                "- **Gemeinsame Meilensteine**: {}\n",
+                "- **Shared Milestones**: {}\n",
                 cog.relationship.shared_milestones.join("; ")
             ));
         }
         if !cog.recent_memories.is_empty() {
-            cog_str.push_str(
-                "\n### Erinnertes Langzeitgedächtnis (Fakten, Versprechen, Erlebnisse):\n",
-            );
+            cog_str.push_str("\n### Long-Term Memories (facts, promises, experiences):\n");
             for mem in &cog.recent_memories {
                 cog_str.push_str(&format!("- [{}] {}\n", mem.category, mem.content));
             }
@@ -232,15 +238,15 @@ pub fn build_system_prompt(ctx: &PromptContext) -> String {
     // 7. Language Directive
     if let Some(lang) = &ctx.reply_language {
         parts.push(format!(
-            "## Sprache\nAntworte natürlich und ausdrucksstark auf **{}**.",
-            lang
+            "## Language\nWrite every reply naturally and expressively in **{}**. These instructions are in English, but your reply must always be in {}.",
+            lang, lang
         ));
     }
 
     // 8. Example Dialogs / Dialogue Style
     if !ctx.character.mes_example.trim().is_empty() {
         parts.push(format!(
-            "## Dialogbeispiele (Stilvorgabe)\n{}",
+            "## Example Dialogue (style reference)\n{}",
             replace_macros(&ctx.character.mes_example)
         ));
     }
@@ -250,29 +256,27 @@ pub fn build_system_prompt(ctx: &PromptContext) -> String {
         && !note.trim().is_empty()
     {
         parts.push(format!(
-            "## Author's Note (Wichtige Regieanweisung)\n{}",
+            "## Author's Note (important direction)\n{}",
             replace_macros(note)
         ));
     }
 
     // 9. Formatting & Roleplay Convention Directive
     let mut formatting_rules = vec![
-        "- Formatiere alle Handlungen, Gesten, Mimiken und Beschreibungen strikt in Sternchen (z. B. *lächelt sanft und lehnt sich vor*).",
-        "- Formatiere alle gesprochenen Worte und wörtliche Rede strikt in Anführungszeichen (z. B. \"Alles klar, wie du willst!\").",
-        "- Trenne Handlungen und gesprochene Worte sauber voneinander.",
+        "- Always put actions, gestures, facial expressions and descriptions in asterisks (e.g. *smiles softly and leans forward*).",
+        "- Always put spoken words in quotation marks (e.g. \"All right, as you wish!\").",
+        "- Keep actions and spoken words clearly separated.",
     ];
 
     if !ctx.allow_reasoning.unwrap_or(false) {
+        formatting_rules.push("- Reply immediately, vividly and directly in character.");
+        formatting_rules.push("- NEVER use <think> tags, reasoning steps, meta commentary or out-of-character monologues.");
         formatting_rules
-            .push("- Antworte sofort, lebendig und direkt in Deiner Rolle als Charakter.");
-        formatting_rules.push("- Verwende NIEMALS <think>-Tags, Denkschritte, Meta-Erklärungen oder interne Monologe.");
-        formatting_rules.push(
-            "- Beginne Deine Antwort unmittelbar mit den Worten oder Taten Deines Charakters.",
-        );
+            .push("- Start your reply directly with your character's words or actions.");
     }
 
     parts.push(format!(
-        "## Formatierungs- & Rollenspiel-Konventionen\n{}",
+        "## Formatting & Roleplay Conventions\n{}",
         formatting_rules.join("\n")
     ));
 

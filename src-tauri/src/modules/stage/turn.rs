@@ -88,8 +88,10 @@ pub async fn execute_stage_turn(
     }
 
     // 2. Build Planner Context & Call LLM for GmPlan
+    let lang = crate::modules::content_lang::ContentLang::current();
+    let reply_language = crate::modules::content_lang::ContentLang::reply_language_name();
     let party_list = if state.definition.party.is_empty() {
-        "Keine".to_string()
+        "none".to_string()
     } else {
         state.definition.party.join(", ")
     };
@@ -198,32 +200,32 @@ pub async fn execute_stage_turn(
         }
     }
     let lore_context = if active_lore_snippets.is_empty() {
-        "keine".to_string()
+        "none".to_string()
     } else {
         active_lore_snippets.join("\n")
     };
 
     let planner_system_prompt = format!(
         r#"[SOUL STAGE — GAME MASTER PLANNER]
-Du bist der Spielleiter (Game Master) für ein immersives Tabletop-RPG im Genre/Ton "{tone}".
-Narrator-Stil: {narrator_style}
-Szenen-Kontext: {world_context}
-Stage-Lore / Weltwissen:
+You are the game master of an immersive tabletop RPG in the genre/tone "{tone}".
+Narrator style: {narrator_style}
+Scene context: {world_context}
+Stage lore / world knowledge:
 {lore_context}
-Aktueller Ort: {location} ({time_of_day}, Wetter: {weather})
-Gruppe: {party}
-Spieler: {user_name}
-Kampagnen-Uhren: {clocks}
-Ziele: {objectives}
-Story-Arcs: {arcs}
-Inventar: {inventory}
-Kampf: {combat}
+Current location: {location} ({time_of_day}, weather: {weather})
+Party: {party}
+Player: {user_name}
+Campaign clocks: {clocks}
+Objectives: {objectives}
+Story arcs: {arcs}
+Inventory: {inventory}
+Combat: {combat}
 
-AUFGABE:
-Analysiere die jüngste Aktion des Spielers und plane den nächsten dramatischen Beat.
-Antworte AUSSCHLIESSLICH mit einem einzigen, gültigen JSON-Objekt im folgenden Format:
+TASK:
+Analyse the player's latest action and plan the next dramatic beat.
+Reply ONLY with a single valid JSON object in this format:
 {{
-  "narration_plan": "Kurze Regie-Anweisung, was jetzt geschieht und enthüllt wird",
+  "narration_plan": "Short direction of what happens now and what is revealed",
   "location": null,
   "time_of_day": null,
   "weather": null,
@@ -239,24 +241,26 @@ Antworte AUSSCHLIESSLICH mit einem einzigen, gültigen JSON-Objekt im folgenden 
   "inventory_remove": [],
   "encounter": null,
   "player_choices": [
-    {{"text": "Aktion 1", "badge": "Wahrnehmung (DC 14)", "action_type": "do"}},
-    {{"text": "Aktion 2", "badge": null, "action_type": "say"}},
-    {{"text": "Aktion 3", "badge": null, "action_type": "do"}}
+    {{"text": "Action 1", "badge": "Perception (DC 14)", "action_type": "do"}},
+    {{"text": "Action 2", "badge": null, "action_type": "say"}},
+    {{"text": "Action 3", "badge": null, "action_type": "do"}}
   ],
   "lasting_consequence": null,
   "discovery": null
 }}
 
-REGELN:
-- dice_check: Wenn eine anspruchsvolle Probe nötig ist, gib z.B. {{"formula": "1d20+3", "dc": 14, "skill_name": "Wahrnehmung"}} an, sonst null.
-- next_actor: Wer soll nach der Spielleiter-Schilderung sprechen? Ein Gruppenmitglied aus [{party}] oder "PLAYER".
-- bg_image: Optional Name eines neuen passenden Hintergrundbildes (z.B. "Horizontal Elkia Grand Library.png") oder null.
-- resource_delta: Optional {{"target":"PLAYER oder Name", "hp_delta":-5, "stress_delta":10}}.
-- story_arc_updates: Optional {{"id":"arc-id", "stage_delta":1, "reveal":true, "resolve":false}}.
-- objective_updates: Optional {{"id":"objective-id", "title":"", "description":"", "progress_delta":1, "max":3, "status":"active|completed|failed"}}.
-- inventory_add: Optional Gegenstände mit name, description, quantity, item_type und optional hp_restore/stress_restore/clears_condition. inventory_remove enthält IDs oder Namen.
-- encounter: Nur bei Kampfänderungen: {{"action":"start|update|end", "enemies":[{{"name":"Gegner", "hp":12, "role":"enemy"}}], "hp_updates":[{{"target":"Name", "hp_delta":-4}}]}}.
-- Antworte NUR als reines JSON ohne Erklärungen oder Markdown davor/danach!"#,
+RULES:
+- Write every text the player sees (player_choices text and badge, discovery, lasting_consequence, item names and descriptions, skill_name) in {reply_language}. Keep JSON keys and enum values in English.
+- dice_check: when a demanding check is needed, give e.g. {{"formula": "1d20+3", "dc": 14, "skill_name": "Perception"}}, otherwise null.
+- next_actor: who speaks after the game master's narration? A party member from [{party}] or "PLAYER".
+- bg_image: optionally the name of a fitting new background image (e.g. "Horizontal Elkia Grand Library.png"), or null.
+- resource_delta: optional {{"target":"PLAYER or name", "hp_delta":-5, "stress_delta":10}}.
+- story_arc_updates: optional {{"id":"arc-id", "stage_delta":1, "reveal":true, "resolve":false}}.
+- objective_updates: optional {{"id":"objective-id", "title":"", "description":"", "progress_delta":1, "max":3, "status":"active|completed|failed"}}.
+- inventory_add: optional items with name, description, quantity, item_type and optionally hp_restore/stress_restore/clears_condition. inventory_remove holds IDs or names.
+- encounter: only when combat changes: {{"action":"start|update|end", "enemies":[{{"name":"Enemy", "hp":12, "role":"enemy"}}], "hp_updates":[{{"target":"Name", "hp_delta":-4}}]}}.
+- Reply ONLY with raw JSON, without explanations or markdown before or after it!"#,
+        reply_language = reply_language,
         tone = state.definition.gm_tone,
         narrator_style = state.definition.narrator_style,
         world_context = state.definition.world_context,
@@ -267,22 +271,22 @@ REGELN:
         party = party_list,
         user_name = user_name,
         clocks = if clock_context.is_empty() {
-            "keine"
+            "none"
         } else {
             &clock_context
         },
         objectives = if objective_context.is_empty() {
-            "keine"
+            "none"
         } else {
             &objective_context
         },
         arcs = if arc_context.is_empty() {
-            "keine"
+            "none"
         } else {
             &arc_context
         },
         inventory = if inventory_context.is_empty() {
-            "leer"
+            "empty"
         } else {
             &inventory_context
         },
@@ -296,7 +300,7 @@ REGELN:
     );
 
     let planner_user_prompt = format!(
-        "=== LETZTER VERLAUF ===\n{}\n\n=== AKTUELLE AKTION VON {} ===\nModus: {}\nInhalt: {}\n\nPlane den nächsten Beat als JSON:",
+        "=== RECENT HISTORY ===\n{}\n\n=== CURRENT ACTION BY {} ===\nMode: {}\nContent: {}\n\nPlan the next beat as JSON:",
         recent_history.join("\n"),
         user_name,
         req.turn_mode,
@@ -346,7 +350,7 @@ REGELN:
     {
         let passed = roll.dc_check.as_ref().is_some_and(|d| d.passed);
         dice_outcome_text = format!(
-            "\n[WÜRFELPROBE {}: Formel {}, Wurf={}, Summe={}. DC={}. Ergebnis: {}]",
+            "\n[DICE CHECK {}: formula {}, rolls={}, total={}. DC={}. Result: {}]",
             check.skill_name.to_uppercase(),
             roll.formula,
             roll.individual_rolls
@@ -405,7 +409,12 @@ REGELN:
             let new_val = (c.current as i32 + clk_up.delta).clamp(0, c.max as i32) as u32;
             c.current = new_val;
             secondary_event_cards.push((
-                format!("Die Kampagnen-Uhr „{}“ verändert sich.", c.name),
+                lang.pick(
+                    "Die Kampagnen-Uhr „{}“ verändert sich.",
+                    "The campaign clock “{}” changes.",
+                    "Часы кампании «{}» меняются.",
+                )
+                .replace("{}", &c.name),
                 StageEventCard::ClockUpdate(ClockUpdateData {
                     clock_id: c.id.clone(),
                     clock_name: c.name.clone(),
@@ -577,20 +586,42 @@ REGELN:
                     .combatants
                     .sort_by_key(|c| std::cmp::Reverse(c.initiative));
                 secondary_event_cards.push((
-                    "Eine Kampfbegegnung beginnt.".to_string(),
+                    lang.pick(
+                        "Eine Kampfbegegnung beginnt.",
+                        "An encounter begins.",
+                        "Начинается схватка.",
+                    )
+                    .to_string(),
                     StageEventCard::Combat {
                         action: "started".to_string(),
-                        text: "Initiative wird gewürfelt — der Kampf beginnt!".to_string(),
+                        text: lang
+                            .pick(
+                                "Initiative wird gewürfelt — der Kampf beginnt!",
+                                "Roll for initiative — the fight begins!",
+                                "Бросок инициативы — бой начинается!",
+                            )
+                            .to_string(),
                     },
                 ));
             }
             "end" => {
                 state.combat.is_active = false;
                 secondary_event_cards.push((
-                    "Die Kampfbegegnung endet.".to_string(),
+                    lang.pick(
+                        "Die Kampfbegegnung endet.",
+                        "The encounter ends.",
+                        "Схватка окончена.",
+                    )
+                    .to_string(),
                     StageEventCard::Combat {
                         action: "ended".to_string(),
-                        text: "Der Kampf ist beendet.".to_string(),
+                        text: lang
+                            .pick(
+                                "Der Kampf ist beendet.",
+                                "The fight is over.",
+                                "Бой окончен.",
+                            )
+                            .to_string(),
                     },
                 ));
             }
@@ -644,22 +675,23 @@ REGELN:
     // 4. GM Executor: Generate Narrative prose
     let executor_system_prompt = format!(
         r#"[SOUL STAGE — GAME MASTER NARRATOR]
-Du bist der Game Master im Genre "{tone}".
-Schreibe die Schilderung dessen, was geschieht, im folgenden Stil:
+You are the game master in the genre "{tone}".
+Narrate what happens in this style:
 {narrator_style}
 
-Szenenort: {location} ({time_of_day}, {weather})
-Gruppe: {party}
-Spieler: {user_name}
+Location: {location} ({time_of_day}, {weather})
+Party: {party}
+Player: {user_name}
 
-Anweisung des Plans:
+Plan to follow:
 {narration_plan}
 {dice_outcome}
 
-REGELN:
-- Verfasse packende, atmosphärische Schilderung auf Deutsch im Präsens.
-- Falls eine Würfelprobe vorliegt, flechte deren Ausgang logisch und dramatisch ein.
-- Antworte NUR mit der Schilderung, ohne Meta-Kommentare oder Anreden."#,
+RULES:
+- Write gripping, atmospheric narration in {reply_language}, in the present tense.
+- If there was a dice check, weave its outcome in logically and dramatically.
+- Reply ONLY with the narration, without meta comments or addressing the reader."#,
+        reply_language = reply_language,
         tone = state.definition.gm_tone,
         narrator_style = state.definition.narrator_style,
         location = state.world.location,
@@ -678,10 +710,7 @@ REGELN:
         },
         ChatMessage {
             role: "user".to_string(),
-            content: format!(
-                "Beschreibe das Geschehen basierend auf der Aktion: '{}'",
-                clean_input
-            ),
+            content: format!("Narrate what happens after this action: '{}'", clean_input),
         },
     ];
 
@@ -778,7 +807,7 @@ REGELN:
 
             let lore_section = if !active_lore_snippets.is_empty() {
                 format!(
-                    "\n\nAktive Welt- und Szenen-Informationen:\n{}",
+                    "\n\nActive world and scene information:\n{}",
                     active_lore_snippets.join("\n---\n")
                 )
             } else {
@@ -787,25 +816,28 @@ REGELN:
 
             let companion_system = if let Some(ch) = matched_char {
                 format!(
-                    r#"Du bist {name}.
-Persönlichkeit: {personality}
-Hintergrund: {description}
-Szenen-Kontext: {world_context}{lore_section}
+                    r#"You are {name}.
+Personality: {personality}
+Background: {description}
+Scene context: {world_context}{lore_section}
 
-Reagiere nun aus der Ich-Perspektive auf das, was der Spielleiter, {user_name} und eventuelle Gefährten soeben getan oder gesagt haben.
-Bleibe absolut in deiner Rolle, nutze deine eigene Stimme und drücke deine Gefühle lebendig und authentisch aus. Fasse dich prägnant."#,
+React in the first person to what the game master, {user_name} and any companions just did or said.
+Stay fully in character, use your own voice and express your feelings vividly and authentically. Keep it concise.
+Reply in {reply_language}."#,
                     name = ch.card.data.name,
                     personality = ch.card.data.personality,
                     description = ch.card.data.description,
                     world_context = state.definition.world_context,
                     lore_section = lore_section,
-                    user_name = user_name
+                    user_name = user_name,
+                    reply_language = reply_language
                 )
             } else {
                 format!(
-                    "Du bist {}. Reagiere aus deiner Sicht auf das Geschehen.{lore_section}",
+                    "You are {}. React to what is happening from your point of view, in {reply_language}.{lore_section}",
                     current_actor,
-                    lore_section = lore_section
+                    lore_section = lore_section,
+                    reply_language = reply_language
                 )
             };
 
@@ -827,7 +859,7 @@ Bleibe absolut in deiner Rolle, nutze deine eigene Stimme und drücke deine Gef�
                 ChatMessage {
                     role: "user".to_string(),
                     content: format!(
-                        "Aktueller Verlauf:\n{}\n\nReagiere als {}:",
+                        "Recent history:\n{}\n\nReact as {}:",
                         history_text, current_actor
                     ),
                 },
@@ -888,17 +920,38 @@ Bleibe absolut in deiner Rolle, nutze deine eigene Stimme und drücke deine Gef�
     } else {
         state.pending_choices = vec![
             TaggedChoice {
-                text: "Vorsichtig weiter vorrücken".to_string(),
+                text: lang
+                    .pick(
+                        "Vorsichtig weiter vorrücken",
+                        "Advance carefully",
+                        "Осторожно продвигаться дальше",
+                    )
+                    .to_string(),
                 badge: None,
                 action_type: "do".to_string(),
             },
             TaggedChoice {
-                text: "Die Umgebung absichern und untersuchen".to_string(),
-                badge: Some("Wahrnehmung".to_string()),
+                text: lang
+                    .pick(
+                        "Die Umgebung absichern und untersuchen",
+                        "Secure and search the surroundings",
+                        "Обезопасить и осмотреть окрестности",
+                    )
+                    .to_string(),
+                badge: Some(
+                    lang.pick("Wahrnehmung", "Perception", "Восприятие")
+                        .to_string(),
+                ),
                 action_type: "do".to_string(),
             },
             TaggedChoice {
-                text: "Mit den Gefährten die nächste Aktion abstimmen".to_string(),
+                text: lang
+                    .pick(
+                        "Mit den Gefährten die nächste Aktion abstimmen",
+                        "Agree on the next move with the companions",
+                        "Обсудить со спутниками следующий шаг",
+                    )
+                    .to_string(),
                 badge: None,
                 action_type: "say".to_string(),
             },
@@ -927,22 +980,42 @@ pub async fn execute_stage_rest(
 
     engine.push_snapshot(&state.definition.id, state.clone());
 
+    let lang = crate::modules::content_lang::ContentLang::current();
     let (hp_rec, stress_rec, note) = if rest_type == "long" {
-        state.world.time_of_day = match state.world.time_of_day.as_str() {
-            "Morgen" => "Abend".to_string(),
-            "Mittag" => "Mitternacht".to_string(),
-            _ => "Morgen".to_string(),
-        };
+        let morning = matches!(
+            state.world.time_of_day.as_str(),
+            "Morgen" | "Morning" | "Утро"
+        );
+        let noon = matches!(
+            state.world.time_of_day.as_str(),
+            "Mittag" | "Noon" | "Полдень"
+        );
+        state.world.time_of_day = if morning {
+            lang.pick("Abend", "Evening", "Вечер")
+        } else if noon {
+            lang.pick("Mitternacht", "Midnight", "Полночь")
+        } else {
+            lang.pick("Morgen", "Morning", "Утро")
+        }
+        .to_string();
         (
             40,
             30,
-            "Lange Rast vollendet: Die Gruppe hat ein sicheres Lager aufgeschlagen, neue Kräfte gesammelt und die Ausrüstung gewartet.",
+            lang.pick(
+                "Lange Rast vollendet: Die Gruppe hat ein sicheres Lager aufgeschlagen, neue Kräfte gesammelt und die Ausrüstung gewartet.",
+                "Long rest complete: the party made a safe camp, regained their strength and tended to their gear.",
+                "Долгий отдых завершён: отряд разбил безопасный лагерь, восстановил силы и привёл снаряжение в порядок.",
+            ),
         )
     } else {
         (
             15,
             10,
-            "Kurze Rast: Ein Moment des Durchatmens am Lagerfeuer lindert die Erschöpfung.",
+            lang.pick(
+                "Kurze Rast: Ein Moment des Durchatmens am Lagerfeuer lindert die Erschöpfung.",
+                "Short rest: a moment to breathe by the campfire eases the exhaustion.",
+                "Короткий отдых: минута передышки у костра снимает усталость.",
+            ),
         )
     };
 
@@ -958,7 +1031,7 @@ pub async fn execute_stage_rest(
     }
 
     let player_name = if state.definition.persona.is_empty() {
-        "Spieler".to_string()
+        lang.pick("Spieler", "Player", "Игрок").to_string()
     } else {
         state.definition.persona.clone()
     };
@@ -976,7 +1049,7 @@ pub async fn execute_stage_rest(
                 target: player_name.clone(),
                 affinity: 0,
                 tags: Vec::new(),
-                role_view: "Gefährte".to_string(),
+                role_view: lang.pick("Gefährte", "Companion", "Спутник").to_string(),
                 last_shift_reason: String::new(),
             });
             state.relationships.len() - 1
@@ -985,9 +1058,11 @@ pub async fn execute_stage_rest(
         let before = relationship.affinity;
         relationship.affinity = (relationship.affinity + affinity_gain).clamp(-100, 100);
         relationship.last_shift_reason = if rest_type == "long" {
-            "Gemeinsames Lagerfeuer".to_string()
+            lang.pick("Gemeinsames Lagerfeuer", "Shared campfire", "Общий костёр")
+                .to_string()
         } else {
-            "Gemeinsame Rast".to_string()
+            lang.pick("Gemeinsame Rast", "Shared rest", "Совместный отдых")
+                .to_string()
         };
         for milestone in [25, 50, 75] {
             if before < milestone && relationship.affinity >= milestone {
@@ -1021,13 +1096,19 @@ pub async fn execute_stage_rest(
         state.chat_log.push(SceneTurnMessage {
             id: format!("msg_bond_{}_{}", Utc::now().timestamp_millis(), index),
             sender_id: "system".to_string(),
-            sender_name: "Beziehungs-Meilenstein".to_string(),
+            sender_name: lang
+                .pick("Beziehungs-Meilenstein", "Bond milestone", "Этап отношений")
+                .to_string(),
             sender_role: "gm".to_string(),
             avatar_url: None,
-            content: format!(
-                "Die Bindung zu {} hat Stufe {} erreicht.",
-                companion, milestone
-            ),
+            content: lang
+                .pick(
+                    "Die Bindung zu {name} hat Stufe {level} erreicht.",
+                    "Your bond with {name} reached level {level}.",
+                    "Связь с {name} достигла уровня {level}.",
+                )
+                .replace("{name}", &companion)
+                .replace("{level}", &milestone.to_string()),
             turn_mode: "direct".to_string(),
             whisper_target: None,
             event_card: Some(StageEventCard::BondMilestone {
@@ -1047,7 +1128,13 @@ pub async fn execute_stage_rest(
             sender_name: companion_name.clone(),
             sender_role: "companion".to_string(),
             avatar_url: None,
-            content: "Es tut gut, für einen Augenblick innezuhalten. Wir müssen auf der Hut bleiben, aber gemeinsam schaffen wir das.".to_string(),
+            content: lang
+                .pick(
+                    "Es tut gut, für einen Augenblick innezuhalten. Wir müssen auf der Hut bleiben, aber gemeinsam schaffen wir das.",
+                    "It feels good to pause for a moment. We have to stay on guard, but together we'll make it.",
+                    "Хорошо ненадолго остановиться. Нужно быть начеку, но вместе мы справимся.",
+                )
+                .to_string(),
             turn_mode: "say".to_string(),
             whisper_target: None,
             event_card: None,

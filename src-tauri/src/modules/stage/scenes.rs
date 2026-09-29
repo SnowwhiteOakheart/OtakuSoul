@@ -3,6 +3,7 @@
 use super::*;
 
 pub fn build_initial_scene_state(def: &SceneDefinition) -> SceneState {
+    let lang = crate::modules::content_lang::ContentLang::current();
     let initial_msg = SceneTurnMessage {
         id: format!("msg_{}", Utc::now().timestamp_millis()),
         sender_id: "gm".to_string(),
@@ -24,21 +25,22 @@ pub fn build_initial_scene_state(def: &SceneDefinition) -> SceneState {
         location: if !def.starting_location.is_empty() {
             def.starting_location.clone()
         } else {
-            "Alte Zuflucht".to_string()
+            lang.pick("Alte Zuflucht", "Old refuge", "Старое убежище")
+                .to_string()
         },
         time_of_day: if !def.time_of_day.is_empty() {
             def.time_of_day.clone()
         } else {
-            "Dämmerung".to_string()
+            lang.pick("Dämmerung", "Dusk", "Сумерки").to_string()
         },
-        weather: "Klar".to_string(),
+        weather: lang.pick("Klar", "Clear", "Ясно").to_string(),
         danger_level: 2,
         active_quest: def.description.clone(),
         key_facts: HashMap::new(),
     };
 
     let persona_name = if def.persona.is_empty() {
-        "Spieler".to_string()
+        lang.pick("Spieler", "Player", "Игрок").to_string()
     } else {
         def.persona.clone()
     };
@@ -48,7 +50,13 @@ pub fn build_initial_scene_state(def: &SceneDefinition) -> SceneState {
         world,
         clocks: vec![CampaignClock {
             id: "clock_tension".to_string(),
-            name: "Dramatische Spannung".to_string(),
+            name: lang
+                .pick(
+                    "Dramatische Spannung",
+                    "Dramatic tension",
+                    "Драматическое напряжение",
+                )
+                .to_string(),
             current: 1,
             max: 6,
             clock_type: "danger".to_string(),
@@ -61,7 +69,12 @@ pub fn build_initial_scene_state(def: &SceneDefinition) -> SceneState {
             title: if !def.title.is_empty() {
                 def.title.clone()
             } else {
-                "Abenteuer beginnen".to_string()
+                lang.pick(
+                    "Abenteuer beginnen",
+                    "Begin the adventure",
+                    "Начать приключение",
+                )
+                .to_string()
             },
             description: def.description.clone(),
             current: 0,
@@ -75,8 +88,8 @@ pub fn build_initial_scene_state(def: &SceneDefinition) -> SceneState {
                 subject: name.clone(),
                 target: persona_name.clone(),
                 affinity: 0,
-                tags: vec!["Gefährte".to_string()],
-                role_view: "Gefährte".to_string(),
+                tags: vec![lang.pick("Gefährte", "Companion", "Спутник").to_string()],
+                role_view: lang.pick("Gefährte", "Companion", "Спутник").to_string(),
                 last_shift_reason: String::new(),
             })
             .collect(),
@@ -84,17 +97,38 @@ pub fn build_initial_scene_state(def: &SceneDefinition) -> SceneState {
         chat_log: vec![initial_msg],
         pending_choices: vec![
             TaggedChoice {
-                text: "Die Umgebung genau mustern".to_string(),
-                badge: Some("Wahrnehmung".to_string()),
+                text: lang
+                    .pick(
+                        "Die Umgebung genau mustern",
+                        "Study the surroundings closely",
+                        "Внимательно осмотреться",
+                    )
+                    .to_string(),
+                badge: Some(
+                    lang.pick("Wahrnehmung", "Perception", "Восприятие")
+                        .to_string(),
+                ),
                 action_type: "do".to_string(),
             },
             TaggedChoice {
-                text: "Einen Schritt vorwärts wagen".to_string(),
+                text: lang
+                    .pick(
+                        "Einen Schritt vorwärts wagen",
+                        "Dare a step forward",
+                        "Решиться на шаг вперёд",
+                    )
+                    .to_string(),
                 badge: None,
                 action_type: "do".to_string(),
             },
             TaggedChoice {
-                text: "Mit den Gefährten beraten".to_string(),
+                text: lang
+                    .pick(
+                        "Mit den Gefährten beraten",
+                        "Confer with the companions",
+                        "Посоветоваться со спутниками",
+                    )
+                    .to_string(),
                 badge: None,
                 action_type: "say".to_string(),
             },

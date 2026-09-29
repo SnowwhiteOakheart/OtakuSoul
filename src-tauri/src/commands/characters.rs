@@ -130,7 +130,7 @@ pub async fn generate_character_draft_llm(
         messages: vec![
             crate::modules::inference::ChatMessage {
                 role: "system".to_string(),
-                content: "Du bist ein erfahrener Rollenspiel- und KI-Charakter-Autor. Du generierst konsistente, psychologisch vielschichtige Charakter-Profile im SillyTavern V2 Format. Antworte AUSSCHLIESSLICH im geforderten JSON-Format.".to_string(),
+                content: "You are an experienced roleplay and AI character author. You create consistent, psychologically layered character profiles in the SillyTavern V2 format. Reply ONLY in the requested JSON format.".to_string(),
             },
             crate::modules::inference::ChatMessage {
                 role: "user".to_string(),

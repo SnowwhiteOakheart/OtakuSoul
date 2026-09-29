@@ -17,8 +17,8 @@ pub fn get_default_presets() -> Vec<LlmPreset> {
     vec![
         LlmPreset {
             id: "roleplay_balanced".to_string(),
-            name: "Ausgewogenes Rollenspiel (Standard)".to_string(),
-            description: "Optimal für immersive Dialoge und lebendige Reaktionen ohne Repetition."
+            name: "Balanced roleplay (default)".to_string(),
+            description: "Ideal for immersive dialogue and lively replies without repetition."
                 .to_string(),
             is_builtin: true,
             sampling: SamplingParams {
@@ -43,10 +43,9 @@ pub fn get_default_presets() -> Vec<LlmPreset> {
         },
         LlmPreset {
             id: "storytelling_creative".to_string(),
-            name: "Storytelling & Kreativ".to_string(),
-            description:
-                "Höhere Varianz mit Dynamic Temperature und DRY für abwechslungsreiche Prosa."
-                    .to_string(),
+            name: "Storytelling & creative".to_string(),
+            description: "More variety with dynamic temperature and DRY for varied prose."
+                .to_string(),
             is_builtin: true,
             sampling: SamplingParams {
                 temperature: Some(1.15),
@@ -70,10 +69,9 @@ pub fn get_default_presets() -> Vec<LlmPreset> {
         },
         LlmPreset {
             id: "tactical_logic".to_string(),
-            name: "Taktisch & Präzise (Stage GM)".to_string(),
-            description:
-                "Niedrige Temperatur für verlässliche Würfelprüfungen, Logik und Kampfregeln."
-                    .to_string(),
+            name: "Tactical & precise (stage GM)".to_string(),
+            description: "Low temperature for reliable dice checks, logic and combat rules."
+                .to_string(),
             is_builtin: true,
             sampling: SamplingParams {
                 temperature: Some(0.35),
@@ -97,10 +95,9 @@ pub fn get_default_presets() -> Vec<LlmPreset> {
         },
         LlmPreset {
             id: "uncensored_xtc".to_string(),
-            name: "Unzensiert & Wild (XTC Explorer)".to_string(),
-            description:
-                "Nutzt XTC (Exclude Top Choices) für überraschende, originelle Wortwahlen."
-                    .to_string(),
+            name: "Uncensored & wild (XTC explorer)".to_string(),
+            description: "Uses XTC (exclude top choices) for surprising, original word choices."
+                .to_string(),
             is_builtin: true,
             sampling: SamplingParams {
                 temperature: Some(1.25),
@@ -124,8 +121,8 @@ pub fn get_default_presets() -> Vec<LlmPreset> {
         },
         LlmPreset {
             id: "fast_chat".to_string(),
-            name: "Schneller Chat & Visual Novel".to_string(),
-            description: "Kompakte Token-Länge für rasanten Gesprächsfluss.".to_string(),
+            name: "Fast chat & visual novel".to_string(),
+            description: "Compact token length for a brisk conversation flow.".to_string(),
             is_builtin: true,
             sampling: SamplingParams {
                 temperature: Some(0.7),

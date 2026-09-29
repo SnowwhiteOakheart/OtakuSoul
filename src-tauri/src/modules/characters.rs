@@ -74,7 +74,13 @@ impl Default for UserPersona {
         Self {
             id: "default_user".to_string(),
             name: "User".to_string(),
-            description: "Ein wissbegieriger Abenteurer und Gesprächspartner.".to_string(),
+            description: crate::modules::content_lang::ContentLang::current()
+                .pick(
+                    "Ein wissbegieriger Abenteurer und Gesprächspartner.",
+                    "A curious adventurer and conversation partner.",
+                    "Любознательный искатель приключений и собеседник.",
+                )
+                .to_string(),
             avatar_data_url: None,
         }
     }
@@ -800,30 +806,30 @@ pub struct CharacterDraft {
 pub fn build_character_wizard_prompt(input: &CharacterWizardInput) -> String {
     let lang = input.target_language.as_deref().unwrap_or("Deutsch");
     format!(
-        r#"Du bist ein meisterhafter KI-Autor für Rollenspiel-Charaktere und SillyTavern V2 Character Cards.
-Erstelle auf Basis der folgenden Benutzer-Eckdaten eine tiefgründige, lebendige und konsistente Charakterkarte in {lang}.
+        r#"You are a masterful AI author of roleplay characters and SillyTavern V2 character cards.
+Based on the user's key facts below, create a deep, vivid and consistent character card. Write every value in {lang}.
 
-ECKDATEN:
+KEY FACTS:
 - Name: {name}
-- Konzept: {concept}
-- Archetyp: {archetype}
-- Visuelles Erscheinungsbild: {visual}
-- Persönlichkeit & Eigenschaften: {personality}
-- Welt & Hintergrund: {world}
-- Beziehung zu {{{{user}}}}: {relationship}
-- Einstiegsszenario: {scenario}
+- Concept: {concept}
+- Archetype: {archetype}
+- Visual appearance: {visual}
+- Personality & traits: {personality}
+- World & background: {world}
+- Relationship to {{{{user}}}}: {relationship}
+- Opening scenario: {scenario}
 
-FORMAT-ANFORDERUNGEN:
-Antworte AUSSCHLIESSLICH mit einem einzigen validen JSON-Objekt im folgenden Format (ohne Erklärungen, ohne Code-Fences):
+FORMAT REQUIREMENTS:
+Reply ONLY with a single valid JSON object in this format (no explanations, no code fences):
 {{
   "name": "{name}",
-  "description": "<Detaillierte visuelle Beschreibung: Kleidung, Haare, Augen, Körperbau, Alter, soziale Rolle>",
-  "personality": "<Ausführliche Persönlichkeit: Wesenszüge, Macken, Ängste, Sehnsüchte, Tonalität, Sprechmuster>",
-  "scenario": "<Aktueller Handlungsrahmen, in dem {{{{char}}}} auf {{{{user}}}} trifft>",
-  "first_mes": "<Atmosphärische erste Nachricht von {{{{char}}}}, inklusive *Handlungen* und \"gesprochenem Dialog\">",
-  "mes_example": "<START>\\n{{{{user}}}}: Hallo!\\n{{{{char}}}}: *mustert dich neugierig* Schön, dich zu sehen.",
-  "system_prompt": "Schreibe als {name}. Bleibe stets in deiner Rolle. Nutze *...* für Handlungen und Sinneswahrnehmungen.",
-  "tags": ["Anime", "{archetype}", "Rollenspiel"]
+  "description": "<Detailed visual description: clothing, hair, eyes, build, age, social role>",
+  "personality": "<Thorough personality: traits, quirks, fears, desires, tone, speech patterns>",
+  "scenario": "<Current setting in which {{{{char}}}} meets {{{{user}}}}>",
+  "first_mes": "<Atmospheric first message from {{{{char}}}}, including *actions* and \"spoken dialogue\">",
+  "mes_example": "<START>\\n{{{{user}}}}: <greeting>\\n{{{{char}}}}: <reply with *action* and dialogue>",
+  "system_prompt": "<One or two sentences in {lang} telling the model to write as {name}, stay in character and use *...* for actions and sensations>",
+  "tags": ["Anime", "{archetype}", "<genre tag>"]
 }}
 "#,
         lang = lang,

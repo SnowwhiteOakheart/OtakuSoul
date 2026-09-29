@@ -41,6 +41,11 @@ export function emotionLabel(emotion: string, lang: SupportedLanguage = 'de'): s
   return key in de ? t(key, lang) : emotion;
 }
 
+/** Translates `key` if it exists, otherwise returns `fallback` (backend codes and user data). */
+export function tOptional(key: string, fallback: string, lang: SupportedLanguage = 'de'): string {
+  return key in de ? t(key, lang) : fallback;
+}
+
 /** Translates with the current app language, for code outside React components (store actions, services). */
 export function translate(key: TranslationKey, vars?: TranslationVars): string {
   return t(key, useAppStore.getState().appLanguage || 'de', vars);
@@ -55,5 +60,12 @@ export function useTranslation() {
   const translateEmotion = (emotion: string): string => emotionLabel(emotion, appLanguage);
   const translatePlural = (base: string, count: number, vars?: TranslationVars): string =>
     tPlural(base, count, appLanguage, vars);
-  return { t: translateKey, tEmotion: translateEmotion, tPlural: translatePlural, currentLanguage: appLanguage };
+  const translateOptional = (key: string, fallback: string): string => tOptional(key, fallback, appLanguage);
+  return {
+    t: translateKey,
+    tEmotion: translateEmotion,
+    tPlural: translatePlural,
+    tOptional: translateOptional,
+    currentLanguage: appLanguage,
+  };
 }

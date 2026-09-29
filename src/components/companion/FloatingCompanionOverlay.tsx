@@ -16,7 +16,7 @@ import {
 import { useTranslation } from '../../i18n';
 
 export const FloatingCompanionOverlay: React.FC = () => {
-  const { t, tEmotion } = useTranslation();
+  const { t, tEmotion, tOptional } = useTranslation();
   const {
     companionState,
     fetchCompanionState,
@@ -117,7 +117,7 @@ export const FloatingCompanionOverlay: React.FC = () => {
           <div className="flex items-center gap-1.5 text-[11px] text-cyan-400 font-mono mb-1">
             <MessageSquare className="w-3 h-3" />
             <span>
-              {t('overlay.feeling')} <strong>{tEmotion(emotion)}</strong> • {hormones?.mood_label || t('overlay.active')}
+              {t('overlay.feeling')} <strong>{tEmotion(emotion)}</strong> • {hormones?.mood_label ? tOptional(`mood.${hormones.mood_label}`, hormones.mood_label) : t('overlay.active')}
             </span>
           </div>
           <p className="italic">"{bubbleText}"</p>

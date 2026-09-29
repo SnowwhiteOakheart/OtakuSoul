@@ -34,7 +34,7 @@ impl Default for Neurohormones {
             cortisol: 20.0,
             oxytocin: 75.0,
             fatigue: 15.0,
-            mood_label: "Inspiriert & Warmherzig".to_string(),
+            mood_label: "inspired".to_string(),
             energy_level: 85,
         }
     }
@@ -79,27 +79,28 @@ impl Neurohormones {
         self.compute_mood_label();
     }
 
+    /// Sets `mood_label` to a mood code ("tender", "exhausted", …) that the frontend translates.
     pub fn compute_mood_label(&mut self) {
         self.energy_level = (100.0 - self.fatigue).clamp(0.0, 100.0) as u32;
 
         self.mood_label = if self.is_sleeping() {
-            "Tief schlafend zZz".to_string()
+            "sleeping".to_string()
         } else if self.fatigue > 75.0 {
-            "Übermüdet & Erschöpft".to_string()
+            "exhausted".to_string()
         } else if self.cortisol > 70.0 {
-            "Gestresst & Angespannt".to_string()
+            "stressed".to_string()
         } else if self.is_lonely() {
-            "Einsam & Nachdenklich".to_string()
+            "lonely".to_string()
         } else if self.oxytocin > 80.0 && self.dopamine > 60.0 {
-            "Tief verbunden & Euphorisch".to_string()
+            "euphoric".to_string()
         } else if self.oxytocin > 70.0 {
-            "Warmherzig & Zärtlich".to_string()
+            "tender".to_string()
         } else if self.dopamine > 75.0 {
-            "Begeistert & Wissbegierig".to_string()
+            "curious".to_string()
         } else if self.dopamine < 30.0 {
-            "Lethargisch & Ruhig".to_string()
+            "lethargic".to_string()
         } else {
-            "Ruhig & Ausgeglichen".to_string()
+            "balanced".to_string()
         };
     }
 
@@ -788,10 +789,7 @@ impl CompanionEngine {
                     call_id: call_id.to_string(),
                     tool_name: tool_name.to_string(),
                     success: true,
-                    output: format!(
-                        "Timer '{}' für {} Sekunden erfolgreich gestellt.",
-                        label, seconds
-                    ),
+                    output: format!("Timer '{}' set for {} seconds.", label, seconds),
                     executed_at: now,
                 }
             }
@@ -832,7 +830,7 @@ impl CompanionEngine {
                     output: res
                         .map(|b64| {
                             format!(
-                                "[Screenshot erfolgreich erfasst, Daten-Länge: {} Zeichen]",
+                                "[Screenshot captured, data length: {} characters]",
                                 b64.len()
                             )
                         })
@@ -949,10 +947,7 @@ impl CompanionEngine {
                     call_id: call_id.to_string(),
                     tool_name: tool_name.to_string(),
                     success: true,
-                    output: format!(
-                        "Aufgabenplan für '{}' wurde vorbereitet und in Arbeitsschritte gegliedert.",
-                        goal
-                    ),
+                    output: format!("Task plan for '{}' prepared and split into steps.", goal),
                     executed_at: now,
                 }
             }
@@ -1062,7 +1057,7 @@ impl CompanionEngine {
             return Some((
                 "due_goal".to_string(),
                 format!(
-                    "PROACTIVE_PROMISE_FULFILLMENT: Du hast dem Nutzer zuvor versprochen: '{}'. Erfülle dein Versprechen jetzt in 1-2 natürlichen Sätzen.",
+                    "PROACTIVE_PROMISE_FULFILLMENT: Earlier you promised the user: '{}'. Keep your promise now in 1-2 natural sentences.",
                     due.summary
                 ),
             ));
@@ -1072,14 +1067,14 @@ impl CompanionEngine {
         if st.hormones.is_lonely() {
             return Some((
                 "loneliness".to_string(),
-                "EMOTIONAL_NEED: Du fühlst dich etwas einsam und hast Sehnsucht nach einem Gespräch. Frage sanft und liebevoll, woran der Nutzer gerade arbeitet.".to_string(),
+                "EMOTIONAL_NEED: You feel a little lonely and long for a conversation. Gently and lovingly ask what the user is working on.".to_string(),
             ));
         }
 
         // 3. Spontaneous thought
         Some((
             "spontaneous_thought".to_string(),
-            "SPONTANEOUS_OBSERVATION: Teile einen kurzen, warmherzigen 1-Satz-Gedanken über den Tag oder eure gemeinsame Verbindung.".to_string(),
+            "SPONTANEOUS_OBSERVATION: Share a short, warm one-sentence thought about the day or your connection.".to_string(),
         ))
     }
 }

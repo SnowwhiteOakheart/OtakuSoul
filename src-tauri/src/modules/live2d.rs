@@ -36,7 +36,7 @@ pub fn get_live2d_catalog() -> Vec<Live2dCatalogItem> {
         Live2dCatalogItem {
             id: "unitychan".to_string(),
             name: "Unity-chan".to_string(),
-            description: "Blonde Zöpfe, Bänder, Idol-Outfit (Ayu Ikue)".to_string(),
+            description: "Blonde pigtails, ribbons, idol outfit (Ayu Ikue)".to_string(),
             url: "https://cubism.live2d.com/sample-data/bin/unitychan/unitychan_ja.zip".to_string(),
             model_file: "unitychan.model3.json".to_string(),
             is_installed: is_installed("unitychan"),
@@ -44,7 +44,7 @@ pub fn get_live2d_catalog() -> Vec<Live2dCatalogItem> {
         Live2dCatalogItem {
             id: "haru_greeter".to_string(),
             name: "Haru (Greeter / Office)".to_string(),
-            description: "Dunkle Haare, schicker Blazer (Marina Wakatsuki)".to_string(),
+            description: "Dark hair, smart blazer (Marina Wakatsuki)".to_string(),
             url: "https://cubism.live2d.com/sample-data/bin/haru_greeter/haru_greeter_ja.zip".to_string(),
             model_file: "haru_greeter_t05.model3.json".to_string(),
             is_installed: is_installed("haru_greeter"),
@@ -52,7 +52,7 @@ pub fn get_live2d_catalog() -> Vec<Live2dCatalogItem> {
         Live2dCatalogItem {
             id: "haru".to_string(),
             name: "Haru (Casual / Sporty)".to_string(),
-            description: "Sportliche Jacke/Hoodie, aktive Ausdrücke (Hazel Williams)".to_string(),
+            description: "Sporty jacket/hoodie, lively expressions (Hazel Williams)".to_string(),
             url: "https://cubism.live2d.com/sample-data/bin/haru/haru_ja.zip".to_string(),
             model_file: "haru.model3.json".to_string(),
             is_installed: is_installed("haru"),
@@ -60,7 +60,7 @@ pub fn get_live2d_catalog() -> Vec<Live2dCatalogItem> {
         Live2dCatalogItem {
             id: "senko".to_string(),
             name: "Senko".to_string(),
-            description: "Fuchsöhrchen, Schweif, Schürze, verspielt (Cosmos)".to_string(),
+            description: "Fox ears, tail, apron, playful (Cosmos)".to_string(),
             url: "https://raw.githubusercontent.com/Eikanya/Live2d-model/master/Live2D/Senko_Normals/senko.model3.json".to_string(),
             model_file: "senko.model3.json".to_string(),
             is_installed: is_installed("senko"),
@@ -68,7 +68,7 @@ pub fn get_live2d_catalog() -> Vec<Live2dCatalogItem> {
         Live2dCatalogItem {
             id: "tsumiki".to_string(),
             name: "Tsumiki Harugasa".to_string(),
-            description: "Traditioneller Kimono & japanische Frisur (Hifumi Yamamoto)".to_string(),
+            description: "Traditional kimono & Japanese hairstyle (Hifumi Yamamoto)".to_string(),
             url: "https://cubism.live2d.com/sample-data/bin/tsumiki/tsumiki_ja.zip".to_string(),
             model_file: "tsumiki.model3.json".to_string(),
             is_installed: is_installed("tsumiki"),
@@ -76,7 +76,7 @@ pub fn get_live2d_catalog() -> Vec<Live2dCatalogItem> {
         Live2dCatalogItem {
             id: "rice".to_string(),
             name: "Rice Glassfield".to_string(),
-            description: "Lange silber-lila Haare, Fantasy-Kleid (Yue)".to_string(),
+            description: "Long silver-lilac hair, fantasy dress (Yue)".to_string(),
             url: "https://cubism.live2d.com/sample-data/bin/rice/rice_en.zip".to_string(),
             model_file: "rice_pro_t03.model3.json".to_string(),
             is_installed: is_installed("rice"),
@@ -84,7 +84,7 @@ pub fn get_live2d_catalog() -> Vec<Live2dCatalogItem> {
         Live2dCatalogItem {
             id: "mao_pro".to_string(),
             name: "Niziiro Mao (Pro)".to_string(),
-            description: "Bunt, Blendshapes, fröhliche Ausdrücke".to_string(),
+            description: "Colourful, blendshapes, cheerful expressions".to_string(),
             url: "https://cubism.live2d.com/sample-data/bin/mao/mao_en.zip".to_string(),
             model_file: "mao_pro.model3.json".to_string(),
             is_installed: is_installed("mao_pro"),
@@ -92,7 +92,7 @@ pub fn get_live2d_catalog() -> Vec<Live2dCatalogItem> {
         Live2dCatalogItem {
             id: "shizuku".to_string(),
             name: "Shizuku".to_string(),
-            description: "Dunkle Haare, Schul- / Casual-Look".to_string(),
+            description: "Dark hair, school / casual look".to_string(),
             url: "https://cubism.live2d.com/sample-data/bin/shizuku/shizuku_ja.zip".to_string(),
             model_file: "shizuku.model3.json".to_string(),
             is_installed: is_installed("shizuku"),

@@ -19,7 +19,7 @@ import { backendMessage } from '../../../utils/errors';
 import { LlamaRuntimeCard } from './LlamaRuntimeCard';
 
 export const ServerSettings = () => {
-  const { t } = useTranslation();
+  const { t, tOptional } = useTranslation();
   const {
     hardware, layerRecommendation, fetchLayerRecommendation, serverStatus, serverConfig,
     setServerConfig, selectLocalModel, startServer, stopServer, scannedModels,
@@ -419,7 +419,7 @@ export const ServerSettings = () => {
             {layerRecommendation && (
               <div className="text-[11px] text-slate-500">
                 {t('settings.vramBreakdown', {
-                  profile: layerRecommendation.profile_name,
+                  profile: tOptional(`settings.profile.${layerRecommendation.profile_name}`, layerRecommendation.profile_name),
                   model: (layerRecommendation.estimated_model_vram_mb / 1024).toFixed(1),
                   kv: (layerRecommendation.estimated_context_vram_mb / 1024).toFixed(1),
                   runtime: (layerRecommendation.runtime_overhead_mb / 1024).toFixed(1),

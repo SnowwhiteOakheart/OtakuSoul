@@ -28,10 +28,11 @@ pub struct DiceRollResult {
 #[derive(Debug, Clone, Serialize, Deserialize, TS)]
 #[ts(export)]
 pub struct WorldState {
-    pub time_of_day: String, // "Morgen", "Mittag", "Dämmerung", "Mitternacht"
-    pub weather: String,     // "Klar", "Stürmisch", "Dichter Nebel", "Blutmond"
-    pub location: String,    // "Kathedrale der Dämmerung", "Palastgarten"
-    pub danger_level: u32,   // 1..5
+    /// Free text in the reply language, e.g. "Dusk".
+    pub time_of_day: String,
+    pub weather: String,
+    pub location: String,
+    pub danger_level: u32, // 1..5
     pub active_quest: String,
     #[serde(default)]
     pub key_facts: HashMap<String, String>,
@@ -39,12 +40,27 @@ pub struct WorldState {
 
 impl Default for WorldState {
     fn default() -> Self {
+        let lang = crate::modules::content_lang::ContentLang::current();
         Self {
-            time_of_day: "Dämmerung".to_string(),
-            weather: "Nebliger Dunst".to_string(),
-            location: "Alte Bibliothek des Ordens".to_string(),
+            time_of_day: lang.pick("Dämmerung", "Dusk", "Сумерки").to_string(),
+            weather: lang
+                .pick("Nebliger Dunst", "Misty haze", "Туманная дымка")
+                .to_string(),
+            location: lang
+                .pick(
+                    "Alte Bibliothek des Ordens",
+                    "The order's old library",
+                    "Старая библиотека ордена",
+                )
+                .to_string(),
             danger_level: 2,
-            active_quest: "Untersuche das uralte Grimoire über Dimensionsrisse.".to_string(),
+            active_quest: lang
+                .pick(
+                    "Untersuche das uralte Grimoire über Dimensionsrisse.",
+                    "Examine the ancient grimoire about dimensional rifts.",
+                    "Изучи древний гримуар о разломах измерений.",
+                )
+                .to_string(),
             key_facts: HashMap::new(),
         }
     }
@@ -334,7 +350,13 @@ pub(super) fn default_gm_tone() -> String {
 }
 
 pub(super) fn default_narrator_style() -> String {
-    "Getragene, bildstarke Prosa im Präsens.".to_string()
+    crate::modules::content_lang::ContentLang::current()
+        .pick(
+            "Getragene, bildstarke Prosa im Präsens.",
+            "Measured, vivid prose in the present tense.",
+            "Размеренная, образная проза в настоящем времени.",
+        )
+        .to_string()
 }
 
 pub(super) fn default_actor_depth() -> u32 {

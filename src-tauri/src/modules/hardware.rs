@@ -87,7 +87,8 @@ fn memory_profile(
     // scale the common 40-layer baseline with the supplied layer count.
     let layers = total_model_layers.max(1) as f64;
     MemoryProfile {
-        name: "Standard-GGUF (Schätzwert)",
+        // Translated by the frontend.
+        name: "generic",
         runtime_overhead_mb: 768,
         kv_cache_mb_per_1k_tokens: (128.0 * (layers / 40.0) * cache_factor).ceil() as u64,
         max_context_size: 262_144,

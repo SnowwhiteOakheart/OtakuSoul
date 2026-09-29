@@ -38,7 +38,7 @@ You MUST otherwise output exactly this JSON structure:
       "active_agenda": "Her subtextual goal in this conversation",
       "immediate_focus": "What is occupying her immediate thoughts right now?"
     },
-    "cognitive_dissonance": "Describe any active contradictions she is feeling right now, or 'Keine.'"
+    "cognitive_dissonance": "Describe any active contradictions she is feeling right now, or '{none}'"
   },
   "user_memory_patch": {
     "user_identity_status": {
@@ -67,6 +67,7 @@ You MUST otherwise output exactly this JSON structure:
 }
 
 RULES:
+- LANGUAGE: write every free-text value in {language}; keep JSON keys, trust_level options and primary_emotion in English.
 - intensity: integer 1-5.
 - emotion_active: true if recent messages support the emotion; false if it is fading.
 - CONTRADICTION PROTOCOL: add the corrected version via *_add, put outdated fact in *_remove, and describe the fix in healing_log_add.
@@ -84,6 +85,7 @@ GUIDELINES:
 - EXTREME COMPRESSION: Keep it as brief and dense as possible (strictly under 300 words).
 - NO FLUFF: Every sentence must contain a hard fact, event, or key emotional milestone.
 - PERSPECTIVE: Write in the third-person focusing on {character}.
+- LANGUAGE: Write in {language}.
 
 Write the lorebook content directly in plain text.
 "#;
@@ -98,6 +100,7 @@ CRITICAL CONSTRAINTS:
 3. FORMAT: Write ONLY plain text prose. NO asterisks (*), NO actions, NO dialogue, NO quotation marks, NO headers.
 4. LENGTH: Strictly 4 to 6 sentences. Keep it short and impactful.
 5. FOCUS: Describe your INTERNAL EMOTIONS. How did {user_name} make you feel?
+6. LANGUAGE: Write in {language}.
 
 Output strictly the diary text. Do not add any greetings or explanations.
 "#;
@@ -340,7 +343,7 @@ pub async fn execute_soul_memory_pipeline(
     }
 
     if dialog_formatted.trim().is_empty() {
-        dialog_formatted = "(Keine kürzlichen Nachrichten im Chat vorhanden)".to_string();
+        dialog_formatted = "(no recent messages in the chat)".to_string();
     }
 
     let mut topic_section = String::new();
@@ -348,13 +351,17 @@ pub async fn execute_soul_memory_pipeline(
         topic_section.push_str(&format!("- [{}] {}\n", mem.category, mem.content));
     }
     if topic_section.is_empty() {
-        topic_section = "(Keine vorhandenen Themen/Notizen)".to_string();
+        topic_section = "(no topics or notes yet)".to_string();
     }
 
     // 3. Prepare Router Prompt
+    let content_lang = crate::modules::content_lang::ContentLang::current();
+    let language = crate::modules::content_lang::ContentLang::reply_language_name();
     let router_sys = ROUTER_SYSTEM_PROMPT
         .replace("{character}", char_id)
-        .replace("{user_name}", user_name);
+        .replace("{user_name}", user_name)
+        .replace("{language}", &language)
+        .replace("{none}", content_lang.none_marker());
 
     let router_user_content = format!(
         "=== CURRENT CHARACTER MEMORY (MEMORY.md) ===\n{}\n\n\
@@ -578,10 +585,11 @@ pub async fn execute_soul_memory_pipeline(
                 .replace("{character}", char_id)
                 .replace("{filename}", &action.filename)
                 .replace("{summary}", &action.summary)
-                .replace("{action_type}", &action.action);
+                .replace("{action_type}", &action.action)
+                .replace("{language}", &language);
 
             let arch_user = format!(
-                "Dialogverlauf:\n{}\n\nGrund für Thema:\n{}",
+                "Conversation:\n{}\n\nReason for this topic:\n{}",
                 dialog_formatted, action.summary
             );
 
@@ -611,7 +619,12 @@ pub async fn execute_soul_memory_pipeline(
             if let Ok(arch_raw) = state.inference_client.generate_direct(arch_req).await {
                 let trimmed = arch_raw.trim();
                 if !trimmed.is_empty() {
-                    let formatted_topic = format!("[Thema: {}]\n{}", action.filename, trimmed);
+                    let formatted_topic = format!(
+                        "[{}: {}]\n{}",
+                        content_lang.pick("Thema", "Topic", "Тема"),
+                        action.filename,
+                        trimmed
+                    );
                     let _ =
                         state
                             .memory_db
@@ -628,10 +641,11 @@ pub async fn execute_soul_memory_pipeline(
         info!("[SoulMemory] Diary Agent für {} ausführen...", char_id);
         let diary_sys = DIARY_SYSTEM_PROMPT
             .replace("{character}", char_id)
-            .replace("{user_name}", user_name);
+            .replace("{user_name}", user_name)
+            .replace("{language}", &language);
 
         let diary_user = format!(
-            "Letztes Gespräch mit {}:\n{}\n\nDeine aktuelle Emotion: {} (Intensität: {}/5)",
+            "Latest conversation with {}:\n{}\n\nYour current emotion: {} (intensity: {}/5)",
             user_name, dialog_formatted, updated_psych.primary_emotion, updated_psych.intensity
         );
 

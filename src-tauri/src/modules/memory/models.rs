@@ -15,7 +15,9 @@ pub(super) fn default_role_in_story() -> String {
 }
 
 pub(super) fn default_none() -> String {
-    "Keine.".to_string()
+    crate::modules::content_lang::ContentLang::current()
+        .none_marker()
+        .to_string()
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize, TS)]

@@ -342,7 +342,7 @@ async fn handle_status(
     let resp = MobileStatusResponse {
         character_name: char_name,
         emotion,
-        mood_label: "Aktiv & Verbunden".to_string(),
+        mood_label: "Active & connected".to_string(),
         dopamine: 75.0,
         oxytocin: 85.0,
         system_status: "Online".to_string(),
@@ -369,12 +369,20 @@ async fn handle_chat(
     let char_name = ctx.active_character_name.read().await.clone();
     let current_emo = ctx.active_emotion.read().await.clone();
 
+    let lang = crate::modules::content_lang::ContentLang::current();
     let reply_text = if user_msg.is_empty() {
-        "Ich bin hier! Was möchtest du besprechen?".to_string()
+        lang.pick(
+            "Ich bin hier! Was möchtest du besprechen?",
+            "I'm here! What would you like to talk about?",
+            "Я здесь! О чём хочешь поговорить?",
+        )
+        .to_string()
     } else {
-        format!(
+        lang.fill(
             "*lächelt dich warm an* Schön, von deinem Smartphone aus mit dir verbunden zu sein! Du hast gesagt: „{}“. Ich begleite dich jederzeit.",
-            user_msg
+            "*smiles warmly at you* So nice to be connected from your phone! You said: “{}”. I'm with you any time.",
+            "*тепло улыбается* Как здорово быть на связи с твоего телефона! Ты сказал(а): «{}». Я всегда рядом.",
+            &[&user_msg],
         )
     };
 

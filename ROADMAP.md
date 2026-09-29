@@ -96,9 +96,12 @@ GitHub Actions wurden bewusst entfernt (Commit `11597c2`). Stattdessen gibt es j
 - [x] Rust-Fehler als Fehlercodes: `err!`-Makro (`modules/error.rs`) liefert `{"code","params"}`, `errorMessage()` übersetzt in die
   Oberflächensprache. Alle Module außer `companion_tools.rs` umgestellt (dessen Meldungen gehen als Werkzeug-Ergebnis an das
   Sprachmodell); ein Test prüft jeden Code gegen die drei Wörterbücher.
-- [ ] **Backend-Inhalte sind deutsch:** mitgelieferte Presets (Namen/Beschreibungen), Stimmungs-Labels des Companions,
-  Szenen- und Kampftexte der Stage, Discord-Antworten und Prompt-Anweisungen. Oberflächenhinweise (GPU-Empfehlung,
-  Modell-Kompatibilität) sind bereits übersetzt. → Inhalte nach Antwortsprache wählen oder übersetzbare Schlüssel verwenden.
+- [x] **Backend-Inhalte sind deutsch.** → Erledigt: Prompts (Chat, Stage-Spielleiter, Gedächtnis-Pipeline, Tagebuch,
+  Charakter-Assistent, Companion) sind englisch und geben die Antwortsprache ausdrücklich vor. Erzähltexte, Vorschläge,
+  Kampflog, Szenen-Standardwerte, Gedächtnis-Platzhalter, Discord- und Web-Antworten folgen der Antwortsprache
+  (`modules/content_lang.rs`, De/En/Ru, sonst Englisch). Mitgelieferte Presets, Stimmungs-Labels und das Hardware-Profil
+  übersetzt das Frontend über ID/Code (`tOptional`).
+- [ ] Die Oberfläche des mobilen Web-Clients (`web_server.rs`, eingebettetes HTML) ist noch deutsch.
 - [x] `<html lang="de">` beim Sprachwechsel dynamisch setzen.
 
 ### Design-System & Themes

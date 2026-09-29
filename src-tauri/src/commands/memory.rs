@@ -175,10 +175,14 @@ pub async fn generate_manual_diary_entry(
 
     let diary_sys = crate::modules::soul_memory_pipeline::DIARY_SYSTEM_PROMPT
         .replace("{character}", char_id)
-        .replace("{user_name}", user_name);
+        .replace("{user_name}", user_name)
+        .replace(
+            "{language}",
+            &crate::modules::content_lang::ContentLang::reply_language_name(),
+        );
 
     let diary_user = format!(
-        "Letztes Gespräch mit {}:\n{}\n\nDeine aktuelle Emotion: {} (Intensität: {}/5)",
+        "Latest conversation with {}:\n{}\n\nYour current emotion: {} (intensity: {}/5)",
         user_name, dialog_formatted, psych.primary_emotion, psych.intensity
     );
 

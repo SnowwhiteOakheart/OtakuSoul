@@ -218,22 +218,44 @@ pub fn repair_and_parse_gm_plan(raw: &str) -> GmPlan {
     }
 
     // Fallback default plan
+    let lang = crate::modules::content_lang::ContentLang::current();
     GmPlan {
         narration_plan: text.to_string(),
         next_actor: Some("PLAYER".to_string()),
         player_choices: vec![
             TaggedChoice {
-                text: "Die Umgebung untersuchen".to_string(),
-                badge: Some("Wahrnehmung".to_string()),
+                text: lang
+                    .pick(
+                        "Die Umgebung untersuchen",
+                        "Search the surroundings",
+                        "Осмотреть окрестности",
+                    )
+                    .to_string(),
+                badge: Some(
+                    lang.pick("Wahrnehmung", "Perception", "Восприятие")
+                        .to_string(),
+                ),
                 action_type: "do".to_string(),
             },
             TaggedChoice {
-                text: "Mit der Gruppe sprechen".to_string(),
+                text: lang
+                    .pick(
+                        "Mit der Gruppe sprechen",
+                        "Talk to the party",
+                        "Поговорить с отрядом",
+                    )
+                    .to_string(),
                 badge: None,
                 action_type: "say".to_string(),
             },
             TaggedChoice {
-                text: "Vorsichtig weitergehen".to_string(),
+                text: lang
+                    .pick(
+                        "Vorsichtig weitergehen",
+                        "Move on carefully",
+                        "Осторожно идти дальше",
+                    )
+                    .to_string(),
                 badge: None,
                 action_type: "do".to_string(),
             },

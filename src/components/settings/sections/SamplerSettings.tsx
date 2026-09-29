@@ -11,7 +11,10 @@ import {
 import type { LlmPreset } from '../../../types';
 
 export const SamplerSettings = () => {
-  const { t } = useTranslation();
+  const { t, tOptional } = useTranslation();
+  // Built-in presets are translated by id; user presets keep their own text.
+  const presetText = (p: LlmPreset, field: 'name' | 'description') =>
+    p.is_builtin ? tOptional(`preset.${p.id}.${field}`, p[field]) : p[field];
   const {
     llmPresets, activePresetId, applyLlmPreset, saveLlmPreset, deleteLlmPreset, sampling,
     setSampling, lorebookScanDepth, setLorebookScanDepth,
@@ -80,11 +83,11 @@ export const SamplerSettings = () => {
                   type="button"
                   onClick={() => applyLlmPreset(p.id)}
                   aria-pressed={isActive}
-                  title={p.description}
-                  aria-label={t('settings.applyPreset', { name: p.name })}
+                  title={presetText(p, 'description')}
+                  aria-label={t('settings.applyPreset', { name: presetText(p, 'name') })}
                   className="font-medium rounded outline-hidden focus-visible:ring-2 focus-visible:ring-accent-400"
                 >
-                  {p.name}
+                  {presetText(p, 'name')}
                 </button>
                 {!p.is_builtin && (
                   <button

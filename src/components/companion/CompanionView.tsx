@@ -10,7 +10,7 @@ import { McpPluginsTab } from './tabs/McpPluginsTab';
 import { DesktopOverlayTab } from './tabs/DesktopOverlayTab';
 
 export const CompanionView: React.FC = () => {
-  const { t } = useTranslation();
+  const { t, tOptional } = useTranslation();
   const { companionState, fetchCompanionState, fetchMcpServers, fetchCompanionPlugins, fetchEnvironmentSnapshot } =
     useStoreFields('companionState', 'fetchCompanionState', 'fetchMcpServers', 'fetchCompanionPlugins', 'fetchEnvironmentSnapshot');
 
@@ -52,7 +52,7 @@ export const CompanionView: React.FC = () => {
         <div className="flex items-center gap-2.5 flex-wrap">
           <span className="px-3 py-1 rounded-xl bg-slate-900 border border-slate-800 text-xs font-mono text-cyan-300 flex items-center gap-1.5 shadow-sm">
             <Activity className="w-3.5 h-3.5 text-cyan-400" />
-            <span>{t('comp.mood')} <strong>{hormones?.mood_label || t('comp.active')}</strong></span>
+            <span>{t('comp.mood')} <strong>{hormones?.mood_label ? tOptional(`mood.${hormones.mood_label}`, hormones.mood_label) : t('comp.active')}</strong></span>
           </span>
           <span className="px-3 py-1 rounded-xl bg-slate-900 border border-slate-800 text-xs font-mono text-accent-300 flex items-center gap-1.5 shadow-sm">
             <Sparkles className="w-3.5 h-3.5 text-accent-400" />

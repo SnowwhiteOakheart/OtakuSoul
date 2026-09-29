@@ -8,6 +8,8 @@ impl MemoryDb {
         &self,
         char_id: &str,
     ) -> Result<PsychologyState, rusqlite::Error> {
+        let lang = crate::modules::content_lang::ContentLang::current();
+        let none = lang.none_marker();
         let conn = self.conn.lock();
         let mut stmt = conn.prepare(
             "SELECT primary_emotion, intensity, psychological_tension, emotional_decay_counter, active_agenda, immediate_focus, updated_at, core_identity, cognitive_dissonance
@@ -18,7 +20,7 @@ impl MemoryDb {
         if let Some(row) = rows.next()? {
             let core_id_str: String = row.get(7).unwrap_or_else(|_| "[]".to_string());
             let core_identity: Vec<String> = serde_json::from_str(&core_id_str).unwrap_or_default();
-            let cognitive_dissonance: String = row.get(8).unwrap_or_else(|_| "Keine.".to_string());
+            let cognitive_dissonance: String = row.get(8).unwrap_or_else(|_| none.to_string());
             Ok(PsychologyState {
                 primary_emotion: row.get(0)?,
                 intensity: row.get(1)?,
@@ -32,21 +34,31 @@ impl MemoryDb {
             })
         } else {
             let now = current_timestamp();
+            let agenda = lang.pick(
+                "Beobachten und Antworten.",
+                "Observe and respond.",
+                "Наблюдать и отвечать.",
+            );
+            let focus = lang.pick(
+                "Das aktuelle Gespräch.",
+                "The current conversation.",
+                "Текущий разговор.",
+            );
             conn.execute(
                 "INSERT INTO soul_psychology (character_id, primary_emotion, intensity, psychological_tension, emotional_decay_counter, active_agenda, immediate_focus, core_identity, cognitive_dissonance, updated_at)
-                 VALUES (?1, 'Calm', 3, 'Keine.', 0, 'Beobachten und Antworten.', 'Das aktuelle Gespräch.', '[]', 'Keine.', ?2)",
-                params![char_id, now],
+                 VALUES (?1, 'Calm', 3, ?3, 0, ?4, ?5, '[]', ?3, ?2)",
+                params![char_id, now, none, agenda, focus],
             )?;
 
             Ok(PsychologyState {
                 primary_emotion: "Calm".to_string(),
                 intensity: 3,
-                psychological_tension: "Keine.".to_string(),
+                psychological_tension: none.to_string(),
                 emotional_decay_counter: 0,
-                active_agenda: "Beobachten und Antworten.".to_string(),
-                immediate_focus: "Das aktuelle Gespräch.".to_string(),
+                active_agenda: agenda.to_string(),
+                immediate_focus: focus.to_string(),
                 core_identity: Vec::new(),
-                cognitive_dissonance: "Keine.".to_string(),
+                cognitive_dissonance: none.to_string(),
                 updated_at: now,
             })
         }
@@ -96,6 +108,7 @@ impl MemoryDb {
         char_id: &str,
         user_name: &str,
     ) -> Result<RelationshipState, rusqlite::Error> {
+        let none = crate::modules::content_lang::ContentLang::current().none_marker();
         let conn = self.conn.lock();
         let mut stmt = conn.prepare(
             "SELECT trust_level, unspoken_tension, preferences_habits, shared_milestones, updated_at, role_in_story, known_attributes, dynamic_description
@@ -112,8 +125,8 @@ impl MemoryDb {
             let shared_milestones: Vec<String> =
                 serde_json::from_str(&mile_str).unwrap_or_default();
             let role_in_story: String = row.get(5).unwrap_or_else(|_| "User".to_string());
-            let known_attributes: String = row.get(6).unwrap_or_else(|_| "Keine.".to_string());
-            let dynamic_description: String = row.get(7).unwrap_or_else(|_| "Keine.".to_string());
+            let known_attributes: String = row.get(6).unwrap_or_else(|_| none.to_string());
+            let dynamic_description: String = row.get(7).unwrap_or_else(|_| none.to_string());
 
             Ok(RelationshipState {
                 user_name: user_name.to_string(),
@@ -130,17 +143,17 @@ impl MemoryDb {
             let now = current_timestamp();
             conn.execute(
                 "INSERT INTO soul_relationship (character_id, user_name, trust_level, unspoken_tension, preferences_habits, shared_milestones, role_in_story, known_attributes, dynamic_description, updated_at)
-                 VALUES (?1, ?2, 'Neutral', 'Keine.', '[]', '[]', 'User', 'Keine.', 'Keine.', ?3)",
-                params![char_id, user_name, now],
+                 VALUES (?1, ?2, 'Neutral', ?4, '[]', '[]', 'User', ?4, ?4, ?3)",
+                params![char_id, user_name, now, none],
             )?;
 
             Ok(RelationshipState {
                 user_name: user_name.to_string(),
                 role_in_story: "User".to_string(),
-                known_attributes: "Keine.".to_string(),
+                known_attributes: none.to_string(),
                 trust_level: "Neutral".to_string(),
-                dynamic_description: "Keine.".to_string(),
-                unspoken_tension: "Keine.".to_string(),
+                dynamic_description: none.to_string(),
+                unspoken_tension: none.to_string(),
                 preferences_habits: Vec::new(),
                 shared_milestones: Vec::new(),
                 updated_at: now,
