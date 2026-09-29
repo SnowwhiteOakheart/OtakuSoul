@@ -200,7 +200,9 @@ GitHub Actions wurden bewusst entfernt (Commit `11597c2`). Stattdessen gibt es j
 - [x] `unwrap()` im Rust-Code: 87 außerhalb von Tests (nicht 221). 62 Lock-`unwrap()` entfallen durch `parking_lot` (keine
   Lock-Vergiftung mehr nach einem Panic), 15 Regexe sind statisch, die übrigen sind durch Längenprüfungen abgesichert.
   Ein gemeinsamer `thiserror`-Fehlertyp ist durch die `err!`-Codes nicht mehr nötig.
-- [ ] `commands.rs` (1.697 Z.) nach Domänen aufteilen (`commands/chat.rs`, `commands/stage.rs` …); `stage.rs` (2.971 Z.) und `memory.rs` (2.069 Z.) ebenfalls modularisieren.
+- [x] `commands.rs` (1.760 Z., 180 Commands) nach Themen aufgeteilt: `src/commands/{app,llm,chat,lorebook,characters,memory,
+  stage,companion,voice,avatar,hub,ecosystem}.rs`.
+- [ ] `stage.rs` (~3.300 Z.) und `memory.rs` (~2.100 Z.) modularisieren.
 - [x] Regexe per `std::sync::LazyLock` statt `Regex::new` pro Aufruf (dynamische Nutzer-Muster ausgenommen).
 - [ ] `tracing-subscriber` mit `env-filter` und Log-Rotation (`tracing-appender`) konfigurieren.
 - [ ] Datenbank-Migrationen versionieren (`rusqlite_migration` oder `PRAGMA user_version`), bevor das rusqlite-Upgrade kommt.
