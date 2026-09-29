@@ -44,3 +44,15 @@ assets/models/
 *.njsproj
 *.sln
 *.sw?
+
+# Große VRM-Modelle, die nur lokal liegen (GitHub-Grenze 100 MB, keine Weitergabelizenz erfasst)
+assets/vrm/Akai.vrm
+assets/vrm/Cereate.v2.vrm
+assets/vrm/Haolan.vrm
+assets/vrm/Lulum.vrm
+assets/vrm/Mirdo.vrm
+assets/vrm/Natsuhi.vrm
+assets/vrm/Sonetto.vrm
+assets/vrm/Sunyeojin.vrm
+assets/vrm/Yui.vrm
+assets/vrm/Yumeka.vrm
