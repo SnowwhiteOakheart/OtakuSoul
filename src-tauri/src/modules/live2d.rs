@@ -219,12 +219,12 @@ pub async fn download_live2d_model(model_id: &str) -> Result<String, String> {
     let item = catalog
         .iter()
         .find(|m| m.id == model_id)
-        .ok_or_else(|| format!("Unbekanntes Live2D-Modell: {}", model_id))?;
+        .ok_or_else(|| crate::err!("backend.live2d.unknownModel", name = model_id))?;
 
     let paths = resolve_app_paths();
     let target_dir = PathBuf::from(&paths.data_dir).join("live2d").join(&item.id);
     fs::create_dir_all(&target_dir)
-        .map_err(|e| format!("Zielverzeichnis konnte nicht erstellt werden: {}", e))?;
+        .map_err(|e| crate::err!("backend.common.dirCreate", error = e))?;
 
     info!(
         "Lade Live2D-Modell herunter: {} von {}",
@@ -234,36 +234,36 @@ pub async fn download_live2d_model(model_id: &str) -> Result<String, String> {
     let client = reqwest::Client::builder()
         .timeout(std::time::Duration::from_secs(60))
         .build()
-        .map_err(|e| format!("HTTP-Client-Fehler: {}", e))?;
+        .map_err(|e| crate::err!("backend.common.httpClient", error = e))?;
 
     if item.url.ends_with(".zip") {
         let resp = client
             .get(&item.url)
             .send()
             .await
-            .map_err(|e| format!("Download fehlgeschlagen: {}", e))?;
+            .map_err(|e| crate::err!("backend.common.downloadFailed", error = e))?;
 
         if !resp.status().is_success() {
-            return Err(format!(
-                "Download-Server antwortete mit Status {}",
-                resp.status()
+            return Err(crate::err!(
+                "backend.common.downloadStatus",
+                status = resp.status()
             ));
         }
 
         let bytes = resp
             .bytes()
             .await
-            .map_err(|e| format!("Fehler beim Lesen der Download-Daten: {}", e))?;
+            .map_err(|e| crate::err!("backend.common.downloadRead", error = e))?;
 
         let cursor = std::io::Cursor::new(bytes);
         let mut archive = zip::ZipArchive::new(cursor)
-            .map_err(|e| format!("ZIP-Archiv konnte nicht geöffnet werden: {}", e))?;
+            .map_err(|e| crate::err!("backend.common.zipOpen", error = e))?;
 
         // Extract files, stripping any "runtime/" prefix if present
         for i in 0..archive.len() {
             let mut file = archive
                 .by_index(i)
-                .map_err(|e| format!("Fehler beim Entpacken: {}", e))?;
+                .map_err(|e| crate::err!("backend.common.unzip", error = e))?;
 
             let enclosed = file.enclosed_name();
             if let Some(enclosed_path) = enclosed {
@@ -284,8 +284,13 @@ pub async fn download_live2d_model(model_id: &str) -> Result<String, String> {
                     let mut outfile = fs::File::create(&outpath).map_err(|e| {
                         format!("Datei {:?} konnte nicht erstellt werden: {}", outpath, e)
                     })?;
-                    std::io::copy(&mut file, &mut outfile)
-                        .map_err(|e| format!("Fehler beim Schreiben von {:?}: {}", outpath, e))?;
+                    std::io::copy(&mut file, &mut outfile).map_err(|e| {
+                        crate::err!(
+                            "backend.common.fileWritePath",
+                            path = format!("{:?}", outpath),
+                            error = e
+                        )
+                    })?;
                 }
             }
         }
@@ -317,13 +322,16 @@ pub async fn download_live2d_model(model_id: &str) -> Result<String, String> {
 pub fn import_live2d_model(source_path: &str) -> Result<ScannedLive2d, String> {
     let src = PathBuf::from(source_path);
     if !src.exists() {
-        return Err(format!("Pfad existiert nicht: {}", source_path));
+        return Err(crate::err!(
+            "backend.common.pathMissing",
+            path = source_path
+        ));
     }
 
     let paths = resolve_app_paths();
     let dest_base = PathBuf::from(&paths.data_dir).join("live2d");
     fs::create_dir_all(&dest_base)
-        .map_err(|e| format!("Zielordner konnte nicht erstellt werden: {}", e))?;
+        .map_err(|e| crate::err!("backend.common.dirCreate", error = e))?;
 
     if src.is_file() {
         let ext = src
@@ -339,17 +347,17 @@ pub fn import_live2d_model(source_path: &str) -> Result<ScannedLive2d, String> {
                 .unwrap_or("imported_model");
             let target_dir = dest_base.join(model_name);
             fs::create_dir_all(&target_dir)
-                .map_err(|e| format!("Verzeichnis konnte nicht erstellt werden: {}", e))?;
+                .map_err(|e| crate::err!("backend.common.dirCreate", error = e))?;
 
             let file = fs::File::open(&src)
-                .map_err(|e| format!("ZIP konnte nicht geöffnet werden: {}", e))?;
-            let mut archive =
-                zip::ZipArchive::new(file).map_err(|e| format!("ZIP-Archiv fehlerhaft: {}", e))?;
+                .map_err(|e| crate::err!("backend.common.zipOpen", error = e))?;
+            let mut archive = zip::ZipArchive::new(file)
+                .map_err(|e| crate::err!("backend.common.zipInvalid", error = e))?;
 
             for i in 0..archive.len() {
                 let mut f = archive
                     .by_index(i)
-                    .map_err(|e| format!("Fehler beim Lesen des Eintrags: {}", e))?;
+                    .map_err(|e| crate::err!("backend.common.unzip", error = e))?;
                 if let Some(enclosed) = f.enclosed_name() {
                     let relative = enclosed.strip_prefix("runtime/").unwrap_or(&enclosed);
                     if relative.as_os_str().is_empty() {
@@ -363,15 +371,15 @@ pub fn import_live2d_model(source_path: &str) -> Result<ScannedLive2d, String> {
                             let _ = fs::create_dir_all(p);
                         }
                         let mut outfile = fs::File::create(&outpath)
-                            .map_err(|e| format!("Datei konnte nicht angelegt werden: {}", e))?;
+                            .map_err(|e| crate::err!("backend.common.fileCreate", error = e))?;
                         std::io::copy(&mut f, &mut outfile)
-                            .map_err(|e| format!("Fehler beim Schreiben: {}", e))?;
+                            .map_err(|e| crate::err!("backend.common.fileWrite", error = e))?;
                     }
                 }
             }
 
             inspect_live2d_dir(&target_dir)
-                .ok_or_else(|| "Im ZIP-Archiv wurde keine gültige .model3.json oder .model.json Datei gefunden.".to_string())
+                .ok_or_else(|| crate::err!("backend.live2d.noModelInZip"))
         } else if ext == "json"
             && (source_path.ends_with(".model3.json") || source_path.ends_with(".model.json"))
         {
@@ -384,12 +392,12 @@ pub fn import_live2d_model(source_path: &str) -> Result<ScannedLive2d, String> {
                 let target_dir = dest_base.join(folder_name);
                 copy_dir_recursive(parent, &target_dir)?;
                 inspect_live2d_dir(&target_dir)
-                    .ok_or_else(|| "Modell nach Kopieren nicht auffindbar.".to_string())
+                    .ok_or_else(|| crate::err!("backend.live2d.modelLostAfterCopy"))
             } else {
-                Err("Ungültiger übergeordneter Ordner für die Model-Datei.".to_string())
+                Err(crate::err!("backend.live2d.invalidParent"))
             }
         } else {
-            Err("Nicht unterstütztes Dateiformat. Bitte wähle eine .zip-Datei oder eine *.model3.json/*.model.json Datei.".to_string())
+            Err(crate::err!("backend.live2d.unsupportedFormat"))
         }
     } else if src.is_dir() {
         let folder_name = src
@@ -398,10 +406,9 @@ pub fn import_live2d_model(source_path: &str) -> Result<ScannedLive2d, String> {
             .unwrap_or("imported_model");
         let target_dir = dest_base.join(folder_name);
         copy_dir_recursive(&src, &target_dir)?;
-        inspect_live2d_dir(&target_dir)
-            .ok_or_else(|| "Im ausgewählten Ordner wurde keine gültige .model3.json oder .model.json Datei gefunden.".to_string())
+        inspect_live2d_dir(&target_dir).ok_or_else(|| crate::err!("backend.live2d.noModelInFolder"))
     } else {
-        Err("Ungültige Quelle.".to_string())
+        Err(crate::err!("backend.live2d.invalidSource"))
     }
 }
 
@@ -410,7 +417,7 @@ pub fn import_sow_live2d_models() -> Result<usize, String> {
     let paths = resolve_app_paths();
     let dest_base = PathBuf::from(&paths.data_dir).join("live2d");
     fs::create_dir_all(&dest_base)
-        .map_err(|e| format!("Zielordner konnte nicht erstellt werden: {}", e))?;
+        .map_err(|e| crate::err!("backend.common.dirCreate", error = e))?;
 
     let sow_live2d =
         PathBuf::from("/home/deathtrap/development/Soul-of-Waifu-linux/assets/emotions/live2d");
@@ -418,8 +425,8 @@ pub fn import_sow_live2d_models() -> Result<usize, String> {
         return Err("Soul-of-Waifu Live2D-Verzeichnis wurde unter /home/deathtrap/development/Soul-of-Waifu-linux/assets/emotions/live2d nicht gefunden.".to_string());
     }
 
-    let entries = fs::read_dir(&sow_live2d)
-        .map_err(|e| format!("Fehler beim Lesen des SoW-Verzeichnisses: {}", e))?;
+    let entries =
+        fs::read_dir(&sow_live2d).map_err(|e| crate::err!("backend.live2d.sowRead", error = e))?;
 
     let mut imported = 0;
     for entry in entries.flatten() {
@@ -439,11 +446,21 @@ pub fn import_sow_live2d_models() -> Result<usize, String> {
 }
 
 fn copy_dir_recursive(src: &Path, dst: &Path) -> Result<(), String> {
-    fs::create_dir_all(dst)
-        .map_err(|e| format!("Verzeichnis {:?} konnte nicht erstellt werden: {}", dst, e))?;
+    fs::create_dir_all(dst).map_err(|e| {
+        crate::err!(
+            "backend.common.dirCreatePath",
+            path = format!("{:?}", dst),
+            error = e
+        )
+    })?;
 
-    let entries = fs::read_dir(src)
-        .map_err(|e| format!("Verzeichnis {:?} konnte nicht gelesen werden: {}", src, e))?;
+    let entries = fs::read_dir(src).map_err(|e| {
+        crate::err!(
+            "backend.common.dirReadPath",
+            path = format!("{:?}", src),
+            error = e
+        )
+    })?;
 
     for entry in entries.flatten() {
         let path = entry.path();

@@ -3,6 +3,7 @@ pub mod companion;
 pub mod companion_tools;
 pub mod discord;
 pub mod emotions;
+pub mod error;
 pub mod hardware;
 pub mod image_generator;
 pub mod inference;

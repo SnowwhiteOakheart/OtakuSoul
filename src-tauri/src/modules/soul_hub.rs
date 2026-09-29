@@ -106,7 +106,7 @@ fn get_http_client() -> Result<reqwest::Client, String> {
         .user_agent(BROWSER_USER_AGENT)
         .timeout(std::time::Duration::from_secs(35))
         .build()
-        .map_err(|e| format!("HTTP Client Fehler: {}", e))
+        .map_err(|e| crate::err!("backend.common.httpClient", error = e))
 }
 
 fn ensure_unique_character_name(base_name: &str, char_dir: &Path) -> String {
@@ -140,11 +140,11 @@ fn convert_image_bytes_to_png(bytes: &[u8]) -> Result<Vec<u8>, String> {
     }
 
     let dyn_img = image::load_from_memory(bytes)
-        .map_err(|e| format!("Fehler beim Dekodieren des Bildes: {}", e))?;
+        .map_err(|e| crate::err!("backend.common.imageDecode", error = e))?;
     let mut buf = Vec::new();
     dyn_img
         .write_to(&mut Cursor::new(&mut buf), image::ImageFormat::Png)
-        .map_err(|e| format!("Fehler beim Konvertieren zu PNG: {}", e))?;
+        .map_err(|e| crate::err!("backend.common.pngConvert", error = e))?;
     Ok(buf)
 }
 
@@ -185,21 +185,24 @@ pub async fn fetch_soul_gateway_registry() -> Result<Vec<GatewayCharacterEntry>,
         .get(SOUL_GATEWAY_REGISTRY_URL)
         .send()
         .await
-        .map_err(|e| format!("Fehler beim Abrufen der Soul Gateway Registry: {}", e))?;
+        .map_err(|e| crate::err!("backend.hub.gatewayFetch", error = e))?;
 
     if !res.status().is_success() {
-        return Err(format!("Registry Server meldete Status {}", res.status()));
+        return Err(crate::err!(
+            "backend.hub.registryStatus",
+            status = res.status()
+        ));
     }
 
     let val = res
         .json::<serde_json::Value>()
         .await
-        .map_err(|e| format!("Fehler beim Parsen der Gateway Registry: {}", e))?;
+        .map_err(|e| crate::err!("backend.hub.gatewayParse", error = e))?;
 
     let characters = val
         .get("characters")
         .and_then(|v| v.as_array())
-        .ok_or_else(|| "Ungültiges Registry-Format: Feld 'characters' fehlt".to_string())?;
+        .ok_or_else(|| crate::err!("backend.hub.gatewayNoCharacters"))?;
 
     let mut results = Vec::new();
     for c in characters {
@@ -238,16 +241,16 @@ pub async fn import_soul_gateway_character(
         })?;
 
     if !res.status().is_success() {
-        return Err(format!(
-            "Download fehlgeschlagen mit Status {}",
-            res.status()
+        return Err(crate::err!(
+            "backend.common.downloadStatus",
+            status = res.status()
         ));
     }
 
     let bytes = res
         .bytes()
         .await
-        .map_err(|e| format!("Fehler beim Lesen der Kartendaten: {}", e))?;
+        .map_err(|e| crate::err!("backend.hub.cardRead", error = e))?;
 
     let (mut card, avatar_data_url) = parse_character_png(&bytes)?;
 
@@ -335,16 +338,16 @@ pub async fn search_chub_characters(
         .header("Accept-Language", "en-US,en;q=0.9")
         .send()
         .await
-        .map_err(|e| format!("Fehler bei der Chub.ai Suchanfrage: {}", e))?;
+        .map_err(|e| crate::err!("backend.hub.chubSearch", error = e))?;
 
     if !res.status().is_success() {
-        return Err(format!("Chub AI meldete Statuscode: {}", res.status()));
+        return Err(crate::err!("backend.hub.chubStatus", status = res.status()));
     }
 
     let val: serde_json::Value = res
         .json()
         .await
-        .map_err(|e| format!("Fehler beim Parsen der Chub AI Antwort: {}", e))?;
+        .map_err(|e| crate::err!("backend.hub.chubParse", error = e))?;
 
     let payload = if val.get("data").is_some() {
         val.get("data").cloned().unwrap_or(val.clone())
@@ -455,17 +458,17 @@ pub async fn get_chub_character_details(full_path: &str) -> Result<ChubCharacter
         })?;
 
     if !res.status().is_success() {
-        return Err(format!("Chub API meldete Status {}", res.status()));
+        return Err(crate::err!("backend.hub.chubStatus", status = res.status()));
     }
 
     let data: serde_json::Value = res
         .json()
         .await
-        .map_err(|e| format!("Fehler beim Parsen der Charakterdetails: {}", e))?;
+        .map_err(|e| crate::err!("backend.hub.chubDetailsParse", error = e))?;
 
     let node = data
         .get("node")
-        .ok_or_else(|| "Feld 'node' in API-Antwort nicht gefunden".to_string())?;
+        .ok_or_else(|| crate::err!("backend.hub.chubNoNode"))?;
 
     let def = node.get("definition").unwrap_or(&serde_json::Value::Null);
 
@@ -643,16 +646,16 @@ pub async fn import_chub_character(full_path: &str) -> Result<CharacterImportRes
         })?;
 
     if !api_res.status().is_success() {
-        return Err(format!(
-            "Chub API Fehler beim Abrufen des Charakters: Status {}",
-            api_res.status()
+        return Err(crate::err!(
+            "backend.hub.chubCharacterStatus",
+            status = api_res.status()
         ));
     }
 
     let val: serde_json::Value = api_res
         .json()
         .await
-        .map_err(|e| format!("Fehler beim Parsen der Chub API Antwort: {}", e))?;
+        .map_err(|e| crate::err!("backend.hub.chubParse", error = e))?;
 
     let mut card = parse_character_json(&serde_json::to_string(&val).unwrap())?;
 
@@ -725,16 +728,19 @@ pub async fn import_character_from_url(url: &str) -> Result<CharacterImportResul
         .get(trimmed)
         .send()
         .await
-        .map_err(|e| format!("Fehler beim Herunterladen der URL: {}", e))?;
+        .map_err(|e| crate::err!("backend.common.downloadFailed", error = e))?;
 
     if !res.status().is_success() {
-        return Err(format!("Download fehlgeschlagen: Status {}", res.status()));
+        return Err(crate::err!(
+            "backend.common.downloadStatus",
+            status = res.status()
+        ));
     }
 
     let bytes = res
         .bytes()
         .await
-        .map_err(|e| format!("Fehler beim Lesen der Dateidaten: {}", e))?;
+        .map_err(|e| crate::err!("backend.common.downloadRead", error = e))?;
 
     let paths = resolve_app_paths();
     let char_dir = PathBuf::from(&paths.characters_dir);
@@ -803,21 +809,24 @@ pub async fn fetch_lorebooks_gateway_registry() -> Result<Vec<GatewayLorebookEnt
         .get(LOREBOOKS_REGISTRY_URL)
         .send()
         .await
-        .map_err(|e| format!("Fehler beim Abrufen der Lorebooks Registry: {}", e))?;
+        .map_err(|e| crate::err!("backend.hub.lorebooksFetch", error = e))?;
 
     if !res.status().is_success() {
-        return Err(format!("Registry meldete Status {}", res.status()));
+        return Err(crate::err!(
+            "backend.hub.registryStatus",
+            status = res.status()
+        ));
     }
 
     let val: serde_json::Value = res
         .json()
         .await
-        .map_err(|e| format!("Fehler beim Parsen der Lorebooks Registry: {}", e))?;
+        .map_err(|e| crate::err!("backend.hub.lorebooksParse", error = e))?;
 
     let books = val
         .get("lorebooks")
         .and_then(|v| v.as_array())
-        .ok_or_else(|| "Feld 'lorebooks' nicht gefunden".to_string())?;
+        .ok_or_else(|| crate::err!("backend.hub.lorebooksMissing"))?;
 
     let mut results = Vec::new();
     for b in books {
@@ -855,16 +864,19 @@ pub async fn import_lorebook_from_gateway(
         .get(download_url)
         .send()
         .await
-        .map_err(|e| format!("Fehler beim Downloaden des Lorebooks: {}", e))?;
+        .map_err(|e| crate::err!("backend.hub.lorebookDownload", error = e))?;
 
     if !res.status().is_success() {
-        return Err(format!("Server meldete Statuscode: {}", res.status()));
+        return Err(crate::err!(
+            "backend.common.downloadStatus",
+            status = res.status()
+        ));
     }
 
     let content = res
         .text()
         .await
-        .map_err(|e| format!("Fehler beim Lesen des Lorebook-Inhalts: {}", e))?;
+        .map_err(|e| crate::err!("backend.hub.lorebookRead", error = e))?;
 
     let mut lorebook = Lorebook::import_from_json_string(&content, Some(fallback_name))?;
 
@@ -907,21 +919,24 @@ pub async fn fetch_stages_gateway_registry() -> Result<Vec<GatewaySceneEntry>, S
         .get(STAGES_REGISTRY_URL)
         .send()
         .await
-        .map_err(|e| format!("Fehler beim Abrufen der Stage Registry: {}", e))?;
+        .map_err(|e| crate::err!("backend.hub.stagesFetch", error = e))?;
 
     if !res.status().is_success() {
-        return Err(format!("Registry Server meldete Status {}", res.status()));
+        return Err(crate::err!(
+            "backend.hub.registryStatus",
+            status = res.status()
+        ));
     }
 
     let val: serde_json::Value = res
         .json()
         .await
-        .map_err(|e| format!("Fehler beim Parsen der Stage Registry: {}", e))?;
+        .map_err(|e| crate::err!("backend.hub.stagesParse", error = e))?;
 
     let scenes = val
         .get("scenes")
         .and_then(|v| v.as_array())
-        .ok_or_else(|| "Feld 'scenes' in Registry nicht gefunden".to_string())?;
+        .ok_or_else(|| crate::err!("backend.hub.scenesMissing"))?;
 
     let mut results = Vec::new();
     for s in scenes {
@@ -969,16 +984,19 @@ pub async fn import_scene_from_gateway(
         .get(download_url)
         .send()
         .await
-        .map_err(|e| format!("Fehler beim Herunterladen des Szenarios: {}", e))?;
+        .map_err(|e| crate::err!("backend.hub.sceneDownload", error = e))?;
 
     if !res.status().is_success() {
-        return Err(format!("Download fehlgeschlagen: Status {}", res.status()));
+        return Err(crate::err!(
+            "backend.common.downloadStatus",
+            status = res.status()
+        ));
     }
 
     let val: serde_json::Value = res
         .json()
         .await
-        .map_err(|e| format!("Fehler beim Parsen des Szenario-JSONs: {}", e))?;
+        .map_err(|e| crate::err!("backend.hub.sceneParse", error = e))?;
 
     let title = val
         .get("title")

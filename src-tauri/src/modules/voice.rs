@@ -200,7 +200,7 @@ fn http_client(timeout_seconds: u64) -> Result<reqwest::Client, String> {
     reqwest::Client::builder()
         .timeout(Duration::from_secs(timeout_seconds))
         .build()
-        .map_err(|e| format!("Audio-HTTP-Client konnte nicht erstellt werden: {}", e))
+        .map_err(|e| crate::err!("backend.voice.httpClient", error = e))
 }
 
 impl Default for VoiceConfig {
@@ -671,18 +671,22 @@ pub async fn list_available_voices(
                 .header("xi-api-key", elevenlabs_api_key)
                 .send()
                 .await
-                .map_err(|e| format!("ElevenLabs-Stimmen konnten nicht geladen werden: {}", e))?;
+                .map_err(|e| crate::err!("backend.voice.elevenVoicesLoad", error = e))?;
 
             if !response.status().is_success() {
                 let status = response.status();
                 let body = response.text().await.unwrap_or_default();
-                return Err(format!("ElevenLabs API-Fehler {}: {}", status, body));
+                return Err(crate::err!(
+                    "backend.voice.elevenApi",
+                    status = status,
+                    error = body
+                ));
             }
 
             let payload: serde_json::Value = response
                 .json()
                 .await
-                .map_err(|e| format!("Ungültige ElevenLabs-Stimmenliste: {}", e))?;
+                .map_err(|e| crate::err!("backend.voice.elevenVoicesInvalid", error = e))?;
             let voices = payload["voices"]
                 .as_array()
                 .map(|items| {
@@ -815,7 +819,7 @@ pub async fn synthesize_edge_tts(
     volume: &str,
 ) -> Result<String, String> {
     if text.trim().is_empty() {
-        return Err("Kein Text zum Vorlesen vorhanden.".to_string());
+        return Err(crate::err!("backend.voice.noText"));
     }
     synthesize_edge_tts_websocket(text, voice_id, rate, pitch, volume).await
 }
@@ -853,7 +857,7 @@ async fn synthesize_edge_tts_websocket(
 
     let (mut ws_stream, _response) = connect_async(request)
         .await
-        .map_err(|e| format!("WebSocket-Verbindung fehlgeschlagen: {}", e))?;
+        .map_err(|e| crate::err!("backend.voice.websocket", error = e))?;
 
     // Send speech config
     let timestamp =
@@ -865,7 +869,7 @@ async fn synthesize_edge_tts_websocket(
     ws_stream
         .send(Message::Text(config_msg.into()))
         .await
-        .map_err(|e| format!("Fehler beim Senden der Konfiguration: {}", e))?;
+        .map_err(|e| crate::err!("backend.voice.sendConfig", error = e))?;
 
     // Send SSML
     let request_id = uuid_v4().replace('-', "");
@@ -876,7 +880,7 @@ async fn synthesize_edge_tts_websocket(
     ws_stream
         .send(Message::Text(ssml_msg.into()))
         .await
-        .map_err(|e| format!("Fehler beim Senden der SSML-Nachricht: {}", e))?;
+        .map_err(|e| crate::err!("backend.voice.sendSsml", error = e))?;
 
     // Collect audio data
     let mut audio_data: Vec<u8> = Vec::new();
@@ -912,9 +916,9 @@ async fn synthesize_edge_tts_websocket(
                 if let Some(close_frame) = c
                     && close_frame.reason.contains("Unsupported voice")
                 {
-                    return Err(format!(
-                        "Die ausgewählte Stimme wird von Microsoft nicht mehr unterstützt. Bitte wähle eine andere Stimme aus. (Details: {})",
-                        close_frame.reason
+                    return Err(crate::err!(
+                        "backend.voice.edgeVoiceRetired",
+                        error = close_frame.reason
                     ));
                 }
                 break;
@@ -932,7 +936,7 @@ async fn synthesize_edge_tts_websocket(
     let _ = ws_stream.close(None).await;
 
     if audio_data.is_empty() {
-        return Err("Keine Audio-Daten von Edge-TTS empfangen.".to_string());
+        return Err(crate::err!("backend.voice.edgeNoAudio"));
     }
 
     info!(
@@ -957,7 +961,7 @@ fn build_edge_tts_request(
     // would bypass that logic and tungstenite would reject it before connecting.
     let mut request = ws_url
         .into_client_request()
-        .map_err(|e| format!("WebSocket-Anfrage konnte nicht erstellt werden: {}", e))?;
+        .map_err(|e| crate::err!("backend.voice.websocketRequest", error = e))?;
 
     request
         .headers_mut()
@@ -983,7 +987,7 @@ fn build_edge_tts_request(
     request.headers_mut().insert(
         COOKIE,
         HeaderValue::from_str(&format!("muid={};", muid))
-            .map_err(|e| format!("Edge-TTS-Cookie konnte nicht erstellt werden: {}", e))?,
+            .map_err(|e| crate::err!("backend.voice.edgeCookie", error = e))?,
     );
 
     Ok(request)
@@ -1027,10 +1031,10 @@ pub async fn synthesize_elevenlabs(
     api_key: &str,
 ) -> Result<String, String> {
     if text.trim().is_empty() {
-        return Err("Kein Text zum Vorlesen vorhanden.".to_string());
+        return Err(crate::err!("backend.voice.noText"));
     }
     if api_key.is_empty() {
-        return Err("ElevenLabs API-Key ist nicht konfiguriert.".to_string());
+        return Err(crate::err!("backend.voice.elevenNoKey"));
     }
 
     let url = format!("https://api.elevenlabs.io/v1/text-to-speech/{}", voice_id);
@@ -1052,18 +1056,22 @@ pub async fn synthesize_elevenlabs(
         .json(&body)
         .send()
         .await
-        .map_err(|e| format!("ElevenLabs-Anfrage fehlgeschlagen: {}", e))?;
+        .map_err(|e| crate::err!("backend.voice.elevenRequest", error = e))?;
 
     if !response.status().is_success() {
         let status = response.status();
         let err_text = response.text().await.unwrap_or_default();
-        return Err(format!("ElevenLabs API-Fehler {}: {}", status, err_text));
+        return Err(crate::err!(
+            "backend.voice.elevenApi",
+            status = status,
+            error = err_text
+        ));
     }
 
     let bytes = response
         .bytes()
         .await
-        .map_err(|e| format!("Fehler beim Empfangen der ElevenLabs-Audio-Daten: {}", e))?;
+        .map_err(|e| crate::err!("backend.voice.elevenAudio", error = e))?;
     let b64 = base64::prelude::BASE64_STANDARD.encode(&bytes);
     Ok(format!("data:audio/mp3;base64,{}", b64))
 }
@@ -1082,7 +1090,7 @@ pub async fn synthesize_openai_tts(
     instructions: &str,
 ) -> Result<String, String> {
     if text.trim().is_empty() {
-        return Err("Kein Text zum Vorlesen vorhanden.".to_string());
+        return Err(crate::err!("backend.voice.noText"));
     }
 
     let client = http_client(120)?;
@@ -1111,12 +1119,16 @@ pub async fn synthesize_openai_tts(
     let response = req
         .send()
         .await
-        .map_err(|e| format!("OpenAI-TTS-Anfrage fehlgeschlagen: {}", e))?;
+        .map_err(|e| crate::err!("backend.voice.openaiRequest", error = e))?;
 
     if !response.status().is_success() {
         let status = response.status();
         let err_text = response.text().await.unwrap_or_default();
-        return Err(format!("OpenAI-TTS API-Fehler {}: {}", status, err_text));
+        return Err(crate::err!(
+            "backend.voice.openaiApi",
+            status = status,
+            error = err_text
+        ));
     }
 
     let mime = response
@@ -1131,7 +1143,7 @@ pub async fn synthesize_openai_tts(
     let bytes = response
         .bytes()
         .await
-        .map_err(|e| format!("Fehler beim Empfangen der OpenAI-TTS-Audio-Daten: {}", e))?;
+        .map_err(|e| crate::err!("backend.voice.openaiAudio", error = e))?;
     let b64 = base64::prelude::BASE64_STANDARD.encode(&bytes);
     Ok(format!("data:{};base64,{}", mime, b64))
 }
@@ -1143,7 +1155,7 @@ pub async fn synthesize_openai_tts(
 fn decode_audio_data_url(data_url: &str) -> Result<(String, Vec<u8>), String> {
     let (metadata, encoded) = data_url
         .split_once(',')
-        .ok_or_else(|| "Ungültige Audio-Data-URL.".to_string())?;
+        .ok_or_else(|| crate::err!("backend.voice.invalidDataUrl"))?;
     let mime = metadata
         .strip_prefix("data:")
         .and_then(|value| value.split(';').next())
@@ -1151,7 +1163,7 @@ fn decode_audio_data_url(data_url: &str) -> Result<(String, Vec<u8>), String> {
         .to_string();
     let bytes = base64::prelude::BASE64_STANDARD
         .decode(encoded)
-        .map_err(|e| format!("Audio-Base64 konnte nicht dekodiert werden: {}", e))?;
+        .map_err(|e| crate::err!("backend.voice.base64", error = e))?;
     Ok((mime, bytes))
 }
 
@@ -1160,7 +1172,7 @@ async fn apply_rvc(data_url: &str, config: &RvcConfig) -> Result<String, String>
         return Ok(data_url.to_string());
     }
     if config.endpoint.trim().is_empty() {
-        return Err("RVC ist aktiviert, aber kein RVC-Endpunkt konfiguriert.".to_string());
+        return Err(crate::err!("backend.voice.rvcNoEndpoint"));
     }
 
     let (mime, audio) = decode_audio_data_url(data_url)?;
@@ -1168,7 +1180,7 @@ async fn apply_rvc(data_url: &str, config: &RvcConfig) -> Result<String, String>
     let audio_part = reqwest::multipart::Part::bytes(audio)
         .file_name(format!("speech.{}", extension))
         .mime_str(&mime)
-        .map_err(|e| format!("Ungültiger RVC-Audiotyp: {}", e))?;
+        .map_err(|e| crate::err!("backend.voice.rvcMime", error = e))?;
     let form = reqwest::multipart::Form::new()
         .part("audio", audio_part)
         .text("model", config.model.clone())
@@ -1183,11 +1195,15 @@ async fn apply_rvc(data_url: &str, config: &RvcConfig) -> Result<String, String>
     let response = request
         .send()
         .await
-        .map_err(|e| format!("RVC-Anfrage fehlgeschlagen: {}", e))?;
+        .map_err(|e| crate::err!("backend.voice.rvcRequest", error = e))?;
     if !response.status().is_success() {
         let status = response.status();
         let body = response.text().await.unwrap_or_default();
-        return Err(format!("RVC-Endpunkt meldet {}: {}", status, body));
+        return Err(crate::err!(
+            "backend.voice.rvcStatus",
+            status = status,
+            error = body
+        ));
     }
 
     let result_mime = response
@@ -1202,7 +1218,7 @@ async fn apply_rvc(data_url: &str, config: &RvcConfig) -> Result<String, String>
     let bytes = response
         .bytes()
         .await
-        .map_err(|e| format!("RVC-Audio konnte nicht gelesen werden: {}", e))?;
+        .map_err(|e| crate::err!("backend.voice.rvcAudio", error = e))?;
     Ok(format!(
         "data:{};base64,{}",
         result_mime,
@@ -1218,7 +1234,7 @@ async fn apply_rvc(data_url: &str, config: &RvcConfig) -> Result<String, String>
 pub async fn synthesize_speech(text: &str, config: &VoiceConfig) -> Result<String, String> {
     let cleaned = clean_text_for_tts(text, &config.filter_mode, &config.custom_regex);
     if cleaned.is_empty() {
-        return Err("Nach dem Filtern ist kein vorlesesbarer Text übrig.".to_string());
+        return Err(crate::err!("backend.voice.nothingLeft"));
     }
 
     let synthesized = match config.engine {
@@ -1256,7 +1272,7 @@ pub async fn synthesize_speech(text: &str, config: &VoiceConfig) -> Result<Strin
             )
             .await
         }
-        TtsEngine::Disabled => Err("TTS ist für diesen Charakter deaktiviert.".to_string()),
+        TtsEngine::Disabled => Err(crate::err!("backend.voice.ttsDisabled")),
     }?;
 
     apply_rvc(&synthesized, &config.rvc).await
@@ -1269,14 +1285,14 @@ pub async fn synthesize_speech(text: &str, config: &VoiceConfig) -> Result<Strin
 fn decode_pcm_f32(audio_base64: &str) -> Result<Vec<f32>, String> {
     let bytes = base64::prelude::BASE64_STANDARD
         .decode(audio_base64)
-        .map_err(|e| format!("PCM-Audio konnte nicht dekodiert werden: {}", e))?;
+        .map_err(|e| crate::err!("backend.voice.pcmDecode", error = e))?;
     if bytes.is_empty() || bytes.len() % 4 != 0 {
-        return Err("PCM-Audio muss 32-Bit-Float-Samples enthalten.".to_string());
+        return Err(crate::err!("backend.voice.pcmFormat"));
     }
 
     const MAX_SAMPLES: usize = 16_000 * 120;
     if bytes.len() / 4 > MAX_SAMPLES {
-        return Err("Die Aufnahme ist länger als 120 Sekunden.".to_string());
+        return Err(crate::err!("backend.voice.recordingTooLong"));
     }
 
     let samples: Vec<f32> = (0..bytes.len())
@@ -1291,7 +1307,7 @@ fn decode_pcm_f32(audio_base64: &str) -> Result<Vec<f32>, String> {
         })
         .collect();
     if samples.iter().any(|sample| !sample.is_finite()) {
-        return Err("PCM-Audio enthält ungültige Samples.".to_string());
+        return Err(crate::err!("backend.voice.pcmInvalid"));
     }
     Ok(samples)
 }
@@ -1306,16 +1322,16 @@ fn pcm_to_wav(samples: &[f32]) -> Result<Vec<u8>, String> {
             sample_format: hound::SampleFormat::Int,
         };
         let mut writer = hound::WavWriter::new(&mut cursor, spec)
-            .map_err(|e| format!("WAV-Encoder konnte nicht gestartet werden: {}", e))?;
+            .map_err(|e| crate::err!("backend.voice.wavStart", error = e))?;
         for sample in samples {
             let value = (sample.clamp(-1.0, 1.0) * i16::MAX as f32) as i16;
             writer
                 .write_sample(value)
-                .map_err(|e| format!("WAV-Sample konnte nicht geschrieben werden: {}", e))?;
+                .map_err(|e| crate::err!("backend.voice.wavWrite", error = e))?;
         }
         writer
             .finalize()
-            .map_err(|e| format!("WAV-Datei konnte nicht abgeschlossen werden: {}", e))?;
+            .map_err(|e| crate::err!("backend.voice.wavFinish", error = e))?;
     }
     Ok(cursor.into_inner())
 }
@@ -1325,12 +1341,12 @@ fn transcribe_native_whisper(samples: Vec<f32>, config: SttConfig) -> Result<Str
     use whisper_rs::{FullParams, SamplingStrategy, WhisperContext, WhisperContextParameters};
 
     if config.whisper_model_path.trim().is_empty() {
-        return Err("Bitte zuerst ein whisper.cpp-GGML/GGUF-Modell auswählen.".to_string());
+        return Err(crate::err!("backend.voice.whisperNoModel"));
     }
     if !std::path::Path::new(&config.whisper_model_path).is_file() {
-        return Err(format!(
-            "Whisper-Modell nicht gefunden: {}",
-            config.whisper_model_path
+        return Err(crate::err!(
+            "backend.voice.whisperModelMissing",
+            path = config.whisper_model_path
         ));
     }
 
@@ -1338,10 +1354,10 @@ fn transcribe_native_whisper(samples: Vec<f32>, config: SttConfig) -> Result<Str
         &config.whisper_model_path,
         WhisperContextParameters::default(),
     )
-    .map_err(|e| format!("Whisper-Modell konnte nicht geladen werden: {}", e))?;
+    .map_err(|e| crate::err!("backend.voice.whisperModelLoad", error = e))?;
     let mut state = context
         .create_state()
-        .map_err(|e| format!("Whisper-Zustand konnte nicht erstellt werden: {}", e))?;
+        .map_err(|e| crate::err!("backend.voice.whisperState", error = e))?;
     let mut params = FullParams::new(SamplingStrategy::Greedy { best_of: 1 });
     params.set_print_progress(false);
     params.set_print_realtime(false);
@@ -1363,16 +1379,16 @@ fn transcribe_native_whisper(samples: Vec<f32>, config: SttConfig) -> Result<Str
 
     state
         .full(params, &samples)
-        .map_err(|e| format!("Whisper-Transkription fehlgeschlagen: {}", e))?;
+        .map_err(|e| crate::err!("backend.voice.whisperTranscribe", error = e))?;
     let segment_count = state.full_n_segments();
     let mut transcript = String::new();
     for index in 0..segment_count {
         let segment = state
             .get_segment(index)
-            .ok_or_else(|| format!("Whisper-Segment {} fehlt.", index))?;
+            .ok_or_else(|| crate::err!("backend.voice.whisperSegmentMissing", index = index))?;
         let text = segment
             .to_str()
-            .map_err(|e| format!("Whisper-Segment konnte nicht gelesen werden: {}", e))?;
+            .map_err(|e| crate::err!("backend.voice.whisperSegmentRead", error = e))?;
         transcript.push_str(text);
     }
     Ok(transcript.trim().to_string())
@@ -1380,10 +1396,7 @@ fn transcribe_native_whisper(samples: Vec<f32>, config: SttConfig) -> Result<Str
 
 #[cfg(any(target_os = "android", target_os = "ios"))]
 fn transcribe_native_whisper(_samples: Vec<f32>, _config: SttConfig) -> Result<String, String> {
-    Err(
-        "Native Whisper-STT ist auf Mobile deaktiviert. Bitte einen OpenAI-kompatiblen STT-Endpunkt verwenden."
-            .to_string(),
-    )
+    Err(crate::err!("backend.voice.whisperMobile"))
 }
 
 async fn transcribe_openai_compatible(
@@ -1391,13 +1404,13 @@ async fn transcribe_openai_compatible(
     config: &SttConfig,
 ) -> Result<String, String> {
     if config.endpoint.trim().is_empty() {
-        return Err("Kein STT-Endpunkt konfiguriert.".to_string());
+        return Err(crate::err!("backend.voice.sttNoEndpoint"));
     }
     let wav = pcm_to_wav(samples)?;
     let audio_part = reqwest::multipart::Part::bytes(wav)
         .file_name("recording.wav")
         .mime_str("audio/wav")
-        .map_err(|e| format!("STT-Audiotyp konnte nicht gesetzt werden: {}", e))?;
+        .map_err(|e| crate::err!("backend.voice.sttMime", error = e))?;
     let mut form = reqwest::multipart::Form::new()
         .part("file", audio_part)
         .text("model", config.model.clone());
@@ -1420,14 +1433,18 @@ async fn transcribe_openai_compatible(
     let response = request
         .send()
         .await
-        .map_err(|e| format!("STT-Anfrage fehlgeschlagen: {}", e))?;
+        .map_err(|e| crate::err!("backend.voice.sttRequest", error = e))?;
     let status = response.status();
     let body = response
         .text()
         .await
-        .map_err(|e| format!("STT-Antwort konnte nicht gelesen werden: {}", e))?;
+        .map_err(|e| crate::err!("backend.voice.sttResponse", error = e))?;
     if !status.is_success() {
-        return Err(format!("STT-Endpunkt meldet {}: {}", status, body));
+        return Err(crate::err!(
+            "backend.voice.sttStatus",
+            status = status,
+            error = body
+        ));
     }
     if let Ok(json) = serde_json::from_str::<serde_json::Value>(&body)
         && let Some(text) = json["text"].as_str()
@@ -1440,7 +1457,7 @@ async fn transcribe_openai_compatible(
 pub async fn transcribe_speech(audio_base64: &str, config: &SttConfig) -> Result<String, String> {
     let samples = decode_pcm_f32(audio_base64)?;
     if samples.len() < 1_600 {
-        return Err("Die Aufnahme ist zu kurz für eine Transkription.".to_string());
+        return Err(crate::err!("backend.voice.recordingTooShort"));
     }
 
     match config.engine {
@@ -1448,10 +1465,10 @@ pub async fn transcribe_speech(audio_base64: &str, config: &SttConfig) -> Result
             let owned_config = config.clone();
             tokio::task::spawn_blocking(move || transcribe_native_whisper(samples, owned_config))
                 .await
-                .map_err(|e| format!("Whisper-Worker ist fehlgeschlagen: {}", e))?
+                .map_err(|e| crate::err!("backend.voice.whisperWorker", error = e))?
         }
         SttEngine::OpenAi => transcribe_openai_compatible(&samples, config).await,
-        SttEngine::Disabled => Err("Spracherkennung ist deaktiviert.".to_string()),
+        SttEngine::Disabled => Err(crate::err!("backend.voice.sttDisabled")),
     }
 }
 
@@ -1554,8 +1571,7 @@ fn save_voice_config_to_path(path: &std::path::Path, config: &VoiceConfig) -> Re
             e
         )
     })?;
-    fs::write(path, json)
-        .map_err(|e| format!("Fehler beim Schreiben der Stimmen-Konfiguration: {}", e))?;
+    fs::write(path, json).map_err(|e| crate::err!("backend.voice.configWrite", error = e))?;
     Ok(())
 }
 
