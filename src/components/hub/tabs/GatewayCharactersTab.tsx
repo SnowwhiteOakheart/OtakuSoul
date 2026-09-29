@@ -30,7 +30,7 @@ export const GatewayCharactersTab = () => {
       loadingText={t('hub.loadingGateway')}
       emptyText={t('hub.noResults')}
       emptyIcon={Users}
-      spinnerClass="text-accent-400"
+      loadingLayout="portrait"
       errorText={(error) => t('hub.loadError', { error })}
       onRetry={load}
     >

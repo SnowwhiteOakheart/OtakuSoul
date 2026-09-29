@@ -7,6 +7,7 @@ import { useStoreFields } from '../../store/useAppStore';
 import { selectCharacterPortrait } from '../../utils/characterPortraits';
 import { translate, useTranslation } from '../../i18n';
 import { DropdownMenu } from '../ui/DropdownMenu';
+import { AvatarSkeleton } from '../ui';
 
 const Live2DViewer = lazy(() =>
   loadCubismCore()
@@ -261,7 +262,7 @@ export const AvatarCanvas: React.FC<AvatarCanvasProps> = ({
       ) : avatarMode === 'live2d' ? (
         live2dPath ? (
           <Suspense
-            fallback={<div className="flex-1 grid place-items-center text-sm text-slate-400">{t('avatar.live2dLoading')}</div>}
+            fallback={<AvatarSkeleton label={t('avatar.live2dLoading')} />}
           >
             <Live2DViewer
               modelPath={live2dPath}

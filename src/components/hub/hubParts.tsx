@@ -5,6 +5,7 @@ import { useAppStore } from '../../store/useAppStore';
 import type { ToastAction } from '../ui/feedback';
 import type { CharacterImportResult } from '../../types';
 import type { RemoteList } from './hubStore';
+import { ListSkeleton } from '../ui';
 
 interface ListStateProps {
   list: RemoteList<unknown>;
@@ -13,8 +14,7 @@ interface ListStateProps {
   loadingText: string;
   emptyText: string;
   emptyIcon: LucideIcon;
-  /** Tailwind text color for the spinner, matching the tab's accent. */
-  spinnerClass: string;
+  loadingLayout?: 'portrait' | 'cards';
   errorText: (error: string) => string;
   onRetry: () => void;
   children: React.ReactNode;
@@ -27,7 +27,7 @@ export const HubListState = ({
   loadingText,
   emptyText,
   emptyIcon: EmptyIcon,
-  spinnerClass,
+  loadingLayout,
   errorText,
   onRetry,
   children,
@@ -37,12 +37,7 @@ export const HubListState = ({
   // Already loaded entries stay visible while more are loading (Chub pagination).
   const pending = list.loading || (!list.loaded && !list.error);
   if (pending && list.items.length === 0) {
-    return (
-      <div className="flex flex-col items-center justify-center py-20 text-slate-400 gap-3">
-        <Loader2 className={`w-8 h-8 animate-spin ${spinnerClass}`} />
-        <p className="text-sm">{loadingText}</p>
-      </div>
-    );
+    return <ListSkeleton label={loadingText} layout={loadingLayout} />;
   }
   if (list.error && list.items.length === 0) {
     return (

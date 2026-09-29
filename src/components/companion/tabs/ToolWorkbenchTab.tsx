@@ -12,6 +12,7 @@ import {
   RefreshCw,
 } from 'lucide-react';
 import type { JsonObject } from '../../../types';
+import { Skeleton } from '../../ui';
 
 export const ToolWorkbenchTab: React.FC = () => {
   const { t } = useTranslation();
@@ -359,8 +360,15 @@ export const ToolWorkbenchTab: React.FC = () => {
               </div>
             </div>
           ) : (
-            <div className="p-8 text-center text-xs text-slate-500 italic">
-              {t('comp.vitalsLoading')}
+            <div role="status" aria-label={t('comp.vitalsLoading')} aria-busy="true" className="grid grid-cols-2 gap-3">
+              <span className="sr-only">{t('comp.vitalsLoading')}</span>
+              {Array.from({ length: 4 }, (_, index) => (
+                <div key={index} className="space-y-2 rounded-xl border border-slate-800 bg-app p-3">
+                  <Skeleton className="h-3 w-12" />
+                  <Skeleton className="h-5 w-20" />
+                  <Skeleton className="h-3 w-28" />
+                </div>
+              ))}
             </div>
           )}
 

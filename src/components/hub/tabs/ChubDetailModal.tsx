@@ -1,6 +1,7 @@
 import { BookOpen, Download, Globe, Loader2, MessageSquare, Star, Users, X } from 'lucide-react';
 import { useTranslation } from '../../../i18n';
 import { ModalOverlay } from '../../ui/ModalOverlay';
+import { Skeleton } from '../../ui';
 import type { ChubCharacterDetail, ChubSearchItem } from '../../../types';
 
 export interface ChubDetailState {
@@ -94,9 +95,11 @@ export const ChubDetailModal = ({ state, importing, onImport, onClose }: Props) 
 
           {/* Detailed Attributes */}
           {state.isLoading ? (
-            <div className="py-8 flex items-center justify-center gap-2 text-slate-400">
-              <Loader2 className="w-4 h-4 animate-spin text-cyan-400" />
-              <span>{t('hub.loadingDetails')}</span>
+            <div role="status" aria-label={t('hub.loadingDetails')} aria-busy="true" className="space-y-4 py-2">
+              <span className="sr-only">{t('hub.loadingDetails')}</span>
+              <Skeleton className="h-24 w-full" />
+              <Skeleton className="h-20 w-full" />
+              <Skeleton className="h-16 w-full" />
             </div>
           ) : state.detail ? (
             <div className="space-y-4 pt-2">

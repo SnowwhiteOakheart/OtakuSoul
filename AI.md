@@ -344,6 +344,8 @@ Alle benötigten Daten sind eigenständig in diesem Projektverzeichnis gekapselt
       und allen drei Übersetzungsdateien entfernt.
     - Die fünf Akzent-Themes unterstützen einen getrennt persistierten Darstellungsmodus (`system`, `light`, `dark`). Der Systemmodus
       folgt `prefers-color-scheme` auch bei Änderungen während der Laufzeit; der helle Modus kehrt die semantische Oberflächenskala um.
+    - Gemeinsame `Skeleton`, `ViewSkeleton`, `ListSkeleton` und `AvatarSkeleton` halten Ansichts- und Listengeometrien beim Laden stabil;
+      alle Container melden ihren Zustand über `role="status"` und `aria-busy`.
   - **System-Logging & Log-Viewer (`logger.rs`, `LogViewerModal.tsx`):**
     - Dateipersistenz in `~/.local/share/otakusoul/logs/otakusoul.log` mit In-Memory-Ringpuffer (1000 Einträge).
     - Backend-Commands: `get_app_logs`, `clear_app_logs`, `export_app_logs`.

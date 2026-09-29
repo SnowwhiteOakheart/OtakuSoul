@@ -38,6 +38,7 @@ import { VoiceCallControls } from '../voice/VoiceCallControls';
 import { translate, useTranslation } from '../../i18n';
 import { confirmDialog } from '../ui/feedback';
 import { EmptyState } from '../ui/EmptyState';
+import { AvatarSkeleton } from '../ui';
 
 const AvatarCanvas = React.lazy(() => import('../avatar/AvatarCanvas').then((module) => ({
   default: module.AvatarCanvas,
@@ -382,7 +383,7 @@ export const ChatView: React.FC = () => {
       <div className="flex-1 flex overflow-hidden">
         {showAvatar && (
           <div className="hidden md:flex w-5/12 lg:w-1/3 h-full">
-            <React.Suspense fallback={<div className="flex-1 grid place-items-center text-xs text-accent-300">{t('chat.avatarLoading')}</div>}>
+            <React.Suspense fallback={<AvatarSkeleton label={t('chat.avatarLoading')} />}>
               <AvatarCanvas
                 character={activeCharacter}
                 isSpeaking={isAudioSpeaking}

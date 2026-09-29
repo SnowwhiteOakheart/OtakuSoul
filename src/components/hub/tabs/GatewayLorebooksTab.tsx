@@ -36,7 +36,7 @@ export const GatewayLorebooksTab = () => {
       loadingText={t('hub.loadingLorebooks')}
       emptyText={t('hub.noLorebooks')}
       emptyIcon={BookOpen}
-      spinnerClass="text-amber-400"
+      loadingLayout="cards"
       errorText={(error) => t('hub.loadError', { error })}
       onRetry={load}
     >

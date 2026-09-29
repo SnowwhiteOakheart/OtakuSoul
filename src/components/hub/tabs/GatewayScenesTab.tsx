@@ -44,7 +44,7 @@ export const GatewayScenesTab = () => {
       loadingText={t('hub.loadingScenes')}
       emptyText={t('hub.noScenes')}
       emptyIcon={Dice5}
-      spinnerClass="text-emerald-400"
+      loadingLayout="cards"
       errorText={(error) => t('hub.loadError', { error })}
       onRetry={load}
     >

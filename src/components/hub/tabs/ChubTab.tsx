@@ -118,7 +118,7 @@ export const ChubTab = () => {
         loadingText={t('hub.loadingChub')}
         emptyText={t('hub.noCharacters')}
         emptyIcon={Globe}
-        spinnerClass="text-cyan-400"
+        loadingLayout="portrait"
         errorText={(error) => t('hub.chubLoadError', { error })}
         onRetry={() => void load(1, false)}
       >

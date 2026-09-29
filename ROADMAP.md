@@ -134,7 +134,8 @@ GitHub Actions wurden bewusst entfernt (Commit `11597c2`). Stattdessen gibt es j
   Heute landet man auf einer leeren Chat-Ansicht mit dem Hinweis „Lokaler Server ist offline“.
 - [x] Die Toolbar der Charakterbibliothek hat 6 gleich gewichtete Buttons. → Primäraktion hervorheben, den Rest in ein „Mehr“-Menü verschieben.
 - [x] **Error Boundary** um jede lazy geladene Ansicht, damit ein Fehler in einer Ansicht nicht die ganze App weiß schaltet.
-- [ ] Skelett-Loader statt reinem Text beim Laden von Ansichten und Listen.
+- [x] **Skelett-Loader statt reinem Text:** Gemeinsame, barrierefreie Skeletons für lazy Hauptansichten, Avatar-Chunks,
+  Hub-Kartenraster, Chub-Details und Companion-Systemwerte; kompakte laufende Aktionen behalten ihre Spinner.
 
 ### Barrierefreiheit (a11y)
 

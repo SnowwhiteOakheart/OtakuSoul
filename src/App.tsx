@@ -7,6 +7,7 @@ import { useTranslation } from './i18n';
 import { ErrorBoundary } from './components/ui/ErrorBoundary';
 import { FeedbackHost } from './components/ui/feedback';
 import { CommandPalette } from './components/CommandPalette';
+import { ViewSkeleton } from './components/ui';
 import './App.css';
 
 const ChatView = lazy(() => import('./components/chat/ChatView').then((module) => ({ default: module.ChatView })));
@@ -47,7 +48,7 @@ export function App() {
       <Sidebar />
       <main className="flex-1 flex min-w-0 overflow-hidden">
         <ErrorBoundary resetKey={activeTab}>
-          <Suspense fallback={<div className="flex-1 grid place-items-center text-sm text-accent-300">{t('common.loadingView')}</div>}>
+          <Suspense fallback={<ViewSkeleton label={t('common.loadingView')} />}>
             {activeTab === 'chat' && <ChatView />}
             {activeTab === 'characters' && <CharacterLibraryView />}
             {activeTab === 'hub' && <SoulHubView />}

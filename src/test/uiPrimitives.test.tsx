@@ -4,7 +4,7 @@ import { fireEvent, render, screen } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { describe, expect, it, vi } from 'vitest';
 import { Info } from 'lucide-react';
-import { Button, IconButton, Select, Slider, Tabs, Toggle, Tooltip } from '../components/ui';
+import { Button, IconButton, ListSkeleton, Select, Slider, Tabs, Toggle, Tooltip, ViewSkeleton } from '../components/ui';
 
 describe('UI primitives', () => {
   it('disables a loading button and exposes its busy state', () => {
@@ -92,5 +92,16 @@ describe('UI primitives', () => {
     render(<Slider label="Lautstärke" min={0} max={10} value={5} onValueChange={onValueChange} />);
     fireEvent.change(screen.getByRole('slider', { name: 'Lautstärke' }), { target: { value: '7' } });
     expect(onValueChange).toHaveBeenCalledWith(7);
+  });
+
+  it('exposes view and list skeletons as busy status regions', () => {
+    render(
+      <>
+        <ViewSkeleton label="Ansicht wird geladen" />
+        <ListSkeleton label="Karten werden geladen" layout="portrait" />
+      </>
+    );
+    expect(screen.getByRole('status', { name: 'Ansicht wird geladen' })).toHaveAttribute('aria-busy', 'true');
+    expect(screen.getByRole('status', { name: 'Karten werden geladen' })).toHaveAttribute('aria-busy', 'true');
   });
 });
