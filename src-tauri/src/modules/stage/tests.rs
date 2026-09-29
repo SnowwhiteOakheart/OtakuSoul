@@ -1,0 +1,200 @@
+use super::*;
+
+#[test]
+fn test_dice_parser_simple() {
+    let res = roll_dice("1d20", None).unwrap();
+    assert_eq!(res.dice_count, 1);
+    assert_eq!(res.die_faces, 20);
+    assert_eq!(res.modifier, 0);
+    assert_eq!(res.individual_rolls.len(), 1);
+    assert!(res.sum >= 1 && res.sum <= 20);
+}
+
+#[test]
+fn test_dice_parser_with_modifier() {
+    let res = roll_dice("2d6+4", None).unwrap();
+    assert_eq!(res.dice_count, 2);
+    assert_eq!(res.die_faces, 6);
+    assert_eq!(res.modifier, 4);
+    assert!(res.sum >= 6 && res.sum <= 16);
+}
+
+#[test]
+fn test_dice_parser_with_negative_modifier() {
+    let res = roll_dice("3d8-2", None).unwrap();
+    assert_eq!(res.dice_count, 3);
+    assert_eq!(res.die_faces, 8);
+    assert_eq!(res.modifier, -2);
+    assert!(res.sum >= 1 && res.sum <= 22);
+}
+
+#[test]
+fn test_dc_check() {
+    let res = roll_dice("1d20+5", Some(15)).unwrap();
+    assert!(res.dc_check.is_some());
+    let dc = res.dc_check.unwrap();
+    assert_eq!(dc.target_dc, 15);
+    assert_eq!(dc.passed, res.sum >= 15 || res.is_critical_success);
+}
+
+#[test]
+fn test_json_repair_valid() {
+    let json = r#"{"narration_plan": "The corridor opens into a hall.", "next_actor": "PLAYER"}"#;
+    let plan = repair_and_parse_gm_plan(json);
+    assert_eq!(plan.narration_plan, "The corridor opens into a hall.");
+    assert_eq!(plan.next_actor.as_deref(), Some("PLAYER"));
+}
+
+#[test]
+fn test_json_repair_fences_and_trailing_commas() {
+    let raw =
+        "```json\n{\n  \"narration_plan\": \"Test Beat\",\n  \"next_actor\": \"Ayu\",\n}\n```";
+    let plan = repair_and_parse_gm_plan(raw);
+    assert_eq!(plan.narration_plan, "Test Beat");
+    assert_eq!(plan.next_actor.as_deref(), Some("Ayu"));
+}
+
+#[test]
+fn test_json_repair_unbalanced_braces() {
+    let raw = "{\n  \"narration_plan\": \"Truncated plan without closing brace\"";
+    let plan = repair_and_parse_gm_plan(raw);
+    assert_eq!(plan.narration_plan, "Truncated plan without closing brace");
+}
+
+#[test]
+fn test_stage_turn_request_accepts_frontend_and_legacy_fields() {
+    let frontend: StageTurnRequest = serde_json::from_str(
+        r#"{
+        "scene_id":"scene", "user_input":"Hallo", "turn_mode":"whisper",
+        "whisper_target":"Ayu", "force_next_actor":"Ayu"
+    }"#,
+    )
+    .unwrap();
+    assert_eq!(frontend.user_input, "Hallo");
+    assert_eq!(frontend.whisper_target.as_deref(), Some("Ayu"));
+    assert_eq!(frontend.force_next_actor.as_deref(), Some("Ayu"));
+
+    let legacy: StageTurnRequest = serde_json::from_str(
+        r#"{
+        "scene_id":"scene", "player_input":"Alt", "target_actor":"NPC"
+    }"#,
+    )
+    .unwrap();
+    assert_eq!(legacy.user_input, "Alt");
+    assert_eq!(legacy.whisper_target.as_deref(), Some("NPC"));
+}
+
+#[test]
+fn test_stage_engine_clocks_and_combat() {
+    let engine = StageEngine::new();
+    let state = engine.get_state();
+    assert_eq!(state.clocks.len(), 2);
+    assert_eq!(state.combat.combatants.len(), 3);
+
+    // Advance clock
+    engine.set_clock_progress("clock_1", 4);
+    let updated = engine.get_state();
+    let clock = updated.clocks.iter().find(|c| c.id == "clock_1").unwrap();
+    assert_eq!(clock.current, 4);
+
+    // Start encounter
+    engine.start_encounter();
+    let combat_st = engine.get_state();
+    assert!(combat_st.combat.is_active);
+    // Ayu has highest initiative (19), so she should be first
+    assert_eq!(combat_st.combat.combatants[0].name, "Ayu Ikue");
+
+    // Next turn
+    engine.next_turn();
+    let turn2 = engine.get_state();
+    assert_eq!(turn2.combat.current_turn_index, 1);
+    assert_eq!(turn2.combat.combatants[1].name, "Hiroki");
+
+    let delayed = engine.delay_turn().unwrap();
+    assert_eq!(delayed.combat.combatants[1].name, "Schattenpirscher");
+    assert_eq!(delayed.combat.combatants[2].name, "Hiroki");
+
+    // Damage calculation
+    engine.apply_combatant_delta("comb_enemy_1", -10, 5);
+    let dmg_st = engine.get_state();
+    let enemy = dmg_st
+        .combat
+        .combatants
+        .iter()
+        .find(|c| c.id == "comb_enemy_1")
+        .unwrap();
+    assert_eq!(enemy.hp, 18);
+    assert_eq!(enemy.stress, 5);
+}
+
+#[test]
+fn test_undo_snapshot() {
+    let engine = StageEngine::new();
+    let initial_st = engine.get_state();
+    engine.push_snapshot(&initial_st.definition.id, initial_st.clone());
+
+    // Modify world location
+    let mut modified = initial_st.clone();
+    modified.world.location = "Tiefster Dungeon".to_string();
+    engine.set_state(modified);
+    assert_eq!(engine.get_state().world.location, "Tiefster Dungeon");
+
+    // Undo
+    let reverted = engine.undo_turn(&initial_st.definition.id).unwrap();
+    assert_eq!(reverted.world.location, "Alte Bibliothek des Ordens");
+}
+
+#[test]
+fn test_folders_and_ngnl_default_presence() {
+    let folders = list_stage_folders().unwrap();
+    assert!(folders.contains(&"No Game No Life".to_string()));
+    assert!(folders.contains(&"Sakura Succubus 3".to_string()));
+
+    let scenes = scan_available_scenes();
+    let ngnl_scenes: Vec<_> = scenes
+        .iter()
+        .filter(|s| s.folder == "No Game No Life")
+        .collect();
+    assert_eq!(
+        ngnl_scenes.len(),
+        12,
+        "Should have 12 No Game No Life episodes/chapters in folder"
+    );
+    // Check chapter ordering
+    assert!(
+        ngnl_scenes[0].title.contains("Kapitel 1")
+            || ngnl_scenes[0].title.contains("Episode 1")
+            || ngnl_scenes[0].id.contains("episode1")
+    );
+}
+
+#[test]
+fn test_edit_and_delete_stage_message() {
+    let engine = StageEngine::new();
+    let st = engine.get_state();
+    let scene_id = &st.definition.id;
+
+    // Edit message
+    let edited = edit_stage_turn_message_with_saver(
+        &engine,
+        scene_id,
+        "msg_init",
+        "Neuer Text für Begrüßung",
+        |_| Ok(()),
+    )
+    .unwrap();
+    assert_eq!(edited.chat_log[0].content, "Neuer Text für Begrüßung");
+
+    // Delete message
+    let deleted =
+        delete_stage_turn_message_with_saver(&engine, scene_id, "msg_init", |_| Ok(())).unwrap();
+    assert!(deleted.chat_log.is_empty());
+}
+
+#[test]
+fn test_get_stage_background_image() {
+    let bg = get_stage_background_image("Horizontal Elkia Grand Library.png");
+    assert!(bg.is_ok(), "Should find NGNL background image");
+    let data = bg.unwrap();
+    assert!(data.starts_with("data:image/"));
+}

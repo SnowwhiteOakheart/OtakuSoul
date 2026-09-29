@@ -203,7 +203,8 @@ GitHub Actions wurden bewusst entfernt (Commit `11597c2`). Stattdessen gibt es j
   Ein gemeinsamer `thiserror`-Fehlertyp ist durch die `err!`-Codes nicht mehr nötig.
 - [x] `commands.rs` (1.760 Z., 180 Commands) nach Themen aufgeteilt: `src/commands/{app,llm,chat,lorebook,characters,memory,
   stage,companion,voice,avatar,hub,ecosystem}.rs`.
-- [ ] `stage.rs` (~3.300 Z.) und `memory.rs` (~2.100 Z.) modularisieren.
+- [x] `stage.rs` (3.500 Z.) und `memory.rs` (2.500 Z.) modularisiert: `modules/stage/{models,plan,engine,dice,scenes,turn}.rs`
+  und `modules/memory/{models,schema,soul,markdown,snapshots,chats}.rs`; öffentliche Pfade bleiben über Re-Exporte gleich.
 - [x] Regexe per `std::sync::LazyLock` statt `Regex::new` pro Aufruf (dynamische Nutzer-Muster ausgenommen).
 - [x] Logging: Alle `tracing`-Meldungen gehen jetzt auch in den Log-Viewer und die Logdatei (vorher kamen dort nur
   „Logdatei geleert“-Einträge an). Level per `RUST_LOG` (`env-filter`), Rotation bei 5 MB mit drei älteren Dateien.
