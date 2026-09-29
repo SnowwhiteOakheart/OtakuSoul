@@ -97,3 +97,22 @@ pub async fn download_gguf_model(
 ) -> Result<String, String> {
     crate::modules::models_hub::download_gguf_file(&app, &download_url, &filename).await
 }
+
+#[tauri::command]
+pub fn get_llama_runtime() -> Option<crate::modules::llama_runtime::LlamaRuntimeInfo> {
+    crate::modules::llama_runtime::installed()
+}
+
+#[tauri::command]
+pub async fn list_llama_runtime_variants()
+-> Result<Vec<crate::modules::llama_runtime::LlamaRuntimeVariant>, String> {
+    crate::modules::llama_runtime::list_variants().await
+}
+
+#[tauri::command]
+pub async fn install_llama_runtime(
+    app: tauri::AppHandle,
+    backend: String,
+) -> Result<crate::modules::llama_runtime::LlamaRuntimeInfo, String> {
+    crate::modules::llama_runtime::install(&app, &backend).await
+}

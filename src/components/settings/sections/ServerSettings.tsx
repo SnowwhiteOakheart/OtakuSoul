@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { useStoreFields } from '../../../store/useAppStore';
+import { useAppStore, useStoreFields } from '../../../store/useAppStore';
 import { translate, useTranslation } from '../../../i18n';
 import { open } from '@tauri-apps/plugin-dialog';
 import {
@@ -16,6 +16,7 @@ import {
   Check,
 } from 'lucide-react';
 import { backendMessage } from '../../../utils/errors';
+import { LlamaRuntimeCard } from './LlamaRuntimeCard';
 
 export const ServerSettings = () => {
   const { t } = useTranslation();
@@ -141,6 +142,8 @@ export const ServerSettings = () => {
           </div>
         </div>
       </div>
+
+      <LlamaRuntimeCard onInstalled={() => void useAppStore.getState().fetchServerStatus()} />
 
       {/* 2. llama-server Controller */}
       <div className="rounded-xl border border-slate-800 bg-slate-900/60 p-4 space-y-4">

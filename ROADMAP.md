@@ -162,8 +162,9 @@ GitHub Actions wurden bewusst entfernt (Commit `11597c2`). Stattdessen gibt es j
 - [x] **Ressourcen im Paket:** `bundle.resources` liefert `presets/`, `assets/emotions/`, `assets/live2d/` und die VRMs
   *Anime Girl*/*Anime Man* mit; die App findet sie über Tauris Ressourcenordner. Weitere VRMs kommen als separates
   Avatar-Paket ins GitHub-Release (`tools/package_avatar_pack.sh`, prüft `lizenzen.txt`), GGUF-Modelle über den Modell-Hub.
-- [ ] `bin/` (llama.cpp-Binaries, ~490 MB, plattformabhängig) wird nicht mitgeliefert. → Klären: pro Plattform bündeln,
-  beim ersten Start herunterladen oder Installation durch den Nutzer (heute Suche im `PATH`).
+- [x] llama.cpp wird nicht gebündelt, sondern in der App geladen (Einstellungen → llama-server): offizielle Builds des
+  aktuellen *stabilen* Releases (`v0.5.0` → `b11146`), Varianten je System (CUDA/Vulkan/ROCm/CPU/Metal) mit Empfehlung
+  nach GPU, SHA-256-Prüfung, Installation im Datenordner (`modules/llama_runtime.rs`).
 - [ ] Tray-Icon für den Companion (minimieren in den Tray statt beenden).
 - [x] **Updater:** `tauri-plugin-updater` installiert signierte Updates direkt (AppImage, deb, rpm, NSIS/MSI, macOS) mit
   Fortschritt und Neustart; ohne signiertes Release bleibt der Link zur Release-Seite. Schlüssel lokal in `.tauri-signing/`

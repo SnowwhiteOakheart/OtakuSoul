@@ -170,6 +170,11 @@ impl LlamaServerManager {
             return Err(crate::err!("backend.server.prismRequired"));
         }
 
+        // The runtime downloaded in the app beats the developer bin/ folders and PATH.
+        if let Some(runtime) = crate::modules::llama_runtime::installed() {
+            return Ok(PathBuf::from(runtime.server_path));
+        }
+
         #[allow(unused_mut)]
         let mut candidates = vec![
             bin_dir.join("llama-server"),
@@ -283,11 +288,23 @@ impl LlamaServerManager {
         let mut cmd = Command::new(&binary_path);
 
         if let Some(parent) = binary_path.parent() {
-            let mut ld_path = parent.to_string_lossy().to_string();
-            if let Ok(existing) = std::env::var("LD_LIBRARY_PATH") {
-                ld_path = format!("{}:{}", ld_path, existing);
+            // The server's folder plus any library folders of an app-installed runtime
+            // (e.g. the CUDA runtime unpacked next to it).
+            let mut dirs: Vec<PathBuf> = vec![parent.to_path_buf()];
+            dirs.extend(crate::modules::llama_runtime::library_dirs_for(
+                &binary_path,
+            ));
+            let var = if cfg!(windows) {
+                "PATH"
+            } else {
+                "LD_LIBRARY_PATH"
+            };
+            if let Some(existing) = std::env::var_os(var) {
+                dirs.extend(std::env::split_paths(&existing));
             }
-            cmd.env("LD_LIBRARY_PATH", ld_path);
+            if let Ok(joined) = std::env::join_paths(dirs) {
+                cmd.env(var, joined);
+            }
         }
         cmd.arg("-m")
             .arg(&config.model_path)

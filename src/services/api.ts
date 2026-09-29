@@ -79,6 +79,9 @@ import {
   LogEntry,
   UpdateInfo,
   JsonObject,
+  LlamaRuntimeInfo,
+  LlamaRuntimeProgress,
+  LlamaRuntimeVariant,
 } from '../types';
 
 export const api = {
@@ -839,6 +842,22 @@ export const api = {
       downloadUrl,
       filename,
     });
+  },
+
+  getLlamaRuntime: async (): Promise<LlamaRuntimeInfo | null> => {
+    return await invoke<LlamaRuntimeInfo | null>('get_llama_runtime');
+  },
+
+  listLlamaRuntimeVariants: async (): Promise<LlamaRuntimeVariant[]> => {
+    return await invoke<LlamaRuntimeVariant[]>('list_llama_runtime_variants');
+  },
+
+  installLlamaRuntime: async (backend: string): Promise<LlamaRuntimeInfo> => {
+    return await invoke<LlamaRuntimeInfo>('install_llama_runtime', { backend });
+  },
+
+  onLlamaRuntimeProgress: async (callback: (data: LlamaRuntimeProgress) => void): Promise<UnlistenFn> => {
+    return await listen<LlamaRuntimeProgress>('llama-runtime-progress', (event) => callback(event.payload));
   },
 
   onModelDownloadProgress: async (
