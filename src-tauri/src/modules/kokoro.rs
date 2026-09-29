@@ -9,6 +9,7 @@ use std::path::{Path, PathBuf};
 use std::sync::{Arc, OnceLock};
 use tauri::Emitter;
 use tokio::io::AsyncWriteExt;
+use ts_rs::TS;
 
 use crate::modules::paths::resolve_app_paths;
 use crate::modules::voice::ScannedVoice;
@@ -28,7 +29,8 @@ const DEFAULT_VOICES: &[&str] = &[
     "bm_george",
 ];
 
-#[derive(Debug, Clone, Default, Serialize, Deserialize)]
+#[derive(Debug, Clone, Default, Serialize, Deserialize, TS)]
+#[ts(export)]
 pub struct KokoroConfig {
     #[serde(default)]
     pub model_path: String,
@@ -36,14 +38,16 @@ pub struct KokoroConfig {
     pub voices_path: String,
 }
 
-#[derive(Debug, Clone, Serialize, Deserialize)]
+#[derive(Debug, Clone, Serialize, Deserialize, TS)]
+#[ts(export)]
 pub struct KokoroInstallResult {
     pub model_path: String,
     pub voices_path: String,
     pub installed_voices: Vec<ScannedVoice>,
 }
 
-#[derive(Debug, Clone, Serialize)]
+#[derive(Debug, Clone, Serialize, TS)]
+#[ts(export)]
 pub struct KokoroDownloadProgress {
     pub filename: String,
     pub file_index: usize,

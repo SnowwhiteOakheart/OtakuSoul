@@ -1,8 +1,10 @@
 use serde::{Deserialize, Serialize};
 use std::process::Command;
 use sysinfo::System;
+use ts_rs::TS;
 
-#[derive(Debug, Serialize, Deserialize, Clone)]
+#[derive(Debug, Serialize, Deserialize, Clone, TS)]
+#[ts(export)]
 pub struct GpuInfo {
     pub name: String,
     pub vendor: String,
@@ -10,7 +12,8 @@ pub struct GpuInfo {
     pub free_vram_mb: u64,
 }
 
-#[derive(Debug, Serialize, Deserialize, Clone)]
+#[derive(Debug, Serialize, Deserialize, Clone, TS)]
+#[ts(export)]
 pub struct HardwareInfo {
     pub os_name: String,
     pub os_version: String,
@@ -21,7 +24,8 @@ pub struct HardwareInfo {
     pub gpus: Vec<GpuInfo>,
 }
 
-#[derive(Debug, Serialize, Deserialize, Clone)]
+#[derive(Debug, Serialize, Deserialize, Clone, TS)]
+#[ts(export)]
 pub struct LayerRecommendation {
     pub recommended_layers: u32,
     pub recommended_context_size: u32,

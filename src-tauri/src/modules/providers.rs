@@ -1,7 +1,9 @@
 use crate::modules::inference::ChatRequest;
 use serde::{Deserialize, Serialize};
+use ts_rs::TS;
 
-#[derive(Debug, Clone, Serialize, Deserialize, PartialEq, Eq)]
+#[derive(Debug, Clone, Serialize, Deserialize, PartialEq, Eq, TS)]
+#[ts(export)]
 #[serde(rename_all = "snake_case")]
 #[derive(Default)]
 pub enum LlmProviderType {
@@ -51,7 +53,8 @@ impl LlmProviderType {
     }
 }
 
-#[derive(Debug, Clone, Serialize, Deserialize)]
+#[derive(Debug, Clone, Serialize, Deserialize, TS)]
+#[ts(export)]
 pub struct OpenRouterModelInfo {
     pub id: String,
     pub name: String,

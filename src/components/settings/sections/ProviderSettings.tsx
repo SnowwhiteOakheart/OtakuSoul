@@ -220,7 +220,9 @@ export const ProviderSettings = () => {
                       </div>
 
                       <div className="text-right font-mono text-xs text-slate-400">
-                        <span>{t('settings.orContext', { size: (m.context_length / 1024).toFixed(0) })}</span>
+                        {m.context_length != null && (
+                          <span>{t('settings.orContext', { size: (m.context_length / 1024).toFixed(0) })}</span>
+                        )}
                       </div>
                     </button>
                   ))}

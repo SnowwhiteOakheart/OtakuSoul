@@ -1,8 +1,10 @@
 use crate::modules::inference::SamplingParams;
 use serde::{Deserialize, Serialize};
 use std::path::{Path, PathBuf};
+use ts_rs::TS;
 
-#[derive(Debug, Clone, Serialize, Deserialize)]
+#[derive(Debug, Clone, Serialize, Deserialize, TS)]
+#[ts(export)]
 pub struct LlmPreset {
     pub id: String,
     pub name: String,

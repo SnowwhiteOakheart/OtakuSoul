@@ -1,43 +1,107 @@
-export interface GpuInfo {
-  name: string;
-  vendor: string;
-  total_vram_mb: number;
-  free_vram_mb: number;
-}
-
-export interface HardwareInfo {
-  os_name: string;
-  os_version: string;
-  cpu_name: string;
-  cpu_cores: number;
-  total_ram_mb: number;
-  available_ram_mb: number;
-  gpus: GpuInfo[];
-}
-
-export interface LayerRecommendation {
-  recommended_layers: number;
-  recommended_context_size: number;
-  fits_entirely_in_vram: boolean;
-  estimated_vram_usage_mb: number;
-  available_vram_mb: number;
-  estimated_model_vram_mb: number;
-  estimated_context_vram_mb: number;
-  runtime_overhead_mb: number;
-  profile_name: string;
-  advice: string;
-}
-
-export type ServerState = 'stopped' | 'starting' | 'running' | 'failed';
-
-export interface ServerStatus {
-  state: ServerState;
-  port: number;
-  pid: number | null;
-  model_name: string | null;
-  error_message: string | null;
-  recent_logs: string[];
-}
+// Types that match the Rust side exactly come from ts-rs (src/types/generated, created by
+// `cargo test`); the rest are still hand-written and checked against Rust in wireCheck.ts.
+import type { AppPaths } from './generated/AppPaths';
+import type { OpenRouterModelInfo } from './generated/OpenRouterModelInfo';
+import type { BackupGroupSelection } from './generated/BackupGroupSelection';
+import type { CampaignClock } from './generated/CampaignClock';
+import type { CampaignObjective } from './generated/CampaignObjective';
+import type { CharacterDraft } from './generated/CharacterDraft';
+import type { ChatSession } from './generated/ChatSession';
+import type { ChubCharacterDetail } from './generated/ChubCharacterDetail';
+import type { CombatCondition } from './generated/CombatCondition';
+import type { ConsequenceEntry } from './generated/ConsequenceEntry';
+import type { DcCheckResult } from './generated/DcCheckResult';
+import type { DiaryEntry } from './generated/DiaryEntry';
+import type { DiscordBotConfig } from './generated/DiscordBotConfig';
+import type { DoneEvent } from './generated/DoneEvent';
+import type { EmotionState } from './generated/EmotionState';
+import type { EpisodicMemory } from './generated/EpisodicMemory';
+import type { GatewayCharacterEntry } from './generated/GatewayCharacterEntry';
+import type { GatewayLorebookEntry } from './generated/GatewayLorebookEntry';
+import type { GatewaySceneEntry } from './generated/GatewaySceneEntry';
+import type { GeneratedImageInfo } from './generated/GeneratedImageInfo';
+import type { GeneratedImageResult } from './generated/GeneratedImageResult';
+import type { GpuInfo } from './generated/GpuInfo';
+import type { HardwareInfo } from './generated/HardwareInfo';
+import type { HealingLogEntry } from './generated/HealingLogEntry';
+import type { KokoroConfig } from './generated/KokoroConfig';
+import type { KokoroDownloadProgress } from './generated/KokoroDownloadProgress';
+import type { KokoroInstallResult } from './generated/KokoroInstallResult';
+import type { LayerRecommendation } from './generated/LayerRecommendation';
+import type { Live2dCatalogItem } from './generated/Live2dCatalogItem';
+import type { LlmProviderType } from './generated/LlmProviderType';
+import type { LogEntry } from './generated/LogEntry';
+import type { MemoryBackupInfo } from './generated/MemoryBackupInfo';
+import type { Neurohormones } from './generated/Neurohormones';
+import type { RvcConfig } from './generated/RvcConfig';
+import type { ScannedVoice } from './generated/ScannedVoice';
+import type { ScannedVrm } from './generated/ScannedVrm';
+import type { ScratchpadEntry } from './generated/ScratchpadEntry';
+import type { ServerState } from './generated/ServerState';
+import type { ServerStatus } from './generated/ServerStatus';
+import type { StageRelationship } from './generated/StageRelationship';
+import type { StoryArc } from './generated/StoryArc';
+import type { SttConfig } from './generated/SttConfig';
+import type { SttEngine } from './generated/SttEngine';
+import type { ToolExecutionResult } from './generated/ToolExecutionResult';
+import type { TtsEngine } from './generated/TtsEngine';
+import type { TtsFilterMode } from './generated/TtsFilterMode';
+import type { VoiceConfig } from './generated/VoiceConfig';
+import type { WebServerConfig } from './generated/WebServerConfig';
+import type { WebServerStatus } from './generated/WebServerStatus';
+import type { WorldState } from './generated/WorldState';
+export type {
+  AppPaths,
+  OpenRouterModelInfo,
+  BackupGroupSelection,
+  CampaignClock,
+  CampaignObjective,
+  CharacterDraft,
+  ChatSession,
+  ChubCharacterDetail,
+  CombatCondition,
+  ConsequenceEntry,
+  DcCheckResult,
+  DiaryEntry,
+  DiscordBotConfig,
+  DoneEvent,
+  EmotionState,
+  EpisodicMemory,
+  GatewayCharacterEntry,
+  GatewayLorebookEntry,
+  GatewaySceneEntry,
+  GeneratedImageInfo,
+  GeneratedImageResult,
+  GpuInfo,
+  HardwareInfo,
+  HealingLogEntry,
+  KokoroConfig,
+  KokoroDownloadProgress,
+  KokoroInstallResult,
+  LayerRecommendation,
+  Live2dCatalogItem,
+  LlmProviderType,
+  LogEntry,
+  MemoryBackupInfo,
+  Neurohormones,
+  RvcConfig,
+  ScannedVoice,
+  ScannedVrm,
+  ScratchpadEntry,
+  ServerState,
+  ServerStatus,
+  StageRelationship,
+  StoryArc,
+  SttConfig,
+  SttEngine,
+  ToolExecutionResult,
+  TtsEngine,
+  TtsFilterMode,
+  VoiceConfig,
+  WebServerConfig,
+  WebServerStatus,
+  WorldState,
+};
 
 export interface LlamaServerConfig {
   binary_path?: string;
@@ -81,18 +145,8 @@ export interface SamplingParams {
   dry_penalty_last_n?: number;
   xtc_threshold?: number;
   xtc_probability?: number;
-  stop?: string[];
+  stop_strings?: string[];
 }
-
-export type LlmProviderType =
-  | 'local_llama'
-  | 'open_router'
-  | 'anthropic'
-  | 'open_ai'
-  | 'deep_seek'
-  | 'gemini'
-  | 'mistral'
-  | 'custom';
 
 export interface ChatRequest {
   endpoint_url: string;
@@ -102,11 +156,6 @@ export interface ChatRequest {
   messages: ChatMessage[];
   sampling?: SamplingParams;
   reasoning_mode?: boolean;
-}
-
-export interface DoneEvent {
-  full_text: string;
-  full_thought: string;
 }
 
 export type JsonValue = string | number | boolean | null | JsonValue[] | { [key: string]: JsonValue };
@@ -223,13 +272,6 @@ export interface RelationshipState {
   updated_at: number;
 }
 
-export interface MemoryBackupInfo {
-  filename: string;
-  timestamp: number;
-  date_formatted: string;
-  size_bytes: number;
-}
-
 export interface SoulMemoryPipelineRequest {
   character_id: string;
   user_name: string;
@@ -250,30 +292,6 @@ export interface SoulMemoryPipelineResult {
   topics_processed: string[];
   diary_entry?: DiaryEntry | null;
   healing_entries: string[];
-}
-
-export interface EpisodicMemory {
-  id: number;
-  category: string; // 'event' | 'fact' | 'location' | 'secret' | 'promise'
-  content: string;
-  significance: number; // 1..5
-  created_at: number;
-  last_accessed_at: number;
-}
-
-export interface DiaryEntry {
-  id: number;
-  title: string;
-  entry_text: string;
-  mood: string;
-  created_at: number;
-}
-
-export interface HealingLogEntry {
-  id: number;
-  action: string;
-  details: string;
-  created_at: number;
 }
 
 export interface CognitiveOverview {
@@ -299,11 +317,6 @@ export interface PromptContext {
 }
 
 // Phase 6: Soul Stage Tabletop RPG
-export interface DcCheckResult {
-  target_dc: number;
-  passed: boolean;
-  margin: number;
-}
 
 export interface DiceRollResult {
   formula: string;
@@ -315,28 +328,6 @@ export interface DiceRollResult {
   is_critical_success: boolean;
   is_critical_failure: boolean;
   dc_check?: DcCheckResult | null;
-}
-
-export interface WorldState {
-  time_of_day: string;
-  weather: string;
-  location: string;
-  danger_level: number;
-  active_quest: string;
-  key_facts: Record<string, string>;
-}
-
-export interface CampaignClock {
-  id: string;
-  name: string;
-  current: number;
-  max: number;
-  clock_type: string;
-}
-
-export interface CombatCondition {
-  name: string;
-  rounds_remaining: number;
 }
 
 export interface Combatant {
@@ -402,16 +393,6 @@ export interface SceneDefinition {
   last_played?: string | null;
 }
 
-export interface StoryArc {
-  id: string;
-  title: string;
-  description: string;
-  stage: number;
-  max_stage: number;
-  is_revealed: boolean;
-  is_resolved: boolean;
-}
-
 export interface InventoryItem {
   id: string;
   name: string;
@@ -421,30 +402,6 @@ export interface InventoryItem {
   hp_restore?: number;
   stress_restore?: number;
   clears_condition?: string | null;
-}
-
-export interface CampaignObjective {
-  id: string;
-  title: string;
-  description: string;
-  current: number;
-  max: number;
-  status: 'active' | 'completed' | 'failed' | string;
-}
-
-export interface StageRelationship {
-  subject: string;
-  target: string;
-  affinity: number;
-  tags: string[];
-  role_view: string;
-  last_shift_reason: string;
-}
-
-export interface ConsequenceEntry {
-  id: string;
-  text: string;
-  created_at: string;
 }
 
 export interface TaggedChoice {
@@ -563,27 +520,6 @@ export interface StageTurnRequest {
 }
 
 // Phase 7 & 16: Soul Companion, Neurohormones, Goals, Scratchpad, MCP & Desktop Agent
-export interface Neurohormones {
-  dopamine: number;
-  cortisol: number;
-  oxytocin: number;
-  fatigue: number;
-  mood_label: string;
-  energy_level: number;
-}
-
-export interface EmotionState {
-  current: string;
-  last_updated: number;
-  ema_scores: Record<string, number>;
-  history: Array<[string, number]>;
-}
-
-export interface ScratchpadEntry {
-  id: string;
-  thought: string;
-  ts: number;
-}
 
 export interface Goal {
   id: string;
@@ -601,14 +537,6 @@ export interface ToolCallRequest {
   requires_confirmation: boolean;
   status: 'pending' | 'approved' | 'rejected' | 'executed';
   created_at: number;
-}
-
-export interface ToolExecutionResult {
-  call_id: string;
-  tool_name: string;
-  success: boolean;
-  output: string;
-  executed_at: number;
 }
 
 export interface CompanionSettings {
@@ -681,19 +609,6 @@ export interface CompanionPlugin {
 }
 
 // Phase 8: Paths, Settings, Scans & Personas
-export interface AppPaths {
-  config_dir: string;
-  data_dir: string;
-  characters_dir: string;
-  lorebooks_dir: string;
-  personas_dir: string;
-  scenes_dir: string;
-  trash_dir: string;
-  bundled_presets_dir: string;
-  bundled_models_dir: string;
-  bundled_vrm_dir: string;
-  bundled_bin_dir: string;
-}
 
 export interface ScannedModel {
   name: string;
@@ -702,12 +617,6 @@ export interface ScannedModel {
   runtime: 'standard' | 'prism';
   recommended_context: number;
   compatibility_note: string;
-}
-
-export interface ScannedVrm {
-  name: string;
-  path: string;
-  size_mb: number;
 }
 
 export interface AppSettings {
@@ -743,15 +652,6 @@ export interface ScannedLive2d {
   version: string;
 }
 
-export interface Live2dCatalogItem {
-  id: string;
-  name: string;
-  description: string;
-  url: string;
-  model_file: string;
-  is_installed: boolean;
-}
-
 export interface EmotionResult {
   emotion: string;
   vrm_expression: 'happy' | 'angry' | 'sad' | 'surprised' | 'relaxed' | 'neutral';
@@ -768,16 +668,6 @@ export interface UserPersona {
 }
 
 // Phase 9: Vollwertiger Chat, Swipes & HUD Presets
-export interface ChatSession {
-  id: string;
-  character_id: string;
-  title: string;
-  created_at: number;
-  updated_at: number;
-  author_note: string;
-  author_note_depth: number;
-  message_count: number;
-}
 
 export interface SwipeVariant {
   content: string;
@@ -807,21 +697,6 @@ export interface HudPreset {
 }
 
 // Phase 10: LLM-Provider & llama.cpp-Tuning
-export interface OpenRouterModelPricing {
-  prompt?: string;
-  completion?: string;
-  image?: string;
-  request?: string;
-}
-
-export interface OpenRouterModelInfo {
-  id: string;
-  name: string;
-  description?: string;
-  context_length: number;
-  pricing?: OpenRouterModelPricing;
-}
-
 export interface LlmPreset {
   id: string;
   name: string;
@@ -861,103 +736,9 @@ export interface DownloadProgressEvent {
   error?: string | null;
 }
 
-
 // Phase 13: Voice & TTS
-export type TtsEngine = 'edge' | 'kokoro' | 'elevenlabs' | 'openai' | 'disabled';
-export type TtsFilterMode = 'all' | 'dialogue_only' | 'strip_actions';
-export type SttEngine = 'native_whisper' | 'openai' | 'disabled';
-
-export interface KokoroConfig {
-  model_path: string;
-  voices_path: string;
-}
-
-export interface KokoroInstallResult extends KokoroConfig {
-  installed_voices: ScannedVoice[];
-}
-
-export interface KokoroDownloadProgress {
-  filename: string;
-  file_index: number;
-  total_files: number;
-  downloaded_bytes: number;
-  total_bytes: number;
-  percent: number;
-  finished: boolean;
-}
-
-export interface RvcConfig {
-  enabled: boolean;
-  endpoint: string;
-  api_key: string;
-  model: string;
-  pitch: number;
-  index_rate: number;
-  protect: number;
-}
-
-export interface SttConfig {
-  engine: SttEngine;
-  whisper_model_path: string;
-  endpoint: string;
-  api_key: string;
-  model: string;
-  language: string;
-  prompt: string;
-  vad_threshold: number;
-  vad_silence_ms: number;
-  input_device_id: string;
-}
-
-export interface VoiceConfig {
-  engine: TtsEngine;
-  voice_id: string;
-  rate: string;
-  pitch: string;
-  volume: string;
-  filter_mode: TtsFilterMode;
-  custom_regex: string;
-  elevenlabs_api_key: string;
-  openai_endpoint: string;
-  openai_api_key: string;
-  openai_model: string;
-  openai_instructions: string;
-  kokoro: KokoroConfig;
-  output_device_id: string;
-  rvc: RvcConfig;
-  stt: SttConfig;
-}
-
-export interface ScannedVoice {
-  id: string;
-  name: string;
-  locale: string;
-  gender: string;
-}
 
 // Soul Hub Types (Soul Gateway, Chub AI, World Lorebooks, Stage Scenarios)
-export interface GatewayCharacterEntry {
-  name: string;
-  author: string;
-  download_url: string;
-}
-
-export interface GatewayLorebookEntry {
-  name: string;
-  author: string;
-  description: string;
-  entry_count: number;
-  download_url: string;
-}
-
-export interface GatewaySceneEntry {
-  id: string;
-  title: string;
-  author: string;
-  description: string;
-  starting_location: string;
-  download_url: string;
-}
 
 export interface ChubSearchItem {
   id: number;
@@ -980,37 +761,12 @@ export interface ChubSearchResult {
   has_more: boolean;
 }
 
-export interface ChubCharacterDetail {
-  name: string;
-  tagline: string;
-  avatar_url: string;
-  star_count: number;
-  n_favorites: number;
-  n_tokens: number;
-  personality: string;
-  first_message: string;
-  scenario: string;
-  example_dialogs: string;
-  alternate_greetings: string[];
-  has_embedded_lorebook: boolean;
-}
-
 export interface CharacterImportResult {
   profile: CharacterProfile;
   imported_lorebook?: string | null;
 }
 
 // --- Phase 17: Ecosystem, Backups, Image Generation, Discord & Web Client ---
-
-export interface BackupGroupSelection {
-  characters: boolean;
-  lorebooks: boolean;
-  personas: boolean;
-  soul_memory: boolean;
-  soul_stage: boolean;
-  companion: boolean;
-  settings: boolean;
-}
 
 export interface BackupManifest {
   schema_version: number;
@@ -1045,24 +801,6 @@ export interface ImageGenConfig {
   seed: number;
 }
 
-export interface GeneratedImageResult {
-  file_name: string;
-  file_path: string;
-  base64_data_url: string;
-  prompt_used: string;
-  negative_used: string;
-  width: number;
-  height: number;
-  created_at: string;
-}
-
-export interface GeneratedImageInfo {
-  file_name: string;
-  file_path: string;
-  size_bytes: number;
-  created_at: string;
-}
-
 export interface DiscordRpcActivity {
   details: string;
   state: string;
@@ -1070,35 +808,11 @@ export interface DiscordRpcActivity {
   start_timestamp?: number | null;
 }
 
-export interface DiscordBotConfig {
-  enabled: boolean;
-  bot_token: string;
-  command_prefix: string;
-  allowed_channels: string[];
-  cooldown_secs: number;
-}
-
 export interface DiscordBotStatus {
   is_running: boolean;
   bot_user?: string | null;
   connected_guilds: number;
   uptime_secs: number;
-}
-
-export interface WebServerConfig {
-  enabled: boolean;
-  port: number;
-  host: string;
-  auth_token: string;
-}
-
-export interface WebServerStatus {
-  is_running: boolean;
-  port: number;
-  local_ip: string;
-  connection_url: string;
-  qr_code_svg: string;
-  auth_token: string;
 }
 
 export interface CharacterWizardInput {
@@ -1113,24 +827,7 @@ export interface CharacterWizardInput {
   target_language?: string | null;
 }
 
-export interface CharacterDraft {
-  name: string;
-  description: string;
-  personality: string;
-  scenario: string;
-  first_mes: string;
-  mes_example: string;
-  system_prompt: string;
-  tags: string[];
-}
-
 // Phase 18: Logging & Updater
-export interface LogEntry {
-  timestamp: string;
-  level: 'INFO' | 'WARN' | 'ERROR' | 'DEBUG' | string;
-  target: string;
-  message: string;
-}
 
 export interface UpdateInfo {
   current_version: string;

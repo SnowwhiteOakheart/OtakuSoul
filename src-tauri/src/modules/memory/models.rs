@@ -1,6 +1,7 @@
 //! Records stored in the soul memory database and exchanged with the frontend.
 
 use super::*;
+use ts_rs::TS;
 
 pub(super) fn current_timestamp() -> u64 {
     SystemTime::now()
@@ -17,7 +18,8 @@ pub(super) fn default_none() -> String {
     "Keine.".to_string()
 }
 
-#[derive(Debug, Clone, Serialize, Deserialize)]
+#[derive(Debug, Clone, Serialize, Deserialize, TS)]
+#[ts(export)]
 pub struct PsychologyState {
     pub primary_emotion: String,
     pub intensity: u32, // 1..5
@@ -32,7 +34,8 @@ pub struct PsychologyState {
     pub updated_at: u64,
 }
 
-#[derive(Debug, Clone, Serialize, Deserialize)]
+#[derive(Debug, Clone, Serialize, Deserialize, TS)]
+#[ts(export)]
 pub struct RelationshipState {
     pub user_name: String,
     #[serde(default = "default_role_in_story")]
@@ -48,7 +51,8 @@ pub struct RelationshipState {
     pub updated_at: u64,
 }
 
-#[derive(Debug, Clone, Serialize, Deserialize)]
+#[derive(Debug, Clone, Serialize, Deserialize, TS)]
+#[ts(export)]
 pub struct MemoryBackupInfo {
     pub filename: String,
     pub timestamp: u64,
@@ -56,7 +60,8 @@ pub struct MemoryBackupInfo {
     pub size_bytes: u64,
 }
 
-#[derive(Debug, Clone, Serialize, Deserialize)]
+#[derive(Debug, Clone, Serialize, Deserialize, TS)]
+#[ts(export)]
 pub struct MemoryBackupSnapshot {
     pub character_id: String,
     pub created_at: u64,
@@ -67,7 +72,8 @@ pub struct MemoryBackupSnapshot {
     pub healing_logs: Vec<HealingLogEntry>,
 }
 
-#[derive(Debug, Clone, Serialize, Deserialize)]
+#[derive(Debug, Clone, Serialize, Deserialize, TS)]
+#[ts(export)]
 pub struct EpisodicMemory {
     pub id: i64,
     pub category: String, // "event", "fact", "location", "secret", "promise"
@@ -77,7 +83,8 @@ pub struct EpisodicMemory {
     pub last_accessed_at: u64,
 }
 
-#[derive(Debug, Clone, Serialize, Deserialize)]
+#[derive(Debug, Clone, Serialize, Deserialize, TS)]
+#[ts(export)]
 pub struct DiaryEntry {
     pub id: i64,
     pub title: String,
@@ -86,7 +93,8 @@ pub struct DiaryEntry {
     pub created_at: u64,
 }
 
-#[derive(Debug, Clone, Serialize, Deserialize)]
+#[derive(Debug, Clone, Serialize, Deserialize, TS)]
+#[ts(export)]
 pub struct HealingLogEntry {
     pub id: i64,
     pub action: String,
@@ -94,7 +102,8 @@ pub struct HealingLogEntry {
     pub created_at: u64,
 }
 
-#[derive(Debug, Clone, Serialize, Deserialize)]
+#[derive(Debug, Clone, Serialize, Deserialize, TS)]
+#[ts(export)]
 pub struct CognitiveOverview {
     pub psychology: PsychologyState,
     pub relationship: RelationshipState,
@@ -103,7 +112,8 @@ pub struct CognitiveOverview {
     pub healing_logs: Vec<HealingLogEntry>,
 }
 
-#[derive(Debug, Clone, Serialize, Deserialize)]
+#[derive(Debug, Clone, Serialize, Deserialize, TS)]
+#[ts(export)]
 pub struct ChatSession {
     pub id: String,
     pub character_id: String,
@@ -115,13 +125,15 @@ pub struct ChatSession {
     pub message_count: usize,
 }
 
-#[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
+#[derive(Debug, Clone, Serialize, Deserialize, PartialEq, TS)]
+#[ts(export)]
 pub struct SwipeVariant {
     pub content: String,
     pub thought: Option<String>,
 }
 
-#[derive(Debug, Clone, Serialize, Deserialize)]
+#[derive(Debug, Clone, Serialize, Deserialize, TS)]
+#[ts(export)]
 pub struct StoredChatMessage {
     pub id: String,
     pub chat_id: String,

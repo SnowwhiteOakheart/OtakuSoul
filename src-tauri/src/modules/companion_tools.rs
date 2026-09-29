@@ -4,6 +4,7 @@ use std::path::{Path, PathBuf};
 use std::sync::LazyLock;
 use std::time::Duration;
 use tokio::process::Command;
+use ts_rs::TS;
 
 static TITLE_RE: LazyLock<Regex> =
     LazyLock::new(|| Regex::new(r"(?is)<title[^>]*>(.*?)</title>").unwrap());
@@ -36,7 +37,8 @@ fn html_to_text(html: &str) -> (Option<String>, String) {
 }
 
 /// System snapshot of CPU, RAM, Disk, GPU and Battery.
-#[derive(Debug, Clone, Serialize, Deserialize)]
+#[derive(Debug, Clone, Serialize, Deserialize, TS)]
+#[ts(export)]
 pub struct EnvironmentSnapshot {
     pub cpu_usage_percent: f32,
     pub ram_used_mb: u64,

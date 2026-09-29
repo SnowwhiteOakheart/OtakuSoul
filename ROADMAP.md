@@ -183,8 +183,11 @@ GitHub Actions wurden bewusst entfernt (Commit `11597c2`). Stattdessen gibt es j
 - [x] Riesige Komponenten aufgeteilt: `SettingsView` → `settings/sections/`, `SoulHubView` → `hub/tabs/` (mit eigenem Hub-Store),
   `CompanionView` → `companion/tabs/`, `IntegrationsView` → `integrations/tabs/`, `CognitiveMemoryDrawer` → `chat/memory/`,
   `LorebookView` → Seitenleiste, Eintragskarte und Eintragsdialog. Keine Datei liegt mehr über 800 Zeilen.
-- [ ] `src/types/index.ts` (1.138 Z.): Typen aus Rust generieren (`specta` + `tauri-specta` oder `ts-rs`), damit Frontend und Backend nicht auseinanderlaufen.
-  Gleichzeitig erhält man typisierte `invoke`-Aufrufe statt manueller Wrapper in `api.ts` (1.179 Z.).
+- [x] Typen aus Rust: **ts-rs** (stabil; `tauri-specta` ist weiterhin nur RC) erzeugt 137 Typen nach `src/types/generated/`.
+  49 identische Typen kommen direkt daher, `wireCheck.ts` vergleicht die Feldnamen der übrigen 59 mit Rust (tsc schlägt bei
+  Abweichung fehl). `npm run check` baut Rust zuerst, damit tsc immer gegen aktuelle Typen prüft. Dabei gefunden: Download-
+  Restzeit wurde nie gesendet (ergänzt), OpenRouter-/Sampler-Feldnamen stimmten nicht.
+- [ ] Command-Wrapper in `api.ts` typsicher erzeugen, sobald `tauri-specta` eine stabile 2.0 hat.
 - [x] `any` ist vollständig beseitigt (35 → 0). Frontend-Warnungen und -Fehler (`console.warn/error`, unbehandelte Fehler
   und Promise-Ablehnungen) landen über `log_frontend` im Log-Viewer und in der Logdatei (gedrosselt, Ziel `frontend`).
 - [x] `tsconfig`: `target`/`lib` von ES2020 auf ES2022+ anheben, `noUncheckedIndexedAccess` aktivieren.

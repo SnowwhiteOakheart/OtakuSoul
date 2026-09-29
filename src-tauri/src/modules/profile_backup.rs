@@ -4,6 +4,7 @@ use std::fs::{self, File};
 use std::io::{Read, Write};
 use std::path::{Path, PathBuf};
 use tracing::{info, warn};
+use ts_rs::TS;
 use zip::write::SimpleFileOptions;
 use zip::{ZipArchive, ZipWriter};
 
@@ -14,7 +15,8 @@ const SCHEMA_VERSION: u32 = 1;
 const SAFETY_ROTATION_KEEP: usize = 5;
 const MEMORY_DB_ENTRY: &str = "memory/otakusoul.db";
 
-#[derive(Debug, Clone, Serialize, Deserialize)]
+#[derive(Debug, Clone, Serialize, Deserialize, TS)]
+#[ts(export)]
 pub struct BackupGroupSelection {
     pub characters: bool,
     pub lorebooks: bool,
@@ -39,7 +41,8 @@ impl Default for BackupGroupSelection {
     }
 }
 
-#[derive(Debug, Clone, Serialize, Deserialize)]
+#[derive(Debug, Clone, Serialize, Deserialize, TS)]
+#[ts(export)]
 pub struct BackupManifest {
     pub schema_version: u32,
     pub app_version: String,
@@ -49,7 +52,8 @@ pub struct BackupManifest {
     pub description: Option<String>,
 }
 
-#[derive(Debug, Clone, Serialize, Deserialize)]
+#[derive(Debug, Clone, Serialize, Deserialize, TS)]
+#[ts(export)]
 pub struct BackupEntryInfo {
     pub id: String,
     pub filename: String,

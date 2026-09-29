@@ -2,6 +2,7 @@ use serde::{Deserialize, Serialize};
 use std::fs;
 use std::path::PathBuf;
 use tracing::{info, warn};
+use ts_rs::TS;
 
 use crate::modules::inference::SamplingParams;
 use crate::modules::llama_manager::LlamaServerConfig;
@@ -16,7 +17,8 @@ fn default_cloud_provider() -> String {
     "open_router".to_string()
 }
 
-#[derive(Debug, Clone, Serialize, Deserialize)]
+#[derive(Debug, Clone, Serialize, Deserialize, TS)]
+#[ts(export)]
 pub struct AppSettings {
     pub server_config: LlamaServerConfig,
     pub sampling: SamplingParams,

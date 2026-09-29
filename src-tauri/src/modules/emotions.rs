@@ -1,5 +1,6 @@
 use serde::{Deserialize, Serialize};
 use std::sync::LazyLock;
+use ts_rs::TS;
 
 /// The 28 standard GoEmotions labels
 pub const GO_EMOTIONS: [&str; 28] = [
@@ -33,7 +34,8 @@ pub const GO_EMOTIONS: [&str; 28] = [
     "neutral",
 ];
 
-#[derive(Debug, Clone, Serialize, Deserialize)]
+#[derive(Debug, Clone, Serialize, Deserialize, TS)]
+#[ts(export)]
 pub struct EmotionResult {
     /// The primary detected emotion out of the 28 GoEmotions
     pub emotion: String,

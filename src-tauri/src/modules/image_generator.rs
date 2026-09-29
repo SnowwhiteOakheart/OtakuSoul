@@ -6,12 +6,14 @@ use std::io::Write;
 use std::path::PathBuf;
 use std::time::Duration;
 use tracing::info;
+use ts_rs::TS;
 
 use crate::modules::paths::resolve_app_paths;
 
 const IMAGE_GEN_KEY_ACCOUNT: &str = "image_gen_api_key";
 
-#[derive(Debug, Clone, Serialize, Deserialize)]
+#[derive(Debug, Clone, Serialize, Deserialize, TS)]
+#[ts(export)]
 pub struct ImageGenConfig {
     pub provider: String, // "Automatic1111", "ComfyUI", "DALL-E 3", "NovelAI", "FLUX"
     pub api_url: String,  // e.g. "http://127.0.0.1:7860" or "http://127.0.0.1:8188"
@@ -44,7 +46,8 @@ impl Default for ImageGenConfig {
     }
 }
 
-#[derive(Debug, Clone, Serialize, Deserialize)]
+#[derive(Debug, Clone, Serialize, Deserialize, TS)]
+#[ts(export)]
 pub struct GeneratedImageResult {
     pub file_name: String,
     pub file_path: String,
@@ -56,7 +59,8 @@ pub struct GeneratedImageResult {
     pub created_at: String,
 }
 
-#[derive(Debug, Clone, Serialize, Deserialize)]
+#[derive(Debug, Clone, Serialize, Deserialize, TS)]
+#[ts(export)]
 pub struct GeneratedImageInfo {
     pub file_name: String,
     pub file_path: String,

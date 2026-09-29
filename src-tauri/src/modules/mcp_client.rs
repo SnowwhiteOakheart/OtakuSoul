@@ -4,8 +4,10 @@ use std::collections::HashMap;
 use std::path::{Path, PathBuf};
 use tokio::io::{AsyncBufReadExt, AsyncWriteExt, BufReader};
 use tokio::process::Command;
+use ts_rs::TS;
 
-#[derive(Debug, Clone, Serialize, Deserialize)]
+#[derive(Debug, Clone, Serialize, Deserialize, TS)]
+#[ts(export)]
 pub struct McpServerConfig {
     pub id: String,
     pub name: String,
@@ -17,7 +19,8 @@ pub struct McpServerConfig {
     pub enabled: bool,
 }
 
-#[derive(Debug, Clone, Serialize, Deserialize)]
+#[derive(Debug, Clone, Serialize, Deserialize, TS)]
+#[ts(export)]
 pub struct McpToolInfo {
     pub server_id: String,
     pub name: String,
@@ -25,7 +28,8 @@ pub struct McpToolInfo {
     pub input_schema: serde_json::Value,
 }
 
-#[derive(Debug, Clone, Serialize, Deserialize)]
+#[derive(Debug, Clone, Serialize, Deserialize, TS)]
+#[ts(export)]
 pub struct CompanionPlugin {
     pub id: String,
     pub name: String,

@@ -4,6 +4,7 @@ use std::fs;
 use std::io::Cursor;
 use std::path::{Path, PathBuf};
 use tracing::info;
+use ts_rs::TS;
 
 use crate::modules::characters::{
     CharacterProfile, extract_and_save_embedded_lorebook, inject_character_metadata_png,
@@ -22,14 +23,16 @@ const LOREBOOKS_REGISTRY_URL: &str =
 const STAGES_REGISTRY_URL: &str =
     "https://raw.githubusercontent.com/SnowwhiteOakheart/sow-data/main/stages_registry.json";
 
-#[derive(Debug, Clone, Serialize, Deserialize)]
+#[derive(Debug, Clone, Serialize, Deserialize, TS)]
+#[ts(export)]
 pub struct GatewayCharacterEntry {
     pub name: String,
     pub author: String,
     pub download_url: String,
 }
 
-#[derive(Debug, Clone, Serialize, Deserialize)]
+#[derive(Debug, Clone, Serialize, Deserialize, TS)]
+#[ts(export)]
 pub struct GatewayLorebookEntry {
     pub name: String,
     pub author: String,
@@ -38,7 +41,8 @@ pub struct GatewayLorebookEntry {
     pub download_url: String,
 }
 
-#[derive(Debug, Clone, Serialize, Deserialize)]
+#[derive(Debug, Clone, Serialize, Deserialize, TS)]
+#[ts(export)]
 pub struct GatewaySceneEntry {
     #[serde(default)]
     pub id: String,
@@ -49,7 +53,8 @@ pub struct GatewaySceneEntry {
     pub download_url: String,
 }
 
-#[derive(Debug, Clone, Serialize, Deserialize)]
+#[derive(Debug, Clone, Serialize, Deserialize, TS)]
+#[ts(export)]
 pub struct ChubSearchItem {
     pub id: u64,
     pub name: String,
@@ -72,14 +77,16 @@ pub struct ChubSearchItem {
     pub nsfw_image: bool,
 }
 
-#[derive(Debug, Clone, Serialize, Deserialize)]
+#[derive(Debug, Clone, Serialize, Deserialize, TS)]
+#[ts(export)]
 pub struct ChubSearchResult {
     pub items: Vec<ChubSearchItem>,
     pub total_count: Option<u64>,
     pub has_more: bool,
 }
 
-#[derive(Debug, Clone, Serialize, Deserialize)]
+#[derive(Debug, Clone, Serialize, Deserialize, TS)]
+#[ts(export)]
 pub struct ChubCharacterDetail {
     pub name: String,
     pub tagline: String,
@@ -95,7 +102,8 @@ pub struct ChubCharacterDetail {
     pub has_embedded_lorebook: bool,
 }
 
-#[derive(Debug, Clone, Serialize, Deserialize)]
+#[derive(Debug, Clone, Serialize, Deserialize, TS)]
+#[ts(export)]
 pub struct CharacterImportResult {
     pub profile: CharacterProfile,
     pub imported_lorebook: Option<String>,

@@ -2,10 +2,12 @@ use base64::prelude::*;
 use serde::{Deserialize, Serialize};
 use std::fs;
 use std::path::{Path, PathBuf};
+use ts_rs::TS;
 
 use crate::modules::paths::resolve_app_paths;
 
-#[derive(Debug, Clone, Serialize, Deserialize, Default)]
+#[derive(Debug, Clone, Serialize, Deserialize, Default, TS)]
+#[ts(export)]
 pub struct CharacterData {
     pub name: String,
     pub description: String,
@@ -30,7 +32,8 @@ pub struct CharacterData {
     pub extensions: serde_json::Value,
 }
 
-#[derive(Debug, Clone, Serialize, Deserialize)]
+#[derive(Debug, Clone, Serialize, Deserialize, TS)]
+#[ts(export)]
 pub struct CharacterCardV2 {
     #[serde(default = "default_spec")]
     pub spec: String,
@@ -47,7 +50,8 @@ fn default_spec_version() -> String {
     "2.0".to_string()
 }
 
-#[derive(Debug, Clone, Serialize, Deserialize)]
+#[derive(Debug, Clone, Serialize, Deserialize, TS)]
+#[ts(export)]
 pub struct CharacterProfile {
     pub id: String,
     pub card: CharacterCardV2,
@@ -56,7 +60,8 @@ pub struct CharacterProfile {
     pub bound_lorebooks: Vec<String>,
 }
 
-#[derive(Debug, Clone, Serialize, Deserialize)]
+#[derive(Debug, Clone, Serialize, Deserialize, TS)]
+#[ts(export)]
 pub struct UserPersona {
     pub id: String,
     pub name: String,
@@ -765,7 +770,8 @@ fn save_personas_list_to_path(list: &[UserPersona], path: &Path) -> Result<(), S
     Ok(())
 }
 
-#[derive(Debug, Clone, Serialize, Deserialize)]
+#[derive(Debug, Clone, Serialize, Deserialize, TS)]
+#[ts(export)]
 pub struct CharacterWizardInput {
     pub name: String,
     pub concept: String,
@@ -778,7 +784,8 @@ pub struct CharacterWizardInput {
     pub target_language: Option<String>,
 }
 
-#[derive(Debug, Clone, Serialize, Deserialize, Default)]
+#[derive(Debug, Clone, Serialize, Deserialize, Default, TS)]
+#[ts(export)]
 pub struct CharacterDraft {
     pub name: String,
     pub description: String,

@@ -4,12 +4,14 @@ use serde_json::{Map as JsonMap, Value as JsonValue};
 use std::collections::HashMap;
 use std::fs;
 use std::path::{Path, PathBuf};
+use ts_rs::TS;
 
 use crate::modules::characters::{
     CharacterProfile, load_character_from_file, parse_character_json,
 };
 
-#[derive(Debug, Clone, Serialize, Deserialize)]
+#[derive(Debug, Clone, Serialize, Deserialize, TS)]
+#[ts(export)]
 pub struct AppPaths {
     pub config_dir: String,
     pub data_dir: String,
@@ -24,7 +26,8 @@ pub struct AppPaths {
     pub bundled_bin_dir: String,
 }
 
-#[derive(Debug, Clone, Serialize, Deserialize)]
+#[derive(Debug, Clone, Serialize, Deserialize, TS)]
+#[ts(export)]
 pub struct ScannedModel {
     pub name: String,
     pub path: String,
@@ -34,7 +37,8 @@ pub struct ScannedModel {
     pub compatibility_note: String,
 }
 
-#[derive(Debug, Clone, Serialize, Deserialize)]
+#[derive(Debug, Clone, Serialize, Deserialize, TS)]
+#[ts(export)]
 pub struct ScannedVrm {
     pub name: String,
     pub path: String,

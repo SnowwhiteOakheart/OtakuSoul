@@ -2,10 +2,12 @@ use serde::{Deserialize, Serialize};
 use std::fs;
 use std::path::{Path, PathBuf};
 use tracing::{info, warn};
+use ts_rs::TS;
 
 use crate::modules::paths::resolve_app_paths;
 
-#[derive(Debug, Clone, Serialize, Deserialize)]
+#[derive(Debug, Clone, Serialize, Deserialize, TS)]
+#[ts(export)]
 pub struct ScannedLive2d {
     pub id: String,
     pub name: String,
@@ -14,7 +16,8 @@ pub struct ScannedLive2d {
     pub version: String, // "cubism3_4" | "cubism2"
 }
 
-#[derive(Debug, Clone, Serialize, Deserialize)]
+#[derive(Debug, Clone, Serialize, Deserialize, TS)]
+#[ts(export)]
 pub struct Live2dCatalogItem {
     pub id: String,
     pub name: String,

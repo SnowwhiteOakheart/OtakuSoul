@@ -1,15 +1,18 @@
 //! Data model of a Soul Stage scene: world state, combat, arcs, inventory, messages and scene files.
 
 use super::*;
+use ts_rs::TS;
 
-#[derive(Debug, Clone, Serialize, Deserialize)]
+#[derive(Debug, Clone, Serialize, Deserialize, TS)]
+#[ts(export)]
 pub struct DcCheckResult {
     pub target_dc: i32,
     pub passed: bool,
     pub margin: i32, // sum - target_dc
 }
 
-#[derive(Debug, Clone, Serialize, Deserialize)]
+#[derive(Debug, Clone, Serialize, Deserialize, TS)]
+#[ts(export)]
 pub struct DiceRollResult {
     pub formula: String,
     pub dice_count: u32,
@@ -22,7 +25,8 @@ pub struct DiceRollResult {
     pub dc_check: Option<DcCheckResult>,
 }
 
-#[derive(Debug, Clone, Serialize, Deserialize)]
+#[derive(Debug, Clone, Serialize, Deserialize, TS)]
+#[ts(export)]
 pub struct WorldState {
     pub time_of_day: String, // "Morgen", "Mittag", "Dämmerung", "Mitternacht"
     pub weather: String,     // "Klar", "Stürmisch", "Dichter Nebel", "Blutmond"
@@ -46,7 +50,8 @@ impl Default for WorldState {
     }
 }
 
-#[derive(Debug, Clone, Serialize, Deserialize)]
+#[derive(Debug, Clone, Serialize, Deserialize, TS)]
+#[ts(export)]
 pub struct CampaignClock {
     pub id: String,
     pub name: String,
@@ -55,13 +60,15 @@ pub struct CampaignClock {
     pub clock_type: String, // "danger" | "progress" | "mystery"
 }
 
-#[derive(Debug, Clone, Serialize, Deserialize)]
+#[derive(Debug, Clone, Serialize, Deserialize, TS)]
+#[ts(export)]
 pub struct CombatCondition {
     pub name: String,
     pub rounds_remaining: u32,
 }
 
-#[derive(Debug, Clone, Serialize, Deserialize)]
+#[derive(Debug, Clone, Serialize, Deserialize, TS)]
+#[ts(export)]
 pub struct Combatant {
     pub id: String,
     pub name: String,
@@ -74,7 +81,8 @@ pub struct Combatant {
     pub conditions: Vec<CombatCondition>,
 }
 
-#[derive(Debug, Clone, Serialize, Deserialize)]
+#[derive(Debug, Clone, Serialize, Deserialize, TS)]
+#[ts(export)]
 pub struct EncounterState {
     pub is_active: bool,
     pub round: u32,
@@ -97,7 +105,8 @@ impl Default for EncounterState {
 
 // --- Story Arcs & Inventory ---
 
-#[derive(Debug, Clone, Serialize, Deserialize)]
+#[derive(Debug, Clone, Serialize, Deserialize, TS)]
+#[ts(export)]
 pub struct StoryArc {
     pub id: String,
     pub title: String,
@@ -108,7 +117,8 @@ pub struct StoryArc {
     pub is_resolved: bool,
 }
 
-#[derive(Debug, Clone, Serialize, Deserialize)]
+#[derive(Debug, Clone, Serialize, Deserialize, TS)]
+#[ts(export)]
 pub struct InventoryItem {
     pub id: String,
     pub name: String,
@@ -123,7 +133,8 @@ pub struct InventoryItem {
     pub clears_condition: Option<String>,
 }
 
-#[derive(Debug, Clone, Serialize, Deserialize)]
+#[derive(Debug, Clone, Serialize, Deserialize, TS)]
+#[ts(export)]
 pub struct CampaignObjective {
     pub id: String,
     pub title: String,
@@ -144,7 +155,8 @@ pub(super) fn default_objective_status() -> String {
     "active".to_string()
 }
 
-#[derive(Debug, Clone, Serialize, Deserialize)]
+#[derive(Debug, Clone, Serialize, Deserialize, TS)]
+#[ts(export)]
 pub struct StageRelationship {
     pub subject: String,
     pub target: String,
@@ -158,7 +170,8 @@ pub struct StageRelationship {
     pub last_shift_reason: String,
 }
 
-#[derive(Debug, Clone, Serialize, Deserialize)]
+#[derive(Debug, Clone, Serialize, Deserialize, TS)]
+#[ts(export)]
 pub struct ConsequenceEntry {
     pub id: String,
     pub text: String,
@@ -167,7 +180,8 @@ pub struct ConsequenceEntry {
 
 // --- Scene & Turn Message Models ---
 
-#[derive(Debug, Clone, Serialize, Deserialize)]
+#[derive(Debug, Clone, Serialize, Deserialize, TS)]
+#[ts(export)]
 pub struct DiceEventData {
     pub formula: String,
     pub rolls: Vec<u32>,
@@ -179,7 +193,8 @@ pub struct DiceEventData {
     pub is_crit_fail: bool,
 }
 
-#[derive(Debug, Clone, Serialize, Deserialize)]
+#[derive(Debug, Clone, Serialize, Deserialize, TS)]
+#[ts(export)]
 pub struct ClockUpdateData {
     pub clock_id: String,
     pub clock_name: String,
@@ -188,7 +203,8 @@ pub struct ClockUpdateData {
     pub max: u32,
 }
 
-#[derive(Debug, Clone, Serialize, Deserialize)]
+#[derive(Debug, Clone, Serialize, Deserialize, TS)]
+#[ts(export)]
 pub struct RestEventData {
     pub rest_type: String, // "short" | "long"
     pub recovered_hp: i32,
@@ -196,7 +212,8 @@ pub struct RestEventData {
     pub campfire_note: String,
 }
 
-#[derive(Debug, Clone, Serialize, Deserialize)]
+#[derive(Debug, Clone, Serialize, Deserialize, TS)]
+#[ts(export)]
 #[serde(tag = "type")]
 pub enum StageEventCard {
     #[serde(rename = "dice_roll")]
@@ -226,7 +243,8 @@ pub enum StageEventCard {
     Combat { action: String, text: String },
 }
 
-#[derive(Debug, Clone, Serialize, Deserialize)]
+#[derive(Debug, Clone, Serialize, Deserialize, TS)]
+#[ts(export)]
 pub struct TaggedChoice {
     pub text: String,
     #[serde(default)]
@@ -239,7 +257,8 @@ pub(super) fn default_action_type() -> String {
     "do".to_string()
 }
 
-#[derive(Debug, Clone, Serialize, Deserialize)]
+#[derive(Debug, Clone, Serialize, Deserialize, TS)]
+#[ts(export)]
 pub struct SceneTurnMessage {
     pub id: String,
     pub sender_id: String,
@@ -261,7 +280,8 @@ pub(super) fn default_turn_mode() -> String {
     "do".to_string()
 }
 
-#[derive(Debug, Clone, Serialize, Deserialize)]
+#[derive(Debug, Clone, Serialize, Deserialize, TS)]
+#[ts(export)]
 pub struct SceneDefinition {
     #[serde(default)]
     pub id: String,
@@ -325,7 +345,8 @@ pub(super) fn default_true() -> bool {
     true
 }
 
-#[derive(Debug, Clone, Serialize, Deserialize)]
+#[derive(Debug, Clone, Serialize, Deserialize, TS)]
+#[ts(export)]
 pub struct ScenePreview {
     pub id: String,
     pub title: String,
@@ -344,7 +365,8 @@ pub struct ScenePreview {
     pub turn_count: usize,
 }
 
-#[derive(Debug, Clone, Serialize, Deserialize)]
+#[derive(Debug, Clone, Serialize, Deserialize, TS)]
+#[ts(export)]
 pub struct SceneState {
     pub definition: SceneDefinition,
     pub world: WorldState,

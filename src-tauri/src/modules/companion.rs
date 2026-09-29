@@ -3,6 +3,7 @@ use serde::{Deserialize, Serialize};
 use std::collections::HashMap;
 use std::path::PathBuf;
 use std::time::{SystemTime, UNIX_EPOCH};
+use ts_rs::TS;
 
 use super::companion_tools::CompanionTools;
 use super::mcp_client::McpManager;
@@ -15,7 +16,8 @@ fn current_timestamp() -> u64 {
         .unwrap_or(0)
 }
 
-#[derive(Debug, Clone, Serialize, Deserialize)]
+#[derive(Debug, Clone, Serialize, Deserialize, TS)]
+#[ts(export)]
 pub struct Neurohormones {
     pub dopamine: f32, // 0..100 (Motivation, Neugier, Freude)
     pub cortisol: f32, // 0..100 (Stress, Alarmbereitschaft)
@@ -136,7 +138,8 @@ impl Neurohormones {
 }
 
 /// 10 distinct affective states mapped via Exponential Moving Average (EMA)
-#[derive(Debug, Clone, Serialize, Deserialize)]
+#[derive(Debug, Clone, Serialize, Deserialize, TS)]
+#[ts(export)]
 pub struct EmotionState {
     pub current: String,
     pub last_updated: u64,
@@ -284,7 +287,8 @@ impl EmotionState {
 }
 
 /// Scratchpad thought entry
-#[derive(Debug, Clone, Serialize, Deserialize)]
+#[derive(Debug, Clone, Serialize, Deserialize, TS)]
+#[ts(export)]
 pub struct ScratchpadEntry {
     pub id: String,
     pub thought: String,
@@ -292,7 +296,8 @@ pub struct ScratchpadEntry {
 }
 
 /// Goals and promises tracking
-#[derive(Debug, Clone, Serialize, Deserialize)]
+#[derive(Debug, Clone, Serialize, Deserialize, TS)]
+#[ts(export)]
 pub struct Goal {
     pub id: String,
     pub summary: String,
@@ -302,7 +307,8 @@ pub struct Goal {
     pub completed_at: Option<String>,
 }
 
-#[derive(Debug, Clone, Serialize, Deserialize)]
+#[derive(Debug, Clone, Serialize, Deserialize, TS)]
+#[ts(export)]
 pub struct ToolCallRequest {
     pub id: String,
     pub tool_name: String,
@@ -312,7 +318,8 @@ pub struct ToolCallRequest {
     pub created_at: u64,
 }
 
-#[derive(Debug, Clone, Serialize, Deserialize)]
+#[derive(Debug, Clone, Serialize, Deserialize, TS)]
+#[ts(export)]
 pub struct ToolExecutionResult {
     pub call_id: String,
     pub tool_name: String,
@@ -321,7 +328,8 @@ pub struct ToolExecutionResult {
     pub executed_at: u64,
 }
 
-#[derive(Debug, Clone, Serialize, Deserialize)]
+#[derive(Debug, Clone, Serialize, Deserialize, TS)]
+#[ts(export)]
 pub struct CompanionSettings {
     pub auto_approve_safe_tools: bool,
     pub countdown_seconds: u32,
@@ -342,7 +350,8 @@ impl Default for CompanionSettings {
     }
 }
 
-#[derive(Debug, Clone, Serialize, Deserialize, Default)]
+#[derive(Debug, Clone, Serialize, Deserialize, Default, TS)]
+#[ts(export)]
 pub struct CompanionState {
     pub hormones: Neurohormones,
     pub emotion: EmotionState,

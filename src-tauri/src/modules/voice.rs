@@ -6,6 +6,7 @@ use std::path::PathBuf;
 use std::sync::LazyLock;
 use std::time::Duration;
 use tracing::{info, warn};
+use ts_rs::TS;
 
 use crate::modules::paths::resolve_app_paths;
 
@@ -18,7 +19,8 @@ const EDGE_TTS_USER_AGENT: &str = "Mozilla/5.0 (Windows NT 10.0; Win64; x64) \
 // Data Models
 // ---------------------------------------------------------------------------
 
-#[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
+#[derive(Debug, Clone, Serialize, Deserialize, PartialEq, TS)]
+#[ts(export)]
 pub enum TtsEngine {
     #[serde(rename = "edge")]
     Edge,
@@ -32,7 +34,8 @@ pub enum TtsEngine {
     Disabled,
 }
 
-#[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
+#[derive(Debug, Clone, Serialize, Deserialize, PartialEq, TS)]
+#[ts(export)]
 pub enum TtsFilterMode {
     #[serde(rename = "all")]
     All,
@@ -42,7 +45,8 @@ pub enum TtsFilterMode {
     StripActions,
 }
 
-#[derive(Debug, Clone, Default, Serialize, Deserialize, PartialEq)]
+#[derive(Debug, Clone, Default, Serialize, Deserialize, PartialEq, TS)]
+#[ts(export)]
 pub enum SttEngine {
     #[serde(rename = "native_whisper")]
     NativeWhisper,
@@ -53,7 +57,8 @@ pub enum SttEngine {
     Disabled,
 }
 
-#[derive(Debug, Clone, Serialize, Deserialize)]
+#[derive(Debug, Clone, Serialize, Deserialize, TS)]
+#[ts(export)]
 pub struct RvcConfig {
     #[serde(default)]
     pub enabled: bool,
@@ -85,7 +90,8 @@ impl Default for RvcConfig {
     }
 }
 
-#[derive(Debug, Clone, Serialize, Deserialize)]
+#[derive(Debug, Clone, Serialize, Deserialize, TS)]
+#[ts(export)]
 pub struct SttConfig {
     #[serde(default)]
     pub engine: SttEngine,
@@ -126,7 +132,8 @@ impl Default for SttConfig {
     }
 }
 
-#[derive(Debug, Clone, Serialize, Deserialize)]
+#[derive(Debug, Clone, Serialize, Deserialize, TS)]
+#[ts(export)]
 pub struct VoiceConfig {
     pub engine: TtsEngine,
     pub voice_id: String,
@@ -227,7 +234,8 @@ impl Default for VoiceConfig {
     }
 }
 
-#[derive(Debug, Clone, Serialize, Deserialize)]
+#[derive(Debug, Clone, Serialize, Deserialize, TS)]
+#[ts(export)]
 pub struct ScannedVoice {
     pub id: String,
     pub name: String,

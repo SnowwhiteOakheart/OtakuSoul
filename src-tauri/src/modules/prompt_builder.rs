@@ -1,8 +1,10 @@
 use crate::modules::characters::CharacterData;
 use crate::modules::lorebook::LorebookEntry;
 use serde::{Deserialize, Serialize};
+use ts_rs::TS;
 
-#[derive(Debug, Clone, Serialize, Deserialize)]
+#[derive(Debug, Clone, Serialize, Deserialize, TS)]
+#[ts(export)]
 pub struct StateVariable {
     pub name: String,
     pub value: String,
@@ -10,7 +12,8 @@ pub struct StateVariable {
     pub max_value: Option<i32>,
 }
 
-#[derive(Debug, Clone, Serialize, Deserialize, Default)]
+#[derive(Debug, Clone, Serialize, Deserialize, Default, TS)]
+#[ts(export)]
 pub struct PromptContext {
     pub char_name: String,
     pub user_name: String,

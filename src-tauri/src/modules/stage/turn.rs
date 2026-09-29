@@ -1,8 +1,10 @@
 //! Turn orchestration: prompts the language model, applies its plan and handles rests.
 
 use super::*;
+use ts_rs::TS;
 
-#[derive(Debug, Clone, Serialize, Deserialize)]
+#[derive(Debug, Clone, Serialize, Deserialize, TS)]
+#[ts(export)]
 pub struct StageTurnRequest {
     pub scene_id: String,
     #[serde(alias = "player_input")]

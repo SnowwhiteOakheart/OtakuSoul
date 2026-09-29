@@ -4,6 +4,7 @@ use crate::modules::providers::LlmProviderType;
 use crate::state::AppState;
 use serde::{Deserialize, Serialize};
 use tracing::info;
+use ts_rs::TS;
 
 pub const ROUTER_SYSTEM_PROMPT: &str = r#"[SOUL MEMORY — ROUTER AGENT]
 You manage the deep cognitive, emotional, and relationship INDEX for "{character}".
@@ -101,7 +102,8 @@ CRITICAL CONSTRAINTS:
 Output strictly the diary text. Do not add any greetings or explanations.
 "#;
 
-#[derive(Debug, Clone, Serialize, Deserialize)]
+#[derive(Debug, Clone, Serialize, Deserialize, TS)]
+#[ts(export)]
 pub struct SoulMemoryPipelineRequest {
     pub character_id: String,
     pub user_name: String,
@@ -117,7 +119,8 @@ pub struct SoulMemoryPipelineRequest {
     pub include_diary: Option<bool>,
 }
 
-#[derive(Debug, Clone, Serialize, Deserialize)]
+#[derive(Debug, Clone, Serialize, Deserialize, TS)]
+#[ts(export)]
 pub struct SoulMemoryPipelineResult {
     pub no_change: bool,
     pub character_id: String,
@@ -128,7 +131,8 @@ pub struct SoulMemoryPipelineResult {
     pub healing_entries: Vec<String>,
 }
 
-#[derive(Debug, Clone, Serialize, Deserialize, Default)]
+#[derive(Debug, Clone, Serialize, Deserialize, Default, TS)]
+#[ts(export)]
 pub struct RouterInternalStatePatch {
     pub primary_emotion: Option<String>,
     pub intensity: Option<u32>,
@@ -136,13 +140,15 @@ pub struct RouterInternalStatePatch {
     pub emotion_active: Option<bool>,
 }
 
-#[derive(Debug, Clone, Serialize, Deserialize, Default)]
+#[derive(Debug, Clone, Serialize, Deserialize, Default, TS)]
+#[ts(export)]
 pub struct RouterCognitiveDrivePatch {
     pub active_agenda: Option<String>,
     pub immediate_focus: Option<String>,
 }
 
-#[derive(Debug, Clone, Serialize, Deserialize, Default)]
+#[derive(Debug, Clone, Serialize, Deserialize, Default, TS)]
+#[ts(export)]
 pub struct RouterCharacterMemoryPatch {
     #[serde(default)]
     pub core_identity_add: Vec<String>,
@@ -153,20 +159,23 @@ pub struct RouterCharacterMemoryPatch {
     pub cognitive_dissonance: Option<String>,
 }
 
-#[derive(Debug, Clone, Serialize, Deserialize, Default)]
+#[derive(Debug, Clone, Serialize, Deserialize, Default, TS)]
+#[ts(export)]
 pub struct RouterUserIdentityPatch {
     pub role_in_story: Option<String>,
     pub known_attributes: Option<String>,
 }
 
-#[derive(Debug, Clone, Serialize, Deserialize, Default)]
+#[derive(Debug, Clone, Serialize, Deserialize, Default, TS)]
+#[ts(export)]
 pub struct RouterRelationshipMetadataPatch {
     pub trust_level: Option<String>,
     pub dynamic_description: Option<String>,
     pub unspoken_tension: Option<String>,
 }
 
-#[derive(Debug, Clone, Serialize, Deserialize, Default)]
+#[derive(Debug, Clone, Serialize, Deserialize, Default, TS)]
+#[ts(export)]
 pub struct RouterUserMemoryPatch {
     pub user_identity_status: Option<RouterUserIdentityPatch>,
     pub relationship_metadata: Option<RouterRelationshipMetadataPatch>,
@@ -180,21 +189,24 @@ pub struct RouterUserMemoryPatch {
     pub shared_milestones_promises_remove: Vec<String>,
 }
 
-#[derive(Debug, Clone, Serialize, Deserialize)]
+#[derive(Debug, Clone, Serialize, Deserialize, TS)]
+#[ts(export)]
 pub struct TopicAction {
     pub action: String, // "create" | "update"
     pub filename: String,
     pub summary: String,
 }
 
-#[derive(Debug, Clone, Serialize, Deserialize, Default)]
+#[derive(Debug, Clone, Serialize, Deserialize, Default, TS)]
+#[ts(export)]
 pub struct TopicPlan {
     pub reasoning: Option<String>,
     #[serde(default)]
     pub actions: Vec<TopicAction>,
 }
 
-#[derive(Debug, Clone, Serialize, Deserialize, Default)]
+#[derive(Debug, Clone, Serialize, Deserialize, Default, TS)]
+#[ts(export)]
 pub struct RouterResponse {
     #[serde(default)]
     pub no_significant_change: Option<bool>,

@@ -165,6 +165,12 @@ npm install
 npm run tauri dev
 ```
 
+### TypeScript-Typen aus Rust
+
+Die Datentypen zwischen Backend und Frontend erzeugt [ts-rs](https://github.com/Aleph-Alpha/ts-rs) aus den Rust-Structs nach
+`src/types/generated/` (bei `cargo test`, einzeln per `npm run types:gen`). Die Dateien werden mit eingecheckt; nicht von
+Hand bearbeiten. `src/types/wireCheck.ts` prüft, dass die übrigen handgeschriebenen Typen dieselben Feldnamen verwenden.
+
 ### Tests ausführen
 
 ```bash

@@ -1,21 +1,25 @@
 //! Schema of the game master plan returned by the language model, and its JSON repair.
 
 use super::*;
+use ts_rs::TS;
 
-#[derive(Debug, Clone, Serialize, Deserialize)]
+#[derive(Debug, Clone, Serialize, Deserialize, TS)]
+#[ts(export)]
 pub struct PlanDiceCheck {
     pub formula: String,
     pub dc: i32,
     pub skill_name: String,
 }
 
-#[derive(Debug, Clone, Serialize, Deserialize)]
+#[derive(Debug, Clone, Serialize, Deserialize, TS)]
+#[ts(export)]
 pub struct PlanClockUpdate {
     pub id: String,
     pub delta: i32,
 }
 
-#[derive(Debug, Clone, Serialize, Deserialize)]
+#[derive(Debug, Clone, Serialize, Deserialize, TS)]
+#[ts(export)]
 pub struct PlanResourceDelta {
     pub target: String,
     #[serde(default)]
@@ -24,7 +28,8 @@ pub struct PlanResourceDelta {
     pub stress_delta: i32,
 }
 
-#[derive(Debug, Clone, Serialize, Deserialize)]
+#[derive(Debug, Clone, Serialize, Deserialize, TS)]
+#[ts(export)]
 pub struct PlanArcUpdate {
     pub id: String,
     #[serde(default)]
@@ -35,7 +40,8 @@ pub struct PlanArcUpdate {
     pub resolve: bool,
 }
 
-#[derive(Debug, Clone, Serialize, Deserialize)]
+#[derive(Debug, Clone, Serialize, Deserialize, TS)]
+#[ts(export)]
 pub struct PlanObjectiveUpdate {
     pub id: String,
     #[serde(default)]
@@ -50,7 +56,8 @@ pub struct PlanObjectiveUpdate {
     pub status: Option<String>,
 }
 
-#[derive(Debug, Clone, Serialize, Deserialize)]
+#[derive(Debug, Clone, Serialize, Deserialize, TS)]
+#[ts(export)]
 pub struct PlanInventoryAdd {
     pub name: String,
     #[serde(default)]
@@ -74,7 +81,8 @@ pub(super) fn default_inventory_type() -> String {
     "key".to_string()
 }
 
-#[derive(Debug, Clone, Serialize, Deserialize)]
+#[derive(Debug, Clone, Serialize, Deserialize, TS)]
+#[ts(export)]
 pub struct PlanCombatant {
     pub name: String,
     #[serde(default = "default_enemy_hp")]
@@ -90,13 +98,15 @@ pub(super) fn default_enemy_role() -> String {
     "enemy".to_string()
 }
 
-#[derive(Debug, Clone, Serialize, Deserialize)]
+#[derive(Debug, Clone, Serialize, Deserialize, TS)]
+#[ts(export)]
 pub struct PlanCombatDelta {
     pub target: String,
     pub hp_delta: i32,
 }
 
-#[derive(Debug, Clone, Serialize, Deserialize)]
+#[derive(Debug, Clone, Serialize, Deserialize, TS)]
+#[ts(export)]
 pub struct PlanEncounterUpdate {
     pub action: String,
     #[serde(default)]
@@ -105,7 +115,8 @@ pub struct PlanEncounterUpdate {
     pub hp_updates: Vec<PlanCombatDelta>,
 }
 
-#[derive(Debug, Clone, Serialize, Deserialize, Default)]
+#[derive(Debug, Clone, Serialize, Deserialize, Default, TS)]
+#[ts(export)]
 pub struct GmPlan {
     pub narration_plan: String,
     #[serde(default)]

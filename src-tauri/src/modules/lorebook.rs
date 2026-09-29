@@ -4,6 +4,7 @@ use serde::{Deserialize, Serialize};
 use std::collections::{HashMap, HashSet};
 use std::fs;
 use std::path::Path;
+use ts_rs::TS;
 
 fn default_trigger() -> String {
     "keyword".to_string()
@@ -25,7 +26,8 @@ fn default_scan_depth() -> u32 {
     5
 }
 
-#[derive(Debug, Clone, Serialize, Deserialize)]
+#[derive(Debug, Clone, Serialize, Deserialize, TS)]
+#[ts(export)]
 pub struct LorebookEntry {
     pub uid: Option<u64>,
     #[serde(default)]
@@ -84,7 +86,8 @@ impl Default for LorebookEntry {
     }
 }
 
-#[derive(Debug, Clone, Serialize, Deserialize)]
+#[derive(Debug, Clone, Serialize, Deserialize, TS)]
+#[ts(export)]
 pub struct Lorebook {
     #[serde(default)]
     pub id: String,
@@ -115,7 +118,8 @@ impl Default for Lorebook {
     }
 }
 
-#[derive(Debug, Clone, Serialize, Deserialize, Default)]
+#[derive(Debug, Clone, Serialize, Deserialize, Default, TS)]
+#[ts(export)]
 pub struct EvaluatedLoreResult {
     pub passive_entries: Vec<LorebookEntry>,
     pub active_entries: Vec<LorebookEntry>,

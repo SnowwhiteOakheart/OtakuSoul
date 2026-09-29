@@ -16,10 +16,12 @@ use std::sync::Arc;
 use std::sync::atomic::{AtomicBool, Ordering};
 use tokio::sync::{RwLock, oneshot};
 use tracing::{error, info, warn};
+use ts_rs::TS;
 
 use crate::modules::paths::resolve_app_paths;
 
-#[derive(Debug, Clone, Serialize, Deserialize)]
+#[derive(Debug, Clone, Serialize, Deserialize, TS)]
+#[ts(export)]
 pub struct WebServerConfig {
     pub enabled: bool,
     pub port: u16,
@@ -61,7 +63,8 @@ impl WebServerConfig {
     }
 }
 
-#[derive(Debug, Clone, Serialize, Deserialize)]
+#[derive(Debug, Clone, Serialize, Deserialize, TS)]
+#[ts(export)]
 pub struct WebServerStatus {
     pub is_running: bool,
     pub port: u16,
@@ -71,19 +74,22 @@ pub struct WebServerStatus {
     pub auth_token: String,
 }
 
-#[derive(Debug, Clone, Serialize, Deserialize)]
+#[derive(Debug, Clone, Serialize, Deserialize, TS)]
+#[ts(export)]
 pub struct MobileChatRequest {
     pub message: String,
 }
 
-#[derive(Debug, Clone, Serialize, Deserialize)]
+#[derive(Debug, Clone, Serialize, Deserialize, TS)]
+#[ts(export)]
 pub struct MobileChatResponse {
     pub reply: String,
     pub character_name: String,
     pub emotion: String,
 }
 
-#[derive(Debug, Clone, Serialize, Deserialize)]
+#[derive(Debug, Clone, Serialize, Deserialize, TS)]
+#[ts(export)]
 pub struct MobileStatusResponse {
     pub character_name: String,
     pub emotion: String,

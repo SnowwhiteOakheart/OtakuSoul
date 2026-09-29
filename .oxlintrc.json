@@ -1,6 +1,11 @@
 {
   "$schema": "./node_modules/oxlint/configuration_schema.json",
-  "plugins": ["typescript", "react", "jsx-a11y", "oxc"],
+  "plugins": [
+    "typescript",
+    "react",
+    "jsx-a11y",
+    "oxc"
+  ],
   "categories": {
     "correctness": "error",
     "suspicious": "warn"
@@ -20,5 +25,12 @@
     "jsx-a11y/prefer-tag-over-role": "off",
     "typescript/no-explicit-any": "warn"
   },
-  "ignorePatterns": ["dist", "target", "src-tauri", "public", "node_modules"]
+  "ignorePatterns": [
+    "dist",
+    "target",
+    "src-tauri",
+    "public",
+    "node_modules",
+    "src/types/generated"
+  ]
 }

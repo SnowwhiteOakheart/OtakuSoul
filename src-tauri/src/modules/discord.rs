@@ -11,6 +11,7 @@ use tokio::sync::{Mutex, RwLock, mpsc};
 use tokio_tungstenite::connect_async;
 use tokio_tungstenite::tungstenite::Message;
 use tracing::{debug, info, warn};
+use ts_rs::TS;
 
 use crate::modules::paths::resolve_app_paths;
 
@@ -20,7 +21,8 @@ pub const DEFAULT_DISCORD_CLIENT_ID: &str = "1540392006956621876";
 // 1. DISCORD RICH PRESENCE (IPC)
 // ============================================================================
 
-#[derive(Debug, Clone, Serialize, Deserialize)]
+#[derive(Debug, Clone, Serialize, Deserialize, TS)]
+#[ts(export)]
 pub struct DiscordRpcActivity {
     pub details: String,
     pub state: String,
@@ -248,7 +250,8 @@ impl DiscordRpcClient {
 
 const DISCORD_TOKEN_ACCOUNT: &str = "discord_bot_token";
 
-#[derive(Debug, Clone, Serialize, Deserialize)]
+#[derive(Debug, Clone, Serialize, Deserialize, TS)]
+#[ts(export)]
 pub struct DiscordBotConfig {
     pub enabled: bool,
     pub bot_token: String,
@@ -269,7 +272,8 @@ impl Default for DiscordBotConfig {
     }
 }
 
-#[derive(Debug, Clone, Serialize, Deserialize)]
+#[derive(Debug, Clone, Serialize, Deserialize, TS)]
+#[ts(export)]
 pub struct DiscordBotStatus {
     pub is_running: bool,
     pub bot_user: Option<String>,

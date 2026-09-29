@@ -4,8 +4,10 @@ use std::path::PathBuf;
 use tauri::Emitter;
 use tokio::io::AsyncWriteExt;
 use tracing::info;
+use ts_rs::TS;
 
-#[derive(Debug, Clone, Serialize, Deserialize)]
+#[derive(Debug, Clone, Serialize, Deserialize, TS)]
+#[ts(export)]
 pub struct HfModelSummary {
     pub id: String,
     pub author: String,
@@ -15,7 +17,8 @@ pub struct HfModelSummary {
     pub last_modified: Option<String>,
 }
 
-#[derive(Debug, Clone, Serialize, Deserialize)]
+#[derive(Debug, Clone, Serialize, Deserialize, TS)]
+#[ts(export)]
 pub struct HfGgufFile {
     pub filename: String,
     pub size_bytes: u64,
@@ -28,15 +31,27 @@ pub struct HfGgufFile {
     pub compatibility_note: String,
 }
 
-#[derive(Debug, Clone, Serialize, Deserialize)]
+#[derive(Debug, Clone, Serialize, Deserialize, TS)]
+#[ts(export)]
 pub struct DownloadProgressEvent {
     pub filename: String,
     pub downloaded_bytes: u64,
     pub total_bytes: u64,
     pub percent: f32,
     pub speed_mbps: f32,
+    /// Estimated seconds until the download completes; `None` while unknown or when finished.
+    pub eta_seconds: Option<u64>,
     pub finished: bool,
     pub error: Option<String>,
+}
+
+/// Remaining seconds at the average speed so far; `None` without a known size or progress.
+fn estimate_eta(downloaded_bytes: u64, total_bytes: u64, elapsed_secs: f32) -> Option<u64> {
+    if total_bytes == 0 || downloaded_bytes == 0 || downloaded_bytes >= total_bytes {
+        return None;
+    }
+    let bytes_per_sec = downloaded_bytes as f64 / f64::from(elapsed_secs);
+    Some(((total_bytes - downloaded_bytes) as f64 / bytes_per_sec).ceil() as u64)
 }
 
 fn format_bytes(bytes: u64) -> String {
@@ -296,6 +311,7 @@ pub async fn download_gguf_file<R: tauri::Runtime>(
             } else {
                 0.0
             };
+            let eta_seconds = estimate_eta(downloaded_bytes, total_bytes, elapsed_secs);
 
             let _ = app.emit(
                 "model-download-progress",
@@ -305,6 +321,7 @@ pub async fn download_gguf_file<R: tauri::Runtime>(
                     total_bytes,
                     percent,
                     speed_mbps,
+                    eta_seconds,
                     finished: false,
                     error: None,
                 },
@@ -330,6 +347,7 @@ pub async fn download_gguf_file<R: tauri::Runtime>(
             total_bytes,
             percent: 100.0,
             speed_mbps: 0.0,
+            eta_seconds: None,
             finished: true,
             error: None,
         },
@@ -341,6 +359,15 @@ pub async fn download_gguf_file<R: tauri::Runtime>(
 
 #[cfg(test)]
 mod tests {
+    #[test]
+    fn estimates_remaining_download_time() {
+        // 25 of 100 MB in 5 s → 5 MB/s → 15 s left.
+        assert_eq!(super::estimate_eta(25, 100, 5.0), Some(15));
+        assert_eq!(super::estimate_eta(0, 100, 5.0), None);
+        assert_eq!(super::estimate_eta(100, 100, 5.0), None);
+        assert_eq!(super::estimate_eta(10, 0, 5.0), None);
+    }
+
     use super::{classify_gguf, extract_quantization};
 
     #[test]
