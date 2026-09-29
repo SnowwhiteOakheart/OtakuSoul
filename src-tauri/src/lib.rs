@@ -172,6 +172,7 @@ pub fn run() {
             commands::companion::toggle_companion_overlay,
             commands::companion::evaluate_companion_proactive,
             commands::app::get_app_paths,
+            commands::app::log_frontend,
             commands::app::open_avatar_folder,
             commands::characters::scan_characters,
             commands::app::scan_models,

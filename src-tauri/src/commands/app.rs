@@ -63,3 +63,14 @@ pub fn export_app_logs() -> Result<String, String> {
 pub async fn check_for_updates() -> Result<crate::modules::updater::UpdateInfo, String> {
     crate::modules::updater::check_for_app_updates().await
 }
+
+/// Writes a warning or error from the frontend (console, uncaught errors) into the app log.
+#[tauri::command]
+pub fn log_frontend(level: String, message: String) {
+    // Cap the size so a runaway object dump cannot bloat the log file.
+    let message: String = message.chars().take(4_000).collect();
+    match level.as_str() {
+        "error" => tracing::error!(target: "frontend", "{}", message),
+        _ => tracing::warn!(target: "frontend", "{}", message),
+    }
+}

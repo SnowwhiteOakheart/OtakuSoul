@@ -185,7 +185,8 @@ GitHub Actions wurden bewusst entfernt (Commit `11597c2`). Stattdessen gibt es j
   `LorebookView` → Seitenleiste, Eintragskarte und Eintragsdialog. Keine Datei liegt mehr über 800 Zeilen.
 - [ ] `src/types/index.ts` (1.138 Z.): Typen aus Rust generieren (`specta` + `tauri-specta` oder `ts-rs`), damit Frontend und Backend nicht auseinanderlaufen.
   Gleichzeitig erhält man typisierte `invoke`-Aufrufe statt manueller Wrapper in `api.ts` (1.179 Z.).
-- [ ] `any` ist vollständig beseitigt (35 → 0); offen: 180× `console.*` durch den vorhandenen Logger ersetzen.
+- [x] `any` ist vollständig beseitigt (35 → 0). Frontend-Warnungen und -Fehler (`console.warn/error`, unbehandelte Fehler
+  und Promise-Ablehnungen) landen über `log_frontend` im Log-Viewer und in der Logdatei (gedrosselt, Ziel `frontend`).
 - [x] `tsconfig`: `target`/`lib` von ES2020 auf ES2022+ anheben, `noUncheckedIndexedAccess` aktivieren.
 - [x] Linter eingerichtet: **oxlint** mit React-Hooks-, `jsx-a11y`- und TypeScript-Regeln (typescript-eslint unterstützt TS 7 noch nicht).
   Oxlint läuft ohne Warnungen; unsichere `any`-Typen, Effekt-Abhängigkeiten und unnötige synchrone Effekt-Updates sind bereinigt.
