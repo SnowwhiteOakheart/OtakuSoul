@@ -1949,4 +1949,5 @@ export const en: TranslationDictionary = {
   "updater.downloadingPercent": "Downloading update … {{percent}}%",
   "updater.restarting": "Update installed – restarting OtakuSoul …",
   "updater.installFailed": "The update could not be installed: {{error}}",
+  "sceneNew.createFailed": "Could not create the scene: {{error}}",
 };

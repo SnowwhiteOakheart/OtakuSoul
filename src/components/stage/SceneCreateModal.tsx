@@ -1,9 +1,10 @@
-import React, { useState } from 'react';
+import React, { startTransition, useActionState, useState } from 'react';
 import { useStoreFields } from '../../store/useAppStore';
 import { SceneDefinition, CharacterProfile } from '../../types';
 import { X, Sparkles, MapPin, Sun, UserCheck } from 'lucide-react';
 import { ModalOverlay } from '../ui/ModalOverlay';
 import { translate, useTranslation } from '../../i18n';
+import { errorMessage } from '../../utils/errors';
 
 interface SceneCreateModalProps {
   isOpen: boolean;
@@ -31,9 +32,6 @@ export const SceneCreateModal: React.FC<SceneCreateModalProps> = ({
   const [narratorStyle, setNarratorStyle] = useState(() => translate('sceneNew.narratorStyleDefault'));
   const [persona, setPersona] = useState(() => translate('sceneNew.personaDefault'));
   const [diceEnabled, setDiceEnabled] = useState(true);
-  const [isSubmitting, setIsSubmitting] = useState(false);
-
-  if (!isOpen) return null;
 
   const togglePartyMember = (name: string) => {
     setSelectedParty((prev) =>
@@ -41,11 +39,9 @@ export const SceneCreateModal: React.FC<SceneCreateModalProps> = ({
     );
   };
 
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!title.trim() || isSubmitting) return;
-
-    setIsSubmitting(true);
+  // Pending and error state come from the action; the error is shown above the buttons.
+  const [submitError, createScene, isSubmitting] = useActionState(async (): Promise<string | null> => {
+    if (!title.trim()) return null;
     const id = `scene_custom_${Date.now()}`;
     const def: SceneDefinition = {
       id,
@@ -74,16 +70,22 @@ export const SceneCreateModal: React.FC<SceneCreateModalProps> = ({
 
     try {
       const created = await createStageScene(def);
-      if (created) {
-        onCreated(created.definition);
-        onClose();
-      }
+      onCreated(created.definition);
+      onClose();
+      return null;
     } catch (err) {
-      console.error(err);
-    } finally {
-      setIsSubmitting(false);
+      return translate('sceneNew.createFailed', { error: errorMessage(err) });
     }
+  }, null);
+
+  const handleSubmit = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (isSubmitting) return;
+    // Not `<form action>`: that resets the form, which would blank these controlled fields on errors.
+    startTransition(createScene);
   };
+
+  if (!isOpen) return null;
 
   return (
     <ModalOverlay onClose={onClose} aria-labelledby="scene-create-title" className="fixed inset-0 z-50 flex items-center justify-center bg-black/75 backdrop-blur-sm p-4 overflow-y-auto">
@@ -306,6 +308,12 @@ export const SceneCreateModal: React.FC<SceneCreateModalProps> = ({
               {t('sceneNew.dice')}
             </label>
           </div>
+
+          {submitError && (
+            <p role="alert" className="rounded-lg border border-rose-500/40 bg-rose-500/10 px-3 py-2 text-xs text-rose-200">
+              {submitError}
+            </p>
+          )}
 
           {/* Actions */}
           <div className="flex items-center justify-end gap-3 pt-3 border-t border-slate-800">

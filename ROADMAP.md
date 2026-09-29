@@ -188,9 +188,12 @@ GitHub Actions wurden bewusst entfernt (Commit `11597c2`). Stattdessen gibt es j
 - [x] Linter eingerichtet: **oxlint** mit React-Hooks-, `jsx-a11y`- und TypeScript-Regeln (typescript-eslint unterstützt TS 7 noch nicht).
   Oxlint läuft ohne Warnungen; unsichere `any`-Typen, Effekt-Abhängigkeiten und unnötige synchrone Effekt-Updates sind bereinigt.
   Prettier fehlt noch.
-- [ ] React 19 nutzen: `useActionState` / `useOptimistic` für Chat-Senden und Formulare, `use()` für Ladezustände.
-- [ ] Routing: Optional die Ansichten über einen leichten Router (z. B. TanStack Router) abbilden, damit Deep-Links
-  (Overlay, mobiler Webclient) und „Zurück“ funktionieren, statt `window.location.search.includes('overlay=true')`.
+- [x] React 19: `useActionState` für die Formulare mit Speichern-/Fehlerzustand (Szene erstellen, Charakter-Editor); dabei gefunden,
+  dass eine fehlgeschlagene Szenen-Erstellung stillschweigend nichts tat. `useOptimistic` bringt beim Chat nichts, weil der
+  Store Nachrichten ohnehin sofort einfügt; `use()` passt nicht zum Store-basierten Laden.
+- [x] Navigation ohne Router-Bibliothek: Bereichswechsel sind History-Einträge, „Zurück“/„Vorwärts“ per Maustasten 4/5 und
+  Alt+←/→ (`useTabHistory`). Einzige URL-Nutzung ist das Overlay-Fenster (`?overlay=true`, jetzt über `URLSearchParams`);
+  ein Router würde darüber hinaus nichts bringen.
 
 ### Backend
 

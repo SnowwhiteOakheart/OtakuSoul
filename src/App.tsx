@@ -3,6 +3,7 @@ import { Header } from './components/Header';
 import { Sidebar } from './components/Sidebar';
 import { SafetyCountdownBanner } from './components/companion/SafetyCountdownBanner';
 import { useAppStore } from './store/useAppStore';
+import { useTabHistory } from './hooks/useTabHistory';
 import { useTranslation } from './i18n';
 import { ErrorBoundary } from './components/ui/ErrorBoundary';
 import { FeedbackHost } from './components/ui/feedback';
@@ -29,7 +30,9 @@ export function App() {
   const activeTab = useAppStore((s) => s.activeTab);
   const onboardingCompleted = useAppStore((s) => s.onboardingCompleted);
   const { t } = useTranslation();
-  const isOverlayMode = typeof window !== 'undefined' && window.location.search.includes('overlay=true');
+  const isOverlayMode =
+    typeof window !== 'undefined' && new URLSearchParams(window.location.search).get('overlay') === 'true';
+  useTabHistory(!isOverlayMode);
 
   if (isOverlayMode) {
     return (

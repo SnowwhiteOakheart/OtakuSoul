@@ -40,7 +40,7 @@ export interface StageSlice {
   regenerateStageTurn: () => Promise<void>;
   loadStageScene: (sceneId: string) => Promise<void>;
   saveStageScene: (state: SceneState) => Promise<void>;
-  createStageScene: (definition: SceneDefinition) => Promise<SceneState | null>;
+  createStageScene: (definition: SceneDefinition) => Promise<SceneState>;
   deleteStageScene: (sceneId: string) => Promise<void>;
   exportStageMarkdown: (sceneId: string) => Promise<string | null>;
   runStageTurn: (userInput: string, turnMode?: string, whisperTarget?: string, forceActor?: string) => Promise<void>;
@@ -238,16 +238,12 @@ export const createStageSlice: SliceCreator<StageSlice> = (set, get) => ({
     }
   },
 
+  // Errors propagate so the create dialog can show them.
   createStageScene: async (definition: SceneDefinition) => {
-    try {
-      const sceneState = await api.createStageScene(definition);
-      set({ stageState: sceneState });
-      await get().fetchStageScenes();
-      return sceneState;
-    } catch (e) {
-      console.error('Failed to create stage scene:', e);
-      return null;
-    }
+    const sceneState = await api.createStageScene(definition);
+    set({ stageState: sceneState });
+    await get().fetchStageScenes();
+    return sceneState;
   },
 
   deleteStageScene: async (sceneId: string) => {

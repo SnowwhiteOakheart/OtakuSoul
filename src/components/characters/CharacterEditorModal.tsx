@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { startTransition, useActionState, useState } from 'react';
 import { CharacterProfile, CharacterCardV2 } from '../../types';
 import { api } from '../../services/api';
 import { useStoreFields } from '../../store/useAppStore';
@@ -32,8 +32,6 @@ export const CharacterEditorModal = ({
   );
 
   const [activeTab, setActiveTab] = useState<'basics' | 'expressions' | 'prompts' | 'greetings' | 'lorebooks' | 'raw'>('basics');
-  const [isSaving, setIsSaving] = useState(false);
-  const [errorMsg, setErrorMsg] = useState<string | null>(null);
 
   // Form State
   const [boundLorebooks, setBoundLorebooks] = useState<string[]>(character?.bound_lorebooks || []);
@@ -133,14 +131,9 @@ export const CharacterEditorModal = ({
     setAlternateGreetings(alternateGreetings.filter((_, i) => i !== index));
   };
 
-  const handleSave = async () => {
-    if (!name.trim()) {
-      setErrorMsg(translate('editor.nameRequired'));
-      return;
-    }
-
-    setIsSaving(true);
-    setErrorMsg(null);
+  // Pending and error state come from the action.
+  const [errorMsg, saveCharacter, isSaving] = useActionState(async (): Promise<string | null> => {
+    if (!name.trim()) return translate('editor.nameRequired');
 
     const tags = tagsStr
       .split(',')
@@ -159,9 +152,7 @@ export const CharacterEditorModal = ({
         if (filePath) cleanedExpressionImages[mood] = await fileToDataUrl(filePath);
       }
     } catch (e) {
-      setErrorMsg(translate('editor.embedFailed', { error: errorMessage(e) }));
-      setIsSaving(false);
-      return;
+      return translate('editor.embedFailed', { error: errorMessage(e) });
     }
 
     const updatedCard: CharacterCardV2 = {
@@ -203,13 +194,12 @@ export const CharacterEditorModal = ({
       await refreshCharacters();
       onSaved(saved);
       onClose();
+      return null;
     } catch (e) {
       console.error('Failed to save character card:', e);
-      setErrorMsg(translate('editor.saveFailed', { error: errorMessage(e) }));
-    } finally {
-      setIsSaving(false);
+      return translate('editor.saveFailed', { error: errorMessage(e) });
     }
-  };
+  }, null);
 
   return (
     <ModalOverlay onClose={onClose} aria-labelledby="character-editor-title" className="fixed inset-0 z-50 bg-black/80 backdrop-blur-sm flex items-center justify-center p-4">
@@ -775,7 +765,7 @@ export const CharacterEditorModal = ({
           </button>
           <button
             type="button"
-            onClick={handleSave}
+            onClick={() => startTransition(saveCharacter)}
             disabled={isSaving}
             className="px-5 py-2 rounded-xl bg-accent-600 hover:bg-accent-500 text-white font-semibold text-xs flex items-center gap-2 shadow-lg shadow-accent-900/30 transition-all disabled:opacity-50"
           >

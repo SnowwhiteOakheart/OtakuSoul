@@ -1951,4 +1951,5 @@ export const de = {
   "updater.downloadingPercent": "Update wird heruntergeladen … {{percent}} %",
   "updater.restarting": "Update installiert – OtakuSoul startet neu …",
   "updater.installFailed": "Update konnte nicht installiert werden: {{error}}",
+  "sceneNew.createFailed": "Szene konnte nicht erstellt werden: {{error}}",
 } as const;
