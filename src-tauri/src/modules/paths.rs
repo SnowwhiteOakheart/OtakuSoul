@@ -68,22 +68,11 @@ pub fn resolve_app_paths() -> AppPaths {
     let _ = fs::create_dir_all(&scenes_dir);
     let _ = fs::create_dir_all(&trash_dir);
 
-    // Locate bundled directories relative to CWD or executable
-    let current_dir = std::env::current_dir().unwrap_or_else(|_| PathBuf::from("."));
-    let mut base_root = current_dir.clone();
-
-    // If running inside src-tauri, parent is workspace root
-    if base_root.ends_with("src-tauri")
-        && let Some(parent) = base_root.parent()
-    {
-        base_root = parent.to_path_buf();
-    }
-
-    let bundled_presets = find_existing_dir(&base_root, &["presets", "../presets"]);
-    let bundled_models =
-        find_existing_dir(&base_root, &["assets/models", "../assets/models", "models"]);
-    let bundled_vrm = find_existing_dir(&base_root, &["assets/vrm", "../assets/vrm", "vrm"]);
-    let bundled_bin = find_existing_dir(&base_root, &["bin/cuda", "bin", "../bin/cuda", "../bin"]);
+    let roots = bundle_roots();
+    let bundled_presets = find_existing_dir(&roots, &["presets"]);
+    let bundled_models = find_existing_dir(&roots, &["assets/models", "models"]);
+    let bundled_vrm = find_existing_dir(&roots, &["assets/vrm", "vrm"]);
+    let bundled_bin = find_existing_dir(&roots, &["bin/cuda", "bin"]);
 
     AppPaths {
         config_dir: config_dir.to_string_lossy().to_string(),
@@ -100,15 +89,42 @@ pub fn resolve_app_paths() -> AppPaths {
     }
 }
 
-fn find_existing_dir(base: &Path, candidates: &[&str]) -> PathBuf {
-    for candidate in candidates {
-        let p = base.join(candidate);
-        if p.exists() && p.is_dir() {
-            return fs::canonicalize(&p).unwrap_or(p);
+/// Folders that may hold the bundled `presets`, `assets` and `bin` directories, in order: the
+/// working directory (and the workspace root when started from `src-tauri`), the executable's
+/// folder and its parents, and in debug builds the source checkout.
+fn bundle_roots() -> Vec<PathBuf> {
+    let mut roots = Vec::new();
+    if let Ok(cwd) = std::env::current_dir() {
+        if cwd.ends_with("src-tauri")
+            && let Some(parent) = cwd.parent()
+        {
+            roots.push(parent.to_path_buf());
+        }
+        roots.push(cwd);
+    }
+    if let Ok(exe) = std::env::current_exe() {
+        roots.extend(exe.ancestors().skip(1).take(4).map(Path::to_path_buf));
+    }
+    if cfg!(debug_assertions) {
+        roots.push(Path::new(env!("CARGO_MANIFEST_DIR")).join(".."));
+    }
+    if roots.is_empty() {
+        roots.push(PathBuf::from("."));
+    }
+    roots
+}
+
+fn find_existing_dir(roots: &[PathBuf], candidates: &[&str]) -> PathBuf {
+    for root in roots {
+        for candidate in candidates {
+            let p = root.join(candidate);
+            if p.is_dir() {
+                return fs::canonicalize(&p).unwrap_or(p);
+            }
         }
     }
-    // Fallback to first candidate resolved against base
-    base.join(candidates[0])
+    // Nothing found: point at the first candidate so callers get a sensible, if missing, path.
+    roots[0].join(candidates[0])
 }
 
 /// Helper to normalize strings for robust deduplication (collapses case and non-alphanumeric chars)

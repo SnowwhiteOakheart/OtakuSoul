@@ -1925,4 +1925,5 @@ export const ru: TranslationDictionary = {
   "voiceCfg.kokoroInstalled": "Kokoro установлен",
   "avatar.vrmLoadFailed": "Не удалось загрузить 3D-модель: {{error}}",
   "avatar.vrmReadFailed": "Не удалось прочитать файл VRM: {{error}}",
+  "backend.live2d.sowMissing": "Установка Soul of Waifu не найдена. OtakuSoul ищет папку «Soul-of-Waifu…» в домашней папке, ~/development, ~/Documents или рядом с OtakuSoul; также можно указать путь в переменной окружения SOUL_OF_WAIFU_DIR.",
 };

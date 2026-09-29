@@ -126,9 +126,7 @@ pub fn scan_available_live2d_models() -> Vec<ScannedLive2d> {
     }
 
     // 4. Soul of Waifu local installation if available
-    let sow_live2d =
-        PathBuf::from("/home/deathtrap/development/Soul-of-Waifu-linux/assets/emotions/live2d");
-    if sow_live2d.exists() {
+    if let Some(sow_live2d) = find_sow_live2d_dir() {
         search_dirs.push(sow_live2d);
     }
 
@@ -412,6 +410,53 @@ pub fn import_live2d_model(source_path: &str) -> Result<ScannedLive2d, String> {
     }
 }
 
+/// Live2D folder of a local Soul of Waifu installation. `SOUL_OF_WAIFU_DIR` wins; otherwise
+/// folders named `Soul-of-Waifu*` in the home directory, `~/development`, `~/Documents` and
+/// next to OtakuSoul's own folder are checked.
+fn find_sow_live2d_dir() -> Option<PathBuf> {
+    let live2d_in = |install: &Path| {
+        let dir = install.join("assets").join("emotions").join("live2d");
+        dir.is_dir().then_some(dir)
+    };
+    if let Some(dir) = std::env::var_os("SOUL_OF_WAIFU_DIR") {
+        return live2d_in(Path::new(&dir));
+    }
+
+    let mut parents = Vec::new();
+    if let Some(user) = directories::UserDirs::new() {
+        let home = user.home_dir().to_path_buf();
+        parents.push(home.join("development"));
+        parents.push(home.join("Documents"));
+        parents.push(home);
+    }
+    if let Ok(cwd) = std::env::current_dir() {
+        parents.extend(cwd.ancestors().skip(1).take(2).map(Path::to_path_buf));
+    }
+
+    sow_live2d_in_parents(&parents)
+}
+
+/// First `Soul-of-Waifu*/assets/emotions/live2d` folder inside any of `parents`.
+fn sow_live2d_in_parents(parents: &[PathBuf]) -> Option<PathBuf> {
+    parents.iter().find_map(|parent| {
+        let mut installs: Vec<PathBuf> = fs::read_dir(parent)
+            .ok()?
+            .flatten()
+            .map(|entry| entry.path())
+            .filter(|path| {
+                path.file_name()
+                    .and_then(|name| name.to_str())
+                    .is_some_and(|name| name.to_lowercase().starts_with("soul-of-waifu"))
+            })
+            .collect();
+        installs.sort();
+        installs.iter().find_map(|install| {
+            let dir = install.join("assets").join("emotions").join("live2d");
+            dir.is_dir().then_some(dir)
+        })
+    })
+}
+
 /// Imports all Live2D models found in the Soul of Waifu installation directory
 pub fn import_sow_live2d_models() -> Result<usize, String> {
     let paths = resolve_app_paths();
@@ -420,10 +465,7 @@ pub fn import_sow_live2d_models() -> Result<usize, String> {
         .map_err(|e| crate::err!("backend.common.dirCreate", error = e))?;
 
     let sow_live2d =
-        PathBuf::from("/home/deathtrap/development/Soul-of-Waifu-linux/assets/emotions/live2d");
-    if !sow_live2d.exists() || !sow_live2d.is_dir() {
-        return Err("Soul-of-Waifu Live2D-Verzeichnis wurde unter /home/deathtrap/development/Soul-of-Waifu-linux/assets/emotions/live2d nicht gefunden.".to_string());
-    }
+        find_sow_live2d_dir().ok_or_else(|| crate::err!("backend.live2d.sowMissing"))?;
 
     let entries =
         fs::read_dir(&sow_live2d).map_err(|e| crate::err!("backend.live2d.sowRead", error = e))?;
@@ -496,5 +538,18 @@ mod tests {
         assert!(catalog.len() >= 6);
         assert!(catalog.iter().any(|c| c.id == "unitychan"));
         assert!(catalog.iter().any(|c| c.id == "senko"));
+    }
+
+    #[test]
+    fn finds_soul_of_waifu_live2d_folder() {
+        let root = std::env::temp_dir().join(format!("otakusoul-sow-test-{}", std::process::id()));
+        let _ = fs::remove_dir_all(&root);
+        fs::create_dir_all(root.join("Soul-of-Waifu-linux/assets/emotions/live2d")).unwrap();
+        fs::create_dir_all(root.join("unrelated/assets/emotions/live2d")).unwrap();
+
+        let found = sow_live2d_in_parents(&[root.join("missing"), root.clone()]).unwrap();
+        assert!(found.ends_with("Soul-of-Waifu-linux/assets/emotions/live2d"));
+        assert!(sow_live2d_in_parents(&[root.join("unrelated")]).is_none());
+        let _ = fs::remove_dir_all(root);
     }
 }

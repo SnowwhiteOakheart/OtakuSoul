@@ -1927,4 +1927,5 @@ export const de = {
   "voiceCfg.kokoroInstalled": "Kokoro ist installiert",
   "avatar.vrmLoadFailed": "Das 3D-Modell konnte nicht geladen werden: {{error}}",
   "avatar.vrmReadFailed": "Die VRM-Datei konnte nicht gelesen werden: {{error}}",
+  "backend.live2d.sowMissing": "Keine Soul-of-Waifu-Installation gefunden. Gesucht wird nach einem Ordner „Soul-of-Waifu…“ im Home-Verzeichnis, in ~/development, ~/Documents oder neben OtakuSoul; alternativ den Pfad über die Umgebungsvariable SOUL_OF_WAIFU_DIR angeben.",
 } as const;

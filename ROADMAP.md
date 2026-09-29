@@ -153,6 +153,12 @@ GitHub Actions wurden bewusst entfernt (Commit `11597c2`). Stattdessen gibt es j
 
 - [x] `tauri-plugin-window-state` einbinden, damit Fenstergröße und -position gespeichert werden.
 - [x] `tauri-plugin-single-instance`, um doppelte Starts (und doppelte llama-server-Prozesse) zu verhindern.
+- [x] Fest eingetragene Pfade `/home/deathtrap/...` entfernt (Live2D, Stage, MCP). Mitgelieferte Ordner werden relativ zu
+  Arbeitsverzeichnis, Programmordner und (Debug) Quellcode gesucht; Soul of Waifu wird automatisch gefunden
+  (oder per `SOUL_OF_WAIFU_DIR`).
+- [ ] **Installierte Builds bündeln keine Ressourcen:** `tauri.conf.json` hat kein `bundle.resources`, `presets/`, `assets/` und `bin/`
+  fehlen also im Paket. → Entscheiden, was mitgeliefert wird (Presets ja; große Modelle/VRMs eher als Download) und
+  `resources` plus `resolveResource`-Pfade einrichten.
 - [ ] Tray-Icon für den Companion (minimieren in den Tray statt beenden).
 - [ ] **Updater:** Aktuell wird nur geprüft und auf die GitHub-Release-Seite verlinkt. → `tauri-plugin-updater` mit signierten Updates nutzen.
   *(Benötigt einen eigenen Signaturschlüssel des Projektinhabers.)*

@@ -82,7 +82,10 @@ impl McpManager {
                 args: Some(vec![
                     "-y".to_string(),
                     "@modelcontextprotocol/server-filesystem".to_string(),
-                    "/home/deathtrap/development".to_string(),
+                    // Shared folder is the user's home; adjust it in the MCP settings.
+                    directories::UserDirs::new()
+                        .map(|dirs| dirs.home_dir().to_string_lossy().to_string())
+                        .unwrap_or_else(|| ".".to_string()),
                 ]),
                 env: None,
                 url: None,

@@ -1390,7 +1390,6 @@ pub fn ensure_default_scene_folders() {
         PathBuf::from(&paths.bundled_presets_dir),
         PathBuf::from("presets"),
         PathBuf::from("../presets"),
-        PathBuf::from("/home/deathtrap/development/OtakuSoul/presets"),
     ];
 
     // 1. Ensure "No Game No Life" folder exists in scenes_dir with all 12 chapters
@@ -1528,7 +1527,6 @@ pub fn find_scene_path(scene_id: &str) -> Option<PathBuf> {
         PathBuf::from(&paths.bundled_presets_dir),
         PathBuf::from("presets"),
         PathBuf::from("../presets"),
-        PathBuf::from("/home/deathtrap/development/OtakuSoul/presets"),
     ];
 
     for root in &search_roots {
@@ -1687,7 +1685,6 @@ pub fn scan_available_scenes() -> Vec<ScenePreview> {
         PathBuf::from(&paths.bundled_presets_dir),
         PathBuf::from("presets"),
         PathBuf::from("../presets"),
-        PathBuf::from("/home/deathtrap/development/OtakuSoul/presets"),
     ];
 
     let preset_folders = [
@@ -2106,10 +2103,6 @@ pub fn get_stage_background_image(name: &str) -> Result<String, String> {
             .join("backgrounds"),
         PathBuf::from("presets/no-game-no-life/backgrounds"),
         PathBuf::from("presets/sakura-succubus-3/backgrounds"),
-        PathBuf::from("/home/deathtrap/development/OtakuSoul/presets/no-game-no-life/backgrounds"),
-        PathBuf::from(
-            "/home/deathtrap/development/OtakuSoul/presets/sakura-succubus-3/backgrounds",
-        ),
         PathBuf::from(&paths.data_dir).join("backgrounds"),
         PathBuf::from("assets/backgrounds"),
         PathBuf::from("../assets/backgrounds"),
