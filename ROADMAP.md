@@ -204,7 +204,8 @@ GitHub Actions wurden bewusst entfernt (Commit `11597c2`). Stattdessen gibt es j
   stage,companion,voice,avatar,hub,ecosystem}.rs`.
 - [ ] `stage.rs` (~3.300 Z.) und `memory.rs` (~2.100 Z.) modularisieren.
 - [x] Regexe per `std::sync::LazyLock` statt `Regex::new` pro Aufruf (dynamische Nutzer-Muster ausgenommen).
-- [ ] `tracing-subscriber` mit `env-filter` und Log-Rotation (`tracing-appender`) konfigurieren.
+- [x] Logging: Alle `tracing`-Meldungen gehen jetzt auch in den Log-Viewer und die Logdatei (vorher kamen dort nur
+  „Logdatei geleert“-Einträge an). Level per `RUST_LOG` (`env-filter`), Rotation bei 5 MB mit drei älteren Dateien.
 - [x] Datenbank-Migrationen versioniert (`PRAGMA user_version`, `MIGRATIONS` in `memory.rs`, eine Transaktion pro Schritt).
   v1 hebt Datenbanken von vor der Versionierung verlustfrei an (an einer Kopie der echten Datenbank geprüft); Datenbanken
   einer neueren App-Version bleiben unangetastet.

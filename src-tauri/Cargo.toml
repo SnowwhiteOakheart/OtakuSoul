@@ -30,7 +30,7 @@ sysinfo = "0.39"
 directories = "6.0"
 rusqlite = { version = "0.40", features = ["bundled", "fallible_uint"] }
 tracing = "0.1"
-tracing-subscriber = "0.3"
+tracing-subscriber = { version = "0.3", features = ["env-filter"] }
 rand = "0.10"
 base64 = "0.23"
 png = "0.18"

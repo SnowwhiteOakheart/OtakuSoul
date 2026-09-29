@@ -45,8 +45,8 @@ fn allow_app_asset_dirs(app: &tauri::App) {
 
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
 pub fn run() {
-    // Initialize tracing subscriber for clean logs
-    let _ = tracing_subscriber::fmt().try_init();
+    // Console, in-app log viewer and rotating log file; level via RUST_LOG.
+    modules::logger::init_tracing();
 
     let builder = tauri::Builder::default();
 
