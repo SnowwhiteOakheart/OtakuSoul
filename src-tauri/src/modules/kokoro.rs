@@ -68,16 +68,10 @@ fn cache() -> &'static tokio::sync::Mutex<Option<CachedKokoro>> {
 
 fn validate_paths(config: &KokoroConfig) -> Result<(PathBuf, PathBuf), String> {
     if config.model_path.trim().is_empty() {
-        return Err(
-            "Kein Kokoro-Modell konfiguriert. Installiere das Standardpaket oder wähle eine ONNX-Datei."
-                .to_string(),
-        );
+        return Err(crate::err!("backend.kokoro.noModel"));
     }
     if config.voices_path.trim().is_empty() {
-        return Err(
-            "Keine Kokoro-Stimmen konfiguriert. Wähle einen Stimmenordner oder eine .bin-Datei."
-                .to_string(),
-        );
+        return Err(crate::err!("backend.kokoro.noVoices"));
     }
 
     let model_path = fs::canonicalize(&config.model_path).map_err(|e| {
@@ -89,7 +83,7 @@ fn validate_paths(config: &KokoroConfig) -> Result<(PathBuf, PathBuf), String> {
     if !model_path.is_file()
         || model_path.extension().and_then(|value| value.to_str()) != Some("onnx")
     {
-        return Err("Das Kokoro-Modell muss eine vorhandene .onnx-Datei sein.".to_string());
+        return Err(crate::err!("backend.kokoro.modelNotOnnx"));
     }
 
     let voices_path = fs::canonicalize(&config.voices_path).map_err(|e| {
@@ -102,10 +96,7 @@ fn validate_paths(config: &KokoroConfig) -> Result<(PathBuf, PathBuf), String> {
         && (!voices_path.is_file()
             || voices_path.extension().and_then(|value| value.to_str()) != Some("bin"))
     {
-        return Err(
-            "Der Kokoro-Stimmenpfad muss ein Ordner mit .bin-Dateien oder eine einzelne .bin-Datei sein."
-                .to_string(),
-        );
+        return Err(crate::err!("backend.kokoro.voicesPathInvalid"));
     }
 
     Ok((model_path, voices_path))
@@ -124,7 +115,7 @@ async fn load_engine(config: &KokoroConfig) -> Result<Arc<KokoroTts>, String> {
 
     let engine = KokoroTts::new(&model_path, &voices_path)
         .await
-        .map_err(|e| format!("Kokoro konnte nicht geladen werden: {e}"))?;
+        .map_err(|e| crate::err!("backend.kokoro.load", error = e))?;
     let engine = Arc::new(engine);
     *cached = Some(CachedKokoro {
         model_path,
@@ -153,16 +144,16 @@ fn samples_to_wav(samples: &[f32]) -> Result<Vec<u8>, String> {
     };
     {
         let mut writer = hound::WavWriter::new(&mut cursor, spec)
-            .map_err(|e| format!("Kokoro-WAV konnte nicht erstellt werden: {e}"))?;
+            .map_err(|e| crate::err!("backend.kokoro.wavCreate", error = e))?;
         for sample in samples {
             let value = (sample.clamp(-1.0, 1.0) * i16::MAX as f32).round() as i16;
             writer
                 .write_sample(value)
-                .map_err(|e| format!("Kokoro-WAV konnte nicht geschrieben werden: {e}"))?;
+                .map_err(|e| crate::err!("backend.kokoro.wavWrite", error = e))?;
         }
         writer
             .finalize()
-            .map_err(|e| format!("Kokoro-WAV konnte nicht abgeschlossen werden: {e}"))?;
+            .map_err(|e| crate::err!("backend.kokoro.wavFinish", error = e))?;
     }
     Ok(cursor.into_inner())
 }
@@ -174,10 +165,10 @@ pub async fn synthesize(
     config: &KokoroConfig,
 ) -> Result<String, String> {
     if text.trim().is_empty() {
-        return Err("Kein Text zum Vorlesen vorhanden.".to_string());
+        return Err(crate::err!("backend.voice.noText"));
     }
     if voice_id.trim().is_empty() {
-        return Err("Keine Kokoro-Stimme ausgewählt.".to_string());
+        return Err(crate::err!("backend.kokoro.noVoice"));
     }
 
     let engine = load_engine(config).await?;
@@ -185,9 +176,9 @@ pub async fn synthesize(
     let (samples, duration) = engine
         .synth(text, voice)
         .await
-        .map_err(|e| format!("Kokoro-Synthese fehlgeschlagen: {e}"))?;
+        .map_err(|e| crate::err!("backend.kokoro.synthesis", error = e))?;
     if samples.is_empty() {
-        return Err("Kokoro hat keine Audiodaten erzeugt.".to_string());
+        return Err(crate::err!("backend.kokoro.noAudio"));
     }
 
     tracing::info!(
@@ -264,7 +255,7 @@ pub fn list_voices(voices_path: &str) -> Result<Vec<ScannedVoice>, String> {
     }
 
     let mut voices = fs::read_dir(&path)
-        .map_err(|e| format!("Kokoro-Stimmenordner konnte nicht gelesen werden: {e}"))?
+        .map_err(|e| crate::err!("backend.kokoro.voicesRead", error = e))?
         .filter_map(Result::ok)
         .filter_map(|entry| voice_info(&entry.path()))
         .collect::<Vec<_>>();
@@ -348,12 +339,12 @@ async fn download_file<R: tauri::Runtime>(
         .get(url)
         .send()
         .await
-        .map_err(|e| format!("Kokoro-Download fehlgeschlagen: {e}"))?;
+        .map_err(|e| crate::err!("backend.kokoro.download", error = e))?;
     if !response.status().is_success() {
-        return Err(format!(
-            "Kokoro-Download für '{}' meldet HTTP {}.",
-            target.display(),
-            response.status()
+        return Err(crate::err!(
+            "backend.kokoro.downloadStatus",
+            file = target.display(),
+            status = response.status()
         ));
     }
 
@@ -372,16 +363,17 @@ async fn download_file<R: tauri::Runtime>(
     ));
     let mut file = tokio::fs::File::create(&part_path)
         .await
-        .map_err(|e| format!("Kokoro-Zieldatei konnte nicht erstellt werden: {e}"))?;
+        .map_err(|e| crate::err!("backend.kokoro.targetCreate", error = e))?;
     let mut stream = response.bytes_stream();
     let mut downloaded_bytes = 0_u64;
     let mut hasher = Sha256::new();
 
     while let Some(chunk) = stream.next().await {
-        let chunk = chunk.map_err(|e| format!("Kokoro-Download wurde unterbrochen: {e}"))?;
+        let chunk =
+            chunk.map_err(|e| crate::err!("backend.kokoro.downloadInterrupted", error = e))?;
         file.write_all(&chunk)
             .await
-            .map_err(|e| format!("Kokoro-Download konnte nicht gespeichert werden: {e}"))?;
+            .map_err(|e| crate::err!("backend.kokoro.downloadSave", error = e))?;
         hasher.update(&chunk);
         downloaded_bytes += chunk.len() as u64;
         let file_progress = if total_bytes > 0 {
@@ -405,14 +397,17 @@ async fn download_file<R: tauri::Runtime>(
     }
     file.flush()
         .await
-        .map_err(|e| format!("Kokoro-Download konnte nicht abgeschlossen werden: {e}"))?;
+        .map_err(|e| crate::err!("backend.kokoro.downloadFinish", error = e))?;
     drop(file);
 
     if let Some(expected) = expected_sha256 {
         let actual = upper_hex(&hasher.finalize());
         if actual != expected {
-            return Err(format!(
-                "Prüfsumme für {filename} stimmt nicht (erwartet {expected}, erhalten {actual})."
+            return Err(crate::err!(
+                "backend.kokoro.checksum",
+                filename = filename,
+                expected = expected,
+                actual = actual
             ));
         }
     }
@@ -420,11 +415,11 @@ async fn download_file<R: tauri::Runtime>(
     if target.exists() {
         tokio::fs::remove_file(target)
             .await
-            .map_err(|e| format!("Alte Kokoro-Datei konnte nicht ersetzt werden: {e}"))?;
+            .map_err(|e| crate::err!("backend.kokoro.replace", error = e))?;
     }
     tokio::fs::rename(&part_path, target)
         .await
-        .map_err(|e| format!("Kokoro-Download konnte nicht aktiviert werden: {e}"))?;
+        .map_err(|e| crate::err!("backend.kokoro.activate", error = e))?;
     Ok(())
 }
 
@@ -434,18 +429,18 @@ pub async fn install<R: tauri::Runtime>(
     let (model_path, voices_path) = installation_paths();
     let root = model_path
         .parent()
-        .ok_or_else(|| "Kokoro-Zielverzeichnis ist ungültig.".to_string())?;
+        .ok_or_else(|| crate::err!("backend.kokoro.targetInvalid"))?;
     tokio::fs::create_dir_all(root)
         .await
-        .map_err(|e| format!("Kokoro-Modellordner konnte nicht erstellt werden: {e}"))?;
+        .map_err(|e| crate::err!("backend.kokoro.modelDirCreate", error = e))?;
     tokio::fs::create_dir_all(&voices_path)
         .await
-        .map_err(|e| format!("Kokoro-Stimmenordner konnte nicht erstellt werden: {e}"))?;
+        .map_err(|e| crate::err!("backend.kokoro.voicesDirCreate", error = e))?;
 
     let client = reqwest::Client::builder()
         .connect_timeout(std::time::Duration::from_secs(30))
         .build()
-        .map_err(|e| format!("Kokoro-Download-Client konnte nicht erstellt werden: {e}"))?;
+        .map_err(|e| crate::err!("backend.kokoro.client", error = e))?;
     let total_files = DEFAULT_VOICES.len() + 1;
     let model_url = format!(
         "https://huggingface.co/{MODEL_REPOSITORY}/resolve/main/onnx/{MODEL_FILENAME}?download=true"
@@ -481,7 +476,8 @@ pub async fn install<R: tauri::Runtime>(
     let _ = app.emit(
         "kokoro-download-progress",
         KokoroDownloadProgress {
-            filename: "Kokoro ist installiert".to_string(),
+            // The frontend shows its own "installed" text once `finished` is set.
+            filename: String::new(),
             file_index: total_files,
             total_files,
             downloaded_bytes: 0,

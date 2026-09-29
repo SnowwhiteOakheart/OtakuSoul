@@ -127,15 +127,18 @@ impl InferenceClient {
         let req_builder =
             crate::modules::providers::ProviderRegistry::build_http_request(&client, &request)?;
 
-        let response = req_builder
-            .send()
-            .await
-            .map_err(|e| format!("Verbindungsfehler zu {}: {}", request.endpoint_url, e))?;
+        let response = req_builder.send().await.map_err(|e| {
+            crate::err!("backend.llm.connect", url = request.endpoint_url, error = e)
+        })?;
 
         if !response.status().is_success() {
             let status = response.status();
             let err_text = response.text().await.unwrap_or_default();
-            return Err(format!("LLM-Server Fehler ({}): {}", status, err_text));
+            return Err(crate::err!(
+                "backend.llm.server",
+                status = status,
+                error = err_text
+            ));
         }
 
         let mut stream = response.bytes_stream();
@@ -150,7 +153,7 @@ impl InferenceClient {
                 break;
             }
 
-            let chunk = chunk_res.map_err(|e| format!("Stream-Fehler: {}", e))?;
+            let chunk = chunk_res.map_err(|e| crate::err!("backend.llm.stream", error = e))?;
             let chunk_str = String::from_utf8_lossy(&chunk);
             buffer.push_str(&chunk_str);
 
@@ -258,15 +261,18 @@ impl InferenceClient {
         let req_builder =
             crate::modules::providers::ProviderRegistry::build_http_request(&client, &request)?;
 
-        let response = req_builder
-            .send()
-            .await
-            .map_err(|e| format!("Verbindungsfehler zu {}: {}", request.endpoint_url, e))?;
+        let response = req_builder.send().await.map_err(|e| {
+            crate::err!("backend.llm.connect", url = request.endpoint_url, error = e)
+        })?;
 
         if !response.status().is_success() {
             let status = response.status();
             let err_text = response.text().await.unwrap_or_default();
-            return Err(format!("LLM-Server Fehler ({}): {}", status, err_text));
+            return Err(crate::err!(
+                "backend.llm.server",
+                status = status,
+                error = err_text
+            ));
         }
 
         let mut stream = response.bytes_stream();
@@ -274,7 +280,7 @@ impl InferenceClient {
         let mut buffer = String::new();
 
         while let Some(chunk_res) = stream.next().await {
-            let chunk = chunk_res.map_err(|e| format!("Stream-Fehler: {}", e))?;
+            let chunk = chunk_res.map_err(|e| crate::err!("backend.llm.stream", error = e))?;
             let chunk_str = String::from_utf8_lossy(&chunk);
             buffer.push_str(&chunk_str);
 

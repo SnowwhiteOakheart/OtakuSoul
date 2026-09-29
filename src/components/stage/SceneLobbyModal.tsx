@@ -28,6 +28,7 @@ import { DropdownMenu } from '../ui/DropdownMenu';
 import { confirmDialog, toast } from '../ui/feedback';
 import { ModalOverlay } from '../ui/ModalOverlay';
 import { pressable } from '../../utils/pressable';
+import { errorMessage } from '../../utils/errors';
 
 interface SceneLobbyModalProps {
   isOpen: boolean;
@@ -208,7 +209,7 @@ export const SceneLobbyModal: React.FC<SceneLobbyModalProps> = ({
       setShowNewFolderModal(false);
       setSelectedStageFolder(trimmed);
     } catch (err) {
-      toast.error(translate('toast.folderCreateFailed', { error: String(err) }));
+      toast.error(translate('toast.folderCreateFailed', { error: errorMessage(err) }));
     }
   };
 
@@ -227,7 +228,7 @@ export const SceneLobbyModal: React.FC<SceneLobbyModalProps> = ({
         await deleteStageFolder(selectedStageFolder);
         setSelectedStageFolder('Alle');
       } catch (err) {
-        toast.error(translate('toast.folderDeleteFailed', { error: String(err) }));
+        toast.error(translate('toast.folderDeleteFailed', { error: errorMessage(err) }));
       }
     }
   };
@@ -241,7 +242,7 @@ export const SceneLobbyModal: React.FC<SceneLobbyModalProps> = ({
       await importStageSceneJson(text, targetFolder);
       toast.success(translate('toast.sceneImported', { folder: targetFolder }));
     } catch (err) {
-      toast.error(translate('toast.sceneImportFailed', { error: String(err) }));
+      toast.error(translate('toast.sceneImportFailed', { error: errorMessage(err) }));
     } finally {
       if (fileInputRef.current) {
         fileInputRef.current.value = '';
@@ -255,7 +256,7 @@ export const SceneLobbyModal: React.FC<SceneLobbyModalProps> = ({
       await moveStageSceneToFolder(movingScene.id, targetFolder);
       setMovingScene(null);
     } catch (err) {
-      toast.error(translate('toast.sceneMoveFailed', { error: String(err) }));
+      toast.error(translate('toast.sceneMoveFailed', { error: errorMessage(err) }));
     }
   };
 

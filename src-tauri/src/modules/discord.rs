@@ -196,7 +196,7 @@ impl DiscordRpcClient {
                 return Ok(p3);
             }
         }
-        Err("Kein aktiver Discord-IPC Socket gefunden.".to_string())
+        Err(crate::err!("backend.discord.noIpc"))
     }
 
     #[cfg(unix)]
@@ -327,9 +327,8 @@ impl DiscordBotManager {
         let mut on_disk = config.clone();
         crate::modules::secrets::externalize(DISCORD_TOKEN_ACCOUNT, &mut on_disk.bot_token);
         let content = serde_json::to_string_pretty(&on_disk)
-            .map_err(|e| format!("Fehler beim Serialisieren der Discord-Konfiguration: {}", e))?;
-        fs::write(&path, content)
-            .map_err(|e| format!("Fehler beim Speichern der Discord-Konfiguration: {}", e))
+            .map_err(|e| crate::err!("backend.discord.configSave", error = e))?;
+        fs::write(&path, content).map_err(|e| crate::err!("backend.discord.configSave", error = e))
     }
 
     pub async fn get_status(&self) -> DiscordBotStatus {
@@ -359,7 +358,7 @@ impl DiscordBotManager {
 
         let cfg = self.config.read().await.clone();
         if cfg.bot_token.trim().is_empty() {
-            return Err("Kein Discord Bot-Token konfiguriert.".to_string());
+            return Err(crate::err!("backend.discord.noToken"));
         }
 
         let (tx, mut rx) = mpsc::channel::<()>(1);

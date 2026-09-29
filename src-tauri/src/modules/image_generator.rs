@@ -279,9 +279,9 @@ impl ImageGenerator {
         let file_path = images_dir.join(&file_name);
 
         let mut file = File::create(&file_path)
-            .map_err(|e| format!("Fehler beim Anlegen der Bilddatei: {}", e))?;
+            .map_err(|e| crate::err!("backend.image.fileCreate", error = e))?;
         file.write_all(&image_bytes)
-            .map_err(|e| format!("Fehler beim Schreiben der Bilddatei: {}", e))?;
+            .map_err(|e| crate::err!("backend.image.fileWrite", error = e))?;
 
         let base64_str =
             base64::Engine::encode(&base64::engine::general_purpose::STANDARD, &image_bytes);
@@ -343,28 +343,28 @@ impl ImageGenerator {
 
         if !resp.status().is_success() {
             let err_text = resp.text().await.unwrap_or_default();
-            return Err(format!("Automatic1111 Serverfehler: {}", err_text));
+            return Err(crate::err!("backend.image.a1111Server", error = err_text));
         }
 
         let json_resp: serde_json::Value = resp
             .json()
             .await
-            .map_err(|e| format!("Fehler beim Parsen der A1111 Antwort: {}", e))?;
+            .map_err(|e| crate::err!("backend.image.a1111Parse", error = e))?;
 
         let images = json_resp["images"]
             .as_array()
-            .ok_or_else(|| "A1111 lieferte kein 'images' Array zurück.".to_string())?;
+            .ok_or_else(|| crate::err!("backend.image.a1111NoImages"))?;
 
         if images.is_empty() {
-            return Err("A1111 lieferte ein leeres 'images' Array.".to_string());
+            return Err(crate::err!("backend.image.a1111Empty"));
         }
 
         let b64_img = images[0]
             .as_str()
-            .ok_or_else(|| "Ungültiges Base64 Bild in A1111 Antwort.".to_string())?;
+            .ok_or_else(|| crate::err!("backend.image.a1111InvalidImage"))?;
 
         let img_bytes = base64::Engine::decode(&base64::engine::general_purpose::STANDARD, b64_img)
-            .map_err(|e| format!("Fehler beim Dekodieren von Base64: {}", e))?;
+            .map_err(|e| crate::err!("backend.image.base64", error = e))?;
 
         Ok(img_bytes)
     }
@@ -459,21 +459,21 @@ impl ImageGenerator {
             .json(&workflow)
             .send()
             .await
-            .map_err(|e| format!("Fehler beim Senden an ComfyUI unter {}: {}", prompt_url, e))?;
+            .map_err(|e| crate::err!("backend.image.comfySend", url = prompt_url, error = e))?;
 
         if !resp.status().is_success() {
             let err = resp.text().await.unwrap_or_default();
-            return Err(format!("ComfyUI Fehler bei /prompt: {}", err));
+            return Err(crate::err!("backend.image.comfyPrompt", error = err));
         }
 
         let json_resp: serde_json::Value = resp
             .json()
             .await
-            .map_err(|e| format!("Ungültiges JSON von ComfyUI: {}", e))?;
+            .map_err(|e| crate::err!("backend.image.comfyJson", error = e))?;
 
         let prompt_id = json_resp["prompt_id"]
             .as_str()
-            .ok_or_else(|| "ComfyUI lieferte keine prompt_id.".to_string())?;
+            .ok_or_else(|| crate::err!("backend.image.comfyNoPromptId"))?;
 
         // Poll history endpoint until prompt_id is present
         let history_url = format!("{}/history/{}", base_url, prompt_id);
@@ -509,10 +509,7 @@ impl ImageGenerator {
         }
 
         if final_filename.is_empty() {
-            return Err(format!(
-                "Timeout beim Warten auf ComfyUI Inferenz (Prompt ID: {}).",
-                prompt_id
-            ));
+            return Err(crate::err!("backend.image.comfyTimeout", id = prompt_id));
         }
 
         // Fetch image via /view
@@ -528,12 +525,12 @@ impl ImageGenerator {
             .get(&view_url)
             .send()
             .await
-            .map_err(|e| format!("Fehler beim Herunterladen des Bildes aus ComfyUI: {}", e))?;
+            .map_err(|e| crate::err!("backend.image.comfyDownload", error = e))?;
 
         let bytes = img_resp
             .bytes()
             .await
-            .map_err(|e| format!("Fehler beim Lesen der Bild-Bytes von ComfyUI: {}", e))?;
+            .map_err(|e| crate::err!("backend.image.comfyRead", error = e))?;
 
         Ok(bytes.to_vec())
     }
@@ -542,7 +539,7 @@ impl ImageGenerator {
     async fn generate_dalle(config: &ImageGenConfig, prompt: &str) -> Result<Vec<u8>, String> {
         let api_key = config.api_key.as_deref().unwrap_or("");
         if api_key.is_empty() {
-            return Err("DALL-E 3 erfordert einen OpenAI API Key.".to_string());
+            return Err(crate::err!("backend.image.dalleNoKey"));
         }
 
         let client = reqwest::Client::builder()
@@ -573,24 +570,24 @@ impl ImageGenerator {
             .json(&payload)
             .send()
             .await
-            .map_err(|e| format!("Fehler beim Verbinden mit DALL-E API: {}", e))?;
+            .map_err(|e| crate::err!("backend.image.dalleConnect", error = e))?;
 
         if !resp.status().is_success() {
             let err = resp.text().await.unwrap_or_default();
-            return Err(format!("DALL-E API Fehler: {}", err));
+            return Err(crate::err!("backend.image.dalleApi", error = err));
         }
 
         let json_resp: serde_json::Value = resp
             .json()
             .await
-            .map_err(|e| format!("Ungültige DALL-E Antwort: {}", e))?;
+            .map_err(|e| crate::err!("backend.image.dalleInvalid", error = e))?;
 
         let b64 = json_resp["data"][0]["b64_json"]
             .as_str()
-            .ok_or_else(|| "DALL-E lieferte kein 'b64_json' Feld zurück.".to_string())?;
+            .ok_or_else(|| crate::err!("backend.image.dalleNoImage"))?;
 
         let bytes = base64::Engine::decode(&base64::engine::general_purpose::STANDARD, b64)
-            .map_err(|e| format!("Fehler beim Dekodieren der DALL-E Bild-Bytes: {}", e))?;
+            .map_err(|e| crate::err!("backend.image.dalleDecode", error = e))?;
 
         Ok(bytes)
     }
@@ -603,7 +600,7 @@ impl ImageGenerator {
     ) -> Result<Vec<u8>, String> {
         let api_key = config.api_key.as_deref().unwrap_or("");
         if api_key.is_empty() {
-            return Err("NovelAI erfordert einen API Key.".to_string());
+            return Err(crate::err!("backend.image.novelaiNoKey"));
         }
 
         let client = reqwest::Client::builder()
@@ -635,17 +632,17 @@ impl ImageGenerator {
             .json(&payload)
             .send()
             .await
-            .map_err(|e| format!("Fehler bei NovelAI Anfrage: {}", e))?;
+            .map_err(|e| crate::err!("backend.image.novelaiRequest", error = e))?;
 
         if !resp.status().is_success() {
             let err = resp.text().await.unwrap_or_default();
-            return Err(format!("NovelAI Fehler: {}", err));
+            return Err(crate::err!("backend.image.novelaiApi", error = err));
         }
 
         let bytes = resp
             .bytes()
             .await
-            .map_err(|e| format!("Fehler beim Lesen der NovelAI Bilddaten: {}", e))?;
+            .map_err(|e| crate::err!("backend.image.novelaiRead", error = e))?;
 
         // NovelAI returns a zip archive containing image_0.png
         if let Ok(mut archive) = zip::ZipArchive::new(std::io::Cursor::new(&bytes))
@@ -653,7 +650,7 @@ impl ImageGenerator {
         {
             let mut img_buf = Vec::new();
             std::io::Read::read_to_end(&mut file, &mut img_buf)
-                .map_err(|e| format!("Fehler beim Extrahieren aus NovelAI Zip: {}", e))?;
+                .map_err(|e| crate::err!("backend.image.novelaiZip", error = e))?;
             return Ok(img_buf);
         }
 

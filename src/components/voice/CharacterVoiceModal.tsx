@@ -349,7 +349,7 @@ export function CharacterVoiceModal({ onClose }: CharacterVoiceModalProps) {
                       {kokoroProgress && (isInstallingKokoro || kokoroProgress.finished) && (
                         <div className="space-y-1.5">
                           <div className="flex justify-between text-xs text-slate-400">
-                            <span className="truncate pr-3">{kokoroProgress.filename}</span>
+                            <span className="truncate pr-3">{kokoroProgress.finished ? t('voiceCfg.kokoroInstalled') : kokoroProgress.filename}</span>
                             <span>{kokoroProgress.file_index}/{kokoroProgress.total_files}</span>
                           </div>
                           <div className="h-1.5 rounded-full bg-slate-800 overflow-hidden">

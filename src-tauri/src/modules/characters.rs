@@ -234,13 +234,13 @@ pub fn parse_character_json(content: &str) -> Result<CharacterCardV2, String> {
         }
     }
 
-    Err("Ungültiges Character Card JSON-Format".to_string())
+    Err(crate::err!("backend.characters.invalidJson"))
 }
 
 /// Extracts SillyTavern / Tavern V2 text chunk from a PNG binary
 pub fn parse_character_png(bytes: &[u8]) -> Result<(CharacterCardV2, String), String> {
     if bytes.len() < 8 || &bytes[0..8] != b"\x89PNG\r\n\x1a\n" {
-        return Err("Die Datei ist kein gültiges PNG-Bild".to_string());
+        return Err(crate::err!("backend.characters.notPng"));
     }
 
     let mut cursor = 8;
@@ -292,11 +292,11 @@ pub fn inject_character_metadata_png(
     card: &CharacterCardV2,
 ) -> Result<Vec<u8>, String> {
     if base_png.len() < 8 || &base_png[0..8] != b"\x89PNG\r\n\x1a\n" {
-        return Err("Ungültiger PNG-Header".to_string());
+        return Err(crate::err!("backend.characters.pngHeader"));
     }
 
     let card_json = serde_json::to_string(card)
-        .map_err(|e| format!("Fehler beim Serialisieren der Karte: {}", e))?;
+        .map_err(|e| crate::err!("backend.characters.serialize", error = e))?;
     let base64_payload = BASE64_STANDARD.encode(card_json.as_bytes());
 
     let mut text_chunk_data = Vec::new();
@@ -353,7 +353,7 @@ pub fn inject_character_metadata_png(
     }
 
     if !inserted {
-        return Err("IHDR-Chunk im PNG nicht gefunden".to_string());
+        return Err(crate::err!("backend.characters.pngNoIhdr"));
     }
 
     Ok(new_png)
@@ -389,7 +389,10 @@ fn get_placeholder_png() -> Vec<u8> {
 
 pub fn load_character_from_file(path: &Path) -> Result<CharacterProfile, String> {
     if !path.exists() {
-        return Err(format!("Datei nicht gefunden: {:?}", path));
+        return Err(crate::err!(
+            "backend.common.fileMissing",
+            path = format!("{:?}", path)
+        ));
     }
 
     let extension = path
@@ -406,15 +409,18 @@ pub fn load_character_from_file(path: &Path) -> Result<CharacterProfile, String>
     let mut bound_lorebooks = Vec::new();
     let card = if extension == "json" {
         let content = fs::read_to_string(path)
-            .map_err(|e| format!("Fehler beim Lesen der JSON-Datei: {}", e))?;
+            .map_err(|e| crate::err!("backend.common.jsonRead", error = e))?;
         parse_character_json(&content)?
     } else if extension == "png" {
         let bytes =
-            fs::read(path).map_err(|e| format!("Fehler beim Lesen der PNG-Datei: {}", e))?;
+            fs::read(path).map_err(|e| crate::err!("backend.characters.pngRead", error = e))?;
         let (card, _) = parse_character_png(&bytes)?;
         card
     } else {
-        return Err(format!("Nicht unterstütztes Dateiformat: .{}", extension));
+        return Err(crate::err!(
+            "backend.common.unsupportedFormat",
+            extension = extension
+        ));
     };
 
     if let Some(ext) = card.data.extensions.as_object() {
@@ -458,7 +464,7 @@ pub fn load_character_from_file(path: &Path) -> Result<CharacterProfile, String>
         })
     } else {
         let bytes =
-            fs::read(path).map_err(|e| format!("Fehler beim Lesen der PNG-Datei: {}", e))?;
+            fs::read(path).map_err(|e| crate::err!("backend.characters.pngRead", error = e))?;
         let (_, avatar_data_url) = parse_character_png(&bytes)?;
 
         Ok(CharacterProfile {
@@ -556,16 +562,26 @@ pub fn save_character_to_user_dir(profile: &CharacterProfile) -> Result<Characte
         };
 
         let enriched_png = inject_character_metadata_png(&base_bytes, &profile.card)?;
-        fs::write(&target_png, enriched_png)
-            .map_err(|e| format!("Fehler beim Schreiben von {:?}: {}", target_png, e))?;
+        fs::write(&target_png, enriched_png).map_err(|e| {
+            crate::err!(
+                "backend.common.fileWritePath",
+                path = format!("{:?}", target_png),
+                error = e
+            )
+        })?;
 
         saved_profile.source_path = Some(target_png.to_string_lossy().to_string());
     } else {
         // Save as JSON
         let json_text = serde_json::to_string_pretty(&profile.card)
-            .map_err(|e| format!("Fehler bei der Serialisierung: {}", e))?;
-        fs::write(&target_json, json_text)
-            .map_err(|e| format!("Fehler beim Schreiben von {:?}: {}", target_json, e))?;
+            .map_err(|e| crate::err!("backend.characters.serialize", error = e))?;
+        fs::write(&target_json, json_text).map_err(|e| {
+            crate::err!(
+                "backend.common.fileWritePath",
+                path = format!("{:?}", target_json),
+                error = e
+            )
+        })?;
 
         saved_profile.source_path = Some(target_json.to_string_lossy().to_string());
     }
@@ -594,12 +610,12 @@ pub fn export_character_card(
 
         let enriched_png = inject_character_metadata_png(&base_bytes, &profile.card)?;
         fs::write(target_path, enriched_png)
-            .map_err(|e| format!("Fehler beim Exportieren des PNGs: {}", e))?;
+            .map_err(|e| crate::err!("backend.characters.exportPng", error = e))?;
     } else {
         let json_text = serde_json::to_string_pretty(&profile.card)
-            .map_err(|e| format!("Fehler beim Serialisieren des JSONs: {}", e))?;
+            .map_err(|e| crate::err!("backend.characters.serialize", error = e))?;
         fs::write(target_path, json_text)
-            .map_err(|e| format!("Fehler beim Exportieren des JSONs: {}", e))?;
+            .map_err(|e| crate::err!("backend.characters.exportJson", error = e))?;
     }
 
     Ok(())
@@ -743,11 +759,11 @@ fn save_personas_list(list: &[UserPersona]) -> Result<(), String> {
 fn save_personas_list_to_path(list: &[UserPersona], path: &Path) -> Result<(), String> {
     if let Some(parent) = path.parent() {
         fs::create_dir_all(parent)
-            .map_err(|e| format!("Persona-Ordner konnte nicht erstellt werden: {}", e))?;
+            .map_err(|e| crate::err!("backend.characters.personaDir", error = e))?;
     }
     let json = serde_json::to_string_pretty(list)
-        .map_err(|e| format!("Fehler bei der Serialisierung der Personas: {}", e))?;
-    fs::write(path, json).map_err(|e| format!("Fehler beim Schreiben der Personas: {}", e))?;
+        .map_err(|e| crate::err!("backend.characters.personaSerialize", error = e))?;
+    fs::write(path, json).map_err(|e| crate::err!("backend.characters.personaWrite", error = e))?;
     Ok(())
 }
 
@@ -830,7 +846,7 @@ pub fn parse_character_wizard_draft(raw_text: &str) -> Result<CharacterDraft, St
     };
 
     serde_json::from_str::<CharacterDraft>(json_candidate)
-        .map_err(|e| format!("Fehler beim Parsen des Charakter-Drafts: {}", e))
+        .map_err(|e| crate::err!("backend.characters.draftParse", error = e))
 }
 
 #[cfg(test)]

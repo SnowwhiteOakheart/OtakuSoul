@@ -119,16 +119,19 @@ pub async fn search_hf_models(query: &str) -> Result<Vec<HfModelSummary>, String
         .header("User-Agent", "OtakuSoul-Desktop-Client")
         .send()
         .await
-        .map_err(|e| format!("Fehler bei HuggingFace-Suche: {}", e))?;
+        .map_err(|e| crate::err!("backend.models.search", error = e))?;
 
     if !res.status().is_success() {
-        return Err(format!("HuggingFace API-Fehler ({})", res.status()));
+        return Err(crate::err!(
+            "backend.models.apiStatus",
+            status = res.status()
+        ));
     }
 
     let val: serde_json::Value = res
         .json()
         .await
-        .map_err(|e| format!("Fehler beim Parsen der HF-Antwort: {}", e))?;
+        .map_err(|e| crate::err!("backend.models.parse", error = e))?;
 
     let mut models = Vec::new();
     if let Some(arr) = val.as_array() {
@@ -174,16 +177,19 @@ pub async fn get_hf_model_files(model_id: &str) -> Result<Vec<HfGgufFile>, Strin
         .header("User-Agent", "OtakuSoul-Desktop-Client")
         .send()
         .await
-        .map_err(|e| format!("Fehler beim Abrufen der Modelldateien: {}", e))?;
+        .map_err(|e| crate::err!("backend.models.filesFetch", error = e))?;
 
     if !res.status().is_success() {
-        return Err(format!("Modelldateien nicht gefunden ({})", res.status()));
+        return Err(crate::err!(
+            "backend.models.filesMissing",
+            status = res.status()
+        ));
     }
 
     let val: serde_json::Value = res
         .json()
         .await
-        .map_err(|e| format!("Fehler beim Parsen der Modell-Metadaten: {}", e))?;
+        .map_err(|e| crate::err!("backend.models.metadataParse", error = e))?;
 
     let mut files = Vec::new();
     if let Some(siblings) = val.get("siblings").and_then(|s| s.as_array()) {
@@ -242,10 +248,13 @@ pub async fn download_gguf_file<R: tauri::Runtime>(
         .header("User-Agent", "OtakuSoul-Desktop-Client")
         .send()
         .await
-        .map_err(|e| format!("Download-Verbindungsfehler: {}", e))?;
+        .map_err(|e| crate::err!("backend.common.downloadFailed", error = e))?;
 
     if !response.status().is_success() {
-        return Err(format!("Download fehlgeschlagen ({})", response.status()));
+        return Err(crate::err!(
+            "backend.common.downloadStatus",
+            status = response.status()
+        ));
     }
 
     let total_bytes = response.content_length().unwrap_or(0);
@@ -257,13 +266,13 @@ pub async fn download_gguf_file<R: tauri::Runtime>(
     let safe_filename = PathBuf::from(target_filename)
         .file_name()
         .and_then(|name| name.to_str())
-        .ok_or_else(|| "Ungültiger Modelldateiname".to_string())?
+        .ok_or_else(|| crate::err!("backend.models.invalidFilename"))?
         .to_string();
     let dest_path = target_dir.join(&safe_filename);
     let partial_path = target_dir.join(format!("{}.part", safe_filename));
     let mut file = tokio::fs::File::create(&partial_path)
         .await
-        .map_err(|e| format!("Fehler beim Erstellen der Zieldatei: {}", e))?;
+        .map_err(|e| crate::err!("backend.common.fileCreate", error = e))?;
 
     let mut stream = response.bytes_stream();
     let mut downloaded_bytes = 0u64;
@@ -272,10 +281,10 @@ pub async fn download_gguf_file<R: tauri::Runtime>(
 
     while let Some(chunk_res) = stream.next().await {
         let chunk =
-            chunk_res.map_err(|e| format!("Fehler beim Empfangen des Datenstroms: {}", e))?;
+            chunk_res.map_err(|e| crate::err!("backend.common.downloadInterrupted", error = e))?;
         file.write_all(&chunk)
             .await
-            .map_err(|e| format!("Schreibfehler: {}", e))?;
+            .map_err(|e| crate::err!("backend.common.fileWrite", error = e))?;
 
         downloaded_bytes += chunk.len() as u64;
 
@@ -307,11 +316,11 @@ pub async fn download_gguf_file<R: tauri::Runtime>(
 
     file.flush()
         .await
-        .map_err(|e| format!("Fehler beim Abschließen der Modelldatei: {}", e))?;
+        .map_err(|e| crate::err!("backend.models.finish", error = e))?;
     drop(file);
     tokio::fs::rename(&partial_path, &dest_path)
         .await
-        .map_err(|e| format!("Modelldatei konnte nicht aktiviert werden: {}", e))?;
+        .map_err(|e| crate::err!("backend.models.activate", error = e))?;
 
     let _ = app.emit(
         "model-download-progress",

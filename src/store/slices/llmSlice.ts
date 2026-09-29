@@ -15,6 +15,7 @@ import type {
   DownloadProgressEvent,
 } from '../../types';
 import type { SliceCreator } from '../storeTypes';
+import { errorMessage } from '../../utils/errors';
 
 /** Local llama-server, hardware, cloud providers, sampler, LLM presets and the GGUF model hub. */
 export interface LlmSlice {
@@ -320,7 +321,7 @@ export const createLlmSlice: SliceCreator<LlmSlice> = (set, get) => ({
       console.error('Failed to search HF models:', e);
       set({
         isSearchingHf: false,
-        hfError: e instanceof Error ? e.message : String(e),
+        hfError: errorMessage(e),
       });
     }
   },
@@ -386,7 +387,7 @@ export const createLlmSlice: SliceCreator<LlmSlice> = (set, get) => ({
       await get().saveCurrentSettings();
     } catch (e) {
       console.error('Failed to download GGUF model:', e);
-      set({ hfError: e instanceof Error ? e.message : String(e) });
+      set({ hfError: errorMessage(e) });
     }
   },
 });

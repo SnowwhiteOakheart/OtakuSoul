@@ -133,7 +133,7 @@ pub fn save_lorebook(mut lorebook: crate::modules::lorebook::Lorebook) -> Result
 pub fn delete_lorebook(file_path: String) -> Result<(), String> {
     let p = std::path::Path::new(&file_path);
     if p.exists() {
-        std::fs::remove_file(p).map_err(|e| format!("Fehler beim Löschen des Lorebooks: {}", e))?;
+        std::fs::remove_file(p).map_err(|e| crate::err!("backend.lorebook.delete", error = e))?;
     }
     Ok(())
 }
@@ -193,8 +193,13 @@ pub fn assemble_prompt(context: crate::modules::prompt_builder::PromptContext) -
 
 #[tauri::command]
 pub fn read_file_binary(file_path: String) -> Result<Vec<u8>, String> {
-    std::fs::read(&file_path)
-        .map_err(|e| format!("Fehler beim Lesen der Datei {:?}: {}", file_path, e))
+    std::fs::read(&file_path).map_err(|e| {
+        crate::err!(
+            "backend.common.fileReadPath",
+            path = format!("{:?}", file_path),
+            error = e
+        )
+    })
 }
 
 // --- Phase 5: Cognitive Soul Memory Commands ---
@@ -405,7 +410,7 @@ pub async fn generate_manual_diary_entry(
     let diary_raw = state.inference_client.generate_direct(diary_req).await?;
     let diary_text = diary_raw.trim();
     if diary_text.is_empty() {
-        return Err("LLM hat leeren Tagebucheintrag generiert.".to_string());
+        return Err(crate::err!("backend.memory.emptyDiary"));
     }
 
     let id = state
@@ -983,7 +988,7 @@ pub async fn toggle_companion_overlay(
 
         let window = builder
             .build()
-            .map_err(|e| format!("Fehler beim Erstellen des Overlay-Fensters: {}", e))?;
+            .map_err(|e| crate::err!("backend.companion.overlayWindow", error = e))?;
         let _ = window.set_ignore_cursor_events(click_through);
     }
     state.companion_engine.set_overlay_active(enable);
@@ -1694,9 +1699,9 @@ pub fn create_character_from_draft(
     };
 
     let json_bytes = serde_json::to_vec_pretty(&card)
-        .map_err(|e| format!("Fehler beim Serialisieren des Charakters: {}", e))?;
+        .map_err(|e| crate::err!("backend.characters.serialize", error = e))?;
     std::fs::write(&target_path, json_bytes)
-        .map_err(|e| format!("Fehler beim Speichern der Charakterdatei: {}", e))?;
+        .map_err(|e| crate::err!("backend.characters.save", error = e))?;
 
     crate::modules::characters::load_character_from_file(&target_path)
 }

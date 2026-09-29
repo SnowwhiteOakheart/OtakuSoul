@@ -113,9 +113,14 @@ impl McpManager {
 
     pub fn save_servers(&self, servers: Vec<McpServerConfig>) -> Result<(), String> {
         let serialized = serde_json::to_string_pretty(&servers)
-            .map_err(|e| format!("Fehler beim Serialisieren der MCP-Server: {}", e))?;
-        std::fs::write(&self.servers_file, serialized)
-            .map_err(|e| format!("Fehler beim Schreiben von {:?}: {}", self.servers_file, e))?;
+            .map_err(|e| crate::err!("backend.mcp.serialize", error = e))?;
+        std::fs::write(&self.servers_file, serialized).map_err(|e| {
+            crate::err!(
+                "backend.common.fileWritePath",
+                path = format!("{:?}", self.servers_file),
+                error = e
+            )
+        })?;
         *self.cached_servers.write().unwrap() = servers;
         Ok(())
     }
@@ -137,7 +142,7 @@ impl McpManager {
         };
 
         let server =
-            server.ok_or_else(|| format!("MCP-Server mit ID '{}' nicht gefunden.", server_id))?;
+            server.ok_or_else(|| crate::err!("backend.mcp.serverMissing", id = server_id))?;
         if !server.enabled {
             return Ok(Vec::new());
         }
@@ -178,7 +183,7 @@ impl McpManager {
             stdin
                 .write_all(format!("{}\n", init_req).as_bytes())
                 .await
-                .map_err(|e| format!("Fehler beim Senden von initialize: {}", e))?;
+                .map_err(|e| crate::err!("backend.mcp.sendInitialize", error = e))?;
 
             // Read initialize response
             let _ =
@@ -195,7 +200,7 @@ impl McpManager {
             stdin
                 .write_all(format!("{}\n", tools_req).as_bytes())
                 .await
-                .map_err(|e| format!("Fehler beim Senden von tools/list: {}", e))?;
+                .map_err(|e| crate::err!("backend.mcp.sendToolsList", error = e))?;
 
             let line_res =
                 tokio::time::timeout(std::time::Duration::from_secs(5), reader.next_line()).await;
@@ -244,7 +249,8 @@ impl McpManager {
             list.iter().find(|s| s.id == server_id).cloned()
         };
 
-        let server = server.ok_or_else(|| format!("MCP-Server '{}' nicht gefunden.", server_id))?;
+        let server =
+            server.ok_or_else(|| crate::err!("backend.mcp.serverMissing", id = server_id))?;
         let cmd_str = server.command.as_deref().unwrap_or("npx");
         let args = server.args.unwrap_or_default();
 
@@ -254,7 +260,7 @@ impl McpManager {
             .stdout(std::process::Stdio::piped())
             .stderr(std::process::Stdio::null())
             .spawn()
-            .map_err(|e| format!("MCP Server-Prozess '{}' fehlgeschlagen: {}", cmd_str, e))?;
+            .map_err(|e| crate::err!("backend.mcp.process", command = cmd_str, error = e))?;
 
         let mut stdin = child.stdin.take().ok_or("Konnte stdin nicht öffnen.")?;
         let stdout = child.stdout.take().ok_or("Konnte stdout nicht öffnen.")?;
@@ -274,7 +280,7 @@ impl McpManager {
         stdin
             .write_all(format!("{}\n", init_req).as_bytes())
             .await
-            .map_err(|e| format!("Fehler beim Senden von initialize: {}", e))?;
+            .map_err(|e| crate::err!("backend.mcp.sendInitialize", error = e))?;
         let _ = tokio::time::timeout(std::time::Duration::from_secs(4), reader.next_line()).await;
 
         // 2. Call tool
@@ -291,7 +297,7 @@ impl McpManager {
         stdin
             .write_all(format!("{}\n", call_req).as_bytes())
             .await
-            .map_err(|e| format!("Fehler beim Senden von tools/call: {}", e))?;
+            .map_err(|e| crate::err!("backend.mcp.sendToolsCall", error = e))?;
 
         let line_res =
             tokio::time::timeout(std::time::Duration::from_secs(20), reader.next_line()).await;
@@ -300,9 +306,9 @@ impl McpManager {
         match line_res {
             Ok(Ok(Some(line))) => {
                 let val: serde_json::Value = serde_json::from_str(&line)
-                    .map_err(|e| format!("MCP Server gab ungültiges JSON zurück: {}", e))?;
+                    .map_err(|e| crate::err!("backend.mcp.invalidJson", error = e))?;
                 if let Some(err) = val.get("error") {
-                    return Err(format!("MCP Fehler: {}", err));
+                    return Err(crate::err!("backend.mcp.error", error = err));
                 }
                 if let Some(content) = val.pointer("/result/content") {
                     return Ok(serde_json::to_string_pretty(content)
@@ -310,9 +316,9 @@ impl McpManager {
                 }
                 Ok(line)
             }
-            Ok(Ok(None)) => Err("MCP Server schloss die Verbindung ohne Antwort.".to_string()),
-            Ok(Err(e)) => Err(format!("Fehler beim Lesen der Server-Antwort: {}", e)),
-            Err(_) => Err("MCP Server-Aufruf überschritt das Timeout (20s).".to_string()),
+            Ok(Ok(None)) => Err(crate::err!("backend.mcp.closed")),
+            Ok(Err(e)) => Err(crate::err!("backend.mcp.readResponse", error = e)),
+            Err(_) => Err(crate::err!("backend.mcp.timeout")),
         }
     }
 
@@ -337,9 +343,9 @@ impl McpManager {
     pub fn save_plugin(&self, plugin: CompanionPlugin) -> Result<(), String> {
         let path = self.plugins_dir.join(format!("{}.json", plugin.id));
         let serialized = serde_json::to_string_pretty(&plugin)
-            .map_err(|e| format!("Plugin-Serialisierungsfehler: {}", e))?;
+            .map_err(|e| crate::err!("backend.mcp.pluginSerialize", error = e))?;
         std::fs::write(&path, serialized)
-            .map_err(|e| format!("Fehler beim Schreiben des Plugins: {}", e))?;
+            .map_err(|e| crate::err!("backend.mcp.pluginWrite", error = e))?;
         Ok(())
     }
 
@@ -353,7 +359,7 @@ impl McpManager {
         let plugin = plugins
             .into_iter()
             .find(|p| p.id == plugin_id)
-            .ok_or_else(|| format!("Plugin mit ID '{}' nicht gefunden.", plugin_id))?;
+            .ok_or_else(|| crate::err!("backend.mcp.pluginMissing", id = plugin_id))?;
 
         let args_str = serde_json::to_string(&args).unwrap_or_default();
         let output = Command::new(&plugin.command)
@@ -361,7 +367,13 @@ impl McpManager {
             .env("PLUGIN_ARGUMENTS", args_str)
             .output()
             .await
-            .map_err(|e| format!("Plugin-Befehl '{}' fehlgeschlagen: {}", plugin.command, e))?;
+            .map_err(|e| {
+                crate::err!(
+                    "backend.mcp.pluginCommand",
+                    command = plugin.command,
+                    error = e
+                )
+            })?;
 
         let stdout = String::from_utf8_lossy(&output.stdout).trim().to_string();
         let stderr = String::from_utf8_lossy(&output.stderr).trim().to_string();
@@ -373,11 +385,11 @@ impl McpManager {
                 stdout
             })
         } else {
-            Err(format!(
-                "Plugin fehlgeschlagen (Exit Code: {}):\nSTDOUT: {}\nSTDERR: {}",
-                output.status.code().unwrap_or(-1),
-                stdout,
-                stderr
+            Err(crate::err!(
+                "backend.mcp.pluginExit",
+                code = output.status.code().unwrap_or(-1),
+                stdout = stdout,
+                stderr = stderr
             ))
         }
     }

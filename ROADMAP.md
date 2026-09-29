@@ -93,8 +93,9 @@ GitHub Actions wurden bewusst entfernt (Commit `11597c2`). Stattdessen gibt es j
   → Alle UI-Texte in Wörterbücher überführen. Das eine große `DICTIONARY`-Objekt in `src/i18n/index.ts` in JSON-Dateien pro Sprache
   und Bereich aufteilen, optional mit `i18next` / `react-i18next` (Pluralisierung, Interpolation, Fallback).
 - [x] Einen Test ergänzen, der fehlende Übersetzungsschlüssel meldet (plus Platzhalter- und Pluraltests).
-- [ ] *(in Arbeit: `err!`-Makro + Übersetzung in `errorMessage`; umgestellt sind Stimmen, Soul Hub und Live2D –
-  offen u. a. Stage, Kokoro, Bildgenerierung, Charaktere, MCP, Backups)* Rust-Fehler als Fehlercodes zurückgeben und im Frontend übersetzen, statt deutschen Klartext aus `format!()` anzuzeigen.
+- [x] Rust-Fehler als Fehlercodes: `err!`-Makro (`modules/error.rs`) liefert `{"code","params"}`, `errorMessage()` übersetzt in die
+  Oberflächensprache. Alle Module außer `companion_tools.rs` umgestellt (dessen Meldungen gehen als Werkzeug-Ergebnis an das
+  Sprachmodell); ein Test prüft jeden Code gegen die drei Wörterbücher.
 - [x] `<html lang="de">` beim Sprachwechsel dynamisch setzen.
 
 ### Design-System & Themes

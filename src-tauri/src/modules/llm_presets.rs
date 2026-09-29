@@ -186,7 +186,7 @@ pub fn save_llm_preset(
 
     if let Some(parent) = path.parent() {
         std::fs::create_dir_all(parent)
-            .map_err(|e| format!("Fehler beim Erstellen des Preset-Ordners: {}", e))?;
+            .map_err(|e| crate::err!("backend.presets.dir", error = e))?;
     }
 
     let mut current = load_llm_presets(Some(&path));
@@ -198,9 +198,9 @@ pub fn save_llm_preset(
 
     let user_only: Vec<LlmPreset> = current.iter().filter(|p| !p.is_builtin).cloned().collect();
     let json = serde_json::to_string_pretty(&user_only)
-        .map_err(|e| format!("Fehler beim Serialisieren der Presets: {}", e))?;
+        .map_err(|e| crate::err!("backend.presets.save", error = e))?;
 
-    std::fs::write(&path, json).map_err(|e| format!("Fehler beim Speichern der Presets: {}", e))?;
+    std::fs::write(&path, json).map_err(|e| crate::err!("backend.presets.save", error = e))?;
 
     Ok(current)
 }
@@ -218,9 +218,9 @@ pub fn delete_llm_preset(
 
     let user_only: Vec<LlmPreset> = current.iter().filter(|p| !p.is_builtin).cloned().collect();
     let json = serde_json::to_string_pretty(&user_only)
-        .map_err(|e| format!("Fehler beim Serialisieren der Presets: {}", e))?;
+        .map_err(|e| crate::err!("backend.presets.save", error = e))?;
 
-    std::fs::write(&path, json).map_err(|e| format!("Fehler beim Speichern der Presets: {}", e))?;
+    std::fs::write(&path, json).map_err(|e| crate::err!("backend.presets.save", error = e))?;
 
     Ok(current)
 }

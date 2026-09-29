@@ -91,7 +91,7 @@ pub fn clear_app_logs() -> Result<(), String> {
     }
     let path = get_log_file_path();
     if path.exists() {
-        fs::write(&path, "").map_err(|e| format!("Fehler beim Leeren der Logdatei: {}", e))?;
+        fs::write(&path, "").map_err(|e| crate::err!("backend.logs.clear", error = e))?;
     }
     log_event("INFO", "logger", "Logdatei wurde geleert.");
     Ok(())
@@ -100,7 +100,7 @@ pub fn clear_app_logs() -> Result<(), String> {
 pub fn export_app_logs() -> Result<String, String> {
     let path = get_log_file_path();
     if path.exists() {
-        fs::read_to_string(&path).map_err(|e| format!("Fehler beim Lesen der Logdatei: {}", e))
+        fs::read_to_string(&path).map_err(|e| crate::err!("backend.logs.read", error = e))
     } else {
         Ok(String::new())
     }

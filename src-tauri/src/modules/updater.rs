@@ -27,7 +27,7 @@ pub async fn check_for_app_updates() -> Result<UpdateInfo, String> {
         .timeout(Duration::from_secs(6))
         .user_agent("OtakuSoul-Desktop-App")
         .build()
-        .map_err(|e| format!("Fehler beim Initialisieren des HTTP-Clients: {}", e))?;
+        .map_err(|e| crate::err!("backend.common.httpClient", error = e))?;
 
     let res = client.get(url).send().await;
 

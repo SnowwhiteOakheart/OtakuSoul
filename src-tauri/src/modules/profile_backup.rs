@@ -179,7 +179,7 @@ impl ProfileBackupManager {
         let backup_path = backups_dir.join(&filename);
 
         let file = File::create(&backup_path)
-            .map_err(|e| format!("Fehler beim Erstellen der Backup-Datei: {}", e))?;
+            .map_err(|e| crate::err!("backend.backup.create", error = e))?;
         let mut zip = ZipWriter::new(file);
         let options = SimpleFileOptions::default()
             .compression_method(zip::CompressionMethod::Deflated)
@@ -311,14 +311,14 @@ impl ProfileBackupManager {
         };
 
         let manifest_bytes = serde_json::to_vec_pretty(&manifest)
-            .map_err(|e| format!("Fehler beim Serialisieren des Manifests: {}", e))?;
+            .map_err(|e| crate::err!("backend.backup.manifest", error = e))?;
         zip.start_file("manifest.json", options)
-            .map_err(|e| format!("Fehler beim Schreiben von manifest.json: {}", e))?;
+            .map_err(|e| crate::err!("backend.backup.manifest", error = e))?;
         zip.write_all(&manifest_bytes)
-            .map_err(|e| format!("Fehler beim Speichern von manifest.json: {}", e))?;
+            .map_err(|e| crate::err!("backend.backup.manifest", error = e))?;
 
         zip.finish()
-            .map_err(|e| format!("Fehler beim Finalisieren des ZIP-Archivs: {}", e))?;
+            .map_err(|e| crate::err!("backend.backup.finish", error = e))?;
 
         info!(
             "Backup erfolgreich erstellt: {:?} mit {} Dateien",
@@ -416,7 +416,7 @@ impl ProfileBackupManager {
         let backups_dir = &loc.backups_dir;
         let backup_path = backups_dir.join(filename);
         if !backup_path.exists() {
-            return Err(format!("Backup-Datei '{}' existiert nicht.", filename));
+            return Err(crate::err!("backend.backup.missing", name = filename));
         }
 
         info!("Erstelle präventiven Sicherheits-Snapshot vor der Wiederherstellung...");
@@ -427,10 +427,10 @@ impl ProfileBackupManager {
             true,
         );
 
-        let file = File::open(&backup_path)
-            .map_err(|e| format!("Fehler beim Öffnen des Backups: {}", e))?;
-        let mut archive =
-            ZipArchive::new(file).map_err(|e| format!("Ungültiges ZIP-Archiv: {}", e))?;
+        let file =
+            File::open(&backup_path).map_err(|e| crate::err!("backend.backup.open", error = e))?;
+        let mut archive = ZipArchive::new(file)
+            .map_err(|e| crate::err!("backend.common.zipInvalid", error = e))?;
 
         let selection = groups.unwrap_or_default();
         let paths = &loc.paths;
@@ -441,7 +441,7 @@ impl ProfileBackupManager {
         for i in 0..archive.len() {
             let mut file = archive
                 .by_index(i)
-                .map_err(|e| format!("Fehler beim Lesen von ZIP-Eintrag {}: {}", i, e))?;
+                .map_err(|e| crate::err!("backend.backup.entryRead", index = i, error = e))?;
             let entry_name = match file.enclosed_name() {
                 Some(p) => p.to_path_buf(),
                 None => continue,
@@ -509,14 +509,15 @@ impl ProfileBackupManager {
             filename, restored_count
         );
         if pending_db_restore {
-            Ok(format!(
-                "Erfolgreich {} Dateien aus dem Backup wiederhergestellt. Die Soul-Memory-Datenbank wird beim nächsten Start von OtakuSoul übernommen – bitte die App neu starten.",
-                restored_count
+            // Coded like errors so the frontend shows it in the interface language.
+            Ok(crate::err!(
+                "backend.backup.restoredRestart",
+                count = restored_count
             ))
         } else {
-            Ok(format!(
-                "Erfolgreich {} Dateien aus dem Backup wiederhergestellt.",
-                restored_count
+            Ok(crate::err!(
+                "backend.backup.restored",
+                count = restored_count
             ))
         }
     }
@@ -527,11 +528,11 @@ impl ProfileBackupManager {
         let backup_path = backups_dir.join(filename);
         if backup_path.exists() {
             fs::remove_file(&backup_path)
-                .map_err(|e| format!("Fehler beim Löschen des Backups: {}", e))?;
+                .map_err(|e| crate::err!("backend.backup.delete", error = e))?;
             info!("Backup '{}' gelöscht.", filename);
             Ok(true)
         } else {
-            Err(format!("Backup '{}' nicht gefunden.", filename))
+            Err(crate::err!("backend.backup.missing", name = filename))
         }
     }
 

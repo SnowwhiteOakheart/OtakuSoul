@@ -993,7 +993,7 @@ impl MemoryDb {
             None => Self::backup_dir_for_character(char_id),
         };
         std::fs::create_dir_all(&target_dir)
-            .map_err(|e| format!("Konnte Backup-Verzeichnis nicht erstellen: {}", e))?;
+            .map_err(|e| crate::err!("backend.memory.backupDir", error = e))?;
 
         let psychology = self
             .get_or_create_psychology(char_id)
@@ -1019,7 +1019,7 @@ impl MemoryDb {
         let filename = format!("backup_{}_{}.json", char_id, now);
         let file_path = target_dir.join(&filename);
         std::fs::write(&file_path, &json_str)
-            .map_err(|e| format!("Konnte Backup-Datei nicht schreiben: {}", e))?;
+            .map_err(|e| crate::err!("backend.memory.backupWrite", error = e))?;
 
         let date_formatted = chrono::DateTime::from_timestamp(now as i64, 0)
             .map(|dt| dt.format("%Y-%m-%d %H:%M:%S").to_string())
@@ -1098,9 +1098,9 @@ impl MemoryDb {
 
     pub fn restore_memory_backup(&self, backup_file_path: &Path) -> Result<(), String> {
         if !backup_file_path.exists() {
-            return Err(format!(
-                "Backup-Datei existiert nicht: {}",
-                backup_file_path.display()
+            return Err(crate::err!(
+                "backend.memory.backupMissing",
+                path = backup_file_path.display()
             ));
         }
 
@@ -1151,9 +1151,9 @@ impl MemoryDb {
         user_name: &str,
     ) -> Result<usize, String> {
         if !folder.exists() || !folder.is_dir() {
-            return Err(format!(
-                "Import-Ordner nicht gefunden: {}",
-                folder.display()
+            return Err(crate::err!(
+                "backend.memory.importMissing",
+                path = folder.display()
             ));
         }
 

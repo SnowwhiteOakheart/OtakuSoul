@@ -11,6 +11,7 @@ import type {
   VoiceConfig,
 } from '../../types';
 import type { SliceCreator } from '../storeTypes';
+import { errorMessage } from '../../utils/errors';
 
 /** Chat messages, streaming, sessions, swipes, HUD presets, reply language and voice. */
 export interface ChatSlice {
@@ -622,7 +623,7 @@ export const createChatSlice: SliceCreator<ChatSlice> = (set, get) => ({
           ...state.messages,
           {
             role: 'assistant',
-            content: translate('chat.inferenceError', { error: e instanceof Error ? e.message : String(e) }),
+            content: translate('chat.inferenceError', { error: errorMessage(e) }),
           },
         ],
         streamingText: '',

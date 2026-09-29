@@ -1033,16 +1033,14 @@ impl StageEngine {
     pub fn delay_turn(&self) -> Result<SceneState, String> {
         let mut st = self.state.write().unwrap();
         if !st.combat.is_active || st.combat.combatants.len() < 2 {
-            return Err("Es läuft keine verschiebbare Kampfbegegnung.".to_string());
+            return Err(crate::err!("backend.stage.noEncounter"));
         }
         let index = st.combat.current_turn_index;
         if index >= st.combat.combatants.len() || st.combat.combatants[index].role != "player" {
-            return Err("Verschieben ist nur im eigenen Zug möglich.".to_string());
+            return Err(crate::err!("backend.stage.delayOwnTurn"));
         }
         if index + 1 >= st.combat.combatants.len() {
-            return Err(
-                "Der letzte Zug der Runde kann nicht weiter verschoben werden.".to_string(),
-            );
+            return Err(crate::err!("backend.stage.delayLastTurn"));
         }
         let player_name = st.combat.combatants[index].name.clone();
         st.combat.combatants.swap(index, index + 1);
@@ -1068,10 +1066,10 @@ impl StageEngine {
             .inventory
             .iter()
             .position(|item| item.id == item_id)
-            .ok_or_else(|| "Gegenstand nicht gefunden.".to_string())?;
+            .ok_or_else(|| crate::err!("backend.stage.itemMissing"))?;
         let item = st.inventory[item_index].clone();
         if item.item_type != "consumable" {
-            return Err("Nur Verbrauchsgegenstände können direkt benutzt werden.".to_string());
+            return Err(crate::err!("backend.stage.itemNotConsumable"));
         }
 
         let fallback_name = item.name.to_lowercase();
@@ -1162,7 +1160,7 @@ impl StageEngine {
             let _ = save_scene_state(&previous_state);
             return Ok(previous_state);
         }
-        Err("Kein früherer Zustand zum Wiederherstellen vorhanden.".to_string())
+        Err(crate::err!("backend.stage.nothingToUndo"))
     }
 }
 
@@ -1173,7 +1171,7 @@ impl StageEngine {
 pub fn roll_dice(formula_raw: &str, target_dc: Option<i32>) -> Result<DiceRollResult, String> {
     let clean = formula_raw.trim().replace(' ', "");
     if clean.is_empty() {
-        return Err("Würfelformel darf nicht leer sein.".to_string());
+        return Err(crate::err!("backend.stage.diceEmpty"));
     }
 
     let (base_part, modifier) = if let Some(pos) = clean.find('+') {
@@ -1194,10 +1192,7 @@ pub fn roll_dice(formula_raw: &str, target_dc: Option<i32>) -> Result<DiceRollRe
 
     let parts: Vec<&str> = base_part.split(['d', 'D']).collect();
     if parts.len() != 2 {
-        return Err(format!(
-            "Ungültiges Würfelformat: '{}'. Erwartet XdY z.B. 1d20 oder 2d6+3",
-            clean
-        ));
+        return Err(crate::err!("backend.stage.diceFormat", formula = clean));
     }
 
     let dice_count: u32 = if parts[0].is_empty() {
@@ -1213,10 +1208,10 @@ pub fn roll_dice(formula_raw: &str, target_dc: Option<i32>) -> Result<DiceRollRe
         .map_err(|_| "Ungültige Seitenzahl des Würfels")?;
 
     if dice_count == 0 || dice_count > 100 {
-        return Err("Würfelanzahl muss zwischen 1 und 100 liegen.".to_string());
+        return Err(crate::err!("backend.stage.diceCount"));
     }
     if !(2..=1000).contains(&die_faces) {
-        return Err("Seitenzahl muss zwischen 2 und 1000 liegen.".to_string());
+        return Err(crate::err!("backend.stage.diceSides"));
     }
 
     let mut rng = rand::rng();
@@ -1748,8 +1743,8 @@ pub fn scan_available_scenes() -> Vec<ScenePreview> {
 
 pub fn load_scene_by_id(scene_id: &str) -> Result<SceneState, String> {
     if let Some(path) = find_scene_path(scene_id) {
-        let content =
-            fs::read_to_string(&path).map_err(|e| format!("Fehler beim Lesen der Szene: {}", e))?;
+        let content = fs::read_to_string(&path)
+            .map_err(|e| crate::err!("backend.stage.sceneRead", error = e))?;
         if let Ok(state) = serde_json::from_str::<SceneState>(&content) {
             return Ok(state);
         }
@@ -1759,7 +1754,7 @@ pub fn load_scene_by_id(scene_id: &str) -> Result<SceneState, String> {
             return Ok(state);
         }
     }
-    Err(format!("Szene '{}' nicht gefunden.", scene_id))
+    Err(crate::err!("backend.stage.sceneMissing", id = scene_id))
 }
 
 pub fn save_scene_state(state: &SceneState) -> Result<(), String> {
@@ -1798,7 +1793,7 @@ pub fn save_scene_state(state: &SceneState) -> Result<(), String> {
     }
 
     let json_data = serde_json::to_string_pretty(state)
-        .map_err(|e| format!("Fehler beim Serialisieren der Szene: {}", e))?;
+        .map_err(|e| crate::err!("backend.stage.sceneSerialize", error = e))?;
 
     fs::write(&target_file, json_data).map_err(|e| {
         format!(
@@ -1846,12 +1841,11 @@ pub fn list_stage_folders() -> Result<Vec<String>, String> {
 pub fn create_stage_folder(folder_name: &str) -> Result<(), String> {
     let clean = folder_name.trim();
     if clean.is_empty() || clean.contains('/') || clean.contains('\\') || clean.contains("..") {
-        return Err("Ungültiger Ordnername.".to_string());
+        return Err(crate::err!("backend.stage.folderNameInvalid"));
     }
     let paths = resolve_app_paths();
     let target = PathBuf::from(&paths.scenes_dir).join(clean);
-    fs::create_dir_all(&target)
-        .map_err(|e| format!("Ordner konnte nicht erstellt werden: {}", e))?;
+    fs::create_dir_all(&target).map_err(|e| crate::err!("backend.common.dirCreate", error = e))?;
     Ok(())
 }
 
@@ -1871,7 +1865,7 @@ pub fn move_stage_scene_to_folder(
         scenes_dir.join(clean_folder)
     };
     fs::create_dir_all(&target_dir)
-        .map_err(|e| format!("Zielordner konnte nicht erstellt werden: {}", e))?;
+        .map_err(|e| crate::err!("backend.common.dirCreate", error = e))?;
 
     state.definition.folder = if clean_folder.is_empty() {
         "Eigene Szenen".to_string()
@@ -1881,9 +1875,14 @@ pub fn move_stage_scene_to_folder(
 
     let new_path = target_dir.join(format!("{}.json", scene_id));
     let json_data = serde_json::to_string_pretty(&state)
-        .map_err(|e| format!("Fehler beim Serialisieren: {}", e))?;
-    fs::write(&new_path, json_data)
-        .map_err(|e| format!("Fehler beim Speichern in {:?}: {}", new_path, e))?;
+        .map_err(|e| crate::err!("backend.stage.sceneSerialize", error = e))?;
+    fs::write(&new_path, json_data).map_err(|e| {
+        crate::err!(
+            "backend.common.fileWritePath",
+            path = format!("{:?}", new_path),
+            error = e
+        )
+    })?;
 
     if let Some(old) = old_path
         && old != new_path
@@ -1902,13 +1901,13 @@ pub fn move_stage_scene_to_folder(
 pub fn delete_stage_folder(folder_name: &str) -> Result<(), String> {
     let clean = folder_name.trim();
     if clean == "No Game No Life" || clean == "Eigene Szenen" {
-        return Err("Dieser Standard-Ordner kann nicht gelöscht werden.".to_string());
+        return Err(crate::err!("backend.stage.folderBuiltin"));
     }
     let paths = resolve_app_paths();
     let scenes_dir = PathBuf::from(&paths.scenes_dir);
     let folder_path = scenes_dir.join(clean);
     if !folder_path.exists() {
-        return Err("Ordner nicht gefunden.".to_string());
+        return Err(crate::err!("backend.stage.folderMissing"));
     }
 
     // Move any contained scenes to root scenes_dir
@@ -1952,15 +1951,12 @@ pub fn import_stage_scene_json(
         return Ok(state);
     }
 
-    Err(
-        "Die Datei ist kein gültiges Szenen-Format (weder SceneState noch SceneDefinition)."
-            .to_string(),
-    )
+    Err(crate::err!("backend.stage.invalidSceneFile"))
 }
 
 pub fn export_stage_scene_json(scene_id: &str) -> Result<String, String> {
     let state = load_scene_by_id(scene_id)?;
-    serde_json::to_string_pretty(&state).map_err(|e| format!("Fehler beim Exportieren: {}", e))
+    serde_json::to_string_pretty(&state).map_err(|e| crate::err!("backend.stage.export", error = e))
 }
 
 pub fn create_custom_scene(mut def: SceneDefinition) -> Result<SceneState, String> {
@@ -1983,7 +1979,8 @@ pub fn delete_scene(scene_id: &str) -> Result<(), String> {
             if bak_file.exists() {
                 let _ = fs::remove_file(bak_file);
             }
-            fs::remove_file(target_file).map_err(|e| format!("Fehler beim Löschen: {}", e))?;
+            fs::remove_file(target_file)
+                .map_err(|e| crate::err!("backend.common.delete", error = e))?;
         }
     }
     Ok(())
@@ -2017,7 +2014,7 @@ fn edit_stage_turn_message_with_saver(
         engine.set_state(state.clone());
         Ok(state)
     } else {
-        Err(format!("Nachricht '{}' nicht gefunden.", message_id))
+        Err(crate::err!("backend.stage.messageMissing", id = message_id))
     }
 }
 
@@ -2151,7 +2148,10 @@ pub fn get_stage_background_image(name: &str) -> Result<String, String> {
         }
     }
 
-    Err(format!("Hintergrundbild '{}' nicht gefunden.", trimmed))
+    Err(crate::err!(
+        "backend.stage.backgroundMissing",
+        name = trimmed
+    ))
 }
 
 pub fn export_scene_to_markdown(scene_id: &str) -> Result<String, String> {

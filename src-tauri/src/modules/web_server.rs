@@ -152,7 +152,7 @@ impl WebServerManager {
             )
         })?;
         fs::write(&path, content)
-            .map_err(|e| format!("Fehler beim Speichern der Web-Server-Konfiguration: {}", e))?;
+            .map_err(|e| crate::err!("backend.webServer.configSave", error = e))?;
         Ok(())
     }
 
@@ -215,9 +215,16 @@ impl WebServerManager {
         }
 
         let cfg = self.config.read().await.clone();
-        let bind_addr: SocketAddr = format!("{}:{}", cfg.host, cfg.port)
-            .parse()
-            .map_err(|e| format!("Ungültige Bind-Adresse '{}:{}': {}", cfg.host, cfg.port, e))?;
+        let bind_addr: SocketAddr = format!("{}:{}", cfg.host, cfg.port).parse().map_err(
+            |e: std::net::AddrParseError| {
+                crate::err!(
+                    "backend.webServer.bindAddress",
+                    host = cfg.host,
+                    port = cfg.port,
+                    error = e
+                )
+            },
+        )?;
 
         let (shutdown_tx, shutdown_rx) = oneshot::channel::<()>();
         *self.shutdown_tx.lock().await = Some(shutdown_tx);

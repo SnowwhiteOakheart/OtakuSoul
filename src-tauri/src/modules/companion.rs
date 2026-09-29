@@ -689,8 +689,8 @@ impl CompanionEngine {
                 .map(|pos| st.pending_tool_calls.remove(pos))
         };
 
-        let req = req_opt
-            .ok_or_else(|| format!("Kein anhängiger Tool-Call mit ID '{}' gefunden.", call_id))?;
+        let req =
+            req_opt.ok_or_else(|| crate::err!("backend.companion.noPendingCall", id = call_id))?;
 
         if !approved {
             let result = ToolExecutionResult {

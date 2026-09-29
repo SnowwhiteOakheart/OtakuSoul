@@ -8,6 +8,7 @@ import { Loader2, Smile, Frown, Angry, Sparkles, RefreshCcw, RotateCcw } from 'l
 import { audioPlayer } from '../../services/audioPlayer';
 import { loadVrmViewState, saveVrmViewState } from '../../services/avatarViewState';
 import { translate, useTranslation } from '../../i18n';
+import { errorMessage } from '../../utils/errors';
 
 const DEFAULT_CAMERA_POSITION: [number, number, number] = [0.0, 1.35, 1.0];
 const DEFAULT_CAMERA_TARGET: [number, number, number] = [0.0, 1.25, 0.0];
@@ -178,14 +179,14 @@ export const VrmViewer = ({
           (err) => {
             if (isDisposed) return;
             console.error('Error parsing VRM:', err);
-            setError(`Fehler beim Laden des 3D-Modells: ${err}`);
+            setError(translate('avatar.vrmLoadFailed', { error: errorMessage(err) }));
             setLoading(false);
           }
         );
       } catch (err) {
         if (isDisposed) return;
         console.error('Failed to read VRM binary:', err);
-        setError(`Fehler beim Lesen der VRM-Datei: ${err}`);
+        setError(translate('avatar.vrmReadFailed', { error: errorMessage(err) }));
         setLoading(false);
       }
     };

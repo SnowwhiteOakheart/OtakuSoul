@@ -30,3 +30,6 @@ export const errorMessage = (error: unknown): string => {
     ? [coded.code, ...Object.values(coded.params ?? {})].join(' – ')
     : message;
 };
+
+/** Same translation for coded success messages from the backend (e.g. a backup restore summary). */
+export const backendMessage = errorMessage;

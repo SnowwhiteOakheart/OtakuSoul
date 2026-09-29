@@ -74,18 +74,14 @@ export const createEcosystemSlice: SliceCreator<EcosystemSlice> = (set, get) => 
     }
   },
 
+  // Errors propagate so the caller can report them instead of claiming success.
   restoreBackup: async (filename, groups) => {
-    try {
-      const msg = await api.restoreProfileBackup(filename, groups);
-      await get().fetchBackups();
-      await get().refreshCharacters();
-      await get().refreshLorebooks();
-      soundFx.playLevelUp();
-      return msg;
-    } catch (e) {
-      console.error('Failed to restore backup:', e);
-      return null;
-    }
+    const msg = await api.restoreProfileBackup(filename, groups);
+    await get().fetchBackups();
+    await get().refreshCharacters();
+    await get().refreshLorebooks();
+    soundFx.playLevelUp();
+    return msg;
   },
 
   deleteBackup: async (filename) => {

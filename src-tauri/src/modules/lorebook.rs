@@ -126,8 +126,13 @@ pub struct EvaluatedLoreResult {
 
 impl Lorebook {
     pub fn load_from_file(path: &Path) -> Result<Self, String> {
-        let content = fs::read_to_string(path)
-            .map_err(|e| format!("Fehler beim Laden des Lorebooks {:?}: {}", path, e))?;
+        let content = fs::read_to_string(path).map_err(|e| {
+            crate::err!(
+                "backend.lorebook.load",
+                path = format!("{:?}", path),
+                error = e
+            )
+        })?;
 
         let mut book =
             Self::import_from_json_string(&content, path.file_stem().and_then(|s| s.to_str()))?;
@@ -146,9 +151,14 @@ impl Lorebook {
             let _ = fs::create_dir_all(parent);
         }
         let json_str = serde_json::to_string_pretty(self)
-            .map_err(|e| format!("Fehler beim Serialisieren des Lorebooks: {}", e))?;
-        fs::write(path, json_str)
-            .map_err(|e| format!("Fehler beim Schreiben des Lorebooks {:?}: {}", path, e))
+            .map_err(|e| crate::err!("backend.lorebook.serialize", error = e))?;
+        fs::write(path, json_str).map_err(|e| {
+            crate::err!(
+                "backend.lorebook.write",
+                path = format!("{:?}", path),
+                error = e
+            )
+        })
     }
 
     /// Import JSON that can be standard OtakuSoul format, or SillyTavern format with entries array or map
@@ -157,7 +167,7 @@ impl Lorebook {
         fallback_name: Option<&str>,
     ) -> Result<Self, String> {
         let val: serde_json::Value = serde_json::from_str(content)
-            .map_err(|e| format!("Ungültiges JSON-Format für Lorebook: {}", e))?;
+            .map_err(|e| crate::err!("backend.lorebook.invalidJson", error = e))?;
 
         let mut name = val
             .get("name")

@@ -18,6 +18,7 @@ import {
 } from 'lucide-react';
 import { translate, useTranslation } from '../../i18n';
 import { confirmDialog, toast } from '../ui/feedback';
+import { errorMessage } from '../../utils/errors';
 
 export const StageChatLog: React.FC = () => {
   const { t, currentLanguage } = useTranslation();
@@ -55,7 +56,7 @@ export const StageChatLog: React.FC = () => {
       await editStageTurnMessage(id, editDraft.trim());
       setEditingMessageId(null);
     } catch (err) {
-      toast.error(translate('toast.editFailed', { error: String(err) }));
+      toast.error(translate('toast.editFailed', { error: errorMessage(err) }));
     }
   };
 
@@ -69,7 +70,7 @@ export const StageChatLog: React.FC = () => {
       try {
         await deleteStageTurnMessage(id);
       } catch (err) {
-        toast.error(translate('toast.deleteFailed', { error: String(err) }));
+        toast.error(translate('toast.deleteFailed', { error: errorMessage(err) }));
       }
     }
   };
@@ -78,7 +79,7 @@ export const StageChatLog: React.FC = () => {
     try {
       await regenerateStageTurn();
     } catch (err) {
-      toast.error(translate('toast.regenerateFailed', { error: String(err) }));
+      toast.error(translate('toast.regenerateFailed', { error: errorMessage(err) }));
     }
   };
 

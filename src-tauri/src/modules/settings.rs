@@ -185,14 +185,19 @@ fn stored_hidden_character_ids(path: &std::path::Path) -> Vec<String> {
 
 fn save_app_settings_to_path(settings: &AppSettings, path: &std::path::Path) -> Result<(), String> {
     if let Some(parent) = path.parent() {
-        fs::create_dir_all(parent)
-            .map_err(|e| format!("Einstellungsordner konnte nicht erstellt werden: {}", e))?;
+        fs::create_dir_all(parent).map_err(|e| crate::err!("backend.settings.dir", error = e))?;
     }
 
     let json = serde_json::to_string_pretty(settings)
-        .map_err(|e| format!("Fehler bei der Serialisierung der Einstellungen: {}", e))?;
+        .map_err(|e| crate::err!("backend.settings.serialize", error = e))?;
 
-    fs::write(path, json).map_err(|e| format!("Fehler beim Schreiben von {:?}: {}", path, e))?;
+    fs::write(path, json).map_err(|e| {
+        crate::err!(
+            "backend.common.fileWritePath",
+            path = format!("{:?}", path),
+            error = e
+        )
+    })?;
 
     Ok(())
 }

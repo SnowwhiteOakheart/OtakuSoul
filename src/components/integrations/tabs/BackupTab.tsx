@@ -3,7 +3,7 @@ import { useState } from 'react';
 import { useStoreFields } from '../../../store/useAppStore';
 import { translate, useTranslation } from '../../../i18n';
 import { confirmDialog, toast } from '../../ui/feedback';
-import { errorMessage } from '../../../utils/errors';
+import { backendMessage, errorMessage } from '../../../utils/errors';
 import {
   RefreshCw,
   Shield,
@@ -64,7 +64,7 @@ export const BackupTab: React.FC = () => {
     if (!confirmed) return;
     try {
       const resultMessage = await restoreBackup(filename);
-      toast.success(resultMessage ?? t('int.restored'));
+      toast.success(resultMessage ? backendMessage(resultMessage) : t('int.restored'));
     } catch (e) {
       toast.error(t('int.restoreFailed', { error: errorMessage(e) }));
     }

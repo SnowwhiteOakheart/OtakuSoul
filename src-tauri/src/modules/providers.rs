@@ -437,20 +437,20 @@ pub async fn fetch_openrouter_models(
     let res = req
         .send()
         .await
-        .map_err(|e| format!("Fehler beim Abrufen der OpenRouter-Modelle: {}", e))?;
+        .map_err(|e| crate::err!("backend.providers.openrouterFetch", error = e))?;
 
     if !res.status().is_success() {
-        return Err(format!(
-            "OpenRouter-Fehler ({}): {}",
-            res.status(),
-            res.text().await.unwrap_or_default()
+        return Err(crate::err!(
+            "backend.providers.openrouterStatus",
+            status = res.status(),
+            error = res.text().await.unwrap_or_default()
         ));
     }
 
     let val: serde_json::Value = res
         .json()
         .await
-        .map_err(|e| format!("Fehler beim Parsen der OpenRouter-Daten: {}", e))?;
+        .map_err(|e| crate::err!("backend.providers.openrouterParse", error = e))?;
 
     let mut models = Vec::new();
     if let Some(data) = val.get("data").and_then(|d| d.as_array()) {

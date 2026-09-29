@@ -145,10 +145,7 @@ impl LlamaServerManager {
         let bin_dir = PathBuf::from(&app_paths.bundled_bin_dir);
 
         if Self::is_deprecated_bonsai_pack(model_path) {
-            return Err(
-                "Ternary-Bonsai-27B-Q2_0.gguf ist das veraltete Übergangsformat und wird bewusst nicht gestartet. Bitte Ternary-Bonsai-27B-PQ2_0.gguf (empfohlen) oder Ternary-Bonsai-27B-Q2_g64.gguf laden."
-                    .to_string(),
-            );
+            return Err(crate::err!("backend.server.bonsaiLegacy"));
         }
 
         if Self::requires_prism_runtime(model_path) {
@@ -166,10 +163,7 @@ impl LlamaServerManager {
             if let Some(binary) = prism_candidates.into_iter().find(|path| path.is_file()) {
                 return Ok(binary);
             }
-            return Err(
-                "Dieses PQ2_0/PTQ1_0-Modell benötigt die PrismML llama.cpp Runtime. Installiere sie mit ./tools/install_prism_runtime.sh; OtakuSoul wählt sie danach automatisch."
-                    .to_string(),
-            );
+            return Err(crate::err!("backend.server.prismRequired"));
         }
 
         #[allow(unused_mut)]
@@ -213,7 +207,7 @@ impl LlamaServerManager {
             }
         }
 
-        Err("llama-server Binary nicht gefunden. Bitte installiere llama.cpp oder gib den Pfad in den Einstellungen an.".to_string())
+        Err(crate::err!("backend.server.binaryMissing"))
     }
 
     pub async fn get_status(&self) -> ServerStatus {

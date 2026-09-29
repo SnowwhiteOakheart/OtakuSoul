@@ -9,6 +9,7 @@ import { audioPlayer } from '../../services/audioPlayer';
 import { loadLive2DViewState, saveLive2DViewState } from '../../services/avatarViewState';
 import { Loader2, Sparkles, RefreshCw } from 'lucide-react';
 import { translate, useTranslation } from '../../i18n';
+import { errorMessage } from '../../utils/errors';
 
 // The Live2D render pipe must be registered before any renderer is created.
 extensions.add(Live2DPlugin);
@@ -268,8 +269,8 @@ export const Live2DViewer: React.FC<Live2DViewerProps> = ({
         console.error('Failed to load Live2D model:', err);
         if (!isDisposed) {
           setError(
-            err instanceof Error
-              ? err.message
+            err instanceof Error || typeof err === 'string'
+              ? errorMessage(err)
               : translate('avatar.live2dLoadFailed')
           );
           setLoading(false);
