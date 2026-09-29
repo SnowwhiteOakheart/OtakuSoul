@@ -1944,4 +1944,11 @@ export const de = {
   "backend.stage.noPlayer": "Kein Spielerstatus für die Gegenstandswirkung vorhanden.",
   "backend.mcp.pluginNoOutput": "Plugin erfolgreich ausgeführt (keine Ausgabe).",
   "backend.models.noteDefault": "Kompatibel mit der normalen OtakuSoul llama.cpp Runtime.",
+  "updater.newVersionText": "Version {{version}} von OtakuSoul ist verfügbar.",
+  "updater.upToDateText": "Du verwendest die aktuelle Version von OtakuSoul ({{version}}).",
+  "updater.installNow": "Jetzt installieren",
+  "updater.downloading": "Update wird heruntergeladen …",
+  "updater.downloadingPercent": "Update wird heruntergeladen … {{percent}} %",
+  "updater.restarting": "Update installiert – OtakuSoul startet neu …",
+  "updater.installFailed": "Update konnte nicht installiert werden: {{error}}",
 } as const;

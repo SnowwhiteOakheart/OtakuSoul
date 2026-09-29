@@ -165,15 +165,9 @@ GitHub Actions wurden bewusst entfernt (Commit `11597c2`). Stattdessen gibt es j
 - [ ] `bin/` (llama.cpp-Binaries, ~490 MB, plattformabhängig) wird nicht mitgeliefert. → Klären: pro Plattform bündeln,
   beim ersten Start herunterladen oder Installation durch den Nutzer (heute Suche im `PATH`).
 - [ ] Tray-Icon für den Companion (minimieren in den Tray statt beenden).
-- [ ] **Updater:** Aktuell wird nur geprüft und auf die GitHub-Release-Seite verlinkt. → `tauri-plugin-updater` mit signierten Updates nutzen.
-  *(Benötigt einen eigenen Signaturschlüssel des Projektinhabers.)*
-
----
-
-## 🏗️ P2 – Code-Architektur & Wartbarkeit
-
-### Frontend
-
+- [x] **Updater:** `tauri-plugin-updater` installiert signierte Updates direkt (AppImage, deb, rpm, NSIS/MSI, macOS) mit
+  Fortschritt und Neustart; ohne signiertes Release bleibt der Link zur Release-Seite. Schlüssel lokal in `.tauri-signing/`
+  (nicht versioniert), `build-linux-packages.sh` signiert und erzeugt `latest.json` (`tools/make_latest_json.py`).
 - [x] **`useAppStore.ts` hatte 3.047 Zeilen.** → Aufgeteilt in 10 Slices unter `src/store/slices/` (app, avatar, llm, character,
   lorebook, memory, stage, companion, chat, ecosystem), gemeinsame Helfer in `helpers.ts`, Typen in `storeTypes.ts`.
   `useAppStore` bleibt der einzige Einstiegspunkt.

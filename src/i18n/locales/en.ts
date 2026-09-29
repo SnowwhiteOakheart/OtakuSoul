@@ -1942,4 +1942,11 @@ export const en: TranslationDictionary = {
   "backend.stage.noPlayer": "There is no player status for the item effect.",
   "backend.mcp.pluginNoOutput": "Plugin ran successfully (no output).",
   "backend.models.noteDefault": "Compatible with the regular OtakuSoul llama.cpp runtime.",
+  "updater.newVersionText": "OtakuSoul {{version}} is available.",
+  "updater.upToDateText": "You are using the latest version of OtakuSoul ({{version}}).",
+  "updater.installNow": "Install now",
+  "updater.downloading": "Downloading update …",
+  "updater.downloadingPercent": "Downloading update … {{percent}}%",
+  "updater.restarting": "Update installed – restarting OtakuSoul …",
+  "updater.installFailed": "The update could not be installed: {{error}}",
 };

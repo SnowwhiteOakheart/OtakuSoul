@@ -2,6 +2,9 @@ import React, { useCallback, useState, useEffect } from 'react';
 import { useStoreFields } from '../../store/useAppStore';
 import { useTranslation } from '../../i18n';
 import { openUrl } from '@tauri-apps/plugin-opener';
+import { check, type Update } from '@tauri-apps/plugin-updater';
+import { relaunch } from '@tauri-apps/plugin-process';
+import { errorMessage } from '../../utils/errors';
 import {
   X,
   RefreshCw,
@@ -20,12 +23,39 @@ export const UpdaterModal: React.FC = () => {
   const { t, currentLanguage } = useTranslation();
 
   const [isChecking, setIsChecking] = useState(false);
+  /** Signed update from latest.json; null when none is available or the updater is unreachable. */
+  const [signedUpdate, setSignedUpdate] = useState<Update | null>(null);
+  const [install, setInstall] = useState<
+    { phase: 'idle' } | { phase: 'downloading'; percent: number | null } | { phase: 'restarting' } | { phase: 'failed'; error: string }
+  >({ phase: 'idle' });
 
   const handleCheck = useCallback(async () => {
     setIsChecking(true);
-    await checkForUpdates();
+    // Release notes come from the GitHub API; installing needs the signed manifest (latest.json).
+    const [, signed] = await Promise.all([checkForUpdates(), check().catch(() => null)]);
+    setSignedUpdate(signed);
     setIsChecking(false);
   }, [checkForUpdates]);
+
+  const handleInstall = async () => {
+    if (!signedUpdate) return;
+    let total = 0;
+    let downloaded = 0;
+    setInstall({ phase: 'downloading', percent: null });
+    try {
+      await signedUpdate.downloadAndInstall((event) => {
+        if (event.event === 'Started') total = event.data.contentLength ?? 0;
+        if (event.event === 'Progress') {
+          downloaded += event.data.chunkLength;
+          setInstall({ phase: 'downloading', percent: total ? Math.round((downloaded / total) * 100) : null });
+        }
+      });
+      setInstall({ phase: 'restarting' });
+      await relaunch();
+    } catch (e) {
+      setInstall({ phase: 'failed', error: errorMessage(e) });
+    }
+  };
 
   useEffect(() => {
     if (isUpdaterOpen && !updateInfo) {
@@ -45,7 +75,9 @@ export const UpdaterModal: React.FC = () => {
     }
   };
 
-  const hasUpdate = updateInfo?.has_update || false;
+  const hasUpdate = Boolean(signedUpdate) || updateInfo?.has_update || false;
+  const latestVersion = signedUpdate?.version ?? updateInfo?.latest_version;
+  const currentVersion = updateInfo?.current_version ?? signedUpdate?.currentVersion;
 
   return (
     <ModalOverlay onClose={() => setIsUpdaterOpen(false)} className="fixed inset-0 z-50 bg-black/80 backdrop-blur-md flex items-center justify-center p-4">
@@ -64,6 +96,7 @@ export const UpdaterModal: React.FC = () => {
 
           <button
             onClick={() => setIsUpdaterOpen(false)}
+            aria-label={t('common.close')}
             className="p-1.5 rounded-lg text-slate-400 hover:text-slate-100 hover:bg-slate-800 transition"
           >
             <X className="w-5 h-5" />
@@ -91,8 +124,8 @@ export const UpdaterModal: React.FC = () => {
               </h3>
               <p className="text-xs text-slate-400 mt-1 leading-relaxed">
                 {hasUpdate
-                  ? `Eine neuere Version von OtakuSoul (${updateInfo?.latest_version}) steht zum Download bereit!`
-                  : `Du verwendest bereits die aktuellste Version von OtakuSoul (v0.1.0).`}
+                  ? t('updater.newVersionText', { version: latestVersion ?? '' })
+                  : t('updater.upToDateText', { version: currentVersion ?? '' })}
               </p>
             </div>
           </div>
@@ -104,7 +137,7 @@ export const UpdaterModal: React.FC = () => {
                 {t('updater.current')}
               </span>
               <span className="font-mono text-sm font-bold text-slate-200">
-                v{updateInfo?.current_version || '0.1.0'}
+                {currentVersion ? `v${currentVersion}` : '–'}
               </span>
             </div>
 
@@ -113,7 +146,7 @@ export const UpdaterModal: React.FC = () => {
                 {t('updater.latest')}
               </span>
               <span className="font-mono text-sm font-bold text-accent-300">
-                v{updateInfo?.latest_version || '0.1.0'}
+                {latestVersion ? `v${latestVersion}` : '–'}
               </span>
             </div>
           </div>
@@ -127,6 +160,23 @@ export const UpdaterModal: React.FC = () => {
               <div className="bg-app border border-slate-800 rounded-xl p-3.5 max-h-40 overflow-y-auto text-xs text-slate-300 whitespace-pre-wrap leading-relaxed font-sans">
                 {updateInfo.release_notes}
               </div>
+            </div>
+          )}
+
+          {install.phase !== 'idle' && (
+            <div
+              role={install.phase === 'failed' ? 'alert' : 'status'}
+              className={`rounded-xl border p-3 text-xs ${install.phase === 'failed' ? 'border-rose-500/40 text-rose-200' : 'border-accent-500/40 text-slate-200'}`}
+            >
+              {install.phase === 'downloading' &&
+                (install.percent === null ? t('updater.downloading') : t('updater.downloadingPercent', { percent: install.percent }))}
+              {install.phase === 'restarting' && t('updater.restarting')}
+              {install.phase === 'failed' && t('updater.installFailed', { error: install.error })}
+              {install.phase === 'downloading' && install.percent !== null && (
+                <div className="mt-2 h-1.5 rounded-full bg-slate-800 overflow-hidden">
+                  <div className="h-full bg-accent-500 transition-all" style={{ width: `${install.percent}%` }} />
+                </div>
+              )}
             </div>
           )}
 
@@ -149,7 +199,16 @@ export const UpdaterModal: React.FC = () => {
             <span>{isChecking ? t('updater.checking') : t('updater.checkAgain')}</span>
           </button>
 
-          {hasUpdate ? (
+          {signedUpdate ? (
+            <button
+              onClick={() => void handleInstall()}
+              disabled={install.phase === 'downloading' || install.phase === 'restarting'}
+              className="flex items-center gap-2 px-4 py-2 rounded-xl bg-accent-600 hover:bg-accent-500 disabled:opacity-50 text-white text-xs font-medium shadow-md shadow-accent-600/30 transition"
+            >
+              <Download className="w-4 h-4" />
+              <span>{t('updater.installNow')}</span>
+            </button>
+          ) : hasUpdate ? (
             <button
               onClick={handleOpenReleaseUrl}
               className="flex items-center gap-2 px-4 py-2 rounded-xl bg-accent-600 hover:bg-accent-500 text-white text-xs font-medium shadow-md shadow-accent-600/30 transition"

@@ -194,6 +194,24 @@ npm run tauri build
 Installierte Pakete enthalten `presets/`, `assets/emotions/`, `assets/live2d/` und die beiden Standard-VRMs
 (`bundle.resources` in `src-tauri/tauri.conf.json`). Große Modelle gehören nicht ins Paket.
 
+### Signierte Updates
+
+Die App installiert Updates selbst (`tauri-plugin-updater`) und prüft dabei die Signatur gegen den öffentlichen Schlüssel in
+`src-tauri/tauri.conf.json`. Der private Schlüssel und sein Passwort liegen lokal in `.tauri-signing/` (per `.gitignore`
+ausgeschlossen) und gehören zusätzlich in einen Passwortmanager – ohne sie lassen sich keine Updates mehr ausliefern.
+
+```bash
+# Signiert bauen (liest .tauri-signing/ automatisch) und target/release/bundle/latest.json erzeugen
+RELEASE_NOTES=notes.md ./packaging/scripts/build-linux-packages.sh
+```
+
+Ist VMware installiert, bricht das AppImage-Bundling ab: `linuxdeploy` greift auf dessen eigene `libgdk_pixbuf` unter
+`/usr/lib/vmware/lib/` zu. Dann das AppImage auf einem Rechner ohne VMware (oder in einem Container) bauen; `.deb` ist
+nicht betroffen.
+
+Danach auf GitHub ein Release `v<Version>` anlegen und die vom Skript aufgelisteten Pakete samt `latest.json` hochladen.
+Die App liest `releases/latest/download/latest.json`.
+
 ### Avatar-Paket für ein Release
 
 ```bash

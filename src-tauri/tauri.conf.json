@@ -31,6 +31,7 @@
   "bundle": {
     "active": true,
     "targets": "all",
+    "createUpdaterArtifacts": true,
     "category": "Game",
     "shortDescription": "Local Anime AI & Roleplay Studio",
     "longDescription": "OtakuSoul is an immersive desktop platform for AI character interactions, 3D VRM and Live2D avatars, long-term memory, voice synthesis, tabletop roleplay campaigns and desktop companion assistant capabilities with local llama.cpp acceleration.",
@@ -73,6 +74,14 @@
     "macOS": {
       "frameworks": [],
       "minimumSystemVersion": "10.15"
+    }
+  },
+  "plugins": {
+    "updater": {
+      "pubkey": "dW50cnVzdGVkIGNvbW1lbnQ6IG1pbmlzaWduIHB1YmxpYyBrZXk6IDZEMTcyNkE2NTRBRjlCQ0IKUldUTG02OVVwaVlYYmJZYmQyOE1QekVMZlNwSHBwVzJOMmtwbFAvWlArMEl6Y2hBMkc1RmdmQUMK",
+      "endpoints": [
+        "https://github.com/SnowwhiteOakheart/OtakuSoul/releases/latest/download/latest.json"
+      ]
     }
   }
 }

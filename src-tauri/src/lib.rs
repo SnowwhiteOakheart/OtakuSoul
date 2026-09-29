@@ -66,10 +66,13 @@ pub fn run() {
             tauri_plugin_window_state::Builder::default()
                 .with_denylist(&["companion_overlay"])
                 .build(),
-        );
+        )
+        // Signed in-app updates; the public key and manifest URL are in tauri.conf.json.
+        .plugin(tauri_plugin_updater::Builder::new().build());
 
     builder
         .plugin(tauri_plugin_opener::init())
+        .plugin(tauri_plugin_process::init())
         .plugin(tauri_plugin_dialog::init())
         .manage(AppState::new())
         .setup(|app| {

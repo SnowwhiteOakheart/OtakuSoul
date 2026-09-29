@@ -1942,4 +1942,11 @@ export const ru: TranslationDictionary = {
   "backend.stage.noPlayer": "Нет статуса игрока для действия предмета.",
   "backend.mcp.pluginNoOutput": "Плагин успешно выполнен (без вывода).",
   "backend.models.noteDefault": "Совместим с обычной средой llama.cpp в OtakuSoul.",
+  "updater.newVersionText": "Доступна версия OtakuSoul {{version}}.",
+  "updater.upToDateText": "Вы используете актуальную версию OtakuSoul ({{version}}).",
+  "updater.installNow": "Установить сейчас",
+  "updater.downloading": "Загрузка обновления …",
+  "updater.downloadingPercent": "Загрузка обновления … {{percent}}%",
+  "updater.restarting": "Обновление установлено – OtakuSoul перезапускается …",
+  "updater.installFailed": "Не удалось установить обновление: {{error}}",
 };
