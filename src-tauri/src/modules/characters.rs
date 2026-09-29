@@ -275,10 +275,8 @@ pub fn parse_character_png(bytes: &[u8]) -> Result<(CharacterCardV2, String), St
         }
     }
 
-    let chara_json = chara_json_opt.ok_or_else(|| {
-        "Kein 'chara' Metadaten-Chunk im PNG gefunden. Es handelt sich um ein normales Bild."
-            .to_string()
-    })?;
+    let chara_json =
+        chara_json_opt.ok_or_else(|| crate::err!("backend.characters.noCharaChunk"))?;
 
     let card = parse_character_json(&chara_json)?;
     let avatar_data_url = format!("data:image/png;base64,{}", BASE64_STANDARD.encode(bytes));

@@ -1,4 +1,5 @@
 use serde::{Deserialize, Serialize};
+use std::sync::LazyLock;
 
 /// The 28 standard GoEmotions labels
 pub const GO_EMOTIONS: [&str; 28] = [
@@ -82,6 +83,10 @@ pub fn map_go_emotion_to_live2d(emotion: &str) -> String {
 }
 
 /// Classifies the emotional tone of text using tags, roleplay asterisks, and a rich bilingual lexicon.
+/// Roleplay actions written as `*…*`.
+static ASTERISK_ACTION_RE: LazyLock<regex::Regex> =
+    LazyLock::new(|| regex::Regex::new(r"\*([^*]+)\*").expect("static regex is valid"));
+
 pub fn classify_emotion(text: &str) -> EmotionResult {
     let lower = text.to_lowercase();
 
@@ -100,8 +105,7 @@ pub fn classify_emotion(text: &str) -> EmotionResult {
 
     // 2. Scan for roleplay actions inside asterisks, e.g. *lächelt sanft*, *weint leise*, *blushes*
     let mut scores = std::collections::HashMap::new();
-    let re_asterisks = regex::Regex::new(r"\*([^*]+)\*").unwrap();
-    for cap in re_asterisks.captures_iter(&lower) {
+    for cap in ASTERISK_ACTION_RE.captures_iter(&lower) {
         let action = &cap[1];
         score_action_segment(action, &mut scores);
     }

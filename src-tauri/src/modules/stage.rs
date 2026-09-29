@@ -1,12 +1,13 @@
 use base64::prelude::*;
 use chrono::Utc;
+use parking_lot::RwLock;
 use rand::RngExt;
 use regex::Regex;
 use serde::{Deserialize, Serialize};
 use std::collections::{HashMap, VecDeque};
 use std::fs;
 use std::path::{Path, PathBuf};
-use std::sync::RwLock;
+use std::sync::LazyLock;
 
 use crate::modules::inference::{ChatMessage, ChatRequest, InferenceClient, SamplingParams};
 use crate::modules::paths::{resolve_app_paths, scan_available_characters};
@@ -540,6 +541,10 @@ pub struct GmPlan {
 }
 
 /// Robust JSON repair function that extracts and parses GM JSON plans
+/// Trailing commas before `]`/`}` that language models like to emit in JSON.
+static TRAILING_COMMA_RE: LazyLock<Regex> =
+    LazyLock::new(|| Regex::new(r",\s*([\]\}])").expect("static regex is valid"));
+
 pub fn repair_and_parse_gm_plan(raw: &str) -> GmPlan {
     let mut text = raw.trim();
 
@@ -565,8 +570,7 @@ pub fn repair_and_parse_gm_plan(raw: &str) -> GmPlan {
     {
         let candidate = &text[start..=end];
         // Remove trailing commas before closing braces/brackets
-        let re_commas = Regex::new(r",\s*([\]\}])").unwrap();
-        let cleaned = re_commas.replace_all(candidate, "$1");
+        let cleaned = TRAILING_COMMA_RE.replace_all(candidate, "$1");
 
         if let Ok(plan) = serde_json::from_str::<GmPlan>(&cleaned) {
             return plan;
@@ -823,40 +827,40 @@ impl StageEngine {
     }
 
     pub fn get_state(&self) -> SceneState {
-        self.state.read().unwrap().clone()
+        self.state.read().clone()
     }
 
     pub fn set_state(&self, new_state: SceneState) {
-        let mut st = self.state.write().unwrap();
+        let mut st = self.state.write();
         *st = new_state;
     }
 
     pub fn update_world(&self, new_world: WorldState) {
-        let mut st = self.state.write().unwrap();
+        let mut st = self.state.write();
         st.world = new_world;
     }
 
     pub fn set_clock_progress(&self, clock_id: &str, progress: u32) {
-        let mut st = self.state.write().unwrap();
+        let mut st = self.state.write();
         if let Some(clock) = st.clocks.iter_mut().find(|c| c.id == clock_id) {
             clock.current = progress.min(clock.max);
         }
     }
 
     pub fn add_clock(&self, clock: CampaignClock) {
-        let mut st = self.state.write().unwrap();
+        let mut st = self.state.write();
         st.clocks.retain(|c| c.id != clock.id);
         st.clocks.push(clock);
     }
 
     pub fn delete_clock(&self, clock_id: &str) {
-        let mut st = self.state.write().unwrap();
+        let mut st = self.state.write();
         st.clocks.retain(|c| c.id != clock_id);
     }
 
     // --- Encounter Lifecycle ---
     pub fn start_encounter(&self) {
-        let mut st = self.state.write().unwrap();
+        let mut st = self.state.write();
         if st.combat.combatants.is_empty() {
             let mut rng = rand::rng();
             let player_name = if st.definition.persona.trim().is_empty() {
@@ -920,7 +924,7 @@ impl StageEngine {
     }
 
     pub fn end_encounter(&self) {
-        let mut st = self.state.write().unwrap();
+        let mut st = self.state.write();
         st.combat.is_active = false;
         st.combat
             .combat_log
@@ -928,7 +932,7 @@ impl StageEngine {
     }
 
     pub fn next_turn(&self) {
-        let mut st = self.state.write().unwrap();
+        let mut st = self.state.write();
         if !st.combat.is_active || st.combat.combatants.is_empty() {
             return;
         }
@@ -965,7 +969,7 @@ impl StageEngine {
     }
 
     pub fn apply_combatant_delta(&self, combatant_id: &str, hp_delta: i32, stress_delta: i32) {
-        let mut st = self.state.write().unwrap();
+        let mut st = self.state.write();
         let log_msg = if let Some(c) = st
             .combat
             .combatants
@@ -1005,7 +1009,7 @@ impl StageEngine {
     }
 
     pub fn add_condition(&self, combatant_id: &str, condition: CombatCondition) {
-        let mut st = self.state.write().unwrap();
+        let mut st = self.state.write();
         let log_msg = if let Some(c) = st
             .combat
             .combatants
@@ -1031,7 +1035,7 @@ impl StageEngine {
     }
 
     pub fn delay_turn(&self) -> Result<SceneState, String> {
-        let mut st = self.state.write().unwrap();
+        let mut st = self.state.write();
         if !st.combat.is_active || st.combat.combatants.len() < 2 {
             return Err(crate::err!("backend.stage.noEncounter"));
         }
@@ -1095,9 +1099,7 @@ impl StageEngine {
             .combatants
             .iter_mut()
             .find(|c| c.role == "player")
-            .ok_or_else(|| {
-                "Kein Spielerstatus für die Gegenstandswirkung vorhanden.".to_string()
-            })?;
+            .ok_or_else(|| crate::err!("backend.stage.noPlayer"))?;
         let hp_before = player.hp;
         let stress_before = player.stress;
         player.hp = (player.hp + hp_restore).clamp(0, player.max_hp);
@@ -1143,7 +1145,7 @@ impl StageEngine {
 
     // --- Snapshot & Undo ---
     pub fn push_snapshot(&self, scene_id: &str, state: SceneState) {
-        let mut snaps = self.snapshots.write().unwrap();
+        let mut snaps = self.snapshots.write();
         let queue = snaps.entry(scene_id.to_string()).or_default();
         queue.push_back(state);
         if queue.len() > 10 {
@@ -1152,7 +1154,7 @@ impl StageEngine {
     }
 
     pub fn undo_turn(&self, scene_id: &str) -> Result<SceneState, String> {
-        let mut snaps = self.snapshots.write().unwrap();
+        let mut snaps = self.snapshots.write();
         if let Some(queue) = snaps.get_mut(scene_id)
             && let Some(previous_state) = queue.pop_back()
         {

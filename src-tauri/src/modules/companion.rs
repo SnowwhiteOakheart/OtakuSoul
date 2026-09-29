@@ -1,7 +1,7 @@
+use parking_lot::RwLock;
 use serde::{Deserialize, Serialize};
 use std::collections::HashMap;
 use std::path::PathBuf;
-use std::sync::RwLock;
 use std::time::{SystemTime, UNIX_EPOCH};
 
 use super::companion_tools::CompanionTools;
@@ -428,31 +428,31 @@ impl CompanionEngine {
     }
 
     pub fn get_state(&self) -> CompanionState {
-        self.state.read().unwrap().clone()
+        self.state.read().clone()
     }
 
     pub fn update_settings(&self, settings: CompanionSettings) {
-        let mut st = self.state.write().unwrap();
+        let mut st = self.state.write();
         st.settings = settings;
     }
 
     pub fn set_overlay_active(&self, active: bool) {
-        let mut st = self.state.write().unwrap();
+        let mut st = self.state.write();
         st.overlay_active = active;
     }
 
     pub fn set_active_window(&self, title: &str) {
-        let mut st = self.state.write().unwrap();
+        let mut st = self.state.write();
         st.active_window_title = title.to_string();
     }
 
     pub fn set_afk(&self, afk: bool) {
-        let mut st = self.state.write().unwrap();
+        let mut st = self.state.write();
         st.is_afk = afk;
     }
 
     pub fn apply_hormone_interaction(&self, interaction_type: &str) -> Neurohormones {
-        let mut st = self.state.write().unwrap();
+        let mut st = self.state.write();
         st.hormones.apply_interaction(interaction_type);
         let h = st.hormones.clone();
         st.emotion.from_hormones(&h);
@@ -466,7 +466,7 @@ impl CompanionEngine {
         oxytocin: f32,
         fatigue: f32,
     ) -> Neurohormones {
-        let mut st = self.state.write().unwrap();
+        let mut st = self.state.write();
         st.hormones.dopamine = dopamine.clamp(0.0, 100.0);
         st.hormones.cortisol = cortisol.clamp(0.0, 100.0);
         st.hormones.oxytocin = oxytocin.clamp(0.0, 100.0);
@@ -489,7 +489,7 @@ impl CompanionEngine {
             ts: current_timestamp(),
         };
 
-        let mut st = self.state.write().unwrap();
+        let mut st = self.state.write();
         st.scratchpad.insert(0, entry);
         if st.scratchpad.len() > 20 {
             st.scratchpad.pop();
@@ -502,7 +502,7 @@ impl CompanionEngine {
     }
 
     pub fn clear_thoughts(&self) {
-        let mut st = self.state.write().unwrap();
+        let mut st = self.state.write();
         st.scratchpad.clear();
         let _ = std::fs::write(&self.scratchpad_file, "[]");
     }
@@ -520,7 +520,7 @@ impl CompanionEngine {
             completed_at: None,
         };
 
-        let mut st = self.state.write().unwrap();
+        let mut st = self.state.write();
         st.goals.insert(0, goal.clone());
 
         // Save
@@ -532,7 +532,7 @@ impl CompanionEngine {
     }
 
     pub fn get_due_goals(&self) -> Vec<Goal> {
-        let st = self.state.read().unwrap();
+        let st = self.state.read();
         let now_str = chrono::Utc::now().to_rfc3339();
         st.goals
             .iter()
@@ -542,7 +542,7 @@ impl CompanionEngine {
     }
 
     pub fn mark_goal_completed(&self, goal_id: &str) -> Result<(), String> {
-        let mut st = self.state.write().unwrap();
+        let mut st = self.state.write();
         if let Some(g) = st.goals.iter_mut().find(|g| g.id == goal_id) {
             g.status = "completed".to_string();
             g.completed_at = Some(chrono::Utc::now().to_rfc3339());
@@ -558,7 +558,7 @@ impl CompanionEngine {
     }
 
     pub fn delete_goal(&self, goal_id: &str) -> Result<(), String> {
-        let mut st = self.state.write().unwrap();
+        let mut st = self.state.write();
         st.goals.retain(|g| g.id != goal_id);
         if let Ok(serialized) = serde_json::to_string_pretty(&st.goals) {
             let _ = std::fs::write(&self.goals_file, serialized);
@@ -643,7 +643,7 @@ impl CompanionEngine {
             && arguments.get("action").and_then(|v| v.as_str()) == Some("organize"));
 
         let auto_approve = {
-            let st = self.state.read().unwrap();
+            let st = self.state.read();
             st.settings.auto_approve_safe_tools && !is_dangerous
         };
 
@@ -665,10 +665,10 @@ impl CompanionEngine {
             // Execute immediately
             let exec_result =
                 self.execute_internal_sync(&request.id, &request.tool_name, &request.arguments);
-            let mut st = self.state.write().unwrap();
+            let mut st = self.state.write();
             st.tool_history.insert(0, exec_result);
         } else {
-            let mut st = self.state.write().unwrap();
+            let mut st = self.state.write();
             st.pending_tool_calls.push(request.clone());
         }
 
@@ -682,7 +682,7 @@ impl CompanionEngine {
         approved: bool,
     ) -> Result<ToolExecutionResult, String> {
         let req_opt = {
-            let mut st = self.state.write().unwrap();
+            let mut st = self.state.write();
             st.pending_tool_calls
                 .iter()
                 .position(|c| c.id == call_id)
@@ -700,14 +700,14 @@ impl CompanionEngine {
                 output: "Vom Benutzer abgelehnt oder 25s Countdown abgelaufen.".to_string(),
                 executed_at: current_timestamp(),
             };
-            let mut st = self.state.write().unwrap();
+            let mut st = self.state.write();
             st.tool_history.insert(0, result.clone());
             return Ok(result);
         }
 
         // Execute approved tool
         let result = self.execute_internal_sync(call_id, &req.tool_name, &req.arguments);
-        let mut st = self.state.write().unwrap();
+        let mut st = self.state.write();
         st.tool_history.insert(0, result.clone());
         Ok(result)
     }
@@ -1036,7 +1036,7 @@ impl CompanionEngine {
 
     /// Evaluate proactive speech opportunities (Due promises, Loneliness, Spontaneous thoughts)
     pub fn evaluate_proactive_opportunity(&self) -> Option<(String, String)> {
-        let st = self.state.read().unwrap();
+        let st = self.state.read();
         if !st.settings.enable_proactive_speaking {
             return None;
         }

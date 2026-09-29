@@ -1,8 +1,50 @@
+use parking_lot::Mutex;
 use rusqlite::{Connection, params};
 use serde::{Deserialize, Serialize};
 use std::path::{Path, PathBuf};
-use std::sync::{Arc, Mutex};
+use std::sync::Arc;
+use std::sync::LazyLock;
 use std::time::{SystemTime, UNIX_EPOCH};
+
+/// Parsers for the MEMORY.md / USER.md sections, compiled once.
+static MD_HEADER_RE: LazyLock<regex::Regex> =
+    LazyLock::new(|| regex::Regex::new(r"^#{1,3}\s+(.+)$").expect("static regex is valid"));
+static MD_EMOTION_RE: LazyLock<regex::Regex> = LazyLock::new(|| {
+    regex::Regex::new(
+        r"(?i)-\s*\*\*Primary Emotion\*\*:\s*([^(]+?)(?:\s*\(Intensity:\s*(\d+)(?:/5)?\))?$",
+    )
+    .expect("static regex is valid")
+});
+static MD_TENSION_RE: LazyLock<regex::Regex> = LazyLock::new(|| {
+    regex::Regex::new(r"(?i)-\s*\*\*Psychological Tension\*\*:\s*(.+)$")
+        .expect("static regex is valid")
+});
+static MD_DECAY_RE: LazyLock<regex::Regex> = LazyLock::new(|| {
+    regex::Regex::new(r"(?i)-\s*\*\*Emotional Decay Counter\*\*:\s*(\d+)")
+        .expect("static regex is valid")
+});
+static MD_AGENDA_RE: LazyLock<regex::Regex> = LazyLock::new(|| {
+    regex::Regex::new(r"(?i)-\s*\*\*Active Agenda\*\*:\s*(.+)$").expect("static regex is valid")
+});
+static MD_FOCUS_RE: LazyLock<regex::Regex> = LazyLock::new(|| {
+    regex::Regex::new(r"(?i)-\s*\*\*Immediate Focus\*\*:\s*(.+)$").expect("static regex is valid")
+});
+static MD_ROLE_RE: LazyLock<regex::Regex> = LazyLock::new(|| {
+    regex::Regex::new(r"(?i)-\s*\*\*Role in Story\*\*:\s*(.+)$").expect("static regex is valid")
+});
+static MD_ATTR_RE: LazyLock<regex::Regex> = LazyLock::new(|| {
+    regex::Regex::new(r"(?i)-\s*\*\*Known Attributes\*\*:\s*(.+)$").expect("static regex is valid")
+});
+static MD_TRUST_RE: LazyLock<regex::Regex> = LazyLock::new(|| {
+    regex::Regex::new(r"(?i)-\s*\*\*Trust Level\*\*:\s*(.+)$").expect("static regex is valid")
+});
+static MD_DYN_RE: LazyLock<regex::Regex> = LazyLock::new(|| {
+    regex::Regex::new(r"(?i)-\s*\*\*(?:Dynamic Description|Current Dynamic)\*\*:\s*(.+)$")
+        .expect("static regex is valid")
+});
+static MD_TENSION_RE_2: LazyLock<regex::Regex> = LazyLock::new(|| {
+    regex::Regex::new(r"(?i)-\s*\*\*Unspoken Tension\*\*:\s*(.+)$").expect("static regex is valid")
+});
 
 fn current_timestamp() -> u64 {
     SystemTime::now()
@@ -297,7 +339,7 @@ impl MemoryDb {
         &self,
         char_id: &str,
     ) -> Result<PsychologyState, rusqlite::Error> {
-        let conn = self.conn.lock().unwrap();
+        let conn = self.conn.lock();
         let mut stmt = conn.prepare(
             "SELECT primary_emotion, intensity, psychological_tension, emotional_decay_counter, active_agenda, immediate_focus, updated_at, core_identity, cognitive_dissonance
              FROM soul_psychology WHERE character_id = ?1",
@@ -346,7 +388,7 @@ impl MemoryDb {
         char_id: &str,
         state: &PsychologyState,
     ) -> Result<(), rusqlite::Error> {
-        let conn = self.conn.lock().unwrap();
+        let conn = self.conn.lock();
         let now = current_timestamp();
         let core_id_str =
             serde_json::to_string(&state.core_identity).unwrap_or_else(|_| "[]".to_string());
@@ -385,7 +427,7 @@ impl MemoryDb {
         char_id: &str,
         user_name: &str,
     ) -> Result<RelationshipState, rusqlite::Error> {
-        let conn = self.conn.lock().unwrap();
+        let conn = self.conn.lock();
         let mut stmt = conn.prepare(
             "SELECT trust_level, unspoken_tension, preferences_habits, shared_milestones, updated_at, role_in_story, known_attributes, dynamic_description
              FROM soul_relationship WHERE character_id = ?1 AND user_name = ?2",
@@ -442,7 +484,7 @@ impl MemoryDb {
         char_id: &str,
         state: &RelationshipState,
     ) -> Result<(), rusqlite::Error> {
-        let conn = self.conn.lock().unwrap();
+        let conn = self.conn.lock();
         let now = current_timestamp();
         let pref_str =
             serde_json::to_string(&state.preferences_habits).unwrap_or_else(|_| "[]".to_string());
@@ -485,7 +527,7 @@ impl MemoryDb {
         content: &str,
         significance: u32,
     ) -> Result<i64, rusqlite::Error> {
-        let conn = self.conn.lock().unwrap();
+        let conn = self.conn.lock();
         let now = current_timestamp();
 
         // 1. Duplicate check (case-insensitive normalized exact or substring match)
@@ -519,7 +561,7 @@ impl MemoryDb {
         char_id: &str,
         limit: usize,
     ) -> Result<Vec<EpisodicMemory>, rusqlite::Error> {
-        let conn = self.conn.lock().unwrap();
+        let conn = self.conn.lock();
         let mut stmt = conn.prepare(
             "SELECT id, category, content, significance, created_at, last_accessed_at
              FROM soul_episodic_memory WHERE character_id = ?1 ORDER BY significance DESC, created_at DESC, id DESC LIMIT ?2",
@@ -551,7 +593,7 @@ impl MemoryDb {
         entry_text: &str,
         mood: &str,
     ) -> Result<i64, rusqlite::Error> {
-        let conn = self.conn.lock().unwrap();
+        let conn = self.conn.lock();
         let now = current_timestamp();
         conn.execute(
             "INSERT INTO soul_diary (character_id, title, entry_text, mood, created_at)
@@ -566,7 +608,7 @@ impl MemoryDb {
         char_id: &str,
         limit: usize,
     ) -> Result<Vec<DiaryEntry>, rusqlite::Error> {
-        let conn = self.conn.lock().unwrap();
+        let conn = self.conn.lock();
         let mut stmt = conn.prepare(
             "SELECT id, title, entry_text, mood, created_at FROM soul_diary WHERE character_id = ?1 ORDER BY created_at DESC, id DESC LIMIT ?2",
         )?;
@@ -595,7 +637,7 @@ impl MemoryDb {
         action: &str,
         details: &str,
     ) -> Result<i64, rusqlite::Error> {
-        let conn = self.conn.lock().unwrap();
+        let conn = self.conn.lock();
         let now = current_timestamp();
         conn.execute(
             "INSERT INTO soul_healing_log (character_id, action, details, created_at) VALUES (?1, ?2, ?3, ?4)",
@@ -609,7 +651,7 @@ impl MemoryDb {
         char_id: &str,
         limit: usize,
     ) -> Result<Vec<HealingLogEntry>, rusqlite::Error> {
-        let conn = self.conn.lock().unwrap();
+        let conn = self.conn.lock();
         let mut stmt = conn.prepare(
             "SELECT id, action, details, created_at FROM soul_healing_log WHERE character_id = ?1 ORDER BY created_at DESC, id DESC LIMIT ?2",
         )?;
@@ -784,19 +826,12 @@ impl MemoryDb {
         let mut core_identity = Vec::new();
         let mut cognitive_dissonance_lines = Vec::new();
 
-        let header_re = regex::Regex::new(r"^#{1,3}\s+(.+)$").map_err(|e| e.to_string())?;
-        let emotion_re = regex::Regex::new(
-            r"(?i)-\s*\*\*Primary Emotion\*\*:\s*([^(]+?)(?:\s*\(Intensity:\s*(\d+)(?:/5)?\))?$",
-        )
-        .map_err(|e| e.to_string())?;
-        let tension_re = regex::Regex::new(r"(?i)-\s*\*\*Psychological Tension\*\*:\s*(.+)$")
-            .map_err(|e| e.to_string())?;
-        let decay_re = regex::Regex::new(r"(?i)-\s*\*\*Emotional Decay Counter\*\*:\s*(\d+)")
-            .map_err(|e| e.to_string())?;
-        let agenda_re = regex::Regex::new(r"(?i)-\s*\*\*Active Agenda\*\*:\s*(.+)$")
-            .map_err(|e| e.to_string())?;
-        let focus_re = regex::Regex::new(r"(?i)-\s*\*\*Immediate Focus\*\*:\s*(.+)$")
-            .map_err(|e| e.to_string())?;
+        let header_re = &*MD_HEADER_RE;
+        let emotion_re = &*MD_EMOTION_RE;
+        let tension_re = &*MD_TENSION_RE;
+        let decay_re = &*MD_DECAY_RE;
+        let agenda_re = &*MD_AGENDA_RE;
+        let focus_re = &*MD_FOCUS_RE;
 
         for raw_line in md.lines() {
             let line = raw_line.trim();
@@ -892,18 +927,12 @@ impl MemoryDb {
         let mut prefs = Vec::new();
         let mut milestones = Vec::new();
 
-        let header_re = regex::Regex::new(r"^#{1,3}\s+(.+)$").map_err(|e| e.to_string())?;
-        let role_re = regex::Regex::new(r"(?i)-\s*\*\*Role in Story\*\*:\s*(.+)$")
-            .map_err(|e| e.to_string())?;
-        let attr_re = regex::Regex::new(r"(?i)-\s*\*\*Known Attributes\*\*:\s*(.+)$")
-            .map_err(|e| e.to_string())?;
-        let trust_re = regex::Regex::new(r"(?i)-\s*\*\*Trust Level\*\*:\s*(.+)$")
-            .map_err(|e| e.to_string())?;
-        let dyn_re =
-            regex::Regex::new(r"(?i)-\s*\*\*(?:Dynamic Description|Current Dynamic)\*\*:\s*(.+)$")
-                .map_err(|e| e.to_string())?;
-        let tension_re = regex::Regex::new(r"(?i)-\s*\*\*Unspoken Tension\*\*:\s*(.+)$")
-            .map_err(|e| e.to_string())?;
+        let header_re = &*MD_HEADER_RE;
+        let role_re = &*MD_ROLE_RE;
+        let attr_re = &*MD_ATTR_RE;
+        let trust_re = &*MD_TRUST_RE;
+        let dyn_re = &*MD_DYN_RE;
+        let tension_re = &*MD_TENSION_RE_2;
 
         for raw_line in md.lines() {
             let line = raw_line.trim();
@@ -1226,7 +1255,7 @@ impl MemoryDb {
         character_id: &str,
         title: &str,
     ) -> Result<ChatSession, rusqlite::Error> {
-        let conn = self.conn.lock().unwrap();
+        let conn = self.conn.lock();
         let now = current_timestamp();
         let id = format!("chat_{}_{:08x}", now, rand::random::<u32>());
         let effective_title = if title.trim().is_empty() {
@@ -1257,7 +1286,7 @@ impl MemoryDb {
         &self,
         character_id: &str,
     ) -> Result<Vec<ChatSession>, rusqlite::Error> {
-        let conn = self.conn.lock().unwrap();
+        let conn = self.conn.lock();
         let mut stmt = conn.prepare(
             "SELECT s.id, s.character_id, s.title, s.created_at, s.updated_at, s.author_note, s.author_note_depth,
                     (SELECT COUNT(*) FROM chat_messages m WHERE m.chat_id = s.id) AS msg_count
@@ -1288,7 +1317,7 @@ impl MemoryDb {
     }
 
     pub fn get_chat_session(&self, chat_id: &str) -> Result<Option<ChatSession>, rusqlite::Error> {
-        let conn = self.conn.lock().unwrap();
+        let conn = self.conn.lock();
         let mut stmt = conn.prepare(
             "SELECT s.id, s.character_id, s.title, s.created_at, s.updated_at, s.author_note, s.author_note_depth,
                     (SELECT COUNT(*) FROM chat_messages m WHERE m.chat_id = s.id) AS msg_count
@@ -1315,7 +1344,7 @@ impl MemoryDb {
     }
 
     pub fn delete_chat_session(&self, chat_id: &str) -> Result<(), rusqlite::Error> {
-        let conn = self.conn.lock().unwrap();
+        let conn = self.conn.lock();
         conn.execute(
             "DELETE FROM chat_messages WHERE chat_id = ?1",
             params![chat_id],
@@ -1329,7 +1358,7 @@ impl MemoryDb {
         chat_id: &str,
         new_title: &str,
     ) -> Result<(), rusqlite::Error> {
-        let conn = self.conn.lock().unwrap();
+        let conn = self.conn.lock();
         let now = current_timestamp();
         conn.execute(
             "UPDATE chat_sessions SET title = ?1, updated_at = ?2 WHERE id = ?3",
@@ -1344,7 +1373,7 @@ impl MemoryDb {
         author_note: &str,
         author_note_depth: u32,
     ) -> Result<(), rusqlite::Error> {
-        let conn = self.conn.lock().unwrap();
+        let conn = self.conn.lock();
         let now = current_timestamp();
         conn.execute(
             "UPDATE chat_sessions SET author_note = ?1, author_note_depth = ?2, updated_at = ?3 WHERE id = ?4",
@@ -1357,7 +1386,7 @@ impl MemoryDb {
         &self,
         chat_id: &str,
     ) -> Result<Vec<StoredChatMessage>, rusqlite::Error> {
-        let conn = self.conn.lock().unwrap();
+        let conn = self.conn.lock();
         let mut stmt = conn.prepare(
             "SELECT id, chat_id, role, content, thought, order_index, swipe_index, swipes_json, created_at
              FROM chat_messages
@@ -1406,7 +1435,7 @@ impl MemoryDb {
         content: &str,
         thought: Option<&str>,
     ) -> Result<StoredChatMessage, rusqlite::Error> {
-        let conn = self.conn.lock().unwrap();
+        let conn = self.conn.lock();
         let now = current_timestamp();
         let id = format!("msg_{}_{:08x}", now, rand::random::<u32>());
 
@@ -1451,7 +1480,7 @@ impl MemoryDb {
         content: &str,
         thought: Option<&str>,
     ) -> Result<StoredChatMessage, rusqlite::Error> {
-        let conn = self.conn.lock().unwrap();
+        let conn = self.conn.lock();
         let now = current_timestamp();
 
         let mut stmt = conn.prepare(
@@ -1519,7 +1548,7 @@ impl MemoryDb {
         content: &str,
         thought: Option<&str>,
     ) -> Result<StoredChatMessage, rusqlite::Error> {
-        let conn = self.conn.lock().unwrap();
+        let conn = self.conn.lock();
         let now = current_timestamp();
 
         let mut stmt = conn.prepare(
@@ -1577,7 +1606,7 @@ impl MemoryDb {
         msg_id: &str,
         new_swipe_index: usize,
     ) -> Result<StoredChatMessage, rusqlite::Error> {
-        let conn = self.conn.lock().unwrap();
+        let conn = self.conn.lock();
         let mut stmt = conn.prepare(
             "SELECT chat_id, role, order_index, swipes_json, created_at FROM chat_messages WHERE id = ?1",
         )?;
@@ -1627,7 +1656,7 @@ impl MemoryDb {
     }
 
     pub fn delete_chat_message(&self, msg_id: &str) -> Result<(), rusqlite::Error> {
-        let conn = self.conn.lock().unwrap();
+        let conn = self.conn.lock();
         conn.execute("DELETE FROM chat_messages WHERE id = ?1", params![msg_id])?;
         Ok(())
     }
@@ -1637,7 +1666,7 @@ impl MemoryDb {
         chat_id: &str,
         order_index: i32,
     ) -> Result<(), rusqlite::Error> {
-        let conn = self.conn.lock().unwrap();
+        let conn = self.conn.lock();
         conn.execute(
             "DELETE FROM chat_messages WHERE chat_id = ?1 AND order_index >= ?2",
             params![chat_id, order_index],
@@ -1836,7 +1865,7 @@ impl MemoryDb {
                     self.add_chat_message(&session.id, &role, &content, thought.as_deref())?;
 
                 if !parsed_swipes.is_empty() {
-                    let conn = self.conn.lock().unwrap();
+                    let conn = self.conn.lock();
                     let safe_idx = if swipe_idx < parsed_swipes.len() {
                         swipe_idx
                     } else {

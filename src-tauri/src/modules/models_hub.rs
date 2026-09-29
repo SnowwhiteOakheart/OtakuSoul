@@ -77,7 +77,7 @@ fn classify_gguf(model_id: &str, filename: &str) -> (String, bool, String) {
         return (
             "prism".to_string(),
             file.contains("pq2_0") && !file.contains("mmproj") && !file.contains("dspark"),
-            "Benötigt die PrismML Runtime; OtakuSoul wählt sie automatisch.".to_string(),
+            crate::err!("backend.models.notePrism"),
         );
     }
 
@@ -88,7 +88,7 @@ fn classify_gguf(model_id: &str, filename: &str) -> (String, bool, String) {
         return (
             "legacy".to_string(),
             false,
-            "Veraltetes Übergangsformat. Bitte PQ2_0 oder Q2_g64 wählen.".to_string(),
+            crate::err!("backend.models.noteLegacy"),
         );
     }
 
@@ -96,14 +96,14 @@ fn classify_gguf(model_id: &str, filename: &str) -> (String, bool, String) {
         return (
             "standard".to_string(),
             false,
-            "Kompatibel mit aktuellem Standard-llama.cpp; etwas größer als PQ2_0.".to_string(),
+            crate::err!("backend.models.noteG64"),
         );
     }
 
     (
         "standard".to_string(),
         false,
-        "Kompatibel mit der normalen OtakuSoul llama.cpp Runtime.".to_string(),
+        crate::err!("backend.models.noteDefault"),
     )
 }
 

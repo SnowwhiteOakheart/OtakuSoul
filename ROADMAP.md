@@ -96,6 +96,9 @@ GitHub Actions wurden bewusst entfernt (Commit `11597c2`). Stattdessen gibt es j
 - [x] Rust-Fehler als Fehlercodes: `err!`-Makro (`modules/error.rs`) liefert `{"code","params"}`, `errorMessage()` übersetzt in die
   Oberflächensprache. Alle Module außer `companion_tools.rs` umgestellt (dessen Meldungen gehen als Werkzeug-Ergebnis an das
   Sprachmodell); ein Test prüft jeden Code gegen die drei Wörterbücher.
+- [ ] **Backend-Inhalte sind deutsch:** mitgelieferte Presets (Namen/Beschreibungen), Stimmungs-Labels des Companions,
+  Szenen- und Kampftexte der Stage, Discord-Antworten und Prompt-Anweisungen. Oberflächenhinweise (GPU-Empfehlung,
+  Modell-Kompatibilität) sind bereits übersetzt. → Inhalte nach Antwortsprache wählen oder übersetzbare Schlüssel verwenden.
 - [x] `<html lang="de">` beim Sprachwechsel dynamisch setzen.
 
 ### Design-System & Themes
@@ -194,10 +197,11 @@ GitHub Actions wurden bewusst entfernt (Commit `11597c2`). Stattdessen gibt es j
 ### Backend
 
 - [x] 50 Clippy-Warnungen beheben (`map_or`, fehlende `Default`-Impls, `sort_by_key`, unnötige Klone …) und danach `-D warnings` in der CI erzwingen.
-- [ ] 221× `unwrap()` im Rust-Code prüfen. In Command-Pfaden durch `?` und einen gemeinsamen Fehlertyp (`thiserror`) ersetzen,
-  damit das Frontend strukturierte Fehler bekommt und die App nicht abstürzt (siehe P0-Regex).
+- [x] `unwrap()` im Rust-Code: 87 außerhalb von Tests (nicht 221). 62 Lock-`unwrap()` entfallen durch `parking_lot` (keine
+  Lock-Vergiftung mehr nach einem Panic), 15 Regexe sind statisch, die übrigen sind durch Längenprüfungen abgesichert.
+  Ein gemeinsamer `thiserror`-Fehlertyp ist durch die `err!`-Codes nicht mehr nötig.
 - [ ] `commands.rs` (1.697 Z.) nach Domänen aufteilen (`commands/chat.rs`, `commands/stage.rs` …); `stage.rs` (2.971 Z.) und `memory.rs` (2.069 Z.) ebenfalls modularisieren.
-- [ ] *(teilweise: `companion_tools`)* Regexe per `std::sync::LazyLock` statt `Regex::new` pro Aufruf. Offen in `memory.rs`, `voice.rs`, `emotions.rs`, `stage.rs`, `companion.rs`.
+- [x] Regexe per `std::sync::LazyLock` statt `Regex::new` pro Aufruf (dynamische Nutzer-Muster ausgenommen).
 - [ ] `tracing-subscriber` mit `env-filter` und Log-Rotation (`tracing-appender`) konfigurieren.
 - [ ] Datenbank-Migrationen versionieren (`rusqlite_migration` oder `PRAGMA user_version`), bevor das rusqlite-Upgrade kommt.
 

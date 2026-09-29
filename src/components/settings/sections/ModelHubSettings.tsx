@@ -10,6 +10,7 @@ import {
   Sparkles,
   Check,
 } from 'lucide-react';
+import { backendMessage } from '../../../utils/errors';
 
 export const ModelHubSettings = ({ onNavigate }: { onNavigate: (section: SettingsSection) => void }) => {
   const { t } = useTranslation();
@@ -378,7 +379,7 @@ export const ModelHubSettings = ({ onNavigate }: { onNavigate: (section: Setting
                                       : t('settings.runtimeStandardLabel')}
                                 </span>
                               </div>
-                              <div className={`text-[11px] ${file.runtime === 'legacy' ? 'text-rose-300' : 'text-slate-500'}`}>{file.compatibility_note}</div>
+                              <div className={`text-[11px] ${file.runtime === 'legacy' ? 'text-rose-300' : 'text-slate-500'}`}>{backendMessage(file.compatibility_note)}</div>
                             </div>
 
                             <button

@@ -1,7 +1,7 @@
+use parking_lot::RwLock;
 use serde::{Deserialize, Serialize};
 use std::collections::HashMap;
 use std::path::{Path, PathBuf};
-use std::sync::RwLock;
 use tokio::io::{AsyncBufReadExt, AsyncWriteExt, BufReader};
 use tokio::process::Command;
 
@@ -111,7 +111,7 @@ impl McpManager {
     }
 
     pub fn list_servers(&self) -> Vec<McpServerConfig> {
-        self.cached_servers.read().unwrap().clone()
+        self.cached_servers.read().clone()
     }
 
     pub fn save_servers(&self, servers: Vec<McpServerConfig>) -> Result<(), String> {
@@ -124,7 +124,7 @@ impl McpManager {
                 error = e
             )
         })?;
-        *self.cached_servers.write().unwrap() = servers;
+        *self.cached_servers.write() = servers;
         Ok(())
     }
 
@@ -140,7 +140,7 @@ impl McpManager {
     /// Query tools from an enabled stdio MCP server using JSON-RPC 2.0
     pub async fn fetch_server_tools(&self, server_id: &str) -> Result<Vec<McpToolInfo>, String> {
         let server = {
-            let list = self.cached_servers.read().unwrap();
+            let list = self.cached_servers.read();
             list.iter().find(|s| s.id == server_id).cloned()
         };
 
@@ -248,7 +248,7 @@ impl McpManager {
         arguments: serde_json::Value,
     ) -> Result<String, String> {
         let server = {
-            let list = self.cached_servers.read().unwrap();
+            let list = self.cached_servers.read();
             list.iter().find(|s| s.id == server_id).cloned()
         };
 
@@ -383,7 +383,7 @@ impl McpManager {
 
         if output.status.success() {
             Ok(if stdout.is_empty() {
-                "Plugin erfolgreich ausgeführt (keine Ausgabe).".to_string()
+                crate::err!("backend.mcp.pluginNoOutput")
             } else {
                 stdout
             })

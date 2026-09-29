@@ -14,6 +14,12 @@ static BLOCK_RE: LazyLock<Regex> = LazyLock::new(|| {
     )
     .unwrap()
 });
+// DuckDuckGo HTML search results.
+static DDG_LINK_RE: LazyLock<Regex> = LazyLock::new(|| {
+    Regex::new(r#"<a class="result__url"[^>]*href="([^"]+)"[^>]*>([\s\S]*?)</a>"#).unwrap()
+});
+static DDG_SNIPPET_RE: LazyLock<Regex> =
+    LazyLock::new(|| Regex::new(r#"<a class="result__snippet"[^>]*>([\s\S]*?)</a>"#).unwrap());
 static TAG_RE: LazyLock<Regex> = LazyLock::new(|| Regex::new(r"<[^>]+>").unwrap());
 static SPACE_RE: LazyLock<Regex> = LazyLock::new(|| Regex::new(r"\s+").unwrap());
 
@@ -106,12 +112,7 @@ impl CompanionTools {
             .map_err(|e| format!("Antworttext konnte nicht gelesen werden: {}", e))?;
 
         let mut results = Vec::new();
-        let link_re =
-            regex::Regex::new(r#"<a class="result__url"[^>]*href="([^"]+)"[^>]*>([\s\S]*?)</a>"#)
-                .unwrap();
-        let snippet_re =
-            regex::Regex::new(r#"<a class="result__snippet"[^>]*>([\s\S]*?)</a>"#).unwrap();
-        let strip_tags_re = regex::Regex::new(r#"<[^>]+>"#).unwrap();
+        let (link_re, snippet_re, strip_tags_re) = (&*DDG_LINK_RE, &*DDG_SNIPPET_RE, &*TAG_RE);
 
         let snippets: Vec<String> = snippet_re
             .captures_iter(&html)

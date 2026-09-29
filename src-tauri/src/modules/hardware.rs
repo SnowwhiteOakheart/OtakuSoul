@@ -249,9 +249,7 @@ fn recommend_gpu_layers_for_vram(
             estimated_context_vram_mb: 0,
             runtime_overhead_mb: profile.runtime_overhead_mb,
             profile_name: profile.name.to_string(),
-            advice:
-                "Keine dedizierte GPU gefunden. Das Modell wird vollständig auf der CPU ausgeführt."
-                    .to_string(),
+            advice: crate::err!("backend.hardware.noGpu"),
         };
     }
 
@@ -297,18 +295,18 @@ fn recommend_gpu_layers_for_vram(
             runtime_overhead_mb: profile.runtime_overhead_mb,
             profile_name: profile.name.to_string(),
             advice: if profile.recommend_largest_context {
-                format!(
-                    "Bonsai passt vollständig in den VRAM – empfohlen: {}K Kontext mit komprimiertem KV-Cache (~{:.1}/{:.1} GiB).",
-                    recommended_context / 1_024,
-                    total_required_mb as f64 / 1_024.0,
-                    safe_vram as f64 / 1_024.0,
+                crate::err!(
+                    "backend.hardware.bonsaiFits",
+                    context = recommended_context / 1_024,
+                    used = format!("{:.1}", total_required_mb as f64 / 1_024.0),
+                    total = format!("{:.1}", safe_vram as f64 / 1_024.0)
                 )
             } else {
-                format!(
-                    "Modell passt mit {}K Kontext vollständig in den VRAM (~{:.1}/{:.1} GiB).",
-                    recommended_context / 1_024,
-                    total_required_mb as f64 / 1_024.0,
-                    safe_vram as f64 / 1_024.0,
+                crate::err!(
+                    "backend.hardware.modelFits",
+                    context = recommended_context / 1_024,
+                    used = format!("{:.1}", total_required_mb as f64 / 1_024.0),
+                    total = format!("{:.1}", safe_vram as f64 / 1_024.0)
                 )
             },
         }
@@ -335,13 +333,13 @@ fn recommend_gpu_layers_for_vram(
             estimated_context_vram_mb: context_overhead_mb,
             runtime_overhead_mb: profile.runtime_overhead_mb,
             profile_name: profile.name.to_string(),
-            advice: format!(
-                "Teilweises GPU-Offloading: {} von {} Layern bei {}K Kontext (~{:.1}/{:.1} GiB).",
-                recommended,
-                layers,
-                recommended_context / 1_024,
-                estimated as f64 / 1_024.0,
-                safe_vram as f64 / 1_024.0,
+            advice: crate::err!(
+                "backend.hardware.partialOffload",
+                layers = recommended,
+                total_layers = layers,
+                context = recommended_context / 1_024,
+                used = format!("{:.1}", estimated as f64 / 1_024.0),
+                total = format!("{:.1}", safe_vram as f64 / 1_024.0)
             ),
         }
     }

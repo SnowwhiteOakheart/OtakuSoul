@@ -15,6 +15,7 @@ import {
   Zap,
   Check,
 } from 'lucide-react';
+import { backendMessage } from '../../../utils/errors';
 
 export const ServerSettings = () => {
   const { t } = useTranslation();
@@ -213,7 +214,7 @@ export const ServerSettings = () => {
                 <span>
                   {t('settings.runtimeInfo', {
                     runtime: selectedModel.runtime === 'prism' ? t('settings.runtimePrism') : t('settings.runtimeLlama'),
-                    note: selectedModel.compatibility_note,
+                    note: backendMessage(selectedModel.compatibility_note),
                   })}
                 </span>
               </div>
@@ -409,7 +410,7 @@ export const ServerSettings = () => {
             </div>
             <div className="text-xs text-slate-400">
               {layerRecommendation
-                ? layerRecommendation.advice
+                ? backendMessage(layerRecommendation.advice)
                 : t('settings.autoVramIntro')}
             </div>
             {layerRecommendation && (

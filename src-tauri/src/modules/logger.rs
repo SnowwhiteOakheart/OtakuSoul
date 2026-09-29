@@ -1,9 +1,9 @@
 use chrono::Local;
+use parking_lot::Mutex;
 use serde::{Deserialize, Serialize};
 use std::fs::{self, OpenOptions};
 use std::io::{BufRead, BufReader, Write};
 use std::path::PathBuf;
-use std::sync::Mutex;
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct LogEntry {
@@ -33,7 +33,8 @@ pub fn log_event(level: &str, target: &str, message: &str) {
     };
 
     // 1. Buffer in memory
-    if let Ok(mut buffer) = LOG_BUFFER.lock() {
+    {
+        let mut buffer = LOG_BUFFER.lock();
         buffer.push(entry.clone());
         if buffer.len() > MAX_BUFFER_SIZE {
             buffer.remove(0);
@@ -55,15 +56,12 @@ pub fn get_recent_logs(max_lines: Option<usize>) -> Vec<LogEntry> {
     let limit = max_lines.unwrap_or(200);
 
     // If memory buffer has logs, return the slice
-    if let Ok(buffer) = LOG_BUFFER.lock()
-        && !buffer.is_empty()
     {
-        let start = if buffer.len() > limit {
-            buffer.len() - limit
-        } else {
-            0
-        };
-        return buffer[start..].to_vec();
+        let buffer = LOG_BUFFER.lock();
+        if !buffer.is_empty() {
+            let start = buffer.len().saturating_sub(limit);
+            return buffer[start..].to_vec();
+        }
     }
 
     // Fallback: Read from file if memory buffer was empty
@@ -86,7 +84,8 @@ pub fn get_recent_logs(max_lines: Option<usize>) -> Vec<LogEntry> {
 }
 
 pub fn clear_app_logs() -> Result<(), String> {
-    if let Ok(mut buffer) = LOG_BUFFER.lock() {
+    {
+        let mut buffer = LOG_BUFFER.lock();
         buffer.clear();
     }
     let path = get_log_file_path();

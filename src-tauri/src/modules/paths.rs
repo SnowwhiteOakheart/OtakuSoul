@@ -414,9 +414,9 @@ pub fn scan_available_models() -> Vec<ScannedModel> {
                         runtime: if is_prism { "prism" } else { "standard" }.to_string(),
                         recommended_context: if is_bonsai { 32768 } else { 8192 },
                         compatibility_note: if is_prism {
-                            "PrismML Runtime wird automatisch verwendet".to_string()
+                            crate::err!("backend.models.notePrismInstalled")
                         } else {
-                            "Standard llama.cpp".to_string()
+                            crate::err!("backend.models.noteStandard")
                         },
                     });
                 }
