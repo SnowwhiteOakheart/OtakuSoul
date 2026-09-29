@@ -1928,4 +1928,7 @@ export const de = {
   "avatar.vrmLoadFailed": "Das 3D-Modell konnte nicht geladen werden: {{error}}",
   "avatar.vrmReadFailed": "Die VRM-Datei konnte nicht gelesen werden: {{error}}",
   "backend.live2d.sowMissing": "Keine Soul-of-Waifu-Installation gefunden. Gesucht wird nach einem Ordner „Soul-of-Waifu…“ im Home-Verzeichnis, in ~/development, ~/Documents oder neben OtakuSoul; alternativ den Pfad über die Umgebungsvariable SOUL_OF_WAIFU_DIR angeben.",
+  "settings.avatarPackHint": "Weitere Avatare gibt es als separates Paket (OtakuSoul-Avatare.zip) bei den GitHub-Releases. In den Avatar-Ordner entpacken und oben auf „Aktualisieren“ klicken.",
+  "settings.openAvatarFolder": "Avatar-Ordner öffnen",
+  "backend.common.openFolder": "Ordner konnte nicht geöffnet werden: {{error}}",
 } as const;

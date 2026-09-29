@@ -106,24 +106,12 @@ pub fn scan_available_live2d_models() -> Vec<ScannedLive2d> {
     let user_live2d = PathBuf::from(&paths.data_dir).join("live2d");
     search_dirs.push(user_live2d);
 
-    // 2. Bundled assets directory relative to workspace root
-    let current_dir = std::env::current_dir().unwrap_or_else(|_| PathBuf::from("."));
-    let mut base_root = current_dir.clone();
-    if base_root.ends_with("src-tauri")
-        && let Some(parent) = base_root.parent()
-    {
-        base_root = parent.to_path_buf();
-    }
-    search_dirs.push(base_root.join("assets").join("live2d"));
-    search_dirs.push(base_root.join("..").join("assets").join("live2d"));
-
-    // 3. Fallback: check relative to exe
-    if let Ok(exe) = std::env::current_exe()
-        && let Some(exe_dir) = exe.parent()
-    {
-        search_dirs.push(exe_dir.join("assets").join("live2d"));
-        search_dirs.push(exe_dir.join("..").join("assets").join("live2d"));
-    }
+    // 2. Bundled models (resource dir, working directory, next to the executable, source checkout)
+    search_dirs.extend(
+        crate::modules::paths::bundle_roots()
+            .into_iter()
+            .map(|root| root.join("assets").join("live2d")),
+    );
 
     // 4. Soul of Waifu local installation if available
     if let Some(sow_live2d) = find_sow_live2d_dir() {

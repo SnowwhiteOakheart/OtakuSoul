@@ -89,11 +89,18 @@ pub fn resolve_app_paths() -> AppPaths {
     }
 }
 
-/// Folders that may hold the bundled `presets`, `assets` and `bin` directories, in order: the
-/// working directory (and the workspace root when started from `src-tauri`), the executable's
-/// folder and its parents, and in debug builds the source checkout.
-fn bundle_roots() -> Vec<PathBuf> {
-    let mut roots = Vec::new();
+static RESOURCE_DIR: std::sync::OnceLock<PathBuf> = std::sync::OnceLock::new();
+
+/// Registers Tauri's resource directory (installed builds ship `presets/` and `assets/` there).
+pub fn set_resource_dir(dir: PathBuf) {
+    let _ = RESOURCE_DIR.set(dir);
+}
+
+/// Folders that may hold the bundled `presets`, `assets` and `bin` directories, in order: Tauri's
+/// resource directory, the working directory (and the workspace root when started from
+/// `src-tauri`), the executable's folder and its parents, and in debug builds the source checkout.
+pub fn bundle_roots() -> Vec<PathBuf> {
+    let mut roots: Vec<PathBuf> = RESOURCE_DIR.get().cloned().into_iter().collect();
     if let Ok(cwd) = std::env::current_dir() {
         if cwd.ends_with("src-tauri")
             && let Some(parent) = cwd.parent()

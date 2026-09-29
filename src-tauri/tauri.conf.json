@@ -42,6 +42,14 @@
       "icons/icon.icns",
       "icons/icon.ico"
     ],
+    "resources": {
+      "../presets/": "presets/",
+      "../assets/emotions/": "assets/emotions/",
+      "../assets/live2d/": "assets/live2d/",
+      "../assets/vrm/Anime Girl.vrm": "assets/vrm/Anime Girl.vrm",
+      "../assets/vrm/Anime Man.vrm": "assets/vrm/Anime Man.vrm",
+      "../assets/vrm/lizenzen.txt": "assets/vrm/lizenzen.txt"
+    },
     "windows": {
       "nsis": {
         "installMode": "currentUser",

@@ -329,6 +329,17 @@ export const GeneralSettings = () => {
             <span className="whitespace-nowrap">{t('settings.chooseVrm')}</span>
           </button>
         </div>
+        <div className="flex flex-wrap items-center justify-between gap-2 text-xs text-slate-400">
+          <p className="max-w-xl">{t('settings.avatarPackHint')}</p>
+          <button
+            type="button"
+            onClick={() => void api.openAvatarFolder().catch((e) => toast.error(errorMessage(e)))}
+            className="px-3 py-1.5 rounded-lg border border-slate-700 bg-slate-800/60 hover:bg-slate-800 text-slate-200 flex items-center gap-1.5 transition-colors"
+          >
+            <FolderOpen className="w-3.5 h-3.5" />
+            <span className="whitespace-nowrap">{t('settings.openAvatarFolder')}</span>
+          </button>
+        </div>
       </div>
 
       {/* 2D Live2D Standard-Auswahl & Import */}

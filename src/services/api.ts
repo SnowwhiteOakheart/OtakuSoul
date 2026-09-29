@@ -617,6 +617,10 @@ export const api = {
     return await invoke<AppPaths>('get_app_paths');
   },
 
+  openAvatarFolder: async (): Promise<void> => {
+    await invoke('open_avatar_folder');
+  },
+
   scanCharacters: async (): Promise<CharacterProfile[]> => {
     return await invoke<CharacterProfile[]>('scan_characters');
   },

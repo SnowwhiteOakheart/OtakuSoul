@@ -78,6 +78,11 @@ Wähle die Darstellung, die zu deinem Charakter passt:
 
 Ansicht, Größe und Position werden automatisch pro Modell gespeichert. So erscheint ein Charakter beim nächsten Start genau dort, wo du ihn platziert hast.
 
+Mitgeliefert werden die VRM-Modelle *Anime Girl* und *Anime Man* sowie die Live2D-Modelle. Weitere Avatare gibt es als
+separates **Avatar-Paket** (`OtakuSoul-Avatare.zip`) bei den GitHub-Releases: in den Avatar-Ordner entpacken
+(*Einstellungen → Erscheinungsbild → Avatar-Ordner öffnen*) und auf *Aktualisieren* klicken. GGUF-Sprachmodelle lädt der
+eingebaute Modell-Hub direkt von Hugging Face.
+
 ## Geschichten werden zum Spiel
 
 Mit **Soul Stage** wird aus Rollenspiel-Chat eine steuerbare Kampagne. Ein mehrstufiger Game-Master-Ablauf verbindet Erzählung und deterministische Mechanik: Würfelwürfe, Schwierigkeitsgrade und Zustandsänderungen werden nachvollziehbar ausgewertet, während die KI daraus eine zusammenhängende Szene gestaltet.
@@ -179,6 +184,19 @@ npm run tauri build
 # Linux Pakete (AppImage, deb)
 ./packaging/scripts/build-linux-packages.sh
 ```
+
+Installierte Pakete enthalten `presets/`, `assets/emotions/`, `assets/live2d/` und die beiden Standard-VRMs
+(`bundle.resources` in `src-tauri/tauri.conf.json`). Große Modelle gehören nicht ins Paket.
+
+### Avatar-Paket für ein Release
+
+```bash
+# Packt alle VRMs aus assets/vrm außer den beiden Standardmodellen nach dist/OtakuSoul-Avatare.zip
+./tools/package_avatar_pack.sh
+```
+
+Das Skript bricht ab, wenn ein Modell keinen Eintrag in `assets/vrm/lizenzen.txt` hat. Nur Modelle aufnehmen, deren Lizenz
+die Weitergabe erlaubt.
 
 ### Optionale PrismML-/Bonsai-Laufzeit unter Linux
 

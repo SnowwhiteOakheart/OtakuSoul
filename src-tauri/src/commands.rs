@@ -1007,6 +1007,19 @@ pub fn get_app_paths() -> crate::modules::paths::AppPaths {
     crate::modules::paths::resolve_app_paths()
 }
 
+/// Opens the folder for additional VRM avatars (e.g. the release avatar pack) in the file manager.
+#[tauri::command]
+pub fn open_avatar_folder(app: tauri::AppHandle) -> Result<(), String> {
+    use tauri_plugin_opener::OpenerExt;
+    let dir = std::path::PathBuf::from(crate::modules::paths::resolve_app_paths().data_dir)
+        .join("avatars");
+    std::fs::create_dir_all(&dir)
+        .map_err(|e| crate::err!("backend.common.dirCreate", error = e))?;
+    app.opener()
+        .open_path(dir.to_string_lossy(), None::<&str>)
+        .map_err(|e| crate::err!("backend.common.openFolder", error = e))
+}
+
 #[tauri::command]
 pub fn scan_characters() -> Vec<crate::modules::characters::CharacterProfile> {
     crate::modules::paths::scan_available_characters()

@@ -73,6 +73,10 @@ pub fn run() {
         .plugin(tauri_plugin_dialog::init())
         .manage(AppState::new())
         .setup(|app| {
+            use tauri::Manager;
+            if let Ok(resource_dir) = app.path().resource_dir() {
+                modules::paths::set_resource_dir(resource_dir);
+            }
             allow_app_asset_dirs(app);
             Ok(())
         })
@@ -168,6 +172,7 @@ pub fn run() {
             commands::toggle_companion_overlay,
             commands::evaluate_companion_proactive,
             commands::get_app_paths,
+            commands::open_avatar_folder,
             commands::scan_characters,
             commands::scan_models,
             commands::scan_vrm_models,

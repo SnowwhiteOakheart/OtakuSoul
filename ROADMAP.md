@@ -156,9 +156,11 @@ GitHub Actions wurden bewusst entfernt (Commit `11597c2`). Stattdessen gibt es j
 - [x] Fest eingetragene Pfade `/home/deathtrap/...` entfernt (Live2D, Stage, MCP). Mitgelieferte Ordner werden relativ zu
   Arbeitsverzeichnis, Programmordner und (Debug) Quellcode gesucht; Soul of Waifu wird automatisch gefunden
   (oder per `SOUL_OF_WAIFU_DIR`).
-- [ ] **Installierte Builds bündeln keine Ressourcen:** `tauri.conf.json` hat kein `bundle.resources`, `presets/`, `assets/` und `bin/`
-  fehlen also im Paket. → Entscheiden, was mitgeliefert wird (Presets ja; große Modelle/VRMs eher als Download) und
-  `resources` plus `resolveResource`-Pfade einrichten.
+- [x] **Ressourcen im Paket:** `bundle.resources` liefert `presets/`, `assets/emotions/`, `assets/live2d/` und die VRMs
+  *Anime Girl*/*Anime Man* mit; die App findet sie über Tauris Ressourcenordner. Weitere VRMs kommen als separates
+  Avatar-Paket ins GitHub-Release (`tools/package_avatar_pack.sh`, prüft `lizenzen.txt`), GGUF-Modelle über den Modell-Hub.
+- [ ] `bin/` (llama.cpp-Binaries, ~490 MB, plattformabhängig) wird nicht mitgeliefert. → Klären: pro Plattform bündeln,
+  beim ersten Start herunterladen oder Installation durch den Nutzer (heute Suche im `PATH`).
 - [ ] Tray-Icon für den Companion (minimieren in den Tray statt beenden).
 - [ ] **Updater:** Aktuell wird nur geprüft und auf die GitHub-Release-Seite verlinkt. → `tauri-plugin-updater` mit signierten Updates nutzen.
   *(Benötigt einen eigenen Signaturschlüssel des Projektinhabers.)*

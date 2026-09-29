@@ -1926,4 +1926,7 @@ export const en: TranslationDictionary = {
   "avatar.vrmLoadFailed": "Could not load the 3D model: {{error}}",
   "avatar.vrmReadFailed": "Could not read the VRM file: {{error}}",
   "backend.live2d.sowMissing": "No Soul of Waifu installation found. OtakuSoul looks for a “Soul-of-Waifu…” folder in your home folder, ~/development, ~/Documents or next to OtakuSoul; alternatively set the SOUL_OF_WAIFU_DIR environment variable.",
+  "settings.avatarPackHint": "More avatars are available as a separate pack (OtakuSoul-Avatare.zip) on the GitHub releases. Unzip it into the avatar folder and click “Refresh” above.",
+  "settings.openAvatarFolder": "Open avatar folder",
+  "backend.common.openFolder": "Could not open the folder: {{error}}",
 };
