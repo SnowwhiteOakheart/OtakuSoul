@@ -5,6 +5,7 @@ use std::path::{Path, PathBuf};
 use std::sync::Arc;
 use std::sync::LazyLock;
 use std::time::{SystemTime, UNIX_EPOCH};
+use tracing::{info, warn};
 
 /// Parsers for the MEMORY.md / USER.md sections, compiled once.
 static MD_HEADER_RE: LazyLock<regex::Regex> =
@@ -178,6 +179,164 @@ pub struct StoredChatMessage {
     pub created_at: u64,
 }
 
+/// Schema migrations in order: after step `i` the database has `PRAGMA user_version = i + 1`.
+/// Append new steps for schema changes; never edit a step that has shipped.
+const MIGRATIONS: &[fn(&Connection) -> rusqlite::Result<()>] = &[migrate_v1_baseline];
+
+/// Brings the database to the latest schema, one transaction per step. A database written by a
+/// newer OtakuSoul is left untouched.
+fn migrate(conn: &mut Connection) -> rusqlite::Result<()> {
+    let current: i64 = conn.query_row("PRAGMA user_version", [], |row| row.get(0))?;
+    let current = usize::try_from(current).unwrap_or(0);
+    if current > MIGRATIONS.len() {
+        warn!(
+            "Datenbank-Schema v{} ist neuer als diese Version (v{}); keine Migration.",
+            current,
+            MIGRATIONS.len()
+        );
+        return Ok(());
+    }
+    for (index, step) in MIGRATIONS.iter().enumerate().skip(current) {
+        let tx = conn.transaction()?;
+        step(&tx)?;
+        tx.pragma_update(None, "user_version", (index + 1) as i64)?;
+        tx.commit()?;
+        info!("Datenbank-Schema auf v{} migriert.", index + 1);
+    }
+    Ok(())
+}
+
+/// v1: the schema as it was when versioning was introduced. Databases from before that have
+/// no version yet and may lack columns that were added over time, so those are added if missing.
+fn migrate_v1_baseline(conn: &Connection) -> rusqlite::Result<()> {
+    conn.execute_batch(
+        r#"
+        CREATE TABLE IF NOT EXISTS soul_psychology (
+            character_id TEXT PRIMARY KEY,
+            primary_emotion TEXT NOT NULL DEFAULT 'Calm',
+            intensity INTEGER NOT NULL DEFAULT 3,
+            psychological_tension TEXT NOT NULL DEFAULT 'Keine.',
+            emotional_decay_counter INTEGER NOT NULL DEFAULT 0,
+            active_agenda TEXT NOT NULL DEFAULT 'Beobachten und Antworten.',
+            immediate_focus TEXT NOT NULL DEFAULT 'Das aktuelle Gespräch.',
+            core_identity TEXT NOT NULL DEFAULT '[]',
+            cognitive_dissonance TEXT NOT NULL DEFAULT 'Keine.',
+            updated_at INTEGER NOT NULL
+        );
+
+        CREATE TABLE IF NOT EXISTS soul_relationship (
+            character_id TEXT NOT NULL,
+            user_name TEXT NOT NULL,
+            role_in_story TEXT NOT NULL DEFAULT 'User',
+            known_attributes TEXT NOT NULL DEFAULT 'Keine.',
+            trust_level TEXT NOT NULL DEFAULT 'Neutral',
+            dynamic_description TEXT NOT NULL DEFAULT 'Keine.',
+            unspoken_tension TEXT NOT NULL DEFAULT 'Keine.',
+            preferences_habits TEXT NOT NULL DEFAULT '[]',
+            shared_milestones TEXT NOT NULL DEFAULT '[]',
+            updated_at INTEGER NOT NULL,
+            PRIMARY KEY (character_id, user_name)
+        );
+
+        CREATE TABLE IF NOT EXISTS soul_episodic_memory (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            character_id TEXT NOT NULL,
+            category TEXT NOT NULL DEFAULT 'fact',
+            content TEXT NOT NULL,
+            significance INTEGER NOT NULL DEFAULT 3,
+            created_at INTEGER NOT NULL,
+            last_accessed_at INTEGER NOT NULL
+        );
+        CREATE INDEX IF NOT EXISTS idx_mem_char ON soul_episodic_memory(character_id);
+
+        CREATE TABLE IF NOT EXISTS soul_diary (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            character_id TEXT NOT NULL,
+            title TEXT NOT NULL,
+            entry_text TEXT NOT NULL,
+            mood TEXT NOT NULL DEFAULT 'Neutral',
+            created_at INTEGER NOT NULL
+        );
+        CREATE INDEX IF NOT EXISTS idx_diary_char ON soul_diary(character_id);
+
+        CREATE TABLE IF NOT EXISTS soul_healing_log (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            character_id TEXT NOT NULL,
+            action TEXT NOT NULL,
+            details TEXT NOT NULL,
+            created_at INTEGER NOT NULL
+        );
+
+        CREATE TABLE IF NOT EXISTS chat_sessions (
+            id TEXT PRIMARY KEY,
+            character_id TEXT NOT NULL,
+            title TEXT NOT NULL,
+            created_at INTEGER NOT NULL,
+            updated_at INTEGER NOT NULL,
+            author_note TEXT NOT NULL DEFAULT '',
+            author_note_depth INTEGER NOT NULL DEFAULT 2
+        );
+        CREATE INDEX IF NOT EXISTS idx_chat_char ON chat_sessions(character_id);
+
+        CREATE TABLE IF NOT EXISTS chat_messages (
+            id TEXT PRIMARY KEY,
+            chat_id TEXT NOT NULL,
+            role TEXT NOT NULL,
+            content TEXT NOT NULL,
+            thought TEXT,
+            order_index INTEGER NOT NULL,
+            swipe_index INTEGER NOT NULL DEFAULT 0,
+            swipes_json TEXT NOT NULL DEFAULT '[]',
+            created_at INTEGER NOT NULL,
+            FOREIGN KEY(chat_id) REFERENCES chat_sessions(id) ON DELETE CASCADE
+        );
+        CREATE INDEX IF NOT EXISTS idx_msg_chat ON chat_messages(chat_id, order_index);
+        "#,
+    )?;
+
+    for (table, column, definition) in [
+        (
+            "soul_psychology",
+            "core_identity",
+            "TEXT NOT NULL DEFAULT '[]'",
+        ),
+        (
+            "soul_psychology",
+            "cognitive_dissonance",
+            "TEXT NOT NULL DEFAULT 'Keine.'",
+        ),
+        (
+            "soul_relationship",
+            "role_in_story",
+            "TEXT NOT NULL DEFAULT 'User'",
+        ),
+        (
+            "soul_relationship",
+            "known_attributes",
+            "TEXT NOT NULL DEFAULT 'Keine.'",
+        ),
+        (
+            "soul_relationship",
+            "dynamic_description",
+            "TEXT NOT NULL DEFAULT 'Keine.'",
+        ),
+    ] {
+        if !has_column(conn, table, column)? {
+            conn.execute(
+                &format!("ALTER TABLE {table} ADD COLUMN {column} {definition}"),
+                [],
+            )?;
+        }
+    }
+    Ok(())
+}
+
+fn has_column(conn: &Connection, table: &str, column: &str) -> rusqlite::Result<bool> {
+    let mut stmt = conn.prepare(&format!("PRAGMA table_info({table})"))?;
+    let mut names = stmt.query_map([], |row| row.get::<_, String>(1))?;
+    names.try_fold(false, |found, name| Ok(found || name? == column))
+}
+
 pub struct MemoryDb {
     conn: Arc<Mutex<Connection>>,
 }
@@ -197,108 +356,10 @@ impl MemoryDb {
         Self::init_with_connection(conn)
     }
 
-    fn init_with_connection(conn: Connection) -> Result<Self, rusqlite::Error> {
-        conn.execute_batch(
-            r#"
-            PRAGMA journal_mode = WAL;
-            PRAGMA synchronous = NORMAL;
-
-            CREATE TABLE IF NOT EXISTS soul_psychology (
-                character_id TEXT PRIMARY KEY,
-                primary_emotion TEXT NOT NULL DEFAULT 'Calm',
-                intensity INTEGER NOT NULL DEFAULT 3,
-                psychological_tension TEXT NOT NULL DEFAULT 'Keine.',
-                emotional_decay_counter INTEGER NOT NULL DEFAULT 0,
-                active_agenda TEXT NOT NULL DEFAULT 'Beobachten und Antworten.',
-                immediate_focus TEXT NOT NULL DEFAULT 'Das aktuelle Gespräch.',
-                core_identity TEXT NOT NULL DEFAULT '[]',
-                cognitive_dissonance TEXT NOT NULL DEFAULT 'Keine.',
-                updated_at INTEGER NOT NULL
-            );
-
-            CREATE TABLE IF NOT EXISTS soul_relationship (
-                character_id TEXT NOT NULL,
-                user_name TEXT NOT NULL,
-                role_in_story TEXT NOT NULL DEFAULT 'User',
-                known_attributes TEXT NOT NULL DEFAULT 'Keine.',
-                trust_level TEXT NOT NULL DEFAULT 'Neutral',
-                dynamic_description TEXT NOT NULL DEFAULT 'Keine.',
-                unspoken_tension TEXT NOT NULL DEFAULT 'Keine.',
-                preferences_habits TEXT NOT NULL DEFAULT '[]',
-                shared_milestones TEXT NOT NULL DEFAULT '[]',
-                updated_at INTEGER NOT NULL,
-                PRIMARY KEY (character_id, user_name)
-            );
-
-            CREATE TABLE IF NOT EXISTS soul_episodic_memory (
-                id INTEGER PRIMARY KEY AUTOINCREMENT,
-                character_id TEXT NOT NULL,
-                category TEXT NOT NULL DEFAULT 'fact',
-                content TEXT NOT NULL,
-                significance INTEGER NOT NULL DEFAULT 3,
-                created_at INTEGER NOT NULL,
-                last_accessed_at INTEGER NOT NULL
-            );
-            CREATE INDEX IF NOT EXISTS idx_mem_char ON soul_episodic_memory(character_id);
-
-            CREATE TABLE IF NOT EXISTS soul_diary (
-                id INTEGER PRIMARY KEY AUTOINCREMENT,
-                character_id TEXT NOT NULL,
-                title TEXT NOT NULL,
-                entry_text TEXT NOT NULL,
-                mood TEXT NOT NULL DEFAULT 'Neutral',
-                created_at INTEGER NOT NULL
-            );
-            CREATE INDEX IF NOT EXISTS idx_diary_char ON soul_diary(character_id);
-
-            CREATE TABLE IF NOT EXISTS soul_healing_log (
-                id INTEGER PRIMARY KEY AUTOINCREMENT,
-                character_id TEXT NOT NULL,
-                action TEXT NOT NULL,
-                details TEXT NOT NULL,
-                created_at INTEGER NOT NULL
-            );
-
-            CREATE TABLE IF NOT EXISTS chat_sessions (
-                id TEXT PRIMARY KEY,
-                character_id TEXT NOT NULL,
-                title TEXT NOT NULL,
-                created_at INTEGER NOT NULL,
-                updated_at INTEGER NOT NULL,
-                author_note TEXT NOT NULL DEFAULT '',
-                author_note_depth INTEGER NOT NULL DEFAULT 2
-            );
-            CREATE INDEX IF NOT EXISTS idx_chat_char ON chat_sessions(character_id);
-
-            CREATE TABLE IF NOT EXISTS chat_messages (
-                id TEXT PRIMARY KEY,
-                chat_id TEXT NOT NULL,
-                role TEXT NOT NULL,
-                content TEXT NOT NULL,
-                thought TEXT,
-                order_index INTEGER NOT NULL,
-                swipe_index INTEGER NOT NULL DEFAULT 0,
-                swipes_json TEXT NOT NULL DEFAULT '[]',
-                created_at INTEGER NOT NULL,
-                FOREIGN KEY(chat_id) REFERENCES chat_sessions(id) ON DELETE CASCADE
-            );
-            CREATE INDEX IF NOT EXISTS idx_msg_chat ON chat_messages(chat_id, order_index);
-            "#,
-        )?;
-
-        // Safe migrations for existing databases
-        let _ = conn.execute(
-            "ALTER TABLE soul_psychology ADD COLUMN core_identity TEXT NOT NULL DEFAULT '[]'",
-            [],
-        );
-        let _ = conn.execute("ALTER TABLE soul_psychology ADD COLUMN cognitive_dissonance TEXT NOT NULL DEFAULT 'Keine.'", []);
-        let _ = conn.execute(
-            "ALTER TABLE soul_relationship ADD COLUMN role_in_story TEXT NOT NULL DEFAULT 'User'",
-            [],
-        );
-        let _ = conn.execute("ALTER TABLE soul_relationship ADD COLUMN known_attributes TEXT NOT NULL DEFAULT 'Keine.'", []);
-        let _ = conn.execute("ALTER TABLE soul_relationship ADD COLUMN dynamic_description TEXT NOT NULL DEFAULT 'Keine.'", []);
-
+    fn init_with_connection(mut conn: Connection) -> Result<Self, rusqlite::Error> {
+        // Journal settings cannot change inside a transaction, so they are set before migrating.
+        conn.execute_batch("PRAGMA journal_mode = WAL; PRAGMA synchronous = NORMAL;")?;
+        migrate(&mut conn)?;
         Ok(Self {
             conn: Arc::new(Mutex::new(conn)),
         })
@@ -1890,6 +1951,67 @@ impl MemoryDb {
 
 #[cfg(test)]
 mod tests {
+    fn schema_version(conn: &Connection) -> i64 {
+        conn.query_row("PRAGMA user_version", [], |row| row.get(0))
+            .unwrap()
+    }
+
+    #[test]
+    fn fresh_database_gets_latest_schema() {
+        let mut conn = Connection::open_in_memory().unwrap();
+        migrate(&mut conn).unwrap();
+        assert_eq!(schema_version(&conn), MIGRATIONS.len() as i64);
+        assert!(has_column(&conn, "soul_relationship", "dynamic_description").unwrap());
+
+        // Running again (next start) is a no-op.
+        migrate(&mut conn).unwrap();
+        assert_eq!(schema_version(&conn), MIGRATIONS.len() as i64);
+    }
+
+    #[test]
+    fn legacy_database_is_upgraded_without_losing_data() {
+        let mut conn = Connection::open_in_memory().unwrap();
+        // A database from before versioning: v0 and without the later columns.
+        conn.execute_batch(
+            "CREATE TABLE soul_psychology (
+                character_id TEXT PRIMARY KEY,
+                primary_emotion TEXT NOT NULL DEFAULT 'Calm',
+                intensity INTEGER NOT NULL DEFAULT 3,
+                psychological_tension TEXT NOT NULL DEFAULT 'Keine.',
+                emotional_decay_counter INTEGER NOT NULL DEFAULT 0,
+                active_agenda TEXT NOT NULL DEFAULT '',
+                immediate_focus TEXT NOT NULL DEFAULT '',
+                updated_at INTEGER NOT NULL
+            );
+            INSERT INTO soul_psychology (character_id, primary_emotion, updated_at) VALUES ('ayu', 'Joy', 1);",
+        )
+        .unwrap();
+
+        migrate(&mut conn).unwrap();
+
+        assert_eq!(schema_version(&conn), MIGRATIONS.len() as i64);
+        assert!(has_column(&conn, "soul_psychology", "core_identity").unwrap());
+        let (emotion, identity): (String, String) = conn
+            .query_row(
+                "SELECT primary_emotion, core_identity FROM soul_psychology WHERE character_id = 'ayu'",
+                [],
+                |row| Ok((row.get(0)?, row.get(1)?)),
+            )
+            .unwrap();
+        assert_eq!(emotion, "Joy");
+        assert_eq!(identity, "[]");
+        assert!(has_column(&conn, "chat_messages", "swipes_json").unwrap());
+    }
+
+    #[test]
+    fn database_from_newer_version_is_left_alone() {
+        let mut conn = Connection::open_in_memory().unwrap();
+        conn.pragma_update(None, "user_version", 999).unwrap();
+        migrate(&mut conn).unwrap();
+        assert_eq!(schema_version(&conn), 999);
+        assert!(!has_column(&conn, "soul_psychology", "core_identity").unwrap());
+    }
+
     use super::*;
 
     #[test]
@@ -2399,3 +2521,4 @@ Keine.
         let _ = std::fs::remove_dir_all(&temp_dir);
     }
 }
+
