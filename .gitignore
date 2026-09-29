@@ -53,3 +53,6 @@ assets/vrm/*.vrm
 
 # Updater-Signaturschlüssel: niemals committen (privater Schlüssel + Passwort)
 /.tauri-signing/
+
+# ts-rs output when the root cargo config is not picked up; real bindings live in src/types/generated
+/src-tauri/bindings/
