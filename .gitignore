@@ -50,3 +50,6 @@ assets/models/
 assets/vrm/*.vrm
 !assets/vrm/Anime Girl.vrm
 !assets/vrm/Anime Man.vrm
+
+# Updater-Signaturschlüssel: niemals committen (privater Schlüssel + Passwort)
+/.tauri-signing/
