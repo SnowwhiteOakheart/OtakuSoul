@@ -144,4 +144,14 @@ mod tests {
         assert_eq!(block_count(&path), None);
         let _ = std::fs::remove_file(path);
     }
+
+    /// Reads a real model: `OTAKUSOUL_GGUF=/path/model.gguf cargo test --lib reads_real_gguf -- --ignored --nocapture`
+    #[test]
+    #[ignore = "needs a model file"]
+    fn reads_real_gguf() {
+        let path = std::env::var("OTAKUSOUL_GGUF").expect("OTAKUSOUL_GGUF");
+        let count = block_count(Path::new(&path));
+        println!("{path}: {count:?}");
+        assert!(count.is_some_and(|c| c > 0));
+    }
 }

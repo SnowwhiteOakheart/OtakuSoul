@@ -78,6 +78,45 @@ pub struct GeneratedImageInfo {
     pub created_at: String,
 }
 
+/// Asks the chat model to turn a character or scene plus the recent story into a prompt for
+/// the image model. Runs before any VRAM swap, while the chat model is still loaded.
+#[derive(Debug, Clone, Serialize, Deserialize, TS)]
+#[ts(export)]
+pub struct ImagePromptRequest {
+    pub endpoint_url: String,
+    pub api_key: Option<String>,
+    pub model: Option<String>,
+    pub provider: Option<crate::modules::providers::LlmProviderType>,
+    /// `portrait` of a character or `scene` for the stage.
+    pub kind: String,
+    /// `tags` (SDXL anime models) or `natural` (FLUX, Qwen-Image, Bonsai Image).
+    pub style: String,
+    pub subject: String,
+    pub description: String,
+    /// Latest messages or narration, oldest first.
+    pub context: Vec<String>,
+}
+
+const IMAGE_PROMPT_SYSTEM: &str = r#"You write prompts for an anime image generator.
+Reply with the prompt only: one line in English, no quotes, no explanations, no text or speech bubbles in the image.
+Describe the {kind} so it matches the current moment of the story: appearance from the description, pose, expression, clothing, location, time of day and lighting from the recent events.
+{style}"#;
+
+fn clean_prompt(raw: &str) -> String {
+    let line = raw
+        .lines()
+        .map(str::trim)
+        .find(|l| !l.is_empty())
+        .unwrap_or_default();
+    let line = line
+        .strip_prefix("Prompt:")
+        .or_else(|| line.strip_prefix("prompt:"))
+        .unwrap_or(line)
+        .trim()
+        .trim_matches(|c| c == '"' || c == '`' || c == '\'');
+    line.to_string()
+}
+
 /// What the "Local" provider needs from the running app.
 pub struct LocalBackend<'a> {
     pub app: &'a tauri::AppHandle,
@@ -150,6 +189,101 @@ impl ImageGenerator {
             )
         })?;
         Ok(())
+    }
+
+    /// Lets the chat model write an image prompt (see [`ImagePromptRequest`]).
+    pub async fn write_image_prompt(
+        inference: &crate::modules::inference::InferenceClient,
+        request: ImagePromptRequest,
+    ) -> Result<String, String> {
+        use crate::modules::inference::{ChatMessage, ChatRequest, SamplingParams};
+        let tags = request.style == "tags";
+        let style = if tags {
+            "Use comma-separated Danbooru-style tags (e.g. 1girl, long hair, smile, night, city lights), at most 40 tags."
+        } else {
+            "Use one or two vivid natural-language sentences, at most 70 words, ending with: anime illustration, detailed."
+        };
+        let kind = if request.kind == "scene" {
+            "scene (environment first, characters small or absent)"
+        } else {
+            "character portrait (upper body, looking at the viewer)"
+        };
+        let system = IMAGE_PROMPT_SYSTEM
+            .replace("{kind}", kind)
+            .replace("{style}", style);
+        let context = request
+            .context
+            .iter()
+            .rev()
+            .take(6)
+            .rev()
+            .map(|m| m.chars().take(600).collect::<String>())
+            .collect::<Vec<_>>()
+            .join("\n---\n");
+        let user = format!(
+            "Subject: {}\n\nDescription:\n{}\n\nRecent story:\n{}",
+            request.subject,
+            request.description.chars().take(2_000).collect::<String>(),
+            if context.is_empty() {
+                "(none)"
+            } else {
+                &context
+            }
+        );
+        let raw = inference
+            .generate_direct(ChatRequest {
+                endpoint_url: request.endpoint_url,
+                api_key: request.api_key,
+                model: request.model,
+                messages: vec![
+                    ChatMessage {
+                        role: "system".to_string(),
+                        content: system,
+                    },
+                    ChatMessage {
+                        role: "user".to_string(),
+                        content: user,
+                    },
+                ],
+                sampling: Some(SamplingParams {
+                    temperature: Some(0.4),
+                    max_tokens: Some(220),
+                    ..Default::default()
+                }),
+                reasoning_mode: Some(false),
+                provider: request.provider,
+            })
+            .await?;
+        let prompt = clean_prompt(&raw);
+        if prompt.is_empty() {
+            return Err(crate::err!("backend.image.emptyPrompt"));
+        }
+        let prefix = Self::load_config().positive_prompt_prefix;
+        Ok(if tags && !prefix.trim().is_empty() {
+            format!("{}, {prompt}", prefix.trim())
+        } else {
+            prompt
+        })
+    }
+
+    /// Copies a generated image into the stage backgrounds folder and returns its name.
+    pub fn save_stage_background(file_path: &str) -> Result<String, String> {
+        let source = std::path::Path::new(file_path);
+        let images_dir = Self::get_images_dir();
+        // Only images the app generated may be copied.
+        if source.parent().map(|p| p != images_dir).unwrap_or(true) {
+            return Err(crate::err!("backend.common.pathMissing", path = file_path));
+        }
+        let name = source
+            .file_name()
+            .and_then(|n| n.to_str())
+            .ok_or_else(|| crate::err!("backend.common.pathMissing", path = file_path))?
+            .to_string();
+        let dir = PathBuf::from(&resolve_app_paths().data_dir).join("backgrounds");
+        fs::create_dir_all(&dir).map_err(|e| crate::err!("backend.common.dirCreate", error = e))?;
+        fs::copy(source, dir.join(&name))
+            .map_err(|e| crate::err!("backend.common.fileWrite", error = e))?;
+        Ok(name)
     }
 
     /// Synthesizes a structured anime / illustration prompt from character card and context.
@@ -843,6 +977,18 @@ mod tests {
         assert_eq!(normalized_provider("DALL-E 3"), "dalle3");
         assert_eq!(normalized_provider("dall_e_3"), "dalle3");
         assert_eq!(normalized_provider("bonsai_image"), "bonsaiimage");
+    }
+
+    #[test]
+    fn cleans_llm_prompts() {
+        assert_eq!(
+            clean_prompt("\n  Prompt: \"1girl, smile\"\nExplanation…"),
+            "1girl, smile"
+        );
+        assert_eq!(
+            clean_prompt("`a quiet library at dusk`"),
+            "a quiet library at dusk"
+        );
     }
 
     #[test]

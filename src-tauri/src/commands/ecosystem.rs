@@ -87,6 +87,23 @@ pub async fn generate_image_action(
 }
 
 #[tauri::command]
+pub async fn write_image_prompt(
+    state: State<'_, AppState>,
+    request: crate::modules::image_generator::ImagePromptRequest,
+) -> Result<String, String> {
+    crate::modules::image_generator::ImageGenerator::write_image_prompt(
+        &state.inference_client,
+        request,
+    )
+    .await
+}
+
+#[tauri::command]
+pub fn save_stage_background(file_path: String) -> Result<String, String> {
+    crate::modules::image_generator::ImageGenerator::save_stage_background(&file_path)
+}
+
+#[tauri::command]
 pub fn list_image_models() -> Vec<crate::modules::local_image::ImageModelInfo> {
     crate::modules::local_image::list_models()
 }

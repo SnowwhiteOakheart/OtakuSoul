@@ -1,5 +1,6 @@
 import { api } from '../../services/api';
 import { soundFx } from '../../services/soundFx';
+import { fillCardMacros, languageCode, localizeCard } from '../../utils/cardI18n';
 import type {
   BackupGroupSelection,
   BackupEntryInfo,
@@ -31,7 +32,17 @@ export interface EcosystemSlice {
     sceneContext?: string | null,
     userPrompt?: string | null
   ) => Promise<string>;
+  /** Generates an image and refreshes the gallery; throws when generation fails. */
   generateImageAction: (prompt: string, negative?: string | null, customConfig?: ImageGenConfig | null) => Promise<GeneratedImageResult | null>;
+  /** Latest scene image per chat session id. */
+  chatSceneImages: Record<string, GeneratedImageResult>;
+  isGeneratingSceneImage: boolean;
+  /**
+   * Lets the chat model write a prompt from the active character (chat) or scene (stage) and the
+   * recent story, then generates the image. In the stage it becomes the scene background.
+   */
+  generateSceneImage: (target: 'chat' | 'stage') => Promise<GeneratedImageResult | null>;
+  dismissChatSceneImage: (chatId: string) => void;
   fetchGeneratedImages: () => Promise<void>;
   discordRpcEnabled: boolean;
   discordBotConfig: DiscordBotConfig | null;
@@ -128,14 +139,108 @@ export const createEcosystemSlice: SliceCreator<EcosystemSlice> = (set, get) => 
   },
 
   generateImageAction: async (prompt, negative, customConfig) => {
+    const res = await api.generateImageAction(prompt, negative, customConfig);
+    await get().fetchGeneratedImages();
+    soundFx.playDiceRoll();
+    return res;
+  },
+
+  chatSceneImages: {},
+
+  isGeneratingSceneImage: false,
+
+  dismissChatSceneImage: (chatId) =>
+    set((state) => {
+      const next = { ...state.chatSceneImages };
+      delete next[chatId];
+      return { chatSceneImages: next };
+    }),
+
+  generateSceneImage: async (target) => {
+    const state = get();
+    if (state.isGeneratingSceneImage) return null;
+    set({ isGeneratingSceneImage: true });
     try {
-      const res = await api.generateImageAction(prompt, negative, customConfig);
-      await get().fetchGeneratedImages();
-      soundFx.playDiceRoll();
+      const config = state.imageGenConfig ?? (await api.getImageGenConfig());
+      const provider = config.provider.toLowerCase();
+      let style: 'tags' | 'natural' = 'tags';
+      if (provider === 'bonsai_image') style = 'natural';
+      if (provider === 'local') {
+        const models = await api.listImageModels().catch(() => []);
+        const family = models.find((m) => m.id === config.local_model_id)?.family;
+        if (family && family !== 'sdxl') style = 'natural';
+      }
+
+      const replyLang = languageCode(state.replyLanguage || 'Deutsch');
+      const character = state.activeCharacter ? localizeCard(state.activeCharacter.card.data, replyLang) : null;
+      let subject: string;
+      let description: string;
+      let context: string[];
+      if (target === 'stage') {
+        const scene = state.stageState;
+        if (!scene) return null;
+        subject = scene.world.location || scene.definition.title;
+        description = [scene.definition.world_context, scene.definition.description, `${scene.world.time_of_day}, ${scene.world.weather}`]
+          .filter(Boolean)
+          .join('\n');
+        context = scene.chat_log.slice(-6).map((m) => `${m.sender_name}: ${m.content}`);
+      } else {
+        if (!character) return null;
+        const userName = state.activePersona.name;
+        subject = character.name;
+        description = fillCardMacros(character.description, character.name, userName);
+        context = state.messages
+          .slice(-6)
+          .map((m) => `${m.role === 'user' ? userName : character.name}: ${fillCardMacros(m.content, character.name, userName)}`);
+      }
+
+      // The chat model writes the prompt while it is still loaded (before any VRAM swap).
+      const endpoint =
+        state.selectedBackend === 'local'
+          ? `http://127.0.0.1:${state.serverConfig.port}/v1/chat/completions`
+          : state.cloudEndpoint;
+      const llmAvailable = state.selectedBackend === 'cloud' || state.serverStatus.state === 'running';
+      let prompt = '';
+      if (llmAvailable) {
+        prompt = await api
+          .writeImagePrompt({
+            endpoint_url: endpoint,
+            api_key: state.selectedBackend === 'cloud' ? state.cloudApiKey : null,
+            model: state.selectedBackend === 'cloud' ? state.cloudModel : null,
+            provider: state.selectedBackend === 'cloud' ? state.cloudProvider : 'local_llama',
+            kind: target === 'stage' ? 'scene' : 'portrait',
+            style,
+            subject,
+            description,
+            context,
+          })
+          .catch((e: unknown) => {
+            console.warn('Image prompt from the chat model failed, using the template:', e);
+            return '';
+          });
+      }
+      if (!prompt) {
+        prompt = await api.buildCharacterImagePrompt(
+          target === 'stage' ? subject : (character?.name ?? subject),
+          description,
+          target === 'chat' ? state.currentEmotion?.emotion : null,
+          target === 'stage' ? subject : null,
+          null
+        );
+      }
+
+      const res = await get().generateImageAction(prompt, null, config);
+      if (!res) return null;
+      if (target === 'stage' && state.stageState) {
+        const name = await api.saveStageBackground(res.file_path);
+        const current = get().stageState ?? state.stageState;
+        await get().saveStageScene({ ...current, current_bg: name });
+      } else if (state.activeChatId) {
+        set((s) => ({ chatSceneImages: { ...s.chatSceneImages, [state.activeChatId as string]: res } }));
+      }
       return res;
-    } catch (e) {
-      console.error('Failed to generate image:', e);
-      return null;
+    } finally {
+      set({ isGeneratingSceneImage: false });
     }
   },
 

@@ -83,6 +83,7 @@ import {
   RuntimeKind,
   ImageModelInfo,
   ImageModelProgress,
+  ImagePromptRequest,
   LocalImageStatus,
   RuntimeProgress,
   RuntimeVariant,
@@ -1101,6 +1102,14 @@ export const api = {
 
   listGeneratedImages: async (): Promise<GeneratedImageInfo[]> => {
     return await invoke<GeneratedImageInfo[]>('list_generated_images');
+  },
+
+  writeImagePrompt: async (request: ImagePromptRequest): Promise<string> => {
+    return await invoke<string>('write_image_prompt', { request });
+  },
+
+  saveStageBackground: async (filePath: string): Promise<string> => {
+    return await invoke<string>('save_stage_background', { filePath });
   },
 
   listImageModels: async (): Promise<ImageModelInfo[]> => {

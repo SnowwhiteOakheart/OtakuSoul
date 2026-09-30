@@ -251,6 +251,8 @@ pub fn run() {
             commands::ecosystem::build_character_image_prompt,
             commands::ecosystem::generate_image_action,
             commands::ecosystem::list_generated_images,
+            commands::ecosystem::write_image_prompt,
+            commands::ecosystem::save_stage_background,
             commands::ecosystem::list_image_models,
             commands::ecosystem::download_image_model,
             commands::ecosystem::cancel_image_model_download,

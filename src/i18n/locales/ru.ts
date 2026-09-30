@@ -2066,4 +2066,12 @@ export const ru: TranslationDictionary = {
   "backend.localImage.noModel": "Сначала выберите локальную модель изображений.",
   "backend.image.bonsaiConnect": "Сервер Bonsai Image по адресу {{url}} недоступен: {{error}}",
   "backend.image.bonsaiServer": "Сервер Bonsai Image сообщил об ошибке: {{error}}",
+  "stage.generateBg": "Создать изображение сцены по сюжету и сделать его фоном",
+  "stage.bgGenerated": "Новый фон сцены установлен.",
+  "chat.sceneImageTitle": "Изображение сцены",
+  "chat.sceneImageAlt": "Изображение сцены, созданное по чату",
+  "chat.sceneImageExpand": "Увеличить изображение",
+  "chat.sceneImageCollapse": "Уменьшить изображение",
+  "chat.sceneImageClose": "Скрыть изображение сцены",
+  "backend.image.emptyPrompt": "Чат-модель не вернула промпт для изображения.",
 };

@@ -2,6 +2,7 @@ import React, { useState, useEffect, useRef } from 'react';
 import { useAppStore, useStoreFields } from '../../store/useAppStore';
 import { api } from '../../services/api';
 import { AdaptiveHud } from './AdaptiveHud';
+import { SceneImageCard } from './SceneImageCard';
 import { RoleplayMessage } from './RoleplayMessage';
 import { ChatSidebar } from './ChatSidebar';
 import {
@@ -396,6 +397,7 @@ export const ChatView: React.FC = () => {
 
         {/* Chat Area */}
         <div className="flex-1 flex flex-col h-full overflow-hidden bg-app">
+          <SceneImageCard />
           {/* Messages Stream Area */}
           <div className="flex-1 overflow-y-auto p-4 space-y-4 select-text" aria-live="polite">
             {displayList.length === 0 && !isGenerating && (

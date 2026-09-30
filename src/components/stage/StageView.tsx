@@ -28,12 +28,14 @@ import {
   UserRound,
   Lock,
   Unlock,
+  ImagePlus,
 } from 'lucide-react';
 import { api } from '../../services/api';
 import { SceneState } from '../../types';
 import { ModalOverlay } from '../ui/ModalOverlay';
 import { translate, useTranslation } from '../../i18n';
-import { confirmDialog } from '../ui/feedback';
+import { confirmDialog, toast } from '../ui/feedback';
+import { errorMessage } from '../../utils/errors';
 
 export const StageView: React.FC = () => {
   const { t } = useTranslation();
@@ -47,9 +49,12 @@ export const StageView: React.FC = () => {
     deleteClock,
     exportStageMarkdown,
     isProcessingStageTurn,
+    generateSceneImage,
+    isGeneratingSceneImage,
   } = useStoreFields(
     'stageState', 'fetchStageState', 'saveStageScene', 'updateWorldState', 'setClockProgress',
     'addClock', 'deleteClock', 'exportStageMarkdown', 'isProcessingStageTurn',
+    'generateSceneImage', 'isGeneratingSceneImage',
   );
 
   const [activeTab, setActiveTab] = useState<'adventure' | 'tactics' | 'campaign'>('adventure');
@@ -81,6 +86,15 @@ export const StageView: React.FC = () => {
       isMounted = false;
     };
   }, [activeBgName]);
+
+  const handleGenerateBackground = async () => {
+    try {
+      const res = await generateSceneImage('stage');
+      if (res) toast.success(translate('stage.bgGenerated'));
+    } catch (e) {
+      toast.error(translate('hud.imageFailed', { error: errorMessage(e) }));
+    }
+  };
 
   const handleToggleLockBg = async () => {
     if (!stageState) return;
@@ -302,6 +316,17 @@ export const StageView: React.FC = () => {
             className="p-2 rounded-xl bg-slate-800/80 hover:bg-slate-700 text-slate-300 hover:text-white border border-slate-700 transition"
           >
             <Download className="w-4 h-4" />
+          </button>
+
+          <button
+            type="button"
+            onClick={() => void handleGenerateBackground()}
+            disabled={isGeneratingSceneImage || !stageState}
+            title={isGeneratingSceneImage ? t('hud.generatingImage') : t('stage.generateBg')}
+            aria-label={t('stage.generateBg')}
+            className="p-2 rounded-xl bg-slate-800/80 hover:bg-slate-700 text-slate-300 hover:text-white border border-slate-700 transition disabled:opacity-50"
+          >
+            {isGeneratingSceneImage ? <LoaderCircle className="w-4 h-4 animate-spin" /> : <ImagePlus className="w-4 h-4" />}
           </button>
 
           <button

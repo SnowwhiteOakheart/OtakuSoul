@@ -2068,4 +2068,12 @@ export const de = {
   "backend.localImage.noModel": "Wähle zuerst ein lokales Bildmodell aus.",
   "backend.image.bonsaiConnect": "Bonsai-Image-Server unter {{url}} nicht erreichbar: {{error}}",
   "backend.image.bonsaiServer": "Bonsai-Image-Server meldet einen Fehler: {{error}}",
+  "stage.generateBg": "Szenenbild aus der Geschichte erzeugen und als Hintergrund setzen",
+  "stage.bgGenerated": "Neuer Szenenhintergrund gesetzt.",
+  "chat.sceneImageTitle": "Szenenbild",
+  "chat.sceneImageAlt": "Aus dem Chat erzeugtes Szenenbild",
+  "chat.sceneImageExpand": "Bild vergrößern",
+  "chat.sceneImageCollapse": "Bild verkleinern",
+  "chat.sceneImageClose": "Szenenbild ausblenden",
+  "backend.image.emptyPrompt": "Das Chat-Modell hat keinen Bild-Prompt geliefert.",
 } as const;

@@ -2066,4 +2066,12 @@ export const en: TranslationDictionary = {
   "backend.localImage.noModel": "Choose a local image model first.",
   "backend.image.bonsaiConnect": "Could not reach the Bonsai Image server at {{url}}: {{error}}",
   "backend.image.bonsaiServer": "The Bonsai Image server reported an error: {{error}}",
+  "stage.generateBg": "Generate a scene image from the story and use it as the background",
+  "stage.bgGenerated": "New scene background set.",
+  "chat.sceneImageTitle": "Scene image",
+  "chat.sceneImageAlt": "Scene image generated from the chat",
+  "chat.sceneImageExpand": "Enlarge image",
+  "chat.sceneImageCollapse": "Shrink image",
+  "chat.sceneImageClose": "Hide scene image",
+  "backend.image.emptyPrompt": "The chat model returned no image prompt.",
 };

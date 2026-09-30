@@ -6,6 +6,7 @@ import type { RuntimeProgress } from './generated/RuntimeProgress';
 import type { RuntimeInfo } from './generated/RuntimeInfo';
 import type { RuntimeKind } from './generated/RuntimeKind';
 import type { ImageModelInfo } from './generated/ImageModelInfo';
+import type { ImagePromptRequest } from './generated/ImagePromptRequest';
 import type { ImageModelProgress } from './generated/ImageModelProgress';
 import type { LocalImageStatus } from './generated/LocalImageStatus';
 import type { VramPlan } from './generated/VramPlan';
@@ -64,6 +65,7 @@ export type {
   RuntimeKind,
   ImageModelInfo,
   ImageModelProgress,
+  ImagePromptRequest,
   LocalImageStatus,
   VramPlan,
   VramStrategy,

@@ -1,6 +1,5 @@
 import { useState } from 'react';
 import { useStoreFields } from '../../store/useAppStore';
-import { api } from '../../services/api';
 import { Heart, Zap, Smile, Users, ChevronDown, BookOpen, Brain, Sparkles, Camera, Loader2 } from 'lucide-react';
 import { CognitiveMemoryDrawer } from './CognitiveMemoryDrawer';
 import { translate, useTranslation } from '../../i18n';
@@ -20,37 +19,24 @@ export const AdaptiveHud = () => {
     setServerConfig,
     setActiveTab,
     activePersona,
-    currentEmotion,
-    generateImageAction,
-    imageGenConfig,
+    generateSceneImage,
+    isGeneratingSceneImage: isGeneratingImage,
   } = useStoreFields(
     'activeCharacter', 'availableCharacters', 'selectCharacter', 'stateVariables',
     'activeLorebooks', 'serverConfig', 'setServerConfig', 'setActiveTab', 'activePersona',
-    'currentEmotion', 'generateImageAction', 'imageGenConfig',
+    'generateSceneImage', 'isGeneratingSceneImage',
   );
 
   const { t, currentLanguage } = useTranslation();
   const [showMemoryDrawer, setShowMemoryDrawer] = useState(false);
-  const [isGeneratingImage, setIsGeneratingImage] = useState(false);
 
   const handleGenerateSituationalImage = async () => {
-    if (!activeCharacter) return;
-    setIsGeneratingImage(true);
     try {
-      const prompt = await api.buildCharacterImagePrompt(
-        activeCharacter.card.data.name,
-        activeCharacter.card.data.description,
-        currentEmotion?.emotion,
-        'masterpiece, anime aesthetic, situational roleplay portrait, expressive eyes',
-        undefined
-      );
-      await generateImageAction(prompt, undefined, imageGenConfig);
-      toast.success(translate('hud.imageDone'));
+      const res = await generateSceneImage('chat');
+      if (res) toast.success(translate('hud.imageDone'));
     } catch (e) {
       console.error('Failed to generate situational image:', e);
       toast.error(translate('hud.imageFailed', { error: errorMessage(e) }));
-    } finally {
-      setIsGeneratingImage(false);
     }
   };
 

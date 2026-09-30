@@ -249,6 +249,11 @@ GitHub Actions wurden bewusst entfernt (Commit `11597c2`). Stattdessen gibt es j
   Nicht in der App ausführbar, weil es nur als Python-Server mit CUDA (Linux) bzw. MLX (Mac) existiert.
 - [x] Dabei behoben: Die Anbieter-Auswahl (`comfy_ui`, `dall_e_3`, …) passte nicht zu den Namen im Backend, alles lief
   über den A1111-Fallback. Die Galerie zeigt jetzt die Bilder statt Platzhaltern.
+- [x] Chat und Stage: Das Kamera-Symbol im Chat und ein neuer Knopf in der Stage lassen das Chat-Modell (noch vor einem
+  VRAM-Tausch) aus Charakter- bzw. Szenenbeschreibung und den letzten Nachrichten einen englischen Bild-Prompt schreiben
+  (Tags für SDXL, Sätze für FLUX/Qwen/Bonsai; ohne laufendes LLM greift die Vorlage). Das Bild erscheint als Szenenbild-Karte
+  über dem Chat bzw. wird Szenenhintergrund der Stage. Bilder bleiben bewusst außerhalb des Chatverlaufs, damit sie nicht
+  ans LLM oder in die Gedächtnis-Pipeline gehen.
 - [ ] **GPU-Tests nachholen** (aufgeschoben, solange keine großen Modelle laufen sollen):
   - sd.cpp-Vulkan/CUDA-Build installieren und je Katalogmodell ein Bild erzeugen (Parameter, Sampler, `--offload-to-cpu`).
   - VRAM-Schätzwerte der Modelle mit `nvidia-smi` nachmessen und im Katalog korrigieren.
