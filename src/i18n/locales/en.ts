@@ -2010,4 +2010,5 @@ export const en: TranslationDictionary = {
   "persona.removeAvatar": "Remove picture",
   "persona.avatarFailed": "Could not load the picture: {{error}}",
   "persona.saveFailed": "Could not save the persona: {{error}}",
+  "editor.translationsHint": "Base language {{source}}. Translations ({{languages}}) are kept but not edited here.",
 };

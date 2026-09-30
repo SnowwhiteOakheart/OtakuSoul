@@ -28,6 +28,7 @@ import { confirmDialog, toast } from '../ui/feedback';
 import { DropdownMenu } from '../ui/DropdownMenu';
 import { EmptyState } from '../ui/EmptyState';
 import { errorMessage } from '../../utils/errors';
+import { fillCardMacros, localizeCard } from '../../utils/cardI18n';
 
 const SECONDARY_BUTTON =
   'px-3 py-1.5 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-200 text-xs font-medium flex items-center gap-1.5 border border-slate-700 transition-colors whitespace-nowrap outline-hidden focus-visible:ring-2 focus-visible:ring-accent-400';
@@ -37,7 +38,7 @@ const CARD_ACTION_BUTTON =
   'p-1.5 rounded-lg bg-slate-900/80 text-slate-200 hover:text-white backdrop-blur shadow-sm transition-colors outline-hidden focus-visible:ring-2 focus-visible:ring-accent-400';
 
 export const CharacterLibraryView = () => {
-  const { t } = useTranslation();
+  const { t, currentLanguage } = useTranslation();
   const {
     availableCharacters,
     activeCharacter,
@@ -73,17 +74,17 @@ export const CharacterLibraryView = () => {
   const allTags = useMemo(() => {
     const set = new Set<string>();
     for (const char of availableCharacters) {
-      for (const tag of char.card.data.tags ?? []) {
+      for (const tag of localizeCard(char.card.data, currentLanguage).tags ?? []) {
         if (tag.trim()) set.add(tag.trim());
       }
     }
     return Array.from(set).slice(0, 12);
-  }, [availableCharacters]);
+  }, [availableCharacters, currentLanguage]);
 
   const filteredCharacters = useMemo(() => {
     const query = searchQuery.toLowerCase();
     return availableCharacters.filter((char) => {
-      const { data } = char.card;
+      const data = localizeCard(char.card.data, currentLanguage);
       const matchesSearch =
         data.name.toLowerCase().includes(query) ||
         data.description.toLowerCase().includes(query) ||
@@ -92,7 +93,7 @@ export const CharacterLibraryView = () => {
       const matchesTag = selectedTag === null || (data.tags ?? []).includes(selectedTag);
       return matchesSearch && matchesTag;
     });
-  }, [availableCharacters, searchQuery, selectedTag]);
+  }, [availableCharacters, searchQuery, selectedTag, currentLanguage]);
 
   const openEditor = (character: CharacterProfile | null) => {
     setEditingCharacter(character);
@@ -302,7 +303,8 @@ export const CharacterLibraryView = () => {
         ) : (
           <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-5">
             {filteredCharacters.map((char) => {
-              const { data } = char.card;
+              // Cards are shown in the interface language; {{char}}/{{user}} become real names.
+              const data = localizeCard(char.card.data, currentLanguage);
               const isActive = activeCharacter?.id === char.id;
               const title = (data.extensions?.sow_title as string) || data.tags?.[0] || t('library.defaultTitle');
 
@@ -376,7 +378,8 @@ export const CharacterLibraryView = () => {
 
                   <div className="p-3.5 flex-1 flex flex-col justify-between gap-3 text-xs">
                     <p className="text-slate-400 text-xs line-clamp-2">
-                      {data.description || data.personality || t('library.noDescription')}
+                      {fillCardMacros(data.description || data.personality, data.name, activePersona.name) ||
+                        t('library.noDescription')}
                     </p>
 
                     {data.tags && data.tags.length > 0 && (

@@ -42,6 +42,15 @@ pub fn is_none_marker(value: &str) -> bool {
 }
 
 pub fn build_system_prompt(ctx: &PromptContext) -> String {
+    // Use the card's translation for the reply language when it has one.
+    let lang = crate::modules::content_lang::language_code(
+        ctx.reply_language.as_deref().unwrap_or("Deutsch"),
+    );
+    let localized = PromptContext {
+        character: ctx.character.localized(&lang),
+        ..ctx.clone()
+    };
+    let ctx = &localized;
     let mut parts = Vec::new();
 
     let replace_macros = |text: &str| -> String {

@@ -104,6 +104,12 @@ GitHub Actions wurden bewusst entfernt (Commit `11597c2`). Stattdessen gibt es j
 - [x] Die Oberfläche des mobilen Web-Clients (`web_server.rs`, eingebettetes HTML) ist noch deutsch. → Erledigt: Die Seite
   folgt der Browsersprache des Handys (De/En/Ru, sonst Englisch); das Stimmungs-Label kommt als Code.
 - [x] `<html lang="de">` beim Sprachwechsel dynamisch setzen.
+- [x] **Mehrsprachige Charakterkarten:** Übersetzungen liegen in `extensions.otakusoul_i18n` (die Karte bleibt gültiges V2).
+  Die Bibliothek zeigt die Oberflächensprache, Prompt und Begrüßung nutzen die Antwortsprache, fehlende Felder fallen auf
+  die Grundsprache zurück; importierte Karten ohne Übersetzung funktionieren unverändert. Die 13 mitgelieferten Karten
+  haben Englisch und Russisch. `{{char}}`/`{{user}}` werden in der Bibliothek durch Namen ersetzt.
+- [ ] Übersetzungen einer Karte im Charakter-Editor bearbeiten (bisher nur in der JSON-Datei); Szenen, Lorebooks und
+  Personas der Presets sind noch nur deutsch.
 
 ### Design-System & Themes
 

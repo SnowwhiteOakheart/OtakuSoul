@@ -2012,4 +2012,5 @@ export const de = {
   "persona.removeAvatar": "Bild entfernen",
   "persona.avatarFailed": "Bild konnte nicht geladen werden: {{error}}",
   "persona.saveFailed": "Persona konnte nicht gespeichert werden: {{error}}",
+  "editor.translationsHint": "Grundsprache {{source}}. Übersetzungen ({{languages}}) bleiben erhalten, werden hier aber nicht bearbeitet.",
 } as const;

@@ -2010,4 +2010,5 @@ export const ru: TranslationDictionary = {
   "persona.removeAvatar": "Удалить изображение",
   "persona.avatarFailed": "Не удалось загрузить изображение: {{error}}",
   "persona.saveFailed": "Не удалось сохранить персону: {{error}}",
+  "editor.translationsHint": "Базовый язык {{source}}. Переводы ({{languages}}) сохраняются, но здесь не редактируются.",
 };

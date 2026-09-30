@@ -5,13 +5,16 @@ import { extractStateUpdates, applyStateUpdates } from '../../utils/stateParser'
 import { HUD_PRESETS } from '../../constants/hudPresets';
 import { resolvePromptWithLore } from '../helpers';
 import type {
+  CharacterProfile,
   ChatMessage,
   ChatSession,
   StoredChatMessage,
+  UserPersona,
   VoiceConfig,
 } from '../../types';
 import type { SliceCreator } from '../storeTypes';
 import { errorMessage } from '../../utils/errors';
+import { fillCardMacros, languageCode, localizeCard } from '../../utils/cardI18n';
 
 /** Chat messages, streaming, sessions, swipes, HUD presets, reply language and voice. */
 export interface ChatSlice {
@@ -50,6 +53,17 @@ export interface ChatSlice {
   loadVoiceConfigForCharacter: (charId: string) => Promise<void>;
   saveVoiceConfigForCharacter: (charId: string, config: VoiceConfig) => Promise<void>;
 }
+
+/** The active character's first message in the reply language, with {{char}}/{{user}} filled in. */
+const greetingFor = (state: {
+  activeCharacter: CharacterProfile | null;
+  activePersona: UserPersona;
+  replyLanguage: string;
+}): string => {
+  if (!state.activeCharacter) return '';
+  const data = localizeCard(state.activeCharacter.card.data, languageCode(state.replyLanguage));
+  return data.first_mes ? fillCardMacros(data.first_mes, data.name, state.activePersona.name) : '';
+};
 
 export const createChatSlice: SliceCreator<ChatSlice> = (set, get) => ({
   replyLanguage: 'Deutsch',
@@ -94,10 +108,8 @@ export const createChatSlice: SliceCreator<ChatSlice> = (set, get) => ({
       const sessions = await api.listChatSessions(charId);
       if (sessions.length === 0) {
         const newSession = await api.createChatSession(charId, translate('chat.newChatTitle'));
-        const char = get().activeCharacter;
-        if (char?.card.data.first_mes) {
-          await api.addChatMessage(newSession.id, 'assistant', char.card.data.first_mes);
-        }
+        const greeting = greetingFor(get());
+        if (greeting) await api.addChatMessage(newSession.id, 'assistant', greeting);
         const updatedSessions = await api.listChatSessions(charId);
         set({ chatSessions: updatedSessions });
         await get().switchChatSession(newSession.id);
@@ -141,9 +153,8 @@ export const createChatSlice: SliceCreator<ChatSlice> = (set, get) => ({
       const sessionTitle = title || translate('chat.defaultSessionTitle', { n: get().chatSessions.length + 1 });
       const session = await api.createChatSession(char.id, sessionTitle);
 
-      if (char.card.data.first_mes) {
-        await api.addChatMessage(session.id, 'assistant', char.card.data.first_mes);
-      }
+      const greeting = greetingFor(get());
+      if (greeting) await api.addChatMessage(session.id, 'assistant', greeting);
 
       const sessions = await api.listChatSessions(char.id);
       set({ chatSessions: sessions });

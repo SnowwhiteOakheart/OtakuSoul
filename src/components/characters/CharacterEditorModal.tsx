@@ -14,6 +14,7 @@ import { ModalOverlay } from '../ui/ModalOverlay';
 import { translate, useTranslation } from '../../i18n';
 import { errorMessage } from '../../utils/errors';
 import { fileToDataUrl, pickImageAsDataUrl } from '../../utils/imageFiles';
+import { I18N_EXTENSION } from '../../utils/cardI18n';
 
 interface CharacterEditorModalProps {
   character: CharacterProfile | null; // null means create new
@@ -59,6 +60,17 @@ export const CharacterEditorModal = ({
   const [creatorNotes, setCreatorNotes] = useState(character?.card.data.creator_notes || '');
   const [tagsStr, setTagsStr] = useState(character?.card.data.tags?.join(', ') || '');
   const [newGreeting, setNewGreeting] = useState('');
+  // Cards may carry translations (extensions.otakusoul_i18n); the editor changes the base language only.
+  const i18n = character?.card.data.extensions?.[I18N_EXTENSION] as
+    | { source_language?: string; translations?: Record<string, unknown> }
+    | undefined;
+  const translatedLanguages = Object.keys(i18n?.translations ?? {});
+  const cardLanguages = translatedLanguages.length
+    ? {
+        source: (i18n?.source_language ?? '?').toUpperCase(),
+        languages: translatedLanguages.map((code) => code.toUpperCase()).join(', '),
+      }
+    : null;
 
   const pickImage = async (): Promise<string | null> => {
     try {
@@ -183,6 +195,11 @@ export const CharacterEditorModal = ({
                 {character ? t('editor.titleEdit', { name: character.card.data.name }) : t('editor.titleNew')}
               </h2>
               <p className="text-xs text-slate-400">{t('editor.subtitle')}</p>
+              {cardLanguages && (
+                <p className="text-xs text-amber-300/90 mt-0.5">
+                  {t('editor.translationsHint', cardLanguages)}
+                </p>
+              )}
             </div>
           </div>
           <button

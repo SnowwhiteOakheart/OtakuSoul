@@ -32,6 +32,66 @@ pub struct CharacterData {
     pub extensions: serde_json::Value,
 }
 
+/// Key in `extensions` that holds translations of a card:
+/// `{"source_language": "de", "translations": {"en": {"description": "...", ...}}}`.
+/// Keeping them in `extensions` leaves the card a valid V2 card for other apps; cards without
+/// it (e.g. imported from the web) simply use their base fields in every language.
+pub const I18N_EXTENSION: &str = "otakusoul_i18n";
+
+/// Text fields a translation may override; empty or missing ones fall back to the base card.
+const TRANSLATABLE_TEXT: [&str; 9] = [
+    "name",
+    "description",
+    "personality",
+    "scenario",
+    "first_mes",
+    "mes_example",
+    "system_prompt",
+    "post_history_instructions",
+    "creator_notes",
+];
+
+impl CharacterData {
+    /// The card with its fields in `lang` (ISO 639-1) where a translation exists.
+    pub fn localized(&self, lang: &str) -> CharacterData {
+        let Some(translation) = self
+            .extensions
+            .get(I18N_EXTENSION)
+            .and_then(|i18n| i18n.get("translations"))
+            .and_then(|translations| translations.get(lang))
+            .and_then(serde_json::Value::as_object)
+        else {
+            return self.clone();
+        };
+        let mut data = serde_json::to_value(self).unwrap_or_default();
+        let Some(fields) = data.as_object_mut() else {
+            return self.clone();
+        };
+        for key in TRANSLATABLE_TEXT {
+            if let Some(text) = translation.get(key).and_then(serde_json::Value::as_str)
+                && !text.trim().is_empty()
+            {
+                fields.insert(key.to_string(), text.into());
+            }
+        }
+        for key in ["alternate_greetings", "tags"] {
+            if let Some(list) = translation.get(key).and_then(serde_json::Value::as_array)
+                && !list.is_empty()
+            {
+                fields.insert(key.to_string(), list.clone().into());
+            }
+        }
+        if let Some(title) = translation
+            .get("sow_title")
+            .and_then(serde_json::Value::as_str)
+            && let Some(extensions) = fields.get_mut("extensions").and_then(|e| e.as_object_mut())
+        {
+            extensions.insert("sow_title".to_string(), title.into());
+        }
+        serde_json::from_value(data).unwrap_or_else(|_| self.clone())
+    }
+}
+
 #[derive(Debug, Clone, Serialize, Deserialize, TS)]
 #[ts(export)]
 pub struct CharacterCardV2 {
@@ -863,6 +923,43 @@ pub fn parse_character_wizard_draft(raw_text: &str) -> Result<CharacterDraft, St
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    #[test]
+    fn localizes_cards_and_falls_back_to_base_fields() {
+        let card: CharacterData = serde_json::from_value(serde_json::json!({
+            "name": "Ayu",
+            "description": "Ein Idol.",
+            "personality": "stolz",
+            "scenario": "Tokio",
+            "first_mes": "Hallo!",
+            "tags": ["Idol"],
+            "extensions": {
+                "sow_title": "Top-Idol",
+                "otakusoul_i18n": {
+                    "source_language": "de",
+                    "translations": {
+                        "en": {"description": "An idol.", "first_mes": "", "tags": ["Idol", "English"], "sow_title": "Top idol"}
+                    }
+                }
+            }
+        }))
+        .unwrap();
+
+        let en = card.localized("en");
+        assert_eq!(en.description, "An idol.");
+        // Empty or missing translated fields keep the base text.
+        assert_eq!(en.first_mes, "Hallo!");
+        assert_eq!(en.personality, "stolz");
+        assert_eq!(en.tags, vec!["Idol", "English"]);
+        assert_eq!(en.extensions["sow_title"], "Top idol");
+        // Languages without a translation (and plain imported cards) are unchanged.
+        assert_eq!(card.localized("ru").description, "Ein Idol.");
+        let plain = CharacterData {
+            description: "Plain".into(),
+            ..Default::default()
+        };
+        assert_eq!(plain.localized("en").description, "Plain");
+    }
 
     #[test]
     fn test_png_metadata_injection_and_roundtrip() {

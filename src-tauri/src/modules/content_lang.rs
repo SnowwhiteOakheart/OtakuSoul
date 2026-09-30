@@ -75,6 +75,22 @@ impl ContentLang {
     }
 }
 
+/// ISO 639-1 code for a reply language name as stored in the settings ("Deutsch" → "de").
+/// Unknown names are returned lowercased, so a code stored directly still works.
+pub fn language_code(reply_language: &str) -> String {
+    let name = reply_language.trim().to_lowercase();
+    match name.as_str() {
+        "deutsch" | "german" => "de",
+        "english" | "englisch" => "en",
+        "русский" | "russian" => "ru",
+        "日本語" | "japanese" => "ja",
+        "français" | "francais" | "french" => "fr",
+        "español" | "espanol" | "spanish" => "es",
+        other => return other.to_string(),
+    }
+    .to_string()
+}
+
 fn reply_language_in(path: &Path) -> Option<String> {
     let content = std::fs::read_to_string(path).ok()?;
     let value: serde_json::Value = serde_json::from_str(&content).ok()?;
@@ -91,6 +107,14 @@ mod tests {
         assert_eq!(ContentLang::from_reply_language("English"), ContentLang::En);
         assert_eq!(ContentLang::from_reply_language("Русский"), ContentLang::Ru);
         assert_eq!(ContentLang::from_reply_language("日本語"), ContentLang::En);
+    }
+
+    #[test]
+    fn maps_reply_languages_to_codes() {
+        assert_eq!(language_code("Deutsch"), "de");
+        assert_eq!(language_code("Русский"), "ru");
+        assert_eq!(language_code("日本語"), "ja");
+        assert_eq!(language_code("en"), "en");
     }
 
     #[test]

@@ -815,6 +815,12 @@ RULES:
             };
 
             let companion_system = if let Some(ch) = matched_char {
+                let localized_char =
+                    ch.card
+                        .data
+                        .localized(&crate::modules::content_lang::language_code(
+                            &reply_language,
+                        ));
                 format!(
                     r#"You are {name}.
 Personality: {personality}
@@ -825,8 +831,8 @@ React in the first person to what the game master, {user_name} and any companion
 Stay fully in character, use your own voice and express your feelings vividly and authentically. Keep it concise.
 Reply in {reply_language}."#,
                     name = ch.card.data.name,
-                    personality = ch.card.data.personality,
-                    description = ch.card.data.description,
+                    personality = localized_char.personality,
+                    description = localized_char.description,
                     world_context = state.definition.world_context,
                     lore_section = lore_section,
                     user_name = user_name,

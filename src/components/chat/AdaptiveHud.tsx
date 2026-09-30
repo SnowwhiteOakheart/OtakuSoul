@@ -7,6 +7,7 @@ import { translate, useTranslation } from '../../i18n';
 import { toast } from '../ui/feedback';
 import { DropdownMenu } from '../ui/DropdownMenu';
 import { errorMessage } from '../../utils/errors';
+import { localizeCard } from '../../utils/cardI18n';
 
 export const AdaptiveHud = () => {
   const {
@@ -28,7 +29,7 @@ export const AdaptiveHud = () => {
     'currentEmotion', 'generateImageAction', 'imageGenConfig',
   );
 
-  const { t } = useTranslation();
+  const { t, currentLanguage } = useTranslation();
   const [showMemoryDrawer, setShowMemoryDrawer] = useState(false);
   const [isGeneratingImage, setIsGeneratingImage] = useState(false);
 
@@ -57,7 +58,7 @@ export const AdaptiveHud = () => {
     return null;
   }
 
-  const { data } = activeCharacter.card;
+  const data = localizeCard(activeCharacter.card.data, currentLanguage);
   const title = (data.extensions?.sow_title as string) || data.tags?.[0] || t('library.defaultTitle');
 
   return (
@@ -95,7 +96,7 @@ export const AdaptiveHud = () => {
             items={[
               ...availableCharacters.map((char) => ({
                 label: char.card.data.name,
-                description: char.card.data.personality || t('hud.noDescription'),
+                description: localizeCard(char.card.data, currentLanguage).personality || t('hud.noDescription'),
                 checked: activeCharacter.id === char.id,
                 leading: char.avatar_data_url ? (
                   <img src={char.avatar_data_url} alt="" className="w-8 h-8 rounded-full object-cover shrink-0" />
