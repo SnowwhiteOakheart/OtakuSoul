@@ -27,6 +27,12 @@ Each card carries description, personality, scenario, one greeting plus alternat
 dialogues. `{{user}}` and `{{char}}` are filled in by the app, so the cards are not hard-wired to the name
 "Haru" - rename the persona freely.
 
+**Translations.** The character cards (not the scenes or lorebooks) also carry English and Russian versions in
+`extensions.otakusoul_i18n` (`{"source_language": "de", "translations": {"en": {...}, "ru": {...}}}`).
+OtakuSoul shows a card in the interface language and uses the reply language for the prompt and the
+greeting; missing fields fall back to the German base text. Other apps ignore the extension and see the
+German card.
+
 ## How the player fits into canon
 
 Sora and Shiro's core sibling bond (and Shiro's genuine separation panic) is left untouched. The player

@@ -2,7 +2,8 @@
 
 A ready-made set for the visual novel *Sakura Succubus 3*: seven character cards (six characters and
 one user persona), six Soul Stage scenes and three lorebooks. The texts are **German**, because they
-were written for the German UI of this fork.
+were written for the German UI of this fork; the character cards also come in English and Russian (see
+below).
 
 | File | Who |
 |---|---|
@@ -25,6 +26,12 @@ The files are plain **chara_card_v2** JSON and work in SillyTavern, Chub and any
 reads that format. Every card points at its `<name>.png` next to it through
 `extensions.sow_avatar` (relative to the card), and at its matching Live2D model through
 `extensions.sow_live2d`.
+
+**Translations.** The character cards also carry English and Russian versions in
+`extensions.otakusoul_i18n` (`{"source_language": "de", "translations": {"en": {...}, "ru": {...}}}`).
+OtakuSoul shows a card in the interface language and uses the reply language for the prompt and the
+greeting; missing fields fall back to the German base text. Other apps ignore the extension and see the
+German card.
 
 ## Scenes and lorebooks
 
