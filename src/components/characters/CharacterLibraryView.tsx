@@ -23,7 +23,6 @@ import {
   UserPlus,
 } from 'lucide-react';
 import { CharacterEditorModal } from './CharacterEditorModal';
-import { PersonaManagerModal } from './PersonaManagerModal';
 import { translate, useTranslation } from '../../i18n';
 import { confirmDialog, toast } from '../ui/feedback';
 import { DropdownMenu } from '../ui/DropdownMenu';
@@ -49,6 +48,7 @@ export const CharacterLibraryView = () => {
     setActiveTab,
     activePersona,
     setCharacterWizardOpen,
+    setIsPersonaManagerOpen,
   } = useAppStore(
     useShallow((s) => ({
       availableCharacters: s.availableCharacters,
@@ -60,6 +60,7 @@ export const CharacterLibraryView = () => {
       setActiveTab: s.setActiveTab,
       activePersona: s.activePersona,
       setCharacterWizardOpen: s.setCharacterWizardOpen,
+      setIsPersonaManagerOpen: s.setIsPersonaManagerOpen,
     }))
   );
 
@@ -68,7 +69,6 @@ export const CharacterLibraryView = () => {
   const [selectedTag, setSelectedTag] = useState<string | null>(null);
   const [editingCharacter, setEditingCharacter] = useState<CharacterProfile | null>(null);
   const [isEditorOpen, setIsEditorOpen] = useState(false);
-  const [isPersonaModalOpen, setIsPersonaModalOpen] = useState(false);
 
   const allTags = useMemo(() => {
     const set = new Set<string>();
@@ -214,7 +214,7 @@ export const CharacterLibraryView = () => {
             trigger={<MoreHorizontal className="w-4 h-4" />}
             triggerClassName={`${SECONDARY_BUTTON} px-2`}
             items={[
-              { label: t('library.personas'), icon: Users, onSelect: () => setIsPersonaModalOpen(true) },
+              { label: t('library.personas'), icon: Users, onSelect: () => setIsPersonaManagerOpen(true) },
               { label: t('library.browseHub'), icon: Compass, onSelect: () => setActiveTab('hub') },
               { label: t('library.restorePresets'), icon: RotateCcw, onSelect: handleRestorePresets },
             ]}
@@ -421,7 +421,6 @@ export const CharacterLibraryView = () => {
         />
       )}
 
-      {isPersonaModalOpen && <PersonaManagerModal onClose={() => setIsPersonaModalOpen(false)} />}
     </div>
   );
 };

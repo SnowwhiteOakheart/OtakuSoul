@@ -40,6 +40,11 @@ pub fn scan_vrm_models() -> Vec<crate::modules::paths::ScannedVrm> {
 }
 
 #[tauri::command]
+pub fn import_vrm_model(source_path: String) -> Result<crate::modules::paths::ScannedVrm, String> {
+    crate::modules::paths::import_vrm_model(&source_path)
+}
+
+#[tauri::command]
 pub fn load_settings() -> crate::modules::settings::AppSettings {
     crate::modules::settings::load_app_settings()
 }

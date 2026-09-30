@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useState, type KeyboardEvent } from 'react';
-import { ArrowRight, Command, Search, Sparkles, Terminal } from 'lucide-react';
+import { ArrowRight, Command, Search, Sparkles, Terminal, Users } from 'lucide-react';
 import { useTranslation } from '../i18n';
 import { useAppStore } from '../store/useAppStore';
 import { ModalOverlay } from './ui/ModalOverlay';
@@ -24,6 +24,7 @@ export const CommandPalette = ({ open, onOpen, onClose }: CommandPaletteProps) =
   const setActiveTab = useAppStore((state) => state.setActiveTab);
   const setIsLogViewerOpen = useAppStore((state) => state.setIsLogViewerOpen);
   const setIsUpdaterOpen = useAppStore((state) => state.setIsUpdaterOpen);
+  const setIsPersonaManagerOpen = useAppStore((state) => state.setIsPersonaManagerOpen);
   const [query, setQuery] = useState('');
   const [activeIndex, setActiveIndex] = useState(0);
 
@@ -54,6 +55,13 @@ export const CommandPalette = ({ open, onOpen, onClose }: CommandPaletteProps) =
         run: () => setActiveTab(item.tab),
       }))
     ),
+    {
+      id: 'manage-personas',
+      label: t('palette.personas'),
+      category: t('palette.actions'),
+      icon: Users,
+      run: () => setIsPersonaManagerOpen(true),
+    },
     {
       id: 'open-logs',
       label: t('header.logs'),

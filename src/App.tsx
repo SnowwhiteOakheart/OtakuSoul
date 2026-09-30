@@ -23,12 +23,15 @@ const FloatingCompanionOverlay = lazy(() => import('./components/companion/Float
 const CharacterAiAssistantModal = lazy(() => import('./components/characters/CharacterAiAssistantModal').then((module) => ({ default: module.CharacterAiAssistantModal })));
 const LogViewerModal = lazy(() => import('./components/logging/LogViewerModal').then((module) => ({ default: module.LogViewerModal })));
 const FirstRunWizard = lazy(() => import('./components/onboarding/FirstRunWizard').then((module) => ({ default: module.FirstRunWizard })));
+const PersonaManagerModal = lazy(() => import('./components/characters/PersonaManagerModal').then((module) => ({ default: module.PersonaManagerModal })));
 const UpdaterModal = lazy(() => import('./components/updater/UpdaterModal').then((module) => ({ default: module.UpdaterModal })));
 
 export function App() {
   const [isCommandPaletteOpen, setIsCommandPaletteOpen] = useState(false);
   const activeTab = useAppStore((s) => s.activeTab);
   const onboardingCompleted = useAppStore((s) => s.onboardingCompleted);
+  const isPersonaManagerOpen = useAppStore((s) => s.isPersonaManagerOpen);
+  const setIsPersonaManagerOpen = useAppStore((s) => s.setIsPersonaManagerOpen);
   const { t } = useTranslation();
   const isOverlayMode =
     typeof window !== 'undefined' && new URLSearchParams(window.location.search).get('overlay') === 'true';
@@ -69,6 +72,7 @@ export function App() {
         <CharacterAiAssistantModal />
         <LogViewerModal />
         <UpdaterModal />
+        {isPersonaManagerOpen && <PersonaManagerModal onClose={() => setIsPersonaManagerOpen(false)} />}
         {!onboardingCompleted && <FirstRunWizard />}
       </Suspense>
       <FeedbackHost />

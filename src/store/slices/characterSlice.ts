@@ -50,14 +50,11 @@ export const createCharacterSlice: SliceCreator<CharacterSlice> = (set, get) => 
   },
 
   savePersona: async (persona) => {
-    try {
-      const updated = await api.savePersona(persona);
-      set({ personas: updated });
-      if (get().activePersona.id === persona.id) {
-        set({ activePersona: persona });
-      }
-    } catch (e) {
-      console.error('Failed to save persona:', e);
+    const updated = await api.savePersona(persona);
+    set({ personas: updated });
+    if (get().activePersona.id === persona.id) {
+      set({ activePersona: persona });
+      get().saveCurrentSettings();
     }
   },
 

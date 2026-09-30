@@ -183,6 +183,7 @@ pub fn run() {
             commands::characters::scan_characters,
             commands::app::scan_models,
             commands::app::scan_vrm_models,
+            commands::app::import_vrm_model,
             commands::app::load_settings,
             commands::app::save_settings,
             commands::characters::save_character_card,

@@ -11,6 +11,7 @@ export interface AvatarSlice {
   scannedVrms: ScannedVrm[];
   activeVrmPath: string | null;
   setActiveVrmPath: (path: string | null) => void;
+  refreshVrmModels: () => Promise<void>;
   scannedLive2ds: ScannedLive2d[];
   activeLive2dPath: string | null;
   setActiveLive2dPath: (path: string | null) => void;
@@ -29,6 +30,14 @@ export const createAvatarSlice: SliceCreator<AvatarSlice> = (set, get) => ({
   setActiveVrmPath: (activeVrmPath) => {
     set({ activeVrmPath });
     get().saveCurrentSettings();
+  },
+
+  refreshVrmModels: async () => {
+    try {
+      set({ scannedVrms: await api.scanVrmModels() });
+    } catch (e) {
+      console.error('Failed to scan VRM models:', e);
+    }
   },
 
   scannedLive2ds: [],

@@ -2,7 +2,6 @@ import { startTransition, useActionState, useState } from 'react';
 import { CharacterProfile, CharacterCardV2 } from '../../types';
 import { api } from '../../services/api';
 import { useStoreFields } from '../../store/useAppStore';
-import { open } from '@tauri-apps/plugin-dialog';
 import { X, Save, Image, Plus, Trash2, Sparkles, User, FileText, Settings2, BookOpen } from 'lucide-react';
 import {
   getPortraitExpressions,
@@ -14,6 +13,7 @@ import {
 import { ModalOverlay } from '../ui/ModalOverlay';
 import { translate, useTranslation } from '../../i18n';
 import { errorMessage } from '../../utils/errors';
+import { fileToDataUrl, pickImageAsDataUrl } from '../../utils/imageFiles';
 
 interface CharacterEditorModalProps {
   character: CharacterProfile | null; // null means create new
@@ -60,54 +60,22 @@ export const CharacterEditorModal = ({
   const [tagsStr, setTagsStr] = useState(character?.card.data.tags?.join(', ') || '');
   const [newGreeting, setNewGreeting] = useState('');
 
-  const fileToDataUrl = async (filePath: string): Promise<string> => {
-    const bytes = await api.readFileBinary(filePath);
-    let binaryString = '';
-    const chunkSize = 0x8000;
-    for (let offset = 0; offset < bytes.length; offset += chunkSize) {
-      binaryString += String.fromCharCode(...bytes.subarray(offset, offset + chunkSize));
-    }
-
-    const lowerPath = filePath.toLowerCase();
-    const mime = lowerPath.endsWith('.png')
-      ? 'image/png'
-      : lowerPath.endsWith('.webp')
-      ? 'image/webp'
-      : lowerPath.endsWith('.gif')
-      ? 'image/gif'
-      : 'image/jpeg';
-    return `data:${mime};base64,${btoa(binaryString)}`;
-  };
-
-  const pickImageAsDataUrl = async (): Promise<string | null> => {
+  const pickImage = async (): Promise<string | null> => {
     try {
-      const selected = await open({
-        multiple: false,
-        filters: [
-          {
-            name: 'Bilder (PNG, JPEG, WebP, GIF)',
-            extensions: ['png', 'jpg', 'jpeg', 'webp', 'gif'],
-          },
-        ],
-      });
-
-      if (selected && typeof selected === 'string') {
-        return await fileToDataUrl(selected);
-      }
+      return await pickImageAsDataUrl();
     } catch (e) {
       console.error('Failed to pick character image:', e);
+      return null;
     }
-
-    return null;
   };
 
   const handlePickAvatar = async () => {
-    const image = await pickImageAsDataUrl();
+    const image = await pickImage();
     if (image) setAvatarDataUrl(image);
   };
 
   const handlePickExpression = async (mood: PortraitMood) => {
-    const image = await pickImageAsDataUrl();
+    const image = await pickImage();
     if (image) {
       setExpressionImages((current) => ({ ...current, [mood]: image }));
     }

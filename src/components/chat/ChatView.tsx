@@ -39,6 +39,7 @@ import { translate, useTranslation } from '../../i18n';
 import { confirmDialog } from '../ui/feedback';
 import { EmptyState } from '../ui/EmptyState';
 import { AvatarSkeleton } from '../ui';
+import { PersonaAvatar } from '../characters/PersonaAvatar';
 
 const AvatarCanvas = React.lazy(() => import('../avatar/AvatarCanvas').then((module) => ({
   default: module.AvatarCanvas,
@@ -62,6 +63,7 @@ export const ChatView: React.FC = () => {
     setSelectedBackend,
     serverStatus,
     activeCharacter,
+    activePersona,
     loadPresetCharacters,
     chatSidebarOpen,
     setChatSidebarOpen,
@@ -78,7 +80,7 @@ export const ChatView: React.FC = () => {
     setActiveTab,
   } = useStoreFields(
     'messages', 'storedMessages', 'sendMessage', 'isGenerating', 'abortGeneration', 'clearChat',
-    'selectedBackend', 'setSelectedBackend', 'serverStatus', 'activeCharacter',
+    'selectedBackend', 'setSelectedBackend', 'serverStatus', 'activeCharacter', 'activePersona',
     'loadPresetCharacters', 'chatSidebarOpen', 'setChatSidebarOpen', 'chatSessions',
     'activeChatId', 'switchMessageSwipe', 'regenerateMessageSwipe', 'continueChatMessage',
     'editChatMessage', 'deleteChatMessage', 'autoTtsEnabled', 'setAutoTtsEnabled',
@@ -461,6 +463,7 @@ export const ChatView: React.FC = () => {
                 >
                   {/* Sender Header + Swipes Navigation */}
                   <div className="flex items-center gap-2 mb-1 px-1">
+                    {msg.role === 'user' && <PersonaAvatar persona={activePersona} className="w-5 h-5 text-[10px]" />}
                     <span className="text-xs font-semibold text-slate-400">
                       {msg.role === 'user' ? t('chat.you') : activeCharacter?.card.data.name || 'OtakuSoul'}
                     </span>

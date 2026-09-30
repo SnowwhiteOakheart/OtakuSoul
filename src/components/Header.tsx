@@ -3,6 +3,7 @@ import { useAppStore } from '../store/useAppStore';
 import { useTranslation } from '../i18n';
 import brandIconUrl from '../assets/brand/otakusoul-icon.png';
 import { AboutDialog } from './AboutDialog';
+import { PersonaAvatar } from './characters/PersonaAvatar';
 import { Cpu, AlertCircle, Loader2, Info, Terminal, Sparkles, Command } from 'lucide-react';
 
 /** Server state changes quickly while starting; VRAM only matters as a rough gauge. */
@@ -27,6 +28,8 @@ export const Header = ({ onOpenCommandPalette }: HeaderProps) => {
   const initApp = useAppStore((s) => s.initApp);
   const setIsLogViewerOpen = useAppStore((s) => s.setIsLogViewerOpen);
   const setIsUpdaterOpen = useAppStore((s) => s.setIsUpdaterOpen);
+  const activePersona = useAppStore((s) => s.activePersona);
+  const setIsPersonaManagerOpen = useAppStore((s) => s.setIsPersonaManagerOpen);
 
   useEffect(() => {
     initApp();
@@ -142,6 +145,17 @@ export const Header = ({ onOpenCommandPalette }: HeaderProps) => {
                 <span className="text-rose-400 font-medium">{t('header.serverFailed')}</span>
               </>
             )}
+          </button>
+
+          <button
+            type="button"
+            onClick={() => setIsPersonaManagerOpen(true)}
+            title={t('header.persona', { name: activePersona.name })}
+            aria-label={t('header.persona', { name: activePersona.name })}
+            className="flex items-center gap-2 rounded-lg border border-slate-700/60 bg-slate-800/70 py-0.5 pl-0.5 pr-2.5 text-xs text-slate-300 outline-hidden transition-colors hover:border-accent-500/40 hover:text-accent-200 focus-visible:ring-2 focus-visible:ring-accent-400 min-w-0"
+          >
+            <PersonaAvatar persona={activePersona} className="w-6 h-6 text-[11px]" />
+            <span className="hidden sm:inline max-w-32 truncate font-medium">{activePersona.name}</span>
           </button>
 
           <button

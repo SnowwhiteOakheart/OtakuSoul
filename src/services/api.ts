@@ -636,6 +636,10 @@ export const api = {
     return await invoke<ScannedVrm[]>('scan_vrm_models');
   },
 
+  importVrmModel: async (sourcePath: string): Promise<ScannedVrm> => {
+    return await invoke<ScannedVrm>('import_vrm_model', { sourcePath });
+  },
+
   loadSettings: async (): Promise<AppSettings> => {
     return await invoke<AppSettings>('load_settings');
   },

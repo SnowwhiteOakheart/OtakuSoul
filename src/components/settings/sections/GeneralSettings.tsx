@@ -31,11 +31,11 @@ export const GeneralSettings = () => {
   const { t } = useTranslation();
   const {
     appPaths, theme, setTheme, colorMode, setColorMode, appLanguage, setAppLanguage, setIsLogViewerOpen, setIsUpdaterOpen,
-    scannedVrms, activeVrmPath, setActiveVrmPath, scannedLive2ds, activeLive2dPath,
+    scannedVrms, activeVrmPath, setActiveVrmPath, refreshVrmModels, scannedLive2ds, activeLive2dPath,
     setActiveLive2dPath, refreshLive2dModels, replyLanguage, setReplyLanguage,
   } = useStoreFields(
     'appPaths', 'theme', 'setTheme', 'colorMode', 'setColorMode', 'appLanguage', 'setAppLanguage', 'setIsLogViewerOpen', 'setIsUpdaterOpen',
-    'scannedVrms', 'activeVrmPath', 'setActiveVrmPath', 'scannedLive2ds', 'activeLive2dPath',
+    'scannedVrms', 'activeVrmPath', 'setActiveVrmPath', 'refreshVrmModels', 'scannedLive2ds', 'activeLive2dPath',
     'setActiveLive2dPath', 'refreshLive2dModels', 'replyLanguage', 'setReplyLanguage',
   );
 
@@ -54,10 +54,14 @@ export const GeneralSettings = () => {
       });
 
       if (selected && typeof selected === 'string') {
-        setActiveVrmPath(selected);
+        const imported = await api.importVrmModel(selected);
+        await refreshVrmModels();
+        setActiveVrmPath(imported.path);
+        toast.success(translate('settings.vrmImported', { name: imported.name }));
       }
     } catch (e) {
-      console.error('Failed to browse VRM:', e);
+      console.error('Failed to import VRM:', e);
+      toast.error(translate('settings.importFailed', { error: errorMessage(e) }));
     }
   };
 
@@ -326,7 +330,7 @@ export const GeneralSettings = () => {
             className="px-3.5 py-2 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-200 font-medium flex items-center gap-1.5 transition-colors border border-slate-700"
           >
             <FolderOpen className="w-3.5 h-3.5" />
-            <span className="whitespace-nowrap">{t('settings.chooseVrm')}</span>
+            <span className="whitespace-nowrap">{t('settings.importVrm')}</span>
           </button>
         </div>
         <div className="flex flex-wrap items-center justify-between gap-2 text-xs text-slate-400">

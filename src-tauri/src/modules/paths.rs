@@ -485,9 +485,97 @@ pub fn scan_available_vrm_models() -> Vec<ScannedVrm> {
     vrms
 }
 
+/// Copies a .vrm file into the user's avatar folder so it shows up in the list and stays
+/// readable after a restart (files outside the app folders are not in the asset scope).
+/// An identical file already in the folder is reused; a different one with the same name
+/// gets a numbered name.
+pub fn import_vrm_model(source_path: &str) -> Result<ScannedVrm, String> {
+    import_vrm_into(
+        Path::new(source_path),
+        &PathBuf::from(resolve_app_paths().data_dir).join("avatars"),
+    )
+}
+
+fn import_vrm_into(src: &Path, dest_dir: &Path) -> Result<ScannedVrm, String> {
+    if !src.is_file() {
+        return Err(crate::err!(
+            "backend.common.pathMissing",
+            path = src.display()
+        ));
+    }
+    let is_vrm = src
+        .extension()
+        .and_then(|e| e.to_str())
+        .is_some_and(|e| e.eq_ignore_ascii_case("vrm"));
+    // VRM files are binary glTF: they start with the magic bytes "glTF".
+    let mut magic = [0u8; 4];
+    let has_magic = fs::File::open(src)
+        .and_then(|mut f| std::io::Read::read_exact(&mut f, &mut magic))
+        .is_ok()
+        && &magic == b"glTF";
+    if !is_vrm || !has_magic {
+        return Err(crate::err!("backend.vrm.invalid"));
+    }
+
+    fs::create_dir_all(dest_dir).map_err(|e| crate::err!("backend.common.dirCreate", error = e))?;
+    let stem = src.file_stem().and_then(|s| s.to_str()).unwrap_or("Avatar");
+    let src_len = fs::metadata(src).map(|m| m.len()).unwrap_or(0);
+    let mut dest = dest_dir.join(format!("{stem}.vrm"));
+    let mut n = 2;
+    while dest.exists() {
+        let same_file = fs::canonicalize(&dest).ok() == fs::canonicalize(src).ok();
+        let same_content = fs::metadata(&dest).map(|m| m.len()).ok() == Some(src_len)
+            && fs::read(&dest).ok() == fs::read(src).ok();
+        if same_file || same_content {
+            break;
+        }
+        dest = dest_dir.join(format!("{stem} ({n}).vrm"));
+        n += 1;
+    }
+    if !dest.exists() {
+        fs::copy(src, &dest).map_err(|e| crate::err!("backend.common.fileWrite", error = e))?;
+    }
+
+    Ok(ScannedVrm {
+        name: dest
+            .file_stem()
+            .and_then(|s| s.to_str())
+            .unwrap_or("Avatar")
+            .to_string(),
+        path: dest.to_string_lossy().to_string(),
+        size_mb: src_len / (1024 * 1024),
+    })
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    #[test]
+    fn imports_vrm_files_without_duplicates() {
+        let root =
+            std::env::temp_dir().join(format!("otakusoul-vrm-import-{}", std::process::id()));
+        let src_dir = root.join("src");
+        let dest = root.join("avatars");
+        fs::create_dir_all(&src_dir).unwrap();
+        let vrm = src_dir.join("Mika.vrm");
+        fs::write(&vrm, b"glTF\x02\0\0\0rest").unwrap();
+
+        let first = import_vrm_into(&vrm, &dest).unwrap();
+        assert_eq!(first.name, "Mika");
+        assert!(Path::new(&first.path).exists());
+        // Same file again: reused, not copied twice.
+        assert_eq!(import_vrm_into(&vrm, &dest).unwrap().path, first.path);
+        // Different content with the same name: numbered copy.
+        fs::write(&vrm, b"glTF\x02\0\0\0other").unwrap();
+        assert_eq!(import_vrm_into(&vrm, &dest).unwrap().name, "Mika (2)");
+        // Not a VRM.
+        let fake = src_dir.join("fake.vrm");
+        fs::write(&fake, b"nope").unwrap();
+        assert!(import_vrm_into(&fake, &dest).is_err());
+
+        let _ = fs::remove_dir_all(root);
+    }
 
     #[test]
     fn test_resolve_app_paths() {

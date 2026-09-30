@@ -36,6 +36,8 @@ export interface AppSlice {
   setIsLogViewerOpen: (open: boolean) => void;
   isUpdaterOpen: boolean;
   setIsUpdaterOpen: (open: boolean) => void;
+  isPersonaManagerOpen: boolean;
+  setIsPersonaManagerOpen: (open: boolean) => void;
   logs: LogEntry[];
   fetchLogs: (maxLines?: number) => Promise<void>;
   clearLogs: () => Promise<void>;
@@ -271,6 +273,10 @@ export const createAppSlice: SliceCreator<AppSlice> = (set, get) => ({
   isUpdaterOpen: false,
 
   setIsUpdaterOpen: (isUpdaterOpen) => set({ isUpdaterOpen }),
+
+  isPersonaManagerOpen: false,
+
+  setIsPersonaManagerOpen: (isPersonaManagerOpen) => set({ isPersonaManagerOpen }),
 
   logs: [],
 
