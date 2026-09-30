@@ -5,4 +5,8 @@ import type { SttConfig } from "./SttConfig";
 import type { TtsEngine } from "./TtsEngine";
 import type { TtsFilterMode } from "./TtsFilterMode";
 
-export type VoiceConfig = { engine: TtsEngine, voice_id: string, rate: string, pitch: string, volume: string, filter_mode: TtsFilterMode, custom_regex: string, elevenlabs_api_key: string, openai_endpoint: string, openai_api_key: string, openai_model: string, openai_instructions: string, kokoro: KokoroConfig, output_device_id: string, rvc: RvcConfig, stt: SttConfig, };
+export type VoiceConfig = { engine: TtsEngine, voice_id: string, rate: string, pitch: string, volume: string, filter_mode: TtsFilterMode, custom_regex: string, elevenlabs_api_key: string, openai_endpoint: string, openai_api_key: string, openai_model: string, openai_instructions: string, kokoro: KokoroConfig, 
+/**
+ * Catalog id of the local speech model (engine `local`).
+ */
+local_model_id: string | null, output_device_id: string, rvc: RvcConfig, stt: SttConfig, };

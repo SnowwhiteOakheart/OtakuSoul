@@ -6,6 +6,7 @@ import { api } from '../../services/api';
 import { KokoroDownloadProgress, ScannedVoice, SttEngine, TtsEngine, TtsFilterMode, VoiceConfig } from '../../types';
 import { audioPlayer, gainFromVoiceVolume } from '../../services/audioPlayer';
 import { ModalOverlay } from '../ui/ModalOverlay';
+import { LocalTtsSettings } from './LocalTtsSettings';
 import { translate, useTranslation } from '../../i18n';
 
 interface CharacterVoiceModalProps {
@@ -29,6 +30,7 @@ const DEFAULT_CONFIG: VoiceConfig = {
     model_path: '',
     voices_path: '',
   },
+  local_model_id: null,
   output_device_id: '',
   rvc: {
     enabled: false,
@@ -95,7 +97,8 @@ export function CharacterVoiceModal({ onClose }: CharacterVoiceModalProps) {
   /* oxlint-enable react/set-state-in-effect */
 
   useEffect(() => {
-    if (draft.engine === 'disabled') {
+    // Local voices come with the model catalog (LocalTtsSettings).
+    if (draft.engine === 'disabled' || draft.engine === 'local') {
       return;
     }
     const timeout = window.setTimeout(() => {
@@ -164,6 +167,7 @@ export function CharacterVoiceModal({ onClose }: CharacterVoiceModalProps) {
       if (engine === 'kokoro' && !/^[a-z]{2}_/i.test(voiceId)) voiceId = 'af_heart';
       if (engine === 'edge' && !voiceId.endsWith('Neural')) voiceId = 'de-DE-KatjaNeural';
       if (engine === 'openai' && (voiceId.endsWith('Neural') || /^[a-z]{2}_/i.test(voiceId))) voiceId = 'nova';
+      if (engine === 'local' && !/^(preset|clone):/.test(voiceId)) voiceId = 'preset:default';
       return { ...current, engine, voice_id: voiceId };
     });
     setError('');
@@ -303,6 +307,7 @@ export function CharacterVoiceModal({ onClose }: CharacterVoiceModalProps) {
                   <select value={draft.engine} onChange={(event) => changeEngine(event.target.value as TtsEngine)} className={fieldClass}>
                     <option value="disabled">{t('voiceCfg.disabled')}</option>
                     <option value="edge">Edge-TTS</option>
+                    <option value="local">{t('voiceCfg.local')}</option>
                     <option value="kokoro">{t('voiceCfg.kokoro')}</option>
                     <option value="elevenlabs">ElevenLabs</option>
                     <option value="openai">{t('voiceCfg.openaiCompatible')}</option>
@@ -327,6 +332,8 @@ export function CharacterVoiceModal({ onClose }: CharacterVoiceModalProps) {
                       <input type="password" value={draft.elevenlabs_api_key} onChange={(event) => update('elevenlabs_api_key', event.target.value)} className={fieldClass} placeholder="xi-api-key" />
                     </label>
                   )}
+
+                  {draft.engine === 'local' && <LocalTtsSettings config={draft} onChange={setDraft} />}
 
                   {draft.engine === 'kokoro' && (
                     <div className="space-y-4 rounded-lg border border-emerald-500/25 bg-emerald-950/10 p-4">
@@ -379,6 +386,7 @@ export function CharacterVoiceModal({ onClose }: CharacterVoiceModalProps) {
                     </div>
                   )}
 
+                  {draft.engine !== 'local' && (
                   <div className="grid sm:grid-cols-2 gap-4">
                     <label>
                       <span className={labelClass}>{t('voiceCfg.foundVoice')} {isLoadingVoices && t('voiceCfg.loading')}</span>
@@ -394,6 +402,7 @@ export function CharacterVoiceModal({ onClose }: CharacterVoiceModalProps) {
                       <input value={draft.voice_id} onChange={(event) => update('voice_id', event.target.value)} className={fieldClass} placeholder={draft.engine === 'kokoro' ? 'af_heart' : 'de-DE-KatjaNeural'} />
                     </label>
                   </div>
+                  )}
 
                   {draft.engine === 'openai' && (
                     <div className="space-y-4 rounded-lg border border-slate-800 bg-app/40 p-4">
@@ -421,7 +430,7 @@ export function CharacterVoiceModal({ onClose }: CharacterVoiceModalProps) {
                     ] as const).map(([key, label, suffix, min, max]) => (
                       <label key={key}>
                         <span className={`${labelClass} flex justify-between`}><span>{label}</span><span>{draft[key]}</span></span>
-                        <input type="range" min={min} max={max} value={numericValue(draft[key])} onChange={(event) => update(key, signedValue(Number(event.target.value), suffix))} disabled={draft.engine === 'kokoro' && key === 'pitch'} className="w-full accent-accent-500 disabled:opacity-35" />
+                        <input type="range" min={min} max={max} value={numericValue(draft[key])} onChange={(event) => update(key, signedValue(Number(event.target.value), suffix))} disabled={(draft.engine === 'kokoro' || draft.engine === 'local') && key === 'pitch'} className="w-full accent-accent-500 disabled:opacity-35" />
                       </label>
                     ))}
                   </div>

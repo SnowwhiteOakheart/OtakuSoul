@@ -15,7 +15,7 @@ export interface VoiceCaptureOptions {
   onAutoStop?: (result: VoiceCaptureResult | null) => void;
 }
 
-function resampleMono(input: Float32Array, sourceRate: number, targetRate = 16_000) {
+export function resampleMono(input: Float32Array, sourceRate: number, targetRate = 16_000) {
   if (sourceRate === targetRate) return input;
   const ratio = sourceRate / targetRate;
   const outputLength = Math.max(1, Math.round(input.length / ratio));
@@ -30,7 +30,7 @@ function resampleMono(input: Float32Array, sourceRate: number, targetRate = 16_0
   return output;
 }
 
-function floatSamplesToBase64(samples: Float32Array) {
+export function floatSamplesToBase64(samples: Float32Array) {
   const bytes = new Uint8Array(samples.buffer, samples.byteOffset, samples.byteLength);
   let binary = '';
   const chunkSize = 0x8000;

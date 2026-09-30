@@ -252,6 +252,20 @@ Beiträge, Fehlermeldungen und nachvollziehbare Verbesserungsvorschläge sind wi
 
 OtakuSoul ist freie Software unter der **GNU General Public License v3.0**.
 
+### KI-Modelle und Laufzeiten
+
+OtakuSoul liefert keine KI-Modelle mit. Laufzeiten (llama.cpp, PrismML-Fork, stable-diffusion.cpp, CrispASR) und
+Modelle werden auf Wunsch von ihren Originalquellen geladen, per SHA-256 geprüft und unterliegen **ihren eigenen
+Lizenzen**, die in der App jeweils angezeigt werden:
+
+- Standardmodelle haben freie Lizenzen, z. B. Qwen3-TTS und Kokoro (Apache-2.0), Chatterbox (MIT), Animagine XL 4.0
+  (CreativeML Open RAIL++-M).
+- Modelle mit Einschränkungen sind gekennzeichnet. **FLUX.1/FLUX.2 dev** und **F5-TTS** (CC-BY-NC-4.0) dürfen nur
+  nicht-kommerziell genutzt werden; F5-TTS bleibt gesperrt, bis man „Nicht-kommerzielle Modelle erlauben“ aktiviert.
+- **Stimmklonen** ist nur mit der eigenen Stimme oder mit ausdrücklicher Einwilligung der sprechenden Person erlaubt.
+  Die App fragt diese Bestätigung ab; lokal erzeugte Sprache wird von CrispASR mit einem Wasserzeichen als KI-generiert
+  gekennzeichnet (EU AI Act, Art. 50).
+
 Entwickelt von **SnowwhiteOakheart**.
 
 <p align="center"><em>Infinite Worlds. One Soul.</em></p>

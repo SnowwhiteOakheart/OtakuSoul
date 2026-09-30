@@ -84,6 +84,10 @@ import {
   ImageModelInfo,
   ImageModelProgress,
   ImagePromptRequest,
+  TtsModelInfo,
+  TtsModelProgress,
+  TtsLocalSettings,
+  ClonedVoice,
   LocalImageStatus,
   RuntimeProgress,
   RuntimeVariant,
@@ -926,6 +930,53 @@ export const api = {
   
   synthesizeSpeech: async (text: string, config: VoiceConfig): Promise<string> => {
     return await invoke<string>('synthesize_speech', { text, config });
+  },
+
+  listTtsModels: async (): Promise<TtsModelInfo[]> => {
+    return await invoke<TtsModelInfo[]>('list_tts_models');
+  },
+
+  downloadTtsModel: async (modelId: string): Promise<void> => {
+    await invoke('download_tts_model', { modelId });
+  },
+
+  cancelTtsModelDownload: async (): Promise<void> => {
+    await invoke('cancel_tts_model_download');
+  },
+
+  deleteTtsModel: async (modelId: string): Promise<void> => {
+    await invoke('delete_tts_model', { modelId });
+  },
+
+  getTtsLocalSettings: async (): Promise<TtsLocalSettings> => {
+    return await invoke<TtsLocalSettings>('get_tts_local_settings');
+  },
+
+  saveTtsLocalSettings: async (settings: TtsLocalSettings): Promise<void> => {
+    await invoke('save_tts_local_settings', { settings });
+  },
+
+  listClonedVoices: async (): Promise<ClonedVoice[]> => {
+    return await invoke<ClonedVoice[]>('list_cloned_voices');
+  },
+
+  createClonedVoice: async (voice: {
+    name: string;
+    samplesBase64: string;
+    sampleRate: number;
+    refText: string;
+    language: string;
+    consent: boolean;
+  }): Promise<ClonedVoice> => {
+    return await invoke<ClonedVoice>('create_cloned_voice', voice);
+  },
+
+  deleteClonedVoice: async (voiceId: string): Promise<void> => {
+    await invoke('delete_cloned_voice', { voiceId });
+  },
+
+  onTtsModelProgress: async (callback: (data: TtsModelProgress) => void): Promise<UnlistenFn> => {
+    return await listen<TtsModelProgress>('tts-model-progress', (event) => callback(event.payload));
   },
 
   transcribeSpeech: async (audioBase64: string, config: SttConfig): Promise<string> => {

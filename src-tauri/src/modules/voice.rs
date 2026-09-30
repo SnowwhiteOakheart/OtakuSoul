@@ -30,6 +30,9 @@ pub enum TtsEngine {
     ElevenLabs,
     #[serde(rename = "openai")]
     OpenAi,
+    /// Local, multilingual speech through CrispASR (`modules/tts_local.rs`).
+    #[serde(rename = "local")]
+    Local,
     #[serde(rename = "disabled")]
     Disabled,
 }
@@ -159,6 +162,9 @@ pub struct VoiceConfig {
     pub openai_instructions: String,
     #[serde(default)]
     pub kokoro: crate::modules::kokoro::KokoroConfig,
+    /// Catalog id of the local speech model (engine `local`).
+    #[serde(default)]
+    pub local_model_id: Option<String>,
     #[serde(default)]
     pub output_device_id: String,
     #[serde(default)]
@@ -227,6 +233,7 @@ impl Default for VoiceConfig {
             openai_model: default_openai_model(),
             openai_instructions: String::new(),
             kokoro: crate::modules::kokoro::KokoroConfig::default(),
+            local_model_id: None,
             output_device_id: String::new(),
             rvc: RvcConfig::default(),
             stt: SttConfig::default(),
@@ -1282,6 +1289,15 @@ pub async fn synthesize_speech(text: &str, config: &VoiceConfig) -> Result<Strin
                 &config.voice_id,
                 &config.rate,
                 &config.openai_instructions,
+            )
+            .await
+        }
+        TtsEngine::Local => {
+            crate::modules::tts_local::synthesize_data_url(
+                config.local_model_id.as_deref(),
+                &config.voice_id,
+                &cleaned,
+                &config.rate,
             )
             .await
         }

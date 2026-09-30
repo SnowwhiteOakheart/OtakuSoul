@@ -5,6 +5,11 @@ import type { RuntimeVariant } from './generated/RuntimeVariant';
 import type { RuntimeProgress } from './generated/RuntimeProgress';
 import type { RuntimeInfo } from './generated/RuntimeInfo';
 import type { RuntimeKind } from './generated/RuntimeKind';
+import type { TtsModelInfo } from './generated/TtsModelInfo';
+import type { TtsModelProgress } from './generated/TtsModelProgress';
+import type { TtsVoiceInfo } from './generated/TtsVoiceInfo';
+import type { TtsLocalSettings } from './generated/TtsLocalSettings';
+import type { ClonedVoice } from './generated/ClonedVoice';
 import type { ImageModelInfo } from './generated/ImageModelInfo';
 import type { ImagePromptRequest } from './generated/ImagePromptRequest';
 import type { ImageModelProgress } from './generated/ImageModelProgress';
@@ -66,6 +71,11 @@ export type {
   ImageModelInfo,
   ImageModelProgress,
   ImagePromptRequest,
+  TtsModelInfo,
+  TtsModelProgress,
+  TtsVoiceInfo,
+  TtsLocalSettings,
+  ClonedVoice,
   LocalImageStatus,
   VramPlan,
   VramStrategy,

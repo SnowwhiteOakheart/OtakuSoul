@@ -129,7 +129,7 @@ async fn load_engine(config: &KokoroConfig) -> Result<Arc<KokoroTts>, String> {
     Ok(engine)
 }
 
-fn rate_to_speed(rate: &str) -> f32 {
+pub(crate) fn rate_to_speed(rate: &str) -> f32 {
     let percent = rate
         .trim()
         .trim_end_matches('%')
