@@ -185,7 +185,7 @@ export const ModelHubSettings = ({ onNavigate }: { onNavigate: (section: Setting
                 </button>
               ) : recommendedFile ? (
                 <button
-                  onClick={() => downloadGgufModel(recommendedFile.download_url, recommendedFile.filename)}
+                  onClick={() => downloadGgufModel(recommendedFile)}
                   className="px-4 py-2 rounded-lg bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-semibold flex items-center gap-2"
                 >
                   <Download className="w-4 h-4" /> {t('settings.downloadRecommended')}
@@ -383,7 +383,7 @@ export const ModelHubSettings = ({ onNavigate }: { onNavigate: (section: Setting
                             </div>
 
                             <button
-                              onClick={() => downloadGgufModel(file.download_url, file.filename)}
+                              onClick={() => downloadGgufModel(file)}
                               disabled={file.runtime === 'legacy'}
                               className="px-3 py-1.5 rounded bg-emerald-600 hover:bg-emerald-500 disabled:bg-slate-700 disabled:text-slate-500 text-white font-semibold text-xs flex items-center gap-1.5 transition-colors shrink-0"
                             >

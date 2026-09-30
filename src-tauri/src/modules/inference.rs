@@ -102,6 +102,80 @@ pub struct InferenceClient {
     abort_flag: Arc<AtomicBool>,
 }
 
+#[derive(Default)]
+struct SseLines {
+    bytes: Vec<u8>,
+}
+
+impl SseLines {
+    fn push(&mut self, chunk: &[u8]) -> Result<Vec<String>, String> {
+        self.bytes.extend_from_slice(chunk);
+        let mut lines = Vec::new();
+        while let Some(end) = self.bytes.iter().position(|byte| *byte == b'\n') {
+            let line = self.bytes.drain(..=end).collect::<Vec<_>>();
+            lines.push(String::from_utf8(line).map_err(|error| error.to_string())?);
+        }
+        Ok(lines)
+    }
+
+    fn finish(&mut self) -> Result<Option<String>, String> {
+        if self.bytes.is_empty() {
+            return Ok(None);
+        }
+        String::from_utf8(std::mem::take(&mut self.bytes))
+            .map(Some)
+            .map_err(|error| error.to_string())
+    }
+}
+
+#[derive(Default)]
+struct ThinkTagFilter {
+    pending: String,
+    in_think_block: bool,
+}
+
+impl ThinkTagFilter {
+    /// Returns `(is_thought, text)` segments that can be emitted immediately.
+    fn push(&mut self, content: &str) -> Vec<(bool, String)> {
+        self.pending.push_str(content);
+        let mut segments = Vec::new();
+        loop {
+            let tag = if self.in_think_block {
+                "</think>"
+            } else {
+                "<think>"
+            };
+            if let Some(position) = self.pending.find(tag) {
+                if position > 0 {
+                    segments.push((self.in_think_block, self.pending[..position].to_string()));
+                }
+                self.pending.drain(..position + tag.len());
+                self.in_think_block = !self.in_think_block;
+                continue;
+            }
+
+            let keep = (1..tag.len())
+                .rev()
+                .find(|length| self.pending.ends_with(&tag[..*length]))
+                .unwrap_or(0);
+            let emit_len = self.pending.len() - keep;
+            if emit_len > 0 {
+                segments.push((self.in_think_block, self.pending[..emit_len].to_string()));
+                self.pending.drain(..emit_len);
+            }
+            return segments;
+        }
+    }
+
+    fn finish(&mut self) -> Option<(bool, String)> {
+        if self.pending.is_empty() {
+            None
+        } else {
+            Some((self.in_think_block, std::mem::take(&mut self.pending)))
+        }
+    }
+}
+
 impl Default for InferenceClient {
     fn default() -> Self {
         Self::new()
@@ -109,6 +183,22 @@ impl Default for InferenceClient {
 }
 
 impl InferenceClient {
+    fn emit_segment<R: tauri::Runtime>(
+        app_handle: &tauri::AppHandle<R>,
+        full_text: &mut String,
+        full_thought: &mut String,
+        is_thought: bool,
+        text: String,
+    ) {
+        if is_thought {
+            full_thought.push_str(&text);
+            let _ = app_handle.emit("llm-thought", ThoughtEvent { text });
+        } else {
+            full_text.push_str(&text);
+            let _ = app_handle.emit("llm-token", TokenEvent { text });
+        }
+    }
+
     pub fn new() -> Self {
         Self {
             abort_flag: Arc::new(AtomicBool::new(false)),
@@ -152,33 +242,27 @@ impl InferenceClient {
         let mut stream = response.bytes_stream();
         let mut full_text = String::new();
         let mut full_thought = String::new();
-        let mut in_think_block = false;
-        let mut buffer = String::new();
+        let mut lines = SseLines::default();
+        let mut think_filter = ThinkTagFilter::default();
 
-        while let Some(chunk_res) = stream.next().await {
+        'stream: while let Some(chunk_res) = stream.next().await {
             if self.abort_flag.load(Ordering::Relaxed) {
                 info!("Inferenz durch Benutzer abgebrochen");
                 break;
             }
 
             let chunk = chunk_res.map_err(|e| crate::err!("backend.llm.stream", error = e))?;
-            let chunk_str = String::from_utf8_lossy(&chunk);
-            buffer.push_str(&chunk_str);
-
-            while let Some(line_end) = buffer.find('\n') {
-                let line = buffer[..line_end].trim().to_string();
-                buffer.drain(..=line_end);
-
+            for line in lines
+                .push(&chunk)
+                .map_err(|error| crate::err!("backend.llm.stream", error = error))?
+            {
+                let line = line.trim();
                 if line.is_empty() || line.starts_with(':') {
                     continue;
                 }
 
                 let delta =
-                    crate::modules::providers::ProviderRegistry::parse_sse_line(&line, &provider);
-                if delta.is_done {
-                    break;
-                }
-
+                    crate::modules::providers::ProviderRegistry::parse_sse_line(line, &provider);
                 if let Some(th) = delta.thought
                     && !th.is_empty()
                 {
@@ -187,65 +271,49 @@ impl InferenceClient {
                 }
 
                 if let Some(content) = delta.text {
-                    if content.is_empty() {
-                        continue;
-                    }
-
-                    // Process inline <think> tags if model outputs them inside text stream
-                    let mut remaining = &content[..];
-                    while !remaining.is_empty() {
-                        if !in_think_block {
-                            if let Some(pos) = remaining.find("<think>") {
-                                let before = &remaining[..pos];
-                                if !before.is_empty() {
-                                    full_text.push_str(before);
-                                    let _ = app_handle.emit(
-                                        "llm-token",
-                                        TokenEvent {
-                                            text: before.to_string(),
-                                        },
-                                    );
-                                }
-                                in_think_block = true;
-                                remaining = &remaining[pos + 7..];
-                            } else {
-                                full_text.push_str(remaining);
-                                let _ = app_handle.emit(
-                                    "llm-token",
-                                    TokenEvent {
-                                        text: remaining.to_string(),
-                                    },
-                                );
-                                break;
-                            }
-                        } else {
-                            if let Some(pos) = remaining.find("</think>") {
-                                let thought_part = &remaining[..pos];
-                                if !thought_part.is_empty() {
-                                    full_thought.push_str(thought_part);
-                                    let _ = app_handle.emit(
-                                        "llm-thought",
-                                        ThoughtEvent {
-                                            text: thought_part.to_string(),
-                                        },
-                                    );
-                                }
-                                in_think_block = false;
-                                remaining = &remaining[pos + 8..];
-                            } else {
-                                full_thought.push_str(remaining);
-                                let _ = app_handle.emit(
-                                    "llm-thought",
-                                    ThoughtEvent {
-                                        text: remaining.to_string(),
-                                    },
-                                );
-                                break;
-                            }
-                        }
+                    for (is_thought, text) in think_filter.push(&content) {
+                        Self::emit_segment(
+                            app_handle,
+                            &mut full_text,
+                            &mut full_thought,
+                            is_thought,
+                            text,
+                        );
                     }
                 }
+                if delta.is_done {
+                    break 'stream;
+                }
             }
+        }
+
+        if let Some(line) = lines
+            .finish()
+            .map_err(|error| crate::err!("backend.llm.stream", error = error))?
+        {
+            let delta =
+                crate::modules::providers::ProviderRegistry::parse_sse_line(line.trim(), &provider);
+            if let Some(content) = delta.text {
+                for (is_thought, text) in think_filter.push(&content) {
+                    Self::emit_segment(
+                        app_handle,
+                        &mut full_text,
+                        &mut full_thought,
+                        is_thought,
+                        text,
+                    );
+                }
+            }
+        }
+
+        if let Some((is_thought, text)) = think_filter.finish() {
+            Self::emit_segment(
+                app_handle,
+                &mut full_text,
+                &mut full_thought,
+                is_thought,
+                text,
+            );
         }
 
         let done_event = DoneEvent {
@@ -285,48 +353,93 @@ impl InferenceClient {
 
         let mut stream = response.bytes_stream();
         let mut full_text = String::new();
-        let mut buffer = String::new();
+        let mut lines = SseLines::default();
+        let mut think_filter = ThinkTagFilter::default();
 
-        while let Some(chunk_res) = stream.next().await {
+        'stream: while let Some(chunk_res) = stream.next().await {
             let chunk = chunk_res.map_err(|e| crate::err!("backend.llm.stream", error = e))?;
-            let chunk_str = String::from_utf8_lossy(&chunk);
-            buffer.push_str(&chunk_str);
-
-            while let Some(line_end) = buffer.find('\n') {
-                let line = buffer[..line_end].trim().to_string();
-                buffer.drain(..=line_end);
-
+            for line in lines
+                .push(&chunk)
+                .map_err(|error| crate::err!("backend.llm.stream", error = error))?
+            {
+                let line = line.trim();
                 if line.is_empty() || line.starts_with(':') {
                     continue;
                 }
 
                 let delta =
-                    crate::modules::providers::ProviderRegistry::parse_sse_line(&line, &provider);
-                if delta.is_done {
-                    break;
-                }
-
+                    crate::modules::providers::ProviderRegistry::parse_sse_line(line, &provider);
                 if let Some(content) = delta.text {
-                    full_text.push_str(&content);
+                    for (is_thought, text) in think_filter.push(&content) {
+                        if !is_thought {
+                            full_text.push_str(&text);
+                        }
+                    }
+                }
+                if delta.is_done {
+                    break 'stream;
                 }
             }
         }
-
-        // Clean out <think>...</think> tags if model produced them
-        let cleaned = if let (Some(start), Some(end)) =
-            (full_text.find("<think>"), full_text.rfind("</think>"))
+        if let Some(line) = lines
+            .finish()
+            .map_err(|error| crate::err!("backend.llm.stream", error = error))?
         {
-            if end > start {
-                let mut stripped = full_text[..start].to_string();
-                stripped.push_str(&full_text[end + 8..]);
-                stripped
-            } else {
-                full_text
+            let delta =
+                crate::modules::providers::ProviderRegistry::parse_sse_line(line.trim(), &provider);
+            if let Some(content) = delta.text {
+                for (is_thought, text) in think_filter.push(&content) {
+                    if !is_thought {
+                        full_text.push_str(&text);
+                    }
+                }
             }
-        } else {
-            full_text
-        };
+        }
+        if let Some((false, text)) = think_filter.finish() {
+            full_text.push_str(&text);
+        }
 
-        Ok(cleaned.trim().to_string())
+        Ok(full_text.trim().to_string())
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::{SseLines, ThinkTagFilter};
+
+    #[test]
+    fn decodes_utf8_after_a_complete_line_arrives() {
+        let mut lines = SseLines::default();
+        let message = "data: {\"text\":\"Grüße\"}\n".as_bytes();
+        let split = message.iter().position(|byte| *byte == 0xc3).unwrap() + 1;
+        assert!(lines.push(&message[..split]).unwrap().is_empty());
+        assert_eq!(
+            lines.push(&message[split..]).unwrap(),
+            vec![String::from_utf8(message.to_vec()).unwrap()]
+        );
+    }
+
+    #[test]
+    fn separates_thought_tags_split_across_deltas() {
+        let mut filter = ThinkTagFilter::default();
+        let mut segments = Vec::new();
+        for part in ["Hallo <thi", "nk>intern</thi", "nk> Welt"] {
+            segments.extend(filter.push(part));
+        }
+        if let Some(last) = filter.finish() {
+            segments.push(last);
+        }
+        let answer: String = segments
+            .iter()
+            .filter(|(thought, _)| !thought)
+            .map(|(_, text)| text.as_str())
+            .collect();
+        let thought: String = segments
+            .iter()
+            .filter(|(thought, _)| *thought)
+            .map(|(_, text)| text.as_str())
+            .collect();
+        assert_eq!(answer, "Hallo  Welt");
+        assert_eq!(thought, "intern");
     }
 }

@@ -84,6 +84,7 @@ pub struct ServerStatus {
 }
 
 pub struct LlamaServerManager {
+    operation: Mutex<()>,
     child: Arc<Mutex<Option<Child>>>,
     status: Arc<RwLock<ServerStatus>>,
     logs: Arc<Mutex<VecDeque<String>>>,
@@ -109,6 +110,7 @@ impl LlamaServerManager {
         };
 
         Self {
+            operation: Mutex::new(()),
             child: Arc::new(Mutex::new(None)),
             status: Arc::new(RwLock::new(default_status)),
             logs: Arc::new(Mutex::new(VecDeque::with_capacity(100))),
@@ -118,7 +120,7 @@ impl LlamaServerManager {
 
     /// Settings of the running server, or `None` when it is not running.
     pub async fn running_config(&self) -> Option<LlamaServerConfig> {
-        if self.status.read().await.state != ServerState::Running {
+        if self.get_status().await.state != ServerState::Running {
             return None;
         }
         self.last_config.lock().await.clone()
@@ -238,6 +240,29 @@ impl LlamaServerManager {
     }
 
     pub async fn get_status(&self) -> ServerStatus {
+        let exit = {
+            let mut guard = self.child.lock().await;
+            if let Some(child) = guard.as_mut() {
+                match child.try_wait() {
+                    Ok(Some(exit)) => {
+                        *guard = None;
+                        Some(format!("llama-server wurde unerwartet beendet: {exit}"))
+                    }
+                    Ok(None) => None,
+                    Err(error) => Some(format!(
+                        "llama-server-Status konnte nicht gelesen werden: {error}"
+                    )),
+                }
+            } else {
+                None
+            }
+        };
+        if let Some(message) = exit {
+            let mut status = self.status.write().await;
+            status.state = ServerState::Failed;
+            status.pid = None;
+            status.error_message = Some(message);
+        }
         let mut status = self.status.read().await.clone();
         let logs_guard = self.logs.lock().await;
         status.recent_logs = logs_guard.iter().cloned().collect();
@@ -245,8 +270,9 @@ impl LlamaServerManager {
     }
 
     pub async fn start(&self, config: LlamaServerConfig) -> Result<(), String> {
+        let _operation = self.operation.lock().await;
         // If already running or starting, stop first
-        self.stop().await?;
+        self.stop_process().await?;
 
         let binary_path = match self
             .resolve_binary_for_model(config.binary_path.as_deref(), &config.model_path)
@@ -292,15 +318,25 @@ impl LlamaServerManager {
             binary_path, config.port, model_path
         );
 
-        // Ensure port is completely free on Linux/Unix to prevent EADDRINUSE
-        #[cfg(unix)]
-        {
-            let _ = tokio::process::Command::new("fuser")
-                .arg("-k")
-                .arg(format!("{}/tcp", config.port))
-                .output()
-                .await;
-            tokio::time::sleep(Duration::from_millis(150)).await;
+        // Report a port conflict without terminating a process owned by another app.
+        let port_probe = tokio::net::TcpListener::bind(("127.0.0.1", config.port))
+            .await
+            .map_err(|error| format!("Port {} ist nicht verfügbar: {error}", config.port));
+        match port_probe {
+            Ok(listener) if config.port != 0 => drop(listener),
+            Ok(_) => {
+                let message = "Port 0 ist für den lokalen Server nicht zulässig".to_string();
+                let mut status = self.status.write().await;
+                status.state = ServerState::Failed;
+                status.error_message = Some(message.clone());
+                return Err(message);
+            }
+            Err(message) => {
+                let mut status = self.status.write().await;
+                status.state = ServerState::Failed;
+                status.error_message = Some(message.clone());
+                return Err(message);
+            }
         }
 
         let mut cmd = Command::new(&binary_path);
@@ -390,11 +426,17 @@ impl LlamaServerManager {
             });
         }
 
-        let mut child = cmd.spawn().map_err(|e| {
-            let err = format!("Fehler beim Starten von llama-server: {}", e);
-            error!("{}", err);
-            err
-        })?;
+        let mut child = match cmd.spawn() {
+            Ok(child) => child,
+            Err(error) => {
+                let message = format!("Fehler beim Starten von llama-server: {error}");
+                error!("{}", message);
+                let mut status = self.status.write().await;
+                status.state = ServerState::Failed;
+                status.error_message = Some(message.clone());
+                return Err(message);
+            }
+        };
 
         let pid = child.id().unwrap_or(0);
         {
@@ -403,18 +445,11 @@ impl LlamaServerManager {
         }
 
         // Pipe stderr/stdout to ring buffer for live log monitoring in UI
-        let logs_clone = self.logs.clone();
         if let Some(stderr) = child.stderr.take() {
-            tokio::spawn(async move {
-                let mut reader = BufReader::new(stderr).lines();
-                while let Ok(Some(line)) = reader.next_line().await {
-                    let mut guard = logs_clone.lock().await;
-                    if guard.len() >= 100 {
-                        guard.pop_front();
-                    }
-                    guard.push_back(line);
-                }
-            });
+            Self::capture_output(stderr, self.logs.clone());
+        }
+        if let Some(stdout) = child.stdout.take() {
+            Self::capture_output(stdout, self.logs.clone());
         }
 
         *self.child.lock().await = Some(child);
@@ -439,6 +474,7 @@ impl LlamaServerManager {
                 if let Some(child_proc) = guard.as_mut() {
                     match child_proc.try_wait() {
                         Ok(Some(status)) => {
+                            *guard = None;
                             let last_logs = self
                                 .logs
                                 .lock()
@@ -453,6 +489,7 @@ impl LlamaServerManager {
                             );
                             let mut s = self.status.write().await;
                             s.state = ServerState::Failed;
+                            s.pid = None;
                             s.error_message = Some(err_msg.clone());
                             return Err(err_msg);
                         }
@@ -461,6 +498,14 @@ impl LlamaServerManager {
                             warn!("Fehler beim Überprüfen des Child-Status: {}", e);
                         }
                     }
+                } else {
+                    let message =
+                        "llama-server wurde vor dem Bereitschaftstest beendet".to_string();
+                    let mut status = self.status.write().await;
+                    status.state = ServerState::Failed;
+                    status.pid = None;
+                    status.error_message = Some(message.clone());
+                    return Err(message);
                 }
             }
 
@@ -491,15 +536,36 @@ impl LlamaServerManager {
                 "Timeout: llama-server hat nach 45s nicht geantwortet.\nLetzte Logs:\n{}",
                 last_logs
             );
+            self.stop_process().await.ok();
             let mut s = self.status.write().await;
             s.state = ServerState::Failed;
             s.error_message = Some(err_msg.clone());
-            self.stop().await.ok();
             Err(err_msg)
         }
     }
 
     pub async fn stop(&self) -> Result<(), String> {
+        let _operation = self.operation.lock().await;
+        self.stop_process().await
+    }
+
+    fn capture_output<R>(output: R, logs: Arc<Mutex<VecDeque<String>>>)
+    where
+        R: tokio::io::AsyncRead + Unpin + Send + 'static,
+    {
+        tokio::spawn(async move {
+            let mut reader = BufReader::new(output).lines();
+            while let Ok(Some(line)) = reader.next_line().await {
+                let mut guard = logs.lock().await;
+                if guard.len() >= 100 {
+                    guard.pop_front();
+                }
+                guard.push_back(line);
+            }
+        });
+    }
+
+    async fn stop_process(&self) -> Result<(), String> {
         let mut guard = self.child.lock().await;
         if let Some(mut child) = guard.take() {
             info!("Stoppe llama-server...");
@@ -527,13 +593,15 @@ impl LlamaServerManager {
         let mut s = self.status.write().await;
         s.state = ServerState::Stopped;
         s.pid = None;
+        s.model_name = None;
+        s.error_message = None;
         Ok(())
     }
 }
 
 #[cfg(test)]
 mod tests {
-    use super::LlamaServerManager;
+    use super::{LlamaServerConfig, LlamaServerManager, ServerState};
 
     #[test]
     fn routes_prism_formats_without_affecting_normal_ggufs() {
@@ -559,5 +627,70 @@ mod tests {
         assert!(!LlamaServerManager::is_deprecated_bonsai_pack(
             "/models/Ternary-Bonsai-27B-PQ2_0.gguf"
         ));
+    }
+
+    #[tokio::test]
+    async fn occupied_port_does_not_kill_its_owner() {
+        let listener = match tokio::net::TcpListener::bind("127.0.0.1:0").await {
+            Ok(listener) => listener,
+            Err(error) if error.kind() == std::io::ErrorKind::PermissionDenied => return,
+            Err(error) => panic!("cannot bind test port: {error}"),
+        };
+        let port = listener.local_addr().unwrap().port();
+        let model = std::env::temp_dir().join(format!(
+            "otakusoul-port-test-{}-{}.gguf",
+            std::process::id(),
+            rand::random::<u64>()
+        ));
+        std::fs::write(&model, b"test").unwrap();
+        let manager = LlamaServerManager::new();
+        let config = LlamaServerConfig {
+            binary_path: Some(
+                std::env::current_exe()
+                    .unwrap()
+                    .to_string_lossy()
+                    .into_owned(),
+            ),
+            model_path: model.to_string_lossy().into_owned(),
+            port,
+            ..Default::default()
+        };
+
+        let result = manager.start(config).await;
+        assert!(result.is_err());
+        assert_eq!(manager.get_status().await.state, ServerState::Failed);
+        assert!(listener.local_addr().is_ok());
+        assert!(
+            tokio::net::TcpListener::bind(("127.0.0.1", port))
+                .await
+                .is_err()
+        );
+        std::fs::remove_file(model).unwrap();
+    }
+
+    #[cfg(unix)]
+    #[tokio::test]
+    async fn status_detects_a_server_that_exits_after_startup() {
+        let manager = LlamaServerManager::new();
+        let child = tokio::process::Command::new("sh")
+            .args(["-c", "exit 7"])
+            .spawn()
+            .unwrap();
+        *manager.child.lock().await = Some(child);
+        manager.status.write().await.state = ServerState::Running;
+
+        let status = tokio::time::timeout(std::time::Duration::from_secs(2), async {
+            loop {
+                let status = manager.get_status().await;
+                if status.state == ServerState::Failed {
+                    break status;
+                }
+                tokio::time::sleep(std::time::Duration::from_millis(10)).await;
+            }
+        })
+        .await
+        .unwrap();
+        assert!(status.error_message.unwrap().contains("7"));
+        assert!(status.pid.is_none());
     }
 }

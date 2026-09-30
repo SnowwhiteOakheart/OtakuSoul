@@ -847,13 +847,12 @@ export const api = {
     return await invoke<HfGgufFile[]>('get_hf_model_files', { modelId });
   },
 
-  downloadGgufModel: async (
-    downloadUrl: string,
-    filename: string
-  ): Promise<string> => {
+  downloadGgufModel: async (file: HfGgufFile): Promise<string> => {
     return await invoke<string>('download_gguf_model', {
-      downloadUrl,
-      filename,
+      downloadUrl: file.download_url,
+      filename: file.filename,
+      expectedSize: file.size_bytes,
+      expectedSha256: file.sha256,
     });
   },
 

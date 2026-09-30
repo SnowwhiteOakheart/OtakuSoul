@@ -34,7 +34,7 @@ export interface LlmSlice {
   serverStatus: ServerStatus;
   serverConfig: LlamaServerConfig;
   setServerConfig: (config: Partial<LlamaServerConfig>) => void;
-  selectLocalModel: (path: string) => void;
+  selectLocalModel: (path: string) => Promise<void>;
   fetchServerStatus: () => Promise<void>;
   startServer: () => Promise<void>;
   stopServer: () => Promise<void>;
@@ -67,7 +67,7 @@ export interface LlmSlice {
   isLoadingHfFiles: Record<string, boolean>;
   fetchHfModelFiles: (modelId: string) => Promise<void>;
   downloadProgress: Record<string, DownloadProgressEvent>;
-  downloadGgufModel: (downloadUrl: string, filename: string) => Promise<void>;
+  downloadGgufModel: (file: HfGgufFile) => Promise<void>;
 }
 
 export const createLlmSlice: SliceCreator<LlmSlice> = (set, get) => ({
@@ -132,7 +132,17 @@ export const createLlmSlice: SliceCreator<LlmSlice> = (set, get) => ({
     get().saveCurrentSettings();
   },
 
-  selectLocalModel: (path) => {
+  selectLocalModel: async (path) => {
+    if (path === get().serverConfig.model_path) return;
+    try {
+      // Keep the selected model in sync with the process serving local chat.
+      // The next Start loads the newly selected file.
+      await api.stopLlamaServer();
+      await get().fetchServerStatus();
+    } catch (error) {
+      console.error('Failed to stop the previous local model:', error);
+      return;
+    }
     set((state) => {
       const model = state.scannedModels.find((item) => item.path === path);
       const isBonsai = model?.name.toLowerCase().includes('bonsai') ?? path.toLowerCase().includes('bonsai');
@@ -162,7 +172,7 @@ export const createLlmSlice: SliceCreator<LlmSlice> = (set, get) => ({
           : state.sampling,
       };
     });
-    get().saveCurrentSettings();
+    await get().saveCurrentSettings();
   },
 
   fetchServerStatus: async () => {
@@ -350,41 +360,13 @@ export const createLlmSlice: SliceCreator<LlmSlice> = (set, get) => ({
 
   downloadProgress: {},
 
-  downloadGgufModel: async (downloadUrl: string, filename: string) => {
+  downloadGgufModel: async (file: HfGgufFile) => {
     set({ hfError: null });
     try {
-      const modelPath = await api.downloadGgufModel(downloadUrl, filename);
+      const modelPath = await api.downloadGgufModel(file);
       const models = await api.scanModels();
-      const isBonsai = filename.toLowerCase().includes('bonsai');
-      set((state) => ({
-        scannedModels: models,
-        selectedBackend: 'local',
-        serverConfig: {
-          ...state.serverConfig,
-          model_path: modelPath,
-          ...(isBonsai
-            ? {
-                context_size: 32768,
-                gpu_layers: 99,
-                cache_type_k: 'q4_0',
-                cache_type_v: 'q4_0',
-                flash_attn: true,
-                reasoning_mode: true,
-              }
-            : {}),
-        },
-        ...(isBonsai
-          ? {
-              sampling: {
-                ...state.sampling,
-                temperature: 0.7,
-                top_p: 0.95,
-                top_k: 20,
-              },
-            }
-          : {}),
-      }));
-      await get().saveCurrentSettings();
+      set({ scannedModels: models });
+      await get().selectLocalModel(modelPath);
     } catch (e) {
       console.error('Failed to download GGUF model:', e);
       set({ hfError: errorMessage(e) });

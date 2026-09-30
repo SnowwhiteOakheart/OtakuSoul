@@ -92,6 +92,25 @@ describe('settings persistence', () => {
   });
 });
 
+describe('local model selection', () => {
+  it('stops the previous server before selecting a different model', async () => {
+    let finishStop!: () => void;
+    vi.mocked(api.stopLlamaServer).mockImplementation(() => new Promise<void>((resolve) => {
+      finishStop = resolve;
+    }));
+    useAppStore.setState({ serverConfig: { ...initialState.serverConfig, model_path: '/old.gguf' } });
+
+    const selecting = useAppStore.getState().selectLocalModel('/new.gguf');
+    expect(api.stopLlamaServer).toHaveBeenCalledOnce();
+    expect(useAppStore.getState().serverConfig.model_path).toBe('/old.gguf');
+
+    finishStop();
+    await selecting;
+    expect(useAppStore.getState().serverConfig.model_path).toBe('/new.gguf');
+    expect(lastSavedSettings().server_config.model_path).toBe('/new.gguf');
+  });
+});
+
 describe('settings sections', () => {
   it('opens a requested section once', () => {
     const store = useAppStore.getState();

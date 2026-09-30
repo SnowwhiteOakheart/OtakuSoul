@@ -87,6 +87,7 @@ export const FirstRunWizard: React.FC = () => {
   const [apiKeyDraft, setApiKeyDraft] = useState(store.cloudApiKey);
   const [modelDraft, setModelDraft] = useState(store.cloudModel);
   const [startServerNow, setStartServerNow] = useState(true);
+  const [modelSelectionPending, setModelSelectionPending] = useState(false);
   const headingRef = useRef<HTMLHeadingElement>(null);
 
   const stepIndex = STEPS.indexOf(step);
@@ -123,7 +124,7 @@ export const FirstRunWizard: React.FC = () => {
     setModelDraft(useAppStore.getState().cloudModel);
   };
 
-  const canContinue = step !== 'model' || !isCloud || apiKeyDraft.trim().length > 0;
+  const canContinue = !modelSelectionPending && (step !== 'model' || !isCloud || apiKeyDraft.trim().length > 0);
 
   const heading = (key: TranslationKey) => (
     <h2 ref={headingRef} tabIndex={-1} id="onboarding-title" className="text-lg font-semibold text-slate-100 outline-hidden">
@@ -290,7 +291,10 @@ export const FirstRunWizard: React.FC = () => {
                           type="radio"
                           name="onboarding-model"
                           checked={store.serverConfig.model_path === model.path}
-                          onChange={() => store.selectLocalModel(model.path)}
+                          onChange={() => {
+                            setModelSelectionPending(true);
+                            void store.selectLocalModel(model.path).finally(() => setModelSelectionPending(false));
+                          }}
                           className="accent-accent-500"
                         />
                         <span className="min-w-0 flex-1 truncate text-sm">{model.name}</span>

@@ -1,5 +1,6 @@
 use futures_util::StreamExt;
 use serde::{Deserialize, Serialize};
+use sha2::{Digest, Sha256};
 use std::path::PathBuf;
 use tauri::Emitter;
 use tokio::io::AsyncWriteExt;
@@ -22,6 +23,7 @@ pub struct HfModelSummary {
 pub struct HfGgufFile {
     pub filename: String,
     pub size_bytes: u64,
+    pub sha256: Option<String>,
     pub size_formatted: String,
     pub download_url: String,
     pub quantization: String,
@@ -66,6 +68,32 @@ fn format_bytes(bytes: u64) -> String {
     } else {
         format!("{:.0} KB", bytes as f64 / KB as f64)
     }
+}
+
+fn verify_download(
+    filename: &str,
+    downloaded_bytes: u64,
+    expected_size: u64,
+    expected_sha256: Option<&str>,
+    actual_sha256: &str,
+) -> Result<(), String> {
+    if expected_size > 0 && downloaded_bytes != expected_size {
+        return Err(crate::err!(
+            "backend.common.downloadInterrupted",
+            error = format!("Erwartet: {expected_size} Bytes, empfangen: {downloaded_bytes} Bytes")
+        ));
+    }
+    if let Some(expected) = expected_sha256
+        && actual_sha256 != expected.trim_start_matches("sha256:").to_ascii_lowercase()
+    {
+        return Err(crate::err!(
+            "backend.runtime.checksum",
+            file = filename,
+            expected = expected,
+            actual = actual_sha256
+        ));
+    }
+    Ok(())
 }
 
 fn extract_quantization(filename: &str) -> String {
@@ -226,12 +254,18 @@ pub async fn get_hf_model_files(model_id: &str) -> Result<Vec<HfGgufFile>, Strin
                     })
                     .unwrap_or(0);
                 let size_formatted = format_bytes(size_bytes);
+                let sha256 = s
+                    .get("lfs")
+                    .and_then(|lfs| lfs.get("oid"))
+                    .and_then(|oid| oid.as_str())
+                    .map(|oid| oid.trim_start_matches("sha256:").to_ascii_lowercase());
                 let quantization = extract_quantization(rfilename);
                 let (runtime, recommended, compatibility_note) = classify_gguf(model_id, rfilename);
 
                 files.push(HfGgufFile {
                     filename: rfilename.to_string(),
                     size_bytes,
+                    sha256,
                     size_formatted,
                     download_url,
                     quantization,
@@ -256,7 +290,18 @@ pub async fn download_gguf_file<R: tauri::Runtime>(
     app: &tauri::AppHandle<R>,
     download_url: &str,
     target_filename: &str,
+    expected_size: u64,
+    expected_sha256: Option<&str>,
 ) -> Result<String, String> {
+    let url = reqwest::Url::parse(download_url)
+        .map_err(|error| crate::err!("backend.common.downloadFailed", error = error))?;
+    if url.scheme() != "https" || url.host_str() != Some("huggingface.co") {
+        return Err(crate::err!(
+            "backend.common.downloadFailed",
+            error = "Nur HTTPS-Downloads von huggingface.co sind zulässig"
+        ));
+    }
+
     let client = reqwest::Client::new();
     let response = client
         .get(download_url)
@@ -272,7 +317,24 @@ pub async fn download_gguf_file<R: tauri::Runtime>(
         ));
     }
 
-    let total_bytes = response.content_length().unwrap_or(0);
+    let content_length = response.content_length().unwrap_or(0);
+    if expected_size > 0 && content_length > 0 && expected_size != content_length {
+        return Err(crate::err!(
+            "backend.common.downloadInterrupted",
+            error = format!("Erwartet: {expected_size} Bytes, Antwort: {content_length} Bytes")
+        ));
+    }
+    let total_bytes = if expected_size > 0 {
+        expected_size
+    } else {
+        content_length
+    };
+    if total_bytes == 0 && expected_sha256.is_none() {
+        return Err(crate::err!(
+            "backend.common.downloadInterrupted",
+            error = "Dateigröße und Prüfsumme fehlen"
+        ));
+    }
 
     let paths = crate::modules::paths::resolve_app_paths();
     let target_dir = PathBuf::from(&paths.bundled_models_dir);
@@ -284,12 +346,23 @@ pub async fn download_gguf_file<R: tauri::Runtime>(
         .ok_or_else(|| crate::err!("backend.models.invalidFilename"))?
         .to_string();
     let dest_path = target_dir.join(&safe_filename);
-    let partial_path = target_dir.join(format!("{}.part", safe_filename));
-    let mut file = tokio::fs::File::create(&partial_path)
+    if dest_path.exists() {
+        return Err(crate::err!(
+            "backend.models.activate",
+            error = format!("{safe_filename} ist bereits installiert")
+        ));
+    }
+    let partial_path = target_dir.join(format!("{}.{}.part", safe_filename, rand::random::<u64>()));
+    let mut file = tokio::fs::OpenOptions::new()
+        .write(true)
+        .create_new(true)
+        .open(&partial_path)
         .await
         .map_err(|e| crate::err!("backend.common.fileCreate", error = e))?;
+    let _partial_cleanup = PartialDownload(partial_path.clone());
 
     let mut stream = response.bytes_stream();
+    let mut hasher = Sha256::new();
     let mut downloaded_bytes = 0u64;
     let start_time = std::time::Instant::now();
     let mut last_emit = std::time::Instant::now();
@@ -301,7 +374,14 @@ pub async fn download_gguf_file<R: tauri::Runtime>(
             .await
             .map_err(|e| crate::err!("backend.common.fileWrite", error = e))?;
 
+        hasher.update(&chunk);
         downloaded_bytes += chunk.len() as u64;
+        if total_bytes > 0 && downloaded_bytes > total_bytes {
+            return Err(crate::err!(
+                "backend.common.downloadInterrupted",
+                error = format!("Datei ist größer als die erwarteten {total_bytes} Bytes")
+            ));
+        }
 
         if last_emit.elapsed() >= std::time::Duration::from_millis(400) {
             let elapsed_secs = start_time.elapsed().as_secs_f32().max(0.001);
@@ -335,7 +415,21 @@ pub async fn download_gguf_file<R: tauri::Runtime>(
         .await
         .map_err(|e| crate::err!("backend.models.finish", error = e))?;
     drop(file);
-    tokio::fs::rename(&partial_path, &dest_path)
+    let actual_sha256: String = hasher
+        .finalize()
+        .iter()
+        .map(|byte| format!("{byte:02x}"))
+        .collect();
+    verify_download(
+        &safe_filename,
+        downloaded_bytes,
+        total_bytes,
+        expected_sha256,
+        &actual_sha256,
+    )?;
+    // hard_link fails if the destination appeared while downloading, so an existing
+    // model is never replaced by a concurrent download.
+    tokio::fs::hard_link(&partial_path, &dest_path)
         .await
         .map_err(|e| crate::err!("backend.models.activate", error = e))?;
 
@@ -357,8 +451,26 @@ pub async fn download_gguf_file<R: tauri::Runtime>(
     Ok(dest_path.to_string_lossy().to_string())
 }
 
+struct PartialDownload(PathBuf);
+
+impl Drop for PartialDownload {
+    fn drop(&mut self) {
+        let _ = std::fs::remove_file(&self.0);
+    }
+}
+
 #[cfg(test)]
 mod tests {
+    use super::verify_download;
+
+    #[test]
+    fn rejects_incomplete_or_changed_model_data() {
+        let expected = "ba7816bf8f01cfea414140de5dae2223b00361a396177a9cb410ff61f20015ad";
+        assert!(verify_download("model.gguf", 3, 3, Some(expected), expected).is_ok());
+        assert!(verify_download("model.gguf", 2, 3, Some(expected), expected).is_err());
+        assert!(verify_download("model.gguf", 3, 3, Some(expected), "wrong").is_err());
+    }
+
     #[test]
     fn estimates_remaining_download_time() {
         // 25 of 100 MB in 5 s → 5 MB/s → 15 s left.

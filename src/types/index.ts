@@ -747,6 +747,7 @@ export interface HfModelSummary {
 export interface HfGgufFile {
   filename: string;
   size_bytes: number;
+  sha256: string | null;
   size_formatted: string;
   download_url: string;
   quantization: string;

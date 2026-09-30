@@ -37,6 +37,21 @@ beforeEach(() => {
 const next = () => screen.getByRole('button', { name: /Next/ });
 
 describe('FirstRunWizard', () => {
+  it('waits for a previous local server to stop before continuing', async () => {
+    let finishStop!: () => void;
+    vi.mocked(api.stopLlamaServer).mockImplementation(() => new Promise<void>((resolve) => {
+      finishStop = resolve;
+    }));
+    const user = userEvent.setup();
+    render(<FirstRunWizard />);
+    await user.click(next());
+
+    await user.click(screen.getByRole('radio', { name: /Qwen3-8B/ }));
+    expect(next()).toBeDisabled();
+    finishStop();
+    await vi.waitFor(() => expect(next()).toBeEnabled());
+  });
+
   it('walks through a local setup and finishes on the chat', async () => {
     const user = userEvent.setup();
     render(<FirstRunWizard />);
@@ -45,7 +60,7 @@ describe('FirstRunWizard', () => {
     await user.click(next());
 
     await user.click(screen.getByRole('radio', { name: /Qwen3-8B/ }));
-    expect(useAppStore.getState().serverConfig.model_path).toBe(model.path);
+    await vi.waitFor(() => expect(useAppStore.getState().serverConfig.model_path).toBe(model.path));
     await user.click(next());
 
     await user.click(screen.getByRole('button', { name: /Ayu Ikue/ }));

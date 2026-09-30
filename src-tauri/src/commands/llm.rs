@@ -94,8 +94,17 @@ pub async fn download_gguf_model(
     app: tauri::AppHandle,
     download_url: String,
     filename: String,
+    expected_size: u64,
+    expected_sha256: Option<String>,
 ) -> Result<String, String> {
-    crate::modules::models_hub::download_gguf_file(&app, &download_url, &filename).await
+    crate::modules::models_hub::download_gguf_file(
+        &app,
+        &download_url,
+        &filename,
+        expected_size,
+        expected_sha256.as_deref(),
+    )
+    .await
 }
 
 use crate::modules::runtimes::{RuntimeInfo, RuntimeKind, RuntimeVariant};
