@@ -33,7 +33,7 @@ aus einer eigenen Aufnahme. Grundlage ist die Recherche vom 30.09.2026.
 4. [x] **Stimmklonen pro Charakter:** Aufnahme hochladen oder aufnehmen (5–15 s), Transkript automatisch per Whisper,
    Pflicht-Häkchen „Ich habe die Rechte/Einwilligung“, Speicherung unter `voices/` im Datenordner, Auswahl im
    Stimmen-Dialog des Charakters. Die Einwilligung wird als `consent_attestation` mitgeschickt.
-5. [ ] **Kennzeichnung:** CrispASR setzt Wasserzeichen/C2PA; im UI ein Hinweis, dass Audio KI-generiert ist.
+5. [x] **Kennzeichnung:** CrispASR setzt Wasserzeichen/C2PA; im UI ein Hinweis, dass Audio KI-generiert ist.
 6. [x] **Freischaltung eingeschränkter Modelle:** Schalter „Nicht-kommerzielle Modelle erlauben“ (Standard: aus),
    Lizenzhinweis im Katalog, README-Abschnitt zu Modell-Lizenzen.
    *Umsetzung:* `modules/tts_local.rs` (Katalog, `crispasr --server` auf Port 48598, Synthese, geklonte Stimmen unter
@@ -42,6 +42,8 @@ aus einer eigenen Aufnahme. Grundlage ist die Recherche vom 30.09.2026.
    gespeichert (so liefert die vorhandene Aufnahmefunktion).
 5a. [x] Gesprochener KI-Hinweis vor geklonten Stimmen ist einstellbar (Standard an); das Wasserzeichen bleibt immer an.
 7. [ ] **VRAM:** TTS-Modelle im VRAM-Planer berücksichtigen (klein, meist parallel zum Chat-Modell).
+   *Teilweise:* Beim Tausch für ein Bild wird auch `crispasr` gestoppt und startet beim nächsten Satz neu; gemessener
+   freier VRAM (nvidia-smi) enthält ein geladenes Sprachmodell bereits. Offen: Schätzwert ohne Messung.
 8. [ ] **Tests nachholen** (aufgeschoben, solange keine Modelle laufen sollen): Qwen3-TTS mit deutscher/russischer
    Ausgabe, Klon aus eigener Aufnahme, Chatterbox, Kokoro-DE, F5-TTS; Latenz und VRAM messen.
 

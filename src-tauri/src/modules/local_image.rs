@@ -875,6 +875,8 @@ impl LocalImageEngine {
             (VramPlan::Swap, Some(_)) => {
                 emit("unloading_llm", Some(plan));
                 llama.stop().await?;
+                // The speech server restarts by itself on the next line it has to speak.
+                crate::modules::tts_local::engine().stop().await;
             }
             (VramPlan::ReduceLlm { gpu_layers }, Some(cfg)) => {
                 emit("reducing_llm", Some(plan));
