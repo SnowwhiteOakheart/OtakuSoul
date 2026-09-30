@@ -5,6 +5,16 @@ on:
     tags:
       - 'v*'
   workflow_dispatch:
+    inputs:
+      platform:
+        description: 'Plattform zum Bauen'
+        required: false
+        default: 'all'
+        type: choice
+        options:
+          - all
+          - linux
+          - windows
 
 jobs:
   release:
@@ -15,10 +25,13 @@ jobs:
       matrix:
         include:
           - platform: 'ubuntu-24.04'
+            target: 'linux'
             args: '--bundles appimage,deb'
           - platform: 'windows-latest'
+            target: 'windows'
             args: '--bundles nsis'
 
+    if: ${{ github.event_name != 'workflow_dispatch' || inputs.platform == 'all' || inputs.platform == '' || inputs.platform == matrix.target }}
     runs-on: ${{ matrix.platform }}
     steps:
       - name: Checkout Repository
@@ -55,7 +68,9 @@ jobs:
             libxrandr-dev \
             libdbus-1-dev \
             libwayland-dev \
-            libegl-dev
+            libegl-dev \
+            libgbm-dev \
+            libdrm-dev
 
       - name: Install Frontend Dependencies
         run: npm ci
