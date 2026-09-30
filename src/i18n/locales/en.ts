@@ -24,7 +24,7 @@ export const en: TranslationDictionary = {
   "palette.noResults": "No matching commands found.",
   "palette.actions": "Actions",
 
-  "header.version": "v0.1.0",
+  "header.version": "v0.2.0",
   "header.logs": "System Logs",
   "header.update": "Check Updates",
   "header.about": "About OtakuSoul",

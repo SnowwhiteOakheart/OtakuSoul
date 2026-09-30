@@ -183,7 +183,7 @@ impl McpManager {
                 "params": {
                     "protocolVersion": "2024-11-05",
                     "capabilities": {},
-                    "clientInfo": { "name": "OtakuSoul", "version": "0.1.0" }
+                    "clientInfo": { "name": "OtakuSoul", "version": env!("CARGO_PKG_VERSION") }
                 }
             });
 
@@ -281,7 +281,7 @@ impl McpManager {
             "params": {
                 "protocolVersion": "2024-11-05",
                 "capabilities": {},
-                "clientInfo": { "name": "OtakuSoul", "version": "0.1.0" }
+                "clientInfo": { "name": "OtakuSoul", "version": env!("CARGO_PKG_VERSION") }
             }
         });
         stdin

@@ -7,7 +7,7 @@
 </p>
 
 <p align="center">
-  <a href="https://github.com/SnowwhiteOakheart/OtakuSoul"><img alt="OtakuSoul" src="https://img.shields.io/badge/OtakuSoul-0.1.0-8b5cf6?style=for-the-badge" /></a>
+  <a href="https://github.com/SnowwhiteOakheart/OtakuSoul"><img alt="OtakuSoul" src="https://img.shields.io/badge/OtakuSoul-0.2.0-8b5cf6?style=for-the-badge" /></a>
   <img alt="Tauri 2" src="https://img.shields.io/badge/Tauri-2-24c8db?style=for-the-badge&logo=tauri&logoColor=white" />
   <img alt="Rust" src="https://img.shields.io/badge/Rust-native-b7410e?style=for-the-badge&logo=rust&logoColor=white" />
   <img alt="React 19" src="https://img.shields.io/badge/React-19-149eca?style=for-the-badge&logo=react&logoColor=white" />
@@ -130,9 +130,9 @@ Wähle die passende Installationsmethode für dein Betriebssystem:
   ```
   Installiert OtakuSoul nach `~/.local/bin/otakusoul`, richtet das 512x512 App-Icon ein, legt die `.desktop`-Verknüpfung für dein Anwendungsmenü (GNOME, KDE, XFCE etc.) an und macht es sofort über das Startmenü oder per CLI-Befehl `otakusoul` startbar.
 - **Paket-Installationen:**
-  - **Debian / Ubuntu:** `sudo dpkg -i OtakuSoul_0.1.0_amd64.deb`
+  - **Debian / Ubuntu:** `sudo dpkg -i OtakuSoul_0.2.0_amd64.deb`
   - **Arch Linux (AUR):** `cd packaging/aur && makepkg -si`
-  - **Portables AppImage:** `chmod +x OtakuSoul_0.1.0_amd64.AppImage && ./OtakuSoul_0.1.0_amd64.AppImage`
+  - **Portables AppImage:** `chmod +x OtakuSoul_0.2.0_amd64.AppImage && ./OtakuSoul_0.2.0_amd64.AppImage`
 
 ### 🪟 Windows (10 / 11)
 - **PowerShell Installer & Shortcut-Setup:**
@@ -140,7 +140,7 @@ Wähle die passende Installationsmethode für dein Betriebssystem:
   powershell -ExecutionPolicy Bypass -File .\install.ps1
   ```
   Installiert OtakuSoul nach `%LOCALAPPDATA%\Programs\OtakuSoul\`, erstellt Verknüpfungen mit dem nativen App-Icon im Windows-Startmenü sowie auf dem Desktop und bietet den Direktstart an.
-- **NSIS Setup (.exe):** Führe den grafischen Installer `OtakuSoul_0.1.0_x64-setup.exe` aus.
+- **NSIS Setup (.exe):** Führe den grafischen Installer `OtakuSoul_0.2.0_x64-setup.exe` aus.
 
 ### 🍏 macOS (Intel & Apple Silicon)
 - **macOS Installer & App-Setup:**
@@ -148,7 +148,7 @@ Wähle die passende Installationsmethode für dein Betriebssystem:
   chmod +x install-macos.sh && ./install-macos.sh
   ```
   Installiert `OtakuSoul.app` nach `/Applications`, bereinigt Gatekeeper-Quarantäne-Attribute und macht OtakuSoul über Launchpad, Spotlight und Dock startbar.
-- **DMG Installer:** Die Datei `OtakuSoul_0.1.0_universal.dmg` öffnen und OtakuSoul in den `Applications`-Ordner ziehen.
+- **DMG Installer:** Die Datei `OtakuSoul_0.2.0_universal.dmg` öffnen und OtakuSoul in den `Applications`-Ordner ziehen.
 
 ## Schnellstart für Entwickler
 
