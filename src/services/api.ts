@@ -79,9 +79,10 @@ import {
   LogEntry,
   UpdateInfo,
   JsonObject,
-  LlamaRuntimeInfo,
-  LlamaRuntimeProgress,
-  LlamaRuntimeVariant,
+  RuntimeInfo,
+  RuntimeKind,
+  RuntimeProgress,
+  RuntimeVariant,
 } from '../types';
 
 export const api = {
@@ -848,20 +849,20 @@ export const api = {
     });
   },
 
-  getLlamaRuntime: async (): Promise<LlamaRuntimeInfo | null> => {
-    return await invoke<LlamaRuntimeInfo | null>('get_llama_runtime');
+  getRuntime: async (kind: RuntimeKind): Promise<RuntimeInfo | null> => {
+    return await invoke<RuntimeInfo | null>('get_runtime', { kind });
   },
 
-  listLlamaRuntimeVariants: async (): Promise<LlamaRuntimeVariant[]> => {
-    return await invoke<LlamaRuntimeVariant[]>('list_llama_runtime_variants');
+  listRuntimeVariants: async (kind: RuntimeKind): Promise<RuntimeVariant[]> => {
+    return await invoke<RuntimeVariant[]>('list_runtime_variants', { kind });
   },
 
-  installLlamaRuntime: async (backend: string): Promise<LlamaRuntimeInfo> => {
-    return await invoke<LlamaRuntimeInfo>('install_llama_runtime', { backend });
+  installRuntime: async (kind: RuntimeKind, backend: string): Promise<RuntimeInfo> => {
+    return await invoke<RuntimeInfo>('install_runtime', { kind, backend });
   },
 
-  onLlamaRuntimeProgress: async (callback: (data: LlamaRuntimeProgress) => void): Promise<UnlistenFn> => {
-    return await listen<LlamaRuntimeProgress>('llama-runtime-progress', (event) => callback(event.payload));
+  onRuntimeProgress: async (callback: (data: RuntimeProgress) => void): Promise<UnlistenFn> => {
+    return await listen<RuntimeProgress>('runtime-progress', (event) => callback(event.payload));
   },
 
   onModelDownloadProgress: async (

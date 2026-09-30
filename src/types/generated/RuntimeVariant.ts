@@ -3,7 +3,7 @@
 /**
  * One downloadable build for this system, e.g. `vulkan` or `cuda-12.8`.
  */
-export type LlamaRuntimeVariant = { 
+export type RuntimeVariant = { 
 /**
  * Backend name from the asset, also used to install it (`cpu`, `vulkan`, `cuda-12.8`, …).
  */

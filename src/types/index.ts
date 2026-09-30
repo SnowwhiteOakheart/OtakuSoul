@@ -1,9 +1,10 @@
 // Types that match the Rust side exactly come from ts-rs (src/types/generated, created by
 // `cargo test`); the rest are still hand-written and checked against Rust in wireCheck.ts.
 import type { AppPaths } from './generated/AppPaths';
-import type { LlamaRuntimeVariant } from './generated/LlamaRuntimeVariant';
-import type { LlamaRuntimeProgress } from './generated/LlamaRuntimeProgress';
-import type { LlamaRuntimeInfo } from './generated/LlamaRuntimeInfo';
+import type { RuntimeVariant } from './generated/RuntimeVariant';
+import type { RuntimeProgress } from './generated/RuntimeProgress';
+import type { RuntimeInfo } from './generated/RuntimeInfo';
+import type { RuntimeKind } from './generated/RuntimeKind';
 import type { OpenRouterModelInfo } from './generated/OpenRouterModelInfo';
 import type { BackupGroupSelection } from './generated/BackupGroupSelection';
 import type { CampaignClock } from './generated/CampaignClock';
@@ -55,9 +56,10 @@ import type { WebServerStatus } from './generated/WebServerStatus';
 import type { WorldState } from './generated/WorldState';
 export type {
   AppPaths,
-  LlamaRuntimeVariant,
-  LlamaRuntimeProgress,
-  LlamaRuntimeInfo,
+  RuntimeKind,
+  RuntimeVariant,
+  RuntimeProgress,
+  RuntimeInfo,
   OpenRouterModelInfo,
   BackupGroupSelection,
   CampaignClock,

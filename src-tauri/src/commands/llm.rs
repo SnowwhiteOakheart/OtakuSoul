@@ -98,21 +98,23 @@ pub async fn download_gguf_model(
     crate::modules::models_hub::download_gguf_file(&app, &download_url, &filename).await
 }
 
+use crate::modules::runtimes::{RuntimeInfo, RuntimeKind, RuntimeVariant};
+
 #[tauri::command]
-pub fn get_llama_runtime() -> Option<crate::modules::llama_runtime::LlamaRuntimeInfo> {
-    crate::modules::llama_runtime::installed()
+pub fn get_runtime(kind: RuntimeKind) -> Option<RuntimeInfo> {
+    crate::modules::runtimes::installed(kind)
 }
 
 #[tauri::command]
-pub async fn list_llama_runtime_variants()
--> Result<Vec<crate::modules::llama_runtime::LlamaRuntimeVariant>, String> {
-    crate::modules::llama_runtime::list_variants().await
+pub async fn list_runtime_variants(kind: RuntimeKind) -> Result<Vec<RuntimeVariant>, String> {
+    crate::modules::runtimes::list_variants(kind).await
 }
 
 #[tauri::command]
-pub async fn install_llama_runtime(
+pub async fn install_runtime(
     app: tauri::AppHandle,
+    kind: RuntimeKind,
     backend: String,
-) -> Result<crate::modules::llama_runtime::LlamaRuntimeInfo, String> {
-    crate::modules::llama_runtime::install(&app, &backend).await
+) -> Result<RuntimeInfo, String> {
+    crate::modules::runtimes::install(&app, kind, &backend).await
 }

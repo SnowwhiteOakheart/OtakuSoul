@@ -4,7 +4,7 @@ import { api } from '../../../services/api';
 import { translate, useTranslation } from '../../../i18n';
 import { errorMessage } from '../../../utils/errors';
 import { toast } from '../../ui/feedback';
-import type { LlamaRuntimeInfo, LlamaRuntimeProgress, LlamaRuntimeVariant } from '../../../types';
+import type { RuntimeInfo, RuntimeKind, RuntimeProgress, RuntimeVariant } from '../../../types';
 
 /** Readable name of a llama.cpp backend, e.g. `cuda-12.8` → "CUDA 12.8 (NVIDIA)". */
 export const backendLabel = (backend: string): string => {
@@ -13,22 +13,29 @@ export const backendLabel = (backend: string): string => {
   if (backend === 'metal') return translate('runtime.backendMetal');
   if (backend.startsWith('cuda-')) return translate('runtime.backendCuda', { version: backend.slice(5) });
   if (backend.startsWith('rocm-')) return translate('runtime.backendRocm', { version: backend.slice(5) });
+  if (backend.startsWith('hip-')) return translate('runtime.backendHip');
   return backend;
 };
 
-/** Downloads the official llama.cpp server build for this system (Settings → server). */
-export const LlamaRuntimeCard = ({ onInstalled }: { onInstalled?: () => void }) => {
+interface RuntimeCardProps {
+  /** llama.cpp, the PrismML fork (Ternary Bonsai) or stable-diffusion.cpp (local images). */
+  kind: RuntimeKind;
+  onInstalled?: () => void;
+}
+
+/** Downloads a prebuilt server runtime of `kind` for this system. */
+export const RuntimeCard = ({ kind, onInstalled }: RuntimeCardProps) => {
   const { t } = useTranslation();
-  const [installed, setInstalled] = useState<LlamaRuntimeInfo | null>(null);
-  const [variants, setVariants] = useState<LlamaRuntimeVariant[] | null>(null);
+  const [installed, setInstalled] = useState<RuntimeInfo | null>(null);
+  const [variants, setVariants] = useState<RuntimeVariant[] | null>(null);
   const [variantsError, setVariantsError] = useState<string | null>(null);
   const [selected, setSelected] = useState('');
-  const [progress, setProgress] = useState<LlamaRuntimeProgress | null>(null);
+  const [progress, setProgress] = useState<RuntimeProgress | null>(null);
   const [installing, setInstalling] = useState(false);
 
   const fetchVariants = () =>
     api
-      .listLlamaRuntimeVariants()
+      .listRuntimeVariants(kind)
       .then((list) => {
         setVariants(list);
         setSelected((current) => current || list[0]?.backend || '');
@@ -42,12 +49,19 @@ export const LlamaRuntimeCard = ({ onInstalled }: { onInstalled?: () => void }) 
   };
 
   useEffect(() => {
-    api.getLlamaRuntime().then(setInstalled).catch(() => setInstalled(null));
+    api.getRuntime(kind).then(setInstalled).catch(() => setInstalled(null));
     void fetchVariants();
     let unlisten: (() => void) | undefined;
-    api.onLlamaRuntimeProgress(setProgress).then((fn) => (unlisten = fn)).catch(() => {});
+    api
+      .onRuntimeProgress((p) => {
+        if (p.kind === kind) setProgress(p);
+      })
+      .then((fn) => (unlisten = fn))
+      .catch(() => {});
     return () => unlisten?.();
-  }, []);
+    // fetchVariants only depends on kind.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [kind]);
 
   const variant = variants?.find((v) => v.backend === selected);
   const upToDate = Boolean(installed && variant && installed.build === variant.build && installed.backend === variant.backend);
@@ -57,9 +71,9 @@ export const LlamaRuntimeCard = ({ onInstalled }: { onInstalled?: () => void }) 
     setInstalling(true);
     setProgress(null);
     try {
-      const info = await api.installLlamaRuntime(variant.backend);
+      const info = await api.installRuntime(kind, variant.backend);
       setInstalled(info);
-      toast.success(t('runtime.installed', { build: info.build, backend: backendLabel(info.backend) }));
+      toast.success(t(`runtime.${kind}.installed`, { build: info.build, backend: backendLabel(info.backend) }));
       onInstalled?.();
     } catch (e) {
       toast.error(t('runtime.installFailed', { error: errorMessage(e) }));
@@ -74,9 +88,9 @@ export const LlamaRuntimeCard = ({ onInstalled }: { onInstalled?: () => void }) 
         <div>
           <h2 className="text-sm font-semibold text-slate-200 flex items-center gap-2">
             <HardDriveDownload className="w-4 h-4 text-accent-400" />
-            {t('runtime.title')}
+            {t(`runtime.${kind}.title`)}
           </h2>
-          <p className="text-xs text-slate-400 mt-0.5">{t('runtime.intro')}</p>
+          <p className="text-xs text-slate-400 mt-0.5">{t(`runtime.${kind}.intro`)}</p>
         </div>
         <button
           type="button"
@@ -92,7 +106,7 @@ export const LlamaRuntimeCard = ({ onInstalled }: { onInstalled?: () => void }) 
       <p className="text-xs text-slate-300">
         {installed
           ? t('runtime.statusInstalled', { build: installed.build, backend: backendLabel(installed.backend) })
-          : t('runtime.statusNone')}
+          : t(`runtime.${kind}.statusNone`)}
       </p>
 
       {variantsError ? (

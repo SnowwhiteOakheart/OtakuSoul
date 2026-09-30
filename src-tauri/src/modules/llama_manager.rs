@@ -153,6 +153,11 @@ impl LlamaServerManager {
         }
 
         if Self::requires_prism_runtime(model_path) {
+            if let Some(runtime) =
+                crate::modules::runtimes::installed(crate::modules::runtimes::RuntimeKind::Prism)
+            {
+                return Ok(PathBuf::from(runtime.server_path));
+            }
             let bin_root = if bin_dir.file_name().and_then(|n| n.to_str()) == Some("cuda") {
                 bin_dir.parent().unwrap_or(&bin_dir).to_path_buf()
             } else {
@@ -171,7 +176,9 @@ impl LlamaServerManager {
         }
 
         // The runtime downloaded in the app beats the developer bin/ folders and PATH.
-        if let Some(runtime) = crate::modules::llama_runtime::installed() {
+        if let Some(runtime) =
+            crate::modules::runtimes::installed(crate::modules::runtimes::RuntimeKind::Llama)
+        {
             return Ok(PathBuf::from(runtime.server_path));
         }
 
@@ -291,9 +298,7 @@ impl LlamaServerManager {
             // The server's folder plus any library folders of an app-installed runtime
             // (e.g. the CUDA runtime unpacked next to it).
             let mut dirs: Vec<PathBuf> = vec![parent.to_path_buf()];
-            dirs.extend(crate::modules::llama_runtime::library_dirs_for(
-                &binary_path,
-            ));
+            dirs.extend(crate::modules::runtimes::library_dirs_for(&binary_path));
             let var = if cfg!(windows) {
                 "PATH"
             } else {

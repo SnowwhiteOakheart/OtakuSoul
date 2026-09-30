@@ -16,7 +16,7 @@ import {
   Check,
 } from 'lucide-react';
 import { backendMessage } from '../../../utils/errors';
-import { LlamaRuntimeCard } from './LlamaRuntimeCard';
+import { RuntimeCard } from './RuntimeCard';
 
 export const ServerSettings = () => {
   const { t, tOptional } = useTranslation();
@@ -143,7 +143,8 @@ export const ServerSettings = () => {
         </div>
       </div>
 
-      <LlamaRuntimeCard onInstalled={() => void useAppStore.getState().fetchServerStatus()} />
+      <RuntimeCard kind="llama" onInstalled={() => void useAppStore.getState().fetchServerStatus()} />
+      <RuntimeCard kind="prism" onInstalled={() => void useAppStore.getState().fetchServerStatus()} />
 
       {/* 2. llama-server Controller */}
       <div className="rounded-xl border border-slate-800 bg-slate-900/60 p-4 space-y-4">
