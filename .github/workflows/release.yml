@@ -17,22 +17,12 @@ on:
           - windows
 
 jobs:
-  release:
+  release-linux:
+    name: Release Linux (AppImage & deb)
+    if: ${{ github.event_name != 'workflow_dispatch' || inputs.platform == 'all' || inputs.platform == '' || inputs.platform == 'linux' }}
+    runs-on: ubuntu-24.04
     permissions:
       contents: write
-    strategy:
-      fail-fast: false
-      matrix:
-        include:
-          - platform: 'ubuntu-24.04'
-            target: 'linux'
-            args: '--bundles appimage,deb'
-          - platform: 'windows-latest'
-            target: 'windows'
-            args: '--bundles nsis'
-
-    if: ${{ github.event_name != 'workflow_dispatch' || inputs.platform == 'all' || inputs.platform == '' || inputs.platform == matrix.target }}
-    runs-on: ${{ matrix.platform }}
     steps:
       - name: Checkout Repository
         uses: actions/checkout@v4
@@ -52,7 +42,6 @@ jobs:
           workspaces: './src-tauri -> target'
 
       - name: Install Linux Dependencies
-        if: matrix.platform == 'ubuntu-24.04'
         run: |
           sudo apt-get update
           sudo apt-get install -y \
@@ -88,4 +77,46 @@ jobs:
           releaseDraft: false
           prerelease: false
           includeUpdaterJson: true
-          args: ${{ matrix.args }}
+          args: '--bundles appimage,deb'
+
+  release-windows:
+    name: Release Windows (NSIS .exe)
+    if: ${{ github.event_name != 'workflow_dispatch' || inputs.platform == 'all' || inputs.platform == '' || inputs.platform == 'windows' }}
+    runs-on: windows-latest
+    permissions:
+      contents: write
+    steps:
+      - name: Checkout Repository
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: 'npm'
+
+      - name: Install Rust Stable
+        uses: dtolnay/rust-toolchain@stable
+
+      - name: Rust Cache
+        uses: swatinem/rust-cache@v2
+        with:
+          workspaces: './src-tauri -> target'
+
+      - name: Install Frontend Dependencies
+        run: npm ci
+
+      - name: Build Tauri App & Publish Release
+        uses: tauri-apps/tauri-action@v0
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          TAURI_SIGNING_PRIVATE_KEY: ${{ secrets.TAURI_SIGNING_PRIVATE_KEY }}
+          TAURI_SIGNING_PRIVATE_KEY_PASSWORD: ${{ secrets.TAURI_SIGNING_PRIVATE_KEY_PASSWORD }}
+        with:
+          tagName: v__VERSION__
+          releaseName: 'OtakuSoul v__VERSION__'
+          releaseBody: 'OtakuSoul Release v__VERSION__. Herunterladen und starten:\n- Windows: `OtakuSoul_..._x64-setup.exe`\n- Linux: `OtakuSoul_..._amd64.AppImage` (oder `.deb`)'
+          releaseDraft: false
+          prerelease: false
+          includeUpdaterJson: true
+          args: '--bundles nsis'
