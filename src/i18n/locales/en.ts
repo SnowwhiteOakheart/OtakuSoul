@@ -2074,4 +2074,8 @@ export const en: TranslationDictionary = {
   "chat.sceneImageCollapse": "Shrink image",
   "chat.sceneImageClose": "Hide scene image",
   "backend.image.emptyPrompt": "The chat model returned no image prompt.",
+  "runtime.crisp.title": "CrispASR runtime (local speech)",
+  "runtime.crisp.intro": "Local speech without Python: the crispasr server from the CrispASR project (MIT) with Qwen3-TTS, Chatterbox, Kokoro and more.",
+  "runtime.crisp.statusNone": "Not installed yet. Local multilingual speech needs this runtime.",
+  "runtime.crisp.installed": "CrispASR {{build}} ({{backend}}) is installed.",
 };

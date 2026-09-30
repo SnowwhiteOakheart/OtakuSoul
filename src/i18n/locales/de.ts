@@ -2076,4 +2076,8 @@ export const de = {
   "chat.sceneImageCollapse": "Bild verkleinern",
   "chat.sceneImageClose": "Szenenbild ausblenden",
   "backend.image.emptyPrompt": "Das Chat-Modell hat keinen Bild-Prompt geliefert.",
+  "runtime.crisp.title": "CrispASR-Laufzeit (lokale Sprachausgabe)",
+  "runtime.crisp.intro": "Lokale Sprachausgabe ohne Python: der crispasr-Server aus dem CrispASR-Projekt (MIT) mit Qwen3-TTS, Chatterbox, Kokoro und mehr.",
+  "runtime.crisp.statusNone": "Noch nicht installiert. Ohne diese Laufzeit gibt es keine lokale mehrsprachige Sprachausgabe.",
+  "runtime.crisp.installed": "CrispASR {{build}} ({{backend}}) ist installiert.",
 } as const;

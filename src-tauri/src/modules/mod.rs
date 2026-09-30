@@ -18,6 +18,7 @@ pub mod logger;
 pub mod lorebook;
 pub mod mcp_client;
 pub mod memory;
+pub mod model_files;
 pub mod models_hub;
 pub mod paths;
 pub mod profile_backup;

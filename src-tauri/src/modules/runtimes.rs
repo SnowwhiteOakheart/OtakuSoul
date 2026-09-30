@@ -1,6 +1,6 @@
 //! Downloads prebuilt server runtimes from GitHub: official llama.cpp, the PrismML llama.cpp
-//! fork (needed for Ternary Bonsai's PQ2_0/PTQ1_0 files) and stable-diffusion.cpp for local
-//! image generation.
+//! fork (needed for Ternary Bonsai's PQ2_0/PTQ1_0 files), stable-diffusion.cpp for local
+//! image generation and CrispASR for local speech synthesis.
 //!
 //! llama.cpp follows its latest *stable* release (e.g. `v0.5.0`), which points to the build it
 //! was cut from through its `nightly-tag.txt` asset; the other two use their latest release.
@@ -26,16 +26,24 @@ pub enum RuntimeKind {
     Prism,
     /// stable-diffusion.cpp with `sd-server`.
     Sd,
+    /// CrispASR (ggml speech engine) with its `--server` mode for text-to-speech.
+    Crisp,
 }
 
 impl RuntimeKind {
-    const ALL: [RuntimeKind; 3] = [RuntimeKind::Llama, RuntimeKind::Prism, RuntimeKind::Sd];
+    const ALL: [RuntimeKind; 4] = [
+        RuntimeKind::Llama,
+        RuntimeKind::Prism,
+        RuntimeKind::Sd,
+        RuntimeKind::Crisp,
+    ];
 
     fn repo(self) -> &'static str {
         match self {
             Self::Llama => "ggml-org/llama.cpp",
             Self::Prism => "PrismML-Eng/llama.cpp",
             Self::Sd => "leejet/stable-diffusion.cpp",
+            Self::Crisp => "CrispStrobe/CrispASR",
         }
     }
 
@@ -44,6 +52,7 @@ impl RuntimeKind {
             Self::Llama => "llama.cpp",
             Self::Prism => "prism",
             Self::Sd => "sd.cpp",
+            Self::Crisp => "crispasr",
         }
     }
 
@@ -51,6 +60,8 @@ impl RuntimeKind {
         match (self, cfg!(windows)) {
             (Self::Sd, true) => "sd-server.exe",
             (Self::Sd, false) => "sd-server",
+            (Self::Crisp, true) => "crispasr.exe",
+            (Self::Crisp, false) => "crispasr",
             (_, true) => "llama-server.exe",
             (_, false) => "llama-server",
         }
@@ -210,6 +221,29 @@ fn backend_of(kind: RuntimeKind, name: &str, build: &str, platform: Platform) ->
                 other => other.to_string(),
             }
         }
+        RuntimeKind::Crisp => {
+            // crispasr-linux-x86_64-vulkan.tar.gz, crispasr-windows-x86_64-cuda.zip,
+            // crispasr-macos-arm64.tar.gz; `libcrispasr-…` and wheels are other files.
+            let (os, ext) = match platform.os {
+                Os::Linux => ("linux", ".tar.gz"),
+                Os::Windows => ("windows", ".zip"),
+                Os::Mac => ("macos", ".tar.gz"),
+            };
+            let arch = if platform.arm64 { "arm64" } else { "x86_64" };
+            let rest = name
+                .strip_prefix(&format!("crispasr-{os}-{arch}"))?
+                .strip_suffix(ext)?;
+            match (rest.trim_start_matches('-'), platform.os) {
+                ("", Os::Mac) => "metal".to_string(),
+                ("", _) | ("cpu", _) => "cpu".to_string(),
+                ("cuda", _) => "cuda-12".to_string(),
+                ("cuda13", _) => "cuda-13".to_string(),
+                ("hip", _) => "hip-amd".to_string(),
+                ("vulkan", _) => "vulkan".to_string(),
+                // avx512/cpu-legacy special builds and the CUDA-less split archives.
+                _ => return None,
+            }
+        }
         RuntimeKind::Sd => {
             if !name.starts_with("sd-") || !name.ends_with(".zip") {
                 return None;
@@ -258,6 +292,8 @@ fn cudart_asset<'a>(
             version.replace('.', "")
         )],
         (RuntimeKind::Sd, _) => return None,
+        // CrispASR's CUDA archives are self-contained.
+        (RuntimeKind::Crisp, _) => return None,
         (_, os) => {
             let (os, ext) = match os {
                 Os::Windows => ("win", ".zip"),
@@ -330,7 +366,7 @@ async fn build_release(client: &reqwest::Client, kind: RuntimeKind) -> Result<Re
             let build = stable_llama_build(client).await?;
             fetch_release(client, format!("{}/tags/{build}", kind.api())).await
         }
-        RuntimeKind::Prism | RuntimeKind::Sd => {
+        RuntimeKind::Prism | RuntimeKind::Sd | RuntimeKind::Crisp => {
             fetch_release(client, format!("{}/latest", kind.api())).await
         }
     }
@@ -815,6 +851,55 @@ mod tests {
         let _ = std::fs::remove_dir_all(root);
     }
 
+    #[test]
+    fn recognizes_crispasr_builds() {
+        let of = |name: &str, platform| backend_of(RuntimeKind::Crisp, name, "v0.8.39", platform);
+        assert_eq!(
+            of("crispasr-linux-x86_64.tar.gz", LINUX).as_deref(),
+            Some("cpu")
+        );
+        assert_eq!(
+            of("crispasr-linux-x86_64-cuda.tar.gz", LINUX).as_deref(),
+            Some("cuda-12")
+        );
+        assert_eq!(
+            of("crispasr-linux-x86_64-cuda13.tar.gz", LINUX).as_deref(),
+            Some("cuda-13")
+        );
+        assert_eq!(
+            of("crispasr-linux-x86_64-vulkan.tar.gz", LINUX).as_deref(),
+            Some("vulkan")
+        );
+        assert_eq!(
+            of("crispasr-linux-x86_64-hip.tar.gz", LINUX).as_deref(),
+            Some("hip-amd")
+        );
+        assert_eq!(
+            of("crispasr-windows-x86_64-cpu.zip", WINDOWS).as_deref(),
+            Some("cpu")
+        );
+        assert_eq!(
+            of("crispasr-windows-x86_64-cuda.zip", WINDOWS).as_deref(),
+            Some("cuda-12")
+        );
+        assert_eq!(
+            of("crispasr-macos-arm64.tar.gz", MAC).as_deref(),
+            Some("metal")
+        );
+        for other in [
+            "crispasr-linux-x86_64-avx512.tar.gz",
+            "crispasr-linux-x86_64-cpu-legacy.tar.gz",
+            "libcrispasr-linux-x86_64.tar.gz",
+            "crispasr-linux-arm64.tar.gz",
+        ] {
+            assert_eq!(of(other, LINUX), None, "{other}");
+        }
+        assert_eq!(
+            of("crispasr-windows-x86_64-cuda-non-cuda.zip", WINDOWS),
+            None
+        );
+    }
+
     /// Downloads the real CPU builds into a temporary folder and runs `--version`/`--help`:
     /// `cargo test --lib installs_cpu_runtimes -- --ignored`
     #[tokio::test]
@@ -824,6 +909,7 @@ mod tests {
             (RuntimeKind::Llama, "--version"),
             (RuntimeKind::Prism, "--version"),
             (RuntimeKind::Sd, "--help"),
+            (RuntimeKind::Crisp, "--version"),
         ] {
             let root = std::env::temp_dir().join(format!(
                 "otakusoul-runtime-install-{}-{}",

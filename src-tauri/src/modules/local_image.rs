@@ -11,15 +11,13 @@
 //! flat in `image-models/` (shared files such as VAEs download once), resumed after an
 //! interruption and checked against Hugging Face's SHA-256.
 
-use futures_util::StreamExt;
 use serde::{Deserialize, Serialize};
-use sha2::{Digest, Sha256};
 use std::path::{Path, PathBuf};
 use std::sync::Arc;
 use std::sync::atomic::{AtomicBool, Ordering};
 use std::time::Duration;
 use tauri::Emitter;
-use tokio::io::{AsyncBufReadExt, AsyncReadExt, AsyncWriteExt, BufReader};
+use tokio::io::{AsyncBufReadExt, BufReader};
 use tokio::process::{Child, Command};
 use tokio::sync::Mutex;
 use ts_rs::TS;
@@ -69,15 +67,17 @@ struct CatalogFile {
 }
 
 impl CatalogFile {
-    fn file_name(&self) -> &'static str {
-        self.path.rsplit('/').next().unwrap_or(self.path)
+    fn remote(&self) -> crate::modules::model_files::RemoteFile {
+        crate::modules::model_files::RemoteFile {
+            repo: self.repo,
+            path: self.path,
+            size: self.size,
+            sha256: Some(self.sha256),
+        }
     }
 
-    fn url(&self) -> String {
-        format!(
-            "https://huggingface.co/{}/resolve/main/{}",
-            self.repo, self.path
-        )
+    fn file_name(&self) -> &'static str {
+        self.remote().file_name()
     }
 }
 
@@ -393,10 +393,7 @@ pub async fn download_model<R: tauri::Runtime>(
     tokio::fs::create_dir_all(&dir)
         .await
         .map_err(|e| crate::err!("backend.common.dirCreate", error = e))?;
-    let client = reqwest::Client::builder()
-        .user_agent(concat!("OtakuSoul/", env!("CARGO_PKG_VERSION")))
-        .build()
-        .map_err(|e| crate::err!("backend.common.httpClient", error = e))?;
+    let client = crate::modules::model_files::http_client()?;
 
     let total: u64 = model.files.iter().map(|f| f.size).sum();
     let mut done: u64 = model
@@ -406,7 +403,7 @@ pub async fn download_model<R: tauri::Runtime>(
         .map(|f| f.size)
         .sum();
     for file in model.files.iter().filter(|f| !is_file_complete(f)) {
-        let emit = |downloaded: u64, finished: bool| {
+        let emit = |downloaded: u64| {
             let _ = app.emit(
                 "image-model-progress",
                 ImageModelProgress {
@@ -415,11 +412,18 @@ pub async fn download_model<R: tauri::Runtime>(
                     downloaded_bytes: done + downloaded,
                     total_bytes: total,
                     percent: ((done + downloaded) as f32 / total.max(1) as f32 * 100.0).min(100.0),
-                    finished,
+                    finished: false,
                 },
             );
         };
-        download_file(&client, file, &emit).await?;
+        crate::modules::model_files::download_file(
+            &client,
+            &file.remote(),
+            &dir,
+            &CANCEL_DOWNLOAD,
+            &emit,
+        )
+        .await?;
         done += file.size;
     }
     let _ = app.emit(
@@ -437,108 +441,6 @@ pub async fn download_model<R: tauri::Runtime>(
     Ok(())
 }
 
-async fn download_file(
-    client: &reqwest::Client,
-    file: &CatalogFile,
-    emit: &(impl Fn(u64, bool) + Sync),
-) -> Result<(), String> {
-    let target = file_path(file);
-    let part = target.with_extension(format!(
-        "{}.part",
-        target.extension().and_then(|e| e.to_str()).unwrap_or("bin")
-    ));
-
-    // Hash what an earlier attempt already downloaded, then continue from there.
-    let mut hasher = Sha256::new();
-    let mut have = 0u64;
-    if let Ok(mut existing) = tokio::fs::File::open(&part).await {
-        let mut buf = vec![0u8; 1 << 20];
-        loop {
-            let n = existing
-                .read(&mut buf)
-                .await
-                .map_err(|e| crate::err!("backend.common.fileWrite", error = e))?;
-            if n == 0 {
-                break;
-            }
-            hasher.update(&buf[..n]);
-            have += n as u64;
-        }
-    }
-    if have > file.size {
-        let _ = tokio::fs::remove_file(&part).await;
-        have = 0;
-        hasher = Sha256::new();
-    }
-
-    let mut request = client.get(file.url());
-    if have > 0 {
-        request = request.header(reqwest::header::RANGE, format!("bytes={have}-"));
-    }
-    let response = request
-        .send()
-        .await
-        .and_then(reqwest::Response::error_for_status)
-        .map_err(|e| crate::err!("backend.common.downloadFailed", error = e))?;
-    let resumed = have > 0 && response.status() == reqwest::StatusCode::PARTIAL_CONTENT;
-    if !resumed {
-        have = 0;
-        hasher = Sha256::new();
-    }
-    let mut out = tokio::fs::OpenOptions::new()
-        .create(true)
-        .write(true)
-        .append(resumed)
-        .truncate(!resumed)
-        .open(&part)
-        .await
-        .map_err(|e| crate::err!("backend.common.fileCreate", error = e))?;
-
-    let mut stream = response.bytes_stream();
-    let mut last_emit = std::time::Instant::now();
-    while let Some(chunk) = stream.next().await {
-        if CANCEL_DOWNLOAD.load(Ordering::SeqCst) {
-            out.flush().await.ok();
-            return Err(crate::err!("backend.localImage.downloadCancelled"));
-        }
-        let chunk =
-            chunk.map_err(|e| crate::err!("backend.common.downloadInterrupted", error = e))?;
-        out.write_all(&chunk)
-            .await
-            .map_err(|e| crate::err!("backend.common.fileWrite", error = e))?;
-        hasher.update(&chunk);
-        have += chunk.len() as u64;
-        if last_emit.elapsed() >= Duration::from_millis(300) {
-            emit(have, false);
-            last_emit = std::time::Instant::now();
-        }
-    }
-    out.flush()
-        .await
-        .map_err(|e| crate::err!("backend.common.fileWrite", error = e))?;
-    drop(out);
-
-    let actual: String = hasher
-        .finalize()
-        .iter()
-        .map(|b| format!("{b:02x}"))
-        .collect();
-    if actual != file.sha256 {
-        let _ = tokio::fs::remove_file(&part).await;
-        return Err(crate::err!(
-            "backend.runtime.checksum",
-            file = file.file_name(),
-            expected = file.sha256,
-            actual = actual
-        ));
-    }
-    tokio::fs::rename(&part, &target)
-        .await
-        .map_err(|e| crate::err!("backend.common.fileWrite", error = e))?;
-    emit(have, false);
-    Ok(())
-}
-
 /// Deletes the files of `model_id` that no other installed model uses.
 pub fn delete_model(model_id: &str) -> Result<(), String> {
     let model = catalog_model(model_id)?;
@@ -553,13 +455,7 @@ pub fn delete_model(model_id: &str) -> Result<(), String> {
         });
         if !shared {
             let _ = std::fs::remove_file(file_path(file));
-            let _ = std::fs::remove_file(file_path(file).with_extension(format!(
-                "{}.part",
-                file_path(file)
-                    .extension()
-                    .and_then(|e| e.to_str())
-                    .unwrap_or("bin")
-            )));
+            let _ = std::fs::remove_file(crate::modules::model_files::part_path(&file_path(file)));
         }
     }
     Ok(())

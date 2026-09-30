@@ -3,4 +3,4 @@
 /**
  * Which runtime to download.
  */
-export type RuntimeKind = "llama" | "prism" | "sd";
+export type RuntimeKind = "llama" | "prism" | "sd" | "crisp";

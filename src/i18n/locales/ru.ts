@@ -2074,4 +2074,8 @@ export const ru: TranslationDictionary = {
   "chat.sceneImageCollapse": "Уменьшить изображение",
   "chat.sceneImageClose": "Скрыть изображение сцены",
   "backend.image.emptyPrompt": "Чат-модель не вернула промпт для изображения.",
+  "runtime.crisp.title": "Среда CrispASR (локальная озвучка)",
+  "runtime.crisp.intro": "Локальная озвучка без Python: сервер crispasr из проекта CrispASR (MIT) с Qwen3-TTS, Chatterbox, Kokoro и другими.",
+  "runtime.crisp.statusNone": "Ещё не установлена. Без неё локальная многоязычная озвучка недоступна.",
+  "runtime.crisp.installed": "CrispASR {{build}} ({{backend}}) установлена.",
 };
