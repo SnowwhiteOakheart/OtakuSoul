@@ -1,5 +1,6 @@
 import type React from 'react';
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
+import { convertFileSrc } from '@tauri-apps/api/core';
 import { useStoreFields } from '../../../store/useAppStore';
 import { useTranslation } from '../../../i18n';
 import { api } from '../../../services/api';
@@ -15,7 +16,15 @@ import {
   EyeOff,
   Wand2,
 } from 'lucide-react';
-import type { ImageGenConfig } from '../../../types';
+import type { ImageGenConfig, LocalImageStatus } from '../../../types';
+import { LocalImageSettings } from './LocalImageSettings';
+
+/** Default endpoint per provider; `local` needs none. */
+const PROVIDER_URLS: Record<string, string> = {
+  automatic1111: 'http://127.0.0.1:7860',
+  comfy_ui: 'http://127.0.0.1:8188',
+  bonsai_image: 'http://127.0.0.1:8000',
+};
 
 const DEFAULT_IMG_CONFIG: ImageGenConfig = {
   provider: 'automatic1111',
@@ -29,6 +38,8 @@ const DEFAULT_IMG_CONFIG: ImageGenConfig = {
   cfg_scale: 7.0,
   sampler_name: 'Euler a',
   seed: -1,
+  local_model_id: null,
+  vram_strategy: 'auto',
 };
 
 export const ImageGenTab: React.FC = () => {
@@ -49,6 +60,19 @@ export const ImageGenTab: React.FC = () => {
   const [testPrompt, setTestPrompt] = useState('');
   const [negativeDraft, setTestNegative] = useState<string | null>(null);
   const testNegative = negativeDraft ?? (imageGenConfig?.negative_prompt || DEFAULT_IMG_CONFIG.negative_prompt);
+  const [localStatus, setLocalStatus] = useState<LocalImageStatus | null>(null);
+  const provider = localImgConfig.provider.toLowerCase();
+  const isLocal = provider === 'local';
+  const isBonsai = provider === 'bonsai_image';
+
+  useEffect(() => {
+    let unlisten: (() => void) | undefined;
+    api
+      .onLocalImageStatus(setLocalStatus)
+      .then((fn) => (unlisten = fn))
+      .catch(() => {});
+    return () => unlisten?.();
+  }, []);
 
   const handleSaveImgConfig = async () => {
     try {
@@ -86,6 +110,7 @@ export const ImageGenTab: React.FC = () => {
       return;
     }
     setIsGeneratingImage(true);
+    setLocalStatus(null);
     try {
       const res = await generateImageAction(testPrompt, testNegative || undefined, localImgConfig);
       if (res) {
@@ -113,9 +138,7 @@ export const ImageGenTab: React.FC = () => {
               </div>
               <div>
                 <h2 className="text-sm font-bold text-slate-100">{t('int.imageTitle')}</h2>
-                <p className="text-xs text-slate-400">
-                  Automatic1111, ComfyUI, DALL-E 3, NovelAI & FLUX
-                </p>
+                <p className="text-xs text-slate-400">{t('int.imageProviders')}</p>
               </div>
             </div>
 
@@ -139,18 +162,23 @@ export const ImageGenTab: React.FC = () => {
                   setLocalImgConfig({
                     ...localImgConfig,
                     provider: e.target.value,
+                    api_url: PROVIDER_URLS[e.target.value] ?? localImgConfig.api_url,
+                    steps: e.target.value === 'bonsai_image' ? 4 : localImgConfig.steps,
                   })
                 }
+                aria-label={t('int.provider')}
                 className="w-full bg-app border border-slate-700 rounded-xl px-3 py-2 text-xs text-slate-100"
               >
+                <option value="local">{t('int.providerLocal')}</option>
+                <option value="bonsai_image">{t('int.providerBonsai')}</option>
                 <option value="automatic1111">Automatic1111 (SD WebUI)</option>
                 <option value="comfy_ui">ComfyUI</option>
                 <option value="dall_e_3">OpenAI DALL-E 3</option>
                 <option value="novel_ai">NovelAI Image Gen</option>
-                <option value="flux">FLUX</option>
               </select>
             </div>
 
+            {!isLocal && (
             <div>
               <label className="block text-xs font-semibold text-slate-300 mb-1">
                 {t('int.resolution')}
@@ -182,8 +210,14 @@ export const ImageGenTab: React.FC = () => {
                 />
               </div>
             </div>
+            )}
           </div>
 
+          {isLocal && <LocalImageSettings config={localImgConfig} onChange={setLocalImgConfig} />}
+          {isBonsai && <p className="text-xs text-slate-400">{t('int.bonsaiHint')}</p>}
+
+          {!isLocal && (
+          <>
           <div>
             <label className="block text-xs font-semibold text-slate-300 mb-1">
               {t('int.endpoint')}
@@ -233,8 +267,8 @@ export const ImageGenTab: React.FC = () => {
               </label>
               <input
                 type="range"
-                min={10}
-                max={60}
+                min={isBonsai ? 1 : 10}
+                max={isBonsai ? 8 : 60}
                 value={localImgConfig.steps}
                 onChange={(e) =>
                   setLocalImgConfig({
@@ -266,6 +300,8 @@ export const ImageGenTab: React.FC = () => {
               />
             </div>
           </div>
+          </>
+          )}
         </div>
 
         {/* Live Generator Studio */}
@@ -320,7 +356,11 @@ export const ImageGenTab: React.FC = () => {
             {isGeneratingImage ? (
               <>
                 <RefreshCw className="w-4 h-4 animate-spin" />
-                <span>{t('int.generating')}</span>
+                <span>
+                  {isLocal && localStatus && localStatus.phase !== 'done' && localStatus.phase !== 'failed'
+                    ? t(`localImage.phase.${localStatus.phase}` as 'localImage.phase.generating')
+                    : t('int.generating')}
+                </span>
               </>
             ) : (
               <>
@@ -362,9 +402,12 @@ export const ImageGenTab: React.FC = () => {
                 key={idx}
                 className="group relative bg-app border border-slate-800 rounded-xl overflow-hidden shadow-md flex flex-col p-3 space-y-2"
               >
-                <div className="w-full aspect-[2/3] bg-slate-900 rounded-lg flex items-center justify-center border border-slate-800">
-                  <ImageIcon className="w-8 h-8 text-accent-400 opacity-60" />
-                </div>
+                <img
+                  src={convertFileSrc(img.file_path)}
+                  alt={img.file_name}
+                  loading="lazy"
+                  className="w-full aspect-[2/3] object-cover bg-slate-900 rounded-lg border border-slate-800"
+                />
                 <div className="text-xs font-mono text-slate-200 truncate">
                   {img.file_name}
                 </div>

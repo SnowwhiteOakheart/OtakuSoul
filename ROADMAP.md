@@ -235,6 +235,33 @@ GitHub Actions wurden bewusst entfernt (Commit `11597c2`). Stattdessen gibt es j
 
 ---
 
+## 🖼️ Lokale Bildgenerierung (offline, mit VRAM-Handling)
+
+- [x] Laufzeiten in der App herunterladen (`modules/runtimes.rs`): llama.cpp, der PrismML-Fork für Ternary Bonsai
+  (PQ2_0/PTQ1_0) und stable-diffusion.cpp (`sd-server`, ohne Python). Netzwerktest lädt und startet alle drei CPU-Builds.
+- [x] Bildmodell-Katalog je VRAM-Stufe mit SHA-256 von Hugging Face, Download fortsetzbar und abbrechbar:
+  Animagine XL 4.0 / Illustrious XL 0.1 (SDXL, ~7,5 GB), FLUX.1 dev Q5_K_S (~10 GB), Qwen-Image 2.1 Q4_K (~9,5 GB),
+  FLUX.2 dev Q4_K_S (~21,5 GB; FP16 wären 64 GB, nicht 24).
+- [x] VRAM-Planer (`local_image::plan`, getestet): parallel, Chat-Modell mit weniger GPU-Layern (Layer-Zahl aus dem
+  GGUF-Header) oder tauschen (llama-server stoppen → Bild → sd-server stoppen → llama-server im Hintergrund mit gleichen
+  Einstellungen neu starten). Die App verwaltet beide Server selbst; ComfyUI-Nodes wie „Release llama.cpp VRAM“ braucht es nicht.
+- [x] Anbieter „Bonsai Image (PrismML)“ über den Demo-Server (`serve.sh`, `POST /generate`): ~2 GB VRAM, läuft parallel.
+  Nicht in der App ausführbar, weil es nur als Python-Server mit CUDA (Linux) bzw. MLX (Mac) existiert.
+- [x] Dabei behoben: Die Anbieter-Auswahl (`comfy_ui`, `dall_e_3`, …) passte nicht zu den Namen im Backend, alles lief
+  über den A1111-Fallback. Die Galerie zeigt jetzt die Bilder statt Platzhaltern.
+- [ ] **GPU-Tests nachholen** (aufgeschoben, solange keine großen Modelle laufen sollen):
+  - sd.cpp-Vulkan/CUDA-Build installieren und je Katalogmodell ein Bild erzeugen (Parameter, Sampler, `--offload-to-cpu`).
+  - VRAM-Schätzwerte der Modelle mit `nvidia-smi` nachmessen und im Katalog korrigieren.
+  - Tausch-Modus mit laufendem Bonsai-Chat: Entladen, Generieren, Neustart im Hintergrund; Chat danach weiter nutzbar.
+  - Modus „Chat-Modell verkleinern“ auf 12/16 GB prüfen; Parallelbetrieb auf 24 GB.
+  - PrismML-Laufzeit (CUDA-Build) mit Ternary Bonsai 2 27B aus der App starten.
+  - Bonsai Image über `serve.sh` gegen die App testen.
+- [ ] Freier VRAM wird nur über `nvidia-smi` gemessen; auf AMD/Intel plant der Planer mit Schätzwerten.
+- [ ] Anime-LoRAs (Flux/SDXL) auswählbar machen (`/sdapi/v1/loras`), Pony V6 (nur über Civitai mit Login) und eine
+  SD-1.5-Stufe für 4-GB-Karten.
+
+---
+
 ## ✨ P3 – Nice-to-have
 
 - [ ] Hardware-Probe für AMD (ROCm/sysfs), Intel und Apple Metal. Heute gibt es nur `nvidia-smi` (offen aus der alten Roadmap).

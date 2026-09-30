@@ -67,6 +67,8 @@ pub fn build_character_image_prompt(
 
 #[tauri::command]
 pub async fn generate_image_action(
+    app: tauri::AppHandle,
+    state: State<'_, AppState>,
     prompt: String,
     negative: Option<String>,
     custom_config: Option<crate::modules::image_generator::ImageGenConfig>,
@@ -75,8 +77,45 @@ pub async fn generate_image_action(
         &prompt,
         negative.as_deref(),
         custom_config,
+        Some(crate::modules::image_generator::LocalBackend {
+            app: &app,
+            engine: &state.local_image,
+            llama: state.llama_manager.clone(),
+        }),
     )
     .await
+}
+
+#[tauri::command]
+pub fn list_image_models() -> Vec<crate::modules::local_image::ImageModelInfo> {
+    crate::modules::local_image::list_models()
+}
+
+#[tauri::command]
+pub async fn download_image_model(app: tauri::AppHandle, model_id: String) -> Result<(), String> {
+    crate::modules::local_image::download_model(&app, &model_id).await
+}
+
+#[tauri::command]
+pub fn cancel_image_model_download() {
+    crate::modules::local_image::cancel_download();
+}
+
+#[tauri::command]
+pub async fn delete_image_model(
+    state: State<'_, AppState>,
+    model_id: String,
+) -> Result<(), String> {
+    if state.local_image.loaded_model().await.as_deref() == Some(model_id.as_str()) {
+        state.local_image.stop().await;
+    }
+    crate::modules::local_image::delete_model(&model_id)
+}
+
+#[tauri::command]
+pub async fn stop_local_image_server(state: State<'_, AppState>) -> Result<(), String> {
+    state.local_image.stop().await;
+    Ok(())
 }
 
 #[tauri::command]

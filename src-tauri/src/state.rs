@@ -2,6 +2,7 @@ use crate::modules::companion::CompanionEngine;
 use crate::modules::discord::{DiscordBotManager, DiscordRpcClient};
 use crate::modules::inference::InferenceClient;
 use crate::modules::llama_manager::LlamaServerManager;
+use crate::modules::local_image::LocalImageEngine;
 use crate::modules::memory::MemoryDb;
 use crate::modules::stage::StageEngine;
 use crate::modules::web_server::WebServerManager;
@@ -9,6 +10,7 @@ use std::sync::Arc;
 
 pub struct AppState {
     pub llama_manager: Arc<LlamaServerManager>,
+    pub local_image: Arc<LocalImageEngine>,
     pub inference_client: Arc<InferenceClient>,
     pub memory_db: Arc<MemoryDb>,
     pub stage_engine: Arc<StageEngine>,
@@ -42,6 +44,7 @@ impl AppState {
 
         Self {
             llama_manager: Arc::new(LlamaServerManager::new()),
+            local_image: Arc::new(LocalImageEngine::new()),
             inference_client: Arc::new(InferenceClient::new()),
             memory_db: Arc::new(memory_db),
             stage_engine: Arc::new(StageEngine::new()),

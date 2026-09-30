@@ -96,6 +96,29 @@ fn memory_profile(
     }
 }
 
+/// VRAM a chat model needs with every layer on the GPU: weights, KV cache for `context_size`
+/// tokens and the runtime's own buffers.
+pub fn estimate_llm_vram_mb(
+    model_path: &str,
+    total_model_layers: u32,
+    context_size: u32,
+    cache_type_k: Option<&str>,
+    cache_type_v: Option<&str>,
+) -> u64 {
+    let profile = memory_profile(
+        Some(model_path),
+        total_model_layers,
+        cache_type_k,
+        cache_type_v,
+    );
+    actual_model_size_mb(0, Some(model_path))
+        .saturating_add(profile.runtime_overhead_mb)
+        .saturating_add(context_memory_mb(
+            context_size,
+            profile.kv_cache_mb_per_1k_tokens,
+        ))
+}
+
 fn context_memory_mb(context_size: u32, mb_per_1k_tokens: u64) -> u64 {
     (u64::from(context_size) * mb_per_1k_tokens).div_ceil(1_000)
 }

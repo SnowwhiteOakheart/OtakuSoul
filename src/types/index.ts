@@ -5,6 +5,11 @@ import type { RuntimeVariant } from './generated/RuntimeVariant';
 import type { RuntimeProgress } from './generated/RuntimeProgress';
 import type { RuntimeInfo } from './generated/RuntimeInfo';
 import type { RuntimeKind } from './generated/RuntimeKind';
+import type { ImageModelInfo } from './generated/ImageModelInfo';
+import type { ImageModelProgress } from './generated/ImageModelProgress';
+import type { LocalImageStatus } from './generated/LocalImageStatus';
+import type { VramPlan } from './generated/VramPlan';
+import type { VramStrategy } from './generated/VramStrategy';
 import type { OpenRouterModelInfo } from './generated/OpenRouterModelInfo';
 import type { BackupGroupSelection } from './generated/BackupGroupSelection';
 import type { CampaignClock } from './generated/CampaignClock';
@@ -57,6 +62,11 @@ import type { WorldState } from './generated/WorldState';
 export type {
   AppPaths,
   RuntimeKind,
+  ImageModelInfo,
+  ImageModelProgress,
+  LocalImageStatus,
+  VramPlan,
+  VramStrategy,
   RuntimeVariant,
   RuntimeProgress,
   RuntimeInfo,
@@ -807,6 +817,9 @@ export interface ImageGenConfig {
   cfg_scale: number;
   sampler_name: string;
   seed: number;
+  /** Catalog id of the local image model (provider `local`). */
+  local_model_id?: string | null;
+  vram_strategy?: VramStrategy;
 }
 
 export interface DiscordRpcActivity {

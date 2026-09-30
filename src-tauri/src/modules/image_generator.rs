@@ -15,8 +15,10 @@ const IMAGE_GEN_KEY_ACCOUNT: &str = "image_gen_api_key";
 #[derive(Debug, Clone, Serialize, Deserialize, TS)]
 #[ts(export)]
 pub struct ImageGenConfig {
-    pub provider: String, // "Automatic1111", "ComfyUI", "DALL-E 3", "NovelAI", "FLUX"
-    pub api_url: String,  // e.g. "http://127.0.0.1:7860" or "http://127.0.0.1:8188"
+    /// `local` (stable-diffusion.cpp run by the app), `bonsai_image` (PrismML demo server),
+    /// `automatic1111`, `comfy_ui`, `dall_e_3`, `novel_ai`; case and separators are ignored.
+    pub provider: String,
+    pub api_url: String, // e.g. "http://127.0.0.1:7860" or "http://127.0.0.1:8188"
     pub api_key: Option<String>,
     pub positive_prompt_prefix: String,
     pub negative_prompt: String,
@@ -26,6 +28,12 @@ pub struct ImageGenConfig {
     pub cfg_scale: f32,
     pub sampler_name: String,
     pub seed: i64,
+    /// Catalog id of the local image model (provider "Local").
+    #[serde(default)]
+    pub local_model_id: Option<String>,
+    /// How the local image model shares the GPU with the chat model.
+    #[serde(default)]
+    pub vram_strategy: crate::modules::local_image::VramStrategy,
 }
 
 impl Default for ImageGenConfig {
@@ -42,6 +50,8 @@ impl Default for ImageGenConfig {
             cfg_scale: 7.0,
             sampler_name: "Euler a".to_string(),
             seed: -1,
+            local_model_id: None,
+            vram_strategy: Default::default(),
         }
     }
 }
@@ -66,6 +76,33 @@ pub struct GeneratedImageInfo {
     pub file_path: String,
     pub size_bytes: u64,
     pub created_at: String,
+}
+
+/// What the "Local" provider needs from the running app.
+pub struct LocalBackend<'a> {
+    pub app: &'a tauri::AppHandle,
+    pub engine: &'a crate::modules::local_image::LocalImageEngine,
+    pub llama: std::sync::Arc<crate::modules::llama_manager::LlamaServerManager>,
+}
+
+/// Provider name without case and separators: the settings store `comfy_ui`, older
+/// configurations `ComfyUI` - both mean the same backend.
+fn normalized_provider(provider: &str) -> String {
+    provider
+        .chars()
+        .filter(|c| c.is_ascii_alphanumeric())
+        .map(|c| c.to_ascii_lowercase())
+        .collect()
+}
+
+/// Width and height from a PNG header.
+fn png_size(bytes: &[u8]) -> Option<(u32, u32)> {
+    if bytes.len() < 24 || &bytes[..8] != b"\x89PNG\r\n\x1a\n" {
+        return None;
+    }
+    let read =
+        |at: usize| -> Option<u32> { Some(u32::from_be_bytes(bytes[at..at + 4].try_into().ok()?)) };
+    Some((read(16)?, read(20)?))
 }
 
 pub struct ImageGenerator;
@@ -254,6 +291,7 @@ impl ImageGenerator {
         prompt: &str,
         negative: Option<&str>,
         custom_config: Option<ImageGenConfig>,
+        local: Option<LocalBackend<'_>>,
     ) -> Result<GeneratedImageResult, String> {
         let config = custom_config.unwrap_or_else(Self::load_config);
         let negative_prompt = negative.unwrap_or(&config.negative_prompt);
@@ -263,13 +301,40 @@ impl ImageGenerator {
             config.provider, prompt
         );
 
-        let image_bytes = match config.provider.as_str() {
-            "Automatic1111" | "SD WebUI" | "Forge" => {
+        let (mut width, mut height) = (config.width, config.height);
+        let image_bytes = match normalized_provider(&config.provider).as_str() {
+            "local" => {
+                let local = local.ok_or_else(|| crate::err!("backend.localImage.unavailable"))?;
+                let model_id = config
+                    .local_model_id
+                    .clone()
+                    .ok_or_else(|| crate::err!("backend.localImage.noModel"))?;
+                let bytes = local
+                    .engine
+                    .generate(
+                        local.app,
+                        local.llama,
+                        crate::modules::local_image::GenerationRequest {
+                            model_id: &model_id,
+                            strategy: config.vram_strategy,
+                            prompt,
+                            negative: negative_prompt,
+                            seed: config.seed,
+                        },
+                    )
+                    .await?;
+                if let Some((w, h)) = png_size(&bytes) {
+                    (width, height) = (w, h);
+                }
+                bytes
+            }
+            "bonsaiimage" => Self::generate_bonsai(&config, prompt).await?,
+            "automatic1111" | "sdwebui" | "forge" => {
                 Self::generate_automatic1111(&config, prompt, negative_prompt).await?
             }
-            "ComfyUI" => Self::generate_comfyui(&config, prompt, negative_prompt).await?,
-            "DALL-E 3" | "OpenAI" => Self::generate_dalle(&config, prompt).await?,
-            "NovelAI" => Self::generate_novelai(&config, prompt, negative_prompt).await?,
+            "comfyui" => Self::generate_comfyui(&config, prompt, negative_prompt).await?,
+            "dalle3" | "openai" => Self::generate_dalle(&config, prompt).await?,
+            "novelai" => Self::generate_novelai(&config, prompt, negative_prompt).await?,
             _ => {
                 // Fallback to Automatic1111 API format
                 Self::generate_automatic1111(&config, prompt, negative_prompt).await?
@@ -299,8 +364,8 @@ impl ImageGenerator {
             base64_data_url,
             prompt_used: prompt.to_string(),
             negative_used: negative_prompt.to_string(),
-            width: config.width,
-            height: config.height,
+            width,
+            height,
             created_at: Utc::now().to_rfc3339(),
         })
     }
@@ -371,6 +436,44 @@ impl ImageGenerator {
             .map_err(|e| crate::err!("backend.image.base64", error = e))?;
 
         Ok(img_bytes)
+    }
+
+    /// PrismML's Bonsai Image demo server (`scripts/serve.sh`): `POST /generate` returns a PNG.
+    async fn generate_bonsai(config: &ImageGenConfig, prompt: &str) -> Result<Vec<u8>, String> {
+        let client = reqwest::Client::builder()
+            .timeout(Duration::from_secs(600))
+            .build()
+            .map_err(|e| crate::err!("backend.common.httpClient", error = e))?;
+        let url = format!("{}/generate", config.api_url.trim_end_matches('/'));
+        // Bonsai Image is a distilled FLUX.2 klein model: few steps, sizes in steps of 16.
+        let round = |v: u32| (v.clamp(256, 1536) / 16) * 16;
+        let seed = if config.seed < 0 {
+            i64::from(fastrand::u32(0..i32::MAX as u32))
+        } else {
+            config.seed
+        };
+        let payload = serde_json::json!({
+            "prompt": prompt,
+            "seed": seed,
+            "steps": config.steps.clamp(1, 8),
+            "width": round(config.width),
+            "height": round(config.height),
+        });
+        let response = client
+            .post(&url)
+            .json(&payload)
+            .send()
+            .await
+            .map_err(|e| crate::err!("backend.image.bonsaiConnect", url = url, error = e))?;
+        if !response.status().is_success() {
+            let body = response.text().await.unwrap_or_default();
+            return Err(crate::err!("backend.image.bonsaiServer", error = body));
+        }
+        let bytes = response
+            .bytes()
+            .await
+            .map_err(|e| crate::err!("backend.image.bonsaiServer", error = e))?;
+        Ok(bytes.to_vec())
     }
 
     /// ComfyUI Native API endpoint
@@ -726,5 +829,28 @@ mod fastrand {
     pub fn i64(range: std::ops::Range<i64>) -> i64 {
         let span = (range.end - range.start) as u64;
         range.start + (next() % span) as i64
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn provider_names_match_in_any_spelling() {
+        assert_eq!(normalized_provider("comfy_ui"), "comfyui");
+        assert_eq!(normalized_provider("ComfyUI"), "comfyui");
+        assert_eq!(normalized_provider("DALL-E 3"), "dalle3");
+        assert_eq!(normalized_provider("dall_e_3"), "dalle3");
+        assert_eq!(normalized_provider("bonsai_image"), "bonsaiimage");
+    }
+
+    #[test]
+    fn reads_png_size() {
+        let mut png = b"\x89PNG\r\n\x1a\n\0\0\0\rIHDR".to_vec();
+        png.extend_from_slice(&832u32.to_be_bytes());
+        png.extend_from_slice(&1216u32.to_be_bytes());
+        assert_eq!(png_size(&png), Some((832, 1216)));
+        assert_eq!(png_size(b"GIF89a"), None);
     }
 }

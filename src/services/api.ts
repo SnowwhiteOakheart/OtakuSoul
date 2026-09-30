@@ -81,6 +81,9 @@ import {
   JsonObject,
   RuntimeInfo,
   RuntimeKind,
+  ImageModelInfo,
+  ImageModelProgress,
+  LocalImageStatus,
   RuntimeProgress,
   RuntimeVariant,
 } from '../types';
@@ -1098,6 +1101,34 @@ export const api = {
 
   listGeneratedImages: async (): Promise<GeneratedImageInfo[]> => {
     return await invoke<GeneratedImageInfo[]>('list_generated_images');
+  },
+
+  listImageModels: async (): Promise<ImageModelInfo[]> => {
+    return await invoke<ImageModelInfo[]>('list_image_models');
+  },
+
+  downloadImageModel: async (modelId: string): Promise<void> => {
+    await invoke('download_image_model', { modelId });
+  },
+
+  cancelImageModelDownload: async (): Promise<void> => {
+    await invoke('cancel_image_model_download');
+  },
+
+  deleteImageModel: async (modelId: string): Promise<void> => {
+    await invoke('delete_image_model', { modelId });
+  },
+
+  stopLocalImageServer: async (): Promise<void> => {
+    await invoke('stop_local_image_server');
+  },
+
+  onImageModelProgress: async (callback: (data: ImageModelProgress) => void): Promise<UnlistenFn> => {
+    return await listen<ImageModelProgress>('image-model-progress', (event) => callback(event.payload));
+  },
+
+  onLocalImageStatus: async (callback: (data: LocalImageStatus) => void): Promise<UnlistenFn> => {
+    return await listen<LocalImageStatus>('local-image-status', (event) => callback(event.payload));
   },
 
   // Phase 17: Discord RPC & Bot

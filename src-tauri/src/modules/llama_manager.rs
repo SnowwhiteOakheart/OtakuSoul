@@ -87,6 +87,8 @@ pub struct LlamaServerManager {
     child: Arc<Mutex<Option<Child>>>,
     status: Arc<RwLock<ServerStatus>>,
     logs: Arc<Mutex<VecDeque<String>>>,
+    /// Settings of the last successful start, so the server can be restarted as it was.
+    last_config: Arc<Mutex<Option<LlamaServerConfig>>>,
 }
 
 impl Default for LlamaServerManager {
@@ -110,7 +112,16 @@ impl LlamaServerManager {
             child: Arc::new(Mutex::new(None)),
             status: Arc::new(RwLock::new(default_status)),
             logs: Arc::new(Mutex::new(VecDeque::with_capacity(100))),
+            last_config: Arc::new(Mutex::new(None)),
         }
+    }
+
+    /// Settings of the running server, or `None` when it is not running.
+    pub async fn running_config(&self) -> Option<LlamaServerConfig> {
+        if self.status.read().await.state != ServerState::Running {
+            return None;
+        }
+        self.last_config.lock().await.clone()
     }
 
     fn requires_prism_runtime(model_path: &str) -> bool {
@@ -463,6 +474,7 @@ impl LlamaServerManager {
 
         if healthy {
             info!("llama-server ist bereit auf Port {}", config.port);
+            *self.last_config.lock().await = Some(config.clone());
             let mut s = self.status.write().await;
             s.state = ServerState::Running;
             Ok(())
