@@ -245,6 +245,9 @@ GitHub Actions wurden bewusst entfernt (Commit `11597c2`). Stattdessen gibt es j
 - [x] VRAM-Planer (`local_image::plan`, getestet): parallel, Chat-Modell mit weniger GPU-Layern (Layer-Zahl aus dem
   GGUF-Header) oder tauschen (llama-server stoppen → Bild → sd-server stoppen → llama-server im Hintergrund mit gleichen
   Einstellungen neu starten). Die App verwaltet beide Server selbst; ComfyUI-Nodes wie „Release llama.cpp VRAM“ braucht es nicht.
+- [x] Gestuftes Entladen: Vor jedem Bild wird geprüft, ob der VRAM reicht (gemessen per `nvidia-smi`, sonst geschätzt,
+  inklusive geladenem Sprachmodell). Passt alles, bleibt alles geladen (typisch bei 24 GB); sonst macht zuerst das kleine
+  Sprachmodell Platz und erst danach das Chat-Modell.
 - [x] Anbieter „Bonsai Image (PrismML)“ über den Demo-Server (`serve.sh`, `POST /generate`): ~2 GB VRAM, läuft parallel.
   Nicht in der App ausführbar, weil es nur als Python-Server mit CUDA (Linux) bzw. MLX (Mac) existiert.
 - [x] Dabei behoben: Die Anbieter-Auswahl (`comfy_ui`, `dall_e_3`, …) passte nicht zu den Namen im Backend, alles lief

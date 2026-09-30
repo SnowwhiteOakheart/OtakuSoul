@@ -2044,7 +2044,7 @@ export const en: TranslationDictionary = {
   "localImage.strategy.parallel": "Always in parallel",
   "localImage.strategy.swap": "Always swap",
   "localImage.strategy.reduce_llm": "Shrink the chat model",
-  "localImage.strategyHint.auto": "If the image model fits next to the running chat model, both stay loaded. Otherwise the chat model is unloaded for the image and restarted in the background afterwards.",
+  "localImage.strategyHint.auto": "VRAM is always checked first. If the image model fits next to the chat and speech models, everything stays loaded. Otherwise the small speech model makes room first, and only if that is not enough is the chat model unloaded for the image and restarted in the background afterwards.",
   "localImage.strategyHint.parallel": "Both models stay loaded even when VRAM runs short. That can spill into system RAM and become very slow.",
   "localImage.strategyHint.swap": "The chat model is unloaded for every image and reloaded afterwards. Clean for cards below 16 GB, costs a few seconds.",
   "localImage.strategyHint.reduce_llm": "The chat model keeps only as many layers on the GPU as leave room for the image model (until the next server start). If fewer than 40 % of the layers would remain, it swaps instead.",
@@ -2140,4 +2140,5 @@ export const en: TranslationDictionary = {
   "backend.tts.timeout": "crispasr did not load the speech model in time.",
   "backend.tts.synthFailed": "Speech synthesis failed: {{error}}",
   "backend.tts.noModel": "Choose a local speech model first.",
+  "localImage.phase.unloading_tts": "The speech model makes room …",
 };

@@ -767,6 +767,14 @@ impl LocalTtsEngine {
         guard.as_ref().map(|p| p.model_id.clone())
     }
 
+    /// Estimated VRAM of the loaded speech model, 0 when none is running.
+    pub async fn loaded_vram_mb(&self) -> u64 {
+        self.loaded_model()
+            .await
+            .and_then(|id| catalog_model(&id).ok())
+            .map_or(0, |m| m.vram_mb)
+    }
+
     pub async fn stop(&self) {
         if let Some(mut process) = self.process.lock().await.take() {
             #[cfg(unix)]

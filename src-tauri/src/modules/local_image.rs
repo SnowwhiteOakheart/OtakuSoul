@@ -478,6 +478,16 @@ pub struct PlanInput {
     pub llm_gpu_layers: u32,
     pub llm_total_layers: Option<u32>,
     pub image_vram_mb: u64,
+    /// VRAM of a loaded speech model (`crispasr`), 0 when none is loaded.
+    pub tts_vram_mb: u64,
+}
+
+/// The plan plus whether the small speech model has to make room as well.
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub struct VramDecision {
+    pub plan: VramPlan,
+    /// Stop `crispasr`; it starts again by itself for the next line it has to speak.
+    pub unload_tts: bool,
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize, TS)]
@@ -495,15 +505,34 @@ pub enum VramPlan {
 /// Below this share of layers on the GPU the chat model gets too slow to be worth it.
 const MIN_REDUCED_LAYER_SHARE: f64 = 0.4;
 
-fn fits_parallel(input: &PlanInput) -> bool {
-    let available = match input.free_vram_mb {
-        Some(free) => free,
-        None => input
-            .total_vram_mb
-            .saturating_sub(OS_RESERVE_MB)
-            .saturating_sub(input.llm_vram_mb),
-    };
-    available >= input.image_vram_mb + SAFETY_MB
+/// What the image model would find free if the chat and speech models stay loaded
+/// (`keep_llm`, `keep_tts`) or are unloaded first.
+fn available_mb(input: &PlanInput, keep_llm: bool, keep_tts: bool) -> u64 {
+    let freed = |keep: bool, mb: u64| if keep { 0 } else { mb };
+    match input.free_vram_mb {
+        // Measured with everything that is loaded right now; unloading gives memory back.
+        Some(free) => {
+            free + freed(keep_llm || !input.llm_running, input.llm_vram_mb)
+                + freed(keep_tts, input.tts_vram_mb)
+        }
+        None => {
+            let llm = if keep_llm && input.llm_running {
+                input.llm_vram_mb
+            } else {
+                0
+            };
+            let tts = if keep_tts { input.tts_vram_mb } else { 0 };
+            input
+                .total_vram_mb
+                .saturating_sub(OS_RESERVE_MB)
+                .saturating_sub(llm)
+                .saturating_sub(tts)
+        }
+    }
+}
+
+fn fits(input: &PlanInput, keep_llm: bool, keep_tts: bool) -> bool {
+    available_mb(input, keep_llm, keep_tts) >= input.image_vram_mb + SAFETY_MB
 }
 
 fn reduced_layers(input: &PlanInput) -> Option<u32> {
@@ -513,6 +542,7 @@ fn reduced_layers(input: &PlanInput) -> Option<u32> {
     let budget = input
         .total_vram_mb
         .saturating_sub(OS_RESERVE_MB)
+        .saturating_sub(input.tts_vram_mb)
         .saturating_sub(input.image_vram_mb + SAFETY_MB);
     let layers = u32::try_from(budget / per_layer)
         .unwrap_or(u32::MAX)
@@ -520,33 +550,46 @@ fn reduced_layers(input: &PlanInput) -> Option<u32> {
     (f64::from(layers) >= f64::from(total_layers) * MIN_REDUCED_LAYER_SHARE).then_some(layers)
 }
 
-/// Decides how chat and image model share the GPU for one generation.
-pub fn plan(input: &PlanInput, strategy: VramStrategy) -> VramPlan {
-    // Nothing to share without a running chat model or without a GPU (CPU generation).
-    if !input.llm_running || input.total_vram_mb == 0 {
-        return VramPlan::Parallel;
+/// Decides how chat, speech and image model share the GPU for one generation. Nothing is
+/// unloaded while everything fits; otherwise the small speech model yields first and the
+/// chat model only when that is not enough (or the user chose to always swap).
+pub fn plan(input: &PlanInput, strategy: VramStrategy) -> VramDecision {
+    let keep = |plan| VramDecision {
+        plan,
+        unload_tts: false,
+    };
+    // CPU generation or an explicit "always parallel": nothing to plan.
+    if input.total_vram_mb == 0 || strategy == VramStrategy::Parallel {
+        return keep(VramPlan::Parallel);
+    }
+    let swap = || VramDecision {
+        plan: VramPlan::Swap,
+        unload_tts: input.tts_vram_mb > 0 && !fits(input, false, true),
+    };
+    if strategy == VramStrategy::Swap && input.llm_running {
+        return swap();
+    }
+    if fits(input, true, true) {
+        return keep(VramPlan::Parallel);
+    }
+    if input.tts_vram_mb > 0 && fits(input, true, false) {
+        return VramDecision {
+            plan: VramPlan::Parallel,
+            unload_tts: true,
+        };
+    }
+    if !input.llm_running {
+        // Only the speech model could make room; the image model may still spill over.
+        return VramDecision {
+            plan: VramPlan::Parallel,
+            unload_tts: input.tts_vram_mb > 0,
+        };
     }
     match strategy {
-        VramStrategy::Parallel => VramPlan::Parallel,
-        VramStrategy::Swap => VramPlan::Swap,
-        VramStrategy::Auto => {
-            if fits_parallel(input) {
-                VramPlan::Parallel
-            } else {
-                VramPlan::Swap
-            }
-        }
-        VramStrategy::ReduceLlm => {
-            if fits_parallel(input) {
-                VramPlan::Parallel
-            } else {
-                reduced_layers(input)
-                    .filter(|layers| *layers < input.llm_gpu_layers)
-                    .map_or(VramPlan::Swap, |gpu_layers| VramPlan::ReduceLlm {
-                        gpu_layers,
-                    })
-            }
-        }
+        VramStrategy::ReduceLlm => reduced_layers(input)
+            .filter(|layers| *layers < input.llm_gpu_layers)
+            .map_or_else(swap, |gpu_layers| keep(VramPlan::ReduceLlm { gpu_layers })),
+        _ => swap(),
     }
 }
 
@@ -821,7 +864,8 @@ impl LocalImageEngine {
 
         let llm_config = llama.running_config().await;
         let image_already_loaded = self.loaded_model().await.as_deref() == Some(model.id);
-        let plan = {
+        let tts_vram = crate::modules::tts_local::engine().loaded_vram_mb().await;
+        let decision = {
             let llm = llm_config.clone();
             let image_vram = model.vram_mb;
             tokio::task::spawn_blocking(move || {
@@ -862,21 +906,30 @@ impl LocalImageEngine {
                         llm_gpu_layers: gpu_layers,
                         llm_total_layers: total_layers,
                         image_vram_mb: image_vram,
+                        tts_vram_mb: tts_vram,
                     },
                     req.strategy,
                 )
             })
             .await
-            .unwrap_or(VramPlan::Swap)
+            // Planning failed (no hardware info): free as much as possible to be safe.
+            .unwrap_or(VramDecision {
+                plan: VramPlan::Swap,
+                unload_tts: true,
+            })
         };
-        tracing::info!("VRAM-Plan für {}: {:?}", model.id, plan);
+        let plan = decision.plan;
+        tracing::info!("VRAM-Plan für {}: {:?}", model.id, decision);
+        if decision.unload_tts {
+            // The speech server restarts by itself on the next line it has to speak.
+            emit("unloading_tts", Some(plan));
+            crate::modules::tts_local::engine().stop().await;
+        }
 
         match (plan, &llm_config) {
             (VramPlan::Swap, Some(_)) => {
                 emit("unloading_llm", Some(plan));
                 llama.stop().await?;
-                // The speech server restarts by itself on the next line it has to speak.
-                crate::modules::tts_local::engine().stop().await;
             }
             (VramPlan::ReduceLlm { gpu_layers }, Some(cfg)) => {
                 emit("reducing_llm", Some(plan));
@@ -930,66 +983,114 @@ mod tests {
             llm_gpu_layers: 64,
             llm_total_layers: Some(64),
             image_vram_mb: image,
+            tts_vram_mb: 0,
         }
     }
 
+    fn with_tts(mut i: PlanInput, tts: u64) -> PlanInput {
+        i.tts_vram_mb = tts;
+        i
+    }
+
+    fn decide(i: PlanInput, strategy: VramStrategy) -> (VramPlan, bool) {
+        let d = plan(&i, strategy);
+        (d.plan, d.unload_tts)
+    }
+
+    use VramPlan::{Parallel, Swap};
+    use VramStrategy::{Auto, ReduceLlm};
+
     #[test]
-    fn plans_by_vram_tier() {
-        // 8 GB: Bonsai (~7 GB) + SDXL (7.5 GB) cannot share → swap.
+    fn keeps_everything_loaded_when_it_fits() {
+        // 24 GB: chat (7.5 GB) + FLUX.1 (10 GB) + speech (2 GB) fit together.
         assert_eq!(
-            plan(&input(8_192, None, 7_000, 7_500), VramStrategy::Auto),
-            VramPlan::Swap
+            decide(with_tts(input(24_576, None, 7_500, 10_000), 2_000), Auto),
+            (Parallel, false)
         );
-        // 16 GB: 7 GB chat + 7.5 GB SDXL → parallel on paper (16384-1536-7000 = 7848 < 8524) → swap,
-        // but with measured free VRAM of 9 GB it fits.
+        // 16 GB with a measured 9 GB free: SDXL fits next to the chat model.
         assert_eq!(
-            plan(
-                &input(16_384, Some(9_000), 7_000, 7_500),
-                VramStrategy::Auto
+            decide(input(16_384, Some(9_000), 7_000, 7_500), Auto),
+            (Parallel, false)
+        );
+        // No GPU or an explicit "always parallel".
+        assert_eq!(
+            decide(input(0, None, 7_000, 7_500), VramStrategy::Swap),
+            (Parallel, false)
+        );
+        assert_eq!(
+            decide(
+                with_tts(input(8_192, None, 7_000, 7_500), 2_000),
+                VramStrategy::Parallel
             ),
-            VramPlan::Parallel
+            (Parallel, false)
         );
-        // 24 GB: chat + Flux.1 → parallel.
+    }
+
+    #[test]
+    fn unloads_the_small_speech_model_before_the_chat_model() {
+        // 24 GB: 24576-1536-7500-2000 = 13540 < 13000+1024, but without speech 15540 fits.
         assert_eq!(
-            plan(&input(24_576, None, 7_500, 10_000), VramStrategy::Auto),
-            VramPlan::Parallel
+            decide(with_tts(input(24_576, None, 7_500, 13_000), 2_000), Auto),
+            (Parallel, true)
         );
-        // 24 GB: chat + Flux.2 (21.5 GB) → swap.
+        // Measured: 12.1 GB free with everything loaded, 14.1 GB once speech is gone.
         assert_eq!(
-            plan(&input(24_576, None, 7_500, 21_500), VramStrategy::Auto),
-            VramPlan::Swap
+            decide(
+                with_tts(input(24_576, Some(12_100), 7_500, 13_000), 2_000),
+                Auto
+            ),
+            (Parallel, true)
         );
-        // No chat model or no GPU: nothing to plan.
-        let mut idle = input(8_192, None, 7_000, 7_500);
+    }
+
+    #[test]
+    fn swaps_the_chat_model_only_when_needed() {
+        // 8 GB: chat + SDXL cannot share; speech has to go as well (8192-1536-2000 < 8524).
+        assert_eq!(
+            decide(with_tts(input(8_192, None, 7_000, 7_500), 2_000), Auto),
+            (Swap, true)
+        );
+        // 16 GB: chat has to go, speech (2 GB) still fits next to SDXL.
+        assert_eq!(
+            decide(with_tts(input(16_384, None, 7_000, 7_500), 2_000), Auto),
+            (Swap, false)
+        );
+        // 24 GB with FLUX.2 (21.5 GB): swap.
+        assert_eq!(
+            decide(input(24_576, None, 7_500, 21_500), Auto),
+            (Swap, false)
+        );
+        // "Always swap" is respected even when everything would fit.
+        assert_eq!(
+            decide(input(49_152, None, 7_000, 7_500), VramStrategy::Swap),
+            (Swap, false)
+        );
+        // Without a chat model there is nothing to swap; only the speech model can make room.
+        let mut idle = with_tts(input(8_192, None, 0, 7_500), 2_000);
         idle.llm_running = false;
-        assert_eq!(plan(&idle, VramStrategy::Swap), VramPlan::Parallel);
-        assert_eq!(
-            plan(&input(0, None, 7_000, 7_500), VramStrategy::Swap),
-            VramPlan::Parallel
-        );
+        assert_eq!(decide(idle, Auto), (Parallel, true));
+        idle.tts_vram_mb = 0;
+        assert_eq!(decide(idle, Auto), (Parallel, false));
     }
 
     #[test]
     fn reduces_llm_layers_only_when_enough_stay_on_the_gpu() {
         // 12 GB, 7 GB chat model (64 layers), 7.5 GB SDXL → budget 12288-1536-8524 = 2228 MB,
         // ~20 layers (31 %) → too few, swap.
-        assert_eq!(
-            plan(&input(12_288, None, 7_000, 7_500), VramStrategy::ReduceLlm),
-            VramPlan::Swap
-        );
+        assert_eq!(decide(input(12_288, None, 7_000, 7_500), ReduceLlm).0, Swap);
         // 16 GB with Qwen-Image (9.5 GB): budget 16384-1536-10524 = 4324 MB → 39 layers (61 %).
         assert_eq!(
-            plan(&input(16_384, None, 7_000, 9_500), VramStrategy::ReduceLlm),
+            decide(input(16_384, None, 7_000, 9_500), ReduceLlm).0,
             VramPlan::ReduceLlm { gpu_layers: 39 }
         );
-        // Explicit strategies are respected.
+        // A loaded speech model shrinks the budget: 4324-2000 = 2324 MB → 21 layers → swap.
         assert_eq!(
-            plan(&input(8_192, None, 7_000, 7_500), VramStrategy::Parallel),
-            VramPlan::Parallel
-        );
-        assert_eq!(
-            plan(&input(49_152, None, 7_000, 7_500), VramStrategy::Swap),
-            VramPlan::Swap
+            decide(
+                with_tts(input(16_384, None, 7_000, 9_500), 2_000),
+                ReduceLlm
+            )
+            .0,
+            Swap
         );
     }
 

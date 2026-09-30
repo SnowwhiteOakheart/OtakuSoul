@@ -41,9 +41,9 @@ aus einer eigenen Aufnahme. Grundlage ist die Recherche vom 30.09.2026.
    läuft vorerst nur mit eingebauter Stimme; Kokoro-DE bringt vier deutsche Stimmen mit. Aufnahmen werden mit 16 kHz
    gespeichert (so liefert die vorhandene Aufnahmefunktion).
 5a. [x] Gesprochener KI-Hinweis vor geklonten Stimmen ist einstellbar (Standard an); das Wasserzeichen bleibt immer an.
-7. [ ] **VRAM:** TTS-Modelle im VRAM-Planer berücksichtigen (klein, meist parallel zum Chat-Modell).
-   *Teilweise:* Beim Tausch für ein Bild wird auch `crispasr` gestoppt und startet beim nächsten Satz neu; gemessener
-   freier VRAM (nvidia-smi) enthält ein geladenes Sprachmodell bereits. Offen: Schätzwert ohne Messung.
+7. [x] **VRAM:** TTS-Modelle im VRAM-Planer berücksichtigen (klein, meist parallel zum Chat-Modell).
+   *Umgesetzt:* Der Bild-Planer rechnet ein geladenes Sprachmodell mit ein (gemessen oder geschätzt) und entlädt gestuft:
+   nichts, wenn alles passt; sonst zuerst `crispasr` (startet beim nächsten Satz neu), erst danach das Chat-Modell.
 8. [ ] **Tests nachholen** (aufgeschoben, solange keine Modelle laufen sollen): Qwen3-TTS mit deutscher/russischer
    Ausgabe, Klon aus eigener Aufnahme, Chatterbox, Kokoro-DE, F5-TTS; Latenz und VRAM messen.
 

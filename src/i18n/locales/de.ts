@@ -2046,7 +2046,7 @@ export const de = {
   "localImage.strategy.parallel": "Immer parallel",
   "localImage.strategy.swap": "Immer tauschen",
   "localImage.strategy.reduce_llm": "Chat-Modell verkleinern",
-  "localImage.strategyHint.auto": "Passt das Bildmodell neben das laufende Chat-Modell, bleiben beide geladen. Sonst wird das Chat-Modell für das Bild entladen und danach im Hintergrund neu gestartet.",
+  "localImage.strategyHint.auto": "Vorher wird immer geprüft, ob der Grafikspeicher reicht. Passt das Bildmodell neben Chat- und Sprachmodell, bleibt alles geladen. Sonst macht zuerst das kleine Sprachmodell Platz, und nur wenn das nicht reicht, wird das Chat-Modell für das Bild entladen und danach im Hintergrund neu gestartet.",
   "localImage.strategyHint.parallel": "Beide Modelle bleiben geladen, auch wenn der VRAM knapp wird. Das kann in den Arbeitsspeicher überlaufen und sehr langsam werden.",
   "localImage.strategyHint.swap": "Das Chat-Modell wird für jedes Bild entladen und danach neu geladen. Sauber für Karten unter 16 GB, kostet ein paar Sekunden.",
   "localImage.strategyHint.reduce_llm": "Das Chat-Modell behält nur so viele Layer auf der GPU, dass das Bildmodell daneben passt (bleibt so bis zum nächsten Serverstart). Bleiben weniger als 40 % der Layer übrig, wird stattdessen getauscht.",
@@ -2142,4 +2142,5 @@ export const de = {
   "backend.tts.timeout": "crispasr hat das Sprachmodell nicht rechtzeitig geladen.",
   "backend.tts.synthFailed": "Sprachausgabe fehlgeschlagen: {{error}}",
   "backend.tts.noModel": "Wähle zuerst ein lokales Sprachmodell aus.",
+  "localImage.phase.unloading_tts": "Sprachmodell macht Platz …",
 } as const;
