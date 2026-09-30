@@ -331,7 +331,7 @@ async fn handle_status(
     if !check_auth(&headers, &params, &ctx.auth_token) {
         return (
             StatusCode::UNAUTHORIZED,
-            "Ungültiges oder fehlendes Authentifizierungs-Token",
+            "Invalid or missing authentication token",
         )
             .into_response();
     }
@@ -342,7 +342,8 @@ async fn handle_status(
     let resp = MobileStatusResponse {
         character_name: char_name,
         emotion,
-        mood_label: "Active & connected".to_string(),
+        // Mood code, translated by the page.
+        mood_label: "connected".to_string(),
         dopamine: 75.0,
         oxytocin: 85.0,
         system_status: "Online".to_string(),
@@ -360,7 +361,7 @@ async fn handle_chat(
     if !check_auth(&headers, &params, &ctx.auth_token) {
         return (
             StatusCode::UNAUTHORIZED,
-            "Ungültiges oder fehlendes Authentifizierungs-Token",
+            "Invalid or missing authentication token",
         )
             .into_response();
     }
@@ -402,7 +403,7 @@ async fn handle_ws(
     Query(params): Query<AuthParams>,
 ) -> Response {
     if !check_auth(&headers, &params, &ctx.auth_token) {
-        return (StatusCode::UNAUTHORIZED, "Ungültiges Token für WebSocket").into_response();
+        return (StatusCode::UNAUTHORIZED, "Invalid token for WebSocket").into_response();
     }
 
     ws.on_upgrade(move |socket| handle_ws_socket(socket, ctx))
@@ -442,11 +443,11 @@ async fn handle_ws_socket(mut socket: WebSocket, ctx: AppStateContext) {
 // ============================================================================
 
 const MOBILE_CLIENT_HTML: &str = r#"<!DOCTYPE html>
-<html lang="de" class="dark">
+<html lang="en" class="dark">
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-  <title>OtakuSoul – Mobiler Begleiter</title>
+  <title>OtakuSoul</title>
   <script src="https://cdn.tailwindcss.com"></script>
   <style>
     body { background-color: #050811; color: #f1f5f9; font-family: system-ui, -apple-system, sans-serif; }
@@ -470,12 +471,12 @@ const MOBILE_CLIENT_HTML: &str = r#"<!DOCTYPE html>
         <div class="flex items-center gap-1.5 text-[11px] text-slate-400">
           <span id="emotionBadge" class="px-1.5 py-0.2 rounded-full bg-cyan-950 border border-cyan-500/30 text-cyan-300 font-mono">warm</span>
           <span>•</span>
-          <span id="moodLabel">Aktiv & Verbunden</span>
+          <span id="moodLabel" data-i18n="mood.connected"></span>
         </div>
       </div>
     </div>
     <div class="flex items-center gap-2">
-      <button onclick="toggleAudioPlayback()" id="audioBtn" title="Sprachausgabe" class="p-2 rounded-xl bg-slate-800/80 border border-slate-700 text-slate-300 active:scale-95 transition">
+      <button onclick="toggleAudioPlayback()" id="audioBtn" data-i18n-title="voiceOutput" class="p-2 rounded-xl bg-slate-800/80 border border-slate-700 text-slate-300 active:scale-95 transition">
         🔊
       </button>
     </div>
@@ -485,9 +486,7 @@ const MOBILE_CLIENT_HTML: &str = r#"<!DOCTYPE html>
   <main id="chatFeed" class="flex-1 overflow-y-auto p-4 flex flex-col gap-3">
     <div class="flex gap-2 max-w-[85%] self-start animate-fade-in">
       <div class="w-7 h-7 rounded-xl bg-cyan-950/80 border border-cyan-500/30 flex items-center justify-center text-xs shrink-0 mt-0.5">🌸</div>
-      <div class="p-3 rounded-2xl bg-slate-900/90 border border-slate-800 text-sm text-slate-200 shadow-md">
-        Hallo! Schön, dass wir auch über dein Smartphone verbunden sind. Wie kann ich dir heute zur Seite stehen? ✨
-      </div>
+      <div class="p-3 rounded-2xl bg-slate-900/90 border border-slate-800 text-sm text-slate-200 shadow-md" data-i18n="greeting"></div>
     </div>
   </main>
 
@@ -497,20 +496,21 @@ const MOBILE_CLIENT_HTML: &str = r#"<!DOCTYPE html>
       <input 
         type="text" 
         id="msgInput" 
-        placeholder="Schreibe eine Nachricht..." 
+        data-i18n-placeholder="placeholder" 
         class="flex-1 bg-slate-900/90 border border-slate-700/80 rounded-2xl px-4 py-2.5 text-sm text-slate-100 placeholder-slate-500 focus:outline-none focus:border-cyan-400 transition"
         onkeydown="if(event.key==='Enter') sendChatMessage()"
       />
       <button 
         onclick="toggleMicrophone()" 
         id="micBtn" 
-        title="Sprachaufnahme" 
+        data-i18n-title="voiceInput" 
         class="p-2.5 rounded-2xl bg-slate-800 border border-slate-700 text-slate-300 active:scale-95 transition"
       >
         🎙️
       </button>
       <button 
         onclick="sendChatMessage()" 
+        data-i18n-title="send"
         class="p-2.5 rounded-2xl bg-gradient-to-r from-cyan-500 to-blue-600 text-white font-bold shadow-md shadow-cyan-500/20 active:scale-95 transition"
       >
         ➤
@@ -519,6 +519,54 @@ const MOBILE_CLIENT_HTML: &str = r#"<!DOCTYPE html>
   </footer>
 
   <script>
+    // The page follows the phone's browser language; the app itself is not asked.
+    const MESSAGES = {
+      de: {
+        greeting: 'Hallo! Schön, dass wir auch über dein Smartphone verbunden sind. Wie kann ich dir heute zur Seite stehen? ✨',
+        placeholder: 'Schreibe eine Nachricht …',
+        voiceOutput: 'Sprachausgabe',
+        voiceInput: 'Sprachaufnahme',
+        send: 'Senden',
+        connectionError: 'Keine Verbindung zum Desktop-Server.',
+        micDenied: 'Mikrofonzugriff nicht erlaubt oder nicht verfügbar.',
+        'mood.connected': 'Aktiv & verbunden',
+      },
+      en: {
+        greeting: "Hi! Nice to be connected through your phone too. How can I help you today? ✨",
+        placeholder: 'Write a message …',
+        voiceOutput: 'Voice output',
+        voiceInput: 'Voice input',
+        send: 'Send',
+        connectionError: 'No connection to the desktop server.',
+        micDenied: 'Microphone access denied or unavailable.',
+        'mood.connected': 'Active & connected',
+      },
+      ru: {
+        greeting: 'Привет! Здорово, что мы на связи и через твой телефон. Чем могу помочь сегодня? ✨',
+        placeholder: 'Напиши сообщение …',
+        voiceOutput: 'Озвучка',
+        voiceInput: 'Голосовой ввод',
+        send: 'Отправить',
+        connectionError: 'Нет связи с сервером на компьютере.',
+        micDenied: 'Доступ к микрофону запрещён или недоступен.',
+        'mood.connected': 'Активна и на связи',
+      },
+    };
+    const lang = (navigator.languages || [navigator.language || 'en'])
+      .map((l) => String(l).slice(0, 2).toLowerCase())
+      .find((l) => l in MESSAGES) || 'en';
+    const tr = (key) => MESSAGES[lang][key] ?? MESSAGES.en[key] ?? key;
+    // Mood codes from the desktop app; unknown values are shown as they are.
+    const moodText = (code) => (('mood.' + code) in MESSAGES.en ? tr('mood.' + code) : code);
+
+    document.documentElement.lang = lang;
+    document.querySelectorAll('[data-i18n]').forEach((el) => { el.textContent = tr(el.dataset.i18n); });
+    document.querySelectorAll('[data-i18n-title]').forEach((el) => {
+      el.title = tr(el.dataset.i18nTitle);
+      el.setAttribute('aria-label', el.title);
+    });
+    document.querySelectorAll('[data-i18n-placeholder]').forEach((el) => { el.placeholder = tr(el.dataset.i18nPlaceholder); });
+
     const urlParams = new URLSearchParams(window.location.search);
     let token = urlParams.get('token') || localStorage.getItem('otaku_token') || '';
     if (urlParams.get('token')) {
@@ -539,7 +587,7 @@ const MOBILE_CLIENT_HTML: &str = r#"<!DOCTYPE html>
           const data = await res.json();
           document.getElementById('charName').textContent = data.character_name;
           document.getElementById('emotionBadge').textContent = data.emotion;
-          document.getElementById('moodLabel').textContent = data.mood_label;
+          document.getElementById('moodLabel').textContent = moodText(data.mood_label);
         }
       } catch (err) {
         console.warn('Status fetch error:', err);
@@ -568,7 +616,7 @@ const MOBILE_CLIENT_HTML: &str = r#"<!DOCTYPE html>
           }
         }
       } catch (err) {
-        appendMessage('Verbindungsfehler zum Desktop-Server.', 'system');
+        appendMessage(tr('connectionError'), 'system');
       }
     }
 
@@ -619,7 +667,7 @@ const MOBILE_CLIENT_HTML: &str = r#"<!DOCTYPE html>
           btn.classList.remove('bg-slate-800', 'text-slate-300');
           btn.classList.add('bg-rose-600', 'text-white', 'animate-pulse');
         } catch (err) {
-          alert('Mikrofonzugriff nicht gestattet oder nicht verfügbar.');
+          alert(tr('micDenied'));
         }
       } else {
         if (mediaRecorder) mediaRecorder.stop();

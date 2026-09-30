@@ -101,7 +101,8 @@ GitHub Actions wurden bewusst entfernt (Commit `11597c2`). Stattdessen gibt es j
   Kampflog, Szenen-Standardwerte, Gedächtnis-Platzhalter, Discord- und Web-Antworten folgen der Antwortsprache
   (`modules/content_lang.rs`, De/En/Ru, sonst Englisch). Mitgelieferte Presets, Stimmungs-Labels und das Hardware-Profil
   übersetzt das Frontend über ID/Code (`tOptional`).
-- [ ] Die Oberfläche des mobilen Web-Clients (`web_server.rs`, eingebettetes HTML) ist noch deutsch.
+- [x] Die Oberfläche des mobilen Web-Clients (`web_server.rs`, eingebettetes HTML) ist noch deutsch. → Erledigt: Die Seite
+  folgt der Browsersprache des Handys (De/En/Ru, sonst Englisch); das Stimmungs-Label kommt als Code.
 - [x] `<html lang="de">` beim Sprachwechsel dynamisch setzen.
 
 ### Design-System & Themes
