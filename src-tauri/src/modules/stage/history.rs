@@ -40,7 +40,7 @@ fn messages(
             .chat_log
             .iter()
             .skip(summary.until)
-            .map(|m| message("user", line_for(m, audience))),
+            .map(|m| message("user", super::npc::npc_history_line(state, m, audience))),
     );
     result.extend_from_slice(&instructions[1..]);
     result
@@ -89,7 +89,11 @@ pub(super) async fn prepare(
             let mut until = summary.until;
             let mut tokens = 0;
             while until < end {
-                let cost = estimate_tokens(&line_for(&state.chat_log[until], audience)) + 6;
+                let cost = estimate_tokens(&super::npc::npc_history_line(
+                    state,
+                    &state.chat_log[until],
+                    audience,
+                )) + 6;
                 if until > summary.until && tokens + cost > budget as usize {
                     break;
                 }
@@ -115,7 +119,7 @@ pub(super) async fn prepare(
                 chunk.extend(
                     state.chat_log[summary.until..until]
                         .iter()
-                        .map(|m| message("user", line_for(m, audience))),
+                        .map(|m| message("user", super::npc::npc_history_line(state, m, audience))),
                 );
                 let (kept, usage) = counter
                     .fit(chunk, base.as_deref(), Some(context), Some(500))

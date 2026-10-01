@@ -438,6 +438,8 @@ pub struct SceneState {
     /// Running summaries are isolated by audience: planner, narrator, character name.
     #[serde(default)]
     pub history_summaries: HashMap<String, StageHistorySummary>,
+    #[serde(default)]
+    pub npcs: Vec<StageNpc>,
 }
 
 #[derive(Debug, Clone, Default, Serialize, Deserialize, TS)]

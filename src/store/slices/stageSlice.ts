@@ -9,6 +9,7 @@ import type {
   SceneState,
   SceneTurnMessage,
   StageState,
+  StageNpcDraft,
   StageStreamEvent,
   StageTurnRequest,
   WorldState,
@@ -32,6 +33,9 @@ export interface StageSlice {
   stageTurnMode: 'say' | 'do' | 'think' | 'whisper' | 'direct';
   stageWhisperTarget: string;
   stageForceActor: string;
+  upsertStageNpc: (draft: StageNpcDraft) => Promise<void>;
+  setStageNpcActive: (id: string, active: boolean) => Promise<void>;
+  promoteStageNpc: (id: string) => Promise<void>;
   fetchStageState: () => Promise<void>;
   fetchStageScenes: () => Promise<void>;
   fetchStageFolders: () => Promise<void>;
@@ -223,6 +227,26 @@ export const createStageSlice: SliceCreator<StageSlice> = (set, get) => ({
     }
   },
 
+  upsertStageNpc: async (draft) => {
+    const current = get().stageState;
+    if (!current || get().isProcessingStageTurn) return;
+    set({ stageState: await api.upsertStageNpc(current.definition.id, draft) });
+  },
+
+  setStageNpcActive: async (id, active) => {
+    const current = get().stageState;
+    if (!current || get().isProcessingStageTurn) return;
+    set({ stageState: await api.setStageNpcActive(current.definition.id, id, active) });
+  },
+
+  promoteStageNpc: async (id) => {
+    const current = get().stageState;
+    if (!current || get().isProcessingStageTurn) return;
+    const result = await api.promoteStageNpc(current.definition.id, id);
+    set({ stageState: result.scene });
+    await get().refreshCharacters();
+  },
+
   fetchStageState: async () => {
     try {
       const state = await api.getStageState();
@@ -293,7 +317,7 @@ export const createStageSlice: SliceCreator<StageSlice> = (set, get) => ({
     const mode = turnMode || get().stageTurnMode;
     let target = whisperTarget !== undefined ? whisperTarget : (get().stageWhisperTarget || undefined);
     // The whisper selector shows the first party member until another is picked.
-    const party = current.definition.party;
+    const party = [...current.definition.party, ...(current.npcs ?? []).filter((npc) => npc.active && !npc.promoted_character_id).map((npc) => npc.name)];
     if (mode === 'whisper' && (!target || !party.includes(target))) target = party[0];
     const actor = forceActor !== undefined ? forceActor : (get().stageForceActor || undefined);
     // Show the player's line right away; the turn result replaces it with the stored one.

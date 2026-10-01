@@ -25,6 +25,8 @@ import {
   SceneDefinition,
   SceneState,
   StageTurnRequest,
+  StageNpcDraft,
+  StageNpcPromotion,
   WorldState,
   CampaignClock,
   CombatCondition,
@@ -359,6 +361,15 @@ export const api = {
       targetDc,
     });
   },
+
+  upsertStageNpc: (sceneId: string, draft: StageNpcDraft): Promise<SceneState> =>
+    invoke('stage_upsert_npc', { sceneId, draft }),
+
+  setStageNpcActive: (sceneId: string, npcId: string, active: boolean): Promise<SceneState> =>
+    invoke('stage_set_npc_active', { sceneId, npcId, active }),
+
+  promoteStageNpc: (sceneId: string, npcId: string): Promise<StageNpcPromotion> =>
+    invoke('stage_promote_npc', { sceneId, npcId }),
 
   getStageState: async (): Promise<StageState> => {
     return await invoke<StageState>('get_stage_state');

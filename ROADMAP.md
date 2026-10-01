@@ -1,6 +1,6 @@
 # 🗺️ OtakuSoul – Verbesserungs-Roadmap
 
-> Stand: 2026-09-28 (zuletzt aktualisiert) · Ursprüngliche Analyse: Commit `8507fb8` (main)
+> Stand: 2026-10-01 (zuletzt aktualisiert) · Ursprüngliche Analyse: Commit `8507fb8` (main)
 > Grundlage: Code-Review von `src/` und `src-tauri/`, `npm outdated`, `cargo outdated`, `npm audit`,
 > `cargo clippy`, `tsc`, Vitest/Cargo-Tests und eine Sichtprüfung der Oberfläche bei 1280×840 und 960×640 (Mindestgröße).
 > Abgeschlossene Feature-Phasen stehen in `Roadmap_abgeschlossen.md`.
@@ -308,7 +308,14 @@ und übernimmt, was SoW lebendig macht:
    Planer, Flüstern nur für Planer/Empfänger. Der Originalverlauf bleibt vollständig; Bearbeiten, Löschen und
    Neugenerieren verwerfen Zusammenfassungen, Undo stellt sie wieder her. Fehlgeschlagene Zusammenfassungen
    werden erneut versucht. E2E-Test mit 45 Beiträgen prüft Budget, Geheimhaltung, Wiederladen und Änderungen.
-4. [ ] **NPC-System:** NPCs mit Archetyp-Avatar, eigenem Gedächtnis (Abruf nach Relevanz) und „NPC zum Charakter befördern“.
+4. [x] **NPC-System** (`stage/npc.rs`): Der Planer lässt NPCs erscheinen, sprechen und die Szene verlassen; manuelles
+   Anlegen/Bearbeiten und Zurückholen über „NPCs“. Acht mitgelieferte Archetyp-Avatare, Auswahl als Sprecher und
+   Flüsterziel. Szenengebundenes Gedächtnis (bis zu 200 beobachtete Beiträge, Abruf der fünf passendsten nach
+   Textrelevanz); Erinnerungen bleiben bei Abwesenheit und Wiederladen erhalten. Fremde Geheimnisse und Ereignisse
+   während der Abwesenheit bleiben verborgen, auch nach der Beförderung. „Zum Charakter befördern“ erstellt eine
+   V2-PNG-Karte mit Avatar, überträgt Erinnerungen ins Soul Memory und ergänzt die Party; vorhandene Karten werden
+   nicht überschrieben. Rust- und Desktop-Tests prüfen Rückkehr, Relevanz, Geheimhaltung, Speicherung und Beförderung,
+   Screenshots auch bei 960×640.
 5. [ ] **Szenen-Editor vollständig:** bestehende Szenen bearbeiten, Startbild, Ambient-Ton, Lorebooks, Akteure pro Runde.
 6. [ ] **Regie & Ablauf:** Routing nach jedem Beitrag (wer spricht als Nächstes), direkte Ansprache per Name, Auto-Play,
    „Plot fortsetzen“.

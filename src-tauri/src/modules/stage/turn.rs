@@ -104,6 +104,11 @@ pub async fn execute_stage_turn(
         state.chat_log.push(player_msg);
     }
 
+    let observation_start = state
+        .chat_log
+        .len()
+        .saturating_sub(usize::from(!clean_input.is_empty()));
+
     // 2. Build Planner Context & Call LLM for GmPlan
     let lang = crate::modules::content_lang::ContentLang::current();
     let reply_language = crate::modules::content_lang::ContentLang::reply_language_name();
@@ -112,6 +117,26 @@ pub async fn execute_stage_turn(
     } else {
         state.definition.party.join(", ")
     };
+
+    let npc_context = state
+        .npcs
+        .iter()
+        .filter(|n| n.promoted_character_id.is_none())
+        .map(|n| {
+            format!(
+                "{} ({}; {}; {})",
+                n.name,
+                n.archetype,
+                if n.active {
+                    "present"
+                } else {
+                    "absent, may return"
+                },
+                n.personality
+            )
+        })
+        .collect::<Vec<_>>()
+        .join("\n");
 
     let clock_context = state
         .clocks
@@ -232,6 +257,8 @@ Stage lore / world knowledge:
 {lore_context}
 Current location: {location} ({time_of_day}, weather: {weather})
 Party: {party}
+Known NPCs:
+{npc_context}
 Player: {user_name}
 Campaign clocks: {clocks}
 Objectives: {objectives}
@@ -251,6 +278,8 @@ Reply ONLY with a single valid JSON object in this format:
   "bg_image": null,
   "ambient_audio": null,
   "next_actor": "{first_party_or_player}",
+  "spawn_npcs": [],
+  "despawn_npcs": [],
   "dice_check": null,
   "campaign_clock_updates": [],
   "resource_delta": null,
@@ -272,7 +301,9 @@ Reply ONLY with a single valid JSON object in this format:
 RULES:
 - Write every text the player sees (player_choices text and badge, discovery, lasting_consequence, item names and descriptions, skill_name) in {reply_language}. Keep JSON keys and enum values in English.
 - dice_check: when a demanding check is needed, give e.g. {{"formula": "1d20+3", "dc": 14, "skill_name": "Perception"}}, otherwise null.
-- next_actor: who speaks after the game master's narration? A party member from [{party}] or "PLAYER".
+- next_actor: who speaks after the game master's narration? A party member from [{party}], a present/new NPC by name, or "PLAYER".
+- spawn_npcs: introduce or return NPCs with {{"name":"Name", "archetype":"citizen|innkeeper|guard|merchant|villain|creature|sage|noble", "personality":"Brief traits and background in {reply_language}"}}. Reuse known names; never create NPCs for party members.
+- despawn_npcs: names of NPCs who leave the scene. Their memories persist. Choose a present or newly spawned NPC as next_actor when they should speak.
 - bg_image: optionally the name of a fitting new background image (e.g. "Horizontal Elkia Grand Library.png"), or null.
 - resource_delta: optional {{"target":"PLAYER or name", "hp_delta":-5, "stress_delta":10}}. HP and stress count outside combat too: wounds, exhaustion, fear and rest matter.
 - condition_updates: optional {{"target":"PLAYER or name", "add":"Poisoned", "turns":3}} or {{"target":"name", "remove":"Poisoned"}}; condition names in {reply_language}.
@@ -367,6 +398,16 @@ RULES:
         .await
         .unwrap_or_default();
     let gm_plan = repair_and_parse_gm_plan(&plan_raw);
+
+    for draft in &gm_plan.spawn_npcs {
+        if let Err(error) = upsert_npc(&mut state, draft.clone()) {
+            tracing::warn!(%error, "Invalid NPC spawn ignored");
+        }
+    }
+    for name in &gm_plan.despawn_npcs {
+        let _ = set_npc_active(&mut state, name, false);
+    }
+    observe_npcs(&mut state, observation_start);
 
     // 3. Resolve Mechanics (Dice, Clocks, Resources)
     let mut dice_outcome_text = String::new();
@@ -857,6 +898,8 @@ RULES:
         });
     }
 
+    observe_npcs(&mut state, observation_start);
+
     // 5. Next Actor Turn (Party Member reactions up to max_actor_depth)
     let initial_next = req
         .force_next_actor
@@ -876,6 +919,9 @@ RULES:
     }
 
     while current_actor != "PLAYER" && actor_depth < max_depth {
+        if let Some(npc) = find_npc(&state, current_actor.trim()) {
+            current_actor = npc.name.clone();
+        }
         actor_depth += 1;
         state.current_turn_actor = current_actor.clone();
         spoken_actors.insert(current_actor.to_lowercase());
@@ -892,11 +938,15 @@ RULES:
             state.combat.current_turn_index = index;
         }
 
-        if state
-            .definition
-            .party
-            .iter()
-            .any(|p| p.eq_ignore_ascii_case(&current_actor))
+        let npc = find_npc(&state, &current_actor)
+            .filter(|n| n.active && n.promoted_character_id.is_none())
+            .cloned();
+        if npc.is_some()
+            || state
+                .definition
+                .party
+                .iter()
+                .any(|p| p.eq_ignore_ascii_case(&current_actor))
         {
             let all_chars = scan_available_characters();
             let matched_char = all_chars
@@ -913,7 +963,17 @@ RULES:
             };
 
             let secrets = private_knowledge_block(&state, &current_actor);
-            let companion_system = if let Some(ch) = matched_char {
+            let companion_system = if let Some(npc) = &npc {
+                format!(
+                    "[SOUL STAGE — NPC]\nYou are {} ({}).\nPersonality and background: {}\nScene context: {}{lore_section}\nReact in the first person to events you witnessed. Stay in character; keep it concise. Reply in {reply_language}.{}{}",
+                    npc.name,
+                    npc.archetype,
+                    npc.personality,
+                    state.definition.world_context,
+                    npc_memory_block(npc, clean_input),
+                    secrets
+                )
+            } else if let Some(ch) = matched_char {
                 let localized_char =
                     ch.card
                         .data
@@ -985,14 +1045,18 @@ Reply in {reply_language}.{secrets}"#,
             )
             .await;
             let comp_msg_id = format!("msg_{}_{}", Utc::now().timestamp_millis(), actor_depth);
-            let avatar_url = matched_char.and_then(|c| c.avatar_data_url.clone());
+            let avatar_url = npc
+                .as_ref()
+                .map(|n| npc_avatar(&n.archetype))
+                .or_else(|| matched_char.and_then(|c| c.avatar_data_url.clone()));
+            let sender_role = if npc.is_some() { "npc" } else { "companion" };
             if let Ok(comp_text) = stream_message(
                 inference,
                 comp_req,
                 on_stream,
                 &comp_msg_id,
                 &current_actor,
-                "companion",
+                sender_role,
                 avatar_url.clone(),
             )
             .await
@@ -1001,7 +1065,7 @@ Reply in {reply_language}.{secrets}"#,
                     id: comp_msg_id,
                     sender_id: current_actor.clone(),
                     sender_name: current_actor.clone(),
-                    sender_role: "companion".to_string(),
+                    sender_role: sender_role.to_string(),
                     avatar_url,
                     content: comp_text,
                     turn_mode: "say".to_string(),
@@ -1010,6 +1074,12 @@ Reply in {reply_language}.{secrets}"#,
                     timestamp: Utc::now().timestamp() as u64,
                 };
                 state.chat_log.push(companion_msg);
+                if let Some(npc) = npc
+                    && let Some(stored) = state.npcs.iter_mut().find(|n| n.id == npc.id)
+                {
+                    stored.turn_count += 1;
+                }
+                observe_npcs(&mut state, observation_start);
             }
         }
 
@@ -1122,6 +1192,7 @@ pub async fn execute_stage_rest(
     }
 
     engine.push_snapshot(&state.definition.id, state.clone());
+    let observation_start = state.chat_log.len();
 
     let lang = crate::modules::content_lang::ContentLang::current();
     let (hp_rec, stress_rec, note) = if rest_type == "long" {
@@ -1286,6 +1357,7 @@ pub async fn execute_stage_rest(
         state.chat_log.push(comp_msg);
     }
 
+    observe_npcs(&mut state, observation_start);
     engine.set_state(state.clone());
     save_scene_state(&state)?;
 

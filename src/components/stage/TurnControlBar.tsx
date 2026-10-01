@@ -39,7 +39,7 @@ export const TurnControlBar: React.FC = () => {
   if (!stageState) return null;
 
   const choices = stageState.pending_choices || [];
-  const party = stageState.definition.party || [];
+  const party = [...stageState.definition.party, ...(stageState.npcs ?? []).filter((npc) => npc.active && !npc.promoted_character_id).map((npc) => npc.name)];
 
   const handleSend = async (e?: React.FormEvent) => {
     if (e) e.preventDefault();
@@ -158,7 +158,7 @@ export const TurnControlBar: React.FC = () => {
           {stageTurnMode === 'whisper' && (
             <div className="flex items-center gap-1.5 bg-app px-2.5 py-1 rounded-lg border border-slate-800">
               <Ear className="w-3.5 h-3.5 text-emerald-400" />
-              {/* Only party members can be whispered to; anyone else would hear nothing. */}
+              {/* Only present actors can be whispered to. */}
               <select
                 aria-label={t('stage.whisperTarget')}
                 value={party.includes(stageWhisperTarget) ? stageWhisperTarget : (party[0] ?? '')}
@@ -179,7 +179,7 @@ export const TurnControlBar: React.FC = () => {
               <Users className="w-3.5 h-3.5 text-slate-400" />
               <select
                 aria-label={t('stage.nextSpeaker')}
-                value={stageForceActor}
+                value={party.includes(stageForceActor) ? stageForceActor : ''}
                 onChange={(e) => setStageForceActor(e.target.value)}
                 className="bg-transparent text-xs text-slate-300 focus:outline-hidden"
               >

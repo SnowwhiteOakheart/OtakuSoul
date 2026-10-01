@@ -273,6 +273,8 @@ export const StageChatLog: React.FC = () => {
           >
             {/* Sender and mode header */}
             <div className="flex items-center gap-2 px-1">
+              {msg.avatar_url && <img src={msg.avatar_url} alt="" className="w-8 h-8 rounded-lg object-cover" />}
+              {msg.sender_role === 'npc' && <span className="text-[11px] text-emerald-400 font-semibold">NPC</span>}
               <span className="text-xs font-bold text-slate-300">
                 {msg.sender_name}
               </span>

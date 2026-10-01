@@ -1,4 +1,5 @@
 import React from 'react';
+import { StageNpcPanel } from './StageNpcPanel';
 import { useStoreFields } from '../../store/useAppStore';
 import { Heart, Zap, Flame, Shield, User, Coffee } from 'lucide-react';
 import { useTranslation } from '../../i18n';
@@ -122,6 +123,7 @@ export const PartyHeader: React.FC = () => {
 
         {/* Rest triggers */}
         <div className="flex items-center gap-2">
+          <StageNpcPanel />
           <button
             onClick={() => restStageParty('short')}
             disabled={isProcessingStageTurn}

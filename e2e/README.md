@@ -16,3 +16,6 @@ Requirements (Linux; Windows works with `msedgedriver`, macOS has no WebDriver f
 
 `stage-context.mjs` prüft zusätzlich lange Stage-Verläufe: Kontextbudget, getrennte Zusammenfassungen für
 Planer/Erzähler/Gefährten, Geheimhaltung, Wiederladen, Undo, Bearbeiten/Löschen und Wiederholung nach LLM-Fehlern.
+
+`stage-npcs.mjs` bedient die NPC-Verwaltung und prüft private Dialoge, Abwesenheit/Rückkehr, Spielleiter-NPCs,
+Beförderung zu V2-PNG samt Soul Memory sowie die Mindestfenstergröße (960×640). Screenshots 13–18 zeigen den Ablauf.

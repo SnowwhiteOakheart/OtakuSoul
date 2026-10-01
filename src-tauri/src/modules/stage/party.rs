@@ -150,6 +150,26 @@ pub fn add_private_knowledge(state: &mut SceneState, recipient: &str, text: Stri
     }
 }
 
+/// Rebuild derived whisper knowledge after editing/deleting/regenerating source messages.
+pub fn rebuild_private_knowledge(state: &mut SceneState) {
+    let whispers: Vec<_> = state
+        .chat_log
+        .iter()
+        .filter_map(|msg| {
+            whisper_recipient(&msg.turn_mode, msg.whisper_target.as_deref()).map(|to| {
+                (
+                    to,
+                    format!("{} whispered to you: {}", msg.sender_name, msg.content),
+                )
+            })
+        })
+        .collect();
+    state.private_knowledge.clear();
+    for (to, text) in whispers {
+        add_private_knowledge(state, &to, text);
+    }
+}
+
 /// Who reads a history line: the game master (knows everything, keeps secrets), the narrator
 /// (describes only what everyone can perceive) or a character.
 #[derive(Clone, Copy)]

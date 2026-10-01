@@ -277,6 +277,7 @@ impl StageEngine {
             current_bg: None,
             private_knowledge: HashMap::new(),
             history_summaries: HashMap::new(),
+            npcs: Vec::new(),
         };
 
         Self {
@@ -616,6 +617,8 @@ impl StageEngine {
             timestamp: Utc::now().timestamp() as u64,
         });
 
+        let observation_start = st.chat_log.len().saturating_sub(1);
+        observe_npcs(&mut st, observation_start);
         self.set_state(st.clone());
         save_scene_state(&st)?;
         Ok(st)

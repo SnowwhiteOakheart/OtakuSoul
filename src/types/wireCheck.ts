@@ -142,3 +142,5 @@ expectMatch<SameFields<Frontend.DiscordRpcActivity, RustDiscordRpcActivity>>();
 expectMatch<SameFields<Frontend.DiscordBotStatus, RustDiscordBotStatus>>();
 expectMatch<SameFields<Frontend.CharacterWizardInput, RustCharacterWizardInput>>();
 expectMatch<SameFields<Frontend.UpdateInfo, RustUpdateInfo>>();
+
+expectMatch<SameFields<Frontend.StageNpcPromotion, import('./generated/StageNpcPromotion').StageNpcPromotion>>();

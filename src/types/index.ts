@@ -1,3 +1,6 @@
+export type { StageNpc } from './generated/StageNpc';
+export type { StageNpcDraft } from './generated/StageNpcDraft';
+export interface StageNpcPromotion { scene: SceneState; character: CharacterProfile; }
 // Types that match the Rust side exactly come from ts-rs (src/types/generated, created by
 // `cargo test`); the rest are still hand-written and checked against Rust in wireCheck.ts.
 import type { AppPaths } from './generated/AppPaths';
@@ -559,6 +562,7 @@ export interface SceneState {
   current_bg?: string | null;
   /** What each character was told in private (whispers). */
   private_knowledge?: Record<string, string[]>;
+  npcs?: import('./generated/StageNpc').StageNpc[];
   history_summaries?: Record<string, import('./generated/StageHistorySummary').StageHistorySummary>;
 }
 

@@ -17,6 +17,55 @@ pub fn get_stage_state(state: State<'_, AppState>) -> crate::modules::stage::Sce
 }
 
 #[tauri::command]
+pub fn stage_upsert_npc(
+    state: State<'_, AppState>,
+    scene_id: String,
+    draft: crate::modules::stage::StageNpcDraft,
+) -> Result<crate::modules::stage::SceneState, String> {
+    let mut scene = state.stage_engine.get_state();
+    if scene.definition.id != scene_id {
+        scene = crate::modules::stage::load_scene_by_id(&scene_id)?;
+    }
+    crate::modules::stage::upsert_npc(&mut scene, draft)?;
+    crate::modules::stage::save_scene_state(&scene)?;
+    state.stage_engine.set_state(scene.clone());
+    Ok(scene)
+}
+
+#[tauri::command]
+pub fn stage_set_npc_active(
+    state: State<'_, AppState>,
+    scene_id: String,
+    npc_id: String,
+    active: bool,
+) -> Result<crate::modules::stage::SceneState, String> {
+    let mut scene = state.stage_engine.get_state();
+    if scene.definition.id != scene_id {
+        scene = crate::modules::stage::load_scene_by_id(&scene_id)?;
+    }
+    crate::modules::stage::set_npc_active(&mut scene, &npc_id, active)?;
+    crate::modules::stage::save_scene_state(&scene)?;
+    state.stage_engine.set_state(scene.clone());
+    Ok(scene)
+}
+
+#[tauri::command]
+pub fn stage_promote_npc(
+    state: State<'_, AppState>,
+    scene_id: String,
+    npc_id: String,
+) -> Result<crate::modules::stage::StageNpcPromotion, String> {
+    let mut scene = state.stage_engine.get_state();
+    if scene.definition.id != scene_id {
+        scene = crate::modules::stage::load_scene_by_id(&scene_id)?;
+    }
+    let character = crate::modules::stage::promote_npc(&mut scene, &npc_id, &state.memory_db)?;
+    crate::modules::stage::save_scene_state(&scene)?;
+    state.stage_engine.set_state(scene.clone());
+    Ok(crate::modules::stage::StageNpcPromotion { scene, character })
+}
+
+#[tauri::command]
 pub fn list_stage_scenes() -> Result<Vec<crate::modules::stage::ScenePreview>, String> {
     Ok(crate::modules::stage::scan_available_scenes())
 }

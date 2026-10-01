@@ -173,6 +173,10 @@ pub struct GmPlan {
     pub lasting_consequence: Option<String>,
     #[serde(default)]
     pub discovery: Option<String>,
+    #[serde(default)]
+    pub spawn_npcs: Vec<StageNpcDraft>,
+    #[serde(default)]
+    pub despawn_npcs: Vec<String>,
 }
 
 /// Robust JSON repair function that extracts and parses GM JSON plans

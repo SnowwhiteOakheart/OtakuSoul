@@ -141,6 +141,7 @@ pub fn build_initial_scene_state(def: &SceneDefinition) -> SceneState {
         },
         private_knowledge: HashMap::new(),
         history_summaries: HashMap::new(),
+        npcs: Vec::new(),
     };
     ensure_party_vitals(&mut state);
     state
@@ -778,6 +779,8 @@ pub(super) fn edit_stage_turn_message_with_saver(
     if let Some(msg) = state.chat_log.iter_mut().find(|m| m.id == message_id) {
         msg.content = new_content.to_string();
         state.history_summaries.clear();
+        reconcile_npc_memories(&mut state);
+        rebuild_private_knowledge(&mut state);
         save(&state)?;
         engine.set_state(state.clone());
         Ok(state)
@@ -808,6 +811,8 @@ pub(super) fn delete_stage_turn_message_with_saver(
 
     state.chat_log.retain(|m| m.id != message_id);
     state.history_summaries.clear();
+    reconcile_npc_memories(&mut state);
+    rebuild_private_knowledge(&mut state);
     save(&state)?;
     engine.set_state(state.clone());
     Ok(state)
@@ -833,6 +838,8 @@ pub async fn regenerate_stage_turn(
         let player_msg = state.chat_log[idx].clone();
         state.chat_log.truncate(idx);
         state.history_summaries.clear();
+        reconcile_npc_memories(&mut state);
+        rebuild_private_knowledge(&mut state);
         save_scene_state(&state)?;
         engine.set_state(state);
 

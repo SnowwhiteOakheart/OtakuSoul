@@ -7,6 +7,7 @@ import type { InventoryItem } from "./InventoryItem";
 import type { SceneDefinition } from "./SceneDefinition";
 import type { SceneTurnMessage } from "./SceneTurnMessage";
 import type { StageHistorySummary } from "./StageHistorySummary";
+import type { StageNpc } from "./StageNpc";
 import type { StageRelationship } from "./StageRelationship";
 import type { StoryArc } from "./StoryArc";
 import type { TaggedChoice } from "./TaggedChoice";
@@ -20,4 +21,4 @@ private_knowledge: { [key in string]: Array<string> },
 /**
  * Running summaries are isolated by audience: planner, narrator, character name.
  */
-history_summaries: { [key in string]: StageHistorySummary }, };
+history_summaries: { [key in string]: StageHistorySummary }, npcs: Array<StageNpc>, };

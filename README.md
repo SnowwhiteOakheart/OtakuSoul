@@ -93,6 +93,11 @@ Szenenordner (inklusive aller 12 Kapitel unseres *No Game No Life* Abenteuers), 
 
 Lange Stage-Verläufe nutzen das Kontextfenster des gewählten Modells und laufende Zusammenfassungen im Spielstand. Planer, Erzähler und Gefährten erhalten getrennte Zusammenfassungen; Flüstern erreicht nur seinen Empfänger, Gedanken nur den Spielleiter. Der vollständige Verlauf bleibt erhalten.
 
+NPCs können vom Spielleiter eingeführt oder über **NPCs** selbst angelegt werden. Acht Archetyp-Avatare, private
+Flüsterziele und eigene, nach Textrelevanz abgerufene Erinnerungen machen wiederkehrende Begegnungen möglich.
+**Zum Charakter befördern** erstellt eine V2-PNG-Karte, übernimmt Erinnerungen ins Soul Memory und fügt den
+Charakter zur Party hinzu. NPCs behalten bei einer Rückkehr ihr Gedächtnis und erfahren keine Ereignisse aus ihrer Abwesenheit.
+
 ## Ein echter Begleiter auf deinem Desktop
 
 Mit **Soul Companion** wird dein Lieblingscharakter zu einem echten Assistenten im Desktop-Alltag:

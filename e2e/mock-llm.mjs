@@ -49,10 +49,17 @@ export function startMockLlm() {
         stats.stageNarrator += 1;
         stats.lastNarratorMessages = request.messages ?? [];
       }
-      const isCompanion = system.includes('React in the first person') || system.includes('React to what is happening');
+      const isNpc = system.includes('[SOUL STAGE — NPC]');
+      if (isNpc) { stats.stageNpc = (stats.stageNpc ?? 0) + 1; stats.lastNpcMessages = request.messages ?? []; }
+      const isCompanion = !isNpc && (system.includes('React in the first person') || system.includes('React to what is happening'));
       if (isCompanion) {
         stats.stageCompanion = (stats.stageCompanion ?? 0) + 1;
         stats.lastCompanionMessages = request.messages ?? [];
+        const name = system.match(/^You are (.+?)(?:\.\n|\. React)/)?.[1];
+        if (name) {
+          stats.companionMessagesByName ??= {};
+          stats.companionMessagesByName[name] = request.messages ?? [];
+        }
       }
       const stageSummary = 'Stage-Zusammenfassung: Die Gruppe versprach, das Tor zu öffnen.' +
         (JSON.stringify(request.messages).includes('SECRET_PASSWORD') ? ' PRIVATE whisper to Ayu: SECRET_PASSWORD.' : '') +
@@ -60,7 +67,9 @@ export function startMockLlm() {
       const text = isStageSummary ? stageSummary : isPlanner
         ? JSON.stringify({
             narration_plan: 'Ein altes Tor taucht aus dem Nebel auf.',
-            next_actor: null,
+            next_actor: stats.spawnNpc?.name ?? null,
+            spawn_npcs: stats.spawnNpc ? [stats.spawnNpc] : [],
+            despawn_npcs: stats.despawnNpc ? [stats.despawnNpc] : [],
             resource_delta: { target: 'PLAYER', hp_delta: -5, stress_delta: 10 },
             condition_updates: [{ target: 'PLAYER', add: 'Erschöpft', turns: 3 }],
           })
