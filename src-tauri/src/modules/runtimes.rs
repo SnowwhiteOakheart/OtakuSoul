@@ -374,23 +374,86 @@ async fn build_release(client: &reqwest::Client, kind: RuntimeKind) -> Result<Re
 
 /// Best backend for the detected hardware among `available`.
 fn recommended_backend(available: &[String]) -> Option<String> {
-    let hardware = crate::modules::hardware::probe_hardware();
-    let vendors: Vec<String> = hardware
+    let vendors: Vec<String> = crate::modules::hardware::probe_hardware()
         .gpus
         .iter()
         .map(|g| g.vendor.to_lowercase())
         .collect();
+    let cuda = if cfg!(target_os = "linux") {
+        CudaRuntime::System(system_cuda_majors())
+    } else {
+        CudaRuntime::Bundled
+    };
+    pick_backend(available, &vendors, &cuda)
+}
+
+/// Where a CUDA build finds its runtime libraries.
+#[derive(Debug, Clone, PartialEq, Eq)]
+enum CudaRuntime {
+    /// Windows archives ship (or download) `cudart` themselves.
+    Bundled,
+    /// Linux builds load `libcudart`/`libcublas` from the system; these major versions exist.
+    System(Vec<u32>),
+}
+
+/// CUDA major versions whose runtime and cuBLAS the dynamic loader can find (`ldconfig -p`).
+fn system_cuda_majors() -> Vec<u32> {
+    let listing = std::process::Command::new("ldconfig")
+        .arg("-p")
+        .output()
+        .ok()
+        .and_then(|o| String::from_utf8(o.stdout).ok())
+        .unwrap_or_default();
+    cuda_majors_in(&listing)
+}
+
+fn cuda_majors_in(ldconfig: &str) -> Vec<u32> {
+    let majors_of = |lib: &str| -> Vec<u32> {
+        ldconfig
+            .lines()
+            .filter_map(|line| line.split_whitespace().next())
+            .filter_map(|name| name.strip_prefix(lib)?.parse().ok())
+            .collect()
+    };
+    let blas = majors_of("libcublas.so.");
+    let mut majors: Vec<u32> = majors_of("libcudart.so.")
+        .into_iter()
+        .filter(|m| blas.contains(m))
+        .collect();
+    majors.sort_unstable();
+    majors.dedup();
+    majors
+}
+
+fn cuda_major(backend: &str) -> Option<u32> {
+    backend
+        .strip_prefix("cuda-")?
+        .split('.')
+        .next()?
+        .parse()
+        .ok()
+}
+
+/// Best backend among `available` for the GPU vendors and the CUDA runtime of this system.
+/// A CUDA build whose runtime is missing silently falls back to the CPU, so on Linux it is only
+/// recommended when the matching CUDA major version is installed; otherwise Vulkan.
+fn pick_backend(available: &[String], vendors: &[String], cuda: &CudaRuntime) -> Option<String> {
     let pick = |prefix: &str| available.iter().find(|b| b.starts_with(prefix)).cloned();
     if vendors.iter().any(|v| v.contains("apple"))
         && let Some(b) = pick("metal")
     {
         return Some(b);
     }
-    // The lowest CUDA version (first in sorted order) runs on the widest range of drivers.
-    if vendors.iter().any(|v| v.contains("nvidia"))
-        && let Some(b) = pick("cuda-")
-    {
-        return Some(b);
+    if vendors.iter().any(|v| v.contains("nvidia")) {
+        // The lowest usable CUDA version (first in sorted order) runs on the most drivers.
+        let usable = available.iter().find(|b| match (cuda_major(b), cuda) {
+            (None, _) => false,
+            (Some(_), CudaRuntime::Bundled) => true,
+            (Some(major), CudaRuntime::System(majors)) => majors.contains(&major),
+        });
+        if let Some(b) = usable {
+            return Some(b.clone());
+        }
     }
     pick("vulkan")
         .or_else(|| pick("metal"))
@@ -577,10 +640,19 @@ pub async fn install<R: tauri::Runtime>(
     kind: RuntimeKind,
     backend: &str,
 ) -> Result<RuntimeInfo, String> {
-    let info = install_into(&runtime_root(kind), kind, backend, &|p| {
+    install_with(kind, backend, &|p| {
         let _ = app.emit("runtime-progress", p);
     })
-    .await?;
+    .await
+}
+
+/// [`install`] with a progress callback instead of the Tauri event (tests, tools).
+pub async fn install_with(
+    kind: RuntimeKind,
+    backend: &str,
+    on_progress: &(impl Fn(RuntimeProgress) + Sync),
+) -> Result<RuntimeInfo, String> {
+    let info = install_into(&runtime_root(kind), kind, backend, on_progress).await?;
     tracing::info!(
         "Laufzeit {} {} ({}) installiert: {}",
         kind.dir_name(),
@@ -849,6 +921,57 @@ mod tests {
             vec![root.join("llama-b1/lib").to_string_lossy().to_string()]
         );
         let _ = std::fs::remove_dir_all(root);
+    }
+
+    #[test]
+    fn recommends_cuda_only_with_a_matching_system_runtime() {
+        let ldconfig = "\tlibcudart.so.13 (libc6,x86-64) => /opt/cuda/lib64/libcudart.so.13
+\tlibcudart.so (libc6,x86-64) => /opt/cuda/lib64/libcudart.so
+\tlibcublas.so.13 (libc6,x86-64) => /opt/cuda/lib64/libcublas.so.13
+\tlibcudart.so.12 (libc6,x86-64) => /usr/lib/libcudart.so.12";
+        // CUDA 12 has no cuBLAS here, so only 13 counts.
+        assert_eq!(cuda_majors_in(ldconfig), vec![13]);
+
+        let nvidia = vec!["nvidia".to_string()];
+        let crisp: Vec<String> = ["cpu", "cuda-12", "cuda-13", "hip-amd", "vulkan"]
+            .iter()
+            .map(|s| s.to_string())
+            .collect();
+        let prism: Vec<String> = ["cpu", "cuda-12.4", "cuda-12.8", "cuda-13.3", "vulkan"]
+            .iter()
+            .map(|s| s.to_string())
+            .collect();
+        let linux13 = CudaRuntime::System(vec![13]);
+        assert_eq!(
+            pick_backend(&crisp, &nvidia, &linux13).as_deref(),
+            Some("cuda-13")
+        );
+        assert_eq!(
+            pick_backend(&prism, &nvidia, &linux13).as_deref(),
+            Some("cuda-13.3")
+        );
+        // CUDA 12 installed: the lowest matching build.
+        let linux12 = CudaRuntime::System(vec![12]);
+        assert_eq!(
+            pick_backend(&prism, &nvidia, &linux12).as_deref(),
+            Some("cuda-12.4")
+        );
+        // No CUDA runtime at all: Vulkan instead of a silent CPU fallback.
+        let none = CudaRuntime::System(vec![]);
+        assert_eq!(
+            pick_backend(&crisp, &nvidia, &none).as_deref(),
+            Some("vulkan")
+        );
+        // Windows archives bring their runtime along.
+        assert_eq!(
+            pick_backend(&crisp, &nvidia, &CudaRuntime::Bundled).as_deref(),
+            Some("cuda-12")
+        );
+        // AMD/Intel use Vulkan.
+        assert_eq!(
+            pick_backend(&crisp, &["amd".to_string()], &linux13).as_deref(),
+            Some("vulkan")
+        );
     }
 
     #[test]
