@@ -291,7 +291,10 @@ export const createStageSlice: SliceCreator<StageSlice> = (set, get) => ({
     const current = get().stageState;
     if (!current) return;
     const mode = turnMode || get().stageTurnMode;
-    const target = whisperTarget !== undefined ? whisperTarget : (get().stageWhisperTarget || undefined);
+    let target = whisperTarget !== undefined ? whisperTarget : (get().stageWhisperTarget || undefined);
+    // The whisper selector shows the first party member until another is picked.
+    const party = current.definition.party;
+    if (mode === 'whisper' && (!target || !party.includes(target))) target = party[0];
     const actor = forceActor !== undefined ? forceActor : (get().stageForceActor || undefined);
     // Show the player's line right away; the turn result replaces it with the stored one.
     const ownLine: SceneTurnMessage[] = userInput.trim()

@@ -45,7 +45,7 @@ pub fn build_initial_scene_state(def: &SceneDefinition) -> SceneState {
         def.persona.clone()
     };
 
-    SceneState {
+    let mut state = SceneState {
         definition: def.clone(),
         world,
         clocks: vec![CampaignClock {
@@ -139,7 +139,10 @@ pub fn build_initial_scene_state(def: &SceneDefinition) -> SceneState {
         } else {
             None
         },
-    }
+        private_knowledge: HashMap::new(),
+    };
+    ensure_party_vitals(&mut state);
+    state
 }
 
 pub fn ensure_default_scene_folders() {
@@ -507,7 +510,8 @@ pub fn load_scene_by_id(scene_id: &str) -> Result<SceneState, String> {
     if let Some(path) = find_scene_path(scene_id) {
         let content = fs::read_to_string(&path)
             .map_err(|e| crate::err!("backend.stage.sceneRead", error = e))?;
-        if let Ok(state) = serde_json::from_str::<SceneState>(&content) {
+        if let Ok(mut state) = serde_json::from_str::<SceneState>(&content) {
+            ensure_party_vitals(&mut state);
             return Ok(state);
         }
         if let Ok(def) = serde_json::from_str::<SceneDefinition>(&content) {

@@ -158,14 +158,19 @@ export const TurnControlBar: React.FC = () => {
           {stageTurnMode === 'whisper' && (
             <div className="flex items-center gap-1.5 bg-app px-2.5 py-1 rounded-lg border border-slate-800">
               <Ear className="w-3.5 h-3.5 text-emerald-400" />
-              <input
-                type="text"
-                placeholder={t('stage.whisperTarget')}
+              {/* Only party members can be whispered to; anyone else would hear nothing. */}
+              <select
                 aria-label={t('stage.whisperTarget')}
-                value={stageWhisperTarget}
+                value={party.includes(stageWhisperTarget) ? stageWhisperTarget : (party[0] ?? '')}
                 onChange={(e) => setStageWhisperTarget(e.target.value)}
-                className="bg-transparent text-xs text-emerald-300 focus:outline-hidden w-28"
-              />
+                className="bg-transparent text-xs text-emerald-300 focus:outline-hidden"
+              >
+                {party.map((p) => (
+                  <option key={p} value={p}>
+                    {t('stage.whisperTo', { name: p })}
+                  </option>
+                ))}
+              </select>
             </div>
           )}
 

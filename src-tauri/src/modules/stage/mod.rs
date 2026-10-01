@@ -18,6 +18,7 @@ use crate::modules::settings::load_app_settings;
 mod dice;
 mod engine;
 mod models;
+mod party;
 mod plan;
 mod scenes;
 #[cfg(test)]
@@ -27,6 +28,7 @@ mod turn;
 pub use dice::*;
 pub use engine::*;
 pub use models::*;
+pub use party::*;
 pub use plan::*;
 pub use scenes::*;
 pub use turn::*;

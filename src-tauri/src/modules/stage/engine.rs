@@ -275,6 +275,7 @@ impl StageEngine {
             ],
             current_turn_actor: "PLAYER".to_string(),
             current_bg: None,
+            private_knowledge: HashMap::new(),
         };
 
         Self {
@@ -319,49 +320,35 @@ impl StageEngine {
     pub fn start_encounter(&self) {
         let lang = crate::modules::content_lang::ContentLang::current();
         let mut st = self.state.write();
-        if st.combat.combatants.is_empty() {
-            let mut rng = rand::rng();
-            let player_name = if st.definition.persona.trim().is_empty() {
-                "Spieler".to_string()
-            } else {
-                st.definition.persona.clone()
-            };
-            st.combat.combatants.push(Combatant {
-                id: "player".to_string(),
-                name: player_name,
-                role: "player".to_string(),
-                hp: 50,
-                max_hp: 50,
-                stress: 0,
-                max_stress: 100,
-                initiative: rng.random_range(1..=20),
-                conditions: Vec::new(),
-            });
-            let party = st.definition.party.clone();
-            for (index, name) in party.into_iter().enumerate() {
-                st.combat.combatants.push(Combatant {
-                    id: format!("companion_{}", index),
-                    name,
-                    role: "companion".to_string(),
-                    hp: 40,
-                    max_hp: 40,
-                    stress: 0,
-                    max_stress: 100,
-                    initiative: rng.random_range(1..=20),
-                    conditions: Vec::new(),
-                });
-            }
+        ensure_party_vitals(&mut st);
+        let mut rng = rand::rng();
+        if !st
+            .combat
+            .combatants
+            .iter()
+            .any(|c| c.role != "player" && c.role != "companion")
+        {
             st.combat.combatants.push(Combatant {
                 id: "enemy_1".to_string(),
-                name: "Unbekannter Gegner".to_string(),
+                name: lang
+                    .pick("Unbekannter Gegner", "Unknown enemy", "Неизвестный враг")
+                    .to_string(),
                 role: "enemy".to_string(),
                 hp: 20,
                 max_hp: 20,
                 stress: 0,
                 max_stress: 0,
-                initiative: rng.random_range(1..=20),
+                initiative: 0,
                 conditions: Vec::new(),
             });
+        }
+        for combatant in st
+            .combat
+            .combatants
+            .iter_mut()
+            .filter(|c| c.initiative == 0)
+        {
+            combatant.initiative = rng.random_range(1..=20);
         }
         st.combat.is_active = true;
         st.combat.round = 1;
@@ -387,6 +374,7 @@ impl StageEngine {
         let lang = crate::modules::content_lang::ContentLang::current();
         let mut st = self.state.write();
         st.combat.is_active = false;
+        remove_enemies(&mut st);
         st.combat.combat_log.push(
             lang.pick(
                 "Kampf beendet. Alle Einheiten entspannen sich.",

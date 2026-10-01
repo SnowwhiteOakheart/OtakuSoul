@@ -807,6 +807,7 @@ export const de = {
   "stage.modeWhisper": "Flüstern",
   "stage.modeWhisperHint": "Geheime Botschaft an ein Gruppenmitglied",
   "stage.whisperTarget": "Ziel (z. B. Ayu) …",
+  "stage.whisperTo": "An {{name}} flüstern",
   "stage.nextSpeaker": "Nächster Sprecher",
   "stage.nextAuto": "Nächster: automatisch",
   "stage.nextActor": "Nächster: {{name}}",

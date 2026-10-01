@@ -557,6 +557,8 @@ export interface SceneState {
   pending_choices: TaggedChoice[];
   current_turn_actor: string;
   current_bg?: string | null;
+  /** What each character was told in private (whispers). */
+  private_knowledge?: Record<string, string[]>;
 }
 
 export type StageState = SceneState;

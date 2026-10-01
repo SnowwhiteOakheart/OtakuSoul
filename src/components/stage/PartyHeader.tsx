@@ -16,34 +16,8 @@ export const PartyHeader: React.FC = () => {
     (c) => c.role === 'player' || c.role === 'companion'
   );
 
-  // If no combatants are defined yet, create fallback display from definition.party
-  const displayParty =
-    partyCombatants.length > 0
-      ? partyCombatants
-      : [
-          {
-            id: 'player',
-            name: stageState.definition.persona || 'Spieler',
-            role: 'player' as const,
-            hp: 50,
-            max_hp: 50,
-            stress: 0,
-            max_stress: 100,
-            initiative: 10,
-            conditions: [],
-          },
-          ...stageState.definition.party.map((p, i) => ({
-            id: `comp_${i}`,
-            name: p,
-            role: 'companion' as const,
-            hp: 40,
-            max_hp: 40,
-            stress: 10,
-            max_stress: 100,
-            initiative: 12,
-            conditions: [],
-          })),
-        ];
+  // The backend keeps player and companions in this list at all times (also outside combat).
+  const displayParty = partyCombatants;
 
   return (
     <div className="bg-slate-900/90 border-b border-slate-800/80 px-4 py-2.5 backdrop-blur-md">
@@ -136,7 +110,7 @@ export const PartyHeader: React.FC = () => {
                         className="px-1.5 py-0.2 rounded bg-amber-950/80 border border-amber-500/30 text-[11px] text-amber-300 font-medium"
                         title={t('stage.conditionRounds', { name: cond.name, rounds: cond.rounds_remaining })}
                       >
-                        {cond.name}
+                        {cond.name} · {cond.rounds_remaining}
                       </span>
                     ))}
                   </div>

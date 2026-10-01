@@ -40,9 +40,22 @@ export function startMockLlm() {
       const isPlanner = system.includes('GAME MASTER PLANNER');
       const isNarrator = system.includes('GAME MASTER NARRATOR');
       if (isPlanner) stats.stagePlanner += 1;
-      if (isNarrator) stats.stageNarrator += 1;
+      if (isNarrator) {
+        stats.stageNarrator += 1;
+        stats.lastNarratorMessages = request.messages ?? [];
+      }
+      const isCompanion = system.includes('React in the first person') || system.includes('React to what is happening');
+      if (isCompanion) {
+        stats.stageCompanion = (stats.stageCompanion ?? 0) + 1;
+        stats.lastCompanionMessages = request.messages ?? [];
+      }
       const text = isPlanner
-        ? JSON.stringify({ narration_plan: 'Ein altes Tor taucht aus dem Nebel auf.', next_actor: null })
+        ? JSON.stringify({
+            narration_plan: 'Ein altes Tor taucht aus dem Nebel auf.',
+            next_actor: null,
+            resource_delta: { target: 'PLAYER', hp_delta: -5, stress_delta: 10 },
+            condition_updates: [{ target: 'PLAYER', add: 'Erschöpft', turns: 3 }],
+          })
         : isNarrator
           ? STAGE_NARRATION
           : isSummary

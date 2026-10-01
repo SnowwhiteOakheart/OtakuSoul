@@ -32,6 +32,9 @@ pub async fn execute_stage_turn(
 
     // 0. Snapshot for Undo
     engine.push_snapshot(&state.definition.id, state.clone());
+    ensure_party_vitals(&mut state);
+    // A turn passes: conditions outside combat wear off (in combat they count rounds).
+    tick_conditions_outside_combat(&mut state);
 
     let settings = load_app_settings();
     let (endpoint_url, api_key, model_name, provider) = if settings.selected_backend == "cloud" {
@@ -74,6 +77,16 @@ pub async fn execute_stage_turn(
 
     // 1. Append Player Turn Message if non-empty
     let clean_input = req.user_input.trim();
+    // A whisper is known only to its recipient, who answers it.
+    let whisper_to = whisper_recipient(&req.turn_mode, req.whisper_target.as_deref())
+        .filter(|_| !clean_input.is_empty());
+    if let Some(to) = &whisper_to {
+        add_private_knowledge(
+            &mut state,
+            to,
+            format!("{user_name} whispered to you: {clean_input}"),
+        );
+    }
     if !clean_input.is_empty() {
         let player_msg = SceneTurnMessage {
             id: format!("msg_{}", Utc::now().timestamp_millis()),
@@ -160,8 +173,9 @@ pub async fn execute_stage_turn(
             .collect::<Vec<_>>()
             .join("; ")
     } else {
-        "kein aktiver Kampf".to_string()
+        "no active combat".to_string()
     };
+    let vitals_context = party_vitals_context(&state);
 
     let recent_history: Vec<String> = state
         .chat_log
@@ -169,7 +183,7 @@ pub async fn execute_stage_turn(
         .rev()
         .take(6)
         .rev()
-        .map(|m| format!("{}: {}", m.sender_name, m.content))
+        .map(|m| line_for(m, Audience::Planner))
         .collect();
 
     // Scan bound lorebooks for Stage-Lore
@@ -222,6 +236,7 @@ Campaign clocks: {clocks}
 Objectives: {objectives}
 Story arcs: {arcs}
 Inventory: {inventory}
+Party condition: {vitals}
 Combat: {combat}
 
 TASK:
@@ -238,6 +253,7 @@ Reply ONLY with a single valid JSON object in this format:
   "dice_check": null,
   "campaign_clock_updates": [],
   "resource_delta": null,
+  "condition_updates": [],
   "story_arc_updates": [],
   "objective_updates": [],
   "inventory_add": [],
@@ -257,7 +273,9 @@ RULES:
 - dice_check: when a demanding check is needed, give e.g. {{"formula": "1d20+3", "dc": 14, "skill_name": "Perception"}}, otherwise null.
 - next_actor: who speaks after the game master's narration? A party member from [{party}] or "PLAYER".
 - bg_image: optionally the name of a fitting new background image (e.g. "Horizontal Elkia Grand Library.png"), or null.
-- resource_delta: optional {{"target":"PLAYER or name", "hp_delta":-5, "stress_delta":10}}.
+- resource_delta: optional {{"target":"PLAYER or name", "hp_delta":-5, "stress_delta":10}}. HP and stress count outside combat too: wounds, exhaustion, fear and rest matter.
+- condition_updates: optional {{"target":"PLAYER or name", "add":"Poisoned", "turns":3}} or {{"target":"name", "remove":"Poisoned"}}; condition names in {reply_language}.
+- Private whispers and thoughts in the history are secret: never put their content into narration_plan or player_choices; only the whisper's recipient may react to it.
 - story_arc_updates: optional {{"id":"arc-id", "stage_delta":1, "reveal":true, "resolve":false}}.
 - objective_updates: optional {{"id":"objective-id", "title":"", "description":"", "progress_delta":1, "max":3, "status":"active|completed|failed"}}.
 - inventory_add: optional items with name, description, quantity, item_type and optionally hp_restore/stress_restore/clears_condition. inventory_remove holds IDs or names.
@@ -293,6 +311,7 @@ RULES:
         } else {
             &inventory_context
         },
+        vitals = vitals_context,
         combat = combat_context,
         first_party_or_player = state
             .definition
@@ -306,7 +325,10 @@ RULES:
         "=== RECENT HISTORY ===\n{}\n\n=== CURRENT ACTION BY {} ===\nMode: {}\nContent: {}\n\nPlan the next beat as JSON:",
         recent_history.join("\n"),
         user_name,
-        req.turn_mode,
+        match &whisper_to {
+            Some(to) => format!("whisper (PRIVATE, only {to} hears it – keep it secret)"),
+            None => req.turn_mode.clone(),
+        },
         clean_input
     );
 
@@ -448,6 +470,30 @@ RULES:
         }
     }
 
+    for update in &gm_plan.condition_updates {
+        if let Some(combatant) = find_combatant(&mut state, &update.target) {
+            if let Some(name) = update
+                .add
+                .as_deref()
+                .map(str::trim)
+                .filter(|n| !n.is_empty())
+            {
+                combatant
+                    .conditions
+                    .retain(|c| !c.name.eq_ignore_ascii_case(name));
+                combatant.conditions.push(CombatCondition {
+                    name: name.to_string(),
+                    rounds_remaining: update.turns.clamp(1, 20),
+                });
+            }
+            if let Some(name) = update.remove.as_deref().map(str::trim) {
+                combatant
+                    .conditions
+                    .retain(|c| !c.name.eq_ignore_ascii_case(name));
+            }
+        }
+    }
+
     for update in &gm_plan.story_arc_updates {
         if let Some(arc) = state.arcs.iter_mut().find(|arc| arc.id == update.id) {
             arc.stage =
@@ -549,6 +595,15 @@ RULES:
     if let Some(encounter) = &gm_plan.encounter {
         match encounter.action.as_str() {
             "start" => {
+                ensure_party_vitals(&mut state);
+                for combatant in state
+                    .combat
+                    .combatants
+                    .iter_mut()
+                    .filter(|c| c.initiative == 0)
+                {
+                    combatant.initiative = rand::rng().random_range(1..=20);
+                }
                 state.combat.is_active = true;
                 state.combat.round = 1;
                 state.combat.current_turn_index = 0;
@@ -611,6 +666,7 @@ RULES:
             }
             "end" => {
                 state.combat.is_active = false;
+                remove_enemies(&mut state);
                 secondary_event_cards.push((
                     lang.pick(
                         "Die Kampfbegegnung endet.",
@@ -716,7 +772,17 @@ RULES:
         },
         ChatMessage {
             role: "user".to_string(),
-            content: format!("Narrate what happens after this action: '{}'", clean_input),
+            content: format!(
+                "Narrate what happens after this action: '{}'",
+                match (&whisper_to, req.turn_mode.as_str()) {
+                    // The narrator describes only what everyone can perceive.
+                    (Some(to), _) => format!(
+                        "{user_name} leans close to {to} and whispers something nobody else can hear"
+                    ),
+                    (None, "think") => format!("{user_name} is silently lost in thought"),
+                    _ => clean_input.to_string(),
+                }
+            ),
             attachments: Vec::new(),
         },
     ];
@@ -786,6 +852,7 @@ RULES:
         .force_next_actor
         .as_deref()
         .filter(|actor| !actor.trim().is_empty())
+        .or(whisper_to.as_deref())
         .or(gm_plan.next_actor.as_deref())
         .unwrap_or("PLAYER")
         .to_string();
@@ -835,6 +902,7 @@ RULES:
                 String::new()
             };
 
+            let secrets = private_knowledge_block(&state, &current_actor);
             let companion_system = if let Some(ch) = matched_char {
                 let localized_char =
                     ch.card
@@ -850,21 +918,23 @@ Scene context: {world_context}{lore_section}
 
 React in the first person to what the game master, {user_name} and any companions just did or said.
 Stay fully in character, use your own voice and express your feelings vividly and authentically. Keep it concise.
-Reply in {reply_language}."#,
+Reply in {reply_language}.{secrets}"#,
                     name = ch.card.data.name,
                     personality = localized_char.personality,
                     description = localized_char.description,
                     world_context = state.definition.world_context,
                     lore_section = lore_section,
                     user_name = user_name,
-                    reply_language = reply_language
+                    reply_language = reply_language,
+                    secrets = secrets
                 )
             } else {
                 format!(
-                    "You are {}. React to what is happening from your point of view, in {reply_language}.{lore_section}",
+                    "You are {}. React to what is happening from your point of view, in {reply_language}.{lore_section}{secrets}",
                     current_actor,
                     lore_section = lore_section,
-                    reply_language = reply_language
+                    reply_language = reply_language,
+                    secrets = secrets
                 )
             };
 
@@ -874,7 +944,7 @@ Reply in {reply_language}."#,
                 .rev()
                 .take(5)
                 .rev()
-                .map(|m| format!("{}: {}", m.sender_name, m.content))
+                .map(|m| line_for(m, Audience::Character(&current_actor)))
                 .collect();
             let history_text = recent_history_dialogue.join("\n\n");
 

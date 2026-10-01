@@ -11,4 +11,8 @@ import type { StoryArc } from "./StoryArc";
 import type { TaggedChoice } from "./TaggedChoice";
 import type { WorldState } from "./WorldState";
 
-export type SceneState = { definition: SceneDefinition, world: WorldState, clocks: Array<CampaignClock>, combat: EncounterState, arcs: Array<StoryArc>, inventory: Array<InventoryItem>, objectives: Array<CampaignObjective>, relationships: Array<StageRelationship>, consequence_ledger: Array<ConsequenceEntry>, chat_log: Array<SceneTurnMessage>, pending_choices: Array<TaggedChoice>, current_turn_actor: string, current_bg: string | null, };
+export type SceneState = { definition: SceneDefinition, world: WorldState, clocks: Array<CampaignClock>, combat: EncounterState, arcs: Array<StoryArc>, inventory: Array<InventoryItem>, objectives: Array<CampaignObjective>, relationships: Array<StageRelationship>, consequence_ledger: Array<ConsequenceEntry>, chat_log: Array<SceneTurnMessage>, pending_choices: Array<TaggedChoice>, current_turn_actor: string, current_bg: string | null, 
+/**
+ * What each character was told in private (whispers), by name.
+ */
+private_knowledge: { [key in string]: Array<string> }, };

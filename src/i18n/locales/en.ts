@@ -805,6 +805,7 @@ export const en: TranslationDictionary = {
   "stage.modeWhisper": "Whisper",
   "stage.modeWhisperHint": "Secret message to a party member",
   "stage.whisperTarget": "Target (e.g. Ayu) …",
+  "stage.whisperTo": "Whisper to {{name}}",
   "stage.nextSpeaker": "Next speaker",
   "stage.nextAuto": "Next: automatic",
   "stage.nextActor": "Next: {{name}}",

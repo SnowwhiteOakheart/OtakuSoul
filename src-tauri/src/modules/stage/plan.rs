@@ -28,6 +28,24 @@ pub struct PlanResourceDelta {
     pub stress_delta: i32,
 }
 
+/// Adds or removes a condition (e.g. "Poisoned") on the player or a companion.
+#[derive(Debug, Clone, Serialize, Deserialize, TS)]
+#[ts(export)]
+pub struct PlanConditionUpdate {
+    pub target: String,
+    #[serde(default)]
+    pub add: Option<String>,
+    #[serde(default)]
+    pub remove: Option<String>,
+    /// How many turns an added condition lasts.
+    #[serde(default = "default_condition_turns")]
+    pub turns: u32,
+}
+
+pub(super) fn default_condition_turns() -> u32 {
+    3
+}
+
 #[derive(Debug, Clone, Serialize, Deserialize, TS)]
 #[ts(export)]
 pub struct PlanArcUpdate {
@@ -137,6 +155,8 @@ pub struct GmPlan {
     pub campaign_clock_updates: Vec<PlanClockUpdate>,
     #[serde(default)]
     pub resource_delta: Option<PlanResourceDelta>,
+    #[serde(default)]
+    pub condition_updates: Vec<PlanConditionUpdate>,
     #[serde(default)]
     pub story_arc_updates: Vec<PlanArcUpdate>,
     #[serde(default)]

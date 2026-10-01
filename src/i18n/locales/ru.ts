@@ -805,6 +805,7 @@ export const ru: TranslationDictionary = {
   "stage.modeWhisper": "Шёпот",
   "stage.modeWhisperHint": "Тайное сообщение члену группы",
   "stage.whisperTarget": "Кому (напр. Аю) …",
+  "stage.whisperTo": "Шепнуть: {{name}}",
   "stage.nextSpeaker": "Следующий говорящий",
   "stage.nextAuto": "Следующий: автоматически",
   "stage.nextActor": "Следующий: {{name}}",

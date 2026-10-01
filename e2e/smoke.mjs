@@ -146,6 +146,24 @@ try {
   assert.ok(STAGE_NARRATION.includes('dreimal'));
   await shot(browser, '11-stage-fertig');
 
+  step('Soul Stage: Flüstern bleibt privat, Spielerwerte gelten auch ohne Kampf');
+  await browser.$('button=Flüstern').click();
+  const whisperSelect = await browser.$('select[aria-label^="Ziel"]');
+  const recipient = await whisperSelect.getValue();
+  assert.ok(recipient, 'kein Flüsterziel wählbar');
+  await stageInput.setValue('Das Passwort lautet Mondlicht.');
+  await browser.keys('Enter');
+  await browser.$('button=Stopp').waitForExist({ reverse: true, timeout: 30_000 });
+  const narratorText = JSON.stringify(mock.stats.lastNarratorMessages);
+  assert.ok(!narratorText.includes('Mondlicht'), 'Erzähler kennt den geflüsterten Inhalt');
+  assert.ok(narratorText.includes('whispers something'), 'Erzähler erfährt nicht, dass geflüstert wurde');
+  assert.ok(JSON.stringify(mock.stats.lastCompanionMessages).includes('Mondlicht'), `${recipient} kennt das Geflüsterte nicht`);
+  // Two turns with -5 HP from the mock planner: 45 → 35, plus a fresh condition.
+  const party = await browser.$('body').getText();
+  assert.ok(/35\s*\/\s*50/.test(party), `HP des Spielers nicht aktualisiert: ${party}`);
+  assert.ok(party.includes('Erschöpft · 3'), 'Zustand fehlt im Party-HUD');
+  await shot(browser, '12-stage-fluestern');
+
   console.log(`\n✔ Rauchtest bestanden (${mock.stats.chat} Chat-Anfragen, ${mock.stats.summary} Zusammenfassung)`);
 } catch (e) {
   failed = true;

@@ -432,6 +432,9 @@ pub struct SceneState {
     pub current_turn_actor: String,
     #[serde(default)]
     pub current_bg: Option<String>,
+    /// What each character was told in private (whispers), by name.
+    #[serde(default)]
+    pub private_knowledge: HashMap<String, Vec<String>>,
 }
 
 pub(super) fn default_current_turn_actor() -> String {

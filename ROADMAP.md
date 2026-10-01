@@ -295,9 +295,13 @@ und übernimmt, was SoW lebendig macht:
 1. [x] **Gestreamte Ausgabe:** Erzähler- und Gefährtentext erscheinen live (Event `stage-stream`, `InferenceClient::stream_text`)
    statt erst am Rundenende; die eigene Eingabe steht sofort im Verlauf; „Stopp“ beendet die Runde nach dem aktuellen Text
    und überspringt weitere Sprecher. Rauchtest prüft den Live-Text.
-2. [ ] **Flüstern wirklich privat** (nur der Empfänger erfährt den Inhalt, andere nur „flüstert etwas“; Privatwissen je
-   Figur) und **echte Spielerwerte** außerhalb des Kampfes (HP/Energie/Stress, Zustände mit Dauer, Fertigkeitsboni) statt
-   der festen Platzhalter im Party-HUD.
+2. [x] **Flüstern wirklich privat** (`stage/party.rs`): Nur der Empfänger erfährt den Inhalt (auch später als
+   Privatwissen im Prompt) und antwortet als Erster; Erzähler und andere sehen nur „flüstert etwas“, Gedanken kennt nur der
+   Spielleiter. Ziel ist eine Auswahl aus der Party statt Freitext. **Echte Spielerwerte:** Spieler und Gefährten haben
+   dauerhaft HP, Stress und Zustände (mit Dauer in Zügen), auch ohne Kampf; der Planer bekommt sie und ändert sie per
+   `resource_delta`/`condition_updates`; Kämpfe fügen nur Gegner hinzu. Die Platzhalter im Party-HUD sind weg.
+   Rauchtest prüft Geheimhaltung, HP und Zustand.
+   - [ ] Noch offen: Fertigkeitswerte als Würfelbonus.
 3. [ ] **Kontext & Zusammenfassung für die Stage:** längerer Verlauf über `context_window`, ältere Runden zusammengefasst
    (heute sieht der Planner nur die letzten 6 Nachrichten).
 4. [ ] **NPC-System:** NPCs mit Archetyp-Avatar, eigenem Gedächtnis (Abruf nach Relevanz) und „NPC zum Charakter befördern“.
@@ -307,7 +311,7 @@ und übernimmt, was SoW lebendig macht:
 7. [ ] **Stimme & Atmosphäre:** Vorlesen mit der Charakterstimme der App statt Browser-TTS, Ambient-Audio aus Szene/Planner.
 8. [ ] **Gedächtnis & Welt:** Story-Arcs beim Auflösen archivieren, regelmäßige Konsistenzprüfung, Szenen-Erlebnisse ins
    Soul Memory der Party, Charakter-Overlays, Lorekarten mit Zielgruppe (Party/GM), Weltzustand vollständig bearbeitbar,
-   Chronik-Einträge löschbar, Übersetzung, Bindungs-Meilensteine beim Lagerfeuer.
+   Chronik-Einträge löschbar, Übersetzung.
 
 ---
 
