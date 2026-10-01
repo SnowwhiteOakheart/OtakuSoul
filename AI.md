@@ -8,7 +8,7 @@
 
 - **Name:** OtakuSoul
 - **GitHub Repository:** [https://github.com/SnowwhiteOakheart/OtakuSoul](https://github.com/SnowwhiteOakheart/OtakuSoul) (Remote: `origin`, Branch: `main`)
-- **Ursprung:** Neuentwicklung und vollständige Portierung von *Soul of Waifu* (`/home/deathtrap/development/Soul-of-Waifu-linux`).
+- **Ursprung:** Neuentwicklung und vollständige Portierung von *Soul of Waifu* (Python-Vorgänger).
 - **Kernziel:** Vollständige Eliminierung des Python-Interpreter-Overheads. Alle Kernfunktionen laufen in **nativem Rust (Tauri v2)** und modernstem **React 19 / TypeScript / Vite / Tailwind CSS v4 / WebGL (Three.js VRM + Pixi.js Live2D)**.
 
 ---
@@ -178,227 +178,39 @@
 
 ---
 
-## 🗃️ 5. Lokale Assets & Verzeichnisse (Vollständig autark in OtakuSoul)
+## 🗃️ 5. Assets & Verzeichnisse
 
-Alle benötigten Daten sind eigenständig in diesem Projektverzeichnis gekapselt:
-- **LLM GGUF-Modelle:** `assets/models/` (im Repo per `.gitignore` ignoriert, lokal vorhanden)
-  - `Gemma4-12B-QAT-Uncensored-HauhauCS-Balanced-Q4_K_M.gguf`
-  - `Qwen3.8-27B-Heretic-Q4_K_M.gguf`
-  - `Ternary-Bonsai-27B-PQ2_0.gguf` (braucht die PrismML-Laufzeit)
+- **Lokale GGUF-Modelle (Entwicklung):** `assets/models/` (gitignored). Installierte Apps laden Modelle über den
+  Modell-Hub nach `<Daten>/models/`; Ternary-Bonsai-Modelle (`PQ2_0`/`PTQ1_0`) brauchen die PrismML-Laufzeit.
 - **Laufzeiten:** werden in der App nach `<Daten>/runtimes/` geladen (`llama.cpp`, `prism`, `sd.cpp`, `crispasr`);
   `bin/cuda/` und `bin/prism-cuda/` (gitignored) sind nur noch Entwickler-Fallbacks.
-- **Bild- und TTS-Modelle:** `<Daten>/image-models/`, `<Daten>/tts-models/`, Stimmklone in `<Daten>/voices/`
-- **3D VRM Avatare:** `assets/vrm/` (u. a. `Anime Girl.vrm`, `Mikku.vrm`, `2B.vrm`)
-- **Charakterkarten & Lorebooks:** `presets/`
-  - V2 JSON-Karten & Lorebooks: `presets/sakura-succubus-3/`, `presets/no-game-no-life/`
-  - SillyTavern V2 PNG-Karten: `presets/cards/` (15 Karten: Akane, Kurisu, Cosmos, Vivy, etc.)
-- **Benutzerverzeichnis (automatisch angelegt):** `~/.local/share/otakusoul/` (`characters/`, `lorebooks/`, `personas/`, `scenes/`, `attachments/`, `runtimes/`, `.trash/`); mit `OTAKUSOUL_HOME` stattdessen `$OTAKUSOUL_HOME/data`
-  - Native Kokoro-Installation: `models/kokoro/model_quantized.onnx` plus `models/kokoro/voices/*.bin` unterhalb dieses Datenverzeichnisses
-- **Hardware des Benutzers:** NVIDIA GeForce RTX 4070 Ti SUPER (16.376 MB VRAM) plus AMD Radeon 890M iGPU, 86 GB RAM,
-  CUDA 13 (`/opt/cuda`), Vulkan 1.4, CachyOS/Arch Linux. Die iGPU meldet ~52 GB geteilten Speicher – Modelle immer auf die
-  dedizierte Karte festlegen.
+- **Bild- und TTS-Modelle:** `<Daten>/image-models/`, `<Daten>/tts-models/`, Stimmklone in `<Daten>/voices/`.
+- **Mitgelieferte Inhalte:** `presets/` (V2-Karten als PNG/JSON, Lorebooks, Stage-Szenen), `assets/vrm/`,
+  `assets/live2d/`, `assets/emotions/`; Lizenzen der VRMs in `assets/vrm/lizenzen.txt`.
+- **Datenverzeichnis `<Daten>`:** `directories::ProjectDirs` (Linux `~/.local/share/otakusoul/`), mit `OTAKUSOUL_HOME`
+  stattdessen `$OTAKUSOUL_HOME/data`. Darin u. a. `characters/`, `lorebooks/`, `personas/`, `scenes/`, `attachments/`,
+  `runtimes/`, `otakusoul.db`, `.trash/`; natives Kokoro unter `models/kokoro/`.
+- **Testhardware:** Die GPU-Tests liefen mit einer 16-GB-NVIDIA-Karte neben einer AMD-iGPU. Solche iGPUs melden
+  Dutzende GB geteilten Speicher – Modelle deshalb immer auf die dedizierte Karte festlegen (siehe Tipps).
 
 ---
 
-## 🧭 6. Phasen-Statusübersicht
+## 🧭 6. Stand
 
-- [x] **Phase 1: Projekt-Setup, Toolchain & GitHub Bootstrap** (Commit `70b2e84`)
-- [x] **Phase 2: Hardware-Erkennung & llama-server Prozessmanager** (Commit `56dbfb2`)
-- [x] **Phase 3: Character Cards V2, Lorebooks & Adaptive HUD** (Commit `012c490`)
-- [x] **Phase 4: 3D VRM & 2D Avatar WebGL Engine mit LipSync** (Commit `a349ee0`)
-- [x] **Phase 5: Kognitive Soul Memory mit SQLite & Emotional Decay** (Commit `05d9fa4`)
-- [x] **Phase 6: Soul Stage Tabletop RPG & Procedural Web Audio SFX** (Commit `59f3792`)
-- [x] **Phase 7: Soul Companion, Neurohormone & 25s Tool Safety** (Commit `aa9a8e5`)
-- [x] **Technische Schulden & Phase 8: Datenfundament & Charakterbibliothek** (Commit `5cb5819`)
-  - Native Dateidialoge (`tauri-plugin-dialog`), dynamische Pfade & Asset-Scans
-  - Persistente `settings.json`, anpassbares Sampling & konfigurierbare Antwortsprache
-  - SillyTavern V2 PNG tEXt Chunk Injection & Export, Charakter-Editor, Galerie-Bibliothek, User-Personas
-- [x] **Phase 9: Vollwertiger Chat, Swipes & HUD-Presets** (Commit `d8c2bde`)
-  - **SQLite Chat-Persistenz:** Tabellen `chat_sessions` & `chat_messages` mit Multi-Chat-Unterstützung pro Charakter
-  - **SillyTavern Swipes (Antwortvarianten):** Beliebig viele Varianten pro Nachricht in `swipes_json`, browsbar via `< 1/3 >` Pagination
-  - **Nachrichten-Aktionen:** Inline-Editing mit Textarea, Löschen, Fortsetzen (Continue), Neu generieren (Swipe anlegen)
-  - **Author's Note & System-Steering:** Dedizierte Regieanweisung pro Chat mit frei wählbarer Injektionstiefe ($N$ Nachrichten vor Ende der Historie)
-  - **Reaktives State Parsing:** Regex-Extraktion von `<state>{...}</state>`, automatische Aktualisierung der HUD-Variablen und Tag-Stripping aus Chatblasen
-  - **11 Rollenspiel-HUD-Presets:** Romance, RPG, Survival, Horror, Cyberpunk, Slice-of-Life, Detektiv, Space Opera, Cultivation, Comedy, Tabletop Tactical
-  - **SillyTavern & SoW JSONL Import/Export:** Volle Kompatibilität inkl. aller Metadaten und Swipes-Historie
-- [x] **Phase 10: LLM-Provider & llama.cpp-Tuning** (Commit `bf00643`)
-  - **Provider-Abstraktion in Rust:** `LlmProviderType` und `ProviderRegistry` unterstützen LocalLlama, OpenRouter, Anthropic (natives Messages-API Format), OpenAI, DeepSeek, Gemini, Mistral & Custom OpenAI-kompatible Endpunkte.
-  - **Natives Anthropic-Protokoll:** Eigene Header (`x-api-key`, `anthropic-version`), oberstes `system`-Prompt Feld (keine System-Rollen im Nachrichten-Array), rollen-alternierende Normalisierung und SSE-Event-Streaming für `content_block_delta`.
-  - **OpenRouter Modellkatalog:** Automatisches Abrufen aller Modelle von OpenRouter mit Kontextlänge & Preisinformationen, Volltext-Suchfilter und 1-Klick-Übernahme.
-  - **Fortgeschrittene Sampler-Engine:** Dynamic Temperature (`dynatemp_range`, `dynatemp_exponent`), DRY (`dry_multiplier`, `dry_base`, `dry_allowed_length`, `dry_penalty_last_n`), XTC (`xtc_threshold`, `xtc_probability`), Min-P, Top-P, Top-K, Repeat Penalty und Stop Strings.
-  - **LLM-Presets System:** 5 vordefinierte Presets (Storytelling/Kreativ, Rollenspiel Standard, Stage GM / Logik, XTC Wild, Fast Chat) + CRUD für eigene Presets mit Persistenz in `llm_presets.json`.
-  - **llama-server Hardware-Tuning:** Batch Size (`-b`), UBatch Size (`-ub`), KV-Cache Quantisierung (`--cache-type-k`, `--cache-type-v` z. B. `q8_0` für 50% VRAM-Ersparnis bei großen Kontexten), Memory-Lock (`--mlock`), no-mmap (`--no-mmap`), CPU MoE Offloading (`--cpu-moe`).
-  - **Models Hub (Hugging Face):** Direkte GGUF-Suche via Hugging Face API, Repo-Dateien-Inspektion mit Quantisierungs-Erkennung (Q4_K_M, Q8_0 etc.), asynchroner Downloader mit Live-Fortschrittsbalken und Download-Geschwindigkeit in MB/s (`model-download-progress`).
-  - **Moderne Einstellungs-Tabs:** Unterteilung in Server Tuning, Cloud Provider & OpenRouter Katalog, Sampler & Presets sowie Models Hub.
-- [x] **Phase 11: Soul Memory 2.0 (Kognitive Pipeline & Agenten)** (Commit `436469c`)
-  - **Autonome Kognitive Pipeline (`soul_memory_pipeline.rs`):**
-    - **Router-Agent:** Analysiert Konversationsabschnitte deterministisch, erkennt belanglose Turns via `{"no_significant_change": true}`, generiert partielle JSON-Field-Patches für Charakter- und Nutzerzustand, löst Widersprüche auf (`healing_log_add`) und plant Themen-Notizen (`topic_plan`).
-    - **Archivist-Agent:** Erstellt und komprimiert thematische Lore-Einträge (<300 Wörter) auf Basis des Topic-Plans in das episodische Gedächtnis.
-    - **Diary-Agent:** Verfasst intime Ich-Perspektiven-Tagebucheinträge (4–6 Sätze) über Gefühle gegenüber `{user_name}` ohne Rollenspiel-Fluff oder Dialogfetzen.
-  - **Bidirektionaler Markdown-Sync (`MEMORY.md` & `USER.md`):**
-    - Vollständiges Rendern des SQLite-Seelenzustands in sauberes, strukturiertes Markdown (`# SOUL CACHE: {CHAR}`, `# USER PROFILE & RELATIONSHIP MEMORY: {USER}`).
-    - Robuster Regex-basierter Markdown-Parser (`parse_and_sync_character_markdown`, `parse_and_sync_user_markdown`), der Änderungen am Markdown direkt in die SQLite-Tabellen synchronisiert.
-    - Integrierter Markdown-Editor mit Tab-Umschaltung und 1-Klick-Speicherung in `CognitiveMemoryDrawer.tsx`.
-  - **Rolling Snapshots & Backup-Manager:**
-    - Automatisches Erstellen von JSON-Snapshots vor jedem Patch-Vorgang in `characters/<char_id>/backups/`.
-    - Übersicht aller Backups mit Datum und Dateigröße sowie 1-Klick-Rollback.
-  - **Soul of Waifu Memory-Importer:**
-    - 1-Klick-Import vorhandener `MEMORY.md`, `USER.md`, `topics/*.md` und `DIARY.md` Dateien aus beliebigen SoW-Ordnern über den nativen Verzeichnisdialog.
-  - **Prompt-Builder-Erweiterung:** Kernidentität, ungelöste Dissonanzen, Story-Rolle und Beziehungsdynamik werden nun direkt in den Rollenspiel-Prompt injiziert.
-- [x] **Phase 12: Lorebook 2.0 (Editor, Multi-Binding, Scene Tension & Chain Dependencies)**
-  - **Erweiterte Trigger-Engine (`lorebook.rs`):**
-    - Primärschlüssel (ODER), Sekundärschlüssel (UND-Bedingung), Ausschlusswörter (NOT-Bedingung), Reguläre Ausdrücke (`regex_keys`), Wortgrenzen-Regex (`\b`), Case-Sensitivity Toggle und Always-On.
-    - **Wahrscheinlichkeits-Roll:** Prozentuale Auslöserate (`probability: 0..100%`) und Prioritäts-Sortierung (`priority: i32`, höhere Werte zuerst).
-  - **Scene Tension Accumulator:**
-    - Dynamische Szenenspannung wächst pro Turn (+2) und bei Konflikt-/Gefahren-Keywords (+10) bis 100%.
-    - Bei Erreichen des Schwellenwerts (`tension_threshold`) triggern spezielle Zufalls-/Krisen-Lorebook-Einträge und bauen Spannung ab (-25).
-    - Interaktiver Tension-Gauge im UI mit Live-Anzeige, Schwellenwerten und manuellem Reset.
-  - **Chain Dependencies:**
-    - `chain_activates`: Zwingt abhängige Folge-Einträge zur gemeinsamen Aktivierung.
-    - `chain_requires`: Filtert Einträge heraus, falls deren Voraussetzungen nicht aktiv sind.
-  - **Getrennte Injektions-Modi im System-Prompt (`prompt_builder.rs`):**
-    - `passive`: Fließt als Hintergrundwissen in `## Weltwissen & Kontext (Lorebook)` ein.
-    - `active` / `directive`: Fließt als strikte Handlungsregel in `## Wichtige Handlungs- & Regie-Anweisungen (Lore-Direktiven)` ein.
-  - **Multi-Binding & globale Lorebooks:**
-    - Beliebig viele Lorebooks können einzelnen Charakteren zugewiesen werden (`bound_lorebooks` im Charakter-Editor).
-    - Universelle Lorebooks können als `global` markiert werden und sind automatisch in jedem Chat aktiv.
-  - **Eigenständiger Lorebook-Manager & Editor (`LorebookView.tsx`):**
-    - Neuer Hauptreiter *Lorebooks* in der Navigation.
-    - Volle CRUD-Funktionalität, Eintrags-Filter, Tag-Chips, SillyTavern- / World-Info-kompatibler JSON-Import und -Export.
-- [x] **Phase 13: Stimme, TTS/STT & Voice Call**
-  - **TTS-Streaming & Audio (`voice.rs`, `streamingTts.ts`, `audioPlayer.ts`):** Fertige Sätze werden bereits während der LLM-Ausgabe synthetisiert und in stabiler Reihenfolge abgespielt; Abbruch, Gain, Ausgabegerätewahl und FFT-LipSync sind integriert.
-  - **Provider:** Edge-TTS, ElevenLabs mit Live-Stimmenliste sowie OpenAI-kompatible Cloud-/Sidecar-Endpunkte. Qwen3-TTS, XTTSv2, Silero und AllTalk werden über diesen einheitlichen Sidecar-Vertrag angebunden.
-  - **Kokoro nativ (`kokoro.rs`):** Kokoro 82M läuft Python-frei direkt in Rust über ONNX Runtime. Ein In-App-Installer lädt das SHA-256-verifizierte Quantmodell und acht englische Voicepacks atomar in das Benutzerdatenverzeichnis; eigene ONNX-/Voice-Pfade, Session-Caching, Geschwindigkeitssteuerung und 24-kHz-WAV-Ausgabe sind integriert. Die verwendete schlanke G2P-Pipeline ist englisch; Kokoro besitzt kein natives deutsches Profil.
-  - **STT:** Offline-Transkription über `whisper-rs`/whisper.cpp mit frei wählbarem GGML/GGUF-Modell sowie OpenAI-kompatible `/v1/audio/transcriptions`-Endpunkte.
-  - **Voice Activity Detection:** Lokale RMS-VAD in der Web-Audio-Aufnahme mit einstellbarer Schwelle und Stillezeit; Mono-Resampling auf 16 kHz vor der Transkription.
-  - **Voice Call:** Zustände Listening → Transcribing → Thinking → Speaking, automatischer Turn-Wechsel, Push-to-talk und Unterbrechung laufender Generierung/Wiedergabe.
-  - **RVC:** Optionales Audio-Postprocessing über einen neutralen Multipart-Sidecar-Vertrag mit Modell, Pitch, Index-Rate und Protect.
-  - **Cross-Platform:** Ein-/Ausgabegerätewahl und macOS-Mikrofonbeschreibung in `Info.plist`; bestehende Konfigurationen werden durch Serde-Defaults migriert.
+Die Phasen 1–18 der ursprünglichen Roadmap sind abgeschlossen; Details und Commits stehen in
+`Roadmap_abgeschlossen.md`. Kurz: Toolchain & Hardware-Erkennung (1–2), Character Cards V2 & Lorebooks (3, 12),
+VRM/Live2D-Avatare (4, 14), Soul Memory mit kognitiver Pipeline (5, 11), Soul Stage als KI-Game-Master (6, 15),
+Soul Companion als Desktop-Agent mit MCP (7, 16), Datenfundament & Bibliothek (8), Chat mit Swipes & HUD-Presets (9),
+LLM-Provider & Sampler (10), Stimme/TTS/STT/Voice Call (13), Web-Client, Discord, Bilder, Soul Hub & Backups (17),
+i18n, Themes, Logging, Updater & Paketierung (18).
 
-- [x] **Phase 14: Avatare, Live2D & Expression-Engine** (Commit `ae2f489`, `c33721f`, `01f8cc5`)
-  - **PixiJS & Live2D-Integration:** PixiJS v7 & `pixi-live2d-display-cubism4` mit Cubism 4 Core (`live2dcubismcore.min.js`), asynchronem Model-Loading und Canvas-Mounting.
-  - **Live2D Asset-Pipeline:** Asset-Ordner `assets/live2d/` für Built-in Modelle (z. B. Hiyori, Mao, etc. aus *Soul of Waifu*), Benutzer-Import aus externen Ordnern und Archiv-Dateien (`.zip`) direkt über die Einstellungen.
-  - **Voice LipSync & Expression Engine:** Amplitudenbasierter LipSync über die AudioPlayer FFT-Analyse, natürliches Blinzeln und Maus-Blickverfolgung.
-  - **Avatar-Modus-Persistenz:** Globale Voreinstellung (`vrm`, `live2d`, `portrait`) wird in `settings.json` dauerhaft gespeichert; zusätzlich kann pro Charakter ein individuelles Modell oder ein Fallback definiert werden.
-- [x] **Phase 15: Soul Stage – KI-Game-Master, Party HUD & Szenenordner (Vollständige SoW-Referenzparität)**
-  - **Two-Tier GM Pipeline (`stage.rs`):**
-    - **Action Planner:** Analysiert Spieleraktionen deterministisch mit striktem JSON-Schema, kalkuliert Schwierigkeitsgrade (SG), führt Fähigkeitsproben durch, verwaltet Clocks und aktualisiert HP/MP der Party. Robuste JSON-Repair-Mechanik bei Provider-Formatabweichungen.
-    - **Narrativer Storyteller:** Generiert atmosphärische Erzähltexte im Chat auf Basis des Planner-Ergebnisses unter Berücksichtigung von Würfelresultaten, Umgebung und Charakterzustand.
-    - **Multi-Actor Turn Loop & Lore-Injektion:** Ausführung von bis zu `max_actor_depth` aufeinanderfolgenden Gefährten-Reaktionen mit Party-Dialog-Ketten und automatischer Injektion aktiver Welt-Lorebooks (`evaluate_lorebooks`).
-  - **Szenenordner & Standard-Presets:**
-    - Verwaltung von Szenenordnern (`list_stage_folders`, `create_stage_folder`, `move_stage_scene_to_folder`, `delete_stage_folder`).
-    - Automatische Bereitstellung aller 12 Kapitel von *No Game No Life* im Ordner „No Game No Life“ inklusive zugehöriger Lorebooks und natürlicher Kapitelreihenfolge.
-  - **Szenen-Zuverlässigkeit & „Fortsetzen vs. Neu starten“:**
-    - Modale Abfrage beim Öffnen von Szenen mit bestehendem Fortschritt (`has_progress`).
-    - Rotierende `.json.bak`-Sicherheitskopien bei jedem Schreib- und Reset-Vorgang.
-  - **Nachrichtenwerkzeuge im Stage-Verlauf:**
-    - Inline-Bearbeitung (`editStageTurnMessage`), Löschen (`deleteStageTurnMessage`), Neugenerierung (`regenerateStageTurn`) und TTS-Vorlesen (`handleSpeak`).
-  - **Dynamische Bühnenatmosphäre & Background-Lock:**
-    - Bild-Auflösung über `get_stage_background_image` für Hintergründe wie *Elkia Throne Room*, *Library*, etc., mit weichem Backdrop-Overlay und fixierbarem Background-Lock (`lock_bg`).
-  - **JSON-Import & Export:**
-    - Beliebige Szenen-Dateien via JSON-Import direkt in Ordner importieren und als `.json` oder `.md` exportieren.
-  - **Party HUD:** Unterstützt bis zu 4 Gruppenmitglieder mit visuellen Lebenspunkten (HP), Magie/Ausdauer (MP), Klassen/Rollen-Badges und Statuseffekten (`PartyHeader.tsx`).
-  - **Rundensteuerung & Aktionskarten:** `TurnControlBar.tsx` mit Aktionen (Angriff, Skill, Zauber, Flucht, Rast) und interaktive Karten `StageEventCardView.tsx` für Choice-Events.
-  - **Rest-Mechanik, Snapshots & Export:** Kurze und lange Rast zum Regenerieren von Ressourcen, Undo-Historie für GM-Turns und Markdown-Export des gesamten Abenteuer-Logs.
-- [x] **Phase 16: Soul Companion – Echter Desktop-Agent, MCP & Werkzeuge**
-  - **Transparentes Overlay-Fenster (`FloatingCompanionOverlay.tsx`):**
-    - Rahmenloses, immer im Vordergrund schwebendes Desktop-Widget (`always_on_top`, `transparent`, `decorations: false`).
-    - Nativ umschaltbarer Click-Through-Modus via Tauri IPC (`set_ignore_cursor_events`), Mini-Hormon-Anzeigen, Zuneigungs- und Stimmungsanzeige sowie Schnellaktions-Dock (Kraulen, Screenshot, Zwischenablage).
-  - **Companion-LLM-Schleife & Proaktivität (`companion.rs`):**
-    - Proaktive Trigger-Evaluation (`evaluate_companion_proactive`), Begrüßung beim Anwendungsstart, Heartbeat-Intervall und Idle/AFK-Erkennung.
-  - **OS Event-Bus & Fenstererkennung:**
-    - `detect_desktop_window` liest das aktive Fenster über X11 (`xdotool`, `xprop`), Wayland oder Windows PowerShell aus.
-    - Robuster Datenschutz-Ausschlussfilter (`is_sensitive_window`) schützt Passwörter, Online-Banking und Inkognito-Browserfenster vor Inferenz und Logging.
-  - **Neurohormone, EmotionState, Scratchpad & Goals:**
-    - 4 Neurohormone (Dopamin, Cortisol, Oxytocin, Erschöpfung) mit minütlichem Zerfall/Erholung, Schlafstatus (`is_sleeping`) und Einsamkeits-Modellierung.
-    - 10 diskrete Emotionen (`neutral`, `curious`, `warm`, `amused`, `concerned`, `playful`, `relaxed`, `sleepy`, `melancholy`, `excited`) über exponentiellen gleitenden Durchschnitt (EMA, $\alpha = 0.30$).
-    - Persistentes Scratchpad (`scratchpad.json`) für fortlaufende innere Monologe des Begleiters.
-    - Goals & Versprechen-Manager (`goals.json`) mit DE/EN Regex-Extraktion von Zusagen ("ich verspreche", "erinnere mich morgen", etc.), Fälligkeitserkennung und automatischem Retention-Cleanup (7 Tage für erledigte, 30 Tage für abgelaufene).
-  - **Echte Desktop-Tools (`companion_tools.rs`):**
-    - Websuche via DuckDuckGo HTML / Instant Answer.
-    - System-Webbrowser-Aufruf (`xdg-open` / `open` / `start`).
-    - System- und Hardware-Überwachung via `sysinfo::System`.
-    - Vollbild- & Monitor-Screenshots via `xcap` als Base64-PNG.
-    - Zwischenablage lesen und schreiben via `arboard::Clipboard` mit Linux-Fallbacks (`wl-paste`, `xclip`, `xsel`).
-    - MPRIS Mediensteuerung via `playerctl` (`play-pause`, `next`, `previous`, `stop`).
-    - Applikationssteuerung (`launch`, `focus`, `close`, `list` mit Aliassuche).
-    - GUI-Automatisierung für Klicks, Texteingaben, Tastenkombinationen und Scrollen.
-    - Autonomer Webseiten-Reader (`fetch_web_content`) mit Tag-Bereinigung.
-    - Sandboxed Skript-Ausführung (Multiplattform: native PowerShell & Batch unter Windows, Bash unter Linux/macOS, optionales Python 3 mit konfigurierbarem Timeout 20s–60s) im isolierten Verzeichnis.
-    - Dateimanager (Suchen, Listen, Vorschau, Kategorisierung) mit absolutem Schreibschutz für Systemverzeichnisse (`/bin`, `/etc`, etc.).
-    - System-Vitals-Watchdog mit CPU-, RAM-, Disk- und GPU-Werten (`nvidia-smi`).
-  - **Model Context Protocol (MCP) Client & Plugins (`mcp_client.rs`):**
-    - JSON-RPC 2.0 Client für stdio und HTTP/SSE MCP-Server (`initialize`, `tools/list`, `tools/call`).
-    - Persistente Server-Verwaltung in `mcp_servers.json`.
-    - JSON-basiertes Skript- und Plugin-System (`companion/plugins/*.json`).
-  - **Desktop-Werkbank & Dashboard (`CompanionView.tsx`):**
-    - 6 modulare Ansichten: Bio-Monitor, Gedankenspeicher, Versprechen & Ziele, Desktop-Werkbank, MCP & Plugins, Desktop-Overlay.
-- [x] **Phase 17: Ökosystem & Integrationen**
-  - **Lokaler Web-Client für Smartphone & Tablet (`web_server.rs`, `IntegrationsView.tsx`):**
-    - Autarker Axum HTTP- und WebSocket-Server auf Port 8088 (0.0.0.0 Bind für lokales WLAN).
-    - Host-Header-Validierung schützt zuverlässig vor DNS-Rebinding-Angriffen im Heimnetzwerk.
-    - Token-basierte Authentifizierung mit kryptografischer Token-Generierung und Widerruf.
-    - Dynamische lokale IP-Erkennung via UDP-Routing-Probe und Vektor-SVG-QR-Code-Erzeugung (`qrcode`) zum direkten Scannen mit der Handykamera.
-    - Vollwertiger, responsiver mobiler HTML5/Tailwind Web-Client für iOS Safari und Android Browser mit Live-Streaming, Speech Synthesis (TTS) und STT-Upload.
-  - **Discord Rich Presence & Gateway-Bot (`discord.rs`):**
-    - Nativer Unix-Domain-Socket / Windows-Named-Pipe RPC-Client für Discord Rich Presence („Im Gespräch mit {character}“, State, Emotion und Zeitstempel).
-    - Autarker Discord Gateway Bot (`wss://gateway.discord.gg`) mit Heartbeat-Schleife (Opcode 1/10) und Befehls-Dispatcher für `!ask`, `!character`, `!status`, `!reset`.
-  - **KI-Bildgenerierung & Live-Studio (`image_generator.rs`):**
-    - Multi-Provider-Engine für Automatic1111 (`/sdapi/v1/txt2img`), ComfyUI (`/prompt` Polling), OpenAI DALL-E 3 (`/v1/images/generations`), NovelAI (`/ai/generate-image`) und FLUX.
-    - Dynamischer Kontext-Prompt-Synthesizer (`build_character_prompt`) synthetisiert visuelle Attribute (Haare, Augen, Kleidung, Emotion, Szene) des Charakters.
-    - Chat-Integration via Kamera-Schnellaufnahme im Chat-HUD (`AdaptiveHud.tsx`).
-    - Lokale Galerie-Verwaltung in `~/.local/share/otakusoul/generated_images/`.
-  - **Soul Hub & Gateways (`soul_hub.rs`, `SoulHubView.tsx`):**
-    - 4-teiliger Community-Hub mit Live-Suche, Tags, NSFW-Filtern und 1-Klick-Import für kuratierte Charaktere (Soul Gateway), Chub AI (API v4 / CDN mit automatischer Lorebook-Extraktion), Welt-Lorebooks und Soul-Stage-Szenarien.
-  - **KI-Charakterassistent (`CharacterAiAssistantModal.tsx`, `characters.rs`):**
-    - Geführter 5-Schritte Creation Wizard: Konzept & Name (mit Archetyp-Pills: Tsundere, Kuudere, Netrunner, etc.), Aussehen, Wesenszüge, Welt & Beziehung zu `{{user}}`, Begrüßung/Szenario.
-    - Direkte LLM-Synthese in standardkonformes SillyTavern V2 Format (`generate_character_draft_llm`), Review-Editor und Speichern in die Bibliothek.
-  - **Profil-Backup & Wiederherstellung (`profile_backup.rs`):**
-    - Portables ZIP-Backup mit Gruppen-Auswahl (Charaktere, Lorebooks, Personas, Seelengedächtnis, Soul Stage, Companion, Settings) und `manifest.json`.
-- [x] **Phase 18: UI-Politur, i18n & Auslieferung**
-  - **Internationalisierung (i18n, `src/i18n/index.ts`):**
-    - Typsicheres Dreisprachen-System mit vollständiger Abdeckung für `de` (Deutsch), `en` (English) und `ru` (Русский).
-    - Reaktiv über `useTranslation()`-Hook und Zustand-Integration (`appLanguage`).
-    - Nahtlose Umschaltung im Header und in den Einstellungen (`SettingsView.tsx`).
-  - **Theme-System & UI-Politur (`src/App.css`, `useAppStore.ts`):**
-    - 5 Farbwelten: `obsidian` (Standard, Dark Purple & Slate), `cyberpunk` (High-Tech Yellow, Pink & Cyan), `sakura` (Kirschblüte & Rosé), `midnight` (Tiefschwarz OLED & Sky Blue), `emerald` (Smaragdgrün Matrix & Dark Terminal).
-    - Sofortige reaktive DOM-Umschaltung über das HTML-Attribut `data-theme` und CSS-Theme-Variablen.
-    - Benutzerdefinierte schlanke Scrollbars in der gesamten Desktop-App.
-  - **Navigation & Befehlspalette (`Sidebar.tsx`, `CommandPalette.tsx`, `navigation.ts`):**
-    - Gruppierte, einklappbare Seitenleiste und eine durchsuchbare globale Palette für alle Ansichten sowie Logs und Updates.
-    - Einheitliche `NAV_GROUPS`-Quelle, globale Kürzel (`Strg/Cmd+K`, `Strg+1…8`) und vollständige Tastaturbedienung.
-  - **UI-Primitive (`src/components/ui/`):**
-    - Einheitliche Varianten für Buttons und Icon-Buttons sowie zugängliche Tabs, Selects, Toggles, Slider und Tooltips.
-    - `SettingsView` nutzt die gemeinsamen Button- und Tabs-Komponenten; 7 gezielte Tests sichern Semantik und Interaktion ab.
-    - Sichtbare UI-Symbole werden konsistent über `lucide-react` gerendert; plattformabhängige Emoji-Präfixe sind aus Komponenten
-      und allen drei Übersetzungsdateien entfernt.
-    - Die fünf Akzent-Themes unterstützen einen getrennt persistierten Darstellungsmodus (`system`, `light`, `dark`). Der Systemmodus
-      folgt `prefers-color-scheme` auch bei Änderungen während der Laufzeit; der helle Modus kehrt die semantische Oberflächenskala um.
-    - Gemeinsame `Skeleton`, `ViewSkeleton`, `ListSkeleton` und `AvatarSkeleton` halten Ansichts- und Listengeometrien beim Laden stabil;
-      alle Container melden ihren Zustand über `role="status"` und `aria-busy`.
-  - **System-Logging & Log-Viewer (`logger.rs`, `LogViewerModal.tsx`):**
-    - Dateipersistenz in `~/.local/share/otakusoul/logs/otakusoul.log` mit In-Memory-Ringpuffer (1000 Einträge).
-    - Backend-Commands: `get_app_logs`, `clear_app_logs`, `export_app_logs`.
-    - Vollwertiges Diagnose-Modal mit Monospace-Konsole, Level-Filtern (`ALL`, `INFO`, `WARN`, `ERROR`, `DEBUG`), Textsuche, Auto-Scroll, Log-Export und Zwischenablage-Kopie.
-  - **Auto-Updater Dialog (`updater.rs`, `UpdaterModal.tsx`):**
-    - Abfrage der offiziellen GitHub Releases API mit SemVer-Vergleich (`check_for_updates`).
-    - Interaktiver Update-Dialog mit Versionsvergleich, Release-Notes-Vorschau und 1-Klick-Link zu den Downloads.
-  - **Frontend-Unit-Tests (Vitest, `npm run test`):**
-    - 63 Tests in 10 Test-Suites für i18n, Store-Slices, zentrale UI-Bausteine, Befehlspalette, Onboarding,
-      Lorebooks, Soul Hub, Soul Memory, State Parsing und Soundeffekte (Stand heute: 97 Tests in 21 Dateien; Rust: 322).
-  - **Packaging & Multiplattform-Installer:**
-    - **Linux:** Universeller Installer `install.sh` (installiert Binary nach `~/.local/bin`, 512x512 Icon & `.desktop`-Menüeintrag), `.deb`, `AppImage`, Arch Linux AUR (`packaging/aur/PKGBUILD`).
-    - **Windows:** PowerShell-Installer `install.ps1` (installiert nach `%LOCALAPPDATA%\Programs\OtakuSoul\`, erstellt Startmenü- und Desktop-Verknüpfungen mit `.ico`), NSIS-Setup `.exe`.
-    - **macOS:** macOS-Installer `install-macos.sh` (Installation nach `/Applications/OtakuSoul.app`, Quarantäne-Entfernung), `.dmg` Disk Image.
-    - Lokale Paketierungs-Skripte in `packaging/scripts/` (keine CI-Ausführung auf GitHub).
-
-**Alle 18 Phasen der ursprünglichen Roadmap sind abgeschlossen.** Die laufende Weiterentwicklung steht in `ROADMAP.md`
-(Detailstand je Punkt) und `Roadmap_TTS.md`; die wichtigsten Ergebnisse danach:
+Die laufende Weiterentwicklung steht in `ROADMAP.md` (Detailstand je Punkt) und `Roadmap_TTS.md`; die wichtigsten
+Ergebnisse nach Phase 18:
 
 - [x] **Laufzeiten in der App:** llama.cpp, PrismML-Fork (Ternary Bonsai), stable-diffusion.cpp und CrispASR werden aus
   den GitHub-Releases geladen und per SHA-256 geprüft; signierte In-App-Updates (`tauri-plugin-updater`).
 - [x] **Lokale Bildgenerierung (stable-diffusion.cpp):** Katalog SDXL/FLUX.1/Qwen-Image/FLUX.2 mit gestuftem VRAM-Planer
-  und Tausch des Chat-Modells; auf RTX 4070 Ti SUPER getestet (SDXL 28 s, FLUX.1 48 s, Qwen-Image 73 s, FLUX.2 248 s).
+  und Tausch des Chat-Modells; auf einer 16-GB-Karte getestet (SDXL 28 s, FLUX.1 48 s, Qwen-Image 73 s, FLUX.2 248 s).
 - [x] **Lokale Sprachausgabe (CrispASR):** Qwen3-TTS CustomVoice/1.7B-Klon, Chatterbox, Kokoro DE, F5-TTS (nur
   nicht-kommerziell); Stimmklonen mit Einwilligung, KI-Kennzeichnung; mit Whisper-Rückerkennung getestet.
 - [x] **Hardware:** AMD/Intel über Vulkan, iGPU-Erkennung, Festlegung von `sd-server`/`llama-server` auf die dedizierte GPU.
@@ -413,7 +225,7 @@ Alle benötigten Daten sind eigenständig in diesem Projektverzeichnis gekapselt
 - **SillyTavern Swipes-Prinzip:** Swipes werden im SQLite-Feld `swipes_json` als Array von `{ content, thought }` gespeichert. Ein `swipe_index` markiert die aktive Variante. Das Erzeugen eines neuen Swipes („Neu generieren“) überschreibt niemals die bisherigen Varianten, sondern hängt eine neue an und setzt den Index auf das Ende.
 - **State Parsing (`<state>` Tags):** Rollenspiel-Modelle können via System-Prompt angewiesen werden, Status-Änderungen am Ende der Nachricht als `<state>{"Affection": 55}</state>` auszugeben. Der Parser in `src/utils/stateParser.ts` fängt diese Tags ab, aktualisiert die Zustand-Variablen und entfernt den Tag restlos aus der sichtbaren Blase, damit der Rollenspielfluss unberührt bleibt.
 - **Reasoning-Unterdrückung im Rollenspiel:** Wie in *Soul of Waifu* ist der Reasoning-Modus standardmäßig **deaktiviert**, um lästige interne Denkmonologe zu unterbinden und die Generierung maximal zu beschleunigen. Bei `reasoning_mode = false` übergibt `llama_manager` die Flags `--reasoning off --reasoning-budget 0`, sendet `enable_thinking: false` und der System-Prompt untersagt `<think>`-Tags explizit. Umschaltbar über den Schnellschalter im Chat-HUD (`AdaptiveHud.tsx`) oder in den Einstellungen.
-- **KV-Cache Quantisierung:** Mit `--cache-type-k q8_0` und `--cache-type-v q8_0` lässt sich der VRAM-Bedarf für lange Kontextfenster (16k–32k Tokens) auf der RTX 4070 Ti SUPER fast halbieren, ohne spürbare Einbußen bei der Generierungsqualität.
+- **KV-Cache Quantisierung:** Mit `--cache-type-k q8_0` und `--cache-type-v q8_0` lässt sich der VRAM-Bedarf für lange Kontextfenster (16k–32k Tokens) etwa halbieren, ohne spürbare Einbußen bei der Generierungsqualität.
 - **Anthropic Messages Streaming:** Anthropic nutzt SSE Events (`content_block_delta`), bei denen das Text-Delta unter `delta.text` liegt, während OpenAI/v1/chat/completions das Delta unter `choices[0].delta.content` platziert. Die `ProviderRegistry` normalisiert beide Formate transparent auf das einheitliche `llm-token` Event in Tauri.
 - **Streaming-Listener & React-Lifecycle:** Asynchrone Tauri-Listener (`listen(...)`) müssen zwingend mit einem `isSubscribed`-Guard gekapselt werden, damit bei unmounted Components / React StrictMode keine Geister-Listener verbleiben, die Tokens doppelt empfangen.
 - **Mobile Viewports (iOS/Android):** Alle UI-Container nutzen Flex/Grid und sind vorbereitet für Touch-Gesten und responsive Breakpoints (`sm:`, `lg:`).

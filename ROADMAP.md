@@ -35,7 +35,7 @@ Die Schwächen liegen vor allem hier:
 - [x] **Sicherheitslücke in `pixi-live2d-display` beseitigt.** Das Paket ist ersetzt, `npm audit` meldet 0 Lücken.
 - [x] *Zusätzlich gefunden:* Das **Profil-Backup** sicherte weder Einstellungen noch Soul Memory (falsche Pfade und Dateinamen).
   Die Datenbank wird jetzt per `VACUUM INTO` konsistent gesichert und beim nächsten Start wiederhergestellt statt im laufenden Betrieb.
-- [x] *Zusätzlich gefunden:* Ein fest eingetragener Pfad `/home/deathtrap/...` im Live2D-Viewer wurde entfernt.
+- [x] *Zusätzlich gefunden:* Ein fest eingetragener Pfad `/home/<user>/...` im Live2D-Viewer wurde entfernt.
 
 ---
 
@@ -166,7 +166,7 @@ GitHub Actions wurden bewusst entfernt (Commit `11597c2`). Stattdessen gibt es j
 
 - [x] `tauri-plugin-window-state` einbinden, damit Fenstergröße und -position gespeichert werden.
 - [x] `tauri-plugin-single-instance`, um doppelte Starts (und doppelte llama-server-Prozesse) zu verhindern.
-- [x] Fest eingetragene Pfade `/home/deathtrap/...` entfernt (Live2D, Stage, MCP). Mitgelieferte Ordner werden relativ zu
+- [x] Fest eingetragene Pfade `/home/<user>/...` entfernt (Live2D, Stage, MCP). Mitgelieferte Ordner werden relativ zu
   Arbeitsverzeichnis, Programmordner und (Debug) Quellcode gesucht; Soul of Waifu wird automatisch gefunden
   (oder per `SOUL_OF_WAIFU_DIR`).
 - [x] **Ressourcen im Paket:** `bundle.resources` liefert `presets/`, `assets/emotions/`, `assets/live2d/` und die VRMs

@@ -1,7 +1,6 @@
 # 🗺️ OtakuSoul – Portierungs-Roadmap (Soul of Waifu → Rust/Tauri)
 
 > Stand: 2026-09-26 · Vergleichsbasis: `Soul-of-Waifu-linux` (Branch `linux`, Upstream v2.5.1)
-> /home/deathtrap/development/Soul-of-Waifu-linux/
 >
 > Diese Roadmap listet alles, was aus dem Python-Original noch **fehlt** oder in OtakuSoul bisher nur
 > **als Gerüst/Simulation** existiert. Abgeschlossene Punkte werden abgehakt und mit Commit-Hash versehen.
