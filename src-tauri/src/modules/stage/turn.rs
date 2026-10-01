@@ -21,7 +21,10 @@ pub async fn execute_stage_turn(
     engine: &StageEngine,
     inference: &InferenceClient,
     req: StageTurnRequest,
+    on_stream: StageStream<'_>,
 ) -> Result<SceneState, String> {
+    // A stop request (abort_chat_generation) ends the whole turn, not just one call.
+    inference.reset_abort();
     let mut state = engine.get_state();
     if state.definition.id != req.scene_id {
         state = load_scene_by_id(&req.scene_id)?;
@@ -733,13 +736,24 @@ RULES:
         provider: provider.clone(),
     };
 
-    let narration_content = inference
-        .generate_direct(exec_req)
-        .await
-        .unwrap_or_else(|_| gm_plan.narration_plan.clone());
+    let gm_msg_id = format!("msg_{}", Utc::now().timestamp_millis());
+    let narration_content = stream_message(
+        inference,
+        exec_req,
+        on_stream,
+        &gm_msg_id,
+        "Game Master",
+        "gm",
+        None,
+    )
+    .await
+    .ok()
+    // Failed, or stopped before the first word: the planner's outline stands in.
+    .filter(|text| !text.trim().is_empty())
+    .unwrap_or_else(|| gm_plan.narration_plan.clone());
 
     let gm_turn_msg = SceneTurnMessage {
-        id: format!("msg_{}", Utc::now().timestamp_millis()),
+        id: gm_msg_id,
         sender_id: "gm".to_string(),
         sender_name: "Game Master".to_string(),
         sender_role: "gm".to_string(),
@@ -780,6 +794,9 @@ RULES:
     let mut current_actor = initial_next;
     let mut actor_depth = 0;
     let mut spoken_actors = std::collections::HashSet::new();
+    if inference.is_aborted() {
+        current_actor = "PLAYER".to_string();
+    }
 
     while current_actor != "PLAYER" && actor_depth < max_depth {
         actor_depth += 1;
@@ -892,13 +909,25 @@ Reply in {reply_language}."#,
                 provider: provider.clone(),
             };
 
-            if let Ok(comp_text) = inference.generate_direct(comp_req).await {
+            let comp_msg_id = format!("msg_{}_{}", Utc::now().timestamp_millis(), actor_depth);
+            let avatar_url = matched_char.and_then(|c| c.avatar_data_url.clone());
+            if let Ok(comp_text) = stream_message(
+                inference,
+                comp_req,
+                on_stream,
+                &comp_msg_id,
+                &current_actor,
+                "companion",
+                avatar_url.clone(),
+            )
+            .await
+            {
                 let companion_msg = SceneTurnMessage {
-                    id: format!("msg_{}_{}", Utc::now().timestamp_millis(), actor_depth),
+                    id: comp_msg_id,
                     sender_id: current_actor.clone(),
                     sender_name: current_actor.clone(),
                     sender_role: "companion".to_string(),
-                    avatar_url: matched_char.and_then(|c| c.avatar_data_url.clone()),
+                    avatar_url,
                     content: comp_text,
                     turn_mode: "say".to_string(),
                     whisper_target: None,
@@ -910,7 +939,9 @@ Reply in {reply_language}."#,
         }
 
         // Determine if another party member should react
-        if actor_depth < max_depth {
+        if inference.is_aborted() {
+            current_actor = "PLAYER".to_string();
+        } else if actor_depth < max_depth {
             if let Some(next_party_member) = state
                 .definition
                 .party
@@ -977,6 +1008,31 @@ Reply in {reply_language}."#,
     save_scene_state(&state)?;
 
     Ok(state)
+}
+
+/// Streams one turn message to the UI (`on_stream`) and returns its full text.
+async fn stream_message(
+    inference: &InferenceClient,
+    request: ChatRequest,
+    on_stream: StageStream<'_>,
+    message_id: &str,
+    sender_name: &str,
+    sender_role: &str,
+    avatar_url: Option<String>,
+) -> Result<String, String> {
+    let event = |text: String, done: bool| StageStreamEvent {
+        message_id: message_id.to_string(),
+        sender_name: sender_name.to_string(),
+        sender_role: sender_role.to_string(),
+        avatar_url: avatar_url.clone(),
+        text,
+        done,
+    };
+    let result = inference
+        .stream_text(request, |text| on_stream(event(text.to_string(), false)))
+        .await;
+    on_stream(event(String::new(), true));
+    result
 }
 
 pub async fn execute_stage_rest(

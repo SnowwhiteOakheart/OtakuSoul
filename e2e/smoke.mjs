@@ -7,7 +7,7 @@ import { mkdtempSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import path from 'node:path';
 import { launch, screenshotDir } from './harness.mjs';
-import { SUMMARY, TRANSLATION } from './mock-llm.mjs';
+import { STAGE_NARRATION, SUMMARY, TRANSLATION } from './mock-llm.mjs';
 
 const step = (name) => console.log(`• ${name}`);
 const shot = (browser, name) => browser.saveScreenshot(path.join(screenshotDir, `${name}.png`));
@@ -124,6 +124,27 @@ try {
   assert.equal(mock.stats.translate, 1);
   assert.ok(TRANSLATION.includes('Testübersetzung'));
   await shot(browser, '08-uebersetzung');
+
+  step('Soul Stage: Erzählertext erscheint live');
+  await browser.$('button=Soul Stage').click();
+  await shot(browser, '09-stage-start');
+  const stageInput = await browser.$('textarea');
+  await stageInput.waitForDisplayed({ timeout: 15_000 });
+  await stageInput.setValue('Ich gehe vorsichtig auf das Tor zu.');
+  await browser.keys('Enter');
+  // Part of the narration is visible while the turn still runs (stop button shown).
+  await browser.waitUntil(async () => (await browser.$('body').getText()).includes('Der Nebel lichtet sich'), {
+    timeout: 20_000,
+    timeoutMsg: 'kein Live-Text vom Erzähler',
+  });
+  assert.ok(await browser.$('button=Stopp').isExisting(), 'Runde schon vorbei – Text kam nicht gestreamt');
+  assert.ok((await browser.$('body').getText()).includes('Ich gehe vorsichtig'), 'eigene Eingabe erscheint erst am Rundenende');
+  assert.ok(!(await browser.$('body').getText()).includes('dreimal'), 'Erzähltext kam nicht schrittweise');
+  await shot(browser, '10-stage-live');
+  await browser.$('button=Stopp').waitForExist({ reverse: true, timeout: 30_000 });
+  assert.ok((await browser.$('body').getText()).includes('schlägt eine Glocke dreimal'), 'Erzähltext fehlt nach der Runde');
+  assert.ok(STAGE_NARRATION.includes('dreimal'));
+  await shot(browser, '11-stage-fertig');
 
   console.log(`\n✔ Rauchtest bestanden (${mock.stats.chat} Chat-Anfragen, ${mock.stats.summary} Zusammenfassung)`);
 } catch (e) {

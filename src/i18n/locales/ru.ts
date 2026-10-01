@@ -879,6 +879,8 @@ export const ru: TranslationDictionary = {
   "stage.deleteMessage": "Удалить сообщение",
   "stage.save": "Сохранить",
   "stage.gmThinking": "Ведущий просчитывает механику и плетёт следующую сцену …",
+  "stage.stopTurn": "Стоп",
+  "stage.stopTurnHint": "Завершить ход после текущего текста; остальные участники пропускаются",
   "stage.combatTitle": "Тактический бой",
   "stage.round": "Раунд {{round}}",
   "stage.combatIntro": "Инициатива, здоровье, стресс и состояния",

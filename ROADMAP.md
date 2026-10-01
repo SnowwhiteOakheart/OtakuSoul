@@ -286,6 +286,31 @@ GitHub Actions wurden bewusst entfernt (Commit `11597c2`). Stattdessen gibt es j
 
 ---
 
+## 🎲 Soul Stage: das Beste aus OtakuSoul und Soul of Waifu
+
+Abgleich mit der Linux-Variante von Soul of Waifu (01.10.2026). OtakuSoul behält seine Stärken (Hintergründe per lokaler
+Bildgenerierung, Lorebook-Engine, Kampf-Tracker mit Stress und Zuständen, Tabs Abenteuer/Taktik/Kampagne, JSON/MD-Export)
+und übernimmt, was SoW lebendig macht:
+
+1. [x] **Gestreamte Ausgabe:** Erzähler- und Gefährtentext erscheinen live (Event `stage-stream`, `InferenceClient::stream_text`)
+   statt erst am Rundenende; die eigene Eingabe steht sofort im Verlauf; „Stopp“ beendet die Runde nach dem aktuellen Text
+   und überspringt weitere Sprecher. Rauchtest prüft den Live-Text.
+2. [ ] **Flüstern wirklich privat** (nur der Empfänger erfährt den Inhalt, andere nur „flüstert etwas“; Privatwissen je
+   Figur) und **echte Spielerwerte** außerhalb des Kampfes (HP/Energie/Stress, Zustände mit Dauer, Fertigkeitsboni) statt
+   der festen Platzhalter im Party-HUD.
+3. [ ] **Kontext & Zusammenfassung für die Stage:** längerer Verlauf über `context_window`, ältere Runden zusammengefasst
+   (heute sieht der Planner nur die letzten 6 Nachrichten).
+4. [ ] **NPC-System:** NPCs mit Archetyp-Avatar, eigenem Gedächtnis (Abruf nach Relevanz) und „NPC zum Charakter befördern“.
+5. [ ] **Szenen-Editor vollständig:** bestehende Szenen bearbeiten, Startbild, Ambient-Ton, Lorebooks, Akteure pro Runde.
+6. [ ] **Regie & Ablauf:** Routing nach jedem Beitrag (wer spricht als Nächstes), direkte Ansprache per Name, Auto-Play,
+   „Plot fortsetzen“.
+7. [ ] **Stimme & Atmosphäre:** Vorlesen mit der Charakterstimme der App statt Browser-TTS, Ambient-Audio aus Szene/Planner.
+8. [ ] **Gedächtnis & Welt:** Story-Arcs beim Auflösen archivieren, regelmäßige Konsistenzprüfung, Szenen-Erlebnisse ins
+   Soul Memory der Party, Charakter-Overlays, Lorekarten mit Zielgruppe (Party/GM), Weltzustand vollständig bearbeitbar,
+   Chronik-Einträge löschbar, Übersetzung, Bindungs-Meilensteine beim Lagerfeuer.
+
+---
+
 ## ✨ P3 – Nice-to-have
 
 - [x] Hardware-Probe für AMD und Intel (Linux und Windows über Vulkan, siehe Bildgenerierung).

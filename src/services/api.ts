@@ -45,6 +45,7 @@ import {
   UserPersona,
   ChatSession,
   ChatSummaryRequest,
+  StageStreamEvent,
   TranslateRequest,
   Attachment,
   AssembledPrompt,
@@ -922,6 +923,11 @@ export const api = {
   },
 
   // Streaming Listeners
+  /** Live text of a running Soul Stage turn. */
+  onStageStream: async (callback: (event: StageStreamEvent) => void): Promise<UnlistenFn> => {
+    return await listen<StageStreamEvent>('stage-stream', (event) => callback(event.payload));
+  },
+
   onLlmToken: async (callback: (text: string) => void): Promise<UnlistenFn> => {
     return await listen<{ text: string }>('llm-token', (event) => {
       callback(event.payload.text);

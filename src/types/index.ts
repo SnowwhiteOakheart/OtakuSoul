@@ -25,6 +25,7 @@ import type { ChatSession } from './generated/ChatSession';
 import type { ChubCharacterDetail } from './generated/ChubCharacterDetail';
 import type { CombatCondition } from './generated/CombatCondition';
 import type { ContextUsage } from './generated/ContextUsage';
+import type { StageStreamEvent } from './generated/StageStreamEvent';
 import type { Attachment } from './generated/Attachment';
 import type { TranslateRequest } from './generated/TranslateRequest';
 import type { PromptTemplate } from './generated/PromptTemplate';
@@ -100,6 +101,7 @@ export type {
   CombatCondition,
   ConsequenceEntry,
   ContextUsage,
+  StageStreamEvent,
   Attachment,
   TranslateRequest,
   PromptTemplate,

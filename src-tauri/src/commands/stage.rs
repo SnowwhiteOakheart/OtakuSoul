@@ -140,15 +140,28 @@ pub fn stage_delete_message(
 
 #[tauri::command]
 pub async fn stage_regenerate_turn(
+    app: tauri::AppHandle,
     state: State<'_, AppState>,
     scene_id: String,
 ) -> Result<crate::modules::stage::SceneState, String> {
+    let emit = stream_emitter(&app);
     crate::modules::stage::regenerate_stage_turn(
         &state.stage_engine,
         &state.inference_client,
         &scene_id,
+        &emit,
     )
     .await
+}
+
+/// Forwards live turn text to the UI as `stage-stream` events.
+fn stream_emitter(
+    app: &tauri::AppHandle,
+) -> impl Fn(crate::modules::stage::StageStreamEvent) + Send + Sync + use<> {
+    let app = app.clone();
+    move |event| {
+        let _ = tauri::Emitter::emit(&app, "stage-stream", event);
+    }
 }
 
 #[tauri::command]
@@ -158,11 +171,18 @@ pub fn stage_get_background_image(name: String) -> Result<String, String> {
 
 #[tauri::command]
 pub async fn run_stage_turn(
+    app: tauri::AppHandle,
     state: State<'_, AppState>,
     request: crate::modules::stage::StageTurnRequest,
 ) -> Result<crate::modules::stage::SceneState, String> {
-    crate::modules::stage::execute_stage_turn(&state.stage_engine, &state.inference_client, request)
-        .await
+    let emit = stream_emitter(&app);
+    crate::modules::stage::execute_stage_turn(
+        &state.stage_engine,
+        &state.inference_client,
+        request,
+        &emit,
+    )
+    .await
 }
 
 #[tauri::command]

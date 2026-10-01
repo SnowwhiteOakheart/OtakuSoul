@@ -387,6 +387,25 @@ pub struct ScenePreview {
     pub turn_count: usize,
 }
 
+/// A piece of live text during a Stage turn (event `stage-stream`); the message with the same
+/// id arrives complete in the turn result.
+#[derive(Debug, Clone, Serialize, Deserialize, TS)]
+#[ts(export)]
+pub struct StageStreamEvent {
+    pub message_id: String,
+    pub sender_name: String,
+    /// `gm` or `companion`.
+    pub sender_role: String,
+    pub avatar_url: Option<String>,
+    /// New text since the last event.
+    pub text: String,
+    /// The message is complete.
+    pub done: bool,
+}
+
+/// Receives live text during a turn.
+pub type StageStream<'a> = &'a (dyn Fn(StageStreamEvent) + Send + Sync);
+
 #[derive(Debug, Clone, Serialize, Deserialize, TS)]
 #[ts(export)]
 pub struct SceneState {

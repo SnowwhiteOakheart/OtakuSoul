@@ -810,6 +810,7 @@ pub async fn regenerate_stage_turn(
     engine: &StageEngine,
     inference: &InferenceClient,
     scene_id: &str,
+    on_stream: StageStream<'_>,
 ) -> Result<SceneState, String> {
     let mut state = engine.get_state();
     if state.definition.id != scene_id {
@@ -837,6 +838,7 @@ pub async fn regenerate_stage_turn(
                 whisper_target: player_msg.whisper_target,
                 force_next_actor: None,
             },
+            on_stream,
         )
         .await
     } else {

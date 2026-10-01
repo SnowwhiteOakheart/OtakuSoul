@@ -881,6 +881,8 @@ export const de = {
   "stage.deleteMessage": "Nachricht löschen",
   "stage.save": "Speichern",
   "stage.gmThinking": "Der Spielleiter berechnet die Mechanik und webt die nächste Szene …",
+  "stage.stopTurn": "Stopp",
+  "stage.stopTurnHint": "Runde nach dem aktuellen Text beenden; weitere Sprecher werden übersprungen",
   "stage.combatTitle": "Taktischer Kampf",
   "stage.round": "Runde {{round}}",
   "stage.combatIntro": "Initiative, Lebenspunkte, Stress & Zustände",

@@ -1,15 +1,17 @@
 import { api } from '../../services/api';
 import { soundFx } from '../../services/soundFx';
 import type {
-  StageState,
-  ScenePreview,
-  SceneDefinition,
-  SceneState,
-  StageTurnRequest,
-  WorldState,
   CampaignClock,
   CombatCondition,
   DiceRollResult,
+  SceneDefinition,
+  ScenePreview,
+  SceneState,
+  SceneTurnMessage,
+  StageState,
+  StageStreamEvent,
+  StageTurnRequest,
+  WorldState,
 } from '../../types';
 import type { SliceCreator } from '../storeTypes';
 
@@ -22,6 +24,11 @@ export interface StageSlice {
   lastDiceRoll: DiceRollResult | null;
   isRollingDice: boolean;
   isProcessingStageTurn: boolean;
+  /** Messages of the running turn as they stream in; replaced by the turn result. */
+  stageLive: StageStreamEvent[];
+  applyStageStream: (event: StageStreamEvent) => void;
+  /** Stops the running turn after the current text (remaining speakers are skipped). */
+  stopStageTurn: () => Promise<void>;
   stageTurnMode: 'say' | 'do' | 'think' | 'whisper' | 'direct';
   stageWhisperTarget: string;
   stageForceActor: string;
@@ -77,6 +84,22 @@ export const createStageSlice: SliceCreator<StageSlice> = (set, get) => ({
   isRollingDice: false,
 
   isProcessingStageTurn: false,
+
+  stageLive: [],
+
+  applyStageStream: (event) =>
+    set((state) => {
+      const live = state.stageLive;
+      const index = live.findIndex((m) => m.message_id === event.message_id);
+      if (index === -1) return { stageLive: [...live, event] };
+      const current = live[index]!;
+      const next = { ...current, text: current.text + event.text, done: current.done || event.done };
+      return { stageLive: live.map((m, i) => (i === index ? next : m)) };
+    }),
+
+  stopStageTurn: async () => {
+    await api.abortChatGeneration();
+  },
 
   stageTurnMode: 'say',
 
@@ -189,13 +212,13 @@ export const createStageSlice: SliceCreator<StageSlice> = (set, get) => ({
   regenerateStageTurn: async () => {
     const current = get().stageState;
     if (!current) return;
-    set({ isProcessingStageTurn: true });
+    set({ isProcessingStageTurn: true, stageLive: [] });
     try {
       const updated = await api.regenerateStageTurn(current.definition.id);
-      set({ stageState: updated, isProcessingStageTurn: false });
+      set({ stageState: updated, isProcessingStageTurn: false, stageLive: [] });
     } catch (e) {
       console.error('Failed to regenerate stage turn:', e);
-      set({ isProcessingStageTurn: false });
+      set({ isProcessingStageTurn: false, stageLive: [] });
       throw e;
     }
   },
@@ -267,11 +290,30 @@ export const createStageSlice: SliceCreator<StageSlice> = (set, get) => ({
   runStageTurn: async (userInput: string, turnMode?: string, whisperTarget?: string, forceActor?: string) => {
     const current = get().stageState;
     if (!current) return;
-    set({ isProcessingStageTurn: true });
+    const mode = turnMode || get().stageTurnMode;
+    const target = whisperTarget !== undefined ? whisperTarget : (get().stageWhisperTarget || undefined);
+    const actor = forceActor !== undefined ? forceActor : (get().stageForceActor || undefined);
+    // Show the player's line right away; the turn result replaces it with the stored one.
+    const ownLine: SceneTurnMessage[] = userInput.trim()
+      ? [{
+          id: `pending_${Date.now()}`,
+          sender_id: 'player',
+          sender_name: current.definition.persona || 'Spieler',
+          sender_role: 'player',
+          avatar_url: null,
+          content: userInput.trim(),
+          turn_mode: mode,
+          whisper_target: target ?? null,
+          event_card: null,
+          timestamp: Math.floor(Date.now() / 1000),
+        }]
+      : [];
+    set({
+      isProcessingStageTurn: true,
+      stageLive: [],
+      stageState: { ...current, chat_log: [...current.chat_log, ...ownLine] },
+    });
     try {
-      const mode = turnMode || get().stageTurnMode;
-      const target = whisperTarget !== undefined ? whisperTarget : (get().stageWhisperTarget || undefined);
-      const actor = forceActor !== undefined ? forceActor : (get().stageForceActor || undefined);
       const req: StageTurnRequest = {
         scene_id: current.definition.id,
         user_input: userInput,
@@ -280,10 +322,10 @@ export const createStageSlice: SliceCreator<StageSlice> = (set, get) => ({
         force_next_actor: actor || undefined,
       };
       const updated = await api.runStageTurn(req);
-      set({ stageState: updated, isProcessingStageTurn: false });
+      set({ stageState: updated, isProcessingStageTurn: false, stageLive: [] });
     } catch (e) {
       console.error('Failed to run stage turn:', e);
-      set({ isProcessingStageTurn: false });
+      set({ isProcessingStageTurn: false, stageLive: [], stageState: current });
       throw e;
     }
   },

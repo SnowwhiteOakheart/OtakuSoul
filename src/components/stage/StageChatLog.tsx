@@ -1,5 +1,6 @@
 import React, { useEffect, useRef, useState } from 'react';
 import { useStoreFields } from '../../store/useAppStore';
+import { api } from '../../services/api';
 import { StageEventCardView } from './StageEventCardView';
 import {
   Compass,
@@ -15,6 +16,7 @@ import {
   Volume2,
   Check,
   X,
+  Square,
 } from 'lucide-react';
 import { translate, useTranslation } from '../../i18n';
 import { confirmDialog, toast } from '../ui/feedback';
@@ -28,18 +30,43 @@ export const StageChatLog: React.FC = () => {
     editStageTurnMessage,
     deleteStageTurnMessage,
     regenerateStageTurn,
+    stageLive,
+    applyStageStream,
+    stopStageTurn,
   } = useStoreFields(
     'stageState', 'isProcessingStageTurn', 'editStageTurnMessage', 'deleteStageTurnMessage',
-    'regenerateStageTurn',
+    'regenerateStageTurn', 'stageLive', 'applyStageStream', 'stopStageTurn',
   );
 
   const bottomRef = useRef<HTMLDivElement>(null);
   const [editingMessageId, setEditingMessageId] = useState<string | null>(null);
   const [editDraft, setEditDraft] = useState('');
 
+  // Live text of the running turn (guarded: StrictMode would otherwise subscribe twice).
   useEffect(() => {
-    bottomRef.current?.scrollIntoView({ behavior: 'smooth' });
-  }, [stageState?.chat_log?.length, isProcessingStageTurn]);
+    let subscribed = true;
+    let unlisten: (() => void) | undefined;
+    api
+      .onStageStream((event) => {
+        if (subscribed) applyStageStream(event);
+      })
+      .then((fn) => {
+        if (subscribed) unlisten = fn;
+        else fn();
+      })
+      .catch(() => {});
+    return () => {
+      subscribed = false;
+      unlisten?.();
+    };
+  }, [applyStageStream]);
+
+  const liveLength = stageLive.reduce((sum, m) => sum + m.text.length, 0);
+  useEffect(() => {
+    bottomRef.current?.scrollIntoView({ behavior: liveLength > 0 ? 'auto' : 'smooth' });
+  }, [stageState?.chat_log?.length, isProcessingStageTurn, liveLength]);
+  // While text streams, the "GM is thinking" note only shows between speakers.
+  const waiting = isProcessingStageTurn && stageLive.every((m) => m.done);
 
   if (!stageState) return null;
 
@@ -347,11 +374,55 @@ export const StageChatLog: React.FC = () => {
         );
       })}
 
+      {/* Live text of the running turn */}
+      {stageLive.map((live) =>
+        live.sender_role === 'gm' ? (
+          <div
+            key={live.message_id}
+            className="p-4 sm:p-5 rounded-2xl bg-linear-to-br from-slate-900/90 via-accent-950/25 to-slate-900/90 border border-accent-500/30 shadow-xl backdrop-blur space-y-2.5"
+          >
+            <div className="flex items-center gap-2 border-b border-accent-500/20 pb-2">
+              <div className="p-1.5 rounded-lg bg-accent-500/20 text-accent-300">
+                <Compass className="w-4 h-4" />
+              </div>
+              <span className="text-xs font-bold text-accent-200 uppercase tracking-wider">{live.sender_name}</span>
+            </div>
+            <div className="text-xs sm:text-sm text-slate-200 leading-relaxed whitespace-pre-wrap font-sans">
+              {live.text}
+              {!live.done && <span className="inline-block w-1.5 h-3.5 ml-0.5 bg-accent-400 animate-pulse align-middle" />}
+            </div>
+          </div>
+        ) : (
+          <div key={live.message_id} className="flex flex-col items-start space-y-1.5">
+            <div className="flex items-center gap-2 px-1">
+              {live.avatar_url && <img src={live.avatar_url} alt="" className="w-5 h-5 rounded-full object-cover" />}
+              <span className="text-xs font-bold text-slate-300">{live.sender_name}</span>
+            </div>
+            <div className="max-w-[85%] sm:max-w-[75%] p-3.5 rounded-2xl rounded-tl-sm text-xs sm:text-sm shadow-md leading-relaxed whitespace-pre-wrap bg-accent-900/30 border border-accent-500/40 text-accent-100">
+              {live.text}
+              {!live.done && <span className="inline-block w-1.5 h-3.5 ml-0.5 bg-accent-400 animate-pulse align-middle" />}
+            </div>
+          </div>
+        ),
+      )}
+
       {/* Processing Turn Indicator */}
       {isProcessingStageTurn && (
-        <div className="flex items-center gap-2 p-3.5 rounded-xl bg-accent-950/30 border border-accent-500/30 animate-pulse text-xs text-accent-300">
-          <Bot className="w-4 h-4 animate-spin" />
-          <span>{t('stage.gmThinking')}</span>
+        <div className="flex items-center gap-2">
+          {waiting && (
+            <div className="flex-1 flex items-center gap-2 p-3.5 rounded-xl bg-accent-950/30 border border-accent-500/30 animate-pulse text-xs text-accent-300">
+              <Bot className="w-4 h-4 animate-spin" />
+              <span>{t('stage.gmThinking')}</span>
+            </div>
+          )}
+          <button
+            onClick={() => void stopStageTurn()}
+            className="ml-auto flex items-center gap-1.5 px-3 py-2 rounded-xl bg-rose-600/80 hover:bg-rose-500 text-white text-xs font-semibold"
+            title={t('stage.stopTurnHint')}
+          >
+            <Square className="w-3.5 h-3.5 fill-white" />
+            {t('stage.stopTurn')}
+          </button>
         </div>
       )}
 

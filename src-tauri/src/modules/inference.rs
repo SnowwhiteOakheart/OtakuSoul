@@ -216,13 +216,70 @@ impl InferenceClient {
         self.abort_flag.store(true, Ordering::Relaxed);
     }
 
+    /// Clears a previous abort; called when a new generation (or Stage turn) starts.
+    pub fn reset_abort(&self) {
+        self.abort_flag.store(false, Ordering::Relaxed);
+    }
+
+    pub fn is_aborted(&self) -> bool {
+        self.abort_flag.load(Ordering::Relaxed)
+    }
+
     pub async fn stream_chat<R: tauri::Runtime>(
         &self,
         app_handle: &tauri::AppHandle<R>,
         request: ChatRequest,
     ) -> Result<DoneEvent, String> {
-        self.abort_flag.store(false, Ordering::Relaxed);
+        self.reset_abort();
+        let mut full_text = String::new();
+        let mut full_thought = String::new();
+        self.stream_segments(request, |is_thought, text| {
+            Self::emit_segment(
+                app_handle,
+                &mut full_text,
+                &mut full_thought,
+                is_thought,
+                text,
+            );
+        })
+        .await?;
 
+        let done_event = DoneEvent {
+            full_text,
+            full_thought,
+            context: None,
+        };
+
+        let _ = app_handle.emit("llm-done", done_event.clone());
+        Ok(done_event)
+    }
+
+    /// Streams the reply and hands every visible text piece to `on_text` (reasoning is dropped);
+    /// returns the whole text. Unlike `stream_chat` it emits no global chat events, so other
+    /// views (e.g. Soul Stage) can show their own live text. Stopped by `abort`.
+    pub async fn stream_text(
+        &self,
+        request: ChatRequest,
+        mut on_text: impl FnMut(&str),
+    ) -> Result<String, String> {
+        let mut full_text = String::new();
+        self.stream_segments(request, |is_thought, text| {
+            if !is_thought {
+                on_text(&text);
+                full_text.push_str(&text);
+            }
+        })
+        .await?;
+        Ok(full_text)
+    }
+
+    /// The SSE loop shared by the streaming calls: `(is_thought, text)` per piece. Does not
+    /// reset the abort flag, so an abort covers every call of a multi-step turn.
+    async fn stream_segments(
+        &self,
+        request: ChatRequest,
+        mut on_segment: impl FnMut(bool, String),
+    ) -> Result<(), String> {
         let provider = crate::modules::providers::ProviderRegistry::detect_provider(
             &request.endpoint_url,
             request.provider.as_ref(),
@@ -247,8 +304,6 @@ impl InferenceClient {
         }
 
         let mut stream = response.bytes_stream();
-        let mut full_text = String::new();
-        let mut full_thought = String::new();
         let mut lines = SseLines::default();
         let mut think_filter = ThinkTagFilter::default();
 
@@ -273,19 +328,12 @@ impl InferenceClient {
                 if let Some(th) = delta.thought
                     && !th.is_empty()
                 {
-                    full_thought.push_str(&th);
-                    let _ = app_handle.emit("llm-thought", ThoughtEvent { text: th });
+                    on_segment(true, th);
                 }
 
                 if let Some(content) = delta.text {
                     for (is_thought, text) in think_filter.push(&content) {
-                        Self::emit_segment(
-                            app_handle,
-                            &mut full_text,
-                            &mut full_thought,
-                            is_thought,
-                            text,
-                        );
+                        on_segment(is_thought, text);
                     }
                 }
                 if delta.is_done {
@@ -302,35 +350,15 @@ impl InferenceClient {
                 crate::modules::providers::ProviderRegistry::parse_sse_line(line.trim(), &provider);
             if let Some(content) = delta.text {
                 for (is_thought, text) in think_filter.push(&content) {
-                    Self::emit_segment(
-                        app_handle,
-                        &mut full_text,
-                        &mut full_thought,
-                        is_thought,
-                        text,
-                    );
+                    on_segment(is_thought, text);
                 }
             }
         }
 
         if let Some((is_thought, text)) = think_filter.finish() {
-            Self::emit_segment(
-                app_handle,
-                &mut full_text,
-                &mut full_thought,
-                is_thought,
-                text,
-            );
+            on_segment(is_thought, text);
         }
-
-        let done_event = DoneEvent {
-            full_text,
-            full_thought,
-            context: None,
-        };
-
-        let _ = app_handle.emit("llm-done", done_event.clone());
-        Ok(done_event)
+        Ok(())
     }
 
     /// Direct non-streaming completion for internal cognitive agents (Router, Archivist, Diary)

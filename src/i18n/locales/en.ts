@@ -879,6 +879,8 @@ export const en: TranslationDictionary = {
   "stage.deleteMessage": "Delete message",
   "stage.save": "Save",
   "stage.gmThinking": "The game master resolves the mechanics and weaves the next scene …",
+  "stage.stopTurn": "Stop",
+  "stage.stopTurnHint": "End the turn after the current text; remaining speakers are skipped",
   "stage.combatTitle": "Tactical combat",
   "stage.round": "Round {{round}}",
   "stage.combatIntro": "Initiative, health, stress & conditions",
