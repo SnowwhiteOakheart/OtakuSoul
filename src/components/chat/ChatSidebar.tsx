@@ -138,10 +138,11 @@ export const ChatSidebar: React.FC<ChatSidebarProps> = ({ isOpen, onClose }) => 
   };
 
   return (
-    // Anchored inside the chat view so it never covers the main navigation.
+    // Anchored inside the chat view so it never covers the main navigation; z-45 keeps it above
+    // the character bar (z-40), which comes later in the DOM.
     <aside
       aria-label={t('chatSidebar.title')}
-      className="absolute inset-y-0 left-0 z-40 w-80 bg-slate-900/95 backdrop-blur-md border-r border-slate-800 shadow-2xl flex flex-col text-slate-200"
+      className="absolute inset-y-0 left-0 z-45 w-80 bg-slate-900/95 backdrop-blur-md border-r border-slate-800 shadow-2xl flex flex-col text-slate-200"
     >
       {/* Sidebar Header */}
       <div className="p-3 border-b border-slate-800 flex items-center justify-between">
