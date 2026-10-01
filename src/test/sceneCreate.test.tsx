@@ -9,12 +9,14 @@ import { api } from '../services/api';
 import { useAppStore } from '../store/useAppStore';
 import { SceneCreateModal } from '../components/stage/SceneCreateModal';
 import { resetApiMocks } from './mockApi';
-import type { SceneState } from '../types';
+import type { SceneDefinition, SceneState } from '../types';
 
 beforeEach(() => {
   resetApiMocks();
-  useAppStore.setState({ appLanguage: 'en', availableCharacters: [] });
+  useAppStore.setState({ appLanguage: 'en', availableCharacters: [], allLorebooks: [], isProcessingStageTurn: false });
   vi.mocked(api.listStageScenes).mockResolvedValue([]);
+  vi.mocked(api.listAllLorebooks).mockResolvedValue([]);
+  vi.mocked(api.listStageAssets).mockResolvedValue({ backgrounds: [], ambient: [] });
 });
 
 describe('SceneCreateModal', () => {
@@ -48,4 +50,21 @@ describe('SceneCreateModal', () => {
     await vi.waitFor(() => expect(onCreated).toHaveBeenCalledWith(created.definition));
     expect(onClose).toHaveBeenCalled();
   });
+  it('edits settings, preserves missing bindings and displays save errors without losing the draft', async () => {
+    const user = userEvent.setup();
+    const definition = { id: 'scene-existing', title: 'Burg', description: '', world_context: '', starting_location: 'Turm', time_of_day: 'Nacht', opening_narration: '', first_message: '', party: ['Missing companion'], gm_tone: 'Custom tone', narrator_style: '', persona: '', lorebook: ['missing-book'], solo_mode: false, max_actor_depth: 2, dice_rolls_enabled: false, starting_bg: 'lost.png', starting_ambient: 'wind.ogg', created_at: 'original' } as SceneDefinition;
+    vi.mocked(api.updateStageSceneDefinition).mockRejectedValue(new Error('Disk full'));
+    render(<SceneCreateModal isOpen definition={definition} onClose={() => {}} onCreated={() => {}} />);
+    expect(screen.getByRole('button', { name: 'Missing companion' })).toHaveAttribute('aria-pressed', 'true');
+    expect(screen.getByRole('checkbox', { name: 'missing-book' })).toBeChecked();
+    expect(screen.getByLabelText('Starting background')).toHaveValue('lost.png');
+    await user.clear(screen.getByLabelText('Maximum actors per turn (1–6)'));
+    await user.type(screen.getByLabelText('Maximum actors per turn (1–6)'), '4');
+    await user.click(screen.getByRole('button', { name: 'Save changes' }));
+    expect(await screen.findByRole('alert')).toHaveTextContent('Disk full');
+    expect(api.updateStageSceneDefinition).toHaveBeenCalledWith(expect.objectContaining({ id: 'scene-existing', max_actor_depth: 4, opening_narration: '', lorebook: ['missing-book'], party: ['Missing companion'], starting_ambient: 'wind.ogg' }));
+    expect(api.createStageScene).not.toHaveBeenCalled();
+    expect(screen.getByLabelText('Maximum actors per turn (1–6)')).toHaveValue(4);
+  });
+
 });

@@ -91,6 +91,36 @@ pub fn save_stage_scene(
 }
 
 #[tauri::command]
+pub fn update_stage_scene_definition(
+    state: State<'_, AppState>,
+    definition: crate::modules::stage::SceneDefinition,
+) -> Result<crate::modules::stage::SceneState, String> {
+    let active = state.stage_engine.get_state();
+    let is_active = active.definition.id == definition.id;
+    let mut scene = if is_active {
+        active
+    } else {
+        crate::modules::stage::load_scene_by_id(&definition.id)?
+    };
+    crate::modules::stage::update_scene_definition(&mut scene, definition);
+    crate::modules::stage::save_scene_state(&scene)?;
+    if is_active {
+        state.stage_engine.set_state(scene.clone());
+    }
+    Ok(scene)
+}
+
+#[tauri::command]
+pub fn list_stage_assets() -> std::collections::HashMap<String, Vec<String>> {
+    crate::modules::stage::list_stage_assets()
+}
+
+#[tauri::command]
+pub fn import_stage_asset(file_path: String, kind: String) -> Result<String, String> {
+    crate::modules::stage::import_stage_asset(&file_path, &kind)
+}
+
+#[tauri::command]
 pub fn create_stage_scene(
     state: State<'_, AppState>,
     definition: crate::modules::stage::SceneDefinition,

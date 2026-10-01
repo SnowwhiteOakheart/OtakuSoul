@@ -469,7 +469,6 @@ RULES:
         && !bg.trim().is_empty()
         && !state.definition.lock_bg
     {
-        state.definition.starting_bg = bg.clone();
         state.current_bg = Some(bg.clone());
     }
 

@@ -98,6 +98,12 @@ Flüsterziele und eigene, nach Textrelevanz abgerufene Erinnerungen machen wiede
 **Zum Charakter befördern** erstellt eine V2-PNG-Karte, übernimmt Erinnerungen ins Soul Memory und fügt den
 Charakter zur Party hinzu. NPCs behalten bei einer Rückkehr ihr Gedächtnis und erfahren keine Ereignisse aus ihrer Abwesenheit.
 
+Bestehende Szenen lassen sich in der **Szenen-Lobby → Weitere Aktionen → Szene bearbeiten** anpassen,
+ohne den Spielstand zu verlieren. Der Editor bindet Lorebooks, setzt 1–6 Akteure pro Runde und verwaltet
+Startbilder samt Vorschau, Ambient-Dateien, Hintergrundsperre und Stummschaltung. Eigene Bilder und
+MP3/WAV/OGG-Dateien können importiert werden. Startort, Startzeit, Eröffnung und Startbild gelten beim
+nächsten Neustart; die Ambient-Wiedergabe folgt mit dem Roadmap-Punkt **Stimme & Atmosphäre**.
+
 ## Ein echter Begleiter auf deinem Desktop
 
 Mit **Soul Companion** wird dein Lieblingscharakter zu einem echten Assistenten im Desktop-Alltag:

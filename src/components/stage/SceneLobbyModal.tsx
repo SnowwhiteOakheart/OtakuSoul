@@ -1,9 +1,10 @@
 import React, { useEffect, useState, useRef } from 'react';
 import { useStoreFields } from '../../store/useAppStore';
-import { ScenePreview } from '../../types';
+import { SceneDefinition, ScenePreview } from '../../types';
 import { SceneCreateModal } from './SceneCreateModal';
 import {
   Compass,
+  Pencil,
   Plus,
   Play,
   Download,
@@ -23,6 +24,7 @@ import {
   Layers,
   History,
 } from 'lucide-react';
+import { api } from '../../services/api';
 import { translate, useTranslation } from '../../i18n';
 import { DropdownMenu } from '../ui/DropdownMenu';
 import { confirmDialog, toast } from '../ui/feedback';
@@ -70,6 +72,7 @@ export const SceneLobbyModal: React.FC<SceneLobbyModalProps> = ({
 
   const [search, setSearch] = useState('');
   const [filterType, setFilterType] = useState<'all' | 'presets' | 'custom'>('all');
+  const [editingScene, setEditingScene] = useState<SceneDefinition | null>(null);
   const [showCreateModal, setShowCreateModal] = useState(false);
   const [showNewFolderModal, setShowNewFolderModal] = useState(false);
   const [newFolderName, setNewFolderName] = useState('');
@@ -84,6 +87,14 @@ export const SceneLobbyModal: React.FC<SceneLobbyModalProps> = ({
       fetchStageFolders();
     }
   }, [isOpen, fetchStageScenes, fetchStageFolders]);
+
+  const handleEdit = async (id: string) => {
+    try {
+      // Read through export: opening the editor must not switch the active engine.
+      const scene = JSON.parse(await api.exportStageSceneJson(id)) as { definition: SceneDefinition };
+      setEditingScene(scene.definition);
+    } catch (err) { toast.error(errorMessage(err)); }
+  };
 
   if (!isOpen) return null;
 
@@ -563,6 +574,7 @@ export const SceneLobbyModal: React.FC<SceneLobbyModalProps> = ({
                         triggerClassName="p-1.5 rounded-lg bg-slate-900 hover:bg-slate-800 text-slate-400 hover:text-slate-200 border border-slate-800 transition outline-hidden focus-visible:ring-2 focus-visible:ring-accent-400"
                         menuClassName="min-w-48"
                         items={[
+                          { label: t('sceneEdit.title'), icon: Pencil, onSelect: () => void handleEdit(sc.id) },
                           { label: t('lobby.exportJson'), icon: Download, onSelect: () => handleExportJson(sc.id, sc.title) },
                           { label: t('lobby.exportMd'), icon: Download, onSelect: () => handleExportMarkdown(sc.id, sc.title) },
                           { label: t('lobby.reset'), icon: RotateCcw, onSelect: () => handleResetScene(sc.id) },
@@ -733,15 +745,19 @@ export const SceneLobbyModal: React.FC<SceneLobbyModalProps> = ({
       )}
 
       {/* Creation Modal */}
-      <SceneCreateModal
-        isOpen={showCreateModal}
-        onClose={() => setShowCreateModal(false)}
+      {(showCreateModal || editingScene) && <SceneCreateModal
+        key={editingScene?.id ?? "new"}
+        definition={editingScene ?? undefined}
+        isOpen={true}
+        onClose={() => { setShowCreateModal(false); setEditingScene(null); }}
         onCreated={(newDef) => {
           fetchStageScenes();
-          loadStageScene(newDef.id);
-          onClose();
+          if (!editingScene) {
+            loadStageScene(newDef.id);
+            onClose();
+          }
         }}
-      />
+      />}
     </>
   );
 };

@@ -316,7 +316,13 @@ und übernimmt, was SoW lebendig macht:
    V2-PNG-Karte mit Avatar, überträgt Erinnerungen ins Soul Memory und ergänzt die Party; vorhandene Karten werden
    nicht überschrieben. Rust- und Desktop-Tests prüfen Rückkehr, Relevanz, Geheimhaltung, Speicherung und Beförderung,
    Screenshots auch bei 960×640.
-5. [ ] **Szenen-Editor vollständig:** bestehende Szenen bearbeiten, Startbild, Ambient-Ton, Lorebooks, Akteure pro Runde.
+5. [x] **Szenen-Editor vollständig:** Bearbeiten über die Szenen-Lobby, auch bei Presets (eigene Kopie).
+   Verlauf, Welt, NPC-Gedächtnis und Spielwerte bleiben erhalten. Startbild mit Vorschau, Import eigener Bilder und
+   MP3/WAV/OGG-Dateien, Hintergrundsperre und Ambient-Schalter, Lorebook-Auswahl und 1–6 Akteure pro Runde.
+   Fehlende Charakter-/Lorebook-Bindungen bleiben erhalten; Startort, Startzeit, Eröffnung und Startbild gelten beim
+   Neustart. Dynamische Hintergründe überschreiben das Startbild nicht mehr. Ambient-Wiedergabe folgt in Punkt 7.
+   Rust-, Frontend- und Desktop-Tests prüfen Fortschritt, Speicherung, Neustart, Lore und Akteur-Grenze;
+   Screenshots auch bei 960×640.
 6. [ ] **Regie & Ablauf:** Routing nach jedem Beitrag (wer spricht als Nächstes), direkte Ansprache per Name, Auto-Play,
    „Plot fortsetzen“.
 7. [ ] **Stimme & Atmosphäre:** Vorlesen mit der Charakterstimme der App statt Browser-TTS, Ambient-Audio aus Szene/Planner.

@@ -79,6 +79,9 @@ Einstellungen: `components/settings/sections/*` (Server inkl. Laufzeiten/`mmproj
   Beförderung zu V2-PNG + Soul Memory. Neue öffentliche Ereignisse außerhalb der Runde ebenfalls mit
   `observe_npcs` erfassen; Verlaufsänderungen brauchen `reconcile_npc_memories` und `rebuild_private_knowledge`.
   Archetyp-Avatare unter `public/npc/` (SVG-Quellen, PNGs per `rsvg-convert`, im Backend eingebettet).
+  `stage/scenes.rs`: `update_scene_definition` ändert nur die Konfiguration (Fortschritt bleibt erhalten),
+  `list_stage_assets`/`import_stage_asset` verwalten Startbilder und Ambient-Dateien. Ein dynamischer
+  Hintergrund gehört in `current_bg`, niemals in `definition.starting_bg`. Ambient-Wiedergabe noch offen.
   Der Abbruch-Merker wird nur am Runden-/Chat-Start zurückgesetzt (`reset_abort`), damit „Stopp“ die ganze Runde beendet.
 - Lokale Vision nur mit gewählter `mmproj`; ohne macht `attachments::prepare` aus Bildern einen Hinweis.
 - Swipes: `swipes_json` + `swipe_index`; „Neu generieren“ hängt an, überschreibt nie.

@@ -727,10 +727,98 @@ pub fn export_stage_scene_json(scene_id: &str) -> Result<String, String> {
     serde_json::to_string_pretty(&state).map_err(|e| crate::err!("backend.stage.export", error = e))
 }
 
+/// Editing changes configuration only; the running world's history stays intact.
+pub fn update_scene_definition(state: &mut SceneState, mut definition: SceneDefinition) {
+    definition.id = state.definition.id.clone();
+    definition.created_at = state.definition.created_at.clone();
+    definition.last_played = state.definition.last_played.clone();
+    definition.folder = state.definition.folder.clone();
+    definition.max_actor_depth = definition.max_actor_depth.clamp(1, 6);
+    definition.solo_mode = definition.party.is_empty();
+    state.definition = definition;
+    state.history_summaries.clear();
+    ensure_party_vitals(state);
+}
+
+fn stage_asset_dirs(kind: &str) -> Vec<PathBuf> {
+    let paths = resolve_app_paths();
+    let mut dirs = vec![
+        PathBuf::from(&paths.data_dir).join(kind),
+        PathBuf::from("assets").join(kind),
+        PathBuf::from("../assets").join(kind),
+    ];
+    if let Ok(presets) = fs::read_dir(&paths.bundled_presets_dir) {
+        dirs.extend(presets.flatten().map(|entry| entry.path().join(kind)));
+    }
+    dirs
+}
+
+fn asset_extension_allowed(path: &Path, kind: &str) -> bool {
+    let ext = path
+        .extension()
+        .and_then(|e| e.to_str())
+        .unwrap_or("")
+        .to_lowercase();
+    match kind {
+        "backgrounds" => matches!(ext.as_str(), "png" | "jpg" | "jpeg" | "webp"),
+        "ambient" => matches!(ext.as_str(), "mp3" | "wav" | "ogg"),
+        _ => false,
+    }
+}
+
+pub fn list_stage_assets() -> HashMap<String, Vec<String>> {
+    ["backgrounds", "ambient"]
+        .into_iter()
+        .map(|kind| {
+            let mut names: Vec<String> = stage_asset_dirs(kind)
+                .into_iter()
+                .filter_map(|dir| fs::read_dir(dir).ok())
+                .flatten()
+                .flatten()
+                .filter(|entry| {
+                    entry.path().is_file() && asset_extension_allowed(&entry.path(), kind)
+                })
+                .filter_map(|entry| entry.file_name().into_string().ok())
+                .collect();
+            names.sort();
+            names.dedup();
+            (kind.to_string(), names)
+        })
+        .collect()
+}
+
+pub fn import_stage_asset(file_path: &str, kind: &str) -> Result<String, String> {
+    let source = Path::new(file_path);
+    if !asset_extension_allowed(source, kind) || !source.is_file() {
+        return Err(crate::err!("backend.stage.invalidAsset"));
+    }
+    let extension = source.extension().and_then(|e| e.to_str()).unwrap_or("bin");
+    let stem: String = source
+        .file_stem()
+        .and_then(|s| s.to_str())
+        .unwrap_or("stage")
+        .chars()
+        .filter(|c| c.is_alphanumeric() || matches!(c, '_' | '-'))
+        .take(60)
+        .collect();
+    let name = format!(
+        "{}_{}.{}",
+        stem,
+        rand::random::<u64>(),
+        extension.to_lowercase()
+    );
+    let dir = PathBuf::from(resolve_app_paths().data_dir).join(kind);
+    fs::create_dir_all(&dir).map_err(|e| crate::err!("backend.common.dirCreate", error = e))?;
+    fs::copy(source, dir.join(&name))
+        .map_err(|e| crate::err!("backend.common.fileWrite", error = e))?;
+    Ok(name)
+}
+
 pub fn create_custom_scene(mut def: SceneDefinition) -> Result<SceneState, String> {
     if def.id.trim().is_empty() {
         def.id = format!("custom_scene_{}", Utc::now().timestamp_millis());
     }
+    def.max_actor_depth = def.max_actor_depth.clamp(1, 6);
     def.created_at = Utc::now().to_rfc3339();
     def.last_played = Some(Utc::now().to_rfc3339());
     let state = build_initial_scene_state(&def);
@@ -875,20 +963,7 @@ pub fn get_stage_background_image(name: &str) -> Result<String, String> {
         return Ok(trimmed.to_string());
     }
 
-    let paths = resolve_app_paths();
-    let search_dirs = [
-        PathBuf::from(&paths.bundled_presets_dir)
-            .join("no-game-no-life")
-            .join("backgrounds"),
-        PathBuf::from(&paths.bundled_presets_dir)
-            .join("sakura-succubus-3")
-            .join("backgrounds"),
-        PathBuf::from("presets/no-game-no-life/backgrounds"),
-        PathBuf::from("presets/sakura-succubus-3/backgrounds"),
-        PathBuf::from(&paths.data_dir).join("backgrounds"),
-        PathBuf::from("assets/backgrounds"),
-        PathBuf::from("../assets/backgrounds"),
-    ];
+    let search_dirs = stage_asset_dirs("backgrounds");
 
     let candidates = [
         trimmed.to_string(),

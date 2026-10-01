@@ -198,3 +198,68 @@ fn test_get_stage_background_image() {
     let data = bg.unwrap();
     assert!(data.starts_with("data:image/"));
 }
+
+#[test]
+fn scene_editor_preserves_progress_and_original_metadata() {
+    let mut state = StageEngine::new().get_state();
+    state.definition.folder = "Kampagne".into();
+    state.definition.created_at = "original".into();
+    state.current_bg = Some("current.png".into());
+    state.world.location = "Reached location".into();
+    state.npcs.push(StageNpc {
+        id: "npc-test".into(),
+        name: "Liora".into(),
+        archetype: "merchant".into(),
+        personality: String::new(),
+        active: true,
+        turn_count: 2,
+        memories: vec![StageNpcMemory {
+            message_id: "source".into(),
+            text: "Remember me".into(),
+        }],
+        promoted_character_id: None,
+    });
+    ensure_party_vitals(&mut state);
+    let before = serde_json::to_value(&state).unwrap();
+    let mut definition = state.definition.clone();
+    definition.id = "foreign".into();
+    definition.folder = "foreign".into();
+    definition.created_at = "foreign".into();
+    definition.title = "New title".into();
+    definition.starting_location = "New start".into();
+    definition.starting_bg = "start.png".into();
+    definition.starting_ambient = "wind.ogg".into();
+    definition.max_actor_depth = 99;
+    update_scene_definition(&mut state, definition);
+    assert_eq!(state.definition.max_actor_depth, 6);
+    assert_eq!(state.definition.id, before["definition"]["id"]);
+    assert_eq!(state.definition.folder, "Kampagne");
+    assert_eq!(state.definition.created_at, "original");
+    let after = serde_json::to_value(&state).unwrap();
+    for key in [
+        "chat_log",
+        "combat",
+        "world",
+        "current_bg",
+        "npcs",
+        "clocks",
+        "arcs",
+        "inventory",
+        "objectives",
+        "relationships",
+        "private_knowledge",
+        "consequence_ledger",
+    ] {
+        assert_eq!(before[key], after[key], "Editor changed progress: {key}");
+    }
+    let reset = build_initial_scene_state(&state.definition);
+    assert_eq!(reset.world.location, "New start");
+    assert_eq!(reset.current_bg.as_deref(), Some("start.png"));
+    assert_eq!(reset.definition.starting_ambient, "wind.ogg");
+}
+
+#[test]
+fn scene_asset_import_rejects_non_media_and_unknown_kind() {
+    assert!(import_stage_asset("Cargo.toml", "ambient").is_err());
+    assert!(import_stage_asset("Cargo.toml", "../config").is_err());
+}

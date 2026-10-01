@@ -387,6 +387,18 @@ export const api = {
     return await invoke<void>('save_stage_scene', { sceneState });
   },
 
+  updateStageSceneDefinition: async (definition: SceneDefinition): Promise<SceneState> => {
+    return await invoke<SceneState>('update_stage_scene_definition', { definition });
+  },
+
+  listStageAssets: async (): Promise<{ backgrounds: string[]; ambient: string[] }> => {
+    return await invoke('list_stage_assets');
+  },
+
+  importStageAsset: async (filePath: string, kind: 'backgrounds' | 'ambient'): Promise<string> => {
+    return await invoke<string>('import_stage_asset', { filePath, kind });
+  },
+
   createStageScene: async (definition: SceneDefinition): Promise<SceneState> => {
     return await invoke<SceneState>('create_stage_scene', { definition });
   },

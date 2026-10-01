@@ -68,6 +68,7 @@ export function startMockLlm() {
         ? JSON.stringify({
             narration_plan: 'Ein altes Tor taucht aus dem Nebel auf.',
             next_actor: stats.spawnNpc?.name ?? null,
+            bg_image: stats.stageBackground ?? null,
             spawn_npcs: stats.spawnNpc ? [stats.spawnNpc] : [],
             despawn_npcs: stats.despawnNpc ? [stats.despawnNpc] : [],
             resource_delta: { target: 'PLAYER', hp_delta: -5, stress_delta: 10 },

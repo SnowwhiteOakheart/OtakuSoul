@@ -51,6 +51,7 @@ export interface StageSlice {
   regenerateStageTurn: () => Promise<void>;
   loadStageScene: (sceneId: string) => Promise<void>;
   saveStageScene: (state: SceneState) => Promise<void>;
+  updateStageSceneDefinition: (definition: SceneDefinition) => Promise<SceneState>;
   createStageScene: (definition: SceneDefinition) => Promise<SceneState>;
   deleteStageScene: (sceneId: string) => Promise<void>;
   exportStageMarkdown: (sceneId: string) => Promise<string | null>;
@@ -283,6 +284,14 @@ export const createStageSlice: SliceCreator<StageSlice> = (set, get) => ({
     } catch (e) {
       console.error('Failed to save stage scene:', e);
     }
+  },
+
+  updateStageSceneDefinition: async (definition) => {
+    if (get().isProcessingStageTurn) throw new Error(JSON.stringify({ code: 'backend.stage.editorBusy' }));
+    const scene = await api.updateStageSceneDefinition(definition);
+    if (get().stageState?.definition.id === scene.definition.id) set({ stageState: scene });
+    await get().fetchStageScenes();
+    return scene;
   },
 
   // Errors propagate so the create dialog can show them.

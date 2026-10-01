@@ -1,13 +1,16 @@
-import React, { startTransition, useActionState, useState } from 'react';
+import React, { startTransition, useActionState, useEffect, useState } from 'react';
 import { useStoreFields } from '../../store/useAppStore';
-import { SceneDefinition, CharacterProfile } from '../../types';
+import { SceneDefinition } from '../../types';
 import { X, Sparkles, MapPin, Sun, UserCheck } from 'lucide-react';
 import { ModalOverlay } from '../ui/ModalOverlay';
 import { translate, useTranslation } from '../../i18n';
+import { open } from '@tauri-apps/plugin-dialog';
+import { api } from '../../services/api';
 import { errorMessage } from '../../utils/errors';
 
 interface SceneCreateModalProps {
   isOpen: boolean;
+  definition?: SceneDefinition;
   onClose: () => void;
   onCreated: (scene: SceneDefinition) => void;
 }
@@ -16,22 +19,61 @@ export const SceneCreateModal: React.FC<SceneCreateModalProps> = ({
   isOpen,
   onClose,
   onCreated,
+  definition,
 }) => {
   const { t } = useTranslation();
-  const { availableCharacters, createStageScene } = useStoreFields('availableCharacters', 'createStageScene');
+  const { availableCharacters, createStageScene, updateStageSceneDefinition, allLorebooks, refreshLorebooks, isProcessingStageTurn } = useStoreFields('availableCharacters', 'createStageScene', 'updateStageSceneDefinition', 'allLorebooks', 'refreshLorebooks', 'isProcessingStageTurn');
 
-  const [title, setTitle] = useState('');
-  const [description, setDescription] = useState('');
-  const [worldContext, setWorldContext] = useState('');
+  const [title, setTitle] = useState(definition?.title ?? '');
+  const [description, setDescription] = useState(definition?.description ?? '');
+  const [worldContext, setWorldContext] = useState(definition?.world_context ?? '');
   // Defaults become scene content for the game master, so they follow the UI language.
-  const [startingLocation, setStartingLocation] = useState(() => translate('sceneNew.startLocationDefault'));
-  const [timeOfDay, setTimeOfDay] = useState(() => translate('sceneNew.time.dusk'));
-  const [openingNarration, setOpeningNarration] = useState('');
-  const [selectedParty, setSelectedParty] = useState<string[]>([]);
-  const [gmTone, setGmTone] = useState('Epic Fantasy');
-  const [narratorStyle, setNarratorStyle] = useState(() => translate('sceneNew.narratorStyleDefault'));
-  const [persona, setPersona] = useState(() => translate('sceneNew.personaDefault'));
-  const [diceEnabled, setDiceEnabled] = useState(true);
+  const [startingLocation, setStartingLocation] = useState(() => definition?.starting_location ?? translate('sceneNew.startLocationDefault'));
+  const [timeOfDay, setTimeOfDay] = useState(() => definition?.time_of_day ?? translate('sceneNew.time.dusk'));
+  const [openingNarration, setOpeningNarration] = useState(definition?.opening_narration ?? '');
+  const [selectedParty, setSelectedParty] = useState<string[]>(definition?.party ?? []);
+  const [gmTone, setGmTone] = useState(definition?.gm_tone ?? 'Epic Fantasy');
+  const [narratorStyle, setNarratorStyle] = useState(() => definition?.narrator_style ?? translate('sceneNew.narratorStyleDefault'));
+  const [persona, setPersona] = useState(() => definition?.persona ?? translate('sceneNew.personaDefault'));
+  const [diceEnabled, setDiceEnabled] = useState(definition?.dice_rolls_enabled ?? true);
+
+  const [lorebooks, setLorebooks] = useState<string[]>(definition?.lorebook ?? []);
+  const [actorDepth, setActorDepth] = useState(definition?.max_actor_depth ?? 3);
+  const [background, setBackground] = useState(definition?.starting_bg ?? '');
+  const [ambient, setAmbient] = useState(definition?.starting_ambient ?? 'None');
+  const [lockBg, setLockBg] = useState(definition?.lock_bg ?? false);
+  const [disableAmbient, setDisableAmbient] = useState(definition?.disable_ambient ?? false);
+  const [assets, setAssets] = useState<{ backgrounds: string[]; ambient: string[] }>({ backgrounds: [], ambient: [] });
+  const [backgroundPreview, setBackgroundPreview] = useState<{ name: string; url: string } | null>(null);
+  const [assetError, setAssetError] = useState('');
+  const [importing, setImporting] = useState(false);
+  useEffect(() => {
+    if (!isOpen) return;
+    let subscribed = true;
+    void refreshLorebooks();
+    void api.listStageAssets().then((data) => { if (subscribed) setAssets(data); }).catch((err: unknown) => { if (subscribed) setAssetError(errorMessage(err)); });
+    return () => { subscribed = false; };
+  }, [isOpen, refreshLorebooks]);
+  useEffect(() => {
+    let subscribed = true;
+    if (background) void api.getStageBackgroundImage(background).then((url) => { if (subscribed) setBackgroundPreview({ name: background, url }); }).catch(() => {});
+    return () => { subscribed = false; };
+  }, [background]);
+  const importAsset = async (kind: 'backgrounds' | 'ambient') => {
+    setImporting(true);
+    setAssetError('');
+    try {
+      const file = await open({ multiple: false, filters: [{ name: kind, extensions: kind === 'backgrounds' ? ['png', 'jpg', 'jpeg', 'webp'] : ['mp3', 'wav', 'ogg'] }] });
+      if (typeof file !== 'string') return;
+      const name = await api.importStageAsset(file, kind);
+      setAssets(await api.listStageAssets());
+      if (kind === 'backgrounds') setBackground(name); else setAmbient(name);
+    } catch (err) { setAssetError(errorMessage(err)); }
+    finally { setImporting(false); }
+  };
+  const loreOptions = [...allLorebooks.map((book) => ({ id: book.id || book.name, name: book.name })),
+    ...lorebooks.filter((id) => !allLorebooks.some((book) => book.id === id || book.name === id)).map((id) => ({ id, name: id }))];
+  const partyOptions = [...new Set([...availableCharacters.map((char) => char.card.data.name || char.id), ...selectedParty])];
 
   const togglePartyMember = (name: string) => {
     setSelectedParty((prev) =>
@@ -44,43 +86,46 @@ export const SceneCreateModal: React.FC<SceneCreateModalProps> = ({
     if (!title.trim()) return null;
     const id = `scene_custom_${Date.now()}`;
     const def: SceneDefinition = {
-      id,
+      ...definition,
+      id: definition?.id ?? id,
       title: title.trim(),
-      description: description.trim() || title.trim(),
+      description: definition ? description.trim() : description.trim() || title.trim(),
       world_context: worldContext.trim(),
       starting_location: startingLocation.trim(),
       time_of_day: timeOfDay.trim(),
       opening_narration:
-        openingNarration.trim() ||
+        definition ? openingNarration.trim() : openingNarration.trim() ||
         translate('sceneNew.defaultOpening', { location: startingLocation.trim() }),
-      first_message: '',
+      first_message: definition?.first_message ?? '',
       party: selectedParty,
       gm_tone: gmTone,
       narrator_style: narratorStyle.trim(),
       persona: persona.trim(),
-      lorebook: [],
+      lorebook: lorebooks,
       solo_mode: selectedParty.length === 0,
-      max_actor_depth: 3,
+      max_actor_depth: actorDepth,
       dice_rolls_enabled: diceEnabled,
-      starting_bg: '',
-      starting_ambient: 'None',
-      created_at: new Date().toISOString(),
-      last_played: new Date().toISOString(),
+      starting_bg: background,
+      starting_ambient: ambient,
+      lock_bg: lockBg,
+      disable_ambient: disableAmbient,
+      created_at: definition?.created_at ?? new Date().toISOString(),
+      last_played: definition?.last_played ?? new Date().toISOString(),
     };
 
     try {
-      const created = await createStageScene(def);
+      const created = definition ? await updateStageSceneDefinition(def) : await createStageScene(def);
       onCreated(created.definition);
       onClose();
       return null;
     } catch (err) {
-      return translate('sceneNew.createFailed', { error: errorMessage(err) });
+      return translate(definition ? 'sceneEdit.saveFailed' : 'sceneNew.createFailed', { error: errorMessage(err) });
     }
   }, null);
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    if (isSubmitting) return;
+    if (isSubmitting || importing || isProcessingStageTurn) return;
     // Not `<form action>`: that resets the form, which would blank these controlled fields on errors.
     startTransition(createScene);
   };
@@ -88,7 +133,7 @@ export const SceneCreateModal: React.FC<SceneCreateModalProps> = ({
   if (!isOpen) return null;
 
   return (
-    <ModalOverlay onClose={onClose} aria-labelledby="scene-create-title" className="fixed inset-0 z-50 flex items-center justify-center bg-black/75 backdrop-blur-sm p-4 overflow-y-auto">
+    <ModalOverlay onClose={isSubmitting || importing ? undefined : onClose} aria-labelledby="scene-create-title" className="fixed inset-0 z-50 flex items-center justify-center bg-black/75 backdrop-blur-sm p-4 overflow-y-auto">
       <div className="w-full max-w-2xl bg-slate-900 border border-slate-700/80 rounded-2xl shadow-2xl overflow-hidden my-8">
         {/* Header */}
         <div className="flex items-center justify-between p-4 sm:p-5 border-b border-slate-800 bg-app/60">
@@ -97,12 +142,13 @@ export const SceneCreateModal: React.FC<SceneCreateModalProps> = ({
               <Sparkles className="w-5 h-5" />
             </div>
             <div>
-              <h3 id="scene-create-title" className="text-base font-bold text-slate-100">{t('sceneNew.title')}</h3>
-              <p className="text-xs text-slate-400">{t('sceneNew.intro')}</p>
+              <h3 id="scene-create-title" className="text-base font-bold text-slate-100">{t(definition ? 'sceneEdit.title' : 'sceneNew.title')}</h3>
+              <p className="text-xs text-slate-400">{t(definition ? 'sceneEdit.intro' : 'sceneNew.intro')}</p>
             </div>
           </div>
           <button
             onClick={onClose}
+            disabled={isSubmitting || importing}
             title={t('common.close')}
             aria-label={t('common.close')}
             className="p-1.5 rounded-lg text-slate-400 hover:text-white hover:bg-slate-800 transition"
@@ -174,6 +220,7 @@ export const SceneCreateModal: React.FC<SceneCreateModalProps> = ({
                   onChange={(e) => setTimeOfDay(e.target.value)}
                   className="w-full pl-9 pr-3 py-2 bg-app border border-slate-700 rounded-xl text-slate-100 focus:outline-hidden focus:border-accent-500"
                 >
+                  {!(['morning', 'noon', 'dusk', 'evening', 'midnight'] as const).some((time) => t(`sceneNew.time.${time}`) === timeOfDay) && <option value={timeOfDay}>{timeOfDay}</option>}
                   {(['morning', 'noon', 'dusk', 'evening', 'midnight'] as const).map((time) => (
                     <option key={time} value={t(`sceneNew.time.${time}`)}>
                       {t(`sceneNew.time.${time}`)}
@@ -223,13 +270,12 @@ export const SceneCreateModal: React.FC<SceneCreateModalProps> = ({
               </span>
             </div>
             <div role="group" aria-labelledby="scene-party-label" className="flex flex-wrap gap-2 p-3 bg-app/60 border border-slate-800 rounded-xl max-h-32 overflow-y-auto">
-              {availableCharacters.map((char: CharacterProfile) => {
-                const charName = char.card.data.name || char.id;
+              {partyOptions.map((charName) => {
                 const isSelected = selectedParty.includes(charName);
                 return (
                   <button
                     type="button"
-                    key={char.id}
+                    key={charName}
                     onClick={() => togglePartyMember(charName)}
                     aria-pressed={isSelected}
                     className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg border transition ${
@@ -243,7 +289,7 @@ export const SceneCreateModal: React.FC<SceneCreateModalProps> = ({
                   </button>
                 );
               })}
-              {availableCharacters.length === 0 && (
+              {partyOptions.length === 0 && (
                 <span className="text-slate-500 text-xs italic">
                   {t('sceneNew.noCharacters')}
                 </span>
@@ -261,6 +307,7 @@ export const SceneCreateModal: React.FC<SceneCreateModalProps> = ({
                 onChange={(e) => setGmTone(e.target.value)}
                 className="w-full px-3 py-2 bg-app border border-slate-700 rounded-xl text-slate-100 focus:outline-hidden focus:border-accent-500"
               >
+                {!['Epic Fantasy', 'Dark Fantasy', 'Sci-Fi Cyberpunk', 'Anime Comedy', 'Eldritch Mystery', 'Isekai Adventure'].includes(gmTone) && <option value={gmTone}>{gmTone}</option>}
                 <option value="Epic Fantasy">{t('sceneNew.tone.epic')}</option>
                 <option value="Dark Fantasy">{t('sceneNew.tone.dark')}</option>
                 <option value="Sci-Fi Cyberpunk">{t('sceneNew.tone.scifi')}</option>
@@ -295,6 +342,44 @@ export const SceneCreateModal: React.FC<SceneCreateModalProps> = ({
             </div>
           </div>
 
+          <fieldset className="p-3 border border-slate-700 rounded-xl space-y-2">
+            <legend className="text-slate-300 px-1">{t('sceneEdit.lorebooks')}</legend>
+            {loreOptions.map((book) => {
+              const bound = lorebooks.includes(book.id) || lorebooks.includes(book.name);
+              return <label key={book.id} className="flex items-center gap-2">
+                <input type="checkbox" checked={bound} onChange={() => setLorebooks((old) => bound ? old.filter((id) => id !== book.id && id !== book.name) : [...old, book.id])} />{book.name}
+              </label>;
+            })}
+            {loreOptions.length === 0 && <p className="text-slate-400">{t('sceneEdit.noLorebooks')}</p>}
+          </fieldset>
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+            <div>
+              <label htmlFor="scene-background" className="block mb-1 text-slate-300">{t('sceneEdit.background')}</label>
+              <select id="scene-background" value={background} onChange={(e) => setBackground(e.target.value)} className="w-full p-2 bg-app border border-slate-700 rounded-xl">
+                <option value="">{t('sceneEdit.none')}</option>
+                {[...new Set([...assets.backgrounds, ...(background ? [background] : [])])].map((name) => <option key={name} value={name}>{name}</option>)}
+              </select>
+              <button type="button" disabled={importing || isSubmitting} onClick={() => void importAsset('backgrounds')} className="mt-2 text-accent-300">{t('sceneEdit.importImage')}</button>
+            </div>
+            <div>
+              <label htmlFor="scene-ambient" className="block mb-1 text-slate-300">{t('sceneEdit.ambient')}</label>
+              <select id="scene-ambient" value={ambient} onChange={(e) => setAmbient(e.target.value)} className="w-full p-2 bg-app border border-slate-700 rounded-xl">
+                <option value="None">{t('sceneEdit.none')}</option>
+                {[...new Set([...assets.ambient, ...(ambient && ambient !== 'None' ? [ambient] : [])])].map((name) => <option key={name} value={name}>{name}</option>)}
+              </select>
+              <button type="button" disabled={importing || isSubmitting} onClick={() => void importAsset('ambient')} className="mt-2 text-accent-300">{t('sceneEdit.importAudio')}</button>
+            </div>
+          </div>
+          {backgroundPreview?.name === background && <img src={backgroundPreview.url} alt={t('sceneEdit.background')} className="w-full max-h-40 rounded-xl object-cover" />}
+          <p className="text-slate-400">{t('sceneEdit.ambientHint')}</p>
+          <div className="space-y-2">
+            <label className="flex gap-2"><input type="checkbox" checked={lockBg} onChange={(e) => setLockBg(e.target.checked)} />{t('sceneEdit.lockBg')}</label>
+            <label className="flex gap-2"><input type="checkbox" checked={disableAmbient} onChange={(e) => setDisableAmbient(e.target.checked)} />{t('sceneEdit.disableAmbient')}</label>
+            <label htmlFor="scene-actors" className="block">{t('sceneEdit.actors')}</label>
+            <input id="scene-actors" type="number" min={1} max={6} required value={actorDepth} onChange={(e) => setActorDepth(Number(e.target.value))} className="w-24 p-2 bg-app border border-slate-700 rounded-xl" />
+          </div>
+          {assetError && <p role="alert" className="text-rose-300">{assetError}</p>}
+
           {/* Dice toggle */}
           <div className="flex items-center gap-3 p-3 bg-app/60 border border-slate-800 rounded-xl">
             <input
@@ -320,17 +405,18 @@ export const SceneCreateModal: React.FC<SceneCreateModalProps> = ({
             <button
               type="button"
               onClick={onClose}
+              disabled={isSubmitting || importing}
               className="px-4 py-2 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-300 font-semibold transition"
             >
               {t('common.cancel')}
             </button>
             <button
               type="submit"
-              disabled={isSubmitting || !title.trim()}
+              disabled={isSubmitting || importing || isProcessingStageTurn || !title.trim()}
               className="px-5 py-2 rounded-xl bg-accent-600 hover:bg-accent-500 text-white font-semibold flex items-center gap-1.5 shadow-lg shadow-accent-950/50 transition disabled:opacity-50"
             >
               <Sparkles className="w-4 h-4" />
-              <span>{isSubmitting ? t('sceneNew.creating') : t('sceneNew.start')}</span>
+              <span>{isSubmitting ? t('sceneNew.creating') : t(definition ? 'sceneEdit.save' : 'sceneNew.start')}</span>
             </button>
           </div>
         </form>
