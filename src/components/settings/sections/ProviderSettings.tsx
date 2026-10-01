@@ -16,11 +16,11 @@ export const ProviderSettings = () => {
   const { t } = useTranslation();
   const {
     selectedBackend, setSelectedBackend, cloudProvider, setCloudProvider, cloudEndpoint,
-    setCloudEndpoint, cloudApiKey, setCloudApiKey, cloudModel, setCloudModel, openRouterModels,
+    setCloudEndpoint, cloudApiKey, setCloudApiKey, cloudModel, setCloudModel, cloudContextTokens, setCloudContextTokens, openRouterModels,
     isLoadingOpenRouterModels, fetchOpenRouterModels,
   } = useStoreFields(
     'selectedBackend', 'setSelectedBackend', 'cloudProvider', 'setCloudProvider', 'cloudEndpoint',
-    'setCloudEndpoint', 'cloudApiKey', 'setCloudApiKey', 'cloudModel', 'setCloudModel',
+    'setCloudEndpoint', 'cloudApiKey', 'setCloudApiKey', 'cloudModel', 'setCloudModel', 'cloudContextTokens', 'setCloudContextTokens',
     'openRouterModels', 'isLoadingOpenRouterModels', 'fetchOpenRouterModels',
   );
 
@@ -159,6 +159,22 @@ export const ProviderSettings = () => {
               onChange={(e) => setCloudModel(e.target.value)}
               className="w-full bg-app border border-slate-800 rounded-lg px-3 py-2 text-slate-200 font-mono focus:outline-hidden focus:border-accent-500"
             />
+          </div>
+
+          <div className="space-y-1.5">
+            <label htmlFor="settings-cloud-context" className="text-slate-300 font-medium">
+              {t('settings.cloudContext')}
+            </label>
+            <input
+              id="settings-cloud-context"
+              type="number"
+              min={2048}
+              step={1024}
+              value={cloudContextTokens}
+              onChange={(e) => setCloudContextTokens(Math.max(2048, parseInt(e.target.value) || 32768))}
+              className="w-full bg-app border border-slate-800 rounded-lg px-3 py-2 text-slate-200 font-mono focus:outline-hidden focus:border-accent-500"
+            />
+            <p className="text-xs text-slate-400">{t('settings.cloudContextHint')}</p>
           </div>
         </div>
 

@@ -8,9 +8,31 @@ use tauri::State;
 pub async fn send_chat_message(
     app: tauri::AppHandle,
     state: State<'_, AppState>,
-    request: ChatRequest,
+    mut request: ChatRequest,
+    context_tokens: Option<u32>,
 ) -> Result<DoneEvent, String> {
-    state.inference_client.stream_chat(&app, request).await
+    use crate::modules::context_window::server_base;
+    use crate::modules::providers::{LlmProviderType, ProviderRegistry};
+
+    // A local llama-server reports its own context size and counts exactly; cloud models use
+    // `context_tokens` from the settings.
+    let local = ProviderRegistry::detect_provider(&request.endpoint_url, request.provider.as_ref())
+        == LlmProviderType::LocalLlama;
+    let base = local.then(|| server_base(&request.endpoint_url));
+    let max_reply = request.sampling.as_ref().and_then(|s| s.max_tokens);
+    let (messages, usage) = state
+        .token_counter
+        .fit(
+            std::mem::take(&mut request.messages),
+            base.as_deref(),
+            context_tokens,
+            max_reply,
+        )
+        .await;
+    request.messages = messages;
+    let mut done = state.inference_client.stream_chat(&app, request).await?;
+    done.context = usage;
+    Ok(done)
 }
 
 #[tauri::command]

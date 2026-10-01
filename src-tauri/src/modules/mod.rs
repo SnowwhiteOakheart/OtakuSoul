@@ -2,6 +2,7 @@ pub mod characters;
 pub mod companion;
 pub mod companion_tools;
 pub mod content_lang;
+pub mod context_window;
 pub mod discord;
 pub mod emotions;
 pub mod error;

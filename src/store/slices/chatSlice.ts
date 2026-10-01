@@ -8,6 +8,7 @@ import type {
   CharacterProfile,
   ChatMessage,
   ChatSession,
+  ContextUsage,
   StoredChatMessage,
   UserPersona,
   VoiceConfig,
@@ -24,6 +25,8 @@ export interface ChatSlice {
   streamingText: string;
   streamingThought: string;
   isGenerating: boolean;
+  /** How full the context window was for the last reply. */
+  contextUsage: ContextUsage | null;
   sendMessage: (content: string) => Promise<void>;
   abortGeneration: () => Promise<void>;
   clearChat: () => void;
@@ -78,6 +81,8 @@ export const createChatSlice: SliceCreator<ChatSlice> = (set, get) => ({
   streamingText: '',
 
   streamingThought: '',
+
+  contextUsage: null,
 
   isGenerating: false,
 
@@ -137,6 +142,7 @@ export const createChatSlice: SliceCreator<ChatSlice> = (set, get) => ({
         activeChatId: chatId,
         storedMessages: storedMsgs,
         messages: flatMsgs,
+        contextUsage: null,
         streamingText: '',
         streamingThought: '',
       });
@@ -334,7 +340,8 @@ export const createChatSlice: SliceCreator<ChatSlice> = (set, get) => ({
         sampling: {
           ...sampling,
         },
-      });
+      }, selectedBackend === 'cloud' ? get().cloudContextTokens : undefined);
+      set({ contextUsage: done.context ?? null });
 
       const { cleanedText, stateUpdates } = extractStateUpdates(done.full_text);
       if (stateUpdates) {
@@ -423,7 +430,8 @@ export const createChatSlice: SliceCreator<ChatSlice> = (set, get) => ({
         sampling: {
           ...sampling,
         },
-      });
+      }, selectedBackend === 'cloud' ? get().cloudContextTokens : undefined);
+      set({ contextUsage: done.context ?? null });
 
       const { cleanedText, stateUpdates } = extractStateUpdates(done.full_text);
       if (stateUpdates) {
@@ -570,7 +578,8 @@ export const createChatSlice: SliceCreator<ChatSlice> = (set, get) => ({
         sampling: {
           ...sampling,
         },
-      });
+      }, selectedBackend === 'cloud' ? get().cloudContextTokens : undefined);
+      set({ contextUsage: done.context ?? null });
 
       // 4. Parse <state> tags
       const { cleanedText, stateUpdates } = extractStateUpdates(done.full_text);

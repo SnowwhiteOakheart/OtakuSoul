@@ -14,6 +14,10 @@ use crate::modules::secrets;
 
 const CLOUD_API_KEY_ACCOUNT: &str = "cloud_api_key";
 
+fn default_cloud_context_tokens() -> u32 {
+    32_768
+}
+
 fn default_cloud_provider() -> String {
     "open_router".to_string()
 }
@@ -29,6 +33,9 @@ pub struct AppSettings {
     pub cloud_endpoint: String,
     pub cloud_api_key: String,
     pub cloud_model: String,
+    /// Context window sent to cloud models; older messages are left out beyond it.
+    #[serde(default = "default_cloud_context_tokens")]
+    pub cloud_context_tokens: u32,
     #[serde(default)]
     pub active_preset_id: Option<String>,
     pub reply_language: String,
@@ -104,6 +111,7 @@ impl Default for AppSettings {
             cloud_endpoint: "https://openrouter.ai/api/v1/chat/completions".to_string(),
             cloud_api_key: String::new(),
             cloud_model: "anthropic/claude-sonnet-5".to_string(),
+            cloud_context_tokens: default_cloud_context_tokens(),
             active_preset_id: Some("storytelling_kreativ".to_string()),
             reply_language: "Deutsch".to_string(),
             lorebook_scan_depth: 5,

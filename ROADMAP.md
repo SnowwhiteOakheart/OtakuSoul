@@ -287,8 +287,13 @@ GitHub Actions wurden bewusst entfernt (Commit `11597c2`). Stattdessen gibt es j
 
 - [x] Hardware-Probe für AMD und Intel (Linux und Windows über Vulkan, siehe Bildgenerierung).
 - [ ] Apple Metal: `recommendedMaxWorkingSetSize` statt des gesamten Arbeitsspeichers als GPU-Speicher.
-- [ ] Offene Chat-Funktionen aus `Roadmap_abgeschlossen.md` (Phase 9): Kontextfenster-Management mit Token-Zählung,
-  automatische Zusammenfassung, System-Prompt-Editor, Datei-Anhänge und Vision, Übersetzung.
+- [x] Kontextfenster-Management (`modules/context_window.rs`): Vor jeder Chat-Anfrage werden die ältesten Nachrichten
+  weggelassen, bis Verlauf + Antwortreserve (`max_tokens`, höchstens halber Kontext) hineinpassen; System-Prompt,
+  Author's Note und die letzte Nachricht bleiben immer drin. Lokal exakt über `/props` (echte Kontextgröße) und
+  `/tokenize` (pro Nachricht gecacht, 200 Nachrichten in ~30 ms), Cloud geschätzt mit einstellbarer Kontextgröße
+  (Standard 32k, begrenzt auch die Kosten). Anzeige unter dem Eingabefeld: belegter Kontext und weggelassene Nachrichten.
+- [ ] Offene Chat-Funktionen aus `Roadmap_abgeschlossen.md` (Phase 9): automatische Zusammenfassung der weggelassenen
+  Nachrichten, System-Prompt-Editor, Datei-Anhänge und Vision, Übersetzung.
 - [ ] Migrationsimport aus einer bestehenden Soul-of-Waifu-Installation.
 - [ ] Virtualisierte Listen (`@tanstack/react-virtual`) für lange Chats, große Charakter- und Lorebook-Bibliotheken.
 - [ ] Bundle-Analyse (`rollup-plugin-visualizer`); `chunkSizeWarningLimit: 800` in `vite.config.ts` nur als Übergang.

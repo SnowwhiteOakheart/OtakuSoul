@@ -48,6 +48,8 @@ export interface LlmSlice {
   setCloudApiKey: (key: string) => void;
   cloudModel: string;
   setCloudModel: (model: string) => void;
+  cloudContextTokens: number;
+  setCloudContextTokens: (tokens: number) => void;
   cloudProvider: LlmProviderType;
   setCloudProvider: (provider: LlmProviderType) => void;
   openRouterModels: OpenRouterModelInfo[];
@@ -241,6 +243,13 @@ export const createLlmSlice: SliceCreator<LlmSlice> = (set, get) => ({
 
   setCloudModel: (cloudModel) => {
     set({ cloudModel });
+    get().saveCurrentSettings();
+  },
+
+  cloudContextTokens: 32768,
+
+  setCloudContextTokens: (cloudContextTokens) => {
+    set({ cloudContextTokens });
     get().saveCurrentSettings();
   },
 

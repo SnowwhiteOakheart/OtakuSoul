@@ -90,6 +90,10 @@ pub struct ThoughtEvent {
 pub struct DoneEvent {
     pub full_text: String,
     pub full_thought: String,
+    /// How full the context window was; only for chat messages from the UI.
+    #[serde(default)]
+    #[ts(optional)]
+    pub context: Option<crate::modules::context_window::ContextUsage>,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize, TS)]
@@ -319,6 +323,7 @@ impl InferenceClient {
         let done_event = DoneEvent {
             full_text,
             full_thought,
+            context: None,
         };
 
         let _ = app_handle.emit("llm-done", done_event.clone());

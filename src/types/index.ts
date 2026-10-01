@@ -24,6 +24,7 @@ import type { CharacterDraft } from './generated/CharacterDraft';
 import type { ChatSession } from './generated/ChatSession';
 import type { ChubCharacterDetail } from './generated/ChubCharacterDetail';
 import type { CombatCondition } from './generated/CombatCondition';
+import type { ContextUsage } from './generated/ContextUsage';
 import type { ConsequenceEntry } from './generated/ConsequenceEntry';
 import type { DcCheckResult } from './generated/DcCheckResult';
 import type { DiaryEntry } from './generated/DiaryEntry';
@@ -91,6 +92,7 @@ export type {
   ChubCharacterDetail,
   CombatCondition,
   ConsequenceEntry,
+  ContextUsage,
   DcCheckResult,
   DiaryEntry,
   DiscordBotConfig,
@@ -657,6 +659,7 @@ export interface AppSettings {
   cloud_endpoint: string;
   cloud_api_key: string;
   cloud_model: string;
+  cloud_context_tokens: number;
   active_preset_id?: string | null;
   reply_language: string;
   lorebook_scan_depth: number;

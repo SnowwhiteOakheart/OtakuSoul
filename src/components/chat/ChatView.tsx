@@ -41,6 +41,7 @@ import { confirmDialog } from '../ui/feedback';
 import { EmptyState } from '../ui/EmptyState';
 import { AvatarSkeleton } from '../ui';
 import { PersonaAvatar } from '../characters/PersonaAvatar';
+import type { ContextUsage } from '../../types';
 
 const AvatarCanvas = React.lazy(() => import('../avatar/AvatarCanvas').then((module) => ({
   default: module.AvatarCanvas,
@@ -79,13 +80,14 @@ export const ChatView: React.FC = () => {
     setAutoTtsEnabled,
     activeVoiceConfig,
     setActiveTab,
+    contextUsage,
   } = useStoreFields(
     'messages', 'storedMessages', 'sendMessage', 'isGenerating', 'abortGeneration', 'clearChat',
     'selectedBackend', 'setSelectedBackend', 'serverStatus', 'activeCharacter', 'activePersona',
     'loadPresetCharacters', 'chatSidebarOpen', 'setChatSidebarOpen', 'chatSessions',
     'activeChatId', 'switchMessageSwipe', 'regenerateMessageSwipe', 'continueChatMessage',
     'editChatMessage', 'deleteChatMessage', 'autoTtsEnabled', 'setAutoTtsEnabled',
-    'activeVoiceConfig', 'setActiveTab',
+    'activeVoiceConfig', 'setActiveTab', 'contextUsage',
   );
 
   const [input, setInput] = useState('');
@@ -731,11 +733,44 @@ export const ChatView: React.FC = () => {
                 onEnsureAutoTts={() => setAutoTtsEnabled(true)}
               />
             </div>
+            {contextUsage && <ContextMeter usage={contextUsage} />}
           </div>
         </div>
       </div>
       {showVoiceModal && (
         <CharacterVoiceModal onClose={() => setShowVoiceModal(false)} />
+      )}
+    </div>
+  );
+};
+
+/** How full the context window was for the last reply and how many old messages were left out. */
+const ContextMeter: React.FC<{ usage: ContextUsage }> = ({ usage }) => {
+  const { t, tPlural } = useTranslation();
+  const room = Math.max(1, usage.context_tokens - usage.reserve_tokens);
+  const percent = Math.min(100, Math.round((usage.prompt_tokens / room) * 100));
+  const k = (n: number) => (n >= 1000 ? `${(n / 1000).toFixed(1)}k` : String(n));
+  return (
+    <div
+      className="max-w-4xl mx-auto mt-1.5 flex items-center gap-2 text-xs text-slate-400"
+      title={t('chat.contextTitle', { reserve: k(usage.reserve_tokens) })}
+    >
+      <div className="h-1 w-16 rounded-full bg-slate-800 overflow-hidden" aria-hidden="true">
+        <div
+          className={`h-full ${percent >= 90 ? 'bg-amber-500' : 'bg-accent-500'}`}
+          style={{ width: `${percent}%` }}
+        />
+      </div>
+      <span>
+        {t(usage.estimated ? 'chat.contextEstimated' : 'chat.context', {
+          used: k(usage.prompt_tokens),
+          total: k(usage.context_tokens),
+        })}
+      </span>
+      {usage.dropped_messages > 0 && (
+        <span className="text-amber-400">
+          {tPlural('chat.contextDropped', usage.dropped_messages)}
+        </span>
       )}
     </div>
   );

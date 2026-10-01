@@ -73,7 +73,7 @@ Die Reihenfolge ist nach Abhängigkeit und Nutzen sortiert: erst das, was jede a
 - [x] **Weiter-Generieren** (Continue) einer Nachricht
 - [x] **Author's Note** pro Chat mit konfigurierbarer Injektionstiefe (Depth-Slider & System-Prompt-Injektion)
 - [x] **State Variables aus LLM-Antworten parsen** – robuster `<state>`-JSON-Interceptor (`stateParser.ts`), Tag-Stripping aus Chatblasen + **11 Rollenspiel-HUD-Presets** (Romance, Fantasy RPG, Survival, Horror, Cyberpunk, Slice of Life, Detektiv, Space Opera, Cultivation, Comedy, Tabletop Tactical)
-- [ ] **Kontextfenster-Management** – Token-Zählung (`tiktoken-rs` oder `/tokenize` des llama-servers), Response-Reserve, älteste Nachrichten abschneiden (SoW: `PromptEngine._get_max_context_tokens`)
+- [x] **Kontextfenster-Management** *(umgesetzt, siehe ROADMAP.md)* – Token-Zählung (`tiktoken-rs` oder `/tokenize` des llama-servers), Response-Reserve, älteste Nachrichten abschneiden (SoW: `PromptEngine._get_max_context_tokens`)
 - [ ] **Automatische Zusammenfassung** alter Nachrichten + Summary-Editor (SoW: `build_summary_prompt_blocks`, `open_summary_editor`, `save_interval_summary`)
 - [ ] **System-Prompt-Editor** & Prompt-Vorlagen
 - [ ] **Datei-Anhänge** (Text, PDF, Bilder für Vision-Modelle) (SoW: `open_attach_file_dialog`)
