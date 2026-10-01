@@ -10,7 +10,9 @@ import { remote } from 'webdriverio';
 import { startMockLlm } from './mock-llm.mjs';
 
 const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
-const binary = path.join(root, 'target', 'debug', process.platform === 'win32' ? 'otakusoul.exe' : 'otakusoul');
+// Own target dir: `cargo test`/`clippy` rebuild target/debug/otakusoul without the bundled
+// frontend (it would try to load the Vite dev server).
+const binary = path.join(root, 'target', 'e2e', 'debug', process.platform === 'win32' ? 'otakusoul.exe' : 'otakusoul');
 export const screenshotDir = path.join(root, 'e2e', 'screenshots');
 
 const waitForPort = async (port, timeoutMs = 20_000) => {
