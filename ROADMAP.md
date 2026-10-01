@@ -310,7 +310,10 @@ GitHub Actions wurden bewusst entfernt (Commit `11597c2`). Stattdessen gibt es j
   ältere werden zu einem Hinweis. Lokal sieht das Modell Bilder nur mit gewählter `mmproj`-Datei (Einstellungen →
   llama-server, `--mmproj`); `mmproj`-Dateien erscheinen nicht mehr fälschlich als startbare Modelle.
   Ablage unter `attachments/<chat>/`, wird mit dem Chat gelöscht. Rauchtest prüft Bild und Textdatei.
-- [ ] Offene Chat-Funktionen aus `Roadmap_abgeschlossen.md` (Phase 9): Übersetzung einzelner Nachrichten.
+- [x] Übersetzung einzelner Nachrichten (Knopf an der Nachricht, `modules/translate.rs`): übersetzt mit dem gewählten
+  Chat-Modell in die App-Sprache, Sternchen-Aktionen und Rede bleiben erhalten; kein externer Übersetzungsdienst.
+  Die Übersetzung erscheint unter dem Original und wird für die Sitzung zwischengespeichert. Dabei: Der Chat bleibt am
+  Ende, wenn eine Nachricht wächst (Übersetzung, nachladendes Bild), sofern man dort stand.
 - [ ] Vision lokal auf echter Hardware testen (Gemma/Qwen-VL mit passender `mmproj`, z. B. aus dem Modell-Hub).
 - [ ] Migrationsimport aus einer bestehenden Soul-of-Waifu-Installation.
 - [x] Lange Chats virtualisiert (`@tanstack/react-virtual`, `chat/MessageList.tsx`); Eingabefeld (`ChatComposer`) und

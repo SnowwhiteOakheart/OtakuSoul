@@ -26,6 +26,7 @@ import type { ChubCharacterDetail } from './generated/ChubCharacterDetail';
 import type { CombatCondition } from './generated/CombatCondition';
 import type { ContextUsage } from './generated/ContextUsage';
 import type { Attachment } from './generated/Attachment';
+import type { TranslateRequest } from './generated/TranslateRequest';
 import type { PromptTemplate } from './generated/PromptTemplate';
 import type { BuiltinPromptTemplate } from './generated/BuiltinPromptTemplate';
 import type { AssembledPrompt } from './generated/AssembledPrompt';
@@ -100,6 +101,7 @@ export type {
   ConsequenceEntry,
   ContextUsage,
   Attachment,
+  TranslateRequest,
   PromptTemplate,
   BuiltinPromptTemplate,
   AssembledPrompt,

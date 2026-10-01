@@ -3,7 +3,7 @@ import { api } from '../../services/api';
 import { soundFx } from '../../services/soundFx';
 import { extractStateUpdates, applyStateUpdates } from '../../utils/stateParser';
 import { HUD_PRESETS } from '../../constants/hudPresets';
-import { resolvePromptWithLore } from '../helpers';
+import { APP_LANGUAGE_NAMES, llmTarget, resolvePromptWithLore } from '../helpers';
 import type {
   AssembledPrompt,
   Attachment,
@@ -34,6 +34,8 @@ export interface ChatSlice {
   /** After a reply: summarize the messages that no longer fit once enough have piled up. */
   summarizeDroppedMessages: (usage: ContextUsage | null | undefined, history: StoredChatMessage[]) => void;
   updateChatSummary: (summary: string, summaryUntil: number) => Promise<void>;
+  /** Translates a message into the app language with the chat model. */
+  translateText: (text: string) => Promise<string>;
   /** Sends a message; `files` are attached to it (images, text, PDF). */
   sendMessage: (content: string, files?: File[]) => Promise<void>;
   abortGeneration: () => Promise<void>;
@@ -122,7 +124,6 @@ export const createChatSlice: SliceCreator<ChatSlice> = (set, get) => ({
     if (pending.length < SUMMARY_BATCH || !last) return;
     const upTo = last.order_index;
 
-    const cloud = state.selectedBackend === 'cloud';
     set({ isSummarizing: true });
     api
       .summarizeChat({
@@ -132,12 +133,7 @@ export const createChatSlice: SliceCreator<ChatSlice> = (set, get) => ({
         user_name: state.activePersona.name,
         reply_language: state.replyLanguage || 'Deutsch',
         context_tokens: usage.context_tokens,
-        endpoint_url: cloud
-          ? state.cloudEndpoint
-          : `http://127.0.0.1:${state.serverConfig.port}/v1/chat/completions`,
-        api_key: cloud ? state.cloudApiKey : null,
-        model: cloud ? state.cloudModel : null,
-        provider: cloud ? state.cloudProvider : 'local_llama',
+        ...llmTarget(state),
       })
       .then((updated) =>
         set((st) => ({
@@ -146,6 +142,15 @@ export const createChatSlice: SliceCreator<ChatSlice> = (set, get) => ({
       )
       .catch((e) => console.warn('Chat summary failed:', e))
       .finally(() => set({ isSummarizing: false }));
+  },
+
+  translateText: async (text) => {
+    const state = get();
+    return api.translateMessage({
+      text,
+      target_language: APP_LANGUAGE_NAMES[state.appLanguage] ?? 'Deutsch',
+      ...llmTarget(state),
+    });
   },
 
   updateChatSummary: async (summary, summaryUntil) => {

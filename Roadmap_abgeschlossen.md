@@ -77,7 +77,7 @@ Die Reihenfolge ist nach Abhängigkeit und Nutzen sortiert: erst das, was jede a
 - [x] **Automatische Zusammenfassung** *(umgesetzt, siehe ROADMAP.md)* alter Nachrichten + Summary-Editor (SoW: `build_summary_prompt_blocks`, `open_summary_editor`, `save_interval_summary`)
 - [x] **System-Prompt-Editor** & Prompt-Vorlagen *(umgesetzt, siehe ROADMAP.md)*
 - [x] **Datei-Anhänge** (Text, PDF, Bilder für Vision-Modelle) *(umgesetzt, siehe ROADMAP.md)* (SoW: `open_attach_file_dialog`)
-- [ ] **Chat-Übersetzung** einzelner Nachrichten (SoW: `translator.py`)
+- [x] **Chat-Übersetzung** einzelner Nachrichten *(umgesetzt, siehe ROADMAP.md)* (SoW: `translator.py`)
 - [ ] **Chat-Erscheinungsbild** – Hintergründe pro Chat, Schrift, Blasenfarben, Themes (SoW: `on_chat_appearance_changed`, `open_chat_background_changer`)
 - [ ] **Ambient-Sound pro Chat** mit Lautstärke (SoW: `ambient_client.py`)
 - [ ] **Tool Calling im normalen Chat** – Websuche, Datum/Zeit, Rechner (SoW: `ai_clients/tools.py`)

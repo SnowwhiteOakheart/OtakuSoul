@@ -113,6 +113,22 @@ export async function resolvePromptWithLore(
   });
 }
 
+/** Endpoint, key, model and provider of the chat model the user selected (local or cloud). */
+export function llmTarget(state: AppStoreState) {
+  const cloud = state.selectedBackend === 'cloud';
+  return {
+    endpoint_url: cloud
+      ? state.cloudEndpoint
+      : `http://127.0.0.1:${state.serverConfig.port}/v1/chat/completions`,
+    api_key: cloud ? state.cloudApiKey : null,
+    model: cloud ? state.cloudModel : null,
+    provider: cloud ? state.cloudProvider : ('local_llama' as const),
+  };
+}
+
+/** Language names for the app's UI languages, as written into prompts. */
+export const APP_LANGUAGE_NAMES = { de: 'Deutsch', en: 'English', ru: 'Русский' } as const;
+
 /**
  * The reply language is written verbatim into the system prompt, so it must be a language
  * name. Older settings UI versions stored ISO codes ("en"), which the model then saw as-is.

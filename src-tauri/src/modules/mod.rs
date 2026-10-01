@@ -33,6 +33,7 @@ pub mod settings;
 pub mod soul_hub;
 pub mod soul_memory_pipeline;
 pub mod stage;
+pub mod translate;
 pub mod tts_local;
 pub mod updater;
 pub mod voice;

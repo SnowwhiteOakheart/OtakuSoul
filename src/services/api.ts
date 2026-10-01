@@ -45,6 +45,7 @@ import {
   UserPersona,
   ChatSession,
   ChatSummaryRequest,
+  TranslateRequest,
   Attachment,
   AssembledPrompt,
   BuiltinPromptTemplate,
@@ -746,6 +747,11 @@ export const api = {
   /** Folds the messages that left the context window into the chat's running summary. */
   summarizeChat: async (request: ChatSummaryRequest): Promise<ChatSession> => {
     return await invoke<ChatSession>('summarize_chat', { request });
+  },
+
+  /** Translates one chat message with the chat model. */
+  translateMessage: async (request: TranslateRequest): Promise<string> => {
+    return await invoke<string>('translate_message', { request });
   },
 
   updateChatSummary: async (chatId: string, summary: string, summaryUntil: number): Promise<void> => {

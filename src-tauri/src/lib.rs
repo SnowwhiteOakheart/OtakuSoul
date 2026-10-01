@@ -116,6 +116,7 @@ pub fn run() {
             commands::chat::assemble_prompt,
             commands::chat::list_prompt_templates,
             commands::chat::save_attachment,
+            commands::chat::translate_message,
             commands::chat::get_attachment_data_url,
             commands::app::read_file_binary,
             commands::memory::get_cognitive_overview,

@@ -7,7 +7,7 @@ import { mkdtempSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import path from 'node:path';
 import { launch, screenshotDir } from './harness.mjs';
-import { SUMMARY } from './mock-llm.mjs';
+import { SUMMARY, TRANSLATION } from './mock-llm.mjs';
 
 const step = (name) => console.log(`• ${name}`);
 const shot = (browser, name) => browser.saveScreenshot(path.join(screenshotDir, `${name}.png`));
@@ -111,6 +111,19 @@ try {
   );
   await browser.$('img[alt="pixel.png"]').waitForExist({ timeout: 10_000 });
   await shot(browser, '07-anhaenge');
+
+  step('Antwort übersetzen');
+  const bubbles = await browser.$$('.group\\/bubble');
+  const lastBubble = bubbles[bubbles.length - 1];
+  await lastBubble.moveTo();
+  await lastBubble.$('button[aria-label="Übersetzen"]').click();
+  await browser.waitUntil(async () => (await lastBubble.getText()).includes('Testübersetzung'), {
+    timeout: 15_000,
+    timeoutMsg: 'Übersetzung erscheint nicht unter der Nachricht',
+  });
+  assert.equal(mock.stats.translate, 1);
+  assert.ok(TRANSLATION.includes('Testübersetzung'));
+  await shot(browser, '08-uebersetzung');
 
   console.log(`\n✔ Rauchtest bestanden (${mock.stats.chat} Chat-Anfragen, ${mock.stats.summary} Zusammenfassung)`);
 } catch (e) {

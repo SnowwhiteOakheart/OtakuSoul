@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import { useVirtualizer } from '@tanstack/react-virtual';
 import {
   Brain,
@@ -9,13 +9,16 @@ import {
   Edit3,
   FastForward,
   FileText,
+  Languages,
+  Loader2,
   RotateCcw,
   Trash2,
   X,
 } from 'lucide-react';
 import { useAppStore } from '../../store/useAppStore';
 import { translate, useTranslation } from '../../i18n';
-import { confirmDialog } from '../ui/feedback';
+import { confirmDialog, toast } from '../ui/feedback';
+import { errorMessage } from '../../utils/errors';
 import { PersonaAvatar } from '../characters/PersonaAvatar';
 import { RoleplayMessage } from './RoleplayMessage';
 import { api } from '../../services/api';
@@ -69,9 +72,27 @@ export const MessageList = React.memo<MessageListProps>(
       return () => clearTimeout(timer);
     }, [lastId, messages.length, virtualizer, scrollRef]);
 
+    // Stay at the bottom while content grows (a translation opens, an image loads), but only
+    // when the reader was already there.
+    const pinned = useRef(true);
+    useEffect(() => {
+      const el = scrollRef.current;
+      if (!el) return;
+      const onScroll = () => {
+        pinned.current = el.scrollHeight - el.scrollTop - el.clientHeight < 80;
+      };
+      el.addEventListener('scroll', onScroll, { passive: true });
+      return () => el.removeEventListener('scroll', onScroll);
+    }, [scrollRef]);
+    const totalSize = virtualizer.getTotalSize();
+    useEffect(() => {
+      const el = scrollRef.current;
+      if (el && pinned.current) el.scrollTop = el.scrollHeight;
+    }, [totalSize, scrollRef]);
+
     if (messages.length === 0) return null;
     return (
-      <div className="relative w-full" style={{ height: virtualizer.getTotalSize() }}>
+      <div className="relative w-full" style={{ height: totalSize }}>
         {virtualizer.getVirtualItems().map((item) => {
           const msg = messages[item.index];
           if (!msg) return null;
@@ -116,9 +137,38 @@ const ChatMessageItem = React.memo<ChatMessageItemProps>(
     const continueChatMessage = useAppStore((s) => s.continueChatMessage);
     const editChatMessage = useAppStore((s) => s.editChatMessage);
     const deleteChatMessage = useAppStore((s) => s.deleteChatMessage);
+    const translateText = useAppStore((s) => s.translateText);
+    const appLanguage = useAppStore((s) => s.appLanguage);
 
     const [thoughtOpen, setThoughtOpen] = useState(false);
     const [editContent, setEditContent] = useState<string | null>(null);
+    const translationKey = `${appLanguage}\u0000${msg.content}`;
+    const [translation, setTranslation] = useState<string | null>(() => translations.get(translationKey) ?? null);
+    const [translating, setTranslating] = useState(false);
+    // A cached translation belongs to this text and language only.
+    const shownTranslation = translation !== null && translations.get(translationKey) === translation ? translation : null;
+
+    const toggleTranslation = async () => {
+      if (shownTranslation !== null) {
+        setTranslation(null);
+        return;
+      }
+      const cached = translations.get(translationKey);
+      if (cached) {
+        setTranslation(cached);
+        return;
+      }
+      setTranslating(true);
+      try {
+        const text = await translateText(msg.content);
+        translations.set(translationKey, text);
+        setTranslation(text);
+      } catch (e) {
+        toast.error(errorMessage(e));
+      } finally {
+        setTranslating(false);
+      }
+    };
 
     const isUser = msg.role === 'user';
     const isAssistant = msg.role === 'assistant';
@@ -251,6 +301,15 @@ const ChatMessageItem = React.memo<ChatMessageItemProps>(
                 isUser={isUser}
                 onSpeak={!isUser && onSpeak ? () => onSpeak(msg.content) : undefined}
               />
+              {shownTranslation !== null && (
+                <div className={`mt-2 pt-2 border-t ${isUser ? 'border-white/30' : 'border-slate-700'}`}>
+                  <div className={`mb-1 flex items-center gap-1 text-[11px] ${isUser ? 'text-white/70' : 'text-slate-500'}`}>
+                    <Languages className="w-3 h-3" />
+                    {t('chat.translation')}
+                  </div>
+                  <RoleplayMessage content={shownTranslation} isUser={isUser} />
+                </div>
+              )}
             </div>
 
             {/* Hover Action Buttons */}
@@ -284,6 +343,16 @@ const ChatMessageItem = React.memo<ChatMessageItemProps>(
                 </>
               )}
               <button
+                onClick={toggleTranslation}
+                disabled={translating || !msg.content.trim()}
+                className={BUBBLE_ACTION}
+                title={t(shownTranslation !== null ? 'chat.hideTranslation' : 'chat.translateHint')}
+                aria-label={t(shownTranslation !== null ? 'chat.hideTranslation' : 'chat.translate')}
+                aria-pressed={shownTranslation !== null}
+              >
+                {translating ? <Loader2 className="w-3 h-3 animate-spin" /> : <Languages className="w-3 h-3" />}
+              </button>
+              <button
                 onClick={() => setEditContent(msg.content)}
                 className={BUBBLE_ACTION}
                 title={t('chat.editMessage')}
@@ -307,6 +376,9 @@ const ChatMessageItem = React.memo<ChatMessageItemProps>(
   },
 );
 ChatMessageItem.displayName = 'ChatMessageItem';
+
+/** Translations by language and text, kept while the app runs. */
+const translations = new Map<string, string>();
 
 /** Loaded image attachments, so scrolling a virtualized chat doesn't reload them. */
 const imageCache = new Map<string, Promise<string | null>>();

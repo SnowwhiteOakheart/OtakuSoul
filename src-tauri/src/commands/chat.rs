@@ -138,6 +138,15 @@ pub async fn summarize_chat(
         .await
 }
 
+/// Translates one chat message with the chat model.
+#[tauri::command]
+pub async fn translate_message(
+    state: State<'_, AppState>,
+    request: crate::modules::translate::TranslateRequest,
+) -> Result<String, String> {
+    crate::modules::translate::translate(&state.inference_client, request).await
+}
+
 #[tauri::command]
 pub fn update_chat_summary(
     state: State<'_, AppState>,

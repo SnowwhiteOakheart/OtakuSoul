@@ -7,10 +7,11 @@ const REPLY =
   '*tippt sich ans Kinn* "Ich glaube, wir sollten morgen zusammen zum Fushimi-Inari-Schrein gehen. ' +
   'Dort gibt es tausend rote Tore, und am Ende des Weges hat man einen wunderschönen Blick über ganz Kyoto. ' +
   'Bring bequeme Schuhe mit, es sind viele Stufen, und vergiss deine Kamera nicht."';
+export const TRANSLATION = '*lächelt* "Testübersetzung: Das ist eine gute Frage!"';
 export const SUMMARY = 'Testzusammenfassung: Kai und die Figur planten einen Ausflug zum Fushimi-Inari-Schrein.';
 
 export function startMockLlm() {
-  const stats = { chat: 0, summary: 0, lastChatSystemPrompt: '', lastChatMessages: [] };
+  const stats = { chat: 0, summary: 0, translate: 0, lastChatSystemPrompt: '', lastChatMessages: [] };
   const server = http.createServer((req, res) => {
     let body = '';
     req.on('data', (chunk) => (body += chunk));
@@ -25,13 +26,15 @@ export function startMockLlm() {
       // Chat replies (every prompt template starts with this heading); other calls such as
       // the memory pipeline only get the canned reply.
       const isChat = system.includes('# Role & Identity');
+      const isTranslation = system.includes('translator for roleplay');
       if (isSummary) stats.summary += 1;
+      if (isTranslation) stats.translate += 1;
       if (isChat) {
         stats.chat += 1;
         stats.lastChatSystemPrompt = system;
         stats.lastChatMessages = request.messages ?? [];
       }
-      const text = isSummary ? SUMMARY : REPLY;
+      const text = isSummary ? SUMMARY : isTranslation ? TRANSLATION : REPLY;
       res.writeHead(200, { 'Content-Type': 'text/event-stream', 'Cache-Control': 'no-cache' });
       // A few chunks, like a real stream.
       for (const piece of text.match(/.{1,40}/gs) ?? []) {
