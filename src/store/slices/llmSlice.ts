@@ -1,18 +1,19 @@
 import { api } from '../../services/api';
 import { CLOUD_PROVIDER_DEFAULTS } from '../helpers';
 import type {
+  DownloadProgressEvent,
   HardwareInfo,
-  ServerStatus,
-  LlamaServerConfig,
+  HfGgufFile,
+  HfModelSummary,
   LayerRecommendation,
-  ScannedModel,
-  SamplingParams,
+  LlamaServerConfig,
+  LlmPreset,
   LlmProviderType,
   OpenRouterModelInfo,
-  LlmPreset,
-  HfModelSummary,
-  HfGgufFile,
-  DownloadProgressEvent,
+  PromptTemplate,
+  SamplingParams,
+  ScannedModel,
+  ServerStatus,
 } from '../../types';
 import type { SliceCreator } from '../storeTypes';
 import { errorMessage } from '../../utils/errors';
@@ -50,6 +51,9 @@ export interface LlmSlice {
   setCloudModel: (model: string) => void;
   cloudContextTokens: number;
   setCloudContextTokens: (tokens: number) => void;
+  /** Editable chat system prompt; null uses the built-in default. */
+  promptTemplate: PromptTemplate | null;
+  setPromptTemplate: (template: PromptTemplate | null) => void;
   cloudProvider: LlmProviderType;
   setCloudProvider: (provider: LlmProviderType) => void;
   openRouterModels: OpenRouterModelInfo[];
@@ -247,6 +251,13 @@ export const createLlmSlice: SliceCreator<LlmSlice> = (set, get) => ({
   },
 
   cloudContextTokens: 32768,
+
+  promptTemplate: null,
+
+  setPromptTemplate: (promptTemplate) => {
+    set({ promptTemplate });
+    get().saveCurrentSettings();
+  },
 
   setCloudContextTokens: (cloudContextTokens) => {
     set({ cloudContextTokens });

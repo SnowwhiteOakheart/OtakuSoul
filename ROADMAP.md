@@ -300,8 +300,11 @@ GitHub Actions wurden bewusst entfernt (Commit `11597c2`). Stattdessen gibt es j
   halbem Kontext, Fortschritt nach jedem Abschnitt gespeichert). Sie steht als „Story So Far“ im System-Prompt und ist
   in der Chat-Seitenleiste (Tab Author's Note) editier- und zurücksetzbar. Getestet mit Gemma 12B: Versprechen,
   Geheimnisse und Verabredungen bleiben erhalten.
-- [ ] Offene Chat-Funktionen aus `Roadmap_abgeschlossen.md` (Phase 9): System-Prompt-Editor, Datei-Anhänge und Vision,
-  Übersetzung.
+- [x] System-Prompt-Editor (Einstellungen → Prompt): Rolle, Stilregeln und Nachspann (nach dem Verlauf) bearbeitbar,
+  Vorlagen Rollenspiel/Erzähler/Companion, Vorschau für den aktiven Charakter. Dabei behoben: `system_prompt` und
+  `post_history_instructions` aus V2-Karten wurden eingelesen, aber nie verwendet; jetzt ersetzen sie Rolle bzw.
+  Nachspann, `{{original}}` bindet die Vorlage ein.
+- [ ] Offene Chat-Funktionen aus `Roadmap_abgeschlossen.md` (Phase 9): Datei-Anhänge und Vision, Übersetzung.
 - [ ] Migrationsimport aus einer bestehenden Soul-of-Waifu-Installation.
 - [x] Lange Chats virtualisiert (`@tanstack/react-virtual`, `chat/MessageList.tsx`); Eingabefeld (`ChatComposer`) und
   Verlauf sind getrennt und memoisiert, Tippen und Streaming rendern den Verlauf nicht mehr neu. Gemessen mit

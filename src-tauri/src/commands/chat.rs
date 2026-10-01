@@ -42,8 +42,15 @@ pub fn abort_chat_generation(state: State<'_, AppState>) -> Result<(), String> {
 }
 
 #[tauri::command]
-pub fn assemble_prompt(context: crate::modules::prompt_builder::PromptContext) -> String {
-    crate::modules::prompt_builder::build_system_prompt(&context)
+pub fn assemble_prompt(
+    context: crate::modules::prompt_builder::PromptContext,
+) -> crate::modules::prompt_builder::AssembledPrompt {
+    crate::modules::prompt_builder::assemble(&context)
+}
+
+#[tauri::command]
+pub fn list_prompt_templates() -> Vec<crate::modules::prompt_builder::BuiltinPromptTemplate> {
+    crate::modules::prompt_builder::builtin_prompt_templates()
 }
 
 #[tauri::command]

@@ -1,15 +1,16 @@
 import { api } from '../services/api';
 import { soundFx } from '../services/soundFx';
-import type { ChatMessage, LorebookEntry, LlmProviderType } from '../types';
+import type { AssembledPrompt, ChatMessage, LorebookEntry, LlmProviderType } from '../types';
 import type { AppStoreState } from './storeTypes';
 
 export async function resolvePromptWithLore(
   state: AppStoreState,
   recentMessages: ChatMessage[],
   latestUserText?: string,
-): Promise<string> {
+): Promise<AssembledPrompt> {
   const {
     activeCharacter,
+    promptTemplate,
     activePersona,
     stateVariables,
     cognitiveOverview,
@@ -25,7 +26,7 @@ export async function resolvePromptWithLore(
     sceneTensionEnabled,
   } = state;
 
-  if (!activeCharacter) return '';
+  if (!activeCharacter) return { system: '', post_history: null };
 
   const activeSession = chatSessions.find((s) => s.id === activeChatId);
   const scanDepth = Math.max(1, lorebookScanDepth || 5);
@@ -108,6 +109,7 @@ export async function resolvePromptWithLore(
     author_note: activeSession?.author_note,
     author_note_depth: activeSession?.author_note_depth,
     chat_summary: activeSession?.summary || undefined,
+    template: promptTemplate ?? undefined,
   });
 }
 
@@ -139,6 +141,6 @@ export const CLOUD_PROVIDER_DEFAULTS: Partial<Record<LlmProviderType, { endpoint
   mistral: { endpoint: 'https://api.mistral.ai/v1/chat/completions', model: 'mistral-large-latest' },
 };
 
-export type SettingsSection = 'general' | 'server' | 'providers' | 'sampler' | 'hub';
+export type SettingsSection = 'general' | 'server' | 'providers' | 'sampler' | 'prompt' | 'hub';
 
 export type AppTab = 'chat' | 'characters' | 'lorebooks' | 'stage' | 'companion' | 'settings' | 'hub' | 'integrations';

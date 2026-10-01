@@ -12,6 +12,75 @@ pub struct StateVariable {
     pub max_value: Option<i32>,
 }
 
+/// The editable parts of the system prompt. `{{char}}` and `{{user}}` are filled in; a card's
+/// own `system_prompt`/`post_history_instructions` replace `main`/`post_history` and can include
+/// them with `{{original}}` (Character Card V2).
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize, TS)]
+#[ts(export)]
+#[serde(default)]
+pub struct PromptTemplate {
+    /// Opening instruction: who the model is and whom it talks to.
+    pub main: String,
+    /// Style rules, sent as "Formatting & Roleplay Conventions".
+    pub style: String,
+    /// Sent as the last system message after the chat history; empty for none.
+    pub post_history: String,
+}
+
+impl Default for PromptTemplate {
+    fn default() -> Self {
+        builtin_prompt_templates().remove(0).template
+    }
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize, TS)]
+#[ts(export)]
+pub struct BuiltinPromptTemplate {
+    /// Stable id; the frontend translates the name by it.
+    pub id: String,
+    pub template: PromptTemplate,
+}
+
+/// Ready-made templates; the first is the default and matches the original fixed prompt.
+pub fn builtin_prompt_templates() -> Vec<BuiltinPromptTemplate> {
+    let make = |id: &str, main: &str, style: &str, post_history: &str| BuiltinPromptTemplate {
+        id: id.into(),
+        template: PromptTemplate {
+            main: main.into(),
+            style: style.into(),
+            post_history: post_history.into(),
+        },
+    };
+    vec![
+        make(
+            "roleplay",
+            "# Role & Identity\nYou fully become **{{char}}** and reply only as this character.\nYou are talking with **{{user}}**.",
+            "- Always put actions, gestures, facial expressions and descriptions in asterisks (e.g. *smiles softly and leans forward*).\n\
+             - Always put spoken words in quotation marks (e.g. \"All right, as you wish!\").\n\
+             - Keep actions and spoken words clearly separated.",
+            "",
+        ),
+        make(
+            "narrator",
+            "# Role & Identity\nYou are the narrator of an interactive story. Portray **{{char}}** and the world around them for **{{user}}**.\n\
+             Never decide what {{user}} says, thinks or does; leave their actions to them.",
+            "- Write vivid prose in the third person and past tense, like a novel.\n\
+             - Describe surroundings, body language and atmosphere; put dialogue in quotation marks.\n\
+             - End each reply at a moment that invites {{user}} to act.",
+            "",
+        ),
+        make(
+            "companion",
+            "# Role & Identity\nYou are **{{char}}**, a close companion chatting with **{{user}}** in everyday life.\n\
+             Be warm, attentive and personal; remember what {{user}} tells you and ask about it later.",
+            "- Reply like a chat message: short (one to three sentences), natural and casual.\n\
+             - No asterisk actions or stage directions; at most an occasional emoji.\n\
+             - Stay in character as {{char}}; no out-of-character meta commentary.",
+            "",
+        ),
+    ]
+}
+
 #[derive(Debug, Clone, Serialize, Deserialize, Default, TS)]
 #[ts(export)]
 pub struct PromptContext {
@@ -35,6 +104,49 @@ pub struct PromptContext {
     #[serde(default)]
     #[ts(optional)]
     pub chat_summary: Option<String>,
+    /// Editable prompt parts; the default template when missing.
+    #[serde(default)]
+    #[ts(optional)]
+    pub template: Option<PromptTemplate>,
+}
+
+/// System prompt plus the instruction that goes after the chat history.
+#[derive(Debug, Clone, Serialize, Deserialize, TS)]
+#[ts(export)]
+pub struct AssembledPrompt {
+    pub system: String,
+    pub post_history: Option<String>,
+}
+
+pub fn assemble(ctx: &PromptContext) -> AssembledPrompt {
+    AssembledPrompt {
+        system: build_system_prompt(ctx),
+        post_history: post_history_instruction(ctx),
+    }
+}
+
+/// A card's override of a template part: empty keeps the template, `{{original}}` includes it.
+fn card_override(card: Option<&str>, original: &str) -> String {
+    match card.map(str::trim).filter(|c| !c.is_empty()) {
+        Some(card) => card.replace("{{original}}", original),
+        None => original.to_string(),
+    }
+}
+
+/// The system message sent after the chat history (card or template), macros filled; `None`
+/// when there is nothing to send.
+pub fn post_history_instruction(ctx: &PromptContext) -> Option<String> {
+    let template = ctx.template.clone().unwrap_or_default();
+    let text = card_override(
+        ctx.character.post_history_instructions.as_deref(),
+        &template.post_history,
+    );
+    let text = text
+        .replace("{{char}}", &ctx.char_name)
+        .replace("{{Char}}", &ctx.char_name)
+        .replace("{{user}}", &ctx.user_name)
+        .replace("{{User}}", &ctx.user_name);
+    (!text.trim().is_empty()).then(|| text.trim().to_string())
 }
 
 /// Placeholder that memory fields hold when there is nothing to say (in any content language).
@@ -64,11 +176,13 @@ pub fn build_system_prompt(ctx: &PromptContext) -> String {
             .replace("{{User}}", &ctx.user_name)
     };
 
-    // 1. Roleplay & Identity Directive
-    parts.push(format!(
-        "# Role & Identity\nYou fully become **{}** and reply only as this character.\nYou are talking with **{}**.",
-        ctx.char_name, ctx.user_name
-    ));
+    let template = ctx.template.clone().unwrap_or_default();
+
+    // 1. Roleplay & Identity Directive (template, or the card's own system prompt)
+    let main = card_override(ctx.character.system_prompt.as_deref(), &template.main);
+    if !main.trim().is_empty() {
+        parts.push(replace_macros(main.trim()));
+    }
 
     // 2. Character Description
     if !ctx.character.description.trim().is_empty() {
@@ -285,11 +399,8 @@ pub fn build_system_prompt(ctx: &PromptContext) -> String {
     }
 
     // 9. Formatting & Roleplay Convention Directive
-    let mut formatting_rules = vec![
-        "- Always put actions, gestures, facial expressions and descriptions in asterisks (e.g. *smiles softly and leans forward*).",
-        "- Always put spoken words in quotation marks (e.g. \"All right, as you wish!\").",
-        "- Keep actions and spoken words clearly separated.",
-    ];
+    let style = replace_macros(template.style.trim());
+    let mut formatting_rules: Vec<&str> = style.lines().filter(|l| !l.trim().is_empty()).collect();
 
     if !ctx.allow_reasoning.unwrap_or(false) {
         formatting_rules.push("- Reply immediately, vividly and directly in character.");
@@ -298,10 +409,84 @@ pub fn build_system_prompt(ctx: &PromptContext) -> String {
             .push("- Start your reply directly with your character's words or actions.");
     }
 
-    parts.push(format!(
-        "## Formatting & Roleplay Conventions\n{}",
-        formatting_rules.join("\n")
-    ));
+    if !formatting_rules.is_empty() {
+        parts.push(format!(
+            "## Formatting & Roleplay Conventions\n{}",
+            formatting_rules.join("\n")
+        ));
+    }
 
     parts.join("\n\n")
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    fn context(system_prompt: Option<&str>) -> PromptContext {
+        PromptContext {
+            char_name: "Aiko".into(),
+            user_name: "Kai".into(),
+            character: CharacterData {
+                name: "Aiko".into(),
+                system_prompt: system_prompt.map(Into::into),
+                ..CharacterData::default()
+            },
+            ..PromptContext::default()
+        }
+    }
+
+    #[test]
+    fn default_template_keeps_the_original_prompt() {
+        let prompt = build_system_prompt(&context(None));
+        assert!(prompt.starts_with(
+            "# Role & Identity\nYou fully become **Aiko** and reply only as this character.\nYou are talking with **Kai**."
+        ));
+        assert!(prompt.contains(
+            "## Formatting & Roleplay Conventions\n- Always put actions, gestures, facial expressions and descriptions in asterisks"
+        ));
+        assert!(
+            prompt.contains(
+                "- Keep actions and spoken words clearly separated.\n- Reply immediately"
+            )
+        );
+    }
+
+    #[test]
+    fn card_system_prompt_replaces_the_main_prompt() {
+        let prompt = build_system_prompt(&context(Some("{{original}}\nAlways rhyme, {{user}}.")));
+        assert!(prompt.starts_with("# Role & Identity\nYou fully become **Aiko**"));
+        assert!(prompt.contains("Always rhyme, Kai."));
+
+        let replaced = build_system_prompt(&context(Some("You are a pirate called {{char}}.")));
+        assert!(replaced.starts_with("You are a pirate called Aiko."));
+        assert!(!replaced.contains("You fully become"));
+    }
+
+    #[test]
+    fn custom_template_and_post_history() {
+        let mut ctx = context(None);
+        ctx.template = Some(PromptTemplate {
+            main: "Be {{char}}.".into(),
+            style: String::new(),
+            post_history: "Stay short, {{user}}.".into(),
+        });
+        ctx.allow_reasoning = Some(true);
+        let prompt = build_system_prompt(&ctx);
+        assert!(prompt.starts_with("Be Aiko."));
+        assert!(!prompt.contains("Formatting & Roleplay Conventions"));
+        assert_eq!(
+            post_history_instruction(&ctx).as_deref(),
+            Some("Stay short, Kai.")
+        );
+
+        ctx.character.post_history_instructions = Some("{{original}} No emojis.".into());
+        assert_eq!(
+            post_history_instruction(&ctx).as_deref(),
+            Some("Stay short, Kai. No emojis.")
+        );
+        ctx.template = None;
+        ctx.character.post_history_instructions = None;
+        assert_eq!(post_history_instruction(&ctx), None);
+    }
 }

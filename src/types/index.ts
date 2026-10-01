@@ -25,6 +25,9 @@ import type { ChatSession } from './generated/ChatSession';
 import type { ChubCharacterDetail } from './generated/ChubCharacterDetail';
 import type { CombatCondition } from './generated/CombatCondition';
 import type { ContextUsage } from './generated/ContextUsage';
+import type { PromptTemplate } from './generated/PromptTemplate';
+import type { BuiltinPromptTemplate } from './generated/BuiltinPromptTemplate';
+import type { AssembledPrompt } from './generated/AssembledPrompt';
 import type { ChatSummaryRequest } from './generated/ChatSummaryRequest';
 import type { ConsequenceEntry } from './generated/ConsequenceEntry';
 import type { DcCheckResult } from './generated/DcCheckResult';
@@ -95,6 +98,9 @@ export type {
   CombatCondition,
   ConsequenceEntry,
   ContextUsage,
+  PromptTemplate,
+  BuiltinPromptTemplate,
+  AssembledPrompt,
   DcCheckResult,
   DiaryEntry,
   DiscordBotConfig,
@@ -349,6 +355,7 @@ export interface PromptContext {
   author_note?: string;
   author_note_depth?: number;
   chat_summary?: string;
+  template?: PromptTemplate;
 }
 
 // Phase 6: Soul Stage Tabletop RPG
@@ -677,6 +684,7 @@ export interface AppSettings {
   theme?: 'obsidian' | 'cyberpunk' | 'sakura' | 'midnight' | 'emerald' | string;
   color_mode?: 'system' | 'light' | 'dark';
   onboarding_completed?: boolean;
+  prompt_template?: PromptTemplate;
 }
 
 // Phase 14: Live2D & Emotion Classification

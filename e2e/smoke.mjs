@@ -66,6 +66,24 @@ try {
   await send('Was weißt du noch von vorhin?');
   assert.ok(mock.stats.lastChatSystemPrompt.includes(SUMMARY), 'System-Prompt enthält die Zusammenfassung nicht');
   await shot(browser, '05-mit-zusammenfassung');
+  step('Prompt-Vorlage „Companion“ wählen, Vorschau, speichern');
+  await browser.$('button=Einstellungen').click();
+  await browser.$('button[role="tab"]=Prompt').click();
+  await browser.$('[aria-label="Vorlagen"]').$('button=Companion').click();
+  await browser.$('button*=Vorschau für').click();
+  await browser.waitUntil(async () => (await browser.$('pre').getText()).includes('a close companion chatting with'), {
+    timeout: 10_000,
+    timeoutMsg: 'Vorschau zeigt die Companion-Vorlage nicht',
+  });
+  await shot(browser, '06-prompt-editor');
+  await browser.$('button=Speichern').click();
+  await browser.$('button=Chat').click();
+  await send('Wie war dein Tag?');
+  assert.ok(
+    mock.stats.lastChatSystemPrompt.includes('Reply like a chat message'),
+    'Chat nutzt die gespeicherte Prompt-Vorlage nicht',
+  );
+
   console.log(`\n✔ Rauchtest bestanden (${mock.stats.chat} Chat-Anfragen, ${mock.stats.summary} Zusammenfassung)`);
 } catch (e) {
   failed = true;

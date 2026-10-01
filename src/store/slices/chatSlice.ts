@@ -5,6 +5,7 @@ import { extractStateUpdates, applyStateUpdates } from '../../utils/stateParser'
 import { HUD_PRESETS } from '../../constants/hudPresets';
 import { resolvePromptWithLore } from '../helpers';
 import type {
+  AssembledPrompt,
   CharacterProfile,
   ChatMessage,
   ChatSession,
@@ -60,6 +61,10 @@ export interface ChatSlice {
   loadVoiceConfigForCharacter: (charId: string) => Promise<void>;
   saveVoiceConfigForCharacter: (charId: string, config: VoiceConfig) => Promise<void>;
 }
+
+/** The card's or template's post-history instruction as a trailing system message. */
+const postHistory = (prompt: AssembledPrompt | null): ChatMessage[] =>
+  prompt?.post_history ? [{ role: 'system', content: prompt.post_history }] : [];
 
 /** Summarize once this many conversation messages have left the context window. */
 const SUMMARY_BATCH = 6;
@@ -368,8 +373,8 @@ export const createChatSlice: SliceCreator<ChatSlice> = (set, get) => ({
 
     set({ isGenerating: true, streamingText: '', streamingThought: '' });
 
-    const promptText = await resolvePromptWithLore(get(), priorFlat);
-    const systemPromptMsg: ChatMessage = { role: 'system', content: promptText };
+    const prompt = await resolvePromptWithLore(get(), priorFlat);
+    const systemPromptMsg: ChatMessage = { role: 'system', content: prompt.system };
 
     const payloadMessages = [systemPromptMsg, ...priorFlat];
 
@@ -382,6 +387,7 @@ export const createChatSlice: SliceCreator<ChatSlice> = (set, get) => ({
         content: `[Author's note: ${activeSession.author_note}]`,
       });
     }
+    payloadMessages.push(...postHistory(prompt));
 
     const endpoint =
       selectedBackend === 'local'
@@ -465,14 +471,14 @@ export const createChatSlice: SliceCreator<ChatSlice> = (set, get) => ({
 
     set({ isGenerating: true, streamingText: '', streamingThought: '' });
 
-    const promptText = await resolvePromptWithLore(get(), historyFlat);
-    const systemPromptMsg: ChatMessage = { role: 'system', content: promptText };
+    const prompt = await resolvePromptWithLore(get(), historyFlat);
+    const systemPromptMsg: ChatMessage = { role: 'system', content: prompt.system };
     const continueInstruction: ChatMessage = {
       role: 'system',
       content: '[Anweisung: Setze deine letzte Nachricht nahtlos und flüssig fort. Wiederhole keine bereits geschriebenen Sätze!]',
     };
 
-    const payloadMessages = [systemPromptMsg, ...historyFlat, continueInstruction];
+    const payloadMessages = [systemPromptMsg, ...historyFlat, ...postHistory(prompt), continueInstruction];
 
     const endpoint =
       selectedBackend === 'local'
@@ -604,9 +610,10 @@ export const createChatSlice: SliceCreator<ChatSlice> = (set, get) => ({
 
     // 2. Build context-aware system prompt
     let systemPromptMsg: ChatMessage | null = null;
+    let prompt: AssembledPrompt | null = null;
     if (activeCharacter) {
-      const promptText = await resolvePromptWithLore(get(), updatedFlat, content);
-      systemPromptMsg = { role: 'system', content: promptText };
+      prompt = await resolvePromptWithLore(get(), updatedFlat, content);
+      systemPromptMsg = { role: 'system', content: prompt.system };
     }
 
     const payloadMessages = systemPromptMsg
@@ -622,6 +629,7 @@ export const createChatSlice: SliceCreator<ChatSlice> = (set, get) => ({
         content: `[Author's note: ${activeSession.author_note}]`,
       });
     }
+    payloadMessages.push(...postHistory(prompt));
 
     const endpoint =
       selectedBackend === 'local'

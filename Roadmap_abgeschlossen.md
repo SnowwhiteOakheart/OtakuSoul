@@ -75,7 +75,7 @@ Die Reihenfolge ist nach Abhängigkeit und Nutzen sortiert: erst das, was jede a
 - [x] **State Variables aus LLM-Antworten parsen** – robuster `<state>`-JSON-Interceptor (`stateParser.ts`), Tag-Stripping aus Chatblasen + **11 Rollenspiel-HUD-Presets** (Romance, Fantasy RPG, Survival, Horror, Cyberpunk, Slice of Life, Detektiv, Space Opera, Cultivation, Comedy, Tabletop Tactical)
 - [x] **Kontextfenster-Management** *(umgesetzt, siehe ROADMAP.md)* – Token-Zählung (`tiktoken-rs` oder `/tokenize` des llama-servers), Response-Reserve, älteste Nachrichten abschneiden (SoW: `PromptEngine._get_max_context_tokens`)
 - [x] **Automatische Zusammenfassung** *(umgesetzt, siehe ROADMAP.md)* alter Nachrichten + Summary-Editor (SoW: `build_summary_prompt_blocks`, `open_summary_editor`, `save_interval_summary`)
-- [ ] **System-Prompt-Editor** & Prompt-Vorlagen
+- [x] **System-Prompt-Editor** & Prompt-Vorlagen *(umgesetzt, siehe ROADMAP.md)*
 - [ ] **Datei-Anhänge** (Text, PDF, Bilder für Vision-Modelle) (SoW: `open_attach_file_dialog`)
 - [ ] **Chat-Übersetzung** einzelner Nachrichten (SoW: `translator.py`)
 - [ ] **Chat-Erscheinungsbild** – Hintergründe pro Chat, Schrift, Blasenfarben, Themes (SoW: `on_chat_appearance_changed`, `open_chat_background_changer`)

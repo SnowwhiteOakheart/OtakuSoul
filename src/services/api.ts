@@ -45,6 +45,8 @@ import {
   UserPersona,
   ChatSession,
   ChatSummaryRequest,
+  AssembledPrompt,
+  BuiltinPromptTemplate,
   StoredChatMessage,
   OpenRouterModelInfo,
   LlmPreset,
@@ -192,8 +194,13 @@ export const api = {
     });
   },
 
-  assemblePrompt: async (context: PromptContext): Promise<string> => {
-    return await invoke<string>('assemble_prompt', { context });
+  /** System prompt plus the instruction sent after the chat history. */
+  assemblePrompt: async (context: PromptContext): Promise<AssembledPrompt> => {
+    return await invoke<AssembledPrompt>('assemble_prompt', { context });
+  },
+
+  listPromptTemplates: async (): Promise<BuiltinPromptTemplate[]> => {
+    return await invoke<BuiltinPromptTemplate[]>('list_prompt_templates');
   },
 
   readFileBinary: async (filePath: string): Promise<Uint8Array> => {

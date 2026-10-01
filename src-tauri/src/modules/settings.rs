@@ -65,6 +65,8 @@ pub struct AppSettings {
     /// from before the wizard existed count as already set up.
     #[serde(default = "default_true")]
     pub onboarding_completed: bool,
+    /// Editable parts of the chat system prompt.
+    pub prompt_template: crate::modules::prompt_builder::PromptTemplate,
 }
 
 fn default_true() -> bool {
@@ -129,6 +131,7 @@ impl Default for AppSettings {
             theme: "obsidian".to_string(),
             color_mode: "system".to_string(),
             onboarding_completed: false,
+            prompt_template: Default::default(),
         }
     }
 }

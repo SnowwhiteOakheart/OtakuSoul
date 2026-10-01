@@ -1,11 +1,12 @@
 import { useState } from 'react';
 import { useAppStore, type SettingsSection, useStoreFields } from '../../store/useAppStore';
 import { useTranslation } from '../../i18n';
-import { Cpu, RefreshCw, Palette, Key, Sliders, Download } from 'lucide-react';
+import { Cpu, RefreshCw, Palette, Key, Sliders, Download, FileText } from 'lucide-react';
 import { GeneralSettings } from './sections/GeneralSettings';
 import { ServerSettings } from './sections/ServerSettings';
 import { ProviderSettings } from './sections/ProviderSettings';
 import { SamplerSettings } from './sections/SamplerSettings';
+import { PromptSettings } from './sections/PromptSettings';
 import { ModelHubSettings } from './sections/ModelHubSettings';
 import { Button, Tabs, type TabItem } from '../ui';
 
@@ -21,6 +22,7 @@ export const SettingsView = () => {
     { value: 'server', label: t('settings.tabServer'), icon: Cpu, panelId: 'settings-panel-server' },
     { value: 'providers', label: t('settings.tabProviders'), icon: Key, panelId: 'settings-panel-providers' },
     { value: 'sampler', label: t('settings.tabSampler'), icon: Sliders, panelId: 'settings-panel-sampler' },
+    { value: 'prompt', label: t('settings.tabPrompt'), icon: FileText, panelId: 'settings-panel-prompt' },
     { value: 'hub', label: t('settings.tabHub'), icon: Download, panelId: 'settings-panel-hub' },
   ];
 
@@ -66,6 +68,7 @@ export const SettingsView = () => {
           {activeTab === 'server' && <ServerSettings />}
           {activeTab === 'providers' && <ProviderSettings />}
           {activeTab === 'sampler' && <SamplerSettings />}
+          {activeTab === 'prompt' && <PromptSettings />}
           {activeTab === 'hub' && <ModelHubSettings onNavigate={setActiveTab} />}
         </div>
       </div>

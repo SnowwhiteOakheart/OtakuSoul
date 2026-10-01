@@ -114,6 +114,7 @@ pub fn run() {
             commands::lorebook::evaluate_lorebook_context,
             commands::lorebook::evaluate_multi_lorebooks,
             commands::chat::assemble_prompt,
+            commands::chat::list_prompt_templates,
             commands::app::read_file_binary,
             commands::memory::get_cognitive_overview,
             commands::memory::update_psychology,
