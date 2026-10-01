@@ -37,13 +37,15 @@ Ob ruhiger Alltagsdialog, langfristige Charakterentwicklung oder eine dramatisch
 | 🎭 **Charaktere & KI-Assistent** | Importiere Tavern-/SillyTavern-Character-Cards, Personas und Lorebooks. Erstelle neue Figuren mit dem geführten 5-Schritte KI-Wizard. |
 | 🌐 **Soul Hub & Gateways** | Stöbere im integrierten Community-Hub: Soul Gateway, Chub AI Browser mit automatischer Lorebook-Extraktion, Welt-Lorebooks und Soul-Stage-Szenarien. |
 | 🎲 **Soul Stage** | Verwandle Gespräche in interaktive Abenteuer: Szenenordner (inkl. 12 Kapiteln *No Game No Life*), Multi-Akteur-Züge, Würfelproben, Kampagnen-Uhren, Initiative, dynamische Hintergründe mit Lock und zuverlässige Backups. |
-| 🎙️ **Stimme & Sprache** | Nutze Edge-TTS, lokales Kokoro, ElevenLabs oder OpenAI-kompatible Stimmen. Aktionen und Regieanweisungen lassen sich gezielt vom gesprochenen Dialog trennen. |
+| 💬 **Chat für lange Geschichten** | Der Verlauf wird automatisch an das Kontextfenster des Modells angepasst; was herausfällt, fasst das Modell als „bisherige Handlung“ zusammen (editierbar). Swipes, Weiterschreiben, Author's Note, eigener System-Prompt mit Vorlagen, Bilder/PDF/Text als Anhänge und Übersetzung einzelner Nachrichten. |
+| 🎙️ **Stimme & Sprache** | Lokal und ohne Python über CrispASR: Qwen3-TTS (10 Sprachen), Chatterbox (23 Sprachen) und deutsches Kokoro, dazu **Stimmklonen** aus einer eigenen Aufnahme (nur mit Einwilligung, Audio wird als KI-generiert markiert). Außerdem Edge-TTS, ElevenLabs und OpenAI-kompatible Stimmen. Aktionen und Regieanweisungen lassen sich gezielt vom gesprochenen Dialog trennen. |
 | 🤖 **Soul Companion** | Echter Desktop-Agent mit transparentem Always-on-Top Floating-Overlay, Click-Through, Neurohormonen, proaktivem Ansprechen, echten Desktop-Tools, Sandbox, MCP-Client und 25s Human-in-the-Loop Sicherheitsbanner. |
 | 📱 **Mobiler Web-Client** | Chatte vom Smartphone oder Tablet im selben WLAN: Autarker Axum-Server, Token-Auth, DNS-Rebinding-Schutz, Streaming und QR-Code-Direktscan. |
-| 🎮 **Discord & Medien** | Discord Rich Presence (RPC) und nativer Gateway-Bot (`!ask`, `!character`, `!status`), sowie KI-Bildgenerierung (A1111, ComfyUI, DALL-E 3, NovelAI, FLUX) direkt aus dem Chat. |
+| 🖼️ **Bilder generieren** | Lokal mit stable-diffusion.cpp (Animagine/Illustrious XL, FLUX.1, Qwen-Image, FLUX.2) – passt der VRAM nicht neben das Chat-Modell, macht die App gestuft Platz und lädt danach alles wieder. Das Chat-Modell schreibt den Bild-Prompt aus Charakter und Szene. Alternativ Automatic1111, ComfyUI, DALL-E 3 oder NovelAI. |
+| 🎮 **Discord** | Discord Rich Presence (RPC) und nativer Gateway-Bot (`!ask`, `!character`, `!status`). |
 | 🌍 **i18n, Themes & Diagnose** | Dreisprachig (`de`, `en`, `ru`), 5 lebendige Akzent-Themes mit hellem, dunklem oder systemgesteuertem Modus, globale Befehlspalette (`Strg/Cmd+K`), rotierender File-Logger, Live-Log-Viewer und Update-Checker. |
 | 💾 **Profil-Backups** | Portabler ZIP-Export mit Gruppen-Auswahl und 5-facher automatischer Sicherheits-Snapshot-Rotation vor jedem Restore. |
-| 🔐 **Local First** | Betreibe GGUF-Modelle direkt auf deinem Rechner. OtakuSoul erkennt Hardware und VRAM, wählt sinnvolle Laufzeitparameter und verwaltet den lokalen `llama-server`. |
+| 🔐 **Local First** | Betreibe GGUF-Modelle direkt auf deinem Rechner. OtakuSoul lädt die passenden Laufzeiten selbst (llama.cpp, PrismML, stable-diffusion.cpp, CrispASR – CUDA, Vulkan, ROCm oder CPU, per SHA-256 geprüft), erkennt NVIDIA-, AMD- und Intel-GPUs samt freiem VRAM und nutzt immer die dedizierte Grafikkarte statt einer iGPU. |
 
 ## Charaktere, die sich entwickeln
 
@@ -61,7 +63,7 @@ Ein integrierter Memory-Inspector macht diese Ebenen sichtbar und editierbar. Ba
 
 ### Lokal
 
-OtakuSoul startet und überwacht einen lokalen `llama-server`, erkennt verfügbare CPU-, RAM- und GPU-Ressourcen und hilft bei einer passenden Konfiguration. Der integrierte Modell-Hub unterstützt die Suche und den Download von GGUF-Modellen sowie die Erkennung gängiger Quantisierungen.
+OtakuSoul lädt die passende Laufzeit (llama.cpp oder für Ternary-Bonsai-Modelle den PrismML-Fork) direkt in der App, startet und überwacht den lokalen `llama-server` und empfiehlt GPU-Layer und Kontextgröße passend zu CPU, RAM und GPU. Der integrierte Modell-Hub sucht und lädt GGUF-Modelle von Hugging Face. Vision-Modelle (z. B. Gemma, Qwen-VL) sehen angehängte Bilder, wenn in den Server-Einstellungen die passende `mmproj`-Datei gewählt ist.
 
 ### Cloud
 
@@ -112,11 +114,12 @@ OtakuSoul unterstützt unter anderem:
 - Model Context Protocol (MCP) Server (stdio & HTTP/SSE) sowie Skript-Plugins
 - Lokaler Axum Webserver für mobile Endgeräte (iOS Safari / Android) mit QR-Code
 - Discord Rich Presence (RPC) und Discord Gateway WebSocket Bot
-- KI-Bildgenerierung via Automatic1111, ComfyUI, DALL-E 3, NovelAI und FLUX
+- KI-Bildgenerierung lokal (stable-diffusion.cpp) oder via Automatic1111, ComfyUI, DALL-E 3 und NovelAI
+- Bilder, PDF- und Textdateien als Chat-Anhänge (Vision-Modelle lokal oder in der Cloud)
 - Vollständige ZIP-Profil-Sicherung & Restore mit 5-facher Sicherheits-Snapshot-Rotation
 - GGUF-Modelle für lokale Inferenz
 - VRM 0.x/1.0 und Live2D Cubism 2/4
-- Edge-TTS, Kokoro, ElevenLabs und OpenAI-kompatible Sprachdienste
+- Lokale Sprachausgabe über CrispASR (Qwen3-TTS, Chatterbox, Kokoro), Edge-TTS, ElevenLabs und OpenAI-kompatible Sprachdienste
 - lokale Whisper- und OpenAI-kompatible Transkription
 
 ## Installation & Start
@@ -174,12 +177,24 @@ Hand bearbeiten. `src/types/wireCheck.ts` prüft, dass die übrigen handgeschrie
 ### Tests ausführen
 
 ```bash
-# Frontend Unit-Tests (Vitest)
-npm run test
+# Alles, was vor einem Commit grün sein muss: oxlint, tsc, Vitest, cargo fmt/clippy/test
+npm run check
 
-# Backend Tests (Cargo)
-cd src-tauri && cargo test
+# End-to-End-Rauchtest: baut die Debug-Version nach target/e2e und bedient sie über tauri-driver
+# gegen ein Mock-LLM (Chat, Kontextfenster, Zusammenfassung, Prompt-Vorlagen, Anhänge, Übersetzung)
+npm run e2e
+
+# Lange Chats messen (1000 Nachrichten: Öffnen, Tastendruck, DOM-Größe)
+npm run e2e:perf
+
+# GPU-Tests mit echten Modellen (lädt große Modelle, nur auf Wunsch)
+cargo test --manifest-path src-tauri/Cargo.toml --test gpu_e2e -- --ignored --nocapture
 ```
+
+Der E2E-Test braucht `tauri-driver` (`cargo install tauri-driver --locked`) und `WebKitWebDriver` (Arch: `webkitgtk-6.0`,
+Debian/Ubuntu: `webkit2gtk-driver`); Details in [`e2e/README.md`](e2e/README.md). Er läuft mit einem Wegwerf-Profil:
+Ist `OTAKUSOUL_HOME` gesetzt, legt die App Einstellungen und Daten dort ab und läuft auch neben einer geöffneten
+OtakuSoul-Instanz, ohne deren Daten zu berühren.
 
 ### Produktions-Build & Paketierung
 
@@ -222,13 +237,12 @@ Die App liest `releases/latest/download/latest.json`.
 Das Skript bricht ab, wenn ein Modell keinen Eintrag in `assets/vrm/lizenzen.txt` hat. Nur Modelle aufnehmen, deren Lizenz
 die Weitergabe erlaubt.
 
-### Optionale PrismML-/Bonsai-Laufzeit unter Linux
+### Laufzeiten (llama.cpp, PrismML, stable-diffusion.cpp, CrispASR)
 
-Kompakte `PQ2_0`- und `PTQ1_0`-Modelle benötigen die separate PrismML-Laufzeit. OtakuSoul hält sie von der normalen llama.cpp-Installation getrennt und wählt sie nur für passende Modelle aus:
-
-```bash
-./tools/install_prism_runtime.sh
-```
+Die App lädt alle Laufzeiten selbst (*Einstellungen → llama-server*, *Integrationen → Bildgenerierung*, Stimmen-Dialog)
+und empfiehlt die passende Variante: CUDA unter Linux nur, wenn die passende CUDA-Version installiert ist, sonst
+Vulkan. Kompakte `PQ2_0`-/`PTQ1_0`-Modelle (Ternary Bonsai) laufen automatisch mit dem PrismML-Fork. Für Entwickler
+gibt es zusätzlich `./tools/install_prism_runtime.sh`, das den Fork nach `bin/prism-cuda/` legt.
 
 ## Technologie
 
@@ -237,8 +251,9 @@ Kompakte `PQ2_0`- und `PTQ1_0`-Modelle benötigen die separate PrismML-Laufzeit.
 - **Frontend:** React 19, TypeScript, Vite und Tailwind CSS 4
 - **UI-System:** Theme-fähige, barrierefrei getestete Primitive für Buttons, Tabs, Auswahlfelder, Schalter, Slider, Dialoge, Feedback und layoutstabile Skeleton-Loader; konsistente Lucide-Icons statt plattformabhängiger Emoji-Glyphen
 - **Avatare:** Three.js, `@pixiv/three-vrm`, PixiJS und Live2D Cubism
-- **Lokale KI:** llama.cpp-kompatibler Server und GGUF
-- **Audio:** Web Audio, Edge-TTS, Kokoro und whisper.cpp
+- **Lokale KI:** llama.cpp (und PrismML-Fork) mit GGUF, stable-diffusion.cpp für Bilder, CrispASR für Sprache
+- **Audio:** Web Audio, CrispASR, Edge-TTS, Kokoro und whisper.cpp
+- **Tests:** Vitest, cargo test und ein E2E-Rauchtest mit WebdriverIO + `tauri-driver`
 
 Die native Rust-Basis hält die Anwendung kompakt und reaktionsschnell, während die WebGL-Oberfläche Raum für ausdrucksstarke Avatare und ein modernes, atmosphärisches Interface schafft.
 

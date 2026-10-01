@@ -18,18 +18,22 @@
 1. **Benutzer-Anrede (Informell):**
    Sprich den Benutzer **immer mit „Du“** an, niemals mit „Sie“.
 2. **Git-Disziplin nach jeder Phase:**
-   Nach jedem Meilenstein, jeder Phase oder größeren Feature-Fertigstellung wird ein sauberer Git-Commit erstellt und direkt auf GitHub (`origin main`) gepusht (`git push origin main`).
+   Thematisch getrennte Commits direkt auf `main`, Commit-Messages auf Deutsch mit Conventional-Commit-Präfix
+   (`feat(chat): …`, `fix(gpu): …`). Nach jedem Commit wird direkt gepusht (`git push origin main`). Der Nutzer arbeitet
+   parallel im selben Verzeichnis: fremde uncommittete Änderungen nie mitcommitten. `ROADMAP.md` (und ggf.
+   `Roadmap_TTS.md`) im selben Commit abhaken. Kein GitHub-CI – geprüft wird lokal.
 3. **Lebendige Dokumentation (`README.md` & `AI.md`):**
    Sowohl `README.md` als auch `AI.md` müssen **stets aktuell gehalten werden**. Sobald neue Module, Typen oder Features hinzukommen, werden beide Dokumente synchronisiert.
 4. **Fehler- und Warnungsfreiheit:**
    Es dürfen **keine Compiler- oder Linter-Warnungen** existieren.
-   Vor jedem Commit muss geprüft werden:
-   - `cargo check` (0 Warnungen, 0 Fehler)
-   - `cargo test` (alle Unit-Tests grün)
-   - `npm run build` (TypeScript-Kompilierung & Vite-Bundle fehlerfrei)
+   Vor jedem Commit muss `npm run check` grün sein (oxlint, `tsc --noEmit`, Vitest, `cargo fmt --check`,
+   `cargo clippy --all-targets -D warnings`, `cargo test`); Commit und Push an dessen Exit-Code koppeln.
+   UI-Änderungen zusätzlich mit `npm run e2e` (Rauchtest über `tauri-driver`) prüfen und die Screenshots in
+   `e2e/screenshots/` ansehen.
 5. **Cross-Platform-Konformität:**
    OtakuSoul ist von Anfang an für **Linux**, **Windows**, **macOS** sowie vorbereitend für **Mobile (iOS & Android)** ausgelegt:
-   - Keine hartcodierten OS-Pfade verwenden. Nutze `directories::ProjectDirs` für Standardpfade (`%APPDATA%`, `~/.local/share`, `~/Library/Application Support`).
+   - Keine hartcodierten OS-Pfade verwenden. Konfigurations- und Datenordner kommen ausschließlich aus
+     `paths::base_dirs()` (`directories::ProjectDirs`, bzw. `$OTAKUSOUL_HOME/config|data` für isolierte Testprofile).
    - Plattformspezifischer Code (z.B. Linux `PR_SET_PDEATHSIG`) muss sauber mit `#[cfg(target_os = "...")]` gekapselt werden.
 6. **Autarke Audio- & Asset-Pipelines:**
    - Soundeffekte werden über die Web Audio API synthetisiert (`src/services/soundFx.ts`), um externe Abhängigkeiten zu minimieren.
@@ -58,16 +62,21 @@
                                       ▼
 +-------------------------------------------------------------------------------+
 | BACKEND: Rust (Tauri v2 + Tokio)                                              |
-| ├─ hardware.rs: GPU/VRAM Probe, automatische n_gpu_layers Zuteilung           |
-| ├─ llama_manager.rs: Child-Prozesssteuerung mit PR_SET_PDEATHSIG              |
+| ├─ hardware.rs: GPU-Probe (nvidia-smi + Vulkan: NVIDIA/AMD/Intel, iGPU-Flag)  |
+| ├─ runtimes.rs: Laufzeiten laden (llama.cpp, PrismML, sd.cpp, CrispASR)       |
+| ├─ llama_manager.rs: Child-Prozesssteuerung, --device/--mmproj               |
+| ├─ local_image.rs / tts_local.rs: sd-server & crispasr --server, VRAM-Planer |
 | ├─ inference.rs: SSE Streaming Proxy mit <think> Reasoning Filter             |
+| ├─ context_window.rs / chat_summary.rs: Kontext kürzen & zusammenfassen       |
+| ├─ attachments.rs / translate.rs: Anhänge (Vision) & Übersetzung             |
 | ├─ characters.rs: SillyTavern V2 Parser (PNG tEXt Chunks & JSON)              |
 | ├─ paths.rs: Standardpfade, Asset-Scans (Karten, GGUF, VRM, Live2D)           |
 | ├─ lorebook.rs: Regex-, Keyword-, Tension- & Chain-Kontextaktivierung         |
 | ├─ prompt_builder.rs: System-Prompt Generator mit {{char}}/{{user}} Makros   |
-| ├─ memory.rs: SQLite Soul Memory (4 Layer, Emotional Decay, Deduplizierung)   |
-| ├─ stage.rs: Two-Tier GM Engine (Action-Planner, Storyteller, Rest, Dice)     |
+| ├─ memory/: SQLite Soul Memory (4 Layer, Chats, Zusammenfassung, Anhänge)    |
+| ├─ stage/: Two-Tier GM Engine (Action-Planner, Storyteller, Rest, Dice)       |
 | ├─ voice.rs / kokoro.rs: TTS/STT, Edge-TTS, Kokoro ONNX, Whisper STT & RVC    |
+| ├─ tts_local.rs: CrispASR-TTS (Qwen3-TTS, Chatterbox, Kokoro DE), Stimmklone |
 | ├─ companion.rs: Neurohormone, EmotionState, Scratchpad & Goals-Manager      |
 | ├─ companion_tools.rs: Echte Tools (Web, Screen, Clip, MPRIS, GUI, Sandbox)   |
 | └─ mcp_client.rs: Standard MCP JSON-RPC 2.0 Client & Plugin-Loader           |
@@ -81,17 +90,26 @@
 ### Backend (`src-tauri/`)
 | Pfad | Zweck |
 |---|---|
-| `src-tauri/src/modules/hardware.rs` | Hardware-Probe, NVIDIA VRAM/RAM Ermittlung & Layer-Rechner |
-| `src-tauri/src/modules/llama_manager.rs` | `llama-server` Prozessmanager, Zombie-Schutz, `/health` Polling |
-| `src-tauri/src/modules/inference.rs` | SSE Token-Streaming & `<think>` Gedanken-Trennung |
+| `src-tauri/src/modules/hardware.rs` | Hardware-Probe: `nvidia-smi` plus Vulkan (`ash`, Loader zur Laufzeit) für AMD/Intel, iGPU-Erkennung, `primary_gpu()` (größte dedizierte), `same_gpu()` für Gerätenamen, Layer-/Kontext-Rechner |
+| `src-tauri/src/modules/runtimes.rs` | Laufzeiten aus GitHub-Releases laden und prüfen (SHA-256): llama.cpp, PrismML, stable-diffusion.cpp, CrispASR; Backend-Empfehlung (CUDA nur mit passender System-CUDA unter Linux, sonst Vulkan) |
+| `src-tauri/src/modules/model_files.rs` | Gemeinsamer fortsetzbarer, geprüfter Hugging-Face-Download für Bild- und TTS-Modelle |
+| `src-tauri/src/modules/gguf.rs` | GGUF-Header lesen (Layer-Zahl für den VRAM-Planer) |
+| `src-tauri/src/modules/llama_manager.rs` | `llama-server` Prozessmanager, Zombie-Schutz, `/health` Polling, `--device` auf die dedizierte GPU bei mehreren Geräten, `--mmproj` für Vision |
+| `src-tauri/src/modules/local_image.rs` | `sd-server` (stable-diffusion.cpp), Bildmodell-Katalog, gestufter VRAM-Planer (parallel → TTS entladen → Chat-Modell verkleinern/tauschen), `--backend`-Gerätefestlegung |
+| `src-tauri/src/modules/tts_local.rs` | `crispasr --server` (Port 48598): TTS-Katalog, Stimmklone unter `voices/` mit Einwilligung, KI-Kennzeichnung |
+| `src-tauri/src/modules/inference.rs` | SSE Token-Streaming & `<think>` Gedanken-Trennung; `ChatMessage` mit optionalen Anhängen |
+| `src-tauri/src/modules/context_window.rs` | Verlauf ans Kontextfenster anpassen (älteste Nachrichten raus, System-Prompt/letzte Nachricht bleiben); lokal exakt über `/props` + `/tokenize` (gecacht), Cloud geschätzt |
+| `src-tauri/src/modules/chat_summary.rs` | Laufende Zusammenfassung herausgefallener Nachrichten pro Chat („Story So Far“) |
+| `src-tauri/src/modules/attachments.rs` | Chat-Anhänge unter `attachments/<chat>/`: Bilder (verkleinert, Bild-Blöcke), PDF/Text (als Text), `prepare()` vor dem Senden |
+| `src-tauri/src/modules/translate.rs` | Übersetzung einzelner Nachrichten mit dem Chat-Modell |
 | `src-tauri/src/modules/characters.rs` | SillyTavern V2 Character Card Parser, PNG tEXt Chunk Injector/Exporter & Personas |
 | `src-tauri/src/modules/paths.rs` | Standardpfade (`directories::ProjectDirs`), Asset-Scans (Karten, Modelle, VRM, Live2D) |
 | `src-tauri/src/modules/settings.rs` | Persistente Konfiguration (`settings.json`) mit atomarem Speichern |
 | `src-tauri/src/modules/lorebook.rs` | Lorebook / World Info Keyword-Scanner |
-| `src-tauri/src/modules/prompt_builder.rs` | Dynamischer Prompt-Builder inkl. Seelen-Zustand |
-| `src-tauri/src/modules/memory.rs` | SQLite Kognitives Seelen-Gedächtnis, Markdown Sync (MEMORY.md/USER.md), Backups & SoW-Importer |
+| `src-tauri/src/modules/prompt_builder.rs` | Prompt-Builder inkl. Seelen-Zustand; bearbeitbare `PromptTemplate` (Rolle, Stil, Nachspann) mit Vorlagen Rollenspiel/Erzähler/Companion; `system_prompt`/`post_history_instructions` der Karte mit `{{original}}` |
+| `src-tauri/src/modules/memory/` | SQLite: Seelen-Gedächtnis, Chats (`chats.rs`, inkl. `summary`/`summary_until`, `attachments_json`), Markdown Sync (MEMORY.md/USER.md), Snapshots & SoW-Importer |
 | `src-tauri/src/modules/soul_memory_pipeline.rs` | Kognitive Pipeline: Router-Agent, Archivist-Agent, Diary-Agent, JSON-Patch-Parser & No-Op Detection |
-| `src-tauri/src/modules/stage.rs` | Tabletop RPG Engine (Two-Tier GM Pipeline: Action Planner & Storyteller, Szenen-Manager, Party HUD, Rest-Mechanik, d20/d100/2d6, DC-Check, Clocks, Kampf & Markdown-Export) |
+| `src-tauri/src/modules/stage/` | Tabletop RPG Engine (Two-Tier GM Pipeline: Action Planner & Storyteller, Szenen-Manager, Party HUD, Rest-Mechanik, d20/d100/2d6, DC-Check, Clocks, Kampf & Markdown-Export) |
 | `src-tauri/src/modules/companion.rs` | Neurohormone (EMA), EmotionState, Schlaf/Einsamkeit, Scratchpad & Goals mit Safety-Countdown |
 | `src-tauri/src/modules/companion_tools.rs` | Echte Desktop-Tools: DuckDuckGo-Suche, URL-Opener, xcap Screenshot, Clipboard, MPRIS, GUI-Actions, Web-Reader, Sandboxing & File-Organizer |
 | `src-tauri/src/modules/mcp_client.rs` | Model Context Protocol (MCP) JSON-RPC 2.0 Client (stdio & HTTP/SSE) & Skript-/Binary-Pluginloader |
@@ -102,7 +120,8 @@
 | `src-tauri/src/modules/kokoro.rs` | Native Offline-Kokoro-82M-Inferenz via ONNX Runtime, Engine-Cache, WAV-Encoding, Stimmen-Scan und atomarer Modell-Installer |
 | `src-tauri/src/modules/soul_hub.rs` | Soul Hub Backend (Soul Gateway, Chub AI Integration mit Lorebook-Extraktion, Lorebooks- & Szenarien-Registries) |
 | `src-tauri/src/state.rs` | Globaler Tokio/Tauri `AppState` |
-| `src-tauri/src/commands.rs` | Alle Tauri IPC Commands |
+| `src-tauri/src/commands/` | Tauri IPC Commands, nach Bereichen (`chat.rs`, `llm.rs`, `voice.rs`, …) |
+| `src-tauri/tests/gpu_e2e.rs` | GPU-Tests mit echten Modellen (`--ignored`): TTS mit Whisper-Rückerkennung, Bildmodelle mit VRAM-Messung |
 | `src-tauri/src/lib.rs` | App Builder, Dialog-Plugin & Handler-Registrierung |
 
 ### Frontend (`src/`)
@@ -116,8 +135,10 @@
 | `src/components/Sidebar.tsx` / `src/components/navigation.ts` | Gruppierte Hauptnavigation, Tastaturkürzel und gemeinsame Navigationskonfiguration |
 | `src/components/CommandPalette.tsx` | Durchsuchbare globale Befehlspalette (`Strg/Cmd+K`) für Ansichten, Logs und Updates |
 | `src/components/ui/` | Theme-fähige UI-Primitive: Button, IconButton, Tabs, Select, Toggle, Slider, Tooltip, Dialoge und Feedback |
-| `src/components/chat/ChatView.tsx` | Split-Screen Chat & 3D Avatar mit Swipes `< 1/3 >`, Inline-Edit, Continue & Regenerate |
-| `src/components/chat/ChatSidebar.tsx` | Slide-out Drawer: Multi-Chat Sitzungen, Author's Note mit Tiefe, 11 HUD-Presets & JSONL Import/Export |
+| `src/components/chat/ChatView.tsx` | Split-Screen Chat & Avatar, Streaming-Blase |
+| `src/components/chat/MessageList.tsx` | Virtualisierter, memoisierter Verlauf (`@tanstack/react-virtual`); `ChatMessageItem` mit Swipes, Edit, Continue, Regenerate, Übersetzung, Anhängen |
+| `src/components/chat/ChatComposer.tsx` | Eingabefeld mit eigenem Entwurf, Anhänge (Büroklammer/Einfügen), Kontextanzeige |
+| `src/components/chat/ChatSidebar.tsx` | Slide-out Drawer: Multi-Chat Sitzungen, Author's Note mit Tiefe, „Bisherige Handlung“ (Zusammenfassung), 11 HUD-Presets & JSONL Import/Export |
 | `src/components/chat/RoleplayMessage.tsx` | Trennung von Handlungen (*...*) und gesprochenem Wort ("...") |
 | `src/components/chat/AdaptiveHud.tsx` | Charakter-Switcher, Persona-Badge & Zuneigungs-/Statusleiste |
 | `src/components/chat/CognitiveMemoryDrawer.tsx` | Seelenspeicher-Inspektor (SQLite) |
@@ -144,12 +165,16 @@
 | `src/components/companion/CompanionView.tsx` | Desktop-Agent Dashboard (6 Tabs: Bio, Scratchpad, Ziele, Tools, MCP/Plugins, Overlay) |
 | `src/components/companion/FloatingCompanionOverlay.tsx` | Transparentes, rahmenloses Floating-Companion-Widget mit Sprechblase, Mini-Gauges & Click-Through |
 | `src/components/companion/SafetyCountdownBanner.tsx` | 25s Human-in-the-Loop Sicherheitsbanner |
-| `src/components/settings/SettingsView.tsx` | Hardware-, Modell- und Server-Konfiguration mit Dateidialogen |
+| `src/components/settings/SettingsView.tsx` | Einstellungs-Tabs: Erscheinungsbild, llama-server (inkl. Laufzeiten, `mmproj`), Cloud-Anbieter (inkl. Kontextgröße), Sampler, Prompt (`PromptSettings.tsx`), Modell-Hub |
+| `src/components/integrations/tabs/LocalImageSettings.tsx` | Lokale Bildgenerierung: Laufzeit, Modellkatalog, VRAM-Strategie |
+| `src/components/voice/LocalTtsSettings.tsx` | Lokale TTS: Laufzeit, Modelle, Stimmklone (Aufnahme/Upload, Einwilligung) |
 | `src/components/voice/CharacterVoiceModal.tsx` | Charakterbezogene TTS/STT-, Audiogeräte-, VAD- und RVC-Konfiguration |
 | `src/components/voice/VoiceCallControls.tsx` | Push-to-talk und Voice-Call-Zustandsautomat mit Unterbrechung |
 | `src/services/audioPlayer.ts` | Unterbrechungssichere Web-Audio-Warteschlange, Geräteauswahl, Gain & FFT-Amplitude |
 | `src/services/streamingTts.ts` | Satzsegmentierung während des LLM-Streams und geordnete TTS-Synthese |
-| `src/services/voiceCapture.ts` | Mikrofonaufnahme, Resampling auf 16 kHz und lokale RMS-VAD |
+| `src/services/voiceCapture.ts` | Mikrofonaufnahme, Resampling (16 kHz STT, 24 kHz Stimmklone) und lokale RMS-VAD |
+| `src/store/helpers.ts` | `resolvePromptWithLore` (System-Prompt + Nachspann), `llmTarget` (Endpunkt der aktuellen Modellwahl) |
+| `e2e/` | Rauchtest (`smoke.mjs`), Langchat-Messung (`perf-long-chat.mjs`), Mock-LLM und Harness mit Wegwerf-Profil |
 
 ---
 
@@ -159,14 +184,19 @@ Alle benötigten Daten sind eigenständig in diesem Projektverzeichnis gekapselt
 - **LLM GGUF-Modelle:** `assets/models/` (im Repo per `.gitignore` ignoriert, lokal vorhanden)
   - `Gemma4-12B-QAT-Uncensored-HauhauCS-Balanced-Q4_K_M.gguf`
   - `Qwen3.8-27B-Heretic-Q4_K_M.gguf`
-- **Vorkompilierte llama-server Binary & CUDA-Libs:** `bin/cuda/llama-server`
+  - `Ternary-Bonsai-27B-PQ2_0.gguf` (braucht die PrismML-Laufzeit)
+- **Laufzeiten:** werden in der App nach `<Daten>/runtimes/` geladen (`llama.cpp`, `prism`, `sd.cpp`, `crispasr`);
+  `bin/cuda/` und `bin/prism-cuda/` (gitignored) sind nur noch Entwickler-Fallbacks.
+- **Bild- und TTS-Modelle:** `<Daten>/image-models/`, `<Daten>/tts-models/`, Stimmklone in `<Daten>/voices/`
 - **3D VRM Avatare:** `assets/vrm/` (u. a. `Anime Girl.vrm`, `Mikku.vrm`, `2B.vrm`)
 - **Charakterkarten & Lorebooks:** `presets/`
   - V2 JSON-Karten & Lorebooks: `presets/sakura-succubus-3/`, `presets/no-game-no-life/`
   - SillyTavern V2 PNG-Karten: `presets/cards/` (15 Karten: Akane, Kurisu, Cosmos, Vivy, etc.)
-- **Benutzerverzeichnis (automatisch angelegt):** `~/.local/share/otakusoul/` (`characters/`, `lorebooks/`, `personas/`, `scenes/`, `.trash/`)
+- **Benutzerverzeichnis (automatisch angelegt):** `~/.local/share/otakusoul/` (`characters/`, `lorebooks/`, `personas/`, `scenes/`, `attachments/`, `runtimes/`, `.trash/`); mit `OTAKUSOUL_HOME` stattdessen `$OTAKUSOUL_HOME/data`
   - Native Kokoro-Installation: `models/kokoro/model_quantized.onnx` plus `models/kokoro/voices/*.bin` unterhalb dieses Datenverzeichnisses
-- **Hardware des Benutzers:** NVIDIA GeForce RTX 4070 Ti SUPER (16.376 MB VRAM), CUDA 13.4, Vulkan 1.4, Arch Linux.
+- **Hardware des Benutzers:** NVIDIA GeForce RTX 4070 Ti SUPER (16.376 MB VRAM) plus AMD Radeon 890M iGPU, 86 GB RAM,
+  CUDA 13 (`/opt/cuda`), Vulkan 1.4, CachyOS/Arch Linux. Die iGPU meldet ~52 GB geteilten Speicher – Modelle immer auf die
+  dedizierte Karte festlegen.
 
 ---
 
@@ -355,14 +385,26 @@ Alle benötigten Daten sind eigenständig in diesem Projektverzeichnis gekapselt
     - Interaktiver Update-Dialog mit Versionsvergleich, Release-Notes-Vorschau und 1-Klick-Link zu den Downloads.
   - **Frontend-Unit-Tests (Vitest, `npm run test`):**
     - 63 Tests in 10 Test-Suites für i18n, Store-Slices, zentrale UI-Bausteine, Befehlspalette, Onboarding,
-      Lorebooks, Soul Hub, Soul Memory, State Parsing und Soundeffekte.
+      Lorebooks, Soul Hub, Soul Memory, State Parsing und Soundeffekte (Stand heute: 97 Tests in 21 Dateien; Rust: 322).
   - **Packaging & Multiplattform-Installer:**
     - **Linux:** Universeller Installer `install.sh` (installiert Binary nach `~/.local/bin`, 512x512 Icon & `.desktop`-Menüeintrag), `.deb`, `AppImage`, Arch Linux AUR (`packaging/aur/PKGBUILD`).
     - **Windows:** PowerShell-Installer `install.ps1` (installiert nach `%LOCALAPPDATA%\Programs\OtakuSoul\`, erstellt Startmenü- und Desktop-Verknüpfungen mit `.ico`), NSIS-Setup `.exe`.
     - **macOS:** macOS-Installer `install-macos.sh` (Installation nach `/Applications/OtakuSoul.app`, Quarantäne-Entfernung), `.dmg` Disk Image.
     - Lokale Paketierungs-Skripte in `packaging/scripts/` (keine CI-Ausführung auf GitHub).
 
-**Alle 18 Phasen der Roadmap sind vollständig abgeschlossen.**
+**Alle 18 Phasen der ursprünglichen Roadmap sind abgeschlossen.** Die laufende Weiterentwicklung steht in `ROADMAP.md`
+(Detailstand je Punkt) und `Roadmap_TTS.md`; die wichtigsten Ergebnisse danach:
+
+- [x] **Laufzeiten in der App:** llama.cpp, PrismML-Fork (Ternary Bonsai), stable-diffusion.cpp und CrispASR werden aus
+  den GitHub-Releases geladen und per SHA-256 geprüft; signierte In-App-Updates (`tauri-plugin-updater`).
+- [x] **Lokale Bildgenerierung (stable-diffusion.cpp):** Katalog SDXL/FLUX.1/Qwen-Image/FLUX.2 mit gestuftem VRAM-Planer
+  und Tausch des Chat-Modells; auf RTX 4070 Ti SUPER getestet (SDXL 28 s, FLUX.1 48 s, Qwen-Image 73 s, FLUX.2 248 s).
+- [x] **Lokale Sprachausgabe (CrispASR):** Qwen3-TTS CustomVoice/1.7B-Klon, Chatterbox, Kokoro DE, F5-TTS (nur
+  nicht-kommerziell); Stimmklonen mit Einwilligung, KI-Kennzeichnung; mit Whisper-Rückerkennung getestet.
+- [x] **Hardware:** AMD/Intel über Vulkan, iGPU-Erkennung, Festlegung von `sd-server`/`llama-server` auf die dedizierte GPU.
+- [x] **Chat:** Kontextfenster-Management, automatische Zusammenfassung, System-Prompt-Editor mit Vorlagen und
+  V2-Karten-Overrides, Datei-Anhänge mit Vision (`mmproj`), Übersetzung, virtualisierter Verlauf (1000 Nachrichten flüssig).
+- [x] **Tests:** E2E-Rauchtest mit `tauri-driver` und Mock-LLM, Langchat-Messung, GPU-Tests mit echten Modellen.
 
 ---
 
@@ -375,4 +417,18 @@ Alle benötigten Daten sind eigenständig in diesem Projektverzeichnis gekapselt
 - **Anthropic Messages Streaming:** Anthropic nutzt SSE Events (`content_block_delta`), bei denen das Text-Delta unter `delta.text` liegt, während OpenAI/v1/chat/completions das Delta unter `choices[0].delta.content` platziert. Die `ProviderRegistry` normalisiert beide Formate transparent auf das einheitliche `llm-token` Event in Tauri.
 - **Streaming-Listener & React-Lifecycle:** Asynchrone Tauri-Listener (`listen(...)`) müssen zwingend mit einem `isSubscribed`-Guard gekapselt werden, damit bei unmounted Components / React StrictMode keine Geister-Listener verbleiben, die Tokens doppelt empfangen.
 - **Mobile Viewports (iOS/Android):** Alle UI-Container nutzen Flex/Grid und sind vorbereitet für Touch-Gesten und responsive Breakpoints (`sm:`, `lg:`).
+- **VRAM & mehrere GPUs:** Vor jedem Bild prüft `local_image::plan`, ob alles passt (gemessen per `nvidia-smi`/Vulkan,
+  sonst geschätzt); entladen wird nur, wenn nötig – erst das kleine TTS-Modell, dann das Chat-Modell. Bei iGPU +
+  dedizierter Karte verteilen sd.cpp und llama.cpp sonst nach freiem Speicher, und die iGPU gewinnt (FLUX.1: 350 s statt
+  48 s) – deshalb `--backend`/`--device` über `hardware::primary_gpu()` und `same_gpu()`.
+- **Kontextfenster:** Gekürzt wird im Command `send_chat_message`, nicht im Frontend. System-Nachrichten (Prompt, Author's
+  Note, Nachspann) bleiben immer, ebenso die letzte Nicht-System-Nachricht; Bilder zählen pauschal 1000 Tokens. Die
+  Zusammenfassung startet erst ab 6 herausgefallenen Nachrichten und läuft im Hintergrund.
+- **Anhänge:** `attachments::prepare` macht vor dem Senden aus Text/PDF Nachrichtentext und behält Bilder nur in den
+  letzten drei Nachrichten mit Bildern; ohne `mmproj` (lokal) werden Bilder zum Hinweis statt zum Serverfehler.
+- **E2E-Tests:** Die Testversion liegt in `target/e2e` (`npm run e2e:build`), weil `cargo test` das normale
+  `target/debug/otakusoul` ohne eingebettetes Frontend überschreibt. Das Mock-LLM erkennt Chat-Anfragen an „# Role &
+  Identity“ – neue Prompt-Vorlagen müssen mit dieser Überschrift beginnen oder das Mock anpassen.
+- **Lizenzen & Veröffentlichung:** Das Repo ist öffentlich. Modelle werden nie mitgeliefert, sondern von der Quelle geladen;
+  nicht-kommerzielle Modelle bleiben ausgeblendet/gesperrt, bis man sie freischaltet. Kein Python in der App.
 - **Tool Calling Erweiterung:** Neue Tools können direkt in `src-tauri/src/modules/companion.rs` in `execute_internal` registriert werden. Deklariere gefährliche Operationen in `is_dangerous`, damit der 25s Sicherheits-Countdown automatisch greift.
