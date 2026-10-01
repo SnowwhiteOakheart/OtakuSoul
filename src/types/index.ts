@@ -25,6 +25,7 @@ import type { ChatSession } from './generated/ChatSession';
 import type { ChubCharacterDetail } from './generated/ChubCharacterDetail';
 import type { CombatCondition } from './generated/CombatCondition';
 import type { ContextUsage } from './generated/ContextUsage';
+import type { ChatSummaryRequest } from './generated/ChatSummaryRequest';
 import type { ConsequenceEntry } from './generated/ConsequenceEntry';
 import type { DcCheckResult } from './generated/DcCheckResult';
 import type { DiaryEntry } from './generated/DiaryEntry';
@@ -89,6 +90,7 @@ export type {
   CampaignObjective,
   CharacterDraft,
   ChatSession,
+  ChatSummaryRequest,
   ChubCharacterDetail,
   CombatCondition,
   ConsequenceEntry,
@@ -346,6 +348,7 @@ export interface PromptContext {
   allow_reasoning?: boolean;
   author_note?: string;
   author_note_depth?: number;
+  chat_summary?: string;
 }
 
 // Phase 6: Soul Stage Tabletop RPG

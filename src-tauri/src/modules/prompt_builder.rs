@@ -31,6 +31,10 @@ pub struct PromptContext {
     pub author_note: Option<String>,
     #[serde(default)]
     pub author_note_depth: Option<u32>,
+    /// Summary of earlier messages that no longer fit into the context window.
+    #[serde(default)]
+    #[ts(optional)]
+    pub chat_summary: Option<String>,
 }
 
 /// Placeholder that memory fields hold when there is nothing to say (in any content language).
@@ -257,6 +261,16 @@ pub fn build_system_prompt(ctx: &PromptContext) -> String {
         parts.push(format!(
             "## Example Dialogue (style reference)\n{}",
             replace_macros(&ctx.character.mes_example)
+        ));
+    }
+
+    // 8.4 Story so far: messages that fell out of the context window
+    if let Some(summary) = &ctx.chat_summary
+        && !summary.trim().is_empty()
+    {
+        parts.push(format!(
+            "## Story So Far (summary of earlier messages that are no longer shown)\n{}",
+            replace_macros(summary.trim())
         ));
     }
 

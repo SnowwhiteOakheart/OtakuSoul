@@ -44,6 +44,7 @@ import {
   AppSettings,
   UserPersona,
   ChatSession,
+  ChatSummaryRequest,
   StoredChatMessage,
   OpenRouterModelInfo,
   LlmPreset,
@@ -727,6 +728,15 @@ export const api = {
       authorNote,
       authorNoteDepth,
     });
+  },
+
+  /** Folds the messages that left the context window into the chat's running summary. */
+  summarizeChat: async (request: ChatSummaryRequest): Promise<ChatSession> => {
+    return await invoke<ChatSession>('summarize_chat', { request });
+  },
+
+  updateChatSummary: async (chatId: string, summary: string, summaryUntil: number): Promise<void> => {
+    return await invoke<void>('update_chat_summary', { chatId, summary, summaryUntil });
   },
 
   getChatMessages: async (chatId: string): Promise<StoredChatMessage[]> => {

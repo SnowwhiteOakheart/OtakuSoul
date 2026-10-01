@@ -125,6 +125,10 @@ pub struct ChatSession {
     pub author_note: String,
     pub author_note_depth: u32,
     pub message_count: usize,
+    /// Running summary of the messages that no longer fit into the context window.
+    pub summary: String,
+    /// `order_index` of the last message the summary covers; -1 for none.
+    pub summary_until: i64,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq, TS)]

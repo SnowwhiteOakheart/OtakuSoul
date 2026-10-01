@@ -215,6 +215,13 @@ fn test_chat_sessions_crud() {
     assert_eq!(loaded2.author_note, "[Ayu ist schüchtern]");
     assert_eq!(loaded2.author_note_depth, 3);
 
+    assert_eq!((loaded2.summary.as_str(), loaded2.summary_until), ("", -1));
+    db.update_chat_summary(&session.id, "Ayu und Kai trafen sich am Bahnhof.", 12)
+        .unwrap();
+    let loaded3 = db.get_chat_session(&session.id).unwrap().unwrap();
+    assert_eq!(loaded3.summary, "Ayu und Kai trafen sich am Bahnhof.");
+    assert_eq!(loaded3.summary_until, 12);
+
     db.delete_chat_session(&session.id).unwrap();
     let list_empty = db.list_chat_sessions("ayu").unwrap();
     assert_eq!(list_empty.len(), 0);

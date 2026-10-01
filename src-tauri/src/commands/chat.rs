@@ -114,6 +114,28 @@ pub fn update_chat_author_note(
 }
 
 #[tauri::command]
+pub async fn summarize_chat(
+    state: State<'_, AppState>,
+    request: crate::modules::chat_summary::ChatSummaryRequest,
+) -> Result<crate::modules::memory::ChatSession, String> {
+    crate::modules::chat_summary::summarize(&state.memory_db, &state.inference_client, request)
+        .await
+}
+
+#[tauri::command]
+pub fn update_chat_summary(
+    state: State<'_, AppState>,
+    chat_id: String,
+    summary: String,
+    summary_until: i64,
+) -> Result<(), String> {
+    state
+        .memory_db
+        .update_chat_summary(&chat_id, &summary, summary_until)
+        .map_err(|e| e.to_string())
+}
+
+#[tauri::command]
 pub fn get_chat_messages(
     state: State<'_, AppState>,
     chat_id: String,

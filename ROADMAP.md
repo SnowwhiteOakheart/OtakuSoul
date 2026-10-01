@@ -292,8 +292,13 @@ GitHub Actions wurden bewusst entfernt (Commit `11597c2`). Stattdessen gibt es j
   Author's Note und die letzte Nachricht bleiben immer drin. Lokal exakt über `/props` (echte Kontextgröße) und
   `/tokenize` (pro Nachricht gecacht, 200 Nachrichten in ~30 ms), Cloud geschätzt mit einstellbarer Kontextgröße
   (Standard 32k, begrenzt auch die Kosten). Anzeige unter dem Eingabefeld: belegter Kontext und weggelassene Nachrichten.
-- [ ] Offene Chat-Funktionen aus `Roadmap_abgeschlossen.md` (Phase 9): automatische Zusammenfassung der weggelassenen
-  Nachrichten, System-Prompt-Editor, Datei-Anhänge und Vision, Übersetzung.
+- [x] Automatische Zusammenfassung (`modules/chat_summary.rs`): Sobald mindestens 6 Nachrichten aus dem Kontext gefallen
+  sind, faltet das Chat-Modell sie im Hintergrund in eine laufende Zusammenfassung pro Chat (Abschnitte von höchstens
+  halbem Kontext, Fortschritt nach jedem Abschnitt gespeichert). Sie steht als „Story So Far“ im System-Prompt und ist
+  in der Chat-Seitenleiste (Tab Author's Note) editier- und zurücksetzbar. Getestet mit Gemma 12B: Versprechen,
+  Geheimnisse und Verabredungen bleiben erhalten.
+- [ ] Offene Chat-Funktionen aus `Roadmap_abgeschlossen.md` (Phase 9): System-Prompt-Editor, Datei-Anhänge und Vision,
+  Übersetzung.
 - [ ] Migrationsimport aus einer bestehenden Soul-of-Waifu-Installation.
 - [ ] Virtualisierte Listen (`@tanstack/react-virtual`) für lange Chats, große Charakter- und Lorebook-Bibliotheken.
 - [ ] Bundle-Analyse (`rollup-plugin-visualizer`); `chunkSizeWarningLimit: 800` in `vite.config.ts` nur als Übergang.

@@ -37,16 +37,19 @@ export const ChatSidebar: React.FC<ChatSidebarProps> = ({ isOpen, onClose }) => 
     applyHudPreset,
     exportCurrentChat,
     importChatJsonl,
+    updateChatSummary,
+    isSummarizing,
   } = useStoreFields(
     'activeCharacter', 'chatSessions', 'activeChatId', 'switchChatSession', 'createNewChat',
     'renameChatSession', 'deleteChatSession', 'updateAuthorNote', 'applyHudPreset',
-    'exportCurrentChat', 'importChatJsonl',
+    'exportCurrentChat', 'importChatJsonl', 'updateChatSummary', 'isSummarizing',
   );
 
   const [editingChatId, setEditingChatId] = useState<string | null>(null);
   const [editTitle, setEditTitle] = useState('');
   const [authorNoteInput, setAuthorNoteInput] = useState('');
   const [authorNoteDepthInput, setAuthorNoteDepthInput] = useState(2);
+  const [summaryInput, setSummaryInput] = useState('');
   const [activeTab, setActiveTab] = useState<'chats' | 'author_note' | 'presets'>('chats');
   const [isImporting, setIsImporting] = useState(false);
 
@@ -57,6 +60,7 @@ export const ChatSidebar: React.FC<ChatSidebarProps> = ({ isOpen, onClose }) => 
     if (activeSession) {
       setAuthorNoteInput(activeSession.author_note || '');
       setAuthorNoteDepthInput(activeSession.author_note_depth || 2);
+      setSummaryInput(activeSession.summary || '');
     }
   }, [activeSession]);
   /* oxlint-enable react/set-state-in-effect */
@@ -87,6 +91,18 @@ export const ChatSidebar: React.FC<ChatSidebarProps> = ({ isOpen, onClose }) => 
   const handleSaveAuthorNote = async () => {
     await updateAuthorNote(authorNoteInput, Number(authorNoteDepthInput) || 2);
     toast.success(translate('chatSidebar.noteSaved'));
+  };
+
+  const handleSaveSummary = async () => {
+    if (!activeSession) return;
+    await updateChatSummary(summaryInput.trim(), activeSession.summary_until);
+    toast.success(translate('chatSidebar.summarySaved'));
+  };
+
+  const handleResetSummary = async () => {
+    // Start over: the next overflow summarizes all messages outside the context again.
+    await updateChatSummary('', -1);
+    setSummaryInput('');
   };
 
   const handleExport = async () => {
@@ -392,6 +408,44 @@ export const ChatSidebar: React.FC<ChatSidebarProps> = ({ isOpen, onClose }) => 
             <Check className="w-4 h-4" />
             <span>{t('chatSidebar.saveNote')}</span>
           </button>
+
+          <div className="space-y-2 pt-4 border-t border-slate-800">
+            <div className="flex items-center justify-between">
+              <label htmlFor="chat-summary-input" className="text-xs font-medium text-slate-300">
+                {t('chatSidebar.summaryLabel')}
+              </label>
+              {isSummarizing && (
+                <span className="text-xs text-accent-400 animate-pulse">{t('chatSidebar.summarizing')}</span>
+              )}
+            </div>
+            <p className="text-xs text-slate-400 leading-relaxed">{t('chatSidebar.summaryIntro')}</p>
+            <textarea
+              id="chat-summary-input"
+              value={summaryInput}
+              onChange={(e) => setSummaryInput(e.target.value)}
+              placeholder={t('chatSidebar.summaryPlaceholder')}
+              rows={8}
+              className="w-full bg-app/80 border border-slate-700/80 rounded-xl p-3 text-xs text-slate-100 placeholder-slate-500 focus:outline-hidden focus:border-accent-500 resize-y"
+            />
+            <div className="flex gap-2">
+              <button
+                onClick={handleSaveSummary}
+                disabled={!activeSession || isSummarizing}
+                className="flex-1 py-2 bg-accent-600 hover:bg-accent-500 disabled:opacity-40 text-white rounded-xl text-xs font-medium transition-all flex items-center justify-center gap-1.5"
+              >
+                <Check className="w-4 h-4" />
+                <span>{t('chatSidebar.saveSummary')}</span>
+              </button>
+              <button
+                onClick={handleResetSummary}
+                disabled={!activeSession || isSummarizing || !activeSession.summary}
+                className="px-3 py-2 bg-slate-800 hover:bg-slate-700 disabled:opacity-40 text-slate-200 rounded-xl text-xs font-medium transition-all"
+                title={t('chatSidebar.resetSummaryHint')}
+              >
+                {t('chatSidebar.resetSummary')}
+              </button>
+            </div>
+          </div>
         </div>
       )}
 

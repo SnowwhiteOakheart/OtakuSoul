@@ -1,4 +1,5 @@
 pub mod characters;
+pub mod chat_summary;
 pub mod companion;
 pub mod companion_tools;
 pub mod content_lang;

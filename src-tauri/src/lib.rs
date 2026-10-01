@@ -199,6 +199,8 @@ pub fn run() {
             commands::chat::delete_chat_session,
             commands::chat::rename_chat_session,
             commands::chat::update_chat_author_note,
+            commands::chat::summarize_chat,
+            commands::chat::update_chat_summary,
             commands::chat::get_chat_messages,
             commands::chat::add_chat_message,
             commands::chat::update_chat_message,

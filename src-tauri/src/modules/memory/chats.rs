@@ -34,6 +34,8 @@ impl MemoryDb {
             author_note: String::new(),
             author_note_depth: 2,
             message_count: 0,
+            summary: String::new(),
+            summary_until: -1,
         })
     }
 
@@ -44,7 +46,8 @@ impl MemoryDb {
         let conn = self.conn.lock();
         let mut stmt = conn.prepare(
             "SELECT s.id, s.character_id, s.title, s.created_at, s.updated_at, s.author_note, s.author_note_depth,
-                    (SELECT COUNT(*) FROM chat_messages m WHERE m.chat_id = s.id) AS msg_count
+                    (SELECT COUNT(*) FROM chat_messages m WHERE m.chat_id = s.id) AS msg_count,
+                    s.summary, s.summary_until
              FROM chat_sessions s
              WHERE s.character_id = ?1
              ORDER BY s.updated_at DESC",
@@ -61,6 +64,8 @@ impl MemoryDb {
                 author_note: row.get(5)?,
                 author_note_depth: row.get(6)?,
                 message_count: count as usize,
+                summary: row.get(8)?,
+                summary_until: row.get(9)?,
             })
         })?;
 
@@ -75,7 +80,8 @@ impl MemoryDb {
         let conn = self.conn.lock();
         let mut stmt = conn.prepare(
             "SELECT s.id, s.character_id, s.title, s.created_at, s.updated_at, s.author_note, s.author_note_depth,
-                    (SELECT COUNT(*) FROM chat_messages m WHERE m.chat_id = s.id) AS msg_count
+                    (SELECT COUNT(*) FROM chat_messages m WHERE m.chat_id = s.id) AS msg_count,
+                    s.summary, s.summary_until
              FROM chat_sessions s
              WHERE s.id = ?1",
         )?;
@@ -92,6 +98,8 @@ impl MemoryDb {
                 author_note: row.get(5)?,
                 author_note_depth: row.get(6)?,
                 message_count: count as usize,
+                summary: row.get(8)?,
+                summary_until: row.get(9)?,
             }))
         } else {
             Ok(None)
@@ -133,6 +141,20 @@ impl MemoryDb {
         conn.execute(
             "UPDATE chat_sessions SET author_note = ?1, author_note_depth = ?2, updated_at = ?3 WHERE id = ?4",
             params![author_note, author_note_depth, now, chat_id],
+        )?;
+        Ok(())
+    }
+
+    pub fn update_chat_summary(
+        &self,
+        chat_id: &str,
+        summary: &str,
+        summary_until: i64,
+    ) -> Result<(), rusqlite::Error> {
+        let conn = self.conn.lock();
+        conn.execute(
+            "UPDATE chat_sessions SET summary = ?1, summary_until = ?2 WHERE id = ?3",
+            params![summary, summary_until, chat_id],
         )?;
         Ok(())
     }

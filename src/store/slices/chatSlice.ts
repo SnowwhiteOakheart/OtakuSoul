@@ -27,6 +27,10 @@ export interface ChatSlice {
   isGenerating: boolean;
   /** How full the context window was for the last reply. */
   contextUsage: ContextUsage | null;
+  isSummarizing: boolean;
+  /** After a reply: summarize the messages that no longer fit once enough have piled up. */
+  summarizeDroppedMessages: (usage: ContextUsage | null | undefined, history: StoredChatMessage[]) => void;
+  updateChatSummary: (summary: string, summaryUntil: number) => Promise<void>;
   sendMessage: (content: string) => Promise<void>;
   abortGeneration: () => Promise<void>;
   clearChat: () => void;
@@ -57,6 +61,9 @@ export interface ChatSlice {
   saveVoiceConfigForCharacter: (charId: string, config: VoiceConfig) => Promise<void>;
 }
 
+/** Summarize once this many conversation messages have left the context window. */
+const SUMMARY_BATCH = 6;
+
 /** The active character's first message in the reply language, with {{char}}/{{user}} filled in. */
 const greetingFor = (state: {
   activeCharacter: CharacterProfile | null;
@@ -83,6 +90,58 @@ export const createChatSlice: SliceCreator<ChatSlice> = (set, get) => ({
   streamingThought: '',
 
   contextUsage: null,
+
+  isSummarizing: false,
+
+  summarizeDroppedMessages: (usage, history) => {
+    const state = get();
+    if (!usage || usage.dropped_messages === 0 || state.isSummarizing) return;
+    const chatId = state.activeChatId;
+    const session = state.chatSessions.find((s) => s.id === chatId);
+    if (!chatId || !session || !state.activeCharacter) return;
+    // The context window drops from the front, so the first N conversation messages are out.
+    const dropped = history.filter((m) => m.role !== 'system').slice(0, usage.dropped_messages);
+    const pending = dropped.filter((m) => m.order_index > session.summary_until);
+    const last = pending[pending.length - 1];
+    if (pending.length < SUMMARY_BATCH || !last) return;
+    const upTo = last.order_index;
+
+    const cloud = state.selectedBackend === 'cloud';
+    set({ isSummarizing: true });
+    api
+      .summarizeChat({
+        chat_id: chatId,
+        up_to_index: upTo,
+        char_name: state.activeCharacter.card.data.name,
+        user_name: state.activePersona.name,
+        reply_language: state.replyLanguage || 'Deutsch',
+        context_tokens: usage.context_tokens,
+        endpoint_url: cloud
+          ? state.cloudEndpoint
+          : `http://127.0.0.1:${state.serverConfig.port}/v1/chat/completions`,
+        api_key: cloud ? state.cloudApiKey : null,
+        model: cloud ? state.cloudModel : null,
+        provider: cloud ? state.cloudProvider : 'local_llama',
+      })
+      .then((updated) =>
+        set((st) => ({
+          chatSessions: st.chatSessions.map((s) => (s.id === updated.id ? updated : s)),
+        })),
+      )
+      .catch((e) => console.warn('Chat summary failed:', e))
+      .finally(() => set({ isSummarizing: false }));
+  },
+
+  updateChatSummary: async (summary, summaryUntil) => {
+    const chatId = get().activeChatId;
+    if (!chatId) return;
+    await api.updateChatSummary(chatId, summary, summaryUntil);
+    set((st) => ({
+      chatSessions: st.chatSessions.map((s) =>
+        s.id === chatId ? { ...s, summary, summary_until: summaryUntil } : s,
+      ),
+    }));
+  },
 
   isGenerating: false,
 
@@ -342,6 +401,7 @@ export const createChatSlice: SliceCreator<ChatSlice> = (set, get) => ({
         },
       }, selectedBackend === 'cloud' ? get().cloudContextTokens : undefined);
       set({ contextUsage: done.context ?? null });
+      get().summarizeDroppedMessages(done.context, priorStored);
 
       const { cleanedText, stateUpdates } = extractStateUpdates(done.full_text);
       if (stateUpdates) {
@@ -432,6 +492,7 @@ export const createChatSlice: SliceCreator<ChatSlice> = (set, get) => ({
         },
       }, selectedBackend === 'cloud' ? get().cloudContextTokens : undefined);
       set({ contextUsage: done.context ?? null });
+      get().summarizeDroppedMessages(done.context, historyStored);
 
       const { cleanedText, stateUpdates } = extractStateUpdates(done.full_text);
       if (stateUpdates) {
@@ -580,6 +641,7 @@ export const createChatSlice: SliceCreator<ChatSlice> = (set, get) => ({
         },
       }, selectedBackend === 'cloud' ? get().cloudContextTokens : undefined);
       set({ contextUsage: done.context ?? null });
+      get().summarizeDroppedMessages(done.context, updatedStored);
 
       // 4. Parse <state> tags
       const { cleanedText, stateUpdates } = extractStateUpdates(done.full_text);

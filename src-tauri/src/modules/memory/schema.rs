@@ -143,6 +143,12 @@ pub(super) fn migrate_v1_baseline(conn: &Connection) -> rusqlite::Result<()> {
             "dynamic_description",
             "TEXT NOT NULL DEFAULT 'Keine.'",
         ),
+        ("chat_sessions", "summary", "TEXT NOT NULL DEFAULT ''"),
+        (
+            "chat_sessions",
+            "summary_until",
+            "INTEGER NOT NULL DEFAULT -1",
+        ),
     ] {
         if !has_column(conn, table, column)? {
             conn.execute(

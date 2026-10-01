@@ -107,6 +107,7 @@ export async function resolvePromptWithLore(
     allow_reasoning: serverConfig.reasoning_mode,
     author_note: activeSession?.author_note,
     author_note_depth: activeSession?.author_note_depth,
+    chat_summary: activeSession?.summary || undefined,
   });
 }
 

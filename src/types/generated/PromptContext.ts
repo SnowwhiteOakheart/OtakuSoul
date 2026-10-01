@@ -4,4 +4,8 @@ import type { CognitiveOverview } from "./CognitiveOverview";
 import type { LorebookEntry } from "./LorebookEntry";
 import type { StateVariable } from "./StateVariable";
 
-export type PromptContext = { char_name: string, user_name: string, character: CharacterData, active_lore: Array<LorebookEntry>, active_directives: Array<LorebookEntry>, state_variables: Array<StateVariable>, cognitive: CognitiveOverview | null, reply_language: string | null, allow_reasoning: boolean | null, author_note: string | null, author_note_depth: number | null, };
+export type PromptContext = { char_name: string, user_name: string, character: CharacterData, active_lore: Array<LorebookEntry>, active_directives: Array<LorebookEntry>, state_variables: Array<StateVariable>, cognitive: CognitiveOverview | null, reply_language: string | null, allow_reasoning: boolean | null, author_note: string | null, author_note_depth: number | null, 
+/**
+ * Summary of earlier messages that no longer fit into the context window.
+ */
+chat_summary?: string, };
