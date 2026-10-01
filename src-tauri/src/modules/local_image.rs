@@ -188,7 +188,7 @@ const CATALOG: &[CatalogModel] = &[
         id: "qwen-image-2.1-q4",
         name: "Qwen-Image 2.1 (GGUF Q4_K)",
         family: "qwen_image",
-        vram_mb: 9_500,
+        vram_mb: 7_000,
         license: "Apache-2.0",
         files: &[
             CatalogFile {
@@ -598,6 +598,43 @@ pub fn plan(input: &PlanInput, strategy: VramStrategy) -> VramDecision {
     }
 }
 
+/// The sd.cpp device (from `sd-server --list-devices`, `name<TAB>description` per line) of the
+/// GPU named `gpu`, e.g. `Vulkan0` for "NVIDIA GeForce RTX 4070 Ti SUPER".
+fn pick_device(listing: &str, gpu: Option<&str>) -> Option<String> {
+    let gpu = gpu?.to_lowercase();
+    listing.lines().find_map(|line| {
+        let (name, description) = line.split_once('\t')?;
+        let description = description.trim().to_lowercase();
+        (name != "CPU"
+            && !gpu.is_empty()
+            && (description.contains(&gpu) || gpu.contains(&description)))
+        .then(|| name.trim().to_string())
+    })
+}
+
+/// `--backend` value and remaining flags: everything on `device`, text encoders on the CPU when
+/// the model asks for that (`--clip-on-cpu` is deprecated in favour of `te=cpu`).
+fn backend_assignment<'a>(
+    args: &'a [&'a str],
+    device: Option<&str>,
+) -> (Option<String>, Vec<&'a str>) {
+    let te_on_cpu = args.contains(&"--clip-on-cpu");
+    let Some(device) = device else {
+        return (None, args.to_vec());
+    };
+    let rest: Vec<&str> = args
+        .iter()
+        .copied()
+        .filter(|a| *a != "--clip-on-cpu")
+        .collect();
+    let backend = if te_on_cpu {
+        format!("te=cpu,diffusion={device},vae={device}")
+    } else {
+        device.to_string()
+    };
+    (Some(backend), rest)
+}
+
 // ---------------------------------------------------------------------------------------
 // sd-server and generation
 // ---------------------------------------------------------------------------------------
@@ -712,12 +749,41 @@ impl LocalImageEngine {
         let joined =
             std::env::join_paths(lib_dirs.into_iter().chain(std::env::split_paths(&existing)))
                 .map_err(|e| crate::err!("backend.localImage.startFailed", error = e))?;
-        cmd.env(var, joined);
+        cmd.env(var, &joined);
 
         for file in model.files {
             cmd.arg(file.role.flag()).arg(file_path(file));
         }
-        cmd.args(model.args)
+        // sd.cpp's auto-fit prefers the device reporting the most free memory, which on laptops
+        // and APUs is the integrated GPU sharing system RAM (FLUX.1 ran there 6x slower in the
+        // GPU test). Pin the model to the GPU the planner works with.
+        let device = {
+            let listing = Command::new(&binary)
+                .arg("--list-devices")
+                .env(var, &joined)
+                .output()
+                .await
+                .ok()
+                .map(|o| String::from_utf8_lossy(&o.stdout).to_string())
+                .unwrap_or_default();
+            let gpu = tokio::task::spawn_blocking(|| {
+                crate::modules::hardware::probe_hardware()
+                    .gpus
+                    .into_iter()
+                    .max_by_key(|g| g.total_vram_mb)
+                    .map(|g| g.name)
+            })
+            .await
+            .ok()
+            .flatten();
+            pick_device(&listing, gpu.as_deref())
+        };
+        let (backend, args) = backend_assignment(model.args, device.as_deref());
+        if let Some(backend) = backend {
+            tracing::info!("sd-server: --backend {backend}");
+            cmd.arg("--backend").arg(backend);
+        }
+        cmd.args(args)
             .arg("--listen-ip")
             .arg("127.0.0.1")
             .arg("--listen-port")
@@ -1095,6 +1161,32 @@ mod tests {
             .0,
             Swap
         );
+    }
+
+    #[test]
+    fn pins_the_model_to_the_dedicated_gpu() {
+        let listing = "Vulkan0\tNVIDIA GeForce RTX 4070 Ti SUPER\nVulkan1\tAMD Radeon 890M Graphics (RADV STRIX1)\nCPU\tAMD Ryzen AI 9 HX 470 w/ Radeon 890M\n";
+        assert_eq!(
+            pick_device(listing, Some("NVIDIA GeForce RTX 4070 Ti SUPER")).as_deref(),
+            Some("Vulkan0")
+        );
+        assert_eq!(pick_device(listing, None), None);
+        assert_eq!(pick_device(listing, Some("Unknown GPU")), None);
+
+        let flux = ["--clip-on-cpu", "--vae-tiling", "--diffusion-fa"];
+        let (backend, rest) = backend_assignment(&flux, Some("Vulkan0"));
+        assert_eq!(
+            backend.as_deref(),
+            Some("te=cpu,diffusion=Vulkan0,vae=Vulkan0")
+        );
+        assert_eq!(rest, vec!["--vae-tiling", "--diffusion-fa"]);
+        let qwen = ["--offload-to-cpu", "--diffusion-fa"];
+        assert_eq!(
+            backend_assignment(&qwen, Some("Vulkan0")).0.as_deref(),
+            Some("Vulkan0")
+        );
+        // Without a match sd.cpp decides itself, flags unchanged.
+        assert_eq!(backend_assignment(&flux, None), (None, flux.to_vec()));
     }
 
     #[test]

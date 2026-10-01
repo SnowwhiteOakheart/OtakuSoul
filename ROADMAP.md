@@ -257,13 +257,24 @@ GitHub Actions wurden bewusst entfernt (Commit `11597c2`). Stattdessen gibt es j
   (Tags für SDXL, Sätze für FLUX/Qwen/Bonsai; ohne laufendes LLM greift die Vorlage). Das Bild erscheint als Szenenbild-Karte
   über dem Chat bzw. wird Szenenhintergrund der Stage. Bilder bleiben bewusst außerhalb des Chatverlaufs, damit sie nicht
   ans LLM oder in die Gedächtnis-Pipeline gehen.
-- [ ] **GPU-Tests nachholen** (aufgeschoben, solange keine großen Modelle laufen sollen):
-  - sd.cpp-Vulkan/CUDA-Build installieren und je Katalogmodell ein Bild erzeugen (Parameter, Sampler, `--offload-to-cpu`).
-  - VRAM-Schätzwerte der Modelle mit `nvidia-smi` nachmessen und im Katalog korrigieren.
-  - Tausch-Modus mit laufendem Bonsai-Chat: Entladen, Generieren, Neustart im Hintergrund; Chat danach weiter nutzbar.
-  - Modus „Chat-Modell verkleinern“ auf 12/16 GB prüfen; Parallelbetrieb auf 24 GB.
-  - PrismML-Laufzeit (CUDA-Build) mit Ternary Bonsai 2 27B aus der App starten.
-  - Bonsai Image über `serve.sh` gegen die App testen.
+- [x] **GPU-Tests auf echter Hardware** (01.10.2026, RTX 4070 Ti SUPER 16 GB + Radeon 890M iGPU, sd.cpp Vulkan,
+  Ternary Bonsai 27B PQ2_0 als Chat-Modell mit 16k Kontext ≈ 8,5 GB, Qwen3-TTS geladen; `src-tauri/tests/gpu_e2e.rs`):
+
+  | Modell | Zeit (Tausch) | VRAM nur Bild (gemessen) | Modus „Chat verkleinern“ |
+  |---|---|---|---|
+  | Animagine XL 4.0 (SDXL) | 28 s | ~7,6 GB | 44 GPU-Layer, 31 s |
+  | FLUX.1 dev Q5_K_S | 48 s | ~9 GB | 26 GPU-Layer |
+  | Qwen-Image 2.1 Q4_K (`--offload-to-cpu`) | 73 s | ~5,6 GB (Schätzung 9,5 → 7 GB) | parallel, 72 s |
+  | FLUX.2 dev Q4_K_S | 248 s | ~14,4 GB (mit Auslagerung) | Tausch (passt nicht) |
+
+  Der Chat antwortet nach jedem Bild 1–4 s nach dem Neustart; FLUX.2 entlädt gestuft erst das Sprachmodell, dann
+  das Chat-Modell; bei SDXL bleibt das Sprachmodell geladen. Die Bilder wurden gesichtet.
+
+  **Gefundener und behobener Fehler:** Mit zwei GPUs verteilen sd.cpp und llama.cpp (Vulkan) nach freiem Speicher –
+  die iGPU meldet 52 GB geteilten RAM und bekam FLUX.1 ab (350 s statt 48 s). `sd-server` bekommt jetzt per
+  `--backend` und `llama-server` per `--device` die größte dedizierte GPU, wenn mehr als ein Gerät gelistet ist.
+
+  Noch offen: Parallelbetrieb auf 24 GB (keine Karte vorhanden) und Bonsai Image über `serve.sh` (Python-Server).
 - [ ] Freier VRAM wird nur über `nvidia-smi` gemessen; auf AMD/Intel plant der Planer mit Schätzwerten.
 - [ ] Anime-LoRAs (Flux/SDXL) auswählbar machen (`/sdapi/v1/loras`), Pony V6 (nur über Civitai mit Login) und eine
   SD-1.5-Stufe für 4-GB-Karten.

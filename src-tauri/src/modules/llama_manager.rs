@@ -239,6 +239,35 @@ impl LlamaServerManager {
         Err(crate::err!("backend.server.binaryMissing"))
     }
 
+    /// The device of the largest GPU when the server sees more than one, e.g. `Vulkan0`.
+    async fn dedicated_device(
+        binary: &Path,
+        library_env: Option<&(&str, std::ffi::OsString)>,
+    ) -> Option<String> {
+        let mut cmd = Command::new(binary);
+        cmd.arg("--list-devices");
+        if let Some((var, value)) = library_env {
+            cmd.env(var, value);
+        }
+        let output = tokio::time::timeout(Duration::from_secs(20), cmd.output())
+            .await
+            .ok()?
+            .ok()?;
+        let listing = String::from_utf8_lossy(&output.stdout).to_string()
+            + &String::from_utf8_lossy(&output.stderr);
+        let gpu = tokio::task::spawn_blocking(|| {
+            crate::modules::hardware::probe_hardware()
+                .gpus
+                .into_iter()
+                .max_by_key(|g| g.total_vram_mb)
+                .map(|g| g.name)
+        })
+        .await
+        .ok()
+        .flatten()?;
+        pick_device(&listing, &gpu)
+    }
+
     pub async fn get_status(&self) -> ServerStatus {
         let exit = {
             let mut guard = self.child.lock().await;
@@ -340,6 +369,7 @@ impl LlamaServerManager {
         }
 
         let mut cmd = Command::new(&binary_path);
+        let mut library_env = None;
 
         if let Some(parent) = binary_path.parent() {
             // The server's folder plus any library folders of an app-installed runtime
@@ -355,8 +385,17 @@ impl LlamaServerManager {
                 dirs.extend(std::env::split_paths(&existing));
             }
             if let Ok(joined) = std::env::join_paths(dirs) {
-                cmd.env(var, joined);
+                cmd.env(var, &joined);
+                library_env = Some((var, joined));
             }
+        }
+
+        // With several GPUs llama.cpp splits the layers by free memory, and an integrated GPU
+        // that shares system RAM reports the most (Radeon 890M: 52 GB next to a 16 GB RTX
+        // card). Keep the model on the GPU the app plans with.
+        if let Some(device) = Self::dedicated_device(&binary_path, library_env.as_ref()).await {
+            info!("llama-server: --device {device}");
+            cmd.arg("--device").arg(device);
         }
         cmd.arg("-m")
             .arg(&config.model_path)
@@ -599,9 +638,47 @@ impl LlamaServerManager {
     }
 }
 
+/// Picks the device for `gpu` from `llama-server --list-devices` output
+/// (`  Vulkan0: NVIDIA GeForce RTX 4070 Ti SUPER (16376 MiB, …)`), only when there is a choice.
+fn pick_device(listing: &str, gpu: &str) -> Option<String> {
+    let devices: Vec<(&str, &str)> = listing
+        .lines()
+        .filter_map(|line| {
+            let (name, rest) = line.trim().split_once(": ")?;
+            (!name.is_empty() && !name.contains(' ')).then_some((name, rest))
+        })
+        .collect();
+    if devices.len() < 2 {
+        return None;
+    }
+    let gpu = gpu.to_lowercase();
+    devices
+        .iter()
+        .find(|(_, description)| description.to_lowercase().starts_with(&gpu))
+        .map(|(name, _)| name.to_string())
+}
+
 #[cfg(test)]
 mod tests {
     use super::{LlamaServerConfig, LlamaServerManager, ServerState};
+
+    #[test]
+    fn keeps_the_model_on_the_dedicated_gpu() {
+        let listing = "0.00.000.202 I srv  llama_server: initializing\n\
+Available devices:\n  Vulkan0: NVIDIA GeForce RTX 4070 Ti SUPER (16376 MiB, 14828 MiB free)\n  \
+Vulkan1: AMD Radeon 890M Graphics (RADV STRIX1) (52254 MiB, 52096 MiB free)\n";
+        assert_eq!(
+            super::pick_device(listing, "NVIDIA GeForce RTX 4070 Ti SUPER").as_deref(),
+            Some("Vulkan0")
+        );
+        // One device: nothing to choose.
+        let single = "Available devices:\n  CUDA0: NVIDIA GeForce RTX 4070 Ti SUPER (16376 MiB, 14828 MiB free)\n";
+        assert_eq!(
+            super::pick_device(single, "NVIDIA GeForce RTX 4070 Ti SUPER"),
+            None
+        );
+        assert_eq!(super::pick_device(listing, "Some other GPU"), None);
+    }
 
     #[test]
     fn routes_prism_formats_without_affecting_normal_ggufs() {

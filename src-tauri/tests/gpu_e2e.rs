@@ -66,6 +66,11 @@ impl VramPeak {
         }
     }
 
+    /// Starts counting again from the current usage (e.g. once other models are unloaded).
+    fn reset(&self) {
+        self.peak.store(vram_used_mb(), Ordering::SeqCst);
+    }
+
     fn finish(mut self) -> u64 {
         self.stop.store(true, Ordering::SeqCst);
         if let Some(h) = self.handle.take() {
@@ -439,10 +444,16 @@ async fn images() {
     // A loaded speech model, so the planner has to consider it.
     if tts_local::list_models()
         .iter()
-        .any(|m| m.id == "qwen3-tts-0.6b" && m.installed)
+        .any(|m| m.id == "qwen3-tts-customvoice-0.6b" && m.installed)
     {
         let wav = tts_local::engine()
-            .synthesize("qwen3-tts-0.6b", "preset:default", "Hallo!", "de", 1.0)
+            .synthesize(
+                "qwen3-tts-customvoice-0.6b",
+                "preset:vivian",
+                "Hallo!",
+                "de",
+                1.0,
+            )
             .await;
         println!(
             "[tts] Sprachmodell geladen: {} ({} MB VRAM)",
@@ -466,6 +477,10 @@ async fn images() {
             let result = engine
                 .generate(
                     &|s| {
+                        // Count only what the image model uses, after unloading/shrinking.
+                        if s.phase == "loading_model" {
+                            peak.reset();
+                        }
                         let label = match s.plan {
                             Some(plan) => format!("{} ({plan:?})", s.phase),
                             None => s.phase,
