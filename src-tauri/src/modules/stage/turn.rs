@@ -36,6 +36,7 @@ pub async fn execute_stage_turn(
     // A turn passes: conditions outside combat wear off (in combat they count rounds).
     tick_conditions_outside_combat(&mut state);
 
+    let counter = crate::modules::context_window::TokenCounter::default();
     let settings = load_app_settings();
     let (endpoint_url, api_key, model_name, provider) = if settings.selected_backend == "cloud" {
         (
@@ -183,14 +184,14 @@ pub async fn execute_stage_turn(
         .rev()
         .take(6)
         .rev()
-        .map(|m| line_for(m, Audience::Planner))
+        .map(|m| line_for(m, Audience::Narrator))
         .collect();
 
     // Scan bound lorebooks for Stage-Lore
     let mut active_lore_snippets = Vec::new();
     if !state.definition.lorebook.is_empty() {
         let all_lorebooks = crate::modules::lorebook::scan_available_lorebooks();
-        let text_to_scan = format!("{}\n{}", clean_input, recent_history.join("\n"));
+        let text_to_scan = recent_history.join("\n");
         for lb_name in &state.definition.lorebook {
             if let Some(lb) = all_lorebooks.iter().find(|l| {
                 l.name.eq_ignore_ascii_case(lb_name) || l.id.eq_ignore_ascii_case(lb_name)
@@ -322,8 +323,7 @@ RULES:
     );
 
     let planner_user_prompt = format!(
-        "=== RECENT HISTORY ===\n{}\n\n=== CURRENT ACTION BY {} ===\nMode: {}\nContent: {}\n\nPlan the next beat as JSON:",
-        recent_history.join("\n"),
+        "=== CURRENT ACTION BY {} ===\nMode: {}\nContent: {}\n\nPlan the next beat as JSON:",
         user_name,
         match &whisper_to {
             Some(to) => format!("whisper (PRIVATE, only {to} hears it – keep it secret)"),
@@ -360,6 +360,8 @@ RULES:
         provider: provider.clone(),
     };
 
+    let plan_req =
+        super::history::prepare(&mut state, inference, &counter, Audience::Planner, plan_req).await;
     let plan_raw = inference
         .generate_direct(plan_req)
         .await
@@ -802,6 +804,14 @@ RULES:
         provider: provider.clone(),
     };
 
+    let exec_req = super::history::prepare(
+        &mut state,
+        inference,
+        &counter,
+        Audience::Narrator,
+        exec_req,
+    )
+    .await;
     let gm_msg_id = format!("msg_{}", Utc::now().timestamp_millis());
     let narration_content = stream_message(
         inference,
@@ -938,16 +948,6 @@ Reply in {reply_language}.{secrets}"#,
                 )
             };
 
-            let recent_history_dialogue: Vec<String> = state
-                .chat_log
-                .iter()
-                .rev()
-                .take(5)
-                .rev()
-                .map(|m| line_for(m, Audience::Character(&current_actor)))
-                .collect();
-            let history_text = recent_history_dialogue.join("\n\n");
-
             let companion_messages = vec![
                 ChatMessage {
                     role: "system".to_string(),
@@ -956,10 +956,7 @@ Reply in {reply_language}.{secrets}"#,
                 },
                 ChatMessage {
                     role: "user".to_string(),
-                    content: format!(
-                        "Recent history:\n{}\n\nReact as {}:",
-                        history_text, current_actor
-                    ),
+                    content: format!("React as {}:", current_actor),
                     attachments: Vec::new(),
                 },
             ];
@@ -979,6 +976,14 @@ Reply in {reply_language}.{secrets}"#,
                 provider: provider.clone(),
             };
 
+            let comp_req = super::history::prepare(
+                &mut state,
+                inference,
+                &counter,
+                Audience::Character(&current_actor),
+                comp_req,
+            )
+            .await;
             let comp_msg_id = format!("msg_{}_{}", Utc::now().timestamp_millis(), actor_depth);
             let avatar_url = matched_char.and_then(|c| c.avatar_data_url.clone());
             if let Ok(comp_text) = stream_message(

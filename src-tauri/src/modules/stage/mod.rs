@@ -17,6 +17,7 @@ use crate::modules::settings::load_app_settings;
 
 mod dice;
 mod engine;
+mod history;
 mod models;
 mod party;
 mod plan;

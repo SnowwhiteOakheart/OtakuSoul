@@ -91,6 +91,8 @@ Mit **Soul Stage** wird aus Rollenspiel-Chat eine steuerbare Kampagne. Ein mehrs
 
 Szenenordner (inklusive aller 12 Kapitel unseres *No Game No Life* Abenteuers), modale Spielstand-Wahl (Fortsetzen vs. Neu starten), rotierende Sicherheits-Backups, Inline-Nachrichtenbearbeitung, Multi-Akteur-Züge, atmosphärische Hintergründe mit Lock-Option, Party-HUD, taktische Begegnungen und ein exportierbares Abenteuerprotokoll machen OtakuSoul zu einer flexiblen Bühne für Solo-Rollenspiel und charaktergetriebene Geschichten.
 
+Lange Stage-Verläufe nutzen das Kontextfenster des gewählten Modells und laufende Zusammenfassungen im Spielstand. Planer, Erzähler und Gefährten erhalten getrennte Zusammenfassungen; Flüstern erreicht nur seinen Empfänger, Gedanken nur den Spielleiter. Der vollständige Verlauf bleibt erhalten.
+
 ## Ein echter Begleiter auf deinem Desktop
 
 Mit **Soul Companion** wird dein Lieblingscharakter zu einem echten Assistenten im Desktop-Alltag:

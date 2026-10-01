@@ -25,7 +25,12 @@ export function startMockLlm() {
       }
       const request = JSON.parse(body || '{}');
       const system = request.messages?.[0]?.content ?? '';
+      const isStageSummary = system.includes('[SOUL STAGE — SUMMARY]');
       const isSummary = system.includes('running summary');
+      if (isStageSummary) {
+        stats.stageSummary = (stats.stageSummary ?? 0) + 1;
+        if (stats.failStageSummary) { res.writeHead(500).end('summary failed'); return; }
+      }
       // Chat replies (every prompt template starts with this heading); other calls such as
       // the memory pipeline only get the canned reply.
       const isChat = system.includes('# Role & Identity');
@@ -39,7 +44,7 @@ export function startMockLlm() {
       }
       const isPlanner = system.includes('GAME MASTER PLANNER');
       const isNarrator = system.includes('GAME MASTER NARRATOR');
-      if (isPlanner) stats.stagePlanner += 1;
+      if (isPlanner) { stats.stagePlanner += 1; stats.lastPlannerMessages = request.messages ?? []; }
       if (isNarrator) {
         stats.stageNarrator += 1;
         stats.lastNarratorMessages = request.messages ?? [];
@@ -49,7 +54,10 @@ export function startMockLlm() {
         stats.stageCompanion = (stats.stageCompanion ?? 0) + 1;
         stats.lastCompanionMessages = request.messages ?? [];
       }
-      const text = isPlanner
+      const stageSummary = 'Stage-Zusammenfassung: Die Gruppe versprach, das Tor zu öffnen.' +
+        (JSON.stringify(request.messages).includes('SECRET_PASSWORD') ? ' PRIVATE whisper to Ayu: SECRET_PASSWORD.' : '') +
+        (JSON.stringify(request.messages).includes('SECRET_THOUGHT') ? ' PRIVATE thought: SECRET_THOUGHT.' : '');
+      const text = isStageSummary ? stageSummary : isPlanner
         ? JSON.stringify({
             narration_plan: 'Ein altes Tor taucht aus dem Nebel auf.',
             next_actor: null,

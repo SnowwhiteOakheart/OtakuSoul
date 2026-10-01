@@ -435,6 +435,17 @@ pub struct SceneState {
     /// What each character was told in private (whispers), by name.
     #[serde(default)]
     pub private_knowledge: HashMap<String, Vec<String>>,
+    /// Running summaries are isolated by audience: planner, narrator, character name.
+    #[serde(default)]
+    pub history_summaries: HashMap<String, StageHistorySummary>,
+}
+
+#[derive(Debug, Clone, Default, Serialize, Deserialize, TS)]
+#[ts(export)]
+pub struct StageHistorySummary {
+    pub text: String,
+    /// Number of leading chat messages already folded into the summary.
+    pub until: usize,
 }
 
 pub(super) fn default_current_turn_actor() -> String {

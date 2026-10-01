@@ -140,6 +140,7 @@ pub fn build_initial_scene_state(def: &SceneDefinition) -> SceneState {
             None
         },
         private_knowledge: HashMap::new(),
+        history_summaries: HashMap::new(),
     };
     ensure_party_vitals(&mut state);
     state
@@ -776,6 +777,7 @@ pub(super) fn edit_stage_turn_message_with_saver(
 
     if let Some(msg) = state.chat_log.iter_mut().find(|m| m.id == message_id) {
         msg.content = new_content.to_string();
+        state.history_summaries.clear();
         save(&state)?;
         engine.set_state(state.clone());
         Ok(state)
@@ -805,6 +807,7 @@ pub(super) fn delete_stage_turn_message_with_saver(
     engine.push_snapshot(scene_id, state.clone());
 
     state.chat_log.retain(|m| m.id != message_id);
+    state.history_summaries.clear();
     save(&state)?;
     engine.set_state(state.clone());
     Ok(state)
@@ -829,6 +832,7 @@ pub async fn regenerate_stage_turn(
     if let Some(idx) = player_idx {
         let player_msg = state.chat_log[idx].clone();
         state.chat_log.truncate(idx);
+        state.history_summaries.clear();
         save_scene_state(&state)?;
         engine.set_state(state);
 

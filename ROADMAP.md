@@ -302,8 +302,12 @@ und übernimmt, was SoW lebendig macht:
    `resource_delta`/`condition_updates`; Kämpfe fügen nur Gegner hinzu. Die Platzhalter im Party-HUD sind weg.
    Rauchtest prüft Geheimhaltung, HP und Zustand.
    - [ ] Noch offen: Fertigkeitswerte als Würfelbonus.
-3. [ ] **Kontext & Zusammenfassung für die Stage:** längerer Verlauf über `context_window`, ältere Runden zusammengefasst
-   (heute sieht der Planner nur die letzten 6 Nachrichten).
+3. [x] **Kontext & Zusammenfassung für die Stage** (`stage/history.rs`): Planer, Erzähler und Gefährten nutzen
+   `context_window` (lokal echte Tokenzählung, Cloud-Schätzung samt Antwortreserve). Ältere Beiträge werden in
+   laufende, im Spielstand gespeicherte Zusammenfassungen gefaltet, getrennt nach Publikum: Gedanken nur für den
+   Planer, Flüstern nur für Planer/Empfänger. Der Originalverlauf bleibt vollständig; Bearbeiten, Löschen und
+   Neugenerieren verwerfen Zusammenfassungen, Undo stellt sie wieder her. Fehlgeschlagene Zusammenfassungen
+   werden erneut versucht. E2E-Test mit 45 Beiträgen prüft Budget, Geheimhaltung, Wiederladen und Änderungen.
 4. [ ] **NPC-System:** NPCs mit Archetyp-Avatar, eigenem Gedächtnis (Abruf nach Relevanz) und „NPC zum Charakter befördern“.
 5. [ ] **Szenen-Editor vollständig:** bestehende Szenen bearbeiten, Startbild, Ambient-Ton, Lorebooks, Akteure pro Runde.
 6. [ ] **Regie & Ablauf:** Routing nach jedem Beitrag (wer spricht als Nächstes), direkte Ansprache per Name, Auto-Play,

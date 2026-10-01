@@ -13,3 +13,6 @@ Requirements (Linux; Windows works with `msedgedriver`, macOS has no WebDriver f
 - `cargo install tauri-driver --locked`
 - `WebKitWebDriver`: Arch `webkitgtk-6.0`, Debian/Ubuntu `webkit2gtk-driver`, Fedora `webkitgtk6.0`
 - A display; headless CI runs it under `xvfb-run npm run e2e`.
+
+`stage-context.mjs` prüft zusätzlich lange Stage-Verläufe: Kontextbudget, getrennte Zusammenfassungen für
+Planer/Erzähler/Gefährten, Geheimhaltung, Wiederladen, Undo, Bearbeiten/Löschen und Wiederholung nach LLM-Fehlern.

@@ -559,6 +559,7 @@ export interface SceneState {
   current_bg?: string | null;
   /** What each character was told in private (whispers). */
   private_knowledge?: Record<string, string[]>;
+  history_summaries?: Record<string, import('./generated/StageHistorySummary').StageHistorySummary>;
 }
 
 export type StageState = SceneState;
