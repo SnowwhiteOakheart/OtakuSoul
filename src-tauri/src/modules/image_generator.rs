@@ -446,7 +446,9 @@ impl ImageGenerator {
                 let bytes = local
                     .engine
                     .generate(
-                        local.app,
+                        &|status| {
+                            let _ = tauri::Emitter::emit(local.app, "local-image-status", status);
+                        },
                         local.llama,
                         crate::modules::local_image::GenerationRequest {
                             model_id: &model_id,

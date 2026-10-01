@@ -387,6 +387,17 @@ pub async fn download_model<R: tauri::Runtime>(
     app: &tauri::AppHandle<R>,
     model_id: &str,
 ) -> Result<(), String> {
+    download_model_with(model_id, &|p| {
+        let _ = app.emit("image-model-progress", p);
+    })
+    .await
+}
+
+/// [`download_model`] with a progress callback instead of the Tauri event (tests, tools).
+pub async fn download_model_with(
+    model_id: &str,
+    emit: &(impl Fn(ImageModelProgress) + Sync),
+) -> Result<(), String> {
     let model = catalog_model(model_id)?;
     CANCEL_DOWNLOAD.store(false, Ordering::SeqCst);
     let dir = models_dir();
@@ -404,17 +415,14 @@ pub async fn download_model<R: tauri::Runtime>(
         .sum();
     for file in model.files.iter().filter(|f| !is_file_complete(f)) {
         let emit = |downloaded: u64| {
-            let _ = app.emit(
-                "image-model-progress",
-                ImageModelProgress {
-                    model_id: model.id.to_string(),
-                    file_name: file.file_name().to_string(),
-                    downloaded_bytes: done + downloaded,
-                    total_bytes: total,
-                    percent: ((done + downloaded) as f32 / total.max(1) as f32 * 100.0).min(100.0),
-                    finished: false,
-                },
-            );
+            emit(ImageModelProgress {
+                model_id: model.id.to_string(),
+                file_name: file.file_name().to_string(),
+                downloaded_bytes: done + downloaded,
+                total_bytes: total,
+                percent: ((done + downloaded) as f32 / total.max(1) as f32 * 100.0).min(100.0),
+                finished: false,
+            });
         };
         crate::modules::model_files::download_file(
             &client,
@@ -426,17 +434,14 @@ pub async fn download_model<R: tauri::Runtime>(
         .await?;
         done += file.size;
     }
-    let _ = app.emit(
-        "image-model-progress",
-        ImageModelProgress {
-            model_id: model.id.to_string(),
-            file_name: String::new(),
-            downloaded_bytes: total,
-            total_bytes: total,
-            percent: 100.0,
-            finished: true,
-        },
-    );
+    emit(ImageModelProgress {
+        model_id: model.id.to_string(),
+        file_name: String::new(),
+        downloaded_bytes: total,
+        total_bytes: total,
+        percent: 100.0,
+        finished: true,
+    });
     tracing::info!("Bildmodell {} heruntergeladen", model.id);
     Ok(())
 }
@@ -842,23 +847,21 @@ impl LocalImageEngine {
 
     /// Generates one image, sharing the GPU with `llama` according to the plan. In swap mode
     /// the chat model is started again in the background, so the image is returned at once.
-    pub async fn generate<R: tauri::Runtime>(
+    /// `on_status` receives each phase (the app forwards it as `local-image-status`).
+    pub async fn generate(
         &self,
-        app: &tauri::AppHandle<R>,
+        on_status: &(impl Fn(LocalImageStatus) + Sync),
         llama: Arc<LlamaServerManager>,
         req: GenerationRequest<'_>,
     ) -> Result<Vec<u8>, String> {
         let _busy = self.busy.lock().await;
         let model = catalog_model(req.model_id)?;
         let emit = |phase: &str, plan: Option<VramPlan>| {
-            let _ = app.emit(
-                "local-image-status",
-                LocalImageStatus {
-                    phase: phase.to_string(),
-                    plan,
-                    model_id: Some(model.id.to_string()),
-                },
-            );
+            on_status(LocalImageStatus {
+                phase: phase.to_string(),
+                plan,
+                model_id: Some(model.id.to_string()),
+            });
         };
         emit("planning", None);
 

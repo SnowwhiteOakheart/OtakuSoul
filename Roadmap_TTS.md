@@ -44,8 +44,36 @@ aus einer eigenen Aufnahme. Grundlage ist die Recherche vom 30.09.2026.
 7. [x] **VRAM:** TTS-Modelle im VRAM-Planer berücksichtigen (klein, meist parallel zum Chat-Modell).
    *Umgesetzt:* Der Bild-Planer rechnet ein geladenes Sprachmodell mit ein (gemessen oder geschätzt) und entlädt gestuft:
    nichts, wenn alles passt; sonst zuerst `crispasr` (startet beim nächsten Satz neu), erst danach das Chat-Modell.
-8. [ ] **Tests nachholen** (aufgeschoben, solange keine Modelle laufen sollen): Qwen3-TTS mit deutscher/russischer
-   Ausgabe, Klon aus eigener Aufnahme, Chatterbox, Kokoro-DE, F5-TTS; Latenz und VRAM messen.
+8. [x] **Tests auf echter Hardware** (01.10.2026, RTX 4070 Ti SUPER 16 GB, CUDA 13; `src-tauri/tests/gpu_e2e.rs`,
+   Verständlichkeit per Whisper-Rückerkennung):
+
+   | Modell | Stimme | DE | RU | EN | RTF (warm) | VRAM |
+   |---|---|---|---|---|---|---|
+   | Qwen3-TTS 0.6B CustomVoice | Vivian/Ryan | 100 % | 90 % | 100 % | 0,12–0,13 | +2,3–3,2 GB |
+   | Qwen3-TTS 1.7B Base | Klon (16-kHz-Aufnahme) | 100 % | 100 % | 100 % | 0,15 | +3,3–3,6 GB |
+   | Chatterbox Multilingual | Standard | 92 % | 70 % | – | 0,3–0,55 | +1,8–2,3 GB |
+   | Kokoro DE | Victoria/Bernd/Eva | 77 % | – | – | 0,06–0,23 | +1,0–1,8 GB |
+   | F5-TTS v1 | Klon | – | – | 100 % | ~55 (!) | +3 GB |
+
+   **Gefundene und behobene Fehler:**
+   - Linux-CUDA-Builds (CrispASR, PrismML) bringen keine CUDA-Laufzeit mit und fallen ohne passende
+     `libcudart` still auf die CPU zurück. Die App empfiehlt CUDA jetzt nur, wenn die CUDA-Hauptversion im System
+     vorhanden ist (`ldconfig`), sonst Vulkan.
+   - Das GGUF von Qwen3-TTS 0.6B **Base** hat keine Sprachtabelle: alles außer Englisch wurde Kauderwelsch bzw. lief
+     62 s weiter. Ersetzt durch 0.6B **CustomVoice** (9 eingebaute Stimmen) und 1.7B Base (Klonen); alte Einstellungen
+     werden umgeleitet.
+   - Der Server akzeptiert Stimmen nur als Namen, keine Pfade; Kokoro sucht sie zudem im Arbeitsverzeichnis →
+     `crispasr` läuft im Stimmen-Ordner, Voice-Packs werden dorthin kopiert.
+   - Kokoros deutsches Grundmodell wird nur unter dem f16-Dateinamen erkannt (vorher englisches Modell mit deutscher
+     Stimme).
+   - Qwen3-TTS verlangt 24-kHz-Referenzen; Klone wurden mit 16 kHz gespeichert → Backend rechnet auf 24 kHz um,
+     Aufnahme/Upload liefern 24 kHz.
+   - Abschalten des gesprochenen KI-Hinweises braucht `--accept-marking-responsibility` und pro Anfrage eine
+     `marking_attestation`; Stimmen realer Sprecher (Kokoro Eva/Bernd) behalten ihn.
+
+   **Offen:** F5-TTS ist in CrispASR 0.8.39 auch auf CUDA extrem langsam (~13 s pro Diffusionsschritt) – im Katalog
+   als „experimentell“ markiert; Fehlerbericht an CrispASR sinnvoll (ebenso: 0.6B-Base-GGUF ohne Sprachtabelle,
+   Standard-Stimmpaket passt nicht zu 1.7B).
 
 ## Später / offen
 

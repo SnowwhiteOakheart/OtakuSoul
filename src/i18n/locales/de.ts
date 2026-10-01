@@ -2105,7 +2105,7 @@ export const de = {
   "localTts.clonedTag": "geklont",
   "localTts.needsClone": "Dieses Modell braucht eine geklonte Stimme (unten anlegen).",
   "localTts.spokenDisclaimer": "Gesprochenen KI-Hinweis vor geklonten Stimmen einfügen",
-  "localTts.spokenDisclaimerHint": "Empfohlen, sobald Audio geteilt wird. Das unhörbare Wasserzeichen bleibt immer aktiv.",
+  "localTts.spokenDisclaimerHint": "Empfohlen, sobald Audio geteilt wird. Abschalten heißt: Du übernimmst die Kennzeichnung selbst (bei rein privater Nutzung unkritisch). Stimmen realer Sprecher (z. B. Kokoro Eva/Bernd) behalten ihn. Das unhörbare Wasserzeichen bleibt immer an.",
   "localTts.cloneTitle": "Stimme aus eigener Aufnahme klonen",
   "localTts.cloneIntro": "5–15 Sekunden klare Sprache ohne Musik oder Hall. Funktioniert mit Qwen3-TTS (und F5-TTS, falls freigeschaltet).",
   "localTts.clonedVoices": "Geklonte Stimmen",

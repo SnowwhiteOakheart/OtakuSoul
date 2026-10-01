@@ -76,25 +76,28 @@ const CHATTERBOX_LANGS: &[&str] = &[
 ];
 
 const CATALOG: &[TtsModel] = &[
+    // The 0.6B *Base* GGUF lacks the codec language table, so every language but English ran
+    // in "auto" and produced gibberish (e2e test 2026-10-01). Built-in voices therefore use
+    // CustomVoice (has the table) and cloning the 1.7B Base model.
     TtsModel {
-        id: "qwen3-tts-0.6b",
-        name: "Qwen3-TTS 0.6B",
-        backend: "qwen3-tts",
+        id: "qwen3-tts-customvoice-0.6b",
+        name: "Qwen3-TTS 0.6B (eingebaute Stimmen)",
+        backend: "qwen3-tts-customvoice",
         license: "Apache-2.0",
         noncommercial: false,
         languages: QWEN_LANGS,
-        cloning: true,
+        cloning: false,
         needs_clone: false,
-        vram_mb: 2_000,
+        vram_mb: 3_200,
         files: &[
             TtsFile {
                 role: Role::Main,
                 file: RemoteFile {
-                    repo: "cstr/qwen3-tts-0.6b-base-GGUF",
-                    path: "qwen3-tts-12hz-0.6b-base-q8_0.gguf",
-                    size: 985_716_544,
+                    repo: "cstr/qwen3-tts-0.6b-customvoice-GGUF",
+                    path: "qwen3-tts-12hz-0.6b-customvoice-q8_0.gguf",
+                    size: 967_980_192,
                     sha256: Some(
-                        "6162637048fff8ca7f7a16bebc8a62ea8181f4aec4f160894955dee5b87c1961",
+                        "5227dcbc4df7c5533341d111cc469fa491a48e722b23dd10f553181b52dff2d9",
                     ),
                 },
             },
@@ -109,24 +112,100 @@ const CATALOG: &[TtsModel] = &[
                     ),
                 },
             },
+        ],
+        voices: &[
+            PresetVoice {
+                id: "vivian",
+                label: "Vivian",
+                file: None,
+                language: "multi",
+            },
+            PresetVoice {
+                id: "serena",
+                label: "Serena",
+                file: None,
+                language: "multi",
+            },
+            PresetVoice {
+                id: "ono_anna",
+                label: "Ono Anna",
+                file: None,
+                language: "multi",
+            },
+            PresetVoice {
+                id: "sohee",
+                label: "Sohee",
+                file: None,
+                language: "multi",
+            },
+            PresetVoice {
+                id: "ryan",
+                label: "Ryan",
+                file: None,
+                language: "multi",
+            },
+            PresetVoice {
+                id: "aiden",
+                label: "Aiden",
+                file: None,
+                language: "multi",
+            },
+            PresetVoice {
+                id: "dylan",
+                label: "Dylan",
+                file: None,
+                language: "multi",
+            },
+            PresetVoice {
+                id: "eric",
+                label: "Eric",
+                file: None,
+                language: "multi",
+            },
+            PresetVoice {
+                id: "uncle_fu",
+                label: "Uncle Fu",
+                file: None,
+                language: "multi",
+            },
+        ],
+        start_language: None,
+    },
+    TtsModel {
+        id: "qwen3-tts-1.7b",
+        name: "Qwen3-TTS 1.7B (Stimmklon)",
+        backend: "qwen3-tts-1.7b-base",
+        license: "Apache-2.0",
+        noncommercial: false,
+        languages: QWEN_LANGS,
+        cloning: true,
+        needs_clone: true,
+        vram_mb: 3_600,
+        files: &[
             TtsFile {
-                role: Role::Extra,
+                role: Role::Main,
                 file: RemoteFile {
-                    repo: "cstr/qwen3-tts-voices-GGUF",
-                    path: "qwen3-tts-voice-default.gguf",
-                    size: 11_104,
+                    repo: "cstr/qwen3-tts-1.7b-base-GGUF",
+                    path: "qwen3-tts-12hz-1.7b-base-q8_0.gguf",
+                    size: 2_066_258_176,
                     sha256: Some(
-                        "031c1b7f397b5f11db237dd39671042f994f1dd6b55369b64e4e72bc723efb28",
+                        "bbb93ab1f4a3f771f94fc6f68404b2b969bdf3b14c6303473dbf64c63011520d",
+                    ),
+                },
+            },
+            TtsFile {
+                role: Role::Codec,
+                file: RemoteFile {
+                    repo: "cstr/qwen3-tts-tokenizer-12hz-GGUF",
+                    path: "qwen3-tts-tokenizer-12hz.gguf",
+                    size: 358_453_280,
+                    sha256: Some(
+                        "70dc95dbfdd9aa5d9d406236ff771d061bf17b0cda02a72513953355606e719b",
                     ),
                 },
             },
         ],
-        voices: &[PresetVoice {
-            id: "default",
-            label: "Standard",
-            file: None,
-            language: "multi",
-        }],
+        voices: &[],
         start_language: None,
     },
     TtsModel {
@@ -138,7 +217,7 @@ const CATALOG: &[TtsModel] = &[
         languages: CHATTERBOX_LANGS,
         cloning: false,
         needs_clone: false,
-        vram_mb: 1_500,
+        vram_mb: 2_300,
         files: &[
             TtsFile {
                 role: Role::Main,
@@ -196,11 +275,12 @@ const CATALOG: &[TtsModel] = &[
             TtsFile {
                 role: Role::Extra,
                 file: RemoteFile {
+                    // CrispASR only picks the German backbone up under this f16 name.
                     repo: "cstr/kokoro-de-hui-base-GGUF",
-                    path: "kokoro-de-hui-base-q8_0.gguf",
-                    size: 141_322_336,
+                    path: "kokoro-de-hui-base-f16.gguf",
+                    size: 163_728_096,
                     sha256: Some(
-                        "882cfc97596128c362d74f8d5de80e554bf6209b432e9176637534f9b338fd5a",
+                        "af1b5339f936635e711fcb1e2aa0f60fb505ff00f55743bc11708d98d4dabaa5",
                     ),
                 },
             },
@@ -279,7 +359,8 @@ const CATALOG: &[TtsModel] = &[
     },
     TtsModel {
         id: "f5-tts-v1",
-        name: "F5-TTS v1",
+        // ~1 min per second of audio on CUDA in CrispASR 0.8.39 (e2e test 2026-10-01).
+        name: "F5-TTS v1 (experimentell, sehr langsam)",
         backend: "f5-tts",
         license: "CC-BY-NC-4.0",
         noncommercial: true,
@@ -302,6 +383,12 @@ const CATALOG: &[TtsModel] = &[
 ];
 
 fn catalog_model(id: &str) -> Result<&'static TtsModel, String> {
+    // Settings saved with the withdrawn 0.6B Base model use the built-in-voice model instead.
+    let id = if id == "qwen3-tts-0.6b" {
+        "qwen3-tts-customvoice-0.6b"
+    } else {
+        id
+    };
     CATALOG
         .iter()
         .find(|m| m.id == id)
@@ -488,6 +575,17 @@ pub async fn download_model<R: tauri::Runtime>(
     app: &tauri::AppHandle<R>,
     model_id: &str,
 ) -> Result<(), String> {
+    download_model_with(model_id, &|p| {
+        let _ = app.emit("tts-model-progress", p);
+    })
+    .await
+}
+
+/// [`download_model`] with a progress callback instead of the Tauri event (tests, tools).
+pub async fn download_model_with(
+    model_id: &str,
+    emit: &(impl Fn(TtsModelProgress) + Sync),
+) -> Result<(), String> {
     let model = catalog_model(model_id)?;
     ensure_allowed(model)?;
     CANCEL_DOWNLOAD.store(false, Ordering::SeqCst);
@@ -504,17 +602,14 @@ pub async fn download_model<R: tauri::Runtime>(
         .map(|f| f.file.size)
         .sum();
     let emit_progress = |file_name: &str, bytes: u64, finished: bool| {
-        let _ = app.emit(
-            "tts-model-progress",
-            TtsModelProgress {
-                model_id: model.id.to_string(),
-                file_name: file_name.to_string(),
-                downloaded_bytes: bytes,
-                total_bytes: total,
-                percent: (bytes as f32 / total.max(1) as f32 * 100.0).min(100.0),
-                finished,
-            },
-        );
+        emit(TtsModelProgress {
+            model_id: model.id.to_string(),
+            file_name: file_name.to_string(),
+            downloaded_bytes: bytes,
+            total_bytes: total,
+            percent: (bytes as f32 / total.max(1) as f32 * 100.0).min(100.0),
+            finished,
+        });
     };
     for file in model.files.iter().filter(|f| !f.file.is_complete(&dir)) {
         crate::modules::model_files::download_file(
@@ -641,15 +736,17 @@ pub fn create_cloned_voice(
     std::fs::create_dir_all(&dir)
         .map_err(|e| crate::err!("backend.common.dirCreate", error = e))?;
     let id = slug(name);
+    // Qwen3-TTS rejects references that are not 24 kHz.
+    let samples = resample_linear(samples, sample_rate, REFERENCE_RATE);
     let spec = hound::WavSpec {
         channels: 1,
-        sample_rate,
+        sample_rate: REFERENCE_RATE,
         bits_per_sample: 16,
         sample_format: hound::SampleFormat::Int,
     };
     let mut writer = hound::WavWriter::create(dir.join(format!("{id}.wav")), spec)
         .map_err(|e| crate::err!("backend.common.fileWrite", error = e))?;
-    for s in samples {
+    for s in &samples {
         writer
             .write_sample((s.clamp(-1.0, 1.0) * f32::from(i16::MAX)) as i16)
             .map_err(|e| crate::err!("backend.common.fileWrite", error = e))?;
@@ -679,6 +776,26 @@ pub fn create_cloned_voice(
         .map_err(|e| crate::err!("backend.common.fileWrite", error = e))?;
     tracing::info!("Stimme {} ({:.1}s) gespeichert", voice.id, duration);
     Ok(voice)
+}
+
+/// Sample rate of stored voice references (required by Qwen3-TTS).
+pub const REFERENCE_RATE: u32 = 24_000;
+
+fn resample_linear(input: &[f32], from: u32, to: u32) -> Vec<f32> {
+    if from == to || input.is_empty() {
+        return input.to_vec();
+    }
+    let ratio = f64::from(from) / f64::from(to);
+    let len = ((input.len() as f64) / ratio).round().max(1.0) as usize;
+    (0..len)
+        .map(|i| {
+            let pos = i as f64 * ratio;
+            let left = (pos as usize).min(input.len() - 1);
+            let right = (left + 1).min(input.len() - 1);
+            let frac = (pos - left as f64) as f32;
+            input[left] * (1.0 - frac) + input[right] * frac
+        })
+        .collect()
 }
 
 pub fn delete_cloned_voice(id: &str) -> Result<(), String> {
@@ -723,7 +840,9 @@ pub fn engine() -> &'static LocalTtsEngine {
 enum VoiceChoice {
     /// The model's built-in voice.
     Default,
-    Preset(PathBuf),
+    /// A voice name the server resolves itself: a built-in speaker (`vivian`) or a voice pack
+    /// file in the voice folder (`kokoro-voice-df_eva.gguf`).
+    Preset(String),
     Clone(ClonedVoice),
 }
 
@@ -750,7 +869,10 @@ fn resolve_voice(model: &TtsModel, voice_id: &str) -> Result<VoiceChoice, String
     {
         Some(PresetVoice {
             file: Some(file), ..
-        }) => Ok(VoiceChoice::Preset(models_dir().join(file))),
+        }) => Ok(VoiceChoice::Preset(file.to_string())),
+        Some(PresetVoice { id, file: None, .. }) if *id != "default" => {
+            Ok(VoiceChoice::Preset(id.to_string()))
+        }
         _ => Ok(VoiceChoice::Default),
     }
 }
@@ -818,6 +940,16 @@ impl LocalTtsEngine {
         let dir = models_dir();
         std::fs::create_dir_all(voices_dir())
             .map_err(|e| crate::err!("backend.common.dirCreate", error = e))?;
+        // Voice packs have to sit in the voice folder to be addressable by name.
+        for voice in model.voices {
+            if let Some(file) = voice.file {
+                let target = voices_dir().join(file);
+                if !target.is_file() {
+                    std::fs::copy(dir.join(file), &target)
+                        .map_err(|e| crate::err!("backend.common.fileWrite", error = e))?;
+                }
+            }
+        }
         let binary = PathBuf::from(&runtime.server_path);
         let mut cmd = Command::new(&binary);
         let mut lib_dirs: Vec<PathBuf> = runtime.library_dirs.iter().map(PathBuf::from).collect();
@@ -835,6 +967,9 @@ impl LocalTtsEngine {
                 .map_err(|e| crate::err!("backend.tts.startFailed", error = e))?;
         cmd.env(var, joined);
 
+        // Kokoro resolves voice packs relative to the working directory instead of
+        // `--voice-dir`, so the server runs inside the voice folder.
+        cmd.current_dir(voices_dir());
         cmd.arg("--server")
             .arg("--host")
             .arg("127.0.0.1")
@@ -859,7 +994,9 @@ impl LocalTtsEngine {
             cmd.arg("-l").arg(lang);
         }
         if !spoken_disclaimer {
-            cmd.arg("--no-spoken-disclaimer");
+            // Turning the spoken label off means the user takes over the marking duty.
+            cmd.arg("--no-spoken-disclaimer")
+                .arg("--accept-marking-responsibility");
         }
         cmd.stdout(std::process::Stdio::piped())
             .stderr(std::process::Stdio::piped())
@@ -962,16 +1099,21 @@ impl LocalTtsEngine {
             "response_format": "wav",
             "speed": speed.clamp(0.5, 2.0),
         });
+        if !settings.spoken_disclaimer {
+            // The server only honours the opt-out with an attestation (CrispASR >= 0.8.22).
+            body["spoken_disclaimer"] = false.into();
+            body["marking_attestation"] =
+                "The OtakuSoul user turned the spoken AI label off and discloses AI-generated audio themselves."
+                    .into();
+        }
         match &voice {
             VoiceChoice::Default => {}
-            VoiceChoice::Preset(path) => {
-                body["voice"] = path.to_string_lossy().into();
+            // The server only accepts bare names, resolved against `--voice-dir`.
+            VoiceChoice::Preset(name) => {
+                body["voice"] = name.clone().into();
             }
             VoiceChoice::Clone(clone) => {
-                body["voice"] = voices_dir()
-                    .join(format!("{}.wav", clone.id))
-                    .to_string_lossy()
-                    .into();
+                body["voice"] = clone.id.clone().into();
                 body["ref_text"] = clone.ref_text.clone().into();
                 body["source_lang"] = clone.language.clone().into();
                 body["consent_attestation"] = clone.consent_statement.clone().into();
@@ -1072,21 +1214,40 @@ mod tests {
         let kokoro = catalog_model("kokoro-de").unwrap();
         assert_eq!(
             resolve_voice(kokoro, "preset:dm_bernd").unwrap(),
-            VoiceChoice::Preset(models_dir().join("kokoro-voice-dm_bernd.gguf"))
+            VoiceChoice::Preset("kokoro-voice-dm_bernd.gguf".into())
         );
         // Unknown presets fall back to the model's first voice.
         assert_eq!(
             resolve_voice(kokoro, "").unwrap(),
-            VoiceChoice::Preset(models_dir().join("kokoro-voice-df_victoria.gguf"))
+            VoiceChoice::Preset("kokoro-voice-df_victoria.gguf".into())
         );
+        // Built-in speakers go by name; the old 0.6B Base id maps to CustomVoice.
         let qwen = catalog_model("qwen3-tts-0.6b").unwrap();
+        assert_eq!(qwen.id, "qwen3-tts-customvoice-0.6b");
+        assert_eq!(
+            resolve_voice(qwen, "preset:serena").unwrap(),
+            VoiceChoice::Preset("serena".into())
+        );
         assert_eq!(
             resolve_voice(qwen, "preset:default").unwrap(),
-            VoiceChoice::Default
+            VoiceChoice::Preset("vivian".into())
         );
-        // Kokoro cannot clone; F5 needs a clone.
+        // Kokoro cannot clone; F5 and the 1.7B model need a clone.
         assert!(resolve_voice(kokoro, "clone:someone").is_err());
         assert!(resolve_voice(catalog_model("f5-tts-v1").unwrap(), "preset:default").is_err());
+        assert!(resolve_voice(catalog_model("qwen3-tts-1.7b").unwrap(), "preset:vivian").is_err());
+    }
+
+    #[test]
+    fn resamples_references_to_24_khz() {
+        let one_second_16k = vec![0.5f32; 16_000];
+        let out = resample_linear(&one_second_16k, 16_000, REFERENCE_RATE);
+        assert_eq!(out.len(), 24_000);
+        assert!(out.iter().all(|s| (s - 0.5).abs() < 1e-6));
+        assert_eq!(
+            resample_linear(&one_second_16k, 16_000, 16_000).len(),
+            16_000
+        );
     }
 
     #[test]

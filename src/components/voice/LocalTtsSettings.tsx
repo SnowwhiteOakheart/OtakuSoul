@@ -9,8 +9,10 @@ import { VoiceCapture, floatSamplesToBase64, resampleMono } from '../../services
 import type { ClonedVoice, TtsLocalSettings, TtsModelInfo, TtsModelProgress, VoiceConfig } from '../../types';
 
 const gb = (bytes: number) => (bytes / 1024 ** 3).toFixed(2);
-/** Sample rate of recordings and uploads for voice cloning (VoiceCapture records at 16 kHz). */
-const CLONE_RATE = 16_000;
+/** Voice references are stored at 24 kHz (Qwen3-TTS rejects other rates). */
+const CLONE_RATE = 24_000;
+/** Speech recognition (whisper) expects 16 kHz. */
+const STT_RATE = 16_000;
 const CLONE_LANGUAGES = ['de', 'en', 'ru', 'ja', 'zh', 'fr', 'es', 'it', 'pt', 'ko'];
 
 const fieldClass =
@@ -338,7 +340,11 @@ const VoiceCloneSection = ({
         return;
       }
       capture.current = new VoiceCapture();
-      await capture.current.start({ inputDeviceId: sttConfig.input_device_id || undefined, maxDurationMs: 30_000 });
+      await capture.current.start({
+        inputDeviceId: sttConfig.input_device_id || undefined,
+        maxDurationMs: 30_000,
+        targetRate: CLONE_RATE,
+      });
       setIsRecording(true);
     } catch (e) {
       setIsRecording(false);
@@ -359,7 +365,8 @@ const VoiceCloneSection = ({
     if (!samples) return;
     setIsBusy(true);
     try {
-      setRefText((await api.transcribeSpeech(floatSamplesToBase64(samples), { ...sttConfig, language })).trim());
+      const speech = resampleMono(samples, CLONE_RATE, STT_RATE);
+      setRefText((await api.transcribeSpeech(floatSamplesToBase64(speech), { ...sttConfig, language })).trim());
     } catch (e) {
       toast.error(translate('localTts.transcribeFailed', { error: errorMessage(e) }));
     } finally {

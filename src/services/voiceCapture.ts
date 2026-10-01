@@ -7,6 +7,8 @@ export interface VoiceCaptureResult {
 
 export interface VoiceCaptureOptions {
   inputDeviceId?: string;
+  /** Sample rate of the result (16 kHz for speech recognition, 24 kHz for voice references). */
+  targetRate?: number;
   vadThreshold?: number;
   silenceMs?: number;
   autoStopOnSilence?: boolean;
@@ -142,7 +144,7 @@ export class VoiceCapture {
       merged.set(chunk, offset);
       offset += chunk.length;
     }
-    const samples = resampleMono(merged, this.sourceRate);
+    const samples = resampleMono(merged, this.sourceRate, this.options.targetRate ?? 16_000);
     this.cleanup();
 
     if (!this.speechDetected || samples.length < 1_600) return null;

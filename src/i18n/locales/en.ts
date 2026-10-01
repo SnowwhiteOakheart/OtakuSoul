@@ -2103,7 +2103,7 @@ export const en: TranslationDictionary = {
   "localTts.clonedTag": "cloned",
   "localTts.needsClone": "This model needs a cloned voice (create one below).",
   "localTts.spokenDisclaimer": "Speak an AI disclosure before cloned voices",
-  "localTts.spokenDisclaimerHint": "Recommended as soon as audio is shared. The inaudible watermark always stays on.",
+  "localTts.spokenDisclaimerHint": "Recommended as soon as audio is shared. Turning it off means you take over the marking yourself (unproblematic for purely private use). Voices of real speakers (e.g. Kokoro Eva/Bernd) keep it. The inaudible watermark always stays on.",
   "localTts.cloneTitle": "Clone a voice from your own recording",
   "localTts.cloneIntro": "5–15 seconds of clear speech without music or reverb. Works with Qwen3-TTS (and F5-TTS if unlocked).",
   "localTts.clonedVoices": "Cloned voices",
