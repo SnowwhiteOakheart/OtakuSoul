@@ -133,7 +133,7 @@ export const ToolWorkbenchTab: React.FC = () => {
                     setToolArgPrimary('https://github.com/SnowwhiteOakheart/OtakuSoul');
                     setToolArgSecondary('');
                   } else if (val === 'execute_code') {
-                    setToolArgPrimary('print("Hallo aus der OtakuSoul Sandbox!")\nimport sys\nprint("Python Version:", sys.version)');
+                    setToolArgPrimary('print("Hallo aus OtakuSoul!")\nimport sys\nprint("Python Version:", sys.version)');
                     setToolArgSecondary('');
                   } else if (val === 'app_control') {
                     setToolArgPrimary('launch');
@@ -181,7 +181,7 @@ export const ToolWorkbenchTab: React.FC = () => {
                     type="button"
                     onClick={() => {
                       setCodeLanguage('powershell');
-                      setToolArgPrimary('Write-Output "Hallo aus der OtakuSoul Sandbox!"\nGet-Date');
+                      setToolArgPrimary('Write-Output "Hallo aus OtakuSoul!"\nGet-Date');
                     }}
                     className={`px-3 py-1 rounded-lg border text-xs font-mono transition ${
                       codeLanguage === 'powershell'
@@ -195,7 +195,7 @@ export const ToolWorkbenchTab: React.FC = () => {
                     type="button"
                     onClick={() => {
                       setCodeLanguage('bash');
-                      setToolArgPrimary('echo "Hallo aus der OtakuSoul Sandbox!"\nuname -a');
+                      setToolArgPrimary('echo "Hallo aus OtakuSoul!"\nuname -a');
                     }}
                     className={`px-3 py-1 rounded-lg border text-xs font-mono transition ${
                       codeLanguage === 'bash'
@@ -209,7 +209,7 @@ export const ToolWorkbenchTab: React.FC = () => {
                     type="button"
                     onClick={() => {
                       setCodeLanguage('cmd');
-                      setToolArgPrimary('@echo off\necho Hallo aus der OtakuSoul Sandbox!\nver');
+                      setToolArgPrimary('@echo off\necho Hallo aus OtakuSoul!\nver');
                     }}
                     className={`px-3 py-1 rounded-lg border text-xs font-mono transition ${
                       codeLanguage === 'cmd'
@@ -223,7 +223,7 @@ export const ToolWorkbenchTab: React.FC = () => {
                     type="button"
                     onClick={() => {
                       setCodeLanguage('python');
-                      setToolArgPrimary('print("Hallo aus der OtakuSoul Sandbox!")\nimport sys\nprint("Python Version:", sys.version)');
+                      setToolArgPrimary('print("Hallo aus OtakuSoul!")\nimport sys\nprint("Python Version:", sys.version)');
                     }}
                     className={`px-3 py-1 rounded-lg border text-xs font-mono transition ${
                       codeLanguage === 'python'

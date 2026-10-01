@@ -2,7 +2,7 @@ use axum::{
     Router,
     extract::ws::{Message as WsMessage, WebSocket},
     extract::{Query, State, WebSocketUpgrade},
-    http::{HeaderMap, StatusCode},
+    http::{HeaderMap, HeaderValue, StatusCode, header},
     response::{Html, IntoResponse, Json, Response},
     routing::{get, post},
 };
@@ -101,13 +101,14 @@ pub struct MobileStatusResponse {
 
 #[derive(Clone)]
 struct AppStateContext {
-    auth_token: String,
+    auth_token: Arc<RwLock<String>>,
     active_character_name: Arc<RwLock<String>>,
     active_emotion: Arc<RwLock<String>>,
 }
 
 pub struct WebServerManager {
     config: Arc<RwLock<WebServerConfig>>,
+    active_token: Arc<RwLock<String>>,
     is_running: Arc<AtomicBool>,
     shutdown_tx: Arc<tokio::sync::Mutex<Option<oneshot::Sender<()>>>>,
 }
@@ -120,8 +121,10 @@ impl Default for WebServerManager {
 
 impl WebServerManager {
     pub fn new() -> Self {
+        let config = Self::load_config();
         Self {
-            config: Arc::new(RwLock::new(Self::load_config())),
+            active_token: Arc::new(RwLock::new(config.auth_token.clone())),
+            config: Arc::new(RwLock::new(config)),
             is_running: Arc::new(AtomicBool::new(false)),
             shutdown_tx: Arc::new(tokio::sync::Mutex::new(None)),
         }
@@ -164,6 +167,7 @@ impl WebServerManager {
 
     pub async fn save_config(&self, config: WebServerConfig) -> Result<(), String> {
         Self::save_config_internal(&config)?;
+        *self.active_token.write().await = config.auth_token.clone();
         *self.config.write().await = config;
         Ok(())
     }
@@ -202,7 +206,8 @@ impl WebServerManager {
         let running = self.is_running.load(Ordering::Relaxed);
         let cfg = self.config.read().await.clone();
         let local_ip = Self::detect_local_ip();
-        let connection_url = format!("http://{}:{}/?token={}", local_ip, cfg.port, cfg.auth_token);
+        // Fragments are not sent in HTTP requests or referrer headers.
+        let connection_url = format!("http://{}:{}/#token={}", local_ip, cfg.port, cfg.auth_token);
         let qr_code_svg = Self::generate_qr_svg(&connection_url);
 
         WebServerStatus {
@@ -239,7 +244,7 @@ impl WebServerManager {
         let is_running_flag = Arc::clone(&self.is_running);
 
         let state = AppStateContext {
-            auth_token: cfg.auth_token.clone(),
+            auth_token: Arc::clone(&self.active_token),
             active_character_name: Arc::new(RwLock::new("OtakuSoul Companion".to_string())),
             active_emotion: Arc::new(RwLock::new("warm".to_string())),
         };
@@ -319,8 +324,18 @@ fn check_auth(headers: &HeaderMap, params: &AuthParams, expected_token: &str) ->
     constant_time_eq(provided.as_bytes(), expected_token.as_bytes())
 }
 
-async fn handle_index() -> Html<&'static str> {
-    Html(MOBILE_CLIENT_HTML)
+async fn handle_index() -> impl IntoResponse {
+    let mut headers = HeaderMap::new();
+    headers.insert(
+        header::CONTENT_SECURITY_POLICY,
+        HeaderValue::from_static("default-src 'none'; script-src 'unsafe-inline'; style-src 'unsafe-inline'; connect-src 'self' ws:; img-src data:; base-uri 'none'; form-action 'none'; frame-ancestors 'none'"),
+    );
+    headers.insert(
+        header::REFERRER_POLICY,
+        HeaderValue::from_static("no-referrer"),
+    );
+    headers.insert(header::CACHE_CONTROL, HeaderValue::from_static("no-store"));
+    (headers, Html(MOBILE_CLIENT_HTML))
 }
 
 async fn handle_status(
@@ -328,7 +343,7 @@ async fn handle_status(
     headers: HeaderMap,
     Query(params): Query<AuthParams>,
 ) -> Response {
-    if !check_auth(&headers, &params, &ctx.auth_token) {
+    if !check_auth(&headers, &params, &ctx.auth_token.read().await) {
         return (
             StatusCode::UNAUTHORIZED,
             "Invalid or missing authentication token",
@@ -358,7 +373,7 @@ async fn handle_chat(
     Query(params): Query<AuthParams>,
     Json(payload): Json<MobileChatRequest>,
 ) -> Response {
-    if !check_auth(&headers, &params, &ctx.auth_token) {
+    if !check_auth(&headers, &params, &ctx.auth_token.read().await) {
         return (
             StatusCode::UNAUTHORIZED,
             "Invalid or missing authentication token",
@@ -402,7 +417,7 @@ async fn handle_ws(
     headers: HeaderMap,
     Query(params): Query<AuthParams>,
 ) -> Response {
-    if !check_auth(&headers, &params, &ctx.auth_token) {
+    if !check_auth(&headers, &params, &ctx.auth_token.read().await) {
         return (StatusCode::UNAUTHORIZED, "Invalid token for WebSocket").into_response();
     }
 
@@ -448,12 +463,33 @@ const MOBILE_CLIENT_HTML: &str = r#"<!DOCTYPE html>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
   <title>OtakuSoul</title>
-  <script src="https://cdn.tailwindcss.com"></script>
   <style>
-    body { background-color: #050811; color: #f1f5f9; font-family: system-ui, -apple-system, sans-serif; }
-    .glass { background: rgba(15, 23, 42, 0.75); backdrop-filter: blur(16px); border: 1px solid rgba(56, 189, 248, 0.2); }
-    ::-webkit-scrollbar { width: 4px; }
-    ::-webkit-scrollbar-thumb { background: rgba(56, 189, 248, 0.3); border-radius: 9999px; }
+    * { box-sizing: border-box; }
+    body { margin: 0; height: 100dvh; display: flex; flex-direction: column; overflow: hidden; background: #050811; color: #f1f5f9; font-family: system-ui, -apple-system, sans-serif; }
+    .glass { background: rgba(15, 23, 42, .9); backdrop-filter: blur(16px); border: 1px solid rgba(56, 189, 248, .2); }
+    header { display: flex; align-items: center; justify-content: space-between; padding: 12px; gap: 12px; box-shadow: 0 4px 16px #0005; }
+    header > div, header > div:first-child > div:last-child > div { display: flex; align-items: center; gap: 10px; }
+    header > div:first-child > div:last-child { display: block; }
+    header h1 { margin: 0 0 4px; font-size: 14px; color: #67e8f9; }
+    header span, #moodLabel { font-size: 11px; color: #94a3b8; }
+    #emotionBadge { padding: 2px 7px; border-radius: 12px; color: #67e8f9; background: #083344; }
+    header > div:first-child > div:first-child { font-size: 28px; }
+    #chatFeed { flex: 1; overflow-y: auto; display: flex; flex-direction: column; gap: 12px; padding: 16px; }
+    #chatFeed > div { display: flex; align-items: flex-start; gap: 8px; max-width: 85%; align-self: flex-start; }
+    #chatFeed > div.self-end { align-self: flex-end; }
+    #chatFeed > div > div:last-child { padding: 12px; border-radius: 16px; background: #0f172a; border: 1px solid #1e293b; font-size: 14px; line-height: 1.5; overflow-wrap: anywhere; }
+    #chatFeed > div.self-end > div:last-child { background: #0891b2; border-color: #0891b2; color: white; }
+    footer { padding: 12px; }
+    footer > div { display: flex; align-items: center; gap: 8px; }
+    button { cursor: pointer; padding: 10px; border: 1px solid #334155; border-radius: 14px; background: #1e293b; color: #cbd5e1; font-size: 16px; }
+    button:active { transform: scale(.95); }
+    footer button:last-child { background: linear-gradient(90deg, #06b6d4, #2563eb); color: white; border: 0; }
+    #msgInput { flex: 1; min-width: 0; padding: 11px 14px; border: 1px solid #334155; border-radius: 14px; background: #0f172a; color: #f1f5f9; font-size: 14px; }
+    #msgInput:focus { outline: 1px solid #22d3ee; }
+    .text-cyan-400 { color: #22d3ee; }
+    .bg-rose-600 { background: #e11d48; }
+    .animate-pulse { animation: pulse 1.5s infinite; }
+    @keyframes pulse { 50% { opacity: .55; } }
   </style>
 </head>
 <body class="h-screen w-screen flex flex-col justify-between overflow-hidden">
@@ -567,10 +603,10 @@ const MOBILE_CLIENT_HTML: &str = r#"<!DOCTYPE html>
     });
     document.querySelectorAll('[data-i18n-placeholder]').forEach((el) => { el.placeholder = tr(el.dataset.i18nPlaceholder); });
 
-    const urlParams = new URLSearchParams(window.location.search);
-    let token = urlParams.get('token') || localStorage.getItem('otaku_token') || '';
+    const urlParams = new URLSearchParams(window.location.hash.slice(1));
+    let token = urlParams.get('token') || sessionStorage.getItem('otaku_token') || '';
     if (urlParams.get('token')) {
-      localStorage.setItem('otaku_token', token);
+      sessionStorage.setItem('otaku_token', token);
       // Keep the token out of the address bar and browser history.
       history.replaceState(null, '', window.location.pathname);
     }

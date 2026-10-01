@@ -1,6 +1,8 @@
 use regex::Regex;
 use serde::{Deserialize, Serialize};
+use std::io;
 use std::path::{Path, PathBuf};
+use std::process::{Output, Stdio};
 use std::sync::LazyLock;
 use std::time::Duration;
 use tokio::process::Command;
@@ -77,6 +79,41 @@ fn format_bytes(bytes: u64) -> String {
 
 /// Tool executor implementation
 pub struct CompanionTools;
+
+async fn run_script_with_timeout(
+    program: &str,
+    args: &[&str],
+    script: &str,
+    working_dir: &Path,
+    timeout_seconds: u64,
+) -> io::Result<Output> {
+    let mut cmd = Command::new(program);
+    cmd.args(args)
+        .arg(script)
+        .current_dir(working_dir)
+        .stdin(Stdio::null())
+        .stdout(Stdio::piped())
+        .stderr(Stdio::piped())
+        .kill_on_drop(true);
+    #[cfg(unix)]
+    cmd.process_group(0);
+
+    let child = cmd.spawn()?;
+    #[cfg(unix)]
+    let process_group = child.id().map(|id| id as i32);
+
+    tokio::select! {
+        output = child.wait_with_output() => output,
+        _ = tokio::time::sleep(Duration::from_secs(timeout_seconds)) => {
+            #[cfg(unix)]
+            if let Some(process_group) = process_group {
+                // The interpreter and its ordinary descendants share this new process group.
+                unsafe { libc::kill(-process_group, libc::SIGKILL) };
+            }
+            Err(io::Error::new(io::ErrorKind::TimedOut, "script timed out"))
+        }
+    }
+}
 
 impl CompanionTools {
     /// Web search tool via DuckDuckGo HTML endpoint without requiring any API key
@@ -674,8 +711,8 @@ impl CompanionTools {
         ))
     }
 
-    /// Execute PowerShell, Bash, Batch, or optional Python script inside sandboxed folder with timeout
-    pub async fn execute_code_sandboxed(
+    /// Execute an approved script with user privileges in a dedicated working directory.
+    pub async fn execute_code_in_working_dir(
         language: &str,
         code: &str,
         timeout_seconds: u64,
@@ -754,79 +791,90 @@ impl CompanionTools {
 
         let script_str = script_file.to_string_lossy().to_string();
 
-        let execution = async {
-            let mut cmd = Command::new(program);
-            for arg in &args_prefix {
-                cmd.arg(arg);
-            }
-            cmd.arg(&script_str);
-            cmd.current_dir(sandbox_dir);
-
-            match cmd.output().await {
-                Ok(out) => Ok((out, program.to_string())),
-                Err(e) if e.kind() == std::io::ErrorKind::NotFound => {
-                    // Fallback-Logik für Interpreter je nach Plattform & Sprache
-                    if lang == "python" || lang == "py" || lang == "python3" {
-                        let alt_prog = if program == "python3" {
-                            "python"
-                        } else {
-                            "python3"
-                        };
-                        let mut alt_cmd = Command::new(alt_prog);
-                        alt_cmd.arg(&script_str);
-                        alt_cmd.current_dir(sandbox_dir);
-                        if let Ok(alt_out) = alt_cmd.output().await {
-                            return Ok((alt_out, alt_prog.to_string()));
-                        }
-                        Err("Python ist auf diesem System nicht im PATH verfügbar (Python ist optional). Unter Windows kannst du PowerShell ('powershell') oder Batch ('cmd') verwenden, unter Linux/macOS 'bash'.".to_string())
-                    } else if lang == "powershell"
-                        || lang == "pwsh"
-                        || lang == "ps1"
-                        || lang == "ps"
-                    {
-                        #[cfg(not(target_os = "windows"))]
-                        {
-                            Err("PowerShell ('pwsh') ist auf diesem Unix-System nicht installiert. Unter Linux/macOS empfehlen wir standardmäßig 'bash'.".to_string())
-                        }
-                        #[cfg(target_os = "windows")]
-                        {
-                            // Fallback powershell.exe -> pwsh.exe
-                            let mut alt_cmd = Command::new("pwsh.exe");
-                            for arg in &args_prefix {
-                                alt_cmd.arg(arg);
-                            }
-                            alt_cmd.arg(&script_str);
-                            alt_cmd.current_dir(sandbox_dir);
-                            if let Ok(alt_out) = alt_cmd.output().await {
-                                return Ok((alt_out, "pwsh.exe".to_string()));
-                            }
-                            Err(format!("PowerShell konnte nicht gestartet werden: {}", e))
-                        }
-                    } else if (lang == "bash" || lang == "sh" || lang == "shell")
-                        && cfg!(target_os = "windows")
-                    {
-                        Err("Bash wurde auf diesem Windows-System nicht gefunden (z. B. Git Bash). Unter Windows bitte nativ PowerShell ('powershell') oder Batch ('cmd') verwenden.".to_string())
+        let result = match run_script_with_timeout(
+            program,
+            &args_prefix,
+            &script_str,
+            sandbox_dir,
+            timeout_s,
+        )
+        .await
+        {
+            Ok(out) => Ok((out, program.to_string())),
+            Err(e) if e.kind() == io::ErrorKind::NotFound => {
+                // Fallback-Logik für Interpreter je nach Plattform & Sprache
+                if lang == "python" || lang == "py" || lang == "python3" {
+                    let alt_prog = if program == "python3" {
+                        "python"
                     } else {
-                        Err(format!(
-                            "Der Skript-Interpreter '{}' wurde nicht gefunden: {}",
-                            program, e
-                        ))
+                        "python3"
+                    };
+                    match run_script_with_timeout(
+                            alt_prog,
+                            &[],
+                            &script_str,
+                            sandbox_dir,
+                            timeout_s,
+                        ).await {
+                            Ok(alt_out) => Ok((alt_out, alt_prog.to_string())),
+                            Err(alt_e) if alt_e.kind() == io::ErrorKind::TimedOut => Err(format!(
+                                "Skript-Ausführung überschritt das Timeout von {} Sekunden; der Interpreter wurde beendet.", timeout_s
+                            )),
+                            Err(_) => Err("Python ist auf diesem System nicht im PATH verfügbar (Python ist optional). Unter Windows kannst du PowerShell ('powershell') oder Batch ('cmd') verwenden, unter Linux/macOS 'bash'.".to_string()),
+                        }
+                } else if lang == "powershell" || lang == "pwsh" || lang == "ps1" || lang == "ps" {
+                    #[cfg(not(target_os = "windows"))]
+                    {
+                        Err("PowerShell ('pwsh') ist auf diesem Unix-System nicht installiert. Unter Linux/macOS empfehlen wir standardmäßig 'bash'.".to_string())
                     }
+                    #[cfg(target_os = "windows")]
+                    {
+                        // Fallback powershell.exe -> pwsh.exe
+                        match run_script_with_timeout(
+                            "pwsh.exe",
+                            &args_prefix,
+                            &script_str,
+                            sandbox_dir,
+                            timeout_s,
+                        )
+                        .await
+                        {
+                            Ok(alt_out) => Ok((alt_out, "pwsh.exe".to_string())),
+                            Err(alt_e) if alt_e.kind() == io::ErrorKind::TimedOut => Err(format!(
+                                "Skript-Ausführung überschritt das Timeout von {} Sekunden; der Interpreter wurde beendet.",
+                                timeout_s
+                            )),
+                            Err(_) => {
+                                Err(format!("PowerShell konnte nicht gestartet werden: {}", e))
+                            }
+                        }
+                    }
+                } else if (lang == "bash" || lang == "sh" || lang == "shell")
+                    && cfg!(target_os = "windows")
+                {
+                    Err("Bash wurde auf diesem Windows-System nicht gefunden (z. B. Git Bash). Unter Windows bitte nativ PowerShell ('powershell') oder Batch ('cmd') verwenden.".to_string())
+                } else {
+                    Err(format!(
+                        "Der Skript-Interpreter '{}' wurde nicht gefunden: {}",
+                        program, e
+                    ))
                 }
-                Err(e) => Err(format!(
-                    "Fehler beim Starten des Skript-Interpreters '{}': {}",
-                    program, e
-                )),
             }
+            Err(e) if e.kind() == io::ErrorKind::TimedOut => Err(format!(
+                "Skript-Ausführung überschritt das Timeout von {} Sekunden; der Interpreter wurde beendet.",
+                timeout_s
+            )),
+            Err(e) => Err(format!(
+                "Fehler beim Starten des Skript-Interpreters '{}': {}",
+                program, e
+            )),
         };
-
-        let result = tokio::time::timeout(Duration::from_secs(timeout_s), execution).await;
 
         // Cleanup temporary script
         let _ = tokio::fs::remove_file(&script_file).await;
 
         match result {
-            Ok(Ok((output, actual_prog))) => {
+            Ok((output, actual_prog)) => {
                 let stdout = String::from_utf8_lossy(&output.stdout).trim().to_string();
                 let stderr = String::from_utf8_lossy(&output.stderr).trim().to_string();
                 let exit_code = output.status.code().unwrap_or(-1);
@@ -847,11 +895,7 @@ impl CompanionTools {
                 }
                 Ok(out_str)
             }
-            Ok(Err(err_msg)) => Err(err_msg),
-            Err(_) => Err(format!(
-                "Skript-Ausführung überschritt das Timeout von {} Sekunden und wurde beendet.",
-                timeout_s
-            )),
+            Err(err_msg) => Err(err_msg),
         }
     }
 
@@ -1001,11 +1045,24 @@ impl CompanionTools {
                                 continue;
                             }
                             let dest = target_dir.join(&name);
-                            if let Err(e) = tokio::fs::rename(&path, &dest).await {
-                                errors
-                                    .push(format!("{}: Verschieben fehlgeschlagen ({})", name, e));
-                            } else {
-                                moved.push(format!("{} → {}/", name, category));
+                            // Both paths are on the same filesystem. Creating the destination
+                            // link fails atomically if a file with that name already exists.
+                            match tokio::fs::hard_link(&path, &dest).await {
+                                Ok(()) => match tokio::fs::remove_file(&path).await {
+                                    Ok(()) => moved.push(format!("{} → {}/", name, category)),
+                                    Err(e) => errors.push(format!(
+                                        "{}: Quelle konnte nach dem Kopieren nicht entfernt werden ({})",
+                                        name, e
+                                    )),
+                                },
+                                Err(e) if e.kind() == std::io::ErrorKind::AlreadyExists => {
+                                    errors.push(format!(
+                                        "{}: Zieldatei in {}/ existiert bereits",
+                                        name, category
+                                    ));
+                                }
+                                Err(e) => errors
+                                    .push(format!("{}: Verschieben fehlgeschlagen ({})", name, e)),
                             }
                         }
                     }

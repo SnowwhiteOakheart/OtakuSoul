@@ -907,7 +907,7 @@ impl CompanionEngine {
                     .get("timeout_seconds")
                     .and_then(|v| v.as_u64())
                     .unwrap_or(20);
-                let res = Self::run_async(CompanionTools::execute_code_sandboxed(
+                let res = Self::run_async(CompanionTools::execute_code_in_working_dir(
                     language,
                     code,
                     timeout_s,
@@ -1202,13 +1202,14 @@ mod tests {
         let temp_dir = std::env::temp_dir().join("otakusoul_test_sandbox");
 
         // 1. Empty code check
-        let empty_res = CompanionTools::execute_code_sandboxed("bash", "   ", 5, &temp_dir).await;
+        let empty_res =
+            CompanionTools::execute_code_in_working_dir("bash", "   ", 5, &temp_dir).await;
         assert!(empty_res.is_err());
         assert!(empty_res.unwrap_err().contains("darf nicht leer sein"));
 
         // 2. Unsupported language check
         let unsupported_res =
-            CompanionTools::execute_code_sandboxed("ruby", "puts 'hello'", 5, &temp_dir).await;
+            CompanionTools::execute_code_in_working_dir("ruby", "puts 'hello'", 5, &temp_dir).await;
         assert!(unsupported_res.is_err());
         assert!(
             unsupported_res
@@ -1219,7 +1220,7 @@ mod tests {
         // 3. Execution on Unix (bash)
         #[cfg(not(target_os = "windows"))]
         {
-            let bash_res = CompanionTools::execute_code_sandboxed(
+            let bash_res = CompanionTools::execute_code_in_working_dir(
                 "bash",
                 "echo 'otakusoul_sandbox_ok'",
                 5,

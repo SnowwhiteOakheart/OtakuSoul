@@ -1,5 +1,6 @@
 use serde::{Deserialize, Serialize};
-use std::fs;
+use std::fs::{self, OpenOptions};
+use std::io::Write;
 use std::path::PathBuf;
 use tracing::{info, warn};
 use ts_rs::TS;
@@ -129,9 +130,14 @@ pub fn get_settings_file_path() -> PathBuf {
 
 pub fn load_app_settings() -> AppSettings {
     let path = get_settings_file_path();
-    if path.exists()
-        && let Ok(content) = fs::read_to_string(&path)
-    {
+    if path.exists() {
+        let content = match fs::read_to_string(&path) {
+            Ok(content) => content,
+            Err(e) => {
+                warn!("settings.json konnte nicht gelesen werden: {e}");
+                return AppSettings::default();
+            }
+        };
         if let Ok(mut settings) = serde_json::from_str::<AppSettings>(&content) {
             if secrets::hydrate(CLOUD_API_KEY_ACCOUNT, &mut settings.cloud_api_key) {
                 let _ = save_app_settings(&settings);
@@ -151,7 +157,20 @@ pub fn load_app_settings() -> AppSettings {
             }
             return settings;
         } else {
-            warn!("settings.json ist beschädigt, erstelle neue Standardkonfiguration.");
+            warn!("settings.json ist beschädigt; die Datei wird zur Wiederherstellung aufbewahrt.");
+            let recovery_path = path.with_file_name(format!(
+                "settings.corrupt-{}-{:016x}.json",
+                chrono::Utc::now().format("%Y%m%d_%H%M%S"),
+                rand::random::<u64>()
+            ));
+            if let Err(e) = fs::rename(&path, &recovery_path) {
+                warn!("Beschädigte Einstellungen konnten nicht gesichert werden: {e}");
+                return AppSettings::default();
+            }
+            warn!(
+                "Beschädigte Einstellungen gesichert unter {:?}",
+                recovery_path
+            );
         }
     }
 
@@ -193,7 +212,23 @@ fn save_app_settings_to_path(settings: &AppSettings, path: &std::path::Path) -> 
     let json = serde_json::to_string_pretty(settings)
         .map_err(|e| crate::err!("backend.settings.serialize", error = e))?;
 
-    fs::write(path, json).map_err(|e| {
+    let temporary_path =
+        path.with_file_name(format!(".settings-{:016x}.tmp", rand::random::<u64>()));
+    let result = (|| -> Result<(), std::io::Error> {
+        let mut file = OpenOptions::new()
+            .write(true)
+            .create_new(true)
+            .open(&temporary_path)?;
+        file.write_all(json.as_bytes())?;
+        file.sync_all()?;
+        drop(file);
+        fs::rename(&temporary_path, path)?;
+        Ok(())
+    })();
+    if result.is_err() {
+        let _ = fs::remove_file(&temporary_path);
+    }
+    result.map_err(|e| {
         crate::err!(
             "backend.common.fileWritePath",
             path = format!("{:?}", path),

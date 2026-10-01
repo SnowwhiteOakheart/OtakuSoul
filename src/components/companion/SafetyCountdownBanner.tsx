@@ -66,6 +66,10 @@ const SafetyCountdown = ({ pendingCall, totalSeconds, resolveToolCall }: SafetyC
             </pre>
           </div>
 
+          {pendingCall.tool_name === 'execute_code' && (
+            <p className="text-xs text-amber-200">{t('comp.tool.codeWarning')}</p>
+          )}
+
           {/* Countdown Progress Bar */}
           <div className="w-full bg-app rounded-full h-1.5 overflow-hidden">
             <div
