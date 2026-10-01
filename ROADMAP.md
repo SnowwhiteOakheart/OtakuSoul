@@ -303,7 +303,11 @@ GitHub Actions wurden bewusst entfernt (Commit `11597c2`). Stattdessen gibt es j
 - [ ] Offene Chat-Funktionen aus `Roadmap_abgeschlossen.md` (Phase 9): System-Prompt-Editor, Datei-Anhänge und Vision,
   Übersetzung.
 - [ ] Migrationsimport aus einer bestehenden Soul-of-Waifu-Installation.
-- [ ] Virtualisierte Listen (`@tanstack/react-virtual`) für lange Chats, große Charakter- und Lorebook-Bibliotheken.
+- [x] Lange Chats virtualisiert (`@tanstack/react-virtual`, `chat/MessageList.tsx`); Eingabefeld (`ChatComposer`) und
+  Verlauf sind getrennt und memoisiert, Tippen und Streaming rendern den Verlauf nicht mehr neu. Gemessen mit
+  `npm run e2e:perf` (1000 Nachrichten): Öffnen 2,5 s → 0,4–0,75 s, pro Tastendruck 43 ms → ≤ 3 ms,
+  DOM-Knoten 37.400 → 850.
+- [ ] Virtualisierte Listen für große Charakter- und Lorebook-Bibliotheken.
 - [ ] Bundle-Analyse (`rollup-plugin-visualizer`); `chunkSizeWarningLimit: 800` in `vite.config.ts` nur als Übergang.
 
 ---

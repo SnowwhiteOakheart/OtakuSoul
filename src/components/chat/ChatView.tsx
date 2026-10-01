@@ -1,18 +1,17 @@
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect, useRef, useCallback, useMemo } from 'react';
 import { useAppStore, useStoreFields } from '../../store/useAppStore';
 import { api } from '../../services/api';
 import { AdaptiveHud } from './AdaptiveHud';
 import { SceneImageCard } from './SceneImageCard';
 import { RoleplayMessage } from './RoleplayMessage';
 import { ChatSidebar } from './ChatSidebar';
+import { MessageList } from './MessageList';
+import { ChatComposer } from './ChatComposer';
 import {
-  Send,
-  Square,
   Sparkles,
   Brain,
   ChevronDown,
   ChevronRight,
-  ChevronLeft,
   Trash2,
   Cpu,
   Cloud,
@@ -20,14 +19,9 @@ import {
   EyeOff,
   MessageSquare,
   MessageCircle,
-  RotateCcw,
   Settings,
   Users,
   PlugZap,
-  FastForward,
-  Edit3,
-  Check,
-  X,
   Volume2,
   VolumeX,
 } from 'lucide-react';
@@ -35,13 +29,10 @@ import { audioPlayer, gainFromVoiceVolume } from '../../services/audioPlayer';
 import { streamingTts } from '../../services/streamingTts';
 
 import { CharacterVoiceModal } from '../voice/CharacterVoiceModal';
-import { VoiceCallControls } from '../voice/VoiceCallControls';
 import { translate, useTranslation } from '../../i18n';
 import { confirmDialog } from '../ui/feedback';
 import { EmptyState } from '../ui/EmptyState';
 import { AvatarSkeleton } from '../ui';
-import { PersonaAvatar } from '../characters/PersonaAvatar';
-import type { ContextUsage } from '../../types';
 
 const AvatarCanvas = React.lazy(() => import('../avatar/AvatarCanvas').then((module) => ({
   default: module.AvatarCanvas,
@@ -49,17 +40,13 @@ const AvatarCanvas = React.lazy(() => import('../avatar/AvatarCanvas').then((mod
 
 const TOOLBAR_TOGGLE =
   'flex items-center gap-1.5 px-2.5 py-1 rounded-lg text-xs transition-colors border outline-hidden focus-visible:ring-2 focus-visible:ring-accent-400';
-const BUBBLE_ACTION =
-  'p-1 hover:text-accent-300 disabled:opacity-40 transition-colors flex items-center gap-1 rounded outline-hidden focus-visible:ring-2 focus-visible:ring-accent-400';
 
 export const ChatView: React.FC = () => {
   const { t } = useTranslation();
   const {
     messages,
     storedMessages,
-    sendMessage,
     isGenerating,
-    abortGeneration,
     clearChat,
     selectedBackend,
     setSelectedBackend,
@@ -71,39 +58,26 @@ export const ChatView: React.FC = () => {
     setChatSidebarOpen,
     chatSessions,
     activeChatId,
-    switchMessageSwipe,
-    regenerateMessageSwipe,
-    continueChatMessage,
-    editChatMessage,
-    deleteChatMessage,
     autoTtsEnabled,
     setAutoTtsEnabled,
     activeVoiceConfig,
     setActiveTab,
-    contextUsage,
   } = useStoreFields(
-    'messages', 'storedMessages', 'sendMessage', 'isGenerating', 'abortGeneration', 'clearChat',
-    'selectedBackend', 'setSelectedBackend', 'serverStatus', 'activeCharacter', 'activePersona',
-    'loadPresetCharacters', 'chatSidebarOpen', 'setChatSidebarOpen', 'chatSessions',
-    'activeChatId', 'switchMessageSwipe', 'regenerateMessageSwipe', 'continueChatMessage',
-    'editChatMessage', 'deleteChatMessage', 'autoTtsEnabled', 'setAutoTtsEnabled',
-    'activeVoiceConfig', 'setActiveTab', 'contextUsage',
+    'messages', 'storedMessages', 'isGenerating', 'clearChat', 'selectedBackend', 'setSelectedBackend',
+    'serverStatus', 'activeCharacter', 'activePersona', 'loadPresetCharacters', 'chatSidebarOpen',
+    'setChatSidebarOpen', 'chatSessions', 'activeChatId', 'autoTtsEnabled', 'setAutoTtsEnabled',
+    'activeVoiceConfig', 'setActiveTab',
   );
 
-  const [input, setInput] = useState('');
   const [streamText, setStreamText] = useState('');
   const [streamThought, setStreamThought] = useState('');
   const [showCurrentThought, setShowCurrentThought] = useState(true);
   const [showAvatar, setShowAvatar] = useState(true);
   const [showVoiceModal, setShowVoiceModal] = useState(false);
   const [isAudioSpeaking, setIsAudioSpeaking] = useState(false);
-  const [expandedThoughts, setExpandedThoughts] = useState<Record<string | number, boolean>>({});
-
-  // Inline editing state
-  const [editingMsgId, setEditingMsgId] = useState<string | null>(null);
-  const [editContent, setEditContent] = useState('');
 
   const messagesEndRef = useRef<HTMLDivElement>(null);
+  const scrollRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
     loadPresetCharacters();
@@ -180,16 +154,10 @@ export const ChatView: React.FC = () => {
     setIsAudioSpeaking(state === 'playing');
   }), []);
 
+  // New messages scroll the message list; the live reply below it scrolls here.
   useEffect(() => {
-    messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
-  }, [messages, storedMessages, streamText, streamThought]);
-
-  const handleSend = () => {
-    if (!input.trim() || isGenerating) return;
-    streamingTts.cancel();
-    sendMessage(input);
-    setInput('');
-  };
+    if (streamText || streamThought) messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
+  }, [streamText, streamThought]);
 
   const handleClearSession = async () => {
     const confirmed = await confirmDialog({
@@ -201,28 +169,8 @@ export const ChatView: React.FC = () => {
     if (confirmed) clearChat();
   };
 
-  const handleAbort = async () => {
-    streamingTts.cancel();
-    await abortGeneration();
-  };
-
-  const toggleThought = (id: string | number) => {
-    setExpandedThoughts((prev) => ({ ...prev, [id]: !prev[id] }));
-  };
-
-  const handleStartEdit = (msgId: string, currentContent: string) => {
-    setEditingMsgId(msgId);
-    setEditContent(currentContent);
-  };
-
-  const handleSaveEdit = async (msgId: string) => {
-    if (editContent.trim()) {
-      await editChatMessage(msgId, editContent.trim());
-    }
-    setEditingMsgId(null);
-  };
-
-  const handleSpeak = async (text: string) => {
+  const canSpeak = !!activeVoiceConfig && activeVoiceConfig.engine !== 'disabled';
+  const handleSpeak = useCallback(async (text: string) => {
     if (!activeVoiceConfig) return;
     try {
       // Phase 14: update avatar emotion to match spoken message
@@ -239,12 +187,12 @@ export const ChatView: React.FC = () => {
     } catch (e) {
       console.error('Speech synthesis failed:', e);
     }
-  };
+  }, [activeVoiceConfig]);
 
   const currentSession = chatSessions.find((s) => s.id === activeChatId);
 
   // Render storedMessages if available, otherwise flat fallback
-  const displayList = storedMessages.length > 0 ? storedMessages : messages.map((m, i) => ({
+  const displayList = useMemo(() => storedMessages.length > 0 ? storedMessages : messages.map((m, i) => ({
     id: `temp_${i}`,
     chat_id: activeChatId || 'default',
     role: m.role,
@@ -254,7 +202,7 @@ export const ChatView: React.FC = () => {
     swipe_index: 0,
     swipes: [{ content: m.content, thought: m.thought }],
     created_at: 0,
-  }));
+  })), [storedMessages, messages, activeChatId]);
 
   return (
     <div className="flex-1 flex flex-col h-full min-h-0 bg-app overflow-hidden relative">
@@ -401,7 +349,7 @@ export const ChatView: React.FC = () => {
         <div className="flex-1 flex flex-col h-full overflow-hidden bg-app">
           <SceneImageCard />
           {/* Messages Stream Area */}
-          <div className="flex-1 overflow-y-auto p-4 space-y-4 select-text" aria-live="polite">
+          <div ref={scrollRef} className="flex-1 overflow-y-auto p-4 space-y-4 select-text" aria-live="polite">
             {displayList.length === 0 && !isGenerating && (
               !activeCharacter ? (
                 <EmptyState
@@ -453,186 +401,14 @@ export const ChatView: React.FC = () => {
                 />
               )
             )}
-            {displayList.map((msg, idx) => {
-              const isAssistant = msg.role === 'assistant';
-              const isEditing = editingMsgId === msg.id;
-              const hasMultipleSwipes = isAssistant && msg.swipes && msg.swipes.length > 1;
-
-              return (
-                <div
-                  key={msg.id || idx}
-                  className={`group flex flex-col ${
-                    msg.role === 'user' ? 'items-end' : 'items-start'
-                  }`}
-                >
-                  {/* Sender Header + Swipes Navigation */}
-                  <div className="flex items-center gap-2 mb-1 px-1">
-                    {msg.role === 'user' && <PersonaAvatar persona={activePersona} className="w-5 h-5 text-[10px]" />}
-                    <span className="text-xs font-semibold text-slate-400">
-                      {msg.role === 'user' ? t('chat.you') : activeCharacter?.card.data.name || 'OtakuSoul'}
-                    </span>
-
-                    {/* SillyTavern Swipes Pagination for Assistant */}
-                    {hasMultipleSwipes && (
-                      <div className="flex items-center bg-slate-900 border border-accent-500/30 rounded-md text-[11px] text-accent-300 px-1 py-0.5 gap-1">
-                        <button
-                          onClick={() => switchMessageSwipe(msg.id, msg.swipe_index - 1)}
-                          disabled={msg.swipe_index <= 0 || isGenerating}
-                          className="hover:text-white disabled:opacity-30 disabled:cursor-not-allowed transition-colors"
-                          title={t('chat.prevSwipe')}
-                          aria-label={t('chat.prevSwipe')}
-                        >
-                          <ChevronLeft className="w-3 h-3" />
-                        </button>
-                        <span
-                          className="font-mono"
-                          aria-label={t('chat.swipeCounter', { current: msg.swipe_index + 1, total: msg.swipes.length })}
-                        >
-                          {msg.swipe_index + 1} / {msg.swipes.length}
-                        </span>
-                        <button
-                          onClick={() => switchMessageSwipe(msg.id, msg.swipe_index + 1)}
-                          disabled={msg.swipe_index >= msg.swipes.length - 1 || isGenerating}
-                          className="hover:text-white disabled:opacity-30 disabled:cursor-not-allowed transition-colors"
-                          title={t('chat.nextSwipe')}
-                          aria-label={t('chat.nextSwipe')}
-                        >
-                          <ChevronRight className="w-3 h-3" />
-                        </button>
-                      </div>
-                    )}
-                  </div>
-
-                  {/* Past Reasoning block */}
-                  {msg.thought && (
-                    <div className="mb-2 max-w-[85%] rounded-lg border border-accent-500/20 bg-accent-950/20 text-xs overflow-hidden">
-                      <button
-                        onClick={() => toggleThought(msg.id || idx)}
-                        aria-expanded={!!expandedThoughts[msg.id || idx]}
-                        className="w-full flex items-center justify-between px-3 py-1.5 text-accent-300 hover:bg-accent-900/30 transition-colors"
-                      >
-                        <div className="flex items-center gap-1.5">
-                          <Brain className="w-3.5 h-3.5 text-accent-400" />
-                          <span className="font-mono">{t('chat.reasoning')}</span>
-                        </div>
-                        {expandedThoughts[msg.id || idx] ? (
-                          <ChevronDown className="w-3.5 h-3.5" />
-                        ) : (
-                          <ChevronRight className="w-3.5 h-3.5" />
-                        )}
-                      </button>
-                      {expandedThoughts[msg.id || idx] && (
-                        <div className="p-3 border-t border-accent-500/20 text-slate-300 font-mono text-xs whitespace-pre-wrap leading-relaxed max-h-60 overflow-y-auto">
-                          {msg.thought}
-                        </div>
-                      )}
-                    </div>
-                  )}
-
-                  {/* Message Bubble or Inline Edit Textarea */}
-                  {isEditing ? (
-                    <div className="w-full max-w-[85%] space-y-2">
-                      <textarea
-                        value={editContent}
-                        onChange={(e) => setEditContent(e.target.value)}
-                        aria-label={t('chat.editMessage')}
-                        autoFocus
-                        rows={4}
-                        className="w-full bg-slate-900 border border-accent-500 rounded-2xl p-3 text-sm text-slate-100 focus:outline-hidden resize-none"
-                      />
-                      <div className="flex items-center justify-end gap-1.5">
-                        <button
-                          onClick={() => handleSaveEdit(msg.id)}
-                          className="flex items-center gap-1 px-3 py-1 bg-accent-600 hover:bg-accent-500 text-white rounded-lg text-xs font-medium transition-colors"
-                        >
-                          <Check className="w-3.5 h-3.5" />
-                          <span>{t('chat.save')}</span>
-                        </button>
-                        <button
-                          onClick={() => setEditingMsgId(null)}
-                          className="flex items-center gap-1 px-3 py-1 bg-slate-800 hover:bg-slate-700 text-slate-300 rounded-lg text-xs transition-colors"
-                        >
-                          <X className="w-3.5 h-3.5" />
-                          <span>{t('common.cancel')}</span>
-                        </button>
-                      </div>
-                    </div>
-                  ) : (
-                    <div className="relative group/bubble max-w-[85%]">
-                      <div
-                        className={`rounded-2xl px-4 py-2.5 text-sm leading-relaxed ${
-                          msg.role === 'user'
-                            ? 'bg-linear-to-r from-accent-600 to-indigo-600 text-white shadow-md'
-                            : 'bg-slate-900 border border-slate-800 text-slate-100 shadow-sm'
-                        }`}
-                      >
-                        <RoleplayMessage 
-                          content={msg.content} 
-                          isUser={msg.role === 'user'}
-                          onSpeak={msg.role !== 'user' && activeVoiceConfig?.engine !== 'disabled' ? () => handleSpeak(msg.content) : undefined}
-                        />
-                      </div>
-
-                      {/* Hover Action Buttons */}
-                      <div
-                        className={`absolute -bottom-3 ${
-                          msg.role === 'user' ? 'right-2' : 'left-2'
-                        } hidden group-hover/bubble:flex group-focus-within/bubble:flex items-center gap-1 bg-slate-900/95 border border-slate-700/80 rounded-lg px-1.5 py-0.5 shadow-lg z-20 text-[11px] text-slate-400`}
-                      >
-                        {isAssistant && (
-                          <>
-                            <button
-                              onClick={() => regenerateMessageSwipe(msg.id)}
-                              disabled={isGenerating}
-                              className={BUBBLE_ACTION}
-                              title={t('chat.regenerateHint')}
-                              aria-label={t('chat.regenerate')}
-                            >
-                              <RotateCcw className="w-3 h-3" />
-                              <span className="hidden sm:inline">{t('chat.regenerate')}</span>
-                            </button>
-                            <button
-                              onClick={() => continueChatMessage(msg.id)}
-                              disabled={isGenerating}
-                              className={BUBBLE_ACTION}
-                              title={t('chat.continueHint')}
-                              aria-label={t('chat.continue')}
-                            >
-                              <FastForward className="w-3 h-3" />
-                              <span className="hidden sm:inline">{t('chat.continue')}</span>
-                            </button>
-                          </>
-                        )}
-                        <button
-                          onClick={() => handleStartEdit(msg.id, msg.content)}
-                          className={BUBBLE_ACTION}
-                          title={t('chat.editMessage')}
-                          aria-label={t('chat.editMessage')}
-                        >
-                          <Edit3 className="w-3 h-3" />
-                        </button>
-                        <button
-                          onClick={async () => {
-                            const confirmed = await confirmDialog({
-                              title: translate('confirm.deleteMessageTitle'),
-                              message: translate('confirm.deleteMessageText'),
-                              confirmLabel: translate('common.delete'),
-                              tone: 'danger',
-                            });
-                            if (confirmed) deleteChatMessage(msg.id);
-                          }}
-                          className={`${BUBBLE_ACTION} hover:text-rose-400`}
-                          title={t('chat.deleteMessage')}
-                          aria-label={t('chat.deleteMessage')}
-                        >
-                          <Trash2 className="w-3 h-3" />
-                        </button>
-                      </div>
-                    </div>
-                  )}
-                </div>
-              );
-            })}
+            <MessageList
+              messages={displayList}
+              scrollRef={scrollRef}
+              characterName={activeCharacter?.card.data.name || 'OtakuSoul'}
+              persona={activePersona}
+              isGenerating={isGenerating}
+              onSpeak={canSpeak ? handleSpeak : undefined}
+            />
 
             {/* Live Streaming Assistant Message */}
             {isGenerating && (
@@ -686,91 +462,11 @@ export const ChatView: React.FC = () => {
             <div ref={messagesEndRef} />
           </div>
 
-          {/* Input Bar */}
-          <div className="p-4 border-t border-slate-800 bg-slate-900/60 backdrop-blur">
-            <div className="flex items-end gap-2 max-w-4xl mx-auto">
-              <textarea
-                value={input}
-                onChange={(e) => setInput(e.target.value)}
-                onKeyDown={(e) => {
-                  if (e.key === 'Enter' && !e.shiftKey) {
-                    e.preventDefault();
-                    handleSend();
-                  }
-                }}
-                placeholder={t('chat.inputPlaceholder')}
-                aria-label={t('chat.inputLabel')}
-                className="flex-1 bg-app/80 border border-slate-700/80 rounded-xl px-4 py-2.5 text-sm text-slate-100 placeholder-slate-500 focus:outline-hidden focus:border-accent-500 focus:ring-1 focus:ring-accent-500 resize-none max-h-32 transition-colors"
-                rows={1}
-              />
-
-              {isGenerating ? (
-                <button
-                  onClick={() => void handleAbort()}
-                  className="p-2.5 rounded-xl bg-rose-600 hover:bg-rose-500 text-white transition-all shadow-md flex items-center justify-center"
-                  title={t('chat.abort')}
-                  aria-label={t('chat.abort')}
-                >
-                  <Square className="w-4 h-4 fill-white" />
-                </button>
-              ) : (
-                <button
-                  onClick={handleSend}
-                  disabled={!input.trim()}
-                  className="p-2.5 rounded-xl bg-accent-600 hover:bg-accent-500 disabled:opacity-40 disabled:cursor-not-allowed text-white transition-all shadow-md flex items-center justify-center"
-                  title={t('chat.send')}
-                  aria-label={t('chat.send')}
-                >
-                  <Send className="w-4 h-4" />
-                </button>
-              )}
-              <VoiceCallControls
-                config={activeVoiceConfig}
-                isGenerating={isGenerating}
-                onDraft={setInput}
-                onSend={sendMessage}
-                onAbort={abortGeneration}
-                onEnsureAutoTts={() => setAutoTtsEnabled(true)}
-              />
-            </div>
-            {contextUsage && <ContextMeter usage={contextUsage} />}
-          </div>
+          <ChatComposer />
         </div>
       </div>
       {showVoiceModal && (
         <CharacterVoiceModal onClose={() => setShowVoiceModal(false)} />
-      )}
-    </div>
-  );
-};
-
-/** How full the context window was for the last reply and how many old messages were left out. */
-const ContextMeter: React.FC<{ usage: ContextUsage }> = ({ usage }) => {
-  const { t, tPlural } = useTranslation();
-  const room = Math.max(1, usage.context_tokens - usage.reserve_tokens);
-  const percent = Math.min(100, Math.round((usage.prompt_tokens / room) * 100));
-  const k = (n: number) => (n >= 1000 ? `${(n / 1000).toFixed(1)}k` : String(n));
-  return (
-    <div
-      className="max-w-4xl mx-auto mt-1.5 flex items-center gap-2 text-xs text-slate-400"
-      title={t('chat.contextTitle', { reserve: k(usage.reserve_tokens) })}
-    >
-      <div className="h-1 w-16 rounded-full bg-slate-800 overflow-hidden" aria-hidden="true">
-        <div
-          className={`h-full ${percent >= 90 ? 'bg-amber-500' : 'bg-accent-500'}`}
-          style={{ width: `${percent}%` }}
-        />
-      </div>
-      <span>
-        {t(usage.estimated ? 'chat.contextEstimated' : 'chat.context', {
-          used: k(usage.prompt_tokens),
-          total: k(usage.context_tokens),
-        })}
-      </span>
-      {usage.dropped_messages > 0 && (
-        <span className="text-amber-400">
-          {tPlural('chat.contextDropped', usage.dropped_messages)}
-        </span>
       )}
     </div>
   );
