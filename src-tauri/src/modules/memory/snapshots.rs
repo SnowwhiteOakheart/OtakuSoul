@@ -6,9 +6,7 @@ impl MemoryDb {
     // --- Backups & Snapshots ---
 
     pub fn backup_dir_for_character(char_id: &str) -> PathBuf {
-        let base_dir = directories::ProjectDirs::from("com", "snowwhite", "otakusoul")
-            .map(|dirs| dirs.data_dir().to_path_buf())
-            .unwrap_or_else(|| PathBuf::from("./data"));
+        let base_dir = crate::modules::paths::base_dirs().1;
         base_dir.join("characters").join(char_id).join("backups")
     }
 

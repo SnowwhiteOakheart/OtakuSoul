@@ -45,17 +45,31 @@ pub struct ScannedVrm {
     pub size_mb: u64,
 }
 
+/// `(config_dir, data_dir)`: the platform folders, or `$OTAKUSOUL_HOME/config|data` when set
+/// (end-to-end tests run against a throwaway profile next to a real installation).
+pub fn base_dirs() -> (PathBuf, PathBuf) {
+    if let Some(home) = isolated_home() {
+        return (home.join("config"), home.join("data"));
+    }
+    match ProjectDirs::from("com", "snowwhite", "otakusoul") {
+        Some(dirs) => (
+            dirs.config_dir().to_path_buf(),
+            dirs.data_dir().to_path_buf(),
+        ),
+        None => (PathBuf::from("./config"), PathBuf::from("./data")),
+    }
+}
+
+/// The profile folder from `OTAKUSOUL_HOME`, if the app runs isolated.
+pub fn isolated_home() -> Option<PathBuf> {
+    std::env::var_os("OTAKUSOUL_HOME")
+        .filter(|v| !v.is_empty())
+        .map(PathBuf::from)
+}
+
 /// Resolves standard base directories for OtakuSoul and creates required user directories
 pub fn resolve_app_paths() -> AppPaths {
-    let (config_dir, data_dir) =
-        if let Some(proj_dirs) = ProjectDirs::from("com", "snowwhite", "otakusoul") {
-            (
-                proj_dirs.config_dir().to_path_buf(),
-                proj_dirs.data_dir().to_path_buf(),
-            )
-        } else {
-            (PathBuf::from("./config"), PathBuf::from("./data"))
-        };
+    let (config_dir, data_dir) = base_dirs();
 
     let characters_dir = data_dir.join("characters");
     let lorebooks_dir = data_dir.join("lorebooks");

@@ -148,9 +148,7 @@ pub fn get_default_presets() -> Vec<LlmPreset> {
 }
 
 pub fn default_presets_path() -> PathBuf {
-    let base_dir = directories::ProjectDirs::from("com", "snowwhite", "otakusoul")
-        .map(|dirs| dirs.config_dir().to_path_buf())
-        .unwrap_or_else(|| PathBuf::from("./config"));
+    let base_dir = crate::modules::paths::base_dirs().0;
     base_dir.join("llm_presets.json")
 }
 

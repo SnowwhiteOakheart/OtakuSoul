@@ -228,7 +228,10 @@ GitHub Actions wurden bewusst entfernt (Commit `11597c2`). Stattdessen gibt es j
 - [ ] *(teilweise: Store-Tests mit API-Mock, Komponenten-Tests mit Testing Library/jsdom für Dialog, Menü, ErrorBoundary,
   Bestätigungsdialog, `pressable`, UI-Primitive, Befehlspalette und den Einrichtungsassistenten – 63 Tests in 10 Suites; offen: Chat, Stage, Charakter-Editor)* Frontend-Abdeckung ausbauen: Tests für Store-Slices, `api.ts`-Mocks
   und Kernkomponenten mit `@testing-library/react` ergänzen.
-- [ ] E2E-Rauchtest mit WebdriverIO + `tauri-driver` (App starten, Charakter importieren, Chat senden gegen einen Mock-Provider).
+- [x] E2E-Rauchtest mit WebdriverIO + `tauri-driver` (`npm run e2e`, `e2e/`): startet die Debug-Build mit Wegwerf-Profil
+  (`OTAKUSOUL_HOME`, ohne Einzelinstanz-Sperre) gegen ein Mock-LLM, chattet bis zum Kontext-Überlauf und prüft
+  Kontextanzeige, automatische Zusammenfassung (Seitenleiste und System-Prompt); Screenshots in `e2e/screenshots/`.
+  Fand gleich einen Fehler: Die Charakterleiste (z-40) verdeckte die Tabs der Chat-Seitenleiste.
 - [x] Rust: Tests für `companion_tools`, `web_server` (Auth) und `profile_backup` (Round-Trip inkl. Datenbank, Gruppenauswahl, Rotation) vorhanden.
   Der Stage-Test für Nachrichtenbearbeitung/-löschung nutzt einen injizierten No-op-Speicher und berührt kein echtes App-Datenverzeichnis mehr.
   *Ursprünglich:* Tests für `companion_tools` (Web-Fetch, Shell-Freigaben), `web_server` (Auth) und `profile_backup` (Round-Trip).

@@ -1,0 +1,77 @@
+// End-to-end smoke test: start the app with a throwaway profile, chat against the mock LLM
+// until old messages leave the context window, and check the context meter and the automatic
+// summary in the chat sidebar. Run with `npm run e2e` (needs a debug build, tauri-driver and
+// WebKitWebDriver; see e2e/README.md).
+import assert from 'node:assert/strict';
+import path from 'node:path';
+import { launch, screenshotDir } from './harness.mjs';
+import { SUMMARY } from './mock-llm.mjs';
+
+const step = (name) => console.log(`• ${name}`);
+const shot = (browser, name) => browser.saveScreenshot(path.join(screenshotDir, `${name}.png`));
+
+// A small window (cloud setting) so a dozen turns are enough to overflow it.
+const { browser, mock, close } = await launch({ cloud_context_tokens: 4096 });
+let failed = false;
+try {
+  step('App startet im Chat');
+  const input = await browser.$('textarea[aria-label="Nachricht"]');
+  await input.waitForDisplayed({ timeout: 30_000 });
+  await shot(browser, '01-start');
+
+  step('Nachricht senden, Antwort vom Mock erscheint');
+  const send = async (text) => {
+    await input.setValue(text);
+    await browser.$('button[aria-label="Nachricht senden"]').click();
+    // Generation done: the send button is back (the abort button replaces it meanwhile).
+    await browser.$('button[aria-label="Nachricht senden"]').waitForExist({ timeout: 20_000 });
+  };
+  await send('Hallo! Was machen wir morgen?');
+  await browser.waitUntil(async () => (await browser.$('body').getText()).includes('Fushimi-Inari'), {
+    timeout: 20_000,
+    timeoutMsg: 'Antwort des Mock-LLM erscheint nicht',
+  });
+  const meter = () => browser.$('div[title*="Antwort frei"]');
+  assert.match(await meter().getText(), /Kontext ~[\d.]+k? \/ 4\.1k Tokens \(geschätzt\)/);
+  await shot(browser, '02-erste-antwort');
+
+  step('Weiterchatten, bis ältere Nachrichten aus dem Kontext fallen');
+  let turns = 1;
+  while (!(await meter().getText()).includes('passen nicht mehr') && turns < 30) {
+    await send(`Erzähl mir mehr, Teil ${turns}.`);
+    turns += 1;
+  }
+  const meterText = await meter().getText();
+  assert.match(meterText, /\d+ ältere Nachrichten? pass/, 'Kontextanzeige meldet keine weggelassenen Nachrichten');
+  console.log(`  ${turns} Runden: ${meterText.replace(/\n/g, ' ')}`);
+  await shot(browser, '03-kontext-voll');
+
+  step('Automatische Zusammenfassung läuft im Hintergrund');
+  // It starts once six conversation messages are out; a few more turns at most.
+  for (let i = 0; i < 6 && mock.stats.summary === 0; i += 1) await send(`Und dann, Teil ${turns + i}?`);
+  await browser.waitUntil(() => mock.stats.summary > 0, { timeout: 20_000, timeoutMsg: 'keine Zusammenfassung angefragt' });
+
+  step('Zusammenfassung steht in der Seitenleiste');
+  await browser.$('button[title^="Gespräche, Author"]').click();
+  await browser.$('button=Author\'s Note').click();
+  const summary = await browser.$('#chat-summary-input');
+  await browser.waitUntil(async () => (await summary.getValue()) === SUMMARY, {
+    timeout: 20_000,
+    timeoutMsg: 'Zusammenfassung erscheint nicht im Editor',
+  });
+  await shot(browser, '04-zusammenfassung');
+
+  step('Die nächste Anfrage enthält die Zusammenfassung im System-Prompt');
+  await browser.$('aside button[aria-label="Schließen"]').click();
+  await send('Was weißt du noch von vorhin?');
+  assert.ok(mock.stats.lastChatSystemPrompt.includes(SUMMARY), 'System-Prompt enthält die Zusammenfassung nicht');
+  await shot(browser, '05-mit-zusammenfassung');
+  console.log(`\n✔ Rauchtest bestanden (${mock.stats.chat} Chat-Anfragen, ${mock.stats.summary} Zusammenfassung)`);
+} catch (e) {
+  failed = true;
+  console.error(`\n✘ ${e.message}`);
+  await shot(browser, 'fehler').catch(() => {});
+} finally {
+  await close();
+}
+process.exit(failed ? 1 : 0);

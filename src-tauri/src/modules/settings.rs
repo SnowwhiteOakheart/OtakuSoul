@@ -24,6 +24,8 @@ fn default_cloud_provider() -> String {
 
 #[derive(Debug, Clone, Serialize, Deserialize, TS)]
 #[ts(export)]
+// Missing fields fall back to the defaults instead of discarding the whole file.
+#[serde(default)]
 pub struct AppSettings {
     pub server_config: LlamaServerConfig,
     pub sampling: SamplingParams,
