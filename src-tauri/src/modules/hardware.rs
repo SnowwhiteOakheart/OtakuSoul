@@ -10,6 +10,10 @@ pub struct GpuInfo {
     pub vendor: String,
     pub total_vram_mb: u64,
     pub free_vram_mb: u64,
+    /// Integrated GPU sharing system RAM (e.g. Radeon 890M, Intel Iris); only used when there
+    /// is no dedicated one.
+    #[serde(default)]
+    pub integrated: bool,
 }
 
 #[derive(Debug, Serialize, Deserialize, Clone, TS)]
@@ -21,7 +25,15 @@ pub struct HardwareInfo {
     pub cpu_cores: usize,
     pub total_ram_mb: u64,
     pub available_ram_mb: u64,
+    /// Dedicated GPUs first, largest first.
     pub gpus: Vec<GpuInfo>,
+}
+
+impl HardwareInfo {
+    /// The GPU models are planned for: the largest dedicated one, else the largest integrated one.
+    pub fn primary_gpu(&self) -> Option<&GpuInfo> {
+        self.gpus.iter().find(|g| g.total_vram_mb > 0)
+    }
 }
 
 #[derive(Debug, Serialize, Deserialize, Clone, TS)]
@@ -175,10 +187,21 @@ pub fn probe_hardware() -> HardwareInfo {
                     vendor: "NVIDIA".to_string(),
                     total_vram_mb: total_vram,
                     free_vram_mb: free_vram,
+                    integrated: false,
                 });
             }
         }
     }
+
+    // AMD, Intel (and NVIDIA without nvidia-smi) via Vulkan, which every current driver ships on
+    // Linux and Windows. nvidia-smi stays first for NVIDIA because it measures free VRAM exactly.
+    let have_nvidia = !gpus.is_empty();
+    gpus.extend(
+        vulkan::gpus()
+            .into_iter()
+            .filter(|g| !(have_nvidia && g.vendor == "NVIDIA")),
+    );
+    sort_gpus(&mut gpus);
 
     // 2. macOS Apple Silicon unified memory detection
     #[cfg(target_os = "macos")]
@@ -189,6 +212,7 @@ pub fn probe_hardware() -> HardwareInfo {
             vendor: "Apple".to_string(),
             total_vram_mb: total_ram_mb,
             free_vram_mb: available_ram_mb,
+            integrated: true,
         });
     }
 
@@ -199,6 +223,7 @@ pub fn probe_hardware() -> HardwareInfo {
             vendor: "Generic".to_string(),
             total_vram_mb: 0,
             free_vram_mb: 0,
+            integrated: false,
         });
     }
 
@@ -213,6 +238,120 @@ pub fn probe_hardware() -> HardwareInfo {
     }
 }
 
+/// Dedicated GPUs before integrated ones, each group largest first.
+fn sort_gpus(gpus: &mut [GpuInfo]) {
+    gpus.sort_by_key(|g| (g.integrated, std::cmp::Reverse(g.total_vram_mb)));
+}
+
+/// Whether two device names mean the same GPU, ignoring driver suffixes and memory figures:
+/// `AMD Radeon 890M Graphics (RADV STRIX1)` from Vulkan is `AMD Radeon 890M Graphics (52254 MiB, …)`
+/// in a llama.cpp device listing.
+pub fn same_gpu(a: &str, b: &str) -> bool {
+    let base = |name: &str| {
+        name.split(" (")
+            .next()
+            .unwrap_or_default()
+            .trim()
+            .to_lowercase()
+    };
+    let (a, b) = (base(a), base(b));
+    !a.is_empty() && a == b
+}
+
+mod vulkan {
+    use super::GpuInfo;
+    use ash::vk;
+    use std::collections::HashSet;
+
+    /// Physical GPUs reported by the Vulkan loader; empty when there is none or no loader.
+    pub fn gpus() -> Vec<GpuInfo> {
+        // SAFETY: the loader is only used within this function and the instance is destroyed
+        // before returning; all handles come from that instance.
+        unsafe {
+            let Ok(entry) = ash::Entry::load() else {
+                return Vec::new();
+            };
+            let app = vk::ApplicationInfo::default().api_version(vk::API_VERSION_1_1);
+            let info = vk::InstanceCreateInfo::default().application_info(&app);
+            let Ok(instance) = entry.create_instance(&info, None) else {
+                return Vec::new();
+            };
+            let mut seen = HashSet::new();
+            let gpus = instance
+                .enumerate_physical_devices()
+                .unwrap_or_default()
+                .into_iter()
+                .filter_map(|device| describe(&instance, device))
+                // Two drivers for one card (e.g. RADV and AMDVLK) report the same device twice.
+                .filter(|(key, _)| seen.insert(*key))
+                .map(|(_, gpu)| gpu)
+                .collect();
+            instance.destroy_instance(None);
+            gpus
+        }
+    }
+
+    unsafe fn describe(
+        instance: &ash::Instance,
+        device: vk::PhysicalDevice,
+    ) -> Option<((u32, u32, u64), GpuInfo)> {
+        let props = unsafe { instance.get_physical_device_properties(device) };
+        let integrated = match props.device_type {
+            vk::PhysicalDeviceType::DISCRETE_GPU => false,
+            vk::PhysicalDeviceType::INTEGRATED_GPU => true,
+            // Software rasterizers (llvmpipe) and virtual GPUs.
+            _ => return None,
+        };
+        let name = props
+            .device_name_as_c_str()
+            .ok()?
+            .to_string_lossy()
+            .into_owned();
+        let has_budget = unsafe { instance.enumerate_device_extension_properties(device) }
+            .unwrap_or_default()
+            .iter()
+            .any(|e| e.extension_name_as_c_str() == Ok(ash::ext::memory_budget::NAME));
+
+        let mut budget = vk::PhysicalDeviceMemoryBudgetPropertiesEXT::default();
+        let memory = {
+            let mut properties = vk::PhysicalDeviceMemoryProperties2::default();
+            if has_budget {
+                properties = properties.push_next(&mut budget);
+            }
+            unsafe { instance.get_physical_device_memory_properties2(device, &mut properties) };
+            properties.memory_properties
+        };
+        // Like ggml: all device-local heaps; on integrated GPUs that includes the shared RAM.
+        let (mut total, mut free) = (0u64, 0u64);
+        for (i, heap) in memory.memory_heaps_as_slice().iter().enumerate() {
+            if heap.flags.contains(vk::MemoryHeapFlags::DEVICE_LOCAL) {
+                total += heap.size;
+                if has_budget {
+                    free += budget.heap_budget[i].saturating_sub(budget.heap_usage[i]);
+                }
+            }
+        }
+        let vendor = match props.vendor_id {
+            0x10de => "NVIDIA",
+            0x1002 => "AMD",
+            0x8086 => "Intel",
+            0x106b => "Apple",
+            _ => "Other",
+        };
+        const MB: u64 = 1024 * 1024;
+        Some((
+            (props.vendor_id, props.device_id, total),
+            GpuInfo {
+                name,
+                vendor: vendor.to_string(),
+                total_vram_mb: total / MB,
+                free_vram_mb: free / MB,
+                integrated,
+            },
+        ))
+    }
+}
+
 pub fn recommend_gpu_layers(
     model_size_mb: u64,
     total_model_layers: u32,
@@ -222,11 +361,7 @@ pub fn recommend_gpu_layers(
     cache_type_v: Option<&str>,
 ) -> LayerRecommendation {
     let hw = probe_hardware();
-    let best_gpu = hw
-        .gpus
-        .iter()
-        .filter(|g| g.total_vram_mb > 0)
-        .max_by_key(|g| g.free_vram_mb);
+    let best_gpu = hw.primary_gpu();
 
     let (free_vram, total_vram) = match best_gpu {
         Some(gpu) => (gpu.free_vram_mb, gpu.total_vram_mb),
@@ -383,8 +518,55 @@ mod tests {
         assert!(!hw.cpu_name.is_empty());
         assert!(hw.total_ram_mb > 0);
         assert!(!hw.gpus.is_empty());
-        let gpu = &hw.gpus[0];
-        println!("GPU detected: {} ({} MB VRAM)", gpu.name, gpu.total_vram_mb);
+        for gpu in &hw.gpus {
+            println!(
+                "GPU detected: {} ({}, {} of {} MB free, integrated: {})",
+                gpu.name, gpu.vendor, gpu.free_vram_mb, gpu.total_vram_mb, gpu.integrated
+            );
+        }
+    }
+
+    fn gpu(name: &str, total: u64, integrated: bool) -> GpuInfo {
+        GpuInfo {
+            name: name.into(),
+            vendor: "AMD".into(),
+            total_vram_mb: total,
+            free_vram_mb: total,
+            integrated,
+        }
+    }
+
+    #[test]
+    fn plans_with_the_dedicated_gpu_even_if_the_igpu_reports_more_memory() {
+        let mut gpus = vec![
+            gpu("AMD Radeon 890M Graphics (RADV STRIX1)", 52_254, true),
+            gpu("AMD Radeon RX 7600 (RADV NAVI33)", 8_176, false),
+        ];
+        sort_gpus(&mut gpus);
+        let hw = HardwareInfo {
+            os_name: String::new(),
+            os_version: String::new(),
+            cpu_name: String::new(),
+            cpu_cores: 1,
+            total_ram_mb: 0,
+            available_ram_mb: 0,
+            gpus,
+        };
+        assert_eq!(hw.primary_gpu().unwrap().total_vram_mb, 8_176);
+    }
+
+    #[test]
+    fn matches_device_names_across_listings() {
+        assert!(same_gpu(
+            "AMD Radeon 890M Graphics (RADV STRIX1)",
+            "AMD Radeon 890M Graphics (RADV STRIX1) (52254 MiB, 52096 MiB free)"
+        ));
+        assert!(same_gpu(
+            "NVIDIA GeForce RTX 4070 Ti SUPER",
+            "NVIDIA GeForce RTX 4070 Ti SUPER (16376 MiB, 14828 MiB free)"
+        ));
+        assert!(!same_gpu("AMD Radeon RX 7600", "AMD Radeon RX 7600 XT"));
+        assert!(!same_gpu("", ""));
     }
 
     #[test]

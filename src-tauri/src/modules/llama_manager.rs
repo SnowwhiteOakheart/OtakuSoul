@@ -239,7 +239,7 @@ impl LlamaServerManager {
         Err(crate::err!("backend.server.binaryMissing"))
     }
 
-    /// The device of the largest GPU when the server sees more than one, e.g. `Vulkan0`.
+    /// The device of the GPU models are planned for when the server sees more than one, e.g. `Vulkan0`.
     async fn dedicated_device(
         binary: &Path,
         library_env: Option<&(&str, std::ffi::OsString)>,
@@ -257,10 +257,8 @@ impl LlamaServerManager {
             + &String::from_utf8_lossy(&output.stderr);
         let gpu = tokio::task::spawn_blocking(|| {
             crate::modules::hardware::probe_hardware()
-                .gpus
-                .into_iter()
-                .max_by_key(|g| g.total_vram_mb)
-                .map(|g| g.name)
+                .primary_gpu()
+                .map(|g| g.name.clone())
         })
         .await
         .ok()
@@ -651,10 +649,9 @@ fn pick_device(listing: &str, gpu: &str) -> Option<String> {
     if devices.len() < 2 {
         return None;
     }
-    let gpu = gpu.to_lowercase();
     devices
         .iter()
-        .find(|(_, description)| description.to_lowercase().starts_with(&gpu))
+        .find(|(_, description)| crate::modules::hardware::same_gpu(description, gpu))
         .map(|(name, _)| name.to_string())
 }
 

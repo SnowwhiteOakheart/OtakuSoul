@@ -275,7 +275,9 @@ GitHub Actions wurden bewusst entfernt (Commit `11597c2`). Stattdessen gibt es j
   `--backend` und `llama-server` per `--device` die größte dedizierte GPU, wenn mehr als ein Gerät gelistet ist.
 
   Noch offen: Parallelbetrieb auf 24 GB (keine Karte vorhanden).
-- [ ] Freier VRAM wird nur über `nvidia-smi` gemessen; auf AMD/Intel plant der Planer mit Schätzwerten.
+- [x] Freier VRAM auch auf AMD/Intel: Grafikkarten werden zusätzlich über Vulkan erkannt (`ash`, Loader erst zur
+  Laufzeit geladen) – Name, Hersteller, VRAM, freier Speicher (`VK_EXT_memory_budget`) und ob es eine iGPU ist.
+  Geplant und festgelegt wird immer auf der größten dedizierten GPU; iGPUs nur, wenn es keine andere gibt.
 - [ ] Anime-LoRAs (Flux/SDXL) auswählbar machen (`/sdapi/v1/loras`), Pony V6 (nur über Civitai mit Login) und eine
   SD-1.5-Stufe für 4-GB-Karten.
 
@@ -283,7 +285,8 @@ GitHub Actions wurden bewusst entfernt (Commit `11597c2`). Stattdessen gibt es j
 
 ## ✨ P3 – Nice-to-have
 
-- [ ] Hardware-Probe für AMD (ROCm/sysfs), Intel und Apple Metal. Heute gibt es nur `nvidia-smi` (offen aus der alten Roadmap).
+- [x] Hardware-Probe für AMD und Intel (Linux und Windows über Vulkan, siehe Bildgenerierung).
+- [ ] Apple Metal: `recommendedMaxWorkingSetSize` statt des gesamten Arbeitsspeichers als GPU-Speicher.
 - [ ] Offene Chat-Funktionen aus `Roadmap_abgeschlossen.md` (Phase 9): Kontextfenster-Management mit Token-Zählung,
   automatische Zusammenfassung, System-Prompt-Editor, Datei-Anhänge und Vision, Übersetzung.
 - [ ] Migrationsimport aus einer bestehenden Soul-of-Waifu-Installation.

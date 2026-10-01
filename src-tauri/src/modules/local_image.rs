@@ -347,12 +347,10 @@ pub fn list_models() -> Vec<ImageModelInfo> {
         .collect()
 }
 
-/// (total, free) VRAM of the largest GPU in MB; free is `None` when the driver doesn't say.
+/// (total, free) VRAM of the GPU models run on in MB; free is `None` when the driver doesn't say.
 fn best_gpu_vram() -> (u64, Option<u64>) {
     crate::modules::hardware::probe_hardware()
-        .gpus
-        .iter()
-        .max_by_key(|g| g.total_vram_mb)
+        .primary_gpu()
         .map(|g| {
             (
                 g.total_vram_mb,
@@ -601,14 +599,11 @@ pub fn plan(input: &PlanInput, strategy: VramStrategy) -> VramDecision {
 /// The sd.cpp device (from `sd-server --list-devices`, `name<TAB>description` per line) of the
 /// GPU named `gpu`, e.g. `Vulkan0` for "NVIDIA GeForce RTX 4070 Ti SUPER".
 fn pick_device(listing: &str, gpu: Option<&str>) -> Option<String> {
-    let gpu = gpu?.to_lowercase();
+    let gpu = gpu?;
     listing.lines().find_map(|line| {
         let (name, description) = line.split_once('\t')?;
-        let description = description.trim().to_lowercase();
-        (name != "CPU"
-            && !gpu.is_empty()
-            && (description.contains(&gpu) || gpu.contains(&description)))
-        .then(|| name.trim().to_string())
+        (name != "CPU" && crate::modules::hardware::same_gpu(description, gpu))
+            .then(|| name.trim().to_string())
     })
 }
 
@@ -768,10 +763,8 @@ impl LocalImageEngine {
                 .unwrap_or_default();
             let gpu = tokio::task::spawn_blocking(|| {
                 crate::modules::hardware::probe_hardware()
-                    .gpus
-                    .into_iter()
-                    .max_by_key(|g| g.total_vram_mb)
-                    .map(|g| g.name)
+                    .primary_gpu()
+                    .map(|g| g.name.clone())
             })
             .await
             .ok()
@@ -1172,6 +1165,12 @@ mod tests {
         );
         assert_eq!(pick_device(listing, None), None);
         assert_eq!(pick_device(listing, Some("Unknown GPU")), None);
+        // AMD card next to an AMD iGPU: names as Vulkan reports them.
+        let amd = "Vulkan0\tAMD Radeon 890M Graphics (RADV STRIX1)\nVulkan1\tAMD Radeon RX 7600 (RADV NAVI33)\n";
+        assert_eq!(
+            pick_device(amd, Some("AMD Radeon RX 7600 (RADV NAVI33)")).as_deref(),
+            Some("Vulkan1")
+        );
 
         let flux = ["--clip-on-cpu", "--vae-tiling", "--diffusion-fa"];
         let (backend, rest) = backend_assignment(&flux, Some("Vulkan0"));
