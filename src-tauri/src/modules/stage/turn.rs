@@ -311,10 +311,12 @@ RULES:
         ChatMessage {
             role: "system".to_string(),
             content: planner_system_prompt,
+            attachments: Vec::new(),
         },
         ChatMessage {
             role: "user".to_string(),
             content: planner_user_prompt,
+            attachments: Vec::new(),
         },
     ];
 
@@ -707,10 +709,12 @@ RULES:
         ChatMessage {
             role: "system".to_string(),
             content: executor_system_prompt,
+            attachments: Vec::new(),
         },
         ChatMessage {
             role: "user".to_string(),
             content: format!("Narrate what happens after this action: '{}'", clean_input),
+            attachments: Vec::new(),
         },
     ];
 
@@ -861,6 +865,7 @@ Reply in {reply_language}."#,
                 ChatMessage {
                     role: "system".to_string(),
                     content: companion_system,
+                    attachments: Vec::new(),
                 },
                 ChatMessage {
                     role: "user".to_string(),
@@ -868,6 +873,7 @@ Reply in {reply_language}."#,
                         "Recent history:\n{}\n\nReact as {}:",
                         history_text, current_actor
                     ),
+                    attachments: Vec::new(),
                 },
             ];
 

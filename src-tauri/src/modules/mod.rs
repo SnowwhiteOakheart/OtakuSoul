@@ -1,3 +1,4 @@
+pub mod attachments;
 pub mod characters;
 pub mod chat_summary;
 pub mod companion;

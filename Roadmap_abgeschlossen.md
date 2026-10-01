@@ -76,7 +76,7 @@ Die Reihenfolge ist nach Abhängigkeit und Nutzen sortiert: erst das, was jede a
 - [x] **Kontextfenster-Management** *(umgesetzt, siehe ROADMAP.md)* – Token-Zählung (`tiktoken-rs` oder `/tokenize` des llama-servers), Response-Reserve, älteste Nachrichten abschneiden (SoW: `PromptEngine._get_max_context_tokens`)
 - [x] **Automatische Zusammenfassung** *(umgesetzt, siehe ROADMAP.md)* alter Nachrichten + Summary-Editor (SoW: `build_summary_prompt_blocks`, `open_summary_editor`, `save_interval_summary`)
 - [x] **System-Prompt-Editor** & Prompt-Vorlagen *(umgesetzt, siehe ROADMAP.md)*
-- [ ] **Datei-Anhänge** (Text, PDF, Bilder für Vision-Modelle) (SoW: `open_attach_file_dialog`)
+- [x] **Datei-Anhänge** (Text, PDF, Bilder für Vision-Modelle) *(umgesetzt, siehe ROADMAP.md)* (SoW: `open_attach_file_dialog`)
 - [ ] **Chat-Übersetzung** einzelner Nachrichten (SoW: `translator.py`)
 - [ ] **Chat-Erscheinungsbild** – Hintergründe pro Chat, Schrift, Blasenfarben, Themes (SoW: `on_chat_appearance_changed`, `open_chat_background_changer`)
 - [ ] **Ambient-Sound pro Chat** mit Lautstärke (SoW: `ambient_client.py`)

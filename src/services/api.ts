@@ -45,6 +45,7 @@ import {
   UserPersona,
   ChatSession,
   ChatSummaryRequest,
+  Attachment,
   AssembledPrompt,
   BuiltinPromptTemplate,
   StoredChatMessage,
@@ -650,6 +651,11 @@ export const api = {
     return await invoke<ScannedModel[]>('scan_models');
   },
 
+  /** `mmproj-*.gguf` files that let a local model see images. */
+  scanVisionProjectors: async (): Promise<ScannedModel[]> => {
+    return await invoke<ScannedModel[]>('scan_vision_projectors');
+  },
+
   scanVrmModels: async (): Promise<ScannedVrm[]> => {
     return await invoke<ScannedVrm[]>('scan_vrm_models');
   },
@@ -754,14 +760,25 @@ export const api = {
     chatId: string,
     role: string,
     content: string,
-    thought?: string | null
+    thought?: string | null,
+    attachments?: Attachment[],
   ): Promise<StoredChatMessage> => {
     return await invoke<StoredChatMessage>('add_chat_message', {
       chatId,
       role,
       content,
       thought: thought ?? null,
+      attachments: attachments ?? null,
     });
+  },
+
+  /** Stores a file for the next message; `data` is base64. */
+  saveAttachment: async (chatId: string, name: string, data: string): Promise<Attachment> => {
+    return await invoke<Attachment>('save_attachment', { chatId, name, data });
+  },
+
+  getAttachmentDataUrl: async (attachment: Attachment): Promise<string | null> => {
+    return await invoke<string | null>('get_attachment_data_url', { attachment });
   },
 
   updateChatMessage: async (

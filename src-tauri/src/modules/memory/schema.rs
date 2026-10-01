@@ -149,6 +149,11 @@ pub(super) fn migrate_v1_baseline(conn: &Connection) -> rusqlite::Result<()> {
             "summary_until",
             "INTEGER NOT NULL DEFAULT -1",
         ),
+        (
+            "chat_messages",
+            "attachments_json",
+            "TEXT NOT NULL DEFAULT '[]'",
+        ),
     ] {
         if !has_column(conn, table, column)? {
             conn.execute(

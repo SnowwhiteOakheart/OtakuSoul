@@ -10,7 +10,7 @@ const REPLY =
 export const SUMMARY = 'Testzusammenfassung: Kai und die Figur planten einen Ausflug zum Fushimi-Inari-Schrein.';
 
 export function startMockLlm() {
-  const stats = { chat: 0, summary: 0, lastChatSystemPrompt: '' };
+  const stats = { chat: 0, summary: 0, lastChatSystemPrompt: '', lastChatMessages: [] };
   const server = http.createServer((req, res) => {
     let body = '';
     req.on('data', (chunk) => (body += chunk));
@@ -22,8 +22,15 @@ export function startMockLlm() {
       const request = JSON.parse(body || '{}');
       const system = request.messages?.[0]?.content ?? '';
       const isSummary = system.includes('running summary');
-      stats[isSummary ? 'summary' : 'chat'] += 1;
-      if (!isSummary) stats.lastChatSystemPrompt = system;
+      // Chat replies (every prompt template starts with this heading); other calls such as
+      // the memory pipeline only get the canned reply.
+      const isChat = system.includes('# Role & Identity');
+      if (isSummary) stats.summary += 1;
+      if (isChat) {
+        stats.chat += 1;
+        stats.lastChatSystemPrompt = system;
+        stats.lastChatMessages = request.messages ?? [];
+      }
       const text = isSummary ? SUMMARY : REPLY;
       res.writeHead(200, { 'Content-Type': 'text/event-stream', 'Cache-Control': 'no-cache' });
       // A few chunks, like a real stream.

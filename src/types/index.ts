@@ -25,6 +25,7 @@ import type { ChatSession } from './generated/ChatSession';
 import type { ChubCharacterDetail } from './generated/ChubCharacterDetail';
 import type { CombatCondition } from './generated/CombatCondition';
 import type { ContextUsage } from './generated/ContextUsage';
+import type { Attachment } from './generated/Attachment';
 import type { PromptTemplate } from './generated/PromptTemplate';
 import type { BuiltinPromptTemplate } from './generated/BuiltinPromptTemplate';
 import type { AssembledPrompt } from './generated/AssembledPrompt';
@@ -98,6 +99,7 @@ export type {
   CombatCondition,
   ConsequenceEntry,
   ContextUsage,
+  Attachment,
   PromptTemplate,
   BuiltinPromptTemplate,
   AssembledPrompt,
@@ -160,12 +162,14 @@ export interface LlamaServerConfig {
   mlock?: boolean;
   no_mmap?: boolean;
   cpu_moe?: boolean;
+  mmproj_path?: string | null;
 }
 
 export interface ChatMessage {
   role: 'user' | 'assistant' | 'system';
   content: string;
   thought?: string;
+  attachments?: Attachment[];
 }
 
 export interface SamplingParams {
@@ -728,6 +732,7 @@ export interface StoredChatMessage {
   swipe_index: number;
   swipes: SwipeVariant[];
   created_at: number;
+  attachments: Attachment[];
 }
 
 export interface HudPreset {

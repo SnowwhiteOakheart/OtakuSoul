@@ -1,9 +1,11 @@
-import React, { useState } from 'react';
-import { Send, Square } from 'lucide-react';
+import React, { useEffect, useMemo, useRef, useState } from 'react';
+import { FileText, Paperclip, Send, Square, X } from 'lucide-react';
 import { useStoreFields } from '../../store/useAppStore';
 import { streamingTts } from '../../services/streamingTts';
 import { useTranslation } from '../../i18n';
 import { VoiceCallControls } from '../voice/VoiceCallControls';
+import { toast } from '../ui/feedback';
+import { errorMessage } from '../../utils/errors';
 import type { ContextUsage } from '../../types';
 
 /**
@@ -12,18 +14,38 @@ import type { ContextUsage } from '../../types';
  */
 export const ChatComposer: React.FC = () => {
   const { t } = useTranslation();
-  const { sendMessage, isGenerating, abortGeneration, activeVoiceConfig, setAutoTtsEnabled, contextUsage } =
-    useStoreFields(
-      'sendMessage', 'isGenerating', 'abortGeneration', 'activeVoiceConfig', 'setAutoTtsEnabled', 'contextUsage',
-    );
+  const {
+    sendMessage, isGenerating, abortGeneration, activeVoiceConfig, setAutoTtsEnabled, contextUsage,
+    selectedBackend, serverConfig,
+  } = useStoreFields(
+    'sendMessage', 'isGenerating', 'abortGeneration', 'activeVoiceConfig', 'setAutoTtsEnabled', 'contextUsage',
+    'selectedBackend', 'serverConfig',
+  );
   const [input, setInput] = useState('');
+  const [files, setFiles] = useState<File[]>([]);
+  const fileInput = useRef<HTMLInputElement>(null);
+
+  const addFiles = (list: Iterable<File>) => {
+    const added = [...list];
+    if (added.length > 0) setFiles((current) => [...current, ...added].slice(0, MAX_FILES));
+  };
 
   const handleSend = () => {
-    if (!input.trim() || isGenerating) return;
+    if ((!input.trim() && files.length === 0) || isGenerating) return;
     streamingTts.cancel();
-    sendMessage(input);
+    const [text, attached] = [input, files];
     setInput('');
+    setFiles([]);
+    sendMessage(text, attached).catch((e) => {
+      // Nothing was stored (upload failed): give the draft back.
+      toast.error(errorMessage(e));
+      setInput(text);
+      setFiles(attached);
+    });
   };
+
+  const imagesWithoutVision =
+    selectedBackend === 'local' && !serverConfig.mmproj_path && files.some((f) => f.type.startsWith('image/'));
 
   const handleAbort = async () => {
     streamingTts.cancel();
@@ -32,10 +54,49 @@ export const ChatComposer: React.FC = () => {
 
   return (
     <div className="p-4 border-t border-slate-800 bg-slate-900/60 backdrop-blur">
+      {files.length > 0 && (
+        <div className="max-w-4xl mx-auto mb-2 flex flex-wrap gap-2" aria-label={t('chat.attachments')}>
+          {files.map((file, i) => (
+            <PendingFile key={`${file.name}-${i}`} file={file} onRemove={() => setFiles(files.filter((_, j) => j !== i))} />
+          ))}
+        </div>
+      )}
+      {imagesWithoutVision && (
+        <p className="max-w-4xl mx-auto mb-2 text-xs text-amber-300">{t('chat.noVisionHint')}</p>
+      )}
       <div className="flex items-end gap-2 max-w-4xl mx-auto">
+        <input
+          ref={fileInput}
+          type="file"
+          multiple
+          accept={ACCEPT}
+          className="hidden"
+          onChange={(e) => {
+            addFiles(e.target.files ?? []);
+            e.target.value = '';
+          }}
+        />
+        <button
+          type="button"
+          onClick={() => fileInput.current?.click()}
+          disabled={files.length >= MAX_FILES}
+          className="p-2.5 rounded-xl bg-slate-800 hover:bg-slate-700 disabled:opacity-40 text-slate-300 transition-colors border border-slate-700/80"
+          title={t('chat.attachHint')}
+          aria-label={t('chat.attach')}
+        >
+          <Paperclip className="w-4 h-4" />
+        </button>
         <textarea
           value={input}
           onChange={(e) => setInput(e.target.value)}
+          onPaste={(e) => {
+            // Screenshots and copied images from the clipboard become attachments.
+            const pasted = [...e.clipboardData.files].filter((f) => f.type.startsWith('image/'));
+            if (pasted.length > 0) {
+              e.preventDefault();
+              addFiles(pasted);
+            }
+          }}
           onKeyDown={(e) => {
             if (e.key === 'Enter' && !e.shiftKey) {
               e.preventDefault();
@@ -60,7 +121,7 @@ export const ChatComposer: React.FC = () => {
         ) : (
           <button
             onClick={handleSend}
-            disabled={!input.trim()}
+            disabled={!input.trim() && files.length === 0}
             className="p-2.5 rounded-xl bg-accent-600 hover:bg-accent-500 disabled:opacity-40 disabled:cursor-not-allowed text-white transition-all shadow-md flex items-center justify-center"
             title={t('chat.send')}
             aria-label={t('chat.send')}
@@ -78,6 +139,36 @@ export const ChatComposer: React.FC = () => {
         />
       </div>
       {contextUsage && <ContextMeter usage={contextUsage} />}
+    </div>
+  );
+};
+
+const MAX_FILES = 6;
+const ACCEPT = 'image/png,image/jpeg,image/webp,.pdf,.txt,.md,.json,.csv,.log,.xml,.html,.yaml,.yml';
+
+/** A file waiting to be sent: thumbnail for images, name for documents. */
+const PendingFile: React.FC<{ file: File; onRemove: () => void }> = ({ file, onRemove }) => {
+  const { t } = useTranslation();
+  const preview = useMemo(() => (file.type.startsWith('image/') ? URL.createObjectURL(file) : null), [file]);
+  useEffect(() => () => {
+    if (preview) URL.revokeObjectURL(preview);
+  }, [preview]);
+  return (
+    <div className="flex items-center gap-2 rounded-lg border border-slate-700 bg-slate-900 pl-1 pr-2 py-1 text-xs text-slate-300 max-w-56">
+      {preview ? (
+        <img src={preview} alt="" className="w-8 h-8 rounded object-cover" />
+      ) : (
+        <FileText className="w-4 h-4 ml-1 text-accent-400 shrink-0" />
+      )}
+      <span className="truncate">{file.name}</span>
+      <button
+        type="button"
+        onClick={onRemove}
+        className="text-slate-500 hover:text-rose-400"
+        aria-label={t('chat.removeAttachment', { name: file.name })}
+      >
+        <X className="w-3.5 h-3.5" />
+      </button>
     </div>
   );
 };

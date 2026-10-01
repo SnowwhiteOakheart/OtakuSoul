@@ -135,71 +135,42 @@ impl ProviderRegistry {
             req_builder = req_builder.header("x-api-key", key);
         }
 
-        // Separate system messages from conversation history
+        // Separate system messages from conversation history; consecutive turns of the same
+        // role are merged, because Anthropic requires alternating user/assistant turns.
         let mut system_parts = Vec::new();
-        let mut conversation: Vec<serde_json::Value> = Vec::new();
+        let mut turns: Vec<(&str, Vec<serde_json::Value>)> = Vec::new();
 
         for msg in &request.messages {
             if msg.role == "system" {
                 system_parts.push(msg.content.clone());
+                continue;
+            }
+            let role = if msg.role == "user" {
+                "user"
             } else {
-                let role = if msg.role == "user" {
-                    "user"
-                } else {
-                    "assistant"
-                };
-                // Anthropic does not allow empty content blocks
-                let text = if msg.content.trim().is_empty() {
-                    "..."
-                } else {
-                    &msg.content
-                };
-                conversation.push(serde_json::json!({
-                    "role": role,
-                    "content": text
-                }));
+                "assistant"
+            };
+            let blocks = anthropic_blocks(msg);
+            match turns.last_mut() {
+                Some((last_role, last_blocks)) if *last_role == role => last_blocks.extend(blocks),
+                _ => turns.push((role, blocks)),
             }
         }
 
-        // Anthropic requires alternating user/assistant turns starting with user
-        let mut normalized_messages: Vec<serde_json::Value> = Vec::new();
-        for msg in conversation {
-            let role = msg.get("role").and_then(|r| r.as_str()).unwrap_or("user");
-            let content = msg.get("content").and_then(|c| c.as_str()).unwrap_or("");
-
-            if let Some(last) = normalized_messages.last_mut() {
-                let last_role = last.get("role").and_then(|r| r.as_str()).unwrap_or("");
-                if last_role == role {
-                    // Merge consecutive turns of same role
-                    let last_content = last.get("content").and_then(|c| c.as_str()).unwrap_or("");
-                    let merged = format!("{}\n\n{}", last_content, content);
-                    last["content"] = serde_json::Value::String(merged);
-                    continue;
-                }
-            }
-            normalized_messages.push(serde_json::json!({
-                "role": role,
-                "content": content
-            }));
+        // The conversation must start with a user turn.
+        if turns.first().is_none_or(|(role, _)| *role != "user") {
+            turns.insert(
+                0,
+                (
+                    "user",
+                    vec![serde_json::json!({ "type": "text", "text": "Hallo." })],
+                ),
+            );
         }
-
-        // Ensure first message is user
-        if let Some(first) = normalized_messages.first() {
-            if first.get("role").and_then(|r| r.as_str()) != Some("user") {
-                normalized_messages.insert(
-                    0,
-                    serde_json::json!({
-                        "role": "user",
-                        "content": "Hallo."
-                    }),
-                );
-            }
-        } else {
-            normalized_messages.push(serde_json::json!({
-                "role": "user",
-                "content": "Hallo."
-            }));
-        }
+        let normalized_messages: Vec<serde_json::Value> = turns
+            .into_iter()
+            .map(|(role, content)| serde_json::json!({ "role": role, "content": content }))
+            .collect();
 
         let sampling = request.sampling.clone().unwrap_or_default();
         let model = request
@@ -260,7 +231,7 @@ impl ProviderRegistry {
 
         let mut body = serde_json::json!({
             "model": model,
-            "messages": request.messages,
+            "messages": request.messages.iter().map(openai_message).collect::<Vec<_>>(),
             "stream": true,
             "temperature": sampling.temperature.unwrap_or(0.7),
             "max_tokens": sampling.max_tokens.unwrap_or(2048),
@@ -486,6 +457,52 @@ pub async fn fetch_openrouter_models(
     }
 
     Ok(models)
+}
+
+/// Data URLs of the image attachments of a message.
+fn image_urls(msg: &crate::modules::inference::ChatMessage) -> Vec<String> {
+    msg.attachments
+        .iter()
+        .filter(|a| a.kind == "image")
+        .filter_map(crate::modules::attachments::data_url)
+        .collect()
+}
+
+/// OpenAI chat message; with images the content becomes a list of text and image parts.
+fn openai_message(msg: &crate::modules::inference::ChatMessage) -> serde_json::Value {
+    let images = image_urls(msg);
+    if images.is_empty() {
+        return serde_json::json!({ "role": msg.role, "content": msg.content });
+    }
+    let mut parts = vec![serde_json::json!({ "type": "text", "text": msg.content })];
+    parts.extend(
+        images
+            .into_iter()
+            .map(|url| serde_json::json!({ "type": "image_url", "image_url": { "url": url } })),
+    );
+    serde_json::json!({ "role": msg.role, "content": parts })
+}
+
+/// Anthropic content blocks: images first (as their docs recommend), then the text.
+fn anthropic_blocks(msg: &crate::modules::inference::ChatMessage) -> Vec<serde_json::Value> {
+    let mut blocks: Vec<serde_json::Value> = image_urls(msg)
+        .into_iter()
+        .filter_map(|url| {
+            let (header, data) = url.strip_prefix("data:")?.split_once(";base64,")?;
+            Some(serde_json::json!({
+                "type": "image",
+                "source": { "type": "base64", "media_type": header, "data": data },
+            }))
+        })
+        .collect();
+    // Anthropic does not allow empty text blocks.
+    let text = if msg.content.trim().is_empty() {
+        "..."
+    } else {
+        msg.content.as_str()
+    };
+    blocks.push(serde_json::json!({ "type": "text", "text": text }));
+    blocks
 }
 
 #[cfg(test)]

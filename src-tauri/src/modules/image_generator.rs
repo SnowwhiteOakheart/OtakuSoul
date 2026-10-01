@@ -245,10 +245,12 @@ impl ImageGenerator {
                     ChatMessage {
                         role: "system".to_string(),
                         content: system,
+                        attachments: Vec::new(),
                     },
                     ChatMessage {
                         role: "user".to_string(),
                         content: user,
+                        attachments: Vec::new(),
                     },
                 ],
                 sampling: Some(SamplingParams {

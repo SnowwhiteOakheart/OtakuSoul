@@ -13,6 +13,8 @@ use ts_rs::TS;
 
 /// Template tokens around each message (role markers, separators), roughly what chat templates add.
 const PER_MESSAGE_TOKENS: usize = 6;
+/// An attached image, roughly (vision encoders use a few hundred to about a thousand tokens).
+const IMAGE_TOKENS: usize = 1_000;
 /// Messages cached per model; enough for very long chats.
 const CACHE_LIMIT: usize = 20_000;
 
@@ -144,15 +146,16 @@ impl TokenCounter {
                 }
                 let tokens = self
                     .count_local(&client, base, &props.model_path, &messages[i].content)
-                    .await;
+                    .await
+                    + messages[i].attachments.len() * IMAGE_TOKENS;
                 counts.insert(i, tokens);
                 used += tokens + PER_MESSAGE_TOKENS;
             }
         }
         let (keep, used) = select(&messages, budget, |i| {
-            *counts
-                .entry(i)
-                .or_insert_with(|| estimate_tokens(&messages[i].content))
+            *counts.entry(i).or_insert_with(|| {
+                estimate_tokens(&messages[i].content) + messages[i].attachments.len() * IMAGE_TOKENS
+            })
         });
         let dropped = messages.len() - keep.len();
         let usage = ContextUsage {
@@ -240,6 +243,7 @@ mod tests {
         ChatMessage {
             role: role.into(),
             content: content.into(),
+            attachments: Vec::new(),
         }
     }
 

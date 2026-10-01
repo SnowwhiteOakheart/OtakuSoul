@@ -304,7 +304,14 @@ GitHub Actions wurden bewusst entfernt (Commit `11597c2`). Stattdessen gibt es j
   Vorlagen Rollenspiel/Erzähler/Companion, Vorschau für den aktiven Charakter. Dabei behoben: `system_prompt` und
   `post_history_instructions` aus V2-Karten wurden eingelesen, aber nie verwendet; jetzt ersetzen sie Rolle bzw.
   Nachspann, `{{original}}` bindet die Vorlage ein.
-- [ ] Offene Chat-Funktionen aus `Roadmap_abgeschlossen.md` (Phase 9): Datei-Anhänge und Vision, Übersetzung.
+- [x] Datei-Anhänge im Chat (Büroklammer oder Bild einfügen, bis zu 6 pro Nachricht; `modules/attachments.rs`): Bilder
+  (auf 1568 px verkleinert) gehen als Bild-Blöcke an Vision-Modelle (OpenAI-Format/llama-server, Anthropic), Text- und
+  PDF-Dateien als Text (bis 30.000 Zeichen). Nur die letzten drei Nachrichten mit Bildern schicken die Bilder mit,
+  ältere werden zu einem Hinweis. Lokal sieht das Modell Bilder nur mit gewählter `mmproj`-Datei (Einstellungen →
+  llama-server, `--mmproj`); `mmproj`-Dateien erscheinen nicht mehr fälschlich als startbare Modelle.
+  Ablage unter `attachments/<chat>/`, wird mit dem Chat gelöscht. Rauchtest prüft Bild und Textdatei.
+- [ ] Offene Chat-Funktionen aus `Roadmap_abgeschlossen.md` (Phase 9): Übersetzung einzelner Nachrichten.
+- [ ] Vision lokal auf echter Hardware testen (Gemma/Qwen-VL mit passender `mmproj`, z. B. aus dem Modell-Hub).
 - [ ] Migrationsimport aus einer bestehenden Soul-of-Waifu-Installation.
 - [x] Lange Chats virtualisiert (`@tanstack/react-virtual`, `chat/MessageList.tsx`); Eingabefeld (`ChatComposer`) und
   Verlauf sind getrennt und memoisiert, Tippen und Streaming rendern den Verlauf nicht mehr neu. Gemessen mit

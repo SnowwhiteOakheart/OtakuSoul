@@ -8,6 +8,7 @@ import {
   ChevronRight,
   Edit3,
   FastForward,
+  FileText,
   RotateCcw,
   Trash2,
   X,
@@ -17,7 +18,8 @@ import { translate, useTranslation } from '../../i18n';
 import { confirmDialog } from '../ui/feedback';
 import { PersonaAvatar } from '../characters/PersonaAvatar';
 import { RoleplayMessage } from './RoleplayMessage';
-import type { StoredChatMessage, UserPersona } from '../../types';
+import { api } from '../../services/api';
+import type { Attachment, StoredChatMessage, UserPersona } from '../../types';
 
 const BUBBLE_ACTION =
   'p-1 hover:text-accent-300 disabled:opacity-40 transition-colors flex items-center gap-1 rounded outline-hidden focus-visible:ring-2 focus-visible:ring-accent-400';
@@ -199,6 +201,14 @@ const ChatMessageItem = React.memo<ChatMessageItemProps>(
           </div>
         )}
 
+        {msg.attachments.length > 0 && (
+          <div className={`mb-1.5 flex flex-wrap gap-2 max-w-[85%] ${isUser ? 'justify-end' : ''}`}>
+            {msg.attachments.map((a) => (
+              <AttachmentView key={a.id} attachment={a} />
+            ))}
+          </div>
+        )}
+
         {/* Message Bubble or Inline Edit Textarea */}
         {editContent !== null ? (
           <div className="w-full max-w-[85%] space-y-2">
@@ -297,3 +307,49 @@ const ChatMessageItem = React.memo<ChatMessageItemProps>(
   },
 );
 ChatMessageItem.displayName = 'ChatMessageItem';
+
+/** Loaded image attachments, so scrolling a virtualized chat doesn't reload them. */
+const imageCache = new Map<string, Promise<string | null>>();
+const loadImage = (attachment: Attachment) => {
+  let pending = imageCache.get(attachment.file);
+  if (!pending) {
+    pending = api.getAttachmentDataUrl(attachment).catch(() => null);
+    imageCache.set(attachment.file, pending);
+  }
+  return pending;
+};
+
+const AttachmentView: React.FC<{ attachment: Attachment }> = ({ attachment }) => {
+  const { t } = useTranslation();
+  const [src, setSrc] = useState<string | null>(null);
+  useEffect(() => {
+    if (attachment.kind !== 'image') return;
+    let alive = true;
+    loadImage(attachment).then((url) => alive && setSrc(url));
+    return () => {
+      alive = false;
+    };
+  }, [attachment]);
+
+  if (attachment.kind === 'image') {
+    return src ? (
+      <img
+        src={src}
+        alt={attachment.name}
+        title={attachment.name}
+        className="max-h-48 max-w-full rounded-xl border border-slate-800 object-contain"
+      />
+    ) : (
+      <div className="h-24 w-32 rounded-xl border border-slate-800 bg-slate-900 animate-pulse" aria-label={attachment.name} />
+    );
+  }
+  return (
+    <div
+      className="flex items-center gap-1.5 rounded-lg border border-slate-700 bg-slate-900 px-2 py-1 text-xs text-slate-300"
+      title={attachment.truncated ? t('chat.attachmentTruncated') : attachment.name}
+    >
+      <FileText className="w-3.5 h-3.5 text-accent-400" />
+      <span className="max-w-48 truncate">{attachment.name}</span>
+    </div>
+  );
+};

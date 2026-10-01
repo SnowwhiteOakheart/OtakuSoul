@@ -6,6 +6,7 @@ import { HUD_PRESETS } from '../../constants/hudPresets';
 import { resolvePromptWithLore } from '../helpers';
 import type {
   AssembledPrompt,
+  Attachment,
   CharacterProfile,
   ChatMessage,
   ChatSession,
@@ -16,6 +17,7 @@ import type {
 } from '../../types';
 import type { SliceCreator } from '../storeTypes';
 import { errorMessage } from '../../utils/errors';
+import { fileToBase64 } from '../../utils/files';
 import { fillCardMacros, languageCode, localizeCard } from '../../utils/cardI18n';
 
 /** Chat messages, streaming, sessions, swipes, HUD presets, reply language and voice. */
@@ -32,7 +34,8 @@ export interface ChatSlice {
   /** After a reply: summarize the messages that no longer fit once enough have piled up. */
   summarizeDroppedMessages: (usage: ContextUsage | null | undefined, history: StoredChatMessage[]) => void;
   updateChatSummary: (summary: string, summaryUntil: number) => Promise<void>;
-  sendMessage: (content: string) => Promise<void>;
+  /** Sends a message; `files` are attached to it (images, text, PDF). */
+  sendMessage: (content: string, files?: File[]) => Promise<void>;
   abortGeneration: () => Promise<void>;
   clearChat: () => void;
   activeChatId: string | null;
@@ -61,6 +64,14 @@ export interface ChatSlice {
   loadVoiceConfigForCharacter: (charId: string) => Promise<void>;
   saveVoiceConfigForCharacter: (charId: string, config: VoiceConfig) => Promise<void>;
 }
+
+/** A stored message as it goes to the model (attachments included). */
+const toFlat = (m: StoredChatMessage): ChatMessage => ({
+  role: m.role as 'user' | 'assistant' | 'system',
+  content: m.content,
+  thought: m.thought || undefined,
+  attachments: m.attachments.length > 0 ? m.attachments : undefined,
+});
 
 /** The card's or template's post-history instruction as a trailing system message. */
 const postHistory = (prompt: AssembledPrompt | null): ChatMessage[] =>
@@ -196,11 +207,7 @@ export const createChatSlice: SliceCreator<ChatSlice> = (set, get) => ({
   switchChatSession: async (chatId: string) => {
     try {
       const storedMsgs = await api.getChatMessages(chatId);
-      const flatMsgs: ChatMessage[] = storedMsgs.map((m) => ({
-        role: m.role as 'user' | 'assistant' | 'system',
-        content: m.content,
-        thought: m.thought || undefined,
-      }));
+      const flatMsgs: ChatMessage[] = storedMsgs.map(toFlat);
 
       set({
         activeChatId: chatId,
@@ -282,11 +289,7 @@ export const createChatSlice: SliceCreator<ChatSlice> = (set, get) => ({
       const updated = await api.switchMessageSwipe(msgId, swipeIndex);
       set((state) => {
         const stored = state.storedMessages.map((m) => (m.id === msgId ? updated : m));
-        const flat: ChatMessage[] = stored.map((m) => ({
-          role: m.role as 'user' | 'assistant' | 'system',
-          content: m.content,
-          thought: m.thought || undefined,
-        }));
+        const flat: ChatMessage[] = stored.map(toFlat);
         return {
           storedMessages: stored,
           messages: flat,
@@ -302,11 +305,7 @@ export const createChatSlice: SliceCreator<ChatSlice> = (set, get) => ({
       const updated = await api.updateChatMessage(msgId, newContent);
       set((state) => {
         const stored = state.storedMessages.map((m) => (m.id === msgId ? updated : m));
-        const flat: ChatMessage[] = stored.map((m) => ({
-          role: m.role as 'user' | 'assistant' | 'system',
-          content: m.content,
-          thought: m.thought || undefined,
-        }));
+        const flat: ChatMessage[] = stored.map(toFlat);
         return {
           storedMessages: stored,
           messages: flat,
@@ -322,11 +321,7 @@ export const createChatSlice: SliceCreator<ChatSlice> = (set, get) => ({
       await api.deleteChatMessage(msgId);
       set((state) => {
         const stored = state.storedMessages.filter((m) => m.id !== msgId);
-        const flat: ChatMessage[] = stored.map((m) => ({
-          role: m.role as 'user' | 'assistant' | 'system',
-          content: m.content,
-          thought: m.thought || undefined,
-        }));
+        const flat: ChatMessage[] = stored.map(toFlat);
         return {
           storedMessages: stored,
           messages: flat,
@@ -365,11 +360,7 @@ export const createChatSlice: SliceCreator<ChatSlice> = (set, get) => ({
 
     // Messages before this message
     const priorStored = storedMessages.filter((m) => m.order_index < targetMsg.order_index);
-    const priorFlat: ChatMessage[] = priorStored.map((m) => ({
-      role: m.role as 'user' | 'assistant' | 'system',
-      content: m.content,
-      thought: m.thought || undefined,
-    }));
+    const priorFlat: ChatMessage[] = priorStored.map(toFlat);
 
     set({ isGenerating: true, streamingText: '', streamingThought: '' });
 
@@ -422,11 +413,7 @@ export const createChatSlice: SliceCreator<ChatSlice> = (set, get) => ({
 
       set((state) => {
         const stored = state.storedMessages.map((m) => (m.id === msgId ? updatedMsg : m));
-        const flat: ChatMessage[] = stored.map((m) => ({
-          role: m.role as 'user' | 'assistant' | 'system',
-          content: m.content,
-          thought: m.thought || undefined,
-        }));
+        const flat: ChatMessage[] = stored.map(toFlat);
         return {
           storedMessages: stored,
           messages: flat,
@@ -463,11 +450,7 @@ export const createChatSlice: SliceCreator<ChatSlice> = (set, get) => ({
 
     // All messages up to and including targetMsg
     const historyStored = storedMessages.filter((m) => m.order_index <= targetMsg.order_index);
-    const historyFlat: ChatMessage[] = historyStored.map((m) => ({
-      role: m.role as 'user' | 'assistant' | 'system',
-      content: m.content,
-      thought: m.thought || undefined,
-    }));
+    const historyFlat: ChatMessage[] = historyStored.map(toFlat);
 
     set({ isGenerating: true, streamingText: '', streamingThought: '' });
 
@@ -514,11 +497,7 @@ export const createChatSlice: SliceCreator<ChatSlice> = (set, get) => ({
 
       set((state) => {
         const stored = state.storedMessages.map((m) => (m.id === msgId ? updatedMsg : m));
-        const flat: ChatMessage[] = stored.map((m) => ({
-          role: m.role as 'user' | 'assistant' | 'system',
-          content: m.content,
-          thought: m.thought || undefined,
-        }));
+        const flat: ChatMessage[] = stored.map(toFlat);
         return {
           storedMessages: stored,
           messages: flat,
@@ -563,7 +542,7 @@ export const createChatSlice: SliceCreator<ChatSlice> = (set, get) => ({
     }
   },
 
-  sendMessage: async (content: string) => {
+  sendMessage: async (content: string, files: File[] = []) => {
     let { activeChatId } = get();
     const {
       activeCharacter,
@@ -577,7 +556,7 @@ export const createChatSlice: SliceCreator<ChatSlice> = (set, get) => ({
       chatSessions,
     } = get();
 
-    if (!content.trim()) return;
+    if (!content.trim() && files.length === 0) return;
 
     // Ensure we have an active chat session
     if (!activeChatId && activeCharacter) {
@@ -589,14 +568,15 @@ export const createChatSlice: SliceCreator<ChatSlice> = (set, get) => ({
 
     soundFx.playMessageSent();
 
-    // 1. Add user message to DB
-    const userStored = await api.addChatMessage(activeChatId, 'user', content);
+    // 1. Store attachments, then the user message
+    // A failed upload rejects before anything is stored; the composer reports it.
+    const chatId = activeChatId;
+    const attachments: Attachment[] = await Promise.all(
+      files.map(async (file) => api.saveAttachment(chatId, file.name, await fileToBase64(file))),
+    );
+    const userStored = await api.addChatMessage(activeChatId, 'user', content, null, attachments);
     const updatedStored = [...get().storedMessages, userStored];
-    const updatedFlat: ChatMessage[] = updatedStored.map((m) => ({
-      role: m.role as 'user' | 'assistant' | 'system',
-      content: m.content,
-      thought: m.thought || undefined,
-    }));
+    const updatedFlat: ChatMessage[] = updatedStored.map(toFlat);
 
     set({
       storedMessages: updatedStored,
@@ -666,11 +646,7 @@ export const createChatSlice: SliceCreator<ChatSlice> = (set, get) => ({
       );
 
       const finalStored = [...get().storedMessages, asstStored];
-      const finalFlat: ChatMessage[] = finalStored.map((m) => ({
-        role: m.role as 'user' | 'assistant' | 'system',
-        content: m.content,
-        thought: m.thought || undefined,
-      }));
+      const finalFlat: ChatMessage[] = finalStored.map(toFlat);
 
       set({
         storedMessages: finalStored,

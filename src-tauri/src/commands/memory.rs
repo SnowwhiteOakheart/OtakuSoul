@@ -194,10 +194,12 @@ pub async fn generate_manual_diary_entry(
             crate::modules::inference::ChatMessage {
                 role: "system".to_string(),
                 content: diary_sys,
+                attachments: Vec::new(),
             },
             crate::modules::inference::ChatMessage {
                 role: "user".to_string(),
                 content: diary_user,
+                attachments: Vec::new(),
             },
         ],
         sampling: Some(crate::modules::inference::SamplingParams {

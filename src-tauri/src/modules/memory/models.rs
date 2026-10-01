@@ -150,4 +150,7 @@ pub struct StoredChatMessage {
     pub swipe_index: usize,
     pub swipes: Vec<SwipeVariant>,
     pub created_at: u64,
+    /// Files the user attached (images, text, PDF).
+    #[serde(default)]
+    pub attachments: Vec<crate::modules::attachments::Attachment>,
 }

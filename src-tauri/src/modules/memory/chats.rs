@@ -113,6 +113,7 @@ impl MemoryDb {
             params![chat_id],
         )?;
         conn.execute("DELETE FROM chat_sessions WHERE id = ?1", params![chat_id])?;
+        crate::modules::attachments::remove_chat(chat_id);
         Ok(())
     }
 
@@ -165,7 +166,8 @@ impl MemoryDb {
     ) -> Result<Vec<StoredChatMessage>, rusqlite::Error> {
         let conn = self.conn.lock();
         let mut stmt = conn.prepare(
-            "SELECT id, chat_id, role, content, thought, order_index, swipe_index, swipes_json, created_at
+            "SELECT id, chat_id, role, content, thought, order_index, swipe_index, swipes_json, created_at,
+                    attachments_json
              FROM chat_messages
              WHERE chat_id = ?1
              ORDER BY order_index ASC",
@@ -195,6 +197,7 @@ impl MemoryDb {
                 swipe_index: swipe_idx as usize,
                 swipes,
                 created_at: row.get(8)?,
+                attachments: parse_attachments(&row.get::<_, String>(9)?),
             })
         })?;
 
@@ -211,10 +214,12 @@ impl MemoryDb {
         role: &str,
         content: &str,
         thought: Option<&str>,
+        attachments: &[crate::modules::attachments::Attachment],
     ) -> Result<StoredChatMessage, rusqlite::Error> {
         let conn = self.conn.lock();
         let now = current_timestamp();
         let id = format!("msg_{}_{:08x}", now, rand::random::<u32>());
+        let attachments_json = serde_json::to_string(attachments).unwrap_or_else(|_| "[]".into());
 
         let mut stmt = conn.prepare(
             "SELECT COALESCE(MAX(order_index) + 1, 0) FROM chat_messages WHERE chat_id = ?1",
@@ -228,9 +233,9 @@ impl MemoryDb {
         let swipes_json = serde_json::to_string(&swipes).unwrap_or_else(|_| "[]".to_string());
 
         conn.execute(
-            "INSERT INTO chat_messages (id, chat_id, role, content, thought, order_index, swipe_index, swipes_json, created_at)
-             VALUES (?1, ?2, ?3, ?4, ?5, ?6, 0, ?7, ?8)",
-            params![id, chat_id, role, content, thought, next_order, swipes_json, now],
+            "INSERT INTO chat_messages (id, chat_id, role, content, thought, order_index, swipe_index, swipes_json, created_at, attachments_json)
+             VALUES (?1, ?2, ?3, ?4, ?5, ?6, 0, ?7, ?8, ?9)",
+            params![id, chat_id, role, content, thought, next_order, swipes_json, now, attachments_json],
         )?;
 
         conn.execute(
@@ -248,6 +253,7 @@ impl MemoryDb {
             swipe_index: 0,
             swipes,
             created_at: now,
+            attachments: attachments.to_vec(),
         })
     }
 
@@ -316,6 +322,7 @@ impl MemoryDb {
             swipe_index: cur_index,
             swipes,
             created_at,
+            attachments: stored_attachments(&conn, msg_id),
         })
     }
 
@@ -375,6 +382,7 @@ impl MemoryDb {
             swipe_index: new_swipe_idx,
             swipes,
             created_at,
+            attachments: stored_attachments(&conn, msg_id),
         })
     }
 
@@ -429,6 +437,7 @@ impl MemoryDb {
             swipe_index: new_swipe_index,
             swipes,
             created_at,
+            attachments: stored_attachments(&conn, msg_id),
         })
     }
 
@@ -639,7 +648,7 @@ impl MemoryDb {
 
                 // Add message
                 let added =
-                    self.add_chat_message(&session.id, &role, &content, thought.as_deref())?;
+                    self.add_chat_message(&session.id, &role, &content, thought.as_deref(), &[])?;
 
                 if !parsed_swipes.is_empty() {
                     let conn = self.conn.lock();
@@ -663,4 +672,21 @@ impl MemoryDb {
         self.get_chat_session(&session.id)?
             .ok_or(rusqlite::Error::QueryReturnedNoRows)
     }
+}
+
+fn parse_attachments(json: &str) -> Vec<crate::modules::attachments::Attachment> {
+    serde_json::from_str(json).unwrap_or_default()
+}
+
+fn stored_attachments(
+    conn: &rusqlite::Connection,
+    msg_id: &str,
+) -> Vec<crate::modules::attachments::Attachment> {
+    conn.query_row(
+        "SELECT attachments_json FROM chat_messages WHERE id = ?1",
+        params![msg_id],
+        |row| row.get::<_, String>(0),
+    )
+    .map(|json| parse_attachments(&json))
+    .unwrap_or_default()
 }

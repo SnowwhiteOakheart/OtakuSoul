@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { useAppStore, useStoreFields } from '../../../store/useAppStore';
 import { translate, useTranslation } from '../../../i18n';
 import { open } from '@tauri-apps/plugin-dialog';
@@ -17,6 +17,8 @@ import {
 } from 'lucide-react';
 import { backendMessage } from '../../../utils/errors';
 import { RuntimeCard } from './RuntimeCard';
+import { api } from '../../../services/api';
+import type { ScannedModel } from '../../../types';
 
 export const ServerSettings = () => {
   const { t, tOptional } = useTranslation();
@@ -29,6 +31,23 @@ export const ServerSettings = () => {
   );
 
   const [showLogs, setShowLogs] = useState(true);
+  const [projectors, setProjectors] = useState<ScannedModel[]>([]);
+  useEffect(() => {
+    api.scanVisionProjectors().then(setProjectors).catch(() => setProjectors([]));
+  }, []);
+
+  const handleBrowseProjector = async () => {
+    try {
+      const selected = await open({
+        multiple: false,
+        filters: [{ name: translate('settings.fileFilterGguf'), extensions: ['gguf'] }],
+      });
+      if (selected && typeof selected === 'string') setServerConfig({ mmproj_path: selected });
+    } catch (e) {
+      console.error('Failed to browse vision projector:', e);
+    }
+  };
+  const mmproj = serverConfig.mmproj_path ?? '';
   const gpu = hardware?.gpus[0];
 
   const vramPercent =
@@ -224,6 +243,38 @@ export const ServerSettings = () => {
               </div>
             );
           })()}
+        </div>
+
+        {/* Vision projector: lets the model see attached images */}
+        <div className="space-y-1.5">
+          <label htmlFor="settings-mmproj" className="text-xs font-medium text-slate-300">
+            {t('settings.mmproj')}
+          </label>
+          <div className="flex gap-2">
+            <select
+              id="settings-mmproj"
+              value={mmproj}
+              onChange={(e) => setServerConfig({ mmproj_path: e.target.value || null })}
+              className="flex-1 bg-app border border-slate-800 rounded-lg px-3 py-2 text-xs font-mono text-slate-200 focus:outline-hidden focus:border-accent-500"
+            >
+              <option value="">{t('settings.mmprojNone')}</option>
+              {mmproj && !projectors.some((p) => p.path === mmproj) && <option value={mmproj}>{mmproj}</option>}
+              {projectors.map((p) => (
+                <option key={p.path} value={p.path}>
+                  {p.name} ({(p.size_mb / 1024).toFixed(1)} GB)
+                </option>
+              ))}
+            </select>
+            <button
+              type="button"
+              onClick={handleBrowseProjector}
+              className="px-3.5 py-2 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-200 text-xs font-medium flex items-center gap-1.5 transition-colors border border-slate-700"
+            >
+              <FolderOpen className="w-3.5 h-3.5" />
+              <span className="whitespace-nowrap">{t('settings.browseFile')}</span>
+            </button>
+          </div>
+          <p className="text-xs text-slate-500">{t('settings.mmprojHint')}</p>
         </div>
 
         {/* Core Parameters */}

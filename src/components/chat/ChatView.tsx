@@ -202,6 +202,7 @@ export const ChatView: React.FC = () => {
     swipe_index: 0,
     swipes: [{ content: m.content, thought: m.thought }],
     created_at: 0,
+    attachments: m.attachments ?? [],
   })), [storedMessages, messages, activeChatId]);
 
   return (

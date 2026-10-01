@@ -18,6 +18,15 @@ pub async fn send_chat_message(
     // `context_tokens` from the settings.
     let local = ProviderRegistry::detect_provider(&request.endpoint_url, request.provider.as_ref())
         == LlmProviderType::LocalLlama;
+    // A local model sees images only with a vision projector; cloud models are trusted to.
+    let vision = !local
+        || state
+            .llama_manager
+            .running_config()
+            .await
+            .and_then(|c| c.mmproj_path)
+            .is_some_and(|p| !p.trim().is_empty());
+    crate::modules::attachments::prepare(&mut request.messages, vision);
     let base = local.then(|| server_base(&request.endpoint_url));
     let max_reply = request.sampling.as_ref().and_then(|s| s.max_tokens);
     let (messages, usage) = state
@@ -142,6 +151,30 @@ pub fn update_chat_summary(
         .map_err(|e| e.to_string())
 }
 
+/// Stores a file the user attaches to their next message (`data` is base64).
+#[tauri::command]
+pub async fn save_attachment(
+    chat_id: String,
+    name: String,
+    data: String,
+) -> Result<crate::modules::attachments::Attachment, String> {
+    use base64::Engine;
+    let bytes = base64::engine::general_purpose::STANDARD
+        .decode(data.trim())
+        .map_err(|e| e.to_string())?;
+    tokio::task::spawn_blocking(move || crate::modules::attachments::save(&chat_id, &name, &bytes))
+        .await
+        .map_err(|e| e.to_string())?
+}
+
+/// An image attachment as `data:` URL, for showing it in the chat.
+#[tauri::command]
+pub fn get_attachment_data_url(
+    attachment: crate::modules::attachments::Attachment,
+) -> Option<String> {
+    crate::modules::attachments::data_url(&attachment)
+}
+
 #[tauri::command]
 pub fn get_chat_messages(
     state: State<'_, AppState>,
@@ -160,10 +193,17 @@ pub fn add_chat_message(
     role: String,
     content: String,
     thought: Option<String>,
+    attachments: Option<Vec<crate::modules::attachments::Attachment>>,
 ) -> Result<crate::modules::memory::StoredChatMessage, String> {
     state
         .memory_db
-        .add_chat_message(&chat_id, &role, &content, thought.as_deref())
+        .add_chat_message(
+            &chat_id,
+            &role,
+            &content,
+            thought.as_deref(),
+            attachments.as_deref().unwrap_or_default(),
+        )
         .map_err(|e| e.to_string())
 }
 

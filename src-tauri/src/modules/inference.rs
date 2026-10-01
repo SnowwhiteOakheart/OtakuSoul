@@ -11,6 +11,9 @@ use ts_rs::TS;
 pub struct ChatMessage {
     pub role: String,
     pub content: String,
+    /// Files attached by the user; see `attachments::prepare` before sending.
+    #[serde(default, skip_serializing_if = "Vec::is_empty")]
+    pub attachments: Vec<crate::modules::attachments::Attachment>,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize, TS)]

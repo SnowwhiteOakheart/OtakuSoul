@@ -121,6 +121,7 @@ pub async fn summarize(
                 ChatMessage {
                     role: "system".into(),
                     content: instructions(&req),
+                    attachments: Vec::new(),
                 },
                 ChatMessage {
                     role: "user".into(),
@@ -128,6 +129,7 @@ pub async fn summarize(
                         "Current summary:\n{current}\n\nNew messages:\n{}",
                         transcript(&chunk, &req.char_name, &req.user_name)
                     ),
+                    attachments: Vec::new(),
                 },
             ],
             sampling: Some(SamplingParams {
@@ -165,6 +167,7 @@ mod tests {
             swipe_index: 0,
             swipes: Vec::new(),
             created_at: 0,
+            attachments: Vec::new(),
         }
     }
 
@@ -227,7 +230,8 @@ mod tests {
             ),
         ];
         for (role, text) in lines {
-            db.add_chat_message(&session.id, role, text, None).unwrap();
+            db.add_chat_message(&session.id, role, text, None, &[])
+                .unwrap();
         }
         let client = InferenceClient::new();
         let request = |up_to: i64| ChatSummaryRequest {

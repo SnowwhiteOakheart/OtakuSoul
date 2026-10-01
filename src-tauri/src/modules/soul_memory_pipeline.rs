@@ -375,10 +375,12 @@ pub async fn execute_soul_memory_pipeline(
         ChatMessage {
             role: "system".to_string(),
             content: router_sys,
+            attachments: Vec::new(),
         },
         ChatMessage {
             role: "user".to_string(),
             content: router_user_content,
+            attachments: Vec::new(),
         },
     ];
 
@@ -601,10 +603,12 @@ pub async fn execute_soul_memory_pipeline(
                     ChatMessage {
                         role: "system".to_string(),
                         content: arch_sys,
+                        attachments: Vec::new(),
                     },
                     ChatMessage {
                         role: "user".to_string(),
                         content: arch_user,
+                        attachments: Vec::new(),
                     },
                 ],
                 sampling: Some(SamplingParams {
@@ -657,10 +661,12 @@ pub async fn execute_soul_memory_pipeline(
                 ChatMessage {
                     role: "system".to_string(),
                     content: diary_sys,
+                    attachments: Vec::new(),
                 },
                 ChatMessage {
                     role: "user".to_string(),
                     content: diary_user,
+                    attachments: Vec::new(),
                 },
             ],
             sampling: Some(SamplingParams {

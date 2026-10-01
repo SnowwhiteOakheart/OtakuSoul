@@ -396,6 +396,19 @@ pub fn scan_available_characters() -> Vec<CharacterProfile> {
 
 /// Scans for .gguf model files in bundled assets and user directory
 pub fn scan_available_models() -> Vec<ScannedModel> {
+    scan_gguf(false)
+}
+
+/// Vision projectors (`mmproj-*.gguf`) that let a chat model see images.
+pub fn scan_vision_projectors() -> Vec<ScannedModel> {
+    scan_gguf(true)
+}
+
+fn is_mmproj(name: &str) -> bool {
+    name.to_ascii_lowercase().contains("mmproj")
+}
+
+fn scan_gguf(projectors: bool) -> Vec<ScannedModel> {
     let paths = resolve_app_paths();
     let mut models = Vec::new();
 
@@ -418,6 +431,9 @@ pub fn scan_available_models() -> Vec<ScannedModel> {
                         .and_then(|s| s.to_str())
                         .unwrap_or("Model")
                         .to_string();
+                    if is_mmproj(&name) != projectors {
+                        continue;
+                    }
                     let size_mb = entry
                         .metadata()
                         .map(|m| m.len() / (1024 * 1024))

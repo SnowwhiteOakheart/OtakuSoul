@@ -234,7 +234,7 @@ fn test_chat_messages_and_swipes() {
 
     // 1. Add user message
     let user_msg = db
-        .add_chat_message(&session.id, "user", "Hallo Ayu!", None)
+        .add_chat_message(&session.id, "user", "Hallo Ayu!", None, &[])
         .unwrap();
     assert_eq!(user_msg.role, "user");
     assert_eq!(user_msg.content, "Hallo Ayu!");
@@ -248,6 +248,7 @@ fn test_chat_messages_and_swipes() {
             "assistant",
             "*lächelt* Hallo Hiroki!",
             Some("Erfreut über die Begrüßung"),
+            &[],
         )
         .unwrap();
     assert_eq!(asst_msg.role, "assistant");
@@ -305,7 +306,7 @@ fn test_chat_jsonl_export_and_import() {
     db.update_chat_author_note(&session.id, "[Wetter ist sonnig]", 2)
         .unwrap();
 
-    db.add_chat_message(&session.id, "user", "Kommst du mit zum Schrein?", None)
+    db.add_chat_message(&session.id, "user", "Kommst du mit zum Schrein?", None, &[])
         .unwrap();
     let asst = db
         .add_chat_message(
@@ -313,6 +314,7 @@ fn test_chat_jsonl_export_and_import() {
             "assistant",
             "*nickt* Sehr gern!",
             Some("Aufgeregt"),
+            &[],
         )
         .unwrap();
     db.add_message_swipe(

@@ -3,6 +3,8 @@
 // summary in the chat sidebar. Run with `npm run e2e` (needs a debug build, tauri-driver and
 // WebKitWebDriver; see e2e/README.md).
 import assert from 'node:assert/strict';
+import { mkdtempSync, writeFileSync } from 'node:fs';
+import { tmpdir } from 'node:os';
 import path from 'node:path';
 import { launch, screenshotDir } from './harness.mjs';
 import { SUMMARY } from './mock-llm.mjs';
@@ -21,9 +23,12 @@ try {
 
   step('Nachricht senden, Antwort vom Mock erscheint');
   const send = async (text) => {
+    const before = mock.stats.chat;
     await input.setValue(text);
     await browser.$('button[aria-label="Nachricht senden"]').click();
-    // Generation done: the send button is back (the abort button replaces it meanwhile).
+    // The request reached the model (attachments upload first), then generation is done:
+    // the send button is back (the abort button replaces it meanwhile).
+    await browser.waitUntil(() => mock.stats.chat > before, { timeout: 20_000, timeoutMsg: 'keine Anfrage am LLM' });
     await browser.$('button[aria-label="Nachricht senden"]').waitForExist({ timeout: 20_000 });
   };
   await send('Hallo! Was machen wir morgen?');
@@ -83,6 +88,29 @@ try {
     mock.stats.lastChatSystemPrompt.includes('Reply like a chat message'),
     'Chat nutzt die gespeicherte Prompt-Vorlage nicht',
   );
+
+  step('Bild und Textdatei anhängen, das Modell bekommt beides');
+  const dir = mkdtempSync(path.join(tmpdir(), 'otakusoul-e2e-files-'));
+  const png = path.join(dir, 'pixel.png');
+  // 2×2 red PNG.
+  writeFileSync(png, Buffer.from('iVBORw0KGgoAAAANSUhEUgAAAAIAAAACCAIAAAD91JpzAAAAFklEQVR4nGP8z8DAwMDAxMDAwMDAAAANHQEDasKb6QAAAABJRU5ErkJggg==', 'base64'));
+  const txt = path.join(dir, 'notiz.txt');
+  writeFileSync(txt, 'Einkaufsliste: Tee, Reis, Mochi');
+  const fileInput = await browser.$('input[type="file"]');
+  await fileInput.addValue(png);
+  await fileInput.addValue(txt);
+  await browser.$('img[src^="blob:"]').waitForExist({ timeout: 10_000 });
+  await send('Was siehst du auf dem Bild, und was steht in der Notiz?');
+  const last = mock.stats.lastChatMessages.filter((m) => m.role === 'user').at(-1);
+  assert.ok(Array.isArray(last.content), 'Nachricht mit Bild wird nicht als Liste von Teilen gesendet');
+  const textPart = last.content.find((p) => p.type === 'text').text;
+  assert.ok(textPart.includes('[Attached file: notiz.txt]') && textPart.includes('Mochi'), 'Textdatei fehlt im Nachrichtentext');
+  assert.ok(
+    last.content.some((p) => p.type === 'image_url' && /^data:image\/(png|jpeg);base64,/.test(p.image_url.url)),
+    'Bild fehlt als image_url',
+  );
+  await browser.$('img[alt="pixel.png"]').waitForExist({ timeout: 10_000 });
+  await shot(browser, '07-anhaenge');
 
   console.log(`\n✔ Rauchtest bestanden (${mock.stats.chat} Chat-Anfragen, ${mock.stats.summary} Zusammenfassung)`);
 } catch (e) {

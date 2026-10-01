@@ -37,6 +37,9 @@ pub struct LlamaServerConfig {
     pub no_mmap: bool,
     #[serde(default)]
     pub cpu_moe: bool,
+    /// Vision projector (`mmproj-*.gguf`) that lets the model see attached images.
+    #[serde(default)]
+    pub mmproj_path: Option<String>,
 }
 
 impl Default for LlamaServerConfig {
@@ -58,6 +61,7 @@ impl Default for LlamaServerConfig {
             mlock: false,
             no_mmap: false,
             cpu_moe: false,
+            mmproj_path: None,
         }
     }
 }
@@ -444,6 +448,13 @@ impl LlamaServerManager {
         }
         if config.cpu_moe {
             cmd.arg("--cpu-moe");
+        }
+        if let Some(mmproj) = config
+            .mmproj_path
+            .as_deref()
+            .filter(|p| !p.trim().is_empty())
+        {
+            cmd.arg("--mmproj").arg(mmproj);
         }
 
         if let Some(t) = config.threads {
