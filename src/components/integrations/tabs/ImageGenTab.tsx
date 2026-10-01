@@ -23,7 +23,6 @@ import { LocalImageSettings } from './LocalImageSettings';
 const PROVIDER_URLS: Record<string, string> = {
   automatic1111: 'http://127.0.0.1:7860',
   comfy_ui: 'http://127.0.0.1:8188',
-  bonsai_image: 'http://127.0.0.1:8000',
 };
 
 const DEFAULT_IMG_CONFIG: ImageGenConfig = {
@@ -63,7 +62,6 @@ export const ImageGenTab: React.FC = () => {
   const [localStatus, setLocalStatus] = useState<LocalImageStatus | null>(null);
   const provider = localImgConfig.provider.toLowerCase();
   const isLocal = provider === 'local';
-  const isBonsai = provider === 'bonsai_image';
 
   useEffect(() => {
     let unlisten: (() => void) | undefined;
@@ -163,14 +161,12 @@ export const ImageGenTab: React.FC = () => {
                     ...localImgConfig,
                     provider: e.target.value,
                     api_url: PROVIDER_URLS[e.target.value] ?? localImgConfig.api_url,
-                    steps: e.target.value === 'bonsai_image' ? 4 : localImgConfig.steps,
                   })
                 }
                 aria-label={t('int.provider')}
                 className="w-full bg-app border border-slate-700 rounded-xl px-3 py-2 text-xs text-slate-100"
               >
                 <option value="local">{t('int.providerLocal')}</option>
-                <option value="bonsai_image">{t('int.providerBonsai')}</option>
                 <option value="automatic1111">Automatic1111 (SD WebUI)</option>
                 <option value="comfy_ui">ComfyUI</option>
                 <option value="dall_e_3">OpenAI DALL-E 3</option>
@@ -214,7 +210,6 @@ export const ImageGenTab: React.FC = () => {
           </div>
 
           {isLocal && <LocalImageSettings config={localImgConfig} onChange={setLocalImgConfig} />}
-          {isBonsai && <p className="text-xs text-slate-400">{t('int.bonsaiHint')}</p>}
 
           {!isLocal && (
           <>
@@ -267,8 +262,8 @@ export const ImageGenTab: React.FC = () => {
               </label>
               <input
                 type="range"
-                min={isBonsai ? 1 : 10}
-                max={isBonsai ? 8 : 60}
+                min={10}
+                max={60}
                 value={localImgConfig.steps}
                 onChange={(e) =>
                   setLocalImgConfig({

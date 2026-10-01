@@ -3,8 +3,7 @@ import type { VramStrategy } from "./VramStrategy";
 
 export type ImageGenConfig = { 
 /**
- * `local` (stable-diffusion.cpp run by the app), `bonsai_image` (PrismML demo server),
- * `automatic1111`, `comfy_ui`, `dall_e_3`, `novel_ai`; case and separators are ignored.
+ * `local` (stable-diffusion.cpp run by the app), `automatic1111`, `comfy_ui`, `dall_e_3`, `novel_ai`; case and separators are ignored.
  */
 provider: string, api_url: string, api_key: string | null, positive_prompt_prefix: string, negative_prompt: string, width: number, height: number, steps: number, cfg_scale: number, sampler_name: string, seed: number, 
 /**

@@ -15,8 +15,7 @@ const IMAGE_GEN_KEY_ACCOUNT: &str = "image_gen_api_key";
 #[derive(Debug, Clone, Serialize, Deserialize, TS)]
 #[ts(export)]
 pub struct ImageGenConfig {
-    /// `local` (stable-diffusion.cpp run by the app), `bonsai_image` (PrismML demo server),
-    /// `automatic1111`, `comfy_ui`, `dall_e_3`, `novel_ai`; case and separators are ignored.
+    /// `local` (stable-diffusion.cpp run by the app), `automatic1111`, `comfy_ui`, `dall_e_3`, `novel_ai`; case and separators are ignored.
     pub provider: String,
     pub api_url: String, // e.g. "http://127.0.0.1:7860" or "http://127.0.0.1:8188"
     pub api_key: Option<String>,
@@ -89,7 +88,7 @@ pub struct ImagePromptRequest {
     pub provider: Option<crate::modules::providers::LlmProviderType>,
     /// `portrait` of a character or `scene` for the stage.
     pub kind: String,
-    /// `tags` (SDXL anime models) or `natural` (FLUX, Qwen-Image, Bonsai Image).
+    /// `tags` (SDXL anime models) or `natural` (FLUX, Qwen-Image).
     pub style: String,
     pub subject: String,
     pub description: String,
@@ -163,7 +162,14 @@ impl ImageGenerator {
             && let Ok(content) = fs::read_to_string(&config_path)
             && let Ok(mut cfg) = serde_json::from_str::<ImageGenConfig>(&content)
         {
-            if crate::modules::secrets::hydrate_opt(IMAGE_GEN_KEY_ACCOUNT, &mut cfg.api_key) {
+            let mut changed =
+                crate::modules::secrets::hydrate_opt(IMAGE_GEN_KEY_ACCOUNT, &mut cfg.api_key);
+            // The Bonsai Image provider needed PrismML's Python server and was removed.
+            if normalized_provider(&cfg.provider) == "bonsaiimage" {
+                cfg.provider = "local".into();
+                changed = true;
+            }
+            if changed {
                 let _ = Self::save_config(&cfg);
             }
             return cfg;
@@ -464,7 +470,6 @@ impl ImageGenerator {
                 }
                 bytes
             }
-            "bonsaiimage" => Self::generate_bonsai(&config, prompt).await?,
             "automatic1111" | "sdwebui" | "forge" => {
                 Self::generate_automatic1111(&config, prompt, negative_prompt).await?
             }
@@ -572,44 +577,6 @@ impl ImageGenerator {
             .map_err(|e| crate::err!("backend.image.base64", error = e))?;
 
         Ok(img_bytes)
-    }
-
-    /// PrismML's Bonsai Image demo server (`scripts/serve.sh`): `POST /generate` returns a PNG.
-    async fn generate_bonsai(config: &ImageGenConfig, prompt: &str) -> Result<Vec<u8>, String> {
-        let client = reqwest::Client::builder()
-            .timeout(Duration::from_secs(600))
-            .build()
-            .map_err(|e| crate::err!("backend.common.httpClient", error = e))?;
-        let url = format!("{}/generate", config.api_url.trim_end_matches('/'));
-        // Bonsai Image is a distilled FLUX.2 klein model: few steps, sizes in steps of 16.
-        let round = |v: u32| (v.clamp(256, 1536) / 16) * 16;
-        let seed = if config.seed < 0 {
-            i64::from(fastrand::u32(0..i32::MAX as u32))
-        } else {
-            config.seed
-        };
-        let payload = serde_json::json!({
-            "prompt": prompt,
-            "seed": seed,
-            "steps": config.steps.clamp(1, 8),
-            "width": round(config.width),
-            "height": round(config.height),
-        });
-        let response = client
-            .post(&url)
-            .json(&payload)
-            .send()
-            .await
-            .map_err(|e| crate::err!("backend.image.bonsaiConnect", url = url, error = e))?;
-        if !response.status().is_success() {
-            let body = response.text().await.unwrap_or_default();
-            return Err(crate::err!("backend.image.bonsaiServer", error = body));
-        }
-        let bytes = response
-            .bytes()
-            .await
-            .map_err(|e| crate::err!("backend.image.bonsaiServer", error = e))?;
-        Ok(bytes.to_vec())
     }
 
     /// ComfyUI Native API endpoint
@@ -978,7 +945,6 @@ mod tests {
         assert_eq!(normalized_provider("ComfyUI"), "comfyui");
         assert_eq!(normalized_provider("DALL-E 3"), "dalle3");
         assert_eq!(normalized_provider("dall_e_3"), "dalle3");
-        assert_eq!(normalized_provider("bonsai_image"), "bonsaiimage");
     }
 
     #[test]

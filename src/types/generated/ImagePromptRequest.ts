@@ -11,7 +11,7 @@ export type ImagePromptRequest = { endpoint_url: string, api_key: string | null,
  */
 kind: string, 
 /**
- * `tags` (SDXL anime models) or `natural` (FLUX, Qwen-Image, Bonsai Image).
+ * `tags` (SDXL anime models) or `natural` (FLUX, Qwen-Image).
  */
 style: string, subject: string, description: string, 
 /**

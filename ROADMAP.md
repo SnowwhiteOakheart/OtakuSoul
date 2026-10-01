@@ -248,8 +248,8 @@ GitHub Actions wurden bewusst entfernt (Commit `11597c2`). Stattdessen gibt es j
 - [x] Gestuftes Entladen: Vor jedem Bild wird geprüft, ob der VRAM reicht (gemessen per `nvidia-smi`, sonst geschätzt,
   inklusive geladenem Sprachmodell). Passt alles, bleibt alles geladen (typisch bei 24 GB); sonst macht zuerst das kleine
   Sprachmodell Platz und erst danach das Chat-Modell.
-- [x] Anbieter „Bonsai Image (PrismML)“ über den Demo-Server (`serve.sh`, `POST /generate`): ~2 GB VRAM, läuft parallel.
-  Nicht in der App ausführbar, weil es nur als Python-Server mit CUDA (Linux) bzw. MLX (Mac) existiert.
+- [x] ~~Anbieter „Bonsai Image (PrismML)“~~ wieder entfernt (01.10.2026): existiert nur als Python-Server, und Python
+  ist in der App ausgeschlossen. Gespeicherte Einstellungen werden auf „Lokal“ umgestellt.
 - [x] Dabei behoben: Die Anbieter-Auswahl (`comfy_ui`, `dall_e_3`, …) passte nicht zu den Namen im Backend, alles lief
   über den A1111-Fallback. Die Galerie zeigt jetzt die Bilder statt Platzhaltern.
 - [x] Chat und Stage: Das Kamera-Symbol im Chat und ein neuer Knopf in der Stage lassen das Chat-Modell (noch vor einem
@@ -274,7 +274,7 @@ GitHub Actions wurden bewusst entfernt (Commit `11597c2`). Stattdessen gibt es j
   die iGPU meldet 52 GB geteilten RAM und bekam FLUX.1 ab (350 s statt 48 s). `sd-server` bekommt jetzt per
   `--backend` und `llama-server` per `--device` die größte dedizierte GPU, wenn mehr als ein Gerät gelistet ist.
 
-  Noch offen: Parallelbetrieb auf 24 GB (keine Karte vorhanden) und Bonsai Image über `serve.sh` (Python-Server).
+  Noch offen: Parallelbetrieb auf 24 GB (keine Karte vorhanden).
 - [ ] Freier VRAM wird nur über `nvidia-smi` gemessen; auf AMD/Intel plant der Planer mit Schätzwerten.
 - [ ] Anime-LoRAs (Flux/SDXL) auswählbar machen (`/sdapi/v1/loras`), Pony V6 (nur über Civitai mit Login) und eine
   SD-1.5-Stufe für 4-GB-Karten.

@@ -164,7 +164,6 @@ export const createEcosystemSlice: SliceCreator<EcosystemSlice> = (set, get) => 
       const config = state.imageGenConfig ?? (await api.getImageGenConfig());
       const provider = config.provider.toLowerCase();
       let style: 'tags' | 'natural' = 'tags';
-      if (provider === 'bonsai_image') style = 'natural';
       if (provider === 'local') {
         const models = await api.listImageModels().catch(() => []);
         const family = models.find((m) => m.id === config.local_model_id)?.family;
