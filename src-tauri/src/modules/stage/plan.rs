@@ -171,6 +171,9 @@ pub struct GmPlan {
     pub player_choices: Vec<TaggedChoice>,
     #[serde(default)]
     pub lasting_consequence: Option<String>,
+    /// Established facts to set (`"key": "value"`) or drop (`"key": null`).
+    #[serde(default)]
+    pub fact_updates: HashMap<String, Option<String>>,
     #[serde(default)]
     pub discovery: Option<String>,
     #[serde(default)]

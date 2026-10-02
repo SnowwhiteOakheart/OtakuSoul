@@ -27,6 +27,7 @@ mod scenes;
 #[cfg(test)]
 mod tests;
 mod turn;
+mod world;
 
 pub use dice::*;
 pub use director::*;
@@ -37,3 +38,4 @@ pub use party::*;
 pub use plan::*;
 pub use scenes::*;
 pub use turn::*;
+pub use world::*;

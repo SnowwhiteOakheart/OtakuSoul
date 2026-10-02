@@ -266,6 +266,8 @@ Objectives: {objectives}
 Story arcs: {arcs}
 Inventory: {inventory}
 Party condition: {vitals}
+Established facts: {facts}
+Lasting consequences (chronicle, oldest first): {chronicle}
 Combat: {combat}
 
 TASK:
@@ -296,6 +298,7 @@ Reply ONLY with a single valid JSON object in this format:
     {{"text": "Action 3", "badge": null, "action_type": "do"}}
   ],
   "lasting_consequence": null,
+  "fact_updates": {{}},
   "discovery": null
 }}
 
@@ -312,6 +315,7 @@ RULES:
 - Private whispers and thoughts in the history are secret: never put their content into narration_plan or player_choices; only the whisper's recipient may react to it.
 - story_arc_updates: optional {{"id":"arc-id", "stage_delta":1, "reveal":true, "resolve":false}}.
 - objective_updates: optional {{"id":"objective-id", "title":"", "description":"", "progress_delta":1, "max":3, "status":"active|completed|failed"}}.
+- fact_updates: keep the established facts true: {{"short_key": "new value"}} to add or change one, {{"short_key": null}} when it no longer holds. Short snake_case keys, values in {reply_language}.
 - inventory_add: optional items with name, description, quantity, item_type and optionally hp_restore/stress_restore/clears_condition. inventory_remove holds IDs or names.
 - encounter: only when combat changes: {{"action":"start|update|end", "enemies":[{{"name":"Enemy", "hp":12, "role":"enemy"}}], "hp_updates":[{{"target":"Name", "hp_delta":-4}}]}}.
 - Reply ONLY with raw JSON, without explanations or markdown before or after it!"#,
@@ -361,6 +365,8 @@ RULES:
             &inventory_context
         },
         vitals = vitals_context,
+        facts = facts_context(&state),
+        chronicle = chronicle_context(&state),
         combat = combat_context,
         first_party_or_player = state
             .definition
@@ -798,6 +804,8 @@ RULES:
             },
         ));
     }
+    apply_fact_updates(&mut state, &gm_plan.fact_updates);
+
     if let Some(consequence) = &gm_plan.lasting_consequence
         && !consequence.trim().is_empty()
     {

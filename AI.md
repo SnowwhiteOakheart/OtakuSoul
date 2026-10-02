@@ -84,6 +84,8 @@ Einstellungen: `components/settings/sections/*` (Server inkl. Laufzeiten/`mmproj
   Hintergrund gehört in `current_bg`, niemals in `definition.starting_bg`; ebenso Ambient in `current_ambient`.
   Vorlesen: `services/stageVoice.ts` (Gefährte = Charakterstimme, GM/NPC = Profil `stage_narrator`), Ambient-Schleife
   `components/stage/useStageAmbient.ts`. E2E-Mock bietet `/v1/audio/speech` (stille WAV).
+  `stage/world.rs`: Fakten (`fact_updates`, Schlüssel normalisiert) und Chronik gehen in den Planer-Kontext;
+  Weltzustand-Editor `StageWorldEditor.tsx` speichert per `save_stage_scene` (in den neuesten Zustand gemischt).
   `stage/director.rs`: Sprecherfolge = Spielerwahl > Flüsterziel > direkte Ansprache > Planer; danach pro Beitrag
   Ansprache-Erkennung, sonst Routing-LLM (Mock erkennt „[SOUL STAGE — ROUTING]“). `turn_mode: "continue"` = Runde ohne
   Spieleraktion (Weiter/Auto-Play).

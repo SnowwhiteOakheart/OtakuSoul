@@ -335,9 +335,14 @@ und übernimmt, was SoW lebendig macht:
    Szene läuft in Schleife (`get_stage_ambient_audio`, `current_ambient`), der Planer wechselt ihn aus den vorhandenen
    Dateien, „Atmosphäre“ und Stummschalten schalten ihn; ohne Datei bleibt das synthetische Lagerfeuer.
    Test: `e2e/stage-voice.mjs` (Stimme je Sprecher, Ambient-Wechsel, Stummschalten).
-8. [ ] **Gedächtnis & Welt:** Story-Arcs beim Auflösen archivieren, regelmäßige Konsistenzprüfung, Szenen-Erlebnisse ins
-   Soul Memory der Party, Charakter-Overlays, Lorekarten mit Zielgruppe (Party/GM), Weltzustand vollständig bearbeitbar,
-   Chronik-Einträge löschbar, Übersetzung.
+8. [ ] **Gedächtnis & Welt:**
+   - [x] Weltzustand vollständig bearbeitbar (`StageWorldEditor.tsx`: Fakten, Story-Arcs inkl. verborgener mit
+     Spoiler-Schalter, Ziele, Beziehungen, Inventar), Chronik-Einträge löschbar, Übersetzung von Stage-Nachrichten.
+     Dabei behoben: Fakten und Chronik erreichten den Planer nie; jetzt stehen sie im Planer-Kontext, und der Planer
+     pflegt Fakten per `fact_updates` (`stage/world.rs`). Test: `e2e/stage-world.mjs`.
+   - [ ] Story-Arcs beim Auflösen archivieren, regelmäßige Konsistenzprüfung der Fakten.
+   - [ ] Charakter-Overlays, Lorekarten mit Zielgruppe (Party/GM).
+   - [ ] Szenen-Erlebnisse ins Soul Memory der Party.
 
 ---
 

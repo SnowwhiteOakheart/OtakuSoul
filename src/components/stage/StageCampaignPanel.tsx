@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { useStoreFields } from '../../store/useAppStore';
 import {
   Backpack,
@@ -10,23 +10,51 @@ import {
   ScrollText,
   Sparkles,
   TriangleAlert,
+  Pencil,
+  Trash2,
 } from 'lucide-react';
-import { useTranslation } from '../../i18n';
+import { translate, useTranslation } from '../../i18n';
+import { confirmDialog } from '../ui/feedback';
+import { StageWorldEditor } from './StageWorldEditor';
 
 const progressWidth = (current: number, max: number) =>
   `${Math.min(100, Math.round((current / Math.max(1, max)) * 100))}%`;
 
 export const StageCampaignPanel: React.FC = () => {
   const { t } = useTranslation();
-  const { stageState, consumeStageInventoryItem } = useStoreFields('stageState', 'consumeStageInventoryItem');
+  const { stageState, consumeStageInventoryItem, saveStageScene, isProcessingStageTurn } = useStoreFields(
+    'stageState', 'consumeStageInventoryItem', 'saveStageScene', 'isProcessingStageTurn',
+  );
+  const [editing, setEditing] = useState(false);
 
   if (!stageState) return null;
+
+  const deleteChronicleEntry = async (id: string) => {
+    const confirmed = await confirmDialog({
+      title: translate('stageWorld.deleteChronicleTitle'),
+      message: translate('stageWorld.deleteChronicleText'),
+      confirmLabel: translate('common.delete'),
+      tone: 'danger',
+    });
+    if (!confirmed) return;
+    await saveStageScene({ ...stageState, consequence_ledger: stageState.consequence_ledger.filter((e) => e.id !== id) });
+  };
 
   const { inventory, objectives, arcs, relationships, consequence_ledger: consequences } = stageState;
   const facts = Object.entries(stageState.world.key_facts || {});
 
   return (
     <div className="grid grid-cols-1 xl:grid-cols-2 gap-4">
+      <div className="xl:col-span-2 flex justify-end">
+        <button
+          onClick={() => setEditing(true)}
+          disabled={isProcessingStageTurn}
+          className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-200 border border-slate-700 text-xs font-semibold disabled:opacity-40"
+        >
+          <Pencil className="w-3.5 h-3.5" /> {t('stageWorld.edit')}
+        </button>
+      </div>
+      {editing && <StageWorldEditor onClose={() => setEditing(false)} />}
       <section className="p-4 rounded-2xl bg-slate-900/80 border border-slate-800 shadow-xl space-y-3">
         <div className="flex items-center gap-2">
           <Backpack className="w-5 h-5 text-amber-400" />
@@ -142,7 +170,18 @@ export const StageCampaignPanel: React.FC = () => {
         </div>
         <div className="space-y-2">
           {consequences.slice().reverse().map((entry) => (
-            <div key={entry.id} className="p-2.5 rounded-lg bg-rose-950/20 border border-rose-500/20 text-xs text-slate-300">{entry.text}</div>
+            <div key={entry.id} className="group flex items-start gap-2 p-2.5 rounded-lg bg-rose-950/20 border border-rose-500/20 text-xs text-slate-300">
+              <span className="flex-1">{entry.text}</span>
+              <button
+                onClick={() => void deleteChronicleEntry(entry.id)}
+                disabled={isProcessingStageTurn}
+                aria-label={t('stageWorld.deleteChronicle')}
+                title={t('stageWorld.deleteChronicle')}
+                className="text-slate-500 hover:text-rose-400 disabled:opacity-40"
+              >
+                <Trash2 className="w-3.5 h-3.5" />
+              </button>
+            </div>
           ))}
           {facts.map(([key, value]) => (
             <div key={key} className="p-2.5 rounded-lg bg-app/60 border border-slate-800 text-xs">

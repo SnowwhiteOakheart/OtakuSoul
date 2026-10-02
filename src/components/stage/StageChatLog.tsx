@@ -19,6 +19,8 @@ import {
   Check,
   X,
   Square,
+  Languages,
+  Loader2,
 } from 'lucide-react';
 import { translate, useTranslation } from '../../i18n';
 import { confirmDialog, toast } from '../ui/feedback';
@@ -36,14 +38,18 @@ export const StageChatLog: React.FC = () => {
     applyStageStream,
     stopStageTurn,
     availableCharacters,
+    translateText,
   } = useStoreFields(
     'stageState', 'isProcessingStageTurn', 'editStageTurnMessage', 'deleteStageTurnMessage',
-    'regenerateStageTurn', 'stageLive', 'applyStageStream', 'stopStageTurn', 'availableCharacters',
+    'regenerateStageTurn', 'stageLive', 'applyStageStream', 'stopStageTurn', 'availableCharacters', 'translateText',
   );
 
   const bottomRef = useRef<HTMLDivElement>(null);
   const [editingMessageId, setEditingMessageId] = useState<string | null>(null);
   const [editDraft, setEditDraft] = useState('');
+  // Translations of single messages into the app language, kept while the log is open.
+  const [translations, setTranslations] = useState<Record<string, string>>({});
+  const [translatingId, setTranslatingId] = useState<string | null>(null);
 
   // Live text of the running turn (guarded: StrictMode would otherwise subscribe twice).
   useEffect(() => {
@@ -113,6 +119,43 @@ export const StageChatLog: React.FC = () => {
     }
   };
 
+  const toggleTranslation = async (msg: SceneTurnMessage) => {
+    if (translations[msg.id] !== undefined) {
+      setTranslations(({ [msg.id]: _removed, ...rest }) => rest);
+      return;
+    }
+    setTranslatingId(msg.id);
+    try {
+      const text = await translateText(msg.content);
+      setTranslations((current) => ({ ...current, [msg.id]: text }));
+    } catch (err) {
+      toast.error(errorMessage(err));
+    } finally {
+      setTranslatingId(null);
+    }
+  };
+  const translateButton = (msg: SceneTurnMessage, size: string) => (
+    <button
+      onClick={() => void toggleTranslation(msg)}
+      disabled={translatingId === msg.id}
+      title={t(translations[msg.id] !== undefined ? 'chat.hideTranslation' : 'chat.translateHint')}
+      aria-label={t(translations[msg.id] !== undefined ? 'chat.hideTranslation' : 'chat.translate')}
+      aria-pressed={translations[msg.id] !== undefined}
+      className="p-1 rounded-lg text-slate-400 hover:text-accent-300 hover:bg-slate-800 transition"
+    >
+      {translatingId === msg.id ? <Loader2 className={`${size} animate-spin`} /> : <Languages className={size} />}
+    </button>
+  );
+  const translationBlock = (msg: SceneTurnMessage) =>
+    translations[msg.id] !== undefined && (
+      <div className="mt-2 pt-2 border-t border-slate-700/70 text-slate-300">
+        <div className="mb-1 flex items-center gap-1 text-[11px] text-slate-500">
+          <Languages className="w-3 h-3" /> {t('chat.translation')}
+        </div>
+        <div className="whitespace-pre-wrap">{translations[msg.id]}</div>
+      </div>
+    );
+
   // The app's voices: the companion's own, the narrator's for game master and NPCs.
   const handleSpeak = (msg: SceneTurnMessage) => {
     void speakStageMessages([msg], availableCharacters, true);
@@ -181,6 +224,7 @@ export const StageChatLog: React.FC = () => {
                 >
                   <Volume2 className="w-3.5 h-3.5" />
                 </button>
+                {translateButton(msg, 'w-3.5 h-3.5')}
                 <button
                   onClick={() => handleStartEdit(msg.id, msg.content)}
                   title={t('stage.editMessage')}
@@ -254,6 +298,7 @@ export const StageChatLog: React.FC = () => {
               ) : (
                 <div className="text-xs sm:text-sm text-slate-200 leading-relaxed whitespace-pre-wrap font-sans">
                   {msg.content}
+                  {translationBlock(msg)}
                 </div>
               )}
 
@@ -302,6 +347,7 @@ export const StageChatLog: React.FC = () => {
                 >
                   <Volume2 className="w-3 h-3" />
                 </button>
+                {!isPlayer && translateButton(msg, 'w-3 h-3')}
                 <button
                   onClick={() => handleStartEdit(msg.id, msg.content)}
                   title={t('stage.editMessage')}
@@ -365,6 +411,7 @@ export const StageChatLog: React.FC = () => {
                   }`}
                 >
                   {msg.content}
+                  {translationBlock(msg)}
 
                   {/* Event Card if attached */}
                   {msg.event_card && <StageEventCardView card={msg.event_card} />}
