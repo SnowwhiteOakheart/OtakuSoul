@@ -115,6 +115,12 @@ pub fn list_stage_assets() -> std::collections::HashMap<String, Vec<String>> {
     crate::modules::stage::list_stage_assets()
 }
 
+/// The scene's ambient sound as `data:` URL.
+#[tauri::command]
+pub fn get_stage_ambient_audio(name: String) -> Result<String, String> {
+    crate::modules::stage::stage_ambient_data_url(&name)
+}
+
 #[tauri::command]
 pub fn import_stage_asset(file_path: String, kind: String) -> Result<String, String> {
     crate::modules::stage::import_stage_asset(&file_path, &kind)

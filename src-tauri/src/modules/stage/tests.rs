@@ -263,3 +263,32 @@ fn scene_asset_import_rejects_non_media_and_unknown_kind() {
     assert!(import_stage_asset("Cargo.toml", "ambient").is_err());
     assert!(import_stage_asset("Cargo.toml", "../config").is_err());
 }
+
+#[test]
+fn ambient_follows_the_editor_until_the_planner_switches_it() {
+    assert_eq!(ambient_name("None"), None);
+    assert_eq!(ambient_name("  "), None);
+    assert_eq!(ambient_name("wind.ogg").as_deref(), Some("wind.ogg"));
+
+    let mut state = StageEngine::new().get_state();
+    state.definition.starting_ambient = "None".into();
+    state.current_ambient = None;
+    let mut definition = state.definition.clone();
+    definition.starting_ambient = "wind.ogg".into();
+    update_scene_definition(&mut state, definition);
+    assert_eq!(state.current_ambient.as_deref(), Some("wind.ogg"));
+
+    // The planner picked another sound: an editor change no longer overrides it.
+    state.current_ambient = Some("battle.mp3".into());
+    let mut definition = state.definition.clone();
+    definition.starting_ambient = "rain.ogg".into();
+    update_scene_definition(&mut state, definition);
+    assert_eq!(state.current_ambient.as_deref(), Some("battle.mp3"));
+}
+
+#[test]
+fn ambient_lookup_rejects_paths_and_other_files() {
+    assert!(stage_ambient_data_url("../secret.wav").is_err());
+    assert!(stage_ambient_data_url("notes.txt").is_err());
+    assert!(stage_ambient_data_url("missing-file.ogg").is_err());
+}

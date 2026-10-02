@@ -560,6 +560,8 @@ export interface SceneState {
   pending_choices: TaggedChoice[];
   current_turn_actor: string;
   current_bg?: string | null;
+  /** Ambient sound playing now (file name). */
+  current_ambient?: string | null;
   /** What each character was told in private (whispers). */
   private_knowledge?: Record<string, string[]>;
   npcs?: import('./generated/StageNpc').StageNpc[];

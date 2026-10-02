@@ -7,6 +7,9 @@ import { PartyHeader } from './PartyHeader';
 import { StageChatLog } from './StageChatLog';
 import { TurnControlBar } from './TurnControlBar';
 import { SceneLobbyModal } from './SceneLobbyModal';
+import { useStageAmbient } from './useStageAmbient';
+import { CharacterVoiceModal } from '../voice/CharacterVoiceModal';
+import { STAGE_NARRATOR_VOICE_ID } from '../../services/stageVoice';
 import { StageCampaignPanel } from './StageCampaignPanel';
 import { soundFx } from '../../services/soundFx';
 import {
@@ -29,6 +32,8 @@ import {
   Lock,
   Unlock,
   ImagePlus,
+  AudioLines,
+  Mic,
 } from 'lucide-react';
 import { api } from '../../services/api';
 import { SceneState } from '../../types';
@@ -51,10 +56,12 @@ export const StageView: React.FC = () => {
     isProcessingStageTurn,
     generateSceneImage,
     isGeneratingSceneImage,
+    stageReadAloud,
+    setStageReadAloud,
   } = useStoreFields(
     'stageState', 'fetchStageState', 'saveStageScene', 'updateWorldState', 'setClockProgress',
     'addClock', 'deleteClock', 'exportStageMarkdown', 'isProcessingStageTurn',
-    'generateSceneImage', 'isGeneratingSceneImage',
+    'generateSceneImage', 'isGeneratingSceneImage', 'stageReadAloud', 'setStageReadAloud',
   );
 
   const [activeTab, setActiveTab] = useState<'adventure' | 'tactics' | 'campaign'>('adventure');
@@ -109,9 +116,23 @@ export const StageView: React.FC = () => {
     await saveStageScene(updatedState);
   };
 
-  // Audio Ambiance state
+  // Audio Ambiance state: the scene's sound file if it has one, else the synthesized campfire.
   const [isAmbianceActive, setIsAmbianceActive] = useState(false);
   const [isMuted, setIsMuted] = useState(soundFx.getIsMuted());
+  const [ambientWanted, setAmbientWanted] = useState(true);
+  const [showNarratorVoice, setShowNarratorVoice] = useState(false);
+  const sceneAmbient = stageState?.definition.disable_ambient ? null : stageState?.current_ambient;
+  const ambientOn = sceneAmbient ? ambientWanted && !isMuted : isAmbianceActive;
+  useStageAmbient(sceneAmbient, ambientWanted && !isMuted);
+  /* oxlint-disable react/set-state-in-effect -- the synthesized campfire is an external audio source. */
+  useEffect(() => {
+    // A scene sound replaces the synthesized campfire.
+    if (sceneAmbient && isAmbianceActive) {
+      soundFx.stopAmbiance();
+      setIsAmbianceActive(false);
+    }
+  }, [sceneAmbient, isAmbianceActive]);
+  /* oxlint-enable react/set-state-in-effect */
 
   // New Clock Modal
   const [showClockModal, setShowClockModal] = useState(false);
@@ -147,6 +168,10 @@ export const StageView: React.FC = () => {
   };
 
   const handleToggleAmbiance = () => {
+    if (sceneAmbient) {
+      setAmbientWanted((on) => !on);
+      return;
+    }
     const active = soundFx.toggleCampfireAmbiance();
     setIsAmbianceActive(active);
   };
@@ -347,17 +372,40 @@ export const StageView: React.FC = () => {
           <button
             onClick={handleToggleAmbiance}
             className={`flex items-center gap-1.5 px-2.5 py-1.5 rounded-xl text-xs font-semibold border transition ${
-              isAmbianceActive
+              ambientOn
                 ? 'bg-amber-600/30 text-amber-200 border-amber-500/50 shadow-md shadow-amber-950/40'
                 : 'bg-slate-800/80 text-slate-400 border-slate-700 hover:text-slate-200'
             }`}
-            title={t('stage.ambianceToggle')}
-            aria-pressed={isAmbianceActive}
+            title={sceneAmbient ? t('stage.ambientFile', { name: sceneAmbient }) : t('stage.ambianceToggle')}
+            aria-pressed={ambientOn}
           >
-            <Radio className={`w-3.5 h-3.5 ${isAmbianceActive ? 'animate-spin' : ''}`} />
+            <Radio className={`w-3.5 h-3.5 ${ambientOn ? 'animate-spin' : ''}`} />
             <span className="hidden md:inline">
-              {isAmbianceActive ? t('stage.ambianceOn') : t('stage.ambiance')}
+              {ambientOn ? t(sceneAmbient ? 'stage.ambientOn' : 'stage.ambianceOn') : t('stage.ambiance')}
             </span>
+          </button>
+
+          <button
+            onClick={() => setStageReadAloud(!stageReadAloud)}
+            aria-pressed={stageReadAloud}
+            title={t('stage.readAloudHint')}
+            className={`flex items-center gap-1.5 px-2.5 py-1.5 rounded-xl text-xs font-semibold border transition ${
+              stageReadAloud
+                ? 'bg-accent-600/30 text-accent-200 border-accent-500/50'
+                : 'bg-slate-800/80 text-slate-400 border-slate-700 hover:text-slate-200'
+            }`}
+          >
+            <AudioLines className="w-3.5 h-3.5" />
+            <span className="hidden md:inline">{t('stage.readAloud')}</span>
+          </button>
+
+          <button
+            onClick={() => setShowNarratorVoice(true)}
+            title={t('stage.narratorVoiceHint')}
+            aria-label={t('stage.narratorVoice')}
+            className="p-2 rounded-xl border bg-slate-800/80 text-slate-300 border-slate-700 hover:text-white transition"
+          >
+            <Mic className="w-4 h-4" />
           </button>
 
           <button
@@ -656,6 +704,12 @@ export const StageView: React.FC = () => {
       )}
 
       {/* Scene Lobby Modal */}
+      {showNarratorVoice && (
+        <CharacterVoiceModal
+          onClose={() => setShowNarratorVoice(false)}
+          target={{ id: STAGE_NARRATOR_VOICE_ID, name: t('stage.narratorVoice') }}
+        />
+      )}
       <SceneLobbyModal
         isOpen={showLobbyModal}
         onClose={() => setShowLobbyModal(false)}

@@ -275,6 +275,7 @@ impl StageEngine {
             ],
             current_turn_actor: "PLAYER".to_string(),
             current_bg: None,
+            current_ambient: None,
             private_knowledge: HashMap::new(),
             history_summaries: HashMap::new(),
             npcs: Vec::new(),

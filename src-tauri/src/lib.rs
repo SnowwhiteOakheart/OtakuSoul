@@ -147,6 +147,7 @@ pub fn run() {
             commands::stage::update_stage_scene_definition,
             commands::stage::list_stage_assets,
             commands::stage::import_stage_asset,
+            commands::stage::get_stage_ambient_audio,
             commands::stage::delete_stage_scene,
             commands::stage::export_stage_markdown,
             commands::stage::stage_list_folders,

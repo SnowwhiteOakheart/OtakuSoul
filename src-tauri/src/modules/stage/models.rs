@@ -432,6 +432,9 @@ pub struct SceneState {
     pub current_turn_actor: String,
     #[serde(default)]
     pub current_bg: Option<String>,
+    /// Ambient sound playing now (file name); the scene's start value or the planner's pick.
+    #[serde(default)]
+    pub current_ambient: Option<String>,
     /// What each character was told in private (whispers), by name.
     #[serde(default)]
     pub private_knowledge: HashMap<String, Vec<String>>,

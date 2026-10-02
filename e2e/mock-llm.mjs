@@ -13,12 +13,32 @@ export const STAGE_NARRATION =
   'und irgendwo hinter den Mauern schlägt eine Glocke dreimal.';
 export const SUMMARY = 'Testzusammenfassung: Kai und die Figur planten einen Ausflug zum Fushimi-Inari-Schrein.';
 
+/** 0.1 s of silence, 8 kHz mono. */
+function silentWav() {
+  const samples = 800;
+  const wav = Buffer.alloc(44 + samples * 2);
+  wav.write('RIFF'); wav.writeUInt32LE(36 + samples * 2, 4); wav.write('WAVEfmt ', 8);
+  wav.writeUInt32LE(16, 16); wav.writeUInt16LE(1, 20); wav.writeUInt16LE(1, 22);
+  wav.writeUInt32LE(8000, 24); wav.writeUInt32LE(16000, 28); wav.writeUInt16LE(2, 32);
+  wav.writeUInt16LE(16, 34); wav.write('data', 36); wav.writeUInt32LE(samples * 2, 40);
+  return wav;
+}
+
 export function startMockLlm() {
   const stats = { chat: 0, summary: 0, translate: 0, stagePlanner: 0, stageNarrator: 0, lastChatSystemPrompt: '', lastChatMessages: [] };
   const server = http.createServer((req, res) => {
     let body = '';
     req.on('data', (chunk) => (body += chunk));
     req.on('end', () => {
+      // OpenAI-compatible text-to-speech: a short silent WAV, so voices can be tested offline.
+      if (req.method === 'POST' && req.url.endsWith('/audio/speech')) {
+        const { input = '', model = '' } = JSON.parse(body || '{}');
+        stats.tts = (stats.tts ?? 0) + 1;
+        (stats.ttsInputs ??= []).push(input);
+        (stats.ttsModels ??= []).push(model);
+        res.writeHead(200, { 'Content-Type': 'audio/wav' }).end(silentWav());
+        return;
+      }
       if (req.method !== 'POST' || !req.url.endsWith('/chat/completions')) {
         res.writeHead(404).end();
         return;
@@ -69,11 +89,13 @@ export function startMockLlm() {
       const stageSummary = 'Stage-Zusammenfassung: Die Gruppe versprach, das Tor zu öffnen.' +
         (JSON.stringify(request.messages).includes('SECRET_PASSWORD') ? ' PRIVATE whisper to Ayu: SECRET_PASSWORD.' : '') +
         (JSON.stringify(request.messages).includes('SECRET_THOUGHT') ? ' PRIVATE thought: SECRET_THOUGHT.' : '');
+      const plannerAmbient = stats.ambient ?? null;
       const text = isRouting ? JSON.stringify({ next_actor: stats.routeTo ?? 'PLAYER' }) : isStageSummary ? stageSummary : isPlanner
         ? JSON.stringify({
             narration_plan: 'Ein altes Tor taucht aus dem Nebel auf.',
             next_actor: stats.spawnNpc?.name ?? null,
             bg_image: stats.stageBackground ?? null,
+            ambient_audio: plannerAmbient,
             spawn_npcs: stats.spawnNpc ? [stats.spawnNpc] : [],
             despawn_npcs: stats.despawnNpc ? [stats.despawnNpc] : [],
             resource_delta: { target: 'PLAYER', hp_delta: -5, stress_delta: 10 },

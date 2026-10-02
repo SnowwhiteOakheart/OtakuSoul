@@ -395,6 +395,11 @@ export const api = {
     return await invoke('list_stage_assets');
   },
 
+  /** The scene's ambient sound file as `data:` URL. */
+  getStageAmbientAudio: async (name: string): Promise<string> => {
+    return await invoke<string>('get_stage_ambient_audio', { name });
+  },
+
   importStageAsset: async (filePath: string, kind: 'backgrounds' | 'ambient'): Promise<string> => {
     return await invoke<string>('import_stage_asset', { filePath, kind });
   },

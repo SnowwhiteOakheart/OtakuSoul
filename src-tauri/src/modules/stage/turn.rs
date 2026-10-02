@@ -248,6 +248,7 @@ pub async fn execute_stage_turn(
         active_lore_snippets.join("\n")
     };
 
+    let ambient_files = list_stage_assets().remove("ambient").unwrap_or_default();
     let planner_system_prompt = format!(
         r#"[SOUL STAGE — GAME MASTER PLANNER]
 You are the game master of an immersive tabletop RPG in the genre/tone "{tone}".
@@ -305,6 +306,7 @@ RULES:
 - spawn_npcs: introduce or return NPCs with {{"name":"Name", "archetype":"citizen|innkeeper|guard|merchant|villain|creature|sage|noble", "personality":"Brief traits and background in {reply_language}"}}. Reuse known names; never create NPCs for party members.
 - despawn_npcs: names of NPCs who leave the scene. Their memories persist. Choose a present or newly spawned NPC as next_actor when they should speak.
 - bg_image: optionally the name of a fitting new background image (e.g. "Horizontal Elkia Grand Library.png"), or null.
+- ambient_audio: when the mood or place changes, one of these sound files: [{ambient_files}]; "None" for silence; otherwise null (keep the current one{current_ambient}).
 - resource_delta: optional {{"target":"PLAYER or name", "hp_delta":-5, "stress_delta":10}}. HP and stress count outside combat too: wounds, exhaustion, fear and rest matter.
 - condition_updates: optional {{"target":"PLAYER or name", "add":"Poisoned", "turns":3}} or {{"target":"name", "remove":"Poisoned"}}; condition names in {reply_language}.
 - Private whispers and thoughts in the history are secret: never put their content into narration_plan or player_choices; only the whisper's recipient may react to it.
@@ -313,6 +315,21 @@ RULES:
 - inventory_add: optional items with name, description, quantity, item_type and optionally hp_restore/stress_restore/clears_condition. inventory_remove holds IDs or names.
 - encounter: only when combat changes: {{"action":"start|update|end", "enemies":[{{"name":"Enemy", "hp":12, "role":"enemy"}}], "hp_updates":[{{"target":"Name", "hp_delta":-4}}]}}.
 - Reply ONLY with raw JSON, without explanations or markdown before or after it!"#,
+        ambient_files = if ambient_files.is_empty() {
+            "none available".to_string()
+        } else {
+            ambient_files
+                .iter()
+                .take(30)
+                .cloned()
+                .collect::<Vec<_>>()
+                .join(", ")
+        },
+        current_ambient = state
+            .current_ambient
+            .as_deref()
+            .map(|a| format!(": {a}"))
+            .unwrap_or_default(),
         reply_language = reply_language,
         tone = state.definition.gm_tone,
         narrator_style = state.definition.narrator_style,
@@ -478,6 +495,20 @@ RULES:
         && !state.definition.lock_bg
     {
         state.current_bg = Some(bg.clone());
+    }
+    // Only known files (or silence); a made-up name would just stop the sound.
+    if let Some(choice) = gm_plan.ambient_audio.as_deref().map(str::trim)
+        && !choice.is_empty()
+        && !state.definition.disable_ambient
+    {
+        match ambient_name(choice) {
+            None => state.current_ambient = None,
+            Some(name) => {
+                if let Some(file) = ambient_files.iter().find(|f| f.eq_ignore_ascii_case(&name)) {
+                    state.current_ambient = Some(file.clone());
+                }
+            }
+        }
     }
 
     // Apply Clock updates

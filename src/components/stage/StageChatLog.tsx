@@ -1,6 +1,8 @@
 import React, { useEffect, useRef, useState } from 'react';
 import { useStoreFields } from '../../store/useAppStore';
 import { api } from '../../services/api';
+import { speakStageMessages } from '../../services/stageVoice';
+import type { SceneTurnMessage } from '../../types';
 import { StageEventCardView } from './StageEventCardView';
 import {
   Compass,
@@ -23,7 +25,7 @@ import { confirmDialog, toast } from '../ui/feedback';
 import { errorMessage } from '../../utils/errors';
 
 export const StageChatLog: React.FC = () => {
-  const { t, currentLanguage } = useTranslation();
+  const { t } = useTranslation();
   const {
     stageState,
     isProcessingStageTurn,
@@ -33,9 +35,10 @@ export const StageChatLog: React.FC = () => {
     stageLive,
     applyStageStream,
     stopStageTurn,
+    availableCharacters,
   } = useStoreFields(
     'stageState', 'isProcessingStageTurn', 'editStageTurnMessage', 'deleteStageTurnMessage',
-    'regenerateStageTurn', 'stageLive', 'applyStageStream', 'stopStageTurn',
+    'regenerateStageTurn', 'stageLive', 'applyStageStream', 'stopStageTurn', 'availableCharacters',
   );
 
   const bottomRef = useRef<HTMLDivElement>(null);
@@ -110,13 +113,9 @@ export const StageChatLog: React.FC = () => {
     }
   };
 
-  const handleSpeak = (text: string) => {
-    if ('speechSynthesis' in window) {
-      window.speechSynthesis.cancel();
-      const utterance = new SpeechSynthesisUtterance(text);
-      utterance.lang = { de: 'de-DE', en: 'en-US', ru: 'ru-RU' }[currentLanguage];
-      window.speechSynthesis.speak(utterance);
-    }
+  // The app's voices: the companion's own, the narrator's for game master and NPCs.
+  const handleSpeak = (msg: SceneTurnMessage) => {
+    void speakStageMessages([msg], availableCharacters, true);
   };
 
   const getModeBadge = (mode: string, whisperTarget?: string | null) => {
@@ -175,7 +174,7 @@ export const StageChatLog: React.FC = () => {
               {/* Floating Action Bar on Hover */}
               <div className="absolute top-3 right-3 opacity-0 group-hover:opacity-100 transition-opacity flex items-center gap-1 bg-app/90 border border-slate-700/80 rounded-xl px-1.5 py-1 shadow-lg backdrop-blur">
                 <button
-                  onClick={() => handleSpeak(msg.content)}
+                  onClick={() => handleSpeak(msg)}
                   title={t('stage.speak')}
                   aria-label={t('stage.speak')}
                   className="p-1 rounded-lg text-slate-400 hover:text-accent-300 hover:bg-slate-800 transition"
@@ -296,7 +295,7 @@ export const StageChatLog: React.FC = () => {
                 } opacity-0 group-hover:opacity-100 transition-opacity flex items-center gap-1 bg-app/95 border border-slate-700/80 rounded-xl px-1.5 py-0.5 shadow-lg backdrop-blur z-20`}
               >
                 <button
-                  onClick={() => handleSpeak(msg.content)}
+                  onClick={() => handleSpeak(msg)}
                   title={t('stage.speak')}
                   aria-label={t('stage.speak')}
                   className="p-1 rounded-lg text-slate-400 hover:text-accent-300 hover:bg-slate-800 transition"

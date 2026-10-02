@@ -1,5 +1,7 @@
 import { api } from '../../services/api';
 import { soundFx } from '../../services/soundFx';
+import { audioPlayer } from '../../services/audioPlayer';
+import { speakStageMessages, stopStageVoice } from '../../services/stageVoice';
 import type {
   CampaignClock,
   CombatCondition,
@@ -21,6 +23,23 @@ import type { SliceCreator } from '../storeTypes';
 const AUTO_PLAY_TURNS = 5;
 const AUTO_PLAY_PAUSE_MS = 1500;
 
+/** Per-viewer setting; storage can be unavailable (private mode), then it simply isn't remembered. */
+const READ_ALOUD_KEY = 'otakusoul.stageReadAloud';
+const readStoredFlag = (key: string): boolean => {
+  try {
+    return localStorage.getItem(key) === '1';
+  } catch {
+    return false;
+  }
+};
+const storeFlag = (key: string, on: boolean) => {
+  try {
+    localStorage.setItem(key, on ? '1' : '0');
+  } catch {
+    // not remembered
+  }
+};
+
 export interface StageSlice {
   stageState: StageState | null;
   stageScenes: ScenePreview[];
@@ -39,6 +58,9 @@ export interface StageSlice {
   /** The scene plays itself for a few turns; stopped by "Stop", by own input or switching it off. */
   stageAutoPlay: boolean;
   setStageAutoPlay: (on: boolean) => void;
+  /** New lines of a turn are read aloud with the characters' voices (narrator for the GM). */
+  stageReadAloud: boolean;
+  setStageReadAloud: (on: boolean) => void;
   stageTurnMode: 'say' | 'do' | 'think' | 'whisper' | 'direct';
   stageWhisperTarget: string;
   stageForceActor: string;
@@ -113,7 +135,16 @@ export const createStageSlice: SliceCreator<StageSlice> = (set, get) => ({
 
   stopStageTurn: async () => {
     set({ stageAutoPlay: false });
+    stopStageVoice();
     await api.abortChatGeneration();
+  },
+
+  stageReadAloud: readStoredFlag(READ_ALOUD_KEY),
+
+  setStageReadAloud: (on) => {
+    set({ stageReadAloud: on });
+    storeFlag(READ_ALOUD_KEY, on);
+    if (!on) stopStageVoice();
   },
 
   continueStagePlot: async () => {
@@ -133,6 +164,8 @@ export const createStageSlice: SliceCreator<StageSlice> = (set, get) => ({
         } catch {
           break;
         }
+        // Let the voices finish before the next beat.
+        if (get().stageReadAloud) await audioPlayer.waitForIdle();
         // A short pause to read before the next beat.
         await new Promise((resolve) => setTimeout(resolve, AUTO_PLAY_PAUSE_MS));
       }
@@ -255,6 +288,10 @@ export const createStageSlice: SliceCreator<StageSlice> = (set, get) => ({
     try {
       const updated = await api.regenerateStageTurn(current.definition.id);
       set({ stageState: updated, isProcessingStageTurn: false, stageLive: [] });
+      if (get().stageReadAloud) {
+        const lastPlayer = updated.chat_log.map((m) => m.sender_role).lastIndexOf('player');
+        void speakStageMessages(updated.chat_log.slice(lastPlayer + 1), get().availableCharacters, true);
+      }
     } catch (e) {
       console.error('Failed to regenerate stage turn:', e);
       set({ isProcessingStageTurn: false, stageLive: [] });
@@ -394,6 +431,9 @@ export const createStageSlice: SliceCreator<StageSlice> = (set, get) => ({
       };
       const updated = await api.runStageTurn(req);
       set({ stageState: updated, isProcessingStageTurn: false, stageLive: [] });
+      if (get().stageReadAloud) {
+        void speakStageMessages(updated.chat_log.slice(current.chat_log.length), get().availableCharacters);
+      }
     } catch (e) {
       console.error('Failed to run stage turn:', e);
       set({ isProcessingStageTurn: false, stageLive: [], stageState: current });

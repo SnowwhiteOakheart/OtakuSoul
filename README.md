@@ -102,7 +102,11 @@ Bestehende Szenen lassen sich in der **Szenen-Lobby → Weitere Aktionen → Sze
 ohne den Spielstand zu verlieren. Der Editor bindet Lorebooks, setzt 1–6 Akteure pro Runde und verwaltet
 Startbilder samt Vorschau, Ambient-Dateien, Hintergrundsperre und Stummschaltung. Eigene Bilder und
 MP3/WAV/OGG-Dateien können importiert werden. Startort, Startzeit, Eröffnung und Startbild gelten beim
-nächsten Neustart; die Ambient-Wiedergabe folgt mit dem Roadmap-Punkt **Stimme & Atmosphäre**.
+nächsten Neustart.
+
+Beim **Vorlesen** sprechen Gefährten mit ihrer eingestellten Charakterstimme, Spielleiter und NPCs mit einer eigenen
+Erzählerstimme; auf Wunsch liest die Stage jeden neuen Beitrag automatisch vor. Der Ambient-Ton einer Szene läuft in
+Schleife, und der Spielleiter wechselt ihn passend zur Stimmung.
 
 ## Ein echter Begleiter auf deinem Desktop
 

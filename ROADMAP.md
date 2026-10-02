@@ -329,7 +329,12 @@ und übernimmt, was SoW lebendig macht:
    Party und anwesenden NPCs reagiert oder ob der Spieler dran ist; ohne Kandidaten kein Aufruf, bei unbrauchbarer Antwort
    die alte Reihenfolge. „Weiter“ setzt den Plot ohne eigene Aktion fort, Auto-Play spielt bis zu 5 Runden selbst
    (Stopp, eigene Eingabe oder Ausschalten beendet es). Test: `e2e/stage-director.mjs`.
-7. [ ] **Stimme & Atmosphäre:** Vorlesen mit der Charakterstimme der App statt Browser-TTS, Ambient-Audio aus Szene/Planner.
+7. [x] **Stimme & Atmosphäre:** Vorlesen mit den Stimmen der App statt Browser-TTS – Gefährten mit ihrer Charakterstimme,
+   Spielleiter und NPCs mit einer eigenen, einstellbaren Erzählerstimme (`services/stageVoice.ts`, Stimmen-Dialog für
+   beliebige Ziele); Schalter „Vorlesen“ liest neue Beiträge der Reihe nach vor, Auto-Play wartet darauf. Ambient-Ton der
+   Szene läuft in Schleife (`get_stage_ambient_audio`, `current_ambient`), der Planer wechselt ihn aus den vorhandenen
+   Dateien, „Atmosphäre“ und Stummschalten schalten ihn; ohne Datei bleibt das synthetische Lagerfeuer.
+   Test: `e2e/stage-voice.mjs` (Stimme je Sprecher, Ambient-Wechsel, Stummschalten).
 8. [ ] **Gedächtnis & Welt:** Story-Arcs beim Auflösen archivieren, regelmäßige Konsistenzprüfung, Szenen-Erlebnisse ins
    Soul Memory der Party, Charakter-Overlays, Lorekarten mit Zielgruppe (Party/GM), Weltzustand vollständig bearbeitbar,
    Chronik-Einträge löschbar, Übersetzung.
@@ -337,6 +342,10 @@ und übernimmt, was SoW lebendig macht:
 ---
 
 ## ✨ P3 – Nice-to-have
+
+- [ ] E2E-Isolation: `OTAKUSOUL_HOME` trennt Konfiguration und Daten, aber nicht den Webview-Speicher (`localStorage`
+  liegt im normalen App-Ordner) – Testläufe teilen ihn untereinander und mit der echten App. Webview-Datenordner im
+  isolierten Modus ebenfalls umlenken.
 
 - [x] Hardware-Probe für AMD und Intel (Linux und Windows über Vulkan, siehe Bildgenerierung).
 - [ ] Apple Metal: `recommendedMaxWorkingSetSize` statt des gesamten Arbeitsspeichers als GPU-Speicher.

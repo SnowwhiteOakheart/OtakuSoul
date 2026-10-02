@@ -11,6 +11,8 @@ import { translate, useTranslation } from '../../i18n';
 
 interface CharacterVoiceModalProps {
   onClose: () => void;
+  /** Whose voice to edit; default is the active chat character (e.g. the Soul Stage narrator). */
+  target?: { id: string; name: string };
 }
 
 const DEFAULT_CONFIG: VoiceConfig = {
@@ -75,7 +77,7 @@ function testText(config: VoiceConfig) {
   return 'Hello! How are you today? This is a test of my voice.';
 }
 
-export function CharacterVoiceModal({ onClose }: CharacterVoiceModalProps) {
+export function CharacterVoiceModal({ onClose, target }: CharacterVoiceModalProps) {
   const { t } = useTranslation();
   const { activeCharacter, activeVoiceConfig, saveVoiceConfigForCharacter } = useStoreFields(
     'activeCharacter', 'activeVoiceConfig', 'saveVoiceConfigForCharacter',
@@ -91,10 +93,22 @@ export function CharacterVoiceModal({ onClose }: CharacterVoiceModalProps) {
   const [error, setError] = useState('');
 
   /* oxlint-disable react/set-state-in-effect -- A newly loaded character voice profile replaces the modal draft. */
+  // By id, so a parent passing a fresh object each render doesn't reload over the user's edits.
+  const targetId = target?.id;
   useEffect(() => {
-    if (activeVoiceConfig) setDraft(activeVoiceConfig);
-  }, [activeVoiceConfig]);
+    if (!targetId && activeVoiceConfig) setDraft(activeVoiceConfig);
+  }, [activeVoiceConfig, targetId]);
   /* oxlint-enable react/set-state-in-effect */
+  useEffect(() => {
+    if (!targetId) return;
+    let subscribed = true;
+    api.getCharacterVoiceConfig(targetId).then((config) => {
+      if (subscribed) setDraft(config);
+    }).catch(() => {});
+    return () => {
+      subscribed = false;
+    };
+  }, [targetId]);
 
   useEffect(() => {
     // Local voices come with the model catalog (LocalTtsSettings).
@@ -234,10 +248,11 @@ export function CharacterVoiceModal({ onClose }: CharacterVoiceModalProps) {
   };
 
   const handleSave = async () => {
-    if (!activeCharacter) return;
+    const id = target?.id ?? activeCharacter?.id;
+    if (!id) return;
     setError('');
     try {
-      await saveVoiceConfigForCharacter(activeCharacter.id, draft);
+      await saveVoiceConfigForCharacter(id, draft);
       onClose();
     } catch (reason) {
       setError(String(reason));
@@ -270,7 +285,7 @@ export function CharacterVoiceModal({ onClose }: CharacterVoiceModalProps) {
         <div className="p-4 border-b border-slate-800 flex justify-between items-center">
           <div>
             <h2 id="voice-config-title" className="text-xl font-semibold text-slate-100">{t('voiceCfg.title')}</h2>
-            <p className="text-xs text-slate-500 mt-0.5">{activeCharacter?.card.data.name ?? t('voiceCfg.characterFallback')}</p>
+            <p className="text-xs text-slate-500 mt-0.5">{target?.name ?? activeCharacter?.card.data.name ?? t('voiceCfg.characterFallback')}</p>
           </div>
           <button onClick={onClose} title={t('common.close')} aria-label={t('common.close')} className="p-2 hover:bg-slate-800 rounded-lg text-slate-400">
             <X className="w-5 h-5" />

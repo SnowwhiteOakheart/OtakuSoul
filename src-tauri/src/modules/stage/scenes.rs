@@ -139,6 +139,7 @@ pub fn build_initial_scene_state(def: &SceneDefinition) -> SceneState {
         } else {
             None
         },
+        current_ambient: ambient_name(&def.starting_ambient),
         private_knowledge: HashMap::new(),
         history_summaries: HashMap::new(),
         npcs: Vec::new(),
@@ -735,9 +736,56 @@ pub fn update_scene_definition(state: &mut SceneState, mut definition: SceneDefi
     definition.folder = state.definition.folder.clone();
     definition.max_actor_depth = definition.max_actor_depth.clamp(1, 6);
     definition.solo_mode = definition.party.is_empty();
+    // A new ambient choice plays right away unless the planner has switched it meanwhile.
+    if state.current_ambient == ambient_name(&state.definition.starting_ambient) {
+        state.current_ambient = ambient_name(&definition.starting_ambient);
+    }
     state.definition = definition;
     state.history_summaries.clear();
     ensure_party_vitals(state);
+}
+
+/// `None` for the "no sound" values the editor and older scenes use.
+pub fn ambient_name(value: &str) -> Option<String> {
+    let value = value.trim();
+    (!value.is_empty() && !["none", "null", "silence"].contains(&value.to_lowercase().as_str()))
+        .then(|| value.to_string())
+}
+
+/// Ambient sound file as `data:` URL, looked up by name in the ambient folders.
+pub fn stage_ambient_data_url(name: &str) -> Result<String, String> {
+    let name = name.trim();
+    let path = Path::new(name);
+    if name.contains(['/', '\\']) || !asset_extension_allowed(path, "ambient") {
+        return Err(crate::err!("backend.stage.invalidAsset"));
+    }
+    let file = stage_asset_dirs("ambient")
+        .into_iter()
+        .map(|dir| dir.join(name))
+        .find(|candidate| candidate.is_file())
+        .ok_or_else(|| crate::err!("backend.stage.invalidAsset"))?;
+    let bytes = fs::read(&file).map_err(|e| {
+        crate::err!(
+            "backend.common.fileReadPath",
+            path = file.display(),
+            error = e
+        )
+    })?;
+    let mime = match path
+        .extension()
+        .and_then(|e| e.to_str())
+        .unwrap_or("")
+        .to_lowercase()
+        .as_str()
+    {
+        "mp3" => "audio/mpeg",
+        "ogg" => "audio/ogg",
+        _ => "audio/wav",
+    };
+    Ok(format!(
+        "data:{mime};base64,{}",
+        BASE64_STANDARD.encode(bytes)
+    ))
 }
 
 fn stage_asset_dirs(kind: &str) -> Vec<PathBuf> {
