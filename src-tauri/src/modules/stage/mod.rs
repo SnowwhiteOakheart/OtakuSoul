@@ -16,6 +16,7 @@ use crate::modules::paths::{resolve_app_paths, scan_available_characters};
 use crate::modules::settings::load_app_settings;
 
 mod dice;
+mod director;
 mod engine;
 mod history;
 mod models;
@@ -28,6 +29,7 @@ mod tests;
 mod turn;
 
 pub use dice::*;
+pub use director::*;
 pub use engine::*;
 pub use models::*;
 pub use npc::*;

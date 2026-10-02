@@ -11,6 +11,8 @@ import {
   Sparkles,
   Users,
   Loader2,
+  FastForward,
+  Repeat,
 } from 'lucide-react';
 import { TaggedChoice } from '../../types';
 import { useTranslation, type TranslationKey } from '../../i18n';
@@ -28,10 +30,13 @@ export const TurnControlBar: React.FC = () => {
     runStageTurn,
     undoStageTurn,
     isProcessingStageTurn,
+    continueStagePlot,
+    stageAutoPlay,
+    setStageAutoPlay,
   } = useStoreFields(
     'stageState', 'stageTurnMode', 'setStageTurnMode', 'stageWhisperTarget',
     'setStageWhisperTarget', 'stageForceActor', 'setStageForceActor', 'runStageTurn',
-    'undoStageTurn', 'isProcessingStageTurn',
+    'undoStageTurn', 'isProcessingStageTurn', 'continueStagePlot', 'stageAutoPlay', 'setStageAutoPlay',
   );
 
   const [input, setInput] = useState('');
@@ -220,6 +225,32 @@ export const TurnControlBar: React.FC = () => {
           className="flex-1 bg-app/90 border border-slate-700/80 rounded-xl px-3.5 py-2.5 text-xs text-slate-100 placeholder-slate-500 focus:outline-hidden focus:border-accent-500 resize-none shadow-inner"
         />
 
+        <button
+          type="button"
+          onClick={() => void continueStagePlot().catch(console.error)}
+          disabled={isProcessingStageTurn}
+          title={t('stage.continuePlotHint')}
+          aria-label={t('stage.continuePlot')}
+          className="h-10 px-3 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-200 border border-slate-700 flex items-center gap-1.5 transition disabled:opacity-40"
+        >
+          <FastForward className="w-4 h-4" />
+          <span className="hidden lg:inline text-xs">{t('stage.continuePlot')}</span>
+        </button>
+        <button
+          type="button"
+          onClick={() => setStageAutoPlay(!stageAutoPlay)}
+          aria-pressed={stageAutoPlay}
+          title={t('stage.autoPlayHint')}
+          aria-label={t('stage.autoPlay')}
+          className={`h-10 px-3 rounded-xl border flex items-center gap-1.5 transition ${
+            stageAutoPlay
+              ? 'bg-emerald-600/30 text-emerald-200 border-emerald-500/50'
+              : 'bg-slate-800 hover:bg-slate-700 text-slate-200 border-slate-700'
+          }`}
+        >
+          <Repeat className={`w-4 h-4 ${stageAutoPlay ? 'animate-pulse' : ''}`} />
+          <span className="hidden lg:inline text-xs">{t('stage.autoPlay')}</span>
+        </button>
         <button
           type="submit"
           disabled={isProcessingStageTurn || !input.trim()}

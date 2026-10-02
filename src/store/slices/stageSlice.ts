@@ -17,6 +17,10 @@ import type {
 import type { SliceCreator } from '../storeTypes';
 
 /** Soul Stage: scenes, turns, dice, world state, clocks and encounters. */
+/** Turns Auto-Play runs on its own, and the pause between them. */
+const AUTO_PLAY_TURNS = 5;
+const AUTO_PLAY_PAUSE_MS = 1500;
+
 export interface StageSlice {
   stageState: StageState | null;
   stageScenes: ScenePreview[];
@@ -30,6 +34,11 @@ export interface StageSlice {
   applyStageStream: (event: StageStreamEvent) => void;
   /** Stops the running turn after the current text (remaining speakers are skipped). */
   stopStageTurn: () => Promise<void>;
+  /** Lets the story run on without a player action (the game master plans the next beat). */
+  continueStagePlot: () => Promise<void>;
+  /** The scene plays itself for a few turns; stopped by "Stop", by own input or switching it off. */
+  stageAutoPlay: boolean;
+  setStageAutoPlay: (on: boolean) => void;
   stageTurnMode: 'say' | 'do' | 'think' | 'whisper' | 'direct';
   stageWhisperTarget: string;
   stageForceActor: string;
@@ -103,7 +112,32 @@ export const createStageSlice: SliceCreator<StageSlice> = (set, get) => ({
     }),
 
   stopStageTurn: async () => {
+    set({ stageAutoPlay: false });
     await api.abortChatGeneration();
+  },
+
+  continueStagePlot: async () => {
+    if (get().isProcessingStageTurn) return;
+    await get().runStageTurn('', 'continue', '', '');
+  },
+
+  stageAutoPlay: false,
+
+  setStageAutoPlay: (on) => {
+    set({ stageAutoPlay: on });
+    if (!on || get().isProcessingStageTurn) return;
+    void (async () => {
+      for (let turn = 0; turn < AUTO_PLAY_TURNS && get().stageAutoPlay && get().stageState; turn += 1) {
+        try {
+          await get().continueStagePlot();
+        } catch {
+          break;
+        }
+        // A short pause to read before the next beat.
+        await new Promise((resolve) => setTimeout(resolve, AUTO_PLAY_PAUSE_MS));
+      }
+      set({ stageAutoPlay: false });
+    })();
   },
 
   stageTurnMode: 'say',
@@ -324,6 +358,7 @@ export const createStageSlice: SliceCreator<StageSlice> = (set, get) => ({
     const current = get().stageState;
     if (!current) return;
     const mode = turnMode || get().stageTurnMode;
+    if (mode !== 'continue') set({ stageAutoPlay: false });
     let target = whisperTarget !== undefined ? whisperTarget : (get().stageWhisperTarget || undefined);
     // The whisper selector shows the first party member until another is picked.
     const party = [...current.definition.party, ...(current.npcs ?? []).filter((npc) => npc.active && !npc.promoted_character_id).map((npc) => npc.name)];

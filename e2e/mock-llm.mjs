@@ -42,6 +42,11 @@ export function startMockLlm() {
         stats.lastChatSystemPrompt = system;
         stats.lastChatMessages = request.messages ?? [];
       }
+      const isRouting = system.includes('[SOUL STAGE — ROUTING]');
+      if (isRouting) {
+        stats.routing = (stats.routing ?? 0) + 1;
+        stats.lastRoutingPrompt = system;
+      }
       const isPlanner = system.includes('GAME MASTER PLANNER');
       const isNarrator = system.includes('GAME MASTER NARRATOR');
       if (isPlanner) { stats.stagePlanner += 1; stats.lastPlannerMessages = request.messages ?? []; }
@@ -64,7 +69,7 @@ export function startMockLlm() {
       const stageSummary = 'Stage-Zusammenfassung: Die Gruppe versprach, das Tor zu öffnen.' +
         (JSON.stringify(request.messages).includes('SECRET_PASSWORD') ? ' PRIVATE whisper to Ayu: SECRET_PASSWORD.' : '') +
         (JSON.stringify(request.messages).includes('SECRET_THOUGHT') ? ' PRIVATE thought: SECRET_THOUGHT.' : '');
-      const text = isStageSummary ? stageSummary : isPlanner
+      const text = isRouting ? JSON.stringify({ next_actor: stats.routeTo ?? 'PLAYER' }) : isStageSummary ? stageSummary : isPlanner
         ? JSON.stringify({
             narration_plan: 'Ein altes Tor taucht aus dem Nebel auf.',
             next_actor: stats.spawnNpc?.name ?? null,

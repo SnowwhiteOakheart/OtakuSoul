@@ -323,8 +323,12 @@ und übernimmt, was SoW lebendig macht:
    Neustart. Dynamische Hintergründe überschreiben das Startbild nicht mehr. Ambient-Wiedergabe folgt in Punkt 7.
    Rust-, Frontend- und Desktop-Tests prüfen Fortschritt, Speicherung, Neustart, Lore und Akteur-Grenze;
    Screenshots auch bei 960×640.
-6. [ ] **Regie & Ablauf:** Routing nach jedem Beitrag (wer spricht als Nächstes), direkte Ansprache per Name, Auto-Play,
-   „Plot fortsetzen“.
+6. [x] **Regie & Ablauf** (`stage/director.rs`): Direkte Ansprache per Name („Ayu, …“, „Hey Sora“, „@Shiro“, „…, Sora?“)
+   lässt die Figur zuerst antworten, auch zwischen Figuren; bloße Erwähnungen zählen nicht. Nach jedem Beitrag entscheidet
+   ein kurzer Routing-Aufruf (Regeln aus SoW: Ansprache, offene Frage, Reaktion, kein Pingpong, faire Redezeit), wer aus
+   Party und anwesenden NPCs reagiert oder ob der Spieler dran ist; ohne Kandidaten kein Aufruf, bei unbrauchbarer Antwort
+   die alte Reihenfolge. „Weiter“ setzt den Plot ohne eigene Aktion fort, Auto-Play spielt bis zu 5 Runden selbst
+   (Stopp, eigene Eingabe oder Ausschalten beendet es). Test: `e2e/stage-director.mjs`.
 7. [ ] **Stimme & Atmosphäre:** Vorlesen mit der Charakterstimme der App statt Browser-TTS, Ambient-Audio aus Szene/Planner.
 8. [ ] **Gedächtnis & Welt:** Story-Arcs beim Auflösen archivieren, regelmäßige Konsistenzprüfung, Szenen-Erlebnisse ins
    Soul Memory der Party, Charakter-Overlays, Lorekarten mit Zielgruppe (Party/GM), Weltzustand vollständig bearbeitbar,

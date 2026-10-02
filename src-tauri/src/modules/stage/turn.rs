@@ -353,14 +353,22 @@ RULES:
             .unwrap_or_else(|| "PLAYER".to_string())
     );
 
+    // "Continue plot" (or an empty turn): the player lets the story run on.
+    let continues = req.turn_mode == "continue" || clean_input.is_empty();
     let planner_user_prompt = format!(
         "=== CURRENT ACTION BY {} ===\nMode: {}\nContent: {}\n\nPlan the next beat as JSON:",
         user_name,
         match &whisper_to {
             Some(to) => format!("whisper (PRIVATE, only {to} hears it – keep it secret)"),
+            None if continues => "continue".to_string(),
             None => req.turn_mode.clone(),
         },
-        clean_input
+        if continues {
+            "(none – the player waits and lets the story unfold; plan the next dramatic beat yourself, \
+             e.g. a development, an NPC's move or a companion taking the initiative)"
+        } else {
+            clean_input
+        }
     );
 
     let planner_messages = vec![
@@ -814,17 +822,22 @@ RULES:
         },
         ChatMessage {
             role: "user".to_string(),
-            content: format!(
-                "Narrate what happens after this action: '{}'",
-                match (&whisper_to, req.turn_mode.as_str()) {
-                    // The narrator describes only what everyone can perceive.
-                    (Some(to), _) => format!(
-                        "{user_name} leans close to {to} and whispers something nobody else can hear"
-                    ),
-                    (None, "think") => format!("{user_name} is silently lost in thought"),
-                    _ => clean_input.to_string(),
-                }
-            ),
+            content: if continues {
+                "Continue the scene with the next beat; the player is waiting to see what happens."
+                    .to_string()
+            } else {
+                format!(
+                    "Narrate what happens after this action: '{}'",
+                    match (&whisper_to, req.turn_mode.as_str()) {
+                        // The narrator describes only what everyone can perceive.
+                        (Some(to), _) => format!(
+                            "{user_name} leans close to {to} and whispers something nobody else can hear"
+                        ),
+                        (None, "think") => format!("{user_name} is silently lost in thought"),
+                        _ => clean_input.to_string(),
+                    }
+                )
+            },
             attachments: Vec::new(),
         },
     ];
@@ -899,12 +912,17 @@ RULES:
 
     observe_npcs(&mut state, observation_start);
 
-    // 5. Next Actor Turn (Party Member reactions up to max_actor_depth)
+    // 5. Next Actor Turn (reactions up to max_actor_depth). Priority: the player's explicit
+    // choice, a whisper's recipient, whoever the player addressed by name, then the planner.
+    let addressed = (!continues && whisper_to.is_none())
+        .then(|| detect_direct_address(clean_input, &speaking_cast(&state)))
+        .flatten();
     let initial_next = req
         .force_next_actor
         .as_deref()
         .filter(|actor| !actor.trim().is_empty())
         .or(whisper_to.as_deref())
+        .or(addressed.as_deref())
         .or(gm_plan.next_actor.as_deref())
         .unwrap_or("PLAYER")
         .to_string();
@@ -913,6 +931,8 @@ RULES:
     let mut current_actor = initial_next;
     let mut actor_depth = 0;
     let mut spoken_actors = std::collections::HashSet::new();
+    let mut spoken_order: Vec<String> = Vec::new();
+    let mut last_line: Option<(String, String)> = None;
     if inference.is_aborted() {
         current_actor = "PLAYER".to_string();
     }
@@ -924,6 +944,7 @@ RULES:
         actor_depth += 1;
         state.current_turn_actor = current_actor.clone();
         spoken_actors.insert(current_actor.to_lowercase());
+        spoken_order.push(current_actor.clone());
 
         if state.combat.is_active
             && let Some(index) = state.combat.combatants.iter().position(|combatant| {
@@ -1060,6 +1081,7 @@ Reply in {reply_language}.{secrets}"#,
             )
             .await
             {
+                last_line = Some((current_actor.clone(), comp_text.clone()));
                 let companion_msg = SceneTurnMessage {
                     id: comp_msg_id,
                     sender_id: current_actor.clone(),
@@ -1082,23 +1104,64 @@ Reply in {reply_language}.{secrets}"#,
             }
         }
 
-        // Determine if another party member should react
-        if inference.is_aborted() {
-            current_actor = "PLAYER".to_string();
-        } else if actor_depth < max_depth {
-            if let Some(next_party_member) = state
-                .definition
-                .party
-                .iter()
-                .find(|p| !spoken_actors.contains(&p.to_lowercase()))
-            {
-                current_actor = next_party_member.clone();
-            } else {
-                current_actor = "PLAYER".to_string();
-            }
+        // Who reacts next: someone addressed by name, else the routing call decides.
+        current_actor = if inference.is_aborted() || actor_depth >= max_depth {
+            "PLAYER".to_string()
         } else {
-            current_actor = "PLAYER".to_string();
-        }
+            let speaker = current_actor.clone();
+            let candidates: Vec<String> = speaking_cast(&state)
+                .into_iter()
+                .filter(|c| !c.eq_ignore_ascii_case(&speaker))
+                .collect();
+            match &last_line {
+                _ if candidates.is_empty() => "PLAYER".to_string(),
+                None => "PLAYER".to_string(),
+                Some((who, text)) => {
+                    if let Some(name) = detect_direct_address(text, &candidates) {
+                        name
+                    } else {
+                        let routing = ChatRequest {
+                            endpoint_url: endpoint_url.clone(),
+                            api_key: api_key.clone(),
+                            model: model_name.clone(),
+                            messages: vec![ChatMessage {
+                                role: "user".to_string(),
+                                content: routing_prompt(
+                                    who,
+                                    text,
+                                    &candidates,
+                                    &spoken_order,
+                                    &recent_speakers(&state, 10),
+                                ),
+                                attachments: Vec::new(),
+                            }],
+                            sampling: Some(SamplingParams {
+                                temperature: Some(0.1),
+                                max_tokens: Some(80),
+                                ..Default::default()
+                            }),
+                            reasoning_mode: Some(false),
+                            provider: provider.clone(),
+                        };
+                        let routed = inference
+                            .generate_direct(routing)
+                            .await
+                            .ok()
+                            .and_then(|raw| parse_routing(&raw, &candidates));
+                        // Unusable answer: the old order (next party member who hasn't spoken).
+                        routed.unwrap_or_else(|| {
+                            state
+                                .definition
+                                .party
+                                .iter()
+                                .find(|p| !spoken_actors.contains(&p.to_lowercase()))
+                                .cloned()
+                                .unwrap_or_else(|| "PLAYER".to_string())
+                        })
+                    }
+                }
+            }
+        };
     }
 
     // 6. Update pending choices and save
