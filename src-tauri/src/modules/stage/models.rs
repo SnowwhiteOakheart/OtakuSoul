@@ -406,6 +406,15 @@ pub struct StageStreamEvent {
 /// Receives live text during a turn.
 pub type StageStream<'a> = &'a (dyn Fn(StageStreamEvent) + Send + Sync);
 
+/// A resolved story arc, condensed when it ended.
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize, TS)]
+#[ts(export)]
+pub struct ArchivedArc {
+    pub arc_id: String,
+    pub title: String,
+    pub summary: String,
+}
+
 #[derive(Debug, Clone, Serialize, Deserialize, TS)]
 #[ts(export)]
 pub struct SceneState {
@@ -435,6 +444,12 @@ pub struct SceneState {
     /// Ambient sound playing now (file name); the scene's start value or the planner's pick.
     #[serde(default)]
     pub current_ambient: Option<String>,
+    /// Summaries of resolved story arcs; the planner keeps them in mind instead of the open list.
+    #[serde(default)]
+    pub arc_archive: Vec<ArchivedArc>,
+    /// Turns since the last consistency check of the facts.
+    #[serde(default)]
+    pub turns_since_audit: u32,
     /// What each character was told in private (whispers), by name.
     #[serde(default)]
     pub private_knowledge: HashMap<String, Vec<String>>,

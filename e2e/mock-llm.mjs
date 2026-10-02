@@ -67,6 +67,10 @@ export function startMockLlm() {
         stats.routing = (stats.routing ?? 0) + 1;
         stats.lastRoutingPrompt = system;
       }
+      const isArcArchive = system.includes('[SOUL STAGE — ARC ARCHIVE]');
+      const isAudit = system.includes('[SOUL STAGE — CONSISTENCY]');
+      if (isArcArchive) { stats.arcArchive = (stats.arcArchive ?? 0) + 1; stats.lastArcArchivePrompt = system; }
+      if (isAudit) { stats.audit = (stats.audit ?? 0) + 1; stats.lastAuditPrompt = system; }
       const isPlanner = system.includes('GAME MASTER PLANNER');
       const isNarrator = system.includes('GAME MASTER NARRATOR');
       if (isPlanner) { stats.stagePlanner += 1; stats.lastPlannerMessages = request.messages ?? []; }
@@ -90,12 +94,15 @@ export function startMockLlm() {
         (JSON.stringify(request.messages).includes('SECRET_PASSWORD') ? ' PRIVATE whisper to Ayu: SECRET_PASSWORD.' : '') +
         (JSON.stringify(request.messages).includes('SECRET_THOUGHT') ? ' PRIVATE thought: SECRET_THOUGHT.' : '');
       const plannerAmbient = stats.ambient ?? null;
-      const text = isRouting ? JSON.stringify({ next_actor: stats.routeTo ?? 'PLAYER' }) : isStageSummary ? stageSummary : isPlanner
+      const text = isArcArchive ? 'ARC_SUMMARY: Das Tor wurde geöffnet, der Wächter ist frei.'
+        : isAudit ? JSON.stringify(stats.auditResult ?? { prune_keys: [], updated_facts: {} })
+        : isRouting ? JSON.stringify({ next_actor: stats.routeTo ?? 'PLAYER' }) : isStageSummary ? stageSummary : isPlanner
         ? JSON.stringify({
             narration_plan: 'Ein altes Tor taucht aus dem Nebel auf.',
             next_actor: stats.spawnNpc?.name ?? null,
             bg_image: stats.stageBackground ?? null,
             ambient_audio: plannerAmbient,
+            story_arc_updates: stats.arcUpdates ?? [],
             spawn_npcs: stats.spawnNpc ? [stats.spawnNpc] : [],
             despawn_npcs: stats.despawnNpc ? [stats.despawnNpc] : [],
             resource_delta: { target: 'PLAYER', hp_delta: -5, stress_delta: 10 },

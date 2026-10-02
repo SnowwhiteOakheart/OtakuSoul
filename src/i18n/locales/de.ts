@@ -749,6 +749,7 @@ export const de = {
   "stage.readAloudHint": "Neue Beiträge automatisch vorlesen – Gefährten mit ihrer Charakterstimme, Spielleiter und NPCs mit der Erzählerstimme",
   "stage.narratorVoice": "Erzählerstimme",
   "stage.narratorVoiceHint": "Stimme für Spielleiter und NPCs einstellen",
+  "stage.arcResolved": "abgeschlossen",
   "stageWorld.edit": "Weltzustand bearbeiten",
   "stageWorld.title": "Weltzustand bearbeiten",
   "stageWorld.intro": "Alles, was der Spielleiter verfolgt. Änderungen gelten ab der nächsten Runde.",

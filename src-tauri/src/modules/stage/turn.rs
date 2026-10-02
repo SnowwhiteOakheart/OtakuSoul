@@ -160,25 +160,7 @@ pub async fn execute_stage_turn(
         })
         .collect::<Vec<_>>()
         .join("; ");
-    let arc_context = state
-        .arcs
-        .iter()
-        .map(|arc| {
-            format!(
-                "{} [{}]: {}/{}{}",
-                arc.title,
-                arc.id,
-                arc.stage,
-                arc.max_stage,
-                if arc.is_revealed {
-                    " sichtbar"
-                } else {
-                    " verborgen"
-                }
-            )
-        })
-        .collect::<Vec<_>>()
-        .join("; ");
+    let arc_context = open_arcs_context(&state);
     let inventory_context = state
         .inventory
         .iter()
@@ -263,7 +245,8 @@ Known NPCs:
 Player: {user_name}
 Campaign clocks: {clocks}
 Objectives: {objectives}
-Story arcs: {arcs}
+Open story arcs: {arcs}
+Resolved story arcs (archive): {arc_archive}
 Inventory: {inventory}
 Party condition: {vitals}
 Established facts: {facts}
@@ -354,11 +337,8 @@ RULES:
         } else {
             &objective_context
         },
-        arcs = if arc_context.is_empty() {
-            "none"
-        } else {
-            &arc_context
-        },
+        arcs = arc_context,
+        arc_archive = arc_archive_context(&state),
         inventory = if inventory_context.is_empty() {
             "empty"
         } else {
@@ -1249,6 +1229,18 @@ Reply in {reply_language}.{secrets}"#,
 
     state.current_turn_actor = "PLAYER".to_string();
     state.definition.last_played = Some(Utc::now().to_rfc3339());
+
+    // Long-term upkeep (skipped after "Stop"): archive resolved arcs, check facts now and then.
+    if !inference.is_aborted() {
+        let llm = StageLlm {
+            endpoint_url: endpoint_url.clone(),
+            api_key: api_key.clone(),
+            model: model_name.clone(),
+            provider: provider.clone(),
+        };
+        archive_resolved_arcs(&mut state, inference, &llm).await;
+        audit_facts(&mut state, inference, &llm).await;
+    }
 
     engine.set_state(state.clone());
     save_scene_state(&state)?;

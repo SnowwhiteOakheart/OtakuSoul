@@ -340,7 +340,10 @@ und übernimmt, was SoW lebendig macht:
      Spoiler-Schalter, Ziele, Beziehungen, Inventar), Chronik-Einträge löschbar, Übersetzung von Stage-Nachrichten.
      Dabei behoben: Fakten und Chronik erreichten den Planer nie; jetzt stehen sie im Planer-Kontext, und der Planer
      pflegt Fakten per `fact_updates` (`stage/world.rs`). Test: `e2e/stage-world.mjs`.
-   - [ ] Story-Arcs beim Auflösen archivieren, regelmäßige Konsistenzprüfung der Fakten.
+   - [x] Story-Arcs beim Auflösen archivieren: abgeschlossene Arcs (Planer oder Editor) fasst das Modell am Rundenende
+     zusammen (`arc_archive`, ohne Antwort die Beschreibung); der Planer sieht nur offene Arcs plus Archiv, die Kampagne
+     zeigt die Zusammenfassung. Konsistenzprüfung alle 8 Runden: entfernt veraltete Fakten und korrigiert widersprochene,
+     erfindet keine neuen. Beides entfällt nach „Stopp“. Test: `e2e/stage-memory.mjs`.
    - [ ] Charakter-Overlays, Lorekarten mit Zielgruppe (Party/GM).
    - [ ] Szenen-Erlebnisse ins Soul Memory der Party.
 

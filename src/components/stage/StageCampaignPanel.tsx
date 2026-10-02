@@ -120,7 +120,7 @@ export const StageCampaignPanel: React.FC = () => {
             </div>
           ))}
 
-          {arcs.filter((arc) => arc.is_revealed).map((arc) => (
+          {arcs.filter((arc) => arc.is_revealed && !(stageState.arc_archive ?? []).some((a) => a.arc_id === arc.id)).map((arc) => (
             <div key={arc.id} className="p-3 rounded-xl bg-accent-950/20 border border-accent-500/20">
               <div className="flex justify-between gap-2 text-xs">
                 <span className="font-semibold text-accent-200 flex items-center gap-1.5"><Sparkles className="w-3.5 h-3.5" />{arc.title}</span>
@@ -130,7 +130,17 @@ export const StageCampaignPanel: React.FC = () => {
             </div>
           ))}
 
-          {!objectives.length && !arcs.some((arc) => arc.is_revealed) && (
+          {(stageState.arc_archive ?? []).map((arc) => (
+            <div key={arc.arc_id} className="p-3 rounded-xl bg-emerald-950/20 border border-emerald-500/20">
+              <div className="text-xs font-semibold text-emerald-200 flex items-center gap-1.5">
+                <CheckCircle2 className="w-3.5 h-3.5" />{arc.title}
+                <span className="font-normal text-emerald-400/80">· {t('stage.arcResolved')}</span>
+              </div>
+              <p className="text-xs text-slate-400 mt-1">{arc.summary}</p>
+            </div>
+          ))}
+
+          {!objectives.length && !arcs.some((arc) => arc.is_revealed) && !(stageState.arc_archive ?? []).length && (
             <p className="text-xs text-slate-500">{t('stage.noObjectives')}</p>
           )}
         </div>

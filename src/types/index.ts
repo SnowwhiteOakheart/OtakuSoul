@@ -28,6 +28,7 @@ import type { ChatSession } from './generated/ChatSession';
 import type { ChubCharacterDetail } from './generated/ChubCharacterDetail';
 import type { CombatCondition } from './generated/CombatCondition';
 import type { ContextUsage } from './generated/ContextUsage';
+import type { ArchivedArc } from './generated/ArchivedArc';
 import type { StageStreamEvent } from './generated/StageStreamEvent';
 import type { Attachment } from './generated/Attachment';
 import type { TranslateRequest } from './generated/TranslateRequest';
@@ -104,6 +105,7 @@ export type {
   CombatCondition,
   ConsequenceEntry,
   ContextUsage,
+  ArchivedArc,
   StageStreamEvent,
   Attachment,
   TranslateRequest,
@@ -562,6 +564,9 @@ export interface SceneState {
   current_bg?: string | null;
   /** Ambient sound playing now (file name). */
   current_ambient?: string | null;
+  /** Summaries of resolved story arcs. */
+  arc_archive?: ArchivedArc[];
+  turns_since_audit?: number;
   /** What each character was told in private (whispers). */
   private_knowledge?: Record<string, string[]>;
   npcs?: import('./generated/StageNpc').StageNpc[];

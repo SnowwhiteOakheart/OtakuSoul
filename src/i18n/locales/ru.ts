@@ -747,6 +747,7 @@ export const ru: TranslationDictionary = {
   "stage.readAloudHint": "Автоматически озвучивать новые реплики – спутники своими голосами, ведущий и NPC голосом рассказчика",
   "stage.narratorVoice": "Голос рассказчика",
   "stage.narratorVoiceHint": "Настроить голос ведущего и NPC",
+  "stage.arcResolved": "завершена",
   "stageWorld.edit": "Изменить состояние мира",
   "stageWorld.title": "Изменить состояние мира",
   "stageWorld.intro": "Всё, что отслеживает ведущий. Изменения действуют со следующего хода.",

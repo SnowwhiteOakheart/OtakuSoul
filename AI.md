@@ -86,6 +86,8 @@ Einstellungen: `components/settings/sections/*` (Server inkl. Laufzeiten/`mmproj
   `components/stage/useStageAmbient.ts`. E2E-Mock bietet `/v1/audio/speech` (stille WAV).
   `stage/world.rs`: Fakten (`fact_updates`, Schlüssel normalisiert) und Chronik gehen in den Planer-Kontext;
   Weltzustand-Editor `StageWorldEditor.tsx` speichert per `save_stage_scene` (in den neuesten Zustand gemischt).
+  Rundenende: `archive_resolved_arcs` und `audit_facts` (alle `AUDIT_INTERVAL` Runden); Mock erkennt
+  „[SOUL STAGE — ARC ARCHIVE]“/„[SOUL STAGE — CONSISTENCY]“.
   `stage/director.rs`: Sprecherfolge = Spielerwahl > Flüsterziel > direkte Ansprache > Planer; danach pro Beitrag
   Ansprache-Erkennung, sonst Routing-LLM (Mock erkennt „[SOUL STAGE — ROUTING]“). `turn_mode: "continue"` = Runde ohne
   Spieleraktion (Weiter/Auto-Play).

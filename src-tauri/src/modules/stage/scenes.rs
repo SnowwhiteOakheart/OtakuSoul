@@ -140,6 +140,8 @@ pub fn build_initial_scene_state(def: &SceneDefinition) -> SceneState {
             None
         },
         current_ambient: ambient_name(&def.starting_ambient),
+        arc_archive: Vec::new(),
+        turns_since_audit: 0,
         private_knowledge: HashMap::new(),
         history_summaries: HashMap::new(),
         npcs: Vec::new(),

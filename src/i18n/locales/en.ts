@@ -747,6 +747,7 @@ export const en: TranslationDictionary = {
   "stage.readAloudHint": "Read new lines aloud automatically – companions with their character voice, game master and NPCs with the narrator voice",
   "stage.narratorVoice": "Narrator voice",
   "stage.narratorVoiceHint": "Set the voice of the game master and NPCs",
+  "stage.arcResolved": "resolved",
   "stageWorld.edit": "Edit world state",
   "stageWorld.title": "Edit world state",
   "stageWorld.intro": "Everything the game master tracks. Changes apply from the next turn.",
