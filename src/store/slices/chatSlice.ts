@@ -251,13 +251,12 @@ export const createChatSlice: SliceCreator<ChatSlice> = (set, get) => ({
   renameChatSession: async (chatId: string, title: string) => {
     try {
       await api.renameChatSession(chatId, title);
-      const char = get().activeCharacter;
-      if (char) {
-        const sessions = await api.listChatSessions(char.id);
-        set({ chatSessions: sessions });
-      }
+      set((st) => ({
+        chatSessions: st.chatSessions.map((s) => s.id === chatId ? { ...s, title } : s),
+      }));
     } catch (e) {
       console.error('Failed to rename chat session:', e);
+      throw e;
     }
   },
 
@@ -279,13 +278,12 @@ export const createChatSlice: SliceCreator<ChatSlice> = (set, get) => ({
 
     try {
       await api.updateChatAuthorNote(chatId, authorNote, depth);
-      const char = get().activeCharacter;
-      if (char) {
-        const sessions = await api.listChatSessions(char.id);
-        set({ chatSessions: sessions });
-      }
+      set((st) => ({
+        chatSessions: st.chatSessions.map((s) => s.id === chatId ? { ...s, author_note: authorNote, author_note_depth: depth } : s),
+      }));
     } catch (e) {
       console.error('Failed to update author note:', e);
+      throw e;
     }
   },
 

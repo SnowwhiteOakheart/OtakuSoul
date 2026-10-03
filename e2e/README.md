@@ -42,3 +42,7 @@ Wiederholen speichert und Verwerfen stellt den gespeicherten Wert wieder her. Sc
 `markdown-errors.mjs` erzwingt einen Lesefehler durch einen temporär ungültigen Datentyp und einen Schreibfehler
 durch einen SQLite-Trigger ausschließlich im Wegwerfprofil. Der Entwurf bleibt erhalten, Erfolgsanzeigen bleiben aus;
 nach Wiederholung werden die Werte tatsächlich gespeichert und wieder geladen. Screenshot 32 zeigt den Lesefehler mit erhaltenem Entwurf.
+
+`chat-sidebar-errors.mjs` erzwingt SQLite-Schreibfehler für Titel, Author's Note und Zusammenfassung
+im Wegwerfprofil. Es prüft erhaltene Entwürfe, Wiederholen, Notiztiefe 0, Schließen/Reiterwechsel und
+fehlgeschlagenes sowie erfolgreiches Zurücksetzen. Screenshots 34–36 zeigen die Fehlerzustände.

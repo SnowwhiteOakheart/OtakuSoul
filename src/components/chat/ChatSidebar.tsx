@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import { useStoreFields } from '../../store/useAppStore';
 import { HUD_PRESETS } from '../../constants/hudPresets';
 import {
@@ -47,23 +47,48 @@ export const ChatSidebar: React.FC<ChatSidebarProps> = ({ isOpen, onClose }) => 
 
   const [editingChatId, setEditingChatId] = useState<string | null>(null);
   const [editTitle, setEditTitle] = useState('');
-  const [authorNoteInput, setAuthorNoteInput] = useState('');
-  const [authorNoteDepthInput, setAuthorNoteDepthInput] = useState(2);
-  const [summaryInput, setSummaryInput] = useState('');
+  const [drafts, setDrafts] = useState<Record<string, { note?: { text: string; depth: number }; summary?: string }>>({});
   const [activeTab, setActiveTab] = useState<'chats' | 'author_note' | 'presets'>('chats');
   const [isImporting, setIsImporting] = useState(false);
-
-  // Sync author note inputs when active chat changes
+  const pending = useRef(new Set<string>());
+  const [saving, setSaving] = useState<string[]>([]);
   const activeSession = chatSessions.find((s) => s.id === activeChatId);
-  /* oxlint-disable react/set-state-in-effect -- The editable draft intentionally follows the externally selected chat. */
-  React.useEffect(() => {
-    if (activeSession) {
-      setAuthorNoteInput(activeSession.author_note || '');
-      setAuthorNoteDepthInput(activeSession.author_note_depth || 2);
-      setSummaryInput(activeSession.summary || '');
+  const draft = activeChatId ? drafts[activeChatId] : undefined;
+  const authorNoteInput = draft?.note?.text ?? activeSession?.author_note ?? '';
+  const authorNoteDepthInput = draft?.note?.depth ?? activeSession?.author_note_depth ?? 2;
+  const summaryInput = draft?.summary ?? activeSession?.summary ?? '';
+  const noteSaving = saving.includes(`note:${activeChatId}`);
+  const summarySaving = saving.includes(`summary:${activeChatId}`);
+  const renameSaving = saving.some((key) => key.startsWith('rename:'));
+
+  const setNoteDraft = (text: string, depth: number) => {
+    if (!activeChatId) return;
+    setDrafts((all) => ({ ...all, [activeChatId]: { ...all[activeChatId], note: { text, depth } } }));
+  };
+  const setSummaryDraft = (summary: string) => {
+    if (!activeChatId) return;
+    setDrafts((all) => ({ ...all, [activeChatId]: { ...all[activeChatId], summary } }));
+  };
+  const clearDraft = (chatId: string, field: 'note' | 'summary') => {
+    setDrafts((all) => {
+      const next = { ...all[chatId] };
+      delete next[field];
+      return { ...all, [chatId]: next };
+    });
+  };
+  const save = async (key: string, action: () => Promise<void>, errorKey: TranslationKey) => {
+    if (pending.current.has(key)) return;
+    pending.current.add(key);
+    setSaving([...pending.current]);
+    try {
+      await action();
+    } catch (error) {
+      toast.error(translate(errorKey, { error: errorMessage(error) }));
+    } finally {
+      pending.current.delete(key);
+      setSaving([...pending.current]);
     }
-  }, [activeSession]);
-  /* oxlint-enable react/set-state-in-effect */
+  };
 
   useEffect(() => {
     if (!isOpen) return;
@@ -82,27 +107,32 @@ export const ChatSidebar: React.FC<ChatSidebarProps> = ({ isOpen, onClose }) => 
   };
 
   const handleSaveRename = async (chatId: string) => {
-    if (editTitle.trim()) {
-      await renameChatSession(chatId, editTitle.trim());
-    }
-    setEditingChatId(null);
+    const title = editTitle.trim();
+    if (!title) return;
+    await save(`rename:${chatId}`, async () => {
+      await renameChatSession(chatId, title);
+      setEditingChatId((current) => current === chatId ? null : current);
+    }, 'chatSidebar.renameFailed');
   };
 
   const handleSaveAuthorNote = async () => {
-    await updateAuthorNote(authorNoteInput, Number(authorNoteDepthInput) || 2);
-    toast.success(translate('chatSidebar.noteSaved'));
-  };
-
-  const handleSaveSummary = async () => {
     if (!activeSession) return;
-    await updateChatSummary(summaryInput.trim(), activeSession.summary_until);
-    toast.success(translate('chatSidebar.summarySaved'));
+    const chatId = activeSession.id;
+    await save(`note:${chatId}`, async () => {
+      await updateAuthorNote(authorNoteInput, authorNoteDepthInput);
+      clearDraft(chatId, 'note');
+      toast.success(translate('chatSidebar.noteSaved'));
+    }, 'chatSidebar.noteSaveFailed');
   };
 
-  const handleResetSummary = async () => {
-    // Start over: the next overflow summarizes all messages outside the context again.
-    await updateChatSummary('', -1);
-    setSummaryInput('');
+  const handleSaveSummary = async (reset = false) => {
+    if (!activeSession || isSummarizing) return;
+    const chatId = activeSession.id;
+    await save(`summary:${chatId}`, async () => {
+      await updateChatSummary(reset ? '' : summaryInput.trim(), reset ? -1 : activeSession.summary_until);
+      clearDraft(chatId, 'summary');
+      toast.success(translate('chatSidebar.summarySaved'));
+    }, 'chatSidebar.summarySaveFailed');
   };
 
   const handleExport = async () => {
@@ -240,17 +270,19 @@ export const ChatSidebar: React.FC<ChatSidebarProps> = ({ isOpen, onClose }) => 
                         <input
                           type="text"
                           value={editTitle}
+                          disabled={renameSaving}
                           onChange={(e) => setEditTitle(e.target.value)}
                           onKeyDown={(e) => {
                             if (e.key === 'Enter') handleSaveRename(session.id);
-                            if (e.key === 'Escape') setEditingChatId(null);
+                            if (e.key === 'Escape' && !renameSaving) { e.preventDefault(); setEditingChatId(null); }
                           }}
                           autoFocus
                           aria-label={t('chatSidebar.renameInput')}
-                          className="flex-1 bg-slate-900 border border-accent-500/60 rounded px-2 py-1 text-xs text-white focus:outline-hidden"
+                          className="flex-1 min-w-0 bg-slate-900 border border-accent-500/60 rounded px-2 py-1 text-xs text-white focus:outline-hidden"
                         />
                         <button
                           onClick={() => handleSaveRename(session.id)}
+                          disabled={renameSaving || !editTitle.trim()}
                           className="p-1 text-green-400 hover:text-green-300"
                           title={t('chatSidebar.saveTitle')}
                           aria-label={t('chatSidebar.saveTitle')}
@@ -259,6 +291,7 @@ export const ChatSidebar: React.FC<ChatSidebarProps> = ({ isOpen, onClose }) => 
                         </button>
                         <button
                           onClick={() => setEditingChatId(null)}
+                          disabled={renameSaving}
                           className="p-1 text-slate-400 hover:text-slate-300"
                           title={t('chatSidebar.cancelRename')}
                           aria-label={t('chatSidebar.cancelRename')}
@@ -301,6 +334,7 @@ export const ChatSidebar: React.FC<ChatSidebarProps> = ({ isOpen, onClose }) => 
                             handleStartRename(session);
                           }}
                           className="p-1 text-slate-400 hover:text-accent-300 transition-colors"
+                          disabled={renameSaving}
                           title={t('chatSidebar.rename')}
                           aria-label={t('chatSidebar.rename')}
                         >
@@ -376,7 +410,8 @@ export const ChatSidebar: React.FC<ChatSidebarProps> = ({ isOpen, onClose }) => 
             <textarea
               id="author-note-input"
               value={authorNoteInput}
-              onChange={(e) => setAuthorNoteInput(e.target.value)}
+              onChange={(e) => setNoteDraft(e.target.value, authorNoteDepthInput)}
+              disabled={!activeSession || noteSaving}
               placeholder={t('chatSidebar.notePlaceholder')}
               rows={5}
               className="w-full bg-app/80 border border-slate-700/80 rounded-xl p-3 text-xs text-slate-100 placeholder-slate-500 focus:outline-hidden focus:border-accent-500 resize-none"
@@ -396,7 +431,8 @@ export const ChatSidebar: React.FC<ChatSidebarProps> = ({ isOpen, onClose }) => 
               min={0}
               max={6}
               value={authorNoteDepthInput}
-              onChange={(e) => setAuthorNoteDepthInput(parseInt(e.target.value, 10))}
+              onChange={(e) => setNoteDraft(authorNoteInput, parseInt(e.target.value, 10))}
+              disabled={!activeSession || noteSaving}
               className="w-full accent-accent-500 cursor-pointer"
             />
             <p className="text-xs text-slate-400">{t('chatSidebar.depthHint')}</p>
@@ -404,10 +440,11 @@ export const ChatSidebar: React.FC<ChatSidebarProps> = ({ isOpen, onClose }) => 
 
           <button
             onClick={handleSaveAuthorNote}
+            disabled={!activeSession || noteSaving}
             className="w-full py-2 bg-accent-600 hover:bg-accent-500 text-white rounded-xl text-xs font-medium transition-all shadow-md flex items-center justify-center gap-1.5"
           >
             <Check className="w-4 h-4" />
-            <span>{t('chatSidebar.saveNote')}</span>
+            <span>{noteSaving ? t('common.saving') : t('chatSidebar.saveNote')}</span>
           </button>
 
           <div className="space-y-2 pt-4 border-t border-slate-800">
@@ -423,23 +460,24 @@ export const ChatSidebar: React.FC<ChatSidebarProps> = ({ isOpen, onClose }) => 
             <textarea
               id="chat-summary-input"
               value={summaryInput}
-              onChange={(e) => setSummaryInput(e.target.value)}
+              onChange={(e) => setSummaryDraft(e.target.value)}
+              disabled={!activeSession || summarySaving || isSummarizing}
               placeholder={t('chatSidebar.summaryPlaceholder')}
               rows={8}
               className="w-full bg-app/80 border border-slate-700/80 rounded-xl p-3 text-xs text-slate-100 placeholder-slate-500 focus:outline-hidden focus:border-accent-500 resize-y"
             />
             <div className="flex gap-2">
               <button
-                onClick={handleSaveSummary}
-                disabled={!activeSession || isSummarizing}
+                onClick={() => handleSaveSummary()}
+                disabled={!activeSession || isSummarizing || summarySaving}
                 className="flex-1 py-2 bg-accent-600 hover:bg-accent-500 disabled:opacity-40 text-white rounded-xl text-xs font-medium transition-all flex items-center justify-center gap-1.5"
               >
                 <Check className="w-4 h-4" />
-                <span>{t('chatSidebar.saveSummary')}</span>
+                <span>{summarySaving ? t('common.saving') : t('chatSidebar.saveSummary')}</span>
               </button>
               <button
-                onClick={handleResetSummary}
-                disabled={!activeSession || isSummarizing || !activeSession.summary}
+                onClick={() => handleSaveSummary(true)}
+                disabled={!activeSession || isSummarizing || summarySaving || !activeSession.summary}
                 className="px-3 py-2 bg-slate-800 hover:bg-slate-700 disabled:opacity-40 text-slate-200 rounded-xl text-xs font-medium transition-all"
                 title={t('chatSidebar.resetSummaryHint')}
               >
