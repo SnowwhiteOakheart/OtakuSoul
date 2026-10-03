@@ -2,7 +2,7 @@ import { startTransition, useActionState, useState } from 'react';
 import { CharacterProfile, CharacterCardV2 } from '../../types';
 import { api } from '../../services/api';
 import { useStoreFields } from '../../store/useAppStore';
-import { X, Save, Image, Plus, Trash2, Sparkles, User, FileText, Settings2, BookOpen } from 'lucide-react';
+import { X, Save, Image, Plus, Trash2, Sparkles, User, FileText, Settings2, BookOpen, Globe } from 'lucide-react';
 import {
   getPortraitExpressions,
   PORTRAIT_MOODS,
@@ -15,6 +15,7 @@ import { translate, useTranslation } from '../../i18n';
 import { errorMessage } from '../../utils/errors';
 import { fileToDataUrl, pickImageAsDataUrl } from '../../utils/imageFiles';
 import { I18N_EXTENSION } from '../../utils/cardI18n';
+import { CharacterTranslationsTab } from './CharacterTranslationsTab';
 
 interface CharacterEditorModalProps {
   character: CharacterProfile | null; // null means create new
@@ -27,12 +28,12 @@ export const CharacterEditorModal = ({
   onClose,
   onSaved,
 }: CharacterEditorModalProps) => {
-  const { t } = useTranslation();
+  const { t, tOptional } = useTranslation();
   const { refreshCharacters, allLorebooks, scannedVrms, scannedLive2ds } = useStoreFields(
     'refreshCharacters', 'allLorebooks', 'scannedVrms', 'scannedLive2ds',
   );
 
-  const [activeTab, setActiveTab] = useState<'basics' | 'expressions' | 'prompts' | 'greetings' | 'lorebooks' | 'raw'>('basics');
+  const [activeTab, setActiveTab] = useState<'basics' | 'expressions' | 'prompts' | 'greetings' | 'lorebooks' | 'i18n' | 'raw'>('basics');
 
   // Form State
   const [boundLorebooks, setBoundLorebooks] = useState<string[]>(character?.bound_lorebooks || []);
@@ -58,6 +59,12 @@ export const CharacterEditorModal = ({
   );
   const [systemPrompt, setSystemPrompt] = useState(character?.card.data.system_prompt || '');
   const [creatorNotes, setCreatorNotes] = useState(character?.card.data.creator_notes || '');
+  const [sourceLanguage, setSourceLanguage] = useState<string>(
+    (character?.card.data.extensions?.[I18N_EXTENSION] as Record<string, unknown>)?.source_language as string || 'de'
+  );
+  const [translations, setTranslations] = useState<Record<string, Record<string, string>>>(
+    (character?.card.data.extensions?.[I18N_EXTENSION] as Record<string, unknown>)?.translations as Record<string, Record<string, string>> || {}
+  );
   const [tagsStr, setTagsStr] = useState(character?.card.data.tags?.join(', ') || '');
   const [newGreeting, setNewGreeting] = useState('');
   // Cards may carry translations (extensions.otakusoul_i18n); the editor changes the base language only.
@@ -156,6 +163,9 @@ export const CharacterEditorModal = ({
           sow_live2d: live2dModel || undefined,
           expressions: Object.keys(cleanedExpressionImages).length > 0
             ? cleanedExpressionImages
+            : undefined,
+          [I18N_EXTENSION]: Object.keys(translations).length > 0
+            ? { source_language: sourceLanguage, translations }
             : undefined,
         },
       },
@@ -276,6 +286,19 @@ export const CharacterEditorModal = ({
           >
             <BookOpen className="w-3.5 h-3.5" />
             <span>{t('editor.tabLorebooks', { count: boundLorebooks.length })}</span>
+          </button>
+          <button
+            role="tab"
+            aria-selected={activeTab === 'i18n'}
+            onClick={() => setActiveTab('i18n')}
+            className={`flex items-center gap-2 px-4 py-2 border-b-2 text-xs font-semibold whitespace-nowrap transition-all outline-hidden focus-visible:ring-2 focus-visible:ring-accent-400 ${
+              activeTab === 'i18n'
+                ? 'border-accent-500 text-accent-300'
+                : 'border-transparent text-slate-400 hover:text-slate-200'
+            }`}
+          >
+            <Globe className="w-3.5 h-3.5" />
+            <span>{tOptional('editor.tabI18n', 'Übersetzungen')}</span>
           </button>
           <button
             role="tab"
@@ -701,7 +724,17 @@ export const CharacterEditorModal = ({
             </div>
           )}
 
-          {/* TAB 6: Raw JSON Preview */}
+          {/* TAB 6: Translations */}
+          {activeTab === 'i18n' && (
+            <CharacterTranslationsTab
+              sourceLanguage={sourceLanguage}
+              setSourceLanguage={setSourceLanguage}
+              translations={translations}
+              setTranslations={setTranslations}
+            />
+          )}
+
+          {/* TAB 7: Raw JSON Preview */}
           {activeTab === 'raw' && (
             <div>
               <pre className="p-4 bg-app border border-slate-800 rounded-xl font-mono text-xs text-accent-300 max-h-96 overflow-y-auto">

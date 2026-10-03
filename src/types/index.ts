@@ -241,6 +241,10 @@ export interface CharacterData {
     sow_vrm?: string;
     expressions?: Record<string, string>;
     sow_expressions?: Record<string, string>;
+    sow_i18n?: {
+      source_language?: string;
+      translations?: Record<string, Partial<Record<'description' | 'personality' | 'scenario' | 'first_mes' | 'mes_example' | 'system_prompt' | 'post_history_instructions' | 'sow_title', string>> & { alternate_greetings?: string[] }>;
+    };
     [key: string]: unknown;
   };
 }
