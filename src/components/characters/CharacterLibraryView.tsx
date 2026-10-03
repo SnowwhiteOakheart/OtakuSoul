@@ -22,6 +22,8 @@ import {
   SearchX,
   UserPlus,
 } from 'lucide-react';
+import { useVirtualizer } from '@tanstack/react-virtual';
+import { useGridCols } from '../../hooks/useGridCols';
 import { CharacterEditorModal } from './CharacterEditorModal';
 import { translate, useTranslation } from '../../i18n';
 import { confirmDialog, toast } from '../ui/feedback';
@@ -39,6 +41,7 @@ const CARD_ACTION_BUTTON =
 
 export const CharacterLibraryView = () => {
   const { t, currentLanguage } = useTranslation();
+
   const {
     availableCharacters,
     activeCharacter,
@@ -94,6 +97,16 @@ export const CharacterLibraryView = () => {
       return matchesSearch && matchesTag;
     });
   }, [availableCharacters, searchQuery, selectedTag, currentLanguage]);
+
+  const { ref: parentRef, cols } = useGridCols({ 640: 2, 768: 3, 1024: 4, 1280: 5 }, 1);
+  // oxlint-disable-next-line react/incompatible-library
+  const rowVirtualizer = useVirtualizer({
+    count: Math.ceil(filteredCharacters.length / cols),
+    getScrollElement: () => parentRef.current,
+    estimateSize: () => 380, // rough height of a card + gap
+    overscan: 2,
+  });
+
 
   const openEditor = (character: CharacterProfile | null) => {
     setEditingCharacter(character);
@@ -265,7 +278,7 @@ export const CharacterLibraryView = () => {
       </div>
 
       {/* Character Cards Grid */}
-      <div className="flex-1 overflow-y-auto p-6">
+      <div className="flex-1 overflow-y-auto p-6" ref={parentRef}>
         {availableCharacters.length === 0 ? (
           <EmptyState
             icon={UserPlus}
@@ -301,8 +314,30 @@ export const CharacterLibraryView = () => {
             }
           />
         ) : (
-          <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-5">
-            {filteredCharacters.map((char) => {
+          <div
+            style={{ height: `${rowVirtualizer.getTotalSize()}px`, width: '100%', position: 'relative' }}
+          >
+            {rowVirtualizer.getVirtualItems().map((virtualRow) => {
+              const startIndex = virtualRow.index * cols;
+              const rowItems = filteredCharacters.slice(startIndex, startIndex + cols);
+
+              return (
+                <div
+                  key={virtualRow.index}
+                  ref={rowVirtualizer.measureElement}
+                  data-index={virtualRow.index}
+                  className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-5"
+                  style={{
+                    position: 'absolute',
+                    top: 0,
+                    left: 0,
+                    width: '100%',
+                    transform: `translateY(${virtualRow.start}px)`,
+                    paddingBottom: '20px', // gap substitute since grid parent doesn't handle vertical gap between virtual rows
+                  }}
+                >
+                  {rowItems.map((char) => {
+
               // Cards are shown in the interface language; {{char}}/{{user}} become real names.
               const data = localizeCard(char.card.data, currentLanguage);
               const isActive = activeCharacter?.id === char.id;
@@ -407,6 +442,10 @@ export const CharacterLibraryView = () => {
                       <span>{isActive ? t('library.openChat') : t('library.selectAndChat')}</span>
                     </button>
                   </div>
+                </div>
+              );
+            
+                  })}
                 </div>
               );
             })}

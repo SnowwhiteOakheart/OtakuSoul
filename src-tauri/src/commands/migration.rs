@@ -21,10 +21,10 @@ pub async fn run_legacy_migration(source_path: String) -> Result<String, String>
                     let entry = entry?;
                     if entry.file_type()?.is_file() {
                         let path = entry.path();
-                        if let Some(e) = ext {
-                            if path.extension().and_then(|s| s.to_str()) != Some(e) {
-                                continue;
-                            }
+                        if let Some(e) = ext
+                            && path.extension().and_then(|s| s.to_str()) != Some(e)
+                        {
+                            continue;
                         }
                         let dest_file = dest_dir.join(entry.file_name());
                         if !dest_file.exists() {

@@ -1,4 +1,5 @@
-import React, { useState } from 'react';
+import React, { useState, useRef } from 'react';
+import { useVirtualizer } from '@tanstack/react-virtual';
 import { useStoreFields } from '../../store/useAppStore';
 import { Lorebook, LorebookEntry } from '../../types';
 import { open, save } from '@tauri-apps/plugin-dialog';
@@ -62,6 +63,16 @@ export const LorebookView: React.FC = () => {
 
     return matchesSearch && matchesFilter;
   });
+
+  const parentRef = useRef<HTMLDivElement>(null);
+  // oxlint-disable-next-line react/incompatible-library
+  const virtualizer = useVirtualizer({
+    count: filteredEntries.length,
+    getScrollElement: () => parentRef.current,
+    estimateSize: () => 100, // rough height of an entry card
+    overscan: 5,
+  });
+
 
   // Create brand new Lorebook
   const handleCreateNewLorebook = () => {
@@ -430,16 +441,40 @@ export const LorebookView: React.FC = () => {
           </div>
 
           {/* Entries Grid */}
-          <div className="flex-1 overflow-y-auto p-5 space-y-3">
-            {filteredEntries.map((entry, idx) => (
+          <div className="flex-1 overflow-y-auto p-5" ref={parentRef}>
+            <div
+              style={{ height: `${virtualizer.getTotalSize()}px`, width: '100%', position: 'relative' }}
+            >
+              {virtualizer.getVirtualItems().map((virtualItem) => {
+                const entry = filteredEntries[virtualItem.index];
+                if (!entry) return null;
+                return (
+                  <div
+                    key={virtualItem.key}
+                    ref={virtualizer.measureElement}
+                    data-index={virtualItem.index}
+                    style={{
+                      position: 'absolute',
+                      top: 0,
+                      left: 0,
+                      width: '100%',
+                      transform: `translateY(${virtualItem.start}px)`,
+                      paddingBottom: '12px',
+                    }}
+                  >
+
               <EntryCard
-                key={entry.name + idx}
+                key={entry.name + virtualItem.index}
                 entry={entry}
                 onToggle={() => handleToggleEntry(entry)}
                 onEdit={() => setEditingEntry({ entry: { ...entry }, isNew: false })}
                 onDelete={() => void handleDeleteEntry(entry.name)}
               />
-            ))}
+            
+                  </div>
+                );
+              })}
+            </div>
 
             {filteredEntries.length === 0 && (
               <div className="p-12 text-center text-xs text-slate-500">

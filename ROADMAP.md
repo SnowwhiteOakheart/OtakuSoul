@@ -78,7 +78,7 @@ und übernimmt, was SoW lebendig macht:
 
 - [ ] Apple Metal: `recommendedMaxWorkingSetSize` statt des gesamten Arbeitsspeichers als GPU-Speicher.
 - [ ] Vision lokal auf echter Hardware testen (Gemma/Qwen-VL mit passender `mmproj`, z. B. aus dem Modell-Hub).
-- [ ] Virtualisierte Listen für große Charakter- und Lorebook-Bibliotheken.
+- [x] Virtualisierte Listen für große Charakter- und Lorebook-Bibliotheken.
 - [ ] Bundle-Analyse (`rollup-plugin-visualizer`); `chunkSizeWarningLimit: 800` in `vite.config.ts` nur als Übergang.
 
 ---

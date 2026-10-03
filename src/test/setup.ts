@@ -6,3 +6,21 @@ afterEach(async () => {
   const { cleanup } = await import('@testing-library/react');
   cleanup();
 });
+
+// Mock react-virtual for unit tests since jsdom has no layout engine
+import { vi } from 'vitest';
+vi.mock('@tanstack/react-virtual', () => ({
+  useVirtualizer: (config: any) => ({
+    getVirtualItems: () => Array.from({ length: config.count }, (_, i) => ({ index: i, start: i * 100 })),
+    getTotalSize: () => config.count * 100,
+    measureElement: () => {},
+  }),
+}));
+
+// Mock ResizeObserver
+class ResizeObserver {
+  observe() {}
+  unobserve() {}
+  disconnect() {}
+}
+if (typeof window !== 'undefined') window.ResizeObserver = ResizeObserver;

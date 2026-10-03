@@ -686,6 +686,7 @@ mod tests {
             bundled_models_dir: String::new(),
             bundled_vrm_dir: String::new(),
             bundled_bin_dir: String::new(),
+            loras_dir: dir("loras"),
         };
         let loc = BackupLocations {
             backups_dir: PathBuf::from(dir("data/backups")),

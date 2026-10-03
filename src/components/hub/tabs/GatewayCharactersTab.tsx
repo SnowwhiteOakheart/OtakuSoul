@@ -1,4 +1,6 @@
 import { useEffect } from 'react';
+import { useVirtualizer } from '@tanstack/react-virtual';
+import { useGridCols } from '../../../hooks/useGridCols';
 import { Users } from 'lucide-react';
 import { useShallow } from 'zustand/react/shallow';
 import { api } from '../../../services/api';
@@ -18,6 +20,16 @@ export const GatewayCharactersTab = () => {
 
   const visible = list.items.filter((c) => matchesQuery(query, c.name, c.author));
 
+  const { ref: gridRef, cols } = useGridCols({ 640: 3, 768: 4, 1024: 5, 1280: 6 }, 2);
+  // oxlint-disable-next-line react/incompatible-library
+  const virtualizer = useVirtualizer({
+    count: Math.ceil(visible.length / cols),
+    getScrollElement: () => document.getElementById('hub-tabpanel'),
+    estimateSize: () => 360,
+    overscan: 2,
+  });
+
+
   const handleImport = (char: GatewayCharacterEntry) =>
     runImport(char.name, async () =>
       characterImported(await api.importSoulGatewayCharacter(char.name, char.author, char.download_url))
@@ -34,8 +46,28 @@ export const GatewayCharactersTab = () => {
       errorText={(error) => t('hub.loadError', { error })}
       onRetry={load}
     >
-      <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-4">
-        {visible.map((char) => (
+      <div ref={gridRef} style={{ height: `${virtualizer.getTotalSize()}px`, width: '100%', position: 'relative' }}>
+        {virtualizer.getVirtualItems().map((virtualRow) => {
+          const startIndex = virtualRow.index * cols;
+          const rowItems = visible.slice(startIndex, startIndex + cols);
+
+          return (
+            <div
+              key={virtualRow.index}
+              ref={virtualizer.measureElement}
+              data-index={virtualRow.index}
+              className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-4"
+              style={{
+                position: 'absolute',
+                top: 0,
+                left: 0,
+                width: '100%',
+                transform: `translateY(${virtualRow.start}px)`,
+                paddingBottom: '16px',
+              }}
+            >
+              {rowItems.map((char) => (
+
           <div
             key={char.name}
             className="group relative rounded-2xl bg-slate-900/60 border border-slate-800/80 hover:border-accent-500/50 transition-all p-3 flex flex-col justify-between overflow-hidden shadow-sm hover:shadow-accent-950/20"
@@ -67,7 +99,11 @@ export const GatewayCharactersTab = () => {
               className="mt-3 w-full py-1.5 px-3 rounded-xl bg-accent-600 hover:bg-accent-500 disabled:bg-accent-900/50 text-white text-xs font-semibold flex items-center justify-center gap-1.5 transition-colors shadow-sm"
             />
           </div>
-        ))}
+        
+              ))}
+            </div>
+          );
+        })}
       </div>
     </HubListState>
   );
