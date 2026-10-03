@@ -156,7 +156,7 @@ export const LocalTtsSettings = ({ config, onChange }: LocalTtsSettingsProps) =>
         </div>
 
         {!models ? (
-          <p className="text-xs text-slate-500 flex items-center gap-1.5">
+          <p className="text-xs text-slate-400 flex items-center gap-1.5">
             <Loader2 className="w-3.5 h-3.5 animate-spin" />
             {t('localTts.loading')}
           </p>
@@ -215,7 +215,7 @@ export const LocalTtsSettings = ({ config, onChange }: LocalTtsSettingsProps) =>
                             onClick={() => void handleDelete(model)}
                             aria-label={t('localTts.delete', { name: model.name })}
                             title={t('localTts.delete', { name: model.name })}
-                            className="p-1 rounded text-slate-500 hover:text-rose-400 hover:bg-slate-800"
+                            className="p-1 rounded text-slate-400 hover:text-rose-400 hover:bg-slate-800"
                           >
                             <Trash2 className="w-3.5 h-3.5" />
                           </button>
@@ -288,7 +288,7 @@ export const LocalTtsSettings = ({ config, onChange }: LocalTtsSettingsProps) =>
           />
           <span>
             {t('localTts.spokenDisclaimer')}
-            <span className="block text-slate-500">{t('localTts.spokenDisclaimerHint')}</span>
+            <span className="block text-slate-400">{t('localTts.spokenDisclaimerHint')}</span>
           </span>
         </label>
       )}
@@ -436,7 +436,7 @@ const VoiceCloneSection = ({
                 onClick={() => void remove(voice)}
                 aria-label={t('localTts.cloneDelete', { name: voice.name })}
                 title={t('localTts.cloneDelete', { name: voice.name })}
-                className="p-1 rounded text-slate-500 hover:text-rose-400 hover:bg-slate-800"
+                className="p-1 rounded text-slate-400 hover:text-rose-400 hover:bg-slate-800"
               >
                 <Trash2 className="w-3.5 h-3.5" />
               </button>

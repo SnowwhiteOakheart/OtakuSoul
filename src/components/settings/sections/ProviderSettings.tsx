@@ -126,7 +126,7 @@ export const ProviderSettings = () => {
               aria-describedby="settings-apikey-hint"
               className="w-full bg-app border border-slate-800 rounded-lg px-3 py-2 text-slate-200 font-mono focus:outline-hidden focus:border-accent-500"
             />
-            <p id="settings-apikey-hint" className="text-xs text-slate-500">
+            <p id="settings-apikey-hint" className="text-xs text-slate-400">
               {t('settings.apiKeyHint')}
             </p>
           </div>
@@ -204,7 +204,7 @@ export const ProviderSettings = () => {
             {openRouterModels.length > 0 && (
               <div className="space-y-2">
                 <div className="relative">
-                  <Search className="w-3.5 h-3.5 absolute left-3 top-2.5 text-slate-500" />
+                  <Search className="w-3.5 h-3.5 absolute left-3 top-2.5 text-slate-400" />
                   <input
                     type="text"
                     value={openRouterSearch}
@@ -232,7 +232,7 @@ export const ProviderSettings = () => {
                           <span>{m.name}</span>
                           {cloudModel === m.id && <Check className="w-3.5 h-3.5 text-accent-400" />}
                         </div>
-                        <div className="font-mono text-[11px] text-slate-500">{m.id}</div>
+                        <div className="font-mono text-[11px] text-slate-400">{m.id}</div>
                       </div>
 
                       <div className="text-right font-mono text-xs text-slate-400">

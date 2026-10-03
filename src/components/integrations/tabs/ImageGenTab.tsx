@@ -426,7 +426,7 @@ export const ImageGenTab: React.FC = () => {
         </div>
 
         {generatedImages.length === 0 ? (
-          <div className="py-12 text-center text-slate-500 text-xs">
+          <div className="py-12 text-center text-slate-400 text-xs">
             {t('int.noImages')}
           </div>
         ) : (
@@ -445,7 +445,7 @@ export const ImageGenTab: React.FC = () => {
                 <div className="text-xs font-mono text-slate-200 truncate">
                   {img.file_name}
                 </div>
-                <div className="text-[11px] text-slate-500">
+                <div className="text-[11px] text-slate-400">
                   {(img.size_bytes / 1024).toFixed(1)} KB · {img.created_at}
                 </div>
               </div>

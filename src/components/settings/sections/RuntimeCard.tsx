@@ -114,7 +114,7 @@ export const RuntimeCard = ({ kind, onInstalled }: RuntimeCardProps) => {
           {t('runtime.variantsFailed', { error: variantsError })}
         </p>
       ) : !variants ? (
-        <p className="text-xs text-slate-500 flex items-center gap-1.5">
+        <p className="text-xs text-slate-400 flex items-center gap-1.5">
           <Loader2 className="w-3.5 h-3.5 animate-spin" />
           {t('runtime.loadingVariants')}
         </p>

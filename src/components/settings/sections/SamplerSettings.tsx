@@ -298,7 +298,7 @@ export const SamplerSettings = () => {
               onChange={(e) => setSampling({ dry_multiplier: parseFloat(e.target.value) })}
               className="w-full accent-rose-500"
             />
-            <div className="text-[11px] text-slate-500">
+            <div className="text-[11px] text-slate-400">
               {t('settings.dryHint')}
             </div>
           </div>
@@ -318,7 +318,7 @@ export const SamplerSettings = () => {
               onChange={(e) => setSampling({ xtc_threshold: parseFloat(e.target.value) })}
               className="w-full accent-cyan-500"
             />
-            <div className="text-[11px] text-slate-500">
+            <div className="text-[11px] text-slate-400">
               {t('settings.xtcHint')}
             </div>
           </div>
@@ -340,7 +340,7 @@ export const SamplerSettings = () => {
               onChange={(e) => setSampling({ dynatemp_range: parseFloat(e.target.value) })}
               className="w-full accent-accent-500"
             />
-            <div className="text-[11px] text-slate-500">
+            <div className="text-[11px] text-slate-400">
               {t('settings.dynatempHint')}
             </div>
           </div>

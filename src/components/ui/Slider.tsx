@@ -30,7 +30,7 @@ export const Slider = ({ label, value, onValueChange, valueLabel, hint, id, clas
         className="h-2 w-full cursor-pointer appearance-none rounded-full bg-slate-800 accent-accent-500 outline-hidden focus-visible:ring-2 focus-visible:ring-accent-400 disabled:cursor-not-allowed disabled:opacity-50"
         {...props}
       />
-      {hint && <span id={hintId} className="block text-xs text-slate-500">{hint}</span>}
+      {hint && <span id={hintId} className="block text-xs text-slate-400">{hint}</span>}
     </div>
   );
 };

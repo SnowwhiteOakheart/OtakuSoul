@@ -83,7 +83,7 @@ export const GoalsTab: React.FC = () => {
               className={`p-3.5 rounded-2xl border text-xs flex items-center justify-between gap-4 transition shadow-sm ${
                 isPending
                   ? 'bg-slate-900/80 border-amber-500/30'
-                  : 'bg-app/40 border-slate-800 text-slate-500'
+                  : 'bg-app/40 border-slate-800 text-slate-400'
               }`}
             >
               <div className="space-y-1">
@@ -129,7 +129,7 @@ export const GoalsTab: React.FC = () => {
         })}
 
         {goals.length === 0 && (
-          <div className="p-12 text-center text-xs text-slate-500 italic rounded-2xl border border-slate-800 bg-slate-900/30">
+          <div className="p-12 text-center text-xs text-slate-400 italic rounded-2xl border border-slate-800 bg-slate-900/30">
             {t('comp.noGoals')}
           </div>
         )}

@@ -179,7 +179,7 @@ export const AdaptiveHud = () => {
           }`}
           title={serverConfig.reasoning_mode ? t('hud.reasoningOnHint') : t('hud.reasoningOffHint')}
         >
-          <Sparkles className={`w-3.5 h-3.5 ${serverConfig.reasoning_mode ? 'text-amber-400' : 'text-slate-500'}`} />
+          <Sparkles className={`w-3.5 h-3.5 ${serverConfig.reasoning_mode ? 'text-amber-400' : 'text-slate-400'}`} />
           <span className="hidden sm:inline">{t('hud.reasoning')}</span>
           <span className={serverConfig.reasoning_mode ? 'text-amber-300 font-bold' : 'text-slate-400'}>
             {serverConfig.reasoning_mode ? t('hud.on') : t('hud.off')}

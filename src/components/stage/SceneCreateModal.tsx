@@ -290,7 +290,7 @@ export const SceneCreateModal: React.FC<SceneCreateModalProps> = ({
                 );
               })}
               {partyOptions.length === 0 && (
-                <span className="text-slate-500 text-xs italic">
+                <span className="text-slate-400 text-xs italic">
                   {t('sceneNew.noCharacters')}
                 </span>
               )}

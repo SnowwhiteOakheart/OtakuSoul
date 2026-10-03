@@ -19,7 +19,7 @@ export const Toggle = ({ checked, onCheckedChange, label, description, disabled,
   >
     <span className="min-w-0">
       <span className="block text-sm font-medium text-slate-200">{label}</span>
-      {description && <span className="mt-0.5 block text-xs text-slate-500">{description}</span>}
+      {description && <span className="mt-0.5 block text-xs text-slate-400">{description}</span>}
     </span>
     <span
       className={`relative h-6 w-11 shrink-0 rounded-full border transition-colors ${

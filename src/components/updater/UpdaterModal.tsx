@@ -133,7 +133,7 @@ export const UpdaterModal: React.FC = () => {
           {/* Versions Grid */}
           <div className="grid grid-cols-2 gap-3">
             <div className="bg-app border border-slate-800 rounded-xl p-3">
-              <span className="text-[11px] uppercase font-bold text-slate-500 block mb-1">
+              <span className="text-[11px] uppercase font-bold text-slate-400 block mb-1">
                 {t('updater.current')}
               </span>
               <span className="font-mono text-sm font-bold text-slate-200">
@@ -142,7 +142,7 @@ export const UpdaterModal: React.FC = () => {
             </div>
 
             <div className="bg-app border border-slate-800 rounded-xl p-3">
-              <span className="text-[11px] uppercase font-bold text-slate-500 block mb-1">
+              <span className="text-[11px] uppercase font-bold text-slate-400 block mb-1">
                 {t('updater.latest')}
               </span>
               <span className="font-mono text-sm font-bold text-accent-300">
@@ -181,7 +181,7 @@ export const UpdaterModal: React.FC = () => {
           )}
 
           {updateInfo?.published_at && (
-            <div className="flex items-center gap-1.5 text-xs text-slate-500">
+            <div className="flex items-center gap-1.5 text-xs text-slate-400">
               <Calendar className="w-3.5 h-3.5" />
               <span>{t('updater.publishedOn', { date: new Date(updateInfo.published_at).toLocaleDateString(currentLanguage) })}</span>
             </div>

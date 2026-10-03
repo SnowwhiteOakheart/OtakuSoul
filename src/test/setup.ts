@@ -10,6 +10,7 @@ afterEach(async () => {
 // Mock react-virtual for unit tests since jsdom has no layout engine
 import { vi } from 'vitest';
 vi.mock('@tanstack/react-virtual', () => ({
+  // oxlint-disable-next-line typescript/no-explicit-any
   useVirtualizer: (config: any) => ({
     getVirtualItems: () => Array.from({ length: config.count }, (_, i) => ({ index: i, start: i * 100 })),
     getTotalSize: () => config.count * 100,

@@ -149,7 +149,7 @@ export const StageChatLog: React.FC = () => {
   const translationBlock = (msg: SceneTurnMessage) =>
     translations[msg.id] !== undefined && (
       <div className="mt-2 pt-2 border-t border-slate-700/70 text-slate-300">
-        <div className="mb-1 flex items-center gap-1 text-[11px] text-slate-500">
+        <div className="mb-1 flex items-center gap-1 text-[11px] text-slate-400">
           <Languages className="w-3 h-3" /> {t('chat.translation')}
         </div>
         <div className="whitespace-pre-wrap">{translations[msg.id]}</div>
@@ -262,7 +262,7 @@ export const StageChatLog: React.FC = () => {
                     {msg.sender_name || 'Game Master'}
                   </span>
                 </div>
-                <span className="text-[11px] text-slate-500 font-mono pr-20 group-hover:pr-24 transition-all">
+                <span className="text-[11px] text-slate-400 font-mono pr-20 group-hover:pr-24 transition-all">
                   {new Date(msg.timestamp * 1000).toLocaleTimeString([], {
                     hour: '2-digit',
                     minute: '2-digit',
@@ -323,7 +323,7 @@ export const StageChatLog: React.FC = () => {
                 {msg.sender_name}
               </span>
               {getModeBadge(msg.turn_mode, msg.whisper_target)}
-              <span className="text-[11px] text-slate-500 font-mono">
+              <span className="text-[11px] text-slate-400 font-mono">
                 {new Date(msg.timestamp * 1000).toLocaleTimeString([], {
                   hour: '2-digit',
                   minute: '2-digit',

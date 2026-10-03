@@ -55,7 +55,7 @@ export const HubListState = ({
   }
   if (visibleCount === 0) {
     return (
-      <div className="flex flex-col items-center justify-center py-20 text-slate-500 gap-2">
+      <div className="flex flex-col items-center justify-center py-20 text-slate-400 gap-2">
         <EmptyIcon className="w-8 h-8" />
         <p className="text-sm">{emptyText}</p>
       </div>

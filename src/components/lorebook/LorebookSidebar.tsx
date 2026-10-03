@@ -85,7 +85,7 @@ export const LorebookSidebar = ({ onCreate, onImport }: LorebookSidebarProps) =>
 
         {/* Search */}
         <div className="relative">
-          <Search className="w-3.5 h-3.5 absolute left-3 top-2.5 text-slate-500" />
+          <Search className="w-3.5 h-3.5 absolute left-3 top-2.5 text-slate-400" />
           <input
             type="text"
             placeholder={t('lore.search')}
@@ -134,7 +134,7 @@ export const LorebookSidebar = ({ onCreate, onImport }: LorebookSidebarProps) =>
         })}
 
         {filteredLorebooks.length === 0 && (
-          <div className="p-8 text-center text-xs text-slate-500">{t('lore.noBooks')}</div>
+          <div className="p-8 text-center text-xs text-slate-400">{t('lore.noBooks')}</div>
         )}
       </div>
     </div>

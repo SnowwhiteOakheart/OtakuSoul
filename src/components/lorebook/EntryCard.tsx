@@ -71,7 +71,7 @@ export const EntryCard = ({ entry, onToggle, onEdit, onDelete }: EntryCardProps)
           </button>
           <button
             onClick={onDelete}
-            className="p-1.5 rounded-lg text-slate-500 hover:text-rose-400 hover:bg-rose-500/10 transition-colors"
+            className="p-1.5 rounded-lg text-slate-400 hover:text-rose-400 hover:bg-rose-500/10 transition-colors"
             title={t('lore.delete')}
           >
             <Trash2 className="w-3.5 h-3.5" />

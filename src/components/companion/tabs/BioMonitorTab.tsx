@@ -95,7 +95,7 @@ export const BioMonitorTab: React.FC = () => {
                   style={{ width: `${hormones.dopamine}%` }}
                 />
               </div>
-              <span className="text-[11px] text-slate-500 block">{t('comp.dopamineHint')}</span>
+              <span className="text-[11px] text-slate-400 block">{t('comp.dopamineHint')}</span>
             </div>
 
             {/* Cortisol */}
@@ -113,7 +113,7 @@ export const BioMonitorTab: React.FC = () => {
                   style={{ width: `${hormones.cortisol}%` }}
                 />
               </div>
-              <span className="text-[11px] text-slate-500 block">{t('comp.cortisolHint')}</span>
+              <span className="text-[11px] text-slate-400 block">{t('comp.cortisolHint')}</span>
             </div>
 
             {/* Oxytocin */}
@@ -131,7 +131,7 @@ export const BioMonitorTab: React.FC = () => {
                   style={{ width: `${hormones.oxytocin}%` }}
                 />
               </div>
-              <span className="text-[11px] text-slate-500 block">{t('comp.oxytocinHint')}</span>
+              <span className="text-[11px] text-slate-400 block">{t('comp.oxytocinHint')}</span>
             </div>
 
             {/* Fatigue */}
@@ -149,7 +149,7 @@ export const BioMonitorTab: React.FC = () => {
                   style={{ width: `${hormones.fatigue}%` }}
                 />
               </div>
-              <span className="text-[11px] text-slate-500 block">{t('comp.fatigueHint')}</span>
+              <span className="text-[11px] text-slate-400 block">{t('comp.fatigueHint')}</span>
             </div>
           </div>
         )}

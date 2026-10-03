@@ -259,7 +259,7 @@ export const CharacterLibraryView = () => {
           aria-label={t('library.tagFilter')}
           className="flex items-center gap-1.5 overflow-x-auto w-full md:w-auto pb-1 md:pb-0"
         >
-          <Tag className="w-3.5 h-3.5 text-slate-500 ml-1 mr-0.5 shrink-0" aria-hidden />
+          <Tag className="w-3.5 h-3.5 text-slate-400 ml-1 mr-0.5 shrink-0" aria-hidden />
           {[null, ...allTags].map((tag) => (
             <button
               key={tag ?? '__all__'}

@@ -151,7 +151,7 @@ export const RelationshipTab = () => {
                     })
                   }
                   aria-label={t('memory.removeItem', { item: pref })}
-                  className="text-slate-500 hover:text-rose-400 transition"
+                  className="text-slate-400 hover:text-rose-400 transition"
                 >
                   ×
                 </button>
@@ -201,7 +201,7 @@ export const RelationshipTab = () => {
                     })
                   }
                   aria-label={t('memory.removeItem', { item: m })}
-                  className="text-slate-500 hover:text-rose-400 transition"
+                  className="text-slate-400 hover:text-rose-400 transition"
                 >
                   <X className="h-3.5 w-3.5" aria-hidden />
                 </button>

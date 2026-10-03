@@ -63,7 +63,7 @@ export const PsychologyTab = () => {
                 <span className="flex-1 pr-2 leading-relaxed">• {belief}</span>
                 <button
                   onClick={() => handleRemoveBelief(idx)}
-                  className="text-slate-500 hover:text-rose-400 transition p-1"
+                  className="text-slate-400 hover:text-rose-400 transition p-1"
                   title={t('memory.removeBelief')}
                   aria-label={t('memory.removeBelief')}
                 >
@@ -72,7 +72,7 @@ export const PsychologyTab = () => {
               </div>
             ))}
             {(!psych.core_identity || psych.core_identity.length === 0) && (
-              <div className="text-xs text-slate-500 italic p-2">
+              <div className="text-xs text-slate-400 italic p-2">
                 {t('memory.noBeliefs')}
               </div>
             )}
@@ -135,7 +135,7 @@ export const PsychologyTab = () => {
                   className={`w-6 h-6 rounded flex items-center justify-center text-xs font-bold transition ${
                     level <= psych.intensity
                       ? 'bg-amber-500 text-app shadow-sm'
-                      : 'bg-slate-800 text-slate-500 hover:bg-slate-700'
+                      : 'bg-slate-800 text-slate-400 hover:bg-slate-700'
                   }`}
                 >
                   {level}

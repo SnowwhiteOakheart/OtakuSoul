@@ -285,7 +285,7 @@ export function CharacterVoiceModal({ onClose, target }: CharacterVoiceModalProp
         <div className="p-4 border-b border-slate-800 flex justify-between items-center">
           <div>
             <h2 id="voice-config-title" className="text-xl font-semibold text-slate-100">{t('voiceCfg.title')}</h2>
-            <p className="text-xs text-slate-500 mt-0.5">{target?.name ?? activeCharacter?.card.data.name ?? t('voiceCfg.characterFallback')}</p>
+            <p className="text-xs text-slate-400 mt-0.5">{target?.name ?? activeCharacter?.card.data.name ?? t('voiceCfg.characterFallback')}</p>
           </div>
           <button onClick={onClose} title={t('common.close')} aria-label={t('common.close')} className="p-2 hover:bg-slate-800 rounded-lg text-slate-400">
             <X className="w-5 h-5" />
@@ -304,7 +304,7 @@ export function CharacterVoiceModal({ onClose, target }: CharacterVoiceModalProp
               aria-selected={tab === id}
               onClick={() => setTab(id)}
               className={`flex items-center gap-2 px-3 py-2.5 text-xs border-b-2 transition-colors ${
-                tab === id ? 'border-accent-400 text-accent-200' : 'border-transparent text-slate-500 hover:text-slate-300'
+                tab === id ? 'border-accent-400 text-accent-200' : 'border-transparent text-slate-400 hover:text-slate-300'
               }`}
             >
               <Icon className="w-3.5 h-3.5" />
@@ -451,7 +451,7 @@ export function CharacterVoiceModal({ onClose, target }: CharacterVoiceModalProp
                   </div>
 
                   {draft.engine === 'kokoro' && (
-                    <p className="text-xs text-slate-500">{t('voiceCfg.kokoroRateNote')}</p>
+                    <p className="text-xs text-slate-400">{t('voiceCfg.kokoroRateNote')}</p>
                   )}
 
                   <div className="grid sm:grid-cols-2 gap-4">
@@ -526,7 +526,7 @@ export function CharacterVoiceModal({ onClose, target }: CharacterVoiceModalProp
                     <label><span className={`${labelClass} flex justify-between`}><span>{t('voiceCfg.vad')}</span><span>{draft.stt.vad_threshold.toFixed(3)}</span></span><input type="range" min="0.005" max="0.12" step="0.005" value={draft.stt.vad_threshold} onChange={(event) => updateStt('vad_threshold', Number(event.target.value))} className="w-full accent-cyan-500" /></label>
                     <label><span className={`${labelClass} flex justify-between`}><span>{t('voiceCfg.vadSilence')}</span><span>{draft.stt.vad_silence_ms} ms</span></span><input type="range" min="300" max="2500" step="100" value={draft.stt.vad_silence_ms} onChange={(event) => updateStt('vad_silence_ms', Number(event.target.value))} className="w-full accent-cyan-500" /></label>
                   </div>
-                  <p className="text-xs text-slate-500">{t('voiceCfg.vadText')}</p>
+                  <p className="text-xs text-slate-400">{t('voiceCfg.vadText')}</p>
                 </>
               )}
             </>
@@ -535,7 +535,7 @@ export function CharacterVoiceModal({ onClose, target }: CharacterVoiceModalProp
           {tab === 'rvc' && (
             <>
               <label className="flex items-center justify-between rounded-lg border border-slate-800 bg-app/50 p-3">
-                <span><span className="block text-sm text-slate-200">{t('voiceCfg.rvcTitle')}</span><span className="block text-xs text-slate-500">{t('voiceCfg.rvcText')}</span></span>
+                <span><span className="block text-sm text-slate-200">{t('voiceCfg.rvcTitle')}</span><span className="block text-xs text-slate-400">{t('voiceCfg.rvcText')}</span></span>
                 <input type="checkbox" checked={draft.rvc.enabled} onChange={(event) => updateRvc('enabled', event.target.checked)} className="w-4 h-4 accent-accent-500" />
               </label>
               {draft.rvc.enabled && (

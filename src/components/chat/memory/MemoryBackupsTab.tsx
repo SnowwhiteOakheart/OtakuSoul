@@ -111,7 +111,7 @@ export const MemoryBackupsTab = () => {
           ))}
 
           {memoryBackups.length === 0 && !isLoadingBackups && (
-            <div className="p-8 text-center text-xs text-slate-500 italic">
+            <div className="p-8 text-center text-xs text-slate-400 italic">
               {t('memory.noSnapshots')}
             </div>
           )}

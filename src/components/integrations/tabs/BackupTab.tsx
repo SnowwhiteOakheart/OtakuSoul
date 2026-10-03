@@ -140,7 +140,7 @@ export const BackupTab: React.FC = () => {
                 }
                 className="rounded bg-app border-slate-700 text-emerald-600 focus:ring-0"
               />
-              <item.icon className="h-3.5 w-3.5 shrink-0 text-slate-500" aria-hidden />
+              <item.icon className="h-3.5 w-3.5 shrink-0 text-slate-400" aria-hidden />
               <span>{item.label}</span>
             </label>
           ))}
@@ -190,7 +190,7 @@ export const BackupTab: React.FC = () => {
         </div>
 
         {backups.length === 0 ? (
-          <div className="py-12 text-center text-slate-500 text-xs">
+          <div className="py-12 text-center text-slate-400 text-xs">
             {t('int.noBackups')}
           </div>
         ) : (
@@ -230,7 +230,7 @@ export const BackupTab: React.FC = () => {
                       </span>
                       <span>{sizeMb} MB</span>
                       {b.manifest && (
-                        <span className="text-slate-500">
+                        <span className="text-slate-400">
                           Version {b.manifest.app_version}
                         </span>
                       )}

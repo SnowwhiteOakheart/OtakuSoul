@@ -99,7 +99,7 @@ export const CharacterTranslationsTab: React.FC<TranslationsTabProps> = ({
         {/* Translation Form */}
         <div className="flex-1 bg-app/50 border border-slate-800 p-4 rounded-xl overflow-y-auto space-y-4">
           {!activeLang ? (
-            <div className="h-full flex items-center justify-center text-slate-500 text-sm">
+            <div className="h-full flex items-center justify-center text-slate-400 text-sm">
               {tOptional('editor.noLanguageSelected', 'Keine Sprache ausgewählt')}
             </div>
           ) : (

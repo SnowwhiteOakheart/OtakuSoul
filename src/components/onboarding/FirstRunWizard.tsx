@@ -359,7 +359,7 @@ export const FirstRunWizard: React.FC = () => {
                       aria-describedby="onboarding-api-key-hint"
                       className={`${INPUT} font-mono`}
                     />
-                    <p id="onboarding-api-key-hint" className="text-xs text-slate-500">
+                    <p id="onboarding-api-key-hint" className="text-xs text-slate-400">
                       {apiKeyDraft.trim() ? t('onboarding.apiKeyHint') : t('onboarding.apiKeyMissing')}
                     </p>
                   </div>
@@ -440,7 +440,7 @@ export const FirstRunWizard: React.FC = () => {
                 ].map((row) => (
                   <div key={row.label} className="flex items-center justify-between gap-4 px-4 py-2.5">
                     <dt className="text-slate-400">{row.label}</dt>
-                    <dd className={`truncate ${row.value ? 'text-slate-100' : 'text-slate-500 italic'}`}>
+                    <dd className={`truncate ${row.value ? 'text-slate-100' : 'text-slate-400 italic'}`}>
                       {row.value || t('onboarding.summaryNone')}
                     </dd>
                   </div>

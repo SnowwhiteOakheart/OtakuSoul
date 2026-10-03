@@ -108,7 +108,7 @@ export const MemoriesTab = () => {
 
           {(!cognitiveOverview?.recent_memories ||
             cognitiveOverview.recent_memories.length === 0) && (
-            <div className="p-8 text-center text-xs text-slate-500 italic">
+            <div className="p-8 text-center text-xs text-slate-400 italic">
               {t('memory.noMemories')}
             </div>
           )}

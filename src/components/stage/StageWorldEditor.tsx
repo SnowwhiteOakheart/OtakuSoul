@@ -50,7 +50,7 @@ const Section: React.FC<{ title: string; onAdd?: () => void; addLabel: string; c
 );
 
 const RemoveButton: React.FC<{ onClick: () => void; label: string }> = ({ onClick, label }) => (
-  <button type="button" onClick={onClick} aria-label={label} title={label} className="p-1.5 text-slate-500 hover:text-rose-400">
+  <button type="button" onClick={onClick} aria-label={label} title={label} className="p-1.5 text-slate-400 hover:text-rose-400">
     <Trash2 className="w-3.5 h-3.5" />
   </button>
 );
@@ -231,7 +231,7 @@ export const StageWorldEditor: React.FC<{ onClose: () => void }> = ({ onClose })
             addLabel={t('stageWorld.add')}
             onAdd={() => update('overlays', [...draft.overlays, { name: '', current_role: '', arc_stage: '', facts: {} }])}
           >
-            <p className="text-xs text-slate-500">{t('stageWorld.overlaysHint')}</p>
+            <p className="text-xs text-slate-400">{t('stageWorld.overlaysHint')}</p>
             {draft.overlays.map((overlay, index) => (
               <div key={index} className="p-3 rounded-xl bg-app/60 border border-slate-800 space-y-2">
                 <div className="flex gap-2 items-center">
@@ -255,7 +255,7 @@ export const StageWorldEditor: React.FC<{ onClose: () => void }> = ({ onClose })
             addLabel={t('stageWorld.add')}
             onAdd={() => update('lore_cards', [...draft.lore_cards, { id: newId('lore'), title: '', content: '', keywords: [], audience: 'party' }])}
           >
-            <p className="text-xs text-slate-500">{t('stageWorld.loreCardsHint')}</p>
+            <p className="text-xs text-slate-400">{t('stageWorld.loreCardsHint')}</p>
             {draft.lore_cards.map((card, index) => (
               <div key={card.id} className="p-3 rounded-xl bg-app/60 border border-slate-800 space-y-2">
                 <div className="flex gap-2 items-center">

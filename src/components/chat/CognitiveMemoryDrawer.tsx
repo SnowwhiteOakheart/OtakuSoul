@@ -119,7 +119,7 @@ export const CognitiveMemoryDrawer: React.FC<CognitiveMemoryDrawerProps> = ({
         {/* Automation Settings Bar */}
         <div className="px-4 py-2 bg-app/50 border-b border-slate-800/80 flex items-center justify-between text-xs text-slate-400">
           <div className="flex items-center gap-2">
-            <Sliders className="w-3.5 h-3.5 text-slate-500" />
+            <Sliders className="w-3.5 h-3.5 text-slate-400" />
             <span>{t('memory.autoReflection')}</span>
             <button
               onClick={() => setAutoReflectionEnabled(!autoReflectionEnabled)}

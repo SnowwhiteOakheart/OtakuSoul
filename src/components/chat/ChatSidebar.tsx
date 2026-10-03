@@ -218,7 +218,7 @@ export const ChatSidebar: React.FC<ChatSidebarProps> = ({ isOpen, onClose }) => 
 
           <div className="flex-1 overflow-y-auto p-2 space-y-1">
             {chatSessions.length === 0 ? (
-              <div className="p-6 text-center text-xs text-slate-500">
+              <div className="p-6 text-center text-xs text-slate-400">
                 {t('chatSidebar.empty')}
               </div>
             ) : (
@@ -281,7 +281,7 @@ export const ChatSidebar: React.FC<ChatSidebarProps> = ({ isOpen, onClose }) => 
                             {tPlural('chat.messageCount', session.message_count)}
                           </span>
                         </div>
-                        <div className="text-[11px] text-slate-500 flex items-center justify-between">
+                        <div className="text-[11px] text-slate-400 flex items-center justify-between">
                           <span>{new Date(session.updated_at * 1000).toLocaleDateString()}</span>
                           {session.author_note && (
                             <span className="text-accent-400 flex items-center gap-0.5">
@@ -479,7 +479,7 @@ export const ChatSidebar: React.FC<ChatSidebarProps> = ({ isOpen, onClose }) => 
                       {t(`hudPreset.${preset.id}` as TranslationKey)}
                     </span>
                   </div>
-                  <ChevronRight className="w-3.5 h-3.5 text-slate-500 group-hover:text-accent-400 transition-colors" />
+                  <ChevronRight className="w-3.5 h-3.5 text-slate-400 group-hover:text-accent-400 transition-colors" />
                 </div>
                 <p className="text-xs text-slate-400 line-clamp-2 leading-relaxed mb-1.5">
                   {t(`hudPreset.${preset.id}Desc` as TranslationKey)}

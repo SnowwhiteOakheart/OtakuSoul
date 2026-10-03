@@ -448,7 +448,7 @@ export const SceneLobbyModal: React.FC<SceneLobbyModalProps> = ({
             </div>
 
             <div className="relative flex-1 max-w-xs">
-              <Search className="w-3.5 h-3.5 text-slate-500 absolute left-3 top-2.5" />
+              <Search className="w-3.5 h-3.5 text-slate-400 absolute left-3 top-2.5" />
               <input
                 type="text"
                 value={search}
@@ -524,13 +524,13 @@ export const SceneLobbyModal: React.FC<SceneLobbyModalProps> = ({
                     <div className="space-y-1 text-xs text-slate-400">
                       {sc.location && (
                         <div className="flex items-center gap-1.5">
-                          <MapPin className="w-3.5 h-3.5 text-slate-500 shrink-0" />
+                          <MapPin className="w-3.5 h-3.5 text-slate-400 shrink-0" />
                           <span className="truncate">{sc.location}</span>
                         </div>
                       )}
                       {sc.party && sc.party.length > 0 && (
                         <div className="flex items-center gap-1.5">
-                          <Users className="w-3.5 h-3.5 text-slate-500 shrink-0" />
+                          <Users className="w-3.5 h-3.5 text-slate-400 shrink-0" />
                           <span className="truncate">{t('lobby.party', { names: sc.party.join(', ') })}</span>
                         </div>
                       )}
@@ -590,7 +590,7 @@ export const SceneLobbyModal: React.FC<SceneLobbyModalProps> = ({
             })}
 
             {filteredScenes.length === 0 && (
-              <div className="col-span-full p-12 text-center text-xs text-slate-500 space-y-2">
+              <div className="col-span-full p-12 text-center text-xs text-slate-400 space-y-2">
                 <BookOpen className="w-8 h-8 text-slate-600 mx-auto" />
                 <p>{t('lobby.empty')}</p>
                 <button

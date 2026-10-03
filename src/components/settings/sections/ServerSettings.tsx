@@ -232,7 +232,7 @@ export const ServerSettings = () => {
             const selectedModel = scannedModels.find((m) => m.path === serverConfig.model_path);
             if (!selectedModel) return null;
             return (
-              <div className={`text-xs flex items-center gap-1.5 ${selectedModel.runtime === 'prism' ? 'text-cyan-300' : 'text-slate-500'}`}>
+              <div className={`text-xs flex items-center gap-1.5 ${selectedModel.runtime === 'prism' ? 'text-cyan-300' : 'text-slate-400'}`}>
                 <Check className="w-3 h-3" />
                 <span>
                   {t('settings.runtimeInfo', {
@@ -274,7 +274,7 @@ export const ServerSettings = () => {
               <span className="whitespace-nowrap">{t('settings.browseFile')}</span>
             </button>
           </div>
-          <p className="text-xs text-slate-500">{t('settings.mmprojHint')}</p>
+          <p className="text-xs text-slate-400">{t('settings.mmprojHint')}</p>
         </div>
 
         {/* Core Parameters */}
@@ -324,7 +324,7 @@ export const ServerSettings = () => {
               onChange={(e) => setServerConfig({ gpu_layers: parseInt(e.target.value) })}
               className="w-full accent-accent-500"
             />
-            <div className="flex justify-between text-[11px] text-slate-500">
+            <div className="flex justify-between text-[11px] text-slate-400">
               <span>{t('settings.gpuLayersCpu')}</span>
               <span>{t('settings.gpuLayersPartial')}</span>
               <span>{t('settings.gpuLayersMax')}</span>
@@ -469,7 +469,7 @@ export const ServerSettings = () => {
                 : t('settings.autoVramIntro')}
             </div>
             {layerRecommendation && (
-              <div className="text-[11px] text-slate-500">
+              <div className="text-[11px] text-slate-400">
                 {t('settings.vramBreakdown', {
                   profile: tOptional(`settings.profile.${layerRecommendation.profile_name}`, layerRecommendation.profile_name),
                   model: (layerRecommendation.estimated_model_vram_mb / 1024).toFixed(1),
@@ -549,13 +549,13 @@ export const ServerSettings = () => {
               <Terminal className="w-3.5 h-3.5 text-accent-400" />
               <span>{t('settings.serverLog', { count: serverStatus.recent_logs.length })}</span>
             </div>
-            <span className="text-[11px] text-slate-500">{showLogs ? t('settings.collapse') : t('settings.expand')}</span>
+            <span className="text-[11px] text-slate-400">{showLogs ? t('settings.collapse') : t('settings.expand')}</span>
           </button>
 
           {showLogs && (
             <div className="p-3 font-mono text-xs text-slate-300 h-44 overflow-y-auto space-y-0.5 bg-app/90 leading-tight select-text">
               {serverStatus.recent_logs.length === 0 ? (
-                <div className="text-slate-500 italic">{t('settings.noLogs')}</div>
+                <div className="text-slate-400 italic">{t('settings.noLogs')}</div>
               ) : (
                 serverStatus.recent_logs.map((log, idx) => (
                   <div key={idx} className="whitespace-pre-wrap hover:bg-slate-900/40 py-0.5 px-1 rounded">

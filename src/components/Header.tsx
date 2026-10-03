@@ -109,7 +109,7 @@ export const Header = ({ onOpenCommandPalette }: HeaderProps) => {
               >
                 {(gpu.free_vram_mb / 1024).toFixed(1)}GB
               </span>
-              <span className="text-slate-500">/</span>
+              <span className="text-slate-400">/</span>
               <span className="text-slate-400">{(gpu.total_vram_mb / 1024).toFixed(1)}GB</span>
             </div>
           )}
@@ -124,7 +124,7 @@ export const Header = ({ onOpenCommandPalette }: HeaderProps) => {
               <>
                 <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse motion-reduce:animate-none" />
                 <span className="text-emerald-400 font-medium">{t('header.serverRunning')}</span>
-                <span className="text-slate-500">:{serverStatus.port}</span>
+                <span className="text-slate-400">:{serverStatus.port}</span>
               </>
             )}
             {serverStatus.state === 'starting' && (

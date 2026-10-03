@@ -28,7 +28,7 @@ export const HealingTab = () => {
                 <div className="text-slate-400 text-xs leading-relaxed">{log.details}</div>
               </div>
             </div>
-            <span className="text-[11px] font-mono text-slate-500 shrink-0">
+            <span className="text-[11px] font-mono text-slate-400 shrink-0">
               {new Date(log.created_at * 1000).toLocaleTimeString()}
             </span>
           </div>
@@ -36,7 +36,7 @@ export const HealingTab = () => {
 
         {(!cognitiveOverview?.healing_logs ||
           cognitiveOverview.healing_logs.length === 0) && (
-          <div className="p-8 text-center text-xs text-slate-500 italic">
+          <div className="p-8 text-center text-xs text-slate-400 italic">
             {t('memory.healingEmpty')}
           </div>
         )}

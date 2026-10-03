@@ -164,7 +164,7 @@ const PendingFile: React.FC<{ file: File; onRemove: () => void }> = ({ file, onR
       <button
         type="button"
         onClick={onRemove}
-        className="text-slate-500 hover:text-rose-400"
+        className="text-slate-400 hover:text-rose-400"
         aria-label={t('chat.removeAttachment', { name: file.name })}
       >
         <X className="w-3.5 h-3.5" />

@@ -88,7 +88,7 @@ export const LocalImageSettings = ({ config, onChange }: LocalImageSettingsProps
         </div>
 
         {!models ? (
-          <p className="text-xs text-slate-500 flex items-center gap-1.5">
+          <p className="text-xs text-slate-400 flex items-center gap-1.5">
             <Loader2 className="w-3.5 h-3.5 animate-spin" />
             {t('localImage.loading')}
           </p>
@@ -147,7 +147,7 @@ export const LocalImageSettings = ({ config, onChange }: LocalImageSettingsProps
                             onClick={() => void handleDelete(model)}
                             aria-label={t('localImage.delete', { name: model.name })}
                             title={t('localImage.delete', { name: model.name })}
-                            className="p-1 rounded text-slate-500 hover:text-rose-400 hover:bg-slate-800"
+                            className="p-1 rounded text-slate-400 hover:text-rose-400 hover:bg-slate-800"
                           >
                             <Trash2 className="w-3.5 h-3.5" />
                           </button>

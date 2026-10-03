@@ -227,7 +227,7 @@ export const CharacterAiAssistantModal: React.FC = () => {
                       ? 'text-indigo-400 font-semibold'
                       : isDone
                       ? 'text-emerald-400 font-medium'
-                      : 'text-slate-500 hover:text-slate-400'
+                      : 'text-slate-400 hover:text-slate-400'
                   }`}
                 >
                   <span

@@ -138,7 +138,7 @@ export const ChubDetailModal = ({ state, importing, onImport, onClose }: Props) 
 
         {/* Modal Footer */}
         <div className="px-6 py-4 border-t border-slate-800 bg-app/50 flex items-center justify-between">
-          <span className="text-xs text-slate-500 font-mono">
+          <span className="text-xs text-slate-400 font-mono">
             {state.item.full_path}
           </span>
           <div className="flex items-center gap-3">

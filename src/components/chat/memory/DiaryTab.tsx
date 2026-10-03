@@ -114,7 +114,7 @@ export const DiaryTab = () => {
 
           {(!cognitiveOverview?.recent_diary ||
             cognitiveOverview.recent_diary.length === 0) && (
-            <div className="p-8 text-center text-xs text-slate-500 italic">
+            <div className="p-8 text-center text-xs text-slate-400 italic">
               {t('memory.diaryEmpty')}
             </div>
           )}

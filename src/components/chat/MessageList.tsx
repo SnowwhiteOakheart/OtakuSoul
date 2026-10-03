@@ -303,7 +303,7 @@ const ChatMessageItem = React.memo<ChatMessageItemProps>(
               />
               {shownTranslation !== null && (
                 <div className={`mt-2 pt-2 border-t ${isUser ? 'border-white/30' : 'border-slate-700'}`}>
-                  <div className={`mb-1 flex items-center gap-1 text-[11px] ${isUser ? 'text-white/70' : 'text-slate-500'}`}>
+                  <div className={`mb-1 flex items-center gap-1 text-[11px] ${isUser ? 'text-white/70' : 'text-slate-400'}`}>
                     <Languages className="w-3 h-3" />
                     {t('chat.translation')}
                   </div>

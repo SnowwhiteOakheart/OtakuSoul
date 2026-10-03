@@ -91,7 +91,7 @@ export const ModelHubSettings = ({ onNavigate }: { onNavigate: (section: Setting
 
         <div className="flex gap-2">
           <div className="relative flex-1">
-            <Search className="w-4 h-4 absolute left-3 top-2.5 text-slate-500" />
+            <Search className="w-4 h-4 absolute left-3 top-2.5 text-slate-400" />
             <input
               type="text"
               value={hfQuery}
@@ -167,7 +167,7 @@ export const ModelHubSettings = ({ onNavigate }: { onNavigate: (section: Setting
               ].map(([value, label]) => (
                 <div key={label} className="rounded-lg bg-app/60 border border-slate-700/70 p-2 text-center">
                   <div className="font-bold text-slate-100">{value}</div>
-                  <div className="text-slate-500">{label}</div>
+                  <div className="text-slate-400">{label}</div>
                 </div>
               ))}
             </div>
@@ -287,7 +287,7 @@ export const ModelHubSettings = ({ onNavigate }: { onNavigate: (section: Setting
                   />
                 </div>
 
-                <div className="flex justify-between text-[11px] text-slate-500 font-mono">
+                <div className="flex justify-between text-[11px] text-slate-400 font-mono">
                   <span>
                     {(prog.downloaded_bytes / (1024 * 1024)).toFixed(1)} MB / {(prog.total_bytes / (1024 * 1024)).toFixed(1)} MB
                   </span>
@@ -316,7 +316,7 @@ export const ModelHubSettings = ({ onNavigate }: { onNavigate: (section: Setting
                   <div className="space-y-0.5">
                     <div className="font-semibold text-slate-200 text-xs flex items-center gap-2">
                       <span>{model.id}</span>
-                      <span className="text-[11px] text-slate-500">{t('settings.by', { author: model.author })}</span>
+                      <span className="text-[11px] text-slate-400">{t('settings.by', { author: model.author })}</span>
                     </div>
                     <div className="text-xs text-slate-400 flex items-center gap-3">
                       <span>{t('settings.hfDownloads', { count: model.downloads.toLocaleString() })}</span>
@@ -354,7 +354,7 @@ export const ModelHubSettings = ({ onNavigate }: { onNavigate: (section: Setting
                         <span>{t('settings.loadingFiles')}</span>
                       </div>
                     ) : files.length === 0 ? (
-                      <div className="py-2 text-center text-xs text-slate-500">
+                      <div className="py-2 text-center text-xs text-slate-400">
                         {t('settings.noGgufFiles')}
                       </div>
                     ) : (
@@ -371,7 +371,7 @@ export const ModelHubSettings = ({ onNavigate }: { onNavigate: (section: Setting
                                   {file.quantization}
                                 </span>
                                 <span className="text-slate-400">{file.size_formatted}</span>
-                                <span className={file.runtime === 'prism' ? 'text-cyan-300' : file.runtime === 'legacy' ? 'text-rose-300' : 'text-slate-500'}>
+                                <span className={file.runtime === 'prism' ? 'text-cyan-300' : file.runtime === 'legacy' ? 'text-rose-300' : 'text-slate-400'}>
                                   {file.runtime === 'prism'
                                     ? t('settings.runtimePrismLabel')
                                     : file.runtime === 'legacy'
@@ -379,13 +379,13 @@ export const ModelHubSettings = ({ onNavigate }: { onNavigate: (section: Setting
                                       : t('settings.runtimeStandardLabel')}
                                 </span>
                               </div>
-                              <div className={`text-[11px] ${file.runtime === 'legacy' ? 'text-rose-300' : 'text-slate-500'}`}>{backendMessage(file.compatibility_note)}</div>
+                              <div className={`text-[11px] ${file.runtime === 'legacy' ? 'text-rose-300' : 'text-slate-400'}`}>{backendMessage(file.compatibility_note)}</div>
                             </div>
 
                             <button
                               onClick={() => downloadGgufModel(file)}
                               disabled={file.runtime === 'legacy'}
-                              className="px-3 py-1.5 rounded bg-emerald-600 hover:bg-emerald-500 disabled:bg-slate-700 disabled:text-slate-500 text-white font-semibold text-xs flex items-center gap-1.5 transition-colors shrink-0"
+                              className="px-3 py-1.5 rounded bg-emerald-600 hover:bg-emerald-500 disabled:bg-slate-700 disabled:text-slate-400 text-white font-semibold text-xs flex items-center gap-1.5 transition-colors shrink-0"
                             >
                               <Download className="w-3.5 h-3.5" />
                               <span className="whitespace-nowrap">{file.runtime === 'legacy' ? t('settings.doNotUse') : t('settings.downloadSelect')}</span>

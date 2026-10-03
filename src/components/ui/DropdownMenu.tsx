@@ -115,7 +115,7 @@ export const DropdownMenu: React.FC<DropdownMenuProps> = ({
           } ${menuClassName}`}
         >
           {heading && (
-            <div className="px-3 pt-1.5 pb-1 mb-1 text-xs font-semibold uppercase tracking-wider text-slate-500 border-b border-slate-800">
+            <div className="px-3 pt-1.5 pb-1 mb-1 text-xs font-semibold uppercase tracking-wider text-slate-400 border-b border-slate-800">
               {heading}
             </div>
           )}
@@ -140,7 +140,7 @@ export const DropdownMenu: React.FC<DropdownMenuProps> = ({
                 {item.leading ?? (Icon && <Icon className="w-4 h-4 shrink-0 text-slate-400" />)}
                 <span className="flex-1 min-w-0">
                   <span className="block truncate">{item.label}</span>
-                  {item.description && <span className="block truncate text-xs text-slate-500">{item.description}</span>}
+                  {item.description && <span className="block truncate text-xs text-slate-400">{item.description}</span>}
                 </span>
                 {item.checked && <Check className="w-3.5 h-3.5 shrink-0 text-accent-400" />}
               </button>

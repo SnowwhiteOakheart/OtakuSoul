@@ -84,14 +84,14 @@ export const ThoughtsTab: React.FC = () => {
                 "{item.thought}"
               </p>
             </div>
-            <span className="text-[11px] font-mono text-slate-500 shrink-0">
+            <span className="text-[11px] font-mono text-slate-400 shrink-0">
               {new Date(item.ts * 1000).toLocaleTimeString()}
             </span>
           </div>
         ))}
 
         {thoughts.length === 0 && (
-          <div className="p-12 text-center text-xs text-slate-500 italic rounded-2xl border border-slate-800 bg-slate-900/30">
+          <div className="p-12 text-center text-xs text-slate-400 italic rounded-2xl border border-slate-800 bg-slate-900/30">
             {t('comp.noThoughts')}
           </div>
         )}

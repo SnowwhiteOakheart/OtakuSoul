@@ -369,7 +369,7 @@ export const LorebookView: React.FC = () => {
           <div className="px-5 py-3 border-b border-slate-800/80 bg-slate-900/20 flex flex-wrap items-center justify-between gap-3">
             <div className="flex items-center gap-2">
               <div className="relative w-64">
-                <Search className="w-3.5 h-3.5 absolute left-3 top-2.5 text-slate-500" />
+                <Search className="w-3.5 h-3.5 absolute left-3 top-2.5 text-slate-400" />
                 <input
                   type="text"
                   placeholder={t('lore.filterEntries')}
@@ -477,17 +477,17 @@ export const LorebookView: React.FC = () => {
             </div>
 
             {filteredEntries.length === 0 && (
-              <div className="p-12 text-center text-xs text-slate-500">
+              <div className="p-12 text-center text-xs text-slate-400">
                 {t('lore.noEntries')}
               </div>
             )}
           </div>
         </div>
       ) : (
-        <div className="flex-1 flex flex-col items-center justify-center p-8 text-center text-slate-500 space-y-3">
+        <div className="flex-1 flex flex-col items-center justify-center p-8 text-center text-slate-400 space-y-3">
           <BookOpen className="w-12 h-12 text-slate-700" />
           <h2 className="text-base font-semibold text-slate-300">{t('lore.noneSelected')}</h2>
-          <p className="text-xs text-slate-500 max-w-sm">
+          <p className="text-xs text-slate-400 max-w-sm">
             {t('lore.noneSelectedText')}
           </p>
           <button

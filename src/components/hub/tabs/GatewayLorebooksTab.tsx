@@ -59,7 +59,7 @@ export const GatewayLorebooksTab = () => {
                 </span>
               </div>
               <p className="text-xs text-slate-400 leading-relaxed mb-3">{lb.description || t('hub.noDescription')}</p>
-              <div className="text-xs text-slate-500">
+              <div className="text-xs text-slate-400">
                 {t('hub.author')}: <span className="text-slate-300">{lb.author}</span>
               </div>
             </div>

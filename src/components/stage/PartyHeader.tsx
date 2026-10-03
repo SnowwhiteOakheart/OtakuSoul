@@ -61,7 +61,7 @@ export const PartyHeader: React.FC = () => {
                     <div className="flex items-center gap-2">
                       <button
                         onClick={() => setEditingSkillsFor(member.id)}
-                        className="text-slate-500 hover:text-slate-300 transition-colors"
+                        className="text-slate-400 hover:text-slate-300 transition-colors"
                         title="Fertigkeiten"
                       >
                         <Settings className="w-3 h-3" />

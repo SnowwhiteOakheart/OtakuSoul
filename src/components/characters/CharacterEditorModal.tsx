@@ -337,7 +337,7 @@ export const CharacterEditorModal = ({
                     />
                   ) : (
                     <div className="text-center p-4">
-                      <Image className="w-8 h-8 text-slate-500 mx-auto mb-2" />
+                      <Image className="w-8 h-8 text-slate-400 mx-auto mb-2" />
                       <span className="text-xs text-slate-400">{t('editor.noAvatar')}</span>
                     </div>
                   )}
@@ -502,7 +502,7 @@ export const CharacterEditorModal = ({
                         <div className="flex items-center justify-between gap-2">
                           <div>
                             <h3 className="text-xs font-bold text-slate-100">{t(`portrait.${mood.key}`)}</h3>
-                            <p className="mt-0.5 text-[11px] leading-relaxed text-slate-500">
+                            <p className="mt-0.5 text-[11px] leading-relaxed text-slate-400">
                               {t(`portrait.${mood.key}Desc`)}
                             </p>
                           </div>
@@ -510,7 +510,7 @@ export const CharacterEditorModal = ({
                             <button
                               type="button"
                               onClick={() => handleRemoveExpression(mood.key)}
-                              className="shrink-0 p-1.5 rounded-lg text-slate-500 hover:text-rose-400 hover:bg-rose-500/10 transition-colors"
+                              className="shrink-0 p-1.5 rounded-lg text-slate-400 hover:text-rose-400 hover:bg-rose-500/10 transition-colors"
                               title={t('editor.removeMoodImage', { mood: t(`portrait.${mood.key}`) })}
                               aria-label={t('editor.removeMoodImage', { mood: t(`portrait.${mood.key}`) })}
                             >
@@ -628,7 +628,7 @@ export const CharacterEditorModal = ({
                         onClick={() => handleRemoveGreeting(idx)}
                         title={t('editor.removeGreeting')}
                         aria-label={t('editor.removeGreeting')}
-                        className="text-slate-500 hover:text-rose-400 p-1 rounded"
+                        className="text-slate-400 hover:text-rose-400 p-1 rounded"
                       >
                         <Trash2 className="w-3.5 h-3.5" />
                       </button>
@@ -716,7 +716,7 @@ export const CharacterEditorModal = ({
                 })}
 
                 {allLorebooks.length === 0 && (
-                  <div className="col-span-2 p-8 text-center text-xs text-slate-500">
+                  <div className="col-span-2 p-8 text-center text-xs text-slate-400">
                     {t('editor.noLorebooks')}
                   </div>
                 )}

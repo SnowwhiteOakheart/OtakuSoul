@@ -76,7 +76,7 @@ export const StageCampaignPanel: React.FC = () => {
                     <span className="text-xs font-bold text-slate-200 truncate">{item.name}</span>
                     <span className="text-[11px] font-mono text-amber-300">×{item.quantity}</span>
                   </div>
-                  <p className="text-xs text-slate-500 mt-0.5 line-clamp-2">{item.description}</p>
+                  <p className="text-xs text-slate-400 mt-0.5 line-clamp-2">{item.description}</p>
                   {item.item_type === 'consumable' && (
                     <button
                       onClick={() => consumeStageInventoryItem(item.id)}
@@ -90,7 +90,7 @@ export const StageCampaignPanel: React.FC = () => {
             ))}
           </div>
         ) : (
-          <p className="p-4 rounded-xl bg-app/40 border border-dashed border-slate-800 text-xs text-slate-500">{t('stage.inventoryEmpty')}</p>
+          <p className="p-4 rounded-xl bg-app/40 border border-dashed border-slate-800 text-xs text-slate-400">{t('stage.inventoryEmpty')}</p>
         )}
       </section>
 
@@ -113,7 +113,7 @@ export const StageCampaignPanel: React.FC = () => {
                 </span>
                 <span className="font-mono text-slate-400">{objective.current}/{objective.max}</span>
               </div>
-              {objective.description && <p className="text-xs text-slate-500 mt-1">{objective.description}</p>}
+              {objective.description && <p className="text-xs text-slate-400 mt-1">{objective.description}</p>}
               <div className="mt-2 h-1.5 rounded-full bg-slate-800 overflow-hidden">
                 <div className="h-full bg-linear-to-r from-cyan-500 to-accent-500" style={{ width: progressWidth(objective.current, objective.max) }} />
               </div>
@@ -141,7 +141,7 @@ export const StageCampaignPanel: React.FC = () => {
           ))}
 
           {!objectives.length && !arcs.some((arc) => arc.is_revealed) && !(stageState.arc_archive ?? []).length && (
-            <p className="text-xs text-slate-500">{t('stage.noObjectives')}</p>
+            <p className="text-xs text-slate-400">{t('stage.noObjectives')}</p>
           )}
         </div>
       </section>
@@ -164,10 +164,10 @@ export const StageCampaignPanel: React.FC = () => {
               <div className="h-full bg-linear-to-r from-accent2-600 to-fuchsia-400" style={{ width: `${Math.max(0, relationship.affinity)}%` }} />
             </div>
             {(relationship.role_view || relationship.last_shift_reason) && (
-              <p className="text-xs text-slate-500 mt-1.5">{relationship.role_view}{relationship.last_shift_reason ? ` · ${relationship.last_shift_reason}` : ''}</p>
+              <p className="text-xs text-slate-400 mt-1.5">{relationship.role_view}{relationship.last_shift_reason ? ` · ${relationship.last_shift_reason}` : ''}</p>
             )}
           </div>
-        )) : <p className="text-xs text-slate-500">{t('stage.noRelationships')}</p>}
+        )) : <p className="text-xs text-slate-400">{t('stage.noRelationships')}</p>}
       </section>
 
       <section className="p-4 rounded-2xl bg-slate-900/80 border border-slate-800 shadow-xl space-y-3">
@@ -187,7 +187,7 @@ export const StageCampaignPanel: React.FC = () => {
                 disabled={isProcessingStageTurn}
                 aria-label={t('stageWorld.deleteChronicle')}
                 title={t('stageWorld.deleteChronicle')}
-                className="text-slate-500 hover:text-rose-400 disabled:opacity-40"
+                className="text-slate-400 hover:text-rose-400 disabled:opacity-40"
               >
                 <Trash2 className="w-3.5 h-3.5" />
               </button>
@@ -199,7 +199,7 @@ export const StageCampaignPanel: React.FC = () => {
               <span className="text-slate-400">{value}</span>
             </div>
           ))}
-          {!consequences.length && !facts.length && <p className="text-xs text-slate-500">{t('stage.chronicleEmpty')}</p>}
+          {!consequences.length && !facts.length && <p className="text-xs text-slate-400">{t('stage.chronicleEmpty')}</p>}
         </div>
       </section>
     </div>

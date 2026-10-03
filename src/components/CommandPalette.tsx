@@ -116,7 +116,7 @@ export const CommandPalette = ({ open, onOpen, onClose }: CommandPaletteProps) =
     >
       <div className="w-full max-w-xl overflow-hidden rounded-xl border border-slate-700 bg-slate-900 shadow-2xl">
         <div className="flex items-center gap-3 border-b border-slate-800 px-4">
-          <Search className="h-5 w-5 shrink-0 text-slate-500" aria-hidden />
+          <Search className="h-5 w-5 shrink-0 text-slate-400" aria-hidden />
           <input
             data-autofocus
             type="search"
@@ -132,7 +132,7 @@ export const CommandPalette = ({ open, onOpen, onClose }: CommandPaletteProps) =
               setActiveIndex(0);
             }}
             onKeyDown={handleKeyDown}
-            className="h-14 min-w-0 flex-1 bg-transparent text-sm text-slate-100 outline-hidden placeholder:text-slate-500"
+            className="h-14 min-w-0 flex-1 bg-transparent text-sm text-slate-100 outline-hidden placeholder:text-slate-400"
           />
           <Command className="h-4 w-4 shrink-0 text-slate-600" aria-hidden />
         </div>
@@ -142,7 +142,7 @@ export const CommandPalette = ({ open, onOpen, onClose }: CommandPaletteProps) =
         </h2>
         <div id="command-palette-results" role="listbox" className="max-h-80 overflow-y-auto p-2">
           {filteredCommands.length === 0 ? (
-            <p className="px-3 py-8 text-center text-sm text-slate-500">{t('palette.noResults')}</p>
+            <p className="px-3 py-8 text-center text-sm text-slate-400">{t('palette.noResults')}</p>
           ) : (
             filteredCommands.map((command, index) => {
               const Icon = command.icon;
@@ -160,9 +160,9 @@ export const CommandPalette = ({ open, onOpen, onClose }: CommandPaletteProps) =
                     isActive ? 'bg-accent-600/20 text-slate-100' : 'text-slate-300 hover:bg-slate-800'
                   }`}
                 >
-                  <Icon className={`h-4 w-4 shrink-0 ${isActive ? 'text-accent-300' : 'text-slate-500'}`} aria-hidden />
+                  <Icon className={`h-4 w-4 shrink-0 ${isActive ? 'text-accent-300' : 'text-slate-400'}`} aria-hidden />
                   <span className="min-w-0 flex-1 truncate text-sm font-medium">{command.label}</span>
-                  <span className="text-xs text-slate-500">{command.category}</span>
+                  <span className="text-xs text-slate-400">{command.category}</span>
                   {isActive && <ArrowRight className="h-4 w-4 shrink-0 text-accent-400" aria-hidden />}
                 </button>
               );

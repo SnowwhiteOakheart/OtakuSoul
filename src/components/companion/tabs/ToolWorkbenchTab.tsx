@@ -323,14 +323,14 @@ export const ToolWorkbenchTab: React.FC = () => {
           {environmentSnapshot ? (
             <div className="grid grid-cols-2 gap-3 text-xs font-mono">
               <div className="p-3 rounded-xl bg-app border border-slate-800">
-                <span className="text-[11px] text-slate-500 block">{t('comp.cpu')}</span>
+                <span className="text-[11px] text-slate-400 block">{t('comp.cpu')}</span>
                 <span className="text-slate-100 font-bold text-sm">
                   {environmentSnapshot.cpu_usage_percent.toFixed(1)}%
                 </span>
               </div>
 
               <div className="p-3 rounded-xl bg-app border border-slate-800">
-                <span className="text-[11px] text-slate-500 block">{t('comp.ram')}</span>
+                <span className="text-[11px] text-slate-400 block">{t('comp.ram')}</span>
                 <span className="text-slate-100 font-bold text-sm">
                   {environmentSnapshot.ram_percent.toFixed(1)}%
                 </span>
@@ -340,7 +340,7 @@ export const ToolWorkbenchTab: React.FC = () => {
               </div>
 
               <div className="p-3 rounded-xl bg-app border border-slate-800">
-                <span className="text-[11px] text-slate-500 block">{t('comp.disk')}</span>
+                <span className="text-[11px] text-slate-400 block">{t('comp.disk')}</span>
                 <span className="text-slate-100 font-bold text-sm">
                   {environmentSnapshot.disk_free_gb.toFixed(1)} GB
                 </span>
@@ -350,7 +350,7 @@ export const ToolWorkbenchTab: React.FC = () => {
               </div>
 
               <div className="p-3 rounded-xl bg-app border border-slate-800">
-                <span className="text-[11px] text-slate-500 block">{t('comp.gpu')}</span>
+                <span className="text-[11px] text-slate-400 block">{t('comp.gpu')}</span>
                 <span className="text-slate-100 font-bold text-sm">
                   {environmentSnapshot.gpu_name || 'NVIDIA GPU'}
                 </span>
@@ -373,7 +373,7 @@ export const ToolWorkbenchTab: React.FC = () => {
           )}
 
           <div className="p-3 rounded-xl bg-app/70 border border-slate-800/80 text-xs font-mono text-slate-300">
-            <span className="text-slate-500 block mb-0.5">{t('comp.activeWindow')}</span>
+            <span className="text-slate-400 block mb-0.5">{t('comp.activeWindow')}</span>
             <span className="text-cyan-300 font-bold">"{currentWindowTitle}"</span>
           </div>
         </div>
@@ -388,7 +388,7 @@ export const ToolWorkbenchTab: React.FC = () => {
               {t('comp.audit')}
             </h3>
           </div>
-          <span className="text-xs text-slate-500 font-mono">
+          <span className="text-xs text-slate-400 font-mono">
             {history.length} Aktionen protokolliert
           </span>
         </div>
@@ -422,14 +422,14 @@ export const ToolWorkbenchTab: React.FC = () => {
                 </pre>
               </div>
 
-              <span className="text-[11px] font-mono text-slate-500 shrink-0">
+              <span className="text-[11px] font-mono text-slate-400 shrink-0">
                 {new Date(item.executed_at * 1000).toLocaleTimeString()}
               </span>
             </div>
           ))}
 
           {history.length === 0 && (
-            <div className="p-8 text-center text-xs text-slate-500 italic">
+            <div className="p-8 text-center text-xs text-slate-400 italic">
               {t('comp.noAudit')}
             </div>
           )}

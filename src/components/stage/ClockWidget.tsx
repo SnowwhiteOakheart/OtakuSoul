@@ -73,7 +73,7 @@ export const ClockWidget: React.FC<ClockWidgetProps> = ({
         onClick={() => onDelete(id)}
         title={t('stage.deleteClock', { name })}
         aria-label={t('stage.deleteClock', { name })}
-        className="absolute top-2.5 right-2.5 text-slate-500 hover:text-rose-400 opacity-0 group-hover:opacity-100 focus-visible:opacity-100 transition p-1 rounded outline-hidden focus-visible:ring-2 focus-visible:ring-rose-400"
+        className="absolute top-2.5 right-2.5 text-slate-400 hover:text-rose-400 opacity-0 group-hover:opacity-100 focus-visible:opacity-100 transition p-1 rounded outline-hidden focus-visible:ring-2 focus-visible:ring-rose-400"
       >
         <Trash2 className="w-3.5 h-3.5" />
       </button>

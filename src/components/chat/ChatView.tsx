@@ -321,7 +321,7 @@ export const ChatView: React.FC = () => {
           <button
             onClick={handleClearSession}
             disabled={!activeChatId}
-            className="text-slate-500 hover:text-rose-400 p-1.5 rounded hover:bg-slate-800/50 transition-colors disabled:opacity-30 outline-hidden focus-visible:ring-2 focus-visible:ring-accent-400"
+            className="text-slate-400 hover:text-rose-400 p-1.5 rounded hover:bg-slate-800/50 transition-colors disabled:opacity-30 outline-hidden focus-visible:ring-2 focus-visible:ring-accent-400"
             title={t('chat.deleteSession')}
             aria-label={t('chat.deleteSession')}
           >

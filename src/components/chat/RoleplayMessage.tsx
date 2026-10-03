@@ -166,7 +166,7 @@ export const RoleplayMessage: React.FC<RoleplayMessageProps> = ({ content, isUse
       {!isUser && onSpeak && (
         <button
           onClick={onSpeak}
-          className="absolute -right-8 top-0 p-1.5 text-slate-500 hover:text-accent-400 bg-slate-900/50 hover:bg-slate-800 rounded-md opacity-0 group-hover/roleplay:opacity-100 focus-visible:opacity-100 transition-all shadow-sm border border-slate-800 outline-hidden focus-visible:ring-2 focus-visible:ring-accent-400"
+          className="absolute -right-8 top-0 p-1.5 text-slate-400 hover:text-accent-400 bg-slate-900/50 hover:bg-slate-800 rounded-md opacity-0 group-hover/roleplay:opacity-100 focus-visible:opacity-100 transition-all shadow-sm border border-slate-800 outline-hidden focus-visible:ring-2 focus-visible:ring-accent-400"
           title={translate('chat.speak')}
           aria-label={translate('chat.speak')}
         >

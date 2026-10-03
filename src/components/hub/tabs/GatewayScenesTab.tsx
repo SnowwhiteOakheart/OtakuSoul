@@ -62,7 +62,7 @@ export const GatewayScenesTab = () => {
                 <h3 className="font-bold text-sm text-slate-100 group-hover:text-emerald-300 transition-colors">{scene.title}</h3>
               </div>
               <p className="text-xs text-slate-400 leading-relaxed mb-3">{scene.description || t('hub.noDescription')}</p>
-              <div className="flex items-center justify-between text-xs text-slate-500">
+              <div className="flex items-center justify-between text-xs text-slate-400">
                 <span>
                   {t('hub.startLocation')}: <span className="text-slate-300">{scene.starting_location}</span>
                 </span>

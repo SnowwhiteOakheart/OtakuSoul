@@ -249,7 +249,7 @@ export const StageView: React.FC = () => {
             </div>
             <div className="flex items-center gap-2 text-xs text-slate-400">
               <span className="flex items-center gap-1 truncate max-w-[180px]">
-                <MapPin className="w-3 h-3 text-slate-500" />
+                <MapPin className="w-3 h-3 text-slate-400" />
                 {world?.location || currentScene?.starting_location || t('stage.unknownLocation')}
               </span>
               <span>•</span>
@@ -611,7 +611,7 @@ export const StageView: React.FC = () => {
                 ))}
 
                 {(!stageState?.clocks || stageState.clocks.length === 0) && (
-                  <div className="col-span-full p-8 text-center text-xs text-slate-500 italic">
+                  <div className="col-span-full p-8 text-center text-xs text-slate-400 italic">
                     {t('stage.noClocks')}
                   </div>
                 )}
