@@ -108,7 +108,7 @@ GitHub Actions wurden bewusst entfernt (Commit `11597c2`). Stattdessen gibt es j
   Die Bibliothek zeigt die Oberflächensprache, Prompt und Begrüßung nutzen die Antwortsprache, fehlende Felder fallen auf
   die Grundsprache zurück; importierte Karten ohne Übersetzung funktionieren unverändert. Die 13 mitgelieferten Karten
   haben Englisch und Russisch. `{{char}}`/`{{user}}` werden in der Bibliothek durch Namen ersetzt.
-- [ ] Übersetzungen einer Karte im Charakter-Editor bearbeiten (bisher nur in der JSON-Datei); Szenen, Lorebooks und
+- [x] Übersetzungen einer Karte im Charakter-Editor bearbeiten (bisher nur in der JSON-Datei); Szenen, Lorebooks und
   Personas der Presets sind noch nur deutsch.
 
 ### Design-System & Themes
@@ -175,7 +175,7 @@ GitHub Actions wurden bewusst entfernt (Commit `11597c2`). Stattdessen gibt es j
 - [x] llama.cpp wird nicht gebündelt, sondern in der App geladen (Einstellungen → llama-server): offizielle Builds des
   aktuellen *stabilen* Releases (`v0.5.0` → `b11146`), Varianten je System (CUDA/Vulkan/ROCm/CPU/Metal) mit Empfehlung
   nach GPU, SHA-256-Prüfung, Installation im Datenordner (`modules/llama_runtime.rs`).
-- [ ] Tray-Icon für den Companion (minimieren in den Tray statt beenden).
+- [x] Tray-Icon für den Companion (minimieren in den Tray statt beenden).
 - [x] **Updater:** `tauri-plugin-updater` installiert signierte Updates direkt (AppImage, deb, rpm, NSIS/MSI, macOS) mit
   Fortschritt und Neustart; ohne signiertes Release bleibt der Link zur Release-Seite. Schlüssel lokal in `.tauri-signing/`
   (nicht versioniert), `build-linux-packages.sh` signiert und erzeugt `latest.json` (`tools/make_latest_json.py`).
@@ -386,7 +386,7 @@ und übernimmt, was SoW lebendig macht:
   Die Übersetzung erscheint unter dem Original und wird für die Sitzung zwischengespeichert. Dabei: Der Chat bleibt am
   Ende, wenn eine Nachricht wächst (Übersetzung, nachladendes Bild), sofern man dort stand.
 - [ ] Vision lokal auf echter Hardware testen (Gemma/Qwen-VL mit passender `mmproj`, z. B. aus dem Modell-Hub).
-- [ ] Migrationsimport aus einer bestehenden Soul-of-Waifu-Installation.
+- [x] Migrationsimport aus einer bestehenden Soul-of-Waifu-Installation.
 - [x] Lange Chats virtualisiert (`@tanstack/react-virtual`, `chat/MessageList.tsx`); Eingabefeld (`ChatComposer`) und
   Verlauf sind getrennt und memoisiert, Tippen und Streaming rendern den Verlauf nicht mehr neu. Gemessen mit
   `npm run e2e:perf` (1000 Nachrichten): Öffnen 2,5 s → 0,4–0,75 s, pro Tastendruck 43 ms → ≤ 3 ms,
