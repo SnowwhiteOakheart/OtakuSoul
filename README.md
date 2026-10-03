@@ -1,322 +1,351 @@
 <p align="center">
-  <img src="src/assets/brand/otakusoul-logo-wide.webp" alt="OtakuSoul – Infinite Worlds" width="100%" />
+  <img src="docs/assets/otakusoul-logo-wide-master.png" alt="OtakuSoul – Infinite Worlds" width="100%" />
 </p>
 
 <p align="center">
-  <strong>Persönliche KI-Charaktere. Lebendige Avatare. Erinnerungen, die bleiben.</strong>
+  <strong>Persönliche KI-Gefährten. Lebendige 3D- & 2D-Avatare. Bleibende Erinnerungen. Pen & Paper Tabletop-Engine.</strong><br>
+  <em>Die native, lokale Desktop-Plattform für tiefgründiges Rollenspiel, immersive Geschichten und intelligente Desktop-Begleiter.</em>
 </p>
 
 <p align="center">
-  <a href="https://github.com/SnowwhiteOakheart/OtakuSoul"><img alt="OtakuSoul" src="https://img.shields.io/badge/OtakuSoul-0.2.0-8b5cf6?style=for-the-badge" /></a>
+  <a href="https://github.com/SnowwhiteOakheart/OtakuSoul"><img alt="Version" src="https://img.shields.io/badge/OtakuSoul-v0.2.0-8b5cf6?style=for-the-badge&logo=sparkles&logoColor=white" /></a>
   <img alt="Tauri 2" src="https://img.shields.io/badge/Tauri-2-24c8db?style=for-the-badge&logo=tauri&logoColor=white" />
   <img alt="Rust" src="https://img.shields.io/badge/Rust-native-b7410e?style=for-the-badge&logo=rust&logoColor=white" />
   <img alt="React 19" src="https://img.shields.io/badge/React-19-149eca?style=for-the-badge&logo=react&logoColor=white" />
+  <img alt="Tailwind 4" src="https://img.shields.io/badge/Tailwind-4-38bdf8?style=for-the-badge&logo=tailwindcss&logoColor=white" />
+  <img alt="Local First" src="https://img.shields.io/badge/Local--First-100%25-10b981?style=for-the-badge&logo=shield&logoColor=white" />
+  <img alt="Zero Python" src="https://img.shields.io/badge/Python--frei-0%25_Venv-f59e0b?style=for-the-badge" />
   <img alt="GPLv3" src="https://img.shields.io/badge/Lizenz-GPLv3-22c55e?style=for-the-badge" />
+</p>
+
+<p align="center">
+  <a href="#-warum-otakusoul">Warum OtakuSoul?</a> •
+  <a href="#-highlights-im-überblick">Highlights</a> •
+  <a href="#-impressionen--feature-tour">Feature-Tour & Screenshots</a> •
+  <a href="#-system--kognitions-architektur">Architektur</a> •
+  <a href="#-geprüfte-hardware-performance">Hardware-Performance</a> •
+  <a href="#-installation--schnellstart">Installation</a> •
+  <a href="#-technologie-stack">Technologie</a>
 </p>
 
 ---
 
-## Mehr als ein Chatbot
+## 🌌 Warum OtakuSoul?
 
-Nachrichtenkorrekturen bleiben bei einem Speicherfehler im Editor erhalten und lassen sich erneut speichern.
-Während des Schreibens ist die Bearbeitung gesperrt; ein Variantenwechsel ist erst nach Speichern oder Abbrechen möglich.
+Herkömmliche Chat-Oberflächen behandeln Charaktere oft wie austauschbare Prompts: Sobald das Kontextfenster voll ist oder das Chatfenster schließt, verblasst die Persönlichkeit.
 
-**OtakuSoul** ist eine immersive Desktop-Plattform für Menschen, die mit KI-Charakteren nicht nur Nachrichten austauschen, sondern gemeinsame Geschichten und Beziehungen entwickeln möchten.
+**OtakuSoul bricht mit diesem Muster.** Entwickelt als hochperformante, native Desktop-App in **Rust (Tauri 2)** und **React 19**, erweckt OtakuSoul Charaktere zu echtem virtuellem Leben:
 
-Deine Charaktere können sich erinnern, ihre Gefühle und Beziehungen verändern, mit einer eigenen Stimme sprechen und als **3D-VRM**, **Live2D-Modell** oder klassisches Porträt sichtbar werden. Lokale GGUF-Modelle geben dir maximale Kontrolle und Privatsphäre; Cloud-Anbieter stehen bereit, wenn du mehr Reichweite oder spezialisierte Modelle brauchst.
+* 🧠 **Seelen, die sich erinnern:** Mit dem kognitiven **Soul Memory 2.0** entwickeln Charaktere ein echtes vierstufiges Gedächtnis – inklusive Überzeugungen, inneren Konflikten, veränderlichen Beziehungen und authentischen Tagebucheinträgen.
+* 🎭 **Ausdrucksstarke Avatare:** Sieh deine Gefährten als **3D-VRM-** oder **Live2D-Modell**, das in Echtzeit mit 28 Emotionen, Blickbewegungen, Blinzeln und audio-gesteuertem LipSync reagiert.
+* 🎲 **Vom Chat zum Pen-&-Paper-Abenteuer:** Mit der **Soul Stage** verwandelt sich jedes Gespräch in eine vollwertige Tabletop-Kampagne. Ein zweistufiger KI-Game-Master führt Regie, während 3D-Würfelproben, Party-Gesundheit, Stress und Quests echte Spannung erzeugen.
+* 🤖 **Ein echter Begleiter auf deinem Desktop:** Der **Soul Companion** schwebt transparent über deinen Fenstern, besitzt einen neurohormonalen Biorhythmus, führt Desktop-Tools aus und verbindet sich über das **Model Context Protocol (MCP)** mit deiner Umgebung.
+* 🔒 **100 % Local First & Privatsphäre:** Betreibe modernste Sprachmodelle (GGUF via llama.cpp/PrismML), Bildgenerierung (stable-diffusion.cpp) und Sprachausgabe (CrispASR) direkt offline auf deiner Grafikkarte. **Keine Python-Installation nötig, keine versteckten Telemetriedaten.** Und wenn du willst, stehen alle großen Cloud-Provider auf Knopfdruck bereit.
 
-Ob ruhiger Alltagsdialog, langfristige Charakterentwicklung oder eine dramatische Kampagne mit Würfeln, Zuständen und Konsequenzen: OtakuSoul verbindet all diese Ebenen in einer einzigen Anwendung.
+---
+
+## ⚡ Highlights im Überblick
+
+| Modul | Das Erlebnis |
+|---|---|
+| 💬 **Immersiver Chat** | Intelligentes Kontextfenster-Management mit automatischer Handlungssammenfassung älterer Turns, Swipes (`< 1/3 >`), Inline-Editor mit Schreibschutz-Entwürfen, Dateianhängen (Bilder, PDFs, Text) und In-Chat-Übersetzung. |
+| 🎭 **3D- & 2D-Avatare** | Native Unterstützung für **3D VRM 0.x/1.0** und **Live2D Cubism 2/4** mit automatischer Emotionserkennung, Physics, Blicksteuerung und Audio-FFT-LipSync. Position und Zoom werden pro Figur gespeichert. |
+| 🧠 **Soul Memory 2.0** | 4-Schichten-Gedächtnis (Geist & Psyche, Beziehungsdynamik, episodische Themen, Tagebuch). Autonome Router- und Archivist-Agenten reflektieren Dialoge, während automatische Snapshots für Datensicherheit sorgen. |
+| 🎲 **Soul Stage (TTRPG)** | Volles Solo- und Party-Rollenspiel: 2-stufiger KI-Spielleiter, spektakuläre 3D-Würfelanimationen mit kritischen Erfolgen/Patzern, Party-HUD (LP, Stress, Statuseffekte), dynamische NPCs, Szenenordner (inkl. 12 Kapiteln *No Game No Life*) und Weltzustand-Editor. |
+| 🤖 **Soul Companion** | Schwebendes, transparentes Always-on-Top-Overlay mit Click-Through, Neurohormonen (Dopamin, Cortisol, Oxytocin, Erschöpfung), echtem Desktop-Tool-Zugriff (Websuche, Screenshots, Zwischenablage, Skripte) und 25s Human-in-the-Loop-Sicherheitsbanner. |
+| 🎙️ **Next-Gen Audio & TTS** | 100 % lokal ohne Python über CrispASR: Qwen3-TTS (10 Sprachen), Chatterbox (23 Sprachen), deutsches Kokoro 82M und echtes **Stimmklonen** aus 5–15s Audio. Dazu Edge-TTS, ElevenLabs und lokale Whisper-Spracherkennung. |
+| 🖼️ **Lokale Bildgenerierung** | Offline-Bilder mit stable-diffusion.cpp (SDXL, FLUX.1, Qwen-Image, FLUX.2). Intelligenter VRAM-Planer entlädt bei Bedarf gestuft Sprach- und Chatmodelle und startet sie nach dem Generieren automatisch wieder. |
+| 🌐 **Soul Hub & Universum** | Direkte Chub AI-Integration mit automatischer Lorebook-Extraktion, SillyTavern-V2-Kartenimport/-export, Lorebook 2.0 mit Spannungs-Triggern und Abhängigkeitsketten sowie geführter 5-Schritte KI-Charakter-Wizard. |
+| 📱 **Mobiler Web-Client** | Chatte im selben WLAN direkt vom Smartphone oder Tablet: Integrierter Axum-Server mit Vektor-QR-Code, Token-Authentifizierung und DNS-Rebinding-Schutz. |
+| 🎨 **Design & Barrierefreiheit** | 5 lebendige Themes (Obsidian, Cyberpunk, Sakura, Midnight, Emerald), flächendeckende Mehrsprachigkeit (DE, EN, RU), Barrierefreiheit (WCAG AA), globale Befehlspalette (`Strg+K`) und virtualisierte High-Speed-Listen. |
+
+---
+
+## 📸 Impressionen & Feature-Tour
+
+### 1. Lebendige Konversationen & 3D/2D-Avatare
+Tausche dich mit deinen Charakteren in einer stimmungsvollen Chat-Oberfläche aus. Der 3D-VRM- oder Live2D-Avatar reagiert dynamisch auf jede Äußerung, während das flexible Rollenspiel-HUD wichtige Variablen wie Zuneigung, Energie und Laune visualisiert.
 
 <p align="center">
-  <img src="src/assets/brand/otakusoul-icon.png" alt="OtakuSoul Sternen- und Orbit-Signet" width="220" />
+  <img src="docs/assets/screenshots/chat-vrm-hud.png" alt="OtakuSoul Immersiver Chat mit 3D VRM Avatar und HUD" width="95%" />
 </p>
 
-## Eine Seele für jede Geschichte
+* **Audio-synchronisierter LipSync:** Das Sprachmodell steuert über TTS die Lippenbewegungen der Figur exakt zur gesprochenen Stimme.
+* **Nie wieder Kontextverlust:** Wird das Modell-Kontextfenster knapp, fasst ein Hintergrundprozess ältere Dialoge als prägnante „Bisherige Handlung“ zusammen – jederzeit einsehbar und editierbar.
+* **Resiliente Interaktion:** Ausführliche Antwortvarianten (Swipes), Inline-Korrekturen und automatische Entwurfssicherung schützen vor Datenverlust bei Verbindungsabbrüchen.
 
-| | Erlebnis |
-|---|---|
-| 🧠 **Soul Memory** | Charaktere bauen langfristige Erinnerungen auf, reflektieren Erlebnisse und entwickeln ihre Beziehung zum Nutzer weiter. Psychologie, episodisches Gedächtnis, Beziehung und Tagebuch greifen ineinander. |
-| ✨ **Lebendige Avatare** | VRM- und Live2D-Modelle reagieren mit Emotionen, Blickbewegungen, Blinzeln, Atmung und audio-gesteuertem LipSync. Position und Zoom bleiben pro Modell gespeichert. |
-| 🎭 **Charaktere & KI-Assistent** | Importiere Tavern-/SillyTavern-Character-Cards, Personas und Lorebooks. Erstelle neue Figuren mit dem geführten 5-Schritte KI-Wizard. |
-| 🌐 **Soul Hub & Gateways** | Stöbere im integrierten Community-Hub: Soul Gateway, Chub AI Browser mit automatischer Lorebook-Extraktion, Welt-Lorebooks und Soul-Stage-Szenarien. |
-| 🎲 **Soul Stage** | Verwandle Gespräche in interaktive Abenteuer: Szenenordner (inkl. 12 Kapiteln *No Game No Life*), Multi-Akteur-Züge, Würfelproben, Kampagnen-Uhren, Initiative, dynamische Hintergründe mit Lock und zuverlässige Backups. |
-| 💬 **Chat für lange Geschichten** | Der Verlauf wird automatisch an das Kontextfenster des Modells angepasst; was herausfällt, fasst das Modell als „bisherige Handlung“ zusammen (editierbar). Swipes, Weiterschreiben, Author's Note, eigener System-Prompt mit Vorlagen, Bilder/PDF/Text als Anhänge und Übersetzung einzelner Nachrichten. |
-| 🎙️ **Stimme & Sprache** | Lokal und ohne Python über CrispASR: Qwen3-TTS (10 Sprachen), Chatterbox (23 Sprachen) und deutsches Kokoro, dazu **Stimmklonen** aus einer eigenen Aufnahme (nur mit Einwilligung, Audio wird als KI-generiert markiert). Außerdem Edge-TTS, ElevenLabs und OpenAI-kompatible Stimmen. Aktionen und Regieanweisungen lassen sich gezielt vom gesprochenen Dialog trennen. |
-| 🤖 **Soul Companion** | Echter Desktop-Agent mit transparentem Always-on-Top Floating-Overlay, Click-Through, Neurohormonen, proaktivem Ansprechen, echten Desktop-Tools, Sandbox, MCP-Client und 25s Human-in-the-Loop Sicherheitsbanner. |
-| 📱 **Mobiler Web-Client** | Chatte vom Smartphone oder Tablet im selben WLAN: Autarker Axum-Server, Token-Auth, DNS-Rebinding-Schutz, Streaming und QR-Code-Direktscan. |
-| 🖼️ **Bilder generieren** | Lokal mit stable-diffusion.cpp (Animagine/Illustrious XL, FLUX.1, Qwen-Image, FLUX.2) – passt der VRAM nicht neben das Chat-Modell, macht die App gestuft Platz und lädt danach alles wieder. Das Chat-Modell schreibt den Bild-Prompt aus Charakter und Szene. Alternativ Automatic1111, ComfyUI, DALL-E 3 oder NovelAI. |
-| 🎮 **Discord** | Discord Rich Presence (RPC) und nativer Gateway-Bot (`!ask`, `!character`, `!status`). |
-| 🌍 **i18n, Themes & Diagnose** | Dreisprachig (`de`, `en`, `ru`), 5 lebendige Akzent-Themes mit hellem, dunklem oder systemgesteuertem Modus, globale Befehlspalette (`Strg/Cmd+K`), rotierender File-Logger, Live-Log-Viewer und Update-Checker. |
-| 💾 **Profil-Backups** | Portabler ZIP-Export mit Gruppen-Auswahl und 5-facher automatischer Sicherheits-Snapshot-Rotation vor jedem Restore. |
-| 🔐 **Local First** | Betreibe GGUF-Modelle direkt auf deinem Rechner. OtakuSoul lädt die passenden Laufzeiten selbst (llama.cpp, PrismML, stable-diffusion.cpp, CrispASR – CUDA, Vulkan, ROCm oder CPU, per SHA-256 geprüft), erkennt NVIDIA-, AMD- und Intel-GPUs samt freiem VRAM und nutzt immer die dedizierte Grafikkarte statt einer iGPU. |
+---
 
-## Charaktere, die sich entwickeln
+### 2. Soul Stage – Die interaktive Rollenspiel-Bühne
+Erlebe interaktive Tabletop-Abenteuer wie mit einem menschlichen Spielleiter. Soul Stage kombiniert erzählerische Tiefe mit verlässlichen Pen-&-Paper-Mechaniken.
 
-OtakuSoul behandelt eine Figur nicht als austauschbaren Prompt. Jede Unterhaltung kann Spuren hinterlassen:
+<p align="center">
+  <img src="docs/assets/screenshots/soul-stage-adventure.png" alt="Soul Stage TTRPG Kampagnen- und Abenteuermodus" width="95%" />
+</p>
 
-- **Psychologie** hält emotionale Muster, Bedürfnisse und innere Konflikte fest.
-- **Beziehungen** verändern sich durch Vertrauen, Nähe, Spannung und gemeinsam Erlebtes.
-- **Episodische Erinnerungen** bewahren bedeutende Momente, ohne den Kontext mit jeder Nachricht neu aufzublähen.
-- **Tagebucheinträge** lassen Charaktere Erlebnisse aus ihrer eigenen Perspektive reflektieren.
-- **Lorebooks** bringen Personen, Orte, Regeln und Weltwissen genau dann in den Kontext, wenn sie gebraucht werden.
+* **Zweistufiger KI-Game-Master:** Ein Planner-Modell entwirft Handlung und Herausforderungen; ein Executor-Modell lässt die Welt und Gefährten reagieren.
+* **3D-animierte Würfelproben:** Proben auf Fertigkeiten mit Schwierigkeitsgraden (DC), dramatischen 3D-Würfelwürfen und audio-visuellen Effekten bei kritischen Treffern oder Patzern.
+* **Szenen & Kampagnen:** Spiele vordefinierte Abenteuer wie alle 12 Kapitel von *No Game No Life* oder erstelle eigene Welten.
+* **NPCs mit Gedächtnis & Beförderung:** Triff auf Händler, Wachen oder Schurken mit eigenen Erinnerungen – und befördere sie bei Gefallen direkt zu festen Gefährten der Gruppe!
 
-Ein integrierter Memory-Inspector macht diese Ebenen sichtbar und editierbar. Backups und Wiederherstellung geben dir Kontrolle über die Entwicklung deiner Figuren.
+<p align="center">
+  <img src="docs/assets/screenshots/stage-world-editor.png" alt="Soul Stage Weltzustand-Editor" width="85%" />
+</p>
 
-Psychologie und Beziehung bearbeitest du als Entwurf mit getrennten Aktionen zum Speichern und Verwerfen.
-Entwürfe bleiben beim Reiterwechsel und Schließen des Inspectors erhalten und sind pro Charakter und Persona getrennt.
-Bei einem Schreibfehler bleiben deine Änderungen für einen erneuten Speicherversuch erhalten.
-Das gilt auch für MEMORY.md und USER.md im Markdown-Editor: Entwürfe bleiben beim Reiterwechsel und Schließen
-erhalten. Fehlgeschlagenes Nachladen ersetzt keine Eingaben; Speichern und Nachladen sperren vorübergehend die Bearbeitung.
+* **Volle Kontrolle über die Welt:** Der integrierte Weltzustand-Editor erlaubt das freie Anpassen von Fakten, Story-Arcs, Geheimnissen, Gruppenbeziehungen und Inventar.
 
-Schlägt das manuelle Speichern einer Erinnerung oder eines Tagebucheintrags fehl, zeigt die App den Fehler an
-und behält deine Eingaben zum Wiederholen. Während des Speicherns sind die jeweiligen Formularfelder gesperrt.
+---
 
-## Deine Welt, dein Modell
+### 3. Soul Memory 2.0 – Charaktere mit echter Tiefe
+Ein Charakter in OtakuSoul vergisst dich nicht. Nach Gesprächen analysiert eine autonome kognitive Pipeline das Geschehene und aktualisiert die verschiedenen Schichten des Seelengedächtnisses.
 
-### Lokal
+<p align="center">
+  <img src="docs/assets/screenshots/soul-memory-psyche.png" alt="Soul Memory 2.0 Kognitiver Psychologie- und Beziehungs-Drawer" width="95%" />
+</p>
 
-OtakuSoul lädt die passende Laufzeit (llama.cpp oder für Ternary-Bonsai-Modelle den PrismML-Fork) direkt in der App, startet und überwacht den lokalen `llama-server` und empfiehlt GPU-Layer und Kontextgröße passend zu CPU, RAM und GPU. Der integrierte Modell-Hub sucht und lädt GGUF-Modelle von Hugging Face. Vision-Modelle (z. B. Gemma, Qwen-VL) sehen angehängte Bilder, wenn in den Server-Einstellungen die passende `mmproj`-Datei gewählt ist.
+* **Geist & Psyche:** Feste Glaubenssätze, momentane Gemütszustände, unbewusste Motive und kognitive Dissonanzen formen das Verhalten.
+* **Beziehungsentwicklung:** Vertrauen, emotionale Nähe und gemeinsam gemeisterte Meilensteine wachsen organisch.
+* **Tagebuch & Episoden:** Die Figur schreibt persönliche Tagebucheinträge aus ihrer eigenen Ich-Perspektive und reflektiert über das Erlebte.
+* **Markdown-Transparenz:** Alle Schichten lassen sich im integrierten Editor als `MEMORY.md` und `USER.md` einsehen, bearbeiten und bidirektional synchronisieren.
 
-### Cloud
+---
 
-Für andere Anforderungen stehen mehrere Provider bereit, darunter OpenRouter, Anthropic, OpenAI, DeepSeek, Gemini, Mistral und benutzerdefinierte OpenAI-kompatible Endpunkte. Presets und erweiterte Sampling-Optionen erlauben den Wechsel zwischen schnellen Chats, kreativem Storytelling und fokussierter Logik.
+### 4. Soul Companion – Dein KI-Agent auf dem Desktop
+Hole deinen Gefährten direkt auf deinen Arbeitsplatz. Als schwebendes, rahmenloses Fenster begleitet dich dein Charakter durch den Alltag.
 
-## Avatare mit Ausdruck
+<p align="center">
+  <img src="docs/assets/screenshots/soul-companion-workbench.png" alt="Soul Companion Desktop-Agent und Werkbank mit Human-in-the-Loop Sicherheit" width="95%" />
+</p>
 
-Wähle die Darstellung, die zu deinem Charakter passt:
+* **Transparentes Overlay & Click-Through:** Platziere deinen Avatar dezent auf dem Bildschirm, ohne dass er dich beim Arbeiten oder Spielen stört.
+* **Biometrisches Hormonsystem:** Dopamin, Cortisol, Oxytocin und Erschöpfung simulieren Laune, Konzentration und Müdigkeit in Echtzeit.
+* **Echte Desktop-Tools:** Dein Begleiter kann auf Wunsch das Web durchsuchen, Screenshots analysieren, Musik über MPRIS steuern oder Skripte ausführen.
+* **Maximale Sicherheit:** Ein **25-Sekunden Human-in-the-Loop Countdown-Banner** verlangt deine explizite Zustimmung vor jeder sensiblen Aktion. Zudem schützt ein automatischer Datenschutzfilter Passwörter und Online-Banking.
 
-- **3D VRM** mit natürlicher Ruhepose, Emotion-Morphs, Physik und LipSync
-- **Live2D** mit Bewegungen, Expressions, Blicksteuerung, Zoom und freier Positionierung
-- **2D-Porträts** mit optionalen Bildern für sechs Stimmungen und weichem Morph-/Crossfade-Wechsel
-- **28 Emotionen** mit deutsch- und englischsprachiger Erkennung
+---
 
-Ansicht, Größe und Position werden automatisch pro Modell gespeichert. So erscheint ein Charakter beim nächsten Start genau dort, wo du ihn platziert hast.
+### 5. Charakter-Studio, Lorebooks & Soul Hub
+Egal ob du eigene Figuren erschaffen oder auf eine gigantische Community-Bibliothek zugreifen möchtest: OtakuSoul fügt sich nahtlos in dein bestehendes Setup ein.
 
-Mitgeliefert werden die VRM-Modelle *Anime Girl* und *Anime Man* sowie die Live2D-Modelle. Weitere Avatare gibt es als
-separates **Avatar-Paket** (`OtakuSoul-Avatare.zip`) bei den GitHub-Releases: in den Avatar-Ordner entpacken
-(*Einstellungen → Erscheinungsbild → Avatar-Ordner öffnen*) und auf *Aktualisieren* klicken. GGUF-Sprachmodelle lädt der
-eingebaute Modell-Hub direkt von Hugging Face.
+<p align="center">
+  <img src="docs/assets/screenshots/character-library.png" alt="OtakuSoul Charakterbibliothek mit Tagging und SillyTavern-Kompatibilität" width="95%" />
+</p>
 
-## Geschichten werden zum Spiel
+<p align="center">
+  <img src="docs/assets/screenshots/prompt-templates.png" alt="OtakuSoul System-Prompt und Vorlagen-Editor" width="85%" />
+</p>
 
-Mit **Soul Stage** wird aus Rollenspiel-Chat eine steuerbare Kampagne. Ein mehrstufiger Game-Master-Ablauf verbindet Erzählung und deterministische Mechanik: Würfelwürfe, Schwierigkeitsgrade und Zustandsänderungen werden nachvollziehbar ausgewertet, während die KI daraus eine zusammenhängende Szene gestaltet.
+* **Vollständige SillyTavern-V2-Kompatibilität:** Importiere und exportiere Charakterkarten als PNG (mit eingebetteten Chara-Daten) oder JSON.
+* **Geführter 5-Schritte KI-Wizard:** Erstelle aus einer vagen Idee in wenigen Schritten tiefgründige Charaktere mit Hintergrundgeschichte, Persönlichkeit und Begrüßung.
+* **Chub AI Browser:** Durchsuche tausende Karten direkt in der App und extrahiere eingebettete Lorebooks automatisch.
+* **Lorebook 2.0 Engine:** Reaktive Welt- und Wissensbücher mit kombinierbaren Triggern (ODER, UND, NICHT, Regex), Spannungs-Akkumulatoren und Aktivierungsketten.
 
-Szenenordner (inklusive aller 12 Kapitel unseres *No Game No Life* Abenteuers), modale Spielstand-Wahl (Fortsetzen vs. Neu starten), rotierende Sicherheits-Backups, Inline-Nachrichtenbearbeitung, Multi-Akteur-Züge, atmosphärische Hintergründe mit Lock-Option, Party-HUD, taktische Begegnungen und ein exportierbares Abenteuerprotokoll machen OtakuSoul zu einer flexiblen Bühne für Solo-Rollenspiel und charaktergetriebene Geschichten.
+---
 
-Lange Stage-Verläufe nutzen das Kontextfenster des gewählten Modells und laufende Zusammenfassungen im Spielstand. Planer, Erzähler und Gefährten erhalten getrennte Zusammenfassungen; Flüstern erreicht nur seinen Empfänger, Gedanken nur den Spielleiter. Der vollständige Verlauf bleibt erhalten.
+## 🏛️ System- & Kognitions-Architektur
 
-Der Weltzustand (Fakten, Story-Arcs, Ziele, Beziehungen, Inventar) ist frei bearbeitbar; aufgelöste Arcs werden archiviert, Fakten regelmäßig auf Widersprüche geprüft. **Charakter-Overlays** halten fest, wie die Geschichte eine Figur verändert hat, **Lorekarten** bringen Szenenwissen ins Spiel – für die Gruppe oder nur für den Spielleiter. Was die Party erlebt, wandert aus ihrer jeweiligen Sicht ins Soul Memory der Charaktere.
+### 1. Technische System-Übersicht
 
-NPCs können vom Spielleiter eingeführt oder über **NPCs** selbst angelegt werden. Acht Archetyp-Avatare, private
-Flüsterziele und eigene, nach Textrelevanz abgerufene Erinnerungen machen wiederkehrende Begegnungen möglich.
-**Zum Charakter befördern** erstellt eine V2-PNG-Karte, übernimmt Erinnerungen ins Soul Memory und fügt den
-Charakter zur Party hinzu. NPCs behalten bei einer Rückkehr ihr Gedächtnis und erfahren keine Ereignisse aus ihrer Abwesenheit.
+OtakuSoul trennt Benutzeroberfläche, Inferenz-Steuerung und Hardware-Ressourcen sauber voneinander. Dank nativer C++/Rust-Engines wird **keine Python-Laufzeit** benötigt:
 
-Bestehende Szenen lassen sich in der **Szenen-Lobby → Weitere Aktionen → Szene bearbeiten** anpassen,
-ohne den Spielstand zu verlieren. Der Editor bindet Lorebooks, setzt 1–6 Akteure pro Runde und verwaltet
-Startbilder samt Vorschau, Ambient-Dateien, Hintergrundsperre und Stummschaltung. Eigene Bilder und
-MP3/WAV/OGG-Dateien können importiert werden. Startort, Startzeit, Eröffnung und Startbild gelten beim
-nächsten Neustart.
+```mermaid
+flowchart TD
+    subgraph Frontend["Modernes Desktop-Frontend (React 19 + TypeScript + Tailwind 4)"]
+        UI["UI-Primitive & Themes\n(Obsidian, Cyberpunk, Sakura, Midnight, Emerald)"]
+        ChatUI["Chat & HUD\n(11 Rollenspiel-Presets)"]
+        StageUI["Soul Stage\n(3D Würfel, Taktik, Kampagne)"]
+        AvatarUI["Avatar Engine\n(Three.js VRM + PixiJS Live2D)"]
+        CompanionUI["Floating Companion\n(Transparent Overlay & MCP)"]
+    end
 
-Beim **Vorlesen** sprechen Gefährten mit ihrer eingestellten Charakterstimme, Spielleiter und NPCs mit einer eigenen
-Erzählerstimme; auf Wunsch liest die Stage jeden neuen Beitrag automatisch vor. Der Ambient-Ton einer Szene läuft in
-Schleife, und der Spielleiter wechselt ihn passend zur Stimmung.
+    subgraph TauriCore["Tauri 2 Core & IPC-Brücke (Rust)"]
+        State["Zentraler AppState & SQLite Engine"]
+        ContextMgr["Kontextfenster-Manager & Zusammenfassungen"]
+        PromptBuilder["Prompt-Builder & Lorebook-Engine"]
+        HardwareSched["Hardware-Probe & VRAM-Planer\n(NVIDIA / AMD / Intel GPU-Priorisierung)"]
+    end
 
-## Ein echter Begleiter auf deinem Desktop
+    subgraph LocalEngines["Lokale KI-Engines (100% C++ / Rust, Zero Python)"]
+        Llama["llama.cpp / PrismML Fork\n(GGUF Text-Inferenz, Ternary Bonsai)"]
+        SD["stable-diffusion.cpp\n(SDXL, FLUX.1, FLUX.2, Qwen-Image)"]
+        Crisp["CrispASR Engine\n(Qwen3-TTS, Chatterbox, Kokoro DE, Stimmklonen)"]
+        Whisper["whisper.cpp\n(Offline-Spracherkennung)"]
+    end
 
-Mit **Soul Companion** wird dein Lieblingscharakter zu einem echten Assistenten im Desktop-Alltag:
+    subgraph CloudGateways["Optionale Cloud-Provider"]
+        CloudLLM["OpenRouter / Anthropic / OpenAI / DeepSeek / Gemini"]
+        CloudTTS["Edge-TTS / ElevenLabs"]
+    end
 
-- **Schwebendes Overlay:** Ein rahmenloses, transparentes Fenster (`always_on_top`) begleitet dich beim Arbeiten oder Spielen, inklusive nativer Click-Through-Umschaltung.
-- **Emotionen & Biorhythmus:** Neurohormone (Dopamin, Cortisol, Oxytocin, Erschöpfung) modellieren Laune, Müdigkeit und Einsamkeit, aus denen fließend 10 Emotionen abgeleitet werden.
-- **Gedankenspeicher & Ziele:** Dein Begleiter führt ein persistentes Scratchpad für eigene Überlegungen und erinnert dich an Versprechen und Verabredungen.
-- **Echte Werkzeuge & Schutz:** Websuche (DuckDuckGo), Screenshot-Erfassung (`xcap`), Zwischenablage, MPRIS-Mediensteuerung, App-Verwaltung, Multiplattform-Skript-Ausführung mit eigenem Arbeitsverzeichnis und Timeout (PowerShell, Bash, Batch, optional Python 3) und Datei-Organisation – geschützt durch einen 25s Human-in-the-Loop Countdown-Banner für sensible Aktionen und automatischen Datenschutzfilter für Passwörter & Banking.
-- **Model Context Protocol (MCP) & Plugins:** Verbinde beliebige MCP-Server (stdio oder HTTP/SSE) und führe benutzerdefinierte Skripte direkt als Tools aus.
+    Frontend <==>|"Typsichere IPC (ts-rs)"| TauriCore
+    HardwareSched -->|"Dynamisches Laden & Entladen"| LocalEngines
+    TauriCore --> LocalEngines
+    TauriCore --> CloudGateways
+```
 
-Automatische Tool-Freigaben gelten ausschließlich für ausdrücklich geprüfte interne Werkzeuge. MCP- und unbekannte
-Werkzeuge, Screenshots, Zwischenablagezugriffe und schreibende Dateiaktionen benötigen eine Bestätigung.
-Die Skript-Ausführung nutzt ein eigenes Arbeitsverzeichnis und einen Timeout; sie bietet derzeit keine
-Betriebssystem-Isolation für Datei- oder Netzwerkzugriffe.
+---
 
-## Offen für dein bestehendes Ökosystem
+### 2. Kognitiver Soul-Memory-Ablauf
 
-OtakuSoul unterstützt unter anderem:
+Jeder Gesprächsabschnitt durchläuft eine mehrstufige Reflexion, damit sich Figuren organisch weiterentwickeln:
 
-- Tavern- und SillyTavern-Character-Card V2 als PNG oder JSON
-- Geführter 5-Schritte KI-Charakterassistent (Wizard) zur automatischen Kartengenerierung
-- Chub AI Kartenimport inkl. automatischer Extraktion eingebetteter Lorebooks (`character_book`)
-- SillyTavern- und Soul-of-Waifu-Chatimporte
-- Lorebooks und World-Info-Strukturen mit Chain-Dependencies und Tension-Trigger
-- Soul-Stage-Szenarien und Szenenordner (JSON-Import/Export)
-- Model Context Protocol (MCP) Server (stdio & HTTP/SSE) sowie Skript-Plugins
-- Lokaler Axum Webserver für mobile Endgeräte (iOS Safari / Android) mit QR-Code
-- Discord Rich Presence (RPC) und Discord Gateway WebSocket Bot
-- KI-Bildgenerierung lokal (stable-diffusion.cpp) oder via Automatic1111, ComfyUI, DALL-E 3 und NovelAI
-- Bilder, PDF- und Textdateien als Chat-Anhänge (Vision-Modelle lokal oder in der Cloud)
-- Vollständige ZIP-Profil-Sicherung & Restore mit 5-facher Sicherheits-Snapshot-Rotation
-- GGUF-Modelle für lokale Inferenz
-- VRM 0.x/1.0 und Live2D Cubism 2/4
-- Lokale Sprachausgabe über CrispASR (Qwen3-TTS, Chatterbox, Kokoro), Edge-TTS, ElevenLabs und OpenAI-kompatible Sprachdienste
-- lokale Whisper- und OpenAI-kompatible Transkription
+```mermaid
+flowchart LR
+    Turn["Nutzer- & Charakter-Turn"] --> Buffer["Dialog-Puffer"]
+    Buffer --> Router{"Router-Agent\n(Signifikante Änderung?)"}
 
-## Installation & Start
+    Router -->|Nein| Idle["Keine Speicherung nötig"]
+    Router -->|Ja| Pipeline["Kognitive Pipeline"]
 
-Wähle die passende Installationsmethode für dein Betriebssystem:
+    subgraph SQLiteMemory["Soul Memory 2.0 (SQLite)"]
+        Psyche["Geist & Psyche\n(Glaubenssätze, Emotionen, Konflikte)"]
+        Rel["Beziehung\n(Affinität, Vertrauen, Meilensteine)"]
+        Episodes["Episodische Themen\n(Themenbezogene Erinnerungen)"]
+        Diary["Tagebuch\n(Ich-Reflexion der Figur)"]
+    end
 
-### 🐧 Linux
-- **Ein-Klick-Installer & Launcher-Setup:**
+    Pipeline --> Psyche
+    Pipeline --> Rel
+    Pipeline --> Episodes
+    Pipeline --> Diary
+
+    SQLiteMemory --> Prompt["Prompt-Builder Injektion"]
+    Prompt --> NextTurn["Nächster Dialog-Turn"]
+```
+
+---
+
+## 📊 Geprüfte Hardware-Performance
+
+OtakuSoul wurde auf echter Hardware auf Herz und Nieren geprüft. Die folgenden Werte wurden auf einem Referenzsystem (**NVIDIA GeForce RTX 4070 Ti SUPER, 16 GB VRAM**, Linux CUDA) ermittelt:
+
+### Lokale Bildgenerierung (stable-diffusion.cpp)
+Dank des intelligenten VRAM-Planers teilt sich die Bildgenerierung den Grafikspeicher nahtlos mit dem Sprachmodell:
+
+| Modell | Generierungszeit | VRAM-Bedarf | VRAM-Verhalten |
+|---|---|---|---|
+| **Animagine XL 4.0** (SDXL) | ~28 s | ~7,6 GB | Läuft parallel neben verkleinertem Chat-Modell (44 GPU-Layer) |
+| **FLUX.1 dev** (Q5_K_S) | ~48 s | ~9,0 GB | Läuft parallel neben Chat-Modell (26 GPU-Layer) |
+| **Qwen-Image 2.1** (Q4_K) | ~73 s | ~5,6 GB | Paralleler Betrieb mit CPU-Offloading möglich |
+| **FLUX.2 dev** (Q4_K_S) | ~248 s | ~14,4 GB | Gestufter VRAM-Tausch: Entlädt Chat-Modell und lädt es danach neu |
+
+### Lokale Sprachausgabe & Stimmklonen (CrispASR)
+Synthesezeiten und Verständlichkeit (gemessen via Whisper-Rückerkennung):
+
+| Modell | Stimme / Modus | Deutsch | Russisch | Englisch | RTF (Real-Time Factor) | VRAM-Zuwachs |
+|---|---|---|---|---|---|---|
+| **Qwen3-TTS 0.6B** (CustomVoice) | Vivian / Ryan | 100 % | 90 % | 100 % | 0,12 – 0,13 (sehr schnell) | +2,3 – 3,2 GB |
+| **Qwen3-TTS 1.7B Base** | **Eigener Stimmklon** (16–24 kHz) | 100 % | 100 % | 100 % | 0,15 (Echtzeit) | +3,3 – 3,6 GB |
+| **Chatterbox Multilingual** | Standard-Stimme | 92 % | 70 % | – | 0,30 – 0,55 | +1,8 – 2,3 GB |
+| **Kokoro DE** | Victoria / Bernd / Eva | 77 % | – | – | 0,06 – 0,23 (ultraschnell) | +1,0 – 1,8 GB |
+
+> [!NOTE]
+> Der lokale Chat steht nach jeder Bild- oder Sprachberechnung bereits nach 1–4 Sekunden wieder vollständig zur Verfügung!
+
+---
+
+## 📥 Installation & Schnellstart
+
+OtakuSoul bietet für alle gängigen Betriebssysteme native Installer:
+
+### 🐧 Linux (Debian, Ubuntu, Arch, Fedora u. a.)
+* **Ein-Klick-Setup (empfohlen):**
   ```bash
   chmod +x install.sh && ./install.sh
   ```
-  Installiert OtakuSoul nach `~/.local/bin/otakusoul`, richtet das 512x512 App-Icon ein, legt die `.desktop`-Verknüpfung für dein Anwendungsmenü (GNOME, KDE, XFCE etc.) an und macht es sofort über das Startmenü oder per CLI-Befehl `otakusoul` startbar.
-- **Paket-Installationen:**
-  - **Debian / Ubuntu:** `sudo dpkg -i OtakuSoul_0.2.0_amd64.deb`
-  - **Arch Linux (AUR):** `cd packaging/aur && makepkg -si`
-  - **Portables AppImage:** `chmod +x OtakuSoul_0.2.0_amd64.AppImage && ./OtakuSoul_0.2.0_amd64.AppImage`
+  Installiert OtakuSoul nach `~/.local/bin/otakusoul`, richtet das hochauflösende App-Icon ein und erstellt den Menüeintrag im Desktop-Starter (GNOME, KDE, XFCE).
+* **Debian / Ubuntu:**
+  ```bash
+  sudo dpkg -i OtakuSoul_0.2.0_amd64.deb
+  ```
+* **Arch Linux (AUR):**
+  ```bash
+  cd packaging/aur && makepkg -si
+  ```
+* **Portables AppImage:**
+  ```bash
+  chmod +x OtakuSoul_0.2.0_amd64.AppImage && ./OtakuSoul_0.2.0_amd64.AppImage
+  ```
 
 ### 🪟 Windows (10 / 11)
-- **PowerShell Installer & Shortcut-Setup:**
+* **PowerShell Schnell-Installer:**
   ```powershell
   powershell -ExecutionPolicy Bypass -File .\install.ps1
   ```
-  Installiert OtakuSoul nach `%LOCALAPPDATA%\Programs\OtakuSoul\`, erstellt Verknüpfungen mit dem nativen App-Icon im Windows-Startmenü sowie auf dem Desktop und bietet den Direktstart an.
-- **NSIS Setup (.exe):** Führe den grafischen Installer `OtakuSoul_0.2.0_x64-setup.exe` aus.
+  Installiert OtakuSoul nach `%LOCALAPPDATA%\Programs\OtakuSoul\`, erstellt Startmenü- und Desktop-Icons und bietet den Sofortstart an.
+* **Grafisches NSIS-Setup:** Führe einfach `OtakuSoul_0.2.0_x64-setup.exe` aus.
 
-### 🍏 macOS (Intel & Apple Silicon)
-- **macOS Installer & App-Setup:**
+### 🍏 macOS (Apple Silicon & Intel)
+* **Terminal-Installer:**
   ```bash
   chmod +x install-macos.sh && ./install-macos.sh
   ```
-  Installiert `OtakuSoul.app` nach `/Applications`, bereinigt Gatekeeper-Quarantäne-Attribute und macht OtakuSoul über Launchpad, Spotlight und Dock startbar.
-- **DMG Installer:** Die Datei `OtakuSoul_0.2.0_universal.dmg` öffnen und OtakuSoul in den `Applications`-Ordner ziehen.
+  Kopiert die App nach `/Applications`, entfernt Gatekeeper-Quarantäne-Flags und verknüpft sie mit Spotlight und Launchpad.
+* **DMG-Image:** Öffne `OtakuSoul_0.2.0_universal.dmg` und ziehe OtakuSoul in deinen Programme-Ordner.
 
-## Schnellstart für Entwickler
+---
+
+## 🛠️ Für Entwickler
 
 ### Voraussetzungen
+* **Node.js** 20+ und `npm`
+* **Rust** 1.78+ (`cargo`)
+* *Linux:* WebKitGTK 4.1, GTK 3, libsoup 3, librsvg 2
 
-- Node.js 20 oder neuer
-- Rust 1.78 oder neuer
-- Linux: WebKitGTK 4.1, GTK 3, libsoup 3 und librsvg 2
-
-### Entwicklungsmodus
-
+### Entwicklungsumgebung starten
 ```bash
+# Abhängigkeiten installieren
 npm install
+
+# Entwicklungsserver mit Hot-Reloading starten
 npm run tauri dev
+
+# Speziell für Linux (mit X11/WebKit-Optimierungen)
+npm run tauri:linux
 ```
 
-### TypeScript-Typen aus Rust
-
-Die Datentypen zwischen Backend und Frontend erzeugt [ts-rs](https://github.com/Aleph-Alpha/ts-rs) aus den Rust-Structs nach
-`src/types/generated/` (bei `cargo test`, einzeln per `npm run types:gen`). Die Dateien werden mit eingecheckt; nicht von
-Hand bearbeiten. `src/types/wireCheck.ts` prüft, dass die übrigen handgeschriebenen Typen dieselben Feldnamen verwenden.
-
-### Tests ausführen
-
+### Tests & Typsicherheit
 ```bash
-# Alles, was vor einem Commit grün sein muss: oxlint, tsc, Vitest, cargo fmt/clippy/test
+# Alle lokalen Vorab-Checks (oxlint, tsc, vitest, cargo fmt, clippy, cargo test)
 npm run check
 
-# End-to-End-Rauchtest: baut die Debug-Version nach target/e2e und bedient sie über tauri-driver
-# gegen ein Mock-LLM (Chat, Kontextfenster, Zusammenfassung, Prompt-Vorlagen, Anhänge, Übersetzung)
+# TypeScript-Typen aus Rust-Structs neu generieren (ts-rs)
+npm run types:gen
+
+# End-to-End Testsuite (baut nach target/e2e und testet alle Features gegen Mock-LLM)
 npm run e2e
 
-# Lange Chats messen (1000 Nachrichten: Öffnen, Tastendruck, DOM-Größe)
+# Langchat-Performance-Messung (1000 Nachrichten)
 npm run e2e:perf
-
-# GPU-Tests mit echten Modellen (lädt große Modelle, nur auf Wunsch)
-cargo test --manifest-path src-tauri/Cargo.toml --test gpu_e2e -- --ignored --nocapture
 ```
 
-Der E2E-Test braucht `tauri-driver` (`cargo install tauri-driver --locked`) und `WebKitWebDriver` (Arch: `webkitgtk-6.0`,
-Debian/Ubuntu: `webkit2gtk-driver`); Details in [`e2e/README.md`](e2e/README.md). Er läuft mit einem Wegwerf-Profil:
-Ist `OTAKUSOUL_HOME` gesetzt, legt die App Einstellungen und Daten dort ab und läuft auch neben einer geöffneten
-OtakuSoul-Instanz, ohne deren Daten zu berühren.
+---
 
-### Produktions-Build & Paketierung
+## 🧰 Technologie-Stack
 
-```bash
-# Standard Tauri Build
-npm run tauri build
+* **Desktop-Architektur:** [Tauri 2](https://tauri.app/) (sicher, leichtgewichtig, minimaler RAM-Verbrauch)
+* **Backend:** [Rust](https://www.rust-lang.org/) mit [Tokio](https://tokio.rs/), [SQLite](https://sqlite.org/) via `rusqlite`, `reqwest` und `axum`
+* **Frontend:** [React 19](https://react.dev/), [TypeScript](https://www.typescriptlang.org/), [Vite](https://vitejs.dev/) und [Tailwind CSS 4](https://tailwindcss.com/)
+* **State Management:** [Zustand](https://github.com/pmndrs/zustand) mit partitionierten Slices
+* **Avatar-Rendering:** [Three.js](https://threejs.org/) & [@pixiv/three-vrm](https://github.com/pixiv/three-vrm) für 3D; [PixiJS](https://pixijs.com/) & Live2D Cubism Core für 2D
+* **Lokale KI-Ressourcen:** llama.cpp & PrismML (GGUF), stable-diffusion.cpp, CrispASR, whisper.cpp
+* **Audio & Sprache:** Web Audio API mit Echtzeit-FFT-Analyse, CrispASR, Edge-TTS, ElevenLabs
 
-# Linux Pakete (AppImage, deb)
-./packaging/scripts/build-linux-packages.sh
-```
+---
 
-Installierte Pakete enthalten `presets/`, `assets/emotions/`, `assets/live2d/` und die beiden Standard-VRMs
-(`bundle.resources` in `src-tauri/tauri.conf.json`). Große Modelle gehören nicht ins Paket.
+## ⚖️ Lizenz & Ethik
 
-### Signierte Updates
+OtakuSoul ist freie Software unter der **GNU General Public License v3.0 (GPLv3)**.
 
-Die App installiert Updates selbst (`tauri-plugin-updater`) und prüft dabei die Signatur gegen den öffentlichen Schlüssel in
-`src-tauri/tauri.conf.json`. Der private Schlüssel und sein Passwort liegen lokal in `.tauri-signing/` (per `.gitignore`
-ausgeschlossen) und gehören zusätzlich in einen Passwortmanager – ohne sie lassen sich keine Updates mehr ausliefern.
+### KI-Modelle & Transparenz
+OtakuSoul bündelt bewusst **keine** proprietären Modellgewichte im Quellcode oder Installer:
+* Laufzeiten und Modelle werden ausschließlich transparent von ihren Originalquellen (z. B. Hugging Face) bezogen und per **SHA-256-Prüfsumme** verifiziert.
+* Nicht-kommerzielle Modelle (z. B. FLUX.1 dev oder F5-TTS) sind standardmäßig gesperrt und müssen in den Einstellungen explizit vom Nutzer freigeschaltet werden.
+* **Verantwortungsvolles Stimmklonen:** Das Klonen von Stimmen erfordert eine ausdrückliche Bestätigung der vorliegenden Einwilligung. Generierte Audiodateien werden über CrispASR mit einem digitalen Wasserzeichen versehen (**EU AI Act, Art. 50**).
 
-```bash
-# Signiert bauen (liest .tauri-signing/ automatisch) und target/release/bundle/latest.json erzeugen
-RELEASE_NOTES=notes.md ./packaging/scripts/build-linux-packages.sh
-```
+---
 
-Ist VMware installiert, bricht das AppImage-Bundling ab: `linuxdeploy` greift auf dessen eigene `libgdk_pixbuf` unter
-`/usr/lib/vmware/lib/` zu. Dann das AppImage auf einem Rechner ohne VMware (oder in einem Container) bauen; `.deb` ist
-nicht betroffen.
-
-Danach auf GitHub ein Release `v<Version>` anlegen und die vom Skript aufgelisteten Pakete samt `latest.json` hochladen.
-Die App liest `releases/latest/download/latest.json`.
-
-### Avatar-Paket für ein Release
-
-```bash
-# Packt alle VRMs aus assets/vrm außer den beiden Standardmodellen nach dist/OtakuSoul-Avatare.zip
-./tools/package_avatar_pack.sh
-```
-
-Das Skript bricht ab, wenn ein Modell keinen Eintrag in `assets/vrm/lizenzen.txt` hat. Nur Modelle aufnehmen, deren Lizenz
-die Weitergabe erlaubt.
-
-### Laufzeiten (llama.cpp, PrismML, stable-diffusion.cpp, CrispASR)
-
-Die App lädt alle Laufzeiten selbst (*Einstellungen → llama-server*, *Integrationen → Bildgenerierung*, Stimmen-Dialog)
-und empfiehlt die passende Variante: CUDA unter Linux nur, wenn die passende CUDA-Version installiert ist, sonst
-Vulkan. Kompakte `PQ2_0`-/`PTQ1_0`-Modelle (Ternary Bonsai) laufen automatisch mit dem PrismML-Fork. Für Entwickler
-gibt es zusätzlich `./tools/install_prism_runtime.sh`, das den Fork nach `bin/prism-cuda/` legt.
-
-## Technologie
-
-- **Desktop:** Tauri 2
-- **Backend:** Rust, Tokio, SQLite und reqwest
-- **Frontend:** React 19, TypeScript, Vite und Tailwind CSS 4
-- **UI-System:** Theme-fähige, barrierefrei getestete Primitive für Buttons, Tabs, Auswahlfelder, Schalter, Slider, Dialoge, Feedback und layoutstabile Skeleton-Loader; konsistente Lucide-Icons statt plattformabhängiger Emoji-Glyphen
-- **Avatare:** Three.js, `@pixiv/three-vrm`, PixiJS und Live2D Cubism
-- **Lokale KI:** llama.cpp (und PrismML-Fork) mit GGUF, stable-diffusion.cpp für Bilder, CrispASR für Sprache
-- **Audio:** Web Audio, CrispASR, Edge-TTS, Kokoro und whisper.cpp
-- **Tests:** Vitest, cargo test und ein E2E-Rauchtest mit WebdriverIO + `tauri-driver`
-
-Die native Rust-Basis hält die Anwendung kompakt und reaktionsschnell, während die WebGL-Oberfläche Raum für ausdrucksstarke Avatare und ein modernes, atmosphärisches Interface schafft.
-
-## Projektstatus
-
-OtakuSoul befindet sich in aktiver Entwicklung. Datenformate, Bedienabläufe und einzelne Schnittstellen können sich bis zu einer stabilen Veröffentlichung noch verändern. Backups wichtiger Charaktere und Erinnerungen werden empfohlen.
-
-Beiträge, Fehlermeldungen und nachvollziehbare Verbesserungsvorschläge sind willkommen.
-
-## Lizenz
-
-OtakuSoul ist freie Software unter der **GNU General Public License v3.0**.
-
-### KI-Modelle und Laufzeiten
-
-OtakuSoul liefert keine KI-Modelle mit. Laufzeiten (llama.cpp, PrismML-Fork, stable-diffusion.cpp, CrispASR) und
-Modelle werden auf Wunsch von ihren Originalquellen geladen, per SHA-256 geprüft und unterliegen **ihren eigenen
-Lizenzen**, die in der App jeweils angezeigt werden:
-
-- Standardmodelle haben freie Lizenzen, z. B. Qwen3-TTS und Kokoro (Apache-2.0), Chatterbox (MIT), Animagine XL 4.0
-  (CreativeML Open RAIL++-M).
-- Modelle mit Einschränkungen sind gekennzeichnet. **FLUX.1/FLUX.2 dev** und **F5-TTS** (CC-BY-NC-4.0) dürfen nur
-  nicht-kommerziell genutzt werden; F5-TTS bleibt gesperrt, bis man „Nicht-kommerzielle Modelle erlauben“ aktiviert.
-- **Stimmklonen** ist nur mit der eigenen Stimme oder mit ausdrücklicher Einwilligung der sprechenden Person erlaubt.
-  Die App fragt diese Bestätigung ab; lokal erzeugte Sprache wird von CrispASR mit einem Wasserzeichen als KI-generiert
-  gekennzeichnet (EU AI Act, Art. 50).
-
-Entwickelt von **SnowwhiteOakheart**.
-
-<p align="center"><em>Infinite Worlds. One Soul.</em></p>
+<p align="center">
+  <img src="src/assets/brand/otakusoul-icon.png" alt="OtakuSoul Icon" width="120" /><br>
+  <em>Infinite Worlds. One Soul.</em>
+</p>
