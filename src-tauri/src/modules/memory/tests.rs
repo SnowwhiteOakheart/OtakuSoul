@@ -612,3 +612,138 @@ fn test_backup_listing_does_not_hide_unreadable_snapshot_metadata() {
     );
     std::fs::remove_dir(path).unwrap();
 }
+
+#[test]
+fn test_restore_rolls_back_all_changes_on_late_failure_and_retries() {
+    let db = MemoryDb::new_in_memory().unwrap();
+    let dir = std::env::temp_dir().join(format!(
+        "otakusoul_restore_atomic_{}",
+        rand::random::<u32>()
+    ));
+    let mut psych = db.get_or_create_psychology("ayu").unwrap();
+    psych.psychological_tension = "Snapshot tension".into();
+    db.update_psychology("ayu", &psych).unwrap();
+    db.add_episodic_memory("ayu", "fact", "Lake", 3).unwrap();
+    db.add_diary_entry("ayu", "Day", "Lake diary", "Calm")
+        .unwrap();
+    let snapshot = db
+        .backup_memory_state("ayu", Some("User"), Some(&dir))
+        .unwrap();
+    psych.psychological_tension = "Current tension".into();
+    db.update_psychology("ayu", &psych).unwrap();
+    let before = serde_json::to_value(db.get_cognitive_overview("ayu", "User").unwrap()).unwrap();
+    db.conn.lock().execute_batch("CREATE TRIGGER fail_restore BEFORE INSERT ON soul_healing_log BEGIN SELECT RAISE(ABORT, 'late restore failure'); END;").unwrap();
+    let path = dir.join(snapshot.filename);
+    assert!(
+        db.restore_memory_backup(&path)
+            .unwrap_err()
+            .contains("late restore failure")
+    );
+    assert_eq!(
+        serde_json::to_value(db.get_cognitive_overview("ayu", "User").unwrap()).unwrap(),
+        before
+    );
+    db.conn
+        .lock()
+        .execute_batch("DROP TRIGGER fail_restore;")
+        .unwrap();
+    db.restore_memory_backup(&path).unwrap();
+    assert_eq!(
+        db.get_or_create_psychology("ayu")
+            .unwrap()
+            .psychological_tension,
+        "Snapshot tension"
+    );
+    assert_eq!(db.get_diary_entries("ayu", 10).unwrap().len(), 2);
+    assert_eq!(db.get_episodic_memories("ayu", 10).unwrap().len(), 1);
+    std::fs::remove_dir_all(dir).unwrap();
+}
+
+#[test]
+fn test_import_rolls_back_all_files_on_late_failure_and_retries() {
+    let db = MemoryDb::new_in_memory().unwrap();
+    let before = serde_json::to_value(db.get_cognitive_overview("ayu", "User").unwrap()).unwrap();
+    let dir =
+        std::env::temp_dir().join(format!("otakusoul_import_atomic_{}", rand::random::<u32>()));
+    std::fs::create_dir_all(dir.join("topics")).unwrap();
+    std::fs::write(
+        dir.join("MEMORY.md"),
+        "## INTERNAL STATE\n- **Psychological Tension**: Imported tension",
+    )
+    .unwrap();
+    std::fs::write(
+        dir.join("USER.md"),
+        "## RELATIONSHIP METADATA\n- **Trust Level**: High",
+    )
+    .unwrap();
+    std::fs::write(dir.join("topics/lake.md"), "Meeting at the lake").unwrap();
+    std::fs::write(dir.join("DIARY.md"), "Lake diary").unwrap();
+    db.conn.lock().execute_batch("CREATE TRIGGER fail_import BEFORE INSERT ON soul_healing_log BEGIN SELECT RAISE(ABORT, 'late import failure'); END;").unwrap();
+    assert!(
+        db.import_sow_memory_folder("ayu", &dir, "User")
+            .unwrap_err()
+            .contains("late import failure")
+    );
+    assert_eq!(
+        serde_json::to_value(db.get_cognitive_overview("ayu", "User").unwrap()).unwrap(),
+        before
+    );
+    db.conn
+        .lock()
+        .execute_batch("DROP TRIGGER fail_import;")
+        .unwrap();
+    assert_eq!(db.import_sow_memory_folder("ayu", &dir, "User").unwrap(), 4);
+    assert_eq!(db.get_diary_entries("ayu", 10).unwrap().len(), 1);
+    assert_eq!(db.get_episodic_memories("ayu", 10).unwrap().len(), 1);
+    assert_eq!(
+        db.get_or_create_relationship("ayu", "User")
+            .unwrap()
+            .trust_level,
+        "High"
+    );
+    std::fs::remove_dir_all(dir).unwrap();
+}
+
+#[test]
+fn test_import_reports_unreadable_files_and_invalid_topics_directory() {
+    let db = MemoryDb::new_in_memory().unwrap();
+    let before = serde_json::to_value(db.get_cognitive_overview("ayu", "User").unwrap()).unwrap();
+    let dir = std::env::temp_dir().join(format!("otakusoul_import_read_{}", rand::random::<u32>()));
+    std::fs::create_dir_all(&dir).unwrap();
+    std::fs::write(
+        dir.join("MEMORY.md"),
+        "## INTERNAL STATE\n- **Psychological Tension**: Imported",
+    )
+    .unwrap();
+    std::fs::write(dir.join("DIARY.md"), [0xff, 0xfe]).unwrap();
+    assert!(db.import_sow_memory_folder("ayu", &dir, "User").is_err());
+    assert_eq!(
+        serde_json::to_value(db.get_cognitive_overview("ayu", "User").unwrap()).unwrap(),
+        before
+    );
+    std::fs::remove_file(dir.join("DIARY.md")).unwrap();
+    std::fs::write(dir.join("topics"), "not a directory").unwrap();
+    assert!(db.import_sow_memory_folder("ayu", &dir, "User").is_err());
+    assert_eq!(
+        serde_json::to_value(db.get_cognitive_overview("ayu", "User").unwrap()).unwrap(),
+        before
+    );
+    std::fs::remove_dir_all(dir).unwrap();
+}
+
+#[test]
+fn test_snapshot_does_not_write_partial_data_when_a_read_fails() {
+    let db = MemoryDb::new_in_memory().unwrap();
+    let dir =
+        std::env::temp_dir().join(format!("otakusoul_snapshot_read_{}", rand::random::<u32>()));
+    db.conn
+        .lock()
+        .execute_batch("DROP TABLE soul_diary;")
+        .unwrap();
+    assert!(
+        db.backup_memory_state("ayu", Some("User"), Some(&dir))
+            .is_err()
+    );
+    assert_eq!(std::fs::read_dir(&dir).unwrap().count(), 0);
+    std::fs::remove_dir_all(dir).unwrap();
+}

@@ -45,7 +45,7 @@ export const createCharacterSlice: SliceCreator<CharacterSlice> = (set, get) => 
   },
 
   selectPersona: (persona) => {
-    set({ activePersona: persona, cognitiveOverview: null, memoryOverviewError: null, isMemoryLoading: false, characterMarkdown: '', userMarkdown: '' });
+    set({ activePersona: persona, cognitiveOverview: null, memoryOverviewError: null, memoryMarkdownError: null, isMemoryMarkdownLoading: false, memoryReflectionError: null, lastReflectionResult: null, isMemoryLoading: false, characterMarkdown: '', userMarkdown: '' });
     get().saveCurrentSettings();
   },
 
@@ -92,6 +92,10 @@ export const createCharacterSlice: SliceCreator<CharacterSlice> = (set, get) => 
       activeCharacter: character,
       cognitiveOverview: null,
       memoryOverviewError: null,
+      memoryMarkdownError: null,
+      isMemoryMarkdownLoading: false,
+      memoryReflectionError: null,
+      lastReflectionResult: null,
       isMemoryLoading: false,
       memoryBackups: [],
       memoryBackupsError: null,

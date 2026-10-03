@@ -143,9 +143,17 @@ impl MemoryDb {
     }
 
     pub fn parse_and_sync_character_markdown(&self, char_id: &str, md: &str) -> Result<(), String> {
-        let mut psych = self
-            .get_or_create_psychology(char_id)
-            .map_err(|e| e.to_string())?;
+        let conn = self.conn.lock();
+        Self::parse_and_sync_character_markdown_on(&conn, char_id, md)
+    }
+
+    pub(super) fn parse_and_sync_character_markdown_on(
+        conn: &Connection,
+        char_id: &str,
+        md: &str,
+    ) -> Result<(), String> {
+        let mut psych =
+            Self::get_or_create_psychology_on(conn, char_id).map_err(|e| e.to_string())?;
 
         let mut section: Option<&str> = None;
         let mut core_identity = Vec::new();
@@ -234,8 +242,7 @@ impl MemoryDb {
             psych.cognitive_dissonance = cognitive_dissonance_lines.join("\n");
         }
 
-        self.update_psychology(char_id, &psych)
-            .map_err(|e| e.to_string())
+        Self::update_psychology_on(conn, char_id, &psych).map_err(|e| e.to_string())
     }
 
     pub fn parse_and_sync_user_markdown(
@@ -244,8 +251,17 @@ impl MemoryDb {
         user_name: &str,
         md: &str,
     ) -> Result<(), String> {
-        let mut rel = self
-            .get_or_create_relationship(char_id, user_name)
+        let conn = self.conn.lock();
+        Self::parse_and_sync_user_markdown_on(&conn, char_id, user_name, md)
+    }
+
+    pub(super) fn parse_and_sync_user_markdown_on(
+        conn: &Connection,
+        char_id: &str,
+        user_name: &str,
+        md: &str,
+    ) -> Result<(), String> {
+        let mut rel = Self::get_or_create_relationship_on(conn, char_id, user_name)
             .map_err(|e| e.to_string())?;
 
         let mut section: Option<&str> = None;
@@ -323,7 +339,6 @@ impl MemoryDb {
             rel.shared_milestones = milestones;
         }
 
-        self.update_relationship(char_id, &rel)
-            .map_err(|e| e.to_string())
+        Self::update_relationship_on(conn, char_id, &rel).map_err(|e| e.to_string())
     }
 }

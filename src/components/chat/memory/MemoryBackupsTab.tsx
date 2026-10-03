@@ -8,9 +8,9 @@ import { Plus, FolderDown, RotateCcw } from 'lucide-react';
 export const MemoryBackupsTab = () => {
   const { t } = useTranslation();
   const {
-    memoryBackups, isLoadingBackups, memoryBackupsError, fetchMemoryBackups, createMemoryBackup, restoreMemoryBackup, importSowFolder,
+    memoryBackups, isLoadingBackups, memoryBackupsError, fetchMemoryBackups, memoryOperation, isReflecting, createMemoryBackup, restoreMemoryBackup, importSowFolder,
   } = useStoreFields(
-    'memoryBackups', 'isLoadingBackups', 'memoryBackupsError', 'fetchMemoryBackups', 'createMemoryBackup', 'restoreMemoryBackup',
+    'memoryBackups', 'isLoadingBackups', 'memoryBackupsError', 'fetchMemoryBackups', 'memoryOperation', 'isReflecting', 'createMemoryBackup', 'restoreMemoryBackup',
     'importSowFolder',
   );
 
@@ -77,6 +77,7 @@ export const MemoryBackupsTab = () => {
           </div>
           <button
             onClick={handleImportSow}
+            disabled={!!memoryOperation || isReflecting}
             className="px-3 py-1.5 rounded-lg bg-accent-600 hover:bg-accent-500 text-white text-xs font-semibold flex items-center gap-1.5 transition"
           >
             <FolderDown className="w-3.5 h-3.5" />
@@ -90,6 +91,7 @@ export const MemoryBackupsTab = () => {
           </span>
           <button
             onClick={handleCreateBackup}
+            disabled={!!memoryOperation || isReflecting}
             className="px-3 py-1 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-200 text-xs font-medium flex items-center gap-1 transition"
           >
             <Plus className="w-3.5 h-3.5" />
@@ -113,6 +115,7 @@ export const MemoryBackupsTab = () => {
               </div>
               <button
                 onClick={() => handleRestoreBackup(b.filename)}
+                disabled={!!memoryOperation || isReflecting}
                 className="px-2.5 py-1 rounded bg-slate-700 hover:bg-accent-600 text-slate-200 text-xs font-medium transition flex items-center gap-1"
                 title={t('memory.restoreSnapshot')}
               >

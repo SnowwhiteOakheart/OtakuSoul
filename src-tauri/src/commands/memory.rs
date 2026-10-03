@@ -276,8 +276,18 @@ pub fn list_memory_backups(
 pub fn restore_memory_backup(
     state: State<'_, AppState>,
     backup_file_path: String,
+    char_id: String,
 ) -> Result<(), String> {
-    state
-        .memory_db
-        .restore_memory_backup(std::path::Path::new(&backup_file_path))
+    let path = std::path::Path::new(&backup_file_path);
+    let resolved = if path.is_absolute() {
+        path.to_path_buf()
+    } else if path.components().count() == 1 && path.file_name().is_some() {
+        crate::modules::memory::MemoryDb::backup_dir_for_character(&char_id).join(path)
+    } else {
+        return Err(crate::err!(
+            "backend.memory.backupMissing",
+            path = backup_file_path
+        ));
+    };
+    state.memory_db.restore_memory_backup(&resolved)
 }

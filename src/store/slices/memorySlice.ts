@@ -17,12 +17,16 @@ export interface MemorySlice {
   isMemoryLoading: boolean;
   memoryOverviewError: string | null;
   isReflecting: boolean;
+  memoryReflectionError: string | null;
+  memoryOperation: 'backup' | 'restore' | 'import' | null;
   lastReflectionResult: SoulMemoryPipelineResult | null;
   characterMarkdown: string;
   userMarkdown: string;
   memoryBackups: MemoryBackupInfo[];
   isLoadingBackups: boolean;
   memoryBackupsError: string | null;
+  memoryMarkdownError: string | null;
+  isMemoryMarkdownLoading: boolean;
   autoReflectionEnabled: boolean;
   autoReflectionThreshold: number;
   setAutoReflectionEnabled: (enabled: boolean) => void;
@@ -47,6 +51,16 @@ export interface MemorySlice {
 export const createMemorySlice: SliceCreator<MemorySlice> = (set, get) => {
   let overviewRequest = 0;
   let backupsRequest = 0;
+  let markdownRequest = 0;
+  const refreshContext = async (cid: string, userName: string) => {
+    const isCurrent = () => get().activeCharacter?.id === cid && get().activePersona.name === userName;
+    if (!isCurrent()) return;
+    await get().fetchCognitiveOverview(cid, userName);
+    if (!isCurrent()) return;
+    await get().fetchMemoryMarkdown().catch(() => {});
+    if (!isCurrent()) return;
+    await get().fetchMemoryBackups();
+  };
   return {
     cognitiveOverview: null,
 
@@ -55,6 +69,8 @@ export const createMemorySlice: SliceCreator<MemorySlice> = (set, get) => {
     memoryOverviewError: null,
 
     isReflecting: false,
+    memoryReflectionError: null,
+    memoryOperation: null,
 
     lastReflectionResult: null,
 
@@ -67,6 +83,8 @@ export const createMemorySlice: SliceCreator<MemorySlice> = (set, get) => {
     isLoadingBackups: false,
 
     memoryBackupsError: null,
+    memoryMarkdownError: null,
+    isMemoryMarkdownLoading: false,
 
     autoReflectionEnabled: true,
 
@@ -180,7 +198,8 @@ export const createMemorySlice: SliceCreator<MemorySlice> = (set, get) => {
         cloudProvider,
       } = get();
 
-      if (!activeCharacter) return null;
+      if (!activeCharacter) throw new Error(translate('int.noCharacter'));
+      if (get().isReflecting || get().memoryOperation) throw new Error(translate('memory.busy'));
       const cid = activeCharacter.id;
       const userName = activePersona.name;
 
@@ -189,7 +208,7 @@ export const createMemorySlice: SliceCreator<MemorySlice> = (set, get) => {
           ? `http://127.0.0.1:${serverConfig.port}/v1/chat/completions`
           : cloudEndpoint;
 
-      set({ isReflecting: true });
+      set({ isReflecting: true, memoryReflectionError: null });
       try {
         const res = await api.triggerMemoryPipeline({
           character_id: cid,
@@ -203,19 +222,20 @@ export const createMemorySlice: SliceCreator<MemorySlice> = (set, get) => {
           include_diary: true,
         });
 
-        set({
-          isReflecting: false,
-          lastReflectionResult: res,
-        });
-
-        await get().fetchCognitiveOverview();
-        await get().fetchMemoryMarkdown().catch(() => {});
-        await get().fetchMemoryBackups();
+        if (get().activeCharacter?.id === cid && get().activePersona.name === userName) {
+          set({ lastReflectionResult: res });
+          await refreshContext(cid, userName);
+        }
         return res;
       } catch (e) {
         console.error('Memory pipeline error:', e);
+        if (get().activeCharacter?.id === cid && get().activePersona.name === userName) {
+          set({ memoryReflectionError: errorMessage(e) });
+          await refreshContext(cid, userName);
+        }
+        throw e;
+      } finally {
         set({ isReflecting: false });
-        return null;
       }
     },
 
@@ -224,17 +244,21 @@ export const createMemorySlice: SliceCreator<MemorySlice> = (set, get) => {
       const userName = get().activePersona.name;
       if (!cid) throw new Error(translate('int.noCharacter'));
 
+      const request = ++markdownRequest;
+      const isCurrent = () => request === markdownRequest && get().activeCharacter?.id === cid && get().activePersona.name === userName;
+      set({ isMemoryMarkdownLoading: true });
       try {
         const [charMd, userMd] = await Promise.all([
           api.getCharacterMemoryMarkdown(cid), api.getUserMemoryMarkdown(cid, userName),
         ]);
-        if (get().activeCharacter?.id === cid && get().activePersona.name === userName) {
-          set({ characterMarkdown: charMd, userMarkdown: userMd });
-        }
+        if (isCurrent()) set({ characterMarkdown: charMd, userMarkdown: userMd, memoryMarkdownError: null });
         return { charMd, userMd };
       } catch (e) {
         console.error('Failed to fetch memory markdown:', e);
+        if (isCurrent()) set({ memoryMarkdownError: errorMessage(e) });
         throw e;
+      } finally {
+        if (isCurrent()) set({ isMemoryMarkdownLoading: false });
       }
     },
 
@@ -327,41 +351,56 @@ export const createMemorySlice: SliceCreator<MemorySlice> = (set, get) => {
       const cid = get().activeCharacter?.id;
       const userName = get().activePersona.name;
       if (!cid) throw new Error(translate('int.noCharacter'));
+      if (get().memoryOperation || get().isReflecting) throw new Error(translate('memory.busy'));
+      set({ memoryOperation: 'backup' });
       try {
         const info = await api.backupMemoryState(cid, userName);
-        await get().fetchMemoryBackups();
+        if (get().activeCharacter?.id === cid) await get().fetchMemoryBackups();
         return info;
       } catch (e) {
         console.error('Failed to create memory backup:', e);
         throw e;
+      } finally {
+        set({ memoryOperation: null });
       }
     },
 
     restoreMemoryBackup: async (backupFilePath: string) => {
+      const cid = get().activeCharacter?.id;
+      const userName = get().activePersona.name;
+      if (!cid) throw new Error(translate('int.noCharacter'));
+      if (get().memoryOperation || get().isReflecting) throw new Error(translate('memory.busy'));
+      set({ memoryOperation: 'restore' });
       try {
-        await api.restoreMemoryBackup(backupFilePath);
-        await get().fetchCognitiveOverview();
-        await get().fetchMemoryMarkdown().catch(() => {});
-        await get().fetchMemoryBackups();
+        await api.restoreMemoryBackup(backupFilePath, cid);
+        if (get().activeCharacter?.id === cid && get().activePersona.name === userName) {
+          await refreshContext(cid, userName);
+        }
       } catch (e) {
         console.error('Failed to restore memory backup:', e);
         throw e;
+      } finally {
+        set({ memoryOperation: null });
       }
     },
 
     importSowFolder: async (folderPath: string) => {
       const cid = get().activeCharacter?.id;
       const userName = get().activePersona.name;
-      if (!cid) return 0;
+      if (!cid) throw new Error(translate('int.noCharacter'));
+      if (get().memoryOperation || get().isReflecting) throw new Error(translate('memory.busy'));
+      set({ memoryOperation: 'import' });
       try {
         const count = await api.importSowMemoryFiles(cid, folderPath, userName);
-        await get().fetchCognitiveOverview();
-        await get().fetchMemoryMarkdown().catch(() => {});
-        await get().fetchMemoryBackups();
+        if (get().activeCharacter?.id === cid && get().activePersona.name === userName) {
+          await refreshContext(cid, userName);
+        }
         return count;
       } catch (e) {
         console.error('Failed to import SoW folder:', e);
         throw e;
+      } finally {
+        set({ memoryOperation: null });
       }
     },
   };

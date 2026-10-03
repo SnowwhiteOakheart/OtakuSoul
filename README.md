@@ -75,6 +75,7 @@ Tausche dich mit deinen Charakteren in einer stimmungsvollen Chat-Oberfläche au
 * **Resiliente Interaktion:** Ausführliche Antwortvarianten (Swipes), Inline-Korrekturen und automatische Entwurfssicherung schützen vor Datenverlust bei Verbindungsabbrüchen.
 * **Verlässliche Chat-Editoren:** Titel, Author's Note und Zusammenfassung melden Speicherfehler und erhalten Entwürfe zum Wiederholen. Notiz- und Zusammenfassungsentwürfe bleiben beim Schließen der Seitenleiste und beim Chatwechsel getrennt erhalten, solange die Chatansicht geöffnet bleibt.
 * **Sichtbare Memory-Lesefehler:** Übersicht und Snapshot-Liste behalten bereits geladene Daten und zeigen Ladefehler mit Wiederholen an. Ein erfolgreiches Speichern bleibt erfolgreich, auch wenn das anschließende Nachladen scheitert.
+* **Verlässlicher Import & Wiederherstellung:** SoW-Import und Snapshot-Wiederherstellung rollen Datenbankänderungen bei Schreibfehlern vollständig zurück. Reflexionsfehler bleiben sichtbar; eine fehlgeschlagene Reflexion kann bereits Änderungen enthalten und wird mit entsprechendem Hinweis angezeigt.
 
 ---
 

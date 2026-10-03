@@ -51,3 +51,9 @@ fehlgeschlagenes sowie erfolgreiches Zurücksetzen. Screenshots 34–36 zeigen d
 beim Lesen der Snapshot-Liste ausschließlich im Wegwerfprofil. Es prüft sichtbare Ursachen,
 erhaltene Daten/Entwürfe, Wiederholen und einen erfolgreichen Schreibvorgang trotz anschließendem Lesefehler.
 Screenshots 37–38 zeigen die Ladefehler.
+
+`memory-operations.mjs` prüft einen realen Reflexions-Lesefehler und Wiederholen mit dem Mock-Router.
+Ein später SQLite-Schreibfehler rollt SoW-Import und Snapshot-Wiederherstellung vollständig zurück;
+Wiederholen besteht. Die Wiederherstellung wird über Liste und Bestätigungsdialog bedient, der Import
+über das echte IPC getestet. Die Frontend-Tests mocken die native Ordnerauswahl und prüfen die
+Import-/Fehler-/Wiederholen-Oberfläche; der native Betriebssystemdialog selbst wird nicht automatisiert. Screenshots 39–40 zeigen Reflexions- und Wiederherstellungsfehler.

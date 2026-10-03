@@ -4,7 +4,6 @@ import type { PsychologyState, RelationshipState } from '../../types';
 import { useStoreFields } from '../../store/useAppStore';
 import { Brain, X, Heart, RefreshCw, BookHeart, Clock, Sparkles, Bookmark, FileCode, RotateCcw, Sliders } from 'lucide-react';
 import { translate, useTranslation } from '../../i18n';
-import { errorMessage } from '../../utils/errors';
 import { toast } from '../ui/feedback';
 import { ModalOverlay } from '../ui/ModalOverlay';
 import { PsychologyTab } from './memory/PsychologyTab';
@@ -37,12 +36,12 @@ export const CognitiveMemoryDrawer: React.FC<CognitiveMemoryDrawerProps> = ({
     activeCharacter, activePersona, cognitiveOverview, isMemoryLoading, isReflecting, lastReflectionResult,
     memoryBackups, autoReflectionEnabled, autoReflectionThreshold, setAutoReflectionEnabled,
     setAutoReflectionThreshold, fetchCognitiveOverview, triggerMemoryPipeline, fetchMemoryMarkdown,
-    fetchMemoryBackups, memoryOverviewError,
+    fetchMemoryBackups, memoryOverviewError, memoryReflectionError, memoryOperation, memoryMarkdownError, isMemoryMarkdownLoading,
   } = useStoreFields(
     'activeCharacter', 'activePersona', 'cognitiveOverview', 'isMemoryLoading', 'isReflecting',
     'lastReflectionResult', 'memoryBackups', 'autoReflectionEnabled', 'autoReflectionThreshold',
     'setAutoReflectionEnabled', 'setAutoReflectionThreshold', 'fetchCognitiveOverview',
-    'triggerMemoryPipeline', 'fetchMemoryMarkdown', 'fetchMemoryBackups', 'memoryOverviewError',
+    'triggerMemoryPipeline', 'fetchMemoryMarkdown', 'fetchMemoryBackups', 'memoryOverviewError', 'memoryReflectionError', 'memoryOperation', 'memoryMarkdownError', 'isMemoryMarkdownLoading',
   );
   const { t } = useTranslation();
 
@@ -60,7 +59,7 @@ export const CognitiveMemoryDrawer: React.FC<CognitiveMemoryDrawerProps> = ({
   useEffect(() => {
     if (isOpen && activeCharacter) {
       fetchCognitiveOverview();
-      fetchMemoryMarkdown().catch((e) => toast.error(translate('memory.loadFailed', { error: errorMessage(e) })));
+      fetchMemoryMarkdown().catch(() => {});
       fetchMemoryBackups();
     }
   }, [isOpen, activeCharacter, activePersona.name, fetchCognitiveOverview, fetchMemoryMarkdown, fetchMemoryBackups]);
@@ -70,18 +69,20 @@ export const CognitiveMemoryDrawer: React.FC<CognitiveMemoryDrawerProps> = ({
   const charName = activeCharacter.card.data.name;
 
   const handleTriggerReflection = async () => {
-    const res = await triggerMemoryPipeline();
-    if (res) {
-      if (res.no_change) {
-        toast.success(translate('memory.reflectNoChange'));
-      } else {
-        toast.success(
-          translate('memory.reflectDone', {
+    try {
+      const res = await triggerMemoryPipeline();
+      if (res) {
+        if (res.no_change) {
+          toast.success(translate('memory.reflectNoChange'));
+        } else {
+          toast.success(translate('memory.reflectDone', {
             topics: res.topics_processed.length,
             conflicts: res.healing_entries.length,
-          })
-        );
+          }));
+        }
       }
+    } catch {
+      // The persistent reflection error is shown below, also for automatic reflection.
     }
   };
 
@@ -109,7 +110,7 @@ export const CognitiveMemoryDrawer: React.FC<CognitiveMemoryDrawerProps> = ({
           <div className="flex items-center gap-2">
             <button
               onClick={handleTriggerReflection}
-              disabled={isReflecting}
+              disabled={isReflecting || !!memoryOperation}
               className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-linear-to-r from-accent-600 to-indigo-600 hover:from-accent-500 hover:to-indigo-500 text-white text-xs font-semibold shadow-lg shadow-accent-900/30 transition disabled:opacity-50"
               title={t('memory.reflectHint')}
             >
@@ -136,6 +137,21 @@ export const CognitiveMemoryDrawer: React.FC<CognitiveMemoryDrawerProps> = ({
           </div>
         </div>
 
+        {memoryReflectionError && (
+          <div role="alert" className="mx-4 mt-3 p-3 rounded-lg border border-rose-500/40 bg-rose-950/30 text-xs text-rose-200 shrink-0">
+            <p>{t('memory.reflectFailed', { error: memoryReflectionError })}</p>
+            <p className="mt-1">{t('memory.reflectionPartial')}</p>
+          </div>
+        )}
+        {memoryMarkdownError && (
+          <div role="alert" className="mx-4 mt-3 p-3 rounded-lg border border-rose-500/40 bg-rose-950/30 text-xs text-rose-200 shrink-0">
+            <p>{t('memory.markdownLoadFailed', { error: memoryMarkdownError })}</p>
+            <button onClick={() => fetchMemoryMarkdown().catch(() => {})} disabled={isMemoryMarkdownLoading}
+              className="mt-2 px-3 py-1.5 rounded bg-slate-800 disabled:opacity-40">
+              {isMemoryMarkdownLoading ? t('memory.loading') : t('memory.retryMarkdown')}
+            </button>
+          </div>
+        )}
         {memoryOverviewError && (
           <div role="alert" className="mx-4 mt-3 p-3 rounded-lg border border-rose-500/40 bg-rose-950/30 text-xs text-rose-200 shrink-0">
             <p>{t('memory.overviewLoadFailed', { error: memoryOverviewError })}</p>

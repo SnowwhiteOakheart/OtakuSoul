@@ -26,6 +26,7 @@ Arbeitsverzeichnis und Timeout allein gelten nicht als Betriebssystem-Sandbox.
 - [x] Tagebuchgenerierung und Memory-Backup-Erstellung: Fehler sichtbar anzeigen.
 - [x] Psychologie und Beziehung als explizit speicherbare Entwürfe bearbeiten; Schreibfehler erhalten Änderungen.
 - [x] Markdown-Editor: Lade- und Schreibfehler erhalten Entwürfe; laufende Vorgänge sperren die Bearbeitung.
+- [x] Reflexionsfehler sichtbar halten; SoW-Import und Snapshot-Wiederherstellung bei Schreibfehlern vollständig zurückrollen.
 - [x] Memory-Übersicht und Snapshot-Liste: Lesefehler sichtbar anzeigen, geladene Daten erhalten und Wiederholen ermöglichen.
 - [x] Chat-Seitenleiste: Titel, Author's Note und Zusammenfassung erhalten Entwürfe und melden Schreibfehler.
 - [x] Inline-Nachrichteneditor: Schreibfehler erhalten den Entwurf; Wiederholen übernimmt erst nach erfolgreichem Schreiben.
@@ -286,3 +287,45 @@ Der aktuelle Build bestand `npm run e2e` unter Xvfb mit allen 15 Szenarien.
 Screenshots `37-memory-uebersicht-ladefehler.png` und `38-memory-snapshot-ladefehler.png`
 wurden visuell geprüft: Entwurf bzw. gecachte Snapshot-Liste, konkrete Ursache,
 Hinweis auf möglicherweise veraltete Daten und Wiederholen sind vollständig sichtbar.
+
+### Achtes Arbeitspaket – 03.10.2026
+
+SoW-Import liest alle vorhandenen Dateien vor dem Schreiben. Fehlende optionale Dateien bleiben erlaubt;
+ungültige UTF-8-Dateien, falsche Verzeichnisarten und Zugriffsfehler werden weitergegeben. Import und
+Snapshot-Wiederherstellung schreiben Psychologie, Beziehung, Episoden, Tagebuch und Heilungsprotokoll
+jeweils in einer SQLite-Transaktion. Auch ein später Fehler rollt alle Änderungen dieses Vorgangs zurück.
+Die verbindungsgebundenen SQL-/Markdown-Helfer werden ebenfalls von den bisherigen einzelnen APIs verwendet.
+
+Die Wiederherstellung löst den Dateinamen aus der Oberfläche jetzt im Backup-Verzeichnis des ausgewählten
+Charakters auf; zuvor wurde der Dateiname als Pfad im Arbeitsverzeichnis gesucht.
+Psychologie und Beziehung werden übernommen, Sammlungen werden ergänzt. Der Bestätigungstext benennt dies
+nun korrekt. Wiederholte erfolgreiche Wiederherstellungen können weiterhin Tagebucheinträge duplizieren;
+ein vollständiger Austausch der Sammlungen oder weitere Deduplizierung ist nicht Teil dieses Pakets.
+Snapshot-Erstellung gibt Leseprobleme weiter und schreibt kein unvollständiges Backup bei SQL-Lesefehlern.
+
+Reflexion gibt Fehler weiter, setzt ihren Beschäftigtzustand zuverlässig zurück und hält Fehler auch für
+automatische Vorgänge sichtbar. Lese-, Snapshot-, Heilungsprotokoll-, Themen- und Tagebuch-Schreibfehler
+werden nicht mehr verschluckt. Der automatische Snapshot muss vor dem Anwenden der Patches erstellt werden.
+Die mehrstufige Reflexion ist weiterhin nicht atomar: Spätere Fehler können bereits gespeicherte Änderungen
+zurücklassen. Der Fehlerhinweis fordert deshalb zur Prüfung der Daten und des Snapshots vor erneutem Start auf.
+
+Import, Wiederherstellung, Snapshot-Erstellung und Reflexion sind gegenseitig gesperrt, solange ein Vorgang läuft,
+auch über Reiterwechsel und Schließen hinweg. Verspätete Reflexionsresultate und Nachladevorgänge wechseln nicht
+in einen anderen Charakter-/Persona-Kontext. Markdown-Lesefehler nach erfolgreichem Schreiben bleiben separat
+sichtbar; Wiederholen lädt nur die Texte und erhält Entwürfe.
+
+Vier Rust-Regressionstests prüfen späte Rollbacks und Wiederholen, ungültige Importdateien/-verzeichnisse
+und das Verhindern eines unvollständigen Snapshots. Zehn Frontend-Tests prüfen sichtbare Reflexionsfehler,
+Wiederholen, Sperren, Kontextwechsel, Import-/Wiederherstellungsfehler und erfolgreiches Schreiben bei
+fehlgeschlagenem Markdown-Nachladen. Ein E2E-Test prüft reale Reflexionsfehler sowie Transaktions-Rollbacks
+und Wiederholen für Import und Wiederherstellung im Wegwerfprofil.
+
+Offen bleiben atomare Reflexion, vollständige Snapshot-/Wiederherstellungssemantik, allgemeine Entwurfssicherung,
+Chat-Generierungsfehler und Konsistenz nach Verlaufsänderungen.
+
+`npm run check` bestanden: 364 Rust-Tests und 158 Frontend-Tests.
+Der abschließende aktuelle Build bestand `npm run e2e` unter Xvfb mit allen 16 Szenarien.
+Der erste Lauf stoppte an einer reservierten `error`-Eigenschaft in der Rückgabe des Import-Testcodes;
+nach Änderung der Test-Rückgabe und Ergänzung des Schutzes für Kontextwechsel wurde der aktuelle Build erneut geprüft.
+Screenshots `39-memory-reflexionsfehler.png` und `40-memory-wiederherstellungsfehler.png` wurden visuell geprüft:
+Die konkreten Fehlerursachen, erneute Aktionen und der Hinweis auf mögliche Teiländerungen sind sichtbar.

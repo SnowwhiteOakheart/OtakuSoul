@@ -124,6 +124,16 @@ Einstellungen: `components/settings/sections/*` (Server inkl. Laufzeiten/`mmproj
   Nach erfolgreichem Schreiben melden fehlgeschlagene Nachladevorgänge keinen Schreibfehler, sondern den
   separaten Ladehinweis im Drawer. Wiederholen lädt ausschließlich die Übersicht bzw. Snapshot-Liste neu.
   Snapshot-Auflistung behandelt nur ein fehlendes Verzeichnis als leer; Verzeichnis- und Metadatenfehler werden weitergegeben.
+- Memory-Vorgänge: Import und Snapshot-Wiederherstellung schreiben einschließlich Heilungsprotokoll in einer
+  SQLite-Transaktion. Verbindungsgebundene `*_on`-Helfer vermeiden erneutes Sperren des Datenbank-Mutex.
+  Import liest alle Dateien vor der Transaktion; fehlende optionale Dateien sind erlaubt, Lesefehler nicht.
+  `restore_memory_backup` erhält `char_id` und löst einzelne Dateinamen im Backup-Verzeichnis dieser Figur auf.
+  Snapshot-Erstellung bricht bei Lesefehlern ab und schreibt kein unvollständiges Backup.
+  `memoryOperation` sperrt Import, Wiederherstellung, Snapshot-Erstellung und Reflexion gegenseitig, auch nach
+  Schließen/Reiterwechsel. Reflexionsfehler werden weitergegeben und in `memoryReflectionError` angezeigt.
+  Die Reflexion ist mehrstufig und nicht atomar; ein Fehler nach frühen Änderungen verlangt Prüfung des Snapshots.
+  `memoryMarkdownError` zeigt auch fehlgeschlagenes Hintergrund-Nachladen nach erfolgreichem Schreiben an;
+  Wiederholen lädt nur Markdown und erhält offene Entwürfe. Alte Kontextergebnisse dürfen nichts überschreiben.
 - Companion-Tools: nur ausdrücklich geprüfte interne Tools in `companion.rs` → `tool_allows_auto_approval`
   dürfen automatisch freigegeben werden. MCP-/unbekannte Tools, Screenshots, Zwischenablage und schreibende
   Dateiaktionen laufen über den Bestätigungsbanner; ausgeführt wird in `execute_internal_sync`.

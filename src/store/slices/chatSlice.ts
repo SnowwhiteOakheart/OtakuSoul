@@ -677,10 +677,11 @@ export const createChatSlice: SliceCreator<ChatSlice> = (set, get) => ({
       }
 
       // Check for automatic cognitive reflection after batch
-      const { autoReflectionEnabled, autoReflectionThreshold, isReflecting } = get();
+      const { autoReflectionEnabled, autoReflectionThreshold, isReflecting, memoryOperation } = get();
       if (
         autoReflectionEnabled &&
         !isReflecting &&
+        !memoryOperation &&
         finalStored.length >= autoReflectionThreshold &&
         finalStored.length % autoReflectionThreshold === 0
       ) {

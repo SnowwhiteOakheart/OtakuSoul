@@ -99,7 +99,9 @@ export function startMockLlm() {
         (JSON.stringify(request.messages).includes('SECRET_PASSWORD') ? ' PRIVATE whisper to Ayu: SECRET_PASSWORD.' : '') +
         (JSON.stringify(request.messages).includes('SECRET_THOUGHT') ? ' PRIVATE thought: SECRET_THOUGHT.' : '');
       const plannerAmbient = stats.ambient ?? null;
-      const text = isArcArchive ? 'ARC_SUMMARY: Das Tor wurde geöffnet, der Wächter ist frei.'
+      const text = stats.memoryRouterResult && JSON.stringify(request.messages ?? []).includes('=== RECENT MESSAGES ===')
+        ? JSON.stringify(stats.memoryRouterResult)
+        : isArcArchive ? 'ARC_SUMMARY: Das Tor wurde geöffnet, der Wächter ist frei.'
         : isAudit ? JSON.stringify(stats.auditResult ?? { prune_keys: [], updated_facts: {} })
         : isRouting ? JSON.stringify({ next_actor: stats.routeTo ?? 'PLAYER' }) : isStageSummary ? stageSummary : isPlanner
         ? JSON.stringify({

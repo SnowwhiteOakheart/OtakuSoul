@@ -8,9 +8,16 @@ impl MemoryDb {
         &self,
         char_id: &str,
     ) -> Result<PsychologyState, rusqlite::Error> {
+        let conn = self.conn.lock();
+        Self::get_or_create_psychology_on(&conn, char_id)
+    }
+
+    pub(super) fn get_or_create_psychology_on(
+        conn: &Connection,
+        char_id: &str,
+    ) -> Result<PsychologyState, rusqlite::Error> {
         let lang = crate::modules::content_lang::ContentLang::current();
         let none = lang.none_marker();
-        let conn = self.conn.lock();
         let mut stmt = conn.prepare(
             "SELECT primary_emotion, intensity, psychological_tension, emotional_decay_counter, active_agenda, immediate_focus, updated_at, core_identity, cognitive_dissonance
              FROM soul_psychology WHERE character_id = ?1",
@@ -70,6 +77,14 @@ impl MemoryDb {
         state: &PsychologyState,
     ) -> Result<(), rusqlite::Error> {
         let conn = self.conn.lock();
+        Self::update_psychology_on(&conn, char_id, state)
+    }
+
+    pub(super) fn update_psychology_on(
+        conn: &Connection,
+        char_id: &str,
+        state: &PsychologyState,
+    ) -> Result<(), rusqlite::Error> {
         let now = current_timestamp();
         let core_id_str =
             serde_json::to_string(&state.core_identity).unwrap_or_else(|_| "[]".to_string());
@@ -108,8 +123,16 @@ impl MemoryDb {
         char_id: &str,
         user_name: &str,
     ) -> Result<RelationshipState, rusqlite::Error> {
-        let none = crate::modules::content_lang::ContentLang::current().none_marker();
         let conn = self.conn.lock();
+        Self::get_or_create_relationship_on(&conn, char_id, user_name)
+    }
+
+    pub(super) fn get_or_create_relationship_on(
+        conn: &Connection,
+        char_id: &str,
+        user_name: &str,
+    ) -> Result<RelationshipState, rusqlite::Error> {
+        let none = crate::modules::content_lang::ContentLang::current().none_marker();
         let mut stmt = conn.prepare(
             "SELECT trust_level, unspoken_tension, preferences_habits, shared_milestones, updated_at, role_in_story, known_attributes, dynamic_description
              FROM soul_relationship WHERE character_id = ?1 AND user_name = ?2",
@@ -167,6 +190,14 @@ impl MemoryDb {
         state: &RelationshipState,
     ) -> Result<(), rusqlite::Error> {
         let conn = self.conn.lock();
+        Self::update_relationship_on(&conn, char_id, state)
+    }
+
+    pub(super) fn update_relationship_on(
+        conn: &Connection,
+        char_id: &str,
+        state: &RelationshipState,
+    ) -> Result<(), rusqlite::Error> {
         let now = current_timestamp();
         let pref_str =
             serde_json::to_string(&state.preferences_habits).unwrap_or_else(|_| "[]".to_string());
@@ -210,6 +241,16 @@ impl MemoryDb {
         significance: u32,
     ) -> Result<i64, rusqlite::Error> {
         let conn = self.conn.lock();
+        Self::add_episodic_memory_on(&conn, char_id, category, content, significance)
+    }
+
+    pub(super) fn add_episodic_memory_on(
+        conn: &Connection,
+        char_id: &str,
+        category: &str,
+        content: &str,
+        significance: u32,
+    ) -> Result<i64, rusqlite::Error> {
         let now = current_timestamp();
 
         // 1. Duplicate check (case-insensitive normalized exact or substring match)
@@ -276,6 +317,16 @@ impl MemoryDb {
         mood: &str,
     ) -> Result<i64, rusqlite::Error> {
         let conn = self.conn.lock();
+        Self::add_diary_entry_on(&conn, char_id, title, entry_text, mood)
+    }
+
+    pub(super) fn add_diary_entry_on(
+        conn: &Connection,
+        char_id: &str,
+        title: &str,
+        entry_text: &str,
+        mood: &str,
+    ) -> Result<i64, rusqlite::Error> {
         let now = current_timestamp();
         conn.execute(
             "INSERT INTO soul_diary (character_id, title, entry_text, mood, created_at)
@@ -320,6 +371,15 @@ impl MemoryDb {
         details: &str,
     ) -> Result<i64, rusqlite::Error> {
         let conn = self.conn.lock();
+        Self::log_healing_on(&conn, char_id, action, details)
+    }
+
+    pub(super) fn log_healing_on(
+        conn: &Connection,
+        char_id: &str,
+        action: &str,
+        details: &str,
+    ) -> Result<i64, rusqlite::Error> {
         let now = current_timestamp();
         conn.execute(
             "INSERT INTO soul_healing_log (character_id, action, details, created_at) VALUES (?1, ?2, ?3, ?4)",

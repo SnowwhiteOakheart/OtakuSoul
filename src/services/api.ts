@@ -347,8 +347,8 @@ export const api = {
     return await invoke<MemoryBackupInfo[]>('list_memory_backups', { charId });
   },
 
-  restoreMemoryBackup: async (backupFilePath: string): Promise<void> => {
-    return await invoke<void>('restore_memory_backup', { backupFilePath });
+  restoreMemoryBackup: async (backupFilePath: string, charId: string): Promise<void> => {
+    return await invoke<void>('restore_memory_backup', { backupFilePath, charId });
   },
 
   // Phase 6: Soul Stage Tabletop RPG

@@ -314,23 +314,26 @@ pub async fn execute_soul_memory_pipeline(
     let episodic_mems = state
         .memory_db
         .get_episodic_memories(char_id, 10)
-        .unwrap_or_default();
+        .map_err(|e| e.to_string())?;
 
     // 2. Fetch recent conversation messages
     let turn_limit = req.recent_turn_count.unwrap_or(8);
     let messages = if let Some(cid) = &req.chat_id {
-        state.memory_db.get_chat_messages(cid).unwrap_or_default()
+        state
+            .memory_db
+            .get_chat_messages(cid)
+            .map_err(|e| e.to_string())?
     } else {
         // Find most recent session for character
         let sessions = state
             .memory_db
             .list_chat_sessions(char_id)
-            .unwrap_or_default();
+            .map_err(|e| e.to_string())?;
         if let Some(first) = sessions.first() {
             state
                 .memory_db
                 .get_chat_messages(&first.id)
-                .unwrap_or_default()
+                .map_err(|e| e.to_string())?
         } else {
             Vec::new()
         }
@@ -439,9 +442,9 @@ pub async fn execute_soul_memory_pipeline(
     }
 
     // 5. Create automatic snapshot backup before applying patches
-    let _ = state
+    state
         .memory_db
-        .backup_memory_state(char_id, Some(user_name), None);
+        .backup_memory_state(char_id, Some(user_name), None)?;
 
     let mut updated_psych = current_psych.clone();
     let mut updated_rel = current_rel.clone();
@@ -578,9 +581,10 @@ pub async fn execute_soul_memory_pipeline(
     for entry in &parsed_router.healing_log_add {
         let text = entry.trim();
         if !text.is_empty() {
-            let _ = state
+            state
                 .memory_db
-                .log_healing(char_id, "contradiction_resolved", text);
+                .log_healing(char_id, "contradiction_resolved", text)
+                .map_err(|e| e.to_string())?;
             healing_entries.push(text.to_string());
         }
     }
@@ -630,7 +634,8 @@ pub async fn execute_soul_memory_pipeline(
                 provider: req.provider.clone(),
             };
 
-            if let Ok(arch_raw) = state.inference_client.generate_direct(arch_req).await {
+            let arch_raw = state.inference_client.generate_direct(arch_req).await?;
+            {
                 let trimmed = arch_raw.trim();
                 if !trimmed.is_empty() {
                     let formatted_topic = format!(
@@ -639,10 +644,10 @@ pub async fn execute_soul_memory_pipeline(
                         action.filename,
                         trimmed
                     );
-                    let _ =
-                        state
-                            .memory_db
-                            .add_episodic_memory(char_id, "topic", &formatted_topic, 4);
+                    state
+                        .memory_db
+                        .add_episodic_memory(char_id, "topic", &formatted_topic, 4)
+                        .map_err(|e| e.to_string())?;
                     topics_processed.push(action.filename);
                 }
             }
@@ -688,16 +693,19 @@ pub async fn execute_soul_memory_pipeline(
             provider: req.provider.clone(),
         };
 
-        if let Ok(diary_raw) = state.inference_client.generate_direct(diary_req).await {
+        let diary_raw = state.inference_client.generate_direct(diary_req).await?;
+        {
             let diary_text = diary_raw.trim();
-            if !diary_text.is_empty()
-                && let Ok(id) = state.memory_db.add_diary_entry(
-                    char_id,
-                    "Innere Reflexion",
-                    diary_text,
-                    &updated_psych.primary_emotion,
-                )
-            {
+            if !diary_text.is_empty() {
+                let id = state
+                    .memory_db
+                    .add_diary_entry(
+                        char_id,
+                        "Innere Reflexion",
+                        diary_text,
+                        &updated_psych.primary_emotion,
+                    )
+                    .map_err(|e| e.to_string())?;
                 diary_result = Some(DiaryEntry {
                     id,
                     title: "Innere Reflexion".to_string(),
