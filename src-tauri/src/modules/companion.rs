@@ -16,6 +16,34 @@ fn current_timestamp() -> u64 {
         .unwrap_or(0)
 }
 
+/// Only explicitly reviewed internal tools may skip confirmation. External MCP tools,
+/// unknown tools and access to sensitive desktop contents require user approval.
+fn tool_allows_auto_approval(tool_name: &str, arguments: &serde_json::Value) -> bool {
+    match tool_name {
+        "system_health_report"
+        | "get_system_info"
+        | "get_hardware_specs"
+        | "get_environment_snapshot"
+        | "set_timer"
+        | "web_search"
+        | "browse_web"
+        | "media_control"
+        | "plan_and_execute" => true,
+        "file_organizer" => {
+            // Match the executor's default and normalization. Future or malformed
+            // actions must never become automatically approved by omission.
+            let action = match arguments.get("action") {
+                None => "list",
+                Some(serde_json::Value::String(action)) => action,
+                Some(_) => return false,
+            }
+            .to_lowercase();
+            matches!(action.trim(), "list" | "search" | "preview")
+        }
+        _ => false,
+    }
+}
+
 #[derive(Debug, Clone, Serialize, Deserialize, TS)]
 #[ts(export)]
 pub struct Neurohormones {
@@ -640,21 +668,15 @@ impl CompanionEngine {
         Some((text.trim().to_string(), minutes))
     }
 
-    /// Request a tool call (with 25s confirmation countdown for dangerous actions)
+    /// Request a tool call; only reviewed internal tools can bypass confirmation.
     pub fn request_tool_call(
         &self,
         tool_name: &str,
         arguments: serde_json::Value,
     ) -> Result<ToolCallRequest, String> {
-        let is_dangerous = matches!(
-            tool_name,
-            "open_external_url" | "execute_code" | "app_control" | "gui_action"
-        ) || (tool_name == "file_organizer"
-            && arguments.get("action").and_then(|v| v.as_str()) == Some("organize"));
-
         let auto_approve = {
             let st = self.state.read();
-            st.settings.auto_approve_safe_tools && !is_dangerous
+            st.settings.auto_approve_safe_tools && tool_allows_auto_approval(tool_name, &arguments)
         };
 
         let call_id = format!("call_{}_{}", current_timestamp(), rand::random::<u16>());
@@ -1086,6 +1108,115 @@ fn uuid_short() -> String {
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    #[test]
+    fn test_tool_auto_approval_policy() {
+        for tool in [
+            "filesystem__delete_file",
+            "filesystem__read_file",
+            "plugin__execute",
+            "unknown_tool",
+            "execute_code",
+            "open_external_url",
+            "app_control",
+            "gui_action",
+            "read_clipboard",
+            "take_screenshot",
+        ] {
+            assert!(
+                !tool_allows_auto_approval(tool, &serde_json::json!({})),
+                "{tool}"
+            );
+        }
+
+        for action in ["organize", "ORGANIZE", " Organize ", "delete", ""] {
+            assert!(
+                !tool_allows_auto_approval(
+                    "file_organizer",
+                    &serde_json::json!({"action": action})
+                ),
+                "{action:?}"
+            );
+        }
+        for action in ["list", "SEARCH", " preview "] {
+            assert!(tool_allows_auto_approval(
+                "file_organizer",
+                &serde_json::json!({"action": action})
+            ));
+        }
+        assert!(tool_allows_auto_approval(
+            "file_organizer",
+            &serde_json::json!({})
+        ));
+        for action in [
+            serde_json::Value::Null,
+            serde_json::json!(42),
+            serde_json::json!(["organize"]),
+        ] {
+            assert!(!tool_allows_auto_approval(
+                "file_organizer",
+                &serde_json::json!({"action": action})
+            ));
+        }
+        assert!(tool_allows_auto_approval(
+            "set_timer",
+            &serde_json::json!({})
+        ));
+    }
+
+    #[test]
+    fn test_external_and_sensitive_tools_wait_without_execution() {
+        let engine = CompanionEngine::new();
+        for (tool, arguments) in [
+            (
+                "filesystem__delete_file",
+                serde_json::json!({"path": "must-not-be-deleted"}),
+            ),
+            ("unknown_tool", serde_json::json!({})),
+            ("read_clipboard", serde_json::json!({})),
+            ("take_screenshot", serde_json::json!({})),
+            (
+                "file_organizer",
+                serde_json::json!({"action": " ORGANIZE "}),
+            ),
+        ] {
+            let request = engine.request_tool_call(tool, arguments).unwrap();
+            assert!(request.requires_confirmation, "{tool}");
+            assert_eq!(request.status, "pending");
+            assert!(engine.get_state().tool_history.is_empty());
+        }
+        let pending = engine.get_state().pending_tool_calls;
+        assert_eq!(pending.len(), 5);
+        for request in pending {
+            let rejected = engine.resolve_tool_call(&request.id, false).unwrap();
+            assert!(!rejected.success);
+        }
+        assert!(engine.get_state().pending_tool_calls.is_empty());
+        assert_eq!(engine.get_state().tool_history.len(), 5);
+    }
+
+    #[test]
+    fn test_safe_tool_auto_approval_respects_settings() {
+        let engine = CompanionEngine::new();
+        let approved = engine
+            .request_tool_call("set_timer", serde_json::json!({"seconds": 10}))
+            .unwrap();
+        assert!(!approved.requires_confirmation);
+        assert_eq!(approved.status, "approved");
+        assert_eq!(engine.get_state().tool_history.len(), 1);
+
+        engine.update_settings(CompanionSettings {
+            auto_approve_safe_tools: false,
+            ..CompanionSettings::default()
+        });
+        let pending = engine
+            .request_tool_call("set_timer", serde_json::json!({"seconds": 10}))
+            .unwrap();
+        assert!(pending.requires_confirmation);
+        assert_eq!(pending.status, "pending");
+        assert_eq!(engine.get_state().tool_history.len(), 1);
+        assert_eq!(engine.get_state().pending_tool_calls.len(), 1);
+    }
 
     #[test]
     fn test_neurohormones_computation() {

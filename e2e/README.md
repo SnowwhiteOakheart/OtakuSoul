@@ -19,3 +19,7 @@ Planer/Erzähler/Gefährten, Geheimhaltung, Wiederladen, Undo, Bearbeiten/Lösch
 
 `stage-npcs.mjs` bedient die NPC-Verwaltung und prüft private Dialoge, Abwesenheit/Rückkehr, Spielleiter-NPCs,
 Beförderung zu V2-PNG samt Soul Memory sowie die Mindestfenstergröße (960×640). Screenshots 13–18 zeigen den Ablauf.
+
+`companion-safety.mjs` prüft bei aktivierter automatischer Freigabe sicherer Tools, dass ein
+Zwischenablagezugriff vor der Ausführung im Bestätigungsbanner landet und abgelehnt werden kann.
+Dabei wird die Zwischenablage nicht gelesen. Screenshot 28 zeigt den Freigabedialog.
