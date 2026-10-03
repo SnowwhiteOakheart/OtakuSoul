@@ -4,7 +4,8 @@ use super::*;
 
 /// Schema migrations in order: after step `i` the database has `PRAGMA user_version = i + 1`.
 /// Append new steps for schema changes; never edit a step that has shipped.
-pub(super) const MIGRATIONS: &[fn(&Connection) -> rusqlite::Result<()>] = &[migrate_v1_baseline];
+pub(super) const MIGRATIONS: &[fn(&Connection) -> rusqlite::Result<()>] =
+    &[migrate_v1_baseline, migrate_v2_chat_summary_attachments];
 
 /// Brings the database to the latest schema, one transaction per step. A database written by a
 /// newer OtakuSoul is left untouched.
@@ -143,6 +144,16 @@ pub(super) fn migrate_v1_baseline(conn: &Connection) -> rusqlite::Result<()> {
             "dynamic_description",
             "TEXT NOT NULL DEFAULT 'Keine.'",
         ),
+    ] {
+        add_column_if_missing(conn, table, column, definition)?;
+    }
+    Ok(())
+}
+
+/// v2: chat summaries and message attachments. These columns were briefly added to v1, so
+/// databases created in that window already have them; hence the existence check.
+pub(super) fn migrate_v2_chat_summary_attachments(conn: &Connection) -> rusqlite::Result<()> {
+    for (table, column, definition) in [
         ("chat_sessions", "summary", "TEXT NOT NULL DEFAULT ''"),
         (
             "chat_sessions",
@@ -155,12 +166,22 @@ pub(super) fn migrate_v1_baseline(conn: &Connection) -> rusqlite::Result<()> {
             "TEXT NOT NULL DEFAULT '[]'",
         ),
     ] {
-        if !has_column(conn, table, column)? {
-            conn.execute(
-                &format!("ALTER TABLE {table} ADD COLUMN {column} {definition}"),
-                [],
-            )?;
-        }
+        add_column_if_missing(conn, table, column, definition)?;
+    }
+    Ok(())
+}
+
+fn add_column_if_missing(
+    conn: &Connection,
+    table: &str,
+    column: &str,
+    definition: &str,
+) -> rusqlite::Result<()> {
+    if !has_column(conn, table, column)? {
+        conn.execute(
+            &format!("ALTER TABLE {table} ADD COLUMN {column} {definition}"),
+            [],
+        )?;
     }
     Ok(())
 }

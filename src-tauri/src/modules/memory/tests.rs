@@ -52,6 +52,28 @@ fn legacy_database_is_upgraded_without_losing_data() {
 }
 
 #[test]
+fn v1_database_gets_chat_summary_and_attachment_columns() {
+    let mut conn = Connection::open_in_memory().unwrap();
+    // v1 as shipped: without summary/attachment columns.
+    conn.execute_batch(
+        "CREATE TABLE chat_sessions (id TEXT PRIMARY KEY, character_id TEXT NOT NULL,
+            title TEXT NOT NULL, created_at INTEGER NOT NULL, updated_at INTEGER NOT NULL);
+         CREATE TABLE chat_messages (id TEXT PRIMARY KEY, chat_id TEXT NOT NULL,
+            role TEXT NOT NULL, content TEXT NOT NULL, order_index INTEGER NOT NULL,
+            created_at INTEGER NOT NULL);
+         PRAGMA user_version = 1;",
+    )
+    .unwrap();
+
+    migrate(&mut conn).unwrap();
+
+    assert_eq!(schema_version(&conn), MIGRATIONS.len() as i64);
+    assert!(has_column(&conn, "chat_sessions", "summary").unwrap());
+    assert!(has_column(&conn, "chat_sessions", "summary_until").unwrap());
+    assert!(has_column(&conn, "chat_messages", "attachments_json").unwrap());
+}
+
+#[test]
 fn database_from_newer_version_is_left_alone() {
     let mut conn = Connection::open_in_memory().unwrap();
     conn.pragma_update(None, "user_version", 999).unwrap();
