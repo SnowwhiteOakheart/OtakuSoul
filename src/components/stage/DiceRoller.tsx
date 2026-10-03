@@ -129,6 +129,8 @@ export const DiceRoller: React.FC = () => {
             isRolling={isRollingDice}
             result={isRollingDice ? null : (lastDiceRoll?.individual_rolls[0] ?? null)}
             faces={lastDiceRoll?.die_faces ?? 20}
+            isCriticalSuccess={lastDiceRoll?.is_critical_success}
+            isCriticalFailure={lastDiceRoll?.is_critical_failure}
           />
         </div>
       )}
