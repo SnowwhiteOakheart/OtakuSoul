@@ -229,9 +229,20 @@ impl ProviderRegistry {
         let default_model = provider.default_model().to_string();
         let model = request.model.clone().unwrap_or(default_model);
 
+        // Local and unknown servers apply the model's own chat template; many of them (Qwen,
+        // Gemma, Mistral, …) reject system messages anywhere but at the start.
+        let messages = if matches!(
+            provider,
+            LlmProviderType::LocalLlama | LlmProviderType::Custom
+        ) {
+            system_first(&request.messages)
+        } else {
+            request.messages.clone()
+        };
+
         let mut body = serde_json::json!({
             "model": model,
-            "messages": request.messages.iter().map(openai_message).collect::<Vec<_>>(),
+            "messages": messages.iter().map(openai_message).collect::<Vec<_>>(),
             "stream": true,
             "temperature": sampling.temperature.unwrap_or(0.7),
             "max_tokens": sampling.max_tokens.unwrap_or(2048),
@@ -468,6 +479,50 @@ fn image_urls(msg: &crate::modules::inference::ChatMessage) -> Vec<String> {
         .collect()
 }
 
+/// Merges the leading system messages into one and turns later ones (author's note,
+/// post-history instructions) into user turns, joined with neighbouring user messages so the
+/// roles still alternate.
+fn system_first(
+    messages: &[crate::modules::inference::ChatMessage],
+) -> Vec<crate::modules::inference::ChatMessage> {
+    let leading = messages.iter().take_while(|m| m.role == "system").count();
+    let mut out = Vec::with_capacity(messages.len());
+    if leading > 0 {
+        out.push(crate::modules::inference::ChatMessage {
+            role: "system".into(),
+            content: messages[..leading]
+                .iter()
+                .map(|m| m.content.as_str())
+                .collect::<Vec<_>>()
+                .join("\n\n"),
+            attachments: Vec::new(),
+        });
+    }
+    for msg in &messages[leading..] {
+        let role = if msg.role == "system" {
+            "user"
+        } else {
+            msg.role.as_str()
+        };
+        match out.last_mut() {
+            Some(last) if role == "user" && last.role == "user" => {
+                if !msg.content.is_empty() {
+                    if !last.content.is_empty() {
+                        last.content.push_str("\n\n");
+                    }
+                    last.content.push_str(&msg.content);
+                }
+                last.attachments.extend(msg.attachments.iter().cloned());
+            }
+            _ => out.push(crate::modules::inference::ChatMessage {
+                role: role.into(),
+                ..msg.clone()
+            }),
+        }
+    }
+    out
+}
+
 /// OpenAI chat message; with images the content becomes a list of text and image parts.
 fn openai_message(msg: &crate::modules::inference::ChatMessage) -> serde_json::Value {
     let images = image_urls(msg);
@@ -508,6 +563,38 @@ fn anthropic_blocks(msg: &crate::modules::inference::ChatMessage) -> Vec<serde_j
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    fn msg(role: &str, content: &str) -> crate::modules::inference::ChatMessage {
+        crate::modules::inference::ChatMessage {
+            role: role.into(),
+            content: content.into(),
+            attachments: Vec::new(),
+        }
+    }
+
+    #[test]
+    fn system_messages_only_at_the_start() {
+        let out = system_first(&[
+            msg("system", "prompt"),
+            msg("system", "lore"),
+            msg("assistant", "Hallo!"),
+            msg("system", "[Author's note]"),
+            msg("user", "hi"),
+            msg("system", "Nachspann"),
+        ]);
+        let pairs: Vec<(&str, &str)> = out
+            .iter()
+            .map(|m| (m.role.as_str(), m.content.as_str()))
+            .collect();
+        assert_eq!(
+            pairs,
+            vec![
+                ("system", "prompt\n\nlore"),
+                ("assistant", "Hallo!"),
+                ("user", "[Author's note]\n\nhi\n\nNachspann"),
+            ]
+        );
+    }
 
     #[test]
     fn test_detect_provider() {
