@@ -335,7 +335,7 @@ und übernimmt, was SoW lebendig macht:
    Szene läuft in Schleife (`get_stage_ambient_audio`, `current_ambient`), der Planer wechselt ihn aus den vorhandenen
    Dateien, „Atmosphäre“ und Stummschalten schalten ihn; ohne Datei bleibt das synthetische Lagerfeuer.
    Test: `e2e/stage-voice.mjs` (Stimme je Sprecher, Ambient-Wechsel, Stummschalten).
-8. [ ] **Gedächtnis & Welt:**
+8. [x] **Gedächtnis & Welt:**
    - [x] Weltzustand vollständig bearbeitbar (`StageWorldEditor.tsx`: Fakten, Story-Arcs inkl. verborgener mit
      Spoiler-Schalter, Ziele, Beziehungen, Inventar), Chronik-Einträge löschbar, Übersetzung von Stage-Nachrichten.
      Dabei behoben: Fakten und Chronik erreichten den Planer nie; jetzt stehen sie im Planer-Kontext, und der Planer
@@ -344,8 +344,12 @@ und übernimmt, was SoW lebendig macht:
      zusammen (`arc_archive`, ohne Antwort die Beschreibung); der Planer sieht nur offene Arcs plus Archiv, die Kampagne
      zeigt die Zusammenfassung. Konsistenzprüfung alle 8 Runden: entfernt veraltete Fakten und korrigiert widersprochene,
      erfindet keine neuen. Beides entfällt nach „Stopp“. Test: `e2e/stage-memory.mjs`.
-   - [ ] Charakter-Overlays, Lorekarten mit Zielgruppe (Party/GM).
-   - [ ] Szenen-Erlebnisse ins Soul Memory der Party.
+   - [x] Charakter-Overlays (Rolle, Arc-Stand, Fakten je Figur; nur im Prompt der Figur) und Lorekarten mit Zielgruppe:
+     „Gruppe“ erreicht Gefährten und Erzähler bei passendem Stichwort, „Nur Spielleiter“ bleibt im Planer-Kontext.
+     Der Planer pflegt beides (`overlay_updates`, `lore_card_updates`), der Weltzustand-Editor ebenso.
+   - [x] Szenen-Erlebnisse ins Soul Memory der Party: alle 10 neuen Zeilen läuft die gefilterte Sicht jedes
+     Mitglieds (ohne fremdes Flüstern, ohne Gedanken anderer) im Hintergrund durch die Gedächtnis-Pipeline
+     (`take_memory_sync_batches`, `transcript` in `SoulMemoryPipelineRequest`). Test: `e2e/stage-memory.mjs`.
 
 ---
 

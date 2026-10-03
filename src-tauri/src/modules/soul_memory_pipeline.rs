@@ -120,6 +120,11 @@ pub struct SoulMemoryPipelineRequest {
     pub recent_turn_count: Option<usize>,
     #[serde(default)]
     pub include_diary: Option<bool>,
+    /// Already formatted dialogue to learn from instead of the chat (e.g. a Soul Stage scene,
+    /// filtered to what this character witnessed).
+    #[serde(default)]
+    #[ts(optional)]
+    pub transcript: Option<String>,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize, TS)]
@@ -338,8 +343,13 @@ pub async fn execute_soul_memory_pipeline(
     };
 
     let mut dialog_formatted = String::new();
-    for msg in recent_slice {
-        dialog_formatted.push_str(&format!("{}: {}\n", msg.role, msg.content));
+    match req.transcript.as_deref().filter(|t| !t.trim().is_empty()) {
+        Some(transcript) => dialog_formatted.push_str(transcript),
+        None => {
+            for msg in recent_slice {
+                dialog_formatted.push_str(&format!("{}: {}\n", msg.role, msg.content));
+            }
+        }
     }
 
     if dialog_formatted.trim().is_empty() {

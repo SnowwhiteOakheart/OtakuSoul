@@ -88,6 +88,9 @@ Einstellungen: `components/settings/sections/*` (Server inkl. Laufzeiten/`mmproj
   Weltzustand-Editor `StageWorldEditor.tsx` speichert per `save_stage_scene` (in den neuesten Zustand gemischt).
   Rundenende: `archive_resolved_arcs` und `audit_facts` (alle `AUDIT_INTERVAL` Runden); Mock erkennt
   „[SOUL STAGE — ARC ARCHIVE]“/„[SOUL STAGE — CONSISTENCY]“.
+  Overlays (`overlay_block` nur für die Figur selbst) und Lorekarten (`relevant_lore_cards`: `party` → Snippets,
+  `gm` → nur Planer). `take_memory_sync_batches` (Rundenende, je Mitglied die gefilterte Sicht) → Soul-Memory-Pipeline
+  mit `transcript` im Hintergrund; Mock erkennt sie an „=== RECENT MESSAGES ===“.
   `stage/director.rs`: Sprecherfolge = Spielerwahl > Flüsterziel > direkte Ansprache > Planer; danach pro Beitrag
   Ansprache-Erkennung, sonst Routing-LLM (Mock erkennt „[SOUL STAGE — ROUTING]“). `turn_mode: "continue"` = Runde ohne
   Spieleraktion (Weiter/Auto-Play).

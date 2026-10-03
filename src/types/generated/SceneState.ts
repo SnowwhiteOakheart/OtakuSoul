@@ -2,12 +2,14 @@
 import type { ArchivedArc } from "./ArchivedArc";
 import type { CampaignClock } from "./CampaignClock";
 import type { CampaignObjective } from "./CampaignObjective";
+import type { CharacterOverlay } from "./CharacterOverlay";
 import type { ConsequenceEntry } from "./ConsequenceEntry";
 import type { EncounterState } from "./EncounterState";
 import type { InventoryItem } from "./InventoryItem";
 import type { SceneDefinition } from "./SceneDefinition";
 import type { SceneTurnMessage } from "./SceneTurnMessage";
 import type { StageHistorySummary } from "./StageHistorySummary";
+import type { StageLoreCard } from "./StageLoreCard";
 import type { StageNpc } from "./StageNpc";
 import type { StageRelationship } from "./StageRelationship";
 import type { StoryArc } from "./StoryArc";
@@ -27,6 +29,18 @@ arc_archive: Array<ArchivedArc>,
  * Turns since the last consistency check of the facts.
  */
 turns_since_audit: number, 
+/**
+ * How each character currently stands in this story (role, personal arc, changing facts).
+ */
+overlays: Array<CharacterOverlay>, 
+/**
+ * Scene lore with an audience: the party, or only the game master.
+ */
+lore_cards: Array<StageLoreCard>, 
+/**
+ * Per character: how much of the log has gone into their Soul Memory.
+ */
+memory_sync: { [key in string]: number }, 
 /**
  * What each character was told in private (whispers), by name.
  */

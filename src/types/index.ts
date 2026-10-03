@@ -29,6 +29,8 @@ import type { ChubCharacterDetail } from './generated/ChubCharacterDetail';
 import type { CombatCondition } from './generated/CombatCondition';
 import type { ContextUsage } from './generated/ContextUsage';
 import type { ArchivedArc } from './generated/ArchivedArc';
+import type { CharacterOverlay } from './generated/CharacterOverlay';
+import type { StageLoreCard } from './generated/StageLoreCard';
 import type { StageStreamEvent } from './generated/StageStreamEvent';
 import type { Attachment } from './generated/Attachment';
 import type { TranslateRequest } from './generated/TranslateRequest';
@@ -106,6 +108,8 @@ export type {
   ConsequenceEntry,
   ContextUsage,
   ArchivedArc,
+  CharacterOverlay,
+  StageLoreCard,
   StageStreamEvent,
   Attachment,
   TranslateRequest,
@@ -335,6 +339,8 @@ export interface SoulMemoryPipelineRequest {
   provider?: LlmProviderType;
   recent_turn_count?: number;
   include_diary?: boolean;
+  /** Dialogue to learn from instead of the chat (Soul Stage). */
+  transcript?: string;
 }
 
 export interface SoulMemoryPipelineResult {
@@ -567,6 +573,9 @@ export interface SceneState {
   /** Summaries of resolved story arcs. */
   arc_archive?: ArchivedArc[];
   turns_since_audit?: number;
+  overlays?: CharacterOverlay[];
+  lore_cards?: StageLoreCard[];
+  memory_sync?: Record<string, number>;
   /** What each character was told in private (whispers). */
   private_knowledge?: Record<string, string[]>;
   npcs?: import('./generated/StageNpc').StageNpc[];

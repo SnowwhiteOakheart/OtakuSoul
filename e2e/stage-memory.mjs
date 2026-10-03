@@ -55,10 +55,53 @@ try {
   assert.deepEqual(state.world.key_facts, { tor: 'offen', wache: 'wach' }, 'Fakten nicht bereinigt');
   assert.equal(state.turns_since_audit, 0);
 
+  // 3. Overlays and lore cards: the companion gets their overlay and party lore, never GM lore.
+  const companion = (await invoke('get_stage_state')).definition.party[0];
+  mock.stats.overlayUpdates = [{ name: companion, current_role: 'OVERLAY_ROLE: Hüterin des Siegels' }];
+  mock.stats.loreUpdates = [
+    { title: 'Das Siegel', content: 'PARTY_LORE: Nur Blut öffnet es.', keywords: ['Siegel'], audience: 'party' },
+    { title: 'Der Verräter', content: 'GM_SECRET: Der Wirt arbeitet für den Feind.', keywords: [], audience: 'gm' },
+  ];
+  await turn('Wir sehen uns um.');
+  mock.stats.overlayUpdates = [];
+  mock.stats.loreUpdates = [];
+  state = await invoke('get_stage_state');
+  assert.equal(state.lore_cards.length, 2);
+  assert.ok(state.overlays.some((o) => o.name === companion && o.current_role.includes('OVERLAY_ROLE')));
+  await turn(`${companion}, was weißt du über das Siegel?`);
+  const companionPrompt = JSON.stringify(mock.stats.companionMessagesByName?.[companion] ?? mock.stats.lastCompanionMessages);
+  assert.ok(companionPrompt.includes('OVERLAY_ROLE'), 'Overlay fehlt im Prompt der Figur');
+  assert.ok(companionPrompt.includes('PARTY_LORE'), 'Gruppen-Lore fehlt bei passendem Stichwort');
+  assert.ok(!companionPrompt.includes('GM_SECRET'), 'Spielleiter-Lore erreicht die Figur');
+  assert.ok(JSON.stringify(mock.stats.lastPlannerMessages).includes('GM_SECRET'), 'Spielleiter-Lore fehlt beim Planer');
+
+  // 4. Soul Memory: after enough witnessed lines, the companion's own view goes to the pipeline.
+  state = await invoke('get_stage_state');
+  const line = (content, extra = {}) => ({ ...state.chat_log[0], id: `sync-${content}`, sender_name: 'Hiroki', sender_role: 'player', content, turn_mode: 'say', whisper_target: null, ...extra });
+  await invoke('save_stage_scene', {
+    sceneState: {
+      ...state,
+      chat_log: [...state.chat_log, line('PUBLIC_EVENT: Das Tor stürzt ein.'), line('SECRET_FOR_OTHER: Ich traue ihr nicht.', { turn_mode: 'whisper', whisper_target: 'Liora' })],
+      memory_sync: { [companion]: state.chat_log.length - 8 },
+    },
+  });
+  await turn('Wir laufen weiter.');
+  // Earlier syncs run in the background too; wait for the one carrying the new lines.
+  const synced = () => (mock.stats.memoryRequests ?? []).find((r) => r.includes('PUBLIC_EVENT'));
+  await browser.waitUntil(() => Boolean(synced()), { timeout: 20_000, timeoutMsg: 'Szenenerlebnis erreicht das Soul Memory nicht' });
+  const memoryRequest = synced();
+  assert.ok(!memoryRequest.includes('SECRET_FOR_OTHER'), 'Geflüstertes an andere landet im Gedächtnis');
+  assert.ok(memoryRequest.includes('whispers something'), 'Flüstern fehlt als Ereignis');
+
   await browser.$('button*=Kampagne').click();
   await browser.$('p*=ARC_SUMMARY').waitForDisplayed({ timeout: 5000 });
   await shot('26-arc-archiv');
-  console.log('Gedächtnis: Arc-Archiv und Konsistenzprüfung bestanden.');
+  await browser.$('button=Weltzustand bearbeiten').click();
+  await browser.$('#stage-world-title').waitForDisplayed();
+  const loreTitle = await browser.$('input[aria-label="Titel"][value="Der Verräter"]');
+  await loreTitle.scrollIntoView();
+  await shot('27-overlays-lorekarten');
+  console.log('Gedächtnis: Arc-Archiv, Konsistenzprüfung, Overlays, Lorekarten und Soul-Memory-Übernahme bestanden.');
 } finally {
   await close();
 }

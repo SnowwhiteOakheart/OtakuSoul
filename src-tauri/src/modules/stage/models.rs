@@ -406,6 +406,39 @@ pub struct StageStreamEvent {
 /// Receives live text during a turn.
 pub type StageStream<'a> = &'a (dyn Fn(StageStreamEvent) + Send + Sync);
 
+/// A character's place in this story, on top of their card: what the scene has made of them.
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize, TS)]
+#[ts(export)]
+pub struct CharacterOverlay {
+    pub name: String,
+    #[serde(default)]
+    pub current_role: String,
+    #[serde(default)]
+    pub arc_stage: String,
+    /// Facts that changed for this character (`"injury": "left arm in a sling"`).
+    #[serde(default)]
+    pub facts: std::collections::BTreeMap<String, String>,
+}
+
+/// Scene knowledge that comes into play when its keywords show up.
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize, TS)]
+#[ts(export)]
+pub struct StageLoreCard {
+    pub id: String,
+    pub title: String,
+    pub content: String,
+    /// Empty = always relevant.
+    #[serde(default)]
+    pub keywords: Vec<String>,
+    /// `party` (everyone may know it) or `gm` (only the game master).
+    #[serde(default = "default_lore_audience")]
+    pub audience: String,
+}
+
+pub(super) fn default_lore_audience() -> String {
+    "party".to_string()
+}
+
 /// A resolved story arc, condensed when it ended.
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize, TS)]
 #[ts(export)]
@@ -450,6 +483,15 @@ pub struct SceneState {
     /// Turns since the last consistency check of the facts.
     #[serde(default)]
     pub turns_since_audit: u32,
+    /// How each character currently stands in this story (role, personal arc, changing facts).
+    #[serde(default)]
+    pub overlays: Vec<CharacterOverlay>,
+    /// Scene lore with an audience: the party, or only the game master.
+    #[serde(default)]
+    pub lore_cards: Vec<StageLoreCard>,
+    /// Per character: how much of the log has gone into their Soul Memory.
+    #[serde(default)]
+    pub memory_sync: HashMap<String, usize>,
     /// What each character was told in private (whispers), by name.
     #[serde(default)]
     pub private_knowledge: HashMap<String, Vec<String>>,

@@ -5,7 +5,9 @@ import type { PlanConditionUpdate } from "./PlanConditionUpdate";
 import type { PlanDiceCheck } from "./PlanDiceCheck";
 import type { PlanEncounterUpdate } from "./PlanEncounterUpdate";
 import type { PlanInventoryAdd } from "./PlanInventoryAdd";
+import type { PlanLoreCard } from "./PlanLoreCard";
 import type { PlanObjectiveUpdate } from "./PlanObjectiveUpdate";
+import type { PlanOverlayUpdate } from "./PlanOverlayUpdate";
 import type { PlanResourceDelta } from "./PlanResourceDelta";
 import type { StageNpcDraft } from "./StageNpcDraft";
 import type { TaggedChoice } from "./TaggedChoice";
@@ -14,4 +16,4 @@ export type GmPlan = { narration_plan: string, location: string | null, time_of_
 /**
  * Established facts to set (`"key": "value"`) or drop (`"key": null`).
  */
-fact_updates: { [key in string]: string | null }, discovery: string | null, spawn_npcs: Array<StageNpcDraft>, despawn_npcs: Array<string>, };
+fact_updates: { [key in string]: string | null }, overlay_updates: Array<PlanOverlayUpdate>, lore_card_updates: Array<PlanLoreCard>, discovery: string | null, spawn_npcs: Array<StageNpcDraft>, despawn_npcs: Array<string>, };

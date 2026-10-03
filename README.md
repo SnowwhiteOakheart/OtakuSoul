@@ -93,6 +93,8 @@ Szenenordner (inklusive aller 12 Kapitel unseres *No Game No Life* Abenteuers), 
 
 Lange Stage-Verläufe nutzen das Kontextfenster des gewählten Modells und laufende Zusammenfassungen im Spielstand. Planer, Erzähler und Gefährten erhalten getrennte Zusammenfassungen; Flüstern erreicht nur seinen Empfänger, Gedanken nur den Spielleiter. Der vollständige Verlauf bleibt erhalten.
 
+Der Weltzustand (Fakten, Story-Arcs, Ziele, Beziehungen, Inventar) ist frei bearbeitbar; aufgelöste Arcs werden archiviert, Fakten regelmäßig auf Widersprüche geprüft. **Charakter-Overlays** halten fest, wie die Geschichte eine Figur verändert hat, **Lorekarten** bringen Szenenwissen ins Spiel – für die Gruppe oder nur für den Spielleiter. Was die Party erlebt, wandert aus ihrer jeweiligen Sicht ins Soul Memory der Charaktere.
+
 NPCs können vom Spielleiter eingeführt oder über **NPCs** selbst angelegt werden. Acht Archetyp-Avatare, private
 Flüsterziele und eigene, nach Textrelevanz abgerufene Erinnerungen machen wiederkehrende Begegnungen möglich.
 **Zum Charakter befördern** erstellt eine V2-PNG-Karte, übernimmt Erinnerungen ins Soul Memory und fügt den

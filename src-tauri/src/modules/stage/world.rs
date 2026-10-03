@@ -19,6 +19,34 @@ pub struct StageLlm {
 }
 
 impl StageLlm {
+    /// The chat model selected in the settings (local llama-server or cloud).
+    pub fn from_settings() -> Self {
+        let settings = load_app_settings();
+        if settings.selected_backend == "cloud" {
+            Self {
+                provider: Some(
+                    crate::modules::providers::ProviderRegistry::detect_provider(
+                        &settings.cloud_endpoint,
+                        None,
+                    ),
+                ),
+                endpoint_url: settings.cloud_endpoint,
+                api_key: (!settings.cloud_api_key.is_empty()).then_some(settings.cloud_api_key),
+                model: (!settings.cloud_model.is_empty()).then_some(settings.cloud_model),
+            }
+        } else {
+            Self {
+                endpoint_url: format!(
+                    "http://127.0.0.1:{}/v1/chat/completions",
+                    settings.server_config.port
+                ),
+                api_key: None,
+                model: None,
+                provider: Some(crate::modules::providers::LlmProviderType::LocalLlama),
+            }
+        }
+    }
+
     fn request(&self, prompt: String, max_tokens: u32) -> ChatRequest {
         ChatRequest {
             endpoint_url: self.endpoint_url.clone(),
@@ -239,9 +267,358 @@ pub fn apply_fact_updates(state: &mut SceneState, updates: &HashMap<String, Opti
     }
 }
 
+/// Overlays for the planner: `Name: role …, arc …, facts …; …` or "none".
+pub fn overlays_context(state: &SceneState) -> String {
+    if state.overlays.is_empty() {
+        return "none".to_string();
+    }
+    state
+        .overlays
+        .iter()
+        .map(|o| {
+            let facts = o
+                .facts
+                .iter()
+                .map(|(k, v)| format!("{k}: {v}"))
+                .collect::<Vec<_>>()
+                .join(", ");
+            format!(
+                "{} (role: {}; arc: {}; facts: {})",
+                o.name,
+                if o.current_role.is_empty() {
+                    "-"
+                } else {
+                    &o.current_role
+                },
+                if o.arc_stage.is_empty() {
+                    "-"
+                } else {
+                    &o.arc_stage
+                },
+                if facts.is_empty() {
+                    "-".to_string()
+                } else {
+                    facts
+                }
+            )
+        })
+        .collect::<Vec<_>>()
+        .join("; ")
+}
+
+/// The overlay as it goes into the character's own prompt, or nothing.
+pub fn overlay_block(state: &SceneState, name: &str) -> String {
+    let Some(overlay) = state
+        .overlays
+        .iter()
+        .find(|o| o.name.eq_ignore_ascii_case(name))
+    else {
+        return String::new();
+    };
+    let mut lines = Vec::new();
+    if !overlay.current_role.trim().is_empty() {
+        lines.push(format!(
+            "Your current role in this story: {}",
+            overlay.current_role
+        ));
+    }
+    if !overlay.arc_stage.trim().is_empty() {
+        lines.push(format!(
+            "Where your personal arc stands: {}",
+            overlay.arc_stage
+        ));
+    }
+    lines.extend(overlay.facts.iter().map(|(k, v)| format!("{k}: {v}")));
+    if lines.is_empty() {
+        String::new()
+    } else {
+        format!(
+            "\n\nHow this story has changed you:\n- {}",
+            lines.join("\n- ")
+        )
+    }
+}
+
+pub fn apply_overlay_updates(state: &mut SceneState, updates: &[PlanOverlayUpdate]) {
+    for update in updates {
+        let name = update.name.trim();
+        if name.is_empty() {
+            continue;
+        }
+        let index = match state
+            .overlays
+            .iter()
+            .position(|o| o.name.eq_ignore_ascii_case(name))
+        {
+            Some(index) => index,
+            None => {
+                state.overlays.push(CharacterOverlay {
+                    name: name.to_string(),
+                    current_role: String::new(),
+                    arc_stage: String::new(),
+                    facts: Default::default(),
+                });
+                state.overlays.len() - 1
+            }
+        };
+        let overlay = &mut state.overlays[index];
+        if let Some(role) = update
+            .current_role
+            .as_deref()
+            .map(str::trim)
+            .filter(|r| !r.is_empty())
+        {
+            overlay.current_role = role.to_string();
+        }
+        if let Some(arc) = update
+            .arc_stage
+            .as_deref()
+            .map(str::trim)
+            .filter(|a| !a.is_empty())
+        {
+            overlay.arc_stage = arc.to_string();
+        }
+        for (key, value) in &update.facts {
+            let key = normalize_fact_key(key);
+            match value.as_deref().map(str::trim).filter(|v| !v.is_empty()) {
+                Some(value) => {
+                    overlay.facts.insert(key, value.to_string());
+                }
+                None => {
+                    overlay.facts.remove(&key);
+                }
+            }
+        }
+    }
+}
+
+pub fn apply_lore_card_updates(state: &mut SceneState, updates: &[PlanLoreCard]) {
+    for card in updates {
+        let title = card.title.trim();
+        if title.is_empty() || card.content.trim().is_empty() {
+            continue;
+        }
+        let audience = if card.audience.eq_ignore_ascii_case("gm") {
+            "gm"
+        } else {
+            "party"
+        };
+        let keywords: Vec<String> = card
+            .keywords
+            .iter()
+            .map(|k| k.trim().to_string())
+            .filter(|k| !k.is_empty())
+            .collect();
+        match state
+            .lore_cards
+            .iter_mut()
+            .find(|c| c.title.eq_ignore_ascii_case(title))
+        {
+            Some(existing) => {
+                existing.content = card.content.trim().to_string();
+                existing.keywords = keywords;
+                existing.audience = audience.to_string();
+            }
+            None => state.lore_cards.push(StageLoreCard {
+                id: format!(
+                    "lore_{}_{}",
+                    Utc::now().timestamp_millis(),
+                    state.lore_cards.len()
+                ),
+                title: title.to_string(),
+                content: card.content.trim().to_string(),
+                keywords,
+                audience: audience.to_string(),
+            }),
+        }
+    }
+}
+
+/// Lore cards relevant to `text` (keyword match, or no keywords): `(party, gm_only)` snippets.
+pub fn relevant_lore_cards(state: &SceneState, text: &str) -> (Vec<String>, Vec<String>) {
+    let text = text.to_lowercase();
+    let mut party = Vec::new();
+    let mut gm = Vec::new();
+    for card in &state.lore_cards {
+        let relevant = card.keywords.is_empty()
+            || card
+                .keywords
+                .iter()
+                .any(|k| text.contains(&k.to_lowercase()));
+        if !relevant {
+            continue;
+        }
+        if card.audience == "gm" {
+            gm.push(format!(
+                "[GM-ONLY LORE – never reveal directly: {}] {}",
+                card.title, card.content
+            ));
+        } else {
+            party.push(format!("[LORE: {}] {}", card.title, card.content));
+        }
+    }
+    (party, gm)
+}
+
+/// Titles of all scene lore cards, so the planner can update instead of duplicating them.
+pub fn lore_card_titles(state: &SceneState) -> String {
+    if state.lore_cards.is_empty() {
+        return "none".to_string();
+    }
+    state
+        .lore_cards
+        .iter()
+        .map(|c| format!("{} ({})", c.title, c.audience))
+        .collect::<Vec<_>>()
+        .join(", ")
+}
+
+/// New log lines a party member must have witnessed before their Soul Memory is updated.
+pub const MEMORY_SYNC_LINES: usize = 10;
+
+/// Party members whose Soul Memory is due: `(name, transcript)` with only what each of them
+/// witnessed (whispers to others and thoughts stay hidden). Marks the lines as taken.
+pub fn take_memory_sync_batches(state: &mut SceneState) -> Vec<(String, String)> {
+    let len = state.chat_log.len();
+    let mut batches = Vec::new();
+    for name in state.definition.party.clone() {
+        let start = *state
+            .memory_sync
+            .entry(name.clone())
+            // First sync of an existing scene: only the recent part, not the whole history.
+            .or_insert_with(|| len.saturating_sub(MEMORY_SYNC_LINES));
+        if len.saturating_sub(start) < MEMORY_SYNC_LINES {
+            continue;
+        }
+        let transcript = state.chat_log[start.min(len)..]
+            .iter()
+            .map(|m| super::npc::npc_history_line(state, m, Audience::Character(&name)))
+            .collect::<Vec<_>>()
+            .join("\n");
+        state.memory_sync.insert(name.clone(), len);
+        batches.push((name, transcript));
+    }
+    batches
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    fn line(sender: &str, content: &str, mode: &str, target: Option<&str>) -> SceneTurnMessage {
+        SceneTurnMessage {
+            id: format!("m-{content}"),
+            sender_id: sender.into(),
+            sender_name: sender.into(),
+            sender_role: "player".into(),
+            avatar_url: None,
+            content: content.into(),
+            turn_mode: mode.into(),
+            whisper_target: target.map(Into::into),
+            event_card: None,
+            timestamp: 0,
+        }
+    }
+
+    #[test]
+    fn memory_sync_takes_each_characters_own_view() {
+        let mut state = StageEngine::new().get_state();
+        state.definition.party = vec!["Ayu".into()];
+        state.chat_log.clear();
+        state.memory_sync.insert("Ayu".into(), 0);
+        for i in 0..8 {
+            state
+                .chat_log
+                .push(line("Kai", &format!("PUBLIC_{i}"), "say", None));
+        }
+        assert!(
+            take_memory_sync_batches(&mut state).is_empty(),
+            "too few lines"
+        );
+        state
+            .chat_log
+            .push(line("Kai", "SECRET_FOR_SORA", "whisper", Some("Sora")));
+        state
+            .chat_log
+            .push(line("Kai", "FOR_AYU", "whisper", Some("Ayu")));
+        let batches = take_memory_sync_batches(&mut state);
+        assert_eq!(batches.len(), 1);
+        let (name, transcript) = &batches[0];
+        assert_eq!(name, "Ayu");
+        assert!(transcript.contains("PUBLIC_0") && transcript.contains("FOR_AYU"));
+        assert!(!transcript.contains("SECRET_FOR_SORA"));
+        // Taken lines are not sent again.
+        assert!(take_memory_sync_batches(&mut state).is_empty());
+    }
+
+    #[test]
+    fn overlays_are_kept_per_character() {
+        let mut state = StageEngine::new().get_state();
+        apply_overlay_updates(
+            &mut state,
+            &[PlanOverlayUpdate {
+                name: "Ayu".into(),
+                current_role: Some("Verräterin wider Willen".into()),
+                arc_stage: None,
+                facts: HashMap::from([("Verletzung".into(), Some("Arm in der Schlinge".into()))]),
+            }],
+        );
+        apply_overlay_updates(
+            &mut state,
+            &[PlanOverlayUpdate {
+                name: "ayu".into(),
+                current_role: None,
+                arc_stage: Some("zweifelt".into()),
+                facts: HashMap::new(),
+            }],
+        );
+        assert_eq!(state.overlays.len(), 1);
+        let block = overlay_block(&state, "Ayu");
+        assert!(
+            block.contains("Verräterin wider Willen")
+                && block.contains("zweifelt")
+                && block.contains("verletzung: Arm in der Schlinge")
+        );
+        assert_eq!(overlay_block(&state, "Sora"), "");
+    }
+
+    #[test]
+    fn lore_cards_reach_their_audience_when_relevant() {
+        let mut state = StageEngine::new().get_state();
+        apply_lore_card_updates(
+            &mut state,
+            &[
+                PlanLoreCard {
+                    title: "Das Siegel".into(),
+                    content: "Nur Blut öffnet es.".into(),
+                    keywords: vec!["Tor".into()],
+                    audience: "party".into(),
+                },
+                PlanLoreCard {
+                    title: "Der Verräter".into(),
+                    content: "Ayu arbeitet für den Feind.".into(),
+                    keywords: vec![],
+                    audience: "GM".into(),
+                },
+            ],
+        );
+        let (party, gm) = relevant_lore_cards(&state, "Wir stehen vor dem tor.");
+        assert_eq!(party.len(), 1);
+        assert!(gm[0].contains("GM-ONLY") && gm[0].contains("Feind"));
+        let (party, _) = relevant_lore_cards(&state, "Wir rasten.");
+        assert!(party.is_empty());
+        // Same title updates instead of duplicating.
+        apply_lore_card_updates(
+            &mut state,
+            &[PlanLoreCard {
+                title: "das siegel".into(),
+                content: "Neu.".into(),
+                keywords: vec![],
+                audience: "party".into(),
+            }],
+        );
+        assert_eq!(state.lore_cards.len(), 2);
+    }
 
     #[test]
     fn resolved_arcs_leave_the_open_list() {

@@ -67,6 +67,11 @@ export function startMockLlm() {
         stats.routing = (stats.routing ?? 0) + 1;
         stats.lastRoutingPrompt = system;
       }
+      // Soul Memory pipeline (router agent): the stage hands it a character's view of the scene.
+      if (JSON.stringify(request.messages ?? []).includes('=== RECENT MESSAGES ===')) {
+        stats.memoryRouter = (stats.memoryRouter ?? 0) + 1;
+        (stats.memoryRequests ??= []).push(JSON.stringify(request.messages));
+      }
       const isArcArchive = system.includes('[SOUL STAGE — ARC ARCHIVE]');
       const isAudit = system.includes('[SOUL STAGE — CONSISTENCY]');
       if (isArcArchive) { stats.arcArchive = (stats.arcArchive ?? 0) + 1; stats.lastArcArchivePrompt = system; }
@@ -103,6 +108,8 @@ export function startMockLlm() {
             bg_image: stats.stageBackground ?? null,
             ambient_audio: plannerAmbient,
             story_arc_updates: stats.arcUpdates ?? [],
+            overlay_updates: stats.overlayUpdates ?? [],
+            lore_card_updates: stats.loreUpdates ?? [],
             spawn_npcs: stats.spawnNpc ? [stats.spawnNpc] : [],
             despawn_npcs: stats.despawnNpc ? [stats.despawnNpc] : [],
             resource_delta: { target: 'PLAYER', hp_delta: -5, stress_delta: 10 },

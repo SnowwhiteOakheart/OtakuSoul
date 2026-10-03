@@ -37,38 +37,12 @@ pub async fn execute_stage_turn(
     tick_conditions_outside_combat(&mut state);
 
     let counter = crate::modules::context_window::TokenCounter::default();
-    let settings = load_app_settings();
-    let (endpoint_url, api_key, model_name, provider) = if settings.selected_backend == "cloud" {
-        (
-            settings.cloud_endpoint.clone(),
-            if settings.cloud_api_key.is_empty() {
-                None
-            } else {
-                Some(settings.cloud_api_key.clone())
-            },
-            if settings.cloud_model.is_empty() {
-                None
-            } else {
-                Some(settings.cloud_model.clone())
-            },
-            Some(
-                crate::modules::providers::ProviderRegistry::detect_provider(
-                    &settings.cloud_endpoint,
-                    None,
-                ),
-            ),
-        )
-    } else {
-        (
-            format!(
-                "http://127.0.0.1:{}/v1/chat/completions",
-                settings.server_config.port
-            ),
-            None,
-            None,
-            Some(crate::modules::providers::LlmProviderType::LocalLlama),
-        )
-    };
+    let StageLlm {
+        endpoint_url,
+        api_key,
+        model: model_name,
+        provider,
+    } = StageLlm::from_settings();
 
     let user_name = if !state.definition.persona.is_empty() {
         state.definition.persona.clone()
@@ -224,10 +198,21 @@ pub async fn execute_stage_turn(
             }
         }
     }
-    let lore_context = if active_lore_snippets.is_empty() {
+    // Scene lore cards: party cards reach every speaker, game-master cards only the planner.
+    let (party_cards, gm_cards) = relevant_lore_cards(
+        &state,
+        &format!("{clean_input}\n{}", recent_history.join("\n")),
+    );
+    active_lore_snippets.extend(party_cards);
+    let lore_context = if active_lore_snippets.is_empty() && gm_cards.is_empty() {
         "none".to_string()
     } else {
-        active_lore_snippets.join("\n")
+        active_lore_snippets
+            .iter()
+            .chain(gm_cards.iter())
+            .cloned()
+            .collect::<Vec<_>>()
+            .join("\n")
     };
 
     let ambient_files = list_stage_assets().remove("ambient").unwrap_or_default();
@@ -250,6 +235,8 @@ Resolved story arcs (archive): {arc_archive}
 Inventory: {inventory}
 Party condition: {vitals}
 Established facts: {facts}
+Character overlays (how the story changed each character): {overlays}
+Scene lore cards: {lore_titles}
 Lasting consequences (chronicle, oldest first): {chronicle}
 Combat: {combat}
 
@@ -282,6 +269,8 @@ Reply ONLY with a single valid JSON object in this format:
   ],
   "lasting_consequence": null,
   "fact_updates": {{}},
+  "overlay_updates": [],
+  "lore_card_updates": [],
   "discovery": null
 }}
 
@@ -299,6 +288,8 @@ RULES:
 - story_arc_updates: optional {{"id":"arc-id", "stage_delta":1, "reveal":true, "resolve":false}}.
 - objective_updates: optional {{"id":"objective-id", "title":"", "description":"", "progress_delta":1, "max":3, "status":"active|completed|failed"}}.
 - fact_updates: keep the established facts true: {{"short_key": "new value"}} to add or change one, {{"short_key": null}} when it no longer holds. Short snake_case keys, values in {reply_language}.
+- overlay_updates: when a character's situation in the story changes: {{"name": "Name", "current_role": "…", "arc_stage": "…", "facts": {{"short_key": "value or null"}}}}; omit unchanged fields.
+- lore_card_updates: new or changed scene knowledge worth remembering: {{"title": "…", "content": "…", "keywords": ["word that brings it up"], "audience": "party" or "gm"}}; "gm" for secrets the players must discover. Same title updates a card.
 - inventory_add: optional items with name, description, quantity, item_type and optionally hp_restore/stress_restore/clears_condition. inventory_remove holds IDs or names.
 - encounter: only when combat changes: {{"action":"start|update|end", "enemies":[{{"name":"Enemy", "hp":12, "role":"enemy"}}], "hp_updates":[{{"target":"Name", "hp_delta":-4}}]}}.
 - Reply ONLY with raw JSON, without explanations or markdown before or after it!"#,
@@ -346,6 +337,8 @@ RULES:
         },
         vitals = vitals_context,
         facts = facts_context(&state),
+        overlays = overlays_context(&state),
+        lore_titles = lore_card_titles(&state),
         chronicle = chronicle_context(&state),
         combat = combat_context,
         first_party_or_player = state
@@ -785,6 +778,8 @@ RULES:
         ));
     }
     apply_fact_updates(&mut state, &gm_plan.fact_updates);
+    apply_overlay_updates(&mut state, &gm_plan.overlay_updates);
+    apply_lore_card_updates(&mut state, &gm_plan.lore_card_updates);
 
     if let Some(consequence) = &gm_plan.lasting_consequence
         && !consequence.trim().is_empty()
@@ -1001,7 +996,12 @@ RULES:
                 String::new()
             };
 
-            let secrets = private_knowledge_block(&state, &current_actor);
+            // What only this character knows, and how the story has changed them.
+            let secrets = format!(
+                "{}{}",
+                private_knowledge_block(&state, &current_actor),
+                overlay_block(&state, &current_actor)
+            );
             let companion_system = if let Some(npc) = &npc {
                 format!(
                     "[SOUL STAGE — NPC]\nYou are {} ({}).\nPersonality and background: {}\nScene context: {}{lore_section}\nReact in the first person to events you witnessed. Stay in character; keep it concise. Reply in {reply_language}.{}{}",

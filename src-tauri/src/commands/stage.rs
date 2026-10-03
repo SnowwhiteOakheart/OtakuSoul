@@ -261,13 +261,71 @@ pub async fn run_stage_turn(
     request: crate::modules::stage::StageTurnRequest,
 ) -> Result<crate::modules::stage::SceneState, String> {
     let emit = stream_emitter(&app);
-    crate::modules::stage::execute_stage_turn(
+    let mut scene = crate::modules::stage::execute_stage_turn(
         &state.stage_engine,
         &state.inference_client,
         request,
         &emit,
     )
-    .await
+    .await?;
+    sync_party_memory(&app, &state, &mut scene)?;
+    Ok(scene)
+}
+
+/// Lets party members remember what they lived through in the scene: once enough new lines
+/// came together, their filtered view runs through the Soul Memory pipeline in the background.
+fn sync_party_memory(
+    app: &tauri::AppHandle,
+    state: &State<'_, AppState>,
+    scene: &mut crate::modules::stage::SceneState,
+) -> Result<(), String> {
+    use tauri::Manager;
+    let batches = crate::modules::stage::take_memory_sync_batches(scene);
+    if batches.is_empty() {
+        return Ok(());
+    }
+    crate::modules::stage::save_scene_state(scene)?;
+    state.stage_engine.set_state(scene.clone());
+    let user_name = if scene.definition.persona.trim().is_empty() {
+        "Player".to_string()
+    } else {
+        scene.definition.persona.clone()
+    };
+    let app = app.clone();
+    tauri::async_runtime::spawn(async move {
+        let llm = crate::modules::stage::StageLlm::from_settings();
+        let characters = crate::modules::paths::scan_available_characters();
+        let app_state = app.state::<AppState>();
+        // One after another: a local model handles a single request at a time anyway.
+        for (name, transcript) in batches {
+            let Some(character) = characters
+                .iter()
+                .find(|c| c.card.data.name.eq_ignore_ascii_case(&name))
+            else {
+                continue;
+            };
+            let request = crate::modules::soul_memory_pipeline::SoulMemoryPipelineRequest {
+                character_id: character.id.clone(),
+                user_name: user_name.clone(),
+                chat_id: None,
+                endpoint_url: llm.endpoint_url.clone(),
+                api_key: llm.api_key.clone(),
+                model: llm.model.clone(),
+                provider: llm.provider.clone(),
+                recent_turn_count: None,
+                include_diary: Some(false),
+                transcript: Some(transcript),
+            };
+            if let Err(error) = crate::modules::soul_memory_pipeline::execute_soul_memory_pipeline(
+                &app_state, request,
+            )
+            .await
+            {
+                tracing::warn!("Stage memory sync for {name} failed: {error}");
+            }
+        }
+    });
+    Ok(())
 }
 
 #[tauri::command]

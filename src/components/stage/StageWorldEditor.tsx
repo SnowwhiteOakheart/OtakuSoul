@@ -4,12 +4,25 @@ import { useStoreFields } from '../../store/useAppStore';
 import { useTranslation } from '../../i18n';
 import { ModalOverlay } from '../ui/ModalOverlay';
 import { toast } from '../ui/feedback';
-import type { CampaignObjective, InventoryItem, SceneState, StageRelationship, StoryArc } from '../../types';
+import type { CampaignObjective, CharacterOverlay, InventoryItem, SceneState, StageLoreCard, StageRelationship, StoryArc } from '../../types';
 
 /** The parts of a scene the world editor changes; everything else stays as the latest state has it. */
 type CampaignDraft = Pick<SceneState, 'arcs' | 'objectives' | 'relationships' | 'inventory'> & {
   facts: [string, string][];
+  overlays: CharacterOverlay[];
+  lore_cards: StageLoreCard[];
 };
+
+/** Overlay facts are edited as `key: value` lines. */
+const factsToText = (facts: Record<string, string>) => Object.entries(facts).map(([k, v]) => `${k}: ${v}`).join('\n');
+const textToFacts = (text: string): Record<string, string> =>
+  Object.fromEntries(
+    text
+      .split('\n')
+      .map((line) => line.split(/:(.*)/s).map((part) => part.trim()))
+      .filter(([key, value]) => key && value)
+      .map(([key, value]) => [key!, value!]),
+  );
 
 // Widths stay separate: a `w-full` in the shared class would win over a narrower one.
 const field = 'bg-app border border-slate-700 rounded-lg px-2 py-1.5 text-xs text-slate-100 focus:outline-hidden focus:border-accent-500';
@@ -59,6 +72,8 @@ export const StageWorldEditor: React.FC<{ onClose: () => void }> = ({ onClose })
           objectives: stageState.objectives.map((o) => ({ ...o })),
           relationships: stageState.relationships.map((r) => ({ ...r })),
           inventory: stageState.inventory.map((i) => ({ ...i })),
+          overlays: (stageState.overlays ?? []).map((o) => ({ ...o, facts: { ...o.facts } })),
+          lore_cards: (stageState.lore_cards ?? []).map((c) => ({ ...c, keywords: [...c.keywords] })),
         }
       : null,
   );
@@ -79,6 +94,8 @@ export const StageWorldEditor: React.FC<{ onClose: () => void }> = ({ onClose })
       objectives: draft.objectives,
       relationships: draft.relationships,
       inventory: draft.inventory.filter((item) => item.name.trim()),
+      overlays: draft.overlays.filter((overlay) => overlay.name.trim()),
+      lore_cards: draft.lore_cards.filter((card) => card.title.trim() && card.content.trim()),
     });
     toast.success(t('stageWorld.saved'));
     onClose();
@@ -205,6 +222,57 @@ export const StageWorldEditor: React.FC<{ onClose: () => void }> = ({ onClose })
                   {(['consumable', 'key', 'equipment'] as const).map((type) => <option key={type} value={type}>{t(`stageWorld.itemType.${type}`)}</option>)}
                 </select>
                 <RemoveButton label={t('common.delete')} onClick={() => update('inventory', draft.inventory.filter((_, i) => i !== index))} />
+              </div>
+            ))}
+          </Section>
+
+          <Section
+            title={t('stageWorld.overlays')}
+            addLabel={t('stageWorld.add')}
+            onAdd={() => update('overlays', [...draft.overlays, { name: '', current_role: '', arc_stage: '', facts: {} }])}
+          >
+            <p className="text-xs text-slate-500">{t('stageWorld.overlaysHint')}</p>
+            {draft.overlays.map((overlay, index) => (
+              <div key={index} className="p-3 rounded-xl bg-app/60 border border-slate-800 space-y-2">
+                <div className="flex gap-2 items-center">
+                  <input aria-label={t('stageWorld.overlayName')} className={`${input} max-w-48`} value={overlay.name} placeholder={t('stageWorld.overlayName')}
+                    onChange={(e) => update('overlays', patch(draft.overlays, index, { name: e.target.value }))} />
+                  <input aria-label={t('stageWorld.overlayRole')} className={input} value={overlay.current_role} placeholder={t('stageWorld.overlayRole')}
+                    onChange={(e) => update('overlays', patch(draft.overlays, index, { current_role: e.target.value }))} />
+                  <RemoveButton label={t('common.delete')} onClick={() => update('overlays', draft.overlays.filter((_, i) => i !== index))} />
+                </div>
+                <input aria-label={t('stageWorld.overlayArc')} className={input} value={overlay.arc_stage} placeholder={t('stageWorld.overlayArc')}
+                  onChange={(e) => update('overlays', patch(draft.overlays, index, { arc_stage: e.target.value }))} />
+                <textarea aria-label={t('stageWorld.overlayFacts')} className={input} rows={2} defaultValue={factsToText(overlay.facts)}
+                  placeholder={t('stageWorld.overlayFactsPlaceholder')}
+                  onChange={(e) => update('overlays', patch(draft.overlays, index, { facts: textToFacts(e.target.value) }))} />
+              </div>
+            ))}
+          </Section>
+
+          <Section
+            title={t('stageWorld.loreCards')}
+            addLabel={t('stageWorld.add')}
+            onAdd={() => update('lore_cards', [...draft.lore_cards, { id: newId('lore'), title: '', content: '', keywords: [], audience: 'party' }])}
+          >
+            <p className="text-xs text-slate-500">{t('stageWorld.loreCardsHint')}</p>
+            {draft.lore_cards.map((card, index) => (
+              <div key={card.id} className="p-3 rounded-xl bg-app/60 border border-slate-800 space-y-2">
+                <div className="flex gap-2 items-center">
+                  <input aria-label={t('stageWorld.loreTitle')} className={input} value={card.title} placeholder={t('stageWorld.loreTitle')}
+                    onChange={(e) => update('lore_cards', patch(draft.lore_cards, index, { title: e.target.value }))} />
+                  <select aria-label={t('stageWorld.loreAudience')} className={`w-44 ${field}`} value={card.audience}
+                    onChange={(e) => update('lore_cards', patch(draft.lore_cards, index, { audience: e.target.value }))}>
+                    <option value="party">{t('stageWorld.loreAudience.party')}</option>
+                    <option value="gm">{t('stageWorld.loreAudience.gm')}</option>
+                  </select>
+                  <RemoveButton label={t('common.delete')} onClick={() => update('lore_cards', draft.lore_cards.filter((_, i) => i !== index))} />
+                </div>
+                <textarea aria-label={t('stageWorld.loreContent')} className={input} rows={2} value={card.content}
+                  onChange={(e) => update('lore_cards', patch(draft.lore_cards, index, { content: e.target.value }))} />
+                <input aria-label={t('stageWorld.loreKeywords')} className={input} defaultValue={card.keywords.join(', ')}
+                  placeholder={t('stageWorld.loreKeywordsPlaceholder')}
+                  onChange={(e) => update('lore_cards', patch(draft.lore_cards, index, { keywords: e.target.value.split(',').map((k) => k.trim()).filter(Boolean) }))} />
               </div>
             ))}
           </Section>

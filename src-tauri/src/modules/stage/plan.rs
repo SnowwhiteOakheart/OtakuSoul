@@ -28,6 +28,31 @@ pub struct PlanResourceDelta {
     pub stress_delta: i32,
 }
 
+/// Changes to a character's place in the story; unset fields stay, facts set to null go.
+#[derive(Debug, Clone, Serialize, Deserialize, TS)]
+#[ts(export)]
+pub struct PlanOverlayUpdate {
+    pub name: String,
+    #[serde(default)]
+    pub current_role: Option<String>,
+    #[serde(default)]
+    pub arc_stage: Option<String>,
+    #[serde(default)]
+    pub facts: HashMap<String, Option<String>>,
+}
+
+/// New or changed scene lore (matched by title).
+#[derive(Debug, Clone, Serialize, Deserialize, TS)]
+#[ts(export)]
+pub struct PlanLoreCard {
+    pub title: String,
+    pub content: String,
+    #[serde(default)]
+    pub keywords: Vec<String>,
+    #[serde(default = "default_lore_audience")]
+    pub audience: String,
+}
+
 /// Adds or removes a condition (e.g. "Poisoned") on the player or a companion.
 #[derive(Debug, Clone, Serialize, Deserialize, TS)]
 #[ts(export)]
@@ -174,6 +199,10 @@ pub struct GmPlan {
     /// Established facts to set (`"key": "value"`) or drop (`"key": null`).
     #[serde(default)]
     pub fact_updates: HashMap<String, Option<String>>,
+    #[serde(default)]
+    pub overlay_updates: Vec<PlanOverlayUpdate>,
+    #[serde(default)]
+    pub lore_card_updates: Vec<PlanLoreCard>,
     #[serde(default)]
     pub discovery: Option<String>,
     #[serde(default)]
