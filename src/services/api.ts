@@ -354,11 +354,13 @@ export const api = {
   // Phase 6: Soul Stage Tabletop RPG
   rollStageDice: async (
     formula: string,
-    targetDc?: number
+    targetDc?: number,
+    combatantId?: string
   ): Promise<DiceRollResult> => {
     return await invoke<DiceRollResult>('roll_stage_dice', {
       formula,
       targetDc,
+      combatantId,
     });
   },
 
@@ -523,6 +525,18 @@ export const api = {
       combatantId,
       hpDelta,
       stressDelta,
+    });
+  },
+
+  stageSetCombatantSkill: async (
+    combatantId: string,
+    skillName: string,
+    value: number
+  ): Promise<void> => {
+    return await invoke<void>('stage_set_combatant_skill', {
+      combatantId,
+      skillName,
+      value,
     });
   },
 

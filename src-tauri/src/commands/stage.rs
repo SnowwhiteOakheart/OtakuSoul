@@ -5,10 +5,24 @@ use tauri::State;
 
 #[tauri::command]
 pub fn roll_stage_dice(
+    state: State<'_, AppState>,
     formula: String,
     target_dc: Option<i32>,
+    combatant_id: Option<String>,
 ) -> Result<crate::modules::stage::DiceRollResult, String> {
-    crate::modules::stage::roll_dice(&formula, target_dc)
+    let mut combatant_clone = None;
+    if let Some(id) = combatant_id
+        && let Some(c) = state
+            .stage_engine
+            .get_state()
+            .combat
+            .combatants
+            .iter()
+            .find(|c| c.id == id)
+    {
+        combatant_clone = Some(c.clone());
+    }
+    crate::modules::stage::roll_dice(&formula, target_dc, combatant_clone.as_ref())
 }
 
 #[tauri::command]
@@ -449,6 +463,20 @@ pub fn add_combatant_condition(
     condition: crate::modules::stage::CombatCondition,
 ) -> Result<(), String> {
     state.stage_engine.add_condition(&combatant_id, condition);
+    crate::modules::stage::save_scene_state(&state.stage_engine.get_state())?;
+    Ok(())
+}
+
+#[tauri::command]
+pub fn stage_set_combatant_skill(
+    state: State<'_, AppState>,
+    combatant_id: String,
+    skill_name: String,
+    value: i32,
+) -> Result<(), String> {
+    state
+        .stage_engine
+        .set_combatant_skill(&combatant_id, &skill_name, value);
     crate::modules::stage::save_scene_state(&state.stage_engine.get_state())?;
     Ok(())
 }

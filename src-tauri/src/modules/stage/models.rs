@@ -95,6 +95,8 @@ pub struct Combatant {
     pub max_stress: i32,
     pub initiative: i32,
     pub conditions: Vec<CombatCondition>,
+    #[serde(default)]
+    pub skills: std::collections::HashMap<String, i32>,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize, TS)]

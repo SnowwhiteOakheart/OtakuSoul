@@ -56,6 +56,7 @@ impl StageEngine {
                 max_stress: 100,
                 initiative: 16,
                 conditions: Vec::new(),
+                skills: HashMap::new(),
             },
             Combatant {
                 id: "comb_companion".to_string(),
@@ -72,6 +73,7 @@ impl StageEngine {
                         .to_string(),
                     rounds_remaining: 3,
                 }],
+                skills: HashMap::new(),
             },
             Combatant {
                 id: "comb_enemy_1".to_string(),
@@ -85,6 +87,7 @@ impl StageEngine {
                 max_stress: 50,
                 initiative: 12,
                 conditions: Vec::new(),
+                skills: HashMap::new(),
             },
         ];
 
@@ -348,6 +351,7 @@ impl StageEngine {
                 max_stress: 0,
                 initiative: 0,
                 conditions: Vec::new(),
+                skills: HashMap::new(),
             });
         }
         for combatant in st
@@ -478,6 +482,18 @@ impl StageEngine {
 
         if let Some(msg) = log_msg {
             st.combat.combat_log.push(msg);
+        }
+    }
+
+    pub fn set_combatant_skill(&self, combatant_id: &str, skill_name: &str, value: i32) {
+        let mut st = self.state.write();
+        if let Some(c) = st
+            .combat
+            .combatants
+            .iter_mut()
+            .find(|c| c.id == combatant_id)
+        {
+            c.skills.insert(skill_name.to_string(), value);
         }
     }
 

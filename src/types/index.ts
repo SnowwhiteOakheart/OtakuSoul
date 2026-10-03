@@ -401,6 +401,7 @@ export interface Combatant {
   max_stress: number;
   initiative: number;
   conditions: CombatCondition[];
+  skills: Record<string, number>;
 }
 
 export interface EncounterState {

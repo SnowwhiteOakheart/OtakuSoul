@@ -2,7 +2,7 @@ use super::*;
 
 #[test]
 fn test_dice_parser_simple() {
-    let res = roll_dice("1d20", None).unwrap();
+    let res = roll_dice("1d20", None, None).unwrap();
     assert_eq!(res.dice_count, 1);
     assert_eq!(res.die_faces, 20);
     assert_eq!(res.modifier, 0);
@@ -12,7 +12,7 @@ fn test_dice_parser_simple() {
 
 #[test]
 fn test_dice_parser_with_modifier() {
-    let res = roll_dice("2d6+4", None).unwrap();
+    let res = roll_dice("2d6+4", None, None).unwrap();
     assert_eq!(res.dice_count, 2);
     assert_eq!(res.die_faces, 6);
     assert_eq!(res.modifier, 4);
@@ -21,7 +21,7 @@ fn test_dice_parser_with_modifier() {
 
 #[test]
 fn test_dice_parser_with_negative_modifier() {
-    let res = roll_dice("3d8-2", None).unwrap();
+    let res = roll_dice("3d8-2", None, None).unwrap();
     assert_eq!(res.dice_count, 3);
     assert_eq!(res.die_faces, 8);
     assert_eq!(res.modifier, -2);
@@ -30,7 +30,7 @@ fn test_dice_parser_with_negative_modifier() {
 
 #[test]
 fn test_dc_check() {
-    let res = roll_dice("1d20+5", Some(15)).unwrap();
+    let res = roll_dice("1d20+5", Some(15), None).unwrap();
     assert!(res.dc_check.is_some());
     let dc = res.dc_check.unwrap();
     assert_eq!(dc.target_dc, 15);

@@ -2,23 +2,43 @@
 
 use super::*;
 
-pub fn roll_dice(formula_raw: &str, target_dc: Option<i32>) -> Result<DiceRollResult, String> {
+pub fn roll_dice(
+    formula_raw: &str,
+    target_dc: Option<i32>,
+    combatant: Option<&Combatant>,
+) -> Result<DiceRollResult, String> {
     let clean = formula_raw.trim().replace(' ', "");
     if clean.is_empty() {
         return Err(crate::err!("backend.stage.diceEmpty"));
     }
 
+    let parse_modifier = |m: &str| -> Result<i32, String> {
+        if let Ok(val) = m.parse::<i32>() {
+            Ok(val)
+        } else {
+            // Skill lookup (case-insensitive)
+            if let Some(c) = combatant {
+                let m_lower = m.to_lowercase();
+                for (k, v) in &c.skills {
+                    if k.to_lowercase() == m_lower {
+                        return Ok(*v);
+                    }
+                }
+            }
+            // Just return 0 if it's a named skill we couldn't find, so you can still roll without error
+            // Or return an error if it's strictly required
+            // For now, if we cannot parse it, treat it as 0 to be safe and avoid panics, but maybe it's better to tell the user:
+            Err("Ungültiger Modifikator oder unbekannte Fertigkeit".to_string())
+        }
+    };
+
     let (base_part, modifier) = if let Some(pos) = clean.find('+') {
         let (b, m) = clean.split_at(pos);
-        let mod_val: i32 = m[1..]
-            .parse()
-            .map_err(|_| "Ungültiger positiver Modifikator")?;
+        let mod_val = parse_modifier(&m[1..])?;
         (b, mod_val)
     } else if let Some(pos) = clean.rfind('-') {
         let (b, m) = clean.split_at(pos);
-        let mod_val: i32 = m[1..]
-            .parse()
-            .map_err(|_| "Ungültiger negativer Modifikator")?;
+        let mod_val = parse_modifier(&m[1..])?;
         (b, -mod_val)
     } else {
         (clean.as_str(), 0)

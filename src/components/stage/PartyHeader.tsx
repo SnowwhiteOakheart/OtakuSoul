@@ -1,14 +1,17 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { StageNpcPanel } from './StageNpcPanel';
 import { useStoreFields } from '../../store/useAppStore';
-import { Heart, Zap, Flame, Shield, User, Coffee } from 'lucide-react';
+import { Heart, Zap, Flame, Shield, User, Coffee, Settings } from 'lucide-react';
 import { useTranslation } from '../../i18n';
+import { ModalOverlay } from '../ui/ModalOverlay';
+import { invoke } from '@tauri-apps/api/core';
 
 export const PartyHeader: React.FC = () => {
   const { t } = useTranslation();
   const { stageState, restStageParty, isProcessingStageTurn } = useStoreFields(
-    'stageState', 'restStageParty', 'isProcessingStageTurn',
+    'stageState', 'restStageParty', 'isProcessingStageTurn'
   );
+  const [editingSkillsFor, setEditingSkillsFor] = useState<string | null>(null);
 
   if (!stageState) return null;
 
@@ -21,8 +24,9 @@ export const PartyHeader: React.FC = () => {
   const displayParty = partyCombatants;
 
   return (
-    <div className="bg-slate-900/90 border-b border-slate-800/80 px-4 py-2.5 backdrop-blur-md">
-      <div className="flex flex-wrap items-center justify-between gap-3">
+    <>
+      <div className="bg-slate-900/90 border-b border-slate-800/80 px-4 py-2.5 backdrop-blur-md">
+        <div className="flex flex-wrap items-center justify-between gap-3">
         {/* Party members avatars and stats */}
         <div className="flex flex-wrap items-center gap-3">
           <div className="text-xs font-bold text-slate-400 uppercase tracking-wider flex items-center gap-1.5 mr-1">
@@ -54,9 +58,18 @@ export const PartyHeader: React.FC = () => {
                 <div className="flex flex-col gap-1 min-w-[120px]">
                   <div className="flex items-center justify-between text-xs font-semibold">
                     <span className="text-slate-200 truncate max-w-[90px]">{member.name}</span>
-                    <span className="text-[11px] text-slate-400 font-mono">
-                      {member.hp}/{member.max_hp}
-                    </span>
+                    <div className="flex items-center gap-2">
+                      <button
+                        onClick={() => setEditingSkillsFor(member.id)}
+                        className="text-slate-500 hover:text-slate-300 transition-colors"
+                        title="Fertigkeiten"
+                      >
+                        <Settings className="w-3 h-3" />
+                      </button>
+                      <span className="text-[11px] text-slate-400 font-mono">
+                        {member.hp}/{member.max_hp}
+                      </span>
+                    </div>
                   </div>
 
                   {/* HP Bar */}
@@ -146,5 +159,75 @@ export const PartyHeader: React.FC = () => {
         </div>
       </div>
     </div>
+      {editingSkillsFor && (
+        <SkillsModal
+          combatantId={editingSkillsFor}
+          onClose={() => setEditingSkillsFor(null)}
+        />
+      )}
+    </>
+  );
+};
+
+const SkillsModal: React.FC<{
+  combatantId: string;
+  onClose: () => void;
+}> = ({ combatantId, onClose }) => {
+  const { stageState } = useStoreFields('stageState');
+  
+  const combatant = stageState?.combat?.combatants.find((c) => c.id === combatantId);
+  const initialText = combatant 
+    ? Object.entries(combatant.skills || {}).map(([k, v]) => `${k}: ${v}`).join('\n') 
+    : '';
+    
+  const [text, setText] = useState(initialText);
+
+  if (!combatant || !stageState) return null;
+
+  const handleSave = async () => {
+    const lines = text.split('\n');
+    for (const line of lines) {
+      if (!line.trim()) continue;
+      const parts = line.split(':');
+      if (parts.length >= 2) {
+        const key = parts[0]!.trim();
+        const value = parseInt(parts[1]!.trim(), 10) || 0;
+        await invoke('stage_set_combatant_skill', { combatantId: combatant.id, skillName: key, value });
+      }
+    }
+    
+    // Refresh stage scene to pick up new skills
+    await invoke('load_stage_scene', { sceneId: stageState.definition.id });
+    onClose();
+  };
+
+  return (
+    <ModalOverlay title={`Fertigkeiten - ${combatant.name}`} onClose={onClose}>
+      <div className="p-4 flex flex-col gap-3 w-[400px]">
+        <p className="text-sm text-slate-400">
+          Trage hier Fertigkeiten und Modifikatoren ein (z.B. "Wahrnehmung: 3"). Eine pro Zeile.
+        </p>
+        <textarea
+          className="w-full bg-slate-900 border border-slate-700 rounded-lg p-3 text-sm text-slate-200 font-mono h-40 focus:outline-none focus:border-accent-500 transition-colors resize-none"
+          value={text}
+          onChange={(e) => setText(e.target.value)}
+          placeholder="Stärke: 2&#10;Geschick: 1&#10;Charisma: -1"
+        />
+        <div className="flex justify-end gap-2 mt-2">
+          <button
+            onClick={onClose}
+            className="px-4 py-2 rounded-lg bg-slate-800 text-slate-300 hover:bg-slate-700 transition font-medium text-sm"
+          >
+            Abbrechen
+          </button>
+          <button
+            onClick={handleSave}
+            className="px-4 py-2 rounded-lg bg-accent-600 text-white hover:bg-accent-500 transition font-medium text-sm"
+          >
+            Speichern
+          </button>
+        </div>
+      </div>
+    </ModalOverlay>
   );
 };

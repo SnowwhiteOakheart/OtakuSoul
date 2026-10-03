@@ -418,9 +418,14 @@ RULES:
     let mut dice_event_card = None;
     let mut secondary_event_cards: Vec<(String, StageEventCard)> = Vec::new();
 
+    let current_actor = state
+        .combat
+        .combatants
+        .iter()
+        .find(|c| c.name == state.current_turn_actor || c.id == state.current_turn_actor);
     if let Some(check) = &gm_plan.dice_check
         && state.definition.dice_rolls_enabled
-        && let Ok(roll) = roll_dice(&check.formula, Some(check.dc))
+        && let Ok(roll) = roll_dice(&check.formula, Some(check.dc), current_actor)
     {
         let passed = roll.dc_check.as_ref().is_some_and(|d| d.passed);
         dice_outcome_text = format!(
@@ -686,6 +691,7 @@ RULES:
                         max_stress: 100,
                         initiative: rand::rng().random_range(1..=20),
                         conditions: Vec::new(),
+                        skills: std::collections::HashMap::new(),
                     });
                 }
                 for (index, enemy) in encounter.enemies.iter().enumerate() {
@@ -699,6 +705,7 @@ RULES:
                         max_stress: 0,
                         initiative: rand::rng().random_range(1..=20),
                         conditions: Vec::new(),
+                        skills: std::collections::HashMap::new(),
                     });
                 }
                 state

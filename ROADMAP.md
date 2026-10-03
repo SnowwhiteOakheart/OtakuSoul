@@ -301,7 +301,7 @@ und übernimmt, was SoW lebendig macht:
    dauerhaft HP, Stress und Zustände (mit Dauer in Zügen), auch ohne Kampf; der Planer bekommt sie und ändert sie per
    `resource_delta`/`condition_updates`; Kämpfe fügen nur Gegner hinzu. Die Platzhalter im Party-HUD sind weg.
    Rauchtest prüft Geheimhaltung, HP und Zustand.
-   - [ ] Noch offen: Fertigkeitswerte als Würfelbonus.
+   - [x] Fertigkeitswerte als Würfelbonus.
 3. [x] **Kontext & Zusammenfassung für die Stage** (`stage/history.rs`): Planer, Erzähler und Gefährten nutzen
    `context_window` (lokal echte Tokenzählung, Cloud-Schätzung samt Antwortreserve). Ältere Beiträge werden in
    laufende, im Spielstand gespeicherte Zusammenfassungen gefaltet, getrennt nach Publikum: Gedanken nur für den
