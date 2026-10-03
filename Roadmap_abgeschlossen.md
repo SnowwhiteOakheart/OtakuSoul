@@ -223,6 +223,17 @@ Die Soul Stage Engine ist nun ein vollwertiges Tabletop-Rollenspiel-Erlebnis mit
 
 ---
 
+
+### Kürzlich abgeschlossene Verbesserungen (OtakuSoul v0.2.0)
+
+- [x] Kontrast prüfen: `text-slate-500` auf `slate-950` erreicht bei kleiner Schrift das WCAG-AA-Kontrastverhältnis nicht.
+- [x] Virtualisierte Listen für große Charakter- und Lorebook-Bibliotheken.
+1. ✅ **P0 komplett**: Regex-Bug, CSP/Scope, Schlüsselbund, Webserver-Absicherung.
+2. ✅ **Tauri-Minor-Updates + lokale Checks + Clippy-Bereinigung.** Geringes Risiko, schafft ein Sicherheitsnetz.
+3. ✅ *(Bausteine teilweise)* **Design-Tokens + UI-Bausteine** (`Button`, `Modal`, `ConfirmDialog`, `Toast`, `EmptyState`), danach **Navigation neu**.
+4. ✅ **i18n flächendeckend** (lässt sich gut mit Schritt 3 kombinieren, weil ohnehin jede Komponente angefasst wird).
+6. ✅ **Große Upgrades:** Live2D-Stack/pixi v8, rusqlite, reqwest, TypeScript 7.
+
 ## ⚖️ 4. Architektur-Entscheidungen
 
 | Frage | Status & Entscheidung |

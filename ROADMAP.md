@@ -26,7 +26,6 @@ GitHub Actions wurden bewusst entfernt (Commit `11597c2`). Stattdessen gibt es j
 
 ### Barrierefreiheit (a11y)
 
-- [x] Kontrast prüfen: `text-slate-500` auf `slate-950` erreicht bei kleiner Schrift das WCAG-AA-Kontrastverhältnis nicht.
 
 ### Fenster & Desktop-Integration
 
@@ -78,17 +77,11 @@ und übernimmt, was SoW lebendig macht:
 
 - [ ] Apple Metal: `recommendedMaxWorkingSetSize` statt des gesamten Arbeitsspeichers als GPU-Speicher.
 - [ ] Vision lokal auf echter Hardware testen (Gemma/Qwen-VL mit passender `mmproj`, z. B. aus dem Modell-Hub).
-- [x] Virtualisierte Listen für große Charakter- und Lorebook-Bibliotheken.
 - [ ] Bundle-Analyse (`rollup-plugin-visualizer`); `chunkSizeWarningLimit: 800` in `vite.config.ts` nur als Übergang.
 
 ---
 
 ## ✅ Empfohlene Reihenfolge
 
-1. ✅ **P0 komplett**: Regex-Bug, CSP/Scope, Schlüsselbund, Webserver-Absicherung.
-2. ✅ **Tauri-Minor-Updates + lokale Checks + Clippy-Bereinigung.** Geringes Risiko, schafft ein Sicherheitsnetz.
-3. ✅ *(Bausteine teilweise)* **Design-Tokens + UI-Bausteine** (`Button`, `Modal`, `ConfirmDialog`, `Toast`, `EmptyState`), danach **Navigation neu**.
-4. ✅ **i18n flächendeckend** (lässt sich gut mit Schritt 3 kombinieren, weil ohnehin jede Komponente angefasst wird).
 5. **Store-Slices + Selektoren**, Komponenten aufteilen.
-6. ✅ **Große Upgrades:** Live2D-Stack/pixi v8, rusqlite, reqwest, TypeScript 7.
 7. P3 nach Bedarf.
