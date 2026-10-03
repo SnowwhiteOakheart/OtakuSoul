@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { createPortal } from 'react-dom';
 import { useStoreFields } from '../../store/useAppStore';
 import { Brain, X, Heart, RefreshCw, BookHeart, Clock, Sparkles, Bookmark, FileCode, RotateCcw, Sliders } from 'lucide-react';
 import { translate, useTranslation } from '../../i18n';
@@ -66,7 +67,8 @@ export const CognitiveMemoryDrawer: React.FC<CognitiveMemoryDrawerProps> = ({
     }
   };
 
-  return (
+  // The HUD uses backdrop-filter, which otherwise confines fixed descendants to its own bounds.
+  return createPortal(
     <ModalOverlay onClose={onClose} aria-labelledby="memory-drawer-title" className="fixed inset-0 z-50 flex justify-end bg-black/60 backdrop-blur-sm transition-opacity">
       <div className="w-full max-w-3xl bg-slate-900 border-l border-slate-700/70 shadow-2xl flex flex-col h-full animate-in slide-in-from-right duration-200">
         {/* Drawer Header */}
@@ -266,6 +268,7 @@ export const CognitiveMemoryDrawer: React.FC<CognitiveMemoryDrawerProps> = ({
           {activeTab === 'backups' && <MemoryBackupsTab />}
         </div>
       </div>
-    </ModalOverlay>
+    </ModalOverlay>,
+    document.body,
   );
 };

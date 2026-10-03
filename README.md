@@ -59,6 +59,9 @@ OtakuSoul behandelt eine Figur nicht als austauschbaren Prompt. Jede Unterhaltun
 
 Ein integrierter Memory-Inspector macht diese Ebenen sichtbar und editierbar. Backups und Wiederherstellung geben dir Kontrolle über die Entwicklung deiner Figuren.
 
+Schlägt das manuelle Speichern einer Erinnerung oder eines Tagebucheintrags fehl, zeigt die App den Fehler an
+und behält deine Eingaben zum Wiederholen. Während des Speicherns sind die jeweiligen Formularfelder gesperrt.
+
 ## Deine Welt, dein Modell
 
 ### Lokal

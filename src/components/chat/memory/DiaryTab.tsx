@@ -2,6 +2,7 @@ import { useState } from 'react';
 import { useStoreFields } from '../../../store/useAppStore';
 import { translate, useTranslation } from '../../../i18n';
 import { toast } from '../../ui/feedback';
+import { errorMessage } from '../../../utils/errors';
 import { BookHeart, Sparkles } from 'lucide-react';
 
 export const DiaryTab = () => {
@@ -16,20 +17,35 @@ export const DiaryTab = () => {
   const [newDiaryTitle, setNewDiaryTitle] = useState('');
   const [newDiaryText, setNewDiaryText] = useState('');
   const [newDiaryMood, setNewDiaryMood] = useState('Reflective');
+  const [isSaving, setIsSaving] = useState(false);
+  const [isGenerating, setIsGenerating] = useState(false);
 
   const handleAddDiary = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!newDiaryTitle.trim() || !newDiaryText.trim()) return;
-    await addManualDiary(newDiaryTitle.trim(), newDiaryText.trim(), newDiaryMood);
-    setNewDiaryTitle('');
-    setNewDiaryText('');
-    toast.success(translate('memory.diarySaved'));
+    if (!newDiaryTitle.trim() || !newDiaryText.trim() || isSaving) return;
+    setIsSaving(true);
+    try {
+      await addManualDiary(newDiaryTitle.trim(), newDiaryText.trim(), newDiaryMood);
+      setNewDiaryTitle('');
+      setNewDiaryText('');
+      toast.success(translate('memory.diarySaved'));
+    } catch (e) {
+      toast.error(translate('memory.saveFailed', { error: errorMessage(e) }));
+    } finally {
+      setIsSaving(false);
+    }
   };
 
   const handleGenerateDiary = async () => {
-    const entry = await generateManualDiary();
-    if (entry) {
-      toast.success(translate('memory.diaryGenerated'));
+    if (isGenerating) return;
+    setIsGenerating(true);
+    try {
+      const entry = await generateManualDiary();
+      if (entry) toast.success(translate('memory.diaryGenerated'));
+    } catch (e) {
+      toast.error(translate('memory.saveFailed', { error: errorMessage(e) }));
+    } finally {
+      setIsGenerating(false);
     }
   };
 
@@ -42,6 +58,7 @@ export const DiaryTab = () => {
           </div>
           <button
             onClick={handleGenerateDiary}
+            disabled={isGenerating}
             className="px-3 py-1 rounded-lg bg-accent2-600 hover:bg-accent2-500 text-white text-xs font-semibold transition"
           >
             {t('memory.generateDiary')}
@@ -52,46 +69,48 @@ export const DiaryTab = () => {
           onSubmit={handleAddDiary}
           className="p-3.5 rounded-xl bg-slate-800/50 border border-slate-700/70 space-y-2.5"
         >
-          <div className="text-xs font-bold text-slate-200 flex items-center gap-1.5">
-            <BookHeart className="w-3.5 h-3.5 text-accent2-400" />
-            {t('memory.writeDiary')}
-          </div>
-          <div className="flex gap-2">
-            <input
-              type="text"
-              value={newDiaryTitle}
-              onChange={(e) => setNewDiaryTitle(e.target.value)}
-              placeholder={t('memory.diaryTitlePlaceholder')}
-              aria-label={t('memory.diaryTitlePlaceholder')}
-              className="flex-1 px-3 py-1.5 bg-slate-900 border border-slate-700 rounded-lg text-xs text-slate-200 focus:outline-hidden focus:border-accent-500"
+          <fieldset disabled={isSaving} className="space-y-2.5">
+            <div className="text-xs font-bold text-slate-200 flex items-center gap-1.5">
+              <BookHeart className="w-3.5 h-3.5 text-accent2-400" />
+              {t('memory.writeDiary')}
+            </div>
+            <div className="flex gap-2">
+              <input
+                type="text"
+                value={newDiaryTitle}
+                onChange={(e) => setNewDiaryTitle(e.target.value)}
+                placeholder={t('memory.diaryTitlePlaceholder')}
+                aria-label={t('memory.diaryTitlePlaceholder')}
+                className="flex-1 px-3 py-1.5 bg-slate-900 border border-slate-700 rounded-lg text-xs text-slate-200 focus:outline-hidden focus:border-accent-500"
+              />
+              <select
+                aria-label={t('memory.mood')}
+                value={newDiaryMood}
+                onChange={(e) => setNewDiaryMood(e.target.value)}
+                className="bg-slate-900 border border-slate-700 text-xs text-slate-300 rounded px-2 py-1.5 focus:outline-hidden"
+              >
+                {(['Reflective', 'Happy', 'Melancholy', 'Flustered', 'Excited'] as const).map((mood) => (
+                  <option key={mood} value={mood}>
+                    {t(`memory.mood.${mood}`)}
+                  </option>
+                ))}
+              </select>
+            </div>
+            <textarea
+              rows={2}
+              value={newDiaryText}
+              onChange={(e) => setNewDiaryText(e.target.value)}
+              placeholder={t('memory.diaryTextPlaceholder', { name: charName })}
+              aria-label={t('memory.writeDiary')}
+              className="w-full px-3 py-1.5 bg-slate-900 border border-slate-700 rounded-lg text-xs text-slate-200 focus:outline-hidden focus:border-accent-500"
             />
-            <select
-              aria-label={t('memory.mood')}
-              value={newDiaryMood}
-              onChange={(e) => setNewDiaryMood(e.target.value)}
-              className="bg-slate-900 border border-slate-700 text-xs text-slate-300 rounded px-2 py-1.5 focus:outline-hidden"
+            <button
+              type="submit"
+              className="px-3 py-1.5 rounded-lg bg-accent2-600 hover:bg-accent2-500 text-white text-xs font-semibold"
             >
-              {(['Reflective', 'Happy', 'Melancholy', 'Flustered', 'Excited'] as const).map((mood) => (
-                <option key={mood} value={mood}>
-                  {t(`memory.mood.${mood}`)}
-                </option>
-              ))}
-            </select>
-          </div>
-          <textarea
-            rows={2}
-            value={newDiaryText}
-            onChange={(e) => setNewDiaryText(e.target.value)}
-            placeholder={t('memory.diaryTextPlaceholder', { name: charName })}
-            aria-label={t('memory.writeDiary')}
-            className="w-full px-3 py-1.5 bg-slate-900 border border-slate-700 rounded-lg text-xs text-slate-200 focus:outline-hidden focus:border-accent-500"
-          />
-          <button
-            type="submit"
-            className="px-3 py-1.5 rounded-lg bg-accent2-600 hover:bg-accent2-500 text-white text-xs font-semibold"
-          >
-            {t('memory.saveDiary')}
-          </button>
+              {isSaving ? t('common.saving') : t('memory.saveDiary')}
+            </button>
+          </fieldset>
         </form>
 
         <div className="space-y-3">

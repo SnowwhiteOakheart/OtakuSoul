@@ -1,4 +1,5 @@
 import { api } from '../../services/api';
+import { translate } from '../../i18n';
 import type {
   CognitiveOverview,
   PsychologyState,
@@ -106,23 +107,25 @@ export const createMemorySlice: SliceCreator<MemorySlice> = (set, get) => ({
 
   addManualMemory: async (category, content, significance) => {
     const cid = get().activeCharacter?.id;
-    if (!cid) return;
+    if (!cid) throw new Error(translate('int.noCharacter'));
     try {
       await api.addEpisodicMemory(cid, category, content, significance);
       await get().fetchCognitiveOverview();
     } catch (e) {
       console.error('Failed to add episodic memory:', e);
+      throw e;
     }
   },
 
   addManualDiary: async (title, entryText, mood) => {
     const cid = get().activeCharacter?.id;
-    if (!cid) return;
+    if (!cid) throw new Error(translate('int.noCharacter'));
     try {
       await api.addDiaryEntry(cid, title, entryText, mood);
       await get().fetchCognitiveOverview();
     } catch (e) {
       console.error('Failed to add diary entry:', e);
+      throw e;
     }
   },
 
@@ -248,7 +251,7 @@ export const createMemorySlice: SliceCreator<MemorySlice> = (set, get) => ({
       cloudProvider,
     } = get();
 
-    if (!activeCharacter) return null;
+    if (!activeCharacter) throw new Error(translate('int.noCharacter'));
     const endpoint =
       selectedBackend === 'local'
         ? `http://127.0.0.1:${serverConfig.port}/v1/chat/completions`
@@ -268,7 +271,7 @@ export const createMemorySlice: SliceCreator<MemorySlice> = (set, get) => ({
       return entry;
     } catch (e) {
       console.error('Failed to generate diary entry:', e);
-      return null;
+      throw e;
     }
   },
 
@@ -288,14 +291,14 @@ export const createMemorySlice: SliceCreator<MemorySlice> = (set, get) => ({
   createMemoryBackup: async () => {
     const cid = get().activeCharacter?.id;
     const userName = get().activePersona.name;
-    if (!cid) return null;
+    if (!cid) throw new Error(translate('int.noCharacter'));
     try {
       const info = await api.backupMemoryState(cid, userName);
       await get().fetchMemoryBackups();
       return info;
     } catch (e) {
       console.error('Failed to create memory backup:', e);
-      return null;
+      throw e;
     }
   },
 

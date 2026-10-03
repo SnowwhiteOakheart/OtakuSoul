@@ -22,11 +22,13 @@ Arbeitsverzeichnis und Timeout allein gelten nicht als Betriebssystem-Sandbox.
 
 ## 2. Speichern und Fehlerrückmeldungen
 
+- [x] Manuelle Erinnerungen und Tagebucheinträge: Schreibfehler weitergeben, Eingaben erhalten und Wiederholen ermöglichen.
+- [x] Tagebuchgenerierung und Memory-Backup-Erstellung: Fehler sichtbar anzeigen.
 - [ ] Speicherfehler vom Store an die Oberfläche weitergeben und verständlich anzeigen.
 - [ ] Erfolgsmeldungen ausschließlich nach erfolgreichem Speichern anzeigen.
 - [ ] Eingaben bei Fehlern erhalten und Wiederholen anbieten.
 - [ ] Memory-, Psychologie-, Beziehungs-, Tagebuch- und Chat-Editoren auf verschluckte Fehler prüfen.
-- [ ] Fehlgeschlagenes Speichern mit Tests absichern, insbesondere manuell angelegte Erinnerungen.
+- [x] Fehlgeschlagenes Speichern mit Tests absichern, insbesondere manuell angelegte Erinnerungen.
 
 Abnahme: Ein fehlgeschlagener Speichervorgang leert keine Eingabe und meldet keinen Erfolg.
 
@@ -118,3 +120,27 @@ Werkzeugargumente und Ablehnen-/Freigeben-Schaltflächen sind vollständig sicht
 Der Companion-Test wurde nach dem bereits laufenden Gesamtlauf separat ausgeführt und ist künftig
 in `npm run e2e` und `npm run e2e:run` integriert.
 Betriebssystem-Isolation und detaillierte Berechtigungsanzeigen bleiben offen.
+
+### Zweites Arbeitspaket – 03.10.2026
+
+Manuelle Erinnerungen und Tagebucheinträge geben Schreibfehler an die Formulare weiter.
+Bei einem Fehler bleiben Text, Titel, Kategorie, Bedeutung und Stimmung erhalten; erneutes Speichern ist möglich.
+Erfolgsmeldungen und das Leeren der Eingaben erfolgen erst nach erfolgreichem Schreiben.
+Während des Schreibens sind die jeweiligen Felder und der Speicherknopf gesperrt.
+Fehler bei Tagebuchgenerierung und Memory-Backup-Erstellung werden ebenfalls angezeigt.
+
+Zusätzlich wurde ein im E2E-Test gefundener Layoutfehler behoben: Der Memory-Drawer rendert
+per Portal in `document.body`, statt durch den `backdrop-filter` der HUD-Leiste begrenzt zu werden.
+Ein Regressionstest prüft die Platzierung außerhalb des HUD.
+
+Sieben neue Frontend-Regressionstests prüfen unter anderem Fehler, Wiederholen, Doppelsenden und Drawer-Platzierung.
+Der neue E2E-Test erzwingt echte SQLite-Schreibfehler mit temporären Triggern ausschließlich im Wegwerfprofil.
+Er prüft erhaltene Eingaben, ausbleibende Erfolgsmeldungen und genau einen gespeicherten Eintrag nach Wiederholung.
+Screenshot `e2e/screenshots/29-erinnerung-speicherfehler.png` wurde visuell geprüft.
+
+Offen in Abschnitt 2: Psychologie-/Beziehungsfelder mit Entwürfen statt Speichern bei jedem Tastendruck,
+Fehler bei Markdown-Nachladen und weiteren Chat-Editoren sowie konsistente Rückmeldungen bei Aktualisierungsfehlern.
+`npm run check` bestanden: 358 Rust-Tests und 108 Frontend-Tests.
+Der aktuelle Build wurde mit `npm run e2e` erstellt; anschließend bestand die gesamte Suite
+mit `npm run e2e:run` (zehn Szenarien einschließlich Companion-Freigabe und Memory-Schreibfehlern).
+Die Screenshot-Prüfung bestätigt den vollständigen Drawer, die sichtbare Fehlermeldung und den erhaltenen Entwurf.

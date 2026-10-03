@@ -55,6 +55,17 @@ beforeEach(() => {
 });
 
 describe('CognitiveMemoryDrawer', () => {
+  it('mounts outside its filtered HUD parent so the drawer can cover the viewport', () => {
+    const { container } = render(
+      <div style={{ backdropFilter: 'blur(8px)' }}>
+        <CognitiveMemoryDrawer isOpen onClose={() => {}} />
+      </div>
+    );
+    const drawer = screen.getByRole('dialog');
+    expect(drawer.parentElement).toBe(document.body);
+    expect(container).not.toContainElement(drawer);
+  });
+
   it('renders every tab without crashing', async () => {
     const user = userEvent.setup();
     render(<CognitiveMemoryDrawer isOpen onClose={() => {}} />);

@@ -98,6 +98,9 @@ Einstellungen: `components/settings/sections/*` (Server inkl. Laufzeiten/`mmproj
 - Lokale Vision nur mit gewählter `mmproj`; ohne macht `attachments::prepare` aus Bildern einen Hinweis.
 - Swipes: `swipes_json` + `swipe_index`; „Neu generieren“ hängt an, überschreibt nie.
 - `<state>{…}</state>` am Antwortende aktualisiert HUD-Variablen (`utils/stateParser.ts`) und wird ausgeblendet.
+- Memory: `addManualMemory`, `addManualDiary`, `generateManualDiary` und `createMemoryBackup` geben Fehler an
+  ihre Aufrufer weiter. Formulare müssen diese anzeigen; Eingaben erst nach erfolgreichem Speichern leeren.
+  Der Memory-Drawer rendert per Portal in `document.body`, damit der `backdrop-filter` des HUD seine Größe nicht begrenzt.
 - Companion-Tools: nur ausdrücklich geprüfte interne Tools in `companion.rs` → `tool_allows_auto_approval`
   dürfen automatisch freigegeben werden. MCP-/unbekannte Tools, Screenshots, Zwischenablage und schreibende
   Dateiaktionen laufen über den Bestätigungsbanner; ausgeführt wird in `execute_internal_sync`.

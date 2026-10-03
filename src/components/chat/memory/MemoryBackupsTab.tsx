@@ -31,9 +31,11 @@ export const MemoryBackupsTab = () => {
   };
 
   const handleCreateBackup = async () => {
-    const b = await createMemoryBackup();
-    if (b) {
-      toast.success(translate('memory.snapshotCreated', { name: b.filename }));
+    try {
+      const b = await createMemoryBackup();
+      if (b) toast.success(translate('memory.snapshotCreated', { name: b.filename }));
+    } catch (e) {
+      toast.error(translate('memory.saveFailed', { error: errorMessage(e) }));
     }
   };
 
