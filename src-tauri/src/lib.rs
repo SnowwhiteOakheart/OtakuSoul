@@ -95,6 +95,59 @@ pub fn run() {
                 use tauri_plugin_window_state::WindowExt;
                 let _ = window.restore_state(tauri_plugin_window_state::StateFlags::all());
                 let _ = window.show();
+
+                // Prevent the app from exiting when the window is closed; hide it instead
+                let window_clone = window.clone();
+                window.on_window_event(move |event| {
+                    if let tauri::WindowEvent::CloseRequested { api, .. } = event {
+                        api.prevent_close();
+                        let _ = window_clone.hide();
+                    }
+                });
+            }
+
+            #[cfg(desktop)]
+            {
+                use tauri::tray::{MouseButton, MouseButtonState, TrayIconBuilder, TrayIconEvent};
+                use tauri::menu::{Menu, MenuItem};
+
+                if let Some(icon) = app.default_window_icon().cloned() {
+                    let show_i = MenuItem::with_id(app, "show", "Anzeigen", true, None::<&str>)?;
+                    let quit_i = MenuItem::with_id(app, "quit", "Beenden", true, None::<&str>)?;
+                    let menu = Menu::with_items(app, &[&show_i, &quit_i])?;
+
+                    let _tray = TrayIconBuilder::new()
+                        .menu(&menu)
+                        .show_menu_on_left_click(false)
+                        .icon(icon)
+                        .on_menu_event(|app, event| match event.id.as_ref() {
+                            "quit" => {
+                                app.exit(0);
+                            }
+                            "show" => {
+                                if let Some(window) = app.get_webview_window("main") {
+                                    let _ = window.show();
+                                    let _ = window.set_focus();
+                                }
+                            }
+                            _ => {}
+                        })
+                        .on_tray_icon_event(|tray, event| {
+                            if let TrayIconEvent::Click {
+                                button: MouseButton::Left,
+                                button_state: MouseButtonState::Up,
+                                ..
+                            } = event
+                            {
+                                let app = tray.app_handle();
+                                if let Some(window) = app.get_webview_window("main") {
+                                    let _ = window.show();
+                                    let _ = window.set_focus();
+                                }
+                            }
+                        })
+                        .build(app)?;
+                }
             }
             Ok(())
         })
