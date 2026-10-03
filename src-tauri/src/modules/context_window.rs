@@ -225,6 +225,14 @@ async fn fetch_props(client: &reqwest::Client, base: &str) -> Option<Props> {
         .ok()
 }
 
+/// Context size the llama-server at `base` was started with.
+pub async fn server_context(client: &reqwest::Client, base: &str) -> Option<u32> {
+    fetch_props(client, base)
+        .await
+        .map(|p| p.default_generation_settings.n_ctx)
+        .filter(|n| *n > 0)
+}
+
 /// `http://127.0.0.1:8080` from `http://127.0.0.1:8080/v1/chat/completions`.
 pub fn server_base(endpoint: &str) -> String {
     let trimmed = endpoint.trim_end_matches('/');

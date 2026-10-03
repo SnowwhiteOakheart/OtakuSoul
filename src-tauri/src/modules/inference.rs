@@ -189,6 +189,38 @@ impl Default for InferenceClient {
     }
 }
 
+/// DRY `-1` means "the whole context". Newer llama-server builds reject negative values, so
+/// local servers get their actual context size instead (or the field is left out if it can't
+/// be read, which falls back to the server's default).
+async fn resolve_dry_window(
+    client: &reqwest::Client,
+    mut request: ChatRequest,
+    provider: &crate::modules::providers::LlmProviderType,
+) -> ChatRequest {
+    use crate::modules::providers::LlmProviderType;
+    let Some(sampling) = request.sampling.as_mut() else {
+        return request;
+    };
+    if !sampling.dry_penalty_last_n.is_some_and(|n| n < 0)
+        || !matches!(
+            provider,
+            LlmProviderType::LocalLlama | LlmProviderType::Custom
+        )
+    {
+        return request;
+    }
+    let base = crate::modules::context_window::server_base(&request.endpoint_url);
+    let context = tokio::time::timeout(
+        std::time::Duration::from_secs(5),
+        crate::modules::context_window::server_context(client, &base),
+    )
+    .await
+    .ok()
+    .flatten();
+    sampling.dry_penalty_last_n = context.and_then(|n| i32::try_from(n).ok());
+    request
+}
+
 impl InferenceClient {
     fn emit_segment<R: tauri::Runtime>(
         app_handle: &tauri::AppHandle<R>,
@@ -286,6 +318,7 @@ impl InferenceClient {
         );
 
         let client = reqwest::Client::new();
+        let request = resolve_dry_window(&client, request, &provider).await;
         let req_builder =
             crate::modules::providers::ProviderRegistry::build_http_request(&client, &request)?;
 
@@ -370,6 +403,7 @@ impl InferenceClient {
         );
 
         let client = reqwest::Client::new();
+        let request = resolve_dry_window(&client, request, &provider).await;
         let req_builder =
             crate::modules::providers::ProviderRegistry::build_http_request(&client, &request)?;
 
@@ -442,6 +476,61 @@ impl InferenceClient {
 #[cfg(test)]
 mod tests {
     use super::{SseLines, ThinkTagFilter};
+
+    /// Local server whose `/props` reports a context of 8192 tokens.
+    async fn props_server() -> String {
+        let app = axum::Router::new().route(
+            "/props",
+            axum::routing::get(|| async {
+                axum::Json(serde_json::json!({
+                    "model_path": "m.gguf",
+                    "default_generation_settings": { "n_ctx": 8192 }
+                }))
+            }),
+        );
+        let listener = tokio::net::TcpListener::bind("127.0.0.1:0").await.unwrap();
+        let addr = listener.local_addr().unwrap();
+        tokio::spawn(async move { axum::serve(listener, app).await });
+        format!("http://{addr}/v1/chat/completions")
+    }
+
+    fn request(endpoint: &str, dry: Option<i32>) -> super::ChatRequest {
+        super::ChatRequest {
+            endpoint_url: endpoint.into(),
+            api_key: None,
+            model: None,
+            messages: Vec::new(),
+            sampling: Some(super::SamplingParams {
+                dry_penalty_last_n: dry,
+                ..Default::default()
+            }),
+            reasoning_mode: None,
+            provider: None,
+        }
+    }
+
+    fn dry(request: &super::ChatRequest) -> Option<i32> {
+        request.sampling.as_ref().unwrap().dry_penalty_last_n
+    }
+
+    #[tokio::test]
+    async fn dry_whole_context_becomes_the_server_context_size() {
+        use crate::modules::providers::LlmProviderType::{LocalLlama, OpenRouter};
+        let client = reqwest::Client::new();
+        let endpoint = props_server().await;
+
+        let local = super::resolve_dry_window(&client, request(&endpoint, Some(-1)), &LocalLlama);
+        assert_eq!(dry(&local.await), Some(8192));
+        let explicit =
+            super::resolve_dry_window(&client, request(&endpoint, Some(256)), &LocalLlama);
+        assert_eq!(dry(&explicit.await), Some(256));
+        let cloud = super::resolve_dry_window(&client, request(&endpoint, Some(-1)), &OpenRouter);
+        assert_eq!(dry(&cloud.await), Some(-1));
+        // Unreachable server: leave it to the server's default.
+        let gone = request("http://127.0.0.1:9/v1/chat/completions", Some(-1));
+        let gone = super::resolve_dry_window(&client, gone, &LocalLlama);
+        assert_eq!(dry(&gone.await), None);
+    }
 
     #[test]
     fn decodes_utf8_after_a_complete_line_arrives() {
