@@ -10,9 +10,9 @@ type MemoryCategory = 'fact' | 'secret' | 'promise' | 'event' | 'location';
 export const MemoriesTab = () => {
   const { t } = useTranslation();
   const {
-    cognitiveOverview, addManualMemory,
+    cognitiveOverview, memoryOverviewError, isMemoryLoading, addManualMemory,
   } = useStoreFields(
-    'cognitiveOverview', 'addManualMemory',
+    'cognitiveOverview', 'memoryOverviewError', 'isMemoryLoading', 'addManualMemory',
   );
 
   const [newMemCategory, setNewMemCategory] = useState<MemoryCategory>('fact');
@@ -117,7 +117,7 @@ export const MemoriesTab = () => {
             </div>
           ))}
 
-          {(!cognitiveOverview?.recent_memories ||
+          {!memoryOverviewError && !isMemoryLoading && (!cognitiveOverview?.recent_memories ||
             cognitiveOverview.recent_memories.length === 0) && (
             <div className="p-8 text-center text-xs text-slate-400 italic">
               {t('memory.noMemories')}

@@ -84,40 +84,41 @@ impl MemoryDb {
             None => Self::backup_dir_for_character(char_id),
         };
 
-        if !target_dir.exists() {
-            return Ok(Vec::new());
-        }
-
+        let read_dir = match std::fs::read_dir(&target_dir) {
+            Ok(entries) => entries,
+            Err(e) if e.kind() == std::io::ErrorKind::NotFound => return Ok(Vec::new()),
+            Err(e) => return Err(e.to_string()),
+        };
         let mut backups = Vec::new();
-        let read_dir = std::fs::read_dir(&target_dir).map_err(|e| e.to_string())?;
-
-        for entry in read_dir.flatten() {
-            let path = entry.path();
-            if path.is_file()
-                && path.extension().and_then(|s| s.to_str()) == Some("json")
-                && let Some(file_name) = path.file_name().and_then(|s| s.to_str())
-                && file_name.starts_with(&format!("backup_{}_", char_id))
+        for entry in read_dir {
+            let entry = entry.map_err(|e| e.to_string())?;
+            let name = entry.file_name();
+            let Some(file_name) = name.to_str() else {
+                continue;
+            };
+            if !file_name.ends_with(".json")
+                || !file_name.starts_with(&format!("backup_{}_", char_id))
             {
-                let meta = entry.metadata().ok();
-                let size_bytes = meta.map(|m| m.len()).unwrap_or(0);
-
-                let ts = file_name
-                    .trim_start_matches(&format!("backup_{}_", char_id))
-                    .trim_end_matches(".json")
-                    .parse::<u64>()
-                    .unwrap_or(0);
-
-                let date_formatted = chrono::DateTime::from_timestamp(ts as i64, 0)
-                    .map(|dt| dt.format("%Y-%m-%d %H:%M:%S").to_string())
-                    .unwrap_or_else(|| format!("{}", ts));
-
-                backups.push(MemoryBackupInfo {
-                    filename: file_name.to_string(),
-                    timestamp: ts,
-                    date_formatted,
-                    size_bytes,
-                });
+                continue;
             }
+            let meta = std::fs::metadata(entry.path()).map_err(|e| e.to_string())?;
+            if !meta.is_file() {
+                continue;
+            }
+            let ts = file_name
+                .trim_start_matches(&format!("backup_{}_", char_id))
+                .trim_end_matches(".json")
+                .parse::<u64>()
+                .unwrap_or(0);
+            let date_formatted = chrono::DateTime::from_timestamp(ts as i64, 0)
+                .map(|dt| dt.format("%Y-%m-%d %H:%M:%S").to_string())
+                .unwrap_or_else(|| format!("{}", ts));
+            backups.push(MemoryBackupInfo {
+                filename: file_name.to_string(),
+                timestamp: ts,
+                date_formatted,
+                size_bytes: meta.len(),
+            });
         }
 
         backups.sort_by_key(|b| std::cmp::Reverse(b.timestamp));

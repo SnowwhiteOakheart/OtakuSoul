@@ -37,12 +37,12 @@ export const CognitiveMemoryDrawer: React.FC<CognitiveMemoryDrawerProps> = ({
     activeCharacter, activePersona, cognitiveOverview, isMemoryLoading, isReflecting, lastReflectionResult,
     memoryBackups, autoReflectionEnabled, autoReflectionThreshold, setAutoReflectionEnabled,
     setAutoReflectionThreshold, fetchCognitiveOverview, triggerMemoryPipeline, fetchMemoryMarkdown,
-    fetchMemoryBackups,
+    fetchMemoryBackups, memoryOverviewError,
   } = useStoreFields(
     'activeCharacter', 'activePersona', 'cognitiveOverview', 'isMemoryLoading', 'isReflecting',
     'lastReflectionResult', 'memoryBackups', 'autoReflectionEnabled', 'autoReflectionThreshold',
     'setAutoReflectionEnabled', 'setAutoReflectionThreshold', 'fetchCognitiveOverview',
-    'triggerMemoryPipeline', 'fetchMemoryMarkdown', 'fetchMemoryBackups',
+    'triggerMemoryPipeline', 'fetchMemoryMarkdown', 'fetchMemoryBackups', 'memoryOverviewError',
   );
   const { t } = useTranslation();
 
@@ -135,6 +135,17 @@ export const CognitiveMemoryDrawer: React.FC<CognitiveMemoryDrawerProps> = ({
             </button>
           </div>
         </div>
+
+        {memoryOverviewError && (
+          <div role="alert" className="mx-4 mt-3 p-3 rounded-lg border border-rose-500/40 bg-rose-950/30 text-xs text-rose-200 shrink-0">
+            <p>{t('memory.overviewLoadFailed', { error: memoryOverviewError })}</p>
+            <p className="mt-1">{t('memory.previousData')}</p>
+            <button onClick={() => fetchCognitiveOverview()} disabled={isMemoryLoading}
+              className="mt-2 px-3 py-1.5 rounded bg-slate-800 disabled:opacity-40">
+              {isMemoryLoading ? t('memory.loading') : t('memory.retryOverview')}
+            </button>
+          </div>
+        )}
 
         {/* Automation Settings Bar */}
         <div className="px-4 py-2 bg-app/50 border-b border-slate-800/80 flex items-center justify-between text-xs text-slate-400">

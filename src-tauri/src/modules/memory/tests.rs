@@ -574,3 +574,41 @@ Keine.
 
     let _ = std::fs::remove_dir_all(&temp_dir);
 }
+
+#[test]
+fn test_backup_listing_distinguishes_missing_directory_and_read_error() {
+    let db = MemoryDb::new_in_memory().unwrap();
+    let path = std::env::temp_dir().join(format!(
+        "otakusoul_backup_listing_{}",
+        rand::random::<u32>()
+    ));
+    assert!(
+        db.list_memory_backups("ayu", Some(&path))
+            .unwrap()
+            .is_empty()
+    );
+    std::fs::write(&path, "not a directory").unwrap();
+    assert!(db.list_memory_backups("ayu", Some(&path)).is_err());
+    std::fs::remove_file(&path).unwrap();
+}
+
+#[cfg(unix)]
+#[test]
+fn test_backup_listing_does_not_hide_unreadable_snapshot_metadata() {
+    let db = MemoryDb::new_in_memory().unwrap();
+    let path = std::env::temp_dir().join(format!(
+        "otakusoul_backup_metadata_{}",
+        rand::random::<u32>()
+    ));
+    std::fs::create_dir_all(&path).unwrap();
+    let broken = path.join("backup_ayu_123.json");
+    std::os::unix::fs::symlink(path.join("missing.json"), &broken).unwrap();
+    assert!(db.list_memory_backups("ayu", Some(&path)).is_err());
+    std::fs::remove_file(broken).unwrap();
+    assert!(
+        db.list_memory_backups("ayu", Some(&path))
+            .unwrap()
+            .is_empty()
+    );
+    std::fs::remove_dir(path).unwrap();
+}

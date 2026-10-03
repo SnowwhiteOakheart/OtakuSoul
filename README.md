@@ -74,6 +74,7 @@ Tausche dich mit deinen Charakteren in einer stimmungsvollen Chat-Oberfläche au
 * **Nie wieder Kontextverlust:** Wird das Modell-Kontextfenster knapp, fasst ein Hintergrundprozess ältere Dialoge als prägnante „Bisherige Handlung“ zusammen – jederzeit einsehbar und editierbar.
 * **Resiliente Interaktion:** Ausführliche Antwortvarianten (Swipes), Inline-Korrekturen und automatische Entwurfssicherung schützen vor Datenverlust bei Verbindungsabbrüchen.
 * **Verlässliche Chat-Editoren:** Titel, Author's Note und Zusammenfassung melden Speicherfehler und erhalten Entwürfe zum Wiederholen. Notiz- und Zusammenfassungsentwürfe bleiben beim Schließen der Seitenleiste und beim Chatwechsel getrennt erhalten, solange die Chatansicht geöffnet bleibt.
+* **Sichtbare Memory-Lesefehler:** Übersicht und Snapshot-Liste behalten bereits geladene Daten und zeigen Ladefehler mit Wiederholen an. Ein erfolgreiches Speichern bleibt erfolgreich, auch wenn das anschließende Nachladen scheitert.
 
 ---
 

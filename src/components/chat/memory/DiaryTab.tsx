@@ -8,9 +8,9 @@ import { BookHeart, Sparkles } from 'lucide-react';
 export const DiaryTab = () => {
   const { t } = useTranslation();
   const {
-    activeCharacter, cognitiveOverview, addManualDiary, generateManualDiary,
+    activeCharacter, cognitiveOverview, memoryOverviewError, isMemoryLoading, addManualDiary, generateManualDiary,
   } = useStoreFields(
-    'activeCharacter', 'cognitiveOverview', 'addManualDiary', 'generateManualDiary',
+    'activeCharacter', 'cognitiveOverview', 'memoryOverviewError', 'isMemoryLoading', 'addManualDiary', 'generateManualDiary',
   );
 
   const charName = activeCharacter?.card.data.name ?? '';
@@ -131,7 +131,7 @@ export const DiaryTab = () => {
             </div>
           ))}
 
-          {(!cognitiveOverview?.recent_diary ||
+          {!memoryOverviewError && !isMemoryLoading && (!cognitiveOverview?.recent_diary ||
             cognitiveOverview.recent_diary.length === 0) && (
             <div className="p-8 text-center text-xs text-slate-400 italic">
               {t('memory.diaryEmpty')}

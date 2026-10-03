@@ -8,9 +8,9 @@ import { Plus, FolderDown, RotateCcw } from 'lucide-react';
 export const MemoryBackupsTab = () => {
   const { t } = useTranslation();
   const {
-    memoryBackups, isLoadingBackups, createMemoryBackup, restoreMemoryBackup, importSowFolder,
+    memoryBackups, isLoadingBackups, memoryBackupsError, fetchMemoryBackups, createMemoryBackup, restoreMemoryBackup, importSowFolder,
   } = useStoreFields(
-    'memoryBackups', 'isLoadingBackups', 'createMemoryBackup', 'restoreMemoryBackup',
+    'memoryBackups', 'isLoadingBackups', 'memoryBackupsError', 'fetchMemoryBackups', 'createMemoryBackup', 'restoreMemoryBackup',
     'importSowFolder',
   );
 
@@ -60,6 +60,16 @@ export const MemoryBackupsTab = () => {
 
   return (
       <div className="space-y-4">
+        {memoryBackupsError && (
+          <div role="alert" className="p-3 rounded-lg border border-rose-500/40 bg-rose-950/30 text-xs text-rose-200">
+            <p>{t('memory.backupsLoadFailed', { error: memoryBackupsError })}</p>
+            <p className="mt-1">{t('memory.previousData')}</p>
+          </div>
+        )}
+        <button onClick={() => fetchMemoryBackups()} disabled={isLoadingBackups}
+          className="px-3 py-1.5 rounded-lg bg-slate-800 disabled:opacity-40 text-xs text-slate-200">
+          {isLoadingBackups ? t('memory.loading') : t('memory.reloadBackups')}
+        </button>
         <div className="flex items-center justify-between p-3.5 rounded-xl bg-slate-800/40 border border-slate-700/60">
           <div>
             <h3 className="text-xs font-bold text-slate-200">{t('memory.sowTitle')}</h3>
@@ -112,7 +122,7 @@ export const MemoryBackupsTab = () => {
             </div>
           ))}
 
-          {memoryBackups.length === 0 && !isLoadingBackups && (
+          {memoryBackups.length === 0 && !isLoadingBackups && !memoryBackupsError && (
             <div className="p-8 text-center text-xs text-slate-400 italic">
               {t('memory.noSnapshots')}
             </div>

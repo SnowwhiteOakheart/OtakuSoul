@@ -118,6 +118,12 @@ Einstellungen: `components/settings/sections/*` (Server inkl. Laufzeiten/`mmproj
   Auch Markdown-Entwürfe und laufende Vorgänge liegen im Drawer. `fetchMemoryMarkdown` wirft bei Lesefehlern;
   nur erfolgreiches manuelles Nachladen darf einen Entwurf verwerfen. Hintergrund-Nachladen nach einer
   bereits erfolgreichen Reflexion/Wiederherstellung/Import protokolliert Lesefehler, ohne den Schreibvorgang als fehlgeschlagen zu melden.
+- Memory-Lesen: `memoryOverviewError` und `memoryBackupsError` halten sichtbare Ladefehler fest; bestehende
+  Daten bleiben erhalten. Nur der neueste Abruf im passenden Kontext darf Daten, Fehler und Ladezustand setzen.
+  Charakterwechsel leert auch die Snapshot-Liste; Personawechsel leert Übersicht und deren Fehler.
+  Nach erfolgreichem Schreiben melden fehlgeschlagene Nachladevorgänge keinen Schreibfehler, sondern den
+  separaten Ladehinweis im Drawer. Wiederholen lädt ausschließlich die Übersicht bzw. Snapshot-Liste neu.
+  Snapshot-Auflistung behandelt nur ein fehlendes Verzeichnis als leer; Verzeichnis- und Metadatenfehler werden weitergegeben.
 - Companion-Tools: nur ausdrücklich geprüfte interne Tools in `companion.rs` → `tool_allows_auto_approval`
   dürfen automatisch freigegeben werden. MCP-/unbekannte Tools, Screenshots, Zwischenablage und schreibende
   Dateiaktionen laufen über den Bestätigungsbanner; ausgeführt wird in `execute_internal_sync`.

@@ -5,9 +5,9 @@ import { Shield } from 'lucide-react';
 export const HealingTab = () => {
   const { t } = useTranslation();
   const {
-    cognitiveOverview,
+    cognitiveOverview, memoryOverviewError, isMemoryLoading,
   } = useStoreFields(
-    'cognitiveOverview',
+    'cognitiveOverview', 'memoryOverviewError', 'isMemoryLoading',
   );
 
   return (
@@ -34,7 +34,7 @@ export const HealingTab = () => {
           </div>
         ))}
 
-        {(!cognitiveOverview?.healing_logs ||
+        {!memoryOverviewError && !isMemoryLoading && (!cognitiveOverview?.healing_logs ||
           cognitiveOverview.healing_logs.length === 0) && (
           <div className="p-8 text-center text-xs text-slate-400 italic">
             {t('memory.healingEmpty')}

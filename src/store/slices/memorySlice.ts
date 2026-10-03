@@ -1,4 +1,5 @@
 import { api } from '../../services/api';
+import { errorMessage } from '../../utils/errors';
 import { translate } from '../../i18n';
 import type {
   CognitiveOverview,
@@ -14,12 +15,14 @@ import type { SliceCreator } from '../storeTypes';
 export interface MemorySlice {
   cognitiveOverview: CognitiveOverview | null;
   isMemoryLoading: boolean;
+  memoryOverviewError: string | null;
   isReflecting: boolean;
   lastReflectionResult: SoulMemoryPipelineResult | null;
   characterMarkdown: string;
   userMarkdown: string;
   memoryBackups: MemoryBackupInfo[];
   isLoadingBackups: boolean;
+  memoryBackupsError: string | null;
   autoReflectionEnabled: boolean;
   autoReflectionThreshold: number;
   setAutoReflectionEnabled: (enabled: boolean) => void;
@@ -41,313 +44,325 @@ export interface MemorySlice {
   importSowFolder: (folderPath: string) => Promise<number>;
 }
 
-export const createMemorySlice: SliceCreator<MemorySlice> = (set, get) => ({
-  cognitiveOverview: null,
+export const createMemorySlice: SliceCreator<MemorySlice> = (set, get) => {
+  let overviewRequest = 0;
+  let backupsRequest = 0;
+  return {
+    cognitiveOverview: null,
 
-  isMemoryLoading: false,
+    isMemoryLoading: false,
 
-  isReflecting: false,
+    memoryOverviewError: null,
 
-  lastReflectionResult: null,
+    isReflecting: false,
 
-  characterMarkdown: '',
+    lastReflectionResult: null,
 
-  userMarkdown: '',
+    characterMarkdown: '',
 
-  memoryBackups: [],
+    userMarkdown: '',
 
-  isLoadingBackups: false,
+    memoryBackups: [],
 
-  autoReflectionEnabled: true,
+    isLoadingBackups: false,
 
-  autoReflectionThreshold: 5,
+    memoryBackupsError: null,
 
-  setAutoReflectionEnabled: (enabled) => set({ autoReflectionEnabled: enabled }),
+    autoReflectionEnabled: true,
 
-  setAutoReflectionThreshold: (count) => set({ autoReflectionThreshold: count }),
+    autoReflectionThreshold: 5,
 
-  fetchCognitiveOverview: async (charId, userName) => {
-    const activeChar = get().activeCharacter;
-    const cid = charId || activeChar?.id;
-    const uid = userName || get().activePersona.name;
+    setAutoReflectionEnabled: (enabled) => set({ autoReflectionEnabled: enabled }),
 
-    if (!cid) return;
+    setAutoReflectionThreshold: (count) => set({ autoReflectionThreshold: count }),
 
-    set({ isMemoryLoading: true });
-    try {
-      const overview = await api.getCognitiveOverview(cid, uid);
-      if (get().activeCharacter?.id === cid && get().activePersona.name === uid) {
-        set({ cognitiveOverview: overview });
+    fetchCognitiveOverview: async (charId, userName) => {
+      const activeChar = get().activeCharacter;
+      const cid = charId || activeChar?.id;
+      const uid = userName || get().activePersona.name;
+
+      if (!cid || get().activeCharacter?.id !== cid || get().activePersona.name !== uid) return;
+      const request = ++overviewRequest;
+      const isCurrent = () => request === overviewRequest && get().activeCharacter?.id === cid && get().activePersona.name === uid;
+      set({ isMemoryLoading: true });
+      try {
+        const overview = await api.getCognitiveOverview(cid, uid);
+        if (isCurrent()) set({ cognitiveOverview: overview, memoryOverviewError: null });
+      } catch (e) {
+        console.error('Failed to fetch cognitive overview:', e);
+        if (isCurrent()) set({ memoryOverviewError: errorMessage(e) });
+      } finally {
+        if (isCurrent()) set({ isMemoryLoading: false });
       }
-      set({ isMemoryLoading: false });
-    } catch (e) {
-      console.error('Failed to fetch cognitive overview:', e);
-      set({ isMemoryLoading: false });
-    }
-  },
+    },
 
-  updatePsychology: async (psych) => {
-    const cid = get().activeCharacter?.id;
-    const uid = get().activePersona.name;
-    if (!cid) throw new Error(translate('int.noCharacter'));
-    try {
-      await api.updatePsychology(cid, psych);
-      if (get().activeCharacter?.id === cid && get().activePersona.name === uid) {
-        set((state) => ({ cognitiveOverview: state.cognitiveOverview ? { ...state.cognitiveOverview, psychology: psych } : null }));
-        await get().fetchCognitiveOverview(cid, uid);
+    updatePsychology: async (psych) => {
+      const cid = get().activeCharacter?.id;
+      const uid = get().activePersona.name;
+      if (!cid) throw new Error(translate('int.noCharacter'));
+      try {
+        await api.updatePsychology(cid, psych);
+        if (get().activeCharacter?.id === cid && get().activePersona.name === uid) {
+          set((state) => ({ cognitiveOverview: state.cognitiveOverview ? { ...state.cognitiveOverview, psychology: psych } : null }));
+          await get().fetchCognitiveOverview(cid, uid);
+        }
+      } catch (e) {
+        console.error('Failed to update psychology:', e);
+        throw e;
       }
-    } catch (e) {
-      console.error('Failed to update psychology:', e);
-      throw e;
-    }
-  },
+    },
 
-  updateRelationship: async (rel) => {
-    const cid = get().activeCharacter?.id;
-    const uid = get().activePersona.name;
-    if (!cid) throw new Error(translate('int.noCharacter'));
-    try {
-      await api.updateRelationship(cid, rel);
-      if (get().activeCharacter?.id === cid && get().activePersona.name === uid) {
-        set((state) => ({ cognitiveOverview: state.cognitiveOverview ? { ...state.cognitiveOverview, relationship: rel } : null }));
-        await get().fetchCognitiveOverview(cid, uid);
+    updateRelationship: async (rel) => {
+      const cid = get().activeCharacter?.id;
+      const uid = get().activePersona.name;
+      if (!cid) throw new Error(translate('int.noCharacter'));
+      try {
+        await api.updateRelationship(cid, rel);
+        if (get().activeCharacter?.id === cid && get().activePersona.name === uid) {
+          set((state) => ({ cognitiveOverview: state.cognitiveOverview ? { ...state.cognitiveOverview, relationship: rel } : null }));
+          await get().fetchCognitiveOverview(cid, uid);
+        }
+      } catch (e) {
+        console.error('Failed to update relationship:', e);
+        throw e;
       }
-    } catch (e) {
-      console.error('Failed to update relationship:', e);
-      throw e;
-    }
-  },
+    },
 
-  addManualMemory: async (category, content, significance) => {
-    const cid = get().activeCharacter?.id;
-    if (!cid) throw new Error(translate('int.noCharacter'));
-    try {
-      await api.addEpisodicMemory(cid, category, content, significance);
-      await get().fetchCognitiveOverview();
-    } catch (e) {
-      console.error('Failed to add episodic memory:', e);
-      throw e;
-    }
-  },
-
-  addManualDiary: async (title, entryText, mood) => {
-    const cid = get().activeCharacter?.id;
-    if (!cid) throw new Error(translate('int.noCharacter'));
-    try {
-      await api.addDiaryEntry(cid, title, entryText, mood);
-      await get().fetchCognitiveOverview();
-    } catch (e) {
-      console.error('Failed to add diary entry:', e);
-      throw e;
-    }
-  },
-
-  triggerEmotionalDecay: async () => {
-    const cid = get().activeCharacter?.id;
-    if (!cid) throw new Error(translate('int.noCharacter'));
-    try {
-      const log = await api.applyEmotionalDecay(cid);
-      if (log) {
-        console.info('Emotional decay tick applied:', log);
-      }
-      await get().fetchCognitiveOverview();
-    } catch (e) {
-      console.error('Failed to apply emotional decay:', e);
-      throw e;
-    }
-  },
-
-  triggerMemoryPipeline: async (recentTurns) => {
-    const {
-      activeCharacter,
-      activePersona,
-      activeChatId,
-      selectedBackend,
-      serverConfig,
-      cloudEndpoint,
-      cloudApiKey,
-      cloudModel,
-      cloudProvider,
-    } = get();
-
-    if (!activeCharacter) return null;
-    const cid = activeCharacter.id;
-    const userName = activePersona.name;
-
-    const endpoint =
-      selectedBackend === 'local'
-        ? `http://127.0.0.1:${serverConfig.port}/v1/chat/completions`
-        : cloudEndpoint;
-
-    set({ isReflecting: true });
-    try {
-      const res = await api.triggerMemoryPipeline({
-        character_id: cid,
-        user_name: userName,
-        chat_id: activeChatId || undefined,
-        endpoint_url: endpoint,
-        api_key: selectedBackend === 'cloud' ? cloudApiKey : undefined,
-        model: selectedBackend === 'cloud' ? cloudModel : undefined,
-        provider: selectedBackend === 'cloud' ? cloudProvider : 'local_llama',
-        recent_turn_count: recentTurns || 8,
-        include_diary: true,
-      });
-
-      set({
-        isReflecting: false,
-        lastReflectionResult: res,
-      });
-
-      await get().fetchCognitiveOverview();
-      await get().fetchMemoryMarkdown().catch(() => {});
-      await get().fetchMemoryBackups();
-      return res;
-    } catch (e) {
-      console.error('Memory pipeline error:', e);
-      set({ isReflecting: false });
-      return null;
-    }
-  },
-
-  fetchMemoryMarkdown: async () => {
-    const cid = get().activeCharacter?.id;
-    const userName = get().activePersona.name;
-    if (!cid) throw new Error(translate('int.noCharacter'));
-
-    try {
-      const [charMd, userMd] = await Promise.all([
-        api.getCharacterMemoryMarkdown(cid), api.getUserMemoryMarkdown(cid, userName),
-      ]);
-      if (get().activeCharacter?.id === cid && get().activePersona.name === userName) {
-        set({ characterMarkdown: charMd, userMarkdown: userMd });
-      }
-      return { charMd, userMd };
-    } catch (e) {
-      console.error('Failed to fetch memory markdown:', e);
-      throw e;
-    }
-  },
-
-  saveCharacterMarkdown: async (markdown: string) => {
-    const cid = get().activeCharacter?.id;
-    if (!cid) throw new Error(translate('int.noCharacter'));
-    try {
-      await api.saveCharacterMemoryMarkdown(cid, markdown);
-      if (get().activeCharacter?.id === cid) {
-        set({ characterMarkdown: markdown });
+    addManualMemory: async (category, content, significance) => {
+      const cid = get().activeCharacter?.id;
+      if (!cid) throw new Error(translate('int.noCharacter'));
+      try {
+        await api.addEpisodicMemory(cid, category, content, significance);
         await get().fetchCognitiveOverview();
+      } catch (e) {
+        console.error('Failed to add episodic memory:', e);
+        throw e;
       }
-    } catch (e) {
-      console.error('Failed to save character markdown:', e);
-      throw e;
-    }
-  },
+    },
 
-  saveUserMarkdown: async (markdown: string) => {
-    const cid = get().activeCharacter?.id;
-    const userName = get().activePersona.name;
-    if (!cid) throw new Error(translate('int.noCharacter'));
-    try {
-      await api.saveUserMemoryMarkdown(cid, userName, markdown);
-      if (get().activeCharacter?.id === cid && get().activePersona.name === userName) {
-        set({ userMarkdown: markdown });
+    addManualDiary: async (title, entryText, mood) => {
+      const cid = get().activeCharacter?.id;
+      if (!cid) throw new Error(translate('int.noCharacter'));
+      try {
+        await api.addDiaryEntry(cid, title, entryText, mood);
         await get().fetchCognitiveOverview();
+      } catch (e) {
+        console.error('Failed to add diary entry:', e);
+        throw e;
       }
-    } catch (e) {
-      console.error('Failed to save user markdown:', e);
-      throw e;
-    }
-  },
+    },
 
-  generateManualDiary: async () => {
-    const {
-      activeCharacter,
-      activePersona,
-      activeChatId,
-      selectedBackend,
-      serverConfig,
-      cloudEndpoint,
-      cloudApiKey,
-      cloudModel,
-      cloudProvider,
-    } = get();
+    triggerEmotionalDecay: async () => {
+      const cid = get().activeCharacter?.id;
+      if (!cid) throw new Error(translate('int.noCharacter'));
+      try {
+        const log = await api.applyEmotionalDecay(cid);
+        if (log) {
+          console.info('Emotional decay tick applied:', log);
+        }
+        await get().fetchCognitiveOverview();
+      } catch (e) {
+        console.error('Failed to apply emotional decay:', e);
+        throw e;
+      }
+    },
 
-    if (!activeCharacter) throw new Error(translate('int.noCharacter'));
-    const endpoint =
-      selectedBackend === 'local'
-        ? `http://127.0.0.1:${serverConfig.port}/v1/chat/completions`
-        : cloudEndpoint;
+    triggerMemoryPipeline: async (recentTurns) => {
+      const {
+        activeCharacter,
+        activePersona,
+        activeChatId,
+        selectedBackend,
+        serverConfig,
+        cloudEndpoint,
+        cloudApiKey,
+        cloudModel,
+        cloudProvider,
+      } = get();
 
-    try {
-      const entry = await api.generateManualDiaryEntry({
-        character_id: activeCharacter.id,
-        user_name: activePersona.name,
-        chat_id: activeChatId || undefined,
-        endpoint_url: endpoint,
-        api_key: selectedBackend === 'cloud' ? cloudApiKey : undefined,
-        model: selectedBackend === 'cloud' ? cloudModel : undefined,
-        provider: selectedBackend === 'cloud' ? cloudProvider : 'local_llama',
-      });
-      await get().fetchCognitiveOverview();
-      return entry;
-    } catch (e) {
-      console.error('Failed to generate diary entry:', e);
-      throw e;
-    }
-  },
+      if (!activeCharacter) return null;
+      const cid = activeCharacter.id;
+      const userName = activePersona.name;
 
-  fetchMemoryBackups: async () => {
-    const cid = get().activeCharacter?.id;
-    if (!cid) return;
-    set({ isLoadingBackups: true });
-    try {
-      const backups = await api.listMemoryBackups(cid);
-      set({ memoryBackups: backups, isLoadingBackups: false });
-    } catch (e) {
-      console.error('Failed to fetch memory backups:', e);
-      set({ isLoadingBackups: false });
-    }
-  },
+      const endpoint =
+        selectedBackend === 'local'
+          ? `http://127.0.0.1:${serverConfig.port}/v1/chat/completions`
+          : cloudEndpoint;
 
-  createMemoryBackup: async () => {
-    const cid = get().activeCharacter?.id;
-    const userName = get().activePersona.name;
-    if (!cid) throw new Error(translate('int.noCharacter'));
-    try {
-      const info = await api.backupMemoryState(cid, userName);
-      await get().fetchMemoryBackups();
-      return info;
-    } catch (e) {
-      console.error('Failed to create memory backup:', e);
-      throw e;
-    }
-  },
+      set({ isReflecting: true });
+      try {
+        const res = await api.triggerMemoryPipeline({
+          character_id: cid,
+          user_name: userName,
+          chat_id: activeChatId || undefined,
+          endpoint_url: endpoint,
+          api_key: selectedBackend === 'cloud' ? cloudApiKey : undefined,
+          model: selectedBackend === 'cloud' ? cloudModel : undefined,
+          provider: selectedBackend === 'cloud' ? cloudProvider : 'local_llama',
+          recent_turn_count: recentTurns || 8,
+          include_diary: true,
+        });
 
-  restoreMemoryBackup: async (backupFilePath: string) => {
-    try {
-      await api.restoreMemoryBackup(backupFilePath);
-      await get().fetchCognitiveOverview();
-      await get().fetchMemoryMarkdown().catch(() => {});
-      await get().fetchMemoryBackups();
-    } catch (e) {
-      console.error('Failed to restore memory backup:', e);
-      throw e;
-    }
-  },
+        set({
+          isReflecting: false,
+          lastReflectionResult: res,
+        });
 
-  importSowFolder: async (folderPath: string) => {
-    const cid = get().activeCharacter?.id;
-    const userName = get().activePersona.name;
-    if (!cid) return 0;
-    try {
-      const count = await api.importSowMemoryFiles(cid, folderPath, userName);
-      await get().fetchCognitiveOverview();
-      await get().fetchMemoryMarkdown().catch(() => {});
-      await get().fetchMemoryBackups();
-      return count;
-    } catch (e) {
-      console.error('Failed to import SoW folder:', e);
-      throw e;
-    }
-  },
-});
+        await get().fetchCognitiveOverview();
+        await get().fetchMemoryMarkdown().catch(() => {});
+        await get().fetchMemoryBackups();
+        return res;
+      } catch (e) {
+        console.error('Memory pipeline error:', e);
+        set({ isReflecting: false });
+        return null;
+      }
+    },
+
+    fetchMemoryMarkdown: async () => {
+      const cid = get().activeCharacter?.id;
+      const userName = get().activePersona.name;
+      if (!cid) throw new Error(translate('int.noCharacter'));
+
+      try {
+        const [charMd, userMd] = await Promise.all([
+          api.getCharacterMemoryMarkdown(cid), api.getUserMemoryMarkdown(cid, userName),
+        ]);
+        if (get().activeCharacter?.id === cid && get().activePersona.name === userName) {
+          set({ characterMarkdown: charMd, userMarkdown: userMd });
+        }
+        return { charMd, userMd };
+      } catch (e) {
+        console.error('Failed to fetch memory markdown:', e);
+        throw e;
+      }
+    },
+
+    saveCharacterMarkdown: async (markdown: string) => {
+      const cid = get().activeCharacter?.id;
+      if (!cid) throw new Error(translate('int.noCharacter'));
+      try {
+        await api.saveCharacterMemoryMarkdown(cid, markdown);
+        if (get().activeCharacter?.id === cid) {
+          set({ characterMarkdown: markdown });
+          await get().fetchCognitiveOverview();
+        }
+      } catch (e) {
+        console.error('Failed to save character markdown:', e);
+        throw e;
+      }
+    },
+
+    saveUserMarkdown: async (markdown: string) => {
+      const cid = get().activeCharacter?.id;
+      const userName = get().activePersona.name;
+      if (!cid) throw new Error(translate('int.noCharacter'));
+      try {
+        await api.saveUserMemoryMarkdown(cid, userName, markdown);
+        if (get().activeCharacter?.id === cid && get().activePersona.name === userName) {
+          set({ userMarkdown: markdown });
+          await get().fetchCognitiveOverview();
+        }
+      } catch (e) {
+        console.error('Failed to save user markdown:', e);
+        throw e;
+      }
+    },
+
+    generateManualDiary: async () => {
+      const {
+        activeCharacter,
+        activePersona,
+        activeChatId,
+        selectedBackend,
+        serverConfig,
+        cloudEndpoint,
+        cloudApiKey,
+        cloudModel,
+        cloudProvider,
+      } = get();
+
+      if (!activeCharacter) throw new Error(translate('int.noCharacter'));
+      const endpoint =
+        selectedBackend === 'local'
+          ? `http://127.0.0.1:${serverConfig.port}/v1/chat/completions`
+          : cloudEndpoint;
+
+      try {
+        const entry = await api.generateManualDiaryEntry({
+          character_id: activeCharacter.id,
+          user_name: activePersona.name,
+          chat_id: activeChatId || undefined,
+          endpoint_url: endpoint,
+          api_key: selectedBackend === 'cloud' ? cloudApiKey : undefined,
+          model: selectedBackend === 'cloud' ? cloudModel : undefined,
+          provider: selectedBackend === 'cloud' ? cloudProvider : 'local_llama',
+        });
+        await get().fetchCognitiveOverview();
+        return entry;
+      } catch (e) {
+        console.error('Failed to generate diary entry:', e);
+        throw e;
+      }
+    },
+
+    fetchMemoryBackups: async () => {
+      const cid = get().activeCharacter?.id;
+      if (!cid) return;
+      const request = ++backupsRequest;
+      const isCurrent = () => request === backupsRequest && get().activeCharacter?.id === cid;
+      set({ isLoadingBackups: true });
+      try {
+        const backups = await api.listMemoryBackups(cid);
+        if (isCurrent()) set({ memoryBackups: backups, memoryBackupsError: null });
+      } catch (e) {
+        console.error('Failed to fetch memory backups:', e);
+        if (isCurrent()) set({ memoryBackupsError: errorMessage(e) });
+      } finally {
+        if (isCurrent()) set({ isLoadingBackups: false });
+      }
+    },
+
+    createMemoryBackup: async () => {
+      const cid = get().activeCharacter?.id;
+      const userName = get().activePersona.name;
+      if (!cid) throw new Error(translate('int.noCharacter'));
+      try {
+        const info = await api.backupMemoryState(cid, userName);
+        await get().fetchMemoryBackups();
+        return info;
+      } catch (e) {
+        console.error('Failed to create memory backup:', e);
+        throw e;
+      }
+    },
+
+    restoreMemoryBackup: async (backupFilePath: string) => {
+      try {
+        await api.restoreMemoryBackup(backupFilePath);
+        await get().fetchCognitiveOverview();
+        await get().fetchMemoryMarkdown().catch(() => {});
+        await get().fetchMemoryBackups();
+      } catch (e) {
+        console.error('Failed to restore memory backup:', e);
+        throw e;
+      }
+    },
+
+    importSowFolder: async (folderPath: string) => {
+      const cid = get().activeCharacter?.id;
+      const userName = get().activePersona.name;
+      if (!cid) return 0;
+      try {
+        const count = await api.importSowMemoryFiles(cid, folderPath, userName);
+        await get().fetchCognitiveOverview();
+        await get().fetchMemoryMarkdown().catch(() => {});
+        await get().fetchMemoryBackups();
+        return count;
+      } catch (e) {
+        console.error('Failed to import SoW folder:', e);
+        throw e;
+      }
+    },
+  };
+};

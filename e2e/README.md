@@ -46,3 +46,8 @@ nach Wiederholung werden die Werte tatsächlich gespeichert und wieder geladen. 
 `chat-sidebar-errors.mjs` erzwingt SQLite-Schreibfehler für Titel, Author's Note und Zusammenfassung
 im Wegwerfprofil. Es prüft erhaltene Entwürfe, Wiederholen, Notiztiefe 0, Schließen/Reiterwechsel und
 fehlgeschlagenes sowie erfolgreiches Zurücksetzen. Screenshots 34–36 zeigen die Fehlerzustände.
+
+`memory-read-errors.mjs` erzwingt einen SQLite-Lesefehler in der Übersicht und einen Dateisystemfehler
+beim Lesen der Snapshot-Liste ausschließlich im Wegwerfprofil. Es prüft sichtbare Ursachen,
+erhaltene Daten/Entwürfe, Wiederholen und einen erfolgreichen Schreibvorgang trotz anschließendem Lesefehler.
+Screenshots 37–38 zeigen die Ladefehler.

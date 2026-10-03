@@ -26,6 +26,7 @@ Arbeitsverzeichnis und Timeout allein gelten nicht als Betriebssystem-Sandbox.
 - [x] Tagebuchgenerierung und Memory-Backup-Erstellung: Fehler sichtbar anzeigen.
 - [x] Psychologie und Beziehung als explizit speicherbare Entwürfe bearbeiten; Schreibfehler erhalten Änderungen.
 - [x] Markdown-Editor: Lade- und Schreibfehler erhalten Entwürfe; laufende Vorgänge sperren die Bearbeitung.
+- [x] Memory-Übersicht und Snapshot-Liste: Lesefehler sichtbar anzeigen, geladene Daten erhalten und Wiederholen ermöglichen.
 - [x] Chat-Seitenleiste: Titel, Author's Note und Zusammenfassung erhalten Entwürfe und melden Schreibfehler.
 - [x] Inline-Nachrichteneditor: Schreibfehler erhalten den Entwurf; Wiederholen übernimmt erst nach erfolgreichem Schreiben.
 - [ ] Speicherfehler vom Store an die Oberfläche weitergeben und verständlich anzeigen.
@@ -255,3 +256,33 @@ Der aktuelle Build bestand `npm run e2e` unter Xvfb mit allen 14 Szenarien.
 Screenshots `34-chat-titelfehler.png`, `35-chat-notizfehler.png` und
 `36-chat-zusammenfassungsfehler.png` wurden visuell geprüft: Die erhaltenen Entwürfe,
 Speicheraktionen und konkreten Fehlerursachen sind vollständig sichtbar.
+
+### Siebtes Arbeitspaket – 03.10.2026
+
+Memory-Übersicht (Psychologie, Beziehung, Episoden, Tagebuch, Heilungsprotokoll) und Snapshot-Liste
+halten Lesefehler im Store fest und zeigen sie mit konkreter Ursache im Drawer an. Bereits geladene
+Daten und offene Entwürfe bleiben erhalten; ein Hinweis erklärt, dass die Daten veraltet sein können.
+Leere Listen werden bei einem Ladefehler oder laufendem Abruf nicht als fehlende Einträge dargestellt.
+Übersicht und Snapshots können unabhängig erneut geladen werden; Erfolg entfernt den jeweiligen Fehlerhinweis.
+
+Nur der neueste Abruf im noch passenden Kontext darf Daten, Fehler und Ladezustand aktualisieren.
+Charakterwechsel leert auch die Snapshot-Liste und alte Fehler; Personawechsel leert den Fehler der Übersicht.
+Erfolgreiche Schreibvorgänge bleiben erfolgreich, wenn das anschließende Nachladen fehlschlägt.
+Das verhindert, dass Wiederholen eines vermeintlich gescheiterten Schreibvorgangs doppelte Einträge anlegt.
+
+Die Snapshot-Auflistung im Backend behandelt ausschließlich ein fehlendes Verzeichnis als leere Liste.
+Fehler bei Verzeichnis- oder Metadatenzugriff werden weitergegeben statt eine unvollständige Liste anzuzeigen.
+Elf Frontend-Tests prüfen Ladefehler/Wiederholen, erhaltene Daten und Entwürfe, leere Erstladeansichten,
+überholte Antworten, Kontextwechsel und erfolgreiche Schreibvorgänge mit fehlgeschlagenem Nachladen.
+Zwei Rust-Tests prüfen fehlendes versus ungültiges Backup-Verzeichnis und fehlerhafte Snapshot-Metadaten.
+Ein neuer E2E-Test erzwingt SQLite- und Dateisystem-Lesefehler im Wegwerfprofil und prüft auch einen erfolgreichen
+Erinnerungseintrag bei fehlgeschlagenem Nachladen.
+
+Offen bleiben weitere Fehlerpfade bei Reflexion/Import/Wiederherstellung sowie allgemeine Entwurfssicherung,
+Generierungsfehler und Konsistenz nach Verlaufsänderungen. Entwürfe sind weiterhin nur im gemounteten Chat gesichert.
+
+`npm run check` bestanden: 360 Rust-Tests und 148 Frontend-Tests.
+Der aktuelle Build bestand `npm run e2e` unter Xvfb mit allen 15 Szenarien.
+Screenshots `37-memory-uebersicht-ladefehler.png` und `38-memory-snapshot-ladefehler.png`
+wurden visuell geprüft: Entwurf bzw. gecachte Snapshot-Liste, konkrete Ursache,
+Hinweis auf möglicherweise veraltete Daten und Wiederholen sind vollständig sichtbar.
