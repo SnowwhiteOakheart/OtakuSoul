@@ -3,6 +3,7 @@
     OtakuSoul - Windows Installer & Shortcut Setup
 .DESCRIPTION
     Installs OtakuSoul to %LOCALAPPDATA%\Programs\OtakuSoul,
+    copies required bundled assets (presets, avatars),
     creates Start Menu and Desktop shortcuts with custom icon,
     and makes the application immediately launchable.
 #>
@@ -27,8 +28,8 @@ $DesktopDir = [Environment]::GetFolderPath("Desktop")
 # 1. Locate Binary
 $SourceBin = $null
 $PossiblePaths = @(
-    (Join-Path $ScriptDir "src-tauri\target\release\otakusoul.exe"),
     (Join-Path $ScriptDir "target\release\otakusoul.exe"),
+    (Join-Path $ScriptDir "src-tauri\target\release\otakusoul.exe"),
     (Join-Path $ScriptDir "otakusoul.exe")
 )
 
@@ -48,9 +49,15 @@ if (-not $SourceBin) {
         Write-Host "[2/2] Kompiliere Rust Backend (Tauri Release)..." -ForegroundColor Cyan
         & npm run tauri build
         
-        $ExpectedBin = Join-Path $ScriptDir "src-tauri\target\release\otakusoul.exe"
-        if (Test-Path $ExpectedBin) {
-            $SourceBin = $ExpectedBin
+        $BuiltPaths = @(
+            (Join-Path $ScriptDir "target\release\otakusoul.exe"),
+            (Join-Path $ScriptDir "src-tauri\target\release\otakusoul.exe")
+        )
+        foreach ($bp in $BuiltPaths) {
+            if (Test-Path $bp) {
+                $SourceBin = $bp
+                break
+            }
         }
     } else {
         Write-Error "Weder die Binärdatei 'otakusoul.exe' noch 'npm' wurden gefunden. Bitte lade den fertigen NSIS-Installer (.exe) herunter."
@@ -58,7 +65,7 @@ if (-not $SourceBin) {
     }
 }
 
-if (-not (Test-Path $SourceBin)) {
+if (-not $SourceBin -or -not (Test-Path $SourceBin)) {
     Write-Error "Konnte 'otakusoul.exe' nicht finden."
     exit 1
 }
@@ -73,6 +80,19 @@ if (-not (Test-Path $InstallDir)) {
 
 $TargetBin = Join-Path $InstallDir "otakusoul.exe"
 Copy-Item -Path $SourceBin -Destination $TargetBin -Force
+
+# Copy bundled presets and assets if present
+$PresetsDir = Join-Path $ScriptDir "presets"
+if (Test-Path $PresetsDir) {
+    Write-Host "      Kopiere Vorlagen (presets)..." -ForegroundColor Gray
+    Copy-Item -Path $PresetsDir -Destination (Join-Path $InstallDir "presets") -Recurse -Force
+}
+
+$AssetsDir = Join-Path $ScriptDir "assets"
+if (Test-Path $AssetsDir) {
+    Write-Host "      Kopiere Assets (VRM, Live2D)..." -ForegroundColor Gray
+    Copy-Item -Path $AssetsDir -Destination (Join-Path $InstallDir "assets") -Recurse -Force
+}
 
 # Copy Icon
 $SourceIcon = Join-Path $ScriptDir "src-tauri\icons\icon.ico"

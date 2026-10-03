@@ -23,5 +23,5 @@ npm run build
 Write-Host "[3/3] Building Windows NSIS and MSI Installers..." -ForegroundColor Cyan
 npm run tauri build -- --bundles nsis,msi
 
-Write-Host "Installers generated in src-tauri\target\release\bundle\" -ForegroundColor Green
-Get-ChildItem "src-tauri\target\release\bundle\nsis", "src-tauri\target\release\bundle\msi" -ErrorAction SilentlyContinue
+Write-Host "Installers generated:" -ForegroundColor Green
+Get-ChildItem "target\release\bundle\nsis", "target\release\bundle\msi", "src-tauri\target\release\bundle\nsis", "src-tauri\target\release\bundle\msi" -ErrorAction SilentlyContinue

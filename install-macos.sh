@@ -2,8 +2,8 @@
 # ==============================================================================
 # OtakuSoul – macOS Installer & App Setup
 # ==============================================================================
-# Installs OtakuSoul.app to /Applications or ~/Applications,
-# removes quarantine flags and makes it launchable from Spotlight/Launchpad.
+# Installiert OtakuSoul.app nach /Applications oder ~/Applications,
+# entfernt Quarantäne-Attribute und macht es über Spotlight und Launchpad startbar.
 # ==============================================================================
 
 set -euo pipefail
@@ -36,12 +36,24 @@ else
 fi
 
 # Locate .app bundle
-APP_BUNDLE=""
-if [ -d "${SCRIPT_DIR}/src-tauri/target/release/bundle/macos/OtakuSoul.app" ]; then
-    APP_BUNDLE="${SCRIPT_DIR}/src-tauri/target/release/bundle/macos/OtakuSoul.app"
-elif [ -d "${SCRIPT_DIR}/OtakuSoul.app" ]; then
-    APP_BUNDLE="${SCRIPT_DIR}/OtakuSoul.app"
-fi
+find_app_bundle() {
+    local candidates=(
+        "${SCRIPT_DIR}/target/release/bundle/macos/OtakuSoul.app"
+        "${SCRIPT_DIR}/target/release/bundle/osx/OtakuSoul.app"
+        "${SCRIPT_DIR}/src-tauri/target/release/bundle/macos/OtakuSoul.app"
+        "${SCRIPT_DIR}/src-tauri/target/release/bundle/osx/OtakuSoul.app"
+        "${SCRIPT_DIR}/OtakuSoul.app"
+    )
+    for c in "${candidates[@]}"; do
+        if [ -d "$c" ]; then
+            echo "$c"
+            return 0
+        fi
+    done
+    return 1
+}
+
+APP_BUNDLE="$(find_app_bundle || true)"
 
 if [ -z "${APP_BUNDLE}" ]; then
     echo -e "${YELLOW}Kein vorkompiliertes OtakuSoul.app Bundle gefunden. Baue OtakuSoul...${RESET}"
@@ -51,16 +63,14 @@ if [ -z "${APP_BUNDLE}" ]; then
         npm run build
         echo -e "${CYAN}[2/2] Kompiliere macOS App Bundle...${RESET}"
         npm run tauri build -- --bundles dmg,app
-        if [ -d "${SCRIPT_DIR}/src-tauri/target/release/bundle/macos/OtakuSoul.app" ]; then
-            APP_BUNDLE="${SCRIPT_DIR}/src-tauri/target/release/bundle/macos/OtakuSoul.app"
-        fi
+        APP_BUNDLE="$(find_app_bundle || true)"
     else
         echo -e "${YELLOW}Fehler: npm nicht gefunden. Bitte lade die .dmg oder .app Release-Datei herunter.${RESET}"
         exit 1
     fi
 fi
 
-if [ ! -d "${APP_BUNDLE}" ]; then
+if [ -z "${APP_BUNDLE}" ] || [ ! -d "${APP_BUNDLE}" ]; then
     echo -e "${YELLOW}Fehler: Konnte 'OtakuSoul.app' nicht finden.${RESET}"
     exit 1
 fi
@@ -81,7 +91,7 @@ echo ""
 echo -e "${GREEN}${BOLD}✔ OtakuSoul wurde erfolgreich installiert!${RESET}"
 echo "---------------------------------------------------------"
 echo -e "• ${BOLD}Installationsort:${RESET} ${DEST_APP}"
-echo -e "• ${BOLD}Starten:${RESET} Über Spotlight (Cmd+Leertaste 'OtakuSoul'), Launchpad oder 'open -a OtakuSoul'"
+echo -e "• ${BOLD}Starten:${RESET}          Über Spotlight (Cmd+Leertaste 'OtakuSoul'), Launchpad oder 'open -a OtakuSoul'"
 echo ""
 
 echo -e "Möchtest du OtakuSoul jetzt starten? [J/n]"

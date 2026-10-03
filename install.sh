@@ -2,8 +2,9 @@
 # ==============================================================================
 # OtakuSoul – Linux Universal Installer & Desktop Launcher Setup
 # ==============================================================================
-# This script installs OtakuSoul on Linux, configures the desktop menu entry,
-# high-resolution app icon, and makes it launchable via application menu or CLI.
+# Dieses Skript installiert OtakuSoul auf Linux, richtet den Menüeintrag,
+# das hochauflösende App-Icon und die erforderlichen Ressourcen (Presets, Assets)
+# ein und macht OtakuSoul über das Anwendungsmenü und das Terminal startbar.
 # ==============================================================================
 
 set -euo pipefail
@@ -30,18 +31,20 @@ BIN_INSTALL_DIR="${HOME}/.local/bin"
 APP_INSTALL_DIR="${HOME}/.local/share/applications"
 ICON_INSTALL_DIR="${HOME}/.local/share/icons/hicolor/512x512/apps"
 DATA_DIR="${HOME}/.local/share/otakusoul"
+APP_LIB_DIR="${HOME}/.local/lib/otakusoul"
 
 mkdir -p "${BIN_INSTALL_DIR}"
 mkdir -p "${APP_INSTALL_DIR}"
 mkdir -p "${ICON_INSTALL_DIR}"
 mkdir -p "${DATA_DIR}"
+mkdir -p "${APP_LIB_DIR}"
 
 # 1. Locate or build the binary
 TARGET_BIN=""
-if [ -f "${SCRIPT_DIR}/src-tauri/target/release/otakusoul" ]; then
-    TARGET_BIN="${SCRIPT_DIR}/src-tauri/target/release/otakusoul"
-elif [ -f "${SCRIPT_DIR}/target/release/otakusoul" ]; then
+if [ -f "${SCRIPT_DIR}/target/release/otakusoul" ]; then
     TARGET_BIN="${SCRIPT_DIR}/target/release/otakusoul"
+elif [ -f "${SCRIPT_DIR}/src-tauri/target/release/otakusoul" ]; then
+    TARGET_BIN="${SCRIPT_DIR}/src-tauri/target/release/otakusoul"
 elif [ -f "${SCRIPT_DIR}/otakusoul" ]; then
     TARGET_BIN="${SCRIPT_DIR}/otakusoul"
 fi
@@ -51,31 +54,49 @@ if [ -z "${TARGET_BIN}" ]; then
     cd "${SCRIPT_DIR}"
     
     if command -v npm >/dev/null 2>&1; then
-        echo -e "${CYAN}[1/2] Baue Frontend...${RESET}"
+        echo -e "${CYAN}[1/2] Baue Web Frontend...${RESET}"
         npm run build
         echo -e "${CYAN}[2/2] Kompiliere Rust Backend (Tauri Release)...${RESET}"
-        npm run tauri build -- --bundles appimage,deb || (cd src-tauri && cargo build --release)
+        npm run tauri build -- --bundles appimage,deb || cargo build --release --manifest-path src-tauri/Cargo.toml
         
-        if [ -f "${SCRIPT_DIR}/src-tauri/target/release/otakusoul" ]; then
+        if [ -f "${SCRIPT_DIR}/target/release/otakusoul" ]; then
+            TARGET_BIN="${SCRIPT_DIR}/target/release/otakusoul"
+        elif [ -f "${SCRIPT_DIR}/src-tauri/target/release/otakusoul" ]; then
             TARGET_BIN="${SCRIPT_DIR}/src-tauri/target/release/otakusoul"
         fi
     else
-        echo -e "${YELLOW}Hinweis: npm/cargo nicht gefunden. Bitte lade das offizielle Release-Paket herunter.${RESET}"
+        echo -e "${YELLOW}Hinweis: npm/cargo nicht gefunden. Bitte lade das offizielle Release-Paket (.deb oder AppImage) herunter.${RESET}"
         exit 1
     fi
 fi
 
-if [ ! -f "${TARGET_BIN}" ]; then
+if [ -z "${TARGET_BIN}" ] || [ ! -f "${TARGET_BIN}" ]; then
     echo -e "${YELLOW}Fehler: Konnte keine ausführbare 'otakusoul' Binärdatei finden.${RESET}"
     exit 1
 fi
 
 echo -e "${CYAN}Gefundene Binärdatei:${RESET} ${TARGET_BIN}"
 
-# 2. Copy binary to ~/.local/bin/otakusoul
-echo -e "${CYAN}[1/4] Kopiere Binärdatei nach ${BIN_INSTALL_DIR}/otakusoul...${RESET}"
-cp -f "${TARGET_BIN}" "${BIN_INSTALL_DIR}/otakusoul"
-chmod +x "${BIN_INSTALL_DIR}/otakusoul"
+# 2. Install application binary and bundled resources into ~/.local/lib/otakusoul
+echo -e "${CYAN}[1/4] Installiere Anwendungsdateien nach ${APP_LIB_DIR}...${RESET}"
+cp -f "${TARGET_BIN}" "${APP_LIB_DIR}/otakusoul"
+chmod +x "${APP_LIB_DIR}/otakusoul"
+
+# Copy bundled presets and assets if present
+if [ -d "${SCRIPT_DIR}/presets" ]; then
+    echo -e "      Kopiere Vorlagen (presets)..."
+    mkdir -p "${APP_LIB_DIR}/presets"
+    cp -r "${SCRIPT_DIR}/presets/"* "${APP_LIB_DIR}/presets/" 2>/dev/null || true
+fi
+
+if [ -d "${SCRIPT_DIR}/assets" ]; then
+    echo -e "      Kopiere integrierte Assets (VRMs, Emotionen, Live2D)..."
+    mkdir -p "${APP_LIB_DIR}/assets"
+    cp -r "${SCRIPT_DIR}/assets/"* "${APP_LIB_DIR}/assets/" 2>/dev/null || true
+fi
+
+# Create launcher symlink in ~/.local/bin/otakusoul
+ln -sf "${APP_LIB_DIR}/otakusoul" "${BIN_INSTALL_DIR}/otakusoul"
 
 # 3. Install Icon
 echo -e "${CYAN}[2/4] Installiere Anwendungs-Icon...${RESET}"
@@ -86,7 +107,6 @@ fi
 
 if [ -f "${SOURCE_ICON}" ]; then
     cp -f "${SOURCE_ICON}" "${ICON_INSTALL_DIR}/otakusoul.png"
-    # Also copy directly into data dir for reference
     cp -f "${SOURCE_ICON}" "${DATA_DIR}/icon.png"
 fi
 
@@ -109,11 +129,10 @@ EOF
 
 chmod +x "${APP_INSTALL_DIR}/otakusoul.desktop"
 
-# Optionally place a link on ~/Desktop if directory exists
+# Optional: place link on ~/Desktop if present
 if [ -d "${HOME}/Desktop" ]; then
     cp -f "${APP_INSTALL_DIR}/otakusoul.desktop" "${HOME}/Desktop/otakusoul.desktop"
     chmod +x "${HOME}/Desktop/otakusoul.desktop"
-    # Try trusting desktop file on GNOME/KDE
     gio set "${HOME}/Desktop/otakusoul.desktop" metadata::trusted true 2>/dev/null || true
 fi
 
@@ -136,8 +155,9 @@ fi
 echo ""
 echo -e "${GREEN}${BOLD}✔ OtakuSoul wurde erfolgreich installiert!${RESET}"
 echo "---------------------------------------------------------"
-echo -e "• ${BOLD}Startmenü:${RESET} OtakuSoul ist nun in deinem Anwendungsmenü verfügbar (GNOME, KDE, XFCE etc.)"
-echo -e "• ${BOLD}Terminal:${RESET}  Kann direkt über '${BOLD}otakusoul${RESET}' gestartet werden"
+echo -e "• ${BOLD}Installationsort:${RESET} ${APP_LIB_DIR}/otakusoul"
+echo -e "• ${BOLD}Startmenü:${RESET}        OtakuSoul ist nun in deinem Anwendungsmenü verfügbar (GNOME, KDE, XFCE etc.)"
+echo -e "• ${BOLD}Terminal:${RESET}         Kann direkt über '${BOLD}otakusoul${RESET}' gestartet werden"
 if [ -n "${PATH_NOTICE}" ]; then
     echo -e "• ${YELLOW}${PATH_NOTICE}${RESET}"
 fi
