@@ -497,7 +497,10 @@ export const createStageSlice: SliceCreator<StageSlice> = (set, get) => ({
     set({ isRollingDice: true });
     soundFx.playDiceRoll();
     try {
-      const res = await api.rollStageDice(formula, targetDc);
+      const [res] = await Promise.all([
+        api.rollStageDice(formula, targetDc),
+        new Promise((r) => setTimeout(r, 800)), // Artificial delay for nice 3D dice animation
+      ]);
       set({ lastDiceRoll: res, isRollingDice: false });
       if (res.is_critical_success) {
         soundFx.playCriticalSuccess();

@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { useStoreFields } from '../../store/useAppStore';
 import { ArrowRight, Dices, Sparkles, AlertOctagon, Send, CheckCircle2, XCircle } from 'lucide-react';
 import { translate, useTranslation } from '../../i18n';
+import { AnimatedCSSDice } from './AnimatedCSSDice';
 
 export const DiceRoller: React.FC = () => {
   const { t } = useTranslation();
@@ -121,8 +122,19 @@ export const DiceRoller: React.FC = () => {
         <span>{isRollingDice ? t('stage.rolling') : t('stage.roll')}</span>
       </button>
 
+      {/* 3D Dice Display */}
+      {(isRollingDice || lastDiceRoll) && (
+        <div className="flex justify-center py-6">
+          <AnimatedCSSDice
+            isRolling={isRollingDice}
+            result={isRollingDice ? null : (lastDiceRoll?.individual_rolls[0] ?? null)}
+            faces={lastDiceRoll?.die_faces ?? 20}
+          />
+        </div>
+      )}
+
       {/* Result Display Banner */}
-      {lastDiceRoll && (
+      {lastDiceRoll && !isRollingDice && (
         <div
           className={`p-4 rounded-xl border transition-all space-y-2 ${
             lastDiceRoll.is_critical_success
