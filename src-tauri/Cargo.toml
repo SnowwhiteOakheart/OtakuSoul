@@ -21,7 +21,7 @@ tar = "0.4"
 ts-rs = { version = "12", features = ["serde-json-impl"] }
 parking_lot = "0.12"
 tauri = { version = "2.12", features = ["protocol-asset", "tray-icon"] }
-tauri-plugin-opener = "2.6"
+tauri-plugin-opener = "2.7"
 tauri-plugin-process = "2"
 tauri-plugin-dialog = "2.8"
 crc32fast = "1.5"
