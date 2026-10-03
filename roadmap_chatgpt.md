@@ -24,6 +24,7 @@ Arbeitsverzeichnis und Timeout allein gelten nicht als Betriebssystem-Sandbox.
 
 - [x] Manuelle Erinnerungen und Tagebucheinträge: Schreibfehler weitergeben, Eingaben erhalten und Wiederholen ermöglichen.
 - [x] Tagebuchgenerierung und Memory-Backup-Erstellung: Fehler sichtbar anzeigen.
+- [x] Psychologie und Beziehung als explizit speicherbare Entwürfe bearbeiten; Schreibfehler erhalten Änderungen.
 - [ ] Speicherfehler vom Store an die Oberfläche weitergeben und verständlich anzeigen.
 - [ ] Erfolgsmeldungen ausschließlich nach erfolgreichem Speichern anzeigen.
 - [ ] Eingaben bei Fehlern erhalten und Wiederholen anbieten.
@@ -144,3 +145,29 @@ Fehler bei Markdown-Nachladen und weiteren Chat-Editoren sowie konsistente Rück
 Der aktuelle Build wurde mit `npm run e2e` erstellt; anschließend bestand die gesamte Suite
 mit `npm run e2e:run` (zehn Szenarien einschließlich Companion-Freigabe und Memory-Schreibfehlern).
 Die Screenshot-Prüfung bestätigt den vollständigen Drawer, die sichtbare Fehlermeldung und den erhaltenen Entwurf.
+
+### Drittes Arbeitspaket – 03.10.2026
+
+Psychologie und Beziehung schreiben jetzt erst beim ausdrücklichen Speichern statt bei jeder Eingabe.
+Texte, Intensität, Glaubenssätze, Vorlieben und Meilensteine bilden einen gemeinsamen Entwurf pro Reiter.
+Ein sichtbarer Hinweis kennzeichnet ungespeicherte Änderungen; Verwerfen stellt die gespeicherten Werte wieder her.
+Schreibfehler werden angezeigt, ohne den Entwurf zu löschen oder Erfolg zu melden.
+
+Entwürfe überleben Reiterwechsel und das Schließen des Inspectors, solange die Chatansicht gemountet bleibt.
+Sie werden nach Charakter und Persona getrennt. Laufende Speichervorgänge sperren die Felder auch nach Wiederöffnen.
+Beim Charakter-/Personawechsel wird die alte Übersicht entfernt; verspätete Antworten für einen anderen Kontext werden ignoriert.
+Nach erfolgreichem Schreiben bleibt der gespeicherte Wert auch dann verfügbar, wenn das anschließende Nachladen fehlschlägt.
+
+Neun zusätzliche Frontend-Tests prüfen unter anderem Fehler/Wiederholen, Verwerfen, Kontextwechsel,
+Schließen während eines Speichervorgangs und fehlgeschlagenes Nachladen nach erfolgreichem Schreiben.
+Der neue E2E-Test prüft ausbleibende Datenbankänderungen beim Tippen und erzwingt echte SQLite-Schreibfehler
+für beide Reiter ausschließlich im Wegwerfprofil.
+
+Offen in Abschnitt 2 bleiben Markdown-Nachladen, weitere Chat-Editoren und sichtbare Rückmeldungen für reine Lesefehler.
+Entwürfe werden noch nicht dauerhaft auf der Festplatte gesichert.
+
+`npm run check` bestanden: 358 Rust-Tests und 117 Frontend-Tests.
+Der aktuelle Build wurde mit `npm run e2e` erstellt; der abschließende Gesamtlauf mit `npm run e2e:run`
+bestand alle elf Szenarien. WebKit-spezifische Textauswahl und die Auswahl des sichtbaren Verwerfen-Knopfs
+wurden im neuen Test korrigiert. Screenshots 30–31 wurden visuell geprüft: Entwurf, Speicheraktionen
+und Fehlerhinweis sind vollständig sichtbar.

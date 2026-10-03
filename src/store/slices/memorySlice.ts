@@ -76,7 +76,10 @@ export const createMemorySlice: SliceCreator<MemorySlice> = (set, get) => ({
     set({ isMemoryLoading: true });
     try {
       const overview = await api.getCognitiveOverview(cid, uid);
-      set({ cognitiveOverview: overview, isMemoryLoading: false });
+      if (get().activeCharacter?.id === cid && get().activePersona.name === uid) {
+        set({ cognitiveOverview: overview });
+      }
+      set({ isMemoryLoading: false });
     } catch (e) {
       console.error('Failed to fetch cognitive overview:', e);
       set({ isMemoryLoading: false });
@@ -85,23 +88,33 @@ export const createMemorySlice: SliceCreator<MemorySlice> = (set, get) => ({
 
   updatePsychology: async (psych) => {
     const cid = get().activeCharacter?.id;
-    if (!cid) return;
+    const uid = get().activePersona.name;
+    if (!cid) throw new Error(translate('int.noCharacter'));
     try {
       await api.updatePsychology(cid, psych);
-      await get().fetchCognitiveOverview();
+      if (get().activeCharacter?.id === cid && get().activePersona.name === uid) {
+        set((state) => ({ cognitiveOverview: state.cognitiveOverview ? { ...state.cognitiveOverview, psychology: psych } : null }));
+        await get().fetchCognitiveOverview(cid, uid);
+      }
     } catch (e) {
       console.error('Failed to update psychology:', e);
+      throw e;
     }
   },
 
   updateRelationship: async (rel) => {
     const cid = get().activeCharacter?.id;
-    if (!cid) return;
+    const uid = get().activePersona.name;
+    if (!cid) throw new Error(translate('int.noCharacter'));
     try {
       await api.updateRelationship(cid, rel);
-      await get().fetchCognitiveOverview();
+      if (get().activeCharacter?.id === cid && get().activePersona.name === uid) {
+        set((state) => ({ cognitiveOverview: state.cognitiveOverview ? { ...state.cognitiveOverview, relationship: rel } : null }));
+        await get().fetchCognitiveOverview(cid, uid);
+      }
     } catch (e) {
       console.error('Failed to update relationship:', e);
+      throw e;
     }
   },
 
@@ -131,7 +144,7 @@ export const createMemorySlice: SliceCreator<MemorySlice> = (set, get) => ({
 
   triggerEmotionalDecay: async () => {
     const cid = get().activeCharacter?.id;
-    if (!cid) return;
+    if (!cid) throw new Error(translate('int.noCharacter'));
     try {
       const log = await api.applyEmotionalDecay(cid);
       if (log) {
@@ -140,6 +153,7 @@ export const createMemorySlice: SliceCreator<MemorySlice> = (set, get) => ({
       await get().fetchCognitiveOverview();
     } catch (e) {
       console.error('Failed to apply emotional decay:', e);
+      throw e;
     }
   },
 

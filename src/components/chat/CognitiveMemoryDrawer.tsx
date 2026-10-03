@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { createPortal } from 'react-dom';
+import type { PsychologyState, RelationshipState } from '../../types';
 import { useStoreFields } from '../../store/useAppStore';
 import { Brain, X, Heart, RefreshCw, BookHeart, Clock, Sparkles, Bookmark, FileCode, RotateCcw, Sliders } from 'lucide-react';
 import { translate, useTranslation } from '../../i18n';
@@ -13,6 +14,13 @@ import { DiaryTab } from './memory/DiaryTab';
 import { HealingTab } from './memory/HealingTab';
 import { MemoryBackupsTab } from './memory/MemoryBackupsTab';
 
+interface MemoryEditorDraft {
+  psychology?: PsychologyState;
+  relationship?: RelationshipState;
+  psychSaving?: boolean;
+  relSaving?: boolean;
+}
+
 interface CognitiveMemoryDrawerProps {
   isOpen: boolean;
   onClose: () => void;
@@ -23,12 +31,12 @@ export const CognitiveMemoryDrawer: React.FC<CognitiveMemoryDrawerProps> = ({
   onClose,
 }) => {
   const {
-    activeCharacter, cognitiveOverview, isMemoryLoading, isReflecting, lastReflectionResult,
+    activeCharacter, activePersona, cognitiveOverview, isMemoryLoading, isReflecting, lastReflectionResult,
     memoryBackups, autoReflectionEnabled, autoReflectionThreshold, setAutoReflectionEnabled,
     setAutoReflectionThreshold, fetchCognitiveOverview, triggerMemoryPipeline, fetchMemoryMarkdown,
     fetchMemoryBackups,
   } = useStoreFields(
-    'activeCharacter', 'cognitiveOverview', 'isMemoryLoading', 'isReflecting',
+    'activeCharacter', 'activePersona', 'cognitiveOverview', 'isMemoryLoading', 'isReflecting',
     'lastReflectionResult', 'memoryBackups', 'autoReflectionEnabled', 'autoReflectionThreshold',
     'setAutoReflectionEnabled', 'setAutoReflectionThreshold', 'fetchCognitiveOverview',
     'triggerMemoryPipeline', 'fetchMemoryMarkdown', 'fetchMemoryBackups',
@@ -39,13 +47,20 @@ export const CognitiveMemoryDrawer: React.FC<CognitiveMemoryDrawerProps> = ({
     'psychology' | 'relationship' | 'markdown' | 'memories' | 'diary' | 'healing' | 'backups'
   >('psychology');
 
+  // Keep edits through tab switches and closing; never reuse another character/persona's draft.
+  const [drafts, setDrafts] = useState<Record<string, MemoryEditorDraft>>({});
+  const draftKey = JSON.stringify([activeCharacter?.id, activePersona.name]);
+  const draft = drafts[draftKey];
+  const changeDraft = (changes: MemoryEditorDraft) =>
+    setDrafts((previous) => ({ ...previous, [draftKey]: { ...previous[draftKey], ...changes } }));
+
   useEffect(() => {
     if (isOpen && activeCharacter) {
       fetchCognitiveOverview();
       fetchMemoryMarkdown();
       fetchMemoryBackups();
     }
-  }, [isOpen, activeCharacter, fetchCognitiveOverview, fetchMemoryMarkdown, fetchMemoryBackups]);
+  }, [isOpen, activeCharacter, activePersona.name, fetchCognitiveOverview, fetchMemoryMarkdown, fetchMemoryBackups]);
 
   if (!isOpen || !activeCharacter) return null;
 
@@ -259,8 +274,16 @@ export const CognitiveMemoryDrawer: React.FC<CognitiveMemoryDrawerProps> = ({
 
         {/* Tab Contents */}
         <div className="flex-1 overflow-y-auto p-4 space-y-4">
-          {activeTab === 'psychology' && <PsychologyTab />}
-          {activeTab === 'relationship' && <RelationshipTab />}
+          <div hidden={activeTab !== 'psychology'}>
+            <PsychologyTab key={`${draftKey}:psychology`} value={draft?.psychology ?? cognitiveOverview?.psychology}
+              isDirty={!!draft?.psychology} isSaving={!!draft?.psychSaving} onSavingChange={(psychSaving) => changeDraft({ psychSaving })} onChange={(psychology) => changeDraft({ psychology })}
+              onDiscard={() => changeDraft({ psychology: undefined })} />
+          </div>
+          <div hidden={activeTab !== 'relationship'}>
+            <RelationshipTab key={`${draftKey}:relationship`} value={draft?.relationship ?? cognitiveOverview?.relationship}
+              isDirty={!!draft?.relationship} isSaving={!!draft?.relSaving} onSavingChange={(relSaving) => changeDraft({ relSaving })} onChange={(relationship) => changeDraft({ relationship })}
+              onDiscard={() => changeDraft({ relationship: undefined })} />
+          </div>
           {activeTab === 'markdown' && <MarkdownTab />}
           {activeTab === 'memories' && <MemoriesTab />}
           {activeTab === 'diary' && <DiaryTab />}

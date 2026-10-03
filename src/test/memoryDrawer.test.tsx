@@ -1,6 +1,6 @@
 // @vitest-environment jsdom
-import { beforeEach, describe, expect, it, vi } from 'vitest';
-import { render, screen } from '@testing-library/react';
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
+import { act, render, screen, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 
 vi.mock('../services/api', async () => (await import('./mockApi')).apiModule);
@@ -8,6 +8,8 @@ vi.mock('../services/api', async () => (await import('./mockApi')).apiModule);
 import { api } from '../services/api';
 import { useAppStore } from '../store/useAppStore';
 import { CognitiveMemoryDrawer } from '../components/chat/CognitiveMemoryDrawer';
+import { toast } from '../components/ui/feedback';
+import { translate } from '../i18n';
 import { resetApiMocks } from './mockApi';
 import type { CharacterProfile, CognitiveOverview } from '../types';
 
@@ -39,6 +41,9 @@ const overview: CognitiveOverview = {
 
 beforeEach(() => {
   resetApiMocks();
+  vi.spyOn(toast, 'success').mockImplementation(() => {});
+  vi.spyOn(toast, 'error').mockImplementation(() => {});
+  vi.spyOn(console, 'error').mockImplementation(() => {});
   useAppStore.setState(initialState, true);
   useAppStore.setState({
     appLanguage: 'en',
@@ -53,6 +58,8 @@ beforeEach(() => {
   vi.mocked(api.getUserMemoryMarkdown).mockResolvedValue('# Snow');
   vi.mocked(api.listMemoryBackups).mockResolvedValue([]);
 });
+
+afterEach(() => vi.restoreAllMocks());
 
 describe('CognitiveMemoryDrawer', () => {
   it('mounts outside its filtered HUD parent so the drawer can cover the viewport', () => {
@@ -100,6 +107,137 @@ describe('CognitiveMemoryDrawer', () => {
 
     await user.click(screen.getByRole('button', { name: 'Save to database' }));
     expect(saveCharacterMarkdown).toHaveBeenCalledWith('# Ayu edited');
+  });
+
+  it('keeps both drafts through tab switches and closing without writing on keystrokes', async () => {
+    const user = userEvent.setup();
+    const { rerender } = render(<CognitiveMemoryDrawer isOpen onClose={() => {}} />);
+    const tension = () => screen.getByRole('textbox', { name: translate('memory.tension') });
+    await user.clear(tension());
+    await user.type(tension(), 'Conflict at the gate');
+    await user.click(screen.getAllByRole('tab')[1]!);
+    const dynamic = () => screen.getByRole('textbox', { name: translate('memory.dynamic') });
+    await user.type(dynamic(), 'Close friends');
+    await user.click(screen.getAllByRole('tab')[0]!);
+    expect(tension()).toHaveValue('Conflict at the gate');
+    rerender(<CognitiveMemoryDrawer isOpen={false} onClose={() => {}} />);
+    rerender(<CognitiveMemoryDrawer isOpen onClose={() => {}} />);
+    expect(tension()).toHaveValue('Conflict at the gate');
+    await user.click(screen.getAllByRole('tab')[1]!);
+    expect(dynamic()).toHaveValue('Close friends');
+    expect(api.updatePsychology).not.toHaveBeenCalled();
+    expect(api.updateRelationship).not.toHaveBeenCalled();
+  });
+
+  it('keeps a failed psychology draft and saves all changes together on retry', async () => {
+    const user = userEvent.setup();
+    vi.mocked(api.updatePsychology).mockRejectedValueOnce(new Error('Disk full')).mockResolvedValueOnce(undefined);
+    render(<CognitiveMemoryDrawer isOpen onClose={() => {}} />);
+    const tension = screen.getByRole('textbox', { name: translate('memory.tension') });
+    await user.clear(tension);
+    await user.type(tension, 'Conflict');
+    await user.click(screen.getByRole('button', { name: translate('memory.intensity', { level: 5 }) }));
+    const save = () => screen.getByRole('button', { name: translate('memory.savePsychology') });
+    await user.click(save());
+    await waitFor(() => expect(toast.error).toHaveBeenCalledOnce());
+    expect(tension).toHaveValue('Conflict');
+    expect(toast.success).not.toHaveBeenCalled();
+    expect(save()).toBeEnabled();
+    vi.mocked(api.getCognitiveOverview).mockResolvedValue({ ...overview, psychology: { ...overview.psychology, psychological_tension: 'Conflict', intensity: 5 } });
+    await user.click(save());
+    await waitFor(() => expect(toast.success).toHaveBeenCalledWith(translate('memory.psychSaved')));
+    expect(api.updatePsychology).toHaveBeenLastCalledWith('ayu', expect.objectContaining({ psychological_tension: 'Conflict', intensity: 5 }));
+    expect(save()).toBeDisabled();
+  });
+
+  it('preserves relationship text and added preferences after a failed write', async () => {
+    const user = userEvent.setup();
+    vi.mocked(api.updateRelationship).mockRejectedValueOnce(new Error('Disk full')).mockResolvedValueOnce(undefined);
+    render(<CognitiveMemoryDrawer isOpen onClose={() => {}} />);
+    await user.click(screen.getAllByRole('tab')[1]!);
+    const role = screen.getByRole('textbox', { name: translate('memory.roleInStory') });
+    await user.type(role, 'Companion');
+    await user.type(screen.getByRole('textbox', { name: translate('memory.preferencePlaceholder') }), 'Coffee');
+    await user.click(screen.getAllByRole('button', { name: translate('memory.add') })[0]!);
+    const save = screen.getByRole('button', { name: translate('memory.saveRelationship') });
+    await user.click(save);
+    await waitFor(() => expect(toast.error).toHaveBeenCalledOnce());
+    expect(role).toHaveValue('Companion');
+    expect(screen.getByText('Coffee')).toBeInTheDocument();
+    expect(toast.success).not.toHaveBeenCalled();
+    await user.click(save);
+    await waitFor(() => expect(toast.success).toHaveBeenCalledWith(translate('memory.relSaved')));
+    expect(api.updateRelationship).toHaveBeenLastCalledWith('ayu', expect.objectContaining({ role_in_story: 'Companion', preferences_habits: ['Tee', 'Coffee'] }));
+  });
+
+  it('discards a draft without writing it', async () => {
+    const user = userEvent.setup();
+    render(<CognitiveMemoryDrawer isOpen onClose={() => {}} />);
+    const tension = screen.getByRole('textbox', { name: translate('memory.tension') });
+    await user.type(tension, ' changed');
+    await user.click(screen.getByRole('button', { name: translate('memory.discardDraft') }));
+    expect(tension).toHaveValue('Neugier');
+    expect(api.updatePsychology).not.toHaveBeenCalled();
+  });
+
+  it('keeps drafts separate when changing characters', async () => {
+    const user = userEvent.setup();
+    const first = useAppStore.getState().activeCharacter;
+    render(<CognitiveMemoryDrawer isOpen onClose={() => {}} />);
+    await user.type(screen.getByRole('textbox', { name: translate('memory.tension') }), ' for Ayu');
+    await act(async () => {
+      useAppStore.setState({ activeCharacter: { id: 'sora', card: { data: { name: 'Sora' } } } as CharacterProfile, cognitiveOverview: null });
+    });
+    await waitFor(() => expect(screen.getByRole('textbox', { name: translate('memory.tension') })).toHaveValue('Neugier'));
+    expect(screen.getByRole('button', { name: translate('memory.savePsychology') })).toBeDisabled();
+    await act(async () => { useAppStore.setState({ activeCharacter: first, cognitiveOverview: null }); });
+    expect(screen.getByRole('textbox', { name: translate('memory.tension') })).toHaveValue('Neugier for Ayu');
+  });
+
+  it('does not apply an overview that arrives after switching characters', async () => {
+    let finish!: (value: CognitiveOverview) => void;
+    vi.mocked(api.getCognitiveOverview).mockImplementation(() => new Promise((resolve) => { finish = resolve; }));
+    const fetching = useAppStore.getState().fetchCognitiveOverview();
+    useAppStore.setState({ activeCharacter: { id: 'sora' } as CharacterProfile, cognitiveOverview: null });
+    finish(overview);
+    await fetching;
+    expect(useAppStore.getState().cognitiveOverview).toBeNull();
+  });
+
+  it('keeps a pending save locked after closing and reopening', async () => {
+    const user = userEvent.setup();
+    let finish!: () => void;
+    vi.mocked(api.updatePsychology).mockImplementation(() => new Promise((resolve) => { finish = resolve; }));
+    const { rerender } = render(<CognitiveMemoryDrawer isOpen onClose={() => {}} />);
+    await user.type(screen.getByRole('textbox', { name: translate('memory.tension') }), ' changed');
+    await user.click(screen.getByRole('button', { name: translate('memory.savePsychology') }));
+    rerender(<CognitiveMemoryDrawer isOpen={false} onClose={() => {}} />);
+    rerender(<CognitiveMemoryDrawer isOpen onClose={() => {}} />);
+    expect(screen.getByRole('textbox', { name: translate('memory.tension') })).toBeDisabled();
+    expect(screen.getByRole('button', { name: translate('common.saving') })).toBeDisabled();
+    await act(async () => { finish(); });
+    expect(screen.getByRole('textbox', { name: translate('memory.tension') })).toBeEnabled();
+    expect(api.updatePsychology).toHaveBeenCalledOnce();
+  });
+
+  it('keeps relationship drafts separate for different personas', async () => {
+    const user = userEvent.setup();
+    const persona = useAppStore.getState().activePersona;
+    render(<CognitiveMemoryDrawer isOpen onClose={() => {}} />);
+    await user.click(screen.getAllByRole('tab')[1]!);
+    await user.type(screen.getByRole('textbox', { name: translate('memory.roleInStory') }), 'First persona');
+    await act(async () => { useAppStore.setState({ activePersona: { ...persona, name: 'Other' }, cognitiveOverview: null }); });
+    expect(screen.getByRole('textbox', { name: translate('memory.roleInStory') })).toHaveValue('');
+    await act(async () => { useAppStore.setState({ activePersona: persona, cognitiveOverview: null }); });
+    expect(screen.getByRole('textbox', { name: translate('memory.roleInStory') })).toHaveValue('First persona');
+  });
+
+  it('keeps the committed value if refreshing after a successful write fails', async () => {
+    vi.mocked(api.updatePsychology).mockResolvedValue(undefined);
+    vi.mocked(api.getCognitiveOverview).mockRejectedValue(new Error('Read failed'));
+    const updated = { ...overview.psychology, psychological_tension: 'Saved' };
+    await useAppStore.getState().updatePsychology(updated);
+    expect(useAppStore.getState().cognitiveOverview?.psychology).toEqual(updated);
   });
 
   it('renders nothing while closed', () => {

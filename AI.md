@@ -101,6 +101,10 @@ Einstellungen: `components/settings/sections/*` (Server inkl. Laufzeiten/`mmproj
 - Memory: `addManualMemory`, `addManualDiary`, `generateManualDiary` und `createMemoryBackup` geben Fehler an
   ihre Aufrufer weiter. Formulare müssen diese anzeigen; Eingaben erst nach erfolgreichem Speichern leeren.
   Der Memory-Drawer rendert per Portal in `document.body`, damit der `backdrop-filter` des HUD seine Größe nicht begrenzt.
+  Psychologie und Beziehung nutzen Entwürfe im Drawer (nach Charakter und Persona getrennt), die Reiterwechsel
+  und Schließen überleben. Erst explizites Speichern schreibt; währenddessen bleiben die Felder auch nach
+  Wiederöffnen gesperrt. `updatePsychology`, `updateRelationship` und `triggerEmotionalDecay` geben Fehler weiter.
+  Verspätete Übersichten für einen anderen Charakter/eine andere Persona dürfen den aktuellen Zustand nicht ersetzen.
 - Companion-Tools: nur ausdrücklich geprüfte interne Tools in `companion.rs` → `tool_allows_auto_approval`
   dürfen automatisch freigegeben werden. MCP-/unbekannte Tools, Screenshots, Zwischenablage und schreibende
   Dateiaktionen laufen über den Bestätigungsbanner; ausgeführt wird in `execute_internal_sync`.

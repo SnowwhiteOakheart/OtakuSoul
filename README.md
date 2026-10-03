@@ -59,6 +59,10 @@ OtakuSoul behandelt eine Figur nicht als austauschbaren Prompt. Jede Unterhaltun
 
 Ein integrierter Memory-Inspector macht diese Ebenen sichtbar und editierbar. Backups und Wiederherstellung geben dir Kontrolle über die Entwicklung deiner Figuren.
 
+Psychologie und Beziehung bearbeitest du als Entwurf mit getrennten Aktionen zum Speichern und Verwerfen.
+Entwürfe bleiben beim Reiterwechsel und Schließen des Inspectors erhalten und sind pro Charakter und Persona getrennt.
+Bei einem Schreibfehler bleiben deine Änderungen für einen erneuten Speicherversuch erhalten.
+
 Schlägt das manuelle Speichern einer Erinnerung oder eines Tagebucheintrags fehl, zeigt die App den Fehler an
 und behält deine Eingaben zum Wiederholen. Während des Speicherns sind die jeweiligen Formularfelder gesperrt.
 
