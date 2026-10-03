@@ -240,6 +240,108 @@ describe('CognitiveMemoryDrawer', () => {
     expect(useAppStore.getState().cognitiveOverview?.psychology).toEqual(updated);
   });
 
+  it('keeps a markdown draft and reports failure when reload fails', async () => {
+    const user = userEvent.setup();
+    render(<CognitiveMemoryDrawer isOpen onClose={() => {}} />);
+    await user.click(screen.getAllByRole('tab')[2]!);
+    await user.type(screen.getByRole('textbox'), ' edited');
+    vi.mocked(api.getUserMemoryMarkdown).mockRejectedValueOnce(new Error('Read failed'));
+    await user.click(screen.getByRole('button', { name: translate('memory.mdReload') }));
+    await waitFor(() => expect(toast.error).toHaveBeenCalledWith('Loading failed: Read failed'));
+    expect(screen.getByRole('textbox')).toHaveValue('# Ayu edited');
+    expect(useAppStore.getState().characterMarkdown).toBe('# Ayu');
+    expect(toast.success).not.toHaveBeenCalled();
+    await user.click(screen.getByRole('button', { name: translate('memory.mdReload') }));
+    await waitFor(() => expect(toast.success).toHaveBeenCalledWith(translate('memory.mdReloadedStatus')));
+    expect(screen.getByRole('textbox')).toHaveValue('# Ayu');
+  });
+
+  it('locks markdown input and file switching during save, then preserves a rejected draft', async () => {
+    const user = userEvent.setup();
+    let reject!: (error: Error) => void;
+    vi.mocked(api.saveCharacterMemoryMarkdown).mockImplementation(() => new Promise((_resolve, fail) => { reject = fail; }));
+    render(<CognitiveMemoryDrawer isOpen onClose={() => {}} />);
+    await user.click(screen.getAllByRole('tab')[2]!);
+    await user.type(screen.getByRole('textbox'), ' edited');
+    await user.click(screen.getByRole('button', { name: translate('memory.mdSync') }));
+    expect(screen.getByRole('textbox')).toBeDisabled();
+    expect(screen.getByRole('button', { name: /USER.md/ })).toBeDisabled();
+    expect(screen.getByRole('button', { name: translate('memory.mdReload') })).toBeDisabled();
+    await act(async () => { reject(new Error('Disk full')); });
+    expect(screen.getByRole('textbox')).toHaveValue('# Ayu edited');
+    expect(screen.getByRole('textbox')).toBeEnabled();
+    expect(toast.success).not.toHaveBeenCalled();
+    vi.mocked(api.saveCharacterMemoryMarkdown).mockResolvedValue(undefined);
+    await user.click(screen.getByRole('button', { name: translate('memory.mdSync') }));
+    await waitFor(() => expect(toast.success).toHaveBeenCalledWith(translate('memory.mdSyncedStatus')));
+    expect(api.saveCharacterMemoryMarkdown).toHaveBeenLastCalledWith('ayu', '# Ayu edited');
+  });
+
+  it('retains markdown drafts through tab switches and does not show them for another character', async () => {
+    const user = userEvent.setup();
+    render(<CognitiveMemoryDrawer isOpen onClose={() => {}} />);
+    await user.click(screen.getAllByRole('tab')[2]!);
+    await user.type(screen.getByRole('textbox'), ' edited');
+    await user.click(screen.getAllByRole('tab')[0]!);
+    await user.click(screen.getAllByRole('tab')[2]!);
+    expect(screen.getByRole('textbox')).toHaveValue('# Ayu edited');
+    vi.mocked(api.getCharacterMemoryMarkdown).mockResolvedValue('# Sora');
+    await act(async () => { useAppStore.setState({ activeCharacter: { id: 'sora', card: { data: { name: 'Sora' } } } as CharacterProfile }); });
+    expect(screen.getByRole('textbox')).toHaveValue('# Sora');
+  });
+
+  it('ignores a delayed markdown read after changing personas', async () => {
+    let finish!: (value: string) => void;
+    vi.mocked(api.getUserMemoryMarkdown).mockImplementation(() => new Promise((resolve) => { finish = resolve; }));
+    const fetching = useAppStore.getState().fetchMemoryMarkdown();
+    useAppStore.setState({ activePersona: { ...useAppStore.getState().activePersona, name: 'Other' }, characterMarkdown: '# Current', userMarkdown: '# Other' });
+    finish('# Old persona');
+    await fetching;
+    expect(useAppStore.getState().userMarkdown).toBe('# Other');
+    expect(useAppStore.getState().characterMarkdown).toBe('# Current');
+  });
+
+  it('does not apply a completed markdown save to another character', async () => {
+    let finish!: () => void;
+    vi.mocked(api.saveCharacterMemoryMarkdown).mockImplementation(() => new Promise((resolve) => { finish = resolve; }));
+    const saving = useAppStore.getState().saveCharacterMarkdown('# Edited Ayu');
+    useAppStore.setState({ activeCharacter: { id: 'sora' } as CharacterProfile, characterMarkdown: '# Sora' });
+    finish();
+    await saving;
+    expect(useAppStore.getState().characterMarkdown).toBe('# Sora');
+  });
+
+  it('retains both markdown files when closing and reopening', async () => {
+    const user = userEvent.setup();
+    const { rerender } = render(<CognitiveMemoryDrawer isOpen onClose={() => {}} />);
+    await user.click(screen.getAllByRole('tab')[2]!);
+    await user.type(screen.getByRole('textbox'), ' character draft');
+    await user.click(screen.getByRole('button', { name: /USER.md/ }));
+    await user.type(screen.getByRole('textbox'), ' persona draft');
+    rerender(<CognitiveMemoryDrawer isOpen={false} onClose={() => {}} />);
+    rerender(<CognitiveMemoryDrawer isOpen onClose={() => {}} />);
+    expect(screen.getByRole('textbox')).toHaveValue('# Ayu character draft');
+    await user.click(screen.getByRole('button', { name: /USER.md/ }));
+    expect(screen.getByRole('textbox')).toHaveValue('# Snow persona draft');
+  });
+
+  it('keeps a reopened markdown draft locked until its pending save fails', async () => {
+    const user = userEvent.setup();
+    let reject!: (error: Error) => void;
+    vi.mocked(api.saveCharacterMemoryMarkdown).mockImplementation(() => new Promise((_resolve, fail) => { reject = fail; }));
+    const { rerender } = render(<CognitiveMemoryDrawer isOpen onClose={() => {}} />);
+    await user.click(screen.getAllByRole('tab')[2]!);
+    await user.type(screen.getByRole('textbox'), ' draft');
+    await user.click(screen.getByRole('button', { name: translate('memory.mdSync') }));
+    rerender(<CognitiveMemoryDrawer isOpen={false} onClose={() => {}} />);
+    rerender(<CognitiveMemoryDrawer isOpen onClose={() => {}} />);
+    expect(screen.getByRole('textbox')).toBeDisabled();
+    await act(async () => { reject(new Error('Disk full')); });
+    expect(screen.getByRole('textbox')).toHaveValue('# Ayu draft');
+    expect(screen.getByRole('textbox')).toBeEnabled();
+    expect(api.saveCharacterMemoryMarkdown).toHaveBeenCalledOnce();
+  });
+
   it('renders nothing while closed', () => {
     const { container } = render(<CognitiveMemoryDrawer isOpen={false} onClose={() => {}} />);
     expect(container).toBeEmptyDOMElement();

@@ -678,6 +678,7 @@ export const ru: TranslationDictionary = {
   "memory.saveRelationship": "Сохранить отношения",
   "memory.psychSaved": "Психология сохранена.",
   "memory.relSaved": "Отношения сохранены.",
+  "memory.loadFailed": "Ошибка загрузки: {{error}}",
   "memory.saveFailed": "Не удалось сохранить: {{error}}",
   "memory.addKnowledge": "Добавить знание или заметку вручную",
   "memory.category": "Категория",

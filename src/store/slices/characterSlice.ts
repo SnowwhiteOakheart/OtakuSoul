@@ -45,7 +45,7 @@ export const createCharacterSlice: SliceCreator<CharacterSlice> = (set, get) => 
   },
 
   selectPersona: (persona) => {
-    set({ activePersona: persona, cognitiveOverview: null });
+    set({ activePersona: persona, cognitiveOverview: null, characterMarkdown: '', userMarkdown: '' });
     get().saveCurrentSettings();
   },
 
@@ -91,6 +91,8 @@ export const createCharacterSlice: SliceCreator<CharacterSlice> = (set, get) => 
     set({
       activeCharacter: character,
       cognitiveOverview: null,
+      characterMarkdown: '',
+      userMarkdown: '',
       streamingText: '',
       streamingThought: '',
     });

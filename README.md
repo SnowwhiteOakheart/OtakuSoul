@@ -62,6 +62,8 @@ Ein integrierter Memory-Inspector macht diese Ebenen sichtbar und editierbar. Ba
 Psychologie und Beziehung bearbeitest du als Entwurf mit getrennten Aktionen zum Speichern und Verwerfen.
 Entwürfe bleiben beim Reiterwechsel und Schließen des Inspectors erhalten und sind pro Charakter und Persona getrennt.
 Bei einem Schreibfehler bleiben deine Änderungen für einen erneuten Speicherversuch erhalten.
+Das gilt auch für MEMORY.md und USER.md im Markdown-Editor: Entwürfe bleiben beim Reiterwechsel und Schließen
+erhalten. Fehlgeschlagenes Nachladen ersetzt keine Eingaben; Speichern und Nachladen sperren vorübergehend die Bearbeitung.
 
 Schlägt das manuelle Speichern einer Erinnerung oder eines Tagebucheintrags fehl, zeigt die App den Fehler an
 und behält deine Eingaben zum Wiederholen. Während des Speicherns sind die jeweiligen Formularfelder gesperrt.

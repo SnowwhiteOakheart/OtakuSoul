@@ -69,6 +69,8 @@ Einstellungen: `components/settings/sections/*` (Server inkl. Laufzeiten/`mmproj
   passender System-CUDA (`ldconfig`), sonst Vulkan.
 - `cargo test`/`clippy` überschreiben `target/debug/otakusoul` mit einer Version ohne eingebettetes Frontend → E2E nutzt
   `target/e2e`.
+- Bei gesperrter Desktop-Sitzung können WebKit-Screenshots und Animationsabfragen hängen. E2E dann unter
+  einem separaten Xvfb-Display ausführen (`xvfb-run npm run e2e`); die Desktop-Sperre nicht verändern.
 - Neue Rust-Felder in Typen, die auch handgeschrieben in `src/types/index.ts` stehen: `src/types/wireCheck.ts` meldet
   Abweichungen; dort und in `index.ts` nachziehen.
 - Tauri-Listener mit `isSubscribed`-Guard (StrictMode), sonst doppelte Tokens.
@@ -105,6 +107,9 @@ Einstellungen: `components/settings/sections/*` (Server inkl. Laufzeiten/`mmproj
   und Schließen überleben. Erst explizites Speichern schreibt; währenddessen bleiben die Felder auch nach
   Wiederöffnen gesperrt. `updatePsychology`, `updateRelationship` und `triggerEmotionalDecay` geben Fehler weiter.
   Verspätete Übersichten für einen anderen Charakter/eine andere Persona dürfen den aktuellen Zustand nicht ersetzen.
+  Auch Markdown-Entwürfe und laufende Vorgänge liegen im Drawer. `fetchMemoryMarkdown` wirft bei Lesefehlern;
+  nur erfolgreiches manuelles Nachladen darf einen Entwurf verwerfen. Hintergrund-Nachladen nach einer
+  bereits erfolgreichen Reflexion/Wiederherstellung/Import protokolliert Lesefehler, ohne den Schreibvorgang als fehlgeschlagen zu melden.
 - Companion-Tools: nur ausdrücklich geprüfte interne Tools in `companion.rs` → `tool_allows_auto_approval`
   dürfen automatisch freigegeben werden. MCP-/unbekannte Tools, Screenshots, Zwischenablage und schreibende
   Dateiaktionen laufen über den Bestätigungsbanner; ausgeführt wird in `execute_internal_sync`.

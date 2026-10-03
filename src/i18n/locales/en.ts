@@ -678,6 +678,7 @@ export const en: TranslationDictionary = {
   "memory.saveRelationship": "Save relationship",
   "memory.psychSaved": "Psychology saved.",
   "memory.relSaved": "Relationship saved.",
+  "memory.loadFailed": "Loading failed: {{error}}",
   "memory.saveFailed": "Saving failed: {{error}}",
   "memory.addKnowledge": "Add knowledge / a note manually",
   "memory.category": "Category",

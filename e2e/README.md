@@ -13,6 +13,7 @@ Requirements (Linux; Windows works with `msedgedriver`, macOS has no WebDriver f
 - `cargo install tauri-driver --locked`
 - `WebKitWebDriver`: Arch `webkitgtk-6.0`, Debian/Ubuntu `webkit2gtk-driver`, Fedora `webkitgtk6.0`
 - A display; headless CI runs it under `xvfb-run npm run e2e`.
+- Bei gesperrtem Desktop ebenfalls Xvfb verwenden: WebKit-Bildaufnahmen und Animationsabfragen können sonst hängen.
 - `sqlite3` CLI for the memory write-error test (temporary triggers in the throwaway profile only).
 
 `stage-context.mjs` prüft zusätzlich lange Stage-Verläufe: Kontextbudget, getrennte Zusammenfassungen für
@@ -33,3 +34,7 @@ Screenshot 29 zeigt den Speicherfehler mit erhaltenem Erinnerungsentwurf.
 `memory-drafts.mjs` prüft Psychologie- und Beziehungsentwürfe: Tastatureingaben schreiben nicht in die Datenbank,
 Reiterwechsel und Schließen erhalten Änderungen. Echte SQLite-Schreibfehler lassen die Entwürfe stehen;
 Wiederholen speichert und Verwerfen stellt den gespeicherten Wert wieder her. Screenshots 30–31 zeigen die Fehlerzustände.
+
+`markdown-errors.mjs` erzwingt einen Lesefehler durch einen temporär ungültigen Datentyp und einen Schreibfehler
+durch einen SQLite-Trigger ausschließlich im Wegwerfprofil. Der Entwurf bleibt erhalten, Erfolgsanzeigen bleiben aus;
+nach Wiederholung werden die Werte tatsächlich gespeichert und wieder geladen. Screenshot 32 zeigt den Lesefehler mit erhaltenem Entwurf.

@@ -20,7 +20,11 @@ const tab = async (name) => {
 const replaceText = async (input, value) => {
   // WebKit's clearElement does not emit React's change event for controlled fields.
   await input.click();
-  await browser.execute((element) => element.select(), await input);
+  await browser.execute((selector) => {
+    const field = document.querySelector(selector);
+    field.focus();
+    field.select();
+  }, await input.selector);
   await browser.keys('Backspace');
   await input.addValue(value);
 };

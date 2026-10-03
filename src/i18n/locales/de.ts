@@ -680,6 +680,7 @@ export const de = {
   "memory.saveRelationship": "Beziehung speichern",
   "memory.psychSaved": "Psychologie gespeichert.",
   "memory.relSaved": "Beziehung gespeichert.",
+  "memory.loadFailed": "Laden fehlgeschlagen: {{error}}",
   "memory.saveFailed": "Speichern fehlgeschlagen: {{error}}",
   "memory.addKnowledge": "Neues Wissen / Notiz manuell hinzufügen",
   "memory.category": "Kategorie",

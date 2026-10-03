@@ -25,6 +25,7 @@ Arbeitsverzeichnis und Timeout allein gelten nicht als Betriebssystem-Sandbox.
 - [x] Manuelle Erinnerungen und Tagebucheinträge: Schreibfehler weitergeben, Eingaben erhalten und Wiederholen ermöglichen.
 - [x] Tagebuchgenerierung und Memory-Backup-Erstellung: Fehler sichtbar anzeigen.
 - [x] Psychologie und Beziehung als explizit speicherbare Entwürfe bearbeiten; Schreibfehler erhalten Änderungen.
+- [x] Markdown-Editor: Lade- und Schreibfehler erhalten Entwürfe; laufende Vorgänge sperren die Bearbeitung.
 - [ ] Speicherfehler vom Store an die Oberfläche weitergeben und verständlich anzeigen.
 - [ ] Erfolgsmeldungen ausschließlich nach erfolgreichem Speichern anzeigen.
 - [ ] Eingaben bei Fehlern erhalten und Wiederholen anbieten.
@@ -171,3 +172,31 @@ Der aktuelle Build wurde mit `npm run e2e` erstellt; der abschließende Gesamtla
 bestand alle elf Szenarien. WebKit-spezifische Textauswahl und die Auswahl des sichtbaren Verwerfen-Knopfs
 wurden im neuen Test korrigiert. Screenshots 30–31 wurden visuell geprüft: Entwurf, Speicheraktionen
 und Fehlerhinweis sind vollständig sichtbar.
+
+### Viertes Arbeitspaket – 03.10.2026
+
+`fetchMemoryMarkdown` gibt Lesefehler weiter und ersetzt den Zustand nicht durch leere Inhalte.
+Der manuelle Nachladevorgang verwirft Entwürfe und meldet Erfolg ausschließlich nach erfolgreichem Lesen beider Dateien.
+Lade-/Schreibfehler werden angezeigt; Wiederholen bleibt möglich. Dateiauswahl, Text und Aktionen sind währenddessen gesperrt.
+Der kurzlebige, dateiübergreifende „Gespeichert!“-Knopf wurde durch die Erfolgsmeldung nach dem jeweiligen Schreibvorgang ersetzt.
+
+Markdown-Entwürfe und laufende Vorgänge liegen wie die anderen Editoren im Drawer und überleben Reiterwechsel und Schließen.
+Charakter und Persona erhalten getrennte Entwürfe; verspätete Lese-/Schreibergebnisse überschreiben keinen anderen Kontext.
+Beim Kontextwechsel werden die gespeicherten Markdown-Texte geleert, bis die richtigen Inhalte geladen wurden.
+Hintergrund-Nachladefehler nach bereits abgeschlossener Reflexion, Wiederherstellung oder Import bleiben protokolliert;
+sie ändern das Ergebnis des bereits erfolgreichen Hauptvorgangs nicht nachträglich.
+
+Sieben zusätzliche Frontend-Regressionstests prüfen Fehler/Wiederholen, Sperren, Reiterwechsel, Schließen und verspätete Ergebnisse.
+Der zusätzliche E2E-Test prüft echte SQLite-Lese- und Schreibfehler, erhaltene Texte, fehlende Erfolgsmeldungen
+und erneutes Speichern/Nachladen im Wegwerfprofil.
+
+Offen bleiben weitere Chat-Editoren und einheitlich sichtbare Fehler beim Nachladen der übrigen Memory-Daten.
+Sämtliche Entwürfe bleiben nur während der gemounteten Chatansicht erhalten; eine dauerhafte Entwurfssicherung ist weiterhin offen.
+
+Der abschließende aktuelle Build bestand `npm run e2e` auf einem separaten Xvfb-Display mit allen zwölf Szenarien.
+Die gesperrte Desktop-Sitzung hatte zuvor WebKit-Screenshots und Animationsabfragen blockiert;
+Xvfb wurde ausschließlich als temporäres Testwerkzeug verwendet. Ein veralteter WebDriver-Elementverweis
+im Entwurfstest wurde durch Auswahl des aktuellen Felds behoben.
+Screenshot `e2e/screenshots/32-markdown-ladefehler.png` wurde visuell geprüft: Der Entwurf und die tatsächliche
+Ladefehlerursache sind sichtbar. Ein dabei gefundener Übersetzungs-Platzhalterfehler wurde in allen drei Sprachen
+korrigiert und durch Prüfung der konkreten Fehlermeldung abgesichert.

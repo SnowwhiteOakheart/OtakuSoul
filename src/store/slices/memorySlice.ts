@@ -199,7 +199,7 @@ export const createMemorySlice: SliceCreator<MemorySlice> = (set, get) => ({
       });
 
       await get().fetchCognitiveOverview();
-      await get().fetchMemoryMarkdown();
+      await get().fetchMemoryMarkdown().catch(() => {});
       await get().fetchMemoryBackups();
       return res;
     } catch (e) {
@@ -212,26 +212,31 @@ export const createMemorySlice: SliceCreator<MemorySlice> = (set, get) => ({
   fetchMemoryMarkdown: async () => {
     const cid = get().activeCharacter?.id;
     const userName = get().activePersona.name;
-    if (!cid) return { charMd: '', userMd: '' };
+    if (!cid) throw new Error(translate('int.noCharacter'));
 
     try {
-      const charMd = await api.getCharacterMemoryMarkdown(cid);
-      const userMd = await api.getUserMemoryMarkdown(cid, userName);
-      set({ characterMarkdown: charMd, userMarkdown: userMd });
+      const [charMd, userMd] = await Promise.all([
+        api.getCharacterMemoryMarkdown(cid), api.getUserMemoryMarkdown(cid, userName),
+      ]);
+      if (get().activeCharacter?.id === cid && get().activePersona.name === userName) {
+        set({ characterMarkdown: charMd, userMarkdown: userMd });
+      }
       return { charMd, userMd };
     } catch (e) {
       console.error('Failed to fetch memory markdown:', e);
-      return { charMd: '', userMd: '' };
+      throw e;
     }
   },
 
   saveCharacterMarkdown: async (markdown: string) => {
     const cid = get().activeCharacter?.id;
-    if (!cid) return;
+    if (!cid) throw new Error(translate('int.noCharacter'));
     try {
       await api.saveCharacterMemoryMarkdown(cid, markdown);
-      set({ characterMarkdown: markdown });
-      await get().fetchCognitiveOverview();
+      if (get().activeCharacter?.id === cid) {
+        set({ characterMarkdown: markdown });
+        await get().fetchCognitiveOverview();
+      }
     } catch (e) {
       console.error('Failed to save character markdown:', e);
       throw e;
@@ -241,11 +246,13 @@ export const createMemorySlice: SliceCreator<MemorySlice> = (set, get) => ({
   saveUserMarkdown: async (markdown: string) => {
     const cid = get().activeCharacter?.id;
     const userName = get().activePersona.name;
-    if (!cid) return;
+    if (!cid) throw new Error(translate('int.noCharacter'));
     try {
       await api.saveUserMemoryMarkdown(cid, userName, markdown);
-      set({ userMarkdown: markdown });
-      await get().fetchCognitiveOverview();
+      if (get().activeCharacter?.id === cid && get().activePersona.name === userName) {
+        set({ userMarkdown: markdown });
+        await get().fetchCognitiveOverview();
+      }
     } catch (e) {
       console.error('Failed to save user markdown:', e);
       throw e;
@@ -320,7 +327,7 @@ export const createMemorySlice: SliceCreator<MemorySlice> = (set, get) => ({
     try {
       await api.restoreMemoryBackup(backupFilePath);
       await get().fetchCognitiveOverview();
-      await get().fetchMemoryMarkdown();
+      await get().fetchMemoryMarkdown().catch(() => {});
       await get().fetchMemoryBackups();
     } catch (e) {
       console.error('Failed to restore memory backup:', e);
@@ -335,7 +342,7 @@ export const createMemorySlice: SliceCreator<MemorySlice> = (set, get) => ({
     try {
       const count = await api.importSowMemoryFiles(cid, folderPath, userName);
       await get().fetchCognitiveOverview();
-      await get().fetchMemoryMarkdown();
+      await get().fetchMemoryMarkdown().catch(() => {});
       await get().fetchMemoryBackups();
       return count;
     } catch (e) {

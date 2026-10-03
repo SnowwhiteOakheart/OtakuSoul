@@ -4,6 +4,7 @@ import type { PsychologyState, RelationshipState } from '../../types';
 import { useStoreFields } from '../../store/useAppStore';
 import { Brain, X, Heart, RefreshCw, BookHeart, Clock, Sparkles, Bookmark, FileCode, RotateCcw, Sliders } from 'lucide-react';
 import { translate, useTranslation } from '../../i18n';
+import { errorMessage } from '../../utils/errors';
 import { toast } from '../ui/feedback';
 import { ModalOverlay } from '../ui/ModalOverlay';
 import { PsychologyTab } from './memory/PsychologyTab';
@@ -19,6 +20,8 @@ interface MemoryEditorDraft {
   relationship?: RelationshipState;
   psychSaving?: boolean;
   relSaving?: boolean;
+  markdown?: Partial<Record<'character' | 'user', string>>;
+  markdownPending?: 'save' | 'reload' | null;
 }
 
 interface CognitiveMemoryDrawerProps {
@@ -57,7 +60,7 @@ export const CognitiveMemoryDrawer: React.FC<CognitiveMemoryDrawerProps> = ({
   useEffect(() => {
     if (isOpen && activeCharacter) {
       fetchCognitiveOverview();
-      fetchMemoryMarkdown();
+      fetchMemoryMarkdown().catch((e) => toast.error(translate('memory.loadFailed', { error: errorMessage(e) })));
       fetchMemoryBackups();
     }
   }, [isOpen, activeCharacter, activePersona.name, fetchCognitiveOverview, fetchMemoryMarkdown, fetchMemoryBackups]);
@@ -284,7 +287,12 @@ export const CognitiveMemoryDrawer: React.FC<CognitiveMemoryDrawerProps> = ({
               isDirty={!!draft?.relationship} isSaving={!!draft?.relSaving} onSavingChange={(relSaving) => changeDraft({ relSaving })} onChange={(relationship) => changeDraft({ relationship })}
               onDiscard={() => changeDraft({ relationship: undefined })} />
           </div>
-          {activeTab === 'markdown' && <MarkdownTab />}
+          <div hidden={activeTab !== 'markdown'}>
+            <MarkdownTab key={draftKey} drafts={draft?.markdown ?? {}}
+              pending={draft?.markdownPending ?? null}
+              onDraftsChange={(markdown) => changeDraft({ markdown })}
+              onPendingChange={(markdownPending) => changeDraft({ markdownPending })} />
+          </div>
           {activeTab === 'memories' && <MemoriesTab />}
           {activeTab === 'diary' && <DiaryTab />}
           {activeTab === 'healing' && <HealingTab />}

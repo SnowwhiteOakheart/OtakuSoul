@@ -5,7 +5,14 @@ import { toast } from '../../ui/feedback';
 import { errorMessage } from '../../../utils/errors';
 import { RefreshCw, Save } from 'lucide-react';
 
-export const MarkdownTab = () => {
+interface MarkdownTabProps {
+  drafts: Partial<Record<'character' | 'user', string>>;
+  pending: 'save' | 'reload' | null;
+  onDraftsChange: (drafts: Partial<Record<'character' | 'user', string>>) => void;
+  onPendingChange: (pending: 'save' | 'reload' | null) => void;
+}
+
+export const MarkdownTab = ({ drafts, pending, onDraftsChange, onPendingChange }: MarkdownTabProps) => {
   const { t } = useTranslation();
   const {
     activeCharacter, cognitiveOverview, characterMarkdown, userMarkdown, fetchMemoryMarkdown,
@@ -18,14 +25,14 @@ export const MarkdownTab = () => {
   const charName = activeCharacter?.card.data.name ?? '';
   const rel = cognitiveOverview?.relationship;
   const [mdMode, setMdMode] = useState<'character' | 'user'>('character');
-  const [mdSaveSuccess, setMdSaveSuccess] = useState(false);
   // Unsaved edits per file; without a draft the editor shows the stored markdown.
-  const [drafts, setDrafts] = useState<Partial<Record<'character' | 'user', string>>>({});
   const localMdContent = drafts[mdMode] ?? (mdMode === 'character' ? characterMarkdown : userMarkdown);
-  const setLocalMdContent = (value: string) => setDrafts((prev) => ({ ...prev, [mdMode]: value }));
-  const discardDraft = () => setDrafts((prev) => ({ ...prev, [mdMode]: undefined }));
+  const setLocalMdContent = (value: string) => onDraftsChange({ ...drafts, [mdMode]: value });
+  const discardDraft = () => onDraftsChange({ ...drafts, [mdMode]: undefined });
 
   const handleSaveMarkdown = async () => {
+    if (pending) return;
+    onPendingChange('save');
     try {
       if (mdMode === 'character') {
         await saveCharacterMarkdown(localMdContent);
@@ -33,25 +40,34 @@ export const MarkdownTab = () => {
         await saveUserMarkdown(localMdContent);
       }
       discardDraft();
-      setMdSaveSuccess(true);
-      setTimeout(() => setMdSaveSuccess(false), 3000);
       toast.success(translate('memory.mdSyncedStatus'));
     } catch (e) {
       toast.error(translate('memory.saveFailed', { error: errorMessage(e) }));
+    } finally {
+      onPendingChange(null);
     }
   };
 
   const handleReloadMarkdown = async () => {
-    await fetchMemoryMarkdown();
-    discardDraft();
-    toast.success(translate('memory.mdReloadedStatus'));
+    if (pending) return;
+    onPendingChange('reload');
+    try {
+      await fetchMemoryMarkdown();
+      discardDraft();
+      toast.success(translate('memory.mdReloadedStatus'));
+    } catch (e) {
+      toast.error(translate('memory.loadFailed', { error: errorMessage(e) }));
+    } finally {
+      onPendingChange(null);
+    }
   };
 
   return (
-      <div className="space-y-3 flex flex-col h-full">
+      <div className="space-y-3 flex flex-col">
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-2">
             <button
+              disabled={pending !== null}
               onClick={() => setMdMode('character')}
               className={`px-3 py-1.5 rounded-lg text-xs font-medium border transition ${
                 mdMode === 'character'
@@ -62,6 +78,7 @@ export const MarkdownTab = () => {
               MEMORY.md ({charName})
             </button>
             <button
+              disabled={pending !== null}
               onClick={() => setMdMode('user')}
               className={`px-3 py-1.5 rounded-lg text-xs font-medium border transition ${
                 mdMode === 'user'
@@ -75,23 +92,21 @@ export const MarkdownTab = () => {
 
           <div className="flex items-center gap-2">
             <button
+              disabled={pending !== null}
               onClick={handleReloadMarkdown}
               className="flex items-center gap-1 text-xs px-2.5 py-1.5 rounded bg-slate-800 text-slate-300 hover:bg-slate-700 transition"
               title={t('memory.mdReloadHint')}
             >
               <RefreshCw className="w-3.5 h-3.5" />
-              {t('memory.mdReload')}
+              {t(pending === 'reload' ? 'common.loading' : 'memory.mdReload')}
             </button>
             <button
+              disabled={pending !== null}
               onClick={handleSaveMarkdown}
-              className={`flex items-center gap-1 text-xs px-3 py-1.5 rounded-lg font-semibold transition ${
-                mdSaveSuccess
-                  ? 'bg-emerald-600 text-white'
-                  : 'bg-accent-600 hover:bg-accent-500 text-white'
-              }`}
+              className="flex items-center gap-1 text-xs px-3 py-1.5 rounded-lg font-semibold transition bg-accent-600 hover:bg-accent-500 text-white disabled:opacity-40"
             >
               <Save className="w-3.5 h-3.5" />
-              {mdSaveSuccess ? t('memory.mdSaved') : t('memory.mdSync')}
+              {t(pending === 'save' ? 'common.saving' : 'memory.mdSync')}
             </button>
           </div>
         </div>
@@ -101,6 +116,7 @@ export const MarkdownTab = () => {
         </div>
 
         <textarea
+          disabled={pending !== null}
           value={localMdContent}
           onChange={(e) => setLocalMdContent(e.target.value)}
           rows={18}
