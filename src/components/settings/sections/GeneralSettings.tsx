@@ -40,6 +40,31 @@ export const GeneralSettings = () => {
   );
 
   const [isImportingSow, setIsImportingSow] = useState(false);
+  const [isMigrating, setIsMigrating] = useState(false);
+
+  const handleMigration = async () => {
+    try {
+      const selected = await open({
+        directory: true,
+        multiple: false,
+        title: 'Soul of Waifu Installationsverzeichnis auswählen',
+      });
+      if (!selected || Array.isArray(selected)) return;
+      setIsMigrating(true);
+      const res = await api.runLegacyMigration(selected);
+      toast.success(res);
+      // Wait for backend to copy files, then refresh the UI lists
+      setTimeout(() => {
+        // Just trigger a window reload to ensure all stores load the new data
+        window.location.reload();
+      }, 1500);
+    } catch (e) {
+      console.error('Failed to migrate data:', e);
+      toast.error(errorMessage(e));
+    } finally {
+      setIsMigrating(false);
+    }
+  };
 
   const handleBrowseVrm = async () => {
     try {
@@ -288,6 +313,16 @@ export const GeneralSettings = () => {
           >
             <Sparkles className="w-4 h-4 text-accent-400" />
             <span>{t('header.update')}</span>
+          </button>
+
+          <button
+            type="button"
+            onClick={handleMigration}
+            disabled={isMigrating}
+            className="flex items-center gap-2 px-3.5 py-2 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-200 text-xs font-medium transition-colors border border-slate-700/60 disabled:opacity-50"
+          >
+            <FolderOpen className="w-4 h-4 text-accent-400" />
+            <span>{isMigrating ? 'Importiere...' : 'Migration (Soul of Waifu)'}</span>
           </button>
         </div>
 

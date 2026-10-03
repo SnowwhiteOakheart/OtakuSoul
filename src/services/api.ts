@@ -687,6 +687,10 @@ export const api = {
     await invoke('open_avatar_folder');
   },
 
+  runLegacyMigration: async (sourcePath: string): Promise<string> => {
+    return await invoke<string>('run_legacy_migration', { sourcePath });
+  },
+
   scanCharacters: async (): Promise<CharacterProfile[]> => {
     return await invoke<CharacterProfile[]>('scan_characters');
   },

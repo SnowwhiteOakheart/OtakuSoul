@@ -372,6 +372,7 @@ pub fn run() {
             commands::app::clear_app_logs,
             commands::app::export_app_logs,
             commands::app::check_for_updates,
+            commands::migration::run_legacy_migration,
         ])
         .run(tauri::generate_context!())
         .expect("error while running OtakuSoul application");

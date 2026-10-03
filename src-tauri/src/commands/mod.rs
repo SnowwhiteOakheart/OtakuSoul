@@ -10,5 +10,6 @@ pub mod hub;
 pub mod llm;
 pub mod lorebook;
 pub mod memory;
+pub mod migration;
 pub mod stage;
 pub mod voice;
