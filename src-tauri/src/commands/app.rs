@@ -40,6 +40,11 @@ pub fn scan_vision_projectors() -> Vec<crate::modules::paths::ScannedModel> {
 }
 
 #[tauri::command]
+pub fn scan_loras() -> Vec<crate::modules::paths::ScannedModel> {
+    crate::modules::paths::scan_loras()
+}
+
+#[tauri::command]
 pub fn scan_vrm_models() -> Vec<crate::modules::paths::ScannedVrm> {
     crate::modules::paths::scan_available_vrm_models()
 }

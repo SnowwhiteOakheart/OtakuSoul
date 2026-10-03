@@ -692,7 +692,7 @@ export interface ScannedModel {
   name: string;
   path: string;
   size_mb: number;
-  runtime: 'standard' | 'prism';
+  runtime: 'standard' | 'prism' | 'sd-server' | string;
   recommended_context: number;
   compatibility_note: string;
 }

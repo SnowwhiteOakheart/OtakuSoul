@@ -16,7 +16,7 @@ import {
   EyeOff,
   Wand2,
 } from 'lucide-react';
-import type { ImageGenConfig, LocalImageStatus } from '../../../types';
+import type { ImageGenConfig, LocalImageStatus, ScannedModel } from '../../../types';
 import { LocalImageSettings } from './LocalImageSettings';
 
 /** Default endpoint per provider; `local` needs none. */
@@ -60,6 +60,12 @@ export const ImageGenTab: React.FC = () => {
   const [negativeDraft, setTestNegative] = useState<string | null>(null);
   const testNegative = negativeDraft ?? (imageGenConfig?.negative_prompt || DEFAULT_IMG_CONFIG.negative_prompt);
   const [localStatus, setLocalStatus] = useState<LocalImageStatus | null>(null);
+  const [loras, setLoras] = useState<ScannedModel[]>([]);
+
+  useEffect(() => {
+    api.scanLoras().then(setLoras).catch(() => {});
+  }, []);
+
   const provider = localImgConfig.provider.toLowerCase();
   const isLocal = provider === 'local';
 
@@ -147,6 +153,20 @@ export const ImageGenTab: React.FC = () => {
               <Save className="w-3.5 h-3.5" />
               <span>{t('int.save')}</span>
             </button>
+          </div>
+
+
+          <div>
+            <label className="block text-xs font-semibold text-slate-300 mb-1">
+              Globaler Stil / Prefix (wird an jeden Prompt angehängt)
+            </label>
+            <textarea
+              rows={2}
+              value={localImgConfig.positive_prompt_prefix}
+              onChange={(e) => setLocalImgConfig({ ...localImgConfig, positive_prompt_prefix: e.target.value })}
+              placeholder="masterpiece, best quality..."
+              className="w-full bg-app border border-slate-700 rounded-xl p-3 text-xs text-slate-100 focus:outline-hidden focus:border-accent-500 resize-none font-mono"
+            />
           </div>
 
           <div className="grid grid-cols-2 gap-3">
@@ -342,6 +362,25 @@ export const ImageGenTab: React.FC = () => {
               className="w-full bg-app border border-slate-700 rounded-xl p-2.5 text-xs text-slate-300 focus:outline-hidden focus:border-accent-500 resize-none font-mono"
             />
           </div>
+
+          {loras.length > 0 && (
+            <div className="pt-2 border-t border-slate-800">
+              <label className="block text-xs font-semibold text-slate-300 mb-2">
+                LoRAs (Klicken zum Einfügen)
+              </label>
+              <div className="flex flex-wrap gap-2">
+                {loras.map((lora) => (
+                  <button
+                    key={lora.path}
+                    onClick={() => setLocalImgConfig({ ...localImgConfig, positive_prompt_prefix: localImgConfig.positive_prompt_prefix ? `${localImgConfig.positive_prompt_prefix}, <lora:${lora.name}:1.0>` : `<lora:${lora.name}:1.0>` })}
+                    className="px-2.5 py-1 rounded-lg bg-indigo-500/10 hover:bg-indigo-500/20 border border-indigo-500/30 text-indigo-300 text-xs transition"
+                  >
+                    {lora.name}
+                  </button>
+                ))}
+              </div>
+            </div>
+          )}
 
           <button
             onClick={handleGenerateImage}

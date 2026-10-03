@@ -3,7 +3,6 @@ import { render, screen, fireEvent } from '@testing-library/react';
 import { describe, it, expect, vi } from 'vitest';
 import { CharacterTranslationsTab } from '../components/characters/CharacterTranslationsTab';
 import { useAppStore } from '../store/useAppStore';
-import React from 'react';
 
 describe('CharacterTranslationsTab', () => {
   it('renders and adds a new language', () => {
@@ -55,7 +54,7 @@ describe('CharacterTranslationsTab', () => {
     const descField = textboxes[3];
     expect(descField).toBeInTheDocument();
 
-    fireEvent.change(descField, { target: { value: 'English description' } });
+    fireEvent.change(descField!, { target: { value: 'English description' } });
     expect(setTranslations).toHaveBeenCalledWith({
       en: { description: 'English description' }
     });

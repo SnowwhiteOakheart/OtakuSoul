@@ -108,8 +108,8 @@ pub fn run() {
 
             #[cfg(desktop)]
             {
-                use tauri::tray::{MouseButton, MouseButtonState, TrayIconBuilder, TrayIconEvent};
                 use tauri::menu::{Menu, MenuItem};
+                use tauri::tray::{MouseButton, MouseButtonState, TrayIconBuilder, TrayIconEvent};
 
                 if let Some(icon) = app.default_window_icon().cloned() {
                     let show_i = MenuItem::with_id(app, "show", "Anzeigen", true, None::<&str>)?;
@@ -261,6 +261,7 @@ pub fn run() {
             commands::app::open_avatar_folder,
             commands::characters::scan_characters,
             commands::app::scan_models,
+            commands::app::scan_loras,
             commands::app::scan_vision_projectors,
             commands::app::scan_vrm_models,
             commands::app::import_vrm_model,

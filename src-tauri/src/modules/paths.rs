@@ -24,6 +24,7 @@ pub struct AppPaths {
     pub bundled_models_dir: String,
     pub bundled_vrm_dir: String,
     pub bundled_bin_dir: String,
+    pub loras_dir: String,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize, TS)]
@@ -75,6 +76,7 @@ pub fn resolve_app_paths() -> AppPaths {
     let lorebooks_dir = data_dir.join("lorebooks");
     let personas_dir = data_dir.join("personas");
     let scenes_dir = data_dir.join("scenes");
+    let loras_dir = data_dir.join("loras");
     let trash_dir = data_dir.join(".trash");
 
     // Ensure user directories exist
@@ -84,6 +86,7 @@ pub fn resolve_app_paths() -> AppPaths {
     let _ = fs::create_dir_all(&lorebooks_dir);
     let _ = fs::create_dir_all(&personas_dir);
     let _ = fs::create_dir_all(&scenes_dir);
+    let _ = fs::create_dir_all(&loras_dir);
     let _ = fs::create_dir_all(&trash_dir);
 
     let roots = bundle_roots();
@@ -104,6 +107,7 @@ pub fn resolve_app_paths() -> AppPaths {
         bundled_models_dir: bundled_models.to_string_lossy().to_string(),
         bundled_vrm_dir: bundled_vrm.to_string_lossy().to_string(),
         bundled_bin_dir: bundled_bin.to_string_lossy().to_string(),
+        loras_dir: loras_dir.to_string_lossy().to_string(),
     }
 }
 
@@ -400,6 +404,45 @@ pub fn scan_available_models() -> Vec<ScannedModel> {
 }
 
 /// Vision projectors (`mmproj-*.gguf`) that let a chat model see images.
+
+pub fn scan_loras() -> Vec<ScannedModel> {
+    let paths = resolve_app_paths();
+    let mut loras = Vec::new();
+    let lora_dir = PathBuf::from(&paths.loras_dir);
+    if lora_dir.exists() && lora_dir.is_dir() {
+        if let Ok(entries) = fs::read_dir(lora_dir) {
+            for entry in entries.flatten() {
+                let path = entry.path();
+                if path.is_file() {
+                    let ext = path
+                        .extension()
+                        .and_then(|e| e.to_str())
+                        .unwrap_or("")
+                        .to_lowercase();
+                    if ext == "safetensors" || ext == "gguf" || ext == "pt" || ext == "bin" {
+                        let name = path
+                            .file_stem()
+                            .and_then(|n| n.to_str())
+                            .unwrap_or("")
+                            .to_string();
+                        let size = entry.metadata().map(|m| m.len()).unwrap_or(0);
+                        loras.push(ScannedModel {
+                            name,
+                            path: path.to_string_lossy().to_string(),
+                            size_mb: size / (1024 * 1024),
+                            runtime: "sd-server".to_string(),
+                            recommended_context: 0,
+                            compatibility_note: String::new(),
+                        });
+                    }
+                }
+            }
+        }
+    }
+    loras.sort_by(|a, b| a.name.to_lowercase().cmp(&b.name.to_lowercase()));
+    loras
+}
+
 pub fn scan_vision_projectors() -> Vec<ScannedModel> {
     scan_gguf(true)
 }

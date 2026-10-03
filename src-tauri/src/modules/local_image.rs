@@ -776,7 +776,10 @@ impl LocalImageEngine {
             tracing::info!("sd-server: --backend {backend}");
             cmd.arg("--backend").arg(backend);
         }
+        let paths = crate::modules::paths::resolve_app_paths();
         cmd.args(args)
+            .arg("--lora-model-dir")
+            .arg(&paths.loras_dir)
             .arg("--listen-ip")
             .arg("127.0.0.1")
             .arg("--listen-port")

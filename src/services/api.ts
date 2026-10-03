@@ -699,6 +699,10 @@ export const api = {
     return await invoke<ScannedModel[]>('scan_models');
   },
 
+  scanLoras: async (): Promise<ScannedModel[]> => {
+    return await invoke<ScannedModel[]>('scan_loras');
+  },
+
   /** `mmproj-*.gguf` files that let a local model see images. */
   scanVisionProjectors: async (): Promise<ScannedModel[]> => {
     return await invoke<ScannedModel[]>('scan_vision_projectors');

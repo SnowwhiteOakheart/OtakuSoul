@@ -14,7 +14,7 @@ import { open } from '@tauri-apps/plugin-dialog';
 
 describe('GeneralSettings', () => {
   beforeEach(() => {
-    useAppStore.setState({ appLanguage: 'de', scannedVrms: [], scannedLive2ds: [] }, true);
+    useAppStore.setState({ appLanguage: 'de', scannedVrms: [], scannedLive2ds: [] });
     vi.clearAllMocks();
   });
 
