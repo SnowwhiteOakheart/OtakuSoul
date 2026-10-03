@@ -91,6 +91,11 @@ pub fn run() {
                 modules::paths::set_resource_dir(resource_dir);
             }
             allow_app_asset_dirs(app);
+            if let Some(window) = app.get_webview_window("main") {
+                use tauri_plugin_window_state::WindowExt;
+                let _ = window.restore_state(tauri_plugin_window_state::StateFlags::all());
+                let _ = window.show();
+            }
             Ok(())
         })
         .invoke_handler(tauri::generate_handler![
