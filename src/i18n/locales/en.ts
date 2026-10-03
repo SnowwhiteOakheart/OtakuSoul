@@ -333,6 +333,7 @@ export const en: TranslationDictionary = {
   "chat.swipeCounter": "Variant {{current}} of {{total}}",
   "chat.reasoning": "Reasoning",
   "chat.liveReasoning": "Thinking…",
+  "chat.editSaveFailed": "Could not save message: {{error}}",
   "chat.save": "Save",
   "chat.regenerate": "Regenerate",
   "chat.regenerateHint": "Create a new reply variant",

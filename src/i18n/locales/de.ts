@@ -335,6 +335,7 @@ export const de = {
   "chat.swipeCounter": "Variante {{current}} von {{total}}",
   "chat.reasoning": "Gedankengang",
   "chat.liveReasoning": "Denkt nach…",
+  "chat.editSaveFailed": "Nachricht konnte nicht gespeichert werden: {{error}}",
   "chat.save": "Speichern",
   "chat.regenerate": "Neu generieren",
   "chat.regenerateHint": "Neue Antwort-Variante erzeugen",

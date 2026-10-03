@@ -31,6 +31,10 @@ für eine Erinnerung und einen Tagebucheintrag. Die Formulare behalten ihre Eing
 Erfolg und speichern beim Wiederholen genau einen Eintrag im echten Backend.
 Screenshot 29 zeigt den Speicherfehler mit erhaltenem Erinnerungsentwurf.
 
+`chat-edit-errors.mjs` erzwingt per SQLite-Trigger einen Fehler beim Bearbeiten einer Chatnachricht im Wegwerfprofil.
+Der Editor behält den Entwurf und die Datenbank den ursprünglichen Text. Wiederholen speichert die Korrektur;
+erneutes Öffnen zeigt den gespeicherten Inhalt. Screenshot 33 zeigt den erhaltenen Entwurf und den Fehlerhinweis.
+
 `memory-drafts.mjs` prüft Psychologie- und Beziehungsentwürfe: Tastatureingaben schreiben nicht in die Datenbank,
 Reiterwechsel und Schließen erhalten Änderungen. Echte SQLite-Schreibfehler lassen die Entwürfe stehen;
 Wiederholen speichert und Verwerfen stellt den gespeicherten Wert wieder her. Screenshots 30–31 zeigen die Fehlerzustände.

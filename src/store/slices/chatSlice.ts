@@ -306,8 +306,10 @@ export const createChatSlice: SliceCreator<ChatSlice> = (set, get) => ({
   },
 
   editChatMessage: async (msgId: string, newContent: string) => {
+    const chatId = get().activeChatId;
     try {
       const updated = await api.updateChatMessage(msgId, newContent);
+      if (get().activeChatId !== chatId) return;
       set((state) => {
         const stored = state.storedMessages.map((m) => (m.id === msgId ? updated : m));
         const flat: ChatMessage[] = stored.map(toFlat);
@@ -318,6 +320,7 @@ export const createChatSlice: SliceCreator<ChatSlice> = (set, get) => ({
       });
     } catch (e) {
       console.error('Failed to edit chat message:', e);
+      throw e;
     }
   },
 

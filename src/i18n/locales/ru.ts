@@ -333,6 +333,7 @@ export const ru: TranslationDictionary = {
   "chat.swipeCounter": "Вариант {{current}} из {{total}}",
   "chat.reasoning": "Ход мыслей",
   "chat.liveReasoning": "Размышляет…",
+  "chat.editSaveFailed": "Не удалось сохранить сообщение: {{error}}",
   "chat.save": "Сохранить",
   "chat.regenerate": "Сгенерировать заново",
   "chat.regenerateHint": "Создать новый вариант ответа",

@@ -99,6 +99,9 @@ Einstellungen: `components/settings/sections/*` (Server inkl. Laufzeiten/`mmproj
   Der Abbruch-Merker wird nur am Runden-/Chat-Start zurückgesetzt (`reset_abort`), damit „Stopp“ die ganze Runde beendet.
 - Lokale Vision nur mit gewählter `mmproj`; ohne macht `attachments::prepare` aus Bildern einen Hinweis.
 - Swipes: `swipes_json` + `swipe_index`; „Neu generieren“ hängt an, überschreibt nie.
+- Nachrichten bearbeiten: `editChatMessage` gibt Schreibfehler weiter; der Inline-Editor schließt erst nach Erfolg.
+  Während des Schreibens sind Text, Speichern und Abbrechen gesperrt; bei offener Bearbeitung auch die Swipe-Navigation.
+  Verspätete Speicherergebnisse eines anderen Chats dürfen den aktuellen Verlauf nicht aktualisieren.
 - `<state>{…}</state>` am Antwortende aktualisiert HUD-Variablen (`utils/stateParser.ts`) und wird ausgeblendet.
 - Memory: `addManualMemory`, `addManualDiary`, `generateManualDiary` und `createMemoryBackup` geben Fehler an
   ihre Aufrufer weiter. Formulare müssen diese anzeigen; Eingaben erst nach erfolgreichem Speichern leeren.

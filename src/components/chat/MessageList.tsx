@@ -142,6 +142,7 @@ const ChatMessageItem = React.memo<ChatMessageItemProps>(
 
     const [thoughtOpen, setThoughtOpen] = useState(false);
     const [editContent, setEditContent] = useState<string | null>(null);
+    const [isSavingEdit, setIsSavingEdit] = useState(false);
     const translationKey = `${appLanguage}\u0000${msg.content}`;
     const [translation, setTranslation] = useState<string | null>(() => translations.get(translationKey) ?? null);
     const [translating, setTranslating] = useState(false);
@@ -175,8 +176,16 @@ const ChatMessageItem = React.memo<ChatMessageItemProps>(
     const hasMultipleSwipes = isAssistant && msg.swipes && msg.swipes.length > 1;
 
     const saveEdit = async () => {
-      if (editContent?.trim()) await editChatMessage(msg.id, editContent.trim());
-      setEditContent(null);
+      if (isSavingEdit || !editContent?.trim()) return;
+      setIsSavingEdit(true);
+      try {
+        await editChatMessage(msg.id, editContent.trim());
+        setEditContent(null);
+      } catch (e) {
+        toast.error(translate('chat.editSaveFailed', { error: errorMessage(e) }));
+      } finally {
+        setIsSavingEdit(false);
+      }
     };
 
     const remove = async () => {
@@ -203,7 +212,7 @@ const ChatMessageItem = React.memo<ChatMessageItemProps>(
             <div className="flex items-center bg-slate-900 border border-accent-500/30 rounded-md text-[11px] text-accent-300 px-1 py-0.5 gap-1">
               <button
                 onClick={() => switchMessageSwipe(msg.id, msg.swipe_index - 1)}
-                disabled={msg.swipe_index <= 0 || isGenerating}
+                disabled={msg.swipe_index <= 0 || isGenerating || editContent !== null}
                 className="hover:text-white disabled:opacity-30 disabled:cursor-not-allowed transition-colors"
                 title={t('chat.prevSwipe')}
                 aria-label={t('chat.prevSwipe')}
@@ -218,7 +227,7 @@ const ChatMessageItem = React.memo<ChatMessageItemProps>(
               </span>
               <button
                 onClick={() => switchMessageSwipe(msg.id, msg.swipe_index + 1)}
-                disabled={msg.swipe_index >= msg.swipes.length - 1 || isGenerating}
+                disabled={msg.swipe_index >= msg.swipes.length - 1 || isGenerating || editContent !== null}
                 className="hover:text-white disabled:opacity-30 disabled:cursor-not-allowed transition-colors"
                 title={t('chat.nextSwipe')}
                 aria-label={t('chat.nextSwipe')}
@@ -263,6 +272,7 @@ const ChatMessageItem = React.memo<ChatMessageItemProps>(
         {editContent !== null ? (
           <div className="w-full max-w-[85%] space-y-2">
             <textarea
+              disabled={isSavingEdit}
               value={editContent}
               onChange={(e) => setEditContent(e.target.value)}
               aria-label={t('chat.editMessage')}
@@ -273,13 +283,15 @@ const ChatMessageItem = React.memo<ChatMessageItemProps>(
             <div className="flex items-center justify-end gap-1.5">
               <button
                 onClick={saveEdit}
+                disabled={isSavingEdit || !editContent.trim()}
                 className="flex items-center gap-1 px-3 py-1 bg-accent-600 hover:bg-accent-500 text-white rounded-lg text-xs font-medium transition-colors"
               >
                 <Check className="w-3.5 h-3.5" />
-                <span>{t('chat.save')}</span>
+                <span>{t(isSavingEdit ? 'common.saving' : 'chat.save')}</span>
               </button>
               <button
                 onClick={() => setEditContent(null)}
+                disabled={isSavingEdit}
                 className="flex items-center gap-1 px-3 py-1 bg-slate-800 hover:bg-slate-700 text-slate-300 rounded-lg text-xs transition-colors"
               >
                 <X className="w-3.5 h-3.5" />

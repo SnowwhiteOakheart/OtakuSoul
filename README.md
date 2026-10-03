@@ -18,6 +18,9 @@
 
 ## Mehr als ein Chatbot
 
+Nachrichtenkorrekturen bleiben bei einem Speicherfehler im Editor erhalten und lassen sich erneut speichern.
+Während des Schreibens ist die Bearbeitung gesperrt; ein Variantenwechsel ist erst nach Speichern oder Abbrechen möglich.
+
 **OtakuSoul** ist eine immersive Desktop-Plattform für Menschen, die mit KI-Charakteren nicht nur Nachrichten austauschen, sondern gemeinsame Geschichten und Beziehungen entwickeln möchten.
 
 Deine Charaktere können sich erinnern, ihre Gefühle und Beziehungen verändern, mit einer eigenen Stimme sprechen und als **3D-VRM**, **Live2D-Modell** oder klassisches Porträt sichtbar werden. Lokale GGUF-Modelle geben dir maximale Kontrolle und Privatsphäre; Cloud-Anbieter stehen bereit, wenn du mehr Reichweite oder spezialisierte Modelle brauchst.

@@ -26,6 +26,7 @@ Arbeitsverzeichnis und Timeout allein gelten nicht als Betriebssystem-Sandbox.
 - [x] Tagebuchgenerierung und Memory-Backup-Erstellung: Fehler sichtbar anzeigen.
 - [x] Psychologie und Beziehung als explizit speicherbare Entwürfe bearbeiten; Schreibfehler erhalten Änderungen.
 - [x] Markdown-Editor: Lade- und Schreibfehler erhalten Entwürfe; laufende Vorgänge sperren die Bearbeitung.
+- [x] Inline-Nachrichteneditor: Schreibfehler erhalten den Entwurf; Wiederholen übernimmt erst nach erfolgreichem Schreiben.
 - [ ] Speicherfehler vom Store an die Oberfläche weitergeben und verständlich anzeigen.
 - [ ] Erfolgsmeldungen ausschließlich nach erfolgreichem Speichern anzeigen.
 - [ ] Eingaben bei Fehlern erhalten und Wiederholen anbieten.
@@ -200,3 +201,29 @@ im Entwurfstest wurde durch Auswahl des aktuellen Felds behoben.
 Screenshot `e2e/screenshots/32-markdown-ladefehler.png` wurde visuell geprüft: Der Entwurf und die tatsächliche
 Ladefehlerursache sind sichtbar. Ein dabei gefundener Übersetzungs-Platzhalterfehler wurde in allen drei Sprachen
 korrigiert und durch Prüfung der konkreten Fehlermeldung abgesichert.
+
+### Fünftes Arbeitspaket – 03.10.2026
+
+Der Inline-Nachrichteneditor schließt erst nach erfolgreichem Schreiben. Der Store gibt Schreibfehler weiter,
+und die Oberfläche zeigt sie mit der konkreten Ursache an. Bei Fehlern bleibt der bearbeitete Text erhalten,
+während der gespeicherte Nachrichtentext unverändert bleibt. Erneutes Speichern übernimmt die Korrektur.
+Leere Entwürfe schließen den Editor nicht und werden nicht geschrieben.
+
+Text, Speichern und Abbrechen sind während des Schreibens gesperrt. Die Swipe-Navigation ist während
+geöffneter Bearbeitung gesperrt, damit der Entwurf nicht versehentlich eine andere Antwortvariante korrigiert.
+Ein verspätetes Ergebnis nach einem Chatwechsel aktualisiert den aktuell sichtbaren Verlauf nicht.
+
+Sechs zusätzliche Frontend-Tests prüfen Fehler/Wiederholen, Sperren und Doppelsenden, leere Entwürfe,
+Abbrechen, Variantenwechsel und verspätete Speicherergebnisse. Ein neuer E2E-Test erzwingt einen echten
+SQLite-Schreibfehler im Wegwerfprofil und prüft ursprünglichen Datenbanktext, erhaltenen Entwurf und Wiederholung.
+
+Offen bleiben Umbenennen, Author's Note und Zusammenfassung in der Chat-Seitenleiste sowie einheitliche
+Lesefehler der übrigen Memory-Daten. Inline-Entwürfe sind noch nicht über Virtualisierung oder Chatwechsel hinweg gesichert.
+Das Abgleichen abgeleiteter Zusammenfassungen und Erinnerungen nach Nachrichtenkorrekturen bleibt in Abschnitt 4 offen.
+
+`npm run check` bestanden: 358 Rust-Tests und 130 Frontend-Tests.
+Der aktuelle Build bestand `npm run e2e` unter Xvfb mit allen 13 Szenarien.
+Screenshot `e2e/screenshots/33-chat-bearbeitungsfehler.png` wurde visuell geprüft: Entwurf,
+erneut verfügbare Speicheraktionen und die konkrete Fehlerursache sind vollständig sichtbar.
+Die erste Prüfung in der Sandbox scheiterte an gesperrten lokalen Testports;
+mit erweitertem Zugriff liefen die Prüfungen erfolgreich durch.
