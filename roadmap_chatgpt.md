@@ -43,6 +43,7 @@ Abnahme: Ein fehlgeschlagener Speichervorgang leert keine Eingabe und meldet kei
 - [x] Promptaufbau und alle nachfolgenden Schritte in eine gemeinsame Fehlerbehandlung aufnehmen.
 - [ ] Generierungszustand bei jedem Fehler und Abbruch zuverlässig zurücksetzen.
 - [x] Bereits gespeicherte Nutzernachrichten beim Wiederholen erkennen; Duplikate vermeiden.
+- [x] Stage-Planung und Kontextvorbereitung einschließlich interner Zusammenfassung abbrechen können.
 - [x] Abbruchkanäle von Chat und Soul Stage trennen, einschließlich Stage-Stopp im Frontend.
 - [x] Native Text-, Gedanken- und Abschlussereignisse an eine eindeutige Generierungs-ID binden.
 - [x] Sitzungsabrufe ordnen, alte Verläufe während des Ladens ausblenden und Lesefehler wiederholbar anzeigen.
@@ -481,3 +482,38 @@ alle 18 Szenarien unter Xvfb erfolgreich abgeschlossen, einschließlich der Abbr
 in beiden Richtungen. Screenshot `e2e/screenshots/44-stage-getrennter-abbruch.png` wurde
 visuell geprüft: Stage bleibt nach einem Chat-Abbruch aktiv und bietet seinen eigenen Stopp an.
 Optionale Inhalte bleiben außerhalb dieses Arbeitspakets.
+
+### Dreizehntes Arbeitspaket – 04.10.2026
+
+Der Stage-Planer wartet nicht mehr bis zum Antwortende, nachdem Stopp gedrückt wurde. Sein interner
+Modell-Aufruf liegt in `with_abort`; dies beendet auch wartende HTTP-Header oder Antwortkörper.
+Die gemeinsame Sprecher-Vorbereitung `history::prepare` liegt ebenfalls in diesem Abbruchrahmen:
+Kontextzählung, Kontextanpassung und interne Zusammenfassungen sind damit abbrechbar. Abbruch
+liefert ausdrücklich `None`, statt eine leere oder unvollständige Modellanfrage weiterzugeben.
+
+Planer, Erzähler und Charaktere beenden die Runde bei abgebrochener Vorbereitung über `finish_turn`.
+Auch ein abgebrochener Planer-Aufruf endet dort, bevor ein Ersatzplan, Mechanik oder neue Erzählung
+angewendet wird. Die bereits eingegebene Spielerzeile und zuvor abgeschlossene Arbeit bleiben
+im Szenenzustand gespeichert; der aktuelle Sprecher wird wieder PLAYER. Die Runde ist keine
+Transaktion: bereits erfolgte Zustandsänderungen und fertig erstellte Zusammenfassungen bleiben bestehen.
+Abgebrochene Zusammenfassungen rücken ihren Cursor nicht weiter.
+
+Zwei Rust-Tests prüfen einen direkten Modell-Aufruf mit begonnenem, aber nicht abgeschlossenem
+Antwortkörper und eine bereits abgebrochene Kontextvorbereitung ohne Änderung an Verlauf/Zusammenfassung.
+Der Sitzungs-E2E-Test stoppt zusätzlich einen Planer ohne HTTP-Antwort, prüft die gespeicherte Spielerzeile,
+unveränderte Welt und das Ausbleiben einer neuen Erzähler-Anfrage. Nach erneutem Laden bleibt die Zeile
+erhalten; die nächste normale Runde funktioniert wieder.
+
+Offen bleiben Abbruch von Routing sowie Archiv-/Konsistenz-Aufrufen am Rundenende, Koordination mehrerer
+Runden im selben Bereich, Frontend-Prompt-/Upload-Vorbereitung und Wiederaufnahme abgebrochener Antworten.
+Interne direkte Modellaufrufe außerhalb der Stage-Planung behalten ihre bisherige Abbruchsemantik.
+
+Validierung: Der vollständige Check auf dem aktuellen Stand besteht mit 371 Rust-Tests
+(6 im Bibliothekslauf absichtlich ignoriert) und 195 Frontend-Tests. `npm run e2e` hat den
+aktuellen Build erstellt. Der erste Lauf bestand den neuen Planungsabbruch, stoppte danach
+aber im vorhandenen Seitenleisten-Test an einer veralteten DOM-Referenz beim Schließen
+des erfolgreich gespeicherten Titelfelds. Die Warteabfrage prüft nun direkt die Abwesenheit
+des Felds im DOM. Der korrigierte Einzeltest und der vollständige Lauf mit `npm run e2e:run`
+unter Xvfb bestehen alle 18 Szenarien. Screenshot `e2e/screenshots/45-stage-planungsabbruch.png`
+wurde geprüft: Die Spielerzeile steht im Verlauf, die wartende Planung bietet Stopp an.
+Die committeten Änderungen zur Titelanpassung bleiben erhalten.

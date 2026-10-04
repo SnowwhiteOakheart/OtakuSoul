@@ -122,6 +122,11 @@ Einstellungen: `components/settings/sections/*` (Server inkl. Laufzeiten/`mmproj
   `abort_stage_turn` beeinflussen nur ihren Bereich; `stopStageTurn` nutzt ausschließlich den Stage-Befehl.
   Jeder Client hat einen eigenen Merker und Watch-Signalzähler. Gleichzeitige Runden innerhalb desselben
   Bereichs benötigen weiterhin gesonderte Koordination; direkte interne Generierungen bleiben unverändert.
+- Stage-Planungsabbruch: `history::prepare` liefert bei Abbruch `None` und umfasst Kontextzählung,
+  Kontextanpassung und interne Zusammenfassung. Der Planer-Aufruf liegt ebenfalls in `with_abort`.
+  Abbruch vor einem Plan beendet die Runde über `finish_turn`: Spielerzeile und bereits abgeschlossene
+  Arbeit bleiben gespeichert, weitere Planmechanik/Erzählung werden nicht gestartet. Sprecher-Vorbereitung
+  endet ebenso bei Abbruch. Routing sowie Archiv-/Konsistenz-Aufrufe sind weiterhin gesondert abzusichern.
 - Backend-Abbruch: `with_abort` beendet wartende asynchrone Vorbereitung, HTTP-Header und SSE-Lesen über
   ein Watch-Signal. `send_chat_message` setzt den Merker vor der Vorbereitung zurück, `stream_chat` nicht erneut.
   Eine neue Runde setzt nur den Merker zurück; der Signalzähler lässt alte Wartevorgänge abgebrochen.

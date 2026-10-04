@@ -44,7 +44,9 @@ try {
   await browser.saveScreenshot(path.join(screenshotDir, '34-chat-titelfehler.png'));
   unblock();
   await browser.$('button[aria-label="Titel speichern"]').click();
-  await browser.$('input[aria-label="Neuer Titel"]').waitForExist({ reverse: true });
+  await browser.waitUntil(() => browser.execute(() =>
+    document.querySelector('input[aria-label="Neuer Titel"]') === null),
+  { timeout: 10_000, timeoutMsg: 'Titelfeld wurde nach dem Speichern nicht geschlossen.' });
   assert.equal(row().title, 'Unser Seeabenteuer');
 
   await browser.$('button=Author\'s Note').click();

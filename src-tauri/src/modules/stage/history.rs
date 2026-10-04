@@ -54,6 +54,18 @@ pub(super) async fn prepare(
     inference: &InferenceClient,
     counter: &TokenCounter,
     audience: Audience<'_>,
+    request: ChatRequest,
+) -> Option<ChatRequest> {
+    inference
+        .with_abort(prepare_inner(state, inference, counter, audience, request))
+        .await
+}
+
+async fn prepare_inner(
+    state: &mut SceneState,
+    inference: &InferenceClient,
+    counter: &TokenCounter,
+    audience: Audience<'_>,
     mut request: ChatRequest,
 ) -> ChatRequest {
     let settings = load_app_settings();
@@ -160,6 +172,42 @@ pub(super) async fn prepare(
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    #[tokio::test]
+    async fn aborted_preparation_keeps_the_existing_summary_and_history() {
+        let mut state = StageEngine::new().get_state();
+        state.history_summaries.insert(
+            "planner".into(),
+            StageHistorySummary {
+                text: "Existing facts".into(),
+                until: 1,
+            },
+        );
+        let previous = serde_json::to_value(&state).unwrap();
+        let inference = InferenceClient::new();
+        inference.abort();
+        let request = ChatRequest {
+            endpoint_url: "http://127.0.0.1:9/v1/chat/completions".into(),
+            api_key: None,
+            model: None,
+            messages: vec![message("system", "role".into())],
+            sampling: None,
+            reasoning_mode: None,
+            provider: None,
+        };
+        assert!(
+            prepare(
+                &mut state,
+                &inference,
+                &TokenCounter::default(),
+                Audience::Planner,
+                request
+            )
+            .await
+            .is_none()
+        );
+        assert_eq!(serde_json::to_value(&state).unwrap(), previous);
+    }
 
     #[test]
     fn summary_and_history_are_isolated_by_audience() {

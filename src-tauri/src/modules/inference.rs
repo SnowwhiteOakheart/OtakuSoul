@@ -560,6 +560,56 @@ mod tests {
     }
 
     #[tokio::test]
+    async fn abort_wrapper_drops_a_direct_request_waiting_for_its_body() {
+        use futures_util::StreamExt;
+        let (started, ready) = tokio::sync::oneshot::channel();
+        let started = std::sync::Arc::new(std::sync::Mutex::new(Some(started)));
+        let app = axum::Router::new().route(
+            "/v1/chat/completions",
+            axum::routing::post(move || {
+                let started = started.clone();
+                async move {
+                    let stream = futures_util::stream::once(async move {
+                        started.lock().unwrap().take().unwrap().send(()).unwrap();
+                        Ok::<_, std::io::Error>(axum::body::Bytes::from_static(b"{\"choices\":"))
+                    })
+                    .chain(futures_util::stream::pending());
+                    axum::response::Response::builder()
+                        .header("content-type", "application/json")
+                        .body(axum::body::Body::from_stream(stream))
+                        .unwrap()
+                }
+            }),
+        );
+        let listener = tokio::net::TcpListener::bind("127.0.0.1:0").await.unwrap();
+        let endpoint = format!(
+            "http://{}/v1/chat/completions",
+            listener.local_addr().unwrap()
+        );
+        let server = tokio::spawn(async move { axum::serve(listener, app).await });
+        let client = std::sync::Arc::new(super::InferenceClient::new());
+        let waiting = client.clone();
+        let task = tokio::spawn(async move {
+            waiting
+                .with_abort(waiting.generate_direct(request(&endpoint, None)))
+                .await
+        });
+        tokio::time::timeout(std::time::Duration::from_secs(2), ready)
+            .await
+            .unwrap()
+            .unwrap();
+        client.abort();
+        assert!(
+            tokio::time::timeout(std::time::Duration::from_secs(2), task)
+                .await
+                .unwrap()
+                .unwrap()
+                .is_none()
+        );
+        server.abort();
+    }
+
+    #[tokio::test]
     async fn separate_clients_do_not_cancel_or_reset_each_other() {
         let chat = std::sync::Arc::new(super::InferenceClient::new());
         let stage = std::sync::Arc::new(super::InferenceClient::new());

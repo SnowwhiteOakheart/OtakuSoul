@@ -400,12 +400,18 @@ RULES:
         provider: provider.clone(),
     };
 
-    let plan_req =
-        super::history::prepare(&mut state, inference, &counter, Audience::Planner, plan_req).await;
-    let plan_raw = inference
-        .generate_direct(plan_req)
+    let Some(plan_req) =
+        super::history::prepare(&mut state, inference, &counter, Audience::Planner, plan_req).await
+    else {
+        return finish_turn(engine, state);
+    };
+    let Some(plan_raw) = inference
+        .with_abort(inference.generate_direct(plan_req))
         .await
-        .unwrap_or_default();
+    else {
+        return finish_turn(engine, state);
+    };
+    let plan_raw = plan_raw.unwrap_or_default();
     let gm_plan = repair_and_parse_gm_plan(&plan_raw);
 
     for draft in &gm_plan.spawn_npcs {
@@ -859,14 +865,17 @@ RULES:
         provider: provider.clone(),
     };
 
-    let exec_req = super::history::prepare(
+    let Some(exec_req) = super::history::prepare(
         &mut state,
         inference,
         &counter,
         Audience::Narrator,
         exec_req,
     )
-    .await;
+    .await
+    else {
+        return finish_turn(engine, state);
+    };
     let gm_msg_id = format!("msg_{}", Utc::now().timestamp_millis());
     let narration_content = stream_message(
         inference,
@@ -1064,14 +1073,17 @@ Reply in {reply_language}.{secrets}"#,
                 provider: provider.clone(),
             };
 
-            let comp_req = super::history::prepare(
+            let Some(comp_req) = super::history::prepare(
                 &mut state,
                 inference,
                 &counter,
                 Audience::Character(&current_actor),
                 comp_req,
             )
-            .await;
+            .await
+            else {
+                return finish_turn(engine, state);
+            };
             let comp_msg_id = format!("msg_{}_{}", Utc::now().timestamp_millis(), actor_depth);
             let avatar_url = npc
                 .as_ref()
@@ -1197,9 +1209,6 @@ Reply in {reply_language}.{secrets}"#,
         ];
     }
 
-    state.current_turn_actor = "PLAYER".to_string();
-    state.definition.last_played = Some(Utc::now().to_rfc3339());
-
     // Long-term upkeep (skipped after "Stop"): archive resolved arcs, check facts now and then.
     if !inference.is_aborted() {
         let llm = StageLlm {
@@ -1212,9 +1221,15 @@ Reply in {reply_language}.{secrets}"#,
         audit_facts(&mut state, inference, &llm).await;
     }
 
+    finish_turn(engine, state)
+}
+
+/// Persists completed work, including the player line when planning was stopped.
+fn finish_turn(engine: &StageEngine, mut state: SceneState) -> Result<SceneState, String> {
+    state.current_turn_actor = "PLAYER".to_string();
+    state.definition.last_played = Some(Utc::now().to_rfc3339());
     engine.set_state(state.clone());
     save_scene_state(&state)?;
-
     Ok(state)
 }
 

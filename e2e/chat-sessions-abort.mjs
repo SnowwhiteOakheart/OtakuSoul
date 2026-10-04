@@ -83,6 +83,34 @@ try {
   await browser.$('button=Stopp').click();
   await browser.waitUntil(() => mock.stats.cancelledStage >= 1, { timeout: 5_000 });
   await browser.$('button=Stopp').waitForExist({ reverse: true, timeout: 5_000 });
+  // Stop before a planner has answered: keep the player line, but no fallback narration.
+  const beforePlan = await browser.execute(() => window.__TAURI_INTERNALS__.invoke('get_stage_state'));
+  const plannerBefore = mock.stats.stagePlanner;
+  const narratorBefore = mock.stats.stageNarrator;
+  mock.stats.stallPlanner = true;
+  mock.stats.stallStage = false;
+  await stageInput.setValue('Diese Planung breche ich ab.');
+  await browser.keys('Enter');
+  await browser.waitUntil(() => mock.stats.stagePlanner > plannerBefore, { timeout: 20_000 });
+  await browser.saveScreenshot(path.join(screenshotDir, '45-stage-planungsabbruch.png'));
+  await browser.$('button=Stopp').click();
+  await browser.waitUntil(() => mock.stats.cancelledPlanner >= 1, { timeout: 5_000 });
+  await browser.$('button=Stopp').waitForExist({ reverse: true, timeout: 5_000 });
+  const stoppedPlan = await browser.execute(() => window.__TAURI_INTERNALS__.invoke('get_stage_state'));
+  assert.deepEqual(stoppedPlan.world, beforePlan.world);
+  assert.equal(stoppedPlan.chat_log.length, beforePlan.chat_log.length + 1);
+  assert.equal(stoppedPlan.chat_log.at(-1).content, 'Diese Planung breche ich ab.');
+  assert.equal(stoppedPlan.chat_log.at(-1).sender_role, 'player');
+  assert.equal(stoppedPlan.current_turn_actor, 'PLAYER');
+  assert.equal(mock.stats.stageNarrator, narratorBefore);
+  const reloaded = await browser.execute((sceneId) => window.__TAURI_INTERNALS__.invoke('load_stage_scene', { sceneId }), stoppedPlan.definition.id);
+  assert.deepEqual(reloaded.chat_log, stoppedPlan.chat_log);
+  mock.stats.stallPlanner = false;
+  await stageInput.setValue('Jetzt spielen wir weiter.');
+  await browser.keys('Enter');
+  await browser.waitUntil(() => mock.stats.stageNarrator > narratorBefore, { timeout: 20_000 });
+  await browser.$('button=Stopp').waitForExist({ reverse: true, timeout: 20_000 });
+  console.log('Stage-Planungsabbruch: antwortlose HTTP-Anfrage beendet; Spielerzeile bleibt gespeichert, kein Ersatzplan/Erzählertext; nächste Runde funktioniert.');
   console.log('Getrennte Abbruchkanäle: Stage-Stopp erhält Chat-Anfragen, Chat-Stopp erhält Stage-Anfragen; der passende Stopp schließt die Verbindung.');
   console.log('Sitzungen: Lesefehler erhalten Entwürfe; Abbruch und Chatwechsel schließen antwortlose HTTP-Anfragen; neue Antworten gehören zum neuen Chat.');
 } catch (failure) {
