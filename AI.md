@@ -117,6 +117,11 @@ Einstellungen: `components/settings/sections/*` (Server inkl. Laufzeiten/`mmproj
   und über `retryChatLoad` wiederholbar. Senden bleibt während Laden/Lesefehlern gesperrt. Navigation fordert
   Abbruch der laufenden Generierung an und stoppt Chat-Sprachausgabe; eine Abrufnummer schützt auch Wechsel A → B → A vor alten Resultaten.
   Späte Sitzungslisten und Stimmenkonfigurationen eines anderen Kontexts dürfen nichts überschreiben.
+- Abbruchbereiche: `AppState.inference_client` gehört zum Chat, `stage_inference_client` zu Soul Stage.
+  Stage-Runde, Neu-Generieren und Rast erhalten den Stage-Client. `abort_chat_generation` und
+  `abort_stage_turn` beeinflussen nur ihren Bereich; `stopStageTurn` nutzt ausschließlich den Stage-Befehl.
+  Jeder Client hat einen eigenen Merker und Watch-Signalzähler. Gleichzeitige Runden innerhalb desselben
+  Bereichs benötigen weiterhin gesonderte Koordination; direkte interne Generierungen bleiben unverändert.
 - Backend-Abbruch: `with_abort` beendet wartende asynchrone Vorbereitung, HTTP-Header und SSE-Lesen über
   ein Watch-Signal. `send_chat_message` setzt den Merker vor der Vorbereitung zurück, `stream_chat` nicht erneut.
   Eine neue Runde setzt nur den Merker zurück; der Signalzähler lässt alte Wartevorgänge abgebrochen.

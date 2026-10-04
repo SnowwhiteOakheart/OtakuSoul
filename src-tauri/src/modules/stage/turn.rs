@@ -23,7 +23,7 @@ pub async fn execute_stage_turn(
     req: StageTurnRequest,
     on_stream: StageStream<'_>,
 ) -> Result<SceneState, String> {
-    // A stop request (abort_chat_generation) ends the whole turn, not just one call.
+    // A Stage stop request ends the whole turn, not just one call.
     inference.reset_abort();
     let mut state = engine.get_state();
     if state.definition.id != req.scene_id {

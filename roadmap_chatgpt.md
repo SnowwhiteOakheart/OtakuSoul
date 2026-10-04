@@ -43,6 +43,7 @@ Abnahme: Ein fehlgeschlagener Speichervorgang leert keine Eingabe und meldet kei
 - [x] Promptaufbau und alle nachfolgenden Schritte in eine gemeinsame Fehlerbehandlung aufnehmen.
 - [ ] Generierungszustand bei jedem Fehler und Abbruch zuverlässig zurücksetzen.
 - [x] Bereits gespeicherte Nutzernachrichten beim Wiederholen erkennen; Duplikate vermeiden.
+- [x] Abbruchkanäle von Chat und Soul Stage trennen, einschließlich Stage-Stopp im Frontend.
 - [x] Native Text-, Gedanken- und Abschlussereignisse an eine eindeutige Generierungs-ID binden.
 - [x] Sitzungsabrufe ordnen, alte Verläufe während des Ladens ausblenden und Lesefehler wiederholbar anzeigen.
 - [x] Wartende HTTP-Anfragen und inaktive SSE-Streams bei Backend-Abbruch beenden.
@@ -453,3 +454,30 @@ Der korrigierte Einzeltest und der vollständige Lauf mit `npm run e2e:run` unte
 bestehen alle 18 Szenarien. Screenshot `e2e/screenshots/43-chat-stream-identitaet.png`
 wurde visuell geprüft: Keine fremden Tokens/Gedanken erscheinen, Abbruch bleibt verfügbar.
 Die bereits committeten Übersetzungsänderungen bleiben erhalten; optionale Inhalte werden nicht mitcommittet.
+
+### Zwölftes Arbeitspaket – 04.10.2026
+
+Chat und Soul Stage besitzen im AppState getrennte Inferenz-Clients und damit eigene Abbruch-Merker
+und Watch-Signalzähler. Stage-Runden, Neu-Generieren und Rast nutzen den Stage-Client; der Chat
+behält seinen Client. Der neue Command `abort_stage_turn` beendet nur Stage-Anfragen. Der
+Stage-Stoppknopf ruft diesen Befehl auf, statt den Chat-Abbruch zu verwenden. Autoplay und
+Stage-Sprachausgabe werden beim Stage-Stopp weiterhin abgeschaltet.
+
+Ein Rust-Test startet wartende Futures in beiden Bereichen und prüft, dass weder Abbruch noch
+Zurücksetzen den jeweils anderen Bereich beeinflussen. Zwei Frontend-Tests prüfen die Befehlswahl,
+Autoplay/Sprachausgabe und Weitergabe eines Stage-Abbruchfehlers ohne Chat-Abbruch.
+Der bestehende Sitzungs-E2E-Test prüft zusätzlich echte wartende HTTP-Anfragen in beiden Richtungen:
+Stage-Abbruch erhält die Chat-Verbindung, Chat-Abbruch erhält die Stage-Verbindung; der jeweils
+zuständige Stopp beendet anschließend die Anfrage.
+
+Offen bleiben die Koordination mehrerer Runden innerhalb desselben Bereichs, sofortiger Abbruch
+von Stage-Planung/direkten internen Modell-Aufrufen und Frontend-Prompt-/Upload-Vorbereitung sowie
+Wiederaufnahme abgebrochener Antworten. Die Trennung betrifft die Abbruchsignale, nicht eine
+Ressourcenplanung für gleichzeitig laufende Modelle oder getrennte Zugriffe auf den Stage-Weltzustand.
+
+Validierung: Der vollständige Check besteht mit 372 Rust-Tests (6 im Bibliothekslauf absichtlich
+ignoriert) und 193 Frontend-Tests. `npm run e2e` hat den aktuellen App-Stand frisch gebaut und
+alle 18 Szenarien unter Xvfb erfolgreich abgeschlossen, einschließlich der Abbruchprüfung
+in beiden Richtungen. Screenshot `e2e/screenshots/44-stage-getrennter-abbruch.png` wurde
+visuell geprüft: Stage bleibt nach einem Chat-Abbruch aktiv und bietet seinen eigenen Stopp an.
+Optionale Inhalte bleiben außerhalb dieses Arbeitspakets.

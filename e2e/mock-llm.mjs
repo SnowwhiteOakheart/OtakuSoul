@@ -124,6 +124,10 @@ export function startMockLlm() {
             : isTranslation
               ? TRANSLATION
               : REPLY;
+      if (isNarrator && stats.stallStage) {
+        res.on('close', () => { stats.cancelledStage = (stats.cancelledStage ?? 0) + 1; });
+        return;
+      }
       if (isChat && stats.stallChat) {
         res.on('close', () => { stats.cancelledChat = (stats.cancelledChat ?? 0) + 1; });
         return;

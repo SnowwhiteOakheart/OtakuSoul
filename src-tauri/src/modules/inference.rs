@@ -559,6 +559,58 @@ mod tests {
         request.sampling.as_ref().unwrap().dry_penalty_last_n
     }
 
+    #[tokio::test]
+    async fn separate_clients_do_not_cancel_or_reset_each_other() {
+        let chat = std::sync::Arc::new(super::InferenceClient::new());
+        let stage = std::sync::Arc::new(super::InferenceClient::new());
+        let (chat_started, chat_ready) = tokio::sync::oneshot::channel();
+        let (stage_started, stage_ready) = tokio::sync::oneshot::channel();
+        let waiting_chat = chat.clone();
+        let waiting_stage = stage.clone();
+        let chat_task = tokio::spawn(async move {
+            waiting_chat
+                .with_abort(async {
+                    chat_started.send(()).unwrap();
+                    std::future::pending::<()>().await
+                })
+                .await
+        });
+        let stage_task = tokio::spawn(async move {
+            waiting_stage
+                .with_abort(async {
+                    stage_started.send(()).unwrap();
+                    std::future::pending::<()>().await
+                })
+                .await
+        });
+        chat_ready.await.unwrap();
+        stage_ready.await.unwrap();
+        chat.abort();
+        stage.reset_abort();
+        assert!(
+            tokio::time::timeout(std::time::Duration::from_secs(2), chat_task)
+                .await
+                .unwrap()
+                .unwrap()
+                .is_none()
+        );
+        assert!(chat.is_aborted());
+        assert!(!stage.is_aborted());
+        assert!(!stage_task.is_finished());
+        stage.abort();
+        chat.reset_abort();
+        assert!(
+            tokio::time::timeout(std::time::Duration::from_secs(2), stage_task)
+                .await
+                .unwrap()
+                .unwrap()
+                .is_none()
+        );
+        assert!(stage.is_aborted());
+        assert!(!chat.is_aborted());
+        assert_eq!(chat.with_abort(async { 42 }).await, Some(42));
+    }
+
     #[test]
     fn native_chat_events_carry_the_request_identity() {
         let id = "chat-generation-42";

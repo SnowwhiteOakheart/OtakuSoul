@@ -146,6 +146,10 @@ export const api = {
     return await invoke<DoneEvent>('send_chat_message', { request, generationId, contextTokens: contextTokens ?? null });
   },
 
+  abortStageTurn: async (): Promise<void> => {
+    return await invoke<void>('abort_stage_turn');
+  },
+
   abortChatGeneration: async (): Promise<void> => {
     return await invoke<void>('abort_chat_generation');
   },

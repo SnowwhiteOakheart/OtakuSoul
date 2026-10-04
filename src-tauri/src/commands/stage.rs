@@ -246,11 +246,17 @@ pub async fn stage_regenerate_turn(
     let emit = stream_emitter(&app);
     crate::modules::stage::regenerate_stage_turn(
         &state.stage_engine,
-        &state.inference_client,
+        &state.stage_inference_client,
         &scene_id,
         &emit,
     )
     .await
+}
+
+#[tauri::command]
+pub fn abort_stage_turn(state: State<'_, AppState>) -> Result<(), String> {
+    state.stage_inference_client.abort();
+    Ok(())
 }
 
 /// Forwards live turn text to the UI as `stage-stream` events.
@@ -277,7 +283,7 @@ pub async fn run_stage_turn(
     let emit = stream_emitter(&app);
     let mut scene = crate::modules::stage::execute_stage_turn(
         &state.stage_engine,
-        &state.inference_client,
+        &state.stage_inference_client,
         request,
         &emit,
     )
@@ -358,7 +364,7 @@ pub async fn rest_stage_party(
 ) -> Result<crate::modules::stage::SceneState, String> {
     crate::modules::stage::execute_stage_rest(
         &state.stage_engine,
-        &state.inference_client,
+        &state.stage_inference_client,
         &scene_id,
         &rest_type,
     )

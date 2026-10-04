@@ -221,6 +221,7 @@ pub fn run() {
             commands::stage::stage_regenerate_turn,
             commands::stage::stage_get_background_image,
             commands::stage::run_stage_turn,
+            commands::stage::abort_stage_turn,
             commands::stage::undo_stage_turn,
             commands::stage::rest_stage_party,
             commands::stage::use_stage_inventory_item,

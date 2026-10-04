@@ -40,6 +40,11 @@ try {
   await browser.pause(200);
   assert.equal(await browser.$('body').getText().then((text) => /Fremdes Stream-Token|Fremder Stream-Gedanke/.test(text)), false);
   await browser.saveScreenshot(path.join(screenshotDir, '43-chat-stream-identitaet.png'));
+  // Stage cancellation must not terminate a pending Chat request.
+  await browser.execute(() => window.__TAURI_INTERNALS__.invoke('abort_stage_turn'));
+  await browser.pause(200);
+  assert.equal(mock.stats.cancelledChat ?? 0, 0);
+  assert.equal(await browser.$('button[aria-label="Generierung abbrechen"]').isDisplayed(), true);
   await browser.$('button[aria-label="Generierung abbrechen"]').click();
   await browser.$('button[aria-label="Nachricht senden"]').waitForDisplayed({ timeout: 5_000 });
   await browser.waitUntil(() => mock.stats.cancelledChat >= 1);
@@ -62,6 +67,23 @@ try {
   await browser.waitUntil(() => sql(`SELECT count(*) FROM chat_messages WHERE chat_id = '${newChat}' AND role = 'assistant';`) === '2', { timeout: 20_000 });
   assert.equal(sql(`SELECT count(*) FROM chat_messages WHERE chat_id = '${oldChat}' AND role = 'assistant';`), '1');
   assert.equal(sql(`SELECT count(*) FROM chat_messages WHERE chat_id = '${newChat}' AND role = 'user';`), '1');
+  // The inverse: Chat cancellation must not terminate a pending Stage narrator.
+  mock.stats.stallStage = true;
+  await browser.$('button=Soul Stage').click();
+  const stageInput = browser.$('form textarea');
+  await stageInput.waitForDisplayed({ timeout: 15_000 });
+  await stageInput.setValue('Ich sehe mich um.');
+  await browser.keys('Enter');
+  await browser.waitUntil(() => mock.stats.stageNarrator >= 1, { timeout: 20_000 });
+  await browser.execute(() => window.__TAURI_INTERNALS__.invoke('abort_chat_generation'));
+  await browser.pause(200);
+  assert.equal(mock.stats.cancelledStage ?? 0, 0);
+  assert.equal(await browser.$('button=Stopp').isDisplayed(), true);
+  await browser.saveScreenshot(path.join(screenshotDir, '44-stage-getrennter-abbruch.png'));
+  await browser.$('button=Stopp').click();
+  await browser.waitUntil(() => mock.stats.cancelledStage >= 1, { timeout: 5_000 });
+  await browser.$('button=Stopp').waitForExist({ reverse: true, timeout: 5_000 });
+  console.log('Getrennte Abbruchkanäle: Stage-Stopp erhält Chat-Anfragen, Chat-Stopp erhält Stage-Anfragen; der passende Stopp schließt die Verbindung.');
   console.log('Sitzungen: Lesefehler erhalten Entwürfe; Abbruch und Chatwechsel schließen antwortlose HTTP-Anfragen; neue Antworten gehören zum neuen Chat.');
 } catch (failure) {
   await browser.saveScreenshot(path.join(screenshotDir, 'chat-sessions-abort-fehler.png'));

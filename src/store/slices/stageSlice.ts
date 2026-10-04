@@ -136,7 +136,7 @@ export const createStageSlice: SliceCreator<StageSlice> = (set, get) => ({
   stopStageTurn: async () => {
     set({ stageAutoPlay: false });
     stopStageVoice();
-    await api.abortChatGeneration();
+    await api.abortStageTurn();
   },
 
   stageReadAloud: readStoredFlag(READ_ALOUD_KEY),
