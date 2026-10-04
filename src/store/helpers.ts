@@ -164,4 +164,6 @@ export const CLOUD_PROVIDER_DEFAULTS: Partial<Record<LlmProviderType, { endpoint
 
 export type SettingsSection = 'general' | 'server' | 'providers' | 'sampler' | 'prompt' | 'hub';
 
+export type IntegrationsTab = 'web' | 'discord' | 'image' | 'backup';
+
 export type AppTab = 'chat' | 'characters' | 'lorebooks' | 'stage' | 'companion' | 'settings' | 'hub' | 'integrations';

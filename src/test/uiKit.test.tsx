@@ -232,12 +232,37 @@ describe('CommandPalette', () => {
     expect(screen.getByRole('dialog', { name: 'Befehlspalette' })).toBeInTheDocument();
 
     const search = screen.getByRole('combobox', { name: 'Befehle durchsuchen' });
-    await user.type(search, 'Einstellungen');
+    await user.type(search, 'Prompt');
     expect(screen.getAllByRole('option')).toHaveLength(1);
     await user.keyboard('{Enter}');
 
-    expect(useAppStore.getState().activeTab).toBe('settings');
+    expect(useAppStore.getState()).toMatchObject({ activeTab: 'settings', pendingSettingsSection: 'prompt' });
     expect(screen.queryByRole('dialog')).not.toBeInTheDocument();
+  });
+
+  it('finds settings and integrations by other-language words and jumps there', async () => {
+    const user = userEvent.setup();
+    useAppStore.setState({ activeTab: 'chat', integrationsTab: 'web' });
+    render(<Harness />);
+
+    await user.keyboard('{Control>}k{/Control}');
+    await user.type(screen.getByRole('combobox', { name: 'Befehle durchsuchen' }), 'lora');
+    expect(screen.getAllByRole('option')).toHaveLength(1);
+    await user.keyboard('{Enter}');
+    expect(useAppStore.getState()).toMatchObject({ activeTab: 'integrations', integrationsTab: 'image' });
+
+    // An option reveals itself once its page is shown.
+    const option = document.createElement('div');
+    option.id = 'setting-close-to-tray';
+    option.scrollIntoView = vi.fn();
+    document.body.append(option);
+    await user.keyboard('{Control>}k{/Control}');
+    await user.type(screen.getByRole('combobox', { name: 'Befehle durchsuchen' }), 'quit');
+    await user.keyboard('{Enter}');
+    expect(useAppStore.getState()).toMatchObject({ activeTab: 'settings', pendingSettingsSection: 'general' });
+    expect(option.scrollIntoView).toHaveBeenCalled();
+    expect(option).toHaveClass('setting-highlight');
+    option.remove();
   });
 
   it('supports arrow navigation and Escape', async () => {

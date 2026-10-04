@@ -90,7 +90,7 @@ export const GeneralSettings = () => {
   return (
     <div className="space-y-6">
       {/* 1. Theme-Auswahl */}
-      <div className="rounded-xl border border-slate-800 bg-slate-900/60 p-5 space-y-4">
+      <div id="setting-theme" className="rounded-xl border border-slate-800 bg-slate-900/60 p-5 space-y-4">
         <div>
           <h2 className="text-sm font-semibold text-slate-200 flex items-center gap-2">
             <Palette className="w-4 h-4 text-accent-400" />
@@ -177,7 +177,7 @@ export const GeneralSettings = () => {
       </div>
 
       {/* 2. Sprachauswahl UI */}
-      <div className="rounded-xl border border-slate-800 bg-slate-900/60 p-5 space-y-4">
+      <div id="setting-language" className="rounded-xl border border-slate-800 bg-slate-900/60 p-5 space-y-4">
         <div>
           <h2 className="text-sm font-semibold text-slate-200 flex items-center gap-2">
             <Globe className="w-4 h-4 text-cyan-400" />
@@ -218,7 +218,7 @@ export const GeneralSettings = () => {
       </div>
 
       {/* 3. Antwort-Sprache (Roleplay default reply language) */}
-      <div className="rounded-xl border border-slate-800 bg-slate-900/60 p-5 space-y-4">
+      <div id="setting-reply-language" className="rounded-xl border border-slate-800 bg-slate-900/60 p-5 space-y-4">
         <div>
           <h2 className="text-sm font-semibold text-slate-200 flex items-center gap-2">
             <Sparkles className="w-4 h-4 text-amber-400" />
@@ -246,7 +246,7 @@ export const GeneralSettings = () => {
       </div>
 
       {/* 4. System-Diagnose & Updates */}
-      <div className="rounded-xl border border-slate-800 bg-slate-900/60 p-5 space-y-4">
+      <div id="setting-system" className="rounded-xl border border-slate-800 bg-slate-900/60 p-5 space-y-4">
         <div>
           <h2 className="text-sm font-semibold text-slate-200 flex items-center gap-2">
             <Terminal className="w-4 h-4 text-emerald-400" />
@@ -256,6 +256,7 @@ export const GeneralSettings = () => {
         </div>
 
         <Toggle
+          id="setting-close-to-tray"
           checked={closeToTray}
           onCheckedChange={setCloseToTray}
           label={t('settings.closeToTray')}
@@ -296,7 +297,7 @@ export const GeneralSettings = () => {
         </div>
       </div>
       {/* 4. Standard-Avatare (VRM & Live2D) */}
-      <h2 className="text-sm font-semibold text-slate-200 pt-2">{t('settings.avatarDefaults')}</h2>
+      <h2 id="setting-avatars" className="text-sm font-semibold text-slate-200 pt-2">{t('settings.avatarDefaults')}</h2>
       {/* 3D Avatar (VRM) Standard-Auswahl */}
       <div className="rounded-xl border border-slate-800 bg-slate-900/60 p-4 space-y-3">
         <h3 className="text-xs font-semibold text-slate-300 flex items-center gap-1.5">

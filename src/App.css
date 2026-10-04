@@ -291,3 +291,11 @@
     background: var(--scrollbar-thumb-hover);
   }
 }
+
+/* Option reached from the command palette (utils/revealSetting.ts). */
+.setting-highlight {
+  outline: 2px solid var(--color-accent-400);
+  outline-offset: 4px;
+  border-radius: 0.75rem;
+  transition: outline-color 0.3s;
+}

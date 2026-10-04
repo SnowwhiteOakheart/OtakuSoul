@@ -13,7 +13,7 @@ import { createEcosystemSlice } from './slices/ecosystemSlice';
 import type { AppStoreState } from './storeTypes';
 
 export type { AppStoreState } from './storeTypes';
-export { normalizeReplyLanguage, CLOUD_PROVIDER_DEFAULTS, type AppTab, type SettingsSection } from './helpers';
+export { normalizeReplyLanguage, CLOUD_PROVIDER_DEFAULTS, type AppTab, type IntegrationsTab, type SettingsSection } from './helpers';
 
 /** The single app store, composed of domain slices (see `./slices`). */
 export const useAppStore = create<AppStoreState>()((...args) => ({

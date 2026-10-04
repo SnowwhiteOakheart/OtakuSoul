@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { useAppStore, type SettingsSection, useStoreFields } from '../../store/useAppStore';
 import { useTranslation } from '../../i18n';
 import { Cpu, RefreshCw, Palette, Key, Sliders, Download, FileText } from 'lucide-react';
@@ -16,6 +16,16 @@ export const SettingsView = () => {
 
   const [activeTab, setActiveTab] = useState<SettingsSection>(
     () => useAppStore.getState().consumePendingSettingsSection() ?? 'general'
+  );
+  // Jumps while the view is already open (command palette, header status).
+  useEffect(
+    () =>
+      useAppStore.subscribe((state, previous) => {
+        if (!state.pendingSettingsSection || state.pendingSettingsSection === previous.pendingSettingsSection) return;
+        const section = useAppStore.getState().consumePendingSettingsSection();
+        if (section) setActiveTab(section);
+      }),
+    [],
   );
   const settingsTabs: TabItem<SettingsSection>[] = [
     { value: 'general', label: t('settings.appearance'), icon: Palette, panelId: 'settings-panel-general' },

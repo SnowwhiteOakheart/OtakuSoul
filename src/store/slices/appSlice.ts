@@ -1,5 +1,5 @@
 import { api } from '../../services/api';
-import { normalizeReplyLanguage, CLOUD_PROVIDER_DEFAULTS, type AppTab, type SettingsSection } from '../helpers';
+import { normalizeReplyLanguage, CLOUD_PROVIDER_DEFAULTS, type AppTab, type IntegrationsTab, type SettingsSection } from '../helpers';
 import type {
   AppPaths,
   AppSettings,
@@ -47,6 +47,9 @@ export interface AppSlice {
   /** Settings section to open next time the settings view mounts. */
   pendingSettingsSection: SettingsSection | null;
   openSettingsSection: (section: SettingsSection) => void;
+  /** Open tab of the integrations view, kept in the store so other places can jump there. */
+  integrationsTab: IntegrationsTab;
+  setIntegrationsTab: (tab: IntegrationsTab) => void;
   consumePendingSettingsSection: () => SettingsSection | null;
   isLogViewerOpen: boolean;
   setIsLogViewerOpen: (open: boolean) => void;
@@ -309,6 +312,10 @@ export const createAppSlice: SliceCreator<AppSlice> = (set, get) => ({
   },
 
   pendingSettingsSection: null,
+
+  integrationsTab: 'web',
+
+  setIntegrationsTab: (integrationsTab) => set({ integrationsTab }),
 
   openSettingsSection: (section) => set({ pendingSettingsSection: section, activeTab: 'settings' }),
 

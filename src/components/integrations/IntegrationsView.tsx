@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React from 'react';
 import { useStoreFields } from '../../store/useAppStore';
 import { useTranslation } from '../../i18n';
 import { Smartphone, Gamepad2, Palette, Database, Layers } from 'lucide-react';
@@ -9,8 +9,9 @@ import { BackupTab } from './tabs/BackupTab';
 
 export const IntegrationsView: React.FC = () => {
   const { t } = useTranslation();
-  const { webServerStatus, discordRpcEnabled, backups } = useStoreFields('webServerStatus', 'discordRpcEnabled', 'backups');
-  const [activeTab, setActiveTab] = useState<'web' | 'discord' | 'image' | 'backup'>('web');
+  const { webServerStatus, discordRpcEnabled, backups, integrationsTab: activeTab, setIntegrationsTab: setActiveTab } = useStoreFields(
+    'webServerStatus', 'discordRpcEnabled', 'backups', 'integrationsTab', 'setIntegrationsTab',
+  );
 
   return (
     <div className="flex-1 flex flex-col h-full bg-app overflow-hidden">
