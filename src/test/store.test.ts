@@ -11,7 +11,8 @@ const initialState = useAppStore.getState();
 
 beforeEach(() => {
   resetApiMocks();
-  useAppStore.setState(initialState, true);
+  // As after `initApp`: settings are known, so changes are saved.
+  useAppStore.setState({ ...initialState, settingsLoaded: true }, true);
 });
 
 const lastSavedSettings = (): AppSettings => {
@@ -131,5 +132,38 @@ describe('normalizeReplyLanguage', () => {
     ['', 'Deutsch'],
   ])('%s -> %s', (input, expected) => {
     expect(normalizeReplyLanguage(input)).toBe(expected);
+  });
+});
+
+describe('startup', () => {
+  const ayu = { id: 'ayu', card: { data: { name: 'Ayu' } } };
+  const rin = { id: 'rin', card: { data: { name: 'Rin' } } };
+
+  it('neither picks a character nor saves before the settings are loaded', async () => {
+    useAppStore.setState({ settingsLoaded: false });
+    vi.mocked(api.scanCharacters).mockResolvedValue([ayu, rin] as never);
+    await useAppStore.getState().refreshCharacters();
+    await useAppStore.getState().saveCurrentSettings();
+    expect(useAppStore.getState().activeCharacter).toBeNull();
+    expect(api.saveSettings).not.toHaveBeenCalled();
+  });
+
+  it('opens the last used character right away, not the first one', async () => {
+    useAppStore.setState({ settingsLoaded: false });
+    vi.mocked(api.getAppPaths).mockResolvedValue({} as never);
+    vi.mocked(api.loadSettings).mockResolvedValue({ server_config: { model_path: '' }, active_character_id: 'rin' } as unknown as AppSettings);
+    vi.mocked(api.scanModels).mockResolvedValue([]);
+    vi.mocked(api.scanVrmModels).mockResolvedValue([]);
+    vi.mocked(api.scanCharacters).mockResolvedValue([ayu, rin] as never);
+    vi.mocked(api.listChatSessions).mockResolvedValue([]);
+    vi.mocked(api.loadPersonas).mockResolvedValue([]);
+    const opened: string[] = [];
+    const unsubscribe = useAppStore.subscribe((state, before) => {
+      if (state.activeCharacter && state.activeCharacter !== before.activeCharacter) opened.push(state.activeCharacter.id);
+    });
+    // The chat view asks for the characters while the app is still starting.
+    await Promise.all([useAppStore.getState().initApp(), useAppStore.getState().loadPresetCharacters()]);
+    unsubscribe();
+    expect(opened).toEqual(['rin']);
   });
 });

@@ -19,6 +19,11 @@ export interface AppSlice {
   openSoulHubTab: (tab: 'soul_gateway' | 'chub_ai' | 'lorebooks' | 'scenes') => void;
   appPaths: AppPaths | null;
   initApp: () => Promise<void>;
+  /**
+   * True once `initApp` applied settings.json. Before that nothing is saved (it would write
+   * defaults over the user's settings) and no character is picked automatically.
+   */
+  settingsLoaded: boolean;
   saveCurrentSettings: () => Promise<void>;
   appLanguage: 'de' | 'en' | 'ru';
   setAppLanguage: (lang: 'de' | 'en' | 'ru') => void;
@@ -119,6 +124,7 @@ export const createAppSlice: SliceCreator<AppSlice> = (set, get) => ({
         theme: settings.theme || 'obsidian',
         colorMode,
         onboardingCompleted: settings.onboarding_completed !== false,
+        settingsLoaded: true,
       });
 
       if (typeof document !== 'undefined') {
@@ -163,18 +169,10 @@ export const createAppSlice: SliceCreator<AppSlice> = (set, get) => ({
         });
       }
 
-      // 5. Scan Characters, Lorebooks & Live2D Models
-      await get().refreshCharacters();
+      // 5. Scan Characters (opening the last one right away), Lorebooks & Live2D Models
+      await get().refreshCharacters(settings.active_character_id);
       await get().refreshLorebooks();
       await get().refreshLive2dModels();
-
-      // If active character was saved in settings, restore it
-      if (settings.active_character_id) {
-        const char = get().availableCharacters.find((c) => c.id === settings.active_character_id);
-        if (char) {
-          await get().selectCharacter(char);
-        }
-      }
 
       // 6. Initialize Companion State & MCP Ecosystem
       await get().fetchCompanionState();
@@ -193,7 +191,10 @@ export const createAppSlice: SliceCreator<AppSlice> = (set, get) => ({
     }
   },
 
+  settingsLoaded: false,
+
   saveCurrentSettings: async () => {
+    if (!get().settingsLoaded) return;
     try {
       const state = get();
       const settings: AppSettings = {

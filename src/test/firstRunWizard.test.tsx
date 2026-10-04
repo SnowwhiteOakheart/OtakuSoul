@@ -25,7 +25,7 @@ const character = { id: 'ayu', card: { data: { name: 'Ayu Ikue' } } } as Charact
 
 beforeEach(() => {
   resetApiMocks();
-  useAppStore.setState(initialState, true);
+  useAppStore.setState({ ...initialState, settingsLoaded: true }, true);
   useAppStore.setState({
     onboardingCompleted: false,
     appLanguage: 'en',

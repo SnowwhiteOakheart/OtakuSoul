@@ -14,7 +14,8 @@ export interface CharacterSlice {
   availableCharacters: CharacterProfile[];
   stateVariables: StateVariable[];
   selectCharacter: (character: CharacterProfile) => Promise<void>;
-  refreshCharacters: () => Promise<void>;
+  /** Rescans the library; without an open character it opens `preferredId` (else the first). */
+  refreshCharacters: (preferredId?: string | null) => Promise<void>;
   loadPresetCharacters: () => Promise<void>;
   deleteCharacter: (charId: string) => Promise<void>;
   restoreHiddenCharacters: () => Promise<void>;
@@ -111,14 +112,16 @@ export const createCharacterSlice: SliceCreator<CharacterSlice> = (set, get) => 
     await get().loadVoiceConfigForCharacter(character.id);
   },
 
-  refreshCharacters: async () => {
+  refreshCharacters: async (preferredId) => {
     try {
       const chars = await api.scanCharacters();
       const firstChar = chars[0];
       if (firstChar) {
         set({ availableCharacters: chars });
-        if (!get().activeCharacter) {
-          get().selectCharacter(firstChar);
+        // Before the settings are loaded the last opened character isn't known yet;
+        // picking one now would show the wrong character first.
+        if (!get().activeCharacter && get().settingsLoaded) {
+          await get().selectCharacter(chars.find((c) => c.id === preferredId) ?? firstChar);
         }
       }
     } catch (e) {
