@@ -43,6 +43,7 @@ Abnahme: Ein fehlgeschlagener Speichervorgang leert keine Eingabe und meldet kei
 - [x] Promptaufbau und alle nachfolgenden Schritte in eine gemeinsame Fehlerbehandlung aufnehmen.
 - [ ] Generierungszustand bei jedem Fehler und Abbruch zuverlässig zurücksetzen.
 - [x] Bereits gespeicherte Nutzernachrichten beim Wiederholen erkennen; Duplikate vermeiden.
+- [x] Native Text-, Gedanken- und Abschlussereignisse an eine eindeutige Generierungs-ID binden.
 - [x] Sitzungsabrufe ordnen, alte Verläufe während des Ladens ausblenden und Lesefehler wiederholbar anzeigen.
 - [x] Wartende HTTP-Anfragen und inaktive SSE-Streams bei Backend-Abbruch beenden.
 - [ ] Gleichzeitiges Senden, Sitzungswechsel und verspätete Antworten eindeutig einer Sitzung zuordnen.
@@ -413,3 +414,42 @@ damit bleibt die Prüfung auch bei verzögertem Hover-/Layout-Update stabil. Scr
 `e2e/screenshots/42-chat-verlauf-ladefehler.png` wurde geprüft: Ursache und Wiederholen sind sichtbar,
 der Entwurf bleibt erhalten und der alte Verlauf wird ausgeblendet. Parallel entstandene Änderungen
 an optionalen Inhalten gehören nicht zu diesem Arbeitspaket.
+
+### Elftes Arbeitspaket – 04.10.2026
+
+Jeder Lauf beim Senden, Neu-Generieren, Fortsetzen oder Wiederholen erhält eine neue UUID im Store.
+Der Chat-Command reicht sie separat von der Modell-Payload an die Inferenz weiter. Native Tokens,
+Gedanken, Abschlussereignisse und das Command-Ergebnis enthalten dieselbe `generation_id`.
+Die API-Listener nutzen die aus Rust generierten Ereignistypen. Interne Modell-Anfragen und Stage
+behalten ihre eigenen bisherigen Ereignisse; die ID wird nicht an den Modellanbieter gesendet.
+
+ChatView nimmt Ereignisse nur bei laufender Generierung, passender ID und passender Sitzung an.
+Fremde Abschlüsse dürfen weder den aktuellen Stream leeren noch Sprachausgabe oder Emotionserkennung
+starten. Navigation und Abbruch verwerfen die ID; scheitert der Abbruch im unveränderten Kontext,
+wird die ursprüngliche ID wieder eingesetzt. Eine neue Anfrage im selben Chat erhält trotzdem eine neue ID.
+Nach Anfrageende bleibt die letzte ID für noch laufende Emotionserkennung erhalten; deren
+Resultat prüft nach dem Await erneut ID und Sitzung, damit ein neuer Lauf es zuverlässig entwertet.
+
+Die zuletzt übernommenen Stream-Tests wurden um die Anfrage-IDs erweitert: Fremde Ereignisse,
+anonyme/abgebrochene Ereignisse sowie passende und verspätete Emotionserkennung werden geprüft.
+Ein weiterer Frontend-Test prüft unterschiedliche IDs im selben Chat. Ein Rust-Test prüft die
+ID im serialisierten Ereignisvertrag. Der Sitzungs-E2E-Test injiziert zusätzlich alte native Ereignisse
+während einer antwortlosen Anfrage und prüft, dass sie nicht angezeigt werden.
+
+Die zunächst uncommittete Umsetzung wurde nach den zwischenzeitlichen Übersetzungsänderungen
+auf dem aktuellen Stand erneut integriert. Ergebnisse des vorherigen Builds gelten deshalb
+nicht als Abnahme dieses neuen Stands.
+
+Offen bleiben sofortiges Beenden der Frontend-Prompt-/Upload-Vorbereitung, Wiederaufnahme abgebrochener
+Antworten und die Koordination paralleler Chat-/Stage-Vorgänge mit ihrem gemeinsamen Abbruch-Merker.
+Die ID filtert native Chat-Ereignisse; sie ersetzt keine getrennten Abbruchkanäle dieser Bereiche.
+
+Validierung auf dem aktuellen Stand: 371 Rust-Tests (6 im Bibliothekslauf absichtlich ignoriert)
+und 191 Frontend-Tests bestehen; Formatierung, Clippy, Lint und TypeScript sind geprüft.
+`npm run e2e` hat den aktuellen Build erstellt; der erste Lauf stoppte im vorhandenen
+Seitenleisten-Test, weil der Hover-Klick das Umbenennen-Feld noch nicht geöffnet hatte.
+Der Test wartet nun auf den klickbaren Knopf und das tatsächlich geöffnete Feld.
+Der korrigierte Einzeltest und der vollständige Lauf mit `npm run e2e:run` unter Xvfb
+bestehen alle 18 Szenarien. Screenshot `e2e/screenshots/43-chat-stream-identitaet.png`
+wurde visuell geprüft: Keine fremden Tokens/Gedanken erscheinen, Abbruch bleibt verfügbar.
+Die bereits committeten Übersetzungsänderungen bleiben erhalten; optionale Inhalte werden nicht mitcommittet.

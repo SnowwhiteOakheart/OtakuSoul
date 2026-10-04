@@ -28,6 +28,18 @@ try {
   mock.stats.stallChat = true;
   await browser.$('button[aria-label="Nachricht senden"]').click();
   await browser.waitUntil(() => mock.stats.chat >= 1);
+  // Delayed native events from a previous request must not enter this live reply.
+  await browser.execute(async () => {
+    const invoke = window.__TAURI_INTERNALS__.invoke;
+    for (const [event, payload] of [
+      ['llm-token', { generation_id: 'previous-generation', text: 'Fremdes Stream-Token' }],
+      ['llm-thought', { generation_id: 'previous-generation', text: 'Fremder Stream-Gedanke' }],
+      ['llm-done', { generation_id: 'previous-generation', full_text: 'Fremder Abschluss', full_thought: '' }],
+    ]) await invoke('plugin:event|emit', { event, payload });
+  });
+  await browser.pause(200);
+  assert.equal(await browser.$('body').getText().then((text) => /Fremdes Stream-Token|Fremder Stream-Gedanke/.test(text)), false);
+  await browser.saveScreenshot(path.join(screenshotDir, '43-chat-stream-identitaet.png'));
   await browser.$('button[aria-label="Generierung abbrechen"]').click();
   await browser.$('button[aria-label="Nachricht senden"]').waitForDisplayed({ timeout: 5_000 });
   await browser.waitUntil(() => mock.stats.cancelledChat >= 1);

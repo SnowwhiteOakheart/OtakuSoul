@@ -18,7 +18,7 @@ const character = { id: 'ayu', card: { data: { name: 'Ayu' } } } as CharacterPro
 const message: StoredChatMessage = { id: 'user-1', chat_id: 'chat-1', role: 'user', content: 'Hello', thought: null, order_index: 0, swipe_index: 0, swipes: [{ content: 'Hello', thought: null }], created_at: 0, attachments: [] };
 const reply: StoredChatMessage = { ...message, id: 'reply-1', role: 'assistant', content: 'Welcome', order_index: 1 };
 const prompt = { system: 'System', post_history: '' } as AssembledPrompt;
-const done = { full_text: 'Welcome', full_thought: '' };
+const done = { generation_id: 'test-generation', full_text: 'Welcome', full_thought: '' };
 beforeEach(() => {
   resetApiMocks();
   useAppStore.setState({ ...initial, appLanguage: 'en', activeCharacter: character, activeChatId: 'chat-1', autoReflectionEnabled: false }, true);
@@ -32,6 +32,19 @@ beforeEach(() => {
 afterEach(() => vi.restoreAllMocks());
 
 describe('chat generation failures', () => {
+  it('assigns a new native event ID for each request in the same chat', async () => {
+    const ids: string[] = [];
+    vi.mocked(api.sendChatMessage).mockImplementation(async (_request, id) => {
+      expect(useAppStore.getState().generationId).toBe(id);
+      ids.push(id);
+      return { ...done, generation_id: id };
+    });
+    await useAppStore.getState().sendMessage('Hello');
+    await useAppStore.getState().sendMessage('Again');
+    expect(ids).toHaveLength(2);
+    expect(ids[0]).toBeTruthy();
+    expect(ids[1]).not.toBe(ids[0]);
+  });
   it('shows prompt errors and retries the saved user message without inserting it again', async () => {
     vi.mocked(resolvePromptWithLore).mockRejectedValueOnce(new Error('Lore unavailable'));
     render(<ChatComposer />);

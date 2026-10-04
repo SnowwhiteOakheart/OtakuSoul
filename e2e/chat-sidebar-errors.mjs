@@ -28,8 +28,14 @@ try {
   await toggle.click();
   const original = row();
   const sidebar = browser.$('aside[aria-label="Gespräche"]');
-  await sidebar.$('[class~="group"]').moveTo();
-  await sidebar.$('button[aria-label="Umbenennen"]').click();
+  await browser.waitUntil(async () => {
+    if (await browser.$('input[aria-label="Neuer Titel"]').isDisplayed()) return true;
+    await sidebar.$('[class~="group"]').moveTo();
+    const rename = sidebar.$('button[aria-label="Umbenennen"]');
+    if (!await rename.isClickable()) return false;
+    await rename.click();
+    return browser.$('input[aria-label="Neuer Titel"]').isDisplayed();
+  }, { timeout: 10_000, timeoutMsg: 'Umbenennen-Feld wurde nicht geöffnet.' });
   await replace('input[aria-label="Neuer Titel"]', 'Unser Seeabenteuer');
   block();
   await failed('Titel speichern', 'Titel konnte nicht gespeichert werden:');

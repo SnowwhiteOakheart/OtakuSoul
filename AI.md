@@ -107,6 +107,11 @@ Einstellungen: `components/settings/sections/*` (Server inkl. Laufzeiten/`mmproj
   `generationChatId` begrenzt native Stream-Anzeigen auf den zugehörigen Chat. Abbruch stoppt auch eine
   noch laufende Promptvorbereitung; die Sperre bleibt bis zum Abschluss des ursprünglichen Vorgangs bestehen.
   Ein bereits laufender Datenbankschreibvorgang wird durch Abbruch nicht rückgängig gemacht.
+- Native Chat-Streams: Senden, Swipe, Fortsetzen und Wiederholen erzeugen je eine neue `generationId`.
+  `send_chat_message` erhält sie als eigenes Argument und gibt sie als `generation_id` in Text-, Gedanken-
+  und Abschlussereignissen sowie im Ergebnis zurück. Listener prüfen ID und aktiven Chat, bevor sie Verlauf,
+  Sprachausgabe oder Emotion beeinflussen. Navigation/Abbruch verwerfen die ID; eine verspätete Emotionserkennung
+  prüft den Kontext nach ihrem Await erneut. Die zuletzt beendete ID bleibt bis zum nächsten Vorgang erhalten.
 - Chat-Laden: Nur der neueste Sitzungsabruf im passenden Charakter-Kontext darf den Verlauf setzen.
   Auswahl startet mit leerem Verlauf, `isChatLoading` und zurückgesetztem `chatLoadError`; Fehler sind sichtbar
   und über `retryChatLoad` wiederholbar. Senden bleibt während Laden/Lesefehlern gesperrt. Navigation fordert

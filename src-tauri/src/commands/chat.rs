@@ -10,6 +10,7 @@ pub async fn send_chat_message(
     state: State<'_, AppState>,
     mut request: ChatRequest,
     context_tokens: Option<u32>,
+    generation_id: String,
 ) -> Result<DoneEvent, String> {
     use crate::modules::context_window::server_base;
     use crate::modules::providers::{LlmProviderType, ProviderRegistry};
@@ -44,13 +45,17 @@ pub async fn send_chat_message(
                 )
                 .await;
             request.messages = messages;
-            let mut done = state.inference_client.stream_chat(&app, request).await?;
+            let mut done = state
+                .inference_client
+                .stream_chat(&app, request, &generation_id)
+                .await?;
             done.context = usage;
             Ok(done)
         })
         .await
         .unwrap_or_else(|| {
             Ok(DoneEvent {
+                generation_id,
                 full_text: String::new(),
                 full_thought: String::new(),
                 context: None,

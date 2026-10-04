@@ -25,7 +25,7 @@ beforeEach(() => {
   Element.prototype.scrollIntoView = vi.fn();
   vi.mocked(api.scanCharacters).mockResolvedValue([]);
   vi.clearAllMocks();
-  useAppStore.setState({ ...initial, appLanguage: 'en', isGenerating: true, generationChatId: 'chat', activeChatId: 'chat', autoTtsEnabled: true, activeVoiceConfig: voice }, true);
+  useAppStore.setState({ ...initial, appLanguage: 'en', isGenerating: true, generationId: 'new', generationChatId: 'chat', activeChatId: 'chat', autoTtsEnabled: true, activeVoiceConfig: voice }, true);
   vi.mocked(api.onLlmToken).mockImplementation(async (cb) => { token = cb; return vi.fn<() => void>(); });
   vi.mocked(api.onLlmThought).mockImplementation(async (cb) => { thought = cb; return vi.fn<() => void>(); });
   vi.mocked(api.onLlmDone).mockImplementation(async (cb) => { done = cb; return vi.fn<() => void>(); });
@@ -35,11 +35,13 @@ async function mount() {
   await waitFor(() => expect(api.onLlmDone).toHaveBeenCalled());
   return view;
 }
-const completed = (): DoneEvent => ({ full_text: 'Finished', full_thought: '' });
+const completed = (id = 'new'): DoneEvent => ({ generation_id: id, full_text: 'Finished', full_thought: '' });
 describe('native chat stream identity', () => {
-  it('accepts tokens and thoughts', async () => {
+  it('accepts matching text and thoughts and ignores old native events in the same chat', async () => {
     await mount();
-    act(() => { token('Current text'); thought('Current thought'); });
+    act(() => { token({ generation_id: 'new', text: 'Current text' }); thought({ generation_id: 'new', text: 'Current thought' }); });
+    await act(async () => { token({ generation_id: 'old', text: 'Foreign text' }); thought({ generation_id: 'old', text: 'Foreign thought' }); await done(completed('old')); });
+    expect(screen.queryByText(/Foreign/)).not.toBeInTheDocument();
     expect(screen.getByText('Current text')).toBeInTheDocument();
     expect(screen.getByText('Current thought')).toBeInTheDocument();
     expect(streamingTts.push).toHaveBeenCalledExactlyOnceWith('Current text', voice);
@@ -48,14 +50,14 @@ describe('native chat stream identity', () => {
   });
   it('rejects anonymous events and events after abort or navigation', async () => {
     await mount();
-    act(() => { useAppStore.setState({ isGenerating: false }); token('Aborted'); useAppStore.setState({ isGenerating: true, activeChatId: 'other' }); token('Wrong chat'); });
+    act(() => { token({ generation_id: '', text: 'Anonymous' }); useAppStore.setState({ generationId: null }); token({ generation_id: 'new', text: 'Aborted' }); useAppStore.setState({ generationId: 'new', activeChatId: 'other' }); token({ generation_id: 'new', text: 'Wrong chat' }); });
     expect(screen.queryByText(/Anonymous|Aborted|Wrong chat/)).not.toBeInTheDocument();
   });
   it('accepts matching completion and applies its emotion after the request finishes', async () => {
     let finish!: (value: Awaited<ReturnType<typeof api.classifyTextEmotion>>) => void;
     vi.mocked(api.classifyTextEmotion).mockImplementation(() => new Promise((resolve) => { finish = resolve; }));
     await mount();
-    act(() => token('Current text'));
+    act(() => token({ generation_id: 'new', text: 'Current text' }));
     let pending!: void | Promise<void>;
     act(() => { pending = done(completed()); });
     expect(screen.queryByText('Current text')).not.toBeInTheDocument();
@@ -71,7 +73,7 @@ describe('native chat stream identity', () => {
     let pending!: void | Promise<void>;
     act(() => { pending = done(completed()); });
     expect(streamingTts.flush).toHaveBeenCalledWith('Finished', voice);
-    act(() => useAppStore.setState({ generationChatId: 'next' }));
+    act(() => useAppStore.setState({ generationId: 'next' }));
     await act(async () => { finish({ emotion: 'happy', intensity: 0.8, confidence: 1, vrm_expression: 'happy', live2d_expression: 'joy_animation' }); await pending; });
     expect(useAppStore.getState().currentEmotion).toEqual(initial.currentEmotion);
   });

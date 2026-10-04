@@ -48,6 +48,7 @@ export const ChatView: React.FC = () => {
     storedMessages,
     isGenerating,
     generationChatId,
+    generationId,
     isChatLoading,
     chatLoadError,
     clearChat,
@@ -66,7 +67,7 @@ export const ChatView: React.FC = () => {
     activeVoiceConfig,
     setActiveTab,
   } = useStoreFields(
-    'messages', 'storedMessages', 'isGenerating', 'generationChatId', 'isChatLoading', 'chatLoadError', 'clearChat', 'selectedBackend', 'setSelectedBackend',
+    'messages', 'storedMessages', 'isGenerating', 'generationChatId', 'generationId', 'isChatLoading', 'chatLoadError', 'clearChat', 'selectedBackend', 'setSelectedBackend',
     'serverStatus', 'activeCharacter', 'activePersona', 'loadPresetCharacters', 'chatSidebarOpen',
     'setChatSidebarOpen', 'chatSessions', 'activeChatId', 'autoTtsEnabled', 'setAutoTtsEnabled',
     'activeVoiceConfig', 'setActiveTab',
@@ -91,18 +92,18 @@ export const ChatView: React.FC = () => {
     let isSubscribed = true;
     const cleanups: (() => void)[] = [];
 
-    const acceptsStream = () => {
+    const acceptsStream = (id: string) => {
       const state = useAppStore.getState();
-      return isSubscribed && state.isGenerating && state.generationChatId === state.activeChatId;
+      return isSubscribed && state.isGenerating && state.generationChatId === state.activeChatId && !!id && state.generationId === id;
     };
     const setup = async () => {
       const uToken = await api.onLlmToken((token) => {
-        if (acceptsStream()) {
-          setStreamText((prev) => prev + token);
+        if (acceptsStream(token.generation_id)) {
+          setStreamText((prev) => prev + token.text);
           const state = useAppStore.getState();
           const voiceConfig = state.activeVoiceConfig;
           if (state.autoTtsEnabled && voiceConfig && voiceConfig.engine !== 'disabled') {
-            streamingTts.push(token, voiceConfig);
+            streamingTts.push(token.text, voiceConfig);
           }
         }
       });
@@ -113,7 +114,7 @@ export const ChatView: React.FC = () => {
       }
 
       const uThought = await api.onLlmThought((thought) => {
-        if (acceptsStream()) setStreamThought((prev) => prev + thought);
+        if (acceptsStream(thought.generation_id)) setStreamThought((prev) => prev + thought.text);
       });
       if (!isSubscribed) {
         uThought();
@@ -122,7 +123,7 @@ export const ChatView: React.FC = () => {
       }
 
       const uDone = await api.onLlmDone(async (data) => {
-        if (acceptsStream()) {
+        if (acceptsStream(data.generation_id)) {
           setStreamText('');
           setStreamThought('');
           
@@ -136,7 +137,7 @@ export const ChatView: React.FC = () => {
           try {
             const detected = await api.classifyTextEmotion(data.full_text);
             const currentState = useAppStore.getState();
-            if (currentState.generationChatId === null || currentState.generationChatId === state.generationChatId) {
+            if (isSubscribed && currentState.generationId === data.generation_id && currentState.activeChatId === state.activeChatId) {
               currentState.setCurrentEmotion(detected);
             }
           } catch (e) {
@@ -165,7 +166,7 @@ export const ChatView: React.FC = () => {
     // oxlint-disable-next-line react/set-state-in-effect
     setStreamText('');
     setStreamThought('');
-  }, [isGenerating, activeChatId, generationChatId]);
+  }, [isGenerating, activeChatId, generationChatId, generationId]);
 
   useEffect(() => audioPlayer.onPlaybackState((state) => {
     setIsAudioSpeaking(state === 'playing');

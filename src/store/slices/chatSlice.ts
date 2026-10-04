@@ -49,6 +49,7 @@ export interface ChatSlice {
   translateText: (text: string) => Promise<string>;
   /** Sends a message; retries pass the ID of the already saved user message. */
   sendMessage: (content: string, files?: File[], storedMessageId?: string) => Promise<void>;
+  generationId: string | null;
   abortGeneration: () => Promise<void>;
   clearChat: () => void;
   activeChatId: string | null;
@@ -128,7 +129,7 @@ export const createChatSlice: SliceCreator<ChatSlice> = (set, get) => {
       void get().abortGeneration().catch((error) => console.warn('Navigation abort failed:', error));
     }
     set({ activeChatId: chatId, storedMessages: [], messages: [], contextUsage: null,
-      generationFailure: null, streamingText: '', streamingThought: '', isChatLoading: true, chatLoadError: null });
+      generationId: null, generationFailure: null, streamingText: '', streamingThought: '', isChatLoading: true, chatLoadError: null });
     return request;
   };
   const isSessionCurrent = (request: number, charId: string | undefined) =>
@@ -220,6 +221,7 @@ export const createChatSlice: SliceCreator<ChatSlice> = (set, get) => {
   },
 
   isGenerating: false,
+  generationId: null,
 
   activeChatId: null,
   isChatLoading: false,
@@ -443,7 +445,8 @@ export const createChatSlice: SliceCreator<ChatSlice> = (set, get) => {
     cancelled = false;
     generationSessionRequest = sessionRequest;
     generationSequence += 1;
-    set({ isGenerating: true, generationChatId: activeChatId, generationFailure: null, streamingText: '', streamingThought: '' });
+    const generationId = crypto.randomUUID();
+    set({ isGenerating: true, generationId, generationChatId: activeChatId, generationFailure: null, streamingText: '', streamingThought: '' });
 
     try {
       const prompt = await resolvePromptWithLore(get(), priorFlat);
@@ -478,7 +481,7 @@ export const createChatSlice: SliceCreator<ChatSlice> = (set, get) => {
         sampling: {
           ...sampling,
         },
-      }, selectedBackend === 'cloud' ? get().cloudContextTokens : undefined);
+      }, generationId, selectedBackend === 'cloud' ? get().cloudContextTokens : undefined);
       if (!inContext(activeChatId, activeCharacter.id)) return;
 
       const { cleanedText, stateUpdates } = extractStateUpdates(done.full_text);
@@ -540,7 +543,8 @@ export const createChatSlice: SliceCreator<ChatSlice> = (set, get) => {
     cancelled = false;
     generationSessionRequest = sessionRequest;
     generationSequence += 1;
-    set({ isGenerating: true, generationChatId: activeChatId, generationFailure: null, streamingText: '', streamingThought: '' });
+    const generationId = crypto.randomUUID();
+    set({ isGenerating: true, generationId, generationChatId: activeChatId, generationFailure: null, streamingText: '', streamingThought: '' });
 
     try {
       const prompt = await resolvePromptWithLore(get(), historyFlat);
@@ -568,7 +572,7 @@ export const createChatSlice: SliceCreator<ChatSlice> = (set, get) => {
         sampling: {
           ...sampling,
         },
-      }, selectedBackend === 'cloud' ? get().cloudContextTokens : undefined);
+      }, generationId, selectedBackend === 'cloud' ? get().cloudContextTokens : undefined);
       if (!inContext(activeChatId, activeCharacter.id)) return;
 
       const { cleanedText, stateUpdates } = extractStateUpdates(done.full_text);
@@ -653,7 +657,8 @@ export const createChatSlice: SliceCreator<ChatSlice> = (set, get) => {
     cancelled = false;
     generationSessionRequest = sessionRequest;
     generationSequence += 1;
-    set({ isGenerating: true, generationChatId: activeChatId, generationFailure: null, streamingText: '', streamingThought: '' });
+    const generationId = crypto.randomUUID();
+    set({ isGenerating: true, generationId, generationChatId: activeChatId, generationFailure: null, streamingText: '', streamingThought: '' });
     let userStored: StoredChatMessage | undefined;
     try {
       // Ensure we have an active chat session
@@ -663,7 +668,7 @@ export const createChatSlice: SliceCreator<ChatSlice> = (set, get) => {
       }
 
       generationSessionRequest = sessionRequest;
-      set({ generationChatId: activeChatId });
+      set({ generationChatId: activeChatId, generationId });
       if (!activeChatId) throw new Error(get().chatLoadError ?? translate('chat.noActiveSession'));
       if (cancelled) throw new Error(translate('chat.sendCancelled'));
       if (!inContext(activeChatId, activeCharacter?.id)) return;
@@ -737,7 +742,7 @@ export const createChatSlice: SliceCreator<ChatSlice> = (set, get) => {
         sampling: {
           ...sampling,
         },
-      }, selectedBackend === 'cloud' ? get().cloudContextTokens : undefined);
+      }, generationId, selectedBackend === 'cloud' ? get().cloudContextTokens : undefined);
       if (!inContext(chatId, activeCharacter?.id)) return;
 
       // 4. Parse <state> tags
@@ -809,8 +814,9 @@ export const createChatSlice: SliceCreator<ChatSlice> = (set, get) => {
     if (abortPending) return abortPending;
     const sequence = generationSequence;
     const chatId = get().generationChatId;
+    const generationId = get().generationId;
     cancelled = true;
-    set({ generationChatId: null });
+    set({ generationChatId: null, generationId: null });
     const pending = api.abortChatGeneration();
     abortPending = pending;
     try {
@@ -819,7 +825,8 @@ export const createChatSlice: SliceCreator<ChatSlice> = (set, get) => {
     } catch (e) {
       if (sequence === generationSequence) {
         cancelled = false;
-        set({ generationChatId: generationSessionRequest === sessionRequest ? chatId : null });
+        set({ generationChatId: generationSessionRequest === sessionRequest ? chatId : null,
+          generationId: generationSessionRequest === sessionRequest ? generationId : null });
       }
       console.error('Failed to abort generation:', e);
       throw e;

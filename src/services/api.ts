@@ -1,3 +1,5 @@
+import type { TokenEvent } from '../types/generated/TokenEvent';
+import type { ThoughtEvent } from '../types/generated/ThoughtEvent';
 import { invoke } from '@tauri-apps/api/core';
 import { listen, UnlistenFn } from '@tauri-apps/api/event';
 import {
@@ -140,8 +142,8 @@ export const api = {
 
   // Chat & Inference
   /** `contextTokens`: context window of a cloud model; a local server reports its own. */
-  sendChatMessage: async (request: ChatRequest, contextTokens?: number): Promise<DoneEvent> => {
-    return await invoke<DoneEvent>('send_chat_message', { request, contextTokens: contextTokens ?? null });
+  sendChatMessage: async (request: ChatRequest, generationId: string, contextTokens?: number): Promise<DoneEvent> => {
+    return await invoke<DoneEvent>('send_chat_message', { request, generationId, contextTokens: contextTokens ?? null });
   },
 
   abortChatGeneration: async (): Promise<void> => {
@@ -978,15 +980,15 @@ export const api = {
     return await listen<StageStreamEvent>('stage-stream', (event) => callback(event.payload));
   },
 
-  onLlmToken: async (callback: (text: string) => void): Promise<UnlistenFn> => {
-    return await listen<{ text: string }>('llm-token', (event) => {
-      callback(event.payload.text);
+  onLlmToken: async (callback: (data: TokenEvent) => void): Promise<UnlistenFn> => {
+    return await listen<TokenEvent>('llm-token', (event) => {
+      callback(event.payload);
     });
   },
 
-  onLlmThought: async (callback: (text: string) => void): Promise<UnlistenFn> => {
-    return await listen<{ text: string }>('llm-thought', (event) => {
-      callback(event.payload.text);
+  onLlmThought: async (callback: (data: ThoughtEvent) => void): Promise<UnlistenFn> => {
+    return await listen<ThoughtEvent>('llm-thought', (event) => {
+      callback(event.payload);
     });
   },
 

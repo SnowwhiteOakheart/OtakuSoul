@@ -79,18 +79,21 @@ pub struct ChatRequest {
 #[derive(Debug, Clone, Serialize, Deserialize, TS)]
 #[ts(export)]
 pub struct TokenEvent {
+    pub generation_id: String,
     pub text: String,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize, TS)]
 #[ts(export)]
 pub struct ThoughtEvent {
+    pub generation_id: String,
     pub text: String,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize, TS)]
 #[ts(export)]
 pub struct DoneEvent {
+    pub generation_id: String,
     pub full_text: String,
     pub full_thought: String,
     /// How full the context window was; only for chat messages from the UI.
@@ -225,6 +228,7 @@ async fn resolve_dry_window(
 impl InferenceClient {
     fn emit_segment<R: tauri::Runtime>(
         app_handle: &tauri::AppHandle<R>,
+        generation_id: &str,
         full_text: &mut String,
         full_thought: &mut String,
         is_thought: bool,
@@ -232,10 +236,22 @@ impl InferenceClient {
     ) {
         if is_thought {
             full_thought.push_str(&text);
-            let _ = app_handle.emit("llm-thought", ThoughtEvent { text });
+            let _ = app_handle.emit(
+                "llm-thought",
+                ThoughtEvent {
+                    generation_id: generation_id.to_owned(),
+                    text,
+                },
+            );
         } else {
             full_text.push_str(&text);
-            let _ = app_handle.emit("llm-token", TokenEvent { text });
+            let _ = app_handle.emit(
+                "llm-token",
+                TokenEvent {
+                    generation_id: generation_id.to_owned(),
+                    text,
+                },
+            );
         }
     }
 
@@ -279,12 +295,14 @@ impl InferenceClient {
         &self,
         app_handle: &tauri::AppHandle<R>,
         request: ChatRequest,
+        generation_id: &str,
     ) -> Result<DoneEvent, String> {
         let mut full_text = String::new();
         let mut full_thought = String::new();
         self.stream_segments(request, |is_thought, text| {
             Self::emit_segment(
                 app_handle,
+                generation_id,
                 &mut full_text,
                 &mut full_thought,
                 is_thought,
@@ -294,6 +312,7 @@ impl InferenceClient {
         .await?;
 
         let done_event = DoneEvent {
+            generation_id: generation_id.to_owned(),
             full_text,
             full_thought,
             context: None,
@@ -538,6 +557,32 @@ mod tests {
 
     fn dry(request: &super::ChatRequest) -> Option<i32> {
         request.sampling.as_ref().unwrap().dry_penalty_last_n
+    }
+
+    #[test]
+    fn native_chat_events_carry_the_request_identity() {
+        let id = "chat-generation-42";
+        let token = super::TokenEvent {
+            generation_id: id.into(),
+            text: "Hello".into(),
+        };
+        let thought = super::ThoughtEvent {
+            generation_id: id.into(),
+            text: "Thinking".into(),
+        };
+        let done = super::DoneEvent {
+            generation_id: id.into(),
+            full_text: "Hello".into(),
+            full_thought: "Thinking".into(),
+            context: None,
+        };
+        for event in [
+            serde_json::to_value(token).unwrap(),
+            serde_json::to_value(thought).unwrap(),
+            serde_json::to_value(done).unwrap(),
+        ] {
+            assert_eq!(event["generation_id"], id);
+        }
     }
 
     #[tokio::test]
