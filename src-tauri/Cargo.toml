@@ -18,7 +18,7 @@ tauri-build = { version = "2.7", features = [] }
 [dependencies]
 flate2 = "1"
 tar = "0.4"
-ts-rs = { version = "12", features = ["serde-json-impl"] }
+ts-rs = { version = "12", features = ["serde-json-impl", "no-serde-warnings"] }
 parking_lot = "0.12"
 tauri = { version = "2.12", features = ["protocol-asset", "tray-icon"] }
 tauri-plugin-opener = "2.7"
