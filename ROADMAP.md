@@ -83,7 +83,10 @@ Tabs Abenteuer/Taktik/Kampagne sowie JSON/MD-Export mit interaktiven TTRPG-Mecha
 
 - [ ] Apple Metal: `recommendedMaxWorkingSetSize` statt des gesamten Arbeitsspeichers als GPU-Speicher.
 - [ ] Vision lokal auf echter Hardware testen (Gemma/Qwen-VL mit passender `mmproj`, z. B. aus dem Modell-Hub).
-- [ ] Bundle-Analyse (`rollup-plugin-visualizer`); `chunkSizeWarningLimit: 800` in `vite.config.ts` nur als Übergang.
+- [x] Bundle-Analyse (`npm run analyze` → `target/bundle-stats.html`): Der Start-Chunk enthielt alle drei Sprachen
+  (~450 kB Rohtext). Englisch und Russisch laden jetzt bei Bedarf (`i18n/registry.ts`), Deutsch bleibt als Rückfall:
+  Start-Chunk 552 → 247 kB (gzip 160 → 74 kB). `chunkSizeWarningLimit: 800` bleibt begründet für den nur bei
+  sichtbarem Avatar geladenen three.js-Chunk (nicht weiter teilbar).
 
 ---
 

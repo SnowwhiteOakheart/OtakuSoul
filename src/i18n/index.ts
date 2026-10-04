@@ -1,14 +1,11 @@
 import { useAppStore } from '../store/useAppStore';
-import { de } from './locales/de';
-import { en } from './locales/en';
-import { ru } from './locales/ru';
-import type { TranslationDictionary, TranslationKey } from './locales/types';
+import { LOCALES, type SupportedLanguage } from './registry';
+import type { TranslationKey } from './locales/types';
 
 export type { TranslationKey } from './locales/types';
-export type SupportedLanguage = 'de' | 'en' | 'ru';
+export { LOCALES, loadLocale, type SupportedLanguage } from './registry';
 export type TranslationVars = Record<string, string | number>;
-
-export const LOCALES: Record<SupportedLanguage, TranslationDictionary> = { de, en, ru };
+const de = LOCALES.de;
 
 const interpolate = (text: string, vars?: TranslationVars): string =>
   vars ? text.replace(/\{\{(\w+)\}\}/g, (match, name: string) => (name in vars ? String(vars[name]) : match)) : text;
@@ -19,7 +16,7 @@ const interpolate = (text: string, vars?: TranslationVars): string =>
  */
 export function t(key: TranslationKey | string, lang: SupportedLanguage = 'de', vars?: TranslationVars): string {
   const text =
-    (LOCALES[lang] as Record<string, string>)[key] ?? (LOCALES.de as Record<string, string>)[key] ?? key;
+    (LOCALES[lang] as Record<string, string> | undefined)?.[key] ?? (de as Record<string, string>)[key] ?? key;
   return interpolate(text, vars);
 }
 
@@ -30,7 +27,7 @@ export function t(key: TranslationKey | string, lang: SupportedLanguage = 'de', 
  */
 export function tPlural(base: string, count: number, lang: SupportedLanguage = 'de', vars?: TranslationVars): string {
   const category = new Intl.PluralRules(lang).select(count);
-  const dict = LOCALES[lang] as Record<string, string>;
+  const dict = (LOCALES[lang] ?? de) as Record<string, string>;
   const key = `${base}_${category}` in dict ? `${base}_${category}` : `${base}_other`;
   return t(key, lang, { count, ...vars });
 }

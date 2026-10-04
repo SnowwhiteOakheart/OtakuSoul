@@ -7,6 +7,7 @@ import type {
   UpdateInfo,
 } from '../../types';
 import type { SliceCreator } from '../storeTypes';
+import { loadLocale } from '../../i18n/registry';
 import { normalizeColorMode, syncColorMode, type ColorModePreference } from '../../services/theme';
 
 /** Navigation, app lifecycle (init/save settings), language, theme, onboarding, logs and updater. */
@@ -85,6 +86,8 @@ export const createAppSlice: SliceCreator<AppSlice> = (set, get) => ({
       }
 
       const colorMode = normalizeColorMode(settings.color_mode);
+      // A missing language file falls back to German text.
+      await loadLocale(settings.app_language || 'de').catch(() => {});
 
       set({
         serverConfig: {
@@ -227,11 +230,16 @@ export const createAppSlice: SliceCreator<AppSlice> = (set, get) => ({
   appLanguage: 'de',
 
   setAppLanguage: (lang) => {
-    set({ appLanguage: lang });
-    if (typeof document !== 'undefined') {
-      document.documentElement.lang = lang;
-    }
-    get().saveCurrentSettings();
+    // Switch once the language is loaded; until then the old one stays.
+    void loadLocale(lang)
+      .catch(() => {})
+      .then(() => {
+        set({ appLanguage: lang });
+        if (typeof document !== 'undefined') {
+          document.documentElement.lang = lang;
+        }
+        get().saveCurrentSettings();
+      });
   },
 
   theme: 'obsidian',

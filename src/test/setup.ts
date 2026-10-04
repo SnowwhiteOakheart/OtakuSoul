@@ -1,4 +1,11 @@
 import '@testing-library/jest-dom/vitest';
+import { LOCALES } from '../i18n/registry';
+import { en } from '../i18n/locales/en';
+import { ru } from '../i18n/locales/ru';
+
+// The app loads languages on demand; tests switch `appLanguage` directly, so all are there.
+LOCALES.en = en;
+LOCALES.ru = ru;
 import { afterEach } from 'vitest';
 
 afterEach(async () => {
