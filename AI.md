@@ -17,7 +17,8 @@ Nutzer mit „Du“ ansprechen. Antworten, Commits und Doku auf Deutsch.
 - Der Nutzer arbeitet parallel im Repo: fremde uncommittete Änderungen nie mitcommitten.
 - `ROADMAP.md` (bzw. `Roadmap_TTS.md`) im selben Commit abhaken; `README.md`/`AI.md` bei neuen Modulen/Features anpassen.
 - Pfade nur über `paths::base_dirs()` (ProjectDirs bzw. `$OTAKUSOUL_HOME/config|data`); OS-Code mit `#[cfg]`.
-- Modelle nie mitliefern, nur von der Quelle laden (SHA-256); nicht-kommerzielle Modelle gesperrt, bis freigeschaltet.
+- Modelle nie mitliefern, nur von der Quelle laden (SHA-256); nicht-kommerzielle Sprachmodelle gesperrt, bis freigeschaltet;
+  Bildmodelle und LoRAs nur gekennzeichnet (Bilder bleiben privat in der App, Entscheidung des Nutzers).
   Stimmklonen nur mit Einwilligung.
 
 ## Befehle
