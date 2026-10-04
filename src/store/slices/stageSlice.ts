@@ -17,8 +17,10 @@ import type {
   WorldState,
 } from '../../types';
 import type { SliceCreator } from '../storeTypes';
+import { reportFailure } from '../reportFailure';
 
 /** Soul Stage: scenes, turns, dice, world state, clocks and encounters. */
+
 /** Turns Auto-Play runs on its own, and the pause between them. */
 const AUTO_PLAY_TURNS = 5;
 const AUTO_PLAY_PAUSE_MS = 1500;
@@ -240,7 +242,7 @@ export const createStageSlice: SliceCreator<StageSlice> = (set, get) => ({
     try {
       return await api.exportStageSceneJson(sceneId);
     } catch (e) {
-      console.error('Failed to export stage scene JSON:', e);
+      reportFailure('Failed to export stage scene JSON:', e);
       return null;
     }
   },
@@ -253,7 +255,7 @@ export const createStageSlice: SliceCreator<StageSlice> = (set, get) => ({
       return fresh;
     } catch (e) {
       console.error('Failed to reset stage scene:', e);
-      return null;
+      throw e;
     }
   },
 
@@ -379,7 +381,7 @@ export const createStageSlice: SliceCreator<StageSlice> = (set, get) => ({
       await api.deleteStageScene(sceneId);
       await get().fetchStageScenes();
     } catch (e) {
-      console.error('Failed to delete stage scene:', e);
+      reportFailure('Failed to delete stage scene:', e);
     }
   },
 
@@ -387,7 +389,7 @@ export const createStageSlice: SliceCreator<StageSlice> = (set, get) => ({
     try {
       return await api.exportStageMarkdown(sceneId);
     } catch (e) {
-      console.error('Failed to export stage markdown:', e);
+      reportFailure('Failed to export stage markdown:', e);
       return null;
     }
   },
@@ -449,7 +451,7 @@ export const createStageSlice: SliceCreator<StageSlice> = (set, get) => ({
       const rolledBack = await api.undoStageTurn(current.definition.id);
       set({ stageState: rolledBack });
     } catch (e) {
-      console.error('Failed to undo stage turn:', e);
+      reportFailure('Failed to undo stage turn:', e);
     }
   },
 
@@ -462,7 +464,7 @@ export const createStageSlice: SliceCreator<StageSlice> = (set, get) => ({
       set({ stageState: rested, isProcessingStageTurn: false });
       soundFx.playDiceRoll();
     } catch (e) {
-      console.error('Failed to rest party:', e);
+      reportFailure('Failed to rest party:', e);
       set({ isProcessingStageTurn: false });
     }
   },
@@ -475,7 +477,7 @@ export const createStageSlice: SliceCreator<StageSlice> = (set, get) => ({
       set({ stageState: updated });
       soundFx.playHealChime();
     } catch (e) {
-      console.error('Failed to use inventory item:', e);
+      reportFailure('Failed to use inventory item:', e);
     }
   },
 
@@ -484,7 +486,7 @@ export const createStageSlice: SliceCreator<StageSlice> = (set, get) => ({
       const updated = await api.delayEncounterTurn();
       set({ stageState: updated });
     } catch (e) {
-      console.error('Failed to delay encounter turn:', e);
+      reportFailure('Failed to delay encounter turn:', e);
     }
   },
 
@@ -510,7 +512,7 @@ export const createStageSlice: SliceCreator<StageSlice> = (set, get) => ({
       }
       return res;
     } catch (e) {
-      console.error('Failed to roll dice:', e);
+      reportFailure('Failed to roll dice:', e);
       set({ isRollingDice: false });
       return null;
     }
@@ -521,7 +523,7 @@ export const createStageSlice: SliceCreator<StageSlice> = (set, get) => ({
       await api.updateWorldState(world);
       await get().fetchStageState();
     } catch (e) {
-      console.error('Failed to update world state:', e);
+      reportFailure('Failed to update world state:', e);
     }
   },
 
@@ -530,7 +532,7 @@ export const createStageSlice: SliceCreator<StageSlice> = (set, get) => ({
       await api.setClockProgress(clockId, progress);
       await get().fetchStageState();
     } catch (e) {
-      console.error('Failed to set clock progress:', e);
+      reportFailure('Failed to set clock progress:', e);
     }
   },
 
@@ -539,7 +541,7 @@ export const createStageSlice: SliceCreator<StageSlice> = (set, get) => ({
       await api.addClock(clock);
       await get().fetchStageState();
     } catch (e) {
-      console.error('Failed to add clock:', e);
+      reportFailure('Failed to add clock:', e);
     }
   },
 
@@ -548,7 +550,7 @@ export const createStageSlice: SliceCreator<StageSlice> = (set, get) => ({
       await api.deleteClock(clockId);
       await get().fetchStageState();
     } catch (e) {
-      console.error('Failed to delete clock:', e);
+      reportFailure('Failed to delete clock:', e);
     }
   },
 
@@ -558,7 +560,7 @@ export const createStageSlice: SliceCreator<StageSlice> = (set, get) => ({
       soundFx.playAttackHit();
       await get().fetchStageState();
     } catch (e) {
-      console.error('Failed to start encounter:', e);
+      reportFailure('Failed to start encounter:', e);
     }
   },
 
@@ -567,7 +569,7 @@ export const createStageSlice: SliceCreator<StageSlice> = (set, get) => ({
       await api.endEncounter();
       await get().fetchStageState();
     } catch (e) {
-      console.error('Failed to end encounter:', e);
+      reportFailure('Failed to end encounter:', e);
     }
   },
 
@@ -576,7 +578,7 @@ export const createStageSlice: SliceCreator<StageSlice> = (set, get) => ({
       await api.nextEncounterTurn();
       await get().fetchStageState();
     } catch (e) {
-      console.error('Failed to advance encounter turn:', e);
+      reportFailure('Failed to advance encounter turn:', e);
     }
   },
 
@@ -585,7 +587,7 @@ export const createStageSlice: SliceCreator<StageSlice> = (set, get) => ({
       await api.applyCombatantDelta(combatantId, hpDelta, stressDelta);
       await get().fetchStageState();
     } catch (e) {
-      console.error('Failed to apply combatant delta:', e);
+      reportFailure('Failed to apply combatant delta:', e);
     }
   },
 
@@ -594,7 +596,7 @@ export const createStageSlice: SliceCreator<StageSlice> = (set, get) => ({
       await api.addCombatantCondition(combatantId, condition);
       await get().fetchStageState();
     } catch (e) {
-      console.error('Failed to add combatant condition:', e);
+      reportFailure('Failed to add combatant condition:', e);
     }
   },
 });

@@ -11,6 +11,7 @@ import type {
   JsonObject,
 } from '../../types';
 import type { SliceCreator } from '../storeTypes';
+import { reportFailure } from '../reportFailure';
 
 /** Desktop companion: hormones, tools, goals, MCP servers, plugins and overlay. */
 export interface CompanionSlice {
@@ -61,7 +62,7 @@ export const createCompanionSlice: SliceCreator<CompanionSlice> = (set, get) => 
           : null,
       }));
     } catch (e) {
-      console.error('Failed to apply hormone interaction:', e);
+      reportFailure('Failed to apply hormone interaction:', e);
     }
   },
 
@@ -74,7 +75,7 @@ export const createCompanionSlice: SliceCreator<CompanionSlice> = (set, get) => 
           : null,
       }));
     } catch (e) {
-      console.error('Failed to set hormones directly:', e);
+      reportFailure('Failed to set hormones directly:', e);
     }
   },
 
@@ -84,7 +85,7 @@ export const createCompanionSlice: SliceCreator<CompanionSlice> = (set, get) => 
       await get().fetchCompanionState();
       return req;
     } catch (e) {
-      console.error('Failed to request tool call:', e);
+      reportFailure('Failed to request tool call:', e);
       return null;
     }
   },
@@ -95,7 +96,7 @@ export const createCompanionSlice: SliceCreator<CompanionSlice> = (set, get) => 
       await get().fetchCompanionState();
       return res;
     } catch (e) {
-      console.error('Failed to resolve tool call:', e);
+      reportFailure('Failed to resolve tool call:', e);
       return null;
     }
   },
@@ -105,7 +106,7 @@ export const createCompanionSlice: SliceCreator<CompanionSlice> = (set, get) => 
       await api.updateCompanionSettings(settings);
       await get().fetchCompanionState();
     } catch (e) {
-      console.error('Failed to update companion settings:', e);
+      reportFailure('Failed to update companion settings:', e);
     }
   },
 
@@ -114,7 +115,7 @@ export const createCompanionSlice: SliceCreator<CompanionSlice> = (set, get) => 
       await api.addCompanionThought(thought);
       await get().fetchCompanionState();
     } catch (e) {
-      console.error('Failed to add companion thought:', e);
+      reportFailure('Failed to add companion thought:', e);
     }
   },
 
@@ -123,7 +124,7 @@ export const createCompanionSlice: SliceCreator<CompanionSlice> = (set, get) => 
       await api.clearCompanionThoughts();
       await get().fetchCompanionState();
     } catch (e) {
-      console.error('Failed to clear companion thoughts:', e);
+      reportFailure('Failed to clear companion thoughts:', e);
     }
   },
 
@@ -133,7 +134,7 @@ export const createCompanionSlice: SliceCreator<CompanionSlice> = (set, get) => 
       await get().fetchCompanionState();
       return goal;
     } catch (e) {
-      console.error('Failed to add companion goal:', e);
+      reportFailure('Failed to add companion goal:', e);
       return null;
     }
   },
@@ -143,7 +144,7 @@ export const createCompanionSlice: SliceCreator<CompanionSlice> = (set, get) => 
       await api.markCompanionGoalCompleted(goalId);
       await get().fetchCompanionState();
     } catch (e) {
-      console.error('Failed to mark goal completed:', e);
+      reportFailure('Failed to mark goal completed:', e);
     }
   },
 
@@ -152,7 +153,7 @@ export const createCompanionSlice: SliceCreator<CompanionSlice> = (set, get) => 
       await api.deleteCompanionGoal(goalId);
       await get().fetchCompanionState();
     } catch (e) {
-      console.error('Failed to delete companion goal:', e);
+      reportFailure('Failed to delete companion goal:', e);
     }
   },
 
@@ -183,7 +184,7 @@ export const createCompanionSlice: SliceCreator<CompanionSlice> = (set, get) => 
       const updated = await api.toggleMcpServer(serverId, enabled);
       set({ mcpServers: updated });
     } catch (e) {
-      console.error('Failed to toggle MCP server:', e);
+      reportFailure('Failed to toggle MCP server:', e);
     }
   },
 
@@ -192,7 +193,7 @@ export const createCompanionSlice: SliceCreator<CompanionSlice> = (set, get) => 
       await api.saveMcpServers(servers);
       set({ mcpServers: servers });
     } catch (e) {
-      console.error('Failed to save MCP servers:', e);
+      reportFailure('Failed to save MCP servers:', e);
     }
   },
 
@@ -212,7 +213,7 @@ export const createCompanionSlice: SliceCreator<CompanionSlice> = (set, get) => 
       await api.saveCompanionPlugin(plugin);
       await get().fetchCompanionPlugins();
     } catch (e) {
-      console.error('Failed to save companion plugin:', e);
+      reportFailure('Failed to save companion plugin:', e);
     }
   },
 
@@ -220,7 +221,7 @@ export const createCompanionSlice: SliceCreator<CompanionSlice> = (set, get) => 
     try {
       return await api.executeCompanionPlugin(pluginId, args);
     } catch (e) {
-      console.error('Failed to execute companion plugin:', e);
+      reportFailure('Failed to execute companion plugin:', e);
       return null;
     }
   },
@@ -231,7 +232,7 @@ export const createCompanionSlice: SliceCreator<CompanionSlice> = (set, get) => 
       await get().fetchCompanionState();
       return res;
     } catch (e) {
-      console.error('Failed to toggle companion overlay:', e);
+      reportFailure('Failed to toggle companion overlay:', e);
       return false;
     }
   },
@@ -242,7 +243,7 @@ export const createCompanionSlice: SliceCreator<CompanionSlice> = (set, get) => 
       await get().fetchCompanionState();
       return title;
     } catch (e) {
-      console.error('Failed to detect desktop window:', e);
+      reportFailure('Failed to detect desktop window:', e);
       return '';
     }
   },

@@ -58,6 +58,7 @@ export const en: TranslationDictionary = {
   "common.back": "Back",
   "common.next": "Next",
   "common.confirm": "Confirm",
+  "common.actionFailed": "That didn't work: {{error}}",
   "common.retry": "Try again",
   "common.loadingView": "Loading view…",
 

@@ -33,12 +33,11 @@ Arbeitsverzeichnis und Timeout allein gelten nicht als Betriebssystem-Sandbox.
 - [x] Memory-Übersicht und Snapshot-Liste: Lesefehler sichtbar anzeigen, geladene Daten erhalten und Wiederholen ermöglichen.
 - [x] Chat-Seitenleiste: Titel, Author's Note und Zusammenfassung erhalten Entwürfe und melden Schreibfehler.
 - [x] Inline-Nachrichteneditor: Schreibfehler erhalten den Entwurf; Wiederholen übernimmt erst nach erfolgreichem Schreiben.
-- [ ] Speicherfehler vom Store an die Oberfläche weitergeben und verständlich anzeigen.
-- [ ] Erfolgsmeldungen ausschließlich nach erfolgreichem Speichern anzeigen.
-- [ ] Eingaben bei Fehlern erhalten und Wiederholen anbieten.
-- [ ] Memory-, Psychologie-, Beziehungs-, Tagebuch- und Chat-Editoren auf verschluckte Fehler prüfen.
-  *Neuzuschnitt (04.10.):* Memory, Chat-Editoren, Seitenleiste und Stage-Weltzustand sind erledigt. Offen ist ein
-  begrenzter Durchgang: Vom Nutzer ausgelöste Aktionen zeigen Fehler an (v. a. Stage-Store, Companion, Ökosystem);
+- [x] Speicherfehler vom Store an die Oberfläche weitergeben und verständlich anzeigen (`store/reportFailure.ts`; Aktionen mit eigener Rückmeldung werfen weiter).
+- [x] Erfolgsmeldungen ausschließlich nach erfolgreichem Speichern anzeigen (u. a. Backup, Bild-/Discord-/Web-Einstellungen, Chat-Import, Szenenimport, KI-Charakterentwurf).
+- [x] Eingaben bei Fehlern erhalten und Wiederholen anbieten (Formulare bleiben offen, Entwürfe erhalten).
+- [x] Memory-, Psychologie-, Beziehungs-, Tagebuch- und Chat-Editoren auf verschluckte Fehler prüfen.
+  *Erledigt (04.10.):* Durchgang durch alle Store-Aktionen: Vom Nutzer ausgelöste Aktionen zeigen Fehler an (v. a. Stage-Store, Companion, Ökosystem);
   Hintergrundabrufe dürfen weiter nur protokollieren.
 - [x] Fehlgeschlagenes Speichern mit Tests absichern, insbesondere manuell angelegte Erinnerungen.
 

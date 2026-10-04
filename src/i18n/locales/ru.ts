@@ -58,6 +58,7 @@ export const ru: TranslationDictionary = {
   "common.back": "Назад",
   "common.next": "Далее",
   "common.confirm": "Подтвердить",
+  "common.actionFailed": "Не получилось: {{error}}",
   "common.retry": "Повторить",
   "common.loadingView": "Загрузка…",
 

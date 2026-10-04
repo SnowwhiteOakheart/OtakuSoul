@@ -63,6 +63,8 @@ Einstellungen: `components/settings/sections/*` (Server inkl. Laufzeiten/`mmproj
   `cloud_context_tokens`. System-Nachrichten und letzte Nicht-System-Nachricht bleiben immer; Bild = 1000 Tokens.
 - **Bilder lokal:** `local_image::plan` prüft VRAM (nvidia-smi/Vulkan) und entlädt nur bei Bedarf gestuft: TTS → Chat-Modell
   verkleinern/tauschen; danach Neustart im Hintergrund.
+- **Fehler im Store:** Aktion mit eigener Rückmeldung im Aufrufer (Erfolgs-Toast, Formular) → `throw e`; Knopf ohne eigene
+  Rückmeldung → `reportFailure` (`store/reportFailure.ts`, Toast mit Ursache); reine Hintergrundabrufe → nur Log.
 - **Fehler:** Backend `crate::err!("backend.x.y", key = wert)` → JSON-Code → Frontend `errorMessage()` übersetzt über
   i18n; jeder neue Code braucht Einträge in allen Locales. (Dynamisches i18n-Backend ladet z.B. de.json und ru.json aus otakusoul-data/locales/)
 

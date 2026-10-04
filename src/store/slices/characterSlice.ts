@@ -7,6 +7,7 @@ import type {
   CharacterDraft,
 } from '../../types';
 import type { SliceCreator } from '../storeTypes';
+import { reportFailure } from '../reportFailure';
 
 /** Characters, personas, state variables and the AI character assistant. */
 export interface CharacterSlice {
@@ -67,7 +68,7 @@ export const createCharacterSlice: SliceCreator<CharacterSlice> = (set, get) => 
         set({ activePersona: updated[0] });
       }
     } catch (e) {
-      console.error('Failed to delete persona:', e);
+      reportFailure('Failed to delete persona:', e);
     }
   },
 
@@ -183,7 +184,7 @@ export const createCharacterSlice: SliceCreator<CharacterSlice> = (set, get) => 
       return profile;
     } catch (e) {
       console.error('Failed to create character from draft:', e);
-      return null;
+      throw e;
     }
   },
 });

@@ -16,6 +16,7 @@ import type {
   ServerStatus,
 } from '../../types';
 import type { SliceCreator } from '../storeTypes';
+import { reportFailure } from '../reportFailure';
 import { errorMessage } from '../../utils/errors';
 
 /** Local llama-server, hardware, cloud providers, sampler, LLM presets and the GGUF model hub. */
@@ -196,7 +197,7 @@ export const createLlmSlice: SliceCreator<LlmSlice> = (set, get) => ({
       await get().fetchServerStatus();
       await get().fetchHardware();
     } catch (e) {
-      console.error('Failed to start server:', e);
+      reportFailure('Failed to start server:', e);
     }
   },
 
@@ -206,7 +207,7 @@ export const createLlmSlice: SliceCreator<LlmSlice> = (set, get) => ({
       await get().fetchServerStatus();
       await get().fetchHardware();
     } catch (e) {
-      console.error('Failed to stop server:', e);
+      reportFailure('Failed to stop server:', e);
     }
   },
 
@@ -320,7 +321,7 @@ export const createLlmSlice: SliceCreator<LlmSlice> = (set, get) => ({
       const updated = await api.saveLlmPreset(preset);
       set({ llmPresets: updated, activePresetId: preset.id });
     } catch (e) {
-      console.error('Failed to save LLM preset:', e);
+      reportFailure('Failed to save LLM preset:', e);
     }
   },
 
@@ -332,7 +333,7 @@ export const createLlmSlice: SliceCreator<LlmSlice> = (set, get) => ({
         activePresetId: get().activePresetId === presetId ? null : get().activePresetId,
       });
     } catch (e) {
-      console.error('Failed to delete LLM preset:', e);
+      reportFailure('Failed to delete LLM preset:', e);
     }
   },
 

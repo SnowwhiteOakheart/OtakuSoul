@@ -60,6 +60,7 @@ export const de = {
   "common.back": "Zurück",
   "common.next": "Weiter",
   "common.confirm": "Bestätigen",
+  "common.actionFailed": "Das hat nicht geklappt: {{error}}",
   "common.retry": "Erneut versuchen",
   "common.loadingView": "Ansicht wird geladen…",
 

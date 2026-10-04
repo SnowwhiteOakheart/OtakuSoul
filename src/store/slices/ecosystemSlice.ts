@@ -13,6 +13,7 @@ import type {
   WebServerStatus,
 } from '../../types';
 import type { SliceCreator } from '../storeTypes';
+import { reportFailure } from '../reportFailure';
 
 /** Profile backups, image generation, Discord and the mobile web server. */
 export interface EcosystemSlice {
@@ -81,7 +82,7 @@ export const createEcosystemSlice: SliceCreator<EcosystemSlice> = (set, get) => 
       return entry;
     } catch (e) {
       console.error('Failed to create backup:', e);
-      return null;
+      throw e;
     }
   },
 
@@ -102,7 +103,7 @@ export const createEcosystemSlice: SliceCreator<EcosystemSlice> = (set, get) => 
       return ok;
     } catch (e) {
       console.error('Failed to delete backup:', e);
-      return false;
+      throw e;
     }
   },
 
@@ -126,6 +127,7 @@ export const createEcosystemSlice: SliceCreator<EcosystemSlice> = (set, get) => 
       soundFx.playSave();
     } catch (e) {
       console.error('Failed to save image gen config:', e);
+      throw e;
     }
   },
 
@@ -263,7 +265,7 @@ export const createEcosystemSlice: SliceCreator<EcosystemSlice> = (set, get) => 
       await api.setDiscordRpcEnabled(enabled);
       set({ discordRpcEnabled: enabled });
     } catch (e) {
-      console.error('Failed to set discord rpc:', e);
+      reportFailure('Failed to set discord rpc:', e);
     }
   },
 
@@ -291,6 +293,7 @@ export const createEcosystemSlice: SliceCreator<EcosystemSlice> = (set, get) => 
       soundFx.playSave();
     } catch (e) {
       console.error('Failed to save discord bot config:', e);
+      throw e;
     }
   },
 
@@ -300,7 +303,7 @@ export const createEcosystemSlice: SliceCreator<EcosystemSlice> = (set, get) => 
       await get().fetchDiscordStatus();
       soundFx.playStart();
     } catch (e) {
-      console.error('Failed to start discord bot:', e);
+      reportFailure('Failed to start discord bot:', e);
     }
   },
 
@@ -309,7 +312,7 @@ export const createEcosystemSlice: SliceCreator<EcosystemSlice> = (set, get) => 
       await api.stopDiscordBot();
       await get().fetchDiscordStatus();
     } catch (e) {
-      console.error('Failed to stop discord bot:', e);
+      reportFailure('Failed to stop discord bot:', e);
     }
   },
 
@@ -337,6 +340,7 @@ export const createEcosystemSlice: SliceCreator<EcosystemSlice> = (set, get) => 
       soundFx.playSave();
     } catch (e) {
       console.error('Failed to save web server config:', e);
+      throw e;
     }
   },
 
@@ -346,7 +350,7 @@ export const createEcosystemSlice: SliceCreator<EcosystemSlice> = (set, get) => 
       await get().fetchWebServerStatus();
       soundFx.playStart();
     } catch (e) {
-      console.error('Failed to start web server:', e);
+      reportFailure('Failed to start web server:', e);
     }
   },
 
@@ -355,7 +359,7 @@ export const createEcosystemSlice: SliceCreator<EcosystemSlice> = (set, get) => 
       await api.stopWebServer();
       await get().fetchWebServerStatus();
     } catch (e) {
-      console.error('Failed to stop web server:', e);
+      reportFailure('Failed to stop web server:', e);
     }
   },
 
@@ -365,7 +369,7 @@ export const createEcosystemSlice: SliceCreator<EcosystemSlice> = (set, get) => 
       await get().fetchWebServerStatus();
       return token;
     } catch (e) {
-      console.error('Failed to regenerate token:', e);
+      reportFailure('Failed to regenerate token:', e);
       return null;
     }
   },

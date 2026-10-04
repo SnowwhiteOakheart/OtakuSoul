@@ -8,6 +8,7 @@ import { audioPlayer, gainFromVoiceVolume } from '../../services/audioPlayer';
 import { ModalOverlay } from '../ui/ModalOverlay';
 import { LocalTtsSettings } from './LocalTtsSettings';
 import { translate, useTranslation } from '../../i18n';
+import { errorMessage } from '../../utils/errors';
 
 interface CharacterVoiceModalProps {
   onClose: () => void;
@@ -119,7 +120,7 @@ export function CharacterVoiceModal({ onClose, target }: CharacterVoiceModalProp
       setIsLoadingVoices(true);
       api.listAvailableVoices(draft.engine, draft.elevenlabs_api_key, draft.kokoro.voices_path)
         .then(setAvailableVoices)
-        .catch((reason) => setError(String(reason)))
+        .catch((reason) => setError(errorMessage(reason)))
         .finally(() => setIsLoadingVoices(false));
     }, draft.engine === 'elevenlabs' ? 450 : 0);
     return () => window.clearTimeout(timeout);
@@ -241,7 +242,7 @@ export function CharacterVoiceModal({ onClose, target }: CharacterVoiceModalProp
         },
       }));
     } catch (reason) {
-      setError(String(reason));
+      setError(errorMessage(reason));
     } finally {
       setIsInstallingKokoro(false);
     }
@@ -255,7 +256,7 @@ export function CharacterVoiceModal({ onClose, target }: CharacterVoiceModalProp
       await saveVoiceConfigForCharacter(id, draft);
       onClose();
     } catch (reason) {
-      setError(String(reason));
+      setError(errorMessage(reason));
     }
   };
 
@@ -273,7 +274,7 @@ export function CharacterVoiceModal({ onClose, target }: CharacterVoiceModalProp
         draft.output_device_id,
       );
     } catch (reason) {
-      setError(String(reason));
+      setError(errorMessage(reason));
     } finally {
       setIsTesting(false);
     }

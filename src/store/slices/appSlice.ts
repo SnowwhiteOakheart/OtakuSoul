@@ -7,6 +7,7 @@ import type {
   UpdateInfo,
 } from '../../types';
 import type { SliceCreator } from '../storeTypes';
+import { reportFailure } from '../reportFailure';
 import { loadLocale } from '../../i18n/registry';
 import { normalizeColorMode, syncColorMode, type ColorModePreference } from '../../services/theme';
 
@@ -332,7 +333,7 @@ export const createAppSlice: SliceCreator<AppSlice> = (set, get) => ({
       await api.clearAppLogs();
       set({ logs: [] });
     } catch (e) {
-      console.error('Failed to clear app logs:', e);
+      reportFailure('Failed to clear app logs:', e);
     }
   },
 
@@ -341,7 +342,7 @@ export const createAppSlice: SliceCreator<AppSlice> = (set, get) => ({
       return await api.exportAppLogs();
     } catch (e) {
       console.error('Failed to export app logs:', e);
-      return '';
+      throw e;
     }
   },
 
@@ -353,7 +354,7 @@ export const createAppSlice: SliceCreator<AppSlice> = (set, get) => ({
       set({ updateInfo: info });
       return info;
     } catch (e) {
-      console.error('Failed to check for updates:', e);
+      reportFailure('Failed to check for updates:', e);
       return null;
     }
   },

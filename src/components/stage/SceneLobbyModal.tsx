@@ -177,11 +177,14 @@ export const SceneLobbyModal: React.FC<SceneLobbyModalProps> = ({
       confirmLabel: translate('confirm.reset'),
       tone: 'danger',
     });
-    if (confirmed) {
+    if (!confirmed) return;
+    try {
       await resetStageScene(sceneId);
       if (currentSceneId === sceneId) {
         await loadStageScene(sceneId);
       }
+    } catch (err) {
+      toast.error(translate('common.actionFailed', { error: errorMessage(err) }));
     }
   };
 

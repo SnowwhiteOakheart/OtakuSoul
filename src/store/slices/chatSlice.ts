@@ -17,6 +17,7 @@ import type {
   VoiceConfig,
 } from '../../types';
 import type { SliceCreator } from '../storeTypes';
+import { reportFailure } from '../reportFailure';
 import { errorMessage } from '../../utils/errors';
 import { fileToBase64 } from '../../utils/files';
 import { waitWithAbort } from '../../utils/cancellation';
@@ -354,7 +355,7 @@ export const createChatSlice: SliceCreator<ChatSlice> = (set, get) => {
       await api.deleteChatSession(chatId);
       await get().loadChatSessions(char.id);
     } catch (e) {
-      console.error('Failed to delete chat session:', e);
+      reportFailure('Failed to delete chat session:', e);
     }
   },
 
@@ -386,7 +387,7 @@ export const createChatSlice: SliceCreator<ChatSlice> = (set, get) => {
         };
       });
     } catch (e) {
-      console.error('Failed to switch swipe:', e);
+      reportFailure('Failed to switch swipe:', e);
     }
   },
 
@@ -427,7 +428,7 @@ export const createChatSlice: SliceCreator<ChatSlice> = (set, get) => {
         set({ chatSessions: sessions });
       }
     } catch (e) {
-      console.error('Failed to delete chat message:', e);
+      reportFailure('Failed to delete chat message:', e);
     }
   },
 
@@ -640,7 +641,7 @@ export const createChatSlice: SliceCreator<ChatSlice> = (set, get) => {
         activePersona.name
       );
     } catch (e) {
-      console.error('Export failed:', e);
+      reportFailure('Export failed:', e);
       return null;
     }
   },
@@ -655,6 +656,7 @@ export const createChatSlice: SliceCreator<ChatSlice> = (set, get) => {
       await get().switchChatSession(imported.id);
     } catch (e) {
       console.error('Import failed:', e);
+      throw e;
     }
   },
 
@@ -874,7 +876,7 @@ export const createChatSlice: SliceCreator<ChatSlice> = (set, get) => {
         await get().loadChatSessions(activeCharacter.id);
       }
     } catch (e) {
-      console.error('Failed to clear chat:', e);
+      reportFailure('Failed to clear chat:', e);
     }
   },
 
@@ -902,6 +904,7 @@ export const createChatSlice: SliceCreator<ChatSlice> = (set, get) => {
       }
     } catch (e) {
       console.error('Failed to save voice config:', e);
+      throw e;
     }
   },
 });
