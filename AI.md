@@ -120,6 +120,8 @@ Einstellungen: `components/settings/sections/*` (Server inkl. Laufzeiten/`mmproj
   `overwrite` erneut auf. Nie umbenennen („_1“); alte Kopien gehen in den Papierkorb, gelöschte werden wieder sichtbar.
 - Lokale Vision nur mit gewählter `mmproj`; ohne macht `attachments::prepare` aus Bildern einen Hinweis.
 - Swipes: `swipes_json` + `swipe_index`; „Neu generieren“ hängt an, überschreibt nie.
+- Chat-Zusammenfassung: Änderungen an Nachrichten bis `summary_until` (Bearbeiten, Swipe, Löschen) verwerfen sie
+  (`discard_stale_summary` in `memory/chats.rs`, gespiegelt in `chatSlice` `withoutStaleSummary`).
 - Chat-Generierung: Upload/Nutzernachricht, Prompt, Anfrage und Antwortspeicherung liegen innerhalb der
   Fehlerbehandlung; `finally` gibt die Sperre frei. `generationFailure` enthält einen sichtbaren Fehler und
   die Quellnachricht für Senden, Swipe oder Fortsetzen. `retryGeneration` verwendet die gespeicherte

@@ -95,6 +95,15 @@ const toFlat = (m: StoredChatMessage): ChatMessage => ({
 const postHistory = (prompt: AssembledPrompt | null): ChatMessage[] =>
   prompt?.post_history ? [{ role: 'system', content: prompt.post_history }] : [];
 
+/**
+ * Mirrors the backend (`discard_stale_summary`): changing a message the running summary already
+ * covers drops it, so the old version doesn't stay in the prompt; it is rebuilt later.
+ */
+const withoutStaleSummary = (sessions: ChatSession[], message: StoredChatMessage): ChatSession[] =>
+  sessions.map((s) =>
+    s.id === message.chat_id && s.summary_until >= message.order_index ? { ...s, summary: '', summary_until: -1 } : s,
+  );
+
 /** Summarize once this many conversation messages have left the context window. */
 const SUMMARY_BATCH = 6;
 
@@ -373,6 +382,7 @@ export const createChatSlice: SliceCreator<ChatSlice> = (set, get) => {
         return {
           storedMessages: stored,
           messages: flat,
+          chatSessions: withoutStaleSummary(state.chatSessions, updated),
         };
       });
     } catch (e) {
@@ -384,6 +394,7 @@ export const createChatSlice: SliceCreator<ChatSlice> = (set, get) => {
     const chatId = get().activeChatId;
     try {
       const updated = await api.updateChatMessage(msgId, newContent);
+      set((state) => ({ chatSessions: withoutStaleSummary(state.chatSessions, updated) }));
       if (get().activeChatId !== chatId) return;
       set((state) => {
         const stored = state.storedMessages.map((m) => (m.id === msgId ? updated : m));
@@ -496,6 +507,7 @@ export const createChatSlice: SliceCreator<ChatSlice> = (set, get) => {
         cleanedText,
         done.full_thought.trim() ? done.full_thought : null
       );
+      set((state) => ({ chatSessions: withoutStaleSummary(state.chatSessions, updatedMsg) }));
 
       if (!isCurrentContext(activeChatId, activeCharacter.id)) return;
       set({ contextUsage: done.context ?? null });
@@ -590,6 +602,7 @@ export const createChatSlice: SliceCreator<ChatSlice> = (set, get) => {
         mergedContent,
         targetMsg.thought
       );
+      set((state) => ({ chatSessions: withoutStaleSummary(state.chatSessions, updatedMsg) }));
 
       if (!isCurrentContext(activeChatId, activeCharacter.id)) return;
       set({ contextUsage: done.context ?? null });

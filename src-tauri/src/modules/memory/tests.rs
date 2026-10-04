@@ -617,3 +617,60 @@ fn test_snapshot_does_not_write_partial_data_when_a_read_fails() {
     assert_eq!(std::fs::read_dir(&dir).unwrap().count(), 0);
     std::fs::remove_dir_all(dir).unwrap();
 }
+
+#[test]
+fn changing_a_summarized_message_drops_the_summary() {
+    let db = MemoryDb::new_in_memory().unwrap();
+    let chat = db.create_chat_session("ayu", "Test").unwrap();
+    let msgs: Vec<_> = (0..6)
+        .map(|i| {
+            db.add_chat_message(
+                &chat.id,
+                if i % 2 == 0 { "user" } else { "assistant" },
+                &format!("m{i}"),
+                None,
+                &[],
+            )
+            .unwrap()
+        })
+        .collect();
+    let summarized = |until: i64| {
+        db.update_chat_summary(&chat.id, "Bisher: m0 bis m3", until)
+            .unwrap();
+    };
+    let summary = || {
+        let s = db.get_chat_session(&chat.id).unwrap().unwrap();
+        (s.summary, s.summary_until)
+    };
+    let until = i64::from(msgs[3].order_index);
+
+    // Changes after the summarized part keep it.
+    summarized(until);
+    db.update_chat_message(&msgs[5].id, "m5 neu", None).unwrap();
+    db.add_message_swipe(&msgs[5].id, "m5 Variante", None)
+        .unwrap();
+    db.switch_message_swipe(&msgs[5].id, 0).unwrap();
+    db.delete_chat_message(&msgs[4].id).unwrap();
+    assert_eq!(summary(), ("Bisher: m0 bis m3".to_string(), until));
+
+    // Edit, new variant, switching variants and deleting inside it drop it.
+    type Change<'a> = Box<dyn Fn() -> Result<(), rusqlite::Error> + 'a>;
+    let changes: Vec<Change> = vec![
+        Box::new(|| {
+            db.update_chat_message(&msgs[1].id, "m1 korrigiert", None)
+                .map(|_| ())
+        }),
+        Box::new(|| {
+            db.add_message_swipe(&msgs[3].id, "m3 Variante", None)
+                .map(|_| ())
+        }),
+        Box::new(|| db.switch_message_swipe(&msgs[3].id, 0).map(|_| ())),
+        Box::new(|| db.delete_chat_message(&msgs[2].id)),
+        Box::new(|| db.delete_messages_after(&chat.id, msgs[3].order_index)),
+    ];
+    for change in changes {
+        summarized(until);
+        change().unwrap();
+        assert_eq!(summary(), (String::new(), -1));
+    }
+}

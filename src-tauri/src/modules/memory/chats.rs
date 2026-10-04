@@ -1,6 +1,22 @@
 //! Chat sessions, messages, swipes and JSONL import/export.
 
 use super::*;
+use rusqlite::OptionalExtension;
+
+/// A message the running summary already covers changed (edit, swipe, delete): the summary
+/// still tells the old version, so it is dropped and rebuilt from the start the next time
+/// messages leave the context window. Later messages don't touch it.
+fn discard_stale_summary(
+    conn: &rusqlite::Connection,
+    chat_id: &str,
+    order_index: i64,
+) -> Result<(), rusqlite::Error> {
+    conn.execute(
+        "UPDATE chat_sessions SET summary = '', summary_until = -1 WHERE id = ?1 AND summary_until >= ?2",
+        params![chat_id, order_index],
+    )?;
+    Ok(())
+}
 
 impl MemoryDb {
     // --- Chat Sessions & Messages (Phase 9) ---
@@ -306,6 +322,7 @@ impl MemoryDb {
             "UPDATE chat_messages SET content = ?1, thought = ?2, swipes_json = ?3 WHERE id = ?4",
             params![content, thought, new_swipes_json, msg_id],
         )?;
+        discard_stale_summary(&conn, &chat_id, i64::from(order_index))?;
 
         conn.execute(
             "UPDATE chat_sessions SET updated_at = ?1 WHERE id = ?2",
@@ -366,6 +383,7 @@ impl MemoryDb {
             "UPDATE chat_messages SET content = ?1, thought = ?2, swipe_index = ?3, swipes_json = ?4 WHERE id = ?5",
             params![content, thought, new_swipe_idx as i64, new_swipes_json, msg_id],
         )?;
+        discard_stale_summary(&conn, &chat_id, i64::from(order_index))?;
 
         conn.execute(
             "UPDATE chat_sessions SET updated_at = ?1 WHERE id = ?2",
@@ -426,6 +444,7 @@ impl MemoryDb {
                 msg_id
             ],
         )?;
+        discard_stale_summary(&conn, &chat_id, i64::from(order_index))?;
 
         Ok(StoredChatMessage {
             id: msg_id.to_string(),
@@ -443,7 +462,17 @@ impl MemoryDb {
 
     pub fn delete_chat_message(&self, msg_id: &str) -> Result<(), rusqlite::Error> {
         let conn = self.conn.lock();
+        let position: Option<(String, i64)> = conn
+            .query_row(
+                "SELECT chat_id, order_index FROM chat_messages WHERE id = ?1",
+                params![msg_id],
+                |row| Ok((row.get(0)?, row.get(1)?)),
+            )
+            .optional()?;
         conn.execute("DELETE FROM chat_messages WHERE id = ?1", params![msg_id])?;
+        if let Some((chat_id, order_index)) = position {
+            discard_stale_summary(&conn, &chat_id, order_index)?;
+        }
         Ok(())
     }
 
@@ -457,6 +486,7 @@ impl MemoryDb {
             "DELETE FROM chat_messages WHERE chat_id = ?1 AND order_index >= ?2",
             params![chat_id, order_index],
         )?;
+        discard_stale_summary(&conn, chat_id, i64::from(order_index))?;
         Ok(())
     }
 

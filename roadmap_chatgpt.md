@@ -64,10 +64,10 @@ Abnahme: Kein Fehler lässt den Chat dauerhaft beschäftigt zurück; Wiederholen
 
 ## 4. Konsistenz nach Verlaufsänderungen
 
-- [ ] Zusammenfassungen nach Bearbeiten, Löschen und Swipe-Wechsel gezielt verwerfen oder neu erstellen.
+- [x] Zusammenfassungen nach Bearbeiten, Löschen und Swipe-Wechsel gezielt verwerfen oder neu erstellen (`discard_stale_summary`: Änderung im zusammengefassten Teil verwirft sie, sie entsteht beim nächsten Überlauf neu).
 - [ ] Aus geänderten Nachrichten abgeleitete Erinnerungen erkennen und abgleichen. *(Zusammen mit Abschnitt 5 umsetzen: braucht die Quellverknüpfung.)*
 - [ ] Auswirkungen einer Verlaufsänderung auf die Figur verständlich anzeigen.
-- [ ] Regressionstests für korrigierte und entfernte Ereignisse ergänzen.
+- [x] Regressionstests für korrigierte und entfernte Ereignisse ergänzen (Rust: alle Änderungswege; Store: Bearbeiten/Swipe).
 
 Abnahme: Entfernte oder ersetzte Ereignisse gelangen nicht über veraltete Zusammenfassungen erneut in den Prompt.
 
