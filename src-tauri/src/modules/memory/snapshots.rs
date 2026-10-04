@@ -1,4 +1,4 @@
-//! Database snapshots and the Soul of Waifu memory import.
+//! Database snapshots and backups.
 
 use super::*;
 

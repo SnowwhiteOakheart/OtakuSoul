@@ -59,7 +59,7 @@ Die Reihenfolge ist nach Abhängigkeit und Nutzen sortiert: erst das, was jede a
 - [x] **Import** von V2-PNG/JSON per nativem Dateidialog.
 - [x] **Export** als SillyTavern V2-PNG (mit `chara` tEXt-Chunk und CRC32) und JSON (`export_character_card`).
 - [x] **Charakter löschen** (mit Papierkorb/Backup `.trash/` statt Hard-Delete).
-- [ ] **SoW-Konfigurationsimport** – `app/configuration/characters.json`, `settings.json`, `api.json` aus einer bestehenden SoW-Installation übernehmen (Migrationspfad für Bestandsnutzer)
+- [ ] ~~**SoW-Konfigurationsimport**~~ – *(Entfällt; durch Entkopplung und Ausbau des modularen Systems obsolet)*
 - [ ] **Port von `tools/import_character_cards.py`** als Rust-Command/CLI (Bulk-Import inkl. Live2D, Personas, Lorebooks, Szenen, Hintergründe, `--scene-group`)
 - [x] **User-Personas** – mehrere Personas anlegen, bearbeiten, löschen, Schnellwechsel im Chat & HUD (`PersonaManagerModal.tsx`).
 
@@ -101,7 +101,7 @@ Die Reihenfolge ist nach Abhängigkeit und Nutzen sortiert: erst das, was jede a
 - [x] **User-Profil & Beziehungsgedächtnis** – Rolle in der Story, bekannte Attribute, dynamische Beziehungsbeschreibung, Vorlieben und gemeinsame Meilensteine als eigene Schicht
 - [x] **Markdown-Ansicht & Bidirektionaler Sync** – Render-Funktionen (`render_character_markdown`, `render_user_markdown`), integrierter Code-Editor für `MEMORY.md` und `USER.md` mit 1-Klick-Sync zurück nach SQLite
 - [x] **Backups & Snapshots** – automatische Snapshots vor jedem Schreibvorgang, Snapshot-Manager mit Verlauf und 1-Klick-Wiederherstellung
-- [x] **Import bestehender SoW-Memory-Dateien** – Importiert vorhandene `MEMORY.md`, `USER.md`, `topics/*.md` und `DIARY.md` aus Soul-of-Waifu-Ordnern direkt in SQLite
+- [x] ~~**Import bestehender SoW-Memory-Dateien**~~ – *(Historisch umgesetzt; in der neutralen Architektur durch Phase 1 vollständig bereinigt und abgelöst)*
 - [x] **Prompt-Builder-Integration** – Unumstößliche Glaubenssätze, kognitive Dissonanz, Story-Rolle und Beziehungsdynamik fließen reaktiv in den System-Prompt ein
 
 ### Phase 12 – Lorebook 2.0 ✅ Abgeschlossen

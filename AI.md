@@ -1,7 +1,7 @@
 # AI.md – Wegweiser für KI-Assistenten
 
 OtakuSoul: Desktop-App für KI-Rollenspiel-Charaktere (Tauri 2, Rust-Backend, React 19/TS/Vite/Tailwind 4/Zustand).
-Port des Python-Projekts *Soul of Waifu*; **kein Python in der App**. Repo öffentlich: github.com/SnowwhiteOakheart/OtakuSoul.
+Port des Python-Projekts *Soul of Waifu* (vollständig eigenständig und entkoppelt); **kein Python in der App**. Repo öffentlich: github.com/SnowwhiteOakheart/OtakuSoul.
 Nutzer mit „Du“ ansprechen. Antworten, Commits und Doku auf Deutsch.
 `CLAUDE.md` (Claude Code) und `AGENTS.md` (Codex, Cursor u. a.) verweisen nur hierher – Inhalte nur in dieser Datei pflegen.
 
@@ -36,8 +36,8 @@ Backend `src-tauri/src/`: `lib.rs` (Plugins, Command-Registrierung), `state.rs` 
 |---|---|
 | Chat-Pipeline | `inference.rs` (SSE-Streaming, `<think>`-Filter), `providers.rs` (OpenAI-Format/llama-server, Anthropic, …), `prompt_builder.rs` (System-Prompt, `PromptTemplate`), `context_window.rs`, `chat_summary.rs`, `attachments.rs`, `translate.rs` |
 | Lokale Server | `runtimes.rs` (Download/Prüfung llama.cpp, PrismML, sd.cpp, CrispASR), `llama_manager.rs` (llama-server), `local_image.rs` (sd-server + VRAM-Planer), `tts_local.rs` (crispasr --server), `model_files.rs` (HF-Downloads), `gguf.rs`, `hardware.rs` (GPU-Probe) |
-| Daten | `memory/` (SQLite: Seelen-Gedächtnis, `chats.rs`, Snapshots), `settings.rs` (`settings.json`), `paths.rs`, `secrets.rs` (Schlüsselbund), `characters.rs` (V2-Karten PNG/JSON, Personas), `lorebook.rs`, `profile_backup.rs` |
-| Features | `soul_memory_pipeline.rs` (Router/Archivist/Diary), `stage/` (Game-Master), `companion.rs` + `companion_tools.rs` + `mcp_client.rs`, `voice.rs`/`kokoro.rs` (TTS/STT), `image_generator.rs`, `models_hub.rs`, `soul_hub.rs`, `web_server.rs`, `discord.rs`, `updater.rs`, `logger.rs` |
+| Daten | `memory/` (SQLite: Kognitives Gedächtnis, `chats.rs`, Snapshots), `settings.rs` (`settings.json`), `paths.rs`, `secrets.rs` (Schlüsselbund), `characters.rs` (V2-Karten PNG/JSON, Personas), `lorebook.rs`, `profile_backup.rs` |
+| Features | `memory_pipeline.rs` (Router/Archivist/Diary), `stage/` (Game-Master), `companion.rs` + `companion_tools.rs` + `mcp_client.rs`, `voice.rs`/`kokoro.rs` (TTS/STT), `image_generator.rs`, `models_hub.rs`, `hub.rs`, `web_server.rs`, `discord.rs`, `updater.rs`, `logger.rs` |
 
 Frontend `src/`: `services/api.ts` (ein Wrapper je Command), `store/slices/*.ts` (Zustand, Zugriff per
 `useStoreFields('a','b')`), `store/helpers.ts` (`resolvePromptWithLore`, `llmTarget`), `components/<bereich>/`,
@@ -74,11 +74,11 @@ Einstellungen: `components/settings/sections/*` (Server inkl. Laufzeiten/`mmproj
 - Neue Rust-Felder in Typen, die auch handgeschrieben in `src/types/index.ts` stehen: `src/types/wireCheck.ts` meldet
   Abweichungen; dort und in `index.ts` nachziehen.
 - Tauri-Listener mit `isSubscribed`-Guard (StrictMode), sonst doppelte Tokens.
-- Soul Stage streamt über `stage-stream` (`InferenceClient::stream_text`), nicht über `llm-token` (das hört der Chat).
+- Stage streamt über `stage-stream` (`InferenceClient::stream_text`), nicht über `llm-token` (das hört der Chat).
   `stage/history.rs` passt alle Sprecher-Anfragen ins Kontextfenster ein und speichert Zusammenfassungen getrennt
   nach Publikum (`history_summaries`); Änderungen am Verlauf müssen diese verwerfen.
   `stage/npc.rs`: szenengebundene NPCs, gefilterte Erinnerungen mit Quellen-ID und Abruf nach Textrelevanz,
-  Beförderung zu V2-PNG + Soul Memory. Neue öffentliche Ereignisse außerhalb der Runde ebenfalls mit
+  Beförderung zu V2-PNG + Cognitive Memory. Neue öffentliche Ereignisse außerhalb der Runde ebenfalls mit
   `observe_npcs` erfassen; Verlaufsänderungen brauchen `reconcile_npc_memories` und `rebuild_private_knowledge`.
   Archetyp-Avatare unter `public/npc/` (SVG-Quellen, PNGs per `rsvg-convert`, im Backend eingebettet).
   `stage/scenes.rs`: `update_scene_definition` ändert nur die Konfiguration (Fortschritt bleibt erhalten),
@@ -89,12 +89,12 @@ Einstellungen: `components/settings/sections/*` (Server inkl. Laufzeiten/`mmproj
   `stage/world.rs`: Fakten (`fact_updates`, Schlüssel normalisiert) und Chronik gehen in den Planer-Kontext;
   Weltzustand-Editor `StageWorldEditor.tsx` speichert per `save_stage_scene` (in den neuesten Zustand gemischt).
   Rundenende: `archive_resolved_arcs` und `audit_facts` (alle `AUDIT_INTERVAL` Runden); Mock erkennt
-  „[SOUL STAGE — ARC ARCHIVE]“/„[SOUL STAGE — CONSISTENCY]“.
+  „[STAGE — ARC ARCHIVE]“/„[STAGE — CONSISTENCY]“.
   Overlays (`overlay_block` nur für die Figur selbst) und Lorekarten (`relevant_lore_cards`: `party` → Snippets,
-  `gm` → nur Planer). `take_memory_sync_batches` (Rundenende, je Mitglied die gefilterte Sicht) → Soul-Memory-Pipeline
+  `gm` → nur Planer). `take_memory_sync_batches` (Rundenende, je Mitglied die gefilterte Sicht) → Memory-Pipeline
   mit `transcript` im Hintergrund; Mock erkennt sie an „=== RECENT MESSAGES ===“.
   `stage/director.rs`: Sprecherfolge = Spielerwahl > Flüsterziel > direkte Ansprache > Planer; danach pro Beitrag
-  Ansprache-Erkennung, sonst Routing-LLM (Mock erkennt „[SOUL STAGE — ROUTING]“). `turn_mode: "continue"` = Runde ohne
+  Ansprache-Erkennung, sonst Routing-LLM (Mock erkennt „[STAGE — ROUTING]“). `turn_mode: "continue"` = Runde ohne
   Spieleraktion (Weiter/Auto-Play).
   Der Abbruch-Merker wird nur am Runden-/Chat-Start zurückgesetzt (`reset_abort`), damit „Stopp“ die ganze Runde beendet.
 - Lokale Vision nur mit gewählter `mmproj`; ohne macht `attachments::prepare` aus Bildern einen Hinweis.
@@ -117,7 +117,7 @@ Einstellungen: `components/settings/sections/*` (Server inkl. Laufzeiten/`mmproj
   und über `retryChatLoad` wiederholbar. Senden bleibt während Laden/Lesefehlern gesperrt. Navigation fordert
   Abbruch der laufenden Generierung an und stoppt Chat-Sprachausgabe; eine Abrufnummer schützt auch Wechsel A → B → A vor alten Resultaten.
   Späte Sitzungslisten und Stimmenkonfigurationen eines anderen Kontexts dürfen nichts überschreiben.
-- Abbruchbereiche: `AppState.inference_client` gehört zum Chat, `stage_inference_client` zu Soul Stage.
+- Abbruchbereiche: `AppState.inference_client` gehört zum Chat, `stage_inference_client` zu Stage.
   Stage-Runde, Neu-Generieren und Rast erhalten den Stage-Client. `abort_chat_generation` und
   `abort_stage_turn` beeinflussen nur ihren Bereich; `stopStageTurn` nutzt ausschließlich den Stage-Befehl.
   Jeder Client hat einen eigenen Merker und Watch-Signalzähler. Gleichzeitige Runden innerhalb desselben

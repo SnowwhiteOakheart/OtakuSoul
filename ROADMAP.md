@@ -61,11 +61,10 @@ GitHub Actions wurden bewusst entfernt (Commit `11597c2`). Stattdessen gibt es j
 
 ---
 
-## 🎲 Soul Stage: das Beste aus OtakuSoul und Soul of Waifu
+## 🎲 Stage: Modulare TTRPG-Bühne
 
-Abgleich mit der Linux-Variante von Soul of Waifu (01.10.2026). OtakuSoul behält seine Stärken (Hintergründe per lokaler
-Bildgenerierung, Lorebook-Engine, Kampf-Tracker mit Stress und Zuständen, Tabs Abenteuer/Taktik/Kampagne, JSON/MD-Export)
-und übernimmt, was SoW lebendig macht:
+Die Stage verbindet die Stärken lokaler Bildgenerierung, Lorebook-Engine, Kampf-Tracker mit Stress und Zuständen,
+Tabs Abenteuer/Taktik/Kampagne sowie JSON/MD-Export mit interaktiven TTRPG-Mechaniken.
 
 ---
 

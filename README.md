@@ -36,10 +36,10 @@ Herkömmliche Chat-Oberflächen behandeln Charaktere oft wie austauschbare Promp
 
 **OtakuSoul bricht mit diesem Muster.** Entwickelt als hochperformante, native Desktop-App in **Rust (Tauri 2)** und **React 19**, erweckt OtakuSoul Charaktere zu echtem virtuellem Leben:
 
-* 🧠 **Seelen, die sich erinnern:** Mit dem kognitiven **Soul Memory 2.0** entwickeln Charaktere ein echtes vierstufiges Gedächtnis – inklusive Überzeugungen, inneren Konflikten, veränderlichen Beziehungen und authentischen Tagebucheinträgen.
+* 🧠 **Seelen, die sich erinnern:** Mit dem kognitiven **Memory (Gedächtnis)** entwickeln Charaktere ein echtes vierstufiges Gedächtnis – inklusive Überzeugungen, inneren Konflikten, veränderlichen Beziehungen und authentischen Tagebucheinträgen.
 * 🎭 **Ausdrucksstarke Avatare:** Sieh deine Gefährten als **3D-VRM-** oder **Live2D-Modell**, das in Echtzeit mit 28 Emotionen, Blickbewegungen, Blinzeln und audio-gesteuertem LipSync reagiert.
-* 🎲 **Vom Chat zum Pen-&-Paper-Abenteuer:** Mit der **Soul Stage** verwandelt sich jedes Gespräch in eine vollwertige Tabletop-Kampagne. Ein zweistufiger KI-Game-Master führt Regie, während 3D-Würfelproben, Party-Gesundheit, Stress und Quests echte Spannung erzeugen.
-* 🤖 **Ein echter Begleiter auf deinem Desktop:** Der **Soul Companion** schwebt transparent über deinen Fenstern, besitzt einen neurohormonalen Biorhythmus, führt Desktop-Tools aus und verbindet sich über das **Model Context Protocol (MCP)** mit deiner Umgebung.
+* 🎲 **Vom Chat zum Pen-&-Paper-Abenteuer:** Mit der **Stage** verwandelt sich jedes Gespräch in eine vollwertige Tabletop-Kampagne. Ein zweistufiger KI-Game-Master führt Regie, während 3D-Würfelproben, Party-Gesundheit, Stress und Quests echte Spannung erzeugen.
+* 🤖 **Ein echter Begleiter auf deinem Desktop:** Der **Companion** schwebt transparent über deinen Fenstern, besitzt einen neurohormonalen Biorhythmus, führt Desktop-Tools aus und verbindet sich über das **Model Context Protocol (MCP)** mit deiner Umgebung.
 * 🔒 **100 % Local First & Privatsphäre:** Betreibe modernste Sprachmodelle (GGUF via llama.cpp/PrismML), Bildgenerierung (stable-diffusion.cpp) und Sprachausgabe (CrispASR) direkt offline auf deiner Grafikkarte. **Keine Python-Installation nötig, keine versteckten Telemetriedaten.** Und wenn du willst, stehen alle großen Cloud-Provider auf Knopfdruck bereit.
 
 ---
@@ -50,13 +50,13 @@ Herkömmliche Chat-Oberflächen behandeln Charaktere oft wie austauschbare Promp
 |---|---|
 | 💬 **Immersiver Chat** | Intelligentes Kontextfenster-Management mit automatischer Handlungssammenfassung älterer Turns, Swipes (`< 1/3 >`), Inline-Editor mit Schreibschutz-Entwürfen, Dateianhängen (Bilder, PDFs, Text) und In-Chat-Übersetzung. |
 | 🎭 **3D- & 2D-Avatare** | Native Unterstützung für **3D VRM 0.x/1.0** und **Live2D Cubism 2/4** mit automatischer Emotionserkennung, Physics, Blicksteuerung und Audio-FFT-LipSync. Position und Zoom werden pro Figur gespeichert. |
-| 🧠 **Soul Memory 2.0** | 4-Schichten-Gedächtnis (Geist & Psyche, Beziehungsdynamik, episodische Themen, Tagebuch). Autonome Router- und Archivist-Agenten reflektieren Dialoge, während automatische Snapshots für Datensicherheit sorgen. |
-| 🎲 **Soul Stage (TTRPG)** | Volles Solo- und Party-Rollenspiel: 2-stufiger KI-Spielleiter, 3D-Würfel, dynamische NPCs, Weltzustand-Editor. Komplette Mehrsprachigkeit für Szenen und Lorebooks durch otakusoul_i18n. |
+| 🧠 **Cognitive Memory** | 4-Schichten-Gedächtnis (Geist & Psyche, Beziehungsdynamik, episodische Themen, Tagebuch). Autonome Router- und Archivist-Agenten reflektieren Dialoge, während automatische Snapshots für Datensicherheit sorgen. |
+| 🎲 **Stage (TTRPG)** | Volles Solo- und Party-Rollenspiel: 2-stufiger KI-Spielleiter, 3D-Würfel, dynamische NPCs, Weltzustand-Editor. Komplette Mehrsprachigkeit für Szenen und Lorebooks durch otakusoul_i18n. |
 | 🌍 **Dynamische Mehrsprachigkeit** | Das gesamte Backend ist auf dynamische JSON-Locales (z.B. otakusoul-data/locales) umgestellt. Neue Sprachen (z.B. Spanisch, Japanisch) können durch Ablegen einer JSON-Datei hinzugefügt werden, ohne den Code neu kompilieren zu müssen. |
-| 🤖 **Soul Companion** | Schwebendes, transparentes Always-on-Top-Overlay mit Click-Through, Neurohormonen (Dopamin, Cortisol, Oxytocin, Erschöpfung), echtem Desktop-Tool-Zugriff (Websuche, Screenshots, Zwischenablage, Skripte) und 25s Human-in-the-Loop-Sicherheitsbanner. |
+| 🤖 **Companion (Desktop-Agent)** | Schwebendes, transparentes Always-on-Top-Overlay mit Click-Through, Neurohormonen (Dopamin, Cortisol, Oxytocin, Erschöpfung), echtem Desktop-Tool-Zugriff (Websuche, Screenshots, Zwischenablage, Skripte) und 25s Human-in-the-Loop-Sicherheitsbanner. |
 | 🎙️ **Next-Gen Audio & TTS** | 100 % lokal ohne Python über CrispASR: Qwen3-TTS (10 Sprachen), Chatterbox (23 Sprachen), deutsches Kokoro 82M und echtes **Stimmklonen** aus 5–15s Audio. Dazu Edge-TTS, ElevenLabs und lokale Whisper-Spracherkennung. |
 | 🖼️ **Lokale Bildgenerierung** | Offline-Bilder mit stable-diffusion.cpp (SDXL, FLUX.1, Qwen-Image, FLUX.2). Intelligenter VRAM-Planer entlädt bei Bedarf gestuft Sprach- und Chatmodelle und startet sie nach dem Generieren automatisch wieder. |
-| 🌐 **Soul Hub & Universum** | Direkte Chub AI-Integration mit automatischer Lorebook-Extraktion, SillyTavern-V2-Kartenimport/-export, Lorebook 2.0 mit Spannungs-Triggern und Abhängigkeitsketten sowie geführter 5-Schritte KI-Charakter-Wizard. |
+| 🌐 **Community Hub** | Direkte Chub AI-Integration mit automatischer Lorebook-Extraktion, SillyTavern-V2-Kartenimport/-export, Lorebook 2.0 mit Spannungs-Triggern und Abhängigkeitsketten sowie geführter 5-Schritte KI-Charakter-Wizard. |
 | 📱 **Mobiler Web-Client** | Chatte im selben WLAN direkt vom Smartphone oder Tablet: Integrierter Axum-Server mit Vektor-QR-Code, Token-Authentifizierung und DNS-Rebinding-Schutz. |
 | 🎨 **Design & Barrierefreiheit** | 5 lebendige Themes (Obsidian, Cyberpunk, Sakura, Midnight, Emerald), flächendeckende Mehrsprachigkeit (DE, EN, RU), Barrierefreiheit (WCAG AA), globale Befehlspalette (`Strg+K`) und virtualisierte High-Speed-Listen. |
 
@@ -80,11 +80,11 @@ Tausche dich mit deinen Charakteren in einer stimmungsvollen Chat-Oberfläche au
 
 ---
 
-### 2. Soul Stage – Die interaktive Rollenspiel-Bühne
-Erlebe interaktive Tabletop-Abenteuer wie mit einem menschlichen Spielleiter. Soul Stage kombiniert erzählerische Tiefe mit verlässlichen Pen-&-Paper-Mechaniken.
+### 2. Stage – Die interaktive Rollenspiel-Bühne
+Erlebe interaktive Tabletop-Abenteuer wie mit einem menschlichen Spielleiter. Die Stage kombiniert erzählerische Tiefe mit verlässlichen Pen-&-Paper-Mechaniken.
 
 <p align="center">
-  <img src="docs/assets/screenshots/soul-stage-adventure.png" alt="Soul Stage TTRPG Kampagnen- und Abenteuermodus" width="95%" />
+  <img src="docs/assets/screenshots/soul-stage-adventure.png" alt="Stage TTRPG Kampagnen- und Abenteuermodus" width="95%" />
 </p>
 
 * **Zweistufiger KI-Game-Master:** Ein Planner-Modell entwirft Handlung und Herausforderungen; ein Executor-Modell lässt die Welt und Gefährten reagieren.
@@ -93,18 +93,18 @@ Erlebe interaktive Tabletop-Abenteuer wie mit einem menschlichen Spielleiter. So
 * **NPCs mit Gedächtnis & Beförderung:** Triff auf Händler, Wachen oder Schurken mit eigenen Erinnerungen – und befördere sie bei Gefallen direkt zu festen Gefährten der Gruppe!
 
 <p align="center">
-  <img src="docs/assets/screenshots/stage-world-editor.png" alt="Soul Stage Weltzustand-Editor" width="85%" />
+  <img src="docs/assets/screenshots/stage-world-editor.png" alt="Stage Weltzustand-Editor" width="85%" />
 </p>
 
 * **Volle Kontrolle über die Welt:** Der integrierte Weltzustand-Editor erlaubt das freie Anpassen von Fakten, Story-Arcs, Geheimnissen, Gruppenbeziehungen und Inventar.
 
 ---
 
-### 3. Soul Memory 2.0 – Charaktere mit echter Tiefe
-Ein Charakter in OtakuSoul vergisst dich nicht. Nach Gesprächen analysiert eine autonome kognitive Pipeline das Geschehene und aktualisiert die verschiedenen Schichten des Seelengedächtnisses.
+### 3. Cognitive Memory – Charaktere mit echter Tiefe
+Ein Charakter in OtakuSoul vergisst dich nicht. Nach Gesprächen analysiert eine autonome kognitive Pipeline das Geschehene und aktualisiert die verschiedenen Schichten des Gedächtnisses.
 
 <p align="center">
-  <img src="docs/assets/screenshots/soul-memory-psyche.png" alt="Soul Memory 2.0 Kognitiver Psychologie- und Beziehungs-Drawer" width="95%" />
+  <img src="docs/assets/screenshots/soul-memory-psyche.png" alt="Cognitive Memory Kognitiver Psychologie- und Beziehungs-Drawer" width="95%" />
 </p>
 
 * **Geist & Psyche:** Feste Glaubenssätze, momentane Gemütszustände, unbewusste Motive und kognitive Dissonanzen formen das Verhalten.
@@ -114,11 +114,11 @@ Ein Charakter in OtakuSoul vergisst dich nicht. Nach Gesprächen analysiert eine
 
 ---
 
-### 4. Soul Companion – Dein KI-Agent auf dem Desktop
+### 4. Companion – Dein KI-Agent auf dem Desktop
 Hole deinen Gefährten direkt auf deinen Arbeitsplatz. Als schwebendes, rahmenloses Fenster begleitet dich dein Charakter durch den Alltag.
 
 <p align="center">
-  <img src="docs/assets/screenshots/soul-companion-workbench.png" alt="Soul Companion Desktop-Agent und Werkbank mit Human-in-the-Loop Sicherheit" width="95%" />
+  <img src="docs/assets/screenshots/soul-companion-workbench.png" alt="Companion Desktop-Agent und Werkbank mit Human-in-the-Loop Sicherheit" width="95%" />
 </p>
 
 * **Transparentes Overlay & Click-Through:** Platziere deinen Avatar dezent auf dem Bildschirm, ohne dass er dich beim Arbeiten oder Spielen stört.
@@ -128,7 +128,7 @@ Hole deinen Gefährten direkt auf deinen Arbeitsplatz. Als schwebendes, rahmenlo
 
 ---
 
-### 5. Charakter-Studio, Lorebooks & Soul Hub
+### 5. Charakter-Studio, Lorebooks & Community Hub
 Egal ob du eigene Figuren erschaffen oder auf eine gigantische Community-Bibliothek zugreifen möchtest: OtakuSoul fügt sich nahtlos in dein bestehendes Setup ein.
 
 <p align="center">
@@ -157,7 +157,7 @@ flowchart TD
     subgraph Frontend["Modernes Desktop-Frontend (React 19 + TypeScript + Tailwind 4)"]
         UI["UI-Primitive & Themes\n(Obsidian, Cyberpunk, Sakura, Midnight, Emerald)"]
         ChatUI["Chat & HUD\n(11 Rollenspiel-Presets)"]
-        StageUI["Soul Stage\n(3D Würfel, Taktik, Kampagne)"]
+        StageUI["Stage\n(3D Würfel, Taktik, Kampagne)"]
         AvatarUI["Avatar Engine\n(Three.js VRM + PixiJS Live2D)"]
         CompanionUI["Floating Companion\n(Transparent Overlay & MCP)"]
     end
@@ -189,7 +189,7 @@ flowchart TD
 
 ---
 
-### 2. Kognitiver Soul-Memory-Ablauf
+### 2. Kognitiver Memory-Ablauf
 
 Jeder Gesprächsabschnitt durchläuft eine mehrstufige Reflexion, damit sich Figuren organisch weiterentwickeln:
 
@@ -201,7 +201,7 @@ flowchart LR
     Router -->|Nein| Idle["Keine Speicherung nötig"]
     Router -->|Ja| Pipeline["Kognitive Pipeline"]
 
-    subgraph SQLiteMemory["Soul Memory 2.0 (SQLite)"]
+    subgraph SQLiteMemory["Cognitive Memory (SQLite)"]
         Psyche["Geist & Psyche\n(Glaubenssätze, Emotionen, Konflikte)"]
         Rel["Beziehung\n(Affinität, Vertrauen, Meilensteine)"]
         Episodes["Episodische Themen\n(Themenbezogene Erinnerungen)"]

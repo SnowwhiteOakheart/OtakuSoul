@@ -138,16 +138,16 @@ Statt Markenpräfixe tief im Code zu verankern, benennen wir Subsysteme rein nac
 ## 📌 Phase 5: Dokumentation, Hygiene & Finale Verifikation
 > **Ziel:** Vollständige Bereinigung der Dokumente und Absicherung der Funktionsfähigkeit.
 
-- [ ] **5.1 Dokumentation neutralisieren**
-  - [ ] `AI.md`: Historische Bindung entfernen; Architektur modular beschreiben; Mock-Signalstrings aktualisieren.
-  - [ ] `README.md`: Modulübersicht auf funktionale Begriffe umstellen.
-  - [ ] `ROADMAP.md` & `Roadmap_abgeschlossen.md`: Überschriften harmonisieren.
-- [ ] **5.2 Code-Kommentare bereinigen**
-  - [ ] Historische SoW-Kommentare entfernen oder neutral formulieren.
-- [ ] **5.3 Vollständiger Prüflauf**
-  - [ ] `npm run check` (oxlint, tsc, vitest, cargo fmt, clippy, cargo test).
-  - [ ] `npm run e2e` (E2E-Rauchtest mit Mock-LLM).
-  - [ ] Sichtprüfung bei unterschiedlichen Bildschirmauflösungen.
+- [x] **5.1 Dokumentation neutralisieren**
+  - [x] `AI.md`: Historische Bindung entfernen; Architektur modular beschreiben; Mock-Signalstrings aktualisieren.
+  - [x] `README.md`: Modulübersicht auf funktionale Begriffe umstellen.
+  - [x] `ROADMAP.md` & `Roadmap_abgeschlossen.md`: Überschriften harmonisieren.
+- [x] **5.2 Code-Kommentare bereinigen**
+  - [x] Historische SoW-Kommentare entfernen oder neutral formulieren.
+- [x] **5.3 Vollständiger Prüflauf**
+  - [x] `npm run check` (oxlint, tsc, vitest, cargo fmt, clippy, cargo test).
+  - [x] `npm run e2e` (E2E-Rauchtest mit Mock-LLM).
+  - [x] Sichtprüfung bei unterschiedlichen Bildschirmauflösungen.
 
 ---
 
