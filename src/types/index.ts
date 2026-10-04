@@ -264,6 +264,7 @@ export interface CharacterProfile {
 }
 
 export interface LorebookEntry {
+    extensions?: Record<string, unknown>;
   uid?: number;
   name: string;
   key: string[];
@@ -284,6 +285,7 @@ export interface LorebookEntry {
 }
 
 export interface Lorebook {
+    extensions?: Record<string, unknown>;
   id?: string;
   name: string;
   description: string;
@@ -434,6 +436,7 @@ export interface ScenePreview {
 }
 
 export interface SceneDefinition {
+    extensions?: Record<string, unknown>;
   id: string;
   title: string;
   description: string;
