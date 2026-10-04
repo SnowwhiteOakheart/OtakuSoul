@@ -14,6 +14,9 @@ Abgehakte Punkte sind umgesetzt und geprüft; offene Punkte sind noch keine zuge
 - [x] Screenshots und Zwischenablagezugriffe wegen ihrer sensiblen Inhalte bestätigen lassen.
 - [x] Regressionstests für Freigabe, Ablehnung, unbekannte Tools und Varianten der Dateiaktionen ergänzen.
 - [ ] Echte Betriebssystem-Isolation für Skripte mit begrenzten Datei-, Netzwerk- und Prozessrechten entwerfen und umsetzen.
+  *Neuzuschnitt (04.10.):* Eine plattformübergreifende Sandbox (bubblewrap/Landlock, AppContainer, macOS) ist
+  unverhältnismäßig. Stattdessen Skript-Ausführung standardmäßig aus, nur per Schalter mit Warnung; vor der
+  Bestätigung den vollständigen Skripttext zeigen.
 - [ ] Berechtigungen und Auswirkungen pro Werkzeug verständlich anzeigen; die Grenzen der Skript-Ausführung klar benennen.
 
 Abnahme: Ohne Bestätigung wird kein unbekanntes oder externes Werkzeug ausgeführt;
@@ -34,6 +37,9 @@ Arbeitsverzeichnis und Timeout allein gelten nicht als Betriebssystem-Sandbox.
 - [ ] Erfolgsmeldungen ausschließlich nach erfolgreichem Speichern anzeigen.
 - [ ] Eingaben bei Fehlern erhalten und Wiederholen anbieten.
 - [ ] Memory-, Psychologie-, Beziehungs-, Tagebuch- und Chat-Editoren auf verschluckte Fehler prüfen.
+  *Neuzuschnitt (04.10.):* Memory, Chat-Editoren, Seitenleiste und Stage-Weltzustand sind erledigt. Offen ist ein
+  begrenzter Durchgang: Vom Nutzer ausgelöste Aktionen zeigen Fehler an (v. a. Stage-Store, Companion, Ökosystem);
+  Hintergrundabrufe dürfen weiter nur protokollieren.
 - [x] Fehlgeschlagenes Speichern mit Tests absichern, insbesondere manuell angelegte Erinnerungen.
 
 Abnahme: Ein fehlgeschlagener Speichervorgang leert keine Eingabe und meldet keinen Erfolg.
@@ -41,7 +47,7 @@ Abnahme: Ein fehlgeschlagener Speichervorgang leert keine Eingabe und meldet kei
 ## 3. Chat senden, abbrechen und wiederholen
 
 - [x] Promptaufbau und alle nachfolgenden Schritte in eine gemeinsame Fehlerbehandlung aufnehmen.
-- [ ] Generierungszustand bei jedem Fehler und Abbruch zuverlässig zurücksetzen.
+- [x] Generierungszustand bei jedem Fehler und Abbruch zuverlässig zurücksetzen (Arbeitspakete 9, 12–16: `finally`, getrennte Sperren und Abbruchkanäle).
 - [x] Bereits gespeicherte Nutzernachrichten beim Wiederholen erkennen; Duplikate vermeiden.
 - [x] Stage-Routing, Archivierung und Konsistenzprüfung abbrechen und offene Arbeit später nachholen.
 - [x] Stage-Planung und Kontextvorbereitung einschließlich interner Zusammenfassung abbrechen können.
@@ -51,7 +57,7 @@ Abnahme: Ein fehlgeschlagener Speichervorgang leert keine Eingabe und meldet kei
 - [x] Native Text-, Gedanken- und Abschlussereignisse an eine eindeutige Generierungs-ID binden.
 - [x] Sitzungsabrufe ordnen, alte Verläufe während des Ladens ausblenden und Lesefehler wiederholbar anzeigen.
 - [x] Wartende HTTP-Anfragen und inaktive SSE-Streams bei Backend-Abbruch beenden.
-- [ ] Gleichzeitiges Senden, Sitzungswechsel und verspätete Antworten eindeutig einer Sitzung zuordnen.
+- [x] Gleichzeitiges Senden, Sitzungswechsel und verspätete Antworten eindeutig einer Sitzung zuordnen (Arbeitspakete 10, 11, 15: Abrufnummern, `generation_id`, native Sperren).
 - [x] Fehler bei Upload, Promptaufbau, Streaming und Antwortspeicherung gezielt testen.
 
 Abnahme: Kein Fehler lässt den Chat dauerhaft beschäftigt zurück; Wiederholen erzeugt keine doppelte Nutzernachricht.
@@ -59,7 +65,7 @@ Abnahme: Kein Fehler lässt den Chat dauerhaft beschäftigt zurück; Wiederholen
 ## 4. Konsistenz nach Verlaufsänderungen
 
 - [ ] Zusammenfassungen nach Bearbeiten, Löschen und Swipe-Wechsel gezielt verwerfen oder neu erstellen.
-- [ ] Aus geänderten Nachrichten abgeleitete Erinnerungen erkennen und abgleichen.
+- [ ] Aus geänderten Nachrichten abgeleitete Erinnerungen erkennen und abgleichen. *(Zusammen mit Abschnitt 5 umsetzen: braucht die Quellverknüpfung.)*
 - [ ] Auswirkungen einer Verlaufsänderung auf die Figur verständlich anzeigen.
 - [ ] Regressionstests für korrigierte und entfernte Ereignisse ergänzen.
 
@@ -68,6 +74,8 @@ Abnahme: Entfernte oder ersetzte Ereignisse gelangen nicht über veraltete Zusam
 ## 5. Soul Memory nachvollziehbar korrigieren
 
 - [ ] Erinnerungen mit Ursprungsunterhaltung und Quellnachrichten verknüpfen.
+  *Neuzuschnitt (04.10.):* In Etappen. Zuerst Bearbeiten/Vergessen einzelner Erinnerungen samt Quelle (Chat,
+  Nachricht), dann Schutz wichtiger Erinnerungen; Tatsache/Deutung und Änderungshistorie zuletzt.
 - [ ] Bestätigte Tatsachen von Modellinterpretationen unterscheiden.
 - [ ] Einzelne Erinnerungen bearbeiten und gezielt vergessen können.
 - [ ] Wichtige Erinnerungen vor automatischer Überschreibung schützen.
@@ -89,7 +97,7 @@ Abnahme: Eine frische Installation führt ohne Suche in mehreren Einstellungssei
 - [ ] Kompakte Chatansicht und einklappbare Zusatzinformationen anbieten.
 - [ ] Werkzeugleisten, HUD und Avatarsteuerung auf das aktuelle Erlebnis fokussieren.
 - [ ] Statusanzeige an das tatsächlich gewählte Backend anpassen.
-- [ ] Einstellungssuche mit direktem Sprung zur passenden Option ergänzen.
+- [ ] Einstellungssuche mit direktem Sprung zur passenden Option ergänzen. *(Neuzuschnitt: Befehlspalette Strg+K um Einstellungsabschnitte erweitern statt eigener Suche; 89/90/93 erst bei konkretem Anlass.)*
 - [ ] Kleine Fenster, Tastaturbedienung und verschiedene Themes anhand von E2E-Screenshots prüfen.
 
 Abnahme: Ein funktionierender Cloud-Chat erscheint nicht wegen eines gestoppten lokalen Servers als gestört.
@@ -98,7 +106,7 @@ Abnahme: Ein funktionierender Cloud-Chat erscheint nicht wegen eines gestoppten 
 
 - [ ] Volltextsuche im Chat mit Sprung zur Fundstelle ergänzen.
 - [ ] Wichtige Szenen mit Lesezeichen markieren können.
-- [ ] Ab einer Nachricht einen alternativen Handlungsverlauf beginnen können.
+- [ ] Ab einer Nachricht einen alternativen Handlungsverlauf beginnen können. *(Neuzuschnitt: „Ab hier als neuen Chat fortsetzen“ statt Verzweigungsbaum. Soul Memory gehört zum Charakter; die Grenze wird benannt statt vollständig getrennt.)*
 - [ ] Bei Verzweigungen Verlauf, Zusammenfassung und Erinnerungen konsistent trennen.
 
 Abnahme: Alternative Geschichten beeinflussen sich nicht unbeabsichtigt über gemeinsame abgeleitete Erinnerungen.
