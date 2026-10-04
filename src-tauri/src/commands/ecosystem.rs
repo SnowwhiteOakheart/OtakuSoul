@@ -130,6 +130,21 @@ pub async fn delete_image_model(
 }
 
 #[tauri::command]
+pub fn list_image_loras() -> Vec<crate::modules::image_loras::LoraInfo> {
+    crate::modules::image_loras::list_loras()
+}
+
+#[tauri::command]
+pub async fn download_image_lora(app: tauri::AppHandle, lora_id: String) -> Result<(), String> {
+    crate::modules::image_loras::download_lora(&app, &lora_id).await
+}
+
+#[tauri::command]
+pub fn delete_image_lora(file: String) -> Result<(), String> {
+    crate::modules::image_loras::delete_lora(&file)
+}
+
+#[tauri::command]
 pub async fn stop_local_image_server(state: State<'_, AppState>) -> Result<(), String> {
     state.local_image.stop().await;
     Ok(())

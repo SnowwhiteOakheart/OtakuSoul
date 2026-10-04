@@ -55,7 +55,7 @@ Herkömmliche Chat-Oberflächen behandeln Charaktere oft wie austauschbare Promp
 | 🌍 **Dynamische Mehrsprachigkeit** | Das gesamte Backend ist auf dynamische JSON-Locales (z.B. otakusoul-data/locales) umgestellt. Neue Sprachen (z.B. Spanisch, Japanisch) können durch Ablegen einer JSON-Datei hinzugefügt werden, ohne den Code neu kompilieren zu müssen. |
 | 🤖 **Companion (Desktop-Agent)** | Schwebendes, transparentes Always-on-Top-Overlay mit Click-Through, Neurohormonen (Dopamin, Cortisol, Oxytocin, Erschöpfung), echtem Desktop-Tool-Zugriff (Websuche, Screenshots, Zwischenablage, Skripte) und 25s Human-in-the-Loop-Sicherheitsbanner. |
 | 🎙️ **Next-Gen Audio & TTS** | 100 % lokal ohne Python über CrispASR: Qwen3-TTS (10 Sprachen), Chatterbox (23 Sprachen), deutsches Kokoro 82M und echtes **Stimmklonen** aus 5–15s Audio. Dazu Edge-TTS, ElevenLabs und lokale Whisper-Spracherkennung. |
-| 🖼️ **Lokale Bildgenerierung** | Offline-Bilder mit stable-diffusion.cpp (SDXL, FLUX.1, Qwen-Image, FLUX.2). Intelligenter VRAM-Planer entlädt bei Bedarf gestuft Sprach- und Chatmodelle und startet sie nach dem Generieren automatisch wieder. |
+| 🖼️ **Lokale Bildgenerierung** | Offline-Bilder mit stable-diffusion.cpp (SD 1.5 für 4-GB-Karten, SDXL, FLUX.1, Qwen-Image, FLUX.2), dazu Anime-LoRAs passend zur Modellfamilie. Intelligenter VRAM-Planer entlädt bei Bedarf gestuft Sprach- und Chatmodelle und startet sie nach dem Generieren automatisch wieder. |
 | 🌐 **Community Hub** | Direkte Chub AI-Integration mit automatischer Lorebook-Extraktion, SillyTavern-V2-Kartenimport/-export, Lorebook 2.0 mit Spannungs-Triggern und Abhängigkeitsketten sowie geführter 5-Schritte KI-Charakter-Wizard. |
 | 📱 **Mobiler Web-Client** | Chatte im selben WLAN direkt vom Smartphone oder Tablet: Integrierter Axum-Server mit Vektor-QR-Code, Token-Authentifizierung und DNS-Rebinding-Schutz. |
 | 🎨 **Design & Barrierefreiheit** | 5 lebendige Themes (Obsidian, Cyberpunk, Sakura, Midnight, Emerald), flächendeckende Mehrsprachigkeit (DE, EN, RU), Barrierefreiheit (WCAG AA), globale Befehlspalette (`Strg+K`) und virtualisierte High-Speed-Listen. |
@@ -228,10 +228,15 @@ Dank des intelligenten VRAM-Planers teilt sich die Bildgenerierung den Grafikspe
 
 | Modell | Generierungszeit | VRAM-Bedarf | VRAM-Verhalten |
 |---|---|---|---|
+| **Counterfeit V3.0** (SD 1.5) | ~15 s | ~2 GB Gewichte | Einstiegsstufe für 4-GB-Karten; was nicht passt, lagert sd.cpp aus |
 | **Animagine XL 4.0** (SDXL) | ~28 s | ~7,6 GB | Läuft parallel neben verkleinertem Chat-Modell (44 GPU-Layer) |
 | **FLUX.1 dev** (Q5_K_S) | ~48 s | ~9,0 GB | Läuft parallel neben Chat-Modell (26 GPU-Layer) |
 | **Qwen-Image 2.1** (Q4_K) | ~73 s | ~5,6 GB | Paralleler Betrieb mit CPU-Offloading möglich |
 | **FLUX.2 dev** (Q4_K_S) | ~248 s | ~14,4 GB | Gestufter VRAM-Tausch: Entlädt Chat-Modell und lädt es danach neu |
+
+**LoRAs:** Ein geprüfter Katalog (Anime Detailer, Style Enhancer und Pastel Anime für SDXL, GHIBSKY für FLUX.1 – nur
+nicht-kommerziell) lädt per SHA-256 geprüft von Hugging Face; eigene Dateien im Ordner `loras` erscheinen ebenfalls.
+Jede LoRA wird mit Stärke gewählt und nur an Modelle ihrer Familie geschickt, Auslösewörter ergänzt die App selbst.
 
 ### Lokale Sprachausgabe & Stimmklonen (CrispASR)
 Synthesezeiten und Verständlichkeit (gemessen via Whisper-Rückerkennung):

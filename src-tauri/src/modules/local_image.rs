@@ -107,6 +107,28 @@ const FLUX_VAE: CatalogFile = CatalogFile {
 };
 
 const CATALOG: &[CatalogModel] = &[
+    // Entry tier for 4 GB cards: SD 1.5 needs ~2 GB of weights; sd.cpp moves what doesn't fit
+    // into RAM by itself.
+    CatalogModel {
+        id: "counterfeit-v3-sd15",
+        name: "Counterfeit V3.0 (SD 1.5)",
+        family: "sd15",
+        vram_mb: 2_500,
+        license: "CreativeML Open RAIL-M",
+        files: &[CatalogFile {
+            role: Role::Checkpoint,
+            repo: "gsdf/Counterfeit-V3.0",
+            path: "Counterfeit-V3.0_fix_fp16.safetensors",
+            size: 2_132_651_162,
+            sha256: "a54c944e4c04e9d9ca43468ef5b90ea0408bb6264829a4980de79a768df7179f",
+        }],
+        width: 512,
+        height: 768,
+        steps: 25,
+        cfg_scale: 7.0,
+        sampler: "euler a",
+        args: &["--vae-tiling"],
+    },
     CatalogModel {
         id: "animagine-xl-4",
         name: "Animagine XL 4.0",
@@ -371,7 +393,7 @@ pub struct ImageModelProgress {
     pub finished: bool,
 }
 
-static CANCEL_DOWNLOAD: AtomicBool = AtomicBool::new(false);
+pub(crate) static CANCEL_DOWNLOAD: AtomicBool = AtomicBool::new(false);
 
 /// Asks a running [`download_model`] to stop after the current chunk; the partial file is
 /// kept and resumed next time.
@@ -669,6 +691,7 @@ pub struct GenerationRequest<'a> {
     pub prompt: &'a str,
     pub negative: &'a str,
     pub seed: i64,
+    pub loras: &'a [crate::modules::image_loras::LoraSelection],
 }
 
 impl LocalImageEngine {
@@ -862,17 +885,64 @@ impl LocalImageEngine {
         Err(crate::err!("backend.localImage.timeout"))
     }
 
+    /// The requested LoRAs that `sd-server` knows. It reads its LoRA folder only when asked for
+    /// the list and rejects the whole request for an unknown path, so ask first.
+    async fn known_loras(
+        &self,
+        client: &reqwest::Client,
+        request: &[serde_json::Value],
+    ) -> Vec<serde_json::Value> {
+        if request.is_empty() {
+            return Vec::new();
+        }
+        let listed: Vec<String> = match client
+            .get(format!("http://127.0.0.1:{SD_PORT}/sdapi/v1/loras"))
+            .send()
+            .await
+        {
+            Ok(response) => response
+                .json::<Vec<serde_json::Value>>()
+                .await
+                .unwrap_or_default()
+                .iter()
+                .filter_map(|l| l["path"].as_str().map(str::to_string))
+                .collect(),
+            Err(e) => {
+                tracing::warn!("LoRA-Liste von sd-server nicht abrufbar: {e}");
+                Vec::new()
+            }
+        };
+        request
+            .iter()
+            .filter(|l| {
+                let known = l["path"]
+                    .as_str()
+                    .is_some_and(|p| listed.iter().any(|x| x == p));
+                if !known {
+                    tracing::warn!(
+                        "sd-server kennt LoRA {} nicht, wird übersprungen",
+                        l["path"]
+                    );
+                }
+                known
+            })
+            .cloned()
+            .collect()
+    }
+
     async fn txt2img(
         &self,
         model: &CatalogModel,
         req: &GenerationRequest<'_>,
+        loras: &crate::modules::image_loras::AppliedLoras,
     ) -> Result<Vec<u8>, String> {
         let client = reqwest::Client::builder()
             .timeout(Duration::from_secs(1_800))
             .build()
             .map_err(|e| crate::err!("backend.common.httpClient", error = e))?;
+        let lora = self.known_loras(&client, &loras.request).await;
         let payload = serde_json::json!({
-            "prompt": req.prompt,
+            "prompt": crate::modules::image_loras::with_triggers(req.prompt, &loras.triggers),
             "negative_prompt": req.negative,
             "width": model.width,
             "height": model.height,
@@ -881,6 +951,7 @@ impl LocalImageEngine {
             "sampler_name": model.sampler,
             "seed": req.seed,
             "batch_size": 1,
+            "lora": lora,
         });
         let response = client
             .post(format!("http://127.0.0.1:{SD_PORT}/sdapi/v1/txt2img"))
@@ -926,13 +997,14 @@ impl LocalImageEngine {
             });
         };
         emit("planning", None);
+        let loras = crate::modules::image_loras::apply(req.loras, model.family);
 
         let llm_config = llama.running_config().await;
         let image_already_loaded = self.loaded_model().await.as_deref() == Some(model.id);
         let tts_vram = crate::modules::tts_local::engine().loaded_vram_mb().await;
         let decision = {
             let llm = llm_config.clone();
-            let image_vram = model.vram_mb;
+            let image_vram = model.vram_mb + loras.vram_mb;
             tokio::task::spawn_blocking(move || {
                 let (total, free) = best_gpu_vram();
                 let (llm_vram, total_layers, gpu_layers) = match &llm {
@@ -1013,7 +1085,7 @@ impl LocalImageEngine {
             emit("loading_model", Some(plan));
             self.ensure_server(model).await?;
             emit("generating", Some(plan));
-            self.txt2img(model, &req).await
+            self.txt2img(model, &req, &loras).await
         }
         .await;
 

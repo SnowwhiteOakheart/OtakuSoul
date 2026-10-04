@@ -64,19 +64,30 @@ pub async fn download_file(
     cancel: &AtomicBool,
     emit: &(impl Fn(u64) + Sync),
 ) -> Result<(), String> {
-    download_from(client, &file.url(), file, dir, cancel, emit).await
+    download_from(client, &file.url(), file, &file.path_in(dir), cancel, emit).await
+}
+
+/// [`download_file`] under another name than the one in the repository (generic names such as
+/// `lora.safetensors`).
+pub async fn download_file_as(
+    client: &reqwest::Client,
+    file: &RemoteFile,
+    target: &Path,
+    cancel: &AtomicBool,
+    emit: &(impl Fn(u64) + Sync),
+) -> Result<(), String> {
+    download_from(client, &file.url(), file, target, cancel, emit).await
 }
 
 async fn download_from(
     client: &reqwest::Client,
     url: &str,
     file: &RemoteFile,
-    dir: &Path,
+    target: &Path,
     cancel: &AtomicBool,
     emit: &(impl Fn(u64) + Sync),
 ) -> Result<(), String> {
-    let target = file.path_in(dir);
-    let part = part_path(&target);
+    let part = part_path(target);
 
     // Hash what an earlier attempt already downloaded, then continue from there.
     let mut hasher = Sha256::new();
@@ -170,7 +181,7 @@ async fn download_from(
             error = file.file_name()
         ));
     }
-    tokio::fs::rename(&part, &target)
+    tokio::fs::rename(&part, target)
         .await
         .map_err(|e| crate::err!("backend.common.fileWrite", error = e))?;
     emit(have);
@@ -231,7 +242,7 @@ mod tests {
 
         // A previous attempt left the first 10 bytes behind.
         std::fs::write(part_path(&file.path_in(&dir)), &DATA[..10]).unwrap();
-        download_from(&client, &url, &file, &dir, &cancel, &|_| {})
+        download_from(&client, &url, &file, &file.path_in(&dir), &cancel, &|_| {})
             .await
             .unwrap();
         assert_eq!(std::fs::read(file.path_in(&dir)).unwrap(), DATA);
@@ -245,7 +256,7 @@ mod tests {
         };
         std::fs::write(part_path(&bad.path_in(&dir)), b"XXXXXXXXXX").unwrap();
         assert!(
-            download_from(&client, &url, &bad, &dir, &cancel, &|_| {})
+            download_from(&client, &url, &bad, &bad.path_in(&dir), &cancel, &|_| {})
                 .await
                 .is_err()
         );
@@ -258,9 +269,16 @@ mod tests {
         };
         cancel.store(true, Ordering::SeqCst);
         assert!(
-            download_from(&client, &url, &cancelled, &dir, &cancel, &|_| {})
-                .await
-                .is_err()
+            download_from(
+                &client,
+                &url,
+                &cancelled,
+                &cancelled.path_in(&dir),
+                &cancel,
+                &|_| {}
+            )
+            .await
+            .is_err()
         );
         assert!(!cancelled.is_complete(&dir));
         let _ = std::fs::remove_dir_all(dir);

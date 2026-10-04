@@ -16,6 +16,8 @@ import type { ClonedVoice } from './generated/ClonedVoice';
 import type { ImageModelInfo } from './generated/ImageModelInfo';
 import type { ImagePromptRequest } from './generated/ImagePromptRequest';
 import type { ImageModelProgress } from './generated/ImageModelProgress';
+import type { LoraInfo } from './generated/LoraInfo';
+import type { LoraSelection } from './generated/LoraSelection';
 import type { LocalImageStatus } from './generated/LocalImageStatus';
 import type { VramPlan } from './generated/VramPlan';
 import type { VramStrategy } from './generated/VramStrategy';
@@ -84,6 +86,8 @@ export type {
   RuntimeKind,
   ImageModelInfo,
   ImageModelProgress,
+  LoraInfo,
+  LoraSelection,
   ImagePromptRequest,
   TtsModelInfo,
   TtsModelProgress,
@@ -898,6 +902,8 @@ export interface ImageGenConfig {
   /** Catalog id of the local image model (provider `local`). */
   local_model_id?: string | null;
   vram_strategy?: VramStrategy;
+  /** LoRAs for the local image model; each applies only to its own model family. */
+  local_loras?: LoraSelection[];
 }
 
 export interface DiscordRpcActivity {

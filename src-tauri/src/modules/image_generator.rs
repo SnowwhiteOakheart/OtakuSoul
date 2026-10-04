@@ -33,6 +33,9 @@ pub struct ImageGenConfig {
     /// How the local image model shares the GPU with the chat model.
     #[serde(default)]
     pub vram_strategy: crate::modules::local_image::VramStrategy,
+    /// LoRAs for the local image model; each applies only to its own model family.
+    #[serde(default)]
+    pub local_loras: Vec<crate::modules::image_loras::LoraSelection>,
 }
 
 impl Default for ImageGenConfig {
@@ -51,6 +54,7 @@ impl Default for ImageGenConfig {
             seed: -1,
             local_model_id: None,
             vram_strategy: Default::default(),
+            local_loras: Vec::new(),
         }
     }
 }
@@ -464,6 +468,7 @@ impl ImageGenerator {
                             prompt,
                             negative: negative_prompt,
                             seed: config.seed,
+                            loras: &config.local_loras,
                         },
                     )
                     .await?;

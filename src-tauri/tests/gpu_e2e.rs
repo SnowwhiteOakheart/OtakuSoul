@@ -494,6 +494,7 @@ async fn images() {
                         prompt,
                         negative: "lowres, bad anatomy, bad hands, watermark, text",
                         seed: 42,
+                        loras: &[],
                     },
                 )
                 .await;
@@ -570,5 +571,77 @@ async fn images() {
     assert!(
         results.iter().all(|r| r.2 && r.3),
         "some generations failed"
+    );
+}
+
+/// LoRAs reach `sd-server` through the app's request: the same seed with and without a LoRA
+/// gives different images; the SD 1.5 tier generates. Downloads the catalog files it needs.
+/// `cargo test --test gpu_e2e loras -- --ignored --nocapture`
+#[tokio::test(flavor = "multi_thread")]
+#[ignore = "needs a GPU and downloads models"]
+async fn loras() {
+    use otakusoul_lib::modules::image_loras::{self, LoraSelection};
+    let out = out_dir();
+    ensure_runtime(RuntimeKind::Sd, &["vulkan"]).await;
+    for id in ["counterfeit-v3-sd15", "animagine-xl-4"] {
+        local_image::download_model_with(id, &|_| {}).await.unwrap();
+    }
+    let pastel = image_loras::list_loras()
+        .into_iter()
+        .find(|l| l.catalog_id.as_deref() == Some("pastel-anime-xl"))
+        .unwrap();
+    assert!(
+        pastel.installed,
+        "Pastel Anime XL in loras/ herunterladen (App oder curl)"
+    );
+
+    let engine = LocalImageEngine::new();
+    let llama = Arc::new(LlamaServerManager::new());
+    let generate = async |model_id: &str, loras: &[LoraSelection]| {
+        let started = Instant::now();
+        let png = engine
+            .generate(
+                &|_| {},
+                llama.clone(),
+                GenerationRequest {
+                    model_id,
+                    strategy: VramStrategy::Swap,
+                    prompt: "1girl, silver hair, school uniform, cherry blossoms, smiling",
+                    negative: "lowres, bad anatomy, worst quality",
+                    seed: 42,
+                    loras,
+                },
+            )
+            .await
+            .expect("image generated");
+        println!(
+            "[lora] {model_id} mit {} LoRA(s): {:.0}s",
+            loras.len(),
+            started.elapsed().as_secs_f32()
+        );
+        png
+    };
+
+    let sd15 = generate("counterfeit-v3-sd15", &[]).await;
+    std::fs::write(out.join("lora-sd15.png"), &sd15).unwrap();
+    let plain = generate("animagine-xl-4", &[]).await;
+    let pastel = [LoraSelection {
+        file: pastel.file,
+        weight: 1.0,
+    }];
+    let styled = generate("animagine-xl-4", &pastel).await;
+    std::fs::write(out.join("lora-sdxl-plain.png"), &plain).unwrap();
+    std::fs::write(out.join("lora-sdxl-pastel.png"), &styled).unwrap();
+    // A LoRA of another family is left out: same image as without.
+    let flux_only = [LoraSelection {
+        file: "flux-ghibsky-illustration.safetensors".into(),
+        weight: 1.0,
+    }];
+    let unchanged = generate("animagine-xl-4", &flux_only).await;
+    engine.stop().await;
+    assert_ne!(plain, styled, "LoRA ändert das Bild nicht");
+    assert_eq!(
+        plain, unchanged,
+        "LoRA einer anderen Modellfamilie wurde mitgeschickt"
     );
 }

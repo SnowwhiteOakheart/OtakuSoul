@@ -363,10 +363,11 @@ export const ImageGenTab: React.FC = () => {
             />
           </div>
 
-          {loras.length > 0 && (
+          {/* sd-server ignores `<lora:…>` tags; local LoRAs are chosen in the local settings. */}
+          {!isLocal && loras.length > 0 && (
             <div className="pt-2 border-t border-slate-800">
               <label className="block text-xs font-semibold text-slate-300 mb-2">
-                LoRAs (Klicken zum Einfügen)
+                {t('int.loraInsert')}
               </label>
               <div className="flex flex-wrap gap-2">
                 {loras.map((lora) => (

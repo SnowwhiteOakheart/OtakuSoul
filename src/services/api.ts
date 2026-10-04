@@ -94,6 +94,7 @@ import {
   ImageModelInfo,
   ImageModelProgress,
   ImagePromptRequest,
+  LoraInfo,
   TtsModelInfo,
   TtsModelProgress,
   TtsLocalSettings,
@@ -1259,6 +1260,19 @@ export const api = {
 
   deleteImageModel: async (modelId: string): Promise<void> => {
     await invoke('delete_image_model', { modelId });
+  },
+
+  listImageLoras: async (): Promise<LoraInfo[]> => {
+    return await invoke<LoraInfo[]>('list_image_loras');
+  },
+
+  /** Progress arrives as `image-model-progress` with the LoRA id as `model_id`. */
+  downloadImageLora: async (loraId: string): Promise<void> => {
+    await invoke('download_image_lora', { loraId });
+  },
+
+  deleteImageLora: async (file: string): Promise<void> => {
+    await invoke('delete_image_lora', { file });
   },
 
   stopLocalImageServer: async (): Promise<void> => {

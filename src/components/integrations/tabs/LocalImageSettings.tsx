@@ -5,6 +5,7 @@ import { translate, useTranslation } from '../../../i18n';
 import { errorMessage } from '../../../utils/errors';
 import { confirmDialog, toast } from '../../ui/feedback';
 import { RuntimeCard } from '../../settings/sections/RuntimeCard';
+import { LocalLoraSettings } from './LocalLoraSettings';
 import type { ImageGenConfig, ImageModelInfo, ImageModelProgress, VramStrategy } from '../../../types';
 
 const STRATEGIES: VramStrategy[] = ['auto', 'parallel', 'swap', 'reduce_llm'];
@@ -197,6 +198,12 @@ export const LocalImageSettings = ({ config, onChange }: LocalImageSettingsProps
           </ul>
         )}
       </div>
+
+      <LocalLoraSettings
+        config={config}
+        onChange={onChange}
+        family={models?.find((m) => m.id === config.local_model_id)?.family ?? null}
+      />
 
       <div className="rounded-xl border border-slate-800 bg-slate-900/60 p-4 space-y-2">
         <label htmlFor="vram-strategy" className="block text-sm font-semibold text-slate-200">

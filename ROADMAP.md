@@ -58,8 +58,13 @@ GitHub Actions wurden bewusst entfernt (Commit `11597c2`). Stattdessen gibt es j
   `--backend` und `llama-server` per `--device` die größte dedizierte GPU, wenn mehr als ein Gerät gelistet ist.
 
   Noch offen: Parallelbetrieb auf 24 GB (keine Karte vorhanden).
-- [ ] Anime-LoRAs (Flux/SDXL) auswählbar machen (`/sdapi/v1/loras`), Pony V6 (nur über Civitai mit Login) und eine
-  SD-1.5-Stufe für 4-GB-Karten.
+- [x] Anime-LoRAs und SD-1.5-Stufe (`image_loras.rs`, `LocalLoraSettings.tsx`): Katalog mit SHA-256 (SDXL: Anime
+  Detailer, Style Enhancer, Pastel Anime; FLUX.1: GHIBSKY, nicht-kommerziell) plus eigene Dateien in `loras/`, Auswahl
+  mit Stärke je Modellfamilie, Auslösewörter automatisch. Counterfeit V3.0 (SD 1.5, 2,1 GB) als 4-GB-Stufe.
+  Auf RTX 4070 Ti SUPER getestet (`gpu_e2e loras`): SD 1.5 in 15 s, alle LoRA-Tensoren angewendet, fremde Familie
+  wird nicht mitgeschickt. Gefunden: `sd-server` ignoriert `<lora:…>` im Prompt und kennt neue Dateien erst nach
+  `GET /sdapi/v1/loras`; XLabs' FLUX-Anime-LoRA wirkt im Original gar nicht und konvertiert verwaschen (nicht im
+  Katalog). Pony V6 bleibt draußen (nur über Civitai mit Login).
 
 ---
 
