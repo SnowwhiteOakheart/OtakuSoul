@@ -2,39 +2,56 @@
 //! defaults, bot replies). It follows the character's reply language, not the interface
 //! language, so text inserted into a conversation matches the story.
 //!
-//! Only German, English and Russian texts exist; other reply languages get English, while the
-//! language model still answers in the chosen language.
+//! Translations for languages are loaded dynamically from `locales/` in the presets repo.
+//! English is the default fallback encoded in the Rust source.
 
 use std::path::Path;
+use std::sync::OnceLock;
+use std::collections::HashMap;
+use std::sync::RwLock;
+use std::borrow::Cow;
 
-#[derive(Debug, Clone, Copy, PartialEq, Eq)]
-pub enum ContentLang {
-    De,
-    En,
-    Ru,
+static TRANSLATIONS: OnceLock<RwLock<HashMap<String, HashMap<String, String>>>> = OnceLock::new();
+
+fn translations() -> &'static RwLock<HashMap<String, HashMap<String, String>>> {
+    TRANSLATIONS.get_or_init(|| RwLock::new(HashMap::new()))
 }
 
-impl ContentLang {
-    /// Maps a reply language as stored in the settings ("Deutsch", "English", "Русский", …).
-    pub fn from_reply_language(name: &str) -> Self {
-        match name.trim().to_lowercase().as_str() {
-            "deutsch" | "german" | "de" => Self::De,
-            "русский" | "russian" | "ru" => Self::Ru,
-            _ => Self::En,
+pub fn load_locales() {
+    let paths = crate::modules::paths::resolve_app_paths();
+    let locales_dir = std::path::PathBuf::from(&paths.bundled_presets_dir).parent().unwrap().join("locales");
+    if let Ok(entries) = std::fs::read_dir(&locales_dir) {
+        let mut map = translations().write().unwrap();
+        for entry in entries.flatten() {
+            let path = entry.path();
+            if path.extension().is_some_and(|e| e == "json") {
+                let lang = path.file_stem().unwrap().to_string_lossy().to_string();
+                if let Ok(content) = std::fs::read_to_string(&path) {
+                    if let Ok(dict) = serde_json::from_str::<HashMap<String, String>>(&content) {
+                        map.insert(lang, dict);
+                    }
+                }
+            }
         }
     }
+}
 
-    /// The reply language from settings.json, read without loading the full settings.
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct ContentLang(pub String);
+
+impl ContentLang {
+    pub fn from_reply_language(name: &str) -> Self {
+        Self(language_code(name))
+    }
+
     pub fn current() -> Self {
-        // Tests must not depend on the developer's own settings.
         if cfg!(test) {
-            return Self::De;
+            return Self("de".to_string());
         }
         let path = crate::modules::settings::get_settings_file_path();
         Self::from_settings_file(&path)
     }
 
-    /// The reply language exactly as the user chose it (e.g. "English", "日本語"), for prompts.
     pub fn reply_language_name() -> String {
         reply_language_in(&crate::modules::settings::get_settings_file_path())
             .unwrap_or_else(|| "Deutsch".to_string())
@@ -43,22 +60,22 @@ impl ContentLang {
     fn from_settings_file(path: &Path) -> Self {
         reply_language_in(path)
             .map(|name| Self::from_reply_language(&name))
-            // The app's default reply language is German.
-            .unwrap_or(Self::De)
+            .unwrap_or_else(|| Self("de".to_string()))
     }
 
-    /// Picks the text for this language.
-    pub fn pick<'a>(self, de: &'a str, en: &'a str, ru: &'a str) -> &'a str {
-        match self {
-            Self::De => de,
-            Self::En => en,
-            Self::Ru => ru,
+    pub fn t<'a>(&'a self, en: &'a str) -> Cow<'a, str> {
+        let map = translations().read().unwrap();
+        if let Some(lang_map) = map.get(&self.0) {
+            if let Some(translated) = lang_map.get(en) {
+                return Cow::Owned(translated.clone());
+            }
         }
+        Cow::Borrowed(en)
     }
 
-    /// Picks the template for this language and fills its `{}` placeholders in order.
-    pub fn fill(self, de: &str, en: &str, ru: &str, args: &[&dyn std::fmt::Display]) -> String {
-        let mut parts = self.pick(de, en, ru).split("{}");
+    pub fn fill_t(&self, en: &str, args: &[&dyn std::fmt::Display]) -> String {
+        let template = self.t(en);
+        let mut parts = template.split("{}");
         let mut out = parts.next().unwrap_or_default().to_string();
         for (index, part) in parts.enumerate() {
             if let Some(arg) = args.get(index) {
@@ -69,14 +86,11 @@ impl ContentLang {
         out
     }
 
-    /// Placeholder for "nothing to report" in memory fields.
-    pub fn none_marker(self) -> &'static str {
-        self.pick("Keine.", "None.", "Нет.")
+    pub fn none_marker(&self) -> String {
+        self.t("None.").into_owned()
     }
 }
 
-/// ISO 639-1 code for a reply language name as stored in the settings ("Deutsch" → "de").
-/// Unknown names are returned lowercased, so a code stored directly still works.
 pub fn language_code(reply_language: &str) -> String {
     let name = reply_language.trim().to_lowercase();
     match name.as_str() {
@@ -103,10 +117,10 @@ mod tests {
 
     #[test]
     fn maps_reply_languages() {
-        assert_eq!(ContentLang::from_reply_language("Deutsch"), ContentLang::De);
-        assert_eq!(ContentLang::from_reply_language("English"), ContentLang::En);
-        assert_eq!(ContentLang::from_reply_language("Русский"), ContentLang::Ru);
-        assert_eq!(ContentLang::from_reply_language("日本語"), ContentLang::En);
+        assert_eq!(ContentLang::from_reply_language("Deutsch").0, "de");
+        assert_eq!(ContentLang::from_reply_language("English").0, "en");
+        assert_eq!(ContentLang::from_reply_language("Русский").0, "ru");
+        assert_eq!(ContentLang::from_reply_language("日本語").0, "ja");
     }
 
     #[test]
@@ -120,7 +134,7 @@ mod tests {
     #[test]
     fn fills_placeholders_in_order() {
         assert_eq!(
-            ContentLang::En.fill("{} x {}", "{} of {}", "{} из {}", &[&3, &"five"]),
+            ContentLang("en".to_string()).fill_t("{} x {}", &[&3, &"five"]),
             "3 of five"
         );
     }
@@ -132,10 +146,10 @@ mod tests {
         std::fs::create_dir_all(&dir).unwrap();
         let path = dir.join("settings.json");
         std::fs::write(&path, r#"{"reply_language":"English"}"#).unwrap();
-        assert_eq!(ContentLang::from_settings_file(&path), ContentLang::En);
+        assert_eq!(ContentLang::from_settings_file(&path).0, "en");
         assert_eq!(
-            ContentLang::from_settings_file(&dir.join("missing.json")),
-            ContentLang::De
+            ContentLang::from_settings_file(&dir.join("missing.json")).0,
+            "de"
         );
         let _ = std::fs::remove_dir_all(dir);
     }

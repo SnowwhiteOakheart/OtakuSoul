@@ -11,7 +11,7 @@ const PRIVATE_KNOWLEDGE_LIMIT: usize = 20;
 fn player_name(state: &SceneState) -> String {
     if state.definition.persona.trim().is_empty() {
         crate::modules::content_lang::ContentLang::current()
-            .pick("Spieler", "Player", "Игрок")
+            .t("Player")
             .to_string()
     } else {
         state.definition.persona.clone()

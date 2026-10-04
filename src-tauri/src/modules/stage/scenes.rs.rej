@@ -1,0 +1,7 @@
+--- scenes.rs
++++ scenes.rs
+@@ -39,3 +39,3 @@
+         world: WorldState {
+-            active_quest: def.description.clone(),
++            active_quest: localized_def.description.clone(),
+             location: def.starting_location.clone(),

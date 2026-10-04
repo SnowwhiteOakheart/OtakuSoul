@@ -42,16 +42,24 @@ impl Default for WorldState {
     fn default() -> Self {
         let lang = crate::modules::content_lang::ContentLang::current();
         Self {
-            time_of_day: lang.t("Dusk").to_string(),
+            time_of_day: lang.pick("Dämmerung", "Dusk", "Сумерки").to_string(),
             weather: lang
-                .t("Misty haze")
+                .pick("Nebliger Dunst", "Misty haze", "Туманная дымка")
                 .to_string(),
             location: lang
-                .t("The order's old library")
+                .pick(
+                    "Alte Bibliothek des Ordens",
+                    "The order's old library",
+                    "Старая библиотека ордена",
+                )
                 .to_string(),
             danger_level: 2,
             active_quest: lang
-                .t("Examine the ancient grimoire about dimensional rifts.")
+                .pick(
+                    "Untersuche das uralte Grimoire über Dimensionsrisse.",
+                    "Examine the ancient grimoire about dimensional rifts.",
+                    "Изучи древний гримуар о разломах измерений.",
+                )
                 .to_string(),
             key_facts: HashMap::new(),
         }
@@ -290,25 +298,6 @@ pub(super) fn default_turn_mode() -> String {
     "do".to_string()
 }
 
-
-impl SceneDefinition {
-    pub fn localized(&self, lang: &str) -> SceneDefinition {
-        let Some(translation) = self.extensions.get(crate::modules::characters::I18N_EXTENSION).and_then(|i18n| i18n.get("translations")).and_then(|t| t.get(lang)) else { return self.clone(); };
-        let mut loc = self.clone();
-        for &field in &["title", "description", "world_context", "opening_narration", "first_message", "gm_tone", "narrator_style"] {
-            if let Some(val) = translation.get(field).and_then(|v| v.as_str()) {
-                if !val.trim().is_empty() {
-                    match field {
-                        "title" => loc.title = val.to_string(), "description" => loc.description = val.to_string(), "world_context" => loc.world_context = val.to_string(),
-                        "opening_narration" => loc.opening_narration = val.to_string(), "first_message" => loc.first_message = val.to_string(),
-                        "gm_tone" => loc.gm_tone = val.to_string(), "narrator_style" => loc.narrator_style = val.to_string(), _ => {}
-                    }
-                }
-            }
-        }
-        loc
-    }
-}
 #[derive(Debug, Clone, Serialize, Deserialize, TS)]
 #[ts(export)]
 pub struct SceneDefinition {
@@ -360,13 +349,54 @@ pub struct SceneDefinition {
     pub extensions: serde_json::Value,
 }
 
+impl SceneDefinition {
+    pub fn localized(&self, lang: &str) -> SceneDefinition {
+        let Some(translation) = self
+            .extensions
+            .get(crate::modules::characters::I18N_EXTENSION)
+            .and_then(|i18n| i18n.get("translations"))
+            .and_then(|t| t.get(lang))
+        else {
+            return self.clone();
+        };
+        
+        let mut loc = self.clone();
+        let fields = [
+            "title", "description", "world_context", "opening_narration",
+            "first_message", "gm_tone", "narrator_style"
+        ];
+        
+        for &field in &fields {
+            if let Some(val) = translation.get(field).and_then(|v| v.as_str()) {
+                if !val.trim().is_empty() {
+                    match field {
+                        "title" => loc.title = val.to_string(),
+                        "description" => loc.description = val.to_string(),
+                        "world_context" => loc.world_context = val.to_string(),
+                        "opening_narration" => loc.opening_narration = val.to_string(),
+                        "first_message" => loc.first_message = val.to_string(),
+                        "gm_tone" => loc.gm_tone = val.to_string(),
+                        "narrator_style" => loc.narrator_style = val.to_string(),
+                        _ => {}
+                    }
+                }
+            }
+        }
+        loc
+    }
+}
+
 pub(super) fn default_gm_tone() -> String {
     "Epic Fantasy".to_string()
 }
 
 pub(super) fn default_narrator_style() -> String {
     crate::modules::content_lang::ContentLang::current()
-        .t("Measured, vivid prose in the present tense.")
+        .pick(
+            "Getragene, bildstarke Prosa im Präsens.",
+            "Measured, vivid prose in the present tense.",
+            "Размеренная, образная проза в настоящем времени.",
+        )
         .to_string()
 }
 
@@ -391,10 +421,14 @@ pub struct ScenePreview {
     pub folder: String,
     pub is_preset: bool,
     pub starting_bg: String,
-    pub last_played: Option<String>,
-    #[serde(default)]
+
+
+
+
+
     pub has_progress: bool,
-    #[serde(default)]
+
+
     pub turn_count: usize,
 }
 

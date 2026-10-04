@@ -15,6 +15,7 @@ fn main() {
             unsafe { std::env::set_var("GDK_BACKEND", "x11") };
         }
     }
+    otakusoul_lib::modules::content_lang::load_locales();
 
     otakusoul_lib::run()
 }

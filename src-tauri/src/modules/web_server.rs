@@ -387,19 +387,10 @@ async fn handle_chat(
 
     let lang = crate::modules::content_lang::ContentLang::current();
     let reply_text = if user_msg.is_empty() {
-        lang.pick(
-            "Ich bin hier! Was möchtest du besprechen?",
-            "I'm here! What would you like to talk about?",
-            "Я здесь! О чём хочешь поговорить?",
-        )
+        lang.t("I'm here! What would you like to talk about?")
         .to_string()
     } else {
-        lang.fill(
-            "*lächelt dich warm an* Schön, von deinem Smartphone aus mit dir verbunden zu sein! Du hast gesagt: „{}“. Ich begleite dich jederzeit.",
-            "*smiles warmly at you* So nice to be connected from your phone! You said: “{}”. I'm with you any time.",
-            "*тепло улыбается* Как здорово быть на связи с твоего телефона! Ты сказал(а): «{}». Я всегда рядом.",
-            &[&user_msg],
-        )
+        lang.fill_t("*smiles warmly at you* So nice to be connected from your phone! You said: “{}”. I'm with you any time.", &[&user_msg], )
     };
 
     let resp = MobileChatResponse {

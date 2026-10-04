@@ -1,0 +1,21 @@
+--- models.rs
++++ models.rs
+@@ -412,18 +412,11 @@
+ pub struct ScenePreview {
+     pub id: String,
+     pub title: String,
+     pub description: String,
+     pub party: Vec<String>,
+     pub location: String,
+     pub time_of_day: String,
+     pub gm_tone: String,
+     pub folder: String,
+     pub is_preset: bool,
+     pub starting_bg: String,
+-
+-
+-
+-
+-
+-    pub has_progress: bool,
+-

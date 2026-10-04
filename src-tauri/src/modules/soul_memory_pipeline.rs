@@ -374,7 +374,7 @@ pub async fn execute_soul_memory_pipeline(
         .replace("{character}", char_id)
         .replace("{user_name}", user_name)
         .replace("{language}", &language)
-        .replace("{none}", content_lang.none_marker());
+        .replace("{none}", &content_lang.none_marker());
 
     let router_user_content = format!(
         "=== CURRENT CHARACTER MEMORY (MEMORY.md) ===\n{}\n\n\
@@ -640,7 +640,7 @@ pub async fn execute_soul_memory_pipeline(
                 if !trimmed.is_empty() {
                     let formatted_topic = format!(
                         "[{}: {}]\n{}",
-                        content_lang.pick("Thema", "Topic", "Тема"),
+                        content_lang.t("Topic"),
                         action.filename,
                         trimmed
                     );

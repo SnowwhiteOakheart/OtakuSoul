@@ -20,11 +20,7 @@ impl StageEngine {
             CampaignClock {
                 id: "clock_1".to_string(),
                 name: lang
-                    .pick(
-                        "Aufmerksamkeit der Wachen",
-                        "The guards' attention",
-                        "Внимание стражи",
-                    )
+                    .t("The guards' attention")
                     .to_string(),
                 current: 2,
                 max: 6,
@@ -33,11 +29,7 @@ impl StageEngine {
             CampaignClock {
                 id: "clock_2".to_string(),
                 name: lang
-                    .pick(
-                        "Ritual-Vollendung",
-                        "Ritual completion",
-                        "Завершение ритуала",
-                    )
+                    .t("Ritual completion")
                     .to_string(),
                 current: 1,
                 max: 4,
@@ -69,7 +61,7 @@ impl StageEngine {
                 initiative: 19,
                 conditions: vec![CombatCondition {
                     name: lang
-                        .pick("Verführerische Aura", "Alluring aura", "Чарующая аура")
+                        .t("Alluring aura")
                         .to_string(),
                     rounds_remaining: 3,
                 }],
@@ -78,7 +70,7 @@ impl StageEngine {
             Combatant {
                 id: "comb_enemy_1".to_string(),
                 name: lang
-                    .pick("Schattenpirscher", "Shadow stalker", "Теневой охотник")
+                    .t("Shadow stalker")
                     .to_string(),
                 role: "enemy".to_string(),
                 hp: 28,
@@ -99,16 +91,16 @@ impl StageEngine {
         let initial_def = SceneDefinition {
 extensions: serde_json::Value::Null,
             id: "default_scene".to_string(),
-            title: lang.pick("Die verlassene Zuflucht", "The abandoned sanctuary", "Заброшенное убежище").to_string(),
-            description: lang.pick("Ein altes Sanktum voller arkaner Relikte und verborgener Gefahren.", "An ancient sanctum full of arcane relics and hidden dangers.", "Древнее святилище, полное тайных реликвий и скрытых опасностей.").to_string(),
-            world_context: lang.pick("In den Tiefen einer vergessenen Bastion sucht ihr nach Antworten.", "Deep inside a forgotten bastion, you search for answers.", "В глубинах забытого бастиона вы ищете ответы.").to_string(),
-            starting_location: lang.pick("Alte Bibliothek des Ordens", "The order's old library", "Старая библиотека ордена").to_string(),
-            time_of_day: lang.pick("Dämmerung", "Dusk", "Сумерки").to_string(),
-            opening_narration: lang.pick("Das Portal schließt sich leise hinter euch. Staub tanzt in den verblassenden Lichtstrahlen. Vor euch erstrecken sich endlose Regale uralter Schriften.", "The portal closes quietly behind you. Dust dances in the fading beams of light. Endless shelves of ancient writings stretch out before you.", "Портал тихо закрывается за вами. Пыль танцует в угасающих лучах света. Перед вами тянутся бесконечные полки древних свитков.").to_string(),
+            title: lang.t("The abandoned sanctuary").to_string(),
+            description: lang.t("An ancient sanctum full of arcane relics and hidden dangers.").to_string(),
+            world_context: lang.t("Deep inside a forgotten bastion, you search for answers.").to_string(),
+            starting_location: lang.t("The order's old library").to_string(),
+            time_of_day: lang.t("Dusk").to_string(),
+            opening_narration: lang.t("The portal closes quietly behind you. Dust dances in the fading beams of light. Endless shelves of ancient writings stretch out before you.").to_string(),
             first_message: "".to_string(),
             party: vec!["Ayu Ikue".to_string()],
             gm_tone: "Epic Fantasy".to_string(),
-            narrator_style: lang.pick("Atmosphärisch und detailliert.", "Atmospheric and detailed.", "Атмосферно и подробно.").to_string(),
+            narrator_style: lang.t("Atmospheric and detailed.").to_string(),
             persona: "Hiroki".to_string(),
             lorebook: Vec::new(),
             folder: "Eigene Szenen".to_string(),
@@ -144,18 +136,10 @@ extensions: serde_json::Value::Null,
             arcs: vec![StoryArc {
                 id: "arc_1".to_string(),
                 title: lang
-                    .pick(
-                        "Das Geheimnis des Ordens",
-                        "The order's secret",
-                        "Тайна ордена",
-                    )
+                    .t("The order's secret")
                     .to_string(),
                 description: lang
-                    .pick(
-                        "Finde heraus, warum die Bibliothek einst versiegelt wurde.",
-                        "Find out why the library was once sealed.",
-                        "Узнай, почему библиотеку когда-то запечатали.",
-                    )
+                    .t("Find out why the library was once sealed.")
                     .to_string(),
                 stage: 1,
                 max_stage: 3,
@@ -166,14 +150,10 @@ extensions: serde_json::Value::Null,
                 InventoryItem {
                     id: "item_1".to_string(),
                     name: lang
-                        .pick("Heiltrank", "Healing potion", "Лечебное зелье")
+                        .t("Healing potion")
                         .to_string(),
                     description: lang
-                        .pick(
-                            "Stellt 25 HP wieder her.",
-                            "Restores 25 HP.",
-                            "Восстанавливает 25 HP.",
-                        )
+                        .t("Restores 25 HP.")
                         .to_string(),
                     quantity: 2,
                     item_type: "consumable".to_string(),
@@ -184,14 +164,10 @@ extensions: serde_json::Value::Null,
                 InventoryItem {
                     id: "item_2".to_string(),
                     name: lang
-                        .pick("Messing-Schlüssel", "Brass key", "Латунный ключ")
+                        .t("Brass key")
                         .to_string(),
                     description: lang
-                        .pick(
-                            "Ein verzierter Schlüssel mit Sonnensymbol.",
-                            "An ornate key with a sun emblem.",
-                            "Узорный ключ с символом солнца.",
-                        )
+                        .t("An ornate key with a sun emblem.")
                         .to_string(),
                     quantity: 1,
                     item_type: "key".to_string(),
@@ -203,18 +179,10 @@ extensions: serde_json::Value::Null,
             objectives: vec![CampaignObjective {
                 id: "objective_1".to_string(),
                 title: lang
-                    .pick(
-                        "Das Grimoire untersuchen",
-                        "Examine the grimoire",
-                        "Изучить гримуар",
-                    )
+                    .t("Examine the grimoire")
                     .to_string(),
                 description: lang
-                    .pick(
-                        "Finde heraus, was die Dimensionsrisse verursacht.",
-                        "Find out what causes the dimensional rifts.",
-                        "Узнай, что вызывает разломы измерений.",
-                    )
+                    .t("Find out what causes the dimensional rifts.")
                     .to_string(),
                 current: 0,
                 max: 3,
@@ -224,9 +192,9 @@ extensions: serde_json::Value::Null,
                 subject: "Ayu Ikue".to_string(),
                 target: "Hiroki".to_string(),
                 affinity: 10,
-                tags: vec![lang.pick("Gefährtin", "Companion", "Спутница").to_string()],
+                tags: vec![lang.t("Companion").to_string()],
                 role_view: lang
-                    .pick("Vertrauter Verbündeter", "Trusted ally", "Верный союзник")
+                    .t("Trusted ally")
                     .to_string(),
                 last_shift_reason: String::new(),
             }],
@@ -235,43 +203,27 @@ extensions: serde_json::Value::Null,
             pending_choices: vec![
                 TaggedChoice {
                     text: lang
-                        .pick(
-                            "Das leuchtende Buch auf dem Lesepult untersuchen",
-                            "Examine the glowing book on the lectern",
-                            "Осмотреть светящуюся книгу на пюпитре",
-                        )
+                        .t("Examine the glowing book on the lectern")
                         .to_string(),
                     badge: Some(
-                        lang.pick(
-                            "Wahrnehmung (DC 13)",
-                            "Perception (DC 13)",
-                            "Восприятие (DC 13)",
-                        )
+                        lang.t("Perception (DC 13)")
                         .to_string(),
                     ),
                     action_type: "do".to_string(),
                 },
                 TaggedChoice {
                     text: lang
-                        .pick(
-                            "Ayu fragen, ob sie diese Schriftzeichen entziffern kann",
-                            "Ask Ayu whether she can decipher these runes",
-                            "Спросить Аю, может ли она расшифровать эти знаки",
-                        )
+                        .t("Ask Ayu whether she can decipher these runes")
                         .to_string(),
                     badge: None,
                     action_type: "say".to_string(),
                 },
                 TaggedChoice {
                     text: lang
-                        .pick(
-                            "Die Tür im hinteren Bereich leise überprüfen",
-                            "Quietly check the door at the back",
-                            "Тихо проверить дверь в глубине зала",
-                        )
+                        .t("Quietly check the door at the back")
                         .to_string(),
                     badge: Some(
-                        lang.pick("Heimlichkeit", "Stealth", "Скрытность")
+                        lang.t("Stealth")
                             .to_string(),
                     ),
                     action_type: "do".to_string(),
@@ -343,7 +295,7 @@ extensions: serde_json::Value::Null,
             st.combat.combatants.push(Combatant {
                 id: "enemy_1".to_string(),
                 name: lang
-                    .pick("Unbekannter Gegner", "Unknown enemy", "Неизвестный враг")
+                    .t("Unknown enemy")
                     .to_string(),
                 role: "enemy".to_string(),
                 hp: 20,
@@ -374,13 +326,8 @@ extensions: serde_json::Value::Null,
             .combatants
             .first()
             .map(|c| c.name.clone())
-            .unwrap_or_else(|| lang.pick("Niemand", "Nobody", "Никто").to_string());
-        st.combat.combat_log.push(lang.fill(
-            "Kampf gestartet! Runde 1 – {} ist am Zug.",
-            "Combat started! Round 1 – {}'s turn.",
-            "Бой начался! Раунд 1 – ходит {}.",
-            &[&active_name],
-        ));
+            .unwrap_or_else(|| lang.t("Nobody").to_string());
+        st.combat.combat_log.push(lang.fill_t("Combat started! Round 1 – {}'s turn.", &[&active_name], ));
     }
 
     pub fn end_encounter(&self) {
@@ -389,11 +336,7 @@ extensions: serde_json::Value::Null,
         st.combat.is_active = false;
         remove_enemies(&mut st);
         st.combat.combat_log.push(
-            lang.pick(
-                "Kampf beendet. Alle Einheiten entspannen sich.",
-                "Combat over. Everyone relaxes.",
-                "Бой окончен. Все расслабляются.",
-            )
+            lang.t("Combat over. Everyone relaxes.")
             .to_string(),
         );
     }
@@ -423,23 +366,13 @@ extensions: serde_json::Value::Null,
             }
 
             let round_num = st.combat.round;
-            st.combat.combat_log.push(lang.fill(
-                "--- Neue Runde: Runde {} ---",
-                "--- New round: round {} ---",
-                "--- Новый раунд: раунд {} ---",
-                &[&round_num],
-            ));
+            st.combat.combat_log.push(lang.fill_t("--- New round: round {} ---", &[&round_num], ));
         }
 
         let active_name = st.combat.combatants[st.combat.current_turn_index]
             .name
             .clone();
-        st.combat.combat_log.push(lang.fill(
-            "{} ist am Zug.",
-            "{}'s turn.",
-            "Ходит {}.",
-            &[&active_name],
-        ));
+        st.combat.combat_log.push(lang.fill_t("{}'s turn.", &[&active_name], ));
     }
 
     pub fn apply_combatant_delta(&self, combatant_id: &str, hp_delta: i32, stress_delta: i32) {
@@ -455,26 +388,11 @@ extensions: serde_json::Value::Null,
             c.stress = (c.stress + stress_delta).clamp(0, c.max_stress);
 
             let msg = if hp_delta < 0 {
-                lang.fill(
-                    "{} erleidet {} Schaden (HP: {}/{})",
-                    "{} takes {} damage (HP: {}/{})",
-                    "{} получает {} урона (HP: {}/{})",
-                    &[&c.name, &hp_delta.abs(), &c.hp, &c.max_hp],
-                )
+                lang.fill_t("{} takes {} damage (HP: {}/{})", &[&c.name, &hp_delta.abs(), &c.hp, &c.max_hp], )
             } else if hp_delta > 0 {
-                lang.fill(
-                    "{} wird um {} HP geheilt (HP: {}/{})",
-                    "{} heals {} HP (HP: {}/{})",
-                    "{} восстанавливает {} HP (HP: {}/{})",
-                    &[&c.name, &hp_delta, &c.hp, &c.max_hp],
-                )
+                lang.fill_t("{} heals {} HP (HP: {}/{})", &[&c.name, &hp_delta, &c.hp, &c.max_hp], )
             } else {
-                lang.fill(
-                    "{} Stress verändert um {} (Stress: {}/{})",
-                    "{} stress changes by {} (stress: {}/{})",
-                    "Стресс {} меняется на {} (стресс: {}/{})",
-                    &[&c.name, &stress_delta, &c.stress, &c.max_stress],
-                )
+                lang.fill_t("{} stress changes by {} (stress: {}/{})", &[&c.name, &stress_delta, &c.stress, &c.max_stress], )
             };
             Some(msg)
         } else {
@@ -512,12 +430,7 @@ extensions: serde_json::Value::Null,
             let c_name = c.name.clone();
             c.conditions.retain(|cond| cond.name != name);
             c.conditions.push(condition);
-            Some(lang.fill(
-                "{} erhält Zustand: {} ({} Runden)",
-                "{} gains condition: {} ({} rounds)",
-                "{} получает состояние: {} ({} раундов)",
-                &[&c_name, &name, &rounds],
-            ))
+            Some(lang.fill_t("{} gains condition: {} ({} rounds)", &[&c_name, &name, &rounds], ))
         } else {
             None
         };
@@ -544,12 +457,7 @@ extensions: serde_json::Value::Null,
         st.combat.combatants.swap(index, index + 1);
         let next_name = st.combat.combatants[index].name.clone();
         st.current_turn_actor = next_name.clone();
-        st.combat.combat_log.push(lang.fill(
-            "{} verschiebt den Zug. {} handelt zuerst.",
-            "{} delays their turn. {} acts first.",
-            "{} откладывает ход. {} действует первым.",
-            &[&player_name, &next_name],
-        ));
+        st.combat.combat_log.push(lang.fill_t("{} delays their turn. {} acts first.", &[&player_name, &next_name], ));
         Ok(st.clone())
     }
 
@@ -620,15 +528,10 @@ extensions: serde_json::Value::Null,
         st.chat_log.push(SceneTurnMessage {
             id: format!("msg_{}", Utc::now().timestamp_millis()),
             sender_id: "system".to_string(),
-            sender_name: lang.pick("Inventar", "Inventory", "Инвентарь").to_string(),
+            sender_name: lang.t("Inventory").to_string(),
             sender_role: "gm".to_string(),
             avatar_url: None,
-            content: lang.fill(
-                "{} wurde benutzt.",
-                "{} was used.",
-                "Использовано: {}.",
-                &[&item.name],
-            ),
+            content: lang.fill_t("{} was used.", &[&item.name], ),
             turn_mode: "do".to_string(),
             whisper_target: None,
             event_card: Some(StageEventCard::ItemUse {

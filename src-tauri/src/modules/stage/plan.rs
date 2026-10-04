@@ -281,36 +281,24 @@ pub fn repair_and_parse_gm_plan(raw: &str) -> GmPlan {
         player_choices: vec![
             TaggedChoice {
                 text: lang
-                    .pick(
-                        "Die Umgebung untersuchen",
-                        "Search the surroundings",
-                        "Осмотреть окрестности",
-                    )
+                    .t("Search the surroundings")
                     .to_string(),
                 badge: Some(
-                    lang.pick("Wahrnehmung", "Perception", "Восприятие")
+                    lang.t("Perception")
                         .to_string(),
                 ),
                 action_type: "do".to_string(),
             },
             TaggedChoice {
                 text: lang
-                    .pick(
-                        "Mit der Gruppe sprechen",
-                        "Talk to the party",
-                        "Поговорить с отрядом",
-                    )
+                    .t("Talk to the party")
                     .to_string(),
                 badge: None,
                 action_type: "say".to_string(),
             },
             TaggedChoice {
                 text: lang
-                    .pick(
-                        "Vorsichtig weitergehen",
-                        "Move on carefully",
-                        "Осторожно идти дальше",
-                    )
+                    .t("Move on carefully")
                     .to_string(),
                 badge: None,
                 action_type: "do".to_string(),

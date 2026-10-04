@@ -41,16 +41,8 @@ impl MemoryDb {
             })
         } else {
             let now = current_timestamp();
-            let agenda = lang.pick(
-                "Beobachten und Antworten.",
-                "Observe and respond.",
-                "Наблюдать и отвечать.",
-            );
-            let focus = lang.pick(
-                "Das aktuelle Gespräch.",
-                "The current conversation.",
-                "Текущий разговор.",
-            );
+            let agenda = lang.t("Observe and respond.");
+            let focus = lang.t("The current conversation.");
             conn.execute(
                 "INSERT INTO soul_psychology (character_id, primary_emotion, intensity, psychological_tension, emotional_decay_counter, active_agenda, immediate_focus, core_identity, cognitive_dissonance, updated_at)
                  VALUES (?1, 'Calm', 3, ?3, 0, ?4, ?5, '[]', ?3, ?2)",

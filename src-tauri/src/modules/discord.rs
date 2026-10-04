@@ -89,14 +89,10 @@ impl DiscordRpcClient {
                         let lang = crate::modules::content_lang::ContentLang::current();
                         DiscordRpcActivity {
                             details: lang
-                                .pick("Im Hauptmenü", "In the main menu", "В главном меню")
+                                .t("In the main menu")
                                 .to_string(),
                             state: lang
-                                .pick(
-                                    "Erkundet unendliche Welten",
-                                    "Exploring endless worlds",
-                                    "Исследует бесконечные миры",
-                                )
+                                .t("Exploring endless worlds")
                                 .to_string(),
                             character_name: None,
                             start_timestamp: Some(self.start_time),
@@ -507,47 +503,19 @@ impl DiscordBotManager {
             let reply = match command.as_str() {
                 "ask" => {
                     if args.is_empty() {
-                        lang.fill(
-                            "Bitte gib eine Nachricht ein: `{}ask <deine Frage>`",
-                            "Please enter a message: `{}ask <your question>`",
-                            "Введи сообщение: `{}ask <твой вопрос>`",
-                            &[&prefix],
-                        )
+                        lang.fill_t("Please enter a message: `{}ask <your question>`", &[&prefix], )
                     } else {
-                        lang.fill(
-                            "*OtakuSoul denkt nach für {}:* „{}“",
-                            "*OtakuSoul is thinking for {}:* “{}”",
-                            "*OtakuSoul думает для {}:* «{}»",
-                            &[&author_name, &args],
-                        )
+                        lang.fill_t("*OtakuSoul is thinking for {}:* “{}”", &[&author_name, &args], )
                     }
                 }
                 "character" => lang
-                    .pick(
-                        "Aktiver Charakter: **OtakuSoul Companion** (Status: Verbunden und aktiv)",
-                        "Active character: **OtakuSoul Companion** (status: connected and active)",
-                        "Активный персонаж: **OtakuSoul Companion** (статус: подключён и активен)",
-                    )
+                    .t("Active character: **OtakuSoul Companion** (status: connected and active)")
                     .to_string(),
-                "status" => lang.fill(
-                    "✨ **OtakuSoul System Status:**\n• Bot: Online\n• Angesprochen von: {}\n• Latenz: Normal",
-                    "✨ **OtakuSoul system status:**\n• Bot: online\n• Asked by: {}\n• Latency: normal",
-                    "✨ **Статус системы OtakuSoul:**\n• Бот: онлайн\n• Запросил: {}\n• Задержка: нормальная",
-                    &[&author_name],
-                ),
+                "status" => lang.fill_t("✨ **OtakuSoul system status:**\n• Bot: online\n• Asked by: {}\n• Latency: normal", &[&author_name], ),
                 "reset" => lang
-                    .pick(
-                        "🔄 Chat-Gedächtnis für diese Sitzung wurde zurückgesetzt.",
-                        "🔄 Chat memory for this session was reset.",
-                        "🔄 Память чата для этой сессии сброшена.",
-                    )
+                    .t("🔄 Chat memory for this session was reset.")
                     .to_string(),
-                _ => lang.fill(
-                    "🌸 **OtakuSoul Discord Bot Befehle:**\n• `{}ask <text>` - Mit deinem Charakter chatten\n• `{}character` - Aktiven Charakter anzeigen\n• `{}status` - Systemstatus prüfen\n• `{}reset` - Konversation neustarten",
-                    "🌸 **OtakuSoul Discord bot commands:**\n• `{}ask <text>` - chat with your character\n• `{}character` - show the active character\n• `{}status` - check the system status\n• `{}reset` - restart the conversation",
-                    "🌸 **Команды бота OtakuSoul:**\n• `{}ask <текст>` - поговорить с персонажем\n• `{}character` - показать активного персонажа\n• `{}status` - проверить статус системы\n• `{}reset` - начать разговор заново",
-                    &[&prefix, &prefix, &prefix, &prefix],
-                ),
+                _ => lang.fill_t("🌸 **OtakuSoul Discord bot commands:**\n• `{}ask <text>` - chat with your character\n• `{}character` - show the active character\n• `{}status` - check the system status\n• `{}reset` - restart the conversation", &[&prefix, &prefix, &prefix, &prefix], ),
             };
 
             Self::send_discord_message(token, channel_id, &reply).await;

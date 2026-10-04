@@ -3,19 +3,20 @@
 use super::*;
 
 pub fn build_initial_scene_state(def: &SceneDefinition) -> SceneState {
-    let lang_code = crate::modules::content_lang::language_code(&crate::modules::content_lang::ContentLang::reply_language_name());
-    let localized_def = def.localized(&lang_code);
     let lang = crate::modules::content_lang::ContentLang::current();
+    let reply_language = crate::modules::content_lang::ContentLang::reply_language_name();
+    let lang_code = crate::modules::content_lang::language_code(&reply_language);
+    let localized_def = def.localized(&lang_code);
     let initial_msg = SceneTurnMessage {
         id: format!("msg_{}", Utc::now().timestamp_millis()),
         sender_id: "gm".to_string(),
         sender_name: "Game Master".to_string(),
         sender_role: "gm".to_string(),
         avatar_url: None,
-        content: if !localized_def.opening_narration.is_empty() {
-            localized_def.opening_narration.clone()
+        content: if !def.opening_narration.is_empty() {
+            def.opening_narration.clone()
         } else {
-            localized_def.description.clone()
+            def.description.clone()
         },
         turn_mode: "do".to_string(),
         whisper_target: None,
@@ -27,22 +28,22 @@ pub fn build_initial_scene_state(def: &SceneDefinition) -> SceneState {
         location: if !def.starting_location.is_empty() {
             def.starting_location.clone()
         } else {
-            lang.t("Old refuge")
+            lang.pick("Alte Zuflucht", "Old refuge", "Старое убежище")
                 .to_string()
         },
         time_of_day: if !def.time_of_day.is_empty() {
             def.time_of_day.clone()
         } else {
-            lang.t("Dusk").to_string()
+            lang.pick("Dämmerung", "Dusk", "Сумерки").to_string()
         },
-        weather: lang.t("Clear").to_string(),
+        weather: lang.pick("Klar", "Clear", "Ясно").to_string(),
         danger_level: 2,
-        active_quest: localized_def.description.clone(),
+        active_quest: def.description.clone(),
         key_facts: HashMap::new(),
     };
 
     let persona_name = if def.persona.is_empty() {
-        lang.t("Player").to_string()
+        lang.pick("Spieler", "Player", "Игрок").to_string()
     } else {
         def.persona.clone()
     };
@@ -53,7 +54,11 @@ pub fn build_initial_scene_state(def: &SceneDefinition) -> SceneState {
         clocks: vec![CampaignClock {
             id: "clock_tension".to_string(),
             name: lang
-                .t("Dramatic tension")
+                .pick(
+                    "Dramatische Spannung",
+                    "Dramatic tension",
+                    "Драматическое напряжение",
+                )
                 .to_string(),
             current: 1,
             max: 6,
@@ -64,13 +69,17 @@ pub fn build_initial_scene_state(def: &SceneDefinition) -> SceneState {
         inventory: Vec::new(),
         objectives: vec![CampaignObjective {
             id: "objective_main".to_string(),
-            title: if !localized_def.title.is_empty() {
-                localized_def.title.clone()
+            title: if !def.title.is_empty() {
+                def.title.clone()
             } else {
-                lang.t("Begin the adventure")
+                lang.pick(
+                    "Abenteuer beginnen",
+                    "Begin the adventure",
+                    "Начать приключение",
+                )
                 .to_string()
             },
-            description: localized_def.description.clone(),
+            description: def.description.clone(),
             current: 0,
             max: 1,
             status: "active".to_string(),
@@ -82,8 +91,8 @@ pub fn build_initial_scene_state(def: &SceneDefinition) -> SceneState {
                 subject: name.clone(),
                 target: persona_name.clone(),
                 affinity: 0,
-                tags: vec![lang.t("Companion").to_string()],
-                role_view: lang.t("Companion").to_string(),
+                tags: vec![lang.pick("Gefährte", "Companion", "Спутник").to_string()],
+                role_view: lang.pick("Gefährte", "Companion", "Спутник").to_string(),
                 last_shift_reason: String::new(),
             })
             .collect(),
@@ -92,24 +101,36 @@ pub fn build_initial_scene_state(def: &SceneDefinition) -> SceneState {
         pending_choices: vec![
             TaggedChoice {
                 text: lang
-                    .t("Study the surroundings closely")
+                    .pick(
+                        "Die Umgebung genau mustern",
+                        "Study the surroundings closely",
+                        "Внимательно осмотреться",
+                    )
                     .to_string(),
                 badge: Some(
-                    lang.t("Perception")
+                    lang.pick("Wahrnehmung", "Perception", "Восприятие")
                         .to_string(),
                 ),
                 action_type: "do".to_string(),
             },
             TaggedChoice {
                 text: lang
-                    .t("Dare a step forward")
+                    .pick(
+                        "Einen Schritt vorwärts wagen",
+                        "Dare a step forward",
+                        "Решиться на шаг вперёд",
+                    )
                     .to_string(),
                 badge: None,
                 action_type: "do".to_string(),
             },
             TaggedChoice {
                 text: lang
-                    .t("Confer with the companions")
+                    .pick(
+                        "Mit den Gefährten beraten",
+                        "Confer with the companions",
+                        "Посоветоваться со спутниками",
+                    )
                     .to_string(),
                 badge: None,
                 action_type: "say".to_string(),
@@ -314,20 +335,18 @@ pub(super) fn parse_scene_file_preview(
 ) -> Option<ScenePreview> {
     let content = fs::read_to_string(p).ok()?;
     if let Ok(state) = serde_json::from_str::<SceneState>(&content) {
-        let lang_code = crate::modules::content_lang::language_code(&crate::modules::content_lang::ContentLang::reply_language_name());
-        let localized_def = state.definition.localized(&lang_code);
         let has_progress = state.chat_log.len() > 1;
         let turn_count = state.chat_log.len();
         return Some(ScenePreview {
-            id: localized_def.id.clone(),
-            title: localized_def.title.clone(),
-            description: localized_def.description.clone(),
-            party: localized_def.party.clone(),
+            id: state.definition.id.clone(),
+            title: state.definition.title.clone(),
+            description: state.definition.description.clone(),
+            party: state.definition.party.clone(),
             location: state.world.location.clone(),
             time_of_day: state.world.time_of_day.clone(),
-            gm_tone: localized_def.gm_tone.clone(),
-            folder: if !localized_def.folder.is_empty() {
-                localized_def.folder.clone()
+            gm_tone: state.definition.gm_tone.clone(),
+            folder: if !state.definition.folder.is_empty() {
+                state.definition.folder.clone()
             } else {
                 folder_label.to_string()
             },
@@ -335,7 +354,7 @@ pub(super) fn parse_scene_file_preview(
             starting_bg: state
                 .current_bg
                 .clone()
-                .unwrap_or_else(|| localized_def.starting_bg.clone()),
+                .unwrap_or_else(|| state.definition.starting_bg.clone()),
             last_played: state.definition.last_played.clone(),
             has_progress,
             turn_count,
@@ -343,8 +362,6 @@ pub(super) fn parse_scene_file_preview(
     }
 
     if let Ok(def) = serde_json::from_str::<SceneDefinition>(&content) {
-        let lang_code = crate::modules::content_lang::language_code(&crate::modules::content_lang::ContentLang::reply_language_name());
-        let localized_def = def.localized(&lang_code);
         let stem = p
             .file_stem()
             .unwrap_or_default()
@@ -357,8 +374,8 @@ pub(super) fn parse_scene_file_preview(
         };
         return Some(ScenePreview {
             id,
-            title: localized_def.title.clone(),
-            description: localized_def.description.clone(),
+            title: def.title.clone(),
+            description: def.description.clone(),
             party: def.party.clone(),
             location: def.starting_location.clone(),
             time_of_day: def.time_of_day.clone(),

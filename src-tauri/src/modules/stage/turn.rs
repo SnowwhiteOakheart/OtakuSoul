@@ -503,11 +503,7 @@ RULES:
             let new_val = (c.current as i32 + clk_up.delta).clamp(0, c.max as i32) as u32;
             c.current = new_val;
             secondary_event_cards.push((
-                lang.pick(
-                    "Die Kampagnen-Uhr „{}“ verändert sich.",
-                    "The campaign clock “{}” changes.",
-                    "Часы кампании «{}» меняются.",
-                )
+                lang.t("The campaign clock “{}” changes.")
                 .replace("{}", &c.name),
                 StageEventCard::ClockUpdate(ClockUpdateData {
                     clock_id: c.id.clone(),
@@ -715,20 +711,12 @@ RULES:
                     .combatants
                     .sort_by_key(|c| std::cmp::Reverse(c.initiative));
                 secondary_event_cards.push((
-                    lang.pick(
-                        "Eine Kampfbegegnung beginnt.",
-                        "An encounter begins.",
-                        "Начинается схватка.",
-                    )
+                    lang.t("An encounter begins.")
                     .to_string(),
                     StageEventCard::Combat {
                         action: "started".to_string(),
                         text: lang
-                            .pick(
-                                "Initiative wird gewürfelt — der Kampf beginnt!",
-                                "Roll for initiative — the fight begins!",
-                                "Бросок инициативы — бой начинается!",
-                            )
+                            .t("Roll for initiative — the fight begins!")
                             .to_string(),
                     },
                 ));
@@ -737,20 +725,12 @@ RULES:
                 state.combat.is_active = false;
                 remove_enemies(&mut state);
                 secondary_event_cards.push((
-                    lang.pick(
-                        "Die Kampfbegegnung endet.",
-                        "The encounter ends.",
-                        "Схватка окончена.",
-                    )
+                    lang.t("The encounter ends.")
                     .to_string(),
                     StageEventCard::Combat {
                         action: "ended".to_string(),
                         text: lang
-                            .pick(
-                                "Der Kampf ist beendet.",
-                                "The fight is over.",
-                                "Бой окончен.",
-                            )
+                            .t("The fight is over.")
                             .to_string(),
                     },
                 ));
@@ -1200,36 +1180,24 @@ Reply in {reply_language}.{secrets}"#,
         state.pending_choices = vec![
             TaggedChoice {
                 text: lang
-                    .pick(
-                        "Vorsichtig weiter vorrücken",
-                        "Advance carefully",
-                        "Осторожно продвигаться дальше",
-                    )
+                    .t("Advance carefully")
                     .to_string(),
                 badge: None,
                 action_type: "do".to_string(),
             },
             TaggedChoice {
                 text: lang
-                    .pick(
-                        "Die Umgebung absichern und untersuchen",
-                        "Secure and search the surroundings",
-                        "Обезопасить и осмотреть окрестности",
-                    )
+                    .t("Secure and search the surroundings")
                     .to_string(),
                 badge: Some(
-                    lang.pick("Wahrnehmung", "Perception", "Восприятие")
+                    lang.t("Perception")
                         .to_string(),
                 ),
                 action_type: "do".to_string(),
             },
             TaggedChoice {
                 text: lang
-                    .pick(
-                        "Mit den Gefährten die nächste Aktion abstimmen",
-                        "Agree on the next move with the companions",
-                        "Обсудить со спутниками следующий шаг",
-                    )
+                    .t("Agree on the next move with the companions")
                     .to_string(),
                 badge: None,
                 action_type: "say".to_string(),
@@ -1308,31 +1276,23 @@ pub async fn execute_stage_rest(
             "Mittag" | "Noon" | "Полдень"
         );
         state.world.time_of_day = if morning {
-            lang.pick("Abend", "Evening", "Вечер")
+            lang.t("Evening")
         } else if noon {
-            lang.pick("Mitternacht", "Midnight", "Полночь")
+            lang.t("Midnight")
         } else {
-            lang.pick("Morgen", "Morning", "Утро")
+            lang.t("Morning")
         }
         .to_string();
         (
             40,
             30,
-            lang.pick(
-                "Lange Rast vollendet: Die Gruppe hat ein sicheres Lager aufgeschlagen, neue Kräfte gesammelt und die Ausrüstung gewartet.",
-                "Long rest complete: the party made a safe camp, regained their strength and tended to their gear.",
-                "Долгий отдых завершён: отряд разбил безопасный лагерь, восстановил силы и привёл снаряжение в порядок.",
-            ),
+            lang.t("Long rest complete: the party made a safe camp, regained their strength and tended to their gear."),
         )
     } else {
         (
             15,
             10,
-            lang.pick(
-                "Kurze Rast: Ein Moment des Durchatmens am Lagerfeuer lindert die Erschöpfung.",
-                "Short rest: a moment to breathe by the campfire eases the exhaustion.",
-                "Короткий отдых: минута передышки у костра снимает усталость.",
-            ),
+            lang.t("Short rest: a moment to breathe by the campfire eases the exhaustion."),
         )
     };
 
@@ -1348,7 +1308,7 @@ pub async fn execute_stage_rest(
     }
 
     let player_name = if state.definition.persona.is_empty() {
-        lang.pick("Spieler", "Player", "Игрок").to_string()
+        lang.t("Player").to_string()
     } else {
         state.definition.persona.clone()
     };
@@ -1366,7 +1326,7 @@ pub async fn execute_stage_rest(
                 target: player_name.clone(),
                 affinity: 0,
                 tags: Vec::new(),
-                role_view: lang.pick("Gefährte", "Companion", "Спутник").to_string(),
+                role_view: lang.t("Companion").to_string(),
                 last_shift_reason: String::new(),
             });
             state.relationships.len() - 1
@@ -1375,10 +1335,10 @@ pub async fn execute_stage_rest(
         let before = relationship.affinity;
         relationship.affinity = (relationship.affinity + affinity_gain).clamp(-100, 100);
         relationship.last_shift_reason = if rest_type == "long" {
-            lang.pick("Gemeinsames Lagerfeuer", "Shared campfire", "Общий костёр")
+            lang.t("Shared campfire")
                 .to_string()
         } else {
-            lang.pick("Gemeinsame Rast", "Shared rest", "Совместный отдых")
+            lang.t("Shared rest")
                 .to_string()
         };
         for milestone in [25, 50, 75] {
@@ -1414,16 +1374,12 @@ pub async fn execute_stage_rest(
             id: format!("msg_bond_{}_{}", Utc::now().timestamp_millis(), index),
             sender_id: "system".to_string(),
             sender_name: lang
-                .pick("Beziehungs-Meilenstein", "Bond milestone", "Этап отношений")
+                .t("Bond milestone")
                 .to_string(),
             sender_role: "gm".to_string(),
             avatar_url: None,
             content: lang
-                .pick(
-                    "Die Bindung zu {name} hat Stufe {level} erreicht.",
-                    "Your bond with {name} reached level {level}.",
-                    "Связь с {name} достигла уровня {level}.",
-                )
+                .t("Your bond with {name} reached level {level}.")
                 .replace("{name}", &companion)
                 .replace("{level}", &milestone.to_string()),
             turn_mode: "direct".to_string(),
@@ -1446,11 +1402,7 @@ pub async fn execute_stage_rest(
             sender_role: "companion".to_string(),
             avatar_url: None,
             content: lang
-                .pick(
-                    "Es tut gut, für einen Augenblick innezuhalten. Wir müssen auf der Hut bleiben, aber gemeinsam schaffen wir das.",
-                    "It feels good to pause for a moment. We have to stay on guard, but together we'll make it.",
-                    "Хорошо ненадолго остановиться. Нужно быть начеку, но вместе мы справимся.",
-                )
+                .t("It feels good to pause for a moment. We have to stay on guard, but together we'll make it.")
                 .to_string(),
             turn_mode: "say".to_string(),
             whisper_target: None,

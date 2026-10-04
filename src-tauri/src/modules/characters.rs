@@ -135,11 +135,7 @@ impl Default for UserPersona {
             id: "default_user".to_string(),
             name: "User".to_string(),
             description: crate::modules::content_lang::ContentLang::current()
-                .pick(
-                    "Ein wissbegieriger Abenteurer und Gesprächspartner.",
-                    "A curious adventurer and conversation partner.",
-                    "Любознательный искатель приключений и собеседник.",
-                )
+                .t("A curious adventurer and conversation partner.")
                 .to_string(),
             avatar_data_url: None,
         }
