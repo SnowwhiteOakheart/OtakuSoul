@@ -44,9 +44,9 @@ interface HubState {
   importingId: string | null;
   /**
    * Runs an import, shows a success toast (optionally with a follow-up action) or an error
-   * toast. Returns whether the import succeeded.
+   * toast. Returns whether the import succeeded (a declined overwrite counts as not imported).
    */
-  runImport: (id: string, task: () => Promise<{ message: string; action?: ToastAction }>) => Promise<boolean>;
+  runImport: (id: string, task: () => Promise<{ message: string; action?: ToastAction } | null>) => Promise<boolean>;
 }
 
 export const useHubStore = create<HubState>()((set, get) => {
@@ -111,8 +111,10 @@ export const useHubStore = create<HubState>()((set, get) => {
     runImport: async (id, task) => {
       set({ importingId: id });
       try {
-        const { message, action } = await task();
-        toast.success(message, action);
+        const result = await task();
+        // `null`: the user kept an existing character instead of replacing it.
+        if (!result) return false;
+        toast.success(result.message, result.action);
         return true;
       } catch (e) {
         console.error('Hub import failed:', e);

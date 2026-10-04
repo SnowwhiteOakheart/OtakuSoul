@@ -16,6 +16,10 @@ const parseCodedError = (text: string): CodedError | null => {
   }
 };
 
+/** Code and parameters of a coded backend error, to react to a specific one. */
+export const errorCode = (error: unknown): CodedError | null =>
+  parseCodedError(error instanceof Error ? error.message : typeof error === 'string' ? error : '');
+
 /**
  * Readable, translated message for anything thrown by Tauri commands, fetch or JS code.
  * Coded backend errors are translated; plain strings are shown as they are.

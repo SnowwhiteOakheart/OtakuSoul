@@ -289,6 +289,7 @@ pub fn run() {
             commands::app::load_settings,
             commands::app::save_settings,
             commands::characters::save_character_card,
+            commands::characters::import_character_file,
             commands::characters::export_character_card,
             commands::characters::delete_character,
             commands::characters::restore_hidden_characters,

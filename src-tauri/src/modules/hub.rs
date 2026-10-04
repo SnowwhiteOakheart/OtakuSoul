@@ -2,13 +2,13 @@ use base64::prelude::*;
 use serde::{Deserialize, Serialize};
 use std::fs;
 use std::io::Cursor;
-use std::path::{Path, PathBuf};
+use std::path::PathBuf;
 use tracing::info;
 use ts_rs::TS;
 
 use crate::modules::characters::{
-    CharacterProfile, extract_and_save_embedded_lorebook, inject_character_metadata_png,
-    parse_character_json, parse_character_png, save_character_to_user_dir,
+    CharacterProfile, inject_character_metadata_png, parse_character_json, parse_character_png,
+    store_imported_card,
 };
 use crate::modules::lorebook::Lorebook;
 use crate::modules::paths::resolve_app_paths;
@@ -117,31 +117,6 @@ fn get_http_client() -> Result<reqwest::Client, String> {
         .map_err(|e| crate::err!("backend.common.httpClient", error = e))
 }
 
-fn ensure_unique_character_name(base_name: &str, char_dir: &Path) -> String {
-    let mut candidate = base_name.to_string();
-    let mut suffix = 1;
-    let safe_stem = |name: &str| {
-        let s = name.replace(['/', '\\', ':', '*', '?', '"', '<', '>', '|'], "_");
-        if s.trim().is_empty() {
-            "character".to_string()
-        } else {
-            s
-        }
-    };
-
-    while char_dir
-        .join(format!("{}.png", safe_stem(&candidate)))
-        .exists()
-        || char_dir
-            .join(format!("{}.json", safe_stem(&candidate)))
-            .exists()
-    {
-        candidate = format!("{}_{}", base_name, suffix);
-        suffix += 1;
-    }
-    candidate
-}
-
 fn convert_image_bytes_to_png(bytes: &[u8]) -> Result<Vec<u8>, String> {
     if bytes.len() >= 8 && &bytes[0..8] == b"\x89PNG\r\n\x1a\n" {
         return Ok(bytes.to_vec());
@@ -234,6 +209,7 @@ pub async fn import_soul_gateway_character(
     name: &str,
     author: &str,
     download_url: &str,
+    overwrite: bool,
 ) -> Result<CharacterImportResult, String> {
     let client = get_http_client()?;
     let res = client
@@ -269,35 +245,7 @@ pub async fn import_soul_gateway_character(
         card.data.creator = Some(author.to_string());
     }
 
-    let paths = resolve_app_paths();
-    let char_dir = PathBuf::from(&paths.characters_dir);
-    let _ = fs::create_dir_all(&char_dir);
-
-    // Check if embedded lorebook is present and extract it
-    let imported_lorebook = extract_and_save_embedded_lorebook(&card, &card.data.name);
-    let mut bound_lorebooks = Vec::new();
-    if let Some(ref lb_name) = imported_lorebook {
-        bound_lorebooks.push(lb_name.clone());
-    }
-
-    // Resolve unique name
-    let unique_name = ensure_unique_character_name(&card.data.name, &char_dir);
-    card.data.name = unique_name;
-
-    let profile = CharacterProfile {
-        id: card.data.name.clone(),
-        card,
-        avatar_data_url: Some(avatar_data_url),
-        source_path: None,
-        bound_lorebooks,
-    };
-
-    let saved = save_character_to_user_dir(&profile)?;
-
-    Ok(CharacterImportResult {
-        profile: saved,
-        imported_lorebook,
-    })
+    store_imported_card(card, Some(avatar_data_url), overwrite)
 }
 
 // =========================================================================
@@ -575,13 +523,12 @@ pub async fn get_chub_character_details(full_path: &str) -> Result<ChubCharacter
     })
 }
 
-pub async fn import_chub_character(full_path: &str) -> Result<CharacterImportResult, String> {
+pub async fn import_chub_character(
+    full_path: &str,
+    overwrite: bool,
+) -> Result<CharacterImportResult, String> {
     let client = get_http_client()?;
     let clean_path = full_path.trim().trim_matches('/');
-
-    let paths = resolve_app_paths();
-    let char_dir = PathBuf::from(&paths.characters_dir);
-    let _ = fs::create_dir_all(&char_dir);
 
     // 1. Try downloading pre-built SillyTavern V2 card PNG from CDN
     let cdn_url = format!(
@@ -601,35 +548,14 @@ pub async fn import_chub_character(full_path: &str) -> Result<CharacterImportRes
         && let Ok(bytes) = resp.bytes().await
         && bytes.len() >= 8
         && &bytes[0..8] == b"\x89PNG\r\n\x1a\n"
-        && let Ok((mut card, avatar_data_url)) = parse_character_png(&bytes)
+        && let Ok((card, avatar_data_url)) = parse_character_png(&bytes)
     {
         info!(
             "[SoulHub] Successfully downloaded V2 card from CDN for {}",
             clean_path
         );
 
-        let imported_lorebook = extract_and_save_embedded_lorebook(&card, &card.data.name);
-        let mut bound_lorebooks = Vec::new();
-        if let Some(ref lb_name) = imported_lorebook {
-            bound_lorebooks.push(lb_name.clone());
-        }
-
-        let unique_name = ensure_unique_character_name(&card.data.name, &char_dir);
-        card.data.name = unique_name;
-
-        let profile = CharacterProfile {
-            id: card.data.name.clone(),
-            card,
-            avatar_data_url: Some(avatar_data_url),
-            source_path: None,
-            bound_lorebooks,
-        };
-
-        let saved = save_character_to_user_dir(&profile)?;
-        return Ok(CharacterImportResult {
-            profile: saved,
-            imported_lorebook,
-        });
+        return store_imported_card(card, Some(avatar_data_url), overwrite);
     }
 
     // 2. Fallback: Query Chub API node and rebuild CharacterCardV2 locally
@@ -665,7 +591,7 @@ pub async fn import_chub_character(full_path: &str) -> Result<CharacterImportRes
         .await
         .map_err(|e| crate::err!("backend.hub.chubParse", error = e))?;
 
-    let mut card = parse_character_json(&serde_json::to_string(&val).unwrap())?;
+    let card = parse_character_json(&serde_json::to_string(&val).unwrap())?;
 
     // Download avatar image
     let node = val.get("node");
@@ -686,39 +612,19 @@ pub async fn import_chub_character(full_path: &str) -> Result<CharacterImportRes
         get_placeholder_png()
     };
 
-    let imported_lorebook = extract_and_save_embedded_lorebook(&card, &card.data.name);
-    let mut bound_lorebooks = Vec::new();
-    if let Some(ref lb_name) = imported_lorebook {
-        bound_lorebooks.push(lb_name.clone());
-    }
-
-    let unique_name = ensure_unique_character_name(&card.data.name, &char_dir);
-    card.data.name = unique_name;
-
     // Inject V2 metadata chunk into avatar PNG
     let enriched_png = inject_character_metadata_png(&avatar_bytes, &card)?;
     let avatar_data_url = format!(
         "data:image/png;base64,{}",
         BASE64_STANDARD.encode(&enriched_png)
     );
-
-    let profile = CharacterProfile {
-        id: card.data.name.clone(),
-        card,
-        avatar_data_url: Some(avatar_data_url),
-        source_path: None,
-        bound_lorebooks,
-    };
-
-    let saved = save_character_to_user_dir(&profile)?;
-
-    Ok(CharacterImportResult {
-        profile: saved,
-        imported_lorebook,
-    })
+    store_imported_card(card, Some(avatar_data_url), overwrite)
 }
 
-pub async fn import_character_from_url(url: &str) -> Result<CharacterImportResult, String> {
+pub async fn import_character_from_url(
+    url: &str,
+    overwrite: bool,
+) -> Result<CharacterImportResult, String> {
     let trimmed = url.trim();
 
     // Check if it's a Chub AI link: e.g. https://chub.ai/characters/author/name
@@ -726,7 +632,7 @@ pub async fn import_character_from_url(url: &str) -> Result<CharacterImportResul
         let parts: Vec<&str> = trimmed.split("chub.ai/characters/").collect();
         if let Some(path_part) = parts.get(1) {
             let clean_path = path_part.split('?').next().unwrap_or("").trim_matches('/');
-            return import_chub_character(clean_path).await;
+            return import_chub_character(clean_path, overwrite).await;
         }
     }
 
@@ -750,60 +656,16 @@ pub async fn import_character_from_url(url: &str) -> Result<CharacterImportResul
         .await
         .map_err(|e| crate::err!("backend.common.downloadRead", error = e))?;
 
-    let paths = resolve_app_paths();
-    let char_dir = PathBuf::from(&paths.characters_dir);
-    let _ = fs::create_dir_all(&char_dir);
-
     if bytes.len() >= 8 && &bytes[0..8] == b"\x89PNG\r\n\x1a\n" {
-        let (mut card, avatar_data_url) = parse_character_png(&bytes)?;
-        let imported_lorebook = extract_and_save_embedded_lorebook(&card, &card.data.name);
-        let mut bound_lorebooks = Vec::new();
-        if let Some(ref lb_name) = imported_lorebook {
-            bound_lorebooks.push(lb_name.clone());
-        }
-
-        let unique_name = ensure_unique_character_name(&card.data.name, &char_dir);
-        card.data.name = unique_name;
-
-        let profile = CharacterProfile {
-            id: card.data.name.clone(),
-            card,
-            avatar_data_url: Some(avatar_data_url),
-            source_path: None,
-            bound_lorebooks,
-        };
-        let saved = save_character_to_user_dir(&profile)?;
-        Ok(CharacterImportResult {
-            profile: saved,
-            imported_lorebook,
-        })
+        let (card, avatar_data_url) = parse_character_png(&bytes)?;
+        store_imported_card(card, Some(avatar_data_url), overwrite)
     } else {
         // Attempt JSON parsing
         let text = String::from_utf8(bytes.to_vec()).map_err(|_| {
             "Datei ist weder ein valides PNG noch eine UTF-8 JSON-Datei".to_string()
         })?;
-        let mut card = parse_character_json(&text)?;
-        let imported_lorebook = extract_and_save_embedded_lorebook(&card, &card.data.name);
-        let mut bound_lorebooks = Vec::new();
-        if let Some(ref lb_name) = imported_lorebook {
-            bound_lorebooks.push(lb_name.clone());
-        }
-
-        let unique_name = ensure_unique_character_name(&card.data.name, &char_dir);
-        card.data.name = unique_name;
-
-        let profile = CharacterProfile {
-            id: card.data.name.clone(),
-            card,
-            avatar_data_url: None,
-            source_path: None,
-            bound_lorebooks,
-        };
-        let saved = save_character_to_user_dir(&profile)?;
-        Ok(CharacterImportResult {
-            profile: saved,
-            imported_lorebook,
-        })
+        let card = parse_character_json(&text)?;
+        store_imported_card(card, None, overwrite)
     }
 }
 

@@ -30,6 +30,7 @@ import { confirmDialog, toast } from '../ui/feedback';
 import { DropdownMenu } from '../ui/DropdownMenu';
 import { EmptyState } from '../ui/EmptyState';
 import { errorMessage } from '../../utils/errors';
+import { importWithOverwrite } from '../../services/characterImport';
 import { fillCardMacros, localizeCard } from '../../utils/cardI18n';
 
 const SECONDARY_BUTTON =
@@ -47,6 +48,7 @@ export const CharacterLibraryView = () => {
     activeCharacter,
     selectCharacter,
     refreshCharacters,
+    refreshLorebooks,
     deleteCharacter,
     restoreHiddenCharacters,
     setActiveTab,
@@ -59,6 +61,7 @@ export const CharacterLibraryView = () => {
       activeCharacter: s.activeCharacter,
       selectCharacter: s.selectCharacter,
       refreshCharacters: s.refreshCharacters,
+      refreshLorebooks: s.refreshLorebooks,
       deleteCharacter: s.deleteCharacter,
       restoreHiddenCharacters: s.restoreHiddenCharacters,
       setActiveTab: s.setActiveTab,
@@ -120,11 +123,12 @@ export const CharacterLibraryView = () => {
         filters: [{ name: translate('library.fileFilterCards'), extensions: ['png', 'json'] }],
       });
       if (selected && typeof selected === 'string') {
-        const loaded = await api.loadCharacterCard(selected);
-        const saved = await api.saveCharacterCard(loaded);
+        const imported = await importWithOverwrite((overwrite) => api.importCharacterFile(selected, overwrite));
+        if (!imported) return;
         await refreshCharacters();
-        await selectCharacter(saved);
-        toast.success(translate('library.imported', { name: saved.card.data.name }));
+        if (imported.imported_lorebook) await refreshLorebooks();
+        await selectCharacter(imported.profile);
+        toast.success(translate('library.imported', { name: imported.profile.card.data.name }));
       }
     } catch (e) {
       console.error('Failed to import character card:', e);

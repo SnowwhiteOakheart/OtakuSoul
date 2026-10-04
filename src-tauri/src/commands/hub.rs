@@ -11,8 +11,15 @@ pub async fn import_soul_gateway_character(
     name: String,
     author: String,
     download_url: String,
+    overwrite: Option<bool>,
 ) -> Result<crate::modules::hub::CharacterImportResult, String> {
-    crate::modules::hub::import_soul_gateway_character(&name, &author, &download_url).await
+    crate::modules::hub::import_soul_gateway_character(
+        &name,
+        &author,
+        &download_url,
+        overwrite.unwrap_or(false),
+    )
+    .await
 }
 
 #[tauri::command]
@@ -37,15 +44,17 @@ pub async fn get_chub_character_details(
 #[tauri::command]
 pub async fn import_chub_character(
     full_path: String,
+    overwrite: Option<bool>,
 ) -> Result<crate::modules::hub::CharacterImportResult, String> {
-    crate::modules::hub::import_chub_character(&full_path).await
+    crate::modules::hub::import_chub_character(&full_path, overwrite.unwrap_or(false)).await
 }
 
 #[tauri::command]
 pub async fn import_character_from_url(
     url: String,
+    overwrite: Option<bool>,
 ) -> Result<crate::modules::hub::CharacterImportResult, String> {
-    crate::modules::hub::import_character_from_url(&url).await
+    crate::modules::hub::import_character_from_url(&url, overwrite.unwrap_or(false)).await
 }
 
 #[tauri::command]

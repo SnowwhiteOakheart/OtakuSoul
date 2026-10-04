@@ -7,6 +7,7 @@ import { api } from '../../../services/api';
 import { useTranslation } from '../../../i18n';
 import { matchesQuery, useHubStore } from '../hubStore';
 import { HubListState, ImportButton, characterImported } from '../hubParts';
+import { importWithOverwrite } from '../../../services/characterImport';
 import type { GatewayCharacterEntry } from '../../../types';
 
 /** Curated characters from the Soul Gateway registry. */
@@ -31,9 +32,12 @@ export const GatewayCharactersTab = () => {
 
 
   const handleImport = (char: GatewayCharacterEntry) =>
-    runImport(char.name, async () =>
-      characterImported(await api.importSoulGatewayCharacter(char.name, char.author, char.download_url))
-    );
+    runImport(char.name, async () => {
+      const res = await importWithOverwrite((overwrite) =>
+        api.importSoulGatewayCharacter(char.name, char.author, char.download_url, overwrite)
+      );
+      return res && characterImported(res);
+    });
 
   return (
     <HubListState

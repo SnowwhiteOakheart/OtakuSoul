@@ -67,11 +67,37 @@ describe('HubView', () => {
     const card = (await screen.findByRole('heading', { name: 'Ayu Ikue' })).closest('div.group') as HTMLElement;
     await user.click(within(card).getByRole('button', { name: 'Import' }));
 
-    expect(api.importSoulGatewayCharacter).toHaveBeenCalledWith('Ayu Ikue', 'snow', 'https://example.invalid/ayu.png');
+    expect(api.importSoulGatewayCharacter).toHaveBeenCalledWith('Ayu Ikue', 'snow', 'https://example.invalid/ayu.png', false);
     expect(api.scanCharacters).toHaveBeenCalled();
     const status = await screen.findByRole('status');
     await user.click(within(status).getByRole('button', { name: /Open in chat/ }));
     await vi.waitFor(() => expect(useAppStore.getState().activeTab).toBe('chat'));
+  });
+
+  it('asks before replacing a character of the same name', async () => {
+    const user = userEvent.setup();
+    const exists = new Error('{"code":"backend.characters.exists","params":{"name":"Ayu Ikue"}}');
+    vi.mocked(api.importSoulGatewayCharacter)
+      .mockRejectedValueOnce(exists)
+      .mockResolvedValueOnce({ profile: ayu, imported_lorebook: null })
+      .mockRejectedValueOnce(exists);
+    renderHub();
+    const card = (await screen.findByRole('heading', { name: 'Ayu Ikue' })).closest('div.group') as HTMLElement;
+
+    // Confirmed: imported again with overwrite.
+    await user.click(within(card).getByRole('button', { name: 'Import' }));
+    const dialog = await screen.findByRole('dialog');
+    expect(dialog).toHaveTextContent('“Ayu Ikue” already exists');
+    await user.click(within(dialog).getByRole('button', { name: 'Overwrite' }));
+    await vi.waitFor(() => expect(api.importSoulGatewayCharacter).toHaveBeenLastCalledWith('Ayu Ikue', 'snow', 'https://example.invalid/ayu.png', true));
+    expect(await screen.findByRole('status')).toHaveTextContent('Ayu Ikue');
+
+    // Declined: nothing replaced, no error.
+    await user.click(within(card).getByRole('button', { name: 'Import' }));
+    await user.click(within(await screen.findByRole('dialog')).getByRole('button', { name: 'Cancel' }));
+    await vi.waitFor(() => expect(screen.queryByRole('dialog')).not.toBeInTheDocument());
+    expect(api.importSoulGatewayCharacter).toHaveBeenCalledTimes(3);
+    expect(screen.queryByRole('alert')).not.toBeInTheDocument();
   });
 
   it('shows load errors with a retry that does not loop', async () => {

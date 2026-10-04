@@ -6,6 +6,7 @@ import { useTranslation } from '../../i18n';
 import { ModalOverlay } from '../ui/ModalOverlay';
 import { useHubStore } from './hubStore';
 import { characterImported } from './hubParts';
+import { importWithOverwrite } from '../../services/characterImport';
 
 const IMPORT_ID = 'url-import';
 
@@ -20,7 +21,10 @@ export const UrlImportModal = ({ onClose }: { onClose: () => void }) => {
   const handleImport = async () => {
     const target = url.trim();
     if (!target) return;
-    const ok = await runImport(IMPORT_ID, async () => characterImported(await api.importCharacterFromUrl(target)));
+    const ok = await runImport(IMPORT_ID, async () => {
+      const res = await importWithOverwrite((overwrite) => api.importCharacterFromUrl(target, overwrite));
+      return res && characterImported(res);
+    });
     if (ok) onClose();
   };
 

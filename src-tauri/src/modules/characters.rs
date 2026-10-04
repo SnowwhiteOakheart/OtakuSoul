@@ -658,6 +658,121 @@ pub fn save_character_to_user_dir(profile: &CharacterProfile) -> Result<Characte
     Ok(saved_profile)
 }
 
+/// The character the library already shows under this name (case and punctuation ignored).
+pub fn find_character_by_name(name: &str) -> Option<CharacterProfile> {
+    let target = crate::modules::paths::normalize_identifier(name);
+    crate::modules::paths::scan_available_characters()
+        .into_iter()
+        .find(|c| crate::modules::paths::normalize_identifier(&c.card.data.name) == target)
+}
+
+/// Stores an imported card under its own name. A character of the same name is replaced only
+/// with `overwrite`; otherwise `backend.characters.exists` lets the interface ask first.
+/// Replacing keeps one entry: older copies under other file names go to the trash, a hidden
+/// (deleted) preset of that name shows again, and lorebooks bound by the user stay bound.
+pub fn store_imported_card(
+    card: CharacterCardV2,
+    avatar_data_url: Option<String>,
+    overwrite: bool,
+) -> Result<crate::modules::hub::CharacterImportResult, String> {
+    let existing = find_character_by_name(&card.data.name);
+    if existing.is_some() && !overwrite {
+        return Err(crate::err!(
+            "backend.characters.exists",
+            name = card.data.name
+        ));
+    }
+    let imported_lorebook = extract_and_save_embedded_lorebook(&card, &card.data.name);
+    let bound_lorebooks = match &imported_lorebook {
+        Some(name) => vec![name.clone()],
+        None => existing.map(|c| c.bound_lorebooks).unwrap_or_default(),
+    };
+    let profile = CharacterProfile {
+        id: card.data.name.clone(),
+        card,
+        avatar_data_url,
+        source_path: None,
+        bound_lorebooks,
+    };
+    let saved = save_character_to_user_dir(&profile)?;
+    let paths = resolve_app_paths();
+    if let Some(keep) = saved.source_path.as_deref() {
+        trash_other_copies(
+            Path::new(&paths.characters_dir),
+            Path::new(&paths.trash_dir),
+            &saved.card.data.name,
+            Path::new(keep),
+        );
+    }
+    unhide_character(&saved.card.data.name)?;
+    Ok(crate::modules::hub::CharacterImportResult {
+        profile: saved,
+        imported_lorebook,
+    })
+}
+
+/// Moves every card in `dir` that belongs to `name` (by file name or card name) to `trash`,
+/// except `keep`.
+fn trash_other_copies(dir: &Path, trash: &Path, name: &str, keep: &Path) {
+    let target = crate::modules::paths::normalize_identifier(name);
+    let Ok(entries) = fs::read_dir(dir) else {
+        return;
+    };
+    let timestamp = std::time::SystemTime::now()
+        .duration_since(std::time::UNIX_EPOCH)
+        .map(|d| d.as_secs())
+        .unwrap_or(0);
+    for path in entries.flatten().map(|e| e.path()) {
+        let is_card = path.is_file()
+            && matches!(
+                path.extension()
+                    .and_then(|e| e.to_str())
+                    .map(str::to_lowercase)
+                    .as_deref(),
+                Some("png" | "json")
+            );
+        if !is_card || path == keep {
+            continue;
+        }
+        let stem = path
+            .file_stem()
+            .and_then(|s| s.to_str())
+            .unwrap_or_default();
+        let same = crate::modules::paths::normalize_identifier(stem) == target
+            || load_character_from_file(&path).is_ok_and(|c| {
+                crate::modules::paths::normalize_identifier(&c.card.data.name) == target
+            });
+        if same {
+            let _ = fs::create_dir_all(trash);
+            let file_name = path.file_name().unwrap_or_default().to_string_lossy();
+            let _ = fs::rename(&path, trash.join(format!("{timestamp}_{file_name}")));
+        }
+    }
+}
+
+/// Shows a deleted character again once a card of that name is imported.
+fn unhide_character(name: &str) -> Result<(), String> {
+    let target = crate::modules::paths::normalize_identifier(name);
+    let mut settings = crate::modules::settings::load_app_settings();
+    let before = settings.hidden_character_ids.len();
+    settings
+        .hidden_character_ids
+        .retain(|id| crate::modules::paths::normalize_identifier(id) != target);
+    if settings.hidden_character_ids.len() != before {
+        crate::modules::settings::save_app_settings(&settings)?;
+    }
+    Ok(())
+}
+
+/// Imports a card file chosen in the library (see [`store_imported_card`]).
+pub fn import_character_file(
+    path: &Path,
+    overwrite: bool,
+) -> Result<crate::modules::hub::CharacterImportResult, String> {
+    let loaded = load_character_from_file(path)?;
+    store_imported_card(loaded.card, loaded.avatar_data_url, overwrite)
+}
+
 /// Exports a character card to an arbitrary destination chosen by the user
 pub fn export_character_card(
     profile: &CharacterProfile,
@@ -922,6 +1037,40 @@ pub fn parse_character_wizard_draft(raw_text: &str) -> Result<CharacterDraft, St
 
 #[cfg(test)]
 mod tests {
+
+    #[test]
+    fn replacing_a_character_trashes_its_other_copies() {
+        let root = std::env::temp_dir().join(format!("otakusoul-copies-{}", std::process::id()));
+        let _ = fs::remove_dir_all(&root);
+        let (dir, trash) = (root.join("characters"), root.join("trash"));
+        fs::create_dir_all(&dir).unwrap();
+        let card = |name: &str| {
+            format!(
+                r#"{{"spec":"chara_card_v2","spec_version":"2.0","data":{{"name":"{name}","description":"","personality":"","scenario":"","first_mes":"Hi","mes_example":""}}}}"#
+            )
+        };
+        fs::write(dir.join("Ayu Ikue.png"), b"new").unwrap();
+        fs::write(dir.join("Ayu Ikue.json"), card("Ayu Ikue")).unwrap();
+        fs::write(dir.join("Ayu Ikue_1.json"), card("ayu ikue")).unwrap();
+        fs::write(dir.join("Rin.json"), card("Rin")).unwrap();
+
+        trash_other_copies(&dir, &trash, "Ayu Ikue", &dir.join("Ayu Ikue.png"));
+
+        let mut left: Vec<_> = fs::read_dir(&dir)
+            .unwrap()
+            .flatten()
+            .map(|e| e.file_name().into_string().unwrap())
+            .collect();
+        left.sort();
+        assert_eq!(left, ["Ayu Ikue.png", "Rin.json"]);
+        assert_eq!(
+            fs::read_dir(&trash).unwrap().count(),
+            2,
+            "copies go to the trash, not away"
+        );
+        let _ = fs::remove_dir_all(&root);
+    }
+
     use super::*;
 
     #[test]

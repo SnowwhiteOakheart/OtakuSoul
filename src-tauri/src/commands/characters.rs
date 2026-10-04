@@ -20,6 +20,18 @@ pub fn save_character_card(
     crate::modules::characters::save_character_to_user_dir(&profile)
 }
 
+/// Imports a card file; asks via `backend.characters.exists` before replacing a character.
+#[tauri::command]
+pub fn import_character_file(
+    file_path: String,
+    overwrite: Option<bool>,
+) -> Result<crate::modules::hub::CharacterImportResult, String> {
+    crate::modules::characters::import_character_file(
+        std::path::Path::new(&file_path),
+        overwrite.unwrap_or(false),
+    )
+}
+
 #[tauri::command]
 pub fn export_character_card(
     profile: crate::modules::characters::CharacterProfile,

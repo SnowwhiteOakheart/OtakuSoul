@@ -1107,12 +1107,14 @@ export const api = {
   importSoulGatewayCharacter: async (
     name: string,
     author: string,
-    downloadUrl: string
+    downloadUrl: string,
+    overwrite = false
   ): Promise<CharacterImportResult> => {
     return await invoke<CharacterImportResult>('import_soul_gateway_character', {
       name,
       author,
       downloadUrl,
+      overwrite,
     });
   },
 
@@ -1138,12 +1140,17 @@ export const api = {
     return await invoke<ChubCharacterDetail>('get_chub_character_details', { fullPath });
   },
 
-  importChubCharacter: async (fullPath: string): Promise<CharacterImportResult> => {
-    return await invoke<CharacterImportResult>('import_chub_character', { fullPath });
+  importChubCharacter: async (fullPath: string, overwrite = false): Promise<CharacterImportResult> => {
+    return await invoke<CharacterImportResult>('import_chub_character', { fullPath, overwrite });
   },
 
-  importCharacterFromUrl: async (url: string): Promise<CharacterImportResult> => {
-    return await invoke<CharacterImportResult>('import_character_from_url', { url });
+  importCharacterFromUrl: async (url: string, overwrite = false): Promise<CharacterImportResult> => {
+    return await invoke<CharacterImportResult>('import_character_from_url', { url, overwrite });
+  },
+
+  /** Imports a card file; a character of the same name is only replaced with `overwrite`. */
+  importCharacterFile: async (filePath: string, overwrite = false): Promise<CharacterImportResult> => {
+    return await invoke<CharacterImportResult>('import_character_file', { filePath, overwrite });
   },
 
   fetchLorebooksGatewayRegistry: async (): Promise<GatewayLorebookEntry[]> => {

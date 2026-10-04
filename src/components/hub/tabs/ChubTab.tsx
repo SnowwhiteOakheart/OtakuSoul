@@ -6,6 +6,7 @@ import { useTranslation } from '../../../i18n';
 import { pressable } from '../../../utils/pressable';
 import { chubFilterKey, useHubStore, type ChubSort } from '../hubStore';
 import { HubListState, ImportButton, characterImported } from '../hubParts';
+import { importWithOverwrite } from '../../../services/characterImport';
 import { ChubDetailModal, type ChubDetailState } from './ChubDetailModal';
 import type { ChubSearchItem } from '../../../types';
 
@@ -104,9 +105,10 @@ export const ChubTab = () => {
   };
 
   const handleImport = async (fullPath: string) => {
-    const ok = await runImport(fullPath, async () =>
-      characterImported(await api.importChubCharacter(fullPath), 'hub.chatNow')
-    );
+    const ok = await runImport(fullPath, async () => {
+      const res = await importWithOverwrite((overwrite) => api.importChubCharacter(fullPath, overwrite));
+      return res && characterImported(res, 'hub.chatNow');
+    });
     if (ok) setDetail(null);
   };
 
