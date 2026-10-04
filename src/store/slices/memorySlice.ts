@@ -18,7 +18,7 @@ export interface MemorySlice {
   memoryOverviewError: string | null;
   isReflecting: boolean;
   memoryReflectionError: string | null;
-  memoryOperation: 'backup' | 'restore' | 'import' | null;
+  memoryOperation: 'backup' | 'restore' | null;
   lastReflectionResult: SoulMemoryPipelineResult | null;
   characterMarkdown: string;
   userMarkdown: string;
@@ -45,7 +45,6 @@ export interface MemorySlice {
   fetchMemoryBackups: () => Promise<void>;
   createMemoryBackup: () => Promise<MemoryBackupInfo | null>;
   restoreMemoryBackup: (backupFilePath: string) => Promise<void>;
-  importSowFolder: (folderPath: string) => Promise<number>;
 }
 
 export const createMemorySlice: SliceCreator<MemorySlice> = (set, get) => {
@@ -378,26 +377,6 @@ export const createMemorySlice: SliceCreator<MemorySlice> = (set, get) => {
         }
       } catch (e) {
         console.error('Failed to restore memory backup:', e);
-        throw e;
-      } finally {
-        set({ memoryOperation: null });
-      }
-    },
-
-    importSowFolder: async (folderPath: string) => {
-      const cid = get().activeCharacter?.id;
-      const userName = get().activePersona.name;
-      if (!cid) throw new Error(translate('int.noCharacter'));
-      if (get().memoryOperation || get().isReflecting) throw new Error(translate('memory.busy'));
-      set({ memoryOperation: 'import' });
-      try {
-        const count = await api.importSowMemoryFiles(cid, folderPath, userName);
-        if (get().activeCharacter?.id === cid && get().activePersona.name === userName) {
-          await refreshContext(cid, userName);
-        }
-        return count;
-      } catch (e) {
-        console.error('Failed to import SoW folder:', e);
         throw e;
       } finally {
         set({ memoryOperation: null });

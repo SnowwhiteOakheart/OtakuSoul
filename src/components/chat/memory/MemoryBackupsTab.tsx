@@ -1,34 +1,16 @@
 import { useStoreFields } from '../../../store/useAppStore';
 import { translate, useTranslation } from '../../../i18n';
-import { open } from '@tauri-apps/plugin-dialog';
 import { confirmDialog, toast } from '../../ui/feedback';
 import { errorMessage } from '../../../utils/errors';
-import { Plus, FolderDown, RotateCcw } from 'lucide-react';
+import { Plus, RotateCcw } from 'lucide-react';
 
 export const MemoryBackupsTab = () => {
   const { t } = useTranslation();
   const {
-    memoryBackups, isLoadingBackups, memoryBackupsError, fetchMemoryBackups, memoryOperation, isReflecting, createMemoryBackup, restoreMemoryBackup, importSowFolder,
+    memoryBackups, isLoadingBackups, memoryBackupsError, fetchMemoryBackups, memoryOperation, isReflecting, createMemoryBackup, restoreMemoryBackup,
   } = useStoreFields(
     'memoryBackups', 'isLoadingBackups', 'memoryBackupsError', 'fetchMemoryBackups', 'memoryOperation', 'isReflecting', 'createMemoryBackup', 'restoreMemoryBackup',
-    'importSowFolder',
   );
-
-  const handleImportSow = async () => {
-    try {
-      const selected = await open({
-        directory: true,
-        multiple: false,
-        title: translate('memory.sowDialogTitle'),
-      });
-      if (selected && typeof selected === 'string') {
-        const count = await importSowFolder(selected);
-        toast.success(translate('memory.sowImported', { count }));
-      }
-    } catch (e) {
-      toast.error(translate('memory.importFailed', { error: errorMessage(e) }));
-    }
-  };
 
   const handleCreateBackup = async () => {
     try {
@@ -70,20 +52,6 @@ export const MemoryBackupsTab = () => {
           className="px-3 py-1.5 rounded-lg bg-slate-800 disabled:opacity-40 text-xs text-slate-200">
           {isLoadingBackups ? t('memory.loading') : t('memory.reloadBackups')}
         </button>
-        <div className="flex items-center justify-between p-3.5 rounded-xl bg-slate-800/40 border border-slate-700/60">
-          <div>
-            <h3 className="text-xs font-bold text-slate-200">{t('memory.sowTitle')}</h3>
-            <p className="text-xs text-slate-400">{t('memory.sowText')}</p>
-          </div>
-          <button
-            onClick={handleImportSow}
-            disabled={!!memoryOperation || isReflecting}
-            className="px-3 py-1.5 rounded-lg bg-accent-600 hover:bg-accent-500 text-white text-xs font-semibold flex items-center gap-1.5 transition"
-          >
-            <FolderDown className="w-3.5 h-3.5" />
-            {t('memory.sowPick')}
-          </button>
-        </div>
 
         <div className="flex items-center justify-between">
           <span className="text-xs font-bold text-slate-300 uppercase tracking-wider">

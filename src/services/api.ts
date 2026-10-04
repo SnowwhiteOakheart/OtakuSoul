@@ -327,18 +327,6 @@ export const api = {
     return await invoke<DiaryEntry>('generate_manual_diary_entry', { req });
   },
 
-  importSowMemoryFiles: async (
-    charId: string,
-    folderPath: string,
-    userName: string
-  ): Promise<number> => {
-    return await invoke<number>('import_sow_memory_files', {
-      charId,
-      folderPath,
-      userName,
-    });
-  },
-
   backupMemoryState: async (
     charId: string,
     userName?: string
@@ -691,10 +679,6 @@ export const api = {
 
   openAvatarFolder: async (): Promise<void> => {
     await invoke('open_avatar_folder');
-  },
-
-  runLegacyMigration: async (sourcePath: string): Promise<string> => {
-    return await invoke<string>('run_legacy_migration', { sourcePath });
   },
 
   scanCharacters: async (): Promise<CharacterProfile[]> => {
@@ -1112,10 +1096,6 @@ export const api = {
 
   importLive2dModel: async (sourcePath: string): Promise<ScannedLive2d> => {
     return await invoke<ScannedLive2d>('import_live2d_model', { sourcePath });
-  },
-
-  importSowLive2dModels: async (): Promise<number> => {
-    return await invoke<number>('import_sow_live2d_models');
   },
 
   // Soul Hub (Soul Gateway, Chub AI, World Lorebooks, Stage Scenarios)

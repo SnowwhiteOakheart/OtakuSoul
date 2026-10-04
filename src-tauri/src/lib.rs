@@ -190,7 +190,6 @@ pub fn run() {
             commands::memory::get_user_memory_markdown,
             commands::memory::save_user_memory_markdown,
             commands::memory::generate_manual_diary_entry,
-            commands::memory::import_sow_memory_files,
             commands::memory::backup_memory_state,
             commands::memory::list_memory_backups,
             commands::memory::restore_memory_backup,
@@ -323,7 +322,6 @@ pub fn run() {
             commands::avatar::download_live2d_model,
             commands::avatar::classify_text_emotion,
             commands::avatar::import_live2d_model,
-            commands::avatar::import_sow_live2d_models,
             // Soul Hub (Soul Gateway, Chub AI, Lorebooks, Stage Scenarios)
             commands::hub::fetch_soul_gateway_registry,
             commands::hub::import_soul_gateway_character,
@@ -375,7 +373,6 @@ pub fn run() {
             commands::app::clear_app_logs,
             commands::app::export_app_logs,
             commands::app::check_for_updates,
-            commands::migration::run_legacy_migration,
         ])
         .run(tauri::generate_context!())
         .expect("error while running OtakuSoul application");

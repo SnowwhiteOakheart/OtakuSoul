@@ -104,17 +104,7 @@ describe('memory operations', () => {
     await waitFor(() => expect(feedback.toast.success).toHaveBeenCalled());
     expect(api.restoreMemoryBackup).toHaveBeenLastCalledWith(backup.filename, 'ayu');
   });
-  it('reports failed imports without success and returns the actual count on retry', async () => {
-    vi.mocked(api.importSowMemoryFiles).mockRejectedValueOnce(new Error('Unreadable diary')).mockResolvedValueOnce(4);
-    const { user } = await openBackups();
-    await user.click(screen.getByRole('button', { name: 'Choose SoW folder …' }));
-    await waitFor(() => expect(feedback.toast.error).toHaveBeenCalledWith('Import failed: Unreadable diary'));
-    expect(feedback.toast.success).not.toHaveBeenCalled();
-    await user.click(screen.getByRole('button', { name: 'Choose SoW folder …' }));
-    await waitFor(() => expect(feedback.toast.success).toHaveBeenCalledWith('Imported 4 entries from Soul of Waifu.'));
-    expect(api.importSowMemoryFiles).toHaveBeenLastCalledWith('ayu', '/tmp/sow-test', 'User');
-  });
-  it('locks restore, import and snapshot creation until a pending operation fails', async () => {
+  it('locks restore and snapshot creation until a pending operation fails', async () => {
     let fail!: (error: Error) => void;
     vi.mocked(api.restoreMemoryBackup).mockImplementation(() => new Promise((_, reject) => { fail = reject; }));
     const { user, view } = await openBackups();
@@ -123,28 +113,23 @@ describe('memory operations', () => {
     view.rerender(<CognitiveMemoryDrawer isOpen={false} onClose={() => {}} />);
     view.rerender(<CognitiveMemoryDrawer isOpen onClose={() => {}} />);
     expect(screen.getByRole('button', { name: 'Restore' })).toBeDisabled();
-    expect(screen.getByRole('button', { name: 'Choose SoW folder …' })).toBeDisabled();
-    await expect(useAppStore.getState().importSowFolder('/tmp/other')).rejects.toThrow('already running');
     await expect(useAppStore.getState().createMemoryBackup()).rejects.toThrow('already running');
-    expect(api.importSowMemoryFiles).not.toHaveBeenCalled();
     await act(async () => fail(new Error('Failed write')));
     await waitFor(() => expect(screen.getByRole('button', { name: 'Restore' })).toBeEnabled());
   });
-  it.each(['restore', 'import', 'reflection'] as const)('retains successful %s despite failed markdown refresh and allows a read-only retry', async (operation) => {
+  it.each(['restore', 'reflection'] as const)('retains successful %s despite failed markdown refresh and allows a read-only retry', async (operation) => {
     vi.mocked(api.getCharacterMemoryMarkdown).mockRejectedValue(new Error('Read blocked'));
-    vi.mocked(api.importSowMemoryFiles).mockResolvedValue(4);
     vi.mocked(api.triggerMemoryPipeline).mockResolvedValue(result);
     if (operation === 'restore') await useAppStore.getState().restoreMemoryBackup(backup.filename);
-    if (operation === 'import') await expect(useAppStore.getState().importSowFolder('/tmp/sow-test')).resolves.toBe(4);
     if (operation === 'reflection') await expect(useAppStore.getState().triggerMemoryPipeline()).resolves.toBe(result);
     expect(useAppStore.getState().memoryMarkdownError).toBe('Read blocked');
     const user = userEvent.setup();
     render(<CognitiveMemoryDrawer isOpen onClose={() => {}} />);
     await screen.findByRole('alert');
-    const callCount = vi.mocked(api.importSowMemoryFiles).mock.calls.length + vi.mocked(api.restoreMemoryBackup).mock.calls.length + vi.mocked(api.triggerMemoryPipeline).mock.calls.length;
+    const callCount = vi.mocked(api.restoreMemoryBackup).mock.calls.length + vi.mocked(api.triggerMemoryPipeline).mock.calls.length;
     vi.mocked(api.getCharacterMemoryMarkdown).mockResolvedValue('# Refreshed');
     await user.click(screen.getByRole('button', { name: 'Retry markdown' }));
     await waitFor(() => expect(screen.queryByRole('alert')).not.toBeInTheDocument());
-    expect(vi.mocked(api.importSowMemoryFiles).mock.calls.length + vi.mocked(api.restoreMemoryBackup).mock.calls.length + vi.mocked(api.triggerMemoryPipeline).mock.calls.length).toBe(callCount);
+    expect(vi.mocked(api.restoreMemoryBackup).mock.calls.length + vi.mocked(api.triggerMemoryPipeline).mock.calls.length).toBe(callCount);
   });
 });

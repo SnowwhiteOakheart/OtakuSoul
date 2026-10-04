@@ -26,8 +26,3 @@ pub fn import_live2d_model(
 ) -> Result<crate::modules::live2d::ScannedLive2d, String> {
     crate::modules::live2d::import_live2d_model(&source_path)
 }
-
-#[tauri::command]
-pub fn import_sow_live2d_models() -> Result<usize, String> {
-    crate::modules::live2d::import_sow_live2d_models()
-}

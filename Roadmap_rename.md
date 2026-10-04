@@ -40,24 +40,24 @@ Statt Markenpräfixe tief im Code zu verankern, benennen wir Subsysteme rein nac
 ## 📌 Phase 1: Vollständige Entfernung des SoW-Imports & der Altlasten
 > **Ziel:** Da das Modell- und Datensystem stark erweitert wird, wird die alte SoW-Importlogik ersatzlos entfernt. Kein toter Code, keine alten Pfad-Scanner.
 
-- [ ] **1.1 Backend: Rust-Commands & Suchroutinen entfernen**
-  - [ ] Rust-Command `import_sow_memory_files` in `src-tauri/src/commands/memory.rs` und `src-tauri/src/modules/memory/` löschen.
-  - [ ] Rust-Command `import_sow_live2d_models` in `src-tauri/src/commands/live2d.rs` löschen.
-  - [ ] Hilfsfunktionen `find_sow_live2d_dir()` und `sow_live2d_in_parents()` in `src-tauri/src/modules/live2d.rs` entfernen (inklusive Unit-Tests).
-  - [ ] Command-Registrierungen in `src-tauri/src/lib.rs` bereinigen.
-- [ ] **1.2 Frontend: API-Wrapper & Store-Aktionen bereinigen**
-  - [ ] `api.importSowMemoryFiles` und `api.importSowLive2dModels` in `src/services/api.ts` entfernen.
-  - [ ] Store-Aktion `importSowFolder` in `src/store/slices/memorySlice.ts` entfernen.
-- [ ] **1.3 UI-Komponenten bereinigen**
-  - [ ] `MemoryBackupsTab.tsx`: Bereich „Import aus Soul of Waifu“ (Card, Dialog, Handler `handleImportSow`) vollständig entfernen.
-  - [ ] `GeneralSettings.tsx`: Bereich „Migration (Soul of Waifu)“ und Button „Import aus Soul of Waifu (Live2D)“ entfernen.
-- [ ] **1.4 Lokalisierung (i18n) & Tests bereinigen**
-  - [ ] Veraltete Übersetzungsschlüssel aus `src/i18n/locales/{de,en,ru}.ts` löschen:
+- [x] **1.1 Backend: Rust-Commands & Suchroutinen entfernen**
+  - [x] Rust-Command `import_sow_memory_files` in `src-tauri/src/commands/memory.rs` und `src-tauri/src/modules/memory/` löschen.
+  - [x] Rust-Command `import_sow_live2d_models` in `src-tauri/src/commands/live2d.rs` löschen.
+  - [x] Hilfsfunktionen `find_sow_live2d_dir()` und `sow_live2d_in_parents()` in `src-tauri/src/modules/live2d.rs` entfernen (inklusive Unit-Tests).
+  - [x] Command-Registrierungen in `src-tauri/src/lib.rs` bereinigen.
+- [x] **1.2 Frontend: API-Wrapper & Store-Aktionen bereinigen**
+  - [x] `api.importSowMemoryFiles` und `api.importSowLive2dModels` in `src/services/api.ts` entfernen.
+  - [x] Store-Aktion `importSowFolder` in `src/store/slices/memorySlice.ts` entfernen.
+- [x] **1.3 UI-Komponenten bereinigen**
+  - [x] `MemoryBackupsTab.tsx`: Bereich „Import aus Soul of Waifu“ (Card, Dialog, Handler `handleImportSow`) vollständig entfernen.
+  - [x] `GeneralSettings.tsx`: Bereich „Migration (Soul of Waifu)“ und Button „Import aus Soul of Waifu (Live2D)“ entfernen.
+- [x] **1.4 Lokalisierung (i18n) & Tests bereinigen**
+  - [x] Veraltete Übersetzungsschlüssel aus `src/i18n/locales/{de,en,ru}.ts` löschen:
     - `settings.importSowLive2d`, `settings.importSowLive2dHint`, `settings.sowLive2dImported`
     - `memory.sowTitle`, `memory.sowText`, `memory.sowPick`, `memory.sowDialogTitle`, `memory.sowImported`
     - `backend.live2d.sowRead`, `backend.live2d.sowMissing`
     - `memory.tabBackups`: Beschriftung neutralisieren („Snapshots & Backups“).
-  - [ ] Unit-Tests in `src/test/` bereinigen (Mock-Aufrufe von `importSowFolder` entfernen).
+  - [x] Unit-Tests in `src/test/` bereinigen (Mock-Aufrufe von `importSowFolder` entfernen).
 
 ---
 

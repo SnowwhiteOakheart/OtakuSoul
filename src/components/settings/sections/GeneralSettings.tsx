@@ -1,4 +1,3 @@
-import { useState } from 'react';
 import { useStoreFields } from '../../../store/useAppStore';
 import { translate, useTranslation, type SupportedLanguage } from '../../../i18n';
 import { open } from '@tauri-apps/plugin-dialog';
@@ -38,33 +37,6 @@ export const GeneralSettings = () => {
     'scannedVrms', 'activeVrmPath', 'setActiveVrmPath', 'refreshVrmModels', 'scannedLive2ds', 'activeLive2dPath',
     'setActiveLive2dPath', 'refreshLive2dModels', 'replyLanguage', 'setReplyLanguage',
   );
-
-  const [isImportingSow, setIsImportingSow] = useState(false);
-  const [isMigrating, setIsMigrating] = useState(false);
-
-  const handleMigration = async () => {
-    try {
-      const selected = await open({
-        directory: true,
-        multiple: false,
-        title: 'Soul of Waifu Installationsverzeichnis auswählen',
-      });
-      if (!selected || Array.isArray(selected)) return;
-      setIsMigrating(true);
-      const res = await api.runLegacyMigration(selected);
-      toast.success(res);
-      // Wait for backend to copy files, then refresh the UI lists
-      setTimeout(() => {
-        // Just trigger a window reload to ensure all stores load the new data
-        window.location.reload();
-      }, 1500);
-    } catch (e) {
-      console.error('Failed to migrate data:', e);
-      toast.error(errorMessage(e));
-    } finally {
-      setIsMigrating(false);
-    }
-  };
 
   const handleBrowseVrm = async () => {
     try {
@@ -111,20 +83,6 @@ export const GeneralSettings = () => {
     } catch (e) {
       console.error('Failed to import Live2D model:', e);
       toast.error(translate('settings.importFailed', { error: errorMessage(e) }));
-    }
-  };
-
-  const handleImportSowLive2d = async () => {
-    setIsImportingSow(true);
-    try {
-      const count = await api.importSowLive2dModels();
-      await refreshLive2dModels();
-      toast.success(translate('settings.sowLive2dImported', { count }));
-    } catch (e) {
-      console.error('Failed to import SoW Live2D models:', e);
-      toast.error(translate('settings.importFailed', { error: errorMessage(e) }));
-    } finally {
-      setIsImportingSow(false);
     }
   };
 
@@ -314,16 +272,6 @@ export const GeneralSettings = () => {
             <Sparkles className="w-4 h-4 text-accent-400" />
             <span>{t('header.update')}</span>
           </button>
-
-          <button
-            type="button"
-            onClick={handleMigration}
-            disabled={isMigrating}
-            className="flex items-center gap-2 px-3.5 py-2 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-200 text-xs font-medium transition-colors border border-slate-700/60 disabled:opacity-50"
-          >
-            <FolderOpen className="w-4 h-4 text-accent-400" />
-            <span>{isMigrating ? 'Importiere...' : 'Migration (Soul of Waifu)'}</span>
-          </button>
         </div>
 
         <div className="p-3 rounded-lg bg-app/80 border border-slate-800/80 text-xs text-slate-400 font-mono space-y-1">
@@ -411,17 +359,6 @@ export const GeneralSettings = () => {
           >
             <FolderOpen className="w-3.5 h-3.5 text-accent-400" />
             <span className="whitespace-nowrap">{t('settings.importLive2d')}</span>
-          </button>
-
-          <button
-            type="button"
-            onClick={handleImportSowLive2d}
-            disabled={isImportingSow}
-            className="px-3.5 py-2 rounded-lg bg-accent-950/60 hover:bg-accent-900/80 text-accent-200 font-medium flex items-center gap-1.5 transition-colors border border-accent-700/60 disabled:opacity-50"
-            title={t('settings.importSowLive2dHint')}
-          >
-            <Sparkles className="w-3.5 h-3.5 text-accent2-400" />
-            <span className="whitespace-nowrap">{isImportingSow ? t('settings.importing') : t('settings.importSowLive2d')}</span>
           </button>
         </div>
       </div>

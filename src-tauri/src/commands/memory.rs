@@ -240,20 +240,6 @@ pub async fn generate_manual_diary_entry(
 }
 
 #[tauri::command]
-pub fn import_sow_memory_files(
-    state: State<'_, AppState>,
-    char_id: String,
-    folder_path: String,
-    user_name: String,
-) -> Result<usize, String> {
-    state.memory_db.import_sow_memory_folder(
-        &char_id,
-        std::path::Path::new(&folder_path),
-        &user_name,
-    )
-}
-
-#[tauri::command]
 pub fn backup_memory_state(
     state: State<'_, AppState>,
     char_id: String,
