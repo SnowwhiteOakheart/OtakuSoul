@@ -14,6 +14,14 @@ cloud_context_tokens: number, active_preset_id: string | null, reply_language: s
  */
 onboarding_completed: boolean, 
 /**
+ * Closing the window keeps the app (and its loaded models) running in the tray.
+ */
+close_to_tray: boolean, 
+/**
+ * The hint about the tray was shown on the first close.
+ */
+tray_hint_shown: boolean, 
+/**
  * Editable parts of the chat system prompt.
  */
 prompt_template: PromptTemplate, };

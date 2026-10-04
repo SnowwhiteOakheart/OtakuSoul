@@ -65,6 +65,12 @@ pub struct AppSettings {
     /// from before the wizard existed count as already set up.
     #[serde(default = "default_true")]
     pub onboarding_completed: bool,
+    /// Closing the window keeps the app (and its loaded models) running in the tray.
+    #[serde(default = "default_true")]
+    pub close_to_tray: bool,
+    /// The hint about the tray was shown on the first close.
+    #[serde(default)]
+    pub tray_hint_shown: bool,
     /// Editable parts of the chat system prompt.
     pub prompt_template: crate::modules::prompt_builder::PromptTemplate,
 }
@@ -131,6 +137,8 @@ impl Default for AppSettings {
             theme: "obsidian".to_string(),
             color_mode: "system".to_string(),
             onboarding_completed: false,
+            close_to_tray: true,
+            tray_hint_shown: false,
             prompt_template: Default::default(),
         }
     }
@@ -207,6 +215,21 @@ pub fn save_app_settings(settings: &AppSettings) -> Result<(), String> {
 pub fn save_frontend_settings(mut settings: AppSettings) -> Result<(), String> {
     settings.hidden_character_ids = stored_hidden_character_ids(&get_settings_file_path());
     save_app_settings(&settings)
+}
+
+/// What closing the window does: `(close_to_tray, tray_hint_shown)`. Reads only these two
+/// fields, so a close doesn't rescan models like a full settings load.
+pub fn close_behaviour() -> (bool, bool) {
+    let value = fs::read_to_string(get_settings_file_path())
+        .ok()
+        .and_then(|content| serde_json::from_str::<serde_json::Value>(&content).ok());
+    let flag = |key: &str, default: bool| {
+        value
+            .as_ref()
+            .and_then(|v| v.get(key)?.as_bool())
+            .unwrap_or(default)
+    };
+    (flag("close_to_tray", true), flag("tray_hint_shown", false))
 }
 
 fn stored_hidden_character_ids(path: &std::path::Path) -> Vec<String> {

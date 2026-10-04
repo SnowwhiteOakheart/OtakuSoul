@@ -34,6 +34,12 @@ export interface AppSlice {
   /** False only on a fresh install; shows the first-run wizard. */
   onboardingCompleted: boolean;
   completeOnboarding: () => void;
+  /** Closing the window hides it into the tray instead of quitting. */
+  closeToTray: boolean;
+  setCloseToTray: (on: boolean) => void;
+  /** The first-close hint about the tray was confirmed. */
+  trayHintShown: boolean;
+  confirmTrayHint: () => Promise<void>;
   /** Settings section to open next time the settings view mounts. */
   pendingSettingsSection: SettingsSection | null;
   openSettingsSection: (section: SettingsSection) => void;
@@ -124,6 +130,8 @@ export const createAppSlice: SliceCreator<AppSlice> = (set, get) => ({
         theme: settings.theme || 'obsidian',
         colorMode,
         onboardingCompleted: settings.onboarding_completed !== false,
+        closeToTray: settings.close_to_tray !== false,
+        trayHintShown: settings.tray_hint_shown === true,
         settingsLoaded: true,
       });
 
@@ -221,6 +229,8 @@ export const createAppSlice: SliceCreator<AppSlice> = (set, get) => ({
         theme: state.theme,
         color_mode: state.colorMode,
         onboarding_completed: state.onboardingCompleted,
+        close_to_tray: state.closeToTray,
+        tray_hint_shown: state.trayHintShown,
       };
       await api.saveSettings(settings);
     } catch (e) {
@@ -267,6 +277,21 @@ export const createAppSlice: SliceCreator<AppSlice> = (set, get) => ({
   completeOnboarding: () => {
     set({ onboardingCompleted: true });
     get().saveCurrentSettings();
+  },
+
+  closeToTray: true,
+
+  setCloseToTray: (on) => {
+    set({ closeToTray: on });
+    get().saveCurrentSettings();
+  },
+
+  trayHintShown: false,
+
+  confirmTrayHint: async () => {
+    set({ trayHintShown: true });
+    // Saved before hiding: the next close reads the flag from settings.json.
+    await get().saveCurrentSettings();
   },
 
   pendingSettingsSection: null,

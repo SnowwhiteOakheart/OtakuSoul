@@ -89,3 +89,11 @@ pub fn log_frontend(level: String, message: String) {
         _ => tracing::warn!(target: "frontend", "{}", message),
     }
 }
+
+/// Hides the main window into the tray (after the first-close hint was confirmed).
+#[tauri::command]
+pub fn hide_main_window(window: tauri::WebviewWindow) -> Result<(), String> {
+    window
+        .hide()
+        .map_err(|e| crate::err!("backend.app.hideWindow", error = e))
+}

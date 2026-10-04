@@ -3,6 +3,7 @@ import { translate, useTranslation, type SupportedLanguage } from '../../../i18n
 import { open } from '@tauri-apps/plugin-dialog';
 import { api } from '../../../services/api';
 import { toast } from '../../ui/feedback';
+import { Toggle } from '../../ui/Toggle';
 import { errorMessage } from '../../../utils/errors';
 import { APP_THEMES } from '../themes';
 import {
@@ -31,11 +32,11 @@ export const GeneralSettings = () => {
   const {
     appPaths, theme, setTheme, colorMode, setColorMode, appLanguage, setAppLanguage, setIsLogViewerOpen, setIsUpdaterOpen,
     scannedVrms, activeVrmPath, setActiveVrmPath, refreshVrmModels, scannedLive2ds, activeLive2dPath,
-    setActiveLive2dPath, refreshLive2dModels, replyLanguage, setReplyLanguage,
+    setActiveLive2dPath, refreshLive2dModels, replyLanguage, setReplyLanguage, closeToTray, setCloseToTray,
   } = useStoreFields(
     'appPaths', 'theme', 'setTheme', 'colorMode', 'setColorMode', 'appLanguage', 'setAppLanguage', 'setIsLogViewerOpen', 'setIsUpdaterOpen',
     'scannedVrms', 'activeVrmPath', 'setActiveVrmPath', 'refreshVrmModels', 'scannedLive2ds', 'activeLive2dPath',
-    'setActiveLive2dPath', 'refreshLive2dModels', 'replyLanguage', 'setReplyLanguage',
+    'setActiveLive2dPath', 'refreshLive2dModels', 'replyLanguage', 'setReplyLanguage', 'closeToTray', 'setCloseToTray',
   );
 
   const handleBrowseVrm = async () => {
@@ -253,6 +254,14 @@ export const GeneralSettings = () => {
           </h2>
           <p className="text-xs text-slate-400 mt-0.5">{t('settings.systemIntro')}</p>
         </div>
+
+        <Toggle
+          checked={closeToTray}
+          onCheckedChange={setCloseToTray}
+          label={t('settings.closeToTray')}
+          description={t(closeToTray ? 'settings.closeToTrayOn' : 'settings.closeToTrayOff')}
+          className="-mx-2"
+        />
 
         <div className="flex flex-wrap items-center gap-3">
           <button

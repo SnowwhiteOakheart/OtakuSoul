@@ -738,6 +738,9 @@ export interface AppSettings {
   theme?: 'obsidian' | 'cyberpunk' | 'sakura' | 'midnight' | 'emerald' | string;
   color_mode?: 'system' | 'light' | 'dark';
   onboarding_completed?: boolean;
+  /** Closing the window keeps the app running in the tray. */
+  close_to_tray?: boolean;
+  tray_hint_shown?: boolean;
   prompt_template?: PromptTemplate;
 }
 

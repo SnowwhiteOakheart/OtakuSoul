@@ -4,6 +4,7 @@ import { Sidebar } from './components/Sidebar';
 import { SafetyCountdownBanner } from './components/companion/SafetyCountdownBanner';
 import { useAppStore } from './store/useAppStore';
 import { useTabHistory } from './hooks/useTabHistory';
+import { useCloseToTray } from './hooks/useCloseToTray';
 import { useTranslation } from './i18n';
 import { ErrorBoundary } from './components/ui/ErrorBoundary';
 import { FeedbackHost } from './components/ui/feedback';
@@ -36,6 +37,7 @@ export function App() {
   const isOverlayMode =
     typeof window !== 'undefined' && new URLSearchParams(window.location.search).get('overlay') === 'true';
   useTabHistory(!isOverlayMode);
+  useCloseToTray(!isOverlayMode);
 
   if (isOverlayMode) {
     return (

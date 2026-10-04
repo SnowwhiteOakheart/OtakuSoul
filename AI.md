@@ -68,7 +68,9 @@ Einstellungen: `components/settings/sections/*` (Server inkl. Laufzeiten/`mmproj
 
 ## Stolperfallen
 
-- Beenden: Schließen-X versteckt nur ins Tray; „Beenden“ (Tray) bzw. Updater-Neustart lösen `RunEvent::Exit` aus →
+- Beenden: Schließen-X richtet sich nach `close_to_tray` (Standard an): beim ersten Mal Hinweis per Event
+  `close-to-tray-hint` (`hooks/useCloseToTray.ts`), danach verstecken; aus → `exit(0)`. E2E schließt über
+  `e2e/tools/wmclose.py` (WM_DELETE_WINDOW, erzwingt X11). „Beenden“ (Tray) bzw. Updater-Neustart lösen `RunEvent::Exit` aus →
   `stop_model_servers` (llama, sd, TTS, max. 8 s). Linux beendet Kindprozesse zusätzlich per `PR_SET_PDEATHSIG`;
   neue Kindprozesse brauchen `kill_on_drop(true)` und unter Linux `PR_SET_PDEATHSIG`.
 - Mehrere GPUs: iGPUs melden Dutzende GB geteilten Speicher; sd.cpp/llama.cpp würden sie wählen (FLUX.1 350 s statt

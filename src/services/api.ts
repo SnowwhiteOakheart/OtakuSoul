@@ -951,6 +951,15 @@ export const api = {
     return await invoke<RuntimeInfo>('install_runtime', { kind, backend });
   },
 
+  hideMainWindow: async (): Promise<void> => {
+    await invoke('hide_main_window');
+  },
+
+  /** First close with "keep running in the tray": the interface explains it before hiding. */
+  onCloseToTrayHint: async (callback: () => void): Promise<UnlistenFn> => {
+    return await listen('close-to-tray-hint', () => callback());
+  },
+
   onRuntimeProgress: async (callback: (data: RuntimeProgress) => void): Promise<UnlistenFn> => {
     return await listen<RuntimeProgress>('runtime-progress', (event) => callback(event.payload));
   },

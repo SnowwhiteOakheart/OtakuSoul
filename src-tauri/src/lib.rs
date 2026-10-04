@@ -117,12 +117,22 @@ pub fn run() {
                 }
                 let _ = window.show();
 
-                // Prevent the app from exiting when the window is closed; hide it instead
+                // Closing hides the window into the tray (setting `close_to_tray`), the first
+                // time after a hint in the interface; otherwise it quits the app.
                 let window_clone = window.clone();
                 window.on_window_event(move |event| {
                     if let tauri::WindowEvent::CloseRequested { api, .. } = event {
                         api.prevent_close();
-                        let _ = window_clone.hide();
+                        match modules::settings::close_behaviour() {
+                            (false, _) => window_clone.app_handle().exit(0),
+                            (true, false) => {
+                                use tauri::Emitter;
+                                let _ = window_clone.emit("close-to-tray-hint", ());
+                            }
+                            (true, true) => {
+                                let _ = window_clone.hide();
+                            }
+                        }
                     }
                 });
             }
@@ -133,8 +143,15 @@ pub fn run() {
                 use tauri::tray::{MouseButton, MouseButtonState, TrayIconBuilder, TrayIconEvent};
 
                 if let Some(icon) = app.default_window_icon().cloned() {
-                    let show_i = MenuItem::with_id(app, "show", "Anzeigen", true, None::<&str>)?;
-                    let quit_i = MenuItem::with_id(app, "quit", "Beenden", true, None::<&str>)?;
+                    // In the interface language; the first-close hint refers to "Beenden"/"Quit".
+                    let (show_label, quit_label) =
+                        match modules::settings::load_app_settings().app_language.as_str() {
+                            "en" => ("Show", "Quit"),
+                            "ru" => ("Показать", "Выход"),
+                            _ => ("Anzeigen", "Beenden"),
+                        };
+                    let show_i = MenuItem::with_id(app, "show", show_label, true, None::<&str>)?;
+                    let quit_i = MenuItem::with_id(app, "quit", quit_label, true, None::<&str>)?;
                     let menu = Menu::with_items(app, &[&show_i, &quit_i])?;
 
                     let _tray = TrayIconBuilder::new()
@@ -278,6 +295,7 @@ pub fn run() {
             commands::companion::toggle_companion_overlay,
             commands::companion::evaluate_companion_proactive,
             commands::app::get_app_paths,
+            commands::app::hide_main_window,
             commands::app::log_frontend,
             commands::app::open_avatar_folder,
             commands::characters::scan_characters,
