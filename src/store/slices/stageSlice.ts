@@ -354,6 +354,7 @@ export const createStageSlice: SliceCreator<StageSlice> = (set, get) => ({
       set({ stageState: sceneState });
     } catch (e) {
       console.error('Failed to save stage scene:', e);
+      throw e;
     }
   },
 

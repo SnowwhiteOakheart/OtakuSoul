@@ -113,7 +113,11 @@ export const StageView: React.FC = () => {
         lock_bg: !currentLock,
       },
     };
-    await saveStageScene(updatedState);
+    try {
+      await saveStageScene(updatedState);
+    } catch (e) {
+      toast.error(translate('stage.saveFailed', { error: errorMessage(e) }));
+    }
   };
 
   // Audio Ambiance state: the scene's sound file if it has one, else the synthesized campfire.

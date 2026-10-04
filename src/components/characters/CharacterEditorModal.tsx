@@ -1,4 +1,4 @@
-import { startTransition, useActionState, useState } from 'react';
+import { startTransition, useActionState, useId, useState } from 'react';
 import { CharacterProfile, CharacterCardV2 } from '../../types';
 import { api } from '../../services/api';
 import { useStoreFields } from '../../store/useAppStore';
@@ -29,6 +29,7 @@ export const CharacterEditorModal = ({
   onSaved,
 }: CharacterEditorModalProps) => {
   const { t, tOptional } = useTranslation();
+  const fieldId = useId();
   const { refreshCharacters, allLorebooks, scannedVrms, scannedLive2ds } = useStoreFields(
     'refreshCharacters', 'allLorebooks', 'scannedVrms', 'scannedLive2ds',
   );
@@ -230,6 +231,7 @@ export const CharacterEditorModal = ({
           </div>
           <button
             onClick={onClose}
+            aria-label={t('common.close')}
             className="p-1.5 rounded-lg text-slate-400 hover:text-slate-100 hover:bg-slate-800 transition-colors"
           >
             <X className="w-5 h-5" />
@@ -419,10 +421,11 @@ export const CharacterEditorModal = ({
               {/* Basic Fields */}
               <div className="md:col-span-2 space-y-4">
                 <div>
-                  <label className="block text-xs font-semibold text-slate-300 mb-1">
+                  <label className="block text-xs font-semibold text-slate-300 mb-1" htmlFor={`${fieldId}-name`}>
                     {t('editor.name')}
                   </label>
                   <input
+                    id={`${fieldId}-name`}
                     type="text"
                     value={name}
                     onChange={(e) => setName(e.target.value)}
@@ -432,10 +435,11 @@ export const CharacterEditorModal = ({
                 </div>
 
                 <div>
-                  <label className="block text-xs font-semibold text-slate-300 mb-1">
+                  <label className="block text-xs font-semibold text-slate-300 mb-1" htmlFor={`${fieldId}-title`}>
                     {t('editor.title')}
                   </label>
                   <input
+                    id={`${fieldId}-title`}
                     type="text"
                     value={title}
                     onChange={(e) => setTitle(e.target.value)}
@@ -445,10 +449,11 @@ export const CharacterEditorModal = ({
                 </div>
 
                 <div>
-                  <label className="block text-xs font-semibold text-slate-300 mb-1">
+                  <label className="block text-xs font-semibold text-slate-300 mb-1" htmlFor={`${fieldId}-tags`}>
                     {t('editor.tags')}
                   </label>
                   <input
+                    id={`${fieldId}-tags`}
                     type="text"
                     value={tagsStr}
                     onChange={(e) => setTagsStr(e.target.value)}
@@ -458,10 +463,11 @@ export const CharacterEditorModal = ({
                 </div>
 
                 <div>
-                  <label className="block text-xs font-semibold text-slate-300 mb-1">
+                  <label className="block text-xs font-semibold text-slate-300 mb-1" htmlFor={`${fieldId}-creatorNotes`}>
                     {t('editor.creatorNotes')}
                   </label>
                   <input
+                    id={`${fieldId}-creatorNotes`}
                     type="text"
                     value={creatorNotes}
                     onChange={(e) => setCreatorNotes(e.target.value)}
@@ -546,10 +552,11 @@ export const CharacterEditorModal = ({
           {activeTab === 'prompts' && (
             <div className="space-y-4">
               <div>
-                <label className="block text-xs font-semibold text-slate-300 mb-1">
+                <label className="block text-xs font-semibold text-slate-300 mb-1" htmlFor={`${fieldId}-description`}>
                   {t('editor.description')}
                 </label>
                 <textarea
+                  id={`${fieldId}-description`}
                   rows={3}
                   value={description}
                   onChange={(e) => setDescription(e.target.value)}
@@ -559,10 +566,11 @@ export const CharacterEditorModal = ({
               </div>
 
               <div>
-                <label className="block text-xs font-semibold text-slate-300 mb-1">
+                <label className="block text-xs font-semibold text-slate-300 mb-1" htmlFor={`${fieldId}-personality`}>
                   {t('editor.personality')}
                 </label>
                 <textarea
+                  id={`${fieldId}-personality`}
                   rows={3}
                   value={personality}
                   onChange={(e) => setPersonality(e.target.value)}
@@ -572,10 +580,11 @@ export const CharacterEditorModal = ({
               </div>
 
               <div>
-                <label className="block text-xs font-semibold text-slate-300 mb-1">
+                <label className="block text-xs font-semibold text-slate-300 mb-1" htmlFor={`${fieldId}-scenario`}>
                   {t('editor.scenario')}
                 </label>
                 <textarea
+                  id={`${fieldId}-scenario`}
                   rows={2}
                   value={scenario}
                   onChange={(e) => setScenario(e.target.value)}
@@ -585,10 +594,11 @@ export const CharacterEditorModal = ({
               </div>
 
               <div>
-                <label className="block text-xs font-semibold text-slate-300 mb-1">
+                <label className="block text-xs font-semibold text-slate-300 mb-1" htmlFor={`${fieldId}-examples`}>
                   {t('editor.examples')}
                 </label>
                 <textarea
+                  id={`${fieldId}-examples`}
                   rows={4}
                   value={mesExample}
                   onChange={(e) => setMesExample(e.target.value)}
@@ -598,10 +608,11 @@ export const CharacterEditorModal = ({
               </div>
 
               <div>
-                <label className="block text-xs font-semibold text-slate-300 mb-1">
+                <label className="block text-xs font-semibold text-slate-300 mb-1" htmlFor={`${fieldId}-systemPrompt`}>
                   {t('editor.systemPrompt')}
                 </label>
                 <textarea
+                  id={`${fieldId}-systemPrompt`}
                   rows={2}
                   value={systemPrompt}
                   onChange={(e) => setSystemPrompt(e.target.value)}
@@ -616,10 +627,11 @@ export const CharacterEditorModal = ({
           {activeTab === 'greetings' && (
             <div className="space-y-4">
               <div>
-                <label className="block text-xs font-semibold text-slate-300 mb-1">
+                <label className="block text-xs font-semibold text-slate-300 mb-1" htmlFor={`${fieldId}-firstMessage`}>
                   {t('editor.firstMessage')}
                 </label>
                 <textarea
+                  id={`${fieldId}-firstMessage`}
                   rows={4}
                   value={firstMes}
                   onChange={(e) => setFirstMes(e.target.value)}
@@ -655,6 +667,7 @@ export const CharacterEditorModal = ({
                 <div className="flex gap-2">
                   <textarea
                     rows={2}
+                    aria-label={t('editor.altGreetingPlaceholder')}
                     value={newGreeting}
                     onChange={(e) => setNewGreeting(e.target.value)}
                     placeholder={t('editor.altGreetingPlaceholder')}

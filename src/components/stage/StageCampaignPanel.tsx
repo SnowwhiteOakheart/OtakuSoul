@@ -14,7 +14,8 @@ import {
   Trash2,
 } from 'lucide-react';
 import { translate, useTranslation } from '../../i18n';
-import { confirmDialog } from '../ui/feedback';
+import { confirmDialog, toast } from '../ui/feedback';
+import { errorMessage } from '../../utils/errors';
 import { StageWorldEditor } from './StageWorldEditor';
 
 const progressWidth = (current: number, max: number) =>
@@ -37,7 +38,11 @@ export const StageCampaignPanel: React.FC = () => {
       tone: 'danger',
     });
     if (!confirmed) return;
-    await saveStageScene({ ...stageState, consequence_ledger: stageState.consequence_ledger.filter((e) => e.id !== id) });
+    try {
+      await saveStageScene({ ...stageState, consequence_ledger: stageState.consequence_ledger.filter((e) => e.id !== id) });
+    } catch (e) {
+      toast.error(translate('stage.saveFailed', { error: errorMessage(e) }));
+    }
   };
 
   const { inventory, objectives, arcs, relationships, consequence_ledger: consequences } = stageState;

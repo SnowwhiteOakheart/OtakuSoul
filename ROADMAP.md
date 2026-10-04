@@ -33,9 +33,11 @@ GitHub Actions wurden bewusst entfernt (Commit `11597c2`). Stattdessen gibt es j
 
 ### Tests
 
-- [ ] *(teilweise: Store-Tests mit API-Mock, Komponenten-Tests mit Testing Library/jsdom für Dialog, Menü, ErrorBoundary,
-  Bestätigungsdialog, `pressable`, UI-Primitive, Befehlspalette und den Einrichtungsassistenten – 63 Tests in 10 Suites; offen: Chat, Stage, Charakter-Editor)* Frontend-Abdeckung ausbauen: Tests für Store-Slices, `api.ts`-Mocks
-  und Kernkomponenten mit `@testing-library/react` ergänzen.
+- [x] Frontend-Abdeckung ausbauen: Store-Tests mit API-Mock (`src/test/mockApi.ts`) und Komponenten-Tests mit Testing
+  Library/jsdom für UI-Primitive, Dialoge, Einrichtungsassistent, Chat (Generierung, Stream, Sitzungen, Bearbeiten),
+  Memory, Stage (`stageTurns`: Runden, Flüstern, Vorlesen, Auto-Play; `stageWorldEditor`) und Charakter-Editor –
+  220 Tests in 38 Suites. Dabei behoben: Speicherfehler der Stage gingen verloren (Weltzustand-Editor meldete
+  „gespeichert“ und verwarf den Entwurf); Feldbeschriftungen im Charakter-Editor sind jetzt mit den Feldern verknüpft.
 
 ---
 

@@ -4,6 +4,7 @@ import { useStoreFields } from '../../store/useAppStore';
 import { useTranslation } from '../../i18n';
 import { ModalOverlay } from '../ui/ModalOverlay';
 import { toast } from '../ui/feedback';
+import { errorMessage } from '../../utils/errors';
 import type { CampaignObjective, CharacterOverlay, InventoryItem, SceneState, StageLoreCard, StageRelationship, StoryArc } from '../../types';
 
 /** The parts of a scene the world editor changes; everything else stays as the latest state has it. */
@@ -78,6 +79,7 @@ export const StageWorldEditor: React.FC<{ onClose: () => void }> = ({ onClose })
       : null,
   );
   const [showHidden, setShowHidden] = useState(false);
+  const [saving, setSaving] = useState(false);
   if (!stageState || !draft) return null;
 
   const update = <K extends keyof CampaignDraft>(key: K, value: CampaignDraft[K]) => setDraft({ ...draft, [key]: value });
@@ -86,17 +88,25 @@ export const StageWorldEditor: React.FC<{ onClose: () => void }> = ({ onClose })
   const save = async () => {
     // Merge into the latest state so a turn that finished meanwhile isn't overwritten.
     const latest = stageState;
+    setSaving(true);
     const facts = Object.fromEntries(draft.facts.filter(([key]) => key.trim()).map(([key, value]) => [key.trim(), value]));
-    await saveStageScene({
-      ...latest,
-      world: { ...latest.world, key_facts: facts },
-      arcs: draft.arcs.map((arc) => ({ ...arc, stage: Math.min(arc.stage, arc.max_stage) })),
-      objectives: draft.objectives,
-      relationships: draft.relationships,
-      inventory: draft.inventory.filter((item) => item.name.trim()),
-      overlays: draft.overlays.filter((overlay) => overlay.name.trim()),
-      lore_cards: draft.lore_cards.filter((card) => card.title.trim() && card.content.trim()),
-    });
+    try {
+      await saveStageScene({
+        ...latest,
+        world: { ...latest.world, key_facts: facts },
+        arcs: draft.arcs.map((arc) => ({ ...arc, stage: Math.min(arc.stage, arc.max_stage) })),
+        objectives: draft.objectives,
+        relationships: draft.relationships,
+        inventory: draft.inventory.filter((item) => item.name.trim()),
+        overlays: draft.overlays.filter((overlay) => overlay.name.trim()),
+        lore_cards: draft.lore_cards.filter((card) => card.title.trim() && card.content.trim()),
+      });
+    } catch (e) {
+      // The draft stays open for another try.
+      toast.error(t('stage.saveFailed', { error: errorMessage(e) }));
+      setSaving(false);
+      return;
+    }
     toast.success(t('stageWorld.saved'));
     onClose();
   };
@@ -282,7 +292,7 @@ export const StageWorldEditor: React.FC<{ onClose: () => void }> = ({ onClose })
           <button onClick={onClose} className="px-4 py-2 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-300 text-xs font-semibold">{t('common.cancel')}</button>
           <button
             onClick={() => void save()}
-            disabled={isProcessingStageTurn}
+            disabled={isProcessingStageTurn || saving}
             title={isProcessingStageTurn ? t('stageWorld.busy') : undefined}
             className="px-4 py-2 rounded-xl bg-accent-600 hover:bg-accent-500 disabled:opacity-40 text-white text-xs font-semibold flex items-center gap-1.5"
           >

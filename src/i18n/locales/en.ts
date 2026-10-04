@@ -800,6 +800,7 @@ export const en: TranslationDictionary = {
   "stageWorld.itemType.key": "Key/story",
   "stageWorld.itemType.equipment": "Equipment",
   "stageWorld.save": "Save",
+  "stage.saveFailed": "Could not save the scene: {{error}}",
   "stageWorld.saved": "World state saved",
   "stageWorld.busy": "Saving is possible after the running turn",
   "stageWorld.deleteChronicle": "Delete entry",

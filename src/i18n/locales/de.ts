@@ -802,6 +802,7 @@ export const de = {
   "stageWorld.itemType.key": "Schlüssel/Story",
   "stageWorld.itemType.equipment": "Ausrüstung",
   "stageWorld.save": "Speichern",
+  "stage.saveFailed": "Spielstand konnte nicht gespeichert werden: {{error}}",
   "stageWorld.saved": "Weltzustand gespeichert",
   "stageWorld.busy": "Speichern geht erst nach der laufenden Runde",
   "stageWorld.deleteChronicle": "Eintrag löschen",

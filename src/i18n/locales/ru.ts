@@ -800,6 +800,7 @@ export const ru: TranslationDictionary = {
   "stageWorld.itemType.key": "Ключевой/сюжетный",
   "stageWorld.itemType.equipment": "Снаряжение",
   "stageWorld.save": "Сохранить",
+  "stage.saveFailed": "Не удалось сохранить сцену: {{error}}",
   "stageWorld.saved": "Состояние мира сохранено",
   "stageWorld.busy": "Сохранить можно после текущего хода",
   "stageWorld.deleteChronicle": "Удалить запись",
