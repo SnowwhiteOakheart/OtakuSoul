@@ -100,7 +100,6 @@ pub fn run() {
         .plugin(tauri_plugin_opener::init())
         .plugin(tauri_plugin_process::init())
         .plugin(tauri_plugin_dialog::init())
-        .plugin(tauri_plugin_window_state::Builder::default().build())
         .manage(AppState::new())
         .setup(|app| {
             use tauri::Manager;
@@ -110,8 +109,12 @@ pub fn run() {
             allow_app_asset_dirs(app);
             create_main_window(app)?;
             if let Some(window) = app.get_webview_window("main") {
-                use tauri_plugin_window_state::WindowExt;
-                let _ = window.restore_state(tauri_plugin_window_state::StateFlags::all());
+                // The window-state plugin is only registered outside an isolated profile.
+                #[cfg(desktop)]
+                if modules::paths::isolated_home().is_none() {
+                    use tauri_plugin_window_state::WindowExt;
+                    let _ = window.restore_state(tauri_plugin_window_state::StateFlags::all());
+                }
                 let _ = window.show();
 
                 // Prevent the app from exiting when the window is closed; hide it instead
