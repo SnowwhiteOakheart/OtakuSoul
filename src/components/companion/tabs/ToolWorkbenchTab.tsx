@@ -93,6 +93,11 @@ export const ToolWorkbenchTab: React.FC = () => {
     await requestToolCall(selectedTool, args);
   };
 
+  const handleToggleCodeExecution = () => {
+    if (!settings) return;
+    updateCompanionSettings({ ...settings, allow_code_execution: !settings.allow_code_execution });
+  };
+
   const handleToggleAutoApprove = () => {
     if (!settings) return;
     updateCompanionSettings({
@@ -133,7 +138,10 @@ export const ToolWorkbenchTab: React.FC = () => {
                     setToolArgPrimary('https://github.com/SnowwhiteOakheart/OtakuSoul');
                     setToolArgSecondary('');
                   } else if (val === 'execute_code') {
-                    setToolArgPrimary('print("Hallo aus OtakuSoul!")\nimport sys\nprint("Python Version:", sys.version)');
+                    // Language and sample must match: the script runs with the selected interpreter.
+                    const windows = navigator.userAgent.includes('Windows');
+                    setCodeLanguage(windows ? 'powershell' : 'bash');
+                    setToolArgPrimary(windows ? 'Write-Output "Hallo aus OtakuSoul!"\nGet-Date' : 'echo "Hallo aus OtakuSoul!"\nuname -a');
                     setToolArgSecondary('');
                   } else if (val === 'app_control') {
                     setToolArgPrimary('launch');
@@ -170,6 +178,12 @@ export const ToolWorkbenchTab: React.FC = () => {
                 <option value="set_timer">{t('comp.tool.timer')}</option>
               </select>
             </div>
+
+            {selectedTool === 'execute_code' && !settings?.allow_code_execution && (
+              <p role="note" className="text-xs text-amber-200 bg-amber-950/40 border border-amber-500/30 rounded-lg p-2">
+                {t('comp.codeDisabledHint')}
+              </p>
+            )}
 
             {selectedTool === 'execute_code' && (
               <div>
@@ -286,7 +300,21 @@ export const ToolWorkbenchTab: React.FC = () => {
           </form>
 
           {/* Safety Toggles */}
-          <div className="pt-2 border-t border-slate-800 flex items-center justify-between text-xs">
+          <div className="pt-2 border-t border-slate-800 space-y-1">
+            <label className="flex items-start gap-2 cursor-pointer text-xs text-slate-300">
+              <input
+                type="checkbox"
+                checked={settings?.allow_code_execution ?? false}
+                onChange={handleToggleCodeExecution}
+                className="mt-0.5 rounded border-slate-700 text-rose-600 focus:ring-0"
+              />
+              <span>
+                <span className="font-semibold text-slate-200">{t('comp.allowCode')}</span>
+                <span className="block text-slate-400">{t('comp.allowCodeHint')}</span>
+              </span>
+            </label>
+          </div>
+          <div className="flex items-center justify-between text-xs">
             <label className="flex items-center gap-2 cursor-pointer text-slate-300">
               <input
                 type="checkbox"

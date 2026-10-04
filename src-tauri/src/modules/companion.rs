@@ -365,6 +365,9 @@ pub struct CompanionSettings {
     pub enable_neurohormones: bool,
     pub proactive_interval_seconds: u32,
     pub enable_proactive_speaking: bool,
+    /// `execute_code` runs scripts with the user's rights (no OS sandbox); off until enabled.
+    #[serde(default)]
+    pub allow_code_execution: bool,
 }
 
 impl Default for CompanionSettings {
@@ -375,6 +378,7 @@ impl Default for CompanionSettings {
             enable_neurohormones: true,
             proactive_interval_seconds: 300,
             enable_proactive_speaking: true,
+            allow_code_execution: false,
         }
     }
 }
@@ -674,6 +678,9 @@ impl CompanionEngine {
         tool_name: &str,
         arguments: serde_json::Value,
     ) -> Result<ToolCallRequest, String> {
+        if tool_name == "execute_code" && !self.state.read().settings.allow_code_execution {
+            return Err(crate::err!("backend.companion.codeDisabled"));
+        }
         let auto_approve = {
             let st = self.state.read();
             st.settings.auto_approve_safe_tools && tool_allows_auto_approval(tool_name, &arguments)
@@ -911,6 +918,16 @@ impl CompanionEngine {
                     tool_name: tool_name.to_string(),
                     success: res.is_ok(),
                     output: res.unwrap_or_else(|e| e),
+                    executed_at: now,
+                }
+            }
+            // Checked again here: a call approved after the setting was switched off must not run.
+            "execute_code" if !self.state.read().settings.allow_code_execution => {
+                ToolExecutionResult {
+                    call_id: call_id.to_string(),
+                    tool_name: tool_name.to_string(),
+                    success: false,
+                    output: "Code execution is switched off in the companion settings.".to_string(),
                     executed_at: now,
                 }
             }
@@ -1193,6 +1210,32 @@ mod tests {
         }
         assert!(engine.get_state().pending_tool_calls.is_empty());
         assert_eq!(engine.get_state().tool_history.len(), 5);
+    }
+
+    #[test]
+    fn test_code_execution_is_off_until_enabled() {
+        let engine = CompanionEngine::new();
+        let code = || serde_json::json!({"language": "bash", "code": "echo hi"});
+        assert!(!engine.get_state().settings.allow_code_execution);
+        let refused = engine
+            .request_tool_call("execute_code", code())
+            .unwrap_err();
+        assert!(refused.contains("backend.companion.codeDisabled"));
+        assert!(engine.get_state().pending_tool_calls.is_empty());
+
+        // Enabled: the call still waits for confirmation.
+        engine.update_settings(CompanionSettings {
+            allow_code_execution: true,
+            ..CompanionSettings::default()
+        });
+        let request = engine.request_tool_call("execute_code", code()).unwrap();
+        assert!(request.requires_confirmation);
+
+        // Switched off before approving: the approved call doesn't run.
+        engine.update_settings(CompanionSettings::default());
+        let result = engine.resolve_tool_call(&request.id, true).unwrap();
+        assert!(!result.success);
+        assert!(result.output.contains("switched off"));
     }
 
     #[test]

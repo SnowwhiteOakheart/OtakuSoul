@@ -641,6 +641,8 @@ export interface CompanionSettings {
   enable_neurohormones: boolean;
   proactive_interval_seconds?: number;
   enable_proactive_speaking?: boolean;
+  /** `execute_code` is allowed (off by default, not kept across restarts). */
+  allow_code_execution?: boolean;
 }
 
 export interface CompanionState {

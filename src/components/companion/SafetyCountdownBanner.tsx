@@ -3,6 +3,7 @@ import { useStoreFields } from '../../store/useAppStore';
 import { ShieldAlert, Check, X, Clock, Terminal } from 'lucide-react';
 import { useTranslation } from '../../i18n';
 import type { ToolCallRequest, ToolExecutionResult } from '../../types';
+import { effectLabel, toolEffects } from './toolEffects';
 
 interface SafetyCountdownProps {
   pendingCall: ToolCallRequest;
@@ -31,9 +32,12 @@ const SafetyCountdown = ({ pendingCall, totalSeconds, resolveToolCall }: SafetyC
   }, [pendingCall.id, resolveToolCall]);
 
   const percent = Math.round((secondsRemaining / totalSeconds) * 100);
+  const isCode = pendingCall.tool_name === 'execute_code';
+  const codeArgs = (pendingCall.arguments ?? {}) as { language?: unknown; code?: unknown };
+  const effects = toolEffects(pendingCall.tool_name, pendingCall.arguments);
 
   return (
-    <div className="fixed bottom-6 right-6 z-50 max-w-lg w-full p-4 rounded-2xl bg-slate-900 border-2 border-amber-500/80 shadow-2xl shadow-amber-950/50 backdrop-blur-xl animate-in slide-in-from-bottom duration-300">
+    <div className="fixed top-20 right-6 z-50 max-w-lg w-full p-4 rounded-2xl bg-slate-900 border-2 border-amber-500/80 shadow-2xl shadow-amber-950/50 backdrop-blur-xl animate-in slide-in-from-top duration-300">
       <div className="flex items-start gap-3">
         <div className="p-2 rounded-xl bg-amber-500/20 border border-amber-500/40 text-amber-400 shrink-0">
           <ShieldAlert className="w-6 h-6 animate-pulse" />
@@ -61,10 +65,35 @@ const SafetyCountdown = ({ pendingCall, totalSeconds, resolveToolCall }: SafetyC
                 {t('safety.tool')} <strong>{pendingCall.tool_name}</strong>
               </span>
             </div>
-            <pre className="text-xs text-slate-400 overflow-x-auto whitespace-pre-wrap">
-              {JSON.stringify(pendingCall.arguments, null, 2)}
-            </pre>
+            {isCode ? (
+              <>
+                <div className="text-slate-400">{t('safety.language', { language: String(codeArgs.language ?? '') })}</div>
+                {/* The whole script, as it will run, not an escaped JSON string. */}
+                <pre className="max-h-60 overflow-auto whitespace-pre text-slate-200 bg-slate-950/60 rounded-lg p-2">{String(codeArgs.code ?? '')}</pre>
+              </>
+            ) : (
+              <pre className="text-xs text-slate-400 overflow-x-auto whitespace-pre-wrap">
+                {JSON.stringify(pendingCall.arguments, null, 2)}
+              </pre>
+            )}
           </div>
+
+          <ul className="flex flex-wrap gap-1.5" aria-label={t('safety.effects')}>
+            {effects.length === 0 ? (
+              <li className="text-[11px] px-2 py-0.5 rounded-full bg-emerald-950/60 text-emerald-300 border border-emerald-500/30">
+                {t('comp.effect.none')}
+              </li>
+            ) : (
+              effects.map((effect) => (
+                <li
+                  key={effect}
+                  className="text-[11px] px-2 py-0.5 rounded-full bg-amber-950/60 text-amber-200 border border-amber-500/30"
+                >
+                  {t(effectLabel(effect))}
+                </li>
+              ))
+            )}
+          </ul>
 
           {pendingCall.tool_name === 'execute_code' && (
             <p className="text-xs text-amber-200">{t('comp.tool.codeWarning')}</p>

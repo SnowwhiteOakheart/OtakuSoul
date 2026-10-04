@@ -13,11 +13,11 @@ Abgehakte Punkte sind umgesetzt und geprüft; offene Punkte sind noch keine zuge
 - [x] Schreibende Dateiaktionen auch bei Großschreibung und umgebenden Leerzeichen bestätigen lassen.
 - [x] Screenshots und Zwischenablagezugriffe wegen ihrer sensiblen Inhalte bestätigen lassen.
 - [x] Regressionstests für Freigabe, Ablehnung, unbekannte Tools und Varianten der Dateiaktionen ergänzen.
-- [ ] Echte Betriebssystem-Isolation für Skripte mit begrenzten Datei-, Netzwerk- und Prozessrechten entwerfen und umsetzen.
+- [x] Echte Betriebssystem-Isolation für Skripte mit begrenzten Datei-, Netzwerk- und Prozessrechten entwerfen und umsetzen. *(Ersetzt durch Neuzuschnitt, umgesetzt 04.10.: `allow_code_execution`, standardmäßig aus und nur bis zum Neustart; Backend prüft bei Anfrage und Ausführung; Banner zeigt den vollständigen Code.)*
   *Neuzuschnitt (04.10.):* Eine plattformübergreifende Sandbox (bubblewrap/Landlock, AppContainer, macOS) ist
   unverhältnismäßig. Stattdessen Skript-Ausführung standardmäßig aus, nur per Schalter mit Warnung; vor der
   Bestätigung den vollständigen Skripttext zeigen.
-- [ ] Berechtigungen und Auswirkungen pro Werkzeug verständlich anzeigen; die Grenzen der Skript-Ausführung klar benennen.
+- [x] Berechtigungen und Auswirkungen pro Werkzeug verständlich anzeigen; die Grenzen der Skript-Ausführung klar benennen (`companion/toolEffects.ts`: Wirkungs-Chips im Freigabe-Banner; Hinweis „ohne Sandbox“ am Schalter).
 
 Abnahme: Ohne Bestätigung wird kein unbekanntes oder externes Werkzeug ausgeführt;
 Schreibaktionen umgehen die Prüfung nicht durch anders formatierte Argumente.

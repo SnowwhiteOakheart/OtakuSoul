@@ -33,7 +33,24 @@ try {
   assert.equal(rejected.tool_history.length, 1);
   assert.equal(rejected.tool_history[0].success, false);
   assert.match(rejected.tool_history[0].output, /abgelehnt/);
-  console.log('Companion: sensible Werkzeuge warten auf Freigabe und lassen sich ablehnen.');
+
+  // Code execution is off until switched on; then the banner shows the whole script.
+  await browser.$('select').selectByAttribute('value', 'execute_code');
+  await browser.$('p*=Code-Ausführung ist ausgeschaltet').waitForDisplayed();
+  await browser.$('button=Werkzeug ausführen').click();
+  await browser.$('div*=Das hat nicht geklappt').waitForDisplayed({ timeout: 5000 });
+  assert.equal((await invoke('get_companion_state')).pending_tool_calls.length, 0, 'ausgeschaltete Code-Ausführung wartet trotzdem');
+  // The error toast may cover the switch; click it directly.
+  await browser.execute((label) => label.click(), await browser.$('label*=Code-Ausführung erlauben'));
+  await browser.waitUntil(async () => (await invoke('get_companion_state')).settings.allow_code_execution === true, { timeout: 5000 });
+  await browser.execute((button) => button.click(), await browser.$('button=Werkzeug ausführen'));
+  await browser.$('button=Ablehnen').waitForDisplayed();
+  const banner = await browser.$('ul[aria-label="Was dieses Werkzeug darf"]');
+  assert.match(await banner.getText(), /führt Code mit deinen Rechten aus/);
+  await browser.saveScreenshot(path.join(screenshotDir, '32-code-freigabe.png'));
+  await browser.$('button=Ablehnen').click();
+  await browser.waitUntil(async () => !(await browser.$('button=Ablehnen').isExisting()));
+  console.log('Companion: sensible Werkzeuge warten auf Freigabe und lassen sich ablehnen; Code-Ausführung nur nach Einschalten.');
 } finally {
   await close();
 }
