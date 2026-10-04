@@ -16,10 +16,10 @@ export const ChatComposer: React.FC = () => {
   const { t } = useTranslation();
   const {
     sendMessage, isGenerating, abortGeneration, activeVoiceConfig, setAutoTtsEnabled, contextUsage,
-    selectedBackend, serverConfig,
+    selectedBackend, serverConfig, generationFailure, retryGeneration, activeChatId,
   } = useStoreFields(
     'sendMessage', 'isGenerating', 'abortGeneration', 'activeVoiceConfig', 'setAutoTtsEnabled', 'contextUsage',
-    'selectedBackend', 'serverConfig',
+    'selectedBackend', 'serverConfig', 'generationFailure', 'retryGeneration', 'activeChatId',
   );
   const [input, setInput] = useState('');
   const [files, setFiles] = useState<File[]>([]);
@@ -37,10 +37,10 @@ export const ChatComposer: React.FC = () => {
     setInput('');
     setFiles([]);
     sendMessage(text, attached).catch((e) => {
-      // Nothing was stored (upload failed): give the draft back.
+      // Upload/user-write failure: restore the unsaved draft without discarding new typing.
       toast.error(errorMessage(e));
-      setInput(text);
-      setFiles(attached);
+      setInput((current) => current ? `${text}\n${current}` : text);
+      setFiles((current) => [...attached, ...current]);
     });
   };
 
@@ -49,11 +49,18 @@ export const ChatComposer: React.FC = () => {
 
   const handleAbort = async () => {
     streamingTts.cancel();
-    await abortGeneration();
+    try { await abortGeneration(); } catch (e) { toast.error(errorMessage(e)); }
   };
 
   return (
     <div className="p-4 border-t border-slate-800 bg-slate-900/60 backdrop-blur">
+      {generationFailure?.chatId === activeChatId && (
+        <div role="alert" className="max-w-4xl mx-auto mb-3 rounded-lg border border-rose-500/40 bg-rose-950/30 p-3 text-sm text-rose-200">
+          <p>{t('chat.inferenceError', { error: generationFailure.message })}</p>
+          <button type="button" disabled={isGenerating} onClick={() => void retryGeneration()}
+            className="mt-2 underline disabled:opacity-40">{t('common.retry')}</button>
+        </div>
+      )}
       {files.length > 0 && (
         <div className="max-w-4xl mx-auto mb-2 flex flex-wrap gap-2" aria-label={t('chat.attachments')}>
           {files.map((file, i) => (

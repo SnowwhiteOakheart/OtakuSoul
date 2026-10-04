@@ -20,6 +20,13 @@ import { errorMessage } from '../../utils/errors';
 import { fileToBase64 } from '../../utils/files';
 import { fillCardMacros, languageCode, localizeCard } from '../../utils/cardI18n';
 
+type GenerationFailure = {
+  chatId: string;
+  message: string;
+  kind: 'send' | 'swipe' | 'continue';
+  messageId: string;
+};
+
 /** Chat messages, streaming, sessions, swipes, HUD presets, reply language and voice. */
 export interface ChatSlice {
   replyLanguage: string;
@@ -28,6 +35,9 @@ export interface ChatSlice {
   streamingText: string;
   streamingThought: string;
   isGenerating: boolean;
+  generationChatId: string | null;
+  generationFailure: GenerationFailure | null;
+  retryGeneration: () => Promise<void>;
   /** How full the context window was for the last reply. */
   contextUsage: ContextUsage | null;
   isSummarizing: boolean;
@@ -36,8 +46,8 @@ export interface ChatSlice {
   updateChatSummary: (summary: string, summaryUntil: number) => Promise<void>;
   /** Translates a message into the app language with the chat model. */
   translateText: (text: string) => Promise<string>;
-  /** Sends a message; `files` are attached to it (images, text, PDF). */
-  sendMessage: (content: string, files?: File[]) => Promise<void>;
+  /** Sends a message; retries pass the ID of the already saved user message. */
+  sendMessage: (content: string, files?: File[], storedMessageId?: string) => Promise<void>;
   abortGeneration: () => Promise<void>;
   clearChat: () => void;
   activeChatId: string | null;
@@ -93,12 +103,39 @@ const greetingFor = (state: {
   return data.first_mes ? fillCardMacros(data.first_mes, data.name, state.activePersona.name) : '';
 };
 
-export const createChatSlice: SliceCreator<ChatSlice> = (set, get) => ({
+export const createChatSlice: SliceCreator<ChatSlice> = (set, get) => {
+  let cancelled = false;
+  let generationSequence = 0;
+  let abortPending: Promise<void> | null = null;
+  const isCurrentContext = (chatId: string, charId: string | undefined) =>
+    get().activeChatId === chatId && get().activeCharacter?.id === charId;
+  const inContext = (chatId: string, charId: string | undefined) =>
+    !cancelled && isCurrentContext(chatId, charId);
+  const finishGeneration = async () => {
+    if (abortPending) await abortPending.catch(() => {});
+    set({ isGenerating: false, generationChatId: null, streamingText: '', streamingThought: '' });
+  };
+  return ({
   replyLanguage: 'Deutsch',
 
   setReplyLanguage: (replyLanguage) => {
     set({ replyLanguage });
     get().saveCurrentSettings();
+  },
+
+  generationChatId: null,
+  generationFailure: null,
+  retryGeneration: async () => {
+    const failure = get().generationFailure;
+    if (!failure || get().isGenerating || get().activeChatId !== failure.chatId) return;
+    if (failure.kind === 'send') {
+      const message = get().storedMessages.find((m) => m.id === failure.messageId && m.role === 'user');
+      if (message) await get().sendMessage(message.content, [], message.id);
+    } else if (failure.kind === 'swipe') {
+      await get().regenerateMessageSwipe(failure.messageId);
+    } else {
+      await get().continueChatMessage(failure.messageId);
+    }
   },
 
   messages: [],
@@ -216,6 +253,7 @@ export const createChatSlice: SliceCreator<ChatSlice> = (set, get) => ({
 
       set({
         activeChatId: chatId,
+        generationFailure: null,
         storedMessages: storedMsgs,
         messages: flatMsgs,
         contextUsage: null,
@@ -358,7 +396,7 @@ export const createChatSlice: SliceCreator<ChatSlice> = (set, get) => ({
       chatSessions,
     } = get();
 
-    if (!activeChatId || !activeCharacter) return;
+    if (get().isGenerating || !activeChatId || !activeCharacter) return;
     const targetMsg = storedMessages.find((m) => m.id === msgId);
     if (!targetMsg) return;
 
@@ -368,30 +406,33 @@ export const createChatSlice: SliceCreator<ChatSlice> = (set, get) => ({
     const priorStored = storedMessages.filter((m) => m.order_index < targetMsg.order_index);
     const priorFlat: ChatMessage[] = priorStored.map(toFlat);
 
-    set({ isGenerating: true, streamingText: '', streamingThought: '' });
-
-    const prompt = await resolvePromptWithLore(get(), priorFlat);
-    const systemPromptMsg: ChatMessage = { role: 'system', content: prompt.system };
-
-    const payloadMessages = [systemPromptMsg, ...priorFlat];
-
-    // Inject author note at depth if requested
-    if (activeSession?.author_note && (activeSession.author_note_depth || 0) > 0) {
-      const depth = activeSession.author_note_depth;
-      const insertIdx = Math.max(1, payloadMessages.length - depth);
-      payloadMessages.splice(insertIdx, 0, {
-        role: 'system',
-        content: `[Author's note: ${activeSession.author_note}]`,
-      });
-    }
-    payloadMessages.push(...postHistory(prompt));
-
-    const endpoint =
-      selectedBackend === 'local'
-        ? `http://127.0.0.1:${serverConfig.port}/v1/chat/completions`
-        : cloudEndpoint;
+    cancelled = false;
+    generationSequence += 1;
+    set({ isGenerating: true, generationChatId: activeChatId, generationFailure: null, streamingText: '', streamingThought: '' });
 
     try {
+      const prompt = await resolvePromptWithLore(get(), priorFlat);
+      if (!inContext(activeChatId, activeCharacter.id)) return;
+      const systemPromptMsg: ChatMessage = { role: 'system', content: prompt.system };
+
+      const payloadMessages = [systemPromptMsg, ...priorFlat];
+
+      // Inject author note at depth if requested
+      if (activeSession?.author_note && (activeSession.author_note_depth || 0) > 0) {
+        const depth = activeSession.author_note_depth;
+        const insertIdx = Math.max(1, payloadMessages.length - depth);
+        payloadMessages.splice(insertIdx, 0, {
+          role: 'system',
+          content: `[Author's note: ${activeSession.author_note}]`,
+        });
+      }
+      payloadMessages.push(...postHistory(prompt));
+
+      const endpoint =
+        selectedBackend === 'local'
+          ? `http://127.0.0.1:${serverConfig.port}/v1/chat/completions`
+          : cloudEndpoint;
+
       const done = await api.sendChatMessage({
         endpoint_url: endpoint,
         provider: selectedBackend === 'cloud' ? cloudProvider : 'local_llama',
@@ -403,13 +444,9 @@ export const createChatSlice: SliceCreator<ChatSlice> = (set, get) => ({
           ...sampling,
         },
       }, selectedBackend === 'cloud' ? get().cloudContextTokens : undefined);
-      set({ contextUsage: done.context ?? null });
-      get().summarizeDroppedMessages(done.context, priorStored);
+      if (!inContext(activeChatId, activeCharacter.id)) return;
 
       const { cleanedText, stateUpdates } = extractStateUpdates(done.full_text);
-      if (stateUpdates) {
-        set({ stateVariables: applyStateUpdates(get().stateVariables, stateUpdates) });
-      }
 
       const updatedMsg = await api.addMessageSwipe(
         msgId,
@@ -417,6 +454,10 @@ export const createChatSlice: SliceCreator<ChatSlice> = (set, get) => ({
         done.full_thought.trim() ? done.full_thought : null
       );
 
+      if (!isCurrentContext(activeChatId, activeCharacter.id)) return;
+      set({ contextUsage: done.context ?? null });
+      if (stateUpdates) set({ stateVariables: applyStateUpdates(get().stateVariables, stateUpdates) });
+      get().summarizeDroppedMessages(done.context, priorStored);
       set((state) => {
         const stored = state.storedMessages.map((m) => (m.id === msgId ? updatedMsg : m));
         const flat: ChatMessage[] = stored.map(toFlat);
@@ -425,14 +466,17 @@ export const createChatSlice: SliceCreator<ChatSlice> = (set, get) => ({
           messages: flat,
           streamingText: '',
           streamingThought: '',
-          isGenerating: false,
         };
       });
 
       soundFx.playMessageSent();
     } catch (e) {
       console.error('Regenerate swipe error:', e);
-      set({ isGenerating: false });
+      if (inContext(activeChatId, activeCharacter.id)) {
+        set({ generationFailure: { chatId: activeChatId, message: errorMessage(e), kind: 'swipe', messageId: msgId } });
+      }
+    } finally {
+      await finishGeneration();
     }
   },
 
@@ -450,7 +494,7 @@ export const createChatSlice: SliceCreator<ChatSlice> = (set, get) => ({
       sampling,
     } = get();
 
-    if (!activeChatId || !activeCharacter) return;
+    if (get().isGenerating || !activeChatId || !activeCharacter) return;
     const targetMsg = storedMessages.find((m) => m.id === msgId);
     if (!targetMsg) return;
 
@@ -458,23 +502,26 @@ export const createChatSlice: SliceCreator<ChatSlice> = (set, get) => ({
     const historyStored = storedMessages.filter((m) => m.order_index <= targetMsg.order_index);
     const historyFlat: ChatMessage[] = historyStored.map(toFlat);
 
-    set({ isGenerating: true, streamingText: '', streamingThought: '' });
-
-    const prompt = await resolvePromptWithLore(get(), historyFlat);
-    const systemPromptMsg: ChatMessage = { role: 'system', content: prompt.system };
-    const continueInstruction: ChatMessage = {
-      role: 'system',
-      content: '[Anweisung: Setze deine letzte Nachricht nahtlos und flüssig fort. Wiederhole keine bereits geschriebenen Sätze!]',
-    };
-
-    const payloadMessages = [systemPromptMsg, ...historyFlat, ...postHistory(prompt), continueInstruction];
-
-    const endpoint =
-      selectedBackend === 'local'
-        ? `http://127.0.0.1:${serverConfig.port}/v1/chat/completions`
-        : cloudEndpoint;
+    cancelled = false;
+    generationSequence += 1;
+    set({ isGenerating: true, generationChatId: activeChatId, generationFailure: null, streamingText: '', streamingThought: '' });
 
     try {
+      const prompt = await resolvePromptWithLore(get(), historyFlat);
+      if (!inContext(activeChatId, activeCharacter.id)) return;
+      const systemPromptMsg: ChatMessage = { role: 'system', content: prompt.system };
+      const continueInstruction: ChatMessage = {
+        role: 'system',
+        content: '[Anweisung: Setze deine letzte Nachricht nahtlos und flüssig fort. Wiederhole keine bereits geschriebenen Sätze!]',
+      };
+
+      const payloadMessages = [systemPromptMsg, ...historyFlat, ...postHistory(prompt), continueInstruction];
+
+      const endpoint =
+        selectedBackend === 'local'
+          ? `http://127.0.0.1:${serverConfig.port}/v1/chat/completions`
+          : cloudEndpoint;
+
       const done = await api.sendChatMessage({
         endpoint_url: endpoint,
         provider: selectedBackend === 'cloud' ? cloudProvider : 'local_llama',
@@ -486,13 +533,9 @@ export const createChatSlice: SliceCreator<ChatSlice> = (set, get) => ({
           ...sampling,
         },
       }, selectedBackend === 'cloud' ? get().cloudContextTokens : undefined);
-      set({ contextUsage: done.context ?? null });
-      get().summarizeDroppedMessages(done.context, historyStored);
+      if (!inContext(activeChatId, activeCharacter.id)) return;
 
       const { cleanedText, stateUpdates } = extractStateUpdates(done.full_text);
-      if (stateUpdates) {
-        set({ stateVariables: applyStateUpdates(get().stateVariables, stateUpdates) });
-      }
 
       const mergedContent = `${targetMsg.content} ${cleanedText}`.trim();
       const updatedMsg = await api.updateChatMessage(
@@ -501,6 +544,10 @@ export const createChatSlice: SliceCreator<ChatSlice> = (set, get) => ({
         targetMsg.thought
       );
 
+      if (!isCurrentContext(activeChatId, activeCharacter.id)) return;
+      set({ contextUsage: done.context ?? null });
+      if (stateUpdates) set({ stateVariables: applyStateUpdates(get().stateVariables, stateUpdates) });
+      get().summarizeDroppedMessages(done.context, historyStored);
       set((state) => {
         const stored = state.storedMessages.map((m) => (m.id === msgId ? updatedMsg : m));
         const flat: ChatMessage[] = stored.map(toFlat);
@@ -509,14 +556,17 @@ export const createChatSlice: SliceCreator<ChatSlice> = (set, get) => ({
           messages: flat,
           streamingText: '',
           streamingThought: '',
-          isGenerating: false,
         };
       });
 
       soundFx.playMessageSent();
     } catch (e) {
       console.error('Continue message error:', e);
-      set({ isGenerating: false });
+      if (inContext(activeChatId, activeCharacter.id)) {
+        set({ generationFailure: { chatId: activeChatId, message: errorMessage(e), kind: 'continue', messageId: msgId } });
+      }
+    } finally {
+      await finishGeneration();
     }
   },
 
@@ -548,7 +598,7 @@ export const createChatSlice: SliceCreator<ChatSlice> = (set, get) => ({
     }
   },
 
-  sendMessage: async (content: string, files: File[] = []) => {
+  sendMessage: async (content: string, files: File[] = [], storedMessageId?: string) => {
     let { activeChatId } = get();
     const {
       activeCharacter,
@@ -562,67 +612,82 @@ export const createChatSlice: SliceCreator<ChatSlice> = (set, get) => ({
       chatSessions,
     } = get();
 
-    if (!content.trim() && files.length === 0) return;
-
-    // Ensure we have an active chat session
-    if (!activeChatId && activeCharacter) {
-      const newSess = await get().createNewChat();
-      if (newSess) activeChatId = newSess.id;
-    }
-
-    if (!activeChatId) return;
-
-    soundFx.playMessageSent();
-
-    // 1. Store attachments, then the user message
-    // A failed upload rejects before anything is stored; the composer reports it.
-    const chatId = activeChatId;
-    const attachments: Attachment[] = await Promise.all(
-      files.map(async (file) => api.saveAttachment(chatId, file.name, await fileToBase64(file))),
-    );
-    const userStored = await api.addChatMessage(activeChatId, 'user', content, null, attachments);
-    const updatedStored = [...get().storedMessages, userStored];
-    const updatedFlat: ChatMessage[] = updatedStored.map(toFlat);
-
-    set({
-      storedMessages: updatedStored,
-      messages: updatedFlat,
-      streamingText: '',
-      streamingThought: '',
-      isGenerating: true,
-    });
-
-    const activeSession = chatSessions.find((s) => s.id === activeChatId);
-
-    // 2. Build context-aware system prompt
-    let systemPromptMsg: ChatMessage | null = null;
-    let prompt: AssembledPrompt | null = null;
-    if (activeCharacter) {
-      prompt = await resolvePromptWithLore(get(), updatedFlat, content);
-      systemPromptMsg = { role: 'system', content: prompt.system };
-    }
-
-    const payloadMessages = systemPromptMsg
-      ? [systemPromptMsg, ...updatedFlat]
-      : updatedFlat;
-
-    // 3. Inject Author's Note at depth if configured
-    if (activeSession?.author_note && (activeSession.author_note_depth || 0) > 0) {
-      const depth = activeSession.author_note_depth;
-      const insertIdx = Math.max(1, payloadMessages.length - depth);
-      payloadMessages.splice(insertIdx, 0, {
-        role: 'system',
-        content: `[Author's note: ${activeSession.author_note}]`,
-      });
-    }
-    payloadMessages.push(...postHistory(prompt));
-
-    const endpoint =
-      selectedBackend === 'local'
-        ? `http://127.0.0.1:${serverConfig.port}/v1/chat/completions`
-        : cloudEndpoint;
-
+    if (get().isGenerating || (!content.trim() && files.length === 0 && !storedMessageId)) return;
+    cancelled = false;
+    generationSequence += 1;
+    set({ isGenerating: true, generationChatId: activeChatId, generationFailure: null, streamingText: '', streamingThought: '' });
+    let userStored: StoredChatMessage | undefined;
     try {
+      // Ensure we have an active chat session
+      if (!activeChatId && activeCharacter) {
+        const newSess = await get().createNewChat();
+        if (newSess) activeChatId = newSess.id;
+      }
+
+      set({ generationChatId: activeChatId });
+      if (!activeChatId) throw new Error(translate('chat.noActiveSession'));
+      if (cancelled) throw new Error(translate('chat.sendCancelled'));
+      if (!inContext(activeChatId, activeCharacter?.id)) return;
+
+      soundFx.playMessageSent();
+
+      // 1. Store attachments, then the user message
+      // A failed upload rejects before anything is stored; the composer reports it.
+      const chatId = activeChatId;
+      userStored = storedMessageId ? get().storedMessages.find((m) => m.id === storedMessageId && m.role === 'user' && m.chat_id === chatId) : undefined;
+      if (storedMessageId && !userStored) return;
+      if (!userStored) {
+        const attachments: Attachment[] = await Promise.all(
+          files.map(async (file) => api.saveAttachment(chatId, file.name, await fileToBase64(file))),
+        );
+        if (cancelled) throw new Error(translate('chat.sendCancelled'));
+        if (!inContext(chatId, activeCharacter?.id)) return;
+        userStored = await api.addChatMessage(chatId, 'user', content, null, attachments);
+      }
+      if (get().activeChatId !== chatId || get().activeCharacter?.id !== activeCharacter?.id) return;
+      const updatedStored = storedMessageId ? get().storedMessages : [...get().storedMessages, userStored];
+      const updatedFlat: ChatMessage[] = updatedStored.map(toFlat);
+
+      set({
+        storedMessages: updatedStored,
+        messages: updatedFlat,
+        streamingText: '',
+        streamingThought: '',
+        isGenerating: true,
+      });
+
+      if (cancelled) return;
+      const activeSession = chatSessions.find((s) => s.id === activeChatId);
+
+      // 2. Build context-aware system prompt
+      let systemPromptMsg: ChatMessage | null = null;
+      let prompt: AssembledPrompt | null = null;
+      if (activeCharacter) {
+        prompt = await resolvePromptWithLore(get(), updatedFlat, content);
+        systemPromptMsg = { role: 'system', content: prompt.system };
+      }
+
+      if (!inContext(chatId, activeCharacter?.id)) return;
+      const payloadMessages = systemPromptMsg
+        ? [systemPromptMsg, ...updatedFlat]
+        : updatedFlat;
+
+      // 3. Inject Author's Note at depth if configured
+      if (activeSession?.author_note && (activeSession.author_note_depth || 0) > 0) {
+        const depth = activeSession.author_note_depth;
+        const insertIdx = Math.max(1, payloadMessages.length - depth);
+        payloadMessages.splice(insertIdx, 0, {
+          role: 'system',
+          content: `[Author's note: ${activeSession.author_note}]`,
+        });
+      }
+      payloadMessages.push(...postHistory(prompt));
+
+      const endpoint =
+        selectedBackend === 'local'
+          ? `http://127.0.0.1:${serverConfig.port}/v1/chat/completions`
+          : cloudEndpoint;
+
       const done = await api.sendChatMessage({
         endpoint_url: endpoint,
         provider: selectedBackend === 'cloud' ? cloudProvider : 'local_llama',
@@ -634,14 +699,10 @@ export const createChatSlice: SliceCreator<ChatSlice> = (set, get) => ({
           ...sampling,
         },
       }, selectedBackend === 'cloud' ? get().cloudContextTokens : undefined);
-      set({ contextUsage: done.context ?? null });
-      get().summarizeDroppedMessages(done.context, updatedStored);
+      if (!inContext(chatId, activeCharacter?.id)) return;
 
       // 4. Parse <state> tags
       const { cleanedText, stateUpdates } = extractStateUpdates(done.full_text);
-      if (stateUpdates) {
-        set({ stateVariables: applyStateUpdates(get().stateVariables, stateUpdates) });
-      }
 
       // 5. Add assistant message to DB
       const asstStored = await api.addChatMessage(
@@ -651,6 +712,10 @@ export const createChatSlice: SliceCreator<ChatSlice> = (set, get) => ({
         done.full_thought.trim() ? done.full_thought : null
       );
 
+      if (!isCurrentContext(chatId, activeCharacter?.id)) return;
+      set({ contextUsage: done.context ?? null });
+      if (stateUpdates) set({ stateVariables: applyStateUpdates(get().stateVariables, stateUpdates) });
+      get().summarizeDroppedMessages(done.context, updatedStored);
       const finalStored = [...get().storedMessages, asstStored];
       const finalFlat: ChatMessage[] = finalStored.map(toFlat);
 
@@ -659,20 +724,19 @@ export const createChatSlice: SliceCreator<ChatSlice> = (set, get) => ({
         messages: finalFlat,
         streamingText: '',
         streamingThought: '',
-        isGenerating: false,
       });
 
       // Refresh chat sessions to update message count badges
       if (activeCharacter?.id) {
         api.listChatSessions(activeCharacter.id).then((sessions) => {
-          set({ chatSessions: sessions });
-        });
+          if (get().activeCharacter?.id === activeCharacter.id) set({ chatSessions: sessions });
+        }).catch((err) => console.warn('Chat session refresh failed:', err));
       }
 
       // Naturally apply emotional decay tick & refresh soul overview
       if (activeCharacter?.id) {
         api.applyEmotionalDecay(activeCharacter.id)
-          .then(() => get().fetchCognitiveOverview())
+          .then(() => { if (get().activeCharacter?.id === activeCharacter.id) return get().fetchCognitiveOverview(); })
           .catch((err) => console.warn('Decay tick error:', err));
       }
 
@@ -691,27 +755,36 @@ export const createChatSlice: SliceCreator<ChatSlice> = (set, get) => ({
       }
     } catch (e) {
       console.error('Chat error:', e);
-      set((state) => ({
-        messages: [
-          ...state.messages,
-          {
-            role: 'assistant',
-            content: translate('chat.inferenceError', { error: errorMessage(e) }),
-          },
-        ],
-        streamingText: '',
-        streamingThought: '',
-        isGenerating: false,
-      }));
+      if (!userStored) throw e; // The composer restores an unsaved draft only.
+      if (activeChatId && inContext(activeChatId, activeCharacter?.id)) {
+        set({ generationFailure: { chatId: activeChatId, message: errorMessage(e), kind: 'send', messageId: userStored.id } });
+      }
+    } finally {
+      await finishGeneration();
     }
   },
 
   abortGeneration: async () => {
+    if (!get().isGenerating) return;
+    if (abortPending) return abortPending;
+    const sequence = generationSequence;
+    const chatId = get().generationChatId;
+    cancelled = true;
+    set({ generationChatId: null });
+    const pending = api.abortChatGeneration();
+    abortPending = pending;
     try {
-      await api.abortChatGeneration();
-      set({ isGenerating: false });
+      await pending;
+      // Keep the lock until the original operation settles; the native stream is shared.
     } catch (e) {
+      if (sequence === generationSequence) {
+        cancelled = false;
+        set({ generationChatId: chatId });
+      }
       console.error('Failed to abort generation:', e);
+      throw e;
+    } finally {
+      if (abortPending === pending) abortPending = null;
     }
   },
 
@@ -756,3 +829,4 @@ export const createChatSlice: SliceCreator<ChatSlice> = (set, get) => ({
     }
   },
 });
+};

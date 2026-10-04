@@ -1,6 +1,6 @@
 # Roadmap aus der unabhängigen App-Durchsicht
 
-Stand: 03.10.2026. Grundlage: Quellcode, Funktionsstruktur und vorhandene E2E-Screenshots;
+Stand: 04.10.2026. Grundlage: Quellcode, Funktionsstruktur und vorhandene E2E-Screenshots;
 kein vollständiger Praxistest. Die bestehende ROADMAP.md wurde nicht als Grundlage verwendet.
 
 Die Reihenfolge priorisiert Sicherheit und Verlässlichkeit vor zusätzlichen Funktionen.
@@ -40,11 +40,11 @@ Abnahme: Ein fehlgeschlagener Speichervorgang leert keine Eingabe und meldet kei
 
 ## 3. Chat senden, abbrechen und wiederholen
 
-- [ ] Promptaufbau und alle nachfolgenden Schritte in eine gemeinsame Fehlerbehandlung aufnehmen.
+- [x] Promptaufbau und alle nachfolgenden Schritte in eine gemeinsame Fehlerbehandlung aufnehmen.
 - [ ] Generierungszustand bei jedem Fehler und Abbruch zuverlässig zurücksetzen.
-- [ ] Bereits gespeicherte Nutzernachrichten beim Wiederholen erkennen; Duplikate vermeiden.
+- [x] Bereits gespeicherte Nutzernachrichten beim Wiederholen erkennen; Duplikate vermeiden.
 - [ ] Gleichzeitiges Senden, Sitzungswechsel und verspätete Antworten eindeutig einer Sitzung zuordnen.
-- [ ] Fehler bei Upload, Promptaufbau, Streaming und Antwortspeicherung gezielt testen.
+- [x] Fehler bei Upload, Promptaufbau, Streaming und Antwortspeicherung gezielt testen.
 
 Abnahme: Kein Fehler lässt den Chat dauerhaft beschäftigt zurück; Wiederholen erzeugt keine doppelte Nutzernachricht.
 
@@ -329,3 +329,44 @@ Der erste Lauf stoppte an einer reservierten `error`-Eigenschaft in der Rückgab
 nach Änderung der Test-Rückgabe und Ergänzung des Schutzes für Kontextwechsel wurde der aktuelle Build erneut geprüft.
 Screenshots `39-memory-reflexionsfehler.png` und `40-memory-wiederherstellungsfehler.png` wurden visuell geprüft:
 Die konkreten Fehlerursachen, erneute Aktionen und der Hinweis auf mögliche Teiländerungen sind sichtbar.
+
+### Neuntes Arbeitspaket – 04.10.2026
+
+Senden, Neu generieren und Fortsetzen behandeln Promptaufbau und Antwortspeicherung im selben Fehlerpfad.
+Der Generierungszustand wird in `finally` zurückgesetzt; die Sperre gilt beim Senden bereits während
+Sitzungserstellung, Upload und Nutzernachricht-Speicherung. Parallele Generierungsaufrufe werden ignoriert.
+Upload-/Nutzernachricht-Schreibfehler geben den ungespeicherten Text und Dateien an den Composer zurück,
+ohne inzwischen neu getippte Eingaben zu überschreiben. Eine fehlende aktive Sitzung wird ausdrücklich gemeldet.
+
+Fehler nach Speicherung der Nutzernachricht werden separat und sichtbar im Composer gehalten, statt eine
+ungespeicherte Fehlermeldung als vermeintliche Assistentenantwort einzufügen. Wiederholen verwendet die ID der
+bereits gespeicherten Nutzernachricht. Swipe und Fortsetzen wiederholen ebenfalls ihre ursprüngliche Aktion.
+Ein fehlgeschlagener Antwort-Schreibvorgang verändert HUD, Kontextanzeige und Zusammenfassung nicht.
+Wiederholen nach einem Antwort-Schreibfehler erzeugt eine neue Modellantwort; die gescheiterte Antwort wird noch nicht zwischengespeichert.
+
+Abbruch verhindert eine Anfrage nach noch laufendem Upload/Promptaufbau und verwirft eine noch nicht
+zur Speicherung übergebene Antwort. Bereits laufende Datenbankschreibvorgänge bleiben wirksam.
+Die Sperre bleibt bis zum Abschluss des ursprünglichen Vorgangs bestehen, damit kein zweiter Chatlauf den
+gemeinsamen nativen Abbruch-Merker zurücksetzt. Abbruchfehler werden angezeigt. Stream-Puffer werden nach
+Fehler/Abbruch geleert; native Chat-Ereignisse werden nur für den zugehörigen aktiven Chat angezeigt.
+Verspätete Prompt-, Modell- und Speicherresultate überschreiben keinen anderen sichtbaren Chat.
+Fehlgeschlagenes Nachladen der Sitzungsliste nach erfolgreichem Schreiben wird separat protokolliert.
+
+Fünfzehn Frontend-Tests prüfen Prompt-/Upload-/Streaming-/Schreibfehler, sichtbares Wiederholen ohne doppelte
+Nutzernachricht, Vorbereitungssperren, Abbruchfehler, Abbruch während Prompt-/Nutzernachricht-Speicherung
+und verspätete Modell-/Schreibergebnisse nach Chatwechsel. Ein E2E-Test erzwingt echte SQLite-Schreibfehler
+für Nutzer- und Assistentennachricht im Wegwerfprofil und prüft Entwurfserhalt und Wiederholen.
+
+Offen bleiben vollständig geordnete Sitzungswechsel, ein Generationstoken in nativen Ereignissen,
+Abbruch bei blockierenden Netzwerk-/Vorbereitungsschritten und die Wiederaufnahme einer abgebrochenen
+Antwort. Upload-Dateien können nach einem späteren Fehler verwaist zurückbleiben. Der gesamte Punkt zu
+Sitzungswechseln sowie die umfassende Abbruch-Abnahme bleiben deshalb offen.
+
+`npm run check` bestanden: 367 Rust-Tests im aktuellen Arbeitsstand und 173 Frontend-Tests.
+Der aktuelle Build wurde mit `npm run e2e` erstellt. Der erste Gesamtlauf stoppte im neuen Test,
+weil der Fehler-Toast den Senden-Knopf überlagerte. Der Test schließt den Hinweis jetzt ausdrücklich,
+bevor er den nächsten Fehlerpfad prüft. Der korrigierte Einzeltest und der anschließende vollständige
+Lauf mit `npm run e2e:run` unter Xvfb bestanden alle 17 Szenarien.
+Screenshot `41-chat-generierungsfehler.png` wurde visuell geprüft: Die Nutzernachricht steht genau einmal
+im Verlauf; konkrete Antwort-Schreibfehlerursache und Wiederholen-Knopf sind vollständig sichtbar.
+Die parallel entstandenen Änderungen an optionalen Inhalten gehören nicht zu diesem Arbeitspaket.

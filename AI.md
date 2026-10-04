@@ -99,6 +99,14 @@ Einstellungen: `components/settings/sections/*` (Server inkl. Laufzeiten/`mmproj
   Der Abbruch-Merker wird nur am Runden-/Chat-Start zurückgesetzt (`reset_abort`), damit „Stopp“ die ganze Runde beendet.
 - Lokale Vision nur mit gewählter `mmproj`; ohne macht `attachments::prepare` aus Bildern einen Hinweis.
 - Swipes: `swipes_json` + `swipe_index`; „Neu generieren“ hängt an, überschreibt nie.
+- Chat-Generierung: Upload/Nutzernachricht, Prompt, Anfrage und Antwortspeicherung liegen innerhalb der
+  Fehlerbehandlung; `finally` gibt die Sperre frei. `generationFailure` enthält einen sichtbaren Fehler und
+  die Quellnachricht für Senden, Swipe oder Fortsetzen. `retryGeneration` verwendet die gespeicherte
+  Nutzernachricht, statt sie erneut einzufügen. Fehler vor deren Speicherung werden an den Composer gegeben,
+  der Text/Dateien erhält. HUD, Kontextanzeige und Zusammenfassung ändern sich erst nach Antwortspeicherung.
+  `generationChatId` begrenzt native Stream-Anzeigen auf den zugehörigen Chat. Abbruch stoppt auch eine
+  noch laufende Promptvorbereitung; die Sperre bleibt bis zum Abschluss des ursprünglichen Vorgangs bestehen.
+  Ein bereits laufender Datenbankschreibvorgang wird durch Abbruch nicht rückgängig gemacht.
 - Nachrichten bearbeiten: `editChatMessage` gibt Schreibfehler weiter; der Inline-Editor schließt erst nach Erfolg.
   Während des Schreibens sind Text, Speichern und Abbrechen gesperrt; bei offener Bearbeitung auch die Swipe-Navigation.
   Verspätete Speicherergebnisse eines anderen Chats dürfen den aktuellen Verlauf nicht aktualisieren.

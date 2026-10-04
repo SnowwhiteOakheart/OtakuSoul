@@ -59,6 +59,8 @@ export const en: TranslationDictionary = {
   "common.retry": "Try again",
   "common.loadingView": "Loading view…",
 
+  "chat.sendCancelled": "Sending was cancelled before saving the message.",
+  "chat.noActiveSession": "No active chat session. Please select a character and a chat.",
   "chat.inferenceError": "Inference error: {{error}}",
 
   "settings.title": "Settings",

@@ -1,0 +1,190 @@
+// @vitest-environment jsdom
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
+import { render, screen, waitFor } from '@testing-library/react';
+import userEvent from '@testing-library/user-event';
+vi.mock('../services/api', async () => (await import('./mockApi')).apiModule);
+vi.mock('../store/helpers', async (original) => ({ ...await original<object>(), resolvePromptWithLore: vi.fn() }));
+vi.mock('../components/voice/VoiceCallControls', () => ({ VoiceCallControls: () => null }));
+vi.mock('../services/soundFx', () => ({ soundFx: { playMessageSent: vi.fn() } }));
+import { api } from '../services/api';
+import { resolvePromptWithLore } from '../store/helpers';
+import { useAppStore } from '../store/useAppStore';
+import { ChatComposer } from '../components/chat/ChatComposer';
+import { toast } from '../components/ui/feedback';
+import { resetApiMocks } from './mockApi';
+import type { AssembledPrompt, CharacterProfile, StoredChatMessage } from '../types';
+const initial = useAppStore.getState();
+const character = { id: 'ayu', card: { data: { name: 'Ayu' } } } as CharacterProfile;
+const message: StoredChatMessage = { id: 'user-1', chat_id: 'chat-1', role: 'user', content: 'Hello', thought: null, order_index: 0, swipe_index: 0, swipes: [{ content: 'Hello', thought: null }], created_at: 0, attachments: [] };
+const reply: StoredChatMessage = { ...message, id: 'reply-1', role: 'assistant', content: 'Welcome', order_index: 1 };
+const prompt = { system: 'System', post_history: '' } as AssembledPrompt;
+const done = { full_text: 'Welcome', full_thought: '' };
+beforeEach(() => {
+  resetApiMocks();
+  useAppStore.setState({ ...initial, appLanguage: 'en', activeCharacter: character, activeChatId: 'chat-1', autoReflectionEnabled: false }, true);
+  vi.mocked(resolvePromptWithLore).mockReset().mockResolvedValue(prompt);
+  vi.mocked(api.addChatMessage).mockImplementation(async (_id, role) => role === 'user' ? message : reply);
+  vi.mocked(api.sendChatMessage).mockResolvedValue(done);
+  vi.mocked(api.listChatSessions).mockResolvedValue([]);
+  vi.spyOn(console, 'error').mockImplementation(() => {});
+  vi.spyOn(toast, 'error').mockImplementation(() => {});
+});
+afterEach(() => vi.restoreAllMocks());
+
+describe('chat generation failures', () => {
+  it('shows prompt errors and retries the saved user message without inserting it again', async () => {
+    vi.mocked(resolvePromptWithLore).mockRejectedValueOnce(new Error('Lore unavailable'));
+    render(<ChatComposer />);
+    const user = userEvent.setup();
+    await user.type(screen.getByRole('textbox'), 'Hello');
+    await user.click(screen.getByRole('button', { name: 'Send message' }));
+    expect(await screen.findByRole('alert')).toHaveTextContent('Lore unavailable');
+    expect(screen.getByRole('textbox')).toHaveValue('');
+    expect(useAppStore.getState().isGenerating).toBe(false);
+    expect(useAppStore.getState().storedMessages).toEqual([message]);
+    await user.click(screen.getByRole('button', { name: 'Try again' }));
+    await waitFor(() => expect(useAppStore.getState().storedMessages).toEqual([message, reply]));
+    expect(vi.mocked(api.addChatMessage).mock.calls.filter((call) => call[1] === 'user')).toHaveLength(1);
+    expect(screen.queryByRole('alert')).not.toBeInTheDocument();
+  });
+  it('restores an unsaved composer draft after the user write fails', async () => {
+    vi.mocked(api.addChatMessage).mockRejectedValueOnce(new Error('Disk full'));
+    render(<ChatComposer />);
+    const user = userEvent.setup();
+    await user.type(screen.getByRole('textbox'), 'Hello');
+    await user.click(screen.getByRole('button', { name: 'Send message' }));
+    await waitFor(() => expect(screen.getByRole('textbox')).toHaveValue('Hello'));
+    expect(toast.error).toHaveBeenCalledWith('Disk full');
+    expect(useAppStore.getState().isGenerating).toBe(false);
+    expect(api.sendChatMessage).not.toHaveBeenCalled();
+  });
+  it('preserves new typing when an older unsaved draft is restored', async () => {
+    let fail!: () => void;
+    vi.mocked(api.addChatMessage).mockImplementationOnce(() => new Promise((_resolve, reject) => { fail = () => reject(new Error('Disk full')); }));
+    render(<ChatComposer />);
+    const user = userEvent.setup();
+    await user.type(screen.getByRole('textbox'), 'Hello');
+    await user.click(screen.getByRole('button', { name: 'Send message' }));
+    await user.type(screen.getByRole('textbox'), 'New draft');
+    fail();
+    await waitFor(() => expect(screen.getByRole('textbox')).toHaveValue('Hello\nNew draft'));
+    expect(useAppStore.getState().isGenerating).toBe(false);
+  });
+  it('releases the lock and rejects failed uploads without saving a user message', async () => {
+    vi.mocked(api.saveAttachment).mockRejectedValueOnce(new Error('Upload failed'));
+    await expect(useAppStore.getState().sendMessage('Hello', [new File(['text'], 'test.txt')])).rejects.toThrow('Upload failed');
+    expect(api.addChatMessage).not.toHaveBeenCalled();
+    expect(useAppStore.getState().isGenerating).toBe(false);
+  });
+  it('locks sending during preparation and ignores duplicate send and retry calls', async () => {
+    let finish!: (value: StoredChatMessage) => void;
+    vi.mocked(api.addChatMessage).mockImplementationOnce(() => new Promise((resolve) => { finish = resolve; }));
+    const pending = useAppStore.getState().sendMessage('Hello');
+    expect(useAppStore.getState().isGenerating).toBe(true);
+    await useAppStore.getState().sendMessage('Second');
+    await useAppStore.getState().retryGeneration();
+    await waitFor(() => expect(api.addChatMessage).toHaveBeenCalledOnce());
+    finish(message);
+    await pending;
+    expect(api.sendChatMessage).toHaveBeenCalledOnce();
+  });
+  it('keeps streaming failures separate from the stored history', async () => {
+    vi.mocked(api.sendChatMessage).mockRejectedValueOnce(new Error('Connection lost'));
+    await useAppStore.getState().sendMessage('Hello');
+    expect(useAppStore.getState().generationFailure?.message).toBe('Connection lost');
+    expect(useAppStore.getState().messages).toHaveLength(1);
+    expect(useAppStore.getState().isGenerating).toBe(false);
+    await useAppStore.getState().retryGeneration();
+    expect(useAppStore.getState().storedMessages).toEqual([message, reply]);
+  });
+  it('does not update HUD or summaries if saving the generated reply fails', async () => {
+    const summarize = vi.fn();
+    useAppStore.setState({ summarizeDroppedMessages: summarize });
+    vi.mocked(api.sendChatMessage).mockResolvedValueOnce({ ...done, full_text: 'Welcome <state>{"mood":"happy"}</state>' });
+    vi.mocked(api.addChatMessage).mockResolvedValueOnce(message).mockRejectedValueOnce(new Error('Reply write failed'));
+    const variables = useAppStore.getState().stateVariables;
+    await useAppStore.getState().sendMessage('Hello');
+    expect(useAppStore.getState().stateVariables).toEqual(variables);
+    expect(summarize).not.toHaveBeenCalled();
+    expect(useAppStore.getState().generationFailure?.message).toBe('Reply write failed');
+    await useAppStore.getState().retryGeneration();
+    expect(useAppStore.getState().storedMessages).toEqual([message, reply]);
+  });
+  it.each(['regenerateMessageSwipe', 'continueChatMessage'] as const)('handles prompt failures and retries %s', async (action) => {
+    useAppStore.setState({ storedMessages: [message, reply] });
+    vi.mocked(resolvePromptWithLore).mockRejectedValueOnce(new Error('Prompt failed'));
+    vi.mocked(api.addMessageSwipe).mockResolvedValue(reply);
+    vi.mocked(api.updateChatMessage).mockResolvedValue(reply);
+    await useAppStore.getState()[action](reply.id);
+    expect(useAppStore.getState().isGenerating).toBe(false);
+    expect(useAppStore.getState().generationFailure?.message).toBe('Prompt failed');
+    await useAppStore.getState().retryGeneration();
+    expect(api.sendChatMessage).toHaveBeenCalledOnce();
+    expect(useAppStore.getState().generationFailure).toBeNull();
+  });
+  it('ignores a late inference result after changing chats', async () => {
+    let finish!: (value: typeof done) => void;
+    vi.mocked(api.sendChatMessage).mockImplementationOnce(() => new Promise((resolve) => { finish = resolve; }));
+    const pending = useAppStore.getState().sendMessage('Hello');
+    await waitFor(() => expect(api.sendChatMessage).toHaveBeenCalledOnce());
+    useAppStore.setState({ activeChatId: 'chat-2', storedMessages: [], messages: [] });
+    finish(done);
+    await pending;
+    expect(api.addChatMessage).toHaveBeenCalledOnce();
+    expect(useAppStore.getState().storedMessages).toEqual([]);
+    expect(useAppStore.getState().isGenerating).toBe(false);
+  });
+  it('keeps the send lock until an aborted request settles and discards its result', async () => {
+    let finish!: (value: typeof done) => void;
+    vi.mocked(api.sendChatMessage).mockImplementationOnce(() => new Promise((resolve) => { finish = resolve; }));
+    const pending = useAppStore.getState().sendMessage('Hello');
+    await waitFor(() => expect(api.sendChatMessage).toHaveBeenCalledOnce());
+    await useAppStore.getState().abortGeneration();
+    await useAppStore.getState().sendMessage('Second');
+    expect(useAppStore.getState().isGenerating).toBe(true);
+    finish(done);
+    await pending;
+    expect(api.addChatMessage).toHaveBeenCalledOnce();
+    expect(useAppStore.getState().isGenerating).toBe(false);
+  });
+  it('prevents the native request after aborting prompt preparation', async () => {
+    let finish!: (value: AssembledPrompt) => void;
+    vi.mocked(resolvePromptWithLore).mockImplementationOnce(() => new Promise((resolve) => { finish = resolve; }));
+    const pending = useAppStore.getState().sendMessage('Hello');
+    await waitFor(() => expect(resolvePromptWithLore).toHaveBeenCalledOnce());
+    await useAppStore.getState().abortGeneration();
+    finish(prompt);
+    await pending;
+    expect(api.sendChatMessage).not.toHaveBeenCalled();
+    expect(useAppStore.getState().isGenerating).toBe(false);
+  });
+  it('retains a user message that finishes saving during abort', async () => {
+    let finish!: (value: StoredChatMessage) => void;
+    vi.mocked(api.addChatMessage).mockImplementationOnce(() => new Promise((resolve) => { finish = resolve; }));
+    const pending = useAppStore.getState().sendMessage('Hello');
+    await waitFor(() => expect(api.addChatMessage).toHaveBeenCalledOnce());
+    await useAppStore.getState().abortGeneration();
+    finish(message);
+    await pending;
+    expect(useAppStore.getState().storedMessages).toEqual([message]);
+    expect(api.sendChatMessage).not.toHaveBeenCalled();
+  });
+  it('does not overwrite a different chat when an assistant write completes late', async () => {
+    let finish!: (value: StoredChatMessage) => void;
+    vi.mocked(api.addChatMessage).mockResolvedValueOnce(message).mockImplementationOnce(() => new Promise((resolve) => { finish = resolve; }));
+    const pending = useAppStore.getState().sendMessage('Hello');
+    await waitFor(() => expect(api.addChatMessage).toHaveBeenCalledTimes(2));
+    useAppStore.setState({ activeChatId: 'chat-2', storedMessages: [], messages: [] });
+    finish(reply);
+    await pending;
+    expect(useAppStore.getState().storedMessages).toEqual([]);
+  });
+  it('shows abort failures while allowing the running operation to finish', async () => {
+    vi.mocked(api.abortChatGeneration).mockRejectedValueOnce(new Error('Stop failed'));
+    useAppStore.setState({ isGenerating: true });
+    render(<ChatComposer />);
+    await userEvent.setup().click(screen.getByRole('button', { name: 'Stop generating' }));
+    await waitFor(() => expect(toast.error).toHaveBeenCalledWith('Stop failed'));
+    expect(useAppStore.getState().isGenerating).toBe(true);
+  });
+});

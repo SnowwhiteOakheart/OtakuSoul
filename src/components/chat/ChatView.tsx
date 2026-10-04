@@ -47,6 +47,7 @@ export const ChatView: React.FC = () => {
     messages,
     storedMessages,
     isGenerating,
+    generationChatId,
     clearChat,
     selectedBackend,
     setSelectedBackend,
@@ -63,7 +64,7 @@ export const ChatView: React.FC = () => {
     activeVoiceConfig,
     setActiveTab,
   } = useStoreFields(
-    'messages', 'storedMessages', 'isGenerating', 'clearChat', 'selectedBackend', 'setSelectedBackend',
+    'messages', 'storedMessages', 'isGenerating', 'generationChatId', 'clearChat', 'selectedBackend', 'setSelectedBackend',
     'serverStatus', 'activeCharacter', 'activePersona', 'loadPresetCharacters', 'chatSidebarOpen',
     'setChatSidebarOpen', 'chatSessions', 'activeChatId', 'autoTtsEnabled', 'setAutoTtsEnabled',
     'activeVoiceConfig', 'setActiveTab',
@@ -88,9 +89,13 @@ export const ChatView: React.FC = () => {
     let isSubscribed = true;
     const cleanups: (() => void)[] = [];
 
+    const acceptsStream = () => {
+      const state = useAppStore.getState();
+      return isSubscribed && state.isGenerating && state.generationChatId === state.activeChatId;
+    };
     const setup = async () => {
       const uToken = await api.onLlmToken((token) => {
-        if (isSubscribed) {
+        if (acceptsStream()) {
           setStreamText((prev) => prev + token);
           const state = useAppStore.getState();
           const voiceConfig = state.activeVoiceConfig;
@@ -106,7 +111,7 @@ export const ChatView: React.FC = () => {
       }
 
       const uThought = await api.onLlmThought((thought) => {
-        if (isSubscribed) setStreamThought((prev) => prev + thought);
+        if (acceptsStream()) setStreamThought((prev) => prev + thought);
       });
       if (!isSubscribed) {
         uThought();
@@ -115,7 +120,7 @@ export const ChatView: React.FC = () => {
       }
 
       const uDone = await api.onLlmDone(async (data) => {
-        if (isSubscribed) {
+        if (acceptsStream()) {
           setStreamText('');
           setStreamThought('');
           
@@ -149,6 +154,13 @@ export const ChatView: React.FC = () => {
       streamingTts.cancel();
     };
   }, []);
+
+  // Reset the buffer fed by native events when its generation/session changes.
+  useEffect(() => {
+    // oxlint-disable-next-line react/set-state-in-effect
+    setStreamText('');
+    setStreamThought('');
+  }, [isGenerating, activeChatId, generationChatId]);
 
   useEffect(() => audioPlayer.onPlaybackState((state) => {
     setIsAudioSpeaking(state === 'playing');
