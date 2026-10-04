@@ -2067,6 +2067,7 @@ export const de = {
   "backend.lorebook.delete": "Fehler beim Löschen des Lorebooks: {{error}}",
   "backend.common.fileReadPath": "Fehler beim Lesen der Datei {{path}}: {{error}}",
   "backend.memory.emptyDiary": "LLM hat leeren Tagebucheintrag generiert.",
+  "backend.chat.generationBusy": "Eine Chat-Antwort wird bereits erzeugt. Warte auf das Ende oder brich sie ab.",
   "backend.chat.notFound": "Chat nicht gefunden.",
   "backend.translate.empty": "Das Modell hat keine Übersetzung geliefert.",
   "backend.attachment.tooLarge": "{{name}} ist zu groß (höchstens 25 MB).",

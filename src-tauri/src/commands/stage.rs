@@ -243,6 +243,10 @@ pub async fn stage_regenerate_turn(
     state: State<'_, AppState>,
     scene_id: String,
 ) -> Result<crate::modules::stage::SceneState, String> {
+    let _turn = state
+        .stage_turn
+        .try_lock()
+        .map_err(|_| crate::err!("backend.stage.editorBusy"))?;
     let emit = stream_emitter(&app);
     crate::modules::stage::regenerate_stage_turn(
         &state.stage_engine,
@@ -280,6 +284,10 @@ pub async fn run_stage_turn(
     state: State<'_, AppState>,
     request: crate::modules::stage::StageTurnRequest,
 ) -> Result<crate::modules::stage::SceneState, String> {
+    let _turn = state
+        .stage_turn
+        .try_lock()
+        .map_err(|_| crate::err!("backend.stage.editorBusy"))?;
     let emit = stream_emitter(&app);
     let mut scene = crate::modules::stage::execute_stage_turn(
         &state.stage_engine,
@@ -361,6 +369,10 @@ pub async fn rest_stage_party(
     scene_id: String,
     rest_type: String,
 ) -> Result<crate::modules::stage::SceneState, String> {
+    let _turn = state
+        .stage_turn
+        .try_lock()
+        .map_err(|_| crate::err!("backend.stage.editorBusy"))?;
     crate::modules::stage::execute_stage_rest(
         &state.stage_engine,
         &state.stage_inference_client,

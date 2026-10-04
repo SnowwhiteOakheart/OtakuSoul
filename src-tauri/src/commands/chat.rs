@@ -15,6 +15,10 @@ pub async fn send_chat_message(
     use crate::modules::context_window::server_base;
     use crate::modules::providers::{LlmProviderType, ProviderRegistry};
 
+    let _generation = state
+        .chat_generation
+        .try_lock()
+        .map_err(|_| crate::err!("backend.chat.generationBusy"))?;
     state.inference_client.reset_abort();
     state
         .inference_client

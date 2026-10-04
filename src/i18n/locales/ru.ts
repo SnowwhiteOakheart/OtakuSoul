@@ -2065,6 +2065,7 @@ export const ru: TranslationDictionary = {
   "backend.lorebook.delete": "Не удалось удалить лорбук: {{error}}",
   "backend.common.fileReadPath": "Не удалось прочитать {{path}}: {{error}}",
   "backend.memory.emptyDiary": "Языковая модель создала пустую запись дневника.",
+  "backend.chat.generationBusy": "Ответ в чате уже генерируется. Дождитесь завершения или остановите его.",
   "backend.chat.notFound": "Чат не найден.",
   "backend.translate.empty": "Модель не вернула перевод.",
   "backend.attachment.tooLarge": "{{name}} слишком большой (не более 25 МБ).",

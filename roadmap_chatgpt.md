@@ -46,6 +46,7 @@ Abnahme: Ein fehlgeschlagener Speichervorgang leert keine Eingabe und meldet kei
 - [x] Stage-Routing, Archivierung und Konsistenzprüfung abbrechen und offene Arbeit später nachholen.
 - [x] Stage-Planung und Kontextvorbereitung einschließlich interner Zusammenfassung abbrechen können.
 - [x] Abbruchkanäle von Chat und Soul Stage trennen, einschließlich Stage-Stopp im Frontend.
+- [x] Parallele native Chat-Anfragen und konkurrierende Stage-Runden, Neu-Generieren und Rast vor ihrem Start ablehnen.
 - [x] Native Text-, Gedanken- und Abschlussereignisse an eine eindeutige Generierungs-ID binden.
 - [x] Sitzungsabrufe ordnen, alte Verläufe während des Ladens ausblenden und Lesefehler wiederholbar anzeigen.
 - [x] Wartende HTTP-Anfragen und inaktive SSE-Streams bei Backend-Abbruch beenden.
@@ -549,3 +550,36 @@ alle 19 Szenarien. Der neue Einzeltest bestand ebenfalls; seine Szene enthält e
 Figur, damit tatsächlich eine Routing-Anfrage entsteht. Screenshot
 `e2e/screenshots/46-stage-rundenende-abbruch.png` wurde geprüft: Die Faktenprüfung wartet,
 die fertigen Beiträge stehen im Verlauf und Stopp bleibt erreichbar.
+
+
+### Fünfzehntes Arbeitspaket – 04.10.2026
+
+Native Chat-Anfragen erhalten eine eigene Sperre im AppState. Stage-Runde, Neu-Generieren
+und Rast teilen eine zweite Sperre. `try_lock` lehnt konkurrierende Aufrufe sofort ab;
+keine zusätzliche Anfrage wird eingereiht. Die Prüfung erfolgt vor Abbruch-Reset,
+Kontextvorbereitung und Änderungen am Szenenzustand. Chat und Stage können unabhängig
+voneinander laufen. Guards werden bei Erfolg, Fehler und Abbruch automatisch freigegeben;
+die Stage-Rundensperre umfasst auch die abschließende Memory-Übernahme im Command.
+
+Chat meldet einen neuen Fehlercode mit deutscher, englischer und russischer Übersetzung.
+Stage verwendet den bestehenden Hinweis auf eine laufende Runde. Der Sitzungs-/Abbruch-E2E-Test
+ruft die nativen Befehle zusätzlich direkt auf: Eine zweite Chat-Anfrage sowie Stage-Runde,
+Neu-Generieren und Rast müssen während laufender Inferenz sofort scheitern. Modell-Anfragezahlen,
+Verbindungsabbruch und Szenenzustand zeigen, dass die erste Anfrage davon unberührt bleibt.
+Nach einem fehlgeschlagenen Stage-Rastaufruf funktioniert die nächste Runde; nach einem
+Chat-Netzwerkfehler funktioniert die nächste native Anfrage. Bestehende Abbruch- und
+Sitzungswechselprüfungen decken die erneute Freigabe nach Stopp und erfolgreichem Abschluss ab.
+
+Die Sperren koordinieren diese nativen Commands. Andere Stage-Editor-/Navigationsbefehle,
+interne Modellaufrufe und die Frontend-Antwortspeicherung liegen außerhalb ihres Umfangs.
+Offen bleiben insbesondere sofortiger Abbruch laufender Frontend-Prompt-/Upload-Vorbereitung,
+Wiederaufnahme abgebrochener Antworten und die Koordination von Stage-Verlaufsänderungen
+mit einer laufenden Runde.
+
+Validierung bewusst auf die Änderung begrenzt: Rust-Formatierung und Clippy (`--lib`,
+Warnungen als Fehler), Lint für die betroffenen Übersetzungen und den E2E-Test sowie
+TypeScript bestehen. Der aktuelle App-Build besteht unter Xvfb den erweiterten
+`chat-sessions-abort.mjs` und `stage-upkeep-abort.mjs`. Die Screenshots
+`45-stage-planungsabbruch.png` und `46-stage-rundenende-abbruch.png` wurden erneut geprüft:
+Die ursprüngliche Runde bleibt nach abgelehnten Zusatzaufrufen bedienbar; Stopp ist erreichbar.
+Die vollständige Test-Suite wurde für dieses abgegrenzte Paket nicht erneut gestartet.

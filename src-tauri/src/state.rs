@@ -13,6 +13,9 @@ pub struct AppState {
     pub local_image: Arc<LocalImageEngine>,
     pub inference_client: Arc<InferenceClient>,
     pub stage_inference_client: Arc<InferenceClient>,
+    // Commands hold these guards through preparation, inference and final persistence.
+    pub chat_generation: tokio::sync::Mutex<()>,
+    pub stage_turn: tokio::sync::Mutex<()>,
     pub token_counter: Arc<crate::modules::context_window::TokenCounter>,
     pub memory_db: Arc<MemoryDb>,
     pub stage_engine: Arc<StageEngine>,
@@ -49,6 +52,8 @@ impl AppState {
             local_image: Arc::new(LocalImageEngine::new()),
             inference_client: Arc::new(InferenceClient::new()),
             stage_inference_client: Arc::new(InferenceClient::new()),
+            chat_generation: tokio::sync::Mutex::new(()),
+            stage_turn: tokio::sync::Mutex::new(()),
             token_counter: Arc::default(),
             memory_db: Arc::new(memory_db),
             stage_engine: Arc::new(StageEngine::new()),

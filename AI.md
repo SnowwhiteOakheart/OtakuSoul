@@ -124,8 +124,11 @@ Einstellungen: `components/settings/sections/*` (Server inkl. Laufzeiten/`mmproj
 - Abbruchbereiche: `AppState.inference_client` gehört zum Chat, `stage_inference_client` zu Stage.
   Stage-Runde, Neu-Generieren und Rast erhalten den Stage-Client. `abort_chat_generation` und
   `abort_stage_turn` beeinflussen nur ihren Bereich; `stopStageTurn` nutzt ausschließlich den Stage-Befehl.
-  Jeder Client hat einen eigenen Merker und Watch-Signalzähler. Gleichzeitige Runden innerhalb desselben
-  Bereichs benötigen weiterhin gesonderte Koordination; direkte interne Generierungen bleiben unverändert.
+  Jeder Client hat einen eigenen Merker und Watch-Signalzähler. Native Chat-Anfragen halten außerdem
+  `AppState.chat_generation`; Stage-Runde, Neu-Generieren und Rast teilen `AppState.stage_turn`.
+  `try_lock` lehnt zusätzliche Aufrufe vor Abbruch-Reset oder Zustandsänderungen mit übersetzbarem Fehler ab.
+  Die Guards bleiben bis zum Command-Ende bestehen und werden auch bei Fehler/Abbruch freigegeben.
+  Direkte interne Generierungen und andere Stage-Editor-/Navigationsbefehle nutzen diese Sperren nicht.
 - Stage-Planungsabbruch: `history::prepare` liefert bei Abbruch `None` und umfasst Kontextzählung,
   Kontextanpassung und interne Zusammenfassung. Der Planer-Aufruf liegt ebenfalls in `with_abort`.
   Abbruch vor einem Plan beendet die Runde über `finish_turn`: Spielerzeile und bereits abgeschlossene

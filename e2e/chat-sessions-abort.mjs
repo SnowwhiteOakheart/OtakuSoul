@@ -6,6 +6,12 @@ import { launch, screenshotDir } from './harness.mjs';
 const { browser, home, mock, close } = await launch();
 const sql = (statement) => execFileSync('sqlite3', [path.join(home, 'data', 'otakusoul.db'), statement], { encoding: 'utf8' }).trim();
 const openSessions = () => browser.$('button[title="Gespräche, Author\'s Note & HUD-Presets öffnen"]').click();
+// Invoke the native command directly: UI guards alone cannot protect a shared abort flag.
+const rejectedCommand = (command, args) => browser.execute(async (cmd, payload) => {
+  const result = window.__TAURI_INTERNALS__.invoke(cmd, payload)
+    .then(() => ({ rejected: false }), (cause) => ({ rejected: true, cause: String(cause) }));
+  return Promise.race([result, new Promise((resolve) => setTimeout(() => resolve({ timedOut: true }), 4_000))]);
+}, command, args);
 try {
   await browser.$('[class~="group/bubble"]').waitForDisplayed({ timeout: 20_000 });
   const oldChat = sql('SELECT id FROM chat_sessions LIMIT 1;');
@@ -28,6 +34,13 @@ try {
   mock.stats.stallChat = true;
   await browser.$('button[aria-label="Nachricht senden"]').click();
   await browser.waitUntil(() => mock.stats.chat >= 1);
+  const duplicateChat = await rejectedCommand('send_chat_message', {
+    request: { endpoint_url: mock.url, model: 'mock', api_key: null, messages: [{ role: 'user', content: 'Zweite Anfrage' }], sampling: null },
+    generationId: 'duplicate-generation',
+  });
+  assert.equal(duplicateChat.rejected, true, 'Parallele Chat-Anfrage muss sofort abgelehnt werden');
+  assert.equal(JSON.parse(duplicateChat.cause).code, 'backend.chat.generationBusy');
+  assert.equal(mock.stats.chat, 1, 'Abgelehnte Anfrage darf das Modell nicht erreichen');
   // Delayed native events from a previous request must not enter this live reply.
   await browser.execute(async () => {
     const invoke = window.__TAURI_INTERNALS__.invoke;
@@ -92,6 +105,20 @@ try {
   await stageInput.setValue('Diese Planung breche ich ab.');
   await browser.keys('Enter');
   await browser.waitUntil(() => mock.stats.stagePlanner > plannerBefore, { timeout: 20_000 });
+  const beforeDuplicates = await browser.execute(() => window.__TAURI_INTERNALS__.invoke('get_stage_state'));
+  for (const [command, args] of [
+    ['run_stage_turn', { request: { scene_id: beforePlan.definition.id, user_input: 'Zweite Runde', turn_mode: 'say' } }],
+    ['stage_regenerate_turn', { sceneId: beforePlan.definition.id }],
+    ['rest_stage_party', { sceneId: beforePlan.definition.id, restType: 'long' }],
+  ]) {
+    const duplicate = await rejectedCommand(command, args);
+    assert.equal(duplicate.rejected, true, `${command} darf keine zweite Runde starten`);
+    assert.equal(JSON.parse(duplicate.cause).code, 'backend.stage.editorBusy');
+  }
+  assert.equal(mock.stats.stagePlanner, plannerBefore + 1);
+  assert.equal(mock.stats.cancelledPlanner ?? 0, 0, 'Erste Planung bleibt aktiv');
+  const afterDuplicates = await browser.execute(() => window.__TAURI_INTERNALS__.invoke('get_stage_state'));
+  assert.deepEqual(afterDuplicates, beforeDuplicates, 'Abgelehnte Stage-Aktionen dürfen den Zustand nicht verändern');
   await browser.saveScreenshot(path.join(screenshotDir, '45-stage-planungsabbruch.png'));
   await browser.$('button=Stopp').click();
   await browser.waitUntil(() => mock.stats.cancelledPlanner >= 1, { timeout: 5_000 });
@@ -105,11 +132,27 @@ try {
   assert.equal(mock.stats.stageNarrator, narratorBefore);
   const reloaded = await browser.execute((sceneId) => window.__TAURI_INTERNALS__.invoke('load_stage_scene', { sceneId }), stoppedPlan.definition.id);
   assert.deepEqual(reloaded.chat_log, stoppedPlan.chat_log);
+  const failedRest = await rejectedCommand('rest_stage_party', { sceneId: 'missing-concurrency-scene', restType: 'short' });
+  assert.equal(failedRest.rejected, true);
+  assert.equal(JSON.parse(failedRest.cause).code, 'backend.stage.sceneMissing');
   mock.stats.stallPlanner = false;
   await stageInput.setValue('Jetzt spielen wir weiter.');
   await browser.keys('Enter');
   await browser.waitUntil(() => mock.stats.stageNarrator > narratorBefore, { timeout: 20_000 });
   await browser.$('button=Stopp').waitForExist({ reverse: true, timeout: 20_000 });
+  const failedChat = await rejectedCommand('send_chat_message', {
+    request: { endpoint_url: 'http://127.0.0.1:9/v1/chat/completions', api_key: null, model: 'mock', messages: [{ role: 'user', content: 'Fehlerfall' }], sampling: null },
+    generationId: 'failed-generation',
+  });
+  assert.equal(failedChat.rejected, true);
+  assert.notEqual(JSON.parse(failedChat.cause).code, 'backend.chat.generationBusy');
+  const nextChat = await browser.execute((endpoint) => window.__TAURI_INTERNALS__.invoke('send_chat_message', {
+    request: { endpoint_url: endpoint, api_key: null, model: 'mock', messages: [{ role: 'user', content: 'Nach dem Fehler' }], sampling: null },
+    generationId: 'after-failure-generation',
+  }), mock.url);
+  assert.equal(nextChat.generation_id, 'after-failure-generation');
+  assert.ok(nextChat.full_text.length > 0, 'Nach Fehler und Abschluss wird die Chat-Sperre freigegeben');
+  console.log('Parallele native Aufrufe: zweite Chat-/Stage-Anfragen sofort abgelehnt; erste Anfrage und Zustand bleiben erhalten; Sperren nach Abbruch/Fehler wieder frei.');
   console.log('Stage-Planungsabbruch: antwortlose HTTP-Anfrage beendet; Spielerzeile bleibt gespeichert, kein Ersatzplan/Erzählertext; nächste Runde funktioniert.');
   console.log('Getrennte Abbruchkanäle: Stage-Stopp erhält Chat-Anfragen, Chat-Stopp erhält Stage-Anfragen; der passende Stopp schließt die Verbindung.');
   console.log('Sitzungen: Lesefehler erhalten Entwürfe; Abbruch und Chatwechsel schließen antwortlose HTTP-Anfragen; neue Antworten gehören zum neuen Chat.');

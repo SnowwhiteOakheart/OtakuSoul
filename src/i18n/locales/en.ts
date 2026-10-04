@@ -2065,6 +2065,7 @@ export const en: TranslationDictionary = {
   "backend.lorebook.delete": "Failed to delete the lorebook: {{error}}",
   "backend.common.fileReadPath": "Failed to read {{path}}: {{error}}",
   "backend.memory.emptyDiary": "The language model generated an empty diary entry.",
+  "backend.chat.generationBusy": "A chat reply is already being generated. Wait for it to finish or stop it.",
   "backend.chat.notFound": "Chat not found.",
   "backend.translate.empty": "The model returned no translation.",
   "backend.attachment.tooLarge": "{{name}} is too large (at most 25 MB).",
