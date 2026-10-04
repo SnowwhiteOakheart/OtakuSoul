@@ -1163,9 +1163,13 @@ Reply in {reply_language}.{secrets}"#,
                             reasoning_mode: Some(false),
                             provider: provider.clone(),
                         };
-                        let routed = inference
-                            .generate_direct(routing)
+                        let Some(routing_result) = inference
+                            .with_abort(inference.generate_direct(routing))
                             .await
+                        else {
+                            return finish_turn(engine, state);
+                        };
+                        let routed = routing_result
                             .ok()
                             .and_then(|raw| parse_routing(&raw, &candidates));
                         // Unusable answer: the old order (next party member who hasn't spoken).

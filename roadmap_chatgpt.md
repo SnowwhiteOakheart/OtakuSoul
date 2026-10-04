@@ -43,6 +43,7 @@ Abnahme: Ein fehlgeschlagener Speichervorgang leert keine Eingabe und meldet kei
 - [x] Promptaufbau und alle nachfolgenden Schritte in eine gemeinsame Fehlerbehandlung aufnehmen.
 - [ ] Generierungszustand bei jedem Fehler und Abbruch zuverlässig zurücksetzen.
 - [x] Bereits gespeicherte Nutzernachrichten beim Wiederholen erkennen; Duplikate vermeiden.
+- [x] Stage-Routing, Archivierung und Konsistenzprüfung abbrechen und offene Arbeit später nachholen.
 - [x] Stage-Planung und Kontextvorbereitung einschließlich interner Zusammenfassung abbrechen können.
 - [x] Abbruchkanäle von Chat und Soul Stage trennen, einschließlich Stage-Stopp im Frontend.
 - [x] Native Text-, Gedanken- und Abschlussereignisse an eine eindeutige Generierungs-ID binden.
@@ -517,3 +518,34 @@ des Felds im DOM. Der korrigierte Einzeltest und der vollständige Lauf mit `npm
 unter Xvfb bestehen alle 18 Szenarien. Screenshot `e2e/screenshots/45-stage-planungsabbruch.png`
 wurde geprüft: Die Spielerzeile steht im Verlauf, die wartende Planung bietet Stopp an.
 Die committeten Änderungen zur Titelanpassung bleiben erhalten.
+
+### Vierzehntes Arbeitspaket – 04.10.2026
+
+Routing, Arc-Archivierung und Faktenprüfung verwenden ebenfalls `with_abort`. Stopp beendet
+wartende Modell-Anfragen auch ohne HTTP-Antwort. Nach abgebrochenem Routing endet die Runde
+über `finish_turn`, ohne eine Ersatzfigur sprechen zu lassen. Fertige Beiträge bleiben gespeichert.
+Ein abgebrochener Archiv-Aufruf legt keinen Ersatzarchiveintrag an; der abgeschlossene Arc bleibt
+für die nächste Runde offen. Bereits fertig archivierte Arcs werden weiterhin nicht doppelt bearbeitet.
+
+Eine abgebrochene Faktenprüfung verändert keine Fakten und behält den fälligen Prüfungszähler.
+Die nächste Runde prüft erneut. Erst ein tatsächlich beendeter Aufruf setzt den Zähler wie bisher
+zurück; reguläre Fehler/ungültige Antworten behalten ihre bisherige Behandlung. Nach bereits
+angefordertem Stage-Stopp wird keine Prüfung gestartet und der Zähler nicht weiter erhöht.
+Ein gesättigtes Hochzählen verhindert Überlauf bei wiederholt abgebrochener fälliger Prüfung.
+
+Ein Rust-Test prüft, dass bereits gestoppte Archiv-/Faktenarbeit den Zustand unverändert lässt.
+Ein neuer E2E-Test hält reale HTTP-Anfragen für alle drei Schritte an, stoppt über die UI und
+prüft die geschlossenen Verbindungen. Fertige Beiträge bleiben erhalten; Archiv/Faktenprüfung
+werden nach Abbruch in einer neuen Runde nachgeholt. Fakten und fälliger Zähler bleiben auch
+nach erneutem Laden erhalten, das Archiv wird genau einmal geschrieben.
+
+Offen bleiben mehrere konkurrierende Runden im selben Bereich, Frontend-Prompt-/Upload-Vorbereitung,
+Wiederaufnahme abgebrochener Antworten und die Fehlerbehandlung direkter Modell-Aufrufe.
+Bereits ausgeführte Mechanik und abgeschlossene Beiträge werden durch Stopp nicht zurückgerollt.
+
+Validierung: `npm run check` besteht mit 372 Rust-Tests (6 im Bibliothekslauf absichtlich
+ignoriert) und 195 Frontend-Tests. `npm run e2e` baut die aktuelle App und besteht unter Xvfb
+alle 19 Szenarien. Der neue Einzeltest bestand ebenfalls; seine Szene enthält eine zweite
+Figur, damit tatsächlich eine Routing-Anfrage entsteht. Screenshot
+`e2e/screenshots/46-stage-rundenende-abbruch.png` wurde geprüft: Die Faktenprüfung wartet,
+die fertigen Beiträge stehen im Verlauf und Stopp bleibt erreichbar.

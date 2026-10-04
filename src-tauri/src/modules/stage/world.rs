@@ -120,7 +120,7 @@ pub fn arc_archive_context(state: &SceneState) -> String {
 }
 
 /// Condenses every resolved arc that is not archived yet; without an answer the description
-/// stands in, so an arc is never lost from the archive.
+/// stands in. Cancellation leaves the arc pending for the next turn.
 pub async fn archive_resolved_arcs(
     state: &mut SceneState,
     inference: &InferenceClient,
@@ -144,9 +144,13 @@ pub async fn archive_resolved_arcs(
              consequences it leaves. Reply with the summary only.",
             arc.title, arc.description, history
         );
-        let summary = inference
-            .generate_direct(llm.request(prompt, 200))
+        let Some(result) = inference
+            .with_abort(inference.generate_direct(llm.request(prompt, 200)))
             .await
+        else {
+            return;
+        };
+        let summary = result
             .ok()
             .map(|text| text.trim().to_string())
             .filter(|text| !text.is_empty())
@@ -170,11 +174,13 @@ struct AuditResult {
 /// Every few turns the model checks the facts against recent events: obsolete ones go,
 /// wrong ones are corrected. New facts are not added here (that is the planner's job).
 pub async fn audit_facts(state: &mut SceneState, inference: &InferenceClient, llm: &StageLlm) {
-    state.turns_since_audit += 1;
+    if inference.is_aborted() {
+        return;
+    }
+    state.turns_since_audit = state.turns_since_audit.saturating_add(1);
     if state.turns_since_audit < AUDIT_INTERVAL || state.world.key_facts.is_empty() {
         return;
     }
-    state.turns_since_audit = 0;
     let prompt = format!(
         "[STAGE — CONSISTENCY]\nYou audit the established facts of a tabletop campaign against recent events.\n\n\
          Facts:\n{}\n\nRecent events:\n{}\n\n\
@@ -184,7 +190,14 @@ pub async fn audit_facts(state: &mut SceneState, inference: &InferenceClient, ll
         facts_context(state).replace("; ", "\n"),
         recent_history(state)
     );
-    let Ok(raw) = inference.generate_direct(llm.request(prompt, 300)).await else {
+    let Some(result) = inference
+        .with_abort(inference.generate_direct(llm.request(prompt, 300)))
+        .await
+    else {
+        return;
+    };
+    state.turns_since_audit = 0;
+    let Ok(raw) = result else {
         return;
     };
     let Some(result) = raw
@@ -504,6 +517,34 @@ pub fn take_memory_sync_batches(state: &mut SceneState) -> Vec<(String, String)>
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    #[tokio::test]
+    async fn already_stopped_upkeep_keeps_archives_facts_and_due_counter() {
+        let mut state = StageEngine::new().get_state();
+        state.arcs = vec![StoryArc {
+            id: "pending".into(),
+            title: "Gate".into(),
+            description: "Opened".into(),
+            stage: 1,
+            max_stage: 1,
+            is_revealed: true,
+            is_resolved: true,
+        }];
+        state.world.key_facts.insert("gate".into(), "open".into());
+        state.turns_since_audit = AUDIT_INTERVAL;
+        let previous = serde_json::to_value(&state).unwrap();
+        let inference = InferenceClient::new();
+        inference.abort();
+        let llm = StageLlm {
+            endpoint_url: "http://127.0.0.1:9/v1/chat/completions".into(),
+            api_key: None,
+            model: None,
+            provider: None,
+        };
+        archive_resolved_arcs(&mut state, &inference, &llm).await;
+        audit_facts(&mut state, &inference, &llm).await;
+        assert_eq!(serde_json::to_value(&state).unwrap(), previous);
+    }
 
     fn line(sender: &str, content: &str, mode: &str, target: Option<&str>) -> SceneTurnMessage {
         SceneTurnMessage {

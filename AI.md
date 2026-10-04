@@ -7,9 +7,13 @@ Nutzer mit „Du“ ansprechen. Antworten, Commits und Doku auf Deutsch.
 
 ## Regeln
 
-- Vor jedem Commit `npm run check` (oxlint, tsc, vitest, cargo fmt --check, clippy -D warnings, cargo test); Commit an
-  den Exit-Code koppeln. UI-Änderungen zusätzlich `npm run e2e` und Screenshots in `e2e/screenshots/` ansehen.
+- Tests nur bei Bedarf ausführen; der Assistent entscheidet anhand der Änderung über Umfang und Zeitpunkt.
+  Erforderliche Checks vor dem Commit ausführen und den Commit an deren erfolgreichen Exit-Code koppeln.
+  Die vollständige Suite (`npm run check` bzw. `npm run e2e`) nur bei sinnvoller Abdeckung breiter Änderungen
+  oder konkretem Regressionsverdacht ausführen. UI-Verhalten gezielt per E2E prüfen und relevante Screenshots
+  in `e2e/screenshots/` ansehen. Bereits bestandene Prüfungen nur bei relevanten Änderungen erneut starten.
 - Thematische Commits direkt auf `main`, `feat(bereich): …` auf Deutsch, danach sofort `git push`. Kein GitHub-CI.
+  Der Nutzer erlaubt Commit und Push für die beauftragte Projektarbeit dauerhaft; keine erneute Rückfrage nötig.
 - Der Nutzer arbeitet parallel im Repo: fremde uncommittete Änderungen nie mitcommitten.
 - `ROADMAP.md` (bzw. `Roadmap_TTS.md`) im selben Commit abhaken; `README.md`/`AI.md` bei neuen Modulen/Features anpassen.
 - Pfade nur über `paths::base_dirs()` (ProjectDirs bzw. `$OTAKUSOUL_HOME/config|data`); OS-Code mit `#[cfg]`.
@@ -126,7 +130,10 @@ Einstellungen: `components/settings/sections/*` (Server inkl. Laufzeiten/`mmproj
   Kontextanpassung und interne Zusammenfassung. Der Planer-Aufruf liegt ebenfalls in `with_abort`.
   Abbruch vor einem Plan beendet die Runde über `finish_turn`: Spielerzeile und bereits abgeschlossene
   Arbeit bleiben gespeichert, weitere Planmechanik/Erzählung werden nicht gestartet. Sprecher-Vorbereitung
-  endet ebenso bei Abbruch. Routing sowie Archiv-/Konsistenz-Aufrufe sind weiterhin gesondert abzusichern.
+  endet ebenso bei Abbruch. Routing beendet die Runde bei Abbruch ohne Ersatzsprecher.
+  Archivierung und Konsistenzprüfung liegen ebenfalls in `with_abort`: abgebrochene Archive bleiben
+  offen, die fällige Faktenprüfung behält ihren Zähler für die nächste Runde. Ein bereits gesetzter
+  Stage-Abbruch startet keine Faktenprüfung und erhöht deren Zähler nicht.
 - Backend-Abbruch: `with_abort` beendet wartende asynchrone Vorbereitung, HTTP-Header und SSE-Lesen über
   ein Watch-Signal. `send_chat_message` setzt den Merker vor der Vorbereitung zurück, `stream_chat` nicht erneut.
   Eine neue Runde setzt nur den Merker zurück; der Signalzähler lässt alte Wartevorgänge abgebrochen.

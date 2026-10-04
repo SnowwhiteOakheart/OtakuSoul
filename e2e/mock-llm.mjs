@@ -124,6 +124,16 @@ export function startMockLlm() {
             : isTranslation
               ? TRANSLATION
               : REPLY;
+      for (const [matches, flag, cancelled] of [
+        [isRouting, 'stallRouting', 'cancelledRouting'],
+        [isArcArchive, 'stallArcArchive', 'cancelledArcArchive'],
+        [isAudit, 'stallAudit', 'cancelledAudit'],
+      ]) {
+        if (matches && stats[flag]) {
+          res.on('close', () => { stats[cancelled] = (stats[cancelled] ?? 0) + 1; });
+          return;
+        }
+      }
       if (isPlanner && stats.stallPlanner) {
         res.on('close', () => { stats.cancelledPlanner = (stats.cancelledPlanner ?? 0) + 1; });
         return;
