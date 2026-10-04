@@ -262,6 +262,7 @@ export const ru: TranslationDictionary = {
   "settings.importLive2dHint": "Импортировать модель Live2D из ZIP-архива или файла .model3.json",
   "settings.importing": "Импорт …",
   "settings.live2dImported": "Модель «{{name}}» импортирована.",
+  "settings.saveFailed": "Не удалось сохранить настройки ({{error}}). Пока сохранение не заработает, изменения будут потеряны при выходе.",
   "settings.importFailed": "Ошибка импорта: {{error}}",
   "settings.hubTitle": "Модели GGUF с Hugging Face",
   "settings.hubIntro": "Ищите языковые модели на Hugging Face и загружайте их прямо в папку моделей.",

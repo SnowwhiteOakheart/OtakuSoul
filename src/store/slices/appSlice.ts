@@ -8,6 +8,9 @@ import type {
 } from '../../types';
 import type { SliceCreator } from '../storeTypes';
 import { reportFailure } from '../reportFailure';
+import { translate } from '../../i18n';
+import { toast } from '../../components/ui/feedback';
+import { errorMessage } from '../../utils/errors';
 import { loadLocale } from '../../i18n/registry';
 import { normalizeColorMode, syncColorMode, type ColorModePreference } from '../../services/theme';
 
@@ -58,6 +61,9 @@ export interface AppSlice {
   updateInfo: UpdateInfo | null;
   checkForUpdates: () => Promise<UpdateInfo | null>;
 }
+
+/** The current settings-save failure was already shown. */
+let settingsSaveFailureShown = false;
 
 export const createAppSlice: SliceCreator<AppSlice> = (set, get) => ({
   activeTab: 'chat',
@@ -234,8 +240,15 @@ export const createAppSlice: SliceCreator<AppSlice> = (set, get) => ({
         tray_hint_shown: state.trayHintShown,
       };
       await api.saveSettings(settings);
+      settingsSaveFailureShown = false;
     } catch (e) {
       console.error('Failed to save settings:', e);
+      // Saving runs on every change; a lasting cause (full disk, read-only folder) is shown once,
+      // and again only after a save in between succeeded.
+      if (!settingsSaveFailureShown) {
+        settingsSaveFailureShown = true;
+        toast.error(translate('settings.saveFailed', { error: errorMessage(e) }));
+      }
     }
   },
 

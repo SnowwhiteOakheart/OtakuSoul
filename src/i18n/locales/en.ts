@@ -262,6 +262,7 @@ export const en: TranslationDictionary = {
   "settings.importLive2dHint": "Import a Live2D model as ZIP archive or .model3.json file",
   "settings.importing": "Importing …",
   "settings.live2dImported": "Imported model “{{name}}”.",
+  "settings.saveFailed": "Settings could not be saved ({{error}}). Until saving works again, changes are lost on exit.",
   "settings.importFailed": "Import failed: {{error}}",
   "settings.hubTitle": "GGUF models from Hugging Face",
   "settings.hubIntro": "Search language models on Hugging Face and download them straight into your model folder.",

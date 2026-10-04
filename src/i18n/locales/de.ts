@@ -264,6 +264,7 @@ export const de = {
   "settings.importLive2dHint": "ZIP-Archiv oder .model3.json-Datei eines Live2D-Modells importieren",
   "settings.importing": "Importiere …",
   "settings.live2dImported": "Modell „{{name}}“ importiert.",
+  "settings.saveFailed": "Einstellungen konnten nicht gespeichert werden ({{error}}). Bis das Speichern wieder klappt, gehen Änderungen beim Beenden verloren.",
   "settings.importFailed": "Import fehlgeschlagen: {{error}}",
   "settings.hubTitle": "GGUF-Modelle von Hugging Face",
   "settings.hubIntro": "Suche Sprachmodelle auf Hugging Face und lade sie direkt in deinen Modellordner.",

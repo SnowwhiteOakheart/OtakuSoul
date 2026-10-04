@@ -38,3 +38,20 @@ describe('failed user actions', () => {
     expect(toast.error).not.toHaveBeenCalled();
   });
 });
+
+describe('saving the settings', () => {
+  it('reports a lasting failure once, again only after a save succeeded', async () => {
+    const save = () => useAppStore.getState().saveCurrentSettings();
+    vi.mocked(api.saveSettings).mockRejectedValue(new Error('disk full'));
+    await save();
+    await save();
+    await save();
+    expect(toast.error).toHaveBeenCalledOnce();
+    expect(toast.error).toHaveBeenCalledWith(expect.stringContaining('disk full'));
+
+    vi.mocked(api.saveSettings).mockResolvedValueOnce(undefined);
+    await save();
+    await save();
+    expect(toast.error).toHaveBeenCalledTimes(2);
+  });
+});
