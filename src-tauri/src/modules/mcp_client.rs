@@ -163,6 +163,8 @@ impl McpManager {
                 .stdin(std::process::Stdio::piped())
                 .stdout(std::process::Stdio::piped())
                 .stderr(std::process::Stdio::null())
+                // Ended with the request, also when it fails halfway.
+                .kill_on_drop(true)
                 .spawn()
                 .map_err(|e| {
                     format!(
@@ -266,6 +268,8 @@ impl McpManager {
             .stdin(std::process::Stdio::piped())
             .stdout(std::process::Stdio::piped())
             .stderr(std::process::Stdio::null())
+            // Ended with the request, also when it fails halfway.
+            .kill_on_drop(true)
             .spawn()
             .map_err(|e| crate::err!("backend.mcp.process", command = cmd_str, error = e))?;
 

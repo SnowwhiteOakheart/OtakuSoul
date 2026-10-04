@@ -68,6 +68,9 @@ Einstellungen: `components/settings/sections/*` (Server inkl. Laufzeiten/`mmproj
 
 ## Stolperfallen
 
+- Beenden: Schließen-X versteckt nur ins Tray; „Beenden“ (Tray) bzw. Updater-Neustart lösen `RunEvent::Exit` aus →
+  `stop_model_servers` (llama, sd, TTS, max. 8 s). Linux beendet Kindprozesse zusätzlich per `PR_SET_PDEATHSIG`;
+  neue Kindprozesse brauchen `kill_on_drop(true)` und unter Linux `PR_SET_PDEATHSIG`.
 - Mehrere GPUs: iGPUs melden Dutzende GB geteilten Speicher; sd.cpp/llama.cpp würden sie wählen (FLUX.1 350 s statt
   48 s). Deshalb `--backend`/`--device` via `hardware::primary_gpu()` + `same_gpu()`.
 - Linux-CUDA-Builds bringen keine CUDA-Laufzeit mit und fallen still auf CPU zurück → `runtimes` empfiehlt CUDA nur bei

@@ -398,6 +398,38 @@ pub fn run() {
             commands::app::export_app_logs,
             commands::app::check_for_updates,
         ])
-        .run(tauri::generate_context!())
-        .expect("error while running OtakuSoul application");
+        .build(tauri::generate_context!())
+        .expect("error while building OtakuSoul application")
+        .run(|app, event| {
+            if let tauri::RunEvent::Exit = event {
+                stop_model_servers(app);
+            }
+        });
+}
+
+/// Stops the app's model servers before the process ends (tray "Beenden", updater restart).
+/// Linux ends them with the app anyway (`PR_SET_PDEATHSIG`); on Windows and macOS they would
+/// keep running and hold VRAM. Bounded, so a hanging server can't keep the app alive.
+fn stop_model_servers(app: &tauri::AppHandle) {
+    use tauri::Manager;
+    let state = app.state::<AppState>();
+    let (llama, image) = (state.llama_manager.clone(), state.local_image.clone());
+    tauri::async_runtime::block_on(async move {
+        let stop_all = async {
+            let (llm, _, _) = tokio::join!(
+                llama.stop(),
+                image.stop(),
+                modules::tts_local::engine().stop()
+            );
+            if let Err(e) = llm {
+                tracing::warn!("llama-server beim Beenden nicht gestoppt: {e}");
+            }
+        };
+        if tokio::time::timeout(std::time::Duration::from_secs(8), stop_all)
+            .await
+            .is_err()
+        {
+            tracing::warn!("Modellserver beim Beenden nicht rechtzeitig gestoppt");
+        }
+    });
 }
