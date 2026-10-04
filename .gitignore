@@ -57,5 +57,6 @@ assets/vrm/*.vrm
 # ts-rs output when the root cargo config is not picked up; real bindings live in src/types/generated
 /src-tauri/bindings/
 
+output/
 # End-to-end test screenshots
 e2e/screenshots/
