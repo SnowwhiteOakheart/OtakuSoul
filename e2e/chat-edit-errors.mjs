@@ -6,6 +6,18 @@ import { launch, screenshotDir } from './harness.mjs';
 
 const { browser, home, close } = await launch();
 const sql = (statement) => execFileSync('sqlite3', [path.join(home, 'data', 'otakusoul.db'), statement], { encoding: 'utf8' }).trim();
+const openEditor = async () => {
+  const editor = browser.$('textarea[aria-label="Nachricht bearbeiten"]');
+  await browser.waitUntil(async () => {
+    if (await editor.isDisplayed()) return true;
+    await browser.$('[class~="group/bubble"]').moveTo();
+    const button = browser.$('button[aria-label="Nachricht bearbeiten"]');
+    if (!await button.isClickable()) return false;
+    await button.click();
+    return editor.isDisplayed();
+  }, { timeout: 10_000, timeoutMsg: 'Der Nachrichteneditor öffnet sich nach einem sichtbaren, klickbaren Bearbeiten-Knopf.' });
+  return editor;
+};
 try {
   const bubble = browser.$('[class~="group/bubble"]');
   await bubble.waitForDisplayed({ timeout: 20_000 });
@@ -14,8 +26,7 @@ try {
   await edit.waitForDisplayed({ timeout: 20_000 });
   const original = JSON.parse(sql("SELECT json_object('id', id, 'content', content) FROM chat_messages ORDER BY order_index LIMIT 1;"));
   sql("CREATE TRIGGER test_chat_edit_failure BEFORE UPDATE ON chat_messages BEGIN SELECT RAISE(ABORT, 'Nachrichten-Schreibfehler (Test).'); END;");
-  await edit.click();
-  const editor = browser.$('textarea[aria-label="Nachricht bearbeiten"]');
+  const editor = await openEditor();
   await editor.click();
   await browser.execute((element) => element.select(), await editor);
   await browser.keys('Backspace');
@@ -29,8 +40,7 @@ try {
   await browser.$('button=Speichern').click();
   await editor.waitForExist({ reverse: true });
   assert.equal(JSON.parse(sql(`SELECT json_quote(content) FROM chat_messages WHERE id = '${original.id}';`)), 'Unser Treffen am See.');
-  await browser.$('[class~="group/bubble"]').moveTo();
-  await browser.$('button[aria-label="Nachricht bearbeiten"]').click();
+  await openEditor();
   assert.equal(await browser.$('textarea[aria-label="Nachricht bearbeiten"]').getValue(), 'Unser Treffen am See.');
   await browser.$('button=Abbrechen').click();
   console.log('Chat: Schreibfehler erhält Nachrichtenentwurf; Wiederholen speichert die Korrektur im Backend.');

@@ -14,34 +14,48 @@ pub async fn send_chat_message(
     use crate::modules::context_window::server_base;
     use crate::modules::providers::{LlmProviderType, ProviderRegistry};
 
-    // A local llama-server reports its own context size and counts exactly; cloud models use
-    // `context_tokens` from the settings.
-    let local = ProviderRegistry::detect_provider(&request.endpoint_url, request.provider.as_ref())
-        == LlmProviderType::LocalLlama;
-    // A local model sees images only with a vision projector; cloud models are trusted to.
-    let vision = !local
-        || state
-            .llama_manager
-            .running_config()
-            .await
-            .and_then(|c| c.mmproj_path)
-            .is_some_and(|p| !p.trim().is_empty());
-    crate::modules::attachments::prepare(&mut request.messages, vision);
-    let base = local.then(|| server_base(&request.endpoint_url));
-    let max_reply = request.sampling.as_ref().and_then(|s| s.max_tokens);
-    let (messages, usage) = state
-        .token_counter
-        .fit(
-            std::mem::take(&mut request.messages),
-            base.as_deref(),
-            context_tokens,
-            max_reply,
-        )
-        .await;
-    request.messages = messages;
-    let mut done = state.inference_client.stream_chat(&app, request).await?;
-    done.context = usage;
-    Ok(done)
+    state.inference_client.reset_abort();
+    state
+        .inference_client
+        .with_abort(async {
+            // A local llama-server reports its own context size and counts exactly; cloud models use
+            // `context_tokens` from the settings.
+            let local =
+                ProviderRegistry::detect_provider(&request.endpoint_url, request.provider.as_ref())
+                    == LlmProviderType::LocalLlama;
+            // A local model sees images only with a vision projector; cloud models are trusted to.
+            let vision = !local
+                || state
+                    .llama_manager
+                    .running_config()
+                    .await
+                    .and_then(|c| c.mmproj_path)
+                    .is_some_and(|p| !p.trim().is_empty());
+            crate::modules::attachments::prepare(&mut request.messages, vision);
+            let base = local.then(|| server_base(&request.endpoint_url));
+            let max_reply = request.sampling.as_ref().and_then(|s| s.max_tokens);
+            let (messages, usage) = state
+                .token_counter
+                .fit(
+                    std::mem::take(&mut request.messages),
+                    base.as_deref(),
+                    context_tokens,
+                    max_reply,
+                )
+                .await;
+            request.messages = messages;
+            let mut done = state.inference_client.stream_chat(&app, request).await?;
+            done.context = usage;
+            Ok(done)
+        })
+        .await
+        .unwrap_or_else(|| {
+            Ok(DoneEvent {
+                full_text: String::new(),
+                full_thought: String::new(),
+                context: None,
+            })
+        })
 }
 
 #[tauri::command]

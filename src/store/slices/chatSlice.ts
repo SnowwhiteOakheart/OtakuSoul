@@ -1,6 +1,7 @@
 import { translate } from '../../i18n';
 import { api } from '../../services/api';
 import { soundFx } from '../../services/soundFx';
+import { streamingTts } from '../../services/streamingTts';
 import { extractStateUpdates, applyStateUpdates } from '../../utils/stateParser';
 import { HUD_PRESETS } from '../../constants/hudPresets';
 import { APP_LANGUAGE_NAMES, llmTarget, resolvePromptWithLore } from '../helpers';
@@ -51,6 +52,9 @@ export interface ChatSlice {
   abortGeneration: () => Promise<void>;
   clearChat: () => void;
   activeChatId: string | null;
+  isChatLoading: boolean;
+  chatLoadError: string | null;
+  retryChatLoad: () => Promise<void>;
   chatSessions: ChatSession[];
   storedMessages: StoredChatMessage[];
   chatSidebarOpen: boolean;
@@ -104,17 +108,31 @@ const greetingFor = (state: {
 };
 
 export const createChatSlice: SliceCreator<ChatSlice> = (set, get) => {
+  let sessionRequest = 0;
+  let generationSessionRequest = 0;
   let cancelled = false;
   let generationSequence = 0;
   let abortPending: Promise<void> | null = null;
   const isCurrentContext = (chatId: string, charId: string | undefined) =>
-    get().activeChatId === chatId && get().activeCharacter?.id === charId;
+    generationSessionRequest === sessionRequest && get().activeChatId === chatId && get().activeCharacter?.id === charId;
   const inContext = (chatId: string, charId: string | undefined) =>
     !cancelled && isCurrentContext(chatId, charId);
   const finishGeneration = async () => {
     if (abortPending) await abortPending.catch(() => {});
     set({ isGenerating: false, generationChatId: null, streamingText: '', streamingThought: '' });
   };
+  const beginSessionLoad = (chatId: string | null) => {
+    const request = ++sessionRequest;
+    streamingTts.cancel();
+    if (get().isGenerating && get().generationChatId) {
+      void get().abortGeneration().catch((error) => console.warn('Navigation abort failed:', error));
+    }
+    set({ activeChatId: chatId, storedMessages: [], messages: [], contextUsage: null,
+      generationFailure: null, streamingText: '', streamingThought: '', isChatLoading: true, chatLoadError: null });
+    return request;
+  };
+  const isSessionCurrent = (request: number, charId: string | undefined) =>
+    request === sessionRequest && get().activeCharacter?.id === charId;
   return ({
   replyLanguage: 'Deutsch',
 
@@ -204,6 +222,13 @@ export const createChatSlice: SliceCreator<ChatSlice> = (set, get) => {
   isGenerating: false,
 
   activeChatId: null,
+  isChatLoading: false,
+  chatLoadError: null,
+  retryChatLoad: async () => {
+    const { activeChatId, activeCharacter } = get();
+    if (activeChatId) await get().switchChatSession(activeChatId);
+    else if (activeCharacter) await get().loadChatSessions(activeCharacter.id);
+  },
 
   chatSessions: [],
 
@@ -226,63 +251,72 @@ export const createChatSlice: SliceCreator<ChatSlice> = (set, get) => {
   },
 
   loadChatSessions: async (charId: string) => {
+    if (get().activeCharacter?.id !== charId) return;
+    const previousChatId = get().activeChatId;
+    const greeting = greetingFor(get());
+    const request = beginSessionLoad(null);
+    set({ chatSessions: [] });
     try {
-      const sessions = await api.listChatSessions(charId);
-      if (sessions.length === 0) {
-        const newSession = await api.createChatSession(charId, translate('chat.newChatTitle'));
-        const greeting = greetingFor(get());
-        if (greeting) await api.addChatMessage(newSession.id, 'assistant', greeting);
-        const updatedSessions = await api.listChatSessions(charId);
-        set({ chatSessions: updatedSessions });
-        await get().switchChatSession(newSession.id);
-      } else {
-        set({ chatSessions: sessions });
-        const currentActive = sessions.find((s) => s.id === get().activeChatId);
-        const targetId = currentActive?.id ?? sessions[0]?.id;
-        if (targetId) await get().switchChatSession(targetId);
+      let sessions = await api.listChatSessions(charId);
+      if (!isSessionCurrent(request, charId)) return;
+      let targetId = sessions.find((session) => session.id === previousChatId)?.id ?? sessions[0]?.id;
+      if (!targetId) {
+        const session = await api.createChatSession(charId, translate('chat.newChatTitle'));
+        if (!isSessionCurrent(request, charId)) return;
+        if (greeting) await api.addChatMessage(session.id, 'assistant', greeting);
+        if (!isSessionCurrent(request, charId)) return;
+        sessions = await api.listChatSessions(charId);
+        if (!isSessionCurrent(request, charId)) return;
+        targetId = session.id;
       }
+      set({ chatSessions: sessions });
+      await get().switchChatSession(targetId);
     } catch (e) {
       console.error('Failed to load chat sessions:', e);
+      if (isSessionCurrent(request, charId)) set({ chatLoadError: errorMessage(e) });
+    } finally {
+      if (isSessionCurrent(request, charId)) set({ isChatLoading: false });
     }
   },
 
   switchChatSession: async (chatId: string) => {
+    const charId = get().activeCharacter?.id;
+    const request = beginSessionLoad(chatId);
     try {
-      const storedMsgs = await api.getChatMessages(chatId);
-      const flatMsgs: ChatMessage[] = storedMsgs.map(toFlat);
-
-      set({
-        activeChatId: chatId,
-        generationFailure: null,
-        storedMessages: storedMsgs,
-        messages: flatMsgs,
-        contextUsage: null,
-        streamingText: '',
-        streamingThought: '',
-      });
+      const stored = await api.getChatMessages(chatId);
+      if (!isSessionCurrent(request, charId)) return;
+      set({ storedMessages: stored, messages: stored.map(toFlat) });
     } catch (e) {
       console.error('Failed to switch chat session:', e);
+      if (isSessionCurrent(request, charId)) set({ chatLoadError: errorMessage(e) });
+    } finally {
+      if (isSessionCurrent(request, charId)) set({ isChatLoading: false });
     }
   },
 
   createNewChat: async (title?: string) => {
     const char = get().activeCharacter;
     if (!char) return null;
-
+    const greeting = greetingFor(get());
+    const sessionTitle = title || translate('chat.defaultSessionTitle', { n: get().chatSessions.length + 1 });
+    const request = beginSessionLoad(null);
     try {
-      const sessionTitle = title || translate('chat.defaultSessionTitle', { n: get().chatSessions.length + 1 });
       const session = await api.createChatSession(char.id, sessionTitle);
-
-      const greeting = greetingFor(get());
+      if (!isSessionCurrent(request, char.id)) return null;
       if (greeting) await api.addChatMessage(session.id, 'assistant', greeting);
-
+      if (!isSessionCurrent(request, char.id)) return null;
       const sessions = await api.listChatSessions(char.id);
+      if (!isSessionCurrent(request, char.id)) return null;
       set({ chatSessions: sessions });
+      const switchRequest = sessionRequest + 1;
       await get().switchChatSession(session.id);
-      return session;
+      return isSessionCurrent(switchRequest, char.id) && get().activeChatId === session.id && !get().chatLoadError ? session : null;
     } catch (e) {
       console.error('Failed to create new chat:', e);
+      if (isSessionCurrent(request, char.id)) set({ chatLoadError: errorMessage(e) });
       return null;
+    } finally {
+      if (isSessionCurrent(request, char.id)) set({ isChatLoading: false });
     }
   },
 
@@ -396,7 +430,7 @@ export const createChatSlice: SliceCreator<ChatSlice> = (set, get) => {
       chatSessions,
     } = get();
 
-    if (get().isGenerating || !activeChatId || !activeCharacter) return;
+    if (get().isGenerating || get().isChatLoading || get().chatLoadError || !activeChatId || !activeCharacter) return;
     const targetMsg = storedMessages.find((m) => m.id === msgId);
     if (!targetMsg) return;
 
@@ -407,6 +441,7 @@ export const createChatSlice: SliceCreator<ChatSlice> = (set, get) => {
     const priorFlat: ChatMessage[] = priorStored.map(toFlat);
 
     cancelled = false;
+    generationSessionRequest = sessionRequest;
     generationSequence += 1;
     set({ isGenerating: true, generationChatId: activeChatId, generationFailure: null, streamingText: '', streamingThought: '' });
 
@@ -494,7 +529,7 @@ export const createChatSlice: SliceCreator<ChatSlice> = (set, get) => {
       sampling,
     } = get();
 
-    if (get().isGenerating || !activeChatId || !activeCharacter) return;
+    if (get().isGenerating || get().isChatLoading || get().chatLoadError || !activeChatId || !activeCharacter) return;
     const targetMsg = storedMessages.find((m) => m.id === msgId);
     if (!targetMsg) return;
 
@@ -503,6 +538,7 @@ export const createChatSlice: SliceCreator<ChatSlice> = (set, get) => {
     const historyFlat: ChatMessage[] = historyStored.map(toFlat);
 
     cancelled = false;
+    generationSessionRequest = sessionRequest;
     generationSequence += 1;
     set({ isGenerating: true, generationChatId: activeChatId, generationFailure: null, streamingText: '', streamingThought: '' });
 
@@ -612,8 +648,10 @@ export const createChatSlice: SliceCreator<ChatSlice> = (set, get) => {
       chatSessions,
     } = get();
 
+    if (get().isChatLoading || get().chatLoadError) throw new Error(get().chatLoadError ?? translate('chat.historyLoading'));
     if (get().isGenerating || (!content.trim() && files.length === 0 && !storedMessageId)) return;
     cancelled = false;
+    generationSessionRequest = sessionRequest;
     generationSequence += 1;
     set({ isGenerating: true, generationChatId: activeChatId, generationFailure: null, streamingText: '', streamingThought: '' });
     let userStored: StoredChatMessage | undefined;
@@ -624,8 +662,9 @@ export const createChatSlice: SliceCreator<ChatSlice> = (set, get) => {
         if (newSess) activeChatId = newSess.id;
       }
 
+      generationSessionRequest = sessionRequest;
       set({ generationChatId: activeChatId });
-      if (!activeChatId) throw new Error(translate('chat.noActiveSession'));
+      if (!activeChatId) throw new Error(get().chatLoadError ?? translate('chat.noActiveSession'));
       if (cancelled) throw new Error(translate('chat.sendCancelled'));
       if (!inContext(activeChatId, activeCharacter?.id)) return;
 
@@ -644,7 +683,7 @@ export const createChatSlice: SliceCreator<ChatSlice> = (set, get) => {
         if (!inContext(chatId, activeCharacter?.id)) return;
         userStored = await api.addChatMessage(chatId, 'user', content, null, attachments);
       }
-      if (get().activeChatId !== chatId || get().activeCharacter?.id !== activeCharacter?.id) return;
+      if (!isCurrentContext(chatId, activeCharacter?.id)) return;
       const updatedStored = storedMessageId ? get().storedMessages : [...get().storedMessages, userStored];
       const updatedFlat: ChatMessage[] = updatedStored.map(toFlat);
 
@@ -728,8 +767,9 @@ export const createChatSlice: SliceCreator<ChatSlice> = (set, get) => {
 
       // Refresh chat sessions to update message count badges
       if (activeCharacter?.id) {
+        const refreshRequest = sessionRequest;
         api.listChatSessions(activeCharacter.id).then((sessions) => {
-          if (get().activeCharacter?.id === activeCharacter.id) set({ chatSessions: sessions });
+          if (refreshRequest === sessionRequest && get().activeCharacter?.id === activeCharacter.id) set({ chatSessions: sessions });
         }).catch((err) => console.warn('Chat session refresh failed:', err));
       }
 
@@ -779,7 +819,7 @@ export const createChatSlice: SliceCreator<ChatSlice> = (set, get) => {
     } catch (e) {
       if (sequence === generationSequence) {
         cancelled = false;
-        set({ generationChatId: chatId });
+        set({ generationChatId: generationSessionRequest === sessionRequest ? chatId : null });
       }
       console.error('Failed to abort generation:', e);
       throw e;
@@ -811,10 +851,10 @@ export const createChatSlice: SliceCreator<ChatSlice> = (set, get) => {
   loadVoiceConfigForCharacter: async (charId) => {
     try {
       const config = await api.getCharacterVoiceConfig(charId);
-      set({ activeVoiceConfig: config });
+      if (get().activeCharacter?.id === charId) set({ activeVoiceConfig: config });
     } catch (e) {
       console.error('Failed to load voice config:', e);
-      set({ activeVoiceConfig: null });
+      if (get().activeCharacter?.id === charId) set({ activeVoiceConfig: null });
     }
   },
 

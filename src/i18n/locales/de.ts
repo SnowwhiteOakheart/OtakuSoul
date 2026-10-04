@@ -61,6 +61,8 @@ export const de = {
   "common.retry": "Erneut versuchen",
   "common.loadingView": "Ansicht wird geladen…",
 
+  "chat.historyLoading": "Chatverlauf wird geladen…",
+  "chat.historyLoadError": "Chatverlauf konnte nicht geladen werden: {{error}}",
   "chat.sendCancelled": "Nachricht wurde vor dem Speichern abgebrochen.",
   "chat.noActiveSession": "Keine aktive Chat-Sitzung. Bitte wähle einen Charakter und einen Chat.",
   "chat.inferenceError": "Inferenz-Fehler: {{error}}",

@@ -16,10 +16,10 @@ export const ChatComposer: React.FC = () => {
   const { t } = useTranslation();
   const {
     sendMessage, isGenerating, abortGeneration, activeVoiceConfig, setAutoTtsEnabled, contextUsage,
-    selectedBackend, serverConfig, generationFailure, retryGeneration, activeChatId,
+    selectedBackend, serverConfig, generationFailure, retryGeneration, activeChatId, isChatLoading, chatLoadError, retryChatLoad,
   } = useStoreFields(
     'sendMessage', 'isGenerating', 'abortGeneration', 'activeVoiceConfig', 'setAutoTtsEnabled', 'contextUsage',
-    'selectedBackend', 'serverConfig', 'generationFailure', 'retryGeneration', 'activeChatId',
+    'selectedBackend', 'serverConfig', 'generationFailure', 'retryGeneration', 'activeChatId', 'isChatLoading', 'chatLoadError', 'retryChatLoad',
   );
   const [input, setInput] = useState('');
   const [files, setFiles] = useState<File[]>([]);
@@ -31,7 +31,7 @@ export const ChatComposer: React.FC = () => {
   };
 
   const handleSend = () => {
-    if ((!input.trim() && files.length === 0) || isGenerating) return;
+    if ((!input.trim() && files.length === 0) || isGenerating || isChatLoading || chatLoadError) return;
     streamingTts.cancel();
     const [text, attached] = [input, files];
     setInput('');
@@ -54,6 +54,14 @@ export const ChatComposer: React.FC = () => {
 
   return (
     <div className="p-4 border-t border-slate-800 bg-slate-900/60 backdrop-blur">
+      {isChatLoading && <p role="status" className="max-w-4xl mx-auto mb-2 text-sm text-slate-300">{t('chat.historyLoading')}</p>}
+      {chatLoadError && (
+        <div role="alert" className="max-w-4xl mx-auto mb-3 rounded-lg border border-rose-500/40 bg-rose-950/30 p-3 text-sm text-rose-200">
+          <p>{t('chat.historyLoadError', { error: chatLoadError })}</p>
+          <button type="button" disabled={isChatLoading} onClick={() => void retryChatLoad()}
+            className="mt-2 underline disabled:opacity-40">{t('common.retry')}</button>
+        </div>
+      )}
       {generationFailure?.chatId === activeChatId && (
         <div role="alert" className="max-w-4xl mx-auto mb-3 rounded-lg border border-rose-500/40 bg-rose-950/30 p-3 text-sm text-rose-200">
           <p>{t('chat.inferenceError', { error: generationFailure.message })}</p>
@@ -128,7 +136,7 @@ export const ChatComposer: React.FC = () => {
         ) : (
           <button
             onClick={handleSend}
-            disabled={!input.trim() && files.length === 0}
+            disabled={isChatLoading || !!chatLoadError || (!input.trim() && files.length === 0)}
             className="p-2.5 rounded-xl bg-accent-600 hover:bg-accent-500 disabled:opacity-40 disabled:cursor-not-allowed text-white transition-all shadow-md flex items-center justify-center"
             title={t('chat.send')}
             aria-label={t('chat.send')}

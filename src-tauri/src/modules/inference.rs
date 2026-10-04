@@ -107,6 +107,7 @@ pub struct ErrorEvent {
 
 pub struct InferenceClient {
     abort_flag: Arc<AtomicBool>,
+    abort_signal: tokio::sync::watch::Sender<u64>,
 }
 
 #[derive(Default)]
@@ -241,11 +242,14 @@ impl InferenceClient {
     pub fn new() -> Self {
         Self {
             abort_flag: Arc::new(AtomicBool::new(false)),
+            abort_signal: tokio::sync::watch::channel(0).0,
         }
     }
 
     pub fn abort(&self) {
         self.abort_flag.store(true, Ordering::Relaxed);
+        self.abort_signal
+            .send_modify(|epoch| *epoch = epoch.wrapping_add(1));
     }
 
     /// Clears a previous abort; called when a new generation (or Stage turn) starts.
@@ -257,12 +261,25 @@ impl InferenceClient {
         self.abort_flag.load(Ordering::Relaxed)
     }
 
+    /// Drops a pending preparation/request on abort, even if no network bytes arrive.
+    /// The signal is an epoch so resetting the flag cannot revive an older waiter.
+    pub async fn with_abort<T>(&self, future: impl std::future::Future<Output = T>) -> Option<T> {
+        let mut signal = self.abort_signal.subscribe();
+        if self.is_aborted() {
+            return None;
+        }
+        tokio::select! {
+            biased;
+            _ = signal.changed() => None,
+            result = future => Some(result),
+        }
+    }
+
     pub async fn stream_chat<R: tauri::Runtime>(
         &self,
         app_handle: &tauri::AppHandle<R>,
         request: ChatRequest,
     ) -> Result<DoneEvent, String> {
-        self.reset_abort();
         let mut full_text = String::new();
         let mut full_thought = String::new();
         self.stream_segments(request, |is_thought, text| {
@@ -308,6 +325,16 @@ impl InferenceClient {
     /// The SSE loop shared by the streaming calls: `(is_thought, text)` per piece. Does not
     /// reset the abort flag, so an abort covers every call of a multi-step turn.
     async fn stream_segments(
+        &self,
+        request: ChatRequest,
+        on_segment: impl FnMut(bool, String),
+    ) -> Result<(), String> {
+        self.with_abort(self.stream_segments_inner(request, on_segment))
+            .await
+            .unwrap_or(Ok(()))
+    }
+
+    async fn stream_segments_inner(
         &self,
         request: ChatRequest,
         mut on_segment: impl FnMut(bool, String),
@@ -511,6 +538,128 @@ mod tests {
 
     fn dry(request: &super::ChatRequest) -> Option<i32> {
         request.sampling.as_ref().unwrap().dry_penalty_last_n
+    }
+
+    #[tokio::test]
+    async fn abort_interrupts_a_request_waiting_for_response_headers() {
+        let (entered, received) = tokio::sync::oneshot::channel();
+        let entered = std::sync::Arc::new(std::sync::Mutex::new(Some(entered)));
+        let app = axum::Router::new().route(
+            "/v1/chat/completions",
+            axum::routing::post(move || {
+                let entered = entered.clone();
+                async move {
+                    if let Some(sender) = entered.lock().unwrap().take() {
+                        let _ = sender.send(());
+                    }
+                    std::future::pending::<axum::response::Response>().await
+                }
+            }),
+        );
+        let listener = tokio::net::TcpListener::bind("127.0.0.1:0").await.unwrap();
+        let endpoint = format!(
+            "http://{}/v1/chat/completions",
+            listener.local_addr().unwrap()
+        );
+        let server = tokio::spawn(async move { axum::serve(listener, app).await });
+        let client = std::sync::Arc::new(super::InferenceClient::new());
+        let running = client.clone();
+        let task =
+            tokio::spawn(
+                async move { running.stream_text(request(&endpoint, None), |_| {}).await },
+            );
+        tokio::time::timeout(std::time::Duration::from_secs(2), received)
+            .await
+            .unwrap()
+            .unwrap();
+        client.abort();
+        let result = tokio::time::timeout(std::time::Duration::from_secs(2), task)
+            .await
+            .unwrap()
+            .unwrap()
+            .unwrap();
+        assert!(result.is_empty());
+        server.abort();
+    }
+
+    #[tokio::test]
+    async fn abort_interrupts_an_idle_stream_without_flushing_partial_tags() {
+        use futures_util::StreamExt;
+        let app = axum::Router::new().route(
+            "/v1/chat/completions",
+            axum::routing::post(|| async {
+                let chunk = axum::body::Bytes::from(
+                    "data: {\"choices\":[{\"delta\":{\"content\":\"Hello<thi\"}}]}\n\n",
+                );
+                let stream =
+                    futures_util::stream::once(std::future::ready(Ok::<_, std::io::Error>(chunk)))
+                        .chain(futures_util::stream::pending());
+                axum::response::Response::builder()
+                    .header("content-type", "text/event-stream")
+                    .body(axum::body::Body::from_stream(stream))
+                    .unwrap()
+            }),
+        );
+        let listener = tokio::net::TcpListener::bind("127.0.0.1:0").await.unwrap();
+        let endpoint = format!(
+            "http://{}/v1/chat/completions",
+            listener.local_addr().unwrap()
+        );
+        let server = tokio::spawn(async move { axum::serve(listener, app).await });
+        let (entered, received) = tokio::sync::oneshot::channel();
+        let client = std::sync::Arc::new(super::InferenceClient::new());
+        let running = client.clone();
+        let task = tokio::spawn(async move {
+            let mut entered = Some(entered);
+            let mut pieces = Vec::new();
+            let result = running
+                .stream_text(request(&endpoint, None), |text| {
+                    pieces.push(text.to_string());
+                    if let Some(sender) = entered.take() {
+                        let _ = sender.send(());
+                    }
+                })
+                .await;
+            (result, pieces)
+        });
+        tokio::time::timeout(std::time::Duration::from_secs(2), received)
+            .await
+            .unwrap()
+            .unwrap();
+        client.abort();
+        let (result, pieces) = tokio::time::timeout(std::time::Duration::from_secs(2), task)
+            .await
+            .unwrap()
+            .unwrap();
+        assert_eq!(result.unwrap(), "Hello");
+        assert_eq!(pieces.concat(), "Hello");
+        server.abort();
+    }
+
+    #[tokio::test]
+    async fn resetting_abort_does_not_revive_an_older_waiter() {
+        let client = std::sync::Arc::new(super::InferenceClient::new());
+        let running = client.clone();
+        let (entered, received) = tokio::sync::oneshot::channel();
+        let task = tokio::spawn(async move {
+            running
+                .with_abort(async {
+                    entered.send(()).unwrap();
+                    std::future::pending::<()>().await
+                })
+                .await
+        });
+        received.await.unwrap();
+        client.abort();
+        client.reset_abort();
+        assert!(
+            tokio::time::timeout(std::time::Duration::from_secs(2), task)
+                .await
+                .unwrap()
+                .unwrap()
+                .is_none()
+        );
+        assert_eq!(client.with_abort(async { 42 }).await, Some(42));
     }
 
     #[tokio::test]

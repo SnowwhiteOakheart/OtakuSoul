@@ -124,6 +124,10 @@ export function startMockLlm() {
             : isTranslation
               ? TRANSLATION
               : REPLY;
+      if (isChat && stats.stallChat) {
+        res.on('close', () => { stats.cancelledChat = (stats.cancelledChat ?? 0) + 1; });
+        return;
+      }
       res.writeHead(200, { 'Content-Type': 'text/event-stream', 'Cache-Control': 'no-cache' });
       // A few chunks, like a real stream; the Stage narrator slowly, so live text can be observed.
       const pieces = text.match(/.{1,40}/gs) ?? [];

@@ -179,6 +179,46 @@ describe('chat generation failures', () => {
     await pending;
     expect(useAppStore.getState().storedMessages).toEqual([]);
   });
+  it('rejects a late result after switching away and back even if navigation abort fails', async () => {
+    let finish!: (value: typeof done) => void;
+    vi.spyOn(console, 'warn').mockImplementation(() => {});
+    vi.mocked(api.abortChatGeneration).mockRejectedValue(new Error('Abort unavailable'));
+    vi.mocked(api.getChatMessages).mockResolvedValue([message]);
+    vi.mocked(api.sendChatMessage).mockImplementationOnce(() => new Promise((resolve) => { finish = resolve; }));
+    const pending = useAppStore.getState().sendMessage('Hello');
+    await waitFor(() => expect(api.sendChatMessage).toHaveBeenCalledOnce());
+    await useAppStore.getState().switchChatSession('chat-2');
+    await useAppStore.getState().switchChatSession('chat-1');
+    expect(useAppStore.getState().generationChatId).toBeNull();
+    finish(done); await pending;
+    expect(api.addChatMessage).toHaveBeenCalledOnce();
+    expect(useAppStore.getState().storedMessages).toEqual([message]);
+  });
+  it('does not replace a new chat list with an older background refresh', async () => {
+    let finish!: (value: Awaited<ReturnType<typeof api.listChatSessions>>) => void;
+    const newSession = { id: 'chat-new', character_id: character.id, title: 'New', created_at: 0, updated_at: 0, author_note: '', author_note_depth: 0, message_count: 0, summary: '', summary_until: -1 };
+    vi.mocked(api.listChatSessions).mockImplementationOnce(() => new Promise((resolve) => { finish = resolve; })).mockResolvedValueOnce([newSession]);
+    vi.mocked(api.createChatSession).mockResolvedValueOnce(newSession);
+    vi.mocked(api.getChatMessages).mockResolvedValueOnce([]);
+    await useAppStore.getState().sendMessage('Hello');
+    await useAppStore.getState().createNewChat();
+    finish([]);
+    await Promise.resolve();
+    expect(useAppStore.getState().chatSessions).toEqual([newSession]);
+    expect(useAppStore.getState().activeChatId).toBe(newSession.id);
+  });
+  it('does not append a late user write twice after navigating away and back', async () => {
+    let finish!: (value: StoredChatMessage) => void;
+    vi.mocked(api.addChatMessage).mockImplementationOnce(() => new Promise((resolve) => { finish = resolve; }));
+    const pending = useAppStore.getState().sendMessage('Hello');
+    await waitFor(() => expect(api.addChatMessage).toHaveBeenCalledOnce());
+    vi.mocked(api.getChatMessages).mockResolvedValueOnce([]).mockResolvedValueOnce([message]);
+    await useAppStore.getState().switchChatSession('chat-2');
+    await useAppStore.getState().switchChatSession('chat-1');
+    finish(message); await pending;
+    expect(useAppStore.getState().storedMessages).toEqual([message]);
+    expect(api.sendChatMessage).not.toHaveBeenCalled();
+  });
   it('shows abort failures while allowing the running operation to finish', async () => {
     vi.mocked(api.abortChatGeneration).mockRejectedValueOnce(new Error('Stop failed'));
     useAppStore.setState({ isGenerating: true });

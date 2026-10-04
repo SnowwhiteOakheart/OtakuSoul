@@ -43,6 +43,8 @@ Abnahme: Ein fehlgeschlagener Speichervorgang leert keine Eingabe und meldet kei
 - [x] Promptaufbau und alle nachfolgenden Schritte in eine gemeinsame Fehlerbehandlung aufnehmen.
 - [ ] Generierungszustand bei jedem Fehler und Abbruch zuverlässig zurücksetzen.
 - [x] Bereits gespeicherte Nutzernachrichten beim Wiederholen erkennen; Duplikate vermeiden.
+- [x] Sitzungsabrufe ordnen, alte Verläufe während des Ladens ausblenden und Lesefehler wiederholbar anzeigen.
+- [x] Wartende HTTP-Anfragen und inaktive SSE-Streams bei Backend-Abbruch beenden.
 - [ ] Gleichzeitiges Senden, Sitzungswechsel und verspätete Antworten eindeutig einer Sitzung zuordnen.
 - [x] Fehler bei Upload, Promptaufbau, Streaming und Antwortspeicherung gezielt testen.
 
@@ -370,3 +372,44 @@ Lauf mit `npm run e2e:run` unter Xvfb bestanden alle 17 Szenarien.
 Screenshot `41-chat-generierungsfehler.png` wurde visuell geprüft: Die Nutzernachricht steht genau einmal
 im Verlauf; konkrete Antwort-Schreibfehlerursache und Wiederholen-Knopf sind vollständig sichtbar.
 Die parallel entstandenen Änderungen an optionalen Inhalten gehören nicht zu diesem Arbeitspaket.
+
+### Zehntes Arbeitspaket – 04.10.2026
+
+Sitzungsauswahl, Sitzungsliste und Chat-Erstellung prüfen nach jedem asynchronen Schritt eine Abrufnummer
+und den Charakter-Kontext. Nur der zuletzt gestartete Vorgang darf den sichtbaren Zustand ändern.
+Der Verlauf wird beim Wechsel sofort ausgeblendet, statt unter einem anderen Sitzungstitel stehen zu bleiben.
+`isChatLoading` kennzeichnet die Ladephase; `chatLoadError` hält die Ursache sichtbar. Wiederholen lädt nur
+den Verlauf bzw. die Sitzungsliste. Der Composer behält seinen Entwurf und sperrt Senden bis zum erfolgreichen Laden.
+Fehler der automatischen Chat-Erstellung geben ihre Ursache an den Composer weiter, bevor eine Nutzernachricht geschrieben wird.
+Späte Stimmenkonfigurationen eines anderen Charakters und Sitzungslisten eines früheren Navigationszustands werden ignoriert.
+
+Navigation stoppt ausstehende Chat-Sprachausgabe und fordert den Abbruch der laufenden Generierung an. Generierungsresultate prüfen zusätzlich die
+Abrufnummer; auch A → B → A kann eine alte Modellantwort nicht in den aktuellen Verlauf übernehmen.
+Ein bereits laufender Datenbankschreibvorgang bleibt wirksam, aber sein spätes Ergebnis überschreibt keinen
+neu geladenen Verlauf. Ein nach Navigation erstellter Chat wird nicht durch ein älteres Hintergrund-Listenresultat verdrängt.
+
+Das Backend meldet Abbruch über einen Watch-Signalzähler. `with_abort` beendet wartende asynchrone Vorbereitung,
+HTTP-Anfragen ohne Antwortheader und SSE-Streams ohne weitere Daten, indem deren Futures fallen gelassen werden.
+Der Abbruch-Merker wird am Anfang des Chat-Commands zurückgesetzt; eine spätere Stream-Initialisierung
+löscht ihn nicht erneut. Das Zurücksetzen für eine neue Runde macht alte Wartevorgänge nicht wieder gültig.
+Abbruch spült auch keine unvollständigen Thought-Tags aus dem Stream-Puffer als Nachrichtentext nach.
+Direkte interne Generierungen und synchrone Datei-/Datenbankvorgänge behalten ihre bisherige Semantik.
+
+Drei Rust-Tests prüfen antwortlose HTTP-Anfragen, inaktive Streams mit unvollständigem Tag und Abbruch
+mit unmittelbar folgendem Zurücksetzen. Dreizehn zusätzliche Frontend-Tests prüfen überlappende Abrufe,
+Lesefehler/Wiederholen, Sendesperren, Charakterwechsel, automatische Erstellung, verspätete Stimmenkonfiguration
+und A → B → A bei fehlgeschlagenem Navigationsabbruch. Ein neuer E2E-Test prüft reale SQLite-Lesefehler,
+Entwurfserhalt, geschlossene HTTP-Verbindungen beim Abbruch/Chatwechsel und Antworten im richtigen neuen Chat.
+
+Offen bleiben IDs in nativen Stream-Ereignissen, sofortiges Beenden noch laufender Frontend-Prompt-/Upload-
+Vorbereitung, Wiederaufnahme abgebrochener Antworten und die Koordination paralleler Chat-/Stage-Vorgänge.
+Chat-Erstellung ist mehrstufig; Fehler nach der ersten Datenbankanlage können eine leere Sitzung zurücklassen.
+Die umfassende Generierungs-/Abbruch-Abnahme bleibt deshalb offen.
+
+Validierung: Der vollständige Check besteht mit 370 Rust-Tests (6 absichtlich ignoriert) und 186 Frontend-Tests.
+Alle 18 E2E-Szenarien bestehen unter Xvfb mit dem frisch gebauten aktuellen App-Stand. Der vorhandene
+Nachrichten-Editor-Test wartet nun auf den klickbaren Bearbeiten-Knopf und den tatsächlich geöffneten Editor;
+damit bleibt die Prüfung auch bei verzögertem Hover-/Layout-Update stabil. Screenshot
+`e2e/screenshots/42-chat-verlauf-ladefehler.png` wurde geprüft: Ursache und Wiederholen sind sichtbar,
+der Entwurf bleibt erhalten und der alte Verlauf wird ausgeblendet. Parallel entstandene Änderungen
+an optionalen Inhalten gehören nicht zu diesem Arbeitspaket.

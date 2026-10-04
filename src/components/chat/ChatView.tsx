@@ -48,6 +48,8 @@ export const ChatView: React.FC = () => {
     storedMessages,
     isGenerating,
     generationChatId,
+    isChatLoading,
+    chatLoadError,
     clearChat,
     selectedBackend,
     setSelectedBackend,
@@ -64,7 +66,7 @@ export const ChatView: React.FC = () => {
     activeVoiceConfig,
     setActiveTab,
   } = useStoreFields(
-    'messages', 'storedMessages', 'isGenerating', 'generationChatId', 'clearChat', 'selectedBackend', 'setSelectedBackend',
+    'messages', 'storedMessages', 'isGenerating', 'generationChatId', 'isChatLoading', 'chatLoadError', 'clearChat', 'selectedBackend', 'setSelectedBackend',
     'serverStatus', 'activeCharacter', 'activePersona', 'loadPresetCharacters', 'chatSidebarOpen',
     'setChatSidebarOpen', 'chatSessions', 'activeChatId', 'autoTtsEnabled', 'setAutoTtsEnabled',
     'activeVoiceConfig', 'setActiveTab',
@@ -363,7 +365,7 @@ export const ChatView: React.FC = () => {
           <SceneImageCard />
           {/* Messages Stream Area */}
           <div ref={scrollRef} className="flex-1 overflow-y-auto p-4 space-y-4 select-text" aria-live="polite">
-            {displayList.length === 0 && !isGenerating && (
+            {displayList.length === 0 && !isGenerating && !isChatLoading && !chatLoadError && (
               !activeCharacter ? (
                 <EmptyState
                   icon={Users}

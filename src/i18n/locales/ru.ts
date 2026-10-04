@@ -59,6 +59,8 @@ export const ru: TranslationDictionary = {
   "common.retry": "Повторить",
   "common.loadingView": "Загрузка…",
 
+  "chat.historyLoading": "Загрузка истории чата…",
+  "chat.historyLoadError": "Не удалось загрузить историю чата: {{error}}",
   "chat.sendCancelled": "Отправка отменена до сохранения сообщения.",
   "chat.noActiveSession": "Нет активного чата. Выберите персонажа и чат.",
   "chat.inferenceError": "Ошибка инференса: {{error}}",
