@@ -45,7 +45,7 @@ export function startMockLlm() {
       }
       const request = JSON.parse(body || '{}');
       const system = request.messages?.[0]?.content ?? '';
-      const isStageSummary = system.includes('[SOUL STAGE — SUMMARY]');
+      const isStageSummary = system.includes('[SOUL STAGE — SUMMARY]') || system.includes('[STAGE — SUMMARY]');
       const isSummary = system.includes('running summary');
       if (isStageSummary) {
         stats.stageSummary = (stats.stageSummary ?? 0) + 1;

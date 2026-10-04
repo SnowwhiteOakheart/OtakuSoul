@@ -72,7 +72,7 @@ pub fn routing_prompt(
 ) -> String {
     let short: String = last_text.chars().take(400).collect();
     format!(
-        r#"[SOUL STAGE — ROUTING]
+        r#"[STAGE — ROUTING]
 Your only job: decide who speaks next.
 
 {last_speaker} just said: "{short}"

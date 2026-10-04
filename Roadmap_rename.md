@@ -114,23 +114,24 @@ Statt Markenpräfixe tief im Code zu verankern, benennen wir Subsysteme rein nac
 ## 📌 Phase 4: Neutrale Code-Internals, Prompts & Mocks
 > **Ziel:** Prompts, Moduldateien und Test-Mocks von Markenpräfixen befreien.
 
-- [ ] **4.1 System-Prompts & E2E-Mocks neutralisieren**
-  - [ ] In `src-tauri/src/modules/stage/turn.rs`, `world.rs`, `director.rs`:
+- [x] **4.1 System-Prompts & E2E-Mocks neutralisieren**
+  - [x] In `src-tauri/src/modules/stage/turn.rs`, `world.rs`, `director.rs`, `history.rs`:
     - `[SOUL STAGE — GAME MASTER PLANNER]` → `[STAGE — GAME MASTER PLANNER]`
     - `[SOUL STAGE — GAME MASTER NARRATOR]` → `[STAGE — GAME MASTER NARRATOR]`
     - `[SOUL STAGE — NPC]` → `[STAGE — NPC]`
     - `[SOUL STAGE — ROUTING]` → `[STAGE — ROUTING]`
     - `[SOUL STAGE — ARC ARCHIVE]` → `[STAGE — ARC ARCHIVE]`
     - `[SOUL STAGE — CONSISTENCY]` → `[STAGE — CONSISTENCY]`
-  - [ ] **Wichtig:** Erkennungs-Strings in den Test-Mocks (E2E / Mock-LLM) synchron auf `[STAGE — ...]` anpassen.
-- [ ] **4.2 Dateinamen & Rust-Module neutralisieren**
-  - [ ] `src-tauri/src/modules/soul_hub.rs` → `src-tauri/src/modules/hub.rs`.
-  - [ ] `src-tauri/src/modules/soul_memory_pipeline.rs` → `src-tauri/src/modules/memory_pipeline.rs`.
-  - [ ] `src/components/hub/SoulHubView.tsx` → `src/components/hub/HubView.tsx`.
-  - [ ] Generierte TS-Typen aktualisieren (`npm run types:gen`).
-- [ ] **4.3 Backup-Manifest neutralisieren (`profile_backup.rs`)**
-  - [ ] Gruppen im Manifest: `memory: bool`, `stage: bool`, `companion: bool`.
-  - [ ] Abwärtskompatibilität: Alte Backups mit `soul_memory` oder `soul_stage` beim Einlesen weiterhin korrekt zuordnen.
+    - `[SOUL STAGE — SUMMARY]` → `[STAGE — SUMMARY]`
+  - [x] Erkennungs-Strings in den Test-Mocks (E2E / Mock-LLM) synchron auf `[STAGE — ...]` angepasst.
+- [x] **4.2 Dateinamen & Rust-Module neutralisieren**
+  - [x] `src-tauri/src/modules/soul_hub.rs` → `src-tauri/src/modules/hub.rs`.
+  - [x] `src-tauri/src/modules/soul_memory_pipeline.rs` → `src-tauri/src/modules/memory_pipeline.rs`.
+  - [x] `src/components/hub/SoulHubView.tsx` → `src/components/hub/HubView.tsx`.
+  - [x] Generierte TS-Typen aktualisiert (`npm run types:gen`).
+- [x] **4.3 Backup-Manifest neutralisieren (`profile_backup.rs`)**
+  - [x] Gruppen im Manifest: `memory: bool`, `stage: bool`, `companion: bool`.
+  - [x] Abwärtskompatibilität: Alte Backups mit `soul_memory` oder `soul_stage` beim Einlesen weiterhin über Serde-Aliase korrekt zugeordnet.
 
 ---
 

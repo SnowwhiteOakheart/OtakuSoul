@@ -24,8 +24,8 @@ const reloadTab = (tab: HubTab) => {
   return { soul_gateway: hub.loadGateway, chub_ai: () => hub.loadChub(1, false), lorebooks: hub.loadLorebooks, scenes: hub.loadScenes }[tab]();
 };
 
-/** Soul Hub: curated gateway content and the chub.ai archive, each in its own tab. */
-export const SoulHubView = () => {
+/** Hub: curated gateway content and the chub.ai archive, each in its own tab. */
+export const HubView = () => {
   const { t } = useTranslation();
   const { hubSubTab, setHubSubTab } = useStoreFields('hubSubTab', 'setHubSubTab');
   const hub = useHubStore(
@@ -152,5 +152,5 @@ export const SoulHubView = () => {
     </div>
   );
 };
-
-export default SoulHubView;
+export const SoulHubView = HubView;
+export default HubView;

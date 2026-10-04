@@ -139,7 +139,7 @@ pub async fn archive_resolved_arcs(
     let history = recent_history(state);
     for arc in pending {
         let prompt = format!(
-            "[SOUL STAGE — ARC ARCHIVE]\nThe story arc \"{}\" has been resolved.\nArc description: {}\n\nRecent events:\n{}\n\n\
+            "[STAGE — ARC ARCHIVE]\nThe story arc \"{}\" has been resolved.\nArc description: {}\n\nRecent events:\n{}\n\n\
              Summarize in two or three sentences in {language} how the arc ended and what lasting \
              consequences it leaves. Reply with the summary only.",
             arc.title, arc.description, history
@@ -176,7 +176,7 @@ pub async fn audit_facts(state: &mut SceneState, inference: &InferenceClient, ll
     }
     state.turns_since_audit = 0;
     let prompt = format!(
-        "[SOUL STAGE — CONSISTENCY]\nYou audit the established facts of a tabletop campaign against recent events.\n\n\
+        "[STAGE — CONSISTENCY]\nYou audit the established facts of a tabletop campaign against recent events.\n\n\
          Facts:\n{}\n\nRecent events:\n{}\n\n\
          Remove facts that are obsolete, temporary or resolved, and correct those that events contradict. \
          Do not invent new facts. Reply ONLY with JSON: \

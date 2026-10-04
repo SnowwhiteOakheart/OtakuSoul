@@ -82,9 +82,9 @@ pub fn apply_emotional_decay(
 #[tauri::command]
 pub async fn trigger_memory_pipeline(
     state: State<'_, AppState>,
-    req: crate::modules::soul_memory_pipeline::SoulMemoryPipelineRequest,
-) -> Result<crate::modules::soul_memory_pipeline::SoulMemoryPipelineResult, String> {
-    crate::modules::soul_memory_pipeline::execute_soul_memory_pipeline(&state, req).await
+    req: crate::modules::memory_pipeline::SoulMemoryPipelineRequest,
+) -> Result<crate::modules::memory_pipeline::SoulMemoryPipelineResult, String> {
+    crate::modules::memory_pipeline::execute_soul_memory_pipeline(&state, req).await
 }
 
 #[tauri::command]
@@ -136,7 +136,7 @@ pub fn save_user_memory_markdown(
 #[tauri::command]
 pub async fn generate_manual_diary_entry(
     state: State<'_, AppState>,
-    req: crate::modules::soul_memory_pipeline::SoulMemoryPipelineRequest,
+    req: crate::modules::memory_pipeline::SoulMemoryPipelineRequest,
 ) -> Result<crate::modules::memory::DiaryEntry, String> {
     let char_id = &req.character_id;
     let user_name = &req.user_name;
@@ -173,7 +173,7 @@ pub async fn generate_manual_diary_entry(
         dialog_formatted.push_str(&format!("{}: {}\n", msg.role, msg.content));
     }
 
-    let diary_sys = crate::modules::soul_memory_pipeline::DIARY_SYSTEM_PROMPT
+    let diary_sys = crate::modules::memory_pipeline::DIARY_SYSTEM_PROMPT
         .replace("{character}", char_id)
         .replace("{user_name}", user_name)
         .replace(

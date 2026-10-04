@@ -127,6 +127,8 @@ pub struct SoulMemoryPipelineRequest {
     pub transcript: Option<String>,
 }
 
+pub type MemoryPipelineRequest = SoulMemoryPipelineRequest;
+
 #[derive(Debug, Clone, Serialize, Deserialize, TS)]
 #[ts(export)]
 pub struct SoulMemoryPipelineResult {
@@ -138,6 +140,8 @@ pub struct SoulMemoryPipelineResult {
     pub diary_entry: Option<DiaryEntry>,
     pub healing_entries: Vec<String>,
 }
+
+pub type MemoryPipelineResult = SoulMemoryPipelineResult;
 
 #[derive(Debug, Clone, Serialize, Deserialize, Default, TS)]
 #[ts(export)]
@@ -296,6 +300,13 @@ fn add_unique(list: &mut Vec<String>, items: &[String], max_cap: usize) {
 }
 
 pub async fn execute_soul_memory_pipeline(
+    state: &AppState,
+    req: SoulMemoryPipelineRequest,
+) -> Result<SoulMemoryPipelineResult, String> {
+    execute_memory_pipeline(state, req).await
+}
+
+pub async fn execute_memory_pipeline(
     state: &AppState,
     req: SoulMemoryPipelineRequest,
 ) -> Result<SoulMemoryPipelineResult, String> {

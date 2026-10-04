@@ -19,8 +19,8 @@ import {
   RelationshipState,
   DiaryEntry,
   MemoryBackupInfo,
-  SoulMemoryPipelineRequest,
-  SoulMemoryPipelineResult,
+  MemoryPipelineRequest,
+  MemoryPipelineResult,
   DiceRollResult,
   StageState,
   ScenePreview,
@@ -276,11 +276,11 @@ export const api = {
     return await invoke<string | null>('apply_emotional_decay', { charId });
   },
 
-  // Phase 11: Soul Memory 2.0 Cognitive Pipeline & Markdown Sync
+  // Cognitive Pipeline & Markdown Sync
   triggerMemoryPipeline: async (
-    req: SoulMemoryPipelineRequest
-  ): Promise<SoulMemoryPipelineResult> => {
-    return await invoke<SoulMemoryPipelineResult>('trigger_memory_pipeline', {
+    req: MemoryPipelineRequest
+  ): Promise<MemoryPipelineResult> => {
+    return await invoke<MemoryPipelineResult>('trigger_memory_pipeline', {
       req,
     });
   },
@@ -322,7 +322,7 @@ export const api = {
   },
 
   generateManualDiaryEntry: async (
-    req: SoulMemoryPipelineRequest
+    req: MemoryPipelineRequest
   ): Promise<DiaryEntry> => {
     return await invoke<DiaryEntry>('generate_manual_diary_entry', { req });
   },

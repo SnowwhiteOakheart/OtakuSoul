@@ -8,7 +8,7 @@ vi.mock('../services/api', async () => (await import('./mockApi')).apiModule);
 import { api } from '../services/api';
 import { useAppStore } from '../store/useAppStore';
 import { useHubStore } from '../components/hub/hubStore';
-import { SoulHubView } from '../components/hub/SoulHubView';
+import { HubView } from '../components/hub/HubView';
 import { FeedbackHost } from '../components/ui/feedback';
 import { resetApiMocks } from './mockApi';
 import type { CharacterProfile } from '../types';
@@ -35,12 +35,12 @@ beforeEach(() => {
 const renderHub = () =>
   render(
     <>
-      <SoulHubView />
+      <HubView />
       <FeedbackHost />
     </>
   );
 
-describe('SoulHubView', () => {
+describe('HubView', () => {
   it('loads the gateway once, filters locally and caches across tab switches', async () => {
     const user = userEvent.setup();
     renderHub();

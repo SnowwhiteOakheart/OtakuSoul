@@ -36,8 +36,8 @@ export const BackupTab: React.FC = () => {
     characters: true,
     lorebooks: true,
     personas: true,
-    soul_memory: true,
-    soul_stage: true,
+    memory: true,
+    stage: true,
     companion: true,
     settings: true,
   });
@@ -123,8 +123,8 @@ export const BackupTab: React.FC = () => {
             { key: 'characters', label: t('int.group.characters'), icon: Users },
             { key: 'lorebooks', label: t('int.group.lorebooks'), icon: BookOpen },
             { key: 'personas', label: t('int.group.personas'), icon: User },
-            { key: 'soul_memory', label: t('int.group.memory'), icon: Brain },
-            { key: 'soul_stage', label: t('int.group.stage'), icon: Swords },
+            { key: 'memory', label: t('int.group.memory'), icon: Brain },
+            { key: 'stage', label: t('int.group.stage'), icon: Swords },
             { key: 'companion', label: t('int.group.companion'), icon: Bot },
             { key: 'settings', label: t('int.group.settings'), icon: Settings },
           ] satisfies { key: keyof BackupGroupSelection; label: string; icon: LucideIcon }[]).map((item) => (

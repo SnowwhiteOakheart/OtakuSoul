@@ -324,7 +324,7 @@ fn sync_party_memory(
             else {
                 continue;
             };
-            let request = crate::modules::soul_memory_pipeline::SoulMemoryPipelineRequest {
+            let request = crate::modules::memory_pipeline::SoulMemoryPipelineRequest {
                 character_id: character.id.clone(),
                 user_name: user_name.clone(),
                 chat_id: None,
@@ -336,10 +336,9 @@ fn sync_party_memory(
                 include_diary: Some(false),
                 transcript: Some(transcript),
             };
-            if let Err(error) = crate::modules::soul_memory_pipeline::execute_soul_memory_pipeline(
-                &app_state, request,
-            )
-            .await
+            if let Err(error) =
+                crate::modules::memory_pipeline::execute_soul_memory_pipeline(&app_state, request)
+                    .await
             {
                 tracing::warn!("Stage memory sync for {name} failed: {error}");
             }

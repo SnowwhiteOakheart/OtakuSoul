@@ -15,14 +15,20 @@ const SCHEMA_VERSION: u32 = 1;
 const SAFETY_ROTATION_KEEP: usize = 5;
 const MEMORY_DB_ENTRY: &str = "memory/otakusoul.db";
 
+fn default_true() -> bool {
+    true
+}
+
 #[derive(Debug, Clone, Serialize, Deserialize, TS)]
 #[ts(export)]
 pub struct BackupGroupSelection {
     pub characters: bool,
     pub lorebooks: bool,
     pub personas: bool,
-    pub soul_memory: bool,
-    pub soul_stage: bool,
+    #[serde(default = "default_true", alias = "soul_memory")]
+    pub memory: bool,
+    #[serde(default = "default_true", alias = "soul_stage")]
+    pub stage: bool,
     pub companion: bool,
     pub settings: bool,
 }
@@ -33,8 +39,8 @@ impl Default for BackupGroupSelection {
             characters: true,
             lorebooks: true,
             personas: true,
-            soul_memory: true,
-            soul_stage: true,
+            memory: true,
+            stage: true,
             companion: true,
             settings: true,
         }
@@ -240,8 +246,8 @@ impl ProfileBackupManager {
             )?;
         }
 
-        // 4. Soul Stage Scenes & Folders
-        if selection.soul_stage {
+        // 4. Stage Scenes & Folders
+        if selection.stage {
             Self::add_dir_to_zip_archive(
                 &mut zip,
                 options,
@@ -251,8 +257,8 @@ impl ProfileBackupManager {
             )?;
         }
 
-        // 5. Soul Memory (SQLite database with chats, memories and relationships)
-        if selection.soul_memory {
+        // 5. Cognitive Memory (SQLite database with chats, memories and relationships)
+        if selection.memory {
             let db_path = &loc.memory_db;
             if db_path.exists() {
                 // VACUUM INTO yields a consistent snapshot even while the app holds the DB open.
@@ -498,10 +504,10 @@ impl ProfileBackupManager {
                 } else if entry_str.starts_with("personas/") && selection.personas {
                     let sub = entry_str.trim_start_matches("personas/");
                     Some(personas_dir.join(sub))
-                } else if entry_str.starts_with("scenes/") && selection.soul_stage {
+                } else if entry_str.starts_with("scenes/") && selection.stage {
                     let sub = entry_str.trim_start_matches("scenes/");
                     Some(scenes_dir.join(sub))
-                } else if entry_str == MEMORY_DB_ENTRY && selection.soul_memory {
+                } else if entry_str == MEMORY_DB_ENTRY && selection.memory {
                     // The live DB is open; it is swapped in on the next start (see MemoryDb::apply_pending_restore).
                     Some(loc.memory_db.with_extension("db.restore"))
                 } else if entry_str.starts_with("companion/") && selection.companion {
@@ -657,9 +663,17 @@ mod tests {
         let sel = BackupGroupSelection::default();
         assert!(sel.characters);
         assert!(sel.lorebooks);
-        assert!(sel.soul_memory);
-        assert!(sel.soul_stage);
+        assert!(sel.memory);
+        assert!(sel.stage);
         assert!(sel.settings);
+    }
+
+    #[test]
+    fn test_backup_group_selection_legacy_deserialization() {
+        let json = r#"{"characters":true,"lorebooks":false,"personas":true,"soul_memory":true,"soul_stage":false,"companion":true,"settings":true}"#;
+        let sel: BackupGroupSelection = serde_json::from_str(json).unwrap();
+        assert!(sel.memory);
+        assert!(!sel.stage);
     }
 
     fn temp_locations(name: &str) -> (PathBuf, BackupLocations) {
@@ -771,8 +785,8 @@ mod tests {
             characters: false,
             lorebooks: true,
             personas: false,
-            soul_memory: false,
-            soul_stage: false,
+            memory: false,
+            stage: false,
             companion: false,
             settings: false,
         };

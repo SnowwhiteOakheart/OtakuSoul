@@ -344,7 +344,7 @@ export interface RelationshipState {
   updated_at: number;
 }
 
-export interface SoulMemoryPipelineRequest {
+export interface MemoryPipelineRequest {
   character_id: string;
   user_name: string;
   chat_id?: string;
@@ -354,11 +354,12 @@ export interface SoulMemoryPipelineRequest {
   provider?: LlmProviderType;
   recent_turn_count?: number;
   include_diary?: boolean;
-  /** Dialogue to learn from instead of the chat (Soul Stage). */
+  /** Dialogue to learn from instead of the chat (Stage). */
   transcript?: string;
 }
+export type SoulMemoryPipelineRequest = MemoryPipelineRequest;
 
-export interface SoulMemoryPipelineResult {
+export interface MemoryPipelineResult {
   no_change: boolean;
   character_id: string;
   psychology: PsychologyState;
@@ -367,6 +368,7 @@ export interface SoulMemoryPipelineResult {
   diary_entry?: DiaryEntry | null;
   healing_entries: string[];
 }
+export type SoulMemoryPipelineResult = MemoryPipelineResult;
 
 export interface CognitiveOverview {
   psychology: PsychologyState;

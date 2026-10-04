@@ -17,7 +17,7 @@ const LorebookView = lazy(() => import('./components/lorebook/LorebookView').the
 const SettingsView = lazy(() => import('./components/settings/SettingsView').then((module) => ({ default: module.SettingsView })));
 const StageView = lazy(() => import('./components/stage/StageView').then((module) => ({ default: module.StageView })));
 const CompanionView = lazy(() => import('./components/companion/CompanionView').then((module) => ({ default: module.CompanionView })));
-const SoulHubView = lazy(() => import('./components/hub/SoulHubView').then((module) => ({ default: module.SoulHubView })));
+const HubView = lazy(() => import('./components/hub/HubView').then((module) => ({ default: module.HubView })));
 const IntegrationsView = lazy(() => import('./components/integrations/IntegrationsView').then((module) => ({ default: module.IntegrationsView })));
 const FloatingCompanionOverlay = lazy(() => import('./components/companion/FloatingCompanionOverlay').then((module) => ({ default: module.FloatingCompanionOverlay })));
 const CharacterAiAssistantModal = lazy(() => import('./components/characters/CharacterAiAssistantModal').then((module) => ({ default: module.CharacterAiAssistantModal })));
@@ -57,7 +57,7 @@ export function App() {
           <Suspense fallback={<ViewSkeleton label={t('common.loadingView')} />}>
             {activeTab === 'chat' && <ChatView />}
             {activeTab === 'characters' && <CharacterLibraryView />}
-            {activeTab === 'hub' && <SoulHubView />}
+            {activeTab === 'hub' && <HubView />}
             {activeTab === 'lorebooks' && <LorebookView />}
             {activeTab === 'stage' && <StageView />}
             {activeTab === 'companion' && <CompanionView />}

@@ -222,7 +222,7 @@ pub async fn execute_stage_turn(
 
     let ambient_files = list_stage_assets().remove("ambient").unwrap_or_default();
     let planner_system_prompt = format!(
-        r#"[SOUL STAGE — GAME MASTER PLANNER]
+        r#"[STAGE — GAME MASTER PLANNER]
 You are the game master of an immersive tabletop RPG in the genre/tone "{tone}".
 Narrator style: {narrator_style}
 Scene context: {world_context}
@@ -787,7 +787,7 @@ RULES:
 
     // 4. GM Executor: Generate Narrative prose
     let executor_system_prompt = format!(
-        r#"[SOUL STAGE — GAME MASTER NARRATOR]
+        r#"[STAGE — GAME MASTER NARRATOR]
 You are the game master in the genre "{tone}".
 Narrate what happens in this style:
 {narrator_style}
@@ -993,7 +993,7 @@ RULES:
             let companion_system = if let Some(npc) = &npc {
                 let localized_npc = npc.localized(&lang_code);
                 format!(
-                    "[SOUL STAGE — NPC]\nYou are {} ({}).\nPersonality and background: {}\nScene context: {}{lore_section}\nReact in the first person to events you witnessed. Stay in character; keep it concise. Reply in {reply_language}.{}{}",
+                    "[STAGE — NPC]\nYou are {} ({}).\nPersonality and background: {}\nScene context: {}{lore_section}\nReact in the first person to events you witnessed. Stay in character; keep it concise. Reply in {reply_language}.{}{}",
                     localized_npc.name,
                     localized_npc.archetype,
                     localized_npc.personality,
