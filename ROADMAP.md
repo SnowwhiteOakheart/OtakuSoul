@@ -72,9 +72,9 @@ Tabs Abenteuer/Taktik/Kampagne sowie JSON/MD-Export mit interaktiven TTRPG-Mecha
 
 ## ✨ P3 – Nice-to-have
 
-- [ ] E2E-Isolation: `OTAKUSOUL_HOME` trennt Konfiguration und Daten, aber nicht den Webview-Speicher (`localStorage`
-  liegt im normalen App-Ordner) – Testläufe teilen ihn untereinander und mit der echten App. Webview-Datenordner im
-  isolierten Modus ebenfalls umlenken.
+- [x] E2E-Isolation: Mit `OTAKUSOUL_HOME` bekommt das Hauptfenster (in `lib.rs` erzeugt, `create: false`) einen
+  eigenen Webview-Datenordner `<home>/webview`; `localStorage` wird nicht mehr zwischen Testläufen und mit der echten
+  App geteilt. Der Harness prüft das bei jedem Start per Marker (macOS: WKWebView ignoriert den Ordner).
 
 - [ ] Apple Metal: `recommendedMaxWorkingSetSize` statt des gesamten Arbeitsspeichers als GPU-Speicher.
 - [ ] Vision lokal auf echter Hardware testen (Gemma/Qwen-VL mit passender `mmproj`, z. B. aus dem Modell-Hub).

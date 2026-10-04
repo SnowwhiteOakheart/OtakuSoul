@@ -43,6 +43,22 @@ fn allow_app_asset_dirs(app: &tauri::App) {
     }
 }
 
+/// The main window comes from `tauri.conf.json` (`create: false`) and is built here, so an
+/// isolated profile also gets its own webview storage (`localStorage`, IndexedDB, cache).
+/// Otherwise test runs would share it with each other and with the real installation.
+/// macOS ignores the folder (WKWebView has no per-path data store).
+fn create_main_window(app: &tauri::App) -> tauri::Result<()> {
+    let Some(config) = app.config().app.windows.iter().find(|w| w.label == "main") else {
+        return Ok(());
+    };
+    let mut builder = tauri::WebviewWindowBuilder::from_config(app, config)?;
+    if let Some(home) = modules::paths::isolated_home() {
+        builder = builder.data_directory(home.join("webview"));
+    }
+    builder.build()?;
+    Ok(())
+}
+
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
 pub fn run() {
     // Console, in-app log viewer and rotating log file; level via RUST_LOG.
@@ -92,6 +108,7 @@ pub fn run() {
                 modules::paths::set_resource_dir(resource_dir);
             }
             allow_app_asset_dirs(app);
+            create_main_window(app)?;
             if let Some(window) = app.get_webview_window("main") {
                 use tauri_plugin_window_state::WindowExt;
                 let _ = window.restore_state(tauri_plugin_window_state::StateFlags::all());

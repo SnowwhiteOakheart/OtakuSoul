@@ -73,6 +73,8 @@ Einstellungen: `components/settings/sections/*` (Server inkl. Laufzeiten/`mmproj
   passender System-CUDA (`ldconfig`), sonst Vulkan.
 - `cargo test`/`clippy` überschreiben `target/debug/otakusoul` mit einer Version ohne eingebettetes Frontend → E2E nutzt
   `target/e2e`.
+- Das Hauptfenster steht in `tauri.conf.json` mit `create: false` und wird in `lib.rs` (`create_main_window`) gebaut,
+  damit `OTAKUSOUL_HOME` auch den Webview-Speicher umlenkt (`<home>/webview`); der E2E-Harness prüft das per Marker.
 - Bei gesperrter Desktop-Sitzung können WebKit-Screenshots und Animationsabfragen hängen. E2E dann unter
   einem separaten Xvfb-Display ausführen (`xvfb-run npm run e2e`); die Desktop-Sperre nicht verändern.
 - Neue Rust-Felder in Typen, die auch handgeschrieben in `src/types/index.ts` stehen: `src/types/wireCheck.ts` meldet

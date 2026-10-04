@@ -72,7 +72,7 @@ try {
   // Read aloud + planner switching the ambient sound in one turn.
   const rain = await invoke('import_stage_asset', { filePath: writeWav('rain.wav', 2), kind: 'ambient' });
   mock.stats.ambient = rain;
-  // The switch is remembered in the webview's storage (shared between runs): set it, don't toggle.
+  // The switch is remembered in the webview's storage: set it, don't toggle.
   const setReadAloud = async (on) => {
     const toggle = await browser.$('button*=Vorlesen');
     if ((await toggle.getAttribute('aria-pressed')) !== String(on)) await toggle.click();

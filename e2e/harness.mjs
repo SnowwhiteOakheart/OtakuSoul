@@ -66,6 +66,14 @@ export async function launch(settings = {}) {
       logLevel: 'error',
       capabilities: { 'tauri:options': { application: binary } },
     });
+    // Each run gets its own webview storage (<home>/webview): a marker from an earlier run
+    // would mean localStorage is shared with other runs or the real installation.
+    await browser.waitUntil(() => browser.execute(() => document.readyState === 'complete'), { timeout: 30_000 });
+    if (await browser.execute(() => localStorage.getItem('otakusoul.e2eRun'))) {
+      await browser.deleteSession().catch(() => {});
+      throw new Error('Webview-Speicher ist nicht isoliert (Marker eines früheren Laufs gefunden)');
+    }
+    await browser.execute(() => localStorage.setItem('otakusoul.e2eRun', '1'));
     const close = async () => {
       await browser.deleteSession().catch(() => {});
       driver.kill();
