@@ -47,6 +47,7 @@ Abnahme: Ein fehlgeschlagener Speichervorgang leert keine Eingabe und meldet kei
 - [x] Stage-Planung und Kontextvorbereitung einschließlich interner Zusammenfassung abbrechen können.
 - [x] Abbruchkanäle von Chat und Soul Stage trennen, einschließlich Stage-Stopp im Frontend.
 - [x] Parallele native Chat-Anfragen und konkurrierende Stage-Runden, Neu-Generieren und Rast vor ihrem Start ablehnen.
+- [x] Warten auf Frontend-Promptvorbereitung und Datei-Lesen nach erfolgreichem Abbruch sofort beenden; späte Resultate verwerfen.
 - [x] Native Text-, Gedanken- und Abschlussereignisse an eine eindeutige Generierungs-ID binden.
 - [x] Sitzungsabrufe ordnen, alte Verläufe während des Ladens ausblenden und Lesefehler wiederholbar anzeigen.
 - [x] Wartende HTTP-Anfragen und inaktive SSE-Streams bei Backend-Abbruch beenden.
@@ -583,3 +584,43 @@ TypeScript bestehen. Der aktuelle App-Build besteht unter Xvfb den erweiterten
 `45-stage-planungsabbruch.png` und `46-stage-rundenende-abbruch.png` wurden erneut geprüft:
 Die ursprüngliche Runde bleibt nach abgelehnten Zusatzaufrufen bedienbar; Stopp ist erreichbar.
 Die vollständige Test-Suite wurde für dieses abgegrenzte Paket nicht erneut gestartet.
+
+
+### Sechzehntes Arbeitspaket – 04.10.2026
+
+Senden, Neu-Generieren und Fortsetzen besitzen je einen AbortController für die Vorbereitung.
+Nach erfolgreichem nativen Stopp beendet `waitWithAbort` das Warten auf Promptaufbau und
+Datei-Lesen, ohne deren Ergebnis abzuwarten. Späte Erfolge und Fehler werden konsumiert;
+sie starten keine neue Modell-Anfrage und beeinflussen keinen späteren Lauf. Ein gescheiterter
+nativer Abbruch lässt die Vorbereitung dagegen weiterlaufen und behält die bestehende Fehlermeldung.
+
+Lorebook-Auswertung und deren Ersatzabfragen sowie Prompt-Zusammenbau nutzen dasselbe Signal.
+Abgebrochene Lore-Auswertung verändert weder Spannung noch Warnton und startet keine weiteren
+Fallback-Abfragen. Datei-Lesen prüft das Signal vor der Base64-Aufbereitung. Anhänge werden
+nacheinander vorbereitet und gespeichert, damit Stopp weitere Uploads verhindert.
+
+Bereits gestartete native Datei-/Datenbankschreibvorgänge werden weiterhin abgewartet und behalten
+die Sendesperre. Die darunterliegende Blob-/IPC-Arbeit wird nicht physisch beendet; ihr spätes
+Resultat wird verworfen. Bereits geschriebene Anhänge können ohne gespeicherte Nutzernachricht
+zurückbleiben. Ungespeicherte Texte/Dateien werden über den bestehenden Composer-Fehlerpfad erhalten.
+Gespeicherte Nutzernachrichten bleiben bei abgebrochener Promptvorbereitung im Verlauf.
+
+Gezielte Tests prüfen sofortiges Ende wartender Vorbereitung für alle drei Chat-Aktionen,
+späte Datei-/Promptresultate nach einem neuen Lauf und das Abwarten begonnener Upload-Schreibvorgänge.
+Der bisherige Uploadfehlertest erhält außerdem eine explizite Datei-Leseimplementierung,
+damit er den tatsächlichen Uploadfehler und nicht eine fehlende jsdom-Blob-Methode prüft.
+Zwei Tests mit der echten Lore-Promptfunktion prüfen späte Erfolge und Fehler ohne Nebenwirkungen.
+Der Chat-E2E-Test hält die Prompt-IPC-Transportantwort an, stoppt über den Composer und prüft
+Sendebereitschaft ohne Promptresultat, wirkungslose späte Antwort und den nächsten normalen Chatlauf.
+
+Offen bleiben Wiederaufnahme abgebrochener Antworten, Bereinigung verwaister Anhänge und
+Koordination von Stage-Verlaufsänderungen mit laufenden Runden.
+
+Validierung gezielt: 39 Frontend-Tests aus Generierungs-, Sitzungs-, Stream- und Prompt-Abbruchtests
+bestehen; ein zusätzlich ergänzter Test für fehlgeschlagenen nativen Stopp besteht ebenfalls
+(40 geprüfte Fälle insgesamt). Lint und TypeScript bestehen. Die frisch gebaute App besteht unter
+Xvfb den erweiterten `chat-generation-errors.mjs`. Im ersten Lauf konnte die Testvorrichtung die
+schreibgeschützte Tauri-Aufruffunktion nicht ersetzen; die korrigierte Vorrichtung hält stattdessen
+die Prompt-Transportantwort über fetch an. Screenshot `48-chat-vorbereitungsabbruch.png` wurde
+geprüft: Die gespeicherte Spielerzeile bleibt sichtbar und der neue Entwurf ist sendebereit.
+Die vollständige Suite und unveränderte Rust-Tests wurden nicht erneut ausgeführt.

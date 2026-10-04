@@ -109,7 +109,10 @@ Einstellungen: `components/settings/sections/*` (Server inkl. Laufzeiten/`mmproj
   Nutzernachricht, statt sie erneut einzufügen. Fehler vor deren Speicherung werden an den Composer gegeben,
   der Text/Dateien erhält. HUD, Kontextanzeige und Zusammenfassung ändern sich erst nach Antwortspeicherung.
   `generationChatId` begrenzt native Stream-Anzeigen auf den zugehörigen Chat. Abbruch stoppt auch eine
-  noch laufende Promptvorbereitung; die Sperre bleibt bis zum Abschluss des ursprünglichen Vorgangs bestehen.
+  noch laufende Promptvorbereitung: Jeder Lauf besitzt einen AbortController für Datei-Lesen und Promptaufbau.
+  Nach erfolgreichem nativen Abbruch beendet `waitWithAbort` das Warten sofort; späte Lore-Ergebnisse dürfen
+  weder Spannung ändern noch Ersatzabfragen starten. Anhänge werden nacheinander verarbeitet.
+  Native Inferenz und bereits gestartete Datei-/Nachrichten-Schreibvorgänge behalten ihre Sperre bis zum Abschluss.
   Ein bereits laufender Datenbankschreibvorgang wird durch Abbruch nicht rückgängig gemacht.
 - Native Chat-Streams: Senden, Swipe, Fortsetzen und Wiederholen erzeugen je eine neue `generationId`.
   `send_chat_message` erhält sie als eigenes Argument und gibt sie als `generation_id` in Text-, Gedanken-

@@ -19,6 +19,7 @@ import type {
 import type { SliceCreator } from '../storeTypes';
 import { errorMessage } from '../../utils/errors';
 import { fileToBase64 } from '../../utils/files';
+import { waitWithAbort } from '../../utils/cancellation';
 import { fillCardMacros, languageCode, localizeCard } from '../../utils/cardI18n';
 
 type GenerationFailure = {
@@ -114,12 +115,14 @@ export const createChatSlice: SliceCreator<ChatSlice> = (set, get) => {
   let cancelled = false;
   let generationSequence = 0;
   let abortPending: Promise<void> | null = null;
+  let generationPreparation: AbortController | null = null;
   const isCurrentContext = (chatId: string, charId: string | undefined) =>
     generationSessionRequest === sessionRequest && get().activeChatId === chatId && get().activeCharacter?.id === charId;
   const inContext = (chatId: string, charId: string | undefined) =>
     !cancelled && isCurrentContext(chatId, charId);
   const finishGeneration = async () => {
     if (abortPending) await abortPending.catch(() => {});
+    generationPreparation = null;
     set({ isGenerating: false, generationChatId: null, streamingText: '', streamingThought: '' });
   };
   const beginSessionLoad = (chatId: string | null) => {
@@ -445,11 +448,13 @@ export const createChatSlice: SliceCreator<ChatSlice> = (set, get) => {
     cancelled = false;
     generationSessionRequest = sessionRequest;
     generationSequence += 1;
+    const preparation = new AbortController();
+    generationPreparation = preparation;
     const generationId = crypto.randomUUID();
     set({ isGenerating: true, generationId, generationChatId: activeChatId, generationFailure: null, streamingText: '', streamingThought: '' });
 
     try {
-      const prompt = await resolvePromptWithLore(get(), priorFlat);
+      const prompt = await waitWithAbort(() => resolvePromptWithLore(get(), priorFlat, undefined, preparation.signal), preparation.signal);
       if (!inContext(activeChatId, activeCharacter.id)) return;
       const systemPromptMsg: ChatMessage = { role: 'system', content: prompt.system };
 
@@ -543,11 +548,13 @@ export const createChatSlice: SliceCreator<ChatSlice> = (set, get) => {
     cancelled = false;
     generationSessionRequest = sessionRequest;
     generationSequence += 1;
+    const preparation = new AbortController();
+    generationPreparation = preparation;
     const generationId = crypto.randomUUID();
     set({ isGenerating: true, generationId, generationChatId: activeChatId, generationFailure: null, streamingText: '', streamingThought: '' });
 
     try {
-      const prompt = await resolvePromptWithLore(get(), historyFlat);
+      const prompt = await waitWithAbort(() => resolvePromptWithLore(get(), historyFlat, undefined, preparation.signal), preparation.signal);
       if (!inContext(activeChatId, activeCharacter.id)) return;
       const systemPromptMsg: ChatMessage = { role: 'system', content: prompt.system };
       const continueInstruction: ChatMessage = {
@@ -657,6 +664,8 @@ export const createChatSlice: SliceCreator<ChatSlice> = (set, get) => {
     cancelled = false;
     generationSessionRequest = sessionRequest;
     generationSequence += 1;
+    const preparation = new AbortController();
+    generationPreparation = preparation;
     const generationId = crypto.randomUUID();
     set({ isGenerating: true, generationId, generationChatId: activeChatId, generationFailure: null, streamingText: '', streamingThought: '' });
     let userStored: StoredChatMessage | undefined;
@@ -681,9 +690,14 @@ export const createChatSlice: SliceCreator<ChatSlice> = (set, get) => {
       userStored = storedMessageId ? get().storedMessages.find((m) => m.id === storedMessageId && m.role === 'user' && m.chat_id === chatId) : undefined;
       if (storedMessageId && !userStored) return;
       if (!userStored) {
-        const attachments: Attachment[] = await Promise.all(
-          files.map(async (file) => api.saveAttachment(chatId, file.name, await fileToBase64(file))),
-        );
+        const attachments: Attachment[] = [];
+        for (const file of files) {
+          const base64 = await fileToBase64(file, preparation.signal);
+          preparation.signal.throwIfAborted();
+          // Native writes cannot be rolled back: wait for this one before unlocking.
+          attachments.push(await api.saveAttachment(chatId, file.name, base64));
+          preparation.signal.throwIfAborted();
+        }
         if (cancelled) throw new Error(translate('chat.sendCancelled'));
         if (!inContext(chatId, activeCharacter?.id)) return;
         userStored = await api.addChatMessage(chatId, 'user', content, null, attachments);
@@ -707,7 +721,7 @@ export const createChatSlice: SliceCreator<ChatSlice> = (set, get) => {
       let systemPromptMsg: ChatMessage | null = null;
       let prompt: AssembledPrompt | null = null;
       if (activeCharacter) {
-        prompt = await resolvePromptWithLore(get(), updatedFlat, content);
+        prompt = await waitWithAbort(() => resolvePromptWithLore(get(), updatedFlat, content, preparation.signal), preparation.signal);
         systemPromptMsg = { role: 'system', content: prompt.system };
       }
 
@@ -800,7 +814,7 @@ export const createChatSlice: SliceCreator<ChatSlice> = (set, get) => {
       }
     } catch (e) {
       console.error('Chat error:', e);
-      if (!userStored) throw e; // The composer restores an unsaved draft only.
+      if (!userStored) throw preparation.signal.aborted ? new Error(translate('chat.sendCancelled')) : e; // Restore an unsaved draft only.
       if (activeChatId && inContext(activeChatId, activeCharacter?.id)) {
         set({ generationFailure: { chatId: activeChatId, message: errorMessage(e), kind: 'send', messageId: userStored.id } });
       }
@@ -813,6 +827,7 @@ export const createChatSlice: SliceCreator<ChatSlice> = (set, get) => {
     if (!get().isGenerating) return;
     if (abortPending) return abortPending;
     const sequence = generationSequence;
+    const preparation = generationPreparation;
     const chatId = get().generationChatId;
     const generationId = get().generationId;
     cancelled = true;
@@ -821,7 +836,8 @@ export const createChatSlice: SliceCreator<ChatSlice> = (set, get) => {
     abortPending = pending;
     try {
       await pending;
-      // Keep the lock until the original operation settles; the native stream is shared.
+      preparation?.abort();
+      // Native inference/writes still retain their lock until the original operation settles.
     } catch (e) {
       if (sequence === generationSequence) {
         cancelled = false;

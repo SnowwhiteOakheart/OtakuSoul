@@ -1,5 +1,6 @@
 import { api } from '../services/api';
 import { soundFx } from '../services/soundFx';
+import { waitWithAbort } from '../utils/cancellation';
 import type { AssembledPrompt, ChatMessage, LorebookEntry, LlmProviderType } from '../types';
 import type { AppStoreState } from './storeTypes';
 
@@ -7,7 +8,9 @@ export async function resolvePromptWithLore(
   state: AppStoreState,
   recentMessages: ChatMessage[],
   latestUserText?: string,
+  signal?: AbortSignal,
 ): Promise<AssembledPrompt> {
+  signal?.throwIfAborted();
   const {
     activeCharacter,
     promptTemplate,
@@ -72,11 +75,12 @@ export async function resolvePromptWithLore(
 
   if (candidateLorebooks.length > 0) {
     try {
-      const evalRes = await api.evaluateMultiLorebooks(
+      const evalRes = await waitWithAbort(() => api.evaluateMultiLorebooks(
         candidateLorebooks,
         recentContext,
         effectiveTension
-      );
+      ), signal);
+      signal?.throwIfAborted();
       passiveEntries = evalRes.passive_entries;
       activeDirectives = evalRes.active_entries;
 
@@ -87,16 +91,17 @@ export async function resolvePromptWithLore(
         state.setCurrentTension(effectiveTension);
       }
     } catch (e) {
+      signal?.throwIfAborted();
       console.warn('Failed evaluateMultiLorebooks, falling back:', e);
       for (const lb of candidateLorebooks) {
-        const entries = await api.evaluateLorebookContext(lb, recentContext);
+        const entries = await waitWithAbort(() => api.evaluateLorebookContext(lb, recentContext), signal);
         passiveEntries.push(...entries);
       }
     }
   }
 
   // 4. Assemble system prompt
-  return await api.assemblePrompt({
+  return await waitWithAbort(() => api.assemblePrompt({
     char_name: activeCharacter.card.data.name,
     user_name: activePersona.name,
     character: activeCharacter.card.data,
@@ -110,7 +115,7 @@ export async function resolvePromptWithLore(
     author_note_depth: activeSession?.author_note_depth,
     chat_summary: activeSession?.summary || undefined,
     template: promptTemplate ?? undefined,
-  });
+  }), signal);
 }
 
 /** Endpoint, key, model and provider of the chat model the user selected (local or cloud). */

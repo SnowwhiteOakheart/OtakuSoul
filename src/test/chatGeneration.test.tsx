@@ -85,7 +85,9 @@ describe('chat generation failures', () => {
   });
   it('releases the lock and rejects failed uploads without saving a user message', async () => {
     vi.mocked(api.saveAttachment).mockRejectedValueOnce(new Error('Upload failed'));
-    await expect(useAppStore.getState().sendMessage('Hello', [new File(['text'], 'test.txt')])).rejects.toThrow('Upload failed');
+    const file = new File(['text'], 'test.txt');
+    Object.defineProperty(file, 'arrayBuffer', { value: async () => new ArrayBuffer(0) });
+    await expect(useAppStore.getState().sendMessage('Hello', [file])).rejects.toThrow('Upload failed');
     expect(api.addChatMessage).not.toHaveBeenCalled();
     expect(useAppStore.getState().isGenerating).toBe(false);
   });
@@ -160,15 +162,66 @@ describe('chat generation failures', () => {
     expect(api.addChatMessage).toHaveBeenCalledOnce();
     expect(useAppStore.getState().isGenerating).toBe(false);
   });
-  it('prevents the native request after aborting prompt preparation', async () => {
+  it('ends prompt preparation immediately and ignores its late result after a new request', async () => {
     let finish!: (value: AssembledPrompt) => void;
     vi.mocked(resolvePromptWithLore).mockImplementationOnce(() => new Promise((resolve) => { finish = resolve; }));
     const pending = useAppStore.getState().sendMessage('Hello');
     await waitFor(() => expect(resolvePromptWithLore).toHaveBeenCalledOnce());
     await useAppStore.getState().abortGeneration();
-    finish(prompt);
     await pending;
     expect(api.sendChatMessage).not.toHaveBeenCalled();
+    expect(useAppStore.getState().isGenerating).toBe(false);
+    await useAppStore.getState().sendMessage('New request');
+    const history = useAppStore.getState().storedMessages;
+    finish(prompt);
+    await Promise.resolve();
+    expect(api.sendChatMessage).toHaveBeenCalledOnce();
+    expect(useAppStore.getState().storedMessages).toBe(history);
+  });
+  it.each(['regenerateMessageSwipe', 'continueChatMessage'] as const)('ends stalled prompt preparation for %s', async (action) => {
+    useAppStore.setState({ storedMessages: [message, reply] });
+    vi.mocked(resolvePromptWithLore).mockImplementationOnce(() => new Promise(() => {}));
+    const pending = useAppStore.getState()[action](reply.id);
+    await waitFor(() => expect(resolvePromptWithLore).toHaveBeenCalledOnce());
+    await useAppStore.getState().abortGeneration();
+    await pending;
+    expect(useAppStore.getState().isGenerating).toBe(false);
+    expect(api.sendChatMessage).not.toHaveBeenCalled();
+  });
+  it('restores an unsaved draft after stopping a stalled file read without uploading late bytes', async () => {
+    let finish!: (value: ArrayBuffer) => void;
+    const file = new File(['text'], 'test.txt');
+    const read = vi.fn(() => new Promise<ArrayBuffer>((resolve) => { finish = resolve; }));
+    Object.defineProperty(file, 'arrayBuffer', { value: read });
+    const pending = useAppStore.getState().sendMessage('Hello', [file]);
+    const rejected = expect(pending).rejects.toThrow('cancel');
+    await waitFor(() => expect(read).toHaveBeenCalledOnce());
+    await useAppStore.getState().abortGeneration();
+    await rejected;
+    expect(useAppStore.getState().isGenerating).toBe(false);
+    await useAppStore.getState().sendMessage('New request');
+    finish(new ArrayBuffer(0));
+    await Promise.resolve();
+    expect(api.saveAttachment).not.toHaveBeenCalled();
+    expect(api.sendChatMessage).toHaveBeenCalledOnce();
+  });
+  it('waits for an already started attachment write and skips remaining files after stop', async () => {
+    let finish!: (value: Awaited<ReturnType<typeof api.saveAttachment>>) => void;
+    vi.mocked(api.saveAttachment).mockImplementationOnce(() => new Promise((resolve) => { finish = resolve; }));
+    const files = ['first.txt', 'second.txt'].map((name) => {
+      const file = new File(['text'], name);
+      Object.defineProperty(file, 'arrayBuffer', { value: async () => new ArrayBuffer(0) });
+      return file;
+    });
+    const pending = useAppStore.getState().sendMessage('Hello', files);
+    const rejected = expect(pending).rejects.toThrow('cancel');
+    await waitFor(() => expect(api.saveAttachment).toHaveBeenCalledOnce());
+    await useAppStore.getState().abortGeneration();
+    expect(useAppStore.getState().isGenerating).toBe(true);
+    finish({} as Awaited<ReturnType<typeof api.saveAttachment>>);
+    await rejected;
+    expect(api.saveAttachment).toHaveBeenCalledOnce();
+    expect(api.addChatMessage).not.toHaveBeenCalled();
     expect(useAppStore.getState().isGenerating).toBe(false);
   });
   it('retains a user message that finishes saving during abort', async () => {
@@ -181,6 +234,20 @@ describe('chat generation failures', () => {
     await pending;
     expect(useAppStore.getState().storedMessages).toEqual([message]);
     expect(api.sendChatMessage).not.toHaveBeenCalled();
+  });
+  it('keeps prompt preparation usable if native cancellation fails', async () => {
+    let finish!: (value: AssembledPrompt) => void;
+    vi.mocked(resolvePromptWithLore).mockImplementationOnce(() => new Promise((resolve) => { finish = resolve; }));
+    vi.mocked(api.abortChatGeneration).mockRejectedValueOnce(new Error('Stop failed'));
+    const pending = useAppStore.getState().sendMessage('Hello');
+    await waitFor(() => expect(resolvePromptWithLore).toHaveBeenCalledOnce());
+    await expect(useAppStore.getState().abortGeneration()).rejects.toThrow('Stop failed');
+    expect(useAppStore.getState().isGenerating).toBe(true);
+    finish(prompt);
+    await pending;
+    expect(api.sendChatMessage).toHaveBeenCalledOnce();
+    expect(useAppStore.getState().storedMessages).toEqual([message, reply]);
+    expect(useAppStore.getState().isGenerating).toBe(false);
   });
   it('does not overwrite a different chat when an assistant write completes late', async () => {
     let finish!: (value: StoredChatMessage) => void;
