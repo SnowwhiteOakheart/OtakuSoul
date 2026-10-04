@@ -12,7 +12,7 @@ const selectTab = async (index) => {
   await button.click();
 };
 try {
-  const open = browser.$('button[aria-label="Kognitiven Seelenspeicher öffnen"]');
+  const open = browser.$('button[aria-label="Kognitives Gedächtnis öffnen"]');
   await open.waitForDisplayed({ timeout: 20_000 });
   await browser.$('button=Bild').click();
   await open.click();

@@ -8,7 +8,7 @@ const { browser, home, close } = await launch();
 const database = path.join(home, 'data', 'otakusoul.db');
 const sql = (statement) => execFileSync('sqlite3', [database, statement], { encoding: 'utf8' }).trim();
 const open = async () => {
-  const button = browser.$('button[aria-label="Kognitiven Seelenspeicher öffnen"]');
+  const button = browser.$('button[aria-label="Kognitives Gedächtnis öffnen"]');
   await button.waitForDisplayed({ timeout: 20_000 });
   await button.click();
 };

@@ -38,3 +38,6 @@ pub mod tts_local;
 pub mod updater;
 pub mod voice;
 pub mod web_server;
+
+pub const APP_NAME: &str = "OtakuSoul";
+pub const APP_DEFAULT_COMPANION_NAME: &str = "Companion";

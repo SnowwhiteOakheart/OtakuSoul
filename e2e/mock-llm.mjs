@@ -62,7 +62,7 @@ export function startMockLlm() {
         stats.lastChatSystemPrompt = system;
         stats.lastChatMessages = request.messages ?? [];
       }
-      const isRouting = system.includes('[SOUL STAGE — ROUTING]');
+      const isRouting = system.includes('[SOUL STAGE — ROUTING]') || system.includes('[STAGE — ROUTING]');
       if (isRouting) {
         stats.routing = (stats.routing ?? 0) + 1;
         stats.lastRoutingPrompt = system;
@@ -72,8 +72,8 @@ export function startMockLlm() {
         stats.memoryRouter = (stats.memoryRouter ?? 0) + 1;
         (stats.memoryRequests ??= []).push(JSON.stringify(request.messages));
       }
-      const isArcArchive = system.includes('[SOUL STAGE — ARC ARCHIVE]');
-      const isAudit = system.includes('[SOUL STAGE — CONSISTENCY]');
+      const isArcArchive = system.includes('[SOUL STAGE — ARC ARCHIVE]') || system.includes('[STAGE — ARC ARCHIVE]');
+      const isAudit = system.includes('[SOUL STAGE — CONSISTENCY]') || system.includes('[STAGE — CONSISTENCY]');
       if (isArcArchive) { stats.arcArchive = (stats.arcArchive ?? 0) + 1; stats.lastArcArchivePrompt = system; }
       if (isAudit) { stats.audit = (stats.audit ?? 0) + 1; stats.lastAuditPrompt = system; }
       const isPlanner = system.includes('GAME MASTER PLANNER');
@@ -83,7 +83,7 @@ export function startMockLlm() {
         stats.stageNarrator += 1;
         stats.lastNarratorMessages = request.messages ?? [];
       }
-      const isNpc = system.includes('[SOUL STAGE — NPC]');
+      const isNpc = system.includes('[SOUL STAGE — NPC]') || system.includes('[STAGE — NPC]');
       if (isNpc) { stats.stageNpc = (stats.stageNpc ?? 0) + 1; stats.lastNpcMessages = request.messages ?? []; }
       const isCompanion = !isNpc && (system.includes('React in the first person') || system.includes('React to what is happening'));
       if (isCompanion) {

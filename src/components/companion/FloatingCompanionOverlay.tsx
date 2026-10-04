@@ -14,6 +14,7 @@ import {
   Brain,
 } from 'lucide-react';
 import { useTranslation } from '../../i18n';
+import { APP_DEFAULT_COMPANION_NAME } from '../../constants/branding';
 
 export const FloatingCompanionOverlay: React.FC = () => {
   const { t, tEmotion, tOptional } = useTranslation();
@@ -83,7 +84,7 @@ export const FloatingCompanionOverlay: React.FC = () => {
           <div className="flex items-center gap-2">
             <span className="w-2.5 h-2.5 rounded-full bg-emerald-400 animate-pulse" />
             <span className="text-xs font-bold font-mono text-cyan-300">
-              {activeCharacter?.card?.data?.name || 'Soul Companion'}
+              {activeCharacter?.card?.data?.name || APP_DEFAULT_COMPANION_NAME}
             </span>
           </div>
 

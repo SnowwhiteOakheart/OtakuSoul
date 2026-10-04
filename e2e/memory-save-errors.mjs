@@ -8,8 +8,8 @@ const { browser, home, close } = await launch();
 const database = path.join(home, 'data', 'otakusoul.db');
 const sql = (statement) => execFileSync('sqlite3', [database, statement], { encoding: 'utf8' }).trim();
 try {
-  await browser.$('button[aria-label="Kognitiven Seelenspeicher öffnen"]').waitForDisplayed({ timeout: 20_000 });
-  await browser.$('button[aria-label="Kognitiven Seelenspeicher öffnen"]').click();
+  await browser.$('button[aria-label="Kognitives Gedächtnis öffnen"]').waitForDisplayed({ timeout: 20_000 });
+  await browser.$('button[aria-label="Kognitives Gedächtnis öffnen"]').click();
   const memoryTab = browser.$('button*=Episoden & Themen');
   await memoryTab.scrollIntoView({ block: 'nearest', inline: 'center' });
   await memoryTab.click();

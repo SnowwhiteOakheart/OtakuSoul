@@ -69,7 +69,7 @@ try {
   assert.equal(sql(`SELECT count(*) FROM chat_messages WHERE chat_id = '${newChat}' AND role = 'user';`), '1');
   // The inverse: Chat cancellation must not terminate a pending Stage narrator.
   mock.stats.stallStage = true;
-  await browser.$('button=Soul Stage').click();
+  await browser.$('button=Stage').click();
   const stageInput = browser.$('form textarea');
   await stageInput.waitForDisplayed({ timeout: 15_000 });
   await stageInput.setValue('Ich sehe mich um.');

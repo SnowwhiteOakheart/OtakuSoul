@@ -54,8 +54,8 @@ describe('SoulHubView', () => {
     await user.clear(screen.getByRole('searchbox'));
     expect(await screen.findByText('1 entry')).toBeInTheDocument();
 
-    await user.click(screen.getByRole('tab', { name: /Soul Gateway/ }));
-    expect(screen.getByRole('tab', { name: /Soul Gateway/ })).toHaveAttribute('aria-selected', 'true');
+    await user.click(screen.getByRole('tab', { name: /Curated characters/ }));
+    expect(screen.getByRole('tab', { name: /Curated characters/ })).toHaveAttribute('aria-selected', 'true');
     expect(api.fetchSoulGatewayRegistry).toHaveBeenCalledTimes(1);
   });
 

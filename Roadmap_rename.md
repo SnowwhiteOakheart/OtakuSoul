@@ -88,26 +88,26 @@ Statt Markenpräfixe tief im Code zu verankern, benennen wir Subsysteme rein nac
 ## 📌 Phase 3: Zentrales Branding & neutrale UI-Begriffe
 > **Ziel:** Kein statisch hardcodierter App-Name mehr in Texten. Subsysteme heißen in der UI rein funktional. Ein zukünftiger Titelwechsel ändert nur noch 1 Konstante.
 
-- [ ] **3.1 Zentrale Branding-Konstante etablieren**
-  - [ ] Frontend-Konstante anlegen (z. B. in `src/constants/branding.ts`):
+- [x] **3.1 Zentrale Branding-Konstante etablieren**
+  - [x] Frontend-Konstante anlegen (in `src/constants/branding.ts`):
     ```typescript
-    export const APP_NAME = "OtakuSoul"; // Zukünftig mit 1 Änderung austauschbar
-    export const APP_DEFAULT_COMPANION_NAME = "Companion";
+    export const APP_NAME = 'OtakuSoul'; // Zukünftig mit 1 Änderung austauschbar
+    export const APP_DEFAULT_COMPANION_NAME = 'Companion';
     ```
-  - [ ] Rust-Backend Konstante (z. B. in `paths.rs` oder `settings.rs`): App-Titel für Fallbacks definieren.
-- [ ] **3.2 Navigation & Hauptmenü neutralisieren**
-  - [ ] `src/components/navigation.ts`:
+  - [x] Rust-Backend Konstante (in `src-tauri/src/modules/mod.rs`): App-Titel für Fallbacks und Default-Companion-Name definiert.
+- [x] **3.2 Navigation & Hauptmenü neutralisieren**
+  - [x] `src/components/navigation.ts` & Locales:
     - Tab-Labels: **Stage**, **Hub**, **Companion**, **Chat**, **Charaktere**, **Einstellungen**.
-  - [ ] `src/components/Sidebar.tsx` & `Header.tsx`: Neutrale Tooltips.
-- [ ] **3.3 Modul-Ansichten neutralisieren**
-  - [ ] `SoulHubView.tsx`: Umbenennung des Headers in **Community Hub** (oder **Hub**).
-  - [ ] Tabs: „Kuratierte Charaktere“ (Gateway), „Chub AI“, „Lorebooks“, „Stage-Szenarien“.
-  - [ ] `CognitiveMemoryDrawer.tsx`: Header-Titel neutral auf **Kognitives Gedächtnis** / **Cognitive Memory** setzen.
-  - [ ] `StageView.tsx`: Überschriften rein auf **Stage** / **Spielleiter** ausrichten.
-  - [ ] `CompanionView.tsx` & `FloatingCompanionOverlay.tsx`: Standard-Name auf **Companion** setzen.
-- [ ] **3.4 Wörterbücher (i18n) aktualisieren (`de.ts`, `en.ts`, `ru.ts`)**
-  - [ ] Alle Modul-Schlüssel neutral formulieren (Stage, Cognitive Memory, Companion, Hub).
-  - [ ] Dynamische Platzhalter wie `{{appName}}` nutzen, wo der Programmname im Text vorkommt.
+  - [x] `src/components/Sidebar.tsx` & `Header.tsx`: Neutrale Tooltips und dynamisches Rendering von `{APP_NAME}`.
+- [x] **3.3 Modul-Ansichten neutralisieren**
+  - [x] `SoulHubView.tsx`: Umbenennung des Headers in **Community Hub** (`hub.title`).
+  - [x] Tabs: „Kuratierte Charaktere“ (Gateway), „Chub AI“, „Lorebooks“, „Stage-Szenarien“.
+  - [x] `CognitiveMemoryDrawer.tsx`: Header-Titel neutral auf **Kognitives Gedächtnis** / **Cognitive Memory** (`memory.title`).
+  - [x] `StageView.tsx`: Überschriften rein auf **Stage** / **Spielleiter** ausgerichtet.
+  - [x] `CompanionView.tsx` & `FloatingCompanionOverlay.tsx`: Standard-Name auf **Companion** (`APP_DEFAULT_COMPANION_NAME`).
+- [x] **3.4 Wörterbücher (i18n) aktualisieren (`de.ts`, `en.ts`, `ru.ts`)**
+  - [x] Alle Modul-Schlüssel neutral formuliert (Stage, Cognitive Memory, Companion, Hub).
+  - [x] Dynamische Platzhalter wie `{{appName}}` und `{APP_NAME}` für flexible Wiederverwendbarkeit.
 
 ---
 

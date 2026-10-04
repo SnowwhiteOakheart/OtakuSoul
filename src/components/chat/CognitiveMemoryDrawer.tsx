@@ -98,7 +98,7 @@ export const CognitiveMemoryDrawer: React.FC<CognitiveMemoryDrawerProps> = ({
             </div>
             <div>
               <h2 id="memory-drawer-title" className="text-base font-bold text-slate-100 flex items-center gap-2">
-                Soul Memory 2.0
+                {t('memory.title')}
                 <span className="text-xs px-2 py-0.5 rounded-full bg-accent-900/50 text-accent-300 font-normal border border-accent-500/30">
                   {charName}
                 </span>

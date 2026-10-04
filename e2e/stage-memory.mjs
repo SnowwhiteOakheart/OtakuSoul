@@ -9,7 +9,7 @@ const invoke = (command, args = {}) => browser.execute((cmd, payload) => window.
 const shot = (name) => browser.saveScreenshot(path.join(screenshotDir, `${name}.png`));
 
 try {
-  await browser.$('button=Soul Stage').waitForExist({ timeout: 20_000 });
+  await browser.$('button=Stage').waitForExist({ timeout: 20_000 });
   const scene = await invoke('get_stage_state');
   await invoke('save_stage_scene', {
     sceneState: {
@@ -20,7 +20,7 @@ try {
       turns_since_audit: 6,
     },
   });
-  await browser.$('button=Soul Stage').click();
+  await browser.$('button=Stage').click();
   const input = await browser.$('form textarea');
   await input.waitForDisplayed({ timeout: 15_000 });
   const turn = async (text) => {

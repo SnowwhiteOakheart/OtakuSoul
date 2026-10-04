@@ -11,8 +11,8 @@ const shot = (name) => browser.saveScreenshot(path.join(screenshotDir, `${name}.
 const speakers = async (from) => (await invoke('get_stage_state')).chat_log.slice(from)
   .filter((m) => m.sender_role === 'companion' || m.sender_role === 'npc').map((m) => m.sender_name);
 try {
-  await browser.$('button=Soul Stage').waitForExist({ timeout: 20_000 });
-  await browser.$('button=Soul Stage').click();
+  await browser.$('button=Stage').waitForExist({ timeout: 20_000 });
+  await browser.$('button=Stage').click();
   const stageInput = await browser.$('form textarea');
   await stageInput.waitForDisplayed({ timeout: 15_000 });
   const waitTurn = async (plannerBefore) => {

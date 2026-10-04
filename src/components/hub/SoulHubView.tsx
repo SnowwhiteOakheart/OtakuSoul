@@ -13,7 +13,7 @@ import { UrlImportModal } from './UrlImportModal';
 type HubTab = 'soul_gateway' | 'chub_ai' | 'lorebooks' | 'scenes';
 
 const TABS: { id: HubTab; label: string | TranslationKey; translate: boolean; icon: LucideIcon; iconClass: string; search: TranslationKey }[] = [
-  { id: 'soul_gateway', label: 'Soul Gateway', translate: false, icon: Sparkles, iconClass: 'text-accent-400', search: 'hub.searchGateway' },
+  { id: 'soul_gateway', label: 'hub.tabGateway', translate: true, icon: Sparkles, iconClass: 'text-accent-400', search: 'hub.searchGateway' },
   { id: 'chub_ai', label: 'Chub AI', translate: false, icon: Globe, iconClass: 'text-cyan-400', search: 'hub.searchChub' },
   { id: 'lorebooks', label: 'hub.tabLorebooks', translate: true, icon: BookOpen, iconClass: 'text-amber-400', search: 'hub.searchLorebooks' },
   { id: 'scenes', label: 'hub.tabScenes', translate: true, icon: Dice5, iconClass: 'text-emerald-400', search: 'hub.searchScenes' },
@@ -50,7 +50,7 @@ export const SoulHubView = () => {
           </div>
           <div>
             <div className="flex items-center gap-2">
-              <h1 className="text-base font-bold text-slate-100">Soul Hub</h1>
+              <h1 className="text-base font-bold text-slate-100">{t('hub.title')}</h1>
               <span className="text-xs px-2 py-0.5 rounded-full bg-accent-500/20 text-accent-300 font-mono">
                 {t('hub.subtitleBadge')}
               </span>

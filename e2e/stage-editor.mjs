@@ -8,7 +8,7 @@ const { browser, mock, home, close } = await launch();
 const invoke = (command, args = {}) => browser.execute((cmd, payload) => window.__TAURI_INTERNALS__.invoke(cmd, payload), command, args);
 const shot = (name) => browser.saveScreenshot(path.join(screenshotDir, `${name}.png`));
 try {
-  await browser.$('button=Soul Stage').waitForExist({ timeout: 20_000 });
+  await browser.$('button=Stage').waitForExist({ timeout: 20_000 });
   const initial = await invoke('get_stage_state');
   const definition = { ...initial.definition, id: 'scene_custom_editor', title: 'Editor-Kampagne', party: ['Ayu Ikue', 'Missing companion'], starting_bg: '', max_actor_depth: 3 };
   const created = await invoke('create_stage_scene', { definition });
@@ -35,7 +35,7 @@ try {
   }, path.resolve('Cargo.toml'));
   assert.equal(rejected, true, 'invalid media kind was accepted');
   await invoke('save_lorebook', { lorebook: { id: 'editor-lore', name: 'Editor-Lore', entries: [{ content: 'EDITOR_LORE_MARKER', trigger_type: 'always_on', enabled: true, probability: 100, priority: 1, injection_behavior: 'passive', uid: 1 }] } });
-  await browser.$('button=Soul Stage').click();
+  await browser.$('button=Stage').click();
   await browser.$('button=Szenen-Lobby').waitForDisplayed();
   const openEditor = async (title) => {
     if (!await browser.$('#scene-lobby-title').isDisplayed()) await browser.$('button=Szenen-Lobby').click();

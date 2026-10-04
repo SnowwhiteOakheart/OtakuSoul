@@ -11,7 +11,7 @@ const shot = (name) => browser.saveScreenshot(path.join(screenshotDir, `${name}.
 const jsClick = (element) => browser.execute((el) => el.click(), element);
 
 try {
-  await browser.$('button=Soul Stage').waitForExist({ timeout: 20_000 });
+  await browser.$('button=Stage').waitForExist({ timeout: 20_000 });
   const scene = await invoke('get_stage_state');
   await invoke('save_stage_scene', {
     sceneState: {
@@ -29,7 +29,7 @@ try {
     },
   });
 
-  await browser.$('button=Soul Stage').click();
+  await browser.$('button=Stage').click();
   await browser.$('form textarea').waitForDisplayed({ timeout: 15_000 });
   await browser.$('button*=Kampagne').click();
 

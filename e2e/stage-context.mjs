@@ -6,8 +6,8 @@ const { browser, mock, close } = await launch({ cloud_context_tokens: 4096 });
 // oxlint-disable-next-line no-underscore-dangle -- Tauri-IPC im Wegwerfprofil
 const invoke = (command, args = {}) => browser.execute((cmd, payload) => window.__TAURI_INTERNALS__.invoke(cmd, payload), command, args);
 try {
-  await browser.$('button=Soul Stage').waitForExist({ timeout: 15_000 });
-  await browser.$('button=Soul Stage').click();
+  await browser.$('button=Stage').waitForExist({ timeout: 15_000 });
+  await browser.$('button=Stage').click();
   await browser.$('textarea').waitForDisplayed({ timeout: 15_000 });
   const initial = await invoke('get_stage_state');
   initial.definition.party = ['Ayu', 'Sora'];

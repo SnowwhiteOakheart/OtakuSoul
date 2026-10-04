@@ -1,6 +1,7 @@
 import { createPortal } from 'react-dom';
 import { BrainCircuit, Dice5, HeartHandshake, ShieldCheck, Sparkles, X } from 'lucide-react';
 import logoUrl from '../assets/brand/otakusoul-logo-wide.webp';
+import { APP_NAME } from '../constants/branding';
 import { ModalOverlay } from './ui/ModalOverlay';
 import { useTranslation, type TranslationKey } from '../i18n';
 
@@ -38,7 +39,7 @@ export function AboutDialog({ onClose }: AboutDialogProps) {
 
         <img
           src={logoUrl}
-          alt="OtakuSoul – Infinite Worlds"
+          alt={`${APP_NAME} – Infinite Worlds`}
           className="aspect-video w-full object-cover"
         />
 
@@ -47,7 +48,7 @@ export function AboutDialog({ onClose }: AboutDialogProps) {
           <div>
             <div className="flex flex-wrap items-center gap-3">
               <h2 id="about-title" className="text-2xl font-semibold tracking-wide text-white">
-                OtakuSoul
+                {APP_NAME}
               </h2>
               <span className="rounded-full border border-accent-400/30 bg-accent-500/10 px-2.5 py-1 font-mono text-xs text-accent-200">
                 {t('header.version')}

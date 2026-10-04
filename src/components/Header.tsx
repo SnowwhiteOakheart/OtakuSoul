@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react';
 import { useAppStore } from '../store/useAppStore';
 import { useTranslation } from '../i18n';
 import brandIconUrl from '../assets/brand/otakusoul-icon.png';
+import { APP_NAME } from '../constants/branding';
 import { AboutDialog } from './AboutDialog';
 import { PersonaAvatar } from './characters/PersonaAvatar';
 import { Cpu, AlertCircle, Loader2, Info, Terminal, Sparkles, Command } from 'lucide-react';
@@ -77,7 +78,7 @@ export const Header = ({ onOpenCommandPalette }: HeaderProps) => {
         >
           <img src={brandIconUrl} alt="" className="h-8 w-8 rounded-lg object-cover shadow-md shadow-accent-950/70" />
           <span className="text-xl font-bold bg-linear-to-r from-accent-400 via-accent2-400 to-indigo-400 bg-clip-text text-transparent tracking-wide whitespace-nowrap">
-            OtakuSoul
+            {APP_NAME}
           </span>
           <span className="text-xs px-1.5 py-0.5 rounded bg-accent-500/20 text-accent-300 border border-accent-500/30 font-mono">
             {t('header.version')}

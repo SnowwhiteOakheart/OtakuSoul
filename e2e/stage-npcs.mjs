@@ -8,8 +8,8 @@ const { browser, mock, close } = await launch();
 const invoke = (command, args = {}) => browser.execute((cmd, payload) => window.__TAURI_INTERNALS__.invoke(cmd, payload), command, args);
 const shot = (name) => browser.saveScreenshot(path.join(screenshotDir, `${name}.png`));
 try {
-  await browser.$('button=Soul Stage').waitForExist({ timeout: 20_000 });
-  await browser.$('button=Soul Stage').click();
+  await browser.$('button=Stage').waitForExist({ timeout: 20_000 });
+  await browser.$('button=Stage').click();
   // The selector below does not depend on the exact translated input label.
   const stageInput = await browser.$('form textarea');
   await stageInput.waitForDisplayed({ timeout: 15_000 });

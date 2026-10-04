@@ -10,7 +10,7 @@ const sql = (statement) => execFileSync('sqlite3', [database, statement], { enco
 const clickButton = async (name) => browser.$(`button=${name}`).click();
 const waitForToast = async (message) => browser.$(`p*=${message}`).waitForDisplayed({ timeout: 10_000 });
 try {
-  const open = browser.$('button[aria-label="Kognitiven Seelenspeicher öffnen"]');
+  const open = browser.$('button[aria-label="Kognitives Gedächtnis öffnen"]');
   await open.waitForDisplayed({ timeout: 20_000 });
   await browser.$('button=Bild').click();
   await open.click();

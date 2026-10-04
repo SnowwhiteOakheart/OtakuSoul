@@ -28,7 +28,7 @@ const ambientPlayers = () => browser.execute(() => (window.__ambient ?? [])
   .filter((a) => a.loop).map((a) => ({ src: a.src.slice(0, 40), paused: a.paused, loop: a.loop })));
 
 try {
-  await browser.$('button=Soul Stage').waitForExist({ timeout: 20_000 });
+  await browser.$('button=Stage').waitForExist({ timeout: 20_000 });
   await browser.execute(() => {
     const Original = window.Audio;
     window.__ambient = [];
@@ -54,7 +54,7 @@ try {
   // Ambient: the scene's sound loops as soon as the stage opens.
   const wind = await invoke('import_stage_asset', { filePath: writeWav('wind.wav', 1), kind: 'ambient' });
   await invoke('update_stage_scene_definition', { definition: { ...scene.definition, starting_ambient: wind, disable_ambient: false } });
-  await browser.$('button=Soul Stage').click();
+  await browser.$('button=Stage').click();
   const stageInput = await browser.$('form textarea');
   await stageInput.waitForDisplayed({ timeout: 15_000 });
   await browser.waitUntil(async () => (await ambientPlayers()).some((a) => !a.paused && a.loop && a.src.startsWith('data:audio/wav')), {

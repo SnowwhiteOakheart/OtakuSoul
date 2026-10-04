@@ -17,7 +17,7 @@ const confirmRestore = async () => {
   await browser.$('[aria-labelledby="confirm-dialog-title"] button[data-autofocus]').click();
 };
 try {
-  const open = browser.$('button[aria-label="Kognitiven Seelenspeicher öffnen"]');
+  const open = browser.$('button[aria-label="Kognitives Gedächtnis öffnen"]');
   await open.waitForDisplayed({ timeout: 20_000 });
   await browser.$('button=Bild').click();
   await open.click();

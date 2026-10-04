@@ -125,8 +125,8 @@ try {
   assert.ok(TRANSLATION.includes('Testübersetzung'));
   await shot(browser, '08-uebersetzung');
 
-  step('Soul Stage: Erzählertext erscheint live');
-  await browser.$('button=Soul Stage').click();
+  step('Stage: Erzählertext erscheint live');
+  await browser.$('button=Stage').click();
   await shot(browser, '09-stage-start');
   const stageInput = await browser.$('textarea');
   await stageInput.waitForDisplayed({ timeout: 15_000 });
@@ -146,7 +146,7 @@ try {
   assert.ok(STAGE_NARRATION.includes('dreimal'));
   await shot(browser, '11-stage-fertig');
 
-  step('Soul Stage: Flüstern bleibt privat, Spielerwerte gelten auch ohne Kampf');
+  step('Stage: Flüstern bleibt privat, Spielerwerte gelten auch ohne Kampf');
   await browser.$('button=Flüstern').click();
   const whisperSelect = await browser.$('select[aria-label^="Ziel"]');
   const recipient = await whisperSelect.getValue();
