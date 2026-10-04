@@ -1,3 +1,4 @@
+#![allow(clippy::collapsible_if)]
 use rand::RngExt;
 use regex::Regex;
 use serde::{Deserialize, Serialize};
@@ -26,15 +27,41 @@ fn default_scan_depth() -> u32 {
     5
 }
 
-
 impl LorebookEntry {
     pub fn localized(&self, lang: &str) -> LorebookEntry {
-        let Some(translation) = self.extensions.get(crate::modules::characters::I18N_EXTENSION).and_then(|i18n| i18n.get("translations")).and_then(|t| t.get(lang)) else { return self.clone(); };
+        let Some(translation) = self
+            .extensions
+            .get(crate::modules::characters::I18N_EXTENSION)
+            .and_then(|i18n| i18n.get("translations"))
+            .and_then(|t| t.get(lang))
+        else {
+            return self.clone();
+        };
         let mut loc = self.clone();
-        if let Some(val) = translation.get("name").and_then(|v| v.as_str()) { if !val.trim().is_empty() { loc.name = val.to_string(); } }
-        if let Some(val) = translation.get("content").and_then(|v| v.as_str()) { if !val.trim().is_empty() { loc.content = val.to_string(); } }
-        let translate_array = |key: &str, target: &mut Vec<String>| { if let Some(arr) = translation.get(key).and_then(|v| v.as_array()) { if !arr.is_empty() { *target = arr.iter().filter_map(|v| v.as_str().map(|s| s.to_string())).collect(); } } };
-        translate_array("key", &mut loc.key); translate_array("secondary_keys", &mut loc.secondary_keys); translate_array("exclude_key", &mut loc.exclude_key); translate_array("regex_keys", &mut loc.regex_keys);
+        if let Some(val) = translation.get("name").and_then(|v| v.as_str()) {
+            if !val.trim().is_empty() {
+                loc.name = val.to_string();
+            }
+        }
+        if let Some(val) = translation.get("content").and_then(|v| v.as_str()) {
+            if !val.trim().is_empty() {
+                loc.content = val.to_string();
+            }
+        }
+        let translate_array = |key: &str, target: &mut Vec<String>| {
+            if let Some(arr) = translation.get(key).and_then(|v| v.as_array()) {
+                if !arr.is_empty() {
+                    *target = arr
+                        .iter()
+                        .filter_map(|v| v.as_str().map(|s| s.to_string()))
+                        .collect();
+                }
+            }
+        };
+        translate_array("key", &mut loc.key);
+        translate_array("secondary_keys", &mut loc.secondary_keys);
+        translate_array("exclude_key", &mut loc.exclude_key);
+        translate_array("regex_keys", &mut loc.regex_keys);
         loc
     }
 }
@@ -146,16 +173,31 @@ pub struct EvaluatedLoreResult {
     pub new_tension: u32,
 }
 
-
 impl Lorebook {
     pub fn localized(&self, lang: &str) -> Lorebook {
-        let Some(translation) = self.extensions.get(crate::modules::characters::I18N_EXTENSION).and_then(|i18n| i18n.get("translations")).and_then(|t| t.get(lang)) else {
-            let mut loc = self.clone(); loc.entries = loc.entries.iter().map(|e| e.localized(lang)).collect(); return loc;
+        let Some(translation) = self
+            .extensions
+            .get(crate::modules::characters::I18N_EXTENSION)
+            .and_then(|i18n| i18n.get("translations"))
+            .and_then(|t| t.get(lang))
+        else {
+            let mut loc = self.clone();
+            loc.entries = loc.entries.iter().map(|e| e.localized(lang)).collect();
+            return loc;
         };
         let mut loc = self.clone();
-        if let Some(val) = translation.get("name").and_then(|v| v.as_str()) { if !val.trim().is_empty() { loc.name = val.to_string(); } }
-        if let Some(val) = translation.get("description").and_then(|v| v.as_str()) { if !val.trim().is_empty() { loc.description = val.to_string(); } }
-        loc.entries = loc.entries.iter().map(|e| e.localized(lang)).collect(); loc
+        if let Some(val) = translation.get("name").and_then(|v| v.as_str()) {
+            if !val.trim().is_empty() {
+                loc.name = val.to_string();
+            }
+        }
+        if let Some(val) = translation.get("description").and_then(|v| v.as_str()) {
+            if !val.trim().is_empty() {
+                loc.description = val.to_string();
+            }
+        }
+        loc.entries = loc.entries.iter().map(|e| e.localized(lang)).collect();
+        loc
     }
 }
 impl Lorebook {

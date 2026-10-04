@@ -1155,7 +1155,7 @@ pub async fn import_scene_from_gateway(
         dice_rolls_enabled,
         starting_bg,
         starting_ambient,
-extensions: serde_json::Value::Null,
+        extensions: serde_json::Value::Null,
         created_at: chrono::Utc::now().to_rfc3339(),
         last_played: None,
     };

@@ -1,3 +1,4 @@
+#![allow(clippy::collapsible_if)]
 //! Data model of a Soul Stage scene: world state, combat, arcs, inventory, messages and scene files.
 
 use super::*;
@@ -43,12 +44,8 @@ impl Default for WorldState {
         let lang = crate::modules::content_lang::ContentLang::current();
         Self {
             time_of_day: lang.t("Dusk").to_string(),
-            weather: lang
-                .t("Misty haze")
-                .to_string(),
-            location: lang
-                .t("The order's old library")
-                .to_string(),
+            weather: lang.t("Misty haze").to_string(),
+            location: lang.t("The order's old library").to_string(),
             danger_level: 2,
             active_quest: lang
                 .t("Examine the ancient grimoire about dimensional rifts.")
@@ -290,18 +287,37 @@ pub(super) fn default_turn_mode() -> String {
     "do".to_string()
 }
 
-
 impl SceneDefinition {
     pub fn localized(&self, lang: &str) -> SceneDefinition {
-        let Some(translation) = self.extensions.get(crate::modules::characters::I18N_EXTENSION).and_then(|i18n| i18n.get("translations")).and_then(|t| t.get(lang)) else { return self.clone(); };
+        let Some(translation) = self
+            .extensions
+            .get(crate::modules::characters::I18N_EXTENSION)
+            .and_then(|i18n| i18n.get("translations"))
+            .and_then(|t| t.get(lang))
+        else {
+            return self.clone();
+        };
         let mut loc = self.clone();
-        for &field in &["title", "description", "world_context", "opening_narration", "first_message", "gm_tone", "narrator_style"] {
+        for &field in &[
+            "title",
+            "description",
+            "world_context",
+            "opening_narration",
+            "first_message",
+            "gm_tone",
+            "narrator_style",
+        ] {
             if let Some(val) = translation.get(field).and_then(|v| v.as_str()) {
                 if !val.trim().is_empty() {
                     match field {
-                        "title" => loc.title = val.to_string(), "description" => loc.description = val.to_string(), "world_context" => loc.world_context = val.to_string(),
-                        "opening_narration" => loc.opening_narration = val.to_string(), "first_message" => loc.first_message = val.to_string(),
-                        "gm_tone" => loc.gm_tone = val.to_string(), "narrator_style" => loc.narrator_style = val.to_string(), _ => {}
+                        "title" => loc.title = val.to_string(),
+                        "description" => loc.description = val.to_string(),
+                        "world_context" => loc.world_context = val.to_string(),
+                        "opening_narration" => loc.opening_narration = val.to_string(),
+                        "first_message" => loc.first_message = val.to_string(),
+                        "gm_tone" => loc.gm_tone = val.to_string(),
+                        "narrator_style" => loc.narrator_style = val.to_string(),
+                        _ => {}
                     }
                 }
             }

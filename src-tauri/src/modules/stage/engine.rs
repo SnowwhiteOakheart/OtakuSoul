@@ -19,18 +19,14 @@ impl StageEngine {
         let initial_clocks = vec![
             CampaignClock {
                 id: "clock_1".to_string(),
-                name: lang
-                    .t("The guards' attention")
-                    .to_string(),
+                name: lang.t("The guards' attention").to_string(),
                 current: 2,
                 max: 6,
                 clock_type: "danger".to_string(),
             },
             CampaignClock {
                 id: "clock_2".to_string(),
-                name: lang
-                    .t("Ritual completion")
-                    .to_string(),
+                name: lang.t("Ritual completion").to_string(),
                 current: 1,
                 max: 4,
                 clock_type: "mystery".to_string(),
@@ -60,18 +56,14 @@ impl StageEngine {
                 max_stress: 100,
                 initiative: 19,
                 conditions: vec![CombatCondition {
-                    name: lang
-                        .t("Alluring aura")
-                        .to_string(),
+                    name: lang.t("Alluring aura").to_string(),
                     rounds_remaining: 3,
                 }],
                 skills: HashMap::new(),
             },
             Combatant {
                 id: "comb_enemy_1".to_string(),
-                name: lang
-                    .t("Shadow stalker")
-                    .to_string(),
+                name: lang.t("Shadow stalker").to_string(),
                 role: "enemy".to_string(),
                 hp: 28,
                 max_hp: 28,
@@ -135,9 +127,7 @@ extensions: serde_json::Value::Null,
             combat: encounter,
             arcs: vec![StoryArc {
                 id: "arc_1".to_string(),
-                title: lang
-                    .t("The order's secret")
-                    .to_string(),
+                title: lang.t("The order's secret").to_string(),
                 description: lang
                     .t("Find out why the library was once sealed.")
                     .to_string(),
@@ -149,12 +139,8 @@ extensions: serde_json::Value::Null,
             inventory: vec![
                 InventoryItem {
                     id: "item_1".to_string(),
-                    name: lang
-                        .t("Healing potion")
-                        .to_string(),
-                    description: lang
-                        .t("Restores 25 HP.")
-                        .to_string(),
+                    name: lang.t("Healing potion").to_string(),
+                    description: lang.t("Restores 25 HP.").to_string(),
                     quantity: 2,
                     item_type: "consumable".to_string(),
                     hp_restore: 25,
@@ -163,12 +149,8 @@ extensions: serde_json::Value::Null,
                 },
                 InventoryItem {
                     id: "item_2".to_string(),
-                    name: lang
-                        .t("Brass key")
-                        .to_string(),
-                    description: lang
-                        .t("An ornate key with a sun emblem.")
-                        .to_string(),
+                    name: lang.t("Brass key").to_string(),
+                    description: lang.t("An ornate key with a sun emblem.").to_string(),
                     quantity: 1,
                     item_type: "key".to_string(),
                     hp_restore: 0,
@@ -178,9 +160,7 @@ extensions: serde_json::Value::Null,
             ],
             objectives: vec![CampaignObjective {
                 id: "objective_1".to_string(),
-                title: lang
-                    .t("Examine the grimoire")
-                    .to_string(),
+                title: lang.t("Examine the grimoire").to_string(),
                 description: lang
                     .t("Find out what causes the dimensional rifts.")
                     .to_string(),
@@ -193,9 +173,7 @@ extensions: serde_json::Value::Null,
                 target: "Hiroki".to_string(),
                 affinity: 10,
                 tags: vec![lang.t("Companion").to_string()],
-                role_view: lang
-                    .t("Trusted ally")
-                    .to_string(),
+                role_view: lang.t("Trusted ally").to_string(),
                 last_shift_reason: String::new(),
             }],
             consequence_ledger: Vec::new(),
@@ -205,10 +183,7 @@ extensions: serde_json::Value::Null,
                     text: lang
                         .t("Examine the glowing book on the lectern")
                         .to_string(),
-                    badge: Some(
-                        lang.t("Perception (DC 13)")
-                        .to_string(),
-                    ),
+                    badge: Some(lang.t("Perception (DC 13)").to_string()),
                     action_type: "do".to_string(),
                 },
                 TaggedChoice {
@@ -219,13 +194,8 @@ extensions: serde_json::Value::Null,
                     action_type: "say".to_string(),
                 },
                 TaggedChoice {
-                    text: lang
-                        .t("Quietly check the door at the back")
-                        .to_string(),
-                    badge: Some(
-                        lang.t("Stealth")
-                            .to_string(),
-                    ),
+                    text: lang.t("Quietly check the door at the back").to_string(),
+                    badge: Some(lang.t("Stealth").to_string()),
                     action_type: "do".to_string(),
                 },
             ],
@@ -294,9 +264,7 @@ extensions: serde_json::Value::Null,
         {
             st.combat.combatants.push(Combatant {
                 id: "enemy_1".to_string(),
-                name: lang
-                    .t("Unknown enemy")
-                    .to_string(),
+                name: lang.t("Unknown enemy").to_string(),
                 role: "enemy".to_string(),
                 hp: 20,
                 max_hp: 20,
@@ -327,7 +295,9 @@ extensions: serde_json::Value::Null,
             .first()
             .map(|c| c.name.clone())
             .unwrap_or_else(|| lang.t("Nobody").to_string());
-        st.combat.combat_log.push(lang.fill_t("Combat started! Round 1 – {}'s turn.", &[&active_name], ));
+        st.combat
+            .combat_log
+            .push(lang.fill_t("Combat started! Round 1 – {}'s turn.", &[&active_name]));
     }
 
     pub fn end_encounter(&self) {
@@ -335,10 +305,9 @@ extensions: serde_json::Value::Null,
         let mut st = self.state.write();
         st.combat.is_active = false;
         remove_enemies(&mut st);
-        st.combat.combat_log.push(
-            lang.t("Combat over. Everyone relaxes.")
-            .to_string(),
-        );
+        st.combat
+            .combat_log
+            .push(lang.t("Combat over. Everyone relaxes.").to_string());
     }
 
     pub fn next_turn(&self) {
@@ -366,13 +335,17 @@ extensions: serde_json::Value::Null,
             }
 
             let round_num = st.combat.round;
-            st.combat.combat_log.push(lang.fill_t("--- New round: round {} ---", &[&round_num], ));
+            st.combat
+                .combat_log
+                .push(lang.fill_t("--- New round: round {} ---", &[&round_num]));
         }
 
         let active_name = st.combat.combatants[st.combat.current_turn_index]
             .name
             .clone();
-        st.combat.combat_log.push(lang.fill_t("{}'s turn.", &[&active_name], ));
+        st.combat
+            .combat_log
+            .push(lang.fill_t("{}'s turn.", &[&active_name]));
     }
 
     pub fn apply_combatant_delta(&self, combatant_id: &str, hp_delta: i32, stress_delta: i32) {
@@ -388,11 +361,20 @@ extensions: serde_json::Value::Null,
             c.stress = (c.stress + stress_delta).clamp(0, c.max_stress);
 
             let msg = if hp_delta < 0 {
-                lang.fill_t("{} takes {} damage (HP: {}/{})", &[&c.name, &hp_delta.abs(), &c.hp, &c.max_hp], )
+                lang.fill_t(
+                    "{} takes {} damage (HP: {}/{})",
+                    &[&c.name, &hp_delta.abs(), &c.hp, &c.max_hp],
+                )
             } else if hp_delta > 0 {
-                lang.fill_t("{} heals {} HP (HP: {}/{})", &[&c.name, &hp_delta, &c.hp, &c.max_hp], )
+                lang.fill_t(
+                    "{} heals {} HP (HP: {}/{})",
+                    &[&c.name, &hp_delta, &c.hp, &c.max_hp],
+                )
             } else {
-                lang.fill_t("{} stress changes by {} (stress: {}/{})", &[&c.name, &stress_delta, &c.stress, &c.max_stress], )
+                lang.fill_t(
+                    "{} stress changes by {} (stress: {}/{})",
+                    &[&c.name, &stress_delta, &c.stress, &c.max_stress],
+                )
             };
             Some(msg)
         } else {
@@ -430,7 +412,10 @@ extensions: serde_json::Value::Null,
             let c_name = c.name.clone();
             c.conditions.retain(|cond| cond.name != name);
             c.conditions.push(condition);
-            Some(lang.fill_t("{} gains condition: {} ({} rounds)", &[&c_name, &name, &rounds], ))
+            Some(lang.fill_t(
+                "{} gains condition: {} ({} rounds)",
+                &[&c_name, &name, &rounds],
+            ))
         } else {
             None
         };
@@ -457,7 +442,10 @@ extensions: serde_json::Value::Null,
         st.combat.combatants.swap(index, index + 1);
         let next_name = st.combat.combatants[index].name.clone();
         st.current_turn_actor = next_name.clone();
-        st.combat.combat_log.push(lang.fill_t("{} delays their turn. {} acts first.", &[&player_name, &next_name], ));
+        st.combat.combat_log.push(lang.fill_t(
+            "{} delays their turn. {} acts first.",
+            &[&player_name, &next_name],
+        ));
         Ok(st.clone())
     }
 
@@ -531,7 +519,7 @@ extensions: serde_json::Value::Null,
             sender_name: lang.t("Inventory").to_string(),
             sender_role: "gm".to_string(),
             avatar_url: None,
-            content: lang.fill_t("{} was used.", &[&item.name], ),
+            content: lang.fill_t("{} was used.", &[&item.name]),
             turn_mode: "do".to_string(),
             whisper_target: None,
             event_card: Some(StageEventCard::ItemUse {

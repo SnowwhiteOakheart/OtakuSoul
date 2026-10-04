@@ -388,7 +388,7 @@ async fn handle_chat(
     let lang = crate::modules::content_lang::ContentLang::current();
     let reply_text = if user_msg.is_empty() {
         lang.t("I'm here! What would you like to talk about?")
-        .to_string()
+            .to_string()
     } else {
         lang.fill_t("*smiles warmly at you* So nice to be connected from your phone! You said: “{}”. I'm with you any time.", &[&user_msg], )
     };

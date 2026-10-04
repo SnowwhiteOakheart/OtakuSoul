@@ -88,12 +88,8 @@ impl DiscordRpcClient {
                     None => {
                         let lang = crate::modules::content_lang::ContentLang::current();
                         DiscordRpcActivity {
-                            details: lang
-                                .t("In the main menu")
-                                .to_string(),
-                            state: lang
-                                .t("Exploring endless worlds")
-                                .to_string(),
+                            details: lang.t("In the main menu").to_string(),
+                            state: lang.t("Exploring endless worlds").to_string(),
                             character_name: None,
                             start_timestamp: Some(self.start_time),
                         }

@@ -135,7 +135,10 @@ export const ChatView: React.FC = () => {
           // Trigger Phase 14 Emotion update for VRM & Live2D
           try {
             const detected = await api.classifyTextEmotion(data.full_text);
-            state.setCurrentEmotion(detected);
+            const currentState = useAppStore.getState();
+            if (currentState.generationChatId === null || currentState.generationChatId === state.generationChatId) {
+              currentState.setCurrentEmotion(detected);
+            }
           } catch (e) {
             console.warn('Emotion classification failed:', e);
           }

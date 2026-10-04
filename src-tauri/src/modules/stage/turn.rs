@@ -173,7 +173,10 @@ pub async fn execute_stage_turn(
     // Scan bound lorebooks for Stage-Lore
     let mut active_lore_snippets = Vec::new();
     if !state.definition.lorebook.is_empty() {
-        let all_lorebooks = crate::modules::lorebook::scan_available_lorebooks().into_iter().map(|lb| lb.localized(&lang_code)).collect::<Vec<_>>();
+        let all_lorebooks = crate::modules::lorebook::scan_available_lorebooks()
+            .into_iter()
+            .map(|lb| lb.localized(&lang_code))
+            .collect::<Vec<_>>();
         let text_to_scan = recent_history.join("\n");
         for lb_name in &state.definition.lorebook {
             if let Some(lb) = all_lorebooks.iter().find(|l| {
@@ -504,7 +507,7 @@ RULES:
             c.current = new_val;
             secondary_event_cards.push((
                 lang.t("The campaign clock “{}” changes.")
-                .replace("{}", &c.name),
+                    .replace("{}", &c.name),
                 StageEventCard::ClockUpdate(ClockUpdateData {
                     clock_id: c.id.clone(),
                     clock_name: c.name.clone(),
@@ -711,8 +714,7 @@ RULES:
                     .combatants
                     .sort_by_key(|c| std::cmp::Reverse(c.initiative));
                 secondary_event_cards.push((
-                    lang.t("An encounter begins.")
-                    .to_string(),
+                    lang.t("An encounter begins.").to_string(),
                     StageEventCard::Combat {
                         action: "started".to_string(),
                         text: lang
@@ -725,13 +727,10 @@ RULES:
                 state.combat.is_active = false;
                 remove_enemies(&mut state);
                 secondary_event_cards.push((
-                    lang.t("The encounter ends.")
-                    .to_string(),
+                    lang.t("The encounter ends.").to_string(),
                     StageEventCard::Combat {
                         action: "ended".to_string(),
-                        text: lang
-                            .t("The fight is over.")
-                            .to_string(),
+                        text: lang.t("The fight is over.").to_string(),
                     },
                 ));
             }
@@ -1179,20 +1178,13 @@ Reply in {reply_language}.{secrets}"#,
     } else {
         state.pending_choices = vec![
             TaggedChoice {
-                text: lang
-                    .t("Advance carefully")
-                    .to_string(),
+                text: lang.t("Advance carefully").to_string(),
                 badge: None,
                 action_type: "do".to_string(),
             },
             TaggedChoice {
-                text: lang
-                    .t("Secure and search the surroundings")
-                    .to_string(),
-                badge: Some(
-                    lang.t("Perception")
-                        .to_string(),
-                ),
+                text: lang.t("Secure and search the surroundings").to_string(),
+                badge: Some(lang.t("Perception").to_string()),
                 action_type: "do".to_string(),
             },
             TaggedChoice {
@@ -1335,11 +1327,9 @@ pub async fn execute_stage_rest(
         let before = relationship.affinity;
         relationship.affinity = (relationship.affinity + affinity_gain).clamp(-100, 100);
         relationship.last_shift_reason = if rest_type == "long" {
-            lang.t("Shared campfire")
-                .to_string()
+            lang.t("Shared campfire").to_string()
         } else {
-            lang.t("Shared rest")
-                .to_string()
+            lang.t("Shared rest").to_string()
         };
         for milestone in [25, 50, 75] {
             if before < milestone && relationship.affinity >= milestone {
@@ -1373,9 +1363,7 @@ pub async fn execute_stage_rest(
         state.chat_log.push(SceneTurnMessage {
             id: format!("msg_bond_{}_{}", Utc::now().timestamp_millis(), index),
             sender_id: "system".to_string(),
-            sender_name: lang
-                .t("Bond milestone")
-                .to_string(),
+            sender_name: lang.t("Bond milestone").to_string(),
             sender_role: "gm".to_string(),
             avatar_url: None,
             content: lang

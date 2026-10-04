@@ -5,11 +5,13 @@
 //! Translations for languages are loaded dynamically from `locales/` in the presets repo.
 //! English is the default fallback encoded in the Rust source.
 
+#![allow(clippy::collapsible_if)]
+
+use std::borrow::Cow;
+use std::collections::HashMap;
 use std::path::Path;
 use std::sync::OnceLock;
-use std::collections::HashMap;
 use std::sync::RwLock;
-use std::borrow::Cow;
 
 static TRANSLATIONS: OnceLock<RwLock<HashMap<String, HashMap<String, String>>>> = OnceLock::new();
 
@@ -19,7 +21,10 @@ fn translations() -> &'static RwLock<HashMap<String, HashMap<String, String>>> {
 
 pub fn load_locales() {
     let paths = crate::modules::paths::resolve_app_paths();
-    let locales_dir = std::path::PathBuf::from(&paths.bundled_presets_dir).parent().unwrap().join("locales");
+    let locales_dir = std::path::PathBuf::from(&paths.bundled_presets_dir)
+        .parent()
+        .unwrap()
+        .join("locales");
     if let Ok(entries) = std::fs::read_dir(&locales_dir) {
         let mut map = translations().write().unwrap();
         for entry in entries.flatten() {
@@ -135,7 +140,7 @@ mod tests {
     fn fills_placeholders_in_order() {
         assert_eq!(
             ContentLang("en".to_string()).fill_t("{} x {}", &[&3, &"five"]),
-            "3 of five"
+            "3 x five"
         );
     }
 

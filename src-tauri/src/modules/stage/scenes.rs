@@ -3,7 +3,9 @@
 use super::*;
 
 pub fn build_initial_scene_state(def: &SceneDefinition) -> SceneState {
-    let lang_code = crate::modules::content_lang::language_code(&crate::modules::content_lang::ContentLang::reply_language_name());
+    let lang_code = crate::modules::content_lang::language_code(
+        &crate::modules::content_lang::ContentLang::reply_language_name(),
+    );
     let localized_def = def.localized(&lang_code);
     let lang = crate::modules::content_lang::ContentLang::current();
     let initial_msg = SceneTurnMessage {
@@ -27,8 +29,7 @@ pub fn build_initial_scene_state(def: &SceneDefinition) -> SceneState {
         location: if !def.starting_location.is_empty() {
             def.starting_location.clone()
         } else {
-            lang.t("Old refuge")
-                .to_string()
+            lang.t("Old refuge").to_string()
         },
         time_of_day: if !def.time_of_day.is_empty() {
             def.time_of_day.clone()
@@ -52,9 +53,7 @@ pub fn build_initial_scene_state(def: &SceneDefinition) -> SceneState {
         world,
         clocks: vec![CampaignClock {
             id: "clock_tension".to_string(),
-            name: lang
-                .t("Dramatic tension")
-                .to_string(),
+            name: lang.t("Dramatic tension").to_string(),
             current: 1,
             max: 6,
             clock_type: "danger".to_string(),
@@ -67,8 +66,7 @@ pub fn build_initial_scene_state(def: &SceneDefinition) -> SceneState {
             title: if !localized_def.title.is_empty() {
                 localized_def.title.clone()
             } else {
-                lang.t("Begin the adventure")
-                .to_string()
+                lang.t("Begin the adventure").to_string()
             },
             description: localized_def.description.clone(),
             current: 0,
@@ -91,26 +89,17 @@ pub fn build_initial_scene_state(def: &SceneDefinition) -> SceneState {
         chat_log: vec![initial_msg],
         pending_choices: vec![
             TaggedChoice {
-                text: lang
-                    .t("Study the surroundings closely")
-                    .to_string(),
-                badge: Some(
-                    lang.t("Perception")
-                        .to_string(),
-                ),
+                text: lang.t("Study the surroundings closely").to_string(),
+                badge: Some(lang.t("Perception").to_string()),
                 action_type: "do".to_string(),
             },
             TaggedChoice {
-                text: lang
-                    .t("Dare a step forward")
-                    .to_string(),
+                text: lang.t("Dare a step forward").to_string(),
                 badge: None,
                 action_type: "do".to_string(),
             },
             TaggedChoice {
-                text: lang
-                    .t("Confer with the companions")
-                    .to_string(),
+                text: lang.t("Confer with the companions").to_string(),
                 badge: None,
                 action_type: "say".to_string(),
             },
@@ -314,7 +303,9 @@ pub(super) fn parse_scene_file_preview(
 ) -> Option<ScenePreview> {
     let content = fs::read_to_string(p).ok()?;
     if let Ok(state) = serde_json::from_str::<SceneState>(&content) {
-        let lang_code = crate::modules::content_lang::language_code(&crate::modules::content_lang::ContentLang::reply_language_name());
+        let lang_code = crate::modules::content_lang::language_code(
+            &crate::modules::content_lang::ContentLang::reply_language_name(),
+        );
         let localized_def = state.definition.localized(&lang_code);
         let has_progress = state.chat_log.len() > 1;
         let turn_count = state.chat_log.len();
@@ -343,7 +334,9 @@ pub(super) fn parse_scene_file_preview(
     }
 
     if let Ok(def) = serde_json::from_str::<SceneDefinition>(&content) {
-        let lang_code = crate::modules::content_lang::language_code(&crate::modules::content_lang::ContentLang::reply_language_name());
+        let lang_code = crate::modules::content_lang::language_code(
+            &crate::modules::content_lang::ContentLang::reply_language_name(),
+        );
         let localized_def = def.localized(&lang_code);
         let stem = p
             .file_stem()

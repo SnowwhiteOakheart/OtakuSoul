@@ -280,26 +280,17 @@ pub fn repair_and_parse_gm_plan(raw: &str) -> GmPlan {
         next_actor: Some("PLAYER".to_string()),
         player_choices: vec![
             TaggedChoice {
-                text: lang
-                    .t("Search the surroundings")
-                    .to_string(),
-                badge: Some(
-                    lang.t("Perception")
-                        .to_string(),
-                ),
+                text: lang.t("Search the surroundings").to_string(),
+                badge: Some(lang.t("Perception").to_string()),
                 action_type: "do".to_string(),
             },
             TaggedChoice {
-                text: lang
-                    .t("Talk to the party")
-                    .to_string(),
+                text: lang.t("Talk to the party").to_string(),
                 badge: None,
                 action_type: "say".to_string(),
             },
             TaggedChoice {
-                text: lang
-                    .t("Move on carefully")
-                    .to_string(),
+                text: lang.t("Move on carefully").to_string(),
                 badge: None,
                 action_type: "do".to_string(),
             },

@@ -111,7 +111,7 @@ fn test_stage_engine_clocks_and_combat() {
     assert_eq!(turn2.combat.combatants[1].name, "Hiroki");
 
     let delayed = engine.delay_turn().unwrap();
-    assert_eq!(delayed.combat.combatants[1].name, "Schattenpirscher");
+    assert_eq!(delayed.combat.combatants[1].name, "Shadow stalker");
     assert_eq!(delayed.combat.combatants[2].name, "Hiroki");
 
     // Damage calculation
@@ -141,7 +141,7 @@ fn test_undo_snapshot() {
 
     // Undo
     let reverted = engine.undo_turn(&initial_st.definition.id).unwrap();
-    assert_eq!(reverted.world.location, "Alte Bibliothek des Ordens");
+    assert_eq!(reverted.world.location, "The order's old library");
 }
 
 #[test]
@@ -208,6 +208,7 @@ fn scene_editor_preserves_progress_and_original_metadata() {
     state.world.location = "Reached location".into();
     state.npcs.push(StageNpc {
         id: "npc-test".into(),
+        extensions: serde_json::Value::Null,
         name: "Liora".into(),
         archetype: "merchant".into(),
         personality: String::new(),
