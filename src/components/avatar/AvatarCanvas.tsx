@@ -7,7 +7,7 @@ import { useStoreFields } from '../../store/useAppStore';
 import { selectCharacterPortrait } from '../../utils/characterPortraits';
 import { translate, useTranslation } from '../../i18n';
 import { DropdownMenu } from '../ui/DropdownMenu';
-import { AvatarSkeleton } from '../ui';
+import { AvatarSkeleton, ScrollText } from '../ui';
 
 const Live2DViewer = lazy(() =>
   loadCubismCore()
@@ -294,9 +294,12 @@ export const AvatarCanvas: React.FC<AvatarCanvasProps> = ({
 
           <div className="mt-4 text-center">
             <h3 className="text-lg font-bold text-slate-100">{charName}</h3>
-            <p className="text-xs text-accent-300/80 font-mono mt-0.5">
+            <ScrollText
+              label={t('avatar.traits', { name: charName })}
+              className="text-xs text-accent-300/80 font-mono mt-0.5 max-w-sm mx-auto"
+            >
               {character?.card.data.personality || t('avatar.portraitMode')}
-            </p>
+            </ScrollText>
           </div>
         </div>
       )}

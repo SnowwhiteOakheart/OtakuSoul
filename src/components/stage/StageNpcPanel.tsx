@@ -4,6 +4,7 @@ import { Users, UserPlus, X, Sparkles } from 'lucide-react';
 import { useStoreFields } from '../../store/useAppStore';
 import { useTranslation, type TranslationKey } from '../../i18n';
 import { Button } from '../ui/Button';
+import { ScrollText } from '../ui/ScrollText';
 import { ModalOverlay } from '../ui/ModalOverlay';
 import { toast } from '../ui/feedback';
 import { errorMessage } from '../../utils/errors';
@@ -57,7 +58,7 @@ export function StageNpcPanel() {
                 <p className="text-xs text-slate-400">{t(archetypeLabel(npc.archetype))} · {t(npc.promoted_character_id ? 'stage.npcPromoted' : npc.active ? 'stage.npcPresent' : 'stage.npcAbsent')}</p>
               </div>
             </div>
-            <p className="text-sm text-slate-300 whitespace-pre-wrap">{npc.personality}</p>
+            <ScrollText label={t('avatar.traits', { name: npc.name })} className="text-sm text-slate-300">{npc.personality}</ScrollText>
             <details className="text-xs text-slate-400">
               <summary className="cursor-pointer focus-visible:ring-2 focus-visible:ring-accent-400">{t('stage.npcMemories', { count: npc.memories.length })}</summary>
               <ul className="mt-2 space-y-1 max-h-40 overflow-y-auto list-disc pl-5">

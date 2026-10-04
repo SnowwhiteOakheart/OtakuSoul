@@ -534,6 +534,7 @@ export const en: TranslationDictionary = {
   "avatar.live2dLoading": "Loading Live2D…",
   "avatar.noLive2dTitle": "No Live2D model assigned",
   "avatar.noLive2dText": "Assign a Live2D model to this character in the character editor.",
+  "avatar.traits": "Traits of {{name}}",
   "avatar.portraitMode": "2D portrait",
   "avatar.vrmLoading": "Loading 3D avatar…",
   "avatar.vrmInvalid": "The file does not contain a valid VRM structure.",

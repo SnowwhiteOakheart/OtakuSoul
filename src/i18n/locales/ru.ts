@@ -534,6 +534,7 @@ export const ru: TranslationDictionary = {
   "avatar.live2dLoading": "Загрузка Live2D…",
   "avatar.noLive2dTitle": "Модель Live2D не назначена",
   "avatar.noLive2dText": "Назначьте этому персонажу модель Live2D в редакторе персонажа.",
+  "avatar.traits": "Черты характера: {{name}}",
   "avatar.portraitMode": "2D-портрет",
   "avatar.vrmLoading": "Загрузка 3D-аватара…",
   "avatar.vrmInvalid": "Файл не содержит корректной структуры VRM.",

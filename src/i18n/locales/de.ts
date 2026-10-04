@@ -536,6 +536,7 @@ export const de = {
   "avatar.live2dLoading": "Live2D wird geladen…",
   "avatar.noLive2dTitle": "Kein Live2D-Modell zugewiesen",
   "avatar.noLive2dText": "Weise diesem Charakter im Charakter-Editor ein Live2D-Modell zu.",
+  "avatar.traits": "Charakterzüge von {{name}}",
   "avatar.portraitMode": "2D-Porträt",
   "avatar.vrmLoading": "3D-Avatar wird geladen…",
   "avatar.vrmInvalid": "Die Datei enthält keine gültige VRM-Struktur.",

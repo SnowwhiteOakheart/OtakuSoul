@@ -4,7 +4,7 @@ import { fireEvent, render, screen } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { describe, expect, it, vi } from 'vitest';
 import { Info } from 'lucide-react';
-import { Button, IconButton, ListSkeleton, Select, Slider, Tabs, Toggle, Tooltip, ViewSkeleton } from '../components/ui';
+import { Button, IconButton, ListSkeleton, ScrollText, Select, Slider, Tabs, Toggle, Tooltip, ViewSkeleton } from '../components/ui';
 
 describe('UI primitives', () => {
   it('disables a loading button and exposes its busy state', () => {
@@ -103,5 +103,24 @@ describe('UI primitives', () => {
     );
     expect(screen.getByRole('status', { name: 'Ansicht wird geladen' })).toHaveAttribute('aria-busy', 'true');
     expect(screen.getByRole('status', { name: 'Karten werden geladen' })).toHaveAttribute('aria-busy', 'true');
+  });
+
+  it('limits long text to three lines and makes it scrollable only when it overflows', () => {
+    const height = (scroll: number) => {
+      vi.spyOn(HTMLElement.prototype, 'scrollHeight', 'get').mockReturnValue(scroll);
+      vi.spyOn(HTMLElement.prototype, 'clientHeight', 'get').mockReturnValue(60);
+    };
+    height(60);
+    const { unmount } = render(<ScrollText label="Charakterzüge">kurz</ScrollText>);
+    const short = screen.getByText('kurz');
+    expect(short).not.toHaveAttribute('tabindex');
+    unmount();
+
+    height(240);
+    render(<ScrollText label="Charakterzüge">sehr langer Text</ScrollText>);
+    const region = screen.getByRole('region', { name: 'Charakterzüge' });
+    expect(region).toHaveAttribute('tabindex', '0');
+    expect(region).toHaveClass('overflow-y-auto');
+    vi.restoreAllMocks();
   });
 });
