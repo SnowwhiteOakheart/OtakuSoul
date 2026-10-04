@@ -28,6 +28,8 @@ export const en: TranslationDictionary = {
   "header.logs": "System Logs",
   "header.update": "Check Updates",
   "header.about": "About",
+  "header.cloud": "Cloud",
+  "header.openCloudSettings": "Set up the cloud provider and model",
   "header.serverRunning": "Server running",
   "header.serverStopped": "Server stopped",
   "header.serverStarting": "LLM starting…",

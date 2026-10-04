@@ -28,6 +28,8 @@ export const ru: TranslationDictionary = {
   "header.logs": "Системные логи",
   "header.update": "Проверить обновления",
   "header.about": "О программе",
+  "header.cloud": "Облако",
+  "header.openCloudSettings": "Настроить облачного провайдера и модель",
   "header.serverRunning": "Сервер работает",
   "header.serverStopped": "Сервер остановлен",
   "header.serverStarting": "Запуск LLM…",

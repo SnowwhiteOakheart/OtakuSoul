@@ -30,6 +30,8 @@ export const de = {
   "header.logs": "System-Logs",
   "header.update": "Updates prüfen",
   "header.about": "Über die App",
+  "header.cloud": "Cloud",
+  "header.openCloudSettings": "Cloud-Anbieter und Modell einstellen",
   "header.serverRunning": "Server läuft",
   "header.serverStopped": "Server gestoppt",
   "header.serverStarting": "LLM startet…",

@@ -96,7 +96,7 @@ Abnahme: Eine frische Installation führt ohne Suche in mehreren Einstellungssei
 
 - [ ] Kompakte Chatansicht und einklappbare Zusatzinformationen anbieten.
 - [ ] Werkzeugleisten, HUD und Avatarsteuerung auf das aktuelle Erlebnis fokussieren.
-- [ ] Statusanzeige an das tatsächlich gewählte Backend anpassen.
+- [x] Statusanzeige an das tatsächlich gewählte Backend anpassen (Cloud zeigt Anbieter-Modell, Klick öffnet die passenden Einstellungen; vor dem Laden der Einstellungen kein Status).
 - [ ] Einstellungssuche mit direktem Sprung zur passenden Option ergänzen. *(Neuzuschnitt: Befehlspalette Strg+K um Einstellungsabschnitte erweitern statt eigener Suche; 89/90/93 erst bei konkretem Anlass.)*
 - [ ] Kleine Fenster, Tastaturbedienung und verschiedene Themes anhand von E2E-Screenshots prüfen.
 

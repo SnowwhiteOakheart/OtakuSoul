@@ -31,6 +31,12 @@ export const Header = ({ onOpenCommandPalette }: HeaderProps) => {
   const setIsUpdaterOpen = useAppStore((s) => s.setIsUpdaterOpen);
   const activePersona = useAppStore((s) => s.activePersona);
   const setIsPersonaManagerOpen = useAppStore((s) => s.setIsPersonaManagerOpen);
+  const openSettingsSection = useAppStore((s) => s.openSettingsSection);
+  // The chat uses one backend; a stopped local server says nothing about a working cloud chat.
+  const isCloud = useAppStore((s) => s.selectedBackend === 'cloud');
+  const cloudModel = useAppStore((s) => s.cloudModel);
+  // Until the settings are loaded the backend isn't known; showing "server stopped" would be wrong for cloud.
+  const settingsLoaded = useAppStore((s) => s.settingsLoaded);
 
   useEffect(() => {
     initApp();
@@ -115,38 +121,47 @@ export const Header = ({ onOpenCommandPalette }: HeaderProps) => {
             </div>
           )}
 
-          <button
-            type="button"
-            onClick={() => setActiveTab('settings')}
-            title={t('header.openServerSettings')}
-            className="flex items-center gap-2 px-2.5 py-1 rounded-lg bg-slate-800/70 border border-slate-700/60 text-xs font-mono whitespace-nowrap outline-hidden transition-colors hover:border-slate-600 focus-visible:ring-2 focus-visible:ring-accent-400"
-          >
-            {serverStatus.state === 'running' && (
-              <>
-                <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse motion-reduce:animate-none" />
-                <span className="text-emerald-400 font-medium">{t('header.serverRunning')}</span>
-                <span className="text-slate-400">:{serverStatus.port}</span>
-              </>
-            )}
-            {serverStatus.state === 'starting' && (
-              <>
-                <Loader2 className="w-3 h-3 text-amber-400 animate-spin" />
-                <span className="text-amber-400 font-medium">{t('header.serverStarting')}</span>
-              </>
-            )}
-            {serverStatus.state === 'stopped' && (
-              <>
-                <span className="w-2 h-2 rounded-full bg-slate-500" />
-                <span className="text-slate-400">{t('header.serverStopped')}</span>
-              </>
-            )}
-            {serverStatus.state === 'failed' && (
-              <>
-                <AlertCircle className="w-3.5 h-3.5 text-rose-500" />
-                <span className="text-rose-400 font-medium">{t('header.serverFailed')}</span>
-              </>
-            )}
-          </button>
+          {settingsLoaded && (
+            <button
+              type="button"
+              onClick={() => openSettingsSection(isCloud ? 'providers' : 'server')}
+              title={isCloud ? t('header.openCloudSettings') : t('header.openServerSettings')}
+              className="flex items-center gap-2 px-2.5 py-1 rounded-lg bg-slate-800/70 border border-slate-700/60 text-xs font-mono whitespace-nowrap outline-hidden transition-colors hover:border-slate-600 focus-visible:ring-2 focus-visible:ring-accent-400 min-w-0"
+            >
+              {isCloud && (
+                <>
+                  <span className="w-2 h-2 rounded-full bg-sky-400 shrink-0" />
+                  <span className="text-sky-300 font-medium">{t('header.cloud')}</span>
+                  {cloudModel && <span className="text-slate-400 truncate max-w-48">{cloudModel}</span>}
+                </>
+              )}
+              {!isCloud && serverStatus.state === 'running' && (
+                <>
+                  <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse motion-reduce:animate-none" />
+                  <span className="text-emerald-400 font-medium">{t('header.serverRunning')}</span>
+                  <span className="text-slate-400">:{serverStatus.port}</span>
+                </>
+              )}
+              {!isCloud && serverStatus.state === 'starting' && (
+                <>
+                  <Loader2 className="w-3 h-3 text-amber-400 animate-spin" />
+                  <span className="text-amber-400 font-medium">{t('header.serverStarting')}</span>
+                </>
+              )}
+              {!isCloud && serverStatus.state === 'stopped' && (
+                <>
+                  <span className="w-2 h-2 rounded-full bg-slate-500" />
+                  <span className="text-slate-400">{t('header.serverStopped')}</span>
+                </>
+              )}
+              {!isCloud && serverStatus.state === 'failed' && (
+                <>
+                  <AlertCircle className="w-3.5 h-3.5 text-rose-500" />
+                  <span className="text-rose-400 font-medium">{t('header.serverFailed')}</span>
+                </>
+              )}
+            </button>
+          )}
 
           <button
             type="button"
