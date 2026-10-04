@@ -341,7 +341,7 @@ export const CharacterLibraryView = () => {
               // Cards are shown in the interface language; {{char}}/{{user}} become real names.
               const data = localizeCard(char.card.data, currentLanguage);
               const isActive = activeCharacter?.id === char.id;
-              const title = (data.extensions?.sow_title as string) || data.tags?.[0] || t('library.defaultTitle');
+              const title = (data.extensions?.custom_title as string) || (data.extensions?.sow_title as string) || data.tags?.[0] || t('library.defaultTitle');
 
               return (
                 <div

@@ -45,7 +45,7 @@ export const AdaptiveHud = () => {
   }
 
   const data = localizeCard(activeCharacter.card.data, currentLanguage);
-  const title = (data.extensions?.sow_title as string) || data.tags?.[0] || t('library.defaultTitle');
+  const title = (data.extensions?.custom_title as string) || (data.extensions?.sow_title as string) || data.tags?.[0] || t('library.defaultTitle');
 
   return (
     <div className="border-b border-slate-800/80 bg-slate-900/60 backdrop-blur px-4 py-2.5 flex items-center justify-between gap-4 z-40">

@@ -18,7 +18,7 @@ export const getPortraitExpressions = (
   character: CharacterProfile | null
 ): PortraitExpressionMap => {
   const extensions = character?.card.data.extensions;
-  const expressions = extensions?.expressions;
+  const expressions = extensions?.expressions ?? extensions?.custom_expressions;
   const legacyExpressions = extensions?.sow_expressions;
 
   if (expressions && typeof expressions === 'object' && !Array.isArray(expressions)) {

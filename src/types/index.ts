@@ -235,6 +235,15 @@ export interface CharacterData {
   creator?: string;
   character_book?: JsonValue;
   extensions: {
+    custom_title?: string;
+    custom_avatar?: string;
+    custom_live2d?: string;
+    custom_vrm?: string;
+    custom_expressions?: Record<string, string>;
+    custom_i18n?: {
+      source_language?: string;
+      translations?: Record<string, Partial<Record<'description' | 'personality' | 'scenario' | 'first_mes' | 'mes_example' | 'system_prompt' | 'post_history_instructions' | 'custom_title' | 'sow_title', string>> & { alternate_greetings?: string[] }>;
+    };
     sow_title?: string;
     sow_avatar?: string;
     sow_live2d?: string;
@@ -243,7 +252,7 @@ export interface CharacterData {
     sow_expressions?: Record<string, string>;
     sow_i18n?: {
       source_language?: string;
-      translations?: Record<string, Partial<Record<'description' | 'personality' | 'scenario' | 'first_mes' | 'mes_example' | 'system_prompt' | 'post_history_instructions' | 'sow_title', string>> & { alternate_greetings?: string[] }>;
+      translations?: Record<string, Partial<Record<'description' | 'personality' | 'scenario' | 'first_mes' | 'mes_example' | 'system_prompt' | 'post_history_instructions' | 'custom_title' | 'sow_title', string>> & { alternate_greetings?: string[] }>;
     };
     [key: string]: unknown;
   };

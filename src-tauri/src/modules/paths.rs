@@ -274,13 +274,15 @@ fn apply_bundled_expression_fallback(
     bundled_sets: &BundledExpressionSets,
 ) {
     let extensions = &mut profile.card.data.extensions;
-    let has_expressions = ["expressions", "sow_expressions"].iter().any(|key| {
-        extensions
-            .get(key)
-            .and_then(JsonValue::as_object)
-            .map(|values| !values.is_empty())
-            .unwrap_or(false)
-    });
+    let has_expressions = ["expressions", "custom_expressions", "sow_expressions"]
+        .iter()
+        .any(|key| {
+            extensions
+                .get(key)
+                .and_then(JsonValue::as_object)
+                .map(|values| !values.is_empty())
+                .unwrap_or(false)
+        });
     if has_expressions {
         return;
     }

@@ -39,9 +39,13 @@ export const CharacterTranslationsTab: React.FC<TranslationsTabProps> = ({
 
   const updateTranslation = (field: string, value: string) => {
     if (!activeLang) return;
+    const current = { ...translations[activeLang], [field]: value };
+    if (field === 'custom_title') {
+      delete current.sow_title;
+    }
     setTranslations({
       ...translations,
-      [activeLang]: { ...translations[activeLang], [field]: value },
+      [activeLang]: current,
     });
   };
 
@@ -105,11 +109,11 @@ export const CharacterTranslationsTab: React.FC<TranslationsTabProps> = ({
           ) : (
             <>
               <div>
-                <label className="text-xs font-semibold text-slate-400 block mb-1">sow_title</label>
+                <label className="text-xs font-semibold text-slate-400 block mb-1">custom_title</label>
                 <input
                   type="text"
-                  value={translations[activeLang]?.sow_title || ''}
-                  onChange={(e) => updateTranslation('sow_title', e.target.value)}
+                  value={translations[activeLang]?.custom_title || translations[activeLang]?.sow_title || ''}
+                  onChange={(e) => updateTranslation('custom_title', e.target.value)}
                   className="w-full px-3 py-2 bg-slate-900 border border-slate-700 rounded-lg text-sm focus:outline-hidden focus:border-accent-500 text-slate-100"
                 />
               </div>

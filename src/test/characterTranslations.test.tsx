@@ -50,7 +50,8 @@ describe('CharacterTranslationsTab', () => {
     expect(screen.queryByText('Keine Sprache ausgewählt')).not.toBeInTheDocument();
     
     const textboxes = screen.getAllByRole('textbox');
-    // 0: Originalsprache, 1: Neue Sprache, 2: sow_title, 3: description
+    // 0: Originalsprache, 1: Neue Sprache, 2: custom_title, 3: description
+    expect(screen.getByText('custom_title')).toBeInTheDocument();
     const descField = textboxes[3];
     expect(descField).toBeInTheDocument();
 

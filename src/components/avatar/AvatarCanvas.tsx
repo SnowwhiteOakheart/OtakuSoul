@@ -132,12 +132,16 @@ export const AvatarCanvas: React.FC<AvatarCanvasProps> = ({
 
   // 1. Resolve VRM path (Character override or global setting)
   const vrmPath =
+    (character?.card.data.extensions?.custom_vrm as string) ||
     (character?.card.data.extensions?.sow_vrm as string) ||
     activeVrmPath ||
     '';
 
   // 2. Resolve Live2D model path (Character override or global setting fallback)
-  const live2dKey = (character?.card.data.extensions?.sow_live2d as string) || '';
+  const live2dKey =
+    (character?.card.data.extensions?.custom_live2d as string) ||
+    (character?.card.data.extensions?.sow_live2d as string) ||
+    '';
   const matchedLive2d = live2dKey
     ? scannedLive2ds.find(
         (m) =>

@@ -64,24 +64,24 @@ Statt Markenpräfixe tief im Code zu verankern, benennen wir Subsysteme rein nac
 ## 📌 Phase 2: Neutrale Charakterkarten-Metadaten (`sow_*` → `custom_*`)
 > **Ziel:** V2-Karten-Extensions werden markenneutral benannt. Bestehende Karten werden beim Lesen tolerant toleriert, beim Speichern wird nur noch der neutrale Standard geschrieben.
 
-- [ ] **2.1 Typsystem aktualisieren (`src/types/index.ts`)**
-  - [ ] `CharacterCardV2Data.extensions`:
+- [x] **2.1 Typsystem aktualisieren (`src/types/index.ts`)**
+  - [x] `CharacterCardV2Data.extensions`:
     - `custom_title?: string` (Fallback beim Lesen: `sow_title`)
     - `custom_vrm?: string` (Fallback beim Lesen: `sow_vrm`)
     - `custom_live2d?: string` (Fallback beim Lesen: `sow_live2d`)
     - `custom_avatar?: string` (Fallback beim Lesen: `sow_avatar`)
     - `custom_expressions?: Record<string, string>` (Fallback beim Lesen: `sow_expressions`)
     - `custom_i18n?: { ... }` (Fallback beim Lesen: `sow_i18n`)
-- [ ] **2.2 Charakter-Editor anpassen (`CharacterEditorModal.tsx` & `CharacterTranslationsTab.tsx`)**
-  - [ ] Tolerante Lese-Logik: `card.data.extensions?.custom_title || card.data.extensions?.sow_title`.
-  - [ ] Saubere Schreib-Logik: Beim Speichern nur noch `custom_*` setzen und Altlast-Schlüssel bereinigen.
-  - [ ] Feldname im Übersetzungs-Tab von `sow_title` auf `custom_title` umstellen.
-- [ ] **2.3 Rendering-Komponenten anpassen**
-  - [ ] `CharacterLibraryView.tsx`: Titelauflösung auf `custom_title` umstellen.
-  - [ ] `AdaptiveHud.tsx`: Titelauflösung auf `custom_title` umstellen.
-  - [ ] `AvatarCanvas.tsx`: VRM- und Live2D-Pfadauflösung auf `custom_vrm` / `custom_live2d` umstellen.
-- [ ] **2.4 Rust-Export anpassen (`src-tauri/src/modules/characters.rs`)**
-  - [ ] V2-PNG-Export (`chara` Chunk) schreibt saubere `custom_*`-Felder in die Extensions.
+- [x] **2.2 Charakter-Editor anpassen (`CharacterEditorModal.tsx` & `CharacterTranslationsTab.tsx`)**
+  - [x] Tolerante Lese-Logik: `card.data.extensions?.custom_title || card.data.extensions?.sow_title`.
+  - [x] Saubere Schreib-Logik: Beim Speichern nur noch `custom_*` setzen und Altlast-Schlüssel bereinigen.
+  - [x] Feldname im Übersetzungs-Tab von `sow_title` auf `custom_title` umstellen.
+- [x] **2.3 Rendering-Komponenten anpassen**
+  - [x] `CharacterLibraryView.tsx`: Titelauflösung auf `custom_title` umstellen.
+  - [x] `AdaptiveHud.tsx`: Titelauflösung auf `custom_title` umstellen.
+  - [x] `AvatarCanvas.tsx`: VRM- und Live2D-Pfadauflösung auf `custom_vrm` / `custom_live2d` umstellen.
+- [x] **2.4 Rust-Export anpassen (`src-tauri/src/modules/characters.rs`)**
+  - [x] V2-PNG-Export (`chara` Chunk) schreibt saubere `custom_*`-Felder in die Extensions.
 
 ---
 

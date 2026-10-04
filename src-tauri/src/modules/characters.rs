@@ -82,11 +82,15 @@ impl CharacterData {
             }
         }
         if let Some(title) = translation
-            .get("sow_title")
+            .get("custom_title")
+            .or_else(|| translation.get("sow_title"))
             .and_then(serde_json::Value::as_str)
             && let Some(extensions) = fields.get_mut("extensions").and_then(|e| e.as_object_mut())
         {
-            extensions.insert("sow_title".to_string(), title.into());
+            extensions.insert("custom_title".to_string(), title.into());
+            if extensions.contains_key("sow_title") {
+                extensions.insert("sow_title".to_string(), title.into());
+            }
         }
         serde_json::from_value(data).unwrap_or_else(|_| self.clone())
     }
@@ -948,6 +952,7 @@ mod tests {
         assert_eq!(en.personality, "stolz");
         assert_eq!(en.tags, vec!["Idol", "English"]);
         assert_eq!(en.extensions["sow_title"], "Top idol");
+        assert_eq!(en.extensions["custom_title"], "Top idol");
         // Languages without a translation (and plain imported cards) are unchanged.
         assert_eq!(card.localized("ru").description, "Ein Idol.");
         let plain = CharacterData {

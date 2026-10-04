@@ -30,6 +30,7 @@ describe('card translations', () => {
     expect(en.first_mes).toBe('Hallo {{user}}!');
     expect(en.tags).toEqual(['Idol', 'English']);
     expect(en.extensions.sow_title).toBe('Top idol');
+    expect(en.extensions.custom_title).toBe('Top idol');
   });
 
   it('leaves cards without translations unchanged', () => {

@@ -19,7 +19,7 @@ const TRANSLATABLE_TEXT = [
   'creator_notes',
 ] as const;
 
-type CardTranslation = Partial<Record<(typeof TRANSLATABLE_TEXT)[number] | 'sow_title', string>> & {
+type CardTranslation = Partial<Record<(typeof TRANSLATABLE_TEXT)[number] | 'custom_title' | 'sow_title', string>> & {
   alternate_greetings?: string[];
   tags?: string[];
 };
@@ -60,7 +60,14 @@ export const localizeCard = (data: CharacterData, lang: string): CharacterData =
   }
   if (translation.alternate_greetings?.length) localized.alternate_greetings = translation.alternate_greetings;
   if (translation.tags?.length) localized.tags = translation.tags;
-  if (translation.sow_title) localized.extensions = { ...data.extensions, sow_title: translation.sow_title };
+  const title = translation.custom_title ?? translation.sow_title;
+  if (title) {
+    localized.extensions = {
+      ...data.extensions,
+      custom_title: title,
+      ...(data.extensions?.sow_title !== undefined ? { sow_title: title } : {}),
+    };
+  }
   return localized;
 };
 

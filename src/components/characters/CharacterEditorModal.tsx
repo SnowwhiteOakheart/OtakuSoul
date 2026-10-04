@@ -37,13 +37,22 @@ export const CharacterEditorModal = ({
 
   // Form State
   const [boundLorebooks, setBoundLorebooks] = useState<string[]>(character?.bound_lorebooks || []);
-  const [vrmPath, setVrmPath] = useState<string>((character?.card.data.extensions?.sow_vrm as string) || '');
+  const [vrmPath, setVrmPath] = useState<string>(
+    (character?.card.data.extensions?.custom_vrm as string) ||
+    (character?.card.data.extensions?.sow_vrm as string) ||
+    ''
+  );
   const [live2dModel, setLive2dModel] = useState<string>(
-    (character?.card.data.extensions?.sow_live2d as string) || ''
+    (character?.card.data.extensions?.custom_live2d as string) ||
+    (character?.card.data.extensions?.sow_live2d as string) ||
+    ''
   );
   const [name, setName] = useState(character?.card.data.name || '');
   const [title, setTitle] = useState(
-    (character?.card.data.extensions?.sow_title as string) || character?.card.data.tags?.[0] || ''
+    (character?.card.data.extensions?.custom_title as string) ||
+    (character?.card.data.extensions?.sow_title as string) ||
+    character?.card.data.tags?.[0] ||
+    ''
   );
   const [avatarDataUrl, setAvatarDataUrl] = useState<string | null>(character?.avatar_data_url || null);
   const [expressionImages, setExpressionImages] = useState<Record<string, string>>(
@@ -156,18 +165,25 @@ export const CharacterEditorModal = ({
         system_prompt: systemPrompt.trim() ? systemPrompt.trim() : undefined,
         creator_notes: creatorNotes.trim() ? creatorNotes.trim() : undefined,
         tags,
-        extensions: {
-          ...(character?.card.data.extensions || {}),
-          sow_title: title.trim() || undefined,
-          sow_vrm: vrmPath || undefined,
-          sow_live2d: live2dModel || undefined,
-          expressions: Object.keys(cleanedExpressionImages).length > 0
-            ? cleanedExpressionImages
-            : undefined,
-          [I18N_EXTENSION]: Object.keys(translations).length > 0
-            ? { source_language: sourceLanguage, translations }
-            : undefined,
-        },
+        extensions: (() => {
+          const cleanExt = { ...(character?.card.data.extensions || {}) };
+          delete cleanExt.sow_title;
+          delete cleanExt.sow_vrm;
+          delete cleanExt.sow_live2d;
+          delete cleanExt.sow_expressions;
+          return {
+            ...cleanExt,
+            custom_title: title.trim() || undefined,
+            custom_vrm: vrmPath || undefined,
+            custom_live2d: live2dModel || undefined,
+            expressions: Object.keys(cleanedExpressionImages).length > 0
+              ? cleanedExpressionImages
+              : undefined,
+            [I18N_EXTENSION]: Object.keys(translations).length > 0
+              ? { source_language: sourceLanguage, translations }
+              : undefined,
+          };
+        })(),
       },
     };
 
@@ -755,9 +771,9 @@ export const CharacterEditorModal = ({
                       tags: tagsStr.split(',').map((tag) => tag.trim()),
                       extensions: {
                         ...(character?.card.data.extensions || {}),
-                        sow_title: title || undefined,
-                        sow_vrm: vrmPath || undefined,
-                        sow_live2d: live2dModel || undefined,
+                        custom_title: title || undefined,
+                        custom_vrm: vrmPath || undefined,
+                        custom_live2d: live2dModel || undefined,
                         expressions: Object.keys(expressionImages).length > 0
                           ? expressionImages
                           : undefined,
