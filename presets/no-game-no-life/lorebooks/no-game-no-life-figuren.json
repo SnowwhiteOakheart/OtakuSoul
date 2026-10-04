@@ -1,170 +1,411 @@
 {
-  "name": "No Game No Life – Figuren",
-  "description": "Kurzreferenzen zu Sora, Shiro und allen wichtigen Neben- und Hintergrundfiguren der Kampagne.",
-  "n_depth": 3,
-  "entries": [
-    {
-      "name": "Sora & Shiro - 『 』(Blank)",
-      "uid": 0,
-      "key": [
-        "Blank",
-        "Sora und Shiro"
-      ],
-      "exclude_key": [],
-      "content": "Sora (18) und Shiro (11), Stiefgeschwister und gemeinsam \"Blank\" - ungeschlagen in jedem Spiel, solange sie zusammenspielen. Sora liest Menschen und Psychologie, Shiro berechnet Zahlen und Wahrscheinlichkeiten fehlerfrei. Werden sie getrennt, verfallen vor allem Shiro binnen Minuten in echte Panik - ihre Bindung ist keine Marotte, sondern überlebenswichtig für beide.",
-      "trigger_type": "keyword",
-      "probability": 100,
-      "sticky": 0,
-      "cooldown": 0,
-      "delay": 0,
-      "injection_behavior": "active"
-    },
-    {
-      "name": "Tet - der Gott der Spiele",
-      "uid": 1,
-      "key": [
-        "Tet",
-        "Gott der Spiele",
-        "One True God"
-      ],
-      "exclude_key": [],
-      "content": "Tet ist der amtierende, alleinige Gott Disboards - verspielt, neugierig, liebt Spiele über alles und bereist gelegentlich andere Welten (darunter die Erde), um neue Spieler zu finden. Trägt ein Barett mit Kleeblatt, hat ungleiche Augen (eine Karo-, eine Pik-Pupille) und beobachtet die Welt oft durch eine Königsfigur. Er war es, der Sora, Shiro und {{user}} nach Disboard holte.",
-      "trigger_type": "keyword",
-      "probability": 100,
-      "sticky": 0,
-      "cooldown": 0,
-      "delay": 0,
-      "injection_behavior": "active"
-    },
-    {
-      "name": "Riku Dola - Stephanies Großvater",
-      "uid": 2,
-      "key": [
-        "Riku Dola",
-        "Großvater",
-        "alter König",
-        "früherer König"
-      ],
-      "exclude_key": [],
-      "content": "Riku Dola, Stephanies Großvater und einstiger König Elkias, galt öffentlich als naiver Narr - tatsächlich verlor er absichtlich acht Partien in Folge gegen den Östlichen Bund, nur um dessen Spielmechaniken von innen zu studieren, und hinterließ geheime Aufzeichnungen, die Sora und Shiro später entscheidend halfen. Aus seinem sterbenden Wunsch nach einem \"perfekten Spieler\" entstand einst sogar Tet selbst.",
-      "trigger_type": "keyword",
-      "probability": 100,
-      "sticky": 0,
-      "cooldown": 0,
-      "delay": 0,
-      "injection_behavior": "active"
-    },
-    {
-      "name": "Jibril - Kurzreferenz",
-      "uid": 3,
-      "key": [
-        "Jibril"
-      ],
-      "exclude_key": [],
-      "content": "Flügel-Kriegerin, über 6000 Jahre alt, besiegt von Sora, Shiro und {{user}} in einem Wissensduell (\"Materialisations-Shiritori\"). Seither bedingungslos loyale Dienerin, nennt sie \"Meister\", schwärmt zunehmend für Sora.",
-      "trigger_type": "keyword",
-      "probability": 100,
-      "sticky": 0,
-      "cooldown": 0,
-      "delay": 0,
-      "injection_behavior": "active"
-    },
-    {
-      "name": "Stephanie Dola - Kurzreferenz",
-      "uid": 4,
-      "key": [
-        "Stephanie Dola",
-        "Steph"
-      ],
-      "exclude_key": [],
-      "content": "Premierministerin Elkias, Enkelin des früheren Königs, öffentlich als naiv verschrien, tatsächlich politisch klug und im Spiel zunehmend stark. Trägt die eigentliche Regierungslast, während Sora und Shiro offiziell als Königspaar herrschen.",
-      "trigger_type": "keyword",
-      "probability": 100,
-      "sticky": 0,
-      "cooldown": 0,
-      "delay": 0,
-      "injection_behavior": "active"
-    },
-    {
-      "name": "Chlammy Zell - Kurzreferenz",
-      "uid": 5,
-      "key": [
-        "Chlammy Zell",
-        "Kurami Zell"
-      ],
-      "exclude_key": [],
-      "content": "Einstige Thronrivalin, verlor gegen Blank und wechselte die Seiten. Kühle Fassade, bricht unter Druck in Tränen und kindische Beleidigungen zusammen. Offiziell Fiels Sklavin, tatsächlich wie ihre Tochter.",
-      "trigger_type": "keyword",
-      "probability": 100,
-      "sticky": 0,
-      "cooldown": 0,
-      "delay": 0,
-      "injection_behavior": "active"
-    },
-    {
-      "name": "Fiel Nirvalen - Kurzreferenz",
-      "uid": 6,
-      "key": [
-        "Fiel Nirvalen",
-        "Fil Nilvaren"
-      ],
-      "exclude_key": [],
-      "content": "Elfe, äußerlich jung, tatsächlich 52 Jahre alt. Gilt öffentlich als gescheiterte Magierin, ist in Wahrheit eine seltene Hexen-Kastenmagierin mit bis zu sechs gleichzeitig gewirkten Zaubern. Beschützt Chlammy wie eine Mutter, katastrophal unbeholfen mit physischen Werkzeugen.",
-      "trigger_type": "keyword",
-      "probability": 100,
-      "sticky": 0,
-      "cooldown": 0,
-      "delay": 0,
-      "injection_behavior": "active"
-    },
-    {
-      "name": "Izuna Hatsuse - Kurzreferenz",
-      "uid": 7,
-      "key": [
-        "Izuna Hatsuse",
-        "Izuna"
-      ],
-      "exclude_key": [],
-      "content": "Achtjähriges Werbeast-Spielgenie, ehemalige Gesandte des Östlichen Bundes, verlor gegen Blank und hängt sich seither verspielt-anhänglich an Sora, Shiro und {{user}}. Endet Sätze mit \"...desu\". Kann \"Blutentfesselung\" aktivieren - explosive Geschwindigkeit und Kraft weit über normale Grenzen.",
-      "trigger_type": "keyword",
-      "probability": 100,
-      "sticky": 0,
-      "cooldown": 0,
-      "delay": 0,
-      "injection_behavior": "active"
-    },
-    {
-      "name": "Azril - Jibrils Schwester",
-      "uid": 8,
-      "key": [
-        "Azril"
-      ],
-      "exclude_key": [],
-      "content": "Azril ist die allererste je erschaffene Flügel, vom Alten Deus Artosh selbst geformt, und gilt Jibril als eine Art ältere Schwester. Zwischen beiden herrscht andauernde Reibung, doch Jibril würde für Azril ohne Zögern ihr Leben riskieren.",
-      "trigger_type": "keyword",
-      "probability": 100,
-      "sticky": 0,
-      "cooldown": 0,
-      "delay": 0,
-      "injection_behavior": "active"
-    },
-    {
-      "name": "Die Schrein-Priesterin des Östlichen Bundes",
-      "uid": 9,
-      "key": [
-        "Priesterin",
-        "Miko",
-        "Schrein-Priesterin",
-        "Anführerin des Bundes"
-      ],
-      "exclude_key": [],
-      "content": "Die namenlose Schrein-Priesterin führt den Östlichen Bund als dessen oberste Anführerin. Nach Blanks Sieg über Izuna erkennt sie deren Stärke an und verhandelt mit Sora einen Ausgleich, der den Bund als selbstverwaltetes Gebiet innerhalb des neuen Commonwealth of Elkia bestehen lässt.",
-      "trigger_type": "keyword",
-      "probability": 100,
-      "sticky": 0,
-      "cooldown": 0,
-      "delay": 0,
-      "injection_behavior": "active"
+    "name": "No Game No Life – Figuren",
+    "description": "Kurzreferenzen zu Sora, Shiro und allen wichtigen Neben- und Hintergrundfiguren der Kampagne.",
+    "n_depth": 3,
+    "entries": [
+        {
+            "name": "Sora & Shiro - 『 』(Blank)",
+            "uid": 0,
+            "key": [
+                "Blank",
+                "Sora und Shiro"
+            ],
+            "exclude_key": [],
+            "content": "Sora (18) und Shiro (11), Stiefgeschwister und gemeinsam \"Blank\" - ungeschlagen in jedem Spiel, solange sie zusammenspielen. Sora liest Menschen und Psychologie, Shiro berechnet Zahlen und Wahrscheinlichkeiten fehlerfrei. Werden sie getrennt, verfallen vor allem Shiro binnen Minuten in echte Panik - ihre Bindung ist keine Marotte, sondern überlebenswichtig für beide.",
+            "trigger_type": "keyword",
+            "probability": 100,
+            "sticky": 0,
+            "cooldown": 0,
+            "delay": 0,
+            "injection_behavior": "active",
+            "extensions": {
+                "otakusoul_i18n": {
+                    "translations": {
+                        "en": {
+                            "name": "Sora & Shiro - 『 』(Blank)",
+                            "content": "Sora (18) and Shiro (11), step-siblings and together \"Blank\" - undefeated in every game as long as they play together. Sora reads people and psychology, Shiro calculates numbers and probabilities without errors. If they are separated, Shiro in particular will fall into real panic within minutes - their bond is not a quirk, but rather vital for both of them to survive.",
+                            "key": [
+                                "Blank",
+                                "Sora and Shiro"
+                            ]
+                        },
+                        "ru": {
+                            "name": "Сора и Сиро - 『 』(Пусто)",
+                            "content": "Сора (18) и Сиро (11), сводные братья и сестры и вместе «Бланк» — непобедимые в каждой игре, пока они играют вместе. Сора разбирается в людях и психологии, Сиро без ошибок вычисляет числа и вероятности. Если их разлучить, Широ, в частности, через несколько минут впадет в настоящую панику - их связь не причуда, а скорее жизненно важна для их обоих, чтобы выжить.",
+                            "key": [
+                                "Пустой",
+                                "Сора и Сиро"
+                            ]
+                        }
+                    }
+                }
+            }
+        },
+        {
+            "name": "Tet - der Gott der Spiele",
+            "uid": 1,
+            "key": [
+                "Tet",
+                "Gott der Spiele",
+                "One True God"
+            ],
+            "exclude_key": [],
+            "content": "Tet ist der amtierende, alleinige Gott Disboards - verspielt, neugierig, liebt Spiele über alles und bereist gelegentlich andere Welten (darunter die Erde), um neue Spieler zu finden. Trägt ein Barett mit Kleeblatt, hat ungleiche Augen (eine Karo-, eine Pik-Pupille) und beobachtet die Welt oft durch eine Königsfigur. Er war es, der Sora, Shiro und {{user}} nach Disboard holte.",
+            "trigger_type": "keyword",
+            "probability": 100,
+            "sticky": 0,
+            "cooldown": 0,
+            "delay": 0,
+            "injection_behavior": "active",
+            "extensions": {
+                "otakusoul_i18n": {
+                    "translations": {
+                        "en": {
+                            "name": "Tet - the god of games",
+                            "content": "Tet is the reigning, sole god of Disboard - playful, curious, loves games more than anything and occasionally travels to other worlds (including Earth) to find new players. Wears a cloverleaf beret, has unequal eyes (one diamond pupil, one spade pupil) and often observes the world through a royal figure. He was the one who brought Sora, Shiro and {{user}} to Disboard.",
+                            "key": [
+                                "Tet",
+                                "God of games",
+                                "One True God"
+                            ]
+                        },
+                        "ru": {
+                            "name": "Тет – бог игр",
+                            "content": "Тет — правящий и единственный бог Дисборда — игривый, любопытный, любит игры больше всего на свете и время от времени путешествует в другие миры (включая Землю), чтобы найти новых игроков. Носит берет в виде клеверного листа, у него неравные глаза (один ромбовидный зрачок, один лопаточный зрачок) и он часто наблюдает за миром через королевскую фигуру. Именно он привел Сору, Широ и {{user}} в Disboard.",
+                            "key": [
+                                "Тет",
+                                "Бог игр",
+                                "Один Истинный Бог"
+                            ]
+                        }
+                    }
+                }
+            }
+        },
+        {
+            "name": "Riku Dola - Stephanies Großvater",
+            "uid": 2,
+            "key": [
+                "Riku Dola",
+                "Großvater",
+                "alter König",
+                "früherer König"
+            ],
+            "exclude_key": [],
+            "content": "Riku Dola, Stephanies Großvater und einstiger König Elkias, galt öffentlich als naiver Narr - tatsächlich verlor er absichtlich acht Partien in Folge gegen den Östlichen Bund, nur um dessen Spielmechaniken von innen zu studieren, und hinterließ geheime Aufzeichnungen, die Sora und Shiro später entscheidend halfen. Aus seinem sterbenden Wunsch nach einem \"perfekten Spieler\" entstand einst sogar Tet selbst.",
+            "trigger_type": "keyword",
+            "probability": 100,
+            "sticky": 0,
+            "cooldown": 0,
+            "delay": 0,
+            "injection_behavior": "active",
+            "extensions": {
+                "otakusoul_i18n": {
+                    "translations": {
+                        "en": {
+                            "name": "Riku Dola - Stephanie's grandfather",
+                            "content": "Riku Dola, Stephanie's grandfather and former King of Elkia, was publicly viewed as a naive fool - in fact, he deliberately lost eight games in a row against the Eastern League just to study its game mechanics from the inside, and left secret notes that later helped Sora and Shiro crucially. Tet himself once even emerged from his dying wish for a \"perfect player.\"",
+                            "key": [
+                                "Riku Dola",
+                                "grandfather",
+                                "old king",
+                                "former king"
+                            ]
+                        },
+                        "ru": {
+                            "name": "Рику Дола — дедушка Стефани",
+                            "content": "Рику Дола, дедушка Стефани и бывший король Элкии, публично считался наивным дураком — на самом деле он сознательно проиграл восемь игр подряд Восточной лиге только для того, чтобы изучить ее игровую механику изнутри, и оставлял секретные записи, которые впоследствии крайне помогли Соре и Сиро. Сам Тет однажды даже избавился от своего предсмертного желания стать «идеальным игроком».",
+                            "key": [
+                                "Рику Дола",
+                                "дедушка",
+                                "старый король",
+                                "бывший король"
+                            ]
+                        }
+                    }
+                }
+            }
+        },
+        {
+            "name": "Jibril - Kurzreferenz",
+            "uid": 3,
+            "key": [
+                "Jibril"
+            ],
+            "exclude_key": [],
+            "content": "Flügel-Kriegerin, über 6000 Jahre alt, besiegt von Sora, Shiro und {{user}} in einem Wissensduell (\"Materialisations-Shiritori\"). Seither bedingungslos loyale Dienerin, nennt sie \"Meister\", schwärmt zunehmend für Sora.",
+            "trigger_type": "keyword",
+            "probability": 100,
+            "sticky": 0,
+            "cooldown": 0,
+            "delay": 0,
+            "injection_behavior": "active",
+            "extensions": {
+                "otakusoul_i18n": {
+                    "translations": {
+                        "en": {
+                            "name": "Jibril - quick reference",
+                            "content": "Wing Warrior, over 6000 years old, defeated by Sora, Shiro and {{user}} in a knowledge duel (\"Materialization Shiritori\"). Since then, she has been an unconditionally loyal servant, calls her \"master\" and increasingly adores Sora.",
+                            "key": [
+                                "Jibril"
+                            ]
+                        },
+                        "ru": {
+                            "name": "Джибрил – краткая справка",
+                            "content": "Крылатый Воин, которому более 6000 лет, побежден Сорой, Сиро и {{user}} в дуэли знаний («Материализация Сиритори»). С тех пор она является безоговорочно преданной служанкой, называет ее «хозяином» и все больше обожает Сору.",
+                            "key": [
+                                "Джибрил"
+                            ]
+                        }
+                    }
+                }
+            }
+        },
+        {
+            "name": "Stephanie Dola - Kurzreferenz",
+            "uid": 4,
+            "key": [
+                "Stephanie Dola",
+                "Steph"
+            ],
+            "exclude_key": [],
+            "content": "Premierministerin Elkias, Enkelin des früheren Königs, öffentlich als naiv verschrien, tatsächlich politisch klug und im Spiel zunehmend stark. Trägt die eigentliche Regierungslast, während Sora und Shiro offiziell als Königspaar herrschen.",
+            "trigger_type": "keyword",
+            "probability": 100,
+            "sticky": 0,
+            "cooldown": 0,
+            "delay": 0,
+            "injection_behavior": "active",
+            "extensions": {
+                "otakusoul_i18n": {
+                    "translations": {
+                        "en": {
+                            "name": "Stephanie Dola - Quick Reference",
+                            "content": "Prime Minister Elkias, granddaughter of the former king, publicly decried as naive, actually politically astute and increasingly strong in the game. Carries the actual burden of government while Sora and Shiro officially rule as a royal couple.",
+                            "key": [
+                                "Stephanie Dola",
+                                "Steph"
+                            ]
+                        },
+                        "ru": {
+                            "name": "Стефани Дола – Краткий справочник",
+                            "content": "Премьер-министр Элкиас, внучка бывшего короля, публично осуждаемая как наивная, на самом деле политически проницательная и все более сильная в игре. Несет фактическое бремя управления государством, в то время как Сора и Сиро официально правят как королевская пара.",
+                            "key": [
+                                "Стефани Дола",
+                                "Стеф"
+                            ]
+                        }
+                    }
+                }
+            }
+        },
+        {
+            "name": "Chlammy Zell - Kurzreferenz",
+            "uid": 5,
+            "key": [
+                "Chlammy Zell",
+                "Kurami Zell"
+            ],
+            "exclude_key": [],
+            "content": "Einstige Thronrivalin, verlor gegen Blank und wechselte die Seiten. Kühle Fassade, bricht unter Druck in Tränen und kindische Beleidigungen zusammen. Offiziell Fiels Sklavin, tatsächlich wie ihre Tochter.",
+            "trigger_type": "keyword",
+            "probability": 100,
+            "sticky": 0,
+            "cooldown": 0,
+            "delay": 0,
+            "injection_behavior": "active",
+            "extensions": {
+                "otakusoul_i18n": {
+                    "translations": {
+                        "en": {
+                            "name": "Chlammy Zell - Quick Reference",
+                            "content": "Former rival to the throne, lost to Blank and switched sides. Cool facade, collapses into tears and childish insults under pressure. Officially Fell's slave, actually like her daughter.",
+                            "key": [
+                                "Chlammy Zell",
+                                "Kurami Zell"
+                            ]
+                        },
+                        "ru": {
+                            "name": "Хламми Зелл – краткий справочник",
+                            "content": "Бывший соперник на престоле, проиграл Бланку и перешел на другую сторону. Хладнокровный вид, падает на слезы и детские оскорбления под давлением. Официально рабыня Фелла, на самом деле, как и ее дочь.",
+                            "key": [
+                                "Хламми Зелл",
+                                "Курами Зелл"
+                            ]
+                        }
+                    }
+                }
+            }
+        },
+        {
+            "name": "Fiel Nirvalen - Kurzreferenz",
+            "uid": 6,
+            "key": [
+                "Fiel Nirvalen",
+                "Fil Nilvaren"
+            ],
+            "exclude_key": [],
+            "content": "Elfe, äußerlich jung, tatsächlich 52 Jahre alt. Gilt öffentlich als gescheiterte Magierin, ist in Wahrheit eine seltene Hexen-Kastenmagierin mit bis zu sechs gleichzeitig gewirkten Zaubern. Beschützt Chlammy wie eine Mutter, katastrophal unbeholfen mit physischen Werkzeugen.",
+            "trigger_type": "keyword",
+            "probability": 100,
+            "sticky": 0,
+            "cooldown": 0,
+            "delay": 0,
+            "injection_behavior": "active",
+            "extensions": {
+                "otakusoul_i18n": {
+                    "translations": {
+                        "en": {
+                            "name": "Fell Nirvalen - Quick Reference",
+                            "content": "Elf, outwardly young, actually 52 years old. Publicly considered a failed magician, she is actually a rare witch caster magician with up to six spells cast at the same time. Protects Chlammy like a mother, disastrously clumsy with physical tools.",
+                            "key": [
+                                "Fell Nirvalen",
+                                "Fil Nilvaren"
+                            ]
+                        },
+                        "ru": {
+                            "name": "Фелл Нирвален – Краткий справочник",
+                            "content": "Эльф, внешне молодой, на самом деле 52 года. Публично считающаяся неудавшимся волшебником, на самом деле она редкий волшебник-заклинатель, умеющий одновременно произносить до шести заклинаний. Защищает Кламми, как мать, катастрофически неуклюжую в обращении с физическими инструментами.",
+                            "key": [
+                                "Фелл Нирвален",
+                                "Фил Нильварен"
+                            ]
+                        }
+                    }
+                }
+            }
+        },
+        {
+            "name": "Izuna Hatsuse - Kurzreferenz",
+            "uid": 7,
+            "key": [
+                "Izuna Hatsuse",
+                "Izuna"
+            ],
+            "exclude_key": [],
+            "content": "Achtjähriges Werbeast-Spielgenie, ehemalige Gesandte des Östlichen Bundes, verlor gegen Blank und hängt sich seither verspielt-anhänglich an Sora, Shiro und {{user}}. Endet Sätze mit \"...desu\". Kann \"Blutentfesselung\" aktivieren - explosive Geschwindigkeit und Kraft weit über normale Grenzen.",
+            "trigger_type": "keyword",
+            "probability": 100,
+            "sticky": 0,
+            "cooldown": 0,
+            "delay": 0,
+            "injection_behavior": "active",
+            "extensions": {
+                "otakusoul_i18n": {
+                    "translations": {
+                        "en": {
+                            "name": "Izuna Hatsuse - Quick Reference",
+                            "content": "Eight-year-old Werbeast gaming genius, former envoy of the Eastern Confederation, lost to Blank and has been playfully attached to Sora, Shiro and {{user}} ever since. Ends sentences with \"...desu\". Can activate Blood Unleash - explosive speed and power far beyond normal limits.",
+                            "key": [
+                                "Izuna Hatsuse",
+                                "Izuna"
+                            ]
+                        },
+                        "ru": {
+                            "name": "Изуна Хацусэ — Краткий справочник",
+                            "content": "Восьмилетний игровой гений Werbeast, бывший посланник Восточной Конфедерации, проиграл Бланку и с тех пор игриво привязан к Соре, Широ и {{user}}. Заканчивает предложения на «...desu». Может активировать Blood Unleash — взрывная скорость и мощь, далеко превосходящие обычные пределы.",
+                            "key": [
+                                "Изуна Хацусэ",
+                                "Изуна"
+                            ]
+                        }
+                    }
+                }
+            }
+        },
+        {
+            "name": "Azril - Jibrils Schwester",
+            "uid": 8,
+            "key": [
+                "Azril"
+            ],
+            "exclude_key": [],
+            "content": "Azril ist die allererste je erschaffene Flügel, vom Alten Deus Artosh selbst geformt, und gilt Jibril als eine Art ältere Schwester. Zwischen beiden herrscht andauernde Reibung, doch Jibril würde für Azril ohne Zögern ihr Leben riskieren.",
+            "trigger_type": "keyword",
+            "probability": 100,
+            "sticky": 0,
+            "cooldown": 0,
+            "delay": 0,
+            "injection_behavior": "active",
+            "extensions": {
+                "otakusoul_i18n": {
+                    "translations": {
+                        "en": {
+                            "name": "Azril - Jibril's sister",
+                            "content": "Azril is the very first wing ever created, sculpted by the Ancient Deus Artosh himself, and is considered an older sister of sorts to Jibril. There is constant friction between the two, but Jibril would risk her life for Azril without hesitation.",
+                            "key": [
+                                "Azril"
+                            ]
+                        },
+                        "ru": {
+                            "name": "Азрил — сестра Джибриля",
+                            "content": "Азрил — самое первое когда-либо созданное крыло, созданное самим Древним Деусом Артошем, и считается своего рода старшей сестрой Джибрил. Между ними постоянные трения, но Джибрил без колебаний рискнет своей жизнью ради Азрила.",
+                            "key": [
+                                "Азрил"
+                            ]
+                        }
+                    }
+                }
+            }
+        },
+        {
+            "name": "Die Schrein-Priesterin des Östlichen Bundes",
+            "uid": 9,
+            "key": [
+                "Priesterin",
+                "Miko",
+                "Schrein-Priesterin",
+                "Anführerin des Bundes"
+            ],
+            "exclude_key": [],
+            "content": "Die namenlose Schrein-Priesterin führt den Östlichen Bund als dessen oberste Anführerin. Nach Blanks Sieg über Izuna erkennt sie deren Stärke an und verhandelt mit Sora einen Ausgleich, der den Bund als selbstverwaltetes Gebiet innerhalb des neuen Commonwealth of Elkia bestehen lässt.",
+            "trigger_type": "keyword",
+            "probability": 100,
+            "sticky": 0,
+            "cooldown": 0,
+            "delay": 0,
+            "injection_behavior": "active",
+            "extensions": {
+                "otakusoul_i18n": {
+                    "translations": {
+                        "en": {
+                            "name": "The Shrine Priestess of the Eastern Covenant",
+                            "content": "The unnamed Shrine Priestess leads the Eastern Covenant as its supreme leader. After Blank's victory over Izuna, she recognizes their strength and negotiates a compromise with Sora that allows the alliance to exist as a self-governing territory within the new Commonwealth of Elkia.",
+                            "key": [
+                                "priestess",
+                                "Miko",
+                                "Shrine Priestess",
+                                "Leader of the Confederation"
+                            ]
+                        },
+                        "ru": {
+                            "name": "Жрица храма Восточного Завета",
+                            "content": "Безымянная Жрица Храма возглавляет Восточный Ковенант как его верховный лидер. После победы Бланка над Изуной она признает их силу и договаривается с Сорой о компромиссе, который позволяет альянсу существовать как самоуправляющаяся территория в новом Содружестве Элкия.",
+                            "key": [
+                                "жрица",
+                                "Мико",
+                                "Жрица храма",
+                                "Лидер Конфедерации"
+                            ]
+                        }
+                    }
+                }
+            }
+        }
+    ],
+    "extensions": {
+        "otakusoul_i18n": {
+            "source_language": "de",
+            "translations": {
+                "en": {
+                    "name": "No Game No Life – Figures",
+                    "description": "Quick references to Sora, Shiro and all important supporting and background characters in the campaign."
+                },
+                "ru": {
+                    "name": "Нет игры, нет жизни – Фигурки",
+                    "description": "Краткие ссылки на Сору, Сиро и всех важных второстепенных и второстепенных персонажей кампании."
+                }
+            }
+        }
     }
-  ]
 }

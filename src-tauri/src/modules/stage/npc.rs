@@ -27,6 +27,21 @@ pub struct StageNpcMemory {
     pub text: String,
 }
 
+
+impl StageNpc {
+    pub fn localized(&self, lang: &str) -> StageNpc {
+        let Some(translation) = self.extensions.get(crate::modules::characters::I18N_EXTENSION).and_then(|i18n| i18n.get("translations")).and_then(|t| t.get(lang)) else { return self.clone(); };
+        let mut loc = self.clone();
+        for &field in &["name", "archetype", "personality"] {
+            if let Some(val) = translation.get(field).and_then(|v| v.as_str()) {
+                if !val.trim().is_empty() {
+                    match field { "name" => loc.name = val.to_string(), "archetype" => loc.archetype = val.to_string(), "personality" => loc.personality = val.to_string(), _ => {} }
+                }
+            }
+        }
+        loc
+    }
+}
 #[derive(Debug, Clone, Serialize, Deserialize, TS)]
 #[ts(export)]
 pub struct StageNpc {
@@ -41,6 +56,8 @@ pub struct StageNpc {
     pub memories: Vec<StageNpcMemory>,
     #[serde(default)]
     pub promoted_character_id: Option<String>,
+    #[serde(default)]
+    pub extensions: serde_json::Value,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize, TS)]
@@ -122,6 +139,7 @@ pub fn upsert_npc(state: &mut SceneState, draft: StageNpcDraft) -> Result<(), St
         }
     } else {
         state.npcs.push(StageNpc {
+extensions: serde_json::Value::Null,
             id: format!("npc_{:016x}", rand::rng().random::<u64>()),
             name: name.into(),
             archetype,

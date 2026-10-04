@@ -26,5 +26,28 @@
   "starting_bg": "Horizontal Elkia Card Room.png",
   "starting_ambient": "None",
   "lock_bg": false,
-  "disable_ambient": false
+  "disable_ambient": false,
+  "extensions": {
+    "otakusoul_i18n": {
+      "source_language": "de",
+      "translations": {
+        "en": {
+          "title": "Chapter 5: Weak Field",
+          "description": "King and Queen of Elkia - and yet Sora and Shiro have completely offloaded all government work onto Stephanie. When she loses her patience, she challenges Sora to a game of Blackjack where more is at stake than money.",
+          "world_context": "Since their coronation, Sora and Shiro have taken care of almost nothing related to government responsibility - Stephanie secretly does almost everything alone. When the chaos gets out of hand, she challenges Sora to Blackjack, with the stakes that he must become 'a decent person' if she wins - and cheats herself with a false shuffle trick.",
+          "opening_narration": "Stephanie slams a fresh deck of cards onto the table, so determined that the candle flames flicker. \"That's enough!\" she announces with a bright red face. \"Blackjack. Me against you, Sora. If I win, you will finally become a decent ruler!\" Sora leans back with an amused grin. \"Interesting stakes for someone who just tried to stack the deck,\" he says casually, without taking his eyes off the cards. Stephanie's face turns a shade paler. Next to you, Shiro already silently begins counting every single drawn card.",
+          "gm_tone": "Comedy",
+          "narrator_style": "Light, humorous, with a warmhearted undertone - ends with Stephanie understanding how much Blank is actually risking for Elkia."
+        },
+        "ru": {
+          "title": "Глава 5: Слабое поле",
+          "description": "Король и Королева Элкии — и всё же Сора и Широ полностью свалили всю правительственную работу на Стефани. Когда она теряет терпение, она бросает вызов Соре на партию в блэкджек, где на кону стоит больше, чем деньги.",
+          "world_context": "С момента своей коронации Сора и Широ почти не занимались ничем, что связано с правительственными обязанностями — Стефани тайно делает почти всё сама. Когда хаос выходит из-под контроля, она бросает вызов Соре в блэкджек, ставя на то, что он должен стать 'порядочным человеком', если она выиграет — и сама при этом жульничает с фальшивым трюком тасования.",
+          "opening_narration": "Стефани с такой решимостью хлопает свежей колодой карт по столу, что пламя свечей мерцает. \"Хватит!\" — заявляет она с покрасневшим лицом. \"Блэкджек. Я против тебя, Сора. Если я выиграю, ты наконец станешь нормальным правителем!\" Сора откидывается назад с веселой ухмылкой. \"Интересная ставка для того, кто только что пытался подтасовать колоду\", — небрежно говорит он, не отрывая взгляда от карт. Лицо Стефани становится немного бледнее. Рядом с тобой Широ уже беззвучно начинает подсчитывать каждую вытянутую карту.",
+          "gm_tone": "Комедия",
+          "narrator_style": "Легкий, юмористический, с теплым подтекстом — заканчивается тем, что Стефани понимает, как много Пустые на самом деле рискуют ради Элкии."
+        }
+      }
+    }
+  }
 }

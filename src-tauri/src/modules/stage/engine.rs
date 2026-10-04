@@ -97,6 +97,7 @@ impl StageEngine {
         };
 
         let initial_def = SceneDefinition {
+extensions: serde_json::Value::Null,
             id: "default_scene".to_string(),
             title: lang.pick("Die verlassene Zuflucht", "The abandoned sanctuary", "Заброшенное убежище").to_string(),
             description: lang.pick("Ein altes Sanktum voller arkaner Relikte und verborgener Gefahren.", "An ancient sanctum full of arcane relics and hidden dangers.", "Древнее святилище, полное тайных реликвий и скрытых опасностей.").to_string(),

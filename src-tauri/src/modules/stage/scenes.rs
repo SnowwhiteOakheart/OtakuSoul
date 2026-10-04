@@ -3,6 +3,8 @@
 use super::*;
 
 pub fn build_initial_scene_state(def: &SceneDefinition) -> SceneState {
+    let lang_code = crate::modules::content_lang::language_code(&crate::modules::content_lang::ContentLang::reply_language_name());
+    let localized_def = def.localized(&lang_code);
     let lang = crate::modules::content_lang::ContentLang::current();
     let initial_msg = SceneTurnMessage {
         id: format!("msg_{}", Utc::now().timestamp_millis()),
@@ -10,10 +12,10 @@ pub fn build_initial_scene_state(def: &SceneDefinition) -> SceneState {
         sender_name: "Game Master".to_string(),
         sender_role: "gm".to_string(),
         avatar_url: None,
-        content: if !def.opening_narration.is_empty() {
-            def.opening_narration.clone()
+        content: if !localized_def.opening_narration.is_empty() {
+            localized_def.opening_narration.clone()
         } else {
-            def.description.clone()
+            localized_def.description.clone()
         },
         turn_mode: "do".to_string(),
         whisper_target: None,
@@ -35,7 +37,7 @@ pub fn build_initial_scene_state(def: &SceneDefinition) -> SceneState {
         },
         weather: lang.pick("Klar", "Clear", "Ясно").to_string(),
         danger_level: 2,
-        active_quest: def.description.clone(),
+        active_quest: localized_def.description.clone(),
         key_facts: HashMap::new(),
     };
 
@@ -66,8 +68,8 @@ pub fn build_initial_scene_state(def: &SceneDefinition) -> SceneState {
         inventory: Vec::new(),
         objectives: vec![CampaignObjective {
             id: "objective_main".to_string(),
-            title: if !def.title.is_empty() {
-                def.title.clone()
+            title: if !localized_def.title.is_empty() {
+                localized_def.title.clone()
             } else {
                 lang.pick(
                     "Abenteuer beginnen",
@@ -76,7 +78,7 @@ pub fn build_initial_scene_state(def: &SceneDefinition) -> SceneState {
                 )
                 .to_string()
             },
-            description: def.description.clone(),
+            description: localized_def.description.clone(),
             current: 0,
             max: 1,
             status: "active".to_string(),
@@ -332,18 +334,20 @@ pub(super) fn parse_scene_file_preview(
 ) -> Option<ScenePreview> {
     let content = fs::read_to_string(p).ok()?;
     if let Ok(state) = serde_json::from_str::<SceneState>(&content) {
+        let lang_code = crate::modules::content_lang::language_code(&crate::modules::content_lang::ContentLang::reply_language_name());
+        let localized_def = state.definition.localized(&lang_code);
         let has_progress = state.chat_log.len() > 1;
         let turn_count = state.chat_log.len();
         return Some(ScenePreview {
-            id: state.definition.id.clone(),
-            title: state.definition.title.clone(),
-            description: state.definition.description.clone(),
-            party: state.definition.party.clone(),
+            id: localized_def.id.clone(),
+            title: localized_def.title.clone(),
+            description: localized_def.description.clone(),
+            party: localized_def.party.clone(),
             location: state.world.location.clone(),
             time_of_day: state.world.time_of_day.clone(),
-            gm_tone: state.definition.gm_tone.clone(),
-            folder: if !state.definition.folder.is_empty() {
-                state.definition.folder.clone()
+            gm_tone: localized_def.gm_tone.clone(),
+            folder: if !localized_def.folder.is_empty() {
+                localized_def.folder.clone()
             } else {
                 folder_label.to_string()
             },
@@ -351,7 +355,7 @@ pub(super) fn parse_scene_file_preview(
             starting_bg: state
                 .current_bg
                 .clone()
-                .unwrap_or_else(|| state.definition.starting_bg.clone()),
+                .unwrap_or_else(|| localized_def.starting_bg.clone()),
             last_played: state.definition.last_played.clone(),
             has_progress,
             turn_count,
@@ -359,6 +363,8 @@ pub(super) fn parse_scene_file_preview(
     }
 
     if let Ok(def) = serde_json::from_str::<SceneDefinition>(&content) {
+        let lang_code = crate::modules::content_lang::language_code(&crate::modules::content_lang::ContentLang::reply_language_name());
+        let localized_def = def.localized(&lang_code);
         let stem = p
             .file_stem()
             .unwrap_or_default()
@@ -371,8 +377,8 @@ pub(super) fn parse_scene_file_preview(
         };
         return Some(ScenePreview {
             id,
-            title: def.title.clone(),
-            description: def.description.clone(),
+            title: localized_def.title.clone(),
+            description: localized_def.description.clone(),
             party: def.party.clone(),
             location: def.starting_location.clone(),
             time_of_day: def.time_of_day.clone(),

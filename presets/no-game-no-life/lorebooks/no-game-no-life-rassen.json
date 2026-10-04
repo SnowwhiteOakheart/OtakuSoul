@@ -1,158 +1,383 @@
 {
-  "name": "No Game No Life – Rassen & Orte",
-  "description": "Die sechzehn Rassen Disboards und die wichtigsten Schauplätze: Elkia, Avant Heim, Elfengard, der Östliche Bund.",
-  "n_depth": 3,
-  "entries": [
-    {
-      "name": "Die sechzehn Rassen im Überblick",
-      "uid": 0,
-      "key": [],
-      "exclude_key": [],
-      "content": "Disboard wird von sechzehn Rassen bewohnt, streng nach magischer Macht gerankt. Die oberen sechs (Alte Deus, Phantasma, Elementare, Drachen, Giganten, Flügel) gelten als \"wahres Leben\", die übrigen zehn als \"Lebewesen\" - eine gewaltige Kluft trennt beide Gruppen. Imanity (die Menschen) steht ganz am Ende der Rangliste, Rang 16 von 16, weil sie als einzige Rasse überhaupt keine Magie wirken oder spüren kann.",
-      "trigger_type": "always_on",
-      "probability": 100,
-      "sticky": 0,
-      "cooldown": 0,
-      "delay": 0,
-      "injection_behavior": "active"
-    },
-    {
-      "name": "Imanity - die schwächste Rasse",
-      "uid": 1,
-      "key": [
-        "Imanity",
-        "Menschen",
-        "Menschheit",
-        "keine Magie"
-      ],
-      "exclude_key": [],
-      "content": "Imanity - die Menschen - stehen auf Rang 16, dem letzten Platz der sechzehn Rassen, weil sie als einzige über keinerlei magische Begabung verfügen. Jahrhundertelang verloren sie deshalb fast jedes Spiel gegen magiebegabte Völker und damit fast ihr gesamtes Territorium, bis nur noch die Stadt Elkia übrig blieb. Ihr Symbol im Spiel ist der König einer Schachfigur. Gerade diese Schwäche macht Imanity gefährlich: Ohne Magie bleibt nur pure Beobachtung, Kalkül und Psychologie - Soras und Shiros Spezialität.",
-      "trigger_type": "keyword",
-      "probability": 100,
-      "sticky": 0,
-      "cooldown": 0,
-      "delay": 0,
-      "injection_behavior": "active"
-    },
-    {
-      "name": "Flügel - Jibrils Volk",
-      "uid": 2,
-      "key": [
-        "Flügel",
-        "geflügelte Rasse",
-        "Engel"
-      ],
-      "exclude_key": [],
-      "content": "Die Flügel stehen auf Rang 6 der sechzehn Rassen - geflügelte, beinahe unsterbliche Kämpfer und Gelehrte, erschaffen vom Alten Deus Artosh während des Großen Krieges. Sie gelten als gnadenlose Kampfmaschinen mit einer tiefen, fast religiösen Liebe zu Wissen und Büchern. Jibril ist die jüngste lebende Flügel.",
-      "trigger_type": "keyword",
-      "probability": 100,
-      "sticky": 0,
-      "cooldown": 0,
-      "delay": 0,
-      "injection_behavior": "active"
-    },
-    {
-      "name": "Elfen - Elfengard",
-      "uid": 3,
-      "key": [
-        "Elf",
-        "Elfen",
-        "Elfengard"
-      ],
-      "exclude_key": [],
-      "content": "Die Elfen stehen auf Rang 7 und beherrschen mit Elfengard das flächenmäßig größte Reich Disboards - drei Kontinente, unterteilt in 52 Staaten. Sie sind auf Magie spezialisiert, verachten körperliche Werkzeuge und Handwerk beinahe vollständig, und altern äußerst langsam, weshalb selbst jahrzehntealte Elfen wie Fiel Nirvalen jung wirken.",
-      "trigger_type": "keyword",
-      "probability": 100,
-      "sticky": 0,
-      "cooldown": 0,
-      "delay": 0,
-      "injection_behavior": "active"
-    },
-    {
-      "name": "Werbeasts - der Östliche Bund",
-      "uid": 4,
-      "key": [
-        "Werbeast",
-        "Werbeasts",
-        "Östlicher Bund",
-        "Tier-Ohren"
-      ],
-      "exclude_key": [],
-      "content": "Werbeasts sind eine Mensch-Tier-Mischrasse (Rang 14), die den Östlichen Bund regiert - Disboards drittgrößte Nation, vor allem Inselgebiete im Südosten. Ihr Ruf als \"Gedankenleser\" ist übertrieben: Tatsächlich können sie nur Lügen erkennen, nicht Gedanken lesen. Ihr eigentlicher Trick, um gegen andere Völker zu gewinnen, sind unbekannte, importierte Spiele, kombiniert mit der Tatsache, dass Verlierer sich an ihre Niederlage magisch nicht mehr erinnern können - wodurch niemand je aus einem verlorenen Spiel gegen sie lernen kann.",
-      "trigger_type": "keyword",
-      "probability": 100,
-      "sticky": 0,
-      "cooldown": 0,
-      "delay": 0,
-      "injection_behavior": "active"
-    },
-    {
-      "name": "Elkia - Hauptstadt der Imanity",
-      "uid": 5,
-      "key": [
-        "Elkia",
-        "Elkia City",
-        "Elkia Castle",
-        "Burg"
-      ],
-      "exclude_key": [],
-      "content": "Elkia ist die letzte verbliebene Stadt der Imanity auf dem Kontinent Andalusia und Sitz von Elkia Castle, der Burg, in der Sora und Shiro nominell als König und Königin residieren - während Stephanie Dola die tatsächliche Regierungsarbeit übernimmt. Nach den Ereignissen gegen den Östlichen Bund wächst Elkia zum \"Commonwealth of Elkia\" heran, einem losen Bündnis mehrerer Völker.",
-      "trigger_type": "keyword",
-      "probability": 100,
-      "sticky": 0,
-      "cooldown": 0,
-      "delay": 0,
-      "injection_behavior": "active"
-    },
-    {
-      "name": "Avant Heim - die schwebende Bibliothek",
-      "uid": 6,
-      "key": [
-        "Avant Heim",
-        "Bibliothek",
-        "Rat der 18 Schwingen"
-      ],
-      "exclude_key": [],
-      "content": "Avant Heim ist die Heimat der Flügel - eine schwebende Landmasse aus riesigen, unregelmäßig gestapelten Würfelstrukturen ohne Straßen, da Flügel fliegen oder teleportieren. Regiert vom Rat der 18 Schwingen, berühmt für seine gewaltige gemeinsame Bibliothek. Ein innerpolitischer Streit darüber, ob Flügel private Bücher besitzen dürfen (5-zu-4 entschieden, gegen private Bücherei), trieb Jibril einst ins selbstgewählte Exil in Elkias Nationalbibliothek.",
-      "trigger_type": "keyword",
-      "probability": 100,
-      "sticky": 0,
-      "cooldown": 0,
-      "delay": 0,
-      "injection_behavior": "active"
-    },
-    {
-      "name": "Elfengard - das größte Reich Disboards",
-      "uid": 7,
-      "key": [
-        "Elfengard",
-        "Elfenreich"
-      ],
-      "exclude_key": [],
-      "content": "Elfengard erstreckt sich über drei Kontinente und 52 Staaten und ist damit die flächenmäßig größte Nation Disboards. Innerhalb Elfengards gilt noch immer eine Form von Sklaverei, gegen die Fiel Nirvalen und Chlammy Zell heimlich zu wirken versuchen.",
-      "trigger_type": "keyword",
-      "probability": 100,
-      "sticky": 0,
-      "cooldown": 0,
-      "delay": 0,
-      "injection_behavior": "active"
-    },
-    {
-      "name": "Der Östliche Bund - Inselreich der Werbeasts",
-      "uid": 8,
-      "key": [
-        "Östlicher Bund",
-        "Ostbund",
-        "Werbeast-Territorium"
-      ],
-      "exclude_key": [],
-      "content": "Der Östliche Bund, Disboards drittgrößte Nation, besteht vor allem aus Inseln im Südosten und wird von einer namenlosen Schrein-Priesterin regiert. Nach der Niederlage gegen Blank in Kapitel 12 bleibt der Bund als selbstverwaltetes Gebiet innerhalb des neu entstehenden Commonwealth of Elkia bestehen.",
-      "trigger_type": "keyword",
-      "probability": 100,
-      "sticky": 0,
-      "cooldown": 0,
-      "delay": 0,
-      "injection_behavior": "active"
+    "name": "No Game No Life – Rassen & Orte",
+    "description": "Die sechzehn Rassen Disboards und die wichtigsten Schauplätze: Elkia, Avant Heim, Elfengard, der Östliche Bund.",
+    "n_depth": 3,
+    "entries": [
+        {
+            "name": "Die sechzehn Rassen im Überblick",
+            "uid": 0,
+            "key": [],
+            "exclude_key": [],
+            "content": "Disboard wird von sechzehn Rassen bewohnt, streng nach magischer Macht gerankt. Die oberen sechs (Alte Deus, Phantasma, Elementare, Drachen, Giganten, Flügel) gelten als \"wahres Leben\", die übrigen zehn als \"Lebewesen\" - eine gewaltige Kluft trennt beide Gruppen. Imanity (die Menschen) steht ganz am Ende der Rangliste, Rang 16 von 16, weil sie als einzige Rasse überhaupt keine Magie wirken oder spüren kann.",
+            "trigger_type": "always_on",
+            "probability": 100,
+            "sticky": 0,
+            "cooldown": 0,
+            "delay": 0,
+            "injection_behavior": "active",
+            "extensions": {
+                "otakusoul_i18n": {
+                    "translations": {
+                        "en": {
+                            "name": "The sixteen breeds at a glance",
+                            "content": "Disboard is inhabited by sixteen races, ranked strictly by magical power. The top six (Old Deus, Phantasm, Elementals, Dragons, Giants, Wings) are considered \"true life\", the remaining ten are considered \"living beings\" - a huge gulf separates both groups. Imanity (the humans) is at the bottom of the rankings, 16th out of 16, because they are the only race that cannot cast or sense magic at all."
+                        },
+                        "ru": {
+                            "name": "Шестнадцать пород с первого взгляда",
+                            "content": "В Дисборде проживают шестнадцать рас, ранжированных строго по магической силе. Шесть лучших (Старый Деус, Фантазм, Элементали, Драконы, Гиганты, Крылья) считаются «истинной жизнью», остальные десять считаются «живыми существами» — обе группы разделяет огромная пропасть. Иманити (люди) находятся внизу рейтинга, на 16-м месте из 16, потому что это единственная раса, которая вообще не может творить или чувствовать магию."
+                        }
+                    }
+                }
+            }
+        },
+        {
+            "name": "Imanity - die schwächste Rasse",
+            "uid": 1,
+            "key": [
+                "Imanity",
+                "Menschen",
+                "Menschheit",
+                "keine Magie"
+            ],
+            "exclude_key": [],
+            "content": "Imanity - die Menschen - stehen auf Rang 16, dem letzten Platz der sechzehn Rassen, weil sie als einzige über keinerlei magische Begabung verfügen. Jahrhundertelang verloren sie deshalb fast jedes Spiel gegen magiebegabte Völker und damit fast ihr gesamtes Territorium, bis nur noch die Stadt Elkia übrig blieb. Ihr Symbol im Spiel ist der König einer Schachfigur. Gerade diese Schwäche macht Imanity gefährlich: Ohne Magie bleibt nur pure Beobachtung, Kalkül und Psychologie - Soras und Shiros Spezialität.",
+            "trigger_type": "keyword",
+            "probability": 100,
+            "sticky": 0,
+            "cooldown": 0,
+            "delay": 0,
+            "injection_behavior": "active",
+            "extensions": {
+                "otakusoul_i18n": {
+                    "translations": {
+                        "en": {
+                            "name": "Imanity - the weakest race",
+                            "content": "Imanity - the humans - are ranked 16th, the last place of the sixteen races, because they are the only ones who have no magical talent whatsoever. For centuries they lost almost every game against magical peoples and thus almost their entire territory, until only the city of Elkia remained. Your symbol in the game is the king of a chess piece. It is precisely this weakness that makes Imanity dangerous: without magic, all that remains is pure observation, calculation and psychology - Sora and Shiro's specialty.",
+                            "key": [
+                                "Imanity",
+                                "People",
+                                "humanity",
+                                "no magic"
+                            ]
+                        },
+                        "ru": {
+                            "name": "Иманити - самая слабая раса",
+                            "content": "Иманити - люди - занимают 16-е место, последнее место из шестнадцати рас, потому что они единственные, у кого нет вообще никакого магического таланта. На протяжении веков они проигрывали почти все игры волшебным народам и, таким образом, почти всей своей территории, пока не остался только город Элкия. Ваш символ в игре – король шахматной фигуры. Именно эта слабость делает Иманити опасной: без магии остаётся лишь чистое наблюдение, расчёт и психология — специализация Соры и Сиро.",
+                            "key": [
+                                "Иманити",
+                                "Люди",
+                                "человечество",
+                                "никакого волшебства"
+                            ]
+                        }
+                    }
+                }
+            }
+        },
+        {
+            "name": "Flügel - Jibrils Volk",
+            "uid": 2,
+            "key": [
+                "Flügel",
+                "geflügelte Rasse",
+                "Engel"
+            ],
+            "exclude_key": [],
+            "content": "Die Flügel stehen auf Rang 6 der sechzehn Rassen - geflügelte, beinahe unsterbliche Kämpfer und Gelehrte, erschaffen vom Alten Deus Artosh während des Großen Krieges. Sie gelten als gnadenlose Kampfmaschinen mit einer tiefen, fast religiösen Liebe zu Wissen und Büchern. Jibril ist die jüngste lebende Flügel.",
+            "trigger_type": "keyword",
+            "probability": 100,
+            "sticky": 0,
+            "cooldown": 0,
+            "delay": 0,
+            "injection_behavior": "active",
+            "extensions": {
+                "otakusoul_i18n": {
+                    "translations": {
+                        "en": {
+                            "name": "Wings - Jibril's people",
+                            "content": "The Wings are the sixth rank of the sixteen races - winged, near-immortal fighters and scholars created by the Ancient Deus Artosh during the Great War. They are considered merciless fighting machines with a deep, almost religious love of knowledge and books. Jibril is the youngest living wing.",
+                            "key": [
+                                "wing",
+                                "winged race",
+                                "angel"
+                            ]
+                        },
+                        "ru": {
+                            "name": "Крылья – люди Джибриля",
+                            "content": "Крылья — шестой ранг из шестнадцати рас — крылатых, почти бессмертных бойцов и учёных, созданных Древним Деусом Артошем во время Великой Войны. Их считают беспощадными боевыми машинами с глубокой, почти религиозной любовью к знаниям и книгам. Джибрил — самое молодое живое крыло.",
+                            "key": [
+                                "крыло",
+                                "крылатая раса",
+                                "ангел"
+                            ]
+                        }
+                    }
+                }
+            }
+        },
+        {
+            "name": "Elfen - Elfengard",
+            "uid": 3,
+            "key": [
+                "Elf",
+                "Elfen",
+                "Elfengard"
+            ],
+            "exclude_key": [],
+            "content": "Die Elfen stehen auf Rang 7 und beherrschen mit Elfengard das flächenmäßig größte Reich Disboards - drei Kontinente, unterteilt in 52 Staaten. Sie sind auf Magie spezialisiert, verachten körperliche Werkzeuge und Handwerk beinahe vollständig, und altern äußerst langsam, weshalb selbst jahrzehntealte Elfen wie Fiel Nirvalen jung wirken.",
+            "trigger_type": "keyword",
+            "probability": 100,
+            "sticky": 0,
+            "cooldown": 0,
+            "delay": 0,
+            "injection_behavior": "active",
+            "extensions": {
+                "otakusoul_i18n": {
+                    "translations": {
+                        "en": {
+                            "name": "Elves - Elfengard",
+                            "content": "The elves are ranked 7th and, with Elfengard, they rule Disboard's largest empire in terms of area - three continents, divided into 52 states. They specialize in magic, have an almost complete disdain for physical tools and crafts, and age extremely slowly, making even decades-old elves like Fiel Nirvalen seem young.",
+                            "key": [
+                                "Eleven",
+                                "Elves",
+                                "Elfengard"
+                            ]
+                        },
+                        "ru": {
+                            "name": "Эльфы - Эльфенгард",
+                            "content": "Эльфы занимают 7-е место и вместе с Эльфенгардом управляют крупнейшей по площади империей Дисборда — тремя континентами, разделенными на 52 государства. Они специализируются на магии, почти полностью презирают физические инструменты и ремесла и стареют очень медленно, в результате чего даже эльфы, которым уже несколько десятков лет, такие как Фиэль Нирвален, кажутся молодыми.",
+                            "key": [
+                                "Одиннадцать",
+                                "Эльфы",
+                                "Эльфэнгард"
+                            ]
+                        }
+                    }
+                }
+            }
+        },
+        {
+            "name": "Werbeasts - der Östliche Bund",
+            "uid": 4,
+            "key": [
+                "Werbeast",
+                "Werbeasts",
+                "Östlicher Bund",
+                "Tier-Ohren"
+            ],
+            "exclude_key": [],
+            "content": "Werbeasts sind eine Mensch-Tier-Mischrasse (Rang 14), die den Östlichen Bund regiert - Disboards drittgrößte Nation, vor allem Inselgebiete im Südosten. Ihr Ruf als \"Gedankenleser\" ist übertrieben: Tatsächlich können sie nur Lügen erkennen, nicht Gedanken lesen. Ihr eigentlicher Trick, um gegen andere Völker zu gewinnen, sind unbekannte, importierte Spiele, kombiniert mit der Tatsache, dass Verlierer sich an ihre Niederlage magisch nicht mehr erinnern können - wodurch niemand je aus einem verlorenen Spiel gegen sie lernen kann.",
+            "trigger_type": "keyword",
+            "probability": 100,
+            "sticky": 0,
+            "cooldown": 0,
+            "delay": 0,
+            "injection_behavior": "active",
+            "extensions": {
+                "otakusoul_i18n": {
+                    "translations": {
+                        "en": {
+                            "name": "Werbranches - the Eastern League",
+                            "content": "Werebsts are a human-animal hybrid (Rank 14) who rule the Eastern Covenant - Disboard's third largest nation, primarily island territories in the southeast. Their reputation as \"mind readers\" is exaggerated: in fact, they can only detect lies, not read minds. Their real trick to winning against other races is unknown, imported games, combined with the fact that losers magically cannot remember their defeat - meaning no one can ever learn from a lost game against them.",
+                            "key": [
+                                "advertising branch",
+                                "Advertising branches",
+                                "Eastern Confederation",
+                                "Animal ears"
+                            ]
+                        },
+                        "ru": {
+                            "name": "Вербранш - Восточная лига",
+                            "content": "Вербсты — гибрид человека и животного (14-й ранг), правящие Восточным Ковенантом — третьей по величине нацией Дисборда, в основном островными территориями на юго-востоке. Их репутация «читателей мыслей» преувеличена: на самом деле они могут только обнаруживать ложь, но не читать мысли. Их настоящий трюк в победе над другими расами неизвестен, импортированные игры в сочетании с тем фактом, что проигравшие волшебным образом не могут вспомнить свое поражение - это означает, что никто никогда не сможет извлечь уроки из проигранной игры против них.",
+                            "key": [
+                                "рекламный филиал",
+                                "Рекламные отрасли",
+                                "Восточная Конфедерация",
+                                "Уши животных"
+                            ]
+                        }
+                    }
+                }
+            }
+        },
+        {
+            "name": "Elkia - Hauptstadt der Imanity",
+            "uid": 5,
+            "key": [
+                "Elkia",
+                "Elkia City",
+                "Elkia Castle",
+                "Burg"
+            ],
+            "exclude_key": [],
+            "content": "Elkia ist die letzte verbliebene Stadt der Imanity auf dem Kontinent Andalusia und Sitz von Elkia Castle, der Burg, in der Sora und Shiro nominell als König und Königin residieren - während Stephanie Dola die tatsächliche Regierungsarbeit übernimmt. Nach den Ereignissen gegen den Östlichen Bund wächst Elkia zum \"Commonwealth of Elkia\" heran, einem losen Bündnis mehrerer Völker.",
+            "trigger_type": "keyword",
+            "probability": 100,
+            "sticky": 0,
+            "cooldown": 0,
+            "delay": 0,
+            "injection_behavior": "active",
+            "extensions": {
+                "otakusoul_i18n": {
+                    "translations": {
+                        "en": {
+                            "name": "Elkia - Capital of Imanity",
+                            "content": "Elkia is the last remaining city of Imanity on the continent of Andalusia and the seat of Elkia Castle, the castle where Sora and Shiro nominally reside as king and queen - while Stephanie Dola handles the actual government work. After the events against the Eastern Covenant, Elkia grows into the \"Commonwealth of Elkia\", a loose alliance of several peoples.",
+                            "key": [
+                                "Elkia",
+                                "Elkia City",
+                                "Elkia Castle",
+                                "castle"
+                            ]
+                        },
+                        "ru": {
+                            "name": "Элкия – столица Иманити",
+                            "content": "Элкия — последний оставшийся город Иманити на континенте Андалусия и резиденция замка Элкия, замка, где Сора и Сиро номинально проживают как король и королева, а Стефани Дола занимается фактической работой правительства. После событий против Восточного Ковенанта Элкия превращается в «Содружество Элкии», свободный союз нескольких народов.",
+                            "key": [
+                                "Элкия",
+                                "Элкия Сити",
+                                "Замок Элкия",
+                                "замок"
+                            ]
+                        }
+                    }
+                }
+            }
+        },
+        {
+            "name": "Avant Heim - die schwebende Bibliothek",
+            "uid": 6,
+            "key": [
+                "Avant Heim",
+                "Bibliothek",
+                "Rat der 18 Schwingen"
+            ],
+            "exclude_key": [],
+            "content": "Avant Heim ist die Heimat der Flügel - eine schwebende Landmasse aus riesigen, unregelmäßig gestapelten Würfelstrukturen ohne Straßen, da Flügel fliegen oder teleportieren. Regiert vom Rat der 18 Schwingen, berühmt für seine gewaltige gemeinsame Bibliothek. Ein innerpolitischer Streit darüber, ob Flügel private Bücher besitzen dürfen (5-zu-4 entschieden, gegen private Bücherei), trieb Jibril einst ins selbstgewählte Exil in Elkias Nationalbibliothek.",
+            "trigger_type": "keyword",
+            "probability": 100,
+            "sticky": 0,
+            "cooldown": 0,
+            "delay": 0,
+            "injection_behavior": "active",
+            "extensions": {
+                "otakusoul_i18n": {
+                    "translations": {
+                        "en": {
+                            "name": "Avant Heim - the floating library",
+                            "content": "Avant Home is the home of the Wings - a floating landmass of huge, irregularly stacked cube structures with no roads as wings fly or teleport. Ruled by the Council of 18 Wings, famous for its massive shared library. An internal political dispute over whether wings should be allowed to own private books (decided 5-4, against private libraries) once drove Jibril into self-imposed exile in Elkia's national library.",
+                            "key": [
+                                "Avant Home",
+                                "library",
+                                "Council of 18 Wings"
+                            ]
+                        },
+                        "ru": {
+                            "name": "Авант Хейм – плавучая библиотека",
+                            "content": "Avant Home — это дом Крыльев — плавучий массив огромных, беспорядочно сложенных кубических структур, без дорог, где крылья летают или телепортируются. Управляется Советом 18 Крыльев, известным своей огромной общей библиотекой. Внутриполитический спор о том, следует ли разрешать крыльям владеть частными книгами (решено 5-4, против частных библиотек) однажды вынудил Джибрил отправиться в добровольное изгнание в национальную библиотеку Элкии.",
+                            "key": [
+                                "Авант Хоум",
+                                "библиотека",
+                                "Совет 18 крыльев"
+                            ]
+                        }
+                    }
+                }
+            }
+        },
+        {
+            "name": "Elfengard - das größte Reich Disboards",
+            "uid": 7,
+            "key": [
+                "Elfengard",
+                "Elfenreich"
+            ],
+            "exclude_key": [],
+            "content": "Elfengard erstreckt sich über drei Kontinente und 52 Staaten und ist damit die flächenmäßig größte Nation Disboards. Innerhalb Elfengards gilt noch immer eine Form von Sklaverei, gegen die Fiel Nirvalen und Chlammy Zell heimlich zu wirken versuchen.",
+            "trigger_type": "keyword",
+            "probability": 100,
+            "sticky": 0,
+            "cooldown": 0,
+            "delay": 0,
+            "injection_behavior": "active",
+            "extensions": {
+                "otakusoul_i18n": {
+                    "translations": {
+                        "en": {
+                            "name": "Elfengard - the largest empire in Disboard",
+                            "content": "Elfengard stretches across three continents and 52 states, making it Disboard's largest nation in terms of area. There is still a form of slavery within Elfengard, which Fiel Nirvalen and Chlammy Zell are secretly trying to combat.",
+                            "key": [
+                                "Elfengard",
+                                "Elven kingdom"
+                            ]
+                        },
+                        "ru": {
+                            "name": "Эльфэнгард — крупнейшая империя в Disboard",
+                            "content": "Эльфенгард простирается на три континента и 52 штата, что делает его крупнейшей по площади страной Дисборда. В Эльфенгарде до сих пор существует форма рабства, с которой Фиэль Нирвален и Кламми Зелл тайно пытаются бороться.",
+                            "key": [
+                                "Эльфэнгард",
+                                "Эльфийское королевство"
+                            ]
+                        }
+                    }
+                }
+            }
+        },
+        {
+            "name": "Der Östliche Bund - Inselreich der Werbeasts",
+            "uid": 8,
+            "key": [
+                "Östlicher Bund",
+                "Ostbund",
+                "Werbeast-Territorium"
+            ],
+            "exclude_key": [],
+            "content": "Der Östliche Bund, Disboards drittgrößte Nation, besteht vor allem aus Inseln im Südosten und wird von einer namenlosen Schrein-Priesterin regiert. Nach der Niederlage gegen Blank in Kapitel 12 bleibt der Bund als selbstverwaltetes Gebiet innerhalb des neu entstehenden Commonwealth of Elkia bestehen.",
+            "trigger_type": "keyword",
+            "probability": 100,
+            "sticky": 0,
+            "cooldown": 0,
+            "delay": 0,
+            "injection_behavior": "active",
+            "extensions": {
+                "otakusoul_i18n": {
+                    "translations": {
+                        "en": {
+                            "name": "The Eastern League - the island kingdom of the Werbrasts",
+                            "content": "The Eastern Covenant, Disboard's third largest nation, consists primarily of islands in the southeast and is ruled by an unnamed shrine priestess. After the defeat against Blank in Chapter 12, the Covenant remains as a self-governing territory within the newly emerging Commonwealth of Elkia.",
+                            "key": [
+                                "Eastern Confederation",
+                                "Eastern Confederation",
+                                "Webeast Territory"
+                            ]
+                        },
+                        "ru": {
+                            "name": "Восточная лига — островное королевство Вербрастов.",
+                            "content": "Восточный Ковенант, третья по величине нация Дисборда, состоит в основном из островов на юго-востоке и управляется неназванной жрицей храма. После поражения от Бланка в главе 12 Ковенант остается самоуправляющейся территорией в составе недавно возникшего Содружества Элкия.",
+                            "key": [
+                                "Восточная Конфедерация",
+                                "Восточная Конфедерация",
+                                "Территория веб-зверя"
+                            ]
+                        }
+                    }
+                }
+            }
+        }
+    ],
+    "extensions": {
+        "otakusoul_i18n": {
+            "source_language": "de",
+            "translations": {
+                "en": {
+                    "name": "No Game No Life – Races & Locations",
+                    "description": "The sixteen races of Disboard and the most important locations: Elkia, Avant Heim, Elfengard, the Eastern League."
+                },
+                "ru": {
+                    "name": "Нет игры, нет жизни – расы и локации",
+                    "description": "Шестнадцать рас Дисборда и важнейшие локации: Элкия, Авант Хейм, Эльфенгард, Восточная Лига."
+                }
+            }
+        }
     }
-  ]
 }

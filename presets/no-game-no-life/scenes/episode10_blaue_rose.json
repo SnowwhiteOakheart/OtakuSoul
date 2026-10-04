@@ -29,5 +29,28 @@
   "starting_bg": "Horizontal Castle War Garden.png",
   "starting_ambient": "None",
   "lock_bg": false,
-  "disable_ambient": false
+  "disable_ambient": false,
+  "extensions": {
+    "otakusoul_i18n": {
+      "source_language": "de",
+      "translations": {
+        "en": {
+          "title": "Chapter 10: Blue Rose",
+          "description": "With Jibril, Stephanie, Chlammy, and Fiel as a united alliance, Sora, Shiro, and Haru prepare for the decisive confrontation with the Eastern Union - but between the Flugel and Elves still lies the burden of an ancient war.",
+          "world_context": "The alliance is set: Jibril, Stephanie, Chlammy, and Fiel now openly fight alongside Blank. However, Fiel meets Jibril with palpable mistrust - during the Great War, the Flugel once destroyed elven cities, and this wound has not healed despite millennia. This episode revolves less around a single game and more around genuine team cohesion before the greatest challenge Blank has taken on so far.",
+          "opening_narration": "The garden lies in warm evening light, but the mood among those present is anything but relaxed. Fiel and Jibril stand at opposite ends of the table, with a distance between them that is more than just politeness. \"Your people burned down my cities,\" Fiel finally says, quietly, without the mocking undertone you normally know from her. Jibril's wings twitch noticeably. \"That was before the Great War ended,\" she replies calmly, \"a different time, a different me.\" Chlammy places a hand on Fiel's arm, wordlessly. Sora watches the scene with a furrowed brow - for the first time, a problem that cannot simply be solved by winning a game.",
+          "gm_tone": "Slice of Life",
+          "narrator_style": "Warm, interpersonal, focusing on quiet gestures instead of grand game scenes - team building before the storm."
+        },
+        "ru": {
+          "title": "Глава 10: Синяя роза",
+          "description": "Вместе с Джибрил, Стефани, Клами и Филь в качестве единого альянса, Сора, Широ и Хару готовятся к решающему противостоянию с Восточным Союзом — но между Флюгелями и Эльфами все еще лежит бремя древней войны.",
+          "world_context": "Альянс сформирован: Джибрил, Стефани, Клами и Филь теперь открыто сражаются на стороне Пустых. Однако Филь относится к Джибрил с ощутимым недоверием — во время Великой Войны Флюгели разрушали эльфийские города, и эта рана не зажила несмотря на тысячелетия. Этот эпизод в меньшей степени вращается вокруг одиночной игры и больше вокруг настоящего сплочения команды перед величайшим испытанием, за которое когда-либо брались Пустые.",
+          "opening_narration": "Сад купается в теплом вечернем свете, но настроение присутствующих далеко от расслабленного. Филь и Джибрил стоят на противоположных концах стола, с дистанцией между ними, которая является чем-то большим, чем просто вежливость. «Твой народ сжигал мои города», — наконец говорит Филь, тихо, без насмешливого подтона, который вы обычно от нее слышите. Крылья Джибрил заметно подергиваются. «Это было до того, как закончилась Великая Война», — спокойно отвечает она, — «другое время, другая я». Клами молча кладет руку на плечо Филь. Сора наблюдает за сценой нахмурившись — впервые перед ним проблема, которую нельзя решить, просто выиграв игру.",
+          "gm_tone": "Повседневность",
+          "narrator_style": "Теплый, межличностный, с акцентом на тихие жесты, а не на грандиозные игровые сцены — сплочение команды перед бурей."
+        }
+      }
+    }
+  }
 }

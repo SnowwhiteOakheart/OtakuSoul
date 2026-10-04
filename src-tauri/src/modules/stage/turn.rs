@@ -86,6 +86,8 @@ pub async fn execute_stage_turn(
     // 2. Build Planner Context & Call LLM for GmPlan
     let lang = crate::modules::content_lang::ContentLang::current();
     let reply_language = crate::modules::content_lang::ContentLang::reply_language_name();
+    let lang_code = crate::modules::content_lang::language_code(&reply_language);
+    let localized_def = state.definition.localized(&lang_code);
     let party_list = if state.definition.party.is_empty() {
         "none".to_string()
     } else {
@@ -171,7 +173,7 @@ pub async fn execute_stage_turn(
     // Scan bound lorebooks for Stage-Lore
     let mut active_lore_snippets = Vec::new();
     if !state.definition.lorebook.is_empty() {
-        let all_lorebooks = crate::modules::lorebook::scan_available_lorebooks();
+        let all_lorebooks = crate::modules::lorebook::scan_available_lorebooks().into_iter().map(|lb| lb.localized(&lang_code)).collect::<Vec<_>>();
         let text_to_scan = recent_history.join("\n");
         for lb_name in &state.definition.lorebook {
             if let Some(lb) = all_lorebooks.iter().find(|l| {
@@ -309,9 +311,9 @@ RULES:
             .map(|a| format!(": {a}"))
             .unwrap_or_default(),
         reply_language = reply_language,
-        tone = state.definition.gm_tone,
-        narrator_style = state.definition.narrator_style,
-        world_context = state.definition.world_context,
+        tone = localized_def.gm_tone,
+        narrator_style = localized_def.narrator_style,
+        world_context = localized_def.world_context,
         lore_context = lore_context,
         location = state.world.location,
         time_of_day = state.world.time_of_day,
@@ -824,8 +826,8 @@ RULES:
 - If there was a dice check, weave its outcome in logically and dramatically.
 - Reply ONLY with the narration, without meta comments or addressing the reader."#,
         reply_language = reply_language,
-        tone = state.definition.gm_tone,
-        narrator_style = state.definition.narrator_style,
+        tone = localized_def.gm_tone,
+        narrator_style = localized_def.narrator_style,
         location = state.world.location,
         time_of_day = state.world.time_of_day,
         weather = state.world.weather,
@@ -1010,12 +1012,13 @@ RULES:
                 overlay_block(&state, &current_actor)
             );
             let companion_system = if let Some(npc) = &npc {
+                let localized_npc = npc.localized(&lang_code);
                 format!(
                     "[SOUL STAGE — NPC]\nYou are {} ({}).\nPersonality and background: {}\nScene context: {}{lore_section}\nReact in the first person to events you witnessed. Stay in character; keep it concise. Reply in {reply_language}.{}{}",
-                    npc.name,
-                    npc.archetype,
-                    npc.personality,
-                    state.definition.world_context,
+                    localized_npc.name,
+                    localized_npc.archetype,
+                    localized_npc.personality,
+                    localized_def.world_context,
                     npc_memory_block(npc, clean_input),
                     secrets
                 )
@@ -1038,7 +1041,7 @@ Reply in {reply_language}.{secrets}"#,
                     name = ch.card.data.name,
                     personality = localized_char.personality,
                     description = localized_char.description,
-                    world_context = state.definition.world_context,
+                    world_context = localized_def.world_context,
                     lore_section = lore_section,
                     user_name = user_name,
                     reply_language = reply_language,

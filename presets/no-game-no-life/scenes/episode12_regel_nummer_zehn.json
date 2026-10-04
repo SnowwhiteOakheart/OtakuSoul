@@ -29,5 +29,28 @@
   "starting_bg": "Horizontal Eastern Union Throne Hall.png",
   "starting_ambient": "None",
   "lock_bg": false,
-  "disable_ambient": false
+  "disable_ambient": false,
+  "extensions": {
+    "otakusoul_i18n": {
+      "source_language": "de",
+      "translations": {
+        "en": {
+          "title": "Chapter 12: Rule Number Ten",
+          "description": "Izuna's Blood Destruction threatens to corner Blank for good - but the decisive shot comes from an unexpected side. Season Finale: Victory over the Eastern Union, a daring coin toss against the Shrine Priestess, and the birth of the Commonwealth of Elkia.",
+          "world_context": "Izuna, now in full Blood Destruction, moves seemingly faster than the game itself allows and pushes Blank onto the defensive - but Sora had long held back a final trump card: a favor from Stephanie, who lands the final hit at the decisive moment. With Imanity's victory over the Eastern Union secured, Sora subsequently negotiates directly with the Shrine Priestess - via a coin toss, which he throws so precisely that the coin stands vertically on its edge, neither heads nor tails. A tie that allows both sides to save face and leads to the new Commonwealth of Elkia - an alliance of Imanity and the Eastern Union.",
+          "opening_narration": "Izuna is hardly recognizable as the childish girl from earlier - her movements blur into mere streaks of light, every shot of yours misses her by a hair's breadth. Sora laughs, out of breath but not worried. \"Did you know,\" he calls between two diving evasive maneuvers, \"that we already won this fight ten minutes ago?\" In the exact same moment, Izuna lowers her guard for a fraction of a second, blinded by genuine joy of playing - and from an angle no one had expected, Stephanie fires the decisive shot. \"Bullseye!\", she calls, surprised by her own courage. The field dissolves into golden light. Imanity's race piece - and the victory over the Eastern Union - belongs to Blank.",
+          "gm_tone": "Epic Fantasy",
+          "narrator_style": "Triumphant, warm, with a quiet, conciliatory conclusion after the victory - the Shrine Priestess should be portrayed with dignity and quiet recognition for Sora, not as a defeated opponent. Let the chapter end with a feeling of 'found family': Sora, Shiro, and Haru, surrounded by everyone they have won over along the way, with the common goal in mind to one day unite all sixteen races."
+        },
+        "ru": {
+          "title": "Глава 12: Правило номер десять",
+          "description": "Разрушение Крови Идзуны грозит окончательно загнать Пустых в угол — но решающий выстрел приходит с неожиданной стороны. Финал сезона: Победа над Восточным Союзом, смелый бросок монеты против Жрицы Храма и рождение Содружества Элькии.",
+          "world_context": "Идзуна, теперь в полном Разрушении Крови, движется, казалось бы, быстрее, чем позволяет сама игра, и вынуждает Пустых уйти в оборону — но Сора давно приберег последний козырь: одолжение от Стефани, которая наносит финальный удар в решающий момент. Обеспечив победу Иманити над Восточным Союзом, Сора затем ведет переговоры напрямую со Жрицей Храма — посредством броска монеты, которую он подбрасывает настолько точно, что монета встает вертикально на ребро, ни орел, ни решка. Ничья, которая позволяет обеим сторонам сохранить лицо и приводит к созданию нового Содружества Элькии — союза Иманити и Восточного Союза.",
+          "opening_narration": "Идзуну уже с трудом можно узнать в той детской девочке, что была раньше — ее движения сливаются в простые полосы света, каждый ваш выстрел промахивается на волосок. Сора смеется, запыхавшись, но не беспокоясь. «А ты знала», — кричит он между двумя ныряющими маневрами уклонения, — «что мы выиграли этот бой еще десять минут назад?» В тот же момент Идзуна на долю секунды опускает защиту, ослепленная искренней радостью от игры — и с угла, откуда никто не ожидал, Стефани производит решающий выстрел. «В яблочко!», — кричит она, сама удивленная собственной смелости. Поле растворяется в золотом свете. Фигура расы Иманити — и победа над Восточным Союзом — принадлежит Пустым.",
+          "gm_tone": "Эпическое фэнтези",
+          "narrator_style": "Триумфальный, теплый, со спокойным, примирительным завершением после победы — Жрицу Храма следует изображать с достоинством и тихим признанием Соры, а не как побежденную противницу. Позвольте главе закончиться чувством «обретенной семьи»: Сора, Широ и Хару, окруженные всеми, кого они завоевали на своем пути, с общей целью в уме — однажды объединить все шестнадцать рас."
+        }
+      }
+    }
+  }
 }

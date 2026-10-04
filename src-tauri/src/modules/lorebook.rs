@@ -26,6 +26,18 @@ fn default_scan_depth() -> u32 {
     5
 }
 
+
+impl LorebookEntry {
+    pub fn localized(&self, lang: &str) -> LorebookEntry {
+        let Some(translation) = self.extensions.get(crate::modules::characters::I18N_EXTENSION).and_then(|i18n| i18n.get("translations")).and_then(|t| t.get(lang)) else { return self.clone(); };
+        let mut loc = self.clone();
+        if let Some(val) = translation.get("name").and_then(|v| v.as_str()) { if !val.trim().is_empty() { loc.name = val.to_string(); } }
+        if let Some(val) = translation.get("content").and_then(|v| v.as_str()) { if !val.trim().is_empty() { loc.content = val.to_string(); } }
+        let translate_array = |key: &str, target: &mut Vec<String>| { if let Some(arr) = translation.get(key).and_then(|v| v.as_array()) { if !arr.is_empty() { *target = arr.iter().filter_map(|v| v.as_str().map(|s| s.to_string())).collect(); } } };
+        translate_array("key", &mut loc.key); translate_array("secondary_keys", &mut loc.secondary_keys); translate_array("exclude_key", &mut loc.exclude_key); translate_array("regex_keys", &mut loc.regex_keys);
+        loc
+    }
+}
 #[derive(Debug, Clone, Serialize, Deserialize, TS)]
 #[ts(export)]
 pub struct LorebookEntry {
@@ -60,6 +72,8 @@ pub struct LorebookEntry {
     pub chain_activates: Vec<String>, // Names or UIDs force-activated
     #[serde(default)]
     pub tension_threshold: Option<u32>, // Triggers when scene tension >= threshold
+    #[serde(default)]
+    pub extensions: serde_json::Value,
 }
 
 impl Default for LorebookEntry {
@@ -82,6 +96,7 @@ impl Default for LorebookEntry {
             chain_requires: Vec::new(),
             chain_activates: Vec::new(),
             tension_threshold: None,
+            extensions: serde_json::Value::Null,
         }
     }
 }
@@ -102,6 +117,8 @@ pub struct Lorebook {
     pub file_path: Option<String>,
     #[serde(default)]
     pub entries: Vec<LorebookEntry>,
+    #[serde(default)]
+    pub extensions: serde_json::Value,
 }
 
 impl Default for Lorebook {
@@ -114,6 +131,7 @@ impl Default for Lorebook {
             is_global: false,
             file_path: None,
             entries: Vec::new(),
+            extensions: serde_json::Value::Null,
         }
     }
 }
@@ -128,6 +146,18 @@ pub struct EvaluatedLoreResult {
     pub new_tension: u32,
 }
 
+
+impl Lorebook {
+    pub fn localized(&self, lang: &str) -> Lorebook {
+        let Some(translation) = self.extensions.get(crate::modules::characters::I18N_EXTENSION).and_then(|i18n| i18n.get("translations")).and_then(|t| t.get(lang)) else {
+            let mut loc = self.clone(); loc.entries = loc.entries.iter().map(|e| e.localized(lang)).collect(); return loc;
+        };
+        let mut loc = self.clone();
+        if let Some(val) = translation.get("name").and_then(|v| v.as_str()) { if !val.trim().is_empty() { loc.name = val.to_string(); } }
+        if let Some(val) = translation.get("description").and_then(|v| v.as_str()) { if !val.trim().is_empty() { loc.description = val.to_string(); } }
+        loc.entries = loc.entries.iter().map(|e| e.localized(lang)).collect(); loc
+    }
+}
 impl Lorebook {
     pub fn load_from_file(path: &Path) -> Result<Self, String> {
         let content = fs::read_to_string(path).map_err(|e| {
@@ -237,6 +267,7 @@ impl Lorebook {
             is_global,
             file_path: None,
             entries: parsed_entries,
+            extensions: serde_json::Value::Null,
         })
     }
 
@@ -354,6 +385,7 @@ impl Lorebook {
             chain_requires: Vec::new(),
             chain_activates: Vec::new(),
             tension_threshold: None,
+            extensions: serde_json::Value::Null,
         })
     }
 

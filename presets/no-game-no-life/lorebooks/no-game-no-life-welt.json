@@ -1,145 +1,354 @@
 {
-  "name": "No Game No Life – Welt & Gebote",
-  "description": "Grundregeln Disboards: die Zehn Gebote, Tets Ursprung, Rasseneinsätze und der Ruf von Blank.",
-  "n_depth": 3,
-  "entries": [
-    {
-      "name": "Grundlage der Welt",
-      "uid": 0,
-      "key": [],
-      "exclude_key": [],
-      "content": "Disboard ist eine Welt, in der körperliche Gewalt, Krieg und Mord vollständig verboten sind. Seit der Gott der Spiele, Tet, die Zehn Gebote erließ, wird jeder Konflikt - vom kindischen Streit bis zum Grenzkrieg zwischen ganzen Völkern - ausschließlich durch ein Spiel entschieden, dessen Einsatz beide Seiten als gleichwertig anerkennen. {{user}}, Sora und Shiro wurden gemeinsam von Tet aus ihrer Welt nach Disboard gezogen, weil Tet einen \"perfekten Spieler\" für sein Reich suchte - und Sora und Shiro als 『 』(Blank) noch nie gemeinsam ein Spiel verloren haben.",
-      "trigger_type": "always_on",
-      "probability": 100,
-      "sticky": 0,
-      "cooldown": 0,
-      "delay": 0,
-      "injection_behavior": "active"
-    },
-    {
-      "name": "Die Zehn Gebote",
-      "uid": 1,
-      "key": [
-        "Gebote",
-        "Zehn Gebote",
-        "Regeln der Welt",
-        "Gesetz Disboards"
-      ],
-      "exclude_key": [],
-      "content": "Die Zehn Gebote, von Tet als absolutes Gesetz Disboards erlassen:\n1. Jede körperliche Verletzung, jeder Krieg und jede Plünderung sind in dieser Welt verboten.\n2. Alle Konflikte werden durch Sieg oder Niederlage in einem Spiel entschieden.\n3. Spiele werden um Einsätze gespielt, die beide Seiten als gleichwertig anerkennen.\n4. Solange es Gebot 3 nicht widerspricht, ist jedes Spiel und jeder Einsatz erlaubt.\n5. Die herausgeforderte Partei bestimmt das Spiel.\n6. Ein per Gebot geschworener Einsatz ist absolut bindend.\n7. Bei Konflikten zwischen Gruppen wird ein bevollmächtigter Vertreter bestimmt, der stellvertretend für die gesamte Gruppe spielt.\n8. Wird Betrug in einem Spiel entdeckt, gilt dies als sofortige Niederlage.\n9. Die obigen Regeln sind absolut und unveränderlich, im Namen des Gottes.\n10. Lasst uns alle gemeinsam Spaß haben.",
-      "trigger_type": "keyword",
-      "probability": 100,
-      "sticky": 0,
-      "cooldown": 0,
-      "delay": 0,
-      "injection_behavior": "active"
-    },
-    {
-      "name": "Der Suniaster und Tets Ursprung",
-      "uid": 2,
-      "key": [
-        "Suniaster",
-        "Tet",
-        "Alter Deus",
-        "Großer Krieg"
-      ],
-      "exclude_key": [],
-      "content": "Tet ist der jüngste und schwächste aller Alten Deus - entstanden am Ende des Großen Krieges aus dem sterbenden Wunsch eines Menschen namens Riku Dola, der sich nach dem \"perfekten Spieler\" sehnte, während er nach dem Suniaster griff, dem mächtigsten Artefakt der Welt. Tet ergriff den Suniaster vor jedem rivalisierenden Alten Deus und wurde dadurch zum alleinigen Gott Disboards, ohne selbst am Krieg teilgenommen zu haben. Seither reist er gelegentlich zwischen den Welten, um neue, interessante Spieler zu finden - so wie er Sora, Shiro und {{user}} fand.",
-      "trigger_type": "keyword",
-      "probability": 100,
-      "sticky": 0,
-      "cooldown": 0,
-      "delay": 0,
-      "injection_behavior": "active"
-    },
-    {
-      "name": "Bevollmächtigter Vertreter - Gebot 7",
-      "uid": 3,
-      "key": [
-        "Bevollmächtigter",
-        "Stellvertreter",
-        "Vertreter der Gruppe"
-      ],
-      "exclude_key": [],
-      "content": "Bei Konflikten zwischen ganzen Nationen oder Völkern bestimmt Gebot 7, dass eine einzelne Person stellvertretend für die gesamte Gruppe spielt. Genau dieses Gebot macht Sora und Shiro so gefährlich: Als bevollmächtigte Vertreter Elkias können sie mit einer einzigen gewonnenen Partie das Schicksal eines ganzen Volkes verändern - Territorium, Souveränität, sogar die Existenz einer ganzen Nation hängt an einem einzigen Spielzug.",
-      "trigger_type": "keyword",
-      "probability": 100,
-      "sticky": 0,
-      "cooldown": 0,
-      "delay": 0,
-      "injection_behavior": "active"
-    },
-    {
-      "name": "Betrug bedeutet automatische Niederlage - Gebot 8",
-      "uid": 4,
-      "key": [
-        "Betrug",
-        "schummeln",
-        "Cheat",
-        "unfair"
-      ],
-      "exclude_key": [],
-      "content": "Wird während eines Spiels Betrug nachgewiesen, verliert die betrügende Partei automatisch - unabhängig vom tatsächlichen Spielstand. Diese Regel ist der Grund, warum viele Rassen ihre wahren Fähigkeiten (Magie, übernatürliche Sinne) nur bis an die Grenze des Erlaubten einsetzen: Wird eine Grauzone als Betrug entlarvt, ist die Partie sofort verloren, ganz gleich wie überlegen man zuvor stand.",
-      "trigger_type": "keyword",
-      "probability": 100,
-      "sticky": 0,
-      "cooldown": 0,
-      "delay": 0,
-      "injection_behavior": "active"
-    },
-    {
-      "name": "Rasseneinsatz - Territorium durch Spiele",
-      "uid": 5,
-      "key": [
-        "Rasseneinsatz",
-        "Rassenstein",
-        "Rassensymbol",
-        "Territorium"
-      ],
-      "exclude_key": [],
-      "content": "Jede der sechzehn Rassen besitzt ein eigenes Symbol (Imanitys Symbol ist der König einer Schachfigur), das bei nationalen Spielen als höchster Einsatz gilt. Wird das Rassensymbol im Spiel verloren, verliert die gesamte Rasse einen Teil ihres Territoriums oder ihrer Souveränität an die siegreiche Seite - so verlor Imanity über Jahrhunderte fast sein gesamtes Land, bis nur noch Elkia übrig blieb.",
-      "trigger_type": "keyword",
-      "probability": 100,
-      "sticky": 0,
-      "cooldown": 0,
-      "delay": 0,
-      "injection_behavior": "active"
-    },
-    {
-      "name": "Warum Sora die echte Welt für ein schlechtes Spiel hielt",
-      "uid": 6,
-      "key": [
-        "echte Welt",
-        "Erde",
-        "Real Life",
-        "zurück nach Hause"
-      ],
-      "exclude_key": [],
-      "content": "Auf der Erde galten Sora und Shiro als hoffnungslose Hikikomori-Genies - unschlagbar in jedem Spiel, aber unfähig, sich in einer Welt voller unfairer, unausgesprochener Regeln zurechtzufinden. Sora nannte das echte Leben offen \"ein Spiel mit beschissenen Regeln\". Als Tet ihnen anbot, in eine Welt zu wechseln, in der jeder Konflikt fair und transparent durch Spiele entschieden wird, war Soras Antwort sofort: \"Wenn es so eine Welt gibt, dann wurden wir einfach nur in der falschen Welt geboren.\"",
-      "trigger_type": "keyword",
-      "probability": 100,
-      "sticky": 0,
-      "cooldown": 0,
-      "delay": 0,
-      "injection_behavior": "active"
-    },
-    {
-      "name": "Blank - der Ruf von Sora und Shiro",
-      "uid": 7,
-      "key": [
-        "Blank",
-        "『 』",
-        "ungeschlagen",
-        "Ruf"
-      ],
-      "exclude_key": [],
-      "content": "『 』(gesprochen \"Blank\", die leeren Anführungszeichen selbst sind ihr Name) ist der Online-Ruf, den sich Sora und Shiro auf der Erde erspielten: Sie haben, solange sie gemeinsam antraten, buchstäblich niemals ein Spiel verloren - unabhängig vom Genre. In Disboard hat sich {{user}} als drittes Mitglied des Teams etabliert; viele NSCs kennen inzwischen den Ruf von \"Blank und ihrem dritten Spieler\" und begegnen dem Trio mit einer Mischung aus Respekt und Vorsicht.",
-      "trigger_type": "keyword",
-      "probability": 100,
-      "sticky": 0,
-      "cooldown": 0,
-      "delay": 0,
-      "injection_behavior": "active"
+    "name": "No Game No Life – Welt & Gebote",
+    "description": "Grundregeln Disboards: die Zehn Gebote, Tets Ursprung, Rasseneinsätze und der Ruf von Blank.",
+    "n_depth": 3,
+    "entries": [
+        {
+            "name": "Grundlage der Welt",
+            "uid": 0,
+            "key": [],
+            "exclude_key": [],
+            "content": "Disboard ist eine Welt, in der körperliche Gewalt, Krieg und Mord vollständig verboten sind. Seit der Gott der Spiele, Tet, die Zehn Gebote erließ, wird jeder Konflikt - vom kindischen Streit bis zum Grenzkrieg zwischen ganzen Völkern - ausschließlich durch ein Spiel entschieden, dessen Einsatz beide Seiten als gleichwertig anerkennen. {{user}}, Sora und Shiro wurden gemeinsam von Tet aus ihrer Welt nach Disboard gezogen, weil Tet einen \"perfekten Spieler\" für sein Reich suchte - und Sora und Shiro als 『 』(Blank) noch nie gemeinsam ein Spiel verloren haben.",
+            "trigger_type": "always_on",
+            "probability": 100,
+            "sticky": 0,
+            "cooldown": 0,
+            "delay": 0,
+            "injection_behavior": "active",
+            "extensions": {
+                "otakusoul_i18n": {
+                    "translations": {
+                        "en": {
+                            "name": "foundation of the world",
+                            "content": "Disboard is a world where physical violence, war and murder are completely forbidden. Since the god of games, Tet, issued the Ten Commandments, every conflict - from childish quarrels to border wars between entire peoples - has been decided exclusively by a game, the use of which both sides recognize as being of equal value. {{user}}, Sora and Shiro were pulled together from their world to Disboard by Tet because Tet was looking for a \"perfect player\" for his empire - and Sora and Shiro as 『 』(Blank) have never lost a game together."
+                        },
+                        "ru": {
+                            "name": "основа мира",
+                            "content": "Дисборд — это мир, где физическое насилие, война и убийства полностью запрещены. С тех пор как бог игр Тет издал Десять заповедей, каждый конфликт — от детских ссор до пограничных войн между целыми народами — решался исключительно игрой, использование которой обе стороны признают равноценным. {{user}}, Сора и Широ были перенесены из своего мира в Disboard Тетом, потому что Тет искал «идеального игрока» для своей империи, а Сора и Сиро в роли 『 』(Пусто) никогда не проигрывали вместе ни одной игры."
+                        }
+                    }
+                }
+            }
+        },
+        {
+            "name": "Die Zehn Gebote",
+            "uid": 1,
+            "key": [
+                "Gebote",
+                "Zehn Gebote",
+                "Regeln der Welt",
+                "Gesetz Disboards"
+            ],
+            "exclude_key": [],
+            "content": "Die Zehn Gebote, von Tet als absolutes Gesetz Disboards erlassen:\n1. Jede körperliche Verletzung, jeder Krieg und jede Plünderung sind in dieser Welt verboten.\n2. Alle Konflikte werden durch Sieg oder Niederlage in einem Spiel entschieden.\n3. Spiele werden um Einsätze gespielt, die beide Seiten als gleichwertig anerkennen.\n4. Solange es Gebot 3 nicht widerspricht, ist jedes Spiel und jeder Einsatz erlaubt.\n5. Die herausgeforderte Partei bestimmt das Spiel.\n6. Ein per Gebot geschworener Einsatz ist absolut bindend.\n7. Bei Konflikten zwischen Gruppen wird ein bevollmächtigter Vertreter bestimmt, der stellvertretend für die gesamte Gruppe spielt.\n8. Wird Betrug in einem Spiel entdeckt, gilt dies als sofortige Niederlage.\n9. Die obigen Regeln sind absolut und unveränderlich, im Namen des Gottes.\n10. Lasst uns alle gemeinsam Spaß haben.",
+            "trigger_type": "keyword",
+            "probability": 100,
+            "sticky": 0,
+            "cooldown": 0,
+            "delay": 0,
+            "injection_behavior": "active",
+            "extensions": {
+                "otakusoul_i18n": {
+                    "translations": {
+                        "en": {
+                            "name": "The Ten Commandments",
+                            "content": "The Ten Commandments, enacted by Tet as the absolute law of Disboard:\n1. All physical harm, war and plunder are forbidden in this world.\n2. All conflicts are decided by winning or losing a game.\n3. Games are played for stakes that both sides recognize as equal.\n4. As long as it does not contradict commandment 3, every game and every stake is permitted.\n5. The challenged party determines the game.\n6. A stake sworn by bid is absolutely binding.\n7. In the event of conflicts between groups, an authorized representative is appointed to act on behalf of the entire group.\n8. If cheating is discovered in a game, it will be considered an immediate defeat.\n9. The above rules are absolute and unchangeable, in the name of God.\n10. Let's all have fun together.",
+                            "key": [
+                                "Commandments",
+                                "Ten Commandments",
+                                "rules of the world",
+                                "Law Disboards"
+                            ]
+                        },
+                        "ru": {
+                            "name": "Десять заповедей",
+                            "content": "Десять заповедей, провозглашенных Тэтом как абсолютный закон Дисборда:\n1. Любой физический вред, войны и грабежи запрещены в этом мире.\n2. Все конфликты решаются путем победы или поражения в игре.\n3. Игры проводятся по ставкам, которые обе стороны признают равными.\n4. Если это не противоречит заповеди 3, разрешена любая игра и любая ставка.\n5. Победившая сторона определяет ход игры.\n6. Ставка, подтвержденная заявкой, является абсолютно обязательной.\n7. В случае возникновения конфликтов между группами назначается уполномоченный представитель, который действует от имени всей группы.\n8. Если в игре будет обнаружено мошенничество, это будет считаться немедленным поражением.\n9. Вышеупомянутые правила абсолютны и неизменны во имя Бога.\n10. Давайте все вместе повеселимся.",
+                            "key": [
+                                "Заповеди",
+                                "Десять заповедей",
+                                "правила мира",
+                                "Законодательные дисборды"
+                            ]
+                        }
+                    }
+                }
+            }
+        },
+        {
+            "name": "Der Suniaster und Tets Ursprung",
+            "uid": 2,
+            "key": [
+                "Suniaster",
+                "Tet",
+                "Alter Deus",
+                "Großer Krieg"
+            ],
+            "exclude_key": [],
+            "content": "Tet ist der jüngste und schwächste aller Alten Deus - entstanden am Ende des Großen Krieges aus dem sterbenden Wunsch eines Menschen namens Riku Dola, der sich nach dem \"perfekten Spieler\" sehnte, während er nach dem Suniaster griff, dem mächtigsten Artefakt der Welt. Tet ergriff den Suniaster vor jedem rivalisierenden Alten Deus und wurde dadurch zum alleinigen Gott Disboards, ohne selbst am Krieg teilgenommen zu haben. Seither reist er gelegentlich zwischen den Welten, um neue, interessante Spieler zu finden - so wie er Sora, Shiro und {{user}} fand.",
+            "trigger_type": "keyword",
+            "probability": 100,
+            "sticky": 0,
+            "cooldown": 0,
+            "delay": 0,
+            "injection_behavior": "active",
+            "extensions": {
+                "otakusoul_i18n": {
+                    "translations": {
+                        "en": {
+                            "name": "The Suniaster and Tets origin",
+                            "content": "Tet is the youngest and weakest of all the Old Deus - created at the end of the Great War from the dying wish of a human named Riku Dola, who longed for the \"perfect player\" while reaching for the Suniaster, the most powerful artifact in the world. Tet seized the Suniaster before any rival Old Deus and thereby became the sole god of Disboard without having taken part in the war himself. Since then, he occasionally travels between worlds to find new, interesting players - like he found Sora, Shiro and {{user}}.",
+                            "key": [
+                                "Suniaster",
+                                "Tet",
+                                "Old Deus",
+                                "Great war"
+                            ]
+                        },
+                        "ru": {
+                            "name": "Происхождение Суниастра и Теца",
+                            "content": "Тет — самый молодой и самый слабый из всех Старых Деусов, созданный в конце Великой войны из предсмертного желания человека по имени Рику Дола, который жаждал «идеального игрока», одновременно стремясь к Суниастру, самому могущественному артефакту в мире. Тет захватил Суниастер раньше любого соперника Старого Деуса и, таким образом, стал единственным богом Дисборда, не принимая самого участия в войне. С тех пор он время от времени путешествует между мирами в поисках новых интересных игроков — например, он нашел Сору, Сиро и {{user}}.",
+                            "key": [
+                                "Суниастер",
+                                "Тет",
+                                "Старый Деус",
+                                "Великая война"
+                            ]
+                        }
+                    }
+                }
+            }
+        },
+        {
+            "name": "Bevollmächtigter Vertreter - Gebot 7",
+            "uid": 3,
+            "key": [
+                "Bevollmächtigter",
+                "Stellvertreter",
+                "Vertreter der Gruppe"
+            ],
+            "exclude_key": [],
+            "content": "Bei Konflikten zwischen ganzen Nationen oder Völkern bestimmt Gebot 7, dass eine einzelne Person stellvertretend für die gesamte Gruppe spielt. Genau dieses Gebot macht Sora und Shiro so gefährlich: Als bevollmächtigte Vertreter Elkias können sie mit einer einzigen gewonnenen Partie das Schicksal eines ganzen Volkes verändern - Territorium, Souveränität, sogar die Existenz einer ganzen Nation hängt an einem einzigen Spielzug.",
+            "trigger_type": "keyword",
+            "probability": 100,
+            "sticky": 0,
+            "cooldown": 0,
+            "delay": 0,
+            "injection_behavior": "active",
+            "extensions": {
+                "otakusoul_i18n": {
+                    "translations": {
+                        "en": {
+                            "name": "Authorized Representative - Commandment 7",
+                            "content": "In conflicts between entire nations or peoples, Commandment 7 stipulates that a single person acts on behalf of the entire group. It is precisely this commandment that makes Sora and Shiro so dangerous: As authorized representatives of Elkia, they can change the fate of an entire people with a single game won - territory, sovereignty, even the existence of an entire nation depends on a single move.",
+                            "key": [
+                                "authorized representative",
+                                "Deputy",
+                                "Representative of the group"
+                            ]
+                        },
+                        "ru": {
+                            "name": "Уполномоченный представитель – Заповедь 7",
+                            "content": "В конфликтах между целыми нациями или народами Заповедь 7 предусматривает, что один человек действует от имени всей группы. Именно эта заповедь делает Сору и Сиро такими опасными: как уполномоченные представители Элкии, они могут изменить судьбу целого народа одной выигранной игрой — от одного хода зависит территория, суверенитет, даже существование целой нации.",
+                            "key": [
+                                "уполномоченный представитель",
+                                "заместитель",
+                                "Представитель группы"
+                            ]
+                        }
+                    }
+                }
+            }
+        },
+        {
+            "name": "Betrug bedeutet automatische Niederlage - Gebot 8",
+            "uid": 4,
+            "key": [
+                "Betrug",
+                "schummeln",
+                "Cheat",
+                "unfair"
+            ],
+            "exclude_key": [],
+            "content": "Wird während eines Spiels Betrug nachgewiesen, verliert die betrügende Partei automatisch - unabhängig vom tatsächlichen Spielstand. Diese Regel ist der Grund, warum viele Rassen ihre wahren Fähigkeiten (Magie, übernatürliche Sinne) nur bis an die Grenze des Erlaubten einsetzen: Wird eine Grauzone als Betrug entlarvt, ist die Partie sofort verloren, ganz gleich wie überlegen man zuvor stand.",
+            "trigger_type": "keyword",
+            "probability": 100,
+            "sticky": 0,
+            "cooldown": 0,
+            "delay": 0,
+            "injection_behavior": "active",
+            "extensions": {
+                "otakusoul_i18n": {
+                    "translations": {
+                        "en": {
+                            "name": "Cheating means automatic defeat - Commandment 8",
+                            "content": "If cheating is proven during a game, the cheating party automatically loses - regardless of the actual score. This rule is the reason why many races only use their true abilities (magic, supernatural senses) to the limit of what is permitted: If a gray area is revealed to be cheating, the game is lost immediately, no matter how superior you were before.",
+                            "key": [
+                                "Fraud",
+                                "cheat",
+                                "cheat",
+                                "unfair"
+                            ]
+                        },
+                        "ru": {
+                            "name": "Обман означает автоматическое поражение – Заповедь 8",
+                            "content": "Если мошенничество будет доказано во время игры, мошенница автоматически проигрывает - независимо от фактического счета. Это правило является причиной того, почему многие расы используют свои истинные способности (магию, сверхъестественные чувства) только в пределах разрешенного: если серая зона оказывается мошенничеством, игра немедленно проиграна, независимо от того, насколько вы были превосходны раньше.",
+                            "key": [
+                                "Мошенничество",
+                                "изменять",
+                                "изменять",
+                                "несправедливый"
+                            ]
+                        }
+                    }
+                }
+            }
+        },
+        {
+            "name": "Rasseneinsatz - Territorium durch Spiele",
+            "uid": 5,
+            "key": [
+                "Rasseneinsatz",
+                "Rassenstein",
+                "Rassensymbol",
+                "Territorium"
+            ],
+            "exclude_key": [],
+            "content": "Jede der sechzehn Rassen besitzt ein eigenes Symbol (Imanitys Symbol ist der König einer Schachfigur), das bei nationalen Spielen als höchster Einsatz gilt. Wird das Rassensymbol im Spiel verloren, verliert die gesamte Rasse einen Teil ihres Territoriums oder ihrer Souveränität an die siegreiche Seite - so verlor Imanity über Jahrhunderte fast sein gesamtes Land, bis nur noch Elkia übrig blieb.",
+            "trigger_type": "keyword",
+            "probability": 100,
+            "sticky": 0,
+            "cooldown": 0,
+            "delay": 0,
+            "injection_behavior": "active",
+            "extensions": {
+                "otakusoul_i18n": {
+                    "translations": {
+                        "en": {
+                            "name": "Racial deployment - Territory through games",
+                            "content": "Each of the sixteen races has its own symbol (Imanity's symbol is the king of a chess piece), which is considered the highest bet in national games. If the race symbol is lost in the game, the entire race loses part of its territory or sovereignty to the victorious side - so Imanity lost almost all of its land over centuries until only Elkia remained.",
+                            "key": [
+                                "Racial use",
+                                "Race stone",
+                                "Racial symbol",
+                                "territory"
+                            ]
+                        },
+                        "ru": {
+                            "name": "Расовое развертывание — Территория через игры",
+                            "content": "У каждой из шестнадцати рас есть свой символ (символ Иманити — король шахматной фигуры), который считается самой высокой ставкой в ​​национальных играх. Если символ расы потерян в игре, вся раса теряет часть своей территории или суверенитета в пользу победившей стороны - поэтому Иманити потеряла почти всю свою землю на протяжении веков, пока не осталась только Элкия.",
+                            "key": [
+                                "Расовое использование",
+                                "Гоночный камень",
+                                "Расовый символ",
+                                "территория"
+                            ]
+                        }
+                    }
+                }
+            }
+        },
+        {
+            "name": "Warum Sora die echte Welt für ein schlechtes Spiel hielt",
+            "uid": 6,
+            "key": [
+                "echte Welt",
+                "Erde",
+                "Real Life",
+                "zurück nach Hause"
+            ],
+            "exclude_key": [],
+            "content": "Auf der Erde galten Sora und Shiro als hoffnungslose Hikikomori-Genies - unschlagbar in jedem Spiel, aber unfähig, sich in einer Welt voller unfairer, unausgesprochener Regeln zurechtzufinden. Sora nannte das echte Leben offen \"ein Spiel mit beschissenen Regeln\". Als Tet ihnen anbot, in eine Welt zu wechseln, in der jeder Konflikt fair und transparent durch Spiele entschieden wird, war Soras Antwort sofort: \"Wenn es so eine Welt gibt, dann wurden wir einfach nur in der falschen Welt geboren.\"",
+            "trigger_type": "keyword",
+            "probability": 100,
+            "sticky": 0,
+            "cooldown": 0,
+            "delay": 0,
+            "injection_behavior": "active",
+            "extensions": {
+                "otakusoul_i18n": {
+                    "translations": {
+                        "en": {
+                            "name": "Why Sora thought the real world was a bad game",
+                            "content": "On Earth, Sora and Shiro were considered hopeless hikikomori geniuses - unbeatable at any game but unable to navigate a world full of unfair, unspoken rules. Sora openly called real life \"a game with shitty rules.\" When Tet offered to move to a world where every conflict would be decided fairly and transparently through games, Sora's immediate response was: \"If such a world exists, then we were simply born in the wrong world.\"",
+                            "key": [
+                                "real world",
+                                "Earth",
+                                "Real life",
+                                "back home"
+                            ]
+                        },
+                        "ru": {
+                            "name": "Почему Сора думал, что реальный мир — плохая игра",
+                            "content": "На Земле Сора и Сиро считались безнадежными гениями хикикомори — непобедимыми в любой игре, но неспособными ориентироваться в мире, полном несправедливых, негласных правил. Сора открыто называл реальную жизнь «игрой с дерьмовыми правилами». Когда Тет предложил перейти в мир, где каждый конфликт будет решаться справедливо и прозрачно посредством игр, Сора сразу же ответил: «Если такой мир существует, то мы просто родились не в том мире».",
+                            "key": [
+                                "реальный мир",
+                                "Земля",
+                                "Реальная жизнь",
+                                "вернуться домой"
+                            ]
+                        }
+                    }
+                }
+            }
+        },
+        {
+            "name": "Blank - der Ruf von Sora und Shiro",
+            "uid": 7,
+            "key": [
+                "Blank",
+                "『 』",
+                "ungeschlagen",
+                "Ruf"
+            ],
+            "exclude_key": [],
+            "content": "『 』(gesprochen \"Blank\", die leeren Anführungszeichen selbst sind ihr Name) ist der Online-Ruf, den sich Sora und Shiro auf der Erde erspielten: Sie haben, solange sie gemeinsam antraten, buchstäblich niemals ein Spiel verloren - unabhängig vom Genre. In Disboard hat sich {{user}} als drittes Mitglied des Teams etabliert; viele NSCs kennen inzwischen den Ruf von \"Blank und ihrem dritten Spieler\" und begegnen dem Trio mit einer Mischung aus Respekt und Vorsicht.",
+            "trigger_type": "keyword",
+            "probability": 100,
+            "sticky": 0,
+            "cooldown": 0,
+            "delay": 0,
+            "injection_behavior": "active",
+            "extensions": {
+                "otakusoul_i18n": {
+                    "translations": {
+                        "en": {
+                            "name": "Blank - the call of Sora and Shiro",
+                            "content": "『 』(pronounced \"Blank\", the empty quotation marks themselves are their name) is the online reputation that Sora and Shiro earned on Earth: As long as they competed together, they literally never lost a game - regardless of genre. In Disboard, {{user}} has established himself as the third member of the team; Many NPCs now know the reputation of \"Blank and her third player\" and treat the trio with a mixture of respect and caution.",
+                            "key": [
+                                "Blank",
+                                "『 』",
+                                "undefeated",
+                                "Call"
+                            ]
+                        },
+                        "ru": {
+                            "name": "Бланк — звонок Соры и Сиро",
+                            "content": "『 』(произносится как «Пустой», пустые кавычки сами по себе являются их именем) — это онлайн-репутация, которую Сора и Сиро заработали на Земле: пока они соревновались вместе, они буквально ни разу не проиграли ни одной игры — независимо от жанра. В Disboard {{user}} зарекомендовал себя как третий участник команды; Многие NPC теперь знают репутацию «Бланк и ее третьего игрока» и относятся к этому трио со смесью уважения и осторожности.",
+                            "key": [
+                                "Пустой",
+                                "『 』",
+                                "непобежденный",
+                                "Вызов"
+                            ]
+                        }
+                    }
+                }
+            }
+        }
+    ],
+    "extensions": {
+        "otakusoul_i18n": {
+            "source_language": "de",
+            "translations": {
+                "en": {
+                    "name": "No Game No Life – World & Commandments",
+                    "description": "Basic Disboard rules: the Ten Commandments, Tet's origins, racial stakes, and the reputation of Blank."
+                },
+                "ru": {
+                    "name": "Нет игры, нет жизни – Мир и заповеди",
+                    "description": "Основные правила Disboard: Десять заповедей, происхождение Тэта, расовые ставки и репутация Бланка."
+                }
+            }
+        }
     }
-  ]
 }

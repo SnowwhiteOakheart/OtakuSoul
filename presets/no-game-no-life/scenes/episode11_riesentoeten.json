@@ -29,5 +29,28 @@
   "starting_bg": "Horizontal Digital Battlefield.png",
   "starting_ambient": "None",
   "lock_bg": false,
-  "disable_ambient": false
+  "disable_ambient": false,
+  "extensions": {
+    "otakusoul_i18n": {
+      "source_language": "de",
+      "translations": {
+        "en": {
+          "title": "Chapter 11: Giant Killing",
+          "description": "The grand showdown against the Eastern Union begins: a full-immersion first-person shooter named 'Love or Loved 2', in which love bullets decide the victory. Blank's opponent: the eight-year-old gaming genius Izuna Hatsuse.",
+          "world_context": "The decisive battle for Imanity's future takes place in a full-immersion first-person shooter named 'Love or Loved 2: Hit them with your bullet of love!' - whoever gets hit switches sides, and hits on animal-eared opponents recharge one's own weapon. Izuna Hatsuse, the eight-year-old gaming genius of the Eastern Union, proves to be a terrifyingly competent opponent - until for the first time in her life she experiences genuine joy in playing and unleashes her full power, the 'Blood Destruction'.",
+          "opening_narration": "The world around you flickers briefly, then becomes more solid than reality: bombed-out streets, glaring sky, in your hand a weapon that looks more like a toy pistol than a tool of destruction - until the first projectile, a heart of pure energy, explodes on a wall. From the smoke emerges a small figure with a wagging fox tail, a childish grin, and deadly precise movements. \"So you are Blank, desu?\", calls Izuna across the field, already taking aim. \"Izuna heard you have never lost. Let's see if that's still true today!\" *her eyes shift for a split second to something unsettlingly sharp.* Sora grins back, relaxed despite the tension all around. \"Small, but dangerous. Just my type.\"",
+          "gm_tone": "Sci-Fi",
+          "narrator_style": "Action-packed, fast-paced, with a tactical focus on positioning and pre-calculated movements - let tension build when Izuna seems to break the very rules of physics after her Blood Destruction."
+        },
+        "ru": {
+          "title": "Глава 11: Убийство гигантов",
+          "description": "Начинается грандиозное противостояние с Восточным Союзом: шутер от первого лица с полным погружением под названием «Love or Loved 2», в котором победу решают пули любви. Противница Пустых: восьмилетний игровой гений Идзуна Хацусэ.",
+          "world_context": "Решающая битва за будущее Иманити разворачивается в шутере от первого лица с полным погружением под названием «Love or Loved 2: Порази их своей пулей любви!» — тот, в кого попадают, меняет сторону, а попадания по противницам с звериными ушками перезаряжают собственное оружие. Идзуна Хацусэ, восьмилетний игровой гений Восточного Союза, оказывается пугающе компетентной противницей — пока впервые в своей жизни не испытывает настоящую радость от игры и не высвобождает свою полную силу, «Разрушение Крови».",
+          "opening_narration": "Мир вокруг вас на мгновение мерцает, затем становится тверже реальности: разбомбленные улицы, ослепительное небо, в вашей руке оружие, больше похожее на игрушечный пистолет, чем на орудие разрушения — пока первый снаряд, сердце из чистой энергии, не взрывается на стене. Из дыма появляется маленькая фигурка с виляющим лисьим хвостом, детской ухмылкой и смертоносно точными движениями. «Так вы и есть Пустые, дэсу?», — кричит Идзуна через поле, уже прицеливаясь. «Идзуна слышала, что вы никогда не проигрывали. Посмотрим, правда ли это сегодня!» *ее глаза на долю секунды меняются на нечто пугающе острое.* Сора усмехается в ответ, расслабленный, несмотря на напряжение вокруг. «Маленькая, но опасная. Как раз в моем вкусе».",
+          "gm_tone": "Научная фантастика",
+          "narrator_style": "Динамичный, быстрый, с тактическим акцентом на позиционирование и заранее просчитанные движения — позвольте напряжению нарастать, когда Идзуна, после своего Разрушения Крови, кажется, нарушает сами законы физики."
+        }
+      }
+    }
+  }
 }

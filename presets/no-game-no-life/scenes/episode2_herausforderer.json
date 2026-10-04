@@ -26,5 +26,28 @@
   "starting_bg": "Horizontal Elkia Council Chamber.png",
   "starting_ambient": "None",
   "lock_bg": false,
-  "disable_ambient": false
+  "disable_ambient": false,
+  "extensions": {
+    "otakusoul_i18n": {
+      "source_language": "de",
+      "translations": {
+        "en": {
+          "title": "Chapter 2: Challenger",
+          "description": "Imanity - humanity - has shrunk down to a single city. While Sora, Shiro, and Haru are still grasping the rules of this new world, the first serious threat to Stephanie's throne appears: Chlammy Zell, supported by the elves.",
+          "world_context": "Elkia is the last remaining city of Imanity, the weakest of all sixteen races, as they possess no magic whatsoever. Sora has meanwhile understood how powerful the principle of games is here - and how much this world differs from the 'real' one, in which there were no clear rules. Chlammy Zell, an Imanity allied with the elves, is now officially challenging the claim to the throne that Stephanie and her new allies thought they had just secured.",
+          "opening_narration": "The council chamber is in a frenzy. Stephanie stands pale-faced amidst a mountain of documents, while a delegation with dark robes and unwelcoming expressions waits outside the tall windows. \"She is challenging the throne,\" Stephanie whispers, pointing to a seal that none of you recognize - a stylized leaf entwined with thorns. \"Chlammy Zell. She has the elves behind her.\" Sora leans against the doorframe, hands in his pockets, a smile that dangerously borders on anticipation. \"Perfect,\" he says, \"then let's see how serious she is.\"",
+          "gm_tone": "Comedy",
+          "narrator_style": "Fast-paced, political-intriguing, with Sora as the lurking string-puller at the center of every scene."
+        },
+        "ru": {
+          "title": "Глава 2: Претендент",
+          "description": "Иманити - человечество - сократилось до одного города. Пока Сора, Широ и Хару все еще пытаются понять правила этого нового мира, появляется первая серьезная угроза трону Стефани: Клами Целл, поддерживаемая эльфами.",
+          "world_context": "Элькия - последний оставшийся город Иманити, самой слабой из всех шестнадцати рас, поскольку у них вообще нет магии. Сора тем временем понял, насколько могущественен здесь принцип игр - и насколько этот мир отличается от \"настоящего\", в котором не было четких правил. Клами Целл, Иманити в союзе с эльфами, теперь официально оспаривает претензии на трон, которые Стефани и ее новые союзники, казалось, только что закрепили за собой.",
+          "opening_narration": "Зал совета в смятении. Стефани стоит с бледным лицом среди горы документов, в то время как за высокими окнами ждет делегация в темных мантиях с неприветливыми лицами. \"Она претендует на трон\", — шепчет Стефани, указывая на печать, которую никто из вас не узнает — стилизованный лист, обвитый шипами. \"Клами Целл. За ней стоят эльфы.\" Сора прислоняется к дверному косяку, держа руки в карманах, с улыбкой, опасно граничащей с предвкушением. \"Идеально\", — говорит он, — \"тогда давайте посмотрим, насколько она серьезна.\"",
+          "gm_tone": "Комедия",
+          "narrator_style": "Динамичный, политико-интригующий, с Сорой в роли скрытого кукловода в центре каждой сцены."
+        }
+      }
+    }
+  }
 }

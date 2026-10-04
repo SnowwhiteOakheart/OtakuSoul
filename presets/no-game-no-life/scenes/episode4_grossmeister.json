@@ -26,5 +26,28 @@
   "starting_bg": "Horizontal Chessboard Climax.png",
   "starting_ambient": "None",
   "lock_bg": false,
-  "disable_ambient": false
+  "disable_ambient": false,
+  "extensions": {
+    "otakusoul_i18n": {
+      "source_language": "de",
+      "translations": {
+        "en": {
+          "title": "Chapter 4: Grandmaster",
+          "description": "The chess battle escalates: Chlammy plays her last, forbidden card - mind control. But Sora has his own, more subtle weapon: the art of seduction through words alone.",
+          "world_context": "In dire straits, Chlammy lets Fiel play one of her most desperate cards: a control spell that turns Shiro's own pieces against her. Sora does not counter with magic - he has none - but with pure psychology: He convinces Chlammy's queen piece that her mistress sees her and everyone else merely as tools, thus getting her to switch sides.",
+          "opening_narration": "A glaring crack of violet light flashes across the field - Shiro's pawns freeze mid-motion, their eyes turning glassy, empty. \"She's controlling our own pieces!\" Stephanie cries in horror. Sora, however, only smiles wider as he walks toward the black queen, who stands motionless amidst the battle. \"You know,\" he says to her, softly, almost tenderly, \"a mistress who sees you only as a tool does not deserve your loyalty.\" The queen piece hesitates - for the first time today. Somewhere at the edge of the field, Chlammy visibly grimaces under her veil.",
+          "gm_tone": "Epic Fantasy",
+          "narrator_style": "Epic with growing tempo towards the climax, dramatic turning points, ending in triumph and the coronation of Sora and Shiro."
+        },
+        "ru": {
+          "title": "Глава 4: Гроссмейстер",
+          "description": "Шахматная битва обостряется: Клами использует свою последнюю, запрещенную карту - контроль разума. Но у Соры есть свое, более тонкое оружие: искусство соблазнения одними лишь словами.",
+          "world_context": "В отчаянном положении Клами позволяет Филь сыграть одну из ее самых безрассудных карт: заклинание контроля, которое обращает собственные фигуры Широ против нее. Сора отвечает не магией — у него ее нет, — а чистой психологией: он убеждает фигуру королевы Клами в том, что ее госпожа рассматривает ее и всех остальных лишь как инструменты, и таким образом заставляет ее сменить сторону.",
+          "opening_narration": "Яркая трещина фиолетового света пронзает поле - пешки Широ замирают на полпути, их глаза становятся стеклянными, пустыми. \"Она контролирует наши собственные фигуры!\" — в ужасе кричит Стефани. Сора, однако, улыбается только шире, направляясь к черной королеве, которая неподвижно стоит посреди битвы. \"Знаешь,\" — говорит он ей, тихо, почти нежно, — \"госпожа, которая видит в тебе лишь инструмент, не заслуживает твоей преданности.\" Фигура королевы колеблется - впервые за сегодняшний день. Где-то на краю поля Клами заметно морщится под своей вуалью.",
+          "gm_tone": "Эпическое Фэнтези",
+          "narrator_style": "Эпический с нарастающим темпом к кульминации, драматические поворотные моменты, завершающиеся триумфом и коронацией Соры и Широ."
+        }
+      }
+    }
+  }
 }

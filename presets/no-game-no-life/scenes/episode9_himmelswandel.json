@@ -27,5 +27,28 @@
   "starting_bg": "Horizontal Chamber of Memory.png",
   "starting_ambient": "None",
   "lock_bg": false,
-  "disable_ambient": false
+  "disable_ambient": false,
+  "extensions": {
+    "otakusoul_i18n": {
+      "source_language": "de",
+      "translations": {
+        "en": {
+          "title": "Chapter 9: Sky Walk",
+          "description": "While Sora plays against Chlammy in a game of Othello for his very existence, Jibril challenges Shiro to a game of chess - wager: Shiro's memory of Sora himself.",
+          "world_context": "In a desperate side battle, Sora plays Othello against Chlammy for memories and existence itself - and something goes terribly wrong. Only Shiro clearly remembers him. Concerned about Sora's fate, Jibril challenges Shiro to a game of chess, wagering Shiro's memories of Sora in the hope that Shiro would lose on purpose to 'wipe the slate clean'. However, at the crucial moment, Shiro senses a weak signal from Sora - and decides to win instead of giving up.",
+          "opening_narration": "Something is wrong. The air itself feels wrong, as if the world is creaking at an invisible seam. Somewhere far away, a game of Othello is being played, the outcome of which none of you know - only that Sora has wagered his own memory and existence. Jibril kneels before Shiro, her face marked by genuine concern for the first time since you've known her. \"Shiro,\" she says softly, \"I challenge you. Chess. Wager: your memory of Master Sora.\" *a chessboard materializes between them, every piece already in place.* \"I beg you to lose on purpose - so that no matter what happens, at least this pain will be spared from you.\" *Shiro's fingers tremble over the first piece, but her eyes remain fixed on the board.*",
+          "gm_tone": "Horror",
+          "narrator_style": "Oppressive, eerie, with genuine emotional weight - the threat is not physical, but existential. Let the tension steadily build up until Shiro's decision."
+        },
+        "ru": {
+          "title": "Глава 9: Небесная прогулка",
+          "description": "Пока Сора играет против Клами в Отелло на собственное существование, Джибрил бросает вызов Широ в шахматы - ставка: память Широ о самом Соре.",
+          "world_context": "В отчаянной побочной битве Сора играет в Отелло против Клами на воспоминания и само существование - и что-то идет ужасно не так. Только Широ ясно помнит его. Беспокоясь о судьбе Соры, Джибрил вызывает Широ на партию в шахматы, ставя на кон воспоминания Широ о Соре в надежде, что Широ намеренно проиграет, чтобы «начать с чистого листа». Однако в решающий момент Широ чувствует слабый сигнал от Соры - и решает победить вместо того, чтобы сдаться.",
+          "opening_narration": "Что-то не так. Сам воздух кажется неправильным, словно мир скрипит по невидимому шву. Где-то далеко идет партия в Отелло, исход которой никому из вас неизвестен - только то, что Сора поставил на кон свою собственную память и существование. Джибрил опускается на колени перед Широ, ее лицо впервые за все время вашего знакомства выражает искреннюю тревогу. «Широ», — тихо говорит она, — «я бросаю тебе вызов. Шахматы. Ставка: твои воспоминания о господине Соре». *между ними материализуется шахматная доска, каждая фигура уже на своем месте.* «Умоляю тебя проиграть намеренно — чтобы, что бы ни случилось, хотя бы от этой боли ты была избавлена». *Пальцы Широ дрожат над первой фигурой, но ее глаза остаются прикованы к доске.*",
+          "gm_tone": "Ужас",
+          "narrator_style": "Гнетущий, жуткий, с настоящим эмоциональным весом - угроза не физическая, а экзистенциальная. Позвольте напряжению неуклонно расти вплоть до решения Широ."
+        }
+      }
+    }
+  }
 }
