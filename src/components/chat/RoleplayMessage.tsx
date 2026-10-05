@@ -143,7 +143,7 @@ export const RoleplayMessage: React.FC<RoleplayMessageProps> = ({ content, isUse
                 className={`transition-colors ${
                   isUser
                     ? 'text-white font-semibold'
-                    : 'text-amber-100/95 font-medium drop-shadow-[0_1px_2px_rgba(0,0,0,0.35)]'
+                    : 'rp-dialogue text-amber-100/95 font-medium drop-shadow-[0_1px_2px_rgba(0,0,0,0.35)]'
                 }`}
               >
                 {seg.text}

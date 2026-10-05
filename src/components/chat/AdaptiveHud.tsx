@@ -1,5 +1,6 @@
 import { useAppStore, useStoreFields } from '../../store/useAppStore';
-import { Heart, Zap, Smile, Users, ChevronDown, BookOpen, Brain, Sparkles, Camera, Loader2 } from 'lucide-react';
+import { Heart, Zap, Smile, Users, ChevronDown, ChevronLeft, ChevronRight, BookOpen, Brain, Sparkles, Camera, Loader2 } from 'lucide-react';
+import { usePersistentFlag } from '../../hooks/usePersistentFlag';
 import { CognitiveMemoryDrawer } from './CognitiveMemoryDrawer';
 import { translate, useTranslation } from '../../i18n';
 import { toast } from '../ui/feedback';
@@ -7,7 +8,11 @@ import { DropdownMenu } from '../ui/DropdownMenu';
 import { errorMessage } from '../../utils/errors';
 import { localizeCard } from '../../utils/cardI18n';
 
-export const AdaptiveHud = () => {
+/**
+ * Character, story state and quick actions above the chat. The state values (and the lorebook
+ * badge) fold away; `compact` makes the bar denser.
+ */
+export const AdaptiveHud = ({ compact = false }: { compact?: boolean }) => {
   const {
     activeCharacter,
     availableCharacters,
@@ -17,18 +22,19 @@ export const AdaptiveHud = () => {
     serverConfig,
     setServerConfig,
     setActiveTab,
-    activePersona,
     generateSceneImage,
     isGeneratingSceneImage: isGeneratingImage,
   } = useStoreFields(
     'activeCharacter', 'availableCharacters', 'selectCharacter', 'stateVariables',
-    'activeLorebooks', 'serverConfig', 'setServerConfig', 'setActiveTab', 'activePersona',
+    'activeLorebooks', 'serverConfig', 'setServerConfig', 'setActiveTab',
     'generateSceneImage', 'isGeneratingSceneImage',
   );
 
   const { t, currentLanguage } = useTranslation();
   const showMemoryDrawer = useAppStore((s) => s.isMemoryDrawerOpen);
   const setShowMemoryDrawer = useAppStore((s) => s.setMemoryDrawerOpen);
+  const [showDetails, setShowDetails] = usePersistentFlag('otakusoul.hud.details', true);
+  const hasDetails = stateVariables.length > 0 || activeLorebooks.length > 0;
 
   const handleGenerateSituationalImage = async () => {
     try {
@@ -48,18 +54,20 @@ export const AdaptiveHud = () => {
   const title = (data.extensions?.custom_title as string) || (data.extensions?.sow_title as string) || data.tags?.[0] || t('library.defaultTitle');
 
   return (
-    <div className="border-b border-slate-800/80 bg-slate-900/60 backdrop-blur px-4 py-2.5 flex items-center justify-between gap-4 z-40">
+    <div
+      className={`border-b border-slate-800/80 bg-slate-900/60 backdrop-blur px-4 flex items-center justify-between gap-4 z-40 ${compact ? 'py-1.5' : 'py-2.5'}`}
+    >
       {/* Left: Character Info & Quick Switcher */}
-      <div className="flex items-center gap-3 relative">
+      <div className="flex shrink-0 items-center gap-3 relative">
         <div className="relative shrink-0" aria-hidden>
           {activeCharacter.avatar_data_url ? (
             <img
               src={activeCharacter.avatar_data_url}
               alt={data.name}
-              className="w-10 h-10 rounded-full object-cover border-2 border-accent-500/60 shadow-md"
+              className={`${compact ? 'w-7 h-7' : 'w-10 h-10'} rounded-full object-cover border-2 border-accent-500/60 shadow-md`}
             />
           ) : (
-            <div className="w-10 h-10 rounded-full bg-linear-to-tr from-accent-600 to-accent2-600 flex items-center justify-center text-white font-bold border-2 border-accent-500/60 shadow-md">
+            <div className={`${compact ? 'w-7 h-7' : 'w-10 h-10'} rounded-full bg-linear-to-tr from-accent-600 to-accent2-600 flex items-center justify-center text-white font-bold border-2 border-accent-500/60 shadow-md`}>
               {data.name.charAt(0)}
             </div>
           )}
@@ -96,25 +104,29 @@ export const AdaptiveHud = () => {
               { label: t('hud.openLibrary'), icon: Users, onSelect: () => setActiveTab('characters') },
             ]}
           />
-          <div className="text-xs text-slate-400 line-clamp-1">{title}</div>
+          {!compact && <div className="text-xs text-slate-400 line-clamp-1">{title}</div>}
         </div>
       </div>
 
       {/* Middle/Right: Adaptive State Variables HUD */}
-      <div className="flex items-center gap-3 text-xs font-mono">
-        {/* Persona Badge */}
-        <button
-          type="button"
-          onClick={() => setActiveTab('characters')}
-          className="cursor-pointer hidden sm:flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-indigo-950/40 border border-indigo-500/30 text-indigo-300 text-xs hover:border-indigo-400 transition-colors whitespace-nowrap outline-hidden focus-visible:ring-2 focus-visible:ring-accent-400"
-          title={t('hud.personaHint')}
-        >
-          <span className="text-slate-400">{t('hud.you')}</span>
-          <span className="font-semibold text-indigo-200">{activePersona.name}</span>
-        </button>
+      {/* Wraps in small windows instead of cutting off the last values. */}
+      <div className="flex min-w-0 flex-wrap items-center justify-end gap-x-3 gap-y-1.5 text-xs font-mono">
+        {/* Story state: folds away when the player wants only the chat. */}
+        {hasDetails && (
+          <button
+            type="button"
+            onClick={() => setShowDetails(!showDetails)}
+            aria-expanded={showDetails}
+            aria-label={showDetails ? t('hud.hideDetails') : t('hud.showDetails')}
+            title={showDetails ? t('hud.hideDetails') : t('hud.showDetails')}
+            className="p-1 rounded-md text-slate-400 hover:text-slate-200 hover:bg-slate-800/60 outline-hidden focus-visible:ring-2 focus-visible:ring-accent-400"
+          >
+            {showDetails ? <ChevronRight className="w-3.5 h-3.5" /> : <ChevronLeft className="w-3.5 h-3.5" />}
+          </button>
+        )}
 
         {/* Lorebook Badge */}
-        {activeLorebooks.length > 0 && (
+        {showDetails && activeLorebooks.length > 0 && (
           <div className="hidden lg:flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-slate-800/70 border border-slate-700/60 text-slate-300 text-xs">
             <BookOpen className="w-3 h-3 text-amber-400" />
             <span className="whitespace-nowrap">{t('hud.lorebookActive')}</span>
@@ -122,7 +134,7 @@ export const AdaptiveHud = () => {
         )}
 
         {/* State Variables */}
-        {stateVariables.map((v, i) => {
+        {showDetails && stateVariables.map((v, i) => {
           if (v.var_type === 'progress') {
             const val = parseInt(v.value) || 0;
             const max = v.max_value || 100;

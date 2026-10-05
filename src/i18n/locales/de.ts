@@ -625,8 +625,6 @@ export const de = {
   "hud.availableCharacters": "Verfügbare Charaktere",
   "hud.noDescription": "Keine Beschreibung",
   "hud.openLibrary": "Alle Charaktere in der Bibliothek anzeigen",
-  "hud.personaHint": "Deine Persona – in der Bibliothek wechseln",
-  "hud.you": "Du:",
   "hud.lorebookActive": "Lorebook aktiv",
   "hud.reasoning": "Reasoning:",
   "hud.reasoningOnHint": "Reasoning ist an: Das Modell denkt vor der Antwort in <think>-Tags nach",
@@ -2483,4 +2481,9 @@ export const de = {
   "task.model": "Modell laden: {{name}}",
   "task.modelLoading": "Das Modell wird in den Grafikspeicher geladen; der Chat antwortet, sobald es bereit ist.",
   "task.download": "Download: {{name}}",
+  "chat.compact": "Kompakt",
+  "chat.compactHint": "Kompakte Chatansicht: dichtere Nachrichten, schmalere Leisten",
+  "chat.moreActions": "Weitere Chat-Aktionen",
+  "hud.showDetails": "Zustandswerte einblenden",
+  "hud.hideDetails": "Zustandswerte ausblenden",
 } as const;

@@ -26,7 +26,11 @@ import {
   PlugZap,
   Volume2,
   VolumeX,
+  Rows3,
+  MoreHorizontal,
 } from 'lucide-react';
+import { DropdownMenu } from '../ui/DropdownMenu';
+import { usePersistentFlag } from '../../hooks/usePersistentFlag';
 import { audioPlayer, gainFromVoiceVolume } from '../../services/audioPlayer';
 import { streamingTts } from '../../services/streamingTts';
 
@@ -78,7 +82,8 @@ export const ChatView: React.FC = () => {
   const [streamText, setStreamText] = useState('');
   const [streamThought, setStreamThought] = useState('');
   const [showCurrentThought, setShowCurrentThought] = useState(true);
-  const [showAvatar, setShowAvatar] = useState(true);
+  const [showAvatar, setShowAvatar] = usePersistentFlag('otakusoul.chat.avatar', true);
+  const [compact, setCompact] = usePersistentFlag('otakusoul.chat.compact', false);
   const [showSearch, setShowSearch] = useState(false);
   const chatJumpTarget = useAppStore((s) => s.chatJumpTarget);
 
@@ -316,16 +321,6 @@ export const ChatView: React.FC = () => {
           >
             <Search className="w-3.5 h-3.5" />
           </button>
-          <button
-            onClick={() => setShowVoiceModal(true)}
-            className={`${TOOLBAR_TOGGLE} bg-slate-800/60 text-slate-400 border-slate-700/60 hover:text-slate-200`}
-            title={t('chat.voiceTooltip')}
-            aria-label={t('chat.voiceTooltip')}
-          >
-            <Volume2 className="w-3.5 h-3.5" />
-            <span className="hidden xl:inline">{t('chat.voice')}</span>
-          </button>
-
           {activeVoiceConfig && activeVoiceConfig.engine !== 'disabled' && (
             <button
               onClick={() => {
@@ -362,19 +357,35 @@ export const ChatView: React.FC = () => {
           </button>
 
           <button
-            onClick={handleClearSession}
-            disabled={!activeChatId}
-            className="text-slate-400 hover:text-rose-400 p-1.5 rounded hover:bg-slate-800/50 transition-colors disabled:opacity-30 outline-hidden focus-visible:ring-2 focus-visible:ring-accent-400"
-            title={t('chat.deleteSession')}
-            aria-label={t('chat.deleteSession')}
+            onClick={() => setCompact(!compact)}
+            aria-pressed={compact}
+            aria-label={t('chat.compact')}
+            className={`${TOOLBAR_TOGGLE} ${
+              compact
+                ? 'bg-accent-950/40 text-accent-300 border-accent-500/40'
+                : 'bg-slate-800/60 text-slate-400 border-slate-700/60 hover:text-slate-200'
+            }`}
+            title={t('chat.compactHint')}
           >
-            <Trash2 className="w-4 h-4" />
+            <Rows3 className="w-3.5 h-3.5" />
+            <span className="hidden xl:inline">{t('chat.compact')}</span>
           </button>
+
+          {/* Rarely used actions stay out of the way. */}
+          <DropdownMenu
+            triggerLabel={t('chat.moreActions')}
+            triggerClassName={`${TOOLBAR_TOGGLE} bg-slate-800/60 text-slate-400 border-slate-700/60 hover:text-slate-200`}
+            trigger={<MoreHorizontal className="w-3.5 h-3.5" />}
+            items={[
+              { label: t('chat.voiceTooltip'), icon: Volume2, onSelect: () => setShowVoiceModal(true) },
+              ...(activeChatId ? [{ label: t('chat.deleteSession'), icon: Trash2, onSelect: () => void handleClearSession() }] : []),
+            ]}
+          />
         </div>
       </div>
 
       {/* Adaptive HUD Bar */}
-      <AdaptiveHud />
+      <AdaptiveHud compact={compact} />
 
       {/* Main Split Layout: Avatar (Left) + Chat (Right) */}
       <div className="flex-1 flex overflow-hidden">
@@ -394,7 +405,12 @@ export const ChatView: React.FC = () => {
           <SceneImageCard />
           {showSearch && <ChatSearchBar messages={displayList} onClose={() => setShowSearch(false)} />}
           {/* Messages Stream Area */}
-          <div ref={scrollRef} className="flex-1 overflow-y-auto p-4 space-y-4 select-text" aria-live="polite">
+          <div
+            ref={scrollRef}
+            data-density={compact ? 'compact' : undefined}
+            className={`flex-1 overflow-y-auto select-text ${compact ? 'px-3 py-2 space-y-2' : 'p-4 space-y-4'}`}
+            aria-live="polite"
+          >
             {displayList.length === 0 && !isGenerating && !isChatLoading && !chatLoadError && (
               !activeCharacter ? (
                 <EmptyState

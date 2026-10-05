@@ -623,8 +623,6 @@ export const ru: TranslationDictionary = {
   "hud.availableCharacters": "Доступные персонажи",
   "hud.noDescription": "Без описания",
   "hud.openLibrary": "Показать всех персонажей в библиотеке",
-  "hud.personaHint": "Ваша персона — сменить в библиотеке",
-  "hud.you": "Вы:",
   "hud.lorebookActive": "Лорбук активен",
   "hud.reasoning": "Рассуждение:",
   "hud.reasoningOnHint": "Рассуждение включено: модель думает в тегах <think> перед ответом",
@@ -2481,4 +2479,9 @@ export const ru: TranslationDictionary = {
   "task.model": "Загрузка модели: {{name}}",
   "task.modelLoading": "Модель загружается в видеопамять; чат ответит, как только она будет готова.",
   "task.download": "Загрузка: {{name}}",
+  "chat.compact": "Компактно",
+  "chat.compactHint": "Компактный чат: плотнее сообщения, уже панели",
+  "chat.moreActions": "Другие действия чата",
+  "hud.showDetails": "Показать значения истории",
+  "hud.hideDetails": "Скрыть значения истории",
 };

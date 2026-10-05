@@ -623,8 +623,6 @@ export const en: TranslationDictionary = {
   "hud.availableCharacters": "Available characters",
   "hud.noDescription": "No description",
   "hud.openLibrary": "Show all characters in the library",
-  "hud.personaHint": "Your persona – change it in the library",
-  "hud.you": "You:",
   "hud.lorebookActive": "Lorebook active",
   "hud.reasoning": "Reasoning:",
   "hud.reasoningOnHint": "Reasoning is on: the model thinks in <think> tags before replying",
@@ -2481,4 +2479,9 @@ export const en: TranslationDictionary = {
   "task.model": "Loading model: {{name}}",
   "task.modelLoading": "The model is being loaded into video memory; the chat answers once it is ready.",
   "task.download": "Download: {{name}}",
+  "chat.compact": "Compact",
+  "chat.compactHint": "Compact chat view: denser messages, slimmer bars",
+  "chat.moreActions": "More chat actions",
+  "hud.showDetails": "Show story values",
+  "hud.hideDetails": "Hide story values",
 };

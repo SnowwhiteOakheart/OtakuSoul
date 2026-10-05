@@ -135,7 +135,7 @@ export const MessageList = React.memo<MessageListProps>(
               data-message-id={msg.id}
               ref={virtualizer.measureElement}
               // Hover actions hang below the bubble; keep them above the next message.
-              className="absolute left-0 top-0 w-full pb-4 hover:z-10 focus-within:z-10"
+              className="chat-row absolute left-0 top-0 w-full pb-4 hover:z-10 focus-within:z-10"
               style={{ transform: `translateY(${item.start}px)` }}
             >
               <ChatMessageItem
@@ -246,7 +246,7 @@ const ChatMessageItem = React.memo<ChatMessageItemProps>(
     return (
       <div className={`group flex flex-col ${isUser ? 'items-end' : 'items-start'}`}>
         {/* Sender Header + Swipes Navigation */}
-        <div className="flex items-center gap-2 mb-1 px-1">
+        <div className="chat-sender flex items-center gap-2 mb-1 px-1">
           {isUser && <PersonaAvatar persona={persona} className="w-5 h-5 text-[10px]" />}
           <span className="text-xs font-semibold text-slate-400">
             {isUser ? t('chat.you') : characterName}
@@ -345,9 +345,9 @@ const ChatMessageItem = React.memo<ChatMessageItemProps>(
             </div>
           </div>
         ) : (
-          <div className="relative group/bubble max-w-[85%]">
+          <div className="chat-bubble-wrap relative group/bubble max-w-[85%]">
             <div
-              className={`rounded-2xl px-4 py-2.5 text-sm leading-relaxed ${
+              className={`chat-bubble rounded-2xl px-4 py-2.5 text-sm leading-relaxed ${
                 isUser
                   ? 'bg-linear-to-r from-accent-600 to-indigo-600 text-white shadow-md'
                   : 'bg-slate-900 border border-slate-800 text-slate-100 shadow-sm'

@@ -224,6 +224,37 @@
     --color-accent2-800: color-mix(in oklab, var(--theme-accent2) 20%, white);
     --color-accent2-900: color-mix(in oklab, var(--theme-accent2) 12%, white);
     --color-accent2-950: color-mix(in oklab, var(--theme-accent2) 6%, white);
+    /* Status colors: their light text shades (100–300) are made for dark surfaces. */
+    --color-amber-100: #92400e;
+    --color-amber-200: #92400e;
+    --color-amber-300: #b45309;
+    --color-rose-100: #9f1239;
+    --color-rose-200: #9f1239;
+    --color-rose-300: #be123c;
+    --color-emerald-100: #065f46;
+    --color-emerald-200: #065f46;
+    --color-emerald-300: #047857;
+    --color-sky-100: #075985;
+    --color-sky-200: #075985;
+    --color-sky-300: #0369a1;
+    --color-cyan-200: #155e75;
+    --color-cyan-300: #0e7490;
+    --color-indigo-100: #3730a3;
+    --color-indigo-200: #3730a3;
+    --color-indigo-300: #4338ca;
+    /* …and their dark surface shades (900/950) become light tints. */
+    --color-amber-900: #fef3c7;
+    --color-amber-950: #fffbeb;
+    --color-rose-900: #ffe4e6;
+    --color-rose-950: #fff1f2;
+    --color-emerald-900: #d1fae5;
+    --color-emerald-950: #ecfdf5;
+    --color-sky-900: #e0f2fe;
+    --color-sky-950: #f0f9ff;
+    --color-cyan-900: #cffafe;
+    --color-cyan-950: #ecfeff;
+    --color-indigo-900: #e0e7ff;
+    --color-indigo-950: #eef2ff;
   }
 
   [data-color-mode="light"][data-theme="cyberpunk"] {
@@ -305,4 +336,26 @@
   outline: 2px solid var(--color-accent-400);
   outline-offset: 2px;
   border-radius: 1rem;
+}
+
+/* Spoken lines glow on dark bubbles; on light ones the shadow only blurs them. */
+[data-color-mode='light'] .rp-dialogue {
+  filter: none;
+}
+
+/* Compact chat (ChatView toggle): denser rows and bubbles, wider text. */
+[data-density='compact'] .chat-row {
+  padding-bottom: 0.625rem;
+}
+[data-density='compact'] .chat-sender {
+  margin-bottom: 0.125rem;
+}
+[data-density='compact'] .chat-bubble-wrap {
+  max-width: 95%;
+}
+[data-density='compact'] .chat-bubble {
+  padding: 0.375rem 0.75rem;
+  border-radius: 0.75rem;
+  font-size: 0.8125rem;
+  line-height: 1.45;
 }

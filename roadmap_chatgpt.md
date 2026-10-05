@@ -93,11 +93,11 @@ Abnahme: Eine frische Installation führt ohne Suche in mehreren Einstellungssei
 
 ## 7. Oberfläche und Orientierung
 
-- [ ] Kompakte Chatansicht und einklappbare Zusatzinformationen anbieten.
-- [ ] Werkzeugleisten, HUD und Avatarsteuerung auf das aktuelle Erlebnis fokussieren.
+- [x] Kompakte Chatansicht und einklappbare Zusatzinformationen anbieten (Schalter „Kompakt“: dichtere Nachrichten und schmalere HUD-Leiste; Zustandswerte im HUD einklappbar; beides und die Avatar-Anzeige bleiben pro Gerät gespeichert).
+- [x] Werkzeugleisten, HUD und Avatarsteuerung auf das aktuelle Erlebnis fokussieren (Stimme anpassen und Chat löschen im Menü „Weitere Chat-Aktionen“; doppelte Persona-Anzeige aus dem HUD entfernt; HUD bricht in kleinen Fenstern um statt abzuschneiden).
 - [x] Statusanzeige an das tatsächlich gewählte Backend anpassen (Cloud zeigt Anbieter-Modell, Klick öffnet die passenden Einstellungen; vor dem Laden der Einstellungen kein Status).
 - [x] Einstellungssuche mit direktem Sprung zur passenden Option ergänzen (Befehlspalette: Einstellungsseiten, einzelne Optionen mit Hervorhebung, Integrationsreiter; Suchwörter dreisprachig). *(Neuzuschnitt: Befehlspalette Strg+K um Einstellungsabschnitte erweitern statt eigener Suche; 89/90/93 erst bei konkretem Anlass.)*
-- [ ] Kleine Fenster, Tastaturbedienung und verschiedene Themes anhand von E2E-Screenshots prüfen.
+- [x] Kleine Fenster, Tastaturbedienung und verschiedene Themes anhand von E2E-Screenshots prüfen (`e2e/ui-layout.mjs`, Screenshots 48–50). Gefunden und behoben: abgeschnittenes HUD bei 820 px, kaum lesbare wörtliche Rede und dunkle Statusflächen im hellen Modus.
 
 Abnahme: Ein funktionierender Cloud-Chat erscheint nicht wegen eines gestoppten lokalen Servers als gestört.
 
