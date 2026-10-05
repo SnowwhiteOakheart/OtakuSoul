@@ -962,3 +962,62 @@ fn a_failed_chat_import_leaves_no_partial_chat() {
     assert!(db.import_chat_jsonl("ayu", jsonl, Some("Kaputt")).is_err());
     assert!(db.list_chat_sessions("ayu").unwrap().is_empty());
 }
+
+#[test]
+fn a_failed_reflection_write_changes_nothing() {
+    let db = MemoryDb::new_in_memory().expect("in-memory db failed");
+    let mut psych = db.get_or_create_psychology("ayu").unwrap();
+    let before = psych.primary_emotion.clone();
+    psych.primary_emotion = "Euphorisch".into();
+    db.conn
+        .lock()
+        .execute_batch(
+            "CREATE TRIGGER fail_diary BEFORE INSERT ON soul_diary
+             BEGIN SELECT RAISE(ABORT, 'late reflection failure'); END;",
+        )
+        .unwrap();
+    let topics = vec!["[Thema: Kyoto]\nReise geplant".to_string()];
+    let healing = vec!["Widerspruch gelöst".to_string()];
+    let result = db.apply_reflection(
+        "ayu",
+        &ReflectionChanges {
+            psychology: Some(&psych),
+            relationship: None,
+            healing: &healing,
+            topics: &topics,
+            source: MemorySource::auto(),
+            diary: Some(("Innere Reflexion", "Heute war schön.", "Euphorisch")),
+        },
+    );
+    assert!(result.is_err());
+    assert_eq!(
+        db.get_or_create_psychology("ayu").unwrap().primary_emotion,
+        before
+    );
+    assert!(db.get_episodic_memories("ayu", 10).unwrap().is_empty());
+    assert!(db.get_healing_logs("ayu", 10).unwrap().is_empty());
+
+    db.conn
+        .lock()
+        .execute_batch("DROP TRIGGER fail_diary;")
+        .unwrap();
+    let diary = db
+        .apply_reflection(
+            "ayu",
+            &ReflectionChanges {
+                psychology: Some(&psych),
+                relationship: None,
+                healing: &healing,
+                topics: &topics,
+                source: MemorySource::auto(),
+                diary: Some(("Innere Reflexion", "Heute war schön.", "Euphorisch")),
+            },
+        )
+        .unwrap();
+    assert!(diary.is_some());
+    assert_eq!(
+        db.get_or_create_psychology("ayu").unwrap().primary_emotion,
+        "Euphorisch"
+    );
+    assert_eq!(db.get_episodic_memories("ayu", 10).unwrap().len(), 1);
+}

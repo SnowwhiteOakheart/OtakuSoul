@@ -721,7 +721,7 @@ export const de = {
   "memory.loading": "Wird geladen…",
   "memory.busy": "Ein Memory-Vorgang läuft bereits.",
   "memory.reflectFailed": "Reflexion fehlgeschlagen: {{error}}",
-  "memory.reflectionPartial": "Die Reflexion kann bereits Änderungen gespeichert haben. Prüfe die Daten und den Snapshot vor einem erneuten Start.",
+  "memory.reflectionPartial": "Es wurde nichts geändert; Du kannst die Reflexion erneut starten.",
   "memory.markdownLoadFailed": "Markdown konnte nicht geladen werden: {{error}}",
   "memory.retryMarkdown": "Markdown erneut laden",
   "memory.loadFailed": "Laden fehlgeschlagen: {{error}}",

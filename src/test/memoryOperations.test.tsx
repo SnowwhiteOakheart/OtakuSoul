@@ -48,7 +48,7 @@ describe('memory operations', () => {
     await user.click(screen.getByRole('button', { name: 'Start reflection' }));
     await screen.findByRole('alert');
     expect(screen.getByRole('alert')).toHaveTextContent('Reflection failed: Router unavailable');
-    expect(screen.getByRole('alert')).toHaveTextContent('may already have saved changes');
+    expect(screen.getByRole('alert')).toHaveTextContent('Nothing was changed');
     expect(feedback.toast.success).not.toHaveBeenCalled();
     expect(useAppStore.getState().isReflecting).toBe(false);
     await user.click(screen.getByRole('button', { name: 'Start reflection' }));

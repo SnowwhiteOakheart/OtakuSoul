@@ -1714,4 +1714,8 @@ veraltet und sind korrigiert: `chat-sidebar-errors` las die Sitzung, bevor der e
 - [x] **„Rückgängig“ beim Löschen von Chat-Nachrichten:** Keine Rückfrage mehr; die Nachricht verschwindet sofort, ein
   Toast bietet 8 s lang „Rückgängig“, danach wird sie gelöscht (schlägt das fehl, erscheint sie wieder). Der Prompt
   enthält sie in der Zwischenzeit nicht (Test `undoDelete.test.ts`, E2E `partial-reply.mjs`).
+- [x] **Atomare Reflexion:** Die Memory-Pipeline holt erst alle Modellantworten (Router, Archivar, Tagebuch), legt dann
+  den Snapshot an und schreibt Psychologie, Beziehung, Heilungsprotokoll, Themen-Erinnerungen und Tagebuch in einer
+  Transaktion (`apply_reflection`). Ein Fehler – auch ein später Modell- oder Schreibfehler – ändert nichts; der Hinweis
+  im Drawer sagt das jetzt (Test `a_failed_reflection_write_changes_nothing`).
 

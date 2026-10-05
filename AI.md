@@ -214,7 +214,8 @@ Hub). Integrationen → Bildgenerierung enthält nur Studio und Galerie.
   Snapshot-Erstellung bricht bei Lesefehlern ab und schreibt kein unvollständiges Backup.
   `memoryOperation` sperrt Import, Wiederherstellung, Snapshot-Erstellung und Reflexion gegenseitig, auch nach
   Schließen/Reiterwechsel. Reflexionsfehler werden weitergegeben und in `memoryReflectionError` angezeigt.
-  Die Reflexion ist mehrstufig und nicht atomar; ein Fehler nach frühen Änderungen verlangt Prüfung des Snapshots.
+  Die Reflexion holt erst alle Modellantworten (Router, Archivar, Tagebuch) und schreibt dann alles in einer
+  Transaktion (`apply_reflection`); ein Fehler ändert nichts.
   `memoryMarkdownError` zeigt auch fehlgeschlagenes Hintergrund-Nachladen nach erfolgreichem Schreiben an;
   Wiederholen lädt nur Markdown und erhält offene Entwürfe. Alte Kontextergebnisse dürfen nichts überschreiben.
 - Companion `execute_code`: nur mit `allow_code_execution` (Standard aus, Companion-Einstellungen werden nicht gespeichert

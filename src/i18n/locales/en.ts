@@ -719,7 +719,7 @@ export const en: TranslationDictionary = {
   "memory.loading": "Loading…",
   "memory.busy": "A memory operation is already running.",
   "memory.reflectFailed": "Reflection failed: {{error}}",
-  "memory.reflectionPartial": "The reflection may already have saved changes. Check the data and snapshot before starting again.",
+  "memory.reflectionPartial": "Nothing was changed; you can start the reflection again.",
   "memory.markdownLoadFailed": "Could not load markdown: {{error}}",
   "memory.retryMarkdown": "Retry markdown",
   "memory.loadFailed": "Loading failed: {{error}}",

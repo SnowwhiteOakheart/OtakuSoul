@@ -20,7 +20,7 @@ mod tests;
 
 pub use models::*;
 use schema::migrate;
-pub use soul::MemorySource;
+pub use soul::{MemorySource, ReflectionChanges};
 
 pub struct MemoryDb {
     conn: Arc<Mutex<Connection>>,

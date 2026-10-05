@@ -463,16 +463,14 @@ pub async fn execute_memory_pipeline(
         });
     }
 
-    // 5. Create automatic snapshot backup before applying patches
-    state
-        .memory_db
-        .backup_memory_state(char_id, Some(user_name), None)?;
-
+    // 5. Work out every change first; the model calls of archivist and diary come before any
+    // write, and all writes happen together at the end (one transaction).
     let mut updated_psych = current_psych.clone();
     let mut updated_rel = current_rel.clone();
     let mut healing_entries = Vec::new();
 
-    // 6. Apply character_memory_patch
+    // 6. Character memory patch
+    let psych_changed = parsed_router.character_memory_patch.is_some();
     if let Some(cp) = parsed_router.character_memory_patch {
         if !cp.core_identity_remove.is_empty() {
             remove_matching(&mut updated_psych.core_identity, &cp.core_identity_remove);
@@ -525,14 +523,10 @@ pub async fn execute_memory_pipeline(
         {
             updated_psych.cognitive_dissonance = dissonance.trim().to_string();
         }
-
-        state
-            .memory_db
-            .update_psychology(char_id, &updated_psych)
-            .map_err(|e| e.to_string())?;
     }
 
-    // 7. Apply user_memory_patch
+    // 7. User memory patch
+    let rel_changed = parsed_router.user_memory_patch.is_some();
     if let Some(up) = parsed_router.user_memory_patch {
         if let Some(uis) = up.user_identity_status {
             if let Some(role) = uis.role_in_story
@@ -592,27 +586,19 @@ pub async fn execute_memory_pipeline(
                 25,
             );
         }
-
-        state
-            .memory_db
-            .update_relationship(char_id, &updated_rel)
-            .map_err(|e| e.to_string())?;
     }
 
-    // 8. Healing Log Entries
+    // 8. Healing log entries
     for entry in &parsed_router.healing_log_add {
         let text = entry.trim();
         if !text.is_empty() {
-            state
-                .memory_db
-                .log_healing(char_id, "contradiction_resolved", text)
-                .map_err(|e| e.to_string())?;
             healing_entries.push(text.to_string());
         }
     }
 
-    // 9. Archivist Agent: Process Topic Actions
+    // 9. Archivist agent: one topic memory per planned topic
     let mut topics_processed = Vec::new();
+    let mut topic_memories = Vec::new();
     if let Some(plan) = parsed_router.topic_plan {
         for action in plan.actions {
             info!(
@@ -666,32 +652,15 @@ pub async fn execute_memory_pipeline(
                         action.filename,
                         trimmed
                     );
-                    state
-                        .memory_db
-                        .add_episodic_memory_from(
-                            char_id,
-                            "topic",
-                            &formatted_topic,
-                            4,
-                            &crate::modules::memory::MemorySource {
-                                origin: "auto",
-                                chat_id: if source_ids.is_empty() {
-                                    None
-                                } else {
-                                    source_chat_id.as_deref()
-                                },
-                                message_ids: &source_ids,
-                            },
-                        )
-                        .map_err(|e| e.to_string())?;
+                    topic_memories.push(formatted_topic);
                     topics_processed.push(action.filename);
                 }
             }
         }
     }
 
-    // 10. Diary Agent: Reflective First-Person Entry
-    let mut diary_result: Option<DiaryEntry> = None;
+    // 10. Diary agent: reflective first-person entry
+    let mut diary_text = String::new();
     if req.include_diary.unwrap_or(true) {
         info!("[SoulMemory] Diary Agent für {} ausführen...", char_id);
         let diary_sys = DIARY_SYSTEM_PROMPT
@@ -730,31 +699,50 @@ pub async fn execute_memory_pipeline(
         };
 
         let diary_raw = state.inference_client.generate_direct(diary_req).await?;
-        {
-            let diary_text = diary_raw.trim();
-            if !diary_text.is_empty() {
-                let id = state
-                    .memory_db
-                    .add_diary_entry(
-                        char_id,
-                        "Innere Reflexion",
-                        diary_text,
-                        &updated_psych.primary_emotion,
-                    )
-                    .map_err(|e| e.to_string())?;
-                diary_result = Some(DiaryEntry {
-                    id,
-                    title: "Innere Reflexion".to_string(),
-                    entry_text: diary_text.to_string(),
-                    mood: updated_psych.primary_emotion.clone(),
-                    created_at: std::time::SystemTime::now()
-                        .duration_since(std::time::UNIX_EPOCH)
-                        .map(|d| d.as_secs())
-                        .unwrap_or(0),
-                });
-            }
-        }
+        diary_text = diary_raw.trim().to_string();
     }
+
+    // 11. Snapshot, then every change in one transaction.
+    state
+        .memory_db
+        .backup_memory_state(char_id, Some(user_name), None)?;
+    let diary_title = "Innere Reflexion";
+    let diary_id = state
+        .memory_db
+        .apply_reflection(
+            char_id,
+            &crate::modules::memory::ReflectionChanges {
+                psychology: psych_changed.then_some(&updated_psych),
+                relationship: rel_changed.then_some(&updated_rel),
+                healing: &healing_entries,
+                topics: &topic_memories,
+                source: crate::modules::memory::MemorySource {
+                    origin: "auto",
+                    chat_id: if source_ids.is_empty() {
+                        None
+                    } else {
+                        source_chat_id.as_deref()
+                    },
+                    message_ids: &source_ids,
+                },
+                diary: (!diary_text.is_empty()).then_some((
+                    diary_title,
+                    diary_text.as_str(),
+                    updated_psych.primary_emotion.as_str(),
+                )),
+            },
+        )
+        .map_err(|e| e.to_string())?;
+    let diary_result = diary_id.map(|id| DiaryEntry {
+        id,
+        title: diary_title.to_string(),
+        entry_text: diary_text.clone(),
+        mood: updated_psych.primary_emotion.clone(),
+        created_at: std::time::SystemTime::now()
+            .duration_since(std::time::UNIX_EPOCH)
+            .map(|d| d.as_secs())
+            .unwrap_or(0),
+    });
 
     Ok(SoulMemoryPipelineResult {
         no_change: false,

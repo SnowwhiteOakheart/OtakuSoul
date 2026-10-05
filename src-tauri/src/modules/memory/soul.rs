@@ -530,6 +530,37 @@ impl MemoryDb {
         Ok(entries)
     }
 
+    /// Writes everything one memory reflection decided, in one transaction: a failure leaves
+    /// the memory as it was. Returns the id of the diary entry, if one was written.
+    pub fn apply_reflection(
+        &self,
+        char_id: &str,
+        changes: &ReflectionChanges<'_>,
+    ) -> Result<Option<i64>, rusqlite::Error> {
+        let conn = self.conn.lock();
+        let tx = conn.unchecked_transaction()?;
+        if let Some(psychology) = changes.psychology {
+            Self::update_psychology_on(&tx, char_id, psychology)?;
+        }
+        if let Some(relationship) = changes.relationship {
+            Self::update_relationship_on(&tx, char_id, relationship)?;
+        }
+        for entry in changes.healing {
+            Self::log_healing_on(&tx, char_id, "contradiction_resolved", entry)?;
+        }
+        for topic in changes.topics {
+            Self::add_episodic_memory_sourced_on(&tx, char_id, "topic", topic, 4, &changes.source)?;
+        }
+        let diary = match changes.diary {
+            Some((title, text, mood)) => {
+                Some(Self::add_diary_entry_on(&tx, char_id, title, text, mood)?)
+            }
+            None => None,
+        };
+        tx.commit()?;
+        Ok(diary)
+    }
+
     // --- Healing & Emotional Decay ---
     pub fn log_healing(
         &self,
@@ -705,4 +736,16 @@ pub(super) fn flag_memories_from_messages(
         }
     }
     Ok(())
+}
+
+/// What one memory reflection writes (`apply_reflection`).
+pub struct ReflectionChanges<'a> {
+    pub psychology: Option<&'a PsychologyState>,
+    pub relationship: Option<&'a RelationshipState>,
+    pub healing: &'a [String],
+    /// Topic memories written by the archivist, with the messages they came from.
+    pub topics: &'a [String],
+    pub source: MemorySource<'a>,
+    /// Title, text and mood of the diary entry.
+    pub diary: Option<(&'a str, &'a str, &'a str)>,
 }

@@ -719,7 +719,7 @@ export const ru: TranslationDictionary = {
   "memory.loading": "Загрузка…",
   "memory.busy": "Операция с памятью уже выполняется.",
   "memory.reflectFailed": "Ошибка рефлексии: {{error}}",
-  "memory.reflectionPartial": "Рефлексия могла уже сохранить изменения. Проверьте данные и снимок перед повторным запуском.",
+  "memory.reflectionPartial": "Ничего не изменено; рефлексию можно запустить снова.",
   "memory.markdownLoadFailed": "Не удалось загрузить Markdown: {{error}}",
   "memory.retryMarkdown": "Загрузить Markdown снова",
   "memory.loadFailed": "Ошибка загрузки: {{error}}",
