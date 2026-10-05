@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState } from 'react';
 import { Check, Download, Loader2, Mic, ShieldAlert, Square, Trash2, Upload, Wand2, X } from 'lucide-react';
 import { api } from '../../services/api';
+import { downloadTtsModelTask } from '../../services/downloadTasks';
 import { translate, useTranslation } from '../../i18n';
 import { errorMessage } from '../../utils/errors';
 import { confirmDialog, toast } from '../ui/feedback';
@@ -102,7 +103,7 @@ export const LocalTtsSettings = ({ config, onChange }: LocalTtsSettingsProps) =>
     setDownloading(model.id);
     setProgress(null);
     try {
-      await api.downloadTtsModel(model.id);
+      await downloadTtsModelTask(model.id, model.name);
       toast.success(translate('localTts.downloaded', { name: model.name }));
       if (!config.local_model_id) onChange({ ...config, local_model_id: model.id, voice_id: model.voices[0]?.voice_id ?? '' });
     } catch (e) {

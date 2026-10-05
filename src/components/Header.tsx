@@ -5,6 +5,7 @@ import brandIconUrl from '../assets/brand/otakusoul-icon.png';
 import { APP_NAME } from '../constants/branding';
 import { AboutDialog } from './AboutDialog';
 import { PersonaAvatar } from './characters/PersonaAvatar';
+import { TaskCenter } from './TaskCenter';
 import { Cpu, AlertCircle, Loader2, Info, Terminal, Sparkles, Command } from 'lucide-react';
 
 /** Server state changes quickly while starting; VRAM only matters as a rough gauge. */
@@ -173,6 +174,8 @@ export const Header = ({ onOpenCommandPalette }: HeaderProps) => {
             <PersonaAvatar persona={activePersona} className="w-6 h-6 text-[11px]" />
             <span className="hidden sm:inline max-w-32 truncate font-medium">{activePersona.name}</span>
           </button>
+
+          <TaskCenter />
 
           <button
             type="button"

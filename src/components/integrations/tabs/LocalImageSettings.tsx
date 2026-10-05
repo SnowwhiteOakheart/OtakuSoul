@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react';
 import { Check, Download, HardDrive, Loader2, Trash2, X } from 'lucide-react';
 import { api } from '../../../services/api';
+import { downloadImageModelTask } from '../../../services/downloadTasks';
 import { translate, useTranslation } from '../../../i18n';
 import { errorMessage } from '../../../utils/errors';
 import { confirmDialog, toast } from '../../ui/feedback';
@@ -47,7 +48,7 @@ export const LocalImageSettings = ({ config, onChange }: LocalImageSettingsProps
     setDownloading(model.id);
     setProgress(null);
     try {
-      await api.downloadImageModel(model.id);
+      await downloadImageModelTask(model.id, model.name);
       toast.success(translate('localImage.downloaded', { name: model.name }));
       if (!config.local_model_id) onChange({ ...config, local_model_id: model.id });
     } catch (e) {

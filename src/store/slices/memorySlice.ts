@@ -10,6 +10,7 @@ import type {
   SoulMemoryPipelineResult,
 } from '../../types';
 import type { SliceCreator } from '../storeTypes';
+import { trackTask } from './taskSlice';
 
 /** Cognitive soul memory: psychology, relationship, diary, reflection and memory backups. */
 export interface MemorySlice {
@@ -250,7 +251,11 @@ export const createMemorySlice: SliceCreator<MemorySlice> = (set, get) => {
 
       set({ isReflecting: true, memoryReflectionError: null });
       try {
-        const res = await api.triggerMemoryPipeline({
+        const retry = () => {
+          if (get().activeCharacter?.id === cid) void get().triggerMemoryPipeline(recentTurns).catch(() => undefined);
+        };
+        const task = { kind: 'reflection' as const, title: translate('task.reflection', { name: activeCharacter.card.data.name }), retry };
+        const res = await trackTask(get(), task, () => api.triggerMemoryPipeline({
           character_id: cid,
           user_name: userName,
           chat_id: activeChatId || undefined,
@@ -260,7 +265,7 @@ export const createMemorySlice: SliceCreator<MemorySlice> = (set, get) => {
           provider: selectedBackend === 'cloud' ? cloudProvider : 'local_llama',
           recent_turn_count: recentTurns || 8,
           include_diary: true,
-        });
+        }));
 
         if (get().activeCharacter?.id === cid && get().activePersona.name === userName) {
           set({ lastReflectionResult: res });

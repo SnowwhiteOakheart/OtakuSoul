@@ -13,6 +13,8 @@ import type {
   WebServerStatus,
 } from '../../types';
 import type { SliceCreator } from '../storeTypes';
+import { trackTask } from './taskSlice';
+import { translate } from '../../i18n';
 import { reportFailure } from '../reportFailure';
 
 /** Profile backups, image generation, Discord and the mobile web server. */
@@ -141,7 +143,10 @@ export const createEcosystemSlice: SliceCreator<EcosystemSlice> = (set, get) => 
   },
 
   generateImageAction: async (prompt, negative, customConfig) => {
-    const res = await api.generateImageAction(prompt, negative, customConfig);
+    // Retrying puts the picture into the gallery; the original caller is gone by then.
+    const retry = () => void get().generateImageAction(prompt, negative, customConfig).catch(() => undefined);
+    const task = { kind: 'image' as const, title: translate('task.image', { prompt: prompt.slice(0, 60) }), retry };
+    const res = await trackTask(get(), task, () => api.generateImageAction(prompt, negative, customConfig));
     await get().fetchGeneratedImages();
     soundFx.playDiceRoll();
     return res;

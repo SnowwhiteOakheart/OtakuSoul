@@ -9,6 +9,7 @@ import type { StageSlice } from './slices/stageSlice';
 import type { CompanionSlice } from './slices/companionSlice';
 import type { ChatSlice } from './slices/chatSlice';
 import type { EcosystemSlice } from './slices/ecosystemSlice';
+import type { TaskSlice } from './slices/taskSlice';
 
 export type AppStoreState = AppSlice &
   AvatarSlice &
@@ -19,7 +20,8 @@ export type AppStoreState = AppSlice &
   StageSlice &
   CompanionSlice &
   ChatSlice &
-  EcosystemSlice;
+  EcosystemSlice &
+  TaskSlice;
 
 /** A slice sees (and may update) the whole store. */
 export type SliceCreator<T> = StateCreator<AppStoreState, [], [], T>;

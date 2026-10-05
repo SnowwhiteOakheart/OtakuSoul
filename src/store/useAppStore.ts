@@ -7,6 +7,7 @@ import { createCharacterSlice } from './slices/characterSlice';
 import { createLorebookSlice } from './slices/lorebookSlice';
 import { createMemorySlice } from './slices/memorySlice';
 import { createStageSlice } from './slices/stageSlice';
+import { createTaskSlice } from './slices/taskSlice';
 import { createCompanionSlice } from './slices/companionSlice';
 import { createChatSlice } from './slices/chatSlice';
 import { createEcosystemSlice } from './slices/ecosystemSlice';
@@ -24,6 +25,7 @@ export const useAppStore = create<AppStoreState>()((...args) => ({
   ...createLorebookSlice(...args),
   ...createMemorySlice(...args),
   ...createStageSlice(...args),
+  ...createTaskSlice(...args),
   ...createCompanionSlice(...args),
   ...createChatSlice(...args),
   ...createEcosystemSlice(...args),

@@ -73,6 +73,7 @@ Tausche dich mit deinen Charakteren in einer stimmungsvollen Chat-Oberfläche au
 
 * **Audio-synchronisierter LipSync:** Das Sprachmodell steuert über TTS die Lippenbewegungen der Figur exakt zur gesprochenen Stimme.
 * **Nie wieder Kontextverlust:** Wird das Modell-Kontextfenster knapp, fasst ein Hintergrundprozess ältere Dialoge als prägnante „Bisherige Handlung“ zusammen – jederzeit einsehbar und editierbar.
+* **Hintergrundaufgaben im Blick:** Downloads, Reflexion, Zusammenfassungen, Bilder und das Laden des Modells erscheinen in einer Aufgabenliste im Kopf – mit Fortschritt, Wartegrund (z. B. „Chat-Modell wird entladen“), Fehlerursache, Abbrechen und Wiederholen.
 * **Resiliente Interaktion:** Ausführliche Antwortvarianten (Swipes), Inline-Korrekturen und automatische Entwurfssicherung schützen vor Datenverlust bei Verbindungsabbrüchen.
 * **Verlässliche Chat-Editoren:** Titel, Author's Note und Zusammenfassung melden Speicherfehler und erhalten Entwürfe zum Wiederholen. Notiz- und Zusammenfassungsentwürfe bleiben beim Schließen der Seitenleiste und beim Chatwechsel getrennt erhalten, solange die Chatansicht geöffnet bleibt.
 * **Sichtbare Memory-Lesefehler:** Übersicht und Snapshot-Liste behalten bereits geladene Daten und zeigen Ladefehler mit Wiederholen an. Ein erfolgreiches Speichern bleibt erfolgreich, auch wenn das anschließende Nachladen scheitert.

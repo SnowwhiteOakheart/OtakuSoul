@@ -18,6 +18,13 @@ import type {
 import type { SliceCreator } from '../storeTypes';
 import { reportFailure } from '../reportFailure';
 import { errorMessage } from '../../utils/errors';
+import { translate } from '../../i18n';
+import { trackTask } from './taskSlice';
+
+/** The task of the model being loaded; the server status says when it is ready. */
+let serverTaskId: string | null = null;
+
+const fileName = (path: string) => path.split(/[\\/]/).pop() || path;
 
 /** Local llama-server, hardware, cloud providers, sampler, LLM presets and the GGUF model hub. */
 export interface LlmSlice {
@@ -186,17 +193,36 @@ export const createLlmSlice: SliceCreator<LlmSlice> = (set, get) => ({
     try {
       const status = await api.getLlamaServerStatus();
       set({ serverStatus: status });
+      if (serverTaskId && status.state !== 'starting') {
+        if (status.state === 'running') get().endTask(serverTaskId, 'done');
+        else if (status.state === 'failed') get().endTask(serverTaskId, 'failed', status.error_message ?? undefined);
+        else get().endTask(serverTaskId, 'cancelled');
+        serverTaskId = null;
+      }
     } catch (e) {
       console.error('Failed to fetch server status:', e);
     }
   },
 
   startServer: async () => {
+    if (serverTaskId) get().endTask(serverTaskId, 'cancelled');
+    // Loading takes from seconds to minutes; the chat waits until the model is in VRAM.
+    const id = get().startTask({
+      kind: 'model',
+      title: translate('task.model', { name: fileName(get().serverConfig.model_path) }),
+      status: 'waiting',
+      detail: translate('task.modelLoading'),
+      cancel: () => void get().stopServer(),
+      retry: () => void get().startServer(),
+    });
+    serverTaskId = id;
     try {
       await api.startLlamaServer(get().serverConfig);
       await get().fetchServerStatus();
       await get().fetchHardware();
     } catch (e) {
+      if (serverTaskId === id) serverTaskId = null;
+      get().endTask(id, 'failed', errorMessage(e));
       reportFailure('Failed to start server:', e);
     }
   },
@@ -384,7 +410,13 @@ export const createLlmSlice: SliceCreator<LlmSlice> = (set, get) => ({
   downloadGgufModel: async (file: HfGgufFile) => {
     set({ hfError: null });
     try {
-      const modelPath = await api.downloadGgufModel(file);
+      const task = {
+        kind: 'download' as const,
+        title: translate('task.download', { name: file.filename }),
+        progressKey: file.filename,
+        retry: () => void get().downloadGgufModel(file),
+      };
+      const modelPath = await trackTask(get(), task, () => api.downloadGgufModel(file));
       const models = await api.scanModels();
       set({ scannedModels: models });
       await get().selectLocalModel(modelPath);

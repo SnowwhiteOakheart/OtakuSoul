@@ -174,6 +174,9 @@ Einstellungen: `components/settings/sections/*` (Server inkl. Laufzeiten/`mmproj
   Zurücksetzen entfernt den jeweiligen Entwurf. Laufende Vorgänge sperren die Felder auch nach Wiederöffnen.
   Umbenennen und Author's Note geben Schreibfehler weiter und aktualisieren nach Erfolg nur die betreffende
   Sitzung im Store; kein erneutes Listenladen nach dem Schreiben. Die Notiztiefe 0 muss erhalten bleiben.
+- Hintergrundaufgaben: `store/slices/taskSlice.ts` (`trackTask` → erledigt/abgebrochen (Code `…Cancelled`)/fehlgeschlagen),
+  Anzeige `components/TaskCenter.tsx` (hört Download-Fortschritt und `local-image-status`). Modellstart endet über
+  `fetchServerStatus`; Bild-/LoRA-/TTS-Downloads laufen über `services/downloadTasks.ts`. Neue lange Vorgänge dort eintragen.
 - `<state>{…}</state>` am Antwortende aktualisiert HUD-Variablen (`utils/stateParser.ts`) und wird ausgeblendet.
 - Memory: `addManualMemory`, `addManualDiary`, `generateManualDiary` und `createMemoryBackup` geben Fehler an
   ihre Aufrufer weiter. Formulare müssen diese anzeigen; Eingaben erst nach erfolgreichem Speichern leeren.

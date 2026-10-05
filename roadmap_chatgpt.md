@@ -112,10 +112,10 @@ Abnahme: Alternative Geschichten beeinflussen sich nicht unbeabsichtigt über ge
 
 ## 9. Hintergrundaufgaben sichtbar machen
 
-- [ ] Gemeinsame Aufgabenanzeige für Downloads, Reflexion, Zusammenfassung, Bilder und Modellwechsel schaffen.
-- [ ] Laufend, wartend, erfolgreich, fehlgeschlagen und abgebrochen unterscheiden.
-- [ ] Abbrechen und Wiederholen anbieten, soweit der jeweilige Vorgang es unterstützt.
-- [ ] Wartezeiten durch Modellbelegung oder VRAM-Wechsel erklären.
+- [x] Gemeinsame Aufgabenanzeige für Downloads, Reflexion, Zusammenfassung, Bilder und Modellwechsel schaffen (`taskSlice` + `TaskCenter` im Kopf; erscheint, sobald es eine Aufgabe gibt).
+- [x] Laufend, wartend, erfolgreich, fehlgeschlagen und abgebrochen unterscheiden (Fehlerursache sichtbar, neue Fehler markieren den Knopf rot).
+- [x] Abbrechen und Wiederholen anbieten, soweit der jeweilige Vorgang es unterstützt (Abbrechen: Bild-/LoRA-/TTS-Downloads, Modellstart; Wiederholen: Downloads, Reflexion, Bild, Modellstart. GGUF-Downloads und Zusammenfassungen haben keinen Abbruch im Backend.)
+- [x] Wartezeiten durch Modellbelegung oder VRAM-Wechsel erklären (Modellstart wartet bis „läuft“; lokale Bilder zeigen die VRAM-Phasen Planen/Entladen/Verkleinern/Laden als „wartet“).
 
 Abnahme: Der Nutzer erkennt, woran die App arbeitet und warum eine Aufgabe wartet.
 

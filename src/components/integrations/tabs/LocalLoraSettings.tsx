@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react';
 import { Check, Download, Layers, Loader2, Trash2, X } from 'lucide-react';
 import { api } from '../../../services/api';
+import { downloadImageLoraTask } from '../../../services/downloadTasks';
 import { translate, useTranslation } from '../../../i18n';
 import { errorMessage } from '../../../utils/errors';
 import { confirmDialog, toast } from '../../ui/feedback';
@@ -58,7 +59,7 @@ export const LocalLoraSettings = ({ config, onChange, family }: LocalLoraSetting
     setDownloading(lora.catalog_id);
     setProgress(null);
     try {
-      await api.downloadImageLora(lora.catalog_id);
+      await downloadImageLoraTask(lora.catalog_id, lora.name);
       toast.success(translate('localImage.downloaded', { name: lora.name }));
       if (!selected.some((s) => s.file === lora.file)) select(lora, true);
     } catch (e) {

@@ -17,6 +17,7 @@ import type {
   VoiceConfig,
 } from '../../types';
 import type { SliceCreator } from '../storeTypes';
+import { trackTask } from './taskSlice';
 import { reportFailure } from '../reportFailure';
 import { toast } from '../../components/ui/feedback';
 import { errorMessage } from '../../utils/errors';
@@ -219,18 +220,20 @@ export const createChatSlice: SliceCreator<ChatSlice> = (set, get) => {
     const last = pending[pending.length - 1];
     if (pending.length < SUMMARY_BATCH || !last) return;
     const upTo = last.order_index;
+    const charName = state.activeCharacter.card.data.name;
 
     set({ isSummarizing: true });
-    api
+    const task = { kind: 'summary' as const, title: translate('task.summary', { chat: session.title }) };
+    trackTask(get(), task, () => api
       .summarizeChat({
         chat_id: chatId,
         up_to_index: upTo,
-        char_name: state.activeCharacter.card.data.name,
+        char_name: charName,
         user_name: state.activePersona.name,
         reply_language: state.replyLanguage || 'Deutsch',
         context_tokens: usage.context_tokens,
         ...llmTarget(state),
-      })
+      }))
       .then((updated) =>
         set((st) => ({
           chatSessions: st.chatSessions.map((s) => (s.id === updated.id ? updated : s)),
