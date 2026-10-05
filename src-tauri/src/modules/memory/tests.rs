@@ -873,3 +873,48 @@ fn memories_keep_their_source_history_and_review_flag() {
         ["created", "source_changed", "edited", "forgotten"]
     );
 }
+
+#[test]
+fn restoring_a_snapshot_keeps_memory_origin_sources_and_pins() {
+    let db = MemoryDb::new_in_memory().unwrap();
+    let dir = std::env::temp_dir().join(format!(
+        "otakusoul_restore_sources_{}",
+        rand::random::<u32>()
+    ));
+    std::fs::create_dir_all(&dir).unwrap();
+    let ids = vec!["m1".to_string()];
+    let id = db
+        .add_episodic_memory_from(
+            "ayu",
+            "fact",
+            "Der Nutzer heißt Hiroki",
+            3,
+            &MemorySource {
+                origin: "auto",
+                chat_id: Some("c1"),
+                message_ids: &ids,
+            },
+        )
+        .unwrap();
+    db.set_episodic_memory_pinned("ayu", id, true).unwrap();
+    let backup = db
+        .backup_memory_state("ayu", Some("Hiroki"), Some(&dir))
+        .unwrap();
+
+    db.forget_episodic_memory("ayu", id).unwrap();
+    db.restore_memory_backup(&dir.join(&backup.filename))
+        .unwrap();
+
+    let restored = &db.get_episodic_memories("ayu", 10).unwrap()[0];
+    assert_eq!(restored.content, "Der Nutzer heißt Hiroki");
+    assert_eq!(
+        (
+            restored.origin.as_str(),
+            restored.source_chat_id.as_deref(),
+            restored.pinned
+        ),
+        ("auto", Some("c1"), true)
+    );
+    assert_eq!(restored.source_message_ids, ids);
+    let _ = std::fs::remove_dir_all(&dir);
+}

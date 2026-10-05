@@ -157,14 +157,7 @@ impl MemoryDb {
         }
 
         for mem in &snapshot.episodic_memories {
-            Self::add_episodic_memory_on(
-                &tx,
-                char_id,
-                &mem.category,
-                &mem.content,
-                mem.significance,
-            )
-            .map_err(|e| e.to_string())?;
+            Self::restore_episodic_memory_on(&tx, char_id, mem).map_err(|e| e.to_string())?;
         }
 
         for d in &snapshot.diary_entries {

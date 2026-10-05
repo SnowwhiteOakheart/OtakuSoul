@@ -262,21 +262,31 @@ impl MemoryDb {
         )
     }
 
-    pub(super) fn add_episodic_memory_on(
+    /// Restores a memory from a snapshot with its origin, sources, pin and review flag.
+    pub(super) fn restore_episodic_memory_on(
         conn: &Connection,
         char_id: &str,
-        category: &str,
-        content: &str,
-        significance: u32,
+        memory: &EpisodicMemory,
     ) -> Result<i64, rusqlite::Error> {
-        Self::add_episodic_memory_sourced_on(
+        let source = MemorySource {
+            origin: &memory.origin,
+            chat_id: memory.source_chat_id.as_deref(),
+            message_ids: &memory.source_message_ids,
+        };
+        let id = Self::add_episodic_memory_sourced_on(
             conn,
             char_id,
-            category,
-            content,
-            significance,
-            &MemorySource::auto(),
-        )
+            &memory.category,
+            &memory.content,
+            memory.significance,
+            &source,
+        )?;
+        // An existing memory with the same text keeps its own flags unless the snapshot pins it.
+        conn.execute(
+            "UPDATE soul_episodic_memory SET pinned = MAX(pinned, ?1), needs_review = MAX(needs_review, ?2) WHERE id = ?3",
+            params![memory.pinned, memory.needs_review, id],
+        )?;
+        Ok(id)
     }
 
     fn add_episodic_memory_sourced_on(

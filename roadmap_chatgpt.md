@@ -77,7 +77,7 @@ Abnahme: Entfernte oder ersetzte Ereignisse gelangen nicht über veraltete Zusam
   Nachricht), dann Schutz wichtiger Erinnerungen; Tatsache/Deutung und Änderungshistorie zuletzt.
 - [x] Bestätigte Tatsachen von Modellinterpretationen unterscheiden (Herkunft: vom Modell abgeleitet / von dir angelegt / von dir bestätigt; ältere ohne Angabe „Herkunft unbekannt“).
 - [x] Einzelne Erinnerungen bearbeiten und gezielt vergessen können.
-- [x] Wichtige Erinnerungen vor automatischer Überschreibung schützen (Anheften: steht immer zuerst im Gedächtnis-Kontext; automatische Abläufe ändern Inhalte nicht). Offen: Snapshot-Wiederherstellung übernimmt Herkunft und Anheftung noch nicht.
+- [x] Wichtige Erinnerungen vor automatischer Überschreibung schützen (Anheften: steht immer zuerst im Gedächtnis-Kontext; automatische Abläufe ändern Inhalte nicht). Snapshot-Wiederherstellung übernimmt Herkunft, Quelle, Anheftung und Prüf-Markierung.
 - [x] Automatische Änderungen mit einer nachvollziehbaren Änderungshistorie versehen (`soul_memory_history`: entstanden, Quelle geändert, korrigiert, bestätigt, angeheftet, vergessen).
 
 Abnahme: Der Nutzer kann Herkunft und Änderungen einer Erinnerung nachvollziehen und sie gezielt korrigieren.
