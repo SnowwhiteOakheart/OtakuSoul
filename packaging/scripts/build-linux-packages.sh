@@ -22,6 +22,8 @@ echo "[1/3] Running checks (lint, types, tests)..."
 npm run check
 
 echo "[2/3] Building Tauri bundles (AppImage, deb)..."
+# Keeps library copies from subfolders of /usr/lib (e.g. VMware's) out of the AppImage.
+export PATH="${PROJECT_DIR}/packaging/scripts/appimage-pkgconf:${PATH}"
 npm run tauri build -- --bundles appimage,deb
 
 echo "[3/3] Writing updater manifest..."

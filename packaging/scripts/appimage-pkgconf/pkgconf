@@ -1,0 +1,36 @@
+#!/usr/bin/env bash
+# pkgconf for linuxdeploy's GTK plugin while building the AppImage.
+#
+# The plugin collects libgdk_pixbuf, libgio, libpango … with a *recursive* `find` in the libdir
+# that pkg-config reports (/usr/lib). Copies of these libraries in subfolders – e.g.
+# /usr/lib/vmware/lib/libgdk_pixbuf-2.0.so.0/ from VMware – would then end up in the AppImage
+# and break the bundling. For the libdir of exactly these libraries this wrapper answers with a
+# folder that only links the system's own top-level copies; everything else goes to pkgconf.
+
+set -euo pipefail
+
+real="$(PATH="${PATH#*appimage-pkgconf:}" command -v pkgconf || command -v pkg-config)"
+variable=""
+library=""
+for arg in "$@"; do
+    case "$arg" in
+        --variable=*) variable="${arg#--variable=}" ;;
+        -*) ;;
+        *) library="$arg" ;;
+    esac
+done
+
+case "$variable:$library" in
+    libdir:gdk-pixbuf-2.0 | libdir:gobject-2.0 | libdir:gio-2.0 | libdir:librsvg-2.0 | \
+    libdir:pango | libdir:pangocairo | libdir:pangoft2)
+        libdir="$("$real" "$@")"
+        staging="${TMPDIR:-/tmp}/otakusoul-appimage-libs/${library}"
+        rm -rf "$staging"
+        mkdir -p "$staging"
+        find "$libdir" -maxdepth 1 \( -type f -o -type l \) -name 'lib*.so*' -exec ln -s {} "$staging/" \;
+        echo "$staging"
+        ;;
+    *)
+        exec "$real" "$@"
+        ;;
+esac
