@@ -233,6 +233,26 @@ pub fn prepare(messages: &mut [crate::modules::inference::ChatMessage], vision: 
 }
 
 /// Deletes all attachments of a chat.
+/// Copy of `attachment` stored under another chat (a chat continued as a new one), so it
+/// survives when the original chat is deleted. A missing file keeps the reference as it is.
+pub fn copy_to_chat(attachment: &Attachment, chat_id: &str) -> Attachment {
+    let chat = safe_segment(chat_id);
+    let (Some(source), Some(name)) = (
+        path_of(&attachment.file),
+        attachment.file.split_once('/').map(|(_, n)| n),
+    ) else {
+        return attachment.clone();
+    };
+    let target = root().join(&chat).join(name);
+    if fs::create_dir_all(root().join(&chat)).is_err() || fs::copy(&source, &target).is_err() {
+        return attachment.clone();
+    }
+    Attachment {
+        file: format!("{chat}/{name}"),
+        ..attachment.clone()
+    }
+}
+
 pub fn remove_chat(chat_id: &str) {
     let chat = safe_segment(chat_id);
     if !chat.is_empty() {

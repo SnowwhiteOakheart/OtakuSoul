@@ -1,5 +1,5 @@
 import React, { useEffect, useRef, useState } from 'react';
-import { useStoreFields } from '../../store/useAppStore';
+import { useAppStore, useStoreFields } from '../../store/useAppStore';
 import { HUD_PRESETS } from '../../constants/hudPresets';
 import {
   Plus,
@@ -44,6 +44,12 @@ export const ChatSidebar: React.FC<ChatSidebarProps> = ({ isOpen, onClose }) => 
     'renameChatSession', 'deleteChatSession', 'updateAuthorNote', 'applyHudPreset',
     'exportCurrentChat', 'importChatJsonl', 'updateChatSummary', 'isSummarizing',
   );
+  const bookmarkedMessageIds = useAppStore((s) => s.bookmarkedMessageIds);
+  const storedMessages = useAppStore((s) => s.storedMessages);
+  const requestChatJump = useAppStore((s) => s.requestChatJump);
+  const bookmarks = bookmarkedMessageIds
+    .map((id) => storedMessages.find((m) => m.id === id))
+    .filter((m): m is NonNullable<typeof m> => Boolean(m));
 
   const [editingChatId, setEditingChatId] = useState<string | null>(null);
   const [editTitle, setEditTitle] = useState('');
@@ -364,6 +370,29 @@ export const ChatSidebar: React.FC<ChatSidebarProps> = ({ isOpen, onClose }) => 
               })
             )}
           </div>
+
+          {/* Bookmarks of the open chat: jump to an important scene. */}
+          {bookmarks.length > 0 && (
+            <div className="border-t border-slate-800 p-2 max-h-48 overflow-y-auto">
+              <h3 className="px-1 pb-1 text-xs font-semibold uppercase tracking-wider text-slate-400 flex items-center gap-1.5">
+                <Bookmark className="w-3.5 h-3.5 text-amber-300" />
+                {t('chatSidebar.bookmarks')}
+              </h3>
+              <ul aria-label={t('chatSidebar.bookmarks')} className="space-y-0.5">
+                {bookmarks.map((m) => (
+                  <li key={m.id}>
+                    <button
+                      type="button"
+                      onClick={() => requestChatJump(m.id)}
+                      className="w-full text-left px-2 py-1 rounded-md text-xs text-slate-300 hover:bg-slate-800 truncate outline-hidden focus-visible:ring-2 focus-visible:ring-accent-400"
+                    >
+                      {m.content.replace(/\s+/g, ' ').slice(0, 80)}
+                    </button>
+                  </li>
+                ))}
+              </ul>
+            </div>
+          )}
 
           {/* Import / Export Buttons */}
           <div className="p-3 border-t border-slate-800 bg-app/80 flex items-center gap-2">

@@ -674,3 +674,110 @@ fn changing_a_summarized_message_drops_the_summary() {
         assert_eq!(summary(), (String::new(), -1));
     }
 }
+
+#[test]
+fn bookmarks_follow_messages_and_chats() {
+    let db = MemoryDb::new_in_memory().unwrap();
+    let chat = db.create_chat_session("ayu", "Test").unwrap();
+    let a = db
+        .add_chat_message(&chat.id, "user", "eins", None, &[])
+        .unwrap();
+    let b = db
+        .add_chat_message(&chat.id, "assistant", "zwei", None, &[])
+        .unwrap();
+    db.set_chat_bookmark(&chat.id, &b.id, true).unwrap();
+    db.set_chat_bookmark(&chat.id, &a.id, true).unwrap();
+    db.set_chat_bookmark(&chat.id, &a.id, true).unwrap();
+    assert_eq!(
+        db.list_chat_bookmarks(&chat.id).unwrap(),
+        [a.id.clone(), b.id.clone()],
+        "story order, no duplicates"
+    );
+
+    db.set_chat_bookmark(&chat.id, &a.id, false).unwrap();
+    db.delete_chat_message(&b.id).unwrap();
+    assert!(
+        db.list_chat_bookmarks(&chat.id).unwrap().is_empty(),
+        "removed and deleted messages are gone"
+    );
+
+    let c = db
+        .add_chat_message(&chat.id, "user", "drei", None, &[])
+        .unwrap();
+    db.set_chat_bookmark(&chat.id, &c.id, true).unwrap();
+    db.delete_chat_session(&chat.id).unwrap();
+    let left: i64 = db
+        .conn
+        .lock()
+        .query_row("SELECT COUNT(*) FROM chat_bookmarks", [], |r| r.get(0))
+        .unwrap();
+    assert_eq!(left, 0);
+}
+
+#[test]
+fn branching_copies_the_history_up_to_a_message() {
+    let db = MemoryDb::new_in_memory().unwrap();
+    let chat = db.create_chat_session("ayu", "Original").unwrap();
+    db.update_chat_author_note(&chat.id, "Bleib freundlich.", 3)
+        .unwrap();
+    let msgs: Vec<_> = (0..4)
+        .map(|i| {
+            db.add_chat_message(
+                &chat.id,
+                if i % 2 == 0 { "user" } else { "assistant" },
+                &format!("m{i}"),
+                None,
+                &[],
+            )
+            .unwrap()
+        })
+        .collect();
+    db.add_message_swipe(&msgs[1].id, "m1 Variante", None)
+        .unwrap();
+    db.set_chat_bookmark(&chat.id, &msgs[1].id, true).unwrap();
+    db.set_chat_bookmark(&chat.id, &msgs[3].id, true).unwrap();
+    db.update_chat_summary(&chat.id, "Bisher: m0", i64::from(msgs[0].order_index))
+        .unwrap();
+
+    let branch = db.branch_chat(&chat.id, &msgs[1].id, "Abzweig").unwrap();
+    assert_eq!(
+        (
+            branch.title.as_str(),
+            branch.character_id.as_str(),
+            branch.author_note.as_str()
+        ),
+        ("Abzweig", "ayu", "Bleib freundlich.")
+    );
+    let copied = db.get_chat_messages(&branch.id).unwrap();
+    assert_eq!(
+        copied
+            .iter()
+            .map(|m| m.content.as_str())
+            .collect::<Vec<_>>(),
+        ["m0", "m1 Variante"]
+    );
+    assert_eq!(copied[1].swipes.len(), 2, "variants come along");
+    assert_eq!(
+        db.list_chat_bookmarks(&branch.id).unwrap(),
+        [copied[1].id.clone()]
+    );
+    assert_eq!(
+        (branch.summary.as_str(), branch.summary_until),
+        ("Bisher: m0", 0)
+    );
+    assert_eq!(
+        db.get_chat_messages(&chat.id).unwrap().len(),
+        4,
+        "the original stays"
+    );
+
+    // A summary reaching past the branch point would tell events the branch doesn't have.
+    db.update_chat_summary(
+        &chat.id,
+        "Bisher: m0 bis m3",
+        i64::from(msgs[3].order_index),
+    )
+    .unwrap();
+    let early = db.branch_chat(&chat.id, &msgs[0].id, "Früh").unwrap();
+    assert_eq!((early.summary.as_str(), early.summary_until), ("", -1));
+}

@@ -103,10 +103,10 @@ Abnahme: Ein funktionierender Cloud-Chat erscheint nicht wegen eines gestoppten 
 
 ## 8. Lange Geschichten navigieren
 
-- [ ] Volltextsuche im Chat mit Sprung zur Fundstelle ergänzen.
-- [ ] Wichtige Szenen mit Lesezeichen markieren können.
-- [ ] Ab einer Nachricht einen alternativen Handlungsverlauf beginnen können. *(Neuzuschnitt: „Ab hier als neuen Chat fortsetzen“ statt Verzweigungsbaum. Soul Memory gehört zum Charakter; die Grenze wird benannt statt vollständig getrennt.)*
-- [ ] Bei Verzweigungen Verlauf, Zusammenfassung und Erinnerungen konsistent trennen.
+- [x] Volltextsuche im Chat mit Sprung zur Fundstelle ergänzen (Strg+F, `ChatSearchBar`, Sprung und Hervorhebung über `requestChatJump`).
+- [x] Wichtige Szenen mit Lesezeichen markieren können (Tabelle `chat_bookmarks`, Migration v3; Liste in der Seitenleiste springt zur Szene).
+- [x] Ab einer Nachricht einen alternativen Handlungsverlauf beginnen können (`branch_chat`). *(Neuzuschnitt: „Ab hier als neuen Chat fortsetzen“ statt Verzweigungsbaum. Soul Memory gehört zum Charakter; die Grenze wird benannt statt vollständig getrennt.)*
+- [x] Bei Verzweigungen Verlauf, Zusammenfassung und Erinnerungen konsistent trennen (Verlauf, Varianten, Anhänge als Kopie, Lesezeichen; Zusammenfassung nur, wenn sie nichts nach dem Abzweig enthält; die gemeinsame Soul Memory nennt die Rückfrage ausdrücklich).
 
 Abnahme: Alternative Geschichten beeinflussen sich nicht unbeabsichtigt über gemeinsame abgeleitete Erinnerungen.
 

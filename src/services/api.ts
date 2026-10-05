@@ -942,6 +942,19 @@ export const api = {
     return await invoke<StarterModel[]>('list_starter_models');
   },
 
+  /** New chat with the history up to and including `messageId`. */
+  branchChat: async (chatId: string, messageId: string, title: string): Promise<ChatSession> => {
+    return await invoke<ChatSession>('branch_chat', { chatId, messageId, title });
+  },
+
+  listChatBookmarks: async (chatId: string): Promise<string[]> => {
+    return await invoke<string[]>('list_chat_bookmarks', { chatId });
+  },
+
+  setChatBookmark: async (chatId: string, messageId: string, bookmarked: boolean): Promise<void> => {
+    await invoke('set_chat_bookmark', { chatId, messageId, bookmarked });
+  },
+
   downloadGgufModel: async (file: HfGgufFile): Promise<string> => {
     return await invoke<string>('download_gguf_model', {
       downloadUrl: file.download_url,

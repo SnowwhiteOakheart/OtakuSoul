@@ -3,6 +3,20 @@
 use super::*;
 use rusqlite::OptionalExtension;
 
+/// A message row copied by `branch_chat`: id, role, content, thought, order, swipe index,
+/// swipes, created, attachments.
+type BranchRow = (
+    String,
+    String,
+    String,
+    Option<String>,
+    i64,
+    i64,
+    String,
+    u64,
+    String,
+);
+
 /// A message the running summary already covers changed (edit, swipe, delete): the summary
 /// still tells the old version, so it is dropped and rebuilt from the start the next time
 /// messages leave the context window. Later messages don't touch it.
@@ -128,6 +142,10 @@ impl MemoryDb {
             "DELETE FROM chat_messages WHERE chat_id = ?1",
             params![chat_id],
         )?;
+        conn.execute(
+            "DELETE FROM chat_bookmarks WHERE chat_id = ?1",
+            params![chat_id],
+        )?;
         conn.execute("DELETE FROM chat_sessions WHERE id = ?1", params![chat_id])?;
         crate::modules::attachments::remove_chat(chat_id);
         Ok(())
@@ -173,6 +191,155 @@ impl MemoryDb {
             "UPDATE chat_sessions SET summary = ?1, summary_until = ?2 WHERE id = ?3",
             params![summary, summary_until, chat_id],
         )?;
+        Ok(())
+    }
+
+    /// Continues a chat as a new one: copies the history up to and including `message_id`
+    /// (variants, attachments, bookmarks) and the author's note; the running summary only
+    /// when it covers nothing after that point. The character's Soul Memory stays shared.
+    pub fn branch_chat(
+        &self,
+        chat_id: &str,
+        message_id: &str,
+        title: &str,
+    ) -> Result<ChatSession, rusqlite::Error> {
+        let new_id = {
+            let conn = self.conn.lock();
+            let tx = conn.unchecked_transaction()?;
+            let (character_id, author_note, depth, summary, summary_until): (String, String, i64, String, i64) = tx.query_row(
+                "SELECT character_id, author_note, author_note_depth, summary, summary_until FROM chat_sessions WHERE id = ?1",
+                params![chat_id],
+                |row| Ok((row.get(0)?, row.get(1)?, row.get(2)?, row.get(3)?, row.get(4)?)),
+            )?;
+            let up_to: i64 = tx.query_row(
+                "SELECT order_index FROM chat_messages WHERE id = ?1 AND chat_id = ?2",
+                params![message_id, chat_id],
+                |row| row.get(0),
+            )?;
+            let now = current_timestamp();
+            let new_id = format!("chat_{}_{:08x}", now, rand::random::<u32>());
+            let (summary, summary_until) = if summary_until <= up_to {
+                (summary, summary_until)
+            } else {
+                (String::new(), -1)
+            };
+            tx.execute(
+                "INSERT INTO chat_sessions (id, character_id, title, created_at, updated_at, author_note, author_note_depth, summary, summary_until)
+                 VALUES (?1, ?2, ?3, ?4, ?4, ?5, ?6, ?7, ?8)",
+                params![new_id, character_id, title.trim(), now, author_note, depth, summary, summary_until],
+            )?;
+
+            let bookmarked: std::collections::HashSet<String> = {
+                let mut stmt =
+                    tx.prepare("SELECT message_id FROM chat_bookmarks WHERE chat_id = ?1")?;
+                stmt.query_map(params![chat_id], |row| row.get(0))?
+                    .collect::<Result<_, _>>()?
+            };
+            let rows: Vec<BranchRow> = {
+                let mut stmt = tx.prepare(
+                    "SELECT id, role, content, thought, order_index, swipe_index, swipes_json, created_at, attachments_json
+                     FROM chat_messages WHERE chat_id = ?1 AND order_index <= ?2 ORDER BY order_index ASC",
+                )?;
+                stmt.query_map(params![chat_id, up_to], |row| {
+                    Ok((
+                        row.get(0)?,
+                        row.get(1)?,
+                        row.get(2)?,
+                        row.get(3)?,
+                        row.get(4)?,
+                        row.get(5)?,
+                        row.get(6)?,
+                        row.get(7)?,
+                        row.get(8)?,
+                    ))
+                })?
+                .collect::<Result<_, _>>()?
+            };
+            for (
+                index,
+                (
+                    old_id,
+                    role,
+                    content,
+                    thought,
+                    order_index,
+                    swipe_index,
+                    swipes_json,
+                    created_at,
+                    attachments_json,
+                ),
+            ) in rows.into_iter().enumerate()
+            {
+                let id = format!("msg_{}_{:08x}_{index}", now, rand::random::<u32>());
+                let attachments: Vec<crate::modules::attachments::Attachment> =
+                    serde_json::from_str(&attachments_json).unwrap_or_default();
+                let attachments: Vec<_> = attachments
+                    .iter()
+                    .map(|a| crate::modules::attachments::copy_to_chat(a, &new_id))
+                    .collect();
+                tx.execute(
+                    "INSERT INTO chat_messages (id, chat_id, role, content, thought, order_index, swipe_index, swipes_json, created_at, attachments_json)
+                     VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?7, ?8, ?9, ?10)",
+                    params![
+                        id,
+                        new_id,
+                        role,
+                        content,
+                        thought,
+                        order_index,
+                        swipe_index,
+                        swipes_json,
+                        created_at,
+                        serde_json::to_string(&attachments).unwrap_or_else(|_| "[]".into())
+                    ],
+                )?;
+                if bookmarked.contains(&old_id) {
+                    tx.execute(
+                        "INSERT INTO chat_bookmarks (message_id, chat_id, created_at) VALUES (?1, ?2, ?3)",
+                        params![id, new_id, now],
+                    )?;
+                }
+            }
+            tx.commit()?;
+            new_id
+        };
+        self.get_chat_session(&new_id)?
+            .ok_or(rusqlite::Error::QueryReturnedNoRows)
+    }
+
+    /// Bookmarked messages of a chat, in story order. Bookmarks of deleted messages are skipped.
+    pub fn list_chat_bookmarks(&self, chat_id: &str) -> Result<Vec<String>, rusqlite::Error> {
+        let conn = self.conn.lock();
+        let mut stmt = conn.prepare(
+            "SELECT b.message_id FROM chat_bookmarks b
+             JOIN chat_messages m ON m.id = b.message_id
+             WHERE b.chat_id = ?1
+             ORDER BY m.order_index ASC",
+        )?;
+        let ids = stmt
+            .query_map(params![chat_id], |row| row.get(0))?
+            .collect::<Result<Vec<String>, _>>()?;
+        Ok(ids)
+    }
+
+    pub fn set_chat_bookmark(
+        &self,
+        chat_id: &str,
+        message_id: &str,
+        bookmarked: bool,
+    ) -> Result<(), rusqlite::Error> {
+        let conn = self.conn.lock();
+        if bookmarked {
+            conn.execute(
+                "INSERT OR IGNORE INTO chat_bookmarks (message_id, chat_id, created_at) VALUES (?1, ?2, ?3)",
+                params![message_id, chat_id, current_timestamp()],
+            )?;
+        } else {
+            conn.execute(
+                "DELETE FROM chat_bookmarks WHERE message_id = ?1",
+                params![message_id],
+            )?;
+        }
         Ok(())
     }
 

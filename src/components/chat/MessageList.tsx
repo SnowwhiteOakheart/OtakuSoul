@@ -1,6 +1,7 @@
 import React, { useEffect, useRef, useState } from 'react';
 import { useVirtualizer } from '@tanstack/react-virtual';
 import {
+  Bookmark,
   Brain,
   Check,
   ChevronDown,
@@ -9,6 +10,7 @@ import {
   Edit3,
   FastForward,
   FileText,
+  GitBranch,
   Languages,
   Loader2,
   RotateCcw,
@@ -36,6 +38,8 @@ interface MessageListProps {
   isGenerating: boolean;
   /** Read a message aloud; undefined when no voice is set up. */
   onSpeak?: (text: string) => void;
+  /** Scroll to this message and highlight it (search, bookmarks). */
+  jumpTo?: { messageId: string; nonce: number } | null;
 }
 
 /**
@@ -43,7 +47,7 @@ interface MessageListProps {
  * messages in the DOM. Memoized so typing and streaming tokens don't re-render the history.
  */
 export const MessageList = React.memo<MessageListProps>(
-  ({ messages, scrollRef, characterName, persona, isGenerating, onSpeak }) => {
+  ({ messages, scrollRef, characterName, persona, isGenerating, onSpeak, jumpTo }) => {
     // The app doesn't use the React Compiler; useVirtualizer's changing functions are fine here.
     // oxlint-disable-next-line react/incompatible-library
     const virtualizer = useVirtualizer({
@@ -84,6 +88,34 @@ export const MessageList = React.memo<MessageListProps>(
       el.addEventListener('scroll', onScroll, { passive: true });
       return () => el.removeEventListener('scroll', onScroll);
     }, [scrollRef]);
+    // Jump to a message: it may not be rendered yet (virtualized), so scroll first and
+    // highlight it once its element exists.
+    useEffect(() => {
+      if (!jumpTo) return undefined;
+      const index = messages.findIndex((m) => m.id === jumpTo.messageId);
+      if (index < 0) return undefined;
+      pinned.current = false;
+      virtualizer.scrollToIndex(index, { align: 'center' });
+      let attempts = 0;
+      let timer: ReturnType<typeof setTimeout> | undefined;
+      const highlight = () => {
+        const el = scrollRef.current?.querySelector<HTMLElement>(`[data-message-id="${CSS.escape(jumpTo.messageId)}"]`);
+        if (!el) {
+          if (attempts++ < 30) timer = setTimeout(highlight, 30);
+          return;
+        }
+        virtualizer.scrollToIndex(index, { align: 'center' });
+        el.classList.remove('message-flash');
+        void el.offsetWidth;
+        el.classList.add('message-flash');
+        timer = setTimeout(() => el.classList.remove('message-flash'), 1800);
+      };
+      highlight();
+      return () => clearTimeout(timer);
+      // Only a new jump request moves the view, not new messages.
+      // oxlint-disable-next-line react-hooks/exhaustive-deps
+    }, [jumpTo]);
+
     const totalSize = virtualizer.getTotalSize();
     useEffect(() => {
       const el = scrollRef.current;
@@ -100,6 +132,7 @@ export const MessageList = React.memo<MessageListProps>(
             <div
               key={item.key}
               data-index={item.index}
+              data-message-id={msg.id}
               ref={virtualizer.measureElement}
               // Hover actions hang below the bubble; keep them above the next message.
               className="absolute left-0 top-0 w-full pb-4 hover:z-10 focus-within:z-10"
@@ -139,6 +172,9 @@ const ChatMessageItem = React.memo<ChatMessageItemProps>(
     const deleteChatMessage = useAppStore((s) => s.deleteChatMessage);
     const translateText = useAppStore((s) => s.translateText);
     const appLanguage = useAppStore((s) => s.appLanguage);
+    const toggleBookmark = useAppStore((s) => s.toggleBookmark);
+    const branchChatFrom = useAppStore((s) => s.branchChatFrom);
+    const bookmarked = useAppStore((s) => s.bookmarkedMessageIds.includes(msg.id));
 
     const [thoughtOpen, setThoughtOpen] = useState(false);
     const [editContent, setEditContent] = useState<string | null>(null);
@@ -196,6 +232,15 @@ const ChatMessageItem = React.memo<ChatMessageItemProps>(
         tone: 'danger',
       });
       if (confirmed) deleteChatMessage(msg.id);
+    };
+
+    const branch = async () => {
+      const confirmed = await confirmDialog({
+        title: translate('confirm.branchTitle'),
+        message: translate('confirm.branchText'),
+        confirmLabel: translate('chat.branch'),
+      });
+      if (confirmed) await branchChatFrom(msg.id);
     };
 
     return (
@@ -371,6 +416,24 @@ const ChatMessageItem = React.memo<ChatMessageItemProps>(
                 aria-label={t('chat.editMessage')}
               >
                 <Edit3 className="w-3 h-3" />
+              </button>
+              <button
+                onClick={() => void branch()}
+                disabled={isGenerating}
+                className={BUBBLE_ACTION}
+                title={t('chat.branch')}
+                aria-label={t('chat.branch')}
+              >
+                <GitBranch className="w-3 h-3" />
+              </button>
+              <button
+                onClick={() => void toggleBookmark(msg.id)}
+                className={`${BUBBLE_ACTION} ${bookmarked ? 'text-amber-300' : ''}`}
+                title={t(bookmarked ? 'chat.removeBookmark' : 'chat.addBookmark')}
+                aria-label={t(bookmarked ? 'chat.removeBookmark' : 'chat.addBookmark')}
+                aria-pressed={bookmarked}
+              >
+                <Bookmark className={`w-3 h-3 ${bookmarked ? 'fill-current' : ''}`} />
               </button>
               <button
                 onClick={remove}

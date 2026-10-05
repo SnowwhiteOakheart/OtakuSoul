@@ -48,7 +48,7 @@ Herkömmliche Chat-Oberflächen behandeln Charaktere oft wie austauschbare Promp
 
 | Modul | Das Erlebnis |
 |---|---|
-| 💬 **Immersiver Chat** | Intelligentes Kontextfenster-Management mit automatischer Handlungssammenfassung älterer Turns, Swipes (`< 1/3 >`), Inline-Editor mit Schreibschutz-Entwürfen, Dateianhängen (Bilder, PDFs, Text) und In-Chat-Übersetzung. |
+| 💬 **Immersiver Chat** | Intelligentes Kontextfenster-Management mit automatischer Handlungssammenfassung älterer Turns, Swipes (`< 1/3 >`), Inline-Editor mit Schreibschutz-Entwürfen, Dateianhängen (Bilder, PDFs, Text), In-Chat-Übersetzung sowie Suche (Strg+F), Lesezeichen und „Ab hier als neuen Chat fortsetzen“ für lange Geschichten. |
 | 🎭 **3D- & 2D-Avatare** | Native Unterstützung für **3D VRM 0.x/1.0** und **Live2D Cubism 2/4** mit automatischer Emotionserkennung, Physics, Blicksteuerung und Audio-FFT-LipSync. Position und Zoom werden pro Figur gespeichert. |
 | 🧠 **Cognitive Memory** | 4-Schichten-Gedächtnis (Geist & Psyche, Beziehungsdynamik, episodische Themen, Tagebuch). Autonome Router- und Archivist-Agenten reflektieren Dialoge, während automatische Snapshots für Datensicherheit sorgen. |
 | 🎲 **Stage (TTRPG)** | Volles Solo- und Party-Rollenspiel: 2-stufiger KI-Spielleiter, 3D-Würfel, dynamische NPCs, Weltzustand-Editor. Komplette Mehrsprachigkeit für Szenen und Lorebooks durch otakusoul_i18n. |

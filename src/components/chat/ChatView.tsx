@@ -7,11 +7,13 @@ import { RoleplayMessage } from './RoleplayMessage';
 import { ChatSidebar } from './ChatSidebar';
 import { MessageList } from './MessageList';
 import { ChatComposer } from './ChatComposer';
+import { ChatSearchBar } from './ChatSearchBar';
 import {
   Sparkles,
   Brain,
   ChevronDown,
   ChevronRight,
+  Search,
   Trash2,
   Cpu,
   Cloud,
@@ -77,6 +79,20 @@ export const ChatView: React.FC = () => {
   const [streamThought, setStreamThought] = useState('');
   const [showCurrentThought, setShowCurrentThought] = useState(true);
   const [showAvatar, setShowAvatar] = useState(true);
+  const [showSearch, setShowSearch] = useState(false);
+  const chatJumpTarget = useAppStore((s) => s.chatJumpTarget);
+
+  // Ctrl+F searches the open chat instead of the page.
+  useEffect(() => {
+    const onKey = (event: KeyboardEvent) => {
+      if ((event.ctrlKey || event.metaKey) && !event.altKey && !event.shiftKey && event.key.toLowerCase() === 'f') {
+        event.preventDefault();
+        setShowSearch(true);
+      }
+    };
+    window.addEventListener('keydown', onKey);
+    return () => window.removeEventListener('keydown', onKey);
+  }, []);
   const [showVoiceModal, setShowVoiceModal] = useState(false);
   const [isAudioSpeaking, setIsAudioSpeaking] = useState(false);
 
@@ -292,6 +308,15 @@ export const ChatView: React.FC = () => {
 
         <div className="flex items-center gap-2">
           <button
+            onClick={() => setShowSearch((open) => !open)}
+            aria-pressed={showSearch}
+            className={`${TOOLBAR_TOGGLE} bg-slate-800/60 text-slate-400 border-slate-700/60 hover:text-slate-200`}
+            title={t('chat.searchTooltip')}
+            aria-label={t('chat.search')}
+          >
+            <Search className="w-3.5 h-3.5" />
+          </button>
+          <button
             onClick={() => setShowVoiceModal(true)}
             className={`${TOOLBAR_TOGGLE} bg-slate-800/60 text-slate-400 border-slate-700/60 hover:text-slate-200`}
             title={t('chat.voiceTooltip')}
@@ -367,6 +392,7 @@ export const ChatView: React.FC = () => {
         {/* Chat Area */}
         <div className="flex-1 flex flex-col h-full overflow-hidden bg-app">
           <SceneImageCard />
+          {showSearch && <ChatSearchBar messages={displayList} onClose={() => setShowSearch(false)} />}
           {/* Messages Stream Area */}
           <div ref={scrollRef} className="flex-1 overflow-y-auto p-4 space-y-4 select-text" aria-live="polite">
             {displayList.length === 0 && !isGenerating && !isChatLoading && !chatLoadError && (
@@ -427,6 +453,7 @@ export const ChatView: React.FC = () => {
               persona={activePersona}
               isGenerating={isGenerating}
               onSpeak={canSpeak ? handleSpeak : undefined}
+              jumpTo={chatJumpTarget}
             />
 
             {/* Live Streaming Assistant Message */}

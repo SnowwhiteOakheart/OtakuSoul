@@ -207,6 +207,44 @@ pub fn get_attachment_data_url(
     crate::modules::attachments::data_url(&attachment)
 }
 
+/// „Ab hier als neuen Chat fortsetzen“: the history up to `message_id` in a new chat.
+#[tauri::command]
+pub fn branch_chat(
+    state: State<'_, AppState>,
+    chat_id: String,
+    message_id: String,
+    title: String,
+) -> Result<crate::modules::memory::ChatSession, String> {
+    state
+        .memory_db
+        .branch_chat(&chat_id, &message_id, &title)
+        .map_err(|e| e.to_string())
+}
+
+#[tauri::command]
+pub fn list_chat_bookmarks(
+    state: State<'_, AppState>,
+    chat_id: String,
+) -> Result<Vec<String>, String> {
+    state
+        .memory_db
+        .list_chat_bookmarks(&chat_id)
+        .map_err(|e| e.to_string())
+}
+
+#[tauri::command]
+pub fn set_chat_bookmark(
+    state: State<'_, AppState>,
+    chat_id: String,
+    message_id: String,
+    bookmarked: bool,
+) -> Result<(), String> {
+    state
+        .memory_db
+        .set_chat_bookmark(&chat_id, &message_id, bookmarked)
+        .map_err(|e| e.to_string())
+}
+
 #[tauri::command]
 pub fn get_chat_messages(
     state: State<'_, AppState>,

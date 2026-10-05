@@ -18,6 +18,7 @@ import type {
 } from '../../types';
 import type { SliceCreator } from '../storeTypes';
 import { reportFailure } from '../reportFailure';
+import { toast } from '../../components/ui/feedback';
 import { errorMessage } from '../../utils/errors';
 import { fileToBase64 } from '../../utils/files';
 import { waitWithAbort } from '../../utils/cancellation';
@@ -32,6 +33,14 @@ type GenerationFailure = {
 
 /** Chat messages, streaming, sessions, swipes, HUD presets, reply language and voice. */
 export interface ChatSlice {
+  /** Message to scroll to and highlight (search hit, bookmark); `nonce` repeats a jump. */
+  chatJumpTarget: { messageId: string; nonce: number } | null;
+  requestChatJump: (messageId: string) => void;
+  /** Bookmarked messages of the open chat (important scenes), in story order. */
+  bookmarkedMessageIds: string[];
+  toggleBookmark: (messageId: string) => Promise<void>;
+  /** Continues the open chat as a new one from `messageId` and opens it. */
+  branchChatFrom: (messageId: string) => Promise<void>;
   replyLanguage: string;
   setReplyLanguage: (lang: string) => void;
   messages: ChatMessage[];
@@ -237,6 +246,47 @@ export const createChatSlice: SliceCreator<ChatSlice> = (set, get) => {
   generationId: null,
 
   activeChatId: null,
+
+  chatJumpTarget: null,
+
+  bookmarkedMessageIds: [],
+
+  branchChatFrom: async (messageId) => {
+    const chatId = get().activeChatId;
+    const char = get().activeCharacter;
+    if (!chatId || !char) return;
+    const original = get().chatSessions.find((s) => s.id === chatId)?.title ?? translate('chat.newChatTitle');
+    try {
+      const branch = await api.branchChat(chatId, messageId, translate('chat.branchTitle', { title: original }));
+      const sessions = await api.listChatSessions(char.id);
+      if (get().activeCharacter?.id !== char.id) return;
+      set({ chatSessions: sessions });
+      await get().switchChatSession(branch.id);
+      toast.success(translate('chat.branched', { title: branch.title }));
+    } catch (e) {
+      reportFailure('Failed to branch chat:', e);
+    }
+  },
+
+  toggleBookmark: async (messageId) => {
+    const chatId = get().activeChatId;
+    if (!chatId) return;
+    const bookmarked = !get().bookmarkedMessageIds.includes(messageId);
+    try {
+      await api.setChatBookmark(chatId, messageId, bookmarked);
+      if (get().activeChatId !== chatId) return;
+      const order = get().storedMessages.map((m) => m.id);
+      set((st) => ({
+        bookmarkedMessageIds: bookmarked
+          ? [...st.bookmarkedMessageIds, messageId].sort((a, b) => order.indexOf(a) - order.indexOf(b))
+          : st.bookmarkedMessageIds.filter((id) => id !== messageId),
+      }));
+    } catch (e) {
+      reportFailure('Failed to set bookmark:', e);
+    }
+  },
+
+  requestChatJump: (messageId) => set((st) => ({ chatJumpTarget: { messageId, nonce: (st.chatJumpTarget?.nonce ?? 0) + 1 } })),
   isChatLoading: false,
   chatLoadError: null,
   retryChatLoad: async () => {
@@ -299,8 +349,10 @@ export const createChatSlice: SliceCreator<ChatSlice> = (set, get) => {
     const request = beginSessionLoad(chatId);
     try {
       const stored = await api.getChatMessages(chatId);
+      // Bookmarks are a convenience: the chat opens even if they can't be read.
+      const bookmarks = await api.listChatBookmarks(chatId).catch(() => [] as string[]);
       if (!isSessionCurrent(request, charId)) return;
-      set({ storedMessages: stored, messages: stored.map(toFlat) });
+      set({ storedMessages: stored, messages: stored.map(toFlat), bookmarkedMessageIds: bookmarks ?? [] });
     } catch (e) {
       console.error('Failed to switch chat session:', e);
       if (isSessionCurrent(request, charId)) set({ chatLoadError: errorMessage(e) });

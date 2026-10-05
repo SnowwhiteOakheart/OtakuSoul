@@ -4,8 +4,11 @@ use super::*;
 
 /// Schema migrations in order: after step `i` the database has `PRAGMA user_version = i + 1`.
 /// Append new steps for schema changes; never edit a step that has shipped.
-pub(super) const MIGRATIONS: &[fn(&Connection) -> rusqlite::Result<()>] =
-    &[migrate_v1_baseline, migrate_v2_chat_summary_attachments];
+pub(super) const MIGRATIONS: &[fn(&Connection) -> rusqlite::Result<()>] = &[
+    migrate_v1_baseline,
+    migrate_v2_chat_summary_attachments,
+    migrate_v3_chat_bookmarks,
+];
 
 /// Brings the database to the latest schema, one transaction per step. A database written by a
 /// newer OtakuSoul is left untouched.
@@ -169,6 +172,18 @@ pub(super) fn migrate_v2_chat_summary_attachments(conn: &Connection) -> rusqlite
         add_column_if_missing(conn, table, column, definition)?;
     }
     Ok(())
+}
+
+/// v3: bookmarks on chat messages (important scenes in long stories).
+pub(super) fn migrate_v3_chat_bookmarks(conn: &Connection) -> rusqlite::Result<()> {
+    conn.execute_batch(
+        "CREATE TABLE IF NOT EXISTS chat_bookmarks (
+            message_id TEXT PRIMARY KEY,
+            chat_id TEXT NOT NULL,
+            created_at INTEGER NOT NULL
+        );
+        CREATE INDEX IF NOT EXISTS idx_chat_bookmarks_chat ON chat_bookmarks(chat_id);",
+    )
 }
 
 fn add_column_if_missing(
