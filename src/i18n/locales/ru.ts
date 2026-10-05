@@ -437,8 +437,6 @@ export const ru: TranslationDictionary = {
   "errors.viewCrashedTitle": "В этом разделе произошла ошибка",
   "errors.viewCrashedHint": "Ваши данные в безопасности. Можно перезагрузить раздел или перейти в другой.",
 
-  "confirm.deleteMessageTitle": "Удалить сообщение?",
-  "confirm.deleteMessageText": "Сообщение будет безвозвратно удалено из истории.",
   "confirm.deleteChatTitle": "Удалить чат «{{title}}»?",
   "confirm.deleteChatText": "Все сообщения этого чата будут удалены.",
   "confirm.restoreSnapshotTitle": "Восстановить снимок «{{name}}»?",
@@ -2503,4 +2501,6 @@ export const ru: TranslationDictionary = {
   "promptLog.noModel": "модель сервера",
   "promptLog.tokens": "{{prompt}}/{{context}} токенов, пропущено старых сообщений: {{dropped}}",
   "promptLog.sampling": "Настройки сэмплера",
+  "chat.messageDeleted": "Сообщение удалено.",
+  "common.undo": "Отменить",
 };

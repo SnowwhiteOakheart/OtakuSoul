@@ -1711,4 +1711,7 @@ veraltet und sind korrigiert: `chat-sidebar-errors` las die Sitzung, bevor der e
   das Streaming endet bei Stopp selbst und liefert den bisherigen Text mit `DoneEvent.aborted`. Senden, Neu-Generieren
   und Fortsetzen speichern diesen Teiltext (solange der Chat offen ist), sodass „Weiter“ an der Abbruchstelle ansetzt;
   ohne Text wird nichts gespeichert (Unit-Tests, E2E `partial-reply.mjs` mit Mock-Option `stallChatAfter`, Screenshot 54).
+- [x] **„Rückgängig“ beim Löschen von Chat-Nachrichten:** Keine Rückfrage mehr; die Nachricht verschwindet sofort, ein
+  Toast bietet 8 s lang „Rückgängig“, danach wird sie gelöscht (schlägt das fehl, erscheint sie wieder). Der Prompt
+  enthält sie in der Zwischenzeit nicht (Test `undoDelete.test.ts`, E2E `partial-reply.mjs`).
 

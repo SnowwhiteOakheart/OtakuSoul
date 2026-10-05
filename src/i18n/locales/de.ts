@@ -439,8 +439,6 @@ export const de = {
   "errors.viewCrashedTitle": "In dieser Ansicht ist ein Fehler aufgetreten",
   "errors.viewCrashedHint": "Deine Daten sind sicher. Du kannst die Ansicht neu laden oder zu einem anderen Bereich wechseln.",
 
-  "confirm.deleteMessageTitle": "Nachricht löschen?",
-  "confirm.deleteMessageText": "Die Nachricht wird dauerhaft aus dem Verlauf entfernt.",
   "confirm.deleteChatTitle": "Chat „{{title}}“ löschen?",
   "confirm.deleteChatText": "Alle Nachrichten dieses Chats werden gelöscht.",
   "confirm.restoreSnapshotTitle": "Snapshot „{{name}}“ wiederherstellen?",
@@ -2505,4 +2503,6 @@ export const de = {
   "promptLog.noModel": "Modell des Servers",
   "promptLog.tokens": "{{prompt}}/{{context}} Tokens, {{dropped}} ältere Nachrichten ausgelassen",
   "promptLog.sampling": "Sampler-Einstellungen",
+  "chat.messageDeleted": "Nachricht gelöscht.",
+  "common.undo": "Rückgängig",
 } as const;

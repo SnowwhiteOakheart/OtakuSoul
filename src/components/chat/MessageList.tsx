@@ -224,15 +224,8 @@ const ChatMessageItem = React.memo<ChatMessageItemProps>(
       }
     };
 
-    const remove = async () => {
-      const confirmed = await confirmDialog({
-        title: translate('confirm.deleteMessageTitle'),
-        message: translate('confirm.deleteMessageText'),
-        confirmLabel: translate('common.delete'),
-        tone: 'danger',
-      });
-      if (confirmed) deleteChatMessage(msg.id);
-    };
+    // No confirmation: the message can be restored from the toast for a few seconds.
+    const remove = () => void deleteChatMessage(msg.id);
 
     const branch = async () => {
       const confirmed = await confirmDialog({

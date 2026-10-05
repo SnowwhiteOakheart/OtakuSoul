@@ -16,7 +16,8 @@ Aus den Arbeitsprotokollen der Qualitäts-Roadmap; größere Pakete, jeweils mit
   über Neustarts; die Entwürfe im Memory-Drawer (Psychologie, Beziehung, Markdown) überleben noch keinen Neustart.
 - [ ] **Atomare Reflexion:** Die mehrstufige Memory-Reflexion speichert frühe Änderungen auch, wenn ein späterer Schritt
   scheitert (Hinweis auf den Snapshot ist vorhanden).
-- [ ] **„Rückgängig“-Toast** bei destruktiven Aktionen statt nur Bestätigungsdialog.
+- [ ] **„Rückgängig“ für weitere Löschaktionen:** Chat-Nachrichten sind umgesetzt; Chats, Stage-Nachrichten und
+  Erinnerungen fragen weiterhin per Bestätigungsdialog.
 
 ## 2. Chat-Funktionen (aus der Portierung, noch nicht umgesetzt)
 

@@ -95,6 +95,9 @@ export interface ChatSlice {
   saveVoiceConfigForCharacter: (charId: string, config: VoiceConfig) => Promise<void>;
 }
 
+/** A deleted message can be restored this long (the undo toast stays as long). */
+const UNDO_DELETE_MS = 8000;
+
 /** A stored message as it goes to the model (attachments included). */
 const toFlat = (m: StoredChatMessage): ChatMessage => ({
   role: m.role as 'user' | 'assistant' | 'system',
@@ -486,26 +489,39 @@ export const createChatSlice: SliceCreator<ChatSlice> = (set, get) => {
   },
 
   deleteChatMessage: async (msgId: string) => {
-    try {
-      const chatOfMessage = get().activeChatId;
-      await api.deleteChatMessage(msgId);
-      if (chatOfMessage) void hintMemorySources(chatOfMessage, msgId, () => get().setMemoryDrawerOpen(true));
-      set((state) => {
-        const stored = state.storedMessages.filter((m) => m.id !== msgId);
-        const flat: ChatMessage[] = stored.map(toFlat);
-        return {
-          storedMessages: stored,
-          messages: flat,
-        };
-      });
-      const char = get().activeCharacter;
-      if (char) {
-        const sessions = await api.listChatSessions(char.id);
-        set({ chatSessions: sessions });
+    // Hidden at once, deleted after the undo window; "Undo" brings it back untouched.
+    const chatOfMessage = get().activeChatId;
+    const removed = get().storedMessages.find((m) => m.id === msgId);
+    if (!chatOfMessage || !removed) return;
+    const show = (stored: StoredChatMessage[]) => set({ storedMessages: stored, messages: stored.map(toFlat) });
+    show(get().storedMessages.filter((m) => m.id !== msgId));
+    const commit = async () => {
+      try {
+        await api.deleteChatMessage(msgId);
+        void hintMemorySources(chatOfMessage, msgId, () => get().setMemoryDrawerOpen(true));
+        const char = get().activeCharacter;
+        if (char) {
+          const sessions = await api.listChatSessions(char.id);
+          if (get().activeCharacter?.id === char.id) set({ chatSessions: sessions });
+        }
+      } catch (e) {
+        // The message is still stored; show it again where it was.
+        if (get().activeChatId === chatOfMessage && !get().storedMessages.some((m) => m.id === msgId)) {
+          show([...get().storedMessages, removed].sort((x, y) => x.order_index - y.order_index));
+        }
+        reportFailure('Failed to delete chat message:', e);
       }
-    } catch (e) {
-      reportFailure('Failed to delete chat message:', e);
-    }
+    };
+    const timer = setTimeout(() => void commit(), UNDO_DELETE_MS);
+    toast.info(translate('chat.messageDeleted'), {
+      label: translate('common.undo'),
+      onClick: () => {
+        clearTimeout(timer);
+        if (get().activeChatId === chatOfMessage && !get().storedMessages.some((m) => m.id === msgId)) {
+          show([...get().storedMessages, removed].sort((x, y) => x.order_index - y.order_index));
+        }
+      },
+    });
   },
 
   regenerateMessageSwipe: async (msgId: string) => {

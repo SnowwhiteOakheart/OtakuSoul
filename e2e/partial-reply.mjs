@@ -35,7 +35,21 @@ try {
   await browser.waitUntil(() => lastAssistant().length > partial.length + 40, { timeout: 15_000, timeoutMsg: 'Fortsetzen ergänzt nichts' });
   assert.ok(lastAssistant().startsWith(partial), 'Fortsetzen hat den Anfang verändert');
   assert.equal(sql("SELECT count(*) FROM chat_messages WHERE role = 'assistant';"), '2', 'Begrüßung + eine Antwort erwartet');
-  console.log('Teilantwort: Stopp behält den Text, Fortsetzen ergänzt dieselbe Nachricht bestanden.');
+
+  // Deleting asks nothing; the toast offers "Undo", afterwards the message is gone for good.
+  const count = () => sql("SELECT count(*) FROM chat_messages WHERE role = 'assistant';");
+  const removeLast = async () => {
+    const last = await browser.$(`div[data-message-id]*=${partial.slice(0, 20)}`);
+    await jsClick(await last.$('button[aria-label="Nachricht löschen"]'));
+  };
+  await removeLast();
+  await jsClick(await browser.$('button*=Rückgängig'));
+  await browser.$(`div[data-message-id]*=${partial.slice(0, 20)}`).waitForDisplayed({ timeout: 5000 });
+  await browser.pause(9000);
+  assert.equal(count(), '2', 'Rückgängig hat nicht verhindert, dass gelöscht wird');
+  await removeLast();
+  await browser.waitUntil(() => count() === '1', { timeout: 12_000, timeoutMsg: 'Nachricht nach Ablauf nicht gelöscht' });
+  console.log('Teilantwort: Stopp behält den Text, Fortsetzen ergänzt dieselbe Nachricht; Löschen mit Rückgängig bestanden.');
 } finally {
   await close();
 }

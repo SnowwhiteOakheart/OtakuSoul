@@ -437,8 +437,6 @@ export const en: TranslationDictionary = {
   "errors.viewCrashedTitle": "Something went wrong in this view",
   "errors.viewCrashedHint": "Your data is safe. You can reload the view or switch to another section.",
 
-  "confirm.deleteMessageTitle": "Delete message?",
-  "confirm.deleteMessageText": "The message will be permanently removed from the history.",
   "confirm.deleteChatTitle": "Delete chat “{{title}}”?",
   "confirm.deleteChatText": "All messages in this chat will be deleted.",
   "confirm.restoreSnapshotTitle": "Restore snapshot “{{name}}”?",
@@ -2503,4 +2501,6 @@ export const en: TranslationDictionary = {
   "promptLog.noModel": "server's model",
   "promptLog.tokens": "{{prompt}}/{{context}} tokens, {{dropped}} older messages left out",
   "promptLog.sampling": "Sampler settings",
+  "chat.messageDeleted": "Message deleted.",
+  "common.undo": "Undo",
 };
