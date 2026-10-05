@@ -15,7 +15,7 @@ Nutzer mit „Du“ ansprechen. Antworten, Commits und Doku auf Deutsch.
 - Thematische Commits direkt auf `main`, `feat(bereich): …` auf Deutsch, danach sofort `git push`. Kein GitHub-CI.
   Der Nutzer erlaubt Commit und Push für die beauftragte Projektarbeit dauerhaft; keine erneute Rückfrage nötig.
 - Der Nutzer arbeitet parallel im Repo: fremde uncommittete Änderungen nie mitcommitten.
-- `ROADMAP.md` (bzw. `Roadmap_TTS.md`) im selben Commit abhaken; `README.md`/`AI.md` bei neuen Modulen/Features anpassen.
+- `roadmap.md` (offene Punkte) im selben Commit abhaken, Erledigtes nach `roadmap_abgeschlossen.md` verschieben; `README.md`/`AI.md` bei neuen Modulen/Features anpassen.
 - Pfade nur über `paths::base_dirs()` (ProjectDirs bzw. `$OTAKUSOUL_HOME/config|data`); OS-Code mit `#[cfg]`.
 - Modelle nie mitliefern, nur von der Quelle laden (SHA-256); nicht-kommerzielle Sprachmodelle gesperrt, bis freigeschaltet;
   Bildmodelle und LoRAs nur gekennzeichnet (Bilder bleiben privat in der App, Entscheidung des Nutzers).
@@ -233,6 +233,6 @@ Hub). Integrationen → Bildgenerierung enthält nur Studio und Galerie.
 
 ## Stand
 
-Phasen 1–18 abgeschlossen (`Roadmap_abgeschlossen.md`); laufende Arbeit und Testergebnisse in `ROADMAP.md` und
-`Roadmap_TTS.md`. Daten: `<Daten>` = `~/.local/share/otakusoul` (Linux) mit `runtimes/`, `image-models/`, `tts-models/`,
+Erledigtes (Portierung Phasen 1–18, Verbesserungen, TTS, Neutralisierung, Inhalte, Qualität) steht in
+`roadmap_abgeschlossen.md`, alles Offene in `roadmap.md`. Daten: `<Daten>` = `~/.local/share/otakusoul` (Linux) mit `runtimes/`, `image-models/`, `tts-models/`,
 `voices/`, `attachments/`, `otakusoul.db`; Entwickler-Modelle in `assets/models/` (gitignored).
