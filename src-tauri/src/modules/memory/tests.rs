@@ -947,3 +947,18 @@ fn new_chat_and_greeting_are_stored_together() {
         .unwrap();
     assert_eq!(empty.message_count, 0);
 }
+
+#[test]
+fn a_failed_chat_import_leaves_no_partial_chat() {
+    let db = MemoryDb::new_in_memory().expect("in-memory db failed");
+    db.conn
+        .lock()
+        .execute_batch(
+            "CREATE TRIGGER fail_import BEFORE INSERT ON chat_messages WHEN NEW.content = 'BOOM'
+             BEGIN SELECT RAISE(ABORT, 'late import failure'); END;",
+        )
+        .unwrap();
+    let jsonl = "{\"mes\":\"Hallo\",\"is_user\":true}\n{\"mes\":\"BOOM\",\"is_user\":false}";
+    assert!(db.import_chat_jsonl("ayu", jsonl, Some("Kaputt")).is_err());
+    assert!(db.list_chat_sessions("ayu").unwrap().is_empty());
+}

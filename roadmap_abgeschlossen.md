@@ -13,6 +13,7 @@
 4. Neutrale Modul-Architektur & SoW-Entkopplung
 5. Optionale Inhalte (`otakusoul-data`)
 6. Qualität & Bedienung (unabhängige App-Durchsicht, Abschnitte 1–9 mit Arbeitsprotokoll)
+7. Abgearbeitet aus `roadmap.md` (ab 05.10.2026)
 
 ---
 
@@ -1682,3 +1683,11 @@ veraltet und sind korrigiert: `chat-sidebar-errors` las die Sitzung, bevor der e
 (der erste Chat entsteht einige Sekunden nach dem Fenster, auch mit dem alten Ablauf), und
 `startup-character` fand über die CSS-Klasse den Cloud-Modellnamen im Kopf statt des Charakternamens.
 `chat-sidebar-errors` scheiterte einmal einmalig an einem Entwurfsvergleich und bestand danach dreimal.
+
+---
+
+## 7. Abgearbeitet aus `roadmap.md` (ab 05.10.2026)
+
+- [x] **Chat-Import in einer Transaktion:** `import_chat_jsonl` liest erst alle Zeilen und schreibt Sitzung, Notiz und
+  Nachrichten (mit Varianten) danach in einer SQLite-Transaktion; ein später Fehler hinterlässt keinen halben Chat
+  (Test `a_failed_chat_import_leaves_no_partial_chat`).

@@ -837,12 +837,7 @@ impl MemoryDb {
         }
 
         let title = initial_title.unwrap_or_else(|| "Importierter Chat".to_string());
-        let session = self.create_chat_session(character_id, &title)?;
-
-        if !author_note.is_empty() || author_note_depth != 2 {
-            self.update_chat_author_note(&session.id, &author_note, author_note_depth)?;
-        }
-
+        let mut parsed = Vec::new();
         for line in &raw_lines[start_idx..] {
             if let Ok(v) = serde_json::from_str::<serde_json::Value>(line) {
                 let content = v
@@ -908,30 +903,58 @@ impl MemoryDb {
                     .and_then(|n| n.as_u64())
                     .unwrap_or(0) as usize;
 
-                // Add message
-                let added =
-                    self.add_chat_message(&session.id, &role, &content, thought.as_deref(), &[])?;
-
-                if !parsed_swipes.is_empty() {
-                    let conn = self.conn.lock();
-                    let safe_idx = if swipe_idx < parsed_swipes.len() {
-                        swipe_idx
-                    } else {
-                        0
-                    };
-                    let active_variant = &parsed_swipes[safe_idx];
-                    let swipes_json =
-                        serde_json::to_string(&parsed_swipes).unwrap_or_else(|_| "[]".to_string());
-                    conn.execute(
-                        "UPDATE chat_messages SET content = ?1, thought = ?2, swipe_index = ?3, swipes_json = ?4 WHERE id = ?5",
-                        params![active_variant.content, active_variant.thought, safe_idx as i64, swipes_json, added.id],
-                    )?;
+                if parsed_swipes.is_empty() {
+                    parsed_swipes.push(SwipeVariant { content, thought });
                 }
+                let swipe_idx = if swipe_idx < parsed_swipes.len() {
+                    swipe_idx
+                } else {
+                    0
+                };
+                parsed.push((role, parsed_swipes, swipe_idx));
             }
         }
 
-        // Return updated session with message count
-        self.get_chat_session(&session.id)?
+        // Session, note and every message in one transaction: a failure leaves no half chat.
+        let id = {
+            let conn = self.conn.lock();
+            let tx = conn.unchecked_transaction()?;
+            let now = current_timestamp();
+            let id = format!("chat_{}_{:08x}", now, rand::random::<u32>());
+            let title = if title.trim().is_empty() {
+                "Importierter Chat"
+            } else {
+                title.trim()
+            };
+            tx.execute(
+                "INSERT INTO chat_sessions (id, character_id, title, created_at, updated_at, author_note, author_note_depth)
+                 VALUES (?1, ?2, ?3, ?4, ?4, ?5, ?6)",
+                params![id, character_id, title, now, author_note, author_note_depth],
+            )?;
+            for (order, (role, swipes, swipe_idx)) in parsed.iter().enumerate() {
+                let active = &swipes[*swipe_idx];
+                let swipes_json =
+                    serde_json::to_string(swipes).unwrap_or_else(|_| "[]".to_string());
+                tx.execute(
+                    "INSERT INTO chat_messages (id, chat_id, role, content, thought, order_index, swipe_index, swipes_json, created_at, attachments_json)
+                     VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?7, ?8, ?9, '[]')",
+                    params![
+                        format!("msg_{}_{:08x}", now, rand::random::<u32>()),
+                        id,
+                        role,
+                        active.content,
+                        active.thought,
+                        order as i64,
+                        *swipe_idx as i64,
+                        swipes_json,
+                        now
+                    ],
+                )?;
+            }
+            tx.commit()?;
+            id
+        };
+        self.get_chat_session(&id)?
             .ok_or(rusqlite::Error::QueryReturnedNoRows)
     }
 }

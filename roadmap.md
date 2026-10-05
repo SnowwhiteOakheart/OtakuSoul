@@ -19,7 +19,6 @@ Aus den Arbeitsprotokollen der Qualitäts-Roadmap; größere Pakete, jeweils mit
   koordinieren (Zusammenfassungen, NPC-Erinnerungen).
 - [ ] **Atomare Reflexion:** Die mehrstufige Memory-Reflexion speichert frühe Änderungen auch, wenn ein späterer Schritt
   scheitert (Hinweis auf den Snapshot ist vorhanden).
-- [ ] **Chat-Import in einer Transaktion:** `import_chat_jsonl` legt Sitzung, Notiz und Nachrichten in Einzelschritten an.
 - [ ] **Erster Chat erscheint verzögert:** Beim ersten Start entsteht der Chat 3–4 s nach dem Fenster (Begrüßung ist schon
   sichtbar). Ursache noch nicht untersucht.
 - [ ] **„Rückgängig“-Toast** bei destruktiven Aktionen statt nur Bestätigungsdialog.
