@@ -2503,4 +2503,8 @@ export const en: TranslationDictionary = {
   "promptLog.sampling": "Sampler settings",
   "chat.messageDeleted": "Message deleted.",
   "common.undo": "Undo",
+  "runtime.previous": "Previous build {{build}} ({{backend}}) is still available.",
+  "runtime.rollback": "Back to {{build}}",
+  "runtime.rolledBack": "{{build}} is active again – from the next server start.",
+  "backend.runtime.noPrevious": "There is no previous build to switch back to.",
 };

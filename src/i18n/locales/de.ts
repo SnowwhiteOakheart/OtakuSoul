@@ -2505,4 +2505,8 @@ export const de = {
   "promptLog.sampling": "Sampler-Einstellungen",
   "chat.messageDeleted": "Nachricht gelöscht.",
   "common.undo": "Rückgängig",
+  "runtime.previous": "Vorheriger Build {{build}} ({{backend}}) ist noch vorhanden.",
+  "runtime.rollback": "Zu {{build}} zurück",
+  "runtime.rolledBack": "{{build}} ist wieder aktiv – gilt ab dem nächsten Serverstart.",
+  "backend.runtime.noPrevious": "Es gibt keinen vorherigen Build zum Zurückwechseln.",
 } as const;

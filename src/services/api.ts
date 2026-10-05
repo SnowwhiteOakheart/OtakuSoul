@@ -1006,6 +1006,15 @@ export const api = {
     return await invoke<RuntimeInfo | null>('get_runtime', { kind });
   },
 
+  /** The build kept from before the last update (for a rollback). */
+  getPreviousRuntime: async (kind: RuntimeKind): Promise<RuntimeInfo | null> => {
+    return await invoke<RuntimeInfo | null>('get_previous_runtime', { kind });
+  },
+
+  rollbackRuntime: async (kind: RuntimeKind): Promise<RuntimeInfo> => {
+    return await invoke<RuntimeInfo>('rollback_runtime', { kind });
+  },
+
   listRuntimeVariants: async (kind: RuntimeKind): Promise<RuntimeVariant[]> => {
     return await invoke<RuntimeVariant[]>('list_runtime_variants', { kind });
   },

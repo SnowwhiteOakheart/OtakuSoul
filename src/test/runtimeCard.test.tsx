@@ -22,6 +22,19 @@ beforeEach(() => {
 });
 
 describe('RuntimeCard', () => {
+  it('offers the previous build after an update and switches back to it', async () => {
+    const user = userEvent.setup();
+    const build = (b: string) => ({ build: b, backend: 'vulkan', server_path: `/r/${b}-vulkan/llama-server`, library_dirs: [] });
+    vi.mocked(api.getRuntime).mockResolvedValue(build('b11146'));
+    vi.mocked(api.getPreviousRuntime).mockResolvedValueOnce(build('b11000')).mockResolvedValue(build('b11146'));
+    vi.mocked(api.rollbackRuntime).mockResolvedValue(build('b11000'));
+    render(<RuntimeCard kind="llama" />);
+
+    await user.click(await screen.findByRole('button', { name: 'Back to b11000' }));
+    expect(api.rollbackRuntime).toHaveBeenCalledWith('llama');
+    expect(await screen.findByRole('button', { name: 'Back to b11146' })).toBeInTheDocument();
+  });
+
   it('preselects the recommended build and installs the chosen variant', async () => {
     const user = userEvent.setup();
     vi.mocked(api.installRuntime).mockResolvedValue({

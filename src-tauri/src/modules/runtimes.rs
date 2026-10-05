@@ -134,9 +134,78 @@ fn runtime_root(kind: RuntimeKind) -> PathBuf {
 
 /// The app-installed runtime of `kind`, if its server binary is still there.
 pub fn installed(kind: RuntimeKind) -> Option<RuntimeInfo> {
-    let manifest = runtime_root(kind).join("current.json");
-    let info: RuntimeInfo = serde_json::from_str(&std::fs::read_to_string(manifest).ok()?).ok()?;
+    read_manifest(&runtime_root(kind).join("current.json"))
+}
+
+fn read_manifest(path: &Path) -> Option<RuntimeInfo> {
+    let info: RuntimeInfo = serde_json::from_str(&std::fs::read_to_string(path).ok()?).ok()?;
     Path::new(&info.server_path).is_file().then_some(info)
+}
+
+/// The build installed before the current one, kept for a rollback.
+pub fn previous(kind: RuntimeKind) -> Option<RuntimeInfo> {
+    read_manifest(&runtime_root(kind).join("previous.json"))
+}
+
+/// The folder of a runtime directly below `root` (`<build>-<backend>`).
+fn install_dir_of(root: &Path, info: &RuntimeInfo) -> Option<PathBuf> {
+    let first = Path::new(&info.server_path)
+        .strip_prefix(root)
+        .ok()?
+        .components()
+        .next()?;
+    Some(root.join(first))
+}
+
+/// Makes `info` (installed in `install_dir`) the current build. The build that was current
+/// until now stays as the one to roll back to; older builds and the downloads are removed.
+fn activate(root: &Path, install_dir: &Path, info: &RuntimeInfo) -> Result<(), String> {
+    let kept = read_manifest(&root.join("current.json"))
+        .filter(|old| install_dir_of(root, old).is_some_and(|dir| dir != install_dir));
+    // Reinstalling the current build keeps the earlier previous one.
+    let kept = match kept {
+        Some(old) => {
+            std::fs::rename(root.join("current.json"), root.join("previous.json"))
+                .map_err(|e| crate::err!("backend.common.fileWrite", error = e))?;
+            Some(old)
+        }
+        None => read_manifest(&root.join("previous.json"))
+            .filter(|old| install_dir_of(root, old).is_some_and(|dir| dir != install_dir)),
+    };
+    let manifest = serde_json::to_string_pretty(info)
+        .map_err(|e| crate::err!("backend.runtime.installFailed", error = e))?;
+    std::fs::write(root.join("current.json"), manifest)
+        .map_err(|e| crate::err!("backend.common.fileWrite", error = e))?;
+
+    let keep_previous = kept.as_ref().and_then(|old| install_dir_of(root, old));
+    if let Ok(entries) = std::fs::read_dir(root) {
+        for entry in entries.flatten() {
+            let path = entry.path();
+            if path.is_dir() && path != install_dir && Some(&path) != keep_previous.as_ref() {
+                let _ = std::fs::remove_dir_all(path);
+            }
+        }
+    }
+    Ok(())
+}
+
+/// Makes the previous build current again (and the current one the previous). Takes effect
+/// with the next server start.
+pub fn rollback(kind: RuntimeKind) -> Result<RuntimeInfo, String> {
+    rollback_in(&runtime_root(kind))
+}
+
+fn rollback_in(root: &Path) -> Result<RuntimeInfo, String> {
+    let (current, previous) = (root.join("current.json"), root.join("previous.json"));
+    let info = read_manifest(&previous).ok_or_else(|| crate::err!("backend.runtime.noPrevious"))?;
+    let swap = root.join("swap.json");
+    std::fs::rename(&current, &swap)
+        .map_err(|e| crate::err!("backend.common.fileWrite", error = e))?;
+    std::fs::rename(&previous, &current)
+        .map_err(|e| crate::err!("backend.common.fileWrite", error = e))?;
+    std::fs::rename(&swap, &previous)
+        .map_err(|e| crate::err!("backend.common.fileWrite", error = e))?;
+    Ok(info)
 }
 
 /// Library folders to add to the search path when starting `binary`.
@@ -734,21 +803,7 @@ async fn install_into(
     .await
     .map_err(|e| crate::err!("backend.runtime.installFailed", error = e))??;
 
-    let manifest = serde_json::to_string_pretty(&info)
-        .map_err(|e| crate::err!("backend.runtime.installFailed", error = e))?;
-    tokio::fs::write(root.join("current.json"), manifest)
-        .await
-        .map_err(|e| crate::err!("backend.common.fileWrite", error = e))?;
-
-    // Only the new runtime stays; older builds and the downloaded archives are removed.
-    if let Ok(entries) = std::fs::read_dir(root) {
-        for entry in entries.flatten() {
-            let path = entry.path();
-            if path.is_dir() && path != install_dir {
-                let _ = std::fs::remove_dir_all(path);
-            }
-        }
-    }
+    activate(root, &install_dir, &info)?;
     on_progress(progress(kind, "done", total, total));
     Ok(info)
 }
@@ -1021,6 +1076,68 @@ mod tests {
             of("crispasr-windows-x86_64-cuda-non-cuda.zip", WINDOWS),
             None
         );
+    }
+
+    fn fake_build(root: &Path, name: &str) -> (PathBuf, RuntimeInfo) {
+        let dir = root.join(name);
+        std::fs::create_dir_all(&dir).unwrap();
+        let server = dir.join(RuntimeKind::Llama.server_name());
+        std::fs::write(&server, b"").unwrap();
+        let info = RuntimeInfo {
+            build: name.into(),
+            backend: "cpu".into(),
+            server_path: server.to_string_lossy().into(),
+            library_dirs: Vec::new(),
+        };
+        (dir, info)
+    }
+
+    #[test]
+    fn keeps_the_previous_build_for_a_rollback() {
+        let root = std::env::temp_dir().join(format!("otakusoul-rollback-{}", std::process::id()));
+        let _ = std::fs::remove_dir_all(&root);
+        let (b1, first) = fake_build(&root, "b1-cpu");
+        activate(&root, &b1, &first).unwrap();
+        assert!(read_manifest(&root.join("previous.json")).is_none());
+
+        let (b2, second) = fake_build(&root, "b2-cpu");
+        activate(&root, &b2, &second).unwrap();
+        assert_eq!(
+            read_manifest(&root.join("previous.json")).unwrap().build,
+            "b1-cpu"
+        );
+        assert!(b1.exists());
+
+        // A third build drops the oldest one.
+        let (b3, third) = fake_build(&root, "b3-cpu");
+        activate(&root, &b3, &third).unwrap();
+        assert!(!b1.exists());
+        assert_eq!(
+            read_manifest(&root.join("previous.json")).unwrap().build,
+            "b2-cpu"
+        );
+
+        // Rolling back swaps current and previous; twice gets back to the start.
+        assert_eq!(rollback_in(&root).unwrap().build, "b2-cpu");
+        assert_eq!(
+            read_manifest(&root.join("current.json")).unwrap().build,
+            "b2-cpu"
+        );
+        assert_eq!(
+            read_manifest(&root.join("previous.json")).unwrap().build,
+            "b3-cpu"
+        );
+        rollback_in(&root).unwrap();
+        assert_eq!(
+            read_manifest(&root.join("current.json")).unwrap().build,
+            "b3-cpu"
+        );
+
+        // Reinstalling the current build keeps the previous one.
+        activate(&root, &b3, &third).unwrap();
+        assert!(b2.exists());
+        assert_eq!(rollback_in(&root).unwrap().build, "b2-cpu");
+        let _ = std::fs::remove_dir_all(&root);
     }
 
     /// Downloads the real CPU builds into a temporary folder and runs `--version`/`--help`:

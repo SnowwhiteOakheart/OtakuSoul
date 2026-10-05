@@ -32,6 +32,8 @@ export const RuntimeCard = ({ kind, onInstalled }: RuntimeCardProps) => {
   const [selected, setSelected] = useState('');
   const [progress, setProgress] = useState<RuntimeProgress | null>(null);
   const [installing, setInstalling] = useState(false);
+  const [previous, setPrevious] = useState<RuntimeInfo | null>(null);
+  const loadPrevious = () => api.getPreviousRuntime(kind).then(setPrevious).catch(() => setPrevious(null));
 
   const fetchVariants = () =>
     api
@@ -50,6 +52,7 @@ export const RuntimeCard = ({ kind, onInstalled }: RuntimeCardProps) => {
 
   useEffect(() => {
     api.getRuntime(kind).then(setInstalled).catch(() => setInstalled(null));
+    void loadPrevious();
     void fetchVariants();
     let unlisten: (() => void) | undefined;
     api
@@ -73,12 +76,26 @@ export const RuntimeCard = ({ kind, onInstalled }: RuntimeCardProps) => {
     try {
       const info = await api.installRuntime(kind, variant.backend);
       setInstalled(info);
+      void loadPrevious();
       toast.success(t(`runtime.${kind}.installed`, { build: info.build, backend: backendLabel(info.backend) }));
       onInstalled?.();
     } catch (e) {
       toast.error(t('runtime.installFailed', { error: errorMessage(e) }));
     } finally {
       setInstalling(false);
+    }
+  };
+
+  // An update that misbehaves can be undone: the previous build stays until the next update.
+  const handleRollback = async () => {
+    try {
+      const info = await api.rollbackRuntime(kind);
+      setInstalled(info);
+      void loadPrevious();
+      toast.success(t('runtime.rolledBack', { build: info.build }));
+      onInstalled?.();
+    } catch (e) {
+      toast.error(errorMessage(e));
     }
   };
 
@@ -144,6 +161,19 @@ export const RuntimeCard = ({ kind, onInstalled }: RuntimeCardProps) => {
             <span className="whitespace-nowrap">
               {upToDate ? t('runtime.reinstall') : installed ? t('runtime.update', { build: variant?.build ?? '' }) : t('runtime.install', { build: variant?.build ?? '' })}
             </span>
+          </button>
+        </div>
+      )}
+
+      {previous && !installing && (
+        <div className="flex flex-wrap items-center justify-between gap-2 text-xs text-slate-400">
+          <span>{t('runtime.previous', { build: previous.build, backend: backendLabel(previous.backend) })}</span>
+          <button
+            type="button"
+            onClick={() => void handleRollback()}
+            className="px-2.5 py-1 rounded-lg border border-slate-700 text-slate-300 hover:bg-slate-800"
+          >
+            {t('runtime.rollback', { build: previous.build })}
           </button>
         </div>
       )}

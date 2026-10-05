@@ -2503,4 +2503,8 @@ export const ru: TranslationDictionary = {
   "promptLog.sampling": "Настройки сэмплера",
   "chat.messageDeleted": "Сообщение удалено.",
   "common.undo": "Отменить",
+  "runtime.previous": "Предыдущая сборка {{build}} ({{backend}}) ещё доступна.",
+  "runtime.rollback": "Вернуться к {{build}}",
+  "runtime.rolledBack": "{{build}} снова активна – со следующего запуска сервера.",
+  "backend.runtime.noPrevious": "Нет предыдущей сборки для возврата.",
 };

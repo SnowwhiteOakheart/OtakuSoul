@@ -1718,4 +1718,8 @@ veraltet und sind korrigiert: `chat-sidebar-errors` las die Sitzung, bevor der e
   den Snapshot an und schreibt Psychologie, Beziehung, Heilungsprotokoll, Themen-Erinnerungen und Tagebuch in einer
   Transaktion (`apply_reflection`). Ein Fehler – auch ein später Modell- oder Schreibfehler – ändert nichts; der Hinweis
   im Drawer sagt das jetzt (Test `a_failed_reflection_write_changes_nothing`).
+- [x] **Laufzeit-Rollback:** Beim Aktualisieren bleibt der bisherige Build als `previous.json` samt Ordner erhalten
+  (ältere Builds gehen); die Laufzeitkarte bietet „Zu bXXXX zurück“, das tauscht aktuellen und vorherigen Build
+  (gilt ab dem nächsten Serverstart). Neuinstallation desselben Builds behält den vorherigen
+  (Tests `keeps_the_previous_build_for_a_rollback`, `runtimeCard.test.tsx`).
 

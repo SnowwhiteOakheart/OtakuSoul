@@ -128,6 +128,18 @@ pub fn get_runtime(kind: RuntimeKind) -> Option<RuntimeInfo> {
     crate::modules::runtimes::installed(kind)
 }
 
+/// The build kept from before the last update, if any.
+#[tauri::command]
+pub fn get_previous_runtime(kind: RuntimeKind) -> Option<RuntimeInfo> {
+    crate::modules::runtimes::previous(kind)
+}
+
+/// Switches back to the previous build (used from the next server start).
+#[tauri::command]
+pub fn rollback_runtime(kind: RuntimeKind) -> Result<RuntimeInfo, String> {
+    crate::modules::runtimes::rollback(kind)
+}
+
 #[tauri::command]
 pub async fn list_runtime_variants(kind: RuntimeKind) -> Result<Vec<RuntimeVariant>, String> {
     crate::modules::runtimes::list_variants(kind).await

@@ -209,6 +209,8 @@ pub fn run() {
             commands::llm::stop_llama_server,
             commands::llm::get_llama_server_status,
             commands::llm::get_runtime,
+            commands::llm::get_previous_runtime,
+            commands::llm::rollback_runtime,
             commands::llm::list_runtime_variants,
             commands::llm::install_runtime,
             commands::chat::send_chat_message,
