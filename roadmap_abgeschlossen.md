@@ -1691,3 +1691,10 @@ veraltet und sind korrigiert: `chat-sidebar-errors` las die Sitzung, bevor der e
 - [x] **Chat-Import in einer Transaktion:** `import_chat_jsonl` liest erst alle Zeilen und schreibt Sitzung, Notiz und
   Nachrichten (mit Varianten) danach in einer SQLite-Transaktion; ein später Fehler hinterlässt keinen halben Chat
   (Test `a_failed_chat_import_leaves_no_partial_chat`).
+- [x] **Erster Chat erschien verzögert:** `get_hardware_info` (startet `nvidia-smi`, Vulkan-Abfrage), `scan_characters`
+  (dekodiert alle Karten-PNGs, im Debug-Build ~0,9 s), `scan_models` und `get_layer_recommendation` waren synchrone
+  Befehle; Tauri führt diese auf dem Hauptthread aus, sodass sie Fenster und alle anderen synchronen Befehle blockierten.
+  Sie laufen jetzt per `spawn_blocking`. Dabei aufgedeckt und behoben: Ein vor dem Laden der Einstellungen gestarteter
+  Charakter-Scan konnte nach dem Laden den ersten Charakter statt des zuletzt geöffneten wählen
+  (`refreshCharacters` merkt sich, ob die Einstellungen beim Start bekannt waren; Test `startupCharacter.test.ts`).
+

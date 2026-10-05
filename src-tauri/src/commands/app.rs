@@ -30,8 +30,10 @@ pub fn open_avatar_folder(app: tauri::AppHandle) -> Result<(), String> {
 }
 
 #[tauri::command]
-pub fn scan_models() -> Vec<crate::modules::paths::ScannedModel> {
-    crate::modules::paths::scan_available_models()
+pub async fn scan_models() -> Vec<crate::modules::paths::ScannedModel> {
+    tokio::task::spawn_blocking(crate::modules::paths::scan_available_models)
+        .await
+        .unwrap_or_default()
 }
 
 #[tauri::command]

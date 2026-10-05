@@ -8,9 +8,12 @@ pub fn load_lorebook(file_path: String) -> Result<crate::modules::lorebook::Lore
     crate::modules::lorebook::Lorebook::load_from_file(std::path::Path::new(&file_path))
 }
 
+/// Reads every card (PNG decoding, avatar data URLs) off the main thread.
 #[tauri::command]
-pub fn scan_characters() -> Vec<crate::modules::characters::CharacterProfile> {
-    crate::modules::paths::scan_available_characters()
+pub async fn scan_characters() -> Vec<crate::modules::characters::CharacterProfile> {
+    tokio::task::spawn_blocking(crate::modules::paths::scan_available_characters)
+        .await
+        .unwrap_or_default()
 }
 
 #[tauri::command]

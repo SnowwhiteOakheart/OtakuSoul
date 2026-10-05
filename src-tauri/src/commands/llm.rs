@@ -7,28 +7,37 @@ use crate::modules::llama_manager::{LlamaServerConfig, ServerStatus};
 use crate::state::AppState;
 use tauri::State;
 
+/// Spawns `nvidia-smi` and probes Vulkan: off the main thread, so it doesn't stall the window
+/// and every other synchronous command (Tauri runs those on the main thread).
 #[tauri::command]
-pub fn get_hardware_info() -> HardwareInfo {
-    probe_hardware()
+pub async fn get_hardware_info() -> Result<HardwareInfo, String> {
+    tokio::task::spawn_blocking(probe_hardware)
+        .await
+        .map_err(|e| e.to_string())
 }
 
 #[tauri::command]
-pub fn get_layer_recommendation(
+pub async fn get_layer_recommendation(
     model_size_mb: u64,
     total_layers: u32,
     context_size: u32,
     model_path: Option<String>,
     cache_type_k: Option<String>,
     cache_type_v: Option<String>,
-) -> LayerRecommendation {
-    recommend_gpu_layers(
-        model_size_mb,
-        total_layers,
-        context_size,
-        model_path.as_deref(),
-        cache_type_k.as_deref(),
-        cache_type_v.as_deref(),
-    )
+) -> Result<LayerRecommendation, String> {
+    // Probes the hardware: off the main thread, like `get_hardware_info`.
+    tokio::task::spawn_blocking(move || {
+        recommend_gpu_layers(
+            model_size_mb,
+            total_layers,
+            context_size,
+            model_path.as_deref(),
+            cache_type_k.as_deref(),
+            cache_type_v.as_deref(),
+        )
+    })
+    .await
+    .map_err(|e| e.to_string())
 }
 
 #[tauri::command]

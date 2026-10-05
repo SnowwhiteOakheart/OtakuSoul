@@ -114,14 +114,15 @@ export const createCharacterSlice: SliceCreator<CharacterSlice> = (set, get) => 
   },
 
   refreshCharacters: async (preferredId) => {
+    // Before the settings are loaded the last opened character isn't known yet; a scan started
+    // then must not pick one, even if it only finishes afterwards (it would show the wrong one).
+    const knewSettings = get().settingsLoaded;
     try {
       const chars = await api.scanCharacters();
       const firstChar = chars[0];
       if (firstChar) {
         set({ availableCharacters: chars });
-        // Before the settings are loaded the last opened character isn't known yet;
-        // picking one now would show the wrong character first.
-        if (!get().activeCharacter && get().settingsLoaded) {
+        if (!get().activeCharacter && knewSettings && get().settingsLoaded) {
           await get().selectCharacter(chars.find((c) => c.id === preferredId) ?? firstChar);
         }
       }
