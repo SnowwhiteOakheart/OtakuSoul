@@ -17,6 +17,8 @@ pub struct AppState {
     pub chat_generation: tokio::sync::Mutex<()>,
     pub stage_turn: tokio::sync::Mutex<()>,
     pub token_counter: Arc<crate::modules::context_window::TokenCounter>,
+    /// The last prompt sent to the chat model (`get_last_prompt`).
+    pub last_prompt: parking_lot::Mutex<Option<crate::modules::prompt_log::PromptLog>>,
     pub memory_db: Arc<MemoryDb>,
     pub stage_engine: Arc<StageEngine>,
     pub companion_engine: Arc<CompanionEngine>,
@@ -55,6 +57,7 @@ impl AppState {
             chat_generation: tokio::sync::Mutex::new(()),
             stage_turn: tokio::sync::Mutex::new(()),
             token_counter: Arc::default(),
+            last_prompt: parking_lot::Mutex::new(None),
             memory_db: Arc::new(memory_db),
             stage_engine: Arc::new(StageEngine::new()),
             companion_engine: Arc::new(CompanionEngine::new()),

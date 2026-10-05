@@ -105,6 +105,7 @@ import {
   RuntimeProgress,
   RuntimeVariant,
   MemoryChange,
+  PromptLog,
 } from '../types';
 
 export const api = {
@@ -782,6 +783,11 @@ export const api = {
   },
 
   // Phase 9: Vollwertiger Chat & Swipes
+  /** The prompt the chat model got last (null before the first message). */
+  getLastPrompt: async (): Promise<PromptLog | null> => {
+    return await invoke<PromptLog | null>('get_last_prompt');
+  },
+
   /** Creates the chat and (optionally) the character's greeting in one step. */
   createChatSession: async (characterId: string, title: string, greeting?: string | null): Promise<ChatSession> => {
     return await invoke<ChatSession>('create_chat_session', { characterId, title, greeting: greeting || null });

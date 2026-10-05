@@ -186,6 +186,8 @@ Hub). Integrationen → Bildgenerierung enthält nur Studio und Galerie.
 - Hintergrundaufgaben: `store/slices/taskSlice.ts` (`trackTask` → erledigt/abgebrochen (Code `…Cancelled`)/fehlgeschlagen),
   Anzeige `components/TaskCenter.tsx` (hört Download-Fortschritt und `local-image-status`). Modellstart endet über
   `fetchServerStatus`; Bild-/LoRA-/TTS-Downloads laufen über `services/downloadTasks.ts`. Neue lange Vorgänge dort eintragen.
+- Prompt-Log: `send_chat_message` legt den gekürzten Prompt in `AppState.last_prompt` ab (`modules/prompt_log.rs`,
+  ohne API-Schlüssel); Anzeige `components/chat/PromptLogModal.tsx` über das Chat-Menü.
 - `<state>{…}</state>` am Antwortende aktualisiert HUD-Variablen (`utils/stateParser.ts`) und wird ausgeblendet.
 - Memory: `addManualMemory`, `addManualDiary`, `generateManualDiary` und `createMemoryBackup` geben Fehler an
   ihre Aufrufer weiter. Formulare müssen diese anzeigen; Eingaben erst nach erfolgreichem Speichern leeren.

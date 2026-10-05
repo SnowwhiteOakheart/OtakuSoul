@@ -213,6 +213,7 @@ pub fn run() {
             commands::llm::install_runtime,
             commands::chat::send_chat_message,
             commands::chat::abort_chat_generation,
+            commands::chat::get_last_prompt,
             commands::llm::load_character_card,
             commands::characters::load_lorebook,
             commands::lorebook::list_all_lorebooks,

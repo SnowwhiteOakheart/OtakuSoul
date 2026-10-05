@@ -49,6 +49,10 @@ pub async fn send_chat_message(
                 )
                 .await;
             request.messages = messages;
+            *state.last_prompt.lock() = Some(crate::modules::prompt_log::PromptLog::of(
+                &request,
+                usage.clone(),
+            ));
             let mut done = state
                 .inference_client
                 .stream_chat(&app, request, &generation_id)
@@ -65,6 +69,14 @@ pub async fn send_chat_message(
                 context: None,
             })
         })
+}
+
+/// What the chat model got last (after lorebooks, template and context trimming), for debugging.
+#[tauri::command]
+pub fn get_last_prompt(
+    state: State<'_, AppState>,
+) -> Option<crate::modules::prompt_log::PromptLog> {
+    state.last_prompt.lock().clone()
 }
 
 #[tauri::command]

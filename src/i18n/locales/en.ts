@@ -2494,4 +2494,13 @@ export const en: TranslationDictionary = {
   "int.imageBackend": "Images are drawn by: {{provider}}. Models, LoRAs and provider are set in the settings.",
   "int.imageOpenSettings": "Image settings",
   "backend.models.downloadCancelled": "Download cancelled.",
+  "promptLog.open": "Show last prompt",
+  "promptLog.title": "Last prompt sent",
+  "promptLog.copy": "Copy",
+  "promptLog.copied": "Prompt copied.",
+  "promptLog.empty": "No chat message has been sent in this session yet.",
+  "promptLog.loading": "Loading …",
+  "promptLog.noModel": "server's model",
+  "promptLog.tokens": "{{prompt}}/{{context}} tokens, {{dropped}} older messages left out",
+  "promptLog.sampling": "Sampler settings",
 };

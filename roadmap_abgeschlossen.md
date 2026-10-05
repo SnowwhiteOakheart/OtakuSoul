@@ -1700,4 +1700,8 @@ veraltet und sind korrigiert: `chat-sidebar-errors` las die Sitzung, bevor der e
 - [x] **Stage-Verlauf und laufende Runde abgestimmt:** Bearbeiten, Löschen, Rückgängig und Szene zurücksetzen nehmen die
   `stage_turn`-Sperre wie Runde, Neu-Generieren und Rast; während einer Runde lehnt das Backend sie mit
   `backend.stage.editorBusy` ab, und die Knöpfe im Verlauf sind gesperrt (Test `stageChatLogBusy.test.tsx`).
+- [x] **Prompt-Log:** Chat-Menü „…“ → „Letzten Prompt anzeigen“ zeigt, was das Chat-Modell zuletzt bekam (nach
+  Lorebooks, Vorlage, Author's Note und Kontextkürzung) mit Modell, Endpunkt, Tokens und Sampler; Kopieren als Text.
+  Nur im Speicher (`prompt_log.rs`, `get_last_prompt`), ohne API-Schlüssel, Anhänge nur als Namen
+  (E2E `prompt-log.mjs`, Screenshot 53).
 

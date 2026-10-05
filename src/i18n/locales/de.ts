@@ -2496,4 +2496,13 @@ export const de = {
   "int.imageBackend": "Bilder erzeugt: {{provider}}. Modelle, LoRAs und Anbieter stellst Du in den Einstellungen ein.",
   "int.imageOpenSettings": "Bild-Einstellungen",
   "backend.models.downloadCancelled": "Download abgebrochen.",
+  "promptLog.open": "Letzten Prompt anzeigen",
+  "promptLog.title": "Zuletzt gesendeter Prompt",
+  "promptLog.copy": "Kopieren",
+  "promptLog.copied": "Prompt kopiert.",
+  "promptLog.empty": "In dieser Sitzung wurde noch keine Chat-Nachricht gesendet.",
+  "promptLog.loading": "Lädt …",
+  "promptLog.noModel": "Modell des Servers",
+  "promptLog.tokens": "{{prompt}}/{{context}} Tokens, {{dropped}} ältere Nachrichten ausgelassen",
+  "promptLog.sampling": "Sampler-Einstellungen",
 } as const;

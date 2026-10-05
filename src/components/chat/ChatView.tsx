@@ -28,6 +28,7 @@ import {
   VolumeX,
   Rows3,
   MoreHorizontal,
+  FileText,
 } from 'lucide-react';
 import { DropdownMenu } from '../ui/DropdownMenu';
 import { usePersistentFlag } from '../../hooks/usePersistentFlag';
@@ -35,6 +36,7 @@ import { audioPlayer, gainFromVoiceVolume } from '../../services/audioPlayer';
 import { streamingTts } from '../../services/streamingTts';
 
 import { CharacterVoiceModal } from '../voice/CharacterVoiceModal';
+import { PromptLogModal } from './PromptLogModal';
 import { translate, useTranslation } from '../../i18n';
 import { confirmDialog } from '../ui/feedback';
 import { EmptyState } from '../ui/EmptyState';
@@ -99,6 +101,7 @@ export const ChatView: React.FC = () => {
     return () => window.removeEventListener('keydown', onKey);
   }, []);
   const [showVoiceModal, setShowVoiceModal] = useState(false);
+  const [showPromptLog, setShowPromptLog] = useState(false);
   const [isAudioSpeaking, setIsAudioSpeaking] = useState(false);
 
   const messagesEndRef = useRef<HTMLDivElement>(null);
@@ -378,6 +381,7 @@ export const ChatView: React.FC = () => {
             trigger={<MoreHorizontal className="w-3.5 h-3.5" />}
             items={[
               { label: t('chat.voiceTooltip'), icon: Volume2, onSelect: () => setShowVoiceModal(true) },
+              { label: t('promptLog.open'), icon: FileText, onSelect: () => setShowPromptLog(true) },
               ...(activeChatId ? [{ label: t('chat.deleteSession'), icon: Trash2, onSelect: () => void handleClearSession() }] : []),
             ]}
           />
@@ -530,6 +534,7 @@ export const ChatView: React.FC = () => {
       {showVoiceModal && (
         <CharacterVoiceModal onClose={() => setShowVoiceModal(false)} />
       )}
+      {showPromptLog && <PromptLogModal onClose={() => setShowPromptLog(false)} />}
     </div>
   );
 };

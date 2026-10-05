@@ -29,6 +29,7 @@ pub mod models_hub;
 pub mod paths;
 pub mod profile_backup;
 pub mod prompt_builder;
+pub mod prompt_log;
 pub mod providers;
 pub mod runtimes;
 pub mod secrets;

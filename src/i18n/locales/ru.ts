@@ -2494,4 +2494,13 @@ export const ru: TranslationDictionary = {
   "int.imageBackend": "Изображения создаёт: {{provider}}. Модели, LoRA и провайдер настраиваются в настройках.",
   "int.imageOpenSettings": "Настройки изображений",
   "backend.models.downloadCancelled": "Загрузка отменена.",
+  "promptLog.open": "Показать последний промпт",
+  "promptLog.title": "Последний отправленный промпт",
+  "promptLog.copy": "Копировать",
+  "promptLog.copied": "Промпт скопирован.",
+  "promptLog.empty": "В этой сессии ещё не отправлялось сообщений чата.",
+  "promptLog.loading": "Загрузка …",
+  "promptLog.noModel": "модель сервера",
+  "promptLog.tokens": "{{prompt}}/{{context}} токенов, пропущено старых сообщений: {{dropped}}",
+  "promptLog.sampling": "Настройки сэмплера",
 };
