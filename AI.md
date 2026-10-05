@@ -204,6 +204,9 @@ Einstellungen: `components/settings/sections/*` (Server inkl. Laufzeiten/`mmproj
 - Companion `execute_code`: nur mit `allow_code_execution` (Standard aus, Companion-Einstellungen werden nicht gespeichert
   → gilt bis Neustart); geprüft in `request_tool_call` und in `execute_internal_sync`. Neue Werkzeuge in
   `components/companion/toolEffects.ts` mit ihren Wirkungen eintragen (sonst „extern, unbekannt“).
+- Einrichtungsassistent: `components/onboarding/OnboardingParts.tsx` (Cloud-Test, lokaler Weg, erste Antwort) nutzt
+  `quick_reply` (eine kurze Antwort außerhalb eines Chats, 90 s) und `list_starter_models` (`models_hub::STARTERS`,
+  Empfehlung = größtes Modell, das in VRAM − 1,5 GB passt).
 - Befehlspalette: Einträge für Einstellungen/Optionen/Integrationen in `CommandPalette.tsx`; Optionen brauchen eine
   `id="setting-…"` und springen per `utils/revealSetting.ts`. `SettingsView` folgt `openSettingsSection` auch offen.
 - Companion-Tools: nur ausdrücklich geprüfte interne Tools in `companion.rs` → `tool_allows_auto_approval`

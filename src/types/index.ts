@@ -17,6 +17,8 @@ import type { ImageModelInfo } from './generated/ImageModelInfo';
 import type { ImagePromptRequest } from './generated/ImagePromptRequest';
 import type { ImageModelProgress } from './generated/ImageModelProgress';
 import type { LoraInfo } from './generated/LoraInfo';
+import type { QuickReplyRequest } from './generated/QuickReplyRequest';
+import type { StarterModel } from './generated/StarterModel';
 import type { LoraSelection } from './generated/LoraSelection';
 import type { LocalImageStatus } from './generated/LocalImageStatus';
 import type { VramPlan } from './generated/VramPlan';
@@ -88,6 +90,8 @@ export type {
   ImageModelProgress,
   LoraInfo,
   LoraSelection,
+  QuickReplyRequest,
+  StarterModel,
   ImagePromptRequest,
   TtsModelInfo,
   TtsModelProgress,

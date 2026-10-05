@@ -19,6 +19,7 @@ import { useTranslation, type SupportedLanguage, type TranslationKey } from '../
 import { ModalOverlay } from '../ui/ModalOverlay';
 import { APP_LANGUAGES, APP_THEMES } from '../settings/themes';
 import type { LlmProviderType } from '../../types';
+import { CloudConnectionTest, FirstReply, LocalModelSetup } from './OnboardingParts';
 
 const STEPS = ['welcome', 'model', 'character', 'done'] as const;
 type Step = (typeof STEPS)[number];
@@ -37,6 +38,7 @@ const CLOUD_PROVIDERS: { id: LlmProviderType; labelKey: TranslationKey }[] = [
   { id: 'deep_seek', labelKey: 'settings.providerDeepSeek' },
   { id: 'gemini', labelKey: 'settings.providerGemini' },
   { id: 'mistral', labelKey: 'settings.providerMistral' },
+  { id: 'custom', labelKey: 'settings.providerCustom' },
 ];
 
 const CHOICE_CARD =
@@ -72,6 +74,7 @@ export const FirstRunWizard: React.FC = () => {
       setCloudApiKey: s.setCloudApiKey,
       cloudModel: s.cloudModel,
       setCloudModel: s.setCloudModel,
+      cloudEndpoint: s.cloudEndpoint,
       availableCharacters: s.availableCharacters,
       activeCharacter: s.activeCharacter,
       selectCharacter: s.selectCharacter,
@@ -276,9 +279,10 @@ export const FirstRunWizard: React.FC = () => {
                 </button>
               </div>
 
-              {!isCloud &&
-                (hasLocalModel ? (
-                  <fieldset className="space-y-2">
+              {!isCloud && (
+                <>
+                  {hasLocalModel && (
+                    <fieldset className="space-y-2">
                     <legend className="mb-2 text-xs font-semibold uppercase tracking-wider text-slate-400">
                       {t('onboarding.installedModels')}
                     </legend>
@@ -302,18 +306,14 @@ export const FirstRunWizard: React.FC = () => {
                       </label>
                     ))}
                   </fieldset>
-                ) : (
-                  <div className="rounded-xl border border-amber-500/30 bg-amber-500/5 p-4 space-y-3">
-                    <div>
-                      <p className="text-sm font-semibold text-amber-200">{t('onboarding.noModelTitle')}</p>
-                      <p className="mt-1 text-xs text-slate-400">{t('onboarding.noModelText')}</p>
-                    </div>
-                    <button type="button" onClick={() => finish(() => store.openSettingsSection('hub'))} className={SECONDARY_BUTTON}>
-                      <Download className="h-4 w-4" />
-                      {t('onboarding.openModelHub')}
-                    </button>
-                  </div>
-                ))}
+                  )}
+                  <LocalModelSetup />
+                  <button type="button" onClick={() => finish(() => store.openSettingsSection('hub'))} className={SECONDARY_BUTTON}>
+                    <Download className="h-4 w-4" />
+                    {t('onboarding.openModelHub')}
+                  </button>
+                </>
+              )}
 
               {isCloud && (
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
@@ -363,6 +363,14 @@ export const FirstRunWizard: React.FC = () => {
                       {apiKeyDraft.trim() ? t('onboarding.apiKeyHint') : t('onboarding.apiKeyMissing')}
                     </p>
                   </div>
+                  {/* Remounted when the inputs change, so an old result doesn't stick to new values. */}
+                  <CloudConnectionTest
+                    key={`${store.cloudProvider}|${store.cloudEndpoint}|${apiKeyDraft}|${modelDraft}`}
+                    provider={store.cloudProvider}
+                    endpoint={store.cloudEndpoint}
+                    apiKey={apiKeyDraft}
+                    model={modelDraft}
+                  />
                 </div>
               )}
             </>
@@ -446,6 +454,10 @@ export const FirstRunWizard: React.FC = () => {
                   </div>
                 ))}
               </dl>
+
+              {store.activeCharacter && (isCloud ? store.cloudApiKey.trim() : localModel) && (
+                <FirstReply key={store.activeCharacter.id} character={store.activeCharacter} />
+              )}
 
               {!isCloud && localModel && (
                 <label className="flex items-center gap-2.5 text-sm text-slate-300 cursor-pointer">

@@ -95,6 +95,8 @@ import {
   ImageModelProgress,
   ImagePromptRequest,
   LoraInfo,
+  QuickReplyRequest,
+  StarterModel,
   TtsModelInfo,
   TtsModelProgress,
   TtsLocalSettings,
@@ -928,6 +930,16 @@ export const api = {
 
   getHfModelFiles: async (modelId: string): Promise<HfGgufFile[]> => {
     return await invoke<HfGgufFile[]>('get_hf_model_files', { modelId });
+  },
+
+  /** One short answer outside a chat (connection test, first reply in the setup wizard). */
+  quickReply: async (request: QuickReplyRequest): Promise<string> => {
+    return await invoke<string>('quick_reply', { request });
+  },
+
+  /** Chat models for getting started, with the recommendation for this GPU. */
+  listStarterModels: async (): Promise<StarterModel[]> => {
+    return await invoke<StarterModel[]>('list_starter_models');
   },
 
   downloadGgufModel: async (file: HfGgufFile): Promise<string> => {

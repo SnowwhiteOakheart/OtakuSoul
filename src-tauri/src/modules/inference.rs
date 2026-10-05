@@ -76,6 +76,19 @@ pub struct ChatRequest {
     pub provider: Option<crate::modules::providers::LlmProviderType>,
 }
 
+/// One short answer outside a chat: connection test and the first reply in the setup wizard.
+#[derive(Debug, Clone, Serialize, Deserialize, TS)]
+#[ts(export)]
+pub struct QuickReplyRequest {
+    pub endpoint_url: String,
+    pub api_key: Option<String>,
+    pub model: Option<String>,
+    pub provider: Option<crate::modules::providers::LlmProviderType>,
+    pub system: String,
+    pub user: String,
+    pub max_tokens: u32,
+}
+
 #[derive(Debug, Clone, Serialize, Deserialize, TS)]
 #[ts(export)]
 pub struct TokenEvent {

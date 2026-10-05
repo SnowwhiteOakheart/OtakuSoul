@@ -127,3 +127,51 @@ pub async fn install_runtime(
 ) -> Result<RuntimeInfo, String> {
     crate::modules::runtimes::install(&app, kind, &backend).await
 }
+
+/// A short answer without a chat (setup wizard: connection test, first reply). Bounded, so a
+/// wrong endpoint doesn't leave the wizard waiting.
+#[tauri::command]
+pub async fn quick_reply(
+    state: State<'_, AppState>,
+    request: crate::modules::inference::QuickReplyRequest,
+) -> Result<String, String> {
+    use crate::modules::inference::{ChatMessage, ChatRequest, SamplingParams};
+    let message = |role: &str, content: String| ChatMessage {
+        role: role.to_string(),
+        content,
+        attachments: Vec::new(),
+    };
+    let chat = ChatRequest {
+        endpoint_url: request.endpoint_url,
+        api_key: request.api_key,
+        model: request.model,
+        messages: vec![
+            message("system", request.system),
+            message("user", request.user),
+        ],
+        sampling: Some(SamplingParams {
+            max_tokens: Some(request.max_tokens),
+            ..SamplingParams::default()
+        }),
+        reasoning_mode: Some(false),
+        provider: request.provider,
+    };
+    match tokio::time::timeout(
+        std::time::Duration::from_secs(90),
+        state.inference_client.generate_direct(chat),
+    )
+    .await
+    {
+        Ok(Ok(text)) if text.trim().is_empty() => Err(crate::err!("backend.llm.emptyReply")),
+        Ok(result) => result,
+        Err(_) => Err(crate::err!("backend.llm.timeout", seconds = 90)),
+    }
+}
+
+/// Chat models for getting started, with the recommendation for this GPU.
+#[tauri::command]
+pub async fn list_starter_models() -> Vec<crate::modules::models_hub::StarterModel> {
+    tokio::task::spawn_blocking(crate::modules::models_hub::starter_models)
+        .await
+        .unwrap_or_default()
+}

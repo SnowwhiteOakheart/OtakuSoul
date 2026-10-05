@@ -84,10 +84,10 @@ Abnahme: Der Nutzer kann Herkunft und Änderungen einer Erinnerung nachvollziehe
 
 ## 6. Einstieg bis zur ersten Antwort
 
-- [ ] Cloud-Verbindung und Modell im Wizard tatsächlich testen.
-- [ ] Lokalen Modelldownload, Laufzeitinstallation und Serverstart durchgehend begleiten.
-- [ ] Hardwaregerechte Auswahl und verständliche Fehlerbehebung anbieten.
-- [ ] Mit einer erfolgreichen ersten Charakterantwort abschließen.
+- [x] Cloud-Verbindung und Modell im Wizard tatsächlich testen („Verbindung testen“ über `quick_reply`, 90 s Obergrenze).
+- [x] Lokalen Modelldownload, Laufzeitinstallation und Serverstart durchgehend begleiten (Laufzeitkarte und Einstiegsmodelle im Wizard; die erste Antwort startet den Server).
+- [x] Hardwaregerechte Auswahl und verständliche Fehlerbehebung anbieten (`models_hub::starter_models`: Qwen3 4B/8B, Mistral Nemo 12B, Mistral Small 24B mit SHA-256, Empfehlung nach VRAM; Fehler mit Ursache und Hinweis).
+- [x] Mit einer erfolgreichen ersten Charakterantwort abschließen (letzter Schritt holt eine echte Begrüßung des gewählten Charakters).
 
 Abnahme: Eine frische Installation führt ohne Suche in mehreren Einstellungsseiten zum funktionierenden Chat.
 

@@ -193,6 +193,8 @@ pub fn run() {
             commands::llm::get_hardware_info,
             commands::llm::get_layer_recommendation,
             commands::llm::start_llama_server,
+            commands::llm::quick_reply,
+            commands::llm::list_starter_models,
             commands::llm::stop_llama_server,
             commands::llm::get_llama_server_status,
             commands::llm::get_runtime,

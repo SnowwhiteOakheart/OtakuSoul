@@ -32,6 +32,11 @@ beforeEach(() => {
     scannedModels: [model],
     availableCharacters: [character],
   });
+  // The local path shows the runtime card and the starter models.
+  vi.mocked(api.getRuntime).mockResolvedValue(null);
+  vi.mocked(api.listRuntimeVariants).mockResolvedValue([]);
+  vi.mocked(api.onRuntimeProgress).mockResolvedValue(() => {});
+  vi.mocked(api.listStarterModels).mockResolvedValue([]);
 });
 
 const next = () => screen.getByRole('button', { name: /Next/ });
