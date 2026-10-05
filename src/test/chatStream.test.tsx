@@ -35,7 +35,7 @@ async function mount() {
   await waitFor(() => expect(api.onLlmDone).toHaveBeenCalled());
   return view;
 }
-const completed = (id = 'new'): DoneEvent => ({ generation_id: id, full_text: 'Finished', full_thought: '' });
+const completed = (id = 'new'): DoneEvent => ({ generation_id: id, full_text: 'Finished', full_thought: '', aborted: false });
 describe('native chat stream identity', () => {
   it('accepts matching text and thoughts and ignores old native events in the same chat', async () => {
     await mount();

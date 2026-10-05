@@ -5,4 +5,8 @@ export type DoneEvent = { generation_id: string, full_text: string, full_thought
 /**
  * How full the context window was; only for chat messages from the UI.
  */
-context?: ContextUsage, };
+context?: ContextUsage, 
+/**
+ * Stopped by the user; `full_text` holds what arrived until then.
+ */
+aborted: boolean, };

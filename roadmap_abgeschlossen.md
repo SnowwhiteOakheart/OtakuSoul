@@ -1707,4 +1707,8 @@ veraltet und sind korrigiert: `chat-sidebar-errors` las die Sitzung, bevor der e
 - [x] **Entwürfe überleben Neustarts (Composer, Chat-Seitenleiste):** Der Composer hält seinen Text je Chat
   (`utils/drafts.ts`, localStorage dieses Geräts; Dateien nicht), Notiz- und Zusammenfassungsentwürfe der Seitenleiste
   ebenso. Erfolgreiches Senden bzw. Speichern entfernt den Entwurf. Tests setzen `localStorage` je Test zurück.
+- [x] **Abgebrochene Antworten fortsetzen:** `send_chat_message` umschließt nur noch die Vorbereitung mit `with_abort`;
+  das Streaming endet bei Stopp selbst und liefert den bisherigen Text mit `DoneEvent.aborted`. Senden, Neu-Generieren
+  und Fortsetzen speichern diesen Teiltext (solange der Chat offen ist), sodass „Weiter“ an der Abbruchstelle ansetzt;
+  ohne Text wird nichts gespeichert (Unit-Tests, E2E `partial-reply.mjs` mit Mock-Option `stallChatAfter`, Screenshot 54).
 

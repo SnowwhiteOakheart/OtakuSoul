@@ -172,7 +172,8 @@ Hub). Integrationen → Bildgenerierung enthält nur Studio und Galerie.
   offen, die fällige Faktenprüfung behält ihren Zähler für die nächste Runde. Ein bereits gesetzter
   Stage-Abbruch startet keine Faktenprüfung und erhöht deren Zähler nicht.
 - Backend-Abbruch: `with_abort` beendet wartende asynchrone Vorbereitung, HTTP-Header und SSE-Lesen über
-  ein Watch-Signal. `send_chat_message` setzt den Merker vor der Vorbereitung zurück, `stream_chat` nicht erneut.
+  ein Watch-Signal. Im Chat umschließt `with_abort` nur die Vorbereitung; der Stream endet bei Stopp selbst und
+  liefert den Teiltext mit `DoneEvent.aborted`, den das Frontend (`keepsPartial`) als Antwort speichert. `send_chat_message` setzt den Merker vor der Vorbereitung zurück, `stream_chat` nicht erneut.
   Eine neue Runde setzt nur den Merker zurück; der Signalzähler lässt alte Wartevorgänge abgebrochen.
   Synchrone Datei-/SQLite-Vorgänge und direkte interne `generate_direct`-Aufrufe werden dadurch nicht abgebrochen.
 - Nachrichten bearbeiten: `editChatMessage` gibt Schreibfehler weiter; der Inline-Editor schließt erst nach Erfolg.

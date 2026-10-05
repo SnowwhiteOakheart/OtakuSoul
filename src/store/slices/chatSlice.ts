@@ -6,6 +6,7 @@ import { extractStateUpdates, applyStateUpdates } from '../../utils/stateParser'
 import { HUD_PRESETS } from '../../constants/hudPresets';
 import { APP_LANGUAGE_NAMES, llmTarget, resolvePromptWithLore } from '../helpers';
 import type {
+  DoneEvent,
   AssembledPrompt,
   Attachment,
   CharacterProfile,
@@ -158,6 +159,9 @@ export const createChatSlice: SliceCreator<ChatSlice> = (set, get) => {
     generationSessionRequest === sessionRequest && get().activeChatId === chatId && get().activeCharacter?.id === charId;
   const inContext = (chatId: string, charId: string | undefined) =>
     !cancelled && isCurrentContext(chatId, charId);
+  /** A reply the user stopped keeps the text so far (and can be continued) while its chat stays open. */
+  const keepsPartial = (done: DoneEvent, chatId: string, charId: string | undefined) =>
+    cancelled && done.aborted && done.full_text.trim() !== '' && isCurrentContext(chatId, charId);
   const finishGeneration = async () => {
     if (abortPending) await abortPending.catch(() => {});
     generationPreparation = null;
@@ -571,7 +575,7 @@ export const createChatSlice: SliceCreator<ChatSlice> = (set, get) => {
           ...sampling,
         },
       }, generationId, selectedBackend === 'cloud' ? get().cloudContextTokens : undefined);
-      if (!inContext(activeChatId, activeCharacter.id)) return;
+      if (!inContext(activeChatId, activeCharacter.id) && !keepsPartial(done, activeChatId, activeCharacter.id)) return;
 
       const { cleanedText, stateUpdates } = extractStateUpdates(done.full_text);
 
@@ -665,7 +669,7 @@ export const createChatSlice: SliceCreator<ChatSlice> = (set, get) => {
           ...sampling,
         },
       }, generationId, selectedBackend === 'cloud' ? get().cloudContextTokens : undefined);
-      if (!inContext(activeChatId, activeCharacter.id)) return;
+      if (!inContext(activeChatId, activeCharacter.id) && !keepsPartial(done, activeChatId, activeCharacter.id)) return;
 
       const { cleanedText, stateUpdates } = extractStateUpdates(done.full_text);
 
@@ -844,7 +848,7 @@ export const createChatSlice: SliceCreator<ChatSlice> = (set, get) => {
           ...sampling,
         },
       }, generationId, selectedBackend === 'cloud' ? get().cloudContextTokens : undefined);
-      if (!inContext(chatId, activeCharacter?.id)) return;
+      if (!inContext(chatId, activeCharacter?.id) && !keepsPartial(done, chatId, activeCharacter?.id)) return;
 
       // 4. Parse <state> tags
       const { cleanedText, stateUpdates } = extractStateUpdates(done.full_text);

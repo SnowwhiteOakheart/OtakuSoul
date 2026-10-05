@@ -18,7 +18,7 @@ const character = { id: 'ayu', card: { data: { name: 'Ayu' } } } as CharacterPro
 const message: StoredChatMessage = { id: 'user-1', chat_id: 'chat-1', role: 'user', content: 'Hello', thought: null, order_index: 0, swipe_index: 0, swipes: [{ content: 'Hello', thought: null }], created_at: 0, attachments: [] };
 const reply: StoredChatMessage = { ...message, id: 'reply-1', role: 'assistant', content: 'Welcome', order_index: 1 };
 const prompt = { system: 'System', post_history: '' } as AssembledPrompt;
-const done = { generation_id: 'test-generation', full_text: 'Welcome', full_thought: '' };
+const done = { generation_id: 'test-generation', full_text: 'Welcome', full_thought: '', aborted: false };
 beforeEach(() => {
   resetApiMocks();
   useAppStore.setState({ ...initial, appLanguage: 'en', activeCharacter: character, activeChatId: 'chat-1', autoReflectionEnabled: false }, true);
@@ -161,6 +161,28 @@ describe('chat generation failures', () => {
     await pending;
     expect(api.addChatMessage).toHaveBeenCalledOnce();
     expect(useAppStore.getState().isGenerating).toBe(false);
+  });
+  it('keeps the text of a reply stopped mid-stream, so it can be continued', async () => {
+    let finish!: (value: typeof done) => void;
+    vi.mocked(api.sendChatMessage).mockImplementationOnce(() => new Promise((resolve) => { finish = resolve; }));
+    const pending = useAppStore.getState().sendMessage('Hello');
+    await waitFor(() => expect(api.sendChatMessage).toHaveBeenCalledOnce());
+    await useAppStore.getState().abortGeneration();
+    finish({ ...done, full_text: 'Welcome to the', aborted: true });
+    await pending;
+    expect(api.addChatMessage).toHaveBeenLastCalledWith(expect.anything(), 'assistant', 'Welcome to the', null);
+    expect(useAppStore.getState().storedMessages.at(-1)).toBe(reply);
+    expect(useAppStore.getState().isGenerating).toBe(false);
+  });
+  it('stores nothing when a reply is stopped before any text arrived', async () => {
+    let finish!: (value: typeof done) => void;
+    vi.mocked(api.sendChatMessage).mockImplementationOnce(() => new Promise((resolve) => { finish = resolve; }));
+    const pending = useAppStore.getState().sendMessage('Hello');
+    await waitFor(() => expect(api.sendChatMessage).toHaveBeenCalledOnce());
+    await useAppStore.getState().abortGeneration();
+    finish({ ...done, full_text: '  ', aborted: true });
+    await pending;
+    expect(api.addChatMessage).toHaveBeenCalledOnce();
   });
   it('ends prompt preparation immediately and ignores its late result after a new request', async () => {
     let finish!: (value: AssembledPrompt) => void;

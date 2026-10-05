@@ -12,7 +12,6 @@
 
 Aus den Arbeitsprotokollen der Qualitäts-Roadmap; größere Pakete, jeweils mit eigenen Tests.
 
-- [ ] **Abgebrochene Antworten fortsetzen:** Eine per Stopp beendete Antwort gezielt an der Abbruchstelle weiterführen.
 - [ ] **Dauerhafte Entwurfssicherung im Memory-Drawer:** Composer und Chat-Seitenleiste sichern ihre Entwürfe bereits
   über Neustarts; die Entwürfe im Memory-Drawer (Psychologie, Beziehung, Markdown) überleben noch keinen Neustart.
 - [ ] **Atomare Reflexion:** Die mehrstufige Memory-Reflexion speichert frühe Änderungen auch, wenn ein späterer Schritt

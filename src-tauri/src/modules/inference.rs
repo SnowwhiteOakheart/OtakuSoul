@@ -113,6 +113,9 @@ pub struct DoneEvent {
     #[serde(default)]
     #[ts(optional)]
     pub context: Option<crate::modules::context_window::ContextUsage>,
+    /// Stopped by the user; `full_text` holds what arrived until then.
+    #[serde(default)]
+    pub aborted: bool,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize, TS)]
@@ -329,6 +332,7 @@ impl InferenceClient {
             full_text,
             full_thought,
             context: None,
+            aborted: self.is_aborted(),
         };
 
         let _ = app_handle.emit("llm-done", done_event.clone());
@@ -690,6 +694,7 @@ mod tests {
             full_text: "Hello".into(),
             full_thought: "Thinking".into(),
             context: None,
+            aborted: false,
         };
         for event in [
             serde_json::to_value(token).unwrap(),

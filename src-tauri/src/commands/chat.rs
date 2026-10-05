@@ -20,7 +20,16 @@ pub async fn send_chat_message(
         .try_lock()
         .map_err(|_| crate::err!("backend.chat.generationBusy"))?;
     state.inference_client.reset_abort();
-    state
+    let aborted = |generation_id: String| DoneEvent {
+        generation_id,
+        full_text: String::new(),
+        full_thought: String::new(),
+        context: None,
+        aborted: true,
+    };
+    // Preparation stops at once on abort. Streaming is not wrapped here: it ends on abort by
+    // itself and returns the text so far, which the chat keeps (and can continue).
+    let prepared = state
         .inference_client
         .with_abort(async {
             // A local llama-server reports its own context size and counts exactly; cloud models use
@@ -53,22 +62,21 @@ pub async fn send_chat_message(
                 &request,
                 usage.clone(),
             ));
-            let mut done = state
-                .inference_client
-                .stream_chat(&app, request, &generation_id)
-                .await?;
-            done.context = usage;
-            Ok(done)
+            (request, usage)
         })
-        .await
-        .unwrap_or_else(|| {
-            Ok(DoneEvent {
-                generation_id,
-                full_text: String::new(),
-                full_thought: String::new(),
-                context: None,
-            })
-        })
+        .await;
+    let Some((request, usage)) = prepared else {
+        return Ok(aborted(generation_id));
+    };
+    if state.inference_client.is_aborted() {
+        return Ok(aborted(generation_id));
+    }
+    let mut done = state
+        .inference_client
+        .stream_chat(&app, request, &generation_id)
+        .await?;
+    done.context = usage;
+    Ok(done)
 }
 
 /// What the chat model got last (after lorebooks, template and context trimming), for debugging.

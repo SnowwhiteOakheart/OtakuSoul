@@ -150,8 +150,12 @@ export function startMockLlm() {
       // A few chunks, like a real stream; the Stage narrator slowly, so live text can be observed.
       const pieces = text.match(/.{1,40}/gs) ?? [];
       const delay = isNarrator ? 250 : 0;
+      // `stallChatAfter`: a chat reply stops after that many pieces and hangs (user presses stop).
+      const stallAfter = isChat && Number.isInteger(stats.stallChatAfter) ? stats.stallChatAfter : null;
+      if (stallAfter !== null) res.on('close', () => { stats.cancelledChat = (stats.cancelledChat ?? 0) + 1; });
       (async () => {
-        for (const piece of pieces) {
+        for (const [index, piece] of pieces.entries()) {
+          if (stallAfter !== null && index >= stallAfter) return;
           res.write(`data: ${JSON.stringify({ choices: [{ delta: { content: piece } }] })}\n\n`);
           if (delay) await new Promise((r) => setTimeout(r, delay));
         }
