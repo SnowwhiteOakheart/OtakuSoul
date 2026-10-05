@@ -1722,4 +1722,6 @@ veraltet und sind korrigiert: `chat-sidebar-errors` las die Sitzung, bevor der e
   (ältere Builds gehen); die Laufzeitkarte bietet „Zu bXXXX zurück“, das tauscht aktuellen und vorherigen Build
   (gilt ab dem nächsten Serverstart). Neuinstallation desselben Builds behält den vorherigen
   (Tests `keeps_the_previous_build_for_a_rollback`, `runtimeCard.test.tsx`).
+- [x] **Xvfb für E2E eingerichtet** (`xorg-server-xvfb` 21.1.24): `xvfb-run -a` startet, Rauchtest und Layout-Test
+  bestehen darunter (Standardbildschirm 640×480 und `-s "-screen 0 1920x1080x24"`), WebGL-Avatar rendert.
 

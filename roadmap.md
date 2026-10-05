@@ -46,4 +46,3 @@ Aus den Arbeitsprotokollen der Qualitäts-Roadmap; größere Pakete, jeweils mit
 - [ ] Command-Wrapper in `api.ts` typsicher erzeugen, sobald `tauri-specta` eine stabile 2.0 hat.
 - [ ] Wackelige E2E-Tests beobachten: `chat-sidebar-errors` scheiterte einmal an einem Entwurfsvergleich,
   `character-import` einmal beim Aufräumen des Testordners (`ENOTEMPTY`); beide bestanden danach wiederholt.
-- [ ] Xvfb für E2E auf diesem Rechner nicht installiert (`xvfb-run` fehlt); bei gesperrtem Desktop nötig (siehe AI.md).
