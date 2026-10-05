@@ -8,7 +8,7 @@
 </p>
 
 <p align="center">
-  <a href="https://github.com/SnowwhiteOakheart/OtakuSoul"><img alt="Version" src="https://img.shields.io/badge/OtakuSoul-v0.2.0-8b5cf6?style=for-the-badge&logo=sparkles&logoColor=white" /></a>
+  <a href="https://github.com/SnowwhiteOakheart/OtakuSoul"><img alt="Version" src="https://img.shields.io/badge/OtakuSoul-v0.3.0-8b5cf6?style=for-the-badge&logo=sparkles&logoColor=white" /></a>
   <img alt="Tauri 2" src="https://img.shields.io/badge/Tauri-2-24c8db?style=for-the-badge&logo=tauri&logoColor=white" />
   <img alt="Rust" src="https://img.shields.io/badge/Rust-native-b7410e?style=for-the-badge&logo=rust&logoColor=white" />
   <img alt="React 19" src="https://img.shields.io/badge/React-19-149eca?style=for-the-badge&logo=react&logoColor=white" />
@@ -269,7 +269,7 @@ OtakuSoul bietet für alle gängigen Betriebssysteme native Installer:
   Installiert OtakuSoul nach `~/.local/bin/otakusoul`, richtet das hochauflösende App-Icon ein und erstellt den Menüeintrag im Desktop-Starter (GNOME, KDE, XFCE).
 * **Debian / Ubuntu:**
   ```bash
-  sudo dpkg -i OtakuSoul_0.2.0_amd64.deb
+  sudo dpkg -i OtakuSoul_0.3.0_amd64.deb
   ```
 * **Arch Linux (AUR):**
   ```bash
@@ -277,7 +277,7 @@ OtakuSoul bietet für alle gängigen Betriebssysteme native Installer:
   ```
 * **Portables AppImage:**
   ```bash
-  chmod +x OtakuSoul_0.2.0_amd64.AppImage && ./OtakuSoul_0.2.0_amd64.AppImage
+  chmod +x OtakuSoul_0.3.0_amd64.AppImage && ./OtakuSoul_0.3.0_amd64.AppImage
   ```
 
 ### 🪟 Windows (10 / 11)
@@ -286,7 +286,7 @@ OtakuSoul bietet für alle gängigen Betriebssysteme native Installer:
   powershell -ExecutionPolicy Bypass -File .\install.ps1
   ```
   Installiert OtakuSoul nach `%LOCALAPPDATA%\Programs\OtakuSoul\`, erstellt Startmenü- und Desktop-Icons und bietet den Sofortstart an.
-* **Grafisches NSIS-Setup:** Führe einfach `OtakuSoul_0.2.0_x64-setup.exe` aus.
+* **Grafisches NSIS-Setup:** Führe einfach `OtakuSoul_0.3.0_x64-setup.exe` aus.
 
 ### 🍏 macOS (Apple Silicon & Intel)
 * **Terminal-Installer:**
@@ -294,7 +294,7 @@ OtakuSoul bietet für alle gängigen Betriebssysteme native Installer:
   chmod +x install-macos.sh && ./install-macos.sh
   ```
   Kopiert die App nach `/Applications`, entfernt Gatekeeper-Quarantäne-Flags und verknüpft sie mit Spotlight und Launchpad.
-* **DMG-Image:** Öffne `OtakuSoul_0.2.0_universal.dmg` und ziehe OtakuSoul in deinen Programme-Ordner.
+* **DMG-Image:** Öffne `OtakuSoul_0.3.0_universal.dmg` und ziehe OtakuSoul in deinen Programme-Ordner.
 
 ---
 

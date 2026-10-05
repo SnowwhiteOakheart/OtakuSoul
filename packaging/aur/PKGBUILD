@@ -1,6 +1,6 @@
 # Maintainer: SnowwhiteOakheart <snowwhiteoakheart@gmail.com>
 pkgname=otakusoul-bin
-pkgver=0.2.0
+pkgver=0.3.0
 pkgrel=1
 pkgdesc="AI-powered anime companion and visual novel roleplay studio with local llama.cpp acceleration"
 arch=('x86_64')
