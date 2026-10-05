@@ -15,8 +15,6 @@ Aus den Arbeitsprotokollen der Qualitäts-Roadmap; größere Pakete, jeweils mit
 - [ ] **Abgebrochene Antworten fortsetzen:** Eine per Stopp beendete Antwort gezielt an der Abbruchstelle weiterführen.
 - [ ] **Dauerhafte Entwurfssicherung:** Entwürfe in Composer, Chat-Seitenleiste und Memory-Drawer überleben bisher
   Reiterwechsel, aber keinen Neustart der App.
-- [ ] **Stage-Verlauf und laufende Runde abstimmen:** Bearbeiten/Löschen im Stage-Verlauf während einer laufenden Runde
-  koordinieren (Zusammenfassungen, NPC-Erinnerungen).
 - [ ] **Atomare Reflexion:** Die mehrstufige Memory-Reflexion speichert frühe Änderungen auch, wenn ein späterer Schritt
   scheitert (Hinweis auf den Snapshot ist vorhanden).
 - [ ] **„Rückgängig“-Toast** bei destruktiven Aktionen statt nur Bestätigungsdialog.

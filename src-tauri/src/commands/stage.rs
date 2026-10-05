@@ -208,6 +208,11 @@ pub fn stage_reset_scene(
     state: State<'_, AppState>,
     scene_id: String,
 ) -> Result<crate::modules::stage::SceneState, String> {
+    // History changes during a running turn would race with it (summaries, NPC memories).
+    let _turn = state
+        .stage_turn
+        .try_lock()
+        .map_err(|_| crate::err!("backend.stage.editorBusy"))?;
     let res = crate::modules::stage::reset_stage_scene(&scene_id)?;
     state.stage_engine.set_state(res.clone());
     Ok(res)
@@ -220,6 +225,11 @@ pub fn stage_edit_message(
     message_id: String,
     new_content: String,
 ) -> Result<crate::modules::stage::SceneState, String> {
+    // History changes during a running turn would race with it (summaries, NPC memories).
+    let _turn = state
+        .stage_turn
+        .try_lock()
+        .map_err(|_| crate::err!("backend.stage.editorBusy"))?;
     crate::modules::stage::edit_stage_turn_message(
         &state.stage_engine,
         &scene_id,
@@ -234,6 +244,11 @@ pub fn stage_delete_message(
     scene_id: String,
     message_id: String,
 ) -> Result<crate::modules::stage::SceneState, String> {
+    // History changes during a running turn would race with it (summaries, NPC memories).
+    let _turn = state
+        .stage_turn
+        .try_lock()
+        .map_err(|_| crate::err!("backend.stage.editorBusy"))?;
     crate::modules::stage::delete_stage_turn_message(&state.stage_engine, &scene_id, &message_id)
 }
 
@@ -360,6 +375,11 @@ pub fn undo_stage_turn(
     state: State<'_, AppState>,
     scene_id: String,
 ) -> Result<crate::modules::stage::SceneState, String> {
+    // History changes during a running turn would race with it (summaries, NPC memories).
+    let _turn = state
+        .stage_turn
+        .try_lock()
+        .map_err(|_| crate::err!("backend.stage.editorBusy"))?;
     state.stage_engine.undo_turn(&scene_id)
 }
 

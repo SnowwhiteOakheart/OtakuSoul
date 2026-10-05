@@ -227,27 +227,30 @@ export const StageChatLog: React.FC = () => {
                 {translateButton(msg, 'w-3.5 h-3.5')}
                 <button
                   onClick={() => handleStartEdit(msg.id, msg.content)}
+                  disabled={isProcessingStageTurn}
                   title={t('stage.editMessage')}
                   aria-label={t('stage.editMessage')}
-                  className="p-1 rounded-lg text-slate-400 hover:text-accent-300 hover:bg-slate-800 transition"
+                  className="p-1 rounded-lg text-slate-400 hover:text-accent-300 hover:bg-slate-800 transition disabled:opacity-40 disabled:cursor-not-allowed"
                 >
                   <Edit3 className="w-3.5 h-3.5" />
                 </button>
                 {isLastMessage && (
                   <button
                     onClick={handleRegenerate}
+                  disabled={isProcessingStageTurn}
                     title={t('stage.regenerateTurn')}
                     aria-label={t('stage.regenerateTurn')}
-                    className="p-1 rounded-lg text-slate-400 hover:text-amber-300 hover:bg-slate-800 transition"
+                    className="p-1 rounded-lg text-slate-400 hover:text-amber-300 hover:bg-slate-800 transition disabled:opacity-40 disabled:cursor-not-allowed"
                   >
                     <RotateCcw className="w-3.5 h-3.5" />
                   </button>
                 )}
                 <button
                   onClick={() => handleDeleteMessage(msg.id)}
+                  disabled={isProcessingStageTurn}
                   title={t('stage.deleteMessage')}
                   aria-label={t('stage.deleteMessage')}
-                  className="p-1 rounded-lg text-slate-400 hover:text-rose-400 hover:bg-slate-800 transition"
+                  className="p-1 rounded-lg text-slate-400 hover:text-rose-400 hover:bg-slate-800 transition disabled:opacity-40 disabled:cursor-not-allowed"
                 >
                   <Trash2 className="w-3.5 h-3.5" />
                 </button>
@@ -289,7 +292,8 @@ export const StageChatLog: React.FC = () => {
                     </button>
                     <button
                       onClick={() => handleSaveEdit(msg.id)}
-                      className="px-3 py-1 rounded-lg bg-accent-600 hover:bg-accent-500 text-white text-xs font-semibold flex items-center gap-1 transition"
+                  disabled={isProcessingStageTurn}
+                      className="px-3 py-1 rounded-lg bg-accent-600 hover:bg-accent-500 text-white text-xs font-semibold flex items-center gap-1 transition disabled:opacity-40 disabled:cursor-not-allowed"
                     >
                       <Check className="w-3 h-3" /> {t('stage.save')}
                     </button>
@@ -350,27 +354,30 @@ export const StageChatLog: React.FC = () => {
                 {!isPlayer && translateButton(msg, 'w-3 h-3')}
                 <button
                   onClick={() => handleStartEdit(msg.id, msg.content)}
+                  disabled={isProcessingStageTurn}
                   title={t('stage.editMessage')}
                   aria-label={t('stage.editMessage')}
-                  className="p-1 rounded-lg text-slate-400 hover:text-accent-300 hover:bg-slate-800 transition"
+                  className="p-1 rounded-lg text-slate-400 hover:text-accent-300 hover:bg-slate-800 transition disabled:opacity-40 disabled:cursor-not-allowed"
                 >
                   <Edit3 className="w-3 h-3" />
                 </button>
                 {isLastMessage && (
                   <button
                     onClick={handleRegenerate}
+                  disabled={isProcessingStageTurn}
                     title={t('stage.regenerateTurn')}
                     aria-label={t('stage.regenerateTurn')}
-                    className="p-1 rounded-lg text-slate-400 hover:text-amber-300 hover:bg-slate-800 transition"
+                    className="p-1 rounded-lg text-slate-400 hover:text-amber-300 hover:bg-slate-800 transition disabled:opacity-40 disabled:cursor-not-allowed"
                   >
                     <RotateCcw className="w-3 h-3" />
                   </button>
                 )}
                 <button
                   onClick={() => handleDeleteMessage(msg.id)}
+                  disabled={isProcessingStageTurn}
                   title={t('stage.deleteMessage')}
                   aria-label={t('stage.deleteMessage')}
-                  className="p-1 rounded-lg text-slate-400 hover:text-rose-400 hover:bg-slate-800 transition"
+                  className="p-1 rounded-lg text-slate-400 hover:text-rose-400 hover:bg-slate-800 transition disabled:opacity-40 disabled:cursor-not-allowed"
                 >
                   <Trash2 className="w-3 h-3" />
                 </button>
@@ -394,7 +401,8 @@ export const StageChatLog: React.FC = () => {
                     </button>
                     <button
                       onClick={() => handleSaveEdit(msg.id)}
-                      className="px-3 py-1 rounded-lg bg-accent-600 hover:bg-accent-500 text-white text-xs font-semibold flex items-center gap-1 transition"
+                  disabled={isProcessingStageTurn}
+                      className="px-3 py-1 rounded-lg bg-accent-600 hover:bg-accent-500 text-white text-xs font-semibold flex items-center gap-1 transition disabled:opacity-40 disabled:cursor-not-allowed"
                     >
                       <Check className="w-3 h-3" /> {t('stage.save')}
                     </button>

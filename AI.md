@@ -161,6 +161,7 @@ Hub). Integrationen → Bildgenerierung enthält nur Studio und Galerie.
   `AppState.chat_generation`; Stage-Runde, Neu-Generieren und Rast teilen `AppState.stage_turn`.
   `try_lock` lehnt zusätzliche Aufrufe vor Abbruch-Reset oder Zustandsänderungen mit übersetzbarem Fehler ab.
   Die Guards bleiben bis zum Command-Ende bestehen und werden auch bei Fehler/Abbruch freigegeben.
+  Stage-Verlaufsänderungen (Bearbeiten, Löschen, Rückgängig, Zurücksetzen) nehmen ebenfalls `stage_turn`.
   Direkte interne Generierungen und andere Stage-Editor-/Navigationsbefehle nutzen diese Sperren nicht.
 - Stage-Planungsabbruch: `history::prepare` liefert bei Abbruch `None` und umfasst Kontextzählung,
   Kontextanpassung und interne Zusammenfassung. Der Planer-Aufruf liegt ebenfalls in `with_abort`.

@@ -1697,4 +1697,7 @@ veraltet und sind korrigiert: `chat-sidebar-errors` las die Sitzung, bevor der e
   Sie laufen jetzt per `spawn_blocking`. Dabei aufgedeckt und behoben: Ein vor dem Laden der Einstellungen gestarteter
   Charakter-Scan konnte nach dem Laden den ersten Charakter statt des zuletzt geöffneten wählen
   (`refreshCharacters` merkt sich, ob die Einstellungen beim Start bekannt waren; Test `startupCharacter.test.ts`).
+- [x] **Stage-Verlauf und laufende Runde abgestimmt:** Bearbeiten, Löschen, Rückgängig und Szene zurücksetzen nehmen die
+  `stage_turn`-Sperre wie Runde, Neu-Generieren und Rast; während einer Runde lehnt das Backend sie mit
+  `backend.stage.editorBusy` ab, und die Knöpfe im Verlauf sind gesperrt (Test `stageChatLogBusy.test.tsx`).
 
