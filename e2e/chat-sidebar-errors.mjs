@@ -26,6 +26,8 @@ try {
   const toggle = browser.$('button[title^="Gespräche, Author"]');
   await toggle.waitForDisplayed({ timeout: 20_000 });
   await toggle.click();
+  // The first chat is created a moment after the window appears.
+  await browser.waitUntil(() => sql('SELECT count(*) FROM chat_sessions;') !== '0', { timeout: 15_000, timeoutMsg: 'Kein Chat angelegt' });
   const original = row();
   const sidebar = browser.$('aside[aria-label="Gespräche"]');
   await browser.waitUntil(async () => {

@@ -643,3 +643,9 @@ Aus den offenen Grenzen der Protokolle umgesetzt:
 Weiter offen (eigene Punkte bei Bedarf): Wiederaufnahme abgebrochener Antworten, dauerhafte
 Entwurfssicherung über Neustarts, Koordination von Stage-Verlaufsänderungen mit laufenden Runden,
 atomare Reflexion, mehrstufiger Chat-Import ohne gemeinsame Transaktion.
+
+Vollständige E2E-Suite (ohne Xvfb, auf dem Desktop): alle Szenarien bestehen. Zwei Tests waren
+veraltet und sind korrigiert: `chat-sidebar-errors` las die Sitzung, bevor der erste Chat angelegt war
+(der erste Chat entsteht einige Sekunden nach dem Fenster, auch mit dem alten Ablauf), und
+`startup-character` fand über die CSS-Klasse den Cloud-Modellnamen im Kopf statt des Charakternamens.
+`chat-sidebar-errors` scheiterte einmal einmalig an einem Entwurfsvergleich und bestand danach dreimal.

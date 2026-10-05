@@ -7,7 +7,7 @@ import { launch } from './harness.mjs';
 const { browser, close } = await launch({ active_character_id: 'yue' });
 // oxlint-disable-next-line no-underscore-dangle -- Tauri IPC in a disposable profile
 const invoke = (command, args = {}) => browser.execute((cmd, payload) => window.__TAURI_INTERNALS__.invoke(cmd, payload), command, args);
-const shownName = () => browser.execute(() => document.querySelector('span.truncate.max-w-48')?.textContent ?? null);
+const shownName = () => browser.execute(() => document.querySelector('button[aria-label="Charakter wechseln"] span.truncate')?.textContent ?? null);
 
 /** Every name the chat header shows while the interface starts. */
 const namesWhileStarting = async () => {
