@@ -49,6 +49,22 @@ describe('chat session loading', () => {
     expect(useAppStore.getState().chatLoadError).toBeNull();
     expect(useAppStore.getState().storedMessages).toEqual([other]);
   });
+  it('keeps each chat its own composer draft, also across a restart', async () => {
+    const user = userEvent.setup();
+    const first = render(<ChatComposer />);
+    await user.type(screen.getByRole('textbox'), 'Für den ersten Chat');
+    vi.mocked(api.getChatMessages).mockResolvedValueOnce([other]);
+    await useAppStore.getState().switchChatSession('chat-2');
+    await waitFor(() => expect(screen.getByRole('textbox')).toHaveValue(''));
+    await user.type(screen.getByRole('textbox'), 'Zweiter');
+    await useAppStore.getState().switchChatSession('chat-1');
+    await waitFor(() => expect(screen.getByRole('textbox')).toHaveValue('Für den ersten Chat'));
+
+    // A restart mounts the composer anew; the draft comes back from the device.
+    first.unmount();
+    render(<ChatComposer />);
+    expect(screen.getByRole('textbox')).toHaveValue('Für den ersten Chat');
+  });
   it('shows load errors, blocks sending and retains the composer draft through retry', async () => {
     render(<ChatComposer />);
     const user = userEvent.setup();

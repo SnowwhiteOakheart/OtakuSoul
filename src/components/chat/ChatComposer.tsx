@@ -7,6 +7,7 @@ import { VoiceCallControls } from '../voice/VoiceCallControls';
 import { toast } from '../ui/feedback';
 import { errorMessage } from '../../utils/errors';
 import type { ContextUsage } from '../../types';
+import { readDraft, writeDraft } from '../../utils/drafts';
 
 /**
  * Message input with send/abort, voice controls and the context meter. Owns the draft so
@@ -21,7 +22,19 @@ export const ChatComposer: React.FC = () => {
     'sendMessage', 'isGenerating', 'abortGeneration', 'activeVoiceConfig', 'setAutoTtsEnabled', 'contextUsage',
     'selectedBackend', 'serverConfig', 'generationFailure', 'retryGeneration', 'activeChatId', 'isChatLoading', 'chatLoadError', 'retryChatLoad',
   );
-  const [input, setInput] = useState('');
+  // The text of each chat survives switching chats and restarts (files don't).
+  const draftKey = activeChatId ? `composer:${activeChatId}` : null;
+  const [input, setInput] = useState(() => (draftKey ? readDraft(draftKey) ?? '' : ''));
+  const [shownKey, setShownKey] = useState(draftKey);
+  if (shownKey !== draftKey) {
+    // Another chat: show its draft; text typed before any chat was open moves along.
+    setShownKey(draftKey);
+    const stored = draftKey ? readDraft(draftKey) : null;
+    if (stored !== null || shownKey !== null) setInput(stored ?? '');
+  }
+  useEffect(() => {
+    if (shownKey) writeDraft(shownKey, input);
+  }, [shownKey, input]);
   const [files, setFiles] = useState<File[]>([]);
   const fileInput = useRef<HTMLInputElement>(null);
 

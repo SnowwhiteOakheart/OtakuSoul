@@ -1704,4 +1704,7 @@ veraltet und sind korrigiert: `chat-sidebar-errors` las die Sitzung, bevor der e
   Lorebooks, Vorlage, Author's Note und Kontextkürzung) mit Modell, Endpunkt, Tokens und Sampler; Kopieren als Text.
   Nur im Speicher (`prompt_log.rs`, `get_last_prompt`), ohne API-Schlüssel, Anhänge nur als Namen
   (E2E `prompt-log.mjs`, Screenshot 53).
+- [x] **Entwürfe überleben Neustarts (Composer, Chat-Seitenleiste):** Der Composer hält seinen Text je Chat
+  (`utils/drafts.ts`, localStorage dieses Geräts; Dateien nicht), Notiz- und Zusammenfassungsentwürfe der Seitenleiste
+  ebenso. Erfolgreiches Senden bzw. Speichern entfernt den Entwurf. Tests setzen `localStorage` je Test zurück.
 

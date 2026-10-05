@@ -1,4 +1,5 @@
 import React, { useEffect, useRef, useState } from 'react';
+import { readDraft, writeDraft } from '../../utils/drafts';
 import { useAppStore, useStoreFields } from '../../store/useAppStore';
 import { HUD_PRESETS } from '../../constants/hudPresets';
 import {
@@ -22,6 +23,17 @@ interface ChatSidebarProps {
   isOpen: boolean;
   onClose: () => void;
 }
+
+type SidebarDrafts = Record<string, { note?: { text: string; depth: number }; summary?: string }>;
+
+const readSidebarDrafts = (): SidebarDrafts => {
+  try {
+    const parsed: unknown = JSON.parse(readDraft('sidebar') ?? '{}');
+    return parsed && typeof parsed === 'object' ? (parsed as SidebarDrafts) : {};
+  } catch {
+    return {};
+  }
+};
 
 export const ChatSidebar: React.FC<ChatSidebarProps> = ({ isOpen, onClose }) => {
   const { t, tPlural } = useTranslation();
@@ -53,7 +65,9 @@ export const ChatSidebar: React.FC<ChatSidebarProps> = ({ isOpen, onClose }) => 
 
   const [editingChatId, setEditingChatId] = useState<string | null>(null);
   const [editTitle, setEditTitle] = useState('');
-  const [drafts, setDrafts] = useState<Record<string, { note?: { text: string; depth: number }; summary?: string }>>({});
+  // Unsaved notes and summaries per chat; kept on this device across restarts.
+  const [drafts, setDrafts] = useState<SidebarDrafts>(readSidebarDrafts);
+  useEffect(() => writeDraft('sidebar', Object.keys(drafts).length > 0 ? JSON.stringify(drafts) : ''), [drafts]);
   const [activeTab, setActiveTab] = useState<'chats' | 'author_note' | 'presets'>('chats');
   const [isImporting, setIsImporting] = useState(false);
   const pending = useRef(new Set<string>());

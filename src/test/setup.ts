@@ -12,6 +12,8 @@ afterEach(async () => {
   if (typeof document === 'undefined') return;
   const { cleanup } = await import('@testing-library/react');
   cleanup();
+  // Drafts and view preferences live in localStorage; each test starts without them.
+  localStorage.clear();
 });
 
 // Mock react-virtual for unit tests since jsdom has no layout engine
