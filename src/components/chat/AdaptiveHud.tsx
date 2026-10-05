@@ -1,5 +1,4 @@
-import { useState } from 'react';
-import { useStoreFields } from '../../store/useAppStore';
+import { useAppStore, useStoreFields } from '../../store/useAppStore';
 import { Heart, Zap, Smile, Users, ChevronDown, BookOpen, Brain, Sparkles, Camera, Loader2 } from 'lucide-react';
 import { CognitiveMemoryDrawer } from './CognitiveMemoryDrawer';
 import { translate, useTranslation } from '../../i18n';
@@ -28,7 +27,8 @@ export const AdaptiveHud = () => {
   );
 
   const { t, currentLanguage } = useTranslation();
-  const [showMemoryDrawer, setShowMemoryDrawer] = useState(false);
+  const showMemoryDrawer = useAppStore((s) => s.isMemoryDrawerOpen);
+  const setShowMemoryDrawer = useAppStore((s) => s.setMemoryDrawerOpen);
 
   const handleGenerateSituationalImage = async () => {
     try {

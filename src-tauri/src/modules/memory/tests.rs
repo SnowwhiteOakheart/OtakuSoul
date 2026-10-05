@@ -781,3 +781,95 @@ fn branching_copies_the_history_up_to_a_message() {
     let early = db.branch_chat(&chat.id, &msgs[0].id, "Früh").unwrap();
     assert_eq!((early.summary.as_str(), early.summary_until), ("", -1));
 }
+
+#[test]
+fn memories_keep_their_source_history_and_review_flag() {
+    let db = MemoryDb::new_in_memory().unwrap();
+    let chat = db.create_chat_session("ayu", "Test").unwrap();
+    let m1 = db
+        .add_chat_message(&chat.id, "user", "Ich heiße Hiroki.", None, &[])
+        .unwrap();
+    let m2 = db
+        .add_chat_message(&chat.id, "assistant", "Schön!", None, &[])
+        .unwrap();
+    let ids = vec![m1.id.clone(), m2.id.clone()];
+    let learned = db
+        .add_episodic_memory_from(
+            "ayu",
+            "fact",
+            "Der Nutzer heißt Hiroki",
+            3,
+            &MemorySource {
+                origin: "auto",
+                chat_id: Some(&chat.id),
+                message_ids: &ids,
+            },
+        )
+        .unwrap();
+    let manual = db
+        .add_episodic_memory_from(
+            "ayu",
+            "secret",
+            "Mag Gewitter nicht",
+            2,
+            &MemorySource::manual(),
+        )
+        .unwrap();
+
+    let find = |id: i64| {
+        db.get_episodic_memories("ayu", 10)
+            .unwrap()
+            .into_iter()
+            .find(|m| m.id == id)
+            .unwrap()
+    };
+    let auto = find(learned);
+    assert_eq!(
+        (auto.origin.as_str(), auto.source_chat_id.as_deref()),
+        ("auto", Some(chat.id.as_str()))
+    );
+    assert_eq!(auto.source_message_ids, ids);
+    assert_eq!(find(manual).origin, "manual");
+    assert_eq!(db.count_memories_from_message(&chat.id, &m1.id).unwrap(), 1);
+
+    // Pinned memories come first, even with low significance.
+    db.set_episodic_memory_pinned("ayu", manual, true).unwrap();
+    assert_eq!(db.get_episodic_memories("ayu", 10).unwrap()[0].id, manual);
+
+    // Editing the source message flags the memory for review.
+    db.update_chat_message(&m1.id, "Ich heiße Kenji.", None)
+        .unwrap();
+    assert!(find(learned).needs_review);
+
+    // The user corrects it: confirmed, flag gone.
+    db.update_episodic_memory("ayu", learned, "fact", "Der Nutzer heißt Kenji", 4)
+        .unwrap();
+    let edited = find(learned);
+    assert_eq!(
+        (
+            edited.origin.as_str(),
+            edited.needs_review,
+            edited.content.as_str()
+        ),
+        ("edited", false, "Der Nutzer heißt Kenji")
+    );
+
+    // Forgetting removes it; the history tells the whole story.
+    db.forget_episodic_memory("ayu", learned).unwrap();
+    assert!(
+        db.get_episodic_memories("ayu", 10)
+            .unwrap()
+            .iter()
+            .all(|m| m.id != learned)
+    );
+    let actions: Vec<_> = db
+        .get_memory_history("ayu", learned)
+        .unwrap()
+        .into_iter()
+        .map(|c| c.action)
+        .collect();
+    assert_eq!(
+        actions,
+        ["created", "source_changed", "edited", "forgotten"]
+    );
+}

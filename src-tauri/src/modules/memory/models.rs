@@ -83,6 +83,33 @@ pub struct EpisodicMemory {
     pub significance: u32, // 1..5
     pub created_at: u64,
     pub last_accessed_at: u64,
+    /// Chat the memory was learned from, if any.
+    #[serde(default)]
+    pub source_chat_id: Option<String>,
+    /// Messages of that chat it was learned from.
+    #[serde(default)]
+    pub source_message_ids: Vec<String>,
+    /// `auto` (derived by the model), `manual` (added by the user), `edited` (corrected by the
+    /// user, so confirmed) or empty for memories from before sources were kept.
+    #[serde(default)]
+    pub origin: String,
+    /// Always part of the memory context and never changed automatically.
+    #[serde(default)]
+    pub pinned: bool,
+    /// A source message was edited or deleted since; the user should check it.
+    #[serde(default)]
+    pub needs_review: bool,
+}
+
+/// One change of an episodic memory, for its history.
+#[derive(Debug, Clone, Serialize, Deserialize, TS)]
+#[ts(export)]
+pub struct MemoryChange {
+    /// `created`, `edited`, `forgotten`, `pinned`, `unpinned`, `confirmed`, `source_changed`.
+    pub action: String,
+    pub content_before: String,
+    pub content_after: String,
+    pub at: u64,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize, TS)]

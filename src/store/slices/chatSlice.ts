@@ -114,6 +114,24 @@ const withoutStaleSummary = (sessions: ChatSession[], message: StoredChatMessage
     s.id === message.chat_id && s.summary_until >= message.order_index ? { ...s, summary: '', summary_until: -1 } : s,
   );
 
+/**
+ * After the user changed or deleted a message: if the character learned memories from it, say
+ * so and offer to check them (they are flagged in the memory drawer).
+ */
+const hintMemorySources = async (chatId: string, messageId: string, openDrawer: () => void) => {
+  try {
+    const count = await api.countMemoriesFromMessage(chatId, messageId);
+    if (count > 0) {
+      toast.info(translate(count === 1 ? 'memory.sourceChangedOne' : 'memory.sourceChangedMany', { count }), {
+        label: translate('memory.review'),
+        onClick: openDrawer,
+      });
+    }
+  } catch {
+    // only a hint
+  }
+};
+
 /** Summarize once this many conversation messages have left the context window. */
 const SUMMARY_BATCH = 6;
 
@@ -448,6 +466,7 @@ export const createChatSlice: SliceCreator<ChatSlice> = (set, get) => {
     try {
       const updated = await api.updateChatMessage(msgId, newContent);
       set((state) => ({ chatSessions: withoutStaleSummary(state.chatSessions, updated) }));
+      void hintMemorySources(updated.chat_id, msgId, () => get().setMemoryDrawerOpen(true));
       if (get().activeChatId !== chatId) return;
       set((state) => {
         const stored = state.storedMessages.map((m) => (m.id === msgId ? updated : m));
@@ -465,7 +484,9 @@ export const createChatSlice: SliceCreator<ChatSlice> = (set, get) => {
 
   deleteChatMessage: async (msgId: string) => {
     try {
+      const chatOfMessage = get().activeChatId;
       await api.deleteChatMessage(msgId);
+      if (chatOfMessage) void hintMemorySources(chatOfMessage, msgId, () => get().setMemoryDrawerOpen(true));
       set((state) => {
         const stored = state.storedMessages.filter((m) => m.id !== msgId);
         const flat: ChatMessage[] = stored.map(toFlat);

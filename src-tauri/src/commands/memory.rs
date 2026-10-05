@@ -50,7 +50,90 @@ pub fn add_episodic_memory(
 ) -> Result<i64, String> {
     state
         .memory_db
-        .add_episodic_memory(&char_id, &category, &content, significance)
+        .add_episodic_memory_from(
+            &char_id,
+            &category,
+            &content,
+            significance,
+            &crate::modules::memory::MemorySource::manual(),
+        )
+        .map_err(|e| e.to_string())
+}
+
+#[tauri::command]
+pub fn update_episodic_memory(
+    state: State<'_, AppState>,
+    char_id: String,
+    id: i64,
+    category: String,
+    content: String,
+    significance: u32,
+) -> Result<(), String> {
+    state
+        .memory_db
+        .update_episodic_memory(&char_id, id, &category, &content, significance)
+        .map_err(|e| e.to_string())
+}
+
+#[tauri::command]
+pub fn forget_episodic_memory(
+    state: State<'_, AppState>,
+    char_id: String,
+    id: i64,
+) -> Result<(), String> {
+    state
+        .memory_db
+        .forget_episodic_memory(&char_id, id)
+        .map_err(|e| e.to_string())
+}
+
+#[tauri::command]
+pub fn set_episodic_memory_pinned(
+    state: State<'_, AppState>,
+    char_id: String,
+    id: i64,
+    pinned: bool,
+) -> Result<(), String> {
+    state
+        .memory_db
+        .set_episodic_memory_pinned(&char_id, id, pinned)
+        .map_err(|e| e.to_string())
+}
+
+#[tauri::command]
+pub fn confirm_episodic_memory(
+    state: State<'_, AppState>,
+    char_id: String,
+    id: i64,
+) -> Result<(), String> {
+    state
+        .memory_db
+        .confirm_episodic_memory(&char_id, id)
+        .map_err(|e| e.to_string())
+}
+
+#[tauri::command]
+pub fn get_memory_history(
+    state: State<'_, AppState>,
+    char_id: String,
+    id: i64,
+) -> Result<Vec<crate::modules::memory::MemoryChange>, String> {
+    state
+        .memory_db
+        .get_memory_history(&char_id, id)
+        .map_err(|e| e.to_string())
+}
+
+/// How many memories were learned from this message (hint after changing it).
+#[tauri::command]
+pub fn count_memories_from_message(
+    state: State<'_, AppState>,
+    chat_id: String,
+    message_id: String,
+) -> Result<usize, String> {
+    state
+        .memory_db
+        .count_memories_from_message(&chat_id, &message_id)
         .map_err(|e| e.to_string())
 }
 

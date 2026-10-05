@@ -35,6 +35,15 @@ export interface MemorySlice {
   updatePsychology: (psych: PsychologyState) => Promise<void>;
   updateRelationship: (rel: RelationshipState) => Promise<void>;
   addManualMemory: (category: string, content: string, significance: number) => Promise<void>;
+  /** Corrects a memory; it counts as confirmed afterwards. */
+  editMemory: (id: number, category: string, content: string, significance: number) => Promise<void>;
+  forgetMemory: (id: number) => Promise<void>;
+  setMemoryPinned: (id: number, pinned: boolean) => Promise<void>;
+  /** Keeps a memory whose source message changed. */
+  confirmMemory: (id: number) => Promise<void>;
+  /** The memory drawer of the chat HUD; in the store so a hint elsewhere can open it. */
+  isMemoryDrawerOpen: boolean;
+  setMemoryDrawerOpen: (open: boolean) => void;
   addManualDiary: (title: string, entryText: string, mood: string) => Promise<void>;
   triggerEmotionalDecay: () => Promise<void>;
   triggerMemoryPipeline: (recentTurns?: number) => Promise<SoulMemoryPipelineResult | null>;
@@ -156,6 +165,38 @@ export const createMemorySlice: SliceCreator<MemorySlice> = (set, get) => {
         throw e;
       }
     },
+
+    editMemory: async (id, category, content, significance) => {
+      const cid = get().activeCharacter?.id;
+      if (!cid) throw new Error(translate('int.noCharacter'));
+      await api.updateEpisodicMemory(cid, id, category, content, significance);
+      await get().fetchCognitiveOverview();
+    },
+
+    forgetMemory: async (id) => {
+      const cid = get().activeCharacter?.id;
+      if (!cid) throw new Error(translate('int.noCharacter'));
+      await api.forgetEpisodicMemory(cid, id);
+      await get().fetchCognitiveOverview();
+    },
+
+    setMemoryPinned: async (id, pinned) => {
+      const cid = get().activeCharacter?.id;
+      if (!cid) throw new Error(translate('int.noCharacter'));
+      await api.setEpisodicMemoryPinned(cid, id, pinned);
+      await get().fetchCognitiveOverview();
+    },
+
+    confirmMemory: async (id) => {
+      const cid = get().activeCharacter?.id;
+      if (!cid) throw new Error(translate('int.noCharacter'));
+      await api.confirmEpisodicMemory(cid, id);
+      await get().fetchCognitiveOverview();
+    },
+
+    isMemoryDrawerOpen: false,
+
+    setMemoryDrawerOpen: (isMemoryDrawerOpen) => set({ isMemoryDrawerOpen }),
 
     addManualDiary: async (title, entryText, mood) => {
       const cid = get().activeCharacter?.id;

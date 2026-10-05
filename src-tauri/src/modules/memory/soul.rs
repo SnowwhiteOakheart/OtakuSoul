@@ -225,6 +225,7 @@ impl MemoryDb {
     }
 
     // --- Episodic Memory ---
+    /// Adds a memory derived by the model (no source). See [`Self::add_episodic_memory_from`].
     pub fn add_episodic_memory(
         &self,
         char_id: &str,
@@ -232,8 +233,33 @@ impl MemoryDb {
         content: &str,
         significance: u32,
     ) -> Result<i64, rusqlite::Error> {
+        self.add_episodic_memory_from(
+            char_id,
+            category,
+            content,
+            significance,
+            &MemorySource::auto(),
+        )
+    }
+
+    /// Adds a memory with where it comes from. The same text again only raises its significance.
+    pub fn add_episodic_memory_from(
+        &self,
+        char_id: &str,
+        category: &str,
+        content: &str,
+        significance: u32,
+        source: &MemorySource<'_>,
+    ) -> Result<i64, rusqlite::Error> {
         let conn = self.conn.lock();
-        Self::add_episodic_memory_on(&conn, char_id, category, content, significance)
+        Self::add_episodic_memory_sourced_on(
+            &conn,
+            char_id,
+            category,
+            content,
+            significance,
+            source,
+        )
     }
 
     pub(super) fn add_episodic_memory_on(
@@ -242,6 +268,24 @@ impl MemoryDb {
         category: &str,
         content: &str,
         significance: u32,
+    ) -> Result<i64, rusqlite::Error> {
+        Self::add_episodic_memory_sourced_on(
+            conn,
+            char_id,
+            category,
+            content,
+            significance,
+            &MemorySource::auto(),
+        )
+    }
+
+    fn add_episodic_memory_sourced_on(
+        conn: &Connection,
+        char_id: &str,
+        category: &str,
+        content: &str,
+        significance: u32,
+        source: &MemorySource<'_>,
     ) -> Result<i64, rusqlite::Error> {
         let now = current_timestamp();
 
@@ -263,12 +307,24 @@ impl MemoryDb {
         }
 
         conn.execute(
-            "INSERT INTO soul_episodic_memory (character_id, category, content, significance, created_at, last_accessed_at)
-             VALUES (?1, ?2, ?3, ?4, ?5, ?6)",
-            params![char_id, category, trimmed, significance, now, now],
+            "INSERT INTO soul_episodic_memory (character_id, category, content, significance, created_at, last_accessed_at,
+                                               source_chat_id, source_message_ids, origin)
+             VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?7, ?8, ?9)",
+            params![
+                char_id,
+                category,
+                trimmed,
+                significance,
+                now,
+                now,
+                source.chat_id,
+                serde_json::to_string(source.message_ids).unwrap_or_else(|_| "[]".into()),
+                source.origin
+            ],
         )?;
-
-        Ok(conn.last_insert_rowid())
+        let id = conn.last_insert_rowid();
+        log_memory_change(conn, id, char_id, "created", "", trimmed)?;
+        Ok(id)
     }
 
     pub fn get_episodic_memories(
@@ -277,9 +333,12 @@ impl MemoryDb {
         limit: usize,
     ) -> Result<Vec<EpisodicMemory>, rusqlite::Error> {
         let conn = self.conn.lock();
+        // Pinned memories always come first, so they are in every memory context.
         let mut stmt = conn.prepare(
-            "SELECT id, category, content, significance, created_at, last_accessed_at
-             FROM soul_episodic_memory WHERE character_id = ?1 ORDER BY significance DESC, created_at DESC, id DESC LIMIT ?2",
+            "SELECT id, category, content, significance, created_at, last_accessed_at,
+                    source_chat_id, source_message_ids, origin, pinned, needs_review
+             FROM soul_episodic_memory WHERE character_id = ?1
+             ORDER BY pinned DESC, significance DESC, created_at DESC, id DESC LIMIT ?2",
         )?;
 
         let rows = stmt.query_map(params![char_id, limit as i64], |row| {
@@ -290,6 +349,12 @@ impl MemoryDb {
                 significance: row.get(3)?,
                 created_at: row.get(4)?,
                 last_accessed_at: row.get(5)?,
+                source_chat_id: row.get(6)?,
+                source_message_ids: serde_json::from_str(&row.get::<_, String>(7)?)
+                    .unwrap_or_default(),
+                origin: row.get(8)?,
+                pinned: row.get(9)?,
+                needs_review: row.get(10)?,
             })
         })?;
 
@@ -298,6 +363,106 @@ impl MemoryDb {
             memories.push(r?);
         }
         Ok(memories)
+    }
+
+    /// The user corrects a memory: it counts as confirmed from now on.
+    pub fn update_episodic_memory(
+        &self,
+        char_id: &str,
+        id: i64,
+        category: &str,
+        content: &str,
+        significance: u32,
+    ) -> Result<(), rusqlite::Error> {
+        let conn = self.conn.lock();
+        let before = memory_content(&conn, char_id, id)?;
+        conn.execute(
+            "UPDATE soul_episodic_memory SET category = ?1, content = ?2, significance = ?3, origin = 'edited', needs_review = 0
+             WHERE id = ?4 AND character_id = ?5",
+            params![category, content.trim(), significance, id, char_id],
+        )?;
+        log_memory_change(&conn, id, char_id, "edited", &before, content.trim())
+    }
+
+    /// The character forgets this memory; the history keeps what it was.
+    pub fn forget_episodic_memory(&self, char_id: &str, id: i64) -> Result<(), rusqlite::Error> {
+        let conn = self.conn.lock();
+        let before = memory_content(&conn, char_id, id)?;
+        conn.execute(
+            "DELETE FROM soul_episodic_memory WHERE id = ?1 AND character_id = ?2",
+            params![id, char_id],
+        )?;
+        log_memory_change(&conn, id, char_id, "forgotten", &before, "")
+    }
+
+    pub fn set_episodic_memory_pinned(
+        &self,
+        char_id: &str,
+        id: i64,
+        pinned: bool,
+    ) -> Result<(), rusqlite::Error> {
+        let conn = self.conn.lock();
+        let content = memory_content(&conn, char_id, id)?;
+        conn.execute(
+            "UPDATE soul_episodic_memory SET pinned = ?1 WHERE id = ?2 AND character_id = ?3",
+            params![pinned, id, char_id],
+        )?;
+        log_memory_change(
+            &conn,
+            id,
+            char_id,
+            if pinned { "pinned" } else { "unpinned" },
+            &content,
+            &content,
+        )
+    }
+
+    /// The user checked a memory whose source changed and keeps it as it is.
+    pub fn confirm_episodic_memory(&self, char_id: &str, id: i64) -> Result<(), rusqlite::Error> {
+        let conn = self.conn.lock();
+        let content = memory_content(&conn, char_id, id)?;
+        conn.execute(
+            "UPDATE soul_episodic_memory SET needs_review = 0 WHERE id = ?1 AND character_id = ?2",
+            params![id, char_id],
+        )?;
+        log_memory_change(&conn, id, char_id, "confirmed", &content, &content)
+    }
+
+    /// Changes of one memory, oldest first.
+    pub fn get_memory_history(
+        &self,
+        char_id: &str,
+        id: i64,
+    ) -> Result<Vec<MemoryChange>, rusqlite::Error> {
+        let conn = self.conn.lock();
+        let mut stmt = conn.prepare(
+            "SELECT action, content_before, content_after, at FROM soul_memory_history
+             WHERE memory_id = ?1 AND character_id = ?2 ORDER BY id ASC",
+        )?;
+        let rows = stmt.query_map(params![id, char_id], |row| {
+            Ok(MemoryChange {
+                action: row.get(0)?,
+                content_before: row.get(1)?,
+                content_after: row.get(2)?,
+                at: row.get(3)?,
+            })
+        })?;
+        rows.collect()
+    }
+
+    /// Number of memories learned from this message (for the hint after changing it).
+    pub fn count_memories_from_message(
+        &self,
+        chat_id: &str,
+        message_id: &str,
+    ) -> Result<usize, rusqlite::Error> {
+        let conn = self.conn.lock();
+        let count: i64 = conn.query_row(
+            "SELECT COUNT(*) FROM soul_episodic_memory WHERE source_chat_id = ?1 AND source_message_ids LIKE ?2",
+            params![chat_id, format!("%\"{message_id}\"%")],
+            |row| row.get(0),
+        )?;
+        Ok(count as usize)
     }
 
     // --- Diary ---
@@ -451,4 +616,83 @@ impl MemoryDb {
             healing_logs,
         })
     }
+}
+
+/// Where a new episodic memory comes from.
+pub struct MemorySource<'a> {
+    /// `auto` (derived by the model) or `manual` (added by the user).
+    pub origin: &'a str,
+    pub chat_id: Option<&'a str>,
+    pub message_ids: &'a [String],
+}
+
+impl MemorySource<'_> {
+    pub fn auto() -> Self {
+        MemorySource {
+            origin: "auto",
+            chat_id: None,
+            message_ids: &[],
+        }
+    }
+
+    pub fn manual() -> Self {
+        MemorySource {
+            origin: "manual",
+            ..Self::auto()
+        }
+    }
+}
+
+fn memory_content(conn: &Connection, char_id: &str, id: i64) -> Result<String, rusqlite::Error> {
+    conn.query_row(
+        "SELECT content FROM soul_episodic_memory WHERE id = ?1 AND character_id = ?2",
+        params![id, char_id],
+        |row| row.get(0),
+    )
+}
+
+fn log_memory_change(
+    conn: &Connection,
+    memory_id: i64,
+    char_id: &str,
+    action: &str,
+    before: &str,
+    after: &str,
+) -> Result<(), rusqlite::Error> {
+    conn.execute(
+        "INSERT INTO soul_memory_history (memory_id, character_id, action, content_before, content_after, at)
+         VALUES (?1, ?2, ?3, ?4, ?5, ?6)",
+        params![memory_id, char_id, action, before, after, current_timestamp()],
+    )?;
+    Ok(())
+}
+
+/// A source message changed (edit, other variant, deleted): memories learned from it are
+/// flagged for the user to check, and the change goes into their history.
+pub(super) fn flag_memories_from_messages(
+    conn: &Connection,
+    chat_id: &str,
+    message_ids: &[String],
+) -> Result<(), rusqlite::Error> {
+    for message_id in message_ids {
+        let pattern = format!("%\"{message_id}\"%");
+        let affected: Vec<(i64, String, String)> = {
+            let mut stmt = conn.prepare(
+                "SELECT id, character_id, content FROM soul_episodic_memory
+                 WHERE source_chat_id = ?1 AND source_message_ids LIKE ?2 AND needs_review = 0",
+            )?;
+            stmt.query_map(params![chat_id, pattern], |row| {
+                Ok((row.get(0)?, row.get(1)?, row.get(2)?))
+            })?
+            .collect::<Result<_, _>>()?
+        };
+        for (id, char_id, content) in affected {
+            conn.execute(
+                "UPDATE soul_episodic_memory SET needs_review = 1 WHERE id = ?1",
+                params![id],
+            )?;
+            log_memory_change(conn, id, &char_id, "source_changed", &content, &content)?;
+        }
+    }
+    Ok(())
 }

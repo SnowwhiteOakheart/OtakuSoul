@@ -8,6 +8,7 @@ pub(super) const MIGRATIONS: &[fn(&Connection) -> rusqlite::Result<()>] = &[
     migrate_v1_baseline,
     migrate_v2_chat_summary_attachments,
     migrate_v3_chat_bookmarks,
+    migrate_v4_memory_sources,
 ];
 
 /// Brings the database to the latest schema, one transaction per step. A database written by a
@@ -183,6 +184,46 @@ pub(super) fn migrate_v3_chat_bookmarks(conn: &Connection) -> rusqlite::Result<(
             created_at INTEGER NOT NULL
         );
         CREATE INDEX IF NOT EXISTS idx_chat_bookmarks_chat ON chat_bookmarks(chat_id);",
+    )
+}
+
+const MEMORY_SOURCE_COLUMNS: [(&str, &str); 5] = [
+    ("source_chat_id", "TEXT"),
+    ("source_message_ids", "TEXT NOT NULL DEFAULT '[]'"),
+    // '' = from before v4 (unknown), 'auto', 'manual', 'edited'
+    ("origin", "TEXT NOT NULL DEFAULT ''"),
+    ("pinned", "INTEGER NOT NULL DEFAULT 0"),
+    ("needs_review", "INTEGER NOT NULL DEFAULT 0"),
+];
+
+/// v4: where an episodic memory comes from (chat and messages, auto/manual/edited), pinned
+/// memories, a review flag when a source message changed, and a change history.
+pub(super) fn migrate_v4_memory_sources(conn: &Connection) -> rusqlite::Result<()> {
+    // Created by v1; only partial test databases lack it.
+    let has_memories: bool = conn.query_row(
+        "SELECT EXISTS(SELECT 1 FROM sqlite_master WHERE type = 'table' AND name = 'soul_episodic_memory')",
+        [],
+        |row| row.get(0),
+    )?;
+    let columns: &[(&str, &str)] = if has_memories {
+        &MEMORY_SOURCE_COLUMNS
+    } else {
+        &[]
+    };
+    for &(column, definition) in columns {
+        add_column_if_missing(conn, "soul_episodic_memory", column, definition)?;
+    }
+    conn.execute_batch(
+        "CREATE TABLE IF NOT EXISTS soul_memory_history (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            memory_id INTEGER NOT NULL,
+            character_id TEXT NOT NULL,
+            action TEXT NOT NULL,
+            content_before TEXT NOT NULL DEFAULT '',
+            content_after TEXT NOT NULL DEFAULT '',
+            at INTEGER NOT NULL
+        );
+        CREATE INDEX IF NOT EXISTS idx_memory_history ON soul_memory_history(memory_id);",
     )
 }
 

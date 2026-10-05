@@ -49,6 +49,7 @@ import type { DiscordBotConfig } from './generated/DiscordBotConfig';
 import type { DoneEvent } from './generated/DoneEvent';
 import type { EmotionState } from './generated/EmotionState';
 import type { EpisodicMemory } from './generated/EpisodicMemory';
+import type { MemoryChange } from './generated/MemoryChange';
 import type { GatewayCharacterEntry } from './generated/GatewayCharacterEntry';
 import type { GatewayLorebookEntry } from './generated/GatewayLorebookEntry';
 import type { GatewaySceneEntry } from './generated/GatewaySceneEntry';
@@ -130,6 +131,7 @@ export type {
   DoneEvent,
   EmotionState,
   EpisodicMemory,
+  MemoryChange,
   GatewayCharacterEntry,
   GatewayLorebookEntry,
   GatewaySceneEntry,

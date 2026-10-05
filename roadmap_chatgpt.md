@@ -64,21 +64,21 @@ Abnahme: Kein Fehler lässt den Chat dauerhaft beschäftigt zurück; Wiederholen
 ## 4. Konsistenz nach Verlaufsänderungen
 
 - [x] Zusammenfassungen nach Bearbeiten, Löschen und Swipe-Wechsel gezielt verwerfen oder neu erstellen (`discard_stale_summary`: Änderung im zusammengefassten Teil verwirft sie, sie entsteht beim nächsten Überlauf neu).
-- [ ] Aus geänderten Nachrichten abgeleitete Erinnerungen erkennen und abgleichen. *(Zusammen mit Abschnitt 5 umsetzen: braucht die Quellverknüpfung.)*
-- [ ] Auswirkungen einer Verlaufsänderung auf die Figur verständlich anzeigen.
+- [x] Aus geänderten Nachrichten abgeleitete Erinnerungen erkennen und abgleichen (Bearbeiten, Variante, Löschen markieren sie `needs_review`; Prüfen per „Passt so“, Korrigieren oder Vergessen).
+- [x] Auswirkungen einer Verlaufsänderung auf die Figur verständlich anzeigen (Hinweis nach Bearbeiten/Löschen mit Anzahl und „Prüfen“, der den Memory-Drawer öffnet).
 - [x] Regressionstests für korrigierte und entfernte Ereignisse ergänzen (Rust: alle Änderungswege; Store: Bearbeiten/Swipe).
 
 Abnahme: Entfernte oder ersetzte Ereignisse gelangen nicht über veraltete Zusammenfassungen erneut in den Prompt.
 
 ## 5. Soul Memory nachvollziehbar korrigieren
 
-- [ ] Erinnerungen mit Ursprungsunterhaltung und Quellnachrichten verknüpfen.
+- [x] Erinnerungen mit Ursprungsunterhaltung und Quellnachrichten verknüpfen (Migration v4; die Pipeline speichert Chat und Nachrichten, „Quelle“ springt dorthin).
   *Neuzuschnitt (04.10.):* In Etappen. Zuerst Bearbeiten/Vergessen einzelner Erinnerungen samt Quelle (Chat,
   Nachricht), dann Schutz wichtiger Erinnerungen; Tatsache/Deutung und Änderungshistorie zuletzt.
-- [ ] Bestätigte Tatsachen von Modellinterpretationen unterscheiden.
-- [ ] Einzelne Erinnerungen bearbeiten und gezielt vergessen können.
-- [ ] Wichtige Erinnerungen vor automatischer Überschreibung schützen.
-- [ ] Automatische Änderungen mit einer nachvollziehbaren Änderungshistorie versehen.
+- [x] Bestätigte Tatsachen von Modellinterpretationen unterscheiden (Herkunft: vom Modell abgeleitet / von dir angelegt / von dir bestätigt; ältere ohne Angabe „Herkunft unbekannt“).
+- [x] Einzelne Erinnerungen bearbeiten und gezielt vergessen können.
+- [x] Wichtige Erinnerungen vor automatischer Überschreibung schützen (Anheften: steht immer zuerst im Gedächtnis-Kontext; automatische Abläufe ändern Inhalte nicht). Offen: Snapshot-Wiederherstellung übernimmt Herkunft und Anheftung noch nicht.
+- [x] Automatische Änderungen mit einer nachvollziehbaren Änderungshistorie versehen (`soul_memory_history`: entstanden, Quelle geändert, korrigiert, bestätigt, angeheftet, vergessen).
 
 Abnahme: Der Nutzer kann Herkunft und Änderungen einer Erinnerung nachvollziehen und sie gezielt korrigieren.
 

@@ -1,9 +1,10 @@
 import { useState } from 'react';
 import { useStoreFields } from '../../../store/useAppStore';
-import { translate, useTranslation, type TranslationKey } from '../../../i18n';
+import { translate, useTranslation } from '../../../i18n';
 import { toast } from '../../ui/feedback';
 import { errorMessage } from '../../../utils/errors';
-import { Sparkles, Star } from 'lucide-react';
+import { Sparkles } from 'lucide-react';
+import { MemoryItem } from './MemoryItem';
 
 type MemoryCategory = 'fact' | 'secret' | 'promise' | 'event' | 'location';
 
@@ -28,8 +29,8 @@ export const MemoriesTab = () => {
       await addManualMemory(newMemCategory, newMemContent.trim(), newMemSignificance);
       setNewMemContent('');
       toast.success(translate('memory.memorySaved'));
-    } catch (e) {
-      toast.error(translate('memory.saveFailed', { error: errorMessage(e) }));
+    } catch (error) {
+      toast.error(translate('memory.saveFailed', { error: errorMessage(error) }));
     } finally {
       setIsSaving(false);
     }
@@ -95,26 +96,7 @@ export const MemoriesTab = () => {
 
         <div className="space-y-2">
           {cognitiveOverview?.recent_memories.map((mem) => (
-            <div
-              key={mem.id}
-              className="p-3 rounded-xl bg-slate-800/40 border border-slate-700/60 flex items-start justify-between gap-3 hover:border-slate-600 transition"
-            >
-              <div className="space-y-1">
-                <div className="flex items-center gap-2">
-                  <span className="text-[11px] uppercase font-bold px-2 py-0.5 rounded bg-accent-900/60 text-accent-300 border border-accent-500/30">
-                    {(['fact', 'topic', 'secret', 'promise', 'event', 'location'] as string[]).includes(mem.category)
-                      ? t(`memory.cat.${mem.category}` as TranslationKey)
-                      : mem.category}
-                  </span>
-                  <span className="flex items-center text-amber-400" aria-label={`${t('memory.significance')}: ${mem.significance}`}>
-                    {Array.from({ length: mem.significance }, (_, index) => (
-                      <Star key={index} className="h-3 w-3 fill-current" aria-hidden />
-                    ))}
-                  </span>
-                </div>
-                <p className="text-xs text-slate-200 leading-relaxed whitespace-pre-wrap">{mem.content}</p>
-              </div>
-            </div>
+            <MemoryItem key={mem.id} memory={mem} />
           ))}
 
           {!memoryOverviewError && !isMemoryLoading && (!cognitiveOverview?.recent_memories ||

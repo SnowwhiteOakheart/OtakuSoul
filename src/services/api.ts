@@ -104,6 +104,7 @@ import {
   LocalImageStatus,
   RuntimeProgress,
   RuntimeVariant,
+  MemoryChange,
 } from '../types';
 
 export const api = {
@@ -259,6 +260,31 @@ export const api = {
       content,
       significance,
     });
+  },
+
+  updateEpisodicMemory: async (charId: string, id: number, category: string, content: string, significance: number): Promise<void> => {
+    await invoke('update_episodic_memory', { charId, id, category, content, significance });
+  },
+
+  forgetEpisodicMemory: async (charId: string, id: number): Promise<void> => {
+    await invoke('forget_episodic_memory', { charId, id });
+  },
+
+  setEpisodicMemoryPinned: async (charId: string, id: number, pinned: boolean): Promise<void> => {
+    await invoke('set_episodic_memory_pinned', { charId, id, pinned });
+  },
+
+  confirmEpisodicMemory: async (charId: string, id: number): Promise<void> => {
+    await invoke('confirm_episodic_memory', { charId, id });
+  },
+
+  getMemoryHistory: async (charId: string, id: number): Promise<MemoryChange[]> => {
+    return await invoke<MemoryChange[]>('get_memory_history', { charId, id });
+  },
+
+  /** How many memories were learned from this message. */
+  countMemoriesFromMessage: async (chatId: string, messageId: string): Promise<number> => {
+    return await invoke<number>('count_memories_from_message', { chatId, messageId });
   },
 
   addDiaryEntry: async (

@@ -355,6 +355,17 @@ pub async fn execute_memory_pipeline(
     } else {
         &messages[..]
     };
+    // Memories remember the messages they were learned from (not for a Stage transcript).
+    let source_chat_id = messages.first().map(|m| m.chat_id.clone());
+    let source_ids: Vec<String> = if req
+        .transcript
+        .as_deref()
+        .is_some_and(|t| !t.trim().is_empty())
+    {
+        Vec::new()
+    } else {
+        recent_slice.iter().map(|m| m.id.clone()).collect()
+    };
 
     let mut dialog_formatted = String::new();
     match req.transcript.as_deref().filter(|t| !t.trim().is_empty()) {
@@ -657,7 +668,21 @@ pub async fn execute_memory_pipeline(
                     );
                     state
                         .memory_db
-                        .add_episodic_memory(char_id, "topic", &formatted_topic, 4)
+                        .add_episodic_memory_from(
+                            char_id,
+                            "topic",
+                            &formatted_topic,
+                            4,
+                            &crate::modules::memory::MemorySource {
+                                origin: "auto",
+                                chat_id: if source_ids.is_empty() {
+                                    None
+                                } else {
+                                    source_chat_id.as_deref()
+                                },
+                                message_ids: &source_ids,
+                            },
+                        )
                         .map_err(|e| e.to_string())?;
                     topics_processed.push(action.filename);
                 }

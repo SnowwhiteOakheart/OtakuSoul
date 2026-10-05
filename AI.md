@@ -204,6 +204,10 @@ Einstellungen: `components/settings/sections/*` (Server inkl. Laufzeiten/`mmproj
 - Companion `execute_code`: nur mit `allow_code_execution` (Standard aus, Companion-Einstellungen werden nicht gespeichert
   → gilt bis Neustart); geprüft in `request_tool_call` und in `execute_internal_sync`. Neue Werkzeuge in
   `components/companion/toolEffects.ts` mit ihren Wirkungen eintragen (sonst „extern, unbekannt“).
+- Episodische Erinnerungen (Migration v4): Quelle (`source_chat_id`, `source_message_ids`), Herkunft (`origin`:
+  auto/manual/edited, '' = alt), `pinned` (zuerst im Kontext), `needs_review`. Neue Erinnerungen mit Quelle über
+  `add_episodic_memory_from` + `MemorySource`. Nachrichtenänderungen in `memory/chats.rs` rufen
+  `flag_memories_from_messages`; jede Änderung landet in `soul_memory_history` (`log_memory_change`).
 - Lange Chats: Sprung zu einer Nachricht über `chatSlice.requestChatJump` → `MessageList` (`jumpTo`, scrollt die
   virtualisierte Liste, Klasse `message-flash`). Lesezeichen in `chat_bookmarks` (per Join an Nachrichten gebunden),
   „Ab hier neu“ = `branch_chat` (kopiert Verlauf, Varianten, Anhänge per `attachments::copy_to_chat`, Lesezeichen).

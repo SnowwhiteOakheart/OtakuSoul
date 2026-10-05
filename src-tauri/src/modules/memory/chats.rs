@@ -490,6 +490,7 @@ impl MemoryDb {
             params![content, thought, new_swipes_json, msg_id],
         )?;
         discard_stale_summary(&conn, &chat_id, i64::from(order_index))?;
+        super::soul::flag_memories_from_messages(&conn, &chat_id, &[msg_id.to_string()])?;
 
         conn.execute(
             "UPDATE chat_sessions SET updated_at = ?1 WHERE id = ?2",
@@ -551,6 +552,7 @@ impl MemoryDb {
             params![content, thought, new_swipe_idx as i64, new_swipes_json, msg_id],
         )?;
         discard_stale_summary(&conn, &chat_id, i64::from(order_index))?;
+        super::soul::flag_memories_from_messages(&conn, &chat_id, &[msg_id.to_string()])?;
 
         conn.execute(
             "UPDATE chat_sessions SET updated_at = ?1 WHERE id = ?2",
@@ -612,6 +614,7 @@ impl MemoryDb {
             ],
         )?;
         discard_stale_summary(&conn, &chat_id, i64::from(order_index))?;
+        super::soul::flag_memories_from_messages(&conn, &chat_id, &[msg_id.to_string()])?;
 
         Ok(StoredChatMessage {
             id: msg_id.to_string(),
@@ -639,6 +642,7 @@ impl MemoryDb {
         conn.execute("DELETE FROM chat_messages WHERE id = ?1", params![msg_id])?;
         if let Some((chat_id, order_index)) = position {
             discard_stale_summary(&conn, &chat_id, order_index)?;
+            super::soul::flag_memories_from_messages(&conn, &chat_id, &[msg_id.to_string()])?;
         }
         Ok(())
     }
@@ -649,10 +653,17 @@ impl MemoryDb {
         order_index: i32,
     ) -> Result<(), rusqlite::Error> {
         let conn = self.conn.lock();
+        let removed: Vec<String> = {
+            let mut stmt = conn
+                .prepare("SELECT id FROM chat_messages WHERE chat_id = ?1 AND order_index >= ?2")?;
+            stmt.query_map(params![chat_id, order_index], |row| row.get(0))?
+                .collect::<Result<_, _>>()?
+        };
         conn.execute(
             "DELETE FROM chat_messages WHERE chat_id = ?1 AND order_index >= ?2",
             params![chat_id, order_index],
         )?;
+        super::soul::flag_memories_from_messages(&conn, chat_id, &removed)?;
         discard_stale_summary(&conn, chat_id, i64::from(order_index))?;
         Ok(())
     }
