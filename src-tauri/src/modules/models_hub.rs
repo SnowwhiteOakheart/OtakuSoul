@@ -403,6 +403,21 @@ pub fn starter_models() -> Vec<StarterModel> {
         .collect()
 }
 
+/// GGUF downloads the user stopped, by file name; the download loop checks it per chunk.
+static CANCELLED_DOWNLOADS: std::sync::LazyLock<
+    parking_lot::Mutex<std::collections::HashSet<String>>,
+> = std::sync::LazyLock::new(Default::default);
+
+/// Stops the running download of `filename`; its partial file is removed.
+pub fn cancel_gguf_download(filename: &str) {
+    if let Some(name) = std::path::Path::new(filename)
+        .file_name()
+        .and_then(|n| n.to_str())
+    {
+        CANCELLED_DOWNLOADS.lock().insert(name.to_string());
+    }
+}
+
 pub async fn download_gguf_file<R: tauri::Runtime>(
     app: &tauri::AppHandle<R>,
     download_url: &str,
@@ -462,6 +477,8 @@ pub async fn download_gguf_file<R: tauri::Runtime>(
         .and_then(|name| name.to_str())
         .ok_or_else(|| crate::err!("backend.models.invalidFilename"))?
         .to_string();
+    // A stop from an earlier attempt must not end this one.
+    CANCELLED_DOWNLOADS.lock().remove(&safe_filename);
     let dest_path = target_dir.join(&safe_filename);
     if dest_path.exists() {
         return Err(crate::err!(
@@ -485,6 +502,9 @@ pub async fn download_gguf_file<R: tauri::Runtime>(
     let mut last_emit = std::time::Instant::now();
 
     while let Some(chunk_res) = stream.next().await {
+        if CANCELLED_DOWNLOADS.lock().remove(&safe_filename) {
+            return Err(crate::err!("backend.models.downloadCancelled"));
+        }
         let chunk =
             chunk_res.map_err(|e| crate::err!("backend.common.downloadInterrupted", error = e))?;
         file.write_all(&chunk)

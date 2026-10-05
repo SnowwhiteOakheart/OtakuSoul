@@ -918,3 +918,32 @@ fn restoring_a_snapshot_keeps_memory_origin_sources_and_pins() {
     assert_eq!(restored.source_message_ids, ids);
     let _ = std::fs::remove_dir_all(&dir);
 }
+
+#[test]
+fn new_chat_and_greeting_are_stored_together() {
+    let db = MemoryDb::new_in_memory().expect("in-memory db failed");
+    let session = db
+        .create_chat_session_with_greeting("ayu", "Neu", Some("  Hallo!  "))
+        .unwrap();
+    assert_eq!(session.message_count, 1);
+    let messages = db.get_chat_messages(&session.id).unwrap();
+    assert_eq!(messages.len(), 1);
+    assert_eq!(
+        (messages[0].role.as_str(), messages[0].content.as_str()),
+        ("assistant", "Hallo!")
+    );
+    // The greeting is a normal first message: the next one follows it.
+    let next = db
+        .add_chat_message(&session.id, "user", "Hi", None, &[])
+        .unwrap();
+    assert_eq!(next.order_index, 1);
+
+    let (files, chats) = db.attachment_references().unwrap();
+    assert!(files.is_empty());
+    assert!(chats.contains(&session.id));
+
+    let empty = db
+        .create_chat_session_with_greeting("ayu", "Leer", Some("   "))
+        .unwrap();
+    assert_eq!(empty.message_count, 0);
+}

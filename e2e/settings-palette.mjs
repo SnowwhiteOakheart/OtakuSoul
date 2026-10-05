@@ -1,5 +1,4 @@
 // The command palette reaches settings pages, single options and integration tabs.
-import assert from 'node:assert/strict';
 import path from 'node:path';
 import { launch, screenshotDir } from './harness.mjs';
 

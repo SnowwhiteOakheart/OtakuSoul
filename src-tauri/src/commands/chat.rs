@@ -90,10 +90,11 @@ pub fn create_chat_session(
     state: State<'_, AppState>,
     character_id: String,
     title: String,
+    greeting: Option<String>,
 ) -> Result<crate::modules::memory::ChatSession, String> {
     state
         .memory_db
-        .create_chat_session(&character_id, &title)
+        .create_chat_session_with_greeting(&character_id, &title, greeting.as_deref())
         .map_err(|e| e.to_string())
 }
 

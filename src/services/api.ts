@@ -782,8 +782,9 @@ export const api = {
   },
 
   // Phase 9: Vollwertiger Chat & Swipes
-  createChatSession: async (characterId: string, title: string): Promise<ChatSession> => {
-    return await invoke<ChatSession>('create_chat_session', { characterId, title });
+  /** Creates the chat and (optionally) the character's greeting in one step. */
+  createChatSession: async (characterId: string, title: string, greeting?: string | null): Promise<ChatSession> => {
+    return await invoke<ChatSession>('create_chat_session', { characterId, title, greeting: greeting || null });
   },
 
   listChatSessions: async (characterId: string): Promise<ChatSession[]> => {
@@ -988,6 +989,11 @@ export const api = {
       expectedSize: file.size_bytes,
       expectedSha256: file.sha256,
     });
+  },
+
+  /** Stops the running GGUF download of `filename`; it then fails with `downloadCancelled`. */
+  cancelGgufDownload: async (filename: string): Promise<void> => {
+    await invoke('cancel_gguf_download', { filename });
   },
 
   getRuntime: async (kind: RuntimeKind): Promise<RuntimeInfo | null> => {

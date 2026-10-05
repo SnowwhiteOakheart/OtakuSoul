@@ -108,6 +108,17 @@ pub fn run() {
             }
             allow_app_asset_dirs(app);
             create_main_window(app)?;
+            // Attachment files left by failed or stopped sends; in the background.
+            let db = app.state::<AppState>().memory_db.clone();
+            std::thread::spawn(move || match db.attachment_references() {
+                Ok((files, chats)) => {
+                    let removed = modules::attachments::remove_orphans(&files, &chats);
+                    if removed > 0 {
+                        tracing::info!("{removed} verwaiste Anhänge entfernt");
+                    }
+                }
+                Err(e) => tracing::warn!("Anhänge nicht bereinigt: {e}"),
+            });
             if let Some(window) = app.get_webview_window("main") {
                 // The window-state plugin is only registered outside an isolated profile.
                 #[cfg(desktop)]
@@ -349,6 +360,7 @@ pub fn run() {
             commands::llm::search_hf_models,
             commands::llm::get_hf_model_files,
             commands::llm::download_gguf_model,
+            commands::llm::cancel_gguf_download,
             // Voice / TTS
             commands::voice::list_available_voices,
             commands::voice::get_kokoro_installation,

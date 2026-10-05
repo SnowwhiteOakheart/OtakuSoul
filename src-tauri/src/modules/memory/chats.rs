@@ -40,7 +40,19 @@ impl MemoryDb {
         character_id: &str,
         title: &str,
     ) -> Result<ChatSession, rusqlite::Error> {
+        self.create_chat_session_with_greeting(character_id, title, None)
+    }
+
+    /// A new chat together with the character's first message, in one transaction: a failure
+    /// leaves neither an empty session nor a lone greeting behind.
+    pub fn create_chat_session_with_greeting(
+        &self,
+        character_id: &str,
+        title: &str,
+        greeting: Option<&str>,
+    ) -> Result<ChatSession, rusqlite::Error> {
         let conn = self.conn.lock();
+        let tx = conn.unchecked_transaction()?;
         let now = current_timestamp();
         let id = format!("chat_{}_{:08x}", now, rand::random::<u32>());
         let effective_title = if title.trim().is_empty() {
@@ -49,11 +61,25 @@ impl MemoryDb {
             title.trim().to_string()
         };
 
-        conn.execute(
+        tx.execute(
             "INSERT INTO chat_sessions (id, character_id, title, created_at, updated_at, author_note, author_note_depth)
              VALUES (?1, ?2, ?3, ?4, ?4, '', 2)",
             params![id, character_id, effective_title, now],
         )?;
+        let greeting = greeting.map(str::trim).filter(|text| !text.is_empty());
+        if let Some(text) = greeting {
+            let swipes = serde_json::to_string(&[SwipeVariant {
+                content: text.to_string(),
+                thought: None,
+            }])
+            .unwrap_or_else(|_| "[]".into());
+            tx.execute(
+                "INSERT INTO chat_messages (id, chat_id, role, content, thought, order_index, swipe_index, swipes_json, created_at, attachments_json)
+                 VALUES (?1, ?2, 'assistant', ?3, NULL, 0, 0, ?4, ?5, '[]')",
+                params![format!("msg_{}_{:08x}", now, rand::random::<u32>()), id, text, swipes, now],
+            )?;
+        }
+        tx.commit()?;
 
         Ok(ChatSession {
             id,
@@ -63,10 +89,38 @@ impl MemoryDb {
             updated_at: now,
             author_note: String::new(),
             author_note_depth: 2,
-            message_count: 0,
+            message_count: usize::from(greeting.is_some()),
             summary: String::new(),
             summary_until: -1,
         })
+    }
+
+    /// Every stored attachment reference (`chat/file`) and every chat id, for cleaning up
+    /// attachment files no message uses anymore.
+    pub fn attachment_references(
+        &self,
+    ) -> Result<
+        (
+            std::collections::HashSet<String>,
+            std::collections::HashSet<String>,
+        ),
+        rusqlite::Error,
+    > {
+        let conn = self.conn.lock();
+        let chats = conn
+            .prepare("SELECT id FROM chat_sessions")?
+            .query_map([], |row| row.get::<_, String>(0))?
+            .collect::<Result<_, _>>()?;
+        let mut files = std::collections::HashSet::new();
+        let mut stmt = conn.prepare(
+            "SELECT attachments_json FROM chat_messages WHERE attachments_json NOT IN ('', '[]')",
+        )?;
+        for json in stmt.query_map([], |row| row.get::<_, String>(0))? {
+            let stored: Vec<crate::modules::attachments::Attachment> =
+                serde_json::from_str(&json?).unwrap_or_default();
+            files.extend(stored.into_iter().map(|attachment| attachment.file));
+        }
+        Ok((files, chats))
     }
 
     pub fn list_chat_sessions(

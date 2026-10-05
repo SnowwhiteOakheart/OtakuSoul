@@ -107,6 +107,11 @@ pub async fn download_gguf_model(
     .await
 }
 
+#[tauri::command]
+pub fn cancel_gguf_download(filename: String) {
+    crate::modules::models_hub::cancel_gguf_download(&filename);
+}
+
 use crate::modules::runtimes::{RuntimeInfo, RuntimeKind, RuntimeVariant};
 
 #[tauri::command]

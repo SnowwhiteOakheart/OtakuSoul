@@ -2493,4 +2493,5 @@ export const en: TranslationDictionary = {
   "voiceCfg.saved": "Voice saved.",
   "int.imageBackend": "Images are drawn by: {{provider}}. Models, LoRAs and provider are set in the settings.",
   "int.imageOpenSettings": "Image settings",
+  "backend.models.downloadCancelled": "Download cancelled.",
 };

@@ -128,6 +128,9 @@ Hub). Integrationen → Bildgenerierung enthält nur Studio und Galerie.
   `overwrite` erneut auf. Nie umbenennen („_1“); alte Kopien gehen in den Papierkorb, gelöschte werden wieder sichtbar.
 - Lokale Vision nur mit gewählter `mmproj`; ohne macht `attachments::prepare` aus Bildern einen Hinweis.
 - Swipes: `swipes_json` + `swipe_index`; „Neu generieren“ hängt an, überschreibt nie.
+- Neuer Chat: `create_chat_session` legt Sitzung und Begrüßung (`greeting`) in einer Transaktion an.
+  Anhänge ohne Nachricht und Ordner gelöschter Chats entfernt der Start im Hintergrund
+  (`attachments::remove_orphans`, nur Dateien älter als 1 h). GGUF-Downloads stoppt `cancel_gguf_download`.
 - Chat-Zusammenfassung: Änderungen an Nachrichten bis `summary_until` (Bearbeiten, Swipe, Löschen) verwerfen sie
   (`discard_stale_summary` in `memory/chats.rs`, gespiegelt in `chatSlice` `withoutStaleSummary`).
 - Chat-Generierung: Upload/Nutzernachricht, Prompt, Anfrage und Antwortspeicherung liegen innerhalb der

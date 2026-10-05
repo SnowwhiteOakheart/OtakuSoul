@@ -2493,4 +2493,5 @@ export const ru: TranslationDictionary = {
   "voiceCfg.saved": "Голос сохранён.",
   "int.imageBackend": "Изображения создаёт: {{provider}}. Модели, LoRA и провайдер настраиваются в настройках.",
   "int.imageOpenSettings": "Настройки изображений",
+  "backend.models.downloadCancelled": "Загрузка отменена.",
 };

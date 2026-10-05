@@ -17,7 +17,7 @@ import type {
 } from '../../types';
 import type { SliceCreator } from '../storeTypes';
 import { reportFailure } from '../reportFailure';
-import { errorMessage } from '../../utils/errors';
+import { errorCode, errorMessage } from '../../utils/errors';
 import { translate } from '../../i18n';
 import { trackTask } from './taskSlice';
 
@@ -414,6 +414,7 @@ export const createLlmSlice: SliceCreator<LlmSlice> = (set, get) => ({
         kind: 'download' as const,
         title: translate('task.download', { name: file.filename }),
         progressKey: file.filename,
+        cancel: () => void api.cancelGgufDownload(file.filename),
         retry: () => void get().downloadGgufModel(file),
       };
       const modelPath = await trackTask(get(), task, () => api.downloadGgufModel(file));
@@ -421,6 +422,13 @@ export const createLlmSlice: SliceCreator<LlmSlice> = (set, get) => ({
       set({ scannedModels: models });
       await get().selectLocalModel(modelPath);
     } catch (e) {
+      // The progress of a stopped or failed download would otherwise stay half full.
+      set((state) => {
+        const { [file.filename]: _stale, ...downloadProgress } = state.downloadProgress;
+        return { downloadProgress };
+      });
+      // A stop by the user is no error; the task list shows it as cancelled.
+      if (errorCode(e)?.code === 'backend.models.downloadCancelled') return;
       console.error('Failed to download GGUF model:', e);
       set({ hfError: errorMessage(e) });
     }

@@ -347,9 +347,7 @@ export const createChatSlice: SliceCreator<ChatSlice> = (set, get) => {
       if (!isSessionCurrent(request, charId)) return;
       let targetId = sessions.find((session) => session.id === previousChatId)?.id ?? sessions[0]?.id;
       if (!targetId) {
-        const session = await api.createChatSession(charId, translate('chat.newChatTitle'));
-        if (!isSessionCurrent(request, charId)) return;
-        if (greeting) await api.addChatMessage(session.id, 'assistant', greeting);
+        const session = await api.createChatSession(charId, translate('chat.newChatTitle'), greeting);
         if (!isSessionCurrent(request, charId)) return;
         sessions = await api.listChatSessions(charId);
         if (!isSessionCurrent(request, charId)) return;
@@ -389,9 +387,7 @@ export const createChatSlice: SliceCreator<ChatSlice> = (set, get) => {
     const sessionTitle = title || translate('chat.defaultSessionTitle', { n: get().chatSessions.length + 1 });
     const request = beginSessionLoad(null);
     try {
-      const session = await api.createChatSession(char.id, sessionTitle);
-      if (!isSessionCurrent(request, char.id)) return null;
-      if (greeting) await api.addChatMessage(session.id, 'assistant', greeting);
+      const session = await api.createChatSession(char.id, sessionTitle, greeting);
       if (!isSessionCurrent(request, char.id)) return null;
       const sessions = await api.listChatSessions(char.id);
       if (!isSessionCurrent(request, char.id)) return null;

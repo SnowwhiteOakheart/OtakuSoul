@@ -11,6 +11,7 @@ import {
   Check,
 } from 'lucide-react';
 import { backendMessage } from '../../../utils/errors';
+import { api } from '../../../services/api';
 
 export const ModelHubSettings = ({ onNavigate }: { onNavigate: (section: SettingsSection) => void }) => {
   const { t } = useTranslation();
@@ -264,9 +265,18 @@ export const ModelHubSettings = ({ onNavigate }: { onNavigate: (section: Setting
                         {t('settings.downloadDone')}
                       </span>
                     ) : (
-                      <span className="px-2 py-0.5 rounded bg-amber-500/20 text-amber-400 text-[11px] font-bold">
-                        {prog.percent.toFixed(1)}%
-                      </span>
+                      <>
+                        <span className="px-2 py-0.5 rounded bg-amber-500/20 text-amber-400 text-[11px] font-bold">
+                          {prog.percent.toFixed(1)}%
+                        </span>
+                        <button
+                          type="button"
+                          onClick={() => void api.cancelGgufDownload(prog.filename)}
+                          className="px-2 py-0.5 rounded border border-slate-700 text-slate-300 hover:bg-slate-800 text-[11px]"
+                        >
+                          {t('task.cancel')}
+                        </button>
+                      </>
                     )}
                   </div>
                 </div>

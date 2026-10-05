@@ -2495,4 +2495,5 @@ export const de = {
   "voiceCfg.saved": "Stimme gespeichert.",
   "int.imageBackend": "Bilder erzeugt: {{provider}}. Modelle, LoRAs und Anbieter stellst Du in den Einstellungen ein.",
   "int.imageOpenSettings": "Bild-Einstellungen",
+  "backend.models.downloadCancelled": "Download abgebrochen.",
 } as const;

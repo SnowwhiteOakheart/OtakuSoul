@@ -5,8 +5,10 @@
 use crate::modules::paths::base_dirs;
 use base64::Engine;
 use serde::{Deserialize, Serialize};
+use std::collections::HashSet;
 use std::fs;
-use std::path::PathBuf;
+use std::path::{Path, PathBuf};
+use std::time::Duration;
 use ts_rs::TS;
 
 /// Longest side of a stored image; larger photos only cost tokens and upload time.
@@ -253,6 +255,60 @@ pub fn copy_to_chat(attachment: &Attachment, chat_id: &str) -> Attachment {
     }
 }
 
+/// Files younger than this may belong to a message that is being sent right now.
+const ORPHAN_MIN_AGE: Duration = Duration::from_secs(60 * 60);
+
+/// Removes attachment files no message refers to (a send that failed or was stopped after
+/// the upload) and folders of chats that no longer exist. `files` are the stored
+/// `chat/file` references, `chats` the existing chat ids. Returns the number removed.
+pub fn remove_orphans(files: &HashSet<String>, chats: &HashSet<String>) -> usize {
+    remove_orphans_in(&root(), files, chats, ORPHAN_MIN_AGE)
+}
+
+fn remove_orphans_in(
+    root: &Path,
+    files: &HashSet<String>,
+    chats: &HashSet<String>,
+    min_age: Duration,
+) -> usize {
+    let old_enough = |path: &Path| {
+        fs::metadata(path)
+            .and_then(|meta| meta.modified())
+            .ok()
+            .and_then(|modified| modified.elapsed().ok())
+            .is_some_and(|age| age >= min_age)
+    };
+    let Ok(entries) = fs::read_dir(root) else {
+        return 0;
+    };
+    let mut removed = 0;
+    for dir in entries.flatten().map(|entry| entry.path()) {
+        let Some(chat) = dir.file_name().and_then(|n| n.to_str()).map(str::to_string) else {
+            continue;
+        };
+        if !dir.is_dir() {
+            continue;
+        }
+        let Ok(children) = fs::read_dir(&dir) else {
+            continue;
+        };
+        let known_chat = chats.contains(&chat);
+        for file in children.flatten().map(|entry| entry.path()) {
+            let Some(name) = file.file_name().and_then(|n| n.to_str()) else {
+                continue;
+            };
+            let referenced = known_chat && files.contains(&format!("{chat}/{name}"));
+            if !referenced && file.is_file() && old_enough(&file) && fs::remove_file(&file).is_ok()
+            {
+                removed += 1;
+            }
+        }
+        // Only empty folders go; `remove_dir` keeps one that still holds files.
+        let _ = fs::remove_dir(&dir);
+    }
+    removed
+}
+
 pub fn remove_chat(chat_id: &str) {
     let chat = safe_segment(chat_id);
     if !chat.is_empty() {
@@ -264,6 +320,36 @@ pub fn remove_chat(chat_id: &str) {
 mod tests {
     use super::*;
     use crate::modules::inference::ChatMessage;
+
+    #[test]
+    fn orphan_cleanup_keeps_referenced_and_recent_files() {
+        let root =
+            std::env::temp_dir().join(format!("otakusoul-attachments-{}", std::process::id()));
+        let _ = fs::remove_dir_all(&root);
+        for (dir, file) in [
+            ("chat_a", "used.png"),
+            ("chat_a", "stray.png"),
+            ("chat_gone", "old.png"),
+        ] {
+            fs::create_dir_all(root.join(dir)).unwrap();
+            fs::write(root.join(dir).join(file), b"x").unwrap();
+        }
+        let files: HashSet<String> = ["chat_a/used.png".to_string()].into();
+        let chats: HashSet<String> = ["chat_a".to_string()].into();
+
+        // Recent files may belong to a message being sent: nothing goes.
+        assert_eq!(
+            remove_orphans_in(&root, &files, &chats, Duration::from_secs(3600)),
+            0
+        );
+        assert!(root.join("chat_a/stray.png").exists());
+
+        assert_eq!(remove_orphans_in(&root, &files, &chats, Duration::ZERO), 2);
+        assert!(root.join("chat_a/used.png").exists());
+        assert!(!root.join("chat_a/stray.png").exists());
+        assert!(!root.join("chat_gone").exists());
+        let _ = fs::remove_dir_all(&root);
+    }
 
     fn attachment(kind: &str, name: &str) -> Attachment {
         Attachment {

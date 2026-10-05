@@ -631,3 +631,15 @@ schreibgeschützte Tauri-Aufruffunktion nicht ersetzen; die korrigierte Vorricht
 die Prompt-Transportantwort über fetch an. Screenshot `48-chat-vorbereitungsabbruch.png` wurde
 geprüft: Die gespeicherte Spielerzeile bleibt sichtbar und der neue Entwurf ist sendebereit.
 Die vollständige Suite und unveränderte Rust-Tests wurden nicht erneut ausgeführt.
+
+### Nacharbeiten – 05.10.2026
+
+Aus den offenen Grenzen der Protokolle umgesetzt:
+- Verwaiste Anhänge: Der App-Start entfernt im Hintergrund Anhangdateien ohne Nachricht und Ordner
+  gelöschter Chats (nur Dateien älter als eine Stunde, damit ein laufendes Senden nichts verliert).
+- Leere Sitzungen: Neuer Chat und Begrüßung entstehen in einer SQLite-Transaktion.
+- GGUF-Downloads lassen sich abbrechen (Aufgabenliste und Modell-Hub); die Teildatei wird entfernt.
+
+Weiter offen (eigene Punkte bei Bedarf): Wiederaufnahme abgebrochener Antworten, dauerhafte
+Entwurfssicherung über Neustarts, Koordination von Stage-Verlaufsänderungen mit laufenden Runden,
+atomare Reflexion, mehrstufiger Chat-Import ohne gemeinsame Transaktion.
