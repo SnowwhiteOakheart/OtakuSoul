@@ -71,7 +71,7 @@ export const de = {
   "chat.inferenceError": "Inferenz-Fehler: {{error}}",
 
   "settings.title": "Einstellungen",
-  "settings.subtitle": "llama-server, KI-Anbieter, Sampler-Presets und GGUF-Modelle aus Hugging Face.",
+  "settings.subtitle": "Chat-Modell (llama-server, Cloud-Anbieter, Sampler, Prompt), Bilder, Stimmen und Modell-Downloads an einem Ort.",
   "settings.appearance": "Erscheinungsbild & Theme",
   "settings.theme": "Farb-Theme",
   "settings.language": "Sprache der Benutzeroberfläche",
@@ -2486,4 +2486,13 @@ export const de = {
   "chat.moreActions": "Weitere Chat-Aktionen",
   "hud.showDetails": "Zustandswerte einblenden",
   "hud.hideDetails": "Zustandswerte ausblenden",
+  "settings.tabImage": "Bilder",
+  "settings.tabVoice": "Stimme",
+  "settings.imagePrefix": "Globaler Stil / Präfix (wird an jeden Prompt angehängt)",
+  "settings.voiceIntro": "Stimmen gelten je Charakter und für den Stage-Erzähler: Sprachausgabe, Spracherkennung und RVC. Lokale Sprachmodelle lädst Du hier bei der Engine „Lokal“.",
+  "settings.voiceFor": "Stimme für",
+  "settings.voiceActive": "aktiv",
+  "voiceCfg.saved": "Stimme gespeichert.",
+  "int.imageBackend": "Bilder erzeugt: {{provider}}. Modelle, LoRAs und Anbieter stellst Du in den Einstellungen ein.",
+  "int.imageOpenSettings": "Bild-Einstellungen",
 } as const;

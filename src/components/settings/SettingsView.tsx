@@ -1,13 +1,15 @@
 import { useEffect, useState } from 'react';
 import { useAppStore, type SettingsSection, useStoreFields } from '../../store/useAppStore';
 import { useTranslation } from '../../i18n';
-import { Cpu, RefreshCw, Palette, Key, Sliders, Download, FileText } from 'lucide-react';
+import { Cpu, RefreshCw, Palette, Key, Sliders, Download, FileText, Image as ImageIcon, AudioLines } from 'lucide-react';
 import { GeneralSettings } from './sections/GeneralSettings';
 import { ServerSettings } from './sections/ServerSettings';
 import { ProviderSettings } from './sections/ProviderSettings';
 import { SamplerSettings } from './sections/SamplerSettings';
 import { PromptSettings } from './sections/PromptSettings';
 import { ModelHubSettings } from './sections/ModelHubSettings';
+import { ImageSettings } from './sections/ImageSettings';
+import { VoiceSettings } from './sections/VoiceSettings';
 import { Button, Tabs, type TabItem } from '../ui';
 
 export const SettingsView = () => {
@@ -33,6 +35,8 @@ export const SettingsView = () => {
     { value: 'providers', label: t('settings.tabProviders'), icon: Key, panelId: 'settings-panel-providers' },
     { value: 'sampler', label: t('settings.tabSampler'), icon: Sliders, panelId: 'settings-panel-sampler' },
     { value: 'prompt', label: t('settings.tabPrompt'), icon: FileText, panelId: 'settings-panel-prompt' },
+    { value: 'image', label: t('settings.tabImage'), icon: ImageIcon, panelId: 'settings-panel-image' },
+    { value: 'voice', label: t('settings.tabVoice'), icon: AudioLines, panelId: 'settings-panel-voice' },
     { value: 'hub', label: t('settings.tabHub'), icon: Download, panelId: 'settings-panel-hub' },
   ];
 
@@ -79,6 +83,8 @@ export const SettingsView = () => {
           {activeTab === 'providers' && <ProviderSettings />}
           {activeTab === 'sampler' && <SamplerSettings />}
           {activeTab === 'prompt' && <PromptSettings />}
+          {activeTab === 'image' && <ImageSettings />}
+          {activeTab === 'voice' && <VoiceSettings />}
           {activeTab === 'hub' && <ModelHubSettings onNavigate={setActiveTab} />}
         </div>
       </div>

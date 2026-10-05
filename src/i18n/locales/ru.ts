@@ -69,7 +69,7 @@ export const ru: TranslationDictionary = {
   "chat.inferenceError": "Ошибка инференса: {{error}}",
 
   "settings.title": "Настройки",
-  "settings.subtitle": "llama-server, провайдеры ИИ, пресеты сэмплера и модели GGUF с Hugging Face.",
+  "settings.subtitle": "Модель чата (llama-server, облачные провайдеры, сэмплер, промпт), изображения, голоса и загрузка моделей в одном месте.",
   "settings.appearance": "Внешний вид и тема",
   "settings.theme": "Цветовая тема",
   "settings.language": "Язык интерфейса",
@@ -2484,4 +2484,13 @@ export const ru: TranslationDictionary = {
   "chat.moreActions": "Другие действия чата",
   "hud.showDetails": "Показать значения истории",
   "hud.hideDetails": "Скрыть значения истории",
+  "settings.tabImage": "Изображения",
+  "settings.tabVoice": "Голос",
+  "settings.imagePrefix": "Общий стиль / префикс (добавляется к каждому промпту)",
+  "settings.voiceIntro": "Голоса задаются для каждого персонажа и для рассказчика Stage: озвучка, распознавание речи и RVC. Локальные речевые модели загружаются здесь при движке «Локально».",
+  "settings.voiceFor": "Голос для",
+  "settings.voiceActive": "активен",
+  "voiceCfg.saved": "Голос сохранён.",
+  "int.imageBackend": "Изображения создаёт: {{provider}}. Модели, LoRA и провайдер настраиваются в настройках.",
+  "int.imageOpenSettings": "Настройки изображений",
 };

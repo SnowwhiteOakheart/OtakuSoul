@@ -26,8 +26,9 @@ try {
   const config = await invoke('get_image_gen_config');
   await invoke('save_image_gen_config', { config: { ...config, provider: 'local', local_model_id: 'animagine-xl-4' } });
 
-  await browser.$('button=Integrationen').click();
-  await browser.$('button=Bildgenerierung').click();
+  // Image models and LoRAs are configured in the settings.
+  await browser.$('button=Einstellungen').click();
+  await browser.$('#settings-tab-image').click();
   const list = await browser.$('ul[aria-label="LoRAs (Stil-Erweiterungen)"]');
   await list.waitForDisplayed({ timeout: 15_000 });
   const text = await list.getText();

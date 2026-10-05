@@ -249,7 +249,7 @@ describe('CommandPalette', () => {
     await user.type(screen.getByRole('combobox', { name: 'Befehle durchsuchen' }), 'lora');
     expect(screen.getAllByRole('option')).toHaveLength(1);
     await user.keyboard('{Enter}');
-    expect(useAppStore.getState()).toMatchObject({ activeTab: 'integrations', integrationsTab: 'image' });
+    expect(useAppStore.getState()).toMatchObject({ activeTab: 'settings', pendingSettingsSection: 'image' });
 
     // An option reveals itself once its page is shown.
     const option = document.createElement('div');

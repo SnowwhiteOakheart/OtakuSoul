@@ -162,7 +162,7 @@ export const CLOUD_PROVIDER_DEFAULTS: Partial<Record<LlmProviderType, { endpoint
   mistral: { endpoint: 'https://api.mistral.ai/v1/chat/completions', model: 'mistral-large-latest' },
 };
 
-export type SettingsSection = 'general' | 'server' | 'providers' | 'sampler' | 'prompt' | 'hub';
+export type SettingsSection = 'general' | 'server' | 'providers' | 'sampler' | 'prompt' | 'image' | 'voice' | 'hub';
 
 export type IntegrationsTab = 'web' | 'discord' | 'image' | 'backup';
 

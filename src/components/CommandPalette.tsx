@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useState, type KeyboardEvent } from 'react';
-import { ArrowRight, Command, Cpu, Download, FileText, Globe, Image, Key, Layers, Palette, Search, Settings2, Sliders, Sparkles, Terminal, Users } from 'lucide-react';
+import { ArrowRight, Command, Cpu, Download, FileText, Globe, Image, Key, Layers, Mic, Palette, Search, Settings2, Sliders, Sparkles, Terminal, Users } from 'lucide-react';
 import type { IntegrationsTab, SettingsSection } from '../store/useAppStore';
 import { revealSetting } from '../utils/revealSetting';
 import { useTranslation } from '../i18n';
@@ -68,6 +68,8 @@ export const CommandPalette = ({ open, onOpen, onClose }: CommandPaletteProps) =
       ['providers', 'settings.tabProviders', Key, 'cloud api key openrouter anthropic openai anbieter провайдер'],
       ['sampler', 'settings.tabSampler', Sliders, 'temperature temperatur top_p preset сэмплер'],
       ['prompt', 'settings.tabPrompt', FileText, 'system prompt vorlage template промпт'],
+      ['image', 'settings.tabImage', Image, 'image bild stable diffusion lora flux sdxl vram изображение'],
+      ['voice', 'settings.tabVoice', Mic, 'voice stimme tts stt sprache kokoro whisper rvc голос речь'],
       ['hub', 'settings.tabHub', Download, 'gguf model modell download huggingface модель'],
     ] as const).map(([section, label, icon, keywords]) => ({
       id: `settings-${section}`,
@@ -98,7 +100,7 @@ export const CommandPalette = ({ open, onOpen, onClose }: CommandPaletteProps) =
     ...([
       ['web', 'int.tabWeb', Globe, 'web client mobile handy phone веб'],
       ['discord', 'Discord', Layers, 'discord bot rpc'],
-      ['image', 'int.tabImage', Image, 'image bild stable diffusion lora flux sdxl изображение'],
+      ['image', 'int.tabImage', Image, 'studio galerie gallery generate erzeugen галерея'],
       ['backup', 'int.tabBackup', Download, 'backup sicherung profile export бэкап'],
     ] as const).map(([tab, label, icon, keywords]) => ({
       id: `integrations-${tab}`,

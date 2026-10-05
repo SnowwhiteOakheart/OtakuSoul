@@ -9,11 +9,14 @@ import { ModalOverlay } from '../ui/ModalOverlay';
 import { LocalTtsSettings } from './LocalTtsSettings';
 import { translate, useTranslation } from '../../i18n';
 import { errorMessage } from '../../utils/errors';
+import { toast } from '../ui/feedback';
 
 interface CharacterVoiceModalProps {
-  onClose: () => void;
+  onClose?: () => void;
   /** Whose voice to edit; default is the active chat character (e.g. the Soul Stage narrator). */
   target?: { id: string; name: string };
+  /** Shown inside a page (settings) instead of a dialog: no close button, saving keeps it open. */
+  embedded?: boolean;
 }
 
 const DEFAULT_CONFIG: VoiceConfig = {
@@ -78,7 +81,7 @@ function testText(config: VoiceConfig) {
   return 'Hello! How are you today? This is a test of my voice.';
 }
 
-export function CharacterVoiceModal({ onClose, target }: CharacterVoiceModalProps) {
+export function CharacterVoiceModal({ onClose, target, embedded = false }: CharacterVoiceModalProps) {
   const { t } = useTranslation();
   const { activeCharacter, activeVoiceConfig, saveVoiceConfigForCharacter } = useStoreFields(
     'activeCharacter', 'activeVoiceConfig', 'saveVoiceConfigForCharacter',
@@ -254,7 +257,8 @@ export function CharacterVoiceModal({ onClose, target }: CharacterVoiceModalProp
     setError('');
     try {
       await saveVoiceConfigForCharacter(id, draft);
-      onClose();
+      if (embedded) toast.success(t('voiceCfg.saved'));
+      else onClose?.();
     } catch (reason) {
       setError(errorMessage(reason));
     }
@@ -280,17 +284,22 @@ export function CharacterVoiceModal({ onClose, target }: CharacterVoiceModalProp
     }
   };
 
-  return (
-    <ModalOverlay onClose={onClose} aria-labelledby="voice-config-title" className="fixed inset-0 z-50 flex items-center justify-center bg-black/65 backdrop-blur-sm p-4">
-      <div className="bg-slate-900 border border-slate-700/60 rounded-xl shadow-2xl w-full max-w-3xl max-h-[92vh] flex flex-col overflow-hidden">
+  const panel = (
+      <div
+        className={`bg-slate-900 border border-slate-700/60 rounded-xl flex flex-col overflow-hidden ${
+          embedded ? 'w-full' : 'shadow-2xl w-full max-w-3xl max-h-[92vh]'
+        }`}
+      >
         <div className="p-4 border-b border-slate-800 flex justify-between items-center">
           <div>
             <h2 id="voice-config-title" className="text-xl font-semibold text-slate-100">{t('voiceCfg.title')}</h2>
             <p className="text-xs text-slate-400 mt-0.5">{target?.name ?? activeCharacter?.card.data.name ?? t('voiceCfg.characterFallback')}</p>
           </div>
-          <button onClick={onClose} title={t('common.close')} aria-label={t('common.close')} className="p-2 hover:bg-slate-800 rounded-lg text-slate-400">
-            <X className="w-5 h-5" />
-          </button>
+          {!embedded && (
+            <button onClick={onClose} title={t('common.close')} aria-label={t('common.close')} className="p-2 hover:bg-slate-800 rounded-lg text-slate-400">
+              <X className="w-5 h-5" />
+            </button>
+          )}
         </div>
 
         <div role="tablist" aria-label={t('voiceCfg.tabs')} className="flex border-b border-slate-800 px-4 gap-1">
@@ -565,11 +574,16 @@ export function CharacterVoiceModal({ onClose, target }: CharacterVoiceModalProp
             <Play className="w-4 h-4" />{isTesting ? t('voiceCfg.testing') : t('voiceCfg.test')}
           </button>
           <div className="flex gap-3">
-            <button onClick={onClose} className="px-4 py-2 hover:bg-slate-800 text-slate-300 rounded-lg">{t('common.cancel')}</button>
+            {!embedded && <button onClick={onClose} className="px-4 py-2 hover:bg-slate-800 text-slate-300 rounded-lg">{t('common.cancel')}</button>}
             <button onClick={() => void handleSave()} className="flex items-center gap-2 px-4 py-2 bg-accent-600 hover:bg-accent-500 text-white rounded-lg shadow-lg shadow-accent-500/20"><Save className="w-4 h-4" />{t('voiceCfg.save')}</button>
           </div>
         </div>
       </div>
+  );
+  if (embedded) return panel;
+  return (
+    <ModalOverlay onClose={onClose ?? (() => undefined)} aria-labelledby="voice-config-title" className="fixed inset-0 z-50 flex items-center justify-center bg-black/65 backdrop-blur-sm p-4">
+      {panel}
     </ModalOverlay>
   );
 }

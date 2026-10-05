@@ -69,7 +69,7 @@ export const en: TranslationDictionary = {
   "chat.inferenceError": "Inference error: {{error}}",
 
   "settings.title": "Settings",
-  "settings.subtitle": "llama server, AI providers, sampler presets and GGUF models from Hugging Face.",
+  "settings.subtitle": "Chat model (llama server, cloud providers, sampler, prompt), images, voices and model downloads in one place.",
   "settings.appearance": "Appearance & Theme",
   "settings.theme": "Color Theme",
   "settings.language": "UI Language",
@@ -2484,4 +2484,13 @@ export const en: TranslationDictionary = {
   "chat.moreActions": "More chat actions",
   "hud.showDetails": "Show story values",
   "hud.hideDetails": "Hide story values",
+  "settings.tabImage": "Images",
+  "settings.tabVoice": "Voice",
+  "settings.imagePrefix": "Global style / prefix (added to every prompt)",
+  "settings.voiceIntro": "Voices are set per character and for the Stage narrator: speech output, speech recognition and RVC. Download local speech models here with the “Local” engine.",
+  "settings.voiceFor": "Voice for",
+  "settings.voiceActive": "active",
+  "voiceCfg.saved": "Voice saved.",
+  "int.imageBackend": "Images are drawn by: {{provider}}. Models, LoRAs and provider are set in the settings.",
+  "int.imageOpenSettings": "Image settings",
 };

@@ -226,6 +226,8 @@ flowchart LR
 OtakuSoul wurde auf echter Hardware auf Herz und Nieren geprüft. Die folgenden Werte wurden auf einem Referenzsystem (**NVIDIA GeForce RTX 4070 Ti SUPER, 16 GB VRAM**, Linux CUDA) ermittelt:
 
 ### Lokale Bildgenerierung (stable-diffusion.cpp)
+Bildmodelle, LoRAs und Anbieter stellst Du unter **Einstellungen → Bilder** ein, Stimmen (Sprachausgabe, Spracherkennung, lokale Sprachmodelle) je Charakter unter **Einstellungen → Stimme** – zusammen mit dem Chat-Modell an einem Ort. Studio und Galerie liegen unter Integrationen.
+
 Dank des intelligenten VRAM-Planers teilt sich die Bildgenerierung den Grafikspeicher nahtlos mit dem Sprachmodell:
 
 | Modell | Generierungszeit | VRAM-Bedarf | VRAM-Verhalten |
