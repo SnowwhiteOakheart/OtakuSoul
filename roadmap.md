@@ -17,7 +17,6 @@ Aus den Arbeitsprotokollen der Qualitäts-Roadmap; größere Pakete, jeweils mit
 
 - [ ] **Chat-Erscheinungsbild** – Hintergrund pro Chat, Schrift, Blasenfarben.
 - [ ] **Ambient-Sound pro Chat** mit Lautstärke (in der Stage bereits vorhanden: `useStageAmbient`).
-- [ ] **Tool Calling im normalen Chat** – Websuche, Datum/Zeit, Rechner (der Companion kann es bereits).
 - [ ] **Sammel-Import** von Charakteren samt Live2D, Personas, Lorebooks, Szenen und Hintergründen aus einem Ordner
   (Port von SoWs `tools/import_character_cards.py`).
 

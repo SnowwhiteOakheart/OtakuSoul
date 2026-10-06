@@ -41,6 +41,9 @@ export interface AppSlice {
   /** Closing the window hides it into the tray instead of quitting. */
   closeToTray: boolean;
   setCloseToTray: (on: boolean) => void;
+  /** The chat model may use tools (date/time, calculator, web search). */
+  chatTools: boolean;
+  setChatTools: (on: boolean) => void;
   /** The first-close hint about the tray was confirmed. */
   trayHintShown: boolean;
   confirmTrayHint: () => Promise<void>;
@@ -141,6 +144,7 @@ export const createAppSlice: SliceCreator<AppSlice> = (set, get) => ({
         colorMode,
         onboardingCompleted: settings.onboarding_completed !== false,
         closeToTray: settings.close_to_tray !== false,
+        chatTools: settings.chat_tools === true,
         trayHintShown: settings.tray_hint_shown === true,
         settingsLoaded: true,
       });
@@ -240,6 +244,7 @@ export const createAppSlice: SliceCreator<AppSlice> = (set, get) => ({
         color_mode: state.colorMode,
         onboarding_completed: state.onboardingCompleted,
         close_to_tray: state.closeToTray,
+        chat_tools: state.chatTools,
         tray_hint_shown: state.trayHintShown,
       };
       await api.saveSettings(settings);
@@ -300,6 +305,13 @@ export const createAppSlice: SliceCreator<AppSlice> = (set, get) => ({
 
   setCloseToTray: (on) => {
     set({ closeToTray: on });
+    get().saveCurrentSettings();
+  },
+
+  chatTools: false,
+
+  setChatTools: (on) => {
+    set({ chatTools: on });
     get().saveCurrentSettings();
   },
 

@@ -1,6 +1,7 @@
 pub mod attachments;
 pub mod characters;
 pub mod chat_summary;
+pub mod chat_tools;
 pub mod companion;
 pub mod companion_tools;
 pub mod content_lang;

@@ -2503,4 +2503,6 @@ export const en: TranslationDictionary = {
   "chat.sessionDeleted": "Chat “{{title}}” deleted.",
   "stage.messageDeleted": "Message deleted.",
   "stage.undoTooLate": "The scene has changed since – “Undo” is no longer possible.",
+  "chat.tools": "Tools",
+  "chat.toolsHint": "The model may use tools: date/time, calculator and web search (the query goes to DuckDuckGo). Tool use appears in the reply's reasoning block.",
 };

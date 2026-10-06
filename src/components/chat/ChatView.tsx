@@ -29,6 +29,7 @@ import {
   Rows3,
   MoreHorizontal,
   FileText,
+  Wrench,
 } from 'lucide-react';
 import { DropdownMenu } from '../ui/DropdownMenu';
 import { usePersistentFlag } from '../../hooks/usePersistentFlag';
@@ -85,6 +86,8 @@ export const ChatView: React.FC = () => {
   const [showCurrentThought, setShowCurrentThought] = useState(true);
   const [showAvatar, setShowAvatar] = usePersistentFlag('otakusoul.chat.avatar', true);
   const [compact, setCompact] = usePersistentFlag('otakusoul.chat.compact', false);
+  const chatTools = useAppStore((s) => s.chatTools);
+  const setChatTools = useAppStore((s) => s.setChatTools);
   const [showSearch, setShowSearch] = useState(false);
   const chatJumpTarget = useAppStore((s) => s.chatJumpTarget);
 
@@ -349,6 +352,21 @@ export const ChatView: React.FC = () => {
           >
             {showAvatar ? <Eye className="w-3.5 h-3.5" /> : <EyeOff className="w-3.5 h-3.5" />}
             <span className="hidden xl:inline">{t('chat.avatar')}</span>
+          </button>
+
+          <button
+            onClick={() => setChatTools(!chatTools)}
+            aria-pressed={chatTools}
+            aria-label={t('chat.tools')}
+            className={`${TOOLBAR_TOGGLE} ${
+              chatTools
+                ? 'bg-accent-950/40 text-accent-300 border-accent-500/40'
+                : 'bg-slate-800/60 text-slate-400 border-slate-700/60 hover:text-slate-200'
+            }`}
+            title={t('chat.toolsHint')}
+          >
+            <Wrench className="w-3.5 h-3.5" />
+            <span className="hidden xl:inline">{t('chat.tools')}</span>
           </button>
 
           <button

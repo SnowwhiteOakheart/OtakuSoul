@@ -22,6 +22,11 @@ close_to_tray: boolean,
  */
 tray_hint_shown: boolean, 
 /**
+ * The chat model may use tools (date/time, calculator, web search); off by default
+ * because a web search sends the query to a search engine.
+ */
+chat_tools: boolean, 
+/**
  * Editable parts of the chat system prompt.
  */
 prompt_template: PromptTemplate, };

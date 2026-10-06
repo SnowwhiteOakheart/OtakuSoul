@@ -753,6 +753,8 @@ export interface AppSettings {
   /** Closing the window keeps the app running in the tray. */
   close_to_tray?: boolean;
   tray_hint_shown?: boolean;
+  /** The chat model may use tools (date/time, calculator, web search). */
+  chat_tools?: boolean;
   prompt_template?: PromptTemplate;
 }
 

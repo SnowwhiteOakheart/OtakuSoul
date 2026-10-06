@@ -147,8 +147,9 @@ export const api = {
 
   // Chat & Inference
   /** `contextTokens`: context window of a cloud model; a local server reports its own. */
-  sendChatMessage: async (request: ChatRequest, generationId: string, contextTokens?: number): Promise<DoneEvent> => {
-    return await invoke<DoneEvent>('send_chat_message', { request, generationId, contextTokens: contextTokens ?? null });
+  /** `tools`: the model may call the chat tools (date/time, calculator, web search). */
+  sendChatMessage: async (request: ChatRequest, generationId: string, contextTokens?: number, tools = false): Promise<DoneEvent> => {
+    return await invoke<DoneEvent>('send_chat_message', { request, generationId, contextTokens: contextTokens ?? null, tools });
   },
 
   abortStageTurn: async (): Promise<void> => {

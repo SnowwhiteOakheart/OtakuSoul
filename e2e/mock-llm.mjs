@@ -62,6 +62,18 @@ export function startMockLlm() {
         stats.lastChatSystemPrompt = system;
         stats.lastChatMessages = request.messages ?? [];
       }
+      // Chat tools: with the tool instructions present the reply first calls the calculator,
+      // then answers with the result it got back.
+      const toolReply = (messages) => {
+        if (!isChat || !messages.some((m) => m.role === 'system' && String(m.content).includes('# Tools\n'))) return null;
+        const last = messages.at(-1);
+        if (String(last?.content ?? '').startsWith('[TOOL RESULT]')) {
+          stats.toolResults = (stats.toolResults ?? 0) + 1;
+          return `*rechnet kurz nach* "Das sind ${String(last.content).split('\n').at(-1)}."`;
+        }
+        stats.toolCalls = (stats.toolCalls ?? 0) + 1;
+        return 'Moment … <tool_call>{"name": "calculate", "arguments": {"expression": "19 * 21"}}</tool_call>';
+      };
       const isRouting = system.includes('[SOUL STAGE — ROUTING]') || system.includes('[STAGE — ROUTING]');
       if (isRouting) {
         stats.routing = (stats.routing ?? 0) + 1;
@@ -123,7 +135,7 @@ export function startMockLlm() {
             ? SUMMARY
             : isTranslation
               ? TRANSLATION
-              : REPLY;
+              : toolReply(request.messages ?? []) ?? REPLY;
       for (const [matches, flag, cancelled] of [
         [isRouting, 'stallRouting', 'cancelledRouting'],
         [isArcArchive, 'stallArcArchive', 'cancelledArcArchive'],

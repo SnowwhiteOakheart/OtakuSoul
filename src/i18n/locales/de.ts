@@ -2505,4 +2505,6 @@ export const de = {
   "chat.sessionDeleted": "Chat „{{title}}“ gelöscht.",
   "stage.messageDeleted": "Nachricht gelöscht.",
   "stage.undoTooLate": "Die Szene hat sich inzwischen geändert – „Rückgängig“ ist nicht mehr möglich.",
+  "chat.tools": "Werkzeuge",
+  "chat.toolsHint": "Das Modell darf Werkzeuge nutzen: Datum/Uhrzeit, Rechner und Websuche (die Suchanfrage geht an DuckDuckGo). Die Nutzung steht im Gedankenblock der Antwort.",
 } as const;

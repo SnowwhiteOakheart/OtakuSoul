@@ -313,19 +313,124 @@ impl InferenceClient {
         request: ChatRequest,
         generation_id: &str,
     ) -> Result<DoneEvent, String> {
+        self.stream_chat_with_tools(app_handle, request, generation_id, false)
+            .await
+    }
+
+    /// Like `stream_chat`; with `tools` the model may call the chat tools (`chat_tools`): calls
+    /// are hidden from the stream, run, and the model is asked again with their results. Tool
+    /// use shows up in the reasoning text.
+    pub async fn stream_chat_with_tools<R: tauri::Runtime>(
+        &self,
+        app_handle: &tauri::AppHandle<R>,
+        mut request: ChatRequest,
+        generation_id: &str,
+        tools: bool,
+    ) -> Result<DoneEvent, String> {
+        use crate::modules::chat_tools::{
+            MAX_TOOL_ROUNDS, TOOL_INSTRUCTIONS, TOOL_RESULT_PREFIX, ToolCallFilter, parse_call, run,
+        };
+        if tools {
+            let after_system = request
+                .messages
+                .iter()
+                .position(|m| m.role != "system")
+                .unwrap_or(request.messages.len());
+            request.messages.insert(
+                after_system,
+                ChatMessage {
+                    role: "system".into(),
+                    content: TOOL_INSTRUCTIONS.into(),
+                    attachments: Vec::new(),
+                },
+            );
+        }
+
         let mut full_text = String::new();
         let mut full_thought = String::new();
-        self.stream_segments(request, |is_thought, text| {
-            Self::emit_segment(
-                app_handle,
-                generation_id,
-                &mut full_text,
-                &mut full_thought,
-                is_thought,
-                text,
-            );
-        })
-        .await?;
+        for round in 0..=MAX_TOOL_ROUNDS {
+            let capture = tools && round < MAX_TOOL_ROUNDS;
+            let mut filter = ToolCallFilter::default();
+            let mut round_text = String::new();
+            self.stream_segments(request.clone(), |is_thought, text| {
+                let text = if is_thought || !capture {
+                    text
+                } else {
+                    filter.push(&text)
+                };
+                if text.is_empty() {
+                    return;
+                }
+                if !is_thought {
+                    round_text.push_str(&text);
+                }
+                Self::emit_segment(
+                    app_handle,
+                    generation_id,
+                    &mut full_text,
+                    &mut full_thought,
+                    is_thought,
+                    text,
+                );
+            })
+            .await?;
+            if !capture {
+                break;
+            }
+            let (rest, calls) = filter.finish();
+            if !rest.is_empty() {
+                round_text.push_str(&rest);
+                Self::emit_segment(
+                    app_handle,
+                    generation_id,
+                    &mut full_text,
+                    &mut full_thought,
+                    false,
+                    rest,
+                );
+            }
+            if calls.is_empty() || self.is_aborted() {
+                break;
+            }
+
+            let mut asked = round_text;
+            let mut results = Vec::new();
+            for raw in &calls {
+                asked.push_str(&format!("\n<tool_call>{}</tool_call>", raw.trim()));
+                let Some(call) = parse_call(raw) else {
+                    results.push(format!("{TOOL_RESULT_PREFIX} invalid tool call (not JSON)"));
+                    continue;
+                };
+                let Some(result) = self.with_abort(run(&call)).await else {
+                    break;
+                };
+                let note = format!(
+                    "\n[Tool] {} {} → {}\n",
+                    call.name,
+                    call.arguments,
+                    result.chars().take(300).collect::<String>()
+                );
+                Self::emit_segment(
+                    app_handle,
+                    generation_id,
+                    &mut full_text,
+                    &mut full_thought,
+                    true,
+                    note,
+                );
+                results.push(format!("{TOOL_RESULT_PREFIX} {}\n{result}", call.name));
+            }
+            if self.is_aborted() {
+                break;
+            }
+            for (role, content) in [("assistant", asked), ("user", results.join("\n\n"))] {
+                request.messages.push(ChatMessage {
+                    role: role.into(),
+                    content,
+                    attachments: Vec::new(),
+                });
+            }
+        }
 
         let done_event = DoneEvent {
             generation_id: generation_id.to_owned(),

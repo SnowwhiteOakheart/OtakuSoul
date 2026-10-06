@@ -1734,4 +1734,9 @@ veraltet und sind korrigiert: `chat-sidebar-errors` las die Sitzung, bevor der e
   `memoryDrawer.test.tsx`).
 - [x] **E2E-Aufräumen ohne `ENOTEMPTY`:** Der Harness löscht das Wegwerfprofil mit Wiederholungen, weil die App beim
   Herunterfahren noch schreiben kann (traf `character-import` und `memory-save-errors`).
+- [x] **Werkzeuge im normalen Chat:** Schalter „Werkzeuge“ in der Chat-Leiste (Einstellung `chat_tools`, Standard aus).
+  Anbieterunabhängiges Text-Protokoll (`chat_tools.rs`): Das Modell schreibt `<tool_call>{…}</tool_call>`, der Stream
+  blendet es aus, die App führt Datum/Uhrzeit, Rechner (eigener sicherer Parser) oder Websuche (DuckDuckGo) aus und
+  fragt mit `[TOOL RESULT]` erneut (höchstens 3 Runden). Die Nutzung steht im Gedankenblock (Rust-Tests, Unit-Test,
+  E2E `chat-tools.mjs`, Screenshot 55).
 

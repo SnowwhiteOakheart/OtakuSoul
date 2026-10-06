@@ -71,6 +71,10 @@ pub struct AppSettings {
     /// The hint about the tray was shown on the first close.
     #[serde(default)]
     pub tray_hint_shown: bool,
+    /// The chat model may use tools (date/time, calculator, web search); off by default
+    /// because a web search sends the query to a search engine.
+    #[serde(default)]
+    pub chat_tools: bool,
     /// Editable parts of the chat system prompt.
     pub prompt_template: crate::modules::prompt_builder::PromptTemplate,
 }
@@ -139,6 +143,7 @@ impl Default for AppSettings {
             onboarding_completed: false,
             close_to_tray: true,
             tray_hint_shown: false,
+            chat_tools: false,
             prompt_template: Default::default(),
         }
     }

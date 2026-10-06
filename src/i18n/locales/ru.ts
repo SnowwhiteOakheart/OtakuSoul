@@ -2503,4 +2503,6 @@ export const ru: TranslationDictionary = {
   "chat.sessionDeleted": "Чат «{{title}}» удалён.",
   "stage.messageDeleted": "Сообщение удалено.",
   "stage.undoTooLate": "Сцена с тех пор изменилась – отмена уже невозможна.",
+  "chat.tools": "Инструменты",
+  "chat.toolsHint": "Модель может использовать инструменты: дату/время, калькулятор и веб-поиск (запрос уходит в DuckDuckGo). Использование видно в блоке рассуждений ответа.",
 };

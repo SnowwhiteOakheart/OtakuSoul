@@ -625,7 +625,7 @@ export const createChatSlice: SliceCreator<ChatSlice> = (set, get) => {
         sampling: {
           ...sampling,
         },
-      }, generationId, selectedBackend === 'cloud' ? get().cloudContextTokens : undefined);
+      }, generationId, selectedBackend === 'cloud' ? get().cloudContextTokens : undefined, get().chatTools);
       if (!inContext(activeChatId, activeCharacter.id) && !keepsPartial(done, activeChatId, activeCharacter.id)) return;
 
       const { cleanedText, stateUpdates } = extractStateUpdates(done.full_text);
@@ -719,7 +719,7 @@ export const createChatSlice: SliceCreator<ChatSlice> = (set, get) => {
         sampling: {
           ...sampling,
         },
-      }, generationId, selectedBackend === 'cloud' ? get().cloudContextTokens : undefined);
+      }, generationId, selectedBackend === 'cloud' ? get().cloudContextTokens : undefined, get().chatTools);
       if (!inContext(activeChatId, activeCharacter.id) && !keepsPartial(done, activeChatId, activeCharacter.id)) return;
 
       const { cleanedText, stateUpdates } = extractStateUpdates(done.full_text);
@@ -898,7 +898,7 @@ export const createChatSlice: SliceCreator<ChatSlice> = (set, get) => {
         sampling: {
           ...sampling,
         },
-      }, generationId, selectedBackend === 'cloud' ? get().cloudContextTokens : undefined);
+      }, generationId, selectedBackend === 'cloud' ? get().cloudContextTokens : undefined, get().chatTools);
       if (!inContext(chatId, activeCharacter?.id) && !keepsPartial(done, chatId, activeCharacter?.id)) return;
 
       // 4. Parse <state> tags

@@ -162,6 +162,13 @@ describe('chat generation failures', () => {
     expect(api.addChatMessage).toHaveBeenCalledOnce();
     expect(useAppStore.getState().isGenerating).toBe(false);
   });
+  it('lets the model use tools only when the chat tools are switched on', async () => {
+    await useAppStore.getState().sendMessage('Hello');
+    expect(vi.mocked(api.sendChatMessage).mock.calls.at(-1)?.[3]).toBe(false);
+    useAppStore.setState({ chatTools: true });
+    await useAppStore.getState().sendMessage('Again');
+    expect(vi.mocked(api.sendChatMessage).mock.calls.at(-1)?.[3]).toBe(true);
+  });
   it('keeps the text of a reply stopped mid-stream, so it can be continued', async () => {
     let finish!: (value: typeof done) => void;
     vi.mocked(api.sendChatMessage).mockImplementationOnce(() => new Promise((resolve) => { finish = resolve; }));
