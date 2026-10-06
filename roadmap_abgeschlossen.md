@@ -1803,4 +1803,8 @@ veraltet und sind korrigiert: `chat-sidebar-errors` las die Sitzung, bevor der e
   Standard-Morphs (あいうえお, まばたき, 笑い, 怒り, 困る …). VMD-Bewegungen als Gesten/Ruhe-Schleife. Mit einem echten
   Modell (Cure Mermaid) geprüft. Dabei behoben: Der VRM-Viewer übernahm erkannte Gefühle nach dem Öffnen nicht mehr;
   beide Viewer teilen jetzt Bühne, Overlay und Bewegungslogik.
+- [x] **glTF/GLB-Avatare:** `.glb` mit Mixamo-artigem Rig (mit oder ohne `mixamorig`-Präfix) importieren; Gesicht über
+  Oculus-Visemes oder ARKit-Blendshapes (Blinzeln, Mundformen, Gefühle; gemeinsame Ziele wie `jawOpen` werden addiert),
+  Arme aus der Bind-Pose abgesenkt, Zentimeter-Exporte automatisch skaliert. Mixamo-FBX laufen auch auf diesen Rigs
+  (Übertragung über den Weltraum mit Ruhepose-Ausgleich). Dabei behoben: Höhenmessung bei MMD/glTF zählte Morph-Ziele mit.
 

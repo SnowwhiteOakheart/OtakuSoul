@@ -126,11 +126,13 @@ Hub). Integrationen → Bildgenerierung enthält nur Studio und Galerie.
   TADA: `CRISPASR_TADA_WAV_CLONE=1` (WAV-Klon, Encoder/Aligner neben dem Modell), `CRISPASR_TADA_NUM_CANDIDATES=4`.
   Chatterbox Turbo (`speaks_sound_tags`): `voice::actions_to_sound_tags` macht *lacht* zu `[laugh]` vor dem Aktionsfilter.
 - 3D-Avatar: gemeinsame Bühne `avatarStage.ts` (Kamera, Licht, gespeicherte Ansicht, Renderschleife), Overlay
-  `AvatarViewerChrome.tsx`, Bewegungen über `useAvatarMotions`; `AvatarCanvas` wählt nach Endung `VrmViewer` oder
+  `AvatarViewerChrome.tsx`, Bewegungen über `useAvatarMotions`; `AvatarCanvas` wählt nach Endung `VrmViewer`,
+  `GltfViewer` (`.glb`, Mixamo-artige Knochennamen, ARKit-/Oculus-Morphs über `gltfRig.ts` `MorphFace`, Mixamo-FBX per
+  `retargetToRig` mit Ruhepose-Ausgleich; Höhe aus Grundpositionen, da Geometrie-Bounds Morphs einrechnen) oder
   `MmdViewer` (`.pmx`/`.pmd`, `@moeru/three-mmd`, Spring-Bone-Physik, Morphs あいうえお/まばたき/笑い …, nur VMD-Bewegungen).
   MMD-Reihenfolge pro Bild: `beforeUpdate` → eigene Knochen auf Ruhe → Mixer → Zusätze → `mmd.update`. Texturen über
   `LoadingManager`-URL-Modifier, Groß-/Kleinschreibung per `list_avatar_model_files`. Import (`avatar_models.rs`): ZIP
-  (Shift_JIS-Namen) oder PMX mit Ordner (max. 1 GB/5000 Dateien). E2E: `e2e/tools/make-mmd.mjs` (PMX + VMD).
+  (Shift_JIS-Namen) oder PMX mit Ordner (max. 1 GB/5000 Dateien). E2E: `e2e/tools/make-mmd.mjs` (PMX + VMD), `make-glb.mjs` (GLB über three.js-Exporter).
 - 3D-Avatar (`VrmViewer.tsx`): Startansicht aus Kopf-Knochen und Modellhöhe (`frameUpperBody` in `services/avatarViewState.ts`);
   gespeichert wird nur eine vom Nutzer bewegte Kamera, „Ansicht zurücksetzen“ löscht sie.
   Bewegungen: `.vrma` und Mixamo-`.fbx` (`mixamoRetarget.ts`: Mixamo-Ruhepose → normalisierte VRM-Knochen) in `<Daten>/animations/` (`avatar_motions.rs`, Verwendung in `roles.json`, aus dem Dateinamen

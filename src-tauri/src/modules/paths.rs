@@ -44,7 +44,7 @@ pub struct ScannedVrm {
     pub name: String,
     pub path: String,
     pub size_mb: u64,
-    /// `vrm` or `mmd` (PMX/PMD with its textures next to it).
+    /// `vrm`, `mmd` (PMX/PMD with its textures next to it) or `gltf` (plain `.glb` rig).
     pub format: String,
 }
 
@@ -554,7 +554,10 @@ pub fn scan_available_vrm_models() -> Vec<ScannedVrm> {
         if let Ok(entries) = fs::read_dir(dir) {
             for entry in entries.flatten() {
                 let path = entry.path();
-                if path.is_file() && path.extension().and_then(|e| e.to_str()) == Some("vrm") {
+                let Some(format) = single_file_avatar_format(&path) else {
+                    continue;
+                };
+                if path.is_file() {
                     let name = path
                         .file_stem()
                         .and_then(|s| s.to_str())
@@ -568,7 +571,7 @@ pub fn scan_available_vrm_models() -> Vec<ScannedVrm> {
                         name,
                         path: path.to_string_lossy().to_string(),
                         size_mb,
-                        format: "vrm".into(),
+                        format: format.into(),
                     });
                 }
             }
@@ -595,6 +598,15 @@ pub fn scan_available_vrm_models() -> Vec<ScannedVrm> {
     vrms
 }
 
+/// Single-file avatars: `.vrm`, or plain binary glTF (`.glb`) with a humanoid rig.
+fn single_file_avatar_format(path: &Path) -> Option<&'static str> {
+    match path.extension()?.to_str()?.to_ascii_lowercase().as_str() {
+        "vrm" => Some("vrm"),
+        "glb" => Some("gltf"),
+        _ => None,
+    }
+}
+
 /// Folders 3D avatars may be loaded from (bundled ones and the user's).
 pub fn avatar_roots() -> Vec<PathBuf> {
     let paths = resolve_app_paths();
@@ -611,11 +623,7 @@ pub fn avatar_roots() -> Vec<PathBuf> {
 pub fn import_vrm_model(source_path: &str) -> Result<ScannedVrm, String> {
     let src = Path::new(source_path);
     let avatars = PathBuf::from(resolve_app_paths().data_dir).join("avatars");
-    let is_vrm = src
-        .extension()
-        .and_then(|e| e.to_str())
-        .is_some_and(|e| e.eq_ignore_ascii_case("vrm"));
-    if is_vrm {
+    if single_file_avatar_format(src).is_some() {
         return import_vrm_into(src, &avatars);
     }
     if !src.is_file() {
@@ -646,24 +654,22 @@ fn import_vrm_into(src: &Path, dest_dir: &Path) -> Result<ScannedVrm, String> {
             path = src.display()
         ));
     }
-    let is_vrm = src
-        .extension()
-        .and_then(|e| e.to_str())
-        .is_some_and(|e| e.eq_ignore_ascii_case("vrm"));
-    // VRM files are binary glTF: they start with the magic bytes "glTF".
+    let format = single_file_avatar_format(src);
+    // VRM and GLB files are binary glTF: they start with the magic bytes "glTF".
     let mut magic = [0u8; 4];
     let has_magic = fs::File::open(src)
         .and_then(|mut f| std::io::Read::read_exact(&mut f, &mut magic))
         .is_ok()
         && &magic == b"glTF";
-    if !is_vrm || !has_magic {
+    let (Some(format), true) = (format, has_magic) else {
         return Err(crate::err!("backend.vrm.invalid"));
-    }
+    };
+    let extension = if format == "vrm" { "vrm" } else { "glb" };
 
     fs::create_dir_all(dest_dir).map_err(|e| crate::err!("backend.common.dirCreate", error = e))?;
     let stem = src.file_stem().and_then(|s| s.to_str()).unwrap_or("Avatar");
     let src_len = fs::metadata(src).map(|m| m.len()).unwrap_or(0);
-    let mut dest = dest_dir.join(format!("{stem}.vrm"));
+    let mut dest = dest_dir.join(format!("{stem}.{extension}"));
     let mut n = 2;
     while dest.exists() {
         let same_file = fs::canonicalize(&dest).ok() == fs::canonicalize(src).ok();
@@ -672,7 +678,7 @@ fn import_vrm_into(src: &Path, dest_dir: &Path) -> Result<ScannedVrm, String> {
         if same_file || same_content {
             break;
         }
-        dest = dest_dir.join(format!("{stem} ({n}).vrm"));
+        dest = dest_dir.join(format!("{stem} ({n}).{extension}"));
         n += 1;
     }
     if !dest.exists() {
@@ -687,7 +693,7 @@ fn import_vrm_into(src: &Path, dest_dir: &Path) -> Result<ScannedVrm, String> {
             .to_string(),
         path: dest.to_string_lossy().to_string(),
         size_mb: src_len / (1024 * 1024),
-        format: "vrm".into(),
+        format: format.into(),
     })
 }
 
@@ -727,6 +733,13 @@ mod tests {
         let fake = src_dir.join("fake.vrm");
         fs::write(&fake, b"nope").unwrap();
         assert!(import_vrm_into(&fake, &dest).is_err());
+        let glb = src_dir.join("Rig.glb");
+        fs::write(&glb, b"glTF\x02\0\0\0").unwrap();
+        let imported = import_vrm_into(&glb, &dest).unwrap();
+        assert_eq!(
+            (imported.format.as_str(), imported.path.ends_with("Rig.glb")),
+            ("gltf", true)
+        );
 
         let _ = fs::remove_dir_all(root);
     }

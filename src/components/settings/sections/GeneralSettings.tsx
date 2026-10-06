@@ -47,7 +47,7 @@ export const GeneralSettings = () => {
         filters: [
           {
             name: translate('settings.fileFilterVrm'),
-            extensions: ['vrm', 'pmx', 'pmd', 'zip'],
+            extensions: ['vrm', 'glb', 'pmx', 'pmd', 'zip'],
           },
         ],
       });
@@ -314,7 +314,7 @@ export const GeneralSettings = () => {
           >
             {scannedVrms.map((vrm, idx) => (
               <option key={idx} value={vrm.path}>
-                {vrm.name} ({vrm.format === 'mmd' ? 'MMD, ' : ''}{vrm.size_mb.toFixed(0)} MB)
+                {vrm.name} ({vrm.format === 'mmd' ? 'MMD, ' : vrm.format === 'gltf' ? 'glTF, ' : ''}{vrm.size_mb.toFixed(0)} MB)
               </option>
             ))}
           </select>

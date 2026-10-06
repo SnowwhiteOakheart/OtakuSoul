@@ -2,6 +2,6 @@
 
 export type ScannedVrm = { name: string, path: string, size_mb: number, 
 /**
- * `vrm` or `mmd` (PMX/PMD with its textures next to it).
+ * `vrm`, `mmd` (PMX/PMD with its textures next to it) or `gltf` (plain `.glb` rig).
  */
 format: string, };

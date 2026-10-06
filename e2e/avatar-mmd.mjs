@@ -28,7 +28,7 @@ try {
 
   // Choose it as the default 3D avatar (the test character has none of its own).
   await browser.$('button=Einstellungen').click();
-  const select = await browser.$('select[aria-label="3D-Avatar (VRM oder MMD)"]');
+  const select = await browser.$('select[aria-label="3D-Avatar (VRM, glTF oder MMD)"]');
   await select.waitForDisplayed({ timeout: 10_000 });
   await browser.$('button*=Aktualisieren').click().catch(() => {});
   await browser.waitUntil(async () => (await select.getHTML()).includes('Testfigur'), { timeout: 10_000, timeoutMsg: 'MMD-Modell fehlt in der Liste' });

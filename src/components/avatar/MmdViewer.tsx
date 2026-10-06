@@ -11,6 +11,7 @@ import { errorMessage } from '../../utils/errors';
 import type { AvatarMotion } from '../../types';
 import { AvatarMotionPlayer } from './vrmMotions';
 import { createAvatarStage, createBlinker } from './avatarStage';
+import { loweredArm } from './avatarPose';
 import { AvatarViewerChrome } from './AvatarViewerChrome';
 import { useAvatarMotions } from './useAvatarMotions';
 import type { AvatarViewerProps } from './VrmViewer';
@@ -38,19 +39,6 @@ const EXPRESSION_WEIGHTS: Record<string, number> = { happy: 0.8, angry: 0.8, sad
 const VISEME_KEYS = Object.keys(SILENT_VISEMES) as (keyof Visemes)[];
 
 const dirname = (path: string) => path.replace(/[\\/][^\\/]*$/, '');
-
-/**
- * The upper arm rotated so it hangs down beside the body, whatever the model's bind pose (MMD
- * models come in T- and A-poses). Computed once from the bind pose; local to the bone.
- */
-function loweredArm(arm: THREE.Bone, elbow: THREE.Bone, side: 1 | -1): THREE.Quaternion {
-  const from = arm.getWorldPosition(new THREE.Vector3());
-  const direction = elbow.getWorldPosition(new THREE.Vector3()).sub(from).normalize();
-  const target = new THREE.Vector3(0.28 * side, -1, 0.06).normalize();
-  const turn = new THREE.Quaternion().setFromUnitVectors(direction, target);
-  const parent = arm.parent ? arm.parent.getWorldQuaternion(new THREE.Quaternion()) : new THREE.Quaternion();
-  return parent.clone().invert().multiply(turn).multiply(parent).multiply(arm.quaternion);
-}
 
 /** Loads a VMD motion for this model. */
 async function loadVmdClip(motion: AvatarMotion, mmd: MMD): Promise<THREE.AnimationClip | null> {
@@ -149,10 +137,11 @@ export const MmdViewer = ({
           if (arm && elbow) posed.push({ bone: arm, rest: loweredArm(arm, elbow, side) });
         }
 
-        // Bind-pose bounds: before the first render the skinning matrices are still empty, so
-        // the skinned bounds of the mesh would collapse to the origin.
-        model.mesh.geometry.computeBoundingBox();
-        const box = model.mesh.geometry.boundingBox!.clone().applyMatrix4(model.mesh.matrixWorld);
+        // Bind-pose bounds from the base positions: skinned bounds are empty before the first
+        // render, and geometry bounds would include every morph at full weight.
+        const box = new THREE.Box3()
+          .setFromBufferAttribute(model.mesh.geometry.getAttribute('position') as THREE.BufferAttribute)
+          .applyMatrix4(model.mesh.matrixWorld);
         const headY = head ? head.getWorldPosition(new THREE.Vector3()).y : box.max.y - 0.15;
         stage.frameModel(headY, box.max.y);
         mmd = model;

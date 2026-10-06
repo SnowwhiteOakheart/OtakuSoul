@@ -12,6 +12,8 @@ import { AvatarSkeleton, ScrollText } from '../ui';
 // MMD brings its own loader and physics; only loaded for MMD avatars.
 const MmdViewer = lazy(() => import('./MmdViewer'));
 const isMmdModel = (path: string) => /\.(pmx|pmd)$/i.test(path);
+const GltfViewer = lazy(() => import('./GltfViewer'));
+const isGltfModel = (path: string) => /\.glb$/i.test(path);
 
 const Live2DViewer = lazy(() =>
   loadCubismCore()
@@ -272,6 +274,18 @@ export const AvatarCanvas: React.FC<AvatarCanvasProps> = ({
         isMmdModel(vrmPath) ? (
           <Suspense fallback={<AvatarSkeleton label={t('avatar.vrmLoading')} />}>
             <MmdViewer
+              key={vrmPath}
+              modelPath={vrmPath}
+              emotion={currentEmotion.vrm_expression}
+              isSpeaking={isSpeaking}
+              motions={avatarMotions}
+              gesture={avatarGesture}
+              onPickEmotion={handleSelectManualEmotion}
+            />
+          </Suspense>
+        ) : isGltfModel(vrmPath) ? (
+          <Suspense fallback={<AvatarSkeleton label={t('avatar.vrmLoading')} />}>
+            <GltfViewer
               key={vrmPath}
               modelPath={vrmPath}
               emotion={currentEmotion.vrm_expression}
