@@ -30,6 +30,9 @@ const waitForPort = async (port, timeoutMs = 20_000) => {
 };
 
 /** Settings for the fresh profile: wizard done, cloud backend pointing at the mock. */
+/** The app may still write its profile while shutting down; retry instead of failing (ENOTEMPTY). */
+const removeHome = (home) => rmSync(home, { recursive: true, force: true, maxRetries: 10, retryDelay: 200 });
+
 export async function launch(settings = {}) {
   const mock = await startMockLlm();
   const home = mkdtempSync(path.join(tmpdir(), 'otakusoul-e2e-'));
@@ -78,13 +81,13 @@ export async function launch(settings = {}) {
       await browser.deleteSession().catch(() => {});
       driver.kill();
       await mock.close();
-      rmSync(home, { recursive: true, force: true });
+      removeHome(home);
     };
     return { browser, mock, home, close };
   } catch (e) {
     driver.kill();
     await mock.close();
-    rmSync(home, { recursive: true, force: true });
+    removeHome(home);
     throw e;
   }
 }
