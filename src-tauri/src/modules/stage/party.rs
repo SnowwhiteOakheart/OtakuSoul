@@ -36,6 +36,7 @@ pub fn ensure_party_vitals(state: &mut SceneState) {
             initiative: 0,
             conditions: Vec::new(),
             skills: std::collections::HashMap::new(),
+            stats5e: None,
         });
     }
     for name in state.definition.party.clone() {
@@ -60,6 +61,7 @@ pub fn ensure_party_vitals(state: &mut SceneState) {
             initiative: 0,
             conditions: Vec::new(),
             skills: std::collections::HashMap::new(),
+            stats5e: None,
         });
     }
 }

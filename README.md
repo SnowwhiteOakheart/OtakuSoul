@@ -357,6 +357,11 @@ OtakuSoul is free and open-source software distributed under the **GNU General P
 ### Credits
 OtakuSoul originated as an independent Rust/Tauri port and redesign of the Python project [Soul of Waifu](https://github.com/jofizcd/Soul-of-Waifu) by [jofizcd](https://github.com/jofizcd) (GPLv3).
 
+### 5e rules (SRD 5.1)
+The optional 5e-compatible rules of Soul Stage (monsters, class templates, combat rules in `presets/srd5/` and the rules engine) are based on the SRD 5.1:
+
+> This work includes material taken from the System Reference Document 5.1 ("SRD 5.1") by Wizards of the Coast LLC and available at https://dnd.wizards.com/resources/systems-reference-document. The SRD 5.1 is licensed under the Creative Commons Attribution 4.0 International License available at https://creativecommons.org/licenses/by/4.0/legalcode.
+
 ### Model Integrity & AI Transparency
 OtakuSoul deliberately **does not** ship proprietary model weights inside installers or git repositories:
 * All runtimes and model weights download directly from verified sources (e.g. Hugging Face) and undergo automated **SHA-256 verification**.

@@ -1,0 +1,41 @@
+{
+  "_source": "Class features and equipment from the System Reference Document 5.1 by Wizards of the Coast LLC, CC-BY-4.0. Ability scores use the standard array (15, 14, 13, 12, 10, 8).",
+  "classes": [
+    {
+      "id": "fighter", "name": { "de": "Kämpfer", "en": "Fighter", "ru": "Воин" },
+      "hit_die": 10, "abilities": [15, 13, 14, 8, 12, 10], "armor_class": 18, "speed_ft": 30,
+      "saves": ["str", "con"], "skills": ["athletics", "perception"],
+      "attacks": [
+        { "id": "longsword", "name": { "de": "Langschwert", "en": "Longsword", "ru": "Длинный меч" }, "kind": "melee", "ability": "str", "damage": "1d8", "damage_type": "slashing" },
+        { "id": "javelin", "name": { "de": "Wurfspeer", "en": "Javelin", "ru": "Метательное копьё" }, "kind": "ranged", "ability": "str", "damage": "1d6", "damage_type": "piercing", "range_ft": 30, "long_range_ft": 120 }
+      ]
+    },
+    {
+      "id": "wizard", "name": { "de": "Magier", "en": "Wizard", "ru": "Волшебник" },
+      "hit_die": 6, "abilities": [8, 14, 13, 15, 12, 10], "armor_class": 12, "speed_ft": 30,
+      "saves": ["int", "wis"], "skills": ["arcana", "history"],
+      "attacks": [
+        { "id": "fire_bolt", "name": { "de": "Feuerpfeil", "en": "Fire bolt", "ru": "Огненный снаряд" }, "kind": "spell", "ability": "int", "damage": "1d10", "add_modifier": false, "damage_type": "fire", "range_ft": 120 },
+        { "id": "quarterstaff", "name": { "de": "Kampfstab", "en": "Quarterstaff", "ru": "Боевой посох" }, "kind": "melee", "ability": "str", "damage": "1d6", "damage_type": "bludgeoning" }
+      ]
+    },
+    {
+      "id": "rogue", "name": { "de": "Schurke", "en": "Rogue", "ru": "Плут" },
+      "hit_die": 8, "abilities": [8, 15, 14, 12, 13, 10], "armor_class": 13, "speed_ft": 30,
+      "saves": ["dex", "int"], "skills": ["stealth", "acrobatics", "perception", "sleight_of_hand"],
+      "attacks": [
+        { "id": "shortsword", "name": { "de": "Kurzschwert", "en": "Shortsword", "ru": "Короткий меч" }, "kind": "melee", "ability": "finesse", "damage": "1d6", "damage_type": "piercing" },
+        { "id": "shortbow", "name": { "de": "Kurzbogen", "en": "Shortbow", "ru": "Короткий лук" }, "kind": "ranged", "ability": "dex", "damage": "1d6", "damage_type": "piercing", "range_ft": 80, "long_range_ft": 320 }
+      ]
+    },
+    {
+      "id": "cleric", "name": { "de": "Kleriker", "en": "Cleric", "ru": "Жрец" },
+      "hit_die": 8, "abilities": [14, 10, 13, 8, 15, 12], "armor_class": 16, "speed_ft": 30,
+      "saves": ["wis", "cha"], "skills": ["medicine", "religion"],
+      "attacks": [
+        { "id": "mace", "name": { "de": "Streitkolben", "en": "Mace", "ru": "Булава" }, "kind": "melee", "ability": "str", "damage": "1d6", "damage_type": "bludgeoning" },
+        { "id": "light_crossbow", "name": { "de": "Leichte Armbrust", "en": "Light crossbow", "ru": "Лёгкий арбалет" }, "kind": "ranged", "ability": "dex", "damage": "1d8", "damage_type": "piercing", "range_ft": 80, "long_range_ft": 320 }
+      ]
+    }
+  ]
+}

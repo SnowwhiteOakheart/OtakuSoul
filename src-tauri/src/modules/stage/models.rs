@@ -86,6 +86,10 @@ pub struct Combatant {
     pub conditions: Vec<CombatCondition>,
     #[serde(default)]
     pub skills: std::collections::HashMap<String, i32>,
+    /// Rules values in 5e scenes (`ruleset: "5e"`); absent in narrative scenes.
+    #[serde(default)]
+    #[ts(optional)]
+    pub stats5e: Option<super::rules5e::Stats5e>,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize, TS)]

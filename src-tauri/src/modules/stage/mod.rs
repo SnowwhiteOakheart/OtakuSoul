@@ -23,6 +23,7 @@ mod models;
 mod npc;
 mod party;
 mod plan;
+pub mod rules5e;
 mod scenes;
 #[cfg(test)]
 mod tests;

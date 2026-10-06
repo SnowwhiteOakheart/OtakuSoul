@@ -89,7 +89,9 @@ import type { VoiceEffects } from './generated/VoiceEffects';
 import type { WebServerConfig } from './generated/WebServerConfig';
 import type { WebServerStatus } from './generated/WebServerStatus';
 import type { WorldState } from './generated/WorldState';
+import type { Stats5e } from './generated/Stats5e';
 export type {
+  Stats5e,
   AppPaths,
   RuntimeKind,
   ImageModelInfo,
@@ -439,6 +441,8 @@ export interface Combatant {
   initiative: number;
   conditions: CombatCondition[];
   skills: Record<string, number>;
+  /** Rules values in 5e scenes. */
+  stats5e?: Stats5e | null;
 }
 
 export interface EncounterState {

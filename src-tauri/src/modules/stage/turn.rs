@@ -699,6 +699,7 @@ RULES:
                         initiative: rand::rng().random_range(1..=20),
                         conditions: Vec::new(),
                         skills: std::collections::HashMap::new(),
+                        stats5e: None,
                     });
                 }
                 for (index, enemy) in encounter.enemies.iter().enumerate() {
@@ -713,6 +714,7 @@ RULES:
                         initiative: rand::rng().random_range(1..=20),
                         conditions: Vec::new(),
                         skills: std::collections::HashMap::new(),
+                        stats5e: None,
                     });
                 }
                 state

@@ -1,0 +1,104 @@
+{
+  "_source": "System Reference Document 5.1 by Wizards of the Coast LLC, CC-BY-4.0. Values from the SRD stat blocks; traits are listed by id and take effect once the engine supports them.",
+  "monsters": [
+    {
+      "id": "goblin", "name": { "de": "Goblin", "en": "Goblin", "ru": "Гоблин" },
+      "cr": 0.25, "armor_class": 15, "hit_dice": "2d6", "speed_ft": 30,
+      "abilities": [8, 14, 10, 10, 8, 8],
+      "attacks": [
+        { "id": "scimitar", "name": { "de": "Krummsäbel", "en": "Scimitar", "ru": "Скимитар" }, "kind": "melee", "to_hit": 4, "damage": "1d6+2", "damage_type": "slashing" },
+        { "id": "shortbow", "name": { "de": "Kurzbogen", "en": "Shortbow", "ru": "Короткий лук" }, "kind": "ranged", "to_hit": 4, "damage": "1d6+2", "damage_type": "piercing", "range_ft": 80, "long_range_ft": 320 }
+      ],
+      "traits": ["nimble_escape"]
+    },
+    {
+      "id": "kobold", "name": { "de": "Kobold", "en": "Kobold", "ru": "Кобольд" },
+      "cr": 0.125, "armor_class": 12, "hit_dice": "2d6-2", "speed_ft": 30,
+      "abilities": [7, 15, 9, 8, 7, 8],
+      "attacks": [
+        { "id": "dagger", "name": { "de": "Dolch", "en": "Dagger", "ru": "Кинжал" }, "kind": "melee", "to_hit": 4, "damage": "1d4+2", "damage_type": "piercing" },
+        { "id": "sling", "name": { "de": "Schleuder", "en": "Sling", "ru": "Праща" }, "kind": "ranged", "to_hit": 4, "damage": "1d4+2", "damage_type": "bludgeoning", "range_ft": 30, "long_range_ft": 120 }
+      ],
+      "traits": ["pack_tactics", "sunlight_sensitivity"]
+    },
+    {
+      "id": "wolf", "name": { "de": "Wolf", "en": "Wolf", "ru": "Волк" },
+      "cr": 0.25, "armor_class": 13, "hit_dice": "2d8+2", "speed_ft": 40,
+      "abilities": [12, 15, 12, 3, 12, 6],
+      "attacks": [
+        { "id": "bite", "name": { "de": "Biss", "en": "Bite", "ru": "Укус" }, "kind": "melee", "to_hit": 4, "damage": "2d4+2", "damage_type": "piercing" }
+      ],
+      "traits": ["pack_tactics", "keen_hearing_and_smell", "bite_knocks_prone"]
+    },
+    {
+      "id": "skeleton", "name": { "de": "Skelett", "en": "Skeleton", "ru": "Скелет" },
+      "cr": 0.25, "armor_class": 13, "hit_dice": "2d8+4", "speed_ft": 30,
+      "abilities": [10, 14, 15, 6, 8, 5],
+      "attacks": [
+        { "id": "shortsword", "name": { "de": "Kurzschwert", "en": "Shortsword", "ru": "Короткий меч" }, "kind": "melee", "to_hit": 4, "damage": "1d6+2", "damage_type": "piercing" },
+        { "id": "shortbow", "name": { "de": "Kurzbogen", "en": "Shortbow", "ru": "Короткий лук" }, "kind": "ranged", "to_hit": 4, "damage": "1d6+2", "damage_type": "piercing", "range_ft": 80, "long_range_ft": 320 }
+      ],
+      "vulnerabilities": ["bludgeoning"], "immunities": ["poison"],
+      "undead": true
+    },
+    {
+      "id": "zombie", "name": { "de": "Zombie", "en": "Zombie", "ru": "Зомби" },
+      "cr": 0.25, "armor_class": 8, "hit_dice": "3d8+9", "speed_ft": 20,
+      "abilities": [13, 6, 16, 3, 6, 5],
+      "attacks": [
+        { "id": "slam", "name": { "de": "Hieb", "en": "Slam", "ru": "Удар" }, "kind": "melee", "to_hit": 3, "damage": "1d6+1", "damage_type": "bludgeoning" }
+      ],
+      "immunities": ["poison"], "traits": ["undead_fortitude"],
+      "undead": true, "never_flees": true
+    },
+    {
+      "id": "bandit", "name": { "de": "Bandit", "en": "Bandit", "ru": "Бандит" },
+      "cr": 0.125, "armor_class": 12, "hit_dice": "2d8+2", "speed_ft": 30,
+      "abilities": [11, 12, 12, 10, 10, 10],
+      "attacks": [
+        { "id": "scimitar", "name": { "de": "Krummsäbel", "en": "Scimitar", "ru": "Скимитар" }, "kind": "melee", "to_hit": 3, "damage": "1d6+1", "damage_type": "slashing" },
+        { "id": "light_crossbow", "name": { "de": "Leichte Armbrust", "en": "Light crossbow", "ru": "Лёгкий арбалет" }, "kind": "ranged", "to_hit": 3, "damage": "1d8+1", "damage_type": "piercing", "range_ft": 80, "long_range_ft": 320 }
+      ]
+    },
+    {
+      "id": "giant_rat", "name": { "de": "Riesenratte", "en": "Giant rat", "ru": "Гигантская крыса" },
+      "cr": 0.125, "armor_class": 12, "hit_dice": "2d6", "speed_ft": 30,
+      "abilities": [7, 15, 11, 2, 10, 4],
+      "attacks": [
+        { "id": "bite", "name": { "de": "Biss", "en": "Bite", "ru": "Укус" }, "kind": "melee", "to_hit": 4, "damage": "1d4+2", "damage_type": "piercing" }
+      ],
+      "traits": ["pack_tactics", "keen_smell"]
+    },
+    {
+      "id": "orc", "name": { "de": "Ork", "en": "Orc", "ru": "Орк" },
+      "cr": 0.5, "armor_class": 13, "hit_dice": "2d8+6", "speed_ft": 30,
+      "abilities": [16, 12, 16, 7, 11, 10],
+      "attacks": [
+        { "id": "greataxe", "name": { "de": "Zweihandaxt", "en": "Greataxe", "ru": "Секира" }, "kind": "melee", "to_hit": 5, "damage": "1d12+3", "damage_type": "slashing" },
+        { "id": "javelin", "name": { "de": "Wurfspeer", "en": "Javelin", "ru": "Метательное копьё" }, "kind": "ranged", "to_hit": 5, "damage": "1d6+3", "damage_type": "piercing", "range_ft": 30, "long_range_ft": 120 }
+      ],
+      "traits": ["aggressive"], "never_flees": true
+    },
+    {
+      "id": "ghoul", "name": { "de": "Ghul", "en": "Ghoul", "ru": "Гуль" },
+      "cr": 1, "armor_class": 12, "hit_dice": "5d8", "speed_ft": 30,
+      "abilities": [13, 15, 10, 7, 10, 6],
+      "attacks": [
+        { "id": "bite", "name": { "de": "Biss", "en": "Bite", "ru": "Укус" }, "kind": "melee", "to_hit": 2, "damage": "2d6+2", "damage_type": "piercing" },
+        { "id": "claws", "name": { "de": "Klauen", "en": "Claws", "ru": "Когти" }, "kind": "melee", "to_hit": 4, "damage": "2d4+2", "damage_type": "slashing" }
+      ],
+      "immunities": ["poison"], "traits": ["claws_paralyze"],
+      "undead": true, "never_flees": true
+    },
+    {
+      "id": "shadow", "name": { "de": "Schatten", "en": "Shadow", "ru": "Тень" },
+      "cr": 0.5, "armor_class": 12, "hit_dice": "3d8+3", "speed_ft": 40,
+      "abilities": [6, 14, 13, 6, 10, 8],
+      "attacks": [
+        { "id": "strength_drain", "name": { "de": "Stärkeentzug", "en": "Strength drain", "ru": "Похищение силы" }, "kind": "melee", "to_hit": 4, "damage": "2d6+2", "damage_type": "necrotic" }
+      ],
+      "vulnerabilities": ["radiant"], "immunities": ["necrotic", "poison"], "traits": ["amorphous", "shadow_stealth", "sunlight_weakness", "strength_drain"],
+      "undead": true, "never_flees": true
+    }
+  ]
+}

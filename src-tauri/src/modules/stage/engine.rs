@@ -45,6 +45,7 @@ impl StageEngine {
                 initiative: 16,
                 conditions: Vec::new(),
                 skills: HashMap::new(),
+                stats5e: None,
             },
             Combatant {
                 id: "comb_companion".to_string(),
@@ -60,6 +61,7 @@ impl StageEngine {
                     rounds_remaining: 3,
                 }],
                 skills: HashMap::new(),
+                stats5e: None,
             },
             Combatant {
                 id: "comb_enemy_1".to_string(),
@@ -72,6 +74,7 @@ impl StageEngine {
                 initiative: 12,
                 conditions: Vec::new(),
                 skills: HashMap::new(),
+                stats5e: None,
             },
         ];
 
@@ -273,6 +276,7 @@ extensions: serde_json::Value::Null,
                 initiative: 0,
                 conditions: Vec::new(),
                 skills: HashMap::new(),
+                stats5e: None,
             });
         }
         for combatant in st

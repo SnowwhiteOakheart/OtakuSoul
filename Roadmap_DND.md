@@ -111,13 +111,14 @@ Jeder Schritt endet mit einem **„Fertig, wenn …“**, das per E2E geprüft w
 Ziel: Eine 5e-Szene, in der der GM eine Begegnung auslöst und der Kampf vollständig von der Engine entschieden wird.
 
 - [ ] `ruleset` in `SceneDefinition` (+ Szenen-Editor, Lobby-Anzeige); `standard` bleibt Vorgabe.
-- [ ] `Stats5e` mit abgeleiteten Werten (Modifikator ⌊(Wert−10)/2⌋, Übungsbonus nach Stufe, passive Wahrnehmung).
-- [ ] Würfel: Vorteil/Nachteil (2W20, höherer/niedrigerer), injizierbarer Zufall; Anzeige im `DiceRoller`.
-- [ ] SRD-Daten v1: ~10 Monster (Goblin, Kobold, Wolf, Skelett, Zombie, Bandit, Riesenratte, Ork, Ghul, Schatten),
+- [x] `Stats5e` mit abgeleiteten Werten (Modifikator ⌊(Wert−10)/2⌋, Übungsbonus nach Stufe, passive Wahrnehmung).
+- [x] Würfel: Vorteil/Nachteil (2W20, höherer/niedrigerer), injizierbarer Zufall.
+- [ ] Anzeige von Vorteil/Nachteil im `DiceRoller`.
+- [x] SRD-Daten v1: ~10 Monster (Goblin, Kobold, Wolf, Skelett, Zombie, Bandit, Riesenratte, Ork, Ghul, Schatten),
   Klassen-Vorlagen Stufe 1 für Kämpfer, Magier, Schurke, Kleriker (ohne Zauber, nur Waffen/Zaubertrick-Angriff).
 - [ ] Kampfablauf: Initiative (W20+GES), Reihenfolge, Zug mit Aktion/Bonusaktion/Bewegung (Bewegung abstrakt), Angriff
   gegen RK, Schaden + Modifikator, Krit (doppelte Würfel) und Patzer, 0 LP: Monster sterben, Helden sind bewusstlos.
-- [ ] Monster-KI v1: Ziel nach Bedrohung/niedrigster RK, bester Angriff, Flucht unter 25 % LP (je Monster-Typ abschaltbar).
+- [x] Monster-KI v1: Ziel nach Bedrohung/niedrigster RK, bester Angriff, Flucht unter 25 % LP (je Monster-Typ abschaltbar).
 - [ ] Gefährten-Aktion: Liste erlaubter Aktionen → LLM wählt ID; Fallback-Heuristik.
 - [ ] GM-Vertrag: Begegnung per Monster-ID, Erzählung aus `CombatEvent`-Kampfbericht; LLM-Zahlen werden ignoriert.
 - [ ] UI: Aktionsleiste im Kampf (Angriff → Ziel, Ausweichen, Spurt, Rückzug), Kampflog aus Events,
