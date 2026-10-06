@@ -1794,4 +1794,7 @@ veraltet und sind korrigiert: `chat-sidebar-errors` las die Sitzung, bevor der e
   passend zum erkannten Gefühl und blenden zurück in die Ruhe. Ohne Bewegungen bleibt die prozedurale Haltung.
   LipSync nutzt jetzt fünf Mundformen (aa/ih/ou/ee/oh) aus den Formanten der Stimme statt nur „aa“ nach Lautstärke.
   Nichts wird mitgeliefert; der E2E-Test erzeugt seine Test-Animation selbst.
+- [x] **Mixamo-Animationen für VRM-Avatare:** `.fbx` von Mixamo lassen sich wie VRMA importieren; die Bewegung wird von der
+  Mixamo-Ruhepose auf die normalisierten VRM-Knochen übertragen (inkl. Finger, Hüfthöhe skaliert, VRM 0.x gespiegelt).
+  Mixamo-Dateien werden nicht mitgeliefert; Tests erzeugen ein eigenes ASCII-FBX.
 

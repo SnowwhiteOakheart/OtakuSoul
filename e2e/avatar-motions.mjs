@@ -4,6 +4,7 @@ import assert from 'node:assert/strict';
 import { writeFileSync } from 'node:fs';
 import path from 'node:path';
 import { clickSend, launch, screenshotDir } from './harness.mjs';
+import { makeMixamoFbx } from './tools/make-fbx.mjs';
 import { makeWaveVrma } from './tools/make-vrma.mjs';
 
 const { browser, mock, home, close } = await launch();
@@ -18,6 +19,10 @@ try {
   writeFileSync(source, makeWaveVrma());
   const imported = await invoke('import_avatar_motion', { sourcePath: source });
   assert.equal(imported.role, 'greeting', 'Verwendung wird nicht aus dem Namen erkannt');
+  // A Mixamo animation (FBX) next to it, used for nodding.
+  const fbx = path.join(home, 'Mixamo Nod.fbx');
+  writeFileSync(fbx, makeMixamoFbx());
+  assert.equal((await invoke('import_avatar_motion', { sourcePath: fbx })).role, 'nod');
 
   // The settings list it with its use.
   await browser.$('button=Einstellungen').click();
@@ -29,7 +34,7 @@ try {
 
   // Back in the chat the avatar loads it and waves on *winkt*.
   await browser.$('button=Chat').click();
-  await browser.$('[data-motions="1"]').waitForExist({ timeout: 30_000, timeoutMsg: 'Bewegung wird im 3D-Avatar nicht geladen' });
+  await browser.$('[data-motions="2"]').waitForExist({ timeout: 30_000, timeoutMsg: 'Bewegung wird im 3D-Avatar nicht geladen' });
   mock.stats.chatReply = '*winkt dir fröhlich zu* "Da bist du ja!"';
   await browser.$('textarea[aria-label="Nachricht"]').setValue('Hallo!');
   await clickSend(browser);
@@ -38,7 +43,16 @@ try {
   await shot('59-avatar-winkt');
   // After the motion it fades back to the resting pose.
   await browser.$('[data-gesture=""]').waitForExist({ timeout: 10_000, timeoutMsg: 'Geste endet nicht' });
-  console.log('Avatar-Bewegungen: Import, Verwendung, Laden und Geste bei *winkt* bestanden.');
+
+  // The Mixamo motion plays on *nickt*.
+  mock.stats.chatReply = '*nickt zustimmend* "Genau so."';
+  await browser.$('textarea[aria-label="Nachricht"]').setValue('Einverstanden?');
+  await clickSend(browser);
+  await browser.$('[data-gesture="nod"]').waitForExist({ timeout: 20_000, timeoutMsg: 'Mixamo-Geste startet nicht' });
+  await browser.pause(500);
+  await shot('60-avatar-mixamo');
+  await browser.$('[data-gesture=""]').waitForExist({ timeout: 10_000 });
+  console.log('Avatar-Bewegungen: VRMA und Mixamo-FBX importiert, geladen und als Geste gespielt.');
 } finally {
   await close();
 }

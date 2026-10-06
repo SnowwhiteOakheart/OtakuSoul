@@ -8,9 +8,25 @@ import type { MotionRole } from '../../utils/avatarGestures';
 
 const FADE_SECONDS = 0.35;
 
-/** Reads a `.vrma` file and turns it into a clip for this avatar; null when it has none. */
+/**
+ * Reads a motion file and turns it into a clip for this avatar: VRMA directly, Mixamo FBX
+ * retargeted onto the VRM humanoid. Null when the file holds no animation.
+ */
 export async function loadMotionClip(motion: AvatarMotion, vrm: VRM): Promise<THREE.AnimationClip | null> {
   const bytes = await api.readFileBinary(motion.path);
+  if (motion.kind === 'fbx') {
+    // Loaded only when needed; most users have no FBX motions.
+    const [{ FBXLoader }, { retargetMixamoClip }] = await Promise.all([
+      import('three/examples/jsm/loaders/FBXLoader.js'),
+      import('./mixamoRetarget'),
+    ]);
+    const rig = new FBXLoader().parse(bytes.buffer as ArrayBuffer, '');
+    const source = THREE.AnimationClip.findByName(rig.animations, 'mixamo.com') ?? rig.animations[0];
+    if (!source) return null;
+    const clip = retargetMixamoClip(source, rig, vrm);
+    clip.name = motion.file;
+    return clip.tracks.length ? clip : null;
+  }
   const loader = new GLTFLoader();
   loader.register((parser) => new VRMAnimationLoaderPlugin(parser));
   const gltf = await loader.parseAsync(bytes.buffer as ArrayBuffer, '');

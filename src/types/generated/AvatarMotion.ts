@@ -8,4 +8,8 @@ file: string, name: string, path: string,
 /**
  * One of `ROLES`, or empty when it is not used.
  */
-role: string, };
+role: string, 
+/**
+ * File format: `vrma` or `fbx`.
+ */
+kind: string, };

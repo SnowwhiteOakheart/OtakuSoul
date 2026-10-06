@@ -1,5 +1,5 @@
-//! Body motions for the 3D avatar: VRM animation files (`.vrma`) the user imports into
-//! `<data>/animations/`. Each file has a use (idle loop or a gesture such as waving); the
+//! Body motions for the 3D avatar: VRM animations (`.vrma`) and Mixamo animations (`.fbx`,
+//! retargeted onto the VRM in the frontend) the user imports into `<data>/animations/`. Each file has a use (idle loop or a gesture such as waving); the
 //! assignment lives next to the files in `roles.json`. Nothing is shipped or downloaded.
 
 use serde::{Deserialize, Serialize};
@@ -31,16 +31,39 @@ pub struct AvatarMotion {
     pub path: String,
     /// One of `ROLES`, or empty when it is not used.
     pub role: String,
+    /// File format: `vrma` or `fbx`.
+    pub kind: String,
 }
 
 fn motions_dir() -> PathBuf {
     crate::modules::paths::base_dirs().1.join("animations")
 }
 
+/// The format by extension, if it is a motion file at all.
+fn motion_kind(path: &Path) -> Option<&'static str> {
+    let extension = path.extension()?.to_str()?.to_ascii_lowercase();
+    match extension.as_str() {
+        "vrma" => Some("vrma"),
+        "fbx" => Some("fbx"),
+        _ => None,
+    }
+}
+
 fn is_motion_file(path: &Path) -> bool {
-    path.extension()
-        .and_then(|e| e.to_str())
-        .is_some_and(|e| e.eq_ignore_ascii_case("vrma"))
+    motion_kind(path).is_some()
+}
+
+/// The content matches the format: VRMA is binary glTF, FBX is binary ("Kaydara FBX Binary")
+/// or the ASCII variant.
+fn has_valid_header(kind: &str, head: &[u8]) -> bool {
+    match kind {
+        "vrma" => head.starts_with(b"glTF"),
+        "fbx" => {
+            head.starts_with(b"Kaydara FBX Binary")
+                || String::from_utf8_lossy(head).contains("FBXHeaderExtension")
+        }
+        _ => false,
+    }
 }
 
 /// A first guess from the file name, so typical packs work without setup.
@@ -97,6 +120,7 @@ fn scan_in(dir: &Path) -> Vec<AvatarMotion> {
             Some(AvatarMotion {
                 file,
                 name,
+                kind: motion_kind(&path)?.to_string(),
                 path: path.to_string_lossy().to_string(),
                 role,
             })
@@ -123,13 +147,11 @@ fn import_into(src: &Path, dir: &Path) -> Result<AvatarMotion, String> {
             path = src.display()
         ));
     }
-    // VRMA files are binary glTF.
-    let mut magic = [0u8; 4];
-    let has_magic = fs::File::open(src)
-        .and_then(|mut f| std::io::Read::read_exact(&mut f, &mut magic))
-        .is_ok()
-        && &magic == b"glTF";
-    if !is_motion_file(src) || !has_magic {
+    let mut head = Vec::with_capacity(1024);
+    let readable = fs::File::open(src)
+        .and_then(|f| std::io::Read::read_to_end(&mut std::io::Read::take(f, 1024), &mut head))
+        .is_ok();
+    if !readable || !motion_kind(src).is_some_and(|kind| has_valid_header(kind, &head)) {
         return Err(crate::err!("backend.avatarMotion.invalid"));
     }
     fs::create_dir_all(dir).map_err(|e| crate::err!("backend.common.dirCreate", error = e))?;
@@ -239,6 +261,18 @@ mod tests {
         set_role_in(&dir, "Wave Hello.vrma", "idle").unwrap();
         assert_eq!(scan_in(&dir)[0].role, "idle");
         assert!(set_role_in(&dir, "Wave Hello.vrma", "dance").is_err());
+
+        let fbx = tmp.join("Mixamo Nod.fbx");
+        let mut binary = b"Kaydara FBX Binary  \0\x1a\0".to_vec();
+        binary.extend_from_slice(&[0; 32]);
+        fs::write(&fbx, binary).unwrap();
+        let motion = import_into(&fbx, &dir).unwrap();
+        assert_eq!((motion.kind.as_str(), motion.role.as_str()), ("fbx", "nod"));
+        let ascii = tmp.join("ascii.fbx");
+        fs::write(&ascii, "; FBX 7.4.0 project file\nFBXHeaderExtension:  {\n").unwrap();
+        assert_eq!(import_into(&ascii, &dir).unwrap().kind, "fbx");
+        delete_in(&dir, "Mixamo Nod.fbx").unwrap();
+        delete_in(&dir, "ascii.fbx").unwrap();
 
         let not_gltf = tmp.join("fake.vrma");
         fs::write(&not_gltf, b"nope").unwrap();

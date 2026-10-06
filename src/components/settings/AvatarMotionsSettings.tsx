@@ -40,7 +40,7 @@ export const AvatarMotionsSettings = () => {
     const selected = await open({
       multiple: true,
       directory: false,
-      filters: [{ name: translate('motions.fileFilter'), extensions: ['vrma'] }],
+      filters: [{ name: translate('motions.fileFilter'), extensions: ['vrma', 'fbx'] }],
     });
     const files = typeof selected === 'string' ? [selected] : (selected ?? []);
     if (files.length === 0) return;
