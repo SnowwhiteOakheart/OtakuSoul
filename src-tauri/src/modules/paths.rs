@@ -148,12 +148,27 @@ fn find_existing_dir(roots: &[PathBuf], candidates: &[&str]) -> PathBuf {
         for candidate in candidates {
             let p = root.join(candidate);
             if p.is_dir() {
-                return fs::canonicalize(&p).unwrap_or(p);
+                return canonical(&p);
             }
         }
     }
     // Nothing found: point at the first candidate so callers get a sensible, if missing, path.
     roots[0].join(candidates[0])
+}
+
+/// `fs::canonicalize` without the Windows `\\?\C:\…` form: such verbatim paths reject `/`,
+/// which the frontend uses to join subpaths. UNC paths stay verbatim.
+fn canonical(p: &Path) -> PathBuf {
+    let Ok(c) = fs::canonicalize(p) else {
+        return p.to_path_buf();
+    };
+    if cfg!(windows)
+        && let Some(rest) = c.to_str().and_then(|s| s.strip_prefix(r"\\?\"))
+        && rest.as_bytes().get(1) == Some(&b':')
+    {
+        return PathBuf::from(rest);
+    }
+    c
 }
 
 /// Helper to normalize strings for robust deduplication (collapses case and non-alphanumeric chars)
@@ -625,6 +640,16 @@ fn import_vrm_into(src: &Path, dest_dir: &Path) -> Result<ScannedVrm, String> {
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    #[test]
+    fn canonical_paths_accept_slash_joined_subpaths() {
+        let dir = canonical(&std::env::temp_dir());
+        assert!(dir.is_absolute());
+        assert!(!dir.to_string_lossy().starts_with(r"\\?\"));
+        // The frontend appends `/sub/file`; that has to resolve on every OS.
+        let joined = PathBuf::from(format!("{}/.", dir.to_string_lossy()));
+        assert!(joined.is_dir());
+    }
 
     #[test]
     fn imports_vrm_files_without_duplicates() {

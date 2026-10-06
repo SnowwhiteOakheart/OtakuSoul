@@ -1029,7 +1029,12 @@ mod tests {
         assert_eq!(found.unwrap(), root.join("llama-b1").join(server));
         assert_eq!(
             libs,
-            vec![root.join("llama-b1/lib").to_string_lossy().to_string()]
+            vec![
+                root.join("llama-b1")
+                    .join("lib")
+                    .to_string_lossy()
+                    .to_string()
+            ]
         );
         let _ = std::fs::remove_dir_all(root);
     }

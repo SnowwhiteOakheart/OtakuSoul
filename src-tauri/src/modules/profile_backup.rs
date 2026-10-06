@@ -482,7 +482,8 @@ impl ProfileBackupManager {
                 None => continue,
             };
 
-            let entry_str = entry_name.to_string_lossy();
+            // `enclosed_name` uses the native separator; the folder checks below expect `/`.
+            let entry_str = entry_name.to_string_lossy().replace('\\', "/");
             if entry_str == "manifest.json" {
                 continue;
             }

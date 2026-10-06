@@ -1,6 +1,8 @@
+#[cfg(unix)]
 use chrono::Utc;
 use futures_util::{SinkExt, StreamExt};
 use serde::{Deserialize, Serialize};
+#[cfg(unix)]
 use std::env;
 use std::fs;
 use std::path::PathBuf;
@@ -31,6 +33,8 @@ pub struct DiscordRpcActivity {
 }
 
 pub struct DiscordRpcClient {
+    // Only the Unix IPC handshake sends it.
+    #[cfg_attr(not(unix), allow(dead_code))]
     client_id: String,
     enabled: Arc<AtomicBool>,
     current_activity: Arc<RwLock<Option<DiscordRpcActivity>>>,

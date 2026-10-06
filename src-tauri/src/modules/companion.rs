@@ -1030,6 +1030,8 @@ impl CompanionEngine {
 
     /// Detect active OS window with privacy filter
     pub fn detect_active_window(&self) -> String {
+        // Only filled on Linux/BSD.
+        #[cfg_attr(any(target_os = "windows", target_os = "macos"), allow(unused_mut))]
         let mut title = String::new();
 
         #[cfg(not(any(target_os = "windows", target_os = "macos")))]
