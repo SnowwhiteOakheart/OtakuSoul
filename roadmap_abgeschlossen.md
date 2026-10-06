@@ -1729,4 +1729,9 @@ veraltet und sind korrigiert: `chat-sidebar-errors` las die Sitzung, bevor der e
   „Vergessen“ blendet die Erinnerung aus und vergisst sie erst danach. Stage-Nachrichten werden sofort gelöscht,
   „Rückgängig“ nutzt den Snapshot der Szene, solange sie sich seitdem nicht geändert hat. Keine Rückfragen mehr
   (Tests `undoDelete.test.ts`, E2E `partial-reply.mjs`, `memory-sources.mjs`).
+- [x] **Entwürfe im Memory-Drawer überleben Neustarts:** Psychologie-, Beziehungs- und Markdown-Entwürfe je Charakter und
+  Persona liegen wie Composer und Seitenleiste in `utils/drafts.ts` (ohne laufende Speicher-/Lade-Merker; Test in
+  `memoryDrawer.test.tsx`).
+- [x] **E2E-Aufräumen ohne `ENOTEMPTY`:** Der Harness löscht das Wegwerfprofil mit Wiederholungen, weil die App beim
+  Herunterfahren noch schreiben kann (traf `character-import` und `memory-save-errors`).
 

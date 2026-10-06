@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { readDraft, writeDraft } from '../../utils/drafts';
 import { createPortal } from 'react-dom';
 import type { PsychologyState, RelationshipState } from '../../types';
 import { useStoreFields } from '../../store/useAppStore';
@@ -22,6 +23,28 @@ interface MemoryEditorDraft {
   markdown?: Partial<Record<'character' | 'user', string>>;
   markdownPending?: 'save' | 'reload' | null;
 }
+
+type MemoryDrafts = Record<string, MemoryEditorDraft>;
+
+/** Unsaved edits survive restarts; running saves/reloads (flags) do not. */
+const readMemoryDrafts = (): MemoryDrafts => {
+  try {
+    const parsed: unknown = JSON.parse(readDraft('memory') ?? '{}');
+    return parsed && typeof parsed === 'object' ? (parsed as MemoryDrafts) : {};
+  } catch {
+    return {};
+  }
+};
+
+const storableDrafts = (drafts: MemoryDrafts): MemoryDrafts =>
+  Object.fromEntries(
+    Object.entries(drafts)
+      .map(([key, { psychology, relationship, markdown }]) => {
+        const text = markdown && Object.values(markdown).some((v) => v !== undefined) ? markdown : undefined;
+        return [key, { psychology, relationship, markdown: text }] as const;
+      })
+      .filter(([, d]) => d.psychology || d.relationship || d.markdown),
+  );
 
 interface CognitiveMemoryDrawerProps {
   isOpen: boolean;
@@ -50,7 +73,11 @@ export const CognitiveMemoryDrawer: React.FC<CognitiveMemoryDrawerProps> = ({
   >('psychology');
 
   // Keep edits through tab switches and closing; never reuse another character/persona's draft.
-  const [drafts, setDrafts] = useState<Record<string, MemoryEditorDraft>>({});
+  const [drafts, setDrafts] = useState<MemoryDrafts>(readMemoryDrafts);
+  useEffect(() => {
+    const stored = storableDrafts(drafts);
+    writeDraft('memory', Object.keys(stored).length > 0 ? JSON.stringify(stored) : '');
+  }, [drafts]);
   const draftKey = JSON.stringify([activeCharacter?.id, activePersona.name]);
   const draft = drafts[draftKey];
   const changeDraft = (changes: MemoryEditorDraft) =>

@@ -12,8 +12,6 @@
 
 Aus den Arbeitsprotokollen der Qualitäts-Roadmap; größere Pakete, jeweils mit eigenen Tests.
 
-- [ ] **Dauerhafte Entwurfssicherung im Memory-Drawer:** Composer und Chat-Seitenleiste sichern ihre Entwürfe bereits
-  über Neustarts; die Entwürfe im Memory-Drawer (Psychologie, Beziehung, Markdown) überleben noch keinen Neustart.
 
 ## 2. Chat-Funktionen (aus der Portierung, noch nicht umgesetzt)
 
@@ -42,5 +40,5 @@ Aus den Arbeitsprotokollen der Qualitäts-Roadmap; größere Pakete, jeweils mit
 ## 5. Technik & Tests
 
 - [ ] Command-Wrapper in `api.ts` typsicher erzeugen, sobald `tauri-specta` eine stabile 2.0 hat.
-- [ ] Wackelige E2E-Tests beobachten: `chat-sidebar-errors` scheiterte einmal an einem Entwurfsvergleich,
-  `character-import` einmal beim Aufräumen des Testordners (`ENOTEMPTY`); beide bestanden danach wiederholt.
+- [ ] Wackeligen E2E-Test beobachten: `chat-sidebar-errors` scheiterte einmal an einem Entwurfsvergleich und bestand
+  danach wiederholt.

@@ -129,6 +129,18 @@ describe('CognitiveMemoryDrawer', () => {
     expect(api.updateRelationship).not.toHaveBeenCalled();
   });
 
+  it('keeps an unsaved draft across a restart of the drawer', async () => {
+    const user = userEvent.setup();
+    const first = render(<CognitiveMemoryDrawer isOpen onClose={() => {}} />);
+    const tension = () => screen.getByRole('textbox', { name: translate('memory.tension') });
+    await user.clear(tension());
+    await user.type(tension(), 'Still unsaved');
+    // A restart mounts everything anew; the draft comes back from this device.
+    first.unmount();
+    render(<CognitiveMemoryDrawer isOpen onClose={() => {}} />);
+    expect(tension()).toHaveValue('Still unsaved');
+    expect(api.updatePsychology).not.toHaveBeenCalled();
+  });
   it('keeps a failed psychology draft and saves all changes together on retry', async () => {
     const user = userEvent.setup();
     vi.mocked(api.updatePsychology).mockRejectedValueOnce(new Error('Disk full')).mockResolvedValueOnce(undefined);

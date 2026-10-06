@@ -181,7 +181,8 @@ Hub). Integrationen → Bildgenerierung enthält nur Studio und Galerie.
   Verspätete Speicherergebnisse eines anderen Chats dürfen den aktuellen Verlauf nicht aktualisieren.
 - Löschen ohne Rückfrage, mit „Rückgängig“ (8 s): Nachrichten und Chats (`chatSlice`, `pendingChatDeletes` filtert
   neu geladene Listen), Erinnerungen (`memorySlice`, `pendingForgets`), Stage-Nachrichten (Szenen-Snapshot per `undoStageTurn`).
-- Entwürfe über Neustarts: `utils/drafts.ts` (localStorage); Composer je Chat (`composer:<id>`), Seitenleiste als `sidebar`.
+- Entwürfe über Neustarts: `utils/drafts.ts` (localStorage); Composer je Chat (`composer:<id>`), Seitenleiste als `sidebar`,
+  Memory-Drawer als `memory` (nur Inhalte, keine Speicher-/Lade-Merker).
 - Chat-Seitenleiste: Notiz- und Zusammenfassungsentwürfe werden nach Chat-ID getrennt im Sidebar
   gehalten (und gesichert); Änderungen an Sitzungsdaten überschreiben offene Entwürfe nicht. Nur erfolgreiches Speichern oder
   Zurücksetzen entfernt den jeweiligen Entwurf. Laufende Vorgänge sperren die Felder auch nach Wiederöffnen.
