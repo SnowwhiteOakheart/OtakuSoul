@@ -84,7 +84,9 @@ Hub). Integrationen → Bildgenerierung enthält nur Studio und Galerie.
 - Mehrere GPUs: iGPUs melden Dutzende GB geteilten Speicher; sd.cpp/llama.cpp würden sie wählen (FLUX.1 350 s statt
   48 s). Deshalb `--backend`/`--device` via `hardware::primary_gpu()` + `same_gpu()`.
 - Linux-CUDA-Builds bringen keine CUDA-Laufzeit mit und fallen still auf CPU zurück → `runtimes` empfiehlt CUDA nur bei
-  passender System-CUDA (`ldconfig`), sonst Vulkan.
+  passender System-CUDA (`ldconfig`), sonst Vulkan. Unter Windows (cudart liegt bei) wird der neueste Build empfohlen,
+  den der Treiber laut `nvidia-smi`-Kopf („CUDA [UMD] Version“) kann; Blackwell (Compute Capability ≥ 12.0) braucht
+  Builds ab CUDA 12.8 (Builds nur mit Major-Version wie bei CrispASR ausgenommen), sonst Vulkan.
 - `cargo test`/`clippy` überschreiben `target/debug/otakusoul` mit einer Version ohne eingebettetes Frontend → E2E nutzt
   `target/e2e`.
 - Das Hauptfenster steht in `tauri.conf.json` mit `create: false` und wird in `lib.rs` (`create_main_window`) gebaut,

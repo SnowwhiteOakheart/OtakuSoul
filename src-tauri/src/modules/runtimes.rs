@@ -448,21 +448,58 @@ fn recommended_backend(available: &[String]) -> Option<String> {
         .iter()
         .map(|g| g.vendor.to_lowercase())
         .collect();
+    let nvidia = vendors.iter().any(|v| v.contains("nvidia"));
     let cuda = if cfg!(target_os = "linux") {
         CudaRuntime::System(system_cuda_majors())
     } else {
-        CudaRuntime::Bundled
+        CudaRuntime::Bundled(nvidia.then(driver_cuda_major).flatten())
     };
-    pick_backend(available, &vendors, &cuda)
+    let compute = nvidia.then(nvidia_compute_capability).flatten();
+    pick_backend(available, &vendors, &cuda, compute)
 }
 
 /// Where a CUDA build finds its runtime libraries.
 #[derive(Debug, Clone, PartialEq, Eq)]
 enum CudaRuntime {
-    /// Windows archives ship (or download) `cudart` themselves.
-    Bundled,
+    /// Windows archives ship (or download) `cudart` themselves; they only need a driver that
+    /// supports their CUDA major version (`None` = driver unknown).
+    Bundled(Option<u32>),
     /// Linux builds load `libcudart`/`libcublas` from the system; these major versions exist.
     System(Vec<u32>),
+}
+
+/// Newest CUDA major version the NVIDIA driver supports, from the `nvidia-smi` header.
+fn driver_cuda_major() -> Option<u32> {
+    let output = std::process::Command::new("nvidia-smi").output().ok()?;
+    cuda_major_in_smi(&String::from_utf8_lossy(&output.stdout))
+}
+
+/// Older drivers print `CUDA Version: 12.4`, newer ones `CUDA UMD Version: 13.4`.
+fn cuda_major_in_smi(smi: &str) -> Option<u32> {
+    let rest = &smi[smi.find("CUDA")?..];
+    let rest = &rest[rest.find("Version:")? + "Version:".len()..];
+    rest.trim_start().split('.').next()?.parse().ok()
+}
+
+/// Highest compute capability among the NVIDIA GPUs, e.g. `(12, 0)` for Blackwell.
+fn nvidia_compute_capability() -> Option<(u32, u32)> {
+    let output = std::process::Command::new("nvidia-smi")
+        .args(["--query-gpu=compute_cap", "--format=csv,noheader"])
+        .output()
+        .ok()
+        .filter(|o| o.status.success())?;
+    String::from_utf8_lossy(&output.stdout)
+        .lines()
+        .filter_map(|line| version_of(line.trim()))
+        .max()
+}
+
+/// `12.8` → `(12, 8)`, `13` → `(13, 0)`.
+fn version_of(text: &str) -> Option<(u32, u32)> {
+    let mut parts = text.split('.');
+    let major = parts.next()?.parse().ok()?;
+    let minor = parts.next().map_or(Some(0), |m| m.parse().ok())?;
+    Some((major, minor))
 }
 
 /// CUDA major versions whose runtime and cuBLAS the dynamic loader can find (`ldconfig -p`).
@@ -494,19 +531,24 @@ fn cuda_majors_in(ldconfig: &str) -> Vec<u32> {
     majors
 }
 
-fn cuda_major(backend: &str) -> Option<u32> {
-    backend
-        .strip_prefix("cuda-")?
-        .split('.')
-        .next()?
-        .parse()
-        .ok()
+/// `cuda-12.4` → `(12, 4)`, `cuda-13` → `(13, 0)`.
+fn cuda_version(backend: &str) -> Option<(u32, u32)> {
+    version_of(backend.strip_prefix("cuda-")?)
 }
 
-/// Best backend among `available` for the GPU vendors and the CUDA runtime of this system.
-/// A CUDA build whose runtime is missing silently falls back to the CPU, so on Linux it is only
-/// recommended when the matching CUDA major version is installed; otherwise Vulkan.
-fn pick_backend(available: &[String], vendors: &[String], cuda: &CudaRuntime) -> Option<String> {
+/// Blackwell (compute capability 12.x) only has kernels in builds from CUDA 12.8 on.
+const BLACKWELL_MIN_CUDA: (u32, u32) = (12, 8);
+
+/// Best backend among `available` for the GPU vendors, the CUDA runtime of this system and the
+/// compute capability of its NVIDIA GPU. A CUDA build whose runtime is missing silently falls
+/// back to the CPU, so on Linux it is only recommended when the matching CUDA major version is
+/// installed, on Windows only when the driver supports it; otherwise Vulkan.
+fn pick_backend(
+    available: &[String],
+    vendors: &[String],
+    cuda: &CudaRuntime,
+    compute: Option<(u32, u32)>,
+) -> Option<String> {
     let pick = |prefix: &str| available.iter().find(|b| b.starts_with(prefix)).cloned();
     if vendors.iter().any(|v| v.contains("apple"))
         && let Some(b) = pick("metal")
@@ -514,13 +556,27 @@ fn pick_backend(available: &[String], vendors: &[String], cuda: &CudaRuntime) ->
         return Some(b);
     }
     if vendors.iter().any(|v| v.contains("nvidia")) {
-        // The lowest usable CUDA version (first in sorted order) runs on the most drivers.
-        let usable = available.iter().find(|b| match (cuda_major(b), cuda) {
-            (None, _) => false,
-            (Some(_), CudaRuntime::Bundled) => true,
-            (Some(major), CudaRuntime::System(majors)) => majors.contains(&major),
-        });
-        if let Some(b) = usable {
+        let min = match compute {
+            Some(cc) if cc >= (12, 0) => BLACKWELL_MIN_CUDA,
+            _ => (0, 0),
+        };
+        let usable = available
+            .iter()
+            .filter_map(|b| Some((cuda_version(b)?, b)))
+            // Builds named only by major version (CrispASR) do not say which GPUs they cover.
+            .filter(|(v, b)| *v >= min || !b.contains('.'))
+            .filter(|((major, _), _)| match cuda {
+                CudaRuntime::Bundled(None) => true,
+                CudaRuntime::Bundled(Some(driver)) => major <= driver,
+                CudaRuntime::System(majors) => majors.contains(major),
+            });
+        let chosen = match cuda {
+            // A known driver runs the newest build it supports best.
+            CudaRuntime::Bundled(Some(_)) => usable.max_by_key(|(v, _)| *v),
+            // Otherwise the lowest version runs on the most drivers.
+            _ => usable.min_by_key(|(v, _)| *v),
+        };
+        if let Some((_, b)) = chosen {
             return Some(b.clone());
         }
     }
@@ -996,37 +1052,103 @@ mod tests {
             .iter()
             .map(|s| s.to_string())
             .collect();
+        let ada = Some((8, 9));
         let linux13 = CudaRuntime::System(vec![13]);
         assert_eq!(
-            pick_backend(&crisp, &nvidia, &linux13).as_deref(),
+            pick_backend(&crisp, &nvidia, &linux13, ada).as_deref(),
             Some("cuda-13")
         );
         assert_eq!(
-            pick_backend(&prism, &nvidia, &linux13).as_deref(),
+            pick_backend(&prism, &nvidia, &linux13, ada).as_deref(),
             Some("cuda-13.3")
         );
         // CUDA 12 installed: the lowest matching build.
         let linux12 = CudaRuntime::System(vec![12]);
         assert_eq!(
-            pick_backend(&prism, &nvidia, &linux12).as_deref(),
+            pick_backend(&prism, &nvidia, &linux12, ada).as_deref(),
             Some("cuda-12.4")
         );
         // No CUDA runtime at all: Vulkan instead of a silent CPU fallback.
         let none = CudaRuntime::System(vec![]);
         assert_eq!(
-            pick_backend(&crisp, &nvidia, &none).as_deref(),
+            pick_backend(&crisp, &nvidia, &none, ada).as_deref(),
             Some("vulkan")
         );
-        // Windows archives bring their runtime along.
+        // Windows archives bring their runtime along; with an unknown driver the lowest build.
         assert_eq!(
-            pick_backend(&crisp, &nvidia, &CudaRuntime::Bundled).as_deref(),
+            pick_backend(&crisp, &nvidia, &CudaRuntime::Bundled(None), None).as_deref(),
             Some("cuda-12")
         );
         // AMD/Intel use Vulkan.
         assert_eq!(
-            pick_backend(&crisp, &["amd".to_string()], &linux13).as_deref(),
+            pick_backend(&crisp, &["amd".to_string()], &linux13, None).as_deref(),
             Some("vulkan")
         );
+    }
+
+    #[test]
+    fn recommends_the_newest_cuda_build_the_windows_driver_supports() {
+        let nvidia = vec!["nvidia".to_string()];
+        let llama: Vec<String> = ["cpu", "cuda-12.4", "cuda-13.1", "vulkan"]
+            .iter()
+            .map(|s| s.to_string())
+            .collect();
+        let prism: Vec<String> = ["cpu", "cuda-12.4", "cuda-12.8", "cuda-13.3", "vulkan"]
+            .iter()
+            .map(|s| s.to_string())
+            .collect();
+        let ada = Some((8, 9));
+        let blackwell = Some((12, 0));
+        let driver13 = CudaRuntime::Bundled(Some(13));
+        let driver12 = CudaRuntime::Bundled(Some(12));
+        assert_eq!(
+            pick_backend(&llama, &nvidia, &driver13, ada).as_deref(),
+            Some("cuda-13.1")
+        );
+        // A CUDA 12 driver cannot run CUDA 13 builds.
+        assert_eq!(
+            pick_backend(&llama, &nvidia, &driver12, ada).as_deref(),
+            Some("cuda-12.4")
+        );
+        assert_eq!(
+            pick_backend(&prism, &nvidia, &driver12, ada).as_deref(),
+            Some("cuda-12.8")
+        );
+        // Blackwell needs at least CUDA 12.8, even when the driver is unknown.
+        assert_eq!(
+            pick_backend(&prism, &nvidia, &CudaRuntime::Bundled(None), blackwell).as_deref(),
+            Some("cuda-12.8")
+        );
+        assert_eq!(
+            pick_backend(&prism, &nvidia, &driver13, blackwell).as_deref(),
+            Some("cuda-13.3")
+        );
+        // No build with Blackwell kernels the driver can run: Vulkan.
+        assert_eq!(
+            pick_backend(&llama, &nvidia, &driver12, blackwell).as_deref(),
+            Some("vulkan")
+        );
+        // Builds without a minor version are not held to that minimum.
+        let crisp: Vec<String> = ["cpu", "cuda-12", "vulkan"]
+            .iter()
+            .map(|s| s.to_string())
+            .collect();
+        assert_eq!(
+            pick_backend(&crisp, &nvidia, &driver13, blackwell).as_deref(),
+            Some("cuda-12")
+        );
+    }
+
+    #[test]
+    fn reads_the_cuda_version_of_the_driver() {
+        let new = "| NVIDIA-SMI 617.14     KMD Version: 617.14     CUDA UMD Version: 13.4     |";
+        let old = "| NVIDIA-SMI 550.54.14  Driver Version: 550.54.14  CUDA Version: 12.4  |";
+        assert_eq!(cuda_major_in_smi(new), Some(13));
+        assert_eq!(cuda_major_in_smi(old), Some(12));
+        assert_eq!(cuda_major_in_smi("NVIDIA-SMI has failed"), None);
+        assert_eq!(version_of("12.0"), Some((12, 0)));
+        assert_eq!(cuda_version("cuda-13"), Some((13, 0)));
+        assert_eq!(cuda_version("vulkan"), None);
     }
 
     #[test]
