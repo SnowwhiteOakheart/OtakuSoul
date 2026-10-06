@@ -2173,7 +2173,7 @@ export const ru: TranslationDictionary = {
   "backend.llm.connect": "Не удалось подключиться к {{url}}: {{error}}",
   "backend.llm.server": "Ошибка сервера языковой модели ({{status}}): {{error}}",
   "backend.llm.stream": "Ошибка потока: {{error}}",
-  "backend.server.bonsaiLegacy": "Ternary-Bonsai-27B-Q2_0.gguf – устаревший промежуточный формат, он намеренно не запускается. Загрузите Ternary-Bonsai-27B-PQ2_0.gguf (рекомендуется) или Ternary-Bonsai-27B-Q2_g64.gguf.",
+  "backend.server.bonsaiLegacy": "Ternary-Bonsai-27B-Q2_0.gguf – устаревший промежуточный формат, он намеренно не запускается. Загрузите вместо неё Ternary-Bonsai-2-27B-PQ2_0.gguf (работает в среде PrismML).",
   "backend.server.prismRequired": "Этой модели PQ2_0/PTQ1_0 нужна среда PrismML. Установите её в Настройки → Сервер (или командой ./tools/install_prism_runtime.sh); затем OtakuSoul выберет её автоматически.",
   "backend.server.binaryMissing": "llama-server не найден. Установите llama.cpp в разделе «Настройки → llama-server и настройка» или укажите путь.",
   "backend.presets.dir": "Не удалось создать папку пресетов: {{error}}",

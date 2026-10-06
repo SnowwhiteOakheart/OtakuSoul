@@ -2173,7 +2173,7 @@ export const en: TranslationDictionary = {
   "backend.llm.connect": "Could not connect to {{url}}: {{error}}",
   "backend.llm.server": "Language model server error ({{status}}): {{error}}",
   "backend.llm.stream": "Streaming error: {{error}}",
-  "backend.server.bonsaiLegacy": "Ternary-Bonsai-27B-Q2_0.gguf is the outdated interim format and is deliberately not started. Please load Ternary-Bonsai-27B-PQ2_0.gguf (recommended) or Ternary-Bonsai-27B-Q2_g64.gguf.",
+  "backend.server.bonsaiLegacy": "Ternary-Bonsai-27B-Q2_0.gguf is the outdated interim format and is deliberately not started. Please load Ternary-Bonsai-2-27B-PQ2_0.gguf instead (runs on the PrismML runtime).",
   "backend.server.prismRequired": "This PQ2_0/PTQ1_0 model needs the PrismML runtime. Install it under Settings → Server (or with ./tools/install_prism_runtime.sh); OtakuSoul then selects it automatically.",
   "backend.server.binaryMissing": "llama-server not found. Install llama.cpp under Settings → llama-server & tuning or set its path.",
   "backend.presets.dir": "Failed to create the preset folder: {{error}}",

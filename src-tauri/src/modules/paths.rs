@@ -522,11 +522,11 @@ fn scan_gguf(projectors: bool) -> Vec<ScannedModel> {
         let a_recommended = a
             .name
             .to_ascii_lowercase()
-            .contains("ternary-bonsai-27b-pq2_0");
+            .contains("ternary-bonsai-2-27b-pq2_0");
         let b_recommended = b
             .name
             .to_ascii_lowercase()
-            .contains("ternary-bonsai-27b-pq2_0");
+            .contains("ternary-bonsai-2-27b-pq2_0");
         b_recommended
             .cmp(&a_recommended)
             .then_with(|| a.name.to_lowercase().cmp(&b.name.to_lowercase()))

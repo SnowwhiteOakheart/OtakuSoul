@@ -2175,7 +2175,7 @@ export const de = {
   "backend.llm.connect": "Verbindungsfehler zu {{url}}: {{error}}",
   "backend.llm.server": "LLM-Server Fehler ({{status}}): {{error}}",
   "backend.llm.stream": "Stream-Fehler: {{error}}",
-  "backend.server.bonsaiLegacy": "Ternary-Bonsai-27B-Q2_0.gguf ist das veraltete Übergangsformat und wird bewusst nicht gestartet. Bitte Ternary-Bonsai-27B-PQ2_0.gguf (empfohlen) oder Ternary-Bonsai-27B-Q2_g64.gguf laden.",
+  "backend.server.bonsaiLegacy": "Ternary-Bonsai-27B-Q2_0.gguf ist das veraltete Übergangsformat und wird bewusst nicht gestartet. Bitte stattdessen Ternary-Bonsai-2-27B-PQ2_0.gguf laden (läuft mit der PrismML-Laufzeit).",
   "backend.server.prismRequired": "Dieses PQ2_0/PTQ1_0-Modell benötigt die PrismML-Laufzeit. Installiere sie unter Einstellungen → Server (oder mit ./tools/install_prism_runtime.sh); OtakuSoul wählt sie danach automatisch.",
   "backend.server.binaryMissing": "llama-server nicht gefunden. Installiere llama.cpp unter Einstellungen → llama-server & Tuning oder gib den Pfad an.",
   "backend.presets.dir": "Fehler beim Erstellen des Preset-Ordners: {{error}}",

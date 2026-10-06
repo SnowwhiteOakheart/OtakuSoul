@@ -26,8 +26,8 @@ export const ModelHubSettings = ({ onNavigate }: { onNavigate: (section: Setting
   );
 
   // HuggingFace search
-  const BONSAI_MODEL_ID = 'prism-ml/Ternary-Bonsai-27B-gguf';
-  const [hfQuery, setHfQuery] = useState('Ternary-Bonsai-27B-gguf');
+  const BONSAI_MODEL_ID = 'prism-ml/Ternary-Bonsai-2-27B-gguf';
+  const [hfQuery, setHfQuery] = useState('Ternary-Bonsai-2-27B-gguf');
   const [expandedModelId, setExpandedModelId] = useState<string | null>(null);
   const [hubView, setHubView] = useState<'recommended' | 'installed' | 'popular' | 'search'>('recommended');
   const gpu = hardware?.gpus[0];
@@ -135,7 +135,7 @@ export const ModelHubSettings = ({ onNavigate }: { onNavigate: (section: Setting
       {hubView === 'recommended' && (() => {
         const files = hfModelFiles[BONSAI_MODEL_ID] || [];
         const recommendedFile = files.find((file) => file.recommended);
-        const installed = scannedModels.find((model) => model.name.toLowerCase().includes('ternary-bonsai-27b-pq2_0'));
+        const installed = scannedModels.find((model) => model.name.toLowerCase().includes('ternary-bonsai-2-27b-pq2_0'));
         const vramGb = (gpu?.total_vram_mb || 0) / 1024;
         return (
           <div className="rounded-2xl border border-accent-500/50 bg-linear-to-br from-accent-950/60 via-slate-900/80 to-cyan-950/40 p-5 space-y-4 shadow-xl shadow-accent-950/20">
@@ -146,7 +146,7 @@ export const ModelHubSettings = ({ onNavigate }: { onNavigate: (section: Setting
                   <span className="px-2 py-0.5 rounded-full bg-cyan-500/15 text-cyan-300 text-[11px] font-bold border border-cyan-500/30">PRISM PQ2_0</span>
                   <span className="text-[11px] text-slate-400">Apache-2.0</span>
                 </div>
-                <h3 className="text-lg font-bold text-slate-100">Ternary Bonsai 27B</h3>
+                <h3 className="text-lg font-bold text-slate-100">Ternary Bonsai 2 27B</h3>
                 <p className="text-xs text-slate-300 max-w-2xl leading-relaxed">
                   {t('settings.bonsaiText')}
                 </p>
@@ -201,7 +201,7 @@ export const ModelHubSettings = ({ onNavigate }: { onNavigate: (section: Setting
                   {isLoadingHfFiles[BONSAI_MODEL_ID] ? t('settings.loadingModelData') : t('settings.prepareDownload')}
                 </button>
               )}
-              <button type="button" onClick={() => openUrl('https://huggingface.co/prism-ml/Ternary-Bonsai-27B-gguf')} className="px-3 py-2 text-xs text-cyan-300 hover:text-cyan-200">
+              <button type="button" onClick={() => openUrl(`https://huggingface.co/${BONSAI_MODEL_ID}`)} className="px-3 py-2 text-xs text-cyan-300 hover:text-cyan-200">
                 {t('settings.openModelPage')}
               </button>
             </div>

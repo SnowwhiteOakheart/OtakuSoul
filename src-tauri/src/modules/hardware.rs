@@ -596,12 +596,12 @@ mod tests {
     #[test]
     fn bonsai_q4_fits_262k_on_16gb_gpu() {
         let rec = recommend_gpu_layers_for_vram(
-            6_834,
+            6_872,
             64,
             32_768,
             15_000,
             16_376,
-            Some("Ternary-Bonsai-27B-PQ2_0.gguf"),
+            Some("Ternary-Bonsai-2-27B-PQ2_0.gguf"),
             Some("q4_0"),
             Some("q4_0"),
         );
@@ -616,12 +616,12 @@ mod tests {
     #[test]
     fn bonsai_f16_recommends_smaller_context_on_16gb_gpu() {
         let rec = recommend_gpu_layers_for_vram(
-            6_834,
+            6_872,
             64,
             262_144,
             15_000,
             16_376,
-            Some("Ternary-Bonsai-27B-PQ2_0.gguf"),
+            Some("Ternary-Bonsai-2-27B-PQ2_0.gguf"),
             Some("f16"),
             Some("f16"),
         );
