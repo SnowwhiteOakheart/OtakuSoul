@@ -4074,6 +4074,7 @@ dependencies = [
  "chrono",
  "crc32fast",
  "directories",
+ "encoding_rs",
  "flate2",
  "futures-util",
  "hound",

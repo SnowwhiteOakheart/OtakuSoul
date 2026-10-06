@@ -1,5 +1,6 @@
-//! Body motions for the 3D avatar: VRM animations (`.vrma`) and Mixamo animations (`.fbx`,
-//! retargeted onto the VRM in the frontend) the user imports into `<data>/animations/`. Each file has a use (idle loop or a gesture such as waving); the
+//! Body motions for the 3D avatar: VRM animations (`.vrma`), Mixamo animations (`.fbx`,
+//! retargeted onto the VRM in the frontend) and MMD motions (`.vmd`, for MMD models) the user
+//! imports into `<data>/animations/`. Each file has a use (idle loop or a gesture such as waving); the
 //! assignment lives next to the files in `roles.json`. Nothing is shipped or downloaded.
 
 use serde::{Deserialize, Serialize};
@@ -31,7 +32,7 @@ pub struct AvatarMotion {
     pub path: String,
     /// One of `ROLES`, or empty when it is not used.
     pub role: String,
-    /// File format: `vrma` or `fbx`.
+    /// File format: `vrma` or `fbx` (for VRM avatars), `vmd` (for MMD models).
     pub kind: String,
 }
 
@@ -45,6 +46,7 @@ fn motion_kind(path: &Path) -> Option<&'static str> {
     match extension.as_str() {
         "vrma" => Some("vrma"),
         "fbx" => Some("fbx"),
+        "vmd" => Some("vmd"),
         _ => None,
     }
 }
@@ -62,6 +64,7 @@ fn has_valid_header(kind: &str, head: &[u8]) -> bool {
             head.starts_with(b"Kaydara FBX Binary")
                 || String::from_utf8_lossy(head).contains("FBXHeaderExtension")
         }
+        "vmd" => head.starts_with(b"Vocaloid Motion Data"),
         _ => false,
     }
 }
@@ -273,6 +276,10 @@ mod tests {
         assert_eq!(import_into(&ascii, &dir).unwrap().kind, "fbx");
         delete_in(&dir, "Mixamo Nod.fbx").unwrap();
         delete_in(&dir, "ascii.fbx").unwrap();
+        let vmd = tmp.join("dance.vmd");
+        fs::write(&vmd, b"Vocaloid Motion Data 0002\0\0\0\0\0").unwrap();
+        assert_eq!(import_into(&vmd, &dir).unwrap().kind, "vmd");
+        delete_in(&dir, "dance.vmd").unwrap();
 
         let not_gltf = tmp.join("fake.vrma");
         fs::write(&not_gltf, b"nope").unwrap();

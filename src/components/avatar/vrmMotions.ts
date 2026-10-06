@@ -38,18 +38,18 @@ export async function loadMotionClip(motion: AvatarMotion, vrm: VRM): Promise<TH
 }
 
 /**
- * Plays the imported motions on one avatar: an idle loop (if there is one) and gestures that
+ * Plays the imported motions on one avatar (VRM scene or MMD mesh): an idle loop (if there is one) and gestures that
  * fade in, play once and fade back. `bodyWeight` says how much the animations drive the body,
  * so the procedural pose can fill in the rest.
  */
-export class VrmMotionPlayer {
+export class AvatarMotionPlayer {
   private readonly mixer: THREE.AnimationMixer;
   private idle: THREE.AnimationAction | null = null;
   private gesture: THREE.AnimationAction | null = null;
   private clips = new Map<MotionRole, THREE.AnimationClip[]>();
 
-  constructor(vrm: VRM, private readonly onGestureEnd?: () => void) {
-    this.mixer = new THREE.AnimationMixer(vrm.scene);
+  constructor(root: THREE.Object3D, private readonly onGestureEnd?: () => void) {
+    this.mixer = new THREE.AnimationMixer(root);
     this.mixer.addEventListener('finished', (event) => {
       if (event.action !== this.gesture) return;
       this.onGestureEnd?.();
@@ -91,6 +91,16 @@ export class VrmMotionPlayer {
 
   update(delta: number) {
     this.mixer.update(delta);
+  }
+
+  /** The mixer, for avatars that drive it themselves (MMD runs IK and physics after it). */
+  get animationMixer(): THREE.AnimationMixer {
+    return this.mixer;
+  }
+
+  /** Whether any motion is assigned (MMD then leaves the pose to the mixer). */
+  get hasClips(): boolean {
+    return this.clips.size > 0;
   }
 
   /** 0 = only the procedural pose, 1 = only the animations. */

@@ -44,6 +44,8 @@ pub struct ScannedVrm {
     pub name: String,
     pub path: String,
     pub size_mb: u64,
+    /// `vrm` or `mmd` (PMX/PMD with its textures next to it).
+    pub format: String,
 }
 
 /// `(config_dir, data_dir)`: the platform folders, or `$OTAKUSOUL_HOME/config|data` when set
@@ -566,13 +568,40 @@ pub fn scan_available_vrm_models() -> Vec<ScannedVrm> {
                         name,
                         path: path.to_string_lossy().to_string(),
                         size_mb,
+                        format: "vrm".into(),
                     });
                 }
             }
         }
+        // MMD models live in their own folders (textures next to them).
+        for model in crate::modules::avatar_models::find_mmd_models(dir, 4) {
+            let name = model
+                .file_stem()
+                .and_then(|s| s.to_str())
+                .unwrap_or("MMD")
+                .to_string();
+            let size_mb = fs::metadata(&model)
+                .map(|m| m.len() / (1024 * 1024))
+                .unwrap_or(0);
+            vrms.push(ScannedVrm {
+                name,
+                path: model.to_string_lossy().to_string(),
+                size_mb,
+                format: "mmd".into(),
+            });
+        }
     }
 
     vrms
+}
+
+/// Folders 3D avatars may be loaded from (bundled ones and the user's).
+pub fn avatar_roots() -> Vec<PathBuf> {
+    let paths = resolve_app_paths();
+    vec![
+        PathBuf::from(&paths.bundled_vrm_dir),
+        PathBuf::from(&paths.data_dir).join("avatars"),
+    ]
 }
 
 /// Copies a .vrm file into the user's avatar folder so it shows up in the list and stays
@@ -580,10 +609,34 @@ pub fn scan_available_vrm_models() -> Vec<ScannedVrm> {
 /// An identical file already in the folder is reused; a different one with the same name
 /// gets a numbered name.
 pub fn import_vrm_model(source_path: &str) -> Result<ScannedVrm, String> {
-    import_vrm_into(
-        Path::new(source_path),
-        &PathBuf::from(resolve_app_paths().data_dir).join("avatars"),
-    )
+    let src = Path::new(source_path);
+    let avatars = PathBuf::from(resolve_app_paths().data_dir).join("avatars");
+    let is_vrm = src
+        .extension()
+        .and_then(|e| e.to_str())
+        .is_some_and(|e| e.eq_ignore_ascii_case("vrm"));
+    if is_vrm {
+        return import_vrm_into(src, &avatars);
+    }
+    if !src.is_file() {
+        return Err(crate::err!(
+            "backend.common.pathMissing",
+            path = src.display()
+        ));
+    }
+    let model = crate::modules::avatar_models::import_mmd(src, &avatars)?;
+    Ok(ScannedVrm {
+        name: model
+            .file_stem()
+            .and_then(|s| s.to_str())
+            .unwrap_or("MMD")
+            .to_string(),
+        size_mb: fs::metadata(&model)
+            .map(|m| m.len() / (1024 * 1024))
+            .unwrap_or(0),
+        path: model.to_string_lossy().to_string(),
+        format: "mmd".into(),
+    })
 }
 
 fn import_vrm_into(src: &Path, dest_dir: &Path) -> Result<ScannedVrm, String> {
@@ -634,6 +687,7 @@ fn import_vrm_into(src: &Path, dest_dir: &Path) -> Result<ScannedVrm, String> {
             .to_string(),
         path: dest.to_string_lossy().to_string(),
         size_mb: src_len / (1024 * 1024),
+        format: "vrm".into(),
     })
 }
 

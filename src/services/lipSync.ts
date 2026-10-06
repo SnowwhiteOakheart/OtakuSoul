@@ -65,3 +65,14 @@ export function estimateVisemes(spectrum: ArrayLike<number>, binHz: number, loud
   });
   return result;
 }
+
+/**
+ * Mouth shapes to aim for: the voice when audio plays, a generic talking motion while the
+ * character speaks without audio, otherwise closed.
+ */
+export function mouthTarget(voice: Visemes | null, speaking: boolean, elapsed: number): Visemes {
+  if (voice) return voice;
+  if (!speaking) return SILENT_VISEMES;
+  const open = (Math.sin(elapsed * 14.0) + 1.0) * 0.35;
+  return { ...SILENT_VISEMES, aa: open * 0.7, oh: open * 0.3 };
+}

@@ -57,6 +57,14 @@ pub fn import_vrm_model(source_path: String) -> Result<crate::modules::paths::Sc
 }
 
 #[tauri::command]
+pub fn list_avatar_model_files(model_path: String) -> Result<Vec<String>, String> {
+    crate::modules::avatar_models::list_model_files(
+        &model_path,
+        &crate::modules::paths::avatar_roots(),
+    )
+}
+
+#[tauri::command]
 pub fn load_settings() -> crate::modules::settings::AppSettings {
     crate::modules::settings::load_app_settings()
 }

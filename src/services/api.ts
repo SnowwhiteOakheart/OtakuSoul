@@ -751,6 +751,11 @@ export const api = {
     await invoke('delete_avatar_motion', { file });
   },
 
+  /** Files next to a 3D model (relative, forward slashes), for textures in other cases. */
+  listAvatarModelFiles: async (modelPath: string): Promise<string[]> => {
+    return await invoke<string[]>('list_avatar_model_files', { modelPath });
+  },
+
   importVrmModel: async (sourcePath: string): Promise<ScannedVrm> => {
     return await invoke<ScannedVrm>('import_vrm_model', { sourcePath });
   },

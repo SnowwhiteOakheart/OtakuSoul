@@ -395,7 +395,7 @@ export const CharacterEditorModal = ({
                     <option value="">{t('editor.vrmDefault')}</option>
                     {scannedVrms.map((vrm) => (
                       <option key={vrm.path} value={vrm.path}>
-                        {vrm.name}
+                        {vrm.name}{vrm.format === 'mmd' ? ' (MMD)' : ''}
                       </option>
                     ))}
                   </select>

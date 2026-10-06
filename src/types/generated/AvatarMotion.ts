@@ -10,6 +10,6 @@ file: string, name: string, path: string,
  */
 role: string, 
 /**
- * File format: `vrma` or `fbx`.
+ * File format: `vrma` or `fbx` (for VRM avatars), `vmd` (for MMD models).
  */
 kind: string, };

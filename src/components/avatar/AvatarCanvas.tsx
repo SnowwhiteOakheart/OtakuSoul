@@ -9,6 +9,10 @@ import { translate, useTranslation } from '../../i18n';
 import { DropdownMenu } from '../ui/DropdownMenu';
 import { AvatarSkeleton, ScrollText } from '../ui';
 
+// MMD brings its own loader and physics; only loaded for MMD avatars.
+const MmdViewer = lazy(() => import('./MmdViewer'));
+const isMmdModel = (path: string) => /\.(pmx|pmd)$/i.test(path);
+
 const Live2DViewer = lazy(() =>
   loadCubismCore()
     .then(() => import('./Live2DViewer'))
@@ -172,6 +176,8 @@ export const AvatarCanvas: React.FC<AvatarCanvasProps> = ({
       ? 'sad'
       : ['surprise', 'confusion', 'curiosity'].includes(em)
       ? 'surprised'
+      : em === 'neutral'
+      ? 'neutral'
       : 'relaxed';
 
     setCurrentEmotion({
@@ -263,13 +269,28 @@ export const AvatarCanvas: React.FC<AvatarCanvasProps> = ({
 
       {/* Main Avatar Viewport */}
       {avatarMode === '3d' ? (
-        <VrmViewer
-          modelPath={vrmPath}
-          emotion={currentEmotion.vrm_expression}
-          isSpeaking={isSpeaking}
-          motions={avatarMotions}
-          gesture={avatarGesture}
-        />
+        isMmdModel(vrmPath) ? (
+          <Suspense fallback={<AvatarSkeleton label={t('avatar.vrmLoading')} />}>
+            <MmdViewer
+              key={vrmPath}
+              modelPath={vrmPath}
+              emotion={currentEmotion.vrm_expression}
+              isSpeaking={isSpeaking}
+              motions={avatarMotions}
+              gesture={avatarGesture}
+              onPickEmotion={handleSelectManualEmotion}
+            />
+          </Suspense>
+        ) : (
+          <VrmViewer
+            modelPath={vrmPath}
+            emotion={currentEmotion.vrm_expression}
+            isSpeaking={isSpeaking}
+            motions={avatarMotions}
+            gesture={avatarGesture}
+            onPickEmotion={handleSelectManualEmotion}
+          />
+        )
       ) : avatarMode === 'live2d' ? (
         live2dPath ? (
           <Suspense

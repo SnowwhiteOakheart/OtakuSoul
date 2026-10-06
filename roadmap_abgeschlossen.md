@@ -1797,4 +1797,10 @@ veraltet und sind korrigiert: `chat-sidebar-errors` las die Sitzung, bevor der e
 - [x] **Mixamo-Animationen für VRM-Avatare:** `.fbx` von Mixamo lassen sich wie VRMA importieren; die Bewegung wird von der
   Mixamo-Ruhepose auf die normalisierten VRM-Knochen übertragen (inkl. Finger, Hüfthöhe skaliert, VRM 0.x gespiegelt).
   Mixamo-Dateien werden nicht mitgeliefert; Tests erzeugen ein eigenes ASCII-FBX.
+- [x] **MMD-Modelle als 3D-Avatar:** PMX/PMD importieren (ZIP mit japanischen Shift_JIS-Namen oder PMX samt Ordner),
+  Darstellung über `@moeru/three-mmd` mit Spring-Bone-Haarphysik, Texturen unabhängig von Groß-/Kleinschreibung,
+  Arme hängen aus T- oder A-Pose herab, Blick folgt der Maus, Blinzeln, Gefühle und Mundformen über die
+  Standard-Morphs (あいうえお, まばたき, 笑い, 怒り, 困る …). VMD-Bewegungen als Gesten/Ruhe-Schleife. Mit einem echten
+  Modell (Cure Mermaid) geprüft. Dabei behoben: Der VRM-Viewer übernahm erkannte Gefühle nach dem Öffnen nicht mehr;
+  beide Viewer teilen jetzt Bühne, Overlay und Bewegungslogik.
 
