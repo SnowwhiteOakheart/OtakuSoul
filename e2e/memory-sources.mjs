@@ -4,7 +4,7 @@
 import assert from 'node:assert/strict';
 import { execFileSync } from 'node:child_process';
 import path from 'node:path';
-import { launch, screenshotDir } from './harness.mjs';
+import { clickSend, launch, screenshotDir } from './harness.mjs';
 
 const { browser, mock, home, close } = await launch();
 const database = path.join(home, 'data', 'otakusoul.db');
@@ -19,7 +19,7 @@ try {
   await input.waitForDisplayed({ timeout: 30_000 });
   const before = mock.stats.chat;
   await input.setValue('Ich heiße Hiroki.');
-  await browser.$('button[aria-label="Nachricht senden"]').click();
+  await clickSend(browser);
   await browser.waitUntil(() => mock.stats.chat > before, { timeout: 20_000 });
   await browser.$('button[aria-label="Nachricht senden"]').waitForExist({ timeout: 20_000 });
 

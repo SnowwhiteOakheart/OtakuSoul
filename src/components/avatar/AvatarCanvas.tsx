@@ -182,9 +182,9 @@ export const AvatarCanvas: React.FC<AvatarCanvasProps> = ({
   };
 
   return (
-    <div className="relative w-full h-full flex flex-col items-center justify-center overflow-hidden border-r border-slate-800 bg-app/80">
-      {/* Top Controls: 3-way Mode Selector & Emotion Badge */}
-      <div className="absolute top-3 right-3 z-30 flex items-center gap-2">
+    <div className="@container relative w-full h-full flex flex-col items-center justify-center overflow-hidden border-r border-slate-800 bg-app/80">
+      {/* Top Controls: 3-way Mode Selector & Emotion Badge; wraps instead of leaving narrow columns */}
+      <div className="absolute top-3 inset-x-3 z-30 flex flex-wrap items-center justify-end gap-2">
         {/* Emotion Pill / Tester Dropdown */}
         <DropdownMenu
           triggerLabel={t('avatar.emotionMenu')}
@@ -192,7 +192,7 @@ export const AvatarCanvas: React.FC<AvatarCanvasProps> = ({
           trigger={
             <>
               <span className="w-2 h-2 rounded-full bg-accent-400 animate-pulse motion-reduce:animate-none" />
-              <span>{tEmotion(currentEmotion.emotion)}</span>
+              <span className="max-w-28 truncate">{tEmotion(currentEmotion.emotion)}</span>
               <ChevronDown className="w-3 h-3 text-slate-400" />
             </>
           }
@@ -221,9 +221,10 @@ export const AvatarCanvas: React.FC<AvatarCanvasProps> = ({
                 : 'text-slate-400 hover:text-slate-200'
             }`}
             title={t('avatar.mode3dHint')}
+            aria-label={t('avatar.mode3d')}
           >
             <Box className="w-3 h-3" />
-            <span>{t('avatar.mode3d')}</span>
+            <span className="hidden @[21.5rem]:inline">{t('avatar.mode3d')}</span>
           </button>
 
           <button
@@ -235,9 +236,10 @@ export const AvatarCanvas: React.FC<AvatarCanvasProps> = ({
                 : 'text-slate-400 hover:text-slate-200'
             }`}
             title={t('avatar.modeLive2dHint')}
+            aria-label={t('avatar.modeLive2d')}
           >
             <Smile className="w-3 h-3" />
-            <span>{t('avatar.modeLive2d')}</span>
+            <span className="hidden @[21.5rem]:inline">{t('avatar.modeLive2d')}</span>
           </button>
 
           <button
@@ -249,9 +251,10 @@ export const AvatarCanvas: React.FC<AvatarCanvasProps> = ({
                 : 'text-slate-400 hover:text-slate-200'
             }`}
             title={t('avatar.modeImageHint')}
+            aria-label={t('avatar.modeImage')}
           >
             <Image className="w-3 h-3" />
-            <span>{t('avatar.modeImage')}</span>
+            <span className="hidden @[21.5rem]:inline">{t('avatar.modeImage')}</span>
           </button>
         </div>
       </div>

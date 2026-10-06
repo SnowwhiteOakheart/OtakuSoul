@@ -1783,4 +1783,9 @@ veraltet und sind korrigiert: `chat-sidebar-errors` las die Sitzung, bevor der e
   deutsche und englische Stichwörter); Whisper hört danach nur den Text, die Tags werden als Geräusch umgesetzt.
   Kartoffelbox Turbo (deutsche Feinabstimmung) getestet und verworfen: erfindet englische Sätze, mit Tags ein
   komplett erfundener Monolog.
+- [x] **UI-Durchsicht (06.10.2026):** Avatar-Spalte erst mit gewähltem Charakter (kein endloser Lade-Kreis), Hinweis
+  ohne VRM-Modell; Avatar-Bedienelemente brechen in schmalen Spalten um (Modus nur als Symbol); kurzer Platzhalter im
+  Eingabefeld (Tastenhinweis als Tooltip); „Einklappen“ statt abgeschnittenem Text. Senden ist ohne geöffneten Chat
+  gesperrt (vorher Fehler „Keine aktive Chat-Sitzung“ beim frühen Klicken). 3D-Kamera richtet sich am Kopf und an der
+  Modellhöhe aus, statt Köpfe großer Modelle anzuschneiden.
 

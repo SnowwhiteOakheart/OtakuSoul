@@ -44,7 +44,7 @@ export const ChatComposer: React.FC = () => {
   };
 
   const handleSend = () => {
-    if ((!input.trim() && files.length === 0) || isGenerating || isChatLoading || chatLoadError) return;
+    if ((!input.trim() && files.length === 0) || isGenerating || !activeChatId || isChatLoading || chatLoadError) return;
     streamingTts.cancel();
     const [text, attached] = [input, files];
     setInput('');
@@ -132,6 +132,7 @@ export const ChatComposer: React.FC = () => {
             }
           }}
           placeholder={t('chat.inputPlaceholder')}
+          title={t('chat.inputHint')}
           aria-label={t('chat.inputLabel')}
           className="flex-1 bg-app/80 border border-slate-700/80 rounded-xl px-4 py-2.5 text-sm text-slate-100 placeholder-slate-500 focus:outline-hidden focus:border-accent-500 focus:ring-1 focus:ring-accent-500 resize-none max-h-32 transition-colors"
           rows={1}
@@ -149,7 +150,7 @@ export const ChatComposer: React.FC = () => {
         ) : (
           <button
             onClick={handleSend}
-            disabled={isChatLoading || !!chatLoadError || (!input.trim() && files.length === 0)}
+            disabled={!activeChatId || isChatLoading || !!chatLoadError || (!input.trim() && files.length === 0)}
             className="p-2.5 rounded-xl bg-accent-600 hover:bg-accent-500 disabled:opacity-40 disabled:cursor-not-allowed text-white transition-all shadow-md flex items-center justify-center"
             title={t('chat.send')}
             aria-label={t('chat.send')}

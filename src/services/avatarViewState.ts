@@ -88,3 +88,25 @@ export function saveVrmViewState(modelPath: string, state: VrmViewState) {
   store.vrm[modelPath] = state;
   writeStore(store);
 }
+
+export function clearVrmViewState(modelPath: string) {
+  const store = readStore();
+  if (!(modelPath in store.vrm)) return;
+  delete store.vrm[modelPath];
+  writeStore(store);
+}
+
+/**
+ * Upper-body framing from the model itself instead of fixed coordinates: the view centres a
+ * little below the head and backs off far enough that the top of the model (hair, ears) and
+ * the start of the shoulders fit, also in narrow portrait columns.
+ */
+export function frameUpperBody(headY: number, topY: number, fovDegrees: number, aspect: number): VrmViewState {
+  const tan = Math.tan((fovDegrees * Math.PI) / 360);
+  const centerY = headY - 0.12;
+  const halfHeight = Math.max(0.3, topY - centerY + 0.06);
+  // Face and the start of the shoulders; more would shrink the face in narrow columns.
+  const halfWidth = 0.18;
+  const distance = Math.min(2.4, Math.max(0.6, halfHeight / tan, halfWidth / (tan * Math.max(aspect, 0.1))));
+  return { camera: [0, centerY + 0.03, distance], target: [0, centerY, 0] };
+}

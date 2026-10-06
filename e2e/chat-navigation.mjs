@@ -2,7 +2,7 @@
 // sidebar, continue from a message as a new chat (history up to there, original unchanged).
 import assert from 'node:assert/strict';
 import path from 'node:path';
-import { launch, screenshotDir } from './harness.mjs';
+import { clickSend, launch, screenshotDir } from './harness.mjs';
 
 const { browser, mock, close } = await launch();
 // oxlint-disable-next-line no-underscore-dangle -- Tauri IPC in a disposable profile
@@ -18,7 +18,7 @@ try {
   for (const text of ['Erzähl mir vom Leuchtturm.', 'Und was ist mit dem Hafen?', 'Gute Nacht!']) {
     const before = mock.stats.chat;
     await input.setValue(text);
-    await browser.$('button[aria-label="Nachricht senden"]').click();
+    await clickSend(browser);
     await browser.waitUntil(() => mock.stats.chat > before, { timeout: 20_000 });
     await browser.$('button[aria-label="Nachricht senden"]').waitForExist({ timeout: 20_000 });
   }

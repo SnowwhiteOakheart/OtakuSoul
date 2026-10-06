@@ -91,3 +91,10 @@ export async function launch(settings = {}) {
     throw e;
   }
 }
+
+/** Clicks „Senden“ once it is enabled: it stays locked until the chat of the character is open. */
+export async function clickSend(browser) {
+  const button = await browser.$('button[aria-label="Nachricht senden"]');
+  await button.waitForEnabled({ timeout: 20_000 });
+  await button.click();
+}

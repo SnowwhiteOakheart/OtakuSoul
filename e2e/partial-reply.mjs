@@ -2,7 +2,7 @@
 import assert from 'node:assert/strict';
 import { execFileSync } from 'node:child_process';
 import path from 'node:path';
-import { launch, screenshotDir } from './harness.mjs';
+import { clickSend, launch, screenshotDir } from './harness.mjs';
 
 const { browser, mock, home, close } = await launch();
 const sql = (statement) => execFileSync('sqlite3', [path.join(home, 'data', 'otakusoul.db'), statement], { encoding: 'utf8' }).trim();
@@ -14,7 +14,7 @@ try {
   await input.waitForDisplayed({ timeout: 30_000 });
   mock.stats.stallChatAfter = 2;
   await input.setValue('Erzähl mir von Kyoto.');
-  await browser.$('button[aria-label="Nachricht senden"]').click();
+  await clickSend(browser);
 
   // Two pieces arrive, then the model hangs; the user stops it.
   const stop = await browser.$('button[aria-label="Generierung abbrechen"]');

@@ -125,6 +125,8 @@ Hub). Integrationen → Bildgenerierung enthält nur Studio und Galerie.
   VoiceDesign-Modelle (`voice_design`) brauchen eine Beschreibung (`openai_instructions` der Stimme → `instructions`).
   TADA: `CRISPASR_TADA_WAV_CLONE=1` (WAV-Klon, Encoder/Aligner neben dem Modell), `CRISPASR_TADA_NUM_CANDIDATES=4`.
   Chatterbox Turbo (`speaks_sound_tags`): `voice::actions_to_sound_tags` macht *lacht* zu `[laugh]` vor dem Aktionsfilter.
+- 3D-Avatar (`VrmViewer.tsx`): Startansicht aus Kopf-Knochen und Modellhöhe (`frameUpperBody` in `services/avatarViewState.ts`);
+  gespeichert wird nur eine vom Nutzer bewegte Kamera, „Ansicht zurücksetzen“ löscht sie.
 - Stimmeffekte: `VoiceConfig.effects` (`VoiceEffects`), gerendert in `services/voiceEffects.ts` (OfflineAudioContext, Tonhöhe per
   WSOLA) über `audioPlayer.enqueue(…, effects)`; jeder neue Abspielweg muss `config.effects` mitgeben.
 - Bild-LoRAs (`image_loras.rs`): `sd-server` ignoriert `<lora:…>` im Prompt; LoRAs gehen als `lora: [{path, multiplier}]`
@@ -161,7 +163,7 @@ Hub). Integrationen → Bildgenerierung enthält nur Studio und Galerie.
   prüft den Kontext nach ihrem Await erneut. Die zuletzt beendete ID bleibt bis zum nächsten Vorgang erhalten.
 - Chat-Laden: Nur der neueste Sitzungsabruf im passenden Charakter-Kontext darf den Verlauf setzen.
   Auswahl startet mit leerem Verlauf, `isChatLoading` und zurückgesetztem `chatLoadError`; Fehler sind sichtbar
-  und über `retryChatLoad` wiederholbar. Senden bleibt während Laden/Lesefehlern gesperrt. Navigation fordert
+  und über `retryChatLoad` wiederholbar. Senden bleibt ohne aktiven Chat und während Laden/Lesefehlern gesperrt (E2E klickt über `clickSend` aus `harness.mjs`). Navigation fordert
   Abbruch der laufenden Generierung an und stoppt Chat-Sprachausgabe; eine Abrufnummer schützt auch Wechsel A → B → A vor alten Resultaten.
   Späte Sitzungslisten und Stimmenkonfigurationen eines anderen Kontexts dürfen nichts überschreiben.
 - Abbruchbereiche: `AppState.inference_client` gehört zum Chat, `stage_inference_client` zu Stage.

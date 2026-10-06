@@ -1,7 +1,7 @@
 // "Show last prompt": after a message the chat menu shows what the model really got.
 import assert from 'node:assert/strict';
 import path from 'node:path';
-import { launch, screenshotDir } from './harness.mjs';
+import { clickSend, launch, screenshotDir } from './harness.mjs';
 
 const { browser, mock, close } = await launch();
 const jsClick = (element) => browser.execute((el) => el.click(), element);
@@ -12,7 +12,7 @@ try {
   await input.waitForDisplayed({ timeout: 30_000 });
   const before = mock.stats.chat;
   await input.setValue('Wie heißt das Café?');
-  await browser.$('button[aria-label="Nachricht senden"]').click();
+  await clickSend(browser);
   await browser.waitUntil(() => mock.stats.chat > before, { timeout: 20_000 });
   await browser.$('button[aria-label="Nachricht senden"]').waitForExist({ timeout: 20_000 });
 

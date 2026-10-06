@@ -4,9 +4,9 @@ import { GLTFLoader } from 'three/examples/jsm/loaders/GLTFLoader.js';
 import { OrbitControls } from 'three/examples/jsm/controls/OrbitControls.js';
 import { VRM, VRMLoaderPlugin, VRMUtils } from '@pixiv/three-vrm';
 import { api } from '../../services/api';
-import { Loader2, Smile, Frown, Angry, Sparkles, RefreshCcw, RotateCcw } from 'lucide-react';
+import { Box, Loader2, Smile, Frown, Angry, Sparkles, RefreshCcw, RotateCcw } from 'lucide-react';
 import { audioPlayer } from '../../services/audioPlayer';
-import { loadVrmViewState, saveVrmViewState } from '../../services/avatarViewState';
+import { clearVrmViewState, frameUpperBody, loadVrmViewState, saveVrmViewState, type VrmViewState } from '../../services/avatarViewState';
 import { translate, useTranslation } from '../../i18n';
 import { errorMessage } from '../../utils/errors';
 
@@ -90,7 +90,15 @@ export const VrmViewer = ({
     controls.maxDistance = 2.5;
     controls.maxPolarAngle = Math.PI / 2 + 0.1;
 
-    const savedView = loadVrmViewState(modelPath);
+    // Earlier versions stored the fixed start view even without a camera move; that is no
+    // choice of the user and must not hide the framing of the model.
+    const storedView = loadVrmViewState(modelPath);
+    const savedView =
+      storedView &&
+      !(storedView.camera.every((v, i) => Math.abs(v - DEFAULT_CAMERA_POSITION[i]!) < 1e-4) &&
+        storedView.target.every((v, i) => Math.abs(v - DEFAULT_CAMERA_TARGET[i]!) < 1e-4))
+        ? storedView
+        : null;
     if (savedView) {
       camera.position.fromArray(savedView.camera);
       controls.target.fromArray(savedView.target);
@@ -98,7 +106,10 @@ export const VrmViewer = ({
     controls.update();
 
     let saveTimer: number | null = null;
+    // Only a camera the user moved is remembered; otherwise the model framing applies.
+    let userMoved = !!savedView;
     const saveViewState = () => {
+      if (!userMoved) return;
       saveVrmViewState(modelPath, {
         camera: [camera.position.x, camera.position.y, camera.position.z],
         target: [controls.target.x, controls.target.y, controls.target.z],
@@ -111,13 +122,24 @@ export const VrmViewer = ({
         saveViewState();
       }, 200);
     };
+    const markMoved = () => {
+      userMoved = true;
+    };
+    controls.addEventListener('start', markMoved);
     controls.addEventListener('change', scheduleViewSave);
 
-    resetViewRef.current = () => {
-      camera.position.fromArray(DEFAULT_CAMERA_POSITION);
-      controls.target.fromArray(DEFAULT_CAMERA_TARGET);
+    // Framing of the loaded model; the fixed values only until it is there.
+    let defaultView: VrmViewState = { camera: DEFAULT_CAMERA_POSITION, target: DEFAULT_CAMERA_TARGET };
+    const applyView = (view: VrmViewState) => {
+      camera.position.fromArray(view.camera);
+      controls.target.fromArray(view.target);
       controls.update();
-      saveViewState();
+    };
+    resetViewRef.current = () => {
+      if (saveTimer !== null) window.clearTimeout(saveTimer);
+      userMoved = false;
+      clearVrmViewState(modelPath);
+      applyView(defaultView);
     };
 
     // 2. Lighting (Gentle anime lighting)
@@ -174,6 +196,15 @@ export const VrmViewer = ({
 
             vrmRef.current = vrm;
             scene.add(vrm.scene);
+
+            vrm.scene.updateMatrixWorld(true);
+            const head = vrm.humanoid.getRawBoneNode('head');
+            if (head) {
+              const headY = head.getWorldPosition(new THREE.Vector3()).y;
+              const topY = new THREE.Box3().setFromObject(vrm.scene).max.y;
+              defaultView = frameUpperBody(headY, topY, camera.fov, camera.aspect);
+              if (!savedView) applyView(defaultView);
+            }
             setLoading(false);
           },
           (err) => {
@@ -346,6 +377,7 @@ export const VrmViewer = ({
       isDisposed = true;
       if (saveTimer !== null) window.clearTimeout(saveTimer);
       saveViewState();
+      controls.removeEventListener('start', markMoved);
       controls.removeEventListener('change', scheduleViewSave);
       controls.dispose();
       resetViewRef.current = null;
@@ -370,6 +402,14 @@ export const VrmViewer = ({
         <div className="absolute inset-0 flex flex-col items-center justify-center bg-app/80 backdrop-blur z-20 space-y-2">
           <Loader2 className="w-8 h-8 text-accent-400 animate-spin" />
           <span className="text-xs text-accent-300 font-mono">{t('avatar.vrmLoading')}</span>
+        </div>
+      )}
+
+      {!loading && !error && !modelPath.trim() && (
+        <div className="absolute inset-0 flex flex-col items-center justify-center p-6 text-center text-slate-400 z-10 pointer-events-none">
+          <Box className="w-12 h-12 text-accent-400/50 mb-2" />
+          <p className="text-sm font-semibold text-slate-200">{t('avatar.noVrmTitle')}</p>
+          <p className="text-xs text-slate-400 mt-1 max-w-xs">{t('avatar.noVrmText')}</p>
         </div>
       )}
 

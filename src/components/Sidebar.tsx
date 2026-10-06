@@ -109,7 +109,7 @@ export const Sidebar = () => {
           className="w-full flex items-center gap-3 rounded-lg px-2.5 py-2 text-sm text-slate-400 outline-hidden hover:bg-slate-800/70 hover:text-slate-200 focus-visible:ring-2 focus-visible:ring-accent-400"
         >
           {collapsed ? <ChevronsRight className="w-[18px] h-[18px] shrink-0" /> : <ChevronsLeft className="w-[18px] h-[18px] shrink-0" />}
-          {!collapsed && <span className="truncate">{t('nav.collapse')}</span>}
+          {!collapsed && <span className="truncate">{t('nav.collapseShort')}</span>}
         </button>
       </div>
     </nav>

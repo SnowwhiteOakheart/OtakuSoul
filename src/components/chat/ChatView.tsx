@@ -423,7 +423,7 @@ export const ChatView: React.FC = () => {
 
       {/* Main Split Layout: Avatar (Left) + Chat (Right) */}
       <div className="flex-1 flex overflow-hidden">
-        {showAvatar && (
+        {showAvatar && activeCharacter && (
           <div className="hidden md:flex w-5/12 lg:w-1/3 h-full">
             <React.Suspense fallback={<AvatarSkeleton label={t('chat.avatarLoading')} />}>
               <AvatarCanvas

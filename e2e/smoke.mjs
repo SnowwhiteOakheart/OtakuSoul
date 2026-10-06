@@ -6,7 +6,7 @@ import assert from 'node:assert/strict';
 import { mkdtempSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import path from 'node:path';
-import { launch, screenshotDir } from './harness.mjs';
+import { clickSend, launch, screenshotDir } from './harness.mjs';
 import { STAGE_NARRATION, SUMMARY, TRANSLATION } from './mock-llm.mjs';
 
 const step = (name) => console.log(`• ${name}`);
@@ -25,7 +25,7 @@ try {
   const send = async (text) => {
     const before = mock.stats.chat;
     await input.setValue(text);
-    await browser.$('button[aria-label="Nachricht senden"]').click();
+    await clickSend(browser);
     // The request reached the model (attachments upload first), then generation is done:
     // the send button is back (the abort button replaces it meanwhile).
     await browser.waitUntil(() => mock.stats.chat > before, { timeout: 20_000, timeoutMsg: 'keine Anfrage am LLM' });
