@@ -19,7 +19,12 @@
 
 - [ ] Chatterbox-Stimmklonen ohne Python (sobald CrispASR ein C++-Baking anbietet).
 
-## 3. Technik & Tests
+## 3. Soul Stage: 5e-Regeln & Spielbrett
+
+- [ ] Eigene Regel-Engine (SRD 5.1), Spielbrett aus Raster/JSON mit eigenen Kachel-SVGs und Starter-Abenteuer – Schritte,
+  Entscheidungen und offene Fragen in [`Roadmap_DND.md`](Roadmap_DND.md).
+
+## 4. Technik & Tests
 
 - [ ] Umstieg auf erzeugte Command-Wrapper (`tauri-specta`), falls es eine stabile 2.0 gibt (bis dahin prüft
   `src/test/commandCheck.test.ts` die Aufrufe; Stand 06.10.2026: 2.0.0-rc.25).
