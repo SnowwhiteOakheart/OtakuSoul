@@ -99,11 +99,15 @@ export const LocalModelSetup = () => {
   }, []);
 
   const pathOf = (starter: StarterModel) => scannedModels.find((m) => m.path.endsWith(starter.file.filename))?.path;
+  // Ternary Bonsai (PQ2_0) only runs on the PrismML runtime.
+  const needsPrism = starters?.some(
+    (s) => s.file.runtime === 'prism' && (s.recommended || (pathOf(s) !== undefined && pathOf(s) === serverConfig.model_path)),
+  );
 
   const download = async (starter: StarterModel) => {
     setDownloading(starter.id);
     // Selects the model when the download finished; errors land in `hfError`.
-    await downloadGgufModel({ ...starter.file, runtime: 'standard' });
+    await downloadGgufModel({ ...starter.file, runtime: starter.file.runtime === 'prism' ? 'prism' : 'standard' });
     setDownloading(null);
     void refresh();
   };
@@ -118,6 +122,7 @@ export const LocalModelSetup = () => {
       </p>
 
       <RuntimeCard kind="llama" />
+      {needsPrism && <RuntimeCard kind="prism" />}
 
       <fieldset className="space-y-2">
         <legend className="mb-1 text-xs font-semibold uppercase tracking-wider text-slate-400">{t('onboarding.starterTitle')}</legend>

@@ -311,9 +311,14 @@ struct StarterSpec {
     sha256: &'static str,
     license: &'static str,
     vram_mb: u64,
+    quantization: &'static str,
+    /// `"prism"` for PQ2_0/PTQ1_0 files that need the PrismML runtime.
+    runtime: &'static str,
+    /// Recommended whenever it fits, even over larger models.
+    preferred: bool,
 }
 
-/// One per VRAM tier; Apache-2.0, ungated, checked against Hugging Face's SHA-256.
+/// One per VRAM tier, sorted by VRAM; Apache-2.0, ungated, checked against Hugging Face's SHA-256.
 const STARTERS: &[StarterSpec] = &[
     StarterSpec {
         id: "qwen3-4b",
@@ -324,6 +329,9 @@ const STARTERS: &[StarterSpec] = &[
         sha256: "2fde00ce69dd4899c70d020845e2638353015bba0fdf161b3eb965f2bca4464e",
         license: "Apache-2.0",
         vram_mb: 4_000,
+        quantization: "Q4_K_M",
+        runtime: "standard",
+        preferred: false,
     },
     StarterSpec {
         id: "qwen3-8b",
@@ -335,6 +343,23 @@ const STARTERS: &[StarterSpec] = &[
         license: "Apache-2.0",
         // 4.7 GiB of weights plus ~1 GB for an 8k context: fits an 8 GB card.
         vram_mb: 6_400,
+        quantization: "Q4_K_M",
+        runtime: "standard",
+        preferred: false,
+    },
+    StarterSpec {
+        id: "ternary-bonsai-2-27b",
+        name: "Ternary Bonsai 2 27B",
+        repo: "prism-ml/Ternary-Bonsai-2-27B-gguf",
+        file: "Ternary-Bonsai-2-27B-PQ2_0.gguf",
+        size: 7_206_168_928,
+        sha256: "3907dc1658db1f78a9826bf8d5bcb8dc65db0d466388937af57f2294fae62ec1",
+        license: "Apache-2.0",
+        // 6.7 GiB of weights, ~1.2 GB runtime and ~0.5 GB for the 32k start context with Q4 KV.
+        vram_mb: 9_000,
+        quantization: "PQ2_0",
+        runtime: "prism",
+        preferred: true,
     },
     StarterSpec {
         id: "mistral-nemo-12b",
@@ -345,6 +370,9 @@ const STARTERS: &[StarterSpec] = &[
         sha256: "7c1a10d202d8788dbe5628dc962254d10654c853cae6aaeca0618f05490d4a46",
         license: "Apache-2.0",
         vram_mb: 9_800,
+        quantization: "Q4_K_M",
+        runtime: "standard",
+        preferred: false,
     },
     StarterSpec {
         id: "mistral-small-24b",
@@ -355,18 +383,24 @@ const STARTERS: &[StarterSpec] = &[
         sha256: "80f5bda68f156f12650ca03a0a2dbfae06a215ac41caa773b8631a479f82415e",
         license: "Apache-2.0",
         vram_mb: 17_500,
+        quantization: "Q4_K_M",
+        runtime: "standard",
+        preferred: false,
     },
 ];
 
 /// VRAM left for the model after the desktop and the driver take theirs.
 const DESKTOP_RESERVE_MB: u64 = 1_536;
 
-/// Index of the recommended starter for `vram_mb` (0 = no GPU): the largest that fits.
+/// Index of the recommended starter for `vram_mb` (0 = no GPU): a preferred one that fits,
+/// else the largest that fits.
 fn recommended_starter(vram_mb: u64) -> usize {
     let usable = vram_mb.saturating_sub(DESKTOP_RESERVE_MB);
+    let fits = |s: &StarterSpec| s.vram_mb <= usable;
     STARTERS
         .iter()
-        .rposition(|s| s.vram_mb <= usable)
+        .position(|s| s.preferred && fits(s))
+        .or_else(|| STARTERS.iter().rposition(fits))
         .unwrap_or(0)
 }
 
@@ -394,8 +428,8 @@ pub fn starter_models() -> Vec<StarterModel> {
                 sha256: Some(s.sha256.to_string()),
                 size_formatted: format!("{:.1} GB", s.size as f64 / 1_073_741_824.0),
                 download_url: format!("https://huggingface.co/{}/resolve/main/{}", s.repo, s.file),
-                quantization: "Q4_K_M".to_string(),
-                runtime: "standard".to_string(),
+                quantization: s.quantization.to_string(),
+                runtime: s.runtime.to_string(),
                 recommended: i == recommended,
                 compatibility_note: String::new(),
             },
@@ -609,12 +643,20 @@ mod tests {
             "no tier fits 4 GB, the smallest is offered"
         );
         assert_eq!(pick(8_192), "qwen3-8b");
-        assert_eq!(pick(12_288), "mistral-nemo-12b");
-        assert_eq!(pick(16_384), "mistral-nemo-12b");
-        assert_eq!(pick(24_576), "mistral-small-24b");
+        // Bonsai is preferred wherever it fits, even over larger models.
+        assert_eq!(pick(12_288), "ternary-bonsai-2-27b");
+        assert_eq!(pick(16_384), "ternary-bonsai-2-27b");
+        assert_eq!(pick(24_576), "ternary-bonsai-2-27b");
+        assert!(STARTERS.windows(2).all(|w| w[0].vram_mb <= w[1].vram_mb));
         for s in STARTERS {
             assert_eq!(s.sha256.len(), 64, "{}", s.id);
-            assert!(s.file.ends_with("Q4_K_M.gguf"), "{}", s.id);
+            assert!(
+                s.file.ends_with(&format!("{}.gguf", s.quantization)),
+                "{}",
+                s.id
+            );
+            let (runtime, _, _) = classify_gguf(s.repo, s.file);
+            assert_eq!(runtime, s.runtime, "{}", s.id);
         }
     }
 

@@ -55,6 +55,28 @@ describe('setup wizard parts', () => {
     await waitFor(() => expect(download).toHaveBeenCalledWith(expect.objectContaining({ filename: 'Qwen_Qwen3-8B-Q4_K_M.gguf' })));
   });
 
+  it('offers the PrismML runtime with a recommended Bonsai starter and keeps its runtime', async () => {
+    const user = userEvent.setup();
+    const bonsaiFile = { ...starter({}).file, filename: 'Ternary-Bonsai-2-27B-PQ2_0.gguf', quantization: 'PQ2_0', runtime: 'prism' };
+    vi.mocked(api.listStarterModels).mockResolvedValue([
+      starter({}),
+      starter({ id: 'ternary-bonsai-2-27b', name: 'Ternary Bonsai 2 27B', recommended: true, file: bonsaiFile }),
+    ]);
+    const download = vi.fn().mockResolvedValue(undefined);
+    useAppStore.setState({ downloadGgufModel: download });
+    render(<LocalModelSetup />);
+    expect(await screen.findByText('PrismML runtime (Ternary Bonsai)')).toBeInTheDocument();
+    await user.click(screen.getByRole('button', { name: 'Download Ternary Bonsai 2 27B' }));
+    await waitFor(() => expect(download).toHaveBeenCalledWith(expect.objectContaining({ runtime: 'prism' })));
+  });
+
+  it('shows no PrismML runtime without a Bonsai starter', async () => {
+    vi.mocked(api.listStarterModels).mockResolvedValue([starter({ recommended: true })]);
+    render(<LocalModelSetup />);
+    await screen.findByText('fits your GPU');
+    expect(screen.queryByText('PrismML runtime (Ternary Bonsai)')).not.toBeInTheDocument();
+  });
+
   it('ends with a real reply of the character, starting the local server first', async () => {
     const user = userEvent.setup();
     let state: 'stopped' | 'starting' | 'running' = 'stopped';

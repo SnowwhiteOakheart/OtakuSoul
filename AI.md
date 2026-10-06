@@ -241,7 +241,8 @@ Hub). Integrationen → Bildgenerierung enthält nur Studio und Galerie.
   „Ab hier neu“ = `branch_chat` (kopiert Verlauf, Varianten, Anhänge per `attachments::copy_to_chat`, Lesezeichen).
 - Einrichtungsassistent: `components/onboarding/OnboardingParts.tsx` (Cloud-Test, lokaler Weg, erste Antwort) nutzt
   `quick_reply` (eine kurze Antwort außerhalb eines Chats, 90 s) und `list_starter_models` (`models_hub::STARTERS`,
-  Empfehlung = größtes Modell, das in VRAM − 1,5 GB passt).
+  Empfehlung = `preferred`-Modell (Ternary Bonsai 2 27B), wenn es in VRAM − 1,5 GB passt, sonst das größte passende).
+  Starter mit `runtime: "prism"` blenden im Assistenten zusätzlich die PrismML-Laufzeitkarte ein.
 - Befehlspalette: Einträge für Einstellungen/Optionen/Integrationen in `CommandPalette.tsx`; Optionen brauchen eine
   `id="setting-…"` und springen per `utils/revealSetting.ts`. `SettingsView` folgt `openSettingsSection` auch offen.
 - Companion-Tools: nur ausdrücklich geprüfte interne Tools in `companion.rs` → `tool_allows_auto_approval`
