@@ -1,4 +1,4 @@
-//! Dice formula parser and roller (`2d6+3`, advantage, DC checks).
+//! Dice formula parser and roller (`2d6+3`, skill modifiers, DC checks).
 
 use super::*;
 
@@ -25,10 +25,7 @@ pub fn roll_dice(
                     }
                 }
             }
-            // Just return 0 if it's a named skill we couldn't find, so you can still roll without error
-            // Or return an error if it's strictly required
-            // For now, if we cannot parse it, treat it as 0 to be safe and avoid panics, but maybe it's better to tell the user:
-            Err("Ungültiger Modifikator oder unbekannte Fertigkeit".to_string())
+            Err(crate::err!("backend.stage.diceModifier", modifier = m))
         }
     };
 
@@ -54,12 +51,12 @@ pub fn roll_dice(
     } else {
         parts[0]
             .parse()
-            .map_err(|_| "Ungültige Anzahl der Würfel")?
+            .map_err(|_| crate::err!("backend.stage.diceFormat", formula = clean))?
     };
 
     let die_faces: u32 = parts[1]
         .parse()
-        .map_err(|_| "Ungültige Seitenzahl des Würfels")?;
+        .map_err(|_| crate::err!("backend.stage.diceFormat", formula = clean))?;
 
     if dice_count == 0 || dice_count > 100 {
         return Err(crate::err!("backend.stage.diceCount"));

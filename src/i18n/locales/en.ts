@@ -2116,6 +2116,7 @@ export const en: TranslationDictionary = {
   "backend.stage.diceFormat": "Invalid dice format: '{{formula}}'. Expected XdY, e.g. 1d20 or 2d6+3",
   "backend.stage.diceCount": "The number of dice must be between 1 and 100.",
   "backend.stage.diceSides": "The number of sides must be between 2 and 1000.",
+  "backend.stage.diceModifier": "Unknown modifier or skill: “{{modifier}}”.",
   "backend.stage.sceneRead": "Failed to read the scene: {{error}}",
   "backend.stage.sceneMissing": "Scene '{{id}}' not found.",
   "backend.stage.sceneSerialize": "Failed to save the scene data: {{error}}",

@@ -2116,6 +2116,7 @@ export const ru: TranslationDictionary = {
   "backend.stage.diceFormat": "Некорректный формат броска: '{{formula}}'. Ожидается XdY, например 1d20 или 2d6+3",
   "backend.stage.diceCount": "Количество костей должно быть от 1 до 100.",
   "backend.stage.diceSides": "Количество граней должно быть от 2 до 1000.",
+  "backend.stage.diceModifier": "Неизвестный модификатор или навык: «{{modifier}}».",
   "backend.stage.sceneRead": "Не удалось прочитать сцену: {{error}}",
   "backend.stage.sceneMissing": "Сцена '{{id}}' не найдена.",
   "backend.stage.sceneSerialize": "Не удалось сериализовать сцену: {{error}}",

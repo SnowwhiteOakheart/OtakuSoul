@@ -2118,6 +2118,7 @@ export const de = {
   "backend.stage.diceFormat": "Ungültiges Würfelformat: '{{formula}}'. Erwartet XdY z.B. 1d20 oder 2d6+3",
   "backend.stage.diceCount": "Würfelanzahl muss zwischen 1 und 100 liegen.",
   "backend.stage.diceSides": "Seitenzahl muss zwischen 2 und 1000 liegen.",
+  "backend.stage.diceModifier": "Unbekannter Modifikator oder unbekannte Fertigkeit: „{{modifier}}“.",
   "backend.stage.sceneRead": "Fehler beim Lesen der Szene: {{error}}",
   "backend.stage.sceneMissing": "Szene '{{id}}' nicht gefunden.",
   "backend.stage.sceneSerialize": "Fehler beim Serialisieren der Szene: {{error}}",

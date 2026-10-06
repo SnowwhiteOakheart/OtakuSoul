@@ -62,3 +62,7 @@ assets/vrm/*.vrm
 output/
 # End-to-end test screenshots
 e2e/screenshots/
+
+# Leftovers of failed patches
+*.orig
+*.rej

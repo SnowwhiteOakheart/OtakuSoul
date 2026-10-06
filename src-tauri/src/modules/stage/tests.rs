@@ -293,3 +293,11 @@ fn ambient_lookup_rejects_paths_and_other_files() {
     assert!(stage_ambient_data_url("notes.txt").is_err());
     assert!(stage_ambient_data_url("missing-file.ogg").is_err());
 }
+
+#[test]
+fn test_dice_errors_are_translatable_codes() {
+    for formula in ["1d20+Schleichen", "xd6", "2dx", ""] {
+        let error = roll_dice(formula, None, None).unwrap_err();
+        assert!(error.contains("backend.stage.dice"), "{formula}: {error}");
+    }
+}
