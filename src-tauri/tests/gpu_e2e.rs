@@ -194,6 +194,8 @@ struct Line {
 const DE: &str = "Guten Abend! Ich habe heute in der alten Bibliothek ein seltsames Buch gefunden.";
 const RU: &str = "Добрый вечер! Сегодня я нашла в старой библиотеке странную книгу.";
 const EN: &str = "Good evening! Today I found a strange book in the old library.";
+/// Sound tags: a model that voices them does not say the words "laugh" or "sigh".
+const EN_TAGS: &str = "[laugh] Oh, that is a funny story! [sigh] But now I am really tired.";
 const WARM: &str = "Hast du Lust, es gemeinsam zu lesen? Ich bin schon ganz gespannt.";
 
 #[tokio::test(flavor = "multi_thread")]
@@ -212,6 +214,8 @@ async fn tts() {
         "kokoro-de",
         "f5-tts-v1",
         "qwen3-tts-1.7b-voicedesign",
+        "tada-3b-ml",
+        "chatterbox-turbo",
     ] {
         let started = Instant::now();
         tts_local::download_model_with(id, &|_| {}).await.unwrap();
@@ -297,6 +301,33 @@ async fn tts() {
         })
         .await;
     }
+    // Chatterbox Turbo (English), plain and with sound tags. Its German fine-tune Kartoffelbox
+    // was tried and dropped: it adds invented English phrases (2026-10-06).
+    for (model, lang, text) in [
+        ("chatterbox-turbo", "en", EN),
+        ("chatterbox-turbo", "en", EN_TAGS),
+    ] {
+        run(Line {
+            model,
+            voice: "preset:default".into(),
+            lang,
+            text,
+        })
+        .await;
+    }
+    // TADA: built-in reference voice per language.
+    for (lang, text, voice) in [
+        ("de", DE, "preset:tada-ref-de"),
+        ("en", EN, "preset:tada-ref"),
+    ] {
+        run(Line {
+            model: "tada-3b-ml",
+            voice: voice.into(),
+            lang,
+            text,
+        })
+        .await;
+    }
     // VoiceDesign: the voice comes from a description.
     for (lang, text) in [("de", DE), ("en", EN)] {
         run(Line {
@@ -353,6 +384,16 @@ async fn tts() {
         for (lang, text) in [("de", WARM), ("ru", RU), ("en", EN)] {
             run(Line {
                 model: "qwen3-tts-1.7b",
+                voice: voice.clone(),
+                lang,
+                text,
+            })
+            .await;
+        }
+        // TADA clones the WAV on the fly with the aligner of the clone's language.
+        for (lang, text) in [("de", WARM), ("en", EN)] {
+            run(Line {
+                model: "tada-3b-ml",
                 voice: voice.clone(),
                 lang,
                 text,

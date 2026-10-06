@@ -2547,4 +2547,5 @@ export const en: TranslationDictionary = {
   "voiceFx.robot": "Robot",
   "voiceFx.highpass_hz": "High-pass",
   "voiceFx.lowpass_hz": "Low-pass",
+  "localTts.soundTagsHint": "With this model actions like *laughs*, *sighs*, *whispers* or *coughs* become audible instead of being skipped (English only).",
 };

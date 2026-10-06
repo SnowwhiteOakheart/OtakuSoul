@@ -251,6 +251,251 @@ const CATALOG: &[TtsModel] = &[
         voices: &[],
         start_language: None,
     },
+    // HumeAI TADA 3B multilingual (Llama 3.2 backbone): one reference voice per language from
+    // FLEURS (CC-BY-4.0); clones from a WAV with the German/English aligner next to the model.
+    TtsModel {
+        id: "tada-3b-ml",
+        name: "TADA 3B (mehrsprachig, Stimmklon)",
+        backend: "tada-3b-ml",
+        license: "Llama 3.2 Community License",
+        noncommercial: false,
+        languages: &["de", "en", "fr", "es", "it", "pl", "pt", "ja", "ar", "zh"],
+        cloning: true,
+        needs_clone: false,
+        voice_design: false,
+        vram_mb: 7_500,
+        files: &[
+            TtsFile {
+                role: Role::Main,
+                file: RemoteFile {
+                    repo: "cstr/tada-tts-3b-ml-GGUF",
+                    path: "tada-tts-3b-ml-q8_0.gguf",
+                    size: 5_579_404_608,
+                    sha256: Some(
+                        "23da2b8230c2e7b1f8753b80200d059c75e0752ef37626917078952e5363cf2d",
+                    ),
+                },
+            },
+            TtsFile {
+                role: Role::Codec,
+                file: RemoteFile {
+                    repo: "cstr/tada-tts-3b-ml-GGUF",
+                    path: "tada-codec-f16.gguf",
+                    size: 250_173_056,
+                    sha256: Some(
+                        "adfb353a0e529bbef61fe062b9fde3a0e99f01f6ffd21dde610a6b2bffd12720",
+                    ),
+                },
+            },
+            TtsFile {
+                role: Role::Extra,
+                file: RemoteFile {
+                    // Encoder and aligners: the server clones a WAV next to the model (CRISPASR_TADA_WAV_CLONE).
+                    repo: "cstr/tada-tts-3b-ml-GGUF",
+                    path: "tada-encoder-f16.gguf",
+                    size: 186_781_600,
+                    sha256: Some(
+                        "f441f17eaf6ad8b8c95fd26e04f38133d677f0812496301c682fe7411bcaabee",
+                    ),
+                },
+            },
+            TtsFile {
+                role: Role::Extra,
+                file: RemoteFile {
+                    repo: "cstr/tada-tts-3b-ml-GGUF",
+                    path: "tada-aligner-de.gguf",
+                    size: 520_459_264,
+                    sha256: Some(
+                        "ada8d0c45a13301980b5deee236e1c704a7bc85d61f720aeda0e950c69e36efb",
+                    ),
+                },
+            },
+            TtsFile {
+                role: Role::Extra,
+                file: RemoteFile {
+                    repo: "cstr/tada-tts-3b-ml-GGUF",
+                    path: "tada-aligner-en.gguf",
+                    size: 520_459_232,
+                    sha256: Some(
+                        "a7bbda1b61a09c17e947346a7da57621e4dd954fdc51e01eeb8f7692b8862ad6",
+                    ),
+                },
+            },
+            TtsFile {
+                role: Role::Extra,
+                file: RemoteFile {
+                    repo: "cstr/tada-tts-3b-ml-GGUF",
+                    path: "tada-ref-de.gguf",
+                    size: 117_664,
+                    sha256: Some(
+                        "ea7cac563039be3b96107f92c34a0a0fce406952b5c5a5821bb0c7b37c210b39",
+                    ),
+                },
+            },
+            TtsFile {
+                role: Role::Extra,
+                file: RemoteFile {
+                    repo: "cstr/tada-tts-3b-ml-GGUF",
+                    path: "tada-ref.gguf",
+                    size: 466_464,
+                    sha256: Some(
+                        "7efcc96795dd2b27577a4a81eb52d0c3add5ffa67f325fba5a938f3f98067ace",
+                    ),
+                },
+            },
+            TtsFile {
+                role: Role::Extra,
+                file: RemoteFile {
+                    repo: "cstr/tada-tts-3b-ml-GGUF",
+                    path: "tada-ref-fr.gguf",
+                    size: 136_160,
+                    sha256: Some(
+                        "3415f1224001008b6c2e41593c46dd76745e9c6445edf5e08fc2f33408f7cdd6",
+                    ),
+                },
+            },
+            TtsFile {
+                role: Role::Extra,
+                file: RemoteFile {
+                    repo: "cstr/tada-tts-3b-ml-GGUF",
+                    path: "tada-ref-es.gguf",
+                    size: 37_504,
+                    sha256: Some(
+                        "63555406ffef0b9a423cc86be8b97f197c5073ce5fb77f45bd80f2c49b9d6b22",
+                    ),
+                },
+            },
+            TtsFile {
+                role: Role::Extra,
+                file: RemoteFile {
+                    repo: "cstr/tada-tts-3b-ml-GGUF",
+                    path: "tada-ref-it.gguf",
+                    size: 72_448,
+                    sha256: Some(
+                        "1de683086be2a7e9758246ce06420759279139ab731dcd1ab949c3d6b2fe79f8",
+                    ),
+                },
+            },
+            TtsFile {
+                role: Role::Extra,
+                file: RemoteFile {
+                    repo: "cstr/tada-tts-3b-ml-GGUF",
+                    path: "tada-ref-pl.gguf",
+                    size: 140_224,
+                    sha256: Some(
+                        "aac0934f55ad19c9d3315aade614cef694533830da534a3edd9ecb0bf60eb55b",
+                    ),
+                },
+            },
+            TtsFile {
+                role: Role::Extra,
+                file: RemoteFile {
+                    repo: "cstr/tada-tts-3b-ml-GGUF",
+                    path: "tada-ref-pt.gguf",
+                    size: 136_224,
+                    sha256: Some(
+                        "ca81bb527cf008a9c116a876dc8cdfb99ee082ff58f811a78a644581fc7b7453",
+                    ),
+                },
+            },
+            TtsFile {
+                role: Role::Extra,
+                file: RemoteFile {
+                    repo: "cstr/tada-tts-3b-ml-GGUF",
+                    path: "tada-ref-ja.gguf",
+                    size: 72_448,
+                    sha256: Some(
+                        "2b9ea59472273f876e93ea75478bffe0e2a20f27bf1bf48e7548f341380e7e29",
+                    ),
+                },
+            },
+            TtsFile {
+                role: Role::Extra,
+                file: RemoteFile {
+                    repo: "cstr/tada-tts-3b-ml-GGUF",
+                    path: "tada-ref-ar.gguf",
+                    size: 82_752,
+                    sha256: Some(
+                        "f20e6193ab1de6f7a23e7a9aa128cc247f42520bf4c786bae4e0d9cbb976ac7c",
+                    ),
+                },
+            },
+            TtsFile {
+                role: Role::Extra,
+                file: RemoteFile {
+                    repo: "cstr/tada-tts-3b-ml-GGUF",
+                    path: "tada-ref-ch.gguf",
+                    size: 97_088,
+                    sha256: Some(
+                        "ac272583a52d5b13c0caad9e0b844f3c202270c1889637c3753c9afffab80a10",
+                    ),
+                },
+            },
+        ],
+        voices: &[
+            PresetVoice {
+                id: "tada-ref-de",
+                label: "Deutsch",
+                file: Some("tada-ref-de.gguf"),
+                language: "de",
+            },
+            PresetVoice {
+                id: "tada-ref",
+                label: "English",
+                file: Some("tada-ref.gguf"),
+                language: "en",
+            },
+            PresetVoice {
+                id: "tada-ref-fr",
+                label: "Français",
+                file: Some("tada-ref-fr.gguf"),
+                language: "fr",
+            },
+            PresetVoice {
+                id: "tada-ref-es",
+                label: "Español",
+                file: Some("tada-ref-es.gguf"),
+                language: "es",
+            },
+            PresetVoice {
+                id: "tada-ref-it",
+                label: "Italiano",
+                file: Some("tada-ref-it.gguf"),
+                language: "it",
+            },
+            PresetVoice {
+                id: "tada-ref-pl",
+                label: "Polski",
+                file: Some("tada-ref-pl.gguf"),
+                language: "pl",
+            },
+            PresetVoice {
+                id: "tada-ref-pt",
+                label: "Português",
+                file: Some("tada-ref-pt.gguf"),
+                language: "pt",
+            },
+            PresetVoice {
+                id: "tada-ref-ja",
+                label: "日本語",
+                file: Some("tada-ref-ja.gguf"),
+                language: "ja",
+            },
+            PresetVoice {
+                id: "tada-ref-ar",
+                label: "العربية",
+                file: Some("tada-ref-ar.gguf"),
+                language: "ar",
+            },
+            PresetVoice {
+                id: "tada-ref-ch",
+                label: "中文",
+                file: Some("tada-ref-ch.gguf"),
+                language: "zh",
+            },
+        ],
+        start_language: None,
+    },
     TtsModel {
         id: "chatterbox-multilingual",
         name: "Chatterbox Multilingual",
@@ -291,6 +536,50 @@ const CATALOG: &[TtsModel] = &[
             label: "Standard",
             file: None,
             language: "multi",
+        }],
+        start_language: None,
+    },
+    // Chatterbox Turbo speaks [laugh], [sigh], [whispering] … as sounds (see `voice_tags`).
+    TtsModel {
+        id: "chatterbox-turbo",
+        name: "Chatterbox Turbo (Englisch, Gefühls-Tags)",
+        backend: "chatterbox-turbo",
+        license: "MIT",
+        noncommercial: false,
+        languages: &["en"],
+        cloning: false,
+        needs_clone: false,
+        voice_design: false,
+        vram_mb: 2_000,
+        files: &[
+            TtsFile {
+                role: Role::Main,
+                file: RemoteFile {
+                    repo: "cstr/chatterbox-turbo-GGUF",
+                    path: "chatterbox-turbo-t3-q8_0.gguf",
+                    size: 658_897_472,
+                    sha256: Some(
+                        "35520ec377209a55e064464996f71694546eb8fdf793c719a24d44729e098d57",
+                    ),
+                },
+            },
+            TtsFile {
+                role: Role::Codec,
+                file: RemoteFile {
+                    repo: "cstr/chatterbox-turbo-GGUF",
+                    path: "chatterbox-turbo-s3gen-q8_0.gguf",
+                    size: 366_820_384,
+                    sha256: Some(
+                        "a77e3ef2559e8c4411b06a2692eb35646a43b0e5eef899633271aa281122e750",
+                    ),
+                },
+            },
+        ],
+        voices: &[PresetVoice {
+            id: "default",
+            label: "Standard",
+            file: None,
+            language: "en",
         }],
         start_language: None,
     },
@@ -533,6 +822,8 @@ pub struct TtsModelInfo {
     pub needs_clone: bool,
     /// The voice is described in words (`openai_instructions` of the voice settings).
     pub voice_design: bool,
+    /// Roleplay actions such as *laughs* become sounds (`speaks_sound_tags`).
+    pub sound_tags: bool,
     pub vram_mb: u64,
     pub download_bytes: u64,
     pub missing_bytes: u64,
@@ -582,6 +873,7 @@ pub fn list_models() -> Vec<TtsModelInfo> {
                 cloning: m.cloning,
                 needs_clone: m.needs_clone,
                 voice_design: m.voice_design,
+                sound_tags: speaks_sound_tags(Some(m.id)),
                 vram_mb: m.vram_mb,
                 download_bytes,
                 missing_bytes,
@@ -1021,6 +1313,13 @@ impl LocalTtsEngine {
         if model.backend == "f5-tts" && runtime.backend.starts_with("cuda") {
             cmd.env("CRISPASR_F5_EMBED_GPU", "1");
         }
+        // TADA clones a reference WAV on the fly only with this opt-in (CrispASR #201).
+        if model.backend.starts_with("tada") {
+            cmd.env("CRISPASR_TADA_WAV_CLONE", "1");
+            // One noise draw per token can rush or drop whole phrases (GPU test: a German clone
+            // lost its first sentence); best-of-4 is far steadier and costs little.
+            cmd.env("CRISPASR_TADA_NUM_CANDIDATES", "4");
+        }
 
         // Kokoro resolves voice packs relative to the working directory instead of
         // `--voice-dir`, so the server runs inside the voice folder.
@@ -1219,6 +1518,11 @@ impl LocalTtsEngine {
             .map(|b| b.to_vec())
             .map_err(|e| crate::err!("backend.tts.synthFailed", error = e))
     }
+}
+
+/// Models that voice `[laugh]`, `[sigh]` … as sounds instead of reading them (Chatterbox Turbo).
+pub fn speaks_sound_tags(model_id: Option<&str>) -> bool {
+    matches!(model_id, Some("chatterbox-turbo"))
 }
 
 /// Synthesises for the voice settings of a character and returns a WAV data URL.

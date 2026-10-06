@@ -9,4 +9,8 @@ allowed: boolean, languages: Array<string>, cloning: boolean, needs_clone: boole
 /**
  * The voice is described in words (`openai_instructions` of the voice settings).
  */
-voice_design: boolean, vram_mb: number, download_bytes: number, missing_bytes: number, installed: boolean, voices: Array<TtsVoiceInfo>, };
+voice_design: boolean, 
+/**
+ * Roleplay actions such as *laughs* become sounds (`speaks_sound_tags`).
+ */
+sound_tags: boolean, vram_mb: number, download_bytes: number, missing_bytes: number, installed: boolean, voices: Array<TtsVoiceInfo>, };

@@ -2549,4 +2549,5 @@ export const de = {
   "voiceFx.robot": "Roboter",
   "voiceFx.highpass_hz": "Hochpass",
   "voiceFx.lowpass_hz": "Tiefpass",
+  "localTts.soundTagsHint": "Aktionen wie *lacht*, *seufzt*, *flüstert* oder *hustet* werden mit diesem Modell hörbar statt übersprungen (nur Englisch).",
 } as const;

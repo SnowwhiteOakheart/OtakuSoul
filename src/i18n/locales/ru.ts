@@ -2547,4 +2547,5 @@ export const ru: TranslationDictionary = {
   "voiceFx.robot": "Робот",
   "voiceFx.highpass_hz": "Фильтр ВЧ",
   "voiceFx.lowpass_hz": "Фильтр НЧ",
+  "localTts.soundTagsHint": "С этой моделью действия вроде *смеётся* (англ. *laughs*), *вздыхает* или *шепчет* становятся слышимыми, а не пропускаются (только английский).",
 };

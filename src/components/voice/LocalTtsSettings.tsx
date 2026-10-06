@@ -274,6 +274,8 @@ export const LocalTtsSettings = ({ config, onChange }: LocalTtsSettingsProps) =>
         </label>
       )}
 
+      {selected?.sound_tags && <p className="text-xs text-emerald-300/90">{t('localTts.soundTagsHint')}</p>}
+
       {selected && !selected.voice_design && (
         <label className="block">
           <span className={labelClass}>{t('localTts.voice')}</span>

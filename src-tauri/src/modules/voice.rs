@@ -298,6 +298,37 @@ static ACTION_RE: LazyLock<regex::Regex> = LazyLock::new(|| regex(r"(?s)\*{1,3}[
 static DANGLING_ACTION_RE: LazyLock<regex::Regex> = LazyLock::new(|| regex(r"(?s)\*{1,3}[^*]*$"));
 static WHITESPACE_RE: LazyLock<regex::Regex> = LazyLock::new(|| regex(r"\s+"));
 
+/// Roleplay actions that Chatterbox Turbo can voice as a sound, by keyword (German and English,
+/// lower case, matched as part of the action). The first hit wins, so the more specific ones
+/// come first.
+const SOUND_TAGS: &[(&[&str], &str)] = &[
+    (&["kicher", "schmunzel", "chuckl", "giggl"], "[chuckle]"),
+    (&["lach", "laugh"], "[laugh]"),
+    (&["seufz", "sigh"], "[sigh]"),
+    (&["keuch", "japs", "schnapp", "gasp"], "[gasp]"),
+    (&["räusper", "throat"], "[clear throat]"),
+    (&["hust", "cough"], "[cough]"),
+    (&["schnief", "schniff", "sniff"], "[sniff]"),
+    (&["stöhn", "ächz", "groan"], "[groan]"),
+    (&["psst", "pscht", "shush"], "[shush]"),
+    (&["flüster", "whisper"], "[whispering]"),
+];
+
+/// Turns actions such as `*lacht leise*` into Chatterbox Turbo's sound tags (`[laugh]`), so
+/// the voice laughs instead of skipping the action. Other actions stay for the filter.
+pub fn actions_to_sound_tags(text: &str) -> String {
+    ACTION_RE
+        .replace_all(text, |caps: &regex::Captures| {
+            let action = caps[0].to_lowercase();
+            SOUND_TAGS
+                .iter()
+                .find(|(keys, _)| keys.iter().any(|key| action.contains(key)))
+                .map(|(_, tag)| format!(" {tag} "))
+                .unwrap_or_else(|| caps[0].to_string())
+        })
+        .to_string()
+}
+
 pub fn clean_text_for_tts(raw: &str, filter_mode: &TtsFilterMode, custom_regex: &str) -> String {
     let mut text = raw.to_string();
 
@@ -1279,6 +1310,15 @@ async fn apply_rvc(data_url: &str, config: &RvcConfig) -> Result<String, String>
 
 /// Dispatches TTS synthesis based on the VoiceConfig engine
 pub async fn synthesize_speech(text: &str, config: &VoiceConfig) -> Result<String, String> {
+    let tagged;
+    let text = if config.engine == TtsEngine::Local
+        && crate::modules::tts_local::speaks_sound_tags(config.local_model_id.as_deref())
+    {
+        tagged = actions_to_sound_tags(text);
+        tagged.as_str()
+    } else {
+        text
+    };
     let cleaned = clean_text_for_tts(text, &config.filter_mode, &config.custom_regex);
     if cleaned.is_empty() {
         return Err(crate::err!("backend.voice.nothingLeft"));
@@ -1657,6 +1697,23 @@ fn uuid_v4() -> String {
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    #[test]
+    fn roleplay_actions_become_sound_tags() {
+        let text = "*lacht leise* Das ist lustig. *kichert* *seufzt tief* \"Na gut.\" *schaut weg*";
+        let tagged = actions_to_sound_tags(text);
+        assert!(tagged.contains("[laugh]"));
+        assert!(tagged.contains("[chuckle]"));
+        assert!(tagged.contains("[sigh]"));
+        // Actions without a sound stay and are removed by the filter as before.
+        assert!(tagged.contains("*schaut weg*"));
+        let cleaned = clean_text_for_tts(&tagged, &TtsFilterMode::StripActions, "");
+        assert_eq!(
+            cleaned,
+            "[laugh] Das ist lustig. [chuckle] [sigh] \"Na gut.\""
+        );
+        assert!(actions_to_sound_tags("*clears her throat* Well.").contains("[clear throat]"));
+    }
 
     #[test]
     fn test_clean_text_for_tts_removes_think_blocks() {

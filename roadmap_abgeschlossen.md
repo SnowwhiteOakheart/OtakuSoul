@@ -1773,4 +1773,14 @@ veraltet und sind korrigiert: `chat-sidebar-errors` las die Sitzung, bevor der e
   ihn abspielt – für jede Engine, die Lippensynchronisation folgt dem bearbeiteten Ton. Gespeichert als
   `VoiceConfig.effects`. Dabei behoben: Der Stimmen-Dialog überschrieb Eingaben, wenn die Stimmkonfiguration erst nach
   dem Öffnen fertig geladen war (Unit-Tests der Signalverarbeitung, E2E `voice-effects.mjs`, Screenshot 57).
+- [x] **TADA 3B mehrsprachig (aus Voicebox übernommen, über CrispASR):** Katalogmodell `tada-3b-ml` (Llama 3.2 Community
+  License, Q8_0 5,6 GB + Codec; ~6,3–7 GB VRAM) mit je einer Referenzstimme für de/en/fr/es/it/pl/pt/ja/ar/zh (FLEURS,
+  CC-BY-4.0; Prüfsummen der kleinen Nicht-LFS-Dateien selbst berechnet) und Stimmklon aus WAV (Encoder + Aligner de/en,
+  `CRISPASR_TADA_WAV_CLONE=1`). `CRISPASR_TADA_NUM_CANDIDATES=4` gegen verschluckte Sätze (deutscher Klon 42 % → 83 %).
+  GPU-Test: Vorgabestimmen de 92 %, en 100 %; Klon en 100 %, de 83 % (Qwen3 1.7B bleibt der bessere deutsche Klon).
+- [x] **Chatterbox Turbo mit Gefühlsgeräuschen (Englisch):** Katalogmodell `chatterbox-turbo` (MIT). Rollenspiel-Aktionen
+  wie *lacht*, *seufzt*, *flüstert*, *hustet* werden vor der Synthese zu `[laugh]`, `[sigh]` … (`voice::actions_to_sound_tags`,
+  deutsche und englische Stichwörter); Whisper hört danach nur den Text, die Tags werden als Geräusch umgesetzt.
+  Kartoffelbox Turbo (deutsche Feinabstimmung) getestet und verworfen: erfindet englische Sätze, mit Tags ein
+  komplett erfundener Monolog.
 

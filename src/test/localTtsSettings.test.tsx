@@ -23,6 +23,7 @@ const qwen: TtsModelInfo = {
   cloning: true,
   needs_clone: false,
   voice_design: false,
+  sound_tags: false,
   vram_mb: 2000,
   download_bytes: 1.3 * GB,
   missing_bytes: 0,
