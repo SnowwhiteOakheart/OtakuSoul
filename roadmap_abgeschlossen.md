@@ -1755,4 +1755,9 @@ veraltet und sind korrigiert: `chat-sidebar-errors` las die Sitzung, bevor der e
 - [x] **Qwen3-TTS VoiceDesign:** Katalogmodell `qwen3-tts-1.7b-voicedesign` (Apache-2.0, 2,0 GB Q8_0, SHA-256). Die Stimme
   wird in Worten beschrieben (Feld in den lokalen Stimmeinstellungen, gespeichert als `openai_instructions`), der Server
   bekommt sie als `instructions`. GPU-Test: Deutsch 92 %, Englisch 100 % Rückerkennung.
+- ~~**TTS-Streaming** (`stream: true`)~~ – gestrichen (06.10.2026): Die App liest bereits satzweise vor, während die
+  Antwort einläuft; Streaming würde nur die Wartezeit innerhalb eines Satzes kürzen und einen Umbau der Wiedergabe
+  samt Lippensynchronisation verlangen.
+- ~~**Spracherkennung über CrispASR**~~ – gestrichen (06.10.2026): Ein CrispASR-Server lädt nur ein Modell; STT bräuchte
+  einen zweiten Prozess mit zusätzlichem VRAM. Whisper (`whisper-rs`) bleibt.
 

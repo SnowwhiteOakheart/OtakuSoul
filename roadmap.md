@@ -18,8 +18,6 @@
 ## 2. Sprachausgabe (TTS)
 
 - [ ] Chatterbox-Stimmklonen ohne Python (sobald CrispASR ein C++-Baking anbietet).
-- [ ] Streaming-Ausgabe (`stream: true`) für kürzere Latenz.
-- [ ] Whisper-Spracherkennung ebenfalls über CrispASR (eine Laufzeit für STT und TTS).
 
 ## 3. Technik & Tests
 
