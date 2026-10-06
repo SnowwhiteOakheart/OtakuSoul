@@ -260,7 +260,21 @@ export const LocalTtsSettings = ({ config, onChange }: LocalTtsSettingsProps) =>
         )}
       </div>
 
-      {selected && (
+      {selected?.voice_design && (
+        <label className="block">
+          <span className={labelClass}>{t('localTts.voiceDescription')}</span>
+          <textarea
+            value={config.openai_instructions}
+            onChange={(e) => onChange({ ...config, openai_instructions: e.target.value })}
+            rows={3}
+            placeholder={t('localTts.voiceDescriptionPlaceholder')}
+            className={`${fieldClass} min-h-20 resize-y`}
+          />
+          <span className="mt-1 block text-[11px] text-slate-400">{t('localTts.voiceDescriptionHint')}</span>
+        </label>
+      )}
+
+      {selected && !selected.voice_design && (
         <label className="block">
           <span className={labelClass}>{t('localTts.voice')}</span>
           <select

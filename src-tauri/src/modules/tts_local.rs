@@ -62,6 +62,8 @@ struct TtsModel {
     cloning: bool,
     /// Needs a cloned voice (no preset of its own).
     needs_clone: bool,
+    /// The voice comes from a description (`instructions`) instead of a preset or clone.
+    voice_design: bool,
     vram_mb: u64,
     files: &'static [TtsFile],
     voices: &'static [PresetVoice],
@@ -88,6 +90,7 @@ const CATALOG: &[TtsModel] = &[
         languages: QWEN_LANGS,
         cloning: false,
         needs_clone: false,
+        voice_design: false,
         vram_mb: 3_200,
         files: &[
             TtsFile {
@@ -180,6 +183,7 @@ const CATALOG: &[TtsModel] = &[
         languages: QWEN_LANGS,
         cloning: true,
         needs_clone: true,
+        voice_design: false,
         vram_mb: 3_600,
         files: &[
             TtsFile {
@@ -208,6 +212,45 @@ const CATALOG: &[TtsModel] = &[
         voices: &[],
         start_language: None,
     },
+    // VoiceDesign: the voice is described in words (character card or voice settings).
+    TtsModel {
+        id: "qwen3-tts-1.7b-voicedesign",
+        name: "Qwen3-TTS 1.7B VoiceDesign (Stimme per Beschreibung)",
+        backend: "qwen3-tts-1.7b-voicedesign",
+        license: "Apache-2.0",
+        noncommercial: false,
+        languages: QWEN_LANGS,
+        cloning: false,
+        needs_clone: false,
+        voice_design: true,
+        vram_mb: 3_600,
+        files: &[
+            TtsFile {
+                role: Role::Main,
+                file: RemoteFile {
+                    repo: "cstr/qwen3-tts-1.7b-voicedesign-GGUF",
+                    path: "qwen3-tts-12hz-1.7b-voicedesign-q8_0.gguf",
+                    size: 2_042_225_536,
+                    sha256: Some(
+                        "ce9c6d69146891f7854ac46be3bf4e40f803fbebbfe7cdbd12ae3a4b24777295",
+                    ),
+                },
+            },
+            TtsFile {
+                role: Role::Codec,
+                file: RemoteFile {
+                    repo: "cstr/qwen3-tts-tokenizer-12hz-GGUF",
+                    path: "qwen3-tts-tokenizer-12hz.gguf",
+                    size: 358_453_280,
+                    sha256: Some(
+                        "70dc95dbfdd9aa5d9d406236ff771d061bf17b0cda02a72513953355606e719b",
+                    ),
+                },
+            },
+        ],
+        voices: &[],
+        start_language: None,
+    },
     TtsModel {
         id: "chatterbox-multilingual",
         name: "Chatterbox Multilingual",
@@ -217,6 +260,7 @@ const CATALOG: &[TtsModel] = &[
         languages: CHATTERBOX_LANGS,
         cloning: false,
         needs_clone: false,
+        voice_design: false,
         vram_mb: 2_300,
         files: &[
             TtsFile {
@@ -259,6 +303,7 @@ const CATALOG: &[TtsModel] = &[
         languages: &["de"],
         cloning: false,
         needs_clone: false,
+        voice_design: false,
         vram_mb: 600,
         files: &[
             TtsFile {
@@ -367,6 +412,7 @@ const CATALOG: &[TtsModel] = &[
         languages: &["en", "zh"],
         cloning: true,
         needs_clone: true,
+        voice_design: false,
         vram_mb: 2_000,
         files: &[TtsFile {
             role: Role::Main,
@@ -485,6 +531,8 @@ pub struct TtsModelInfo {
     pub languages: Vec<String>,
     pub cloning: bool,
     pub needs_clone: bool,
+    /// The voice is described in words (`openai_instructions` of the voice settings).
+    pub voice_design: bool,
     pub vram_mb: u64,
     pub download_bytes: u64,
     pub missing_bytes: u64,
@@ -533,6 +581,7 @@ pub fn list_models() -> Vec<TtsModelInfo> {
                 languages: m.languages.iter().map(|l| l.to_string()).collect(),
                 cloning: m.cloning,
                 needs_clone: m.needs_clone,
+                voice_design: m.voice_design,
                 vram_mb: m.vram_mb,
                 download_bytes,
                 missing_bytes,
@@ -967,6 +1016,12 @@ impl LocalTtsEngine {
                 .map_err(|e| crate::err!("backend.tts.startFailed", error = e))?;
         cmd.env(var, joined);
 
+        // F5's text embedding runs on the CPU by default and makes it very slow; on CUDA the
+        // GPU path is several times faster (CrispASR issue #294, opt-in since 0.8.x).
+        if model.backend == "f5-tts" && runtime.backend.starts_with("cuda") {
+            cmd.env("CRISPASR_F5_EMBED_GPU", "1");
+        }
+
         // Kokoro resolves voice packs relative to the working directory instead of
         // `--voice-dir`, so the server runs inside the voice folder.
         cmd.current_dir(voices_dir());
@@ -1085,9 +1140,30 @@ impl LocalTtsEngine {
         language: &str,
         speed: f32,
     ) -> Result<Vec<u8>, String> {
+        self.synthesize_with(model_id, voice_id, text, language, speed, "")
+            .await
+    }
+
+    /// `synthesize` with a voice description for VoiceDesign models.
+    pub async fn synthesize_with(
+        &self,
+        model_id: &str,
+        voice_id: &str,
+        text: &str,
+        language: &str,
+        speed: f32,
+        description: &str,
+    ) -> Result<Vec<u8>, String> {
         let _busy = self.busy.lock().await;
         let model = catalog_model(model_id)?;
         ensure_allowed(model)?;
+        let description = description.trim();
+        if model.voice_design && description.is_empty() {
+            return Err(crate::err!(
+                "backend.tts.needsDescription",
+                model = model.name
+            ));
+        }
         let voice = resolve_voice(model, voice_id)?;
         let settings = load_settings();
         self.ensure_server(model, settings.spoken_disclaimer)
@@ -1105,6 +1181,9 @@ impl LocalTtsEngine {
             body["marking_attestation"] =
                 "The OtakuSoul user turned the spoken AI label off and discloses AI-generated audio themselves."
                     .into();
+        }
+        if model.voice_design {
+            body["instructions"] = description.into();
         }
         match &voice {
             VoiceChoice::Default => {}
@@ -1148,6 +1227,7 @@ pub async fn synthesize_data_url(
     voice_id: &str,
     text: &str,
     rate: &str,
+    description: &str,
 ) -> Result<String, String> {
     let model_id = model_id
         .filter(|id| !id.trim().is_empty())
@@ -1156,12 +1236,13 @@ pub async fn synthesize_data_url(
         &crate::modules::content_lang::ContentLang::reply_language_name(),
     );
     let wav = engine()
-        .synthesize(
+        .synthesize_with(
             model_id,
             voice_id,
             text,
             &language,
             crate::modules::kokoro::rate_to_speed(rate),
+            description,
         )
         .await?;
     let b64 = base64::Engine::encode(&base64::engine::general_purpose::STANDARD, wav);
@@ -1198,7 +1279,13 @@ mod tests {
                     );
                 }
             }
-            assert_eq!(model.needs_clone, model.voices.is_empty(), "{}", model.id);
+            // Without presets a model needs a clone, unless the voice is described (VoiceDesign).
+            assert_eq!(
+                model.needs_clone,
+                model.voices.is_empty() && !model.voice_design,
+                "{}",
+                model.id
+            );
             // Non-commercial weights must be flagged by their licence name.
             assert_eq!(
                 model.noncommercial,

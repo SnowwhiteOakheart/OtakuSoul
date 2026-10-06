@@ -84,7 +84,7 @@ impl VramPeak {
 /// one is installed), or the first match of `prefer` when the app has no recommendation.
 async fn ensure_runtime(kind: RuntimeKind, prefer: &[&str]) -> runtimes::RuntimeInfo {
     let variants = runtimes::list_variants(kind).await.unwrap();
-    let backend = variants
+    let variant = variants
         .iter()
         .find(|v| v.recommended)
         .or_else(|| {
@@ -92,11 +92,12 @@ async fn ensure_runtime(kind: RuntimeKind, prefer: &[&str]) -> runtimes::Runtime
                 .iter()
                 .find_map(|p| variants.iter().find(|v| v.backend.starts_with(p)))
         })
-        .expect("no variant")
-        .backend
-        .clone();
+        .expect("no variant");
+    let backend = variant.backend.clone();
+    // Tests run against the newest build; an update keeps the previous one for a rollback.
     if let Some(info) = runtimes::installed(kind)
         && info.backend == backend
+        && info.build == variant.build
     {
         println!(
             "[{kind:?}] bereits installiert: {} {}",
@@ -210,6 +211,7 @@ async fn tts() {
         "chatterbox-multilingual",
         "kokoro-de",
         "f5-tts-v1",
+        "qwen3-tts-1.7b-voicedesign",
     ] {
         let started = Instant::now();
         tts_local::download_model_with(id, &|_| {}).await.unwrap();
@@ -227,8 +229,21 @@ async fn tts() {
     let mut run = async |line: Line| {
         let peak = VramPeak::start();
         let started = Instant::now();
+        // VoiceDesign lines carry the voice description in `voice`.
+        let description = if line.model.ends_with("voicedesign") {
+            line.voice.as_str()
+        } else {
+            ""
+        };
         let result = engine
-            .synthesize(line.model, &line.voice, line.text, line.lang, 1.0)
+            .synthesize_with(
+                line.model,
+                &line.voice,
+                line.text,
+                line.lang,
+                1.0,
+                description,
+            )
             .await;
         let secs = started.elapsed().as_secs_f32();
         let peak = peak.finish();
@@ -277,6 +292,16 @@ async fn tts() {
         run(Line {
             model: "qwen3-tts-customvoice-0.6b",
             voice: "preset:vivian".into(),
+            lang,
+            text,
+        })
+        .await;
+    }
+    // VoiceDesign: the voice comes from a description.
+    for (lang, text) in [("de", DE), ("en", EN)] {
+        run(Line {
+            model: "qwen3-tts-1.7b-voicedesign",
+            voice: "A calm, warm young female voice, speaking softly and a little slowly.".into(),
             lang,
             text,
         })

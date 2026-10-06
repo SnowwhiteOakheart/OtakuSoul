@@ -18,11 +18,8 @@
 ## 2. Sprachausgabe (TTS)
 
 - [ ] Chatterbox-Stimmklonen ohne Python (sobald CrispASR ein C++-Baking anbietet).
-- [ ] Qwen3-TTS VoiceDesign (Stimme per Beschreibung, 1.7B-Modell).
 - [ ] Streaming-Ausgabe (`stream: true`) für kürzere Latenz.
 - [ ] Whisper-Spracherkennung ebenfalls über CrispASR (eine Laufzeit für STT und TTS).
-- [ ] Fehlerberichte an CrispASR: F5-TTS extrem langsam (~13 s pro Diffusionsschritt, im Katalog „experimentell“),
-  0.6B-Base-GGUF ohne Sprachtabelle, Standard-Stimmpaket passt nicht zu 1.7B.
 
 ## 3. Technik & Tests
 

@@ -1746,4 +1746,13 @@ veraltet und sind korrigiert: `chat-sidebar-errors` las die Sitzung, bevor der e
   (Rust-Test, E2E `chat-style.mjs`, Screenshot 56).
 - ~~**Sammel-Import** von Charakteren aus einem Ordner (Port von SoWs `tools/import_character_cards.py`)~~ – gestrichen
   (06.10.2026, nicht benötigt; Einzelimporte über Datei, Hub, Chub und URL bleiben).
+- [x] **CrispASR v0.8.41 geprüft (06.10.2026):** F5-TTS ist per Opt-in `CRISPASR_F5_EMBED_GPU=1` schnell (Issue #294); die
+  App setzt den Schalter für CUDA-Builds. GPU-Test auf RTX 4070 Ti SUPER: F5 jetzt RTF 2,65 statt ~55 (100 % Wörter),
+  gemessen bei voll ausgelasteter GPU durch ein laufendes Spiel – die übrigen Zeiten (Qwen3 RTF ~1,0–1,5) sind daher
+  nicht mit dem 01.10. vergleichbar, Verständlichkeit unverändert. Nicht behoben (in der App weiter umgangen, nicht
+  gemeldet): 0.6B-Base-GGUF ohne Sprachtabelle, Standard-Stimmpaket passt nicht zu 1.7B. Der GPU-Test aktualisiert die
+  Laufzeit jetzt auf den neuesten Build (der vorige bleibt für den Rollback).
+- [x] **Qwen3-TTS VoiceDesign:** Katalogmodell `qwen3-tts-1.7b-voicedesign` (Apache-2.0, 2,0 GB Q8_0, SHA-256). Die Stimme
+  wird in Worten beschrieben (Feld in den lokalen Stimmeinstellungen, gespeichert als `openai_instructions`), der Server
+  bekommt sie als `instructions`. GPU-Test: Deutsch 92 %, Englisch 100 % Rückerkennung.
 

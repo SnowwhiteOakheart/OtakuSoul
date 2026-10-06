@@ -1,6 +1,6 @@
 // @vitest-environment jsdom
 import { beforeEach, describe, expect, it, vi } from 'vitest';
-import { render, screen, waitFor } from '@testing-library/react';
+import { fireEvent, render, screen, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 
 vi.mock('../services/api', async () => (await import('./mockApi')).apiModule);
@@ -22,6 +22,7 @@ const qwen: TtsModelInfo = {
   languages: ['de', 'en', 'ru'],
   cloning: true,
   needs_clone: false,
+  voice_design: false,
   vram_mb: 2000,
   download_bytes: 1.3 * GB,
   missing_bytes: 0,
@@ -61,6 +62,16 @@ beforeEach(() => {
 });
 
 describe('LocalTtsSettings', () => {
+  it('asks for a voice description instead of a voice for VoiceDesign models', async () => {
+    const design: TtsModelInfo = { ...qwen, id: 'qwen3-tts-1.7b-voicedesign', name: 'VoiceDesign', voice_design: true, cloning: false, voices: [] };
+    vi.mocked(api.listTtsModels).mockResolvedValue([design]);
+    const onChange = vi.fn();
+    render(<LocalTtsSettings config={{ ...config, local_model_id: design.id, openai_instructions: '' } as VoiceConfig} onChange={onChange} />);
+    const description = await screen.findByRole('textbox', { name: /Voice description/ });
+    expect(screen.queryByRole('combobox', { name: /^Voice$/ })).not.toBeInTheDocument();
+    fireEvent.change(description, { target: { value: 'A calm voice' } });
+    expect(onChange).toHaveBeenLastCalledWith(expect.objectContaining({ openai_instructions: 'A calm voice' }));
+  });
   it('keeps non-commercial models locked until the user confirms the licence', async () => {
     const user = userEvent.setup();
     render(

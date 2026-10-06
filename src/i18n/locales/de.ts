@@ -2529,4 +2529,8 @@ export const de = {
   "chatStyle.images": "Bilder",
   "chatStyle.sounds": "Klänge",
   "chatStyle.saveFailed": "Gestaltung nicht gespeichert: {{error}}",
+  "localTts.voiceDescription": "Stimmbeschreibung",
+  "localTts.voiceDescriptionPlaceholder": "z. B. A calm, warm young female voice, speaking softly and a little slowly.",
+  "localTts.voiceDescriptionHint": "Beschreibe die Stimme in Worten (am besten auf Englisch): Alter, Klangfarbe, Tempo, Stimmung. Gilt für diesen Charakter.",
+  "backend.tts.needsDescription": "{{model}} braucht eine Stimmbeschreibung – trage sie in den Stimmeinstellungen ein.",
 } as const;

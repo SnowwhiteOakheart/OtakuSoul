@@ -2527,4 +2527,8 @@ export const ru: TranslationDictionary = {
   "chatStyle.images": "Картинки",
   "chatStyle.sounds": "Звуки",
   "chatStyle.saveFailed": "Оформление не сохранено: {{error}}",
+  "localTts.voiceDescription": "Описание голоса",
+  "localTts.voiceDescriptionPlaceholder": "напр. A calm, warm young female voice, speaking softly and a little slowly.",
+  "localTts.voiceDescriptionHint": "Опишите голос словами (лучше на английском): возраст, тембр, темп, настроение. Действует для этого персонажа.",
+  "backend.tts.needsDescription": "{{model}} нужно описание голоса – укажите его в настройках голоса.",
 };

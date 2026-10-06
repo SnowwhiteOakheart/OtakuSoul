@@ -5,4 +5,8 @@ export type TtsModelInfo = { id: string, name: string, license: string, noncomme
 /**
  * Usable under the current settings (non-commercial models need to be allowed).
  */
-allowed: boolean, languages: Array<string>, cloning: boolean, needs_clone: boolean, vram_mb: number, download_bytes: number, missing_bytes: number, installed: boolean, voices: Array<TtsVoiceInfo>, };
+allowed: boolean, languages: Array<string>, cloning: boolean, needs_clone: boolean, 
+/**
+ * The voice is described in words (`openai_instructions` of the voice settings).
+ */
+voice_design: boolean, vram_mb: number, download_bytes: number, missing_bytes: number, installed: boolean, voices: Array<TtsVoiceInfo>, };

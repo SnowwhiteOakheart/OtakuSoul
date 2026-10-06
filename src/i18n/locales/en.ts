@@ -2527,4 +2527,8 @@ export const en: TranslationDictionary = {
   "chatStyle.images": "Pictures",
   "chatStyle.sounds": "Sounds",
   "chatStyle.saveFailed": "Style not saved: {{error}}",
+  "localTts.voiceDescription": "Voice description",
+  "localTts.voiceDescriptionPlaceholder": "e.g. A calm, warm young female voice, speaking softly and a little slowly.",
+  "localTts.voiceDescriptionHint": "Describe the voice in words (English works best): age, timbre, pace, mood. Applies to this character.",
+  "backend.tts.needsDescription": "{{model}} needs a voice description – enter it in the voice settings.",
 };

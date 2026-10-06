@@ -1298,6 +1298,7 @@ pub async fn synthesize_speech(text: &str, config: &VoiceConfig) -> Result<Strin
                 &config.voice_id,
                 &cleaned,
                 &config.rate,
+                &config.openai_instructions,
             )
             .await
         }
