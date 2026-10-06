@@ -85,6 +85,7 @@ impl StageEngine {
 
         let initial_def = SceneDefinition {
 extensions: serde_json::Value::Null,
+            rules: None,
             id: "default_scene".to_string(),
             title: lang.t("The abandoned sanctuary").to_string(),
             description: lang.t("An ancient sanctum full of arcane relics and hidden dangers.").to_string(),

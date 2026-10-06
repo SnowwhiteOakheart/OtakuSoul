@@ -64,6 +64,8 @@ pub fn ensure_party_vitals(state: &mut SceneState) {
             stats5e: None,
         });
     }
+    // 5e scenes: heroes get their rules values from the class templates.
+    super::combat5e::ensure_party_stats(state);
 }
 
 /// After a fight only the party stays; the next fight rolls initiative anew.

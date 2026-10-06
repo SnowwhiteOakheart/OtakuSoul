@@ -8,6 +8,8 @@ use rand::Rng;
 
 /// Condition name of a combatant who took the Dodge action (until its next turn).
 pub const DODGING: &str = "dodging";
+/// Condition name of a combatant who left the fight; it takes no more turns.
+pub const FLED: &str = "fled";
 
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize, TS)]
 #[ts(export)]
@@ -102,11 +104,12 @@ pub fn is_enemy(combatant: &Combatant) -> bool {
     combatant.role == "enemy" || combatant.role == "boss"
 }
 
+/// Still in the fight: hit points left and not fled.
 pub fn is_up(combatant: &Combatant) -> bool {
-    combatant.hp > 0
+    combatant.hp > 0 && !has_condition(combatant, FLED)
 }
 
-fn has_condition(combatant: &Combatant, name: &str) -> bool {
+pub fn has_condition(combatant: &Combatant, name: &str) -> bool {
     combatant.conditions.iter().any(|c| c.name == name)
 }
 
@@ -215,7 +218,7 @@ pub fn apply_damage(
         DamageScaling::Vulnerable => roll.total * 2,
         DamageScaling::Immune => 0,
     };
-    let was_up = is_up(target);
+    let was_up = target.hp > 0;
     target.hp = (target.hp - amount).max(0);
     let mut events = vec![CombatEvent::Damage {
         target_id: target.id.clone(),
@@ -227,7 +230,7 @@ pub fn apply_damage(
         hp_after: target.hp,
         tier: health_tier(target.hp, target.max_hp),
     }];
-    if was_up && !is_up(target) {
+    if was_up && target.hp == 0 {
         events.push(CombatEvent::Down {
             target_id: target.id.clone(),
             target_name: target.name.clone(),
@@ -245,6 +248,20 @@ pub fn take_dodge(actor: &mut Combatant) -> CombatEvent {
         });
     }
     CombatEvent::Dodge {
+        actor_id: actor.id.clone(),
+        actor_name: actor.name.clone(),
+    }
+}
+
+/// The combatant leaves the fight.
+pub fn flee(actor: &mut Combatant) -> CombatEvent {
+    if !has_condition(actor, FLED) {
+        actor.conditions.push(CombatCondition {
+            name: FLED.to_string(),
+            rounds_remaining: 0,
+        });
+    }
+    CombatEvent::Flee {
         actor_id: actor.id.clone(),
         actor_name: actor.name.clone(),
     }

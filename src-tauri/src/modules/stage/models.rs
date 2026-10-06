@@ -100,6 +100,9 @@ pub struct EncounterState {
     pub current_turn_index: usize,
     pub combatants: Vec<Combatant>,
     pub combat_log: Vec<String>,
+    /// Rules events of the current fight (5e scenes), newest last.
+    #[serde(default)]
+    pub events: Vec<super::rules5e::CombatEvent>,
 }
 
 impl Default for EncounterState {
@@ -110,6 +113,7 @@ impl Default for EncounterState {
             current_turn_index: 0,
             combatants: Vec::new(),
             combat_log: Vec::new(),
+            events: Vec::new(),
         }
     }
 }
@@ -378,6 +382,32 @@ pub struct SceneDefinition {
     pub last_played: Option<String>,
     #[serde(default)]
     pub extensions: serde_json::Value,
+    /// Rules of the scene; absent = narrative scene (stress, free checks).
+    #[serde(default)]
+    pub rules: Option<SceneRules>,
+}
+
+/// A scene played with the 5e rules engine (`Roadmap_DND.md`).
+#[derive(Debug, Clone, Default, PartialEq, Serialize, Deserialize, TS)]
+#[ts(export)]
+pub struct SceneRules {
+    /// `5e`; other values are treated as a narrative scene.
+    pub ruleset: String,
+    /// Class template per party member (`player` for the player), e.g. `{"Lyra": "wizard"}`.
+    #[serde(default)]
+    pub hero_classes: HashMap<String, String>,
+    /// The player chooses the companions' combat actions instead of the language model.
+    #[serde(default)]
+    pub control_companions: bool,
+}
+
+impl SceneDefinition {
+    /// The scene uses the 5e rules engine.
+    pub fn is_5e(&self) -> bool {
+        self.rules
+            .as_ref()
+            .is_some_and(|rules| rules.ruleset == "5e")
+    }
 }
 
 pub(super) fn default_gm_tone() -> String {

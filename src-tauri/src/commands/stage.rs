@@ -315,6 +315,30 @@ pub async fn run_stage_turn(
     Ok(scene)
 }
 
+/// 5e scenes: the player's combat action (`attack:<attack>:<target>` or `dodge`), or `None`
+/// to let the engine and the companions play until it is the player's turn again.
+#[tauri::command]
+pub async fn run_stage_combat(
+    app: tauri::AppHandle,
+    state: State<'_, AppState>,
+    scene_id: String,
+    action: Option<String>,
+) -> Result<crate::modules::stage::SceneState, String> {
+    let _turn = state
+        .stage_turn
+        .try_lock()
+        .map_err(|_| crate::err!("backend.stage.editorBusy"))?;
+    let emit = stream_emitter(&app);
+    crate::modules::stage::execute_combat_turn(
+        &state.stage_engine,
+        &state.stage_inference_client,
+        &scene_id,
+        action,
+        &emit,
+    )
+    .await
+}
+
 /// Lets party members remember what they lived through in the scene: once enough new lines
 /// came together, their filtered view runs through the Soul Memory pipeline in the background.
 fn sync_party_memory(

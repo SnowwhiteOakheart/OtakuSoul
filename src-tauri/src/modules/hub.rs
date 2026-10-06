@@ -1018,6 +1018,7 @@ pub async fn import_scene_from_gateway(
         starting_bg,
         starting_ambient,
         extensions: serde_json::Value::Null,
+        rules: None,
         created_at: chrono::Utc::now().to_rfc3339(),
         last_played: None,
     };

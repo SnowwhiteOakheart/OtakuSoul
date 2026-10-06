@@ -151,6 +151,12 @@ Hub). Integrationen → Bildgenerierung enthält nur Studio und Galerie.
   `StdRng::seed_from_u64`); die Engine entscheidet alle Zahlen, das LLM erzählt nur aus `CombatEvent`s. Gespeichert werden
   nur Grundwerte (`Stats5e` an `Combatant`), Modifikatoren/Übungsbonus werden berechnet. Monster/Klassen kommen aus
   `presets/srd5/*.json` (per `include_str!`, Namen de/en/ru); SRD-Namensnennung (CC-BY-4.0) steht in den READMEs.
+  Ablauf in `stage/combat5e.rs`: `SceneDefinition.rules` (`SceneRules`: `ruleset "5e"`, `hero_classes`, `control_companions`)
+  → `ensure_party_stats` (in `ensure_party_vitals`) gibt der Gruppe Klassenwerte; der Planer startet Kämpfe nur mit
+  Monster-IDs (`PlanCombatant.monster/count`), `hp_updates`/`resource_delta.hp_delta` werden in 5e ignoriert.
+  `run_stage_combat(scene_id, action)` (Sperre `stage_turn`, Snapshot) führt die Spieleraktion aus und spielt Monster
+  (Engine-KI) und Gefährten (LLM wählt eine Aktions-ID, „[STAGE — COMBAT ACTION]“, sonst Ersatzwahl) bis zum nächsten
+  Spielerzug; Ereignisse landen in `combat.events`, der GM erzählt sie („[STAGE — COMBAT REPORT]“) ohne sie zu ändern.
 - Stimmeffekte: `VoiceConfig.effects` (`VoiceEffects`), gerendert in `services/voiceEffects.ts` (OfflineAudioContext, Tonhöhe per
   WSOLA) über `audioPlayer.enqueue(…, effects)`; jeder neue Abspielweg muss `config.effects` mitgeben.
 - Bild-LoRAs (`image_loras.rs`): `sd-server` ignoriert `<lora:…>` im Prompt; LoRAs gehen als `lora: [{path, multiplier}]`

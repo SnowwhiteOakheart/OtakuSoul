@@ -296,7 +296,7 @@ RULES:
 - overlay_updates: when a character's situation in the story changes: {{"name": "Name", "current_role": "…", "arc_stage": "…", "facts": {{"short_key": "value or null"}}}}; omit unchanged fields.
 - lore_card_updates: new or changed scene knowledge worth remembering: {{"title": "…", "content": "…", "keywords": ["word that brings it up"], "audience": "party" or "gm"}}; "gm" for secrets the players must discover. Same title updates a card.
 - inventory_add: optional items with name, description, quantity, item_type and optionally hp_restore/stress_restore/clears_condition. inventory_remove holds IDs or names.
-- encounter: only when combat changes: {{"action":"start|update|end", "enemies":[{{"name":"Enemy", "hp":12, "role":"enemy"}}], "hp_updates":[{{"target":"Name", "hp_delta":-4}}]}}.
+{encounter_rule}
 - Reply ONLY with raw JSON, without explanations or markdown before or after it!"#,
         ambient_files = if ambient_files.is_empty() {
             "none available".to_string()
@@ -314,6 +314,11 @@ RULES:
             .map(|a| format!(": {a}"))
             .unwrap_or_default(),
         reply_language = reply_language,
+        encounter_rule = if state.definition.is_5e() {
+            super::combat5e::planner_encounter_rule()
+        } else {
+            r#"- encounter: only when combat changes: {"action":"start|update|end", "enemies":[{"name":"Enemy", "hp":12, "role":"enemy"}], "hp_updates":[{"target":"Name", "hp_delta":-4}]}."#.to_string()
+        },
         tone = localized_def.gm_tone,
         narrator_style = localized_def.narrator_style,
         world_context = localized_def.world_context,
@@ -532,7 +537,10 @@ RULES:
                 || combatant.name.eq_ignore_ascii_case(target)
                 || combatant.id.eq_ignore_ascii_case(target)
         }) {
-            combatant.hp = (combatant.hp + delta.hp_delta).clamp(0, combatant.max_hp);
+            // With the 5e rules the engine alone changes hit points.
+            if !state.definition.is_5e() {
+                combatant.hp = (combatant.hp + delta.hp_delta).clamp(0, combatant.max_hp);
+            }
             combatant.stress =
                 (combatant.stress + delta.stress_delta).clamp(0, combatant.max_stress);
             state.combat.combat_log.push(format!(
@@ -664,7 +672,39 @@ RULES:
         }
     }
 
-    if let Some(encounter) = &gm_plan.encounter {
+    if let Some(encounter) = gm_plan
+        .encounter
+        .as_ref()
+        .filter(|_| state.definition.is_5e())
+    {
+        // 5e: the engine sets up the fight; hit points from the plan are ignored.
+        match encounter.action.as_str() {
+            "start" if !state.combat.is_active => {
+                if super::combat5e::start_encounter(&mut state, &encounter.enemies, &lang_code) {
+                    secondary_event_cards.push((
+                        lang.t("An encounter begins.").to_string(),
+                        StageEventCard::Combat {
+                            action: "started".to_string(),
+                            text: lang
+                                .t("Roll for initiative — the fight begins!")
+                                .to_string(),
+                        },
+                    ));
+                }
+            }
+            "end" if state.combat.is_active => {
+                super::combat5e::end_encounter(&mut state, None);
+                secondary_event_cards.push((
+                    lang.t("The encounter ends.").to_string(),
+                    StageEventCard::Combat {
+                        action: "ended".to_string(),
+                        text: lang.t("The fight is over.").to_string(),
+                    },
+                ));
+            }
+            _ => {}
+        }
+    } else if let Some(encounter) = &gm_plan.encounter {
         match encounter.action.as_str() {
             "start" => {
                 ensure_party_vitals(&mut state);
@@ -1240,7 +1280,7 @@ fn finish_turn(engine: &StageEngine, mut state: SceneState) -> Result<SceneState
 }
 
 /// Streams one turn message to the UI (`on_stream`) and returns its full text.
-async fn stream_message(
+pub(super) async fn stream_message(
     inference: &InferenceClient,
     request: ChatRequest,
     on_stream: StageStream<'_>,

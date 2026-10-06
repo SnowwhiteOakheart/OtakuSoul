@@ -90,8 +90,12 @@ import type { WebServerConfig } from './generated/WebServerConfig';
 import type { WebServerStatus } from './generated/WebServerStatus';
 import type { WorldState } from './generated/WorldState';
 import type { Stats5e } from './generated/Stats5e';
+import type { CombatEvent } from './generated/CombatEvent';
+import type { SceneRules } from './generated/SceneRules';
 export type {
   Stats5e,
+  CombatEvent,
+  SceneRules,
   AppPaths,
   RuntimeKind,
   ImageModelInfo,
@@ -451,6 +455,8 @@ export interface EncounterState {
   current_turn_index: number;
   combatants: Combatant[];
   combat_log: string[];
+  /** Rules events of the current fight (5e scenes). */
+  events?: CombatEvent[];
 }
 
 // Phase 15: Soul Stage (KI-Game-Master Orchestrator)
@@ -495,6 +501,8 @@ export interface SceneDefinition {
   starting_ambient: string;
   created_at: string;
   last_played?: string | null;
+  /** 5e rules engine; absent = narrative scene. */
+  rules?: SceneRules | null;
 }
 
 export interface InventoryItem {

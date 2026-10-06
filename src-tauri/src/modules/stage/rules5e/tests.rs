@@ -229,6 +229,7 @@ fn initiative_order_and_turn_advance() {
             goblin("g2"),
         ],
         combat_log: Vec::new(),
+        events: Vec::new(),
     };
     let event = roll_initiative(&mut encounter.combatants, &mut StdRng::seed_from_u64(3));
     let CombatEvent::Initiative { order } = event else {
@@ -321,6 +322,7 @@ fn a_seeded_fight_runs_to_the_end() {
             goblin("g2"),
         ],
         combat_log: Vec::new(),
+        events: Vec::new(),
     };
     roll_initiative(&mut encounter.combatants, &mut rng);
     let mut turns = 0;

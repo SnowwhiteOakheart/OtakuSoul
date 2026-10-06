@@ -15,6 +15,7 @@ use crate::modules::inference::{ChatMessage, ChatRequest, InferenceClient, Sampl
 use crate::modules::paths::{resolve_app_paths, scan_available_characters};
 use crate::modules::settings::load_app_settings;
 
+mod combat5e;
 mod dice;
 mod director;
 mod engine;
@@ -30,6 +31,7 @@ mod tests;
 mod turn;
 mod world;
 
+pub use combat5e::execute_combat_turn;
 pub use dice::*;
 pub use director::*;
 pub use engine::*;

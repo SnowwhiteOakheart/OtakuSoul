@@ -47,7 +47,7 @@ impl StageLlm {
         }
     }
 
-    fn request(&self, prompt: String, max_tokens: u32) -> ChatRequest {
+    pub(super) fn request(&self, prompt: String, max_tokens: u32) -> ChatRequest {
         ChatRequest {
             endpoint_url: self.endpoint_url.clone(),
             api_key: self.api_key.clone(),

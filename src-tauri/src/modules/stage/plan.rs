@@ -127,7 +127,15 @@ pub(super) fn default_inventory_type() -> String {
 #[derive(Debug, Clone, Serialize, Deserialize, TS)]
 #[ts(export)]
 pub struct PlanCombatant {
+    #[serde(default)]
     pub name: String,
+    /// 5e scenes: SRD monster id (`goblin`) and how many.
+    #[serde(default)]
+    #[ts(optional)]
+    pub monster: Option<String>,
+    #[serde(default)]
+    #[ts(optional)]
+    pub count: Option<u32>,
     #[serde(default = "default_enemy_hp")]
     pub hp: i32,
     #[serde(default = "default_enemy_role")]
