@@ -65,3 +65,25 @@ describe('glTF rig', () => {
     expect(local.angleTo(aboutZ(Math.PI / 2))).toBeLessThan(1e-3); // keys are float32
   });
 });
+
+describe('other rig naming', () => {
+  it('finds MakeHuman, Unreal and VRoid bones and retargets Mixamo onto them', () => {
+    const root = new THREE.Group();
+    const pelvis = bone('root', root);
+    const spine = bone('spine03', pelvis);
+    bone('head', bone('neck01', spine));
+    const arm = bone('upperarm01_R', spine);
+    bone('lowerarm01_R', arm);
+    bone('upperarm_l', spine);
+    bone('J_Bip_L_LowerArm', spine);
+    const found = findRigBones(root);
+    expect([found.hips, found.spine, found.rightArm].map((b) => b?.name)).toEqual(['root', 'spine03', 'upperarm01_R']);
+    expect(found.leftArm?.name).toBe('upperarm_l');
+    expect(found.leftForeArm?.name).toBe('J_Bip_L_LowerArm');
+
+    const source = new THREE.Group();
+    bone('mixamorigRightArm', bone('mixamorigHips', source));
+    const clip = new THREE.AnimationClip('mixamo.com', 1, [new THREE.QuaternionKeyframeTrack('mixamorigRightArm.quaternion', [0], aboutZ(0.5).toArray())]);
+    expect(retargetToRig(clip, source, root, captureRest(root)).tracks[0]?.name).toBe(`${arm.uuid}.quaternion`);
+  });
+});

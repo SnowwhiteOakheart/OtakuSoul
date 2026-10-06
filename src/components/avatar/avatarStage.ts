@@ -1,5 +1,6 @@
 import * as THREE from 'three';
 import { OrbitControls } from 'three/examples/jsm/controls/OrbitControls.js';
+import { RoomEnvironment } from 'three/examples/jsm/environments/RoomEnvironment.js';
 import {
   clearVrmViewState,
   frameUpperBody,
@@ -24,6 +25,11 @@ export interface AvatarStage {
   /** Frames the loaded model (head height and top in world units) unless the user moved the camera. */
   frameModel: (headY: number, topY: number) => void;
   resetView: () => void;
+  /**
+   * Soft studio reflections for PBR materials (plain glTF): without an environment, metallic
+   * parts such as eyes render almost black. VRM (MToon) and MMD (toon) do not need it.
+   */
+  useStudioEnvironment: () => void;
   start: (onFrame: (delta: number, elapsed: number) => void) => void;
   dispose: () => void;
 }
@@ -118,6 +124,7 @@ export function createAvatarStage(container: HTMLElement, modelPath: string): Av
   window.addEventListener('resize', handleResize);
 
   let animationFrameId = 0;
+  let environment: THREE.Texture | null = null;
   return {
     scene,
     camera,
@@ -131,6 +138,14 @@ export function createAvatarStage(container: HTMLElement, modelPath: string): Av
       userMoved = false;
       clearVrmViewState(modelPath);
       applyView(defaultView);
+    },
+    useStudioEnvironment: () => {
+      if (environment) return;
+      const pmrem = new THREE.PMREMGenerator(renderer);
+      environment = pmrem.fromScene(new RoomEnvironment(), 0.04).texture;
+      pmrem.dispose();
+      scene.environment = environment;
+      scene.environmentIntensity = 0.6;
     },
     start: (onFrame) => {
       let lastTime = performance.now();
@@ -156,6 +171,7 @@ export function createAvatarStage(container: HTMLElement, modelPath: string): Av
       controls.dispose();
       window.removeEventListener('resize', handleResize);
       container.removeEventListener('mousemove', handleMouseMove);
+      environment?.dispose();
       renderer.dispose();
       renderer.domElement.remove();
     },

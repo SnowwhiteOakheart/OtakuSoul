@@ -1807,4 +1807,8 @@ veraltet und sind korrigiert: `chat-sidebar-errors` las die Sitzung, bevor der e
   Oculus-Visemes oder ARKit-Blendshapes (Blinzeln, Mundformen, Gefühle; gemeinsame Ziele wie `jawOpen` werden addiert),
   Arme aus der Bind-Pose abgesenkt, Zentimeter-Exporte automatisch skaliert. Mixamo-FBX laufen auch auf diesen Rigs
   (Übertragung über den Weltraum mit Ruhepose-Ausgleich). Dabei behoben: Höhenmessung bei MMD/glTF zählte Morph-Ziele mit.
+- [x] **Avatare mit echten Modellen geprüft (lokal, `assets/test-avatars/`, gitignored):** Nahida (VRM) ohne Befund,
+  Eula (MMD, 7z entpackt) ohne Befund. A010 (GLB, MakeHuman-Rig) brachte drei Verbesserungen: Knochen-Aliase für
+  MakeHuman/Unreal/Blender/VRoid, Größenangleich für Exporte in anderen Einheiten (Bounds über das Skelett) und eine
+  Studio-Umgebung für PBR-Materialien. Prüfskript `e2e/local-avatars.mjs`.
 

@@ -27,6 +27,8 @@ src-tauri/gen/schemas/
 bin/
 models/
 assets/models/
+# Local test avatars (third-party models, never committed)
+assets/test-avatars/
 *.gguf
 *.bin
 *.pt

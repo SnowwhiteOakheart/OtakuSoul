@@ -24,17 +24,30 @@ interface LoadedRig {
 }
 
 /**
- * Bind-pose bounds of all meshes from their base positions only: skinned bounds are empty
- * before the first render, and geometry bounds include every morph target at full weight.
+ * Bounds of the model as it is drawn in its rest pose. Skinned meshes are measured through
+ * their skeleton (raw vertices can lie in another space when the rig root is rotated); the
+ * skeleton is updated first, else the skinning matrices are still empty. Morph targets are
+ * left out (geometry bounds would include each at full weight).
  */
-function bindPoseBounds(root: THREE.Object3D): THREE.Box3 {
+function restPoseBounds(root: THREE.Object3D): THREE.Box3 {
   const box = new THREE.Box3();
-  root.updateWorldMatrix(true, true);
+  // updateMatrixWorld (not updateWorldMatrix): only it refreshes the bind matrix inverse of
+  // skinned meshes, else a rescaled model is measured with its scale twice.
+  root.updateMatrixWorld(true);
   root.traverse((node) => {
-    const mesh = node as THREE.Mesh;
-    const position = mesh.isMesh ? mesh.geometry.getAttribute('position') : undefined;
-    if (!position) return;
-    box.union(new THREE.Box3().setFromBufferAttribute(position as THREE.BufferAttribute).applyMatrix4(mesh.matrixWorld));
+    const mesh = node as THREE.SkinnedMesh;
+    if (!mesh.isMesh) return;
+    if (mesh.isSkinnedMesh) {
+      mesh.skeleton.update();
+      const influences = mesh.morphTargetInfluences?.slice();
+      mesh.morphTargetInfluences?.fill(0);
+      mesh.computeBoundingBox();
+      if (influences) mesh.morphTargetInfluences!.splice(0, influences.length, ...influences);
+      box.union(mesh.boundingBox!.clone().applyMatrix4(mesh.matrixWorld));
+    } else {
+      const position = mesh.geometry.getAttribute('position') as THREE.BufferAttribute | undefined;
+      if (position) box.union(new THREE.Box3().setFromBufferAttribute(position).applyMatrix4(mesh.matrixWorld));
+    }
   });
   return box;
 }
@@ -93,6 +106,7 @@ export const GltfViewer = ({
       audioVisemes = visemes;
     });
     const stage = createAvatarStage(container, modelPath);
+    stage.useStudioEnvironment();
     resetViewRef.current = stage.resetView;
 
     let root: THREE.Object3D | null = null;
@@ -108,8 +122,10 @@ export const GltfViewer = ({
         if (isDisposed) return;
         const scene = gltf.scene;
         stage.scene.add(scene);
-        // Exports in centimetres are a hundred times too big.
-        if (bindPoseBounds(scene).getSize(new THREE.Vector3()).y > 10) scene.scale.setScalar(0.01);
+        // Exports in other units (centimetres, decimetres …) are brought to human size; models
+        // between half a metre (chibi) and three metres keep theirs.
+        const height = restPoseBounds(scene).getSize(new THREE.Vector3()).y;
+        if (height > 0 && (height < 0.5 || height > 3)) scene.scale.setScalar(1.6 / height);
         const bones = findRigBones(scene);
         head = bones.head;
         spine = bones.spine;
@@ -121,7 +137,7 @@ export const GltfViewer = ({
           if (arm && forearm) posed.push({ bone: arm, rest: loweredArm(arm, forearm, side) });
         }
         face = new MorphFace(scene);
-        const box = bindPoseBounds(scene);
+        const box = restPoseBounds(scene);
         stage.frameModel(head ? head.getWorldPosition(new THREE.Vector3()).y : box.max.y - 0.15, box.max.y);
         const rest = captureRest(scene);
         root = scene;

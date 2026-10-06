@@ -1,20 +1,24 @@
 import * as THREE from 'three';
 
-/** Bone roles of a humanoid glTF rig, found by Mixamo-style names (with or without prefix). */
-const BONE_NAMES = {
-  hips: 'hips',
-  spine: 'spine',
-  neck: 'neck',
-  head: 'head',
-  leftArm: 'leftarm',
-  leftForeArm: 'leftforearm',
-  rightArm: 'rightarm',
-  rightForeArm: 'rightforearm',
+/**
+ * Bone roles of a humanoid glTF rig and the (normalized) names rigs use for them: Mixamo /
+ * Ready Player Me, MakeHuman, Unreal, Blender (Rigify-like ".L") and VRoid ("J_Bip_…").
+ */
+const BONE_ALIASES = {
+  hips: ['hips', 'pelvis', 'jbipchips', 'root'],
+  spine: ['spine', 'spine1', 'spine01', 'spine02', 'spine03', 'chest', 'jbipcspine'],
+  neck: ['neck', 'neck01', 'jbipcneck'],
+  head: ['head', 'jbipchead'],
+  leftArm: ['leftarm', 'leftupperarm', 'upperarml', 'upperarm01l', 'lupperarm', 'armleft', 'jbiplupperarm'],
+  leftForeArm: ['leftforearm', 'leftlowerarm', 'lowerarml', 'lowerarm01l', 'forearml', 'lforearm', 'jbipllowerarm'],
+  rightArm: ['rightarm', 'rightupperarm', 'upperarmr', 'upperarm01r', 'rupperarm', 'armright', 'jbiprupperarm'],
+  rightForeArm: ['rightforearm', 'rightlowerarm', 'lowerarmr', 'lowerarm01r', 'forearmr', 'rforearm', 'jbiprlowerarm'],
 } as const;
-export type RigBone = keyof typeof BONE_NAMES;
+export type RigBone = keyof typeof BONE_ALIASES;
 
-/** "mixamorig:LeftArm", "mixamorigLeftArm", "LeftArm" → "leftarm". */
-export const plainBoneName = (name: string) => name.replace(/^mixamorig[:_]?/i, '').toLowerCase();
+/** "mixamorig:LeftArm" → "leftarm", "upperarm01_L" → "upperarm01l", "upper_arm.L" → "upperarml". */
+export const plainBoneName = (name: string) =>
+  name.replace(/^mixamorig[:_]?/i, '').toLowerCase().replace(/[^a-z0-9]/g, '');
 
 /** The humanoid bones of a glTF scene by role; missing ones stay undefined. */
 export function findRigBones(root: THREE.Object3D): Partial<Record<RigBone, THREE.Object3D>> {
@@ -23,9 +27,12 @@ export function findRigBones(root: THREE.Object3D): Partial<Record<RigBone, THRE
     const key = plainBoneName(node.name);
     if (!byName.has(key) && ((node as THREE.Bone).isBone || node.type === 'Object3D' || node.type === 'Group')) byName.set(key, node);
   });
-  return Object.fromEntries(
-    Object.entries(BONE_NAMES).map(([role, name]) => [role, byName.get(name)]).filter(([, node]) => node),
-  ) as Partial<Record<RigBone, THREE.Object3D>>;
+  const found: Partial<Record<RigBone, THREE.Object3D>> = {};
+  for (const [role, aliases] of Object.entries(BONE_ALIASES) as [RigBone, readonly string[]][]) {
+    const node = aliases.map((alias) => byName.get(alias)).find(Boolean);
+    if (node) found[role] = node;
+  }
+  return found;
 }
 
 type MorphRecipe = [string, number][];
@@ -126,6 +133,8 @@ export function retargetToRig(clip: THREE.AnimationClip, source: THREE.Object3D,
   target.traverse((node) => {
     if (!targets.has(plainBoneName(node.name))) targets.set(plainBoneName(node.name), node);
   });
+  // Rigs with other naming (MakeHuman, Unreal …): the main bones by their role.
+  for (const [role, node] of Object.entries(findRigBones(target))) targets.set(BONE_ALIASES[role as RigBone][0], node);
   source.updateWorldMatrix(true, true);
   const sourceHips = source.getObjectByName('mixamorigHips');
   const scale = rest.hipsHeight / (sourceHips?.getWorldPosition(new THREE.Vector3()).y || 1);
