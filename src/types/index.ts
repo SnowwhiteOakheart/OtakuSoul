@@ -84,6 +84,7 @@ import type { ToolExecutionResult } from './generated/ToolExecutionResult';
 import type { TtsEngine } from './generated/TtsEngine';
 import type { TtsFilterMode } from './generated/TtsFilterMode';
 import type { VoiceConfig } from './generated/VoiceConfig';
+import type { VoiceEffects } from './generated/VoiceEffects';
 import type { WebServerConfig } from './generated/WebServerConfig';
 import type { WebServerStatus } from './generated/WebServerStatus';
 import type { WorldState } from './generated/WorldState';
@@ -169,6 +170,7 @@ export type {
   TtsEngine,
   TtsFilterMode,
   VoiceConfig,
+  VoiceEffects,
   WebServerConfig,
   WebServerStatus,
   WorldState,

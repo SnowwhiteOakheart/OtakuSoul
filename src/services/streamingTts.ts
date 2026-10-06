@@ -75,6 +75,7 @@ export class StreamingTtsManager {
           audioUrl,
           gainFromVoiceVolume(config.volume),
           config.output_device_id,
+          config.effects,
         );
       } catch (error) {
         console.error('Satzweises TTS fehlgeschlagen:', error);

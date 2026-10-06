@@ -1767,4 +1767,10 @@ veraltet und sind korrigiert: `chat-sidebar-errors` las die Sitzung, bevor der e
   Umbau aller Befehle), tauri-bindgen (experimentell). Gleich gefunden und behoben: `stage_set_combatant_skill` war
   nicht registriert – Fertigkeitswerte der Stage-Gruppe ließen sich nie speichern; der Dialog übernimmt jetzt auch die
   neu geladene Szene und meldet Fehler.
+- [x] **Stimmeffekte (Idee aus Voicebox, ohne Python):** Reiter „Effekte“ im Stimmen-Dialog mit Vorlagen (Roboter, Funk,
+  Geist, Höhle, Tief, Fee) und Reglern für Tonhöhe (WSOLA, ohne Tempoänderung), Hall, Echo, Roboter-Ringmodulation,
+  Hoch- und Tiefpass. `services/voiceEffects.ts` rendert sie per `OfflineAudioContext` in den Clip, bevor der Player
+  ihn abspielt – für jede Engine, die Lippensynchronisation folgt dem bearbeiteten Ton. Gespeichert als
+  `VoiceConfig.effects`. Dabei behoben: Der Stimmen-Dialog überschrieb Eingaben, wenn die Stimmkonfiguration erst nach
+  dem Öffnen fertig geladen war (Unit-Tests der Signalverarbeitung, E2E `voice-effects.mjs`, Screenshot 57).
 

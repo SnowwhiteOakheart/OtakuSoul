@@ -80,6 +80,7 @@ Engage with your characters in an atmospheric chat interface. The 3D VRM or Live
 * **Audio-Synchronized Lip Sync:** Voice models animate avatar mouth shapes precisely to the spoken waveforms in real time.
 * **Zero Context Amnesia:** When model context fills up, a background engine condenses older turns into a concise "Story So Far" narrative summary, fully editable at any point.
 * **Compact Density View:** Toggle between standard and compact UI layouts; HUD metrics can be collapsed to minimize screen clutter.
+* **Voice Effects:** Robot, radio, ghost, cave, deep or fairy – or your own pitch, reverb, echo and filter values, for every speech engine.
 * **Per-Chat Style:** Own background picture, text size, bubble style and an ambient sound with volume – stored per chat, sharing pictures and sounds with the Stage library.
 * **Chat Tools:** On request the model can use date/time, a calculator and web search – with every provider and local models; tool use shows up in the reasoning block.
 * **Unified Background Tasks:** Downloads, memory reflection, image generation, and model initialization appear in a centralized task header with progress bars, wait explanations, cancel, and retry actions.

@@ -1,10 +1,13 @@
 import { translate } from '../i18n';
+import { applyVoiceEffects } from './voiceEffects';
+import type { VoiceEffects } from '../types';
 export type AudioPlaybackState = 'idle' | 'loading' | 'playing';
 
 interface QueuedAudio {
   dataUrl: string;
   gain: number;
   outputDeviceId: string;
+  effects?: VoiceEffects | null;
 }
 
 type SinkAwareAudioContext = AudioContext & {
@@ -134,9 +137,14 @@ export class AudioPlaybackManager {
     const currentGeneration = this.generation;
     try {
       await this.initAudioContext(next.outputDeviceId);
+      // Effects are rendered into the clip, so lip sync follows what is heard.
+      const url = await applyVoiceEffects(next.dataUrl, next.effects).catch((error: unknown) => {
+        console.warn('Stimmeffekte nicht angewendet:', error);
+        return next.dataUrl;
+      });
       if (!this.audioElement || currentGeneration !== this.generation) return;
 
-      this.audioElement.src = next.dataUrl;
+      this.audioElement.src = url;
       if (this.gainNode) this.gainNode.gain.value = next.gain;
 
       this.audioElement.onended = () => {
@@ -165,13 +173,13 @@ export class AudioPlaybackManager {
     }
   }
 
-  public async playDataUrl(dataUrl: string, gain = 1, outputDeviceId = '') {
+  public async playDataUrl(dataUrl: string, gain = 1, outputDeviceId = '', effects?: VoiceEffects | null) {
     this.stop();
-    this.enqueue(dataUrl, gain, outputDeviceId);
+    this.enqueue(dataUrl, gain, outputDeviceId, effects);
   }
 
-  public enqueue(dataUrl: string, gain = 1, outputDeviceId = '') {
-    this.queue.push({ dataUrl, gain, outputDeviceId });
+  public enqueue(dataUrl: string, gain = 1, outputDeviceId = '', effects?: VoiceEffects | null) {
+    this.queue.push({ dataUrl, gain, outputDeviceId, effects });
     void this.processQueue();
   }
 

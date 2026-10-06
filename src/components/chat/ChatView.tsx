@@ -221,6 +221,7 @@ export const ChatView: React.FC = () => {
         audioUrl,
         gainFromVoiceVolume(activeVoiceConfig.volume),
         activeVoiceConfig.output_device_id,
+        activeVoiceConfig.effects,
       );
     } catch (e) {
       console.error('Speech synthesis failed:', e);

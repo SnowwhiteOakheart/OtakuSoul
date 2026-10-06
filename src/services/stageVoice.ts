@@ -34,7 +34,7 @@ export async function speakStageMessages(
     if (!config) continue;
     try {
       const url = await api.synthesizeSpeech(message.content, config);
-      audioPlayer.enqueue(url, gainFromVoiceVolume(config.volume), config.output_device_id);
+      audioPlayer.enqueue(url, gainFromVoiceVolume(config.volume), config.output_device_id, config.effects);
     } catch (error) {
       console.warn('Stage voice failed:', error);
     }

@@ -1,6 +1,7 @@
-import { useEffect, useMemo, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import { open } from '@tauri-apps/plugin-dialog';
-import { Download, FolderOpen, Headphones, Mic, Play, RefreshCw, Save, SlidersHorizontal, X } from 'lucide-react';
+import { Download, FolderOpen, Headphones, Mic, Play, RefreshCw, Save, SlidersHorizontal, Wand2, X } from 'lucide-react';
+import { VoiceEffectsPanel } from './VoiceEffectsPanel';
 import { useStoreFields } from '../../store/useAppStore';
 import { api } from '../../services/api';
 import { KokoroDownloadProgress, ScannedVoice, SttEngine, TtsEngine, TtsFilterMode, VoiceConfig } from '../../types';
@@ -61,7 +62,7 @@ const DEFAULT_CONFIG: VoiceConfig = {
   },
 };
 
-type VoiceTab = 'tts' | 'stt' | 'rvc';
+type VoiceTab = 'tts' | 'effects' | 'stt' | 'rvc';
 
 const fieldClass = 'w-full bg-app border border-slate-800 rounded-lg p-2.5 text-sm text-slate-200 outline-hidden focus:border-accent-500/60';
 const labelClass = 'block text-xs font-medium text-slate-300 mb-1';
@@ -96,11 +97,13 @@ export function CharacterVoiceModal({ onClose, target, embedded = false }: Chara
   const [kokoroProgress, setKokoroProgress] = useState<KokoroDownloadProgress | null>(null);
   const [error, setError] = useState('');
 
+  // Set by the first edit; a profile loaded later must not overwrite what the user changed.
+  const touched = useRef(false);
   /* oxlint-disable react/set-state-in-effect -- A newly loaded character voice profile replaces the modal draft. */
   // By id, so a parent passing a fresh object each render doesn't reload over the user's edits.
   const targetId = target?.id;
   useEffect(() => {
-    if (!targetId && activeVoiceConfig) setDraft(activeVoiceConfig);
+    if (!targetId && activeVoiceConfig && !touched.current) setDraft(activeVoiceConfig);
   }, [activeVoiceConfig, targetId]);
   /* oxlint-enable react/set-state-in-effect */
   useEffect(() => {
@@ -163,24 +166,29 @@ export function CharacterVoiceModal({ onClose, target, embedded = false }: Chara
   const inputDevices = useMemo(() => devices.filter((device) => device.kind === 'audioinput'), [devices]);
   const outputDevices = useMemo(() => devices.filter((device) => device.kind === 'audiooutput'), [devices]);
 
+  const edit = (next: VoiceConfig | ((current: VoiceConfig) => VoiceConfig)) => {
+    touched.current = true;
+    setDraft(next);
+  };
+
   const update = <K extends keyof VoiceConfig>(key: K, value: VoiceConfig[K]) => {
-    setDraft((current) => ({ ...current, [key]: value }));
+    edit((current) => ({ ...current, [key]: value }));
   };
 
   const updateStt = <K extends keyof VoiceConfig['stt']>(key: K, value: VoiceConfig['stt'][K]) => {
-    setDraft((current) => ({ ...current, stt: { ...current.stt, [key]: value } }));
+    edit((current) => ({ ...current, stt: { ...current.stt, [key]: value } }));
   };
 
   const updateRvc = <K extends keyof VoiceConfig['rvc']>(key: K, value: VoiceConfig['rvc'][K]) => {
-    setDraft((current) => ({ ...current, rvc: { ...current.rvc, [key]: value } }));
+    edit((current) => ({ ...current, rvc: { ...current.rvc, [key]: value } }));
   };
 
   const updateKokoro = <K extends keyof VoiceConfig['kokoro']>(key: K, value: VoiceConfig['kokoro'][K]) => {
-    setDraft((current) => ({ ...current, kokoro: { ...current.kokoro, [key]: value } }));
+    edit((current) => ({ ...current, kokoro: { ...current.kokoro, [key]: value } }));
   };
 
   const changeEngine = (engine: TtsEngine) => {
-    setDraft((current) => {
+    edit((current) => {
       let voiceId = current.voice_id;
       if (engine === 'kokoro' && !/^[a-z]{2}_/i.test(voiceId)) voiceId = 'af_heart';
       if (engine === 'edge' && !voiceId.endsWith('Neural')) voiceId = 'de-DE-KatjaNeural';
@@ -276,6 +284,7 @@ export function CharacterVoiceModal({ onClose, target, embedded = false }: Chara
         audioUrl,
         gainFromVoiceVolume(draft.volume),
         draft.output_device_id,
+        draft.effects,
       );
     } catch (reason) {
       setError(errorMessage(reason));
@@ -305,6 +314,7 @@ export function CharacterVoiceModal({ onClose, target, embedded = false }: Chara
         <div role="tablist" aria-label={t('voiceCfg.tabs')} className="flex border-b border-slate-800 px-4 gap-1">
           {([
             ['tts', Headphones, t('voiceCfg.tabTts')],
+            ['effects', Wand2, t('voiceCfg.tabEffects')],
             ['stt', Mic, t('voiceCfg.tabStt')],
             ['rvc', SlidersHorizontal, 'RVC'],
           ] as const).map(([id, Icon, label]) => (
@@ -358,7 +368,7 @@ export function CharacterVoiceModal({ onClose, target, embedded = false }: Chara
                     </label>
                   )}
 
-                  {draft.engine === 'local' && <LocalTtsSettings config={draft} onChange={setDraft} />}
+                  {draft.engine === 'local' && <LocalTtsSettings config={draft} onChange={edit} />}
 
                   {draft.engine === 'kokoro' && (
                     <div className="space-y-4 rounded-lg border border-emerald-500/25 bg-emerald-950/10 p-4">
@@ -478,6 +488,10 @@ export function CharacterVoiceModal({ onClose, target, embedded = false }: Chara
                 </>
               )}
             </>
+          )}
+
+          {tab === 'effects' && (
+            <VoiceEffectsPanel value={draft.effects} onChange={(effects) => update('effects', effects ?? undefined)} />
           )}
 
           {tab === 'stt' && (

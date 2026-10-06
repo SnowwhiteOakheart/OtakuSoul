@@ -4,9 +4,14 @@ import type { RvcConfig } from "./RvcConfig";
 import type { SttConfig } from "./SttConfig";
 import type { TtsEngine } from "./TtsEngine";
 import type { TtsFilterMode } from "./TtsFilterMode";
+import type { VoiceEffects } from "./VoiceEffects";
 
 export type VoiceConfig = { engine: TtsEngine, voice_id: string, rate: string, pitch: string, volume: string, filter_mode: TtsFilterMode, custom_regex: string, elevenlabs_api_key: string, openai_endpoint: string, openai_api_key: string, openai_model: string, openai_instructions: string, kokoro: KokoroConfig, 
 /**
  * Catalog id of the local speech model (engine `local`).
  */
-local_model_id: string | null, output_device_id: string, rvc: RvcConfig, stt: SttConfig, };
+local_model_id: string | null, output_device_id: string, rvc: RvcConfig, stt: SttConfig, 
+/**
+ * Played with these effects; `None` = plain voice.
+ */
+effects?: VoiceEffects, };

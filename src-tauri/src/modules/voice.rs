@@ -93,6 +93,28 @@ impl Default for RvcConfig {
     }
 }
 
+/// Sound effects applied to a voice when it is played (Web Audio in the app; the server
+/// returns the plain voice). Presets only fill these values.
+#[derive(Debug, Clone, Default, Serialize, Deserialize, PartialEq, TS)]
+#[serde(default)]
+#[ts(export)]
+pub struct VoiceEffects {
+    /// Last chosen preset (`robot`, `radio`, `ghost`, `cave`, `deep`, `fairy`); empty = own values.
+    pub preset: String,
+    /// Pitch in semitones (−12 … 12) without changing the tempo.
+    pub pitch_semitones: f32,
+    /// Reverb share 0 … 1.
+    pub reverb: f32,
+    /// Echo share 0 … 1.
+    pub echo: f32,
+    /// Robotic ring modulation 0 … 1.
+    pub robot: f32,
+    /// Cuts frequencies below (Hz, 0 = off).
+    pub highpass_hz: u32,
+    /// Cuts frequencies above (Hz, 0 = off).
+    pub lowpass_hz: u32,
+}
+
 #[derive(Debug, Clone, Serialize, Deserialize, TS)]
 #[ts(export)]
 pub struct SttConfig {
@@ -171,6 +193,10 @@ pub struct VoiceConfig {
     pub rvc: RvcConfig,
     #[serde(default)]
     pub stt: SttConfig,
+    /// Played with these effects; `None` = plain voice.
+    #[serde(default)]
+    #[ts(optional)]
+    pub effects: Option<VoiceEffects>,
 }
 
 fn default_rate() -> String {
@@ -237,6 +263,7 @@ impl Default for VoiceConfig {
             output_device_id: String::new(),
             rvc: RvcConfig::default(),
             stt: SttConfig::default(),
+            effects: None,
         }
     }
 }
