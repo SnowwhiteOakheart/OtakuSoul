@@ -8,24 +8,14 @@
 > Offene Punkte sind Vorschläge, keine zugesagten Features. Erledigtes wird hier abgehakt und beim nächsten
 > Aufräumen nach `roadmap_abgeschlossen.md` verschoben.
 
-## 1. Verlässlichkeit von Chat und Daten
-
-Aus den Arbeitsprotokollen der Qualitäts-Roadmap; größere Pakete, jeweils mit eigenen Tests.
-
-
-## 2. Chat-Funktionen (aus der Portierung, noch nicht umgesetzt)
-
-- [ ] **Sammel-Import** von Charakteren samt Live2D, Personas, Lorebooks, Szenen und Hintergründen aus einem Ordner
-  (Port von SoWs `tools/import_character_cards.py`).
-
-## 3. Lokale Modelle, Hardware & Laufzeiten
+## 1. Lokale Modelle, Hardware & Laufzeiten
 
 - [ ] **Apple Metal:** `recommendedMaxWorkingSetSize` statt des gesamten Arbeitsspeichers als GPU-Speicher.
 - [ ] **Vision lokal auf echter Hardware testen** (Gemma/Qwen-VL mit passender `mmproj`, z. B. aus dem Modell-Hub).
 - [ ] **Bildgenerierung parallel zum Chat auf 24 GB** testen (keine passende Karte vorhanden).
 - [ ] **Weitere Laufzeit-Backends** (HIP/ROCm, SYCL) neben CUDA, Vulkan, Metal und CPU – nur bei Bedarf.
 
-## 4. Sprachausgabe (TTS)
+## 2. Sprachausgabe (TTS)
 
 - [ ] Chatterbox-Stimmklonen ohne Python (sobald CrispASR ein C++-Baking anbietet).
 - [ ] Qwen3-TTS VoiceDesign (Stimme per Beschreibung, 1.7B-Modell).
@@ -34,7 +24,7 @@ Aus den Arbeitsprotokollen der Qualitäts-Roadmap; größere Pakete, jeweils mit
 - [ ] Fehlerberichte an CrispASR: F5-TTS extrem langsam (~13 s pro Diffusionsschritt, im Katalog „experimentell“),
   0.6B-Base-GGUF ohne Sprachtabelle, Standard-Stimmpaket passt nicht zu 1.7B.
 
-## 5. Technik & Tests
+## 3. Technik & Tests
 
 - [ ] Command-Wrapper in `api.ts` typsicher erzeugen, sobald `tauri-specta` eine stabile 2.0 hat.
 - [ ] Wackeligen E2E-Test beobachten: `chat-sidebar-errors` scheiterte einmal an einem Entwurfsvergleich und bestand

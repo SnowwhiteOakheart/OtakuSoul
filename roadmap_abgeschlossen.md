@@ -1744,4 +1744,6 @@ veraltet und sind korrigiert: `chat-sidebar-errors` las die Sitzung, bevor der e
   kommen aus der Stage-Bibliothek (Import im Reiter). Gespeichert als `chat_sessions.style_json` (Migration v5,
   `ChatStyle`), „Ab hier neu“ übernimmt die Gestaltung; Hook `hooks/useAmbientSound.ts` dient Chat und Stage
   (Rust-Test, E2E `chat-style.mjs`, Screenshot 56).
+- ~~**Sammel-Import** von Charakteren aus einem Ordner (Port von SoWs `tools/import_character_cards.py`)~~ – gestrichen
+  (06.10.2026, nicht benötigt; Einzelimporte über Datei, Hub, Chub und URL bleiben).
 
