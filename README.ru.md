@@ -352,8 +352,8 @@ npm run e2e:perf
 
 OtakuSoul распространяется на условиях лицензии **GNU General Public License v3.0 (GPLv3)**.
 
-### Корни проекта и благодарности (Credits)
-OtakuSoul был создан как современное переосмысление на стеке Rust/Tauri, вдохновлённое пионерским проектом [Soul of Waifu](https://github.com/jofizcd/Soul-of-Waifu) от разработчика [jofizcd](https://github.com/jofizcd). Оба проекта разделяют общую идею свободных локальных ИИ-спутников на ПК и лицензируются под **GNU General Public License v3.0 (GPLv3)**. Выражаем искреннюю благодарность автору оригинального проекта за вдохновение и неоценимый вклад в сообщество Open Source!
+### Благодарности (Credits)
+OtakuSoul создавался как самостоятельный порт и переработка Python-проекта [Soul of Waifu](https://github.com/jofizcd/Soul-of-Waifu) от [jofizcd](https://github.com/jofizcd) на стеке Rust/Tauri (GPLv3).
 
 ### ИИ-модели и прозрачность
 OtakuSoul принципиально **не содержит** проприетарных весов моделей в дистрибутивах:

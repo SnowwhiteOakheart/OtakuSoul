@@ -355,8 +355,8 @@ npm run e2e:perf
 
 OtakuSoul ist freie Software unter der **GNU General Public License v3.0 (GPLv3)**.
 
-### Open-Source-Wurzeln & Anerkennung (Credits)
-OtakuSoul entstand als moderner Rust/Tauri-Neuentwurf inspiriert von dem herausragenden Pionierprojekt [Soul of Waifu](https://github.com/jofizcd/Soul-of-Waifu) von [jofizcd](https://github.com/jofizcd). Beide Projekte teilen die Vision freier, privater KI-Begleiter auf dem Desktop und stehen unter der **GNU General Public License v3.0 (GPLv3)**. Ein herzlicher Dank gilt dem ursprünglichen Autor für die Inspiration und seinen wertvollen Beitrag zur Open-Source-Community!
+### Credits
+OtakuSoul entstand als eigenständiger Rust/Tauri-Port und Neuentwurf des Python-Projekts [Soul of Waifu](https://github.com/jofizcd/Soul-of-Waifu) von [jofizcd](https://github.com/jofizcd) (GPLv3).
 
 ### KI-Modelle & Transparenz
 OtakuSoul bündelt bewusst **keine** proprietären Modellgewichte im Quellcode oder Installer:
