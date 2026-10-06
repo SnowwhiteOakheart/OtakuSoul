@@ -1,10 +1,12 @@
 import React, { useState } from 'react';
 import { StageNpcPanel } from './StageNpcPanel';
-import { useStoreFields } from '../../store/useAppStore';
+import { useAppStore, useStoreFields } from '../../store/useAppStore';
 import { Heart, Zap, Flame, Shield, User, Coffee, Settings } from 'lucide-react';
 import { useTranslation } from '../../i18n';
 import { ModalOverlay } from '../ui/ModalOverlay';
-import { invoke } from '@tauri-apps/api/core';
+import { api } from '../../services/api';
+import { toast } from '../ui/feedback';
+import { errorMessage } from '../../utils/errors';
 
 export const PartyHeader: React.FC = () => {
   const { t } = useTranslation();
@@ -185,20 +187,19 @@ const SkillsModal: React.FC<{
   if (!combatant || !stageState) return null;
 
   const handleSave = async () => {
-    const lines = text.split('\n');
-    for (const line of lines) {
-      if (!line.trim()) continue;
-      const parts = line.split(':');
-      if (parts.length >= 2) {
-        const key = parts[0]!.trim();
+    try {
+      for (const line of text.split('\n')) {
+        const parts = line.split(':');
+        if (!line.trim() || parts.length < 2) continue;
         const value = parseInt(parts[1]!.trim(), 10) || 0;
-        await invoke('stage_set_combatant_skill', { combatantId: combatant.id, skillName: key, value });
+        await api.stageSetCombatantSkill(combatant.id, parts[0]!.trim(), value);
       }
+      // The stored scene now has the new skills; show them.
+      useAppStore.setState({ stageState: await api.loadStageScene(stageState.definition.id) });
+      onClose();
+    } catch (e) {
+      toast.error(errorMessage(e));
     }
-    
-    // Refresh stage scene to pick up new skills
-    await invoke('load_stage_scene', { sceneId: stageState.definition.id });
-    onClose();
   };
 
   return (

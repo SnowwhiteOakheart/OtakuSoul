@@ -293,6 +293,7 @@ pub fn run() {
             commands::stage::next_encounter_turn,
             commands::stage::apply_combatant_delta,
             commands::stage::add_combatant_condition,
+            commands::stage::stage_set_combatant_skill,
             commands::companion::get_companion_state,
             commands::companion::apply_hormone_interaction,
             commands::companion::set_hormones,
