@@ -119,6 +119,19 @@ pub fn create_chat_session(
         .map_err(|e| e.to_string())
 }
 
+/// Look and sound of one chat (`None` = defaults).
+#[tauri::command]
+pub fn update_chat_style(
+    state: State<'_, AppState>,
+    chat_id: String,
+    style: Option<crate::modules::memory::ChatStyle>,
+) -> Result<(), String> {
+    state
+        .memory_db
+        .update_chat_style(&chat_id, style.as_ref())
+        .map_err(|e| e.to_string())
+}
+
 #[tauri::command]
 pub fn list_chat_sessions(
     state: State<'_, AppState>,

@@ -33,6 +33,7 @@ import {
 } from 'lucide-react';
 import { DropdownMenu } from '../ui/DropdownMenu';
 import { usePersistentFlag } from '../../hooks/usePersistentFlag';
+import { useAmbientSound } from '../../hooks/useAmbientSound';
 import { audioPlayer, gainFromVoiceVolume } from '../../services/audioPlayer';
 import { streamingTts } from '../../services/streamingTts';
 
@@ -227,6 +228,24 @@ export const ChatView: React.FC = () => {
   }, [activeVoiceConfig]);
 
   const currentSession = chatSessions.find((s) => s.id === activeChatId);
+  const chatStyle = currentSession?.style;
+  // The picture of the chat (Stage library), loaded once per file name.
+  const [background, setBackground] = useState<{ name: string; url: string } | null>(null);
+  useEffect(() => {
+    const name = chatStyle?.background;
+    if (!name) return;
+    let cancelled = false;
+    api
+      .getStageBackgroundImage(name)
+      .then((url) => !cancelled && setBackground({ name, url }))
+      .catch((error: unknown) => console.warn('Chat background missing:', error));
+    return () => {
+      cancelled = true;
+    };
+  }, [chatStyle?.background]);
+  const backgroundUrl = chatStyle?.background && background?.name === chatStyle.background ? background.url : null;
+  const ambientVolume = (chatStyle?.ambient_volume ?? 0) / 100;
+  useAmbientSound(chatStyle?.ambient, Boolean(chatStyle?.ambient) && ambientVolume > 0, ambientVolume);
 
   // Render storedMessages if available, otherwise flat fallback
   const displayList = useMemo(() => storedMessages.length > 0 ? storedMessages : messages.map((m, i) => ({
@@ -415,13 +434,22 @@ export const ChatView: React.FC = () => {
         )}
 
         {/* Chat Area */}
-        <div className="flex-1 flex flex-col h-full overflow-hidden bg-app">
+        <div className="relative isolate flex-1 flex flex-col h-full overflow-hidden bg-app">
+          {backgroundUrl && (
+            <>
+              <div aria-hidden className="pointer-events-none absolute inset-0 -z-10 bg-cover bg-center" style={{ backgroundImage: `url("${backgroundUrl}")` }} />
+              <div aria-hidden className="pointer-events-none absolute inset-0 -z-10 bg-app" style={{ opacity: (chatStyle?.background_dim ?? 40) / 100 }} />
+            </>
+          )}
           <SceneImageCard />
           {showSearch && <ChatSearchBar messages={displayList} onClose={() => setShowSearch(false)} />}
           {/* Messages Stream Area */}
           <div
             ref={scrollRef}
             data-density={compact ? 'compact' : undefined}
+            data-text-size={chatStyle?.text_size || undefined}
+            data-bubbles={chatStyle?.bubbles || undefined}
+            data-has-background={backgroundUrl ? '' : undefined}
             className={`flex-1 overflow-y-auto select-text ${compact ? 'px-3 py-2 space-y-2' : 'p-4 space-y-4'}`}
             aria-live="polite"
           >

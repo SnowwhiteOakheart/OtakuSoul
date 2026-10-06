@@ -9,6 +9,7 @@ pub(super) const MIGRATIONS: &[fn(&Connection) -> rusqlite::Result<()>] = &[
     migrate_v2_chat_summary_attachments,
     migrate_v3_chat_bookmarks,
     migrate_v4_memory_sources,
+    migrate_v5_chat_style,
 ];
 
 /// Brings the database to the latest schema, one transaction per step. A database written by a
@@ -225,6 +226,24 @@ pub(super) fn migrate_v4_memory_sources(conn: &Connection) -> rusqlite::Result<(
         );
         CREATE INDEX IF NOT EXISTS idx_memory_history ON soul_memory_history(memory_id);",
     )
+}
+
+/// v5: look and sound per chat (background, text size, bubbles, ambient) as JSON.
+pub(super) fn migrate_v5_chat_style(conn: &Connection) -> rusqlite::Result<()> {
+    let has_sessions: bool = conn.query_row(
+        "SELECT EXISTS(SELECT 1 FROM sqlite_master WHERE type = 'table' AND name = 'chat_sessions')",
+        [],
+        |row| row.get(0),
+    )?;
+    if has_sessions {
+        add_column_if_missing(
+            conn,
+            "chat_sessions",
+            "style_json",
+            "TEXT NOT NULL DEFAULT ''",
+        )?;
+    }
+    Ok(())
 }
 
 fn add_column_if_missing(

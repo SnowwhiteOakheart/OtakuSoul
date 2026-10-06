@@ -1021,3 +1021,45 @@ fn a_failed_reflection_write_changes_nothing() {
     );
     assert_eq!(db.get_episodic_memories("ayu", 10).unwrap().len(), 1);
 }
+
+#[test]
+fn chat_style_is_stored_reset_and_kept_by_a_branch() {
+    let db = MemoryDb::new_in_memory().expect("in-memory db failed");
+    let chat = db
+        .create_chat_session_with_greeting("ayu", "Kyoto", Some("Hallo"))
+        .unwrap();
+    assert!(chat.style.is_none());
+    let style = ChatStyle {
+        background: Some("tempel.png".into()),
+        background_dim: 40,
+        text_size: "large".into(),
+        bubbles: "subtle".into(),
+        ambient: Some("regen.ogg".into()),
+        ambient_volume: 30,
+    };
+    db.update_chat_style(&chat.id, Some(&style)).unwrap();
+    assert_eq!(
+        db.get_chat_session(&chat.id).unwrap().unwrap().style,
+        Some(style.clone())
+    );
+    assert_eq!(
+        db.list_chat_sessions("ayu").unwrap()[0].style,
+        Some(style.clone())
+    );
+
+    let first = db.get_chat_messages(&chat.id).unwrap()[0].id.clone();
+    let branch = db.branch_chat(&chat.id, &first, "Abzweig").unwrap();
+    assert_eq!(branch.style, Some(style));
+
+    // Defaults are stored as "no style".
+    db.update_chat_style(&chat.id, Some(&ChatStyle::default()))
+        .unwrap();
+    assert!(
+        db.get_chat_session(&chat.id)
+            .unwrap()
+            .unwrap()
+            .style
+            .is_none()
+    );
+    assert!(db.update_chat_style("gibt-es-nicht", None).is_err());
+}

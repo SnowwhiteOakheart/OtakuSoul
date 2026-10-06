@@ -1739,4 +1739,9 @@ veraltet und sind korrigiert: `chat-sidebar-errors` las die Sitzung, bevor der e
   blendet es aus, die App führt Datum/Uhrzeit, Rechner (eigener sicherer Parser) oder Websuche (DuckDuckGo) aus und
   fragt mit `[TOOL RESULT]` erneut (höchstens 3 Runden). Die Nutzung steht im Gedankenblock (Rust-Tests, Unit-Test,
   E2E `chat-tools.mjs`, Screenshot 55).
+- [x] **Gestaltung und Ambient-Klang pro Chat:** Reiter „Gestaltung“ in der Chat-Seitenleiste: Hintergrundbild mit
+  Abdunklung, Textgröße, Blasenstil (Standard/Dezent/Kontrast) und ein Ambient-Klang mit Lautstärke. Bilder und Klänge
+  kommen aus der Stage-Bibliothek (Import im Reiter). Gespeichert als `chat_sessions.style_json` (Migration v5,
+  `ChatStyle`), „Ab hier neu“ übernimmt die Gestaltung; Hook `hooks/useAmbientSound.ts` dient Chat und Stage
+  (Rust-Test, E2E `chat-style.mjs`, Screenshot 56).
 

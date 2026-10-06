@@ -359,3 +359,33 @@
   font-size: 0.8125rem;
   line-height: 1.45;
 }
+
+/* Per-chat style (ChatStylePanel): text size and bubble look on the message list. */
+[data-text-size='small'] .chat-bubble {
+  font-size: 0.8125rem;
+}
+[data-text-size='large'] .chat-bubble {
+  font-size: 1rem;
+  line-height: 1.6;
+}
+[data-bubbles='subtle'] .chat-bubble {
+  background: color-mix(in oklab, var(--color-slate-900) 55%, transparent);
+  border-color: color-mix(in oklab, var(--color-slate-700) 50%, transparent);
+  box-shadow: none;
+  backdrop-filter: blur(6px);
+}
+[data-bubbles='contrast'] .chat-bubble {
+  background: var(--color-slate-950);
+  border: 1px solid var(--color-slate-500);
+  color: var(--color-slate-50);
+}
+
+/* Without the coloured user bubble, white text needs the theme's text colour (light mode). */
+[data-bubbles='subtle'] .chat-bubble .text-white,
+[data-bubbles='contrast'] .chat-bubble .text-white {
+  color: var(--color-slate-50);
+}
+/* Names above the bubbles stay legible on a background picture. */
+[data-has-background] .chat-sender {
+  text-shadow: 0 1px 3px rgb(0 0 0 / 0.85);
+}

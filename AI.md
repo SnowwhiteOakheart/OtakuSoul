@@ -191,6 +191,9 @@ Hub). Integrationen → Bildgenerierung enthält nur Studio und Galerie.
 - Hintergrundaufgaben: `store/slices/taskSlice.ts` (`trackTask` → erledigt/abgebrochen (Code `…Cancelled`)/fehlgeschlagen),
   Anzeige `components/TaskCenter.tsx` (hört Download-Fortschritt und `local-image-status`). Modellstart endet über
   `fetchServerStatus`; Bild-/LoRA-/TTS-Downloads laufen über `services/downloadTasks.ts`. Neue lange Vorgänge dort eintragen.
+- Chat-Gestaltung: `ChatSession.style` (`ChatStyle`, Spalte `style_json`, Migration v5; leer = Standard) über
+  `update_chat_style`; Panel `components/chat/ChatStylePanel.tsx` (Stage-Bibliothek für Bilder/Klänge), Anzeige in `ChatView`
+  (`data-text-size`, `data-bubbles`, CSS in `App.css`), Klang über `hooks/useAmbientSound.ts`.
 - Chat-Werkzeuge (`chat_tools.rs`, Schalter `chatTools`): Text-Protokoll `<tool_call>{name, arguments}</tool_call>` statt
   nativer Tool-Calls; `InferenceClient::stream_chat_with_tools` filtert die Tags (`ToolCallFilter`), führt aus und fragt mit
   `[TOOL RESULT]` erneut (max. 3 Runden). Anbieter fassen System-Nachrichten zusammen; das Mock erkennt „# Tools“ im Text.

@@ -338,6 +338,7 @@ pub fn run() {
             commands::characters::delete_persona,
             commands::chat::create_chat_session,
             commands::chat::list_chat_sessions,
+            commands::chat::update_chat_style,
             commands::chat::get_chat_session,
             commands::chat::delete_chat_session,
             commands::chat::rename_chat_session,

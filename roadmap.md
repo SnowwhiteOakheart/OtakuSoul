@@ -15,8 +15,6 @@ Aus den Arbeitsprotokollen der Qualitäts-Roadmap; größere Pakete, jeweils mit
 
 ## 2. Chat-Funktionen (aus der Portierung, noch nicht umgesetzt)
 
-- [ ] **Chat-Erscheinungsbild** – Hintergrund pro Chat, Schrift, Blasenfarben.
-- [ ] **Ambient-Sound pro Chat** mit Lautstärke (in der Stage bereits vorhanden: `useStageAmbient`).
 - [ ] **Sammel-Import** von Charakteren samt Live2D, Personas, Lorebooks, Szenen und Hintergründen aus einem Ordner
   (Port von SoWs `tools/import_character_cards.py`).
 

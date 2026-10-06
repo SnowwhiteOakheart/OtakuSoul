@@ -31,6 +31,7 @@ import type { CampaignClock } from './generated/CampaignClock';
 import type { CampaignObjective } from './generated/CampaignObjective';
 import type { CharacterDraft } from './generated/CharacterDraft';
 import type { ChatSession } from './generated/ChatSession';
+import type { ChatStyle } from './generated/ChatStyle';
 import type { ChubCharacterDetail } from './generated/ChubCharacterDetail';
 import type { CombatCondition } from './generated/CombatCondition';
 import type { ContextUsage } from './generated/ContextUsage';
@@ -115,6 +116,7 @@ export type {
   CampaignObjective,
   CharacterDraft,
   ChatSession,
+  ChatStyle,
   ChatSummaryRequest,
   ChubCharacterDetail,
   CombatCondition,

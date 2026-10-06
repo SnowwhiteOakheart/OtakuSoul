@@ -12,6 +12,7 @@ import type {
   CharacterProfile,
   ChatMessage,
   ChatSession,
+  ChatStyle,
   ContextUsage,
   StoredChatMessage,
   UserPersona,
@@ -79,6 +80,8 @@ export interface ChatSlice {
   switchChatSession: (chatId: string) => Promise<void>;
   createNewChat: (title?: string) => Promise<ChatSession | null>;
   renameChatSession: (chatId: string, title: string) => Promise<void>;
+  /** Look and sound of a chat; errors go to the caller. */
+  updateChatStyle: (chatId: string, style: ChatStyle | null) => Promise<void>;
   deleteChatSession: (chatId: string) => Promise<void>;
   updateAuthorNote: (authorNote: string, depth: number) => Promise<void>;
   switchMessageSwipe: (msgId: string, swipeIndex: number) => Promise<void>;
@@ -413,6 +416,13 @@ export const createChatSlice: SliceCreator<ChatSlice> = (set, get) => {
     } finally {
       if (isSessionCurrent(request, char.id)) set({ isChatLoading: false });
     }
+  },
+
+  updateChatStyle: async (chatId, style) => {
+    await api.updateChatStyle(chatId, style);
+    set((st) => ({
+      chatSessions: st.chatSessions.map((s) => (s.id === chatId ? { ...s, style: style ?? undefined } : s)),
+    }));
   },
 
   renameChatSession: async (chatId: string, title: string) => {

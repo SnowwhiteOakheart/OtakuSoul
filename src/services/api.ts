@@ -106,6 +106,7 @@ import {
   RuntimeVariant,
   MemoryChange,
   PromptLog,
+  ChatStyle,
 } from '../types';
 
 export const api = {
@@ -792,6 +793,11 @@ export const api = {
   /** Creates the chat and (optionally) the character's greeting in one step. */
   createChatSession: async (characterId: string, title: string, greeting?: string | null): Promise<ChatSession> => {
     return await invoke<ChatSession>('create_chat_session', { characterId, title, greeting: greeting || null });
+  },
+
+  /** Look and sound of one chat; null restores the defaults. */
+  updateChatStyle: async (chatId: string, style: ChatStyle | null): Promise<void> => {
+    await invoke('update_chat_style', { chatId, style });
   },
 
   listChatSessions: async (characterId: string): Promise<ChatSession[]> => {

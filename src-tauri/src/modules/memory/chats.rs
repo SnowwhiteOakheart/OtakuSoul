@@ -92,7 +92,31 @@ impl MemoryDb {
             message_count: usize::from(greeting.is_some()),
             summary: String::new(),
             summary_until: -1,
+            style: None,
         })
+    }
+
+    /// Stores the look and sound of a chat; `None` restores the defaults.
+    pub fn update_chat_style(
+        &self,
+        chat_id: &str,
+        style: Option<&ChatStyle>,
+    ) -> Result<(), rusqlite::Error> {
+        let json = match style {
+            Some(style) if *style != ChatStyle::default() => {
+                serde_json::to_string(style).unwrap_or_default()
+            }
+            _ => String::new(),
+        };
+        let conn = self.conn.lock();
+        let changed = conn.execute(
+            "UPDATE chat_sessions SET style_json = ?1 WHERE id = ?2",
+            params![json, chat_id],
+        )?;
+        if changed == 0 {
+            return Err(rusqlite::Error::QueryReturnedNoRows);
+        }
+        Ok(())
     }
 
     /// Every stored attachment reference (`chat/file`) and every chat id, for cleaning up
@@ -131,7 +155,7 @@ impl MemoryDb {
         let mut stmt = conn.prepare(
             "SELECT s.id, s.character_id, s.title, s.created_at, s.updated_at, s.author_note, s.author_note_depth,
                     (SELECT COUNT(*) FROM chat_messages m WHERE m.chat_id = s.id) AS msg_count,
-                    s.summary, s.summary_until
+                    s.summary, s.summary_until, s.style_json
              FROM chat_sessions s
              WHERE s.character_id = ?1
              ORDER BY s.updated_at DESC",
@@ -150,6 +174,7 @@ impl MemoryDb {
                 message_count: count as usize,
                 summary: row.get(8)?,
                 summary_until: row.get(9)?,
+                style: parse_style(&row.get::<_, String>(10)?),
             })
         })?;
 
@@ -165,7 +190,7 @@ impl MemoryDb {
         let mut stmt = conn.prepare(
             "SELECT s.id, s.character_id, s.title, s.created_at, s.updated_at, s.author_note, s.author_note_depth,
                     (SELECT COUNT(*) FROM chat_messages m WHERE m.chat_id = s.id) AS msg_count,
-                    s.summary, s.summary_until
+                    s.summary, s.summary_until, s.style_json
              FROM chat_sessions s
              WHERE s.id = ?1",
         )?;
@@ -184,6 +209,7 @@ impl MemoryDb {
                 message_count: count as usize,
                 summary: row.get(8)?,
                 summary_until: row.get(9)?,
+                style: parse_style(&row.get::<_, String>(10)?),
             }))
         } else {
             Ok(None)
@@ -281,6 +307,11 @@ impl MemoryDb {
                 "INSERT INTO chat_sessions (id, character_id, title, created_at, updated_at, author_note, author_note_depth, summary, summary_until)
                  VALUES (?1, ?2, ?3, ?4, ?4, ?5, ?6, ?7, ?8)",
                 params![new_id, character_id, title.trim(), now, author_note, depth, summary, summary_until],
+            )?;
+            // The continued story keeps the look and sound of its chat.
+            tx.execute(
+                "UPDATE chat_sessions SET style_json = (SELECT style_json FROM chat_sessions WHERE id = ?1) WHERE id = ?2",
+                params![chat_id, new_id],
             )?;
 
             let bookmarked: std::collections::HashSet<String> = {
@@ -974,4 +1005,13 @@ fn stored_attachments(
     )
     .map(|json| parse_attachments(&json))
     .unwrap_or_default()
+}
+
+/// The stored style of a chat; empty or unreadable means the defaults.
+fn parse_style(json: &str) -> Option<ChatStyle> {
+    if json.is_empty() {
+        None
+    } else {
+        serde_json::from_str(json).ok()
+    }
 }

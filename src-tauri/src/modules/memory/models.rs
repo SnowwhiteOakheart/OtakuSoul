@@ -156,6 +156,30 @@ pub struct ChatSession {
     pub summary: String,
     /// `order_index` of the last message the summary covers; -1 for none.
     pub summary_until: i64,
+    /// Look and sound of this chat; `None` = the app's defaults.
+    #[serde(default)]
+    #[ts(optional)]
+    pub style: Option<ChatStyle>,
+}
+
+/// Per-chat look and sound. Pictures and sounds come from the Stage library
+/// (`list_stage_assets`), so both views share imported files.
+#[derive(Debug, Clone, Default, Serialize, Deserialize, PartialEq, TS)]
+#[serde(default)]
+#[ts(export)]
+pub struct ChatStyle {
+    /// Background picture (file name in the Stage backgrounds).
+    pub background: Option<String>,
+    /// Darkening over the picture for legible text, 0–90 (%).
+    pub background_dim: u8,
+    /// `small`, `normal` (empty) or `large`.
+    pub text_size: String,
+    /// Message bubbles: `default` (empty), `subtle` or `contrast`.
+    pub bubbles: String,
+    /// Looping background sound (file name in the Stage ambient sounds).
+    pub ambient: Option<String>,
+    /// 0–100 (%).
+    pub ambient_volume: u8,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq, TS)]
