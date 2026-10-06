@@ -1,10 +1,12 @@
 import { api } from '../../services/api';
 import type {
   ScannedVrm,
+  AvatarMotion,
   ScannedLive2d,
   EmotionResult,
 } from '../../types';
 import type { SliceCreator } from '../storeTypes';
+import type { MotionRole } from '../../utils/avatarGestures';
 
 /** 3D/Live2D avatar models, avatar mode and the current emotion. */
 export interface AvatarSlice {
@@ -20,6 +22,12 @@ export interface AvatarSlice {
   setAvatarMode: (mode: '3d' | 'live2d' | '2d') => void;
   currentEmotion: EmotionResult;
   setCurrentEmotion: (em: EmotionResult) => void;
+  /** Imported body motions (VRMA) with their use. */
+  avatarMotions: AvatarMotion[];
+  refreshAvatarMotions: () => Promise<void>;
+  /** The gesture the 3D avatar should play next; `id` makes repeats of the same one count. */
+  avatarGesture: { role: MotionRole; id: number } | null;
+  playAvatarGesture: (role: MotionRole) => void;
 }
 
 export const createAvatarSlice: SliceCreator<AvatarSlice> = (set, get) => ({
@@ -78,4 +86,18 @@ export const createAvatarSlice: SliceCreator<AvatarSlice> = (set, get) => ({
   },
 
   setCurrentEmotion: (currentEmotion) => set({ currentEmotion }),
+
+  avatarMotions: [],
+
+  refreshAvatarMotions: async () => {
+    try {
+      set({ avatarMotions: (await api.scanAvatarMotions()) ?? [] });
+    } catch (e) {
+      console.error('Failed to scan avatar motions:', e);
+    }
+  },
+
+  avatarGesture: null,
+
+  playAvatarGesture: (role) => set((state) => ({ avatarGesture: { role, id: (state.avatarGesture?.id ?? 0) + 1 } })),
 });

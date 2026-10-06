@@ -389,6 +389,10 @@ pub fn run() {
             commands::avatar::download_live2d_model,
             commands::avatar::classify_text_emotion,
             commands::avatar::import_live2d_model,
+            commands::avatar::scan_avatar_motions,
+            commands::avatar::import_avatar_motion,
+            commands::avatar::set_avatar_motion_role,
+            commands::avatar::delete_avatar_motion,
             // Soul Hub (Soul Gateway, Chub AI, Lorebooks, Stage Scenarios)
             commands::hub::fetch_soul_gateway_registry,
             commands::hub::import_soul_gateway_character,

@@ -1,5 +1,6 @@
 import { translate } from '../i18n';
 import { applyVoiceEffects } from './voiceEffects';
+import { estimateVisemes, SILENT_VISEMES, type Visemes } from './lipSync';
 import type { VoiceEffects } from '../types';
 export type AudioPlaybackState = 'idle' | 'loading' | 'playing';
 
@@ -33,7 +34,7 @@ export class AudioPlaybackManager {
   private generation = 0;
   private state: AudioPlaybackState = 'idle';
 
-  private readonly onFrameCallbacks = new Set<(amplitude: number) => void>();
+  private readonly onFrameCallbacks = new Set<(amplitude: number, visemes: Visemes) => void>();
   private readonly onStateCallbacks = new Set<(state: AudioPlaybackState) => void>();
   private animationFrameId: number | null = null;
 
@@ -65,7 +66,8 @@ export class AudioPlaybackManager {
 
       this.audioContext = new AudioContextClass() as SinkAwareAudioContext;
       this.analyser = this.audioContext.createAnalyser();
-      this.analyser.fftSize = 256;
+      // Fine enough (~47 Hz per bin) to find the vowel formants for the mouth shapes.
+      this.analyser.fftSize = 1024;
       this.gainNode = this.audioContext.createGain();
       
       this.audioElement = new Audio();
@@ -88,7 +90,7 @@ export class AudioPlaybackManager {
     }
   }
 
-  public onAudioFrame(callback: (amplitude: number) => void) {
+  public onAudioFrame(callback: (amplitude: number, visemes: Visemes) => void) {
     this.onFrameCallbacks.add(callback);
     return () => {
       this.onFrameCallbacks.delete(callback);
@@ -109,14 +111,16 @@ export class AudioPlaybackManager {
 
     const loop = () => {
       if (!this.playing) {
-        this.onFrameCallbacks.forEach((callback) => callback(0));
+        this.onFrameCallbacks.forEach((callback) => callback(0, SILENT_VISEMES));
         return;
       }
       this.analyser?.getByteFrequencyData(data);
       let sum = 0;
       for (const value of data) sum += value;
       const amplitude = Math.min(1, sum / data.length / 128);
-      this.onFrameCallbacks.forEach((callback) => callback(amplitude));
+      const binHz = (this.audioContext?.sampleRate ?? 48_000) / (this.analyser?.fftSize ?? 1024);
+      const visemes = estimateVisemes(data, binHz, amplitude);
+      this.onFrameCallbacks.forEach((callback) => callback(amplitude, visemes));
       this.animationFrameId = requestAnimationFrame(loop);
     };
 
@@ -200,7 +204,7 @@ export class AudioPlaybackManager {
       this.animationFrameId = null;
     }
     this.playing = false;
-    this.onFrameCallbacks.forEach((callback) => callback(0));
+    this.onFrameCallbacks.forEach((callback) => callback(0, SILENT_VISEMES));
     this.setState('idle');
   }
 

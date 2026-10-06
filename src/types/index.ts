@@ -73,6 +73,7 @@ import type { Neurohormones } from './generated/Neurohormones';
 import type { RvcConfig } from './generated/RvcConfig';
 import type { ScannedVoice } from './generated/ScannedVoice';
 import type { ScannedVrm } from './generated/ScannedVrm';
+import type { AvatarMotion } from './generated/AvatarMotion';
 import type { ScratchpadEntry } from './generated/ScratchpadEntry';
 import type { ServerState } from './generated/ServerState';
 import type { ServerStatus } from './generated/ServerStatus';
@@ -159,6 +160,7 @@ export type {
   RvcConfig,
   ScannedVoice,
   ScannedVrm,
+  AvatarMotion,
   ScratchpadEntry,
   ServerState,
   ServerStatus,

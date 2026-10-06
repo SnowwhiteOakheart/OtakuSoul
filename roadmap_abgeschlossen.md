@@ -1788,4 +1788,10 @@ veraltet und sind korrigiert: `chat-sidebar-errors` las die Sitzung, bevor der e
   Eingabefeld (Tastenhinweis als Tooltip); „Einklappen“ statt abgeschnittenem Text. Senden ist ohne geöffneten Chat
   gesperrt (vorher Fehler „Keine aktive Chat-Sitzung“ beim frühen Klicken). 3D-Kamera richtet sich am Kopf und an der
   Modellhöhe aus, statt Köpfe großer Modelle anzuschneiden.
+- [x] **VRMA-Bewegungen und Mundformen für den 3D-Avatar:** Eigene VRM-Animationen (`.vrma`) importieren und je eine
+  Verwendung zuordnen (Ruhe-Schleife, Begrüßen/Winken, Nicken, Freude, Trauer, Wut, Überraschung, Nachdenken; aus dem
+  Dateinamen geraten). Gesten spielen nach jeder Antwort bei Rollenspiel-Aktionen (*winkt*, *nickt*, *lacht* …) oder
+  passend zum erkannten Gefühl und blenden zurück in die Ruhe. Ohne Bewegungen bleibt die prozedurale Haltung.
+  LipSync nutzt jetzt fünf Mundformen (aa/ih/ou/ee/oh) aus den Formanten der Stimme statt nur „aa“ nach Lautstärke.
+  Nichts wird mitgeliefert; der E2E-Test erzeugt seine Test-Animation selbst.
 

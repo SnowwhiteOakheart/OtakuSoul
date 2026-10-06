@@ -85,6 +85,7 @@ export const CommandPalette = ({ open, onOpen, onClose }: CommandPaletteProps) =
       ['setting-theme', 'settings.theme', Palette, 'theme farbe dark light hell dunkel тема цвет'],
       ['setting-close-to-tray', 'settings.closeToTray', Settings2, 'tray close schließen beenden quit трей закрыть'],
       ['setting-avatars', 'settings.avatarDefaults', Users, 'avatar vrm live2d аватар'],
+      ['setting-avatar-motions', 'motions.title', Users, 'motion bewegung animation vrma geste gesture движение анимация'],
       ['setting-system', 'settings.systemTitle', Terminal, 'logs version update daten data логи'],
     ] as const).map(([anchor, label, icon, keywords]) => ({
       id: `option-${anchor}`,

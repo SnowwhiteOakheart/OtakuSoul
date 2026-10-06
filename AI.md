@@ -127,6 +127,13 @@ Hub). Integrationen → Bildgenerierung enthält nur Studio und Galerie.
   Chatterbox Turbo (`speaks_sound_tags`): `voice::actions_to_sound_tags` macht *lacht* zu `[laugh]` vor dem Aktionsfilter.
 - 3D-Avatar (`VrmViewer.tsx`): Startansicht aus Kopf-Knochen und Modellhöhe (`frameUpperBody` in `services/avatarViewState.ts`);
   gespeichert wird nur eine vom Nutzer bewegte Kamera, „Ansicht zurücksetzen“ löscht sie.
+  Bewegungen: `.vrma` in `<Daten>/animations/` (`avatar_motions.rs`, Verwendung in `roles.json`, aus dem Dateinamen
+  geraten); `vrmMotions.ts` (`VrmMotionPlayer`: Ruhe-Schleife + Gesten mit Überblendung), die prozedurale Haltung füllt
+  nur den Anteil, den keine Animation steuert (`bodyWeight`). Gesten löst `ChatView` nach jeder Antwort über
+  `gestureForReply` aus (`utils/avatarGestures.ts`: Rollenspiel-Aktion vor Gefühl) → `avatarSlice.playAvatarGesture`.
+  Mundformen aa/ih/ou/ee/oh aus Formanten (`services/lipSync.ts`, `audioPlayer.onAudioFrame(amplitude, visemes)`).
+  E2E: `e2e/tools/make-vrma.mjs` baut eine Test-Animation; der Viewer zeigt `data-motions`/`data-gesture`,
+  das Mock antwortet mit `stats.chatReply`.
 - Stimmeffekte: `VoiceConfig.effects` (`VoiceEffects`), gerendert in `services/voiceEffects.ts` (OfflineAudioContext, Tonhöhe per
   WSOLA) über `audioPlayer.enqueue(…, effects)`; jeder neue Abspielweg muss `config.effects` mitgeben.
 - Bild-LoRAs (`image_loras.rs`): `sd-server` ignoriert `<lora:…>` im Prompt; LoRAs gehen als `lora: [{path, multiplier}]`

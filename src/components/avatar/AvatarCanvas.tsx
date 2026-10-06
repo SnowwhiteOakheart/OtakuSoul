@@ -124,9 +124,11 @@ export const AvatarCanvas: React.FC<AvatarCanvasProps> = ({
     scannedLive2ds,
     currentEmotion,
     setCurrentEmotion,
+    avatarMotions,
+    avatarGesture,
   } = useStoreFields(
     'activeVrmPath', 'activeLive2dPath', 'avatarMode', 'setAvatarMode', 'scannedLive2ds',
-    'currentEmotion', 'setCurrentEmotion',
+    'currentEmotion', 'setCurrentEmotion', 'avatarMotions', 'avatarGesture',
   );
   const { t, tEmotion } = useTranslation();
 
@@ -224,7 +226,7 @@ export const AvatarCanvas: React.FC<AvatarCanvasProps> = ({
             aria-label={t('avatar.mode3d')}
           >
             <Box className="w-3 h-3" />
-            <span className="hidden @[21.5rem]:inline">{t('avatar.mode3d')}</span>
+            <span className="hidden @sm:inline">{t('avatar.mode3d')}</span>
           </button>
 
           <button
@@ -239,7 +241,7 @@ export const AvatarCanvas: React.FC<AvatarCanvasProps> = ({
             aria-label={t('avatar.modeLive2d')}
           >
             <Smile className="w-3 h-3" />
-            <span className="hidden @[21.5rem]:inline">{t('avatar.modeLive2d')}</span>
+            <span className="hidden @sm:inline">{t('avatar.modeLive2d')}</span>
           </button>
 
           <button
@@ -254,7 +256,7 @@ export const AvatarCanvas: React.FC<AvatarCanvasProps> = ({
             aria-label={t('avatar.modeImage')}
           >
             <Image className="w-3 h-3" />
-            <span className="hidden @[21.5rem]:inline">{t('avatar.modeImage')}</span>
+            <span className="hidden @sm:inline">{t('avatar.modeImage')}</span>
           </button>
         </div>
       </div>
@@ -265,6 +267,8 @@ export const AvatarCanvas: React.FC<AvatarCanvasProps> = ({
           modelPath={vrmPath}
           emotion={currentEmotion.vrm_expression}
           isSpeaking={isSpeaking}
+          motions={avatarMotions}
+          gesture={avatarGesture}
         />
       ) : avatarMode === 'live2d' ? (
         live2dPath ? (

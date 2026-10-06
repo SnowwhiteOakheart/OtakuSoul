@@ -135,7 +135,7 @@ export function startMockLlm() {
             ? SUMMARY
             : isTranslation
               ? TRANSLATION
-              : toolReply(request.messages ?? []) ?? REPLY;
+              : (isChat && stats.chatReply) || (toolReply(request.messages ?? []) ?? REPLY);
       for (const [matches, flag, cancelled] of [
         [isRouting, 'stallRouting', 'cancelledRouting'],
         [isArcArchive, 'stallArcArchive', 'cancelledArcArchive'],

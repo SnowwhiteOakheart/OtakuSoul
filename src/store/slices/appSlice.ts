@@ -97,6 +97,7 @@ export const createAppSlice: SliceCreator<AppSlice> = (set, get) => ({
       const models = await api.scanModels();
       const vrms = await api.scanVrmModels();
       set({ scannedModels: models, scannedVrms: vrms });
+      void get().refreshAvatarMotions();
 
       // If settings model path is empty or not in scan, choose first available
       let modelPath = settings.server_config.model_path;

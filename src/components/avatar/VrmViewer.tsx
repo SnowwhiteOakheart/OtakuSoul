@@ -9,6 +9,10 @@ import { audioPlayer } from '../../services/audioPlayer';
 import { clearVrmViewState, frameUpperBody, loadVrmViewState, saveVrmViewState, type VrmViewState } from '../../services/avatarViewState';
 import { translate, useTranslation } from '../../i18n';
 import { errorMessage } from '../../utils/errors';
+import { SILENT_VISEMES, type Visemes } from '../../services/lipSync';
+import type { AvatarMotion } from '../../types';
+import type { MotionRole } from '../../utils/avatarGestures';
+import { loadMotionClip, VrmMotionPlayer } from './vrmMotions';
 
 const DEFAULT_CAMERA_POSITION: [number, number, number] = [0.0, 1.35, 1.0];
 const DEFAULT_CAMERA_TARGET: [number, number, number] = [0.0, 1.25, 0.0];
@@ -17,12 +21,20 @@ interface VrmViewerProps {
   modelPath: string;
   emotion?: 'neutral' | 'happy' | 'angry' | 'sad' | 'surprised' | 'relaxed';
   isSpeaking?: boolean;
+  /** Imported VRMA motions with their use. */
+  motions?: AvatarMotion[];
+  /** Gesture to play; a new `id` starts it again. */
+  gesture?: { role: MotionRole; id: number } | null;
 }
+
+const VISEME_KEYS = Object.keys(SILENT_VISEMES) as (keyof Visemes)[];
 
 export const VrmViewer = ({
   modelPath,
   emotion = 'neutral',
   isSpeaking = false,
+  motions = [],
+  gesture = null,
 }: VrmViewerProps) => {
   const { t } = useTranslation();
   const containerRef = useRef<HTMLDivElement>(null);
@@ -34,6 +46,13 @@ export const VrmViewer = ({
   const emotionRef = useRef(emotion);
   const isSpeakingRef = useRef(isSpeaking);
   const resetViewRef = useRef<(() => void) | null>(null);
+  const [loadedVrm, setLoadedVrm] = useState<VRM | null>(null);
+  const motionPlayerRef = useRef<VrmMotionPlayer | null>(null);
+  // Shown as data attributes: loaded motions and the gesture playing right now.
+  const [motionCount, setMotionCount] = useState(0);
+  const [playingGesture, setPlayingGesture] = useState('');
+  // Only gestures requested after the viewer opened play; an old one is not replayed.
+  const lastGestureRef = useRef(gesture?.id ?? 0);
 
   useEffect(() => {
     emotionRef.current = currentEmotion;
@@ -51,11 +70,12 @@ export const VrmViewer = ({
     setLoading(true);
     setError(null);
     
-    let currentAmplitude = 0;
+    let audioVisemes: Visemes = { ...SILENT_VISEMES };
+    const mouth: Visemes = { ...SILENT_VISEMES };
     let leftArmDirection = 1;
     let rightArmDirection = -1;
-    const cleanupAudio = audioPlayer.onAudioFrame((amp) => {
-      currentAmplitude = amp;
+    const cleanupAudio = audioPlayer.onAudioFrame((_amplitude, visemes) => {
+      audioVisemes = visemes;
     });
 
     // 1. Scene, Camera, Renderer
@@ -196,6 +216,8 @@ export const VrmViewer = ({
 
             vrmRef.current = vrm;
             scene.add(vrm.scene);
+            motionPlayerRef.current = new VrmMotionPlayer(vrm, () => setPlayingGesture(''));
+            setLoadedVrm(vrm);
 
             vrm.scene.updateMatrixWorld(true);
             const head = vrm.humanoid.getRawBoneNode('head');
@@ -241,6 +263,10 @@ export const VrmViewer = ({
     let blinkTimer = 0.0;
     let isBlinking = false;
     let animationFrameId: number;
+    let lookX = 0;
+    let lookY = 0;
+    const poseEuler = new THREE.Euler();
+    const poseQuaternion = new THREE.Quaternion();
 
     const animate = () => {
       animationFrameId = requestAnimationFrame(animate);
@@ -253,64 +279,38 @@ export const VrmViewer = ({
 
       const vrm = vrmRef.current;
       if (vrm) {
-        // A. Breathing animation, Head Tracking & Natural Idle Pose (Arms down)
+        // A. Imported motions first; the procedural pose (breathing, resting arms) fills in
+        // whatever share of the body they do not drive, the head always follows the mouse.
+        const motionPlayer = motionPlayerRef.current;
+        // The mouse look is added on top every frame, so the head starts from rest (or from
+        // the motion, which overwrites it if it animates the head).
+        vrm.humanoid?.getNormalizedBoneNode('head')?.quaternion.identity();
+        motionPlayer?.update(delta);
+        const animated = motionPlayer?.bodyWeight ?? 0;
+        const pose = (name: Parameters<typeof vrm.humanoid.getNormalizedBoneNode>[0], x: number, y: number, z: number) => {
+          const bone = vrm.humanoid.getNormalizedBoneNode(name);
+          if (!bone || animated >= 0.999) return;
+          poseQuaternion.setFromEuler(poseEuler.set(x, y, z));
+          if (animated <= 0.001) bone.quaternion.copy(poseQuaternion);
+          else bone.quaternion.slerp(poseQuaternion, 1 - animated);
+        };
+        lookX = THREE.MathUtils.lerp(lookX, mousePos.x, 0.05);
+        lookY = THREE.MathUtils.lerp(lookY, mousePos.y, 0.05);
         if (vrm.humanoid) {
-          const spine = vrm.humanoid.getNormalizedBoneNode('spine');
-          if (spine) {
-            spine.rotation.x = Math.sin(elapsed * 1.8) * 0.012;
-            spine.rotation.z = Math.sin(elapsed * 0.9) * 0.005;
-          }
-          const chest = vrm.humanoid.getNormalizedBoneNode('chest');
-          if (chest) {
-            chest.rotation.x = Math.sin(elapsed * 1.8 + 0.3) * 0.01;
-            chest.rotation.y = Math.sin(elapsed * 0.9) * 0.008;
-          }
+          const breath = Math.sin(elapsed * 1.8);
+          pose('spine', breath * 0.012, 0, Math.sin(elapsed * 0.9) * 0.005);
+          pose('chest', Math.sin(elapsed * 1.8 + 0.3) * 0.01, Math.sin(elapsed * 0.9) * 0.008, 0);
           const head = vrm.humanoid.getNormalizedBoneNode('head');
-          if (head) {
-            head.rotation.y = THREE.MathUtils.lerp(head.rotation.y, mousePos.x * 0.2, 0.05);
-            head.rotation.x = THREE.MathUtils.lerp(head.rotation.x, -mousePos.y * 0.12, 0.05);
-            head.rotation.z = THREE.MathUtils.lerp(head.rotation.z, -mousePos.x * 0.04, 0.05);
-          }
+          if (head) head.quaternion.multiply(poseQuaternion.setFromEuler(poseEuler.set(-lookY * 0.12, lookX * 0.2, -lookX * 0.04)));
 
-          // Natural Resting Arms (Drop down from T-pose to sides of body)
-          const leftUpperArm = vrm.humanoid.getNormalizedBoneNode('leftUpperArm');
-          if (leftUpperArm) {
-            // Rotate whichever way this model's arm chain points toward the floor.
-            leftUpperArm.rotation.z = -leftArmDirection * (1.25 - Math.sin(elapsed * 1.8) * 0.015);
-            leftUpperArm.rotation.x = 0.12;
-            leftUpperArm.rotation.y = -0.05;
-          }
-
-          const rightUpperArm = vrm.humanoid.getNormalizedBoneNode('rightUpperArm');
-          if (rightUpperArm) {
-            rightUpperArm.rotation.z = -rightArmDirection * (1.25 - Math.sin(elapsed * 1.8) * 0.015);
-            rightUpperArm.rotation.x = 0.12;
-            rightUpperArm.rotation.y = 0.05;
-          }
-
-          const leftLowerArm = vrm.humanoid.getNormalizedBoneNode('leftLowerArm');
-          if (leftLowerArm) {
-            // Elbow naturally bent forward towards waist
-            leftLowerArm.rotation.y = -leftArmDirection * 0.3;
-            leftLowerArm.rotation.x = 0.05;
-          }
-
-          const rightLowerArm = vrm.humanoid.getNormalizedBoneNode('rightLowerArm');
-          if (rightLowerArm) {
-            // Elbow naturally bent forward towards waist
-            rightLowerArm.rotation.y = -rightArmDirection * 0.3;
-            rightLowerArm.rotation.x = 0.05;
-          }
-
-          const leftHand = vrm.humanoid.getNormalizedBoneNode('leftHand');
-          if (leftHand) {
-            leftHand.rotation.y = -leftArmDirection * 0.1;
-          }
-
-          const rightHand = vrm.humanoid.getNormalizedBoneNode('rightHand');
-          if (rightHand) {
-            rightHand.rotation.y = -rightArmDirection * 0.1;
-          }
+          // Resting arms (down from the T-pose), whichever way this model's arm chain points.
+          pose('leftUpperArm', 0.12, -0.05, -leftArmDirection * (1.25 - breath * 0.015));
+          pose('rightUpperArm', 0.12, 0.05, -rightArmDirection * (1.25 - breath * 0.015));
+          // Elbows bent slightly forward towards the waist.
+          pose('leftLowerArm', 0.05, -leftArmDirection * 0.3, 0);
+          pose('rightLowerArm', 0.05, -rightArmDirection * 0.3, 0);
+          pose('leftHand', 0, -leftArmDirection * 0.1, 0);
+          pose('rightHand', 0, -rightArmDirection * 0.1, 0);
         }
 
         // B. Natural Blinking
@@ -343,14 +343,17 @@ export const VrmViewer = ({
           em.setValue('surprised', activeEmo === 'surprised' ? 0.8 : 0.0);
           em.setValue('relaxed', activeEmo === 'relaxed' ? 0.6 : 0.0);
 
-          // D. Talking Viseme (LipSync)
+          // D. Lip sync: mouth shapes from the voice; without audio a generic talking motion.
+          let target: Visemes = SILENT_VISEMES;
           if (audioPlayer.isPlaying()) {
-            em.setValue('aa', currentAmplitude);
+            target = audioVisemes;
           } else if (isSpeakingRef.current) {
-            const talkWeight = (Math.sin(elapsed * 14.0) + 1.0) * 0.35;
-            em.setValue('aa', talkWeight);
-          } else {
-            em.setValue('aa', 0.0);
+            const open = (Math.sin(elapsed * 14.0) + 1.0) * 0.35;
+            target = { ...SILENT_VISEMES, aa: open * 0.7, oh: open * 0.3 };
+          }
+          for (const key of VISEME_KEYS) {
+            mouth[key] = THREE.MathUtils.lerp(mouth[key], target[key], 0.5);
+            em.setValue(key, mouth[key]);
           }
         }
 
@@ -383,6 +386,12 @@ export const VrmViewer = ({
       resetViewRef.current = null;
       cleanupAudio();
       cancelAnimationFrame(animationFrameId);
+      motionPlayerRef.current?.dispose();
+      motionPlayerRef.current = null;
+      vrmRef.current = null;
+      setLoadedVrm(null);
+      setMotionCount(0);
+      setPlayingGesture('');
       window.removeEventListener('resize', handleResize);
       container.removeEventListener('mousemove', handleMouseMove);
       renderer.dispose();
@@ -392,10 +401,52 @@ export const VrmViewer = ({
     };
   }, [modelPath]);
 
+  // Load the motions that have a use for this avatar (clips are retargeted per model).
+  const motionKey = motions.filter((m) => m.role).map((m) => `${m.file}:${m.role}`).join('|');
+  useEffect(() => {
+    if (!loadedVrm) return;
+    let cancelled = false;
+    const used = motions.filter((m) => m.role);
+    void Promise.all(
+      used.map((motion) =>
+        loadMotionClip(motion, loadedVrm).catch((e) => {
+          console.warn(`Bewegung ${motion.file} konnte nicht geladen werden:`, e);
+          return null;
+        }),
+      ),
+    ).then((clips) => {
+      if (cancelled || !motionPlayerRef.current) return;
+      const byRole = new Map<MotionRole, THREE.AnimationClip[]>();
+      clips.forEach((clip, i) => {
+        if (!clip) return;
+        const role = used[i]!.role as MotionRole;
+        byRole.set(role, [...(byRole.get(role) ?? []), clip]);
+      });
+      motionPlayerRef.current.setClips(byRole);
+      setMotionCount(clips.filter(Boolean).length);
+    });
+    return () => {
+      cancelled = true;
+    };
+    // `motionKey` stands for `motions`; a new array with the same content must not reload.
+    // oxlint-disable-next-line react-hooks/exhaustive-deps
+  }, [loadedVrm, motionKey]);
+
+  useEffect(() => {
+    if (!gesture || gesture.id === lastGestureRef.current) return;
+    lastGestureRef.current = gesture.id;
+    if (motionPlayerRef.current?.play(gesture.role)) setPlayingGesture(gesture.role);
+  }, [gesture]);
+
   return (
     <div className="relative w-full h-full flex flex-col items-center justify-center overflow-hidden bg-linear-to-b from-slate-900/40 via-accent-950/20 to-app">
       {/* 3D Canvas Container */}
-      <div ref={containerRef} className="w-full h-full cursor-grab active:cursor-grabbing" />
+      <div
+        ref={containerRef}
+        data-motions={motionCount}
+        data-gesture={playingGesture}
+        className="w-full h-full cursor-grab active:cursor-grabbing"
+      />
 
       {/* Loading Overlay */}
       {loading && (

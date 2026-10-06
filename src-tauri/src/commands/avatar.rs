@@ -26,3 +26,25 @@ pub fn import_live2d_model(
 ) -> Result<crate::modules::live2d::ScannedLive2d, String> {
     crate::modules::live2d::import_live2d_model(&source_path)
 }
+
+#[tauri::command]
+pub fn scan_avatar_motions() -> Vec<crate::modules::avatar_motions::AvatarMotion> {
+    crate::modules::avatar_motions::scan_avatar_motions()
+}
+
+#[tauri::command]
+pub fn import_avatar_motion(
+    source_path: String,
+) -> Result<crate::modules::avatar_motions::AvatarMotion, String> {
+    crate::modules::avatar_motions::import_avatar_motion(&source_path)
+}
+
+#[tauri::command]
+pub fn set_avatar_motion_role(file: String, role: String) -> Result<(), String> {
+    crate::modules::avatar_motions::set_avatar_motion_role(&file, &role)
+}
+
+#[tauri::command]
+pub fn delete_avatar_motion(file: String) -> Result<(), String> {
+    crate::modules::avatar_motions::delete_avatar_motion(&file)
+}

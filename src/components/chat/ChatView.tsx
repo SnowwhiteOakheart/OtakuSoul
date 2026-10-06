@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useRef, useCallback, useMemo } from 'react';
 import { useAppStore, useStoreFields } from '../../store/useAppStore';
 import { api } from '../../services/api';
+import { gestureForReply } from '../../utils/avatarGestures';
 import { AdaptiveHud } from './AdaptiveHud';
 import { SceneImageCard } from './SceneImageCard';
 import { RoleplayMessage } from './RoleplayMessage';
@@ -166,6 +167,9 @@ export const ChatView: React.FC = () => {
             const currentState = useAppStore.getState();
             if (isSubscribed && currentState.generationId === data.generation_id && currentState.activeChatId === state.activeChatId) {
               currentState.setCurrentEmotion(detected);
+              // Body motion: a roleplay action like *winkt* first, else the emotion.
+              const gesture = gestureForReply(data.full_text, detected.vrm_expression);
+              if (gesture) currentState.playAvatarGesture(gesture);
             }
           } catch (e) {
             console.warn('Emotion classification failed:', e);

@@ -45,6 +45,7 @@ import {
   AppPaths,
   ScannedModel,
   ScannedVrm,
+  AvatarMotion,
   AppSettings,
   UserPersona,
   ChatSession,
@@ -732,6 +733,22 @@ export const api = {
 
   scanVrmModels: async (): Promise<ScannedVrm[]> => {
     return await invoke<ScannedVrm[]>('scan_vrm_models');
+  },
+
+  scanAvatarMotions: async (): Promise<AvatarMotion[]> => {
+    return await invoke<AvatarMotion[]>('scan_avatar_motions');
+  },
+
+  importAvatarMotion: async (sourcePath: string): Promise<AvatarMotion> => {
+    return await invoke<AvatarMotion>('import_avatar_motion', { sourcePath });
+  },
+
+  setAvatarMotionRole: async (file: string, role: string): Promise<void> => {
+    await invoke('set_avatar_motion_role', { file, role });
+  },
+
+  deleteAvatarMotion: async (file: string): Promise<void> => {
+    await invoke('delete_avatar_motion', { file });
   },
 
   importVrmModel: async (sourcePath: string): Promise<ScannedVrm> => {
