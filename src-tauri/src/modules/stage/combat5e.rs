@@ -163,18 +163,17 @@ pub fn start_encounter(
     true
 }
 
-/// Ends the fight: enemies leave; after a defeat the party comes to with 1 hit point.
-pub fn end_encounter(state: &mut SceneState, outcome: Option<CombatOutcome>) {
+/// Ends the fight: enemies leave; whoever went down comes to with 1 hit point (until death
+/// saves and stabilizing exist, step 3 of the roadmap).
+pub fn end_encounter(state: &mut SceneState, _outcome: Option<CombatOutcome>) {
     state.combat.is_active = false;
-    if outcome == Some(CombatOutcome::Defeat) {
-        for combatant in state
-            .combat
-            .combatants
-            .iter_mut()
-            .filter(|c| rules5e::is_party(c))
-        {
-            combatant.hp = combatant.hp.max(1);
-        }
+    for combatant in state
+        .combat
+        .combatants
+        .iter_mut()
+        .filter(|c| rules5e::is_party(c))
+    {
+        combatant.hp = combatant.hp.max(1);
     }
     for combatant in &mut state.combat.combatants {
         combatant
@@ -649,7 +648,7 @@ mod tests {
     }
 
     #[test]
-    fn defeat_wakes_the_party_with_one_hit_point() {
+    fn downed_heroes_wake_with_one_hit_point_after_any_end() {
         let mut state = five_e_scene(&[]);
         start_encounter(
             &mut state,
@@ -683,6 +682,33 @@ mod tests {
                 .iter()
                 .all(|c| rules5e::is_party(c) && c.hp == 1)
         );
+        // After a victory too: someone who went down does not stay at 0.
+        let goblin = PlanCombatant {
+            name: "Goblin".into(),
+            monster: None,
+            count: None,
+            hp: 1,
+            role: "enemy".into(),
+        };
+        start_encounter(&mut state, &[goblin], "en");
+        let player = |state: &mut SceneState| {
+            state
+                .combat
+                .combatants
+                .iter_mut()
+                .find(|c| c.role == "player")
+                .unwrap()
+                .hp
+        };
+        state
+            .combat
+            .combatants
+            .iter_mut()
+            .find(|c| c.role == "player")
+            .unwrap()
+            .hp = 0;
+        end_encounter(&mut state, Some(CombatOutcome::Victory));
+        assert_eq!(player(&mut state), 1);
     }
 
     #[test]

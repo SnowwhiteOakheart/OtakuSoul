@@ -3,6 +3,7 @@ import { useStoreFields } from '../../store/useAppStore';
 import { ClockWidget } from './ClockWidget';
 import { DiceRoller } from './DiceRoller';
 import { EncounterTracker } from './EncounterTracker';
+import { Combat5ePanel } from './Combat5ePanel';
 import { PartyHeader } from './PartyHeader';
 import { StageChatLog } from './StageChatLog';
 import { TurnControlBar } from './TurnControlBar';
@@ -435,6 +436,9 @@ export const StageView: React.FC = () => {
 
           {/* Interactive Chat Log */}
           <StageChatLog />
+
+          {/* 5e fight: order, actions and log (engine-driven) */}
+          <Combat5ePanel />
 
           {/* Turn Control Bar (Mode switcher, choice pills, inputs) */}
           <TurnControlBar />

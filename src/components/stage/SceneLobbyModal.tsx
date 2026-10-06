@@ -493,6 +493,11 @@ export const SceneLobbyModal: React.FC<SceneLobbyModalProps> = ({
                             {folderLabel(sc.folder)}
                           </span>
                         )}
+                        {sc.rules_5e && (
+                          <span title={t('sceneRules.fiveE')} className="text-[11px] px-2 py-0.5 rounded-full bg-rose-950/60 border border-rose-500/40 text-rose-200 font-semibold">
+                            5e
+                          </span>
+                        )}
                         {sc.gm_tone && (
                           <span className="text-[11px] px-2 py-0.5 rounded-full bg-accent-950/60 border border-accent-500/30 text-accent-300 font-mono">
                             {sc.gm_tone}

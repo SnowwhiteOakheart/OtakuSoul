@@ -446,6 +446,9 @@ pub struct ScenePreview {
     pub has_progress: bool,
     #[serde(default)]
     pub turn_count: usize,
+    /// The scene uses the 5e rules engine (badge in the lobby).
+    #[serde(default)]
+    pub rules_5e: bool,
 }
 
 /// A piece of live text during a Stage turn (event `stage-stream`); the message with the same

@@ -2,7 +2,8 @@ import React, { useState } from 'react';
 import { StageNpcPanel } from './StageNpcPanel';
 import { useAppStore, useStoreFields } from '../../store/useAppStore';
 import { Heart, Zap, Flame, Shield, User, Coffee, Settings } from 'lucide-react';
-import { useTranslation } from '../../i18n';
+import { tOptional, useTranslation } from '../../i18n';
+import { Character5eSheet } from './Character5eSheet';
 import { ModalOverlay } from '../ui/ModalOverlay';
 import { api } from '../../services/api';
 import { toast } from '../ui/feedback';
@@ -14,8 +15,12 @@ export const PartyHeader: React.FC = () => {
     'stageState', 'restStageParty', 'isProcessingStageTurn'
   );
   const [editingSkillsFor, setEditingSkillsFor] = useState<string | null>(null);
+  const [sheetFor, setSheetFor] = useState<string | null>(null);
+  const { appLanguage } = useStoreFields('appLanguage');
 
   if (!stageState) return null;
+  // 5e scenes: values come from the class (no stress, no free skill editor); the sheet opens instead.
+  const fiveE = stageState.definition.rules?.ruleset === '5e';
 
   const combatants = stageState.combat?.combatants || [];
   const partyCombatants = combatants.filter(
@@ -47,27 +52,31 @@ export const PartyHeader: React.FC = () => {
                 key={member.id}
                 className="flex items-center gap-2.5 px-3 py-1.5 rounded-xl bg-app/60 border border-slate-800 shadow-sm"
               >
-                <div
-                  className={`w-7 h-7 rounded-lg flex items-center justify-center font-bold text-xs ${
+                <button
+                  type="button"
+                  disabled={!fiveE || !member.stats5e}
+                  onClick={() => setSheetFor(member.id)}
+                  aria-label={fiveE ? t('fight.sheet.open', { name: member.name }) : member.name}
+                  className={`w-7 h-7 rounded-lg flex items-center justify-center font-bold text-xs disabled:cursor-default ${
                     isPlayer
                       ? 'bg-blue-600/30 text-blue-300 border border-blue-500/40'
                       : 'bg-accent-600/30 text-accent-300 border border-accent-500/40'
-                  }`}
+                  } ${fiveE ? 'hover:ring-2 hover:ring-accent-400' : ''}`}
                 >
                   {isPlayer ? <User className="w-3.5 h-3.5" /> : member.name.charAt(0)}
-                </div>
+                </button>
 
                 <div className="flex flex-col gap-1 min-w-[120px]">
                   <div className="flex items-center justify-between text-xs font-semibold">
                     <span className="text-slate-200 truncate max-w-[90px]">{member.name}</span>
                     <div className="flex items-center gap-2">
-                      <button
+                      {!fiveE && <button
                         onClick={() => setEditingSkillsFor(member.id)}
                         className="text-slate-400 hover:text-slate-300 transition-colors"
                         title="Fertigkeiten"
                       >
                         <Settings className="w-3 h-3" />
-                      </button>
+                      </button>}
                       <span className="text-[11px] text-slate-400 font-mono">
                         {member.hp}/{member.max_hp}
                       </span>
@@ -98,8 +107,8 @@ export const PartyHeader: React.FC = () => {
                     </div>
                   </div>
 
-                  {/* Stress Bar */}
-                  <div
+                  {/* Stress Bar (narrative scenes) */}
+                  {!fiveE && <div
                     className="flex items-center gap-1.5"
                     role="meter"
                     aria-label={t('stage.stress', { current: member.stress, max: member.max_stress })}
@@ -114,7 +123,7 @@ export const PartyHeader: React.FC = () => {
                         style={{ width: `${stressPercent}%` }}
                       />
                     </div>
-                  </div>
+                  </div>}
                 </div>
 
                 {/* Conditions badges */}
@@ -126,7 +135,7 @@ export const PartyHeader: React.FC = () => {
                         className="px-1.5 py-0.2 rounded bg-amber-950/80 border border-amber-500/30 text-[11px] text-amber-300 font-medium"
                         title={t('stage.conditionRounds', { name: cond.name, rounds: cond.rounds_remaining })}
                       >
-                        {cond.name} · {cond.rounds_remaining}
+                        {tOptional(`fight.condition.${cond.name}`, cond.name, appLanguage)} · {cond.rounds_remaining}
                       </span>
                     ))}
                   </div>
@@ -161,6 +170,10 @@ export const PartyHeader: React.FC = () => {
         </div>
       </div>
     </div>
+      {sheetFor && (() => {
+        const member = displayParty.find((c) => c.id === sheetFor);
+        return member ? <Character5eSheet member={member} onClose={() => setSheetFor(null)} /> : null;
+      })()}
       {editingSkillsFor && (
         <SkillsModal
           combatantId={editingSkillsFor}

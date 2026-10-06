@@ -21,6 +21,14 @@ import { reportFailure } from '../reportFailure';
 import { toast } from '../../components/ui/feedback';
 import { translate } from '../../i18n';
 
+/** A 5e fight is running and the current combatant is not the player's to command. */
+export function combatAwaitsEngine(state: SceneState): boolean {
+  if (state.definition.rules?.ruleset !== '5e' || !state.combat.is_active) return false;
+  const actor = state.combat.combatants[state.combat.current_turn_index];
+  if (!actor) return false;
+  return actor.role !== 'player' && !(actor.role === 'companion' && state.definition.rules.control_companions);
+}
+
 /** Soul Stage: scenes, turns, dice, world state, clocks and encounters. */
 
 /** Turns Auto-Play runs on its own, and the pause between them. */
@@ -91,6 +99,8 @@ export interface StageSlice {
   deleteStageScene: (sceneId: string) => Promise<void>;
   exportStageMarkdown: (sceneId: string) => Promise<string | null>;
   runStageTurn: (userInput: string, turnMode?: string, whisperTarget?: string, forceActor?: string) => Promise<void>;
+  /** 5e fight: the player's action (`attack:<attack>:<target>` or `dodge`), or none to continue. */
+  runStageCombat: (action?: string) => Promise<void>;
   undoStageTurn: () => Promise<void>;
   restStageParty: (restType: 'short' | 'long') => Promise<void>;
   consumeStageInventoryItem: (itemId: string) => Promise<void>;
@@ -450,10 +460,28 @@ export const createStageSlice: SliceCreator<StageSlice> = (set, get) => ({
       if (get().stageReadAloud) {
         void speakStageMessages(updated.chat_log.slice(current.chat_log.length), get().availableCharacters);
       }
+      // A 5e fight just started and others act first: the engine plays their turns.
+      if (combatAwaitsEngine(updated)) await get().runStageCombat();
     } catch (e) {
       console.error('Failed to run stage turn:', e);
       set({ isProcessingStageTurn: false, stageLive: [], stageState: current });
       throw e;
+    }
+  },
+
+  runStageCombat: async (action?: string) => {
+    const current = get().stageState;
+    if (!current) return;
+    set({ isProcessingStageTurn: true, stageLive: [] });
+    try {
+      const updated = await api.runStageCombat(current.definition.id, action);
+      set({ stageState: updated, isProcessingStageTurn: false, stageLive: [] });
+      if (get().stageReadAloud) {
+        void speakStageMessages(updated.chat_log.slice(current.chat_log.length), get().availableCharacters);
+      }
+    } catch (e) {
+      set({ isProcessingStageTurn: false, stageLive: [] });
+      reportFailure('Failed to run combat turn:', e);
     }
   },
 

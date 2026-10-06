@@ -1811,4 +1811,14 @@ veraltet und sind korrigiert: `chat-sidebar-errors` las die Sitzung, bevor der e
   Eula (MMD, 7z entpackt) ohne Befund. A010 (GLB, MakeHuman-Rig) brachte drei Verbesserungen: Knochen-Aliase für
   MakeHuman/Unreal/Blender/VRoid, Größenangleich für Exporte in anderen Einheiten (Bounds über das Skelett) und eine
   Studio-Umgebung für PBR-Materialien. Prüfskript `e2e/local-avatars.mjs`.
+- [x] **Soul Stage 5e – Schritt 1 (Regelkern, Kampf ohne Brett, `Roadmap_DND.md`):** Szenen können mit 5e-Regeln
+  (SRD 5.1) laufen. Die Regel-Engine (`stage/rules5e`) entscheidet alle Zahlen: Initiative, Angriffe gegen RK mit
+  Vorteil/Nachteil, Krits und Patzer, Schaden mit Resistenz/Verwundbarkeit, Ausweichen, Flucht, Kampfende. Monster
+  steuert die Engine-KI, Gefährten wählen per LLM eine erlaubte Aktion (sonst Ersatzwahl), der GM startet Kämpfe nur mit
+  SRD-Monster-IDs und erzählt den Kampfbericht, ohne ihn zu ändern; LP-Angaben des LLM werden ignoriert.
+  Oberfläche: Kampfpanel mit Reihenfolge, Aktionsleiste und übersetztem Kampflog, Gegner nur mit Zustandsstufe,
+  kompakter Charakterbogen, Regelwerk/Klassen/„Gefährten selbst steuern“ im Szenen-Editor, 5e-Kennzeichen in der Lobby.
+  Daten: 10 SRD-Monster, 4 Klassen-Vorlagen (de/en/ru), SRD-Namensnennung in den READMEs. E2E `stage-5e.mjs`
+  (zwei Goblins bis zum Sieg, LP nur aus Engine-Schaden). Bewusstlose wachen nach dem Kampf mit 1 LP auf, bis Schritt 3
+  Todesrettungswürfe bringt.
 

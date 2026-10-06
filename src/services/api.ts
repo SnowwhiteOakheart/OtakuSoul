@@ -489,6 +489,11 @@ export const api = {
     return await invoke<string>('stage_get_background_image', { name });
   },
 
+  /** 5e fight: the player's action id, or none to let the engine play the other turns. */
+  runStageCombat: async (sceneId: string, action?: string): Promise<SceneState> => {
+    return await invoke<SceneState>('run_stage_combat', { sceneId, action: action ?? null });
+  },
+
   runStageTurn: async (request: StageTurnRequest): Promise<SceneState> => {
     return await invoke<SceneState>('run_stage_turn', { request });
   },

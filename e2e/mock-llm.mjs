@@ -11,6 +11,8 @@ export const TRANSLATION = '*lächelt* "Testübersetzung: Das ist eine gute Frag
 export const STAGE_NARRATION =
   'Der Nebel lichtet sich, und vor euch ragt ein uraltes Tor aus schwarzem Stein auf. Runen glimmen schwach in der Dämmerung, ' +
   'und irgendwo hinter den Mauern schlägt eine Glocke dreimal.';
+/** Narration of a 5e combat report. */
+export const COMBAT_NARRATION = 'Stahl blitzt im Fackellicht, der Kampf tobt weiter.';
 export const SUMMARY = 'Testzusammenfassung: Kai und die Figur planten einen Ausflug zum Fushimi-Inari-Schrein.';
 
 /** 0.1 s of silence, 8 kHz mono. */
@@ -88,6 +90,11 @@ export function startMockLlm() {
       const isAudit = system.includes('[SOUL STAGE — CONSISTENCY]') || system.includes('[STAGE — CONSISTENCY]');
       if (isArcArchive) { stats.arcArchive = (stats.arcArchive ?? 0) + 1; stats.lastArcArchivePrompt = system; }
       if (isAudit) { stats.audit = (stats.audit ?? 0) + 1; stats.lastAuditPrompt = system; }
+      // 5e fights: a companion picks one listed action id; the narrator retells the engine's report.
+      const isCombatAction = system.includes('[STAGE — COMBAT ACTION]');
+      const isCombatReport = system.includes('[STAGE — COMBAT REPORT]');
+      if (isCombatAction) stats.combatActions = (stats.combatActions ?? 0) + 1;
+      if (isCombatReport) { stats.combatReports = (stats.combatReports ?? 0) + 1; stats.lastCombatReport = system; }
       const isPlanner = system.includes('GAME MASTER PLANNER');
       const isNarrator = system.includes('GAME MASTER NARRATOR');
       if (isPlanner) { stats.stagePlanner += 1; stats.lastPlannerMessages = request.messages ?? []; }
@@ -115,7 +122,10 @@ export function startMockLlm() {
         ? JSON.stringify(stats.memoryRouterResult)
         : isArcArchive ? 'ARC_SUMMARY: Das Tor wurde geöffnet, der Wächter ist frei.'
         : isAudit ? JSON.stringify(stats.auditResult ?? { prune_keys: [], updated_facts: {} })
-        : isRouting ? JSON.stringify({ next_actor: stats.routeTo ?? 'PLAYER' }) : isStageSummary ? stageSummary : isPlanner
+        : isRouting ? JSON.stringify({ next_actor: stats.routeTo ?? 'PLAYER' }) : isStageSummary ? stageSummary
+        : isCombatAction ? (system.match(/^(attack:\S+) —/m)?.[1] ?? 'dodge')
+        : isCombatReport ? COMBAT_NARRATION
+        : isPlanner
         ? JSON.stringify({
             narration_plan: 'Ein altes Tor taucht aus dem Nebel auf.',
             next_actor: stats.spawnNpc?.name ?? null,
@@ -126,6 +136,7 @@ export function startMockLlm() {
             lore_card_updates: stats.loreUpdates ?? [],
             spawn_npcs: stats.spawnNpc ? [stats.spawnNpc] : [],
             despawn_npcs: stats.despawnNpc ? [stats.despawnNpc] : [],
+            ...(stats.stageEncounter ? { encounter: stats.stageEncounter } : {}),
             resource_delta: { target: 'PLAYER', hp_delta: -5, stress_delta: 10 },
             condition_updates: [{ target: 'PLAYER', add: 'Erschöpft', turns: 3 }],
           })

@@ -106,15 +106,15 @@ Jeder Schritt endet mit einem **„Fertig, wenn …“**, das per E2E geprüft w
 - [x] Patch-Reste `stage/models.rs|scenes.rs .orig/.rej` entfernt, `*.orig`/`*.rej` ignoriert.
 - [x] `dice.rs`: Fehlertexte als i18n-Codes; Dokukommentar korrigiert.
 
-### ⚔️ Schritt 1 – Regelkern: ein Kampf ohne Brett
+### ✅ Schritt 1 – Regelkern: ein Kampf ohne Brett
 
 Ziel: Eine 5e-Szene, in der der GM eine Begegnung auslöst und der Kampf vollständig von der Engine entschieden wird.
 
 - [x] `ruleset` in `SceneDefinition` (`rules: SceneRules`, fehlt = Erzähl-Szene), Klassen je Gruppenmitglied.
-- [ ] Szenen-Editor und Lobby: Regelwerk, Klassen und „Gefährten selbst steuern“ einstellen/anzeigen.
+- [x] Szenen-Editor und Lobby: Regelwerk, Klassen und „Gefährten selbst steuern“ einstellen/anzeigen.
 - [x] `Stats5e` mit abgeleiteten Werten (Modifikator ⌊(Wert−10)/2⌋, Übungsbonus nach Stufe, passive Wahrnehmung).
 - [x] Würfel: Vorteil/Nachteil (2W20, höherer/niedrigerer), injizierbarer Zufall.
-- [ ] Anzeige von Vorteil/Nachteil im `DiceRoller`.
+- [x] Anzeige von Vorteil/Nachteil im Kampflog (beide W20 und Modus); der freie `DiceRoller` der Erzähl-Szenen bleibt unverändert.
 - [x] SRD-Daten v1: ~10 Monster (Goblin, Kobold, Wolf, Skelett, Zombie, Bandit, Riesenratte, Ork, Ghul, Schatten),
   Klassen-Vorlagen Stufe 1 für Kämpfer, Magier, Schurke, Kleriker (ohne Zauber, nur Waffen/Zaubertrick-Angriff).
 - [x] Kampfablauf: Initiative (W20+GES), Reihenfolge, Zug mit Aktion/Bonusaktion/Bewegung (Bewegung abstrakt), Angriff
@@ -122,9 +122,9 @@ Ziel: Eine 5e-Szene, in der der GM eine Begegnung auslöst und der Kampf vollst�
 - [x] Monster-KI v1: Ziel nach Bedrohung/niedrigster RK, bester Angriff, Flucht unter 25 % LP (je Monster-Typ abschaltbar).
 - [x] Gefährten-Aktion: Liste erlaubter Aktionen → LLM wählt ID; Fallback-Heuristik.
 - [x] GM-Vertrag: Begegnung per Monster-ID, Erzählung aus `CombatEvent`-Kampfbericht; LLM-Zahlen werden ignoriert.
-- [ ] UI: Aktionsleiste im Kampf (Angriff → Ziel, Ausweichen, Spurt, Rückzug), Kampflog aus Events,
+- [x] UI: Aktionsleiste im Kampf (Angriff → Ziel, Ausweichen, Spurt, Rückzug), Kampflog aus Events,
   kompakter Bogen (Attribute, RK, LP, Angriffe) per Klick im Party-Header.
-- [ ] Tests: Rust (Modifikatoren, Vorteil, Angriff/Krit, Initiative, KI-Zielwahl, Seed-Kampf bis Ende), E2E (5e-Szene,
+- [x] Tests: Rust (Modifikatoren, Vorteil, Angriff/Krit, Initiative, KI-Zielwahl, Seed-Kampf bis Ende), E2E (5e-Szene,
   Begegnung, drei Züge, Sieg).
 
 **Fertig, wenn:** Spieler und ein Gefährte besiegen zwei Goblins; jede Zahl im Log stammt aus der Engine, das LLM

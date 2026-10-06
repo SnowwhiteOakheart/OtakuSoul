@@ -157,6 +157,10 @@ Hub). Integrationen → Bildgenerierung enthält nur Studio und Galerie.
   `run_stage_combat(scene_id, action)` (Sperre `stage_turn`, Snapshot) führt die Spieleraktion aus und spielt Monster
   (Engine-KI) und Gefährten (LLM wählt eine Aktions-ID, „[STAGE — COMBAT ACTION]“, sonst Ersatzwahl) bis zum nächsten
   Spielerzug; Ereignisse landen in `combat.events`, der GM erzählt sie („[STAGE — COMBAT REPORT]“) ohne sie zu ändern.
+  Frontend: `Combat5ePanel.tsx` (Abenteuer-Reiter), `stageSlice.runStageCombat` + `combatAwaitsEngine` (nach einem
+  Rundenzug spielt die Engine automatisch weiter), Log-Texte in `utils/combatEvents.ts` (`fight.*`), Bogen
+  `Character5eSheet.tsx`, Regeln im `SceneCreateModal` (`sceneRules.*`). Mock: `stats.stageEncounter` startet einen
+  Kampf, „[STAGE — COMBAT ACTION]“ antwortet mit der ersten `attack:`-ID.
 - Stimmeffekte: `VoiceConfig.effects` (`VoiceEffects`), gerendert in `services/voiceEffects.ts` (OfflineAudioContext, Tonhöhe per
   WSOLA) über `audioPlayer.enqueue(…, effects)`; jeder neue Abspielweg muss `config.effects` mitgeben.
 - Bild-LoRAs (`image_loras.rs`): `sd-server` ignoriert `<lora:…>` im Prompt; LoRAs gehen als `lora: [{path, multiplier}]`

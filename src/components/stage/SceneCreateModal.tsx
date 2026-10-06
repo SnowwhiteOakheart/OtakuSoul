@@ -1,12 +1,72 @@
 import React, { startTransition, useActionState, useEffect, useState } from 'react';
 import { useStoreFields } from '../../store/useAppStore';
-import { SceneDefinition } from '../../types';
+import type { SceneDefinition, SceneRules } from '../../types';
 import { X, Sparkles, MapPin, Sun, UserCheck } from 'lucide-react';
 import { ModalOverlay } from '../ui/ModalOverlay';
 import { translate, useTranslation } from '../../i18n';
 import { open } from '@tauri-apps/plugin-dialog';
 import { api } from '../../services/api';
 import { errorMessage } from '../../utils/errors';
+
+const FIVE_E_CLASSES = ['fighter', 'wizard', 'rogue', 'cleric'] as const;
+
+/** Rules of the scene: narrative or the 5e engine with a class per party member. */
+const SceneRulesFields: React.FC<{ rules: SceneRules | null; party: string[]; onChange: (rules: SceneRules | null) => void }> = ({ rules, party, onChange }) => {
+  const { t } = useTranslation();
+  const fiveE = rules?.ruleset === '5e';
+  const classes = rules?.hero_classes ?? {};
+  const setClass = (member: string, classId: string) =>
+    rules && onChange({ ...rules, hero_classes: { ...rules.hero_classes, [member]: classId } });
+  return (
+    <fieldset className="space-y-2 p-3 bg-app/60 border border-slate-800 rounded-xl text-xs">
+      <legend className="px-1 font-semibold text-slate-300">{t('sceneRules.title')}</legend>
+      <label htmlFor="scene-ruleset" className="block text-slate-400">{t('sceneRules.ruleset')}</label>
+      <select
+        id="scene-ruleset"
+        value={fiveE ? '5e' : 'standard'}
+        onChange={(e) =>
+          onChange(e.target.value === '5e' ? { ruleset: '5e', hero_classes: rules?.hero_classes ?? {}, control_companions: rules?.control_companions ?? false } : null)
+        }
+        className="w-full p-2 bg-app border border-slate-700 rounded-xl"
+      >
+        <option value="standard">{t('sceneRules.standard')}</option>
+        <option value="5e">{t('sceneRules.fiveE')}</option>
+      </select>
+      {fiveE && (
+        <>
+          <p className="text-slate-400">{t('sceneRules.fiveEHint')}</p>
+          {['player', ...party].map((member) => (
+            <div key={member} className="flex items-center gap-2">
+              <label htmlFor={`scene-class-${member}`} className="w-32 truncate text-slate-300">
+                {member === 'player' ? t('sceneRules.you') : member}
+              </label>
+              <select
+                id={`scene-class-${member}`}
+                value={classes[member] ?? ''}
+                onChange={(e) => setClass(member, e.target.value)}
+                className="flex-1 p-1.5 bg-app border border-slate-700 rounded-lg"
+              >
+                <option value="">{t('sceneRules.classAuto')}</option>
+                {FIVE_E_CLASSES.map((id) => (
+                  <option key={id} value={id}>{t(`sceneRules.class.${id}`)}</option>
+                ))}
+              </select>
+            </div>
+          ))}
+          <label className="flex items-center gap-2 text-slate-300">
+            <input
+              type="checkbox"
+              checked={rules?.control_companions ?? false}
+              onChange={(e) => rules && onChange({ ...rules, control_companions: e.target.checked })}
+              className="w-4 h-4 accent-accent-600"
+            />
+            {t('sceneRules.controlCompanions')}
+          </label>
+        </>
+      )}
+    </fieldset>
+  );
+};
 
 interface SceneCreateModalProps {
   isOpen: boolean;
@@ -36,6 +96,7 @@ export const SceneCreateModal: React.FC<SceneCreateModalProps> = ({
   const [narratorStyle, setNarratorStyle] = useState(() => definition?.narrator_style ?? translate('sceneNew.narratorStyleDefault'));
   const [persona, setPersona] = useState(() => definition?.persona ?? translate('sceneNew.personaDefault'));
   const [diceEnabled, setDiceEnabled] = useState(definition?.dice_rolls_enabled ?? true);
+  const [rules, setRules] = useState<SceneRules | null>(definition?.rules ?? null);
 
   const [lorebooks, setLorebooks] = useState<string[]>(definition?.lorebook ?? []);
   const [actorDepth, setActorDepth] = useState(definition?.max_actor_depth ?? 3);
@@ -109,6 +170,7 @@ export const SceneCreateModal: React.FC<SceneCreateModalProps> = ({
       starting_ambient: ambient,
       lock_bg: lockBg,
       disable_ambient: disableAmbient,
+      rules,
       created_at: definition?.created_at ?? new Date().toISOString(),
       last_played: definition?.last_played ?? new Date().toISOString(),
     };
@@ -393,6 +455,8 @@ export const SceneCreateModal: React.FC<SceneCreateModalProps> = ({
               {t('sceneNew.dice')}
             </label>
           </div>
+
+          <SceneRulesFields rules={rules} party={selectedParty} onChange={setRules} />
 
           {submitError && (
             <p role="alert" className="rounded-lg border border-rose-500/40 bg-rose-500/10 px-3 py-2 text-xs text-rose-200">

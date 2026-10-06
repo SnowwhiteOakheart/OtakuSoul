@@ -330,6 +330,7 @@ pub(super) fn parse_scene_file_preview(
             last_played: state.definition.last_played.clone(),
             has_progress,
             turn_count,
+            rules_5e: state.definition.is_5e(),
         });
     }
 
@@ -366,6 +367,7 @@ pub(super) fn parse_scene_file_preview(
             last_played: def.last_played.clone(),
             has_progress: false,
             turn_count: 0,
+            rules_5e: def.is_5e(),
         });
     }
 

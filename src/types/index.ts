@@ -474,6 +474,7 @@ export interface ScenePreview {
   last_played?: string | null;
   has_progress?: boolean;
   turn_count?: number;
+  rules_5e?: boolean;
 }
 
 export interface SceneDefinition {
