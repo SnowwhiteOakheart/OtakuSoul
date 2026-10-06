@@ -1760,4 +1760,11 @@ veraltet und sind korrigiert: `chat-sidebar-errors` las die Sitzung, bevor der e
   samt Lippensynchronisation verlangen.
 - ~~**Spracherkennung über CrispASR**~~ – gestrichen (06.10.2026): Ein CrispASR-Server lädt nur ein Modell; STT bräuchte
   einen zweiten Prozess mit zusätzlichem VRAM. Whisper (`whisper-rs`) bleibt.
+- [x] **Prüfung der Befehlsaufrufe statt tauri-specta:** `src/test/commandCheck.test.ts` liest alle `#[tauri::command]`
+  aus Rust, die Registrierung in `generate_handler!` und alle `invoke(…)` im Frontend und meldet unbekannte oder nicht
+  registrierte Befehle, falsche Argumentnamen (camelCase) und fehlende Pflichtargumente. Alternativen geprüft:
+  tauri-specta 2.0 (seit Jahren RC, würde den Umstieg aller ts-rs-Typen verlangen), TauRPC (baut ebenfalls auf specta,
+  Umbau aller Befehle), tauri-bindgen (experimentell). Gleich gefunden und behoben: `stage_set_combatant_skill` war
+  nicht registriert – Fertigkeitswerte der Stage-Gruppe ließen sich nie speichern; der Dialog übernimmt jetzt auch die
+  neu geladene Szene und meldet Fehler.
 

@@ -93,6 +93,8 @@ Hub). Integrationen → Bildgenerierung enthält nur Studio und Galerie.
   damit `OTAKUSOUL_HOME` auch den Webview-Speicher umlenkt (`<home>/webview`); der E2E-Harness prüft das per Marker.
 - Bei gesperrter Desktop-Sitzung können WebKit-Screenshots und Animationsabfragen hängen. E2E dann unter
   einem separaten Xvfb-Display ausführen (`xvfb-run npm run e2e`); die Desktop-Sperre nicht verändern.
+- Befehlsaufrufe: `src/test/commandCheck.test.ts` gleicht jedes `invoke('…', {…})` mit den Rust-Signaturen und
+  `generate_handler!` ab (camelCase-Argumente, Pflichtargumente) – neue Befehle immer registrieren.
 - Neue Rust-Felder in Typen, die auch handgeschrieben in `src/types/index.ts` stehen: `src/types/wireCheck.ts` meldet
   Abweichungen; dort und in `index.ts` nachziehen.
 - Tauri-Listener mit `isSubscribed`-Guard (StrictMode), sonst doppelte Tokens.

@@ -21,6 +21,7 @@
 
 ## 3. Technik & Tests
 
-- [ ] Command-Wrapper in `api.ts` typsicher erzeugen, sobald `tauri-specta` eine stabile 2.0 hat.
+- [ ] Umstieg auf erzeugte Command-Wrapper (`tauri-specta`), falls es eine stabile 2.0 gibt (bis dahin prüft
+  `src/test/commandCheck.test.ts` die Aufrufe; Stand 06.10.2026: 2.0.0-rc.25).
 - [ ] Wackeligen E2E-Test beobachten: `chat-sidebar-errors` scheiterte einmal an einem Entwurfsvergleich und bestand
   danach wiederholt.
