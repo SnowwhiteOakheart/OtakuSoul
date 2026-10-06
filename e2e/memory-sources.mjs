@@ -67,8 +67,9 @@ try {
   const forget = await browser.$('button[aria-label="Vergessen"]');
   await forget.waitForEnabled({ timeout: 5000 });
   await jsClick(forget);
-  await jsClick(await browser.$('[role="dialog"]').$('button=Vergessen'));
-  await browser.waitUntil(() => sql(`SELECT count(*) FROM soul_episodic_memory WHERE id = ${memoryId};`) === '0', { timeout: 5000, timeoutMsg: 'Vergessen wirkt nicht' });
+  // No dialog: the memory disappears, the toast offers "Undo", then it is forgotten.
+  await browser.$('div[role="note"]').waitForExist({ reverse: true, timeout: 5000 }).catch(() => {});
+  await browser.waitUntil(() => sql(`SELECT count(*) FROM soul_episodic_memory WHERE id = ${memoryId};`) === '0', { timeout: 15_000, timeoutMsg: 'Vergessen wirkt nicht' });
   const actions = sql(`SELECT group_concat(action, ',') FROM (SELECT action FROM soul_memory_history WHERE memory_id = ${memoryId} ORDER BY id);`);
   assert.equal(actions, 'created,source_changed,confirmed,pinned,forgotten');
   console.log('Soul Memory: Herkunft, Quelle, Prüfen nach Nachrichtenänderung, Anheften, Vergessen und Verlauf bestanden.');

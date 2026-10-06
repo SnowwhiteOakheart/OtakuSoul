@@ -10,6 +10,17 @@ import type {
   SoulMemoryPipelineResult,
 } from '../../types';
 import type { SliceCreator } from '../storeTypes';
+import { toast } from '../../components/ui/feedback';
+import { reportFailure } from '../reportFailure';
+
+/** A forgotten memory can be restored this long (as long as the undo toast stays). */
+const UNDO_FORGET_MS = 8000;
+/** Memories forgotten but still restorable; overviews leave them out until then. */
+const pendingForgets = new Set<number>();
+const withoutPending = (overview: CognitiveOverview): CognitiveOverview =>
+  pendingForgets.size === 0
+    ? overview
+    : { ...overview, recent_memories: overview.recent_memories.filter((m) => !pendingForgets.has(m.id)) };
 import { trackTask } from './taskSlice';
 
 /** Cognitive soul memory: psychology, relationship, diary, reflection and memory backups. */
@@ -114,7 +125,7 @@ export const createMemorySlice: SliceCreator<MemorySlice> = (set, get) => {
       set({ isMemoryLoading: true });
       try {
         const overview = await api.getCognitiveOverview(cid, uid);
-        if (isCurrent()) set({ cognitiveOverview: overview, memoryOverviewError: null });
+        if (isCurrent()) set({ cognitiveOverview: withoutPending(overview), memoryOverviewError: null });
       } catch (e) {
         console.error('Failed to fetch cognitive overview:', e);
         if (isCurrent()) set({ memoryOverviewError: errorMessage(e) });
@@ -175,10 +186,32 @@ export const createMemorySlice: SliceCreator<MemorySlice> = (set, get) => {
     },
 
     forgetMemory: async (id) => {
+      // Hidden at once, forgotten after the undo window (the toast offers "Undo").
       const cid = get().activeCharacter?.id;
       if (!cid) throw new Error(translate('int.noCharacter'));
-      await api.forgetEpisodicMemory(cid, id);
-      await get().fetchCognitiveOverview();
+      if (pendingForgets.has(id)) return;
+      pendingForgets.add(id);
+      const overview = get().cognitiveOverview;
+      if (overview) set({ cognitiveOverview: withoutPending(overview) });
+      const commit = async () => {
+        try {
+          await api.forgetEpisodicMemory(cid, id);
+        } catch (e) {
+          reportFailure('Failed to forget memory:', e);
+        } finally {
+          pendingForgets.delete(id);
+          if (get().activeCharacter?.id === cid) await get().fetchCognitiveOverview();
+        }
+      };
+      const timer = setTimeout(() => void commit(), UNDO_FORGET_MS);
+      toast.info(translate('memory.memoryForgotten'), {
+        label: translate('common.undo'),
+        onClick: () => {
+          clearTimeout(timer);
+          pendingForgets.delete(id);
+          if (get().activeCharacter?.id === cid) void get().fetchCognitiveOverview();
+        },
+      });
     },
 
     setMemoryPinned: async (id, pinned) => {

@@ -3,7 +3,7 @@ import { AlertTriangle, Check, History, Link2, Pencil, Pin, PinOff, Star, Trash2
 import { api } from '../../../services/api';
 import { useAppStore } from '../../../store/useAppStore';
 import { translate, useTranslation, type TranslationKey } from '../../../i18n';
-import { confirmDialog, toast } from '../../ui/feedback';
+import { toast } from '../../ui/feedback';
 import { errorMessage } from '../../../utils/errors';
 import type { EpisodicMemory, MemoryChange } from '../../../types';
 
@@ -50,15 +50,8 @@ export const MemoryItem = ({ memory }: { memory: EpisodicMemory }) => {
     }
   };
 
-  const forget = async () => {
-    const confirmed = await confirmDialog({
-      title: translate('memory.forgetTitle'),
-      message: translate('memory.forgetText', { content: memory.content.slice(0, 120) }),
-      confirmLabel: translate('memory.forget'),
-      tone: 'danger',
-    });
-    if (confirmed) await run(() => store().forgetMemory(memory.id), 'memory.memoryForgotten');
-  };
+  // No confirmation: the toast offers "Undo" for a few seconds.
+  const forget = () => void run(() => store().forgetMemory(memory.id));
 
   const toggleHistory = async () => {
     if (history) return setHistory(null);

@@ -18,6 +18,8 @@ import type {
 } from '../../types';
 import type { SliceCreator } from '../storeTypes';
 import { reportFailure } from '../reportFailure';
+import { toast } from '../../components/ui/feedback';
+import { translate } from '../../i18n';
 
 /** Soul Stage: scenes, turns, dice, world state, clocks and encounters. */
 
@@ -277,6 +279,17 @@ export const createStageSlice: SliceCreator<StageSlice> = (set, get) => ({
     try {
       const updated = await api.deleteStageTurnMessage(current.definition.id, messageId);
       set({ stageState: updated });
+      // Deleting stored a snapshot; "Undo" returns to it while nothing else changed the scene.
+      toast.info(translate('stage.messageDeleted'), {
+        label: translate('common.undo'),
+        onClick: () => {
+          if (get().stageState !== updated || get().isProcessingStageTurn) {
+            toast.info(translate('stage.undoTooLate'));
+            return;
+          }
+          void get().undoStageTurn();
+        },
+      });
     } catch (e) {
       console.error('Failed to delete stage turn message:', e);
       throw e;

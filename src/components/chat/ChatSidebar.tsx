@@ -16,7 +16,7 @@ import {
   ChevronRight,
 } from 'lucide-react';
 import { translate, useTranslation, type TranslationKey } from '../../i18n';
-import { confirmDialog, toast } from '../ui/feedback';
+import { toast } from '../ui/feedback';
 import { errorMessage } from '../../utils/errors';
 
 interface ChatSidebarProps {
@@ -361,15 +361,10 @@ export const ChatSidebar: React.FC<ChatSidebarProps> = ({ isOpen, onClose }) => 
                           <Edit2 className="w-3 h-3" />
                         </button>
                         <button
-                          onClick={async (e) => {
+                          onClick={(e) => {
                             e.stopPropagation();
-                            const confirmed = await confirmDialog({
-                              title: translate('confirm.deleteChatTitle', { title: session.title }),
-                              message: translate('confirm.deleteChatText'),
-                              confirmLabel: translate('common.delete'),
-                              tone: 'danger',
-                            });
-                            if (confirmed) deleteChatSession(session.id);
+                            // No confirmation: the toast offers "Undo" for a few seconds.
+                            void deleteChatSession(session.id);
                           }}
                           className="p-1 text-slate-400 hover:text-rose-400 transition-colors"
                           title={t('common.delete')}

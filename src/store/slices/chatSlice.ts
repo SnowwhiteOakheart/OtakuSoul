@@ -98,6 +98,10 @@ export interface ChatSlice {
 /** A deleted message can be restored this long (the undo toast stays as long). */
 const UNDO_DELETE_MS = 8000;
 
+/** Chats deleted but still restorable; lists from the backend leave them out until then. */
+const pendingChatDeletes = new Set<string>();
+const visibleSessions = (sessions: ChatSession[]) => sessions.filter((s) => !pendingChatDeletes.has(s.id));
+
 /** A stored message as it goes to the model (attachments included). */
 const toFlat = (m: StoredChatMessage): ChatMessage => ({
   role: m.role as 'user' | 'assistant' | 'system',
@@ -288,7 +292,7 @@ export const createChatSlice: SliceCreator<ChatSlice> = (set, get) => {
       const branch = await api.branchChat(chatId, messageId, translate('chat.branchTitle', { title: original }));
       const sessions = await api.listChatSessions(char.id);
       if (get().activeCharacter?.id !== char.id) return;
-      set({ chatSessions: sessions });
+      set({ chatSessions: visibleSessions(sessions) });
       await get().switchChatSession(branch.id);
       toast.success(translate('chat.branched', { title: branch.title }));
     } catch (e) {
@@ -350,17 +354,17 @@ export const createChatSlice: SliceCreator<ChatSlice> = (set, get) => {
     const request = beginSessionLoad(null);
     set({ chatSessions: [] });
     try {
-      let sessions = await api.listChatSessions(charId);
+      let sessions = visibleSessions(await api.listChatSessions(charId));
       if (!isSessionCurrent(request, charId)) return;
       let targetId = sessions.find((session) => session.id === previousChatId)?.id ?? sessions[0]?.id;
       if (!targetId) {
         const session = await api.createChatSession(charId, translate('chat.newChatTitle'), greeting);
         if (!isSessionCurrent(request, charId)) return;
-        sessions = await api.listChatSessions(charId);
+        sessions = visibleSessions(await api.listChatSessions(charId));
         if (!isSessionCurrent(request, charId)) return;
         targetId = session.id;
       }
-      set({ chatSessions: sessions });
+      set({ chatSessions: visibleSessions(sessions) });
       await get().switchChatSession(targetId);
     } catch (e) {
       console.error('Failed to load chat sessions:', e);
@@ -398,7 +402,7 @@ export const createChatSlice: SliceCreator<ChatSlice> = (set, get) => {
       if (!isSessionCurrent(request, char.id)) return null;
       const sessions = await api.listChatSessions(char.id);
       if (!isSessionCurrent(request, char.id)) return null;
-      set({ chatSessions: sessions });
+      set({ chatSessions: visibleSessions(sessions) });
       const switchRequest = sessionRequest + 1;
       await get().switchChatSession(session.id);
       return isSessionCurrent(switchRequest, char.id) && get().activeChatId === session.id && !get().chatLoadError ? session : null;
@@ -424,15 +428,46 @@ export const createChatSlice: SliceCreator<ChatSlice> = (set, get) => {
   },
 
   deleteChatSession: async (chatId: string) => {
+    // Hidden at once (another chat opens), deleted after the undo window.
     const char = get().activeCharacter;
-    if (!char) return;
-
-    try {
-      await api.deleteChatSession(chatId);
-      await get().loadChatSessions(char.id);
-    } catch (e) {
-      reportFailure('Failed to delete chat session:', e);
-    }
+    const removed = get().chatSessions.find((s) => s.id === chatId);
+    if (!char || !removed || pendingChatDeletes.has(chatId)) return;
+    pendingChatDeletes.add(chatId);
+    set((st) => ({ chatSessions: st.chatSessions.filter((s) => s.id !== chatId) }));
+    if (get().activeChatId === chatId) await get().loadChatSessions(char.id);
+    const commit = async () => {
+      try {
+        await api.deleteChatSession(chatId);
+        pendingChatDeletes.delete(chatId);
+      } catch (e) {
+        // Still stored: show it in the list again.
+        pendingChatDeletes.delete(chatId);
+        reportFailure('Failed to delete chat session:', e);
+        if (get().activeCharacter?.id === char.id) {
+          const sessions = await api.listChatSessions(char.id).catch(() => null);
+          if (sessions && get().activeCharacter?.id === char.id) set({ chatSessions: visibleSessions(sessions) });
+        }
+      }
+    };
+    const timer = setTimeout(() => void commit(), UNDO_DELETE_MS);
+    toast.info(translate('chat.sessionDeleted', { title: removed.title }), {
+      label: translate('common.undo'),
+      onClick: () => {
+        clearTimeout(timer);
+        pendingChatDeletes.delete(chatId);
+        if (get().activeCharacter?.id !== char.id) return;
+        void (async () => {
+          try {
+            const sessions = await api.listChatSessions(char.id);
+            if (get().activeCharacter?.id !== char.id) return;
+            set({ chatSessions: visibleSessions(sessions) });
+            await get().switchChatSession(chatId);
+          } catch (e) {
+            reportFailure('Failed to restore chat session:', e);
+          }
+        })();
+      },
+    });
   },
 
   updateAuthorNote: async (authorNote: string, depth: number) => {
@@ -502,7 +537,7 @@ export const createChatSlice: SliceCreator<ChatSlice> = (set, get) => {
         const char = get().activeCharacter;
         if (char) {
           const sessions = await api.listChatSessions(char.id);
-          if (get().activeCharacter?.id === char.id) set({ chatSessions: sessions });
+          if (get().activeCharacter?.id === char.id) set({ chatSessions: visibleSessions(sessions) });
         }
       } catch (e) {
         // The message is still stored; show it again where it was.
@@ -744,7 +779,7 @@ export const createChatSlice: SliceCreator<ChatSlice> = (set, get) => {
     try {
       const imported = await api.importChatJsonl(char.id, jsonlContent, title);
       const sessions = await api.listChatSessions(char.id);
-      set({ chatSessions: sessions });
+      set({ chatSessions: visibleSessions(sessions) });
       await get().switchChatSession(imported.id);
     } catch (e) {
       console.error('Import failed:', e);
@@ -895,7 +930,7 @@ export const createChatSlice: SliceCreator<ChatSlice> = (set, get) => {
       if (activeCharacter?.id) {
         const refreshRequest = sessionRequest;
         api.listChatSessions(activeCharacter.id).then((sessions) => {
-          if (refreshRequest === sessionRequest && get().activeCharacter?.id === activeCharacter.id) set({ chatSessions: sessions });
+          if (refreshRequest === sessionRequest && get().activeCharacter?.id === activeCharacter.id) set({ chatSessions: visibleSessions(sessions) });
         }).catch((err) => console.warn('Chat session refresh failed:', err));
       }
 
@@ -959,18 +994,10 @@ export const createChatSlice: SliceCreator<ChatSlice> = (set, get) => {
   },
 
   clearChat: async () => {
-    const { activeChatId, activeCharacter } = get();
-    if (!activeChatId) return;
-
-    try {
-      await api.deleteChatSession(activeChatId);
-      if (activeCharacter) {
-        await get().loadChatSessions(activeCharacter.id);
-      }
-    } catch (e) {
-      reportFailure('Failed to clear chat:', e);
-    }
+    const { activeChatId } = get();
+    if (activeChatId) await get().deleteChatSession(activeChatId);
   },
+
 
   autoTtsEnabled: false,
 

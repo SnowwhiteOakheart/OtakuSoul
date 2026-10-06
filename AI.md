@@ -179,6 +179,8 @@ Hub). Integrationen → Bildgenerierung enthält nur Studio und Galerie.
 - Nachrichten bearbeiten: `editChatMessage` gibt Schreibfehler weiter; der Inline-Editor schließt erst nach Erfolg.
   Während des Schreibens sind Text, Speichern und Abbrechen gesperrt; bei offener Bearbeitung auch die Swipe-Navigation.
   Verspätete Speicherergebnisse eines anderen Chats dürfen den aktuellen Verlauf nicht aktualisieren.
+- Löschen ohne Rückfrage, mit „Rückgängig“ (8 s): Nachrichten und Chats (`chatSlice`, `pendingChatDeletes` filtert
+  neu geladene Listen), Erinnerungen (`memorySlice`, `pendingForgets`), Stage-Nachrichten (Szenen-Snapshot per `undoStageTurn`).
 - Entwürfe über Neustarts: `utils/drafts.ts` (localStorage); Composer je Chat (`composer:<id>`), Seitenleiste als `sidebar`.
 - Chat-Seitenleiste: Notiz- und Zusammenfassungsentwürfe werden nach Chat-ID getrennt im Sidebar
   gehalten (und gesichert); Änderungen an Sitzungsdaten überschreiben offene Entwürfe nicht. Nur erfolgreiches Speichern oder

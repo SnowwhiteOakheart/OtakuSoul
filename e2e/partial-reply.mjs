@@ -49,7 +49,20 @@ try {
   assert.equal(count(), '2', 'Rückgängig hat nicht verhindert, dass gelöscht wird');
   await removeLast();
   await browser.waitUntil(() => count() === '1', { timeout: 12_000, timeoutMsg: 'Nachricht nach Ablauf nicht gelöscht' });
-  console.log('Teilantwort: Stopp behält den Text, Fortsetzen ergänzt dieselbe Nachricht; Löschen mit Rückgängig bestanden.');
+
+  // Deleting the whole chat: another (new) chat opens, "Undo" brings this one back.
+  const chatId = sql('SELECT chat_id FROM chat_messages WHERE role = \'user\' LIMIT 1;');
+  await jsClick(await browser.$('button[aria-label="Weitere Chat-Aktionen"]'));
+  const deleteItem = await browser.$('button*=Aktuelles Gespräch löschen');
+  await deleteItem.waitForExist({ timeout: 5000 });
+  await jsClick(deleteItem);
+  const undoChat = await browser.$('button*=Rückgängig');
+  await undoChat.waitForExist({ timeout: 10_000 });
+  await jsClick(undoChat);
+  await browser.$('div[data-message-id]*=Erzähl mir von Kyoto.').waitForDisplayed({ timeout: 10_000 });
+  await browser.pause(9000);
+  assert.equal(sql(`SELECT count(*) FROM chat_sessions WHERE id = '${chatId}';`), '1', 'Chat trotz Rückgängig gelöscht');
+  console.log('Teilantwort: Stopp behält den Text, Fortsetzen ergänzt dieselbe Nachricht; Löschen von Nachricht und Chat mit Rückgängig bestanden.');
 } finally {
   await close();
 }

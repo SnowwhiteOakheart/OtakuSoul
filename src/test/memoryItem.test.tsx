@@ -1,6 +1,6 @@
 // @vitest-environment jsdom
 import { beforeEach, describe, expect, it, vi } from 'vitest';
-import { render, screen, waitFor, within } from '@testing-library/react';
+import { render, screen, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 vi.mock('../services/api', async () => (await import('./mockApi')).apiModule);
 import { api } from '../services/api';
@@ -55,9 +55,10 @@ describe('memory item', () => {
     await user.click(screen.getByRole('button', { name: /Save/ }));
     await waitFor(() => expect(api.updateEpisodicMemory).toHaveBeenCalledWith('ayu', 7, 'fact', 'Der Nutzer heißt Kenji', 3));
 
+    // Forgetting asks nothing; the backend call follows after the undo time (store test).
     await user.click(screen.getByRole('button', { name: 'Forget' }));
-    await user.click(within(await screen.findByRole('dialog')).getByRole('button', { name: 'Forget' }));
-    await waitFor(() => expect(api.forgetEpisodicMemory).toHaveBeenCalledWith('ayu', 7));
+    expect(screen.queryByRole('dialog')).not.toBeInTheDocument();
+    expect(api.forgetEpisodicMemory).not.toHaveBeenCalled();
   });
 
   it('asks to check a memory whose source changed and keeps it on request', async () => {

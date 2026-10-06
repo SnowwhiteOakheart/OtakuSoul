@@ -37,8 +37,7 @@ import { streamingTts } from '../../services/streamingTts';
 
 import { CharacterVoiceModal } from '../voice/CharacterVoiceModal';
 import { PromptLogModal } from './PromptLogModal';
-import { translate, useTranslation } from '../../i18n';
-import { confirmDialog } from '../ui/feedback';
+import { useTranslation } from '../../i18n';
 import { EmptyState } from '../ui/EmptyState';
 import { AvatarSkeleton } from '../ui';
 
@@ -201,15 +200,8 @@ export const ChatView: React.FC = () => {
     if (streamText || streamThought) messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
   }, [streamText, streamThought]);
 
-  const handleClearSession = async () => {
-    const confirmed = await confirmDialog({
-      title: translate('confirm.clearSessionTitle'),
-      message: translate('confirm.clearSessionText'),
-      confirmLabel: translate('common.delete'),
-      tone: 'danger',
-    });
-    if (confirmed) clearChat();
-  };
+  // No confirmation: the toast offers "Undo" for a few seconds.
+  const handleClearSession = () => void clearChat();
 
   const canSpeak = !!activeVoiceConfig && activeVoiceConfig.engine !== 'disabled';
   const handleSpeak = useCallback(async (text: string) => {

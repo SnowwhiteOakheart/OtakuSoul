@@ -23,7 +23,7 @@ import {
   Loader2,
 } from 'lucide-react';
 import { translate, useTranslation } from '../../i18n';
-import { confirmDialog, toast } from '../ui/feedback';
+import { toast } from '../ui/feedback';
 import { errorMessage } from '../../utils/errors';
 
 export const StageChatLog: React.FC = () => {
@@ -96,18 +96,12 @@ export const StageChatLog: React.FC = () => {
     }
   };
 
+  // No confirmation: the toast offers "Undo".
   const handleDeleteMessage = async (id: string) => {
-    const confirmed = await confirmDialog({
-      title: translate('confirm.deleteStageMessageTitle'),
-      confirmLabel: translate('common.delete'),
-      tone: 'danger',
-    });
-    if (confirmed) {
-      try {
-        await deleteStageTurnMessage(id);
-      } catch (err) {
-        toast.error(translate('toast.deleteFailed', { error: errorMessage(err) }));
-      }
+    try {
+      await deleteStageTurnMessage(id);
+    } catch (err) {
+      toast.error(translate('toast.deleteFailed', { error: errorMessage(err) }));
     }
   };
 

@@ -14,8 +14,6 @@ Aus den Arbeitsprotokollen der Qualitäts-Roadmap; größere Pakete, jeweils mit
 
 - [ ] **Dauerhafte Entwurfssicherung im Memory-Drawer:** Composer und Chat-Seitenleiste sichern ihre Entwürfe bereits
   über Neustarts; die Entwürfe im Memory-Drawer (Psychologie, Beziehung, Markdown) überleben noch keinen Neustart.
-- [ ] **„Rückgängig“ für weitere Löschaktionen:** Chat-Nachrichten sind umgesetzt; Chats, Stage-Nachrichten und
-  Erinnerungen fragen weiterhin per Bestätigungsdialog.
 
 ## 2. Chat-Funktionen (aus der Portierung, noch nicht umgesetzt)
 
