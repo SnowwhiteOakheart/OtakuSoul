@@ -14,7 +14,7 @@
 |---|---|---|
 | E1 | **Die Regel-Engine ist maßgeblich.** Würfe, Treffer, Schaden, Bewegung, Reichweite und Monsterzüge berechnet Rust deterministisch. | Das LLM erzählt und äußert höchstens *Absichten*; Zahlen aus dem LLM werden im 5e-Modus ignoriert. |
 | E2 | **Monster steuert ausschließlich die Engine** (eigene Monster-KI). | Kein LLM-Aufruf pro Monsterzug, reproduzierbar und testbar. |
-| E3 | **Karten sind Raster als JSON, gezeichnet mit eigenen Kachel-SVGs.** | Wände, Türen, Gelände und Startzonen sind exakt bekannt; keine Fremd-Assets, keine Lizenzfragen. |
+| E3 | **Karten sind Raster als JSON, gezeichnet mit eigenen Kachel-SVGs.** | Wände, Türen, Gelände und Startzonen sind exakt bekannt; keine Fremd-Assets. Was gezeichnet werden muss, steht in [`todo_assets.md`](todo_assets.md). |
 | E4 | **Regelwerk pro Szene:** `ruleset: "standard" \| "5e"`. | Bestehende Erzähl-Szenen (Stress, freie Proben) bleiben unverändert. |
 | E5 | **Daten statt Code:** Monster, Zauber, Klassen-Vorlagen als SRD-Daten (JSON, gebündelt). | Ausbau ohne Rust-Änderungen; Übersetzungen der Namen in den Daten (de/en/ru). |
 | E6 | **Jeder Schritt ist spielbar und getestet** (Rust-Unit-Tests mit festem Zufalls-Seed, E2E mit Mock-LLM, i18n in allen Locales, AI.md/README). | Keine „Test-Phase“ am Ende. |
@@ -24,7 +24,7 @@
 | Wer | Entscheidet | Wie |
 |---|---|---|
 | Spieler | eigene Aktionen | Aktionsleiste und Spielbrett; die Engine bietet nur erlaubte Aktionen an. |
-| Gefährten (LLM-Figuren) | eigene Aktionen | Die Engine erzeugt eine Liste erlaubter Aktionen; das LLM wählt **eine ID** (+ kurzer Satz). Ungültig/Timeout → Engine-Heuristik. *(Offene Frage F2)* |
+| Gefährten (LLM-Figuren) | eigene Aktionen | Die Engine erzeugt eine Liste erlaubter Aktionen; das LLM wählt **eine ID** (+ kurzer Satz). Ungültig/Timeout → Engine-Heuristik. Schalter „Gefährten selbst steuern“ (F2). |
 | Monster | – | Engine-KI (Ziel wählen, bewegen, angreifen, fliehen). |
 | KI-Spielleiter | Szene, Begegnungen, Erzählung | Wählt Begegnung (Monster-IDs aus der Liste) und Startzone; erzählt aus dem **Kampfbericht** der Engine. |
 
@@ -131,7 +131,7 @@ erzählt nur.
 ### 🗺️ Schritt 2 – Spielbrett: Raster, Tokens, Bewegung, Reichweite
 
 - [ ] Kartenformat (JSON, s. o.) + Validierung beim Laden (Rechteck, bekannte Zeichen, Startzonen vorhanden).
-- [ ] Kachel-SVG-Satz „Dungeon“ (eigene Zeichnungen) und `StageBattleMap.tsx` (SVG, zoombar, per Tastatur bedienbar).
+- [ ] Kachel-SVG-Satz „Dungeon“ (aus [`todo_assets.md`](todo_assets.md), A) und `StageBattleMap.tsx` (SVG, zoombar, per Tastatur bedienbar).
 - [ ] Tokens: Porträt (Charakterbild bzw. NPC-Archetyp), LP-Ring, Initiativ-Rang, Zustands-Badges.
 - [ ] Bewegung: Tempo in Feldern, Diagonale = 5 ft *(F1)*, schwieriges Gelände ×2, Wände/geschlossene Türen und
   besetzte Felder blockieren; Wegfindung (A*) zeigt erreichbare Felder.
@@ -177,7 +177,8 @@ Rückgängig stellt Karte und Kampf korrekt wieder her.
 
 ### 🏰 Schritt 5 – Starter-Abenteuer & Heldengruppe
 
-- [ ] Vier Helden als V2-Karten mit 5e-Erweiterung (`extensions.otakusoul_5e`) und eigenen Token-SVGs:
+- [ ] Vier Helden als V2-Karten mit 5e-Erweiterung (`extensions.otakusoul_5e`), Porträts und Tokens aus
+  [`todo_assets.md`](todo_assets.md) (C, D):
   Thorin (Zwerg, Kämpfer), Lyra (Hochelfe, Magierin), Finn (Halbling, Schurke), Althea (Mensch, Klerikerin).
 - [ ] Eigene Gefährten bekommen per Klassen-Vorlage 5e-Werte (Charakter-Editor: Klasse wählen → Stufe-1-Werte).
 - [ ] Lobby: klassische Helden, eigene Gefährten oder gemischt.
@@ -196,15 +197,17 @@ Rückgängig stellt Karte und Kampf korrekt wieder her.
 
 ---
 
-## 4. Offene Fragen (gemeinsam klären, bevor der jeweilige Schritt beginnt)
+## 4. Entschiedene Fragen (06.10.2026)
 
-| # | Frage | Vorschlag | Für |
+| # | Frage | Entscheidung | Ab |
 |---|---|---|---|
-| F1 | Diagonalregel | SRD-Standard: jedes Feld 5 ft (Variante 5/10/5 später als Option) | Schritt 2 |
-| F2 | Gefährten im Kampf | LLM wählt aus erlaubter Liste; Schalter „Gefährten selbst steuern“ für Spieler, die alles kontrollieren wollen | Schritt 1 |
-| F3 | Gegner-LP sichtbar? | Zustandsstufen („unverletzt/angeschlagen/schwer verletzt“) statt Zahlen | Schritt 1 |
+| F1 | Diagonalregel | SRD-Standard: jedes Feld 5 ft, auch diagonal (Variante 5/10/5 höchstens später als Option) | Schritt 2 |
+| F2 | Gefährten im Kampf | LLM wählt aus der erlaubten Liste; Schalter „Gefährten selbst steuern“ übergibt sie dem Spieler | Schritt 1 |
+| F3 | Gegner-LP sichtbar? | Nein – Zustandsstufen („unverletzt / angeschlagen / schwer verletzt / am Boden“) | Schritt 1 |
 | F4 | Übersetzung der SRD-Begriffe | Kernbegriffe (Attribute, Fertigkeiten, Zustände) über i18n; Monster-/Zaubernamen in den Daten mit de/en/ru | Schritt 1 |
 | F5 | Ort der SRD-Daten | gebündelt wie die Presets (`assets/…`), Nutzer-Erweiterungen im Datenordner | Schritt 1 |
+
+Neue Fragen werden hier mit Vorschlag ergänzt und vor dem betroffenen Schritt entschieden.
 
 ## 5. Nicht-Ziele
 
