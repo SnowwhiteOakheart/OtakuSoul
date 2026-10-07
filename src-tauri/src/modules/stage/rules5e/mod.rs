@@ -9,6 +9,7 @@ pub mod combat;
 pub mod conditions;
 pub mod data;
 pub mod explore;
+pub mod features;
 pub mod map;
 pub mod roll;
 pub mod skills;
@@ -23,6 +24,7 @@ pub use combat::*;
 pub use conditions::*;
 pub use data::*;
 pub use explore::*;
+pub use features::*;
 pub use map::*;
 pub use roll::*;
 pub use skills::*;
@@ -162,6 +164,9 @@ pub struct Stats5e {
     #[serde(default)]
     #[ts(optional)]
     pub concentration: Option<String>,
+    /// Uses spent of limited class features (`second_wind` …) since the last rest.
+    #[serde(default)]
+    pub resources_used: std::collections::HashMap<String, u32>,
 }
 
 fn humanoid() -> String {

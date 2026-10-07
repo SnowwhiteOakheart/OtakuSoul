@@ -21,6 +21,9 @@ pub struct TurnBudget {
     pub bonus_action_used: bool,
     /// Disengage taken: leaving reach provokes no opportunity attacks this turn.
     pub disengaged: bool,
+    /// Sneak Attack is once per turn.
+    #[serde(default)]
+    pub sneak_used: bool,
 }
 
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize, TS)]
@@ -57,6 +60,12 @@ pub enum CombatOutcome {
 pub enum CombatEvent {
     Initiative {
         order: Vec<InitiativeEntry>,
+    },
+    /// A class feature takes effect (Second Wind, Sneak Attack, Turn Undead, Shield …).
+    Feature {
+        actor_id: String,
+        actor_name: String,
+        feature: String,
     },
     TurnStart {
         round: u32,
@@ -206,6 +215,10 @@ pub struct AttackSituation {
     pub disadvantage: bool,
     pub distance_ft: Option<u32>,
     pub heroic_death: bool,
+    /// Sneak Attack d6 added on a hit (0 = none).
+    pub sneak_dice: u32,
+    /// Lowest natural roll that crits (0 = only 20).
+    pub critical_from: u32,
 }
 
 /// Damage details that matter at 0 hit points and for concentration.
@@ -328,8 +341,13 @@ pub fn resolve_attack_with<R: Rng + ?Sized>(
     let bonus_die = has_condition(attacker, BLESSED).then(|| rng.random_range(1..=4u32));
     let target_ac = armor_class(target);
     let total = roll.natural as i32 + attack.to_hit + bonus_die.map_or(0, |d| d as i32);
-    let hit = roll.natural == 20 || (roll.natural != 1 && total >= target_ac);
-    let critical = hit && (roll.natural == 20 || auto_crit);
+    let crit_on = match situation.critical_from {
+        0 => 20,
+        from => from.clamp(2, 20),
+    };
+    let crit_roll = roll.natural >= crit_on;
+    let hit = crit_roll || (roll.natural != 1 && total >= target_ac);
+    let critical = hit && (crit_roll || auto_crit);
     let mut events = vec![CombatEvent::Attack {
         attacker_id: attacker.id.clone(),
         attacker_name: attacker.name.clone(),
@@ -351,7 +369,22 @@ pub fn resolve_attack_with<R: Rng + ?Sized>(
             sides: 4,
             modifier: 0,
         });
-        let damage = roll_damage(rng, &formula, critical);
+        let mut damage = roll_damage(rng, &formula, critical);
+        if situation.sneak_dice > 0 {
+            let extra = DiceFormula {
+                count: situation.sneak_dice,
+                sides: 6,
+                modifier: 0,
+            };
+            let sneak = roll_damage(rng, &extra, critical);
+            damage.total += sneak.total;
+            damage.rolls.extend(sneak.rolls);
+            events.push(CombatEvent::Feature {
+                actor_id: attacker.id.clone(),
+                actor_name: attacker.name.clone(),
+                feature: SNEAK_ATTACK.to_string(),
+            });
+        }
         let scaling = target.stats5e.as_ref().map_or(DamageScaling::Normal, |s| {
             scaling_for(s, &attack.damage_type)
         });
@@ -411,6 +444,9 @@ pub fn apply_damage<R: Rng + ?Sized>(
     }];
     if amount == 0 {
         return events;
+    }
+    if remove_condition(target, TURNED) {
+        events.push(condition_end(target, TURNED));
     }
     if remove_condition(target, ASLEEP) {
         events.push(condition_end(target, ASLEEP));

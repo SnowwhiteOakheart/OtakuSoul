@@ -44,4 +44,8 @@ death_saves: DeathSaves,
 /**
  * The concentration spell this creature keeps up.
  */
-concentration?: string, };
+concentration?: string, 
+/**
+ * Uses spent of limited class features (`second_wind` …) since the last rest.
+ */
+resources_used: { [key in string]: number }, };

@@ -63,6 +63,10 @@ pub enum ExploreEvent {
         goal_id: String,
         title: LocalizedName,
     },
+    /// The party reaches a new level (milestone after an act).
+    LevelUp {
+        level: u32,
+    },
     /// Every goal of the act is reached; `next_scene` continues the adventure.
     ActComplete {
         #[serde(default)]

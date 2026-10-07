@@ -197,6 +197,12 @@ Hub). Integrationen → Bildgenerierung enthält nur Studio und Galerie.
   `continue_stage_adventure` (Gruppe, Klassen, Inventar, lange Rast). Abgewählte Gefährten verlassen außerhalb von
   Kämpfen die Gruppe (`ensure_party_vitals`). Lobby: `AdventurePartyModal` vor 5e-Szenen mit Gruppe ohne Fortschritt;
   Szenenkarten tragen `data-scene-id`. SRD-Hinweis im `AboutDialog` (`srd-attribution`). E2E `stage-adventure.mjs`.
+  Stufen & Merkmale (Schritt 6): `rules5e/features.rs` (Tabelle Klasse → Stufe → Merkmal, `hero_stats_at`, `level_up`
+  bis `MAX_LEVEL` 3, Verbrauch in `Stats5e.resources_used`, `short_rest`/`long_rest`, `arcane_recovery`). Meilenstein:
+  `continue_adventure` hebt die Gruppe um eine Stufe (`ExploreEvent::LevelUp`). Aktionen `feature:<id>`
+  (`feature_options`/`use_feature` in `combat5e.rs`, `TurnDecision::Feature`), Ereignis `CombatEvent::Feature`;
+  Hinterhältiger Angriff und Krit ab 19 über `AttackSituation.sneak_dice`/`critical_from`, Vertriebene (`TURNED`)
+  weichen zurück und verteidigen sich, Schaden beendet es. Gefährten nutzen Zweiter Atem selbst.
 - Stimmeffekte: `VoiceConfig.effects` (`VoiceEffects`), gerendert in `services/voiceEffects.ts` (OfflineAudioContext, Tonhöhe per
   WSOLA) über `audioPlayer.enqueue(…, effects)`; jeder neue Abspielweg muss `config.effects` mitgeben.
 - Bild-LoRAs (`image_loras.rs`): `sd-server` ignoriert `<lora:…>` im Prompt; LoRAs gehen als `lora: [{path, multiplier}]`

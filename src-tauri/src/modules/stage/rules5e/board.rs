@@ -177,11 +177,20 @@ pub fn monster_board_plan(
     combatants: &[Combatant],
     budget_ft: u32,
 ) -> BoardPlan {
-    if let TurnDecision::Flee = monster_decision(actor, combatants) {
-        return BoardPlan {
-            move_to: retreat(map, actor, combatants, budget_ft),
-            action: TurnDecision::Flee,
-        };
+    match monster_decision(actor, combatants) {
+        TurnDecision::Flee => {
+            return BoardPlan {
+                move_to: retreat(map, actor, combatants, budget_ft),
+                action: TurnDecision::Flee,
+            };
+        }
+        TurnDecision::Dodge => {
+            return BoardPlan {
+                move_to: retreat(map, actor, combatants, budget_ft),
+                action: TurnDecision::Dodge,
+            };
+        }
+        _ => {}
     }
     let lowest_ac = |c: &Combatant| c.stats5e.as_ref().map_or(10, |s| s.armor_class) * 100 + c.hp;
     attack_plans(map, actor, combatants, budget_ft, lowest_ac)
@@ -320,6 +329,22 @@ pub struct CombatOptions {
     /// Spells the actor can cast now.
     #[serde(default)]
     pub spells: Vec<SpellOption>,
+    /// Class features the actor can use now.
+    #[serde(default)]
+    pub features: Vec<FeatureOption>,
+}
+
+/// A class feature usable right now: what it costs and how many uses are left.
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize, TS)]
+#[ts(export)]
+pub struct FeatureOption {
+    /// `second_wind`, `action_surge`, `turn_undead`, `cunning_dash`, `cunning_disengage`.
+    pub id: String,
+    /// `action`, `bonus` or `free`.
+    pub cost: String,
+    #[serde(default)]
+    #[ts(optional)]
+    pub uses_left: Option<u32>,
 }
 
 /// Attacks the actor can make from where it stands now (board), plus Dodge.

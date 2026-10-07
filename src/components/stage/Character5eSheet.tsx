@@ -15,6 +15,14 @@ const SKILLS: [string, AbilityId][] = [
   ['nature', 'int'], ['perception', 'wis'], ['performance', 'cha'], ['persuasion', 'cha'], ['religion', 'int'],
   ['sleight_of_hand', 'dex'], ['stealth', 'dex'], ['survival', 'wis'],
 ];
+/** Class features by level (same table as `rules5e/features.rs`); limited ones once per rest. */
+const FEATURES: Record<string, [number, string][]> = {
+  fighter: [[1, 'second_wind'], [2, 'action_surge'], [3, 'improved_critical']],
+  rogue: [[1, 'sneak_attack'], [2, 'cunning_action']],
+  cleric: [[1, 'disciple_of_life'], [2, 'turn_undead']],
+  wizard: [[1, 'arcane_recovery']],
+};
+const LIMITED = new Set(['second_wind', 'action_surge', 'turn_undead', 'arcane_recovery']);
 const modifier = (score: number) => Math.floor((score - 10) / 2);
 const signed = (value: number) => (value >= 0 ? `+${value}` : `${value}`);
 
@@ -106,6 +114,36 @@ export const Character5eSheet: React.FC<{ member: Combatant; onClose: () => void
             ))}
           </ul>
         </div>
+        {(FEATURES[stats.class_id] ?? []).some(([from]) => from <= stats.level) && (
+          <div data-testid="sheet-features">
+            <h3 className={heading}>{t('fight.sheet.features')}</h3>
+            <ul className="space-y-1 text-xs">
+              {(FEATURES[stats.class_id] ?? [])
+                .filter(([from]) => from <= stats.level)
+                .map(([, id]) => {
+                  const feature = id === 'cunning_action' ? 'cunning_dash' : id;
+                  const used = stats.resources_used?.[id] ?? 0;
+                  return (
+                    <li key={id} className="rounded-lg bg-app/60 px-2 py-1">
+                      <span className="font-semibold text-slate-100">
+                        {id === 'cunning_action'
+                          ? `${t('fight.feature.cunning_dash')} / ${t('fight.feature.cunning_disengage')}`
+                          : t(`fight.feature.${feature}` as TranslationKey)}
+                      </span>
+                      {LIMITED.has(id) && (
+                        <span className="ml-2 text-slate-400">{t('fight.sheet.usesLeft', { count: Math.max(0, 1 - used) })}</span>
+                      )}
+                      <p className="text-slate-400">
+                        {t((['second_wind', 'action_surge', 'turn_undead'].includes(id) || id === 'cunning_action'
+                          ? `fight.featureHint.${feature}`
+                          : `fight.featureDesc.${id}`) as TranslationKey)}
+                      </p>
+                    </li>
+                  );
+                })}
+            </ul>
+          </div>
+        )}
         {casting && (
           <div data-testid="sheet-spells">
             <h3 className={heading}>{t('fight.sheet.spells')}</h3>

@@ -126,6 +126,12 @@ try {
   assert.deepEqual(act2.definition.party, HEROES);
   assert.ok(act2.combat.combatants.filter((c) => c.role !== 'enemy').every((c) => c.hp === c.max_hp), 'keine Rast zwischen den Akten');
   assert.ok(await exists('[data-goal="goblins"][data-reached="false"]'));
+  // Milestone: the finished act lifts everyone to level 2 (more hit points, Action Surge …).
+  assert.ok(act2.combat.combatants.filter((c) => c.role !== 'enemy').every((c) => c.stats5e.level === 2), 'kein Stufenaufstieg');
+  assert.ok(act2.exploration.some((e) => e.type === 'level_up' && e.level === 2));
+  const thorin = act2.combat.combatants.find((c) => c.name === 'Thorin Eisenbart');
+  assert.equal(thorin.max_hp, 20);
+  assert.match(await browser.$('[data-testid="explore-5e"]').getText(), /Stufe 2/);
   console.log(`Abenteuer: Akt 1 mit ${ended.combat.events.filter((e) => e.type === 'attack').length} Angriffen geschafft, Akt 2 begonnen.`);
 } finally {
   await close();

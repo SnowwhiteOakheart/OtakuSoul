@@ -186,15 +186,22 @@ pub fn monster_stats(data: &MonsterData) -> (Stats5e, i32) {
         spellcasting: None,
         death_saves: DeathSaves::default(),
         concentration: None,
+        resources_used: Default::default(),
     };
     (stats, hit_dice.average().max(1))
 }
 
-/// Stats and hit points of a level-1 hero built from a class template: attack bonus is
-/// proficiency + ability modifier, damage adds the modifier (unless the attack says not to),
-/// hit points are the hit die maximum + CON modifier.
+/// Stats and hit points of a level-1 hero built from a class template.
 pub fn hero_stats(data: &ClassData) -> (Stats5e, i32) {
-    let level = 1;
+    hero_stats_at(data, 1)
+}
+
+/// Stats and hit points of a hero of `level` built from a class template: attack bonus is
+/// proficiency + ability modifier, damage adds the modifier (unless the attack says not to),
+/// hit points are the hit die maximum + CON modifier, plus the die's average (rounded up) +
+/// CON modifier for every further level (SRD fixed hit points).
+pub fn hero_stats_at(data: &ClassData, level: u32) -> (Stats5e, i32) {
+    let level = level.max(1);
     let modifier = |ability: Ability| ability_modifier(data.abilities[ability.index()]);
     let attacks = data
         .attacks
@@ -261,7 +268,10 @@ pub fn hero_stats(data: &ClassData) -> (Stats5e, i32) {
         }),
         death_saves: DeathSaves::default(),
         concentration: None,
+        resources_used: Default::default(),
     };
-    let max_hp = (data.hit_die as i32 + modifier(Ability::Con)).max(1);
+    let con = modifier(Ability::Con);
+    let per_level = (data.hit_die as i32 / 2 + 1 + con).max(1);
+    let max_hp = (data.hit_die as i32 + con).max(1) + per_level * (level as i32 - 1);
     (stats, max_hp)
 }

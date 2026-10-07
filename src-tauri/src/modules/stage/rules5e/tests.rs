@@ -386,7 +386,10 @@ fn a_seeded_fight_runs_to_the_end() {
                 resolve_attack(&actor, &attack, target, &mut rng);
             }
             TurnDecision::Flee => encounter.combatants[index].hp = 0,
-            TurnDecision::Dodge | TurnDecision::Pass | TurnDecision::Cast(_) => {}
+            TurnDecision::Dodge
+            | TurnDecision::Pass
+            | TurnDecision::Cast(_)
+            | TurnDecision::Feature(_) => {}
         }
         advance_turn(&mut encounter);
         turns += 1;
@@ -1407,4 +1410,164 @@ fn healing_and_magic_missile() {
         3
     );
     assert!(lyra_side[1].hp <= 7 - 3);
+}
+
+#[test]
+fn heroes_level_up_by_milestone() {
+    let fighter = class("fighter").unwrap();
+    assert_eq!([1, 2, 3].map(|l| hero_stats_at(fighter, l).1), [12, 20, 28]);
+    let (wizard3, hp) = hero_stats_at(class("wizard").unwrap(), 3);
+    assert_eq!(hp, 17);
+    let casting = wizard3.spellcasting.as_ref().unwrap();
+    assert_eq!(&casting.slots_max[..2], &[4, 2]);
+    assert!(casting.spells.contains(&"scorching_ray".to_string()));
+    assert!(
+        !hero("w", "wizard", "player")
+            .stats5e
+            .unwrap()
+            .spellcasting
+            .unwrap()
+            .spells
+            .contains(&"scorching_ray".to_string())
+    );
+
+    let mut thorin = hero("thorin", "fighter", "companion");
+    thorin.hp = 5;
+    rules5e_spend_second_wind(&mut thorin);
+    assert!(level_up(&mut thorin, 2));
+    let stats = thorin.stats5e.as_ref().unwrap();
+    assert_eq!(
+        (thorin.hp, thorin.max_hp, stats.level, stats.hit_dice_left),
+        (13, 20, 2, 2)
+    );
+    assert_eq!(uses_left(stats, SECOND_WIND), 0, "used features stay used");
+    assert_eq!(uses_left(stats, ACTION_SURGE), 1);
+    assert!(!level_up(&mut thorin, 2), "no level twice");
+    assert!(level_up(&mut thorin, 9));
+    assert_eq!(thorin.stats5e.as_ref().unwrap().level, MAX_LEVEL);
+    assert_eq!(critical_from(thorin.stats5e.as_ref().unwrap()), 19);
+
+    // A spent slot stays spent when the hero gains slots.
+    let mut lyra = hero("lyra", "wizard", "companion");
+    lyra.stats5e
+        .as_mut()
+        .unwrap()
+        .spellcasting
+        .as_mut()
+        .unwrap()
+        .slots_used[0] = 2;
+    level_up(&mut lyra, 3);
+    let casting = lyra
+        .stats5e
+        .as_ref()
+        .unwrap()
+        .spellcasting
+        .as_ref()
+        .unwrap();
+    assert_eq!(
+        (
+            casting.slots_used[0],
+            casting.slots_left(1),
+            casting.slots_left(2)
+        ),
+        (2, 2, 2)
+    );
+}
+
+fn rules5e_spend_second_wind(hero: &mut Combatant) {
+    spend(hero.stats5e.as_mut().unwrap(), SECOND_WIND);
+}
+
+#[test]
+fn class_features_by_level_and_rests() {
+    assert_eq!(class_features("rogue", 1), vec![SNEAK_ATTACK]);
+    assert_eq!(
+        class_features("rogue", 3),
+        vec![SNEAK_ATTACK, CUNNING_ACTION]
+    );
+    assert_eq!(
+        class_features("cleric", 2),
+        vec![DISCIPLE_OF_LIFE, TURN_UNDEAD]
+    );
+    let mut rogue = hero("finn", "rogue", "companion");
+    assert_eq!(sneak_attack_dice(rogue.stats5e.as_ref().unwrap()), 1);
+    level_up(&mut rogue, 3);
+    assert_eq!(sneak_attack_dice(rogue.stats5e.as_ref().unwrap()), 2);
+    let cleric = hero("althea", "cleric", "companion");
+    assert_eq!(healing_bonus(cleric.stats5e.as_ref().unwrap(), 1), 3);
+    assert_eq!(healing_bonus(cleric.stats5e.as_ref().unwrap(), 0), 0);
+
+    // Arcane Recovery: half the wizard level (rounded up) in slot levels, once per long rest.
+    let mut lyra = hero("lyra", "wizard", "companion");
+    level_up(&mut lyra, 3);
+    let stats = lyra.stats5e.as_mut().unwrap();
+    let casting = stats.spellcasting.as_mut().unwrap();
+    casting.slots_used[0] = 2;
+    casting.slots_used[1] = 1;
+    assert_eq!(arcane_recovery(stats), vec![2]);
+    assert!(arcane_recovery(stats).is_empty());
+    short_rest(stats);
+    assert!(
+        arcane_recovery(stats).is_empty(),
+        "comes back only with a long rest"
+    );
+    long_rest(stats);
+    assert_eq!(arcane_recovery(stats), vec![1, 1]);
+}
+
+#[test]
+fn sneak_attack_adds_dice_on_hits_and_champions_crit_on_19() {
+    let finn = hero("finn", "rogue", "player");
+    let attack = finn.stats5e.as_ref().unwrap().attacks[0].clone();
+    let situation = AttackSituation {
+        sneak_dice: 1,
+        ..Default::default()
+    };
+    let (mut hits, mut sneaks) = (0, 0);
+    for seed in 0..40 {
+        let mut target = goblin("g");
+        target.hp = 500;
+        target.max_hp = 500;
+        let events = resolve_attack_with(
+            &finn,
+            &attack,
+            &mut target,
+            &situation,
+            &mut StdRng::seed_from_u64(seed),
+        );
+        let hit = matches!(events[0], CombatEvent::Attack { hit: true, .. });
+        let sneak = events
+            .iter()
+            .any(|e| matches!(e, CombatEvent::Feature { feature, .. } if feature == SNEAK_ATTACK));
+        assert_eq!(hit, sneak);
+        hits += usize::from(hit);
+        sneaks += usize::from(sneak);
+    }
+    assert!(hits > 0 && hits == sneaks);
+
+    let mut thorin = hero("thorin", "fighter", "player");
+    level_up(&mut thorin, 3);
+    let attack = thorin.stats5e.as_ref().unwrap().attacks[0].clone();
+    let situation = AttackSituation {
+        critical_from: 19,
+        ..Default::default()
+    };
+    let nineteen = (0..400)
+        .find_map(|seed| {
+            let mut target = goblin("g");
+            target.hp = 500;
+            let events = resolve_attack_with(
+                &thorin,
+                &attack,
+                &mut target,
+                &situation,
+                &mut StdRng::seed_from_u64(seed),
+            );
+            match &events[0] {
+                CombatEvent::Attack { roll, critical, .. } if roll.natural == 19 => Some(*critical),
+                _ => None,
+            }
+        })
+        .expect("a natural 19");
+    assert!(nineteen);
 }

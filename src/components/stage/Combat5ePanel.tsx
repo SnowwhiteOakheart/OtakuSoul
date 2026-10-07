@@ -2,7 +2,7 @@ import React from 'react';
 import { Loader2, Shield, Swords } from 'lucide-react';
 import { useStoreFields } from '../../store/useAppStore';
 import { combatAwaitsEngine } from '../../store/slices/stageSlice';
-import { useTranslation } from '../../i18n';
+import { useTranslation, type TranslationKey } from '../../i18n';
 import { combatEventText, localizedName, tierLabel } from '../../utils/combatEvents';
 import type { Combatant } from '../../types';
 import { Combat5eSpells } from './Combat5eSpells';
@@ -130,6 +130,26 @@ export const Combat5ePanel: React.FC = () => {
           ))}
           {actor.stats5e?.spellcasting && (options?.spells.length ?? 0) > 0 && (
             <Combat5eSpells actor={actor} spells={options!.spells} combatants={combat.combatants} disabled={isProcessingStageTurn} />
+          )}
+          {(options?.features.length ?? 0) > 0 && (
+            <div className="flex flex-wrap gap-1.5" data-testid="class-features">
+              {options!.features.map((feature) => (
+                <button
+                  key={feature.id}
+                  type="button"
+                  data-feature={feature.id}
+                  disabled={isProcessingStageTurn}
+                  onClick={() => void runStageCombat(`feature:${feature.id}`)}
+                  title={t(`fight.featureHint.${feature.id}` as TranslationKey)}
+                  className="rounded-lg border border-emerald-500/40 bg-emerald-950/40 px-2 py-1 font-semibold text-emerald-100 hover:bg-emerald-900/60 disabled:opacity-40"
+                >
+                  {t(`fight.feature.${feature.id}` as TranslationKey)}
+                  <span className="ml-1 font-normal text-emerald-300/70">
+                    ({t(`fight.cost.${feature.cost}` as TranslationKey)}{feature.uses_left != null ? ` · ${feature.uses_left}×` : ''})
+                  </span>
+                </button>
+              ))}
+            </div>
           )}
           <div className="flex flex-wrap gap-1.5">
             <button

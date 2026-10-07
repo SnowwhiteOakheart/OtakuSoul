@@ -577,6 +577,7 @@ pub fn cast_spell<R: Rng + ?Sized>(
                     }),
                     distance_ft: distance,
                     heroic_death,
+                    ..Default::default()
                 };
                 let attack_events = resolve_attack_with(
                     &caster,
@@ -686,7 +687,9 @@ pub fn cast_spell<R: Rng + ?Sized>(
                 .spellcasting
                 .as_ref()
                 .map_or(Ability::Wis, |c| c.ability);
-            let amount = roll_damage(rng, &dice, false).total + stats.modifier(ability);
+            let amount = roll_damage(rng, &dice, false).total
+                + stats.modifier(ability)
+                + healing_bonus(&stats, request.slot_level);
             events.extend(heal(&mut combatants[target_index], amount));
         }
         SpellEffect::Condition {

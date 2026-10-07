@@ -39,6 +39,8 @@ export function exploreEventText(event: ExploreEvent, language: Language): strin
       return translate('explore.event.encounter');
     case 'goal':
       return translate('explore.event.goal', { goal: localizedName(event.title, language) });
+    case 'level_up':
+      return translate('explore.event.levelUp', { level: event.level });
     case 'act_complete':
       return translate('explore.event.actComplete');
     case 'map_change':

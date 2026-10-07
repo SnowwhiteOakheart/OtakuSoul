@@ -501,6 +501,23 @@ pub fn continue_adventure(engine: &StageEngine, scene_id: &str) -> Result<SceneS
     next.map = None;
     next.exploration = Vec::new();
     ensure_party_vitals(&mut next);
+    // Milestone: every finished act brings the party one level further (up to level 3).
+    let mut reached = 0;
+    for hero in next
+        .combat
+        .combatants
+        .iter_mut()
+        .filter(|c| rules5e::is_party(c))
+    {
+        let level = hero.stats5e.as_ref().map_or(1, |s| s.level) + 1;
+        if rules5e::level_up(hero, level) {
+            reached = reached.max(level.min(rules5e::MAX_LEVEL));
+        }
+    }
+    if reached > 0 {
+        next.exploration
+            .push(ExploreEvent::LevelUp { level: reached });
+    }
     super::combat5e::rest_party(&mut next, true);
     next.definition.last_played = Some(Utc::now().to_rfc3339());
     engine.set_state(next.clone());
@@ -621,6 +638,9 @@ fn report(events: &[ExploreEvent], state: &SceneState) -> String {
                 format!("Enemies appear and a fight begins: {}.", foes.join(", "))
             }
             ExploreEvent::Goal { title, .. } => format!("The party reaches a goal: {}.", title.en),
+            ExploreEvent::LevelUp { level } => {
+                format!("The party has grown stronger: level {level}.")
+            }
             ExploreEvent::ActComplete { .. } => {
                 "This chapter of the adventure is complete; close it with a fitting image."
                     .to_string()

@@ -77,6 +77,8 @@ export function combatEventText(event: CombatEvent, language: Language): string 
       return translate('fight.event.dash', { name: event.actor_name });
     case 'disengage':
       return translate('fight.event.disengage', { name: event.actor_name });
+    case 'feature':
+      return translate(`fight.event.feature.${event.feature}` as TranslationKey, { name: event.actor_name });
     case 'spell_cast': {
       const params = { caster: event.caster_name, spell: localizedName(event.spell_name, language), slot: event.slot_level };
       return translate(event.slot_level > 0 ? 'fight.event.spellSlot' : 'fight.event.spell', params);

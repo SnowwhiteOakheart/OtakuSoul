@@ -16,6 +16,8 @@ pub enum TurnDecision {
     Pass,
     /// A spell, as `cast:…` request id (see [`CastRequest`]).
     Cast(String),
+    /// A class feature by id (`second_wind`, `turn_undead` …).
+    Feature(String),
 }
 
 fn best_attack(stats: &Stats5e) -> Option<&Attack> {
@@ -36,6 +38,10 @@ pub fn monster_decision(actor: &Combatant, combatants: &[Combatant]) -> TurnDeci
     };
     if !stats.never_flees && actor.hp * 4 < actor.max_hp {
         return TurnDecision::Flee;
+    }
+    // Turned undead keep away and defend themselves.
+    if has_condition(actor, TURNED) {
+        return TurnDecision::Dodge;
     }
     let target = combatants
         .iter()

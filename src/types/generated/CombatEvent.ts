@@ -13,7 +13,7 @@ import type { LocalizedName } from "./LocalizedName";
 /**
  * One thing that happened in a fight.
  */
-export type CombatEvent = { "type": "initiative", order: Array<InitiativeEntry>, } | { "type": "turn_start", round: number, actor_id: string, actor_name: string, } | { "type": "attack", attacker_id: string, attacker_name: string, target_id: string, target_name: string, attack_id: string, attack_name: LocalizedName, roll: D20Roll, to_hit: number, total: number, target_ac: number, hit: boolean, critical: boolean, 
+export type CombatEvent = { "type": "initiative", order: Array<InitiativeEntry>, } | { "type": "feature", actor_id: string, actor_name: string, feature: string, } | { "type": "turn_start", round: number, actor_id: string, actor_name: string, } | { "type": "attack", attacker_id: string, attacker_name: string, target_id: string, target_name: string, attack_id: string, attack_name: LocalizedName, roll: D20Roll, to_hit: number, total: number, target_ac: number, hit: boolean, critical: boolean, 
 /**
  * Bless: the d4 added to the roll.
  */

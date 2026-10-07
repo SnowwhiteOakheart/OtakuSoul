@@ -7,4 +7,8 @@ export type TurnBudget = { movement_left_ft: number, action_used: boolean, bonus
 /**
  * Disengage taken: leaving reach provokes no opportunity attacks this turn.
  */
-disengaged: boolean, };
+disengaged: boolean, 
+/**
+ * Sneak Attack is once per turn.
+ */
+sneak_used: boolean, };
