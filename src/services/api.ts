@@ -46,6 +46,7 @@ import {
   ScannedModel,
   BattleMap,
   SpellData,
+  ItemData,
   CombatOptions,
   ScannedVrm,
   AvatarMotion,
@@ -518,6 +519,20 @@ export const api = {
 
   listSrdSpells: async (): Promise<SpellData[]> => {
     return await invoke<SpellData[]>('list_srd_spells');
+  },
+
+  listSrdItems: async (): Promise<ItemData[]> => {
+    return await invoke<ItemData[]>('list_srd_items');
+  },
+
+  /** 5e: a party member puts on gear from the inventory. */
+  equipStageItem: async (sceneId: string, memberId: string, itemId: string): Promise<SceneState> => {
+    return await invoke<SceneState>('equip_stage_item', { sceneId, memberId, itemId });
+  },
+
+  /** 5e: a party member takes gear off into the inventory. */
+  unequipStageItem: async (sceneId: string, memberId: string, srdId: string): Promise<SceneState> => {
+    return await invoke<SceneState>('unequip_stage_item', { sceneId, memberId, srdId });
   },
 
   runStageTurn: async (request: StageTurnRequest): Promise<SceneState> => {

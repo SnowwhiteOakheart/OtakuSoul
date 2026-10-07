@@ -167,6 +167,10 @@ pub struct InventoryItem {
     pub stress_restore: i32,
     #[serde(default)]
     pub clears_condition: Option<String>,
+    /// SRD equipment id (`longsword`, `potion_of_healing` …) for 5e gear and loot.
+    #[serde(default)]
+    #[ts(optional)]
+    pub srd_id: Option<String>,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize, TS)]

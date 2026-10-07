@@ -106,6 +106,9 @@ export interface StageSlice {
   runStageExploration: (action?: string) => Promise<void>;
   /** Adventure acts: on to the next act with the party. */
   continueAdventure: () => Promise<void>;
+  /** 5e gear: put on an inventory item / take gear off (outside fights). */
+  equipStageItem: (memberId: string, itemId: string) => Promise<void>;
+  unequipStageItem: (memberId: string, srdId: string) => Promise<void>;
   /** What the current combatant may do on the board (squares, attacks in reach). */
   stageCombatOptions: CombatOptions | null;
   refreshStageCombatOptions: () => Promise<void>;
@@ -536,6 +539,26 @@ export const createStageSlice: SliceCreator<StageSlice> = (set, get) => ({
       // Starting to explore happens in the background; a refused step is the player's to know.
       if (action) reportFailure('Failed to explore:', e);
       else console.error('Failed to start exploring:', e);
+    }
+  },
+
+  equipStageItem: async (memberId, itemId) => {
+    const current = get().stageState;
+    if (!current) return;
+    try {
+      set({ stageState: await api.equipStageItem(current.definition.id, memberId, itemId) });
+    } catch (e) {
+      reportFailure('Failed to equip item:', e);
+    }
+  },
+
+  unequipStageItem: async (memberId, srdId) => {
+    const current = get().stageState;
+    if (!current) return;
+    try {
+      set({ stageState: await api.unequipStageItem(current.definition.id, memberId, srdId) });
+    } catch (e) {
+      reportFailure('Failed to unequip item:', e);
     }
   },
 

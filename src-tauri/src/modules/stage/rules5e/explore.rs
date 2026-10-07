@@ -6,6 +6,15 @@
 use super::*;
 use std::collections::VecDeque;
 
+/// One kind of found item and how many.
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize, TS)]
+#[ts(export)]
+pub struct LootItem {
+    pub srd_id: String,
+    pub name: LocalizedName,
+    pub quantity: u32,
+}
+
 /// What happened while exploring (log in the UI, facts for the game master).
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize, TS)]
 #[serde(tag = "type", rename_all = "snake_case")]
@@ -62,6 +71,10 @@ pub enum ExploreEvent {
     Goal {
         goal_id: String,
         title: LocalizedName,
+    },
+    /// Items found (a chest, the spoils of a fight).
+    Loot {
+        items: Vec<LootItem>,
     },
     /// The party reaches a new level (milestone after an act).
     LevelUp {

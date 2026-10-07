@@ -209,6 +209,12 @@ Hub). Integrationen → Bildgenerierung enthält nur Studio und Galerie.
   (das SRD hat keine Tabelle); vom Planer erfundene Kämpfe werden weit über „tödlich“ gekürzt (`start_encounter_at`
   mit `limit`), vorbereitete nicht; `EncounterState.difficulty` zeigt das Kampfpanel. Monster ohne Token-SVG zeigen
   ihren Anfangsbuchstaben (`MONSTER_TOKENS` in `StageBattleMap`).
+  Ausrüstung: `presets/srd5/equipment.json` + `rules5e/equipment.rs` (`Stats5e.equipped`, `recompute_gear` setzt
+  `armor_class` und Waffenangriffe neu, andere Vorlagenangriffe wie Feuerpfeil bleiben; Klassen haben `proficiencies`
+  und Startausrüstung `equipment`). Inventar-Einträge tragen `srd_id`; `explore5e::add_items` (Einträge `id`/`id*n`,
+  gleiche stapeln), Beute aus `BattleMap.loot` (Truhen) und `MapEncounter.loot` (Sieg), Planer `inventory_add.srd_id`.
+  Anlegen/Ablegen nur außerhalb von Kämpfen (`equip_stage_item`/`unequip_stage_item`, Snapshot), Bogen-Abschnitt
+  `sheet-gear`, Werte-Text `utils/srdItems.ts` (`itemSummary`, Katalog über `list_srd_items`).
 - Stimmeffekte: `VoiceConfig.effects` (`VoiceEffects`), gerendert in `services/voiceEffects.ts` (OfflineAudioContext, Tonhöhe per
   WSOLA) über `audioPlayer.enqueue(…, effects)`; jeder neue Abspielweg muss `config.effects` mitgeben.
 - Bild-LoRAs (`image_loras.rs`): `sd-server` ignoriert `<lora:…>` im Prompt; LoRAs gehen als `lora: [{path, multiplier}]`

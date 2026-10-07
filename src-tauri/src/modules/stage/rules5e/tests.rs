@@ -1674,3 +1674,80 @@ fn a_wizard_casts_shield_when_it_turns_a_hit_into_a_miss() {
         lyra.hp = lyra.max_hp;
     }
 }
+
+#[test]
+fn starting_gear_gives_the_class_armor_class_and_attacks() {
+    assert!(items().len() >= 20);
+    for class_data in classes() {
+        for id in &class_data.equipment {
+            assert!(item(id).is_some(), "{id}");
+        }
+        let (stats, _) = hero_stats(class_data);
+        assert_eq!(
+            stats.armor_class, class_data.armor_class,
+            "{}",
+            class_data.id
+        );
+        assert_eq!(stats.armor_class, worn_armor_class(&stats));
+        let ids: Vec<&str> = stats.attacks.iter().map(|a| a.id.as_str()).collect();
+        let template: Vec<&str> = class_data.attacks.iter().map(|a| a.id.as_str()).collect();
+        let mut sorted = ids.clone();
+        sorted.sort();
+        let mut expected = template.clone();
+        expected.sort();
+        assert_eq!(sorted, expected, "{}", class_data.id);
+    }
+    // Loot on the bundled maps names real items.
+    for map in battle_maps() {
+        for entry in map
+            .loot
+            .iter()
+            .flat_map(|l| l.items.iter())
+            .chain(map.encounters.iter().flat_map(|e| e.loot.iter()))
+        {
+            let id = entry.split('*').next().unwrap();
+            assert!(item(id).is_some(), "{}: {entry}", map.id);
+        }
+    }
+}
+
+#[test]
+fn equipping_changes_armor_class_and_attacks_within_proficiencies() {
+    let mut thorin = hero("thorin", "fighter", "player");
+    let stats = thorin.stats5e.as_mut().unwrap();
+    assert!(unequip(stats, "chain_mail"));
+    assert_eq!(stats.armor_class, 10 + 1 + 2, "unarmored + DEX + shield");
+    assert_eq!(equip(stats, "splint"), Ok(Vec::new()));
+    assert_eq!(stats.armor_class, 19);
+    assert_eq!(equip(stats, "chain_mail"), Ok(vec!["splint".to_string()]));
+    // A third weapon fits; a fourth replaces the first.
+    assert_eq!(equip(stats, "greataxe"), Ok(Vec::new()));
+    let greataxe = stats.attack("greataxe").unwrap();
+    assert_eq!((greataxe.to_hit, greataxe.damage.as_str()), (4, "1d12+2"));
+    assert_eq!(equip(stats, "handaxe"), Ok(vec!["longsword".to_string()]));
+    assert!(stats.attack("longsword").is_none() && stats.attack("handaxe_thrown").is_some());
+
+    let mut lyra = hero("lyra", "wizard", "player");
+    let stats = lyra.stats5e.as_mut().unwrap();
+    assert_eq!(equip(stats, "leather"), Err(EquipProblem::NotProficient));
+    assert_eq!(
+        equip(stats, "potion_of_healing"),
+        Err(EquipProblem::NotWearable)
+    );
+    // A wizard can swing a longsword, but without proficiency.
+    equip(stats, "longsword").unwrap();
+    assert_eq!(stats.attack("longsword").unwrap().to_hit, -1);
+    assert!(stats.attack("fire_bolt").is_some(), "spell attacks stay");
+
+    let mut finn = hero("finn", "rogue", "player");
+    level_up(&mut finn, 2);
+    let stats = finn.stats5e.as_mut().unwrap();
+    equip(stats, "studded_leather").unwrap();
+    assert_eq!(stats.armor_class, 14);
+    level_up(&mut finn, 3);
+    assert_eq!(
+        finn.stats5e.as_ref().unwrap().armor_class,
+        14,
+        "gear survives a level-up"
+    );
+}

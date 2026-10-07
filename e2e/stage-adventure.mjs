@@ -99,6 +99,21 @@ try {
   assert.ok(ended.combat.events.some((e) => e.type === 'combat_end' && e.outcome === 'victory'), 'Hinterhalt nicht überstanden');
   await browser.$('[data-goal="hinterhalt"][data-reached="true"]').waitForExist({ timeout: 10_000, timeoutMsg: 'Ziel nicht abgehakt' });
 
+  // The bandits' spoils land in the inventory; Finn takes up their light crossbow.
+  const looted = await invoke('get_stage_state');
+  assert.ok(looted.inventory.some((i) => i.srd_id === 'light_crossbow'), 'keine Beute');
+  assert.ok(looted.exploration.some((e) => e.type === 'loot'));
+  await browser.$('button[aria-label="Charakterbogen von Finn Flinkfuß öffnen"]').click();
+  await browser.$('[data-testid="sheet-gear"]').waitForDisplayed({ timeout: 10_000 });
+  await browser.$('[data-equip="light_crossbow"]').click();
+  await browser.waitUntil(async () => {
+    const s = await invoke('get_stage_state');
+    return s.combat.combatants.find((c) => c.name === 'Finn Flinkfuß').stats5e.equipped.includes('light_crossbow');
+  }, { timeout: 10_000, timeoutMsg: 'Armbrust nicht angelegt' });
+  await browser.$('[data-equipped="light_crossbow"]').waitForExist({ timeout: 5_000 });
+  await shot('78-abenteuer-ausruestung');
+  await browser.keys('Escape');
+
   // 3) Along the road to the west edge: the act is complete.
   for (let step = 0; step < 6 && !(await exists('[data-testid="act-done"]')); step += 1) {
     const target = await browser.execute(() => {

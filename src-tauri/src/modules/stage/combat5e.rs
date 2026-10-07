@@ -128,8 +128,14 @@ pub fn planner_encounter_rule(state: &SceneState) -> String {
     format!(
         r#"- encounter: only to start or end a fight. Start: {{"action":"start", "enemies":[{{"monster":"goblin", "count":2}}]}} with monster ids from: {ids}. End without a winner (surrender, escape, truce): {{"action":"end"}}. A rules engine resolves every attack, hit and wound – never put damage, hit points or hp_updates into the plan.
 - Encounter budget for this party (XP, a group counts +25 % per extra monster): easy {easy}, medium {medium}, hard {hard}, deadly {deadly}. Pick monsters to fit the story; the engine trims groups far beyond deadly.
+- inventory_add (5e): gear, potions and coins as {{"srd_id": "<id>", "quantity": 1}} with ids from: {items}; other finds as before.
 - dice_check (5e): skill_name must be one of {skills}; the engine adds the character's own bonus, so the formula is ignored.{map_rule}"#,
         skills = rules5e::skill_ids().join(", "),
+        items = rules5e::items()
+            .iter()
+            .map(|i| i.id.as_str())
+            .collect::<Vec<_>>()
+            .join(", "),
     )
 }
 

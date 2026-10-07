@@ -361,6 +361,7 @@ fn apply(
                 (rules5e::Interaction::OpenChest, _) => {
                     rules5e::set_object(map, target, "chest_open");
                     events.push(ExploreEvent::Chest { at: target });
+                    events.extend(take_chest_loot(state, target));
                 }
                 (
                     rules5e::Interaction::LockedDoor | rules5e::Interaction::LockedChest,
@@ -390,6 +391,7 @@ fn apply(
                         if locked == rules5e::Interaction::LockedChest {
                             rules5e::set_object(map, target, "chest_open");
                             events.push(ExploreEvent::Chest { at: target });
+                            events.extend(take_chest_loot(state, target));
                         } else {
                             rules5e::set_object(map, target, "door_open");
                             events.push(ExploreEvent::Door {
@@ -457,8 +459,155 @@ pub fn won_fight(state: &mut SceneState) {
     let Some(id) = state.map.as_mut().and_then(|m| m.active_encounter.take()) else {
         return;
     };
-    let events = reach_goal(state, "encounter", &id);
+    let mut events = reach_goal(state, "encounter", &id);
+    let loot = state
+        .map
+        .as_ref()
+        .and_then(|m| m.encounters.iter().find(|e| e.id == id))
+        .map(|e| e.loot.clone())
+        .unwrap_or_default();
+    if !loot.is_empty() {
+        let items = add_items(state, &loot, &reply_code());
+        events.insert(0, ExploreEvent::Loot { items });
+    }
     push_events(state, events);
+}
+
+fn reply_code() -> String {
+    crate::modules::content_lang::language_code(
+        &crate::modules::content_lang::ContentLang::reply_language_name(),
+    )
+}
+
+/// Parses `id` or `id*count` into an SRD item and a count.
+fn loot_entry(entry: &str) -> Option<(&'static rules5e::ItemData, u32)> {
+    let (id, count) = match entry.split_once('*') {
+        Some((id, count)) => (id.trim(), count.trim().parse().ok()?),
+        None => (entry.trim(), 1),
+    };
+    rules5e::item(id).map(|item| (item, count))
+}
+
+/// Puts SRD items into the party inventory (same items stack); returns what was added.
+pub fn add_items(
+    state: &mut SceneState,
+    entries: &[String],
+    language_code: &str,
+) -> Vec<rules5e::LootItem> {
+    let mut added = Vec::new();
+    for (data, count) in entries.iter().filter_map(|e| loot_entry(e)) {
+        if let Some(existing) = state
+            .inventory
+            .iter_mut()
+            .find(|i| i.srd_id.as_deref() == Some(data.id.as_str()))
+        {
+            existing.quantity = existing.quantity.saturating_add(count);
+        } else {
+            let heal = data
+                .heal
+                .as_deref()
+                .and_then(rules5e::DiceFormula::parse)
+                .map_or(0, |f| f.average());
+            state.inventory.push(InventoryItem {
+                id: format!("item_{}_{}", data.id, Utc::now().timestamp_micros()),
+                name: data.name.get(language_code).to_string(),
+                description: String::new(),
+                quantity: count,
+                item_type: match data.kind {
+                    rules5e::ItemKind::Potion => "consumable",
+                    rules5e::ItemKind::Treasure => "treasure",
+                    _ => "equipment",
+                }
+                .to_string(),
+                hp_restore: heal,
+                stress_restore: 0,
+                clears_condition: None,
+                srd_id: Some(data.id.clone()),
+            });
+        }
+        added.push(rules5e::LootItem {
+            srd_id: data.id.clone(),
+            name: data.name.clone(),
+            quantity: count,
+        });
+    }
+    added
+}
+
+/// What lies in the chest at `at` goes to the party (once).
+fn take_chest_loot(state: &mut SceneState, at: GridPos) -> Option<ExploreEvent> {
+    let map = state.map.as_mut()?;
+    let index = map.loot.iter().position(|l| l.at == at)?;
+    let entries = map.loot.remove(index).items;
+    let items = add_items(state, &entries, &reply_code());
+    (!items.is_empty()).then_some(ExploreEvent::Loot { items })
+}
+
+/// Why equipping failed, as a translatable error.
+fn equip_error(problem: rules5e::EquipProblem) -> String {
+    match problem {
+        rules5e::EquipProblem::NotProficient => crate::err!("backend.stage.notProficient"),
+        rules5e::EquipProblem::Unknown | rules5e::EquipProblem::NotWearable => {
+            crate::err!("backend.stage.cannotEquip")
+        }
+    }
+}
+
+/// A party member puts on gear from the inventory; what comes off goes back into it.
+pub fn equip_item(
+    state: &mut SceneState,
+    member_id: &str,
+    inventory_id: &str,
+) -> Result<(), String> {
+    if state.combat.is_active {
+        return Err(crate::err!("backend.stage.inCombat"));
+    }
+    let position = state
+        .inventory
+        .iter()
+        .position(|i| i.id == inventory_id)
+        .ok_or_else(|| crate::err!("backend.stage.itemMissing"))?;
+    let srd_id = state.inventory[position]
+        .srd_id
+        .clone()
+        .ok_or_else(|| crate::err!("backend.stage.cannotEquip"))?;
+    let hero = state
+        .combat
+        .combatants
+        .iter_mut()
+        .find(|c| c.id == member_id && rules5e::is_party(c))
+        .ok_or_else(|| crate::err!("backend.stage.cannotEquip"))?;
+    let stats = hero
+        .stats5e
+        .as_mut()
+        .ok_or_else(|| crate::err!("backend.stage.cannotEquip"))?;
+    let removed = rules5e::equip(stats, &srd_id).map_err(equip_error)?;
+    let item = &mut state.inventory[position];
+    item.quantity = item.quantity.saturating_sub(1);
+    if item.quantity == 0 {
+        state.inventory.remove(position);
+    }
+    add_items(state, &removed, &reply_code());
+    Ok(())
+}
+
+/// A party member takes gear off; it goes into the inventory.
+pub fn unequip_item(state: &mut SceneState, member_id: &str, srd_id: &str) -> Result<(), String> {
+    if state.combat.is_active {
+        return Err(crate::err!("backend.stage.inCombat"));
+    }
+    let hero = state
+        .combat
+        .combatants
+        .iter_mut()
+        .find(|c| c.id == member_id && rules5e::is_party(c))
+        .and_then(|c| c.stats5e.as_mut())
+        .ok_or_else(|| crate::err!("backend.stage.cannotEquip"))?;
+    if !rules5e::unequip(hero, srd_id) {
+        return Err(crate::err!("backend.stage.itemMissing"));
+    }
+    add_items(state, &[srd_id.to_string()], &reply_code());
+    Ok(())
 }
 
 /// Goes on with the next act: the party (classes, hit points after a long rest, spells),
@@ -595,9 +744,7 @@ fn report(events: &[ExploreEvent], state: &SceneState) -> String {
                 "A door is closed."
             }
             .to_string(),
-            ExploreEvent::Chest { .. } => {
-                "A chest is opened (describe what lies inside, nothing magical yet).".to_string()
-            }
+            ExploreEvent::Chest { .. } => "A chest is opened.".to_string(),
             ExploreEvent::Locked { .. } => "It is locked.".to_string(),
             ExploreEvent::Check {
                 actor_name,
@@ -638,6 +785,14 @@ fn report(events: &[ExploreEvent], state: &SceneState) -> String {
                 format!("Enemies appear and a fight begins: {}.", foes.join(", "))
             }
             ExploreEvent::Goal { title, .. } => format!("The party reaches a goal: {}.", title.en),
+            ExploreEvent::Loot { items } => format!(
+                "The party finds: {}.",
+                items
+                    .iter()
+                    .map(|i| format!("{}× {}", i.quantity, i.name.en))
+                    .collect::<Vec<_>>()
+                    .join(", ")
+            ),
             ExploreEvent::LevelUp { level } => {
                 format!("The party has grown stronger: level {level}.")
             }
@@ -1248,6 +1403,111 @@ mod tests {
             matches!(events.last(), Some(ExploreEvent::ActComplete { next_scene: Some(n) }) if n == "akt2_gruft")
         );
         assert!(state.objectives.iter().all(|o| o.status == "completed"));
+    }
+
+    #[test]
+    fn chests_and_won_fights_fill_the_inventory_and_gear_can_be_worn() {
+        let mut state = crypt();
+        let map = state.map.as_mut().unwrap();
+        map.revealed.fill(true);
+        map.locks.clear();
+        map.triggered.push("ossuary_dead".into());
+        map.traps.clear();
+        let before = state.inventory.len();
+        let (events, _) = apply(&mut state, ExploreAction::Use(GridPos::new(1, 10))).unwrap();
+        assert!(
+            events
+                .iter()
+                .any(|e| matches!(e, ExploreEvent::Loot { items } if items.len() == 3))
+        );
+        assert_eq!(state.inventory.len(), before + 3);
+        let gold = state
+            .inventory
+            .iter()
+            .find(|i| i.srd_id.as_deref() == Some("gold_piece"))
+            .unwrap();
+        assert_eq!((gold.quantity, gold.item_type.as_str()), (25, "treasure"));
+        let potion = state
+            .inventory
+            .iter()
+            .find(|i| i.srd_id.as_deref() == Some("potion_of_healing"))
+            .unwrap();
+        assert_eq!(
+            (potion.hp_restore, potion.item_type.as_str()),
+            (7, "consumable")
+        );
+        assert!(
+            state.map.as_ref().unwrap().loot.is_empty(),
+            "a chest is emptied once"
+        );
+
+        // Lyra (a rogue in this test scene) puts on the studded leather; the old leather goes into the pack.
+        let finn = state
+            .combat
+            .combatants
+            .iter()
+            .find(|c| c.name == "Lyra")
+            .map(|c| c.id.clone())
+            .unwrap();
+        let armor = state
+            .inventory
+            .iter()
+            .find(|i| i.srd_id.as_deref() == Some("studded_leather"))
+            .unwrap()
+            .id
+            .clone();
+        equip_item(&mut state, &finn, &armor).unwrap();
+        let lyra = state
+            .combat
+            .combatants
+            .iter()
+            .find(|c| c.id == finn)
+            .unwrap();
+        assert_eq!(lyra.stats5e.as_ref().unwrap().armor_class, 14);
+        assert!(
+            state
+                .inventory
+                .iter()
+                .any(|i| i.srd_id.as_deref() == Some("leather"))
+        );
+        assert!(
+            !state
+                .inventory
+                .iter()
+                .any(|i| i.srd_id.as_deref() == Some("studded_leather"))
+        );
+        unequip_item(&mut state, &finn, "shortsword").unwrap();
+        assert!(
+            state
+                .inventory
+                .iter()
+                .any(|i| i.srd_id.as_deref() == Some("shortsword"))
+        );
+        assert!(unequip_item(&mut state, &finn, "shortsword").is_err());
+
+        // Spoils of a prepared fight.
+        let encounter = state
+            .map
+            .as_ref()
+            .unwrap()
+            .encounters
+            .iter()
+            .find(|e| e.id == "hall_goblins")
+            .cloned()
+            .unwrap();
+        assert!(start_prepared(&mut state, &encounter, "de"));
+        assert!(
+            equip_item(&mut state, &finn, "nothing").is_err(),
+            "no changing gear mid-fight"
+        );
+        won_fight(&mut state);
+        assert!(state.exploration.iter().any(|e| matches!(e, ExploreEvent::Loot { items } if items.iter().any(|i| i.srd_id == "shortsword"))));
+        let swords = state
+            .inventory
+            .iter()
+            .find(|i| i.srd_id.as_deref() == Some("shortsword"))
+            .unwrap();
+        assert_eq!(swords.quantity, 2, "same items stack");
     }
 
     #[test]

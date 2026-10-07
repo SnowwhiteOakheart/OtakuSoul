@@ -54,6 +54,24 @@
      "range_ft": 30,
      "long_range_ft": 120
     }
+   ],
+   "proficiencies": {
+    "armor": [
+     "light",
+     "medium",
+     "heavy"
+    ],
+    "shield": true,
+    "weapons": [
+     "simple",
+     "martial"
+    ]
+   },
+   "equipment": [
+    "chain_mail",
+    "shield",
+    "longsword",
+    "javelin"
    ]
   },
   {
@@ -129,7 +147,19 @@
      "shatter",
      "blindness_deafness"
     ]
-   }
+   },
+   "proficiencies": {
+    "armor": [],
+    "shield": false,
+    "weapons": [
+     "dagger",
+     "quarterstaff",
+     "light_crossbow"
+    ]
+   },
+   "equipment": [
+    "quarterstaff"
+   ]
   },
   {
    "id": "rogue",
@@ -186,6 +216,23 @@
      "range_ft": 80,
      "long_range_ft": 320
     }
+   ],
+   "proficiencies": {
+    "armor": [
+     "light"
+    ],
+    "shield": false,
+    "weapons": [
+     "simple",
+     "rapier",
+     "shortsword",
+     "longsword"
+    ]
+   },
+   "equipment": [
+    "leather",
+    "shortsword",
+    "shortbow"
    ]
   },
   {
@@ -258,7 +305,23 @@
      "lesser_restoration",
      "blindness_deafness"
     ]
-   }
+   },
+   "proficiencies": {
+    "armor": [
+     "light",
+     "medium"
+    ],
+    "shield": true,
+    "weapons": [
+     "simple"
+    ]
+   },
+   "equipment": [
+    "scale_mail",
+    "shield",
+    "mace",
+    "light_crossbow"
+   ]
   }
  ]
 }

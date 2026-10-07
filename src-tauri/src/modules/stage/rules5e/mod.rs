@@ -9,6 +9,7 @@ pub mod combat;
 pub mod conditions;
 pub mod data;
 pub mod difficulty;
+pub mod equipment;
 pub mod explore;
 pub mod features;
 pub mod map;
@@ -25,6 +26,7 @@ pub use combat::*;
 pub use conditions::*;
 pub use data::*;
 pub use difficulty::*;
+pub use equipment::*;
 pub use explore::*;
 pub use features::*;
 pub use map::*;
@@ -169,6 +171,9 @@ pub struct Stats5e {
     /// Uses spent of limited class features (`second_wind` …) since the last rest.
     #[serde(default)]
     pub resources_used: std::collections::HashMap<String, u32>,
+    /// Ids of the equipment a hero wears (armor, shield, weapons; see `equipment.json`).
+    #[serde(default)]
+    pub equipped: Vec<String>,
 }
 
 fn humanoid() -> String {

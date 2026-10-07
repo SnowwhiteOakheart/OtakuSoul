@@ -39,6 +39,10 @@ export function exploreEventText(event: ExploreEvent, language: Language): strin
       return translate('explore.event.encounter');
     case 'goal':
       return translate('explore.event.goal', { goal: localizedName(event.title, language) });
+    case 'loot':
+      return translate('explore.event.loot', {
+        items: event.items.map((item) => `${item.quantity}× ${localizedName(item.name, language)}`).join(', '),
+      });
     case 'level_up':
       return translate('explore.event.levelUp', { level: event.level });
     case 'act_complete':

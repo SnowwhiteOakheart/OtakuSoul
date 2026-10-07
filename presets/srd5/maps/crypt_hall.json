@@ -162,7 +162,11 @@
      "count": 2
     }
    ],
-   "zone": "spawn"
+   "zone": "spawn",
+   "loot": [
+    "shortsword",
+    "gold_piece*8"
+   ]
   },
   {
    "id": "ossuary_dead",
@@ -173,7 +177,10 @@
      "count": 2
     }
    ],
-   "zone": "spawn_ossuary"
+   "zone": "spawn_ossuary",
+   "loot": [
+    "rapier"
+   ]
   }
  ],
  "exits": [
@@ -208,6 +215,19 @@
     "y": 10
    },
    "dc": 13
+  }
+ ],
+ "loot": [
+  {
+   "at": {
+    "x": 1,
+    "y": 10
+   },
+   "items": [
+    "potion_of_healing",
+    "studded_leather",
+    "gold_piece*25"
+   ]
   }
  ]
 }

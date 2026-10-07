@@ -1850,6 +1850,14 @@ veraltet und sind korrigiert: `chat-sidebar-errors` las die Sitzung, bevor der e
   Engine abhakt; „Weiter mit dem nächsten Akt“ nimmt Gruppe, Klassen und Inventar mit. Lobby fragt vor dem Start nach
   der Gruppe (klassisch, eigene Gefährten oder gemischt), der Charakter-Editor kennt eine 5e-Klasse, der Info-Dialog
   nennt das SRD 5.1. E2E `stage-adventure.mjs` spielt Akt 1 von der Lobby bis in Akt 2.
+- [x] **Soul Stage 5e – Schritt 6 (Ausbau, `Roadmap_DND.md`):** Stufenaufstieg 1 → 3 per Meilenstein nach jedem Akt
+  (SRD-Festwerte für Trefferpunkte, Zauberplätze, Zauber des 2. Grades) mit Klassenmerkmalen: Zweiter Atem, Tatendrang,
+  Verbesserter kritischer Treffer, Hinterhältiger Angriff, Raffinierte Aktion, Jünger des Lebens, Untote vertreiben,
+  Arkane Erholung. Reaktion *Schild*, neue Zauber (Schockgriff, Zerbersten, Blindheit/Taubheit) und Monster (Hobgoblin,
+  Grottenschrat, Riesenspinne, Schreckenswolf, Oger); Begegnungs-Schwierigkeit nach SRD-Erfahrungspunkten mit eigenem
+  Gruppenbudget, das erfundene Übermacht kürzt. Ausrüstung nach SRD: RK aus Rüstung und Schild, Waffenangriffe aus den
+  angelegten Waffen, Übungen je Klasse; Beute aus Truhen, Siegen und vom Spielleiter landet im Inventar und lässt sich
+  im Charakterbogen anlegen.
 
 
 ## Grafiken für das Spielbrett (07.10.2026)

@@ -98,6 +98,7 @@ import type { ExploreEvent } from './generated/ExploreEvent';
 import type { CombatOptions } from './generated/CombatOptions';
 import type { SpellOption } from './generated/SpellOption';
 import type { SpellData } from './generated/SpellData';
+import type { ItemData } from './generated/ItemData';
 import type { Area } from './generated/Area';
 import type { SceneRules } from './generated/SceneRules';
 export type {
@@ -109,6 +110,7 @@ export type {
   CombatOptions,
   SpellOption,
   SpellData,
+  ItemData,
   Area,
   CombatEvent,
   SceneRules,
@@ -540,6 +542,8 @@ export interface InventoryItem {
   hp_restore?: number;
   stress_restore?: number;
   clears_condition?: string | null;
+  /** SRD equipment id for 5e gear and loot. */
+  srd_id?: string;
 }
 
 export interface TaggedChoice {

@@ -5,4 +5,8 @@ export type MapEncounter = { id: string, room: string, monsters: Array<Encounter
 /**
  * Placement zone of the monsters.
  */
-zone: string, };
+zone: string, 
+/**
+ * What the defeated leave behind (`id` or `id*count`).
+ */
+loot: Array<string>, };

@@ -4,6 +4,7 @@ import { useStoreFields } from '../../store/useAppStore';
 import { useTranslation, type TranslationKey } from '../../i18n';
 import { conditionLabel, damageTypeLabel, localizedName } from '../../utils/combatEvents';
 import { useSrdSpells } from '../../utils/srdSpells';
+import { itemSummary, useSrdItems } from '../../utils/srdItems';
 import type { Combatant } from '../../types';
 
 const ABILITIES = ['str', 'dex', 'con', 'int', 'wis', 'cha'] as const;
@@ -29,8 +30,11 @@ const signed = (value: number) => (value >= 0 ? `+${value}` : `${value}`);
 /** 5e character sheet: abilities, saves, skills, armor class, hit points, attacks, spells, death saves. */
 export const Character5eSheet: React.FC<{ member: Combatant; onClose: () => void }> = ({ member, onClose }) => {
   const { t } = useTranslation();
-  const { appLanguage } = useStoreFields('appLanguage');
+  const { appLanguage, stageState, equipStageItem, unequipStageItem, isProcessingStageTurn } = useStoreFields(
+    'appLanguage', 'stageState', 'equipStageItem', 'unequipStageItem', 'isProcessingStageTurn',
+  );
   const spellData = useSrdSpells();
+  const itemData = useSrdItems();
   const stats = member.stats5e;
   if (!stats) return null;
   const proficiency = 2 + Math.floor((Math.max(1, stats.level) - 1) / 4);
@@ -114,6 +118,69 @@ export const Character5eSheet: React.FC<{ member: Combatant; onClose: () => void
             ))}
           </ul>
         </div>
+        {stats.class_id && (() => {
+          const inFight = !!stageState?.combat.is_active;
+          const wearable = (stageState?.inventory ?? []).filter((entry) => {
+            const data = entry.srd_id ? itemData.get(entry.srd_id) : undefined;
+            return data && ['armor', 'shield', 'weapon'].includes(data.kind);
+          });
+          const button = 'rounded-md border px-1.5 py-0.5 text-[11px] font-semibold disabled:opacity-40';
+          return (
+            <div data-testid="sheet-gear">
+              <h3 className={heading}>{t('gear.title')}</h3>
+              {inFight && <p className="mb-1 text-[11px] text-amber-300">{t('gear.inFight')}</p>}
+              <ul className="space-y-1 text-xs">
+                {stats.equipped.map((id) => {
+                  const data = itemData.get(id);
+                  return (
+                    <li key={id} data-equipped={id} className="flex items-center justify-between gap-2 rounded-lg bg-app/60 px-2 py-1">
+                      <span>
+                        <span className="font-semibold text-slate-100">{data ? localizedName(data.name, appLanguage) : id}</span>
+                        {data && <span className="ml-2 text-slate-400">{itemSummary(data)}</span>}
+                      </span>
+                      <button
+                        type="button"
+                        disabled={inFight || isProcessingStageTurn}
+                        onClick={() => void unequipStageItem(member.id, id)}
+                        className={`${button} border-slate-600 text-slate-300 hover:bg-slate-800`}
+                      >
+                        {t('gear.unequip')}
+                      </button>
+                    </li>
+                  );
+                })}
+              </ul>
+              <p className="mt-2 mb-1 text-[11px] font-semibold text-slate-400">{t('gear.fromInventory')}</p>
+              {wearable.length === 0 ? (
+                <p className="text-[11px] text-slate-500">{t('gear.nothing')}</p>
+              ) : (
+                <ul className="space-y-1 text-xs">
+                  {wearable.map((entry) => {
+                    const data = itemData.get(entry.srd_id!)!;
+                    return (
+                      <li key={entry.id} className="flex items-center justify-between gap-2 rounded-lg border border-dashed border-slate-700 px-2 py-1">
+                        <span>
+                          <span className="text-slate-200">{entry.name}</span>
+                          <span className="ml-1 text-slate-500">×{entry.quantity}</span>
+                          <span className="ml-2 text-slate-400">{itemSummary(data)}</span>
+                        </span>
+                        <button
+                          type="button"
+                          data-equip={entry.srd_id}
+                          disabled={inFight || isProcessingStageTurn}
+                          onClick={() => void equipStageItem(member.id, entry.id)}
+                          className={`${button} border-emerald-500/50 text-emerald-200 hover:bg-emerald-950`}
+                        >
+                          {t('gear.equip')}
+                        </button>
+                      </li>
+                    );
+                  })}
+                </ul>
+              )}
+            </div>
+          );
+        })()}
         {(FEATURES[stats.class_id] ?? []).some(([from]) => from <= stats.level) && (
           <div data-testid="sheet-features">
             <h3 className={heading}>{t('fight.sheet.features')}</h3>

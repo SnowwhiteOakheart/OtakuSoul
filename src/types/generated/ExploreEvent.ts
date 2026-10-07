@@ -2,8 +2,9 @@
 import type { D20Roll } from "./D20Roll";
 import type { GridPos } from "./GridPos";
 import type { LocalizedName } from "./LocalizedName";
+import type { LootItem } from "./LootItem";
 
 /**
  * What happened while exploring (log in the UI, facts for the game master).
  */
-export type ExploreEvent = { "type": "move", actor_name: string, feet: number, } | { "type": "room", room_id: string, name: LocalizedName, description: string, } | { "type": "door", at: GridPos, opened: boolean, } | { "type": "chest", at: GridPos, } | { "type": "locked", at: GridPos, } | { "type": "check", actor_name: string, skill: string, roll: D20Roll, bonus: number, total: number, dc: number, success: boolean, } | { "type": "trap_spotted", at: GridPos, by_name: string, } | { "type": "trap", at: GridPos, target_name: string, saved: boolean, damage: number, down: boolean, } | { "type": "encounter", encounter_id: string, } | { "type": "map_change", map_id: string, name: LocalizedName, } | { "type": "goal", goal_id: string, title: LocalizedName, } | { "type": "level_up", level: number, } | { "type": "act_complete", next_scene?: string, };
+export type ExploreEvent = { "type": "move", actor_name: string, feet: number, } | { "type": "room", room_id: string, name: LocalizedName, description: string, } | { "type": "door", at: GridPos, opened: boolean, } | { "type": "chest", at: GridPos, } | { "type": "locked", at: GridPos, } | { "type": "check", actor_name: string, skill: string, roll: D20Roll, bonus: number, total: number, dc: number, success: boolean, } | { "type": "trap_spotted", at: GridPos, by_name: string, } | { "type": "trap", at: GridPos, target_name: string, saved: boolean, damage: number, down: boolean, } | { "type": "encounter", encounter_id: string, } | { "type": "map_change", map_id: string, name: LocalizedName, } | { "type": "goal", goal_id: string, title: LocalizedName, } | { "type": "loot", items: Array<LootItem>, } | { "type": "level_up", level: number, } | { "type": "act_complete", next_scene?: string, };

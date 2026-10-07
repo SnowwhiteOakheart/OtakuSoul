@@ -363,6 +363,52 @@ pub async fn run_stage_exploration(
     .await
 }
 
+/// 5e: a party member puts on gear from the inventory (outside fights).
+#[tauri::command]
+pub fn equip_stage_item(
+    state: State<'_, AppState>,
+    scene_id: String,
+    member_id: String,
+    item_id: String,
+) -> Result<crate::modules::stage::SceneState, String> {
+    change_gear(&state, &scene_id, |scene| {
+        crate::modules::stage::equip_item(scene, &member_id, &item_id)
+    })
+}
+
+/// 5e: a party member takes gear off into the inventory (outside fights).
+#[tauri::command]
+pub fn unequip_stage_item(
+    state: State<'_, AppState>,
+    scene_id: String,
+    member_id: String,
+    srd_id: String,
+) -> Result<crate::modules::stage::SceneState, String> {
+    change_gear(&state, &scene_id, |scene| {
+        crate::modules::stage::unequip_item(scene, &member_id, &srd_id)
+    })
+}
+
+fn change_gear(
+    state: &State<'_, AppState>,
+    scene_id: &str,
+    change: impl FnOnce(&mut crate::modules::stage::SceneState) -> Result<(), String>,
+) -> Result<crate::modules::stage::SceneState, String> {
+    let _turn = state
+        .stage_turn
+        .try_lock()
+        .map_err(|_| crate::err!("backend.stage.editorBusy"))?;
+    let mut scene = state.stage_engine.get_state();
+    if scene.definition.id != scene_id {
+        scene = crate::modules::stage::load_scene_by_id(scene_id)?;
+    }
+    state.stage_engine.push_snapshot(scene_id, scene.clone());
+    change(&mut scene)?;
+    crate::modules::stage::save_scene_state(&scene)?;
+    state.stage_engine.set_state(scene.clone());
+    Ok(scene)
+}
+
 /// Adventure acts: goes on with the next act, taking the party and inventory along.
 #[tauri::command]
 pub fn continue_stage_adventure(
@@ -388,6 +434,12 @@ pub fn get_stage_combat_options(
 #[tauri::command]
 pub fn list_srd_spells() -> Vec<crate::modules::stage::rules5e::SpellData> {
     crate::modules::stage::rules5e::spells().to_vec()
+}
+
+/// The bundled SRD equipment for 5e scenes (names and values for sheet and inventory).
+#[tauri::command]
+pub fn list_srd_items() -> Vec<crate::modules::stage::rules5e::ItemData> {
+    crate::modules::stage::rules5e::items().to_vec()
 }
 
 /// The bundled battle maps for 5e scenes.

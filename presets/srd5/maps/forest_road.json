@@ -154,7 +154,12 @@
      "count": 2
     }
    ],
-   "zone": "spawn"
+   "zone": "spawn",
+   "loot": [
+    "light_crossbow",
+    "potion_of_healing",
+    "gold_piece*12"
+   ]
   },
   {
    "id": "stream_wolves",
@@ -165,7 +170,8 @@
      "count": 2
     }
    ],
-   "zone": "spawn_south"
+   "zone": "spawn_south",
+   "loot": []
   }
  ],
  "exits": [

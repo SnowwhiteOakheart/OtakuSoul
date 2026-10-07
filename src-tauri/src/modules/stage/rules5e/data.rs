@@ -98,6 +98,11 @@ pub struct ClassData {
     pub attacks: Vec<ClassAttackData>,
     #[serde(default)]
     pub spellcasting: Option<ClassSpellcasting>,
+    #[serde(default)]
+    pub proficiencies: ClassProficiencies,
+    /// Starting equipment (ids from `equipment.json`).
+    #[serde(default)]
+    pub equipment: Vec<String>,
 }
 
 #[derive(Deserialize)]
@@ -187,6 +192,7 @@ pub fn monster_stats(data: &MonsterData) -> (Stats5e, i32) {
         death_saves: DeathSaves::default(),
         concentration: None,
         resources_used: Default::default(),
+        equipped: Vec::new(),
     };
     (stats, hit_dice.average().max(1))
 }
@@ -269,7 +275,10 @@ pub fn hero_stats_at(data: &ClassData, level: u32) -> (Stats5e, i32) {
         death_saves: DeathSaves::default(),
         concentration: None,
         resources_used: Default::default(),
+        equipped: data.equipment.clone(),
     };
+    let mut stats = stats;
+    recompute_gear(&mut stats);
     let con = modifier(Ability::Con);
     let per_level = (data.hit_die as i32 / 2 + 1 + con).max(1);
     let max_hp = (data.hit_die as i32 + con).max(1) + per_level * (level as i32 - 1);

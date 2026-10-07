@@ -654,6 +654,16 @@ RULES:
     }
 
     for addition in &gm_plan.inventory_add {
+        // 5e gear and loot by SRD id: name and values come from the equipment data.
+        if let Some(srd_id) = addition
+            .srd_id
+            .as_deref()
+            .filter(|id| super::rules5e::item(id).is_some())
+        {
+            let entry = format!("{srd_id}*{}", addition.quantity.max(1));
+            super::explore5e::add_items(&mut state, &[entry], &lang_code);
+            continue;
+        }
         if let Some(existing) = state
             .inventory
             .iter_mut()
@@ -670,6 +680,7 @@ RULES:
                 hp_restore: addition.hp_restore,
                 stress_restore: addition.stress_restore,
                 clears_condition: addition.clears_condition.clone(),
+                srd_id: None,
             });
         }
     }

@@ -1,0 +1,360 @@
+{
+ "_source": "System Reference Document 5.1 by Wizards of the Coast LLC, CC-BY-4.0. Armor, weapons and the potion as in the SRD equipment tables.",
+ "items": [
+  {
+   "id": "leather",
+   "name": {
+    "de": "Lederrüstung",
+    "en": "Leather armor",
+    "ru": "Кожаный доспех"
+   },
+   "kind": "armor",
+   "armor": {
+    "category": "light",
+    "base": 11
+   },
+   "value_gp": 10
+  },
+  {
+   "id": "studded_leather",
+   "name": {
+    "de": "Beschlagene Lederrüstung",
+    "en": "Studded leather",
+    "ru": "Проклёпанный кожаный доспех"
+   },
+   "kind": "armor",
+   "armor": {
+    "category": "light",
+    "base": 12
+   },
+   "value_gp": 45
+  },
+  {
+   "id": "chain_shirt",
+   "name": {
+    "de": "Kettenhemd",
+    "en": "Chain shirt",
+    "ru": "Кольчужная рубаха"
+   },
+   "kind": "armor",
+   "armor": {
+    "category": "medium",
+    "base": 13,
+    "dex_max": 2
+   },
+   "value_gp": 50
+  },
+  {
+   "id": "scale_mail",
+   "name": {
+    "de": "Schuppenpanzer",
+    "en": "Scale mail",
+    "ru": "Чешуйчатый доспех"
+   },
+   "kind": "armor",
+   "armor": {
+    "category": "medium",
+    "base": 14,
+    "dex_max": 2
+   },
+   "value_gp": 50
+  },
+  {
+   "id": "chain_mail",
+   "name": {
+    "de": "Kettenpanzer",
+    "en": "Chain mail",
+    "ru": "Кольчуга"
+   },
+   "kind": "armor",
+   "armor": {
+    "category": "heavy",
+    "base": 16,
+    "dex_max": 0
+   },
+   "value_gp": 75
+  },
+  {
+   "id": "splint",
+   "name": {
+    "de": "Schienenpanzer",
+    "en": "Splint armor",
+    "ru": "Наборный доспех"
+   },
+   "kind": "armor",
+   "armor": {
+    "category": "heavy",
+    "base": 17,
+    "dex_max": 0
+   },
+   "value_gp": 200
+  },
+  {
+   "id": "shield",
+   "name": {
+    "de": "Schild",
+    "en": "Shield",
+    "ru": "Щит"
+   },
+   "kind": "shield",
+   "value_gp": 10
+  },
+  {
+   "id": "dagger",
+   "name": {
+    "de": "Dolch",
+    "en": "Dagger",
+    "ru": "Кинжал"
+   },
+   "kind": "weapon",
+   "weapon": {
+    "category": "simple",
+    "damage": "1d4",
+    "damage_type": "piercing",
+    "finesse": true,
+    "thrown": true,
+    "range_ft": 20,
+    "long_range_ft": 60
+   },
+   "value_gp": 2
+  },
+  {
+   "id": "quarterstaff",
+   "name": {
+    "de": "Kampfstab",
+    "en": "Quarterstaff",
+    "ru": "Боевой посох"
+   },
+   "kind": "weapon",
+   "weapon": {
+    "category": "simple",
+    "damage": "1d6",
+    "damage_type": "bludgeoning"
+   },
+   "value_gp": 0.2
+  },
+  {
+   "id": "mace",
+   "name": {
+    "de": "Streitkolben",
+    "en": "Mace",
+    "ru": "Булава"
+   },
+   "kind": "weapon",
+   "weapon": {
+    "category": "simple",
+    "damage": "1d6",
+    "damage_type": "bludgeoning"
+   },
+   "value_gp": 5
+  },
+  {
+   "id": "handaxe",
+   "name": {
+    "de": "Handbeil",
+    "en": "Handaxe",
+    "ru": "Ручной топор"
+   },
+   "kind": "weapon",
+   "weapon": {
+    "category": "simple",
+    "damage": "1d6",
+    "damage_type": "slashing",
+    "thrown": true,
+    "range_ft": 20,
+    "long_range_ft": 60
+   },
+   "value_gp": 5
+  },
+  {
+   "id": "javelin",
+   "name": {
+    "de": "Wurfspeer",
+    "en": "Javelin",
+    "ru": "Метательное копьё"
+   },
+   "kind": "weapon",
+   "weapon": {
+    "category": "simple",
+    "damage": "1d6",
+    "damage_type": "piercing",
+    "thrown": true,
+    "range_ft": 30,
+    "long_range_ft": 120,
+    "thrown_only": true
+   },
+   "value_gp": 0.5
+  },
+  {
+   "id": "light_crossbow",
+   "name": {
+    "de": "Leichte Armbrust",
+    "en": "Light crossbow",
+    "ru": "Лёгкий арбалет"
+   },
+   "kind": "weapon",
+   "weapon": {
+    "category": "simple",
+    "damage": "1d8",
+    "damage_type": "piercing",
+    "ranged": true,
+    "range_ft": 80,
+    "long_range_ft": 320,
+    "two_handed": true
+   },
+   "value_gp": 25
+  },
+  {
+   "id": "shortbow",
+   "name": {
+    "de": "Kurzbogen",
+    "en": "Shortbow",
+    "ru": "Короткий лук"
+   },
+   "kind": "weapon",
+   "weapon": {
+    "category": "simple",
+    "damage": "1d6",
+    "damage_type": "piercing",
+    "ranged": true,
+    "range_ft": 80,
+    "long_range_ft": 320,
+    "two_handed": true
+   },
+   "value_gp": 25
+  },
+  {
+   "id": "shortsword",
+   "name": {
+    "de": "Kurzschwert",
+    "en": "Shortsword",
+    "ru": "Короткий меч"
+   },
+   "kind": "weapon",
+   "weapon": {
+    "category": "martial",
+    "damage": "1d6",
+    "damage_type": "piercing",
+    "finesse": true
+   },
+   "value_gp": 10
+  },
+  {
+   "id": "rapier",
+   "name": {
+    "de": "Rapier",
+    "en": "Rapier",
+    "ru": "Рапира"
+   },
+   "kind": "weapon",
+   "weapon": {
+    "category": "martial",
+    "damage": "1d8",
+    "damage_type": "piercing",
+    "finesse": true
+   },
+   "value_gp": 25
+  },
+  {
+   "id": "longsword",
+   "name": {
+    "de": "Langschwert",
+    "en": "Longsword",
+    "ru": "Длинный меч"
+   },
+   "kind": "weapon",
+   "weapon": {
+    "category": "martial",
+    "damage": "1d8",
+    "damage_type": "slashing"
+   },
+   "value_gp": 15
+  },
+  {
+   "id": "battleaxe",
+   "name": {
+    "de": "Streitaxt",
+    "en": "Battleaxe",
+    "ru": "Боевой топор"
+   },
+   "kind": "weapon",
+   "weapon": {
+    "category": "martial",
+    "damage": "1d8",
+    "damage_type": "slashing"
+   },
+   "value_gp": 10
+  },
+  {
+   "id": "warhammer",
+   "name": {
+    "de": "Kriegshammer",
+    "en": "Warhammer",
+    "ru": "Боевой молот"
+   },
+   "kind": "weapon",
+   "weapon": {
+    "category": "martial",
+    "damage": "1d8",
+    "damage_type": "bludgeoning"
+   },
+   "value_gp": 15
+  },
+  {
+   "id": "greataxe",
+   "name": {
+    "de": "Zweihandaxt",
+    "en": "Greataxe",
+    "ru": "Секира"
+   },
+   "kind": "weapon",
+   "weapon": {
+    "category": "martial",
+    "damage": "1d12",
+    "damage_type": "slashing",
+    "two_handed": true
+   },
+   "value_gp": 30
+  },
+  {
+   "id": "longbow",
+   "name": {
+    "de": "Langbogen",
+    "en": "Longbow",
+    "ru": "Длинный лук"
+   },
+   "kind": "weapon",
+   "weapon": {
+    "category": "martial",
+    "damage": "1d8",
+    "damage_type": "piercing",
+    "ranged": true,
+    "range_ft": 150,
+    "long_range_ft": 600,
+    "two_handed": true
+   },
+   "value_gp": 50
+  },
+  {
+   "id": "potion_of_healing",
+   "name": {
+    "de": "Heiltrank",
+    "en": "Potion of healing",
+    "ru": "Зелье лечения"
+   },
+   "kind": "potion",
+   "heal": "2d4+2",
+   "value_gp": 50
+  },
+  {
+   "id": "gold_piece",
+   "name": {
+    "de": "Goldmünze",
+    "en": "Gold piece",
+    "ru": "Золотая монета"
+   },
+   "kind": "treasure",
+   "value_gp": 1
+  }
+ ]
+}

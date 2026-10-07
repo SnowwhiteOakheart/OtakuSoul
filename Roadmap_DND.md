@@ -191,11 +191,11 @@ Rückgängig stellt Karte und Kampf korrekt wieder her.
 
 **Fertig, wenn:** Eine neue Nutzerin startet das Abenteuer mit den vier Helden und spielt Akt 1 ohne Vorwissen durch.
 
-### 💎 Schritt 6 – Ausbau (nach Bedarf)
+### 💎 Schritt 6 – Ausbau (nach Bedarf) ✅
 
 - [x] Stufenaufstieg 1 → 3 (Meilenstein), Klassenmerkmale (Zweiter Atem, Hinterhältiger Angriff, Göttliche Macht …).
 - [x] Weitere Reaktionen (*Schild*), mehr Zauber/Monster, Begegnungs-Schwierigkeit (EP-Budget).
-- [ ] Ausrüstung: RK aus Rüstung, Waffen aus dem Inventar, Beute.
+- [x] Ausrüstung: RK aus Rüstung, Waffen aus dem Inventar, Beute.
 
 ---
 

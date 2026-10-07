@@ -144,6 +144,8 @@ pub fn level_up(hero: &mut Combatant, level: u32) -> bool {
     stats.resources_used = old.resources_used;
     stats.death_saves = old.death_saves;
     stats.concentration = old.concentration;
+    stats.equipped = old.equipped;
+    recompute_gear(&mut stats);
     if let (Some(new), Some(old)) = (stats.spellcasting.as_mut(), old.spellcasting.as_ref()) {
         for (used, (was, max)) in new
             .slots_used

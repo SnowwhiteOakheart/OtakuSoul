@@ -4,6 +4,7 @@ import type { MapCell } from "./MapCell";
 import type { MapEncounter } from "./MapEncounter";
 import type { MapExit } from "./MapExit";
 import type { MapLock } from "./MapLock";
+import type { MapLoot } from "./MapLoot";
 import type { MapRoom } from "./MapRoom";
 import type { MapTrap } from "./MapTrap";
 
@@ -36,6 +37,10 @@ traps: Array<MapTrap>,
  * Locked doors and chests.
  */
 locks: Array<MapLock>, 
+/**
+ * What lies in chests (`id` or `id*count` from `equipment.json`).
+ */
+loot: Array<MapLoot>, 
 /**
  * How far the party sees (light); default by tile set.
  */

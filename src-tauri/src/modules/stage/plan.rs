@@ -102,7 +102,12 @@ pub struct PlanObjectiveUpdate {
 #[derive(Debug, Clone, Serialize, Deserialize, TS)]
 #[ts(export)]
 pub struct PlanInventoryAdd {
+    #[serde(default)]
     pub name: String,
+    /// 5e scenes: an SRD equipment id; name and values then come from the data.
+    #[serde(default)]
+    #[ts(optional)]
+    pub srd_id: Option<String>,
     #[serde(default)]
     pub description: String,
     #[serde(default = "default_inventory_quantity")]

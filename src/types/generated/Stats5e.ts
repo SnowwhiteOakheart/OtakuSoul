@@ -48,4 +48,8 @@ concentration?: string,
 /**
  * Uses spent of limited class features (`second_wind` …) since the last rest.
  */
-resources_used: { [key in string]: number }, };
+resources_used: { [key in string]: number }, 
+/**
+ * Ids of the equipment a hero wears (armor, shield, weapons; see `equipment.json`).
+ */
+equipped: Array<string>, };

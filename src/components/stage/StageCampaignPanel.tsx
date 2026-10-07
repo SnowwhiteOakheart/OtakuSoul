@@ -17,12 +17,14 @@ import { translate, useTranslation } from '../../i18n';
 import { confirmDialog, toast } from '../ui/feedback';
 import { errorMessage } from '../../utils/errors';
 import { StageWorldEditor } from './StageWorldEditor';
+import { itemSummary, useSrdItems } from '../../utils/srdItems';
 
 const progressWidth = (current: number, max: number) =>
   `${Math.min(100, Math.round((current / Math.max(1, max)) * 100))}%`;
 
 export const StageCampaignPanel: React.FC = () => {
   const { t } = useTranslation();
+  const srdItems = useSrdItems();
   const { stageState, consumeStageInventoryItem, saveStageScene, isProcessingStageTurn } = useStoreFields(
     'stageState', 'consumeStageInventoryItem', 'saveStageScene', 'isProcessingStageTurn',
   );
@@ -81,7 +83,9 @@ export const StageCampaignPanel: React.FC = () => {
                     <span className="text-xs font-bold text-slate-200 truncate">{item.name}</span>
                     <span className="text-[11px] font-mono text-amber-300">×{item.quantity}</span>
                   </div>
-                  <p className="text-xs text-slate-400 mt-0.5 line-clamp-2">{item.description}</p>
+                  <p className="text-xs text-slate-400 mt-0.5 line-clamp-2">
+                    {item.description || (item.srd_id && srdItems.get(item.srd_id) ? itemSummary(srdItems.get(item.srd_id)!) : '')}
+                  </p>
                   {item.item_type === 'consumable' && (
                     <button
                       onClick={() => consumeStageInventoryItem(item.id)}

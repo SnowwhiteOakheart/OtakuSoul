@@ -141,6 +141,9 @@ pub struct BattleMap {
     /// Locked doors and chests.
     #[serde(default)]
     pub locks: Vec<MapLock>,
+    /// What lies in chests (`id` or `id*count` from `equipment.json`).
+    #[serde(default)]
+    pub loot: Vec<MapLoot>,
     /// How far the party sees (light); default by tile set.
     #[serde(default)]
     #[ts(optional)]
@@ -197,6 +200,16 @@ pub struct MapEncounter {
     /// Placement zone of the monsters.
     #[serde(default = "spawn_zone")]
     pub zone: String,
+    /// What the defeated leave behind (`id` or `id*count`).
+    #[serde(default)]
+    pub loot: Vec<String>,
+}
+
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize, TS)]
+#[ts(export)]
+pub struct MapLoot {
+    pub at: GridPos,
+    pub items: Vec<String>,
 }
 
 fn spawn_zone() -> String {
@@ -256,6 +269,8 @@ pub struct MapFile {
     #[serde(default)]
     pub locks: Vec<MapLock>,
     #[serde(default)]
+    pub loot: Vec<MapLoot>,
+    #[serde(default)]
     pub light_ft: Option<u32>,
 }
 
@@ -287,6 +302,7 @@ impl MapFile {
             exits: self.exits,
             traps: self.traps,
             locks: self.locks,
+            loot: self.loot,
             light_ft: self.light_ft,
             revealed: Vec::new(),
             triggered: Vec::new(),
