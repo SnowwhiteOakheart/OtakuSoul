@@ -18,6 +18,10 @@
     <rect x="60" y="174" width="26" height="6" rx="2" transform="rotate(-25 73 177)" fill="#9aa3ad" stroke="#0f172a" stroke-width="1.5"/>
     <circle cx="65" cy="148" r="4.5" fill="#c9a227" stroke="#0f172a" stroke-width="1.2"/>
 
+    <!-- Green Leather Hood Pushed Back Over Head -->
+    <path d="M78 126 Q74 64 128 58 Q182 64 178 126 Q194 154 184 178 L152 180 Q128 174 104 180 L72 178 Q62 154 78 126 Z" fill="#2f5a2a" stroke="#0f172a" stroke-width="2.2"/>
+    <path d="M84 76 Q128 66 172 76" stroke="#4f7f3f" stroke-width="2.5" fill="none"/>
+
     <!-- Halfling Youthful Face -->
     <rect x="114" y="144" width="28" height="32" fill="#fed7aa"/>
     <circle cx="128" cy="132" r="36" fill="#fcd34d" opacity="0.15"/>
@@ -28,10 +32,6 @@
     <ellipse cx="90" cy="132" rx="5" ry="8" fill="#fbcfe8" opacity="0.6"/>
     <ellipse cx="168" cy="132" rx="10" ry="14" fill="#fed7aa" stroke="#0f172a" stroke-width="1.8"/>
     <ellipse cx="166" cy="132" rx="5" ry="8" fill="#fbcfe8" opacity="0.6"/>
-
-    <!-- Green Leather Hood Pushed Back Over Head -->
-    <path d="M78 126 Q74 64 128 58 Q182 64 178 126 Q194 154 184 178 L152 180 Q128 174 104 180 L72 178 Q62 154 78 126 Z" fill="#2f5a2a" stroke="#0f172a" stroke-width="2.2"/>
-    <path d="M84 76 Q128 66 172 76" stroke="#4f7f3f" stroke-width="2.5" fill="none"/>
 
     <!-- Messy Brown Curls Framing Face -->
     <circle cx="104" cy="98" r="10" fill="#5a3d24"/>
