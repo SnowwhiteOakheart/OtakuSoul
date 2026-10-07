@@ -1,40 +1,35 @@
-<svg xmlns="http://www.w3.org/2000/svg" width="256" height="256" viewBox="0 0 256 256">
-  <defs>
-    <clipPath id="monster_bandit-clip">
-      <circle cx="128" cy="128" r="120"/>
-    </clipPath>
-  </defs>
-  <g clip-path="url(#monster_bandit-clip)">
-    <!-- Background -->
-    <circle cx="128" cy="128" r="120" fill="#262626"/>
-    <!-- Leather Brigandine / Gambeson -->
-    <path d="M52 248 Q64 186 102 182 L128 188 L154 182 Q192 186 204 248 Z" fill="#44403c" stroke="#0f172a" stroke-width="2"/>
-    <line x1="128" y1="188" x2="128" y2="248" stroke="#1c1917" stroke-width="2"/>
-    <circle cx="118" cy="214" r="2.5" fill="#9aa3ad"/>
-    <circle cx="118" cy="234" r="2.5" fill="#9aa3ad"/>
-
-    <!-- Shadowy Bandit Hood -->
-    <path d="M74 134 Q68 56 128 50 Q188 56 182 134 Q194 170 178 184 L154 182 Q128 174 102 182 L78 184 Q62 170 74 134 Z" fill="#292524" stroke="#0f172a" stroke-width="2.5"/>
-    <path d="M86 68 Q128 58 170 68" stroke="#44403c" stroke-width="3" fill="none"/>
-
-    <!-- Face Area Exposed Under Hood -->
-    <ellipse cx="128" cy="126" rx="34" ry="34" fill="#d6a383" stroke="#0f172a" stroke-width="2"/>
-
-    <!-- Fierce Eyes & Scowling Brow -->
-    <path d="M102 110 Q112 106 122 112" stroke="#1c1917" stroke-width="3.5" fill="none"/>
-    <path d="M134 112 Q144 106 154 110" stroke="#1c1917" stroke-width="3.5" fill="none"/>
-    <ellipse cx="112" cy="118" rx="5" ry="3.5" fill="#ffffff" stroke="#0f172a" stroke-width="1.2"/>
-    <circle cx="113" cy="118" r="2.5" fill="#1c1917"/>
-    <ellipse cx="144" cy="118" rx="5" ry="3.5" fill="#ffffff" stroke="#0f172a" stroke-width="1.2"/>
-    <circle cx="143" cy="118" r="2.5" fill="#1c1917"/>
-
-    <!-- Prominent Facial Scar Across Eyebrow -->
-    <line x1="140" y1="102" x2="150" y2="124" stroke="#9f5d4c" stroke-width="2.2" stroke-linecap="round"/>
-    <line x1="142" y1="108" x2="146" y2="110" stroke="#7f1d1d" stroke-width="1.2"/>
-
-    <!-- Cloth Mask / Bandana Covering Nose and Mouth -->
-    <path d="M94 126 Q128 120 162 126 L154 172 Q128 180 102 172 Z" fill="#3f3f46" stroke="#0f172a" stroke-width="2"/>
-    <path d="M96 136 Q128 130 160 136" stroke="#18181b" stroke-width="1.5" fill="none"/>
-    <path d="M100 152 Q128 146 156 152" stroke="#18181b" stroke-width="1.5" fill="none"/>
-  </g>
+<svg xmlns="http://www.w3.org/2000/svg" version="1.1" width="256" height="256" viewBox="0 0 256 256">
+<defs>
+<clipPath id="monster_bandit-clip">
+<circle cx="128" cy="128" r="120"/>
+</clipPath>
+</defs>
+<g clip-path="url(#monster_bandit-clip)">
+<circle cx="128" cy="128" r="120" fill="#36303b" stroke="none" stroke-width="1"/>
+<path d="M8 150 Q20 28 129 8 Q70 44 57 128 Q46 192 8 203Z" fill="#ffffff" stroke="none" stroke-width="0" stroke-linejoin="round" stroke-linecap="round" opacity="0.04"/>
+<path d="M27 256 Q29 203 72 184 L106 171 H149 L187 185 Q226 200 234 256Z" fill="#373b43" stroke="#0f172a" stroke-width="3" stroke-linejoin="round" stroke-linecap="round" />
+<path d="M33 252 Q39 208 77 194 L105 181 L114 204 L83 216 L72 256Z" fill="#565960" stroke="#0f172a" stroke-width="0" stroke-linejoin="round" stroke-linecap="round" />
+<path d="M55 195 Q44 151 59 93 Q72 37 124 31 Q166 22 195 83 Q215 137 201 198 L162 187 L173 129 Q171 79 128 69 Q89 79 83 125 L94 188Z" fill="#333440" stroke="#0f172a" stroke-width="3" stroke-linejoin="round" stroke-linecap="round" />
+<path d="M60 169 Q52 88 104 48 L125 40 L105 71 Q69 95 72 166Z" fill="#545562" stroke="#0f172a" stroke-width="0" stroke-linejoin="round" stroke-linecap="round" />
+<path d="M132 42 Q172 61 180 109 L183 161" fill="none" stroke="#545562" stroke-width="3" stroke-linejoin="round" stroke-linecap="round" />
+<path d="M109 159 L106 188 Q127 202 150 187 L146 159Z" fill="#a37564" stroke="#0f172a" stroke-width="2" stroke-linejoin="round" stroke-linecap="round" />
+<path d="M91 85 Q126 64 161 86 L167 128 Q165 158 145 173 L129 181 L110 173 Q88 157 86 128Z" fill="#cfaa8b" stroke="#0f172a" stroke-width="2.5" stroke-linejoin="round" stroke-linecap="round" />
+<path d="M145 84 Q158 107 151 140 L139 163 L128 177 L145 173 Q165 155 167 129 L161 86Z" fill="#a37564" stroke="#0f172a" stroke-width="0" stroke-linejoin="round" stroke-linecap="round" />
+<path d="M94 105 Q92 91 114 88" fill="#f4d4b5" stroke="#f4d4b5" stroke-width="2" stroke-linejoin="round" stroke-linecap="round" />
+<path d="M96 116 Q106 110 118 118 Q108 125 97 122Z" fill="#ede5d3" stroke="#0f172a" stroke-width="1.8" stroke-linejoin="round" stroke-linecap="round" />
+<path d="M138 118 Q149 113 160 116 L158 122 Q149 125 138 118Z" fill="#ede5d3" stroke="#0f172a" stroke-width="1.8" stroke-linejoin="round" stroke-linecap="round" />
+<ellipse cx="109" cy="120" rx="3.5" ry="4" fill="#9aa3ad" stroke="none" stroke-width="1"/>
+<ellipse cx="148" cy="120" rx="3.5" ry="4" fill="#9aa3ad" stroke="none" stroke-width="1"/>
+<circle cx="109" cy="120" r="1.8" fill="#0f172a" stroke="none" stroke-width="1"/>
+<circle cx="148" cy="120" r="1.8" fill="#0f172a" stroke="none" stroke-width="1"/>
+<circle cx="108" cy="119" r="1" fill="#ffffff" stroke="none" stroke-width="1"/>
+<circle cx="147" cy="119" r="1" fill="#ffffff" stroke="none" stroke-width="1"/>
+<path d="M97 110 L117 112 M139 111 L160 106" fill="none" stroke="#493b35" stroke-width="3" stroke-linejoin="round" stroke-linecap="round" />
+<path d="M148 94 L144 108 L147 115" fill="none" stroke="#c9a68c" stroke-width="2" stroke-linejoin="round" stroke-linecap="round" />
+<path d="M84 133 L112 137 L130 132 L167 135 L159 172 L131 186 L102 174Z" fill="#65615a" stroke="#0f172a" stroke-width="2" stroke-linejoin="round" stroke-linecap="round" />
+<path d="M92 140 L123 148 L154 142 M105 160 L142 170 L154 161" fill="none" stroke="#8a8273" stroke-width="2" stroke-linejoin="round" stroke-linecap="round" />
+<path d="M47 212 L177 250 L187 234 L63 196Z" fill="#6b4a2f" stroke="#0f172a" stroke-width="2" stroke-linejoin="round" stroke-linecap="round" />
+<rect x="113" y="217" width="17" height="18" rx="2" fill="#9aa3ad" stroke="#0f172a" stroke-width="2"/>
+<rect x="117" y="221" width="9" height="10" rx="1" fill="#4a3322" stroke="none" stroke-width="1"/>
+</g>
 </svg>

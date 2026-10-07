@@ -1,49 +1,41 @@
-<svg xmlns="http://www.w3.org/2000/svg" width="256" height="256" viewBox="0 0 256 256">
-  <defs>
-    <clipPath id="monster_ghoul-clip">
-      <circle cx="128" cy="128" r="120"/>
-    </clipPath>
-  </defs>
-  <g clip-path="url(#monster_ghoul-clip)">
-    <!-- Background -->
-    <circle cx="128" cy="128" r="120" fill="#141d24"/>
-    <!-- Emaciated Gaunt Torso & Ribs -->
-    <path d="M60 248 Q76 196 110 190 L128 194 L146 190 Q180 196 196 248 Z" fill="#475569" stroke="#0f172a" stroke-width="2"/>
-    <path d="M102 214 Q128 204 154 214 M98 232 Q128 222 158 232" stroke="#334155" stroke-width="3" fill="none"/>
-
-    <!-- Long Wicked Black Claws Clutched at Bottom -->
-    <path d="M52 248 L68 206 L74 248 M72 208 L84 248" stroke="#0f172a" stroke-width="4" stroke-linecap="round"/>
-    <path d="M52 248 L68 206 L74 248 M72 208 L84 248" stroke="#334155" stroke-width="2" stroke-linecap="round"/>
-    <path d="M204 248 L188 206 L182 248 M184 208 L172 248" stroke="#0f172a" stroke-width="4" stroke-linecap="round"/>
-    <path d="M204 248 L188 206 L182 248 M184 208 L172 248" stroke="#334155" stroke-width="2" stroke-linecap="round"/>
-
-    <!-- Gaunt Ashen-Gray Neck & Head -->
-    <rect x="114" y="146" width="28" height="44" fill="#64748b"/>
-    <polygon points="128,70 94,110 102,152 128,172 154,152 162,110" fill="#94a3b8" stroke="#0f172a" stroke-width="2"/>
-
-    <!-- Bald Head with Veins & Bony Ridges -->
-    <path d="M106 88 Q118 78 126 94" stroke="#64748b" stroke-width="1.8" fill="none"/>
-    <path d="M148 88 Q138 78 130 94" stroke="#64748b" stroke-width="1.8" fill="none"/>
-
-    <!-- Sunken Eyes Glowing with Hungry Necrotic Light -->
-    <ellipse cx="112" cy="118" rx="8" ry="9" fill="#0f172a"/>
-    <circle cx="112" cy="118" r="4" fill="#a3e635"/>
-    <circle cx="112" cy="118" r="1.5" fill="#ffffff"/>
-
-    <ellipse cx="144" cy="118" rx="8" ry="9" fill="#0f172a"/>
-    <circle cx="144" cy="118" r="4" fill="#a3e635"/>
-    <circle cx="144" cy="118" r="1.5" fill="#ffffff"/>
-
-    <!-- Hollow Sunken Cheeks -->
-    <polygon points="98,124 108,138 100,146" fill="#64748b"/>
-    <polygon points="158,124 148,138 156,146" fill="#64748b"/>
-
-    <!-- Wide Gaping Mouth with Jagged Rotten Teeth -->
-    <polygon points="112,146 144,146 140,166 116,166" fill="#0f172a" stroke="#0f172a" stroke-width="1.5"/>
-    <polygon points="114,146 117,154 120,146" fill="#fef08a"/>
-    <polygon points="124,146 128,156 132,146" fill="#fef08a"/>
-    <polygon points="136,146 139,154 142,146" fill="#fef08a"/>
-    <polygon points="118,166 121,158 124,166" fill="#fef08a"/>
-    <polygon points="130,166 133,158 136,166" fill="#fef08a"/>
-  </g>
+<svg xmlns="http://www.w3.org/2000/svg" version="1.1" width="256" height="256" viewBox="0 0 256 256">
+<defs>
+<clipPath id="monster_ghoul-clip">
+<circle cx="128" cy="128" r="120"/>
+</clipPath>
+</defs>
+<g clip-path="url(#monster_ghoul-clip)">
+<circle cx="128" cy="128" r="120" fill="#2e3d3c" stroke="none" stroke-width="1"/>
+<path d="M8 150 Q20 28 129 8 Q70 44 57 128 Q46 192 8 203Z" fill="#ffffff" stroke="none" stroke-width="0" stroke-linejoin="round" stroke-linecap="round" opacity="0.04"/>
+<path d="M27 256 Q29 203 72 184 L106 171 H149 L187 185 Q226 200 234 256Z" fill="#30383b" stroke="#0f172a" stroke-width="3" stroke-linejoin="round" stroke-linecap="round" />
+<path d="M33 252 Q39 208 77 194 L105 181 L114 204 L83 216 L72 256Z" fill="#485655" stroke="#0f172a" stroke-width="0" stroke-linejoin="round" stroke-linecap="round" />
+<path d="M109 159 L106 188 Q127 202 150 187 L146 159Z" fill="#708882" stroke="#0f172a" stroke-width="2" stroke-linejoin="round" stroke-linecap="round" />
+<path d="M100 82 Q129 61 156 86 L158 132 L148 153 L143 180 L126 195 L110 182 L105 157 L93 128Z" fill="#abb8ac" stroke="#0f172a" stroke-width="2.5" stroke-linejoin="round" stroke-linecap="round" />
+<path d="M145 84 Q158 107 151 140 L139 163 L128 177 L145 173 Q165 155 167 129 L161 86Z" fill="#708882" stroke="#0f172a" stroke-width="0" stroke-linejoin="round" stroke-linecap="round" />
+<path d="M94 105 Q92 91 114 88" fill="#f4d4b5" stroke="#f4d4b5" stroke-width="2" stroke-linejoin="round" stroke-linecap="round" />
+<path d="M92 121 Q79 86 101 58 L122 51 L114 77 L102 102 L106 147 L95 133Z" fill="#37443f" stroke="#0f172a" stroke-width="2" stroke-linejoin="round" stroke-linecap="round" />
+<path d="M139 60 L159 70 L169 97 L163 140 L156 130 L153 91Z" fill="#293833" stroke="#0f172a" stroke-width="2" stroke-linejoin="round" stroke-linecap="round" />
+<path d="M96 119 Q106 113 118 121 Q108 128 97 125Z" fill="#ede5d3" stroke="#0f172a" stroke-width="1.8" stroke-linejoin="round" stroke-linecap="round" />
+<path d="M138 121 Q149 116 160 119 L158 125 Q149 128 138 121Z" fill="#ede5d3" stroke="#0f172a" stroke-width="1.8" stroke-linejoin="round" stroke-linecap="round" />
+<ellipse cx="109" cy="123" rx="3.5" ry="4" fill="#bfc983" stroke="none" stroke-width="1"/>
+<ellipse cx="148" cy="123" rx="3.5" ry="4" fill="#bfc983" stroke="none" stroke-width="1"/>
+<circle cx="109" cy="123" r="1.8" fill="#0f172a" stroke="none" stroke-width="1"/>
+<circle cx="148" cy="123" r="1.8" fill="#0f172a" stroke="none" stroke-width="1"/>
+<circle cx="108" cy="122" r="1" fill="#ffffff" stroke="none" stroke-width="1"/>
+<circle cx="147" cy="122" r="1" fill="#ffffff" stroke="none" stroke-width="1"/>
+<path d="M103 138 L115 142 L109 158 M148 137 L137 144 L143 158" fill="none" stroke="#708882" stroke-width="3" stroke-linejoin="round" stroke-linecap="round" />
+<path d="M128 122 L120 148 L132 151" fill="none" stroke="#4c675e" stroke-width="2" stroke-linejoin="round" stroke-linecap="round" />
+<path d="M113 165 L140 162 L138 179 L128 185 L116 180Z" fill="#243430" stroke="#0f172a" stroke-width="2" stroke-linejoin="round" stroke-linecap="round" />
+<path d="M117 166 l2 7 2 -8" fill="#d6d6bf" stroke="#0f172a" stroke-width="0" stroke-linejoin="round" stroke-linecap="round" />
+<path d="M124 166 l2 7 2 -8" fill="#d6d6bf" stroke="#0f172a" stroke-width="0" stroke-linejoin="round" stroke-linecap="round" />
+<path d="M131 166 l2 7 2 -8" fill="#d6d6bf" stroke="#0f172a" stroke-width="0" stroke-linejoin="round" stroke-linecap="round" />
+<path d="M138 166 l2 7 2 -8" fill="#d6d6bf" stroke="#0f172a" stroke-width="0" stroke-linejoin="round" stroke-linecap="round" />
+<path d="M27 251 L34 215 L31 178 Q30 167 35 165 L43 191 L43 169 Q44 156 49 160 L55 199 L61 175 Q65 167 69 173 L67 212 L75 229 L66 256Z" fill="#80978c" stroke="#0f172a" stroke-width="2" stroke-linejoin="round" stroke-linecap="round" />
+<path d="M196 256 L187 227 L195 205 L192 174 Q197 166 202 180 L207 200 L208 165 Q215 156 218 170 L218 203 L225 178 Q230 171 234 182 L230 220 L236 251Z" fill="#708882" stroke="#0f172a" stroke-width="2" stroke-linejoin="round" stroke-linecap="round" />
+<path d="M31 178 L28 155 L35 165" fill="#d1d4bb" stroke="#0f172a" stroke-width="1.5" stroke-linejoin="round" stroke-linecap="round" />
+<path d="M43 169 L45 147 L49 160" fill="#d1d4bb" stroke="#0f172a" stroke-width="1.5" stroke-linejoin="round" stroke-linecap="round" />
+<path d="M61 175 L66 154 L69 173" fill="#d1d4bb" stroke="#0f172a" stroke-width="1.5" stroke-linejoin="round" stroke-linecap="round" />
+<path d="M208 165 L214 145 L218 170" fill="#d1d4bb" stroke="#0f172a" stroke-width="1.5" stroke-linejoin="round" stroke-linecap="round" />
+<path d="M225 178 L234 160 L234 182" fill="#d1d4bb" stroke="#0f172a" stroke-width="1.5" stroke-linejoin="round" stroke-linecap="round" />
+</g>
 </svg>

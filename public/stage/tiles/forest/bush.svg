@@ -1,25 +1,18 @@
-<svg xmlns="http://www.w3.org/2000/svg" width="64" height="64" viewBox="0 0 64 64">
-  <!-- Shadow -->
-  <ellipse cx="36" cy="36" rx="20" ry="17" fill="#0f172a" opacity="0.35"/>
-  <!-- Shrub Cluster: 3 Overlapping Spheres -->
-  <!-- Clump 1 (Right / Back) -->
-  <circle cx="38" cy="32" r="14" fill="#24401f" stroke="#0f172a" stroke-width="1"/>
-  <circle cx="36" cy="30" r="11" fill="#2f5a2a"/>
+<svg xmlns="http://www.w3.org/2000/svg" version="1.1" width="64" height="64" viewBox="0 0 64 64">
 
-  <!-- Clump 2 (Left / Back) -->
-  <circle cx="24" cy="34" r="13" fill="#24401f" stroke="#0f172a" stroke-width="1"/>
-  <circle cx="23" cy="32" r="10" fill="#2f5a2a"/>
-
-  <!-- Clump 3 (Top / Front Center) -->
-  <circle cx="29" cy="24" r="14" fill="#2f5a2a" stroke="#0f172a" stroke-width="1"/>
-  <circle cx="28" cy="22" r="11" fill="#3d7a34"/>
-  <circle cx="26" cy="19" r="7" fill="#4f7f3f"/>
-  <circle cx="24" cy="17" r="4" fill="#5e8f48"/>
-
-  <!-- Forest Berries -->
-  <circle cx="20" cy="26" r="1.8" fill="#dc2626" stroke="#0f172a" stroke-width="0.6"/>
-  <circle cx="23" cy="29" r="1.5" fill="#dc2626" stroke="#0f172a" stroke-width="0.6"/>
-  <circle cx="36" cy="24" r="1.8" fill="#dc2626" stroke="#0f172a" stroke-width="0.6"/>
-  <circle cx="33" cy="36" r="1.6" fill="#dc2626" stroke="#0f172a" stroke-width="0.6"/>
-  <circle cx="42" cy="31" r="1.6" fill="#dc2626" stroke="#0f172a" stroke-width="0.6"/>
+<g transform="translate(6 13) scale(0.7)">
+<ellipse cx="39" cy="36" rx="41" ry="26" fill="#0f172a" stroke="none" stroke-width="1"/>
+<path d="M4 18 q-4 -9 5 -13 q2 -7 11 -5 q9 -5 15 3 q10 0 11 10 q6 7 -1 14 q1 8 -9 9 q-8 7 -15 1 q-12 1 -13 -9 q-7 -4 -4 -10Z" fill="#24401f" stroke="#0f172a" stroke-width="1.2" stroke-linejoin="round" stroke-linecap="round" />
+<path d="M6 17 q-3 -8 6 -10 q3 -6 11 -3 q9 -3 15 5 l-7 4 -8 -2 -5 6 -7 -2Z" fill="#3d7a34" stroke="#0f172a" stroke-width="0" stroke-linejoin="round" stroke-linecap="round" />
+<path d="M10 13 l5 -5 7 1 2 4 -6 2Z" fill="#5e8f48" stroke="#0f172a" stroke-width="0" stroke-linejoin="round" stroke-linecap="round" />
+<path d="M10 25 l6 -2 4 3 M27 18 l5 -2 3 2 M22 32 l5 -2" fill="none" stroke="#2f5a2a" stroke-width="1" stroke-linejoin="round" stroke-linecap="round" />
+<path d="M30 22 q-4 -9 5 -13 q2 -7 11 -5 q9 -5 15 3 q10 0 11 10 q6 7 -1 14 q1 8 -9 9 q-8 7 -15 1 q-12 1 -13 -9 q-7 -4 -4 -10Z" fill="#24401f" stroke="#0f172a" stroke-width="1.2" stroke-linejoin="round" stroke-linecap="round" />
+<path d="M32 21 q-3 -8 6 -10 q3 -6 11 -3 q9 -3 15 5 l-7 4 -8 -2 -5 6 -7 -2Z" fill="#3d7a34" stroke="#0f172a" stroke-width="0" stroke-linejoin="round" stroke-linecap="round" />
+<path d="M36 17 l5 -5 7 1 2 4 -6 2Z" fill="#5e8f48" stroke="#0f172a" stroke-width="0" stroke-linejoin="round" stroke-linecap="round" />
+<path d="M36 29 l6 -2 4 3 M53 22 l5 -2 3 2 M48 36 l5 -2" fill="none" stroke="#2f5a2a" stroke-width="1" stroke-linejoin="round" stroke-linecap="round" />
+<path d="M17 9 q-4 -9 5 -13 q2 -7 11 -5 q9 -5 15 3 q10 0 11 10 q6 7 -1 14 q1 8 -9 9 q-8 7 -15 1 q-12 1 -13 -9 q-7 -4 -4 -10Z" fill="#24401f" stroke="#0f172a" stroke-width="1.2" stroke-linejoin="round" stroke-linecap="round" />
+<path d="M19 8 q-3 -8 6 -10 q3 -6 11 -3 q9 -3 15 5 l-7 4 -8 -2 -5 6 -7 -2Z" fill="#3d7a34" stroke="#0f172a" stroke-width="0" stroke-linejoin="round" stroke-linecap="round" />
+<path d="M23 4 l5 -5 7 1 2 4 -6 2Z" fill="#5e8f48" stroke="#0f172a" stroke-width="0" stroke-linejoin="round" stroke-linecap="round" />
+<path d="M23 16 l6 -2 4 3 M40 9 l5 -2 3 2 M35 23 l5 -2" fill="none" stroke="#2f5a2a" stroke-width="1" stroke-linejoin="round" stroke-linecap="round" />
+</g>
 </svg>

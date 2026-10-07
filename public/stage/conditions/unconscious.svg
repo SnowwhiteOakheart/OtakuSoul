@@ -1,13 +1,4 @@
-<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-  <!-- Closed eye with eyelashes -->
-  <path d="M3 14c3 4 6 5 9 5s6-1 9-5"/>
-  <line x1="6" y1="16" x2="5" y2="19"/>
-  <line x1="9" y1="17.5" x2="8.5" y2="21"/>
-  <line x1="12" y1="19" x2="12" y2="22.5"/>
-  <line x1="15" y1="17.5" x2="15.5" y2="21"/>
-  <line x1="18" y1="16" x2="19" y2="19"/>
-  <!-- 3 floating waves above (sleep / unconsciousness) -->
-  <path d="M5 9c2-1.5 4-1.5 6 0s4 1.5 6 0"/>
-  <path d="M7 6c2-1.5 4-1.5 6 0s4 1.5 6 0"/>
-  <path d="M9 3c2-1.5 4-1.5 6 0"/>
+<svg xmlns="http://www.w3.org/2000/svg" version="1.1" width="24" height="24" viewBox="0 0 24 24">
+
+<path d="M3 15 Q12 23 21 15 M5 17 L3 20 M10 19 L9 22 M15 19 L16 22 M19 17 L21 20 M5 4 Q2 6 5 8 M12 3 Q9 5 12 7 M19 4 Q16 6 19 8" fill="none" stroke="currentColor" stroke-width="2" stroke-linejoin="round" stroke-linecap="round" />
 </svg>

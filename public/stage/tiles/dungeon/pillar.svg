@@ -1,16 +1,9 @@
-<svg xmlns="http://www.w3.org/2000/svg" width="64" height="64" viewBox="0 0 64 64">
-  <!-- Cast Shadow -->
-  <ellipse cx="36" cy="36" rx="22" ry="20" fill="#0f172a" opacity="0.38"/>
-  <!-- Pillar Base Ring -->
-  <circle cx="28" cy="28" r="21" fill="#2b2f3a" stroke="#0f172a" stroke-width="1"/>
-  <circle cx="28" cy="28" r="18" fill="#3b4252" stroke="#0f172a" stroke-width="1"/>
-  <!-- Bevels -->
-  <path d="M15 15 A18 18 0 0 1 41 15" stroke="#5e6779" stroke-width="2" fill="none"/>
-  <path d="M41 41 A18 18 0 0 1 15 41" stroke="#1e222b" stroke-width="2" fill="none"/>
-  <!-- Top Surface Capital -->
-  <circle cx="28" cy="28" r="14" fill="#4c566a" stroke="#0f172a" stroke-width="1"/>
-  <path d="M18 18 A14 14 0 0 1 38 18" stroke="#5e6779" stroke-width="2" fill="none"/>
-  <!-- Center Carving / Texture -->
-  <circle cx="28" cy="28" r="7" fill="#3b4252" stroke="#0f172a" stroke-width="1"/>
-  <circle cx="28" cy="28" r="2" fill="#5e6779"/>
+<svg xmlns="http://www.w3.org/2000/svg" version="1.1" width="64" height="64" viewBox="0 0 64 64">
+
+<ellipse cx="36" cy="37" rx="24" ry="24" fill="#0f172a" stroke="none" stroke-width="1"/>
+<circle cx="30" cy="29" r="24" fill="#3b4252" stroke="#0f172a" stroke-width="1.5"/>
+<circle cx="30" cy="29" r="20" fill="#6b7480" stroke="#0f172a" stroke-width="1"/>
+<circle cx="29" cy="28" r="16" fill="#4c566a" stroke="none" stroke-width="1"/>
+<path d="M13 29 Q12 12 30 11" fill="none" stroke="#9aa3ad" stroke-width="2" stroke-linejoin="round" stroke-linecap="round" />
+<path d="M29 15 L35 24 L31 29" fill="none" stroke="#3b4252" stroke-width="1" stroke-linejoin="round" stroke-linecap="round" />
 </svg>

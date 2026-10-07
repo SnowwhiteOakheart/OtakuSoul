@@ -1,14 +1,9 @@
-<svg xmlns="http://www.w3.org/2000/svg" width="64" height="64" viewBox="0 0 64 64">
-  <!-- Shadow under Overhanging Grass -->
-  <path d="M0 16 Q8 25 16 19 Q24 28 32 20 Q40 27 48 21 Q56 26 64 18 V22 Q56 30 48 24 Q40 31 32 23 Q24 31 16 22 Q8 28 0 20 Z" fill="#0f172a" opacity="0.3"/>
+<svg xmlns="http://www.w3.org/2000/svg" version="1.1" width="64" height="64" viewBox="0 0 64 64">
 
-  <!-- Overhanging Grass Bank (y=0..22) -->
-  <path d="M0 0 H64 V14 Q56 22 48 16 Q40 23 32 15 Q24 23 16 14 Q8 20 0 12 Z" fill="#3f6b35" stroke="#0f172a" stroke-width="1"/>
-  <path d="M0 0 H64 V8 Q56 14 48 9 Q40 15 32 8 Q24 15 16 9 Q8 13 0 7 Z" fill="#4f7f3f"/>
-
-  <!-- Individual Grass Tufts pointing downward -->
-  <polygon points="6,12 8,20 11,13" fill="#5e8f48" stroke="#0f172a" stroke-width="0.8"/>
-  <polygon points="21,14 24,23 27,15" fill="#5e8f48" stroke="#0f172a" stroke-width="0.8"/>
-  <polygon points="36,15 39,24 42,16" fill="#7aa35a" stroke="#0f172a" stroke-width="0.8"/>
-  <polygon points="52,14 55,22 58,15" fill="#5e8f48" stroke="#0f172a" stroke-width="0.8"/>
+<path d="M0 0 H64 V9 L57 6 L54 16 L46 10 L39 18 L31 11 L24 20 L17 12 L8 15 L0 8Z" fill="#2f4a2a" stroke="#0f172a" stroke-width="0" stroke-linejoin="round" stroke-linecap="round" />
+<path d="M0 0 H64 V5 L53 8 L46 4 L37 10 L28 5 L17 10 L7 5 L0 7Z" fill="#3f6b35" stroke="#0f172a" stroke-width="0" stroke-linejoin="round" stroke-linecap="round" />
+<path d="M7 10 l-2 -7 3 2 3 -3 -1 8Z" fill="#5e8f48" stroke="#0f172a" stroke-width="0" stroke-linejoin="round" stroke-linecap="round" />
+<path d="M21 10 l-2 -7 3 2 3 -3 -1 8Z" fill="#5e8f48" stroke="#0f172a" stroke-width="0" stroke-linejoin="round" stroke-linecap="round" />
+<path d="M39 10 l-2 -7 3 2 3 -3 -1 8Z" fill="#5e8f48" stroke="#0f172a" stroke-width="0" stroke-linejoin="round" stroke-linecap="round" />
+<path d="M53 10 l-2 -7 3 2 3 -3 -1 8Z" fill="#5e8f48" stroke="#0f172a" stroke-width="0" stroke-linejoin="round" stroke-linecap="round" />
 </svg>

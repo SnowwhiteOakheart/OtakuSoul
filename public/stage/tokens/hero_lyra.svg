@@ -1,62 +1,44 @@
-<svg xmlns="http://www.w3.org/2000/svg" width="256" height="256" viewBox="0 0 256 256">
-  <defs>
-    <clipPath id="hero_lyra-clip">
-      <circle cx="128" cy="128" r="120"/>
-    </clipPath>
-  </defs>
-  <g clip-path="url(#hero_lyra-clip)">
-    <!-- Background -->
-    <circle cx="128" cy="128" r="120" fill="#0f172a"/>
-    <!-- Soft Magical Glow in Background -->
-    <circle cx="128" cy="110" r="85" fill="#1e3a8a" opacity="0.35"/>
-    <circle cx="192" cy="170" r="30" fill="#38bdf8" opacity="0.25"/>
-
-    <!-- Deep Blue Robe with Gold Trim -->
-    <path d="M52 248 Q64 186 100 178 L128 190 L156 178 Q192 186 204 248 Z" fill="#1e3a8a" stroke="#0f172a" stroke-width="2"/>
-    <path d="M96 182 Q128 194 160 182" stroke="#e0c25a" stroke-width="3" fill="none"/>
-    <line x1="128" y1="190" x2="128" y2="248" stroke="#e0c25a" stroke-width="2"/>
-    <!-- Embroidered Gold Stars on Robe -->
-    <polygon points="84,216 86,210 88,216 94,218 88,220 86,226 84,220 78,218" fill="#e0c25a"/>
-    <polygon points="172,216 174,210 176,216 182,218 176,220 174,226 172,220 166,218" fill="#e0c25a"/>
-
-    <!-- Long Flowing Silver-Blue Hair (Back Layer) -->
-    <path d="M64 96 Q52 160 60 230 Q80 210 88 160 L168 160 Q176 210 196 230 Q204 160 192 96 Z" fill="#93c5fd" stroke="#0f172a" stroke-width="2"/>
-
-    <!-- Slender Neck & Elegant Elf Face -->
-    <rect x="114" y="140" width="28" height="42" fill="#fed7aa"/>
-    <polygon points="128,172 98,126 98,96 158,96 158,126" fill="#ffedd5" stroke="#0f172a" stroke-width="2"/>
-
-    <!-- Pointed Elf Ears -->
-    <polygon points="98,110 54,92 96,124" fill="#ffedd5" stroke="#0f172a" stroke-width="1.8"/>
-    <polygon points="94,110 68,98 94,118" fill="#fbcfe8" opacity="0.6"/>
-    <polygon points="158,110 202,92 160,124" fill="#ffedd5" stroke="#0f172a" stroke-width="1.8"/>
-    <polygon points="162,110 188,98 162,118" fill="#fbcfe8" opacity="0.6"/>
-
-    <!-- Silver-Blue Front Hair & Bangs -->
-    <path d="M84 94 Q128 62 172 94 Q162 140 152 146 Q138 106 128 116 Q118 106 104 146 Q94 140 84 94 Z" fill="#bfdbfe" stroke="#0f172a" stroke-width="2"/>
-    <path d="M106 90 Q128 72 150 90" stroke="#ffffff" stroke-width="2" fill="none"/>
-
-    <!-- Delicate Slender Violet Eyes -->
-    <ellipse cx="112" cy="122" rx="7" ry="4" fill="#ffffff" stroke="#0f172a" stroke-width="1.2"/>
-    <circle cx="112" cy="122" r="3.5" fill="#8b5cf6"/>
-    <circle cx="111" cy="121" r="1.2" fill="#ffffff"/>
-    <ellipse cx="144" cy="122" rx="7" ry="4" fill="#ffffff" stroke="#0f172a" stroke-width="1.2"/>
-    <circle cx="144" cy="122" r="3.5" fill="#8b5cf6"/>
-    <circle cx="143" cy="121" r="1.2" fill="#ffffff"/>
-
-    <path d="M105 114 Q113 110 120 115" stroke="#6366f1" stroke-width="1.8" fill="none"/>
-    <path d="M136 115 Q143 110 151 114" stroke="#6366f1" stroke-width="1.8" fill="none"/>
-
-    <!-- Small Elf Nose & Soft Lip -->
-    <path d="M127 126 L125 136 L129 136" stroke="#f43f5e" stroke-width="1.2" fill="none"/>
-    <path d="M122 148 Q128 152 134 148" stroke="#e11d48" stroke-width="1.8" fill="none" stroke-linecap="round"/>
-
-    <!-- Floating Glowing Star above Hand (Bottom Right) -->
-    <!-- Hand -->
-    <path d="M176 248 Q182 208 194 200 Q202 206 198 248 Z" fill="#ffedd5" stroke="#0f172a" stroke-width="1.8"/>
-    <!-- Floating Star -->
-    <circle cx="194" cy="174" r="14" fill="#67e8f9" opacity="0.4"/>
-    <polygon points="194,158 198,170 210,174 198,178 194,190 190,178 178,174 190,170" fill="#fef08a" stroke="#e0c25a" stroke-width="1"/>
-    <circle cx="194" cy="174" r="3.5" fill="#ffffff"/>
-  </g>
+<svg xmlns="http://www.w3.org/2000/svg" version="1.1" width="256" height="256" viewBox="0 0 256 256">
+<defs>
+<clipPath id="hero_lyra-clip">
+<circle cx="128" cy="128" r="120"/>
+</clipPath>
+</defs>
+<g clip-path="url(#hero_lyra-clip)">
+<circle cx="128" cy="128" r="120" fill="#19273d" stroke="none" stroke-width="1"/>
+<path d="M8 150 Q20 28 129 8 Q70 44 57 128 Q46 192 8 203Z" fill="#ffffff" stroke="none" stroke-width="0" stroke-linejoin="round" stroke-linecap="round" opacity="0.04"/>
+<path d="M27 256 Q29 203 72 184 L106 171 H149 L187 185 Q226 200 234 256Z" fill="#202d4c" stroke="#0f172a" stroke-width="3" stroke-linejoin="round" stroke-linecap="round" />
+<path d="M33 252 Q39 208 77 194 L105 181 L114 204 L83 216 L72 256Z" fill="#35486a" stroke="#0f172a" stroke-width="0" stroke-linejoin="round" stroke-linecap="round" />
+<path d="M75 204 L101 178 L126 219 L154 178 L180 206 L148 256 H107Z" fill="#17233e" stroke="#0f172a" stroke-width="2" stroke-linejoin="round" stroke-linecap="round" />
+<path d="M72 207 Q56 115 78 66 Q96 30 131 38 Q181 32 188 86 L184 226 L151 238 L153 87 L103 89 L102 225Z" fill="#7389b3" stroke="#0f172a" stroke-width="3" stroke-linejoin="round" stroke-linecap="round" />
+<path d="M80 202 Q63 109 91 61 Q107 45 129 46 L108 81 L99 193Z" fill="#bdcce0" stroke="#0f172a" stroke-width="0" stroke-linejoin="round" stroke-linecap="round" />
+<path d="M91 109 L64 94 Q62 120 91 138 M163 107 L191 91 Q190 120 163 137" fill="#dfb9aa" stroke="#0f172a" stroke-width="2" stroke-linejoin="round" stroke-linecap="round" />
+<path d="M109 159 L106 188 Q127 202 150 187 L146 159Z" fill="#b88c8b" stroke="#0f172a" stroke-width="2" stroke-linejoin="round" stroke-linecap="round" />
+<path d="M91 85 Q126 64 161 86 L167 128 Q165 158 145 173 L129 181 L110 173 Q88 157 86 128Z" fill="#e7c9b8" stroke="#0f172a" stroke-width="2.5" stroke-linejoin="round" stroke-linecap="round" />
+<path d="M145 84 Q158 107 151 140 L139 163 L128 177 L145 173 Q165 155 167 129 L161 86Z" fill="#b88c8b" stroke="#0f172a" stroke-width="0" stroke-linejoin="round" stroke-linecap="round" />
+<path d="M94 105 Q92 91 114 88" fill="#f4d4b5" stroke="#f4d4b5" stroke-width="2" stroke-linejoin="round" stroke-linecap="round" />
+<path d="M96 116 Q106 113 118 118 Q108 125 97 122Z" fill="#ede5d3" stroke="#0f172a" stroke-width="1.8" stroke-linejoin="round" stroke-linecap="round" />
+<path d="M138 118 Q149 113 160 116 L158 122 Q149 125 138 118Z" fill="#ede5d3" stroke="#0f172a" stroke-width="1.8" stroke-linejoin="round" stroke-linecap="round" />
+<ellipse cx="109" cy="120" rx="3.5" ry="4" fill="#8b5cf6" stroke="none" stroke-width="1"/>
+<ellipse cx="148" cy="120" rx="3.5" ry="4" fill="#8b5cf6" stroke="none" stroke-width="1"/>
+<circle cx="109" cy="120" r="1.8" fill="#0f172a" stroke="none" stroke-width="1"/>
+<circle cx="148" cy="120" r="1.8" fill="#0f172a" stroke="none" stroke-width="1"/>
+<circle cx="108" cy="119" r="1" fill="#ffffff" stroke="none" stroke-width="1"/>
+<circle cx="147" cy="119" r="1" fill="#ffffff" stroke="none" stroke-width="1"/>
+<path d="M128 119 L123 140 Q129 144 135 138" fill="none" stroke="#925f55" stroke-width="1.7" stroke-linejoin="round" stroke-linecap="round" />
+<path d="M115 154 Q129 153 143 152" fill="none" stroke="#704743" stroke-width="2" stroke-linejoin="round" stroke-linecap="round" />
+<path d="M83 107 Q77 63 114 47 Q159 35 176 78 L169 110 L156 85 L135 65 Q121 91 89 97Z" fill="#b6c8e0" stroke="#0f172a" stroke-width="2" stroke-linejoin="round" stroke-linecap="round" />
+<path d="M90 85 Q103 53 136 53 Q126 76 90 85Z" fill="#e0e7ee" stroke="#0f172a" stroke-width="0" stroke-linejoin="round" stroke-linecap="round" />
+<path d="M136 64 Q148 80 164 86" fill="none" stroke="#7389b3" stroke-width="2" stroke-linejoin="round" stroke-linecap="round" />
+<path d="M92 109 L117 111 M139 111 L159 106" fill="none" stroke="#555178" stroke-width="2" stroke-linejoin="round" stroke-linecap="round" />
+<path d="M98 193 L126 219 L156 187" fill="none" stroke="#9aa3ad" stroke-width="3" stroke-linejoin="round" stroke-linecap="round" />
+<path d="M73 226 L75 230 L78 231 L75 233 L73 236 L71 233 L68 231 L71 230Z" fill="#9aa3ad" stroke="#0f172a" stroke-width="0" stroke-linejoin="round" stroke-linecap="round" />
+<path d="M165 218 L167 222 L170 223 L167 225 L165 228 L163 225 L160 223 L163 222Z" fill="#9aa3ad" stroke="#0f172a" stroke-width="0" stroke-linejoin="round" stroke-linecap="round" />
+<path d="M126 234 L128 238 L131 239 L128 241 L126 244 L124 241 L121 239 L124 238Z" fill="#9aa3ad" stroke="#0f172a" stroke-width="0" stroke-linejoin="round" stroke-linecap="round" />
+<path d="M172 242 L171 218 Q169 212 174 208 L180 215 L180 199 Q182 194 186 198 L189 214 L196 208 Q202 211 197 218 L185 238Z" fill="#e7c9b8" stroke="#0f172a" stroke-width="2" stroke-linejoin="round" stroke-linecap="round" />
+<circle cx="188" cy="183" r="19" fill="#8b5cf6" stroke="none" stroke-width="0"/>
+<circle cx="188" cy="183" r="14" fill="#35486a" stroke="none" stroke-width="1"/>
+<path d="M188 163 L193 178 L207 183 L193 188 L188 203 L183 188 L169 183 L183 178Z" fill="#cbd5ef" stroke="#8b5cf6" stroke-width="1" stroke-linejoin="round" stroke-linecap="round" />
+<path d="M188 172 L191 181 L198 183 L190 185 L188 194 L186 185 L178 183 L186 181Z" fill="#ffffff" stroke="#0f172a" stroke-width="0" stroke-linejoin="round" stroke-linecap="round" />
+</g>
 </svg>

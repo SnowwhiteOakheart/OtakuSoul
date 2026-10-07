@@ -1,24 +1,16 @@
-<svg xmlns="http://www.w3.org/2000/svg" width="64" height="64" viewBox="0 0 64 64">
-  <!-- Shadow -->
-  <rect x="14" y="23" width="42" height="24" rx="2" fill="#0f172a" opacity="0.35"/>
-  <!-- Stone Altar Base -->
-  <rect x="11" y="20" width="42" height="24" rx="2" fill="#2b2f3a" stroke="#0f172a" stroke-width="1"/>
-  <!-- Altar Slab Surface -->
-  <rect x="13" y="22" width="38" height="20" rx="1" fill="#4c566a" stroke="#0f172a" stroke-width="1"/>
-  <path d="M14 23 H50 V25 H15 V40 H14 Z" fill="#5e6779" opacity="0.8"/>
-  <path d="M49 25 H50 V41 H15 V40 H49 Z" fill="#1e222b" opacity="0.7"/>
-  <!-- Center Bronze Offering Bowl -->
-  <ellipse cx="32" cy="32" rx="7" ry="5" fill="#c9a227" stroke="#0f172a" stroke-width="1"/>
-  <ellipse cx="32" cy="32" rx="5" ry="3.5" fill="#e0c25a"/>
-  <circle cx="32" cy="32" r="1.5" fill="#fef08a"/>
-  <!-- Left Candle -->
-  <ellipse cx="19" cy="32" rx="3" ry="2.5" fill="#0f172a" opacity="0.3"/>
-  <circle cx="19" cy="31" r="2.5" fill="#f8fafc" stroke="#0f172a" stroke-width="0.8"/>
-  <circle cx="19" cy="30" r="1.5" fill="#e0c25a"/>
-  <circle cx="19" cy="29" r="0.8" fill="#f97316"/>
-  <!-- Right Candle -->
-  <ellipse cx="45" cy="32" rx="3" ry="2.5" fill="#0f172a" opacity="0.3"/>
-  <circle cx="45" cy="31" r="2.5" fill="#f8fafc" stroke="#0f172a" stroke-width="0.8"/>
-  <circle cx="45" cy="30" r="1.5" fill="#e0c25a"/>
-  <circle cx="45" cy="29" r="0.8" fill="#f97316"/>
+<svg xmlns="http://www.w3.org/2000/svg" version="1.1" width="64" height="64" viewBox="0 0 64 64">
+
+<path d="M9 21 H58 V51 H9Z" fill="#0f172a" stroke="none" stroke-width="0" stroke-linejoin="round" stroke-linecap="round" opacity="0.4"/>
+<path d="M9 15 H53 L55 18 V45 L52 47 H8 L7 44 V17Z" fill="#4c566a" stroke="#0f172a" stroke-width="1" stroke-linejoin="round" stroke-linecap="round" />
+<path d="M9 16 H52 L50 18 H10 V43 L8 45 V18Z" fill="#6b7480" stroke="#0f172a" stroke-width="0" stroke-linejoin="round" stroke-linecap="round" />
+<path d="M53 19 V45 H11 L13 43 H51 V22Z" fill="#3b4252" stroke="#0f172a" stroke-width="0" stroke-linejoin="round" stroke-linecap="round" />
+<ellipse cx="32" cy="31" rx="10" ry="8" fill="#1e222b" stroke="#0f172a" stroke-width="1"/>
+<ellipse cx="31" cy="29" rx="8" ry="6" fill="#6b7480" stroke="none" stroke-width="1"/>
+<path d="M25 28 Q29 24 36 26" fill="none" stroke="#9aa3ad" stroke-width="1" stroke-linejoin="round" stroke-linecap="round" />
+<circle cx="15" cy="22" r="4" fill="#c9a227" stroke="#0f172a" stroke-width="1"/>
+<circle cx="15" cy="21" r="2.5" fill="#e5dac1" stroke="none" stroke-width="1"/>
+<path d="M15 22 q-4 -4 0 -8 q3 5 0 8Z" fill="#e0c25a" stroke="#0f172a" stroke-width="0" stroke-linejoin="round" stroke-linecap="round" />
+<circle cx="48" cy="22" r="4" fill="#c9a227" stroke="#0f172a" stroke-width="1"/>
+<circle cx="48" cy="21" r="2.5" fill="#e5dac1" stroke="none" stroke-width="1"/>
+<path d="M48 22 q-4 -4 0 -8 q3 5 0 8Z" fill="#e0c25a" stroke="#0f172a" stroke-width="0" stroke-linejoin="round" stroke-linecap="round" />
 </svg>

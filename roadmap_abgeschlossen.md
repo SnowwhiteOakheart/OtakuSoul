@@ -1838,3 +1838,10 @@ veraltet und sind korrigiert: `chat-sidebar-errors` las die Sitzung, bevor der e
   Flächenzauber werden auf dem Brett mit Vorschau gezielt, Kampflog für alle neuen Ereignisse, vollständiger Bogen
   (Rettungswürfe, Fertigkeiten, Zauber/Plätze, Konzentration, Todesrettung). E2E `stage-spells.mjs`.
 
+
+## Grafiken für das Spielbrett (07.10.2026)
+
+- [x] Alle 69 Stage-Assets nach `todo_assets.md` neu gestaltet: 15 Porträt-Tokens als reine SVGs,
+  38 Dungeon-/Waldkacheln, zwölf einfarbige Zustandssymbole und vier neue Heldenillustrationen
+  (768 × 1024 px, PNG/sRGB). SVG-Regeln, Transparenz, Größen und pixelgenaue Bodenübergänge
+  einschließlich gemischter Varianten geprüft; 3×3-Kachelansichten und Tokens bei 48 px angesehen.

@@ -1,28 +1,21 @@
-<svg xmlns="http://www.w3.org/2000/svg" width="64" height="64" viewBox="0 0 64 64">
-  <!-- Shadow -->
-  <rect x="10" y="8" width="46" height="52" fill="#0f172a" opacity="0.3"/>
-  <!-- Outer Well Cutout Frame -->
-  <rect x="8" y="6" width="48" height="52" fill="#1e222b" stroke="#0f172a" stroke-width="1"/>
-  <!-- Steps descending into depth (top is darkest abyss) -->
-  <!-- Step 6 (Deepest Void) -->
-  <rect x="10" y="8" width="44" height="8" fill="#0b0e14"/>
-  <!-- Step 5 -->
-  <rect x="10" y="16" width="44" height="8" fill="#1e222b" stroke="#0f172a" stroke-width="0.8"/>
-  <line x1="10" y1="17" x2="54" y2="17" stroke="#2b2f3a" stroke-width="1"/>
-  <!-- Step 4 -->
-  <rect x="10" y="24" width="44" height="8" fill="#2b2f3a" stroke="#0f172a" stroke-width="0.8"/>
-  <line x1="10" y1="25" x2="54" y2="25" stroke="#3b4252" stroke-width="1"/>
-  <!-- Step 3 -->
-  <rect x="10" y="32" width="44" height="8" fill="#3b4252" stroke="#0f172a" stroke-width="0.8"/>
-  <line x1="10" y1="33" x2="54" y2="33" stroke="#4c566a" stroke-width="1"/>
-  <!-- Step 2 -->
-  <rect x="10" y="40" width="44" height="8" fill="#4c566a" stroke="#0f172a" stroke-width="0.8"/>
-  <line x1="10" y1="41" x2="54" y2="41" stroke="#5e6779" stroke-width="1"/>
-  <!-- Step 1 (Top Level Entrance) -->
-  <rect x="10" y="48" width="44" height="8" fill="#5e6779" stroke="#0f172a" stroke-width="0.8"/>
-  <!-- Downward Arrow / Chevron -->
-  <path d="M26 38 L32 44 L38 38" stroke="#0f172a" stroke-width="2.5" fill="none" stroke-linecap="round"/>
-  <path d="M26 38 L32 44 L38 38" stroke="#8a8e94" stroke-width="1.2" fill="none" stroke-linecap="round"/>
-  <path d="M26 26 L32 32 L38 26" stroke="#0f172a" stroke-width="2.5" fill="none" stroke-linecap="round"/>
-  <path d="M26 26 L32 32 L38 26" stroke="#4c566a" stroke-width="1.2" fill="none" stroke-linecap="round"/>
+<svg xmlns="http://www.w3.org/2000/svg" version="1.1" width="64" height="64" viewBox="0 0 64 64">
+
+<path d="M9 9 H57 V60 H9Z" fill="#0f172a" stroke="none" stroke-width="0" stroke-linejoin="round" stroke-linecap="round" opacity="0.4"/>
+<rect x="8" y="5" width="48" height="52" rx="0" fill="#1e222b" stroke="#0f172a" stroke-width="1"/>
+<rect x="12" y="7" width="40" height="9" rx="0" fill="#1e222b" stroke="none" stroke-width="1"/>
+<path d="M13 8 H51" fill="none" stroke="#6b7480" stroke-width="1" stroke-linejoin="round" stroke-linecap="round" />
+<rect x="12" y="17" width="40" height="9" rx="0" fill="#2b2f3a" stroke="none" stroke-width="1"/>
+<path d="M13 18 H51" fill="none" stroke="#6b7480" stroke-width="1" stroke-linejoin="round" stroke-linecap="round" />
+<rect x="12" y="27" width="40" height="9" rx="0" fill="#3b4252" stroke="none" stroke-width="1"/>
+<path d="M13 28 H51" fill="none" stroke="#6b7480" stroke-width="1" stroke-linejoin="round" stroke-linecap="round" />
+<rect x="12" y="37" width="40" height="9" rx="0" fill="#4c566a" stroke="none" stroke-width="1"/>
+<path d="M13 38 H51" fill="none" stroke="#6b7480" stroke-width="1" stroke-linejoin="round" stroke-linecap="round" />
+<rect x="12" y="47" width="40" height="9" rx="0" fill="#5e6779" stroke="none" stroke-width="1"/>
+<path d="M13 48 H51" fill="none" stroke="#6b7480" stroke-width="1" stroke-linejoin="round" stroke-linecap="round" />
+<path d="M8 5 H10 L12 8 V55 L9 57 H7 L6 54 V7Z" fill="#3b4252" stroke="#0f172a" stroke-width="1" stroke-linejoin="round" stroke-linecap="round" />
+<path d="M8 6 H9 L7 8 H9 V53 L7 55 V8Z" fill="#4c566a" stroke="#0f172a" stroke-width="0" stroke-linejoin="round" stroke-linecap="round" />
+<path d="M10 9 V55 H10 L12 53 H8 V12Z" fill="#2b2f3a" stroke="#0f172a" stroke-width="0" stroke-linejoin="round" stroke-linecap="round" />
+<path d="M54 5 H56 L58 8 V55 L55 57 H53 L52 54 V7Z" fill="#3b4252" stroke="#0f172a" stroke-width="1" stroke-linejoin="round" stroke-linecap="round" />
+<path d="M54 6 H55 L53 8 H55 V53 L53 55 V8Z" fill="#4c566a" stroke="#0f172a" stroke-width="0" stroke-linejoin="round" stroke-linecap="round" />
+<path d="M56 9 V55 H56 L58 53 H54 V12Z" fill="#2b2f3a" stroke="#0f172a" stroke-width="0" stroke-linejoin="round" stroke-linecap="round" />
 </svg>

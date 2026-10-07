@@ -1,67 +1,133 @@
-<svg xmlns="http://www.w3.org/2000/svg" width="256" height="256" viewBox="0 0 256 256">
-  <defs>
-    <clipPath id="hero_thorin-clip">
-      <circle cx="128" cy="128" r="120"/>
-    </clipPath>
-  </defs>
-  <g clip-path="url(#hero_thorin-clip)">
-    <!-- Background -->
-    <circle cx="128" cy="128" r="120" fill="#451a1a"/>
-    <!-- Torso: Chainmail & Heavy Steel Armor -->
-    <path d="M48 248 L64 192 L88 176 L168 176 L192 192 L208 248 Z" fill="#475569" stroke="#0f172a" stroke-width="2"/>
-    <!-- Chainmail Texture Pattern -->
-    <path d="M96 188 L160 188 M92 200 L164 200 M96 212 L160 212 M100 224 L156 224" stroke="#334155" stroke-width="2" stroke-dasharray="4,4"/>
-    
-    <!-- Steel Pauldrons (Left & Right) -->
-    <path d="M44 248 L58 190 Q80 180 96 196 L76 248 Z" fill="#64748b" stroke="#0f172a" stroke-width="2"/>
-    <path d="M50 196 Q70 188 88 200" stroke="#94a3b8" stroke-width="2" fill="none"/>
-    <path d="M212 248 L198 190 Q176 180 160 196 L180 248 Z" fill="#475569" stroke="#0f172a" stroke-width="2"/>
-    
-    <!-- Dwarf Broad Neck & Head Base -->
-    <rect x="100" y="140" width="56" height="40" fill="#d6a383"/>
-    <ellipse cx="128" cy="130" rx="44" ry="42" fill="#f1c5a5" stroke="#0f172a" stroke-width="2"/>
-
-    <!-- Rugged Eyebrows & Eyes -->
-    <path d="M96 112 Q108 106 120 114" stroke="#b45309" stroke-width="5" stroke-linecap="round" fill="none"/>
-    <path d="M136 114 Q148 106 160 112" stroke="#b45309" stroke-width="5" stroke-linecap="round" fill="none"/>
-    <circle cx="110" cy="122" r="4.5" fill="#0f172a"/>
-    <circle cx="146" cy="122" r="4.5" fill="#0f172a"/>
-    <circle cx="108" cy="120" r="1.5" fill="#ffffff"/>
-    <circle cx="144" cy="120" r="1.5" fill="#ffffff"/>
-
-    <!-- Broad Nose -->
-    <path d="M124 116 L120 134 Q128 138 136 134 L132 116 Z" fill="#e2a98a" stroke="#0f172a" stroke-width="1.5"/>
-
-    <!-- Steel Helmet (Spangenhelm with Noseguard) -->
-    <path d="M78 116 Q80 44 128 42 Q176 44 178 116 Q150 102 128 102 Q106 102 78 116 Z" fill="#64748b" stroke="#0f172a" stroke-width="2.5"/>
-    <path d="M84 106 Q128 52 172 106" stroke="#94a3b8" stroke-width="3" fill="none"/>
-    <!-- Center Brow Ridge & Crest -->
-    <path d="M124 42 H132 V106 H124 Z" fill="#94a3b8" stroke="#0f172a" stroke-width="1.5"/>
-    <!-- Nasal Guard -->
-    <path d="M122 102 H134 L131 130 H125 Z" fill="#94a3b8" stroke="#0f172a" stroke-width="1.5"/>
-    <!-- Helmet Rivets -->
-    <circle cx="92" cy="106" r="2.5" fill="#cbd5e1" stroke="#0f172a" stroke-width="1"/>
-    <circle cx="108" cy="104" r="2.5" fill="#cbd5e1" stroke="#0f172a" stroke-width="1"/>
-    <circle cx="148" cy="104" r="2.5" fill="#cbd5e1" stroke="#0f172a" stroke-width="1"/>
-    <circle cx="164" cy="106" r="2.5" fill="#cbd5e1" stroke="#0f172a" stroke-width="1"/>
-
-    <!-- Bushy Copper-Red Mustache & Two Braided Beard Strands -->
-    <!-- Heavy Mustache -->
-    <path d="M96 142 Q128 136 128 148 Q128 136 160 142 Q144 162 128 156 Q112 162 96 142 Z" fill="#d97706" stroke="#0f172a" stroke-width="2"/>
-    
-    <!-- Full Beard Base -->
-    <path d="M84 138 Q82 170 94 200 L162 200 Q174 170 172 138 Q150 156 128 156 Q106 156 84 138 Z" fill="#b45309" stroke="#0f172a" stroke-width="2"/>
-    
-    <!-- Left Braid -->
-    <path d="M96 196 Q92 224 100 248 Q112 248 116 224 Q114 196 112 196 Z" fill="#d97706" stroke="#0f172a" stroke-width="2"/>
-    <!-- Metal Rings on Left Braid -->
-    <rect x="94" y="214" width="20" height="7" rx="2" fill="#9aa3ad" stroke="#0f172a" stroke-width="1.2"/>
-    <rect x="96" y="238" width="16" height="6" rx="2" fill="#c9a227" stroke="#0f172a" stroke-width="1.2"/>
-
-    <!-- Right Braid -->
-    <path d="M144 196 Q142 224 140 248 Q152 248 160 224 Q162 196 160 196 Z" fill="#d97706" stroke="#0f172a" stroke-width="2"/>
-    <!-- Metal Rings on Right Braid -->
-    <rect x="142" y="214" width="20" height="7" rx="2" fill="#9aa3ad" stroke="#0f172a" stroke-width="1.2"/>
-    <rect x="144" y="238" width="16" height="6" rx="2" fill="#c9a227" stroke="#0f172a" stroke-width="1.2"/>
-  </g>
+<svg xmlns="http://www.w3.org/2000/svg" version="1.1" width="256" height="256" viewBox="0 0 256 256">
+<defs>
+<clipPath id="hero_thorin-clip">
+<circle cx="128" cy="128" r="120"/>
+</clipPath>
+</defs>
+<g clip-path="url(#hero_thorin-clip)">
+<circle cx="128" cy="128" r="120" fill="#472a30" stroke="none" stroke-width="1"/>
+<path d="M8 150 Q20 28 129 8 Q70 44 57 128 Q46 192 8 203Z" fill="#ffffff" stroke="none" stroke-width="0" stroke-linejoin="round" stroke-linecap="round" opacity="0.04"/>
+<path d="M27 256 Q29 203 72 184 L106 171 H149 L187 185 Q226 200 234 256Z" fill="#3b4252" stroke="#0f172a" stroke-width="3" stroke-linejoin="round" stroke-linecap="round" />
+<path d="M33 252 Q39 208 77 194 L105 181 L114 204 L83 216 L72 256Z" fill="#6b7480" stroke="#0f172a" stroke-width="0" stroke-linejoin="round" stroke-linecap="round" />
+<path d="M73 199 q4 7 8 0" fill="none" stroke="#9aa3ad" stroke-width="1.4" stroke-linejoin="round" stroke-linecap="round" />
+<path d="M82 199 q4 7 8 0" fill="none" stroke="#9aa3ad" stroke-width="1.4" stroke-linejoin="round" stroke-linecap="round" />
+<path d="M91 199 q4 7 8 0" fill="none" stroke="#9aa3ad" stroke-width="1.4" stroke-linejoin="round" stroke-linecap="round" />
+<path d="M100 199 q4 7 8 0" fill="none" stroke="#9aa3ad" stroke-width="1.4" stroke-linejoin="round" stroke-linecap="round" />
+<path d="M109 199 q4 7 8 0" fill="none" stroke="#9aa3ad" stroke-width="1.4" stroke-linejoin="round" stroke-linecap="round" />
+<path d="M118 199 q4 7 8 0" fill="none" stroke="#9aa3ad" stroke-width="1.4" stroke-linejoin="round" stroke-linecap="round" />
+<path d="M127 199 q4 7 8 0" fill="none" stroke="#9aa3ad" stroke-width="1.4" stroke-linejoin="round" stroke-linecap="round" />
+<path d="M136 199 q4 7 8 0" fill="none" stroke="#9aa3ad" stroke-width="1.4" stroke-linejoin="round" stroke-linecap="round" />
+<path d="M145 199 q4 7 8 0" fill="none" stroke="#9aa3ad" stroke-width="1.4" stroke-linejoin="round" stroke-linecap="round" />
+<path d="M154 199 q4 7 8 0" fill="none" stroke="#9aa3ad" stroke-width="1.4" stroke-linejoin="round" stroke-linecap="round" />
+<path d="M163 199 q4 7 8 0" fill="none" stroke="#9aa3ad" stroke-width="1.4" stroke-linejoin="round" stroke-linecap="round" />
+<path d="M172 199 q4 7 8 0" fill="none" stroke="#9aa3ad" stroke-width="1.4" stroke-linejoin="round" stroke-linecap="round" />
+<path d="M181 199 q4 7 8 0" fill="none" stroke="#9aa3ad" stroke-width="1.4" stroke-linejoin="round" stroke-linecap="round" />
+<path d="M73 208 q4 7 8 0" fill="none" stroke="#9aa3ad" stroke-width="1.4" stroke-linejoin="round" stroke-linecap="round" />
+<path d="M82 208 q4 7 8 0" fill="none" stroke="#9aa3ad" stroke-width="1.4" stroke-linejoin="round" stroke-linecap="round" />
+<path d="M91 208 q4 7 8 0" fill="none" stroke="#9aa3ad" stroke-width="1.4" stroke-linejoin="round" stroke-linecap="round" />
+<path d="M100 208 q4 7 8 0" fill="none" stroke="#9aa3ad" stroke-width="1.4" stroke-linejoin="round" stroke-linecap="round" />
+<path d="M109 208 q4 7 8 0" fill="none" stroke="#9aa3ad" stroke-width="1.4" stroke-linejoin="round" stroke-linecap="round" />
+<path d="M118 208 q4 7 8 0" fill="none" stroke="#9aa3ad" stroke-width="1.4" stroke-linejoin="round" stroke-linecap="round" />
+<path d="M127 208 q4 7 8 0" fill="none" stroke="#9aa3ad" stroke-width="1.4" stroke-linejoin="round" stroke-linecap="round" />
+<path d="M136 208 q4 7 8 0" fill="none" stroke="#9aa3ad" stroke-width="1.4" stroke-linejoin="round" stroke-linecap="round" />
+<path d="M145 208 q4 7 8 0" fill="none" stroke="#9aa3ad" stroke-width="1.4" stroke-linejoin="round" stroke-linecap="round" />
+<path d="M154 208 q4 7 8 0" fill="none" stroke="#9aa3ad" stroke-width="1.4" stroke-linejoin="round" stroke-linecap="round" />
+<path d="M163 208 q4 7 8 0" fill="none" stroke="#9aa3ad" stroke-width="1.4" stroke-linejoin="round" stroke-linecap="round" />
+<path d="M172 208 q4 7 8 0" fill="none" stroke="#9aa3ad" stroke-width="1.4" stroke-linejoin="round" stroke-linecap="round" />
+<path d="M181 208 q4 7 8 0" fill="none" stroke="#9aa3ad" stroke-width="1.4" stroke-linejoin="round" stroke-linecap="round" />
+<path d="M73 217 q4 7 8 0" fill="none" stroke="#9aa3ad" stroke-width="1.4" stroke-linejoin="round" stroke-linecap="round" />
+<path d="M82 217 q4 7 8 0" fill="none" stroke="#9aa3ad" stroke-width="1.4" stroke-linejoin="round" stroke-linecap="round" />
+<path d="M91 217 q4 7 8 0" fill="none" stroke="#9aa3ad" stroke-width="1.4" stroke-linejoin="round" stroke-linecap="round" />
+<path d="M100 217 q4 7 8 0" fill="none" stroke="#9aa3ad" stroke-width="1.4" stroke-linejoin="round" stroke-linecap="round" />
+<path d="M109 217 q4 7 8 0" fill="none" stroke="#9aa3ad" stroke-width="1.4" stroke-linejoin="round" stroke-linecap="round" />
+<path d="M118 217 q4 7 8 0" fill="none" stroke="#9aa3ad" stroke-width="1.4" stroke-linejoin="round" stroke-linecap="round" />
+<path d="M127 217 q4 7 8 0" fill="none" stroke="#9aa3ad" stroke-width="1.4" stroke-linejoin="round" stroke-linecap="round" />
+<path d="M136 217 q4 7 8 0" fill="none" stroke="#9aa3ad" stroke-width="1.4" stroke-linejoin="round" stroke-linecap="round" />
+<path d="M145 217 q4 7 8 0" fill="none" stroke="#9aa3ad" stroke-width="1.4" stroke-linejoin="round" stroke-linecap="round" />
+<path d="M154 217 q4 7 8 0" fill="none" stroke="#9aa3ad" stroke-width="1.4" stroke-linejoin="round" stroke-linecap="round" />
+<path d="M163 217 q4 7 8 0" fill="none" stroke="#9aa3ad" stroke-width="1.4" stroke-linejoin="round" stroke-linecap="round" />
+<path d="M172 217 q4 7 8 0" fill="none" stroke="#9aa3ad" stroke-width="1.4" stroke-linejoin="round" stroke-linecap="round" />
+<path d="M181 217 q4 7 8 0" fill="none" stroke="#9aa3ad" stroke-width="1.4" stroke-linejoin="round" stroke-linecap="round" />
+<path d="M73 226 q4 7 8 0" fill="none" stroke="#9aa3ad" stroke-width="1.4" stroke-linejoin="round" stroke-linecap="round" />
+<path d="M82 226 q4 7 8 0" fill="none" stroke="#9aa3ad" stroke-width="1.4" stroke-linejoin="round" stroke-linecap="round" />
+<path d="M91 226 q4 7 8 0" fill="none" stroke="#9aa3ad" stroke-width="1.4" stroke-linejoin="round" stroke-linecap="round" />
+<path d="M100 226 q4 7 8 0" fill="none" stroke="#9aa3ad" stroke-width="1.4" stroke-linejoin="round" stroke-linecap="round" />
+<path d="M109 226 q4 7 8 0" fill="none" stroke="#9aa3ad" stroke-width="1.4" stroke-linejoin="round" stroke-linecap="round" />
+<path d="M118 226 q4 7 8 0" fill="none" stroke="#9aa3ad" stroke-width="1.4" stroke-linejoin="round" stroke-linecap="round" />
+<path d="M127 226 q4 7 8 0" fill="none" stroke="#9aa3ad" stroke-width="1.4" stroke-linejoin="round" stroke-linecap="round" />
+<path d="M136 226 q4 7 8 0" fill="none" stroke="#9aa3ad" stroke-width="1.4" stroke-linejoin="round" stroke-linecap="round" />
+<path d="M145 226 q4 7 8 0" fill="none" stroke="#9aa3ad" stroke-width="1.4" stroke-linejoin="round" stroke-linecap="round" />
+<path d="M154 226 q4 7 8 0" fill="none" stroke="#9aa3ad" stroke-width="1.4" stroke-linejoin="round" stroke-linecap="round" />
+<path d="M163 226 q4 7 8 0" fill="none" stroke="#9aa3ad" stroke-width="1.4" stroke-linejoin="round" stroke-linecap="round" />
+<path d="M172 226 q4 7 8 0" fill="none" stroke="#9aa3ad" stroke-width="1.4" stroke-linejoin="round" stroke-linecap="round" />
+<path d="M181 226 q4 7 8 0" fill="none" stroke="#9aa3ad" stroke-width="1.4" stroke-linejoin="round" stroke-linecap="round" />
+<path d="M73 235 q4 7 8 0" fill="none" stroke="#9aa3ad" stroke-width="1.4" stroke-linejoin="round" stroke-linecap="round" />
+<path d="M82 235 q4 7 8 0" fill="none" stroke="#9aa3ad" stroke-width="1.4" stroke-linejoin="round" stroke-linecap="round" />
+<path d="M91 235 q4 7 8 0" fill="none" stroke="#9aa3ad" stroke-width="1.4" stroke-linejoin="round" stroke-linecap="round" />
+<path d="M100 235 q4 7 8 0" fill="none" stroke="#9aa3ad" stroke-width="1.4" stroke-linejoin="round" stroke-linecap="round" />
+<path d="M109 235 q4 7 8 0" fill="none" stroke="#9aa3ad" stroke-width="1.4" stroke-linejoin="round" stroke-linecap="round" />
+<path d="M118 235 q4 7 8 0" fill="none" stroke="#9aa3ad" stroke-width="1.4" stroke-linejoin="round" stroke-linecap="round" />
+<path d="M127 235 q4 7 8 0" fill="none" stroke="#9aa3ad" stroke-width="1.4" stroke-linejoin="round" stroke-linecap="round" />
+<path d="M136 235 q4 7 8 0" fill="none" stroke="#9aa3ad" stroke-width="1.4" stroke-linejoin="round" stroke-linecap="round" />
+<path d="M145 235 q4 7 8 0" fill="none" stroke="#9aa3ad" stroke-width="1.4" stroke-linejoin="round" stroke-linecap="round" />
+<path d="M154 235 q4 7 8 0" fill="none" stroke="#9aa3ad" stroke-width="1.4" stroke-linejoin="round" stroke-linecap="round" />
+<path d="M163 235 q4 7 8 0" fill="none" stroke="#9aa3ad" stroke-width="1.4" stroke-linejoin="round" stroke-linecap="round" />
+<path d="M172 235 q4 7 8 0" fill="none" stroke="#9aa3ad" stroke-width="1.4" stroke-linejoin="round" stroke-linecap="round" />
+<path d="M181 235 q4 7 8 0" fill="none" stroke="#9aa3ad" stroke-width="1.4" stroke-linejoin="round" stroke-linecap="round" />
+<path d="M73 244 q4 7 8 0" fill="none" stroke="#9aa3ad" stroke-width="1.4" stroke-linejoin="round" stroke-linecap="round" />
+<path d="M82 244 q4 7 8 0" fill="none" stroke="#9aa3ad" stroke-width="1.4" stroke-linejoin="round" stroke-linecap="round" />
+<path d="M91 244 q4 7 8 0" fill="none" stroke="#9aa3ad" stroke-width="1.4" stroke-linejoin="round" stroke-linecap="round" />
+<path d="M100 244 q4 7 8 0" fill="none" stroke="#9aa3ad" stroke-width="1.4" stroke-linejoin="round" stroke-linecap="round" />
+<path d="M109 244 q4 7 8 0" fill="none" stroke="#9aa3ad" stroke-width="1.4" stroke-linejoin="round" stroke-linecap="round" />
+<path d="M118 244 q4 7 8 0" fill="none" stroke="#9aa3ad" stroke-width="1.4" stroke-linejoin="round" stroke-linecap="round" />
+<path d="M127 244 q4 7 8 0" fill="none" stroke="#9aa3ad" stroke-width="1.4" stroke-linejoin="round" stroke-linecap="round" />
+<path d="M136 244 q4 7 8 0" fill="none" stroke="#9aa3ad" stroke-width="1.4" stroke-linejoin="round" stroke-linecap="round" />
+<path d="M145 244 q4 7 8 0" fill="none" stroke="#9aa3ad" stroke-width="1.4" stroke-linejoin="round" stroke-linecap="round" />
+<path d="M154 244 q4 7 8 0" fill="none" stroke="#9aa3ad" stroke-width="1.4" stroke-linejoin="round" stroke-linecap="round" />
+<path d="M163 244 q4 7 8 0" fill="none" stroke="#9aa3ad" stroke-width="1.4" stroke-linejoin="round" stroke-linecap="round" />
+<path d="M172 244 q4 7 8 0" fill="none" stroke="#9aa3ad" stroke-width="1.4" stroke-linejoin="round" stroke-linecap="round" />
+<path d="M181 244 q4 7 8 0" fill="none" stroke="#9aa3ad" stroke-width="1.4" stroke-linejoin="round" stroke-linecap="round" />
+<path d="M28 232 L37 196 Q54 179 88 185 L100 205 L79 238Z" fill="#9aa3ad" stroke="#0f172a" stroke-width="3" stroke-linejoin="round" stroke-linecap="round" />
+<path d="M37 202 L78 192 L89 204 L49 212Z" fill="#c5cbd0" stroke="#0f172a" stroke-width="0" stroke-linejoin="round" stroke-linecap="round" />
+<path d="M167 189 Q198 176 217 200 L229 232 L178 240 L158 208Z" fill="#6b7480" stroke="#0f172a" stroke-width="3" stroke-linejoin="round" stroke-linecap="round" />
+<path d="M109 159 L106 188 Q127 202 150 187 L146 159Z" fill="#b0785d" stroke="#0f172a" stroke-width="2" stroke-linejoin="round" stroke-linecap="round" />
+<path d="M82 101 Q127 77 175 101 L178 143 Q170 168 150 176 H108 Q84 165 78 143Z" fill="#d6a383" stroke="#0f172a" stroke-width="2.5" stroke-linejoin="round" stroke-linecap="round" />
+<path d="M145 84 Q158 107 151 140 L139 163 L128 177 L145 173 Q165 155 167 129 L161 86Z" fill="#b0785d" stroke="#0f172a" stroke-width="0" stroke-linejoin="round" stroke-linecap="round" />
+<path d="M94 105 Q92 91 114 88" fill="#f4d4b5" stroke="#f4d4b5" stroke-width="2" stroke-linejoin="round" stroke-linecap="round" />
+<path d="M96 120 Q106 114 118 122 Q108 129 97 126Z" fill="#ede5d3" stroke="#0f172a" stroke-width="1.8" stroke-linejoin="round" stroke-linecap="round" />
+<path d="M138 122 Q149 117 160 120 L158 126 Q149 129 138 122Z" fill="#ede5d3" stroke="#0f172a" stroke-width="1.8" stroke-linejoin="round" stroke-linecap="round" />
+<ellipse cx="109" cy="124" rx="3.5" ry="4" fill="#72848a" stroke="none" stroke-width="1"/>
+<ellipse cx="148" cy="124" rx="3.5" ry="4" fill="#72848a" stroke="none" stroke-width="1"/>
+<circle cx="109" cy="124" r="1.8" fill="#0f172a" stroke="none" stroke-width="1"/>
+<circle cx="148" cy="124" r="1.8" fill="#0f172a" stroke="none" stroke-width="1"/>
+<circle cx="108" cy="123" r="1" fill="#ffffff" stroke="none" stroke-width="1"/>
+<circle cx="147" cy="123" r="1" fill="#ffffff" stroke="none" stroke-width="1"/>
+<path d="M88 110 L117 116 M140 116 L168 108" fill="none" stroke="#7f4026" stroke-width="6" stroke-linejoin="round" stroke-linecap="round" />
+<path d="M81 140 L96 153 L111 146 L128 157 L148 146 L171 137 L178 159 L170 183 L158 197 L149 222 L130 205 L106 224 L97 197 L83 184 L76 163Z" fill="#914625" stroke="#0f172a" stroke-width="3" stroke-linejoin="round" stroke-linecap="round" />
+<path d="M82 146 L93 157 L108 153 L126 165 L110 190 L98 187 L93 170Z" fill="#c16a36" stroke="#0f172a" stroke-width="0" stroke-linejoin="round" stroke-linecap="round" />
+<path d="M128 163 L148 152 L162 153 L167 143 L164 174 L148 194 L134 192Z" fill="#aa552c" stroke="#0f172a" stroke-width="0" stroke-linejoin="round" stroke-linecap="round" />
+<path d="M98 151 Q110 138 125 146 L129 154 Q138 138 158 146 L170 159 L149 160 L134 157 L128 163 L120 157 L102 161 L89 160Z" fill="#d08345" stroke="#0f172a" stroke-width="2" stroke-linejoin="round" stroke-linecap="round" />
+<path d="M100 181 Q89 197 95 209 Q88 224 100 245 Q112 227 107 213 Q114 194 100 181Z" fill="#b96031" stroke="#0f172a" stroke-width="2" stroke-linejoin="round" stroke-linecap="round" />
+<path d="M94 193 L106 202 M106 193 L94 202" fill="none" stroke="#743b27" stroke-width="2" stroke-linejoin="round" stroke-linecap="round" />
+<path d="M94 206 L106 215 M106 206 L94 215" fill="none" stroke="#743b27" stroke-width="2" stroke-linejoin="round" stroke-linecap="round" />
+<path d="M94 219 L106 228 M106 219 L94 228" fill="none" stroke="#743b27" stroke-width="2" stroke-linejoin="round" stroke-linecap="round" />
+<rect x="91" y="228" width="18" height="7" rx="2" fill="#c9a227" stroke="#0f172a" stroke-width="1.5"/>
+<path d="M94 230 H104" fill="none" stroke="#e0c25a" stroke-width="1.5" stroke-linejoin="round" stroke-linecap="round" />
+<path d="M148 181 Q137 197 143 209 Q136 224 148 245 Q160 227 155 213 Q162 194 148 181Z" fill="#b96031" stroke="#0f172a" stroke-width="2" stroke-linejoin="round" stroke-linecap="round" />
+<path d="M142 193 L154 202 M154 193 L142 202" fill="none" stroke="#743b27" stroke-width="2" stroke-linejoin="round" stroke-linecap="round" />
+<path d="M142 206 L154 215 M154 206 L142 215" fill="none" stroke="#743b27" stroke-width="2" stroke-linejoin="round" stroke-linecap="round" />
+<path d="M142 219 L154 228 M154 219 L142 228" fill="none" stroke="#743b27" stroke-width="2" stroke-linejoin="round" stroke-linecap="round" />
+<rect x="139" y="228" width="18" height="7" rx="2" fill="#c9a227" stroke="#0f172a" stroke-width="1.5"/>
+<path d="M142 230 H152" fill="none" stroke="#e0c25a" stroke-width="1.5" stroke-linejoin="round" stroke-linecap="round" />
+<path d="M72 112 L75 81 Q80 41 123 34 Q165 32 179 72 L187 112 L166 105 Q128 98 88 109Z" fill="#6b7480" stroke="#0f172a" stroke-width="3" stroke-linejoin="round" stroke-linecap="round" />
+<path d="M80 99 Q82 52 122 42 L118 92Z" fill="#9aa3ad" stroke="#0f172a" stroke-width="0" stroke-linejoin="round" stroke-linecap="round" />
+<path d="M133 40 Q168 47 174 94 L135 91Z" fill="#4c566a" stroke="#0f172a" stroke-width="0" stroke-linejoin="round" stroke-linecap="round" />
+<path d="M73 102 Q127 86 185 102 L187 114 Q131 99 72 116Z" fill="#9aa3ad" stroke="#0f172a" stroke-width="2" stroke-linejoin="round" stroke-linecap="round" />
+<path d="M122 35 H133 L137 97 L136 139 L127 145 L119 137 L122 97Z" fill="#9aa3ad" stroke="#0f172a" stroke-width="2" stroke-linejoin="round" stroke-linecap="round" />
+<path d="M124 39 H127 L128 131" fill="none" stroke="#d1d7dc" stroke-width="2" stroke-linejoin="round" stroke-linecap="round" />
+<circle cx="86" cy="105" r="2.5" fill="#e0c25a" stroke="#0f172a" stroke-width="1"/>
+<circle cx="104" cy="101" r="2.5" fill="#e0c25a" stroke="#0f172a" stroke-width="1"/>
+<circle cx="151" cy="101" r="2.5" fill="#e0c25a" stroke="#0f172a" stroke-width="1"/>
+<circle cx="172" cy="105" r="2.5" fill="#e0c25a" stroke="#0f172a" stroke-width="1"/>
+</g>
 </svg>

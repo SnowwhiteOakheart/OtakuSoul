@@ -220,11 +220,14 @@ bzw. `stroke="currentColor"` (die App färbt sie), Strichstärke 2, keine Füllf
 
 ## G. Prüfliste vor der Übergabe
 
-- [ ] Dateiname exakt wie in der Tabelle, im richtigen Ordner.
-- [ ] SVG öffnet im Browser, keine verbotenen Elemente, Größe im Rahmen.
-- [ ] Bodenkacheln 3×3 nebeneinander ohne sichtbare Kanten (Claude prüft das zusätzlich automatisch).
-- [ ] Objekte mit transparentem Hintergrund, Tokens ohne eigenen Rahmen.
-- [ ] Keine Schrift, keine Marken, jugendfrei.
+Neu gestaltet und geprüft am **07.10.2026**: alle 69 Assets (65 SVGs und vier PNGs).
+Details und Porträt-Prompts: [`docs/stage_assets.md`](docs/stage_assets.md).
+
+- [x] Dateiname exakt wie in der Tabelle, im richtigen Ordner.
+- [x] SVG öffnet im Browser, keine verbotenen Elemente, Größe im Rahmen.
+- [x] Bodenkacheln 3×3 nebeneinander ohne sichtbare Kanten (Claude prüft das zusätzlich automatisch).
+- [x] Objekte mit transparentem Hintergrund, Tokens ohne eigenen Rahmen.
+- [x] Keine Schrift, keine Marken, jugendfrei.
 
 **Reihenfolge nach Bedarf:** zuerst A (Dungeon) und die Tokens aus C (Helden, Goblin, Skelett, Zombie) – damit lässt
 sich Schritt 2 vollständig bauen. B, D, die übrigen Monster und E folgen bis Schritt 5.

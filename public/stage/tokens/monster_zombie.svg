@@ -1,40 +1,28 @@
-<svg xmlns="http://www.w3.org/2000/svg" width="256" height="256" viewBox="0 0 256 256">
-  <defs>
-    <clipPath id="monster_zombie-clip">
-      <circle cx="128" cy="128" r="120"/>
-    </clipPath>
-  </defs>
-  <g clip-path="url(#monster_zombie-clip)">
-    <!-- Background -->
-    <circle cx="128" cy="128" r="120" fill="#1c2920"/>
-    <!-- Tattered Peasant Clothes -->
-    <path d="M52 248 Q64 190 102 186 L128 192 L154 186 Q192 190 204 248 Z" fill="#57534e" stroke="#0f172a" stroke-width="2"/>
-    <!-- Torn Cloth Edges -->
-    <polygon points="98,214 110,248 124,220 138,248 152,216" fill="#44403c"/>
-
-    <!-- Sickly Pale-Green Neck & Head -->
-    <rect x="110" y="146" width="36" height="42" fill="#65a30d"/>
-    <ellipse cx="128" cy="132" rx="38" ry="40" fill="#84cc16" stroke="#0f172a" stroke-width="2"/>
-    <path d="M96 142 Q128 166 160 142" fill="#65a30d" opacity="0.6"/>
-
-    <!-- Stringy Bedraggled Hair -->
-    <path d="M92 110 Q86 64 128 62 Q170 64 164 110 Q152 78 128 80 Q104 78 92 110 Z" fill="#292524" stroke="#0f172a" stroke-width="1.8"/>
-    <path d="M96 82 L90 126 M108 72 L104 116 M152 74 L158 118" stroke="#44403c" stroke-width="2"/>
-
-    <!-- Vacant, Milky Asymmetrical Eyes -->
-    <ellipse cx="112" cy="124" rx="7" ry="7" fill="#fef08a" stroke="#0f172a" stroke-width="1.5"/>
-    <circle cx="112" cy="124" r="2.5" fill="#cbd5e1"/>
-
-    <ellipse cx="144" cy="126" rx="8" ry="8" fill="#f1f5f9" stroke="#0f172a" stroke-width="1.5"/>
-    <circle cx="144" cy="126" r="1.5" fill="#94a3b8"/>
-
-    <!-- Sunken Bruised Eye Sockets -->
-    <path d="M104 132 Q112 136 120 132" stroke="#365314" stroke-width="2" fill="none"/>
-    <path d="M136 136 Q144 140 152 136" stroke="#365314" stroke-width="2" fill="none"/>
-
-    <!-- Slack Sagging Jaw & Dull Expression -->
-    <path d="M114 150 Q128 146 142 152 Q138 168 122 168 Q116 164 114 150 Z" fill="#1c1917" stroke="#0f172a" stroke-width="1.8"/>
-    <polygon points="120,150 122,156 124,150" fill="#fef08a"/>
-    <polygon points="132,152 134,157 136,152" fill="#fef08a"/>
-  </g>
+<svg xmlns="http://www.w3.org/2000/svg" version="1.1" width="256" height="256" viewBox="0 0 256 256">
+<defs>
+<clipPath id="monster_zombie-clip">
+<circle cx="128" cy="128" r="120"/>
+</clipPath>
+</defs>
+<g clip-path="url(#monster_zombie-clip)">
+<circle cx="128" cy="128" r="120" fill="#384039" stroke="none" stroke-width="1"/>
+<path d="M8 150 Q20 28 129 8 Q70 44 57 128 Q46 192 8 203Z" fill="#ffffff" stroke="none" stroke-width="0" stroke-linejoin="round" stroke-linecap="round" opacity="0.04"/>
+<path d="M27 256 Q29 203 72 184 L106 171 H149 L187 185 Q226 200 234 256Z" fill="#655e4b" stroke="#0f172a" stroke-width="3" stroke-linejoin="round" stroke-linecap="round" />
+<path d="M33 252 Q39 208 77 194 L105 181 L114 204 L83 216 L72 256Z" fill="#8b8164" stroke="#0f172a" stroke-width="0" stroke-linejoin="round" stroke-linecap="round" />
+<path d="M76 192 L95 183 L113 207 L104 216 L123 228 L100 256 L85 233 L65 240Z" fill="#494638" stroke="#0f172a" stroke-width="2" stroke-linejoin="round" stroke-linecap="round" />
+<path d="M109 159 L106 188 Q127 202 150 187 L146 159Z" fill="#708264" stroke="#0f172a" stroke-width="2" stroke-linejoin="round" stroke-linecap="round" />
+<path d="M87 88 Q128 65 163 90 L166 135 L160 157 L140 176 L119 180 L95 160 L83 133Z" fill="#a1af88" stroke="#0f172a" stroke-width="2.5" stroke-linejoin="round" stroke-linecap="round" />
+<path d="M145 84 Q158 107 151 140 L139 163 L128 177 L145 173 Q165 155 167 129 L161 86Z" fill="#708264" stroke="#0f172a" stroke-width="0" stroke-linejoin="round" stroke-linecap="round" />
+<path d="M94 105 Q92 91 114 88" fill="#f4d4b5" stroke="#f4d4b5" stroke-width="2" stroke-linejoin="round" stroke-linecap="round" />
+<path d="M87 109 Q77 68 103 56 Q129 43 159 67 L173 101 L159 95 L147 78 L128 81 L119 75 L107 91 L96 86Z" fill="#41423c" stroke="#0f172a" stroke-width="2" stroke-linejoin="round" stroke-linecap="round" />
+<path d="M92 89 L103 65 L123 60" fill="none" stroke="#626454" stroke-width="4" stroke-linejoin="round" stroke-linecap="round" />
+<path d="M96 120 Q106 112 119 120 L117 132 L99 131Z" fill="#55604b" stroke="#0f172a" stroke-width="1" stroke-linejoin="round" stroke-linecap="round" />
+<path d="M138 120 Q152 112 162 123 L158 134 L139 131Z" fill="#55604b" stroke="#0f172a" stroke-width="1" stroke-linejoin="round" stroke-linecap="round" />
+<ellipse cx="108" cy="125" rx="4" ry="3" fill="#d2d2b2" stroke="none" stroke-width="1"/>
+<ellipse cx="149" cy="127" rx="4" ry="3" fill="#c4c6a7" stroke="none" stroke-width="1"/>
+<path d="M127 120 L121 140 L132 143" fill="none" stroke="#63725b" stroke-width="2" stroke-linejoin="round" stroke-linecap="round" />
+<path d="M110 156 L140 157 L146 151" fill="none" stroke="#56614b" stroke-width="3" stroke-linejoin="round" stroke-linecap="round" />
+<path d="M87 141 L101 146 M143 144 L155 140" fill="none" stroke="#708264" stroke-width="2" stroke-linejoin="round" stroke-linecap="round" />
+<path d="M111 183 L125 203 L143 181 L156 205 L138 215 L140 250 M84 222 L75 232 M174 213 L181 230" fill="none" stroke="#b0a48a" stroke-width="2" stroke-linejoin="round" stroke-linecap="round" />
+</g>
 </svg>

@@ -1,65 +1,53 @@
-<svg xmlns="http://www.w3.org/2000/svg" width="256" height="256" viewBox="0 0 256 256">
-  <defs>
-    <clipPath id="hero_finn-clip">
-      <circle cx="128" cy="128" r="120"/>
-    </clipPath>
-  </defs>
-  <g clip-path="url(#hero_finn-clip)">
-    <!-- Background -->
-    <circle cx="128" cy="128" r="120" fill="#143a1f"/>
-    <!-- Leather Tunic & Shoulder Strap -->
-    <path d="M52 248 Q68 186 104 180 L128 186 L152 180 Q188 186 204 248 Z" fill="#3f6b35" stroke="#0f172a" stroke-width="2"/>
-    <!-- Leather Cross-Belt -->
-    <polygon points="84,248 98,248 168,184 154,184" fill="#6b4a2f" stroke="#0f172a" stroke-width="1.5"/>
-    <circle cx="126" cy="216" r="4.5" fill="#c9a227" stroke="#0f172a" stroke-width="1"/>
-
-    <!-- Dagger Hilt Over Shoulder (Left) -->
-    <rect x="68" y="146" width="10" height="34" rx="2" transform="rotate(-25 73 163)" fill="#4a3322" stroke="#0f172a" stroke-width="1.5"/>
-    <rect x="60" y="174" width="26" height="6" rx="2" transform="rotate(-25 73 177)" fill="#9aa3ad" stroke="#0f172a" stroke-width="1.5"/>
-    <circle cx="65" cy="148" r="4.5" fill="#c9a227" stroke="#0f172a" stroke-width="1.2"/>
-
-    <!-- Green Leather Hood Pushed Back Over Head -->
-    <path d="M78 126 Q74 64 128 58 Q182 64 178 126 Q194 154 184 178 L152 180 Q128 174 104 180 L72 178 Q62 154 78 126 Z" fill="#2f5a2a" stroke="#0f172a" stroke-width="2.2"/>
-    <path d="M84 76 Q128 66 172 76" stroke="#4f7f3f" stroke-width="2.5" fill="none"/>
-
-    <!-- Halfling Youthful Face -->
-    <rect x="114" y="144" width="28" height="32" fill="#fed7aa"/>
-    <circle cx="128" cy="132" r="36" fill="#fcd34d" opacity="0.15"/>
-    <ellipse cx="128" cy="132" rx="36" ry="34" fill="#fed7aa" stroke="#0f172a" stroke-width="2"/>
-
-    <!-- Big Mischievous Halfling Ears -->
-    <ellipse cx="88" cy="132" rx="10" ry="14" fill="#fed7aa" stroke="#0f172a" stroke-width="1.8"/>
-    <ellipse cx="90" cy="132" rx="5" ry="8" fill="#fbcfe8" opacity="0.6"/>
-    <ellipse cx="168" cy="132" rx="10" ry="14" fill="#fed7aa" stroke="#0f172a" stroke-width="1.8"/>
-    <ellipse cx="166" cy="132" rx="5" ry="8" fill="#fbcfe8" opacity="0.6"/>
-
-    <!-- Messy Brown Curls Framing Face -->
-    <circle cx="104" cy="98" r="10" fill="#5a3d24"/>
-    <circle cx="120" cy="92" r="11" fill="#78350f"/>
-    <circle cx="138" cy="92" r="11" fill="#5a3d24"/>
-    <circle cx="152" cy="100" r="10" fill="#78350f"/>
-    <circle cx="94" cy="112" r="8" fill="#78350f"/>
-    <circle cx="162" cy="112" r="8" fill="#5a3d24"/>
-
-    <!-- Freckles & Mischievous Grin -->
-    <!-- Eyes -->
-    <circle cx="112" cy="126" r="4.5" fill="#0f172a"/>
-    <circle cx="144" cy="126" r="4.5" fill="#0f172a"/>
-    <circle cx="110" cy="124" r="1.5" fill="#ffffff"/>
-    <circle cx="142" cy="124" r="1.5" fill="#ffffff"/>
-    <path d="M106 118 Q114 114 120 119" stroke="#5a3d24" stroke-width="2" fill="none"/>
-    <path d="M136 119 Q142 114 150 118" stroke="#5a3d24" stroke-width="2" fill="none"/>
-
-    <!-- Freckles -->
-    <circle cx="104" cy="134" r="1.2" fill="#b45309"/>
-    <circle cx="108" cy="136" r="1.2" fill="#b45309"/>
-    <circle cx="148" cy="136" r="1.2" fill="#b45309"/>
-    <circle cx="152" cy="134" r="1.2" fill="#b45309"/>
-
-    <!-- Small Button Nose -->
-    <circle cx="128" cy="132" r="3" fill="#fca5a5" stroke="#0f172a" stroke-width="1"/>
-
-    <!-- Mischievous Crooked Smile -->
-    <path d="M116 146 Q130 156 144 144" stroke="#0f172a" stroke-width="2.5" fill="none" stroke-linecap="round"/>
-  </g>
+<svg xmlns="http://www.w3.org/2000/svg" version="1.1" width="256" height="256" viewBox="0 0 256 256">
+<defs>
+<clipPath id="hero_finn-clip">
+<circle cx="128" cy="128" r="120"/>
+</clipPath>
+</defs>
+<g clip-path="url(#hero_finn-clip)">
+<circle cx="128" cy="128" r="120" fill="#243d33" stroke="none" stroke-width="1"/>
+<path d="M8 150 Q20 28 129 8 Q70 44 57 128 Q46 192 8 203Z" fill="#ffffff" stroke="none" stroke-width="0" stroke-linejoin="round" stroke-linecap="round" opacity="0.04"/>
+<path d="M27 256 Q29 203 72 184 L106 171 H149 L187 185 Q226 200 234 256Z" fill="#344b37" stroke="#0f172a" stroke-width="3" stroke-linejoin="round" stroke-linecap="round" />
+<path d="M33 252 Q39 208 77 194 L105 181 L114 204 L83 216 L72 256Z" fill="#54724a" stroke="#0f172a" stroke-width="0" stroke-linejoin="round" stroke-linecap="round" />
+<path d="M173 197 L190 75 L196 73 L202 79 L188 200Z" fill="#6b4a2f" stroke="#0f172a" stroke-width="2" stroke-linejoin="round" stroke-linecap="round" />
+<path d="M181 105 L206 109 L206 117 L180 113Z" fill="#9aa3ad" stroke="#0f172a" stroke-width="2" stroke-linejoin="round" stroke-linecap="round" />
+<path d="M189 73 L199 71 L204 82 L192 86Z" fill="#c9a227" stroke="#0f172a" stroke-width="2" stroke-linejoin="round" stroke-linecap="round" />
+<path d="M55 195 Q44 151 59 93 Q72 37 124 31 Q166 22 195 83 Q215 137 201 198 L162 187 L173 129 Q171 79 128 69 Q89 79 83 125 L94 188Z" fill="#2f4a2a" stroke="#0f172a" stroke-width="3" stroke-linejoin="round" stroke-linecap="round" />
+<path d="M60 169 Q52 88 104 48 L125 40 L105 71 Q69 95 72 166Z" fill="#5e7b48" stroke="#0f172a" stroke-width="0" stroke-linejoin="round" stroke-linecap="round" />
+<path d="M132 42 Q172 61 180 109 L183 161" fill="none" stroke="#5e7b48" stroke-width="3" stroke-linejoin="round" stroke-linecap="round" />
+<path d="M109 159 L106 188 Q127 202 150 187 L146 159Z" fill="#b27c60" stroke="#0f172a" stroke-width="2" stroke-linejoin="round" stroke-linecap="round" />
+<path d="M88 101 Q125 76 164 100 L168 132 Q165 154 143 173 Q126 184 106 168 Q86 151 85 128Z" fill="#e3b38f" stroke="#0f172a" stroke-width="2.5" stroke-linejoin="round" stroke-linecap="round" />
+<path d="M145 84 Q158 107 151 140 L139 163 L128 177 L145 173 Q165 155 167 129 L161 86Z" fill="#b27c60" stroke="#0f172a" stroke-width="0" stroke-linejoin="round" stroke-linecap="round" />
+<path d="M94 105 Q92 91 114 88" fill="#f4d4b5" stroke="#f4d4b5" stroke-width="2" stroke-linejoin="round" stroke-linecap="round" />
+<path d="M96 120 Q106 117 118 122 Q108 129 97 126Z" fill="#ede5d3" stroke="#0f172a" stroke-width="1.8" stroke-linejoin="round" stroke-linecap="round" />
+<path d="M138 122 Q149 117 160 120 L158 126 Q149 129 138 122Z" fill="#ede5d3" stroke="#0f172a" stroke-width="1.8" stroke-linejoin="round" stroke-linecap="round" />
+<ellipse cx="109" cy="124" rx="3.5" ry="4" fill="#607648" stroke="none" stroke-width="1"/>
+<ellipse cx="148" cy="124" rx="3.5" ry="4" fill="#607648" stroke="none" stroke-width="1"/>
+<circle cx="109" cy="124" r="1.8" fill="#0f172a" stroke="none" stroke-width="1"/>
+<circle cx="148" cy="124" r="1.8" fill="#0f172a" stroke="none" stroke-width="1"/>
+<circle cx="108" cy="123" r="1" fill="#ffffff" stroke="none" stroke-width="1"/>
+<circle cx="147" cy="123" r="1" fill="#ffffff" stroke="none" stroke-width="1"/>
+<path d="M128 119 L123 140 Q129 144 135 138" fill="none" stroke="#925f55" stroke-width="1.7" stroke-linejoin="round" stroke-linecap="round" />
+<path d="M115 154 Q129 163 143 152" fill="none" stroke="#704743" stroke-width="2" stroke-linejoin="round" stroke-linecap="round" />
+<circle cx="91" cy="95" r="13" fill="#5a3d24" stroke="#0f172a" stroke-width="2"/>
+<path d="M86 98 q-4 -10 5 -9" fill="none" stroke="#8a6240" stroke-width="2" stroke-linejoin="round" stroke-linecap="round" />
+<circle cx="101" cy="82" r="15" fill="#5a3d24" stroke="#0f172a" stroke-width="2"/>
+<path d="M96 85 q-4 -10 5 -9" fill="none" stroke="#8a6240" stroke-width="2" stroke-linejoin="round" stroke-linecap="round" />
+<circle cx="121" cy="79" r="15" fill="#5a3d24" stroke="#0f172a" stroke-width="2"/>
+<path d="M116 82 q-4 -10 5 -9" fill="none" stroke="#8a6240" stroke-width="2" stroke-linejoin="round" stroke-linecap="round" />
+<circle cx="143" cy="81" r="14" fill="#5a3d24" stroke="#0f172a" stroke-width="2"/>
+<path d="M138 84 q-4 -10 5 -9" fill="none" stroke="#8a6240" stroke-width="2" stroke-linejoin="round" stroke-linecap="round" />
+<circle cx="162" cy="90" r="13" fill="#5a3d24" stroke="#0f172a" stroke-width="2"/>
+<path d="M157 93 q-4 -10 5 -9" fill="none" stroke="#8a6240" stroke-width="2" stroke-linejoin="round" stroke-linecap="round" />
+<circle cx="92" cy="111" r="9" fill="#5a3d24" stroke="#0f172a" stroke-width="2"/>
+<path d="M87 114 q-4 -10 5 -9" fill="none" stroke="#8a6240" stroke-width="2" stroke-linejoin="round" stroke-linecap="round" />
+<circle cx="166" cy="107" r="8" fill="#5a3d24" stroke="#0f172a" stroke-width="2"/>
+<path d="M161 110 q-4 -10 5 -9" fill="none" stroke="#8a6240" stroke-width="2" stroke-linejoin="round" stroke-linecap="round" />
+<path d="M96 112 L117 111 M141 112 L158 107" fill="none" stroke="#5a3d24" stroke-width="3" stroke-linejoin="round" stroke-linecap="round" />
+<path d="M97 143 L103 141 M151 141 L155 142" fill="none" stroke="#c68f6d" stroke-width="2" stroke-linejoin="round" stroke-linecap="round" />
+<path d="M64 197 L110 218 L99 230 L55 209Z" fill="#6b4a2f" stroke="#0f172a" stroke-width="2" stroke-linejoin="round" stroke-linecap="round" />
+<rect x="85" y="205" width="13" height="14" rx="2" fill="#c9a227" stroke="#0f172a" stroke-width="2"/>
+<rect x="89" y="208" width="5" height="8" rx="1" fill="#344b37" stroke="none" stroke-width="1"/>
+<path d="M155 184 L133 217 L170 202 L194 228" fill="none" stroke="#1c3426" stroke-width="3" stroke-linejoin="round" stroke-linecap="round" />
+</g>
 </svg>

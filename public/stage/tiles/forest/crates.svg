@@ -1,23 +1,14 @@
-<svg xmlns="http://www.w3.org/2000/svg" width="64" height="64" viewBox="0 0 64 64">
-  <!-- Shadow -->
-  <rect x="12" y="18" width="42" height="36" rx="3" fill="#0f172a" opacity="0.35"/>
-  <!-- Crate 1 (Bottom Left Large Crate) -->
-  <rect x="10" y="16" width="26" height="26" fill="#6b4a2f" stroke="#0f172a" stroke-width="1"/>
-  <rect x="12" y="18" width="22" height="22" fill="#8a6240"/>
-  <!-- Diagonal Braces -->
-  <line x1="12" y1="18" x2="34" y2="40" stroke="#6b4a2f" stroke-width="2"/>
-  <line x1="12" y1="40" x2="34" y2="18" stroke="#6b4a2f" stroke-width="2"/>
-  <rect x="10" y="16" width="26" height="26" fill="none" stroke="#0f172a" stroke-width="1"/>
+<svg xmlns="http://www.w3.org/2000/svg" version="1.1" width="64" height="64" viewBox="0 0 64 64">
 
-  <!-- Crate 2 (Top Right Stacked Crate) -->
-  <rect x="28" y="24" width="24" height="24" fill="#6b4a2f" stroke="#0f172a" stroke-width="1"/>
-  <rect x="30" y="26" width="20" height="20" fill="#8a6240"/>
-  <line x1="30" y1="26" x2="50" y2="46" stroke="#6b4a2f" stroke-width="2"/>
-  <line x1="30" y1="46" x2="50" y2="26" stroke="#6b4a2f" stroke-width="2"/>
-  <rect x="28" y="24" width="24" height="24" fill="none" stroke="#0f172a" stroke-width="1"/>
-
-  <!-- Tied Burlap Grain Sack (Resting in front) -->
-  <ellipse cx="20" cy="44" rx="9" ry="7" fill="#a3835a" stroke="#0f172a" stroke-width="1"/>
-  <circle cx="26" cy="42" r="2.5" fill="#8c6b45" stroke="#0f172a" stroke-width="0.8"/>
-  <path d="M15 44 Q20 46 25 44" stroke="#8c6b45" stroke-width="1.2" fill="none"/>
+<path d="M9 18 H51 V53 H9Z" fill="#0f172a" stroke="none" stroke-width="0" stroke-linejoin="round" stroke-linecap="round" opacity="0.4"/>
+<path d="M10 26 H32 L34 29 V49 L31 51 H9 L8 48 V28Z" fill="#6b4a2f" stroke="#0f172a" stroke-width="1" stroke-linejoin="round" stroke-linecap="round" />
+<path d="M10 27 H31 L29 29 H11 V47 L9 49 V29Z" fill="#8a6240" stroke="#0f172a" stroke-width="0" stroke-linejoin="round" stroke-linecap="round" />
+<path d="M32 30 V49 H12 L14 47 H30 V33Z" fill="#4a3322" stroke="#0f172a" stroke-width="0" stroke-linejoin="round" stroke-linecap="round" />
+<path d="M11 29 L31 48 M31 29 L11 48" fill="none" stroke="#a3835a" stroke-width="2" stroke-linejoin="round" stroke-linecap="round" />
+<path d="M31 12 H51 L53 15 V34 L50 36 H30 L29 33 V14Z" fill="#6b4a2f" stroke="#0f172a" stroke-width="1" stroke-linejoin="round" stroke-linecap="round" />
+<path d="M31 13 H50 L48 15 H32 V32 L30 34 V15Z" fill="#8a6240" stroke="#0f172a" stroke-width="0" stroke-linejoin="round" stroke-linecap="round" />
+<path d="M51 16 V34 H33 L35 32 H49 V19Z" fill="#4a3322" stroke="#0f172a" stroke-width="0" stroke-linejoin="round" stroke-linecap="round" />
+<path d="M32 15 L50 33 M50 15 L32 33" fill="none" stroke="#a3835a" stroke-width="2" stroke-linejoin="round" stroke-linecap="round" />
+<path d="M43 37 Q38 41 40 52 Q48 60 58 51 L57 43 L52 35Z" fill="#a3835a" stroke="#0f172a" stroke-width="1.5" stroke-linejoin="round" stroke-linecap="round" />
+<path d="M45 38 Q49 42 54 38 M44 46 L47 53" fill="none" stroke="#7a5c3a" stroke-width="1" stroke-linejoin="round" stroke-linecap="round" />
 </svg>

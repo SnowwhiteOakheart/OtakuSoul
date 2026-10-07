@@ -1,40 +1,17 @@
-<svg xmlns="http://www.w3.org/2000/svg" width="256" height="256" viewBox="0 0 256 256">
-  <defs>
-    <clipPath id="monster_shadow-clip">
-      <circle cx="128" cy="128" r="120"/>
-    </clipPath>
-  </defs>
-  <g clip-path="url(#monster_shadow-clip)">
-    <!-- Background -->
-    <circle cx="128" cy="128" r="120" fill="#0b0f19"/>
-    <!-- Eerie Smoky Tendrils & Wisps in Background -->
-    <path d="M54 230 Q28 170 60 120 Q92 70 70 30" stroke="#1e1b4b" stroke-width="16" fill="none" opacity="0.4" stroke-linecap="round"/>
-    <path d="M202 230 Q228 170 196 120 Q164 70 186 30" stroke="#1e1b4b" stroke-width="16" fill="none" opacity="0.4" stroke-linecap="round"/>
-
-    <!-- Dark Silhouette Body Emerging from Void -->
-    <path d="M42 248 Q70 178 106 174 L128 180 L150 174 Q186 178 214 248 Z" fill="#090d16" stroke="#0f172a" stroke-width="2"/>
-    <path d="M68 248 Q94 200 128 206 Q162 200 188 248 Z" fill="#18181b"/>
-
-    <!-- Smoky Tendrils Wisping Off Shoulders -->
-    <path d="M84 196 Q64 168 56 134 Q68 152 88 178" fill="#1e1b4b" opacity="0.6"/>
-    <path d="M172 196 Q192 168 200 134 Q188 152 168 178" fill="#1e1b4b" opacity="0.6"/>
-
-    <!-- Ghostly Silhouette Head -->
-    <ellipse cx="128" cy="126" rx="38" ry="44" fill="#090d16" stroke="#0f172a" stroke-width="2"/>
-    <ellipse cx="128" cy="126" rx="32" ry="38" fill="#18181b"/>
-
-    <!-- Whisping Smokey Crown / Spikes -->
-    <path d="M100 94 Q96 52 112 42 Q116 64 122 84" fill="#1e1b4b"/>
-    <path d="M124 84 Q128 40 134 36 Q136 58 138 84" fill="#1e1b4b"/>
-    <path d="M140 86 Q154 52 148 44 Q142 66 136 90" fill="#1e1b4b"/>
-
-    <!-- Two Piercing Pure Cold White Eyes -->
-    <ellipse cx="114" cy="122" rx="7" ry="6" fill="#e0f2fe" opacity="0.8"/>
-    <ellipse cx="114" cy="122" rx="4.5" ry="4" fill="#ffffff"/>
-    <circle cx="114" cy="122" r="1.5" fill="#38bdf8"/>
-
-    <ellipse cx="142" cy="122" rx="7" ry="6" fill="#e0f2fe" opacity="0.8"/>
-    <ellipse cx="142" cy="122" rx="4.5" ry="4" fill="#ffffff"/>
-    <circle cx="142" cy="122" r="1.5" fill="#38bdf8"/>
-  </g>
+<svg xmlns="http://www.w3.org/2000/svg" version="1.1" width="256" height="256" viewBox="0 0 256 256">
+<defs>
+<clipPath id="monster_shadow-clip">
+<circle cx="128" cy="128" r="120"/>
+</clipPath>
+</defs>
+<g clip-path="url(#monster_shadow-clip)">
+<circle cx="128" cy="128" r="120" fill="#323044" stroke="none" stroke-width="1"/>
+<path d="M8 150 Q20 28 129 8 Q70 44 57 128 Q46 192 8 203Z" fill="#ffffff" stroke="none" stroke-width="0" stroke-linejoin="round" stroke-linecap="round" opacity="0.04"/>
+<path d="M23 256 Q60 215 42 191 Q22 168 57 144 Q73 130 66 101 Q64 66 99 56 Q126 25 164 57 Q194 66 188 112 Q173 141 199 166 Q218 189 201 211 Q187 233 237 256Z" fill="#222736" stroke="#0f172a" stroke-width="0" stroke-linejoin="round" stroke-linecap="round" />
+<path d="M42 256 Q81 217 64 192 Q54 175 85 153 Q100 139 83 109 Q80 72 113 63 Q156 44 173 88 Q176 115 155 147 Q157 167 177 184 Q192 210 171 226 L191 256Z" fill="#141b29" stroke="#0f172a" stroke-width="0" stroke-linejoin="round" stroke-linecap="round" />
+<path d="M67 256 Q102 219 83 198 L102 168 Q95 145 106 131 Q91 110 102 91 Q125 62 152 83 Q164 107 147 127 L152 148 L133 177 L149 210 L131 231 L147 256Z" fill="#0a101c" stroke="#0f172a" stroke-width="0" stroke-linejoin="round" stroke-linecap="round" />
+<path d="M100 110 Q110 104 120 112 L115 124 L106 121Z" fill="#e0e8ec" stroke="#0f172a" stroke-width="0" stroke-linejoin="round" stroke-linecap="round" />
+<path d="M135 112 Q143 104 154 108 L147 121 L138 123Z" fill="#c9d6e3" stroke="#0f172a" stroke-width="0" stroke-linejoin="round" stroke-linecap="round" />
+<path d="M55 145 Q24 151 35 176 M197 136 Q226 149 211 167 M67 72 Q39 89 50 108" fill="none" stroke="#222736" stroke-width="4" stroke-linejoin="round" stroke-linecap="round" />
+</g>
 </svg>

@@ -1,50 +1,32 @@
-<svg xmlns="http://www.w3.org/2000/svg" width="256" height="256" viewBox="0 0 256 256">
-  <defs>
-    <clipPath id="monster_orc-clip">
-      <circle cx="128" cy="128" r="120"/>
-    </clipPath>
-  </defs>
-  <g clip-path="url(#monster_orc-clip)">
-    <!-- Background -->
-    <circle cx="128" cy="128" r="120" fill="#3b1818"/>
-    <!-- Heavy Fur Cloak Shoulders -->
-    <path d="M42 248 Q70 174 128 174 Q186 174 214 248 Z" fill="#292524" stroke="#0f172a" stroke-width="2.5"/>
-    <path d="M56 210 Q84 186 128 188 Q172 186 200 210" stroke="#44403c" stroke-width="6" fill="none"/>
-
-    <!-- Massive Gray-Green Neck & Head -->
-    <rect x="98" y="140" width="60" height="42" fill="#3f6212"/>
-    <ellipse cx="128" cy="126" rx="46" ry="42" fill="#4d7c0f" stroke="#0f172a" stroke-width="2"/>
-
-    <!-- Pointed Small Orc Ears -->
-    <polygon points="82,118 60,104 84,130" fill="#4d7c0f" stroke="#0f172a" stroke-width="1.8"/>
-    <polygon points="174,118 196,104 172,130" fill="#4d7c0f" stroke="#0f172a" stroke-width="1.8"/>
-
-    <!-- Shaved Head with Topknot / Coarse Hair -->
-    <path d="M88 106 Q92 70 128 68 Q164 70 168 106 Q146 94 128 94 Q110 94 88 106 Z" fill="#1c1917" stroke="#0f172a" stroke-width="2"/>
-    <path d="M124 68 Q122 40 136 34 Q134 56 132 68 Z" fill="#1c1917" stroke="#0f172a" stroke-width="1.5"/>
-
-    <!-- Red War Paint Stripes Across Cheeks -->
-    <line x1="88" y1="126" x2="114" y2="134" stroke="#dc2626" stroke-width="4" stroke-linecap="round"/>
-    <line x1="90" y1="136" x2="112" y2="144" stroke="#dc2626" stroke-width="3" stroke-linecap="round"/>
-    <line x1="168" y1="126" x2="142" y2="134" stroke="#dc2626" stroke-width="4" stroke-linecap="round"/>
-    <line x1="166" y1="136" x2="144" y2="144" stroke="#dc2626" stroke-width="3" stroke-linecap="round"/>
-
-    <!-- Heavy Brow & Fierce Eyes -->
-    <path d="M96 112 Q112 106 124 114" stroke="#1c1917" stroke-width="4" fill="none"/>
-    <path d="M132 114 Q144 106 160 112" stroke="#1c1917" stroke-width="4" fill="none"/>
-    <ellipse cx="110" cy="120" rx="5" ry="4" fill="#fbbf24" stroke="#0f172a" stroke-width="1.2"/>
-    <circle cx="110" cy="120" r="2.5" fill="#7f1d1d"/>
-    <ellipse cx="146" cy="120" rx="5" ry="4" fill="#fbbf24" stroke="#0f172a" stroke-width="1.2"/>
-    <circle cx="146" cy="120" r="2.5" fill="#7f1d1d"/>
-
-    <!-- Flat Pug Nose with Ring -->
-    <ellipse cx="128" cy="132" rx="10" ry="7" fill="#3f6212" stroke="#0f172a" stroke-width="1.5"/>
-    <circle cx="128" cy="140" r="5" fill="none" stroke="#eab308" stroke-width="2"/>
-
-    <!-- Underbite Jaw & Protruding Boar-Like Tusks -->
-    <path d="M98 144 Q128 152 158 144 L152 168 Q128 178 104 168 Z" fill="#3f6212" stroke="#0f172a" stroke-width="2"/>
-    <!-- Big Tusks Emerging from Lower Jaw -->
-    <polygon points="106,160 114,134 118,160" fill="#fef08a" stroke="#0f172a" stroke-width="1.5"/>
-    <polygon points="150,160 142,134 138,160" fill="#fef08a" stroke="#0f172a" stroke-width="1.5"/>
-  </g>
+<svg xmlns="http://www.w3.org/2000/svg" version="1.1" width="256" height="256" viewBox="0 0 256 256">
+<defs>
+<clipPath id="monster_orc-clip">
+<circle cx="128" cy="128" r="120"/>
+</clipPath>
+</defs>
+<g clip-path="url(#monster_orc-clip)">
+<circle cx="128" cy="128" r="120" fill="#3c4036" stroke="none" stroke-width="1"/>
+<path d="M8 150 Q20 28 129 8 Q70 44 57 128 Q46 192 8 203Z" fill="#ffffff" stroke="none" stroke-width="0" stroke-linejoin="round" stroke-linecap="round" opacity="0.04"/>
+<path d="M23 256 L29 211 L51 188 L58 168 L84 179 L103 171 H155 L176 179 L200 164 L208 187 L229 210 L239 256Z" fill="#4a3322" stroke="#0f172a" stroke-width="3" stroke-linejoin="round" stroke-linecap="round" />
+<path d="M35 224 L52 194 L67 205 L67 183 L89 200 L99 188 L107 220 L74 235 L70 256Z" fill="#8a7352" stroke="#0f172a" stroke-width="0" stroke-linejoin="round" stroke-linecap="round" />
+<path d="M109 159 L106 188 Q127 202 150 187 L146 159Z" fill="#586d5d" stroke="#0f172a" stroke-width="2" stroke-linejoin="round" stroke-linecap="round" />
+<path d="M81 89 Q127 63 173 90 L182 127 L173 163 L149 188 L108 188 L81 163 L74 129Z" fill="#87947b" stroke="#0f172a" stroke-width="2.5" stroke-linejoin="round" stroke-linecap="round" />
+<path d="M145 84 Q158 107 151 140 L139 163 L128 177 L145 173 Q165 155 167 129 L161 86Z" fill="#586d5d" stroke="#0f172a" stroke-width="0" stroke-linejoin="round" stroke-linecap="round" />
+<path d="M94 105 Q92 91 114 88" fill="#f4d4b5" stroke="#f4d4b5" stroke-width="2" stroke-linejoin="round" stroke-linecap="round" />
+<path d="M81 106 Q74 67 113 53 L149 55 L173 78 L177 107 L159 84 L133 81 L107 88Z" fill="#293730" stroke="#0f172a" stroke-width="3" stroke-linejoin="round" stroke-linecap="round" />
+<path d="M96 121 Q106 115 118 123 Q108 130 97 127Z" fill="#ede5d3" stroke="#0f172a" stroke-width="1.8" stroke-linejoin="round" stroke-linecap="round" />
+<path d="M138 123 Q149 118 160 121 L158 127 Q149 130 138 123Z" fill="#ede5d3" stroke="#0f172a" stroke-width="1.8" stroke-linejoin="round" stroke-linecap="round" />
+<ellipse cx="109" cy="125" rx="3.5" ry="4" fill="#c9a227" stroke="none" stroke-width="1"/>
+<ellipse cx="148" cy="125" rx="3.5" ry="4" fill="#c9a227" stroke="none" stroke-width="1"/>
+<circle cx="109" cy="125" r="1.8" fill="#0f172a" stroke="none" stroke-width="1"/>
+<circle cx="148" cy="125" r="1.8" fill="#0f172a" stroke="none" stroke-width="1"/>
+<circle cx="108" cy="124" r="1" fill="#ffffff" stroke="none" stroke-width="1"/>
+<circle cx="147" cy="124" r="1" fill="#ffffff" stroke="none" stroke-width="1"/>
+<path d="M86 111 L119 118 M140 117 L172 108" fill="none" stroke="#374c3e" stroke-width="6" stroke-linejoin="round" stroke-linecap="round" />
+<path d="M125 124 L115 147 L138 148 L144 142" fill="#6f826b" stroke="#0f172a" stroke-width="2" stroke-linejoin="round" stroke-linecap="round" />
+<path d="M103 160 Q129 174 155 160 L151 179 H112Z" fill="#394a3e" stroke="#0f172a" stroke-width="2" stroke-linejoin="round" stroke-linecap="round" />
+<path d="M106 177 Q96 164 102 148 L111 165 L116 175 M144 176 L153 163 L155 149 Q165 167 153 179" fill="#e1d4b1" stroke="#0f172a" stroke-width="2" stroke-linejoin="round" stroke-linecap="round" />
+<path d="M88 137 L101 142 M85 147 L99 152 M158 140 L171 135 M159 151 L172 147" fill="none" stroke="#58404a" stroke-width="5" stroke-linejoin="round" stroke-linecap="round" />
+<path d="M91 201 L110 214 L119 240 L128 225 L141 238 L150 211 L170 199" fill="none" stroke="#b3a284" stroke-width="3" stroke-linejoin="round" stroke-linecap="round" />
+</g>
 </svg>

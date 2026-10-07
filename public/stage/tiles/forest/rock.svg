@@ -1,25 +1,8 @@
-<svg xmlns="http://www.w3.org/2000/svg" width="64" height="64" viewBox="0 0 64 64">
-  <!-- Shadow -->
-  <polygon points="18,36 30,50 48,50 54,38 42,26" fill="#0f172a" opacity="0.38"/>
-  <!-- Angular Faceted Boulder -->
-  <!-- Base Silhouette -->
-  <polygon points="14,28 22,14 36,12 48,18 52,32 44,44 26,46 16,40" fill="#4a4e55" stroke="#0f172a" stroke-width="1.2"/>
+<svg xmlns="http://www.w3.org/2000/svg" version="1.1" width="64" height="64" viewBox="0 0 64 64">
 
-  <!-- Facet 1: Top-Left Highlight -->
-  <polygon points="22,14 36,12 32,26 19,23" fill="#8a8e94"/>
-  <polygon points="22,14 28,13 25,20 19,23" fill="#9aa3ad"/>
-
-  <!-- Facet 2: Top-Right Midtone -->
-  <polygon points="36,12 48,18 42,28 32,26" fill="#6b6f75"/>
-
-  <!-- Facet 3: Left Midtone -->
-  <polygon points="14,28 19,23 32,26 26,38 16,40" fill="#6b6f75"/>
-
-  <!-- Facet 4: Center/Right Shadow -->
-  <polygon points="32,26 42,28 52,32 44,44 36,36 26,38" fill="#4a4e55"/>
-  <polygon points="44,44 26,46 36,36" fill="#3b4252"/>
-
-  <!-- Lichen / Moss patch in crevice -->
-  <path d="M22 25 Q25 22 28 26" stroke="#3f6b35" stroke-width="2" fill="none"/>
-  <circle cx="25" cy="24" r="1.5" fill="#4f7f3f"/>
+<path d="M14 18 L43 12 L60 33 L52 53 L25 58 L9 42Z" fill="#0f172a" stroke="none" stroke-width="0" stroke-linejoin="round" stroke-linecap="round" opacity="0.4"/>
+<path d="M10 16 L38 8 L55 25 L50 47 L23 53 L6 35Z" fill="#6b6f75" stroke="#0f172a" stroke-width="1.5" stroke-linejoin="round" stroke-linecap="round" />
+<path d="M10 16 L38 8 L43 18 L24 28 L6 35Z" fill="#8a8e94" stroke="#0f172a" stroke-width="0" stroke-linejoin="round" stroke-linecap="round" />
+<path d="M43 18 L55 25 L50 47 L23 53 L26 40Z" fill="#4a4e55" stroke="#0f172a" stroke-width="0" stroke-linejoin="round" stroke-linecap="round" />
+<path d="M23 28 L28 19 L37 17 M30 38 L37 32 L42 33" fill="none" stroke="#4a4e55" stroke-width="1" stroke-linejoin="round" stroke-linecap="round" />
 </svg>

@@ -1,47 +1,31 @@
-<svg xmlns="http://www.w3.org/2000/svg" width="256" height="256" viewBox="0 0 256 256">
-  <defs>
-    <clipPath id="monster_wolf-clip">
-      <circle cx="128" cy="128" r="120"/>
-    </clipPath>
-  </defs>
-  <g clip-path="url(#monster_wolf-clip)">
-    <!-- Background -->
-    <circle cx="128" cy="128" r="120" fill="#182230"/>
-    <!-- Wolf Shoulders / Thick Fur Mantle -->
-    <path d="M48 248 Q76 180 128 184 Q180 180 208 248 Z" fill="#374151" stroke="#0f172a" stroke-width="2"/>
-    <path d="M72 248 L96 200 L128 220 L160 200 L184 248" fill="#4b5563"/>
-
-    <!-- Pointed Wolf Ears -->
-    <polygon points="86,112 76,52 112,82" fill="#4b5563" stroke="#0f172a" stroke-width="2"/>
-    <polygon points="86,104 82,66 104,86" fill="#1f2937"/>
-    <polygon points="170,112 180,52 144,82" fill="#4b5563" stroke="#0f172a" stroke-width="2"/>
-    <polygon points="170,104 174,66 152,86" fill="#1f2937"/>
-
-    <!-- Fluffy Cheek Ruffs & Head Base -->
-    <path d="M68 140 L92 110 Q128 84 164 110 L188 140 L164 164 L128 190 L92 164 Z" fill="#6b7280" stroke="#0f172a" stroke-width="2"/>
-    <polygon points="68,140 86,134 76,156" fill="#9ca3af"/>
-    <polygon points="188,140 170,134 180,156" fill="#9ca3af"/>
-
-    <!-- Forehead Fur Markings -->
-    <path d="M112 94 L128 124 L144 94" fill="#374151"/>
-
-    <!-- Piercing Amber / Gold Eyes -->
-    <polygon points="102,118 116,114 122,122 108,124" fill="#f59e0b" stroke="#0f172a" stroke-width="1.5"/>
-    <circle cx="112" cy="120" r="2.5" fill="#0f172a"/>
-    <polygon points="154,118 140,114 134,122 148,124" fill="#f59e0b" stroke="#0f172a" stroke-width="1.5"/>
-    <circle cx="144" cy="120" r="2.5" fill="#0f172a"/>
-
-    <!-- Snout & Growling Muzzle -->
-    <polygon points="116,124 140,124 144,152 112,152" fill="#374151" stroke="#0f172a" stroke-width="1.5"/>
-    <!-- Black Wet Nose -->
-    <polygon points="120,146 136,146 128,154" fill="#0f172a"/>
-
-    <!-- Snarl & Bared White Fangs -->
-    <path d="M112 152 Q128 148 144 152 L140 168 Q128 174 116 168 Z" fill="#7f1d1d" stroke="#0f172a" stroke-width="1.5"/>
-    <!-- Upper & Lower Fangs -->
-    <polygon points="116,152 119,162 122,152" fill="#ffffff"/>
-    <polygon points="134,152 137,162 140,152" fill="#ffffff"/>
-    <polygon points="122,168 124,161 126,168" fill="#ffffff"/>
-    <polygon points="130,168 132,161 134,168" fill="#ffffff"/>
-  </g>
+<svg xmlns="http://www.w3.org/2000/svg" version="1.1" width="256" height="256" viewBox="0 0 256 256">
+<defs>
+<clipPath id="monster_wolf-clip">
+<circle cx="128" cy="128" r="120"/>
+</clipPath>
+</defs>
+<g clip-path="url(#monster_wolf-clip)">
+<circle cx="128" cy="128" r="120" fill="#26333e" stroke="none" stroke-width="1"/>
+<path d="M8 150 Q20 28 129 8 Q70 44 57 128 Q46 192 8 203Z" fill="#ffffff" stroke="none" stroke-width="0" stroke-linejoin="round" stroke-linecap="round" opacity="0.04"/>
+<path d="M35 256 L47 208 L62 192 L58 168 L81 166 L72 137 L83 117 L73 51 L90 39 L116 74 L145 74 L177 39 L188 53 L176 114 L192 140 L179 165 L198 168 L186 192 L208 215 L221 256Z" fill="#4a4e55" stroke="#0f172a" stroke-width="3" stroke-linejoin="round" stroke-linecap="round" />
+<path d="M84 99 L82 53 L105 79 M155 80 L179 51 L171 100" fill="#9aa3ad" stroke="#0f172a" stroke-width="2" stroke-linejoin="round" stroke-linecap="round" />
+<path d="M88 87 L88 63 L101 84 M164 84 L177 64 L170 87" fill="#54434a" stroke="#0f172a" stroke-width="0" stroke-linejoin="round" stroke-linecap="round" />
+<path d="M85 109 L108 81 L126 91 L147 80 L170 110 L162 132 L181 152 L157 151 L159 173 L138 164 L128 185 L110 165 L89 174 L94 150 L74 153 L92 129Z" fill="#8a8e94" stroke="#0f172a" stroke-width="2" stroke-linejoin="round" stroke-linecap="round" />
+<path d="M89 112 L107 87 L124 98 L114 118 L95 133 L84 142 L99 137Z" fill="#bec3c6" stroke="#0f172a" stroke-width="0" stroke-linejoin="round" stroke-linecap="round" />
+<path d="M115 92 L128 103 L141 91 L136 135 H120Z" fill="#4a4e55" stroke="#0f172a" stroke-width="0" stroke-linejoin="round" stroke-linecap="round" />
+<path d="M96 121 Q106 115 118 123 Q108 130 97 127Z" fill="#ede5d3" stroke="#0f172a" stroke-width="1.8" stroke-linejoin="round" stroke-linecap="round" />
+<path d="M138 123 Q149 118 160 121 L158 127 Q149 130 138 123Z" fill="#ede5d3" stroke="#0f172a" stroke-width="1.8" stroke-linejoin="round" stroke-linecap="round" />
+<ellipse cx="109" cy="125" rx="3.5" ry="4" fill="#c9a227" stroke="none" stroke-width="1"/>
+<ellipse cx="148" cy="125" rx="3.5" ry="4" fill="#c9a227" stroke="none" stroke-width="1"/>
+<circle cx="109" cy="125" r="1.8" fill="#0f172a" stroke="none" stroke-width="1"/>
+<circle cx="148" cy="125" r="1.8" fill="#0f172a" stroke="none" stroke-width="1"/>
+<circle cx="108" cy="124" r="1" fill="#ffffff" stroke="none" stroke-width="1"/>
+<circle cx="147" cy="124" r="1" fill="#ffffff" stroke="none" stroke-width="1"/>
+<path d="M117 137 L140 137 L151 155 L146 174 L128 183 L108 173 L103 158Z" fill="#b9bdbb" stroke="#0f172a" stroke-width="2" stroke-linejoin="round" stroke-linecap="round" />
+<path d="M110 163 L146 163 L144 183 L129 190 L112 181Z" fill="#26303a" stroke="#0f172a" stroke-width="2" stroke-linejoin="round" stroke-linecap="round" />
+<path d="M113 164 L119 178 L122 164 M135 164 L139 178 L144 164" fill="#eee8d7" stroke="#0f172a" stroke-width="1" stroke-linejoin="round" stroke-linecap="round" />
+<path d="M118 148 Q128 143 139 148 L135 158 L128 162 L121 157Z" fill="#0f172a" stroke="#0f172a" stroke-width="2" stroke-linejoin="round" stroke-linecap="round" />
+<path d="M123 149 H130" fill="none" stroke="#6b7480" stroke-width="2" stroke-linejoin="round" stroke-linecap="round" />
+<path d="M74 201 L95 187 L125 209 L155 187 L179 202 L161 232 L129 241 L96 227Z" fill="#6b6f75" stroke="#0f172a" stroke-width="1" stroke-linejoin="round" stroke-linecap="round" />
+</g>
 </svg>
