@@ -219,6 +219,17 @@ pub struct AttackSituation {
     pub sneak_dice: u32,
     /// Lowest natural roll that crits (0 = only 20).
     pub critical_from: u32,
+    /// The target still has its reaction (for Shield).
+    pub target_can_react: bool,
+}
+
+/// The lowest spell slot for Shield, if the creature knows it and has one left.
+fn shield_slot(target: &Combatant) -> Option<u8> {
+    let casting = target.stats5e.as_ref()?.spellcasting.as_ref()?;
+    if !casting.spells.iter().any(|s| s == "shield") {
+        return None;
+    }
+    (1..=9u8).find(|&level| casting.slots_left(level) > 0)
 }
 
 /// Damage details that matter at 0 hit points and for concentration.
@@ -339,16 +350,39 @@ pub fn resolve_attack_with<R: Rng + ?Sized>(
     remove_condition(target, GUIDED);
     let roll = roll_d20(rng, mode);
     let bonus_die = has_condition(attacker, BLESSED).then(|| rng.random_range(1..=4u32));
-    let target_ac = armor_class(target);
+    let mut target_ac = armor_class(target);
     let total = roll.natural as i32 + attack.to_hit + bonus_die.map_or(0, |d| d as i32);
     let crit_on = match situation.critical_from {
         0 => 20,
         from => from.clamp(2, 20),
     };
     let crit_roll = roll.natural >= crit_on;
-    let hit = crit_roll || (roll.natural != 1 && total >= target_ac);
+    let mut hit = crit_roll || (roll.natural != 1 && total >= target_ac);
+    let mut events = Vec::new();
+    // Shield: a caster who would be hit by less than 5 casts it as a reaction.
+    if hit
+        && !crit_roll
+        && situation.target_can_react
+        && total < target_ac + 5
+        && !incapacitated(target)
+        && let Some(slot) = shield_slot(target)
+        && let Some(casting) = target
+            .stats5e
+            .as_mut()
+            .and_then(|s| s.spellcasting.as_mut())
+    {
+        casting.slots_used[usize::from(slot - 1)] += 1;
+        add_condition(target, SHIELDED, 1);
+        events.push(CombatEvent::Feature {
+            actor_id: target.id.clone(),
+            actor_name: target.name.clone(),
+            feature: "shield".to_string(),
+        });
+        target_ac = armor_class(target);
+        hit = false;
+    }
     let critical = hit && (crit_roll || auto_crit);
-    let mut events = vec![CombatEvent::Attack {
+    events.push(CombatEvent::Attack {
         attacker_id: attacker.id.clone(),
         attacker_name: attacker.name.clone(),
         target_id: target.id.clone(),
@@ -362,7 +396,7 @@ pub fn resolve_attack_with<R: Rng + ?Sized>(
         hit,
         critical,
         bonus_die,
-    }];
+    });
     if hit {
         let formula = DiceFormula::parse(&attack.damage).unwrap_or(DiceFormula {
             count: 1,

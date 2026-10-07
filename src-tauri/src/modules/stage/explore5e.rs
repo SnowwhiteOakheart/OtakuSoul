@@ -565,7 +565,7 @@ fn start_prepared(
             role: "enemy".into(),
         })
         .collect();
-    super::combat5e::start_encounter_at(state, &enemies, language_code, &encounter.zone)
+    super::combat5e::start_encounter_at(state, &enemies, language_code, &encounter.zone, false)
 }
 
 /// Facts for the game master: rooms entered (with their description), doors, locks, traps,
@@ -771,6 +771,7 @@ pub fn apply_planner_map(
         &encounter.enemies,
         language_code,
         &zone,
+        true,
     ))
 }
 

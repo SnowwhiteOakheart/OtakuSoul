@@ -32,6 +32,8 @@ pub const GUIDED: &str = "guided";
 pub const NO_HEAL: &str = "no_heal";
 /// Turn Undead: the creature flees from the cleric until it takes damage.
 pub const TURNED: &str = "turned";
+/// Shield: +5 AC until the start of the caster's next turn.
+pub const SHIELDED: &str = "shielded";
 
 /// Rounds a condition lasts when a spell gives no other number (1 minute = 10 rounds).
 pub const ONE_MINUTE: u32 = 10;
@@ -93,6 +95,9 @@ pub fn armor_class(combatant: &Combatant) -> i32 {
     }
     if has_condition(combatant, SHIELD_OF_FAITH) {
         ac += 2;
+    }
+    if has_condition(combatant, SHIELDED) {
+        ac += 5;
     }
     ac
 }

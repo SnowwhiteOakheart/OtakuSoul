@@ -194,7 +194,7 @@ Rückgängig stellt Karte und Kampf korrekt wieder her.
 ### 💎 Schritt 6 – Ausbau (nach Bedarf)
 
 - [x] Stufenaufstieg 1 → 3 (Meilenstein), Klassenmerkmale (Zweiter Atem, Hinterhältiger Angriff, Göttliche Macht …).
-- [ ] Weitere Reaktionen (*Schild*), mehr Zauber/Monster, Begegnungs-Schwierigkeit (EP-Budget).
+- [x] Weitere Reaktionen (*Schild*), mehr Zauber/Monster, Begegnungs-Schwierigkeit (EP-Budget).
 - [ ] Ausrüstung: RK aus Rüstung, Waffen aus dem Inventar, Beute.
 
 ---

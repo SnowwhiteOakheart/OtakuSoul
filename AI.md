@@ -203,6 +203,12 @@ Hub). Integrationen → Bildgenerierung enthält nur Studio und Galerie.
   (`feature_options`/`use_feature` in `combat5e.rs`, `TurnDecision::Feature`), Ereignis `CombatEvent::Feature`;
   Hinterhältiger Angriff und Krit ab 19 über `AttackSituation.sneak_dice`/`critical_from`, Vertriebene (`TURNED`)
   weichen zurück und verteidigen sich, Schaden beendet es. Gefährten nutzen Zweiter Atem selbst.
+  Reaktion *Schild* (`CastingTime::Reaction`, `SpellEffect::Shield`): `resolve_attack_with` wirkt sie automatisch, wenn
+  `AttackSituation.target_can_react` und +5 RK den Treffer abwenden (Zustand `shielded`); Aufrufer tragen die Reaktion
+  in `reactions_used` ein. Schwierigkeit `rules5e/difficulty.rs`: EP nach HG aus dem SRD, Gruppenbudget eigene Formel
+  (das SRD hat keine Tabelle); vom Planer erfundene Kämpfe werden weit über „tödlich“ gekürzt (`start_encounter_at`
+  mit `limit`), vorbereitete nicht; `EncounterState.difficulty` zeigt das Kampfpanel. Monster ohne Token-SVG zeigen
+  ihren Anfangsbuchstaben (`MONSTER_TOKENS` in `StageBattleMap`).
 - Stimmeffekte: `VoiceConfig.effects` (`VoiceEffects`), gerendert in `services/voiceEffects.ts` (OfflineAudioContext, Tonhöhe per
   WSOLA) über `audioPlayer.enqueue(…, effects)`; jeder neue Abspielweg muss `config.effects` mitgeben.
 - Bild-LoRAs (`image_loras.rs`): `sd-server` ignoriert `<lora:…>` im Prompt; LoRAs gehen als `lora: [{path, multiplier}]`

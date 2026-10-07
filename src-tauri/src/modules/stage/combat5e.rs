@@ -119,13 +119,15 @@ fn ensure_party_stats_with(state: &mut SceneState, card_class_of: impl Fn(&str) 
 /// The planner's rule for encounters in 5e scenes, with the monsters it may use.
 pub fn planner_encounter_rule(state: &SceneState) -> String {
     let map_rule = super::explore5e::planner_map_rule(state);
+    let [easy, medium, hard, deadly] = rules5e::party_budget(&party_levels(state));
     let ids = rules5e::monsters()
         .iter()
-        .map(|m| format!("{} (CR {})", m.id, m.cr))
+        .map(|m| format!("{} (CR {}, {} XP)", m.id, m.cr, rules5e::xp_for_cr(m.cr)))
         .collect::<Vec<_>>()
         .join(", ");
     format!(
         r#"- encounter: only to start or end a fight. Start: {{"action":"start", "enemies":[{{"monster":"goblin", "count":2}}]}} with monster ids from: {ids}. End without a winner (surrender, escape, truce): {{"action":"end"}}. A rules engine resolves every attack, hit and wound – never put damage, hit points or hp_updates into the plan.
+- Encounter budget for this party (XP, a group counts +25 % per extra monster): easy {easy}, medium {medium}, hard {hard}, deadly {deadly}. Pick monsters to fit the story; the engine trims groups far beyond deadly.
 - dice_check (5e): skill_name must be one of {skills}; the engine adds the character's own bonus, so the formula is ignored.{map_rule}"#,
         skills = rules5e::skill_ids().join(", "),
     )
@@ -196,15 +198,29 @@ pub fn start_encounter(
     enemies: &[PlanCombatant],
     language_code: &str,
 ) -> bool {
-    start_encounter_at(state, enemies, language_code, "spawn")
+    start_encounter_at(state, enemies, language_code, "spawn", true)
 }
 
-/// Like [`start_encounter`], with the monsters placed on `zone` of the map.
+/// Levels of the party members still standing (for the XP budget).
+fn party_levels(state: &SceneState) -> Vec<u32> {
+    state
+        .combat
+        .combatants
+        .iter()
+        .filter(|c| rules5e::is_party(c) && rules5e::is_up(c))
+        .map(|c| c.stats5e.as_ref().map_or(1, |s| s.level))
+        .collect()
+}
+
+/// Like [`start_encounter`], with the monsters placed on `zone` of the map. With `limit`
+/// (fights the game master makes up) a group far beyond deadly for the party is trimmed;
+/// prepared encounters of an adventure stay as written.
 pub fn start_encounter_at(
     state: &mut SceneState,
     enemies: &[PlanCombatant],
     language_code: &str,
     zone: &str,
+    limit: bool,
 ) -> bool {
     ensure_party_vitals(state);
     let mut fresh = Vec::new();
@@ -225,6 +241,18 @@ pub fn start_encounter_at(
     if fresh.is_empty() {
         return false;
     }
+    let budget = rules5e::party_budget(&party_levels(state));
+    if limit {
+        let before = fresh.len();
+        fresh = rules5e::trim_to_budget(fresh, budget);
+        if fresh.len() < before {
+            tracing::info!(
+                "5e encounter trimmed from {before} to {} monsters (XP budget)",
+                fresh.len()
+            );
+        }
+    }
+    let difficulty = rules5e::rate(rules5e::encounter_xp(&fresh), budget);
     super::remove_enemies(state);
     let stamp = Utc::now().timestamp_millis();
     for (index, data) in fresh.iter().enumerate() {
@@ -263,6 +291,7 @@ pub fn start_encounter_at(
     let mut rng = rand::rng();
     let initiative = rules5e::roll_initiative(&mut state.combat.combatants, &mut rng);
     state.combat.is_active = true;
+    state.combat.difficulty = Some(difficulty);
     state.combat.round = 1;
     state.combat.current_turn_index = 0;
     state.combat.reactions_used.clear();
@@ -465,6 +494,7 @@ fn cast(state: &mut SceneState, request_id: &str) -> Vec<CombatEvent> {
     match spell.casting {
         rules5e::CastingTime::Action => state.combat.turn.action_used = true,
         rules5e::CastingTime::Bonus => state.combat.turn.bonus_action_used = true,
+        rules5e::CastingTime::Reaction => {}
     }
     let heroic = heroic_death(state);
     let mut events = rules5e::cast_spell(
@@ -696,6 +726,7 @@ fn act(state: &mut SceneState, decision: TurnDecision) -> Vec<CombatEvent> {
                 .map(|c| (c.position, rules5e::is_up(c) && !rules5e::incapacitated(c)))
                 .collect();
             let sneak_used = state.combat.turn.sneak_used;
+            let target_can_react = !state.combat.reactions_used.contains(&target_id);
             let target = state
                 .combat
                 .combatants
@@ -726,11 +757,15 @@ fn act(state: &mut SceneState, decision: TurnDecision) -> Vec<CombatEvent> {
                         heroic_death,
                         sneak_dice,
                         critical_from: stats.map_or(20, rules5e::critical_from),
+                        target_can_react,
                     };
                     let events =
                         rules5e::resolve_attack_with(&actor, &attack, target, &situation, &mut rng);
                     if events.iter().any(|e| matches!(e, CombatEvent::Feature { feature, .. } if feature == rules5e::SNEAK_ATTACK)) {
                         state.combat.turn.sneak_used = true;
+                    }
+                    if events.iter().any(|e| matches!(e, CombatEvent::Feature { feature, actor_id, .. } if feature == "shield" && *actor_id == target_id)) {
+                        state.combat.reactions_used.push(target_id.clone());
                     }
                     events
                 }

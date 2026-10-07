@@ -41,7 +41,7 @@ fn modifiers_and_proficiency() {
 
 #[test]
 fn srd_data_loads_and_matches_the_stat_blocks() {
-    assert_eq!(monsters().len(), 11);
+    assert_eq!(monsters().len(), 16);
     assert_eq!(classes().len(), 4);
     let (goblin, hp) = monster_stats(monster("Goblin").unwrap());
     assert_eq!(
@@ -252,6 +252,7 @@ fn initiative_order_and_turn_advance() {
         turn: TurnBudget::default(),
         reactions_used: Vec::new(),
         effects: Vec::new(),
+        difficulty: None,
     };
     let event = roll_initiative(&mut encounter.combatants, &mut StdRng::seed_from_u64(3));
     let CombatEvent::Initiative { order } = event else {
@@ -355,6 +356,7 @@ fn a_seeded_fight_runs_to_the_end() {
         turn: TurnBudget::default(),
         reactions_used: Vec::new(),
         effects: Vec::new(),
+        difficulty: None,
     };
     roll_initiative(&mut encounter.combatants, &mut rng);
     let mut turns = 0;
@@ -797,6 +799,7 @@ fn a_seeded_board_fight_runs_to_the_end() {
         turn: TurnBudget::default(),
         reactions_used: Vec::new(),
         effects: Vec::new(),
+        difficulty: None,
     };
     roll_initiative(&mut encounter.combatants, &mut rng);
     let mut turns = 0;
@@ -887,7 +890,7 @@ fn wizard(id: &str) -> Combatant {
 
 #[test]
 fn spell_data_loads_and_casters_get_slots_and_spells() {
-    assert_eq!(spells().len(), 22);
+    assert_eq!(spells().len(), 26);
     for spell in spells() {
         assert!(
             !spell.name.de.is_empty() && !spell.name.ru.is_empty(),
@@ -1570,4 +1573,104 @@ fn sneak_attack_adds_dice_on_hits_and_champions_crit_on_19() {
         })
         .expect("a natural 19");
     assert!(nineteen);
+}
+
+#[test]
+fn encounter_difficulty_uses_srd_xp_and_trims_wild_groups() {
+    assert_eq!(
+        [0.125, 0.25, 0.5, 1.0, 2.0].map(xp_for_cr),
+        [25, 50, 100, 200, 450]
+    );
+    let budget = party_budget(&[1, 1, 1, 1, 1]);
+    assert_eq!(budget, [100, 200, 320, 480]);
+    let goblin = monster("goblin").unwrap();
+    assert_eq!(encounter_xp(&[goblin, goblin]), 125);
+    assert_eq!(rate(125, budget), Difficulty::Easy);
+    assert_eq!(rate(50, budget), Difficulty::Trivial);
+    let ogre = monster("ogre").unwrap();
+    assert_eq!(rate(encounter_xp(&[ogre]), budget), Difficulty::Hard);
+    // Eight ogres against level-1 heroes: cut down until it is merely brutal.
+    let trimmed = trim_to_budget(vec![ogre; 8], budget);
+    assert!(trimmed.len() < 8 && encounter_xp(&trimmed) <= budget[3] * 3 / 2);
+    assert_eq!(
+        trim_to_budget(vec![ogre], party_budget(&[1])).len(),
+        1,
+        "one always stays"
+    );
+}
+
+#[test]
+fn a_wizard_casts_shield_when_it_turns_a_hit_into_a_miss() {
+    let goblin = goblin("g");
+    let attack = goblin.stats5e.as_ref().unwrap().attacks[0].clone();
+    let situation = AttackSituation {
+        target_can_react: true,
+        ..Default::default()
+    };
+    let mut shielded = 0;
+    for seed in 0..60 {
+        let mut lyra = wizard("lyra");
+        lyra.hp = 500;
+        let events = resolve_attack_with(
+            &goblin,
+            &attack,
+            &mut lyra,
+            &situation,
+            &mut StdRng::seed_from_u64(seed),
+        );
+        let shield = events
+            .iter()
+            .any(|e| matches!(e, CombatEvent::Feature { feature, .. } if feature == "shield"));
+        let CombatEvent::Attack {
+            hit,
+            total,
+            target_ac,
+            roll,
+            ..
+        } = events
+            .iter()
+            .find(|e| matches!(e, CombatEvent::Attack { .. }))
+            .unwrap()
+        else {
+            unreachable!()
+        };
+        if shield {
+            shielded += 1;
+            assert!(!hit && *target_ac == 17 && *total < 17);
+            assert!(has_condition(&lyra, SHIELDED));
+            assert_eq!(
+                lyra.stats5e
+                    .as_ref()
+                    .unwrap()
+                    .spellcasting
+                    .as_ref()
+                    .unwrap()
+                    .slots_used[0],
+                1
+            );
+        } else if *hit {
+            assert!(
+                roll.natural == 20 || *total >= 17,
+                "a hit Shield could have stopped"
+            );
+        }
+    }
+    assert!(shielded > 0);
+    // Without the reaction nothing happens.
+    let mut lyra = wizard("lyra");
+    for seed in 0..20 {
+        let events = resolve_attack_with(
+            &goblin,
+            &attack,
+            &mut lyra,
+            &AttackSituation::default(),
+            &mut StdRng::seed_from_u64(seed),
+        );
+        assert!(
+            !events
+                .iter()
+                .any(|e| matches!(e, CombatEvent::Feature { .. }))
+        );
+        lyra.hp = lyra.max_hp;
+    }
 }

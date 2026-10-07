@@ -16,6 +16,8 @@ pub enum CastingTime {
     #[default]
     Action,
     Bonus,
+    /// Cast by the engine in reply to a trigger (Shield), never chosen in a turn.
+    Reaction,
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize, TS)]
@@ -89,6 +91,8 @@ pub enum SpellEffect {
     Stabilize,
     Teleport,
     Cure,
+    /// Shield: +5 AC until the caster's next turn (a reaction to being hit).
+    Shield,
 }
 
 fn one() -> u32 {
@@ -345,6 +349,7 @@ pub fn check_cast(
     let has_time = match spell.casting {
         CastingTime::Action => budget.action,
         CastingTime::Bonus => budget.bonus_action,
+        CastingTime::Reaction => false,
     };
     if !has_time {
         return Err(CastProblem::BudgetUsed);
@@ -822,6 +827,8 @@ pub fn cast_spell<R: Rng + ?Sized>(
                 });
             }
         }
+        // Only ever cast as a reaction inside attack resolution.
+        SpellEffect::Shield => {}
         SpellEffect::Cure => {
             if let Some(i) = target_index {
                 for condition in [PARALYZED, POISONED, BLINDED] {
@@ -991,6 +998,7 @@ pub fn spell_options(
         let time_ok = match spell.casting {
             CastingTime::Action => budget.action,
             CastingTime::Bonus => budget.bonus_action,
+            CastingTime::Reaction => false,
         };
         if !time_ok || (!needs_point && targets.is_empty()) {
             continue;

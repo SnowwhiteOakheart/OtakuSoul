@@ -541,6 +541,233 @@
    ],
    "never_flees": true,
    "creature_type": "humanoid"
+  },
+  {
+   "id": "hobgoblin",
+   "name": {
+    "de": "Hobgoblin",
+    "en": "Hobgoblin",
+    "ru": "Хобгоблин"
+   },
+   "cr": 0.5,
+   "armor_class": 18,
+   "hit_dice": "2d8+2",
+   "speed_ft": 30,
+   "abilities": [
+    13,
+    12,
+    12,
+    10,
+    10,
+    9
+   ],
+   "attacks": [
+    {
+     "id": "longsword",
+     "name": {
+      "de": "Langschwert",
+      "en": "Longsword",
+      "ru": "Длинный меч"
+     },
+     "kind": "melee",
+     "to_hit": 3,
+     "damage": "1d8+1",
+     "damage_type": "slashing"
+    },
+    {
+     "id": "longbow",
+     "name": {
+      "de": "Langbogen",
+      "en": "Longbow",
+      "ru": "Длинный лук"
+     },
+     "kind": "ranged",
+     "to_hit": 3,
+     "damage": "1d8+1",
+     "damage_type": "piercing",
+     "range_ft": 150,
+     "long_range_ft": 600
+    }
+   ],
+   "never_flees": true,
+   "creature_type": "humanoid"
+  },
+  {
+   "id": "bugbear",
+   "name": {
+    "de": "Grottenschrat",
+    "en": "Bugbear",
+    "ru": "Багбир"
+   },
+   "cr": 1,
+   "armor_class": 16,
+   "hit_dice": "5d8+5",
+   "speed_ft": 30,
+   "abilities": [
+    15,
+    14,
+    13,
+    8,
+    11,
+    9
+   ],
+   "attacks": [
+    {
+     "id": "morningstar",
+     "name": {
+      "de": "Morgenstern",
+      "en": "Morningstar",
+      "ru": "Моргенштерн"
+     },
+     "kind": "melee",
+     "to_hit": 4,
+     "damage": "2d8+2",
+     "damage_type": "piercing"
+    },
+    {
+     "id": "javelin",
+     "name": {
+      "de": "Wurfspeer",
+      "en": "Javelin",
+      "ru": "Метательное копьё"
+     },
+     "kind": "ranged",
+     "to_hit": 4,
+     "damage": "2d6+2",
+     "damage_type": "piercing",
+     "range_ft": 30,
+     "long_range_ft": 120
+    }
+   ],
+   "creature_type": "humanoid"
+  },
+  {
+   "id": "giant_spider",
+   "name": {
+    "de": "Riesenspinne",
+    "en": "Giant spider",
+    "ru": "Гигантский паук"
+   },
+   "cr": 1,
+   "armor_class": 14,
+   "hit_dice": "4d10+4",
+   "speed_ft": 30,
+   "abilities": [
+    14,
+    16,
+    12,
+    2,
+    11,
+    4
+   ],
+   "attacks": [
+    {
+     "id": "bite",
+     "name": {
+      "de": "Biss",
+      "en": "Bite",
+      "ru": "Укус"
+     },
+     "kind": "melee",
+     "to_hit": 5,
+     "damage": "1d8+3",
+     "damage_type": "piercing"
+    }
+   ],
+   "traits": [
+    "spider_climb",
+    "web_sense",
+    "poison_bite"
+   ],
+   "creature_type": "beast"
+  },
+  {
+   "id": "dire_wolf",
+   "name": {
+    "de": "Schreckenswolf",
+    "en": "Dire wolf",
+    "ru": "Лютоволк"
+   },
+   "cr": 1,
+   "armor_class": 14,
+   "hit_dice": "5d10+10",
+   "speed_ft": 50,
+   "abilities": [
+    17,
+    15,
+    15,
+    3,
+    12,
+    7
+   ],
+   "attacks": [
+    {
+     "id": "bite",
+     "name": {
+      "de": "Biss",
+      "en": "Bite",
+      "ru": "Укус"
+     },
+     "kind": "melee",
+     "to_hit": 5,
+     "damage": "2d6+3",
+     "damage_type": "piercing"
+    }
+   ],
+   "traits": [
+    "pack_tactics",
+    "keen_hearing_smell"
+   ],
+   "creature_type": "beast"
+  },
+  {
+   "id": "ogre",
+   "name": {
+    "de": "Oger",
+    "en": "Ogre",
+    "ru": "Огр"
+   },
+   "cr": 2,
+   "armor_class": 11,
+   "hit_dice": "7d10+21",
+   "speed_ft": 40,
+   "abilities": [
+    19,
+    8,
+    16,
+    5,
+    7,
+    7
+   ],
+   "attacks": [
+    {
+     "id": "greatclub",
+     "name": {
+      "de": "Großknüppel",
+      "en": "Greatclub",
+      "ru": "Палица"
+     },
+     "kind": "melee",
+     "to_hit": 6,
+     "damage": "2d8+4",
+     "damage_type": "bludgeoning"
+    },
+    {
+     "id": "javelin",
+     "name": {
+      "de": "Wurfspeer",
+      "en": "Javelin",
+      "ru": "Метательное копьё"
+     },
+     "kind": "ranged",
+     "to_hit": 6,
+     "damage": "2d6+4",
+     "damage_type": "piercing",
+     "range_ft": 30,
+     "long_range_ft": 120
+    }
+   ],
+   "creature_type": "giant"
   }
  ]
 }

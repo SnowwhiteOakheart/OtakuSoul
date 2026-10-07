@@ -66,6 +66,11 @@ export const Combat5ePanel: React.FC = () => {
         <span className="rounded-full border border-rose-500/50 bg-rose-950 px-2 py-0.5 text-xs text-rose-300">
           {t('stage.round', { round: combat.round })}
         </span>
+        {combat.difficulty && (
+          <span data-testid="fight-difficulty" title={t('fight.difficultyHint')} className="rounded-full border border-slate-600 bg-slate-800 px-2 py-0.5 text-xs font-normal text-slate-300">
+            {t(`fight.difficulty.${combat.difficulty}` as TranslationKey)}
+          </span>
+        )}
       </header>
 
       <ol aria-label={t('fight.order')} className="flex flex-wrap gap-1.5">

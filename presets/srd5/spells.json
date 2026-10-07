@@ -364,6 +364,73 @@
    "effect": {
     "type": "cure"
    }
+  },
+  {
+   "id": "shocking_grasp",
+   "name": {
+    "de": "Schockgriff",
+    "en": "Shocking grasp",
+    "ru": "Электрошок"
+   },
+   "level": 0,
+   "range_ft": 5,
+   "effect": {
+    "type": "attack",
+    "attack_kind": "melee",
+    "damage": "1d8",
+    "damage_type": "lightning"
+   }
+  },
+  {
+   "id": "shield",
+   "name": {
+    "de": "Schild",
+    "en": "Shield",
+    "ru": "Щит"
+   },
+   "level": 1,
+   "casting": "reaction",
+   "range_ft": 0,
+   "effect": {
+    "type": "shield"
+   }
+  },
+  {
+   "id": "shatter",
+   "name": {
+    "de": "Zerbersten",
+    "en": "Shatter",
+    "ru": "Дребезги"
+   },
+   "level": 2,
+   "range_ft": 60,
+   "upcast_dice": 1,
+   "effect": {
+    "type": "save",
+    "save": "con",
+    "damage": "3d8",
+    "damage_type": "thunder",
+    "half": true,
+    "area": {
+     "shape": "sphere",
+     "size_ft": 10
+    }
+   }
+  },
+  {
+   "id": "blindness_deafness",
+   "name": {
+    "de": "Blindheit/Taubheit",
+    "en": "Blindness/deafness",
+    "ru": "Слепота/глухота"
+   },
+   "level": 2,
+   "range_ft": 30,
+   "effect": {
+    "type": "condition",
+    "save": "con",
+    "condition": "blinded"
+   }
   }
  ]
 }

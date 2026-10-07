@@ -2,6 +2,7 @@
 import type { ActiveEffect } from "./ActiveEffect";
 import type { CombatEvent } from "./CombatEvent";
 import type { Combatant } from "./Combatant";
+import type { Difficulty } from "./Difficulty";
 import type { TurnBudget } from "./TurnBudget";
 
 export type EncounterState = { is_active: boolean, round: number, current_turn_index: number, combatants: Array<Combatant>, combat_log: Array<string>, 
@@ -20,4 +21,8 @@ reactions_used: Array<string>,
 /**
  * Ongoing spell effects (concentration, repeated saves).
  */
-effects: Array<ActiveEffect>, };
+effects: Array<ActiveEffect>, 
+/**
+ * How hard the fight is for the party (5e, XP budget).
+ */
+difficulty?: Difficulty, };

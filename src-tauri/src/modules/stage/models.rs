@@ -116,6 +116,10 @@ pub struct EncounterState {
     /// Ongoing spell effects (concentration, repeated saves).
     #[serde(default)]
     pub effects: Vec<super::rules5e::ActiveEffect>,
+    /// How hard the fight is for the party (5e, XP budget).
+    #[serde(default)]
+    #[ts(optional)]
+    pub difficulty: Option<super::rules5e::Difficulty>,
 }
 
 impl Default for EncounterState {
@@ -130,6 +134,7 @@ impl Default for EncounterState {
             turn: Default::default(),
             reactions_used: Vec::new(),
             effects: Vec::new(),
+            difficulty: None,
         }
     }
 }

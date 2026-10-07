@@ -480,6 +480,8 @@ export interface EncounterState {
   reactions_used?: string[];
   /** Ongoing spell effects (concentration, repeated saves). */
   effects?: import('./generated/ActiveEffect').ActiveEffect[];
+  /** How hard the fight is for the party (5e, XP budget). */
+  difficulty?: import('./generated/Difficulty').Difficulty;
 }
 
 // Phase 15: Soul Stage (KI-Game-Master Orchestrator)

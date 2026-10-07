@@ -273,12 +273,24 @@ pub fn walk<R: Rng + ?Sized>(
                     attacker_name: attacker.name.clone(),
                     target_name: combatants[mover_index].name.clone(),
                 });
-                events.extend(resolve_attack(
+                let mover_id = combatants[mover_index].id.clone();
+                let situation = AttackSituation {
+                    target_can_react: !reactions_used.contains(&mover_id),
+                    ..Default::default()
+                };
+                let attack_events = resolve_attack_with(
                     &attacker,
                     &attack,
                     &mut combatants[mover_index],
+                    &situation,
                     rng,
-                ));
+                );
+                if attack_events.iter().any(
+                    |e| matches!(e, CombatEvent::Feature { feature, .. } if feature == "shield"),
+                ) {
+                    reactions_used.push(mover_id);
+                }
+                events.extend(attack_events);
                 if !is_up(&combatants[mover_index]) {
                     break;
                 }
