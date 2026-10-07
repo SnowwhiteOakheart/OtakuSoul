@@ -160,7 +160,7 @@ Hub). Integrationen → Bildgenerierung enthält nur Studio und Galerie.
   Frontend: `Combat5ePanel.tsx` (Abenteuer-Reiter), `stageSlice.runStageCombat` + `combatAwaitsEngine` (nach einem
   Rundenzug spielt die Engine automatisch weiter), Log-Texte in `utils/combatEvents.ts` (`fight.*`), Bogen
   `Character5eSheet.tsx`, Regeln im `SceneCreateModal` (`sceneRules.*`). Mock: `stats.stageEncounter` startet einen
-  Kampf, „[STAGE — COMBAT ACTION]“ antwortet mit der ersten `attack:`-ID.
+  Kampf, „[STAGE — COMBAT ACTION]“ antwortet mit der ersten `attack:`-ID (mit `stats.preferCast` mit der ersten `cast:`-ID).
   Spielbrett (Schritt 2): Karten in `presets/srd5/maps/*.json` (Zeilen + Legende, in `rules5e/data.rs` eingetragen),
   `rules5e/map.rs` (Wegfindung `reachable`/`Reach`, Sichtlinie, `attack_reach`; Diagonale 5 ft), `rules5e/board.rs`
   (`walk` mit Gelegenheitsangriffen, `attack_plans`/`monster_board_plan`/`hero_board_plan`, `actions_in_place`).
@@ -170,6 +170,15 @@ Hub). Integrationen → Bildgenerierung enthält nur Studio und Galerie.
   UI: Reiter „Spielbrett“ (`StageBoardView`, öffnet sich bei Kampf mit Karte), `StageBattleMap.tsx` (Kacheln/Tokens aus
   `public/stage/`, Wände abgedunkelt, Raster; Tokens: Monster per SRD-ID, klassische Helden per Name, sonst Porträt).
   Grafiken nach `todo_assets.md`, Regeln geprüft von `stageAssets.test.ts`. E2E `stage-board.mjs` wartet auf `data-busy`.
+  Magie (Schritt 3): Zauber in `presets/srd5/spells.json`, `rules5e/spells.rs` (`check_cast` → `cast_spell`, Flächen
+  `area_squares` – gespiegelt in `utils/spellArea.ts`, Konzentration, wiederholte Rettungswürfe), Zustände mit Wirkung in
+  `rules5e/conditions.rs` (GM-Namen per `normalize_condition`), Todesrettung in `combat.rs` (`SceneRules.heroic_death`),
+  Fertigkeiten in `rules5e/skills.rs` (`check_bonus` für `dice_check`), Rasten `combat5e::rest_party`.
+  Aktion `cast:<zauber>:<grad>:<ziel-id>` bzw. `…:@x:y`; Bonusaktions-Zauber lassen die Aktion offen
+  (`TurnBudget.bonus_action_used`). `CombatOptions.spells` (`spell_options`) füllt das Zauberbuch `Combat5eSpells.tsx`;
+  Flächenzauber werden über `stageAimedSpell` auf dem Brett gezielt (`data-cast-at`, Vorschau `data-area`).
+  Gefährten heilen Sterbende ohne LLM (`urgent_cast`), sonst bis zu drei Zauber aus `spell_plans` als Optionen.
+  Zaubernamen fürs Log/den Bogen über `list_srd_spells` (`utils/srdSpells.ts`). E2E `stage-spells.mjs`.
 - Stimmeffekte: `VoiceConfig.effects` (`VoiceEffects`), gerendert in `services/voiceEffects.ts` (OfflineAudioContext, Tonhöhe per
   WSOLA) über `audioPlayer.enqueue(…, effects)`; jeder neue Abspielweg muss `config.effects` mitgeben.
 - Bild-LoRAs (`image_loras.rs`): `sd-server` ignoriert `<lora:…>` im Prompt; LoRAs gehen als `lora: [{path, multiplier}]`

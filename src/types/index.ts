@@ -95,6 +95,9 @@ import type { GridPos } from './generated/GridPos';
 import type { TurnBudget } from './generated/TurnBudget';
 import type { BattleMap } from './generated/BattleMap';
 import type { CombatOptions } from './generated/CombatOptions';
+import type { SpellOption } from './generated/SpellOption';
+import type { SpellData } from './generated/SpellData';
+import type { Area } from './generated/Area';
 import type { SceneRules } from './generated/SceneRules';
 export type {
   Stats5e,
@@ -102,6 +105,9 @@ export type {
   TurnBudget,
   BattleMap,
   CombatOptions,
+  SpellOption,
+  SpellData,
+  Area,
   CombatEvent,
   SceneRules,
   AppPaths,

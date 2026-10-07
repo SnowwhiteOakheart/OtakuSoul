@@ -45,6 +45,7 @@ import {
   AppPaths,
   ScannedModel,
   BattleMap,
+  SpellData,
   CombatOptions,
   ScannedVrm,
   AvatarMotion,
@@ -503,6 +504,10 @@ export const api = {
 
   listBattleMaps: async (): Promise<BattleMap[]> => {
     return await invoke<BattleMap[]>('list_battle_maps');
+  },
+
+  listSrdSpells: async (): Promise<SpellData[]> => {
+    return await invoke<SpellData[]>('list_srd_spells');
   },
 
   runStageTurn: async (request: StageTurnRequest): Promise<SceneState> => {

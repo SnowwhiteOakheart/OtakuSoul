@@ -148,20 +148,20 @@ erzählt nur.
 **Fertig, wenn:** Der Goblin-Kampf aus Schritt 1 läuft auf einer Karte; Bogenschützen halten Abstand, Wände
 blockieren Sicht und Weg.
 
-### ✨ Schritt 3 – Magie, Rettungswürfe, Zustände & Rasten
+### ✨ Schritt 3 – Magie, Rettungswürfe, Zustände & Rasten ✅
 
 - [x] SRD-Zauberdaten: Zaubertricks + Grad 1–2 als Startsatz (~25 Zauber), Zauberplätze nach Klasse/Stufe,
   Konzentration.
 - [x] Zauberangriff, Rettungswurf gegen SG (8 + Übung + Mod), halber Schaden bei Erfolg.
-- [ ] Flächen-Schablonen auf dem Brett (Kugel, Kegel, Linie, Würfel) mit Vorschau der getroffenen Felder.
+- [x] Flächen-Schablonen auf dem Brett (Kugel, Kegel, Linie, Würfel) mit Vorschau der getroffenen Felder.
 - [x] Zustände nach SRD mit Wirkung (Vorteil/Nachteil, Tempo 0, automatische Krits bei Gelähmt …); bestehende
   `CombatCondition` wird im 5e-Modus darauf abgebildet.
 - [x] Todesrettungswürfe, Stabilisieren, Heilung aus 0 LP.
 - [x] Rasten im 5e-Modus über `rest_stage_party`: kurz (Trefferwürfel), lang (LP, Plätze, halbe Trefferwürfel).
 - [x] Proben außerhalb des Kampfs: `dice_check` des GM nennt eine 5e-Fertigkeit, die Engine rechnet mit Übung.
-- [ ] UI: Zauberbuch (nach Graden, Platzverbrauch), vollständiger Bogen (Fertigkeiten, Rettungswürfe, Trefferwürfel,
+- [x] UI: Zauberbuch (nach Graden, Platzverbrauch), vollständiger Bogen (Fertigkeiten, Rettungswürfe, Trefferwürfel,
   Todesrettungswürfe).
-- [ ] Tests: Rettungswurf/Halbschaden, Konzentration, Zustandswirkungen, Todesrettung, Rasten; E2E Zauber auf dem Brett.
+- [x] Tests: Rettungswurf/Halbschaden, Konzentration, Zustandswirkungen, Todesrettung, Rasten; E2E Zauber auf dem Brett.
 
 **Fertig, wenn:** Die Magierin wirkt *Brennende Hände* (Kegel) auf zwei Gegner mit korrekten Rettungswürfen, und die
 Klerikerin holt einen bewusstlosen Helden zurück.

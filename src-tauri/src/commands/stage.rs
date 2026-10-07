@@ -347,6 +347,12 @@ pub fn get_stage_combat_options(
     crate::modules::stage::combat_options(&state.stage_engine.get_state())
 }
 
+/// The bundled SRD spells for 5e scenes (names and levels for the character sheet).
+#[tauri::command]
+pub fn list_srd_spells() -> Vec<crate::modules::stage::rules5e::SpellData> {
+    crate::modules::stage::rules5e::spells().to_vec()
+}
+
 /// The bundled battle maps for 5e scenes.
 #[tauri::command]
 pub fn list_battle_maps() -> Vec<crate::modules::stage::rules5e::BattleMap> {

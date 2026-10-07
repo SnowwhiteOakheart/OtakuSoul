@@ -105,6 +105,9 @@ export interface StageSlice {
   /** What the current combatant may do on the board (squares, attacks in reach). */
   stageCombatOptions: CombatOptions | null;
   refreshStageCombatOptions: () => Promise<void>;
+  /** An area spell the player is aiming on the board (then a square click casts it). */
+  stageAimedSpell: { spellId: string; slot: number } | null;
+  setStageAimedSpell: (aim: { spellId: string; slot: number } | null) => void;
   undoStageTurn: () => Promise<void>;
   restStageParty: (restType: 'short' | 'long') => Promise<void>;
   consumeStageInventoryItem: (itemId: string) => Promise<void>;
@@ -352,6 +355,7 @@ export const createStageSlice: SliceCreator<StageSlice> = (set, get) => ({
     try {
       const state = await api.getStageState();
       set({ stageState: state });
+      void get().refreshStageCombatOptions();
     } catch (e) {
       console.error('Failed to fetch stage state:', e);
     }
@@ -478,6 +482,9 @@ export const createStageSlice: SliceCreator<StageSlice> = (set, get) => ({
 
   stageCombatOptions: null,
 
+  stageAimedSpell: null,
+  setStageAimedSpell: (aim) => set({ stageAimedSpell: aim }),
+
   refreshStageCombatOptions: async () => {
     const state = get().stageState;
     if (!state || state.definition.rules?.ruleset !== '5e' || !state.combat.is_active || combatAwaitsEngine(state)) {
@@ -495,7 +502,7 @@ export const createStageSlice: SliceCreator<StageSlice> = (set, get) => ({
   runStageCombat: async (action?: string) => {
     const current = get().stageState;
     if (!current) return;
-    set({ isProcessingStageTurn: true, stageLive: [], stageCombatOptions: null });
+    set({ isProcessingStageTurn: true, stageLive: [], stageCombatOptions: null, stageAimedSpell: null });
     try {
       const updated = await api.runStageCombat(current.definition.id, action);
       set({ stageState: updated, isProcessingStageTurn: false, stageLive: [] });

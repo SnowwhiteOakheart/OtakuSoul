@@ -5,6 +5,7 @@ import { combatAwaitsEngine } from '../../store/slices/stageSlice';
 import { useTranslation } from '../../i18n';
 import { combatEventText, localizedName, tierLabel } from '../../utils/combatEvents';
 import type { Combatant } from '../../types';
+import { Combat5eSpells } from './Combat5eSpells';
 
 /** Lines of the fight log shown under the actions. */
 const LOG_LINES = 8;
@@ -95,6 +96,7 @@ export const Combat5ePanel: React.FC = () => {
             <p className="text-slate-400" data-testid="turn-budget">
               {t('board.budget', { feet: options.movement_left_ft })}
               {actionUsed && <> · {t('board.actionUsed')}</>}
+              {options.bonus_action_used && <> · {t('fight.bonusUsed')}</>}
             </p>
           )}
           {enemies.map((enemy) => (
@@ -126,6 +128,9 @@ export const Combat5ePanel: React.FC = () => {
               })}
             </div>
           ))}
+          {actor.stats5e?.spellcasting && (options?.spells.length ?? 0) > 0 && (
+            <Combat5eSpells actor={actor} spells={options!.spells} combatants={combat.combatants} disabled={isProcessingStageTurn} />
+          )}
           <div className="flex flex-wrap gap-1.5">
             <button
               type="button"

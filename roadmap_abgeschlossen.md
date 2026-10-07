@@ -1829,4 +1829,12 @@ veraltet und sind korrigiert: `chat-sidebar-errors` las die Sitzung, bevor der e
   Oberfläche: Reiter „Spielbrett“ mit Kacheln und Tokens aus den eigenen Grafiken (abgedunkelte Wände, 5-ft-Raster,
   grüne Zielfelder, Gegner anklickbar), Kartenauswahl im Szenen-Editor. Grafiken (Dungeon, Wald, Tokens, Porträts,
   Zustandssymbole) mit Regelprüfung per Vitest. E2E `stage-board.mjs`.
+- [x] **Soul Stage 5e – Schritt 3 (Magie, Rettungswürfe, Zustände, Rasten, `Roadmap_DND.md`):** 22 SRD-Zauber
+  (Zaubertricks, Grad 1–2) mit Zauberplätzen, Hochstufen, Konzentration und Flächen (Kugel, Kegel, Würfel, Linie);
+  Rettungswürfe gegen SG 8 + Übung + Mod mit halbem Schaden, SRD-Zustände mit echter Wirkung, Todesrettungswürfe
+  (Heldentod optional, sonst „außer Gefecht“ bis Kampfende), Stabilisieren und Heilung aus 0 LP. Proben nennen eine der
+  18 Fertigkeiten, Rasten verbrauchen Trefferwürfel bzw. stellen LP, Plätze und halbe Trefferwürfel her. Gefährten
+  heilen Sterbende selbst und wählen sonst auch Zauber. Oberfläche: Zauberbuch im Kampfpanel mit Gradwahl und Zielen,
+  Flächenzauber werden auf dem Brett mit Vorschau gezielt, Kampflog für alle neuen Ereignisse, vollständiger Bogen
+  (Rettungswürfe, Fertigkeiten, Zauber/Plätze, Konzentration, Todesrettung). E2E `stage-spells.mjs`.
 

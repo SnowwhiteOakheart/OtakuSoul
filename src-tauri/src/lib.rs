@@ -282,6 +282,7 @@ pub fn run() {
             commands::stage::run_stage_combat,
             commands::stage::get_stage_combat_options,
             commands::stage::list_battle_maps,
+            commands::stage::list_srd_spells,
             commands::stage::abort_stage_turn,
             commands::stage::undo_stage_turn,
             commands::stage::rest_stage_party,

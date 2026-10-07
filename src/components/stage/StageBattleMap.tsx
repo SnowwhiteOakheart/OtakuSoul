@@ -1,8 +1,9 @@
-import React, { useMemo } from 'react';
+import React, { useMemo, useState } from 'react';
 import { useStoreFields } from '../../store/useAppStore';
 import { useTranslation } from '../../i18n';
-import { tierLabel } from '../../utils/combatEvents';
-import type { BattleMap, Combatant, CombatOptions } from '../../types';
+import { localizedName, tierLabel } from '../../utils/combatEvents';
+import { areaSquares, squaresBetween } from '../../utils/spellArea';
+import type { BattleMap, Combatant, CombatOptions, GridPos } from '../../types';
 
 /** Pixels per square in the SVG (tiles are drawn 64×64). */
 const TILE = 64;
@@ -52,11 +53,30 @@ interface Props {
  */
 export const StageBattleMap: React.FC<Props> = ({ map, combatants, currentIndex, options, disabled, onAction }) => {
   const { t } = useTranslation();
-  const { availableCharacters } = useStoreFields('availableCharacters');
+  const { availableCharacters, stageAimedSpell, appLanguage } = useStoreFields('availableCharacters', 'stageAimedSpell', 'appLanguage');
+  const [hover, setHover] = useState<GridPos | null>(null);
   const portraits = useMemo(
     () => new Map(availableCharacters.filter((c) => c.avatar_data_url).map((c) => [c.card.data.name.toLowerCase(), c.avatar_data_url!])),
     [availableCharacters],
   );
+  // An area spell being aimed: squares it may be aimed at, and what it would cover from the hovered one.
+  const aimed = stageAimedSpell ? options?.spells.find((s) => s.spell_id === stageAimedSpell.spellId) : undefined;
+  const caster = combatants[currentIndex]?.position;
+  const aimSquares = useMemo(() => {
+    if (!aimed || !caster) return [];
+    // Self-origin areas (range 0) only take a direction: any square up to their size away.
+    const rangeFt = aimed.range_ft > 0 ? aimed.range_ft : (aimed.area?.size_ft ?? 5);
+    const squares: GridPos[] = [];
+    map.cells.forEach((cell, index) => {
+      const p = { x: index % map.width, y: Math.floor(index / map.width) };
+      const away = squaresBetween(caster, p);
+      if (cell.kind !== 'wall' && away * 5 <= rangeFt && (away > 0 || aimed.range_ft > 0)) squares.push(p);
+    });
+    return squares;
+  }, [aimed, caster, map]);
+  const covered = aimed && caster && hover ? (aimed.area ? areaSquares(aimed.area, caster, hover) : [hover]) : [];
+  const castAt = (p: GridPos) => stageAimedSpell && onAction(`cast:${stageAimedSpell.spellId}:${stageAimedSpell.slot}:@${p.x}:${p.y}`);
+
   const attackFor = (target: Combatant) =>
     options?.actions
       .filter((o) => o.target_id === target.id)
@@ -99,8 +119,37 @@ export const StageBattleMap: React.FC<Props> = ({ map, combatants, currentIndex,
         );
       })}
 
+      {/* Aiming an area spell: the covered squares light up, a click casts. */}
+      {!disabled && aimed && (
+        <g data-testid="spell-aim">
+          {covered.map((p) => (
+            <rect key={`area-${p.x},${p.y}`} x={p.x * TILE} y={p.y * TILE} width={TILE} height={TILE} fill="#f97316" opacity={0.35} pointerEvents="none" data-area={`${p.x}:${p.y}`} />
+          ))}
+          {aimSquares.map((p) => (
+            <rect
+              key={`aim-${p.x},${p.y}`}
+              x={p.x * TILE + 2}
+              y={p.y * TILE + 2}
+              width={TILE - 4}
+              height={TILE - 4}
+              rx={8}
+              role="button"
+              tabIndex={0}
+              aria-label={t('board.castAt', { spell: localizedName(aimed.name, appLanguage), x: p.x + 1, y: p.y + 1 })}
+              data-cast-at={`${p.x}:${p.y}`}
+              onMouseEnter={() => setHover(p)}
+              onFocus={() => setHover(p)}
+              onClick={() => castAt(p)}
+              onKeyDown={(e) => (e.key === 'Enter' || e.key === ' ') && castAt(p)}
+              className="cursor-crosshair fill-violet-400/10 stroke-violet-300/40 hover:fill-violet-400/25 focus:fill-violet-400/25 outline-none"
+              strokeWidth={1.5}
+            />
+          ))}
+        </g>
+      )}
+
       {/* Squares to move to */}
-      {!disabled &&
+      {!disabled && !aimed &&
         options?.reachable.map((square) => (
           <rect
             key={`${square.x},${square.y}`}
@@ -129,7 +178,7 @@ export const StageBattleMap: React.FC<Props> = ({ map, combatants, currentIndex,
         const current = index === currentIndex;
         const ratio = Math.max(0, Math.min(1, c.hp / Math.max(1, c.max_hp)));
         const ring = isParty(c) ? (ratio > 0.5 ? '#22c55e' : ratio > 0.25 ? '#f59e0b' : '#ef4444') : '#e11d48';
-        const attack = !disabled && !isParty(c) ? attackFor(c) : undefined;
+        const attack = !disabled && !aimed && !isParty(c) ? attackFor(c) : undefined;
         const label = isParty(c)
           ? t('board.token', { name: c.name, state: t('fight.hp', { current: c.hp, max: c.max_hp }) })
           : t('board.token', { name: c.name, state: tierLabel(tierOf(c)) });
@@ -143,6 +192,8 @@ export const StageBattleMap: React.FC<Props> = ({ map, combatants, currentIndex,
             onClick={attack ? () => onAction(attack.id) : undefined}
             onKeyDown={attack ? (e) => (e.key === 'Enter' || e.key === ' ') && onAction(attack.id) : undefined}
             className={attack ? 'cursor-crosshair' : undefined}
+            // While aiming, clicks go through the tokens to the square below.
+            pointerEvents={aimed ? 'none' : undefined}
           >
             <title>{label}</title>
             {current && <circle cx={cx} cy={cy} r={30} fill="none" stroke="#fbbf24" strokeWidth={4} className="animate-pulse motion-reduce:animate-none" />}
