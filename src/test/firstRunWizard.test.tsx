@@ -72,6 +72,12 @@ describe('FirstRunWizard', () => {
     await vi.waitFor(() => expect(useAppStore.getState().activeCharacter?.id).toBe('ayu'));
     await user.click(next());
 
+    // Voice & images are optional: the step names the chosen character and can be passed.
+    expect(screen.getByRole('heading', { name: 'Voice and images (optional)' })).toBeInTheDocument();
+    expect(screen.getByRole('tab', { name: /Voice/ })).toHaveAttribute('aria-selected', 'true');
+    expect(screen.getByText(/Voice for Ayu Ikue/)).toBeInTheDocument();
+    await user.click(next());
+
     expect(screen.getByText('Qwen3-8B-Q4_K_M')).toBeInTheDocument();
     await user.click(screen.getByRole('checkbox', { name: /local server/ }));
     await user.click(screen.getByRole('button', { name: /Let's go/ }));

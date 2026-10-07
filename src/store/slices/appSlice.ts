@@ -139,7 +139,7 @@ export const createAppSlice: SliceCreator<AppSlice> = (set, get) => ({
         activeLive2dPath: settings.active_live2d_path || null,
         globalLorebookIds: settings.global_lorebooks || [],
         sceneTensionEnabled: settings.scene_tension_enabled !== false,
-        avatarMode: settings.avatar_mode || '3d',
+        avatarMode: settings.avatar_mode || '2d',
         appLanguage: settings.app_language || 'de',
         theme: settings.theme || 'obsidian',
         colorMode,

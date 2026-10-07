@@ -18,6 +18,8 @@ interface CharacterVoiceModalProps {
   target?: { id: string; name: string };
   /** Shown inside a page (settings) instead of a dialog: no close button, saving keeps it open. */
   embedded?: boolean;
+  /** Saves every change by itself (first-run wizard), so nothing is lost without "Save". */
+  autoSave?: boolean;
 }
 
 const DEFAULT_CONFIG: VoiceConfig = {
@@ -82,7 +84,7 @@ function testText(config: VoiceConfig) {
   return 'Hello! How are you today? This is a test of my voice.';
 }
 
-export function CharacterVoiceModal({ onClose, target, embedded = false }: CharacterVoiceModalProps) {
+export function CharacterVoiceModal({ onClose, target, embedded = false, autoSave = false }: CharacterVoiceModalProps) {
   const { t } = useTranslation();
   const { activeCharacter, activeVoiceConfig, saveVoiceConfigForCharacter } = useStoreFields(
     'activeCharacter', 'activeVoiceConfig', 'saveVoiceConfigForCharacter',
@@ -110,7 +112,7 @@ export function CharacterVoiceModal({ onClose, target, embedded = false }: Chara
     if (!targetId) return;
     let subscribed = true;
     api.getCharacterVoiceConfig(targetId).then((config) => {
-      if (subscribed) setDraft(config);
+      if (subscribed && config) setDraft(config);
     }).catch(() => {});
     return () => {
       subscribed = false;
@@ -125,7 +127,7 @@ export function CharacterVoiceModal({ onClose, target, embedded = false }: Chara
     const timeout = window.setTimeout(() => {
       setIsLoadingVoices(true);
       api.listAvailableVoices(draft.engine, draft.elevenlabs_api_key, draft.kokoro.voices_path)
-        .then(setAvailableVoices)
+        .then((voices) => setAvailableVoices(voices ?? []))
         .catch((reason) => setError(errorMessage(reason)))
         .finally(() => setIsLoadingVoices(false));
     }, draft.engine === 'elevenlabs' ? 450 : 0);
@@ -170,6 +172,16 @@ export function CharacterVoiceModal({ onClose, target, embedded = false }: Chara
     touched.current = true;
     setDraft(next);
   };
+
+  // Auto-save: a short pause after the user's last change writes the voice.
+  const autoSaveId = target?.id ?? activeCharacter?.id;
+  useEffect(() => {
+    if (!autoSave || !touched.current || !autoSaveId) return;
+    const timeout = window.setTimeout(() => {
+      saveVoiceConfigForCharacter(autoSaveId, draft).catch((reason) => setError(errorMessage(reason)));
+    }, 600);
+    return () => window.clearTimeout(timeout);
+  }, [autoSave, autoSaveId, draft, saveVoiceConfigForCharacter]);
 
   const update = <K extends keyof VoiceConfig>(key: K, value: VoiceConfig[K]) => {
     edit((current) => ({ ...current, [key]: value }));
@@ -589,7 +601,9 @@ export function CharacterVoiceModal({ onClose, target, embedded = false }: Chara
           </button>
           <div className="flex gap-3">
             {!embedded && <button onClick={onClose} className="px-4 py-2 hover:bg-slate-800 text-slate-300 rounded-lg">{t('common.cancel')}</button>}
-            <button onClick={() => void handleSave()} className="flex items-center gap-2 px-4 py-2 bg-accent-600 hover:bg-accent-500 text-white rounded-lg shadow-lg shadow-accent-500/20"><Save className="w-4 h-4" />{t('voiceCfg.save')}</button>
+            {!autoSave && (
+              <button onClick={() => void handleSave()} className="flex items-center gap-2 px-4 py-2 bg-accent-600 hover:bg-accent-500 text-white rounded-lg shadow-lg shadow-accent-500/20"><Save className="w-4 h-4" />{t('voiceCfg.save')}</button>
+            )}
           </div>
         </div>
       </div>

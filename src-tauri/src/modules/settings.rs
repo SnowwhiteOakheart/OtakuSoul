@@ -83,8 +83,10 @@ fn default_true() -> bool {
     true
 }
 
+/// New profiles show the character's picture; 3D and Live2D are a choice (every card has a
+/// portrait, few have their own model).
 fn default_avatar_mode() -> String {
-    "3d".to_string()
+    "2d".to_string()
 }
 
 fn default_app_language() -> String {
@@ -136,7 +138,7 @@ impl Default for AppSettings {
             global_lorebooks: Vec::new(),
             scene_tension_enabled: true,
             hidden_character_ids: Vec::new(),
-            avatar_mode: "3d".to_string(),
+            avatar_mode: default_avatar_mode(),
             app_language: "de".to_string(),
             theme: "obsidian".to_string(),
             color_mode: "system".to_string(),

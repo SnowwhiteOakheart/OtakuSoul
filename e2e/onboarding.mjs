@@ -26,8 +26,18 @@ try {
   await browser.$('h2=Mit wem möchtest du sprechen?').waitForDisplayed();
   // The character cards of the dialog (the app behind it has pressable buttons too).
   const firstCharacter = await browser.$('[role="dialog"] .grid button[aria-pressed]');
+  await firstCharacter.waitForExist({ timeout: 20_000, timeoutMsg: 'keine Charaktere im Assistenten' });
   const name = (await browser.execute((el) => el.textContent, firstCharacter)).trim();
   await firstCharacter.click();
+  await next();
+
+  // Voice & images: the chosen character's voice and the image models, saved as you go.
+  await browser.$('h2=Stimme und Bilder (optional)').waitForDisplayed();
+  await browser.$('[data-testid="onboarding-voice"]').waitForDisplayed();
+  assert.match(await browser.$('[data-testid="onboarding-voice"]').getText(), new RegExp(name));
+  await browser.$('[data-media-tab="images"]').click();
+  await browser.$('[data-testid="onboarding-images"]').waitForDisplayed();
+  await shot('35b-assistent-stimme-bilder');
   await next();
 
   // Done: a real reply of the chosen character.
@@ -42,6 +52,9 @@ try {
 
   await browser.$('button*=Los geht').click();
   await browser.$('textarea[aria-label="Nachricht"]').waitForDisplayed({ timeout: 10_000 });
+  // New profiles show the character's picture, not the generic 3D model.
+  const pressed = await browser.execute(() => [...document.querySelectorAll('button[aria-pressed="true"]')].map((b) => b.textContent.trim()));
+  assert.ok(pressed.includes('Bild'), `Avatar-Modus: ${pressed}`);
   console.log('Einrichtungsassistent: Verbindungstest, Charakterwahl und erste Antwort bestanden.');
 } finally {
   await close();

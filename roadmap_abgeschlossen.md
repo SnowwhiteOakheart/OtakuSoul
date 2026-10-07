@@ -1872,3 +1872,6 @@ veraltet und sind korrigiert: `chat-sidebar-errors` las die Sitzung, bevor der e
 
 - [x] **Weitere Monster-Tokens (07.10.2026):** Hobgoblin, Grottenschrat, Riesenspinne, Schreckenswolf und
   Oger nach `todo_assets.md` erstellt; reine 256er-SVGs mit Kreisbeschnitt, bei 48 px geprüft.
+- [x] **Einrichtung für neue Nutzer (07.10.2026):** Der Einrichtungsassistent hat einen Schritt „Stimme & Bilder“ mit
+  Stimme der gewählten Figur und Bildmodell (Änderungen speichern sich selbst). Neue Profile zeigen den Avatar als
+  Charakterbild statt des allgemeinen 3D-Modells; gespeicherte Einstellungen bleiben unverändert.

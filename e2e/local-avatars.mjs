@@ -17,7 +17,7 @@ const models = readdirSync(root, { recursive: true })
   .map((file) => path.join(root, String(file)))
   .filter((file) => /\.(vrm|glb|pmx|pmd)$/i.test(file) && !file.includes(`${path.sep}screenshots${path.sep}`));
 
-const { browser, close } = await launch();
+const { browser, close } = await launch({ avatar_mode: '3d' });
 // oxlint-disable-next-line no-underscore-dangle -- Tauri IPC in a disposable profile
 const invoke = (command, args = {}) => browser.execute((cmd, payload) => window.__TAURI_INTERNALS__.invoke(cmd, payload), command, args);
 let failed = 0;

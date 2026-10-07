@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { Eye, EyeOff, Palette, Save } from 'lucide-react';
 import { useStoreFields } from '../../../store/useAppStore';
 import { useTranslation } from '../../../i18n';
@@ -40,12 +40,20 @@ export const DEFAULT_IMG_CONFIG: ImageGenConfig = {
  * Image generation backend: provider, local image models (sd.cpp, VRAM strategy, LoRAs) or a
  * remote endpoint. The studio and gallery stay under Integrations.
  */
-export const ImageSettings = () => {
+/** `autoSave`: every change is saved by itself (first-run wizard) instead of with "Save". */
+export const ImageSettings = ({ autoSave = false }: { autoSave?: boolean } = {}) => {
   const { t } = useTranslation();
   const { imageGenConfig, saveImageGenConfig } = useStoreFields('imageGenConfig', 'saveImageGenConfig');
   const [showImgApiKey, setShowImgApiKey] = useState(false);
   // Edits live in a draft; without one the form shows the saved configuration.
   const [draft, setLocalImgConfig] = useState<ImageGenConfig | null>(null);
+  useEffect(() => {
+    if (!autoSave || !draft) return;
+    const timeout = window.setTimeout(() => {
+      saveImageGenConfig(draft).catch((e: unknown) => toast.error(t('int.error', { error: errorMessage(e) })));
+    }, 600);
+    return () => window.clearTimeout(timeout);
+  }, [autoSave, draft, saveImageGenConfig, t]);
   const localImgConfig = draft ?? imageGenConfig ?? DEFAULT_IMG_CONFIG;
   const provider = providerOption(localImgConfig.provider);
   const isLocal = provider === 'local';
@@ -73,13 +81,15 @@ export const ImageSettings = () => {
           </div>
         </div>
 
-        <button
-          onClick={handleSaveImgConfig}
-          className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-200 text-xs font-medium border border-slate-700 transition"
-        >
-          <Save className="w-3.5 h-3.5" />
-          <span>{t('int.save')}</span>
-        </button>
+        {!autoSave && (
+          <button
+            onClick={handleSaveImgConfig}
+            className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-200 text-xs font-medium border border-slate-700 transition"
+          >
+            <Save className="w-3.5 h-3.5" />
+            <span>{t('int.save')}</span>
+          </button>
+        )}
       </div>
 
 

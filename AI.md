@@ -343,6 +343,9 @@ Hub). Integrationen → Bildgenerierung enthält nur Studio und Galerie.
   `quick_reply` (eine kurze Antwort außerhalb eines Chats, 90 s) und `list_starter_models` (`models_hub::STARTERS`,
   Empfehlung = `preferred`-Modell (Ternary Bonsai 2 27B), wenn es in VRAM − 1,5 GB passt, sonst das größte passende).
   Starter mit `runtime: "prism"` blenden im Assistenten zusätzlich die PrismML-Laufzeitkarte ein.
+  Schritt „Stimme & Bilder“ (nach „Charakter“) bettet `CharacterVoiceModal` (gewählte Figur) und `ImageSettings` mit
+  `autoSave` ein: Änderungen speichern sich nach kurzer Pause selbst, der Speichern-Knopf entfällt.
+  Neue Profile zeigen den Avatar als Bild (`avatar_mode` Standard `2d`); 3D/Live2D ist eine Wahl, gespeicherte bleibt.
 - Befehlspalette: Einträge für Einstellungen/Optionen/Integrationen in `CommandPalette.tsx`; Optionen brauchen eine
   `id="setting-…"` und springen per `utils/revealSetting.ts`. `SettingsView` folgt `openSettingsSection` auch offen.
 - Companion-Tools: nur ausdrücklich geprüfte interne Tools in `companion.rs` → `tool_allows_auto_approval`

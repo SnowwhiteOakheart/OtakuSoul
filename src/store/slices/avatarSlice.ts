@@ -70,7 +70,8 @@ export const createAvatarSlice: SliceCreator<AvatarSlice> = (set, get) => ({
     }
   },
 
-  avatarMode: '3d',
+  // Picture by default; a saved choice (3D, Live2D) wins once settings are loaded.
+  avatarMode: '2d',
 
   setAvatarMode: (mode) => {
     set({ avatarMode: mode });

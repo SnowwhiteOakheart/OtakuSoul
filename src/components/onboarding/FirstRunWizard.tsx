@@ -8,7 +8,9 @@ import {
   Cpu,
   Download,
   Import,
+  Image,
   Languages,
+  Mic,
   Palette,
   Sparkles,
   UserRound,
@@ -20,14 +22,17 @@ import { ModalOverlay } from '../ui/ModalOverlay';
 import { APP_LANGUAGES, APP_THEMES } from '../settings/themes';
 import type { LlmProviderType } from '../../types';
 import { CloudConnectionTest, FirstReply, LocalModelSetup } from './OnboardingParts';
+import { CharacterVoiceModal } from '../voice/CharacterVoiceModal';
+import { ImageSettings } from '../settings/sections/ImageSettings';
 
-const STEPS = ['welcome', 'model', 'character', 'done'] as const;
+const STEPS = ['welcome', 'model', 'character', 'media', 'done'] as const;
 type Step = (typeof STEPS)[number];
 
 const STEP_LABEL_KEYS = {
   welcome: 'onboarding.stepWelcome',
   model: 'onboarding.stepModel',
   character: 'onboarding.stepCharacter',
+  media: 'onboarding.stepMedia',
   done: 'onboarding.stepDone',
 } as const;
 
@@ -91,6 +96,7 @@ export const FirstRunWizard: React.FC = () => {
   const [modelDraft, setModelDraft] = useState(store.cloudModel);
   const [startServerNow, setStartServerNow] = useState(true);
   const [modelSelectionPending, setModelSelectionPending] = useState(false);
+  const [mediaTab, setMediaTab] = useState<'voice' | 'images'>('voice');
   const headingRef = useRef<HTMLHeadingElement>(null);
 
   const stepIndex = STEPS.indexOf(step);
@@ -422,6 +428,51 @@ export const FirstRunWizard: React.FC = () => {
                   {t('onboarding.importCharacter')}
                 </button>
               </div>
+            </>
+          )}
+
+          {step === 'media' && (
+            <>
+              <div className="space-y-1.5">
+                {heading('onboarding.mediaTitle')}
+                <p className="text-sm text-slate-400">{t('onboarding.mediaText')}</p>
+              </div>
+              <div role="tablist" aria-label={t('onboarding.stepMedia')} className="flex gap-2">
+                {([['voice', Mic, 'onboarding.mediaVoice'], ['images', Image, 'onboarding.mediaImages']] as const).map(([id, Icon, label]) => (
+                  <button
+                    key={id}
+                    type="button"
+                    role="tab"
+                    data-media-tab={id}
+                    aria-selected={mediaTab === id}
+                    onClick={() => setMediaTab(id)}
+                    className={`${CHOICE_CARD} ${choiceState(mediaTab === id)} items-center px-3.5 py-2 text-sm font-medium`}
+                  >
+                    <Icon className="h-4 w-4" />
+                    {t(label)}
+                  </button>
+                ))}
+              </div>
+              {mediaTab === 'voice' ? (
+                store.activeCharacter ? (
+                  <div data-testid="onboarding-voice" className="space-y-2">
+                    <p className="text-xs text-slate-400">{t('onboarding.mediaVoiceFor', { name: store.activeCharacter.card.data.name })}</p>
+                    <CharacterVoiceModal
+                      key={store.activeCharacter.id}
+                      target={{ id: store.activeCharacter.id, name: store.activeCharacter.card.data.name }}
+                      embedded
+                      autoSave
+                    />
+                  </div>
+                ) : (
+                  <p className="rounded-xl border border-slate-800 bg-app/60 p-4 text-sm text-slate-400">{t('onboarding.mediaNoCharacter')}</p>
+                )
+              ) : (
+                <div data-testid="onboarding-images">
+                  <ImageSettings autoSave />
+                </div>
+              )}
+              <p className="text-xs text-slate-500">{t('onboarding.mediaLater')}</p>
             </>
           )}
 

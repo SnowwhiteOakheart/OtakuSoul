@@ -6,7 +6,7 @@ import path from 'node:path';
 import { clickSend, launch, screenshotDir } from './harness.mjs';
 import { makePmx, makeVmd, PNG } from './tools/make-mmd.mjs';
 
-const { browser, mock, home, close } = await launch();
+const { browser, mock, home, close } = await launch({ avatar_mode: '3d' });
 const shot = (name) => browser.saveScreenshot(path.join(screenshotDir, `${name}.png`));
 // oxlint-disable-next-line no-underscore-dangle -- Tauri IPC in a disposable profile
 const invoke = (command, args = {}) => browser.execute((cmd, payload) => window.__TAURI_INTERNALS__.invoke(cmd, payload), command, args);
