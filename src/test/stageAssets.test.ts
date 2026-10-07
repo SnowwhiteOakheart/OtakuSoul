@@ -5,6 +5,7 @@
  * Regenerated assets are checked here before they reach the board.
  */
 import { describe, expect, it } from 'vitest';
+import monsterData from '../../presets/srd5/monsters.json';
 
 const svgs = import.meta.glob<string>('../../public/stage/**/*.svg', { query: '?raw', import: 'default', eager: true });
 
@@ -21,6 +22,12 @@ describe('stage assets', () => {
     for (const required of ['tiles/dungeon/floor_stone_1.svg', 'tiles/dungeon/wall_stone.svg', 'tiles/dungeon/door_closed.svg', 'tokens/hero_thorin.svg', 'tokens/monster_goblin.svg']) {
       expect(names).toContain(required);
     }
+  });
+
+  it('give every SRD monster a token', () => {
+    const names = Object.keys(svgs).map((file) => file.replace(/^.*public\/stage\//, ''));
+    const missing = monsterData.monsters.map((m) => `tokens/monster_${m.id}.svg`).filter((token) => !names.includes(token));
+    expect(missing).toEqual([]);
   });
 
   it('follow the SVG rules', () => {

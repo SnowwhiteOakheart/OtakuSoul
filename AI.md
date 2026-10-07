@@ -207,8 +207,8 @@ Hub). Integrationen → Bildgenerierung enthält nur Studio und Galerie.
   `AttackSituation.target_can_react` und +5 RK den Treffer abwenden (Zustand `shielded`); Aufrufer tragen die Reaktion
   in `reactions_used` ein. Schwierigkeit `rules5e/difficulty.rs`: EP nach HG aus dem SRD, Gruppenbudget eigene Formel
   (das SRD hat keine Tabelle); vom Planer erfundene Kämpfe werden weit über „tödlich“ gekürzt (`start_encounter_at`
-  mit `limit`), vorbereitete nicht; `EncounterState.difficulty` zeigt das Kampfpanel. Monster ohne Token-SVG zeigen
-  ihren Anfangsbuchstaben (`MONSTER_TOKENS` in `StageBattleMap`).
+  mit `limit`), vorbereitete nicht; `EncounterState.difficulty` zeigt das Kampfpanel. Jedes Monster in
+  `monsters.json` braucht ein Token `public/stage/tokens/monster_<id>.svg` (prüft `stageAssets.test.ts`).
   Ausrüstung: `presets/srd5/equipment.json` + `rules5e/equipment.rs` (`Stats5e.equipped`, `recompute_gear` setzt
   `armor_class` und Waffenangriffe neu, andere Vorlagenangriffe wie Feuerpfeil bleiben; Klassen haben `proficiencies`
   und Startausrüstung `equipment`). Inventar-Einträge tragen `srd_id`; `explore5e::add_items` (Einträge `id`/`id*n`,

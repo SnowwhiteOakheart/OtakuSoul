@@ -10,10 +10,6 @@ const TILE = 64;
 /** Ground tiles that come in numbered variants (`floor_stone_1` …). */
 const VARIANTS: Record<string, number> = { floor_stone: 3, grass: 3 };
 const CLASSIC_HEROES = ['thorin', 'lyra', 'finn', 'althea'];
-/** Monsters with a drawn token in public/stage/tokens; others show their initial. */
-const MONSTER_TOKENS = new Set([
-  'bandit', 'ghoul', 'giant_rat', 'goblin', 'kobold', 'necromancer', 'orc', 'shadow', 'skeleton', 'wolf', 'zombie',
-]);
 
 /** Objects that block walking (same list as `BLOCKING_OBJECTS` in `rules5e/map.rs`). */
 const BLOCKING = new Set([
@@ -44,9 +40,8 @@ const doorRotation = (map: BattleMap, x: number, y: number) => {
 
 /** Token image of a combatant: monsters by SRD id, the classic heroes by name, others by portrait. */
 const tokenImage = (c: Combatant, portraits: Map<string, string>) => {
-  if (c.stats5e?.monster_id) {
-    return MONSTER_TOKENS.has(c.stats5e.monster_id) ? `/stage/tokens/monster_${c.stats5e.monster_id}.svg` : null;
-  }
+  // Every SRD monster has a token (checked by stageAssets.test.ts).
+  if (c.stats5e?.monster_id) return `/stage/tokens/monster_${c.stats5e.monster_id}.svg`;
   const first = c.name.split(' ')[0]!.toLowerCase();
   if (CLASSIC_HEROES.includes(first)) return `/stage/tokens/hero_${first}.svg`;
   return portraits.get(c.name.toLowerCase()) ?? null;
