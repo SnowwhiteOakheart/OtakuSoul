@@ -1,0 +1,21 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="64" height="64" viewBox="0 0 64 64">
+  <!-- Shadow -->
+  <circle cx="36" cy="36" r="18" fill="#0f172a" opacity="0.35"/>
+  <!-- Iron Struts / Legs -->
+  <line x1="30" y1="30" x2="14" y2="18" stroke="#2b2f3a" stroke-width="3" stroke-linecap="round"/>
+  <line x1="30" y1="30" x2="46" y2="18" stroke="#2b2f3a" stroke-width="3" stroke-linecap="round"/>
+  <line x1="30" y1="30" x2="30" y2="48" stroke="#2b2f3a" stroke-width="3" stroke-linecap="round"/>
+  <!-- Iron Brazier Outer Ring -->
+  <circle cx="30" cy="30" r="18" fill="#2b2f3a" stroke="#0f172a" stroke-width="1"/>
+  <circle cx="30" cy="30" r="15" fill="#1e222b" stroke="#0f172a" stroke-width="1"/>
+  <circle cx="30" cy="30" r="13" fill="#451a03"/>
+  <!-- Glowing Embers & Coals -->
+  <circle cx="26" cy="28" r="2.5" fill="#b45309"/>
+  <circle cx="34" cy="27" r="2.5" fill="#b45309"/>
+  <circle cx="28" cy="33" r="2.5" fill="#b45309"/>
+  <circle cx="33" cy="32" r="2.5" fill="#b45309"/>
+  <!-- Stylized Flame Cluster -->
+  <path d="M26 31 Q24 24 29 20 Q31 25 34 22 Q37 26 33 32 Q30 35 26 31 Z" fill="#f97316"/>
+  <path d="M27 30 Q26 25 29 23 Q31 26 33 24 Q35 27 32 31 Q30 33 27 30 Z" fill="#eab308"/>
+  <ellipse cx="30" cy="29" rx="2.5" ry="3" fill="#fef08a"/>
+</svg>

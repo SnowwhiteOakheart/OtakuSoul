@@ -1,0 +1,22 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="64" height="64" viewBox="0 0 64 64">
+  <!-- Shadow -->
+  <rect x="22" y="27" width="24" height="18" rx="2" fill="#0f172a" opacity="0.35"/>
+  <path d="M33 32 L46 20" stroke="#0f172a" stroke-width="5" stroke-linecap="round" opacity="0.35"/>
+  <!-- Iron Base Plate -->
+  <rect x="20" y="25" width="24" height="16" rx="2" fill="#6b7480" stroke="#0f172a" stroke-width="1"/>
+  <!-- Bevel -->
+  <path d="M21 26 H43 V28 H23 V39 H21 Z" fill="#9aa3ad" opacity="0.8"/>
+  <!-- Rivets -->
+  <circle cx="23" cy="28" r="1" fill="#2b2f3a"/>
+  <circle cx="41" cy="28" r="1" fill="#2b2f3a"/>
+  <circle cx="23" cy="38" r="1" fill="#2b2f3a"/>
+  <circle cx="41" cy="38" r="1" fill="#2b2f3a"/>
+  <!-- Lever Slot -->
+  <rect x="26" y="31" width="12" height="4" rx="1" fill="#1e222b" stroke="#0f172a" stroke-width="0.8"/>
+  <!-- Metal Pivot & Lever Arm -->
+  <line x1="30" y1="33" x2="43" y2="18" stroke="#9aa3ad" stroke-width="3" stroke-linecap="round"/>
+  <line x1="30" y1="33" x2="43" y2="18" stroke="#0f172a" stroke-width="1" stroke-linecap="round"/>
+  <!-- Carved Wooden Handle -->
+  <circle cx="43" cy="18" r="4.5" fill="#8a6240" stroke="#0f172a" stroke-width="1"/>
+  <circle cx="42" cy="17" r="2" fill="#6b4a2f" opacity="0.6"/>
+</svg>

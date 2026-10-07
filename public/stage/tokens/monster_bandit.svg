@@ -1,0 +1,40 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="256" height="256" viewBox="0 0 256 256">
+  <defs>
+    <clipPath id="monster_bandit-clip">
+      <circle cx="128" cy="128" r="120"/>
+    </clipPath>
+  </defs>
+  <g clip-path="url(#monster_bandit-clip)">
+    <!-- Background -->
+    <circle cx="128" cy="128" r="120" fill="#262626"/>
+    <!-- Leather Brigandine / Gambeson -->
+    <path d="M52 248 Q64 186 102 182 L128 188 L154 182 Q192 186 204 248 Z" fill="#44403c" stroke="#0f172a" stroke-width="2"/>
+    <line x1="128" y1="188" x2="128" y2="248" stroke="#1c1917" stroke-width="2"/>
+    <circle cx="118" cy="214" r="2.5" fill="#9aa3ad"/>
+    <circle cx="118" cy="234" r="2.5" fill="#9aa3ad"/>
+
+    <!-- Shadowy Bandit Hood -->
+    <path d="M74 134 Q68 56 128 50 Q188 56 182 134 Q194 170 178 184 L154 182 Q128 174 102 182 L78 184 Q62 170 74 134 Z" fill="#292524" stroke="#0f172a" stroke-width="2.5"/>
+    <path d="M86 68 Q128 58 170 68" stroke="#44403c" stroke-width="3" fill="none"/>
+
+    <!-- Face Area Exposed Under Hood -->
+    <ellipse cx="128" cy="126" rx="34" ry="34" fill="#d6a383" stroke="#0f172a" stroke-width="2"/>
+
+    <!-- Fierce Eyes & Scowling Brow -->
+    <path d="M102 110 Q112 106 122 112" stroke="#1c1917" stroke-width="3.5" fill="none"/>
+    <path d="M134 112 Q144 106 154 110" stroke="#1c1917" stroke-width="3.5" fill="none"/>
+    <ellipse cx="112" cy="118" rx="5" ry="3.5" fill="#ffffff" stroke="#0f172a" stroke-width="1.2"/>
+    <circle cx="113" cy="118" r="2.5" fill="#1c1917"/>
+    <ellipse cx="144" cy="118" rx="5" ry="3.5" fill="#ffffff" stroke="#0f172a" stroke-width="1.2"/>
+    <circle cx="143" cy="118" r="2.5" fill="#1c1917"/>
+
+    <!-- Prominent Facial Scar Across Eyebrow -->
+    <line x1="140" y1="102" x2="150" y2="124" stroke="#9f5d4c" stroke-width="2.2" stroke-linecap="round"/>
+    <line x1="142" y1="108" x2="146" y2="110" stroke="#7f1d1d" stroke-width="1.2"/>
+
+    <!-- Cloth Mask / Bandana Covering Nose and Mouth -->
+    <path d="M94 126 Q128 120 162 126 L154 172 Q128 180 102 172 Z" fill="#3f3f46" stroke="#0f172a" stroke-width="2"/>
+    <path d="M96 136 Q128 130 160 136" stroke="#18181b" stroke-width="1.5" fill="none"/>
+    <path d="M100 152 Q128 146 156 152" stroke="#18181b" stroke-width="1.5" fill="none"/>
+  </g>
+</svg>

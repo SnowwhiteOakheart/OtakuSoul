@@ -1,0 +1,21 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="64" height="64" viewBox="0 0 64 64">
+  <rect width="64" height="64" fill="#1f3f4f"/>
+  <!-- Submerged Stone Slabs -->
+  <rect x="2" y="2" width="28" height="28" fill="#2b3b45" stroke="#162933" stroke-width="1" opacity="0.6"/>
+  <rect x="34" y="2" width="28" height="28" fill="#24343e" stroke="#162933" stroke-width="1" opacity="0.6"/>
+  <rect x="2" y="34" width="28" height="28" fill="#24343e" stroke="#162933" stroke-width="1" opacity="0.6"/>
+  <rect x="34" y="34" width="28" height="28" fill="#2b3b45" stroke="#162933" stroke-width="1" opacity="0.6"/>
+  <!-- Deep Pools -->
+  <path d="M0 24 Q18 20 32 26 Q46 32 64 24 V44 Q48 50 32 44 Q16 38 0 46 Z" fill="#172e3a" opacity="0.8"/>
+  <!-- Water Waves / Glanzlinien (Wrap across 0 and 64) -->
+  <path d="M0 12 Q16 8 32 12 Q48 16 64 12" stroke="#2f5d73" stroke-width="2" fill="none"/>
+  <path d="M0 12 Q16 9 32 12" stroke="#3f7d95" stroke-width="1.2" fill="none"/>
+  <path d="M32 12 Q48 15 64 12" stroke="#7fb3c4" stroke-width="1.2" fill="none" opacity="0.7"/>
+
+  <path d="M0 36 Q16 40 32 36 Q48 32 64 36" stroke="#2f5d73" stroke-width="2" fill="none"/>
+  <path d="M10 36 Q22 39 34 36" stroke="#7fb3c4" stroke-width="1.2" fill="none" opacity="0.8"/>
+  <path d="M42 34 Q54 31 64 34" stroke="#3f7d95" stroke-width="1.2" fill="none"/>
+
+  <path d="M0 56 Q16 52 32 56 Q48 60 64 56" stroke="#2f5d73" stroke-width="1.8" fill="none"/>
+  <path d="M20 54 Q32 57 44 54" stroke="#7fb3c4" stroke-width="1" fill="none" opacity="0.6"/>
+</svg>

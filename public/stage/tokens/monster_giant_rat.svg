@@ -1,0 +1,45 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="256" height="256" viewBox="0 0 256 256">
+  <defs>
+    <clipPath id="monster_giant_rat-clip">
+      <circle cx="128" cy="128" r="120"/>
+    </clipPath>
+  </defs>
+  <g clip-path="url(#monster_giant_rat-clip)">
+    <!-- Background -->
+    <circle cx="128" cy="128" r="120" fill="#2e221b"/>
+    <!-- Rat Body / Coarse Shaggy Fur Base -->
+    <path d="M48 248 Q76 182 128 184 Q180 182 208 248 Z" fill="#3d2f27" stroke="#0f172a" stroke-width="2"/>
+
+    <!-- Large Rounded Naked Rat Ears -->
+    <ellipse cx="84" cy="94" rx="18" ry="24" fill="#524036" stroke="#0f172a" stroke-width="2"/>
+    <ellipse cx="86" cy="96" rx="12" ry="16" fill="#fca5a5" opacity="0.6"/>
+    <ellipse cx="172" cy="94" rx="18" ry="24" fill="#524036" stroke="#0f172a" stroke-width="2"/>
+    <ellipse cx="170" cy="96" rx="12" ry="16" fill="#fca5a5" opacity="0.6"/>
+
+    <!-- Angular V-Shaped Rat Head -->
+    <polygon points="128,68 88,124 104,170 128,188 152,170 168,124" fill="#524036" stroke="#0f172a" stroke-width="2"/>
+    <polygon points="128,78 98,124 110,162 128,176 146,162 158,124" fill="#665043"/>
+
+    <!-- Glowing Evil Red Eyes -->
+    <ellipse cx="106" cy="120" rx="8" ry="7" fill="#dc2626" stroke="#0f172a" stroke-width="1.5"/>
+    <circle cx="106" cy="120" r="3" fill="#7f1d1d"/>
+    <circle cx="104" cy="118" r="1.5" fill="#fecaca"/>
+
+    <ellipse cx="150" cy="120" rx="8" ry="7" fill="#dc2626" stroke="#0f172a" stroke-width="1.5"/>
+    <circle cx="150" cy="120" r="3" fill="#7f1d1d"/>
+    <circle cx="148" cy="118" r="1.5" fill="#fecaca"/>
+
+    <!-- Pinkish Pointed Snout -->
+    <polygon points="120,154 136,154 128,166" fill="#fca5a5" stroke="#0f172a" stroke-width="1.2"/>
+
+    <!-- Whiskers -->
+    <line x1="74" y1="146" x2="114" y2="156" stroke="#d6d3d1" stroke-width="1.2"/>
+    <line x1="72" y1="160" x2="114" y2="162" stroke="#d6d3d1" stroke-width="1.2"/>
+    <line x1="182" y1="146" x2="142" y2="156" stroke="#d6d3d1" stroke-width="1.2"/>
+    <line x1="184" y1="160" x2="142" y2="162" stroke="#d6d3d1" stroke-width="1.2"/>
+
+    <!-- Long Curved Yellow Gnawing Incisors -->
+    <rect x="122" y="166" width="5" height="18" rx="1" fill="#fef08a" stroke="#0f172a" stroke-width="1"/>
+    <rect x="129" y="166" width="5" height="18" rx="1" fill="#fef08a" stroke="#0f172a" stroke-width="1"/>
+  </g>
+</svg>

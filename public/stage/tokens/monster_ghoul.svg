@@ -1,0 +1,49 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="256" height="256" viewBox="0 0 256 256">
+  <defs>
+    <clipPath id="monster_ghoul-clip">
+      <circle cx="128" cy="128" r="120"/>
+    </clipPath>
+  </defs>
+  <g clip-path="url(#monster_ghoul-clip)">
+    <!-- Background -->
+    <circle cx="128" cy="128" r="120" fill="#141d24"/>
+    <!-- Emaciated Gaunt Torso & Ribs -->
+    <path d="M60 248 Q76 196 110 190 L128 194 L146 190 Q180 196 196 248 Z" fill="#475569" stroke="#0f172a" stroke-width="2"/>
+    <path d="M102 214 Q128 204 154 214 M98 232 Q128 222 158 232" stroke="#334155" stroke-width="3" fill="none"/>
+
+    <!-- Long Wicked Black Claws Clutched at Bottom -->
+    <path d="M52 248 L68 206 L74 248 M72 208 L84 248" stroke="#0f172a" stroke-width="4" stroke-linecap="round"/>
+    <path d="M52 248 L68 206 L74 248 M72 208 L84 248" stroke="#334155" stroke-width="2" stroke-linecap="round"/>
+    <path d="M204 248 L188 206 L182 248 M184 208 L172 248" stroke="#0f172a" stroke-width="4" stroke-linecap="round"/>
+    <path d="M204 248 L188 206 L182 248 M184 208 L172 248" stroke="#334155" stroke-width="2" stroke-linecap="round"/>
+
+    <!-- Gaunt Ashen-Gray Neck & Head -->
+    <rect x="114" y="146" width="28" height="44" fill="#64748b"/>
+    <polygon points="128,70 94,110 102,152 128,172 154,152 162,110" fill="#94a3b8" stroke="#0f172a" stroke-width="2"/>
+
+    <!-- Bald Head with Veins & Bony Ridges -->
+    <path d="M106 88 Q118 78 126 94" stroke="#64748b" stroke-width="1.8" fill="none"/>
+    <path d="M148 88 Q138 78 130 94" stroke="#64748b" stroke-width="1.8" fill="none"/>
+
+    <!-- Sunken Eyes Glowing with Hungry Necrotic Light -->
+    <ellipse cx="112" cy="118" rx="8" ry="9" fill="#0f172a"/>
+    <circle cx="112" cy="118" r="4" fill="#a3e635"/>
+    <circle cx="112" cy="118" r="1.5" fill="#ffffff"/>
+
+    <ellipse cx="144" cy="118" rx="8" ry="9" fill="#0f172a"/>
+    <circle cx="144" cy="118" r="4" fill="#a3e635"/>
+    <circle cx="144" cy="118" r="1.5" fill="#ffffff"/>
+
+    <!-- Hollow Sunken Cheeks -->
+    <polygon points="98,124 108,138 100,146" fill="#64748b"/>
+    <polygon points="158,124 148,138 156,146" fill="#64748b"/>
+
+    <!-- Wide Gaping Mouth with Jagged Rotten Teeth -->
+    <polygon points="112,146 144,146 140,166 116,166" fill="#0f172a" stroke="#0f172a" stroke-width="1.5"/>
+    <polygon points="114,146 117,154 120,146" fill="#fef08a"/>
+    <polygon points="124,146 128,156 132,146" fill="#fef08a"/>
+    <polygon points="136,146 139,154 142,146" fill="#fef08a"/>
+    <polygon points="118,166 121,158 124,166" fill="#fef08a"/>
+    <polygon points="130,166 133,158 136,166" fill="#fef08a"/>
+  </g>
+</svg>

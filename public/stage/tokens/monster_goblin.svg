@@ -1,0 +1,49 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="256" height="256" viewBox="0 0 256 256">
+  <defs>
+    <clipPath id="monster_goblin-clip">
+      <circle cx="128" cy="128" r="120"/>
+    </clipPath>
+  </defs>
+  <g clip-path="url(#monster_goblin-clip)">
+    <!-- Background -->
+    <circle cx="128" cy="128" r="120" fill="#272f1b"/>
+    <!-- Leather Tunic & Scraps -->
+    <path d="M58 248 Q70 196 106 190 L128 194 L150 190 Q186 196 198 248 Z" fill="#5a3d24" stroke="#0f172a" stroke-width="2"/>
+    <line x1="128" y1="194" x2="128" y2="248" stroke="#3d2714" stroke-width="2"/>
+
+    <!-- Large Pointy Goblin Ears (Left & Right) -->
+    <path d="M96 122 Q44 94 28 84 Q48 128 92 144 Z" fill="#22c55e" stroke="#0f172a" stroke-width="2"/>
+    <path d="M84 122 Q54 100 42 94 Q56 122 84 134 Z" fill="#86efac" opacity="0.6"/>
+
+    <path d="M160 122 Q212 94 228 84 Q208 128 164 144 Z" fill="#22c55e" stroke="#0f172a" stroke-width="2"/>
+    <path d="M172 122 Q202 100 214 94 Q200 122 172 134 Z" fill="#86efac" opacity="0.6"/>
+
+    <!-- Green Head Base -->
+    <ellipse cx="128" cy="134" rx="38" ry="36" fill="#22c55e" stroke="#0f172a" stroke-width="2"/>
+    <ellipse cx="128" cy="142" rx="26" ry="20" fill="#4ade80"/>
+
+    <!-- Worn Leather Cap -->
+    <path d="M88 120 Q84 76 128 66 Q172 76 168 120 Q148 108 128 108 Q108 108 88 120 Z" fill="#6b4a2f" stroke="#0f172a" stroke-width="2"/>
+    <!-- Floppy Tip of Cap -->
+    <path d="M128 66 Q146 48 168 44 Q156 68 152 74 Z" fill="#4a3322" stroke="#0f172a" stroke-width="1.8"/>
+
+    <!-- Piercing Yellow Eyes -->
+    <ellipse cx="112" cy="126" rx="8" ry="7" fill="#facc15" stroke="#0f172a" stroke-width="1.5"/>
+    <circle cx="112" cy="126" r="3.5" fill="#0f172a"/>
+    <circle cx="110" cy="124" r="1.2" fill="#ffffff"/>
+
+    <ellipse cx="144" cy="126" rx="8" ry="7" fill="#facc15" stroke="#0f172a" stroke-width="1.5"/>
+    <circle cx="144" cy="126" r="3.5" fill="#0f172a"/>
+    <circle cx="142" cy="124" r="1.2" fill="#ffffff"/>
+
+    <!-- Flat Goblin Nose -->
+    <polygon points="124,132 120,140 136,140 132,132" fill="#15803d" stroke="#0f172a" stroke-width="1.2"/>
+
+    <!-- Cheeky Tooth-Filled Goblin Grin -->
+    <path d="M106 148 Q128 174 150 148 Q128 162 106 148 Z" fill="#1e293b" stroke="#0f172a" stroke-width="2"/>
+    <!-- Pointy Teeth -->
+    <polygon points="112,150 115,158 118,151" fill="#ffffff"/>
+    <polygon points="124,153 128,162 132,153" fill="#ffffff"/>
+    <polygon points="138,151 141,158 144,150" fill="#ffffff"/>
+  </g>
+</svg>

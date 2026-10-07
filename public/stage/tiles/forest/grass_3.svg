@@ -1,0 +1,21 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="64" height="64" viewBox="0 0 64 64">
+  <rect width="64" height="64" fill="#3f6b35"/>
+  <!-- Seamless Base Patches matching grass_1 -->
+  <path d="M0 10 Q14 6 28 12 Q42 18 64 10 V24 Q44 32 24 26 Q12 22 0 28 Z" fill="#365d2d" opacity="0.7"/>
+  <path d="M0 42 Q18 36 36 44 Q50 50 64 42 V58 Q46 64 26 58 Q12 54 0 60 Z" fill="#497c3d" opacity="0.7"/>
+
+  <!-- Small Stone Pebble -->
+  <ellipse cx="44" cy="24" rx="4.5" ry="3.5" fill="#0f172a" opacity="0.3"/>
+  <ellipse cx="43" cy="23" rx="4.5" ry="3.5" fill="#6b6f75" stroke="#0f172a" stroke-width="0.8"/>
+  <ellipse cx="42" cy="22" rx="3" ry="2" fill="#8a8e94"/>
+  <path d="M40 24 Q42 25 44 24" stroke="#2f4a2a" stroke-width="1.2" fill="none"/>
+
+  <!-- Taller Grass Tufts -->
+  <path d="M22 28 Q19 18 16 12 Q21 19 24 28" fill="#5e8f48"/>
+  <path d="M24 28 Q26 17 28 10 Q27 19 26 28" fill="#7aa35a"/>
+  <path d="M26 28 Q30 18 33 13 Q29 20 27 28" fill="#5e8f48"/>
+
+  <path d="M34 46 Q31 36 28 30 Q33 37 36 46" fill="#5e8f48"/>
+  <path d="M36 46 Q38 35 40 28 Q39 37 38 46" fill="#7aa35a"/>
+  <path d="M38 46 Q42 36 45 31 Q41 38 39 46" fill="#5e8f48"/>
+</svg>

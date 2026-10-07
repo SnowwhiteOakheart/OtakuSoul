@@ -1,0 +1,56 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="256" height="256" viewBox="0 0 256 256">
+  <defs>
+    <clipPath id="hero_althea-clip">
+      <circle cx="128" cy="128" r="120"/>
+    </clipPath>
+  </defs>
+  <g clip-path="url(#hero_althea-clip)">
+    <!-- Background -->
+    <circle cx="128" cy="128" r="120" fill="#4a3810"/>
+    <!-- Golden Sacred Halo / Glow around Head -->
+    <circle cx="128" cy="116" r="68" fill="#fde047" opacity="0.3"/>
+    <circle cx="128" cy="116" r="54" fill="#fef08a" opacity="0.35"/>
+
+    <!-- White Surcoat / Vestment with Golden Trim -->
+    <path d="M52 248 Q64 186 102 180 L128 188 L154 180 Q192 186 204 248 Z" fill="#f8fafc" stroke="#0f172a" stroke-width="2"/>
+    <path d="M52 248 L92 248 L98 180 Z" fill="#e2e8f0"/>
+    <path d="M204 248 L164 248 L158 180 Z" fill="#e2e8f0"/>
+    <path d="M102 180 L128 188 L154 180" stroke="#e0c25a" stroke-width="3" fill="none"/>
+
+    <!-- Golden Sun Disc Crest on Breast (No Text) -->
+    <circle cx="128" cy="216" r="16" fill="#e0c25a" stroke="#0f172a" stroke-width="1.8"/>
+    <circle cx="128" cy="216" r="10" fill="#fef08a"/>
+    <!-- 8 Sun Rays -->
+    <path d="M128 194 V199 M128 233 V238 M106 216 H111 M145 216 H150 M113 201 L117 205 M139 227 L143 231 M113 231 L117 227 M139 205 L143 201" stroke="#e0c25a" stroke-width="2.5" stroke-linecap="round"/>
+
+    <!-- Golden-Blond Hair (Back Braid) -->
+    <path d="M144 140 Q168 180 156 248 Q144 248 138 210 Q142 168 138 140 Z" fill="#ca8a04" stroke="#0f172a" stroke-width="2"/>
+    <circle cx="152" cy="190" r="12" fill="#eab308"/>
+    <circle cx="154" cy="212" r="10" fill="#eab308"/>
+    <circle cx="152" cy="232" r="8" fill="#eab308"/>
+
+    <!-- Friendly Face & Neck -->
+    <rect x="114" y="142" width="28" height="40" fill="#fed7aa"/>
+    <ellipse cx="128" cy="126" rx="34" ry="34" fill="#ffedd5" stroke="#0f172a" stroke-width="2"/>
+
+    <!-- Golden-Blond Front Hair & Braided Crown -->
+    <path d="M92 118 Q90 74 128 72 Q166 74 164 118 Q150 96 128 98 Q106 96 92 118 Z" fill="#eab308" stroke="#0f172a" stroke-width="2"/>
+    <path d="M96 92 Q128 80 160 92" stroke="#fde047" stroke-width="3" fill="none"/>
+
+    <!-- Warm Friendly Eyes -->
+    <ellipse cx="114" cy="122" rx="6" ry="4" fill="#ffffff" stroke="#0f172a" stroke-width="1.2"/>
+    <circle cx="114" cy="122" r="3" fill="#2563eb"/>
+    <circle cx="113" cy="121" r="1" fill="#ffffff"/>
+    <ellipse cx="142" cy="122" rx="6" ry="4" fill="#ffffff" stroke="#0f172a" stroke-width="1.2"/>
+    <circle cx="142" cy="122" r="3" fill="#2563eb"/>
+    <circle cx="141" cy="121" r="1" fill="#ffffff"/>
+
+    <path d="M108 115 Q115 111 121 116" stroke="#ca8a04" stroke-width="1.8" fill="none"/>
+    <path d="M135 116 Q141 111 148 115" stroke="#ca8a04" stroke-width="1.8" fill="none"/>
+
+    <!-- Gentle Smile & Cheeks -->
+    <circle cx="106" cy="132" r="4" fill="#fca5a5" opacity="0.6"/>
+    <circle cx="150" cy="132" r="4" fill="#fca5a5" opacity="0.6"/>
+    <path d="M120 138 Q128 146 136 138" stroke="#be123c" stroke-width="2" fill="none" stroke-linecap="round"/>
+  </g>
+</svg>

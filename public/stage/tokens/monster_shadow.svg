@@ -1,0 +1,40 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="256" height="256" viewBox="0 0 256 256">
+  <defs>
+    <clipPath id="monster_shadow-clip">
+      <circle cx="128" cy="128" r="120"/>
+    </clipPath>
+  </defs>
+  <g clip-path="url(#monster_shadow-clip)">
+    <!-- Background -->
+    <circle cx="128" cy="128" r="120" fill="#0b0f19"/>
+    <!-- Eerie Smoky Tendrils & Wisps in Background -->
+    <path d="M54 230 Q28 170 60 120 Q92 70 70 30" stroke="#1e1b4b" stroke-width="16" fill="none" opacity="0.4" stroke-linecap="round"/>
+    <path d="M202 230 Q228 170 196 120 Q164 70 186 30" stroke="#1e1b4b" stroke-width="16" fill="none" opacity="0.4" stroke-linecap="round"/>
+
+    <!-- Dark Silhouette Body Emerging from Void -->
+    <path d="M42 248 Q70 178 106 174 L128 180 L150 174 Q186 178 214 248 Z" fill="#090d16" stroke="#0f172a" stroke-width="2"/>
+    <path d="M68 248 Q94 200 128 206 Q162 200 188 248 Z" fill="#18181b"/>
+
+    <!-- Smoky Tendrils Wisping Off Shoulders -->
+    <path d="M84 196 Q64 168 56 134 Q68 152 88 178" fill="#1e1b4b" opacity="0.6"/>
+    <path d="M172 196 Q192 168 200 134 Q188 152 168 178" fill="#1e1b4b" opacity="0.6"/>
+
+    <!-- Ghostly Silhouette Head -->
+    <ellipse cx="128" cy="126" rx="38" ry="44" fill="#090d16" stroke="#0f172a" stroke-width="2"/>
+    <ellipse cx="128" cy="126" rx="32" ry="38" fill="#18181b"/>
+
+    <!-- Whisping Smokey Crown / Spikes -->
+    <path d="M100 94 Q96 52 112 42 Q116 64 122 84" fill="#1e1b4b"/>
+    <path d="M124 84 Q128 40 134 36 Q136 58 138 84" fill="#1e1b4b"/>
+    <path d="M140 86 Q154 52 148 44 Q142 66 136 90" fill="#1e1b4b"/>
+
+    <!-- Two Piercing Pure Cold White Eyes -->
+    <ellipse cx="114" cy="122" rx="7" ry="6" fill="#e0f2fe" opacity="0.8"/>
+    <ellipse cx="114" cy="122" rx="4.5" ry="4" fill="#ffffff"/>
+    <circle cx="114" cy="122" r="1.5" fill="#38bdf8"/>
+
+    <ellipse cx="142" cy="122" rx="7" ry="6" fill="#e0f2fe" opacity="0.8"/>
+    <ellipse cx="142" cy="122" rx="4.5" ry="4" fill="#ffffff"/>
+    <circle cx="142" cy="122" r="1.5" fill="#38bdf8"/>
+  </g>
+</svg>

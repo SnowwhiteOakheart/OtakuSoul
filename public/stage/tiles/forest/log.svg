@@ -1,0 +1,25 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="64" height="64" viewBox="0 0 64 64">
+  <!-- Shadow -->
+  <rect x="6" y="36" width="54" height="9" rx="3" fill="#0f172a" opacity="0.35"/>
+  <!-- Log Bark Cylinder -->
+  <rect x="4" y="24" width="48" height="16" rx="2" fill="#5a3d24" stroke="#0f172a" stroke-width="1"/>
+  <!-- Bark Grooves -->
+  <line x1="8" y1="28" x2="48" y2="28" stroke="#4a3322" stroke-width="1.2"/>
+  <line x1="6" y1="32" x2="50" y2="32" stroke="#4a3322" stroke-width="1.2"/>
+  <line x1="8" y1="36" x2="48" y2="36" stroke="#4a3322" stroke-width="1.2"/>
+  <!-- Highlight on Top -->
+  <path d="M5 25 H49 V27 H5 Z" fill="#6b4a2f" opacity="0.8"/>
+
+  <!-- Broken Branch Nub -->
+  <polygon points="22,24 26,18 29,24" fill="#4a3322" stroke="#0f172a" stroke-width="1"/>
+
+  <!-- Moss Patch on Trunk -->
+  <ellipse cx="34" cy="25" rx="6" ry="2" fill="#4f7f3f"/>
+  <circle cx="34" cy="25" r="1.5" fill="#7aa35a"/>
+
+  <!-- Cut / Broken End Cross-Section (Annual Rings) -->
+  <ellipse cx="52" cy="32" rx="7" ry="8" fill="#8a6240" stroke="#0f172a" stroke-width="1"/>
+  <ellipse cx="52" cy="32" rx="5" ry="5.5" fill="#a3835a" stroke="#6b4a2f" stroke-width="1"/>
+  <ellipse cx="52" cy="32" rx="3" ry="3.5" stroke="#6b4a2f" stroke-width="0.8" fill="none"/>
+  <circle cx="52" cy="32" r="1" fill="#4a3322"/>
+</svg>

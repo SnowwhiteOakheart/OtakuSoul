@@ -1,0 +1,25 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="64" height="64" viewBox="0 0 64 64">
+  <!-- Shadow -->
+  <polygon points="18,36 30,50 48,50 54,38 42,26" fill="#0f172a" opacity="0.38"/>
+  <!-- Angular Faceted Boulder -->
+  <!-- Base Silhouette -->
+  <polygon points="14,28 22,14 36,12 48,18 52,32 44,44 26,46 16,40" fill="#4a4e55" stroke="#0f172a" stroke-width="1.2"/>
+
+  <!-- Facet 1: Top-Left Highlight -->
+  <polygon points="22,14 36,12 32,26 19,23" fill="#8a8e94"/>
+  <polygon points="22,14 28,13 25,20 19,23" fill="#9aa3ad"/>
+
+  <!-- Facet 2: Top-Right Midtone -->
+  <polygon points="36,12 48,18 42,28 32,26" fill="#6b6f75"/>
+
+  <!-- Facet 3: Left Midtone -->
+  <polygon points="14,28 19,23 32,26 26,38 16,40" fill="#6b6f75"/>
+
+  <!-- Facet 4: Center/Right Shadow -->
+  <polygon points="32,26 42,28 52,32 44,44 36,36 26,38" fill="#4a4e55"/>
+  <polygon points="44,44 26,46 36,36" fill="#3b4252"/>
+
+  <!-- Lichen / Moss patch in crevice -->
+  <path d="M22 25 Q25 22 28 26" stroke="#3f6b35" stroke-width="2" fill="none"/>
+  <circle cx="25" cy="24" r="1.5" fill="#4f7f3f"/>
+</svg>

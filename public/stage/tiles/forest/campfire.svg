@@ -1,0 +1,27 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="64" height="64" viewBox="0 0 64 64">
+  <!-- Shadow -->
+  <circle cx="34" cy="34" r="18" fill="#0f172a" opacity="0.32"/>
+  <!-- Ring of River Stones -->
+  <circle cx="20" cy="20" r="4.5" fill="#6b6f75" stroke="#0f172a" stroke-width="0.8"/>
+  <circle cx="32" cy="16" r="4.5" fill="#8a8e94" stroke="#0f172a" stroke-width="0.8"/>
+  <circle cx="44" cy="20" r="4.5" fill="#6b6f75" stroke="#0f172a" stroke-width="0.8"/>
+  <circle cx="48" cy="32" r="4.5" fill="#4a4e55" stroke="#0f172a" stroke-width="0.8"/>
+  <circle cx="44" cy="44" r="4.5" fill="#4a4e55" stroke="#0f172a" stroke-width="0.8"/>
+  <circle cx="32" cy="48" r="4.5" fill="#4a4e55" stroke="#0f172a" stroke-width="0.8"/>
+  <circle cx="20" cy="44" r="4.5" fill="#6b6f75" stroke="#0f172a" stroke-width="0.8"/>
+  <circle cx="16" cy="32" r="4.5" fill="#8a8e94" stroke="#0f172a" stroke-width="0.8"/>
+
+  <!-- Ash Bed in Center -->
+  <circle cx="32" cy="32" r="13" fill="#2b2f3a"/>
+
+  <!-- Crossed Firewood Logs -->
+  <line x1="22" y1="24" x2="42" y2="40" stroke="#4a3322" stroke-width="3" stroke-linecap="round"/>
+  <line x1="22" y1="40" x2="42" y2="24" stroke="#4a3322" stroke-width="3" stroke-linecap="round"/>
+  <line x1="32" y1="20" x2="32" y2="44" stroke="#5a3d24" stroke-width="3" stroke-linecap="round"/>
+
+  <!-- Vibrant Fire Flames & Glowing Coals -->
+  <circle cx="32" cy="32" r="7" fill="#ea580c"/>
+  <path d="M26 33 Q25 25 31 22 Q34 26 37 23 Q38 29 34 34 Q30 37 26 33 Z" fill="#f97316"/>
+  <path d="M28 32 Q27 26 31 24 Q33 27 35 25 Q36 30 33 33 Q31 35 28 32 Z" fill="#eab308"/>
+  <ellipse cx="32" cy="31" rx="2.5" ry="3" fill="#fef08a"/>
+</svg>

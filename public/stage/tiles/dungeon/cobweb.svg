@@ -1,0 +1,18 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="64" height="64" viewBox="0 0 64 64">
+  <!-- Radial Strands from (0,0) -->
+  <line x1="0" y1="0" x2="46" y2="4" stroke="#9aa3ad" stroke-width="1" opacity="0.6"/>
+  <line x1="0" y1="0" x2="38" y2="16" stroke="#9aa3ad" stroke-width="1" opacity="0.6"/>
+  <line x1="0" y1="0" x2="28" y2="28" stroke="#9aa3ad" stroke-width="1" opacity="0.6"/>
+  <line x1="0" y1="0" x2="16" y2="38" stroke="#9aa3ad" stroke-width="1" opacity="0.6"/>
+  <line x1="0" y1="0" x2="4" y2="46" stroke="#9aa3ad" stroke-width="1" opacity="0.6"/>
+
+  <!-- Concentric Connecting Arcs -->
+  <!-- Arc 1 -->
+  <path d="M12 1 Q9 4 10 5 Q7 8 7 7 Q4 10 1 12" stroke="#cbd5e1" stroke-width="1" fill="none" opacity="0.5"/>
+  <!-- Arc 2 -->
+  <path d="M24 2 Q19 8 20 9 Q15 15 14 14 Q8 20 2 24" stroke="#cbd5e1" stroke-width="1" fill="none" opacity="0.55"/>
+  <!-- Arc 3 -->
+  <path d="M35 3 Q28 12 29 13 Q21 21 21 21 Q12 29 3 35" stroke="#cbd5e1" stroke-width="1" fill="none" opacity="0.55"/>
+  <!-- Arc 4 -->
+  <path d="M46 4 Q38 16 38 16 Q28 28 28 28 Q16 38 4 46" stroke="#cbd5e1" stroke-width="1" fill="none" opacity="0.5"/>
+</svg>

@@ -1,0 +1,40 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="256" height="256" viewBox="0 0 256 256">
+  <defs>
+    <clipPath id="monster_zombie-clip">
+      <circle cx="128" cy="128" r="120"/>
+    </clipPath>
+  </defs>
+  <g clip-path="url(#monster_zombie-clip)">
+    <!-- Background -->
+    <circle cx="128" cy="128" r="120" fill="#1c2920"/>
+    <!-- Tattered Peasant Clothes -->
+    <path d="M52 248 Q64 190 102 186 L128 192 L154 186 Q192 190 204 248 Z" fill="#57534e" stroke="#0f172a" stroke-width="2"/>
+    <!-- Torn Cloth Edges -->
+    <polygon points="98,214 110,248 124,220 138,248 152,216" fill="#44403c"/>
+
+    <!-- Sickly Pale-Green Neck & Head -->
+    <rect x="110" y="146" width="36" height="42" fill="#65a30d"/>
+    <ellipse cx="128" cy="132" rx="38" ry="40" fill="#84cc16" stroke="#0f172a" stroke-width="2"/>
+    <path d="M96 142 Q128 166 160 142" fill="#65a30d" opacity="0.6"/>
+
+    <!-- Stringy Bedraggled Hair -->
+    <path d="M92 110 Q86 64 128 62 Q170 64 164 110 Q152 78 128 80 Q104 78 92 110 Z" fill="#292524" stroke="#0f172a" stroke-width="1.8"/>
+    <path d="M96 82 L90 126 M108 72 L104 116 M152 74 L158 118" stroke="#44403c" stroke-width="2"/>
+
+    <!-- Vacant, Milky Asymmetrical Eyes -->
+    <ellipse cx="112" cy="124" rx="7" ry="7" fill="#fef08a" stroke="#0f172a" stroke-width="1.5"/>
+    <circle cx="112" cy="124" r="2.5" fill="#cbd5e1"/>
+
+    <ellipse cx="144" cy="126" rx="8" ry="8" fill="#f1f5f9" stroke="#0f172a" stroke-width="1.5"/>
+    <circle cx="144" cy="126" r="1.5" fill="#94a3b8"/>
+
+    <!-- Sunken Bruised Eye Sockets -->
+    <path d="M104 132 Q112 136 120 132" stroke="#365314" stroke-width="2" fill="none"/>
+    <path d="M136 136 Q144 140 152 136" stroke="#365314" stroke-width="2" fill="none"/>
+
+    <!-- Slack Sagging Jaw & Dull Expression -->
+    <path d="M114 150 Q128 146 142 152 Q138 168 122 168 Q116 164 114 150 Z" fill="#1c1917" stroke="#0f172a" stroke-width="1.8"/>
+    <polygon points="120,150 122,156 124,150" fill="#fef08a"/>
+    <polygon points="132,152 134,157 136,152" fill="#fef08a"/>
+  </g>
+</svg>

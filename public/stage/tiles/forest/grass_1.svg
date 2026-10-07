@@ -1,0 +1,25 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="64" height="64" viewBox="0 0 64 64">
+  <rect width="64" height="64" fill="#3f6b35"/>
+  <!-- Seamless Base Patches (Wrapping at borders) -->
+  <path d="M0 10 Q14 6 28 12 Q42 18 64 10 V24 Q44 32 24 26 Q12 22 0 28 Z" fill="#365d2d" opacity="0.7"/>
+  <path d="M0 42 Q18 36 36 44 Q50 50 64 42 V58 Q46 64 26 58 Q12 54 0 60 Z" fill="#497c3d" opacity="0.7"/>
+
+  <!-- Grass Blade Tuft 1 (Top Center) -->
+  <path d="M30 18 Q28 12 26 8 Q30 13 32 18" fill="#5e8f48"/>
+  <path d="M32 18 Q33 11 35 7 Q34 13 33 18" fill="#7aa35a"/>
+  <path d="M33 18 Q36 12 39 9 Q36 14 34 18" fill="#5e8f48"/>
+
+  <!-- Grass Blade Tuft 2 (Bottom Left) -->
+  <path d="M14 46 Q12 40 10 36 Q14 41 16 46" fill="#5e8f48"/>
+  <path d="M16 46 Q17 39 19 35 Q18 41 17 46" fill="#7aa35a"/>
+  <path d="M17 46 Q20 40 23 37 Q20 42 18 46" fill="#5e8f48"/>
+
+  <!-- Grass Blade Tuft 3 (Center Right) -->
+  <path d="M48 38 Q46 32 44 28 Q48 33 50 38" fill="#5e8f48"/>
+  <path d="M50 38 Q51 31 53 27 Q52 33 51 38" fill="#7aa35a"/>
+  <path d="M51 38 Q54 32 57 29 Q54 34 52 38" fill="#5e8f48"/>
+
+  <!-- Subtle edge wrap blade at x=0 / x=64 -->
+  <path d="M0 30 Q2 26 3 24 Q1 28 0 30" fill="#7aa35a"/>
+  <path d="M64 30 Q62 26 61 24 Q63 28 64 30" fill="#7aa35a"/>
+</svg>

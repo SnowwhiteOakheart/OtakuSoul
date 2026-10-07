@@ -1,0 +1,52 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="256" height="256" viewBox="0 0 256 256">
+  <defs>
+    <clipPath id="monster_skeleton-clip">
+      <circle cx="128" cy="128" r="120"/>
+    </clipPath>
+  </defs>
+  <g clip-path="url(#monster_skeleton-clip)">
+    <!-- Background -->
+    <circle cx="128" cy="128" r="120" fill="#1e1b2e"/>
+    <!-- Bony Ribcage & Spine Base -->
+    <rect x="124" y="180" width="8" height="68" fill="#cbd5e1" stroke="#0f172a" stroke-width="1.5"/>
+    <!-- Ribs -->
+    <path d="M92 198 Q128 190 164 198" stroke="#cbd5e1" stroke-width="5" fill="none" stroke-linecap="round"/>
+    <path d="M88 214 Q128 206 168 214" stroke="#cbd5e1" stroke-width="5" fill="none" stroke-linecap="round"/>
+    <path d="M92 230 Q128 222 164 230" stroke="#cbd5e1" stroke-width="5" fill="none" stroke-linecap="round"/>
+
+    <!-- Rusty Round Shield Rim (Right Side) -->
+    <ellipse cx="196" cy="216" rx="28" ry="46" fill="#713f12" stroke="#0f172a" stroke-width="2"/>
+    <ellipse cx="196" cy="216" rx="22" ry="40" fill="#475569" stroke="#0f172a" stroke-width="1.5"/>
+    <circle cx="186" cy="216" r="4.5" fill="#9aa3ad" stroke="#0f172a" stroke-width="1"/>
+
+    <!-- Cervical Vertebrae (Neck) -->
+    <rect x="122" y="152" width="12" height="32" rx="2" fill="#cbd5e1" stroke="#0f172a" stroke-width="1.5"/>
+
+    <!-- Humanoid Cranium (Skull) -->
+    <path d="M96 116 Q88 74 128 72 Q168 74 160 116 L154 136 L144 140 L144 154 L112 154 L112 140 L102 136 Z" fill="#e2e8f0" stroke="#0f172a" stroke-width="2"/>
+    <polygon points="112,140 144,140 140,154 116,154" fill="#cbd5e1"/>
+
+    <!-- Dented Rusty Iron Helmet -->
+    <path d="M88 98 Q92 56 128 54 Q164 56 168 98 L162 104 Q128 92 94 104 Z" fill="#52525b" stroke="#0f172a" stroke-width="2"/>
+    <path d="M102 68 Q128 62 154 68" stroke="#713f12" stroke-width="3" fill="none"/>
+    <polygon points="122,86 126,78 132,88 126,90" fill="#78350f"/>
+
+    <!-- Hollow Eye Sockets with Glowing Blue Magic Points -->
+    <ellipse cx="114" cy="116" rx="10" ry="11" fill="#0f172a"/>
+    <circle cx="114" cy="116" r="3.5" fill="#38bdf8"/>
+    <circle cx="114" cy="116" r="1.5" fill="#ffffff"/>
+
+    <ellipse cx="142" cy="116" rx="10" ry="11" fill="#0f172a"/>
+    <circle cx="142" cy="116" r="3.5" fill="#38bdf8"/>
+    <circle cx="142" cy="116" r="1.5" fill="#ffffff"/>
+
+    <!-- Nasal Cavity -->
+    <polygon points="128,124 124,134 132,134" fill="#0f172a"/>
+
+    <!-- Teeth / Jaw Sockets -->
+    <line x1="116" y1="146" x2="140" y2="146" stroke="#0f172a" stroke-width="1.5"/>
+    <line x1="120" y1="140" x2="120" y2="152" stroke="#0f172a" stroke-width="1.2"/>
+    <line x1="128" y1="140" x2="128" y2="152" stroke="#0f172a" stroke-width="1.2"/>
+    <line x1="136" y1="140" x2="136" y2="152" stroke="#0f172a" stroke-width="1.2"/>
+  </g>
+</svg>

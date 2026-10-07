@@ -1,0 +1,50 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="256" height="256" viewBox="0 0 256 256">
+  <defs>
+    <clipPath id="monster_orc-clip">
+      <circle cx="128" cy="128" r="120"/>
+    </clipPath>
+  </defs>
+  <g clip-path="url(#monster_orc-clip)">
+    <!-- Background -->
+    <circle cx="128" cy="128" r="120" fill="#3b1818"/>
+    <!-- Heavy Fur Cloak Shoulders -->
+    <path d="M42 248 Q70 174 128 174 Q186 174 214 248 Z" fill="#292524" stroke="#0f172a" stroke-width="2.5"/>
+    <path d="M56 210 Q84 186 128 188 Q172 186 200 210" stroke="#44403c" stroke-width="6" fill="none"/>
+
+    <!-- Massive Gray-Green Neck & Head -->
+    <rect x="98" y="140" width="60" height="42" fill="#3f6212"/>
+    <ellipse cx="128" cy="126" rx="46" ry="42" fill="#4d7c0f" stroke="#0f172a" stroke-width="2"/>
+
+    <!-- Pointed Small Orc Ears -->
+    <polygon points="82,118 60,104 84,130" fill="#4d7c0f" stroke="#0f172a" stroke-width="1.8"/>
+    <polygon points="174,118 196,104 172,130" fill="#4d7c0f" stroke="#0f172a" stroke-width="1.8"/>
+
+    <!-- Shaved Head with Topknot / Coarse Hair -->
+    <path d="M88 106 Q92 70 128 68 Q164 70 168 106 Q146 94 128 94 Q110 94 88 106 Z" fill="#1c1917" stroke="#0f172a" stroke-width="2"/>
+    <path d="M124 68 Q122 40 136 34 Q134 56 132 68 Z" fill="#1c1917" stroke="#0f172a" stroke-width="1.5"/>
+
+    <!-- Red War Paint Stripes Across Cheeks -->
+    <line x1="88" y1="126" x2="114" y2="134" stroke="#dc2626" stroke-width="4" stroke-linecap="round"/>
+    <line x1="90" y1="136" x2="112" y2="144" stroke="#dc2626" stroke-width="3" stroke-linecap="round"/>
+    <line x1="168" y1="126" x2="142" y2="134" stroke="#dc2626" stroke-width="4" stroke-linecap="round"/>
+    <line x1="166" y1="136" x2="144" y2="144" stroke="#dc2626" stroke-width="3" stroke-linecap="round"/>
+
+    <!-- Heavy Brow & Fierce Eyes -->
+    <path d="M96 112 Q112 106 124 114" stroke="#1c1917" stroke-width="4" fill="none"/>
+    <path d="M132 114 Q144 106 160 112" stroke="#1c1917" stroke-width="4" fill="none"/>
+    <ellipse cx="110" cy="120" rx="5" ry="4" fill="#fbbf24" stroke="#0f172a" stroke-width="1.2"/>
+    <circle cx="110" cy="120" r="2.5" fill="#7f1d1d"/>
+    <ellipse cx="146" cy="120" rx="5" ry="4" fill="#fbbf24" stroke="#0f172a" stroke-width="1.2"/>
+    <circle cx="146" cy="120" r="2.5" fill="#7f1d1d"/>
+
+    <!-- Flat Pug Nose with Ring -->
+    <ellipse cx="128" cy="132" rx="10" ry="7" fill="#3f6212" stroke="#0f172a" stroke-width="1.5"/>
+    <circle cx="128" cy="140" r="5" fill="none" stroke="#eab308" stroke-width="2"/>
+
+    <!-- Underbite Jaw & Protruding Boar-Like Tusks -->
+    <path d="M98 144 Q128 152 158 144 L152 168 Q128 178 104 168 Z" fill="#3f6212" stroke="#0f172a" stroke-width="2"/>
+    <!-- Big Tusks Emerging from Lower Jaw -->
+    <polygon points="106,160 114,134 118,160" fill="#fef08a" stroke="#0f172a" stroke-width="1.5"/>
+    <polygon points="150,160 142,134 138,160" fill="#fef08a" stroke="#0f172a" stroke-width="1.5"/>
+  </g>
+</svg>

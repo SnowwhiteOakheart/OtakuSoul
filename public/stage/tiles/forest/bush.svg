@@ -1,0 +1,25 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="64" height="64" viewBox="0 0 64 64">
+  <!-- Shadow -->
+  <ellipse cx="36" cy="36" rx="20" ry="17" fill="#0f172a" opacity="0.35"/>
+  <!-- Shrub Cluster: 3 Overlapping Spheres -->
+  <!-- Clump 1 (Right / Back) -->
+  <circle cx="38" cy="32" r="14" fill="#24401f" stroke="#0f172a" stroke-width="1"/>
+  <circle cx="36" cy="30" r="11" fill="#2f5a2a"/>
+
+  <!-- Clump 2 (Left / Back) -->
+  <circle cx="24" cy="34" r="13" fill="#24401f" stroke="#0f172a" stroke-width="1"/>
+  <circle cx="23" cy="32" r="10" fill="#2f5a2a"/>
+
+  <!-- Clump 3 (Top / Front Center) -->
+  <circle cx="29" cy="24" r="14" fill="#2f5a2a" stroke="#0f172a" stroke-width="1"/>
+  <circle cx="28" cy="22" r="11" fill="#3d7a34"/>
+  <circle cx="26" cy="19" r="7" fill="#4f7f3f"/>
+  <circle cx="24" cy="17" r="4" fill="#5e8f48"/>
+
+  <!-- Forest Berries -->
+  <circle cx="20" cy="26" r="1.8" fill="#dc2626" stroke="#0f172a" stroke-width="0.6"/>
+  <circle cx="23" cy="29" r="1.5" fill="#dc2626" stroke="#0f172a" stroke-width="0.6"/>
+  <circle cx="36" cy="24" r="1.8" fill="#dc2626" stroke="#0f172a" stroke-width="0.6"/>
+  <circle cx="33" cy="36" r="1.6" fill="#dc2626" stroke="#0f172a" stroke-width="0.6"/>
+  <circle cx="42" cy="31" r="1.6" fill="#dc2626" stroke="#0f172a" stroke-width="0.6"/>
+</svg>

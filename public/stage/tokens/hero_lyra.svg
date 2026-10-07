@@ -1,0 +1,62 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="256" height="256" viewBox="0 0 256 256">
+  <defs>
+    <clipPath id="hero_lyra-clip">
+      <circle cx="128" cy="128" r="120"/>
+    </clipPath>
+  </defs>
+  <g clip-path="url(#hero_lyra-clip)">
+    <!-- Background -->
+    <circle cx="128" cy="128" r="120" fill="#0f172a"/>
+    <!-- Soft Magical Glow in Background -->
+    <circle cx="128" cy="110" r="85" fill="#1e3a8a" opacity="0.35"/>
+    <circle cx="192" cy="170" r="30" fill="#38bdf8" opacity="0.25"/>
+
+    <!-- Deep Blue Robe with Gold Trim -->
+    <path d="M52 248 Q64 186 100 178 L128 190 L156 178 Q192 186 204 248 Z" fill="#1e3a8a" stroke="#0f172a" stroke-width="2"/>
+    <path d="M96 182 Q128 194 160 182" stroke="#e0c25a" stroke-width="3" fill="none"/>
+    <line x1="128" y1="190" x2="128" y2="248" stroke="#e0c25a" stroke-width="2"/>
+    <!-- Embroidered Gold Stars on Robe -->
+    <polygon points="84,216 86,210 88,216 94,218 88,220 86,226 84,220 78,218" fill="#e0c25a"/>
+    <polygon points="172,216 174,210 176,216 182,218 176,220 174,226 172,220 166,218" fill="#e0c25a"/>
+
+    <!-- Long Flowing Silver-Blue Hair (Back Layer) -->
+    <path d="M64 96 Q52 160 60 230 Q80 210 88 160 L168 160 Q176 210 196 230 Q204 160 192 96 Z" fill="#93c5fd" stroke="#0f172a" stroke-width="2"/>
+
+    <!-- Slender Neck & Elegant Elf Face -->
+    <rect x="114" y="140" width="28" height="42" fill="#fed7aa"/>
+    <polygon points="128,172 98,126 98,96 158,96 158,126" fill="#ffedd5" stroke="#0f172a" stroke-width="2"/>
+
+    <!-- Pointed Elf Ears -->
+    <polygon points="98,110 54,92 96,124" fill="#ffedd5" stroke="#0f172a" stroke-width="1.8"/>
+    <polygon points="94,110 68,98 94,118" fill="#fbcfe8" opacity="0.6"/>
+    <polygon points="158,110 202,92 160,124" fill="#ffedd5" stroke="#0f172a" stroke-width="1.8"/>
+    <polygon points="162,110 188,98 162,118" fill="#fbcfe8" opacity="0.6"/>
+
+    <!-- Silver-Blue Front Hair & Bangs -->
+    <path d="M84 94 Q128 62 172 94 Q162 140 152 146 Q138 106 128 116 Q118 106 104 146 Q94 140 84 94 Z" fill="#bfdbfe" stroke="#0f172a" stroke-width="2"/>
+    <path d="M106 90 Q128 72 150 90" stroke="#ffffff" stroke-width="2" fill="none"/>
+
+    <!-- Delicate Slender Violet Eyes -->
+    <ellipse cx="112" cy="122" rx="7" ry="4" fill="#ffffff" stroke="#0f172a" stroke-width="1.2"/>
+    <circle cx="112" cy="122" r="3.5" fill="#8b5cf6"/>
+    <circle cx="111" cy="121" r="1.2" fill="#ffffff"/>
+    <ellipse cx="144" cy="122" rx="7" ry="4" fill="#ffffff" stroke="#0f172a" stroke-width="1.2"/>
+    <circle cx="144" cy="122" r="3.5" fill="#8b5cf6"/>
+    <circle cx="143" cy="121" r="1.2" fill="#ffffff"/>
+
+    <path d="M105 114 Q113 110 120 115" stroke="#6366f1" stroke-width="1.8" fill="none"/>
+    <path d="M136 115 Q143 110 151 114" stroke="#6366f1" stroke-width="1.8" fill="none"/>
+
+    <!-- Small Elf Nose & Soft Lip -->
+    <path d="M127 126 L125 136 L129 136" stroke="#f43f5e" stroke-width="1.2" fill="none"/>
+    <path d="M122 148 Q128 152 134 148" stroke="#e11d48" stroke-width="1.8" fill="none" stroke-linecap="round"/>
+
+    <!-- Floating Glowing Star above Hand (Bottom Right) -->
+    <!-- Hand -->
+    <path d="M176 248 Q182 208 194 200 Q202 206 198 248 Z" fill="#ffedd5" stroke="#0f172a" stroke-width="1.8"/>
+    <!-- Floating Star -->
+    <circle cx="194" cy="174" r="14" fill="#67e8f9" opacity="0.4"/>
+    <polygon points="194,158 198,170 210,174 198,178 194,190 190,178 178,174 190,170" fill="#fef08a" stroke="#e0c25a" stroke-width="1"/>
+    <circle cx="194" cy="174" r="3.5" fill="#ffffff"/>
+  </g>
+</svg>

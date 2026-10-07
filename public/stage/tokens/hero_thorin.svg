@@ -1,0 +1,67 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="256" height="256" viewBox="0 0 256 256">
+  <defs>
+    <clipPath id="hero_thorin-clip">
+      <circle cx="128" cy="128" r="120"/>
+    </clipPath>
+  </defs>
+  <g clip-path="url(#hero_thorin-clip)">
+    <!-- Background -->
+    <circle cx="128" cy="128" r="120" fill="#451a1a"/>
+    <!-- Torso: Chainmail & Heavy Steel Armor -->
+    <path d="M48 248 L64 192 L88 176 L168 176 L192 192 L208 248 Z" fill="#475569" stroke="#0f172a" stroke-width="2"/>
+    <!-- Chainmail Texture Pattern -->
+    <path d="M96 188 L160 188 M92 200 L164 200 M96 212 L160 212 M100 224 L156 224" stroke="#334155" stroke-width="2" stroke-dasharray="4,4"/>
+    
+    <!-- Steel Pauldrons (Left & Right) -->
+    <path d="M44 248 L58 190 Q80 180 96 196 L76 248 Z" fill="#64748b" stroke="#0f172a" stroke-width="2"/>
+    <path d="M50 196 Q70 188 88 200" stroke="#94a3b8" stroke-width="2" fill="none"/>
+    <path d="M212 248 L198 190 Q176 180 160 196 L180 248 Z" fill="#475569" stroke="#0f172a" stroke-width="2"/>
+    
+    <!-- Dwarf Broad Neck & Head Base -->
+    <rect x="100" y="140" width="56" height="40" fill="#d6a383"/>
+    <ellipse cx="128" cy="130" rx="44" ry="42" fill="#f1c5a5" stroke="#0f172a" stroke-width="2"/>
+
+    <!-- Rugged Eyebrows & Eyes -->
+    <path d="M96 112 Q108 106 120 114" stroke="#b45309" stroke-width="5" stroke-linecap="round" fill="none"/>
+    <path d="M136 114 Q148 106 160 112" stroke="#b45309" stroke-width="5" stroke-linecap="round" fill="none"/>
+    <circle cx="110" cy="122" r="4.5" fill="#0f172a"/>
+    <circle cx="146" cy="122" r="4.5" fill="#0f172a"/>
+    <circle cx="108" cy="120" r="1.5" fill="#ffffff"/>
+    <circle cx="144" cy="120" r="1.5" fill="#ffffff"/>
+
+    <!-- Broad Nose -->
+    <path d="M124 116 L120 134 Q128 138 136 134 L132 116 Z" fill="#e2a98a" stroke="#0f172a" stroke-width="1.5"/>
+
+    <!-- Steel Helmet (Spangenhelm with Noseguard) -->
+    <path d="M78 116 Q80 44 128 42 Q176 44 178 116 Q150 102 128 102 Q106 102 78 116 Z" fill="#64748b" stroke="#0f172a" stroke-width="2.5"/>
+    <path d="M84 106 Q128 52 172 106" stroke="#94a3b8" stroke-width="3" fill="none"/>
+    <!-- Center Brow Ridge & Crest -->
+    <path d="M124 42 H132 V106 H124 Z" fill="#94a3b8" stroke="#0f172a" stroke-width="1.5"/>
+    <!-- Nasal Guard -->
+    <path d="M122 102 H134 L131 130 H125 Z" fill="#94a3b8" stroke="#0f172a" stroke-width="1.5"/>
+    <!-- Helmet Rivets -->
+    <circle cx="92" cy="106" r="2.5" fill="#cbd5e1" stroke="#0f172a" stroke-width="1"/>
+    <circle cx="108" cy="104" r="2.5" fill="#cbd5e1" stroke="#0f172a" stroke-width="1"/>
+    <circle cx="148" cy="104" r="2.5" fill="#cbd5e1" stroke="#0f172a" stroke-width="1"/>
+    <circle cx="164" cy="106" r="2.5" fill="#cbd5e1" stroke="#0f172a" stroke-width="1"/>
+
+    <!-- Bushy Copper-Red Mustache & Two Braided Beard Strands -->
+    <!-- Heavy Mustache -->
+    <path d="M96 142 Q128 136 128 148 Q128 136 160 142 Q144 162 128 156 Q112 162 96 142 Z" fill="#d97706" stroke="#0f172a" stroke-width="2"/>
+    
+    <!-- Full Beard Base -->
+    <path d="M84 138 Q82 170 94 200 L162 200 Q174 170 172 138 Q150 156 128 156 Q106 156 84 138 Z" fill="#b45309" stroke="#0f172a" stroke-width="2"/>
+    
+    <!-- Left Braid -->
+    <path d="M96 196 Q92 224 100 248 Q112 248 116 224 Q114 196 112 196 Z" fill="#d97706" stroke="#0f172a" stroke-width="2"/>
+    <!-- Metal Rings on Left Braid -->
+    <rect x="94" y="214" width="20" height="7" rx="2" fill="#9aa3ad" stroke="#0f172a" stroke-width="1.2"/>
+    <rect x="96" y="238" width="16" height="6" rx="2" fill="#c9a227" stroke="#0f172a" stroke-width="1.2"/>
+
+    <!-- Right Braid -->
+    <path d="M144 196 Q142 224 140 248 Q152 248 160 224 Q162 196 160 196 Z" fill="#d97706" stroke="#0f172a" stroke-width="2"/>
+    <!-- Metal Rings on Right Braid -->
+    <rect x="142" y="214" width="20" height="7" rx="2" fill="#9aa3ad" stroke="#0f172a" stroke-width="1.2"/>
+    <rect x="144" y="238" width="16" height="6" rx="2" fill="#c9a227" stroke="#0f172a" stroke-width="1.2"/>
+  </g>
+</svg>

@@ -1,0 +1,65 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="256" height="256" viewBox="0 0 256 256">
+  <defs>
+    <clipPath id="hero_finn-clip">
+      <circle cx="128" cy="128" r="120"/>
+    </clipPath>
+  </defs>
+  <g clip-path="url(#hero_finn-clip)">
+    <!-- Background -->
+    <circle cx="128" cy="128" r="120" fill="#143a1f"/>
+    <!-- Leather Tunic & Shoulder Strap -->
+    <path d="M52 248 Q68 186 104 180 L128 186 L152 180 Q188 186 204 248 Z" fill="#3f6b35" stroke="#0f172a" stroke-width="2"/>
+    <!-- Leather Cross-Belt -->
+    <polygon points="84,248 98,248 168,184 154,184" fill="#6b4a2f" stroke="#0f172a" stroke-width="1.5"/>
+    <circle cx="126" cy="216" r="4.5" fill="#c9a227" stroke="#0f172a" stroke-width="1"/>
+
+    <!-- Dagger Hilt Over Shoulder (Left) -->
+    <rect x="68" y="146" width="10" height="34" rx="2" transform="rotate(-25 73 163)" fill="#4a3322" stroke="#0f172a" stroke-width="1.5"/>
+    <rect x="60" y="174" width="26" height="6" rx="2" transform="rotate(-25 73 177)" fill="#9aa3ad" stroke="#0f172a" stroke-width="1.5"/>
+    <circle cx="65" cy="148" r="4.5" fill="#c9a227" stroke="#0f172a" stroke-width="1.2"/>
+
+    <!-- Halfling Youthful Face -->
+    <rect x="114" y="144" width="28" height="32" fill="#fed7aa"/>
+    <circle cx="128" cy="132" r="36" fill="#fcd34d" opacity="0.15"/>
+    <ellipse cx="128" cy="132" rx="36" ry="34" fill="#fed7aa" stroke="#0f172a" stroke-width="2"/>
+
+    <!-- Big Mischievous Halfling Ears -->
+    <ellipse cx="88" cy="132" rx="10" ry="14" fill="#fed7aa" stroke="#0f172a" stroke-width="1.8"/>
+    <ellipse cx="90" cy="132" rx="5" ry="8" fill="#fbcfe8" opacity="0.6"/>
+    <ellipse cx="168" cy="132" rx="10" ry="14" fill="#fed7aa" stroke="#0f172a" stroke-width="1.8"/>
+    <ellipse cx="166" cy="132" rx="5" ry="8" fill="#fbcfe8" opacity="0.6"/>
+
+    <!-- Green Leather Hood Pushed Back Over Head -->
+    <path d="M78 126 Q74 64 128 58 Q182 64 178 126 Q194 154 184 178 L152 180 Q128 174 104 180 L72 178 Q62 154 78 126 Z" fill="#2f5a2a" stroke="#0f172a" stroke-width="2.2"/>
+    <path d="M84 76 Q128 66 172 76" stroke="#4f7f3f" stroke-width="2.5" fill="none"/>
+
+    <!-- Messy Brown Curls Framing Face -->
+    <circle cx="104" cy="98" r="10" fill="#5a3d24"/>
+    <circle cx="120" cy="92" r="11" fill="#78350f"/>
+    <circle cx="138" cy="92" r="11" fill="#5a3d24"/>
+    <circle cx="152" cy="100" r="10" fill="#78350f"/>
+    <circle cx="94" cy="112" r="8" fill="#78350f"/>
+    <circle cx="162" cy="112" r="8" fill="#5a3d24"/>
+
+    <!-- Freckles & Mischievous Grin -->
+    <!-- Eyes -->
+    <circle cx="112" cy="126" r="4.5" fill="#0f172a"/>
+    <circle cx="144" cy="126" r="4.5" fill="#0f172a"/>
+    <circle cx="110" cy="124" r="1.5" fill="#ffffff"/>
+    <circle cx="142" cy="124" r="1.5" fill="#ffffff"/>
+    <path d="M106 118 Q114 114 120 119" stroke="#5a3d24" stroke-width="2" fill="none"/>
+    <path d="M136 119 Q142 114 150 118" stroke="#5a3d24" stroke-width="2" fill="none"/>
+
+    <!-- Freckles -->
+    <circle cx="104" cy="134" r="1.2" fill="#b45309"/>
+    <circle cx="108" cy="136" r="1.2" fill="#b45309"/>
+    <circle cx="148" cy="136" r="1.2" fill="#b45309"/>
+    <circle cx="152" cy="134" r="1.2" fill="#b45309"/>
+
+    <!-- Small Button Nose -->
+    <circle cx="128" cy="132" r="3" fill="#fca5a5" stroke="#0f172a" stroke-width="1"/>
+
+    <!-- Mischievous Crooked Smile -->
+    <path d="M116 146 Q130 156 144 144" stroke="#0f172a" stroke-width="2.5" fill="none" stroke-linecap="round"/>
+  </g>
+</svg>

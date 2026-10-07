@@ -1,0 +1,19 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="64" height="64" viewBox="0 0 64 64">
+  <!-- Shadow -->
+  <ellipse cx="28" cy="30" rx="6" ry="6" fill="#0f172a" opacity="0.25"/>
+  <path d="M36 24 L48 38" stroke="#0f172a" stroke-width="4" opacity="0.25"/>
+  <!-- Femur 1 (Long Bone) -->
+  <path d="M34 22 C33 21 33 24 35 24 L45 36 C47 38 49 37 48 35 Z" fill="#9aa3ad" stroke="#0f172a" stroke-width="0.8"/>
+  <!-- Rib / Bone 2 -->
+  <path d="M22 40 Q28 44 36 42" stroke="#9aa3ad" stroke-width="2" fill="none" stroke-linecap="round"/>
+  <path d="M22 40 Q28 44 36 42" stroke="#cbd5e1" stroke-width="1" fill="none" stroke-linecap="round"/>
+  <!-- Skull -->
+  <ellipse cx="26" cy="27" rx="6" ry="6.5" fill="#cbd5e1" stroke="#0f172a" stroke-width="1"/>
+  <rect x="23.5" y="30.5" width="5" height="3.5" rx="1" fill="#cbd5e1" stroke="#0f172a" stroke-width="0.8"/>
+  <!-- Eye Sockets & Nose -->
+  <circle cx="24" cy="27" r="1.5" fill="#1e222b"/>
+  <circle cx="28" cy="27" r="1.5" fill="#1e222b"/>
+  <polygon points="26,29 25,30.5 27,30.5" fill="#1e222b"/>
+  <line x1="25" y1="32.5" x2="25" y2="34" stroke="#1e222b" stroke-width="0.6"/>
+  <line x1="27" y1="32.5" x2="27" y2="34" stroke="#1e222b" stroke-width="0.6"/>
+</svg>

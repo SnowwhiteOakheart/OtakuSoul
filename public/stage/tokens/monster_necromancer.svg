@@ -1,0 +1,58 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="256" height="256" viewBox="0 0 256 256">
+  <defs>
+    <clipPath id="monster_necromancer-clip">
+      <circle cx="128" cy="128" r="120"/>
+    </clipPath>
+  </defs>
+  <g clip-path="url(#monster_necromancer-clip)">
+    <!-- Background -->
+    <circle cx="128" cy="128" r="120" fill="#1f0c3d"/>
+    <!-- Eerie Green Necrotic Aura Glow in Background -->
+    <circle cx="128" cy="128" r="80" fill="#22c55e" opacity="0.2"/>
+    <circle cx="196" cy="180" r="34" fill="#22c55e" opacity="0.3"/>
+
+    <!-- Hooded Robe in Midnight Black & Deep Violet -->
+    <path d="M48 248 Q64 184 102 180 L128 186 L154 180 Q192 184 208 248 Z" fill="#18181b" stroke="#0f172a" stroke-width="2"/>
+    <path d="M96 182 L128 188 L160 182 V248 H96 Z" fill="#581c87" stroke="#0f172a" stroke-width="1.8"/>
+
+    <!-- Bone Necklace / Skull Talisman -->
+    <path d="M102 182 Q128 206 154 182" stroke="#cbd5e1" stroke-width="2.5" fill="none"/>
+    <circle cx="112" cy="192" r="3" fill="#cbd5e1" stroke="#0f172a" stroke-width="0.8"/>
+    <circle cx="144" cy="192" r="3" fill="#cbd5e1" stroke="#0f172a" stroke-width="0.8"/>
+    <!-- Center Carved Skull Pendant -->
+    <ellipse cx="128" cy="204" rx="6" ry="7" fill="#f1f5f9" stroke="#0f172a" stroke-width="1"/>
+    <circle cx="126" cy="203" r="1.2" fill="#0f172a"/>
+    <circle cx="130" cy="203" r="1.2" fill="#0f172a"/>
+
+    <!-- Deep Hood Casting Shadow Over Face -->
+    <path d="M72 134 Q68 52 128 46 Q188 52 184 134 Q196 172 178 184 L154 180 Q128 174 102 180 L78 184 Q60 172 72 134 Z" fill="#2e1065" stroke="#0f172a" stroke-width="2.5"/>
+    <path d="M84 64 Q128 54 172 64" stroke="#7e22ce" stroke-width="3" fill="none"/>
+
+    <!-- Gaunt Pale Face Emerging from Hood Shadow -->
+    <ellipse cx="128" cy="126" rx="32" ry="34" fill="#cbd5e1" stroke="#0f172a" stroke-width="2"/>
+    <!-- Deep Hood Shadow on Upper Face -->
+    <path d="M96 116 Q128 134 160 116 L154 94 Q128 88 102 94 Z" fill="#18181b" opacity="0.75"/>
+
+    <!-- Glowing Cold Eyes Under Shadow -->
+    <ellipse cx="114" cy="120" rx="5" ry="3.5" fill="#a7f3d0"/>
+    <circle cx="114" cy="120" r="2.2" fill="#22c55e"/>
+    <circle cx="114" cy="120" r="0.8" fill="#ffffff"/>
+
+    <ellipse cx="142" cy="120" rx="5" ry="3.5" fill="#a7f3d0"/>
+    <circle cx="142" cy="120" r="2.2" fill="#22c55e"/>
+    <circle cx="142" cy="120" r="0.8" fill="#ffffff"/>
+
+    <!-- Sunken Cruel Mouth -->
+    <path d="M118 146 Q128 142 138 146" stroke="#0f172a" stroke-width="2" fill="none" stroke-linecap="round"/>
+
+    <!-- Hand Conjuring Green Necrotic Fire Sphere (Right Side) -->
+    <!-- Gaunt Skeletal Hand -->
+    <path d="M176 248 Q182 206 196 196 Q204 204 198 248 Z" fill="#cbd5e1" stroke="#0f172a" stroke-width="1.8"/>
+    <!-- Swirling Necrotic Fire Orb -->
+    <circle cx="196" cy="168" r="18" fill="#22c55e" opacity="0.4"/>
+    <circle cx="196" cy="168" r="12" fill="#4ade80"/>
+    <circle cx="196" cy="168" r="6" fill="#bbf7d0"/>
+    <!-- Necro Flames -->
+    <path d="M188 168 Q184 154 196 148 Q202 158 206 152 Q208 164 196 176 Z" fill="#86efac"/>
+  </g>
+</svg>

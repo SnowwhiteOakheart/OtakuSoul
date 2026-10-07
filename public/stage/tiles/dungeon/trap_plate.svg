@@ -1,0 +1,17 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="64" height="64" viewBox="0 0 64 64">
+  <!-- Outer Gap Groove -->
+  <rect x="13" y="13" width="38" height="38" rx="1" fill="#1e222b" stroke="#0f172a" stroke-width="1"/>
+  <!-- Slightly Depressed Pressure Plate -->
+  <rect x="15" y="15" width="34" height="34" rx="1" fill="#3b4252" stroke="#0f172a" stroke-width="1"/>
+  <!-- Inset Bevels -->
+  <path d="M16 16 H48 V18 H18 V48 H16 Z" fill="#2b2f3a" opacity="0.8"/>
+  <path d="M47 18 H48 V48 H18 V47 H47 Z" fill="#5e6779" opacity="0.7"/>
+  <!-- Plate Surface Details / Mechanical Notch -->
+  <rect x="22" y="22" width="20" height="20" fill="#4c566a" stroke="#0f172a" stroke-width="0.8"/>
+  <circle cx="32" cy="32" r="3" fill="#2b2f3a" stroke="#0f172a" stroke-width="0.8"/>
+  <circle cx="32" cy="32" r="1" fill="#1e222b"/>
+  <line x1="18" y1="32" x2="22" y2="32" stroke="#1e222b" stroke-width="1"/>
+  <line x1="42" y1="32" x2="46" y2="32" stroke="#1e222b" stroke-width="1"/>
+  <line x1="32" y1="18" x2="32" y2="22" stroke="#1e222b" stroke-width="1"/>
+  <line x1="32" y1="42" x2="32" y2="46" stroke="#1e222b" stroke-width="1"/>
+</svg>

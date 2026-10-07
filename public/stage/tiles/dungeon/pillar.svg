@@ -1,0 +1,16 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="64" height="64" viewBox="0 0 64 64">
+  <!-- Cast Shadow -->
+  <ellipse cx="36" cy="36" rx="22" ry="20" fill="#0f172a" opacity="0.38"/>
+  <!-- Pillar Base Ring -->
+  <circle cx="28" cy="28" r="21" fill="#2b2f3a" stroke="#0f172a" stroke-width="1"/>
+  <circle cx="28" cy="28" r="18" fill="#3b4252" stroke="#0f172a" stroke-width="1"/>
+  <!-- Bevels -->
+  <path d="M15 15 A18 18 0 0 1 41 15" stroke="#5e6779" stroke-width="2" fill="none"/>
+  <path d="M41 41 A18 18 0 0 1 15 41" stroke="#1e222b" stroke-width="2" fill="none"/>
+  <!-- Top Surface Capital -->
+  <circle cx="28" cy="28" r="14" fill="#4c566a" stroke="#0f172a" stroke-width="1"/>
+  <path d="M18 18 A14 14 0 0 1 38 18" stroke="#5e6779" stroke-width="2" fill="none"/>
+  <!-- Center Carving / Texture -->
+  <circle cx="28" cy="28" r="7" fill="#3b4252" stroke="#0f172a" stroke-width="1"/>
+  <circle cx="28" cy="28" r="2" fill="#5e6779"/>
+</svg>

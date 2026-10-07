@@ -67,29 +67,29 @@ Objekten (siehe Spalte „Typ“).
 
 | ☐ | Datei | Typ | Beschreibung |
 |---|---|---|---|
-| [ ] | `floor_stone_1.svg` | Boden | Grob behauene, graue Steinplatten (2×2 große Platten pro Kachel), feine dunkle Fugen. Nahtlos. |
-| [ ] | `floor_stone_2.svg` | Boden | Wie 1, andere Plattenaufteilung (1 große + 2 kleine), ein feiner Riss. Nahtlos und mit 1 kombinierbar. |
-| [ ] | `floor_stone_3.svg` | Boden | Wie 1, mit etwas Moos in einer Fuge und ein paar Steinkrümeln. Nahtlos, mit 1/2 kombinierbar. |
-| [ ] | `wall_stone.svg` | Boden (blockiert) | Wand von oben: dicht gemauerte, dunklere Steinblöcke mit hellerer Oberkante links oben. Nahtlos in alle Richtungen, deutlich dunkler/massiver als der Boden. |
-| [ ] | `door_closed.svg` | Objekt | Geschlossene Holztür mit zwei Eisenbändern, quer über die Kachel (ca. 64×20, mittig), links und rechts kurze Steinpfosten. |
-| [ ] | `door_open.svg` | Objekt | Dieselbe Tür, geöffnet: Türblatt um 90° aufgeklappt am linken Pfosten, Durchgang frei. |
-| [ ] | `door_locked.svg` | Objekt | Wie `door_closed`, zusätzlich großes Vorhängeschloss in Gold/Metall mittig. |
-| [ ] | `rubble.svg` | Objekt (schwieriges Gelände) | Lose Steinbrocken und Geröll, verteilt über ca. 70 % der Fläche. |
-| [ ] | `water_shallow.svg` | Boden (schwieriges Gelände) | Flache, dunkle Pfütze/Wasserfläche über Stein, leichte Glanzlinien. Nahtlos. |
-| [ ] | `pit.svg` | Boden (blockiert) | Tiefe Grube/Abgrund: schwarzes Loch mit gebrochener Steinkante, fast die ganze Kachel. |
-| [ ] | `pillar.svg` | Objekt (blockiert) | Runde Steinsäule von oben (Kreis, Ø ca. 48), Schattenwurf nach rechts unten. |
-| [ ] | `stairs_down.svg` | Objekt | Treppe nach unten: Stufen werden nach oben hin dunkler (führt in die Tiefe), Pfeilform durch Stufen erkennbar. |
-| [ ] | `stairs_up.svg` | Objekt | Treppe nach oben: Stufen werden nach oben heller. |
-| [ ] | `chest_closed.svg` | Objekt | Holztruhe mit Metallbeschlägen, geschlossen, von oben (ca. 40×28). |
-| [ ] | `chest_open.svg` | Objekt | Dieselbe Truhe offen, goldener Schimmer im Inneren. |
-| [ ] | `sarcophagus.svg` | Objekt (blockiert) | Steinsarkophag von oben, schlichte Ornamente, längs (ca. 30×58). |
-| [ ] | `altar.svg` | Objekt (blockiert) | Steinaltar mit zwei Kerzen und einer Schale. |
-| [ ] | `altar_dark.svg` | Objekt (blockiert) | Wie `altar`, aber schwarzer Stein, violett leuchtende Runen-Linien (abstrakte Muster, **keine** Schriftzeichen) und grünliches Licht in der Schale. Bossraum Akt 3. |
-| [ ] | `bones.svg` | Objekt (Deko) | Ein paar verstreute Knochen und ein Schädel, klein, nicht eklig. |
-| [ ] | `trap_plate.svg` | Objekt | Druckplatte im Boden: quadratische, leicht abgesenkte Steinplatte mit feinem Spalt rundum (nach Entdeckung sichtbar). |
-| [ ] | `lever.svg` | Objekt | Wandhebel mit Holzgriff auf kleiner Metallplatte. |
-| [ ] | `brazier.svg` | Objekt (blockiert) | Eisernes Feuerbecken mit Glut und Flammen (orange/gelb), runde Form. |
-| [ ] | `cobweb.svg` | Objekt (Deko) | Spinnennetz in einer Ecke (oben links), halbtransparent hell. |
+| [x] | `floor_stone_1.svg` | Boden | Grob behauene, graue Steinplatten (2×2 große Platten pro Kachel), feine dunkle Fugen. Nahtlos. |
+| [x] | `floor_stone_2.svg` | Boden | Wie 1, andere Plattenaufteilung (1 große + 2 kleine), ein feiner Riss. Nahtlos und mit 1 kombinierbar. |
+| [x] | `floor_stone_3.svg` | Boden | Wie 1, mit etwas Moos in einer Fuge und ein paar Steinkrümeln. Nahtlos, mit 1/2 kombinierbar. |
+| [x] | `wall_stone.svg` | Boden (blockiert) | Wand von oben: dicht gemauerte, dunklere Steinblöcke mit hellerer Oberkante links oben. Nahtlos in alle Richtungen, deutlich dunkler/massiver als der Boden. |
+| [x] | `door_closed.svg` | Objekt | Geschlossene Holztür mit zwei Eisenbändern, quer über die Kachel (ca. 64×20, mittig), links und rechts kurze Steinpfosten. |
+| [x] | `door_open.svg` | Objekt | Dieselbe Tür, geöffnet: Türblatt um 90° aufgeklappt am linken Pfosten, Durchgang frei. |
+| [x] | `door_locked.svg` | Objekt | Wie `door_closed`, zusätzlich großes Vorhängeschloss in Gold/Metall mittig. |
+| [x] | `rubble.svg` | Objekt (schwieriges Gelände) | Lose Steinbrocken und Geröll, verteilt über ca. 70 % der Fläche. |
+| [x] | `water_shallow.svg` | Boden (schwieriges Gelände) | Flache, dunkle Pfütze/Wasserfläche über Stein, leichte Glanzlinien. Nahtlos. |
+| [x] | `pit.svg` | Boden (blockiert) | Tiefe Grube/Abgrund: schwarzes Loch mit gebrochener Steinkante, fast die ganze Kachel. |
+| [x] | `pillar.svg` | Objekt (blockiert) | Runde Steinsäule von oben (Kreis, Ø ca. 48), Schattenwurf nach rechts unten. |
+| [x] | `stairs_down.svg` | Objekt | Treppe nach unten: Stufen werden nach oben hin dunkler (führt in die Tiefe), Pfeilform durch Stufen erkennbar. |
+| [x] | `stairs_up.svg` | Objekt | Treppe nach oben: Stufen werden nach oben heller. |
+| [x] | `chest_closed.svg` | Objekt | Holztruhe mit Metallbeschlägen, geschlossen, von oben (ca. 40×28). |
+| [x] | `chest_open.svg` | Objekt | Dieselbe Truhe offen, goldener Schimmer im Inneren. |
+| [x] | `sarcophagus.svg` | Objekt (blockiert) | Steinsarkophag von oben, schlichte Ornamente, längs (ca. 30×58). |
+| [x] | `altar.svg` | Objekt (blockiert) | Steinaltar mit zwei Kerzen und einer Schale. |
+| [x] | `altar_dark.svg` | Objekt (blockiert) | Wie `altar`, aber schwarzer Stein, violett leuchtende Runen-Linien (abstrakte Muster, **keine** Schriftzeichen) und grünliches Licht in der Schale. Bossraum Akt 3. |
+| [x] | `bones.svg` | Objekt (Deko) | Ein paar verstreute Knochen und ein Schädel, klein, nicht eklig. |
+| [x] | `trap_plate.svg` | Objekt | Druckplatte im Boden: quadratische, leicht abgesenkte Steinplatte mit feinem Spalt rundum (nach Entdeckung sichtbar). |
+| [x] | `lever.svg` | Objekt | Wandhebel mit Holzgriff auf kleiner Metallplatte. |
+| [x] | `brazier.svg` | Objekt (blockiert) | Eisernes Feuerbecken mit Glut und Flammen (orange/gelb), runde Form. |
+| [x] | `cobweb.svg` | Objekt (Deko) | Spinnennetz in einer Ecke (oben links), halbtransparent hell. |
 
 ---
 
@@ -99,21 +99,21 @@ Gleiche Regeln wie A (64×64, Boden nahtlos, Objekte transparent).
 
 | ☐ | Datei | Typ | Beschreibung |
 |---|---|---|---|
-| [ ] | `grass_1.svg` | Boden | Kurzes Gras, mehrere Grüntöne, kleine Halmgruppen. Nahtlos. |
-| [ ] | `grass_2.svg` | Boden | Wie 1 mit ein paar winzigen Blüten (weiß/gelb). Nahtlos, mit 1 kombinierbar. |
-| [ ] | `grass_3.svg` | Boden | Wie 1 mit etwas höherem Gras und einem kleinen Stein. Nahtlos, mit 1/2 kombinierbar. |
-| [ ] | `dirt_road.svg` | Boden | Festgetretene Erdstraße mit zwei Wagenspuren (waagerecht). Nahtlos in alle Richtungen (auch als Fläche nutzbar). |
-| [ ] | `road_edge.svg` | Objekt | Übergang Straße→Gras: Grasbüschel, die von **oben** in die Kachel ragen (unterer Teil transparent). Die App dreht sie für alle Seiten. |
-| [ ] | `tree.svg` | Objekt (blockiert) | Laubbaumkrone von oben, rund, fast kachelfüllend (Ø ca. 60), dunkler Schatten unten rechts. |
-| [ ] | `tree_pine.svg` | Objekt (blockiert) | Nadelbaum von oben: sternförmige Nadelkrone, dunkelgrün. |
-| [ ] | `bush.svg` | Objekt (schwieriges Gelände) | Dichtes Gebüsch, 2–3 runde Blattballen. |
-| [ ] | `rock.svg` | Objekt (blockiert) | Großer Felsbrocken von oben, kantig, grau. |
-| [ ] | `log.svg` | Objekt (schwieriges Gelände) | Umgestürzter Baumstamm waagerecht, sichtbare Jahresringe an einem Ende. |
-| [ ] | `wagon_left.svg` | Objekt (blockiert) | **Linke Hälfte** eines umgestürzten Planwagens (mit rechtem Teil zusammen 128×64): Deichsel, Vorderrad, zerrissene Plane. |
-| [ ] | `wagon_right.svg` | Objekt (blockiert) | **Rechte Hälfte** desselben Wagens: Hinterrad, verstreute Ladung. Muss nahtlos an `wagon_left` anschließen. |
-| [ ] | `crates.svg` | Objekt (blockiert) | Zwei gestapelte Holzkisten und ein Sack. |
-| [ ] | `campfire.svg` | Objekt (blockiert) | Lagerfeuer im Steinkreis mit Flammen. |
-| [ ] | `stream.svg` | Boden (schwieriges Gelände) | Flacher Bach waagerecht durch die Kachel (oben/unten Gras-Ufer). Links/rechts nahtlos. |
+| [x] | `grass_1.svg` | Boden | Kurzes Gras, mehrere Grüntöne, kleine Halmgruppen. Nahtlos. |
+| [x] | `grass_2.svg` | Boden | Wie 1 mit ein paar winzigen Blüten (weiß/gelb). Nahtlos, mit 1 kombinierbar. |
+| [x] | `grass_3.svg` | Boden | Wie 1 mit etwas höherem Gras und einem kleinen Stein. Nahtlos, mit 1/2 kombinierbar. |
+| [x] | `dirt_road.svg` | Boden | Festgetretene Erdstraße mit zwei Wagenspuren (waagerecht). Nahtlos in alle Richtungen (auch als Fläche nutzbar). |
+| [x] | `road_edge.svg` | Objekt | Übergang Straße→Gras: Grasbüschel, die von **oben** in die Kachel ragen (unterer Teil transparent). Die App dreht sie für alle Seiten. |
+| [x] | `tree.svg` | Objekt (blockiert) | Laubbaumkrone von oben, rund, fast kachelfüllend (Ø ca. 60), dunkler Schatten unten rechts. |
+| [x] | `tree_pine.svg` | Objekt (blockiert) | Nadelbaum von oben: sternförmige Nadelkrone, dunkelgrün. |
+| [x] | `bush.svg` | Objekt (schwieriges Gelände) | Dichtes Gebüsch, 2–3 runde Blattballen. |
+| [x] | `rock.svg` | Objekt (blockiert) | Großer Felsbrocken von oben, kantig, grau. |
+| [x] | `log.svg` | Objekt (schwieriges Gelände) | Umgestürzter Baumstamm waagerecht, sichtbare Jahresringe an einem Ende. |
+| [x] | `wagon_left.svg` | Objekt (blockiert) | **Linke Hälfte** eines umgestürzten Planwagens (mit rechtem Teil zusammen 128×64): Deichsel, Vorderrad, zerrissene Plane. |
+| [x] | `wagon_right.svg` | Objekt (blockiert) | **Rechte Hälfte** desselben Wagens: Hinterrad, verstreute Ladung. Muss nahtlos an `wagon_left` anschließen. |
+| [x] | `crates.svg` | Objekt (blockiert) | Zwei gestapelte Holzkisten und ein Sack. |
+| [x] | `campfire.svg` | Objekt (blockiert) | Lagerfeuer im Steinkreis mit Flammen. |
+| [x] | `stream.svg` | Boden (schwieriges Gelände) | Flacher Bach waagerecht durch die Kachel (oben/unten Gras-Ufer). Links/rechts nahtlos. |
 
 ---
 
@@ -128,26 +128,26 @@ gedämpften Farbe passend zur Figur. Gut erkennbar bei 48 px.
 
 | ☐ | Datei | Figur |
 |---|---|---|
-| [ ] | `hero_thorin.svg` | **Thorin Eisenfaust** – Zwerg, Kämpfer. Breites Gesicht, buschiger kupferroter Bart in zwei Zöpfen, Stahlhelm mit Nasenschutz, Kettenhemd, Schulterplatte. Hintergrund dunkles Rot. |
-| [ ] | `hero_lyra.svg` | **Lyra Sternenweberin** – Hochelfe, Magierin. Lange silberblaue Haare, spitze Ohren, schmale Augen in Violett, dunkelblaue Robe mit Sternenstickerei, kleiner leuchtender Stern über der Hand. Hintergrund Nachtblau. |
-| [ ] | `hero_finn.svg` | **Finn Flinkfinger** – Halbling, Schurke. Junges, verschmitztes Gesicht, braune Locken, Kapuze aus grünem Leder, Dolchgriff über der Schulter. Hintergrund dunkles Grün. |
-| [ ] | `hero_althea.svg` | **Althea Sonnenglanz** – Mensch, Klerikerin. Freundliche Frau, goldblonder Zopf, weißer Wappenrock mit goldener Sonnenscheibe (Symbol, keine Schrift), leichter Glanz um den Kopf. Hintergrund warmes Gold/Bernstein. |
+| [x] | `hero_thorin.svg` | **Thorin Eisenfaust** – Zwerg, Kämpfer. Breites Gesicht, buschiger kupferroter Bart in zwei Zöpfen, Stahlhelm mit Nasenschutz, Kettenhemd, Schulterplatte. Hintergrund dunkles Rot. |
+| [x] | `hero_lyra.svg` | **Lyra Sternenweberin** – Hochelfe, Magierin. Lange silberblaue Haare, spitze Ohren, schmale Augen in Violett, dunkelblaue Robe mit Sternenstickerei, kleiner leuchtender Stern über der Hand. Hintergrund Nachtblau. |
+| [x] | `hero_finn.svg` | **Finn Flinkfinger** – Halbling, Schurke. Junges, verschmitztes Gesicht, braune Locken, Kapuze aus grünem Leder, Dolchgriff über der Schulter. Hintergrund dunkles Grün. |
+| [x] | `hero_althea.svg` | **Althea Sonnenglanz** – Mensch, Klerikerin. Freundliche Frau, goldblonder Zopf, weißer Wappenrock mit goldener Sonnenscheibe (Symbol, keine Schrift), leichter Glanz um den Kopf. Hintergrund warmes Gold/Bernstein. |
 
 ### Monster (SRD) und Boss
 
 | ☐ | Datei | Figur |
 |---|---|---|
-| [ ] | `monster_goblin.svg` | Goblin: kleine grüne Kreatur, große spitze Ohren, gelbe Augen, Lederkappe, freches Grinsen. |
-| [ ] | `monster_kobold.svg` | Kobold: kleines echsenartiges Wesen, rostrote Schuppen, Hörnchen, Speer über der Schulter. |
-| [ ] | `monster_wolf.svg` | Wolf: grauer Wolfskopf, gefletschte Zähne, bernsteinfarbene Augen. |
-| [ ] | `monster_skeleton.svg` | Skelett: Totenschädel mit glimmenden blauen Augenpunkten, rostiger Helm, Schildrand. |
-| [ ] | `monster_zombie.svg` | Zombie: fahlgrüne Haut, leerer Blick, zerrissene Bauernkleidung (nicht eklig). |
-| [ ] | `monster_bandit.svg` | Bandit: Mensch mit Tuch vor Mund/Nase, Kapuze, Narbe über der Augenbraue. |
-| [ ] | `monster_giant_rat.svg` | Riesenratte: Rattenkopf, rote Augen, gelbe Nagezähne. |
-| [ ] | `monster_orc.svg` | Ork: graugrüne Haut, Hauer, Kriegsbemalung (Striche, keine Zeichen), Fellumhang. |
-| [ ] | `monster_ghoul.svg` | Ghul: hagere, fahle Gestalt, lange Krallen am Bildrand, hungrige Augen. |
-| [ ] | `monster_shadow.svg` | Schatten: fast schwarze, rauchige Silhouette mit zwei weißen Augenpunkten. |
-| [ ] | `monster_necromancer.svg` | Nekromant (Boss Akt 3): bleicher Mann mit Kapuzenrobe in Schwarz/Violett, grünes Nekrolicht in der Hand, Knochenschmuck. |
+| [x] | `monster_goblin.svg` | Goblin: kleine grüne Kreatur, große spitze Ohren, gelbe Augen, Lederkappe, freches Grinsen. |
+| [x] | `monster_kobold.svg` | Kobold: kleines echsenartiges Wesen, rostrote Schuppen, Hörnchen, Speer über der Schulter. |
+| [x] | `monster_wolf.svg` | Wolf: grauer Wolfskopf, gefletschte Zähne, bernsteinfarbene Augen. |
+| [x] | `monster_skeleton.svg` | Skelett: Totenschädel mit glimmenden blauen Augenpunkten, rostiger Helm, Schildrand. |
+| [x] | `monster_zombie.svg` | Zombie: fahlgrüne Haut, leerer Blick, zerrissene Bauernkleidung (nicht eklig). |
+| [x] | `monster_bandit.svg` | Bandit: Mensch mit Tuch vor Mund/Nase, Kapuze, Narbe über der Augenbraue. |
+| [x] | `monster_giant_rat.svg` | Riesenratte: Rattenkopf, rote Augen, gelbe Nagezähne. |
+| [x] | `monster_orc.svg` | Ork: graugrüne Haut, Hauer, Kriegsbemalung (Striche, keine Zeichen), Fellumhang. |
+| [x] | `monster_ghoul.svg` | Ghul: hagere, fahle Gestalt, lange Krallen am Bildrand, hungrige Augen. |
+| [x] | `monster_shadow.svg` | Schatten: fast schwarze, rauchige Silhouette mit zwei weißen Augenpunkten. |
+| [x] | `monster_necromancer.svg` | Nekromant (Boss Akt 3): bleicher Mann mit Kapuzenrobe in Schwarz/Violett, grünes Nekrolicht in der Hand, Knochenschmuck. |
 
 ---
 
@@ -159,10 +159,10 @@ leicht unscharfer Fantasy-Hintergrund passend zur Figur, **kein Text**. Stil: ho
 
 | ☐ | Datei | Figur & Hintergrund |
 |---|---|---|
-| [ ] | `thorin.png` | Thorin wie in C, Streitaxt oder Langschwert und Rundschild; Hintergrund Schmiede/Bergfestung mit Glut. |
-| [ ] | `lyra.png` | Lyra wie in C, Zauberbuch und kleine Sternlichter; Hintergrund nächtliche Bibliothek/Turm. |
-| [ ] | `finn.png` | Finn wie in C, zwei Dolche, Diebeswerkzeug am Gürtel; Hintergrund Dächer einer Stadt in der Dämmerung. |
-| [ ] | `althea.png` | Althea wie in C, Streitkolben und Sonnenamulett; Hintergrund heller Tempel mit Sonnenstrahlen. |
+| [x] | `thorin.png` | Thorin wie in C, Streitaxt oder Langschwert und Rundschild; Hintergrund Schmiede/Bergfestung mit Glut. |
+| [x] | `lyra.png` | Lyra wie in C, Zauberbuch und kleine Sternlichter; Hintergrund nächtliche Bibliothek/Turm. |
+| [x] | `finn.png` | Finn wie in C, zwei Dolche, Diebeswerkzeug am Gürtel; Hintergrund Dächer einer Stadt in der Dämmerung. |
+| [x] | `althea.png` | Althea wie in C, Streitkolben und Sonnenamulett; Hintergrund heller Tempel mit Sonnenstrahlen. |
 
 ---
 
@@ -173,18 +173,18 @@ bzw. `stroke="currentColor"` (die App färbt sie), Strichstärke 2, keine Füllf
 
 | ☐ | Datei | Bedeutung |
 |---|---|---|
-| [ ] | `blinded.svg` | Blind (durchgestrichenes Auge) |
-| [ ] | `charmed.svg` | Bezaubert (Herz mit Funken) |
-| [ ] | `frightened.svg` | Verängstigt (erschrockenes Gesicht) |
-| [ ] | `grappled.svg` | Gepackt (greifende Hand) |
-| [ ] | `incapacitated.svg` | Kampfunfähig (Spirale) |
-| [ ] | `paralyzed.svg` | Gelähmt (Blitz durch Figur) |
-| [ ] | `poisoned.svg` | Vergiftet (Tropfen mit Totenkopf-Punkt) |
-| [ ] | `prone.svg` | Liegend (liegende Figur) |
-| [ ] | `restrained.svg` | Festgesetzt (Kette) |
-| [ ] | `stunned.svg` | Betäubt (Sterne um Kopf) |
-| [ ] | `unconscious.svg` | Bewusstlos (geschlossenes Auge mit drei kleinen Wellen darüber, keine Buchstaben) |
-| [ ] | `concentration.svg` | Konzentration (Kreis mit Punkt) |
+| [x] | `blinded.svg` | Blind (durchgestrichenes Auge) |
+| [x] | `charmed.svg` | Bezaubert (Herz mit Funken) |
+| [x] | `frightened.svg` | Verängstigt (erschrockenes Gesicht) |
+| [x] | `grappled.svg` | Gepackt (greifende Hand) |
+| [x] | `incapacitated.svg` | Kampfunfähig (Spirale) |
+| [x] | `paralyzed.svg` | Gelähmt (Blitz durch Figur) |
+| [x] | `poisoned.svg` | Vergiftet (Tropfen mit Totenkopf-Punkt) |
+| [x] | `prone.svg` | Liegend (liegende Figur) |
+| [x] | `restrained.svg` | Festgesetzt (Kette) |
+| [x] | `stunned.svg` | Betäubt (Sterne um Kopf) |
+| [x] | `unconscious.svg` | Bewusstlos (geschlossenes Auge mit drei kleinen Wellen darüber, keine Buchstaben) |
+| [x] | `concentration.svg` | Konzentration (Kreis mit Punkt) |
 
 ---
 

@@ -1,0 +1,24 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="64" height="64" viewBox="0 0 64 64">
+  <!-- Shadow -->
+  <rect x="14" y="21" width="40" height="28" rx="2" fill="#0f172a" opacity="0.35"/>
+  <!-- Chest Body (Wood) -->
+  <rect x="12" y="18" width="40" height="28" rx="2" fill="#6b4a2f" stroke="#0f172a" stroke-width="1"/>
+  <line x1="12" y1="24" x2="52" y2="24" stroke="#4a3322" stroke-width="1"/>
+  <line x1="12" y1="32" x2="52" y2="32" stroke="#4a3322" stroke-width="1"/>
+  <line x1="12" y1="40" x2="52" y2="40" stroke="#4a3322" stroke-width="1"/>
+  <path d="M13 19 H51 V21 H13 Z" fill="#8a6240" opacity="0.8"/>
+  <!-- Iron Corner Reinforcements -->
+  <rect x="12" y="18" width="5" height="28" fill="#6b7480" stroke="#0f172a" stroke-width="1"/>
+  <rect x="47" y="18" width="5" height="28" fill="#6b7480" stroke="#0f172a" stroke-width="1"/>
+  <rect x="12" y="18" width="40" height="4" fill="#6b7480" stroke="#0f172a" stroke-width="1"/>
+  <rect x="12" y="42" width="40" height="4" fill="#6b7480" stroke="#0f172a" stroke-width="1"/>
+  <!-- Rivets -->
+  <circle cx="14.5" cy="20" r="1" fill="#9aa3ad"/>
+  <circle cx="49.5" cy="20" r="1" fill="#9aa3ad"/>
+  <circle cx="14.5" cy="44" r="1" fill="#9aa3ad"/>
+  <circle cx="49.5" cy="44" r="1" fill="#9aa3ad"/>
+  <!-- Center Latch (Gold) -->
+  <rect x="29" y="28" width="6" height="8" rx="1" fill="#c9a227" stroke="#0f172a" stroke-width="1"/>
+  <circle cx="32" cy="31" r="1" fill="#0f172a"/>
+  <line x1="32" y1="32" x2="32" y2="34" stroke="#0f172a" stroke-width="0.8"/>
+</svg>

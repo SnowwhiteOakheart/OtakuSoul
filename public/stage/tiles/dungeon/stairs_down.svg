@@ -1,0 +1,28 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="64" height="64" viewBox="0 0 64 64">
+  <!-- Shadow -->
+  <rect x="10" y="8" width="46" height="52" fill="#0f172a" opacity="0.3"/>
+  <!-- Outer Well Cutout Frame -->
+  <rect x="8" y="6" width="48" height="52" fill="#1e222b" stroke="#0f172a" stroke-width="1"/>
+  <!-- Steps descending into depth (top is darkest abyss) -->
+  <!-- Step 6 (Deepest Void) -->
+  <rect x="10" y="8" width="44" height="8" fill="#0b0e14"/>
+  <!-- Step 5 -->
+  <rect x="10" y="16" width="44" height="8" fill="#1e222b" stroke="#0f172a" stroke-width="0.8"/>
+  <line x1="10" y1="17" x2="54" y2="17" stroke="#2b2f3a" stroke-width="1"/>
+  <!-- Step 4 -->
+  <rect x="10" y="24" width="44" height="8" fill="#2b2f3a" stroke="#0f172a" stroke-width="0.8"/>
+  <line x1="10" y1="25" x2="54" y2="25" stroke="#3b4252" stroke-width="1"/>
+  <!-- Step 3 -->
+  <rect x="10" y="32" width="44" height="8" fill="#3b4252" stroke="#0f172a" stroke-width="0.8"/>
+  <line x1="10" y1="33" x2="54" y2="33" stroke="#4c566a" stroke-width="1"/>
+  <!-- Step 2 -->
+  <rect x="10" y="40" width="44" height="8" fill="#4c566a" stroke="#0f172a" stroke-width="0.8"/>
+  <line x1="10" y1="41" x2="54" y2="41" stroke="#5e6779" stroke-width="1"/>
+  <!-- Step 1 (Top Level Entrance) -->
+  <rect x="10" y="48" width="44" height="8" fill="#5e6779" stroke="#0f172a" stroke-width="0.8"/>
+  <!-- Downward Arrow / Chevron -->
+  <path d="M26 38 L32 44 L38 38" stroke="#0f172a" stroke-width="2.5" fill="none" stroke-linecap="round"/>
+  <path d="M26 38 L32 44 L38 38" stroke="#8a8e94" stroke-width="1.2" fill="none" stroke-linecap="round"/>
+  <path d="M26 26 L32 32 L38 26" stroke="#0f172a" stroke-width="2.5" fill="none" stroke-linecap="round"/>
+  <path d="M26 26 L32 32 L38 26" stroke="#4c566a" stroke-width="1.2" fill="none" stroke-linecap="round"/>
+</svg>

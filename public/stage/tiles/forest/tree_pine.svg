@@ -1,0 +1,19 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="64" height="64" viewBox="0 0 64 64">
+  <!-- Shadow -->
+  <polygon points="36,12 56,36 48,56 28,52 36,36" fill="#0f172a" opacity="0.35"/>
+  <circle cx="36" cy="36" r="22" fill="#0f172a" opacity="0.2"/>
+
+  <!-- Tier 1: Lowest / Widest Star (Darkest) -->
+  <polygon points="30,4 37,18 52,14 44,28 58,38 42,42 40,58 28,46 16,56 18,40 4,32 18,24 10,12 24,18" fill="#1b3317" stroke="#0f172a" stroke-width="1.2"/>
+
+  <!-- Tier 2: Middle Star -->
+  <polygon points="30,8 35,20 47,17 40,28 51,36 38,39 37,51 28,42 19,49 21,37 9,30 21,24 15,14 26,19" fill="#24401f" stroke="#0f172a" stroke-width="1"/>
+
+  <!-- Tier 3: Upper Star -->
+  <polygon points="30,13 34,22 43,20 37,28 45,34 35,36 34,44 28,37 22,42 24,33 15,28 24,23 20,16 27,21" fill="#2f5a2a" stroke="#0f172a" stroke-width="0.8"/>
+
+  <!-- Tier 4: Top Tier & Needle Tip (Highlight) -->
+  <polygon points="30,18 33,24 39,22 35,28 40,32 33,33 32,39 28,34 24,37 25,31 19,27 25,24 23,19 28,23" fill="#3d7a34"/>
+  <circle cx="30" cy="28" r="4" fill="#4f7f3f"/>
+  <circle cx="29" cy="27" r="2" fill="#5e8f48"/>
+</svg>
