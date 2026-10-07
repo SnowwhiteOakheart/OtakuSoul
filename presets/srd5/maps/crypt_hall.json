@@ -101,8 +101,8 @@
   "X": {
    "ground": "floor_stone",
    "kind": "floor",
-   "object": "stairs_up",
-   "zone": "exit_surface"
+   "object": "stairs_down",
+   "zone": "exit_depths"
   }
  },
  "rooms": [
@@ -149,7 +149,7 @@
     14,
     10
    ],
-   "description": "A long hall with a stone sarcophagus, two pillars, braziers that still glow and a dark altar. Stairs in the far corner lead up to the surface."
+   "description": "A long hall with a stone sarcophagus, two pillars, braziers that still glow and a dark altar. In the far corner a narrow stair leads down into the depths."
   }
  ],
  "encounters": [
@@ -178,8 +178,8 @@
  ],
  "exits": [
   {
-   "zone": "exit_surface",
-   "to": "forest_road"
+   "zone": "exit_depths",
+   "to": "shadow_sanctum"
   }
  ],
  "traps": [

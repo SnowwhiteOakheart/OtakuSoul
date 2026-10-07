@@ -76,6 +76,9 @@ export const CharacterEditorModal = ({
     (character?.card.data.extensions?.[I18N_EXTENSION] as Record<string, unknown>)?.translations as Record<string, Record<string, string>> || {}
   );
   const [tagsStr, setTagsStr] = useState(character?.card.data.tags?.join(', ') || '');
+  // Soul Stage 5e: class template for scenes with the 5e rules (`extensions.otakusoul_5e`).
+  const fiveE = (character?.card.data.extensions?.otakusoul_5e as Record<string, unknown> | undefined) ?? {};
+  const [fiveEClass, setFiveEClass] = useState<string>(typeof fiveE.class === 'string' ? fiveE.class : '');
   const [newGreeting, setNewGreeting] = useState('');
   // Cards may carry translations (extensions.otakusoul_i18n); the editor changes the base language only.
   const i18n = character?.card.data.extensions?.[I18N_EXTENSION] as
@@ -183,6 +186,11 @@ export const CharacterEditorModal = ({
             [I18N_EXTENSION]: Object.keys(translations).length > 0
               ? { source_language: sourceLanguage, translations }
               : undefined,
+            otakusoul_5e: (() => {
+              const { class: _old, ...rest } = fiveE;
+              const next = fiveEClass ? { ...rest, class: fiveEClass } : rest;
+              return Object.keys(next).length > 0 ? next : undefined;
+            })(),
           };
         })(),
       },
@@ -460,6 +468,24 @@ export const CharacterEditorModal = ({
                     placeholder="Anime, Tsundere, Sci-Fi, Steins;Gate"
                     className="w-full px-3 py-2 bg-app border border-slate-800 rounded-xl text-slate-200 placeholder-slate-500 focus:outline-hidden focus:border-accent-500"
                   />
+                </div>
+
+                <div>
+                  <label className="block text-xs font-semibold text-slate-300 mb-1" htmlFor={`${fieldId}-fiveEClass`}>
+                    {t('editor.fiveEClass')}
+                  </label>
+                  <select
+                    id={`${fieldId}-fiveEClass`}
+                    value={fiveEClass}
+                    onChange={(e) => setFiveEClass(e.target.value)}
+                    className="w-full px-3 py-2 bg-app border border-slate-800 rounded-xl text-slate-200 focus:outline-hidden focus:border-accent-500"
+                  >
+                    <option value="">{t('editor.fiveEClassNone')}</option>
+                    {(['fighter', 'wizard', 'rogue', 'cleric'] as const).map((id) => (
+                      <option key={id} value={id}>{t(`sceneRules.class.${id}`)}</option>
+                    ))}
+                  </select>
+                  <p className="mt-1 text-[11px] text-slate-500">{t('editor.fiveEClassHint')}</p>
                 </div>
 
                 <div>

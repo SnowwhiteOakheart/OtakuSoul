@@ -126,7 +126,7 @@
     17,
     5
    ],
-   "description": "A rutted dirt road through the forest. A broken-down wagon blocks half of it. To the west the road leads back towards the crypt."
+   "description": "A rutted dirt road through the forest. A broken-down wagon blocks half of it - a classic spot for an ambush. To the west the road leads on towards the crypt."
   },
   {
    "id": "south_wood",
@@ -147,7 +147,7 @@
  "encounters": [
   {
    "id": "road_bandits",
-   "room": "north_wood",
+   "room": "road",
    "monsters": [
     {
      "monster": "bandit",

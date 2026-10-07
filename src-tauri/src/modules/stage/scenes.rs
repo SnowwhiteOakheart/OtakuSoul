@@ -61,18 +61,40 @@ pub fn build_initial_scene_state(def: &SceneDefinition) -> SceneState {
         combat: EncounterState::default(),
         arcs: Vec::new(),
         inventory: Vec::new(),
-        objectives: vec![CampaignObjective {
-            id: "objective_main".to_string(),
-            title: if !localized_def.title.is_empty() {
-                localized_def.title.clone()
-            } else {
-                lang.t("Begin the adventure").to_string()
-            },
-            description: localized_def.description.clone(),
-            current: 0,
-            max: 1,
-            status: "active".to_string(),
-        }],
+        objectives: if let Some(goals) = def
+            .rules
+            .as_ref()
+            .map(|r| &r.goals)
+            .filter(|g| !g.is_empty())
+        {
+            let code = crate::modules::content_lang::language_code(
+                &crate::modules::content_lang::ContentLang::reply_language_name(),
+            );
+            goals
+                .iter()
+                .map(|goal| CampaignObjective {
+                    id: goal.id.clone(),
+                    title: goal.title.get(&code).to_string(),
+                    description: String::new(),
+                    current: 0,
+                    max: 1,
+                    status: "active".to_string(),
+                })
+                .collect()
+        } else {
+            vec![CampaignObjective {
+                id: "objective_main".to_string(),
+                title: if !localized_def.title.is_empty() {
+                    localized_def.title.clone()
+                } else {
+                    lang.t("Begin the adventure").to_string()
+                },
+                description: localized_def.description.clone(),
+                current: 0,
+                max: 1,
+                status: "active".to_string(),
+            }]
+        },
         relationships: def
             .party
             .iter()
@@ -124,6 +146,49 @@ pub fn build_initial_scene_state(def: &SceneDefinition) -> SceneState {
     };
     ensure_party_vitals(&mut state);
     state
+}
+
+/// The 5e starter adventure (`presets/crypt-of-shadows`): heroes, acts and its folder.
+pub const ADVENTURE_PACK: &str = "crypt-of-shadows";
+pub const ADVENTURE_FOLDER: &str = "Die Gruft der vergessenen Schatten";
+
+/// Copies the starter adventure's acts that the scene folder does not have yet (new acts
+/// arrive with updates; started acts keep their progress).
+fn ensure_adventure_scenes(scenes_dir: &Path, search_roots: &[PathBuf]) {
+    let Some(src) = search_roots
+        .iter()
+        .map(|root| root.join(ADVENTURE_PACK).join("scenes"))
+        .find(|dir| dir.exists())
+    else {
+        return;
+    };
+    let target_dir = scenes_dir.join(ADVENTURE_FOLDER);
+    let _ = fs::create_dir_all(&target_dir);
+    for entry in fs::read_dir(&src).into_iter().flatten().flatten() {
+        let p = entry.path();
+        if !p.is_file() || p.extension().is_none_or(|ext| ext != "json") {
+            continue;
+        }
+        let stem = p
+            .file_stem()
+            .unwrap_or_default()
+            .to_string_lossy()
+            .to_string();
+        let target = target_dir.join(format!("{stem}.json"));
+        if target.exists() {
+            continue;
+        }
+        if let Ok(content) = fs::read_to_string(&p)
+            && let Ok(mut def) = serde_json::from_str::<SceneDefinition>(&content)
+        {
+            def.id = stem;
+            def.folder = ADVENTURE_FOLDER.to_string();
+            let state = build_initial_scene_state(&def);
+            if let Ok(json) = serde_json::to_string_pretty(&state) {
+                let _ = fs::write(&target, json);
+            }
+        }
+    }
 }
 
 pub fn ensure_default_scene_folders() {
@@ -207,6 +272,8 @@ pub fn ensure_default_scene_folders() {
         }
     }
 
+    ensure_adventure_scenes(&scenes_dir, &search_roots);
+
     // 3. Ensure Sakura Succubus 3 folder exists with presets
     let ss3_dir = scenes_dir.join("Sakura Succubus 3");
     if !ss3_dir.exists() {
@@ -275,7 +342,7 @@ pub fn find_scene_path(scene_id: &str) -> Option<PathBuf> {
     ];
 
     for root in &search_roots {
-        for folder in &["no-game-no-life", "sakura-succubus-3"] {
+        for folder in &["no-game-no-life", "sakura-succubus-3", ADVENTURE_PACK] {
             let scene_dir = root.join(folder).join("scenes");
             if scene_dir.exists() {
                 let candidate = scene_dir.join(format!("{}.json", scene_id));
@@ -449,6 +516,7 @@ pub fn scan_available_scenes() -> Vec<ScenePreview> {
     let preset_folders = [
         ("sakura-succubus-3", "Sakura Succubus 3"),
         ("no-game-no-life", "No Game No Life"),
+        (ADVENTURE_PACK, ADVENTURE_FOLDER),
     ];
 
     for root in &search_roots {

@@ -498,6 +498,11 @@ export const api = {
   },
 
   /** 5e map outside fights: one exploration step (`move:x:y`, `use:x:y`, `pick:x:y`, `force:x:y`) or, without one, start exploring. */
+  /** Adventure acts: the next act with the party and inventory carried over. */
+  continueStageAdventure: async (sceneId: string): Promise<SceneState> => {
+    return await invoke<SceneState>('continue_stage_adventure', { sceneId });
+  },
+
   runStageExploration: async (sceneId: string, action?: string): Promise<SceneState> => {
     return await invoke<SceneState>('run_stage_exploration', { sceneId, action: action ?? null });
   },

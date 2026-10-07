@@ -179,12 +179,12 @@ Rückgängig stellt Karte und Kampf korrekt wieder her.
 
 ### 🏰 Schritt 5 – Starter-Abenteuer & Heldengruppe
 
-- [ ] Vier Helden als V2-Karten mit 5e-Erweiterung (`extensions.otakusoul_5e`), Porträts und Tokens aus
+- [x] Vier Helden als V2-Karten mit 5e-Erweiterung (`extensions.otakusoul_5e`), Porträts und Tokens aus
   [`todo_assets.md`](todo_assets.md) (C, D):
   Thorin (Zwerg, Kämpfer), Lyra (Hochelfe, Magierin), Finn (Halbling, Schurke), Althea (Mensch, Klerikerin).
-- [ ] Eigene Gefährten bekommen per Klassen-Vorlage 5e-Werte (Charakter-Editor: Klasse wählen → Stufe-1-Werte).
+- [x] Eigene Gefährten bekommen per Klassen-Vorlage 5e-Werte (Charakter-Editor: Klasse wählen → Stufe-1-Werte).
 - [ ] Lobby: klassische Helden, eigene Gefährten oder gemischt.
-- [ ] Abenteuer „Die Gruft der vergessenen Schatten“ (3 Akte, je 1–2 Karten, Monster aus den SRD-Daten) im bestehenden
+- [x] Abenteuer „Die Gruft der vergessenen Schatten“ (3 Akte, je 1–2 Karten, Monster aus den SRD-Daten) im bestehenden
   Szenenformat (erweitert um Karten/`ruleset`), kein zweites `campaign.json`-Format; später über Hub verteilbar.
 - [ ] SRD-Namensnennung in README und im Info-Dialog der App.
 - [ ] E2E: Akt 1 vollständig spielbar (Mock-LLM).

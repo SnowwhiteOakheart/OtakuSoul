@@ -25,11 +25,42 @@ fn default_class(role: &str, companion_index: usize) -> &'static str {
 }
 
 /// Gives player and companions their rules values from the class templates (5e scenes only).
-/// A changed class rebuilds the values; otherwise hit points stay as they are.
+/// A changed class rebuilds the values; otherwise hit points stay as they are. Order: the
+/// scene's choice, the class on the character card (`extensions.otakusoul_5e.class`, read
+/// once when the hero joins), the default by place in the party.
 pub fn ensure_party_stats(state: &mut SceneState) {
     if !state.definition.is_5e() {
         return;
     }
+    let needs_cards = state
+        .combat
+        .combatants
+        .iter()
+        .any(|c| c.role == "companion" && c.stats5e.is_none());
+    let cards = if needs_cards {
+        crate::modules::paths::scan_available_characters()
+    } else {
+        Vec::new()
+    };
+    ensure_party_stats_with(state, |name| {
+        cards
+            .iter()
+            .find(|c| c.card.data.name.eq_ignore_ascii_case(name))
+            .and_then(|c| card_class(&c.card.data.extensions))
+    });
+}
+
+/// The 5e class a character card names (`extensions.otakusoul_5e.class`).
+pub fn card_class(extensions: &serde_json::Value) -> Option<String> {
+    extensions
+        .get("otakusoul_5e")?
+        .get("class")?
+        .as_str()
+        .filter(|id| rules5e::class(id).is_some())
+        .map(str::to_string)
+}
+
+fn ensure_party_stats_with(state: &mut SceneState, card_class_of: impl Fn(&str) -> Option<String>) {
     let rules = state.definition.rules.clone().unwrap_or_default();
     let class_for = |key: &str| {
         rules
@@ -55,9 +86,18 @@ pub fn ensure_party_stats(state: &mut SceneState) {
             .iter()
             .position(|name| name.eq_ignore_ascii_case(&combatant.name))
             .unwrap_or(party.len());
-        let wanted = class_for(key)
-            .filter(|id| rules5e::class(id).is_some())
-            .unwrap_or_else(|| default_class(&combatant.role, companion_index).to_string());
+        let chosen = class_for(key).filter(|id| rules5e::class(id).is_some());
+        let wanted = match (chosen, &combatant.stats5e) {
+            (Some(id), _) => id,
+            // No choice in the scene: a hero keeps the class they joined with.
+            (None, Some(stats)) if rules5e::class(&stats.class_id).is_some() => {
+                stats.class_id.clone()
+            }
+            (None, _) => (combatant.role == "companion")
+                .then(|| card_class_of(&combatant.name))
+                .flatten()
+                .unwrap_or_else(|| default_class(&combatant.role, companion_index).to_string()),
+        };
         if combatant
             .stats5e
             .as_ref()
@@ -1294,8 +1334,14 @@ pub(super) async fn finish_round(
     let overflow = state.combat.events.len().saturating_sub(MAX_EVENTS);
     state.combat.events.drain(..overflow);
     narrate(&mut state, &events, inference, &llm, on_stream).await;
+    if outcome == Some(CombatOutcome::Victory) {
+        super::explore5e::won_fight(&mut state);
+    }
     if let Some(outcome) = outcome {
         end_encounter(&mut state, Some(outcome));
+    }
+    if let Some(map) = state.map.as_mut() {
+        map.active_encounter = None;
     }
     super::explore5e::refresh_fog(&mut state);
     state.current_turn_actor = "PLAYER".to_string();
@@ -1321,6 +1367,7 @@ mod tests {
             control_companions: false,
             heroic_death: false,
             map_id: None,
+            ..Default::default()
         });
         state.combat.combatants.retain(|c| c.role == "player");
         ensure_party_vitals(&mut state);
@@ -1681,6 +1728,7 @@ mod board_tests {
             control_companions: false,
             heroic_death: false,
             map_id: Some("crypt_hall".into()),
+            ..Default::default()
         });
         state.combat.combatants.retain(|c| c.role == "player");
         ensure_party_vitals(&mut state);

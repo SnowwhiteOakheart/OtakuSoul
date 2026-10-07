@@ -36,7 +36,7 @@ pub use combat5e::{combat_options, execute_combat_turn};
 pub use dice::*;
 pub use director::*;
 pub use engine::*;
-pub use explore5e::{ensure_exploring, execute_exploration};
+pub use explore5e::{continue_adventure, ensure_exploring, execute_exploration};
 pub use models::*;
 pub use npc::*;
 pub use party::*;

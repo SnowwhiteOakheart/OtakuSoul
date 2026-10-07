@@ -31,7 +31,7 @@ const SceneRulesFields: React.FC<{ rules: SceneRules | null; party: string[]; on
         id="scene-ruleset"
         value={fiveE ? '5e' : 'standard'}
         onChange={(e) =>
-          onChange(e.target.value === '5e' ? { ruleset: '5e', hero_classes: rules?.hero_classes ?? {}, control_companions: rules?.control_companions ?? false, heroic_death: rules?.heroic_death ?? false } : null)
+          onChange(e.target.value === '5e' ? { ruleset: '5e', hero_classes: rules?.hero_classes ?? {}, control_companions: rules?.control_companions ?? false, heroic_death: rules?.heroic_death ?? false, goals: rules?.goals ?? [] } : null)
         }
         className="w-full p-2 bg-app border border-slate-700 rounded-xl"
       >

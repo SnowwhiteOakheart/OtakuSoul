@@ -281,6 +281,7 @@ pub fn run() {
             commands::stage::run_stage_turn,
             commands::stage::run_stage_combat,
             commands::stage::run_stage_exploration,
+            commands::stage::continue_stage_adventure,
             commands::stage::get_stage_combat_options,
             commands::stage::list_battle_maps,
             commands::stage::list_srd_spells,

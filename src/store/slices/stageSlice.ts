@@ -104,6 +104,8 @@ export interface StageSlice {
   runStageCombat: (action?: string) => Promise<void>;
   /** 5e map outside fights: `move:x:y`, `use:x:y`, `pick:x:y`, `force:x:y`; none = start exploring. */
   runStageExploration: (action?: string) => Promise<void>;
+  /** Adventure acts: on to the next act with the party. */
+  continueAdventure: () => Promise<void>;
   /** What the current combatant may do on the board (squares, attacks in reach). */
   stageCombatOptions: CombatOptions | null;
   refreshStageCombatOptions: () => Promise<void>;
@@ -534,6 +536,21 @@ export const createStageSlice: SliceCreator<StageSlice> = (set, get) => ({
       // Starting to explore happens in the background; a refused step is the player's to know.
       if (action) reportFailure('Failed to explore:', e);
       else console.error('Failed to start exploring:', e);
+    }
+  },
+
+  continueAdventure: async () => {
+    const current = get().stageState;
+    if (!current || get().isProcessingStageTurn) return;
+    set({ isProcessingStageTurn: true });
+    try {
+      const next = await api.continueStageAdventure(current.definition.id);
+      set({ stageState: next, isProcessingStageTurn: false });
+      void get().fetchStageScenes();
+      void get().runStageExploration();
+    } catch (e) {
+      set({ isProcessingStageTurn: false });
+      reportFailure('Failed to continue the adventure:', e);
     }
   },
 

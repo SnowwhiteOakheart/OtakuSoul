@@ -363,6 +363,19 @@ pub async fn run_stage_exploration(
     .await
 }
 
+/// Adventure acts: goes on with the next act, taking the party and inventory along.
+#[tauri::command]
+pub fn continue_stage_adventure(
+    state: State<'_, AppState>,
+    scene_id: String,
+) -> Result<crate::modules::stage::SceneState, String> {
+    let _turn = state
+        .stage_turn
+        .try_lock()
+        .map_err(|_| crate::err!("backend.stage.editorBusy"))?;
+    crate::modules::stage::continue_adventure(&state.stage_engine, &scene_id)
+}
+
 /// 5e scenes: what the current combatant may do (squares to move to, attacks in reach).
 #[tauri::command]
 pub fn get_stage_combat_options(

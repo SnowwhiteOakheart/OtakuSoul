@@ -41,7 +41,7 @@ fn modifiers_and_proficiency() {
 
 #[test]
 fn srd_data_loads_and_matches_the_stat_blocks() {
-    assert_eq!(monsters().len(), 10);
+    assert_eq!(monsters().len(), 11);
     assert_eq!(classes().len(), 4);
     let (goblin, hp) = monster_stats(monster("Goblin").unwrap());
     assert_eq!(
@@ -443,7 +443,7 @@ fn small_map(rows: &[&str]) -> BattleMap {
 
 #[test]
 fn bundled_maps_build_and_have_spawn_zones() {
-    assert_eq!(battle_maps().len(), 2);
+    assert_eq!(battle_maps().len(), 3);
     for map in battle_maps() {
         assert!(
             !map.zone_cells("party").is_empty() && !map.zone_cells("spawn").is_empty(),

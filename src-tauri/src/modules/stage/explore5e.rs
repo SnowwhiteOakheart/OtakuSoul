@@ -406,6 +406,108 @@ fn apply(
     }
 }
 
+/// Checks off the act's goals of `kind` reaching `target` (an encounter won, a map reached);
+/// once all are reached, the act is complete.
+pub fn reach_goal(state: &mut SceneState, kind: &str, target: &str) -> Vec<ExploreEvent> {
+    let goals = state
+        .definition
+        .rules
+        .as_ref()
+        .map(|r| r.goals.clone())
+        .unwrap_or_default();
+    let mut events = Vec::new();
+    for goal in goals
+        .iter()
+        .filter(|g| g.kind == kind && g.target == target)
+    {
+        if let Some(objective) = state
+            .objectives
+            .iter_mut()
+            .find(|o| o.id == goal.id && o.status != "completed")
+        {
+            objective.current = objective.max;
+            objective.status = "completed".to_string();
+            events.push(ExploreEvent::Goal {
+                goal_id: goal.id.clone(),
+                title: goal.title.clone(),
+            });
+        }
+    }
+    let all_done = !goals.is_empty()
+        && goals.iter().all(|g| {
+            state
+                .objectives
+                .iter()
+                .any(|o| o.id == g.id && o.status == "completed")
+        });
+    if !events.is_empty() && all_done {
+        events.push(ExploreEvent::ActComplete {
+            next_scene: state
+                .definition
+                .rules
+                .as_ref()
+                .and_then(|r| r.next_scene.clone()),
+        });
+    }
+    events
+}
+
+/// A won fight: the prepared encounter it came from counts for the act's goals.
+pub fn won_fight(state: &mut SceneState) {
+    let Some(id) = state.map.as_mut().and_then(|m| m.active_encounter.take()) else {
+        return;
+    };
+    let events = reach_goal(state, "encounter", &id);
+    push_events(state, events);
+}
+
+/// Goes on with the next act: the party (classes, hit points after a long rest, spells),
+/// the chosen companions and the inventory come along; the act starts fresh otherwise.
+pub fn continue_adventure(engine: &StageEngine, scene_id: &str) -> Result<SceneState, String> {
+    let mut current = engine.get_state();
+    if current.definition.id != scene_id {
+        current = load_scene_by_id(scene_id)?;
+    }
+    let next_id = current
+        .definition
+        .rules
+        .as_ref()
+        .and_then(|r| r.next_scene.clone())
+        .ok_or_else(|| crate::err!("backend.stage.noNextAct"))?;
+    let mut next = load_scene_by_id(&next_id)?;
+    next.definition.party = current.definition.party.clone();
+    next.definition.persona = current.definition.persona.clone();
+    if let (Some(from), Some(to)) = (
+        current.definition.rules.as_ref(),
+        next.definition.rules.as_mut(),
+    ) {
+        to.hero_classes = from.hero_classes.clone();
+        to.control_companions = from.control_companions;
+        to.heroic_death = from.heroic_death;
+    }
+    next.combat = EncounterState::default();
+    next.combat.combatants = current
+        .combat
+        .combatants
+        .iter()
+        .filter(|c| rules5e::is_party(c))
+        .cloned()
+        .map(|mut c| {
+            c.position = None;
+            c
+        })
+        .collect();
+    next.inventory = current.inventory.clone();
+    next.map = None;
+    next.exploration = Vec::new();
+    ensure_party_vitals(&mut next);
+    super::combat5e::rest_party(&mut next, true);
+    next.definition.last_played = Some(Utc::now().to_rfc3339());
+    engine.set_state(next.clone());
+    save_scene_state(&next)?;
+    Ok(next)
+}
+
 /// Moves the party to another map: its start zone, fog fresh.
 pub fn change_map(state: &mut SceneState, map_id: &str) -> Option<ExploreEvent> {
     let map = rules5e::battle_map(map_id)?.clone();
@@ -433,6 +535,7 @@ fn start_prepared(
 ) -> bool {
     if let Some(map) = state.map.as_mut() {
         map.triggered.push(encounter.id.clone());
+        map.active_encounter = Some(encounter.id.clone());
     }
     let enemies: Vec<PlanCombatant> = encounter
         .monsters
@@ -516,6 +619,11 @@ fn report(events: &[ExploreEvent], state: &SceneState) -> String {
                     .map(|c| c.name.clone())
                     .collect();
                 format!("Enemies appear and a fight begins: {}.", foes.join(", "))
+            }
+            ExploreEvent::Goal { title, .. } => format!("The party reaches a goal: {}.", title.en),
+            ExploreEvent::ActComplete { .. } => {
+                "This chapter of the adventure is complete; close it with a fitting image."
+                    .to_string()
             }
             ExploreEvent::MapChange { name, .. } => {
                 format!("The party travels on and arrives at {}.", name.en)
@@ -686,7 +794,10 @@ pub async fn execute_exploration(
     let lang_code = crate::modules::content_lang::language_code(&reply_language);
     let mut fight = false;
     match stop {
-        Some(Stop::Exit(to)) => events.extend(change_map(&mut state, &to)),
+        Some(Stop::Exit(to)) => {
+            events.extend(change_map(&mut state, &to));
+            events.extend(reach_goal(&mut state, "exit", &to));
+        }
         Some(Stop::Encounter(encounter)) => {
             if start_prepared(&mut state, &encounter, &lang_code) {
                 events.push(ExploreEvent::Encounter {
@@ -734,6 +845,7 @@ mod tests {
             control_companions: false,
             heroic_death: false,
             map_id: Some("crypt_hall".into()),
+            ..Default::default()
         });
         state.combat.combatants.retain(|c| c.role == "player");
         assert!(ensure_exploring(&mut state));
@@ -912,7 +1024,7 @@ mod tests {
     }
 
     #[test]
-    fn stairs_lead_to_the_forest_road() {
+    fn stairs_lead_down_to_the_sanctum() {
         let mut state = crypt();
         let map = state.map.as_mut().unwrap();
         map.triggered.push("hall_goblins".into());
@@ -925,10 +1037,10 @@ mod tests {
         };
         let event = change_map(&mut state, &to).unwrap();
         assert!(
-            matches!(event, ExploreEvent::MapChange { ref map_id, .. } if map_id == "forest_road")
+            matches!(event, ExploreEvent::MapChange { ref map_id, .. } if map_id == "shadow_sanctum")
         );
         let map = state.map.as_ref().unwrap();
-        assert_eq!(map.id, "forest_road");
+        assert_eq!(map.id, "shadow_sanctum");
         assert!(party_positions(&state).iter().all(|p| map.walkable(*p)));
         assert!(map.revealed.iter().any(|r| *r) && !map.revealed.iter().all(|r| *r));
     }
@@ -940,7 +1052,7 @@ mod tests {
         assert!(rule.contains("The party is in: Antechamber"));
         assert!(rule.contains("Burial hall (not yet seen by the party"));
         assert!(rule.contains("hall_goblins (room hall, 2×goblin)"));
-        assert!(rule.contains("spawn_ossuary") && !rule.contains("exit_surface"));
+        assert!(rule.contains("spawn_ossuary") && !rule.contains("exit_depths"));
         assert!(rule.contains("forest_road"));
         let plan = |json: &str| serde_json::from_str::<PlanEncounterUpdate>(json).unwrap();
         // Unknown ids and zones fall back; a prepared encounter starts once.
@@ -965,7 +1077,7 @@ mod tests {
         let started = apply_planner_map(
             &mut state,
             Some(&plan(
-                r#"{"action":"start","enemies":[{"monster":"wolf"}],"zone":"exit_surface"}"#,
+                r#"{"action":"start","enemies":[{"monster":"wolf"}],"zone":"exit_depths"}"#,
             )),
             None,
             "en",
@@ -992,6 +1104,129 @@ mod tests {
             state.exploration.last(),
             Some(ExploreEvent::MapChange { .. })
         ));
+    }
+
+    fn act(file: &str) -> SceneState {
+        let json = match file {
+            "akt1" => {
+                include_str!("../../../../presets/crypt-of-shadows/scenes/akt1_waldstrasse.json")
+            }
+            "akt2" => include_str!("../../../../presets/crypt-of-shadows/scenes/akt2_gruft.json"),
+            _ => include_str!("../../../../presets/crypt-of-shadows/scenes/akt3_heiligtum.json"),
+        };
+        let mut def: SceneDefinition = serde_json::from_str(json).unwrap();
+        def.id = file.to_string();
+        build_initial_scene_state(&def)
+    }
+
+    #[test]
+    fn the_adventure_acts_fit_their_maps() {
+        for (file, next) in [
+            ("akt1", Some("akt2_gruft")),
+            ("akt2", Some("akt3_heiligtum")),
+            ("akt3", None),
+        ] {
+            let state = act(file);
+            let rules = state.definition.rules.clone().unwrap();
+            assert_eq!(rules.next_scene.as_deref(), next);
+            let map = rules5e::battle_map(rules.map_id.as_deref().unwrap()).unwrap();
+            assert_eq!(state.objectives.len(), rules.goals.len());
+            for goal in &rules.goals {
+                match goal.kind.as_str() {
+                    "encounter" => assert!(
+                        map.encounters.iter().any(|e| e.id == goal.target),
+                        "{}",
+                        goal.target
+                    ),
+                    "exit" => assert!(
+                        map.exits.iter().any(|e| e.to == goal.target),
+                        "{}",
+                        goal.target
+                    ),
+                    other => panic!("unknown goal kind {other}"),
+                }
+                assert!(
+                    !goal.title.de.is_empty()
+                        && !goal.title.en.is_empty()
+                        && !goal.title.ru.is_empty()
+                );
+            }
+            assert_eq!(state.definition.party.len(), 4);
+        }
+    }
+
+    #[test]
+    fn act_one_ends_after_the_ambush_and_the_road_west() {
+        let mut state = act("akt1");
+        assert!(ensure_exploring(&mut state));
+        // The classic heroes bring their class from their cards.
+        let class_of = |name: &str| {
+            state
+                .combat
+                .combatants
+                .iter()
+                .find(|c| c.name.starts_with(name))
+                .unwrap()
+                .stats5e
+                .as_ref()
+                .unwrap()
+                .class_id
+                .clone()
+        };
+        assert_eq!(
+            [
+                class_of("Thorin"),
+                class_of("Lyra"),
+                class_of("Finn"),
+                class_of("Althea")
+            ],
+            ["fighter", "wizard", "rogue", "cleric"]
+        );
+        // The ambush starts with the first step on the road.
+        let (_, stop) = apply(&mut state, ExploreAction::Move(GridPos::new(12, 4))).unwrap();
+        let Some(Stop::Encounter(encounter)) = stop else {
+            panic!("no ambush")
+        };
+        assert_eq!(encounter.id, "road_bandits");
+        assert!(start_prepared(&mut state, &encounter, "de"));
+        // The fight is won: the goal is reached, the act not yet.
+        for c in state
+            .combat
+            .combatants
+            .iter_mut()
+            .filter(|c| rules5e::is_enemy(c))
+        {
+            c.hp = 0;
+        }
+        won_fight(&mut state);
+        super::super::combat5e::end_encounter(&mut state, Some(rules5e::CombatOutcome::Victory));
+        assert!(
+            matches!(state.exploration.last(), Some(ExploreEvent::Goal { goal_id, .. }) if goal_id == "hinterhalt")
+        );
+        assert!(
+            !state
+                .exploration
+                .iter()
+                .any(|e| matches!(e, ExploreEvent::ActComplete { .. }))
+        );
+        // West along the road to the crypt: the act is complete.
+        state.map.as_mut().unwrap().revealed.fill(true);
+        state
+            .map
+            .as_mut()
+            .unwrap()
+            .triggered
+            .push("stream_wolves".into());
+        let (_, stop) = apply(&mut state, ExploreAction::Move(GridPos::new(0, 4))).unwrap();
+        let Some(Stop::Exit(to)) = stop else {
+            panic!("no exit")
+        };
+        change_map(&mut state, &to);
+        let events = reach_goal(&mut state, "exit", &to);
+        assert!(
+            matches!(events.last(), Some(ExploreEvent::ActComplete { next_scene: Some(n) }) if n == "akt2_gruft")
+        );
+        assert!(state.objectives.iter().all(|o| o.status == "completed"));
     }
 
     #[test]

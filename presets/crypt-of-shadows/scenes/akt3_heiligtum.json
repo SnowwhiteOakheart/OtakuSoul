@@ -1,0 +1,67 @@
+{
+ "title": "Akt 3: Das Herz der Schatten",
+ "description": "Unter der Gruft liegt ein altes Heiligtum. Dort hält ein Totenbeschwörer die gestohlenen Toten und die Schatten an sich gebunden - mit dem Grimoire, das Lyra sucht.",
+ "world_context": "Das Grenzland am Rand des Dunkelwalds. Seit Wochen verschwinden Tote aus den Gräbern der Dörfer, und Reisende meiden die alte Waldstraße. Gerüchte sprechen von einer vergessenen Gruft tief im Wald, in der einst ein Orden der Morgensonne seine Toten bestattete - und von einem Totenbeschwörer, der dort die Schatten bindet. Die Gruppe: Thorin (Zwerg, Kämpfer), Lyra (Hochelfe, Magierin), Finn (Halbling, Schurke) und Althea (Mensch, Klerikerin) - und die Spielerfigur, die sie anführt.",
+ "starting_location": "Das Heiligtum der Schatten unter der Gruft",
+ "time_of_day": "night",
+ "opening_narration": "Die Treppe windet sich tiefer, als die Gruft je hätte reichen dürfen. Unten empfängt euch eine Kammer voller Warnungen, in Stein gekratzt von Händen, die es eilig hatten. Von irgendwo unter euch steigt ein leiser, gleichförmiger Gesang auf, und das Licht eurer Fackeln wirkt plötzlich dünner, als würde die Dunkelheit daran saugen. Eine Tür im Osten, eine verriegelte im Süden.",
+ "first_message": "",
+ "party": [
+  "Thorin Eisenbart",
+  "Lyra Sternenhain",
+  "Finn Flinkfuß",
+  "Althea Sonnwind"
+ ],
+ "gm_tone": "Epic Fantasy",
+ "narrator_style": "Klassisches Fantasy-Abenteuer am Spieltisch: bildhaft, atmosphärisch und knapp. Beschreibt Orte mit Geräuschen, Licht und Geruch, lässt den Gefährten Raum für eigene Sätze und gibt dem Spieler klare Ansatzpunkte, was er als Nächstes tun kann. Kämpfe und Proben entscheidet die Regel-Engine - erzähle ihre Ergebnisse, erfinde keine eigenen.",
+ "conversation_method": "Local LLM",
+ "persona": "",
+ "lorebook": [],
+ "solo_mode": false,
+ "max_actor_depth": 2,
+ "dice_rolls_enabled": true,
+ "starting_bg": "",
+ "starting_ambient": "None",
+ "lock_bg": false,
+ "disable_ambient": false,
+ "rules": {
+  "ruleset": "5e",
+  "hero_classes": {},
+  "control_companions": false,
+  "heroic_death": false,
+  "map_id": "shadow_sanctum",
+  "goals": [
+   {
+    "id": "totenbeschwoerer",
+    "title": {
+     "de": "Den Totenbeschwörer im Heiligtum besiegen",
+     "en": "Defeat the necromancer in the sanctum",
+     "ru": "Победить некроманта в святилище"
+    },
+    "kind": "encounter",
+    "target": "sanctum_necromancer"
+   }
+  ]
+ },
+ "extensions": {
+  "otakusoul_i18n": {
+   "source_language": "de",
+   "translations": {
+    "en": {
+     "title": "Act 3: The Heart of Shadows",
+     "description": "Beneath the crypt lies an ancient sanctum. There a necromancer keeps the stolen dead and the shadows bound to him - with the grimoire Lyra is looking for.",
+     "world_context": "The borderland at the edge of the Darkwood. For weeks the dead have been vanishing from village graves, and travellers avoid the old forest road. Rumours tell of a forgotten crypt deep in the woods, where an order of the Morning Sun once buried its dead - and of a necromancer who binds the shadows there. The party: Thorin (dwarf, fighter), Lyra (high elf, wizard), Finn (halfling, rogue) and Althea (human, cleric) - and the player character who leads them.",
+     "opening_narration": "The stairs wind deeper than the crypt ever should have reached. At the bottom a chamber full of warnings awaits you, scratched into the stone by hands in a hurry. From somewhere below rises a low, steady chanting, and the light of your torches suddenly seems thinner, as if the darkness were drinking it. A door to the east, a barred one to the south.",
+     "narrator_style": "Classic tabletop fantasy adventure: vivid, atmospheric and concise. Describe places with sounds, light and smell, give the companions room for their own lines and give the player clear hooks for what to do next. The rules engine decides fights and checks - narrate its results, never invent your own."
+    },
+    "ru": {
+     "title": "Акт 3: Сердце теней",
+     "description": "Под склепом лежит древнее святилище. Там некромант держит при себе украденных мертвецов и тени - с помощью гримуара, который ищет Лира.",
+     "world_context": "Пограничье на краю Тёмного леса. Уже несколько недель из деревенских могил пропадают мёртвые, а путники обходят старую лесную дорогу. Слухи говорят о забытом склепе в глубине леса, где когда-то орден Утреннего Солнца хоронил своих мёртвых, - и о некроманте, что связывает там тени. Отряд: Торин (дварф, воин), Лира (высшая эльфийка, волшебница), Финн (полурослик, плут) и Алтея (человек, жрица) - и персонаж игрока, который ведёт их.",
+     "opening_narration": "Лестница уходит глубже, чем мог бы простираться склеп. Внизу вас встречает камера, исцарапанная предупреждениями - их выцарапывали в спешке. Откуда-то снизу поднимается тихое монотонное пение, а свет факелов вдруг кажется тоньше, будто тьма пьёт его. Дверь на востоке, запертая дверь на юге.",
+     "narrator_style": "Классическое настольное фэнтези-приключение: образно, атмосферно и кратко. Описывай места через звуки, свет и запахи, оставляй спутникам место для собственных реплик и давай игроку ясные зацепки, что делать дальше. Бои и проверки решает движок правил - рассказывай их итоги, не придумывай своих."
+    }
+   }
+  }
+ }
+}

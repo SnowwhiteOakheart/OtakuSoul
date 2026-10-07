@@ -48,4 +48,8 @@ revealed: Array<boolean>,
 /**
  * Encounters that already happened.
  */
-triggered: Array<string>, };
+triggered: Array<string>, 
+/**
+ * The prepared encounter being fought right now.
+ */
+active_encounter?: string, };

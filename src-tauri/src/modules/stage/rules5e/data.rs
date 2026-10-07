@@ -7,9 +7,10 @@ use std::sync::LazyLock;
 const MONSTERS_JSON: &str = include_str!("../../../../../presets/srd5/monsters.json");
 const CLASSES_JSON: &str = include_str!("../../../../../presets/srd5/classes.json");
 /// Battle maps (`presets/srd5/maps/*.json`); new maps are added here.
-const MAP_JSONS: [&str; 2] = [
+const MAP_JSONS: [&str; 3] = [
     include_str!("../../../../../presets/srd5/maps/crypt_hall.json"),
     include_str!("../../../../../presets/srd5/maps/forest_road.json"),
+    include_str!("../../../../../presets/srd5/maps/shadow_sanctum.json"),
 ];
 
 #[derive(Debug, Clone, Deserialize)]

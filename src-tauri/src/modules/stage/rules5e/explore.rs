@@ -58,6 +58,17 @@ pub enum ExploreEvent {
         map_id: String,
         name: LocalizedName,
     },
+    /// A goal of the adventure act is reached.
+    Goal {
+        goal_id: String,
+        title: LocalizedName,
+    },
+    /// Every goal of the act is reached; `next_scene` continues the adventure.
+    ActComplete {
+        #[serde(default)]
+        #[ts(optional)]
+        next_scene: Option<String>,
+    },
 }
 
 /// Light radius in squares: the map's own value, otherwise torchlight underground and

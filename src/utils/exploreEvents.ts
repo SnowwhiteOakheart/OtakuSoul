@@ -37,6 +37,10 @@ export function exploreEventText(event: ExploreEvent, language: Language): strin
       });
     case 'encounter':
       return translate('explore.event.encounter');
+    case 'goal':
+      return translate('explore.event.goal', { goal: localizedName(event.title, language) });
+    case 'act_complete':
+      return translate('explore.event.actComplete');
     case 'map_change':
       return translate('explore.event.mapChange', { map: localizedName(event.name, language) });
   }

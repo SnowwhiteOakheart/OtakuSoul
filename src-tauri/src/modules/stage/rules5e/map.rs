@@ -152,6 +152,10 @@ pub struct BattleMap {
     /// Encounters that already happened.
     #[serde(default)]
     pub triggered: Vec<String>,
+    /// The prepared encounter being fought right now.
+    #[serde(default)]
+    #[ts(optional)]
+    pub active_encounter: Option<String>,
 }
 
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize, TS)]
@@ -286,6 +290,7 @@ impl MapFile {
             light_ft: self.light_ft,
             revealed: Vec::new(),
             triggered: Vec::new(),
+            active_encounter: None,
         };
         if map.zone_cells("party").is_empty() {
             return Err(format!("map {}: no party start zone", map.id));

@@ -1,0 +1,78 @@
+{
+ "title": "Akt 1: Überfall auf der Waldstraße",
+ "description": "Die Gruppe folgt der alten Waldstraße zur vergessenen Gruft. Bei einem liegengebliebenen Wagen lauern Banditen - und im Unterholz am Bach heult etwas.",
+ "world_context": "Das Grenzland am Rand des Dunkelwalds. Seit Wochen verschwinden Tote aus den Gräbern der Dörfer, und Reisende meiden die alte Waldstraße. Gerüchte sprechen von einer vergessenen Gruft tief im Wald, in der einst ein Orden der Morgensonne seine Toten bestattete - und von einem Totenbeschwörer, der dort die Schatten bindet. Die Gruppe: Thorin (Zwerg, Kämpfer), Lyra (Hochelfe, Magierin), Finn (Halbling, Schurke) und Althea (Mensch, Klerikerin) - und die Spielerfigur, die sie anführt.",
+ "starting_location": "Die alte Waldstraße im Dunkelwald",
+ "time_of_day": "dusk",
+ "opening_narration": "Die Sonne sinkt hinter die Wipfel des Dunkelwalds, und die alte Straße liegt still vor euch. Die Fahrrinnen sind mit Moos überwachsen; seit Wochen ist hier niemand gefahren. Ein Stück weiter westlich steht ein Wagen quer, die Plane zerrissen, ein Rad gebrochen. Kein Pferd, kein Fuhrmann. Nur ein Rabe, der auf der Deichsel sitzt und euch beobachtet. Irgendwo im Unterholz knackt ein Ast.",
+ "first_message": "",
+ "party": [
+  "Thorin Eisenbart",
+  "Lyra Sternenhain",
+  "Finn Flinkfuß",
+  "Althea Sonnwind"
+ ],
+ "gm_tone": "Epic Fantasy",
+ "narrator_style": "Klassisches Fantasy-Abenteuer am Spieltisch: bildhaft, atmosphärisch und knapp. Beschreibt Orte mit Geräuschen, Licht und Geruch, lässt den Gefährten Raum für eigene Sätze und gibt dem Spieler klare Ansatzpunkte, was er als Nächstes tun kann. Kämpfe und Proben entscheidet die Regel-Engine - erzähle ihre Ergebnisse, erfinde keine eigenen.",
+ "conversation_method": "Local LLM",
+ "persona": "",
+ "lorebook": [],
+ "solo_mode": false,
+ "max_actor_depth": 2,
+ "dice_rolls_enabled": true,
+ "starting_bg": "",
+ "starting_ambient": "None",
+ "lock_bg": false,
+ "disable_ambient": false,
+ "rules": {
+  "ruleset": "5e",
+  "hero_classes": {},
+  "control_companions": false,
+  "heroic_death": false,
+  "map_id": "forest_road",
+  "goals": [
+   {
+    "id": "hinterhalt",
+    "title": {
+     "de": "Den Hinterhalt auf der Waldstraße überstehen",
+     "en": "Survive the ambush on the forest road",
+     "ru": "Пережить засаду на лесной дороге"
+    },
+    "kind": "encounter",
+    "target": "road_bandits"
+   },
+   {
+    "id": "gruft_finden",
+    "title": {
+     "de": "Dem Weg nach Westen zur Gruft folgen",
+     "en": "Follow the road west to the crypt",
+     "ru": "Пройти по дороге на запад к склепу"
+    },
+    "kind": "exit",
+    "target": "crypt_hall"
+   }
+  ],
+  "next_scene": "akt2_gruft"
+ },
+ "extensions": {
+  "otakusoul_i18n": {
+   "source_language": "de",
+   "translations": {
+    "en": {
+     "title": "Act 1: Ambush on the Forest Road",
+     "description": "The party follows the old forest road towards the forgotten crypt. Bandits lie in wait by a broken-down wagon - and something howls in the undergrowth by the stream.",
+     "world_context": "The borderland at the edge of the Darkwood. For weeks the dead have been vanishing from village graves, and travellers avoid the old forest road. Rumours tell of a forgotten crypt deep in the woods, where an order of the Morning Sun once buried its dead - and of a necromancer who binds the shadows there. The party: Thorin (dwarf, fighter), Lyra (high elf, wizard), Finn (halfling, rogue) and Althea (human, cleric) - and the player character who leads them.",
+     "opening_narration": "The sun sinks behind the treetops of the Darkwood, and the old road lies silent before you. Moss has grown over the ruts; no one has driven here for weeks. A little further west a wagon stands across the road, its canvas torn, a wheel broken. No horse, no driver. Only a raven sitting on the shaft, watching you. Somewhere in the undergrowth a branch cracks.",
+     "narrator_style": "Classic tabletop fantasy adventure: vivid, atmospheric and concise. Describe places with sounds, light and smell, give the companions room for their own lines and give the player clear hooks for what to do next. The rules engine decides fights and checks - narrate its results, never invent your own."
+    },
+    "ru": {
+     "title": "Акт 1: Засада на лесной дороге",
+     "description": "Отряд идёт по старой лесной дороге к забытому склепу. У сломанной повозки затаились бандиты - а в подлеске у ручья что-то воет.",
+     "world_context": "Пограничье на краю Тёмного леса. Уже несколько недель из деревенских могил пропадают мёртвые, а путники обходят старую лесную дорогу. Слухи говорят о забытом склепе в глубине леса, где когда-то орден Утреннего Солнца хоронил своих мёртвых, - и о некроманте, что связывает там тени. Отряд: Торин (дварф, воин), Лира (высшая эльфийка, волшебница), Финн (полурослик, плут) и Алтея (человек, жрица) - и персонаж игрока, который ведёт их.",
+     "opening_narration": "Солнце опускается за верхушки Тёмного леса, и старая дорога лежит перед вами в тишине. Колеи поросли мхом - здесь уже несколько недель никто не ездил. Чуть западнее поперёк дороги стоит повозка с порванным тентом и сломанным колесом. Ни лошади, ни возницы. Лишь ворон сидит на оглобле и наблюдает за вами. Где-то в подлеске хрустит ветка.",
+     "narrator_style": "Классическое настольное фэнтези-приключение: образно, атмосферно и кратко. Описывай места через звуки, свет и запахи, оставляй спутникам место для собственных реплик и давай игроку ясные зацепки, что делать дальше. Бои и проверки решает движок правил - рассказывай их итоги, не придумывай своих."
+    }
+   }
+  }
+ }
+}

@@ -423,6 +423,24 @@ pub struct SceneRules {
     #[serde(default)]
     #[ts(optional)]
     pub map_id: Option<String>,
+    /// Goals of an adventure act that the engine checks off (prepared fights won, exits used).
+    #[serde(default)]
+    pub goals: Vec<SceneGoal>,
+    /// The next act (scene id) once every goal is reached.
+    #[serde(default)]
+    #[ts(optional)]
+    pub next_scene: Option<String>,
+}
+
+/// A goal of an adventure act: winning a prepared encounter of a map (`kind: "encounter"`,
+/// `target` = encounter id) or leaving through an exit to a map (`kind: "exit"`, `target` = map id).
+#[derive(Debug, Clone, Default, PartialEq, Serialize, Deserialize, TS)]
+#[ts(export)]
+pub struct SceneGoal {
+    pub id: String,
+    pub title: super::rules5e::LocalizedName,
+    pub kind: String,
+    pub target: String,
 }
 
 impl SceneDefinition {

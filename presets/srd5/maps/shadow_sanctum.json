@@ -1,0 +1,188 @@
+{
+ "id": "shadow_sanctum",
+ "name": {
+  "de": "Heiligtum der Schatten",
+  "en": "Sanctum of Shadows",
+  "ru": "Святилище теней"
+ },
+ "tileset": "dungeon",
+ "rows": [
+  "################",
+  "#pp.....#..w...#",
+  "#pp.....D...S..#",
+  "#..O....#..hh..#",
+  "#.....b.#......#",
+  "###L######..####",
+  "#..............#",
+  "#.B..ss..ss..B.#",
+  "#......~~......#",
+  "#.O..........O.#",
+  "#......a.......#",
+  "################"
+ ],
+ "legend": {
+  "#": {
+   "ground": "wall_stone",
+   "kind": "wall"
+  },
+  ".": {
+   "ground": "floor_stone",
+   "kind": "floor"
+  },
+  "p": {
+   "ground": "floor_stone",
+   "kind": "floor",
+   "zone": "party"
+  },
+  "s": {
+   "ground": "floor_stone",
+   "kind": "floor",
+   "zone": "spawn"
+  },
+  "h": {
+   "ground": "floor_stone",
+   "kind": "floor",
+   "zone": "spawn_shadows"
+  },
+  "D": {
+   "ground": "floor_stone",
+   "kind": "floor",
+   "object": "door_closed"
+  },
+  "L": {
+   "ground": "floor_stone",
+   "kind": "floor",
+   "object": "door_closed"
+  },
+  "O": {
+   "ground": "floor_stone",
+   "kind": "floor",
+   "object": "pillar"
+  },
+  "B": {
+   "ground": "floor_stone",
+   "kind": "floor",
+   "object": "brazier"
+  },
+  "S": {
+   "ground": "floor_stone",
+   "kind": "floor",
+   "object": "sarcophagus"
+  },
+  "a": {
+   "ground": "floor_stone",
+   "kind": "floor",
+   "object": "altar_dark"
+  },
+  "b": {
+   "ground": "floor_stone",
+   "kind": "floor",
+   "object": "bones"
+  },
+  "w": {
+   "ground": "floor_stone",
+   "kind": "floor",
+   "object": "cobweb"
+  },
+  "~": {
+   "ground": "water_shallow",
+   "kind": "difficult"
+  }
+ },
+ "rooms": [
+  {
+   "id": "stairwell",
+   "name": {
+    "de": "Treppenkammer",
+    "en": "Stairwell",
+    "ru": "Лестничная камера"
+   },
+   "area": [
+    1,
+    1,
+    7,
+    4
+   ],
+   "description": "The stairs from the crypt end in a cold chamber. Scratched warnings cover the walls; a heavy door leads east, a barred door south. Faint chanting rises from below."
+  },
+  {
+   "id": "shadow_hall",
+   "name": {
+    "de": "Halle der Schatten",
+    "en": "Hall of Shadows",
+    "ru": "Зал теней"
+   },
+   "area": [
+    9,
+    1,
+    14,
+    4
+   ],
+   "description": "A narrow hall around an open sarcophagus. The torchlight does not reach the corners, and the darkness there moves. A wide gap in the south wall opens onto the sanctum."
+  },
+  {
+   "id": "sanctum",
+   "name": {
+    "de": "Heiligtum",
+    "en": "Sanctum",
+    "ru": "Святилище"
+   },
+   "area": [
+    1,
+    6,
+    14,
+    10
+   ],
+   "description": "A vaulted sanctum with a black altar, braziers burning with green flame and a pool of dark water. A robed necromancer stands at the altar with the stolen dead at his side; the grimoire lies open before him."
+  }
+ ],
+ "encounters": [
+  {
+   "id": "hall_shadows",
+   "room": "shadow_hall",
+   "monsters": [
+    {
+     "monster": "shadow",
+     "count": 1
+    }
+   ],
+   "zone": "spawn_shadows"
+  },
+  {
+   "id": "sanctum_necromancer",
+   "room": "sanctum",
+   "monsters": [
+    {
+     "monster": "necromancer",
+     "count": 1
+    },
+    {
+     "monster": "zombie",
+     "count": 2
+    }
+   ],
+   "zone": "spawn"
+  }
+ ],
+ "traps": [
+  {
+   "at": {
+    "x": 3,
+    "y": 6
+   },
+   "spot_dc": 13,
+   "save_dc": 12,
+   "damage": "2d6",
+   "damage_type": "fire"
+  }
+ ],
+ "locks": [
+  {
+   "at": {
+    "x": 3,
+    "y": 5
+   },
+   "dc": 14
+  }
+ ]
+}

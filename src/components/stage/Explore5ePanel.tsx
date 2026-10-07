@@ -1,5 +1,5 @@
 import React from 'react';
-import { Compass, Hammer, KeyRound, Loader2 } from 'lucide-react';
+import { CheckCircle2, Circle, Compass, Hammer, KeyRound, Loader2, Trophy } from 'lucide-react';
 import { useStoreFields } from '../../store/useAppStore';
 import { useTranslation } from '../../i18n';
 import { localizedName } from '../../utils/combatEvents';
@@ -14,8 +14,8 @@ const LOG_LINES = 8;
  */
 export const Explore5ePanel: React.FC = () => {
   const { t } = useTranslation();
-  const { stageState, runStageExploration, isProcessingStageTurn, appLanguage } = useStoreFields(
-    'stageState', 'runStageExploration', 'isProcessingStageTurn', 'appLanguage',
+  const { stageState, runStageExploration, continueAdventure, isProcessingStageTurn, appLanguage } = useStoreFields(
+    'stageState', 'runStageExploration', 'continueAdventure', 'isProcessingStageTurn', 'appLanguage',
   );
   const map = stageState?.map;
   if (!stageState || !map || stageState.combat.is_active) return null;
@@ -27,6 +27,11 @@ export const Explore5ePanel: React.FC = () => {
   const locks = map.locks.filter((lock) => lock.known);
   const log = (stageState.exploration ?? []).slice(-LOG_LINES).map((event) => exploreEventText(event, appLanguage));
   const button = 'flex items-center gap-1 rounded-lg border px-2 py-1 font-semibold disabled:opacity-40';
+  // Adventure acts: goals the engine checks off; all reached = the act is done.
+  const goals = stageState.definition.rules?.goals ?? [];
+  const reached = (id: string) => stageState.objectives.some((o) => o.id === id && o.status === 'completed');
+  const actDone = goals.length > 0 && goals.every((goal) => reached(goal.id));
+  const nextScene = stageState.definition.rules?.next_scene;
 
   return (
     <section
@@ -54,6 +59,39 @@ export const Explore5ePanel: React.FC = () => {
         >
           <Compass className="w-3.5 h-3.5" /> {t('explore.start')}
         </button>
+      )}
+      {goals.length > 0 && (
+        <div className="space-y-1" data-testid="explore-goals">
+          <p className="font-semibold text-slate-200">{t('explore.goals')}</p>
+          <ul className="space-y-0.5">
+            {goals.map((goal) => (
+              <li key={goal.id} data-goal={goal.id} data-reached={reached(goal.id)} className={`flex items-center gap-1.5 ${reached(goal.id) ? 'text-emerald-300' : 'text-slate-300'}`}>
+                {reached(goal.id) ? <CheckCircle2 className="w-3.5 h-3.5" /> : <Circle className="w-3.5 h-3.5 text-slate-500" />}
+                {localizedName(goal.title, appLanguage)}
+              </li>
+            ))}
+          </ul>
+        </div>
+      )}
+      {actDone && (
+        <div className="space-y-2 rounded-xl border border-amber-400/50 bg-amber-500/10 p-3" data-testid="act-done">
+          <p className="flex items-center gap-1.5 text-sm font-bold text-amber-100">
+            <Trophy className="w-4 h-4" /> {nextScene ? t('explore.actDone') : t('explore.adventureDone')}
+          </p>
+          {nextScene && (
+            <>
+              <p className="text-amber-100/80">{t('explore.actDoneHint')}</p>
+              <button
+                type="button"
+                disabled={isProcessingStageTurn}
+                onClick={() => void continueAdventure()}
+                className={`${button} border-amber-400/60 bg-amber-600/30 text-amber-50 hover:bg-amber-600/50`}
+              >
+                {t('explore.nextAct')}
+              </button>
+            </>
+          )}
+        </div>
       )}
       {locks.length > 0 && (
         <div className="space-y-1.5" data-testid="explore-locks">

@@ -333,6 +333,7 @@ pub fn scan_available_characters() -> Vec<CharacterProfile> {
         PathBuf::from(&paths.characters_dir),
         PathBuf::from(&paths.bundled_presets_dir).join("sakura-succubus-3"),
         PathBuf::from(&paths.bundled_presets_dir).join("no-game-no-life"),
+        PathBuf::from(&paths.bundled_presets_dir).join("crypt-of-shadows"),
         PathBuf::from(&paths.bundled_presets_dir).join("cards"),
         PathBuf::from(&paths.bundled_presets_dir),
     ];
