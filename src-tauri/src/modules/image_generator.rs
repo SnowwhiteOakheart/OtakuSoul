@@ -41,7 +41,9 @@ pub struct ImageGenConfig {
 impl Default for ImageGenConfig {
     fn default() -> Self {
         Self {
-            provider: "Automatic1111".to_string(),
+            // New profiles start with the bundled local generator (stable-diffusion.cpp and its
+            // model catalog); a saved choice stays.
+            provider: "local".to_string(),
             api_url: "http://127.0.0.1:7860".to_string(),
             api_key: None,
             positive_prompt_prefix: "masterpiece, best quality, very aesthetic, anime artstyle, vivid colors, highly detailed".to_string(),

@@ -21,7 +21,7 @@ export const providerOption = (provider: string) =>
   PROVIDER_OPTIONS.find((option) => normalized(option) === normalized(provider)) ?? provider;
 
 export const DEFAULT_IMG_CONFIG: ImageGenConfig = {
-  provider: 'automatic1111',
+  provider: 'local',
   api_url: 'http://127.0.0.1:7860',
   api_key: null,
   positive_prompt_prefix: '',

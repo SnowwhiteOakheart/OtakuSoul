@@ -9,6 +9,83 @@ use tokio::sync::{Mutex, RwLock};
 use tracing::{error, info, warn};
 use ts_rs::TS;
 
+/// Video memory a start with every layer on the GPU needs (model, KV cache, runtime buffers
+/// and a vision projector); `None` when only part of the model goes to the GPU.
+fn vram_need(config: &LlamaServerConfig) -> Option<u64> {
+    let layers = crate::modules::gguf::block_count(Path::new(&config.model_path))?;
+    if config.gpu_layers < layers {
+        return None;
+    }
+    let projector = config
+        .mmproj_path
+        .as_deref()
+        .and_then(|p| std::fs::metadata(p).ok())
+        .map_or(0, |m| m.len() / (1024 * 1024));
+    Some(
+        crate::modules::hardware::estimate_llm_vram_mb(
+            &config.model_path,
+            layers,
+            config.context_size,
+            config.cache_type_k.as_deref(),
+            config.cache_type_v.as_deref(),
+        ) + projector,
+    )
+}
+
+fn gb(mb: u64) -> String {
+    format!("{:.1}", mb as f64 / 1024.0)
+}
+
+/// The translatable message about too little free video memory, with the programs using it.
+/// `None` without a dedicated GPU to report on.
+fn vram_report(
+    need: Option<u64>,
+    hardware: &crate::modules::hardware::HardwareInfo,
+) -> Option<String> {
+    let gpu = hardware.primary_gpu().filter(|g| !g.integrated)?;
+    let users = crate::modules::hardware::gpu_memory_users()
+        .into_iter()
+        .filter(|(name, _)| !name.starts_with("llama-server"))
+        .take(4)
+        .map(|(name, mb)| format!("{name} ({} GB)", gb(mb)))
+        .collect::<Vec<_>>();
+    Some(crate::err!(
+        "backend.server.notEnoughVram",
+        needed = need.map_or_else(|| "?".to_string(), gb),
+        free = gb(gpu.free_vram_mb),
+        total = gb(gpu.total_vram_mb),
+        users = if users.is_empty() {
+            "–".to_string()
+        } else {
+            users.join(", ")
+        },
+    ))
+}
+
+/// Before a start: the model needs more video memory than is free right now.
+fn vram_shortage(config: &LlamaServerConfig) -> Option<String> {
+    let need = vram_need(config)?;
+    let hardware = crate::modules::hardware::probe_hardware();
+    let gpu = hardware
+        .primary_gpu()
+        .filter(|g| !g.integrated && g.free_vram_mb > 0)?;
+    (need > gpu.free_vram_mb)
+        .then(|| vram_report(Some(need), &hardware))
+        .flatten()
+}
+
+/// llama.cpp aborted because the GPU ran out of memory (CUDA, Vulkan, ROCm).
+fn is_vram_failure(logs: &str) -> bool {
+    const SIGNS: [&str; 5] = [
+        "unable to allocate CUDA",
+        "cudaMalloc failed",
+        "ErrorOutOfDeviceMemory",
+        "out of memory",
+        "failed to allocate ROCm",
+    ];
+    SIGNS.iter().any(|sign| logs.contains(sign))
+}
+
 #[derive(Debug, Clone, Serialize, Deserialize, TS)]
 #[ts(export)]
 pub struct LlamaServerConfig {
@@ -324,6 +401,17 @@ impl LlamaServerManager {
             status.error_message = Some(message.clone());
             return Err(message);
         }
+        // Too little free video memory (another program, a game): say so instead of letting
+        // llama.cpp abort with a CUDA allocation error.
+        let check = config.clone();
+        if let Ok(Some(message)) = tokio::task::spawn_blocking(move || vram_shortage(&check)).await
+        {
+            warn!("llama-server not started: too little free VRAM");
+            let mut status = self.status.write().await;
+            status.state = ServerState::Failed;
+            status.error_message = Some(message.clone());
+            return Err(message);
+        }
 
         let model_name = model_path
             .file_name()
@@ -531,10 +619,24 @@ impl LlamaServerManager {
                                 .cloned()
                                 .collect::<Vec<_>>()
                                 .join("\n");
-                            let err_msg = format!(
-                                "llama-server Prozess unerwartet beendet mit Status {}.\nLogs:\n{}",
-                                status, last_logs
-                            );
+                            let err_msg = if is_vram_failure(&last_logs) {
+                                let check = config.clone();
+                                tokio::task::spawn_blocking(move || {
+                                    vram_report(
+                                        vram_need(&check),
+                                        &crate::modules::hardware::probe_hardware(),
+                                    )
+                                })
+                                .await
+                                .ok()
+                                .flatten()
+                                .unwrap_or_else(|| crate::err!("backend.server.vramCrash"))
+                            } else {
+                                format!(
+                                    "llama-server Prozess unerwartet beendet mit Status {}.\nLogs:\n{}",
+                                    status, last_logs
+                                )
+                            };
                             let mut s = self.status.write().await;
                             s.state = ServerState::Failed;
                             s.pid = None;
@@ -668,6 +770,19 @@ fn pick_device(listing: &str, gpu: &str) -> Option<String> {
 
 #[cfg(test)]
 mod tests {
+    use super::*;
+
+    #[test]
+    fn running_out_of_video_memory_is_recognised() {
+        assert!(is_vram_failure(
+            "0.01 E alloc_tensor_range: failed to allocate CUDA0 buffer\nllama_model_load: error loading model: unable to allocate CUDA0 buffer"
+        ));
+        assert!(is_vram_failure(
+            "vk::Device::allocateMemory: ErrorOutOfDeviceMemory"
+        ));
+        assert!(!is_vram_failure("error loading model: invalid magic"));
+    }
+
     use super::{LlamaServerConfig, LlamaServerManager, ServerState};
 
     #[test]

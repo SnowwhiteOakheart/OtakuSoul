@@ -1875,6 +1875,9 @@ veraltet und sind korrigiert: `chat-sidebar-errors` las die Sitzung, bevor der e
 - [x] **Einrichtung für neue Nutzer (07.10.2026):** Der Einrichtungsassistent hat einen Schritt „Stimme & Bilder“ mit
   Stimme der gewählten Figur und Bildmodell (Änderungen speichern sich selbst). Neue Profile zeigen den Avatar als
   Charakterbild statt des allgemeinen 3D-Modells; gespeicherte Einstellungen bleiben unverändert.
+- [x] **Verständliche Meldung bei vollem Grafikspeicher (07.10.2026):** Vor dem Start des Chat-Modells prüft die App den
+  freien Grafikspeicher und nennt Bedarf, freien Speicher und die belegenden Programme statt des CUDA-Abbruchs; ein
+  Speicher-Abbruch von llama.cpp wird ebenso übersetzt. Neue Profile starten bei Bildern mit „Lokal“.
 
 ## Charakterporträts und Emotionen (07.10.2026)
 
@@ -1883,3 +1886,9 @@ veraltet und sind korrigiert: `chat-sidebar-errors` las die Sitzung, bevor der e
   Charaktere sechs Emotionsbilder ergänzt (114 WebPs, 640 × 800 px, sRGB), einschließlich der vier
   5e-Helden. Bildzuordnungen in JSON und eingebetteten PNG-Karten ergänzt; vorhandene Charakterdaten
   erhalten. Formate, Pfade, Metadaten und Mimik visuell geprüft; lokale Portrait-Tests bestanden.
+
+- [x] **Emotionsbilder nach dem Speichern (07.10.2026):** Relative Portraitpfade beim Laden und
+  Speichern auf den ursprünglichen Kartenordner beziehen; PNG/JSON enthalten dieselben korrigierten
+  Metadaten. Defekte Bildverweise älterer Nutzerkopien beim Scan durch passende Presetbilder ersetzen,
+  funktionierende eigene Bilder erhalten. Regressionstest für manuelle Emotionen, Chatantworten,
+  Speichern/Neustart und beschädigte Karten ergänzt (`npm run e2e:portraits`).

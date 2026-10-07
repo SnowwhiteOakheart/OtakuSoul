@@ -195,7 +195,9 @@ export const createLlmSlice: SliceCreator<LlmSlice> = (set, get) => ({
       set({ serverStatus: status });
       if (serverTaskId && status.state !== 'starting') {
         if (status.state === 'running') get().endTask(serverTaskId, 'done');
-        else if (status.state === 'failed') get().endTask(serverTaskId, 'failed', status.error_message ?? undefined);
+        else if (status.state === 'failed') {
+          get().endTask(serverTaskId, 'failed', status.error_message ? errorMessage(status.error_message) : undefined);
+        }
         else get().endTask(serverTaskId, 'cancelled');
         serverTaskId = null;
       }

@@ -146,6 +146,47 @@ fn largest_context_that_fits(max_tokens: u32, token_capacity: u64) -> u32 {
         .unwrap_or(1_024)
 }
 
+/// Programs holding at least this much video memory are named when memory runs short.
+const NOTABLE_GPU_USER_MB: u64 = 512;
+
+/// Programs that hold video memory on NVIDIA GPUs (name without path, MB), largest first.
+pub fn gpu_memory_users() -> Vec<(String, u64)> {
+    let Ok(output) = Command::new("nvidia-smi")
+        .args([
+            "--query-compute-apps=process_name,used_memory",
+            "--format=csv,noheader,nounits",
+        ])
+        .output()
+    else {
+        return Vec::new();
+    };
+    if !output.status.success() {
+        return Vec::new();
+    }
+    parse_gpu_memory_users(&String::from_utf8_lossy(&output.stdout))
+}
+
+fn parse_gpu_memory_users(csv: &str) -> Vec<(String, u64)> {
+    let mut users: Vec<(String, u64)> = csv
+        .lines()
+        .filter_map(|line| {
+            let (name, used) = line.rsplit_once(',')?;
+            let used = used.trim().parse::<u64>().ok()?;
+            let name = name.trim();
+            // Linux and Windows (Proton) paths alike; arguments after the program are dropped.
+            let program = name.split_whitespace().next().unwrap_or(name);
+            let short = program
+                .rsplit(['/', '\\'])
+                .next()
+                .unwrap_or(program)
+                .to_string();
+            (used >= NOTABLE_GPU_USER_MB && !short.is_empty()).then_some((short, used))
+        })
+        .collect();
+    users.sort_by_key(|(_, used)| std::cmp::Reverse(*used));
+    users
+}
+
 pub fn probe_hardware() -> HardwareInfo {
     let mut sys = System::new();
     sys.refresh_memory();
@@ -510,6 +551,19 @@ fn recommend_gpu_layers_for_vram(
 
 #[cfg(test)]
 mod tests {
+
+    #[test]
+    fn gpu_memory_users_are_named_without_path_and_sorted() {
+        let csv = "/usr/bin/kwin_wayland, 119\nS:\\steamapps\\common\\AION2\\Binaries\\Win64\\AION2.exe, 10595\n/opt/x/llama-server --port 8080, 2048\nbroken line\n";
+        assert_eq!(
+            parse_gpu_memory_users(csv),
+            vec![
+                ("AION2.exe".to_string(), 10595),
+                ("llama-server".to_string(), 2048)
+            ]
+        );
+    }
+
     use super::*;
 
     #[test]

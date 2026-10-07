@@ -2513,6 +2513,8 @@ export const ru: TranslationDictionary = {
   "backend.llm.stream": "Ошибка потока: {{error}}",
   "backend.server.bonsaiLegacy": "Ternary-Bonsai-27B-Q2_0.gguf – устаревший промежуточный формат, он намеренно не запускается. Загрузите вместо неё Ternary-Bonsai-2-27B-PQ2_0.gguf (работает в среде PrismML).",
   "backend.server.prismRequired": "Этой модели PQ2_0/PTQ1_0 нужна среда PrismML. Установите её в Настройки → Сервер (или командой ./tools/install_prism_runtime.sh); затем OtakuSoul выберет её автоматически.",
+  "backend.server.notEnoughVram": "Недостаточно свободной видеопамяти для этой модели: нужно около {{needed}} ГБ, свободно {{free}} из {{total}} ГБ. Занято: {{users}}. Закройте эти программы, выберите меньший контекст или выгрузите на GPU меньше слоёв (Настройки → Сервер).",
+  "backend.server.vramCrash": "llama-server не хватило видеопамяти при загрузке. Закройте программы, использующие GPU, или выгрузите на GPU меньше слоёв (Настройки → Сервер).",
   "backend.server.binaryMissing": "llama-server не найден. Установите llama.cpp в разделе «Настройки → llama-server и настройка» или укажите путь.",
   "backend.presets.dir": "Не удалось создать папку пресетов: {{error}}",
   "backend.presets.save": "Не удалось сохранить пресеты: {{error}}",

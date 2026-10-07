@@ -81,6 +81,11 @@ Hub). Integrationen → Bildgenerierung enthält nur Studio und Galerie.
   `e2e/tools/wmclose.py` (WM_DELETE_WINDOW, erzwingt X11). „Beenden“ (Tray) bzw. Updater-Neustart lösen `RunEvent::Exit` aus →
   `stop_model_servers` (llama, sd, TTS, max. 8 s). Linux beendet Kindprozesse zusätzlich per `PR_SET_PDEATHSIG`;
   neue Kindprozesse brauchen `kill_on_drop(true)` und unter Linux `PR_SET_PDEATHSIG`.
+- Grafikspeicher beim Chat-Modell: `llama_manager::vram_shortage` vergleicht vor dem Start (nur bei voller GPU-Auslagerung)
+  `hardware::estimate_llm_vram_mb` (+ mmproj) mit dem freien VRAM und meldet `backend.server.notEnoughVram` samt
+  Belegern (`hardware::gpu_memory_users`, nvidia-smi); bricht llama.cpp trotzdem mit Speichermangel ab
+  (`is_vram_failure`), wird daraus dieselbe Meldung. Server-Fehler im UI über `errorMessage()` anzeigen.
+  Neue Profile starten bei Bildern mit dem Anbieter `local` (stable-diffusion.cpp); gespeicherte Wahl bleibt.
 - Mehrere GPUs: iGPUs melden Dutzende GB geteilten Speicher; sd.cpp/llama.cpp würden sie wählen (FLUX.1 350 s statt
   48 s). Deshalb `--backend`/`--device` via `hardware::primary_gpu()` + `same_gpu()`.
 - Linux-CUDA-Builds bringen keine CUDA-Laufzeit mit und fallen still auf CPU zurück → `runtimes` empfiehlt CUDA nur bei

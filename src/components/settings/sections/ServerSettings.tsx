@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react';
 import { useAppStore, useStoreFields } from '../../../store/useAppStore';
 import { translate, useTranslation } from '../../../i18n';
+import { errorMessage } from '../../../utils/errors';
 import { open } from '@tauri-apps/plugin-dialog';
 import {
   Cpu,
@@ -534,7 +535,7 @@ export const ServerSettings = () => {
               <AlertTriangle className="w-3.5 h-3.5" />
               {t('settings.startError')}
             </div>
-            <div className="font-mono text-xs whitespace-pre-wrap select-text">{serverStatus.error_message}</div>
+            <div className="font-mono text-xs whitespace-pre-wrap select-text">{errorMessage(serverStatus.error_message)}</div>
           </div>
         )}
 

@@ -31,6 +31,11 @@ try {
   await browser.$('#settings-tab-image').click();
   const list = await browser.$('ul[aria-label="LoRAs (Stil-Erweiterungen)"]');
   await list.waitForDisplayed({ timeout: 15_000 });
+  // The saved configuration (SDXL model) arrives after the page: wait for the filtered list.
+  await browser.waitUntil(async () => !(await list.getText()).includes('GHIBSKY'), {
+    timeout: 10_000,
+    timeoutMsg: 'FLUX-LoRA bei einem SDXL-Modell angezeigt',
+  });
   const text = await list.getText();
   assert.ok(text.includes('Pastel Anime XL') && text.includes('Anime Detailer XL'), 'SDXL-Katalog fehlt');
   assert.ok(text.includes('mein-stil'), 'eigene Datei fehlt');

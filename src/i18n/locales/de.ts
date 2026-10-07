@@ -2515,6 +2515,8 @@ export const de = {
   "backend.llm.stream": "Stream-Fehler: {{error}}",
   "backend.server.bonsaiLegacy": "Ternary-Bonsai-27B-Q2_0.gguf ist das veraltete Übergangsformat und wird bewusst nicht gestartet. Bitte stattdessen Ternary-Bonsai-2-27B-PQ2_0.gguf laden (läuft mit der PrismML-Laufzeit).",
   "backend.server.prismRequired": "Dieses PQ2_0/PTQ1_0-Modell benötigt die PrismML-Laufzeit. Installiere sie unter Einstellungen → Server (oder mit ./tools/install_prism_runtime.sh); OtakuSoul wählt sie danach automatisch.",
+  "backend.server.notEnoughVram": "Nicht genug freier Grafikspeicher für dieses Modell: Es braucht etwa {{needed}} GB, frei sind {{free}} von {{total}} GB. Belegt durch: {{users}}. Schließe diese Programme, wähle einen kleineren Kontext oder lagere weniger Schichten auf die GPU aus (Einstellungen → Server).",
+  "backend.server.vramCrash": "llama-server hat beim Laden zu wenig Grafikspeicher bekommen. Schließe Programme, die die GPU nutzen, oder lagere weniger Schichten auf die GPU aus (Einstellungen → Server).",
   "backend.server.binaryMissing": "llama-server nicht gefunden. Installiere llama.cpp unter Einstellungen → llama-server & Tuning oder gib den Pfad an.",
   "backend.presets.dir": "Fehler beim Erstellen des Preset-Ordners: {{error}}",
   "backend.presets.save": "Fehler beim Serialisieren der Presets: {{error}}",
