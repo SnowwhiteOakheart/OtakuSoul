@@ -72,6 +72,14 @@
             ]
           }
         }
+      },
+      "expressions": {
+        "neutral": "expressions/hifumi_yamamoto/neutral.webp",
+        "happy": "expressions/hifumi_yamamoto/happy.webp",
+        "sad": "expressions/hifumi_yamamoto/sad.webp",
+        "angry": "expressions/hifumi_yamamoto/angry.webp",
+        "surprised": "expressions/hifumi_yamamoto/surprised.webp",
+        "relaxed": "expressions/hifumi_yamamoto/relaxed.webp"
       }
     }
   }

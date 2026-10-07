@@ -72,6 +72,14 @@
             ]
           }
         }
+      },
+      "expressions": {
+        "neutral": "expressions/marina_wakatsuki/neutral.webp",
+        "happy": "expressions/marina_wakatsuki/happy.webp",
+        "sad": "expressions/marina_wakatsuki/sad.webp",
+        "angry": "expressions/marina_wakatsuki/angry.webp",
+        "surprised": "expressions/marina_wakatsuki/surprised.webp",
+        "relaxed": "expressions/marina_wakatsuki/relaxed.webp"
       }
     }
   }

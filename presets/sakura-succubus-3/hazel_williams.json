@@ -72,6 +72,14 @@
             ]
           }
         }
+      },
+      "expressions": {
+        "neutral": "expressions/hazel_williams/neutral.webp",
+        "happy": "expressions/hazel_williams/happy.webp",
+        "sad": "expressions/hazel_williams/sad.webp",
+        "angry": "expressions/hazel_williams/angry.webp",
+        "surprised": "expressions/hazel_williams/surprised.webp",
+        "relaxed": "expressions/hazel_williams/relaxed.webp"
       }
     }
   }

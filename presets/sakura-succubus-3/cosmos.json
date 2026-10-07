@@ -72,6 +72,14 @@
             ]
           }
         }
+      },
+      "expressions": {
+        "neutral": "expressions/cosmos/neutral.webp",
+        "happy": "expressions/cosmos/happy.webp",
+        "sad": "expressions/cosmos/sad.webp",
+        "angry": "expressions/cosmos/angry.webp",
+        "surprised": "expressions/cosmos/surprised.webp",
+        "relaxed": "expressions/cosmos/relaxed.webp"
       }
     }
   }

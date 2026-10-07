@@ -72,6 +72,14 @@
             ]
           }
         }
+      },
+      "expressions": {
+        "neutral": "expressions/ayu_ikue/neutral.webp",
+        "happy": "expressions/ayu_ikue/happy.webp",
+        "sad": "expressions/ayu_ikue/sad.webp",
+        "angry": "expressions/ayu_ikue/angry.webp",
+        "surprised": "expressions/ayu_ikue/surprised.webp",
+        "relaxed": "expressions/ayu_ikue/relaxed.webp"
       }
     }
   }

@@ -75,6 +75,14 @@
             ]
           }
         }
+      },
+      "expressions": {
+        "neutral": "expressions/yue/neutral.webp",
+        "happy": "expressions/yue/happy.webp",
+        "sad": "expressions/yue/sad.webp",
+        "angry": "expressions/yue/angry.webp",
+        "surprised": "expressions/yue/surprised.webp",
+        "relaxed": "expressions/yue/relaxed.webp"
       }
     }
   }

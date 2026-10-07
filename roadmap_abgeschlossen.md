@@ -1875,3 +1875,11 @@ veraltet und sind korrigiert: `chat-sidebar-errors` las die Sitzung, bevor der e
 - [x] **Einrichtung für neue Nutzer (07.10.2026):** Der Einrichtungsassistent hat einen Schritt „Stimme & Bilder“ mit
   Stimme der gewählten Figur und Bildmodell (Änderungen speichern sich selbst). Neue Profile zeigen den Avatar als
   Charakterbild statt des allgemeinen 3D-Modells; gespeicherte Einstellungen bleiben unverändert.
+
+## Charakterporträts und Emotionen (07.10.2026)
+
+- [x] Neue Grundporträts für Cosmos, Echidna, Emilia, Hazel Williams, Hifumi Yamamoto, Makise Kurisu,
+  Rory Mercury, Vivy und Yue erstellt. Anschließend für alle 19 bisher nicht versorgten mitgelieferten
+  Charaktere sechs Emotionsbilder ergänzt (114 WebPs, 640 × 800 px, sRGB), einschließlich der vier
+  5e-Helden. Bildzuordnungen in JSON und eingebetteten PNG-Karten ergänzt; vorhandene Charakterdaten
+  erhalten. Formate, Pfade, Metadaten und Mimik visuell geprüft; lokale Portrait-Tests bestanden.
