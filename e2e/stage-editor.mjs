@@ -103,7 +103,7 @@ try {
   assert.equal(restarted.definition.starting_ambient, audio);
   const scenes = await invoke('list_stage_scenes');
   // Bundled presets are copied into the user's scene folder at startup, so they count as own scenes.
-  const preset = scenes.find((scene) => scene.folder === 'No Game No Life' && scene.id !== definition.id);
+  const preset = scenes.find((scene) => scene.folder === 'Die Gruft der vergessenen Schatten' && scene.id !== definition.id);
   assert.ok(preset, 'missing preset fixture');
   const presetState = JSON.parse(await invoke('stage_export_scene_json', { sceneId: preset.id }));
   const override = await invoke('update_stage_scene_definition', { definition: { ...presetState.definition, title: 'Eigene Preset-Anpassung' } });

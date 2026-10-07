@@ -97,7 +97,7 @@ Step into tabletop campaigns led by an adaptive AI Game Master. The Stage combin
 
 * **Two-Stage AI Game Master:** A Planner model designs plot beats and challenges; an Executor model renders world reactions and companion responses.
 * **3D Animated Dice Rolls:** Skill checks against Difficulty Classes (DC), physical 3D dice simulations, and audiovisual flair for critical successes and fumbles.
-* **Scenes & Campaigns:** Play preloaded modules like all 12 chapters of *No Game No Life* or craft custom universes from scratch.
+* **Scenes & Campaigns:** Play the bundled 5e adventure, download ready-made campaigns like all 12 chapters of *No Game No Life* from the Hub, or craft custom universes from scratch.
 * **NPCs with Memory & Promotion:** Encounter vendors, guards, or rivals with persistent memories — and recruit them into your permanent party!
 * **5e-compatible fights (SRD 5.1):** Optionally a rules engine decides every roll, hit and enemy turn while the Game Master only narrates — with classes, SRD monsters and a tactical battle map (movement, line of sight, ranges, opportunity attacks), spells with area preview, conditions, death saves, skill checks and rests — plus map exploration with fog of war, doors, locks, traps and encounters. The starter adventure *The Crypt of Forgotten Shadows* (three acts, start it via **Stage → 5e adventures**) comes with four classic heroes — Thorin, Lyra, Finn and Althea — or takes your own companions, whose 5e class you pick in the character editor. Heroes level up to 3 after each act, use their class features, wear the armor and weapons they find, and loot chests and defeated foes.
 
@@ -151,6 +151,7 @@ Craft new characters from scratch or tap into vast community card repositories.
 * **Full SillyTavern V2 Compatibility:** Import and export character cards in PNG (embedded chunks) or JSON formats.
 * **Guided 5-Step AI Wizard:** Turn an initial concept into an intricate character with backstory, personality, and greeting scenarios.
 * **Chub AI Browser:** Explore thousands of community cards inside the app and extract embedded lorebooks automatically.
+* **Bundled characters & content packs:** The app ships with Ayu Ikue, Cosmos, Emilia and the four heroes of the 5e adventure. More characters (including *No Game No Life*, *Sakura Succubus 3*, Holo, Makise Kurisu), lorebooks and scenes – all in German, English and Russian – are available in the Hub and in the [otakusoul-data](https://github.com/SnowwhiteOakheart/otakusoul-data) repository.
 * **Lorebook 2.0 Engine:** Reactive encyclopedias with combinable trigger rules (AND, OR, NOT, Regex), tension accumulators, and activation cascades.
 
 ---

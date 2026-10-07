@@ -1895,3 +1895,10 @@ veraltet und sind korrigiert: `chat-sidebar-errors` las die Sitzung, bevor der e
   die Emotionsbilder nicht, weil WebKitGTK `asset://`-Bilder auf der Vite-Seite ablehnt: Porträts werden nun vollständig
   vorgeladen und dort als Blob-URL angezeigt (`npm run e2e:portraits:dev` prüft den Dev-Modus); die Asset-Freigabe
   bleibt eng.
+
+- [x] **Schlankes Release, Inhalte über `otakusoul-data` (07.10.2026):** Das Release bringt nur noch Ayu Ikue,
+  Cosmos und Emilia (`presets/characters/`) sowie das 5e-Abenteuer mit Thorin, Lyra, Finn und Althea mit. Die Pakete
+  *No Game No Life* und *Sakura Succubus 3* (Figuren, Szenen, Lorebooks, Personas, Hintergründe) und die übrigen
+  Einzelkarten liegen im Repository `otakusoul-data`; der Hub lädt Registries jetzt von dort statt aus `sow-data`.
+  Alle Karten enthalten Deutsch, Englisch und Russisch (`otakusoul_i18n`, auch Schlagwörter), die Kennung „sow“ ist
+  aus Schlagwörtern und Erweiterungsschlüsseln entfernt (`custom_avatar`, `custom_title`, `custom_variables`).

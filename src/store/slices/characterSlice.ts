@@ -133,18 +133,6 @@ export const createCharacterSlice: SliceCreator<CharacterSlice> = (set, get) => 
 
   loadPresetCharacters: async () => {
     await get().refreshCharacters();
-
-    // Try loading default world lorebook if presets dir available
-    const paths = get().appPaths;
-    if (paths) {
-      const candidateLorebook = `${paths.bundled_presets_dir}/sakura-succubus-3/lorebooks/sakura-succubus-3-welt.json`;
-      try {
-        const lore = await api.loadLorebook(candidateLorebook);
-        set({ activeLorebooks: [lore] });
-      } catch (e) {
-        console.warn('Could not load default lorebook:', e);
-      }
-    }
   },
 
   deleteCharacter: async (charId) => {

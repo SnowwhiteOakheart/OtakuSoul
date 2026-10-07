@@ -1258,18 +1258,17 @@ mod tests {
         let manifest_dir = std::env::var("CARGO_MANIFEST_DIR").unwrap_or_else(|_| ".".to_string());
         let root = Path::new(&manifest_dir).parent().unwrap_or(Path::new("."));
 
-        let json_path = root.join("presets/sakura-succubus-3/ayu_ikue.json");
+        let json_path = root.join("presets/characters/ayu_ikue.json");
         if json_path.exists() {
             let profile =
                 load_character_from_file(&json_path).expect("Failed to load ayu_ikue.json");
             assert_eq!(profile.card.data.name, "Ayu Ikue");
         }
 
-        let png_path = root.join("presets/cards/Akane Kurokawa.png");
+        let png_path = root.join("presets/characters/Emilia.png");
         if png_path.exists() {
-            let profile =
-                load_character_from_file(&png_path).expect("Failed to load Akane Kurokawa.png");
-            assert_eq!(profile.card.data.name, "Akane Kurokawa");
+            let profile = load_character_from_file(&png_path).expect("Failed to load Emilia.png");
+            assert_eq!(profile.card.data.name, "Emilia");
             assert!(profile.avatar_data_url.is_some());
         }
     }

@@ -17,11 +17,10 @@ use crate::modules::stage::{SceneDefinition, SceneState, create_custom_scene, sa
 const BROWSER_USER_AGENT: &str = "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Safari/537.36";
 
 const SOUL_GATEWAY_REGISTRY_URL: &str =
-    "https://raw.githubusercontent.com/SnowwhiteOakheart/sow-data/main/soul_registry.json";
-const LOREBOOKS_REGISTRY_URL: &str =
-    "https://raw.githubusercontent.com/SnowwhiteOakheart/sow-data/main/lorebooks_registry.json";
+    "https://raw.githubusercontent.com/SnowwhiteOakheart/otakusoul-data/main/soul_registry.json";
+const LOREBOOKS_REGISTRY_URL: &str = "https://raw.githubusercontent.com/SnowwhiteOakheart/otakusoul-data/main/lorebooks_registry.json";
 const STAGES_REGISTRY_URL: &str =
-    "https://raw.githubusercontent.com/SnowwhiteOakheart/sow-data/main/stages_registry.json";
+    "https://raw.githubusercontent.com/SnowwhiteOakheart/otakusoul-data/main/stages_registry.json";
 
 #[derive(Debug, Clone, Serialize, Deserialize, TS)]
 #[ts(export)]

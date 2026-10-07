@@ -139,7 +139,7 @@ export const createStageSlice: SliceCreator<StageSlice> = (set, get) => ({
 
   stageScenes: [],
 
-  stageFolders: ['Alle', 'No Game No Life', 'Sakura Succubus 3', 'Eigene Szenen'],
+  stageFolders: ['Alle', 'Eigene Szenen'],
 
   selectedStageFolder: 'Alle',
 

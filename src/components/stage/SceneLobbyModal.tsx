@@ -280,7 +280,7 @@ export const SceneLobbyModal: React.FC<SceneLobbyModalProps> = ({
   };
 
   const handleDeleteCurrentFolder = async () => {
-    if (selectedStageFolder === 'Alle' || selectedStageFolder === 'No Game No Life' || selectedStageFolder === 'Eigene Szenen') {
+    if (selectedStageFolder === 'Alle' || selectedStageFolder === 'Eigene Szenen') {
       return;
     }
     const confirmed = await confirmDialog({
@@ -451,7 +451,6 @@ export const SceneLobbyModal: React.FC<SceneLobbyModalProps> = ({
             </div>
 
             {selectedStageFolder !== 'Alle' &&
-              selectedStageFolder !== 'No Game No Life' &&
               selectedStageFolder !== 'Eigene Szenen' && (
                 <button
                   onClick={handleDeleteCurrentFolder}

@@ -145,27 +145,17 @@ fn test_undo_snapshot() {
 }
 
 #[test]
-fn test_folders_and_ngnl_default_presence() {
+fn test_folders_and_adventure_default_presence() {
     let folders = list_stage_folders().unwrap();
-    assert!(folders.contains(&"No Game No Life".to_string()));
-    assert!(folders.contains(&"Sakura Succubus 3".to_string()));
+    assert!(folders.contains(&ADVENTURE_FOLDER.to_string()));
+    assert!(folders.contains(&"Eigene Szenen".to_string()));
 
     let scenes = scan_available_scenes();
-    let ngnl_scenes: Vec<_> = scenes
+    let acts: Vec<_> = scenes
         .iter()
-        .filter(|s| s.folder == "No Game No Life")
+        .filter(|s| s.folder == ADVENTURE_FOLDER)
         .collect();
-    assert_eq!(
-        ngnl_scenes.len(),
-        12,
-        "Should have 12 No Game No Life episodes/chapters in folder"
-    );
-    // Check chapter ordering
-    assert!(
-        ngnl_scenes[0].title.contains("Kapitel 1")
-            || ngnl_scenes[0].title.contains("Episode 1")
-            || ngnl_scenes[0].id.contains("episode1")
-    );
+    assert_eq!(acts.len(), 3, "Das Startabenteuer hat drei Akte");
 }
 
 #[test]
@@ -193,10 +183,24 @@ fn test_edit_and_delete_stage_message() {
 
 #[test]
 fn test_get_stage_background_image() {
-    let bg = get_stage_background_image("Horizontal Elkia Grand Library.png");
-    assert!(bg.is_ok(), "Should find NGNL background image");
-    let data = bg.unwrap();
-    assert!(data.starts_with("data:image/"));
+    // Release builds bring no backgrounds; a picture in a searched folder is enough.
+    let dir = std::path::PathBuf::from("assets/backgrounds");
+    let created_dir = !dir.exists();
+    std::fs::create_dir_all(&dir).unwrap();
+    let name = "Stage Test Background.png";
+    let png = base64::prelude::BASE64_STANDARD
+        .decode("iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR4nGP4z8DwHwAFAAH/iZk9HQAAAABJRU5ErkJggg==")
+        .unwrap();
+    std::fs::write(dir.join(name), png).unwrap();
+    let bg = get_stage_background_image(name);
+    let _ = std::fs::remove_file(dir.join(name));
+    if created_dir {
+        let _ = std::fs::remove_dir("assets/backgrounds");
+        let _ = std::fs::remove_dir("assets");
+    }
+    assert!(bg.is_ok(), "Should find the background image");
+    assert!(bg.unwrap().starts_with("data:image/"));
+    assert!(get_stage_background_image("Gibt es nicht.png").is_err());
 }
 
 #[test]

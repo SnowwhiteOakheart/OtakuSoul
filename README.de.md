@@ -100,7 +100,7 @@ Erlebe interaktive Tabletop-Abenteuer wie mit einem menschlichen Spielleiter. Di
 
 * **Zweistufiger KI-Game-Master:** Ein Planner-Modell entwirft Handlung und Herausforderungen; ein Executor-Modell lässt die Welt und Gefährten reagieren.
 * **3D-animierte Würfelproben:** Proben auf Fertigkeiten mit Schwierigkeitsgraden (DC), dramatischen 3D-Würfelwürfen und audio-visuellen Effekten bei kritischen Treffern oder Patzern.
-* **Szenen & Kampagnen:** Spiele vordefinierte Abenteuer wie alle 12 Kapitel von *No Game No Life* oder erstelle eigene Welten.
+* **Szenen & Kampagnen:** Spiele das mitgelieferte 5e-Abenteuer, lade fertige Kampagnen wie alle 12 Kapitel von *No Game No Life* über den Hub nach oder erstelle eigene Welten.
 * **NPCs mit Gedächtnis & Beförderung:** Triff auf Händler, Wachen oder Schurken mit eigenen Erinnerungen – und befördere sie bei Gefallen direkt zu festen Gefährten der Gruppe!
 * **5e-kompatible Kämpfe (SRD 5.1):** Auf Wunsch entscheidet eine Regel-Engine jeden Wurf, Treffer und Gegnerzug, der Spielleiter erzählt nur – mit Klassen, SRD-Monstern und taktischem Spielbrett (Bewegung, Sichtlinie, Reichweiten, Gelegenheitsangriffe), Zaubern mit Flächenvorschau, Zuständen, Todesrettungswürfen, Fertigkeitsproben und Rasten – und Erkundung der Karte mit Nebel des Krieges, Türen, Schlössern, Fallen und Begegnungen. Das Starter-Abenteuer *Die Gruft der vergessenen Schatten* (drei Akte, Start über **Stage → 5e-Abenteuer**) bringt vier klassische Helden mit – Thorin, Lyra, Finn und Althea – oder nimmt Deine eigenen Gefährten, deren 5e-Klasse Du im Charakter-Editor wählst. Nach jedem Akt steigen die Helden bis Stufe 3 auf, nutzen ihre Klassenmerkmale, tragen gefundene Rüstungen und Waffen und plündern Truhen und besiegte Gegner.
 
@@ -154,6 +154,7 @@ Egal ob du eigene Figuren erschaffen oder auf eine gigantische Community-Bibliot
 * **Vollständige SillyTavern-V2-Kompatibilität:** Importiere und exportiere Charakterkarten als PNG (mit eingebetteten Chara-Daten) oder JSON.
 * **Geführter 5-Schritte KI-Wizard:** Erstelle aus einer vagen Idee in wenigen Schritten tiefgründige Charaktere mit Hintergrundgeschichte, Persönlichkeit und Begrüßung.
 * **Chub AI Browser:** Durchsuche tausende Karten direkt in der App und extrahiere eingebettete Lorebooks automatisch.
+* **Mitgelieferte Figuren & Inhaltspakete:** Die App bringt Ayu Ikue, Cosmos, Emilia und die vier Helden des 5e-Abenteuers mit. Weitere Figuren (u. a. *No Game No Life*, *Sakura Succubus 3*, Holo, Makise Kurisu), Lorebooks und Szenen – alle auf Deutsch, Englisch und Russisch – gibt es im Hub bzw. im Repository [otakusoul-data](https://github.com/SnowwhiteOakheart/otakusoul-data).
 * **Lorebook 2.0 Engine:** Reaktive Welt- und Wissensbücher mit kombinierbaren Triggern (ODER, UND, NICHT, Regex), Spannungs-Akkumulatoren und Aktivierungsketten.
 
 ---

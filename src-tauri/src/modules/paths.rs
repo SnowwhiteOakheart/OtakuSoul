@@ -358,10 +358,8 @@ pub fn scan_available_characters() -> Vec<CharacterProfile> {
 
     let scan_dirs = [
         PathBuf::from(&paths.characters_dir),
-        PathBuf::from(&paths.bundled_presets_dir).join("sakura-succubus-3"),
-        PathBuf::from(&paths.bundled_presets_dir).join("no-game-no-life"),
+        PathBuf::from(&paths.bundled_presets_dir).join("characters"),
         PathBuf::from(&paths.bundled_presets_dir).join("crypt-of-shadows"),
-        PathBuf::from(&paths.bundled_presets_dir).join("cards"),
         PathBuf::from(&paths.bundled_presets_dir),
     ];
 
@@ -792,12 +790,12 @@ mod tests {
     fn test_bundled_expression_sets_resolve_to_absolute_paths() {
         let paths = resolve_app_paths();
         let sets = collect_bundled_expression_sets(Path::new(&paths.bundled_presets_dir));
-        let jibril = sets
-            .get("jibril")
-            .expect("Jibril preset should provide expressions");
+        let cosmos = sets
+            .get("cosmos")
+            .expect("Cosmos preset should provide expressions");
 
-        assert_eq!(jibril.len(), 6);
-        for source in jibril.values().filter_map(JsonValue::as_str) {
+        assert_eq!(cosmos.len(), 6);
+        for source in cosmos.values().filter_map(JsonValue::as_str) {
             assert!(Path::new(source).is_absolute(), "not absolute: {source}");
             assert!(Path::new(source).exists(), "missing expression: {source}");
         }
@@ -807,10 +805,10 @@ mod tests {
     fn test_missing_user_expressions_inherit_bundled_set() {
         let paths = resolve_app_paths();
         let preset_path = Path::new(&paths.bundled_presets_dir)
-            .join("no-game-no-life")
-            .join("jibril.json");
-        let mut profile = load_character_from_file(&preset_path).expect("load Jibril preset");
-        profile.source_path = Some("/tmp/user-characters/Jibril.png".to_string());
+            .join("characters")
+            .join("cosmos.json");
+        let mut profile = load_character_from_file(&preset_path).expect("load Cosmos preset");
+        profile.source_path = Some("/tmp/user-characters/Cosmos.png".to_string());
         profile
             .card
             .data
@@ -842,12 +840,12 @@ mod tests {
     #[test]
     fn test_broken_user_expressions_inherit_bundled_files_without_replacing_custom_images() {
         let paths = resolve_app_paths();
-        let preset_path = Path::new(&paths.bundled_presets_dir).join("no-game-no-life/jibril.json");
+        let preset_path = Path::new(&paths.bundled_presets_dir).join("characters/cosmos.json");
         let mut profile = load_character_from_file(&preset_path).unwrap();
         let custom = profile.card.data.extensions["expressions"]["happy"].clone();
-        profile.source_path = Some("/missing/user/Jibril.png".into());
+        profile.source_path = Some("/missing/user/Cosmos.png".into());
         profile.card.data.extensions["expressions"]["neutral"] =
-            JsonValue::String("expressions/jibril/neutral.webp".into());
+            JsonValue::String("expressions/cosmos/neutral.webp".into());
         profile.card.data.extensions["expressions"]["sad"] =
             JsonValue::String("https://example.org/custom-sad.webp".into());
         profile.card.data.extensions["expressions"]["angry"] =

@@ -1357,7 +1357,7 @@ export const ru: TranslationDictionary = {
 
   "lobby.title": "Stage — сцены и папки",
   "lobby.adventureCount": "Приключений: {{count}}",
-  "lobby.intro": "Выберите ролевой сценарий, управляйте папками или начните No Game No Life.",
+  "lobby.intro": "Выберите ролевой сценарий, управляйте папками или начните приключение 5e.",
   "lobby.importJson": "Импорт JSON",
   "lobby.importJsonHint": "Импортировать сцену из JSON-файла",
   "lobby.browseHub": "Открыть Хаб",

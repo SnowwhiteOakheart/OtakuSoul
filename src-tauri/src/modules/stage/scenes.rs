@@ -202,113 +202,7 @@ pub fn ensure_default_scene_folders() {
         PathBuf::from("../presets"),
     ];
 
-    // 1. Ensure "No Game No Life" folder exists in scenes_dir with all 12 chapters
-    let ngnl_dir = scenes_dir.join("No Game No Life");
-    let needs_ngnl_copy = !ngnl_dir.exists()
-        || fs::read_dir(&ngnl_dir)
-            .map(|d| {
-                d.flatten()
-                    .filter(|e| e.path().extension().is_some_and(|ext| ext == "json"))
-                    .count()
-                    < 12
-            })
-            .unwrap_or(true);
-
-    if needs_ngnl_copy {
-        let _ = fs::create_dir_all(&ngnl_dir);
-        for root in &search_roots {
-            let src_scenes = root.join("no-game-no-life").join("scenes");
-            if src_scenes.exists() {
-                if let Ok(entries) = fs::read_dir(&src_scenes) {
-                    for entry in entries.flatten() {
-                        let p = entry.path();
-                        if p.is_file() && p.extension().is_some_and(|ext| ext == "json") {
-                            let stem = p
-                                .file_stem()
-                                .unwrap_or_default()
-                                .to_string_lossy()
-                                .to_string();
-                            let target_p = ngnl_dir.join(format!("{}.json", stem));
-                            if let Ok(content) = fs::read_to_string(&p)
-                                && let Ok(mut def) =
-                                    serde_json::from_str::<SceneDefinition>(&content)
-                            {
-                                def.id = stem.clone();
-                                def.folder = "No Game No Life".to_string();
-                                let state = build_initial_scene_state(&def);
-                                if let Ok(json_str) = serde_json::to_string_pretty(&state) {
-                                    let _ = fs::write(&target_p, json_str);
-                                }
-                            }
-                        }
-                    }
-                }
-                break;
-            }
-        }
-    }
-
-    // 2. Ensure No Game No Life Lorebooks are copied to lorebooks_dir
-    let lorebooks_dir = PathBuf::from(&paths.lorebooks_dir);
-    let _ = fs::create_dir_all(&lorebooks_dir);
-    for root in &search_roots {
-        let src_lb = root.join("no-game-no-life").join("lorebooks");
-        if src_lb.exists() {
-            if let Ok(entries) = fs::read_dir(&src_lb) {
-                for entry in entries.flatten() {
-                    let p = entry.path();
-                    if p.is_file()
-                        && p.extension().is_some_and(|ext| ext == "json")
-                        && let Some(filename) = p.file_name()
-                    {
-                        let target_lb = lorebooks_dir.join(filename);
-                        if !target_lb.exists() {
-                            let _ = fs::copy(&p, &target_lb);
-                        }
-                    }
-                }
-            }
-            break;
-        }
-    }
-
     ensure_adventure_scenes(&scenes_dir, &search_roots);
-
-    // 3. Ensure Sakura Succubus 3 folder exists with presets
-    let ss3_dir = scenes_dir.join("Sakura Succubus 3");
-    if !ss3_dir.exists() {
-        for root in &search_roots {
-            let src_scenes = root.join("sakura-succubus-3").join("scenes");
-            if src_scenes.exists() {
-                let _ = fs::create_dir_all(&ss3_dir);
-                if let Ok(entries) = fs::read_dir(&src_scenes) {
-                    for entry in entries.flatten() {
-                        let p = entry.path();
-                        if p.is_file() && p.extension().is_some_and(|ext| ext == "json") {
-                            let stem = p
-                                .file_stem()
-                                .unwrap_or_default()
-                                .to_string_lossy()
-                                .to_string();
-                            let target_p = ss3_dir.join(format!("{}.json", stem));
-                            if let Ok(content) = fs::read_to_string(&p)
-                                && let Ok(mut def) =
-                                    serde_json::from_str::<SceneDefinition>(&content)
-                            {
-                                def.id = stem.clone();
-                                def.folder = "Sakura Succubus 3".to_string();
-                                let state = build_initial_scene_state(&def);
-                                if let Ok(json_str) = serde_json::to_string_pretty(&state) {
-                                    let _ = fs::write(&target_p, json_str);
-                                }
-                            }
-                        }
-                    }
-                }
-                break;
-            }
-        }
-    }
 }
 
 pub fn find_scene_path(scene_id: &str) -> Option<PathBuf> {
@@ -342,7 +236,7 @@ pub fn find_scene_path(scene_id: &str) -> Option<PathBuf> {
     ];
 
     for root in &search_roots {
-        for folder in &["no-game-no-life", "sakura-succubus-3", ADVENTURE_PACK] {
+        for folder in &[ADVENTURE_PACK] {
             let scene_dir = root.join(folder).join("scenes");
             if scene_dir.exists() {
                 let candidate = scene_dir.join(format!("{}.json", scene_id));
@@ -519,11 +413,7 @@ pub fn scan_available_scenes() -> Vec<ScenePreview> {
         PathBuf::from("../presets"),
     ];
 
-    let preset_folders = [
-        ("sakura-succubus-3", "Sakura Succubus 3"),
-        ("no-game-no-life", "No Game No Life"),
-        (ADVENTURE_PACK, ADVENTURE_FOLDER),
-    ];
+    let preset_folders = [(ADVENTURE_PACK, ADVENTURE_FOLDER)];
 
     for root in &search_roots {
         for (folder_key, folder_label) in &preset_folders {
@@ -550,10 +440,10 @@ pub fn scan_available_scenes() -> Vec<ScenePreview> {
     // Sort by folder, then chapter number, then title
     results.sort_by(|a, b| {
         if a.folder != b.folder {
-            if a.folder == "No Game No Life" {
+            if a.folder == ADVENTURE_FOLDER {
                 return std::cmp::Ordering::Less;
             }
-            if b.folder == "No Game No Life" {
+            if b.folder == ADVENTURE_FOLDER {
                 return std::cmp::Ordering::Greater;
             }
             a.folder.cmp(&b.folder)
@@ -649,8 +539,6 @@ pub fn list_stage_folders() -> Result<Vec<String>, String> {
     let scenes_dir = PathBuf::from(&paths.scenes_dir);
     let mut folders = Vec::new();
 
-    folders.push("No Game No Life".to_string());
-    folders.push("Sakura Succubus 3".to_string());
     folders.push("Eigene Szenen".to_string());
 
     if let Ok(entries) = fs::read_dir(&scenes_dir) {
@@ -731,7 +619,7 @@ pub fn move_stage_scene_to_folder(
 
 pub fn delete_stage_folder(folder_name: &str) -> Result<(), String> {
     let clean = folder_name.trim();
-    if clean == "No Game No Life" || clean == "Eigene Szenen" {
+    if clean == "Eigene Szenen" {
         return Err(crate::err!("backend.stage.folderBuiltin"));
     }
     let paths = resolve_app_paths();

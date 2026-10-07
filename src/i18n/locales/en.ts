@@ -1357,7 +1357,7 @@ export const en: TranslationDictionary = {
 
   "lobby.title": "Stage – scenes & folders",
   "lobby.adventureCount": "{{count}} adventures",
-  "lobby.intro": "Choose a roleplay scenario, manage your folders or start No Game No Life.",
+  "lobby.intro": "Choose a roleplay scenario, manage your folders or start the 5e adventure.",
   "lobby.importJson": "Import JSON",
   "lobby.importJsonHint": "Import a scene from a JSON file",
   "lobby.browseHub": "Browse Hub",

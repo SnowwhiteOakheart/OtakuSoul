@@ -7,19 +7,19 @@ const COUNT = Number(process.env.E2E_MESSAGES ?? 1000);
 const { browser, close } = await launch({ cloud_context_tokens: 4096 });
 try {
   await browser.$('textarea[aria-label="Nachricht"]').waitForDisplayed({ timeout: 30_000 });
-  const lines = [JSON.stringify({ user_name: 'User', character_name: 'Akane', chat_metadata: { title: 'Lang' } })];
+  const lines = [JSON.stringify({ user_name: 'User', character_name: 'Emilia', chat_metadata: { title: 'Lang' } })];
   for (let i = 0; i < COUNT; i += 1) {
     const user = i % 2 === 0;
     lines.push(JSON.stringify({
-      name: user ? 'User' : 'Akane', is_user: user, send_date: '2026-10-01',
+      name: user ? 'User' : 'Emilia', is_user: user, send_date: '2026-10-01',
       mes: user ? `Frage ${i}: Wie geht es weiter?` : `*lächelt* "Antwort ${i}: ${'Das ist ein längerer Satz mit *Aktion* und "Rede". '.repeat(4)}"`,
     }));
   }
   const chars = await browser.execute(() => window.__TAURI_INTERNALS__.invoke('scan_characters'));
-  const akane = chars.find((c) => c.card.data.name.startsWith('Akane'));
+  const emilia = chars.find((c) => c.card.data.name === 'Emilia');
   await browser.execute(
     (id, jsonl) => window.__TAURI_INTERNALS__.invoke('import_chat_jsonl', { characterId: id, jsonlContent: jsonl, titleOverride: 'Lang' }),
-    akane.id, lines.join('\n'),
+    emilia.id, lines.join('\n'),
   );
 
   // Reopen the character's chats so the import shows up, then open it.

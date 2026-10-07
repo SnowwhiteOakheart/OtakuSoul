@@ -369,5 +369,8 @@ Hub). Integrationen → Bildgenerierung enthält nur Studio und Galerie.
 ## Stand
 
 Erledigtes (Portierung Phasen 1–18, Verbesserungen, TTS, Neutralisierung, Inhalte, Qualität) steht in
-`roadmap_abgeschlossen.md`, alles Offene in `roadmap.md`. Daten: `<Daten>` = `~/.local/share/otakusoul` (Linux) mit `runtimes/`, `image-models/`, `tts-models/`,
+`roadmap_abgeschlossen.md`, alles Offene in `roadmap.md`. Mitgelieferte Figuren: `presets/characters/` (Ayu, Cosmos,
+Emilia) und `presets/crypt-of-shadows/`; weitere Figuren/Pakete (NGNL, Sakura Succubus 3, Einzelkarten) liegen in
+`SnowwhiteOakheart/otakusoul-data` (Hub-Registries in `hub.rs`). Karten pflegen Übersetzungen in `otakusoul_i18n` und
+verwenden `custom_*`-Schlüssel (`sow_*` wird nur noch gelesen). Daten: `<Daten>` = `~/.local/share/otakusoul` (Linux) mit `runtimes/`, `image-models/`, `tts-models/`,
 `voices/`, `attachments/`, `otakusoul.db`; Entwickler-Modelle in `assets/models/` (gitignored).

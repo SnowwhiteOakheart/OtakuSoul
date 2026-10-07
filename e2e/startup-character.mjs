@@ -4,7 +4,7 @@ import assert from 'node:assert/strict';
 import { launch } from './harness.mjs';
 
 // Not the first character of the bundled list (that one shows when the choice is ignored).
-const { browser, close } = await launch({ active_character_id: 'yue' });
+const { browser, close } = await launch({ active_character_id: 'thorin' });
 // oxlint-disable-next-line no-underscore-dangle -- Tauri IPC in a disposable profile
 const invoke = (command, args = {}) => browser.execute((cmd, payload) => window.__TAURI_INTERNALS__.invoke(cmd, payload), command, args);
 const shownName = () => browser.execute(() => document.querySelector('button[aria-label="Charakter wechseln"] span.truncate')?.textContent ?? null);
@@ -22,8 +22,8 @@ const namesWhileStarting = async () => {
 
 try {
   const first = await namesWhileStarting();
-  assert.deepEqual(first, ['Yue'], `beim ersten Start angezeigt: ${first.join(' → ')}`);
-  assert.equal((await invoke('load_settings')).active_character_id, 'yue', 'Start hat die Auswahl überschrieben');
+  assert.deepEqual(first, ['Thorin Eisenbart'], `beim ersten Start angezeigt: ${first.join(' → ')}`);
+  assert.equal((await invoke('load_settings')).active_character_id, 'thorin', 'Start hat die Auswahl überschrieben');
   console.log('Startcharakter: direkt der zuletzt geöffnete, kein anderer dazwischen bestanden.');
 } finally {
   await close();

@@ -1359,7 +1359,7 @@ export const de = {
 
   "lobby.title": "Stage – Szenen & Ordner",
   "lobby.adventureCount": "{{count}} Abenteuer",
-  "lobby.intro": "Wähle ein Rollenspiel-Szenario, verwalte deine Ordner oder starte No Game No Life.",
+  "lobby.intro": "Wähle ein Rollenspiel-Szenario, verwalte deine Ordner oder starte das 5e-Abenteuer.",
   "lobby.importJson": "JSON importieren",
   "lobby.importJsonHint": "Szene aus JSON-Datei importieren",
   "lobby.browseHub": "Im Hub stöbern",
