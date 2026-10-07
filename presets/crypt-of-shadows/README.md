@@ -26,7 +26,8 @@ Die Porträts sind verkleinerte Fassungen von `public/stage/heroes/`, die Spielb
 
 Die Akte sind gewöhnliche Szenen (`SceneDefinition` mit `rules.ruleset = "5e"`, `map_id`, `goals`, `next_scene`).
 Sind alle Ziele erreicht, führt „Weiter mit dem nächsten Akt“ die Gruppe samt Klassen und Inventar in den nächsten Akt.
-Die App kopiert die Akte beim Start in den Szenenordner „Die Gruft der vergessenen Schatten“.
+Die App kopiert die Akte beim Start in den Szenenordner „Die Gruft der vergessenen Schatten“. Gestartet wird über
+**Stage → 5e-Abenteuer** (Lobby mit Regelwerk-Filter und Abenteuer-Banner).
 
 ## Namensnennung
 

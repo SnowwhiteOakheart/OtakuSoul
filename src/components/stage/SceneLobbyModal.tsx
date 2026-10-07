@@ -24,6 +24,7 @@ import {
   MoreVertical,
   Layers,
   History,
+  Swords,
 } from 'lucide-react';
 import { api } from '../../services/api';
 import { translate, useTranslation } from '../../i18n';
@@ -33,14 +34,20 @@ import { ModalOverlay } from '../ui/ModalOverlay';
 import { pressable } from '../../utils/pressable';
 import { errorMessage } from '../../utils/errors';
 
+/** Which rules the lobby shows: everything, story scenes, or 5e adventures (SRD rules engine). */
+export type LobbyRules = 'all' | 'narrative' | '5e';
+
 interface SceneLobbyModalProps {
   isOpen: boolean;
   onClose: () => void;
+  /** Opens with this rules filter (the "5e adventures" button of the Stage header). */
+  initialRules?: LobbyRules;
 }
 
 export const SceneLobbyModal: React.FC<SceneLobbyModalProps> = ({
   isOpen,
   onClose,
+  initialRules = 'all',
 }) => {
   const { t } = useTranslation();
   // 'Alle' and 'Eigene Szenen' are folder identifiers shared with the backend; only their label is translated.
@@ -76,6 +83,14 @@ export const SceneLobbyModal: React.FC<SceneLobbyModalProps> = ({
 
   const [search, setSearch] = useState('');
   const [filterType, setFilterType] = useState<'all' | 'presets' | 'custom'>('all');
+  const [rulesFilter, setRulesFilter] = useState<LobbyRules>(initialRules);
+  // Every opening starts with the requested rules.
+  const [openedWith, setOpenedWith] = useState<LobbyRules | null>(isOpen ? initialRules : null);
+  const openKey = isOpen ? initialRules : null;
+  if (openKey !== openedWith) {
+    setOpenedWith(openKey);
+    if (openKey) setRulesFilter(openKey);
+  }
   const [editingScene, setEditingScene] = useState<SceneDefinition | null>(null);
   const [showCreateModal, setShowCreateModal] = useState(false);
   const [showNewFolderModal, setShowNewFolderModal] = useState(false);
@@ -91,6 +106,7 @@ export const SceneLobbyModal: React.FC<SceneLobbyModalProps> = ({
       fetchStageFolders();
     }
   }, [isOpen, fetchStageScenes, fetchStageFolders]);
+
 
   const handleEdit = async (id: string) => {
     try {
@@ -124,10 +140,20 @@ export const SceneLobbyModal: React.FC<SceneLobbyModalProps> = ({
       if (!folderMatch) return false;
     }
 
+    if (rulesFilter === '5e' && !sc.rules_5e) return false;
+    if (rulesFilter === 'narrative' && sc.rules_5e) return false;
     if (filterType === 'presets') return sc.is_preset;
     if (filterType === 'custom') return !sc.is_preset;
     return true;
   });
+  // The starter adventure as a banner wherever 5e adventures are listed: the act played last,
+  // otherwise the first act.
+  const acts = stageScenes.filter((sc) => sc.adventure && sc.rules_5e).sort((a, b) => a.id.localeCompare(b.id));
+  const lastPlayed = acts
+    .filter((sc) => sc.has_progress)
+    .sort((a, b) => (b.last_played ?? '').localeCompare(a.last_played ?? ''))[0];
+  const adventureStart = lastPlayed ?? acts[0];
+  const adventureFolder = adventureStart?.folder;
 
   const handleSceneClick = async (scene: ScenePreview) => {
     if (scene.rules_5e && !scene.has_progress && scene.party.length > 0 && scene.id !== currentSceneId) {
@@ -489,8 +515,53 @@ export const SceneLobbyModal: React.FC<SceneLobbyModalProps> = ({
             </div>
           </div>
 
+          {/* Rules: story scenes or 5e adventures with the rules engine */}
+          <div className="flex flex-wrap items-center gap-2 px-4 py-2 border-b border-slate-800 bg-app/30 text-xs">
+            <span className="font-semibold uppercase tracking-wider text-slate-400">{t('lobby.rules')}</span>
+            <div role="group" aria-label={t('lobby.rules')} className="flex items-center gap-1.5 p-1 rounded-xl bg-app border border-slate-800">
+              {(['all', 'narrative', '5e'] as const).map((rules) => (
+                <button
+                  key={rules}
+                  type="button"
+                  data-rules={rules}
+                  onClick={() => setRulesFilter(rules)}
+                  aria-pressed={rulesFilter === rules}
+                  className={`flex items-center gap-1 px-3 py-1 rounded-lg font-medium transition whitespace-nowrap ${
+                    rulesFilter === rules
+                      ? rules === '5e' ? 'bg-rose-600 text-white' : 'bg-accent-600 text-white'
+                      : 'text-slate-400 hover:text-slate-200'
+                  }`}
+                >
+                  {rules === '5e' && <Swords className="w-3 h-3" />}
+                  {t(`lobby.rules.${rules}`)}
+                </button>
+              ))}
+            </div>
+            <span className="text-slate-500">{t(`lobby.rulesHint.${rulesFilter}`)}</span>
+          </div>
+
           {/* Scenes Grid */}
-          <div className="flex-1 overflow-y-auto p-4 sm:p-5 grid grid-cols-1 md:grid-cols-2 gap-4">
+          <div className="flex-1 overflow-y-auto p-4 sm:p-5 grid grid-cols-1 md:grid-cols-2 gap-4 content-start">
+            {adventureStart && rulesFilter !== 'narrative' && !search && (
+              <div data-testid="adventure-banner" className="md:col-span-2 rounded-2xl border border-rose-500/40 bg-gradient-to-r from-rose-950/60 to-slate-900/60 p-4 flex flex-wrap items-center gap-4">
+                <div className="p-3 rounded-xl bg-rose-600/20 text-rose-300"><Swords className="w-6 h-6" /></div>
+                <div className="flex-1 min-w-60 space-y-1">
+                  <p className="text-[11px] font-semibold uppercase tracking-wider text-rose-300">{t('lobby.adventureBadge')}</p>
+                  <h3 className="text-base font-bold text-slate-100">{adventureFolder}</h3>
+                  {lastPlayed && <p className="text-xs text-rose-200">{lastPlayed.title}</p>}
+                  <p className="text-xs text-slate-300">{t('lobby.adventureText')}</p>
+                </div>
+                <button
+                  type="button"
+                  data-testid="adventure-begin"
+                  onClick={() => void handleSceneClick(adventureStart)}
+                  className="flex items-center gap-1.5 px-4 py-2 rounded-xl bg-rose-600 hover:bg-rose-500 text-white text-sm font-semibold shadow-lg shadow-rose-950/40 transition"
+                >
+                  <Play className="w-4 h-4" />
+                  {lastPlayed ? t('lobby.adventureContinue') : t('lobby.adventureStart')}
+                </button>
+              </div>
+            )}
             {filteredScenes.map((sc) => {
               const isCurrent = currentSceneId === sc.id;
               const hasProgress = sc.has_progress || (sc.turn_count && sc.turn_count > 1);
@@ -512,7 +583,7 @@ export const SceneLobbyModal: React.FC<SceneLobbyModalProps> = ({
                       <div className="flex flex-wrap items-center gap-1.5">
                         <span className="text-[11px] px-2 py-0.5 rounded-full bg-slate-900 border border-slate-700 text-accent-300 font-semibold flex items-center gap-1">
                           <Film className="w-3 h-3" />
-                          {sc.is_preset ? t('lobby.officialPreset') : t('lobby.customScene')}
+                          {sc.adventure ? t('lobby.adventureAct') : sc.is_preset ? t('lobby.officialPreset') : t('lobby.customScene')}
                         </span>
                         {sc.folder && (
                           <span className="text-[11px] px-2 py-0.5 rounded-full bg-slate-900 border border-accent-900/60 text-amber-300 font-medium flex items-center gap-1">
@@ -521,8 +592,8 @@ export const SceneLobbyModal: React.FC<SceneLobbyModalProps> = ({
                           </span>
                         )}
                         {sc.rules_5e && (
-                          <span title={t('sceneRules.fiveE')} className="text-[11px] px-2 py-0.5 rounded-full bg-rose-950/60 border border-rose-500/40 text-rose-200 font-semibold">
-                            5e
+                          <span title={t('sceneRules.fiveE')} className="text-[11px] px-2 py-0.5 rounded-full bg-rose-950/60 border border-rose-500/40 text-rose-200 font-semibold flex items-center gap-1">
+                            <Swords className="w-2.5 h-2.5" /> {t('lobby.rules5eBadge')}
                           </span>
                         )}
                         {sc.gm_tone && (

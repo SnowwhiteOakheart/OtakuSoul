@@ -502,6 +502,8 @@ export interface ScenePreview {
   has_progress?: boolean;
   turn_count?: number;
   rules_5e?: boolean;
+  /** An act of a 5e adventure (goals, a series of acts). */
+  adventure?: boolean;
 }
 
 export interface SceneDefinition {

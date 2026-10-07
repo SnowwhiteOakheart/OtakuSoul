@@ -195,7 +195,9 @@ Hub). Integrationen → Bildgenerierung enthält nur Studio und Galerie.
   Wahl behält eine Figur ihre Klasse. Akt-Ziele `SceneRules.goals` (`encounter` = vorbereitete Begegnung gewonnen über
   `BattleMap.active_encounter` → `won_fight`, `exit` = Ausgang zur Karte → `reach_goal`), `next_scene` →
   `continue_stage_adventure` (Gruppe, Klassen, Inventar, lange Rast). Abgewählte Gefährten verlassen außerhalb von
-  Kämpfen die Gruppe (`ensure_party_vitals`). Lobby: `AdventurePartyModal` vor 5e-Szenen mit Gruppe ohne Fortschritt;
+  Kämpfen die Gruppe (`ensure_party_vitals`). Einstieg: Knopf „5e-Abenteuer“ in der Stage-Kopfzeile öffnet die Lobby
+  mit `initialRules="5e"` (Regelwerk-Filter Alle/Erzählszenen/5e, Banner für den zuletzt gespielten bzw. ersten Akt;
+  `ScenePreview.adventure` = Szene mit Zielen). Lobby: `AdventurePartyModal` vor 5e-Szenen mit Gruppe ohne Fortschritt;
   Szenenkarten tragen `data-scene-id`. SRD-Hinweis im `AboutDialog` (`srd-attribution`). E2E `stage-adventure.mjs`.
   Stufen & Merkmale (Schritt 6): `rules5e/features.rs` (Tabelle Klasse → Stufe → Merkmal, `hero_stats_at`, `level_up`
   bis `MAX_LEVEL` 3, Verbrauch in `Stats5e.resources_used`, `short_rest`/`long_rest`, `arcane_recovery`). Meilenstein:

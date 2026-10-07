@@ -500,6 +500,9 @@ pub struct ScenePreview {
     /// The scene uses the 5e rules engine (badge in the lobby).
     #[serde(default)]
     pub rules_5e: bool,
+    /// An act of a 5e adventure (it has goals and belongs to a series of acts).
+    #[serde(default)]
+    pub adventure: bool,
 }
 
 /// A piece of live text during a Stage turn (event `stage-stream`); the message with the same

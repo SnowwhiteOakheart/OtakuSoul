@@ -400,6 +400,11 @@ pub(super) fn parse_scene_file_preview(
             has_progress,
             turn_count,
             rules_5e: state.definition.is_5e(),
+            adventure: state
+                .definition
+                .rules
+                .as_ref()
+                .is_some_and(|r| !r.goals.is_empty()),
         });
     }
 
@@ -437,6 +442,7 @@ pub(super) fn parse_scene_file_preview(
             has_progress: false,
             turn_count: 0,
             rules_5e: def.is_5e(),
+            adventure: def.rules.as_ref().is_some_and(|r| !r.goals.is_empty()),
         });
     }
 

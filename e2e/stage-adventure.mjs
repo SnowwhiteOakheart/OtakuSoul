@@ -69,12 +69,21 @@ try {
   await browser.setWindowSize(1400, 900);
   await browser.$('button=Stage').click();
 
-  // 1) Lobby → act 1 → party choice with the classic heroes.
-  await browser.$('button=Szenen-Lobby').click();
-  const card = await browser.$('[data-scene-id="akt1_waldstrasse"]');
-  await card.waitForExist({ timeout: 15_000, timeoutMsg: 'Akt 1 fehlt in der Lobby' });
-  await card.scrollIntoView({ block: 'center' });
-  await jsClick('[data-scene-id="akt1_waldstrasse"]');
+  // 1) The "5e adventures" button opens the lobby on 5e scenes only, with the starter adventure on top.
+  await browser.$('[data-testid="open-5e-adventures"]').click();
+  await browser.$('[data-testid="adventure-banner"]').waitForDisplayed({ timeout: 15_000, timeoutMsg: 'kein Abenteuer-Banner' });
+  await browser.$('[data-scene-id="akt1_waldstrasse"]').waitForExist({ timeout: 15_000, timeoutMsg: 'Akt 1 fehlt' });
+  const listed = await browser.execute(() => [...document.querySelectorAll('[data-scene-id]')].map((el) => el.getAttribute('data-scene-id')));
+  assert.deepEqual([...listed].sort(), ['akt1_waldstrasse', 'akt2_gruft', 'akt3_heiligtum'], `nur 5e-Abenteuer: ${listed}`);
+  assert.match(await browser.$('[data-scene-id="akt1_waldstrasse"]').getText(), /5e-Abenteuer/);
+  await shot('79-abenteuer-lobby');
+  // Story scenes hide the adventure; back to it and begin.
+  await jsClick('[data-rules="narrative"]');
+  await browser.waitUntil(() => browser.execute(() => !document.querySelector('[data-scene-id="akt1_waldstrasse"]')), { timeout: 5_000, timeoutMsg: 'Erzählfilter zeigt 5e-Akte' });
+  assert.ok(!(await exists('[data-testid="adventure-banner"]')));
+  await jsClick('[data-rules="5e"]');
+  await browser.$('[data-testid="adventure-begin"]').waitForDisplayed({ timeout: 5_000 });
+  await jsClick('[data-testid="adventure-begin"]');
   await browser.$('[data-testid="adventure-party"]').waitForDisplayed({ timeout: 10_000, timeoutMsg: 'keine Gruppenwahl' });
   for (const hero of HEROES) {
     assert.ok(await browser.$(`input[data-member="${hero}"]`).isSelected(), `${hero} nicht vorausgewählt`);
@@ -93,8 +102,17 @@ try {
   await shot('76-abenteuer-akt1');
 
   // 2) The first steps west: ambush, fight to the end.
-  assert.ok(await jsClick('[data-explore="12:4"]') || await jsClick('[data-explore="13:4"]'), 'kein Feld nach Westen');
-  await browser.$('[data-testid="combat-5e"]').waitForDisplayed({ timeout: 30_000, timeoutMsg: 'kein Überfall' });
+  const west = await browser.execute(() => {
+    const squares = [...document.querySelectorAll('rect[data-explore]')].map((r) => r.getAttribute('data-explore').split(':').map(Number));
+    const road = squares.filter(([x, y]) => y >= 3 && y <= 5 && x < 12).sort((a, b) => b[0] - a[0]);
+    return road[0] ? road[0].join(':') : null;
+  });
+  assert.ok(west && (await jsClick(`[data-explore="${west}"]`)), 'kein Feld nach Westen');
+  // The ambush has begun once the engine logged the encounter (the panel may be short-lived).
+  await browser.waitUntil(async () => (await invoke('get_stage_state')).exploration.some((e) => e.type === 'encounter'), {
+    timeout: 30_000,
+    timeoutMsg: 'kein Überfall',
+  });
   const ended = await fight();
   assert.ok(ended.combat.events.some((e) => e.type === 'combat_end' && e.outcome === 'victory'), 'Hinterhalt nicht überstanden');
   await browser.$('[data-goal="hinterhalt"][data-reached="true"]').waitForExist({ timeout: 10_000, timeoutMsg: 'Ziel nicht abgehakt' });

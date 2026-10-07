@@ -4,4 +4,8 @@ export type ScenePreview = { id: string, title: string, description: string, par
 /**
  * The scene uses the 5e rules engine (badge in the lobby).
  */
-rules_5e: boolean, };
+rules_5e: boolean, 
+/**
+ * An act of a 5e adventure (it has goals and belongs to a series of acts).
+ */
+adventure: boolean, };

@@ -8,7 +8,7 @@ import { StageBoardView } from './StageBoardView';
 import { PartyHeader } from './PartyHeader';
 import { StageChatLog } from './StageChatLog';
 import { TurnControlBar } from './TurnControlBar';
-import { SceneLobbyModal } from './SceneLobbyModal';
+import { SceneLobbyModal, type LobbyRules } from './SceneLobbyModal';
 import { useStageAmbient } from './useStageAmbient';
 import { CharacterVoiceModal } from '../voice/CharacterVoiceModal';
 import { STAGE_NARRATOR_VOICE_ID } from '../../services/stageVoice';
@@ -61,10 +61,11 @@ export const StageView: React.FC = () => {
     isGeneratingSceneImage,
     stageReadAloud,
     setStageReadAloud,
+    setSelectedStageFolder,
   } = useStoreFields(
     'stageState', 'fetchStageState', 'saveStageScene', 'updateWorldState', 'setClockProgress',
     'addClock', 'deleteClock', 'exportStageMarkdown', 'isProcessingStageTurn',
-    'generateSceneImage', 'isGeneratingSceneImage', 'stageReadAloud', 'setStageReadAloud',
+    'generateSceneImage', 'isGeneratingSceneImage', 'stageReadAloud', 'setStageReadAloud', 'setSelectedStageFolder',
   );
 
   const [activeTab, setActiveTab] = useState<'adventure' | 'board' | 'tactics' | 'campaign'>('adventure');
@@ -79,6 +80,7 @@ export const StageView: React.FC = () => {
     setShownBoardFight('');
   }
   const [showLobbyModal, setShowLobbyModal] = useState(false);
+  const [lobbyRules, setLobbyRules] = useState<LobbyRules>('all');
 
   const [isEditingWorld, setIsEditingWorld] = useState(false);
   const [locationInput, setLocationInput] = useState('');
@@ -360,11 +362,29 @@ export const StageView: React.FC = () => {
           </div>
 
           <button
-            onClick={() => setShowLobbyModal(true)}
+            onClick={() => {
+              setLobbyRules('all');
+              setShowLobbyModal(true);
+            }}
             className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-accent-600/20 hover:bg-accent-600/30 text-accent-300 text-xs font-semibold border border-accent-500/30 transition"
           >
             <BookOpen className="w-3.5 h-3.5" />
             <span className="whitespace-nowrap">{t('stage.sceneLobby')}</span>
+          </button>
+
+          <button
+            data-testid="open-5e-adventures"
+            onClick={() => {
+              // 5e adventures are looked for in every folder.
+              setSelectedStageFolder('Alle');
+              setLobbyRules('5e');
+              setShowLobbyModal(true);
+            }}
+            title={t('stage.adventuresHint')}
+            className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-rose-600/20 hover:bg-rose-600/30 text-rose-200 text-xs font-semibold border border-rose-500/40 transition"
+          >
+            <Swords className="w-3.5 h-3.5" />
+            <span className="whitespace-nowrap">{t('stage.adventures')}</span>
           </button>
 
           <button
@@ -751,6 +771,7 @@ export const StageView: React.FC = () => {
       <SceneLobbyModal
         isOpen={showLobbyModal}
         onClose={() => setShowLobbyModal(false)}
+        initialRules={lobbyRules}
       />
     </div>
   );
