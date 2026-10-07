@@ -117,6 +117,7 @@ pub fn build_initial_scene_state(def: &SceneDefinition) -> SceneState {
         lore_cards: Vec::new(),
         memory_sync: HashMap::new(),
         private_knowledge: HashMap::new(),
+        map: None,
         history_summaries: HashMap::new(),
         npcs: Vec::new(),
     };

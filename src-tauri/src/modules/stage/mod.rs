@@ -31,7 +31,7 @@ mod tests;
 mod turn;
 mod world;
 
-pub use combat5e::execute_combat_turn;
+pub use combat5e::{combat_options, execute_combat_turn};
 pub use dice::*;
 pub use director::*;
 pub use engine::*;

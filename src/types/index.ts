@@ -91,9 +91,17 @@ import type { WebServerStatus } from './generated/WebServerStatus';
 import type { WorldState } from './generated/WorldState';
 import type { Stats5e } from './generated/Stats5e';
 import type { CombatEvent } from './generated/CombatEvent';
+import type { GridPos } from './generated/GridPos';
+import type { TurnBudget } from './generated/TurnBudget';
+import type { BattleMap } from './generated/BattleMap';
+import type { CombatOptions } from './generated/CombatOptions';
 import type { SceneRules } from './generated/SceneRules';
 export type {
   Stats5e,
+  GridPos,
+  TurnBudget,
+  BattleMap,
+  CombatOptions,
   CombatEvent,
   SceneRules,
   AppPaths,
@@ -447,6 +455,8 @@ export interface Combatant {
   skills: Record<string, number>;
   /** Rules values in 5e scenes. */
   stats5e?: Stats5e | null;
+  /** Square on the battle map. */
+  position?: GridPos | null;
 }
 
 export interface EncounterState {
@@ -457,6 +467,9 @@ export interface EncounterState {
   combat_log: string[];
   /** Rules events of the current fight (5e scenes). */
   events?: CombatEvent[];
+  /** What the current combatant has left this turn (5e). */
+  turn?: TurnBudget;
+  reactions_used?: string[];
 }
 
 // Phase 15: Soul Stage (KI-Game-Master Orchestrator)
@@ -632,6 +645,8 @@ export interface SceneState {
   private_knowledge?: Record<string, string[]>;
   npcs?: import('./generated/StageNpc').StageNpc[];
   history_summaries?: Record<string, import('./generated/StageHistorySummary').StageHistorySummary>;
+  /** Battle map of the current or last fight (5e scenes). */
+  map?: BattleMap | null;
 }
 
 export type StageState = SceneState;

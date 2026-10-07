@@ -339,6 +339,20 @@ pub async fn run_stage_combat(
     .await
 }
 
+/// 5e scenes: what the current combatant may do (squares to move to, attacks in reach).
+#[tauri::command]
+pub fn get_stage_combat_options(
+    state: State<'_, AppState>,
+) -> crate::modules::stage::rules5e::CombatOptions {
+    crate::modules::stage::combat_options(&state.stage_engine.get_state())
+}
+
+/// The bundled battle maps for 5e scenes.
+#[tauri::command]
+pub fn list_battle_maps() -> Vec<crate::modules::stage::rules5e::BattleMap> {
+    crate::modules::stage::rules5e::battle_maps().to_vec()
+}
+
 /// Lets party members remember what they lived through in the scene: once enough new lines
 /// came together, their filtered view runs through the Soul Memory pipeline in the background.
 fn sync_party_memory(

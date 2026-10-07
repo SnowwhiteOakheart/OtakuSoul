@@ -3,6 +3,7 @@ import type { CombatOutcome } from "./CombatOutcome";
 import type { D20Roll } from "./D20Roll";
 import type { DamageRoll } from "./DamageRoll";
 import type { DamageScaling } from "./DamageScaling";
+import type { GridPos } from "./GridPos";
 import type { HealthTier } from "./HealthTier";
 import type { InitiativeEntry } from "./InitiativeEntry";
 import type { LocalizedName } from "./LocalizedName";
@@ -10,4 +11,4 @@ import type { LocalizedName } from "./LocalizedName";
 /**
  * One thing that happened in a fight.
  */
-export type CombatEvent = { "type": "initiative", order: Array<InitiativeEntry>, } | { "type": "turn_start", round: number, actor_id: string, actor_name: string, } | { "type": "attack", attacker_id: string, attacker_name: string, target_id: string, target_name: string, attack_id: string, attack_name: LocalizedName, roll: D20Roll, to_hit: number, total: number, target_ac: number, hit: boolean, critical: boolean, } | { "type": "damage", target_id: string, target_name: string, roll: DamageRoll, amount: number, damage_type: string, scaling: DamageScaling, hp_after: number, tier: HealthTier, } | { "type": "down", target_id: string, target_name: string, } | { "type": "dodge", actor_id: string, actor_name: string, } | { "type": "flee", actor_id: string, actor_name: string, } | { "type": "pass", actor_id: string, actor_name: string, } | { "type": "combat_end", outcome: CombatOutcome, };
+export type CombatEvent = { "type": "initiative", order: Array<InitiativeEntry>, } | { "type": "turn_start", round: number, actor_id: string, actor_name: string, } | { "type": "attack", attacker_id: string, attacker_name: string, target_id: string, target_name: string, attack_id: string, attack_name: LocalizedName, roll: D20Roll, to_hit: number, total: number, target_ac: number, hit: boolean, critical: boolean, } | { "type": "damage", target_id: string, target_name: string, roll: DamageRoll, amount: number, damage_type: string, scaling: DamageScaling, hp_after: number, tier: HealthTier, } | { "type": "down", target_id: string, target_name: string, } | { "type": "dodge", actor_id: string, actor_name: string, } | { "type": "flee", actor_id: string, actor_name: string, } | { "type": "pass", actor_id: string, actor_name: string, } | { "type": "combat_end", outcome: CombatOutcome, } | { "type": "move", actor_id: string, actor_name: string, path: Array<GridPos>, feet: number, } | { "type": "opportunity_attack", attacker_id: string, attacker_name: string, target_name: string, } | { "type": "dash", actor_id: string, actor_name: string, } | { "type": "disengage", actor_id: string, actor_name: string, };

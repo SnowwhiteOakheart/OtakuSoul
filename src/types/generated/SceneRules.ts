@@ -15,4 +15,8 @@ hero_classes: { [key in string]: string },
 /**
  * The player chooses the companions' combat actions instead of the language model.
  */
-control_companions: boolean, };
+control_companions: boolean, 
+/**
+ * Battle map for fights (`presets/srd5/maps`); without one fights run without a board.
+ */
+map_id?: string, };

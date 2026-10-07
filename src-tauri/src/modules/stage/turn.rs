@@ -740,6 +740,7 @@ RULES:
                         conditions: Vec::new(),
                         skills: std::collections::HashMap::new(),
                         stats5e: None,
+                        position: None,
                     });
                 }
                 for (index, enemy) in encounter.enemies.iter().enumerate() {
@@ -755,6 +756,7 @@ RULES:
                         conditions: Vec::new(),
                         skills: std::collections::HashMap::new(),
                         stats5e: None,
+                        position: None,
                     });
                 }
                 state

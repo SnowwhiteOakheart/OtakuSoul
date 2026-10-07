@@ -11,6 +11,16 @@ pub const DODGING: &str = "dodging";
 /// Condition name of a combatant who left the fight; it takes no more turns.
 pub const FLED: &str = "fled";
 
+/// What the combatant whose turn it is has left (5e: move up to its speed, one action).
+#[derive(Debug, Clone, Default, PartialEq, Serialize, Deserialize, TS)]
+#[ts(export)]
+pub struct TurnBudget {
+    pub movement_left_ft: u32,
+    pub action_used: bool,
+    /// Disengage taken: leaving reach provokes no opportunity attacks this turn.
+    pub disengaged: bool,
+}
+
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize, TS)]
 #[ts(export)]
 pub struct InitiativeEntry {
@@ -94,6 +104,27 @@ pub enum CombatEvent {
     CombatEnd {
         outcome: CombatOutcome,
     },
+    /// Movement on the battle map.
+    Move {
+        actor_id: String,
+        actor_name: String,
+        path: Vec<GridPos>,
+        feet: u32,
+    },
+    /// A reaction attack follows (someone left the attacker's reach).
+    OpportunityAttack {
+        attacker_id: String,
+        attacker_name: String,
+        target_name: String,
+    },
+    Dash {
+        actor_id: String,
+        actor_name: String,
+    },
+    Disengage {
+        actor_id: String,
+        actor_name: String,
+    },
 }
 
 pub fn is_party(combatant: &Combatant) -> bool {
@@ -170,7 +201,22 @@ pub fn resolve_attack<R: Rng + ?Sized>(
     target: &mut Combatant,
     rng: &mut R,
 ) -> Vec<CombatEvent> {
-    let mode = attack_mode(attacker, target);
+    resolve_attack_with(attacker, attack, target, false, rng)
+}
+
+/// Like [`resolve_attack`], with a disadvantage from the situation on the board (long range,
+/// shooting with an enemy next to you).
+pub fn resolve_attack_with<R: Rng + ?Sized>(
+    attacker: &Combatant,
+    attack: &Attack,
+    target: &mut Combatant,
+    situational_disadvantage: bool,
+    rng: &mut R,
+) -> Vec<CombatEvent> {
+    let mode = RollMode::combine(
+        false,
+        attack_mode(attacker, target) == RollMode::Disadvantage || situational_disadvantage,
+    );
     let roll = roll_d20(rng, mode);
     let target_ac = target.stats5e.as_ref().map_or(10, |s| s.armor_class);
     let total = roll.natural as i32 + attack.to_hit;
@@ -316,6 +362,9 @@ pub struct ActionOption {
     pub id: String,
     pub attack_id: Option<String>,
     pub target_id: Option<String>,
+    /// The attack would have disadvantage (long range, enemy next to the shooter).
+    #[serde(default)]
+    pub disadvantage: bool,
 }
 
 pub fn legal_actions(actor: &Combatant, combatants: &[Combatant]) -> Vec<ActionOption> {
@@ -329,6 +378,7 @@ pub fn legal_actions(actor: &Combatant, combatants: &[Combatant]) -> Vec<ActionO
                     id: format!("attack:{}:{}", attack.id, target.id),
                     attack_id: Some(attack.id.clone()),
                     target_id: Some(target.id.clone()),
+                    disadvantage: false,
                 });
             }
         }
@@ -337,6 +387,7 @@ pub fn legal_actions(actor: &Combatant, combatants: &[Combatant]) -> Vec<ActionO
         id: "dodge".to_string(),
         attack_id: None,
         target_id: None,
+        disadvantage: false,
     });
     options
 }

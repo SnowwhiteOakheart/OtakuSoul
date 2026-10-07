@@ -132,16 +132,16 @@ erzählt nur.
 
 ### 🗺️ Schritt 2 – Spielbrett: Raster, Tokens, Bewegung, Reichweite
 
-- [ ] Kartenformat (JSON, s. o.) + Validierung beim Laden (Rechteck, bekannte Zeichen, Startzonen vorhanden).
+- [x] Kartenformat (JSON, s. o.) + Validierung beim Laden (Rechteck, bekannte Zeichen, Startzonen vorhanden).
 - [ ] Kachel-SVG-Satz „Dungeon“ (aus [`todo_assets.md`](todo_assets.md), A) und `StageBattleMap.tsx` (SVG, zoombar, per Tastatur bedienbar).
 - [ ] Tokens: Porträt (Charakterbild bzw. NPC-Archetyp), LP-Ring, Initiativ-Rang, Zustands-Badges.
-- [ ] Bewegung: Tempo in Feldern, Diagonale = 5 ft *(F1)*, schwieriges Gelände ×2, Wände/geschlossene Türen und
+- [x] Bewegung: Tempo in Feldern, Diagonale = 5 ft *(F1)*, schwieriges Gelände ×2, Wände/geschlossene Türen und
   besetzte Felder blockieren; Wegfindung (A*) zeigt erreichbare Felder.
-- [ ] Reichweite: Nahkampf 5 ft (auch diagonal), Fernkampf normal/lang (lang = Nachteil), Sichtlinie per Raster-Strahl
+- [x] Reichweite: Nahkampf 5 ft (auch diagonal), Fernkampf normal/lang (lang = Nachteil), Sichtlinie per Raster-Strahl
   (Wände blockieren), Deckung zunächst nur „voll“ (kein Ziel).
-- [ ] Gelegenheitsangriff beim Verlassen der Reichweite (einzige Reaktion in diesem Schritt).
-- [ ] Platzierung: Party auf `start_party`, Monster auf vom GM gewählter Spawn-Zone (Engine verteilt auf freie Felder).
-- [ ] Monster-KI v2: vorrücken (Pfad), Fernkämpfer halten Abstand, Nahkämpfer umgehen Hindernisse.
+- [x] Gelegenheitsangriff beim Verlassen der Reichweite (einzige Reaktion in diesem Schritt).
+- [x] Platzierung: Party auf `start_party`, Monster auf vom GM gewählter Spawn-Zone (Engine verteilt auf freie Felder).
+- [x] Monster-KI v2: vorrücken (Pfad), Fernkämpfer halten Abstand, Nahkämpfer umgehen Hindernisse.
 - [ ] Stage-Ansicht „Spielbrett“ neben Abenteuer/Taktik/Kampagne; Kampfaktionen direkt vom Brett.
 - [ ] Tests: Wegfindung, Sichtlinie, Reichweite, Gelegenheitsangriff (Rust); E2E Bewegung + Angriff auf dem Brett.
 

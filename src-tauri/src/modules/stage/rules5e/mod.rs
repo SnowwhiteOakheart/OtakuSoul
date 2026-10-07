@@ -4,6 +4,7 @@
 //! takes its randomness from the caller, so tests can use a fixed seed.
 
 pub mod ai;
+pub mod board;
 pub mod combat;
 pub mod data;
 pub mod map;
@@ -13,6 +14,7 @@ use serde::{Deserialize, Serialize};
 use ts_rs::TS;
 
 pub use ai::*;
+pub use board::*;
 pub use combat::*;
 pub use data::*;
 pub use map::*;

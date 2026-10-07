@@ -15,6 +15,7 @@ fn combatant(id: &str, role: &str, stats: (Stats5e, i32)) -> Combatant {
         conditions: Vec::new(),
         skills: Default::default(),
         stats5e: Some(stats.0),
+        position: None,
     }
 }
 
@@ -230,6 +231,8 @@ fn initiative_order_and_turn_advance() {
         ],
         combat_log: Vec::new(),
         events: Vec::new(),
+        turn: TurnBudget::default(),
+        reactions_used: Vec::new(),
     };
     let event = roll_initiative(&mut encounter.combatants, &mut StdRng::seed_from_u64(3));
     let CombatEvent::Initiative { order } = event else {
@@ -323,6 +326,8 @@ fn a_seeded_fight_runs_to_the_end() {
         ],
         combat_log: Vec::new(),
         events: Vec::new(),
+        turn: TurnBudget::default(),
+        reactions_used: Vec::new(),
     };
     roll_initiative(&mut encounter.combatants, &mut rng);
     let mut turns = 0;
@@ -557,4 +562,253 @@ fn placement_fills_the_zone_then_spreads() {
             .all(|p| map.walkable(*p) && *p != GridPos::new(2, 1))
     );
     assert_eq!(GridPos::new(1, 1).feet_to(GridPos::new(4, 3)), 15);
+}
+
+// --- Fighting on the board ---
+
+fn at(mut c: Combatant, x: i32, y: i32) -> Combatant {
+    c.position = Some(GridPos::new(x, y));
+    c
+}
+
+fn open_map() -> BattleMap {
+    small_map(&[
+        "############",
+        "#p.........#",
+        "#..........#",
+        "#..........#",
+        "#.........s#",
+        "############",
+    ])
+}
+
+#[test]
+fn leaving_reach_provokes_one_opportunity_attack_unless_disengaged() {
+    let mut fighters = vec![
+        at(hero("thorin", "fighter", "player"), 2, 2),
+        at(goblin("g1"), 3, 2),
+    ];
+    let mut reactions = Vec::new();
+    let mut rng = StdRng::seed_from_u64(5);
+    let events = walk(
+        &mut fighters,
+        0,
+        &[GridPos::new(1, 2), GridPos::new(1, 1)],
+        false,
+        &mut reactions,
+        &mut rng,
+    );
+    assert!(matches!(events[0], CombatEvent::Move { feet: 10, .. }));
+    assert!(
+        events
+            .iter()
+            .any(|e| matches!(e, CombatEvent::OpportunityAttack { .. }))
+    );
+    assert_eq!(reactions, vec!["g1".to_string()]);
+    // Back next to the goblin and away again: its reaction is spent this round.
+    fighters[0].position = Some(GridPos::new(2, 2));
+    let again = walk(
+        &mut fighters,
+        0,
+        &[GridPos::new(1, 2)],
+        false,
+        &mut reactions,
+        &mut rng,
+    );
+    assert!(
+        !again
+            .iter()
+            .any(|e| matches!(e, CombatEvent::OpportunityAttack { .. }))
+    );
+    // Disengaged: no reaction at all.
+    let mut fresh = Vec::new();
+    fighters[0].position = Some(GridPos::new(2, 2));
+    let calm = walk(
+        &mut fighters,
+        0,
+        &[GridPos::new(1, 2)],
+        true,
+        &mut fresh,
+        &mut rng,
+    );
+    assert!(fresh.is_empty() && calm.len() == 1);
+}
+
+#[test]
+fn monsters_close_in_and_archers_keep_their_distance() {
+    let map = open_map();
+    let thorin = at(hero("thorin", "fighter", "player"), 1, 1);
+    // A zombie (speed 20) far away walks towards the hero and cannot attack yet.
+    let zombie = at(
+        combatant("z", "enemy", monster_stats(monster("zombie").unwrap())),
+        9,
+        4,
+    );
+    let fight = vec![thorin.clone(), zombie.clone()];
+    let plan = monster_board_plan(&map, &zombie, &fight, 20);
+    assert_eq!(plan.action, TurnDecision::Pass);
+    let target = plan.move_to.expect("moves");
+    assert!(
+        target.squares_to(GridPos::new(1, 1))
+            < zombie.position.unwrap().squares_to(GridPos::new(1, 1))
+    );
+    // An orc two squares away walks up and swings its greataxe (much stronger than a javelin);
+    // a goblin with equally strong bow and scimitar simply shoots from where it stands.
+    let orc = at(
+        combatant("o", "enemy", monster_stats(monster("orc").unwrap())),
+        4,
+        1,
+    );
+    let plan = monster_board_plan(&map, &orc, &[thorin.clone(), orc.clone()], 30);
+    assert!(
+        matches!(plan.action, TurnDecision::Attack { ref attack_id, .. } if attack_id == "greataxe")
+    );
+    assert_eq!(
+        plan.move_to.map(|p| p.squares_to(GridPos::new(1, 1))),
+        Some(1)
+    );
+    let archer = at(goblin("g"), 4, 1);
+    let plan = monster_board_plan(&map, &archer, &[thorin.clone(), archer.clone()], 30);
+    assert!(
+        matches!(plan.action, TurnDecision::Attack { ref attack_id, .. } if attack_id == "shortbow")
+    );
+    assert_eq!(plan.move_to, None);
+    // A kobold with only a sling in reach shoots from where it stands, not from next to the hero.
+    let mut slinger = at(
+        combatant("k", "enemy", monster_stats(monster("kobold").unwrap())),
+        6,
+        3,
+    );
+    slinger
+        .stats5e
+        .as_mut()
+        .unwrap()
+        .attacks
+        .retain(|a| a.id == "sling");
+    let plan = monster_board_plan(&map, &slinger, &[thorin.clone(), slinger.clone()], 30);
+    assert!(matches!(plan.action, TurnDecision::Attack { .. }));
+    let from = plan.move_to.or(slinger.position).unwrap();
+    assert!(
+        from.squares_to(GridPos::new(1, 1)) > 1,
+        "shoots from a distance"
+    );
+}
+
+#[test]
+fn attacks_in_place_follow_reach_and_sight() {
+    let map = open_map();
+    let lyra = at(hero("lyra", "wizard", "player"), 1, 1);
+    let near = at(goblin("near"), 2, 1);
+    let far = at(goblin("far"), 9, 4);
+    let options = actions_in_place(&map, &lyra, &[lyra.clone(), near.clone(), far.clone()]);
+    let ids: Vec<&str> = options.iter().map(|o| o.id.as_str()).collect();
+    assert!(ids.contains(&"attack:quarterstaff:near"));
+    assert!(!ids.contains(&"attack:quarterstaff:far"));
+    // Fire Bolt at the far goblin: in range, but an enemy stands next to Lyra.
+    let bolt = options
+        .iter()
+        .find(|o| o.id == "attack:fire_bolt:far")
+        .unwrap();
+    assert!(bolt.disadvantage);
+    assert!(ids.contains(&"dodge"));
+}
+
+#[test]
+fn a_seeded_board_fight_runs_to_the_end() {
+    let map = open_map();
+    let mut rng = StdRng::seed_from_u64(9);
+    let mut encounter = EncounterState {
+        is_active: true,
+        round: 1,
+        current_turn_index: 0,
+        combatants: vec![
+            at(hero("thorin", "fighter", "player"), 1, 1),
+            at(hero("finn", "rogue", "companion"), 2, 2),
+            at(goblin("g1"), 9, 4),
+            at(goblin("g2"), 10, 3),
+        ],
+        combat_log: Vec::new(),
+        events: Vec::new(),
+        turn: TurnBudget::default(),
+        reactions_used: Vec::new(),
+    };
+    roll_initiative(&mut encounter.combatants, &mut rng);
+    let mut turns = 0;
+    while combat_outcome(&encounter.combatants).is_none() && turns < 300 {
+        let index = encounter.current_turn_index;
+        let actor = encounter.combatants[index].clone();
+        let plan = if is_enemy(&actor) {
+            monster_board_plan(&map, &actor, &encounter.combatants, 30)
+        } else {
+            hero_board_plan(&map, &actor, &encounter.combatants, 30)
+        };
+        if let Some(target) = plan.move_to {
+            let reach = reachable(
+                &map,
+                actor.position.unwrap(),
+                30,
+                &occupancy(&actor, &encounter.combatants),
+            );
+            let path = reach.path(target);
+            walk(
+                &mut encounter.combatants,
+                index,
+                &path,
+                false,
+                &mut encounter.reactions_used,
+                &mut rng,
+            );
+        }
+        let actor = encounter.combatants[index].clone();
+        if is_up(&actor) {
+            match plan.action {
+                TurnDecision::Attack {
+                    attack_id,
+                    target_id,
+                } => {
+                    let attack = actor
+                        .stats5e
+                        .as_ref()
+                        .unwrap()
+                        .attack(&attack_id)
+                        .unwrap()
+                        .clone();
+                    let target = encounter
+                        .combatants
+                        .iter_mut()
+                        .find(|c| c.id == target_id)
+                        .unwrap();
+                    resolve_attack(&actor, &attack, target, &mut rng);
+                }
+                TurnDecision::Flee => {
+                    flee(&mut encounter.combatants[index]);
+                }
+                _ => {}
+            }
+        }
+        // Nobody ever stands on a wall or on someone else's square.
+        let positions: Vec<GridPos> = encounter
+            .combatants
+            .iter()
+            .filter(|c| is_up(c))
+            .filter_map(|c| c.position)
+            .collect();
+        assert!(positions.iter().all(|p| map.walkable(*p)));
+        assert_eq!(
+            positions.len(),
+            positions
+                .iter()
+                .collect::<std::collections::HashSet<_>>()
+                .len()
+        );
+        advance_turn(&mut encounter);
+        encounter
+            .reactions_used
+            .retain(|id| *id != encounter.combatants[encounter.current_turn_index].id);
+        turns += 1;
+    }
+    assert!(
+        combat_outcome(&encounter.combatants).is_some(),
+        "board fight ended within {turns} turns"
+    );
 }

@@ -46,6 +46,7 @@ impl StageEngine {
                 conditions: Vec::new(),
                 skills: HashMap::new(),
                 stats5e: None,
+                position: None,
             },
             Combatant {
                 id: "comb_companion".to_string(),
@@ -62,6 +63,7 @@ impl StageEngine {
                 }],
                 skills: HashMap::new(),
                 stats5e: None,
+                position: None,
             },
             Combatant {
                 id: "comb_enemy_1".to_string(),
@@ -75,6 +77,7 @@ impl StageEngine {
                 conditions: Vec::new(),
                 skills: HashMap::new(),
                 stats5e: None,
+                position: None,
             },
         ];
 
@@ -212,6 +215,7 @@ extensions: serde_json::Value::Null,
             lore_cards: Vec::new(),
             memory_sync: HashMap::new(),
             private_knowledge: HashMap::new(),
+            map: None,
             history_summaries: HashMap::new(),
             npcs: Vec::new(),
         };
@@ -278,6 +282,7 @@ extensions: serde_json::Value::Null,
                 conditions: Vec::new(),
                 skills: HashMap::new(),
                 stats5e: None,
+                position: None,
             });
         }
         for combatant in st

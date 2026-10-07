@@ -8,4 +8,8 @@ export type ActionOption = {
 /**
  * `attack:<attack id>:<target id>` or `dodge`.
  */
-id: string, attack_id: string | null, target_id: string | null, };
+id: string, attack_id: string | null, target_id: string | null, 
+/**
+ * The attack would have disadvantage (long range, enemy next to the shooter).
+ */
+disadvantage: boolean, };

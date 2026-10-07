@@ -90,6 +90,10 @@ pub struct Combatant {
     #[serde(default)]
     #[ts(optional)]
     pub stats5e: Option<super::rules5e::Stats5e>,
+    /// Square on the battle map (5e scenes with a map).
+    #[serde(default)]
+    #[ts(optional)]
+    pub position: Option<super::rules5e::GridPos>,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize, TS)]
@@ -103,6 +107,12 @@ pub struct EncounterState {
     /// Rules events of the current fight (5e scenes), newest last.
     #[serde(default)]
     pub events: Vec<super::rules5e::CombatEvent>,
+    /// What the current combatant has left this turn (5e).
+    #[serde(default)]
+    pub turn: super::rules5e::TurnBudget,
+    /// Combatants who used their reaction since their last turn.
+    #[serde(default)]
+    pub reactions_used: Vec<String>,
 }
 
 impl Default for EncounterState {
@@ -114,6 +124,8 @@ impl Default for EncounterState {
             combatants: Vec::new(),
             combat_log: Vec::new(),
             events: Vec::new(),
+            turn: Default::default(),
+            reactions_used: Vec::new(),
         }
     }
 }
@@ -399,6 +411,10 @@ pub struct SceneRules {
     /// The player chooses the companions' combat actions instead of the language model.
     #[serde(default)]
     pub control_companions: bool,
+    /// Battle map for fights (`presets/srd5/maps`); without one fights run without a board.
+    #[serde(default)]
+    #[ts(optional)]
+    pub map_id: Option<String>,
 }
 
 impl SceneDefinition {
@@ -564,6 +580,9 @@ pub struct SceneState {
     pub history_summaries: HashMap<String, StageHistorySummary>,
     #[serde(default)]
     pub npcs: Vec<StageNpc>,
+    /// Battle map of the current or last fight (5e scenes).
+    #[serde(default)]
+    pub map: Option<super::rules5e::BattleMap>,
 }
 
 #[derive(Debug, Clone, Default, Serialize, Deserialize, TS)]

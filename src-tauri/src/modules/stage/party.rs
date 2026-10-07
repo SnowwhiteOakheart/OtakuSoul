@@ -37,6 +37,7 @@ pub fn ensure_party_vitals(state: &mut SceneState) {
             conditions: Vec::new(),
             skills: std::collections::HashMap::new(),
             stats5e: None,
+            position: None,
         });
     }
     for name in state.definition.party.clone() {
@@ -62,6 +63,7 @@ pub fn ensure_party_vitals(state: &mut SceneState) {
             conditions: Vec::new(),
             skills: std::collections::HashMap::new(),
             stats5e: None,
+            position: None,
         });
     }
     // 5e scenes: heroes get their rules values from the class templates.
