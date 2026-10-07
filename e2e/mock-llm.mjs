@@ -95,6 +95,9 @@ export function startMockLlm() {
       const isCombatReport = system.includes('[STAGE — COMBAT REPORT]');
       if (isCombatAction) stats.combatActions = (stats.combatActions ?? 0) + 1;
       if (isCombatReport) { stats.combatReports = (stats.combatReports ?? 0) + 1; stats.lastCombatReport = system; }
+      // 5e exploration: the narrator retells rooms, traps, locks and arrivals.
+      const isExploreReport = system.includes('[STAGE — EXPLORATION REPORT]');
+      if (isExploreReport) { stats.exploreReports = (stats.exploreReports ?? 0) + 1; stats.lastExploreReport = system; }
       const isPlanner = system.includes('GAME MASTER PLANNER');
       const isNarrator = system.includes('GAME MASTER NARRATOR');
       if (isPlanner) { stats.stagePlanner += 1; stats.lastPlannerMessages = request.messages ?? []; }
@@ -125,6 +128,7 @@ export function startMockLlm() {
         : isRouting ? JSON.stringify({ next_actor: stats.routeTo ?? 'PLAYER' }) : isStageSummary ? stageSummary
         : isCombatAction ? ((stats.preferCast && system.match(/^(cast:\S+) —/m)?.[1]) || system.match(/^(attack:\S+) —/m)?.[1] || 'dodge')
         : isCombatReport ? COMBAT_NARRATION
+        : isExploreReport ? 'Staub rieselt von der Decke, als die Gruppe weitergeht.'
         : isPlanner
         ? JSON.stringify({
             narration_plan: 'Ein altes Tor taucht aus dem Nebel auf.',

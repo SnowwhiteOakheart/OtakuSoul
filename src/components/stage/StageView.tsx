@@ -69,7 +69,7 @@ export const StageView: React.FC = () => {
 
   const [activeTab, setActiveTab] = useState<'adventure' | 'board' | 'tactics' | 'campaign'>('adventure');
   // The board tab exists in 5e scenes with a map; a fight on a map opens it.
-  const hasBoard = stageState?.definition.rules?.ruleset === '5e' && !!stageState.map;
+  const hasBoard = stageState?.definition.rules?.ruleset === '5e' && (!!stageState.map || !!stageState.definition.rules.map_id);
   const boardFightKey = hasBoard && stageState?.combat.is_active ? `${stageState.definition.id}:${stageState.map?.id}` : '';
   const [shownBoardFight, setShownBoardFight] = useState('');
   if (boardFightKey && boardFightKey !== shownBoardFight) {

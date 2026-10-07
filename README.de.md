@@ -102,7 +102,7 @@ Erlebe interaktive Tabletop-Abenteuer wie mit einem menschlichen Spielleiter. Di
 * **3D-animierte Würfelproben:** Proben auf Fertigkeiten mit Schwierigkeitsgraden (DC), dramatischen 3D-Würfelwürfen und audio-visuellen Effekten bei kritischen Treffern oder Patzern.
 * **Szenen & Kampagnen:** Spiele vordefinierte Abenteuer wie alle 12 Kapitel von *No Game No Life* oder erstelle eigene Welten.
 * **NPCs mit Gedächtnis & Beförderung:** Triff auf Händler, Wachen oder Schurken mit eigenen Erinnerungen – und befördere sie bei Gefallen direkt zu festen Gefährten der Gruppe!
-* **5e-kompatible Kämpfe (SRD 5.1):** Auf Wunsch entscheidet eine Regel-Engine jeden Wurf, Treffer und Gegnerzug, der Spielleiter erzählt nur – mit Klassen, SRD-Monstern und taktischem Spielbrett (Bewegung, Sichtlinie, Reichweiten, Gelegenheitsangriffe), Zaubern mit Flächenvorschau, Zuständen, Todesrettungswürfen, Fertigkeitsproben und Rasten.
+* **5e-kompatible Kämpfe (SRD 5.1):** Auf Wunsch entscheidet eine Regel-Engine jeden Wurf, Treffer und Gegnerzug, der Spielleiter erzählt nur – mit Klassen, SRD-Monstern und taktischem Spielbrett (Bewegung, Sichtlinie, Reichweiten, Gelegenheitsangriffe), Zaubern mit Flächenvorschau, Zuständen, Todesrettungswürfen, Fertigkeitsproben und Rasten – und Erkundung der Karte mit Nebel des Krieges, Türen, Schlössern, Fallen und Begegnungen.
 
 <p align="center">
   <img src="docs/assets/screenshots/stage-world-editor.png" alt="Stage Weltzustand-Editor" width="85%" />

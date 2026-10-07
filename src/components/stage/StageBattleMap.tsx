@@ -1,6 +1,6 @@
 import React, { useMemo, useState } from 'react';
 import { useStoreFields } from '../../store/useAppStore';
-import { useTranslation } from '../../i18n';
+import { useTranslation, type TranslationKey } from '../../i18n';
 import { localizedName, tierLabel } from '../../utils/combatEvents';
 import { areaSquares, squaresBetween } from '../../utils/spellArea';
 import type { BattleMap, Combatant, CombatOptions, GridPos } from '../../types';
@@ -10,6 +10,14 @@ const TILE = 64;
 /** Ground tiles that come in numbered variants (`floor_stone_1` …). */
 const VARIANTS: Record<string, number> = { floor_stone: 3, grass: 3 };
 const CLASSIC_HEROES = ['thorin', 'lyra', 'finn', 'althea'];
+
+/** Objects that block walking (same list as `BLOCKING_OBJECTS` in `rules5e/map.rs`). */
+const BLOCKING = new Set([
+  'door_locked', 'pillar', 'chest_closed', 'chest_open', 'altar', 'altar_dark', 'sarcophagus', 'brazier',
+  'tree', 'tree_pine', 'rock', 'wagon_left', 'wagon_right', 'crates', 'campfire',
+]);
+/** Objects the party can use while exploring. */
+const USABLE = new Set(['door_closed', 'door_open', 'door_locked', 'chest_closed']);
 
 const isParty = (c: Combatant) => c.role === 'player' || c.role === 'companion';
 const isUp = (c: Combatant) => c.hp > 0 && !c.conditions.some((condition) => condition.name === 'fled');
@@ -45,13 +53,15 @@ interface Props {
   options: CombatOptions | null;
   disabled: boolean;
   onAction: (action: string) => void;
+  /** Outside fights: clicks walk the party and use doors and chests. */
+  exploring?: boolean;
 }
 
 /**
  * The 5e battle map: tiles from public/stage/tiles, tokens with health rings, the squares the
  * current combatant may move to (click to move) and enemies in reach (click to attack).
  */
-export const StageBattleMap: React.FC<Props> = ({ map, combatants, currentIndex, options, disabled, onAction }) => {
+export const StageBattleMap: React.FC<Props> = ({ map, combatants, currentIndex, options, disabled, onAction, exploring = false }) => {
   const { t } = useTranslation();
   const { availableCharacters, stageAimedSpell, appLanguage } = useStoreFields('availableCharacters', 'stageAimedSpell', 'appLanguage');
   const [hover, setHover] = useState<GridPos | null>(null);
@@ -70,12 +80,17 @@ export const StageBattleMap: React.FC<Props> = ({ map, combatants, currentIndex,
     map.cells.forEach((cell, index) => {
       const p = { x: index % map.width, y: Math.floor(index / map.width) };
       const away = squaresBetween(caster, p);
-      if (cell.kind !== 'wall' && away * 5 <= rangeFt && (away > 0 || aimed.range_ft > 0)) squares.push(p);
+      const seen = map.revealed.length === 0 || !!map.revealed[index];
+      if (seen && cell.kind !== 'wall' && away * 5 <= rangeFt && (away > 0 || aimed.range_ft > 0)) squares.push(p);
     });
     return squares;
   }, [aimed, caster, map]);
   const covered = aimed && caster && hover ? (aimed.area ? areaSquares(aimed.area, caster, hover) : [hover]) : [];
   const castAt = (p: GridPos) => stageAimedSpell && onAction(`cast:${stageAimedSpell.spellId}:${stageAimedSpell.slot}:@${p.x}:${p.y}`);
+
+  // Fog of war: only what the party has seen is drawn (maps without fog show everything).
+  const revealed = (x: number, y: number) => map.revealed.length === 0 || !!map.revealed[y * map.width + x];
+  const occupied = new Set(combatants.filter((c) => c.position && isUp(c)).map((c) => `${c.position!.x}:${c.position!.y}`));
 
   const attackFor = (target: Combatant) =>
     options?.actions
@@ -98,6 +113,9 @@ export const StageBattleMap: React.FC<Props> = ({ map, combatants, currentIndex,
       {map.cells.map((cell, index) => {
         const x = index % map.width;
         const y = Math.floor(index / map.width);
+        if (!revealed(x, y)) {
+          return <rect key={index} x={x * TILE} y={y * TILE} width={TILE} height={TILE} fill="#020617" data-fog="" />;
+        }
         return (
           <g key={index} transform={`translate(${x * TILE} ${y * TILE})`}>
             <image href={groundTile(map, cell.ground, x, y)} width={TILE} height={TILE} />
@@ -118,6 +136,61 @@ export const StageBattleMap: React.FC<Props> = ({ map, combatants, currentIndex,
           </g>
         );
       })}
+
+      {/* Exploring: walk to any seen square, use doors and chests. */}
+      {exploring && !disabled && (
+        <g data-testid="explore-layer">
+          {map.cells.map((cell, index) => {
+            const x = index % map.width;
+            const y = Math.floor(index / map.width);
+            if (!revealed(x, y)) return null;
+            const object = cell.object ?? '';
+            const usable = USABLE.has(object);
+            if (usable) {
+              const action = t(`explore.object.${object}` as TranslationKey);
+              return (
+                <rect
+                  key={`use-${index}`}
+                  x={x * TILE + 3}
+                  y={y * TILE + 3}
+                  width={TILE - 6}
+                  height={TILE - 6}
+                  rx={10}
+                  role="button"
+                  tabIndex={0}
+                  aria-label={t('board.use', { action, x: x + 1, y: y + 1 })}
+                  data-use={`${x}:${y}`}
+                  onClick={() => onAction(`use:${x}:${y}`)}
+                  onKeyDown={(e) => (e.key === 'Enter' || e.key === ' ') && onAction(`use:${x}:${y}`)}
+                  className="cursor-pointer fill-transparent stroke-amber-300/60 hover:fill-amber-300/20 focus:fill-amber-300/20 outline-none"
+                  strokeWidth={2}
+                  strokeDasharray="6 4"
+                >
+                  <title>{action}</title>
+                </rect>
+              );
+            }
+            const walkable = cell.kind !== 'wall' && cell.kind !== 'pit' && !BLOCKING.has(object) && !occupied.has(`${x}:${y}`);
+            if (!walkable) return null;
+            return (
+              <rect
+                key={`walk-${index}`}
+                x={x * TILE + 2}
+                y={y * TILE + 2}
+                width={TILE - 4}
+                height={TILE - 4}
+                rx={8}
+                role="button"
+                aria-label={t('board.walkTo', { x: x + 1, y: y + 1 })}
+                data-explore={`${x}:${y}`}
+                onClick={() => onAction(`move:${x}:${y}`)}
+                className="cursor-pointer fill-transparent hover:fill-sky-300/20 hover:stroke-sky-200/60 outline-none"
+                strokeWidth={2}
+              />
+            );
+          })}
+        </g>
+      )}
 
       {/* Aiming an area spell: the covered squares light up, a click casts. */}
       {!disabled && aimed && (
@@ -150,7 +223,7 @@ export const StageBattleMap: React.FC<Props> = ({ map, combatants, currentIndex,
 
       {/* Squares to move to */}
       {!disabled && !aimed &&
-        options?.reachable.map((square) => (
+        options?.reachable.filter((square) => revealed(square.x, square.y)).map((square) => (
           <rect
             key={`${square.x},${square.y}`}
             x={square.x * TILE + 2}
@@ -171,7 +244,7 @@ export const StageBattleMap: React.FC<Props> = ({ map, combatants, currentIndex,
 
       {/* Tokens */}
       {combatants.map((c, index) => {
-        if (!c.position || !isUp(c)) return null;
+        if (!c.position || !isUp(c) || !revealed(c.position.x, c.position.y)) return null;
         const cx = c.position.x * TILE + TILE / 2;
         const cy = c.position.y * TILE + TILE / 2;
         const image = tokenImage(c, portraits);

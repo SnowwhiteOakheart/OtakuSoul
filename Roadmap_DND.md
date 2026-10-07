@@ -166,13 +166,13 @@ blockieren Sicht und Weg.
 **Fertig, wenn:** Die Magierin wirkt *Brennende Hände* (Kegel) auf zwei Gegner mit korrekten Rettungswürfen, und die
 Klerikerin holt einen bewusstlosen Helden zurück.
 
-### 🔦 Schritt 4 – Erkundung & Spielleitung auf der Karte
+### 🔦 Schritt 4 – Erkundung & Spielleitung auf der Karte ✅
 
 - [x] Nebel des Krieges: aufgedeckt, was die Party sieht (Radius + Sichtlinie); Dunkelsicht/Licht vereinfacht.
 - [x] Türen öffnen/schließen, Fallen und Objekte mit Proben, Kartenübergänge (Ausgangsfelder → nächste Karte).
 - [x] GM-Kontext: Raumbeschreibungen der Karte im Planer; GM wählt Karte/Begegnung/Spawn-Zone nur aus Listen.
 - [x] Prüfen: Undo, Bearbeiten/Löschen im Verlauf und Abbruch mit Kartenzustand (Snapshots, `reconcile_*`).
-- [ ] Tests: Sicht-/Aufdeck-Logik (Rust); E2E Erkundung zweier Räume mit Tür.
+- [x] Tests: Sicht-/Aufdeck-Logik (Rust); E2E Erkundung zweier Räume mit Tür.
 
 **Fertig, wenn:** Die Party erkundet eine Karte mit zwei Räumen, öffnet eine Tür, löst eine Begegnung aus, und
 Rückgängig stellt Karte und Kampf korrekt wieder her.

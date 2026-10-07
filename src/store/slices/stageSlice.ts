@@ -102,6 +102,8 @@ export interface StageSlice {
   runStageTurn: (userInput: string, turnMode?: string, whisperTarget?: string, forceActor?: string) => Promise<void>;
   /** 5e fight: the player's action (`attack:<attack>:<target>` or `dodge`), or none to continue. */
   runStageCombat: (action?: string) => Promise<void>;
+  /** 5e map outside fights: `move:x:y`, `use:x:y`, `pick:x:y`, `force:x:y`; none = start exploring. */
+  runStageExploration: (action?: string) => Promise<void>;
   /** What the current combatant may do on the board (squares, attacks in reach). */
   stageCombatOptions: CombatOptions | null;
   refreshStageCombatOptions: () => Promise<void>;
@@ -513,6 +515,25 @@ export const createStageSlice: SliceCreator<StageSlice> = (set, get) => ({
     } catch (e) {
       set({ isProcessingStageTurn: false, stageLive: [] });
       reportFailure('Failed to run combat turn:', e);
+    }
+  },
+
+  runStageExploration: async (action?: string) => {
+    const current = get().stageState;
+    if (!current || get().isProcessingStageTurn) return;
+    set({ isProcessingStageTurn: true, stageLive: [] });
+    try {
+      const updated = await api.runStageExploration(current.definition.id, action);
+      set({ stageState: updated, isProcessingStageTurn: false, stageLive: [] });
+      void get().refreshStageCombatOptions();
+      if (get().stageReadAloud) {
+        void speakStageMessages(updated.chat_log.slice(current.chat_log.length), get().availableCharacters);
+      }
+    } catch (e) {
+      set({ isProcessingStageTurn: false, stageLive: [] });
+      // Starting to explore happens in the background; a refused step is the player's to know.
+      if (action) reportFailure('Failed to explore:', e);
+      else console.error('Failed to start exploring:', e);
     }
   },
 

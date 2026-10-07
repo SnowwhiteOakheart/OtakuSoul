@@ -173,24 +173,33 @@ pub fn approach_object(
     target: GridPos,
     party: &[GridPos],
 ) -> Option<Vec<GridPos>> {
-    if from.squares_to(target) == 1 {
-        return Some(Vec::new());
-    }
-    let mut best: Option<Vec<GridPos>> = None;
+    // Straight in front of it is better than diagonal (one sees through an opened door), as
+    // long as it is not much further.
+    let score = |len: usize, at: GridPos| {
+        len * 2
+            + if at.x != target.x && at.y != target.y {
+                3
+            } else {
+                0
+            }
+    };
+    let mut best: Option<(usize, Vec<GridPos>)> =
+        (from.squares_to(target) == 1).then(|| (score(0, from), Vec::new()));
     for y in -1..=1 {
         for x in -1..=1 {
             let next = GridPos::new(target.x + x, target.y + y);
             if next == target || !map.walkable(next) {
                 continue;
             }
-            if let Some(path) = explore_path(map, from, next, party)
-                && best.as_ref().is_none_or(|b| path.len() < b.len())
-            {
-                best = Some(path);
+            if let Some(path) = explore_path(map, from, next, party) {
+                let value = score(path.len(), next);
+                if best.as_ref().is_none_or(|(b, _)| value < *b) {
+                    best = Some((value, path));
+                }
             }
         }
     }
-    best
+    best.map(|(_, path)| path)
 }
 
 /// Free squares closest to the leader (by walking, not through walls), for the rest of the

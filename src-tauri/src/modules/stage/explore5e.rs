@@ -866,8 +866,10 @@ mod tests {
         let map = state.map.as_mut().unwrap();
         map.triggered.push("ossuary_dead".into());
         map.traps[0].spot_dc = 99;
+        map.traps[0].spotted = false;
         map.revealed.fill(true);
         let trap = map.traps[0].at;
+        map.cell_mut(trap).unwrap().object = None;
         let (events, stop) = apply(&mut state, ExploreAction::Move(trap)).unwrap();
         assert!(matches!(stop, Some(Stop::Trap)));
         assert!(

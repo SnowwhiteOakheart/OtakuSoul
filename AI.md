@@ -179,6 +179,16 @@ Hub). Integrationen → Bildgenerierung enthält nur Studio und Galerie.
   Flächenzauber werden über `stageAimedSpell` auf dem Brett gezielt (`data-cast-at`, Vorschau `data-area`).
   Gefährten heilen Sterbende ohne LLM (`urgent_cast`), sonst bis zu drei Zauber aus `spell_plans` als Optionen.
   Zaubernamen fürs Log/den Bogen über `list_srd_spells` (`utils/srdSpells.ts`). E2E `stage-spells.mjs`.
+  Erkundung (Schritt 4): Karten-JSON mit `rooms` (Rechteck + englische GM-Beschreibung), `encounters` (Raum → Monster,
+  Zone), `exits` (Zone → Karte), `traps`, `locks`; Laufzeitzustand in `BattleMap.revealed` (leer = kein Nebel) und
+  `triggered` (Begegnungen, `room:<id>`). Reine Logik `rules5e/explore.rs`, Szene `stage/explore5e.rs`
+  (`run_stage_exploration`: `move`/`use`/`pick`/`force:x:y`, ohne Aktion = Start; ein Snapshot je Schritt, auch wenn
+  eine Begegnung startet → `combat5e::finish_round`). Geschlossene Türen öffnen sich im Vorbeigehen (`open_doors_on`),
+  Schlösser blockieren (`walkable`). Erkundet die Gruppe, behält `place_on_map` Karte und Positionen und setzt nur
+  Gegner auf die Zone. Planer: `planner_map_rule` (Räume, Begegnungen, Zonen, Karten), Plan-Felder
+  `encounter.encounter`/`encounter.zone`/`map_change` → `apply_planner_map`. Mock erkennt
+  „[STAGE — EXPLORATION REPORT]“. UI: `Explore5ePanel.tsx`, Nebel und Klickflächen (`data-explore`, `data-use`) in
+  `StageBattleMap`, Log `utils/exploreEvents.ts`. E2E `stage-explore.mjs`.
 - Stimmeffekte: `VoiceConfig.effects` (`VoiceEffects`), gerendert in `services/voiceEffects.ts` (OfflineAudioContext, Tonhöhe per
   WSOLA) über `audioPlayer.enqueue(…, effects)`; jeder neue Abspielweg muss `config.effects` mitgeben.
 - Bild-LoRAs (`image_loras.rs`): `sd-server` ignoriert `<lora:…>` im Prompt; LoRAs gehen als `lora: [{path, multiplier}]`

@@ -1837,6 +1837,13 @@ veraltet und sind korrigiert: `chat-sidebar-errors` las die Sitzung, bevor der e
   heilen Sterbende selbst und wählen sonst auch Zauber. Oberfläche: Zauberbuch im Kampfpanel mit Gradwahl und Zielen,
   Flächenzauber werden auf dem Brett mit Vorschau gezielt, Kampflog für alle neuen Ereignisse, vollständiger Bogen
   (Rettungswürfe, Fertigkeiten, Zauber/Plätze, Konzentration, Todesrettung). E2E `stage-spells.mjs`.
+- [x] **Soul Stage 5e – Schritt 4 (Erkundung & Spielleitung auf der Karte, `Roadmap_DND.md`):** Szenen mit Karte
+  werden außerhalb von Kämpfen erkundet: Nebel des Krieges nach Lichtradius und Sichtlinie, die Gruppe folgt dem Spieler
+  per Klick, Türen und Truhen per Klick, Schlösser per Fingerfertigkeit oder Athletik, verborgene Fallen per passiver
+  Wahrnehmung entdeckt oder per GES-Rettungswurf ausgelöst, Ausgänge zwischen Gruft und Waldstraße. Betritt die Gruppe
+  den Raum einer vorbereiteten Begegnung, startet der Kampf am Ort; ein Rückgängig stellt Karte und Gruppe davor wieder
+  her. Der Spielleiter kennt Räume (gesehen/ungesehen), Begegnungen, Zonen und Karten nur als Auswahllisten und erzählt
+  Neues aus dem Erkundungsbericht. Oberfläche: Erkundungspanel mit Ort, Schlössern und Verlauf. E2E `stage-explore.mjs`.
 
 
 ## Grafiken für das Spielbrett (07.10.2026)
