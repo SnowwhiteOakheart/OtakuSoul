@@ -103,7 +103,7 @@ export const StageBattleMap: React.FC<Props> = ({ map, combatants, currentIndex,
             <image href={groundTile(map, cell.ground, x, y)} width={TILE} height={TILE} />
             {/* Walls darker and the 5-ft grid on open ground, so rooms read at a glance. */}
             {cell.kind === 'wall' ? (
-              <rect width={TILE} height={TILE} fill="#020617" opacity={0.25} />
+              <rect width={TILE} height={TILE} fill="#020617" opacity={0.55} />
             ) : (
               <rect width={TILE} height={TILE} fill="none" stroke="#020617" strokeOpacity={0.35} strokeWidth={1} />
             )}

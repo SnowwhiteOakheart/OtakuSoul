@@ -207,7 +207,7 @@ Rückgängig stellt Karte und Kampf korrekt wieder her.
 | F2 | Gefährten im Kampf | LLM wählt aus der erlaubten Liste; Schalter „Gefährten selbst steuern“ übergibt sie dem Spieler | Schritt 1 |
 | F3 | Gegner-LP sichtbar? | Nein – Zustandsstufen („unverletzt / angeschlagen / schwer verletzt / am Boden“) | Schritt 1 |
 | F4 | Übersetzung der SRD-Begriffe | Kernbegriffe (Attribute, Fertigkeiten, Zustände) über i18n; Monster-/Zaubernamen in den Daten mit de/en/ru | Schritt 1 |
-| F6 | Tod nach drei gescheiterten Todesrettungswürfen? | Szenen-Schalter „Heldentod“, Standard **aus**: dann nur „außer Gefecht“, Aufwachen nach dem Kampf mit 1 LP (eigene Gefährten sterben nicht durch einen Wurf). *Vorläufig von Claude gesetzt – bitte bestätigen.* | Schritt 3 |
+| F6 | Tod nach drei gescheiterten Todesrettungswürfen? | Szenen-Schalter „Heldentod“, Standard **aus**: dann nur „außer Gefecht“, Aufwachen nach dem Kampf mit 1 LP (eigene Gefährten sterben nicht durch einen Wurf). Vom Nutzer bestätigt (07.10.2026). | Schritt 3 |
 | F5 | Ort der SRD-Daten | gebündelt wie die Presets (`assets/…`), Nutzer-Erweiterungen im Datenordner | Schritt 1 |
 
 Neue Fragen werden hier mit Vorschlag ergänzt und vor dem betroffenen Schritt entschieden.

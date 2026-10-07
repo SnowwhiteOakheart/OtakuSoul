@@ -1,6 +1,6 @@
 // 5e magic (Roadmap_DND.md, step 3): the cleric companion brings an unconscious hero back on
 // her own, and the wizard aims Burning Hands on the board – the preview lights the cone, both
-// goblins in it roll their own Dexterity saves against the wizard's DC.
+// zombies in it roll their own Dexterity saves against the wizard's DC.
 import assert from 'node:assert/strict';
 import path from 'node:path';
 import { launch, screenshotDir } from './harness.mjs';
@@ -21,6 +21,22 @@ const waitIdle = async () => {
     () => browser.execute(() => !document.querySelector('[data-testid="combat-5e"][data-busy="true"]')),
     { timeout: 30_000, timeoutMsg: 'Kampfzug endet nicht' },
   );
+};
+/** Waits until the engine has played everyone else and the player is to move (or the fight is over). */
+const waitPlayerTurn = async () => {
+  await browser.waitUntil(async () => {
+    await waitIdle();
+    const s = await invoke('get_stage_state');
+    if (!s.combat.is_active) return true;
+    if (s.combat.combatants[s.combat.current_turn_index]?.role === 'player') {
+      await browser.pause(300);
+      const again = await invoke('get_stage_state');
+      return again.combat.current_turn_index === s.combat.current_turn_index && again.combat.events.length === s.combat.events.length;
+    }
+    // A companion or monster is to move: let the engine go on.
+    await jsClick('[data-testid="combat-5e"] button:not([disabled])');
+    return false;
+  }, { timeout: 60_000, interval: 300, timeoutMsg: 'Spieler kommt nicht an die Reihe' });
 };
 const freshTurn = { movement_left_ft: 30, action_used: false, bonus_action_used: false, disengaged: false };
 
@@ -55,14 +71,15 @@ try {
   await browser.$('button=Stage').click();
   const input = await browser.$('form textarea');
   await input.waitForDisplayed({ timeout: 15_000 });
-  mock.stats.stageEncounter = { action: 'start', enemies: [{ monster: 'goblin', count: 2 }] };
+  mock.stats.stageEncounter = { action: 'start', enemies: [{ monster: 'zombie', count: 2 }] };
   await input.setValue('Wir steigen in die Gruft hinab.');
   await browser.keys('Enter');
   await browser.$('[data-testid="battle-map"]').waitForDisplayed({ timeout: 30_000, timeoutMsg: 'Spielbrett erscheint nicht' });
   mock.stats.stageEncounter = null;
-  await waitIdle();
+  await waitPlayerTurn();
 
   // 1) The hero lies dying; it is the cleric's turn. She heals without being asked.
+  const mark = (await invoke('get_stage_state')).combat.events.length;
   await arrange((s) => {
     const player = s.combat.combatants.find((c) => c.role === 'player');
     player.hp = 0;
@@ -70,24 +87,23 @@ try {
     s.combat.current_turn_index = s.combat.combatants.findIndex((c) => c.name === 'Ayu Ikue');
     s.combat.turn = freshTurn;
   });
-  const before = (await invoke('get_stage_state')).combat.events.length;
-  assert.ok(await jsClick('[data-testid="combat-5e"] button:not([disabled])'), 'kein Weiter-Knopf');
-  await waitIdle();
+  // The Stage view may already let the engine continue on its own; otherwise "Weiter" starts it.
+  await waitPlayerTurn();
   const healed = await invoke('get_stage_state');
-  const newEvents = healed.combat.events.slice(before);
+  const newEvents = healed.combat.events.slice(mark);
   const cast = newEvents.find((e) => e.type === 'spell_cast' && e.caster_name === 'Ayu Ikue');
   assert.ok(cast && ['healing_word', 'cure_wounds'].includes(cast.spell_id), `Klerikerin heilt nicht: ${JSON.stringify(newEvents.map((e) => e.type))}`);
   assert.ok(newEvents.some((e) => e.type === 'heal' && e.target_id === 'player'), 'keine Heilung für den Helden');
 
-  // 2) The wizard's turn with both goblins in a row in front of her.
+  // 2) The wizard's turn with both zombies in a row in front of her.
   await arrange((s) => {
     s.combat.is_active = true;
     const player = s.combat.combatants.find((c) => c.role === 'player');
     player.hp = player.max_hp;
     player.conditions = [];
     player.position = { x: 1, y: 4 };
-    const goblins = s.combat.combatants.filter((c) => c.role === 'enemy');
-    goblins.forEach((g, i) => {
+    const foes = s.combat.combatants.filter((c) => c.role === 'enemy');
+    foes.forEach((g, i) => {
       g.hp = g.max_hp;
       g.conditions = [];
       g.position = { x: 2 + i, y: 4 };
