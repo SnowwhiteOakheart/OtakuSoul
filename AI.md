@@ -143,6 +143,15 @@ Hub). Integrationen → Bildgenerierung enthält nur Studio und Galerie.
   glTF: Knochen-Aliase für Mixamo/RPM, MakeHuman, Unreal, Blender, VRoid (`gltfRig.ts`); Größe außerhalb 0,5–3 m wird
   auf 1,6 m gebracht; Bounds über das Skelett nach `updateMatrixWorld` (nicht `updateWorldMatrix`, sonst doppelter
   Maßstab); PBR-Materialien bekommen `useStudioEnvironment` (ohne Umgebung werden metallische Teile schwarz).
+- Porträts/Emotionsbilder: `utils/characterPortraits.ts` wählt das Bild je Emotion und macht Dateipfade über
+  `convertFileSrc` zu `asset://`-URLs. Unter `tauri dev` (Seite von `http://localhost:1420`) lädt WebKitGTK solche
+  Bilder nicht in `<img>`, `fetch` aber schon → `loadDisplayableImage`/`assetAsBlobUrl` laden sie als Blob-URL;
+  `MorphingPortrait` lädt vor dem Überblenden vollständig und trägt die Quelle in `data-portrait`. Die Asset-Freigabe
+  bleibt eng (`tauri.conf.json` `scope: []`, Laufzeit-Freigabe in `lib.rs` `allow_app_asset_dirs`), niemals `**`.
+  Relative Bildpfade einer Karte werden beim Laden/Speichern auf ihren Ordner bezogen
+  (`characters::resolve_profile_expression_paths`), fehlende Dateien alter Nutzerkopien ersetzt
+  `paths::apply_bundled_expression_fallback`. E2E `avatar-portraits.mjs`; `npm run e2e:portraits:dev` startet denselben
+  Test gegen das Dev-Binary (`OTAKUSOUL_E2E_DEV=1`, Vite muss laufen, vorher `cargo build`).
 - 3D-Avatar (`VrmViewer.tsx`): Startansicht aus Kopf-Knochen und Modellhöhe (`frameUpperBody` in `services/avatarViewState.ts`);
   gespeichert wird nur eine vom Nutzer bewegte Kamera, „Ansicht zurücksetzen“ löscht sie.
   Bewegungen: `.vrma` und Mixamo-`.fbx` (`mixamoRetarget.ts`: Mixamo-Ruhepose → normalisierte VRM-Knochen) in `<Daten>/animations/` (`avatar_motions.rs`, Verwendung in `roles.json`, aus dem Dateinamen

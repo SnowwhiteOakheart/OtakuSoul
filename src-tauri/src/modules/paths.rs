@@ -200,7 +200,7 @@ fn load_hidden_character_ids() -> std::collections::HashSet<String> {
 
 type BundledExpressionSets = HashMap<String, JsonMap<String, JsonValue>>;
 
-fn resolve_bundled_expression_set(
+pub(crate) fn resolve_expression_set(
     card_path: &Path,
     expressions: &JsonMap<String, JsonValue>,
 ) -> JsonMap<String, JsonValue> {
@@ -275,7 +275,7 @@ fn collect_bundled_expression_sets(presets_dir: &Path) -> BundledExpressionSets 
                 continue;
             };
 
-            let resolved = resolve_bundled_expression_set(&card_path, expressions);
+            let resolved = resolve_expression_set(&card_path, expressions);
             if let Some(stem) = card_path.file_stem().and_then(|value| value.to_str()) {
                 sets.insert(normalize_identifier(stem), resolved.clone());
             }
@@ -291,32 +291,59 @@ fn apply_bundled_expression_fallback(
     bundled_sets: &BundledExpressionSets,
 ) {
     let extensions = &mut profile.card.data.extensions;
-    let has_expressions = ["expressions", "custom_expressions", "sow_expressions"]
-        .iter()
-        .any(|key| {
-            extensions
-                .get(key)
-                .and_then(JsonValue::as_object)
-                .map(|values| !values.is_empty())
-                .unwrap_or(false)
-        });
-    if has_expressions {
-        return;
-    }
-
-    let expressions = bundled_sets
+    let Some(bundled) = bundled_sets
         .get(&normalize_identifier(&profile.id))
         .or_else(|| bundled_sets.get(&normalize_identifier(&profile.card.data.name)))
-        .cloned();
-    let Some(expressions) = expressions else {
+    else {
         return;
     };
 
     if !extensions.is_object() {
         *extensions = JsonValue::Object(JsonMap::new());
     }
-    if let Some(values) = extensions.as_object_mut() {
-        values.insert("expressions".to_string(), JsonValue::Object(expressions));
+    let values = extensions.as_object_mut().expect("extensions object");
+    let key = ["expressions", "custom_expressions", "sow_expressions"]
+        .into_iter()
+        .find(|key| values.get(*key).and_then(JsonValue::as_object).is_some())
+        .unwrap_or("expressions");
+    if !values.get(key).is_some_and(JsonValue::is_object) {
+        values.insert(key.to_string(), JsonValue::Object(JsonMap::new()));
+    }
+    let expressions = values
+        .entry(key)
+        .or_insert_with(|| JsonValue::Object(JsonMap::new()))
+        .as_object_mut()
+        .expect("expression object");
+
+    // Older saved cards can still point at a relative preset path in the user folder.
+    // Repair only missing local files; keep working user artwork and external URLs.
+    for (mood, fallback) in bundled {
+        let available = expressions
+            .get(mood)
+            .and_then(JsonValue::as_str)
+            .is_some_and(|source| {
+                if source.starts_with("data:")
+                    || source.starts_with("blob:")
+                    || source.starts_with("http://")
+                    || source.starts_with("https://")
+                    || source.starts_with("asset:")
+                {
+                    return true;
+                }
+                let path = Path::new(source);
+                if path.is_absolute() {
+                    path.is_file()
+                } else {
+                    profile
+                        .source_path
+                        .as_deref()
+                        .and_then(|p| Path::new(p).parent())
+                        .is_some_and(|parent| parent.join(path).is_file())
+                }
+            });
+        if !available {
+            expressions.insert(mood.clone(), fallback.clone());
+        }
     }
 }
 
@@ -811,5 +838,27 @@ mod tests {
                 .map(Path::exists)
                 .unwrap_or(false)
         );
+    }
+    #[test]
+    fn test_broken_user_expressions_inherit_bundled_files_without_replacing_custom_images() {
+        let paths = resolve_app_paths();
+        let preset_path = Path::new(&paths.bundled_presets_dir).join("no-game-no-life/jibril.json");
+        let mut profile = load_character_from_file(&preset_path).unwrap();
+        let custom = profile.card.data.extensions["expressions"]["happy"].clone();
+        profile.source_path = Some("/missing/user/Jibril.png".into());
+        profile.card.data.extensions["expressions"]["neutral"] =
+            JsonValue::String("expressions/jibril/neutral.webp".into());
+        profile.card.data.extensions["expressions"]["sad"] =
+            JsonValue::String("https://example.org/custom-sad.webp".into());
+        profile.card.data.extensions["expressions"]["angry"] =
+            JsonValue::String("/missing/angry.webp".into());
+        let sets = collect_bundled_expression_sets(Path::new(&paths.bundled_presets_dir));
+        apply_bundled_expression_fallback(&mut profile, &sets);
+        let images = &profile.card.data.extensions["expressions"];
+        assert_eq!(images["happy"], custom);
+        assert_eq!(images["sad"], "https://example.org/custom-sad.webp");
+        for mood in ["neutral", "angry"] {
+            assert!(Path::new(images[mood].as_str().unwrap()).is_file());
+        }
     }
 }

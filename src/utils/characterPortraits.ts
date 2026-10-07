@@ -81,3 +81,39 @@ export const selectCharacterPortrait = (
 
   return resolveCharacterImageSource(selected, character?.source_path) || character?.avatar_data_url;
 };
+
+const isAssetUrl = (url: string) => /^(asset:|https?:\/\/asset\.localhost)/i.test(url);
+const blobUrls = new Map<string, Promise<string>>();
+
+/**
+ * An `asset://` file as blob URL. Under `tauri dev` the page comes from the Vite server
+ * (`http://localhost:1420`) and WebKitGTK refuses `asset://` images there, although `fetch`
+ * reads them fine; the bundled app (`tauri://localhost`) shows them directly.
+ */
+export const assetAsBlobUrl = (url: string): Promise<string> => {
+  if (!isAssetUrl(url)) return Promise.reject(new Error('not an asset URL'));
+  let pending = blobUrls.get(url);
+  if (!pending) {
+    pending = fetch(url)
+      .then((response) => {
+        if (!response.ok) throw new Error(`HTTP ${response.status}`);
+        return response.blob();
+      })
+      .then((blob) => URL.createObjectURL(blob));
+    pending.catch(() => blobUrls.delete(url));
+    blobUrls.set(url, pending);
+  }
+  return pending;
+};
+
+const decode = (url: string) =>
+  new Promise<string>((resolve, reject) => {
+    const image = new window.Image();
+    image.onload = () => resolve(url);
+    image.onerror = () => reject(new Error(`image failed: ${url.slice(0, 60)}`));
+    image.src = url;
+  });
+
+/** A URL the webview can show for `url`: directly, else (asset files) as blob URL. */
+export const loadDisplayableImage = (url: string): Promise<string> =>
+  decode(url).catch((error: unknown) => (isAssetUrl(url) ? assetAsBlobUrl(url).then(decode) : Promise.reject(error)));

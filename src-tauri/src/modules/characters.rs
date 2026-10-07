@@ -456,6 +456,21 @@ fn get_placeholder_png() -> Vec<u8> {
     out
 }
 
+/// Keep expression paths tied to their original card folder when a card is saved or imported.
+fn resolve_profile_expression_paths(card: &mut CharacterCardV2, source: &Path) {
+    for key in ["expressions", "custom_expressions", "sow_expressions"] {
+        if let Some(expressions) = card
+            .data
+            .extensions
+            .get(key)
+            .and_then(serde_json::Value::as_object)
+        {
+            let resolved = crate::modules::paths::resolve_expression_set(source, expressions);
+            card.data.extensions[key] = serde_json::Value::Object(resolved);
+        }
+    }
+}
+
 pub fn load_character_from_file(path: &Path) -> Result<CharacterProfile, String> {
     if !path.exists() {
         return Err(crate::err!(
@@ -476,7 +491,7 @@ pub fn load_character_from_file(path: &Path) -> Result<CharacterProfile, String>
         .unwrap_or_else(|| "character".to_string());
 
     let mut bound_lorebooks = Vec::new();
-    let card = if extension == "json" {
+    let mut card = if extension == "json" {
         let content = fs::read_to_string(path)
             .map_err(|e| crate::err!("backend.common.jsonRead", error = e))?;
         parse_character_json(&content)?
@@ -491,6 +506,8 @@ pub fn load_character_from_file(path: &Path) -> Result<CharacterProfile, String>
             extension = extension
         ));
     };
+
+    resolve_profile_expression_paths(&mut card, path);
 
     if let Some(ext) = card.data.extensions.as_object() {
         if let Some(lb) = ext.get("selected_lorebook").and_then(|v| v.as_str())
@@ -602,6 +619,9 @@ pub fn save_character_to_user_dir(profile: &CharacterProfile) -> Result<Characte
 
     let mut saved_profile = profile.clone();
     saved_profile.id = safe_stem;
+    if let Some(source) = profile.source_path.as_deref() {
+        resolve_profile_expression_paths(&mut saved_profile.card, Path::new(source));
+    }
 
     // Ensure bound_lorebooks is updated in extensions
     if let Some(ext) = saved_profile.card.data.extensions.as_object_mut() {
@@ -630,7 +650,7 @@ pub fn save_character_to_user_dir(profile: &CharacterProfile) -> Result<Characte
             get_placeholder_png()
         };
 
-        let enriched_png = inject_character_metadata_png(&base_bytes, &profile.card)?;
+        let enriched_png = inject_character_metadata_png(&base_bytes, &saved_profile.card)?;
         fs::write(&target_png, enriched_png).map_err(|e| {
             crate::err!(
                 "backend.common.fileWritePath",
@@ -642,7 +662,7 @@ pub fn save_character_to_user_dir(profile: &CharacterProfile) -> Result<Characte
         saved_profile.source_path = Some(target_png.to_string_lossy().to_string());
     } else {
         // Save as JSON
-        let json_text = serde_json::to_string_pretty(&profile.card)
+        let json_text = serde_json::to_string_pretty(&saved_profile.card)
             .map_err(|e| crate::err!("backend.characters.serialize", error = e))?;
         fs::write(&target_json, json_text).map_err(|e| {
             crate::err!(
@@ -774,11 +794,36 @@ pub fn import_character_file(
 }
 
 /// Exports a character card to an arbitrary destination chosen by the user
+/// A card leaving the app carries no local file paths: emotion pictures stored as paths on this
+/// computer (absolute after loading) would only reveal the user's folders and not work elsewhere.
+/// Web and `data:` pictures stay.
+fn without_local_picture_paths(card: &CharacterCardV2) -> CharacterCardV2 {
+    let mut card = card.clone();
+    for key in ["expressions", "custom_expressions", "sow_expressions"] {
+        if let Some(map) = card
+            .data
+            .extensions
+            .get_mut(key)
+            .and_then(serde_json::Value::as_object_mut)
+        {
+            map.retain(|_, value| {
+                value.as_str().is_some_and(|source| {
+                    ["data:", "http://", "https://"]
+                        .iter()
+                        .any(|prefix| source.starts_with(prefix))
+                })
+            });
+        }
+    }
+    card
+}
+
 pub fn export_character_card(
     profile: &CharacterProfile,
     target_path: &Path,
     export_as_png: bool,
 ) -> Result<(), String> {
+    let card = without_local_picture_paths(&profile.card);
     if export_as_png {
         let base_bytes = if let Some(ref data_url) = profile.avatar_data_url {
             if let Some(stripped) = data_url.strip_prefix("data:image/png;base64,") {
@@ -792,11 +837,11 @@ pub fn export_character_card(
             get_placeholder_png()
         };
 
-        let enriched_png = inject_character_metadata_png(&base_bytes, &profile.card)?;
+        let enriched_png = inject_character_metadata_png(&base_bytes, &card)?;
         fs::write(target_path, enriched_png)
             .map_err(|e| crate::err!("backend.characters.exportPng", error = e))?;
     } else {
-        let json_text = serde_json::to_string_pretty(&profile.card)
+        let json_text = serde_json::to_string_pretty(&card)
             .map_err(|e| crate::err!("backend.characters.serialize", error = e))?;
         fs::write(target_path, json_text)
             .map_err(|e| crate::err!("backend.characters.exportJson", error = e))?;
@@ -1037,6 +1082,80 @@ pub fn parse_character_wizard_draft(raw_text: &str) -> Result<CharacterDraft, St
 
 #[cfg(test)]
 mod tests {
+
+    #[test]
+    fn exported_cards_carry_no_local_picture_paths() {
+        let card: CharacterCardV2 = serde_json::from_value(serde_json::json!({
+            "spec": "chara_card_v2", "spec_version": "2.0",
+            "data": {"name": "Export", "description": "", "personality": "", "scenario": "", "first_mes": "",
+                "extensions": {"expressions": {
+                    "happy": "/home/someone/presets/expressions/happy.webp",
+                    "sad": "https://example.org/sad.webp",
+                    "angry": "data:image/webp;base64,abc"
+                }}
+            }
+        })).unwrap();
+        let target =
+            std::env::temp_dir().join(format!("otakusoul-export-{}.json", std::process::id()));
+        let profile = CharacterProfile {
+            id: "export".into(),
+            card,
+            avatar_data_url: None,
+            source_path: None,
+            bound_lorebooks: Vec::new(),
+        };
+        export_character_card(&profile, &target, false).unwrap();
+        let written = std::fs::read_to_string(&target).unwrap();
+        let _ = std::fs::remove_file(&target);
+        assert!(!written.contains("/home/someone"));
+        assert!(
+            written.contains("https://example.org/sad.webp") && written.contains("data:image/webp")
+        );
+        // The card in the app keeps its pictures.
+        assert!(profile.card.data.extensions["expressions"]["happy"].is_string());
+    }
+
+    #[test]
+    fn portrait_paths_survive_moving_a_card_to_the_user_folder() {
+        let mut card: CharacterCardV2 = serde_json::from_value(serde_json::json!({
+            "spec": "chara_card_v2", "spec_version": "2.0",
+            "data": {"name": "Portrait", "description": "", "personality": "", "scenario": "", "first_mes": "",
+                "extensions": {
+                    "expressions": {"happy": "expressions/happy.webp", "sad": "https://example.org/sad.webp"},
+                    "custom_expressions": {"angry": "custom/angry.png"},
+                    "sow_expressions": {"neutral": "data:image/png;base64,abc"}
+                }
+            }
+        })).unwrap();
+        let root = std::env::temp_dir().join("otakusoul-portrait-paths");
+        resolve_profile_expression_paths(&mut card, &root.join("presets/card.json"));
+        let expected = root
+            .join("presets/expressions/happy.webp")
+            .to_string_lossy()
+            .to_string();
+        assert_eq!(card.data.extensions["expressions"]["happy"], expected);
+        // Resolving again after a save must retain the original directory.
+        resolve_profile_expression_paths(&mut card, &root.join("user/card.png"));
+        let (restored, _) = parse_character_png(
+            &inject_character_metadata_png(&get_placeholder_png(), &card).unwrap(),
+        )
+        .unwrap();
+        assert_eq!(restored.data.extensions["expressions"]["happy"], expected);
+        assert_eq!(
+            restored.data.extensions["expressions"]["sad"],
+            "https://example.org/sad.webp"
+        );
+        assert_eq!(
+            restored.data.extensions["custom_expressions"]["angry"],
+            root.join("presets/custom/angry.png")
+                .to_string_lossy()
+                .as_ref()
+        );
+        assert_eq!(
+            restored.data.extensions["sow_expressions"]["neutral"],
+            "data:image/png;base64,abc"
+        );
+    }
 
     #[test]
     fn replacing_a_character_trashes_its_other_copies() {

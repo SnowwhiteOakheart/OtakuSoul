@@ -4,7 +4,7 @@ import { loadCubismCore } from '../../services/live2dRuntime';
 import { Box, Image, Sparkles, Smile, ChevronDown } from 'lucide-react';
 import { CharacterProfile } from '../../types';
 import { useStoreFields } from '../../store/useAppStore';
-import { selectCharacterPortrait } from '../../utils/characterPortraits';
+import { assetAsBlobUrl, loadDisplayableImage, selectCharacterPortrait } from '../../utils/characterPortraits';
 import { translate, useTranslation } from '../../i18n';
 import { DropdownMenu } from '../ui/DropdownMenu';
 import { AvatarSkeleton, ScrollText } from '../ui';
@@ -34,59 +34,77 @@ interface AvatarCanvasProps {
   isSpeaking?: boolean;
 }
 
+/** A shown picture: its URL and the portrait it stands for. */
+type PortraitLayer = { url: string; origin: string } | null;
+
 interface MorphingPortraitProps {
   src: string;
+  fallbackSrc?: string | null;
   alt: string;
   isSpeaking: boolean;
 }
 
-const MorphingPortrait: React.FC<MorphingPortraitProps> = ({ src, alt, isSpeaking }) => {
-  const [layers, setLayers] = useState<[string | null, string | null]>([src, null]);
+const MorphingPortrait: React.FC<MorphingPortraitProps> = ({
+  src,
+  fallbackSrc,
+  alt,
+  isSpeaking,
+}) => {
+  // The first picture shows right away; later ones are loaded first and then cross-faded.
+  // `origin` is the portrait a layer stands for (its URL may be a blob under `tauri dev`).
+  const [layers, setLayers] = useState<[PortraitLayer, PortraitLayer]>([{ url: src, origin: src }, null]);
   const [visibleLayer, setVisibleLayer] = useState<0 | 1>(0);
   const visibleLayerRef = useRef<0 | 1>(0);
-  const activeSourceRef = useRef(src);
+  const requestedRef = useRef(src);
   const loadSequenceRef = useRef(0);
   const clearTimerRef = useRef<number | null>(null);
 
-  useEffect(() => {
-    if (src === activeSourceRef.current) return;
+  const transitionTo = (layer: NonNullable<PortraitLayer>, loadSequence: number) => {
+    const nextLayer = (visibleLayerRef.current === 0 ? 1 : 0) as 0 | 1;
+    setLayers((current) => {
+      const next: [PortraitLayer, PortraitLayer] = [...current];
+      next[nextLayer] = layer;
+      return next;
+    });
 
-    const loadSequence = ++loadSequenceRef.current;
-    const preloader = new window.Image();
-
-    preloader.onload = () => {
+    window.requestAnimationFrame(() => {
       if (loadSequence !== loadSequenceRef.current) return;
+      visibleLayerRef.current = nextLayer;
+      setVisibleLayer(nextLayer);
 
-      const nextLayer = (visibleLayerRef.current === 0 ? 1 : 0) as 0 | 1;
-      setLayers((current) => {
-        const next: [string | null, string | null] = [...current];
-        next[nextLayer] = src;
-        return next;
-      });
+      if (clearTimerRef.current !== null) window.clearTimeout(clearTimerRef.current);
+      clearTimerRef.current = window.setTimeout(() => {
+        setLayers((current) => {
+          const next: [PortraitLayer, PortraitLayer] = [...current];
+          next[nextLayer === 0 ? 1 : 0] = null;
+          return next;
+        });
+      }, 550);
+    });
+  };
 
-      window.requestAnimationFrame(() => {
-        if (loadSequence !== loadSequenceRef.current) return;
-        visibleLayerRef.current = nextLayer;
-        activeSourceRef.current = src;
-        setVisibleLayer(nextLayer);
-
-        if (clearTimerRef.current !== null) window.clearTimeout(clearTimerRef.current);
-        clearTimerRef.current = window.setTimeout(() => {
-          setLayers((current) => {
-            const next: [string | null, string | null] = [...current];
-            next[nextLayer === 0 ? 1 : 0] = null;
-            return next;
-          });
-        }, 550);
-      });
-    };
-
-    preloader.src = src;
-
+  // Every new portrait is loaded completely first (directly, or as blob under `tauri dev`),
+  // then cross-faded; a missing file falls back to the character's base picture.
+  useEffect(() => {
+    if (src === requestedRef.current) return;
+    requestedRef.current = src;
+    const loadSequence = ++loadSequenceRef.current;
+    let cancelled = false;
+    loadDisplayableImage(src)
+      .then((url) => ({ url, origin: src }))
+      .catch((error: unknown) =>
+        fallbackSrc && fallbackSrc !== src
+          ? loadDisplayableImage(fallbackSrc).then((url) => ({ url, origin: fallbackSrc }))
+          : Promise.reject(error),
+      )
+      .then((layer) => {
+        if (!cancelled && loadSequence === loadSequenceRef.current) transitionTo(layer, loadSequence);
+      })
+      .catch(() => {});
     return () => {
-      preloader.onload = null;
+      cancelled = true;
     };
-  }, [src]);
+  }, [src, fallbackSrc]);
 
   useEffect(() => () => {
     if (clearTimerRef.current !== null) window.clearTimeout(clearTimerRef.current);
@@ -94,12 +112,29 @@ const MorphingPortrait: React.FC<MorphingPortraitProps> = ({ src, alt, isSpeakin
 
   return (
     <div className="relative w-full max-w-sm aspect-[4/5] rounded-3xl overflow-hidden border-2 border-accent-500/40 shadow-2xl shadow-accent-500/10 transition-transform duration-700 hover:scale-[1.02]">
-      {layers.map((layerSource, index) => layerSource && (
+      {layers.map((layer, index) => layer && (
         <img
-          key={`${index}-${layerSource}`}
-          src={layerSource}
+          key={`${index}-${layer.url}`}
+          src={layer.url}
+          data-portrait={layer.origin}
           alt={index === visibleLayer ? alt : ''}
           aria-hidden={index !== visibleLayer}
+          onError={() => {
+            // The picture shown without preloading failed (first picture): as blob under
+            // `tauri dev`, otherwise the base picture.
+            const replace = (replacement: NonNullable<PortraitLayer>) =>
+              setLayers((current) => {
+                if (current[index]?.url !== layer.url) return current;
+                const next: [PortraitLayer, PortraitLayer] = [...current];
+                next[index] = replacement;
+                return next;
+              });
+            assetAsBlobUrl(layer.url)
+              .then((url) => replace({ url, origin: layer.origin }))
+              .catch(() => {
+                if (fallbackSrc && layer.url !== fallbackSrc) replace({ url: fallbackSrc, origin: fallbackSrc });
+              });
+          }}
           className={`absolute inset-0 w-full h-full object-cover transition-[opacity,filter,transform] duration-500 ease-out ${
             index === visibleLayer
               ? 'opacity-100 blur-0 scale-100'
@@ -326,8 +361,14 @@ export const AvatarCanvas: React.FC<AvatarCanvasProps> = ({
       ) : (
         /* 2D Portrait / Expression Sprite Mode */
         <div className="relative w-full h-full flex flex-col items-center justify-center p-6 bg-linear-to-b from-slate-900/60 via-accent-950/30 to-app">
-          {emotionImage ? (
-            <MorphingPortrait src={emotionImage} alt={charName} isSpeaking={isSpeaking} />
+          {emotionImage || character?.avatar_data_url ? (
+            <MorphingPortrait
+              key={character?.id || 'none'}
+              src={emotionImage || character?.avatar_data_url || ''}
+              fallbackSrc={character?.avatar_data_url}
+              alt={charName}
+              isSpeaking={isSpeaking}
+            />
           ) : (
             <div className="w-48 h-48 rounded-full bg-linear-to-tr from-accent-600 to-accent2-600 flex items-center justify-center text-white text-5xl font-bold border-4 border-accent-500/50 shadow-2xl">
               {charName.charAt(0)}

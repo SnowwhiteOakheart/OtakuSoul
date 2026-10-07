@@ -4,6 +4,7 @@ import { api } from '../../services/api';
 import { useStoreFields } from '../../store/useAppStore';
 import { X, Save, Image, Plus, Trash2, Sparkles, User, FileText, Settings2, BookOpen, Globe } from 'lucide-react';
 import {
+  assetAsBlobUrl,
   getPortraitExpressions,
   PORTRAIT_MOODS,
   PortraitMood,
@@ -528,6 +529,22 @@ export const CharacterEditorModal = ({
                           <img
                             src={previewImage || fallbackImage || undefined}
                             alt={t('editor.moodAlt', { name: name || t('editor.defaultName'), mood: t(`portrait.${mood.key}`) })}
+                            onError={(e) => {
+                              const image = e.currentTarget;
+                              // Under `tauri dev` asset files only show as blob URLs; a missing file shows the base picture.
+                              if (!image.dataset.blobTried) {
+                                image.dataset.blobTried = '1';
+                                void assetAsBlobUrl(image.src)
+                                  .then((url) => {
+                                    image.src = url;
+                                  })
+                                  .catch(() => {
+                                    if (fallbackImage && image.src !== fallbackImage) image.src = fallbackImage;
+                                  });
+                              } else if (fallbackImage && image.src !== fallbackImage) {
+                                image.src = fallbackImage;
+                              }
+                            }}
                             className={`w-full h-full object-cover ${!previewImage ? 'opacity-60' : ''}`}
                           />
                         ) : (

@@ -11,8 +11,12 @@ import { startMockLlm } from './mock-llm.mjs';
 
 const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
 // Own target dir: `cargo test`/`clippy` rebuild target/debug/otakusoul without the bundled
-// frontend (it would try to load the Vite dev server).
-const binary = path.join(root, 'target', 'e2e', 'debug', process.platform === 'win32' ? 'otakusoul.exe' : 'otakusoul');
+// frontend (it would try to load the Vite dev server). With OTAKUSOUL_E2E_DEV=1 the test runs
+// exactly that dev binary instead – like `npm run tauri dev`, so the Vite server must be running.
+const exe = process.platform === 'win32' ? 'otakusoul.exe' : 'otakusoul';
+const binary = process.env.OTAKUSOUL_E2E_DEV === '1'
+  ? path.join(root, 'target', 'debug', exe)
+  : path.join(root, 'target', 'e2e', 'debug', exe);
 export const screenshotDir = path.join(root, 'e2e', 'screenshots');
 
 const waitForPort = async (port, timeoutMs = 20_000) => {
