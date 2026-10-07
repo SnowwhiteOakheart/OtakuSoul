@@ -1852,3 +1852,6 @@ veraltet und sind korrigiert: `chat-sidebar-errors` las die Sitzung, bevor der e
   38 Dungeon-/Waldkacheln, zwölf einfarbige Zustandssymbole und vier neue Heldenillustrationen
   (768 × 1024 px, PNG/sRGB). SVG-Regeln, Transparenz, Größen und pixelgenaue Bodenübergänge
   einschließlich gemischter Varianten geprüft; 3×3-Kachelansichten und Tokens bei 48 px angesehen.
+
+- [x] **Token-Korrektur Althea/Lyra (07.10.2026):** Altheas Seitenhaar geht zusammenhängend in einen
+  geflochtenen Zopf über; Lyra hält eine offene Hand unter dem Zauberstern. Beide SVGs bei 256 und 48 px geprüft.
