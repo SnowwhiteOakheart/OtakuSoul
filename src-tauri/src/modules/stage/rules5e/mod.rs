@@ -6,9 +6,11 @@
 pub mod ai;
 pub mod board;
 pub mod combat;
+pub mod conditions;
 pub mod data;
 pub mod map;
 pub mod roll;
+pub mod spells;
 
 use serde::{Deserialize, Serialize};
 use ts_rs::TS;
@@ -16,15 +18,18 @@ use ts_rs::TS;
 pub use ai::*;
 pub use board::*;
 pub use combat::*;
+pub use conditions::*;
 pub use data::*;
 pub use map::*;
 pub use roll::*;
+pub use spells::*;
 
 /// The six abilities, in the usual order (STR DEX CON INT WIS CHA).
-#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, Serialize, Deserialize, TS)]
+#[derive(Debug, Clone, Copy, Default, PartialEq, Eq, Hash, Serialize, Deserialize, TS)]
 #[serde(rename_all = "lowercase")]
 #[ts(export)]
 pub enum Ability {
+    #[default]
     Str,
     Dex,
     Con,
@@ -139,6 +144,79 @@ pub struct Stats5e {
     /// Monsters that fight to the end (undead, orcs …) instead of fleeing when badly hurt.
     #[serde(default)]
     pub never_flees: bool,
+    /// `humanoid`, `beast`, `undead` … (heroes are humanoid).
+    #[serde(default = "humanoid")]
+    pub creature_type: String,
+    /// Spells and slots of casters.
+    #[serde(default)]
+    #[ts(optional)]
+    pub spellcasting: Option<Spellcasting>,
+    /// Death saving throws of a hero at 0 hit points.
+    #[serde(default)]
+    pub death_saves: DeathSaves,
+    /// The concentration spell this creature keeps up.
+    #[serde(default)]
+    #[ts(optional)]
+    pub concentration: Option<String>,
+}
+
+fn humanoid() -> String {
+    "humanoid".to_string()
+}
+
+/// A caster's spells and slots (slot levels 1–9 as index 0–8).
+#[derive(Debug, Clone, Default, PartialEq, Serialize, Deserialize, TS)]
+#[ts(export)]
+pub struct Spellcasting {
+    pub ability: Ability,
+    pub spells: Vec<String>,
+    pub slots_max: [u8; 9],
+    pub slots_used: [u8; 9],
+}
+
+impl Spellcasting {
+    pub fn slots_left(&self, level: u8) -> u8 {
+        let index = usize::from(level.clamp(1, 9) - 1);
+        self.slots_max[index].saturating_sub(self.slots_used[index])
+    }
+}
+
+/// Spell slots of a full caster (wizard, cleric) by class level (SRD table).
+pub fn full_caster_slots(level: u32) -> [u8; 9] {
+    const TABLE: [[u8; 9]; 20] = [
+        [2, 0, 0, 0, 0, 0, 0, 0, 0],
+        [3, 0, 0, 0, 0, 0, 0, 0, 0],
+        [4, 2, 0, 0, 0, 0, 0, 0, 0],
+        [4, 3, 0, 0, 0, 0, 0, 0, 0],
+        [4, 3, 2, 0, 0, 0, 0, 0, 0],
+        [4, 3, 3, 0, 0, 0, 0, 0, 0],
+        [4, 3, 3, 1, 0, 0, 0, 0, 0],
+        [4, 3, 3, 2, 0, 0, 0, 0, 0],
+        [4, 3, 3, 3, 1, 0, 0, 0, 0],
+        [4, 3, 3, 3, 2, 0, 0, 0, 0],
+        [4, 3, 3, 3, 2, 1, 0, 0, 0],
+        [4, 3, 3, 3, 2, 1, 0, 0, 0],
+        [4, 3, 3, 3, 2, 1, 1, 0, 0],
+        [4, 3, 3, 3, 2, 1, 1, 0, 0],
+        [4, 3, 3, 3, 2, 1, 1, 1, 0],
+        [4, 3, 3, 3, 2, 1, 1, 1, 0],
+        [4, 3, 3, 3, 2, 1, 1, 1, 1],
+        [4, 3, 3, 3, 3, 1, 1, 1, 1],
+        [4, 3, 3, 3, 3, 2, 1, 1, 1],
+        [4, 3, 3, 3, 3, 2, 2, 1, 1],
+    ];
+    TABLE[(level.clamp(1, 20) - 1) as usize]
+}
+
+/// Death saving throws: three successes stabilize, three failures kill (or, without heroic
+/// death, knock the hero out of the fight).
+#[derive(Debug, Clone, Default, PartialEq, Serialize, Deserialize, TS)]
+#[ts(export)]
+pub struct DeathSaves {
+    pub successes: u8,
+    pub failures: u8,
+    pub stable: bool,
+    pub dead: bool,
 }
 
 impl Stats5e {

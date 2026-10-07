@@ -32,6 +32,8 @@ pub struct MonsterData {
     pub immunities: Vec<String>,
     #[serde(default)]
     pub undead: bool,
+    #[serde(default = "beast")]
+    pub creature_type: String,
     #[serde(default)]
     pub never_flees: bool,
 }
@@ -71,6 +73,17 @@ fn yes() -> bool {
     true
 }
 
+fn beast() -> String {
+    "beast".to_string()
+}
+
+/// Spellcasting of a class template: the ability and the spells it can cast.
+#[derive(Debug, Clone, Deserialize)]
+pub struct ClassSpellcasting {
+    pub ability: Ability,
+    pub spells: Vec<String>,
+}
+
 #[derive(Debug, Clone, Deserialize)]
 pub struct ClassData {
     pub id: String,
@@ -82,6 +95,8 @@ pub struct ClassData {
     pub saves: Vec<Ability>,
     pub skills: Vec<String>,
     pub attacks: Vec<ClassAttackData>,
+    #[serde(default)]
+    pub spellcasting: Option<ClassSpellcasting>,
 }
 
 #[derive(Deserialize)]
@@ -166,6 +181,10 @@ pub fn monster_stats(data: &MonsterData) -> (Stats5e, i32) {
         resistances: data.resistances.clone(),
         immunities: data.immunities.clone(),
         never_flees: data.never_flees,
+        creature_type: data.creature_type.clone(),
+        spellcasting: None,
+        death_saves: DeathSaves::default(),
+        concentration: None,
     };
     (stats, hit_dice.average().max(1))
 }
@@ -222,6 +241,25 @@ pub fn hero_stats(data: &ClassData) -> (Stats5e, i32) {
         resistances: Vec::new(),
         immunities: Vec::new(),
         never_flees: true,
+        creature_type: "humanoid".to_string(),
+        spellcasting: data.spellcasting.as_ref().map(|casting| Spellcasting {
+            ability: casting.ability,
+            // Spells of slot levels the hero can cast (cantrips always).
+            spells: casting
+                .spells
+                .iter()
+                .filter(|id| {
+                    spell(id).is_some_and(|s| {
+                        s.level == 0 || full_caster_slots(level)[usize::from(s.level) - 1] > 0
+                    })
+                })
+                .cloned()
+                .collect(),
+            slots_max: full_caster_slots(level),
+            slots_used: [0; 9],
+        }),
+        death_saves: DeathSaves::default(),
+        concentration: None,
     };
     let max_hp = (data.hit_die as i32 + modifier(Ability::Con)).max(1);
     (stats, max_hp)

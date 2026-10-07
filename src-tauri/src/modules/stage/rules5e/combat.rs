@@ -4,7 +4,7 @@
 
 use super::*;
 use crate::modules::stage::{CombatCondition, Combatant, EncounterState};
-use rand::Rng;
+use rand::{Rng, RngExt};
 
 /// Condition name of a combatant who took the Dodge action (until its next turn).
 pub const DODGING: &str = "dodging";
@@ -74,6 +74,10 @@ pub enum CombatEvent {
         target_ac: i32,
         hit: bool,
         critical: bool,
+        /// Bless: the d4 added to the roll.
+        #[serde(default)]
+        #[ts(optional)]
+        bonus_die: Option<u32>,
     },
     Damage {
         target_id: String,
@@ -125,6 +129,88 @@ pub enum CombatEvent {
         actor_id: String,
         actor_name: String,
     },
+    SpellCast {
+        caster_id: String,
+        caster_name: String,
+        spell_id: String,
+        spell_name: LocalizedName,
+        /// 0 for cantrips.
+        slot_level: u8,
+    },
+    Save {
+        target_id: String,
+        target_name: String,
+        ability: Ability,
+        roll: D20Roll,
+        bonus: i32,
+        total: i32,
+        dc: i32,
+        success: bool,
+    },
+    Heal {
+        target_id: String,
+        target_name: String,
+        amount: i32,
+        hp_after: i32,
+    },
+    ConditionStart {
+        target_id: String,
+        target_name: String,
+        condition: String,
+    },
+    ConditionEnd {
+        target_id: String,
+        target_name: String,
+        condition: String,
+    },
+    DeathSave {
+        actor_id: String,
+        actor_name: String,
+        /// The d20; 0 when a hit at 0 hit points counted as failure.
+        roll: u32,
+        successes: u8,
+        failures: u8,
+        outcome: DeathSaveOutcome,
+    },
+    ConcentrationLost {
+        caster_id: String,
+        caster_name: String,
+        spell_id: String,
+    },
+    Teleport {
+        actor_id: String,
+        actor_name: String,
+        to: GridPos,
+    },
+}
+
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize, TS)]
+#[serde(rename_all = "snake_case")]
+#[ts(export)]
+pub enum DeathSaveOutcome {
+    Ongoing,
+    Stable,
+    /// Natural 20: back on their feet with 1 hit point.
+    Revived,
+    Dead,
+    /// Three failures without heroic death: out of this fight, wakes afterwards.
+    Out,
+}
+
+/// How an attack happens: disadvantage from the board, distance to the target (for prone and
+/// paralyzed targets) and whether heroes can die in this scene.
+#[derive(Debug, Clone, Copy, Default)]
+pub struct AttackSituation {
+    pub disadvantage: bool,
+    pub distance_ft: Option<u32>,
+    pub heroic_death: bool,
+}
+
+/// Damage details that matter at 0 hit points and for concentration.
+#[derive(Debug, Clone, Copy, Default)]
+pub struct DamageContext {
+    pub critical: bool,
+    pub heroic_death: bool,
 }
 
 pub fn is_party(combatant: &Combatant) -> bool {
@@ -138,6 +224,21 @@ pub fn is_enemy(combatant: &Combatant) -> bool {
 /// Still in the fight: hit points left and not fled.
 pub fn is_up(combatant: &Combatant) -> bool {
     combatant.hp > 0 && !has_condition(combatant, FLED)
+}
+
+/// A hero at 0 hit points who still rolls death saves.
+pub fn is_dying(combatant: &Combatant) -> bool {
+    is_party(combatant)
+        && combatant.hp <= 0
+        && combatant
+            .stats5e
+            .as_ref()
+            .is_some_and(|s| !s.death_saves.stable && !s.death_saves.dead)
+}
+
+/// Gets a turn: up, or dying (to roll the death save).
+pub fn takes_turn(combatant: &Combatant) -> bool {
+    is_up(combatant) || is_dying(combatant)
 }
 
 pub fn has_condition(combatant: &Combatant, name: &str) -> bool {
@@ -175,9 +276,9 @@ pub fn roll_initiative<R: Rng + ?Sized>(combatants: &mut [Combatant], rng: &mut 
     }
 }
 
-/// Advantage/disadvantage of an attack from the situation (so far: the target is dodging).
-pub fn attack_mode(_attacker: &Combatant, target: &Combatant) -> RollMode {
-    RollMode::combine(false, has_condition(target, DODGING))
+/// Advantage/disadvantage of an attack from the conditions (no board: attacker counts as close).
+pub fn attack_mode(attacker: &Combatant, target: &Combatant) -> RollMode {
+    attack_conditions(attacker, target, None).0
 }
 
 fn scaling_for(target: &Stats5e, damage_type: &str) -> DamageScaling {
@@ -201,27 +302,32 @@ pub fn resolve_attack<R: Rng + ?Sized>(
     target: &mut Combatant,
     rng: &mut R,
 ) -> Vec<CombatEvent> {
-    resolve_attack_with(attacker, attack, target, false, rng)
+    resolve_attack_with(attacker, attack, target, &AttackSituation::default(), rng)
 }
 
-/// Like [`resolve_attack`], with a disadvantage from the situation on the board (long range,
-/// shooting with an enemy next to you).
+/// Like [`resolve_attack`], in a situation: disadvantage from the board, distance (prone,
+/// paralyzed and unconscious targets), heroic death. Conditions on both sides give advantage
+/// or disadvantage; Bless adds a d4; a Guiding Bolt mark is used up.
 pub fn resolve_attack_with<R: Rng + ?Sized>(
     attacker: &Combatant,
     attack: &Attack,
     target: &mut Combatant,
-    situational_disadvantage: bool,
+    situation: &AttackSituation,
     rng: &mut R,
 ) -> Vec<CombatEvent> {
-    let mode = RollMode::combine(
-        false,
-        attack_mode(attacker, target) == RollMode::Disadvantage || situational_disadvantage,
-    );
+    let (mode, auto_crit) = attack_conditions(attacker, target, situation.distance_ft);
+    let mode = match (mode, situation.disadvantage) {
+        (RollMode::Advantage, true) => RollMode::Normal,
+        (_, true) => RollMode::Disadvantage,
+        (mode, false) => mode,
+    };
+    remove_condition(target, GUIDED);
     let roll = roll_d20(rng, mode);
-    let target_ac = target.stats5e.as_ref().map_or(10, |s| s.armor_class);
-    let total = roll.natural as i32 + attack.to_hit;
-    let critical = roll.natural == 20;
-    let hit = critical || (roll.natural != 1 && total >= target_ac);
+    let bonus_die = has_condition(attacker, BLESSED).then(|| rng.random_range(1..=4u32));
+    let target_ac = armor_class(target);
+    let total = roll.natural as i32 + attack.to_hit + bonus_die.map_or(0, |d| d as i32);
+    let hit = roll.natural == 20 || (roll.natural != 1 && total >= target_ac);
+    let critical = hit && (roll.natural == 20 || auto_crit);
     let mut events = vec![CombatEvent::Attack {
         attacker_id: attacker.id.clone(),
         attacker_name: attacker.name.clone(),
@@ -235,6 +341,7 @@ pub fn resolve_attack_with<R: Rng + ?Sized>(
         target_ac,
         hit,
         critical,
+        bonus_die,
     }];
     if hit {
         let formula = DiceFormula::parse(&attack.damage).unwrap_or(DiceFormula {
@@ -246,17 +353,40 @@ pub fn resolve_attack_with<R: Rng + ?Sized>(
         let scaling = target.stats5e.as_ref().map_or(DamageScaling::Normal, |s| {
             scaling_for(s, &attack.damage_type)
         });
-        events.extend(apply_damage(target, damage, &attack.damage_type, scaling));
+        let context = DamageContext {
+            critical,
+            heroic_death: situation.heroic_death,
+        };
+        events.extend(apply_damage(
+            target,
+            damage,
+            &attack.damage_type,
+            scaling,
+            &context,
+            rng,
+        ));
     }
     events
 }
 
-/// Applies rolled damage after resistance/vulnerability/immunity.
-pub fn apply_damage(
+pub fn damage_scaling(target: &Combatant, damage_type: &str) -> DamageScaling {
+    target
+        .stats5e
+        .as_ref()
+        .map_or(DamageScaling::Normal, |s| scaling_for(s, damage_type))
+}
+
+/// Applies rolled damage after resistance/vulnerability/immunity. Damage wakes a sleeper,
+/// tests the target's concentration (CON save, DC 10 or half the damage), and a hit on a
+/// dying hero counts as a failed death save (two on a critical hit); damage beyond the hero's
+/// hit point maximum kills outright.
+pub fn apply_damage<R: Rng + ?Sized>(
     target: &mut Combatant,
     roll: DamageRoll,
     damage_type: &str,
     scaling: DamageScaling,
+    context: &DamageContext,
+    rng: &mut R,
 ) -> Vec<CombatEvent> {
     let amount = match scaling {
         DamageScaling::Normal => roll.total,
@@ -265,6 +395,7 @@ pub fn apply_damage(
         DamageScaling::Immune => 0,
     };
     let was_up = target.hp > 0;
+    let overflow = (amount - target.hp.max(0)).max(0);
     target.hp = (target.hp - amount).max(0);
     let mut events = vec![CombatEvent::Damage {
         target_id: target.id.clone(),
@@ -276,11 +407,162 @@ pub fn apply_damage(
         hp_after: target.hp,
         tier: health_tier(target.hp, target.max_hp),
     }];
+    if amount == 0 {
+        return events;
+    }
+    if remove_condition(target, ASLEEP) {
+        events.push(condition_end(target, ASLEEP));
+    }
     if was_up && target.hp == 0 {
         events.push(CombatEvent::Down {
             target_id: target.id.clone(),
             target_name: target.name.clone(),
         });
+        if is_party(target) {
+            add_condition(target, UNCONSCIOUS, 0);
+            if overflow >= target.max_hp {
+                events.extend(death_save_failures(target, 3, context.heroic_death));
+            }
+        }
+    } else if !was_up && is_dying(target) {
+        events.extend(death_save_failures(
+            target,
+            if context.critical { 2 } else { 1 },
+            context.heroic_death,
+        ));
+    }
+    events.extend(concentration_check(target, amount, rng));
+    events
+}
+
+/// Concentration is lost on a failed CON save after damage, or when the caster goes down.
+fn concentration_check<R: Rng + ?Sized>(
+    target: &mut Combatant,
+    amount: i32,
+    rng: &mut R,
+) -> Option<CombatEvent> {
+    let stats = target.stats5e.as_ref()?;
+    let spell = stats.concentration.clone()?;
+    let keeps = target.hp > 0 && {
+        let dc = (amount / 2).max(10);
+        let roll = roll_d20(rng, RollMode::Normal).natural as i32;
+        roll + stats.saving_throw_bonus(Ability::Con) >= dc
+    };
+    if keeps {
+        return None;
+    }
+    target.stats5e.as_mut()?.concentration = None;
+    Some(CombatEvent::ConcentrationLost {
+        caster_id: target.id.clone(),
+        caster_name: target.name.clone(),
+        spell_id: spell,
+    })
+}
+
+fn condition_end(target: &Combatant, condition: &str) -> CombatEvent {
+    CombatEvent::ConditionEnd {
+        target_id: target.id.clone(),
+        target_name: target.name.clone(),
+        condition: condition.to_string(),
+    }
+}
+
+fn death_save_event(target: &Combatant, roll: u32, outcome: DeathSaveOutcome) -> CombatEvent {
+    let saves = target
+        .stats5e
+        .as_ref()
+        .map(|s| s.death_saves.clone())
+        .unwrap_or_default();
+    CombatEvent::DeathSave {
+        actor_id: target.id.clone(),
+        actor_name: target.name.clone(),
+        roll,
+        successes: saves.successes,
+        failures: saves.failures,
+        outcome,
+    }
+}
+
+fn death_save_failures(target: &mut Combatant, count: u8, heroic_death: bool) -> Vec<CombatEvent> {
+    let Some(stats) = target.stats5e.as_mut() else {
+        return Vec::new();
+    };
+    let saves = &mut stats.death_saves;
+    saves.failures = (saves.failures + count).min(3);
+    let outcome = if saves.failures < 3 {
+        DeathSaveOutcome::Ongoing
+    } else if heroic_death {
+        saves.dead = true;
+        DeathSaveOutcome::Dead
+    } else {
+        saves.stable = true;
+        DeathSaveOutcome::Out
+    };
+    vec![death_save_event(target, 0, outcome)]
+}
+
+/// A dying hero's death saving throw at the start of its turn: 10 or more succeeds, a natural
+/// 1 counts twice, a natural 20 brings it back with 1 hit point.
+pub fn death_save<R: Rng + ?Sized>(
+    target: &mut Combatant,
+    heroic_death: bool,
+    rng: &mut R,
+) -> CombatEvent {
+    let roll = roll_d20(rng, RollMode::Normal).natural;
+    if roll == 20 {
+        target.hp = 1;
+        if let Some(stats) = target.stats5e.as_mut() {
+            stats.death_saves = DeathSaves::default();
+        }
+        remove_condition(target, UNCONSCIOUS);
+        return death_save_event(target, roll, DeathSaveOutcome::Revived);
+    }
+    if roll < 10 {
+        let mut events = death_save_failures(target, if roll == 1 { 2 } else { 1 }, heroic_death);
+        if let Some(CombatEvent::DeathSave { roll: r, .. }) = events.first_mut() {
+            *r = roll;
+        }
+        return events.remove(0);
+    }
+    let Some(stats) = target.stats5e.as_mut() else {
+        return death_save_event(target, roll, DeathSaveOutcome::Ongoing);
+    };
+    stats.death_saves.successes += 1;
+    let outcome = if stats.death_saves.successes >= 3 {
+        stats.death_saves.stable = true;
+        DeathSaveOutcome::Stable
+    } else {
+        DeathSaveOutcome::Ongoing
+    };
+    death_save_event(target, roll, outcome)
+}
+
+/// Regains hit points (not past the maximum, not with Chill Touch on it, not undead from
+/// healing magic); a dying or stable hero comes back.
+pub fn heal(target: &mut Combatant, amount: i32) -> Vec<CombatEvent> {
+    if has_condition(target, NO_HEAL)
+        || target
+            .stats5e
+            .as_ref()
+            .is_some_and(|s| s.death_saves.dead || s.creature_type == "undead")
+    {
+        return Vec::new();
+    }
+    let before = target.hp.max(0);
+    target.hp = (before + amount.max(0)).min(target.max_hp);
+    let mut events = vec![CombatEvent::Heal {
+        target_id: target.id.clone(),
+        target_name: target.name.clone(),
+        amount: target.hp - before,
+        hp_after: target.hp,
+    }];
+    if before == 0 && target.hp > 0 {
+        if let Some(stats) = target.stats5e.as_mut() {
+            stats.death_saves = DeathSaves::default();
+        }
+        if remove_condition(target, UNCONSCIOUS) {
+            events.push(condition_end(target, UNCONSCIOUS));
+        }
     }
     events
 }
@@ -315,7 +597,7 @@ pub fn flee(actor: &mut Combatant) -> CombatEvent {
 
 /// Start of a combatant's turn: effects that last "until your next turn" end.
 pub fn start_turn(actor: &mut Combatant, round: u32) -> CombatEvent {
-    actor.conditions.retain(|c| c.name != DODGING);
+    tick_conditions(actor);
     CombatEvent::TurnStart {
         round,
         actor_id: actor.id.clone(),
@@ -341,7 +623,7 @@ pub fn advance_turn(encounter: &mut EncounterState) -> bool {
     for step in 1..=count {
         let position = encounter.current_turn_index + step;
         let index = position % count;
-        if is_up(&encounter.combatants[index]) {
+        if takes_turn(&encounter.combatants[index]) {
             // Past the end of the order: a new round begins.
             if position >= count {
                 encounter.round += 1;

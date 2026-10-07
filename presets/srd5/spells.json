@@ -1,0 +1,369 @@
+{
+ "_source": "Spells from the System Reference Document 5.1 by Wizards of the Coast LLC, CC-BY-4.0 (simplified to what the engine resolves: no cover, single targets for multi-target cantrips).",
+ "spells": [
+  {
+   "id": "ray_of_frost",
+   "name": {
+    "de": "Kältestrahl",
+    "en": "Ray of frost",
+    "ru": "Луч холода"
+   },
+   "level": 0,
+   "range_ft": 60,
+   "effect": {
+    "type": "attack",
+    "attack_kind": "ranged",
+    "damage": "1d8",
+    "damage_type": "cold",
+    "rider": "slowed"
+   }
+  },
+  {
+   "id": "chill_touch",
+   "name": {
+    "de": "Kalte Hand",
+    "en": "Chill touch",
+    "ru": "Леденящее прикосновение"
+   },
+   "level": 0,
+   "range_ft": 120,
+   "effect": {
+    "type": "attack",
+    "attack_kind": "ranged",
+    "damage": "1d8",
+    "damage_type": "necrotic",
+    "rider": "no_heal"
+   }
+  },
+  {
+   "id": "acid_splash",
+   "name": {
+    "de": "Säurespritzer",
+    "en": "Acid splash",
+    "ru": "Брызги кислоты"
+   },
+   "level": 0,
+   "range_ft": 60,
+   "effect": {
+    "type": "save",
+    "save": "dex",
+    "damage": "1d6",
+    "damage_type": "acid"
+   }
+  },
+  {
+   "id": "poison_spray",
+   "name": {
+    "de": "Giftspritzer",
+    "en": "Poison spray",
+    "ru": "Ядовитые брызги"
+   },
+   "level": 0,
+   "range_ft": 10,
+   "effect": {
+    "type": "save",
+    "save": "con",
+    "damage": "1d12",
+    "damage_type": "poison"
+   }
+  },
+  {
+   "id": "sacred_flame",
+   "name": {
+    "de": "Heilige Flamme",
+    "en": "Sacred flame",
+    "ru": "Священное пламя"
+   },
+   "level": 0,
+   "range_ft": 60,
+   "effect": {
+    "type": "save",
+    "save": "dex",
+    "damage": "1d8",
+    "damage_type": "radiant"
+   }
+  },
+  {
+   "id": "spare_the_dying",
+   "name": {
+    "de": "Verschonung der Sterbenden",
+    "en": "Spare the dying",
+    "ru": "Уход за умирающим"
+   },
+   "level": 0,
+   "range_ft": 5,
+   "effect": {
+    "type": "stabilize"
+   }
+  },
+  {
+   "id": "magic_missile",
+   "name": {
+    "de": "Magisches Geschoss",
+    "en": "Magic missile",
+    "ru": "Волшебная стрела"
+   },
+   "level": 1,
+   "range_ft": 120,
+   "effect": {
+    "type": "missiles",
+    "darts": 3,
+    "damage": "1d4+1",
+    "damage_type": "force"
+   }
+  },
+  {
+   "id": "burning_hands",
+   "name": {
+    "de": "Brennende Hände",
+    "en": "Burning hands",
+    "ru": "Огненные ладони"
+   },
+   "level": 1,
+   "range_ft": 0,
+   "upcast_dice": 1,
+   "effect": {
+    "type": "save",
+    "save": "dex",
+    "damage": "3d6",
+    "damage_type": "fire",
+    "half": true,
+    "area": {
+     "shape": "cone",
+     "size_ft": 15
+    }
+   }
+  },
+  {
+   "id": "thunderwave",
+   "name": {
+    "de": "Donnerwoge",
+    "en": "Thunderwave",
+    "ru": "Громовая волна"
+   },
+   "level": 1,
+   "range_ft": 0,
+   "upcast_dice": 1,
+   "effect": {
+    "type": "save",
+    "save": "con",
+    "damage": "2d8",
+    "damage_type": "thunder",
+    "half": true,
+    "area": {
+     "shape": "cube",
+     "size_ft": 15
+    }
+   }
+  },
+  {
+   "id": "sleep",
+   "name": {
+    "de": "Schlaf",
+    "en": "Sleep",
+    "ru": "Усыпление"
+   },
+   "level": 1,
+   "range_ft": 90,
+   "upcast_dice": 2,
+   "effect": {
+    "type": "sleep",
+    "pool": "5d8",
+    "area": {
+     "shape": "sphere",
+     "size_ft": 20
+    }
+   }
+  },
+  {
+   "id": "mage_armor",
+   "name": {
+    "de": "Magierrüstung",
+    "en": "Mage armor",
+    "ru": "Доспехи мага"
+   },
+   "level": 1,
+   "range_ft": 5,
+   "effect": {
+    "type": "buff",
+    "buff": "mage_armor",
+    "targets": 1
+   }
+  },
+  {
+   "id": "cure_wounds",
+   "name": {
+    "de": "Wunden heilen",
+    "en": "Cure wounds",
+    "ru": "Лечение ран"
+   },
+   "level": 1,
+   "range_ft": 5,
+   "upcast_dice": 1,
+   "effect": {
+    "type": "heal",
+    "heal": "1d8"
+   }
+  },
+  {
+   "id": "healing_word",
+   "name": {
+    "de": "Heilendes Wort",
+    "en": "Healing word",
+    "ru": "Лечащее слово"
+   },
+   "level": 1,
+   "casting": "bonus",
+   "range_ft": 60,
+   "upcast_dice": 1,
+   "effect": {
+    "type": "heal",
+    "heal": "1d4"
+   }
+  },
+  {
+   "id": "guiding_bolt",
+   "name": {
+    "de": "Lenkendes Geschoss",
+    "en": "Guiding bolt",
+    "ru": "Направленный снаряд"
+   },
+   "level": 1,
+   "range_ft": 120,
+   "upcast_dice": 1,
+   "effect": {
+    "type": "attack",
+    "attack_kind": "ranged",
+    "damage": "4d6",
+    "damage_type": "radiant",
+    "rider": "guided"
+   }
+  },
+  {
+   "id": "inflict_wounds",
+   "name": {
+    "de": "Wunden verursachen",
+    "en": "Inflict wounds",
+    "ru": "Нанесение ран"
+   },
+   "level": 1,
+   "range_ft": 5,
+   "upcast_dice": 1,
+   "effect": {
+    "type": "attack",
+    "attack_kind": "melee",
+    "damage": "3d10",
+    "damage_type": "necrotic"
+   }
+  },
+  {
+   "id": "bless",
+   "name": {
+    "de": "Segnen",
+    "en": "Bless",
+    "ru": "Благословение"
+   },
+   "level": 1,
+   "range_ft": 30,
+   "concentration": true,
+   "effect": {
+    "type": "buff",
+    "buff": "blessed",
+    "targets": 3
+   }
+  },
+  {
+   "id": "shield_of_faith",
+   "name": {
+    "de": "Schild des Glaubens",
+    "en": "Shield of faith",
+    "ru": "Щит веры"
+   },
+   "level": 1,
+   "casting": "bonus",
+   "range_ft": 60,
+   "concentration": true,
+   "effect": {
+    "type": "buff",
+    "buff": "shield_of_faith",
+    "targets": 1
+   }
+  },
+  {
+   "id": "scorching_ray",
+   "name": {
+    "de": "Sengender Strahl",
+    "en": "Scorching ray",
+    "ru": "Палящий луч"
+   },
+   "level": 2,
+   "range_ft": 120,
+   "effect": {
+    "type": "attack",
+    "attack_kind": "ranged",
+    "damage": "2d6",
+    "damage_type": "fire",
+    "rays": 3
+   }
+  },
+  {
+   "id": "hold_person",
+   "name": {
+    "de": "Person festhalten",
+    "en": "Hold person",
+    "ru": "Удержание личности"
+   },
+   "level": 2,
+   "range_ft": 60,
+   "concentration": true,
+   "effect": {
+    "type": "condition",
+    "save": "wis",
+    "condition": "paralyzed",
+    "humanoid_only": true
+   }
+  },
+  {
+   "id": "misty_step",
+   "name": {
+    "de": "Nebelschritt",
+    "en": "Misty step",
+    "ru": "Туманный шаг"
+   },
+   "level": 2,
+   "casting": "bonus",
+   "range_ft": 30,
+   "effect": {
+    "type": "teleport"
+   }
+  },
+  {
+   "id": "aid",
+   "name": {
+    "de": "Beistand",
+    "en": "Aid",
+    "ru": "Подмога"
+   },
+   "level": 2,
+   "range_ft": 30,
+   "effect": {
+    "type": "buff",
+    "buff": "aid",
+    "targets": 3
+   }
+  },
+  {
+   "id": "lesser_restoration",
+   "name": {
+    "de": "Schwache Genesung",
+    "en": "Lesser restoration",
+    "ru": "Малое восстановление"
+   },
+   "level": 2,
+   "range_ft": 5,
+   "effect": {
+    "type": "cure"
+   }
+  }
+ ]
+}

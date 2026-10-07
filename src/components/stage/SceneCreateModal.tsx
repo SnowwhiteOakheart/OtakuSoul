@@ -31,7 +31,7 @@ const SceneRulesFields: React.FC<{ rules: SceneRules | null; party: string[]; on
         id="scene-ruleset"
         value={fiveE ? '5e' : 'standard'}
         onChange={(e) =>
-          onChange(e.target.value === '5e' ? { ruleset: '5e', hero_classes: rules?.hero_classes ?? {}, control_companions: rules?.control_companions ?? false } : null)
+          onChange(e.target.value === '5e' ? { ruleset: '5e', hero_classes: rules?.hero_classes ?? {}, control_companions: rules?.control_companions ?? false, heroic_death: rules?.heroic_death ?? false } : null)
         }
         className="w-full p-2 bg-app border border-slate-700 rounded-xl"
       >
@@ -80,6 +80,16 @@ const SceneRulesFields: React.FC<{ rules: SceneRules | null; party: string[]; on
             />
             {t('sceneRules.controlCompanions')}
           </label>
+          <label className="flex items-center gap-2 text-slate-300">
+            <input
+              type="checkbox"
+              checked={rules?.heroic_death ?? false}
+              onChange={(e) => rules && onChange({ ...rules, heroic_death: e.target.checked })}
+              className="w-4 h-4 accent-accent-600"
+            />
+            {t('sceneRules.heroicDeath')}
+          </label>
+          <p className="text-slate-500">{t('sceneRules.heroicDeathHint')}</p>
         </>
       )}
     </fieldset>

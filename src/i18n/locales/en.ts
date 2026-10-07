@@ -1139,6 +1139,8 @@ export const en: TranslationDictionary = {
   "sceneRules.class.rogue": "Rogue",
   "sceneRules.class.cleric": "Cleric",
   "sceneRules.controlCompanions": "Command companions in fights yourself",
+  "sceneRules.heroicDeath": "Heroic death (three failed death saves are fatal)",
+  "sceneRules.heroicDeathHint": "Off: whoever fails three death saves is only out of the fight and wakes afterwards with 1 HP.",
   "stage.combatIntro": "Initiative, health, stress & conditions",
   "stage.attack": "Attack",
   "stage.attackAction": "[Attack] I attack my target.",

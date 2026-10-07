@@ -113,6 +113,9 @@ pub struct EncounterState {
     /// Combatants who used their reaction since their last turn.
     #[serde(default)]
     pub reactions_used: Vec<String>,
+    /// Ongoing spell effects (concentration, repeated saves).
+    #[serde(default)]
+    pub effects: Vec<super::rules5e::ActiveEffect>,
 }
 
 impl Default for EncounterState {
@@ -126,6 +129,7 @@ impl Default for EncounterState {
             events: Vec::new(),
             turn: Default::default(),
             reactions_used: Vec::new(),
+            effects: Vec::new(),
         }
     }
 }
@@ -411,6 +415,10 @@ pub struct SceneRules {
     /// The player chooses the companions' combat actions instead of the language model.
     #[serde(default)]
     pub control_companions: bool,
+    /// Three failed death saves kill a hero; otherwise the hero is out of the fight and wakes
+    /// afterwards with 1 hit point (default, so beloved companions cannot die by a roll).
+    #[serde(default)]
+    pub heroic_death: bool,
     /// Battle map for fights (`presets/srd5/maps`); without one fights run without a board.
     #[serde(default)]
     #[ts(optional)]

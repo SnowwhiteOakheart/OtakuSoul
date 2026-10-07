@@ -470,6 +470,8 @@ export interface EncounterState {
   /** What the current combatant has left this turn (5e). */
   turn?: TurnBudget;
   reactions_used?: string[];
+  /** Ongoing spell effects (concentration, repeated saves). */
+  effects?: import('./generated/ActiveEffect').ActiveEffect[];
 }
 
 // Phase 15: Soul Stage (KI-Game-Master Orchestrator)

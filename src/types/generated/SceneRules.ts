@@ -17,6 +17,11 @@ hero_classes: { [key in string]: string },
  */
 control_companions: boolean, 
 /**
+ * Three failed death saves kill a hero; otherwise the hero is out of the fight and wakes
+ * afterwards with 1 hit point (default, so beloved companions cannot die by a roll).
+ */
+heroic_death: boolean, 
+/**
  * Battle map for fights (`presets/srd5/maps`); without one fights run without a board.
  */
 map_id?: string, };

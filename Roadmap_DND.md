@@ -150,13 +150,13 @@ blockieren Sicht und Weg.
 
 ### ✨ Schritt 3 – Magie, Rettungswürfe, Zustände & Rasten
 
-- [ ] SRD-Zauberdaten: Zaubertricks + Grad 1–2 als Startsatz (~25 Zauber), Zauberplätze nach Klasse/Stufe,
+- [x] SRD-Zauberdaten: Zaubertricks + Grad 1–2 als Startsatz (~25 Zauber), Zauberplätze nach Klasse/Stufe,
   Konzentration.
-- [ ] Zauberangriff, Rettungswurf gegen SG (8 + Übung + Mod), halber Schaden bei Erfolg.
+- [x] Zauberangriff, Rettungswurf gegen SG (8 + Übung + Mod), halber Schaden bei Erfolg.
 - [ ] Flächen-Schablonen auf dem Brett (Kugel, Kegel, Linie, Würfel) mit Vorschau der getroffenen Felder.
-- [ ] Zustände nach SRD mit Wirkung (Vorteil/Nachteil, Tempo 0, automatische Krits bei Gelähmt …); bestehende
+- [x] Zustände nach SRD mit Wirkung (Vorteil/Nachteil, Tempo 0, automatische Krits bei Gelähmt …); bestehende
   `CombatCondition` wird im 5e-Modus darauf abgebildet.
-- [ ] Todesrettungswürfe, Stabilisieren, Heilung aus 0 LP.
+- [x] Todesrettungswürfe, Stabilisieren, Heilung aus 0 LP.
 - [ ] Rasten im 5e-Modus über `rest_stage_party`: kurz (Trefferwürfel), lang (LP, Plätze, halbe Trefferwürfel).
 - [ ] Proben außerhalb des Kampfs: `dice_check` des GM nennt eine 5e-Fertigkeit, die Engine rechnet mit Übung.
 - [ ] UI: Zauberbuch (nach Graden, Platzverbrauch), vollständiger Bogen (Fertigkeiten, Rettungswürfe, Trefferwürfel,
@@ -207,6 +207,7 @@ Rückgängig stellt Karte und Kampf korrekt wieder her.
 | F2 | Gefährten im Kampf | LLM wählt aus der erlaubten Liste; Schalter „Gefährten selbst steuern“ übergibt sie dem Spieler | Schritt 1 |
 | F3 | Gegner-LP sichtbar? | Nein – Zustandsstufen („unverletzt / angeschlagen / schwer verletzt / am Boden“) | Schritt 1 |
 | F4 | Übersetzung der SRD-Begriffe | Kernbegriffe (Attribute, Fertigkeiten, Zustände) über i18n; Monster-/Zaubernamen in den Daten mit de/en/ru | Schritt 1 |
+| F6 | Tod nach drei gescheiterten Todesrettungswürfen? | Szenen-Schalter „Heldentod“, Standard **aus**: dann nur „außer Gefecht“, Aufwachen nach dem Kampf mit 1 LP (eigene Gefährten sterben nicht durch einen Wurf). *Vorläufig von Claude gesetzt – bitte bestätigen.* | Schritt 3 |
 | F5 | Ort der SRD-Daten | gebündelt wie die Presets (`assets/…`), Nutzer-Erweiterungen im Datenordner | Schritt 1 |
 
 Neue Fragen werden hier mit Vorschlag ergänzt und vor dem betroffenen Schritt entschieden.

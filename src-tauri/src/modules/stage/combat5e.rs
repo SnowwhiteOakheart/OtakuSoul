@@ -212,22 +212,50 @@ fn begin_turn(state: &mut SceneState) -> CombatEvent {
     event
 }
 
-/// Ends the fight: enemies leave; whoever went down comes to with 1 hit point (until death
-/// saves and stabilizing exist, step 3 of the roadmap).
+/// Ends the fight: enemies leave, fight-only effects end (Dodge, Bless, Sleep, Hold …);
+/// heroes who went down wake with 1 hit point – except the dead (only with heroic death).
 pub fn end_encounter(state: &mut SceneState, _outcome: Option<CombatOutcome>) {
     state.combat.is_active = false;
+    state.combat.effects.clear();
     for combatant in state
         .combat
         .combatants
         .iter_mut()
         .filter(|c| rules5e::is_party(c))
     {
-        combatant.hp = combatant.hp.max(1);
+        let dead = combatant
+            .stats5e
+            .as_ref()
+            .is_some_and(|s| s.death_saves.dead);
+        if let Some(stats) = combatant.stats5e.as_mut() {
+            stats.concentration = None;
+            if !dead {
+                stats.death_saves = rules5e::DeathSaves::default();
+            }
+        }
+        if !dead {
+            combatant.hp = combatant.hp.max(1);
+            rules5e::remove_condition(combatant, rules5e::UNCONSCIOUS);
+        }
     }
+    // Conditions that only make sense within a fight; long-lasting buffs (Mage Armor, Aid)
+    // and narrative conditions stay.
+    const FIGHT_ONLY: [&str; 10] = [
+        rules5e::DODGING,
+        rules5e::FLED,
+        rules5e::BLESSED,
+        rules5e::SHIELD_OF_FAITH,
+        rules5e::ASLEEP,
+        rules5e::PARALYZED,
+        rules5e::SLOWED,
+        rules5e::GUIDED,
+        rules5e::NO_HEAL,
+        rules5e::PRONE,
+    ];
     for combatant in &mut state.combat.combatants {
         combatant
             .conditions
-            .retain(|c| c.name != rules5e::DODGING && c.name != rules5e::FLED);
+            .retain(|c| !FIGHT_ONLY.contains(&c.name.as_str()));
     }
     super::remove_enemies(state);
 }
@@ -244,9 +272,19 @@ fn player_controls(state: &SceneState, combatant: &Combatant) -> bool {
                 .is_some_and(|r| r.control_companions))
 }
 
+/// Heroes die after three failed death saves (scene setting, off by default).
+fn heroic_death(state: &SceneState) -> bool {
+    state
+        .definition
+        .rules
+        .as_ref()
+        .is_some_and(|r| r.heroic_death)
+}
+
 /// Carries out a decision of the current combatant (uses its action).
 fn act(state: &mut SceneState, decision: TurnDecision) -> Vec<CombatEvent> {
     state.combat.turn.action_used = true;
+    let heroic_death = heroic_death(state);
     let index = state.combat.current_turn_index;
     let mut rng = rand::rng();
     match decision {
@@ -286,7 +324,15 @@ fn act(state: &mut SceneState, decision: TurnDecision) -> Vec<CombatEvent> {
                 .find(|c| c.id == target_id);
             match (attack, target) {
                 (Some(attack), Some(target)) => {
-                    rules5e::resolve_attack_with(&actor, &attack, target, disadvantage, &mut rng)
+                    let situation = rules5e::AttackSituation {
+                        disadvantage,
+                        distance_ft: actor
+                            .position
+                            .zip(target.position)
+                            .map(|(a, b)| a.feet_to(b)),
+                        heroic_death,
+                    };
+                    rules5e::resolve_attack_with(&actor, &attack, target, &situation, &mut rng)
                 }
                 _ => vec![CombatEvent::Pass {
                     actor_id: actor.id.clone(),
@@ -307,11 +353,50 @@ fn act(state: &mut SceneState, decision: TurnDecision) -> Vec<CombatEvent> {
 }
 
 /// Next combatant's turn (or `None` when nobody can act).
-fn next_turn(state: &mut SceneState) -> Option<CombatEvent> {
-    if !rules5e::advance_turn(&mut state.combat) {
-        return None;
+/// Ends the current combatant's turn (short spell riders end, repeated saves) and starts
+/// the next one. Dying heroes roll their death save, incapacitated creatures lose their turn,
+/// both without waiting for anyone. Empty when nobody can act.
+fn next_turn(state: &mut SceneState) -> Vec<CombatEvent> {
+    let mut events = Vec::new();
+    let mut rng = rand::rng();
+    let heroic = heroic_death(state);
+    for _ in 0..state.combat.combatants.len() * 2 + 2 {
+        let index = state.combat.current_turn_index;
+        rules5e::end_of_turn_conditions(&mut state.combat.combatants[index]);
+        events.extend(rules5e::repeat_saves(
+            &mut state.combat.combatants,
+            index,
+            &mut state.combat.effects,
+            &mut rng,
+        ));
+        events.extend(settle(state));
+        if rules5e::combat_outcome(&state.combat.combatants).is_some()
+            || !rules5e::advance_turn(&mut state.combat)
+        {
+            break;
+        }
+        events.push(begin_turn(state));
+        let index = state.combat.current_turn_index;
+        let actor = &mut state.combat.combatants[index];
+        if rules5e::is_dying(actor) {
+            events.push(rules5e::death_save(actor, heroic, &mut rng));
+            continue;
+        }
+        if rules5e::incapacitated(actor) {
+            events.push(CombatEvent::Pass {
+                actor_id: actor.id.clone(),
+                actor_name: actor.name.clone(),
+            });
+            continue;
+        }
+        break;
     }
-    Some(begin_turn(state))
+    events
+}
+
+/// After anything that can hurt: effects whose caster lost concentration end.
+fn settle(state: &mut SceneState) -> Vec<CombatEvent> {
+    rules5e::sync_concentration(&mut state.combat.combatants, &mut state.combat.effects)
 }
 
 /// Moves the current combatant along the path to `target` (opportunity attacks included)
@@ -831,10 +916,11 @@ pub async fn execute_combat_turn(
         if rules5e::combat_outcome(&state.combat.combatants).is_some() {
             break;
         }
-        match next_turn(&mut state) {
-            Some(event) => events.push(event),
-            None => break,
+        let next = next_turn(&mut state);
+        if next.is_empty() {
+            break;
         }
+        events.extend(next);
     }
 
     let outcome = rules5e::combat_outcome(&state.combat.combatants);
@@ -869,6 +955,7 @@ mod tests {
                 .map(|(k, v)| (k.to_string(), v.to_string()))
                 .collect(),
             control_companions: false,
+            heroic_death: false,
             map_id: None,
         });
         state.combat.combatants.retain(|c| c.role == "player");
@@ -1081,6 +1168,7 @@ mod board_tests {
             ruleset: "5e".into(),
             hero_classes: HashMap::new(),
             control_companions: false,
+            heroic_death: false,
             map_id: Some("crypt_hall".into()),
         });
         state.combat.combatants.retain(|c| c.role == "player");

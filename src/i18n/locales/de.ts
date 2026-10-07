@@ -1141,6 +1141,8 @@ export const de = {
   "sceneRules.class.rogue": "Schurke",
   "sceneRules.class.cleric": "Kleriker",
   "sceneRules.controlCompanions": "Gefährten im Kampf selbst steuern",
+  "sceneRules.heroicDeath": "Heldentod (drei gescheiterte Todesrettungswürfe sind tödlich)",
+  "sceneRules.heroicDeathHint": "Aus: Wer drei Todesrettungswürfe verpatzt, ist nur außer Gefecht und wacht nach dem Kampf mit 1 LP auf.",
   "stage.combatIntro": "Initiative, Lebenspunkte, Stress & Zustände",
   "stage.attack": "Angriff",
   "stage.attackAction": "[Angriff] Ich greife mein Ziel an.",

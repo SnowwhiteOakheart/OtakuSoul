@@ -183,15 +183,26 @@ fn damage_scaling_and_going_down() {
         modifier: 0,
         total: 4,
     };
+    let ctx = DamageContext::default();
+    let mut rng = StdRng::seed_from_u64(1);
     let events = apply_damage(
         &mut skeleton,
         roll.clone(),
         "bludgeoning",
         DamageScaling::Vulnerable,
+        &ctx,
+        &mut rng,
     );
     assert!(matches!(events[0], CombatEvent::Damage { amount: 8, .. }));
     assert_eq!(skeleton.hp, 5);
-    let events = apply_damage(&mut skeleton, roll, "slashing", DamageScaling::Normal);
+    let events = apply_damage(
+        &mut skeleton,
+        roll,
+        "slashing",
+        DamageScaling::Normal,
+        &ctx,
+        &mut rng,
+    );
     assert_eq!(skeleton.hp, 1);
     assert_eq!(events.len(), 1);
     let big = DamageRoll {
@@ -199,7 +210,14 @@ fn damage_scaling_and_going_down() {
         modifier: 0,
         total: 9,
     };
-    let events = apply_damage(&mut skeleton, big, "slashing", DamageScaling::Normal);
+    let events = apply_damage(
+        &mut skeleton,
+        big,
+        "slashing",
+        DamageScaling::Normal,
+        &ctx,
+        &mut rng,
+    );
     assert_eq!(skeleton.hp, 0);
     assert!(matches!(events[1], CombatEvent::Down { .. }));
     assert_eq!(health_tier(0, 13), HealthTier::Down);
@@ -233,6 +251,7 @@ fn initiative_order_and_turn_advance() {
         events: Vec::new(),
         turn: TurnBudget::default(),
         reactions_used: Vec::new(),
+        effects: Vec::new(),
     };
     let event = roll_initiative(&mut encounter.combatants, &mut StdRng::seed_from_u64(3));
     let CombatEvent::Initiative { order } = event else {
@@ -240,7 +259,14 @@ fn initiative_order_and_turn_advance() {
     };
     assert_eq!(order.len(), 3);
     assert!(order.windows(2).all(|pair| pair[0].total >= pair[1].total));
-    // Someone down is skipped; wrapping starts a new round.
+    // A downed enemy is skipped (a downed hero would still roll death saves); wrapping
+    // starts a new round. Put a goblin in the middle of the order and knock it out.
+    let goblin_index = encounter
+        .combatants
+        .iter()
+        .position(|c| c.role == "enemy")
+        .unwrap();
+    encounter.combatants.swap(goblin_index, 1);
     encounter.current_turn_index = 0;
     encounter.combatants[1].hp = 0;
     assert!(advance_turn(&mut encounter));
@@ -328,6 +354,7 @@ fn a_seeded_fight_runs_to_the_end() {
         events: Vec::new(),
         turn: TurnBudget::default(),
         reactions_used: Vec::new(),
+        effects: Vec::new(),
     };
     roll_initiative(&mut encounter.combatants, &mut rng);
     let mut turns = 0;
@@ -731,6 +758,7 @@ fn a_seeded_board_fight_runs_to_the_end() {
         events: Vec::new(),
         turn: TurnBudget::default(),
         reactions_used: Vec::new(),
+        effects: Vec::new(),
     };
     roll_initiative(&mut encounter.combatants, &mut rng);
     let mut turns = 0;
@@ -811,4 +839,537 @@ fn a_seeded_board_fight_runs_to_the_end() {
         combat_outcome(&encounter.combatants).is_some(),
         "board fight ended within {turns} turns"
     );
+}
+
+// --- Spells, conditions, death saves ---
+
+fn wizard(id: &str) -> Combatant {
+    hero(id, "wizard", "player")
+}
+
+#[test]
+fn spell_data_loads_and_casters_get_slots_and_spells() {
+    assert_eq!(spells().len(), 22);
+    for spell in spells() {
+        assert!(
+            !spell.name.de.is_empty() && !spell.name.ru.is_empty(),
+            "{}",
+            spell.id
+        );
+    }
+    let lyra = wizard("lyra");
+    let casting = lyra
+        .stats5e
+        .as_ref()
+        .unwrap()
+        .spellcasting
+        .as_ref()
+        .unwrap();
+    assert_eq!(casting.slots_max[0], 2);
+    // Level 1: cantrips and 1st-level spells, no 2nd-level ones yet.
+    assert!(casting.spells.contains(&"burning_hands".to_string()));
+    assert!(!casting.spells.contains(&"scorching_ray".to_string()));
+    let stats = lyra.stats5e.as_ref().unwrap();
+    assert_eq!((spell_save_dc(stats), spell_attack_bonus(stats)), (12, 4));
+    assert!(
+        hero("t", "fighter", "player")
+            .stats5e
+            .unwrap()
+            .spellcasting
+            .is_none()
+    );
+    assert_eq!(full_caster_slots(3)[..2], [4, 2]);
+}
+
+#[test]
+fn cast_requests_round_trip_and_are_checked() {
+    let request = CastRequest {
+        spell_id: "burning_hands".into(),
+        slot_level: 1,
+        target: CastTarget::Point(GridPos::new(3, 2)),
+    };
+    assert_eq!(CastRequest::parse(&request.id()), Some(request.clone()));
+    let map = open_map();
+    let lyra = at(wizard("lyra"), 1, 1);
+    let goblin = at(goblin("g"), 3, 1);
+    let fighters = vec![lyra.clone(), goblin.clone()];
+    let budget = CastBudget {
+        action: true,
+        bonus_action: true,
+    };
+    assert!(check_cast(Some(&map), &lyra, &fighters, &request, budget).is_ok());
+    // Cantrips cost no slot; spells need one of their level; time must be left.
+    let bolt = CastRequest {
+        spell_id: "ray_of_frost".into(),
+        slot_level: 0,
+        target: CastTarget::Creature("g".into()),
+    };
+    assert!(check_cast(Some(&map), &lyra, &fighters, &bolt, budget).is_ok());
+    let no_time = CastBudget {
+        action: false,
+        bonus_action: true,
+    };
+    assert_eq!(
+        check_cast(Some(&map), &lyra, &fighters, &bolt, no_time),
+        Err(CastProblem::BudgetUsed)
+    );
+    let unknown = CastRequest {
+        spell_id: "cure_wounds".into(),
+        slot_level: 1,
+        target: CastTarget::Creature("lyra".into()),
+    };
+    assert_eq!(
+        check_cast(Some(&map), &lyra, &fighters, &unknown, budget),
+        Err(CastProblem::UnknownSpell)
+    );
+    let mut spent = lyra.clone();
+    spent
+        .stats5e
+        .as_mut()
+        .unwrap()
+        .spellcasting
+        .as_mut()
+        .unwrap()
+        .slots_used[0] = 2;
+    assert_eq!(
+        check_cast(Some(&map), &spent, &fighters, &request, budget),
+        Err(CastProblem::NoSlot)
+    );
+    // Hold Person only works on humanoids.
+    let mut cleric = at(hero("althea", "cleric", "player"), 1, 2);
+    cleric
+        .stats5e
+        .as_mut()
+        .unwrap()
+        .spellcasting
+        .as_mut()
+        .unwrap()
+        .spells
+        .push("hold_person".into());
+    cleric
+        .stats5e
+        .as_mut()
+        .unwrap()
+        .spellcasting
+        .as_mut()
+        .unwrap()
+        .slots_max[1] = 1;
+    let zombie = at(
+        combatant("z", "enemy", monster_stats(monster("zombie").unwrap())),
+        4,
+        2,
+    );
+    let hold = |id: &str| CastRequest {
+        spell_id: "hold_person".into(),
+        slot_level: 2,
+        target: CastTarget::Creature(id.into()),
+    };
+    let crowd = vec![cleric.clone(), goblin.clone(), zombie];
+    assert!(check_cast(Some(&map), &cleric, &crowd, &hold("g"), budget).is_ok());
+    assert_eq!(
+        check_cast(Some(&map), &cleric, &crowd, &hold("z"), budget),
+        Err(CastProblem::WrongTarget)
+    );
+}
+
+#[test]
+fn areas_cover_the_expected_squares() {
+    let caster = GridPos::new(5, 5);
+    // 15-ft cone to the east: 1 square wide at the start, 3 at the end.
+    let cone = area_squares(
+        Area {
+            shape: AreaShape::Cone,
+            size_ft: 15,
+        },
+        caster,
+        GridPos::new(9, 5),
+    );
+    assert!(
+        cone.contains(&GridPos::new(6, 5))
+            && cone.contains(&GridPos::new(8, 6))
+            && cone.contains(&GridPos::new(8, 4))
+    );
+    assert!(
+        !cone.contains(&caster)
+            && !cone.contains(&GridPos::new(4, 5))
+            && !cone.contains(&GridPos::new(9, 5))
+    );
+    // 20-ft sphere: 9×9 squares around the point.
+    assert_eq!(
+        area_squares(
+            Area {
+                shape: AreaShape::Sphere,
+                size_ft: 20
+            },
+            caster,
+            GridPos::new(2, 2)
+        )
+        .len(),
+        81
+    );
+    // 15-ft cube next to the caster.
+    let cube = area_squares(
+        Area {
+            shape: AreaShape::Cube,
+            size_ft: 15,
+        },
+        caster,
+        GridPos::new(5, 9),
+    );
+    assert!(
+        cube.contains(&GridPos::new(5, 6))
+            && cube.contains(&GridPos::new(4, 8))
+            && !cube.contains(&GridPos::new(5, 9))
+    );
+}
+
+#[test]
+fn burning_hands_hits_everyone_in_the_cone_with_saves() {
+    let map = open_map();
+    let mut fighters = vec![
+        at(wizard("lyra"), 2, 2),
+        at(goblin("g1"), 3, 2),
+        at(goblin("g2"), 4, 3),
+        at(goblin("far"), 9, 2),
+    ];
+    let request = CastRequest {
+        spell_id: "burning_hands".into(),
+        slot_level: 1,
+        target: CastTarget::Point(GridPos::new(5, 2)),
+    };
+    let mut effects = Vec::new();
+    let events = cast_spell(
+        Some(&map),
+        &mut fighters,
+        0,
+        spell("burning_hands").unwrap(),
+        &request,
+        &mut effects,
+        false,
+        &mut StdRng::seed_from_u64(4),
+    );
+    let saves: Vec<&str> = events
+        .iter()
+        .filter_map(|e| match e {
+            CombatEvent::Save { target_name, .. } => Some(target_name.as_str()),
+            _ => None,
+        })
+        .collect();
+    assert_eq!(saves, vec!["g1", "g2"]);
+    assert!(fighters[1].hp < 7 || fighters[2].hp < 7);
+    assert_eq!(fighters[3].hp, 7, "outside the cone");
+    assert_eq!(
+        fighters[0]
+            .stats5e
+            .as_ref()
+            .unwrap()
+            .spellcasting
+            .as_ref()
+            .unwrap()
+            .slots_used[0],
+        1
+    );
+    // Half damage on a save, of the same roll.
+    for e in &events {
+        if let CombatEvent::Save {
+            success: true,
+            target_id,
+            ..
+        } = e
+        {
+            let damage = events.iter().find_map(|d| match d {
+                CombatEvent::Damage {
+                    target_id: t,
+                    amount,
+                    ..
+                } if t == target_id => Some(*amount),
+                _ => None,
+            });
+            let full = events
+                .iter()
+                .find_map(|d| match d {
+                    CombatEvent::Damage { roll, .. } => Some(roll.total),
+                    _ => None,
+                })
+                .unwrap();
+            assert!(damage.is_none_or(|d| d <= full));
+        }
+    }
+}
+
+#[test]
+fn conditions_change_attacks_and_saves() {
+    let thorin = hero("thorin", "fighter", "player");
+    let mut held = goblin("g");
+    add_condition(&mut held, PARALYZED, 10);
+    let (mode, crit) = attack_conditions(&thorin, &held, Some(5));
+    assert_eq!((mode, crit), (RollMode::Advantage, true));
+    assert!(
+        !attack_conditions(&thorin, &held, Some(30)).1,
+        "no automatic crit from afar"
+    );
+    assert!(incapacitated(&held) && speed_ft(&held) == 0 && auto_fails(&held, Ability::Dex));
+    let mut poisoned = hero("finn", "rogue", "player");
+    add_condition(&mut poisoned, POISONED, 3);
+    assert_eq!(
+        attack_conditions(&poisoned, &goblin("x"), None).0,
+        RollMode::Disadvantage
+    );
+    // Prone: close attackers have advantage, distant ones disadvantage.
+    let mut lying = goblin("p");
+    add_condition(&mut lying, PRONE, 1);
+    assert_eq!(
+        attack_conditions(&thorin, &lying, Some(5)).0,
+        RollMode::Advantage
+    );
+    assert_eq!(
+        attack_conditions(&thorin, &lying, Some(30)).0,
+        RollMode::Disadvantage
+    );
+    assert_eq!(normalize_condition("Vergiftet"), Some(POISONED));
+    assert_eq!(normalize_condition("ошеломлён"), Some(STUNNED));
+    assert_eq!(normalize_condition("Verliebt"), None);
+    // Shield of Faith and Mage Armor change the armor class.
+    let mut lyra = wizard("lyra");
+    assert_eq!(armor_class(&lyra), 12);
+    add_condition(&mut lyra, MAGE_ARMOR, UNTIL_REST);
+    add_condition(&mut lyra, SHIELD_OF_FAITH, 10);
+    assert_eq!(armor_class(&lyra), 15 + 2);
+}
+
+#[test]
+fn death_saves_stabilize_kill_or_knock_out() {
+    let mut rng = StdRng::seed_from_u64(11);
+    let mut finn = hero("finn", "rogue", "companion");
+    let hit = DamageRoll {
+        rolls: vec![20],
+        modifier: 0,
+        total: 20,
+    };
+    let ctx = DamageContext::default();
+    // Finn has 10 hit points (d8 + CON 2): exactly 10 damage takes him down.
+    let events = apply_damage(
+        &mut finn,
+        DamageRoll {
+            rolls: vec![10],
+            modifier: 0,
+            total: 10,
+        },
+        "slashing",
+        DamageScaling::Normal,
+        &ctx,
+        &mut rng,
+    );
+    assert!(events.iter().any(|e| matches!(e, CombatEvent::Down { .. })));
+    assert!(is_dying(&finn) && takes_turn(&finn) && !is_up(&finn));
+    // A hit while dying is a failure, a critical one two.
+    apply_damage(
+        &mut finn,
+        hit.clone(),
+        "slashing",
+        DamageScaling::Normal,
+        &DamageContext {
+            critical: true,
+            heroic_death: true,
+        },
+        &mut rng,
+    );
+    assert_eq!(finn.stats5e.as_ref().unwrap().death_saves.failures, 2);
+    let events = apply_damage(
+        &mut finn,
+        hit,
+        "slashing",
+        DamageScaling::Normal,
+        &DamageContext {
+            critical: false,
+            heroic_death: true,
+        },
+        &mut rng,
+    );
+    assert!(events.iter().any(|e| matches!(
+        e,
+        CombatEvent::DeathSave {
+            outcome: DeathSaveOutcome::Dead,
+            ..
+        }
+    )));
+    assert!(!takes_turn(&finn));
+    // Without heroic death three failures only knock out; healing brings the hero back.
+    let mut lyra = wizard("lyra");
+    lyra.hp = 0;
+    add_condition(&mut lyra, UNCONSCIOUS, 0);
+    for _ in 0..30 {
+        if !is_dying(&lyra) {
+            break;
+        }
+        death_save(&mut lyra, false, &mut rng);
+    }
+    assert!(!is_dying(&lyra));
+    let saves = &lyra.stats5e.as_ref().unwrap().death_saves;
+    assert!(!saves.dead, "never dead without heroic death");
+    if lyra.hp == 0 {
+        let events = heal(&mut lyra, 4);
+        assert_eq!(lyra.hp, 4);
+        assert!(
+            events
+                .iter()
+                .any(|e| matches!(e, CombatEvent::ConditionEnd { .. }))
+        );
+        assert_eq!(
+            lyra.stats5e.as_ref().unwrap().death_saves,
+            DeathSaves::default()
+        );
+    }
+}
+
+#[test]
+fn sleep_takes_the_weakest_and_spares_undead() {
+    let map = open_map();
+    let mut fighters = vec![
+        at(wizard("lyra"), 1, 1),
+        at(goblin("weak"), 6, 2),
+        at(
+            combatant("z", "enemy", monster_stats(monster("zombie").unwrap())),
+            6,
+            3,
+        ),
+        at(
+            combatant("o", "enemy", monster_stats(monster("orc").unwrap())),
+            7,
+            3,
+        ),
+    ];
+    fighters[1].hp = 2;
+    let request = CastRequest {
+        spell_id: "sleep".into(),
+        slot_level: 1,
+        target: CastTarget::Point(GridPos::new(6, 3)),
+    };
+    let mut effects = Vec::new();
+    cast_spell(
+        Some(&map),
+        &mut fighters,
+        0,
+        spell("sleep").unwrap(),
+        &request,
+        &mut effects,
+        false,
+        &mut StdRng::seed_from_u64(3),
+    );
+    assert!(
+        has_condition(&fighters[1], ASLEEP),
+        "the weakest sleeps first"
+    );
+    assert!(!has_condition(&fighters[2], ASLEEP), "undead do not sleep");
+    // Damage wakes a sleeper.
+    let mut rng = StdRng::seed_from_u64(2);
+    apply_damage(
+        &mut fighters[1],
+        DamageRoll {
+            rolls: vec![1],
+            modifier: 0,
+            total: 1,
+        },
+        "fire",
+        DamageScaling::Normal,
+        &DamageContext::default(),
+        &mut rng,
+    );
+    assert!(!has_condition(&fighters[1], ASLEEP));
+}
+
+#[test]
+fn concentration_ends_with_the_casters_focus() {
+    let mut cleric = hero("althea", "cleric", "player");
+    let thorin = hero("thorin", "fighter", "companion");
+    let mut fighters = vec![cleric.clone(), thorin];
+    let request = CastRequest {
+        spell_id: "bless".into(),
+        slot_level: 1,
+        target: CastTarget::Creature("althea".into()),
+    };
+    let mut effects = Vec::new();
+    cast_spell(
+        None,
+        &mut fighters,
+        0,
+        spell("bless").unwrap(),
+        &request,
+        &mut effects,
+        false,
+        &mut StdRng::seed_from_u64(1),
+    );
+    assert!(fighters.iter().all(|c| has_condition(c, BLESSED)));
+    assert_eq!(effects.len(), 2);
+    assert_eq!(
+        fighters[0]
+            .stats5e
+            .as_ref()
+            .unwrap()
+            .concentration
+            .as_deref(),
+        Some("bless")
+    );
+    // The caster goes down: concentration and the blessing end everywhere.
+    fighters[0].hp = 0;
+    let ended = sync_concentration(&mut fighters, &mut effects);
+    assert_eq!(ended.len(), 2);
+    assert!(effects.is_empty() && !fighters.iter().any(|c| has_condition(c, BLESSED)));
+    cleric.hp = 1;
+}
+
+#[test]
+fn healing_and_magic_missile() {
+    let mut fighters = vec![
+        hero("althea", "cleric", "player"),
+        hero("finn", "rogue", "companion"),
+        goblin("g"),
+    ];
+    fighters[1].hp = 0;
+    add_condition(&mut fighters[1], UNCONSCIOUS, 0);
+    let mut effects = Vec::new();
+    let cure = CastRequest {
+        spell_id: "healing_word".into(),
+        slot_level: 1,
+        target: CastTarget::Creature("finn".into()),
+    };
+    let events = cast_spell(
+        None,
+        &mut fighters,
+        0,
+        spell("healing_word").unwrap(),
+        &cure,
+        &mut effects,
+        false,
+        &mut StdRng::seed_from_u64(6),
+    );
+    assert!(
+        fighters[1].hp > 2 && is_up(&fighters[1]),
+        "1d4 + WIS 2: {events:?}"
+    );
+    // Magic missile never misses: three darts of 1d4+1.
+    let mut lyra_side = vec![wizard("lyra"), goblin("g")];
+    let missile = CastRequest {
+        spell_id: "magic_missile".into(),
+        slot_level: 1,
+        target: CastTarget::Creature("g".into()),
+    };
+    let events = cast_spell(
+        None,
+        &mut lyra_side,
+        0,
+        spell("magic_missile").unwrap(),
+        &missile,
+        &mut effects,
+        false,
+        &mut StdRng::seed_from_u64(6),
+    );
+    assert_eq!(
+        events
+            .iter()
+            .filter(|e| matches!(e, CombatEvent::Damage { .. }))
+            .count(),
+        3
+    );
+    assert!(lyra_side[1].hp <= 7 - 3);
 }

@@ -1139,6 +1139,8 @@ export const ru: TranslationDictionary = {
   "sceneRules.class.rogue": "Плут",
   "sceneRules.class.cleric": "Жрец",
   "sceneRules.controlCompanions": "Самому управлять спутниками в бою",
+  "sceneRules.heroicDeath": "Героическая смерть (три проваленных спасброска от смерти смертельны)",
+  "sceneRules.heroicDeathHint": "Выкл.: проваливший три спасброска лишь выбывает из боя и приходит в себя после него с 1 хитом.",
   "stage.combatIntro": "Инициатива, здоровье, стресс и состояния",
   "stage.attack": "Атака",
   "stage.attackAction": "[Атака] Я атакую цель.",
