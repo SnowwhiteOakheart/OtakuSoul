@@ -1,6 +1,6 @@
 import React, { startTransition, useActionState, useEffect, useState } from 'react';
 import { useStoreFields } from '../../store/useAppStore';
-import type { SceneDefinition, SceneRules } from '../../types';
+import type { BattleMap, SceneDefinition, SceneRules } from '../../types';
 import { X, Sparkles, MapPin, Sun, UserCheck } from 'lucide-react';
 import { ModalOverlay } from '../ui/ModalOverlay';
 import { translate, useTranslation } from '../../i18n';
@@ -15,6 +15,12 @@ const SceneRulesFields: React.FC<{ rules: SceneRules | null; party: string[]; on
   const { t } = useTranslation();
   const fiveE = rules?.ruleset === '5e';
   const classes = rules?.hero_classes ?? {};
+  const { appLanguage } = useStoreFields('appLanguage');
+  const [maps, setMaps] = useState<BattleMap[]>([]);
+  useEffect(() => {
+    if (!fiveE) return;
+    api.listBattleMaps().then(setMaps).catch((e) => console.error('Failed to list battle maps:', e));
+  }, [fiveE]);
   const setClass = (member: string, classId: string) =>
     rules && onChange({ ...rules, hero_classes: { ...rules.hero_classes, [member]: classId } });
   return (
@@ -53,6 +59,18 @@ const SceneRulesFields: React.FC<{ rules: SceneRules | null; party: string[]; on
               </select>
             </div>
           ))}
+          <label htmlFor="scene-map" className="block text-slate-400">{t('sceneRules.map')}</label>
+          <select
+            id="scene-map"
+            value={rules?.map_id ?? ''}
+            onChange={(e) => rules && onChange({ ...rules, map_id: e.target.value || undefined })}
+            className="w-full p-1.5 bg-app border border-slate-700 rounded-lg"
+          >
+            <option value="">{t('sceneRules.noMap')}</option>
+            {maps.map((map) => (
+              <option key={map.id} value={map.id}>{map.name[appLanguage] || map.name.en}</option>
+            ))}
+          </select>
           <label className="flex items-center gap-2 text-slate-300">
             <input
               type="checkbox"

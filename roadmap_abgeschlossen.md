@@ -1821,4 +1821,12 @@ veraltet und sind korrigiert: `chat-sidebar-errors` las die Sitzung, bevor der e
   Daten: 10 SRD-Monster, 4 Klassen-Vorlagen (de/en/ru), SRD-Namensnennung in den READMEs. E2E `stage-5e.mjs`
   (zwei Goblins bis zum Sieg, LP nur aus Engine-Schaden). Bewusstlose wachen nach dem Kampf mit 1 LP auf, bis Schritt 3
   Todesrettungswürfe bringt.
+- [x] **Soul Stage 5e – Schritt 2 (Spielbrett, `Roadmap_DND.md`):** Szenen können eine Karte haben (Halle der Gruft,
+  Waldstraße; JSON-Raster mit Legende). Kämpfe laufen dann auf dem Brett: Gruppe und Gegner starten auf ihren Zonen,
+  Bewegung bis zur Bewegungsrate (schwieriges Gelände doppelt, keine Ecken-Schnitte, Gegner blockieren), Angriffe nur
+  in Reichweite und Sicht mit Nachteil auf langer Distanz und beim Schießen im Nahkampf, Gelegenheitsangriffe, Spurt,
+  Rückzug, Zug beenden. Monster planen Feld und Angriff selbst, Gefährten wählen unter erreichbaren Angriffen.
+  Oberfläche: Reiter „Spielbrett“ mit Kacheln und Tokens aus den eigenen Grafiken (abgedunkelte Wände, 5-ft-Raster,
+  grüne Zielfelder, Gegner anklickbar), Kartenauswahl im Szenen-Editor. Grafiken (Dungeon, Wald, Tokens, Porträts,
+  Zustandssymbole) mit Regelprüfung per Vitest. E2E `stage-board.mjs`.
 

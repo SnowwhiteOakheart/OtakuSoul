@@ -64,6 +64,14 @@ export function combatEventText(event: CombatEvent, language: Language): string 
       return translate('fight.event.flee', { name: event.actor_name });
     case 'pass':
       return translate('fight.event.pass', { name: event.actor_name });
+    case 'move':
+      return translate('fight.event.move', { name: event.actor_name, feet: event.feet });
+    case 'opportunity_attack':
+      return translate('fight.event.opportunity', { attacker: event.attacker_name, target: event.target_name });
+    case 'dash':
+      return translate('fight.event.dash', { name: event.actor_name });
+    case 'disengage':
+      return translate('fight.event.disengage', { name: event.actor_name });
     case 'combat_end':
       return translate(event.outcome === 'victory' ? 'fight.event.victory' : 'fight.event.defeat');
     default:

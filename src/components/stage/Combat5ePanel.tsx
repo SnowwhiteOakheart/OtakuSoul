@@ -21,8 +21,8 @@ const tierOf = (c: Combatant) =>
  */
 export const Combat5ePanel: React.FC = () => {
   const { t } = useTranslation();
-  const { stageState, runStageCombat, isProcessingStageTurn, appLanguage } = useStoreFields(
-    'stageState', 'runStageCombat', 'isProcessingStageTurn', 'appLanguage',
+  const { stageState, runStageCombat, isProcessingStageTurn, appLanguage, stageCombatOptions } = useStoreFields(
+    'stageState', 'runStageCombat', 'isProcessingStageTurn', 'appLanguage', 'stageCombatOptions',
   );
   if (!stageState || stageState.definition.rules?.ruleset !== '5e' || !stageState.combat.is_active) return null;
 
@@ -31,6 +31,22 @@ export const Combat5ePanel: React.FC = () => {
   const waiting = combatAwaitsEngine(stageState);
   const enemies = combat.combatants.filter((c) => !isParty(c) && isUp(c));
   const attacks = actor?.stats5e?.attacks ?? [];
+  // On a board only the engine's options count (reach, sight); without one every attack works.
+  const onBoard = !!stageState.map;
+  const options = stageCombatOptions;
+  const optionFor = (id: string) => (onBoard ? options?.actions.find((o) => o.id === id) : { id, disadvantage: false });
+  const actionUsed = onBoard && !!options?.action_used;
+  const board = (action: string, label: string, hint: string) => (
+    <button
+      type="button"
+      disabled={isProcessingStageTurn || (action !== 'end_turn' && actionUsed)}
+      onClick={() => void runStageCombat(action)}
+      title={hint}
+      className="rounded-lg border border-slate-600 bg-slate-800/60 px-2 py-1 font-semibold text-slate-100 hover:bg-slate-700 disabled:opacity-40"
+    >
+      {label}
+    </button>
+  );
   const log = (combat.events ?? [])
     .map((event) => combatEventText(event, appLanguage))
     .filter((line): line is string => !!line)
@@ -40,6 +56,7 @@ export const Combat5ePanel: React.FC = () => {
     <section
       aria-label={t('fight.title')}
       data-testid="combat-5e"
+      data-busy={isProcessingStageTurn}
       className="mx-4 my-2 rounded-2xl border border-rose-500/30 bg-slate-900/90 p-3 space-y-3 text-xs shadow-xl"
     >
       <header className="flex items-center gap-2 text-sm font-bold text-slate-100">
@@ -74,38 +91,59 @@ export const Combat5ePanel: React.FC = () => {
       {actor && !waiting ? (
         <div className="space-y-2">
           <p className="font-semibold text-amber-200">{t('fight.yourTurn', { name: actor.name })}</p>
+          {onBoard && options && (
+            <p className="text-slate-400" data-testid="turn-budget">
+              {t('board.budget', { feet: options.movement_left_ft })}
+              {actionUsed && <> · {t('board.actionUsed')}</>}
+            </p>
+          )}
           {enemies.map((enemy) => (
             <div key={enemy.id} className="flex flex-wrap items-center gap-1.5">
               <span className="min-w-28 text-slate-300">
                 {enemy.name} <span className="text-slate-500">({tierLabel(tierOf(enemy))})</span>
               </span>
-              {attacks.map((attack) => (
-                <button
-                  key={attack.id}
-                  type="button"
-                  disabled={isProcessingStageTurn}
-                  onClick={() => void runStageCombat(`attack:${attack.id}:${enemy.id}`)}
-                  title={t('fight.attackHint', { toHit: attack.to_hit >= 0 ? `+${attack.to_hit}` : attack.to_hit, damage: attack.damage })}
-                  aria-label={t('fight.attackOn', { attack: localizedName(attack.name, appLanguage), target: enemy.name })}
-                  className="rounded-lg border border-rose-500/40 bg-rose-950/50 px-2 py-1 font-semibold text-rose-100 hover:bg-rose-900 disabled:opacity-40"
-                >
-                  {localizedName(attack.name, appLanguage)}
-                  <span className="ml-1 font-normal text-rose-300/80">
-                    {attack.to_hit >= 0 ? `+${attack.to_hit}` : attack.to_hit} · {attack.damage}
-                  </span>
-                </button>
-              ))}
+              {attacks.map((attack) => {
+                const option = optionFor(`attack:${attack.id}:${enemy.id}`);
+                return (
+                  <button
+                    key={attack.id}
+                    type="button"
+                    disabled={isProcessingStageTurn || !option}
+                    onClick={() => void runStageCombat(`attack:${attack.id}:${enemy.id}`)}
+                    title={option
+                      ? t('fight.attackHint', { toHit: attack.to_hit >= 0 ? `+${attack.to_hit}` : attack.to_hit, damage: attack.damage })
+                      : t(actionUsed ? 'board.actionUsed' : 'board.outOfReach')}
+                    aria-label={t('fight.attackOn', { attack: localizedName(attack.name, appLanguage), target: enemy.name })}
+                    className="rounded-lg border border-rose-500/40 bg-rose-950/50 px-2 py-1 font-semibold text-rose-100 hover:bg-rose-900 disabled:opacity-40"
+                  >
+                    {localizedName(attack.name, appLanguage)}
+                    <span className="ml-1 font-normal text-rose-300/80">
+                      {attack.to_hit >= 0 ? `+${attack.to_hit}` : attack.to_hit} · {attack.damage}
+                    </span>
+                    {option?.disadvantage && <span className="ml-1 text-amber-300">({t('fight.disadvantage')})</span>}
+                  </button>
+                );
+              })}
             </div>
           ))}
-          <button
-            type="button"
-            disabled={isProcessingStageTurn}
-            onClick={() => void runStageCombat('dodge')}
-            title={t('fight.dodgeHint')}
-            className="flex items-center gap-1 rounded-lg border border-cyan-500/40 bg-cyan-950/50 px-2 py-1 font-semibold text-cyan-100 hover:bg-cyan-900 disabled:opacity-40"
-          >
-            <Shield className="w-3.5 h-3.5" /> {t('fight.dodge')}
-          </button>
+          <div className="flex flex-wrap gap-1.5">
+            <button
+              type="button"
+              disabled={isProcessingStageTurn || actionUsed}
+              onClick={() => void runStageCombat('dodge')}
+              title={t('fight.dodgeHint')}
+              className="flex items-center gap-1 rounded-lg border border-cyan-500/40 bg-cyan-950/50 px-2 py-1 font-semibold text-cyan-100 hover:bg-cyan-900 disabled:opacity-40"
+            >
+              <Shield className="w-3.5 h-3.5" /> {t('fight.dodge')}
+            </button>
+            {onBoard && (
+              <>
+                {board('dash', t('board.dash'), t('board.dashHint'))}
+                {board('disengage', t('board.disengage'), t('board.disengageHint'))}
+                {board('end_turn', t('board.endTurn'), t('board.endTurnHint'))}
+              </>
+            )}
+          </div>
         </div>
       ) : (
         <div className="flex items-center gap-2 text-slate-300">

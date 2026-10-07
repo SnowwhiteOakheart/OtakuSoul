@@ -44,6 +44,8 @@ import {
   CompanionPlugin,
   AppPaths,
   ScannedModel,
+  BattleMap,
+  CombatOptions,
   ScannedVrm,
   AvatarMotion,
   AppSettings,
@@ -492,6 +494,15 @@ export const api = {
   /** 5e fight: the player's action id, or none to let the engine play the other turns. */
   runStageCombat: async (sceneId: string, action?: string): Promise<SceneState> => {
     return await invoke<SceneState>('run_stage_combat', { sceneId, action: action ?? null });
+  },
+
+  /** 5e fight: squares the current combatant can move to and the actions it has. */
+  getStageCombatOptions: async (): Promise<CombatOptions> => {
+    return await invoke<CombatOptions>('get_stage_combat_options');
+  },
+
+  listBattleMaps: async (): Promise<BattleMap[]> => {
+    return await invoke<BattleMap[]>('list_battle_maps');
   },
 
   runStageTurn: async (request: StageTurnRequest): Promise<SceneState> => {

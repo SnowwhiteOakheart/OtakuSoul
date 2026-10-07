@@ -5,6 +5,7 @@ import { speakStageMessages, stopStageVoice } from '../../services/stageVoice';
 import type {
   CampaignClock,
   CombatCondition,
+  CombatOptions,
   DiceRollResult,
   SceneDefinition,
   ScenePreview,
@@ -101,6 +102,9 @@ export interface StageSlice {
   runStageTurn: (userInput: string, turnMode?: string, whisperTarget?: string, forceActor?: string) => Promise<void>;
   /** 5e fight: the player's action (`attack:<attack>:<target>` or `dodge`), or none to continue. */
   runStageCombat: (action?: string) => Promise<void>;
+  /** What the current combatant may do on the board (squares, attacks in reach). */
+  stageCombatOptions: CombatOptions | null;
+  refreshStageCombatOptions: () => Promise<void>;
   undoStageTurn: () => Promise<void>;
   restStageParty: (restType: 'short' | 'long') => Promise<void>;
   consumeStageInventoryItem: (itemId: string) => Promise<void>;
@@ -366,6 +370,7 @@ export const createStageSlice: SliceCreator<StageSlice> = (set, get) => ({
     try {
       const sceneState = await api.loadStageScene(sceneId);
       set({ stageState: sceneState });
+      void get().refreshStageCombatOptions();
       await get().fetchStageScenes();
     } catch (e) {
       console.error('Failed to load stage scene:', e);
@@ -377,6 +382,7 @@ export const createStageSlice: SliceCreator<StageSlice> = (set, get) => ({
     try {
       await api.saveStageScene(sceneState);
       set({ stageState: sceneState });
+      void get().refreshStageCombatOptions();
     } catch (e) {
       console.error('Failed to save stage scene:', e);
       throw e;
@@ -462,6 +468,7 @@ export const createStageSlice: SliceCreator<StageSlice> = (set, get) => ({
       }
       // A 5e fight just started and others act first: the engine plays their turns.
       if (combatAwaitsEngine(updated)) await get().runStageCombat();
+      else void get().refreshStageCombatOptions();
     } catch (e) {
       console.error('Failed to run stage turn:', e);
       set({ isProcessingStageTurn: false, stageLive: [], stageState: current });
@@ -469,13 +476,30 @@ export const createStageSlice: SliceCreator<StageSlice> = (set, get) => ({
     }
   },
 
+  stageCombatOptions: null,
+
+  refreshStageCombatOptions: async () => {
+    const state = get().stageState;
+    if (!state || state.definition.rules?.ruleset !== '5e' || !state.combat.is_active || combatAwaitsEngine(state)) {
+      set({ stageCombatOptions: null });
+      return;
+    }
+    try {
+      set({ stageCombatOptions: await api.getStageCombatOptions() });
+    } catch (e) {
+      console.error('Failed to load combat options:', e);
+      set({ stageCombatOptions: null });
+    }
+  },
+
   runStageCombat: async (action?: string) => {
     const current = get().stageState;
     if (!current) return;
-    set({ isProcessingStageTurn: true, stageLive: [] });
+    set({ isProcessingStageTurn: true, stageLive: [], stageCombatOptions: null });
     try {
       const updated = await api.runStageCombat(current.definition.id, action);
       set({ stageState: updated, isProcessingStageTurn: false, stageLive: [] });
+      void get().refreshStageCombatOptions();
       if (get().stageReadAloud) {
         void speakStageMessages(updated.chat_log.slice(current.chat_log.length), get().availableCharacters);
       }
@@ -491,6 +515,7 @@ export const createStageSlice: SliceCreator<StageSlice> = (set, get) => ({
     try {
       const rolledBack = await api.undoStageTurn(current.definition.id);
       set({ stageState: rolledBack });
+      void get().refreshStageCombatOptions();
     } catch (e) {
       reportFailure('Failed to undo stage turn:', e);
     }

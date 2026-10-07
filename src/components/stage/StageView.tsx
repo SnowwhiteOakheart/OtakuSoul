@@ -4,6 +4,7 @@ import { ClockWidget } from './ClockWidget';
 import { DiceRoller } from './DiceRoller';
 import { EncounterTracker } from './EncounterTracker';
 import { Combat5ePanel } from './Combat5ePanel';
+import { StageBoardView } from './StageBoardView';
 import { PartyHeader } from './PartyHeader';
 import { StageChatLog } from './StageChatLog';
 import { TurnControlBar } from './TurnControlBar';
@@ -35,6 +36,7 @@ import {
   ImagePlus,
   AudioLines,
   Mic,
+  Map as MapIcon,
 } from 'lucide-react';
 import { api } from '../../services/api';
 import { SceneState } from '../../types';
@@ -65,7 +67,17 @@ export const StageView: React.FC = () => {
     'generateSceneImage', 'isGeneratingSceneImage', 'stageReadAloud', 'setStageReadAloud',
   );
 
-  const [activeTab, setActiveTab] = useState<'adventure' | 'tactics' | 'campaign'>('adventure');
+  const [activeTab, setActiveTab] = useState<'adventure' | 'board' | 'tactics' | 'campaign'>('adventure');
+  // The board tab exists in 5e scenes with a map; a fight on a map opens it.
+  const hasBoard = stageState?.definition.rules?.ruleset === '5e' && !!stageState.map;
+  const boardFightKey = hasBoard && stageState?.combat.is_active ? `${stageState.definition.id}:${stageState.map?.id}` : '';
+  const [shownBoardFight, setShownBoardFight] = useState('');
+  if (boardFightKey && boardFightKey !== shownBoardFight) {
+    setShownBoardFight(boardFightKey);
+    setActiveTab('board');
+  } else if (!boardFightKey && shownBoardFight) {
+    setShownBoardFight('');
+  }
   const [showLobbyModal, setShowLobbyModal] = useState(false);
 
   const [isEditingWorld, setIsEditingWorld] = useState(false);
@@ -281,6 +293,22 @@ export const StageView: React.FC = () => {
             <span>{t('stage.tabAdventure')}</span>
           </button>
 
+          {hasBoard && (
+            <button
+              role="tab"
+              aria-selected={activeTab === 'board'}
+              onClick={() => setActiveTab('board')}
+              className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg font-bold transition whitespace-nowrap outline-hidden focus-visible:ring-2 focus-visible:ring-accent-400 ${
+                activeTab === 'board'
+                  ? 'bg-accent-600 text-white shadow-md'
+                  : 'text-slate-400 hover:text-slate-200'
+              }`}
+            >
+              <MapIcon className="w-3.5 h-3.5" />
+              <span>{t('board.tab')}</span>
+            </button>
+          )}
+
           <button
             role="tab"
             aria-selected={activeTab === 'tactics'}
@@ -443,6 +471,8 @@ export const StageView: React.FC = () => {
           {/* Turn Control Bar (Mode switcher, choice pills, inputs) */}
           <TurnControlBar />
         </div>
+      ) : activeTab === 'board' && hasBoard ? (
+        <StageBoardView />
       ) : activeTab === 'tactics' ? (
         /* Tactical Overview: Clocks, Dice & Encounters */
         <div className="flex-1 overflow-y-auto p-4 lg:p-6 space-y-6">
