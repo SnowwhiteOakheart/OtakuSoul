@@ -2289,6 +2289,8 @@ export const en: TranslationDictionary = {
   "backend.stage.noCombat": "No fight under the 5e rules is running in this scene.",
   "backend.stage.notYourTurn": "It is not your turn.",
   "backend.stage.invalidAction": "This action is not allowed right now.",
+  "backend.stage.inCombat": "Not possible during a fight – finish the fight first.",
+  "backend.stage.noMap": "This scene has no map to explore.",
   "backend.stage.sceneRead": "Failed to read the scene: {{error}}",
   "backend.stage.sceneMissing": "Scene '{{id}}' not found.",
   "backend.stage.sceneSerialize": "Failed to save the scene data: {{error}}",

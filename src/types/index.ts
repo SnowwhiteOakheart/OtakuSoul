@@ -94,6 +94,7 @@ import type { CombatEvent } from './generated/CombatEvent';
 import type { GridPos } from './generated/GridPos';
 import type { TurnBudget } from './generated/TurnBudget';
 import type { BattleMap } from './generated/BattleMap';
+import type { ExploreEvent } from './generated/ExploreEvent';
 import type { CombatOptions } from './generated/CombatOptions';
 import type { SpellOption } from './generated/SpellOption';
 import type { SpellData } from './generated/SpellData';
@@ -104,6 +105,7 @@ export type {
   GridPos,
   TurnBudget,
   BattleMap,
+  ExploreEvent,
   CombatOptions,
   SpellOption,
   SpellData,
@@ -653,8 +655,10 @@ export interface SceneState {
   private_knowledge?: Record<string, string[]>;
   npcs?: import('./generated/StageNpc').StageNpc[];
   history_summaries?: Record<string, import('./generated/StageHistorySummary').StageHistorySummary>;
-  /** Battle map of the current or last fight (5e scenes). */
+  /** Battle map of the current or last fight (5e scenes); while exploring with fog of war. */
   map?: BattleMap | null;
+  /** What happened while exploring the map (5e scenes). */
+  exploration?: ExploreEvent[];
 }
 
 export type StageState = SceneState;

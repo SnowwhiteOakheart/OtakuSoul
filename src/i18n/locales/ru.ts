@@ -2289,6 +2289,8 @@ export const ru: TranslationDictionary = {
   "backend.stage.noCombat": "В этой сцене сейчас нет боя по правилам 5e.",
   "backend.stage.notYourTurn": "Сейчас не ваш ход.",
   "backend.stage.invalidAction": "Это действие сейчас недоступно.",
+  "backend.stage.inCombat": "Во время боя это невозможно – сначала завершите бой.",
+  "backend.stage.noMap": "В этой сцене нет карты для исследования.",
   "backend.stage.sceneRead": "Не удалось прочитать сцену: {{error}}",
   "backend.stage.sceneMissing": "Сцена '{{id}}' не найдена.",
   "backend.stage.sceneSerialize": "Не удалось сериализовать сцену: {{error}}",

@@ -9,15 +9,15 @@
  "rows": [
   "################",
   "#pp..:..#w....B#",
-  "#pp.....d......#",
+  "#pp.....D......#",
   "#...O...#..O...#",
   "#.......#......#",
-  "####d####..ss..#",
+  "####D####..ss..#",
   "#b......#......#",
   "#...~~..d..S...#",
   "#..~~~..#......#",
-  "#.......#.ss.O.#",
-  "#c.....B#....a.#",
+  "#....kk.#.ss.O.#",
+  "#c.....B#....aX#",
   "################"
  ],
  "legend": {
@@ -92,6 +92,122 @@
    "ground": "floor_stone",
    "kind": "floor",
    "object": "cobweb"
+  },
+  "k": {
+   "ground": "floor_stone",
+   "kind": "floor",
+   "zone": "spawn_ossuary"
+  },
+  "X": {
+   "ground": "floor_stone",
+   "kind": "floor",
+   "object": "stairs_up",
+   "zone": "exit_surface"
   }
- }
+ },
+ "rooms": [
+  {
+   "id": "antechamber",
+   "name": {
+    "de": "Vorkammer",
+    "en": "Antechamber",
+    "ru": "Прихожая"
+   },
+   "area": [
+    1,
+    1,
+    7,
+    4
+   ],
+   "description": "A low, dusty antechamber with a cracked pillar and rubble from a collapsed ceiling. Two heavy doors lead on: one east, one south."
+  },
+  {
+   "id": "ossuary",
+   "name": {
+    "de": "Beinhaus",
+    "en": "Ossuary",
+    "ru": "Оссуарий"
+   },
+   "area": [
+    1,
+    6,
+    7,
+    10
+   ],
+   "description": "Bones are stacked in niches along the walls; a shallow pool of black water fills the middle. An old iron-bound chest stands in the corner."
+  },
+  {
+   "id": "hall",
+   "name": {
+    "de": "Grabhalle",
+    "en": "Burial hall",
+    "ru": "Погребальный зал"
+   },
+   "area": [
+    9,
+    1,
+    14,
+    10
+   ],
+   "description": "A long hall with a stone sarcophagus, two pillars, braziers that still glow and a dark altar. Stairs in the far corner lead up to the surface."
+  }
+ ],
+ "encounters": [
+  {
+   "id": "hall_goblins",
+   "room": "hall",
+   "monsters": [
+    {
+     "monster": "goblin",
+     "count": 2
+    }
+   ],
+   "zone": "spawn"
+  },
+  {
+   "id": "ossuary_dead",
+   "room": "ossuary",
+   "monsters": [
+    {
+     "monster": "skeleton",
+     "count": 2
+    }
+   ],
+   "zone": "spawn_ossuary"
+  }
+ ],
+ "exits": [
+  {
+   "zone": "exit_surface",
+   "to": "forest_road"
+  }
+ ],
+ "traps": [
+  {
+   "at": {
+    "x": 2,
+    "y": 9
+   },
+   "spot_dc": 13,
+   "save_dc": 12,
+   "damage": "2d6",
+   "damage_type": "piercing"
+  }
+ ],
+ "locks": [
+  {
+   "at": {
+    "x": 4,
+    "y": 5
+   },
+   "dc": 12
+  },
+  {
+   "at": {
+    "x": 1,
+    "y": 10
+   },
+   "dc": 13
+  }
+ ]
 }

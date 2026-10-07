@@ -435,6 +435,7 @@ fn small_map(rows: &[&str]) -> BattleMap {
         .into_iter()
         .map(|(k, v)| (k.to_string(), v))
         .collect(),
+        ..MapFile::default()
     }
     .build()
     .unwrap()
@@ -451,6 +452,39 @@ fn bundled_maps_build_and_have_spawn_zones() {
         );
         assert_eq!(map.cells.len() as i32, map.width * map.height);
         assert!(!map.name.de.is_empty() && !map.name.ru.is_empty());
+        // Exploration data points at things that exist; rooms do not overlap.
+        assert!(!map.rooms.is_empty(), "{}", map.id);
+        for room in &map.rooms {
+            assert!(
+                !room.name.de.is_empty()
+                    && !room.name.ru.is_empty()
+                    && !room.description.is_empty()
+            );
+            for other in map.rooms.iter().filter(|o| o.id != room.id) {
+                let [x0, y0, x1, y1] = other.area;
+                assert!(
+                    ![(x0, y0), (x1, y1)]
+                        .iter()
+                        .any(|&(x, y)| room.contains(GridPos::new(x, y)))
+                );
+            }
+        }
+        for encounter in &map.encounters {
+            assert!(
+                encounter
+                    .monsters
+                    .iter()
+                    .all(|m| monster(&m.monster).is_some()),
+                "{}",
+                encounter.id
+            );
+        }
+        for exit in &map.exits {
+            assert!(battle_map(&exit.to).is_some(), "{}", exit.to);
+        }
+        for trap in &map.traps {
+            assert!(map.walkable(trap.at) && DiceFormula::parse(&trap.damage).is_some());
+        }
     }
     assert_eq!(battle_map("crypt_hall").unwrap().tileset, "dungeon");
 }
@@ -472,6 +506,7 @@ fn map_files_are_checked() {
             },
         )]
         .into(),
+        ..MapFile::default()
     };
     assert!(file(&["..", "."]).build().is_err()); // not a rectangle
     assert!(

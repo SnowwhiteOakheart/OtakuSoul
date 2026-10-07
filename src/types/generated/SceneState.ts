@@ -6,6 +6,7 @@ import type { CampaignObjective } from "./CampaignObjective";
 import type { CharacterOverlay } from "./CharacterOverlay";
 import type { ConsequenceEntry } from "./ConsequenceEntry";
 import type { EncounterState } from "./EncounterState";
+import type { ExploreEvent } from "./ExploreEvent";
 import type { InventoryItem } from "./InventoryItem";
 import type { SceneDefinition } from "./SceneDefinition";
 import type { SceneTurnMessage } from "./SceneTurnMessage";
@@ -51,6 +52,10 @@ private_knowledge: { [key in string]: Array<string> },
  */
 history_summaries: { [key in string]: StageHistorySummary }, npcs: Array<StageNpc>, 
 /**
- * Battle map of the current or last fight (5e scenes).
+ * Battle map of the current or last fight (5e scenes); while exploring with fog of war.
  */
-map: BattleMap | null, };
+map: BattleMap | null, 
+/**
+ * What happened while exploring the map (5e scenes).
+ */
+exploration: Array<ExploreEvent>, };

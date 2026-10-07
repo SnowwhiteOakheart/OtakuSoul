@@ -497,6 +497,11 @@ export const api = {
     return await invoke<SceneState>('run_stage_combat', { sceneId, action: action ?? null });
   },
 
+  /** 5e map outside fights: one exploration step (`move:x:y`, `use:x:y`, `pick:x:y`, `force:x:y`) or, without one, start exploring. */
+  runStageExploration: async (sceneId: string, action?: string): Promise<SceneState> => {
+    return await invoke<SceneState>('run_stage_exploration', { sceneId, action: action ?? null });
+  },
+
   /** 5e fight: squares the current combatant can move to and the actions it has. */
   getStageCombatOptions: async (): Promise<CombatOptions> => {
     return await invoke<CombatOptions>('get_stage_combat_options');

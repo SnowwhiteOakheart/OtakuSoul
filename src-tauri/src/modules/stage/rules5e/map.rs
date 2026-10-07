@@ -59,9 +59,9 @@ pub struct MapCell {
     pub zone: Option<String>,
 }
 
-/// Objects that block movement (and those that also block sight).
+/// Objects that block movement (and those that also block sight). A closed door is opened in
+/// passing (free object interaction); locked ones stay shut.
 const BLOCKING_OBJECTS: &[&str] = &[
-    "door_closed",
     "door_locked",
     "pillar",
     "chest_closed",
@@ -126,16 +126,133 @@ pub struct BattleMap {
     pub height: i32,
     /// Row by row, `width × height` cells.
     pub cells: Vec<MapCell>,
+    /// Rooms with a description for the game master (exploration).
+    #[serde(default)]
+    pub rooms: Vec<MapRoom>,
+    /// Prepared encounters: entering their room starts the fight.
+    #[serde(default)]
+    pub encounters: Vec<MapEncounter>,
+    /// Squares of a zone that lead to another map.
+    #[serde(default)]
+    pub exits: Vec<MapExit>,
+    /// Hidden traps; found ones get the `trap_plate` object.
+    #[serde(default)]
+    pub traps: Vec<MapTrap>,
+    /// Locked doors and chests.
+    #[serde(default)]
+    pub locks: Vec<MapLock>,
+    /// How far the party sees (light); default by tile set.
+    #[serde(default)]
+    #[ts(optional)]
+    pub light_ft: Option<u32>,
+    /// Fog of war: squares the party has seen. Empty = everything visible (fights without
+    /// exploration).
+    #[serde(default)]
+    pub revealed: Vec<bool>,
+    /// Encounters that already happened.
+    #[serde(default)]
+    pub triggered: Vec<String>,
+}
+
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize, TS)]
+#[ts(export)]
+pub struct MapRoom {
+    pub id: String,
+    pub name: LocalizedName,
+    /// Inclusive rectangle `[x0, y0, x1, y1]`.
+    pub area: [i32; 4],
+    /// For the game master (English); the narrator retells it.
+    pub description: String,
+}
+
+impl MapRoom {
+    pub fn contains(&self, pos: GridPos) -> bool {
+        let [x0, y0, x1, y1] = self.area;
+        (x0..=x1).contains(&pos.x) && (y0..=y1).contains(&pos.y)
+    }
+}
+
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize, TS)]
+#[ts(export)]
+pub struct EncounterMonster {
+    pub monster: String,
+    #[serde(default = "one")]
+    pub count: u32,
+}
+
+fn one() -> u32 {
+    1
+}
+
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize, TS)]
+#[ts(export)]
+pub struct MapEncounter {
+    pub id: String,
+    pub room: String,
+    pub monsters: Vec<EncounterMonster>,
+    /// Placement zone of the monsters.
+    #[serde(default = "spawn_zone")]
+    pub zone: String,
+}
+
+fn spawn_zone() -> String {
+    "spawn".to_string()
+}
+
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize, TS)]
+#[ts(export)]
+pub struct MapExit {
+    pub zone: String,
+    /// Map id it leads to.
+    pub to: String,
+}
+
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize, TS)]
+#[ts(export)]
+pub struct MapTrap {
+    pub at: GridPos,
+    /// Passive Perception needed to notice it.
+    pub spot_dc: i32,
+    /// Dexterity save against it.
+    pub save_dc: i32,
+    pub damage: String,
+    pub damage_type: String,
+    #[serde(default)]
+    pub spotted: bool,
+    #[serde(default)]
+    pub sprung: bool,
+}
+
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize, TS)]
+#[ts(export)]
+pub struct MapLock {
+    pub at: GridPos,
+    pub dc: i32,
+    /// Someone tried it: the party knows it is locked.
+    #[serde(default)]
+    pub known: bool,
 }
 
 /// A map as written by hand: rows of characters and what each character means.
-#[derive(Debug, Deserialize)]
+#[derive(Debug, Default, Deserialize)]
 pub struct MapFile {
     pub id: String,
     pub name: LocalizedName,
     pub tileset: String,
     pub rows: Vec<String>,
     pub legend: HashMap<String, MapCell>,
+    #[serde(default)]
+    pub rooms: Vec<MapRoom>,
+    #[serde(default)]
+    pub encounters: Vec<MapEncounter>,
+    #[serde(default)]
+    pub exits: Vec<MapExit>,
+    #[serde(default)]
+    pub traps: Vec<MapTrap>,
+    #[serde(default)]
+    pub locks: Vec<MapLock>,
+    #[serde(default)]
+    pub light_ft: Option<u32>,
 }
 
 impl MapFile {
@@ -161,9 +278,49 @@ impl MapFile {
             width: width as i32,
             height: self.rows.len() as i32,
             cells,
+            rooms: self.rooms,
+            encounters: self.encounters,
+            exits: self.exits,
+            traps: self.traps,
+            locks: self.locks,
+            light_ft: self.light_ft,
+            revealed: Vec::new(),
+            triggered: Vec::new(),
         };
         if map.zone_cells("party").is_empty() {
             return Err(format!("map {}: no party start zone", map.id));
+        }
+        for encounter in &map.encounters {
+            if !map.rooms.iter().any(|r| r.id == encounter.room) {
+                return Err(format!(
+                    "map {}: encounter {} in unknown room",
+                    map.id, encounter.id
+                ));
+            }
+            if map.zone_cells(&encounter.zone).is_empty() {
+                return Err(format!(
+                    "map {}: encounter {} without zone",
+                    map.id, encounter.id
+                ));
+            }
+        }
+        for exit in &map.exits {
+            if map.zone_cells(&exit.zone).is_empty() {
+                return Err(format!(
+                    "map {}: exit zone {} has no squares",
+                    map.id, exit.zone
+                ));
+            }
+        }
+        for at in map
+            .traps
+            .iter()
+            .map(|t| t.at)
+            .chain(map.locks.iter().map(|l| l.at))
+        {
+            if !map.contains(at) {
+                return Err(format!("map {}: trap or lock outside the map", map.id));
+            }
         }
         Ok(map)
     }
@@ -189,6 +346,21 @@ impl BattleMap {
 
     pub fn walkable(&self, pos: GridPos) -> bool {
         self.cell(pos).is_some_and(|c| !c.blocks_movement())
+            && !self.locks.iter().any(|lock| lock.at == pos)
+    }
+
+    /// Opens closed doors on the squares walked; returns the doors opened.
+    pub fn open_doors_on(&mut self, path: &[GridPos]) -> Vec<GridPos> {
+        let mut opened = Vec::new();
+        for &pos in path {
+            if let Some(cell) = self.cell_mut(pos)
+                && cell.object.as_deref() == Some("door_closed")
+            {
+                cell.object = Some("door_open".to_string());
+                opened.push(pos);
+            }
+        }
+        opened
     }
 
     /// Squares of a placement zone, in reading order.
@@ -327,7 +499,7 @@ pub fn reachable(map: &BattleMap, start: GridPos, budget_ft: u32, occupancy: &Oc
         for (dx, dy) in NEIGHBOURS {
             let next = GridPos::new(pos.x + dx, pos.y + dy);
             let Some(cell) = map.cell(next) else { continue };
-            if cell.blocks_movement() || occupancy.enemies.contains(&next) {
+            if !map.walkable(next) || occupancy.enemies.contains(&next) {
                 continue;
             }
             if dx != 0

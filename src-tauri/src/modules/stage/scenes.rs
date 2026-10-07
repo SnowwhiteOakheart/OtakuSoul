@@ -118,6 +118,7 @@ pub fn build_initial_scene_state(def: &SceneDefinition) -> SceneState {
         memory_sync: HashMap::new(),
         private_knowledge: HashMap::new(),
         map: None,
+        exploration: Vec::new(),
         history_summaries: HashMap::new(),
         npcs: Vec::new(),
     };

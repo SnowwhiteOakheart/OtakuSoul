@@ -10,12 +10,12 @@
   ",,T,,,b,,,,P,,,T,,",
   ",P,,,,,,,s,,,,b,,P",
   ",,,b,,R,,,s,,,,,,,",
-  "===============pp=",
-  "=====Ww=======pp==",
+  "E==============pp=",
+  "E====Ww=======pp==",
   "==================",
   ",,L,,,,,,,,b,,,,T,",
-  ",T,,,s,,,,,,,,,R,,",
-  ",,,,,s,,~~~~,,,,,,",
+  ",T,,,z,,,,,,,,,R,,",
+  ",,,,,z,,~~~~,,,,,,",
   "~~~~~~~~~,,,,P,,,,"
  ],
  "legend": {
@@ -85,6 +85,93 @@
    "ground": "grass",
    "kind": "floor",
    "object": "campfire"
+  },
+  "z": {
+   "ground": "grass",
+   "kind": "floor",
+   "zone": "spawn_south"
+  },
+  "E": {
+   "ground": "dirt_road",
+   "kind": "floor",
+   "zone": "exit_crypt"
   }
- }
+ },
+ "rooms": [
+  {
+   "id": "north_wood",
+   "name": {
+    "de": "Nördlicher Waldrand",
+    "en": "Northern woods",
+    "ru": "Северная опушка"
+   },
+   "area": [
+    0,
+    0,
+    17,
+    2
+   ],
+   "description": "Old oaks and pines crowd the road; bushes offer plenty of cover. Fresh tracks of boots lead between the trees."
+  },
+  {
+   "id": "road",
+   "name": {
+    "de": "Waldstraße",
+    "en": "Forest road",
+    "ru": "Лесная дорога"
+   },
+   "area": [
+    0,
+    3,
+    17,
+    5
+   ],
+   "description": "A rutted dirt road through the forest. A broken-down wagon blocks half of it. To the west the road leads back towards the crypt."
+  },
+  {
+   "id": "south_wood",
+   "name": {
+    "de": "Südlicher Wald und Bach",
+    "en": "Southern woods and stream",
+    "ru": "Южный лес и ручей"
+   },
+   "area": [
+    0,
+    6,
+    17,
+    9
+   ],
+   "description": "Dense undergrowth slopes down to a cold stream. Something howls in the distance."
+  }
+ ],
+ "encounters": [
+  {
+   "id": "road_bandits",
+   "room": "north_wood",
+   "monsters": [
+    {
+     "monster": "bandit",
+     "count": 2
+    }
+   ],
+   "zone": "spawn"
+  },
+  {
+   "id": "stream_wolves",
+   "room": "south_wood",
+   "monsters": [
+    {
+     "monster": "wolf",
+     "count": 2
+    }
+   ],
+   "zone": "spawn_south"
+  }
+ ],
+ "exits": [
+  {
+   "zone": "exit_crypt",
+   "to": "crypt_hall"
+  }
+ ]
 }

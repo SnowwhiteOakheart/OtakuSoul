@@ -2,4 +2,12 @@
 import type { PlanCombatDelta } from "./PlanCombatDelta";
 import type { PlanCombatant } from "./PlanCombatant";
 
-export type PlanEncounterUpdate = { action: string, enemies: Array<PlanCombatant>, hp_updates: Array<PlanCombatDelta>, };
+export type PlanEncounterUpdate = { action: string, enemies: Array<PlanCombatant>, 
+/**
+ * 5e map: a prepared encounter of the map by id (instead of `enemies`).
+ */
+encounter?: string, 
+/**
+ * 5e map: placement zone of the enemies (from the listed zones).
+ */
+zone?: string, hp_updates: Array<PlanCombatDelta>, };

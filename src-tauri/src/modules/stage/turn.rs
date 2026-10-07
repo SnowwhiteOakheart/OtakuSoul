@@ -315,7 +315,7 @@ RULES:
             .unwrap_or_default(),
         reply_language = reply_language,
         encounter_rule = if state.definition.is_5e() {
-            super::combat5e::planner_encounter_rule()
+            super::combat5e::planner_encounter_rule(&state)
         } else {
             r#"- encounter: only when combat changes: {"action":"start|update|end", "enemies":[{"name":"Enemy", "hp":12, "role":"enemy"}], "hp_updates":[{"target":"Name", "hp_delta":-4}]}."#.to_string()
         },
@@ -685,6 +685,18 @@ RULES:
         }
     }
 
+    // 5e scenes with a map are explored on it; the planner chooses only from its lists.
+    let map_started = if state.definition.is_5e() && super::explore5e::ensure_exploring(&mut state)
+    {
+        super::explore5e::apply_planner_map(
+            &mut state,
+            gm_plan.encounter.as_ref(),
+            gm_plan.map_change.as_deref(),
+            &lang_code,
+        )
+    } else {
+        None
+    };
     if let Some(encounter) = gm_plan
         .encounter
         .as_ref()
@@ -692,8 +704,11 @@ RULES:
     {
         // 5e: the engine sets up the fight; hit points from the plan are ignored.
         match encounter.action.as_str() {
-            "start" if !state.combat.is_active => {
-                if super::combat5e::start_encounter(&mut state, &encounter.enemies, &lang_code) {
+            "start" if map_started.is_some() || !state.combat.is_active => {
+                let started = map_started.unwrap_or_else(|| {
+                    super::combat5e::start_encounter(&mut state, &encounter.enemies, &lang_code)
+                });
+                if started {
                     secondary_event_cards.push((
                         lang.t("An encounter begins.").to_string(),
                         StageEventCard::Combat {

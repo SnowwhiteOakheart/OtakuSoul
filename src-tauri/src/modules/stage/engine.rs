@@ -216,6 +216,7 @@ extensions: serde_json::Value::Null,
             memory_sync: HashMap::new(),
             private_knowledge: HashMap::new(),
             map: None,
+            exploration: Vec::new(),
             history_summaries: HashMap::new(),
             npcs: Vec::new(),
         };

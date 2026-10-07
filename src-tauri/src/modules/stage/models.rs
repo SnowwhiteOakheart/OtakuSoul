@@ -588,9 +588,12 @@ pub struct SceneState {
     pub history_summaries: HashMap<String, StageHistorySummary>,
     #[serde(default)]
     pub npcs: Vec<StageNpc>,
-    /// Battle map of the current or last fight (5e scenes).
+    /// Battle map of the current or last fight (5e scenes); while exploring with fog of war.
     #[serde(default)]
     pub map: Option<super::rules5e::BattleMap>,
+    /// What happened while exploring the map (5e scenes).
+    #[serde(default)]
+    pub exploration: Vec<super::rules5e::ExploreEvent>,
 }
 
 #[derive(Debug, Clone, Default, Serialize, Deserialize, TS)]

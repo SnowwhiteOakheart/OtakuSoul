@@ -12,7 +12,11 @@ import type { PlanResourceDelta } from "./PlanResourceDelta";
 import type { StageNpcDraft } from "./StageNpcDraft";
 import type { TaggedChoice } from "./TaggedChoice";
 
-export type GmPlan = { narration_plan: string, location: string | null, time_of_day: string | null, weather: string | null, bg_image: string | null, ambient_audio: string | null, next_actor: string | null, dice_check: PlanDiceCheck | null, campaign_clock_updates: Array<PlanClockUpdate>, resource_delta: PlanResourceDelta | null, condition_updates: Array<PlanConditionUpdate>, story_arc_updates: Array<PlanArcUpdate>, objective_updates: Array<PlanObjectiveUpdate>, inventory_add: Array<PlanInventoryAdd>, inventory_remove: Array<string>, encounter: PlanEncounterUpdate | null, player_choices: Array<TaggedChoice>, lasting_consequence: string | null, 
+export type GmPlan = { narration_plan: string, location: string | null, time_of_day: string | null, weather: string | null, bg_image: string | null, ambient_audio: string | null, next_actor: string | null, dice_check: PlanDiceCheck | null, campaign_clock_updates: Array<PlanClockUpdate>, resource_delta: PlanResourceDelta | null, condition_updates: Array<PlanConditionUpdate>, story_arc_updates: Array<PlanArcUpdate>, objective_updates: Array<PlanObjectiveUpdate>, inventory_add: Array<PlanInventoryAdd>, inventory_remove: Array<string>, encounter: PlanEncounterUpdate | null, 
+/**
+ * 5e scenes: the party travels to another listed map (outside fights).
+ */
+map_change?: string, player_choices: Array<TaggedChoice>, lasting_consequence: string | null, 
 /**
  * Established facts to set (`"key": "value"`) or drop (`"key": null`).
  */

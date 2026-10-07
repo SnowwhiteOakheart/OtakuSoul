@@ -2291,6 +2291,8 @@ export const de = {
   "backend.stage.noCombat": "In dieser Szene läuft gerade kein Kampf nach 5e-Regeln.",
   "backend.stage.notYourTurn": "Gerade ist nicht Dein Zug.",
   "backend.stage.invalidAction": "Diese Aktion ist jetzt nicht erlaubt.",
+  "backend.stage.inCombat": "Während eines Kampfes geht das nicht – erst den Kampf beenden.",
+  "backend.stage.noMap": "Diese Szene hat keine Karte zum Erkunden.",
   "backend.stage.sceneRead": "Fehler beim Lesen der Szene: {{error}}",
   "backend.stage.sceneMissing": "Szene '{{id}}' nicht gefunden.",
   "backend.stage.sceneSerialize": "Fehler beim Serialisieren der Szene: {{error}}",

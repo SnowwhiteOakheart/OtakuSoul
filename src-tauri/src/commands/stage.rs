@@ -339,6 +339,30 @@ pub async fn run_stage_combat(
     .await
 }
 
+/// 5e scenes with a map, outside fights: one exploration step of the party (`move:x:y`,
+/// `use:x:y`, `pick:x:y`, `force:x:y`), or without an action just start exploring.
+#[tauri::command]
+pub async fn run_stage_exploration(
+    app: tauri::AppHandle,
+    state: State<'_, AppState>,
+    scene_id: String,
+    action: Option<String>,
+) -> Result<crate::modules::stage::SceneState, String> {
+    let _turn = state
+        .stage_turn
+        .try_lock()
+        .map_err(|_| crate::err!("backend.stage.editorBusy"))?;
+    let emit = stream_emitter(&app);
+    crate::modules::stage::execute_exploration(
+        &state.stage_engine,
+        &state.stage_inference_client,
+        &scene_id,
+        action,
+        &emit,
+    )
+    .await
+}
+
 /// 5e scenes: what the current combatant may do (squares to move to, attacks in reach).
 #[tauri::command]
 pub fn get_stage_combat_options(

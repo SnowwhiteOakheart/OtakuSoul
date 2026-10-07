@@ -168,10 +168,10 @@ Klerikerin holt einen bewusstlosen Helden zurück.
 
 ### 🔦 Schritt 4 – Erkundung & Spielleitung auf der Karte
 
-- [ ] Nebel des Krieges: aufgedeckt, was die Party sieht (Radius + Sichtlinie); Dunkelsicht/Licht vereinfacht.
-- [ ] Türen öffnen/schließen, Fallen und Objekte mit Proben, Kartenübergänge (Ausgangsfelder → nächste Karte).
-- [ ] GM-Kontext: Raumbeschreibungen der Karte im Planer; GM wählt Karte/Begegnung/Spawn-Zone nur aus Listen.
-- [ ] Prüfen: Undo, Bearbeiten/Löschen im Verlauf und Abbruch mit Kartenzustand (Snapshots, `reconcile_*`).
+- [x] Nebel des Krieges: aufgedeckt, was die Party sieht (Radius + Sichtlinie); Dunkelsicht/Licht vereinfacht.
+- [x] Türen öffnen/schließen, Fallen und Objekte mit Proben, Kartenübergänge (Ausgangsfelder → nächste Karte).
+- [x] GM-Kontext: Raumbeschreibungen der Karte im Planer; GM wählt Karte/Begegnung/Spawn-Zone nur aus Listen.
+- [x] Prüfen: Undo, Bearbeiten/Löschen im Verlauf und Abbruch mit Kartenzustand (Snapshots, `reconcile_*`).
 - [ ] Tests: Sicht-/Aufdeck-Logik (Rust); E2E Erkundung zweier Räume mit Tür.
 
 **Fertig, wenn:** Die Party erkundet eine Karte mit zwei Räumen, öffnet eine Tür, löst eine Begegnung aus, und

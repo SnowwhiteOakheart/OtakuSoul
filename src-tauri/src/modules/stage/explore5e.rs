@@ -1,0 +1,1007 @@
+//! Exploring the map of a 5e scene between fights (`Roadmap_DND.md`, step 4): the party walks
+//! as a group behind the player, sees by its light (fog of war), opens doors and chests,
+//! picks or forces locks with skill checks, finds or springs traps, enters rooms whose
+//! prepared encounter then starts, and leaves through exits to other maps. The engine
+//! resolves everything; the game master narrates what is new.
+
+use super::rules5e::{self, ExploreEvent, GridPos};
+use super::*;
+
+/// Exploration events kept in the scene (log in the UI).
+const MAX_EVENTS: usize = 60;
+
+/// The scene's map is explored (fog of war on), outside fights.
+pub fn exploring(state: &SceneState) -> bool {
+    state.definition.is_5e()
+        && !state.combat.is_active
+        && state.map.as_ref().is_some_and(|m| !m.revealed.is_empty())
+}
+
+fn party_indices(state: &SceneState) -> Vec<usize> {
+    (0..state.combat.combatants.len())
+        .filter(|&i| rules5e::is_party(&state.combat.combatants[i]))
+        .collect()
+}
+
+/// Who leads the walk: the player, or the first party member still standing.
+fn leader_index(state: &SceneState) -> Option<usize> {
+    let party = party_indices(state);
+    party
+        .iter()
+        .copied()
+        .find(|&i| {
+            state.combat.combatants[i].role == "player"
+                && rules5e::is_up(&state.combat.combatants[i])
+        })
+        .or_else(|| {
+            party
+                .into_iter()
+                .find(|&i| rules5e::is_up(&state.combat.combatants[i]))
+        })
+}
+
+fn party_positions(state: &SceneState) -> Vec<GridPos> {
+    party_indices(state)
+        .into_iter()
+        .filter_map(|i| state.combat.combatants[i].position)
+        .collect()
+}
+
+/// Reveals what the party sees now and notices traps; returns the finds.
+fn look_around(state: &mut SceneState) -> Vec<ExploreEvent> {
+    let viewers: Vec<(GridPos, i32, String)> = party_indices(state)
+        .into_iter()
+        .map(|i| &state.combat.combatants[i])
+        .filter(|c| rules5e::is_up(c))
+        .filter_map(|c| {
+            let passive = c.stats5e.as_ref().map_or(10, |s| s.passive_perception());
+            c.position.map(|p| (p, passive, c.name.clone()))
+        })
+        .collect();
+    let Some(map) = state.map.as_mut() else {
+        return Vec::new();
+    };
+    let positions: Vec<GridPos> = viewers.iter().map(|(p, _, _)| *p).collect();
+    rules5e::reveal(map, &positions);
+    rules5e::spot_traps(map, &viewers)
+        .into_iter()
+        .map(|(at, by_name)| ExploreEvent::TrapSpotted { at, by_name })
+        .collect()
+}
+
+/// After fight moves: the fog lifts where the party now stands.
+pub fn refresh_fog(state: &mut SceneState) {
+    if state.map.as_ref().is_some_and(|m| !m.revealed.is_empty()) {
+        look_around(state);
+    }
+}
+
+/// Places party members without a square around the leader (or on the start zone).
+fn gather_party(state: &mut SceneState) {
+    let Some(map) = state.map.clone() else { return };
+    let party = party_indices(state);
+    let leader = leader_index(state).unwrap_or(party[0]);
+    if state.combat.combatants[leader]
+        .position
+        .is_none_or(|p| !map.walkable(p))
+    {
+        let start = map.placements("party", 1, &[]);
+        state.combat.combatants[leader].position = start.first().copied();
+    }
+    let Some(lead) = state.combat.combatants[leader].position else {
+        return;
+    };
+    let others: Vec<usize> = party.into_iter().filter(|&i| i != leader).collect();
+    let spots = rules5e::follow_squares(&map, lead, others.len());
+    for (slot, index) in others.into_iter().enumerate() {
+        state.combat.combatants[index].position = spots.get(slot).copied().or(Some(lead));
+    }
+}
+
+/// Starts exploring the scene's map when it has one (5e, no fight): fog on, the party on its
+/// start zone. Returns whether the scene is now being explored.
+pub fn ensure_exploring(state: &mut SceneState) -> bool {
+    if !state.definition.is_5e() || state.combat.is_active {
+        return false;
+    }
+    let map_id = state
+        .definition
+        .rules
+        .as_ref()
+        .and_then(|r| r.map_id.clone());
+    if state.map.is_none() {
+        let Some(map) = map_id.as_deref().and_then(rules5e::battle_map) else {
+            return false;
+        };
+        state.map = Some(map.clone());
+        for c in &mut state.combat.combatants {
+            c.position = None;
+        }
+    }
+    ensure_party_vitals(state);
+    let fresh = state.map.as_ref().is_some_and(|m| m.revealed.is_empty());
+    if let Some(map) = state.map.as_mut() {
+        rules5e::start_exploring(map);
+    }
+    if fresh || party_positions(state).len() < party_indices(state).len() {
+        gather_party(state);
+    }
+    look_around(state);
+    if fresh && let Some(event) = enter_room(state) {
+        push_events(state, vec![event]);
+    }
+    true
+}
+
+fn push_events(state: &mut SceneState, events: Vec<ExploreEvent>) {
+    state.exploration.extend(events);
+    let overflow = state.exploration.len().saturating_sub(MAX_EVENTS);
+    state.exploration.drain(..overflow);
+}
+
+/// The room the leader stands in, the first time the party comes there.
+fn enter_room(state: &mut SceneState) -> Option<ExploreEvent> {
+    let leader = state.combat.combatants[leader_index(state)?].position?;
+    let map = state.map.as_mut()?;
+    let room = rules5e::room_at(map, leader)?.clone();
+    let key = format!("room:{}", room.id);
+    if map.triggered.contains(&key) {
+        return None;
+    }
+    map.triggered.push(key);
+    Some(ExploreEvent::Room {
+        room_id: room.id,
+        name: room.name,
+        description: room.description,
+    })
+}
+
+/// What stopped a walk early.
+enum Stop {
+    Trap,
+    Encounter(rules5e::MapEncounter),
+    Exit(String),
+}
+
+/// Walks the leader along `path` square by square; the others follow. Stops on a sprung
+/// trap, in the room of a prepared encounter, or on an exit.
+fn walk(state: &mut SceneState, path: &[GridPos]) -> (Vec<ExploreEvent>, Option<Stop>) {
+    let mut events = Vec::new();
+    let Some(leader) = leader_index(state) else {
+        return (events, None);
+    };
+    let mut feet = 0;
+    let mut stop = None;
+    for &step in path {
+        state.combat.combatants[leader].position = Some(step);
+        feet += rules5e::SQUARE_FT;
+        let map = state.map.as_mut().expect("exploring has a map");
+        for at in map.open_doors_on(&[step]) {
+            events.push(ExploreEvent::Door { at, opened: true });
+        }
+        rules5e::reveal(map, &[step]);
+        if let Some(trap) = rules5e::hidden_trap_at(map, step) {
+            map.traps[trap].sprung = true;
+            let trap = map.traps[trap].clone();
+            rules5e::set_object(map, step, "trap_plate");
+            events.push(spring_trap(state, leader, &trap));
+            stop = Some(Stop::Trap);
+            break;
+        }
+        let map = state.map.as_ref().expect("exploring has a map");
+        if let Some(exit) = rules5e::exit_at(map, step) {
+            stop = Some(Stop::Exit(exit.to.clone()));
+            break;
+        }
+        if let Some(encounter) = rules5e::pending_encounter(map, &[step]) {
+            stop = Some(Stop::Encounter(encounter));
+            break;
+        }
+    }
+    if feet > 0 {
+        let actor = &state.combat.combatants[leader];
+        events.insert(
+            0,
+            ExploreEvent::Move {
+                actor_name: actor.name.clone(),
+                feet,
+            },
+        );
+        gather_party(state);
+        events.extend(look_around(state));
+        events.extend(enter_room(state));
+    }
+    (events, stop)
+}
+
+/// A hidden trap springs under a party member: Dexterity save, half damage on a success.
+fn spring_trap(state: &mut SceneState, index: usize, trap: &rules5e::MapTrap) -> ExploreEvent {
+    let mut rng = rand::rng();
+    let heroic_death = state
+        .definition
+        .rules
+        .as_ref()
+        .is_some_and(|r| r.heroic_death);
+    let target = &mut state.combat.combatants[index];
+    let save = rules5e::saving_throw(target, rules5e::Ability::Dex, trap.save_dc, &mut rng);
+    let success = matches!(save, rules5e::CombatEvent::Save { success: true, .. });
+    let formula = rules5e::DiceFormula::parse(&trap.damage).unwrap_or(rules5e::DiceFormula {
+        count: 1,
+        sides: 6,
+        modifier: 0,
+    });
+    let mut roll = rules5e::roll_damage(&mut rng, &formula, false);
+    if success {
+        roll.total /= 2;
+    }
+    let before = target.hp;
+    let scaling = rules5e::damage_scaling(target, &trap.damage_type);
+    rules5e::apply_damage(
+        target,
+        roll,
+        &trap.damage_type,
+        scaling,
+        &rules5e::DamageContext {
+            critical: false,
+            heroic_death,
+        },
+        &mut rng,
+    );
+    ExploreEvent::Trap {
+        at: trap.at,
+        target_name: target.name.clone(),
+        saved: success,
+        damage: before - target.hp,
+        down: target.hp <= 0,
+    }
+}
+
+/// A skill check of the party member best at it (picking or forcing a lock).
+fn party_check(state: &SceneState, skill: &str, dc: i32) -> ExploreEvent {
+    let mut rng = rand::rng();
+    let best = party_indices(state)
+        .into_iter()
+        .map(|i| &state.combat.combatants[i])
+        .filter(|c| rules5e::is_up(c))
+        .filter_map(|c| {
+            let bonus = c
+                .stats5e
+                .as_ref()
+                .and_then(|s| rules5e::check_bonus(s, skill))?;
+            Some((c, bonus))
+        })
+        .max_by_key(|(_, bonus)| *bonus);
+    let (name, bonus) = best.map_or(("?".to_string(), 0), |(c, b)| (c.name.clone(), b));
+    let roll = rules5e::roll_d20(&mut rng, rules5e::RollMode::Normal);
+    let total = roll.natural as i32 + bonus;
+    ExploreEvent::Check {
+        actor_name: name,
+        skill: skill.to_string(),
+        roll,
+        bonus,
+        total,
+        dc,
+        success: total >= dc,
+    }
+}
+
+/// The player's exploration input.
+enum ExploreAction {
+    Move(GridPos),
+    Use(GridPos),
+    Pick(GridPos),
+    Force(GridPos),
+}
+
+fn parse_action(action: &str) -> Option<ExploreAction> {
+    let (kind, rest) = action.trim().split_once(':')?;
+    let (x, y) = rest.split_once(':')?;
+    let pos = GridPos::new(x.parse().ok()?, y.parse().ok()?);
+    Some(match kind {
+        "move" => ExploreAction::Move(pos),
+        "use" => ExploreAction::Use(pos),
+        "pick" => ExploreAction::Pick(pos),
+        "force" => ExploreAction::Force(pos),
+        _ => return None,
+    })
+}
+
+/// Carries out one action. `Ok(None)` = nothing happened (unreachable, nothing there).
+fn apply(
+    state: &mut SceneState,
+    action: ExploreAction,
+) -> Option<(Vec<ExploreEvent>, Option<Stop>)> {
+    let leader = leader_index(state)?;
+    let from = state.combat.combatants[leader].position?;
+    let others: Vec<GridPos> = party_positions(state)
+        .into_iter()
+        .filter(|p| *p != from)
+        .collect();
+    let map = state.map.clone()?;
+    match action {
+        ExploreAction::Move(target) => {
+            if !rules5e::is_revealed(&map, target) {
+                return None;
+            }
+            let path = rules5e::explore_path(&map, from, target, &others)?;
+            if path.is_empty() {
+                return None;
+            }
+            Some(walk(state, &path))
+        }
+        ExploreAction::Use(target) | ExploreAction::Pick(target) | ExploreAction::Force(target) => {
+            if !rules5e::is_revealed(&map, target) {
+                return None;
+            }
+            let interaction = rules5e::interaction_at(&map, target)?;
+            let path = rules5e::approach_object(&map, from, target, &others)?;
+            let (mut events, stop) = walk(state, &path);
+            if stop.is_some() {
+                return Some((events, stop));
+            }
+            let map = state.map.as_mut().expect("exploring has a map");
+            match (interaction, &action) {
+                (rules5e::Interaction::OpenDoor, _) => {
+                    rules5e::set_object(map, target, "door_open");
+                    events.push(ExploreEvent::Door {
+                        at: target,
+                        opened: true,
+                    });
+                }
+                (rules5e::Interaction::CloseDoor, _) => {
+                    if others.contains(&target) {
+                        return None;
+                    }
+                    rules5e::set_object(map, target, "door_closed");
+                    events.push(ExploreEvent::Door {
+                        at: target,
+                        opened: false,
+                    });
+                }
+                (rules5e::Interaction::OpenChest, _) => {
+                    rules5e::set_object(map, target, "chest_open");
+                    events.push(ExploreEvent::Chest { at: target });
+                }
+                (
+                    rules5e::Interaction::LockedDoor | rules5e::Interaction::LockedChest,
+                    ExploreAction::Use(_),
+                ) => {
+                    for lock in map.locks.iter_mut().filter(|l| l.at == target) {
+                        lock.known = true;
+                    }
+                    if map.cell(target).and_then(|c| c.object.as_deref()) == Some("door_closed") {
+                        rules5e::set_object(map, target, "door_locked");
+                    }
+                    events.push(ExploreEvent::Locked { at: target });
+                }
+                (locked, _) => {
+                    let dc = rules5e::lock_dc(map, target).unwrap_or(15);
+                    let skill = if matches!(action, ExploreAction::Pick(_)) {
+                        "sleight_of_hand"
+                    } else {
+                        "athletics"
+                    };
+                    let check = party_check(state, skill, dc);
+                    let success = matches!(check, ExploreEvent::Check { success: true, .. });
+                    events.push(check);
+                    if success {
+                        let map = state.map.as_mut().expect("exploring has a map");
+                        rules5e::unlock(map, target);
+                        if locked == rules5e::Interaction::LockedChest {
+                            rules5e::set_object(map, target, "chest_open");
+                            events.push(ExploreEvent::Chest { at: target });
+                        } else {
+                            rules5e::set_object(map, target, "door_open");
+                            events.push(ExploreEvent::Door {
+                                at: target,
+                                opened: true,
+                            });
+                        }
+                    }
+                }
+            }
+            events.extend(look_around(state));
+            Some((events, None))
+        }
+    }
+}
+
+/// Moves the party to another map: its start zone, fog fresh.
+pub fn change_map(state: &mut SceneState, map_id: &str) -> Option<ExploreEvent> {
+    let map = rules5e::battle_map(map_id)?.clone();
+    let name = map.name.clone();
+    state.map = Some(map);
+    for index in party_indices(state) {
+        state.combat.combatants[index].position = None;
+    }
+    if let Some(map) = state.map.as_mut() {
+        rules5e::start_exploring(map);
+    }
+    gather_party(state);
+    look_around(state);
+    Some(ExploreEvent::MapChange {
+        map_id: map_id.to_string(),
+        name,
+    })
+}
+
+/// The prepared encounter of a room starts: its monsters on its zone.
+fn start_prepared(
+    state: &mut SceneState,
+    encounter: &rules5e::MapEncounter,
+    language_code: &str,
+) -> bool {
+    if let Some(map) = state.map.as_mut() {
+        map.triggered.push(encounter.id.clone());
+    }
+    let enemies: Vec<PlanCombatant> = encounter
+        .monsters
+        .iter()
+        .map(|m| PlanCombatant {
+            name: String::new(),
+            monster: Some(m.monster.clone()),
+            count: Some(m.count),
+            hp: 0,
+            role: "enemy".into(),
+        })
+        .collect();
+    super::combat5e::start_encounter_at(state, &enemies, language_code, &encounter.zone)
+}
+
+/// Facts for the game master: rooms entered (with their description), doors, locks, traps,
+/// enemies and travel. Plain walking and doors alone need no narration.
+fn report(events: &[ExploreEvent], state: &SceneState) -> String {
+    let worth_telling = events.iter().any(|e| {
+        !matches!(
+            e,
+            ExploreEvent::Move { .. } | ExploreEvent::Door { .. } | ExploreEvent::Locked { .. }
+        )
+    });
+    if !worth_telling {
+        return String::new();
+    }
+    events
+        .iter()
+        .map(|event| match event {
+            ExploreEvent::Move { actor_name, feet } => {
+                format!("{actor_name} leads the party {feet} feet on.")
+            }
+            ExploreEvent::Room {
+                name, description, ..
+            } => format!("The party enters {}: {description}", name.en),
+            ExploreEvent::Door { opened, .. } => if *opened {
+                "A door opens."
+            } else {
+                "A door is closed."
+            }
+            .to_string(),
+            ExploreEvent::Chest { .. } => {
+                "A chest is opened (describe what lies inside, nothing magical yet).".to_string()
+            }
+            ExploreEvent::Locked { .. } => "It is locked.".to_string(),
+            ExploreEvent::Check {
+                actor_name,
+                skill,
+                success,
+                ..
+            } => format!(
+                "{actor_name} tries {}: {}.",
+                if skill == "athletics" {
+                    "to force the lock"
+                } else {
+                    "to pick the lock"
+                },
+                if *success { "success" } else { "failure" }
+            ),
+            ExploreEvent::TrapSpotted { by_name, .. } => {
+                format!("{by_name} notices a hidden pressure plate trap.")
+            }
+            ExploreEvent::Trap {
+                target_name,
+                saved,
+                damage,
+                down,
+                ..
+            } => format!(
+                "{target_name} steps on a hidden trap, {} and takes {damage} damage{}.",
+                if *saved { "partly dodges" } else { "is caught" },
+                if *down { " and goes down" } else { "" }
+            ),
+            ExploreEvent::Encounter { .. } => {
+                let foes: Vec<String> = state
+                    .combat
+                    .combatants
+                    .iter()
+                    .filter(|c| rules5e::is_enemy(c))
+                    .map(|c| c.name.clone())
+                    .collect();
+                format!("Enemies appear and a fight begins: {}.", foes.join(", "))
+            }
+            ExploreEvent::MapChange { name, .. } => {
+                format!("The party travels on and arrives at {}.", name.en)
+            }
+        })
+        .collect::<Vec<_>>()
+        .join("\n")
+}
+
+/// The map part of the planner's rules: where the party is, the rooms (with the party's
+/// knowledge), prepared encounters, zones and maps to choose from. Empty without a map.
+pub fn planner_map_rule(state: &SceneState) -> String {
+    let Some(map) = state.map.as_ref() else {
+        return String::new();
+    };
+    let here = leader_index(state)
+        .and_then(|i| state.combat.combatants[i].position)
+        .and_then(|p| rules5e::room_at(map, p))
+        .map_or("between rooms".to_string(), |r| r.name.en.clone());
+    let rooms = map
+        .rooms
+        .iter()
+        .map(|room| {
+            let seen =
+                map.triggered.contains(&format!("room:{}", room.id)) || map.revealed.is_empty();
+            format!(
+                "  * {} ({}): {}",
+                room.name.en,
+                if seen {
+                    "explored"
+                } else {
+                    "not yet seen by the party – keep it secret"
+                },
+                room.description
+            )
+        })
+        .collect::<Vec<_>>()
+        .join("\n");
+    let encounters = map
+        .encounters
+        .iter()
+        .filter(|e| !map.triggered.contains(&e.id))
+        .map(|e| {
+            let foes = e
+                .monsters
+                .iter()
+                .map(|m| format!("{}×{}", m.count, m.monster))
+                .collect::<Vec<_>>()
+                .join(", ");
+            format!("{} (room {}, {foes})", e.id, e.room)
+        })
+        .collect::<Vec<_>>();
+    let mut zones: Vec<String> = map
+        .cells
+        .iter()
+        .filter_map(|c| c.zone.clone())
+        .filter(|z| z != "party" && !z.starts_with("exit"))
+        .collect();
+    zones.sort();
+    zones.dedup();
+    let maps = rules5e::battle_maps()
+        .iter()
+        .filter(|m| m.id != map.id)
+        .map(|m| m.id.clone())
+        .collect::<Vec<_>>()
+        .join(", ");
+    format!(
+        "\n- Map \"{name}\" (the engine moves the party; the player explores by clicking it). The party is in: {here}. Rooms:\n{rooms}\n- Prepared encounters not yet met: {encounters}. They start by themselves when the party enters their room; to start one earlier use {{\"action\":\"start\", \"encounter\":\"<id>\"}}. Other enemies need \"zone\" from: {zones}.\n- map_change: only when the party really travels to another place outside a fight, one of: {maps}; otherwise leave it out.",
+        name = map.name.en,
+        encounters = if encounters.is_empty() {
+            "none".to_string()
+        } else {
+            encounters.join("; ")
+        },
+        zones = zones.join(", "),
+    )
+}
+
+/// The planner's choices on the map: a prepared encounter or enemies on a listed zone, and
+/// travel to a listed map. Returns whether a fight started.
+pub fn apply_planner_map(
+    state: &mut SceneState,
+    encounter: Option<&PlanEncounterUpdate>,
+    map_change: Option<&str>,
+    language_code: &str,
+) -> Option<bool> {
+    if let Some(to) = map_change
+        && !state.combat.is_active
+        && state.map.as_ref().is_some_and(|m| m.id != to)
+        && let Some(event) = change_map(state, to)
+    {
+        push_events(state, vec![event]);
+    }
+    let encounter = encounter.filter(|e| e.action == "start" && !state.combat.is_active)?;
+    let map = state.map.as_ref()?;
+    if let Some(prepared) = encounter
+        .encounter
+        .as_deref()
+        .and_then(|id| {
+            map.encounters
+                .iter()
+                .find(|e| e.id == id && !map.triggered.contains(&e.id))
+        })
+        .cloned()
+    {
+        let started = start_prepared(state, &prepared, language_code);
+        if started {
+            push_events(
+                state,
+                vec![ExploreEvent::Encounter {
+                    encounter_id: prepared.id,
+                }],
+            );
+        }
+        return Some(started);
+    }
+    let zone = encounter
+        .zone
+        .as_deref()
+        .filter(|z| !z.starts_with("exit") && *z != "party" && !map.zone_cells(z).is_empty())
+        .unwrap_or("spawn")
+        .to_string();
+    Some(super::combat5e::start_encounter_at(
+        state,
+        &encounter.enemies,
+        language_code,
+        &zone,
+    ))
+}
+
+/// Runs one exploration action of the player (`move:x:y`, `use:x:y`, `pick:x:y`,
+/// `force:x:y`) or, without one, starts exploring. Undo restores the state before it.
+pub async fn execute_exploration(
+    engine: &StageEngine,
+    inference: &InferenceClient,
+    scene_id: &str,
+    action: Option<String>,
+    on_stream: StageStream<'_>,
+) -> Result<SceneState, String> {
+    inference.reset_abort();
+    let mut state = engine.get_state();
+    if state.definition.id != scene_id {
+        state = load_scene_by_id(scene_id)?;
+    }
+    if state.combat.is_active {
+        return Err(crate::err!("backend.stage.inCombat"));
+    }
+    let Some(action) = action else {
+        if !exploring(&state) {
+            if !ensure_exploring(&mut state) {
+                return Err(crate::err!("backend.stage.noMap"));
+            }
+            engine.set_state(state.clone());
+            save_scene_state(&state)?;
+        }
+        return Ok(state);
+    };
+    if !ensure_exploring(&mut state) {
+        return Err(crate::err!("backend.stage.noMap"));
+    }
+    let action = parse_action(&action).ok_or_else(|| crate::err!("backend.stage.invalidAction"))?;
+    let before = state.clone();
+    let (mut events, stop) =
+        apply(&mut state, action).ok_or_else(|| crate::err!("backend.stage.invalidAction"))?;
+    engine.push_snapshot(&state.definition.id, before);
+
+    let reply_language = crate::modules::content_lang::ContentLang::reply_language_name();
+    let lang_code = crate::modules::content_lang::language_code(&reply_language);
+    let mut fight = false;
+    match stop {
+        Some(Stop::Exit(to)) => events.extend(change_map(&mut state, &to)),
+        Some(Stop::Encounter(encounter)) => {
+            if start_prepared(&mut state, &encounter, &lang_code) {
+                events.push(ExploreEvent::Encounter {
+                    encounter_id: encounter.id.clone(),
+                });
+                fight = true;
+            }
+        }
+        Some(Stop::Trap) | None => {}
+    }
+    let facts = report(&events, &state);
+    push_events(&mut state, events);
+    let llm = StageLlm::from_settings();
+    super::combat5e::narrate_facts(
+        &mut state,
+        "[STAGE — EXPLORATION REPORT]",
+        "The party explores; these things just happened, in this order, and are final",
+        &facts,
+        inference,
+        &llm,
+        on_stream,
+    )
+    .await;
+    if fight {
+        // Monsters that win the initiative act right away, then the player.
+        return super::combat5e::finish_round(engine, inference, state, Vec::new(), on_stream)
+            .await;
+    }
+    state.definition.last_played = Some(Utc::now().to_rfc3339());
+    engine.set_state(state.clone());
+    save_scene_state(&state)?;
+    Ok(state)
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    fn crypt() -> SceneState {
+        let mut state = StageEngine::new().get_state();
+        state.definition.party = vec!["Lyra".into()];
+        state.definition.rules = Some(SceneRules {
+            ruleset: "5e".into(),
+            hero_classes: HashMap::from([("Lyra".to_string(), "rogue".to_string())]),
+            control_companions: false,
+            heroic_death: false,
+            map_id: Some("crypt_hall".into()),
+        });
+        state.combat.combatants.retain(|c| c.role == "player");
+        assert!(ensure_exploring(&mut state));
+        state
+    }
+
+    fn seen(state: &SceneState, x: i32, y: i32) -> bool {
+        rules5e::is_revealed(state.map.as_ref().unwrap(), GridPos::new(x, y))
+    }
+
+    fn leader(state: &SceneState) -> GridPos {
+        state.combat.combatants[leader_index(state).unwrap()]
+            .position
+            .unwrap()
+    }
+
+    #[test]
+    fn the_party_starts_in_the_antechamber_and_sees_only_it() {
+        let state = crypt();
+        assert!(exploring(&state));
+        let positions = party_positions(&state);
+        assert_eq!(positions.len(), 2);
+        let map = state.map.as_ref().unwrap();
+        assert!(
+            positions
+                .iter()
+                .all(|p| rules5e::room_at(map, *p).is_some_and(|r| r.id == "antechamber"))
+        );
+        // The antechamber and its walls, but nothing behind the closed doors.
+        assert!(seen(&state, 7, 4) && seen(&state, 8, 1) && seen(&state, 8, 2));
+        assert!(!seen(&state, 10, 2) && !seen(&state, 4, 7));
+        assert!(
+            matches!(state.exploration.last(), Some(ExploreEvent::Room { room_id, .. }) if room_id == "antechamber")
+        );
+    }
+
+    #[test]
+    fn walking_through_a_door_opens_it_and_starts_the_hall_encounter() {
+        let mut state = crypt();
+        let (events, stop) = apply(&mut state, ExploreAction::Move(GridPos::new(7, 2))).unwrap();
+        assert!(stop.is_none() && matches!(events[0], ExploreEvent::Move { .. }));
+        // The door square is seen, the hall behind it not yet: open it.
+        let (events, _) = apply(&mut state, ExploreAction::Use(GridPos::new(8, 2))).unwrap();
+        assert!(
+            events
+                .iter()
+                .any(|e| matches!(e, ExploreEvent::Door { opened: true, .. }))
+        );
+        assert!(seen(&state, 12, 2), "the hall shows through the open door");
+        let (events, stop) = apply(&mut state, ExploreAction::Move(GridPos::new(10, 2))).unwrap();
+        let Some(Stop::Encounter(encounter)) = stop else {
+            panic!("{events:?}")
+        };
+        assert_eq!(encounter.id, "hall_goblins");
+        assert_eq!(
+            leader(&state),
+            GridPos::new(9, 2),
+            "stops on the first square of the room"
+        );
+        let mut party_before = party_positions(&state);
+        party_before.sort();
+        assert!(start_prepared(&mut state, &encounter, "en"));
+        assert!(state.combat.is_active);
+        let mut party_after = party_positions(&state);
+        party_after.sort();
+        assert_eq!(party_after, party_before, "the party keeps its squares");
+        let map = state.map.as_ref().unwrap();
+        for goblin in state
+            .combat
+            .combatants
+            .iter()
+            .filter(|c| rules5e::is_enemy(c))
+        {
+            let pos = goblin.position.unwrap();
+            assert_eq!(map.cell(pos).unwrap().zone.as_deref(), Some("spawn"));
+        }
+        assert!(map.triggered.contains(&"hall_goblins".to_string()));
+        assert!(
+            rules5e::pending_encounter(map, &[GridPos::new(10, 3)]).is_none(),
+            "only once"
+        );
+    }
+
+    #[test]
+    fn locks_need_a_check_and_hidden_traps_spring() {
+        let mut state = crypt();
+        let door = GridPos::new(4, 5);
+        let (events, _) = apply(&mut state, ExploreAction::Use(door)).unwrap();
+        assert!(matches!(events.last(), Some(ExploreEvent::Locked { .. })));
+        let map = state.map.as_ref().unwrap();
+        assert_eq!(
+            map.cell(door).unwrap().object.as_deref(),
+            Some("door_locked")
+        );
+        assert!(map.locks.iter().any(|l| l.at == door && l.known));
+        assert!(
+            apply(&mut state, ExploreAction::Move(GridPos::new(4, 6))).is_none(),
+            "locked doors block"
+        );
+        // The rogue picks it sooner or later.
+        let mut tries = 0;
+        while state
+            .map
+            .as_ref()
+            .unwrap()
+            .locks
+            .iter()
+            .any(|l| l.at == door)
+        {
+            tries += 1;
+            assert!(tries < 60);
+            let (events, _) = apply(&mut state, ExploreAction::Pick(door)).unwrap();
+            assert!(events.iter().any(
+                |e| matches!(e, ExploreEvent::Check { skill, .. } if skill == "sleight_of_hand")
+            ));
+        }
+        assert_eq!(
+            state
+                .map
+                .as_ref()
+                .unwrap()
+                .cell(door)
+                .unwrap()
+                .object
+                .as_deref(),
+            Some("door_open")
+        );
+
+        // A trap nobody notices springs under the leader.
+        let map = state.map.as_mut().unwrap();
+        map.triggered.push("ossuary_dead".into());
+        map.traps[0].spot_dc = 99;
+        map.revealed.fill(true);
+        let trap = map.traps[0].at;
+        let (events, stop) = apply(&mut state, ExploreAction::Move(trap)).unwrap();
+        assert!(matches!(stop, Some(Stop::Trap)));
+        assert!(
+            events
+                .iter()
+                .any(|e| matches!(e, ExploreEvent::Trap { .. }))
+        );
+        let map = state.map.as_ref().unwrap();
+        assert!(map.traps[0].sprung);
+        assert_eq!(
+            map.cell(trap).unwrap().object.as_deref(),
+            Some("trap_plate")
+        );
+        assert!(!report(&events, &state).is_empty());
+    }
+
+    #[test]
+    fn passive_perception_finds_traps_and_paths_avoid_them() {
+        let mut state = crypt();
+        let map = state.map.as_mut().unwrap();
+        map.traps[0].spot_dc = 1;
+        map.locks.retain(|l| l.at != GridPos::new(4, 5));
+        map.triggered.push("ossuary_dead".into());
+        map.revealed.fill(true);
+        let (events, _) = apply(&mut state, ExploreAction::Move(GridPos::new(3, 8))).unwrap();
+        assert!(
+            events
+                .iter()
+                .any(|e| matches!(e, ExploreEvent::TrapSpotted { .. })),
+            "{events:?}"
+        );
+        let (_, stop) = apply(&mut state, ExploreAction::Move(GridPos::new(1, 9))).unwrap();
+        assert!(stop.is_none());
+        assert!(!state.map.as_ref().unwrap().traps[0].sprung);
+        assert!(
+            party_positions(&state)
+                .iter()
+                .all(|p| *p != GridPos::new(2, 9))
+        );
+    }
+
+    #[test]
+    fn stairs_lead_to_the_forest_road() {
+        let mut state = crypt();
+        let map = state.map.as_mut().unwrap();
+        map.triggered.push("hall_goblins".into());
+        let (_, stop) = apply(&mut state, ExploreAction::Use(GridPos::new(8, 2))).unwrap();
+        assert!(stop.is_none());
+        state.map.as_mut().unwrap().revealed.fill(true);
+        let (_, stop) = apply(&mut state, ExploreAction::Move(GridPos::new(14, 10))).unwrap();
+        let Some(Stop::Exit(to)) = stop else {
+            panic!("no exit")
+        };
+        let event = change_map(&mut state, &to).unwrap();
+        assert!(
+            matches!(event, ExploreEvent::MapChange { ref map_id, .. } if map_id == "forest_road")
+        );
+        let map = state.map.as_ref().unwrap();
+        assert_eq!(map.id, "forest_road");
+        assert!(party_positions(&state).iter().all(|p| map.walkable(*p)));
+        assert!(map.revealed.iter().any(|r| *r) && !map.revealed.iter().all(|r| *r));
+    }
+
+    #[test]
+    fn the_planner_chooses_from_the_map_lists() {
+        let mut state = crypt();
+        let rule = planner_map_rule(&state);
+        assert!(rule.contains("The party is in: Antechamber"));
+        assert!(rule.contains("Burial hall (not yet seen by the party"));
+        assert!(rule.contains("hall_goblins (room hall, 2×goblin)"));
+        assert!(rule.contains("spawn_ossuary") && !rule.contains("exit_surface"));
+        assert!(rule.contains("forest_road"));
+        let plan = |json: &str| serde_json::from_str::<PlanEncounterUpdate>(json).unwrap();
+        // Unknown ids and zones fall back; a prepared encounter starts once.
+        let started = apply_planner_map(
+            &mut state,
+            Some(&plan(r#"{"action":"start","encounter":"ossuary_dead"}"#)),
+            None,
+            "en",
+        );
+        assert_eq!(started, Some(true));
+        let map = state.map.as_ref().unwrap();
+        assert!(
+            state
+                .combat
+                .combatants
+                .iter()
+                .filter(|c| rules5e::is_enemy(c))
+                .all(|c| map.cell(c.position.unwrap()).unwrap().zone.as_deref()
+                    == Some("spawn_ossuary"))
+        );
+        super::super::combat5e::end_encounter(&mut state, None);
+        let started = apply_planner_map(
+            &mut state,
+            Some(&plan(
+                r#"{"action":"start","enemies":[{"monster":"wolf"}],"zone":"exit_surface"}"#,
+            )),
+            None,
+            "en",
+        );
+        assert_eq!(started, Some(true));
+        let wolf = state
+            .combat
+            .combatants
+            .iter()
+            .find(|c| rules5e::is_enemy(c))
+            .unwrap();
+        let map = state.map.as_ref().unwrap();
+        assert_eq!(
+            map.cell(wolf.position.unwrap()).unwrap().zone.as_deref(),
+            Some("spawn")
+        );
+        super::super::combat5e::end_encounter(&mut state, None);
+        // Travel only to a listed map, never during a fight.
+        apply_planner_map(&mut state, None, Some("nowhere"), "en");
+        assert_eq!(state.map.as_ref().unwrap().id, "crypt_hall");
+        apply_planner_map(&mut state, None, Some("forest_road"), "en");
+        assert_eq!(state.map.as_ref().unwrap().id, "forest_road");
+        assert!(matches!(
+            state.exploration.last(),
+            Some(ExploreEvent::MapChange { .. })
+        ));
+    }
+
+    #[test]
+    fn actions_are_parsed_strictly() {
+        assert!(
+            matches!(parse_action("move:3:4"), Some(ExploreAction::Move(p)) if p == GridPos::new(3, 4))
+        );
+        assert!(matches!(
+            parse_action("force:1:2"),
+            Some(ExploreAction::Force(_))
+        ));
+        assert!(parse_action("jump:1:2").is_none());
+        assert!(parse_action("move:a:2").is_none());
+    }
+}

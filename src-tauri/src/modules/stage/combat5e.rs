@@ -77,7 +77,8 @@ pub fn ensure_party_stats(state: &mut SceneState) {
 }
 
 /// The planner's rule for encounters in 5e scenes, with the monsters it may use.
-pub fn planner_encounter_rule() -> String {
+pub fn planner_encounter_rule(state: &SceneState) -> String {
+    let map_rule = super::explore5e::planner_map_rule(state);
     let ids = rules5e::monsters()
         .iter()
         .map(|m| format!("{} (CR {})", m.id, m.cr))
@@ -85,7 +86,7 @@ pub fn planner_encounter_rule() -> String {
         .join(", ");
     format!(
         r#"- encounter: only to start or end a fight. Start: {{"action":"start", "enemies":[{{"monster":"goblin", "count":2}}]}} with monster ids from: {ids}. End without a winner (surrender, escape, truce): {{"action":"end"}}. A rules engine resolves every attack, hit and wound – never put damage, hit points or hp_updates into the plan.
-- dice_check (5e): skill_name must be one of {skills}; the engine adds the character's own bonus, so the formula is ignored."#,
+- dice_check (5e): skill_name must be one of {skills}; the engine adds the character's own bonus, so the formula is ignored.{map_rule}"#,
         skills = rules5e::skill_ids().join(", "),
     )
 }
@@ -146,6 +147,16 @@ pub fn start_encounter(
     enemies: &[PlanCombatant],
     language_code: &str,
 ) -> bool {
+    start_encounter_at(state, enemies, language_code, "spawn")
+}
+
+/// Like [`start_encounter`], with the monsters placed on `zone` of the map.
+pub fn start_encounter_at(
+    state: &mut SceneState,
+    enemies: &[PlanCombatant],
+    language_code: &str,
+    zone: &str,
+) -> bool {
     ensure_party_vitals(state);
     let mut fresh = Vec::new();
     for request in enemies {
@@ -199,7 +210,7 @@ pub fn start_encounter(
             .conditions
             .retain(|c| c.name != rules5e::DODGING && c.name != rules5e::FLED);
     }
-    place_on_map(state);
+    place_on_map(state, zone);
     let mut rng = rand::rng();
     let initiative = rules5e::roll_initiative(&mut state.combat.combatants, &mut rng);
     state.combat.is_active = true;
@@ -218,7 +229,42 @@ pub fn start_encounter(
 
 /// Loads the scene's battle map (if it has one) and places the party on the start zone and
 /// the enemies on the spawn zone. Without a map nobody has a position.
-fn place_on_map(state: &mut SceneState) {
+/// Places the fighters. While the party explores a map they keep their squares (and the map
+/// its fog, doors and traps) and only the enemies arrive on `zone`; otherwise the scene's
+/// map is set up fresh with the party on its start zone.
+fn place_on_map(state: &mut SceneState, zone: &str) {
+    let exploring = state.map.as_ref().is_some_and(|m| !m.revealed.is_empty())
+        && state
+            .combat
+            .combatants
+            .iter()
+            .filter(|c| rules5e::is_party(c))
+            .all(|c| c.position.is_some());
+    if exploring {
+        let map = state.map.clone().expect("checked above");
+        let mut taken: Vec<rules5e::GridPos> = state
+            .combat
+            .combatants
+            .iter()
+            .filter(|c| rules5e::is_party(c))
+            .filter_map(|c| c.position)
+            .collect();
+        let enemies: Vec<usize> = (0..state.combat.combatants.len())
+            .filter(|&i| !rules5e::is_party(&state.combat.combatants[i]))
+            .collect();
+        let zone = if map.zone_cells(zone).is_empty() {
+            "spawn"
+        } else {
+            zone
+        };
+        let spots = map.placements(zone, enemies.len(), &taken);
+        for (slot, index) in enemies.into_iter().enumerate() {
+            let spot = spots.get(slot).copied();
+            state.combat.combatants[index].position = spot;
+            taken.extend(spot);
+        }
+        return;
+    }
     state.map = state
         .definition
         .rules
@@ -233,7 +279,7 @@ fn place_on_map(state: &mut SceneState) {
         return;
     };
     let mut taken = Vec::new();
-    for (zone, party) in [("party", true), ("spawn", false)] {
+    for (zone, party) in [("party", true), (zone, false)] {
         let indices: Vec<usize> = (0..state.combat.combatants.len())
             .filter(|&i| rules5e::is_party(&state.combat.combatants[i]) == party)
             .collect();
@@ -528,14 +574,23 @@ fn move_current(state: &mut SceneState, target: rules5e::GridPos) -> Vec<CombatE
     let path = reach.path(target);
     state.combat.turn.movement_left_ft -= cost;
     let disengaged = state.combat.turn.disengaged;
-    rules5e::walk(
+    let events = rules5e::walk(
         &mut state.combat.combatants,
         index,
         &path,
         disengaged,
         &mut state.combat.reactions_used,
         &mut rand::rng(),
-    )
+    );
+    // Doors on the way open as the mover passes (up to where it stopped).
+    let end = state.combat.combatants[index].position;
+    let walked = end
+        .and_then(|e| path.iter().position(|p| *p == e))
+        .map_or(0, |i| i + 1);
+    if let Some(map) = state.map.as_mut() {
+        map.open_doors_on(&path[..walked]);
+    }
+    events
 }
 
 /// What the current combatant may do now, for the UI (and to check the player's action).
@@ -1077,6 +1132,28 @@ async fn narrate(
     on_stream: StageStream<'_>,
 ) {
     let facts = report(events);
+    narrate_facts(
+        state,
+        "[STAGE — COMBAT REPORT]",
+        "These things just happened in the fight, in this order; they are final",
+        &facts,
+        inference,
+        llm,
+        on_stream,
+    )
+    .await;
+}
+
+/// The game master narrates engine facts (fight or exploration) without changing them.
+pub(super) async fn narrate_facts(
+    state: &mut SceneState,
+    marker: &str,
+    intro: &str,
+    facts: &str,
+    inference: &InferenceClient,
+    llm: &StageLlm,
+    on_stream: StageStream<'_>,
+) {
     if facts.is_empty() || inference.is_aborted() {
         return;
     }
@@ -1093,7 +1170,7 @@ async fn narrate(
         .collect::<Vec<_>>()
         .join("\n");
     let prompt = format!(
-        "[STAGE — COMBAT REPORT]\nYou are the game master of a tabletop fantasy adventure (tone: {tone}). Narrator style: {style}\nRecent story:\n{recent}\n\nThese things just happened in the fight, in this order; they are final:\n{facts}\n\nNarrate them in {reply_language} in 2 to 5 vivid sentences. Keep every outcome exactly as given: no extra hits, wounds or enemies, nobody acts who is not listed. Do not mention dice, numbers or armor class.",
+        "{marker}\nYou are the game master of a tabletop fantasy adventure (tone: {tone}). Narrator style: {style}\nRecent story:\n{recent}\n\n{intro}:\n{facts}\n\nNarrate them in {reply_language} in 2 to 5 vivid sentences. Keep every outcome exactly as given: no extra hits, wounds or enemies, nobody acts who is not listed. Do not mention dice, numbers or armor class.",
         tone = definition.gm_tone,
         style = definition.narrator_style,
     );
@@ -1163,6 +1240,7 @@ pub async fn execute_combat_turn(
             if !turn_over {
                 // Still the player's turn on the board: keep the events, no narration yet.
                 state.combat.events.extend(events);
+                super::explore5e::refresh_fog(&mut state);
                 engine.set_state(state.clone());
                 save_scene_state(&state)?;
                 return Ok(state);
@@ -1176,6 +1254,18 @@ pub async fn execute_combat_turn(
         engine.push_snapshot(&state.definition.id, state.clone());
     }
 
+    finish_round(engine, inference, state, events, on_stream).await
+}
+
+/// Plays monsters and companions until the player is to act (or the fight ends), lets the
+/// game master narrate `events` plus what happened, and saves the scene.
+pub(super) async fn finish_round(
+    engine: &StageEngine,
+    inference: &InferenceClient,
+    mut state: SceneState,
+    mut events: Vec<CombatEvent>,
+    on_stream: StageStream<'_>,
+) -> Result<SceneState, String> {
     let llm = StageLlm::from_settings();
     let mut turns = 0;
     while rules5e::combat_outcome(&state.combat.combatants).is_none() && turns < MAX_TURNS_PER_CALL
@@ -1207,6 +1297,7 @@ pub async fn execute_combat_turn(
     if let Some(outcome) = outcome {
         end_encounter(&mut state, Some(outcome));
     }
+    super::explore5e::refresh_fog(&mut state);
     state.current_turn_actor = "PLAYER".to_string();
     state.definition.last_played = Some(Utc::now().to_rfc3339());
     engine.set_state(state.clone());

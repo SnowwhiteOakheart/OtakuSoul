@@ -162,6 +162,14 @@ pub struct PlanEncounterUpdate {
     pub action: String,
     #[serde(default)]
     pub enemies: Vec<PlanCombatant>,
+    /// 5e map: a prepared encounter of the map by id (instead of `enemies`).
+    #[serde(default)]
+    #[ts(optional)]
+    pub encounter: Option<String>,
+    /// 5e map: placement zone of the enemies (from the listed zones).
+    #[serde(default)]
+    #[ts(optional)]
+    pub zone: Option<String>,
     #[serde(default)]
     pub hp_updates: Vec<PlanCombatDelta>,
 }
@@ -200,6 +208,10 @@ pub struct GmPlan {
     pub inventory_remove: Vec<String>,
     #[serde(default)]
     pub encounter: Option<PlanEncounterUpdate>,
+    /// 5e scenes: the party travels to another listed map (outside fights).
+    #[serde(default)]
+    #[ts(optional)]
+    pub map_change: Option<String>,
     #[serde(default)]
     pub player_choices: Vec<TaggedChoice>,
     #[serde(default)]
