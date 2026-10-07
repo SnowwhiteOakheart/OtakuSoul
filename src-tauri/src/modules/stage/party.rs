@@ -66,6 +66,13 @@ pub fn ensure_party_vitals(state: &mut SceneState) {
             position: None,
         });
     }
+    // Companions who left the party (scene editor, party choice) leave outside fights.
+    if !state.combat.is_active {
+        let party = state.definition.party.clone();
+        state.combat.combatants.retain(|c| {
+            c.role != "companion" || party.iter().any(|name| name.eq_ignore_ascii_case(&c.name))
+        });
+    }
     // 5e scenes: heroes get their rules values from the class templates.
     super::combat5e::ensure_party_stats(state);
 }

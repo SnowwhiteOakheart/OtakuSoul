@@ -168,6 +168,17 @@ export function AboutDialog({ onClose }: AboutDialogProps) {
                   {t('about.credits.licenseNotice')}
                 </p>
 
+                {/* SRD 5.1 attribution (CC-BY-4.0) for the 5e-compatible Soul Stage rules. */}
+                <div data-testid="srd-attribution" className="space-y-1 text-[11px] leading-relaxed text-slate-400">
+                  <p>{t('about.credits.srd')}</p>
+                  <p lang="en" className="italic text-slate-500">
+                    This work includes material taken from the System Reference Document 5.1 ("SRD 5.1") by Wizards of the
+                    Coast LLC and available at https://dnd.wizards.com/resources/systems-reference-document. The SRD 5.1 is
+                    licensed under the Creative Commons Attribution 4.0 International License available at
+                    https://creativecommons.org/licenses/by/4.0/legalcode.
+                  </p>
+                </div>
+
                 {/* External Links */}
                 <div className="flex flex-wrap items-center gap-2.5 pt-1">
                   <button

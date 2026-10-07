@@ -189,6 +189,14 @@ Hub). Integrationen → Bildgenerierung enthält nur Studio und Galerie.
   `encounter.encounter`/`encounter.zone`/`map_change` → `apply_planner_map`. Mock erkennt
   „[STAGE — EXPLORATION REPORT]“. UI: `Explore5ePanel.tsx`, Nebel und Klickflächen (`data-explore`, `data-use`) in
   `StageBattleMap`, Log `utils/exploreEvents.ts`. E2E `stage-explore.mjs`.
+  Starter-Abenteuer (Schritt 5): Paket `presets/crypt-of-shadows/` (Helden-Karten mit `extensions.otakusoul_5e.class`,
+  Akte in `scenes/`, von `ensure_adventure_scenes` in den Szenenordner kopiert; Paket auch in `scan_available_characters`).
+  Klasse: Szenenwahl (`hero_classes`) > Karte (`combat5e::card_class`, nur beim Beitritt) > Platz in der Gruppe; ohne
+  Wahl behält eine Figur ihre Klasse. Akt-Ziele `SceneRules.goals` (`encounter` = vorbereitete Begegnung gewonnen über
+  `BattleMap.active_encounter` → `won_fight`, `exit` = Ausgang zur Karte → `reach_goal`), `next_scene` →
+  `continue_stage_adventure` (Gruppe, Klassen, Inventar, lange Rast). Abgewählte Gefährten verlassen außerhalb von
+  Kämpfen die Gruppe (`ensure_party_vitals`). Lobby: `AdventurePartyModal` vor 5e-Szenen mit Gruppe ohne Fortschritt;
+  Szenenkarten tragen `data-scene-id`. SRD-Hinweis im `AboutDialog` (`srd-attribution`). E2E `stage-adventure.mjs`.
 - Stimmeffekte: `VoiceConfig.effects` (`VoiceEffects`), gerendert in `services/voiceEffects.ts` (OfflineAudioContext, Tonhöhe per
   WSOLA) über `audioPlayer.enqueue(…, effects)`; jeder neue Abspielweg muss `config.effects` mitgeben.
 - Bild-LoRAs (`image_loras.rs`): `sd-server` ignoriert `<lora:…>` im Prompt; LoRAs gehen als `lora: [{path, multiplier}]`

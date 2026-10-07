@@ -1844,6 +1844,12 @@ veraltet und sind korrigiert: `chat-sidebar-errors` las die Sitzung, bevor der e
   den Raum einer vorbereiteten Begegnung, startet der Kampf am Ort; ein Rückgängig stellt Karte und Gruppe davor wieder
   her. Der Spielleiter kennt Räume (gesehen/ungesehen), Begegnungen, Zonen und Karten nur als Auswahllisten und erzählt
   Neues aus dem Erkundungsbericht. Oberfläche: Erkundungspanel mit Ort, Schlössern und Verlauf. E2E `stage-explore.mjs`.
+- [x] **Soul Stage 5e – Schritt 5 (Starter-Abenteuer & Heldengruppe, `Roadmap_DND.md`):** „Die Gruft der vergessenen
+  Schatten“ in drei Akten (Waldstraße, Gruft, Heiligtum der Schatten mit Totenbeschwörer) mit vier klassischen Helden
+  als V2-Karten (de/en/ru, Porträts, Tokens, 5e-Klasse auf der Karte). Akte sind normale 5e-Szenen mit Zielen, die die
+  Engine abhakt; „Weiter mit dem nächsten Akt“ nimmt Gruppe, Klassen und Inventar mit. Lobby fragt vor dem Start nach
+  der Gruppe (klassisch, eigene Gefährten oder gemischt), der Charakter-Editor kennt eine 5e-Klasse, der Info-Dialog
+  nennt das SRD 5.1. E2E `stage-adventure.mjs` spielt Akt 1 von der Lobby bis in Akt 2.
 
 
 ## Grafiken für das Spielbrett (07.10.2026)

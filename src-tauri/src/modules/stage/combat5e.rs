@@ -356,6 +356,9 @@ fn begin_turn(state: &mut SceneState) -> CombatEvent {
 /// heroes who went down wake with 1 hit point – except the dead (only with heroic death).
 pub fn end_encounter(state: &mut SceneState, _outcome: Option<CombatOutcome>) {
     state.combat.is_active = false;
+    if let Some(map) = state.map.as_mut() {
+        map.active_encounter = None;
+    }
     state.combat.effects.clear();
     for combatant in state
         .combat
@@ -1339,9 +1342,6 @@ pub(super) async fn finish_round(
     }
     if let Some(outcome) = outcome {
         end_encounter(&mut state, Some(outcome));
-    }
-    if let Some(map) = state.map.as_mut() {
-        map.active_encounter = None;
     }
     super::explore5e::refresh_fog(&mut state);
     state.current_turn_actor = "PLAYER".to_string();

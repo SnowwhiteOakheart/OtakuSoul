@@ -99,7 +99,7 @@ Step into tabletop campaigns led by an adaptive AI Game Master. The Stage combin
 * **3D Animated Dice Rolls:** Skill checks against Difficulty Classes (DC), physical 3D dice simulations, and audiovisual flair for critical successes and fumbles.
 * **Scenes & Campaigns:** Play preloaded modules like all 12 chapters of *No Game No Life* or craft custom universes from scratch.
 * **NPCs with Memory & Promotion:** Encounter vendors, guards, or rivals with persistent memories — and recruit them into your permanent party!
-* **5e-compatible fights (SRD 5.1):** Optionally a rules engine decides every roll, hit and enemy turn while the Game Master only narrates — with classes, SRD monsters and a tactical battle map (movement, line of sight, ranges, opportunity attacks), spells with area preview, conditions, death saves, skill checks and rests — plus map exploration with fog of war, doors, locks, traps and encounters.
+* **5e-compatible fights (SRD 5.1):** Optionally a rules engine decides every roll, hit and enemy turn while the Game Master only narrates — with classes, SRD monsters and a tactical battle map (movement, line of sight, ranges, opportunity attacks), spells with area preview, conditions, death saves, skill checks and rests — plus map exploration with fog of war, doors, locks, traps and encounters. The starter adventure *The Crypt of Forgotten Shadows* (three acts) comes with four classic heroes — Thorin, Lyra, Finn and Althea — or takes your own companions, whose 5e class you pick in the character editor.
 
 <p align="center">
   <img src="docs/assets/screenshots/stage-world-editor.png" alt="Stage World State Editor" width="85%" />

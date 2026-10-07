@@ -1,7 +1,8 @@
 import React, { useEffect, useState, useRef } from 'react';
-import { useStoreFields } from '../../store/useAppStore';
+import { useAppStore, useStoreFields } from '../../store/useAppStore';
 import { SceneDefinition, ScenePreview } from '../../types';
 import { SceneCreateModal } from './SceneCreateModal';
+import { AdventurePartyModal } from './AdventurePartyModal';
 import {
   Compass,
   Pencil,
@@ -63,12 +64,15 @@ export const SceneLobbyModal: React.FC<SceneLobbyModalProps> = ({
     deleteStageScene,
     exportStageMarkdown,
     openSoulHubTab,
+    updateStageSceneDefinition,
   } = useStoreFields(
     'stageScenes', 'fetchStageScenes', 'stageFolders', 'fetchStageFolders', 'selectedStageFolder',
     'setSelectedStageFolder', 'createStageFolder', 'moveStageSceneToFolder', 'deleteStageFolder',
     'importStageSceneJson', 'exportStageSceneJson', 'resetStageScene', 'stageState',
-    'loadStageScene', 'deleteStageScene', 'exportStageMarkdown', 'openSoulHubTab',
+    'loadStageScene', 'deleteStageScene', 'exportStageMarkdown', 'openSoulHubTab', 'updateStageSceneDefinition',
   );
+  // 5e adventures with a party: choose classic heroes, own companions or a mix first.
+  const [partyScene, setPartyScene] = useState<ScenePreview | null>(null);
 
   const [search, setSearch] = useState('');
   const [filterType, setFilterType] = useState<'all' | 'presets' | 'custom'>('all');
@@ -126,7 +130,9 @@ export const SceneLobbyModal: React.FC<SceneLobbyModalProps> = ({
   });
 
   const handleSceneClick = async (scene: ScenePreview) => {
-    if (scene.has_progress && scene.id !== currentSceneId) {
+    if (scene.rules_5e && !scene.has_progress && scene.party.length > 0 && scene.id !== currentSceneId) {
+      setPartyScene(scene);
+    } else if (scene.has_progress && scene.id !== currentSceneId) {
       setSceneToResume(scene);
     } else {
       await handleLoadSceneDirect(scene.id);
@@ -139,6 +145,26 @@ export const SceneLobbyModal: React.FC<SceneLobbyModalProps> = ({
       onClose();
     } catch (err) {
       console.error(err);
+    }
+  };
+
+  const handlePartyChosen = async (party: string[], heroClasses: Record<string, string>) => {
+    if (!partyScene) return;
+    try {
+      await loadStageScene(partyScene.id);
+      const definition = useAppStore.getState().stageState?.definition;
+      if (definition?.id === partyScene.id) {
+        const rules = definition.rules;
+        await updateStageSceneDefinition({
+          ...definition,
+          party,
+          rules: rules ? { ...rules, hero_classes: { ...rules.hero_classes, ...heroClasses } } : rules,
+        });
+      }
+      setPartyScene(null);
+      onClose();
+    } catch (err) {
+      toast.error(translate('common.actionFailed', { error: errorMessage(err) }));
     }
   };
 
@@ -472,6 +498,7 @@ export const SceneLobbyModal: React.FC<SceneLobbyModalProps> = ({
               return (
                 <div
                   key={sc.id}
+                  data-scene-id={sc.id}
                   {...pressable(() => handleSceneClick(sc))}
                   className={`group relative flex flex-col justify-between p-4 rounded-2xl border transition-all cursor-pointer ${
                     isCurrent
@@ -615,6 +642,9 @@ export const SceneLobbyModal: React.FC<SceneLobbyModalProps> = ({
       </ModalOverlay>
 
       {/* Fortsetzen vs. Neu starten Modal */}
+      {partyScene && (
+        <AdventurePartyModal scene={partyScene} onStart={(party, classes) => void handlePartyChosen(party, classes)} onClose={() => setPartyScene(null)} />
+      )}
       {sceneToResume && (
         <ModalOverlay onClose={() => setSceneToResume(null)} className="fixed inset-0 z-60 flex items-center justify-center bg-black/85 backdrop-blur-md p-4">
           <div className="w-full max-w-md bg-slate-900 border border-accent-500/50 rounded-2xl p-5 shadow-2xl space-y-4">
