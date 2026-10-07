@@ -6,6 +6,11 @@ use std::sync::LazyLock;
 
 const MONSTERS_JSON: &str = include_str!("../../../../../presets/srd5/monsters.json");
 const CLASSES_JSON: &str = include_str!("../../../../../presets/srd5/classes.json");
+/// Battle maps (`presets/srd5/maps/*.json`); new maps are added here.
+const MAP_JSONS: [&str; 2] = [
+    include_str!("../../../../../presets/srd5/maps/crypt_hall.json"),
+    include_str!("../../../../../presets/srd5/maps/forest_road.json"),
+];
 
 #[derive(Debug, Clone, Deserialize)]
 pub struct MonsterData {
@@ -100,6 +105,26 @@ static CLASSES: LazyLock<Vec<ClassData>> = LazyLock::new(|| {
         .expect("presets/srd5/classes.json is valid (checked by tests)")
         .classes
 });
+
+static MAPS: LazyLock<Vec<BattleMap>> = LazyLock::new(|| {
+    MAP_JSONS
+        .iter()
+        .map(|json| {
+            serde_json::from_str::<MapFile>(json)
+                .map_err(|e| e.to_string())
+                .and_then(MapFile::build)
+                .expect("bundled maps are valid (checked by tests)")
+        })
+        .collect()
+});
+
+pub fn battle_maps() -> &'static [BattleMap] {
+    &MAPS
+}
+
+pub fn battle_map(id: &str) -> Option<&'static BattleMap> {
+    MAPS.iter().find(|map| map.id == id)
+}
 
 pub fn monsters() -> &'static [MonsterData] {
     &MONSTERS

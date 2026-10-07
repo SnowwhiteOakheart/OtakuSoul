@@ -1,0 +1,97 @@
+{
+ "id": "crypt_hall",
+ "name": {
+  "de": "Halle der Gruft",
+  "en": "Crypt hall",
+  "ru": "Зал склепа"
+ },
+ "tileset": "dungeon",
+ "rows": [
+  "################",
+  "#pp..:..#w....B#",
+  "#pp.....d......#",
+  "#...O...#..O...#",
+  "#.......#......#",
+  "####d####..ss..#",
+  "#b......#......#",
+  "#...~~..d..S...#",
+  "#..~~~..#......#",
+  "#.......#.ss.O.#",
+  "#c.....B#....a.#",
+  "################"
+ ],
+ "legend": {
+  "#": {
+   "ground": "wall_stone",
+   "kind": "wall"
+  },
+  ".": {
+   "ground": "floor_stone",
+   "kind": "floor"
+  },
+  "p": {
+   "ground": "floor_stone",
+   "kind": "floor",
+   "zone": "party"
+  },
+  "s": {
+   "ground": "floor_stone",
+   "kind": "floor",
+   "zone": "spawn"
+  },
+  "d": {
+   "ground": "floor_stone",
+   "kind": "floor",
+   "object": "door_open"
+  },
+  "D": {
+   "ground": "floor_stone",
+   "kind": "floor",
+   "object": "door_closed"
+  },
+  "O": {
+   "ground": "floor_stone",
+   "kind": "floor",
+   "object": "pillar"
+  },
+  ":": {
+   "ground": "floor_stone",
+   "kind": "floor",
+   "object": "rubble"
+  },
+  "~": {
+   "ground": "water_shallow",
+   "kind": "difficult"
+  },
+  "a": {
+   "ground": "floor_stone",
+   "kind": "floor",
+   "object": "altar_dark"
+  },
+  "b": {
+   "ground": "floor_stone",
+   "kind": "floor",
+   "object": "bones"
+  },
+  "c": {
+   "ground": "floor_stone",
+   "kind": "floor",
+   "object": "chest_closed"
+  },
+  "B": {
+   "ground": "floor_stone",
+   "kind": "floor",
+   "object": "brazier"
+  },
+  "S": {
+   "ground": "floor_stone",
+   "kind": "floor",
+   "object": "sarcophagus"
+  },
+  "w": {
+   "ground": "floor_stone",
+   "kind": "floor",
+   "object": "cobweb"
+  }
+ }
+}

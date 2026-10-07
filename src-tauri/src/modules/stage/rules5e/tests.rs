@@ -364,3 +364,197 @@ fn a_seeded_fight_runs_to_the_end() {
         "fight ended within {turns} turns"
     );
 }
+
+// --- Battle map ---
+
+fn small_map(rows: &[&str]) -> BattleMap {
+    let cell = |ground: &str, kind: CellKind, object: Option<&str>, zone: Option<&str>| MapCell {
+        ground: ground.into(),
+        kind,
+        object: object.map(Into::into),
+        zone: zone.map(Into::into),
+    };
+    MapFile {
+        id: "test".into(),
+        name: LocalizedName::default(),
+        tileset: "dungeon".into(),
+        rows: rows.iter().map(|r| r.to_string()).collect(),
+        legend: [
+            ("#", cell("wall_stone", CellKind::Wall, None, None)),
+            (".", cell("floor_stone", CellKind::Floor, None, None)),
+            (
+                "p",
+                cell("floor_stone", CellKind::Floor, None, Some("party")),
+            ),
+            (
+                "s",
+                cell("floor_stone", CellKind::Floor, None, Some("spawn")),
+            ),
+            ("~", cell("water_shallow", CellKind::Difficult, None, None)),
+            (
+                "D",
+                cell("floor_stone", CellKind::Floor, Some("door_closed"), None),
+            ),
+            (
+                "O",
+                cell("floor_stone", CellKind::Floor, Some("pillar"), None),
+            ),
+        ]
+        .into_iter()
+        .map(|(k, v)| (k.to_string(), v))
+        .collect(),
+    }
+    .build()
+    .unwrap()
+}
+
+#[test]
+fn bundled_maps_build_and_have_spawn_zones() {
+    assert_eq!(battle_maps().len(), 2);
+    for map in battle_maps() {
+        assert!(
+            !map.zone_cells("party").is_empty() && !map.zone_cells("spawn").is_empty(),
+            "{}",
+            map.id
+        );
+        assert_eq!(map.cells.len() as i32, map.width * map.height);
+        assert!(!map.name.de.is_empty() && !map.name.ru.is_empty());
+    }
+    assert_eq!(battle_map("crypt_hall").unwrap().tileset, "dungeon");
+}
+
+#[test]
+fn map_files_are_checked() {
+    let file = |rows: &[&str]| MapFile {
+        id: "bad".into(),
+        name: LocalizedName::default(),
+        tileset: "dungeon".into(),
+        rows: rows.iter().map(|r| r.to_string()).collect(),
+        legend: [(
+            ".".to_string(),
+            MapCell {
+                ground: "f".into(),
+                kind: CellKind::Floor,
+                object: None,
+                zone: Some("party".into()),
+            },
+        )]
+        .into(),
+    };
+    assert!(file(&["..", "."]).build().is_err()); // not a rectangle
+    assert!(
+        file(&[".x"])
+            .build()
+            .unwrap_err()
+            .contains("unknown character 'x'")
+    );
+    assert!(file(&[".."]).build().is_ok());
+}
+
+#[test]
+fn movement_costs_terrain_and_respects_walls_and_corners() {
+    let map = small_map(&["#######", "#p.~..#", "#..#..#", "#.....#", "#######"]);
+    let start = GridPos::new(1, 1);
+    let reach = reachable(&map, start, 30, &Occupancy::default());
+    // Into the water costs 10: 5 to (2,1), 10 more to (3,1).
+    assert_eq!(reach.cost(GridPos::new(3, 1)), Some(15));
+    // Walls are never reachable.
+    assert_eq!(reach.cost(GridPos::new(3, 2)), None);
+    // (4,2) is two squares from (3,1)… but the diagonal from (2,1)? Cutting past the wall at
+    // (3,2) from (2,1) to (3,2) is impossible anyway; check a real corner: (2,2) → (3,3) passes
+    // the wall corner (3,2), so it must go around.
+    let from_corner = reachable(&map, GridPos::new(2, 2), 5, &Occupancy::default());
+    assert_eq!(from_corner.cost(GridPos::new(3, 3)), None);
+    assert_eq!(from_corner.cost(GridPos::new(2, 3)), Some(5));
+    // Diagonals cost 5 ft like straight steps.
+    assert_eq!(reach.cost(GridPos::new(2, 2)), Some(5));
+    let path = reach.path(GridPos::new(5, 3));
+    assert_eq!(path.last(), Some(&GridPos::new(5, 3)));
+    assert!(path.iter().all(|p| map.walkable(*p)));
+}
+
+#[test]
+fn enemies_block_and_allies_are_passed_but_not_ended_on() {
+    let map = small_map(&["#####", "#p..#", "#####"]);
+    let start = GridPos::new(1, 1);
+    let ally = Occupancy {
+        allies: vec![GridPos::new(2, 1)],
+        enemies: vec![],
+    };
+    let reach = reachable(&map, start, 30, &ally);
+    assert!(!reach.can_end(GridPos::new(2, 1)));
+    assert_eq!(
+        reach.path(GridPos::new(3, 1)),
+        vec![GridPos::new(2, 1), GridPos::new(3, 1)]
+    );
+    let enemy = Occupancy {
+        allies: vec![],
+        enemies: vec![GridPos::new(2, 1)],
+    };
+    assert_eq!(
+        reachable(&map, start, 30, &enemy).cost(GridPos::new(3, 1)),
+        None
+    );
+}
+
+#[test]
+fn sight_and_attack_ranges() {
+    let map = small_map(&[
+        "##########",
+        "#p...O...#",
+        "#........#",
+        "#...D....#",
+        "##########",
+    ]);
+    let archer = GridPos::new(1, 1);
+    assert!(
+        !map.line_of_sight(archer, GridPos::new(8, 1)),
+        "pillar blocks"
+    );
+    assert!(map.line_of_sight(archer, GridPos::new(8, 2)));
+    assert!(
+        !map.line_of_sight(GridPos::new(4, 2), GridPos::new(4, 4))
+            || !map.contains(GridPos::new(4, 4))
+    );
+    assert!(
+        !map.line_of_sight(GridPos::new(3, 3), GridPos::new(5, 3)),
+        "closed door blocks"
+    );
+    let (goblin, _) = monster_stats(monster("goblin").unwrap());
+    let scimitar = goblin.attack("scimitar").unwrap();
+    let shortbow = goblin.attack("shortbow").unwrap();
+    assert_eq!(
+        attack_reach(&map, scimitar, GridPos::new(2, 2), GridPos::new(3, 3)),
+        Some(RollMode::Normal)
+    );
+    assert_eq!(
+        attack_reach(&map, scimitar, GridPos::new(2, 2), GridPos::new(4, 2)),
+        None
+    );
+    assert_eq!(
+        attack_reach(&map, shortbow, archer, GridPos::new(8, 2)),
+        Some(RollMode::Normal)
+    );
+    let mut short = shortbow.clone();
+    short.range_ft = 20;
+    short.long_range_ft = 30; // (8,2) is 35 ft away: out of long range
+    assert_eq!(
+        attack_reach(&map, &short, archer, GridPos::new(6, 2)),
+        Some(RollMode::Disadvantage)
+    );
+    assert_eq!(attack_reach(&map, &short, archer, GridPos::new(8, 2)), None);
+}
+
+#[test]
+fn placement_fills_the_zone_then_spreads() {
+    let map = small_map(&["#######", "#s....#", "#....p#", "#######"]);
+    let spots = map.placements("spawn", 3, &[GridPos::new(2, 1)]);
+    assert_eq!(spots.len(), 3);
+    assert_eq!(spots[0], GridPos::new(1, 1));
+    assert!(
+        spots
+            .iter()
+            .all(|p| map.walkable(*p) && *p != GridPos::new(2, 1))
+    );
+    assert_eq!(GridPos::new(1, 1).feet_to(GridPos::new(4, 3)), 15);
+}

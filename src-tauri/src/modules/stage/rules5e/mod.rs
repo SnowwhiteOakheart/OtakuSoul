@@ -6,6 +6,7 @@
 pub mod ai;
 pub mod combat;
 pub mod data;
+pub mod map;
 pub mod roll;
 
 use serde::{Deserialize, Serialize};
@@ -14,6 +15,7 @@ use ts_rs::TS;
 pub use ai::*;
 pub use combat::*;
 pub use data::*;
+pub use map::*;
 pub use roll::*;
 
 /// The six abilities, in the usual order (STR DEX CON INT WIS CHA).

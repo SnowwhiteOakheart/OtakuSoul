@@ -1,0 +1,90 @@
+{
+ "id": "forest_road",
+ "name": {
+  "de": "Waldstraße",
+  "en": "Forest road",
+  "ru": "Лесная дорога"
+ },
+ "tileset": "forest",
+ "rows": [
+  ",,T,,,b,,,,P,,,T,,",
+  ",P,,,,,,,s,,,,b,,P",
+  ",,,b,,R,,,s,,,,,,,",
+  "===============pp=",
+  "=====Ww=======pp==",
+  "==================",
+  ",,L,,,,,,,,b,,,,T,",
+  ",T,,,s,,,,,,,,,R,,",
+  ",,,,,s,,~~~~,,,,,,",
+  "~~~~~~~~~,,,,P,,,,"
+ ],
+ "legend": {
+  ",": {
+   "ground": "grass",
+   "kind": "floor"
+  },
+  "=": {
+   "ground": "dirt_road",
+   "kind": "floor"
+  },
+  "T": {
+   "ground": "grass",
+   "kind": "floor",
+   "object": "tree"
+  },
+  "P": {
+   "ground": "grass",
+   "kind": "floor",
+   "object": "tree_pine"
+  },
+  "b": {
+   "ground": "grass",
+   "kind": "floor",
+   "object": "bush"
+  },
+  "R": {
+   "ground": "grass",
+   "kind": "floor",
+   "object": "rock"
+  },
+  "L": {
+   "ground": "grass",
+   "kind": "floor",
+   "object": "log"
+  },
+  "W": {
+   "ground": "dirt_road",
+   "kind": "floor",
+   "object": "wagon_left"
+  },
+  "w": {
+   "ground": "dirt_road",
+   "kind": "floor",
+   "object": "wagon_right"
+  },
+  "C": {
+   "ground": "grass",
+   "kind": "floor",
+   "object": "crates"
+  },
+  "~": {
+   "ground": "stream",
+   "kind": "difficult"
+  },
+  "p": {
+   "ground": "dirt_road",
+   "kind": "floor",
+   "zone": "party"
+  },
+  "s": {
+   "ground": "grass",
+   "kind": "floor",
+   "zone": "spawn"
+  },
+  "F": {
+   "ground": "grass",
+   "kind": "floor",
+   "object": "campfire"
+  }
+ }
+}
