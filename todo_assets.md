@@ -148,11 +148,11 @@ gedämpften Farbe passend zur Figur. Gut erkennbar bei 48 px.
 | [x] | `monster_ghoul.svg` | Ghul: hagere, fahle Gestalt, lange Krallen am Bildrand, hungrige Augen. |
 | [x] | `monster_shadow.svg` | Schatten: fast schwarze, rauchige Silhouette mit zwei weißen Augenpunkten. |
 | [x] | `monster_necromancer.svg` | Nekromant (Boss Akt 3): bleicher Mann mit Kapuzenrobe in Schwarz/Violett, grünes Nekrolicht in der Hand, Knochenschmuck. |
-| [ ] | `monster_hobgoblin.svg` | Hobgoblin: orangerote Haut, disziplinierter Blick, Plattenhelm mit Wangenschutz, Schildkante. |
-| [ ] | `monster_bugbear.svg` | Grottenschrat: großer, zottelig behaarter Goblinoid, Bärenschnauze, Morgenstern über der Schulter. |
-| [ ] | `monster_giant_spider.svg` | Riesenspinne: schwarzbrauner Spinnenkopf von vorn, acht glänzende Augen, Kieferklauen, Netzfäden am Rand. |
-| [ ] | `monster_dire_wolf.svg` | Schreckenswolf: massiger dunkelgrauer Wolfskopf, Narben, gelbe Augen (größer und wilder als der Wolf). |
-| [ ] | `monster_ogre.svg` | Oger: breites Gesicht, schiefe Hauer, Fellumhang, grober Holzknüppel am Bildrand. |
+| [x] | `monster_hobgoblin.svg` | Hobgoblin: orangerote Haut, disziplinierter Blick, Plattenhelm mit Wangenschutz, Schildkante. |
+| [x] | `monster_bugbear.svg` | Grottenschrat: großer, zottelig behaarter Goblinoid, Bärenschnauze, Morgenstern über der Schulter. |
+| [x] | `monster_giant_spider.svg` | Riesenspinne: schwarzbrauner Spinnenkopf von vorn, acht glänzende Augen, Kieferklauen, Netzfäden am Rand. |
+| [x] | `monster_dire_wolf.svg` | Schreckenswolf: massiger dunkelgrauer Wolfskopf, Narben, gelbe Augen (größer und wilder als der Wolf). |
+| [x] | `monster_ogre.svg` | Oger: breites Gesicht, schiefe Hauer, Fellumhang, grober Holzknüppel am Bildrand. |
 
 ---
 
@@ -225,7 +225,7 @@ bzw. `stroke="currentColor"` (die App färbt sie), Strichstärke 2, keine Füllf
 
 ## G. Prüfliste vor der Übergabe
 
-Neu gestaltet und geprüft am **07.10.2026**: alle 69 Assets (65 SVGs und vier PNGs).
+Neu gestaltet und geprüft am **07.10.2026**: alle 74 Assets (70 SVGs und vier PNGs), einschließlich der fünf ergänzten Monster-Tokens.
 Details und Porträt-Prompts: [`docs/stage_assets.md`](docs/stage_assets.md).
 
 - [x] Dateiname exakt wie in der Tabelle, im richtigen Ordner.

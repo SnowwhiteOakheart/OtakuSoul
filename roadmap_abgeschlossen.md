@@ -1869,3 +1869,6 @@ veraltet und sind korrigiert: `chat-sidebar-errors` las die Sitzung, bevor der e
 
 - [x] **Token-Korrektur Althea/Lyra (07.10.2026):** Altheas Seitenhaar geht zusammenhängend in einen
   geflochtenen Zopf über; Lyra hält eine offene Hand unter dem Zauberstern. Beide SVGs bei 256 und 48 px geprüft.
+
+- [x] **Weitere Monster-Tokens (07.10.2026):** Hobgoblin, Grottenschrat, Riesenspinne, Schreckenswolf und
+  Oger nach `todo_assets.md` erstellt; reine 256er-SVGs mit Kreisbeschnitt, bei 48 px geprüft.

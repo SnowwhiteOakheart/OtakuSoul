@@ -1,9 +1,9 @@
 # Stage-Grafiken
 
-Die 69 Grafiken unter `public/stage/` wurden am 07.10.2026 nach
+Die 74 Grafiken unter `public/stage/` wurden am 07.10.2026 nach
 [`todo_assets.md`](../todo_assets.md) neu gestaltet. Dateinamen und Einbindung bleiben erhalten.
 
-Die 15 Tokens sind direkt gezeichnete Vektorgrafiken mit facettierten Licht- und Schattenflächen,
+Die 20 Tokens sind direkt gezeichnete Vektorgrafiken mit facettierten Licht- und Schattenflächen,
 unterschiedlichen Silhouetten und hervorgehobenen Augen. Sie sind auf den Kreis mit Mittelpunkt
 128/128 und Radius 120 begrenzt; die App zeichnet den äußeren Rahmen. Die vier Heldenillustrationen
 zeigen dieselben Merkmale in einem ausgearbeiteten Anime-/Fantasy-Stil.
@@ -62,3 +62,11 @@ Gemeinsamer Rahmen:
 
 > Human cleric woman, friendly confident face, golden blonde braid, white tabard with a
 > GOLD SUN DISC emblem (purely pictorial), sun amulet and mace. Bright temple with warm sun rays.
+
+## Ergänzte Monster-Tokens (07.10.2026)
+
+Hobgoblin, Grottenschrat, Riesenspinne, Schreckenswolf und Oger sind als reine SVGs unter
+`public/stage/tokens/monster_{hobgoblin,bugbear,giant_spider,dire_wolf,ogre}.svg` ergänzt.
+Die Riesenspinne besitzt acht Augen; der Schreckenswolf unterscheidet sich durch massigeren Kopf,
+zerklüfteten Fellkragen und Narben vom gewöhnlichen Wolf. Alle fünf Tokens sind bei 256 und 48 px
+visuell geprüft; SVG-Regeln, Dateigrößen und Transparenz außerhalb des Kreises wurden kontrolliert.

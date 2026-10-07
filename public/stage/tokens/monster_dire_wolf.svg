@@ -1,0 +1,33 @@
+<svg xmlns="http://www.w3.org/2000/svg" version="1.1" width="256" height="256" viewBox="0 0 256 256">
+<defs>
+<clipPath id="monster_dire_wolf-clip">
+<circle cx="128" cy="128" r="120"/>
+</clipPath>
+</defs>
+<g clip-path="url(#monster_dire_wolf-clip)">
+<circle cx="128" cy="128" r="120" fill="#293039" stroke="none" stroke-width="1"/>
+<path d="M8 150 Q20 28 129 8 Q70 44 57 128 Q46 192 8 203Z" fill="#293039" stroke="#0f172a" stroke-width="0" stroke-linecap="round" stroke-linejoin="round"/>
+<path d="M9 256 L26 208 L43 190 L32 162 L58 166 L52 134 L70 112 L62 47 L78 35 L112 65 L143 64 L180 33 L195 48 L185 111 L204 133 L199 163 L225 167 L210 191 L233 211 L247 256Z" fill="#30343b" stroke="#0f172a" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"/>
+<path d="M72 104 L72 49 L102 79 M153 79 L181 47 L178 105" fill="#6b6f75" stroke="#0f172a" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+<path d="M77 90 L78 61 L93 81 M165 82 L181 61 L175 93" fill="#4a3322" stroke="#0f172a" stroke-width="0" stroke-linecap="round" stroke-linejoin="round"/>
+<path d="M70 120 L99 75 L126 88 L151 74 L182 117 L172 141 L195 164 L173 169 L180 194 L153 182 L128 209 L101 181 L76 194 L83 168 L61 163 L82 142Z" fill="#4a4e55" stroke="#0f172a" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+<path d="M74 120 L100 82 L119 95 L108 125 L84 143 L70 154 L92 151Z" fill="#6b6f75" stroke="#0f172a" stroke-width="0" stroke-linecap="round" stroke-linejoin="round"/>
+<path d="M114 90 L128 106 L144 88 L140 140 L120 140Z" fill="#30343b" stroke="#0f172a" stroke-width="0" stroke-linecap="round" stroke-linejoin="round"/>
+<path d="M94 124 Q106 119 117 126 L114 132 L97 132Z" fill="#e2d8bb" stroke="#0f172a" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
+<ellipse cx="106" cy="128" rx="4" ry="4" fill="#e0c25a" stroke="none" stroke-width="1"/>
+<circle cx="106" cy="128" r="2" fill="#0f172a" stroke="none" stroke-width="1"/>
+<circle cx="105" cy="127" r="1" fill="#ffffff" stroke="none" stroke-width="1"/>
+<path d="M138 124 Q150 119 161 126 L158 132 L141 132Z" fill="#e2d8bb" stroke="#0f172a" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
+<ellipse cx="150" cy="128" rx="4" ry="4" fill="#e0c25a" stroke="none" stroke-width="1"/>
+<circle cx="150" cy="128" r="2" fill="#0f172a" stroke="none" stroke-width="1"/>
+<circle cx="149" cy="127" r="1" fill="#ffffff" stroke="none" stroke-width="1"/>
+<path d="M85 113 L116 119 M140 119 L172 111" fill="none" stroke="#30343b" stroke-width="4" stroke-linecap="round" stroke-linejoin="round"/>
+<path d="M109 146 L146 145 L163 172 L151 194 L128 207 L102 192 L91 172Z" fill="#8a8e94" stroke="#0f172a" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+<path d="M101 174 L154 174 L150 198 L129 211 L108 199Z" fill="#202530" stroke="#0f172a" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+<path d="M106 175 L112 191 L118 175 M138 175 L145 191 L150 175 M118 201 L122 192 L126 205 M132 204 L136 192 L140 200" fill="#ded9c7" stroke="#0f172a" stroke-width="1" stroke-linecap="round" stroke-linejoin="round"/>
+<path d="M110 153 Q128 146 146 153 L140 169 L128 175 L116 168Z" fill="#0f172a" stroke="#0f172a" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+<path d="M117 155 H128" fill="none" stroke="#6b7480" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+<path d="M154 91 L143 113 L153 128 M162 94 L151 116" fill="none" stroke="#9aa3ad" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+<path d="M75 215 L93 198 L104 222 L128 236 L148 219 L167 199 L185 215 L169 242 L129 256 L91 243Z" fill="#4a4e55" stroke="#0f172a" stroke-width="1" stroke-linecap="round" stroke-linejoin="round"/>
+</g>
+</svg>
