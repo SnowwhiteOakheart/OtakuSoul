@@ -315,6 +315,11 @@ pub struct CombatOptions {
     pub actions: Vec<ActionOption>,
     pub movement_left_ft: u32,
     pub action_used: bool,
+    #[serde(default)]
+    pub bonus_action_used: bool,
+    /// Spells the actor can cast now.
+    #[serde(default)]
+    pub spells: Vec<SpellOption>,
 }
 
 /// Attacks the actor can make from where it stands now (board), plus Dodge.

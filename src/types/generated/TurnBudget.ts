@@ -3,7 +3,7 @@
 /**
  * What the combatant whose turn it is has left (5e: move up to its speed, one action).
  */
-export type TurnBudget = { movement_left_ft: number, action_used: boolean, 
+export type TurnBudget = { movement_left_ft: number, action_used: boolean, bonus_action_used: boolean, 
 /**
  * Disengage taken: leaving reach provokes no opportunity attacks this turn.
  */

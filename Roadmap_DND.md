@@ -157,8 +157,8 @@ blockieren Sicht und Weg.
 - [x] Zustände nach SRD mit Wirkung (Vorteil/Nachteil, Tempo 0, automatische Krits bei Gelähmt …); bestehende
   `CombatCondition` wird im 5e-Modus darauf abgebildet.
 - [x] Todesrettungswürfe, Stabilisieren, Heilung aus 0 LP.
-- [ ] Rasten im 5e-Modus über `rest_stage_party`: kurz (Trefferwürfel), lang (LP, Plätze, halbe Trefferwürfel).
-- [ ] Proben außerhalb des Kampfs: `dice_check` des GM nennt eine 5e-Fertigkeit, die Engine rechnet mit Übung.
+- [x] Rasten im 5e-Modus über `rest_stage_party`: kurz (Trefferwürfel), lang (LP, Plätze, halbe Trefferwürfel).
+- [x] Proben außerhalb des Kampfs: `dice_check` des GM nennt eine 5e-Fertigkeit, die Engine rechnet mit Übung.
 - [ ] UI: Zauberbuch (nach Graden, Platzverbrauch), vollständiger Bogen (Fertigkeiten, Rettungswürfe, Trefferwürfel,
   Todesrettungswürfe).
 - [ ] Tests: Rettungswurf/Halbschaden, Konzentration, Zustandswirkungen, Todesrettung, Rasten; E2E Zauber auf dem Brett.

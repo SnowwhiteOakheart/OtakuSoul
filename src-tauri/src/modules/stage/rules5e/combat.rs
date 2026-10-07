@@ -17,6 +17,8 @@ pub const FLED: &str = "fled";
 pub struct TurnBudget {
     pub movement_left_ft: u32,
     pub action_used: bool,
+    #[serde(default)]
+    pub bonus_action_used: bool,
     /// Disengage taken: leaving reach provokes no opportunity attacks this turn.
     pub disengaged: bool,
 }

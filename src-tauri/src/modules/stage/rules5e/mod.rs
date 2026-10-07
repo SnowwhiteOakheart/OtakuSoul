@@ -10,6 +10,7 @@ pub mod conditions;
 pub mod data;
 pub mod map;
 pub mod roll;
+pub mod skills;
 pub mod spells;
 
 use serde::{Deserialize, Serialize};
@@ -22,6 +23,7 @@ pub use conditions::*;
 pub use data::*;
 pub use map::*;
 pub use roll::*;
+pub use skills::*;
 pub use spells::*;
 
 /// The six abilities, in the usual order (STR DEX CON INT WIS CHA).

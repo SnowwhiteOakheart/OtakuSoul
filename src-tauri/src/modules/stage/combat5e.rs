@@ -3,8 +3,9 @@
 //! action (or the engine's fallback), the player through the UI. Afterwards the game master
 //! narrates the resulting events without changing them.
 
-use super::rules5e::{self, CombatEvent, CombatOutcome, TurnDecision};
+use super::rules5e::{self, CombatEvent, CombatOutcome, DeathSaveOutcome, TurnDecision};
 use super::*;
+use rand::RngExt;
 
 /// Fight events kept in the scene (log in the UI).
 const MAX_EVENTS: usize = 300;
@@ -83,8 +84,59 @@ pub fn planner_encounter_rule() -> String {
         .collect::<Vec<_>>()
         .join(", ");
     format!(
-        r#"- encounter: only to start or end a fight. Start: {{"action":"start", "enemies":[{{"monster":"goblin", "count":2}}]}} with monster ids from: {ids}. End without a winner (surrender, escape, truce): {{"action":"end"}}. A rules engine resolves every attack, hit and wound – never put damage, hit points or hp_updates into the plan."#
+        r#"- encounter: only to start or end a fight. Start: {{"action":"start", "enemies":[{{"monster":"goblin", "count":2}}]}} with monster ids from: {ids}. End without a winner (surrender, escape, truce): {{"action":"end"}}. A rules engine resolves every attack, hit and wound – never put damage, hit points or hp_updates into the plan.
+- dice_check (5e): skill_name must be one of {skills}; the engine adds the character's own bonus, so the formula is ignored."#,
+        skills = rules5e::skill_ids().join(", "),
     )
+}
+
+/// A 5e rest for the party. Short: each hero spends hit dice (d + CON) while below three
+/// quarters of their hit points. Long: full hit points, all spell slots, half the hit dice
+/// back, death saves and fight conditions cleared, Aid ends. Returns one line per hero for
+/// the chronicle (English; the narrator retells it).
+pub fn rest_party(state: &mut SceneState, long: bool) -> Vec<String> {
+    let mut rng = rand::rng();
+    let mut lines = Vec::new();
+    for c in state
+        .combat
+        .combatants
+        .iter_mut()
+        .filter(|c| rules5e::is_party(c))
+    {
+        let Some(stats) = c.stats5e.as_mut() else {
+            continue;
+        };
+        if stats.death_saves.dead {
+            continue;
+        }
+        let before = c.hp;
+        if long {
+            if c.conditions.iter().any(|x| x.name == rules5e::AID) {
+                c.max_hp = (c.max_hp - 5).max(1);
+            }
+            c.hp = c.max_hp;
+            stats.hit_dice_left = (stats.hit_dice_left + (stats.level / 2).max(1)).min(stats.level);
+            if let Some(casting) = stats.spellcasting.as_mut() {
+                casting.slots_used = [0; 9];
+            }
+            stats.death_saves = rules5e::DeathSaves::default();
+            stats.concentration = None;
+            c.conditions.clear();
+        } else {
+            let con = stats.modifier(rules5e::Ability::Con);
+            while stats.hit_dice_left > 0 && c.hp * 4 < c.max_hp * 3 {
+                stats.hit_dice_left -= 1;
+                let roll = rng.random_range(1..=stats.hit_die) as i32;
+                c.hp = (c.hp + (roll + con).max(1)).min(c.max_hp);
+            }
+            if c.hp > 0 {
+                stats.death_saves = rules5e::DeathSaves::default();
+                c.conditions.retain(|x| x.name != rules5e::UNCONSCIOUS);
+            }
+        }
+        lines.push(format!("{}: {} → {} HP", c.name, before, c.hp));
+    }
+    lines
 }
 
 /// Sets up a fight with the SRD monsters the game master asked for. Unknown monsters are
@@ -200,13 +252,15 @@ fn begin_turn(state: &mut SceneState) -> CombatEvent {
     let index = state.combat.current_turn_index;
     let round = state.combat.round;
     let actor = &mut state.combat.combatants[index];
-    let speed = actor.stats5e.as_ref().map_or(30, |s| s.speed_ft);
     let actor_id = actor.id.clone();
     let event = rules5e::start_turn(actor, round);
+    // Speed after conditions (grappled, restrained, slowed …).
+    let speed = rules5e::speed_ft(actor);
     state.combat.reactions_used.retain(|id| *id != actor_id);
     state.combat.turn = rules5e::TurnBudget {
         movement_left_ft: if state.map.is_some() { speed } else { 0 },
         action_used: false,
+        bonus_action_used: false,
         disengaged: false,
     };
     event
@@ -281,13 +335,65 @@ fn heroic_death(state: &SceneState) -> bool {
         .is_some_and(|r| r.heroic_death)
 }
 
-/// Carries out a decision of the current combatant (uses its action).
+/// What the current combatant may still spend on a spell.
+fn cast_budget(state: &SceneState) -> rules5e::CastBudget {
+    rules5e::CastBudget {
+        action: !state.combat.turn.action_used,
+        bonus_action: !state.combat.turn.bonus_action_used,
+    }
+}
+
+/// Casts a spell for the current combatant if it is (still) valid; spends the action or the
+/// bonus action it takes.
+fn cast(state: &mut SceneState, request_id: &str) -> Vec<CombatEvent> {
+    let index = state.combat.current_turn_index;
+    let Some(request) = rules5e::CastRequest::parse(request_id) else {
+        return Vec::new();
+    };
+    let caster = state.combat.combatants[index].clone();
+    let Ok(spell) = rules5e::check_cast(
+        state.map.as_ref(),
+        &caster,
+        &state.combat.combatants,
+        &request,
+        cast_budget(state),
+    ) else {
+        return vec![CombatEvent::Pass {
+            actor_id: caster.id,
+            actor_name: caster.name,
+        }];
+    };
+    match spell.casting {
+        rules5e::CastingTime::Action => state.combat.turn.action_used = true,
+        rules5e::CastingTime::Bonus => state.combat.turn.bonus_action_used = true,
+    }
+    let heroic = heroic_death(state);
+    let mut events = rules5e::cast_spell(
+        state.map.as_ref(),
+        &mut state.combat.combatants,
+        index,
+        spell,
+        &request,
+        &mut state.combat.effects,
+        heroic,
+        &mut rand::rng(),
+    );
+    events.extend(settle(state));
+    events
+}
+
+/// Carries out a decision of the current combatant (uses its action; spells may use the
+/// bonus action instead).
 fn act(state: &mut SceneState, decision: TurnDecision) -> Vec<CombatEvent> {
+    if let TurnDecision::Cast(request) = &decision {
+        return cast(state, request);
+    }
     state.combat.turn.action_used = true;
     let heroic_death = heroic_death(state);
     let index = state.combat.current_turn_index;
     let mut rng = rand::rng();
     match decision {
+        TurnDecision::Cast(_) => unreachable!("handled above"),
         TurnDecision::Attack {
             attack_id,
             target_id,
@@ -471,6 +577,8 @@ pub fn combat_options(state: &SceneState) -> rules5e::CombatOptions {
         actions,
         movement_left_ft: turn.movement_left_ft,
         action_used: turn.action_used,
+        bonus_action_used: turn.bonus_action_used,
+        spells: rules5e::spell_options(state.map.as_ref(), actor, combatants, cast_budget(state)),
     }
 }
 
@@ -499,6 +607,19 @@ fn parse_player_action(state: &SceneState, action: &str) -> Option<PlayerAction>
             .any(|s| s.x == target.x && s.y == target.y)
             .then_some(PlayerAction::Move(target));
     }
+    if action.starts_with("cast:") {
+        let request = rules5e::CastRequest::parse(action)?;
+        let caster = &state.combat.combatants[state.combat.current_turn_index];
+        return rules5e::check_cast(
+            state.map.as_ref(),
+            caster,
+            &state.combat.combatants,
+            &request,
+            cast_budget(state),
+        )
+        .ok()
+        .map(|_| PlayerAction::Act(TurnDecision::Cast(action.to_string())));
+    }
     if !on_board || options.action_used {
         return rules5e::parse_action(action, &options.actions).map(PlayerAction::Act);
     }
@@ -517,7 +638,7 @@ fn apply_player_action(state: &mut SceneState, action: PlayerAction) -> (Vec<Com
         PlayerAction::Act(decision) => act(state, decision),
         PlayerAction::Dash => {
             let actor = &state.combat.combatants[index];
-            state.combat.turn.movement_left_ft += actor.stats5e.as_ref().map_or(30, |s| s.speed_ft);
+            state.combat.turn.movement_left_ft += rules5e::speed_ft(actor);
             state.combat.turn.action_used = true;
             vec![CombatEvent::Dash {
                 actor_id: actor.id.clone(),
@@ -536,9 +657,9 @@ fn apply_player_action(state: &mut SceneState, action: PlayerAction) -> (Vec<Com
         PlayerAction::EndTurn => return (Vec::new(), true),
     };
     let turn = &state.combat.turn;
-    let over = state.map.is_none()
-        || !rules5e::is_up(&state.combat.combatants[index])
-        || (turn.action_used && turn.movement_left_ft == 0);
+    // A bonus-action spell leaves the action (and without a board the turn) open.
+    let over = !rules5e::is_up(&state.combat.combatants[index])
+        || (turn.action_used && (state.map.is_none() || turn.movement_left_ft == 0));
     (events, over)
 }
 
@@ -563,6 +684,7 @@ fn describe_options(
     options
         .iter()
         .map(|option| match (&option.attack_id, &option.target_id) {
+            _ if option.id.starts_with("cast:") => describe_cast(&option.id, combatants),
             (Some(attack_id), Some(target_id)) => {
                 let attack = actor.stats5e.as_ref().and_then(|s| s.attack(attack_id));
                 let target = combatants.iter().find(|c| &c.id == target_id);
@@ -584,6 +706,77 @@ fn describe_options(
         .collect::<Vec<_>>()
         .join("\n")
 }
+
+fn describe_cast(id: &str, combatants: &[Combatant]) -> String {
+    let Some(request) = rules5e::CastRequest::parse(id) else {
+        return id.to_string();
+    };
+    let Some(spell) = rules5e::spell(&request.spell_id) else {
+        return id.to_string();
+    };
+    let slot = if request.slot_level == 0 {
+        "cantrip".to_string()
+    } else {
+        format!("level {} slot", request.slot_level)
+    };
+    let target = match &request.target {
+        rules5e::CastTarget::Creature(target_id) => combatants
+            .iter()
+            .find(|c| &c.id == target_id)
+            .map_or(target_id.clone(), |t| {
+                if rules5e::is_enemy(t) {
+                    format!(
+                        "{} ({})",
+                        t.name,
+                        tier_text(rules5e::health_tier(t.hp, t.max_hp))
+                    )
+                } else {
+                    format!("{} ({}/{} HP)", t.name, t.hp, t.max_hp)
+                }
+            }),
+        rules5e::CastTarget::Point(p) => format!("the area around square {}:{}", p.x, p.y),
+    };
+    format!("{id} — cast {} ({slot}) on {target}", spell.name.en)
+}
+
+/// Up to three sensible casts as options for the language model.
+fn cast_options(state: &SceneState, actor: &Combatant) -> Vec<rules5e::ActionOption> {
+    let mut plans = rules5e::spell_plans(
+        state.map.as_ref(),
+        actor,
+        &state.combat.combatants,
+        cast_budget(state),
+    );
+    plans.sort_by_key(|(_, score)| -score);
+    plans
+        .into_iter()
+        .filter(|(_, score)| *score > 0)
+        .take(3)
+        .map(|(request, _)| rules5e::ActionOption {
+            id: request.id(),
+            attack_id: None,
+            target_id: None,
+            disadvantage: false,
+        })
+        .collect()
+}
+
+/// A companion with someone dying in reach of a healing spell casts it without asking.
+fn urgent_cast(state: &SceneState, actor: &Combatant) -> Option<String> {
+    rules5e::spell_plans(
+        state.map.as_ref(),
+        actor,
+        &state.combat.combatants,
+        cast_budget(state),
+    )
+    .into_iter()
+    .filter(|(_, score)| *score >= URGENT_CAST)
+    .max_by_key(|(_, score)| *score)
+    .map(|(request, _)| request.id())
+}
+
+/// Score from which a cast (stabilizing or healing the dying) is done without asking.
+const URGENT_CAST: i32 = 45;
 
 fn tier_text(tier: rules5e::HealthTier) -> &'static str {
     match tier {
@@ -655,11 +848,23 @@ async fn engine_turn(
     let Some(map) = state.map.clone() else {
         let decision = if rules5e::is_enemy(&actor) {
             rules5e::monster_decision(&actor, &state.combat.combatants)
+        } else if let Some(id) = urgent_cast(state, &actor) {
+            TurnDecision::Cast(id)
         } else {
-            let options = rules5e::legal_actions(&actor, &state.combat.combatants);
+            let mut options = rules5e::legal_actions(&actor, &state.combat.combatants);
+            options.extend(cast_options(state, &actor));
             companion_choice(state, inference, llm, &options)
                 .await
-                .and_then(|id| rules5e::parse_action(&id, &options))
+                .and_then(|id| {
+                    if id.starts_with("cast:") {
+                        options
+                            .iter()
+                            .any(|o| o.id == id)
+                            .then_some(TurnDecision::Cast(id))
+                    } else {
+                        rules5e::parse_action(&id, &options)
+                    }
+                })
                 .unwrap_or_else(|| {
                     rules5e::hero_fallback_decision(&actor, &state.combat.combatants)
                 })
@@ -668,6 +873,11 @@ async fn engine_turn(
     };
     let plan = if rules5e::is_enemy(&actor) {
         rules5e::monster_board_plan(&map, &actor, &state.combat.combatants, budget)
+    } else if let Some(id) = urgent_cast(state, &actor) {
+        rules5e::BoardPlan {
+            move_to: None,
+            action: TurnDecision::Cast(id),
+        }
     } else {
         // The model chooses among the attacks the companion can set up this turn (moving
         // there first) and Dodge.
@@ -691,6 +901,17 @@ async fn engine_turn(
                     plans.push((option, plan));
                 }
             }
+        }
+        // Casts happen from where the companion stands.
+        for option in cast_options(state, &actor) {
+            let action = TurnDecision::Cast(option.id.clone());
+            plans.push((
+                option,
+                rules5e::BoardPlan {
+                    move_to: None,
+                    action,
+                },
+            ));
         }
         if plans.is_empty() {
             // Nothing to attack this turn: no choice to make, the companion closes in.
@@ -779,6 +1000,58 @@ fn report(events: &[CombatEvent]) -> String {
             CombatEvent::Dash { actor_name, .. } => Some(format!("{actor_name} dashes.")),
             CombatEvent::Disengage { actor_name, .. } => {
                 Some(format!("{actor_name} carefully disengages."))
+            }
+            CombatEvent::SpellCast {
+                caster_name,
+                spell_name,
+                ..
+            } => Some(format!("{caster_name} casts {}.", spell_name.en)),
+            CombatEvent::Save {
+                target_name,
+                ability,
+                success,
+                ..
+            } => Some(format!(
+                "{target_name} {} the {ability:?} saving throw.",
+                if *success { "succeeds on" } else { "fails" }
+            )),
+            CombatEvent::Heal {
+                target_name,
+                amount,
+                ..
+            } => Some(format!("{target_name} regains {amount} hit points.")),
+            CombatEvent::ConditionStart {
+                target_name,
+                condition,
+                ..
+            } => Some(format!(
+                "{target_name} is now {}.",
+                condition.replace('_', " ")
+            )),
+            CombatEvent::ConditionEnd {
+                target_name,
+                condition,
+                ..
+            } => Some(format!(
+                "{target_name} is no longer {}.",
+                condition.replace('_', " ")
+            )),
+            CombatEvent::DeathSave {
+                actor_name,
+                outcome,
+                ..
+            } => Some(match outcome {
+                DeathSaveOutcome::Ongoing => format!("{actor_name} fights for life."),
+                DeathSaveOutcome::Stable => format!("{actor_name} is stable, but unconscious."),
+                DeathSaveOutcome::Revived => format!("{actor_name} gets back up!"),
+                DeathSaveOutcome::Dead => format!("{actor_name} dies."),
+                DeathSaveOutcome::Out => format!("{actor_name} is out of the fight."),
+            }),
+            CombatEvent::ConcentrationLost { caster_name, .. } => {
+                Some(format!("{caster_name} loses concentration on the spell."))
+            }
+            CombatEvent::Teleport { actor_name, .. } => {
+                Some(format!("{actor_name} vanishes and reappears nearby."))
             }
             CombatEvent::CombatEnd { outcome } => Some(match outcome {
                 CombatOutcome::Victory => {
@@ -1003,6 +1276,153 @@ mod tests {
         let mut plain = StageEngine::new().get_state();
         ensure_party_vitals(&mut plain);
         assert!(plain.combat.combatants.iter().all(|c| c.stats5e.is_none()));
+    }
+
+    fn wolf_fight(classes: &[(&str, &str)]) -> SceneState {
+        let mut state = five_e_scene(classes);
+        assert!(start_encounter(
+            &mut state,
+            &[PlanCombatant {
+                name: String::new(),
+                monster: Some("wolf".into()),
+                count: Some(1),
+                hp: 0,
+                role: "enemy".into(),
+            }],
+            "en",
+        ));
+        state
+    }
+
+    fn index_of(state: &SceneState, name: &str) -> usize {
+        state
+            .combat
+            .combatants
+            .iter()
+            .position(|c| c.name == name || c.role == name)
+            .unwrap()
+    }
+
+    #[test]
+    fn a_cleric_companion_brings_a_dying_hero_back() {
+        let mut state = wolf_fight(&[("lyra", "cleric")]);
+        let player = index_of(&state, "player");
+        state.combat.combatants[player].hp = 0;
+        rules5e::add_condition(
+            &mut state.combat.combatants[player],
+            rules5e::UNCONSCIOUS,
+            0,
+        );
+        assert!(rules5e::is_dying(&state.combat.combatants[player]));
+        state.combat.current_turn_index = index_of(&state, "Lyra");
+        begin_turn(&mut state);
+        let lyra = state.combat.combatants[state.combat.current_turn_index].clone();
+        let id = urgent_cast(&state, &lyra).expect("healing the dying is urgent");
+        assert!(
+            id.ends_with(&format!(":{}", state.combat.combatants[player].id)),
+            "{id}"
+        );
+        let events = act(&mut state, TurnDecision::Cast(id));
+        assert!(
+            events
+                .iter()
+                .any(|e| matches!(e, CombatEvent::SpellCast { .. }))
+        );
+        let hero = &state.combat.combatants[player];
+        assert!(hero.hp > 0, "{events:?}");
+        assert!(!rules5e::has_condition(hero, rules5e::UNCONSCIOUS));
+        assert!(report(&events).contains("regains"));
+    }
+
+    #[test]
+    fn the_player_casts_and_a_bonus_spell_keeps_the_turn_open() {
+        let mut state = wolf_fight(&[("player", "cleric")]);
+        let player = index_of(&state, "player");
+        let wolf = state
+            .combat
+            .combatants
+            .iter()
+            .find(|c| c.role == "enemy")
+            .unwrap()
+            .id
+            .clone();
+        let player_id = state.combat.combatants[player].id.clone();
+        state.combat.current_turn_index = player;
+        begin_turn(&mut state);
+        let options = combat_options(&state);
+        assert!(
+            options
+                .spells
+                .iter()
+                .any(|o| o.spell_id == "sacred_flame" && o.targets.contains(&wolf))
+        );
+        // Healing Word is a bonus action: the action stays.
+        state.combat.combatants[player].hp -= 3;
+        let action = parse_player_action(&state, &format!("cast:healing_word:1:{player_id}"))
+            .expect("valid cast");
+        let (_, over) = apply_player_action(&mut state, action);
+        assert!(!over && !state.combat.turn.action_used && state.combat.turn.bonus_action_used);
+        let slots = state.combat.combatants[player]
+            .stats5e
+            .as_ref()
+            .unwrap()
+            .spellcasting
+            .as_ref()
+            .unwrap()
+            .slots_used;
+        assert_eq!(slots.first().copied(), Some(1));
+        // No second bonus action, but the cantrip still works and ends the turn.
+        assert!(parse_player_action(&state, &format!("cast:healing_word:1:{player_id}")).is_none());
+        let action =
+            parse_player_action(&state, &format!("cast:sacred_flame:0:{wolf}")).expect("cantrip");
+        let (events, over) = apply_player_action(&mut state, action);
+        assert!(over);
+        assert!(events.iter().any(|e| matches!(e, CombatEvent::Save { .. })));
+        assert!(parse_player_action(&state, "cast:fireball:3:x").is_none());
+    }
+
+    #[test]
+    fn rests_restore_hit_points_and_slots() {
+        let mut state = five_e_scene(&[("lyra", "cleric")]);
+        let lyra = index_of(&state, "Lyra");
+        let player = index_of(&state, "player");
+        {
+            let c = &mut state.combat.combatants[lyra];
+            c.hp = 1;
+            c.stats5e
+                .as_mut()
+                .unwrap()
+                .spellcasting
+                .as_mut()
+                .unwrap()
+                .slots_used[0] = 2;
+        }
+        rest_party(&mut state, false);
+        let c = &state.combat.combatants[lyra];
+        let stats = c.stats5e.as_ref().unwrap();
+        // A level-1 hero has one hit die: spent, and some hit points back; slots stay used.
+        assert!(c.hp > 1 && stats.hit_dice_left == 0);
+        assert_eq!(stats.spellcasting.as_ref().unwrap().slots_used[0], 2);
+        state.combat.combatants[player].hp = 0;
+        rules5e::add_condition(
+            &mut state.combat.combatants[player],
+            rules5e::UNCONSCIOUS,
+            0,
+        );
+        let lines = rest_party(&mut state, true);
+        assert_eq!(lines.len(), 3);
+        for c in state
+            .combat
+            .combatants
+            .iter()
+            .filter(|c| rules5e::is_party(c))
+        {
+            assert_eq!(c.hp, c.max_hp, "{}", c.name);
+            assert!(c.conditions.is_empty());
+        }
+        let stats = state.combat.combatants[lyra].stats5e.as_ref().unwrap();
+        assert_eq!(stats.spellcasting.as_ref().unwrap().slots_used, [0; 9]);
+        assert_eq!(stats.hit_dice_left, 1);
     }
 
     #[test]

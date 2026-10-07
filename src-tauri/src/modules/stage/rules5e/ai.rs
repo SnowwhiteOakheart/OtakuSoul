@@ -14,6 +14,8 @@ pub enum TurnDecision {
     Dodge,
     Flee,
     Pass,
+    /// A spell, as `cast:…` request id (see [`CastRequest`]).
+    Cast(String),
 }
 
 fn best_attack(stats: &Stats5e) -> Option<&Attack> {

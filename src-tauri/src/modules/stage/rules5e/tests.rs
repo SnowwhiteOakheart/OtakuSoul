@@ -386,7 +386,7 @@ fn a_seeded_fight_runs_to_the_end() {
                 resolve_attack(&actor, &attack, target, &mut rng);
             }
             TurnDecision::Flee => encounter.combatants[index].hp = 0,
-            TurnDecision::Dodge | TurnDecision::Pass => {}
+            TurnDecision::Dodge | TurnDecision::Pass | TurnDecision::Cast(_) => {}
         }
         advance_turn(&mut encounter);
         turns += 1;

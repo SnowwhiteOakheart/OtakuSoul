@@ -915,3 +915,298 @@ pub fn repeat_saves<R: Rng + ?Sized>(
     }
     events
 }
+
+/// A spell the current combatant can cast now (for the UI): slot levels with slots left,
+/// creatures it can target, or a point on the board.
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize, TS)]
+#[ts(export)]
+pub struct SpellOption {
+    pub spell_id: String,
+    pub name: LocalizedName,
+    pub level: u8,
+    pub casting: CastingTime,
+    pub range_ft: u32,
+    pub slot_levels: Vec<u8>,
+    pub targets: Vec<String>,
+    pub needs_point: bool,
+    #[serde(default)]
+    #[ts(optional)]
+    pub area: Option<Area>,
+}
+
+fn slot_levels(stats: &Stats5e, spell: &SpellData) -> Vec<u8> {
+    let Some(casting) = &stats.spellcasting else {
+        return Vec::new();
+    };
+    if spell.level == 0 {
+        return vec![0];
+    }
+    (spell.level..=9)
+        .filter(|&level| casting.slots_left(level) > 0)
+        .collect()
+}
+
+/// Every spell the caster could cast right now, with its valid targets.
+pub fn spell_options(
+    map: Option<&BattleMap>,
+    caster: &Combatant,
+    combatants: &[Combatant],
+    budget: CastBudget,
+) -> Vec<SpellOption> {
+    let Some(stats) = &caster.stats5e else {
+        return Vec::new();
+    };
+    let Some(casting) = &stats.spellcasting else {
+        return Vec::new();
+    };
+    let mut options = Vec::new();
+    for spell in casting.spells.iter().filter_map(|id| spell(id)) {
+        let levels = slot_levels(stats, spell);
+        let Some(&lowest) = levels.first() else {
+            continue;
+        };
+        let needs_point = spell.targets_point();
+        if needs_point && map.is_none() {
+            continue;
+        }
+        let targets: Vec<String> = if needs_point {
+            Vec::new()
+        } else {
+            combatants
+                .iter()
+                .filter(|target| {
+                    let request = CastRequest {
+                        spell_id: spell.id.clone(),
+                        slot_level: lowest,
+                        target: CastTarget::Creature(target.id.clone()),
+                    };
+                    check_cast(map, caster, combatants, &request, budget).is_ok()
+                })
+                .map(|t| t.id.clone())
+                .collect()
+        };
+        let time_ok = match spell.casting {
+            CastingTime::Action => budget.action,
+            CastingTime::Bonus => budget.bonus_action,
+        };
+        if !time_ok || (!needs_point && targets.is_empty()) {
+            continue;
+        }
+        let area = match &spell.effect {
+            SpellEffect::Save { area, .. } => *area,
+            SpellEffect::Sleep { area, .. } => Some(*area),
+            _ => None,
+        };
+        options.push(SpellOption {
+            spell_id: spell.id.clone(),
+            name: spell.name.clone(),
+            level: spell.level,
+            casting: spell.casting,
+            range_ft: spell.range_ft,
+            slot_levels: levels,
+            targets,
+            needs_point,
+            area,
+        });
+    }
+    options
+}
+
+fn average(formula: &str) -> i32 {
+    DiceFormula::parse(formula).map_or(0, |f| f.average())
+}
+
+/// Sensible casts for a companion, best first, with a score: saving the dying first,
+/// healing the badly hurt, area spells only when they catch at least two enemies and no ally,
+/// otherwise damage and control; spending a slot costs a little so cantrips are preferred
+/// for small jobs.
+pub fn spell_plans(
+    map: Option<&BattleMap>,
+    caster: &Combatant,
+    combatants: &[Combatant],
+    budget: CastBudget,
+) -> Vec<(CastRequest, i32)> {
+    let mut plans = Vec::new();
+    let side = is_enemy(caster);
+    for option in spell_options(map, caster, combatants, budget) {
+        let Some(spell) = spell(&option.spell_id) else {
+            continue;
+        };
+        let slot = option.slot_levels[0];
+        let cost = i32::from(slot) * 3;
+        let creature = |id: &str| combatants.iter().find(|c| c.id == id);
+        match &spell.effect {
+            SpellEffect::Heal { heal } => {
+                for id in &option.targets {
+                    let Some(t) = creature(id) else { continue };
+                    let score = if is_dying(t) {
+                        100
+                    } else if t.hp * 2 < t.max_hp {
+                        40 + average(heal)
+                    } else {
+                        continue;
+                    };
+                    plans.push((
+                        CastRequest {
+                            spell_id: spell.id.clone(),
+                            slot_level: slot,
+                            target: CastTarget::Creature(id.clone()),
+                        },
+                        score - cost,
+                    ));
+                }
+            }
+            SpellEffect::Stabilize => {
+                for id in &option.targets {
+                    plans.push((
+                        CastRequest {
+                            spell_id: spell.id.clone(),
+                            slot_level: slot,
+                            target: CastTarget::Creature(id.clone()),
+                        },
+                        45,
+                    ));
+                }
+            }
+            SpellEffect::Attack { damage, rays, .. } => {
+                for id in &option.targets {
+                    let score = average(damage) * (*rays as i32) * 2;
+                    plans.push((
+                        CastRequest {
+                            spell_id: spell.id.clone(),
+                            slot_level: slot,
+                            target: CastTarget::Creature(id.clone()),
+                        },
+                        score - cost,
+                    ));
+                }
+            }
+            SpellEffect::Missiles { darts, damage, .. } => {
+                for id in &option.targets {
+                    let score = average(damage) * (*darts as i32) * 2;
+                    plans.push((
+                        CastRequest {
+                            spell_id: spell.id.clone(),
+                            slot_level: slot,
+                            target: CastTarget::Creature(id.clone()),
+                        },
+                        score - cost,
+                    ));
+                }
+            }
+            SpellEffect::Save {
+                damage, area: None, ..
+            } => {
+                for id in &option.targets {
+                    plans.push((
+                        CastRequest {
+                            spell_id: spell.id.clone(),
+                            slot_level: slot,
+                            target: CastTarget::Creature(id.clone()),
+                        },
+                        average(damage) - cost,
+                    ));
+                }
+            }
+            SpellEffect::Save {
+                damage,
+                area: Some(area),
+                ..
+            }
+            | SpellEffect::Sleep { pool: damage, area } => {
+                let (Some(map), Some(from)) = (map, caster.position) else {
+                    continue;
+                };
+                // Aim at each enemy and count who would be caught.
+                for aim in combatants
+                    .iter()
+                    .filter(|c| is_up(c) && is_enemy(c) != side)
+                    .filter_map(|c| c.position)
+                {
+                    let squares = area_squares(*area, from, aim);
+                    let caught = |want_enemies: bool| {
+                        combatants
+                            .iter()
+                            .filter(|c| {
+                                c.id != caster.id
+                                    && is_up(c)
+                                    && (is_enemy(c) != side) == want_enemies
+                            })
+                            .filter(|c| c.position.is_some_and(|p| squares.contains(&p)))
+                            .count() as i32
+                    };
+                    let (enemies, allies) = (caught(true), caught(false));
+                    let request = CastRequest {
+                        spell_id: spell.id.clone(),
+                        slot_level: slot,
+                        target: CastTarget::Point(aim),
+                    };
+                    if enemies >= 2
+                        && allies == 0
+                        && check_cast(Some(map), caster, combatants, &request, budget).is_ok()
+                    {
+                        plans.push((request, enemies * average(damage) - cost));
+                    }
+                }
+            }
+            SpellEffect::Condition { .. } => {
+                for id in &option.targets {
+                    if creature(id).is_some_and(|t| t.hp * 2 > t.max_hp) {
+                        plans.push((
+                            CastRequest {
+                                spell_id: spell.id.clone(),
+                                slot_level: slot,
+                                target: CastTarget::Creature(id.clone()),
+                            },
+                            30 - cost,
+                        ));
+                    }
+                }
+            }
+            SpellEffect::Buff { buff, .. } if buff == BLESSED => {
+                let blessed = combatants.iter().any(|c| has_condition(c, BLESSED));
+                let allies = combatants
+                    .iter()
+                    .filter(|c| is_up(c) && is_enemy(c) == side)
+                    .count();
+                if !blessed
+                    && allies >= 2
+                    && caster
+                        .stats5e
+                        .as_ref()
+                        .is_some_and(|s| s.concentration.is_none())
+                {
+                    plans.push((
+                        CastRequest {
+                            spell_id: spell.id.clone(),
+                            slot_level: slot,
+                            target: CastTarget::Creature(caster.id.clone()),
+                        },
+                        25 - cost,
+                    ));
+                }
+            }
+            SpellEffect::Cure => {
+                for id in &option.targets {
+                    if creature(id).is_some_and(|t| {
+                        [PARALYZED, POISONED, BLINDED]
+                            .iter()
+                            .any(|c| has_condition(t, c))
+                    }) {
+                        plans.push((
+                            CastRequest {
+                                spell_id: spell.id.clone(),
+                                slot_level: slot,
+                                target: CastTarget::Creature(id.clone()),
+                            },
+                            40 - cost,
+                        ));
+                    }
+                }
+            }
+            _ => {}
+        }
+    }
+    plans.sort_by_key(|(request, score)| (std::cmp::Reverse(*score), request.id()));
+    plans
+}

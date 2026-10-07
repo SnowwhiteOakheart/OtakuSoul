@@ -439,9 +439,22 @@ RULES:
         .combatants
         .iter()
         .find(|c| c.name == state.current_turn_actor || c.id == state.current_turn_actor);
+    // 5e: the engine sets the bonus from the actor's ability and skill training.
+    let check_formula = gm_plan.dice_check.as_ref().map(|check| {
+        let actor_stats = current_actor
+            .or_else(|| state.combat.combatants.iter().find(|c| c.role == "player"))
+            .and_then(|c| c.stats5e.as_ref());
+        match actor_stats.filter(|_| state.definition.is_5e()) {
+            Some(stats) => super::rules5e::check_bonus(stats, &check.skill_name)
+                .map(|bonus| format!("1d20{bonus:+}"))
+                .unwrap_or_else(|| check.formula.clone()),
+            None => check.formula.clone(),
+        }
+    });
     if let Some(check) = &gm_plan.dice_check
         && state.definition.dice_rolls_enabled
-        && let Ok(roll) = roll_dice(&check.formula, Some(check.dc), current_actor)
+        && let Some(formula) = &check_formula
+        && let Ok(roll) = roll_dice(formula, Some(check.dc), current_actor)
     {
         let passed = roll.dc_check.as_ref().is_some_and(|d| d.passed);
         dice_outcome_text = format!(
@@ -1351,8 +1364,13 @@ pub async fn execute_stage_rest(
         )
     };
 
+    // 5e scenes rest by the rules (hit dice, slots); narrative scenes by fixed amounts.
+    let five_e = state.definition.is_5e();
+    if five_e {
+        super::combat5e::rest_party(&mut state, rest_type == "long");
+    }
     // Heal combatants
-    for c in state.combat.combatants.iter_mut() {
+    for c in state.combat.combatants.iter_mut().filter(|_| !five_e) {
         if c.role == "player" || c.role == "companion" {
             c.hp = (c.hp + hp_rec).min(c.max_hp);
             c.stress = (c.stress - stress_rec).max(0);
