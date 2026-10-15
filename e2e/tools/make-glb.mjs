@@ -2,7 +2,8 @@
 // without prefix (Hips, Spine, Neck, Head, Left/RightArm, Left/RightForeArm) in a T-pose, in
 // metres, with the ARKit blendshapes jawOpen, eyeBlinkLeft/Right and mouthSmileLeft/Right.
 // With `{ clips: true }` the file also carries its own animations, named like game exports:
-// "A_Idle_Breath" (loop) and "Emote_Wave" (a gesture).
+// "A_Idle_Breath" and "Idle_Happy" (loops, the second for a happy mood), "Emote_Wave" (a
+// gesture) and "Dance_Spin" (no use, played by hand).
 import * as THREE from 'three';
 import { GLTFExporter } from 'three/examples/jsm/exporters/GLTFExporter.js';
 
@@ -106,5 +107,12 @@ function embeddedClips() {
   const wave = new THREE.AnimationClip('Emote_Wave', 1.2, [
     new THREE.QuaternionKeyframeTrack('RightArm.quaternion', [0, 0.4, 0.8, 1.2], [...turn(z, 0), ...turn(z, 1.2), ...turn(z, 0.8), ...turn(z, 0)]),
   ]);
-  return [idle, wave];
+  const happyIdle = new THREE.AnimationClip('Idle_Happy', 1, [
+    new THREE.QuaternionKeyframeTrack('Head.quaternion', [0, 0.5, 1], [...turn(z, 0), ...turn(z, 0.1), ...turn(z, 0)]),
+  ]);
+  const y = new THREE.Vector3(0, 1, 0);
+  const spin = new THREE.AnimationClip('Dance_Spin', 1, [
+    new THREE.QuaternionKeyframeTrack('Spine.quaternion', [0, 0.5, 1], [...turn(y, 0), ...turn(y, 0.6), ...turn(y, 0)]),
+  ]);
+  return [idle, wave, happyIdle, spin];
 }

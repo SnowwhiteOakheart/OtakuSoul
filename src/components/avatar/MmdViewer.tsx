@@ -217,6 +217,7 @@ export const MmdViewer = ({
     player: motionPlayerRef,
     load: loadVmdClip,
     gesture,
+    mood: emotion,
     onGesture: setPlayingGesture,
   });
 

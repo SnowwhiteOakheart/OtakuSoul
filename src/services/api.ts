@@ -794,6 +794,10 @@ export const api = {
     await invoke('set_avatar_motion_role', { file, role });
   },
 
+  setAvatarMotionMood: async (file: string, mood: string): Promise<void> => {
+    await invoke('set_avatar_motion_mood', { file, mood });
+  },
+
   deleteAvatarMotion: async (file: string): Promise<void> => {
     await invoke('delete_avatar_motion', { file });
   },
@@ -805,6 +809,10 @@ export const api = {
 
   setModelClipRole: async (modelPath: string, clip: string, role: string): Promise<void> => {
     await invoke('set_model_clip_role', { modelPath, clip, role });
+  },
+
+  setModelClipMood: async (modelPath: string, clip: string, mood: string): Promise<void> => {
+    await invoke('set_model_clip_mood', { modelPath, clip, mood });
   },
 
   /** Files next to a 3D model (relative, forward slashes), for textures in other cases. */

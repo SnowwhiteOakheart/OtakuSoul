@@ -6,7 +6,7 @@ import type {
   EmotionResult,
 } from '../../types';
 import type { SliceCreator } from '../storeTypes';
-import type { MotionRole } from '../../utils/avatarGestures';
+import type { GestureRequest, MotionRole } from '../../utils/avatarGestures';
 
 /** 3D/Live2D avatar models, avatar mode and the current emotion. */
 export interface AvatarSlice {
@@ -26,8 +26,10 @@ export interface AvatarSlice {
   avatarMotions: AvatarMotion[];
   refreshAvatarMotions: () => Promise<void>;
   /** The gesture the 3D avatar should play next; `id` makes repeats of the same one count. */
-  avatarGesture: { role: MotionRole; id: number } | null;
+  avatarGesture: GestureRequest | null;
   playAvatarGesture: (role: MotionRole) => void;
+  /** Plays a clip of the glTF model by name (gestures picked by hand). */
+  playAvatarClip: (clip: string) => void;
   /** Counts changes to the uses of animations inside glTF models; viewers reload on it. */
   modelClipRevision: number;
   bumpModelClipRevision: () => void;
@@ -104,6 +106,8 @@ export const createAvatarSlice: SliceCreator<AvatarSlice> = (set, get) => ({
   avatarGesture: null,
 
   playAvatarGesture: (role) => set((state) => ({ avatarGesture: { role, id: (state.avatarGesture?.id ?? 0) + 1 } })),
+
+  playAvatarClip: (clip) => set((state) => ({ avatarGesture: { clip, id: (state.avatarGesture?.id ?? 0) + 1 } })),
 
   modelClipRevision: 0,
 

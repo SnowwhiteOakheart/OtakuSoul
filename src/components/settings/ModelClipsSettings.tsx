@@ -3,7 +3,7 @@ import { useEffect, useState } from 'react';
 import { api } from '../../services/api';
 import { useStoreFields } from '../../store/useAppStore';
 import { useTranslation, type TranslationKey } from '../../i18n';
-import { MOTION_ROLES, type MotionRole } from '../../utils/avatarGestures';
+import { MOTION_MOODS, MOTION_ROLES } from '../../utils/avatarGestures';
 import { errorMessage } from '../../utils/errors';
 import type { ModelClip } from '../../types';
 import { toast } from '../ui/feedback';
@@ -14,8 +14,8 @@ import { toast } from '../ui/feedback';
  */
 export const ModelClipsSettings = () => {
   const { t } = useTranslation();
-  const { scannedVrms, activeVrmPath, playAvatarGesture, bumpModelClipRevision } = useStoreFields(
-    'scannedVrms', 'activeVrmPath', 'playAvatarGesture', 'bumpModelClipRevision',
+  const { scannedVrms, activeVrmPath, playAvatarClip, bumpModelClipRevision } = useStoreFields(
+    'scannedVrms', 'activeVrmPath', 'playAvatarClip', 'bumpModelClipRevision',
   );
   const models = scannedVrms.filter((m) => m.format === 'gltf');
   const [chosen, setChosen] = useState('');
@@ -48,11 +48,12 @@ export const ModelClipsSettings = () => {
 
   if (models.length === 0) return null;
 
-  const assign = async (clip: string, role: string) => {
+  const assign = async (clip: string, change: { role: string } | { mood: string }) => {
     setBusy(true);
     try {
-      await api.setModelClipRole(modelPath, clip, role);
-      setClips((list) => list.map((c) => (c.name === clip ? { ...c, role } : c)));
+      if ('role' in change) await api.setModelClipRole(modelPath, clip, change.role);
+      else await api.setModelClipMood(modelPath, clip, change.mood);
+      setClips((list) => list.map((c) => (c.name === clip ? { ...c, ...change } : c)));
       bumpModelClipRevision();
     } catch (e) {
       toast.error(errorMessage(e));
@@ -95,18 +96,18 @@ export const ModelClipsSettings = () => {
                 aria-label={t('motions.roleFor', { name: clip.name })}
                 value={clip.role}
                 disabled={busy}
-                onChange={(e) => void assign(clip.name, e.target.value)}
+                onChange={(e) => void assign(clip.name, { role: e.target.value })}
                 className="w-40 bg-app border border-slate-700 rounded-lg px-2 py-1 text-slate-200"
               >
-                <option value="">{t('motions.role.none')}</option>
+                <option value="">{t('modelClips.byHand')}</option>
                 {MOTION_ROLES.map((role) => (
                   <option key={role} value={role}>{t(`motions.role.${role}` as TranslationKey)}</option>
                 ))}
               </select>
+              <MoodSelect name={clip.name} mood={clip.mood} disabled={busy} onChange={(mood) => void assign(clip.name, { mood })} />
               <button
                 type="button"
-                disabled={!clip.role || clip.role === 'idle'}
-                onClick={() => playAvatarGesture(clip.role as MotionRole)}
+                onClick={() => playAvatarClip(clip.name)}
                 title={t('motions.preview')}
                 aria-label={t('motions.previewFor', { name: clip.name })}
                 className="p-1.5 rounded-lg border border-slate-700 text-slate-300 hover:bg-slate-800 disabled:opacity-30"
@@ -118,5 +119,24 @@ export const ModelClipsSettings = () => {
         </ul>
       )}
     </div>
+  );
+};
+
+/** Which mood a motion is meant for; with several motions for one use those fitting the mood win. */
+export const MoodSelect = ({ name, mood, disabled, onChange }: { name: string; mood: string; disabled: boolean; onChange: (mood: string) => void }) => {
+  const { t } = useTranslation();
+  return (
+    <select
+      aria-label={t('motions.moodFor', { name })}
+      value={mood}
+      disabled={disabled}
+      onChange={(e) => onChange(e.target.value)}
+      className="w-32 bg-app border border-slate-700 rounded-lg px-2 py-1 text-slate-200"
+    >
+      <option value="">{t('motions.mood.any')}</option>
+      {MOTION_MOODS.map((m) => (
+        <option key={m} value={m}>{t(`motions.mood.${m}` as TranslationKey)}</option>
+      ))}
+    </select>
   );
 };

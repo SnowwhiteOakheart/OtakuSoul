@@ -2,6 +2,16 @@
 export const MOTION_ROLES = ['idle', 'greeting', 'nod', 'happy', 'sad', 'angry', 'surprised', 'thinking'] as const;
 export type MotionRole = (typeof MOTION_ROLES)[number];
 
+/**
+ * A gesture the 3D avatar should play: by use (from the chat or a preview) or a clip of the model
+ * by name (played by hand). `id` makes repeats of the same one count.
+ */
+export interface GestureRequest {
+  role?: MotionRole;
+  clip?: string;
+  id: number;
+}
+
 /** Keywords in roleplay actions (`*waves*`, `*nickt*`) and the gesture they start. */
 const ACTION_GESTURES: [MotionRole, RegExp][] = [
   ['greeting', /\b(wave[sd]?|waving|greets?|winkt|winkend|gr(ü|ue)(ß|ss)t)\b/i],
@@ -30,4 +40,35 @@ export function gestureForReply(text: string, vrmExpression?: string): MotionRol
     for (const [role, pattern] of ACTION_GESTURES) if (pattern.test(match[1]!)) return role;
   }
   return (vrmExpression && EMOTION_GESTURES[vrmExpression]) || null;
+}
+
+/** Moods a motion can be meant for (same list as `avatar_motions::MOODS`); '' = any mood. */
+export const MOTION_MOODS = ['happy', 'sad', 'angry', 'surprised', 'relaxed'] as const;
+
+/** How much a motion fits the avatar's mood: made for it > for any mood > for another one. */
+export function moodWeight(motionMood: string | undefined, currentMood: string): number {
+  if (!motionMood) return 1;
+  return motionMood === currentMood ? 4 : 0.25;
+}
+
+/** A random motion, weighted by how well its mood fits (`mood` of each item, '' = any). */
+export function pickByMood<T extends { mood?: string }>(items: T[], currentMood: string, random = Math.random): T | undefined {
+  const weights = items.map((item) => moodWeight(item.mood, currentMood));
+  let roll = random() * weights.reduce((sum, w) => sum + w, 0);
+  for (let i = 0; i < items.length; i += 1) {
+    roll -= weights[i]!;
+    if (roll < 0) return items[i];
+  }
+  return items.at(-1);
+}
+
+/** The motion that fits the mood best (the first of equals), e.g. for the idle loop. */
+export function bestByMood<T extends { mood?: string }>(items: T[], currentMood: string): T | undefined {
+  let best: T | undefined;
+  let bestWeight = -1;
+  for (const item of items) {
+    const weight = moodWeight(item.mood, currentMood);
+    if (weight > bestWeight) [best, bestWeight] = [item, weight];
+  }
+  return best;
 }

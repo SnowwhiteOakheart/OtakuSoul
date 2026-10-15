@@ -8,7 +8,7 @@ import { translate, useTranslation } from '../../i18n';
 import { errorMessage } from '../../utils/errors';
 import { mouthTarget, SILENT_VISEMES, type Visemes } from '../../services/lipSync';
 import type { AvatarMotion } from '../../types';
-import type { MotionRole } from '../../utils/avatarGestures';
+import type { GestureRequest } from '../../utils/avatarGestures';
 import { loadMotionClip, AvatarMotionPlayer } from './vrmMotions';
 import { createAvatarStage, createBlinker } from './avatarStage';
 import { AvatarViewerChrome } from './AvatarViewerChrome';
@@ -22,7 +22,7 @@ export interface AvatarViewerProps {
   /** Imported motions with their use; each viewer takes the formats it can play. */
   motions?: AvatarMotion[];
   /** Gesture to play; a new `id` starts it again. */
-  gesture?: { role: MotionRole; id: number } | null;
+  gesture?: GestureRequest | null;
   /** A quick emotion button was pressed (GoEmotions name). */
   onPickEmotion?: (emotion: string) => void;
 }
@@ -201,6 +201,7 @@ export const VrmViewer = ({
     player: motionPlayerRef,
     load: (motion, model) => loadMotionClip(motion, model),
     gesture,
+    mood: emotion,
     onGesture: setPlayingGesture,
   });
 

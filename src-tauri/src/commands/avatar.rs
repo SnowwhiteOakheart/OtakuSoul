@@ -57,6 +57,16 @@ pub fn set_model_clip_role(model_path: String, clip: String, role: String) -> Re
 }
 
 #[tauri::command]
+pub fn set_model_clip_mood(model_path: String, clip: String, mood: String) -> Result<(), String> {
+    crate::modules::avatar_motions::set_model_clip_mood(&model_path, &clip, &mood)
+}
+
+#[tauri::command]
+pub fn set_avatar_motion_mood(file: String, mood: String) -> Result<(), String> {
+    crate::modules::avatar_motions::set_avatar_motion_mood(&file, &mood)
+}
+
+#[tauri::command]
 pub fn delete_avatar_motion(file: String) -> Result<(), String> {
     crate::modules::avatar_motions::delete_avatar_motion(&file)
 }

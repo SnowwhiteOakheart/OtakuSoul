@@ -1,6 +1,7 @@
-// glTF avatars with their own animations: a GLB with an idle loop and a wave clip is imported,
-// the viewer plays both from the model (no imported motions), *winkt* starts the wave, and a
-// use changed in the settings takes effect on the open avatar.
+// glTF avatars with their own animations: a GLB with two idle loops, a wave and a dance clip is
+// imported. The viewer plays them from the model (no imported motions): *winkt* starts the wave,
+// a happy mood switches to the happy idle loop, the dance (no use) is started from the gestures
+// menu, and a use or mood changed in the settings takes effect and is kept.
 import assert from 'node:assert/strict';
 import { writeFileSync } from 'node:fs';
 import path from 'node:path';
@@ -25,7 +26,12 @@ try {
   const model = await invoke('import_vrm_model', { sourcePath: glb });
   assert.equal(model.format, 'gltf');
   const clips = await invoke('list_model_clips', { modelPath: model.path });
-  assert.deepEqual(clips.map((c) => [c.name, c.role]), [['A_Idle_Breath', 'idle'], ['Emote_Wave', 'greeting']]);
+  assert.deepEqual(clips.map((c) => [c.name, c.role, c.mood]), [
+    ['A_Idle_Breath', 'idle', ''],
+    ['Emote_Wave', 'greeting', ''],
+    ['Idle_Happy', 'idle', 'happy'],
+    ['Dance_Spin', '', ''],
+  ]);
 
   await browser.$('button=Einstellungen').click();
   const select = await browser.$('select[aria-label="3D-Avatar (VRM, glTF oder MMD)"]');
@@ -35,29 +41,41 @@ try {
   await select.selectByAttribute('value', model.path);
 
   await browser.$('button=Chat').click();
-  await browser.$('[data-avatar-format="gltf"][data-motions="2"]').waitForExist({ timeout: 30_000, timeoutMsg: 'eingebettete Clips werden nicht geladen' });
-  await reply('*winkt fröhlich* "Hallo!"');
-  await browser.$('[data-avatar-format="gltf"][data-gesture="greeting"]').waitForExist({ timeout: 20_000, timeoutMsg: 'eingebettete Geste startet nicht' });
+  const viewer = '[data-avatar-format="gltf"]';
+  await browser.$(`${viewer}[data-motions="4"][data-idle-clip="A_Idle_Breath"]`).waitForExist({ timeout: 30_000, timeoutMsg: 'eingebettete Clips werden nicht geladen' });
+  await reply('*winkt* "Hallo!"');
+  await browser.$(`${viewer}[data-gesture="greeting"][data-gesture-clip="Emote_Wave"]`).waitForExist({ timeout: 20_000, timeoutMsg: 'eingebettete Geste startet nicht' });
   await browser.pause(400);
   await shot('65-gltf-eigene-geste');
-  await browser.$('[data-avatar-format="gltf"][data-gesture=""]').waitForExist({ timeout: 10_000 });
+  await browser.$(`${viewer}[data-gesture=""]`).waitForExist({ timeout: 10_000 });
+
+  // A happy mood switches to the idle loop made for it.
+  await browser.$('button[aria-label="Fröhlich"]').click();
+  await browser.$(`${viewer}[data-idle-clip="Idle_Happy"]`).waitForExist({ timeout: 10_000, timeoutMsg: 'Ruhe-Schleife folgt der Stimmung nicht' });
+
+  // The dance has no use: it is only offered in the gestures menu.
+  await browser.$('button[aria-label="Gesten aus dem Modell"]').click();
+  await browser.$('button[title="Dance_Spin abspielen"]').click();
+  await browser.$(`${viewer}[data-gesture="Dance_Spin"]`).waitForExist({ timeout: 10_000, timeoutMsg: 'Geste aus dem Menü startet nicht' });
+  await browser.$(`${viewer}[data-gesture=""]`).waitForExist({ timeout: 10_000 });
 
   // The settings list the clips; giving the wave the use "nod" makes *nickt* play it.
   await browser.$('button=Einstellungen').click();
   const section = await browser.$('#setting-model-clips');
   await section.scrollIntoView();
-  await browser.$('#setting-model-clips [data-model-clips="2"]').waitForExist({ timeout: 10_000, timeoutMsg: 'Clips fehlen in den Einstellungen' });
+  await browser.$('#setting-model-clips [data-model-clips="4"]').waitForExist({ timeout: 10_000, timeoutMsg: 'Clips fehlen in den Einstellungen' });
   await browser.$('select[aria-label="Verwendung von Emote_Wave"]').selectByAttribute('value', 'nod');
-  await browser.waitUntil(async () => (await invoke('list_model_clips', { modelPath: model.path }))[1].role === 'nod', {
-    timeout: 10_000,
-    timeoutMsg: 'Verwendung wurde nicht gespeichert',
-  });
+  await browser.$('select[aria-label="Stimmung von Emote_Wave"]').selectByAttribute('value', 'happy');
+  await browser.waitUntil(async () => {
+    const wave = (await invoke('list_model_clips', { modelPath: model.path }))[1];
+    return wave.role === 'nod' && wave.mood === 'happy';
+  }, { timeout: 10_000, timeoutMsg: 'Verwendung oder Stimmung wurde nicht gespeichert' });
   await shot('66-gltf-clips-einstellungen');
   await browser.$('button=Chat').click();
-  await browser.$('[data-avatar-format="gltf"][data-motions="2"]').waitForExist({ timeout: 30_000 });
+  await browser.$(`${viewer}[data-motions="4"]`).waitForExist({ timeout: 30_000 });
   await reply('*nickt* "Gern."');
-  await browser.$('[data-avatar-format="gltf"][data-gesture="nod"]').waitForExist({ timeout: 20_000, timeoutMsg: 'geänderte Verwendung greift nicht' });
-  console.log('glTF-Clips: eigene Ruhe-Schleife, Geste aus dem Modell und geänderte Verwendung bestanden.');
+  await browser.$(`${viewer}[data-gesture="nod"][data-gesture-clip="Emote_Wave"]`).waitForExist({ timeout: 20_000, timeoutMsg: 'geänderte Verwendung greift nicht' });
+  console.log('glTF-Clips: Ruhe-Schleife nach Stimmung, Geste aus dem Modell, Gesten-Menü und geänderte Verwendung bestanden.');
 } finally {
   await close();
 }

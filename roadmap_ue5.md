@@ -58,7 +58,10 @@
 - [ ] Anleitung „Eigenes 3D-Modell mit Animationen importieren“ (Blender-Export, Clipnamen, Gesichts-Morphs,
       Grenzen) in README/Hilfe, dreisprachig.
 
-## 4. Offene Fragen
+## 4. Entschiedene Fragen (15.10.2026)
 
-- Sollen eingebettete Clips ohne Rolle (z. B. Kampfanimationen) als zusätzliche manuelle Gesten auswählbar sein?
-- Mehrere Clips je Rolle: zufällig (wie heute) oder nach Stimmung gewichtet?
+- **Clips ohne Verwendung** (z. B. Kampfanimationen) sind als manuelle Gesten auswählbar: Verwendung „Nur von Hand“,
+  Gesten-Menü am Avatar und Vorschau in den Einstellungen. ✅
+- **Mehrere Clips je Verwendung** werden **nach Stimmung** gewählt: Jeder Clip und jede importierte Bewegung hat eine
+  optionale Stimmung (aus dem Namen geraten, änderbar); passende werden bevorzugt (Gewicht 4, „jede Stimmung“ 1,
+  andere 0,25), die Ruhe-Schleife wechselt mit der Stimmung zur passendsten. ✅

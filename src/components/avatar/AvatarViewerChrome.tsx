@@ -1,4 +1,5 @@
-import { Angry, Box, Frown, Loader2, RefreshCcw, RotateCcw, Smile, Sparkles } from 'lucide-react';
+import { Angry, Box, Clapperboard, Frown, Loader2, RefreshCcw, RotateCcw, Smile, Sparkles } from 'lucide-react';
+import { DropdownMenu } from '../ui/DropdownMenu';
 import type { ReactNode } from 'react';
 import { useTranslation, type TranslationKey } from '../../i18n';
 
@@ -21,10 +22,15 @@ interface AvatarViewerChromeProps {
   expression: string;
   onPickEmotion: (emotion: string) => void;
   onResetView: () => void;
+  /** Clips of the model without a use; a menu plays them by hand. */
+  gestureClips?: string[];
+  onPlayGesture?: (clip: string) => void;
 }
 
 /** Overlays every 3D viewer shares: loading, error, empty hint, view reset and quick emotions. */
-export const AvatarViewerChrome = ({ loading, loadingLabel, error, empty, expression, onPickEmotion, onResetView }: AvatarViewerChromeProps) => {
+export const AvatarViewerChrome = ({
+  loading, loadingLabel, error, empty, expression, onPickEmotion, onResetView, gestureClips = [], onPlayGesture,
+}: AvatarViewerChromeProps) => {
   const { t } = useTranslation();
   return (
     <>
@@ -57,6 +63,25 @@ export const AvatarViewerChrome = ({ loading, loadingLabel, error, empty, expres
       >
         <RotateCcw className="w-3.5 h-3.5" />
       </button>
+
+      {gestureClips.length > 0 && onPlayGesture && (
+        <div className="absolute bottom-4 left-4 z-20">
+          <DropdownMenu
+            triggerLabel={t('avatar.gestures')}
+            triggerClassName="p-2 rounded-full bg-slate-900/80 border border-slate-700/60 text-slate-400 hover:text-accent-300 hover:bg-slate-800 backdrop-blur shadow-xl transition-colors outline-hidden focus-visible:ring-2 focus-visible:ring-accent-400"
+            trigger={<Clapperboard className="w-3.5 h-3.5" />}
+            heading={t('avatar.gestures')}
+            align="left"
+            placement="top"
+            menuClassName="max-h-72 overflow-y-auto"
+            items={gestureClips.map((clip) => ({
+              label: clip,
+              hint: t('avatar.playGesture', { name: clip }),
+              onSelect: () => onPlayGesture(clip),
+            }))}
+          />
+        </div>
+      )}
 
       <div
         role="group"

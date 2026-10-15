@@ -402,6 +402,8 @@ pub fn run() {
             commands::avatar::scan_avatar_motions,
             commands::avatar::list_model_clips,
             commands::avatar::set_model_clip_role,
+            commands::avatar::set_model_clip_mood,
+            commands::avatar::set_avatar_motion_mood,
             commands::avatar::import_avatar_motion,
             commands::avatar::set_avatar_motion_role,
             commands::avatar::delete_avatar_motion,

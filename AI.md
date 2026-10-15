@@ -145,6 +145,10 @@ Hub). Integrationen → Bildgenerierung enthält nur Studio und Galerie.
   (sonst `guess_role`). `GltfViewer` spielt sie ohne Retargeting (`withoutRootMotion` entfernt die Position der obersten
   Nicht-Hüft-Knochen), `useAvatarMotions` `ownClips` haben je Rolle Vorrang vor FBX; Änderungen in
   `ModelClipsSettings` erhöhen `modelClipRevision`. E2E `avatar-gltf-clips.mjs` (`makeGlb({ clips: true })`).
+  Stimmung: `MOODS`/`guess_mood` (Bewegungen in `moods.json`, Clips in `model_roles.json` als `{role, mood}`), der
+  `AvatarMotionPlayer` wählt per `pickByMood`/`bestByMood` (`utils/avatarGestures.ts`, Stimmung = VRM-Ausdruck) und
+  wechselt die Ruhe-Schleife in `setMood`. Clips ohne Verwendung (`extraClips`) startet das Gesten-Menü in
+  `AvatarViewerChrome` über `playAvatarClip` (`GestureRequest.clip`); der Viewer zeigt `data-idle-clip`/`data-gesture-clip`.
   glTF: Knochen-Aliase für Mixamo/RPM, MakeHuman, Unreal, Blender, VRoid (`gltfRig.ts`); Größe außerhalb 0,5–3 m wird
   auf 1,6 m gebracht; Bounds über das Skelett nach `updateMatrixWorld` (nicht `updateWorldMatrix`, sonst doppelter
   Maßstab); PBR-Materialien bekommen `useStudioEnvironment` (ohne Umgebung werden metallische Teile schwarz).

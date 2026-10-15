@@ -7,7 +7,7 @@ import { translate, useTranslation, type TranslationKey } from '../../i18n';
 import { MOTION_ROLES, type MotionRole } from '../../utils/avatarGestures';
 import { errorMessage } from '../../utils/errors';
 import { toast } from '../ui/feedback';
-import { ModelClipsSettings } from './ModelClipsSettings';
+import { ModelClipsSettings, MoodSelect } from './ModelClipsSettings';
 
 /**
  * Body motions of the 3D avatar: imported VRMA files and what they are used for (idle loop,
@@ -88,6 +88,12 @@ export const AvatarMotionsSettings = () => {
                   <option key={role} value={role}>{t(`motions.role.${role}` as TranslationKey)}</option>
                 ))}
               </select>
+              <MoodSelect
+                name={motion.name}
+                mood={motion.mood}
+                disabled={busy}
+                onChange={(mood) => void run(() => api.setAvatarMotionMood(motion.file, mood))}
+              />
               <button
                 type="button"
                 disabled={!motion.role || motion.role === 'idle'}

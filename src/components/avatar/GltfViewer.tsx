@@ -110,7 +110,9 @@ export const GltfViewer = ({
   const [playingGesture, setPlayingGesture] = useState('');
   const [embedded, setEmbedded] = useState<THREE.AnimationClip[]>([]);
   const [ownClips, setOwnClips] = useState<Map<MotionRole, THREE.AnimationClip[]> | undefined>(undefined);
-  const { modelClipRevision } = useStoreFields('modelClipRevision');
+  const [extraClips, setExtraClips] = useState<THREE.AnimationClip[]>([]);
+  const [playingClips, setPlayingClips] = useState({ idle: '', gesture: '' });
+  const { modelClipRevision, playAvatarClip } = useStoreFields('modelClipRevision', 'playAvatarClip');
 
   useEffect(() => {
     emotionRef.current = emotion;
@@ -168,6 +170,7 @@ export const GltfViewer = ({
         setEmbedded(withoutRootMotion(gltf.animations, scene, bones.hips));
         root = scene;
         motionPlayerRef.current = new AvatarMotionPlayer(scene, () => setPlayingGesture(''));
+        motionPlayerRef.current.onClipChange = (kind, name) => setPlayingClips((now) => ({ ...now, [kind]: name }));
         setLoaded({ root: scene, rest });
         setLoading(false);
       } catch (err) {
@@ -222,6 +225,7 @@ export const GltfViewer = ({
       setPlayingGesture('');
       setEmbedded([]);
       setOwnClips(undefined);
+      setExtraClips([]);
     };
   }, [modelPath]);
 
@@ -234,12 +238,19 @@ export const GltfViewer = ({
       .then((uses) => {
         if (cancelled) return;
         const byRole = new Map<MotionRole, THREE.AnimationClip[]>();
-        for (const { name, role } of uses) {
+        const extras: THREE.AnimationClip[] = [];
+        for (const { name, role, mood } of uses) {
           const clip = embedded.find((c) => c.name === name);
-          if (!clip || !(MOTION_ROLES as readonly string[]).includes(role)) continue;
-          byRole.set(role as MotionRole, [...(byRole.get(role as MotionRole) ?? []), clip]);
+          if (!clip) continue;
+          clip.userData = { ...clip.userData, mood };
+          if ((MOTION_ROLES as readonly string[]).includes(role)) {
+            byRole.set(role as MotionRole, [...(byRole.get(role as MotionRole) ?? []), clip]);
+          } else {
+            extras.push(clip);
+          }
         }
         setOwnClips(byRole);
+        setExtraClips(extras);
       })
       .catch((e) => console.warn('Animationen im Modell konnten nicht zugeordnet werden:', e));
     return () => {
@@ -253,8 +264,10 @@ export const GltfViewer = ({
     player: motionPlayerRef,
     load: loadFbxForRig,
     gesture,
+    mood: emotion,
     onGesture: setPlayingGesture,
     ownClips,
+    extraClips,
   });
 
   return (
@@ -264,6 +277,8 @@ export const GltfViewer = ({
         data-avatar-format="gltf"
         data-motions={motionCount}
         data-gesture={playingGesture}
+        data-idle-clip={playingClips.idle}
+        data-gesture-clip={playingGesture ? playingClips.gesture : ''}
         className="w-full h-full cursor-grab active:cursor-grabbing"
       />
       <AvatarViewerChrome
@@ -273,6 +288,8 @@ export const GltfViewer = ({
         expression={emotion}
         onPickEmotion={onPickEmotion}
         onResetView={() => resetViewRef.current?.()}
+        gestureClips={extraClips.map((clip) => clip.name)}
+        onPlayGesture={playAvatarClip}
       />
     </div>
   );

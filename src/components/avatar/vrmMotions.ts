@@ -4,7 +4,7 @@ import type { VRM } from '@pixiv/three-vrm';
 import { createVRMAnimationClip, VRMAnimationLoaderPlugin, type VRMAnimation } from '@pixiv/three-vrm-animation';
 import { api } from '../../services/api';
 import type { AvatarMotion } from '../../types';
-import type { MotionRole } from '../../utils/avatarGestures';
+import { bestByMood, pickByMood, type MotionRole } from '../../utils/avatarGestures';
 
 const FADE_SECONDS = 0.35;
 
@@ -37,16 +37,24 @@ export async function loadMotionClip(motion: AvatarMotion, vrm: VRM): Promise<TH
   return clip;
 }
 
+/** The mood a clip is meant for ('' = any), kept in its `userData`. */
+const clipMood = (clip: THREE.AnimationClip): string => (clip.userData?.mood as string | undefined) ?? '';
+
 /**
  * Plays the imported motions on one avatar (VRM scene or MMD mesh): an idle loop (if there is one) and gestures that
- * fade in, play once and fade back. `bodyWeight` says how much the animations drive the body,
- * so the procedural pose can fill in the rest.
+ * fade in, play once and fade back. With several motions for one use, those meant for the current
+ * mood (`clip.userData.mood`) are preferred; the idle loop follows the mood. `bodyWeight` says how
+ * much the animations drive the body, so the procedural pose can fill in the rest.
  */
 export class AvatarMotionPlayer {
   private readonly mixer: THREE.AnimationMixer;
   private idle: THREE.AnimationAction | null = null;
   private gesture: THREE.AnimationAction | null = null;
   private clips = new Map<MotionRole, THREE.AnimationClip[]>();
+  private extras: THREE.AnimationClip[] = [];
+  private mood = 'neutral';
+  /** Called with the clip name whenever the idle loop or a gesture starts (for test hooks). */
+  onClipChange?: (kind: 'idle' | 'gesture', name: string) => void;
 
   constructor(root: THREE.Object3D, private readonly onGestureEnd?: () => void) {
     this.mixer = new THREE.AnimationMixer(root);
@@ -63,21 +71,51 @@ export class AvatarMotionPlayer {
     });
   }
 
-  setClips(clips: Map<MotionRole, THREE.AnimationClip[]>) {
+  /** Motions by use, and clips without a use that can only be played by hand. */
+  setClips(clips: Map<MotionRole, THREE.AnimationClip[]>, extras: THREE.AnimationClip[] = []) {
     this.mixer.stopAllAction();
-    for (const list of this.clips.values()) for (const clip of list) this.mixer.uncacheClip(clip);
+    for (const clip of this.allClips()) this.mixer.uncacheClip(clip);
     this.clips = clips;
+    this.extras = extras;
     this.gesture = null;
-    const idleClip = clips.get('idle')?.[0];
+    const idleClip = this.idleFor(this.mood);
     this.idle = idleClip ? this.mixer.clipAction(idleClip) : null;
     this.idle?.setLoop(THREE.LoopRepeat, Infinity).play();
+    this.onClipChange?.('idle', idleClip?.name ?? '');
+  }
+
+  /** The avatar's mood changed: switch to the idle loop that fits it best. */
+  setMood(mood: string) {
+    this.mood = mood;
+    const clip = this.idleFor(mood);
+    if (!clip || clip === this.idle?.getClip()) return;
+    const previous = this.idle;
+    this.idle = this.mixer.clipAction(clip).setLoop(THREE.LoopRepeat, Infinity);
+    this.onClipChange?.('idle', clip.name);
+    // During a gesture the new loop starts when it ends ('finished' fades into `idle`).
+    if (this.gesture) {
+      previous?.fadeOut(FADE_SECONDS);
+      return;
+    }
+    this.idle.reset().play();
+    if (previous) this.idle.crossFadeFrom(previous, FADE_SECONDS * 2, false);
   }
 
   /** Starts a gesture; false when no motion has this use. */
   play(role: MotionRole): boolean {
     const options = this.clips.get(role);
     if (!options?.length || role === 'idle') return false;
-    const clip = options[Math.floor(Math.random() * options.length)]!;
+    const pick = pickByMood(options.map((clip) => ({ clip, mood: clipMood(clip) })), this.mood);
+    return pick ? this.start(pick.clip) : false;
+  }
+
+  /** Plays a clip by name once (gestures picked by hand); false when there is none. */
+  playClip(name: string): boolean {
+    const clip = this.allClips().find((c) => c.name === name);
+    return clip ? this.start(clip) : false;
+  }
+
+  private start(clip: THREE.AnimationClip): boolean {
     const action = this.mixer.clipAction(clip);
     const previous = this.gesture ?? this.idle;
     action.reset().setLoop(THREE.LoopOnce, 1);
@@ -86,7 +124,17 @@ export class AvatarMotionPlayer {
     if (previous && previous !== action) action.crossFadeFrom(previous, FADE_SECONDS, false);
     else action.fadeIn(FADE_SECONDS);
     this.gesture = action;
+    this.onClipChange?.('gesture', clip.name);
     return true;
+  }
+
+  private idleFor(mood: string): THREE.AnimationClip | undefined {
+    const idles = this.clips.get('idle') ?? [];
+    return bestByMood(idles.map((clip) => ({ clip, mood: clipMood(clip) })), mood)?.clip;
+  }
+
+  private allClips(): THREE.AnimationClip[] {
+    return [...[...this.clips.values()].flat(), ...this.extras];
   }
 
   update(delta: number) {
@@ -108,11 +156,9 @@ export class AvatarMotionPlayer {
     let weight = 0;
     for (const action of [this.idle, this.gesture]) if (action?.isRunning()) weight += action.getEffectiveWeight();
     // A gesture fading out after its end is no longer running but still blends.
-    for (const list of this.clips.values()) {
-      for (const clip of list) {
-        const action = this.mixer.existingAction(clip);
-        if (action && action !== this.idle && action !== this.gesture && action.enabled) weight += action.getEffectiveWeight();
-      }
+    for (const clip of this.allClips()) {
+      const action = this.mixer.existingAction(clip);
+      if (action && action !== this.idle && action !== this.gesture && action.enabled) weight += action.getEffectiveWeight();
     }
     return Math.min(1, weight);
   }

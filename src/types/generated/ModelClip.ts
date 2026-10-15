@@ -9,6 +9,10 @@ export type ModelClip = {
  */
 name: string, 
 /**
- * One of `ROLES`, or empty when it is not used.
+ * One of `ROLES`, or empty when it is not used (it can still be played by hand).
  */
-role: string, };
+role: string, 
+/**
+ * One of `MOODS`, or empty for any mood.
+ */
+mood: string, };

@@ -12,4 +12,8 @@ role: string,
 /**
  * File format: `vrma` or `fbx` (for VRM avatars), `vmd` (for MMD models).
  */
-kind: string, };
+kind: string, 
+/**
+ * One of `MOODS`, or empty for any mood.
+ */
+mood: string, };
