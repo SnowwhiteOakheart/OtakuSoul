@@ -9,8 +9,9 @@
 
 - **Kein Extraktor in der App.** OtakuSoul liest keine Spielarchive (`.pak`/`.utoc`/`.ucas`). Austauschformat ist
   glTF/GLB, wie es Blender exportiert; damit funktioniert der Import für jede Quelle (Spiel, Blender, VRoid, Kauf).
-- **Private Nutzung.** Figuren aus Spielen werden nicht veröffentlicht. Die spätere Nutzeranleitung beschreibt den
-  Weg *Blender → GLB → OtakuSoul* allgemein, nicht das Rippen aus bestimmten Spielen.
+- **Private Nutzung.** Figuren aus Spielen werden nicht veröffentlicht. Die Nutzeranleitung beschreibt den Weg
+  *Blender → GLB → OtakuSoul* allgemein; wie man an Modelle kommt, müssen Nutzer selbst herausfinden. Die vollständige
+  Anleitung mit Extraktion liegt nur lokal (`docs/private/`, nicht im Repository).
 - **Keine Umgehung von Schutzmaßnahmen.** Verschlüsselte Archive (AES) oder Anti-Cheat werden nicht angegangen,
   auch nicht in der Anleitung (§ 95a UrhG; Anti-Cheat-Sperren). Beispiel *Neverness to Everness*: UE-IoStore
   (`.utoc` Version 8, `.pak` Version 12), 12 von 22 Containern verschlüsselt, Anti-Cheat Expert (ACE).
@@ -54,9 +55,13 @@
 ### Schritt 5 – Import als Ordner/ZIP
 - [ ] `.gltf` + `.bin` + Texturen als Ordner oder ZIP importieren (wie MMD), Texturpfade case-insensitiv auflösen.
 
-### Schritt 6 – Nutzeranleitung
-- [ ] Anleitung „Eigenes 3D-Modell mit Animationen importieren“ (Blender-Export, Clipnamen, Gesichts-Morphs,
-      Grenzen) in README/Hilfe, dreisprachig.
+### Schritt 6 – Nutzeranleitung ✅
+- [x] Anleitung „Eigenes 3D-Modell mit Animationen“ (Blender-Export, Clipnamen, Stimmungen, Gesichts-Morphs,
+      Grenzen) dreisprachig in `docs/guide-3d-avatars{,.de,.ru}.md`, verlinkt aus den READMEs. Die Herkunft der
+      Modelle bleibt bewusst offen („musst Du selbst herausfinden“).
+- [x] Vollständige Anleitung inkl. Extraktion aus Unreal-Spielen nur lokal in `docs/private/` (per `.gitignore`
+      nicht im Repository).
+- [ ] Nach Schritt 2–5 nachziehen (Knochen, Gesichts-Editor, Toon-Modus, Ordner/ZIP-Import).
 
 ## 4. Entschiedene Fragen (15.10.2026)
 
