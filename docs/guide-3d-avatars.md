@@ -41,7 +41,11 @@ OtakuSoul uses standard materials (glTF "PBR"). For each material in the shader 
 
 - **Base color:** image texture → *Base Color* of the *Principled BSDF*
 - **Normal map:** image texture (color space *Non-Color*) → *Normal Map* node → *Normal*
-- **Transparency** (hair, eyelashes): alpha of the base color → *Alpha*, *Blend Mode* *Alpha Clip* or *Alpha Blend*
+- **Transparency** (hair, eyelashes, frills):
+  - Cut-outs (alpha only fully transparent or fully opaque – the usual case): connect the base color's alpha through
+    a **Math node "Round"** to *Alpha*. The glTF export turns this into *alpha clip* (`MASK`).
+  - Only real semi-transparency (shadow overlays, glass): alpha straight to *Alpha* → *blending* (`BLEND`).
+  - Do not set everything to blending: overlapping parts are then sorted wrongly and show up as black frayed spots.
 - For anime figures usually **Metallic 0** and **Roughness 0.6–0.8** – otherwise they look like plastic.
 
 Custom shaders (e.g. toon/cel shading) do not survive the glTF export.
@@ -122,7 +126,8 @@ Feel free to scale textures down to 2048 px – it saves video memory and loadin
 |---|---|
 | Figure is tiny, huge or lies on its back | In Blender **Ctrl+A → All Transforms**, export again |
 | Figure is grey or black | Connect the textures (section 4); for black metal parts set Metallic to 0 |
-| Hair/eyelashes show as blocks | Connect the base color's alpha, *Blend Mode* Alpha Clip |
+| Hair/eyelashes show as blocks | Connect the base color's alpha (section 4) |
+| Black frayed spots on hair or clothes | Export cut-out parts as alpha clip (Math node "Round"), not as blending |
 | Animations are missing | Set "Fake User", export with animation mode **Actions** |
 | Figure distorts during animations | The animation belongs to a different skeleton |
 | Figure walks out of the picture | Set the walk animation to "By hand only" or leave it out |

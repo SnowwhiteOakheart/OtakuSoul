@@ -41,7 +41,12 @@ OtakuSoul nutzt Standardmaterialien (glTF „PBR“). Je Material im Shader-Edit
 
 - **Grundfarbe:** Bildtextur → *Base Color* des *Principled BSDF*
 - **Normal Map:** Bildtextur (Farbraum *Non-Color*) → *Normal Map*-Knoten → *Normal*
-- **Transparenz** (Haare, Wimpern): Alpha der Grundfarbe → *Alpha*, *Blend Mode* auf *Alpha Clip* oder *Alpha Blend*
+- **Transparenz** (Haare, Wimpern, Rüschen):
+  - Ausgeschnittene Stellen (Alpha nur ganz durchsichtig oder ganz deckend – der Normalfall): Alpha der Grundfarbe
+    über einen **Mathe-Knoten „Runden“ (Round)** an *Alpha*. Daraus macht der glTF-Export *Alpha-Clip* (`MASK`).
+  - Nur echte Halbtransparenz (Schatten-Overlays, Glas): Alpha direkt an *Alpha* → *Überblendung* (`BLEND`).
+  - Nicht alles auf Überblendung stellen: Überlappende Teile werden dann falsch sortiert und erscheinen als schwarze
+    Fransen.
 - Bei Anime-Figuren meist **Metallic 0** und **Roughness 0,6–0,8** – sonst wirken sie wie Plastik.
 
 Eigene Shader (z. B. Toon-/Cel-Shading) überstehen den glTF-Export nicht.
@@ -121,7 +126,8 @@ Texturen ruhig auf 2048 px verkleinern – das spart Grafikspeicher und Ladezeit
 |---|---|
 | Figur ist winzig, riesig oder liegt auf dem Rücken | In Blender **Strg+A → Alle Transformationen**, neu exportieren |
 | Figur ist grau oder schwarz | Texturen verbinden (Abschnitt 4); bei schwarzen Metallteilen Metallic auf 0 |
-| Haare/Wimpern als Blöcke | Alpha der Grundfarbe verbinden, *Blend Mode* Alpha Clip |
+| Haare/Wimpern als Blöcke | Alpha der Grundfarbe verbinden (Abschnitt 4) |
+| Schwarze, ausgefranste Flecken an Haaren oder Kleidung | Ausgeschnittene Teile als Alpha-Clip exportieren (Mathe-Knoten „Runden“), nicht als Überblendung |
 | Animationen fehlen | „Fake User“ setzen, beim Export Animation-Modus **Aktionen** |
 | Figur verzerrt sich bei Animationen | Animation gehört zu einem anderen Skelett |
 | Figur läuft aus dem Bild | Lauf-Animation als „Nur von Hand“ einstellen oder weglassen |
