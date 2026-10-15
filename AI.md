@@ -168,7 +168,8 @@ Hub). Integrationen → Bildgenerierung enthält nur Studio und Galerie.
   Bewegungen: `.vrma` und Mixamo-`.fbx` (`mixamoRetarget.ts`: Mixamo-Ruhepose → normalisierte VRM-Knochen) in `<Daten>/animations/` (`avatar_motions.rs`, Verwendung in `roles.json`, aus dem Dateinamen
   geraten); `vrmMotions.ts` (`VrmMotionPlayer`: Ruhe-Schleife + Gesten mit Überblendung), die prozedurale Haltung füllt
   nur den Anteil, den keine Animation steuert (`bodyWeight`). Gesten löst `ChatView` nach jeder Antwort über
-  `gestureForReply` aus (`utils/avatarGestures.ts`: Rollenspiel-Aktion vor Gefühl) → `avatarSlice.playAvatarGesture`.
+  `gestureForReply` aus (`utils/avatarGestures.ts`: Rollenspiel-Aktion vor Gefühl; Aktionswörter de/en, russische als
+  Wortstämme über `ru()` mit `\p{L}`-Wortgrenze, da `\b` nur lateinische Buchstaben kennt) → `avatarSlice.playAvatarGesture`.
   Mundformen aa/ih/ou/ee/oh aus Formanten (`services/lipSync.ts`, `audioPlayer.onAudioFrame(amplitude, visemes)`).
   E2E: `e2e/tools/make-vrma.mjs` und `make-fbx.mjs` (ASCII-FBX im Mixamo-Format) bauen Test-Animationen; der Viewer zeigt `data-motions`/`data-gesture`,
   das Mock antwortet mit `stats.chatReply`.

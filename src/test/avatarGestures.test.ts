@@ -8,6 +8,22 @@ describe('gestureForReply', () => {
     expect(gestureForReply('*nickt langsam*', 'sad')).toBe('nod');
   });
 
+  it('understands Russian roleplay actions in any form', () => {
+    expect(gestureForReply('*машет рукой* «Привет!»')).toBe('greeting');
+    expect(gestureForReply('*Кивнула* «Хорошо.»')).toBe('nod');
+    expect(gestureForReply('*задумчиво смотрит в окно*')).toBe('thinking');
+    expect(gestureForReply('*вздрогнула от неожиданности*')).toBe('surprised');
+    expect(gestureForReply('*тихо засмеялась*')).toBe('happy');
+    expect(gestureForReply('*всхлипывает*')).toBe('sad');
+    expect(gestureForReply('*нахмурилась и топнула ногой*')).toBe('angry');
+  });
+
+  it('does not match Russian stems inside other words', () => {
+    // "машина" (car) is no wave, "откивать" is no word, "потоп" (flood) no stomp.
+    expect(gestureForReply('*садится в машину*')).toBeNull();
+    expect(gestureForReply('*смотрит на потоп*')).toBeNull();
+  });
+
   it('falls back to the emotion and ignores words outside actions', () => {
     expect(gestureForReply('Ich lache nie. *schaut aus dem Fenster*', 'sad')).toBe('sad');
     expect(gestureForReply('She waves.', 'relaxed')).toBeNull();

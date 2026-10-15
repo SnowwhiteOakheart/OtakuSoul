@@ -12,15 +12,39 @@ export interface GestureRequest {
   id: number;
 }
 
-/** Keywords in roleplay actions (`*waves*`, `*nickt*`) and the gesture they start. */
-const ACTION_GESTURES: [MotionRole, RegExp][] = [
-  ['greeting', /\b(wave[sd]?|waving|greets?|winkt|winkend|gr(ü|ue)(ß|ss)t)\b/i],
-  ['nod', /\b(nods?|nodding|nickt|nickend)\b/i],
-  ['thinking', /\b(thinks?|ponders?|thoughtful|tilts (her|his|their) head|(ü|ue)berlegt|denkt nach|nachdenklich|gr(ü|ue)belt)\b/i],
-  ['surprised', /\b(gasps?|startled|jumps|blinks in surprise|zuckt zusammen|erschrickt|staunt|keucht)\b/i],
-  ['happy', /\b(laughs?|giggles?|grins|cheers?|beams|lacht|kichert|strahlt|grinst|jubelt)\b/i],
-  ['sad', /\b(sighs? sadly|cries|sobs|tears up|weint|schluchzt|seufzt traurig)\b/i],
-  ['angry', /\b(glares|scowls|huffs|stomps|funkelt|schnaubt|stampft|ballt die f(ä|ae)uste)\b/i],
+/**
+ * Russian words start with one of these stems (any ending: кивает, кивнула, кивая). `\b` only knows
+ * Latin letters, so the start of a word is checked against any letter instead.
+ */
+const ru = (stems: string) => new RegExp(`(?<!\\p{L})(?:${stems})\\p{L}*`, 'iu');
+
+/** Keywords in roleplay actions (`*waves*`, `*nickt*`, `*кивает*`) and the gesture they start. */
+const ACTION_GESTURES: [MotionRole, RegExp[]][] = [
+  ['greeting', [
+    /\b(wave[sd]?|waving|greets?|winkt|winkend|gr(ü|ue)(ß|ss)t)\b/i,
+    ru('машет|машут|машу|помаха|махну|махая|здорова|поздорова|приветству'),
+  ]],
+  ['nod', [/\b(nods?|nodding|nickt|nickend)\b/i, ru('кива|кивн|кивок')]],
+  ['thinking', [
+    /\b(thinks?|ponders?|thoughtful|tilts (her|his|their) head|(ü|ue)berlegt|denkt nach|nachdenklich|gr(ü|ue)belt)\b/i,
+    ru('задум|размышля|думает|наклоняет голову|склоняет голову'),
+  ]],
+  ['surprised', [
+    /\b(gasps?|startled|jumps|blinks in surprise|zuckt zusammen|erschrickt|staunt|keucht)\b/i,
+    ru('ахае|ахну|вздраг|вздрогн|удивл[её]нно|изумл|опешил|испуганно'),
+  ]],
+  ['happy', [
+    /\b(laughs?|giggles?|grins|cheers?|beams|lacht|kichert|strahlt|grinst|jubelt)\b/i,
+    ru('смеётся|смеется|смеясь|засмея|рассмея|хихик|хохоч|хохот|ухмыля|сияет|ликует'),
+  ]],
+  ['sad', [
+    /\b(sighs? sadly|cries|sobs|tears up|weint|schluchzt|seufzt traurig)\b/i,
+    ru('плач|запла|всхлип|рыда|грустно вздых|печально вздых'),
+  ]],
+  ['angry', [
+    /\b(glares|scowls|huffs|stomps|funkelt|schnaubt|stampft|ballt die f(ä|ae)uste)\b/i,
+    ru('хмур|нахмур|фырка|фыркн|топа[еюя]|топну|сердито смотр|свирепо смотр|сжимает кулаки|сжала кулаки|сжал кулаки'),
+  ]],
 ];
 
 /** VRM expressions from the emotion detection and the gesture that fits them. */
@@ -37,7 +61,7 @@ const EMOTION_GESTURES: Partial<Record<string, MotionRole>> = {
  */
 export function gestureForReply(text: string, vrmExpression?: string): MotionRole | null {
   for (const match of text.matchAll(/\*([^*\n]{1,200})\*/g)) {
-    for (const [role, pattern] of ACTION_GESTURES) if (pattern.test(match[1]!)) return role;
+    for (const [role, patterns] of ACTION_GESTURES) if (patterns.some((p) => p.test(match[1]!))) return role;
   }
   return (vrmExpression && EMOTION_GESTURES[vrmExpression]) || null;
 }
