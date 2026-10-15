@@ -100,5 +100,7 @@ export async function launch(settings = {}) {
 export async function clickSend(browser) {
   const button = await browser.$('button[aria-label="Nachricht senden"]');
   await button.waitForEnabled({ timeout: 20_000 });
+  // A toast in the corner (e.g. "System-Prompt gespeichert") can cover the button for a moment.
+  await button.waitForClickable({ timeout: 20_000 });
   await button.click();
 }
