@@ -28,6 +28,9 @@ export interface AvatarSlice {
   /** The gesture the 3D avatar should play next; `id` makes repeats of the same one count. */
   avatarGesture: { role: MotionRole; id: number } | null;
   playAvatarGesture: (role: MotionRole) => void;
+  /** Counts changes to the uses of animations inside glTF models; viewers reload on it. */
+  modelClipRevision: number;
+  bumpModelClipRevision: () => void;
 }
 
 export const createAvatarSlice: SliceCreator<AvatarSlice> = (set, get) => ({
@@ -101,4 +104,8 @@ export const createAvatarSlice: SliceCreator<AvatarSlice> = (set, get) => ({
   avatarGesture: null,
 
   playAvatarGesture: (role) => set((state) => ({ avatarGesture: { role, id: (state.avatarGesture?.id ?? 0) + 1 } })),
+
+  modelClipRevision: 0,
+
+  bumpModelClipRevision: () => set((state) => ({ modelClipRevision: state.modelClipRevision + 1 })),
 });

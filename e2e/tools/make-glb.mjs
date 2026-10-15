@@ -1,6 +1,8 @@
 // A small glTF avatar (GLB) for tests, made with three.js itself: boxes on a Mixamo-style rig
 // without prefix (Hips, Spine, Neck, Head, Left/RightArm, Left/RightForeArm) in a T-pose, in
 // metres, with the ARKit blendshapes jawOpen, eyeBlinkLeft/Right and mouthSmileLeft/Right.
+// With `{ clips: true }` the file also carries its own animations, named like game exports:
+// "A_Idle_Breath" (loop) and "Emote_Wave" (a gesture).
 import * as THREE from 'three';
 import { GLTFExporter } from 'three/examples/jsm/exporters/GLTFExporter.js';
 
@@ -38,7 +40,7 @@ const PARTS = [
 ];
 const MORPHS = ['jawOpen', 'eyeBlinkLeft', 'eyeBlinkRight', 'mouthSmileLeft', 'mouthSmileRight'];
 
-export async function makeGlb() {
+export async function makeGlb({ clips = false } = {}) {
   const bones = new Map();
   for (const [name, position, parent] of BONES) {
     const bone = new THREE.Bone();
@@ -88,6 +90,21 @@ export async function makeGlb() {
   root.add(mesh);
   root.updateMatrixWorld(true);
   mesh.bind(new THREE.Skeleton(names.map((name) => bones.get(name))));
-  const result = await new GLTFExporter().parseAsync(root, { binary: true });
+  const animations = clips ? embeddedClips() : [];
+  const result = await new GLTFExporter().parseAsync(root, { binary: true, animations });
   return Buffer.from(result);
+}
+
+/** A breathing loop on the spine and a wave of the right arm. */
+function embeddedClips() {
+  const turn = (axis, angle) => new THREE.Quaternion().setFromAxisAngle(axis, angle).toArray();
+  const x = new THREE.Vector3(1, 0, 0);
+  const z = new THREE.Vector3(0, 0, 1);
+  const idle = new THREE.AnimationClip('A_Idle_Breath', 2, [
+    new THREE.QuaternionKeyframeTrack('Spine.quaternion', [0, 1, 2], [...turn(x, 0), ...turn(x, 0.04), ...turn(x, 0)]),
+  ]);
+  const wave = new THREE.AnimationClip('Emote_Wave', 1.2, [
+    new THREE.QuaternionKeyframeTrack('RightArm.quaternion', [0, 0.4, 0.8, 1.2], [...turn(z, 0), ...turn(z, 1.2), ...turn(z, 0.8), ...turn(z, 0)]),
+  ]);
+  return [idle, wave];
 }

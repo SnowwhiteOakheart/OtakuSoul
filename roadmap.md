@@ -19,7 +19,12 @@
 
 - [ ] Chatterbox-Stimmklonen ohne Python (sobald CrispASR ein C++-Baking anbietet).
 
-## 3. Technik & Tests
+## 3. 3D-Avatare: Figuren aus Unreal-Spielen (0.5.0)
+
+- [ ] GLB samt eingebetteter Animationen importieren und abspielen, mehr Knochen erkennen, Gesicht zuordnen,
+  Anime-Look, Import als Ordner/ZIP, Nutzeranleitung – Schritte und Rahmen in [`roadmap_ue5.md`](roadmap_ue5.md).
+
+## 4. Technik & Tests
 
 - [ ] Umstieg auf erzeugte Command-Wrapper (`tauri-specta`), falls es eine stabile 2.0 gibt (bis dahin prüft
   `src/test/commandCheck.test.ts` die Aufrufe; Stand 06.10.2026: 2.0.0-rc.25).

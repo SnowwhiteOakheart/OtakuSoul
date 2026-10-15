@@ -14,17 +14,22 @@ interface Options<Model> {
   gesture: { role: MotionRole; id: number } | null;
   /** The gesture that started (or '' when none could). */
   onGesture: (role: string) => void;
+  /**
+   * Clips the model brings itself (glTF animations), by use. They win over imported motions of
+   * the same use; imported ones fill the other uses.
+   */
+  ownClips?: Map<MotionRole, THREE.AnimationClip[]>;
 }
 
 /**
  * Loads the motions that have a use for this avatar and plays requested gestures. Returns
  * how many motions are loaded.
  */
-export function useAvatarMotions<Model>({ model, motions, player, load, gesture, onGesture }: Options<Model>): number {
+export function useAvatarMotions<Model>({ model, motions, player, load, gesture, onGesture, ownClips }: Options<Model>): number {
   const [count, setCount] = useState(0);
   // Only gestures requested after the viewer opened play; an old one is not replayed.
   const lastGesture = useRef(gesture?.id ?? 0);
-  const used = motions.filter((m) => m.role);
+  const used = motions.filter((m) => m.role && !ownClips?.get(m.role as MotionRole)?.length);
   // A new array with the same content must not reload the clips.
   const key = used.map((m) => `${m.file}:${m.role}`).join('|');
 
@@ -43,21 +48,21 @@ export function useAvatarMotions<Model>({ model, motions, player, load, gesture,
       ),
     ).then((clips) => {
       if (cancelled || !player.current) return;
-      const byRole = new Map<MotionRole, THREE.AnimationClip[]>();
+      const byRole = new Map<MotionRole, THREE.AnimationClip[]>(ownClips);
       clips.forEach((clip, i) => {
         if (!clip) return;
         const role = used[i]!.role as MotionRole;
         byRole.set(role, [...(byRole.get(role) ?? []), clip]);
       });
       player.current.setClips(byRole);
-      setCount(clips.filter(Boolean).length);
+      setCount([...byRole.values()].reduce((sum, list) => sum + list.length, 0));
     });
     return () => {
       cancelled = true;
     };
     // `key` stands for `used`; `load` and `player` are stable per viewer.
     // oxlint-disable-next-line react-hooks/exhaustive-deps
-  }, [model, key]);
+  }, [model, key, ownClips]);
 
   useEffect(() => {
     if (!gesture || gesture.id === lastGesture.current) return;

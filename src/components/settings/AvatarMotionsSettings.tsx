@@ -7,6 +7,7 @@ import { translate, useTranslation, type TranslationKey } from '../../i18n';
 import { MOTION_ROLES, type MotionRole } from '../../utils/avatarGestures';
 import { errorMessage } from '../../utils/errors';
 import { toast } from '../ui/feedback';
+import { ModelClipsSettings } from './ModelClipsSettings';
 
 /**
  * Body motions of the 3D avatar: imported VRMA files and what they are used for (idle loop,
@@ -111,6 +112,7 @@ export const AvatarMotionsSettings = () => {
           ))}
         </ul>
       )}
+      <ModelClipsSettings />
     </div>
   );
 };

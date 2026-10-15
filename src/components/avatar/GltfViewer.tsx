@@ -14,6 +14,8 @@ import { AvatarViewerChrome } from './AvatarViewerChrome';
 import { useAvatarMotions } from './useAvatarMotions';
 import { captureRest, findRigBones, MorphFace, retargetToRig, type RigRest } from './gltfRig';
 import type { AvatarViewerProps } from './VrmViewer';
+import { useStoreFields } from '../../store/useAppStore';
+import { MOTION_ROLES, type MotionRole } from '../../utils/avatarGestures';
 
 const EXPRESSION_WEIGHTS: Record<string, number> = { happy: 0.8, angry: 0.8, sad: 0.7, surprised: 0.8, relaxed: 0.6 };
 const VISEME_KEYS = Object.keys(SILENT_VISEMES) as (keyof Visemes)[];
@@ -52,6 +54,25 @@ function restPoseBounds(root: THREE.Object3D): THREE.Box3 {
   return box;
 }
 
+/**
+ * The model's own animations, ready to play: game rigs (Unreal) move their top bone for root
+ * motion, which would walk the figure out of the picture, so that bone keeps its place. The hips
+ * keep their movement (breathing, swaying).
+ */
+export function withoutRootMotion(clips: THREE.AnimationClip[], scene: THREE.Object3D, hips?: THREE.Object3D): THREE.AnimationClip[] {
+  const roots = new Set<string>();
+  scene.traverse((node) => {
+    if ((node as THREE.Bone).isBone && !(node.parent as THREE.Bone | null)?.isBone && node !== hips) roots.add(node.name);
+  });
+  return clips.map((clip) => {
+    const tracks = clip.tracks.filter((track) => {
+      const { nodeName, propertyName } = THREE.PropertyBinding.parseTrackName(track.name);
+      return !(propertyName === 'position' && roots.has(nodeName));
+    });
+    return tracks.length === clip.tracks.length ? clip : new THREE.AnimationClip(clip.name, clip.duration, tracks);
+  });
+}
+
 /** Mixamo FBX motions, moved onto this rig. */
 async function loadFbxForRig(motion: AvatarMotion, rig: LoadedRig): Promise<THREE.AnimationClip | null> {
   const bytes = await api.readFileBinary(motion.path);
@@ -66,7 +87,8 @@ async function loadFbxForRig(motion: AvatarMotion, rig: LoadedRig): Promise<THRE
 
 /**
  * Plain glTF/GLB avatars with a Mixamo-style rig (Ready Player Me-like, Blender exports): face
- * through ARKit blendshapes or Oculus visemes, Mixamo FBX motions.
+ * through ARKit blendshapes or Oculus visemes, the model's own animations (uses from
+ * `list_model_clips`) and Mixamo FBX motions for the uses it has none for.
  */
 export const GltfViewer = ({
   modelPath,
@@ -86,6 +108,9 @@ export const GltfViewer = ({
   const [loaded, setLoaded] = useState<LoadedRig | null>(null);
   const motionPlayerRef = useRef<AvatarMotionPlayer | null>(null);
   const [playingGesture, setPlayingGesture] = useState('');
+  const [embedded, setEmbedded] = useState<THREE.AnimationClip[]>([]);
+  const [ownClips, setOwnClips] = useState<Map<MotionRole, THREE.AnimationClip[]> | undefined>(undefined);
+  const { modelClipRevision } = useStoreFields('modelClipRevision');
 
   useEffect(() => {
     emotionRef.current = emotion;
@@ -140,6 +165,7 @@ export const GltfViewer = ({
         const box = restPoseBounds(scene);
         stage.frameModel(head ? head.getWorldPosition(new THREE.Vector3()).y : box.max.y - 0.15, box.max.y);
         const rest = captureRest(scene);
+        setEmbedded(withoutRootMotion(gltf.animations, scene, bones.hips));
         root = scene;
         motionPlayerRef.current = new AvatarMotionPlayer(scene, () => setPlayingGesture(''));
         setLoaded({ root: scene, rest });
@@ -194,8 +220,32 @@ export const GltfViewer = ({
       motionPlayerRef.current = null;
       setLoaded(null);
       setPlayingGesture('');
+      setEmbedded([]);
+      setOwnClips(undefined);
     };
   }, [modelPath]);
+
+  // Which of the model's animations are used for what (saved per model, else guessed by name).
+  useEffect(() => {
+    if (!embedded.length) return;
+    let cancelled = false;
+    api
+      .listModelClips(modelPath)
+      .then((uses) => {
+        if (cancelled) return;
+        const byRole = new Map<MotionRole, THREE.AnimationClip[]>();
+        for (const { name, role } of uses) {
+          const clip = embedded.find((c) => c.name === name);
+          if (!clip || !(MOTION_ROLES as readonly string[]).includes(role)) continue;
+          byRole.set(role as MotionRole, [...(byRole.get(role as MotionRole) ?? []), clip]);
+        }
+        setOwnClips(byRole);
+      })
+      .catch((e) => console.warn('Animationen im Modell konnten nicht zugeordnet werden:', e));
+    return () => {
+      cancelled = true;
+    };
+  }, [embedded, modelPath, modelClipRevision]);
 
   const motionCount = useAvatarMotions({
     model: loaded,
@@ -204,6 +254,7 @@ export const GltfViewer = ({
     load: loadFbxForRig,
     gesture,
     onGesture: setPlayingGesture,
+    ownClips,
   });
 
   return (

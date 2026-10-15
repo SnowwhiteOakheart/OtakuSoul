@@ -50,6 +50,7 @@ import {
   CombatOptions,
   ScannedVrm,
   AvatarMotion,
+  ModelClip,
   AppSettings,
   UserPersona,
   ChatSession,
@@ -795,6 +796,15 @@ export const api = {
 
   deleteAvatarMotion: async (file: string): Promise<void> => {
     await invoke('delete_avatar_motion', { file });
+  },
+
+  /** Animations stored inside a glTF avatar, with their use (saved or guessed from the name). */
+  listModelClips: async (modelPath: string): Promise<ModelClip[]> => {
+    return await invoke<ModelClip[]>('list_model_clips', { modelPath });
+  },
+
+  setModelClipRole: async (modelPath: string, clip: string, role: string): Promise<void> => {
+    await invoke('set_model_clip_role', { modelPath, clip, role });
   },
 
   /** Files next to a 3D model (relative, forward slashes), for textures in other cases. */

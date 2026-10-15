@@ -400,6 +400,8 @@ pub fn run() {
             commands::avatar::classify_text_emotion,
             commands::avatar::import_live2d_model,
             commands::avatar::scan_avatar_motions,
+            commands::avatar::list_model_clips,
+            commands::avatar::set_model_clip_role,
             commands::avatar::import_avatar_motion,
             commands::avatar::set_avatar_motion_role,
             commands::avatar::delete_avatar_motion,

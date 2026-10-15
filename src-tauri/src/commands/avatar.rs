@@ -45,6 +45,18 @@ pub fn set_avatar_motion_role(file: String, role: String) -> Result<(), String> 
 }
 
 #[tauri::command]
+pub fn list_model_clips(
+    model_path: String,
+) -> Result<Vec<crate::modules::avatar_motions::ModelClip>, String> {
+    crate::modules::avatar_motions::model_clips(&model_path)
+}
+
+#[tauri::command]
+pub fn set_model_clip_role(model_path: String, clip: String, role: String) -> Result<(), String> {
+    crate::modules::avatar_motions::set_model_clip_role(&model_path, &clip, &role)
+}
+
+#[tauri::command]
 pub fn delete_avatar_motion(file: String) -> Result<(), String> {
     crate::modules::avatar_motions::delete_avatar_motion(&file)
 }

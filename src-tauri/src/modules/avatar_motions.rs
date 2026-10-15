@@ -2,6 +2,9 @@
 //! retargeted onto the VRM in the frontend) and MMD motions (`.vmd`, for MMD models) the user
 //! imports into `<data>/animations/`. Each file has a use (idle loop or a gesture such as waving); the
 //! assignment lives next to the files in `roles.json`. Nothing is shipped or downloaded.
+//!
+//! glTF avatars can also bring their own animations inside the model file. Their names are read
+//! straight from the file (`model_clips`) and their uses are kept per model in `model_roles.json`.
 
 use serde::{Deserialize, Serialize};
 use std::collections::BTreeMap;
@@ -22,6 +25,9 @@ pub const ROLES: [&str; 8] = [
 ];
 
 const ROLES_FILE: &str = "roles.json";
+const MODEL_ROLES_FILE: &str = "model_roles.json";
+/// Larger JSON chunks are no real avatar (the JSON only describes the model, the data is binary).
+const MAX_GLTF_JSON: u64 = 64 * 1024 * 1024;
 
 #[derive(Debug, Clone, Serialize, Deserialize, TS, PartialEq)]
 #[ts(export)]
@@ -232,6 +238,158 @@ fn delete_in(dir: &Path, file: &str) -> Result<(), String> {
     Ok(())
 }
 
+/// An animation stored inside a glTF avatar and its use.
+#[derive(Debug, Clone, Serialize, Deserialize, TS, PartialEq)]
+#[ts(export)]
+pub struct ModelClip {
+    /// The clip name as three.js names it (`animation_<n>` when the file has none).
+    pub name: String,
+    /// One of `ROLES`, or empty when it is not used.
+    pub role: String,
+}
+
+/// The JSON part of a glTF file: the first chunk of a `.glb`, or the whole `.gltf` text. Only
+/// the JSON is read, never the (large) binary buffer behind it.
+fn read_gltf_json(path: &Path) -> Result<serde_json::Value, String> {
+    use std::io::Read;
+    let invalid = || crate::err!("backend.avatarMotion.modelInvalid");
+    let mut file = fs::File::open(path).map_err(|e| {
+        crate::err!(
+            "backend.common.fileReadPath",
+            path = path.display(),
+            error = e
+        )
+    })?;
+    let mut head = [0u8; 20];
+    let read = file.read(&mut head).map_err(|_| invalid())?;
+    let text = if read >= 20 && head.starts_with(b"glTF") {
+        let length = u64::from(u32::from_le_bytes(
+            head[12..16].try_into().unwrap_or_default(),
+        ));
+        if &head[16..20] != b"JSON" || length > MAX_GLTF_JSON {
+            return Err(invalid());
+        }
+        let mut json = Vec::new();
+        file.take(length)
+            .read_to_end(&mut json)
+            .map_err(|_| invalid())?;
+        json
+    } else {
+        let mut text = head[..read].to_vec();
+        file.take(MAX_GLTF_JSON)
+            .read_to_end(&mut text)
+            .map_err(|_| invalid())?;
+        text
+    };
+    serde_json::from_slice(&text).map_err(|_| invalid())
+}
+
+/// Animation names of a glTF file in file order, unnamed ones as three.js's GLTFLoader names them.
+fn gltf_animation_names(gltf: &serde_json::Value) -> Vec<String> {
+    gltf.get("animations")
+        .and_then(serde_json::Value::as_array)
+        .map(|animations| {
+            animations
+                .iter()
+                .enumerate()
+                .map(|(i, animation)| {
+                    animation
+                        .get("name")
+                        .and_then(serde_json::Value::as_str)
+                        .filter(|name| !name.is_empty())
+                        .map_or_else(|| format!("animation_{i}"), str::to_string)
+                })
+                .collect()
+        })
+        .unwrap_or_default()
+}
+
+/// The model inside one of the avatar folders, as the key its clip uses are stored under.
+fn model_key(model_path: &str, roots: &[PathBuf]) -> Result<(PathBuf, String), String> {
+    let model = fs::canonicalize(model_path)
+        .map_err(|_| crate::err!("backend.common.pathMissing", path = model_path))?;
+    let inside = roots
+        .iter()
+        .filter_map(|root| fs::canonicalize(root).ok())
+        .any(|root| model.starts_with(root));
+    let key = model
+        .file_name()
+        .and_then(|n| n.to_str())
+        .filter(|_| inside)
+        .ok_or_else(|| crate::err!("backend.vrm.invalid"))?
+        .to_string();
+    Ok((model, key))
+}
+
+type ModelRoles = BTreeMap<String, BTreeMap<String, String>>;
+
+fn read_model_roles(dir: &Path) -> ModelRoles {
+    fs::read_to_string(dir.join(MODEL_ROLES_FILE))
+        .ok()
+        .and_then(|text| serde_json::from_str(&text).ok())
+        .unwrap_or_default()
+}
+
+/// The animations inside a glTF avatar with their uses: the saved one, else guessed from the name.
+pub fn model_clips(model_path: &str) -> Result<Vec<ModelClip>, String> {
+    model_clips_in(
+        model_path,
+        &crate::modules::paths::avatar_roots(),
+        &motions_dir(),
+    )
+}
+
+fn model_clips_in(
+    model_path: &str,
+    roots: &[PathBuf],
+    dir: &Path,
+) -> Result<Vec<ModelClip>, String> {
+    let (model, key) = model_key(model_path, roots)?;
+    let saved = read_model_roles(dir).remove(&key).unwrap_or_default();
+    Ok(gltf_animation_names(&read_gltf_json(&model)?)
+        .into_iter()
+        .map(|name| ModelClip {
+            role: saved
+                .get(&name)
+                .cloned()
+                .unwrap_or_else(|| guess_role(&name).to_string()),
+            name,
+        })
+        .collect())
+}
+
+pub fn set_model_clip_role(model_path: &str, clip: &str, role: &str) -> Result<(), String> {
+    set_model_clip_role_in(
+        model_path,
+        clip,
+        role,
+        &crate::modules::paths::avatar_roots(),
+        &motions_dir(),
+    )
+}
+
+fn set_model_clip_role_in(
+    model_path: &str,
+    clip: &str,
+    role: &str,
+    roots: &[PathBuf],
+    dir: &Path,
+) -> Result<(), String> {
+    if !role.is_empty() && !ROLES.contains(&role) {
+        return Err(crate::err!("backend.avatarMotion.role", role = role));
+    }
+    let (_, key) = model_key(model_path, roots)?;
+    let mut roles = read_model_roles(dir);
+    roles
+        .entry(key)
+        .or_default()
+        .insert(clip.to_string(), role.to_string());
+    let text = serde_json::to_string_pretty(&roles).unwrap_or_default();
+    fs::create_dir_all(dir).map_err(|e| crate::err!("backend.common.dirCreate", error = e))?;
+    fs::write(dir.join(MODEL_ROLES_FILE), text)
+        .map_err(|e| crate::err!("backend.common.fileWrite", error = e))
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -289,6 +447,83 @@ mod tests {
         delete_in(&dir, "Wave Hello.vrma").unwrap();
         assert!(scan_in(&dir).is_empty());
         assert!(read_roles(&dir).is_empty());
+        let _ = fs::remove_dir_all(&tmp);
+    }
+
+    /// A minimal GLB: header, JSON chunk (padded to 4 bytes), no binary chunk.
+    fn glb(json: &str) -> Vec<u8> {
+        let mut chunk = json.as_bytes().to_vec();
+        while !chunk.len().is_multiple_of(4) {
+            chunk.push(b' ');
+        }
+        let mut out = b"glTF".to_vec();
+        out.extend_from_slice(&2u32.to_le_bytes());
+        out.extend_from_slice(&((12 + 8 + chunk.len()) as u32).to_le_bytes());
+        out.extend_from_slice(&(chunk.len() as u32).to_le_bytes());
+        out.extend_from_slice(b"JSON");
+        out.extend_from_slice(&chunk);
+        out
+    }
+
+    #[test]
+    fn reads_and_assigns_model_clips() {
+        let tmp = std::env::temp_dir().join(format!("otakusoul-clips-{}", std::process::id()));
+        let _ = fs::remove_dir_all(&tmp);
+        let avatars = tmp.join("avatars");
+        fs::create_dir_all(&avatars).unwrap();
+        let roots = [avatars.clone()];
+        let dir = tmp.join("animations");
+        let model = avatars.join("Figur.glb");
+        fs::write(
+            &model,
+            glb(r#"{"asset":{"version":"2.0"},"animations":[{"name":"A_Idle_Loop"},{"name":"Emote_Wave"},{},{"name":"Attack_01"}]}"#),
+        )
+        .unwrap();
+        let path = model.to_str().unwrap();
+
+        let clips = model_clips_in(path, &roots, &dir).unwrap();
+        let pairs: Vec<_> = clips
+            .iter()
+            .map(|c| (c.name.as_str(), c.role.as_str()))
+            .collect();
+        assert_eq!(
+            pairs,
+            [
+                ("A_Idle_Loop", "idle"),
+                ("Emote_Wave", "greeting"),
+                ("animation_2", ""),
+                ("Attack_01", "")
+            ]
+        );
+
+        set_model_clip_role_in(path, "Attack_01", "angry", &roots, &dir).unwrap();
+        set_model_clip_role_in(path, "A_Idle_Loop", "", &roots, &dir).unwrap();
+        let clips = model_clips_in(path, &roots, &dir).unwrap();
+        assert_eq!(clips[0].role, "");
+        assert_eq!(clips[3].role, "angry");
+        assert!(set_model_clip_role_in(path, "Attack_01", "dance", &roots, &dir).is_err());
+
+        // A plain .gltf (JSON text) works too; files outside the avatar folders do not.
+        let text = avatars.join("Text.gltf");
+        fs::write(&text, r#"{"animations":[{"name":"Nod"}]}"#).unwrap();
+        assert_eq!(
+            model_clips_in(text.to_str().unwrap(), &roots, &dir).unwrap()[0].role,
+            "nod"
+        );
+        let outside = tmp.join("Outside.glb");
+        fs::write(&outside, glb("{}")).unwrap();
+        assert!(model_clips_in(outside.to_str().unwrap(), &roots, &dir).is_err());
+        // Without animations the list is empty; broken files are an error.
+        let none = avatars.join("None.glb");
+        fs::write(&none, glb(r#"{"asset":{}}"#)).unwrap();
+        assert!(
+            model_clips_in(none.to_str().unwrap(), &roots, &dir)
+                .unwrap()
+                .is_empty()
+        );
+        let broken = avatars.join("Broken.glb");
+        fs::write(&broken, b"glTF\x02\0\0\0\x20\0\0\0\x99\0\0\0BIN\0").unwrap();
+        assert!(model_clips_in(broken.to_str().unwrap(), &roots, &dir).is_err());
         let _ = fs::remove_dir_all(&tmp);
     }
 }

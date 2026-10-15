@@ -74,6 +74,7 @@ import type { RvcConfig } from './generated/RvcConfig';
 import type { ScannedVoice } from './generated/ScannedVoice';
 import type { ScannedVrm } from './generated/ScannedVrm';
 import type { AvatarMotion } from './generated/AvatarMotion';
+import type { ModelClip } from './generated/ModelClip';
 import type { ScratchpadEntry } from './generated/ScratchpadEntry';
 import type { ServerState } from './generated/ServerState';
 import type { ServerStatus } from './generated/ServerStatus';
@@ -185,6 +186,7 @@ export type {
   ScannedVoice,
   ScannedVrm,
   AvatarMotion,
+  ModelClip,
   ScratchpadEntry,
   ServerState,
   ServerStatus,
