@@ -14,7 +14,7 @@
 </p>
 
 <p align="center">
-  <a href="https://github.com/SnowwhiteOakheart/OtakuSoul"><img alt="Версия" src="https://img.shields.io/badge/OtakuSoul-v0.3.0-8b5cf6?style=for-the-badge&logo=sparkles&logoColor=white" /></a>
+  <a href="https://github.com/SnowwhiteOakheart/OtakuSoul"><img alt="Версия" src="https://img.shields.io/badge/OtakuSoul-v0.4.0-8b5cf6?style=for-the-badge&logo=sparkles&logoColor=white" /></a>
   <img alt="Tauri 2" src="https://img.shields.io/badge/Tauri-2-24c8db?style=for-the-badge&logo=tauri&logoColor=white" />
   <img alt="Rust" src="https://img.shields.io/badge/Rust-native-b7410e?style=for-the-badge&logo=rust&logoColor=white" />
   <img alt="React 19" src="https://img.shields.io/badge/React-19-149eca?style=for-the-badge&logo=react&logoColor=white" />
@@ -275,7 +275,7 @@ OtakuSoul предоставляет нативные установщики д�
   Устанавливает программу в `~/.local/bin/otakusoul`, настраивает ярлык высокого разрешения и пункт в меню приложений (GNOME, KDE, XFCE).
 * **Debian / Ubuntu:**
   ```bash
-  sudo dpkg -i OtakuSoul_0.3.0_amd64.deb
+  sudo dpkg -i OtakuSoul_0.4.0_amd64.deb
   ```
 * **Arch Linux (AUR):**
   ```bash
@@ -283,7 +283,7 @@ OtakuSoul предоставляет нативные установщики д�
   ```
 * **Портативный AppImage:**
   ```bash
-  chmod +x OtakuSoul_0.3.0_amd64.AppImage && ./OtakuSoul_0.3.0_amd64.AppImage
+  chmod +x OtakuSoul_0.4.0_amd64.AppImage && ./OtakuSoul_0.4.0_amd64.AppImage
   ```
 
 ### 🪟 Windows (10 / 11)
@@ -292,7 +292,7 @@ OtakuSoul предоставляет нативные установщики д�
   powershell -ExecutionPolicy Bypass -File .\install.ps1
   ```
   Устанавливает OtakuSoul в `%LOCALAPPDATA%\Programs\OtakuSoul\`, создаёт ярлыки в меню «Пуск» и на рабочем столе.
-* **Графический инсталлятор NSIS:** Запустите `OtakuSoul_0.3.0_x64-setup.exe`.
+* **Графический инсталлятор NSIS:** Запустите `OtakuSoul_0.4.0_x64-setup.exe`.
 
 ### 🍏 macOS (Apple Silicon и Intel)
 * **Установка через Терминал:**
@@ -300,7 +300,7 @@ OtakuSoul предоставляет нативные установщики д�
   chmod +x install-macos.sh && ./install-macos.sh
   ```
   Копирует приложение в `/Applications`, снимает карантинные флаги Gatekeeper и интегрирует программу с Spotlight и Launchpad.
-* **Образ DMG:** Откройте `OtakuSoul_0.3.0_universal.dmg` и перетащите OtakuSoul в папку «Программы».
+* **Образ DMG:** Откройте `OtakuSoul_0.4.0_universal.dmg` и перетащите OtakuSoul в папку «Программы».
 
 ---
 

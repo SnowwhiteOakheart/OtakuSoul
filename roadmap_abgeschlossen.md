@@ -1902,3 +1902,7 @@ veraltet und sind korrigiert: `chat-sidebar-errors` las die Sitzung, bevor der e
   Einzelkarten liegen im Repository `otakusoul-data`; der Hub lädt Registries jetzt von dort statt aus `sow-data`.
   Alle Karten enthalten Deutsch, Englisch und Russisch (`otakusoul_i18n`, auch Schlagwörter), die Kennung „sow“ ist
   aus Schlagwörtern und Erweiterungsschlüsseln entfernt (`custom_avatar`, `custom_title`, `custom_variables`).
+
+- [x] **Soul Stage: 5e-Regeln & Spielbrett (07.10.2026):** Eigene Regel-Engine nach SRD 5.1, Spielbrett aus Raster/JSON
+  mit eigenen Kachel-SVGs, Magie, Erkundung, Starter-Abenteuer *Die Gruft der vergessenen Schatten*, Stufen bis 3,
+  Klassenmerkmale, Ausrüstung und Beute – alle Schritte 0–6 in [`Roadmap_DND.md`](Roadmap_DND.md).

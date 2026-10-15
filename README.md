@@ -14,7 +14,7 @@
 </p>
 
 <p align="center">
-  <a href="https://github.com/SnowwhiteOakheart/OtakuSoul"><img alt="Version" src="https://img.shields.io/badge/OtakuSoul-v0.3.0-8b5cf6?style=for-the-badge&logo=sparkles&logoColor=white" /></a>
+  <a href="https://github.com/SnowwhiteOakheart/OtakuSoul"><img alt="Version" src="https://img.shields.io/badge/OtakuSoul-v0.4.0-8b5cf6?style=for-the-badge&logo=sparkles&logoColor=white" /></a>
   <img alt="Tauri 2" src="https://img.shields.io/badge/Tauri-2-24c8db?style=for-the-badge&logo=tauri&logoColor=white" />
   <img alt="Rust" src="https://img.shields.io/badge/Rust-native-b7410e?style=for-the-badge&logo=rust&logoColor=white" />
   <img alt="React 19" src="https://img.shields.io/badge/React-19-149eca?style=for-the-badge&logo=react&logoColor=white" />
@@ -275,7 +275,7 @@ OtakuSoul provides native packages for all major desktop platforms:
   Installs OtakuSoul to `~/.local/bin/otakusoul`, registers desktop icons, and configures application menu entries (GNOME, KDE, XFCE).
 * **Debian / Ubuntu:**
   ```bash
-  sudo dpkg -i OtakuSoul_0.3.0_amd64.deb
+  sudo dpkg -i OtakuSoul_0.4.0_amd64.deb
   ```
 * **Arch Linux (AUR):**
   ```bash
@@ -283,7 +283,7 @@ OtakuSoul provides native packages for all major desktop platforms:
   ```
 * **Portable AppImage:**
   ```bash
-  chmod +x OtakuSoul_0.3.0_amd64.AppImage && ./OtakuSoul_0.3.0_amd64.AppImage
+  chmod +x OtakuSoul_0.4.0_amd64.AppImage && ./OtakuSoul_0.4.0_amd64.AppImage
   ```
 
 ### 🪟 Windows (10 / 11)
@@ -292,7 +292,7 @@ OtakuSoul provides native packages for all major desktop platforms:
   powershell -ExecutionPolicy Bypass -File .\install.ps1
   ```
   Installs OtakuSoul into `%LOCALAPPDATA%\Programs\OtakuSoul\`, creates desktop and Start Menu shortcuts, and offers an immediate launch.
-* **Graphical NSIS Installer:** Run `OtakuSoul_0.3.0_x64-setup.exe`.
+* **Graphical NSIS Installer:** Run `OtakuSoul_0.4.0_x64-setup.exe`.
 
 ### 🍏 macOS (Apple Silicon & Intel)
 * **Terminal Installer:**
@@ -300,7 +300,7 @@ OtakuSoul provides native packages for all major desktop platforms:
   chmod +x install-macos.sh && ./install-macos.sh
   ```
   Copies the application into `/Applications`, clears Gatekeeper quarantine flags, and binds Spotlight and Launchpad entries.
-* **DMG Package:** Open `OtakuSoul_0.3.0_universal.dmg` and drag OtakuSoul into your Applications folder.
+* **DMG Package:** Open `OtakuSoul_0.4.0_universal.dmg` and drag OtakuSoul into your Applications folder.
 
 ---
 
