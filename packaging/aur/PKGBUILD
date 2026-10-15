@@ -5,7 +5,7 @@ pkgrel=1
 pkgdesc="AI-powered anime companion and visual novel roleplay studio with local llama.cpp acceleration"
 arch=('x86_64')
 url="https://github.com/SnowwhiteOakheart/OtakuSoul"
-license=('MIT')
+license=('GPL-3.0-only')
 depends=('webkit2gtk-4.1' 'gtk3' 'libappindicator-gtk3')
 optdepends=(
     'cuda: NVIDIA GPU hardware acceleration support'
