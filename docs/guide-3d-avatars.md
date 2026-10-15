@@ -71,8 +71,8 @@ A **mood** in the name makes OtakuSoul prefer the clip when the emotion fits: `I
 `Idle_Sad`, `Wave_Angry`, `Surprise_Shock` …
 
 - **Protect every action with "Fake User" (shield icon)**, otherwise Blender drops unused actions.
-- If an animation moves the whole figure through space, OtakuSoul removes the translation of the top bone. Walk
-  cycles are still rarely a good fit.
+- If an animation moves the whole figure through space (walking), OtakuSoul keeps the hips and every bone above
+  them in place sideways; up and down (breathing, bobbing) stays.
 
 ## 6. Face (shape keys)
 
@@ -133,6 +133,7 @@ Feel free to scale textures down to 2048 px – it saves video memory and loadin
 | Black frayed spots on hair or clothes | Export cut-out parts as alpha clip (Math node "Round"), not as blending |
 | Animations are missing | Set "Fake User", export with animation mode **Actions** |
 | Figure distorts during animations | The animation belongs to a different skeleton |
+| Figure lies sideways, stands on its head or vanishes once an animation plays | Load the model and the animations through the **same** import path in Blender (e.g. both with the same add-on). Different importers use different axes (Z or Y up) and bone orientations; Blender already shows this on playback |
 | Figure walks out of the picture | Set the walk animation to "By hand only" or leave it out |
 | Face does not move | Rename shape keys as in section 6 |
 | Mixamo motions do not fit | So far torso, head and arms are recognised; better recognition (legs, hands, fingers, `Bip001` rigs) is planned |

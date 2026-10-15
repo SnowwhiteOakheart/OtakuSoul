@@ -72,8 +72,8 @@ Eine **Stimmung** im Namen lässt OtakuSoul bei passender Emotion diesen Clip be
 `Wave_Shy` (entspannt), `Idle_Sad`, `Wave_Angry`, `Surprise_Shock` …
 
 - **Jede Aktion mit „Fake User“ (Schild-Symbol) sichern**, sonst verwirft Blender ungenutzte Aktionen.
-- Bewegt eine Animation die ganze Figur durch den Raum, entfernt OtakuSoul die Verschiebung des obersten Knochens.
-  Lauf-Animationen eignen sich trotzdem selten.
+- Bewegt eine Animation die ganze Figur durch den Raum (Laufen), hält OtakuSoul Hüfte und alle Knochen darüber
+  seitlich an ihrem Platz; Auf und Ab (Atmen, Wippen) bleibt.
 
 ## 6. Gesicht (Shape Keys)
 
@@ -133,6 +133,7 @@ Texturen ruhig auf 2048 px verkleinern – das spart Grafikspeicher und Ladezeit
 | Schwarze, ausgefranste Flecken an Haaren oder Kleidung | Ausgeschnittene Teile als Alpha-Clip exportieren (Mathe-Knoten „Runden“), nicht als Überblendung |
 | Animationen fehlen | „Fake User“ setzen, beim Export Animation-Modus **Aktionen** |
 | Figur verzerrt sich bei Animationen | Animation gehört zu einem anderen Skelett |
+| Figur liegt quer, steht kopf oder verschwindet, sobald eine Animation läuft | Modell und Animationen über **denselben** Importweg in Blender laden (z. B. beides mit demselben Add-on). Verschiedene Importer verwenden unterschiedliche Achsen (Z- oder Y-oben) und Knochenausrichtungen; in Blender zeigt sich das schon beim Abspielen |
 | Figur läuft aus dem Bild | Lauf-Animation als „Nur von Hand“ einstellen oder weglassen |
 | Gesicht bewegt sich nicht | Shape Keys nach Abschnitt 6 umbenennen |
 | Mixamo-Bewegungen passen nicht | Erkannt werden bisher Rumpf, Kopf und Arme; bessere Erkennung (Beine, Hände, Finger, `Bip001`-Rigs) ist geplant |

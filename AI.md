@@ -142,8 +142,8 @@ Hub). Integrationen → Bildgenerierung enthält nur Studio und Galerie.
   jedes davon und legt Screenshots in `assets/test-avatars/screenshots/` ab (nicht Teil von `npm run e2e`).
   glTF-Eigenanimationen (Plan in `roadmap_ue5.md`): `avatar_motions::model_clips` liest Clipnamen nur aus dem JSON-Teil
   der GLB/glTF (unbenannte wie three.js `animation_<n>`), Rollen je Modell-Dateiname in `<Daten>/animations/model_roles.json`
-  (sonst `guess_role`). `GltfViewer` spielt sie ohne Retargeting (`withoutRootMotion` entfernt die Position der obersten
-  Nicht-Hüft-Knochen), `useAvatarMotions` `ownClips` haben je Rolle Vorrang vor FBX; Änderungen in
+  (sonst `guess_role`). `GltfViewer` spielt sie ohne Retargeting (`withoutRootMotion` hält Hüfte und alle Knoten darüber,
+  z. B. Unreal `root` und Biped-`Bip001`, waagerecht auf ihrer Ruheposition, senkrecht bleibt), `useAvatarMotions` `ownClips` haben je Rolle Vorrang vor FBX; Änderungen in
   `ModelClipsSettings` erhöhen `modelClipRevision`. E2E `avatar-gltf-clips.mjs` (`makeGlb({ clips: true })`).
   Stimmung: `MOODS`/`guess_mood` (Bewegungen in `moods.json`, Clips in `model_roles.json` als `{role, mood}`), der
   `AvatarMotionPlayer` wählt per `pickByMood`/`bestByMood` (`utils/avatarGestures.ts`, Stimmung = VRM-Ausdruck) und

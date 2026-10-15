@@ -55,21 +55,51 @@ function restPoseBounds(root: THREE.Object3D): THREE.Box3 {
 }
 
 /**
- * The model's own animations, ready to play: game rigs (Unreal) move their top bone for root
- * motion, which would walk the figure out of the picture, so that bone keeps its place. The hips
- * keep their movement (breathing, swaying).
+ * The model's own animations, ready to play: walking and other root motion would carry the figure
+ * out of the picture. The hips and every node above them (Unreal's `root`, the Biped centre of mass
+ * `Bip001`) keep their rest place sideways, even when a clip starts mid-stride; their movement up and
+ * down (breathing, bobbing, crouching) stays. Rigs without known hips treat their top bones that way.
  */
 export function withoutRootMotion(clips: THREE.AnimationClip[], scene: THREE.Object3D, hips?: THREE.Object3D): THREE.AnimationClip[] {
-  const roots = new Set<string>();
-  scene.traverse((node) => {
-    if ((node as THREE.Bone).isBone && !(node.parent as THREE.Bone | null)?.isBone && node !== hips) roots.add(node.name);
-  });
-  return clips.map((clip) => {
-    const tracks = clip.tracks.filter((track) => {
-      const { nodeName, propertyName } = THREE.PropertyBinding.parseTrackName(track.name);
-      return !(propertyName === 'position' && roots.has(nodeName));
+  scene.updateWorldMatrix(true, true);
+  const carriers: THREE.Object3D[] = [];
+  if (hips) {
+    for (let node: THREE.Object3D | null = hips; node && node !== scene; node = node.parent) carriers.push(node);
+  } else {
+    scene.traverse((node) => {
+      if ((node as THREE.Bone).isBone && !(node.parent as THREE.Bone | null)?.isBone) carriers.push(node);
     });
-    return tracks.length === clip.tracks.length ? clip : new THREE.AnimationClip(clip.name, clip.duration, tracks);
+  }
+  // Positions are keyed in the parent's space: turn each offset into the world, drop its sideways
+  // part and turn it back.
+  const toWorld = new Map(carriers.map((node) => [node.name, {
+    rotation: node.parent?.getWorldQuaternion(new THREE.Quaternion()) ?? new THREE.Quaternion(),
+    rest: node.position.clone(),
+  }]));
+  const offset = new THREE.Vector3();
+  return clips.map((clip) => {
+    let changed = false;
+    const tracks = clip.tracks.map((track) => {
+      const { nodeName, propertyName } = THREE.PropertyBinding.parseTrackName(track.name);
+      const carrier = toWorld.get(nodeName);
+      if (propertyName !== 'position' || !carrier) return track;
+      const { rotation, rest } = carrier;
+      const back = rotation.clone().invert();
+      const values = Float32Array.from(track.values);
+      const [x0, y0, z0] = [rest.x, rest.y, rest.z];
+      for (let i = 0; i < values.length; i += 3) {
+        offset.set(values[i]! - x0, values[i + 1]! - y0, values[i + 2]! - z0).applyQuaternion(rotation);
+        offset.x = 0;
+        offset.z = 0;
+        offset.applyQuaternion(back);
+        values[i] = x0 + offset.x;
+        values[i + 1] = y0 + offset.y;
+        values[i + 2] = z0 + offset.z;
+      }
+      changed = true;
+      return new THREE.VectorKeyframeTrack(track.name, Array.from(track.times), Array.from(values));
+    });
+    return changed ? new THREE.AnimationClip(clip.name, clip.duration, tracks) : clip;
   });
 }
 
