@@ -153,7 +153,8 @@ Hub). Integrationen → Bildgenerierung enthält nur Studio und Galerie.
   abgelegte zeigt `GltfViewer` nicht (`avatar.noSkeleton`). `ScannedVrm.triangles` > 500.000 → Hinweis `settings.vrmHeavy`.
   Nutzeranleitung `docs/guide-3d-avatars{,.de,.ru}.md` (UI-Pfade/Namenslisten bei Änderungen nachziehen); `docs/private/`
   ist gitignored (lokale Notizen, nie committen).
-  glTF: Knochen-Aliase für Mixamo/RPM, MakeHuman, Unreal, Blender, VRoid (`gltfRig.ts`); Größe außerhalb 0,5–3 m wird
+  glTF: Knochen-Aliase für Mixamo/RPM, MakeHuman, Unreal, Blender, VRoid, Bip001, MMD englisch/japanisch (`gltfRig.ts`,
+  `plainBoneName` behält Buchstaben aller Schriften), MMD-Gesichtsnamen `MMD_MORPHS` geteilt mit `MmdViewer`; Größe außerhalb 0,5–3 m wird
   auf 1,6 m gebracht; Bounds über das Skelett nach `updateMatrixWorld` (nicht `updateWorldMatrix`, sonst doppelter
   Maßstab); PBR-Materialien bekommen `useStudioEnvironment` (ohne Umgebung werden metallische Teile schwarz).
 - Porträts/Emotionsbilder: `utils/characterPortraits.ts` wählt das Bild je Emotion und macht Dateipfade über

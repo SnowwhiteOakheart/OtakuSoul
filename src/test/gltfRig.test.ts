@@ -23,6 +23,39 @@ describe('glTF rig', () => {
     expect(found.head).toBeUndefined();
   });
 
+  it('finds the arms of MMD (English and Japanese) and 3ds Max Biped rigs', () => {
+    expect(plainBoneName('Bip001 L UpperArm')).toBe('bip001lupperarm');
+    expect(plainBoneName('左ひじ')).toBe('左ひじ');
+    const mmd = new THREE.Group();
+    const hips = bone('Hips', mmd);
+    const leftArm = bone('Left arm', bone('Left shoulder', bone('Spine', hips)));
+    const leftElbow = bone('Left elbow', leftArm);
+    const japanese = new THREE.Group();
+    const upper = bone('上半身', bone('下半身', japanese));
+    const rightElbow = bone('右ひじ', bone('右腕', upper));
+    const biped = new THREE.Group();
+    const bipForearm = bone('Bip001 L Forearm', bone('Bip001 L UpperArm', bone('Bip001 Spine', bone('Bip001 Pelvis', biped))));
+    expect(findRigBones(mmd)).toMatchObject({ hips, leftArm, leftForeArm: leftElbow });
+    expect(findRigBones(japanese)).toMatchObject({ spine: upper, rightForeArm: rightElbow });
+    expect(findRigBones(biped).leftForeArm).toBe(bipForearm);
+  });
+
+  it('uses the Japanese morphs of models converted from MMD', () => {
+    const names = ['あ', 'まばたき', '笑い', 'a'];
+    const geometry = new THREE.BufferGeometry();
+    geometry.setAttribute('position', new THREE.Float32BufferAttribute([0, 0, 0], 3));
+    geometry.morphAttributes.position = names.map(() => new THREE.Float32BufferAttribute([0, 0, 0], 3));
+    const mesh = new THREE.Mesh(geometry);
+    mesh.updateMorphTargets();
+    mesh.morphTargetDictionary = Object.fromEntries(names.map((n, i) => [n, i]));
+    const face = new MorphFace(mesh);
+    expect(face.supported).toEqual(expect.arrayContaining(['aa', 'blink', 'happy']));
+    face.set('happy', 0.8);
+    face.set('aa', 0.5);
+    face.apply();
+    expect(mesh.morphTargetInfluences).toEqual([0.5, 0, 0.8, 0]);
+  });
+
   it('mixes ARKit blendshapes and shares jawOpen between shapes', () => {
     const geometry = new THREE.BufferGeometry();
     geometry.setAttribute('position', new THREE.Float32BufferAttribute([0, 0, 0], 3));

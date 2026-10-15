@@ -2,23 +2,48 @@ import * as THREE from 'three';
 
 /**
  * Bone roles of a humanoid glTF rig and the (normalized) names rigs use for them: Mixamo /
- * Ready Player Me, MakeHuman, Unreal, Blender (Rigify-like ".L") and VRoid ("J_Bip_…").
+ * Ready Player Me, MakeHuman, Unreal, Blender (Rigify-like ".L"), VRoid ("J_Bip_…"), 3ds Max Biped
+ * ("Bip001 L UpperArm") and MMD models converted to glTF (English "Left elbow" or Japanese "左ひじ").
  */
 const BONE_ALIASES = {
-  hips: ['hips', 'pelvis', 'jbipchips', 'root'],
-  spine: ['spine', 'spine1', 'spine01', 'spine02', 'spine03', 'chest', 'jbipcspine'],
-  neck: ['neck', 'neck01', 'jbipcneck'],
-  head: ['head', 'jbipchead'],
-  leftArm: ['leftarm', 'leftupperarm', 'upperarml', 'upperarm01l', 'lupperarm', 'armleft', 'jbiplupperarm'],
-  leftForeArm: ['leftforearm', 'leftlowerarm', 'lowerarml', 'lowerarm01l', 'forearml', 'lforearm', 'jbipllowerarm'],
-  rightArm: ['rightarm', 'rightupperarm', 'upperarmr', 'upperarm01r', 'rupperarm', 'armright', 'jbiprupperarm'],
-  rightForeArm: ['rightforearm', 'rightlowerarm', 'lowerarmr', 'lowerarm01r', 'forearmr', 'rforearm', 'jbiprlowerarm'],
+  hips: ['hips', 'pelvis', 'jbipchips', 'bip001pelvis', '下半身', 'root'],
+  spine: ['spine', 'spine1', 'spine01', 'spine02', 'spine03', 'chest', 'jbipcspine', 'bip001spine', '上半身', 'upperbody'],
+  neck: ['neck', 'neck01', 'jbipcneck', 'bip001neck', '首'],
+  head: ['head', 'jbipchead', 'bip001head', '頭'],
+  leftArm: ['leftarm', 'leftupperarm', 'upperarml', 'upperarm01l', 'lupperarm', 'armleft', 'jbiplupperarm', 'bip001lupperarm', '左腕', 'arml'],
+  leftForeArm: [
+    'leftforearm', 'leftlowerarm', 'lowerarml', 'lowerarm01l', 'forearml', 'lforearm', 'jbipllowerarm',
+    'bip001lforearm', 'leftelbow', 'elbowl', 'lelbow', '左ひじ', '左肘',
+  ],
+  rightArm: ['rightarm', 'rightupperarm', 'upperarmr', 'upperarm01r', 'rupperarm', 'armright', 'jbiprupperarm', 'bip001rupperarm', '右腕', 'armr'],
+  rightForeArm: [
+    'rightforearm', 'rightlowerarm', 'lowerarmr', 'lowerarm01r', 'forearmr', 'rforearm', 'jbiprlowerarm',
+    'bip001rforearm', 'rightelbow', 'elbowr', 'relbow', '右ひじ', '右肘',
+  ],
 } as const;
 export type RigBone = keyof typeof BONE_ALIASES;
 
-/** "mixamorig:LeftArm" → "leftarm", "upperarm01_L" → "upperarm01l", "upper_arm.L" → "upperarml". */
+/**
+ * "mixamorig:LeftArm" → "leftarm", "upperarm01_L" → "upperarm01l", "upper_arm.L" → "upperarml",
+ * "Bip001 L UpperArm" → "bip001lupperarm"; letters of other scripts stay ("左ひじ").
+ */
 export const plainBoneName = (name: string) =>
-  name.replace(/^mixamorig[:_]?/i, '').toLowerCase().replace(/[^a-z0-9]/g, '');
+  name.replace(/^mixamorig[:_]?/i, '').toLowerCase().replace(/[^\p{L}\p{N}]/gu, '');
+
+/** Standard MMD morph names (Japanese) for each mouth shape and expression, first found wins. */
+export const MMD_MORPHS: Record<string, string[]> = {
+  blink: ['まばたき', '瞬き', 'blink'],
+  aa: ['あ', 'a'],
+  ih: ['い', 'i'],
+  ou: ['う', 'u'],
+  ee: ['え', 'e'],
+  oh: ['お', 'o'],
+  happy: ['笑い', 'にこり', '笑顔'],
+  angry: ['怒り'],
+  sad: ['困る', '悲しい'],
+  surprised: ['びっくり', '驚き'],
+  relaxed: ['なごみ', 'にこり'],
+};
 
 /** The humanoid bones of a glTF scene by role; missing ones stay undefined. */
 export function findRigBones(root: THREE.Object3D): Partial<Record<RigBone, THREE.Object3D>> {
@@ -38,9 +63,10 @@ export function findRigBones(root: THREE.Object3D): Partial<Record<RigBone, THRE
 type MorphRecipe = [string, number][];
 /**
  * Each expression and mouth shape as morph recipes, best first: Oculus visemes and ARKit
- * blendshapes (used by most face-rigged glTF avatars), then simple names.
+ * blendshapes (used by most face-rigged glTF avatars), then simple names, then the Japanese MMD
+ * names of models converted from MMD.
  */
-const RECIPES: Record<string, MorphRecipe[]> = {
+const BASE_RECIPES: Record<string, MorphRecipe[]> = {
   blink: [[['eyeBlinkLeft', 1], ['eyeBlinkRight', 1]], [['eyesClosed', 1]], [['blink', 1]]],
   aa: [[['viseme_aa', 1]], [['jawOpen', 0.8]]],
   ih: [[['viseme_I', 1]], [['jawOpen', 0.3], ['mouthStretchLeft', 0.5], ['mouthStretchRight', 0.5]]],
@@ -53,6 +79,12 @@ const RECIPES: Record<string, MorphRecipe[]> = {
   surprised: [[['browInnerUp', 0.8], ['eyeWideLeft', 1], ['eyeWideRight', 1], ['jawOpen', 0.3]], [['surprised', 1]]],
   relaxed: [[['mouthSmileLeft', 0.4], ['mouthSmileRight', 0.4]], [['relaxed', 1]]],
 };
+const RECIPES: Record<string, MorphRecipe[]> = Object.fromEntries(
+  Object.entries(BASE_RECIPES).map(([key, recipes]) => [
+    key,
+    [...recipes, ...(MMD_MORPHS[key] ?? []).filter((name) => [...name].some((char) => char.charCodeAt(0) > 127)).map((name): MorphRecipe => [[name, 1]])],
+  ]),
+);
 
 /**
  * Drives the face of a glTF avatar: `set` collects weights per expression for one frame,

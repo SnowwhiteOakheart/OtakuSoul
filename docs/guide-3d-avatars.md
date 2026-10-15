@@ -32,7 +32,7 @@ You are responsible for models you did not make yourself.
 4. **One armature:** all parts (body, head, hair, clothes) should hang on **one** skeleton. Remove extra armatures
    and attach the parts to the main armature via an "Armature" modifier.
 5. **Bone names:** OtakuSoul recognises torso, head and arms with Mixamo, Unreal Mannequin, MakeHuman, Blender
-   (`upper_arm.L`) and VRoid names. Other skeletons still work with their own animations; only imported foreign
+   (`upper_arm.L`), VRoid, 3ds Max Biped (`Bip001 …`) and MMD names (Japanese too). Other skeletons still work with their own animations; only imported foreign
    motions (Mixamo FBX) will not fit them.
 
 ## 4. Materials
@@ -88,6 +88,9 @@ OtakuSoul drives blinking, mouth movement while speaking and emotions through **
 | Sad | `browInnerUp` + `mouthFrownLeft/Right`, or `sad` |
 | Surprised | `browInnerUp` + `eyeWideLeft/Right` + `jawOpen`, or `surprised` |
 | Relaxed | a slight `mouthSmileLeft/Right`, or `relaxed` |
+
+Models converted from MMD also work with their Japanese names: `あ` `い` `う` `え` `お`, `まばたき`, `笑い`,
+`怒り`, `困る`, `びっくり`, `なごみ`.
 
 If your shape keys are named differently, rename the matching ones (Object Data properties → Shape Keys). An editor
 for mapping them directly in OtakuSoul is planned.

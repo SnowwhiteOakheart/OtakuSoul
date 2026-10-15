@@ -39,11 +39,15 @@
 - [x] Tests: Rust (Clipnamen, Rollen), E2E mit GLB samt eingebetteten Clips (Ruhe + Geste).
 
 ### Schritt 2 – Mehr Knochen erkennen
-- [ ] Rollen für Beine, Hände, Finger und Zehen ergänzen; Aliase für 3ds-Max-Biped (`Bip001 …`), Unreal
-      Mannequin (UE4/UE5), weitere verbreitete Asia-Rigs.
+- [x] Aliase für 3ds-Max-Biped (`Bip001 …`) und nach glTF konvertierte MMD-Modelle (englisch „Left elbow“, japanisch
+      „左ひじ“/„上半身“); Knochennamen behalten dafür Buchstaben anderer Schriften. Geprüft an einem echten MMD-Modell
+      (Arme hängen statt T-Pose).
+- [ ] Rollen für Beine, Hände, Finger und Zehen ergänzen; weitere verbreitete Asia-Rigs.
 - [ ] Retargeting fremder Bewegungen (Mixamo, VRMA) über alle Rollen, nicht nur Rumpf und Arme.
 
 ### Schritt 3 – Gesicht zuordnen
+- [x] Japanische MMD-Gesichtsformen (あ い う え お, まばたき, 笑い, 怒り, 困る, びっくり, なごみ) auch im glTF-Viewer
+      (`MMD_MORPHS` in `gltfRig.ts`, geteilt mit dem MMD-Viewer).
 - [ ] Editor je Modell: Emotionen (fröhlich, traurig, wütend, überrascht, entspannt), Blinzeln und Mundformen
       (aa/ih/ou/ee/oh) auf beliebige Morph Targets legen, mit Gewicht; gespeichert pro Modell.
 - [ ] Gesichter mit Knochen statt Morphs (Kiefer, Augenlider) als Fallback.

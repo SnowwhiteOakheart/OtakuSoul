@@ -32,7 +32,7 @@ fremde Figuren nicht weiter. Für Modelle, die Du nicht selbst gemacht hast, bis
 4. **Eine Armatur:** Alle Teile (Körper, Kopf, Haare, Kleidung) sollten an **einem** Skelett hängen. Überzählige
    Armaturen entfernen und die Teile per Modifikator „Armatur“ an die Hauptarmatur hängen.
 5. **Knochennamen:** OtakuSoul erkennt Rumpf, Kopf und Arme bei Mixamo-, Unreal-Mannequin-, MakeHuman-, Blender-
-   (`upper_arm.L`) und VRoid-Namen. Andere Skelette funktionieren mit ihren eigenen Animationen trotzdem; nur
+   (`upper_arm.L`), VRoid-, 3ds-Max-Biped- (`Bip001 …`) und MMD-Namen (auch japanisch). Andere Skelette funktionieren mit ihren eigenen Animationen trotzdem; nur
    importierte Fremdbewegungen (Mixamo-FBX) passen dann nicht.
 
 ## 4. Materialien
@@ -89,6 +89,9 @@ Blinzeln, Mundbewegung beim Sprechen und Emotionen steuert OtakuSoul über **Sha
 | Traurig | `browInnerUp` + `mouthFrownLeft/Right`, oder `sad` |
 | Überrascht | `browInnerUp` + `eyeWideLeft/Right` + `jawOpen`, oder `surprised` |
 | Entspannt | leichtes `mouthSmileLeft/Right`, oder `relaxed` |
+
+Von MMD konvertierte Modelle funktionieren auch mit ihren japanischen Namen: `あ` `い` `う` `え` `お`, `まばたき`,
+`笑い`, `怒り`, `困る`, `びっくり`, `なごみ`.
 
 Heißen Deine Shape Keys anders, benenne die passenden um (Objekteigenschaften → Formschlüssel). Ein Editor zum
 Zuordnen direkt in OtakuSoul ist geplant.

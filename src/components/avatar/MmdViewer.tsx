@@ -14,6 +14,7 @@ import { createAvatarStage, createBlinker } from './avatarStage';
 import { loweredArm } from './avatarPose';
 import { AvatarViewerChrome } from './AvatarViewerChrome';
 import { useAvatarMotions } from './useAvatarMotions';
+import { MMD_MORPHS } from './gltfRig';
 import type { AvatarViewerProps } from './VrmViewer';
 
 /** MMD lengths are in "units" of about 8 cm. */
@@ -21,20 +22,6 @@ const MMD_TO_METRES = 0.08;
 /** Prefix for texture paths, mapped to the model folder by the loading manager. */
 const RESOURCE_PREFIX = 'otakusoul-mmd:';
 
-/** Standard MMD morph names (Japanese) for each mouth shape and expression, first found wins. */
-const MORPHS: Record<string, string[]> = {
-  blink: ['まばたき', '瞬き', 'blink'],
-  aa: ['あ', 'a'],
-  ih: ['い', 'i'],
-  ou: ['う', 'u'],
-  ee: ['え', 'e'],
-  oh: ['お', 'o'],
-  happy: ['笑い', 'にこり', '笑顔'],
-  angry: ['怒り'],
-  sad: ['困る', '悲しい'],
-  surprised: ['びっくり', '驚き'],
-  relaxed: ['なごみ', 'にこり'],
-};
 const EXPRESSION_WEIGHTS: Record<string, number> = { happy: 0.8, angry: 0.8, sad: 0.7, surprised: 0.8, relaxed: 0.6 };
 const VISEME_KEYS = Object.keys(SILENT_VISEMES) as (keyof Visemes)[];
 
@@ -121,7 +108,7 @@ export const MmdViewer = ({
 
         const dictionary = model.mesh.morphTargetDictionary ?? {};
         morphIndex = Object.fromEntries(
-          Object.entries(MORPHS)
+          Object.entries(MMD_MORPHS)
             .map(([key, names]) => [key, names.map((name) => dictionary[name]).find((i) => i !== undefined)] as const)
             .filter((entry): entry is readonly [string, number] => entry[1] !== undefined),
         );
