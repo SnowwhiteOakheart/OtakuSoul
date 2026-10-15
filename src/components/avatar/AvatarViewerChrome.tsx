@@ -1,4 +1,4 @@
-import { Angry, Box, Clapperboard, Frown, Loader2, RefreshCcw, RotateCcw, Smile, Sparkles } from 'lucide-react';
+import { Angry, Box, Brush, Clapperboard, Frown, Loader2, RefreshCcw, RotateCcw, Smile, Sparkles } from 'lucide-react';
 import { DropdownMenu } from '../ui/DropdownMenu';
 import type { ReactNode } from 'react';
 import { useTranslation, type TranslationKey } from '../../i18n';
@@ -25,11 +25,13 @@ interface AvatarViewerChromeProps {
   /** Clips of the model without a use; a menu plays them by hand. */
   gestureClips?: string[];
   onPlayGesture?: (clip: string) => void;
+  /** Cel-shading switch (glTF models; VRM and MMD bring their own toon shaders). */
+  toon?: { enabled: boolean; onToggle: () => void };
 }
 
 /** Overlays every 3D viewer shares: loading, error, empty hint, view reset and quick emotions. */
 export const AvatarViewerChrome = ({
-  loading, loadingLabel, error, empty, expression, onPickEmotion, onResetView, gestureClips = [], onPlayGesture,
+  loading, loadingLabel, error, empty, expression, onPickEmotion, onResetView, gestureClips = [], onPlayGesture, toon,
 }: AvatarViewerChromeProps) => {
   const { t } = useTranslation();
   return (
@@ -63,6 +65,20 @@ export const AvatarViewerChrome = ({
       >
         <RotateCcw className="w-3.5 h-3.5" />
       </button>
+
+      {toon && (
+        <button
+          onClick={toon.onToggle}
+          aria-pressed={toon.enabled}
+          className={`absolute bottom-14 right-4 z-20 p-2 rounded-full border backdrop-blur shadow-xl transition-colors ${
+            toon.enabled ? 'bg-accent-600 border-accent-400 text-white' : 'bg-slate-900/80 border-slate-700/60 text-slate-400 hover:text-accent-300 hover:bg-slate-800'
+          }`}
+          title={t('avatar.toonLook')}
+          aria-label={t('avatar.toonLook')}
+        >
+          <Brush className="w-3.5 h-3.5" />
+        </button>
+      )}
 
       {gestureClips.length > 0 && onPlayGesture && (
         <div className="absolute bottom-4 left-4 z-20">

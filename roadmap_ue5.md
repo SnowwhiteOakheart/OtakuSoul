@@ -52,9 +52,10 @@
       (aa/ih/ou/ee/oh) auf beliebige Morph Targets legen, mit Gewicht; gespeichert pro Modell.
 - [ ] Gesichter mit Knochen statt Morphs (Kiefer, Augenlider) als Fallback.
 
-### Schritt 4 – Anime-Look
-- [ ] Optionaler Toon-/Unbeleuchtet-Modus pro Modell (z. B. `MeshToonMaterial` mit Kontur), damit Cel-Shading-Figuren
-      nicht wie PBR-Plastik wirken.
+### Schritt 4 – Anime-Look ✅
+- [x] Toon-Schalter am glTF-Avatar (`toonLook.ts`: `MeshToonMaterial` mit drei Lichtstufen, Konturen über
+      `OutlineEffect` nur für deckende Teile, neutrales Tone-Mapping, mehr Umgebungslicht), gemerkt pro Modell und Gerät.
+      VRM (MToon) und MMD bringen eigene Toon-Shader mit.
 
 ### Schritt 5 – Import als Ordner/ZIP
 - [ ] `.gltf` + `.bin` + Texturen als Ordner oder ZIP importieren (wie MMD), Texturpfade case-insensitiv auflösen.

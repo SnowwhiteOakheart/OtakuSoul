@@ -594,6 +594,7 @@ export const de = {
   "motions.mood.surprised": "Überrascht",
   "motions.mood.relaxed": "Entspannt",
   "avatar.gestures": "Gesten aus dem Modell",
+  "avatar.toonLook": "Toon-Look (Cel-Shading mit Konturen)",
   "avatar.playGesture": "{{name}} abspielen",
   "modelClips.title": "Bewegungen im Modell (glTF)",
   "modelClips.model": "glTF-Modell",

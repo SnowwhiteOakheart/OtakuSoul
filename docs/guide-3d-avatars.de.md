@@ -49,7 +49,8 @@ OtakuSoul nutzt Standardmaterialien (glTF „PBR“). Je Material im Shader-Edit
     Fransen.
 - Bei Anime-Figuren meist **Metallic 0** und **Roughness 0,6–0,8** – sonst wirken sie wie Plastik.
 
-Eigene Shader (z. B. Toon-/Cel-Shading) überstehen den glTF-Export nicht.
+Eigene Shader (z. B. Toon-/Cel-Shading) überstehen den glTF-Export nicht. Für den Anime-Look hat OtakuSoul einen eigenen
+**Toon-Schalter** am Avatar (Pinsel-Symbol): harte Licht/Schatten-Stufen und Konturlinien, gemerkt pro Modell.
 
 ## 5. Animationen benennen
 

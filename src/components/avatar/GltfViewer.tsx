@@ -8,7 +8,9 @@ import { translate, useTranslation } from '../../i18n';
 import { errorMessage } from '../../utils/errors';
 import type { AvatarMotion } from '../../types';
 import { AvatarMotionPlayer } from './vrmMotions';
-import { createAvatarStage, createBlinker } from './avatarStage';
+import { createAvatarStage, createBlinker, type AvatarStage } from './avatarStage';
+import { applyToonLook } from './toonLook';
+import { usePersistentFlag } from '../../hooks/usePersistentFlag';
 import { loweredArm } from './avatarPose';
 import { AvatarViewerChrome } from './AvatarViewerChrome';
 import { useAvatarMotions } from './useAvatarMotions';
@@ -142,6 +144,9 @@ export const GltfViewer = ({
   const [ownClips, setOwnClips] = useState<Map<MotionRole, THREE.AnimationClip[]> | undefined>(undefined);
   const [extraClips, setExtraClips] = useState<THREE.AnimationClip[]>([]);
   const [playingClips, setPlayingClips] = useState({ idle: '', gesture: '' });
+  const stageRef = useRef<AvatarStage | null>(null);
+  // Cel shading per model and device; game figures usually look right with it, scans without.
+  const [toon, setToon] = usePersistentFlag(`avatarToon:${modelPath}`, false);
   const { modelClipRevision, playAvatarClip } = useStoreFields('modelClipRevision', 'playAvatarClip');
 
   useEffect(() => {
@@ -164,6 +169,7 @@ export const GltfViewer = ({
     });
     const stage = createAvatarStage(container, modelPath);
     stage.useStudioEnvironment();
+    stageRef.current = stage;
     resetViewRef.current = stage.resetView;
 
     let root: THREE.Object3D | null = null;
@@ -257,6 +263,7 @@ export const GltfViewer = ({
     return () => {
       isDisposed = true;
       resetViewRef.current = null;
+      stageRef.current = null;
       cleanupAudio();
       stage.dispose();
       motionPlayerRef.current?.dispose();
@@ -268,6 +275,12 @@ export const GltfViewer = ({
       setExtraClips([]);
     };
   }, [modelPath]);
+
+  useEffect(() => {
+    if (!loaded) return;
+    applyToonLook(loaded.root, toon);
+    stageRef.current?.setToon(toon);
+  }, [loaded, toon]);
 
   // Which of the model's animations are used for what (saved per model, else guessed by name).
   useEffect(() => {
@@ -317,6 +330,7 @@ export const GltfViewer = ({
         data-avatar-format="gltf"
         data-motions={motionCount}
         data-gesture={playingGesture}
+        data-toon={toon}
         data-idle-clip={playingClips.idle}
         data-gesture-clip={playingGesture ? playingClips.gesture : ''}
         className="w-full h-full cursor-grab active:cursor-grabbing"
@@ -330,6 +344,7 @@ export const GltfViewer = ({
         onResetView={() => resetViewRef.current?.()}
         gestureClips={extraClips.map((clip) => clip.name)}
         onPlayGesture={playAvatarClip}
+        toon={loaded ? { enabled: toon, onToggle: () => setToon(!toon) } : undefined}
       />
     </div>
   );

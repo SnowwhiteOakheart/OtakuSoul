@@ -36,6 +36,17 @@ try {
   await browser.pause(800);
   await shot('63-gltf-avatar');
 
+  // Toon look: switched on, kept for this model after a reload, switched off again.
+  const toonButton = 'button[aria-label="Toon-Look (Cel-Shading mit Konturen)"]';
+  await browser.$(toonButton).click();
+  await browser.$('[data-avatar-format="gltf"][data-toon="true"]').waitForExist({ timeout: 5_000, timeoutMsg: 'Toon-Look schaltet nicht ein' });
+  await browser.pause(500);
+  await shot('63b-gltf-toon');
+  await browser.execute(() => location.reload());
+  await browser.$('[data-avatar-format="gltf"][data-toon="true"][data-motions="1"]').waitForExist({ timeout: 30_000, timeoutMsg: 'Toon-Look nach Neuladen vergessen' });
+  await browser.$(toonButton).click();
+  await browser.$('[data-avatar-format="gltf"][data-toon="false"]').waitForExist({ timeout: 5_000, timeoutMsg: 'Toon-Look schaltet nicht aus' });
+
   mock.stats.chatReply = '*nickt lächelnd* "Klar!"';
   await browser.$('textarea[aria-label="Nachricht"]').setValue('Machst du mit?');
   await clickSend(browser);

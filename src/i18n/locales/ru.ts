@@ -592,6 +592,7 @@ export const ru: TranslationDictionary = {
   "motions.mood.surprised": "Удивление",
   "motions.mood.relaxed": "Спокойствие",
   "avatar.gestures": "Жесты из модели",
+  "avatar.toonLook": "Тун-стиль (cel-шейдинг с контурами)",
   "avatar.playGesture": "Воспроизвести {{name}}",
   "modelClips.title": "Движения внутри модели (glTF)",
   "modelClips.model": "Модель glTF",

@@ -48,7 +48,8 @@ OtakuSoul uses standard materials (glTF "PBR"). For each material in the shader 
   - Do not set everything to blending: overlapping parts are then sorted wrongly and show up as black frayed spots.
 - For anime figures usually **Metallic 0** and **Roughness 0.6–0.8** – otherwise they look like plastic.
 
-Custom shaders (e.g. toon/cel shading) do not survive the glTF export.
+Custom shaders (e.g. toon/cel shading) do not survive the glTF export. For the anime look OtakuSoul has its own
+**toon switch** on the avatar (brush icon): hard light and shadow steps plus outlines, remembered per model.
 
 ## 5. Name the animations
 

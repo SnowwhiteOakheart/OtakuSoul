@@ -592,6 +592,7 @@ export const en: TranslationDictionary = {
   "motions.mood.surprised": "Surprised",
   "motions.mood.relaxed": "Relaxed",
   "avatar.gestures": "Gestures from the model",
+  "avatar.toonLook": "Toon look (cel shading with outlines)",
   "avatar.playGesture": "Play {{name}}",
   "modelClips.title": "Motions inside the model (glTF)",
   "modelClips.model": "glTF model",

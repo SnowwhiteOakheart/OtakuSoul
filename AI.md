@@ -151,6 +151,9 @@ Hub). Integrationen → Bildgenerierung enthält nur Studio und Galerie.
   `AvatarViewerChrome` über `playAvatarClip` (`GestureRequest.clip`); der Viewer zeigt `data-idle-clip`/`data-gesture-clip`.
   GLB ohne Skelett (`skins` leer, `avatar_motions::gltf_summary`) lehnt `import_vrm_into` mit `backend.vrm.noSkeleton` ab; von Hand
   abgelegte zeigt `GltfViewer` nicht (`avatar.noSkeleton`). `ScannedVrm.triangles` > 500.000 → Hinweis `settings.vrmHeavy`.
+  Toon-Look (glTF): `toonLook.ts` `applyToonLook` tauscht Materialien gegen `MeshToonMaterial` (Originale in `userData`),
+  `AvatarStage.setToon` schaltet `OutlineEffect`, `NeutralToneMapping` und Umgebungslicht; Schalter `usePersistentFlag`
+  `avatarToon:<Pfad>`, Viewer zeigt `data-toon`.
   Nutzeranleitung `docs/guide-3d-avatars{,.de,.ru}.md` (UI-Pfade/Namenslisten bei Änderungen nachziehen); `docs/private/`
   ist gitignored (lokale Notizen, nie committen).
   glTF: Knochen-Aliase für Mixamo/RPM, MakeHuman, Unreal, Blender, VRoid, Bip001, MMD englisch/japanisch (`gltfRig.ts`,

@@ -1,4 +1,5 @@
 import * as THREE from 'three';
+import { OutlineEffect } from 'three/examples/jsm/effects/OutlineEffect.js';
 import { OrbitControls } from 'three/examples/jsm/controls/OrbitControls.js';
 import { RoomEnvironment } from 'three/examples/jsm/environments/RoomEnvironment.js';
 import {
@@ -30,6 +31,11 @@ export interface AvatarStage {
    * parts such as eyes render almost black. VRM (MToon) and MMD (toon) do not need it.
    */
   useStudioEnvironment: () => void;
+  /**
+   * Cel-shaded look (glTF toon switch): outlines through `OutlineEffect` and neutral tone mapping,
+   * which keeps anime colours instead of the filmic curve's washed-out skin.
+   */
+  setToon: (enabled: boolean) => void;
   start: (onFrame: (delta: number, elapsed: number) => void) => void;
   dispose: () => void;
 }
@@ -100,7 +106,8 @@ export function createAvatarStage(container: HTMLElement, modelPath: string): Av
   // Framing of the loaded model; the fixed values only until it is there.
   let defaultView: VrmViewState = { camera: DEFAULT_CAMERA_POSITION, target: DEFAULT_CAMERA_TARGET };
 
-  scene.add(new THREE.AmbientLight(0xffffff, 0.85));
+  const ambient = new THREE.AmbientLight(0xffffff, 0.85);
+  scene.add(ambient);
   const keyLight = new THREE.DirectionalLight(0xfff5ea, 1.2);
   keyLight.position.set(1.0, 2.0, 1.5).normalize();
   scene.add(keyLight);
@@ -125,6 +132,8 @@ export function createAvatarStage(container: HTMLElement, modelPath: string): Av
 
   let animationFrameId = 0;
   let environment: THREE.Texture | null = null;
+  let outline: OutlineEffect | null = null;
+  let toon = false;
   return {
     scene,
     camera,
@@ -147,6 +156,18 @@ export function createAvatarStage(container: HTMLElement, modelPath: string): Av
       scene.environment = environment;
       scene.environmentIntensity = 0.6;
     },
+    setToon: (enabled) => {
+      toon = enabled;
+      if (enabled) outline ??= new OutlineEffect(renderer, { defaultThickness: 0.0035, defaultColor: [0.16, 0.11, 0.14] });
+      renderer.toneMapping = enabled ? THREE.NeutralToneMapping : THREE.ACESFilmicToneMapping;
+      // Toon materials take no light from the studio environment; more ambient light makes up for it.
+      ambient.intensity = enabled ? 1.5 : 0.85;
+      // Tone mapping is compiled into each shader.
+      scene.traverse((node) => {
+        const material = (node as THREE.Mesh).material;
+        for (const m of Array.isArray(material) ? material : material ? [material] : []) m.needsUpdate = true;
+      });
+    },
     start: (onFrame) => {
       let lastTime = performance.now();
       const startTime = lastTime;
@@ -158,7 +179,8 @@ export function createAvatarStage(container: HTMLElement, modelPath: string): Av
         lastTime = now;
         controls.update();
         onFrame(delta, (now - startTime) / 1000);
-        renderer.render(scene, camera);
+        if (toon && outline) outline.render(scene, camera);
+        else renderer.render(scene, camera);
       };
       animate();
     },
