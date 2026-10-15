@@ -27,9 +27,11 @@ You are responsible for models you did not make yourself.
 2. **Check the scale:** the figure should be about 1.5–1.8 m tall (sidebar `N` → Dimensions). OtakuSoul brings
    models outside 0.5–3 m to 1.6 m on its own, but a correct scale is cleaner. Then apply
    **Ctrl+A → All Transforms**.
-3. **One armature:** all parts (body, head, hair, clothes) should hang on **one** skeleton. Remove extra armatures
+3. **A skeleton is required:** models without an armature (sculptures, AI-generated figures, scans) are refused.
+   More than about 500,000 triangles load slowly – OtakuSoul points this out on import.
+4. **One armature:** all parts (body, head, hair, clothes) should hang on **one** skeleton. Remove extra armatures
    and attach the parts to the main armature via an "Armature" modifier.
-4. **Bone names:** OtakuSoul recognises torso, head and arms with Mixamo, Unreal Mannequin, MakeHuman, Blender
+5. **Bone names:** OtakuSoul recognises torso, head and arms with Mixamo, Unreal Mannequin, MakeHuman, Blender
    (`upper_arm.L`) and VRoid names. Other skeletons still work with their own animations; only imported foreign
    motions (Mixamo FBX) will not fit them.
 
@@ -126,4 +128,5 @@ Feel free to scale textures down to 2048 px – it saves video memory and loadin
 | Figure walks out of the picture | Set the walk animation to "By hand only" or leave it out |
 | Face does not move | Rename shape keys as in section 6 |
 | Mixamo motions do not fit | So far torso, head and arms are recognised; better recognition (legs, hands, fingers, `Bip001` rigs) is planned |
+| “The model has no skeleton” | Static models (e.g. AI-generated figures, 3D scans) are refused. Rig them first – e.g. with Mixamo (auto-rig) or in Blender (Rigify) – and reduce the polygon count beforehand with “Decimate” to about 50,000–100,000 triangles |
 | Import fails or loads very slowly | Only `.glb` without Draco compression; scale textures down |

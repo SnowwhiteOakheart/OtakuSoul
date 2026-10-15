@@ -4,4 +4,8 @@ export type ScannedVrm = { name: string, path: string, size_mb: number,
 /**
  * `vrm`, `mmd` (PMX/PMD with its textures next to it) or `gltf` (plain `.glb` rig).
  */
-format: string, };
+format: string, 
+/**
+ * Triangles of an imported glTF model (0 when not counted), for a hint on heavy models.
+ */
+triangles: number, };

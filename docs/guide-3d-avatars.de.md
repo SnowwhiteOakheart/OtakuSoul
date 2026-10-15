@@ -27,9 +27,11 @@ fremde Figuren nicht weiter. Für Modelle, die Du nicht selbst gemacht hast, bis
 2. **Maßstab prüfen:** Die Figur sollte etwa 1,5–1,8 m groß sein (Seitenleiste `N` → Abmessungen). OtakuSoul bringt
    Modelle außerhalb von 0,5–3 m zwar selbst auf 1,6 m, sauberer ist ein richtiger Maßstab. Danach
    **Strg+A → Alle Transformationen** anwenden.
-3. **Eine Armatur:** Alle Teile (Körper, Kopf, Haare, Kleidung) sollten an **einem** Skelett hängen. Überzählige
+3. **Ein Skelett ist Pflicht:** Modelle ohne Armatur (Skulpturen, KI-generierte Figuren, Scans) lehnt OtakuSoul ab.
+   Mehr als etwa 500.000 Dreiecke laden langsam – OtakuSoul weist beim Import darauf hin.
+4. **Eine Armatur:** Alle Teile (Körper, Kopf, Haare, Kleidung) sollten an **einem** Skelett hängen. Überzählige
    Armaturen entfernen und die Teile per Modifikator „Armatur“ an die Hauptarmatur hängen.
-4. **Knochennamen:** OtakuSoul erkennt Rumpf, Kopf und Arme bei Mixamo-, Unreal-Mannequin-, MakeHuman-, Blender-
+5. **Knochennamen:** OtakuSoul erkennt Rumpf, Kopf und Arme bei Mixamo-, Unreal-Mannequin-, MakeHuman-, Blender-
    (`upper_arm.L`) und VRoid-Namen. Andere Skelette funktionieren mit ihren eigenen Animationen trotzdem; nur
    importierte Fremdbewegungen (Mixamo-FBX) passen dann nicht.
 
@@ -125,4 +127,5 @@ Texturen ruhig auf 2048 px verkleinern – das spart Grafikspeicher und Ladezeit
 | Figur läuft aus dem Bild | Lauf-Animation als „Nur von Hand“ einstellen oder weglassen |
 | Gesicht bewegt sich nicht | Shape Keys nach Abschnitt 6 umbenennen |
 | Mixamo-Bewegungen passen nicht | Erkannt werden bisher Rumpf, Kopf und Arme; bessere Erkennung (Beine, Hände, Finger, `Bip001`-Rigs) ist geplant |
+| „Das Modell hat kein Skelett“ | Statische Modelle (z. B. KI-generierte Figuren, 3D-Scans) werden abgelehnt. Erst riggen – etwa mit Mixamo (automatisches Rig) oder in Blender (Rigify) – und die Polygonzahl vorher mit „Decimate“ auf etwa 50.000–100.000 Dreiecke senken |
 | Import schlägt fehl oder lädt sehr lange | Nur `.glb` ohne Draco-Kompression; Texturen verkleinern |

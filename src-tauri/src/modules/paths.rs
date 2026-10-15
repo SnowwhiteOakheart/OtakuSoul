@@ -46,6 +46,9 @@ pub struct ScannedVrm {
     pub size_mb: u64,
     /// `vrm`, `mmd` (PMX/PMD with its textures next to it) or `gltf` (plain `.glb` rig).
     pub format: String,
+    /// Triangles of an imported glTF model (0 when not counted), for a hint on heavy models.
+    #[serde(default)]
+    pub triangles: u64,
 }
 
 /// `(config_dir, data_dir)`: the platform folders, or `$OTAKUSOUL_HOME/config|data` when set
@@ -598,6 +601,7 @@ pub fn scan_available_vrm_models() -> Vec<ScannedVrm> {
                         path: path.to_string_lossy().to_string(),
                         size_mb,
                         format: format.into(),
+                        triangles: 0,
                     });
                 }
             }
@@ -617,6 +621,7 @@ pub fn scan_available_vrm_models() -> Vec<ScannedVrm> {
                 path: model.to_string_lossy().to_string(),
                 size_mb,
                 format: "mmd".into(),
+                triangles: 0,
             });
         }
     }
@@ -670,6 +675,7 @@ pub fn import_vrm_model(source_path: &str) -> Result<ScannedVrm, String> {
             .unwrap_or(0),
         path: model.to_string_lossy().to_string(),
         format: "mmd".into(),
+        triangles: 0,
     })
 }
 
@@ -691,6 +697,17 @@ fn import_vrm_into(src: &Path, dest_dir: &Path) -> Result<ScannedVrm, String> {
         return Err(crate::err!("backend.vrm.invalid"));
     };
     let extension = if format == "vrm" { "vrm" } else { "glb" };
+    // A glTF model without a skeleton (e.g. a generated statue) cannot move or show emotions.
+    let triangles = if format == "gltf" {
+        let summary = crate::modules::avatar_motions::gltf_summary(src)
+            .map_err(|_| crate::err!("backend.vrm.invalid"))?;
+        if summary.skins == 0 {
+            return Err(crate::err!("backend.vrm.noSkeleton"));
+        }
+        summary.triangles
+    } else {
+        0
+    };
 
     fs::create_dir_all(dest_dir).map_err(|e| crate::err!("backend.common.dirCreate", error = e))?;
     let stem = src.file_stem().and_then(|s| s.to_str()).unwrap_or("Avatar");
@@ -720,6 +737,7 @@ fn import_vrm_into(src: &Path, dest_dir: &Path) -> Result<ScannedVrm, String> {
         path: dest.to_string_lossy().to_string(),
         size_mb: src_len / (1024 * 1024),
         format: format.into(),
+        triangles,
     })
 }
 
@@ -759,12 +777,46 @@ mod tests {
         let fake = src_dir.join("fake.vrm");
         fs::write(&fake, b"nope").unwrap();
         assert!(import_vrm_into(&fake, &dest).is_err());
+        // GLB: header plus JSON chunk; one with a skeleton is copied, a statue is refused.
+        let glb_with = |json: &str| {
+            let mut chunk = json.as_bytes().to_vec();
+            while !chunk.len().is_multiple_of(4) {
+                chunk.push(b' ');
+            }
+            let mut out = b"glTF".to_vec();
+            out.extend_from_slice(&2u32.to_le_bytes());
+            out.extend_from_slice(&((20 + chunk.len()) as u32).to_le_bytes());
+            out.extend_from_slice(&(chunk.len() as u32).to_le_bytes());
+            out.extend_from_slice(b"JSON");
+            out.extend_from_slice(&chunk);
+            out
+        };
         let glb = src_dir.join("Rig.glb");
-        fs::write(&glb, b"glTF\x02\0\0\0").unwrap();
+        fs::write(
+            &glb,
+            glb_with(r#"{"accessors":[{"count":30}],"meshes":[{"primitives":[{"attributes":{"POSITION":0}}]}],"skins":[{"joints":[0]}]}"#),
+        )
+        .unwrap();
         let imported = import_vrm_into(&glb, &dest).unwrap();
         assert_eq!(
-            (imported.format.as_str(), imported.path.ends_with("Rig.glb")),
-            ("gltf", true)
+            (
+                imported.format.as_str(),
+                imported.path.ends_with("Rig.glb"),
+                imported.triangles
+            ),
+            ("gltf", true, 10)
+        );
+        let statue = src_dir.join("Statue.glb");
+        fs::write(&statue, glb_with(r#"{"meshes":[]}"#)).unwrap();
+        let refused = import_vrm_into(&statue, &dest).unwrap_err();
+        assert!(refused.contains("backend.vrm.noSkeleton"), "{refused}");
+        assert!(!dest.join("Statue.glb").exists());
+        let broken = src_dir.join("Broken.glb");
+        fs::write(&broken, b"glTF\x02\0\0\0").unwrap();
+        assert!(
+            import_vrm_into(&broken, &dest)
+                .unwrap_err()
+                .contains("backend.vrm.invalid")
         );
 
         let _ = fs::remove_dir_all(root);

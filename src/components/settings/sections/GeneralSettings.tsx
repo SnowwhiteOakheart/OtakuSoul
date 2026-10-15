@@ -28,6 +28,9 @@ const COLOR_MODES: { id: ColorModePreference; icon: typeof Monitor }[] = [
   { id: 'dark', icon: Moon },
 ];
 
+/** Above this many triangles a model loads slowly; the import suggests reducing it. */
+const HEAVY_MODEL_TRIANGLES = 500_000;
+
 export const GeneralSettings = () => {
   const { t } = useTranslation();
   const {
@@ -57,6 +60,9 @@ export const GeneralSettings = () => {
         await refreshVrmModels();
         setActiveVrmPath(imported.path);
         toast.success(translate('settings.vrmImported', { name: imported.name }));
+        if (imported.triangles > HEAVY_MODEL_TRIANGLES) {
+          toast.info(translate('settings.vrmHeavy', { name: imported.name, count: imported.triangles.toLocaleString() }));
+        }
       }
     } catch (e) {
       console.error('Failed to import VRM:', e);

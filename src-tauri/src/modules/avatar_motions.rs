@@ -377,6 +377,63 @@ fn read_gltf_json(path: &Path) -> Result<serde_json::Value, String> {
     serde_json::from_slice(&text).map_err(|_| invalid())
 }
 
+/// What an import needs to know about a glTF avatar before copying it.
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub struct GltfSummary {
+    /// Skeletons (glTF skins); a model without one cannot move and is refused.
+    pub skins: usize,
+    /// Triangles over all meshes (each mesh counted once), for a hint on very heavy models.
+    pub triangles: u64,
+}
+
+pub fn gltf_summary(path: &Path) -> Result<GltfSummary, String> {
+    let gltf = read_gltf_json(path)?;
+    let accessor_count = |index: Option<&serde_json::Value>| {
+        index
+            .and_then(serde_json::Value::as_u64)
+            .and_then(|i| {
+                gltf.get("accessors")?
+                    .get(i as usize)?
+                    .get("count")?
+                    .as_u64()
+            })
+            .unwrap_or(0)
+    };
+    let triangles = gltf
+        .get("meshes")
+        .and_then(serde_json::Value::as_array)
+        .into_iter()
+        .flatten()
+        .flat_map(|mesh| {
+            mesh.get("primitives")
+                .and_then(serde_json::Value::as_array)
+                .cloned()
+                .unwrap_or_default()
+        })
+        // Mode 4 (triangles) is the default; points and lines draw none.
+        .filter(|p| {
+            p.get("mode")
+                .and_then(serde_json::Value::as_u64)
+                .unwrap_or(4)
+                == 4
+        })
+        .map(|p| {
+            let indices = accessor_count(p.get("indices"));
+            let points = if indices > 0 {
+                indices
+            } else {
+                accessor_count(p.get("attributes").and_then(|a| a.get("POSITION")))
+            };
+            points / 3
+        })
+        .sum();
+    let skins = gltf
+        .get("skins")
+        .and_then(serde_json::Value::as_array)
+        .map_or(0, Vec::len);
+    Ok(GltfSummary { skins, triangles })
+}
+
 /// Animation names of a glTF file in file order, unnamed ones as three.js's GLTFLoader names them.
 fn gltf_animation_names(gltf: &serde_json::Value) -> Vec<String> {
     gltf.get("animations")
@@ -588,6 +645,31 @@ mod tests {
         out.extend_from_slice(b"JSON");
         out.extend_from_slice(&chunk);
         out
+    }
+
+    #[test]
+    fn summarizes_skeleton_and_triangles() {
+        let tmp = std::env::temp_dir().join(format!("otakusoul-summary-{}", std::process::id()));
+        let _ = fs::remove_dir_all(&tmp);
+        fs::create_dir_all(&tmp).unwrap();
+        let rigged = tmp.join("rigged.glb");
+        fs::write(
+            &rigged,
+            glb(r#"{"accessors":[{"count":300},{"count":90}],"meshes":[{"primitives":[{"attributes":{"POSITION":1},"indices":0},{"attributes":{"POSITION":1}},{"attributes":{"POSITION":1},"mode":1}]}],"skins":[{"joints":[0]}]}"#),
+        )
+        .unwrap();
+        // 300 indices + 90 points without indices = 100 + 30 triangles; the line primitive counts none.
+        assert_eq!(
+            gltf_summary(&rigged).unwrap(),
+            GltfSummary {
+                skins: 1,
+                triangles: 130
+            }
+        );
+        let statue = tmp.join("statue.glb");
+        fs::write(&statue, glb(r#"{"meshes":[]}"#)).unwrap();
+        assert_eq!(gltf_summary(&statue).unwrap().skins, 0);
+        let _ = fs::remove_dir_all(&tmp);
     }
 
     #[test]

@@ -148,6 +148,16 @@ export const GltfViewer = ({
         const gltf = await new GLTFLoader().parseAsync(bytes.buffer as ArrayBuffer, '');
         if (isDisposed) return;
         const scene = gltf.scene;
+        // Models copied into the folder by hand skip the import check: no skeleton, no avatar.
+        let rigged = false;
+        scene.traverse((node) => {
+          if ((node as THREE.SkinnedMesh).isSkinnedMesh) rigged = true;
+        });
+        if (!rigged) {
+          setError(translate('avatar.noSkeleton'));
+          setLoading(false);
+          return;
+        }
         stage.scene.add(scene);
         // Exports in other units (centimetres, decimetres …) are brought to human size; models
         // between half a metre (chibi) and three metres keep theirs.

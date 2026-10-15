@@ -149,6 +149,8 @@ Hub). Integrationen → Bildgenerierung enthält nur Studio und Galerie.
   `AvatarMotionPlayer` wählt per `pickByMood`/`bestByMood` (`utils/avatarGestures.ts`, Stimmung = VRM-Ausdruck) und
   wechselt die Ruhe-Schleife in `setMood`. Clips ohne Verwendung (`extraClips`) startet das Gesten-Menü in
   `AvatarViewerChrome` über `playAvatarClip` (`GestureRequest.clip`); der Viewer zeigt `data-idle-clip`/`data-gesture-clip`.
+  GLB ohne Skelett (`skins` leer, `avatar_motions::gltf_summary`) lehnt `import_vrm_into` mit `backend.vrm.noSkeleton` ab; von Hand
+  abgelegte zeigt `GltfViewer` nicht (`avatar.noSkeleton`). `ScannedVrm.triangles` > 500.000 → Hinweis `settings.vrmHeavy`.
   Nutzeranleitung `docs/guide-3d-avatars{,.de,.ru}.md` (UI-Pfade/Namenslisten bei Änderungen nachziehen); `docs/private/`
   ist gitignored (lokale Notizen, nie committen).
   glTF: Knochen-Aliase für Mixamo/RPM, MakeHuman, Unreal, Blender, VRoid (`gltfRig.ts`); Größe außerhalb 0,5–3 m wird

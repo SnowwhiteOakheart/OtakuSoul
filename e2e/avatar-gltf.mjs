@@ -4,7 +4,7 @@ import assert from 'node:assert/strict';
 import { writeFileSync } from 'node:fs';
 import path from 'node:path';
 import { clickSend, launch, screenshotDir } from './harness.mjs';
-import { makeGlb } from './tools/make-glb.mjs';
+import { makeGlb, makeStatueGlb } from './tools/make-glb.mjs';
 import { makeMixamoFbx } from './tools/make-fbx.mjs';
 
 const { browser, mock, home, close } = await launch({ avatar_mode: '3d' });
@@ -43,7 +43,25 @@ try {
   await browser.pause(500);
   await shot('64-gltf-mixamo');
   await browser.$('[data-avatar-format="gltf"][data-gesture=""]').waitForExist({ timeout: 10_000 });
-  console.log('glTF: Import, Anzeige und Mixamo-Geste auf dem Rig bestanden.');
+
+  // A model without skeleton is refused on import; one copied into the folder by hand is not shown.
+  const statue = path.join(home, 'Statue.glb');
+  writeFileSync(statue, await makeStatueGlb());
+  const refused = await browser.execute((sourcePath) => window.__TAURI_INTERNALS__.invoke('import_vrm_model', { sourcePath })
+    .then(() => 'importiert', (cause) => String(cause)), statue);
+  assert.ok(refused.includes('backend.vrm.noSkeleton'), `Statue wurde nicht abgelehnt: ${refused}`);
+  const handCopy = path.join(home, 'data', 'avatars', 'Handkopie.glb');
+  writeFileSync(handCopy, await makeStatueGlb());
+  await browser.$('button=Einstellungen').click();
+  await browser.$('button*=Aktualisieren').click().catch(() => {});
+  await browser.waitUntil(async () => (await select.getHTML()).includes('Handkopie'), { timeout: 10_000, timeoutMsg: 'Handkopie fehlt in der Liste' });
+  const listed = (await invoke('scan_vrm_models')).find((m) => m.name === 'Handkopie');
+  assert.ok(listed, 'Handkopie fehlt im Scan');
+  await select.selectByAttribute('value', listed.path);
+  await browser.$('button=Chat').click();
+  await browser.$('div*=hat kein Skelett und wird nicht angezeigt').waitForExist({ timeout: 20_000, timeoutMsg: 'Viewer zeigt die Statue ohne Hinweis' });
+  await shot('64b-gltf-ohne-skelett');
+  console.log('glTF: Import, Anzeige, Mixamo-Geste und Ablehnung von Modellen ohne Skelett bestanden.');
 } finally {
   await close();
 }

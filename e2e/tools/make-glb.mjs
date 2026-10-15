@@ -116,3 +116,10 @@ function embeddedClips() {
   ]);
   return [idle, wave, happyIdle, spin];
 }
+
+/** A statue: one textureless box without skeleton, like generated scan or AI models. */
+export async function makeStatueGlb() {
+  const mesh = new THREE.Mesh(new THREE.BoxGeometry(0.4, 1.7, 0.3), new THREE.MeshStandardMaterial({ color: 0xcccccc }));
+  mesh.name = 'Statue';
+  return Buffer.from(await new GLTFExporter().parseAsync(mesh, { binary: true }));
+}
