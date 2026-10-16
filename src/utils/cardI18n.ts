@@ -74,3 +74,16 @@ export const localizeCard = (data: CharacterData, lang: string): CharacterData =
 /** Replaces the SillyTavern macros {{char}} and {{user}} (any case) with the actual names. */
 export const fillCardMacros = (text: string, charName: string, userName: string): string =>
   text.replace(/\{\{\s*char\s*\}\}/gi, charName).replace(/\{\{\s*user\s*\}\}/gi, userName);
+
+/** Title and tone of a scene in `lang` (from `extensions.otakusoul_i18n`, like `SceneDefinition::localized`). */
+export const localizeSceneHeader = (
+  definition: { title: string; gm_tone: string; extensions?: unknown },
+  lang: string,
+): { title: string; gm_tone: string } => {
+  const i18n = (definition.extensions as Record<string, unknown> | null | undefined)?.[I18N_EXTENSION] as { translations?: Record<string, { title?: string; gm_tone?: string }> } | undefined;
+  const translation = i18n?.translations?.[lang];
+  return {
+    title: translation?.title?.trim() || definition.title,
+    gm_tone: translation?.gm_tone?.trim() || definition.gm_tone,
+  };
+};

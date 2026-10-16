@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { fillCardMacros, languageCode, localizeCard } from '../utils/cardI18n';
+import { fillCardMacros, languageCode, localizeCard, localizeSceneHeader } from '../utils/cardI18n';
 import type { CharacterData } from '../types';
 
 const card: CharacterData = {
@@ -47,5 +47,16 @@ describe('card translations', () => {
 
   it('fills {{char}} and {{user}} in any case', () => {
     expect(fillCardMacros('{{char}} mag {{User}}. {{ CHAR }}!', 'Ayu', 'Hiroki')).toBe('Ayu mag Hiroki. Ayu!');
+  });
+
+  it('shows a scene title and tone in the story language', () => {
+    const scene = {
+      title: 'Hanami-Live im Ueno-Park',
+      gm_tone: 'Fröhliche Alltagskomödie',
+      extensions: { otakusoul_i18n: { translations: { en: { title: 'Hanami Live at Ueno Park', gm_tone: ' ' } } } },
+    };
+    expect(localizeSceneHeader(scene, 'en')).toEqual({ title: 'Hanami Live at Ueno Park', gm_tone: 'Fröhliche Alltagskomödie' });
+    expect(localizeSceneHeader(scene, 'ru').title).toBe('Hanami-Live im Ueno-Park');
+    expect(localizeSceneHeader({ title: 'X', gm_tone: '', extensions: null }, 'en').title).toBe('X');
   });
 });

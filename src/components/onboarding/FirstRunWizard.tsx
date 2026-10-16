@@ -161,12 +161,12 @@ export const FirstRunWizard: React.FC = () => {
       <div className="bg-slate-900 border border-slate-700/80 rounded-2xl w-full max-w-2xl max-h-full shadow-2xl flex flex-col overflow-hidden">
         {/* Progress */}
         <div className="px-6 pt-5 pb-4 border-b border-slate-800 flex items-center justify-between gap-4">
-          <ol className="flex items-center gap-2 text-xs" aria-label={t('onboarding.stepProgress', { current: stepIndex + 1, total: STEPS.length })}>
+          <ol className="flex min-w-0 items-center gap-2 text-xs" aria-label={t('onboarding.stepProgress', { current: stepIndex + 1, total: STEPS.length })}>
             {STEPS.map((s, index) => {
               const done = index < stepIndex;
               const active = index === stepIndex;
               return (
-                <li key={s} className="flex items-center gap-2" aria-current={active ? 'step' : undefined}>
+                <li key={s} className="flex items-center gap-2" aria-current={active ? 'step' : undefined} title={t(STEP_LABEL_KEYS[s])}>
                   {index > 0 && <span aria-hidden className={`h-px w-5 ${done || active ? 'bg-accent-500/60' : 'bg-slate-700'}`} />}
                   <span
                     className={`grid h-6 w-6 place-items-center rounded-full border text-xs ${
@@ -179,7 +179,8 @@ export const FirstRunWizard: React.FC = () => {
                   >
                     {done ? <Check className="h-3.5 w-3.5" /> : index + 1}
                   </span>
-                  <span className={`hidden sm:inline ${active ? 'text-slate-100 font-medium' : 'text-slate-400'}`}>
+                  {/* Only the current step is named: five labels and "skip" do not fit the dialog's width. */}
+                  <span className={active ? 'hidden sm:inline whitespace-nowrap text-slate-100 font-medium' : 'sr-only'}>
                     {t(STEP_LABEL_KEYS[s])}
                   </span>
                 </li>
@@ -190,7 +191,7 @@ export const FirstRunWizard: React.FC = () => {
             <button
               type="button"
               onClick={() => finish()}
-              className="text-xs text-slate-400 hover:text-slate-200 rounded px-1.5 py-1 outline-hidden focus-visible:ring-2 focus-visible:ring-accent-400"
+              className="shrink-0 whitespace-nowrap text-xs text-slate-400 hover:text-slate-200 rounded px-1.5 py-1 outline-hidden focus-visible:ring-2 focus-visible:ring-accent-400"
             >
               {t('onboarding.skip')}
             </button>

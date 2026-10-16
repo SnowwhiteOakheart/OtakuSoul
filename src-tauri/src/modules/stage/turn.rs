@@ -47,7 +47,9 @@ pub async fn execute_stage_turn(
     let user_name = if !state.definition.persona.is_empty() {
         state.definition.persona.clone()
     } else {
-        "Spieler".to_string()
+        crate::modules::content_lang::ContentLang::current()
+            .t("Player")
+            .to_string()
     };
 
     // 1. Append Player Turn Message if non-empty

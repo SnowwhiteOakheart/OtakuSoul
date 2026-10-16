@@ -49,6 +49,7 @@ import { ModalOverlay } from '../ui/ModalOverlay';
 import { translate, useTranslation } from '../../i18n';
 import { confirmDialog, toast } from '../ui/feedback';
 import { errorMessage } from '../../utils/errors';
+import { languageCode, localizeSceneHeader } from '../../utils/cardI18n';
 
 export const StageView: React.FC = () => {
   const { t } = useTranslation();
@@ -71,11 +72,12 @@ export const StageView: React.FC = () => {
     stageLastScene,
     loadStageScene,
     fetchStageScenes,
+    replyLanguage,
   } = useStoreFields(
     'stageState', 'fetchStageState', 'saveStageScene', 'updateWorldState', 'setClockProgress',
     'addClock', 'deleteClock', 'exportStageMarkdown', 'isProcessingStageTurn',
     'generateSceneImage', 'isGeneratingSceneImage', 'stageReadAloud', 'setStageReadAloud', 'setSelectedStageFolder',
-    'restoreStageScene', 'stageLastScene', 'loadStageScene', 'fetchStageScenes',
+    'restoreStageScene', 'stageLastScene', 'loadStageScene', 'fetchStageScenes', 'replyLanguage',
   );
   // Gallery (choose a story) or the running story; decided once the remembered scene is restored.
   const [view, setView] = useState<'loading' | 'gallery' | 'play'>('loading');
@@ -267,6 +269,7 @@ export const StageView: React.FC = () => {
 
   const world = stageState?.world;
   const currentScene = stageState?.definition;
+  const header = currentScene ? localizeSceneHeader(currentScene, languageCode(replyLanguage)) : null;
 
   const closeLobby = () => {
     setShowLobbyModal(false);
@@ -339,11 +342,11 @@ export const StageView: React.FC = () => {
           <div>
             <div className="flex items-center gap-2">
               <h2 className="text-sm font-bold text-slate-100 truncate max-w-[220px] sm:max-w-md">
-                {currentScene?.title || t('stage.defaultTitle')}
+                {header?.title || t('stage.defaultTitle')}
               </h2>
-              {currentScene?.gm_tone && (
+              {header?.gm_tone && (
                 <span className="text-[11px] px-2 py-0.2 rounded-full bg-accent-950/80 border border-accent-500/30 text-accent-300 font-mono">
-                  {currentScene.gm_tone}
+                  {header.gm_tone}
                 </span>
               )}
             </div>

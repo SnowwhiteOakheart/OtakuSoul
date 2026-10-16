@@ -46,6 +46,8 @@ export const AdaptiveHud = ({ compact = false }: { compact?: boolean }) => {
     const key = STATE_LABELS[name.toLowerCase()];
     return key ? t(key) : name;
   };
+  // The preset start value is German; shown in the UI language until the AI sets its own.
+  const shownValue = (value: string) => (value === 'Glücklich' ? t('memory.mood.Happy') : value);
   const showMemoryDrawer = useAppStore((s) => s.isMemoryDrawerOpen);
   const setShowMemoryDrawer = useAppStore((s) => s.setMemoryDrawerOpen);
   const [showDetails, setShowDetails] = usePersistentFlag('otakusoul.hud.details', true);
@@ -192,7 +194,7 @@ export const AdaptiveHud = ({ compact = false }: { compact?: boolean }) => {
             >
               <Smile className="w-3.5 h-3.5 text-accent-400" />
               <span className="text-slate-400 font-sans">{label(v.name)}:</span>
-              <span className="text-accent-200 font-medium">{v.value}</span>
+              <span className="text-accent-200 font-medium">{shownValue(v.value)}</span>
             </div>
           );
         })}

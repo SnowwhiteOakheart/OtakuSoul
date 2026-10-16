@@ -8,6 +8,7 @@ import { assetAsBlobUrl, loadDisplayableImage, selectCharacterPortrait } from '.
 import { translate, useTranslation } from '../../i18n';
 import { DropdownMenu } from '../ui/DropdownMenu';
 import { AvatarSkeleton, ScrollText } from '../ui';
+import { languageCode, localizeCard } from '../../utils/cardI18n';
 
 // MMD brings its own loader and physics; only loaded for MMD avatars.
 const MmdViewer = lazy(() => import('./MmdViewer'));
@@ -167,9 +168,10 @@ export const AvatarCanvas: React.FC<AvatarCanvasProps> = ({
     setCurrentEmotion,
     avatarMotions,
     avatarGesture,
+    replyLanguage,
   } = useStoreFields(
     'activeVrmPath', 'activeLive2dPath', 'avatarMode', 'setAvatarMode', 'scannedLive2ds',
-    'currentEmotion', 'setCurrentEmotion', 'avatarMotions', 'avatarGesture',
+    'currentEmotion', 'setCurrentEmotion', 'avatarMotions', 'avatarGesture', 'replyLanguage',
   );
   const { t, tEmotion } = useTranslation();
 
@@ -381,7 +383,7 @@ export const AvatarCanvas: React.FC<AvatarCanvasProps> = ({
               label={t('avatar.traits', { name: charName })}
               className="text-xs text-accent-300/80 font-mono mt-0.5 max-w-sm mx-auto"
             >
-              {character?.card.data.personality || t('avatar.portraitMode')}
+              {(character && localizeCard(character.card.data, languageCode(replyLanguage)).personality) || t('avatar.portraitMode')}
             </ScrollText>
           </div>
         </div>
