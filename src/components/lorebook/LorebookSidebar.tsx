@@ -21,7 +21,7 @@ interface LorebookSidebarProps {
 
 /** Searchable list of all lorebooks; global ones are marked. */
 export const LorebookSidebar = ({ onCreate, onImport }: LorebookSidebarProps) => {
-  const { t } = useTranslation();
+  const { t, tPlural } = useTranslation();
   const { allLorebooks, activeLorebook, selectLorebook, refreshLorebooks, globalLorebookIds, openSoulHubTab } = useStoreFields(
     'allLorebooks', 'activeLorebook', 'selectLorebook', 'refreshLorebooks', 'globalLorebookIds', 'openSoulHubTab',
   );
@@ -45,7 +45,7 @@ export const LorebookSidebar = ({ onCreate, onImport }: LorebookSidebarProps) =>
             </div>
             <div>
               <h1 className="text-sm font-bold text-slate-100">{t('lore.title')}</h1>
-              <p className="text-[11px] text-slate-400">{allLorebooks.length} Bücher verfügbar</p>
+              <p className="text-[11px] text-slate-400">{tPlural('lore.bookCount', allLorebooks.length)}</p>
             </div>
           </div>
           <button

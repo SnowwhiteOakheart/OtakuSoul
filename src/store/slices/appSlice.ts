@@ -68,6 +68,9 @@ export interface AppSlice {
   setIsLogViewerOpen: (open: boolean) => void;
   isUpdaterOpen: boolean;
   setIsUpdaterOpen: (open: boolean) => void;
+  /** Help dialog (first steps, glossary). */
+  isHelpOpen: boolean;
+  setIsHelpOpen: (open: boolean) => void;
   isPersonaManagerOpen: boolean;
   setIsPersonaManagerOpen: (open: boolean) => void;
   logs: LogEntry[];
@@ -375,6 +378,8 @@ export const createAppSlice: SliceCreator<AppSlice> = (set, get) => ({
   isUpdaterOpen: false,
 
   setIsUpdaterOpen: (isUpdaterOpen) => set({ isUpdaterOpen }),
+  isHelpOpen: false,
+  setIsHelpOpen: (isHelpOpen) => set({ isHelpOpen }),
 
   isPersonaManagerOpen: false,
 

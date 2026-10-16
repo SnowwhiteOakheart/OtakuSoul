@@ -60,3 +60,16 @@ describe('LorebookView', () => {
     expect(entries.find((e) => e.name === 'Castle')!.enabled).toBe(true);
   });
 });
+
+describe('LorebookView without a lorebook', () => {
+  it('explains lorebooks and leads to the hub', async () => {
+    const user = userEvent.setup();
+    useAppStore.setState({ ...initialState, appLanguage: 'en', allLorebooks: [], activeLorebook: null }, true);
+    render(<LorebookView />);
+    expect(screen.getByText(/A lorebook is a reference book for your world/)).toBeInTheDocument();
+    expect(screen.getByText('0 books')).toBeInTheDocument();
+    await user.click(screen.getByRole('button', { name: 'Ready-made worlds in the hub' }));
+    expect(useAppStore.getState().activeTab).toBe('hub');
+    expect(useAppStore.getState().hubSubTab).toBe('lorebooks');
+  });
+});

@@ -143,16 +143,19 @@
 
 ## 6. Hilfe, Fehler & leere Zustände
 
-- [ ] **Kontext-Hilfe:** „?“-Symbol an komplexen Stellen mit Kurztext und Link zur passenden Anleitung (`docs/`).
-- [ ] **Glossar** (dreisprachig) für LLM, Kontext, Token, GGUF, Quantisierung, LoRA, TTS, Klonen … – aus der App
+- [x] **Kontext-Hilfe (16.10.2026, global):** Fragezeichen in der Kopfzeile und Befehlspalette öffnen `HelpDialog`
+  (Erste Schritte, Glossar, Link zur Online-Anleitung); einzelne „?“ gibt es in Stage-Eingabe und Kampf. Ursprünglicher Plan: „?“-Symbol an komplexen Stellen mit Kurztext und Link zur passenden Anleitung (`docs/`).
+- [x] **Glossar (16.10.2026):** 18 Begriffe dreisprachig mit Suche im Hilfe-Dialog. Ursprünglicher Plan: (dreisprachig) für LLM, Kontext, Token, GGUF, Quantisierung, LoRA, TTS, Klonen … – aus der App
   erreichbar.
 - [x] **Fehlermeldungen mit Lösung (16.10.2026):** `utils/errorFixes.ts` (Schlüssel prüfen, Modell prüfen, lokale KI starten,
   Verbindung prüfen, kleineres Modell, Laufzeit einrichten, KI einrichten) im Chat-Fehlerbanner und in `reportFailure`.
   Ursprünglicher Plan: jede häufige Meldung (kein Modell, zu wenig VRAM, Schlüssel ungültig, Server
   startet nicht, Download abgebrochen) bekommt einen Lösungsknopf („Kleineres Modell wählen“, „Schlüssel prüfen“).
-- [ ] **Leere Zustände überall:** Stage, Lorebooks, Galerie, Erinnerungen, Companion erklären in einem Satz, wozu sie
+- [x] **Leere Zustände (16.10.2026):** Stage (Galerie), Bibliothek (Assistent), Lorebooks (Erklärung + Hub), Galerie hatte
+  bereits einen Hinweis; Seitenleiste „x Bücher“ übersetzt. Ursprünglicher Plan: Stage, Lorebooks, Galerie, Erinnerungen, Companion erklären in einem Satz, wozu sie
   da sind, und bieten den ersten Schritt an.
-- [ ] **Einsteiger-Anleitung** `docs/guide-getting-started{,.de,.ru}.md` mit Screenshots (Chat, Story, Stimme).
+- [x] **Einsteiger-Anleitung (16.10.2026):** `docs/guide-getting-started{,.de,.ru}.md`, in den READMEs verlinkt. Ursprünglicher
+  Plan: `docs/guide-getting-started{,.de,.ru}.md` mit Screenshots (Chat, Story, Stimme).
 
 ## 7. Konsistenz & Barrierefreiheit
 

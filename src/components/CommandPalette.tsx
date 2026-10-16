@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useState, type KeyboardEvent } from 'react';
-import { ArrowRight, Command, Cpu, Download, FileText, Globe, Image, Key, Layers, Mic, Palette, Search, Settings2, Sliders, Sparkles, Terminal, Users } from 'lucide-react';
+import { ArrowRight, CircleHelp, Command, Cpu, Download, FileText, Globe, Image, Key, Layers, Mic, Palette, Search, Settings2, Sliders, Sparkles, Terminal, Users } from 'lucide-react';
 import type { IntegrationsTab, SettingsSection } from '../store/useAppStore';
 import { revealSetting } from '../utils/revealSetting';
 import { useTranslation } from '../i18n';
@@ -114,6 +114,14 @@ export const CommandPalette = ({ open, onOpen, onClose }: CommandPaletteProps) =
         setActiveTab('integrations');
       },
     })),
+    {
+      id: 'open-help',
+      label: t('palette.help'),
+      category: t('palette.actions'),
+      icon: CircleHelp,
+      keywords: 'help hilfe glossar glossary anleitung guide begriffe помощь глоссарий',
+      run: () => useAppStore.getState().setIsHelpOpen(true),
+    },
     {
       id: 'manage-personas',
       label: t('palette.personas'),

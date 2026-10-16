@@ -1,6 +1,6 @@
 import React, { useState, useRef } from 'react';
 import { useVirtualizer } from '@tanstack/react-virtual';
-import { useStoreFields } from '../../store/useAppStore';
+import { useAppStore, useStoreFields } from '../../store/useAppStore';
 import { Lorebook, LorebookEntry } from '../../types';
 import { open, save } from '@tauri-apps/plugin-dialog';
 import {
@@ -490,12 +490,25 @@ export const LorebookView: React.FC = () => {
           <p className="text-xs text-slate-400 max-w-sm">
             {t('lore.noneSelectedText')}
           </p>
-          <button
-            onClick={handleCreateNewLorebook}
-            className="px-4 py-2 rounded-xl bg-indigo-600 hover:bg-indigo-500 text-white text-xs font-semibold shadow transition-colors"
-          >
-            {t('lore.createBook')}
-          </button>
+          <p className="text-xs text-slate-500 max-w-md" data-lore-explainer>{t('lore.whatIs')}</p>
+          <div className="flex flex-wrap justify-center gap-2">
+            <button
+              onClick={handleCreateNewLorebook}
+              className="px-4 py-2 rounded-xl bg-indigo-600 hover:bg-indigo-500 text-white text-xs font-semibold shadow transition-colors"
+            >
+              {t('lore.createBook')}
+            </button>
+            <button
+              type="button"
+              onClick={() => {
+                useAppStore.getState().setHubSubTab('lorebooks');
+                useAppStore.getState().setActiveTab('hub');
+              }}
+              className="px-4 py-2 rounded-xl border border-slate-700 text-slate-300 hover:bg-slate-800 text-xs font-semibold transition-colors"
+            >
+              {t('lore.browseHub')}
+            </button>
+          </div>
         </div>
       )}
 

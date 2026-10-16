@@ -269,6 +269,8 @@ Synthesezeiten und Verständlichkeit (gemessen via Whisper-Rückerkennung):
 
 ## 📥 Installation & Schnellstart
 
+> **Neu hier?** Die Anleitung [Erste Schritte mit OtakuSoul](docs/guide-getting-started.de.md) führt in wenigen Minuten zur ersten Antwort – in der App findest Du sie samt Glossar unter dem Fragezeichen oben rechts.
+
 OtakuSoul bietet für alle gängigen Betriebssysteme native Installer:
 
 ### 🐧 Linux (Debian, Ubuntu, Arch, Fedora u. a.)

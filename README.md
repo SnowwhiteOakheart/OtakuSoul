@@ -266,6 +266,8 @@ Synthesis speed and speech clarity (validated via Whisper reverse-transcription)
 
 ## 📥 Installation & Quick Start
 
+> **New here?** The guide [Getting started with OtakuSoul](docs/guide-getting-started.md) takes you to the first reply in a few minutes – in the app it is under the question mark at the top right, together with a glossary.
+
 OtakuSoul provides native packages for all major desktop platforms:
 
 ### 🐧 Linux (Debian, Ubuntu, Arch, Fedora, etc.)

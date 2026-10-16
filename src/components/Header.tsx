@@ -4,9 +4,10 @@ import { useTranslation } from '../i18n';
 import brandIconUrl from '../assets/brand/otakusoul-icon.png';
 import { APP_NAME } from '../constants/branding';
 import { AboutDialog } from './AboutDialog';
+import { HelpDialog } from './HelpDialog';
 import { PersonaAvatar } from './characters/PersonaAvatar';
 import { TaskCenter } from './TaskCenter';
-import { Cpu, AlertCircle, Loader2, Info, Terminal, Sparkles, Command } from 'lucide-react';
+import { Cpu, AlertCircle, Loader2, Info, Terminal, Sparkles, Command, CircleHelp } from 'lucide-react';
 
 /** Server state changes quickly while starting; VRAM only matters as a rough gauge. */
 const SERVER_POLL_MS = 3000;
@@ -37,6 +38,8 @@ export const Header = ({ onOpenCommandPalette }: HeaderProps) => {
   const isCloud = useAppStore((s) => s.selectedBackend === 'cloud');
   const cloudModel = useAppStore((s) => s.cloudModel);
   const expertMode = useAppStore((s) => s.expertMode);
+  const isHelpOpen = useAppStore((s) => s.isHelpOpen);
+  const setIsHelpOpen = useAppStore((s) => s.setIsHelpOpen);
   // Until the settings are loaded the backend isn't known; showing "server stopped" would be wrong for cloud.
   const settingsLoaded = useAppStore((s) => s.settingsLoaded);
 
@@ -212,6 +215,15 @@ export const Header = ({ onOpenCommandPalette }: HeaderProps) => {
 
           <button
             type="button"
+            onClick={() => setIsHelpOpen(true)}
+            className={ACTION_BUTTON_CLASS}
+            title={t('help.open')}
+            aria-label={t('help.open')}
+          >
+            <CircleHelp className="h-4 w-4" />
+          </button>
+          <button
+            type="button"
             onClick={() => setShowAbout(true)}
             className={ACTION_BUTTON_CLASS}
             title={t('header.about')}
@@ -223,6 +235,7 @@ export const Header = ({ onOpenCommandPalette }: HeaderProps) => {
       </header>
 
       {showAbout && <AboutDialog onClose={() => setShowAbout(false)} />}
+      {isHelpOpen && <HelpDialog onClose={() => setIsHelpOpen(false)} />}
     </>
   );
 };

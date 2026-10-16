@@ -76,6 +76,9 @@ Hub). Integrationen → Bildgenerierung enthält nur Studio und Galerie.
 - **Fehler im Store:** Aktion mit eigener Rückmeldung im Aufrufer (Erfolgs-Toast, Formular) → `throw e`; Knopf ohne eigene
   Rückmeldung → `reportFailure` (`store/reportFailure.ts`, Toast mit Ursache); reine Hintergrundabrufe → nur Log. Ausnahme `saveCurrentSettings`: Fehler einmalig melden, erneut erst nach einem
   zwischenzeitlich erfolgreichen Speichern.
+- **Hilfe:** `components/HelpDialog.tsx` (`GUIDE_STEPS`, `GLOSSARY_TERMS`, Texte `help.*`/`glossary.*`), geöffnet über
+  `appSlice.isHelpOpen` (Kopfzeile, Befehlspalette); Anleitung `docs/guide-getting-started{,.de,.ru}.md` bei neuen
+  Abläufen nachziehen.
 - **Lösungsknöpfe:** `utils/errorFixes.ts` `errorFix(error, store)` ordnet häufige Codes einem Schritt zu (Chat-Banner über
   `generationFailure.cause`, Toasts über `reportFailure`); neue Codes mit klarer Abhilfe dort ergänzen.
 - **Fehler:** Backend `crate::err!("backend.x.y", key = wert)` → JSON-Code → Frontend `errorMessage()` übersetzt über
