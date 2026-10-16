@@ -97,6 +97,13 @@ export const ru: TranslationDictionary = {
   "chat.sendCancelled": "Отправка отменена до сохранения сообщения.",
   "chat.noActiveSession": "Нет активного чата. Выберите персонажа и чат.",
   "chat.inferenceError": "Ошибка инференса: {{error}}",
+  "errorFix.setUpAi": "Настроить ИИ",
+  "errorFix.checkKey": "Проверить ключ API",
+  "errorFix.checkModel": "Проверить модель",
+  "errorFix.startAi": "Запустить локальный ИИ",
+  "errorFix.checkConnection": "Проверить подключение",
+  "errorFix.smallerModel": "Выбрать модель поменьше",
+  "errorFix.installRuntime": "Установить среду ИИ",
 
   "settings.title": "Настройки",
   "settings.subtitle": "Модель ИИ, стиль ответов, изображения, голоса и загрузки в одном месте.",

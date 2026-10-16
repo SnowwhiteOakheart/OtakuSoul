@@ -146,7 +146,9 @@
 - [ ] **Kontext-Hilfe:** „?“-Symbol an komplexen Stellen mit Kurztext und Link zur passenden Anleitung (`docs/`).
 - [ ] **Glossar** (dreisprachig) für LLM, Kontext, Token, GGUF, Quantisierung, LoRA, TTS, Klonen … – aus der App
   erreichbar.
-- [ ] **Fehlermeldungen mit Lösung:** jede häufige Meldung (kein Modell, zu wenig VRAM, Schlüssel ungültig, Server
+- [x] **Fehlermeldungen mit Lösung (16.10.2026):** `utils/errorFixes.ts` (Schlüssel prüfen, Modell prüfen, lokale KI starten,
+  Verbindung prüfen, kleineres Modell, Laufzeit einrichten, KI einrichten) im Chat-Fehlerbanner und in `reportFailure`.
+  Ursprünglicher Plan: jede häufige Meldung (kein Modell, zu wenig VRAM, Schlüssel ungültig, Server
   startet nicht, Download abgebrochen) bekommt einen Lösungsknopf („Kleineres Modell wählen“, „Schlüssel prüfen“).
 - [ ] **Leere Zustände überall:** Stage, Lorebooks, Galerie, Erinnerungen, Companion erklären in einem Satz, wozu sie
   da sind, und bieten den ersten Schritt an.

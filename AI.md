@@ -76,6 +76,8 @@ Hub). Integrationen → Bildgenerierung enthält nur Studio und Galerie.
 - **Fehler im Store:** Aktion mit eigener Rückmeldung im Aufrufer (Erfolgs-Toast, Formular) → `throw e`; Knopf ohne eigene
   Rückmeldung → `reportFailure` (`store/reportFailure.ts`, Toast mit Ursache); reine Hintergrundabrufe → nur Log. Ausnahme `saveCurrentSettings`: Fehler einmalig melden, erneut erst nach einem
   zwischenzeitlich erfolgreichen Speichern.
+- **Lösungsknöpfe:** `utils/errorFixes.ts` `errorFix(error, store)` ordnet häufige Codes einem Schritt zu (Chat-Banner über
+  `generationFailure.cause`, Toasts über `reportFailure`); neue Codes mit klarer Abhilfe dort ergänzen.
 - **Fehler:** Backend `crate::err!("backend.x.y", key = wert)` → JSON-Code → Frontend `errorMessage()` übersetzt über
   i18n; jeder neue Code braucht Einträge in allen Locales.
 - **Spieltexte** (was die App selbst in Geschichten schreibt, `ContentLang::t("englischer Text")`, Sprache = Antwortsprache):

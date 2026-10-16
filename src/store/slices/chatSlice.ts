@@ -30,6 +30,8 @@ import { fillCardMacros, languageCode, localizeCard } from '../../utils/cardI18n
 type GenerationFailure = {
   chatId: string;
   message: string;
+  /** The error as thrown (coded backend text), for the fix button. */
+  cause?: string;
   kind: 'send' | 'swipe' | 'continue';
   messageId: string;
 };
@@ -666,7 +668,7 @@ export const createChatSlice: SliceCreator<ChatSlice> = (set, get) => {
     } catch (e) {
       console.error('Regenerate swipe error:', e);
       if (inContext(activeChatId, activeCharacter.id)) {
-        set({ generationFailure: { chatId: activeChatId, message: errorMessage(e), kind: 'swipe', messageId: msgId } });
+        set({ generationFailure: { chatId: activeChatId, message: errorMessage(e), cause: e instanceof Error ? e.message : String(e), kind: 'swipe', messageId: msgId } });
       }
     } finally {
       await finishGeneration();
@@ -761,7 +763,7 @@ export const createChatSlice: SliceCreator<ChatSlice> = (set, get) => {
     } catch (e) {
       console.error('Continue message error:', e);
       if (inContext(activeChatId, activeCharacter.id)) {
-        set({ generationFailure: { chatId: activeChatId, message: errorMessage(e), kind: 'continue', messageId: msgId } });
+        set({ generationFailure: { chatId: activeChatId, message: errorMessage(e), cause: e instanceof Error ? e.message : String(e), kind: 'continue', messageId: msgId } });
       }
     } finally {
       await finishGeneration();
@@ -968,7 +970,7 @@ export const createChatSlice: SliceCreator<ChatSlice> = (set, get) => {
       console.error('Chat error:', e);
       if (!userStored) throw preparation.signal.aborted ? new Error(translate('chat.sendCancelled')) : e; // Restore an unsaved draft only.
       if (activeChatId && inContext(activeChatId, activeCharacter?.id)) {
-        set({ generationFailure: { chatId: activeChatId, message: errorMessage(e), kind: 'send', messageId: userStored.id } });
+        set({ generationFailure: { chatId: activeChatId, message: errorMessage(e), cause: e instanceof Error ? e.message : String(e), kind: 'send', messageId: userStored.id } });
       }
     } finally {
       await finishGeneration();

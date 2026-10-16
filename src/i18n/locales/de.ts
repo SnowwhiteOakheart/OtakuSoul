@@ -99,6 +99,13 @@ export const de = {
   "chat.sendCancelled": "Nachricht wurde vor dem Speichern abgebrochen.",
   "chat.noActiveSession": "Keine aktive Chat-Sitzung. Bitte wähle einen Charakter und einen Chat.",
   "chat.inferenceError": "Inferenz-Fehler: {{error}}",
+  "errorFix.setUpAi": "KI einrichten",
+  "errorFix.checkKey": "API-Schlüssel prüfen",
+  "errorFix.checkModel": "Modell prüfen",
+  "errorFix.startAi": "Lokale KI starten",
+  "errorFix.checkConnection": "Verbindung prüfen",
+  "errorFix.smallerModel": "Kleineres Modell wählen",
+  "errorFix.installRuntime": "KI-Laufzeit einrichten",
 
   "settings.title": "Einstellungen",
   "settings.subtitle": "KI-Modell, Antwortstil, Bilder, Stimmen und Downloads an einem Ort.",

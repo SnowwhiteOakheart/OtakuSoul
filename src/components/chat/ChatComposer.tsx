@@ -1,6 +1,7 @@
 import React, { useEffect, useMemo, useRef, useState } from 'react';
 import { FileText, Paperclip, Send, Square, X } from 'lucide-react';
 import { useAppStore, useStoreFields } from '../../store/useAppStore';
+import { errorFix } from '../../utils/errorFixes';
 import { streamingTts } from '../../services/streamingTts';
 import { useTranslation } from '../../i18n';
 import { VoiceCallControls } from '../voice/VoiceCallControls';
@@ -65,6 +66,7 @@ export const ChatComposer: React.FC = () => {
     try { await abortGeneration(); } catch (e) { toast.error(errorMessage(e)); }
   };
 
+  const failureFix = generationFailure ? errorFix(generationFailure.cause ?? generationFailure.message, useAppStore.getState()) : null;
   return (
     <div className="p-4 border-t border-slate-800 bg-slate-900/60 backdrop-blur">
       {isChatLoading && <p role="status" className="max-w-4xl mx-auto mb-2 text-sm text-slate-300">{t('chat.historyLoading')}</p>}
@@ -78,8 +80,14 @@ export const ChatComposer: React.FC = () => {
       {generationFailure?.chatId === activeChatId && (
         <div role="alert" className="max-w-4xl mx-auto mb-3 rounded-lg border border-rose-500/40 bg-rose-950/30 p-3 text-sm text-rose-200">
           <p>{t('chat.inferenceError', { error: generationFailure.message })}</p>
-          <button type="button" disabled={isGenerating} onClick={() => void retryGeneration()}
-            className="mt-2 underline disabled:opacity-40">{t('common.retry')}</button>
+          <div className="mt-2 flex flex-wrap items-center gap-3">
+            {failureFix && (
+              <button type="button" onClick={failureFix.run} data-error-fix
+                className="rounded-lg bg-rose-500/20 px-2.5 py-1 font-semibold text-rose-100 hover:bg-rose-500/30">{t(failureFix.label)}</button>
+            )}
+            <button type="button" disabled={isGenerating} onClick={() => void retryGeneration()}
+              className="underline disabled:opacity-40">{t('common.retry')}</button>
+          </div>
         </div>
       )}
       {files.length > 0 && (

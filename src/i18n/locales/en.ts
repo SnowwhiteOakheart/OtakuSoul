@@ -97,6 +97,13 @@ export const en: TranslationDictionary = {
   "chat.sendCancelled": "Sending was cancelled before saving the message.",
   "chat.noActiveSession": "No active chat session. Please select a character and a chat.",
   "chat.inferenceError": "Inference error: {{error}}",
+  "errorFix.setUpAi": "Set up AI",
+  "errorFix.checkKey": "Check API key",
+  "errorFix.checkModel": "Check model",
+  "errorFix.startAi": "Start local AI",
+  "errorFix.checkConnection": "Check connection",
+  "errorFix.smallerModel": "Choose a smaller model",
+  "errorFix.installRuntime": "Set up AI runtime",
 
   "settings.title": "Settings",
   "settings.subtitle": "AI model, reply style, images, voices and downloads in one place.",
