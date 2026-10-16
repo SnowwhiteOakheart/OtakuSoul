@@ -170,11 +170,21 @@
 
 ## 8. Qualitätssicherung
 
-- [ ] E2E-Szenario `e2e/beginner-journey.mjs`: frisches Profil → Einrichtung (einfacher Weg, Mock) → Startseite →
+- [x] (16.10.2026) E2E-Szenario `e2e/beginner-journey.mjs` umgesetzt (Einrichtung → „Geschichte beginnen“ → Hanami-Live
+  zwei Runden → Startseite „Weiterspielen“ → Chat), Screenshots 92–95. Ursprünglich: frisches Profil → Einrichtung (einfacher Weg, Mock) → Startseite →
   Story aus der Galerie → zwei Runden → zurück → Chat mit Figur; Screenshots je Schritt.
-- [ ] Textprüfung: Test, der in einfachen Ansichten verbotene Fachbegriffe (GGUF, llama-server, Sampler, RegEx …)
+- [x] (16.10.2026) Textprüfung im Einsteiger-Durchlauf (llama-server, Sampler, Tokens, Reasoning, RegEx, GGUF, SillyTavern,
+  „GAME MASTER“ – gefunden und behoben: Spielleiter-Name im Stage-Verlauf). Ursprünglich: Test, der in einfachen Ansichten verbotene Fachbegriffe (GGUF, llama-server, Sampler, RegEx …)
   außerhalb von „Erweitert“ meldet.
 - [ ] Kurze Nutzertests mit 2–3 Einsteigern anhand einer Aufgabenliste; Befunde hier als neue Punkte eintragen.
+  Aufgabenliste (ohne Hilfe vorlesen, beobachten, wo gezögert wird; Zeit pro Aufgabe notieren):
+  1. „Richte die App so ein, dass eine Figur dir antworten kann.“
+  2. „Unterhalte dich mit einer Figur, die dir gefällt, und lass eine Antwort neu schreiben.“
+  3. „Starte eine kurze Geschichte und spiele drei Züge – einmal mit einem Vorschlag.“
+  4. „Erstelle eine eigene Geschichte mit einem Gefährten deiner Wahl.“
+  5. „Lass die Figur ihre Antworten vorlesen.“
+  6. „Finde heraus, was ‚Kontext‘ bedeutet.“
+  7. „Hol dir eine neue Figur aus dem Hub.“
 
 ## Reihenfolge (Vorschlag)
 

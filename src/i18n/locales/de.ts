@@ -997,6 +997,7 @@ export const de = {
   "stage.tabTacticsHint": "Werte der Gruppe, Kämpfe und Würfelproben",
   "stage.tabCampaignHint": "Ziele, Inventar, Weltzustand und Zeitleisten",
   "stage.stories": "Geschichten",
+  "stage.gameMaster": "Spielleiter",
   "gallery.back": "Zurück zur laufenden Geschichte",
   "gallery.title": "Was möchtest du erleben?",
   "gallery.intro": "Wähle eine Geschichte – die KI erzählt, du entscheidest, was deine Figur sagt und tut. Du kannst jederzeit aufhören und später weiterspielen.",

@@ -26,6 +26,10 @@ import { translate, useTranslation } from '../../i18n';
 import { toast } from '../ui/feedback';
 import { errorMessage } from '../../utils/errors';
 
+/** The game master's messages carry the English default name; it is shown in the interface language. */
+const gmName = (name: string | undefined) =>
+  !name || name === 'Game Master' ? translate('stage.gameMaster') : name;
+
 export const StageChatLog: React.FC = () => {
   const { t } = useTranslation();
   const {
@@ -256,7 +260,7 @@ export const StageChatLog: React.FC = () => {
                     <Compass className="w-4 h-4" />
                   </div>
                   <span className="text-xs font-bold text-accent-200 uppercase tracking-wider">
-                    {msg.sender_name || 'Game Master'}
+                    {gmName(msg.sender_name)}
                   </span>
                 </div>
                 <span className="text-[11px] text-slate-400 font-mono pr-20 group-hover:pr-24 transition-all">
@@ -435,7 +439,7 @@ export const StageChatLog: React.FC = () => {
               <div className="p-1.5 rounded-lg bg-accent-500/20 text-accent-300">
                 <Compass className="w-4 h-4" />
               </div>
-              <span className="text-xs font-bold text-accent-200 uppercase tracking-wider">{live.sender_name}</span>
+              <span className="text-xs font-bold text-accent-200 uppercase tracking-wider">{gmName(live.sender_name)}</span>
             </div>
             <div className="text-xs sm:text-sm text-slate-200 leading-relaxed whitespace-pre-wrap font-sans">
               {live.text}

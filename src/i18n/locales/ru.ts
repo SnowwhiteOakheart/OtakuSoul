@@ -995,6 +995,7 @@ export const ru: TranslationDictionary = {
   "stage.tabTacticsHint": "Показатели группы, бои и проверки кубиками",
   "stage.tabCampaignHint": "Цели, инвентарь, состояние мира и шкалы",
   "stage.stories": "Истории",
+  "stage.gameMaster": "Ведущий",
   "gallery.back": "Назад к текущей истории",
   "gallery.title": "Что ты хочешь пережить?",
   "gallery.intro": "Выбери историю – ИИ рассказывает, а ты решаешь, что говорит и делает твой персонаж. Можно остановиться в любой момент и продолжить позже.",

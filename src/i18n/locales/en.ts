@@ -995,6 +995,7 @@ export const en: TranslationDictionary = {
   "stage.tabTacticsHint": "Party values, fights and dice checks",
   "stage.tabCampaignHint": "Goals, inventory, world state and clocks",
   "stage.stories": "Stories",
+  "stage.gameMaster": "Game master",
   "gallery.back": "Back to the current story",
   "gallery.title": "What would you like to experience?",
   "gallery.intro": "Pick a story – the AI narrates, you decide what your character says and does. You can stop at any time and continue later.",
