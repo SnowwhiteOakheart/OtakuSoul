@@ -67,7 +67,7 @@ export const de = {
   "palette.noResults": "Keine passenden Befehle gefunden.",
   "palette.actions": "Aktionen",
 
-  "header.version": "v0.4.0",
+  "header.version": "v0.5.0",
   "header.logs": "System-Logs",
   "header.update": "Updates prüfen",
   "header.about": "Über die App",
