@@ -36,6 +36,7 @@ export const Header = ({ onOpenCommandPalette }: HeaderProps) => {
   // The chat uses one backend; a stopped local server says nothing about a working cloud chat.
   const isCloud = useAppStore((s) => s.selectedBackend === 'cloud');
   const cloudModel = useAppStore((s) => s.cloudModel);
+  const expertMode = useAppStore((s) => s.expertMode);
   // Until the settings are loaded the backend isn't known; showing "server stopped" would be wrong for cloud.
   const settingsLoaded = useAppStore((s) => s.settingsLoaded);
 
@@ -93,7 +94,7 @@ export const Header = ({ onOpenCommandPalette }: HeaderProps) => {
         </button>
 
         <div className="flex items-center gap-2.5 min-w-0">
-          {gpu && gpu.total_vram_mb > 0 && (
+          {expertMode && gpu && gpu.total_vram_mb > 0 && (
             <div
               title={t('header.gpuTooltip', {
                 name: gpu.name,
@@ -187,6 +188,7 @@ export const Header = ({ onOpenCommandPalette }: HeaderProps) => {
             <Command className="h-4 w-4" />
           </button>
 
+          {expertMode && (
           <button
             type="button"
             onClick={() => setIsLogViewerOpen(true)}
@@ -196,6 +198,7 @@ export const Header = ({ onOpenCommandPalette }: HeaderProps) => {
           >
             <Terminal className="h-4 w-4" />
           </button>
+          )}
 
           <button
             type="button"

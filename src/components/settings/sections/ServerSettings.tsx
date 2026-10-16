@@ -25,10 +25,10 @@ export const ServerSettings = () => {
   const { t, tOptional } = useTranslation();
   const {
     hardware, layerRecommendation, fetchLayerRecommendation, serverStatus, serverConfig,
-    setServerConfig, selectLocalModel, startServer, stopServer, scannedModels,
+    setServerConfig, selectLocalModel, startServer, stopServer, scannedModels, expertMode,
   } = useStoreFields(
     'hardware', 'layerRecommendation', 'fetchLayerRecommendation', 'serverStatus', 'serverConfig',
-    'setServerConfig', 'selectLocalModel', 'startServer', 'stopServer', 'scannedModels',
+    'setServerConfig', 'selectLocalModel', 'startServer', 'stopServer', 'scannedModels', 'expertMode',
   );
 
   const [showLogs, setShowLogs] = useState(true);
@@ -347,7 +347,8 @@ export const ServerSettings = () => {
           </div>
         </div>
 
-        {/* Advanced Server Tuning Section */}
+        {/* Advanced Server Tuning Section (experts) */}
+        {expertMode && (
         <div className="p-3.5 rounded-lg bg-app/40 border border-slate-800/80 space-y-3">
           <div className="text-xs font-semibold text-slate-300 flex items-center gap-1.5">
             <Zap className="w-3.5 h-3.5 text-amber-400" />
@@ -456,6 +457,7 @@ export const ServerSettings = () => {
             </label>
           </div>
         </div>
+        )}
 
         {/* Layer Recommendation Box */}
         <div className="p-3 rounded-lg bg-accent-950/20 border border-accent-900/40 flex items-center justify-between">

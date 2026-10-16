@@ -77,6 +77,10 @@ pub struct AppSettings {
     /// Page the app opens with: `home` (start page) or `chat` (straight into the last chat).
     #[serde(default = "default_start_tab")]
     pub start_tab: String,
+    /// Shows technical options (server tuning, raw sampler values, prompt editor, GPU and logs in
+    /// the header); off by default so beginners see a simple app.
+    #[serde(default)]
+    pub expert_mode: bool,
     /// The chat model may use tools (date/time, calculator, web search); off by default
     /// because a web search sends the query to a search engine.
     #[serde(default)]
@@ -157,6 +161,7 @@ impl Default for AppSettings {
             tray_hint_shown: false,
             stage_last_scene: String::new(),
             start_tab: default_start_tab(),
+            expert_mode: false,
             chat_tools: false,
             prompt_template: Default::default(),
         }

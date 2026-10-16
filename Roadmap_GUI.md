@@ -57,13 +57,13 @@
   abschaltbar), KI-Status mit „KI ändern“ bzw. „Jetzt einrichten“, Karten Weiterchatten / Geschichte / Hub.
   Ursprünglicher Plan: (statt leerem Chat): Weiterspielen (letzter Chat/letzte Szene), Mit einer
   Figur chatten, Geschichte beginnen, Figur entdecken (Hub). Leere Zustände führen hierher.
-- [ ] **Kopfzeile aufräumen:** (Symbolknöpfe haben Tooltips; KI-Status erklärt jetzt die Startseite – GPU-Anzeige und
-  Protokoll mit dem Expertenmodus ausblenden) Symbolknöpfe beschriften oder mit Tooltip + Kurztext versehen; Lokal/Cloud-Umschalter
+- [x] **Kopfzeile aufräumen (16.10.2026):** GPU-Anzeige und Protokoll nur im Expertenmodus, KI-Status auf der Startseite. Symbolknöpfe beschriften oder mit Tooltip + Kurztext versehen; Lokal/Cloud-Umschalter
   als verständlicher Status („Antworten kommen von: Bonsai 27B auf deinem PC“) mit Klick zur Auswahl; GPU-Anzeige nur
   im Expertenmodus oder als Detail.
 - [ ] **Navigation benennen:** Seitenleiste mit Untertiteln beim ersten Start („Stage – Geschichten mit mehreren
   Figuren“, „Companion – Assistent auf dem Desktop“), danach kompakt.
-- [ ] **Einfach-/Expertenmodus** als globale Einstellung (Standard: einfach), schaltet erweiterte Bereiche überall
+- [x] **Einfach-/Expertenmodus (16.10.2026):** `AppSettings.expert_mode`, Schalter oben in den Einstellungen.
+  Ursprünglicher Plan: als globale Einstellung (Standard: einfach), schaltet erweiterte Bereiche überall
   zu; Befehlspalette findet auch versteckte Optionen.
 
 ## 3. Einstieg in Geschichten (Stage) – Schwerpunkt
@@ -126,10 +126,13 @@
 
 ## 5. Einstellungen
 
-- [ ] **Reiter umbenennen und ordnen:** „KI-Modell“ (lokal/Cloud zusammen), „Antwortstil“ (statt Sampler, mit Vorlagen
+- [x] **Reiter umbenennen und ordnen (16.10.2026):** „Lokale KI“, „Cloud-KI“, „Antwortstil“, „Modelle herunterladen“,
+  „Prompt (Experten)“ nur im Expertenmodus; Antwortstil zeigt die Vorlagen mit Beschreibung, Regler nur für Experten,
+  Server-Tuning ebenso. Ursprünglicher Plan: „KI-Modell“ (lokal/Cloud zusammen), „Antwortstil“ (statt Sampler, mit Vorlagen
   *Kreativ / Ausgewogen / Genau*), „Stimme“, „Bilder“, „Aussehen“, „Erweitert“ (llama-server, Prompt, Sampler-Rohwerte).
 - [ ] **Jede Option mit Satz:** Kurzbeschreibung unter jeder Einstellung; Fachbegriff in Klammern; Glossar-Link.
-- [ ] **Stimme vereinfachen:** „Stimme wählen“ mit Probehören-Liste über alle Engines; Voice-ID, RegEx, RVC unter
+- [ ] **Stimme vereinfachen:** (teilweise 16.10.2026: Voice-ID, Ausschluss-RegEx und RVC nur im Expertenmodus, Texte ohne
+  Fachbegriffe; Probehör-Liste über alle Engines fehlt noch) „Stimme wählen“ mit Probehören-Liste über alle Engines; Voice-ID, RegEx, RVC unter
   „Erweitert“; Klon-Dialog als eigener, geführter Ablauf.
 - [ ] **Zurücksetzen pro Bereich** und Hinweis, welche Werte vom Standard abweichen.
 

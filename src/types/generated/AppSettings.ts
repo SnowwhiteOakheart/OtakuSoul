@@ -30,6 +30,11 @@ stage_last_scene: string,
  */
 start_tab: string, 
 /**
+ * Shows technical options (server tuning, raw sampler values, prompt editor, GPU and logs in
+ * the header); off by default so beginners see a simple app.
+ */
+expert_mode: boolean, 
+/**
  * The chat model may use tools (date/time, calculator, web search); off by default
  * because a web search sends the query to a search engine.
  */

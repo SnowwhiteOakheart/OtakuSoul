@@ -14,7 +14,7 @@ import { Button, Tabs, type TabItem } from '../ui';
 
 export const SettingsView = () => {
   const { t } = useTranslation();
-  const { fetchHardware, initApp } = useStoreFields('fetchHardware', 'initApp');
+  const { fetchHardware, initApp, expertMode, setExpertMode } = useStoreFields('fetchHardware', 'initApp', 'expertMode', 'setExpertMode');
 
   const [activeTab, setActiveTab] = useState<SettingsSection>(
     () => useAppStore.getState().consumePendingSettingsSection() ?? 'general'
@@ -29,7 +29,9 @@ export const SettingsView = () => {
       }),
     [],
   );
-  const settingsTabs: TabItem<SettingsSection>[] = [
+  // The prompt editor is for experts; a jump to it (palette) still shows it.
+  const expertOnly: SettingsSection[] = ['prompt'];
+  const allTabs: TabItem<SettingsSection>[] = [
     { value: 'general', label: t('settings.appearance'), icon: Palette, panelId: 'settings-panel-general' },
     { value: 'server', label: t('settings.tabServer'), icon: Cpu, panelId: 'settings-panel-server' },
     { value: 'providers', label: t('settings.tabProviders'), icon: Key, panelId: 'settings-panel-providers' },
@@ -39,6 +41,7 @@ export const SettingsView = () => {
     { value: 'voice', label: t('settings.tabVoice'), icon: AudioLines, panelId: 'settings-panel-voice' },
     { value: 'hub', label: t('settings.tabHub'), icon: Download, panelId: 'settings-panel-hub' },
   ];
+  const settingsTabs = allTabs.filter((tab) => expertMode || !expertOnly.includes(tab.value) || tab.value === activeTab);
 
   return (
     <div className="flex-1 overflow-y-auto p-6 bg-app space-y-6">
@@ -52,18 +55,31 @@ export const SettingsView = () => {
             </h1>
             <p className="text-xs text-slate-400 mt-1">{t('settings.subtitle')}</p>
           </div>
-          <Button
-            variant="secondary"
-            size="sm"
-            onClick={() => {
-              fetchHardware();
-              initApp();
-            }}
-          >
-            <RefreshCw className="w-3.5 h-3.5" />
-            <span>{t('settings.refresh')}</span>
-          </Button>
+          <div className="flex flex-wrap items-center gap-3">
+            <label className="flex items-center gap-2 text-xs text-slate-300" title={t('settings.expertModeHint')}>
+              <input
+                type="checkbox"
+                id="setting-expert-mode"
+                checked={expertMode}
+                onChange={(e) => setExpertMode(e.target.checked)}
+                className="accent-accent-500"
+              />
+              {t('settings.expertMode')}
+            </label>
+            <Button
+              variant="secondary"
+              size="sm"
+              onClick={() => {
+                fetchHardware();
+                initApp();
+              }}
+            >
+              <RefreshCw className="w-3.5 h-3.5" />
+              <span>{t('settings.refresh')}</span>
+            </Button>
+          </div>
         </div>
+        {!expertMode && <p className="-mt-3 text-xs text-slate-500">{t('settings.simpleModeHint')}</p>}
 
         <Tabs
           idPrefix="settings"

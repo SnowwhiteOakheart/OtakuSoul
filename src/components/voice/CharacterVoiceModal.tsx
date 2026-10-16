@@ -86,8 +86,8 @@ function testText(config: VoiceConfig) {
 
 export function CharacterVoiceModal({ onClose, target, embedded = false, autoSave = false }: CharacterVoiceModalProps) {
   const { t } = useTranslation();
-  const { activeCharacter, activeVoiceConfig, saveVoiceConfigForCharacter } = useStoreFields(
-    'activeCharacter', 'activeVoiceConfig', 'saveVoiceConfigForCharacter',
+  const { activeCharacter, activeVoiceConfig, saveVoiceConfigForCharacter, expertMode } = useStoreFields(
+    'activeCharacter', 'activeVoiceConfig', 'saveVoiceConfigForCharacter', 'expertMode',
   );
   const [tab, setTab] = useState<VoiceTab>('tts');
   const [draft, setDraft] = useState<VoiceConfig>(activeVoiceConfig ?? DEFAULT_CONFIG);
@@ -329,7 +329,7 @@ export function CharacterVoiceModal({ onClose, target, embedded = false, autoSav
             ['effects', Wand2, t('voiceCfg.tabEffects')],
             ['stt', Mic, t('voiceCfg.tabStt')],
             ['rvc', SlidersHorizontal, 'RVC'],
-          ] as const).map(([id, Icon, label]) => (
+          ] as const).filter(([id]) => expertMode || id !== 'rvc' || tab === 'rvc').map(([id, Icon, label]) => (
             <button
               key={id}
               role="tab"
@@ -444,10 +444,12 @@ export function CharacterVoiceModal({ onClose, target, embedded = false, autoSav
                         ))}
                       </select>
                     </label>
-                    <label>
-                      <span className={labelClass}>{t('voiceCfg.voiceId')}</span>
-                      <input value={draft.voice_id} onChange={(event) => update('voice_id', event.target.value)} className={fieldClass} placeholder={draft.engine === 'kokoro' ? 'af_heart' : 'de-DE-KatjaNeural'} />
-                    </label>
+                    {expertMode && (
+                      <label>
+                        <span className={labelClass}>{t('voiceCfg.voiceId')}</span>
+                        <input value={draft.voice_id} onChange={(event) => update('voice_id', event.target.value)} className={fieldClass} placeholder={draft.engine === 'kokoro' ? 'af_heart' : 'de-DE-KatjaNeural'} />
+                      </label>
+                    )}
                   </div>
                   )}
 
@@ -495,7 +497,7 @@ export function CharacterVoiceModal({ onClose, target, embedded = false, autoSav
                         <option value="strip_actions">{t('voiceCfg.filterActions')}</option>
                       </select>
                     </label>
-                    <label><span className={labelClass}>{t('voiceCfg.customRegex')}</span><input value={draft.custom_regex} onChange={(event) => update('custom_regex', event.target.value)} className={fieldClass} placeholder="\[System:.*?\]" /></label>
+                    {expertMode && <label><span className={labelClass}>{t('voiceCfg.customRegex')}</span><input value={draft.custom_regex} onChange={(event) => update('custom_regex', event.target.value)} className={fieldClass} placeholder="\[System:.*?\]" /></label>}
                   </div>
                 </>
               )}

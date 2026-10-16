@@ -51,6 +51,9 @@ export interface AppSlice {
   /** Page the app opens with. */
   startTab: 'home' | 'chat';
   setStartTab: (tab: 'home' | 'chat') => void;
+  /** Technical options are visible (server tuning, raw sampler values, prompt editor, GPU and logs). */
+  expertMode: boolean;
+  setExpertMode: (on: boolean) => void;
   /** Shows the first-run wizard again (start page: "set up the AI"). */
   reopenOnboarding: () => void;
   confirmTrayHint: () => Promise<void>;
@@ -156,6 +159,7 @@ export const createAppSlice: SliceCreator<AppSlice> = (set, get) => ({
         trayHintShown: settings.tray_hint_shown === true,
         stageLastScene: settings.stage_last_scene || '',
         startTab: settings.start_tab === 'chat' ? 'chat' : 'home',
+        expertMode: settings.expert_mode === true,
         // The app opens on the start page unless the user goes straight to the chat (or already moved on).
         ...(settings.start_tab !== 'chat' && get().activeTab === 'chat' ? { activeTab: 'home' as const } : {}),
         settingsLoaded: true,
@@ -260,6 +264,7 @@ export const createAppSlice: SliceCreator<AppSlice> = (set, get) => ({
         tray_hint_shown: state.trayHintShown,
         stage_last_scene: state.stageLastScene,
         start_tab: state.startTab,
+        expert_mode: state.expertMode,
       };
       await api.saveSettings(settings);
       settingsSaveFailureShown = false;
@@ -337,6 +342,11 @@ export const createAppSlice: SliceCreator<AppSlice> = (set, get) => ({
     get().saveCurrentSettings();
   },
   reopenOnboarding: () => set({ onboardingCompleted: false }),
+  expertMode: false,
+  setExpertMode: (expertMode) => {
+    set({ expertMode });
+    get().saveCurrentSettings();
+  },
 
   confirmTrayHint: async () => {
     set({ trayHintShown: true });

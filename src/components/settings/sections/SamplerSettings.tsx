@@ -17,10 +17,10 @@ export const SamplerSettings = () => {
     p.is_builtin ? tOptional(`preset.${p.id}.${field}`, p[field]) : p[field];
   const {
     llmPresets, activePresetId, applyLlmPreset, saveLlmPreset, deleteLlmPreset, sampling,
-    setSampling, lorebookScanDepth, setLorebookScanDepth,
+    setSampling, lorebookScanDepth, setLorebookScanDepth, expertMode,
   } = useStoreFields(
     'llmPresets', 'activePresetId', 'applyLlmPreset', 'saveLlmPreset', 'deleteLlmPreset',
-    'sampling', 'setSampling', 'lorebookScanDepth', 'setLorebookScanDepth',
+    'sampling', 'setSampling', 'lorebookScanDepth', 'setLorebookScanDepth', 'expertMode',
   );
 
   // New preset modal state
@@ -57,13 +57,13 @@ export const SamplerSettings = () => {
             <p className="text-xs text-slate-400 mt-0.5">{t('settings.presetsIntro')}</p>
           </div>
 
-          <button
+          {expertMode && <button
             onClick={() => setIsCreatingPreset(true)}
             className="px-3 py-1.5 rounded-lg bg-accent-600 hover:bg-accent-500 text-white text-xs font-semibold flex items-center gap-1.5"
           >
             <Plus className="w-3.5 h-3.5" />
             <span className="whitespace-nowrap">{t('settings.saveAsPreset')}</span>
-          </button>
+          </button>}
         </div>
 
         {/* Preset Selector Badges */}
@@ -73,7 +73,7 @@ export const SamplerSettings = () => {
             return (
               <div
                 key={p.id}
-                className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg border text-xs transition-all ${
+                className={`flex items-start gap-1.5 px-3 py-2 rounded-lg border text-xs transition-all ${
                   isActive
                     ? 'border-accent-500 bg-accent-500/20 text-accent-200'
                     : 'border-slate-800 bg-app/60 text-slate-400 hover:border-slate-700'
@@ -85,9 +85,12 @@ export const SamplerSettings = () => {
                   aria-pressed={isActive}
                   title={presetText(p, 'description')}
                   aria-label={t('settings.applyPreset', { name: presetText(p, 'name') })}
-                  className="font-medium rounded outline-hidden focus-visible:ring-2 focus-visible:ring-accent-400"
+                  className="text-left rounded outline-hidden focus-visible:ring-2 focus-visible:ring-accent-400"
                 >
-                  {presetText(p, 'name')}
+                  <span className="block font-medium">{presetText(p, 'name')}</span>
+                  {presetText(p, 'description') && (
+                    <span className="block max-w-56 text-[11px] font-normal text-slate-500">{presetText(p, 'description')}</span>
+                  )}
                 </button>
                 {!p.is_builtin && (
                   <button
@@ -155,6 +158,8 @@ export const SamplerSettings = () => {
         )}
       </div>
 
+      {!expertMode && <p className="text-xs text-slate-500">{t('settings.samplerExpertHint')}</p>}
+      {expertMode && (<>
       {/* Standard Samplers */}
       <div className="rounded-xl border border-slate-800 bg-slate-900/60 p-4 space-y-4">
         <h3 className="text-xs font-semibold text-slate-300 flex items-center gap-1.5">
@@ -365,6 +370,7 @@ export const SamplerSettings = () => {
         </div>
       </div>
 
+      </>)}
     </div>
   );
 };

@@ -45,7 +45,7 @@ try {
   const target = await browser.$('#setting-voice-target');
   await target.waitForDisplayed({ timeout: 10_000 });
   await target.selectByAttribute('value', 'stage_narrator');
-  await browser.$('h2=Stimme & Voice Call').waitForDisplayed();
+  await browser.$('h2=Stimme & Sprachanruf').waitForDisplayed();
   await browser.saveScreenshot(path.join(screenshotDir, '51-einstellungen-stimme.png'));
   await browser.$('#settings-panel-voice').$('button=Speichern').click();
   await browser.waitUntil(() => browser.execute(() => document.body.textContent.includes('Stimme gespeichert.')), { timeout: 5000, timeoutMsg: 'Speichern ohne Rückmeldung' });

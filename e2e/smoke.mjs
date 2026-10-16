@@ -73,7 +73,9 @@ try {
   await shot(browser, '05-mit-zusammenfassung');
   step('Prompt-Vorlage „Companion“ wählen, Vorschau, speichern');
   await browser.$('button=Einstellungen').click();
-  await browser.$('button[role="tab"]=Prompt').click();
+  // The prompt editor is an expert option.
+  await browser.$('#setting-expert-mode').click();
+  await browser.$('button[role="tab"]*=Prompt').click();
   await browser.$('[aria-label="Vorlagen"]').$('button=Companion').click();
   await browser.$('button*=Vorschau für').click();
   await browser.waitUntil(async () => (await browser.$('pre').getText()).includes('a close companion chatting with'), {

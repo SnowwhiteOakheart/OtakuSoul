@@ -819,6 +819,8 @@ export interface AppSettings {
   stage_last_scene?: string;
   /** Page the app opens with: start page or straight into the chat. */
   start_tab?: 'home' | 'chat';
+  /** Technical options are visible. */
+  expert_mode?: boolean;
   /** Closing the window keeps the app running in the tray. */
   close_to_tray?: boolean;
   tray_hint_shown?: boolean;
