@@ -74,6 +74,8 @@
   Ursprünglicher Plan (Galerie-Anzeige erledigt): 3–5 kurze, hochwertige Starter-Stories (z. B. Fantasy-Abenteuer,
   Slice-of-Life-Schulfest, Krimi, Science-Fiction, Horror light) – dreisprachig, mit Startbild, Ambient, Zielen und
   passenden Gefährten aus den mitgelieferten Figuren; die englische Standardszene ersetzen.
+- [x] **Hub-Szenen mit Story-Daten (16.10.2026):** alle 45 Szenen in `otakusoul-data` (plus Paket-Kopien) tragen
+  `otakusoul_story`, übersetzte Startorte und Tageszeiten; Format in dessen `AI.md` beschrieben.
 - [ ] **Story-Assistent „Eigene Geschichte“:** 4 Schritte – Genre/Stimmung → Wer bist du? (Persona) → Wer begleitet
   dich? (Figuren, Vorschläge) → Ausgangslage (Vorlagen oder eigener Satz, „Würfel mir etwas aus“). Regeln/Technik
   (Akteure pro Runde, SG, Regelwerk) nur unter „Erweitert“; der heutige Editor bleibt für Fortgeschrittene.
