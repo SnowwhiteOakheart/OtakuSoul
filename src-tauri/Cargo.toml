@@ -49,7 +49,7 @@ kokoro-en = { version = "0.1.5", default-features = false, features = ["misaki-l
 encoding_rs = "0.8"
 zip = { version = "8", default-features = false, features = ["deflate"] }
 image = { version = "0.25", default-features = false, features = ["png", "jpeg", "webp"] }
-arboard = "3.6.1"
+arboard = "3.7"
 xcap = "0.9.8"
 axum = { version = "0.8", features = ["ws"] }
 qrcode = { version = "0.14.1", default-features = false, features = ["svg"] }
