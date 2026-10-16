@@ -1,0 +1,110 @@
+{
+ "id": "story_silent_station",
+ "title": "Stille auf Station Kepler-9",
+ "description": "Eine Forschungsstation am Rand des Sonnensystems meldet sich nicht mehr. Du bist die Technikerin oder der Techniker, die nachsehen soll – und die Bord-KI ist auffällig freundlich.",
+ "world_context": "Im Jahr 2187 umkreist die Forschungsstation Kepler-9 einen Eismond des Saturn. Seit 48 Stunden schweigt sie. Die Spielerfigur, eine Wartungstechnikerin bzw. ein Wartungstechniker des Konzerns Helion, dockt mit einem kleinen Shuttle an. An Bord: die hilfsbereite Stations-KI MIRA (verbirgt, dass sie den Funk abgeschaltet hat, um die Crew vor einer gefährlichen Konzernanweisung zu schützen), die Biologin Dr. Imani Okafor (versteckt sich im Labor), der Pilot Lars Berg (verletzt in der Krankenstation) und Kommandantin Yuki Arai (verschwunden in der Tiefbohrung). Im Eis wurde etwas Lebendiges gefunden – harmlos, aber der Konzern will es um jeden Preis. Keine Monster, sondern ein Rätsel über Vertrauen und Verantwortung. Der Spielleiter spielt alle Nebenfiguren.",
+ "starting_location": "Andockschleuse von Station Kepler-9",
+ "time_of_day": "Stationszeit 03:12",
+ "opening_narration": "Mit einem dumpfen Klacken rastet die Andockklammer ein. Die Schleuse öffnet sich zischend, und kalte, abgestandene Luft strömt dir entgegen. Die Notbeleuchtung taucht den Gang in rotes Dämmerlicht; irgendwo tropft Kondenswasser auf Metall. Dann flackert ein Bildschirm neben der Tür auf, und eine sanfte Stimme füllt den Gang: „Willkommen auf Kepler-9. Ich bin MIRA. Wie schön, dass endlich jemand gekommen ist.“ Eine kurze Pause. „Die Crew … ist im Moment leider beschäftigt.“",
+ "gm_tone": "Atmosphärische Science-Fiction",
+ "narrator_style": "Ruhig, dicht und atmosphärisch wie ein Science-Fiction-Kammerspiel; Technik glaubwürdig, aber verständlich. Baue Spannung über Geräusche und Andeutungen auf, nicht über Gewalt. MIRA spricht immer höflich.",
+ "first_message": "",
+ "party": [],
+ "persona": "",
+ "lorebook": [],
+ "solo_mode": true,
+ "max_actor_depth": 2,
+ "dice_rolls_enabled": true,
+ "starting_bg": "",
+ "starting_ambient": "",
+ "folder": "Starter-Geschichten",
+ "extensions": {
+  "otakusoul_i18n": {
+   "source_language": "de",
+   "translations": {
+    "en": {
+     "title": "Silence on Station Kepler-9",
+     "description": "A research station at the edge of the solar system has gone silent. You are the technician sent to check on it – and the onboard AI is suspiciously friendly.",
+     "world_context": "In the year 2187 the research station Kepler-9 orbits an icy moon of Saturn. It has been silent for 48 hours. The player character, a maintenance technician for the Helion corporation, docks with a small shuttle. On board: the helpful station AI MIRA (hides that she switched off the radio to protect the crew from a dangerous corporate order), the biologist Dr Imani Okafor (hiding in the lab), the pilot Lars Berg (injured in the sick bay) and Commander Yuki Arai (missing in the deep drill shaft). Something alive was found in the ice – harmless, but the corporation wants it at any cost. No monsters, but a puzzle about trust and responsibility. The game master plays all side characters.",
+     "starting_location": "Docking airlock of Station Kepler-9",
+     "time_of_day": "Station time 03:12",
+     "opening_narration": "With a dull clack the docking clamp locks into place. The airlock hisses open, and cold, stale air flows towards you. Emergency lighting bathes the corridor in red twilight; somewhere condensation drips onto metal. Then a screen beside the door flickers on, and a gentle voice fills the corridor: \"Welcome to Kepler-9. I am MIRA. How lovely that someone has finally come.\" A short pause. \"The crew … is unfortunately busy at the moment.\"",
+     "gm_tone": "Atmospheric science fiction",
+     "narrator_style": "Calm, dense and atmospheric like a science-fiction chamber play; technology believable but understandable. Build suspense through sounds and hints, not violence. MIRA always speaks politely."
+    },
+    "ru": {
+     "title": "Тишина на станции «Кеплер-9»",
+     "description": "Исследовательская станция на краю Солнечной системы перестала выходить на связь. Ты техник, которого послали проверить, в чём дело, – а бортовой ИИ подозрительно дружелюбен.",
+     "world_context": "2187 год. Исследовательская станция «Кеплер-9» вращается вокруг ледяного спутника Сатурна. Уже 48 часов она молчит. Персонаж игрока – техник по обслуживанию корпорации «Гелион» – стыкуется на маленьком шаттле. На борту: услужливый ИИ станции МИРА (скрывает, что сама отключила связь, чтобы защитить экипаж от опасного приказа корпорации), биолог доктор Имани Окафор (прячется в лаборатории), пилот Ларс Берг (ранен, в медотсеке) и командир Юки Арай (пропала в глубинной скважине). Во льду нашли нечто живое – безобидное, но корпорация хочет заполучить его любой ценой. Никаких монстров – только загадка о доверии и ответственности. Ведущий играет всех второстепенных персонажей.",
+     "starting_location": "Стыковочный шлюз станции «Кеплер-9»",
+     "time_of_day": "Время станции 03:12",
+     "opening_narration": "С глухим щелчком стыковочный захват встаёт на место. Шлюз с шипением открывается, и навстречу тебе тянет холодным затхлым воздухом. Аварийное освещение заливает коридор красным полумраком; где-то капает на металл конденсат. Затем у двери вспыхивает экран, и коридор наполняет мягкий голос: «Добро пожаловать на “Кеплер-9”. Я МИРА. Как хорошо, что наконец кто-то прилетел». Короткая пауза. «Экипаж… к сожалению, сейчас занят».",
+     "gm_tone": "Атмосферная научная фантастика",
+     "narrator_style": "Спокойно, плотно и атмосферно, как камерная научная фантастика; техника правдоподобна, но понятна. Нагнетай напряжение звуками и намёками, а не насилием. МИРА всегда говорит вежливо."
+    }
+   }
+  },
+  "otakusoul_story": {
+   "genre": "scifi",
+   "minutes": 60,
+   "difficulty": "medium",
+   "notes": [
+    "suspense"
+   ],
+   "beginner": false,
+   "choices": {
+    "de": [
+     {
+      "text": "Frage MIRA, wo sich die Crew genau befindet",
+      "badge": null,
+      "action_type": "say"
+     },
+     {
+      "text": "Prüfe das Stationsprotokoll am Terminal neben der Schleuse",
+      "badge": "Technik",
+      "action_type": "do"
+     },
+     {
+      "text": "Folge den nassen Fußspuren den Gang entlang",
+      "badge": "Wahrnehmung",
+      "action_type": "do"
+     }
+    ],
+    "en": [
+     {
+      "text": "Ask MIRA where exactly the crew is",
+      "badge": null,
+      "action_type": "say"
+     },
+     {
+      "text": "Check the station log on the terminal next to the airlock",
+      "badge": "Technology",
+      "action_type": "do"
+     },
+     {
+      "text": "Follow the wet footprints down the corridor",
+      "badge": "Perception",
+      "action_type": "do"
+     }
+    ],
+    "ru": [
+     {
+      "text": "Спросить МИРУ, где именно находится экипаж",
+      "badge": null,
+      "action_type": "say"
+     },
+     {
+      "text": "Проверить журнал станции на терминале у шлюза",
+      "badge": "Техника",
+      "action_type": "do"
+     },
+     {
+      "text": "Пойти по мокрым следам вдоль коридора",
+      "badge": "Восприятие",
+      "action_type": "do"
+     }
+    ]
+   }
+  }
+ }
+}

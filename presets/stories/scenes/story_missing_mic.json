@@ -1,0 +1,111 @@
+{
+ "id": "story_missing_mic",
+ "title": "Das verschwundene Mikrofon",
+ "description": "Eine Stunde vor der Live-Sendung ist Ayus goldenes Glücksmikrofon aus der Garderobe verschwunden. Vier Verdächtige, eine Uhr, die tickt – finde den Täter.",
+ "world_context": "Tokio, Gegenwart, ein großes Fernsehstudio in Minato. Ayu Ikue tritt heute Abend live in der beliebten Musikshow „Starlight Stage“ auf. Ihr goldenes Mikrofon – ein Geschenk ihres ersten Fanclubs, ohne das sie nie auftritt – ist aus der verschlossenen Garderobe verschwunden. Verdächtige: die gestresste Aufnahmeleiterin Frau Kanda (hat einen Generalschlüssel), das Rivalen-Idol Rei Hoshino (zufällig in der Nachbargarderobe), der nervöse Praktikant Daichi (hat etwas Glänzendes in seiner Tasche versteckt) und der freundliche Hausmeister Herr Mori. Die Wahrheit: Daichi hat das Mikrofon nur zum Polieren geholt und es dann aus Angst versteckt, als Frau Kanda ihn anschrie; Rei hat es gesehen, schweigt aber. Der Spielleiter verteilt Hinweise fair und lässt den Spieler kombinieren. Die Spielerfigur ist Ayus Mitbewohner und hat einen Backstage-Ausweis.",
+ "starting_location": "Ayus Garderobe im Fernsehstudio",
+ "time_of_day": "Früher Abend",
+ "opening_narration": "Die Garderobe riecht nach Haarspray und frischen Blumen. Auf dem Schminktisch liegt ein leerer, mit Samt ausgeschlagener Koffer – genau dort, wo sonst Ayus goldenes Mikrofon ruht. Ayu läuft auf und ab, die Fäuste geballt. „Ich habe die Tür abgeschlossen! Ich bin mir hundertprozentig sicher!“ Cosmos hockt auf dem Sofa und scrollt durch ihre Fotos. „Ich hab vor einer Stunde ein Selfie hier gemacht … da war es noch da, nya.“ Draußen ruft jemand durch den Flur: „Noch sechzig Minuten bis zur Sendung!“",
+ "gm_tone": "Gemütlicher Krimi",
+ "narrator_style": "Spannend, aber gemütlich wie ein Detektiv-Anime; beschreibe Hinweise genau, verrate nie die Lösung. Lass Verdächtige glaubwürdig ausweichen und belohne gute Fragen mit neuen Spuren.",
+ "first_message": "",
+ "party": [
+  "Ayu Ikue",
+  "Cosmos"
+ ],
+ "persona": "",
+ "lorebook": [],
+ "solo_mode": false,
+ "max_actor_depth": 2,
+ "dice_rolls_enabled": true,
+ "starting_bg": "",
+ "starting_ambient": "",
+ "folder": "Starter-Geschichten",
+ "extensions": {
+  "otakusoul_i18n": {
+   "source_language": "de",
+   "translations": {
+    "en": {
+     "title": "The Missing Microphone",
+     "description": "One hour before the live broadcast, Ayu's golden lucky microphone has vanished from her dressing room. Four suspects, a ticking clock – find the culprit.",
+     "world_context": "Tokyo, present day, a large TV studio in Minato. Ayu Ikue is performing live tonight on the popular music show \"Starlight Stage\". Her golden microphone – a gift from her first fan club, without which she never performs – has vanished from the locked dressing room. Suspects: the stressed floor manager Ms Kanda (has a master key), rival idol Rei Hoshino (conveniently in the neighbouring dressing room), the nervous intern Daichi (has hidden something shiny in his bag) and the friendly caretaker Mr Mori. The truth: Daichi only took the microphone to polish it, then hid it out of fear when Ms Kanda shouted at him; Rei saw it but keeps quiet. The game master hands out clues fairly and lets the player deduce. The player character is Ayu's housemate and has a backstage pass.",
+     "starting_location": "Ayu's dressing room at the TV studio",
+     "time_of_day": "Early evening",
+     "opening_narration": "The dressing room smells of hairspray and fresh flowers. On the make-up table lies an empty velvet-lined case – exactly where Ayu's golden microphone usually rests. Ayu paces up and down, fists clenched. \"I locked the door! I'm one hundred percent sure!\" Cosmos is curled up on the sofa, scrolling through her photos. \"I took a selfie in here an hour ago … it was still there then, nya.\" Outside someone calls down the corridor: \"Sixty minutes to air!\"",
+     "gm_tone": "Cosy mystery",
+     "narrator_style": "Suspenseful but cosy like a detective anime; describe clues precisely, never reveal the solution. Let suspects dodge believably and reward good questions with new leads."
+    },
+    "ru": {
+     "title": "Пропавший микрофон",
+     "description": "За час до прямого эфира из гримёрки исчез золотой счастливый микрофон Аю. Четверо подозреваемых, тикающие часы – найди виновного.",
+     "world_context": "Токио, наши дни, большая телестудия в Минато. Сегодня вечером Аю Икуэ выступает в прямом эфире популярного музыкального шоу «Starlight Stage». Её золотой микрофон – подарок первого фан-клуба, без которого она никогда не выступает, – исчез из запертой гримёрки. Подозреваемые: замотанная помощница режиссёра госпожа Канда (у неё универсальный ключ), айдол-соперница Рэй Хосино (как раз в соседней гримёрке), нервный стажёр Дайти (спрятал что-то блестящее в сумку) и приветливый завхоз господин Мори. Правда: Дайти взял микрофон лишь чтобы отполировать, а потом спрятал от страха, когда на него накричала госпожа Канда; Рэй это видела, но молчит. Ведущий честно раздаёт улики и даёт игроку делать выводы. Персонаж игрока – сосед Аю с пропуском за кулисы.",
+     "starting_location": "Гримёрка Аю в телестудии",
+     "time_of_day": "Ранний вечер",
+     "opening_narration": "В гримёрке пахнет лаком для волос и свежими цветами. На туалетном столике лежит пустой футляр, обитый бархатом, – ровно там, где обычно лежит золотой микрофон Аю. Аю ходит туда-сюда, сжав кулаки. «Я заперла дверь! Я уверена на сто процентов!» Космос свернулась на диване и листает фотографии. «Час назад я делала здесь селфи… тогда он ещё был на месте, ня». Снаружи кто-то кричит в коридоре: «Шестьдесят минут до эфира!»",
+     "gm_tone": "Уютный детектив",
+     "narrator_style": "Напряжённо, но уютно, как в детективном аниме; описывай улики точно, никогда не раскрывай разгадку. Пусть подозреваемые правдоподобно увиливают, а удачные вопросы приносят новые зацепки."
+    }
+   }
+  },
+  "otakusoul_story": {
+   "genre": "mystery",
+   "minutes": 45,
+   "difficulty": "medium",
+   "notes": [],
+   "beginner": false,
+   "choices": {
+    "de": [
+     {
+      "text": "Untersuche den leeren Koffer und das Türschloss",
+      "badge": "Nachforschung",
+      "action_type": "do"
+     },
+     {
+      "text": "Lass dir von Cosmos das Selfie von vorhin zeigen",
+      "badge": null,
+      "action_type": "say"
+     },
+     {
+      "text": "Frage Ayu, wer heute alles in der Garderobe war",
+      "badge": null,
+      "action_type": "say"
+     }
+    ],
+    "en": [
+     {
+      "text": "Examine the empty case and the door lock",
+      "badge": "Investigation",
+      "action_type": "do"
+     },
+     {
+      "text": "Ask Cosmos to show you the selfie from earlier",
+      "badge": null,
+      "action_type": "say"
+     },
+     {
+      "text": "Ask Ayu who has been in the dressing room today",
+      "badge": null,
+      "action_type": "say"
+     }
+    ],
+    "ru": [
+     {
+      "text": "Осмотреть пустой футляр и дверной замок",
+      "badge": "Анализ",
+      "action_type": "do"
+     },
+     {
+      "text": "Попросить Космос показать то самое селфи",
+      "badge": null,
+      "action_type": "say"
+     },
+     {
+      "text": "Спросить Аю, кто сегодня заходил в гримёрку",
+      "badge": null,
+      "action_type": "say"
+     }
+    ]
+   }
+  }
+ }
+}

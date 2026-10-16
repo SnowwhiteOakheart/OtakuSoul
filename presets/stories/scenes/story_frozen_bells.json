@@ -1,0 +1,112 @@
+{
+ "id": "story_frozen_bells",
+ "title": "Die Glocken von Frostweiler",
+ "description": "In einem Bergdorf sind alle Glocken zu Eis erstarrt – und wer ihren letzten Ton gehört hat, wacht nicht mehr auf. Emilia bittet dich um Hilfe.",
+ "world_context": "Frostweiler ist ein kleines Bergdorf im Hochland, bekannt für seine sieben Glocken, die seit Generationen die Geister des Berges besänftigen. Vor drei Tagen sind alle Glocken über Nacht zu Eis erstarrt, und jeder, der ihren letzten, falschen Ton gehört hat, liegt seitdem in einem tiefen, kalten Schlaf. Die Dorfbewohner misstrauen Fremden – besonders einer silberhaarigen Halbelfe. Emilia, eine junge Geistermagierin mit einem kleinen Feuergeist als Begleiter, spürt, dass ein verletzter Wintergeist hinter allem steckt, und will ihn retten statt bekämpfen. Die Spielerfigur ist eine Reisende bzw. ein Reisender, der zufällig im Dorf ist.",
+ "starting_location": "Der verschneite Dorfplatz von Frostweiler",
+ "time_of_day": "Abenddämmerung",
+ "opening_narration": "Der Schnee knirscht unter deinen Stiefeln, als du den Dorfplatz von Frostweiler betrittst. Über dir hängt die große Glocke im Turm – vollständig von klarem Eis umschlossen, als hätte jemand die Zeit angehalten. Kein Laut, kein Kinderlachen, nur das leise Klirren von Eiskristallen im Wind. Vor dem Brunnen kniet eine junge Frau mit silbernem Haar und legt behutsam die Hand auf das gefrorene Wasser. Als sie dich bemerkt, steht sie hastig auf. „Bitte erschrick nicht“, sagt sie leise. „Ich bin Emilia. Ich glaube, die Glocken weinen … und ich könnte Hilfe gebrauchen.“",
+ "gm_tone": "Märchenhafte Fantasy",
+ "narrator_style": "Warm, bildhaft und märchenhaft wie ein Wintermärchen; kurze Absätze, sanfte Spannung statt Gewalt. Gib dem Spieler pro Antwort einen klaren Hinweis, was er als Nächstes erkunden könnte.",
+ "first_message": "",
+ "party": [
+  "Emilia"
+ ],
+ "persona": "",
+ "lorebook": [],
+ "solo_mode": false,
+ "max_actor_depth": 2,
+ "dice_rolls_enabled": true,
+ "starting_bg": "",
+ "starting_ambient": "",
+ "folder": "Starter-Geschichten",
+ "extensions": {
+  "otakusoul_i18n": {
+   "source_language": "de",
+   "translations": {
+    "en": {
+     "title": "The Bells of Frostweiler",
+     "description": "In a mountain village every bell has turned to ice – and whoever heard their last note no longer wakes up. Emilia asks for your help.",
+     "world_context": "Frostweiler is a small highland village famous for its seven bells, which have soothed the spirits of the mountain for generations. Three days ago all the bells froze overnight, and everyone who heard their last, false note has been lying in a deep, cold sleep ever since. The villagers distrust strangers – especially a silver-haired half-elf. Emilia, a young spirit mage with a small fire spirit as her companion, senses that a wounded winter spirit is behind it all and wants to save it rather than fight it. The player character is a traveller who happens to be in the village.",
+     "starting_location": "The snowy village square of Frostweiler",
+     "time_of_day": "Dusk",
+     "opening_narration": "Snow crunches under your boots as you step onto the village square of Frostweiler. Above you the great bell hangs in its tower – completely encased in clear ice, as if someone had stopped time. No sound, no children laughing, only the soft clinking of ice crystals in the wind. By the well kneels a young woman with silver hair, gently laying her hand on the frozen water. When she notices you, she hurriedly stands up. \"Please don't be afraid,\" she says quietly. \"I'm Emilia. I think the bells are crying … and I could use some help.\"",
+     "gm_tone": "Fairy-tale fantasy",
+     "narrator_style": "Warm, vivid and fairy-tale-like, like a winter tale; short paragraphs, gentle suspense instead of violence. Give the player one clear hint per reply about what they could explore next."
+    },
+    "ru": {
+     "title": "Колокола Фроствайлера",
+     "description": "В горной деревне все колокола превратились в лёд – а тот, кто слышал их последний звон, больше не просыпается. Эмилия просит тебя о помощи.",
+     "world_context": "Фроствайлер – маленькая высокогорная деревня, известная своими семью колоколами, которые поколениями успокаивали духов горы. Три дня назад все колокола за одну ночь превратились в лёд, и каждый, кто слышал их последний фальшивый звон, с тех пор лежит в глубоком холодном сне. Жители не доверяют чужакам – особенно серебровласой полуэльфийке. Эмилия, юная заклинательница духов с маленьким огненным духом-спутником, чувствует, что за всем стоит раненый дух зимы, и хочет спасти его, а не сражаться с ним. Персонаж игрока – путник, случайно оказавшийся в деревне.",
+     "starting_location": "Заснеженная деревенская площадь Фроствайлера",
+     "time_of_day": "Сумерки",
+     "opening_narration": "Снег хрустит под твоими сапогами, когда ты выходишь на деревенскую площадь Фроствайлера. Над тобой в башне висит большой колокол – целиком заключённый в прозрачный лёд, будто кто-то остановил время. Ни звука, ни детского смеха, лишь тихий звон льдинок на ветру. У колодца стоит на коленях девушка с серебряными волосами и осторожно кладёт ладонь на замёрзшую воду. Заметив тебя, она поспешно поднимается. «Пожалуйста, не пугайся, – тихо говорит она. – Я Эмилия. Мне кажется, колокола плачут… и мне бы пригодилась помощь».",
+     "gm_tone": "Сказочное фэнтези",
+     "narrator_style": "Тепло, образно и сказочно, как зимняя сказка; короткие абзацы, мягкое напряжение вместо насилия. В каждом ответе давай игроку одну ясную подсказку, что можно исследовать дальше."
+    }
+   }
+  },
+  "otakusoul_story": {
+   "genre": "fantasy",
+   "minutes": 45,
+   "difficulty": "easy",
+   "notes": [
+    "mild_danger"
+   ],
+   "beginner": true,
+   "choices": {
+    "de": [
+     {
+      "text": "Frage Emilia, was sie über die Glocken herausgefunden hat",
+      "badge": null,
+      "action_type": "say"
+     },
+     {
+      "text": "Untersuche die gefrorene Glocke im Turm",
+      "badge": "Wahrnehmung",
+      "action_type": "do"
+     },
+     {
+      "text": "Klopfe beim Dorfältesten an und bitte um Auskunft",
+      "badge": "Überzeugen",
+      "action_type": "do"
+     }
+    ],
+    "en": [
+     {
+      "text": "Ask Emilia what she has found out about the bells",
+      "badge": null,
+      "action_type": "say"
+     },
+     {
+      "text": "Examine the frozen bell in the tower",
+      "badge": "Perception",
+      "action_type": "do"
+     },
+     {
+      "text": "Knock on the village elder's door and ask for information",
+      "badge": "Persuasion",
+      "action_type": "do"
+     }
+    ],
+    "ru": [
+     {
+      "text": "Спросить Эмилию, что она узнала о колоколах",
+      "badge": null,
+      "action_type": "say"
+     },
+     {
+      "text": "Осмотреть замёрзший колокол в башне",
+      "badge": "Восприятие",
+      "action_type": "do"
+     },
+     {
+      "text": "Постучать к деревенскому старосте и расспросить его",
+      "badge": "Убеждение",
+      "action_type": "do"
+     }
+    ]
+   }
+  }
+ }
+}

@@ -1463,7 +1463,7 @@ export const ru: TranslationDictionary = {
   "sceneEdit.none": "Нет",
   "sceneEdit.importImage": "Импорт изображения …",
   "sceneEdit.importAudio": "Импорт звука …",
-  "sceneEdit.ambientHint": "Выбор сохраняется; воспроизведение фонового звука появится в одном из следующих обновлений.",
+  "sceneEdit.ambientHint": "Выбор сохраняется и звучит в сцене как фоновый звук.",
   "sceneEdit.lockBg": "Запретить автоматическую смену фона",
   "sceneEdit.disableAmbient": "Отключить фоновый звук",
   "sceneEdit.actors": "Максимум участников за ход (1–6)",

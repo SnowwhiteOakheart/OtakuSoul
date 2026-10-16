@@ -1,0 +1,113 @@
+{
+ "id": "story_ryokan_night",
+ "title": "Eine Nacht im Ryokan Tsukimi",
+ "description": "Für eine Gruselfolge ihrer TV-Show übernachtet Ayu in einem alten Gasthaus in den Bergen. Dann schneit es euch ein – und im leeren Flur klappern Teetassen.",
+ "world_context": "Ein abgelegenes, traditionelles Gasthaus (Ryokan) in den Bergen von Nagano, Winter. Ayu Ikue dreht für ihre Varieté-Show die Folge „Mutprobe im Spukhaus“ – obwohl sie Gespenster panisch fürchtet (was sie nie zugeben würde). Cosmos filmt begeistert jede Sekunde für ihre Follower. Das Kamerateam ist ins Tal gefahren, ein Schneesturm hat die Straße blockiert, nur die alte Wirtin Frau Shirakawa ist noch da. In Wahrheit spukt der einsame Geist des früheren Wirts Tsukimi-san, der seit Jahrzehnten auf Gäste wartet, um ihnen ein letztes Mal Tee zu servieren und sich zu verabschieden. Grusel mit Herz: unheimliche Geräusche, flackernde Laternen, kein Blut. Die Spielerfigur begleitet Ayu als Mitbewohner.",
+ "starting_location": "Der Empfangsraum des Ryokan Tsukimi",
+ "time_of_day": "Nacht",
+ "opening_narration": "Draußen heult der Schneesturm um das alte Holzhaus, und die Papierlaternen im Empfangsraum werfen zitternde Schatten an die Wände. Ayu klammert sich mit einer Hand an deinen Ärmel und hält mit der anderen ein Mikrofon hoch. „Ich habe überhaupt keine Angst“, verkündet sie mit dünner Stimme in Cosmos‘ Kamera. „Gespenster gibt es nicht. Punkt.“ In diesem Moment klappert irgendwo im dunklen Flur leise Porzellan – wie Teetassen, die jemand auf ein Tablett stellt. Cosmos‘ Ohren stellen sich auf. „Nyaa … habt ihr das gehört?“",
+ "gm_tone": "Gemütlicher Grusel",
+ "narrator_style": "Unheimlich, aber nie grausam – wie eine Gruselgeschichte am Lagerfeuer; Spannung über Geräusche, Schatten und Andeutungen, mit humorvollen Momenten zwischen Ayu und Cosmos. Das Ende soll berühren statt schocken.",
+ "first_message": "",
+ "party": [
+  "Ayu Ikue",
+  "Cosmos"
+ ],
+ "persona": "",
+ "lorebook": [],
+ "solo_mode": false,
+ "max_actor_depth": 2,
+ "dice_rolls_enabled": true,
+ "starting_bg": "",
+ "starting_ambient": "",
+ "folder": "Starter-Geschichten",
+ "extensions": {
+  "otakusoul_i18n": {
+   "source_language": "de",
+   "translations": {
+    "en": {
+     "title": "A Night at Ryokan Tsukimi",
+     "description": "For a spooky episode of her TV show, Ayu stays overnight at an old inn in the mountains. Then you get snowed in – and in the empty corridor, teacups rattle.",
+     "world_context": "A remote traditional inn (ryokan) in the mountains of Nagano, winter. Ayu Ikue is shooting the episode \"Courage Test in the Haunted House\" for her variety show – even though she is terrified of ghosts (which she would never admit). Cosmos excitedly films every second for her followers. The camera crew has driven down to the valley, a snowstorm has blocked the road, and only the old landlady Mrs Shirakawa is still there. In truth the lonely ghost of the former innkeeper, Tsukimi-san, haunts the house; for decades he has been waiting for guests so he can serve them tea one last time and say goodbye. Horror with heart: eerie sounds, flickering lanterns, no blood. The player character accompanies Ayu as her housemate.",
+     "starting_location": "The reception room of Ryokan Tsukimi",
+     "time_of_day": "Night",
+     "opening_narration": "Outside the snowstorm howls around the old wooden house, and the paper lanterns in the reception room cast trembling shadows on the walls. Ayu clings to your sleeve with one hand and holds up a microphone with the other. \"I'm not scared at all,\" she announces in a thin voice into Cosmos' camera. \"Ghosts don't exist. Period.\" At that very moment, somewhere in the dark corridor, porcelain rattles softly – like teacups being set on a tray. Cosmos' ears prick up. \"Nyaa … did you hear that?\"",
+     "gm_tone": "Cosy horror",
+     "narrator_style": "Eerie but never cruel – like a ghost story by the campfire; suspense through sounds, shadows and hints, with humorous moments between Ayu and Cosmos. The ending should touch rather than shock."
+    },
+    "ru": {
+     "title": "Ночь в рёкане «Цукими»",
+     "description": "Ради страшного выпуска своего шоу Аю ночует в старой гостинице в горах. Потом вас заметает снегом – а в пустом коридоре звенят чайные чашки.",
+     "world_context": "Уединённая традиционная гостиница (рёкан) в горах Нагано, зима. Аю Икуэ снимает для своего развлекательного шоу выпуск «Проверка на смелость в доме с привидениями» – хотя до ужаса боится призраков (в чём никогда не признается). Космос с восторгом снимает каждую секунду для подписчиков. Съёмочная группа уехала в долину, метель перекрыла дорогу, в доме осталась только старая хозяйка госпожа Сиракава. На самом деле здесь обитает одинокий призрак прежнего хозяина, Цукими-сана, который десятилетиями ждёт гостей, чтобы в последний раз подать им чай и попрощаться. Страшилка с душой: жуткие звуки, мерцающие фонари, никакой крови. Персонаж игрока сопровождает Аю как её сосед.",
+     "starting_location": "Приёмная рёкана «Цукими»",
+     "time_of_day": "Ночь",
+     "opening_narration": "Снаружи вокруг старого деревянного дома воет метель, и бумажные фонари в приёмной отбрасывают на стены дрожащие тени. Аю одной рукой вцепилась в твой рукав, а другой держит микрофон. «Мне совсем не страшно, – тонким голосом объявляет она в камеру Космос. – Призраков не существует. Точка». В тот же миг где-то в тёмном коридоре тихо звякает фарфор – будто кто-то ставит чашки на поднос. Ушки Космос встают торчком. «Ня-а… вы это слышали?»",
+     "gm_tone": "Уютная страшилка",
+     "narrator_style": "Жутко, но никогда не жестоко – как страшная история у костра; напряжение через звуки, тени и намёки, с забавными моментами между Аю и Космос. Финал должен трогать, а не пугать."
+    }
+   }
+  },
+  "otakusoul_story": {
+   "genre": "horror",
+   "minutes": 45,
+   "difficulty": "medium",
+   "notes": [
+    "spooky"
+   ],
+   "beginner": false,
+   "choices": {
+    "de": [
+     {
+      "text": "Geh mit einer Laterne in den dunklen Flur",
+      "badge": "Mut",
+      "action_type": "do"
+     },
+     {
+      "text": "Frage die alte Wirtin, wer außer euch noch im Haus ist",
+      "badge": null,
+      "action_type": "say"
+     },
+     {
+      "text": "Nimm Ayus Hand: „Ich bleibe bei dir.“",
+      "badge": null,
+      "action_type": "say"
+     }
+    ],
+    "en": [
+     {
+      "text": "Go into the dark corridor with a lantern",
+      "badge": "Courage",
+      "action_type": "do"
+     },
+     {
+      "text": "Ask the old landlady who else is in the house",
+      "badge": null,
+      "action_type": "say"
+     },
+     {
+      "text": "Take Ayu's hand: \"I'll stay with you.\"",
+      "badge": null,
+      "action_type": "say"
+     }
+    ],
+    "ru": [
+     {
+      "text": "Пойти с фонарём в тёмный коридор",
+      "badge": "Смелость",
+      "action_type": "do"
+     },
+     {
+      "text": "Спросить старую хозяйку, кто ещё есть в доме",
+      "badge": null,
+      "action_type": "say"
+     },
+     {
+      "text": "Взять Аю за руку: «Я останусь с тобой».",
+      "badge": null,
+      "action_type": "say"
+     }
+    ]
+   }
+  }
+ }
+}

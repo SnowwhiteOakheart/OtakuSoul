@@ -22,6 +22,10 @@ close_to_tray: boolean,
  */
 tray_hint_shown: boolean, 
 /**
+ * Scene that Stage reopens on the next start; empty = Stage starts with the story gallery.
+ */
+stage_last_scene: string, 
+/**
  * The chat model may use tools (date/time, calculator, web search); off by default
  * because a web search sends the query to a search engine.
  */

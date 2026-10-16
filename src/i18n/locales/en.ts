@@ -1463,7 +1463,7 @@ export const en: TranslationDictionary = {
   "sceneEdit.none": "None",
   "sceneEdit.importImage": "Import image …",
   "sceneEdit.importAudio": "Import audio …",
-  "sceneEdit.ambientHint": "The selection is saved; ambient playback arrives in a later update.",
+  "sceneEdit.ambientHint": "The selection is saved and plays as background sound in the scene.",
   "sceneEdit.lockBg": "Prevent automatic background changes",
   "sceneEdit.disableAmbient": "Disable ambient audio",
   "sceneEdit.actors": "Maximum actors per turn (1–6)",

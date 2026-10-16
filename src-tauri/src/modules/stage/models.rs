@@ -283,7 +283,7 @@ pub enum StageEventCard {
     Combat { action: String, text: String },
 }
 
-#[derive(Debug, Clone, Serialize, Deserialize, TS)]
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize, TS)]
 #[ts(export)]
 pub struct TaggedChoice {
     pub text: String,
@@ -335,6 +335,8 @@ impl SceneDefinition {
             "title",
             "description",
             "world_context",
+            "starting_location",
+            "time_of_day",
             "opening_narration",
             "first_message",
             "gm_tone",
@@ -346,6 +348,8 @@ impl SceneDefinition {
                         "title" => loc.title = val.to_string(),
                         "description" => loc.description = val.to_string(),
                         "world_context" => loc.world_context = val.to_string(),
+                        "starting_location" => loc.starting_location = val.to_string(),
+                        "time_of_day" => loc.time_of_day = val.to_string(),
                         "opening_narration" => loc.opening_narration = val.to_string(),
                         "first_message" => loc.first_message = val.to_string(),
                         "gm_tone" => loc.gm_tone = val.to_string(),
@@ -357,7 +361,40 @@ impl SceneDefinition {
         }
         loc
     }
+
+    /// Gallery data of a bundled story (`extensions.otakusoul_story`), if the scene has it.
+    pub fn story_info(&self) -> Option<StoryInfo> {
+        self.extensions
+            .get(STORY_EXTENSION)
+            .and_then(|value| serde_json::from_value(value.clone()).ok())
+    }
 }
+
+/// Extension key with the gallery data of a story.
+pub const STORY_EXTENSION: &str = "otakusoul_story";
+
+/// What the story gallery shows about a scene: genre, length, difficulty, content notes and the
+/// first suggestions per language (they replace the generic ones at the start).
+#[derive(Debug, Clone, Default, PartialEq, Serialize, Deserialize, TS)]
+#[ts(export)]
+pub struct StoryInfo {
+    /// `fantasy`, `slice_of_life`, `mystery`, `scifi` or `horror`.
+    pub genre: String,
+    /// Typical playing time of a first session in minutes.
+    pub minutes: u32,
+    /// `easy`, `medium` or `hard`.
+    pub difficulty: String,
+    /// Content notes (ids translated by the frontend, e.g. `mild_violence`, `spooky`).
+    #[serde(default)]
+    pub notes: Vec<String>,
+    /// Recommended for a first story.
+    #[serde(default)]
+    pub beginner: bool,
+    /// Opening suggestions per language code.
+    #[serde(default)]
+    pub choices: HashMap<String, Vec<TaggedChoice>>,
+}
+
 #[derive(Debug, Clone, Serialize, Deserialize, TS)]
 #[ts(export)]
 pub struct SceneDefinition {
@@ -503,6 +540,10 @@ pub struct ScenePreview {
     /// An act of a 5e adventure (it has goals and belongs to a series of acts).
     #[serde(default)]
     pub adventure: bool,
+    /// Gallery data of a bundled story.
+    #[serde(default)]
+    #[ts(optional)]
+    pub story: Option<StoryInfo>,
 }
 
 /// A piece of live text during a Stage turn (event `stage-stream`); the message with the same

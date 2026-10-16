@@ -26,13 +26,13 @@ pub fn build_initial_scene_state(def: &SceneDefinition) -> SceneState {
     };
 
     let world = WorldState {
-        location: if !def.starting_location.is_empty() {
-            def.starting_location.clone()
+        location: if !localized_def.starting_location.is_empty() {
+            localized_def.starting_location.clone()
         } else {
             lang.t("Old refuge").to_string()
         },
-        time_of_day: if !def.time_of_day.is_empty() {
-            def.time_of_day.clone()
+        time_of_day: if !localized_def.time_of_day.is_empty() {
+            localized_def.time_of_day.clone()
         } else {
             lang.t("Dusk").to_string()
         },
@@ -109,23 +109,30 @@ pub fn build_initial_scene_state(def: &SceneDefinition) -> SceneState {
             .collect(),
         consequence_ledger: Vec::new(),
         chat_log: vec![initial_msg],
-        pending_choices: vec![
-            TaggedChoice {
-                text: lang.t("Study the surroundings closely").to_string(),
-                badge: Some(lang.t("Perception").to_string()),
-                action_type: "do".to_string(),
-            },
-            TaggedChoice {
-                text: lang.t("Dare a step forward").to_string(),
-                badge: None,
-                action_type: "do".to_string(),
-            },
-            TaggedChoice {
-                text: lang.t("Confer with the companions").to_string(),
-                badge: None,
-                action_type: "say".to_string(),
-            },
-        ],
+        pending_choices: match def
+            .story_info()
+            .and_then(|story| story.choices.get(&lang_code).cloned())
+            .filter(|choices| !choices.is_empty())
+        {
+            Some(choices) => choices,
+            None => vec![
+                TaggedChoice {
+                    text: lang.t("Study the surroundings closely").to_string(),
+                    badge: Some(lang.t("Perception").to_string()),
+                    action_type: "do".to_string(),
+                },
+                TaggedChoice {
+                    text: lang.t("Dare a step forward").to_string(),
+                    badge: None,
+                    action_type: "do".to_string(),
+                },
+                TaggedChoice {
+                    text: lang.t("Confer with the companions").to_string(),
+                    badge: None,
+                    action_type: "say".to_string(),
+                },
+            ],
+        },
         current_turn_actor: "PLAYER".to_string(),
         current_bg: if !def.starting_bg.is_empty() {
             Some(def.starting_bg.clone())
@@ -151,6 +158,10 @@ pub fn build_initial_scene_state(def: &SceneDefinition) -> SceneState {
 /// The 5e starter adventure (`presets/crypt-of-shadows`): heroes, acts and its folder.
 pub const ADVENTURE_PACK: &str = "crypt-of-shadows";
 pub const ADVENTURE_FOLDER: &str = "Die Gruft der vergessenen Schatten";
+/// Bundled narrative stories (`presets/stories/scenes`), shown in the gallery; a started story
+/// is saved into this folder of the user's scenes.
+pub const STORY_PACK: &str = "stories";
+pub const STORY_FOLDER: &str = "Starter-Geschichten";
 
 /// Copies the starter adventure's acts that the scene folder does not have yet (new acts
 /// arrive with updates; started acts keep their progress).
@@ -236,7 +247,7 @@ pub fn find_scene_path(scene_id: &str) -> Option<PathBuf> {
     ];
 
     for root in &search_roots {
-        for folder in &[ADVENTURE_PACK] {
+        for folder in &[ADVENTURE_PACK, STORY_PACK] {
             let scene_dir = root.join(folder).join("scenes");
             if scene_dir.exists() {
                 let candidate = scene_dir.join(format!("{}.json", scene_id));
@@ -299,6 +310,7 @@ pub(super) fn parse_scene_file_preview(
                 .rules
                 .as_ref()
                 .is_some_and(|r| !r.goals.is_empty()),
+            story: state.definition.story_info(),
         });
     }
 
@@ -322,9 +334,9 @@ pub(super) fn parse_scene_file_preview(
             title: localized_def.title.clone(),
             description: localized_def.description.clone(),
             party: def.party.clone(),
-            location: def.starting_location.clone(),
-            time_of_day: def.time_of_day.clone(),
-            gm_tone: def.gm_tone.clone(),
+            location: localized_def.starting_location.clone(),
+            time_of_day: localized_def.time_of_day.clone(),
+            gm_tone: localized_def.gm_tone.clone(),
             folder: if !def.folder.is_empty() {
                 def.folder.clone()
             } else {
@@ -337,6 +349,7 @@ pub(super) fn parse_scene_file_preview(
             turn_count: 0,
             rules_5e: def.is_5e(),
             adventure: def.rules.as_ref().is_some_and(|r| !r.goals.is_empty()),
+            story: def.story_info(),
         });
     }
 
@@ -413,7 +426,10 @@ pub fn scan_available_scenes() -> Vec<ScenePreview> {
         PathBuf::from("../presets"),
     ];
 
-    let preset_folders = [(ADVENTURE_PACK, ADVENTURE_FOLDER)];
+    let preset_folders = [
+        (ADVENTURE_PACK, ADVENTURE_FOLDER),
+        (STORY_PACK, STORY_FOLDER),
+    ];
 
     for root in &search_roots {
         for (folder_key, folder_label) in &preset_folders {
@@ -1089,4 +1105,74 @@ pub fn export_scene_to_markdown(scene_id: &str) -> Result<String, String> {
     }
 
     Ok(md)
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    const STORIES: [&str; 5] = [
+        include_str!("../../../../presets/stories/scenes/story_frozen_bells.json"),
+        include_str!("../../../../presets/stories/scenes/story_hanami_live.json"),
+        include_str!("../../../../presets/stories/scenes/story_missing_mic.json"),
+        include_str!("../../../../presets/stories/scenes/story_silent_station.json"),
+        include_str!("../../../../presets/stories/scenes/story_ryokan_night.json"),
+    ];
+
+    #[test]
+    fn bundled_stories_are_complete_in_every_language() {
+        for raw in STORIES {
+            let def: SceneDefinition = serde_json::from_str(raw).unwrap();
+            assert!(def.id.starts_with("story_"), "{}", def.id);
+            assert_eq!(def.folder, STORY_FOLDER);
+            let story = def.story_info().expect("otakusoul_story");
+            assert!(
+                ["fantasy", "slice_of_life", "mystery", "scifi", "horror"]
+                    .contains(&story.genre.as_str())
+            );
+            assert!(["easy", "medium", "hard"].contains(&story.difficulty.as_str()));
+            assert!(story.minutes >= 15);
+            for lang in ["de", "en", "ru"] {
+                assert_eq!(story.choices[lang].len(), 3, "{} {lang}", def.id);
+                let localized = def.localized(lang);
+                for (field, text) in [
+                    ("title", &localized.title),
+                    ("description", &localized.description),
+                    ("world_context", &localized.world_context),
+                    ("starting_location", &localized.starting_location),
+                    ("time_of_day", &localized.time_of_day),
+                    ("opening_narration", &localized.opening_narration),
+                    ("gm_tone", &localized.gm_tone),
+                    ("narrator_style", &localized.narrator_style),
+                ] {
+                    assert!(!text.trim().is_empty(), "{} {lang} {field}", def.id);
+                }
+                if lang != "de" {
+                    assert_ne!(
+                        localized.title, def.title,
+                        "{} {lang}: Titel unübersetzt",
+                        def.id
+                    );
+                    assert_ne!(localized.opening_narration, def.opening_narration);
+                }
+            }
+        }
+    }
+
+    #[test]
+    fn a_story_starts_with_its_own_suggestions_and_location() {
+        let def: SceneDefinition = serde_json::from_str(STORIES[0]).unwrap();
+        let lang = crate::modules::content_lang::language_code(
+            &crate::modules::content_lang::ContentLang::reply_language_name(),
+        );
+        let state = build_initial_scene_state(&def);
+        let story = def.story_info().unwrap();
+        assert_eq!(state.pending_choices.len(), 3);
+        assert_eq!(state.pending_choices[0].text, story.choices[&lang][0].text);
+        assert_eq!(state.world.location, def.localized(&lang).starting_location);
+        assert_eq!(
+            state.chat_log[0].content,
+            def.localized(&lang).opening_narration
+        );
+    }
 }

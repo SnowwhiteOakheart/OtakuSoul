@@ -62,10 +62,17 @@
 
 ## 3. Einstieg in Geschichten (Stage) – Schwerpunkt
 
+> Begonnen: Einstellung `stage_last_scene` (Rust/Typen) für „zuletzt gespielte Geschichte wieder öffnen“ ist angelegt,
+> aber noch nicht verdrahtet (appSlice laden/speichern, `loadStageScene` setzt sie, StageView zeigt ohne sie die Galerie;
+> E2E-Harness muss dann `stage_last_scene: "default_scene"` setzen).
+
 - [ ] **Story-Galerie statt Lobby-Verwaltung:** große Karten mit Titelbild, Genre, Dauer („ca. 30–60 Min.“),
   Schwierigkeit, Spielerzahl/Gefährten und Inhaltshinweisen; Filter in *einer* Zeile (Genre, Länge, Regeln), Ordner
   und Import unter „Verwalten“.
-- [ ] **Mitgelieferte Erzählgeschichten:** 3–5 kurze, hochwertige Starter-Stories (z. B. Fantasy-Abenteuer,
+- [x] **Mitgelieferte Erzählgeschichten (Inhalte, 16.10.2026):** `presets/stories/scenes/` mit fünf Geschichten
+  (Fantasy/Emilia, Alltag, Krimi, Horror light mit Ayu & Cosmos, Sci-Fi solo), de/en/ru, Story-Daten
+  `extensions.otakusoul_story` (`StoryInfo` in `ScenePreview.story`, eigene Startvorschläge); Galerie-Anzeige folgt.
+  Ursprünglicher Plan: 3–5 kurze, hochwertige Starter-Stories (z. B. Fantasy-Abenteuer,
   Slice-of-Life-Schulfest, Krimi, Science-Fiction, Horror light) – dreisprachig, mit Startbild, Ambient, Zielen und
   passenden Gefährten aus den mitgelieferten Figuren; die englische Standardszene ersetzen.
 - [ ] **Story-Assistent „Eigene Geschichte“:** 4 Schritte – Genre/Stimmung → Wer bist du? (Persona) → Wer begleitet
@@ -81,7 +88,8 @@
 - [ ] **Stage-Kopfzeile ordnen:** wichtigste Aktionen (Lobby, Vorlesen, Atmosphäre) beschriftet, seltene (Export,
   Bild, Sperre) in ein Menü; Reiter „Abenteuer / Taktik & Würfel / Kampagne“ mit Kurzerklärung.
 - [ ] **Szenen-Editor entrümpeln:** Abschnitte *Geschichte* (Titel, Ort, Eröffnung, Bild), *Figuren*, *Atmosphäre*,
-  *Regeln (Erweitert)*; Bild-/Tonauswahl als Vorschau-Galerie statt Dateinamen; veralteten Ambient-Hinweis entfernen.
+  *Regeln (Erweitert)*; Bild-/Tonauswahl als Vorschau-Galerie statt Dateinamen; veralteten Ambient-Hinweis entfernen
+  (erledigt 16.10.2026).
 - [ ] **5e-Abenteuer einsteigerfreundlich:** kurze Regel-Einführung („So funktioniert ein Kampf“) beim ersten Kampf,
   Erklärungen zu RK/TP/Zaubergraden per Tooltip, empfohlene Klassen für Einsteiger.
 - [ ] E2E: Einsteiger startet eine mitgelieferte Story aus der Galerie, spielt zwei Runden und setzt sie fort;

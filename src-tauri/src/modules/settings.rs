@@ -71,6 +71,9 @@ pub struct AppSettings {
     /// The hint about the tray was shown on the first close.
     #[serde(default)]
     pub tray_hint_shown: bool,
+    /// Scene that Stage reopens on the next start; empty = Stage starts with the story gallery.
+    #[serde(default)]
+    pub stage_last_scene: String,
     /// The chat model may use tools (date/time, calculator, web search); off by default
     /// because a web search sends the query to a search engine.
     #[serde(default)]
@@ -145,6 +148,7 @@ impl Default for AppSettings {
             onboarding_completed: false,
             close_to_tray: true,
             tray_hint_shown: false,
+            stage_last_scene: String::new(),
             chat_tools: false,
             prompt_template: Default::default(),
         }

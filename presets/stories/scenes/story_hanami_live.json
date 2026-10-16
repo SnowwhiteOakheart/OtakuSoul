@@ -1,0 +1,113 @@
+{
+ "id": "story_hanami_live",
+ "title": "Hanami-Live im Ueno-Park",
+ "description": "Ayu gibt ein Überraschungskonzert beim Kirschblütenfest – doch eine Stunde vorher ist ihr Kostüm zerrissen und Cosmos hat das Geheimnis schon gepostet. Rette den Tag!",
+ "world_context": "Tokio, Gegenwart, Kirschblütenzeit. Das Pop-Idol Ayu Ikue (stolz, tsundere, heimlich nervös) plant ein geheimes Mini-Konzert auf der kleinen Bühne im Ueno-Park. Ihre Mitbewohnerin Cosmos (verspieltes Katzenmädchen, Social-Media-Star) sollte nur Fotos machen, hat aber versehentlich den Ort gepostet – jetzt strömen Fans herbei. Dazu ist beim Ausladen Ayus Bühnenkostüm am Saum gerissen. Die Spielerfigur ist Ayus Mitbewohner und heimliche Stütze. Eine leichte, humorvolle Alltagsgeschichte voller kleiner Aufgaben: Kostüm flicken, Fans beruhigen, Technik retten, Ayu Mut machen.",
+ "starting_location": "Hinter der kleinen Festbühne im Ueno-Park",
+ "time_of_day": "Nachmittag",
+ "opening_narration": "Rosa Blütenblätter wirbeln über die Wege des Ueno-Parks, und überall duftet es nach gegrilltem Tintenfisch und süßen Dango. Hinter der kleinen Festbühne sitzt Ayu auf einer Kiste, hält ihr glitzerndes Kostüm hoch und starrt fassungslos auf einen langen Riss im Saum. „Das ist eine Katastrophe!“, zischt sie. „In einer Stunde fange ich an!“ Neben ihr hält Cosmos ihr Handy hoch, die Katzenohren schuldbewusst angelegt. „Ähm … also … der Post hat schon zwanzigtausend Likes, nya~“ Von der Wiese her hört man die ersten Fans Ayus Namen rufen.",
+ "gm_tone": "Fröhliche Alltagskomödie",
+ "narrator_style": "Leicht, witzig und herzlich wie ein Slice-of-Life-Anime; lebendige Dialoge, kleine Missgeschicke, nie gemein. Biete regelmäßig zwei, drei konkrete Möglichkeiten an, wie es weitergehen kann.",
+ "first_message": "",
+ "party": [
+  "Ayu Ikue",
+  "Cosmos"
+ ],
+ "persona": "",
+ "lorebook": [],
+ "solo_mode": false,
+ "max_actor_depth": 2,
+ "dice_rolls_enabled": true,
+ "starting_bg": "",
+ "starting_ambient": "",
+ "folder": "Starter-Geschichten",
+ "extensions": {
+  "otakusoul_i18n": {
+   "source_language": "de",
+   "translations": {
+    "en": {
+     "title": "Hanami Live at Ueno Park",
+     "description": "Ayu is giving a surprise concert at the cherry blossom festival – but an hour before, her costume is torn and Cosmos has already posted the secret. Save the day!",
+     "world_context": "Tokyo, present day, cherry blossom season. Pop idol Ayu Ikue (proud, tsundere, secretly nervous) is planning a secret mini concert on the small stage in Ueno Park. Her housemate Cosmos (playful cat girl, social media star) was only supposed to take photos but accidentally posted the location – now fans are flocking in. On top of that, Ayu's stage costume tore at the hem while unloading. The player character is Ayu's housemate and secret support. A light, humorous slice-of-life story full of small tasks: mend the costume, calm the fans, rescue the sound system, give Ayu courage.",
+     "starting_location": "Behind the small festival stage in Ueno Park",
+     "time_of_day": "Afternoon",
+     "opening_narration": "Pink petals whirl across the paths of Ueno Park, and everywhere it smells of grilled squid and sweet dango. Behind the small festival stage Ayu sits on a crate, holding up her glittering costume and staring in disbelief at a long tear in the hem. \"This is a disaster!\" she hisses. \"I start in an hour!\" Next to her Cosmos holds up her phone, cat ears flattened guiltily. \"Um … so … the post already has twenty thousand likes, nya~\" From the meadow you can hear the first fans calling Ayu's name.",
+     "gm_tone": "Cheerful slice-of-life comedy",
+     "narrator_style": "Light, funny and warm like a slice-of-life anime; lively dialogue, small mishaps, never mean. Regularly offer two or three concrete options for how things could continue."
+    },
+    "ru": {
+     "title": "Ханами-лайв в парке Уэно",
+     "description": "Аю даёт концерт-сюрприз на фестивале цветения сакуры – но за час до начала её костюм порван, а Космос уже выложила секрет в сеть. Спаси положение!",
+     "world_context": "Токио, наши дни, время цветения сакуры. Поп-айдол Аю Икуэ (гордая, цундэрэ, втайне волнуется) готовит секретный мини-концерт на маленькой сцене в парке Уэно. Её соседка Космос (игривая девушка-кошка, звезда соцсетей) должна была только фотографировать, но случайно выложила место – теперь сюда стекаются фанаты. Вдобавок при разгрузке у сценического костюма Аю порвался подол. Персонаж игрока – сосед Аю и её тайная опора. Лёгкая, смешная повседневная история с маленькими задачами: зашить костюм, успокоить фанатов, спасти технику, подбодрить Аю.",
+     "starting_location": "За маленькой фестивальной сценой в парке Уэно",
+     "time_of_day": "День",
+     "opening_narration": "Розовые лепестки кружатся над дорожками парка Уэно, и повсюду пахнет жареным кальмаром и сладкими данго. За маленькой фестивальной сценой Аю сидит на ящике, держит перед собой сверкающий костюм и потрясённо смотрит на длинную прореху в подоле. «Это катастрофа! – шипит она. – Через час мой выход!» Рядом Космос поднимает телефон, виновато прижав кошачьи ушки. «Эм… в общем… у поста уже двадцать тысяч лайков, ня~» С лужайки доносятся первые крики фанатов, зовущих Аю.",
+     "gm_tone": "Весёлая повседневная комедия",
+     "narrator_style": "Легко, смешно и тепло, как в аниме о повседневности; живые диалоги, мелкие неурядицы, никакой злобы. Регулярно предлагай два-три конкретных варианта развития событий."
+    }
+   }
+  },
+  "otakusoul_story": {
+   "genre": "slice_of_life",
+   "minutes": 30,
+   "difficulty": "easy",
+   "notes": [
+    "flirting"
+   ],
+   "beginner": true,
+   "choices": {
+    "de": [
+     {
+      "text": "Biete an, das Kostüm zu flicken – irgendwo gibt es doch Nadel und Faden",
+      "badge": "Geschick",
+      "action_type": "do"
+     },
+     {
+      "text": "Beruhige Ayu: „Du schaffst das, so wie immer.“",
+      "badge": null,
+      "action_type": "say"
+     },
+     {
+      "text": "Frage Cosmos, wie viele Fans genau kommen werden",
+      "badge": null,
+      "action_type": "say"
+     }
+    ],
+    "en": [
+     {
+      "text": "Offer to mend the costume – there must be a needle and thread somewhere",
+      "badge": "Dexterity",
+      "action_type": "do"
+     },
+     {
+      "text": "Calm Ayu down: \"You've got this, like always.\"",
+      "badge": null,
+      "action_type": "say"
+     },
+     {
+      "text": "Ask Cosmos how many fans exactly are coming",
+      "badge": null,
+      "action_type": "say"
+     }
+    ],
+    "ru": [
+     {
+      "text": "Предложить зашить костюм – где-то же есть иголка с ниткой",
+      "badge": "Ловкость",
+      "action_type": "do"
+     },
+     {
+      "text": "Успокоить Аю: «Ты справишься, как всегда».",
+      "badge": null,
+      "action_type": "say"
+     },
+     {
+      "text": "Спросить Космос, сколько именно фанатов придёт",
+      "badge": null,
+      "action_type": "say"
+     }
+    ]
+   }
+  }
+ }
+}

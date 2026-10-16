@@ -512,6 +512,8 @@ export interface ScenePreview {
   rules_5e?: boolean;
   /** An act of a 5e adventure (goals, a series of acts). */
   adventure?: boolean;
+  /** Gallery data of a bundled story (genre, length, difficulty, notes, first suggestions). */
+  story?: import('./generated/StoryInfo').StoryInfo;
 }
 
 export interface SceneDefinition {
@@ -812,6 +814,7 @@ export interface AppSettings {
   theme?: 'obsidian' | 'cyberpunk' | 'sakura' | 'midnight' | 'emerald' | string;
   color_mode?: 'system' | 'light' | 'dark';
   onboarding_completed?: boolean;
+  stage_last_scene?: string;
   /** Closing the window keeps the app running in the tray. */
   close_to_tray?: boolean;
   tray_hint_shown?: boolean;

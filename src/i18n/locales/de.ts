@@ -1465,7 +1465,7 @@ export const de = {
   "sceneEdit.none": "Keiner",
   "sceneEdit.importImage": "Bild importieren …",
   "sceneEdit.importAudio": "Ton importieren …",
-  "sceneEdit.ambientHint": "Die Auswahl wird gespeichert; abgespielt wird der Ambient-Ton erst in einem späteren Update.",
+  "sceneEdit.ambientHint": "Die Auswahl wird gespeichert und in der Szene als Hintergrundklang abgespielt.",
   "sceneEdit.lockBg": "Automatischen Hintergrundwechsel sperren",
   "sceneEdit.disableAmbient": "Ambient-Ton deaktivieren",
   "sceneEdit.actors": "Maximale Akteure pro Runde (1–6)",
