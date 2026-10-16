@@ -27,3 +27,5 @@
   verlangt exakte specta-Pins; Umstieg betrifft 257 Befehle und 232 Typen → abwarten).
 - [ ] Wackeligen E2E-Test beobachten: `chat-sidebar-errors` scheiterte einmal an einem Entwurfsvergleich und bestand
   danach wiederholt.
+- [ ] Wackeligen E2E-Test beobachten: `stage-5e` scheiterte einmal an einem veralteten Element (`button[aria-label*="gegen"]`
+  im Kampfpanel, 16.10.2026) und bestand danach.

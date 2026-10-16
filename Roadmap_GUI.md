@@ -96,7 +96,8 @@
 - [ ] E2E: Einsteiger startet eine mitgelieferte Story aus der Galerie, spielt zwei Runden und setzt sie fort;
   zweiter Durchlauf über den Story-Assistenten.
 
-- [ ] **Spieltexte übersetzen:** Texte, die die App selbst in Geschichten schreibt („Player“, „Dramatic tension“, Startvorschläge
+- [x] **Spieltexte übersetzen (16.10.2026):** Kopie in `presets/locales/`, Laden nach dem Ressourcenpfad, Nachladen aus dem
+  Daten-Repo beim Start. Ursprünglicher Befund: Texte, die die App selbst in Geschichten schreibt („Player“, „Dramatic tension“, Startvorschläge
   der Demo), kommen aus `otakusoul-data/locales/*.json`, die nicht mit der App ausgeliefert werden → in deutschen Szenen
   erscheint Englisch. Locales mitliefern (Ressourcen) oder beim Start aus dem Daten-Repo laden.
 

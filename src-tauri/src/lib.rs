@@ -106,6 +106,9 @@ pub fn run() {
             if let Ok(resource_dir) = app.path().resource_dir() {
                 modules::paths::set_resource_dir(resource_dir);
             }
+            // Story texts (de/ru): shipped copy now, the current one from the data repo in the background.
+            modules::content_lang::load_locales();
+            tauri::async_runtime::spawn(modules::content_lang::refresh_locales());
             allow_app_asset_dirs(app);
             create_main_window(app)?;
             // Attachment files left by failed or stopped sends; in the background.

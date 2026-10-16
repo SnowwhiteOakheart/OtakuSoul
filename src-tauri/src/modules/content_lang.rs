@@ -19,25 +19,86 @@ fn translations() -> &'static RwLock<HashMap<String, HashMap<String, String>>> {
     TRANSLATIONS.get_or_init(|| RwLock::new(HashMap::new()))
 }
 
+/// Languages with translations of the story texts (English is the source in the code).
+pub const STORY_LANGUAGES: [&str; 2] = ["de", "ru"];
+
+fn downloaded_locales_dir() -> std::path::PathBuf {
+    std::path::PathBuf::from(crate::modules::paths::resolve_app_paths().data_dir).join("locales")
+}
+
+fn read_locale(path: &Path) -> Option<HashMap<String, String>> {
+    let content = std::fs::read_to_string(path).ok()?;
+    serde_json::from_str::<HashMap<String, String>>(&content)
+        .ok()
+        .filter(|dict| !dict.is_empty())
+}
+
+fn merge_locale(lang: &str, dict: HashMap<String, String>) {
+    translations()
+        .write()
+        .unwrap()
+        .entry(lang.to_string())
+        .or_default()
+        .extend(dict);
+}
+
+/// Loads the story texts: the copy shipped in `presets/locales/`, then a newer one downloaded
+/// from the data repository (`<Daten>/locales/`, see [`refresh_locales`]). Call once the
+/// resource folder is known.
 pub fn load_locales() {
     let paths = crate::modules::paths::resolve_app_paths();
-    let locales_dir = std::path::PathBuf::from(&paths.bundled_presets_dir)
-        .parent()
-        .unwrap()
-        .join("locales");
-    if let Ok(entries) = std::fs::read_dir(&locales_dir) {
-        let mut map = translations().write().unwrap();
-        for entry in entries.flatten() {
-            let path = entry.path();
-            if path.extension().is_some_and(|e| e == "json") {
-                let lang = path.file_stem().unwrap().to_string_lossy().to_string();
-                if let Ok(content) = std::fs::read_to_string(&path) {
-                    if let Ok(dict) = serde_json::from_str::<HashMap<String, String>>(&content) {
-                        map.insert(lang, dict);
-                    }
-                }
+    let bundled = std::path::PathBuf::from(&paths.bundled_presets_dir).join("locales");
+    for dir in [bundled, downloaded_locales_dir()] {
+        for lang in STORY_LANGUAGES {
+            if let Some(dict) = read_locale(&dir.join(format!("{lang}.json"))) {
+                merge_locale(lang, dict);
             }
         }
+    }
+}
+
+/// Fetches the current story texts from the data repository, keeps them for the next start and
+/// applies them right away. Errors only end up in the log (the shipped copy stays in use).
+pub async fn refresh_locales() {
+    let Ok(client) = reqwest::Client::builder()
+        .timeout(std::time::Duration::from_secs(20))
+        .build()
+    else {
+        return;
+    };
+    let dir = downloaded_locales_dir();
+    for lang in STORY_LANGUAGES {
+        let url = crate::modules::hub::hub_url(&format!("locales/{lang}.json"));
+        let text = match client
+            .get(&url)
+            .send()
+            .await
+            .and_then(reqwest::Response::error_for_status)
+        {
+            Ok(response) => match response.text().await {
+                Ok(text) => text,
+                Err(e) => {
+                    tracing::debug!("Spieltexte {lang} nicht geladen: {e}");
+                    continue;
+                }
+            },
+            Err(e) => {
+                tracing::debug!("Spieltexte {lang} nicht geladen: {e}");
+                continue;
+            }
+        };
+        let Ok(dict) = serde_json::from_str::<HashMap<String, String>>(&text) else {
+            tracing::warn!("Spieltexte {lang} aus dem Daten-Repo sind kein gültiges JSON");
+            continue;
+        };
+        if dict.is_empty() {
+            continue;
+        }
+        let _ = std::fs::create_dir_all(&dir);
+        if let Err(e) = std::fs::write(dir.join(format!("{lang}.json")), &text) {
+            tracing::warn!("Spieltexte {lang} nicht gespeichert: {e}");
+        }
+        merge_locale(lang, dict);
     }
 }
 
@@ -119,6 +180,29 @@ fn reply_language_in(path: &Path) -> Option<String> {
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    /// Story texts the app writes into every Stage scene; the shipped copies must translate them.
+    #[test]
+    fn shipped_story_texts_translate_the_scene_defaults() {
+        for (lang, raw) in [
+            ("de", include_str!("../../../presets/locales/de.json")),
+            ("ru", include_str!("../../../presets/locales/ru.json")),
+        ] {
+            let dict: HashMap<String, String> = serde_json::from_str(raw).unwrap();
+            for key in [
+                "Player",
+                "Companion",
+                "Dramatic tension",
+                "Study the surroundings closely",
+                "Dusk",
+            ] {
+                let text = dict
+                    .get(key)
+                    .unwrap_or_else(|| panic!("{lang}: {key} fehlt"));
+                assert_ne!(text, key, "{lang}: {key} unübersetzt");
+            }
+        }
+    }
 
     #[test]
     fn maps_reply_languages() {

@@ -54,6 +54,9 @@ try {
   assert.match(state.chat_log[0].content, /Ich bin Emilia/);
   assert.equal(state.world.location, 'Der verschneite Dorfplatz von Frostweiler');
   assert.equal(state.pending_choices[1].text, 'Untersuche die gefrorene Glocke im Turm');
+  // Story texts of the app follow the reply language (shipped locales).
+  assert.equal(state.relationships[0].target, 'Spieler');
+  assert.equal(state.clocks[0].name, 'Dramatische Spannung');
   await browser.$('button*=Untersuche die gefrorene Glocke im Turm').waitForDisplayed({ timeout: 5000 });
   await browser.pause(300);
   await shot(browser, '83-story-gestartet');

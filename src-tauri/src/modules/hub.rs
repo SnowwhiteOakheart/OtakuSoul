@@ -23,8 +23,9 @@ const BROWSER_USER_AGENT: &str = "Mozilla/5.0 (Windows NT 10.0; Win64; x64) Appl
 const HUB_BASE_URL: &str =
     "https://raw.githubusercontent.com/SnowwhiteOakheart/otakusoul-data/main";
 
-/// Address of a registry file; `OTAKUSOUL_HUB_BASE` points the hub elsewhere (E2E mock server).
-fn registry_url(file: &str) -> String {
+/// Address of a file in the data repository; `OTAKUSOUL_HUB_BASE` points the hub elsewhere (E2E
+/// mock server).
+pub fn hub_url(file: &str) -> String {
     let base = std::env::var("OTAKUSOUL_HUB_BASE").unwrap_or_else(|_| HUB_BASE_URL.to_string());
     format!("{}/{file}", base.trim_end_matches('/'))
 }
@@ -203,7 +204,7 @@ fn get_placeholder_png() -> Vec<u8> {
 pub async fn fetch_soul_gateway_registry() -> Result<Vec<GatewayCharacterEntry>, String> {
     let client = get_http_client()?;
     let res = client
-        .get(registry_url("soul_registry.json"))
+        .get(hub_url("soul_registry.json"))
         .send()
         .await
         .map_err(|e| crate::err!("backend.hub.gatewayFetch", error = e))?;
@@ -728,7 +729,7 @@ pub async fn import_character_from_url(
 pub async fn fetch_lorebooks_gateway_registry() -> Result<Vec<GatewayLorebookEntry>, String> {
     let client = get_http_client()?;
     let res = client
-        .get(registry_url("lorebooks_registry.json"))
+        .get(hub_url("lorebooks_registry.json"))
         .send()
         .await
         .map_err(|e| crate::err!("backend.hub.lorebooksFetch", error = e))?;
@@ -896,7 +897,7 @@ fn install_lorebook(
 pub async fn fetch_stages_gateway_registry() -> Result<Vec<GatewaySceneEntry>, String> {
     let client = get_http_client()?;
     let res = client
-        .get(registry_url("stages_registry.json"))
+        .get(hub_url("stages_registry.json"))
         .send()
         .await
         .map_err(|e| crate::err!("backend.hub.stagesFetch", error = e))?;

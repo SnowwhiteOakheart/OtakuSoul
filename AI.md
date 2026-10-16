@@ -72,7 +72,11 @@ Hub). Integrationen → Bildgenerierung enthält nur Studio und Galerie.
   Rückmeldung → `reportFailure` (`store/reportFailure.ts`, Toast mit Ursache); reine Hintergrundabrufe → nur Log. Ausnahme `saveCurrentSettings`: Fehler einmalig melden, erneut erst nach einem
   zwischenzeitlich erfolgreichen Speichern.
 - **Fehler:** Backend `crate::err!("backend.x.y", key = wert)` → JSON-Code → Frontend `errorMessage()` übersetzt über
-  i18n; jeder neue Code braucht Einträge in allen Locales. (Dynamisches i18n-Backend ladet z.B. de.json und ru.json aus otakusoul-data/locales/)
+  i18n; jeder neue Code braucht Einträge in allen Locales.
+- **Spieltexte** (was die App selbst in Geschichten schreibt, `ContentLang::t("englischer Text")`, Sprache = Antwortsprache):
+  Übersetzungen in `otakusoul-data/locales/{de,ru}.json`; die App liefert eine Kopie in `presets/locales/` mit und lädt beim
+  Start im Hintergrund die aktuelle Fassung nach (`content_lang::refresh_locales` → `<Daten>/locales/`, überschreibt die Kopie).
+  `load_locales` erst in `setup` nach `set_resource_dir`. Neue `t()`-Texte im Daten-Repo ergänzen und die Kopie hier aktualisieren.
 
 ## Stolperfallen
 
