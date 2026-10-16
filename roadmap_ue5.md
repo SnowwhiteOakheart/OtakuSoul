@@ -71,7 +71,8 @@
       Modelle bleibt bewusst offen („musst Du selbst herausfinden“).
 - [x] Vollständige Anleitung inkl. Extraktion aus Unreal-Spielen nur lokal in `docs/private/` (per `.gitignore`
       nicht im Repository).
-- [ ] Nach Schritt 2–5 nachziehen (Knochen, Gesichts-Editor, Toon-Modus, Ordner/ZIP-Import).
+- [x] Nachgezogen für Knochen (Beine, Hände, Finger, Gesichtsknochen), Toon-Schalter und Ordner/ZIP-Import.
+- [ ] Gesichts-Editor beschreiben, sobald es ihn gibt.
 
 ## 4. Entschiedene Fragen (15.10.2026)
 
