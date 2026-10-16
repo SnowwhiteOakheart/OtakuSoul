@@ -8,6 +8,11 @@
 > Offene Punkte sind Vorschläge, keine zugesagten Features. Erledigtes wird hier abgehakt und beim nächsten
 > Aufräumen nach `roadmap_abgeschlossen.md` verschoben.
 
+## 0. Bedienbarkeit & Story-Einstieg (aktueller Schwerpunkt)
+
+- [ ] Einsteigerfreundliche Oberfläche und produktionsreifer Einstieg in Geschichten – Plan und Befunde in
+  [`Roadmap_GUI.md`](Roadmap_GUI.md).
+
 ## 1. Lokale Modelle, Hardware & Laufzeiten
 
 - [ ] **Apple Metal:** `recommendedMaxWorkingSetSize` statt des gesamten Arbeitsspeichers als GPU-Speicher.
