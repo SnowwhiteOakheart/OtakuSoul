@@ -61,8 +61,9 @@
       `OutlineEffect` nur für deckende Teile, neutrales Tone-Mapping, mehr Umgebungslicht), gemerkt pro Modell und Gerät.
       VRM (MToon) und MMD bringen eigene Toon-Shader mit.
 
-### Schritt 5 – Import als Ordner/ZIP
-- [ ] `.gltf` + `.bin` + Texturen als Ordner oder ZIP importieren (wie MMD), Texturpfade case-insensitiv auflösen.
+### Schritt 5 – Import als Ordner/ZIP ✅
+- [x] `.gltf` + `.bin` + Texturen als Ordner oder ZIP importieren (`avatar_models::import_folder_model`, Skelett-Prüfung,
+      Liste über `find_gltf_models`); der Viewer lädt Puffer und Texturen per Blob-URL, Namen case-insensitiv (`gltfFile.ts`).
 
 ### Schritt 6 – Nutzeranleitung ✅
 - [x] Anleitung „Eigenes 3D-Modell mit Animationen“ (Blender-Export, Clipnamen, Stimmungen, Gesichts-Morphs,

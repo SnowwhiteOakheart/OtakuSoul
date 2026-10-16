@@ -105,7 +105,8 @@ for mapping them directly in OtakuSoul is planned.
 
 Select all parts and the armature, then **File → Export → glTF 2.0 (.glb/.gltf)**:
 
-- **Format:** *glTF Binary (.glb)* – OtakuSoul imports a single `.glb` file
+- **Format:** *glTF Binary (.glb)* – a single file, the simplest. *glTF Separate (.gltf + .bin + textures)* works too:
+  keep the whole folder or pack it as a ZIP
 - **Include:** *Selected Objects*
 - **Mesh:** *UVs*, *Normals*, *Apply Modifiers*
 - **Shape Keys** and **Skinning:** on
@@ -117,6 +118,7 @@ Feel free to scale textures down to 2048 px – it saves video memory and loadin
 ## 8. Import into OtakuSoul
 
 1. **Settings → Appearance & Theme → Default avatars → 3D avatar (VRM, glTF or MMD) → "Import 3D model …"** and choose the `.glb`.
+   You can also pick the `.gltf` (its folder with `.bin` and textures is copied along) or a ZIP holding a `.gltf`/`.glb`.
    The model is copied into the avatar folder.
 2. Select the model (globally or per character in the character editor) and switch the chat's avatar mode to **3D**.
 3. **Settings → Appearance & Theme → 3D avatar motions (VRMA, Mixamo) → "Motions inside the model (glTF)"** lists all clips of the
@@ -143,4 +145,4 @@ Feel free to scale textures down to 2048 px – it saves video memory and loadin
 | Figure walks out of the picture | Set the walk animation to "By hand only" or leave it out |
 | Face does not move | Rename shape keys as in section 6 – or name face bones after the patterns listed there |
 | “The model has no skeleton” | Static models (e.g. AI-generated figures, 3D scans) are refused. Rig them first – e.g. with Mixamo (auto-rig) or in Blender (Rigify) – and reduce the polygon count beforehand with “Decimate” to about 50,000–100,000 triangles |
-| Import fails or loads very slowly | Only `.glb` without Draco compression; scale textures down |
+| Import fails or loads very slowly | `.glb`, `.gltf` with its folder or a ZIP, each without Draco compression; scale textures down |

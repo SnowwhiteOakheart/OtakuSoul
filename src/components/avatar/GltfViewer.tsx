@@ -1,6 +1,5 @@
 import { useEffect, useRef, useState } from 'react';
 import * as THREE from 'three';
-import { GLTFLoader } from 'three/examples/jsm/loaders/GLTFLoader.js';
 import { api } from '../../services/api';
 import { audioPlayer } from '../../services/audioPlayer';
 import { mouthTarget, SILENT_VISEMES, type Visemes } from '../../services/lipSync';
@@ -11,6 +10,7 @@ import { AvatarMotionPlayer } from './vrmMotions';
 import { createAvatarStage, createBlinker, type AvatarStage } from './avatarStage';
 import { applyToonLook } from './toonLook';
 import { BoneFace } from './boneFace';
+import { loadGltfAvatar } from './gltfFile';
 import { usePersistentFlag } from '../../hooks/usePersistentFlag';
 import { loweredArm } from './avatarPose';
 import { AvatarViewerChrome } from './AvatarViewerChrome';
@@ -183,8 +183,7 @@ export const GltfViewer = ({
 
     const load = async () => {
       try {
-        const bytes = await api.readFileBinary(modelPath);
-        const gltf = await new GLTFLoader().parseAsync(bytes.buffer as ArrayBuffer, '');
+        const gltf = await loadGltfAvatar(modelPath);
         if (isDisposed) return;
         const scene = gltf.scene;
         // Models copied into the folder by hand skip the import check: no skeleton, no avatar.

@@ -2631,7 +2631,7 @@ export const de = {
   "settings.vrmHeavy": "„{{name}}“ hat {{count}} Dreiecke und lädt entsprechend langsam. Verkleinere es in Blender (Modifikator „Decimate“, etwa 50.000–100.000 Dreiecke).",
   "avatar.noSkeleton": "Dieses glTF-Modell hat kein Skelett und wird nicht angezeigt. Wähle ein Modell mit Rig.",
   "backend.vrm.noSkeleton": "Das Modell hat kein Skelett und kann sich nicht bewegen – es wird nicht verwendet. Statische Modelle (z. B. KI-generierte Figuren) brauchen erst ein Rig, etwa über Blender oder Mixamo (siehe Anleitung „Eigenes 3D-Modell“).",
-  "backend.avatar.noModelInZip": "Im ZIP-Archiv wurde kein MMD-Modell (.pmx/.pmd) gefunden.",
+  "backend.avatar.noModelInZip": "Im ZIP-Archiv wurde kein 3D-Modell (.pmx/.pmd, .gltf oder .glb) gefunden.",
   "backend.avatar.folderTooLarge": "Der Ordner {{path}} ist zu groß (über 1 GB oder 5000 Dateien). Lege das Modell in einen eigenen Ordner oder importiere das ZIP.",
   "backend.avatarMotion.invalid": "Die Datei ist keine gültige Bewegung (.vrma, Mixamo-.fbx oder MMD-.vmd).",
   "backend.avatarMotion.role": "Unbekannte Verwendung für eine Bewegung: {{role}}",

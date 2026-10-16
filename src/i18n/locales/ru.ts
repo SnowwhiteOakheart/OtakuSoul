@@ -2629,7 +2629,7 @@ export const ru: TranslationDictionary = {
   "settings.vrmHeavy": "«{{name}}» содержит {{count}} треугольников и загружается медленно. Уменьшите её в Blender (модификатор «Decimate», около 50 000–100 000 треугольников).",
   "avatar.noSkeleton": "У этой модели glTF нет скелета, поэтому она не отображается. Выберите модель с ригом.",
   "backend.vrm.noSkeleton": "У модели нет скелета, и она не может двигаться — она не будет использоваться. Статичным моделям (например, созданным ИИ) сначала нужен риг, например через Blender или Mixamo (см. руководство «Своя 3D-модель»).",
-  "backend.avatar.noModelInZip": "В ZIP-архиве не найдена MMD-модель (.pmx/.pmd).",
+  "backend.avatar.noModelInZip": "В ZIP-архиве не найдена 3D-модель (.pmx/.pmd, .gltf или .glb).",
   "backend.avatar.folderTooLarge": "Папка {{path}} слишком большая (более 1 ГБ или 5000 файлов). Поместите модель в отдельную папку или импортируйте ZIP.",
   "backend.avatarMotion.invalid": "Файл не является корректной анимацией (.vrma, .fbx из Mixamo или .vmd из MMD).",
   "backend.avatarMotion.role": "Неизвестное назначение анимации: {{role}}",

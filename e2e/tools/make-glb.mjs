@@ -5,6 +5,8 @@
 // "A_Idle_Breath" and "Idle_Happy" (loops, the second for a happy mood), "Emote_Wave" (a
 // gesture) and "Dance_Spin" (no use, played by hand). With `{ faceBones: true }` the face is rigged
 // like game figures instead: eyelid, lip and mouth-corner bones on the head, no blendshapes.
+import { mkdirSync, writeFileSync } from 'node:fs';
+import path from 'node:path';
 import * as THREE from 'three';
 import { GLTFExporter } from 'three/examples/jsm/exporters/GLTFExporter.js';
 
@@ -142,4 +144,30 @@ export async function makeStatueGlb() {
   const mesh = new THREE.Mesh(new THREE.BoxGeometry(0.4, 1.7, 0.3), new THREE.MeshStandardMaterial({ color: 0xcccccc }));
   mesh.name = 'Statue';
   return Buffer.from(await new GLTFExporter().parseAsync(mesh, { binary: true }));
+}
+
+// 1×1 PNG used as the texture of the folder variant.
+const PIXEL_PNG = Buffer.from('iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR4nGP4z8DwHwAFAAH/iZk9HQAAAABJRU5ErkJggg==', 'base64');
+
+/**
+ * The same avatar as a `.gltf` folder, as many downloads come: JSON next to `Body.bin` and a texture.
+ * The JSON names the texture "tex/Skin.PNG" while the file is "tex/skin.png" (packs made on Windows).
+ */
+export async function writeGltfFolder(dir, name, options = {}) {
+  const glb = await makeGlb(options);
+  const jsonLength = glb.readUInt32LE(12);
+  const json = JSON.parse(glb.subarray(20, 20 + jsonLength).toString('utf8'));
+  const binStart = 20 + jsonLength;
+  const bin = glb.subarray(binStart + 8, binStart + 8 + glb.readUInt32LE(binStart));
+  json.buffers = [{ uri: 'Body.bin', byteLength: bin.length }];
+  json.images = [{ uri: 'tex/Skin.PNG' }];
+  json.samplers = [{}];
+  json.textures = [{ source: 0, sampler: 0 }];
+  json.materials[0].pbrMetallicRoughness = { ...json.materials[0].pbrMetallicRoughness, baseColorTexture: { index: 0 } };
+  mkdirSync(path.join(dir, 'tex'), { recursive: true });
+  writeFileSync(path.join(dir, 'Body.bin'), bin);
+  writeFileSync(path.join(dir, 'tex', 'skin.png'), PIXEL_PNG);
+  const file = path.join(dir, `${name}.gltf`);
+  writeFileSync(file, JSON.stringify(json));
+  return file;
 }

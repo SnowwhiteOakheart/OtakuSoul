@@ -13,7 +13,7 @@ import { AvatarSkeleton, ScrollText } from '../ui';
 const MmdViewer = lazy(() => import('./MmdViewer'));
 const isMmdModel = (path: string) => /\.(pmx|pmd)$/i.test(path);
 const GltfViewer = lazy(() => import('./GltfViewer'));
-const isGltfModel = (path: string) => /\.glb$/i.test(path);
+const isGltfModel = (path: string) => /\.(glb|gltf)$/i.test(path);
 
 const Live2DViewer = lazy(() =>
   loadCubismCore()

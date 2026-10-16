@@ -606,6 +606,22 @@ pub fn scan_available_vrm_models() -> Vec<ScannedVrm> {
                 }
             }
         }
+        // glTF models with their own folder (.gltf with .bin and textures, or unpacked ZIPs).
+        for model in crate::modules::avatar_models::find_gltf_models(dir, 4) {
+            vrms.push(ScannedVrm {
+                name: model
+                    .file_stem()
+                    .and_then(|s| s.to_str())
+                    .unwrap_or("glTF")
+                    .to_string(),
+                size_mb: fs::metadata(&model)
+                    .map(|m| m.len() / (1024 * 1024))
+                    .unwrap_or(0),
+                path: model.to_string_lossy().to_string(),
+                format: "gltf".into(),
+                triangles: 0,
+            });
+        }
         // MMD models live in their own folders (textures next to them).
         for model in crate::modules::avatar_models::find_mmd_models(dir, 4) {
             let name = model
@@ -663,18 +679,18 @@ pub fn import_vrm_model(source_path: &str) -> Result<ScannedVrm, String> {
             path = src.display()
         ));
     }
-    let model = crate::modules::avatar_models::import_mmd(src, &avatars)?;
+    let (model, format) = crate::modules::avatar_models::import_folder_model(src, &avatars)?;
     Ok(ScannedVrm {
         name: model
             .file_stem()
             .and_then(|s| s.to_str())
-            .unwrap_or("MMD")
+            .unwrap_or("Avatar")
             .to_string(),
         size_mb: fs::metadata(&model)
             .map(|m| m.len() / (1024 * 1024))
             .unwrap_or(0),
         path: model.to_string_lossy().to_string(),
-        format: "mmd".into(),
+        format: format.into(),
         triangles: 0,
     })
 }

@@ -151,6 +151,9 @@ Hub). Integrationen → Bildgenerierung enthält nur Studio und Galerie.
   `AvatarViewerChrome` über `playAvatarClip` (`GestureRequest.clip`); der Viewer zeigt `data-idle-clip`/`data-gesture-clip`.
   GLB ohne Skelett (`skins` leer, `avatar_motions::gltf_summary`) lehnt `import_vrm_into` mit `backend.vrm.noSkeleton` ab; von Hand
   abgelegte zeigt `GltfViewer` nicht (`avatar.noSkeleton`). `ScannedVrm.triangles` > 500.000 → Hinweis `settings.vrmHeavy`.
+  glTF als Ordner/ZIP: `avatar_models::import_folder_model` (MMD, `.gltf` mit Ordner, ZIP mit MMD/`.gltf`/`.glb`, Skelett-
+  Prüfung), Liste `find_gltf_models` (Unterordner); `gltfFile.ts` `loadGltfAvatar` liest `.bin`/Texturen über die App als
+  Blob-URLs (case-insensitiv per `list_avatar_model_files`). E2E `avatar-gltf-folder.mjs` (`writeGltfFolder`).
   Gesichter über Knochen (`boneFace.ts`, ohne Morphs): `facePartOf` erkennt Lider/Brauen/Lippen/Mundwinkel/Augäpfel am Namen,
   `BoneFace` verschiebt sie geometrisch (Welt → Elternraum, Augenabstand als Einheit); `restore()` vor dem Mixer, `apply()`
   danach addiert. Viewer zeigt `data-face` (`morphs`/`bones`/`none`); Testmodell `makeGlb({ faceBones: true })`.

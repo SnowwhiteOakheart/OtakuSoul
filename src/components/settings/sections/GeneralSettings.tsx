@@ -50,7 +50,7 @@ export const GeneralSettings = () => {
         filters: [
           {
             name: translate('settings.fileFilterVrm'),
-            extensions: ['vrm', 'glb', 'pmx', 'pmd', 'zip'],
+            extensions: ['vrm', 'glb', 'gltf', 'pmx', 'pmd', 'zip'],
           },
         ],
       });

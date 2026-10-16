@@ -107,7 +107,8 @@ Zuordnen direkt in OtakuSoul ist geplant.
 
 Alle Teile und die Armatur auswählen, dann **Datei → Exportieren → glTF 2.0 (.glb/.gltf)**:
 
-- **Format:** *glTF Binary (.glb)* – OtakuSoul importiert eine einzelne `.glb`-Datei
+- **Format:** *glTF Binary (.glb)* – eine einzige Datei, am einfachsten. *glTF Separate (.gltf + .bin + Texturen)* geht
+  auch: Dann den ganzen Ordner behalten oder als ZIP packen
 - **Einschließen:** *Ausgewählte Objekte*
 - **Mesh:** *UVs*, *Normalen*, *Modifikatoren anwenden*
 - **Shape Keys** und **Skinning:** an
@@ -119,7 +120,8 @@ Texturen ruhig auf 2048 px verkleinern – das spart Grafikspeicher und Ladezeit
 ## 8. In OtakuSoul importieren
 
 1. **Einstellungen → Erscheinungsbild & Theme → Standard-Avatare → 3D-Avatar (VRM, glTF oder MMD) → „3D-Modell importieren …“** und
-   die `.glb` wählen. Das Modell wird in den Avatar-Ordner kopiert.
+   die `.glb` wählen – oder die `.gltf` (der Ordner mit `.bin` und Texturen wird mitkopiert) bzw. ein ZIP mit einer
+   `.gltf`/`.glb`. Das Modell wird in den Avatar-Ordner kopiert.
 2. Das Modell auswählen (global oder pro Figur im Charakter-Editor) und im Chat den Avatar-Modus **3D** wählen.
 3. **Einstellungen → Erscheinungsbild & Theme → Bewegungen des 3D-Avatars (VRMA, Mixamo) → „Bewegungen im Modell (glTF)“** zeigt
    alle Clips der Datei:
@@ -144,4 +146,4 @@ Texturen ruhig auf 2048 px verkleinern – das spart Grafikspeicher und Ladezeit
 | Figur läuft aus dem Bild | Lauf-Animation als „Nur von Hand“ einstellen oder weglassen |
 | Gesicht bewegt sich nicht | Shape Keys nach Abschnitt 6 umbenennen – oder Gesichtsknochen nach den dort genannten Mustern benennen |
 | „Das Modell hat kein Skelett“ | Statische Modelle (z. B. KI-generierte Figuren, 3D-Scans) werden abgelehnt. Erst riggen – etwa mit Mixamo (automatisches Rig) oder in Blender (Rigify) – und die Polygonzahl vorher mit „Decimate“ auf etwa 50.000–100.000 Dreiecke senken |
-| Import schlägt fehl oder lädt sehr lange | Nur `.glb` ohne Draco-Kompression; Texturen verkleinern |
+| Import schlägt fehl oder lädt sehr lange | `.glb`, `.gltf` mit Ordner oder ZIP, jeweils ohne Draco-Kompression; Texturen verkleinern |

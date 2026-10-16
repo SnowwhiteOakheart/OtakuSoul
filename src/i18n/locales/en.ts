@@ -2629,7 +2629,7 @@ export const en: TranslationDictionary = {
   "settings.vrmHeavy": "“{{name}}” has {{count}} triangles and loads slowly. Reduce it in Blender (“Decimate” modifier, about 50,000–100,000 triangles).",
   "avatar.noSkeleton": "This glTF model has no skeleton and is not shown. Choose a rigged model.",
   "backend.vrm.noSkeleton": "The model has no skeleton and cannot move – it will not be used. Static models (e.g. AI-generated figures) need a rig first, e.g. via Blender or Mixamo (see the guide “Your own 3D model”).",
-  "backend.avatar.noModelInZip": "No MMD model (.pmx/.pmd) was found in the ZIP archive.",
+  "backend.avatar.noModelInZip": "No 3D model (.pmx/.pmd, .gltf or .glb) was found in the ZIP archive.",
   "backend.avatar.folderTooLarge": "The folder {{path}} is too large (over 1 GB or 5000 files). Put the model into its own folder or import the ZIP.",
   "backend.avatarMotion.invalid": "The file is not a valid motion (.vrma, Mixamo .fbx or MMD .vmd).",
   "backend.avatarMotion.role": "Unknown use for a motion: {{role}}",

@@ -27,6 +27,65 @@ fn has_mmd_header(path: &Path) -> bool {
 }
 
 /// MMD models in the subfolders of `dir` (a few levels deep, as packs nest them).
+/// glTF avatars: `.gltf` (JSON with `.bin` and textures next to it) or binary `.glb`.
+pub fn is_gltf_model(path: &Path) -> bool {
+    path.extension()
+        .and_then(|e| e.to_str())
+        .is_some_and(|e| e.eq_ignore_ascii_case("gltf") || e.eq_ignore_ascii_case("glb"))
+}
+
+/// glTF models in the subfolders of `dir` (a `.gltf` brings its folder; loose `.glb` files right
+/// in `dir` are listed as single files elsewhere), `.gltf` before `.glb` in each folder.
+pub fn find_gltf_models(dir: &Path, depth: usize) -> Vec<PathBuf> {
+    let mut found = Vec::new();
+    let Ok(entries) = fs::read_dir(dir) else {
+        return found;
+    };
+    let mut dirs: Vec<PathBuf> = entries
+        .flatten()
+        .map(|e| e.path())
+        .filter(|p| p.is_dir())
+        .collect();
+    dirs.sort();
+    for sub in dirs {
+        found.extend(gltf_in(&sub, depth));
+    }
+    found
+}
+
+fn gltf_in(dir: &Path, depth: usize) -> Vec<PathBuf> {
+    let mut found = Vec::new();
+    let Ok(entries) = fs::read_dir(dir) else {
+        return found;
+    };
+    let mut entries: Vec<PathBuf> = entries.flatten().map(|e| e.path()).collect();
+    entries.sort_by_key(|p| {
+        let gltf = p
+            .extension()
+            .and_then(|e| e.to_str())
+            .is_some_and(|e| e.eq_ignore_ascii_case("gltf"));
+        (!gltf, p.clone())
+    });
+    for path in entries {
+        if path.is_file() && is_gltf_model(&path) {
+            found.push(path);
+        } else if path.is_dir() && depth > 0 {
+            found.extend(gltf_in(&path, depth - 1));
+        }
+    }
+    found
+}
+
+/// A glTF model must have a skeleton; one without (a statue, a scan) cannot move.
+fn check_gltf_rig(model: &Path) -> Result<(), String> {
+    let summary = crate::modules::avatar_motions::gltf_summary(model)
+        .map_err(|_| crate::err!("backend.vrm.invalid"))?;
+    if summary.skins == 0 {
+        return Err(crate::err!("backend.vrm.noSkeleton"));
+    }
+    Ok(())
+}
+
 pub fn find_mmd_models(dir: &Path, depth: usize) -> Vec<PathBuf> {
     let mut found = Vec::new();
     let Ok(entries) = fs::read_dir(dir) else {
@@ -46,7 +105,13 @@ pub fn find_mmd_models(dir: &Path, depth: usize) -> Vec<PathBuf> {
 
 /// Imports an MMD model: a `.zip` is unpacked, a `.pmx`/`.pmd` brings its folder (textures)
 /// along. Returns the path of the model file inside the avatar folder.
-pub fn import_mmd(src: &Path, avatars_dir: &Path) -> Result<PathBuf, String> {
+/// Imports an avatar that comes with its own folder: an MMD model (`.pmx`/`.pmd`), a `.gltf` with
+/// its `.bin` and textures, or a ZIP holding either (or a `.glb`). Returns the model and its format
+/// (`mmd` or `gltf`).
+pub fn import_folder_model(
+    src: &Path,
+    avatars_dir: &Path,
+) -> Result<(PathBuf, &'static str), String> {
     let is_zip = src
         .extension()
         .and_then(|e| e.to_str())
@@ -61,15 +126,26 @@ pub fn import_mmd(src: &Path, avatars_dir: &Path) -> Result<PathBuf, String> {
         unzip(src, &target).inspect_err(|_| {
             let _ = fs::remove_dir_all(&target);
         })?;
-        return find_mmd_models(&target, 4)
-            .into_iter()
-            .next()
-            .ok_or_else(|| {
-                let _ = fs::remove_dir_all(&target);
-                crate::err!("backend.avatar.noModelInZip")
-            });
+        if let Some(model) = find_mmd_models(&target, 4).into_iter().next() {
+            return Ok((model, "mmd"));
+        }
+        let Some(model) = gltf_in(&target, 4).into_iter().next() else {
+            let _ = fs::remove_dir_all(&target);
+            return Err(crate::err!("backend.avatar.noModelInZip"));
+        };
+        check_gltf_rig(&model).inspect_err(|_| {
+            let _ = fs::remove_dir_all(&target);
+        })?;
+        return Ok((model, "gltf"));
     }
-    if !is_mmd_model(src) || !has_mmd_header(src) {
+    let gltf = src
+        .extension()
+        .and_then(|e| e.to_str())
+        .is_some_and(|e| e.eq_ignore_ascii_case("gltf"));
+    if gltf {
+        check_gltf_rig(src)?;
+    }
+    if !gltf && (!is_mmd_model(src) || !has_mmd_header(src)) {
         return Err(crate::err!("backend.vrm.invalid"));
     }
     let folder = src
@@ -91,7 +167,10 @@ pub fn import_mmd(src: &Path, avatars_dir: &Path) -> Result<PathBuf, String> {
     copy_dir(folder, &target).inspect_err(|_| {
         let _ = fs::remove_dir_all(&target);
     })?;
-    Ok(target.join(src.file_name().unwrap_or_default()))
+    Ok((
+        target.join(src.file_name().unwrap_or_default()),
+        if gltf { "gltf" } else { "mmd" },
+    ))
 }
 
 /// A folder name that is not taken yet ("Name", "Name (2)", …).
@@ -290,7 +369,7 @@ mod tests {
         writer.start_file("ミク/tex/Face.png", options).unwrap();
         writer.write_all(b"png").unwrap();
         writer.finish().unwrap();
-        let model = import_mmd(&zip_path, &avatars).unwrap();
+        let (model, _) = import_folder_model(&zip_path, &avatars).unwrap();
         assert!(model.ends_with("Miku/ミク/ミク.pmx"), "{model:?}");
         let files =
             list_model_files(model.to_str().unwrap(), std::slice::from_ref(&avatars)).unwrap();
@@ -302,13 +381,81 @@ mod tests {
         fs::create_dir_all(folder.join("tex")).unwrap();
         fs::write(folder.join("a.pmx"), b"PMX \0\0\0\0").unwrap();
         fs::write(folder.join("tex").join("b.png"), b"png").unwrap();
-        let copied = import_mmd(&folder.join("a.pmx"), &avatars).unwrap();
+        let (copied, _) = import_folder_model(&folder.join("a.pmx"), &avatars).unwrap();
         assert!(copied.ends_with("Model A/a.pmx"));
         assert!(avatars.join("Model A").join("tex").join("b.png").exists());
         fs::write(folder.join("fake.pmx"), b"nope").unwrap();
-        assert!(import_mmd(&folder.join("fake.pmx"), &avatars).is_err());
+        assert!(import_folder_model(&folder.join("fake.pmx"), &avatars).is_err());
 
         assert_eq!(find_mmd_models(&avatars, 4).len(), 2);
+        let _ = fs::remove_dir_all(&tmp);
+    }
+
+    /// A minimal rigged (or unrigged) glTF JSON document.
+    fn gltf_json(rigged: bool) -> String {
+        let skins = if rigged {
+            r#","skins":[{"joints":[0]}]"#
+        } else {
+            ""
+        };
+        format!(
+            r#"{{"asset":{{"version":"2.0"}},"buffers":[{{"uri":"Body.bin","byteLength":4}}],"images":[{{"uri":"tex/Skin.png"}}]{skins}}}"#
+        )
+    }
+
+    #[test]
+    fn imports_gltf_with_its_folder_and_from_zip() {
+        let tmp = temp("gltf");
+        let avatars = tmp.join("avatars");
+        let folder = tmp.join("Figur");
+        fs::create_dir_all(folder.join("tex")).unwrap();
+        fs::write(folder.join("Figur.gltf"), gltf_json(true)).unwrap();
+        fs::write(folder.join("Body.bin"), b"\0\0\0\0").unwrap();
+        fs::write(folder.join("tex").join("Skin.png"), b"png").unwrap();
+        let (model, format) = import_folder_model(&folder.join("Figur.gltf"), &avatars).unwrap();
+        assert_eq!(format, "gltf");
+        assert!(model.ends_with("Figur/Figur.gltf"));
+        assert!(avatars.join("Figur").join("Body.bin").exists());
+        assert!(avatars.join("Figur").join("tex").join("Skin.png").exists());
+
+        // Without a skeleton nothing is copied.
+        let statue = tmp.join("Statue");
+        fs::create_dir_all(&statue).unwrap();
+        fs::write(statue.join("Statue.gltf"), gltf_json(false)).unwrap();
+        let refused = import_folder_model(&statue.join("Statue.gltf"), &avatars).unwrap_err();
+        assert!(refused.contains("backend.vrm.noSkeleton"), "{refused}");
+        assert!(!avatars.join("Statue").exists());
+
+        // A ZIP with a .gltf (and a .glb next to it: the .gltf wins).
+        let zip_path = tmp.join("Pack.zip");
+        let mut writer = zip::ZipWriter::new(fs::File::create(&zip_path).unwrap());
+        let options = zip::write::SimpleFileOptions::default();
+        writer.start_file("Pack/b.glb", options).unwrap();
+        writer.write_all(b"glTF").unwrap();
+        writer.start_file("Pack/a.gltf", options).unwrap();
+        writer.write_all(gltf_json(true).as_bytes()).unwrap();
+        writer.start_file("Pack/Body.bin", options).unwrap();
+        writer.write_all(b"\0\0\0\0").unwrap();
+        writer.finish().unwrap();
+        let (model, format) = import_folder_model(&zip_path, &avatars).unwrap();
+        assert_eq!(
+            (format, model.file_name().unwrap().to_str().unwrap()),
+            ("gltf", "a.gltf")
+        );
+
+        // An unrigged one in a ZIP is refused and its folder removed again.
+        let zip_statue = tmp.join("Statue.zip");
+        let mut writer = zip::ZipWriter::new(fs::File::create(&zip_statue).unwrap());
+        writer.start_file("s.gltf", options).unwrap();
+        writer.write_all(gltf_json(false).as_bytes()).unwrap();
+        writer.finish().unwrap();
+        assert!(import_folder_model(&zip_statue, &avatars).is_err());
+        assert!(!avatars.join("Statue").exists());
+
+        // Listing: one model per folder, .gltf first.
+        let listed = find_gltf_models(&avatars, 4);
+        assert_eq!(listed.len(), 3, "{listed:?}");
+        assert!(listed[0].ends_with("Figur/Figur.gltf"));
         let _ = fs::remove_dir_all(&tmp);
     }
 }
