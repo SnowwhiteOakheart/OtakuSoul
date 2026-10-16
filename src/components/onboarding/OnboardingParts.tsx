@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { CheckCircle2, Cpu, Download, Loader2, MessageCircle, PlugZap, RefreshCw, XCircle } from 'lucide-react';
+import { CheckCircle2, Cpu, Download, Loader2, MessageCircle, PlugZap, RefreshCw, Wand2, XCircle } from 'lucide-react';
 import { api } from '../../services/api';
 import { useStoreFields, useAppStore } from '../../store/useAppStore';
 import { llmTarget } from '../../store/helpers';
@@ -75,9 +75,49 @@ export const CloudConnectionTest = ({ provider, endpoint, apiKey, model }: Cloud
   );
 };
 
+/** Quantisation and file details at the end of a GGUF name (`Q4_K_M`, `PQ2_0`, `F16` …). */
+const QUANT_SUFFIX = /[-_. ](?:I?Q\d[A-Z0-9_]*|PQ\d[A-Z0-9_]*|B?F(?:16|32)|GGUF)$/i;
+
+/** A model file name as people read it: without extension, quantisation and dashes. */
+export function prettyModelName(name: string): string {
+  let plain = name.replace(/\.gguf$/i, '');
+  while (QUANT_SUFFIX.test(plain)) plain = plain.replace(QUANT_SUFFIX, '');
+  return plain.replace(/[-_]+/g, ' ').trim() || name;
+}
+
+/** `fits`, `tight` or `too_big` for the graphics card (model + room for the conversation). */
+export function modelFit(sizeMb: number, vramMb: number): 'fits' | 'tight' | 'too_big' {
+  const need = sizeMb * 1.15 + 1024;
+  if (need <= vramMb * 0.9) return 'fits';
+  if (need <= vramMb * 1.2) return 'tight';
+  return 'too_big';
+}
+
+const FIT_STYLE = {
+  fits: 'border-emerald-500/40 bg-emerald-500/10 text-emerald-300',
+  tight: 'border-amber-500/40 bg-amber-500/10 text-amber-300',
+  too_big: 'border-rose-500/40 bg-rose-500/10 text-rose-300',
+} as const;
+
+/** Traffic light whether a model fits the detected graphics card (nothing without a GPU). */
+export const ModelFit = ({ sizeMb }: { sizeMb: number }) => {
+  const { t } = useTranslation();
+  const hardware = useAppStore((s) => s.hardware);
+  const gpu = hardware?.gpus.find((g) => g.total_vram_mb > 0);
+  if (!gpu) return null;
+  const fit = modelFit(sizeMb, gpu.total_vram_mb);
+  return (
+    <span data-model-fit={fit} title={t(`onboarding.fitHint.${fit}`)} className={`shrink-0 rounded border px-1.5 py-0.5 text-[11px] ${FIT_STYLE[fit]}`}>
+      {t(`onboarding.fit.${fit}`)}
+    </span>
+  );
+};
+
+type Express = { phase: 'idle' | 'runtime' | 'model' | 'done' } | { phase: 'failed'; error: string };
+
 /**
- * The local path in one place: detected GPU, the llama.cpp runtime and a starter model
- * that fits it (download with progress, selected when done).
+ * The local path in one place: detected GPU, a one-click setup of the recommended starter
+ * (runtime and model) and, for those who want to choose, the runtimes and all starter models.
  */
 export const LocalModelSetup = () => {
   const { t } = useTranslation();
@@ -86,6 +126,7 @@ export const LocalModelSetup = () => {
   );
   const [starters, setStarters] = useState<StarterModel[] | null>(null);
   const [downloading, setDownloading] = useState<string | null>(null);
+  const [express, setExpress] = useState<Express>({ phase: 'idle' });
   const gpu = hardware?.gpus.find((g) => g.total_vram_mb > 0);
 
   const refresh = () =>
@@ -112,8 +153,72 @@ export const LocalModelSetup = () => {
     void refresh();
   };
 
+  const recommended = starters?.find((s) => s.recommended);
+  const recommendedSelected = !!recommended && pathOf(recommended) === serverConfig.model_path && !!serverConfig.model_path;
+
+  /** Installs what the recommended starter needs (runtimes not yet installed, the model) and selects it. */
+  const setUpRecommended = async (starter: StarterModel) => {
+    try {
+      setExpress({ phase: 'runtime' });
+      for (const kind of starter.file.runtime === 'prism' ? (['llama', 'prism'] as const) : (['llama'] as const)) {
+        const installed = await api.getRuntime(kind).catch(() => null);
+        if (installed) continue;
+        const variants = await api.listRuntimeVariants(kind);
+        const variant = variants.find((v) => v.recommended) ?? variants[0];
+        if (variant) await api.installRuntime(kind, variant.backend);
+      }
+      setExpress({ phase: 'model' });
+      const path = pathOf(starter);
+      if (path) await selectLocalModel(path);
+      else await download(starter);
+      const ready = useAppStore.getState().serverConfig.model_path;
+      setExpress(ready ? { phase: 'done' } : { phase: 'failed', error: useAppStore.getState().hfError || t('onboarding.expressFailed') });
+    } catch (e) {
+      setExpress({ phase: 'failed', error: errorMessage(e) });
+    }
+  };
+  const expressBusy = express.phase === 'runtime' || express.phase === 'model';
+  const expressProgress = recommended ? downloadProgress[recommended.file.filename] : undefined;
+
   return (
     <div className="space-y-3">
+      {recommended && (
+        <div className="rounded-xl border border-accent-500/40 bg-accent-500/10 p-4 space-y-2" data-express-setup={express.phase}>
+          <p className="text-sm font-semibold text-slate-100">
+            {t('onboarding.expressTitle', { name: recommended.name, size: recommended.file.size_formatted })}
+          </p>
+          <p className="text-xs text-slate-400">{t('onboarding.expressText')}</p>
+          {recommendedSelected || express.phase === 'done' ? (
+            <p role="status" className="flex items-center gap-1.5 text-xs text-emerald-300">
+              <CheckCircle2 className="h-4 w-4" />
+              {t('onboarding.expressDone')}
+            </p>
+          ) : (
+            <button
+              type="button"
+              disabled={expressBusy || downloading !== null}
+              onClick={() => void setUpRecommended(recommended)}
+              className="inline-flex items-center gap-1.5 rounded-xl bg-accent-600 px-4 py-2 text-sm font-semibold text-white hover:bg-accent-500 disabled:opacity-50"
+            >
+              {expressBusy ? <Loader2 className="h-4 w-4 animate-spin" /> : <Wand2 className="h-4 w-4" />}
+              {express.phase === 'runtime'
+                ? t('onboarding.expressRuntime')
+                : express.phase === 'model'
+                  ? t('onboarding.expressModel', { percent: (expressProgress?.percent ?? 0).toFixed(0) })
+                  : t('onboarding.expressButton')}
+            </button>
+          )}
+          {express.phase === 'model' && expressProgress && (
+            <div className="h-1.5 overflow-hidden rounded-full bg-slate-800">
+              <div className="h-full bg-accent-500 transition-all" style={{ width: `${expressProgress.percent}%` }} />
+            </div>
+          )}
+          {express.phase === 'failed' && <p role="alert" className="text-xs text-rose-300">{express.error}</p>}
+        </div>
+      )}
+
+      <details className="space-y-3" open={!recommended}>
+        <summary className="cursor-pointer text-xs font-semibold text-slate-300">{t('onboarding.chooseYourself')}</summary>
       <p className="flex items-center gap-1.5 text-xs text-slate-400">
         <Cpu className="h-3.5 w-3.5" />
         {gpu
@@ -194,6 +299,7 @@ export const LocalModelSetup = () => {
         )}
         {hfError && <p role="alert" className="text-xs text-rose-300">{hfError}</p>}
       </fieldset>
+      </details>
     </div>
   );
 };

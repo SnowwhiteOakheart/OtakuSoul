@@ -13,6 +13,13 @@ try {
   await browser.$('h2=Willkommen bei OtakuSoul').waitForDisplayed({ timeout: 30_000 });
   await next();
 
+  // The local way: one-click setup of the recommended model, the rest under "choose yourself".
+  await browser.$('[role="dialog"]').$('button*=Lokal').click();
+  await browser.$('[data-express-setup]').waitForDisplayed({ timeout: 15_000, timeoutMsg: 'Kein Ein-Klick-Weg für lokale Modelle' });
+  await browser.pause(300);
+  await shot('37-assistent-lokal');
+  await browser.$('[role="dialog"]').$('button*=Cloud').click();
+
   // Cloud is preselected by the test profile; the key is still missing.
   await browser.$('#onboarding-api-key').waitForDisplayed();
   await browser.$('#onboarding-api-key').setValue('sk-test');

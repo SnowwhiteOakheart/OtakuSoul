@@ -34,18 +34,21 @@
 
 ## 1. Erster Start & Einrichtung
 
-- [ ] **Einstiegsfrage statt Technikwahl:** „Wie möchtest du starten?“ – *Einfach loslegen* (empfohlener Weg je nach
+- [x] **Einstiegsfrage statt Technikwahl (16.10.2026, als Empfehlung umgesetzt):** „Empfohlen für deinen PC“ an Lokal (ab
+  6 GB Grafikspeicher) bzw. Cloud; eine eigene dritte Frage war nicht nötig. Ursprünglicher Plan: „Wie möchtest du starten?“ – *Einfach loslegen* (empfohlener Weg je nach
   Hardware), *Mit eigenem Cloud-Konto*, *Ich kenne mich aus* (heutiger Assistent). Hardware-Erkennung entscheidet die
   Empfehlung, der Nutzer bestätigt nur.
-- [ ] **Modelle mit Klarnamen:** Anzeige „Bonsai 27B – sehr gut, braucht 7 GB Grafikspeicher“ statt Dateiname;
+- [x] **Modelle mit Klarnamen (16.10.2026):** `prettyModelName`, Ampel `ModelFit` (passt/knapp/zu groß). Ursprünglicher Plan: Anzeige „Bonsai 27B – sehr gut, braucht 7 GB Grafikspeicher“ statt Dateiname;
   Eignung als Ampel (passt / knapp / zu groß), Dateiname nur im Tooltip.
-- [ ] **Laufzeit unsichtbar machen:** llama.cpp-Laufzeit wird im einfachen Weg automatisch passend geladen; die
+- [x] **Laufzeit unsichtbar machen (16.10.2026):** „Alles automatisch einrichten“ installiert fehlende Laufzeiten (empfohlene
+  Variante) und das empfohlene Modell; Laufzeitkarten unter „Selbst auswählen“. Ursprünglicher Plan: llama.cpp-Laufzeit wird im einfachen Weg automatisch passend geladen; die
   Laufzeitkarte erscheint nur im Expertenweg oder bei Fehlern.
-- [ ] **Cloud-Anbieter geführt:** Anbieter als Karten mit Kurzbeschreibung, Kosten-Hinweis und Link „Wo bekomme ich
+- [x] **Cloud-Anbieter geführt (16.10.2026):** Anbieter als Karten mit Kurzbeschreibung und „Wo bekomme ich einen
+  Schlüssel?“ (Kosten-Hinweis fehlt noch). Ursprünglicher Plan: Anbieter als Karten mit Kurzbeschreibung, Kosten-Hinweis und Link „Wo bekomme ich
   einen Schlüssel?“; „Eigener Endpunkt“ unter „Weitere“.
 - [ ] **Fortschritt und Wartezeiten erklären:** Download-/Startzeiten realistisch anzeigen („ca. 4 Minuten“), App bleibt
   währenddessen bedienbar (Charakter wählen, Story ansehen).
-- [ ] **Abschluss mit Wahl:** Letzter Schritt bietet „Mit einer Figur chatten“ oder „Eine Geschichte beginnen“.
+- [x] **Abschluss mit Wahl (16.10.2026):** „Geschichte beginnen“ neben „Los geht's“. Ursprünglicher Plan: Letzter Schritt bietet „Mit einer Figur chatten“ oder „Eine Geschichte beginnen“.
 - [ ] E2E: Einsteiger-Durchlauf von leerem Profil bis zur ersten Antwort ohne Expertenbildschirm.
 
 ## 2. Startseite & Navigation

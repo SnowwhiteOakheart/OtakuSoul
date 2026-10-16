@@ -55,6 +55,27 @@ describe('setup wizard parts', () => {
     await waitFor(() => expect(download).toHaveBeenCalledWith(expect.objectContaining({ filename: 'Qwen_Qwen3-8B-Q4_K_M.gguf' })));
   });
 
+  it('sets up runtime and recommended model with one click', async () => {
+    const user = userEvent.setup();
+    useAppStore.setState({ hardware: { gpus: [{ name: 'RTX 4060', total_vram_mb: 8192 }] } as never });
+    vi.mocked(api.listStarterModels).mockResolvedValue([starter({ recommended: true })]);
+    vi.mocked(api.listRuntimeVariants).mockResolvedValue([
+      { backend: 'cpu', recommended: false } as never,
+      { backend: 'vulkan', recommended: true } as never,
+    ]);
+    vi.mocked(api.installRuntime).mockResolvedValue({ backend: 'vulkan', build: 'b1' } as never);
+    // The download selects the model when it is done.
+    const download = vi.fn().mockImplementation(async () => {
+      useAppStore.setState({ serverConfig: { ...useAppStore.getState().serverConfig, model_path: '/m/Qwen_Qwen3-8B-Q4_K_M.gguf' } });
+    });
+    useAppStore.setState({ downloadGgufModel: download });
+    render(<LocalModelSetup />);
+    await user.click(await screen.findByRole('button', { name: /Set everything up automatically/ }));
+    await waitFor(() => expect(screen.getByText(/Set up – the model is selected/)).toBeInTheDocument());
+    expect(api.installRuntime).toHaveBeenCalledWith('llama', 'vulkan');
+    expect(download).toHaveBeenCalledWith(expect.objectContaining({ filename: 'Qwen_Qwen3-8B-Q4_K_M.gguf' }));
+  });
+
   it('offers the PrismML runtime with a recommended Bonsai starter and keeps its runtime', async () => {
     const user = userEvent.setup();
     const bonsaiFile = { ...starter({}).file, filename: 'Ternary-Bonsai-2-27B-PQ2_0.gguf', quantization: 'PQ2_0', runtime: 'prism' };

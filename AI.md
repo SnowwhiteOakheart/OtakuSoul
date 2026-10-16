@@ -416,6 +416,9 @@ Hub). Integrationen → Bildgenerierung enthält nur Studio und Galerie.
   `quick_reply` (eine kurze Antwort außerhalb eines Chats, 90 s) und `list_starter_models` (`models_hub::STARTERS`,
   Empfehlung = `preferred`-Modell (Ternary Bonsai 2 27B), wenn es in VRAM − 1,5 GB passt, sonst das größte passende).
   Starter mit `runtime: "prism"` blenden im Assistenten zusätzlich die PrismML-Laufzeitkarte ein.
+  Einfacher Weg: `LocalModelSetup` „Alles automatisch einrichten“ (fehlende Laufzeiten mit empfohlener Variante, dann Starter
+  laden/auswählen; Details unter „Selbst auswählen“), Modellnamen über `prettyModelName`, Ampel `ModelFit`/`modelFit`.
+  Cloud-Anbieter als Karten (`CLOUD_PROVIDERS` mit `keyUrl`), Abschluss wahlweise in Chat oder Stage.
   Schritt „Stimme & Bilder“ (nach „Charakter“) bettet `CharacterVoiceModal` (gewählte Figur) und `ImageSettings` mit
   `autoSave` ein: Änderungen speichern sich nach kurzer Pause selbst, der Speichern-Knopf entfällt.
   Neue Profile zeigen den Avatar als Bild (`avatar_mode` Standard `2d`); 3D/Live2D ist eine Wahl, gespeicherte bleibt.

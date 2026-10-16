@@ -51,7 +51,7 @@ describe('FirstRunWizard', () => {
     render(<FirstRunWizard />);
     await user.click(next());
 
-    await user.click(screen.getByRole('radio', { name: /Qwen3-8B/ }));
+    await user.click(screen.getByRole('radio', { name: /Qwen3 8B/ }));
     expect(next()).toBeDisabled();
     finishStop();
     await vi.waitFor(() => expect(next()).toBeEnabled());
@@ -64,7 +64,7 @@ describe('FirstRunWizard', () => {
     expect(screen.getByRole('heading', { name: 'Welcome to OtakuSoul' })).toBeInTheDocument();
     await user.click(next());
 
-    await user.click(screen.getByRole('radio', { name: /Qwen3-8B/ }));
+    await user.click(screen.getByRole('radio', { name: /Qwen3 8B/ }));
     await vi.waitFor(() => expect(useAppStore.getState().serverConfig.model_path).toBe(model.path));
     await user.click(next());
 
@@ -78,7 +78,7 @@ describe('FirstRunWizard', () => {
     expect(screen.getByText(/Voice for Ayu Ikue/)).toBeInTheDocument();
     await user.click(next());
 
-    expect(screen.getByText('Qwen3-8B-Q4_K_M')).toBeInTheDocument();
+    expect(screen.getByText('Qwen3 8B')).toBeInTheDocument();
     await user.click(screen.getByRole('checkbox', { name: /local server/ }));
     await user.click(screen.getByRole('button', { name: /Let's go/ }));
 

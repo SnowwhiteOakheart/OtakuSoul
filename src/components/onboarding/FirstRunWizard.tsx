@@ -6,8 +6,11 @@ import {
   Check,
   Cloud,
   Cpu,
+  Dice5,
   Download,
+  ExternalLink,
   Import,
+  MessageSquare,
   Image,
   Languages,
   Mic,
@@ -16,12 +19,13 @@ import {
   UserRound,
   Wand2,
 } from 'lucide-react';
+import { openUrl } from '@tauri-apps/plugin-opener';
 import { useAppStore } from '../../store/useAppStore';
 import { useTranslation, type SupportedLanguage, type TranslationKey } from '../../i18n';
 import { ModalOverlay } from '../ui/ModalOverlay';
 import { APP_LANGUAGES, APP_THEMES } from '../settings/themes';
 import type { LlmProviderType } from '../../types';
-import { CloudConnectionTest, FirstReply, LocalModelSetup } from './OnboardingParts';
+import { CloudConnectionTest, FirstReply, LocalModelSetup, ModelFit, prettyModelName } from './OnboardingParts';
 import { CharacterVoiceModal } from '../voice/CharacterVoiceModal';
 import { ImageSettings } from '../settings/sections/ImageSettings';
 
@@ -36,15 +40,18 @@ const STEP_LABEL_KEYS = {
   done: 'onboarding.stepDone',
 } as const;
 
-const CLOUD_PROVIDERS: { id: LlmProviderType; labelKey: TranslationKey }[] = [
-  { id: 'open_router', labelKey: 'settings.providerOpenRouter' },
-  { id: 'anthropic', labelKey: 'settings.providerAnthropic' },
-  { id: 'open_ai', labelKey: 'settings.providerOpenAi' },
-  { id: 'deep_seek', labelKey: 'settings.providerDeepSeek' },
-  { id: 'gemini', labelKey: 'settings.providerGemini' },
-  { id: 'mistral', labelKey: 'settings.providerMistral' },
+/** Cloud providers with a short note and where to get a key (`keyUrl`). */
+const CLOUD_PROVIDERS: { id: LlmProviderType; labelKey: TranslationKey; keyUrl?: string }[] = [
+  { id: 'open_router', labelKey: 'settings.providerOpenRouter', keyUrl: 'https://openrouter.ai/keys' },
+  { id: 'anthropic', labelKey: 'settings.providerAnthropic', keyUrl: 'https://console.anthropic.com/settings/keys' },
+  { id: 'open_ai', labelKey: 'settings.providerOpenAi', keyUrl: 'https://platform.openai.com/api-keys' },
+  { id: 'deep_seek', labelKey: 'settings.providerDeepSeek', keyUrl: 'https://platform.deepseek.com/api_keys' },
+  { id: 'gemini', labelKey: 'settings.providerGemini', keyUrl: 'https://aistudio.google.com/apikey' },
+  { id: 'mistral', labelKey: 'settings.providerMistral', keyUrl: 'https://console.mistral.ai/api-keys' },
   { id: 'custom', labelKey: 'settings.providerCustom' },
 ];
+/** Graphics memory from which the local way is recommended (smaller cards: cloud). */
+const LOCAL_RECOMMENDED_VRAM_MB = 6 * 1024;
 
 const CHOICE_CARD =
   'flex gap-3 rounded-xl border text-left transition-all outline-hidden focus-visible:ring-2 focus-visible:ring-accent-400';
@@ -88,6 +95,7 @@ export const FirstRunWizard: React.FC = () => {
       openSettingsSection: s.openSettingsSection,
       startServer: s.startServer,
       completeOnboarding: s.completeOnboarding,
+      hardware: s.hardware,
     }))
   );
 
@@ -103,6 +111,10 @@ export const FirstRunWizard: React.FC = () => {
   const isCloud = store.selectedBackend === 'cloud';
   const hasLocalModel = store.scannedModels.length > 0;
   const localModel = store.scannedModels.find((m) => m.path === store.serverConfig.model_path);
+  const gpu = store.hardware?.gpus.find((g) => g.total_vram_mb > 0);
+  const hardwareKnown = !!store.hardware;
+  const recommendLocal = (gpu?.total_vram_mb ?? 0) >= LOCAL_RECOMMENDED_VRAM_MB;
+  const providerInfo = CLOUD_PROVIDERS.find((p) => p.id === store.cloudProvider);
   const cloudProviderLabel = t(CLOUD_PROVIDERS.find((p) => p.id === store.cloudProvider)?.labelKey ?? 'settings.providerCustom');
 
   // Move focus to the new step's heading so screen readers announce it.
@@ -267,7 +279,10 @@ export const FirstRunWizard: React.FC = () => {
                 >
                   <Cpu className="mt-0.5 h-5 w-5 shrink-0 text-accent-300" />
                   <span>
-                    <span className="block text-sm font-semibold">{t('onboarding.localTitle')}</span>
+                    <span className="block text-sm font-semibold">
+                      {t('onboarding.localTitle')}
+                      {recommendLocal && <span className="ml-2 rounded border border-emerald-500/30 bg-emerald-500/15 px-1.5 py-0.5 text-[11px] font-normal text-emerald-300">{t('onboarding.recommendedForYou')}</span>}
+                    </span>
                     <span className="block text-xs text-slate-400">{t('onboarding.localHint')}</span>
                   </span>
                 </button>
@@ -279,7 +294,10 @@ export const FirstRunWizard: React.FC = () => {
                 >
                   <Cloud className="mt-0.5 h-5 w-5 shrink-0 text-amber-300" />
                   <span>
-                    <span className="block text-sm font-semibold">{t('onboarding.cloudTitle')}</span>
+                    <span className="block text-sm font-semibold">
+                      {t('onboarding.cloudTitle')}
+                      {hardwareKnown && !recommendLocal && <span className="ml-2 rounded border border-emerald-500/30 bg-emerald-500/15 px-1.5 py-0.5 text-[11px] font-normal text-emerald-300">{t('onboarding.recommendedForYou')}</span>}
+                    </span>
                     <span className="block text-xs text-slate-400">{t('onboarding.cloudHint')}</span>
                   </span>
                 </button>
@@ -307,7 +325,8 @@ export const FirstRunWizard: React.FC = () => {
                           }}
                           className="accent-accent-500"
                         />
-                        <span className="min-w-0 flex-1 truncate text-sm">{model.name}</span>
+                        <span className="min-w-0 flex-1 truncate text-sm" title={model.name}>{prettyModelName(model.name)}</span>
+                        <ModelFit sizeMb={model.size_mb} />
                         <span className="shrink-0 text-xs text-slate-400">{(model.size_mb / 1024).toFixed(1)} GB</span>
                       </label>
                     ))}
@@ -323,23 +342,24 @@ export const FirstRunWizard: React.FC = () => {
 
               {isCloud && (
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                  <div className="space-y-1.5">
-                    <label htmlFor="onboarding-provider" className="text-xs font-medium text-slate-300">
-                      {t('onboarding.providerLabel')}
-                    </label>
-                    <select
-                      id="onboarding-provider"
-                      value={store.cloudProvider}
-                      onChange={(e) => handleProviderChange(e.target.value as LlmProviderType)}
-                      className={INPUT}
-                    >
+                  <fieldset className="space-y-2 sm:col-span-2">
+                    <legend className="mb-1 text-xs font-medium text-slate-300">{t('onboarding.providerLabel')}</legend>
+                    <div role="radiogroup" aria-label={t('onboarding.providerLabel')} className="grid grid-cols-2 sm:grid-cols-3 gap-2">
                       {CLOUD_PROVIDERS.map((provider) => (
-                        <option key={provider.id} value={provider.id}>
-                          {t(provider.labelKey)}
-                        </option>
+                        <button
+                          key={provider.id}
+                          type="button"
+                          role="radio"
+                          aria-checked={store.cloudProvider === provider.id}
+                          onClick={() => handleProviderChange(provider.id)}
+                          className={`${CHOICE_CARD} ${choiceState(store.cloudProvider === provider.id)} flex-col gap-0.5 p-2.5`}
+                        >
+                          <span className="text-sm font-semibold">{t(provider.labelKey)}</span>
+                          <span className="text-[11px] text-slate-400">{t(`onboarding.providerNote.${provider.id}` as TranslationKey)}</span>
+                        </button>
                       ))}
-                    </select>
-                  </div>
+                    </div>
+                  </fieldset>
                   <div className="space-y-1.5">
                     <label htmlFor="onboarding-model-id" className="text-xs font-medium text-slate-300">
                       {t('onboarding.modelIdLabel')}
@@ -368,6 +388,16 @@ export const FirstRunWizard: React.FC = () => {
                     <p id="onboarding-api-key-hint" className="text-xs text-slate-400">
                       {apiKeyDraft.trim() ? t('onboarding.apiKeyHint') : t('onboarding.apiKeyMissing')}
                     </p>
+                    {providerInfo?.keyUrl && (
+                      <button
+                        type="button"
+                        onClick={() => void openUrl(providerInfo.keyUrl!)}
+                        className="inline-flex items-center gap-1 text-xs text-accent-300 hover:text-accent-200"
+                      >
+                        <ExternalLink className="h-3.5 w-3.5" />
+                        {t('onboarding.whereKey', { provider: cloudProviderLabel })}
+                      </button>
+                    )}
                   </div>
                   {/* Remounted when the inputs change, so an old result doesn't stick to new values. */}
                   <CloudConnectionTest
@@ -493,7 +523,7 @@ export const FirstRunWizard: React.FC = () => {
                   { label: t('onboarding.summaryLanguage'), value: APP_LANGUAGES.find((l) => l.id === store.appLanguage)?.label },
                   {
                     label: t('onboarding.summaryModel'),
-                    value: isCloud ? `${cloudProviderLabel} · ${store.cloudModel}` : localModel?.name,
+                    value: isCloud ? `${cloudProviderLabel} · ${store.cloudModel}` : localModel && prettyModelName(localModel.name),
                   },
                   { label: t('onboarding.summaryCharacter'), value: store.activeCharacter?.card.data.name },
                 ].map((row) => (
@@ -536,19 +566,35 @@ export const FirstRunWizard: React.FC = () => {
             <span />
           )}
           {step === 'done' ? (
-            <button
-              type="button"
-              onClick={() =>
-                finish(() => {
-                  store.setActiveTab('chat');
-                  if (!isCloud && localModel && startServerNow) void store.startServer();
-                })
-              }
-              className={PRIMARY_BUTTON}
-            >
-              {t('onboarding.finish')}
-              <ArrowRight className="h-4 w-4" />
-            </button>
+            <div className="flex flex-wrap justify-end gap-2">
+              <button
+                type="button"
+                onClick={() =>
+                  finish(() => {
+                    store.setActiveTab('stage');
+                    if (!isCloud && localModel && startServerNow) void store.startServer();
+                  })
+                }
+                className={SECONDARY_BUTTON}
+              >
+                <Dice5 className="h-4 w-4" />
+                {t('onboarding.finishStory')}
+              </button>
+              <button
+                type="button"
+                onClick={() =>
+                  finish(() => {
+                    store.setActiveTab('chat');
+                    if (!isCloud && localModel && startServerNow) void store.startServer();
+                  })
+                }
+                className={PRIMARY_BUTTON}
+              >
+                <MessageSquare className="h-4 w-4" />
+                {t('onboarding.finish')}
+                <ArrowRight className="h-4 w-4" />
+              </button>
+            </div>
           ) : (
             <button type="button" disabled={!canContinue} onClick={() => goTo(STEPS[stepIndex + 1]!)} className={PRIMARY_BUTTON}>
               {t('onboarding.next')}
