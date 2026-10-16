@@ -1379,7 +1379,7 @@ impl LocalTtsEngine {
         cmd.stdout(std::process::Stdio::piped())
             .stderr(std::process::Stdio::piped())
             .kill_on_drop(true);
-        #[cfg(unix)]
+        #[cfg(target_os = "linux")]
         // SAFETY: prctl only affects the child that is about to exec.
         unsafe {
             cmd.pre_exec(|| {

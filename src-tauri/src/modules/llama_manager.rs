@@ -553,8 +553,8 @@ impl LlamaServerManager {
         cmd.stderr(std::process::Stdio::piped());
         cmd.kill_on_drop(true);
 
-        // Linux/Unix safety: Ensure child dies if OtakuSoul terminates
-        #[cfg(unix)]
+        // Linux: the child dies with OtakuSoul (prctl does not exist on macOS)
+        #[cfg(target_os = "linux")]
         unsafe {
             cmd.pre_exec(|| {
                 libc::prctl(libc::PR_SET_PDEATHSIG, libc::SIGTERM);
