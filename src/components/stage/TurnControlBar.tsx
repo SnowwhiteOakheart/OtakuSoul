@@ -13,9 +13,12 @@ import {
   Loader2,
   FastForward,
   Repeat,
+  CircleHelp,
 } from 'lucide-react';
 import { TaggedChoice } from '../../types';
 import { useTranslation, type TranslationKey } from '../../i18n';
+import { usePersistentFlag } from '../../hooks/usePersistentFlag';
+import { StageGuide } from './StageGuide';
 
 export const TurnControlBar: React.FC = () => {
   const { t } = useTranslation();
@@ -40,6 +43,9 @@ export const TurnControlBar: React.FC = () => {
   );
 
   const [input, setInput] = useState('');
+  // The guide shows once on this device; the help button brings it back.
+  const [guideSeen, setGuideSeen] = usePersistentFlag('stageGuideSeen', false);
+  const [guideOpen, setGuideOpen] = useState(false);
 
   if (!stageState) return null;
 
@@ -95,8 +101,18 @@ export const TurnControlBar: React.FC = () => {
     whisper: 'stage.placeholderWhisper',
   };
 
+  const activeMode = modeButtons.find((button) => button.mode === stageTurnMode);
+
   return (
     <div className="bg-slate-900/95 border-t border-slate-800 p-3 sm:p-4 backdrop-blur-md space-y-3">
+      {(!guideSeen || guideOpen) && (
+        <StageGuide
+          onClose={() => {
+            setGuideSeen(true);
+            setGuideOpen(false);
+          }}
+        />
+      )}
       {/* 1. Tagged Choices Pills */}
       {choices.length > 0 && (
         <div className="flex flex-wrap items-center gap-2 pt-0.5 pb-1">
@@ -156,7 +172,22 @@ export const TurnControlBar: React.FC = () => {
               </button>
             );
           })}
+          <button
+            type="button"
+            onClick={() => setGuideOpen(!guideOpen)}
+            aria-label={t('stageGuide.open')}
+            title={t('stageGuide.open')}
+            aria-expanded={guideOpen || !guideSeen}
+            className="p-1 rounded-lg text-slate-400 hover:text-accent-200 hover:bg-slate-900"
+          >
+            <CircleHelp className="w-4 h-4" />
+          </button>
         </div>
+        {activeMode && (
+          <p className="w-full order-last text-[11px] text-slate-400" data-mode-hint={activeMode.mode}>
+            <span className="font-semibold text-slate-300">{activeMode.label}:</span> {activeMode.desc}
+          </p>
+        )}
 
         {/* Whisper Target & Next Actor */}
         <div className="flex items-center gap-2">

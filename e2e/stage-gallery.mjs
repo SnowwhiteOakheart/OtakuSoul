@@ -58,8 +58,13 @@ try {
   assert.equal(state.relationships[0].target, 'Spieler');
   assert.equal(state.clocks[0].name, 'Dramatische Spannung');
   await browser.$('button*=Untersuche die gefrorene Glocke im Turm').waitForDisplayed({ timeout: 5000 });
+  // The first story explains how to play; the active mode is described below the modes.
+  await browser.$('[data-stage-guide]').waitForDisplayed({ timeout: 5000, timeoutMsg: 'Keine Kurzanleitung beim ersten Spiel' });
+  assert.match(await browser.$('[data-mode-hint]').getText(), /Sagen:/);
   await browser.pause(300);
   await shot(browser, '83-story-gestartet');
+  await jsClick(await browser.$('button*=Verstanden'));
+  await browser.$('[data-stage-guide]').waitForExist({ reverse: true, timeout: 3000 });
   assert.equal((await invoke('load_settings')).stage_last_scene, 'story_frozen_bells');
 
   // Back to the gallery and into the running story again.
@@ -68,14 +73,35 @@ try {
   await jsClick(await browser.$('button*=Zurück zur laufenden Geschichte'));
   await browser.$('textarea').waitForDisplayed({ timeout: 5000 });
 
+  // Own story through the wizard.
+  await jsClick(await browser.$('button=Geschichten'));
+  await browser.$('[data-story-gallery]').waitForDisplayed({ timeout: 5000 });
+  await jsClick(await browser.$('[data-story-gallery]').$('button*=Eigene Geschichte'));
+  await browser.$('[data-story-wizard="genre"]').waitForDisplayed({ timeout: 5000 });
+  await jsClick(await browser.$('[data-story-wizard]').$('button*=Krimi'));
+  for (const step of ['you', 'companions', 'start']) {
+    await jsClick(await browser.$('button*=Weiter'));
+    await browser.$(`[data-story-wizard="${step}"]`).waitForDisplayed({ timeout: 3000 });
+  }
+  await jsClick(await browser.$('button*=Tod einer Torte'));
+  await browser.pause(300);
+  await shot(browser, '85-story-assistent');
+  await jsClick(await browser.$('[data-story-wizard]').$('button*=Geschichte starten'));
+  await browser.$('textarea').waitForDisplayed({ timeout: 15_000 });
+  const own = await invoke('get_stage_state');
+  assert.equal(own.definition.title, 'Tod einer Torte');
+  assert.equal(own.definition.extensions.otakusoul_story.genre, 'mystery');
+  assert.match(own.chat_log[0].content, /Kochlöffel/);
+  assert.equal((await invoke('load_settings')).stage_last_scene, own.definition.id);
+
   // After a reload Stage opens the remembered story directly.
   await browser.refresh();
   await browser.$('button=Stage').waitForExist({ timeout: 20_000 });
   await browser.$('button=Stage').click();
   await browser.$('textarea').waitForDisplayed({ timeout: 15_000 });
-  assert.equal((await invoke('get_stage_state')).definition.id, 'story_frozen_bells');
+  assert.equal((await invoke('get_stage_state')).definition.id, own.definition.id);
   assert.equal(await browser.$('[data-story-gallery]').isExisting(), false);
-  console.log('Story-Galerie: erster Besuch, Filter, Vorschau, Start mit eigenen Vorschlägen und Wiederaufnahme bestanden.');
+  console.log('Story-Galerie: erster Besuch, Filter, Vorschau, Start mit eigenen Vorschlägen, Kurzanleitung, Assistent und Wiederaufnahme bestanden.');
 } finally {
   await close();
 }

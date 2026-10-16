@@ -11,6 +11,7 @@ import { TurnControlBar } from './TurnControlBar';
 import { SceneLobbyModal, type LobbyRules } from './SceneLobbyModal';
 import { SceneCreateModal } from './SceneCreateModal';
 import { StoryGallery } from './StoryGallery';
+import { StoryWizard } from './StoryWizard';
 import { useStageAmbient } from './useStageAmbient';
 import { CharacterVoiceModal } from '../voice/CharacterVoiceModal';
 import { STAGE_NARRATOR_VOICE_ID } from '../../services/stageVoice';
@@ -79,6 +80,7 @@ export const StageView: React.FC = () => {
   // Scene shown when the gallery opened: a scene loaded from the lobby switches to playing.
   const [galleryFrom, setGalleryFrom] = useState<string | null>(null);
   const [showCreateStory, setShowCreateStory] = useState(false);
+  const [showStoryWizard, setShowStoryWizard] = useState(false);
   const openGallery = () => {
     setGalleryFrom(stageState?.definition.id ?? null);
     setView('gallery');
@@ -279,8 +281,22 @@ export const StageView: React.FC = () => {
               setLobbyRules('all');
               setShowLobbyModal(true);
             }}
-            onCreate={() => setShowCreateStory(true)}
+            onCreate={() => setShowStoryWizard(true)}
             onBack={stageLastScene ? () => setView('play') : undefined}
+          />
+        )}
+        {showStoryWizard && (
+          <StoryWizard
+            onClose={() => setShowStoryWizard(false)}
+            onCreated={() => {
+              setShowStoryWizard(false);
+              void fetchStageScenes();
+              setView('play');
+            }}
+            onAdvanced={() => {
+              setShowStoryWizard(false);
+              setShowCreateStory(true);
+            }}
           />
         )}
         {showCreateStory && (

@@ -34,7 +34,7 @@ export type StoryKind =
   | 'fantasy' | 'adventure' | 'slice_of_life' | 'comedy' | 'romance' | 'mystery' | 'scifi' | 'horror' | 'adventure5e' | 'custom';
 type Filter = 'all' | 'beginner' | StoryKind;
 
-const KINDS: Record<StoryKind, { icon: LucideIcon; cover: string; accent: string }> = {
+export const KINDS: Record<StoryKind, { icon: LucideIcon; cover: string; accent: string }> = {
   fantasy: { icon: Sparkles, cover: 'from-sky-800 via-indigo-900 to-slate-950', accent: 'text-sky-200' },
   adventure: { icon: Compass, cover: 'from-emerald-800 via-teal-900 to-slate-950', accent: 'text-emerald-200' },
   comedy: { icon: Laugh, cover: 'from-yellow-700 via-orange-900 to-slate-950', accent: 'text-yellow-200' },

@@ -76,12 +76,14 @@
   passenden Gefährten aus den mitgelieferten Figuren; die englische Standardszene ersetzen.
 - [x] **Hub-Szenen mit Story-Daten (16.10.2026):** alle 45 Szenen in `otakusoul-data` (plus Paket-Kopien) tragen
   `otakusoul_story`, übersetzte Startorte und Tageszeiten; Format in dessen `AI.md` beschrieben.
-- [ ] **Story-Assistent „Eigene Geschichte“:** 4 Schritte – Genre/Stimmung → Wer bist du? (Persona) → Wer begleitet
+- [x] **Story-Assistent „Eigene Geschichte“ (16.10.2026):** `StoryWizard.tsx` (Genre → Figur → Gefährten → Ausgangslage mit
+  zwei Vorlagen je Genre, Würfeln oder eigener Idee), Editor über „Erweiterter Editor“. Ursprünglicher Plan: 4 Schritte – Genre/Stimmung → Wer bist du? (Persona) → Wer begleitet
   dich? (Figuren, Vorschläge) → Ausgangslage (Vorlagen oder eigener Satz, „Würfel mir etwas aus“). Regeln/Technik
   (Akteure pro Runde, SG, Regelwerk) nur unter „Erweitert“; der heutige Editor bleibt für Fortgeschrittene.
 - [x] **Vorschau vor dem Start:** Karte zeigt Ausgangslage, Gruppe, was man tun kann; „Starten“ mit einem Klick, ohne
   Zwischenschritte; „Weiterspielen“ für begonnene Geschichten an erster Stelle.
-- [ ] **Geführte erste Runde:** Bei der ersten Szene kurze Einblendungen zu Sagen/Tun/Denken/Regie/Flüstern,
+- [x] **Geführte erste Runde (16.10.2026):** `StageGuide.tsx` beim ersten Spiel (Gerät, `stageGuideSeen`), „?“ öffnet sie
+  wieder, Erklärung der gewählten Eingabeart unter den Knöpfen. Ursprünglicher Plan: Bei der ersten Szene kurze Einblendungen zu Sagen/Tun/Denken/Regie/Flüstern,
   Vorschlägen, „Weiter“ und Auto-Play (überspringbar, später unter Hilfe abrufbar); Eingabearten mit Beispieltext im
   Platzhalter.
 - [ ] **Sprache durchziehen:** Szenen, Vorschläge und Erzähler antworten in der App-Sprache (Szenen pflegen Übersetzungen

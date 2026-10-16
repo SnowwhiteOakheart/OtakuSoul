@@ -137,6 +137,8 @@ Hub). Integrationen → Bildgenerierung enthält nur Studio und Galerie.
   die allgemeinen `pending_choices`); mitgelieferte Geschichten in `presets/stories/scenes/` (Ordner `STORY_FOLDER`).
   Szenen übersetzen auch `starting_location`/`time_of_day`. Lobby = „Szenen verwalten“ aus der Galerie; E2E-Harness setzt
   `stage_last_scene: "default_scene"`, Galerie-Test `stage-gallery.mjs`, Lobby über `openSceneLobby`.
+  „Eigene Geschichte“ = `StoryWizard.tsx` (`buildStoryDefinition`; Vorlagen `storyWizard.premise.<genre>.<n>.*` in allen Locales,
+  `PREMISES_PER_GENRE`), Kurzanleitung `StageGuide.tsx` in `TurnControlBar` (`usePersistentFlag('stageGuideSeen')`).
 - Lokale TTS (`tts_local.rs`, `crispasr --server`): F5 bekommt unter CUDA `CRISPASR_F5_EMBED_GPU=1` (sonst ~20× langsamer).
   VoiceDesign-Modelle (`voice_design`) brauchen eine Beschreibung (`openai_instructions` der Stimme → `instructions`).
   TADA: `CRISPASR_TADA_WAV_CLONE=1` (WAV-Klon, Encoder/Aligner neben dem Modell), `CRISPASR_TADA_NUM_CANDIDATES=4`.
