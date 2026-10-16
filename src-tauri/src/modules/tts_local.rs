@@ -62,6 +62,8 @@ struct TtsModel {
     cloning: bool,
     /// Needs a cloned voice (no preset of its own).
     needs_clone: bool,
+    /// Cloning works but CrispASR marks it experimental (Chatterbox: native WAV path, 24 kHz).
+    clone_experimental: bool,
     /// The voice comes from a description (`instructions`) instead of a preset or clone.
     voice_design: bool,
     vram_mb: u64,
@@ -90,6 +92,7 @@ const CATALOG: &[TtsModel] = &[
         languages: QWEN_LANGS,
         cloning: false,
         needs_clone: false,
+        clone_experimental: false,
         voice_design: false,
         vram_mb: 3_200,
         files: &[
@@ -183,6 +186,7 @@ const CATALOG: &[TtsModel] = &[
         languages: QWEN_LANGS,
         cloning: true,
         needs_clone: true,
+        clone_experimental: false,
         voice_design: false,
         vram_mb: 3_600,
         files: &[
@@ -222,6 +226,7 @@ const CATALOG: &[TtsModel] = &[
         languages: QWEN_LANGS,
         cloning: false,
         needs_clone: false,
+        clone_experimental: false,
         voice_design: true,
         vram_mb: 3_600,
         files: &[
@@ -262,6 +267,7 @@ const CATALOG: &[TtsModel] = &[
         languages: &["de", "en", "fr", "es", "it", "pl", "pt", "ja", "ar", "zh"],
         cloning: true,
         needs_clone: false,
+        clone_experimental: false,
         voice_design: false,
         vram_mb: 7_500,
         files: &[
@@ -503,8 +509,9 @@ const CATALOG: &[TtsModel] = &[
         license: "MIT",
         noncommercial: false,
         languages: CHATTERBOX_LANGS,
-        cloning: false,
+        cloning: true,
         needs_clone: false,
+        clone_experimental: true,
         voice_design: false,
         vram_mb: 2_300,
         files: &[
@@ -547,8 +554,9 @@ const CATALOG: &[TtsModel] = &[
         license: "MIT",
         noncommercial: false,
         languages: &["en"],
-        cloning: false,
+        cloning: true,
         needs_clone: false,
+        clone_experimental: true,
         voice_design: false,
         vram_mb: 2_000,
         files: &[
@@ -592,6 +600,7 @@ const CATALOG: &[TtsModel] = &[
         languages: &["de"],
         cloning: false,
         needs_clone: false,
+        clone_experimental: false,
         voice_design: false,
         vram_mb: 600,
         files: &[
@@ -701,6 +710,7 @@ const CATALOG: &[TtsModel] = &[
         languages: &["en", "zh"],
         cloning: true,
         needs_clone: true,
+        clone_experimental: false,
         voice_design: false,
         vram_mb: 2_000,
         files: &[TtsFile {
@@ -820,6 +830,8 @@ pub struct TtsModelInfo {
     pub languages: Vec<String>,
     pub cloning: bool,
     pub needs_clone: bool,
+    /// Cloning is marked experimental upstream (shown next to the model).
+    pub clone_experimental: bool,
     /// The voice is described in words (`openai_instructions` of the voice settings).
     pub voice_design: bool,
     /// Roleplay actions such as *laughs* become sounds (`speaks_sound_tags`).
@@ -872,6 +884,7 @@ pub fn list_models() -> Vec<TtsModelInfo> {
                 languages: m.languages.iter().map(|l| l.to_string()).collect(),
                 cloning: m.cloning,
                 needs_clone: m.needs_clone,
+                clone_experimental: m.clone_experimental,
                 voice_design: m.voice_design,
                 sound_tags: speaks_sound_tags(Some(m.id)),
                 vram_mb: m.vram_mb,
@@ -1117,6 +1130,17 @@ pub fn create_cloned_voice(
         .map_err(|e| crate::err!("backend.common.fileWrite", error = e))?;
     tracing::info!("Stimme {} ({:.1}s) gespeichert", voice.id, duration);
     Ok(voice)
+}
+
+/// The name a cloned voice is sent under. Chatterbox clones natively only from the file itself
+/// (24 kHz WAV): with the bare name the server finds the voice but the backend loads nothing
+/// ("native WAV cloning failed", CrispASR 0.8.43); the other backends take the bare name.
+fn clone_voice_name(model: &TtsModel, id: &str) -> String {
+    if model.backend.starts_with("chatterbox") {
+        format!("{id}.wav")
+    } else {
+        id.to_string()
+    }
 }
 
 /// Sample rate of stored voice references (required by Qwen3-TTS).
@@ -1491,7 +1515,7 @@ impl LocalTtsEngine {
                 body["voice"] = name.clone().into();
             }
             VoiceChoice::Clone(clone) => {
-                body["voice"] = clone.id.clone().into();
+                body["voice"] = clone_voice_name(model, &clone.id).into();
                 body["ref_text"] = clone.ref_text.clone().into();
                 body["source_lang"] = clone.language.clone().into();
                 body["consent_attestation"] = clone.consent_statement.clone().into();
@@ -1555,6 +1579,19 @@ pub async fn synthesize_data_url(
 
 #[cfg(test)]
 mod tests {
+
+    #[test]
+    fn chatterbox_gets_the_clone_as_wav_file() {
+        let chatterbox = catalog_model("chatterbox-multilingual").unwrap();
+        let turbo = catalog_model("chatterbox-turbo").unwrap();
+        assert!(chatterbox.cloning && chatterbox.clone_experimental && turbo.cloning);
+        assert_eq!(clone_voice_name(chatterbox, "anna-1"), "anna-1.wav");
+        assert_eq!(
+            clone_voice_name(catalog_model("tada-3b-ml").unwrap(), "anna-1"),
+            "anna-1"
+        );
+    }
+
     use super::*;
 
     #[test]

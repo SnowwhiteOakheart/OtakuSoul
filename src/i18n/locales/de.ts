@@ -2764,6 +2764,7 @@ export const de = {
   "localTts.loading": "Modelle werden geladen …",
   "localTts.meta": "{{license}} · {{languages}} · {{size}} GB",
   "localTts.canClone": "kann Stimmen klonen",
+  "localTts.canCloneExperimental": "kann Stimmen klonen (experimentell)",
   "localTts.installed": "installiert",
   "localTts.delete": "{{name}} löschen",
   "localTts.deleteTitle": "Sprachmodell „{{name}}“ löschen?",

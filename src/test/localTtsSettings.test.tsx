@@ -22,6 +22,7 @@ const qwen: TtsModelInfo = {
   languages: ['de', 'en', 'ru'],
   cloning: true,
   needs_clone: false,
+  clone_experimental: false,
   voice_design: false,
   sound_tags: false,
   vram_mb: 2000,
@@ -40,6 +41,7 @@ const f5: TtsModelInfo = {
   installed: false,
   missing_bytes: 1 * GB,
   needs_clone: true,
+  clone_experimental: false,
   voices: [],
 };
 

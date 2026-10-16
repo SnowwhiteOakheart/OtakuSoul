@@ -650,7 +650,7 @@ aus einer eigenen Aufnahme. Grundlage ist die Recherche vom 30.09.2026.
    Download-Logik für Modelle ist jetzt gemeinsam in `modules/model_files.rs`, mit Test für Fortsetzen/Prüfsumme/Abbruch.)*
 2. [x] **TTS-Modellkatalog** mit fortsetzbarem, geprüftem Download (gemeinsame Download-Logik mit den Bildmodellen):
    - Qwen3-TTS 0.6B Base (Apache-2.0, ~1 GB + Codec): Standard, 10 Sprachen, Stimmklonen aus WAV + Transkript.
-   - Chatterbox Multilingual (MIT, ~0,9 GB): 23 Sprachen, eingebaute Stimme (Klonen braucht bisher ein Python-Skript).
+   - Chatterbox Multilingual (MIT, ~0,9 GB): 23 Sprachen, eingebaute Stimme (Klonen braucht bisher ein Python-Skript; seit 16.10.2026 experimentell nativ, siehe unten).
    - Kokoro mit deutschem Modell (Apache-2.0): klein und schnell, feste Stimmen.
    - F5-TTS v1 (Gewichte CC-BY-NC-4.0): nur nach Freischaltung, mit Hinweis.
 3. [x] **Lokaler TTS-Server:** `crispasr --server` wird von der App gestartet/gestoppt (wie `sd-server`),
@@ -1912,3 +1912,10 @@ veraltet und sind korrigiert: `chat-sidebar-errors` las die Sitzung, bevor der e
   für Rumpf, Arme, Hände, Beine und Finger (Mixamo, Unreal, Rigify, MakeHuman, VRoid, Biped, MMD), MMD-Gesichter,
   Gesichter über Knochen, Gesichts-Editor mit Live-Vorschau, Toon-Look, Import als `.gltf`-Ordner oder ZIP und eine
   dreisprachige Anleitung – Schritte in [`roadmap_ue5.md`](roadmap_ue5.md).
+
+- [x] **Chatterbox-Stimmklonen ohne Python (16.10.2026):** CrispASR klont Chatterbox (Multilingual und Turbo) inzwischen
+  nativ aus 24-kHz-Mono-WAV (VoiceEncoder, S3Tokenizer, CAMPPlus; von CrispASR als experimentell markiert). Im
+  Server-Modus braucht die Stimme den Dateinamen samt `.wav` (`tts_local::clone_voice_name`), sonst kommt leeres Audio.
+  Katalog-Feld `clone_experimental` zeigt „kann Stimmen klonen (experimentell)“. GPU-Test `chatterbox_clone`
+  (Referenz Kokoro `df_victoria` 145 Hz): Klon de 141 Hz / en 145 Hz / Turbo 149 Hz statt 156 bzw. 224 Hz der
+  Standardstimme, Whisper-Wortübereinstimmung 100 %.

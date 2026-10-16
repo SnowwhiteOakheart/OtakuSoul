@@ -198,6 +198,137 @@ const EN: &str = "Good evening! Today I found a strange book in the old library.
 const EN_TAGS: &str = "[laugh] Oh, that is a funny story! [sigh] But now I am really tired.";
 const WARM: &str = "Hast du Lust, es gemeinsam zu lesen? Ich bin schon ganz gespannt.";
 
+/// Median pitch (Hz) of the voiced parts of a WAV, by autocorrelation over 40 ms frames.
+fn median_pitch(bytes: &[u8]) -> f32 {
+    let mut reader = hound::WavReader::new(std::io::Cursor::new(bytes)).expect("valid WAV");
+    let spec = reader.spec();
+    let channels = spec.channels as usize;
+    let samples: Vec<f32> = match spec.sample_format {
+        hound::SampleFormat::Float => reader.samples::<f32>().map(|s| s.unwrap()).collect(),
+        hound::SampleFormat::Int => reader
+            .samples::<i16>()
+            .map(|s| f32::from(s.unwrap()) / f32::from(i16::MAX))
+            .collect(),
+    };
+    let mono: Vec<f32> = samples
+        .chunks(channels)
+        .map(|c| c.iter().sum::<f32>() / channels as f32)
+        .collect();
+    let rate = spec.sample_rate as usize;
+    let frame = rate * 40 / 1000;
+    let (min_lag, max_lag) = (rate / 400, rate / 60);
+    let mut pitches = Vec::new();
+    for chunk in mono.chunks(frame) {
+        if chunk.len() < frame {
+            break;
+        }
+        let energy: f32 = chunk.iter().map(|x| x * x).sum();
+        if energy / (frame as f32) < 1e-4 {
+            continue;
+        }
+        let (mut best, mut best_lag) = (0.0f32, 0usize);
+        for lag in min_lag..max_lag.min(frame - 1) {
+            let corr: f32 = (0..frame - lag).map(|i| chunk[i] * chunk[i + lag]).sum();
+            if corr > best {
+                best = corr;
+                best_lag = lag;
+            }
+        }
+        // Voiced: a clear periodic peak.
+        if best_lag > 0 && best > 0.3 * energy {
+            pitches.push(rate as f32 / best_lag as f32);
+        }
+    }
+    pitches.sort_by(|a, b| a.partial_cmp(b).unwrap());
+    pitches.get(pitches.len() / 2).copied().unwrap_or(0.0)
+}
+
+/// Chatterbox clones natively from a WAV (CrispASR, 24 kHz path): a clone of Kokoro's high
+/// female voice must come out near its pitch, not near Chatterbox's own (lower) default voice.
+///
+/// ```text
+/// OTAKUSOUL_E2E_OUT=/tmp/e2e cargo test --test gpu_e2e chatterbox_clone -- --ignored --nocapture
+/// ```
+#[tokio::test(flavor = "multi_thread")]
+#[ignore = "downloads models and needs a GPU"]
+async fn chatterbox_clone() {
+    let out = out_dir();
+    ensure_runtime(RuntimeKind::Crisp, &["vulkan"]).await;
+    let models: &[&str] = if std::env::var("OTAKUSOUL_E2E_TURBO").is_ok() {
+        &["kokoro-de", "chatterbox-multilingual", "chatterbox-turbo"]
+    } else {
+        &["kokoro-de", "chatterbox-multilingual"]
+    };
+    for id in models {
+        tts_local::download_model_with(id, &|_| {}).await.unwrap();
+    }
+    let engine = tts_local::engine();
+    engine.stop().await;
+    let say = async |model: &str, voice: &str, text: &str, lang: &str| {
+        let started = Instant::now();
+        let wav = engine
+            .synthesize_with(model, voice, text, lang, 1.0, "")
+            .await
+            .unwrap_or_else(|e| panic!("{model} {voice}: {e}"));
+        let name = format!("clone-{model}-{}-{lang}.wav", voice.replace(':', "_"));
+        std::fs::write(out.join(&name), &wav).unwrap();
+        let heard = transcribe(&out.join(&name), lang);
+        let score = word_match(text, &heard);
+        let pitch = median_pitch(&wav);
+        println!(
+            "[clone] {model} {voice} {lang}: {:.1}s Audio in {:.1}s, Tonhöhe {pitch:.0} Hz, Wörter {:.0}%\n        gehört: {heard}",
+            wav_seconds(&wav),
+            started.elapsed().as_secs_f32(),
+            score * 100.0
+        );
+        (pitch, score)
+    };
+
+    // Reference: Kokoro's female German voice, taken as the app's recorder delivers it (16 kHz).
+    let reference = engine
+        .synthesize_with("kokoro-de", "preset:df_victoria", DE, "de", 1.0, "")
+        .await
+        .unwrap();
+    let reference_path = out.join("clone-reference-victoria.wav");
+    std::fs::write(&reference_path, &reference).unwrap();
+    let reference_pitch = median_pitch(&reference);
+    let (samples, rate) = read_wav_mono(&reference_path);
+    let samples = resample(&samples, rate, 16_000);
+    let clone =
+        tts_local::create_cloned_voice("E2E Victoria", &samples, 16_000, DE, "de", true).unwrap();
+    println!(
+        "[clone] Referenz Victoria: Tonhöhe {reference_pitch:.0} Hz, Klon {}",
+        clone.id
+    );
+    let voice = format!("clone:{}", clone.id);
+
+    let mut failures = Vec::new();
+    let (default_pitch, _) = say("chatterbox-multilingual", "preset:default", WARM, "de").await;
+    for (lang, text) in [("de", WARM), ("en", EN)] {
+        let (pitch, score) = say("chatterbox-multilingual", &voice, text, lang).await;
+        let near_reference = (pitch - reference_pitch).abs() < (pitch - default_pitch).abs();
+        if score < 0.6 || !near_reference {
+            failures.push(format!(
+                "multilingual {lang}: {pitch:.0} Hz, Wörter {:.0}%",
+                score * 100.0
+            ));
+        }
+    }
+    if models.contains(&"chatterbox-turbo") {
+        let (turbo_default, _) = say("chatterbox-turbo", "preset:default", EN, "en").await;
+        let (pitch, score) = say("chatterbox-turbo", &voice, EN, "en").await;
+        if score < 0.6 || (pitch - reference_pitch).abs() >= (pitch - turbo_default).abs() {
+            failures.push(format!(
+                "turbo: {pitch:.0} Hz, Wörter {:.0}%",
+                score * 100.0
+            ));
+        }
+    }
+    tts_local::delete_cloned_voice(&clone.id).unwrap();
+    engine.stop().await;
+    assert!(failures.is_empty(), "Klon nicht gelungen: {failures:?}");
+}
+
 #[tokio::test(flavor = "multi_thread")]
 #[ignore = "downloads models and needs a GPU"]
 async fn tts() {

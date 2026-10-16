@@ -2762,6 +2762,7 @@ export const en: TranslationDictionary = {
   "localTts.loading": "Loading models …",
   "localTts.meta": "{{license}} · {{languages}} · {{size}} GB",
   "localTts.canClone": "can clone voices",
+  "localTts.canCloneExperimental": "can clone voices (experimental)",
   "localTts.installed": "installed",
   "localTts.delete": "Delete {{name}}",
   "localTts.deleteTitle": "Delete speech model “{{name}}”?",

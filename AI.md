@@ -129,6 +129,8 @@ Hub). Integrationen → Bildgenerierung enthält nur Studio und Galerie.
 - Lokale TTS (`tts_local.rs`, `crispasr --server`): F5 bekommt unter CUDA `CRISPASR_F5_EMBED_GPU=1` (sonst ~20× langsamer).
   VoiceDesign-Modelle (`voice_design`) brauchen eine Beschreibung (`openai_instructions` der Stimme → `instructions`).
   TADA: `CRISPASR_TADA_WAV_CLONE=1` (WAV-Klon, Encoder/Aligner neben dem Modell), `CRISPASR_TADA_NUM_CANDIDATES=4`.
+  Chatterbox klont nativ nur aus 24-kHz-WAV und braucht im Server die Stimme als `<id>.wav` (`clone_voice_name`);
+  Katalog-Feld `clone_experimental` kennzeichnet das in der UI.
   Chatterbox Turbo (`speaks_sound_tags`): `voice::actions_to_sound_tags` macht *lacht* zu `[laugh]` vor dem Aktionsfilter.
 - 3D-Avatar: gemeinsame Bühne `avatarStage.ts` (Kamera, Licht, gespeicherte Ansicht, Renderschleife), Overlay
   `AvatarViewerChrome.tsx`, Bewegungen über `useAvatarMotions`; `AvatarCanvas` wählt nach Endung `VrmViewer`,

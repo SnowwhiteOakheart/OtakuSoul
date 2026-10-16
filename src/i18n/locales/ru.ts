@@ -2762,6 +2762,7 @@ export const ru: TranslationDictionary = {
   "localTts.loading": "Загрузка моделей …",
   "localTts.meta": "{{license}} · {{languages}} · {{size}} ГБ",
   "localTts.canClone": "умеет клонировать голоса",
+  "localTts.canCloneExperimental": "умеет клонировать голоса (экспериментально)",
   "localTts.installed": "установлена",
   "localTts.delete": "Удалить {{name}}",
   "localTts.deleteTitle": "Удалить речевую модель «{{name}}»?",

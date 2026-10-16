@@ -198,7 +198,7 @@ export const LocalTtsSettings = ({ config, onChange }: LocalTtsSettingsProps) =>
                             languages: model.languages.join(', '),
                             size: gb(model.download_bytes),
                           })}
-                          {model.cloning ? ` · ${t('localTts.canClone')}` : ''}
+                          {model.cloning ? ` · ${t(model.clone_experimental ? 'localTts.canCloneExperimental' : 'localTts.canClone')}` : ''}
                         </span>
                         {!model.allowed && <span className="block text-amber-300/90 mt-0.5">{t('localTts.ncLocked')}</span>}
                       </span>

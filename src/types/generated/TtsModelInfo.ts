@@ -7,6 +7,10 @@ export type TtsModelInfo = { id: string, name: string, license: string, noncomme
  */
 allowed: boolean, languages: Array<string>, cloning: boolean, needs_clone: boolean, 
 /**
+ * Cloning is marked experimental upstream (shown next to the model).
+ */
+clone_experimental: boolean, 
+/**
  * The voice is described in words (`openai_instructions` of the voice settings).
  */
 voice_design: boolean, 
