@@ -1919,3 +1919,8 @@ veraltet und sind korrigiert: `chat-sidebar-errors` las die Sitzung, bevor der e
   Katalog-Feld `clone_experimental` zeigt „kann Stimmen klonen (experimentell)“. GPU-Test `chatterbox_clone`
   (Referenz Kokoro `df_victoria` 145 Hz): Klon de 141 Hz / en 145 Hz / Turbo 149 Hz statt 156 bzw. 224 Hz der
   Standardstimme, Whisper-Wortübereinstimmung 100 %.
+
+- [x] **Stimmklonen: Zuschnitt und Sicherung (16.10.2026):** Der Klon-Dialog schneidet längere Aufnahmen und Dateien selbst
+  zu (Wellenform, Anfang/Ende, „Besten Abschnitt vorschlagen“, Ausschnitt anhören; Aufnahme bis 60 s). Geklonte Stimmen
+  gehören jetzt zur Profil-Sicherung (Gruppe „App-Einstellungen & geklonte Stimmen“), der Hinweistext nennt alle
+  klonfähigen Modelle (Qwen3-TTS, Chatterbox, TADA, F5-TTS).

@@ -103,4 +103,45 @@ describe('LocalTtsSettings', () => {
     expect(screen.getByRole('button', { name: 'Detect automatically' })).toBeDisabled();
     expect(screen.getByRole('checkbox', { name: /I confirm that this is my own voice/ })).not.toBeChecked();
   });
+
+  it('cuts the reference out of a longer file and saves only that part', async () => {
+    // 40 s at 24 kHz: silence with speech-like noise from 20 s to 34 s.
+    const rate = 24_000;
+    const audio = new Float32Array(40 * rate);
+    for (let i = 20 * rate; i < 34 * rate; i += 1) audio[i] = Math.sin(i / 7) * 0.5;
+    class FakeAudioContext {
+      decodeAudioData = async () => ({ length: audio.length, numberOfChannels: 1, sampleRate: rate, getChannelData: () => audio });
+      close = async () => {};
+    }
+    vi.stubGlobal('AudioContext', FakeAudioContext);
+    const user = userEvent.setup();
+    const { container } = render(<LocalTtsSettings config={config} onChange={vi.fn()} />);
+    const file = new File([new Uint8Array(8)], 'long.wav', { type: 'audio/wav' });
+    await user.upload(await screen.findByLabelText('Choose audio file'), file);
+
+    // The suggestion covers the speech, not the silence before it.
+    const trim = await waitFor(() => {
+      const element = container.querySelector<HTMLElement>('[data-clone-trim]');
+      expect(element).not.toBeNull();
+      return element!;
+    });
+    const [start = 0, end = 0] = trim.dataset.cloneTrim!.split('-').map(Number);
+    expect(start).toBeGreaterThan(18);
+    expect(start).toBeLessThan(23);
+    expect(end - start).toBeGreaterThan(10);
+    expect(end - start).toBeLessThan(16);
+
+    fireEvent.change(screen.getByRole('slider', { name: /^Start/ }), { target: { value: '21' } });
+    fireEvent.change(screen.getByRole('slider', { name: /^End/ }), { target: { value: '31' } });
+    expect(container.querySelector('[data-clone-seconds]')?.getAttribute('data-clone-seconds')).toBe('10.0');
+
+    await user.type(screen.getByRole('textbox', { name: 'Voice name' }), 'Probe');
+    await user.type(screen.getByRole('textbox', { name: /What is said in the recording/ }), 'Hallo');
+    await user.click(screen.getByRole('checkbox', { name: /I confirm that this is my own voice/ }));
+    await user.click(screen.getByRole('button', { name: 'Save voice' }));
+    await waitFor(() => expect(api.createClonedVoice).toHaveBeenCalled());
+    const saved = vi.mocked(api.createClonedVoice).mock.calls[0]![0];
+    expect(atob(saved.samplesBase64).length / 4).toBe(10 * rate);
+    vi.unstubAllGlobals();
+  });
 });

@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import { Check, Download, Loader2, Mic, ShieldAlert, Square, Trash2, Upload, Wand2, X } from 'lucide-react';
 import { api } from '../../services/api';
 import { downloadTtsModelTask } from '../../services/downloadTasks';
@@ -7,6 +7,8 @@ import { errorMessage } from '../../utils/errors';
 import { confirmDialog, toast } from '../ui/feedback';
 import { RuntimeCard } from '../settings/sections/RuntimeCard';
 import { VoiceCapture, floatSamplesToBase64, resampleMono } from '../../services/voiceCapture';
+import { suggestClip, trimSamples, type ClipRange } from '../../utils/audioClip';
+import { CloneTrimmer } from './CloneTrimmer';
 import type { ClonedVoice, TtsLocalSettings, TtsModelInfo, TtsModelProgress, VoiceConfig } from '../../types';
 
 const gb = (bytes: number) => (bytes / 1024 ** 3).toFixed(2);
@@ -14,6 +16,8 @@ const gb = (bytes: number) => (bytes / 1024 ** 3).toFixed(2);
 const CLONE_RATE = 24_000;
 /** Speech recognition (whisper) expects 16 kHz. */
 const STT_RATE = 16_000;
+/** Longest recording; the trimmer then cuts the reference out of it. */
+const MAX_RECORDING_MS = 60_000;
 const CLONE_LANGUAGES = ['de', 'en', 'ru', 'ja', 'zh', 'fr', 'es', 'it', 'pt', 'ko'];
 
 const fieldClass =
@@ -329,7 +333,9 @@ const VoiceCloneSection = ({
   const [language, setLanguage] = useState('de');
   const [refText, setRefText] = useState('');
   const [consent, setConsent] = useState(false);
-  const [samples, setSamples] = useState<Float32Array | null>(null);
+  // The whole recording or file; `range` is the part that becomes the reference.
+  const [source, setSource] = useState<Float32Array | null>(null);
+  const [range, setRange] = useState<ClipRange>({ start: 0, end: 0 });
   const [isRecording, setIsRecording] = useState(false);
   const [isBusy, setIsBusy] = useState(false);
   const capture = useRef<VoiceCapture | null>(null);
@@ -346,20 +352,25 @@ const VoiceCloneSection = ({
     return () => void capture.current?.cancel();
   }, []);
 
+  const samples = useMemo(() => (source ? trimSamples(source, CLONE_RATE, range) : null), [source, range]);
   const seconds = samples ? samples.length / CLONE_RATE : 0;
+  const takeSource = (audio: Float32Array | null) => {
+    setSource(audio);
+    setRange(audio ? suggestClip(audio, CLONE_RATE) : { start: 0, end: 0 });
+  };
 
   const toggleRecording = async () => {
     try {
       if (isRecording) {
         const result = await capture.current?.stop();
         setIsRecording(false);
-        if (result) setSamples(base64ToFloat(result.audioBase64));
+        if (result) takeSource(base64ToFloat(result.audioBase64));
         return;
       }
       capture.current = new VoiceCapture();
       await capture.current.start({
         inputDeviceId: sttConfig.input_device_id || undefined,
-        maxDurationMs: 30_000,
+        maxDurationMs: MAX_RECORDING_MS,
         targetRate: CLONE_RATE,
       });
       setIsRecording(true);
@@ -372,7 +383,7 @@ const VoiceCloneSection = ({
   const handleFile = async (file: File | undefined) => {
     if (!file) return;
     try {
-      setSamples(await decodeAudioFile(file, CLONE_RATE));
+      takeSource(await decodeAudioFile(file, CLONE_RATE));
     } catch (e) {
       toast.error(translate('localTts.decodeFailed', { error: errorMessage(e) }));
     }
@@ -407,7 +418,7 @@ const VoiceCloneSection = ({
       setName('');
       setRefText('');
       setConsent(false);
-      setSamples(null);
+      takeSource(null);
       void loadVoices();
       onChanged();
     } catch (e) {
@@ -507,11 +518,15 @@ const VoiceCloneSection = ({
           onChange={(e) => void handleFile(e.target.files?.[0])}
         />
         {samples && (
-          <span className={seconds < 3 || seconds > 30 ? 'text-amber-300' : 'text-slate-400'}>
+          <span className={seconds < 3 || seconds > 30 ? 'text-amber-300' : 'text-slate-400'} data-clone-seconds={seconds.toFixed(1)}>
             {t('localTts.sampleLength', { seconds: seconds.toFixed(1) })}
           </span>
         )}
       </div>
+
+      {source && source.length / CLONE_RATE > 3 && (
+        <CloneTrimmer source={source} rate={CLONE_RATE} range={range} onRange={setRange} />
+      )}
 
       <div>
         <div className={`${labelClass} flex items-center justify-between`}>

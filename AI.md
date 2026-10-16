@@ -131,6 +131,10 @@ Hub). Integrationen → Bildgenerierung enthält nur Studio und Galerie.
   TADA: `CRISPASR_TADA_WAV_CLONE=1` (WAV-Klon, Encoder/Aligner neben dem Modell), `CRISPASR_TADA_NUM_CANDIDATES=4`.
   Chatterbox klont nativ nur aus 24-kHz-WAV und braucht im Server die Stimme als `<id>.wav` (`clone_voice_name`);
   Katalog-Feld `clone_experimental` kennzeichnet das in der UI.
+  Klon-Dialog: Aufnahme (bis 60 s) oder Datei → `CloneTrimmer` (Wellenform, Anfang/Ende, Vorschlag `utils/audioClip.ts`
+  `suggestClip` = Fenster mit meister Sprache, Ränder in Pausen); gespeichert wird nur `trimSamples` (Blenden). E2E
+  `voice-clone-trim.mjs`. Geklonte Stimmen (`<Daten>/voices`, ohne Kokoro-`.gguf`) sichert `profile_backup` mit der
+  Gruppe „settings“ unter `voices/`.
   Chatterbox Turbo (`speaks_sound_tags`): `voice::actions_to_sound_tags` macht *lacht* zu `[laugh]` vor dem Aktionsfilter.
 - 3D-Avatar: gemeinsame Bühne `avatarStage.ts` (Kamera, Licht, gespeicherte Ansicht, Renderschleife), Overlay
   `AvatarViewerChrome.tsx`, Bewegungen über `useAvatarMotions`; `AvatarCanvas` wählt nach Endung `VrmViewer`,

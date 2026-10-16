@@ -14,6 +14,8 @@ use crate::modules::paths::{AppPaths, resolve_app_paths};
 const SCHEMA_VERSION: u32 = 1;
 const SAFETY_ROTATION_KEEP: usize = 5;
 const MEMORY_DB_ENTRY: &str = "memory/otakusoul.db";
+/// Cloned voices from `<Daten>/voices`, backed up with the settings group.
+const VOICES_PREFIX: &str = "voices/";
 
 fn default_true() -> bool {
     true
@@ -320,6 +322,28 @@ impl ProfileBackupManager {
                 "settings/voice_configs",
                 &mut added_files,
             )?;
+            // Cloned voices (reference WAV, transcript, consent) that the voice configs point to.
+            // Kokoro voice packs (`.gguf`) are copies of downloaded models and are left out.
+            let voices_dir = data_dir.join("voices");
+            for path in walkdir(&voices_dir)? {
+                if path
+                    .extension()
+                    .is_some_and(|ext| ext.eq_ignore_ascii_case("gguf"))
+                {
+                    continue;
+                }
+                let rel_path = path.strip_prefix(&voices_dir).map_err(|e| e.to_string())?;
+                Self::add_file_to_zip_archive(
+                    &mut zip,
+                    options,
+                    &path,
+                    &format!(
+                        "{VOICES_PREFIX}{}",
+                        rel_path.to_string_lossy().replace('\\', "/")
+                    ),
+                    &mut added_files,
+                )?;
+            }
         }
 
         // Write manifest
@@ -514,6 +538,9 @@ impl ProfileBackupManager {
                 } else if entry_str.starts_with("companion/") && selection.companion {
                     let sub = entry_str.trim_start_matches("companion/");
                     Some(data_dir.join("companion").join(sub))
+                } else if entry_str.starts_with(VOICES_PREFIX) && selection.settings {
+                    let sub = entry_str.trim_start_matches(VOICES_PREFIX);
+                    Some(data_dir.join("voices").join(sub))
                 } else if entry_str.starts_with("settings/") && selection.settings {
                     let sub = entry_str.trim_start_matches("settings/");
                     Some(PathBuf::from(&paths.config_dir).join(sub))
@@ -761,6 +788,37 @@ mod tests {
                 .flatten()
                 .any(|e| e.file_name().to_string_lossy().starts_with("pre_restore_"))
         );
+
+        let _ = fs::remove_dir_all(root);
+    }
+
+    #[test]
+    fn cloned_voices_are_backed_up_without_model_files() {
+        let (root, loc) = temp_locations("voices");
+        let voices = PathBuf::from(&loc.paths.data_dir).join("voices");
+        fs::create_dir_all(&voices).unwrap();
+        for name in ["stimme-1.wav", "stimme-1.txt", "stimme-1.json"] {
+            fs::write(voices.join(name), name).unwrap();
+        }
+        fs::write(voices.join("kokoro-voice-df_eva.gguf"), "model").unwrap();
+
+        let backup = ProfileBackupManager::create_backup_at(
+            &loc,
+            BackupGroupSelection::default(),
+            None,
+            false,
+        )
+        .unwrap();
+        assert_eq!(backup.manifest.unwrap().files_count, 3);
+
+        fs::remove_dir_all(&voices).unwrap();
+        ProfileBackupManager::restore_backup_at(&loc, &backup.filename, None).unwrap();
+        assert_eq!(
+            fs::read_to_string(voices.join("stimme-1.txt")).unwrap(),
+            "stimme-1.txt"
+        );
+        assert!(voices.join("stimme-1.wav").exists() && voices.join("stimme-1.json").exists());
+        assert!(!voices.join("kokoro-voice-df_eva.gguf").exists());
 
         let _ = fs::remove_dir_all(root);
     }
