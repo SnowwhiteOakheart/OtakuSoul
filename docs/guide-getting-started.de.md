@@ -21,13 +21,13 @@ Beim ersten Start öffnet sich ein Assistent. Im Schritt **„KI-Modell“** wä
 Die App empfiehlt je nach Grafikkarte einen der beiden Wege. Später kannst Du alles auf der **Startseite** unter
 **„KI ändern“** anpassen.
 
-## 2. Eine Figur auswählen
+## 2. Einen Charakter auswählen
 
 Unter **Charaktere** liegen die Figuren. Die mitgelieferten tragen **„Gut für den Einstieg“**. Ein Klick aufs Bild
 zeigt, wer die Figur ist und wie euer Chat beginnt; **„Jetzt chatten“** startet das Gespräch.
 
 - Weitere Figuren findest Du im **Hub**.
-- Eigene Figuren erstellst Du mit **„Figur erstellen“** – ein Assistent führt Dich durch Konzept, Aussehen und
+- Eigene Charaktere erstellst Du mit **„Charakter erstellen“** – ein Assistent führt Dich durch Konzept, Aussehen und
   Persönlichkeit.
 
 ## 3. Chatten

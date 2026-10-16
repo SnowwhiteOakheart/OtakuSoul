@@ -256,6 +256,7 @@ export const BioMonitorTab: React.FC = () => {
                 max="100"
                 value={sliders.dopamine}
                 onChange={(e) => setSlider('dopamine', parseInt(e.target.value))}
+                aria-label={t('comp.dopamine')}
                 className="w-full accent-amber-400"
               />
             </div>
@@ -270,6 +271,7 @@ export const BioMonitorTab: React.FC = () => {
                 max="100"
                 value={sliders.cortisol}
                 onChange={(e) => setSlider('cortisol', parseInt(e.target.value))}
+                aria-label={t('comp.cortisol')}
                 className="w-full accent-rose-400"
               />
             </div>
@@ -284,6 +286,7 @@ export const BioMonitorTab: React.FC = () => {
                 max="100"
                 value={sliders.oxytocin}
                 onChange={(e) => setSlider('oxytocin', parseInt(e.target.value))}
+                aria-label={t('comp.oxytocin')}
                 className="w-full accent-accent2-400"
               />
             </div>
@@ -298,6 +301,7 @@ export const BioMonitorTab: React.FC = () => {
                 max="100"
                 value={sliders.fatigue}
                 onChange={(e) => setSlider('fatigue', parseInt(e.target.value))}
+                aria-label={t('comp.fatigue')}
                 className="w-full accent-indigo-400"
               />
             </div>

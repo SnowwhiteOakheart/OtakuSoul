@@ -60,6 +60,10 @@ Einstellungen: `components/settings/sections/*` (Server inkl. Laufzeiten/`mmproj
 `ImageSettings` mit lokalen Bildmodellen/LoRAs, Stimme = `VoiceSettings` bettet `CharacterVoiceModal` mit `embedded` ein,
 Hub). Integrationen → Bildgenerierung enthält nur Studio und Galerie.
 
+Begriffe der Oberfläche (de): Knöpfe, Titel und Navigation sagen „Charakter“ (Fließtext darf „Figur“), „Geschichte“ ist,
+was man in Stage spielt, „Szene“ die technische Einheit (Akt, Datei, „Szenen verwalten“); en „character/story/scene“,
+ru „персонаж/история/сцена“. Fachbegriffe nur im Expertenmodus oder mit Erklärung (Glossar).
+
 ## Abläufe
 
 - **Nachricht senden:** `chatSlice.sendMessage` → Anhänge `save_attachment` → `add_chat_message` → `resolvePromptWithLore`

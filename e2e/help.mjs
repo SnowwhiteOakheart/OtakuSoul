@@ -13,7 +13,7 @@ try {
   await jsClick(helpButton);
   const dialog = await browser.$('[data-help]');
   await dialog.waitForDisplayed({ timeout: 5000 });
-  assert.match(await dialog.getText(), /KI einrichten[\s\S]*Eine Figur wählen/);
+  assert.match(await dialog.getText(), /KI einrichten[\s\S]*Einen Charakter wählen/);
   await browser.pause(300);
   await shot('89-hilfe-erste-schritte');
 

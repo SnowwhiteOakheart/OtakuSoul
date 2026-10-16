@@ -159,10 +159,14 @@
 
 ## 7. Konsistenz & Barrierefreiheit
 
-- [ ] Alle reinen Symbolknöpfe mit `aria-label` **und** sichtbarem Tooltip; einheitliche Begriffe (Szene/Story/
+- [x] (16.10.2026) Begriffe festgelegt (AI.md), `e2e/a11y-sweep.mjs` prüft alle Ansichten auf Bedienelemente ohne Namen;
+  gefundene behoben. Ursprünglich: Alle reinen Symbolknöpfe mit `aria-label` **und** sichtbarem Tooltip; einheitliche Begriffe (Szene/Story/
   Geschichte, Figur/Charakter) app-weit festlegen und in allen Locales durchziehen.
 - [ ] Tastaturbedienung der neuen Abläufe (Galerie, Assistenten), Fokus-Reihenfolge, Kontrast in allen Themes.
-- [ ] Kleine Fenster (≥ 1024×700) ohne abgeschnittene Dialoge; Dialoge mit fester Fußzeile.
+  (16.10.2026: Sweep prüft Enter/Escape und Fokus-Rückkehr der Story-Vorschau; Kontrast je Theme noch ungeprüft.
+  `a11y-sweep` scheiterte einmal ohne erkennbare Ursache und bestand danach zweimal – beobachten.)
+- [x] (16.10.2026) Kleine Fenster: der Sweep prüft 1024×700 auf seitlichen Überlauf und Dialoge außerhalb des Fensters –
+  ohne Befund. Ursprünglich: Kleine Fenster (≥ 1024×700) ohne abgeschnittene Dialoge; Dialoge mit fester Fußzeile.
 
 ## 8. Qualitätssicherung
 

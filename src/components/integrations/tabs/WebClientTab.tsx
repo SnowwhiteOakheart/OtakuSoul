@@ -168,10 +168,11 @@ export const WebClientTab: React.FC = () => {
           {/* Settings Grid */}
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4 pt-2">
             <div>
-              <label className="block text-xs font-semibold text-slate-300 mb-1.5">
+              <label htmlFor="web-port" className="block text-xs font-semibold text-slate-300 mb-1.5">
                 {t('int.port')}
               </label>
               <input
+                id="web-port"
                 type="number"
                 value={localWebConfig.port}
                 onChange={(e) =>
@@ -182,11 +183,12 @@ export const WebClientTab: React.FC = () => {
             </div>
 
             <div>
-              <label className="block text-xs font-semibold text-slate-300 mb-1.5">
+              <label htmlFor="web-token" className="block text-xs font-semibold text-slate-300 mb-1.5">
                 {t('int.authToken')}
               </label>
               <div className="flex items-center gap-2">
                 <input
+                  id="web-token"
                   type="text"
                   readOnly
                   value={localWebConfig.auth_token}

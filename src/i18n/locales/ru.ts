@@ -1813,6 +1813,7 @@ export const ru: TranslationDictionary = {
   "lore.firstEntryContent": "Подробности об этой теме …",
   "lore.newEntryName": "Новая запись лора",
   "lore.title": "Миры и лорбуки",
+  "lore.bookName": "Название лорбука",
   "lore.refresh": "Обновить",
   "lore.new": "Новый",
   "lore.import": "Импорт",

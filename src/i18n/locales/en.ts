@@ -1813,6 +1813,7 @@ export const en: TranslationDictionary = {
   "lore.firstEntryContent": "Details about this topic …",
   "lore.newEntryName": "New lore entry",
   "lore.title": "Worlds & lorebooks",
+  "lore.bookName": "Lorebook name",
   "lore.refresh": "Refresh",
   "lore.new": "New",
   "lore.import": "Import",

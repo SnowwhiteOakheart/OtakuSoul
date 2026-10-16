@@ -227,6 +227,7 @@ export const LorebookView: React.FC = () => {
               <div className="flex-1 min-w-[280px]">
                 <input
                   type="text"
+                  aria-label={t('lore.bookName')}
                   value={activeLorebook.name}
                   onChange={(e) =>
                     selectLorebook({
