@@ -14,6 +14,21 @@
 </p>
 
 <p align="center">
+  <a href="https://github.com/SnowwhiteOakheart/OtakuSoul/releases">
+    <img alt="Downloads" src="https://img.shields.io/github/downloads/SnowwhiteOakheart/OtakuSoul/total?style=for-the-badge&logo=github&label=Downloads" />
+  </a>
+  <a href="https://github.com/SnowwhiteOakheart/OtakuSoul/stargazers">
+    <img alt="Stars" src="https://img.shields.io/github/stars/SnowwhiteOakheart/OtakuSoul?style=for-the-badge&logo=github" />
+  </a>
+  <a href="https://github.com/SnowwhiteOakheart/OtakuSoul/network/members">
+    <img alt="Forks" src="https://img.shields.io/github/forks/SnowwhiteOakheart/OtakuSoul?style=for-the-badge&logo=github" />
+  </a>
+  <a href="https://github.com/SnowwhiteOakheart/OtakuSoul/issues">
+    <img alt="Issues" src="https://img.shields.io/github/issues/SnowwhiteOakheart/OtakuSoul?style=for-the-badge&logo=github" />
+  </a>
+</p>
+
+<p align="center">
   <a href="https://github.com/SnowwhiteOakheart/OtakuSoul/releases/latest"><img alt="Версия" src="https://img.shields.io/badge/OtakuSoul-v0.5.0-8b5cf6?style=for-the-badge&logo=sparkles&logoColor=white" /></a>
   <img alt="Windows · Linux · macOS" src="https://img.shields.io/badge/Windows%20·%20Linux%20·%20macOS-desktop-0ea5e9?style=for-the-badge" />
   <img alt="Local First" src="https://img.shields.io/badge/Local--First-100%25-10b981?style=for-the-badge&logo=shield&logoColor=white" />
