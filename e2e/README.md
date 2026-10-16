@@ -1,59 +1,49 @@
-# End-to-end smoke test
+# End-to-End-Testsuite (E2E)
 
-`npm run e2e` builds the app in debug mode and runs `smoke.mjs`: the app starts with a throwaway
-profile (`OTAKUSOUL_HOME` in a temp folder, so real chats and settings stay untouched, even with
-OtakuSoul open) and talks to a mock LLM (`mock-llm.mjs`) instead of a model. The test chats until
-older messages leave the context window, then checks the context meter, the automatic summary in
-the chat sidebar and that the summary reaches the system prompt. Screenshots land in
-`e2e/screenshots/`. `npm run e2e:run` skips the build. The build goes to `target/e2e/` so `cargo test` cannot replace
-it with a binary that expects the Vite dev server.
+`npm run e2e` baut die App im Debug-Modus nach `target/e2e/` und führt die vollständige E2E-Suite aus. Die App startet dabei mit einem isolierten Wegwerfprofil (`OTAKUSOUL_HOME` in einem temporären Verzeichnis), sodass echte Chats, Einstellungen und Datenbanken unberührt bleiben (selbst wenn eine OtakuSoul-Instanz parallel geöffnet ist). Die Tests kommunizieren mit einem integrierten Mock-LLM (`mock-llm.mjs`) anstelle echter Modelle. Screenshots werden in `e2e/screenshots/` abgelegt (gitignored).
 
-Requirements (Linux; Windows works with `msedgedriver`, macOS has no WebDriver for WKWebView):
+`npm run e2e:run` überspringt den Build-Schritt und führt die Tests direkt gegen das bestehende Test-Binary aus.
 
-- `cargo install tauri-driver --locked`
-- `WebKitWebDriver`: Arch `webkitgtk-6.0`, Debian/Ubuntu `webkit2gtk-driver`, Fedora `webkitgtk6.0`
-- A display; headless CI runs it under `xvfb-run npm run e2e`.
-- Bei gesperrtem Desktop ebenfalls Xvfb verwenden: WebKit-Bildaufnahmen und Animationsabfragen können sonst hängen.
-- `sqlite3` CLI for the memory write-error test (temporary triggers in the throwaway profile only).
+## Voraussetzungen (Linux)
 
-`stage-context.mjs` prüft zusätzlich lange Stage-Verläufe: Kontextbudget, getrennte Zusammenfassungen für
-Planer/Erzähler/Gefährten, Geheimhaltung, Wiederladen, Undo, Bearbeiten/Löschen und Wiederholung nach LLM-Fehlern.
+- `tauri-driver`: `cargo install tauri-driver --locked`
+- `WebKitWebDriver`: Arch `webkitgtk-6.0`, Debian/Ubuntu `webkit2gtk-driver`, Fedora `webkitgtk6.0` (unter Windows funktioniert `msedgedriver`; für macOS gibt es keinen WebDriver für WKWebView).
+- Display / X11: Bei headless-Umgebungen oder gesperrter Desktop-Sitzung per `xvfb-run npm run e2e` ausführen, da WebKit-Bildaufnahmen und Animationsabfragen sonst hängen können.
+- `sqlite3` CLI für die Fehler- und Rollback-Tests (temporäre Trigger ausschließlich im Wegwerfprofil).
 
-`stage-npcs.mjs` bedient die NPC-Verwaltung und prüft private Dialoge, Abwesenheit/Rückkehr, Spielleiter-NPCs,
-Beförderung zu V2-PNG samt Soul Memory sowie die Mindestfenstergröße (960×640). Screenshots 13–18 zeigen den Ablauf.
+## Abgedeckte Testbereiche
 
-`companion-safety.mjs` prüft bei aktivierter automatischer Freigabe sicherer Tools, dass ein
-Zwischenablagezugriff vor der Ausführung im Bestätigungsbanner landet und abgelehnt werden kann.
-Dabei wird die Zwischenablage nicht gelesen. Screenshot 28 zeigt den Freigabedialog.
+Die Suite umfasst über 45 spezialisierte Testmodule:
 
-`memory-save-errors.mjs` erzwingt mit temporären SQLite-Triggern im Wegwerfprofil je einen fehlgeschlagenen Schreibvorgang
-für eine Erinnerung und einen Tagebucheintrag. Die Formulare behalten ihre Eingaben, melden keinen
-Erfolg und speichern beim Wiederholen genau einen Eintrag im echten Backend.
-Screenshot 29 zeigt den Speicherfehler mit erhaltenem Erinnerungsentwurf.
+1. **Rauchtest & Chat-Grundlagen:**
+   - `smoke.mjs`: Start, Kontextzähler, automatische Zusammenfassungen im System-Prompt, Verlaufsnavigation.
+   - `chat-navigation.mjs`, `chat-tools.mjs`, `chat-style.mjs`, `prompt-log.mjs`, `partial-reply.mjs`.
 
-`chat-edit-errors.mjs` erzwingt per SQLite-Trigger einen Fehler beim Bearbeiten einer Chatnachricht im Wegwerfprofil.
-Der Editor behält den Entwurf und die Datenbank den ursprünglichen Text. Wiederholen speichert die Korrektur;
-erneutes Öffnen zeigt den gespeicherten Inhalt. Screenshot 33 zeigt den erhaltenen Entwurf und den Fehlerhinweis.
+2. **Fehlertoleranz & Entwurfsschutz (SQLite-Trigger im Wegwerfprofil):**
+   - `chat-edit-errors.mjs`, `chat-generation-errors.mjs`, `chat-sessions-abort.mjs`, `chat-sidebar-errors.mjs`.
+   - `markdown-errors.mjs`, `error-fixes.mjs`: Entwürfe bleiben bei Schreib-/Lesefehlern erhalten; Lösungsknöpfe und Fehlerhinweise greifen korrekt.
 
-`memory-drafts.mjs` prüft Psychologie- und Beziehungsentwürfe: Tastatureingaben schreiben nicht in die Datenbank,
-Reiterwechsel und Schließen erhalten Änderungen. Echte SQLite-Schreibfehler lassen die Entwürfe stehen;
-Wiederholen speichert und Verwerfen stellt den gespeicherten Wert wieder her. Screenshots 30–31 zeigen die Fehlerzustände.
+3. **Kognitives Gedächtnis:**
+   - `memory-save-errors.mjs`, `memory-read-errors.mjs`, `memory-operations.mjs`, `memory-drafts.mjs`, `memory-sources.mjs`.
+   - Prüft Transaktionssicherheit, Rollbacks bei Import/Snapshot-Wiederherstellung, Mehrschichten-Reflexion und Quellennachweise.
 
-`markdown-errors.mjs` erzwingt einen Lesefehler durch einen temporär ungültigen Datentyp und einen Schreibfehler
-durch einen SQLite-Trigger ausschließlich im Wegwerfprofil. Der Entwurf bleibt erhalten, Erfolgsanzeigen bleiben aus;
-nach Wiederholung werden die Werte tatsächlich gespeichert und wieder geladen. Screenshot 32 zeigt den Lesefehler mit erhaltenem Entwurf.
+4. **Soul Stage & 5e-Regelsystem:**
+   - `stage-context.mjs`, `stage-npcs.mjs`, `stage-editor.mjs`, `stage-director.mjs`, `stage-voice.mjs`, `stage-world.mjs`, `stage-memory.mjs`, `stage-upkeep-abort.mjs`.
+   - `stage-5e.mjs`, `stage-board.mjs`, `stage-spells.mjs`, `stage-explore.mjs`, `stage-adventure.mjs`, `stage-gallery.mjs`: Spielbrett, Wegfindung, Sichtlinie, Zauberflächen, Nebel des Krieges, Meilensteine und mehraktige Abenteuer.
 
-`chat-sidebar-errors.mjs` erzwingt SQLite-Schreibfehler für Titel, Author's Note und Zusammenfassung
-im Wegwerfprofil. Es prüft erhaltene Entwürfe, Wiederholen, Notiztiefe 0, Schließen/Reiterwechsel und
-fehlgeschlagenes sowie erfolgreiches Zurücksetzen. Screenshots 34–36 zeigen die Fehlerzustände.
+5. **Avatare & 3D-Bühne:**
+   - `avatar-motions.mjs`, `avatar-mmd.mjs`, `avatar-gltf.mjs`, `avatar-gltf-clips.mjs`, `avatar-gltf-folder.mjs`, `avatar-gltf-face.mjs`, `avatar-portraits.mjs`: VRM-, MMD-, glTF-Animationen, Morph-/Knochen-Gesichter und Emotionsporträts.
 
-`memory-read-errors.mjs` erzwingt einen SQLite-Lesefehler in der Übersicht und einen Dateisystemfehler
-beim Lesen der Snapshot-Liste ausschließlich im Wegwerfprofil. Es prüft sichtbare Ursachen,
-erhaltene Daten/Entwürfe, Wiederholen und einen erfolgreichen Schreibvorgang trotz anschließendem Lesefehler.
-Screenshots 37–38 zeigen die Ladefehler.
+6. **Stimme, Bildgenerierung & Begleiter:**
+   - `voice-effects.mjs`, `voice-clone-trim.mjs`: Audioeffekte und Wellenform-Zuschnitt für Stimmklone.
+   - `image-loras.mjs`: Modellfamilien-Zuordnung lokaler Bild-LoRAs.
+   - `companion-safety.mjs`: Bestätigungsbanner bei sensiblen Aktionen (HITL-Sicherheitsabfrage).
 
-`memory-operations.mjs` prüft einen realen Reflexions-Lesefehler und Wiederholen mit dem Mock-Router.
-Ein später SQLite-Schreibfehler rollt SoW-Import und Snapshot-Wiederherstellung vollständig zurück;
-Wiederholen besteht. Die Wiederherstellung wird über Liste und Bestätigungsdialog bedient, der Import
-über das echte IPC getestet. Die Frontend-Tests mocken die native Ordnerauswahl und prüfen die
-Import-/Fehler-/Wiederholen-Oberfläche; der native Betriebssystemdialog selbst wird nicht automatisiert. Screenshots 39–40 zeigen Reflexions- und Wiederherstellungsfehler.
+7. **Oberfläche, Zugänglichkeit & Hub:**
+   - `onboarding.mjs`, `home.mjs`, `character-library.mjs`, `character-traits.mjs`, `character-import.mjs`, `startup-character.mjs`, `settings-palette.mjs`, `close-to-tray.mjs`, `background-tasks.mjs`, `ui-layout.mjs`, `hub-updates.mjs`, `languages.mjs`, `help.mjs`, `a11y-sweep.mjs`, `beginner-journey.mjs`.
+
+## Weitere E2E-Werkzeuge
+
+- **Langchat-Messung (1000 Nachrichten):** `npm run e2e:perf`
+- **README-Screenshots:** `xvfb-run -a node e2e/readme-screenshots.mjs de|en|ru`
+- **Porträt-Dev-Test:** `npm run e2e:portraits:dev`

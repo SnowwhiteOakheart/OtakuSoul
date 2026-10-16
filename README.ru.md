@@ -276,7 +276,7 @@ flowchart LR
 
 ### Сборка из исходников
 
-Требования: **Node.js** 20+, **Rust** 1.78+; в Linux – WebKitGTK 4.1, GTK 3, libsoup 3, librsvg 2.
+Требования: **Node.js** 20+, **Rust** 1.88+; в Linux – WebKitGTK 4.1, GTK 3, libsoup 3, librsvg 2.
 
 ```bash
 npm install
@@ -306,9 +306,15 @@ npm run e2e:perf   # замер длинного чата (1000 сообщени
 
 ## ⚖️ Лицензия и этика
 
-OtakuSoul – свободное ПО под лицензией **GNU General Public License v3.0 (GPLv3)**.
+OtakuSoul – свободное ПО: Copyright (C) 2026 SnowwhiteOakheart.
+Выпущено под лицензией **GNU General Public License v3.0** (`GPL-3.0-only`).
 
 **Благодарности:** OtakuSoul появился как самостоятельный порт на Rust/Tauri и переработка Python-проекта [Soul of Waifu](https://github.com/jofizcd/Soul-of-Waifu) от [jofizcd](https://github.com/jofizcd) (GPLv3).
+
+**Компоненты сторонних авторов и дополнительные разрешения:**
+* **Live2D Cubism Core:** `public/live2d/live2dcubismcore.min.js` – (C) Live2D Inc., по лицензии [Live2D Proprietary Software License Agreement](https://www.live2d.com/eula/live2d-proprietary-software-license-agreement_en.html). Разрешение на связывание и распространение с OtakuSoul предоставлено в соответствии с разделом 7 GNU GPLv3.
+* **Unity-chan:** Модель Live2D в `assets/live2d/unitychan` – © Unity Technologies Japan/UCL, распространяется по [Unity-Chan License 2.0](https://unity-chan.com/contents/license_en/).
+* **Базовые 3D-аватары VRM:** `Anime Girl.vrm` и `Anime Man.vrm` в `assets/vrm/` – модели AvatarSample_Y и AvatarSample_Z от pixiv VRoid Project (yomox9) по лицензии [VRoid Sample Model License](https://vroid.pixiv.help/hc/ja/articles/4402394424089-AvatarSample-A-Z).
 
 **Правила 5e (SRD 5.1):** необязательные правила Stage (монстры, классы, заклинания и снаряжение в `presets/srd5/` и движок правил) основаны на SRD 5.1:
 

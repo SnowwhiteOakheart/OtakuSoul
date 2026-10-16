@@ -2036,6 +2036,7 @@ export const de = {
   "about.credits.text": "{{appName}} wurde maßgeblich inspiriert durch das wegweisende Projekt Soul of Waifu von jofizcd. Als moderner Neubau auf Basis von Rust und Tauri führen wir die Vision einer freien, lokalen KI-Begleiterplattform im Geiste der Open-Source-Gemeinschaft fort.",
   "about.credits.licenseNotice": "Beide Projekte stehen unter der GNU General Public License v3.0 (GPLv3). Dieser Hinweis würdigt die Leistung des ursprünglichen Schöpfers und wahrt die Transparenz und Freiheit freier Software.",
   "about.credits.srd": "Die 5e-kompatiblen Regeln von Soul Stage (Klassen, Monster, Zauber, Kampfregeln) beruhen auf dem SRD 5.1; Abenteuer, Figuren und Karten sind eigene Inhalte.",
+  "about.credits.live2d": "Live2D- & Avatar-Namensnennung: Live2D-Modell Unity-chan © Unity Technologies Japan/UCL (UCL 2.0). Live2D Cubism Core © Live2D Inc. (Verknüpfungserlaubnis nach GNU GPLv3 Abs. 7). Mitgelieferte VRM-Standardmodelle © pixiv VRoid Project (yomox9).",
   "about.credits.visitSow": "Originalprojekt: Soul-of-Waifu (GitHub)",
   "about.credits.visitRepo": "{{appName}} Quellcode (GitHub)",
   "about.license": "Open Source · GNU GPLv3",

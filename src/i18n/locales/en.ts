@@ -2034,6 +2034,7 @@ export const en: TranslationDictionary = {
   "about.credits.text": "{{appName}} was significantly inspired by the outstanding pioneering project Soul of Waifu by jofizcd. Built from scratch on Rust and Tauri, we carry forward the vision of a free, local AI companion platform in the spirit of open source.",
   "about.credits.licenseNotice": "Both projects are licensed under the GNU General Public License v3.0 (GPLv3). This notice honors the original creator and preserves the transparency and freedom of free software.",
   "about.credits.srd": "Soul Stage's 5e-compatible rules (classes, monsters, spells, combat rules) are based on the SRD 5.1; adventure, characters and maps are original content.",
+  "about.credits.live2d": "Live2D & avatar attributions: Live2D model Unity-chan © Unity Technologies Japan/UCL (UCL 2.0). Live2D Cubism Core © Live2D Inc. (linking permitted under GNU GPLv3 Sec. 7). Bundled VRM default models © pixiv VRoid Project (yomox9).",
   "about.credits.visitSow": "Original project: Soul-of-Waifu (GitHub)",
   "about.credits.visitRepo": "{{appName}} source code (GitHub)",
   "about.license": "Open Source · GNU GPLv3",

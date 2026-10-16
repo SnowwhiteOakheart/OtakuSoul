@@ -276,7 +276,7 @@ Der lokale Chat steht 1–4 Sekunden nach einem Bild- oder Sprachauftrag wieder 
 
 ### Aus dem Quellcode bauen
 
-Voraussetzungen: **Node.js** 20+, **Rust** 1.78+; unter Linux WebKitGTK 4.1, GTK 3, libsoup 3, librsvg 2.
+Voraussetzungen: **Node.js** 20+, **Rust** 1.88+; unter Linux WebKitGTK 4.1, GTK 3, libsoup 3, librsvg 2.
 
 ```bash
 npm install
@@ -306,9 +306,15 @@ Die README-Screenshots entstehen mit `xvfb-run -a node e2e/readme-screenshots.mj
 
 ## ⚖️ Lizenz & Ethik
 
-OtakuSoul ist freie Software unter der **GNU General Public License v3.0 (GPLv3)**.
+OtakuSoul ist freie Software: Copyright (C) 2026 SnowwhiteOakheart.
+Lizenziert unter der **GNU General Public License v3.0** (`GPL-3.0-only`).
 
 **Credits:** OtakuSoul entstand als eigenständiger Rust/Tauri-Port und Neuentwurf des Python-Projekts [Soul of Waifu](https://github.com/jofizcd/Soul-of-Waifu) von [jofizcd](https://github.com/jofizcd) (GPLv3).
+
+**Drittanbieter-Inhalte & Ausnahmegenehmigungen:**
+* **Live2D Cubism Core:** `public/live2d/live2dcubismcore.min.js` ist (C) Live2D Inc., lizenziert unter der [Live2D Proprietary Software License Agreement](https://www.live2d.com/eula/live2d-proprietary-software-license-agreement_en.html). Die Erlaubnis zur Verknüpfung und Weitergabe mit OtakuSoul wird gemäß Abschnitt 7 der GNU GPLv3 erteilt.
+* **Unity-chan:** Das Live2D-Modell in `assets/live2d/unitychan` ist © Unity Technologies Japan/UCL, bereitgestellt unter der [Unity-Chan-Lizenz 2.0](https://unity-chan.com/contents/license_en/).
+* **3D-VRM-Standardmodelle:** `Anime Girl.vrm` und `Anime Man.vrm` in `assets/vrm/` sind AvatarSample_Y und AvatarSample_Z vom pixiv VRoid Project (yomox9), bereitgestellt unter der [VRoid Sample Model License](https://vroid.pixiv.help/hc/ja/articles/4402394424089-AvatarSample-A-Z).
 
 **5e-Regeln (SRD 5.1):** Die optionalen Regeln der Stage (Monster, Klassen, Zauber und Ausrüstung in `presets/srd5/` und die Regel-Engine) beruhen auf dem SRD 5.1:
 

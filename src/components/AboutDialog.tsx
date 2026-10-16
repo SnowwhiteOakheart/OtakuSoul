@@ -179,6 +179,11 @@ export function AboutDialog({ onClose }: AboutDialogProps) {
                   </p>
                 </div>
 
+                {/* Third-party asset attributions (Live2D, Unity-Chan, VRM) */}
+                <div data-testid="live2d-attribution" className="space-y-1 text-[11px] leading-relaxed text-slate-400">
+                  <p>{t('about.credits.live2d')}</p>
+                </div>
+
                 {/* External Links */}
                 <div className="flex flex-wrap items-center gap-2.5 pt-1">
                   <button
