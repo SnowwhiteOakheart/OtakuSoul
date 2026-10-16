@@ -3,7 +3,7 @@ import { CheckCircle2, Cpu, Download, Loader2, MessageCircle, PlugZap, RefreshCw
 import { api } from '../../services/api';
 import { useStoreFields, useAppStore } from '../../store/useAppStore';
 import { llmTarget } from '../../store/helpers';
-import { useTranslation } from '../../i18n';
+import { translate, useTranslation } from '../../i18n';
 import { errorMessage } from '../../utils/errors';
 import { RuntimeCard } from '../settings/sections/RuntimeCard';
 import type { CharacterProfile, LlmProviderType, StarterModel } from '../../types';
@@ -113,6 +113,13 @@ export const ModelFit = ({ sizeMb }: { sizeMb: number }) => {
   );
 };
 
+/** Remaining download time in words ("about 4 min"), empty while unknown. */
+export function etaText(seconds: number | null | undefined): string {
+  if (seconds == null || !Number.isFinite(seconds)) return '';
+  if (seconds < 60) return translate('onboarding.etaUnderMinute');
+  return translate('onboarding.etaMinutes', { minutes: Math.ceil(seconds / 60) });
+}
+
 type Express = { phase: 'idle' | 'runtime' | 'model' | 'done' } | { phase: 'failed'; error: string };
 
 /**
@@ -204,7 +211,7 @@ export const LocalModelSetup = () => {
               {express.phase === 'runtime'
                 ? t('onboarding.expressRuntime')
                 : express.phase === 'model'
-                  ? t('onboarding.expressModel', { percent: (expressProgress?.percent ?? 0).toFixed(0) })
+                  ? `${t('onboarding.expressModel', { percent: (expressProgress?.percent ?? 0).toFixed(0) })}${etaText(expressProgress?.eta_seconds) ? ` · ${etaText(expressProgress?.eta_seconds)}` : ''}`
                   : t('onboarding.expressButton')}
             </button>
           )}
@@ -286,7 +293,10 @@ export const LocalModelSetup = () => {
                   </div>
                   {isDownloading && progress && (
                     <div role="status" className="space-y-1 text-xs text-slate-400">
-                      <span>{t('onboarding.starterProgress', { percent: progress.percent.toFixed(0) })}</span>
+                      <span>
+                        {t('onboarding.starterProgress', { percent: progress.percent.toFixed(0) })}
+                        {etaText(progress.eta_seconds) && ` · ${etaText(progress.eta_seconds)}`}
+                      </span>
                       <div className="h-1.5 overflow-hidden rounded-full bg-slate-800">
                         <div className="h-full bg-accent-500 transition-all" style={{ width: `${progress.percent}%` }} />
                       </div>

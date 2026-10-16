@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest';
-import { modelFit, prettyModelName } from '../components/onboarding/OnboardingParts';
+import { etaText, modelFit, prettyModelName } from '../components/onboarding/OnboardingParts';
+import { useAppStore } from '../store/useAppStore';
 
 describe('model names for people', () => {
   it('drops extension, quantisation and dashes', () => {
@@ -14,5 +15,12 @@ describe('model names for people', () => {
     expect(modelFit(7 * 1024, vram)).toBe('fits');
     expect(modelFit(15 * 1024, vram)).toBe('tight');
     expect(modelFit(24 * 1024, vram)).toBe('too_big');
+  });
+
+  it('says how long a download still takes', () => {
+    useAppStore.setState({ appLanguage: 'en' });
+    expect(etaText(null)).toBe('');
+    expect(etaText(30)).toBe('almost done');
+    expect(etaText(230)).toBe('about 4 min left');
   });
 });

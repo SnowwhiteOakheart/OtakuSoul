@@ -4,8 +4,9 @@ import {
   ChevronsRight,
 } from 'lucide-react';
 import { useAppStore } from '../store/useAppStore';
-import { useTranslation } from '../i18n';
+import { useTranslation, type TranslationKey } from '../i18n';
 import { NAV_GROUPS, SHORTCUT_TABS } from './navigation';
+import { usePersistentFlag } from '../hooks/usePersistentFlag';
 
 const COLLAPSED_STORAGE_KEY = 'otakusoul.sidebarCollapsed';
 
@@ -24,6 +25,8 @@ export const Sidebar = () => {
   const activeTab = useAppStore((s) => s.activeTab);
   const setActiveTab = useAppStore((s) => s.setActiveTab);
   const [collapsed, setCollapsed] = useState(loadCollapsed);
+  // One line under each entry explains it for newcomers until they hide the hints.
+  const [showHints, setShowHints] = usePersistentFlag('navHints', true);
 
   const toggleCollapsed = () => {
     setCollapsed((prev) => {
@@ -75,8 +78,8 @@ export const Sidebar = () => {
               const isActive = activeTab === tab;
               const shortcut = t('nav.shortcut', { key: SHORTCUT_TABS.indexOf(tab) + 1 });
               return (
+                <div key={tab}>
                 <button
-                  key={tab}
                   type="button"
                   onClick={() => setActiveTab(tab)}
                   aria-current={isActive ? 'page' : undefined}
@@ -94,13 +97,28 @@ export const Sidebar = () => {
                   <Icon className="w-[18px] h-[18px] shrink-0" />
                   {!collapsed && <span className="truncate">{t(label)}</span>}
                 </button>
+                {!collapsed && showHints && (
+                  <p className="-mt-0.5 mb-1 pl-[42px] pr-2 text-[11px] leading-tight text-slate-500" data-nav-hint={tab}>
+                    {t(`nav.hint.${tab}` as TranslationKey)}
+                  </p>
+                )}
+                </div>
               );
             })}
           </div>
         ))}
       </div>
 
-      <div className="border-t border-slate-800 p-2">
+      <div className="border-t border-slate-800 p-2 space-y-1">
+        {!collapsed && (
+          <button
+            type="button"
+            onClick={() => setShowHints(!showHints)}
+            className="w-full rounded-lg px-2.5 py-1 text-left text-[11px] text-slate-500 hover:bg-slate-800/70 hover:text-slate-300"
+          >
+            {showHints ? t('nav.hideHints') : t('nav.showHints')}
+          </button>
+        )}
         <button
           type="button"
           onClick={toggleCollapsed}

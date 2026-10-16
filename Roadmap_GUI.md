@@ -46,10 +46,11 @@
 - [x] **Cloud-Anbieter geführt (16.10.2026):** Anbieter als Karten mit Kurzbeschreibung und „Wo bekomme ich einen
   Schlüssel?“ (Kosten-Hinweis fehlt noch). Ursprünglicher Plan: Anbieter als Karten mit Kurzbeschreibung, Kosten-Hinweis und Link „Wo bekomme ich
   einen Schlüssel?“; „Eigener Endpunkt“ unter „Weitere“.
-- [ ] **Fortschritt und Wartezeiten erklären:** Download-/Startzeiten realistisch anzeigen („ca. 4 Minuten“), App bleibt
+- [x] **Fortschritt und Wartezeiten erklären (16.10.2026):** Restzeit „noch ca. x Min.“ beim Ein-Klick-Weg und in der
+  Modellliste (`etaText`). Ursprünglicher Plan: Download-/Startzeiten realistisch anzeigen („ca. 4 Minuten“), App bleibt
   währenddessen bedienbar (Charakter wählen, Story ansehen).
 - [x] **Abschluss mit Wahl (16.10.2026):** „Geschichte beginnen“ neben „Los geht's“. Ursprünglicher Plan: Letzter Schritt bietet „Mit einer Figur chatten“ oder „Eine Geschichte beginnen“.
-- [ ] E2E: Einsteiger-Durchlauf von leerem Profil bis zur ersten Antwort ohne Expertenbildschirm.
+- [x] E2E: Einsteiger-Durchlauf von leerem Profil bis zur ersten Antwort ohne Expertenbildschirm (`beginner-journey.mjs`).
 
 ## 2. Startseite & Navigation
 
@@ -60,7 +61,8 @@
 - [x] **Kopfzeile aufräumen (16.10.2026):** GPU-Anzeige und Protokoll nur im Expertenmodus, KI-Status auf der Startseite. Symbolknöpfe beschriften oder mit Tooltip + Kurztext versehen; Lokal/Cloud-Umschalter
   als verständlicher Status („Antworten kommen von: Bonsai 27B auf deinem PC“) mit Klick zur Auswahl; GPU-Anzeige nur
   im Expertenmodus oder als Detail.
-- [ ] **Navigation benennen:** Seitenleiste mit Untertiteln beim ersten Start („Stage – Geschichten mit mehreren
+- [x] **Navigation benennen (16.10.2026):** Untertitel unter jedem Eintrag, unten ausblendbar (`navHints`).
+  Ursprünglicher Plan: Seitenleiste mit Untertiteln beim ersten Start („Stage – Geschichten mit mehreren
   Figuren“, „Companion – Assistent auf dem Desktop“), danach kompakt.
 - [x] **Einfach-/Expertenmodus (16.10.2026):** `AppSettings.expert_mode`, Schalter oben in den Einstellungen.
   Ursprünglicher Plan: als globale Einstellung (Standard: einfach), schaltet erweiterte Bereiche überall
@@ -92,7 +94,8 @@
   wieder, Erklärung der gewählten Eingabeart unter den Knöpfen. Ursprünglicher Plan: Bei der ersten Szene kurze Einblendungen zu Sagen/Tun/Denken/Regie/Flüstern,
   Vorschlägen, „Weiter“ und Auto-Play (überspringbar, später unter Hilfe abrufbar); Eingabearten mit Beispieltext im
   Platzhalter.
-- [ ] **Sprache durchziehen:** Szenen, Vorschläge und Erzähler antworten in der App-Sprache (Szenen pflegen Übersetzungen
+- [x] **Sprache durchziehen (16.10.2026):** Geschichten dreisprachig inkl. Ort/Tageszeit/Vorschläge, Spieltexte
+  mitgeliefert, Spielleiter-Name und HUD-Werte übersetzt. Ursprünglicher Plan: Szenen, Vorschläge und Erzähler antworten in der App-Sprache (Szenen pflegen Übersetzungen
   wie Karten mit `otakusoul_i18n`).
 - [x] **Stage-Kopfzeile ordnen (16.10.2026):** Bild erzeugen/festhalten, Erzählerstimme und Export im Menü „Mehr“ (mit
   Erklärung), Reiter mit Kurzbeschreibung im Tooltip. Ursprünglicher Plan: wichtigste Aktionen (Lobby, Vorlesen, Atmosphäre) beschriftet, seltene (Export,
@@ -106,7 +109,7 @@
   `combat5eGuideSeen`, „?“ öffnet erneut), Tooltip für LP/Verletzungsstufe, Klassentipp in der Gruppenwahl.
   Ursprünglicher Plan: kurze Regel-Einführung („So funktioniert ein Kampf“) beim ersten Kampf,
   Erklärungen zu RK/TP/Zaubergraden per Tooltip, empfohlene Klassen für Einsteiger.
-- [ ] E2E: Einsteiger startet eine mitgelieferte Story aus der Galerie, spielt zwei Runden und setzt sie fort;
+- [x] E2E (`stage-gallery.mjs`, `beginner-journey.mjs`): Einsteiger startet eine mitgelieferte Story aus der Galerie, spielt zwei Runden und setzt sie fort;
   zweiter Durchlauf über den Story-Assistenten.
 
 - [x] **Spieltexte übersetzen (16.10.2026):** Kopie in `presets/locales/`, Laden nach dem Ressourcenpfad, Nachladen aus dem
