@@ -93,6 +93,11 @@ OtakuSoul drives blinking, mouth movement while speaking and emotions through **
 Models converted from MMD also work with their Japanese names: `あ` `い` `う` `え` `お`, `まばたき`, `笑い`,
 `怒り`, `困る`, `びっくり`, `なごみ`.
 
+**Faces driven by bones:** many game figures have no shape keys but small face bones. OtakuSoul recognises them by
+name and moves them itself: eyelids (`…lid…_up`/`…_lo`), brows (`…brow…`), upper and lower lip
+(`…uplip…`/`…lolip…`, `upper_lip`/`lower_lip`) and mouth corners (`…colip…`, `…corner…`), each with side `_L`/`_R`.
+Eyeballs (`…eyeball…`) serve as the scale. The bones must hang on the head bone and be weighted to the face.
+
 If your shape keys are named differently, rename the matching ones (Object Data properties → Shape Keys). An editor
 for mapping them directly in OtakuSoul is planned.
 
@@ -136,7 +141,7 @@ Feel free to scale textures down to 2048 px – it saves video memory and loadin
 | Figure distorts during animations | The animation belongs to a different skeleton |
 | Figure lies sideways, stands on its head or vanishes once an animation plays | Load the model and the animations through the **same** import path in Blender (e.g. both with the same add-on). Different importers use different axes (Z or Y up) and bone orientations; Blender already shows this on playback |
 | Figure walks out of the picture | Set the walk animation to "By hand only" or leave it out |
-| Face does not move | Rename shape keys as in section 6 |
+| Face does not move | Rename shape keys as in section 6 – or name face bones after the patterns listed there |
 | Mixamo motions do not fit | So far torso, head and arms are recognised; better recognition (legs, hands, fingers, `Bip001` rigs) is planned |
 | “The model has no skeleton” | Static models (e.g. AI-generated figures, 3D scans) are refused. Rig them first – e.g. with Mixamo (auto-rig) or in Blender (Rigify) – and reduce the polygon count beforehand with “Decimate” to about 50,000–100,000 triangles |
 | Import fails or loads very slowly | Only `.glb` without Draco compression; scale textures down |

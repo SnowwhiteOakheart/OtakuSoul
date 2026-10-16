@@ -94,6 +94,12 @@ Blinzeln, Mundbewegung beim Sprechen und Emotionen steuert OtakuSoul über **Sha
 Von MMD konvertierte Modelle funktionieren auch mit ihren japanischen Namen: `あ` `い` `う` `え` `お`, `まばたき`,
 `笑い`, `怒り`, `困る`, `びっくり`, `なごみ`.
 
+**Gesichter über Knochen:** Viele Spielfiguren haben keine Shape Keys, sondern kleine Gesichtsknochen. OtakuSoul erkennt
+sie am Namen und bewegt sie selbst: Augenlider (`…lid…_up`/`…_lo`), Augenbrauen (`…brow…`), Ober- und Unterlippe
+(`…uplip…`/`…lolip…`, `upper_lip`/`lower_lip`) und Mundwinkel (`…colip…`, `…corner…`), jeweils mit Seite `_L`/`_R`.
+Augäpfel (`…eyeball…`) dienen als Maßstab. Die Knochen müssen am Kopfknochen hängen und mit dem Gesicht verbunden
+sein (Gewichte).
+
 Heißen Deine Shape Keys anders, benenne die passenden um (Objekteigenschaften → Formschlüssel). Ein Editor zum
 Zuordnen direkt in OtakuSoul ist geplant.
 
@@ -136,7 +142,7 @@ Texturen ruhig auf 2048 px verkleinern – das spart Grafikspeicher und Ladezeit
 | Figur verzerrt sich bei Animationen | Animation gehört zu einem anderen Skelett |
 | Figur liegt quer, steht kopf oder verschwindet, sobald eine Animation läuft | Modell und Animationen über **denselben** Importweg in Blender laden (z. B. beides mit demselben Add-on). Verschiedene Importer verwenden unterschiedliche Achsen (Z- oder Y-oben) und Knochenausrichtungen; in Blender zeigt sich das schon beim Abspielen |
 | Figur läuft aus dem Bild | Lauf-Animation als „Nur von Hand“ einstellen oder weglassen |
-| Gesicht bewegt sich nicht | Shape Keys nach Abschnitt 6 umbenennen |
+| Gesicht bewegt sich nicht | Shape Keys nach Abschnitt 6 umbenennen – oder Gesichtsknochen nach den dort genannten Mustern benennen |
 | Mixamo-Bewegungen passen nicht | Erkannt werden bisher Rumpf, Kopf und Arme; bessere Erkennung (Beine, Hände, Finger, `Bip001`-Rigs) ist geplant |
 | „Das Modell hat kein Skelett“ | Statische Modelle (z. B. KI-generierte Figuren, 3D-Scans) werden abgelehnt. Erst riggen – etwa mit Mixamo (automatisches Rig) oder in Blender (Rigify) – und die Polygonzahl vorher mit „Decimate“ auf etwa 50.000–100.000 Dreiecke senken |
 | Import schlägt fehl oder lädt sehr lange | Nur `.glb` ohne Draco-Kompression; Texturen verkleinern |

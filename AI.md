@@ -151,6 +151,9 @@ Hub). Integrationen → Bildgenerierung enthält nur Studio und Galerie.
   `AvatarViewerChrome` über `playAvatarClip` (`GestureRequest.clip`); der Viewer zeigt `data-idle-clip`/`data-gesture-clip`.
   GLB ohne Skelett (`skins` leer, `avatar_motions::gltf_summary`) lehnt `import_vrm_into` mit `backend.vrm.noSkeleton` ab; von Hand
   abgelegte zeigt `GltfViewer` nicht (`avatar.noSkeleton`). `ScannedVrm.triangles` > 500.000 → Hinweis `settings.vrmHeavy`.
+  Gesichter über Knochen (`boneFace.ts`, ohne Morphs): `facePartOf` erkennt Lider/Brauen/Lippen/Mundwinkel/Augäpfel am Namen,
+  `BoneFace` verschiebt sie geometrisch (Welt → Elternraum, Augenabstand als Einheit); `restore()` vor dem Mixer, `apply()`
+  danach addiert. Viewer zeigt `data-face` (`morphs`/`bones`/`none`); Testmodell `makeGlb({ faceBones: true })`.
   Toon-Look (glTF): `toonLook.ts` `applyToonLook` tauscht Materialien gegen `MeshToonMaterial` (Originale in `userData`),
   `AvatarStage.setToon` schaltet `OutlineEffect`, `NeutralToneMapping` und Umgebungslicht; Schalter `usePersistentFlag`
   `avatarToon:<Pfad>`, Viewer zeigt `data-toon`.

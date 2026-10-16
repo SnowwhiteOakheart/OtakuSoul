@@ -50,7 +50,9 @@
       (`MMD_MORPHS` in `gltfRig.ts`, geteilt mit dem MMD-Viewer).
 - [ ] Editor je Modell: Emotionen (fröhlich, traurig, wütend, überrascht, entspannt), Blinzeln und Mundformen
       (aa/ih/ou/ee/oh) auf beliebige Morph Targets legen, mit Gewicht; gespeichert pro Modell.
-- [ ] Gesichter mit Knochen statt Morphs (Kiefer, Augenlider) als Fallback.
+- [x] Gesichter mit Knochen statt Morphs (`boneFace.ts`): Augenlider, Brauen, Lippen und Mundwinkel nach Namensmuster,
+      Bewegungen geometrisch in der Ruhepose (Augenabstand als Maß) und in den Elternraum umgerechnet; Blinzeln, Mundformen
+      und Gefühle. Geprüft an Unreal-Figuren (NTE).
 
 ### Schritt 4 – Anime-Look ✅
 - [x] Toon-Schalter am glTF-Avatar (`toonLook.ts`: `MeshToonMaterial` mit drei Lichtstufen, Konturen über

@@ -10,6 +10,7 @@ import type { AvatarMotion } from '../../types';
 import { AvatarMotionPlayer } from './vrmMotions';
 import { createAvatarStage, createBlinker, type AvatarStage } from './avatarStage';
 import { applyToonLook } from './toonLook';
+import { BoneFace } from './boneFace';
 import { usePersistentFlag } from '../../hooks/usePersistentFlag';
 import { loweredArm } from './avatarPose';
 import { AvatarViewerChrome } from './AvatarViewerChrome';
@@ -144,6 +145,7 @@ export const GltfViewer = ({
   const [ownClips, setOwnClips] = useState<Map<MotionRole, THREE.AnimationClip[]> | undefined>(undefined);
   const [extraClips, setExtraClips] = useState<THREE.AnimationClip[]>([]);
   const [playingClips, setPlayingClips] = useState({ idle: '', gesture: '' });
+  const [faceKind, setFaceKind] = useState('');
   const stageRef = useRef<AvatarStage | null>(null);
   // Cel shading per model and device; game figures usually look right with it, scans without.
   const [toon, setToon] = usePersistentFlag(`avatarToon:${modelPath}`, false);
@@ -173,7 +175,8 @@ export const GltfViewer = ({
     resetViewRef.current = stage.resetView;
 
     let root: THREE.Object3D | null = null;
-    let face: MorphFace | null = null;
+    // Morph targets if the model has them, else face bones (game rigs), else none.
+    let face: { set: (key: string, weight: number) => void; apply: () => void; restore?: () => void } | null = null;
     let posed: { bone: THREE.Object3D; rest: THREE.Quaternion }[] = [];
     let head: THREE.Object3D | undefined;
     let spine: THREE.Object3D | undefined;
@@ -209,7 +212,10 @@ export const GltfViewer = ({
         for (const [arm, forearm, side] of [[bones.leftArm, bones.leftForeArm, 1], [bones.rightArm, bones.rightForeArm, -1]] as const) {
           if (arm && forearm) posed.push({ bone: arm, rest: loweredArm(arm, forearm, side) });
         }
-        face = new MorphFace(scene);
+        const morphs = new MorphFace(scene);
+        const boneFace = morphs.supported.length ? null : BoneFace.detect(scene);
+        face = boneFace ?? morphs;
+        setFaceKind(morphs.supported.length ? 'morphs' : boneFace ? 'bones' : 'none');
         const box = restPoseBounds(scene);
         stage.frameModel(head ? head.getWorldPosition(new THREE.Vector3()).y : box.max.y - 0.15, box.max.y);
         const rest = captureRest(scene);
@@ -240,6 +246,7 @@ export const GltfViewer = ({
       const animated = player?.bodyWeight ?? 0;
       // Posed bones start from rest each frame; motions overwrite what they animate.
       for (const { bone, rest } of posed) bone.quaternion.copy(rest);
+      face?.restore?.();
       player?.update(delta);
       if (animated > 0.001 && animated < 0.999) for (const { bone, rest } of posed) bone.quaternion.slerp(rest, 1 - animated);
       lookX = THREE.MathUtils.lerp(lookX, stage.mouse.x, 0.05);
@@ -331,6 +338,7 @@ export const GltfViewer = ({
         data-motions={motionCount}
         data-gesture={playingGesture}
         data-toon={toon}
+        data-face={faceKind}
         data-idle-clip={playingClips.idle}
         data-gesture-clip={playingGesture ? playingClips.gesture : ''}
         className="w-full h-full cursor-grab active:cursor-grabbing"

@@ -33,6 +33,7 @@ try {
   await browser.$('button=Chat').click();
   await browser.$('[data-avatar-format="gltf"][data-motions="1"]').waitForExist({ timeout: 30_000, timeoutMsg: 'glTF-Viewer oder Mixamo-Bewegung fehlt' });
   assert.ok(!(await browser.$('body').getText()).includes('konnte nicht geladen werden'), 'Fehlermeldung im Viewer');
+  assert.equal(await browser.$('[data-avatar-format="gltf"]').getAttribute('data-face'), 'morphs', 'ARKit-Gesicht nicht erkannt');
   await browser.pause(800);
   await shot('63-gltf-avatar');
 

@@ -3,7 +3,8 @@
 // metres, with the ARKit blendshapes jawOpen, eyeBlinkLeft/Right and mouthSmileLeft/Right.
 // With `{ clips: true }` the file also carries its own animations, named like game exports:
 // "A_Idle_Breath" and "Idle_Happy" (loops, the second for a happy mood), "Emote_Wave" (a
-// gesture) and "Dance_Spin" (no use, played by hand).
+// gesture) and "Dance_Spin" (no use, played by hand). With `{ faceBones: true }` the face is rigged
+// like game figures instead: eyelid, lip and mouth-corner bones on the head, no blendshapes.
 import * as THREE from 'three';
 import { GLTFExporter } from 'three/examples/jsm/exporters/GLTFExporter.js';
 
@@ -41,7 +42,15 @@ const PARTS = [
 ];
 const MORPHS = ['jawOpen', 'eyeBlinkLeft', 'eyeBlinkRight', 'mouthSmileLeft', 'mouthSmileRight'];
 
-export async function makeGlb({ clips = false } = {}) {
+const FACE_BONES = [
+  ['Bon_eyeball_L', [0.04, 0.06, 0.08]], ['Bon_eyeball_R', [-0.04, 0.06, 0.08]],
+  ['BON_eyelid_up_L', [0.04, 0.075, 0.12]], ['BON_eyelid_lo_L', [0.04, 0.05, 0.12]],
+  ['BON_eyelid_up_R', [-0.04, 0.075, 0.12]], ['BON_eyelid_lo_R', [-0.04, 0.05, 0.12]],
+  ['Bon_uplip_M', [0, 0.0, 0.12]], ['Bon_Lolip_M', [0, -0.01, 0.12]],
+  ['Bon_colip_L', [0.015, -0.005, 0.12]], ['Bon_colip_R', [-0.015, -0.005, 0.12]],
+];
+
+export async function makeGlb({ clips = false, faceBones = false } = {}) {
   const bones = new Map();
   for (const [name, position, parent] of BONES) {
     const bone = new THREE.Bone();
@@ -50,7 +59,16 @@ export async function makeGlb({ clips = false } = {}) {
     bones.get(parent)?.add(bone);
     bones.set(name, bone);
   }
-  const names = BONES.map(([name]) => name);
+  if (faceBones) {
+    for (const [name, position] of FACE_BONES) {
+      const bone = new THREE.Bone();
+      bone.name = name;
+      bone.position.fromArray(position);
+      bones.get('Head').add(bone);
+      bones.set(name, bone);
+    }
+  }
+  const names = [...BONES.map(([name]) => name), ...(faceBones ? FACE_BONES.map(([name]) => name) : [])];
   const positions = [];
   const skinIndex = [];
   const skinWeight = [];
@@ -74,7 +92,7 @@ export async function makeGlb({ clips = false } = {}) {
   geometry.computeVertexNormals();
   // Each morph moves the head vertices a little (jawOpen the most), enough to see a change.
   geometry.morphTargetsRelative = true;
-  geometry.morphAttributes.position = MORPHS.map((name) => {
+  geometry.morphAttributes.position = (faceBones ? [] : MORPHS).map((name) => {
     const delta = new Float32Array(positions.length);
     for (let i = 0; i < positions.length; i += 3) {
       if (positions[i + 1] > 1.5 && positions[i + 1] < 1.6) delta[i + 1] = name === 'jawOpen' ? -0.06 : -0.01;
@@ -83,8 +101,10 @@ export async function makeGlb({ clips = false } = {}) {
   });
   const mesh = new THREE.SkinnedMesh(geometry, new THREE.MeshStandardMaterial({ color: 0xd8b4fe }));
   mesh.name = 'Body';
-  mesh.morphTargetDictionary = Object.fromEntries(MORPHS.map((name, i) => [name, i]));
-  mesh.morphTargetInfluences = MORPHS.map(() => 0);
+  if (!faceBones) {
+    mesh.morphTargetDictionary = Object.fromEntries(MORPHS.map((name, i) => [name, i]));
+    mesh.morphTargetInfluences = MORPHS.map(() => 0);
+  }
   const root = new THREE.Group();
   root.name = 'Avatar';
   root.add(bones.get('Hips'));
