@@ -1,27 +1,81 @@
 import * as THREE from 'three';
 
+type Side = 'left' | 'right';
+const FULL_WIDTH = '０１２３';
+
+/** Names of one limb bone on one side: `l`/`r` and `左`/`右` are filled in, the Mixamo name comes first. */
+const sided = (side: Side, names: (s: { l: string; side: string; jp: string }) => string[]) =>
+  names({ l: side[0]!, side, jp: side === 'left' ? '左' : '右' });
+
+/** Finger roles: thumb, index, middle, ring and little finger with three segments each. */
+const FINGERS = [
+  // [Mixamo, Unreal/Rigify, Biped number, VRoid, MMD English, MMD Japanese, first Japanese segment]
+  ['thumb', 'thumb', 0, 'thumb', 'thumb', '親指', 0],
+  ['index', 'index', 1, 'index', 'indexfinger', '人指', 1],
+  ['middle', 'middle', 2, 'middle', 'middlefinger', '中指', 1],
+  ['ring', 'ring', 3, 'ring', 'ringfinger', '薬指', 1],
+  ['pinky', 'pinky', 4, 'little', 'littlefinger', '小指', 1],
+] as const;
+
+function fingerAliases(side: Side): Record<string, string[]> {
+  const out: Record<string, string[]> = {};
+  const l = side[0]!;
+  const jp = side === 'left' ? '左' : '右';
+  for (const [mixamo, unreal, biped, vroid, mmd, japanese, jpStart] of FINGERS) {
+    for (const segment of [1, 2, 3]) {
+      out[`${side}${mixamo[0]!.toUpperCase()}${mixamo.slice(1)}${segment}`] = [
+        `${side}hand${mixamo}${segment}`,
+        `${unreal}0${segment}${l}`,
+        `f${unreal}0${segment}${l}`,
+        `bip001${l}finger${biped}${segment === 1 ? '' : segment - 1}`,
+        `jbip${l}${vroid}${segment}`,
+        `${mmd}${segment}${l}`,
+        `${jp}${japanese}${FULL_WIDTH[jpStart + segment - 1]}`,
+        // "finger1-1_L": numbered from the thumb.
+        `finger${biped + 1}${segment}${l}`,
+      ];
+    }
+  }
+  return out;
+}
+
+function limbAliases(side: Side): Record<string, string[]> {
+  return {
+    [`${side}Shoulder`]: sided(side, ({ l, side, jp }) => [`${side}shoulder`, `clavicle${l}`, `bip001${l}clavicle`, `jbip${l}shoulder`, `shoulder${l}`, `${l}clavicle`, `${jp}肩`]),
+    [`${side}Arm`]: sided(side, ({ l, side, jp }) => [`${side}arm`, `${side}upperarm`, `upperarm${l}`, `upperarm01${l}`, `${l}upperarm`, `arm${side}`, `jbip${l}upperarm`, `bip001${l}upperarm`, `${jp}腕`, `arm${l}`]),
+    [`${side}ForeArm`]: sided(side, ({ l, side, jp }) => [
+      `${side}forearm`, `${side}lowerarm`, `lowerarm${l}`, `lowerarm01${l}`, `forearm${l}`, `${l}forearm`, `jbip${l}lowerarm`,
+      `bip001${l}forearm`, `${side}elbow`, `elbow${l}`, `${l}elbow`, `${jp}ひじ`, `${jp}肘`,
+    ]),
+    [`${side}Hand`]: sided(side, ({ l, side, jp }) => [`${side}hand`, `hand${l}`, `bip001${l}hand`, `jbip${l}hand`, `${side}wrist`, `wrist${l}`, `${l}hand`, `${jp}手首`]),
+    // MMD calls the thigh "leg" and the shin "knee" – see `findRigBones`.
+    [`${side}UpLeg`]: sided(side, ({ l, side, jp }) => [`${side}upleg`, `thigh${l}`, `bip001${l}thigh`, `jbip${l}upperleg`, `upperleg${l}`, `upperleg01${l}`, `${side}upperleg`, `${l}thigh`, `${jp}足`]),
+    [`${side}Leg`]: sided(side, ({ l, side, jp }) => [`${side}leg`, `calf${l}`, `bip001${l}calf`, `jbip${l}lowerleg`, `lowerleg${l}`, `lowerleg01${l}`, `${side}lowerleg`, `shin${l}`, `${l}calf`, `${side}knee`, `${jp}ひざ`]),
+    [`${side}Foot`]: sided(side, ({ l, side, jp }) => [`${side}foot`, `foot${l}`, `bip001${l}foot`, `jbip${l}foot`, `${side}ankle`, `${l}foot`, `${jp}足首`]),
+    [`${side}ToeBase`]: sided(side, ({ l, side, jp }) => [`${side}toebase`, `ball${l}`, `bip001${l}toe0`, `jbip${l}toebase`, `${side}toe`, `toe${l}`, `${jp}つま先`]),
+    ...fingerAliases(side),
+  };
+}
+
 /**
  * Bone roles of a humanoid glTF rig and the (normalized) names rigs use for them: Mixamo /
- * Ready Player Me, MakeHuman, Unreal, Blender (Rigify-like ".L"), VRoid ("J_Bip_…"), 3ds Max Biped
- * ("Bip001 L UpperArm") and MMD models converted to glTF (English "Left elbow" or Japanese "左ひじ").
+ * Ready Player Me (first, they name the roles for retargeting), Unreal, Blender/Rigify (".L"),
+ * MakeHuman, VRoid ("J_Bip_…"), 3ds Max Biped ("Bip001 L UpperArm") and MMD models converted to glTF
+ * (English "Left elbow" or Japanese "左ひじ").
  */
-const BONE_ALIASES = {
-  hips: ['hips', 'pelvis', 'jbipchips', 'bip001pelvis', '下半身', 'root'],
-  spine: ['spine', 'spine1', 'spine01', 'spine02', 'spine03', 'chest', 'jbipcspine', 'bip001spine', '上半身', 'upperbody'],
-  neck: ['neck', 'neck01', 'jbipcneck', 'bip001neck', '首'],
-  head: ['head', 'jbipchead', 'bip001head', '頭'],
-  leftArm: ['leftarm', 'leftupperarm', 'upperarml', 'upperarm01l', 'lupperarm', 'armleft', 'jbiplupperarm', 'bip001lupperarm', '左腕', 'arml'],
-  leftForeArm: [
-    'leftforearm', 'leftlowerarm', 'lowerarml', 'lowerarm01l', 'forearml', 'lforearm', 'jbipllowerarm',
-    'bip001lforearm', 'leftelbow', 'elbowl', 'lelbow', '左ひじ', '左肘',
-  ],
-  rightArm: ['rightarm', 'rightupperarm', 'upperarmr', 'upperarm01r', 'rupperarm', 'armright', 'jbiprupperarm', 'bip001rupperarm', '右腕', 'armr'],
-  rightForeArm: [
-    'rightforearm', 'rightlowerarm', 'lowerarmr', 'lowerarm01r', 'forearmr', 'rforearm', 'jbiprlowerarm',
-    'bip001rforearm', 'rightelbow', 'elbowr', 'relbow', '右ひじ', '右肘',
-  ],
-} as const;
-export type RigBone = keyof typeof BONE_ALIASES;
+const BONE_ALIASES: Record<string, readonly string[]> = Object.fromEntries(
+  Object.entries({
+    hips: ['hips', 'pelvis', 'jbipchips', 'bip001pelvis', '下半身', 'root'],
+    spine: ['spine', 'spine1', 'spine01', 'spine02', 'spine03', 'chest', 'jbipcspine', 'bip001spine', '上半身', 'upperbody'],
+    spine1: ['spine1', 'bip001spine1', 'jbipcchest', 'spine02', 'chest', '上半身2'],
+    spine2: ['spine2', 'bip001spine2', 'jbipcupperchest', 'spine03', 'upperchest'],
+    neck: ['neck', 'neck01', 'jbipcneck', 'bip001neck', '首'],
+    head: ['head', 'jbipchead', 'bip001head', '頭'],
+    ...limbAliases('left'),
+    ...limbAliases('right'),
+  }).filter(([, names]) => names.length > 0),
+);
+export type RigBone = string;
 
 /**
  * "mixamorig:LeftArm" → "leftarm", "upperarm01_L" → "upperarm01l", "upper_arm.L" → "upperarml",
@@ -53,7 +107,12 @@ export function findRigBones(root: THREE.Object3D): Partial<Record<RigBone, THRE
     if (!byName.has(key) && ((node as THREE.Bone).isBone || node.type === 'Object3D' || node.type === 'Group')) byName.set(key, node);
   });
   const found: Partial<Record<RigBone, THREE.Object3D>> = {};
-  for (const [role, aliases] of Object.entries(BONE_ALIASES) as [RigBone, readonly string[]][]) {
+  // MMD names the thigh "leg" and the shin "knee"; Mixamo's "LeftLeg" is the shin.
+  const mmdLegs = byName.has('leftknee') || byName.has('rightknee');
+  for (const [role, names] of Object.entries(BONE_ALIASES)) {
+    let aliases = names;
+    if (mmdLegs && /UpLeg$/.test(role)) aliases = [role.startsWith('left') ? 'leftleg' : 'rightleg', ...names];
+    if (mmdLegs && /^(left|right)Leg$/.test(role)) aliases = names.filter((n) => n !== 'leftleg' && n !== 'rightleg');
     const node = aliases.map((alias) => byName.get(alias)).find(Boolean);
     if (node) found[role] = node;
   }
@@ -166,7 +225,11 @@ export function retargetToRig(clip: THREE.AnimationClip, source: THREE.Object3D,
     if (!targets.has(plainBoneName(node.name))) targets.set(plainBoneName(node.name), node);
   });
   // Rigs with other naming (MakeHuman, Unreal …): the main bones by their role.
-  for (const [role, node] of Object.entries(findRigBones(target))) targets.set(BONE_ALIASES[role as RigBone][0], node);
+  // Every role is filed under its Mixamo name, which is how the source tracks are named.
+  for (const [role, node] of Object.entries(findRigBones(target))) {
+    const mixamo = BONE_ALIASES[role]?.[0];
+    if (mixamo && node) targets.set(mixamo, node);
+  }
   source.updateWorldMatrix(true, true);
   const sourceHips = source.getObjectByName('mixamorigHips');
   const scale = rest.hipsHeight / (sourceHips?.getWorldPosition(new THREE.Vector3()).y || 1);

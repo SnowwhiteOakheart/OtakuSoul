@@ -40,6 +40,49 @@ describe('glTF rig', () => {
     expect(findRigBones(biped).leftForeArm).toBe(bipForearm);
   });
 
+  it('finds legs, hands and fingers of every rig family', () => {
+    const rig = (names: string[]) => {
+      const root = new THREE.Group();
+      for (const name of names) bone(name, root);
+      const found = findRigBones(root);
+      return Object.fromEntries(Object.entries(found).map(([role, node]) => [role, node!.name]));
+    };
+    expect(rig(['Bip001-L-Thigh', 'Bip001-L-Calf', 'Bip001-L-Foot', 'Bip001-L-Toe0', 'Bip001-L-Clavicle', 'Bip001-L-Hand', 'Bip001-L-Finger0', 'Bip001-L-Finger11', 'Bip001-R-Finger42'])).toMatchObject({
+      leftUpLeg: 'Bip001-L-Thigh', leftLeg: 'Bip001-L-Calf', leftFoot: 'Bip001-L-Foot', leftToeBase: 'Bip001-L-Toe0',
+      leftShoulder: 'Bip001-L-Clavicle', leftHand: 'Bip001-L-Hand', leftThumb1: 'Bip001-L-Finger0', leftIndex2: 'Bip001-L-Finger11', rightPinky3: 'Bip001-R-Finger42',
+    });
+    expect(rig(['thigh_l', 'calf_l', 'ball_l', 'hand_r', 'index_02_r', 'thumb_01_l'])).toMatchObject({
+      leftUpLeg: 'thigh_l', leftLeg: 'calf_l', leftToeBase: 'ball_l', rightHand: 'hand_r', rightIndex2: 'index_02_r', leftThumb1: 'thumb_01_l',
+    });
+    expect(rig(['J_Bip_L_UpperLeg', 'J_Bip_L_LowerLeg', 'J_Bip_R_Little3', 'J_Bip_C_Chest'])).toMatchObject({
+      leftUpLeg: 'J_Bip_L_UpperLeg', leftLeg: 'J_Bip_L_LowerLeg', rightPinky3: 'J_Bip_R_Little3', spine1: 'J_Bip_C_Chest',
+    });
+    expect(rig(['thigh.L', 'shin.L', 'f_middle.01.R'])).toMatchObject({ leftUpLeg: 'thigh.L', leftLeg: 'shin.L', rightMiddle1: 'f_middle.01.R' });
+    // MMD: "Left leg" is the thigh when there is a "Left knee"; Mixamo's "LeftLeg" stays the shin.
+    expect(rig(['Left leg', 'Left knee', 'Left ankle', 'IndexFinger2_L', '右足', '右ひざ', '右親指０'])).toMatchObject({
+      leftUpLeg: 'Left leg', leftLeg: 'Left knee', leftFoot: 'Left ankle', leftIndex2: 'IndexFinger2_L', rightUpLeg: '右足', rightLeg: '右ひざ', rightThumb1: '右親指０',
+    });
+    expect(rig(['finger1-1_L', 'finger5-3_R'])).toMatchObject({ leftThumb1: 'finger1-1_L', rightPinky3: 'finger5-3_R' });
+    expect(rig(['mixamorig:LeftUpLeg', 'mixamorig:LeftLeg'])).toMatchObject({ leftUpLeg: 'mixamorig:LeftUpLeg', leftLeg: 'mixamorig:LeftLeg' });
+  });
+
+  it('moves Mixamo legs and fingers onto a Biped rig', () => {
+    const source = new THREE.Group();
+    const sourceHips = bone('mixamorigHips', source);
+    const sourceThigh = bone('mixamorigLeftUpLeg', sourceHips);
+    const sourceIndex = bone('mixamorigLeftHandIndex1', sourceHips);
+    const target = new THREE.Group();
+    const pelvis = bone('Bip001-Pelvis', target);
+    const thigh = bone('Bip001-L-Thigh', pelvis);
+    const index = bone('Bip001-L-Finger1', pelvis);
+    const clip = new THREE.AnimationClip('mixamo.com', 1, [
+      new THREE.QuaternionKeyframeTrack(`${sourceThigh.name}.quaternion`, [0], aboutZ(0.4).toArray()),
+      new THREE.QuaternionKeyframeTrack(`${sourceIndex.name}.quaternion`, [0], aboutZ(0.2).toArray()),
+    ]);
+    const result = retargetToRig(clip, source, target, captureRest(target));
+    expect(result.tracks.map((t) => t.name).sort()).toEqual([`${index.uuid}.quaternion`, `${thigh.uuid}.quaternion`].sort());
+  });
+
   it('uses the Japanese morphs of models converted from MMD', () => {
     const names = ['あ', 'まばたき', '笑い', 'a'];
     const geometry = new THREE.BufferGeometry();

@@ -31,7 +31,7 @@ You are responsible for models you did not make yourself.
    More than about 500,000 triangles load slowly – OtakuSoul points this out on import.
 4. **One armature:** all parts (body, head, hair, clothes) should hang on **one** skeleton. Remove extra armatures
    and attach the parts to the main armature via an "Armature" modifier.
-5. **Bone names:** OtakuSoul recognises torso, head and arms with Mixamo, Unreal Mannequin, MakeHuman, Blender
+5. **Bone names:** OtakuSoul recognises torso, head, arms, hands, legs, feet and fingers with Mixamo, Unreal Mannequin, MakeHuman, Blender
    (`upper_arm.L`), VRoid, 3ds Max Biped (`Bip001 …`) and MMD names (Japanese too). Other skeletons still work with their own animations; only imported foreign
    motions (Mixamo FBX) will not fit them.
 
@@ -142,6 +142,5 @@ Feel free to scale textures down to 2048 px – it saves video memory and loadin
 | Figure lies sideways, stands on its head or vanishes once an animation plays | Load the model and the animations through the **same** import path in Blender (e.g. both with the same add-on). Different importers use different axes (Z or Y up) and bone orientations; Blender already shows this on playback |
 | Figure walks out of the picture | Set the walk animation to "By hand only" or leave it out |
 | Face does not move | Rename shape keys as in section 6 – or name face bones after the patterns listed there |
-| Mixamo motions do not fit | So far torso, head and arms are recognised; better recognition (legs, hands, fingers, `Bip001` rigs) is planned |
 | “The model has no skeleton” | Static models (e.g. AI-generated figures, 3D scans) are refused. Rig them first – e.g. with Mixamo (auto-rig) or in Blender (Rigify) – and reduce the polygon count beforehand with “Decimate” to about 50,000–100,000 triangles |
 | Import fails or loads very slowly | Only `.glb` without Draco compression; scale textures down |

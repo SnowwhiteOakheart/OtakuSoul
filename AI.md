@@ -160,6 +160,8 @@ Hub). Integrationen → Bildgenerierung enthält nur Studio und Galerie.
   Nutzeranleitung `docs/guide-3d-avatars{,.de,.ru}.md` (UI-Pfade/Namenslisten bei Änderungen nachziehen); `docs/private/`
   ist gitignored (lokale Notizen, nie committen).
   glTF: Knochen-Aliase für Mixamo/RPM, MakeHuman, Unreal, Blender, VRoid, Bip001, MMD englisch/japanisch (`gltfRig.ts`,
+  Rollen für Rumpf, Arme, Hände, Beine, Füße und alle Finger, Mixamo-Name je Rolle zuerst – darunter läuft `retargetToRig`;
+  MMD-„Left leg“ = Oberschenkel, wenn „Left knee“ existiert;
   `plainBoneName` behält Buchstaben aller Schriften), MMD-Gesichtsnamen `MMD_MORPHS` geteilt mit `MmdViewer`; Größe außerhalb 0,5–3 m wird
   auf 1,6 m gebracht; Bounds über das Skelett nach `updateMatrixWorld` (nicht `updateWorldMatrix`, sonst doppelter
   Maßstab); PBR-Materialien bekommen `useStudioEnvironment` (ohne Umgebung werden metallische Teile schwarz).

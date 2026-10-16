@@ -38,12 +38,14 @@
 - [x] Einstellungen → Avatar-Bewegungen: Abschnitt „Bewegungen im Modell“ mit Rollenwahl und Vorschau.
 - [x] Tests: Rust (Clipnamen, Rollen), E2E mit GLB samt eingebetteten Clips (Ruhe + Geste).
 
-### Schritt 2 – Mehr Knochen erkennen
+### Schritt 2 – Mehr Knochen erkennen ✅
 - [x] Aliase für 3ds-Max-Biped (`Bip001 …`) und nach glTF konvertierte MMD-Modelle (englisch „Left elbow“, japanisch
       „左ひじ“/„上半身“); Knochennamen behalten dafür Buchstaben anderer Schriften. Geprüft an einem echten MMD-Modell
       (Arme hängen statt T-Pose).
-- [ ] Rollen für Beine, Hände, Finger und Zehen ergänzen; weitere verbreitete Asia-Rigs.
-- [ ] Retargeting fremder Bewegungen (Mixamo, VRMA) über alle Rollen, nicht nur Rumpf und Arme.
+- [x] Rollen für Brust, Schultern, Hände, Beine, Füße, Zehen und alle Finger (je drei Glieder) mit Namen für Mixamo,
+      Unreal, Blender/Rigify, MakeHuman, VRoid, Biped, MMD englisch/japanisch und `finger1-1_L`; MMD-„Left leg“ ist
+      der Oberschenkel, wenn es „Left knee“ gibt. Geprüft an NTE (52 Rollen), MMD (48) und A010 (50).
+- [x] Retargeting fremder Mixamo-Bewegungen über alle Rollen (jede Rolle unter ihrem Mixamo-Namen).
 
 ### Schritt 3 – Gesicht zuordnen
 - [x] Japanische MMD-Gesichtsformen (あ い う え お, まばたき, 笑い, 怒り, 困る, びっくり, なごみ) auch im glTF-Viewer
