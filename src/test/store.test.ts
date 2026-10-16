@@ -110,6 +110,48 @@ describe('local model selection', () => {
     expect(useAppStore.getState().serverConfig.model_path).toBe('/new.gguf');
     expect(lastSavedSettings().server_config.model_path).toBe('/new.gguf');
   });
+
+  it('sizes context and GPU layers for the new model', async () => {
+    vi.mocked(api.getLayerRecommendation).mockResolvedValue({
+      recommended_layers: 99,
+      recommended_context_size: 32_768,
+      trained_context_size: 131_072,
+      available_vram_mb: 14_840,
+    } as Awaited<ReturnType<typeof api.getLayerRecommendation>>);
+    useAppStore.setState({ serverConfig: { ...initialState.serverConfig, model_path: '/old.gguf', context_size: 4096, gpu_layers: 20 } });
+
+    await useAppStore.getState().selectLocalModel('/nemo.gguf');
+    expect(api.getLayerRecommendation).toHaveBeenCalledWith(0, 0, 4096, '/nemo.gguf', 'f16', 'f16');
+    expect(useAppStore.getState().serverConfig).toMatchObject({ context_size: 32_768, gpu_layers: 99 });
+    expect(lastSavedSettings().server_config.context_size).toBe(32_768);
+  });
+});
+
+describe('local AI on demand', () => {
+  const status = (state: string) => ({ state, port: 48596, pid: null, model_name: null, error_message: null, recent_logs: [] });
+
+  it('starts a stopped local model before a request and waits for it', async () => {
+    vi.mocked(api.getLlamaServerStatus).mockResolvedValueOnce(status('stopped') as never).mockResolvedValue(status('running') as never);
+    useAppStore.setState({ selectedBackend: 'local', serverConfig: { ...initialState.serverConfig, model_path: '/m.gguf' } });
+    await useAppStore.getState().ensureLocalAi();
+    expect(api.startLlamaServer).toHaveBeenCalledOnce();
+  });
+
+  it('leaves a running model and the cloud alone', async () => {
+    vi.mocked(api.getLlamaServerStatus).mockResolvedValue(status('running') as never);
+    useAppStore.setState({ selectedBackend: 'local', serverConfig: { ...initialState.serverConfig, model_path: '/m.gguf' } });
+    await useAppStore.getState().ensureLocalAi();
+    useAppStore.setState({ selectedBackend: 'cloud' });
+    await useAppStore.getState().ensureLocalAi();
+    expect(api.startLlamaServer).not.toHaveBeenCalled();
+  });
+
+  it('passes a failed start on to the request without a toast', async () => {
+    vi.mocked(api.getLlamaServerStatus).mockResolvedValue(status('stopped') as never);
+    vi.mocked(api.startLlamaServer).mockRejectedValue(new Error('kein VRAM'));
+    useAppStore.setState({ selectedBackend: 'local', serverConfig: { ...initialState.serverConfig, model_path: '/m.gguf' } });
+    await expect(useAppStore.getState().ensureLocalAi()).rejects.toThrow('kein VRAM');
+  });
 });
 
 describe('settings sections', () => {

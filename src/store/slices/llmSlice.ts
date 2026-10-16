@@ -45,7 +45,10 @@ export interface LlmSlice {
   setServerConfig: (config: Partial<LlamaServerConfig>) => void;
   selectLocalModel: (path: string) => Promise<void>;
   fetchServerStatus: () => Promise<void>;
-  startServer: () => Promise<void>;
+  /** `quiet`: the caller shows the error itself (no toast). */
+  startServer: (options?: { quiet?: boolean }) => Promise<void>;
+  /** Starts the local AI if it is chosen but not running, and waits until it answers; throws if it cannot start. */
+  ensureLocalAi: () => Promise<void>;
   stopServer: () => Promise<void>;
   sampling: SamplingParams;
   setSampling: (sampling: Partial<SamplingParams>) => void;
@@ -168,7 +171,6 @@ export const createLlmSlice: SliceCreator<LlmSlice> = (set, get) => ({
           gpu_layers: 99,
           ...(isBonsai
             ? {
-                context_size: model?.recommended_context || 32768,
                 cache_type_k: 'q4_0',
                 cache_type_v: 'q4_0',
                 flash_attn: true,
@@ -186,6 +188,30 @@ export const createLlmSlice: SliceCreator<LlmSlice> = (set, get) => ({
           : state.sampling,
       };
     });
+    // Context and GPU layers for this model: what fits into the graphics memory, never more
+    // than the model was trained for.
+    try {
+      const config = get().serverConfig;
+      const model = get().scannedModels.find((item) => item.path === path);
+      const rec = await api.getLayerRecommendation(
+        model?.size_mb ?? 0,
+        0,
+        config.context_size,
+        path,
+        config.cache_type_k ?? 'f16',
+        config.cache_type_v ?? 'f16',
+      );
+      set((state) => ({
+        layerRecommendation: rec,
+        serverConfig: {
+          ...state.serverConfig,
+          context_size: rec.recommended_context_size,
+          gpu_layers: rec.available_vram_mb > 0 ? rec.recommended_layers : state.serverConfig.gpu_layers,
+        },
+      }));
+    } catch (e) {
+      console.error('Failed to size the context for the model:', e);
+    }
     await get().saveCurrentSettings();
   },
 
@@ -206,7 +232,7 @@ export const createLlmSlice: SliceCreator<LlmSlice> = (set, get) => ({
     }
   },
 
-  startServer: async () => {
+  startServer: async (options) => {
     if (serverTaskId) get().endTask(serverTaskId, 'cancelled');
     // Loading takes from seconds to minutes; the chat waits until the model is in VRAM.
     const id = get().startTask({
@@ -215,7 +241,7 @@ export const createLlmSlice: SliceCreator<LlmSlice> = (set, get) => ({
       status: 'waiting',
       detail: translate('task.modelLoading'),
       cancel: () => void get().stopServer(),
-      retry: () => void get().startServer(),
+      retry: () => void get().startServer().catch(() => {}),
     });
     serverTaskId = id;
     try {
@@ -225,8 +251,22 @@ export const createLlmSlice: SliceCreator<LlmSlice> = (set, get) => ({
     } catch (e) {
       if (serverTaskId === id) serverTaskId = null;
       get().endTask(id, 'failed', errorMessage(e));
-      reportFailure('Failed to start server:', e);
+      if (options?.quiet) console.error('Failed to start server:', e);
+      else reportFailure('Failed to start server:', e);
+      throw e;
     }
+  },
+
+  ensureLocalAi: async () => {
+    if (get().selectedBackend !== 'local' || !get().serverConfig.model_path) return;
+    await get().fetchServerStatus();
+    // Someone else is already loading the model: wait for it (up to 5 minutes).
+    for (let i = 0; i < 300 && get().serverStatus.state === 'starting'; i += 1) {
+      await new Promise((resolve) => setTimeout(resolve, 1000));
+      await get().fetchServerStatus();
+    }
+    if (get().serverStatus.state === 'running') return;
+    await get().startServer({ quiet: true });
   },
 
   stopServer: async () => {

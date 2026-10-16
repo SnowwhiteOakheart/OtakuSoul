@@ -277,6 +277,7 @@ export const ru: TranslationDictionary = {
   "settings.fileFilterLive2d": "Модели Live2D (*.zip, *.model3.json, *.model.json)",
   "settings.contextSize": "Размер контекста (-c)",
   "settings.tokens": "{{count}} токенов",
+  "settings.ctxTrained": "Модель обучена максимум на {{count}} токенов – больше приложение не использует.",
   "settings.ctx32k": "{{count}} токенов (рекомендуется квантование KV)",
   "settings.ctx128k": "{{count}} токенов (много RAM/VRAM)",
   "settings.ctx256k": "{{count}} токенов (максимум модели, экспериментально)",

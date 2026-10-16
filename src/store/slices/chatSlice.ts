@@ -605,6 +605,8 @@ export const createChatSlice: SliceCreator<ChatSlice> = (set, get) => {
     set({ isGenerating: true, generationId, generationChatId: activeChatId, generationFailure: null, streamingText: '', streamingThought: '' });
 
     try {
+      // The local AI starts with the first message (the task list shows the loading).
+      await waitWithAbort(() => get().ensureLocalAi(), preparation.signal);
       const prompt = await waitWithAbort(() => resolvePromptWithLore(get(), priorFlat, undefined, preparation.signal), preparation.signal);
       if (!inContext(activeChatId, activeCharacter.id)) return;
       const systemPromptMsg: ChatMessage = { role: 'system', content: prompt.system };
@@ -706,6 +708,8 @@ export const createChatSlice: SliceCreator<ChatSlice> = (set, get) => {
     set({ isGenerating: true, generationId, generationChatId: activeChatId, generationFailure: null, streamingText: '', streamingThought: '' });
 
     try {
+      // The local AI starts with the first message (the task list shows the loading).
+      await waitWithAbort(() => get().ensureLocalAi(), preparation.signal);
       const prompt = await waitWithAbort(() => resolvePromptWithLore(get(), historyFlat, undefined, preparation.signal), preparation.signal);
       if (!inContext(activeChatId, activeCharacter.id)) return;
       const systemPromptMsg: ChatMessage = { role: 'system', content: prompt.system };
@@ -871,6 +875,8 @@ export const createChatSlice: SliceCreator<ChatSlice> = (set, get) => {
       if (cancelled) return;
       const activeSession = chatSessions.find((s) => s.id === activeChatId);
 
+      // The local AI starts with the first message (the task list shows the loading).
+      await waitWithAbort(() => get().ensureLocalAi(), preparation.signal);
       // 2. Build context-aware system prompt
       let systemPromptMsg: ChatMessage | null = null;
       let prompt: AssembledPrompt | null = null;

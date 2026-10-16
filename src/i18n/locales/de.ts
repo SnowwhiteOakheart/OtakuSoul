@@ -279,6 +279,7 @@ export const de = {
   "settings.fileFilterLive2d": "Live2D-Modelle (*.zip, *.model3.json, *.model.json)",
   "settings.contextSize": "Kontextgröße (-c)",
   "settings.tokens": "{{count}} Tokens",
+  "settings.ctxTrained": "Dieses Modell wurde für bis zu {{count}} Tokens trainiert – mehr nutzt die App nicht.",
   "settings.ctx32k": "{{count}} Tokens (KV-Quantisierung empfohlen)",
   "settings.ctx128k": "{{count}} Tokens (viel RAM/VRAM)",
   "settings.ctx256k": "{{count}} Tokens (Modellmaximum, experimentell)",

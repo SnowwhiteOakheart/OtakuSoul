@@ -76,6 +76,13 @@ ru „персонаж/история/сцена“. Fachbegriffe nur im Experte
   „# Role & Identity“ (das E2E-Mock erkennt Chat-Anfragen daran).
 - **Kontext:** lokal exakt über llama-server `/props` + `/tokenize` (gecacht), Cloud geschätzt (Bytes/3) mit
   `cloud_context_tokens`. System-Nachrichten und letzte Nicht-System-Nachricht bleiben immer; Bild = 1000 Tokens.
+  Größe je Modell: `gguf::model_shape` liest Schichten, gelernte Länge (`<arch>.context_length`) und den KV-Bedarf pro
+  Token aus dem Header (KV-Köpfe je Schicht, `full_attention_interval` bei Hybrid-Modellen, Gleitfenster-Schichten mit
+  festem Block `window + ub`; MLA → unbekannt, dann Schätzung). `hardware::MemoryProfile::context_mb` nutzt das;
+  `selectLocalModel` setzt Kontext und GPU-Layer per `get_layer_recommendation` (bis 32K, Bonsai so viel wie passt,
+  nie über die gelernte Länge – `llama_manager` begrenzt beim Start zusätzlich). llama-server läuft mit `--parallel 1`
+  (Hintergrundanfragen warten, statt sich den KV-Cache zu teilen). Lokale KI startet bei Bedarf: `ensureLocalAi` vor
+  Chat-Senden/Swipe/Fortsetzen und Stage-Aktionen (Fehler ohne Toast an den Aufrufer, `startServer({ quiet })`).
 - **Bilder lokal:** `local_image::plan` prüft VRAM (nvidia-smi/Vulkan) und entlädt nur bei Bedarf gestuft: TTS → Chat-Modell
   verkleinern/tauschen; danach Neustart im Hintergrund.
 - **Fehler im Store:** Aktion mit eigener Rückmeldung im Aufrufer (Erfolgs-Toast, Formular) → `throw e`; Knopf ohne eigene

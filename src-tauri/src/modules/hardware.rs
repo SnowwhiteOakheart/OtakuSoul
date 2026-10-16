@@ -41,6 +41,8 @@ impl HardwareInfo {
 pub struct LayerRecommendation {
     pub recommended_layers: u32,
     pub recommended_context_size: u32,
+    /// Context the model was trained for (`0` = unknown); larger contexts make it ramble.
+    pub trained_context_size: u32,
     pub fits_entirely_in_vram: bool,
     pub estimated_vram_usage_mb: u64,
     pub available_vram_mb: u64,
@@ -55,9 +57,35 @@ pub struct LayerRecommendation {
 struct MemoryProfile {
     name: &'static str,
     runtime_overhead_mb: u64,
+    /// Estimate when the model file does not describe its attention layout.
     kv_cache_mb_per_1k_tokens: u64,
+    /// Exact KV layout from the GGUF header.
+    shape: Option<crate::modules::gguf::ModelShape>,
+    cache_factor: f64,
+    /// The model's trained context, at most the largest choice.
     max_context_size: u32,
+    trained_context: Option<u32>,
     recommend_largest_context: bool,
+}
+
+/// Room llama.cpp keeps in sliding-window caches next to the window (`-ub`, default 512).
+const SWA_UBATCH: u32 = 512;
+/// Context the planner aims for with ordinary models: plenty for long role-play chats without
+/// slowing every request down.
+const GENERIC_TARGET_CONTEXT: u32 = 32_768;
+
+impl MemoryProfile {
+    /// VRAM of the KV cache for `context` tokens.
+    fn context_mb(&self, context: u32) -> u64 {
+        match self
+            .shape
+            .as_ref()
+            .and_then(|s| s.kv_bytes(context, SWA_UBATCH))
+        {
+            Some(bytes) => (bytes as f64 * self.cache_factor / (1024.0 * 1024.0)).ceil() as u64,
+            None => (u64::from(context) * self.kv_cache_mb_per_1k_tokens).div_ceil(1_000),
+        }
+    }
 }
 
 fn cache_precision_factor(cache_type: Option<&str>) -> f64 {
@@ -80,6 +108,11 @@ fn memory_profile(
     let model_name = model_path.unwrap_or_default().to_ascii_lowercase();
     let cache_factor =
         (cache_precision_factor(cache_type_k) + cache_precision_factor(cache_type_v)) / 2.0;
+    let shape =
+        model_path.and_then(|path| crate::modules::gguf::model_shape(std::path::Path::new(path)));
+    let trained_context = shape.as_ref().and_then(|s| s.trained_context);
+    let max_context_size = trained_context.unwrap_or(262_144).min(262_144);
+    let shape = shape.filter(|s| s.kv_bytes_per_token.is_some());
 
     if model_name.contains("ternary-bonsai") || model_name.contains("ternary_bonsai") {
         // Calibrated against PrismML's published measurements. Bonsai uses hybrid
@@ -90,20 +123,26 @@ fn memory_profile(
             name: "Ternary Bonsai (Hybrid Attention)",
             runtime_overhead_mb: 1_250,
             kv_cache_mb_per_1k_tokens: (64.0 * cache_factor).ceil() as u64,
-            max_context_size: 262_144,
+            shape,
+            cache_factor,
+            max_context_size,
+            trained_context,
             recommend_largest_context: true,
         };
     }
 
-    // Generic GQA estimate. Exact KV requirements depend on the architecture;
-    // scale the common 40-layer baseline with the supplied layer count.
+    // Without a readable header: generic GQA estimate, the common 40-layer baseline scaled
+    // with the supplied layer count.
     let layers = total_model_layers.max(1) as f64;
     MemoryProfile {
         // Translated by the frontend.
         name: "generic",
         runtime_overhead_mb: 768,
         kv_cache_mb_per_1k_tokens: (128.0 * (layers / 40.0) * cache_factor).ceil() as u64,
-        max_context_size: 262_144,
+        shape,
+        cache_factor,
+        max_context_size,
+        trained_context,
         recommend_largest_context: false,
     }
 }
@@ -125,25 +164,17 @@ pub fn estimate_llm_vram_mb(
     );
     actual_model_size_mb(0, Some(model_path))
         .saturating_add(profile.runtime_overhead_mb)
-        .saturating_add(context_memory_mb(
-            context_size,
-            profile.kv_cache_mb_per_1k_tokens,
-        ))
+        .saturating_add(profile.context_mb(context_size.min(profile.max_context_size)))
 }
 
-fn context_memory_mb(context_size: u32, mb_per_1k_tokens: u64) -> u64 {
-    (u64::from(context_size) * mb_per_1k_tokens).div_ceil(1_000)
-}
-
-fn largest_context_that_fits(max_tokens: u32, token_capacity: u64) -> u32 {
+/// The largest context of the usual choices up to `max_tokens` for which `fits` holds.
+fn largest_context_that_fits(max_tokens: u32, fits: impl Fn(u32) -> bool) -> Option<u32> {
     const CONTEXT_CHOICES: [u32; 9] = [
         262_144, 131_072, 65_536, 32_768, 16_384, 8_192, 4_096, 2_048, 1_024,
     ];
-
     CONTEXT_CHOICES
         .into_iter()
-        .find(|choice| *choice <= max_tokens && u64::from(*choice) <= token_capacity)
-        .unwrap_or(1_024)
+        .find(|choice| *choice <= max_tokens && fits(*choice))
 }
 
 /// Programs holding at least this much video memory are named when memory runs short.
@@ -409,9 +440,13 @@ pub fn recommend_gpu_layers(
         None => (0, 0),
     };
 
+    // The file knows its layer count; the caller's number is only a guess from the name.
+    let layers = model_path
+        .and_then(|path| crate::modules::gguf::block_count(std::path::Path::new(path)))
+        .unwrap_or(total_model_layers);
     recommend_gpu_layers_for_vram(
         actual_model_size_mb(model_size_mb, model_path),
-        total_model_layers,
+        layers,
         context_size,
         free_vram,
         total_vram,
@@ -441,11 +476,13 @@ fn recommend_gpu_layers_for_vram(
     cache_type_v: Option<&str>,
 ) -> LayerRecommendation {
     let profile = memory_profile(model_path, total_model_layers, cache_type_k, cache_type_v);
+    let trained = profile.trained_context.unwrap_or(0);
 
     if total_vram == 0 {
         return LayerRecommendation {
             recommended_layers: 0,
-            recommended_context_size: context_size,
+            recommended_context_size: context_size.min(profile.max_context_size),
+            trained_context_size: trained,
             fits_entirely_in_vram: false,
             estimated_vram_usage_mb: 0,
             available_vram_mb: 0,
@@ -462,21 +499,21 @@ fn recommend_gpu_layers_for_vram(
     // so we budget against the maximum capacity available to the LLM.
     let safe_vram = total_vram.saturating_sub(1_536);
 
-    let requested_context = context_size.max(1_024).min(profile.max_context_size);
     let available_for_context = safe_vram
         .saturating_sub(model_size_mb)
         .saturating_sub(profile.runtime_overhead_mb);
-    let token_capacity = available_for_context
-        .saturating_mul(1_000)
-        .checked_div(profile.kv_cache_mb_per_1k_tokens.max(1))
-        .unwrap_or(0);
-    let recommended_context = if profile.recommend_largest_context {
-        largest_context_that_fits(profile.max_context_size, token_capacity)
+    let fits = |context: u32| profile.context_mb(context) <= available_for_context;
+    // Bonsai: as much as fits. Other models: up to 32K, never above what the model was
+    // trained for; when the model itself does not fit, a modest 8K next to the layers.
+    let target = if profile.recommend_largest_context {
+        profile.max_context_size
     } else {
-        requested_context
+        GENERIC_TARGET_CONTEXT.min(profile.max_context_size)
     };
-    let context_overhead_mb =
-        context_memory_mb(recommended_context, profile.kv_cache_mb_per_1k_tokens);
+    let recommended_context = largest_context_that_fits(target, fits)
+        .filter(|context| *context >= 4_096 || profile.recommend_largest_context)
+        .unwrap_or_else(|| 8_192.min(profile.max_context_size));
+    let context_overhead_mb = profile.context_mb(recommended_context);
     let total_required_mb = model_size_mb
         .saturating_add(profile.runtime_overhead_mb)
         .saturating_add(context_overhead_mb);
@@ -491,6 +528,7 @@ fn recommend_gpu_layers_for_vram(
         LayerRecommendation {
             recommended_layers: 99, // Offload all layers
             recommended_context_size: recommended_context,
+            trained_context_size: trained,
             fits_entirely_in_vram: true,
             estimated_vram_usage_mb: total_required_mb,
             available_vram_mb: safe_vram,
@@ -530,6 +568,7 @@ fn recommend_gpu_layers_for_vram(
         LayerRecommendation {
             recommended_layers: recommended,
             recommended_context_size: recommended_context,
+            trained_context_size: trained,
             fits_entirely_in_vram: false,
             estimated_vram_usage_mb: estimated,
             available_vram_mb: safe_vram,
@@ -683,5 +722,35 @@ mod tests {
         assert!(rec.fits_entirely_in_vram);
         assert_eq!(rec.recommended_layers, 99);
         assert_eq!(rec.recommended_context_size, 65_536);
+    }
+
+    /// Recommendation for a real model on a 16 GB card:
+    /// `OTAKUSOUL_GGUF=/path/model.gguf cargo test --lib real_model_recommendation -- --ignored --nocapture`
+    #[test]
+    #[ignore = "needs a model file"]
+    fn real_model_recommendation() {
+        let path = std::env::var("OTAKUSOUL_GGUF").expect("OTAKUSOUL_GGUF");
+        let layers = crate::modules::gguf::block_count(std::path::Path::new(&path)).unwrap_or(40);
+        for cache in ["f16", "q8_0"] {
+            let rec = recommend_gpu_layers_for_vram(
+                actual_model_size_mb(0, Some(&path)),
+                layers,
+                4_096,
+                16_376,
+                16_376,
+                Some(&path),
+                Some(cache),
+                Some(cache),
+            );
+            println!(
+                "{cache}: context {} (trained {}), layers {}, KV {} MB, total {} / {} MB",
+                rec.recommended_context_size,
+                rec.trained_context_size,
+                rec.recommended_layers,
+                rec.estimated_context_vram_mb,
+                rec.estimated_vram_usage_mb,
+                rec.available_vram_mb
+            );
+        }
     }
 }

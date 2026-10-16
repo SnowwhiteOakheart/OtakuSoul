@@ -43,6 +43,8 @@ describe('stage turns', () => {
     const pending = useAppStore.getState();
     expect(pending.isProcessingStageTurn).toBe(true);
     expect(pending.stageState!.chat_log.at(-1)).toMatchObject({ sender_name: 'Hiroki', content: 'Ich klopfe an.', turn_mode: 'do' });
+    // The request follows once the local AI is checked.
+    await vi.waitFor(() => expect(api.runStageTurn).toHaveBeenCalled());
     expect(request()).toMatchObject({ scene_id: 'scene-1', user_input: '  Ich klopfe an. ', turn_mode: 'do' });
 
     const stored = withLines(line('p-1', 'player', 'Ich klopfe an.'), line('gm-1', 'gm', 'Es knarrt.'));

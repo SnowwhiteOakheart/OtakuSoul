@@ -329,6 +329,7 @@ export const createStageSlice: SliceCreator<StageSlice> = (set, get) => ({
     if (!current) return;
     set({ isProcessingStageTurn: true, stageLive: [] });
     try {
+      await get().ensureLocalAi();
       const updated = await api.regenerateStageTurn(current.definition.id);
       set({ stageState: updated, isProcessingStageTurn: false, stageLive: [] });
       if (get().stageReadAloud) {
@@ -502,6 +503,7 @@ export const createStageSlice: SliceCreator<StageSlice> = (set, get) => ({
         whisper_target: target || undefined,
         force_next_actor: actor || undefined,
       };
+      await get().ensureLocalAi();
       const updated = await api.runStageTurn(req);
       set({ stageState: updated, isProcessingStageTurn: false, stageLive: [] });
       if (get().stageReadAloud) {
@@ -541,6 +543,7 @@ export const createStageSlice: SliceCreator<StageSlice> = (set, get) => ({
     if (!current) return;
     set({ isProcessingStageTurn: true, stageLive: [], stageCombatOptions: null, stageAimedSpell: null });
     try {
+      await get().ensureLocalAi();
       const updated = await api.runStageCombat(current.definition.id, action);
       set({ stageState: updated, isProcessingStageTurn: false, stageLive: [] });
       void get().refreshStageCombatOptions();
@@ -558,6 +561,7 @@ export const createStageSlice: SliceCreator<StageSlice> = (set, get) => ({
     if (!current || get().isProcessingStageTurn) return;
     set({ isProcessingStageTurn: true, stageLive: [] });
     try {
+      await get().ensureLocalAi();
       const updated = await api.runStageExploration(current.definition.id, action);
       set({ stageState: updated, isProcessingStageTurn: false, stageLive: [] });
       void get().refreshStageCombatOptions();
@@ -624,6 +628,7 @@ export const createStageSlice: SliceCreator<StageSlice> = (set, get) => ({
     if (!current) return;
     set({ isProcessingStageTurn: true });
     try {
+      await get().ensureLocalAi();
       const rested = await api.restStageParty(current.definition.id, restType);
       set({ stageState: rested, isProcessingStageTurn: false });
       soundFx.playDiceRoll();

@@ -42,7 +42,7 @@ export function errorFix(error: unknown, app: FixContext): ErrorFix | null {
     case 'backend.llm.connect':
     case 'backend.llm.timeout':
       return local
-        ? { label: 'errorFix.startAi', run: () => void app.startServer() }
+        ? { label: 'errorFix.startAi', run: () => void app.startServer().catch(() => {}) }
         : { label: 'errorFix.checkConnection', run: settings('providers') };
     case 'backend.server.notEnoughVram':
     case 'backend.server.vramCrash':

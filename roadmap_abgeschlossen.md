@@ -1936,3 +1936,9 @@ veraltet und sind korrigiert: `chat-sidebar-errors` las die Sitzung, bevor der e
   `stageNarration`, `stageReply`). Behoben: Stage-Kopf zeigte Titel/Ton der Geschichte nicht in der Antwortsprache,
   Spielername „Spieler“ in fremdsprachigen Geschichten, HUD-Startwert „Glücklich“ und Porträt-Eigenschaften unübersetzt,
   „Überspringen“ ragte im Einrichtungsassistenten über den Rand. Release-Workflow baut zusätzlich macOS (Apple Silicon).
+
+- [x] **Kontextfenster je lokalem Modell (16.10.2026):** Kontextgröße und GPU-Layer richten sich beim Modellwechsel nach
+  dem Modell (gelernte Länge aus dem GGUF-Header, exakter KV-Bedarf inkl. Hybrid- und Gleitfenster-Schichten, geprüft
+  gegen llama.cpp b11429: Nemo 2560 MiB, Qwen3.5 1024 MiB, Gemma 4 256 + 480 MiB bei 16K). Auswahl in den Einstellungen
+  nur bis zur gelernten Länge, Start begrenzt zusätzlich. `--parallel 1` statt vier geteilter Slots. Die lokale KI startet
+  beim ersten Senden selbst (vorher stimmte der Hinweis „startet mit der ersten Nachricht“ nicht).

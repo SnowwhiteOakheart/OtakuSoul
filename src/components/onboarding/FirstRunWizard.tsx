@@ -573,7 +573,7 @@ export const FirstRunWizard: React.FC = () => {
                 onClick={() =>
                   finish(() => {
                     store.setActiveTab('stage');
-                    if (!isCloud && localModel && startServerNow) void store.startServer();
+                    if (!isCloud && localModel && startServerNow) void store.startServer().catch(() => {});
                   })
                 }
                 className={SECONDARY_BUTTON}
@@ -586,7 +586,7 @@ export const FirstRunWizard: React.FC = () => {
                 onClick={() =>
                   finish(() => {
                     store.setActiveTab('chat');
-                    if (!isCloud && localModel && startServerNow) void store.startServer();
+                    if (!isCloud && localModel && startServerNow) void store.startServer().catch(() => {});
                   })
                 }
                 className={PRIMARY_BUTTON}

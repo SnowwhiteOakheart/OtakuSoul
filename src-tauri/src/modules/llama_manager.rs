@@ -487,10 +487,27 @@ impl LlamaServerManager {
             info!("llama-server: --device {device}");
             cmd.arg("--device").arg(device);
         }
+        // Never more context than the model was trained for: beyond it replies fall apart.
+        let context = match crate::modules::gguf::model_shape(model_path)
+            .and_then(|shape| shape.trained_context)
+        {
+            Some(trained) if config.context_size > trained => {
+                warn!(
+                    "llama-server: context {} > trained {trained}, using {trained}",
+                    config.context_size
+                );
+                trained
+            }
+            _ => config.context_size,
+        };
         cmd.arg("-m")
             .arg(&config.model_path)
             .arg("-c")
-            .arg(config.context_size.to_string())
+            .arg(context.to_string())
+            // One slot: background requests (summaries, memory, Stage routing) wait for the
+            // chat instead of sharing its KV cache and failing when it is full.
+            .arg("--parallel")
+            .arg("1")
             .arg("-ngl")
             .arg(config.gpu_layers.to_string())
             .arg("--port")

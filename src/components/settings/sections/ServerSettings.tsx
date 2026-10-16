@@ -36,6 +36,11 @@ export const ServerSettings = () => {
   useEffect(() => {
     api.scanVisionProjectors().then(setProjectors).catch(() => setProjectors([]));
   }, []);
+  // The recommendation (and the model's trained context) follows the chosen model.
+  useEffect(() => {
+    if (serverConfig.model_path) handleRecommendLayers();
+    // oxlint-disable-next-line react-hooks/exhaustive-deps -- only on a model change
+  }, [serverConfig.model_path]);
 
   const handleBrowseProjector = async () => {
     try {
@@ -49,6 +54,8 @@ export const ServerSettings = () => {
     }
   };
   const mmproj = serverConfig.mmproj_path ?? '';
+  // What the chosen model was trained for limits the context choices (0 = unknown).
+  const trainedContext = layerRecommendation?.trained_context_size ?? 0;
   const gpu = hardware?.gpus[0];
 
   const vramPercent =
@@ -291,7 +298,9 @@ export const ServerSettings = () => {
               onChange={(e) => setServerConfig({ context_size: parseInt(e.target.value) })}
               className="w-full bg-app border border-slate-800 rounded-lg px-3 py-1.5 text-slate-200 font-mono focus:outline-hidden focus:border-accent-500"
             >
-              {[2048, 4096, 8192, 16384, 32768, 65536, 131072, 262144].map((size) => (
+              {[2048, 4096, 8192, 16384, 32768, 65536, 131072, 262144]
+                .filter((size) => !trainedContext || size <= trainedContext || size === serverConfig.context_size)
+                .map((size) => (
                 <option key={size} value={size}>
                   {t(
                     size === 32768
@@ -306,6 +315,11 @@ export const ServerSettings = () => {
                 </option>
               ))}
             </select>
+            {trainedContext > 0 && (
+              <p className="text-[11px] text-slate-500" data-trained-context={trainedContext}>
+                {t('settings.ctxTrained', { count: trainedContext.toLocaleString() })}
+              </p>
+            )}
           </div>
 
           {/* GPU Layers */}
@@ -511,7 +525,7 @@ export const ServerSettings = () => {
           <button
             type="button"
             disabled={serverStatus.state === 'running' || serverStatus.state === 'starting' || !serverConfig.model_path}
-            onClick={startServer}
+            onClick={() => void startServer().catch(() => {})}
             title={!serverConfig.model_path ? t('settings.startDisabledHint') : undefined}
             className="flex-1 py-2.5 px-4 rounded-lg bg-emerald-600 hover:bg-emerald-500 disabled:opacity-50 text-white text-xs font-semibold flex items-center justify-center gap-2 transition-colors shadow-lg shadow-emerald-950/40"
           >
