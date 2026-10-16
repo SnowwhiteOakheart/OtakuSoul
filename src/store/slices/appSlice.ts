@@ -48,6 +48,11 @@ export interface AppSlice {
   trayHintShown: boolean;
   /** Scene Stage reopens on the next start; empty = Stage starts with the story gallery. */
   stageLastScene: string;
+  /** Page the app opens with. */
+  startTab: 'home' | 'chat';
+  setStartTab: (tab: 'home' | 'chat') => void;
+  /** Shows the first-run wizard again (start page: "set up the AI"). */
+  reopenOnboarding: () => void;
   confirmTrayHint: () => Promise<void>;
   /** Settings section to open next time the settings view mounts. */
   pendingSettingsSection: SettingsSection | null;
@@ -150,6 +155,9 @@ export const createAppSlice: SliceCreator<AppSlice> = (set, get) => ({
         chatTools: settings.chat_tools === true,
         trayHintShown: settings.tray_hint_shown === true,
         stageLastScene: settings.stage_last_scene || '',
+        startTab: settings.start_tab === 'chat' ? 'chat' : 'home',
+        // The app opens on the start page unless the user goes straight to the chat (or already moved on).
+        ...(settings.start_tab !== 'chat' && get().activeTab === 'chat' ? { activeTab: 'home' as const } : {}),
         settingsLoaded: true,
       });
 
@@ -251,6 +259,7 @@ export const createAppSlice: SliceCreator<AppSlice> = (set, get) => ({
         chat_tools: state.chatTools,
         tray_hint_shown: state.trayHintShown,
         stage_last_scene: state.stageLastScene,
+        start_tab: state.startTab,
       };
       await api.saveSettings(settings);
       settingsSaveFailureShown = false;
@@ -322,6 +331,12 @@ export const createAppSlice: SliceCreator<AppSlice> = (set, get) => ({
 
   trayHintShown: false,
   stageLastScene: '',
+  startTab: 'home',
+  setStartTab: (startTab) => {
+    set({ startTab });
+    get().saveCurrentSettings();
+  },
+  reopenOnboarding: () => set({ onboardingCompleted: false }),
 
   confirmTrayHint: async () => {
     set({ trayHintShown: true });

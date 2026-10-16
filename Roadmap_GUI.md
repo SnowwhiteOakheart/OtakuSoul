@@ -50,9 +50,12 @@
 
 ## 2. Startseite & Navigation
 
-- [ ] **Startseite „Was möchtest du tun?“** (statt leerem Chat): Weiterspielen (letzter Chat/letzte Szene), Mit einer
+- [x] **Startseite „Was möchtest du tun?“ (16.10.2026):** `HomeView.tsx` als erster Reiter „Start“ (Einstellung `start_tab`,
+  abschaltbar), KI-Status mit „KI ändern“ bzw. „Jetzt einrichten“, Karten Weiterchatten / Geschichte / Hub.
+  Ursprünglicher Plan: (statt leerem Chat): Weiterspielen (letzter Chat/letzte Szene), Mit einer
   Figur chatten, Geschichte beginnen, Figur entdecken (Hub). Leere Zustände führen hierher.
-- [ ] **Kopfzeile aufräumen:** Symbolknöpfe beschriften oder mit Tooltip + Kurztext versehen; Lokal/Cloud-Umschalter
+- [ ] **Kopfzeile aufräumen:** (Symbolknöpfe haben Tooltips; KI-Status erklärt jetzt die Startseite – GPU-Anzeige und
+  Protokoll mit dem Expertenmodus ausblenden) Symbolknöpfe beschriften oder mit Tooltip + Kurztext versehen; Lokal/Cloud-Umschalter
   als verständlicher Status („Antworten kommen von: Bonsai 27B auf deinem PC“) mit Klick zur Auswahl; GPU-Anzeige nur
   im Expertenmodus oder als Detail.
 - [ ] **Navigation benennen:** Seitenleiste mit Untertiteln beim ersten Start („Stage – Geschichten mit mehreren

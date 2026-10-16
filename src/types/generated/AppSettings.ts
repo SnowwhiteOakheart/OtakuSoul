@@ -26,6 +26,10 @@ tray_hint_shown: boolean,
  */
 stage_last_scene: string, 
 /**
+ * Page the app opens with: `home` (start page) or `chat` (straight into the last chat).
+ */
+start_tab: string, 
+/**
  * The chat model may use tools (date/time, calculator, web search); off by default
  * because a web search sends the query to a search engine.
  */

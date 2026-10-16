@@ -3,6 +3,7 @@ import {
   Bot,
   Compass,
   Dice5,
+  House,
   Layers,
   MessageSquare,
   Settings,
@@ -27,6 +28,7 @@ export const NAV_GROUPS: NavGroup[] = [
   {
     label: 'nav.groupPlay',
     items: [
+      { tab: 'home', label: 'nav.home', icon: House },
       { tab: 'chat', label: 'nav.chat', icon: MessageSquare },
       { tab: 'stage', label: 'nav.stage', icon: Dice5 },
       { tab: 'companion', label: 'nav.companion', icon: Bot },
@@ -49,5 +51,5 @@ export const NAV_GROUPS: NavGroup[] = [
   },
 ];
 
-/** Tabs in display order; Ctrl+1...8 follows this order. */
+/** Tabs in display order; Ctrl+1...9 follows this order. */
 export const SHORTCUT_TABS = NAV_GROUPS.flatMap((group) => group.items.map((item) => item.tab));

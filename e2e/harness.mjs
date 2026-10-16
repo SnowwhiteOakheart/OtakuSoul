@@ -53,6 +53,8 @@ export async function launch(settings = {}) {
       cloud_model: 'mock',
       // Stage opens the demo scene instead of the story gallery (tests of the gallery override this).
       stage_last_scene: 'default_scene',
+      // Tests start in the chat; the start page has its own test.
+      start_tab: 'chat',
       ...settings,
     }),
   );

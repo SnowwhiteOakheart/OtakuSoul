@@ -817,6 +817,8 @@ export interface AppSettings {
   color_mode?: 'system' | 'light' | 'dark';
   onboarding_completed?: boolean;
   stage_last_scene?: string;
+  /** Page the app opens with: start page or straight into the chat. */
+  start_tab?: 'home' | 'chat';
   /** Closing the window keeps the app running in the tray. */
   close_to_tray?: boolean;
   tray_hint_shown?: boolean;

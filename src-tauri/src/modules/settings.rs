@@ -74,6 +74,9 @@ pub struct AppSettings {
     /// Scene that Stage reopens on the next start; empty = Stage starts with the story gallery.
     #[serde(default)]
     pub stage_last_scene: String,
+    /// Page the app opens with: `home` (start page) or `chat` (straight into the last chat).
+    #[serde(default = "default_start_tab")]
+    pub start_tab: String,
     /// The chat model may use tools (date/time, calculator, web search); off by default
     /// because a web search sends the query to a search engine.
     #[serde(default)]
@@ -94,6 +97,10 @@ fn default_avatar_mode() -> String {
 
 fn default_app_language() -> String {
     "de".to_string()
+}
+
+fn default_start_tab() -> String {
+    "home".to_string()
 }
 
 fn default_theme() -> String {
@@ -149,6 +156,7 @@ impl Default for AppSettings {
             close_to_tray: true,
             tray_hint_shown: false,
             stage_last_scene: String::new(),
+            start_tab: default_start_tab(),
             chat_tools: false,
             prompt_template: Default::default(),
         }

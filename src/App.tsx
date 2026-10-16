@@ -1,3 +1,4 @@
+import { HomeView } from './components/HomeView';
 import { lazy, Suspense, useState } from 'react';
 import { Header } from './components/Header';
 import { Sidebar } from './components/Sidebar';
@@ -57,6 +58,7 @@ export function App() {
       <main className="flex-1 flex min-w-0 overflow-hidden">
         <ErrorBoundary resetKey={activeTab}>
           <Suspense fallback={<ViewSkeleton label={t('common.loadingView')} />}>
+            {activeTab === 'home' && <HomeView />}
             {activeTab === 'chat' && <ChatView />}
             {activeTab === 'characters' && <CharacterLibraryView />}
             {activeTab === 'hub' && <HubView />}

@@ -47,6 +47,7 @@ Backend `src-tauri/src/`: `lib.rs` (Plugins, Command-Registrierung), `state.rs` 
 Frontend `src/`: `services/api.ts` (ein Wrapper je Command), `store/slices/*.ts` (Zustand, Zugriff per
 `useStoreFields('a','b')`), `store/helpers.ts` (`resolvePromptWithLore`, `llmTarget`), `components/<bereich>/`,
 `i18n/locales/{de,en,ru}.ts` (en/ru laden bei Bedarf über `i18n/registry.ts`, Tests registrieren alle in `src/test/setup.ts`), `types/index.ts` (+ `generated/`), `utils/errors.ts`.
+Startseite `components/HomeView.tsx` (Reiter `home`, `AppSettings.start_tab` = `home`/`chat`, E2E-Harness setzt `chat`).
 Chat-UI: `ChatView.tsx` → `MessageList.tsx` (virtualisiert, `ChatMessageItem`) + `ChatComposer.tsx` + `ChatSidebar.tsx`.
 Ansichtsvorlieben pro Gerät über `hooks/usePersistentFlag.ts` (Kompakt = `data-density="compact"`, CSS in `App.css` über
 `.chat-row`/`.chat-bubble`; HUD-Zustandswerte einklappbar). Heller Modus kehrt Slate um und dunkelt Statusfarben 100–300 ab
