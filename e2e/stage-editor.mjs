@@ -2,7 +2,7 @@
 import assert from 'node:assert/strict';
 import { writeFileSync } from 'node:fs';
 import path from 'node:path';
-import { launch, screenshotDir } from './harness.mjs';
+import { launch, openSceneLobby, screenshotDir } from './harness.mjs';
 const { browser, mock, home, close } = await launch();
 // oxlint-disable-next-line no-underscore-dangle -- Tauri IPC in a disposable profile
 const invoke = (command, args = {}) => browser.execute((cmd, payload) => window.__TAURI_INTERNALS__.invoke(cmd, payload), command, args);
@@ -36,9 +36,9 @@ try {
   assert.equal(rejected, true, 'invalid media kind was accepted');
   await invoke('save_lorebook', { lorebook: { id: 'editor-lore', name: 'Editor-Lore', entries: [{ content: 'EDITOR_LORE_MARKER', trigger_type: 'always_on', enabled: true, probability: 100, priority: 1, injection_behavior: 'passive', uid: 1 }] } });
   await browser.$('button=Stage').click();
-  await browser.$('button=Szenen-Lobby').waitForDisplayed();
+  await browser.$('button=Geschichten').waitForDisplayed();
   const openEditor = async (title) => {
-    if (!await browser.$('#scene-lobby-title').isDisplayed()) await browser.$('button=Szenen-Lobby').click();
+    if (!await browser.$('#scene-lobby-title').isDisplayed()) await openSceneLobby(browser);
     await browser.$(`button[aria-label='Weitere Aktionen für „${title}“']`).click();
     await browser.$('button=Szene bearbeiten').click();
     await browser.$('#scene-title').waitForDisplayed();
@@ -72,6 +72,8 @@ try {
   await shot('20-szenen-editor-klein');
   await browser.$('button=Abbrechen').click();
   await browser.$('[role="dialog"] button[aria-label="Schließen"]').click();
+  // The management was opened from the story gallery; back into the running story.
+  await browser.$('button*=Zurück zur laufenden Geschichte').click();
   mock.stats.spawnNpc = { name: 'Liora', archetype: 'merchant', personality: 'Geduldig' };
   mock.stats.stageBackground = image;
   const input = await browser.$('form textarea');

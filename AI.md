@@ -126,6 +126,13 @@ Hub). Integrationen → Bildgenerierung enthält nur Studio und Galerie.
   Ansprache-Erkennung, sonst Routing-LLM (Mock erkennt „[STAGE — ROUTING]“). `turn_mode: "continue"` = Runde ohne
   Spieleraktion (Weiter/Auto-Play).
   Der Abbruch-Merker wird nur am Runden-/Chat-Start zurückgesetzt (`reset_abort`), damit „Stopp“ die ganze Runde beendet.
+  Story-Galerie (`Roadmap_GUI.md`): `StoryGallery.tsx` ist der Einstieg in Stage, wenn keine Szene gemerkt ist
+  (`AppSettings.stage_last_scene`, `stageSlice.rememberStageScene`/`restoreStageScene`; fehlt die gemerkte Szene, bleibt eine
+  aktive gespeicherte). Story-Daten in `extensions.otakusoul_story` (`StoryInfo`: Genre fantasy/adventure/slice_of_life/
+  comedy/romance/mystery/scifi/horror, Minuten, Schwierigkeit, Hinweise, `beginner`, Startvorschläge je Sprache → ersetzen
+  die allgemeinen `pending_choices`); mitgelieferte Geschichten in `presets/stories/scenes/` (Ordner `STORY_FOLDER`).
+  Szenen übersetzen auch `starting_location`/`time_of_day`. Lobby = „Szenen verwalten“ aus der Galerie; E2E-Harness setzt
+  `stage_last_scene: "default_scene"`, Galerie-Test `stage-gallery.mjs`, Lobby über `openSceneLobby`.
 - Lokale TTS (`tts_local.rs`, `crispasr --server`): F5 bekommt unter CUDA `CRISPASR_F5_EMBED_GPU=1` (sonst ~20× langsamer).
   VoiceDesign-Modelle (`voice_design`) brauchen eine Beschreibung (`openai_instructions` der Stimme → `instructions`).
   TADA: `CRISPASR_TADA_WAV_CLONE=1` (WAV-Klon, Encoder/Aligner neben dem Modell), `CRISPASR_TADA_NUM_CANDIDATES=4`.

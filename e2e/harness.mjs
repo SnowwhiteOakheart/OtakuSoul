@@ -51,6 +51,8 @@ export async function launch(settings = {}) {
       cloud_provider: 'custom',
       cloud_endpoint: mock.url,
       cloud_model: 'mock',
+      // Stage opens the demo scene instead of the story gallery (tests of the gallery override this).
+      stage_last_scene: 'default_scene',
       ...settings,
     }),
   );
@@ -103,4 +105,11 @@ export async function clickSend(browser) {
   // A toast in the corner (e.g. "System-Prompt gespeichert") can cover the button for a moment.
   await button.waitForClickable({ timeout: 20_000 });
   await button.click();
+}
+
+/** Opens the scene management of Stage: story gallery → "Szenen verwalten". */
+export async function openSceneLobby(browser) {
+  if (!(await browser.$('[data-story-gallery]').isExisting())) await browser.$('button=Geschichten').click();
+  await browser.$('button=Szenen verwalten').click();
+  await browser.$('#scene-lobby-title').waitForDisplayed({ timeout: 10_000 });
 }

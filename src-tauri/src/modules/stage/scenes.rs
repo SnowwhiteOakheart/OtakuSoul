@@ -1127,8 +1127,17 @@ mod tests {
             assert_eq!(def.folder, STORY_FOLDER);
             let story = def.story_info().expect("otakusoul_story");
             assert!(
-                ["fantasy", "slice_of_life", "mystery", "scifi", "horror"]
-                    .contains(&story.genre.as_str())
+                [
+                    "fantasy",
+                    "adventure",
+                    "slice_of_life",
+                    "comedy",
+                    "romance",
+                    "mystery",
+                    "scifi",
+                    "horror"
+                ]
+                .contains(&story.genre.as_str())
             );
             assert!(["easy", "medium", "hard"].contains(&story.difficulty.as_str()));
             assert!(story.minutes >= 15);

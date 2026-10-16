@@ -7,7 +7,7 @@ import type { TaggedChoice } from "./TaggedChoice";
  */
 export type StoryInfo = { 
 /**
- * `fantasy`, `slice_of_life`, `mystery`, `scifi` or `horror`.
+ * `fantasy`, `adventure`, `slice_of_life`, `comedy`, `romance`, `mystery`, `scifi` or `horror`.
  */
 genre: string, 
 /**
@@ -19,7 +19,8 @@ minutes: number,
  */
 difficulty: string, 
 /**
- * Content notes (ids translated by the frontend, e.g. `mild_violence`, `spooky`).
+ * Content notes (ids translated by the frontend: `mild_danger`, `mild_violence`, `action`, `spooky`,
+ * `suspense`, `flirting`, `romance`, `dark_themes`, `death`).
  */
 notes: Array<string>, 
 /**

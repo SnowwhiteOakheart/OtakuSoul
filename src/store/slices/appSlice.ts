@@ -46,6 +46,8 @@ export interface AppSlice {
   setChatTools: (on: boolean) => void;
   /** The first-close hint about the tray was confirmed. */
   trayHintShown: boolean;
+  /** Scene Stage reopens on the next start; empty = Stage starts with the story gallery. */
+  stageLastScene: string;
   confirmTrayHint: () => Promise<void>;
   /** Settings section to open next time the settings view mounts. */
   pendingSettingsSection: SettingsSection | null;
@@ -147,6 +149,7 @@ export const createAppSlice: SliceCreator<AppSlice> = (set, get) => ({
         closeToTray: settings.close_to_tray !== false,
         chatTools: settings.chat_tools === true,
         trayHintShown: settings.tray_hint_shown === true,
+        stageLastScene: settings.stage_last_scene || '',
         settingsLoaded: true,
       });
 
@@ -247,6 +250,7 @@ export const createAppSlice: SliceCreator<AppSlice> = (set, get) => ({
         close_to_tray: state.closeToTray,
         chat_tools: state.chatTools,
         tray_hint_shown: state.trayHintShown,
+        stage_last_scene: state.stageLastScene,
       };
       await api.saveSettings(settings);
       settingsSaveFailureShown = false;
@@ -317,6 +321,7 @@ export const createAppSlice: SliceCreator<AppSlice> = (set, get) => ({
   },
 
   trayHintShown: false,
+  stageLastScene: '',
 
   confirmTrayHint: async () => {
     set({ trayHintShown: true });

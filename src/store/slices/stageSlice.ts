@@ -94,6 +94,10 @@ export interface StageSlice {
   deleteStageTurnMessage: (messageId: string) => Promise<void>;
   regenerateStageTurn: () => Promise<void>;
   loadStageScene: (sceneId: string) => Promise<void>;
+  /** Remembers the scene Stage reopens on the next start. */
+  rememberStageScene: (sceneId: string) => void;
+  /** Opens the remembered scene once per app start; false = none (Stage shows the gallery). */
+  restoreStageScene: () => Promise<boolean>;
   saveStageScene: (state: SceneState) => Promise<void>;
   updateStageSceneDefinition: (definition: SceneDefinition) => Promise<SceneState>;
   createStageScene: (definition: SceneDefinition) => Promise<SceneState>;
@@ -377,10 +381,35 @@ export const createStageSlice: SliceCreator<StageSlice> = (set, get) => ({
     }
   },
 
+  rememberStageScene: (sceneId: string) => {
+    if (!sceneId || get().stageLastScene === sceneId) return;
+    set({ stageLastScene: sceneId });
+    void get().saveCurrentSettings();
+  },
+
+  restoreStageScene: async () => {
+    const last = get().stageLastScene;
+    if (!last) return false;
+    if (get().stageState?.definition.id === last) return true;
+    try {
+      await get().loadStageScene(last);
+      return true;
+    } catch {
+      // Deleted or unreadable: keep a saved scene that is already active, else start with the gallery.
+      await get().fetchStageScenes();
+      const current = get().stageState?.definition.id;
+      const saved = !!current && get().stageScenes.some((scene) => scene.id === current);
+      set({ stageLastScene: saved ? current : '' });
+      void get().saveCurrentSettings();
+      return saved;
+    }
+  },
+
   loadStageScene: async (sceneId: string) => {
     try {
       const sceneState = await api.loadStageScene(sceneId);
       set({ stageState: sceneState });
+      get().rememberStageScene(sceneState.definition.id);
       void get().refreshStageCombatOptions();
       await get().fetchStageScenes();
     } catch (e) {
@@ -412,6 +441,7 @@ export const createStageSlice: SliceCreator<StageSlice> = (set, get) => ({
   createStageScene: async (definition: SceneDefinition) => {
     const sceneState = await api.createStageScene(definition);
     set({ stageState: sceneState });
+    get().rememberStageScene(sceneState.definition.id);
     await get().fetchStageScenes();
     return sceneState;
   },

@@ -62,23 +62,22 @@
 
 ## 3. Einstieg in Geschichten (Stage) – Schwerpunkt
 
-> Begonnen: Einstellung `stage_last_scene` (Rust/Typen) für „zuletzt gespielte Geschichte wieder öffnen“ ist angelegt,
-> aber noch nicht verdrahtet (appSlice laden/speichern, `loadStageScene` setzt sie, StageView zeigt ohne sie die Galerie;
-> E2E-Harness muss dann `stage_last_scene: "default_scene"` setzen).
+> 16.10.2026: Galerie, Vorschau, Weiterspielen und Wiederaufnahme der letzten Geschichte umgesetzt (siehe Häkchen).
 
-- [ ] **Story-Galerie statt Lobby-Verwaltung:** große Karten mit Titelbild, Genre, Dauer („ca. 30–60 Min.“),
+- [x] **Story-Galerie statt Lobby-Verwaltung:** umgesetzt in `StoryGallery.tsx` (Genre-Titelkarten statt Bildern; echte
+  Titelbilder später). große Karten mit Titelbild, Genre, Dauer („ca. 30–60 Min.“),
   Schwierigkeit, Spielerzahl/Gefährten und Inhaltshinweisen; Filter in *einer* Zeile (Genre, Länge, Regeln), Ordner
   und Import unter „Verwalten“.
 - [x] **Mitgelieferte Erzählgeschichten (Inhalte, 16.10.2026):** `presets/stories/scenes/` mit fünf Geschichten
   (Fantasy/Emilia, Alltag, Krimi, Horror light mit Ayu & Cosmos, Sci-Fi solo), de/en/ru, Story-Daten
   `extensions.otakusoul_story` (`StoryInfo` in `ScenePreview.story`, eigene Startvorschläge); Galerie-Anzeige folgt.
-  Ursprünglicher Plan: 3–5 kurze, hochwertige Starter-Stories (z. B. Fantasy-Abenteuer,
+  Ursprünglicher Plan (Galerie-Anzeige erledigt): 3–5 kurze, hochwertige Starter-Stories (z. B. Fantasy-Abenteuer,
   Slice-of-Life-Schulfest, Krimi, Science-Fiction, Horror light) – dreisprachig, mit Startbild, Ambient, Zielen und
   passenden Gefährten aus den mitgelieferten Figuren; die englische Standardszene ersetzen.
 - [ ] **Story-Assistent „Eigene Geschichte“:** 4 Schritte – Genre/Stimmung → Wer bist du? (Persona) → Wer begleitet
   dich? (Figuren, Vorschläge) → Ausgangslage (Vorlagen oder eigener Satz, „Würfel mir etwas aus“). Regeln/Technik
   (Akteure pro Runde, SG, Regelwerk) nur unter „Erweitert“; der heutige Editor bleibt für Fortgeschrittene.
-- [ ] **Vorschau vor dem Start:** Karte zeigt Ausgangslage, Gruppe, was man tun kann; „Starten“ mit einem Klick, ohne
+- [x] **Vorschau vor dem Start:** Karte zeigt Ausgangslage, Gruppe, was man tun kann; „Starten“ mit einem Klick, ohne
   Zwischenschritte; „Weiterspielen“ für begonnene Geschichten an erster Stelle.
 - [ ] **Geführte erste Runde:** Bei der ersten Szene kurze Einblendungen zu Sagen/Tun/Denken/Regie/Flüstern,
   Vorschlägen, „Weiter“ und Auto-Play (überspringbar, später unter Hilfe abrufbar); Eingabearten mit Beispieltext im

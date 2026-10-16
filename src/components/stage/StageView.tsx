@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import { useStoreFields } from '../../store/useAppStore';
+import { useAppStore, useStoreFields } from '../../store/useAppStore';
 import { ClockWidget } from './ClockWidget';
 import { DiceRoller } from './DiceRoller';
 import { EncounterTracker } from './EncounterTracker';
@@ -9,6 +9,8 @@ import { PartyHeader } from './PartyHeader';
 import { StageChatLog } from './StageChatLog';
 import { TurnControlBar } from './TurnControlBar';
 import { SceneLobbyModal, type LobbyRules } from './SceneLobbyModal';
+import { SceneCreateModal } from './SceneCreateModal';
+import { StoryGallery } from './StoryGallery';
 import { useStageAmbient } from './useStageAmbient';
 import { CharacterVoiceModal } from '../voice/CharacterVoiceModal';
 import { STAGE_NARRATOR_VOICE_ID } from '../../services/stageVoice';
@@ -62,11 +64,25 @@ export const StageView: React.FC = () => {
     stageReadAloud,
     setStageReadAloud,
     setSelectedStageFolder,
+    restoreStageScene,
+    stageLastScene,
+    loadStageScene,
+    fetchStageScenes,
   } = useStoreFields(
     'stageState', 'fetchStageState', 'saveStageScene', 'updateWorldState', 'setClockProgress',
     'addClock', 'deleteClock', 'exportStageMarkdown', 'isProcessingStageTurn',
     'generateSceneImage', 'isGeneratingSceneImage', 'stageReadAloud', 'setStageReadAloud', 'setSelectedStageFolder',
+    'restoreStageScene', 'stageLastScene', 'loadStageScene', 'fetchStageScenes',
   );
+  // Gallery (choose a story) or the running story; decided once the remembered scene is restored.
+  const [view, setView] = useState<'loading' | 'gallery' | 'play'>('loading');
+  // Scene shown when the gallery opened: a scene loaded from the lobby switches to playing.
+  const [galleryFrom, setGalleryFrom] = useState<string | null>(null);
+  const [showCreateStory, setShowCreateStory] = useState(false);
+  const openGallery = () => {
+    setGalleryFrom(stageState?.definition.id ?? null);
+    setView('gallery');
+  };
 
   const [activeTab, setActiveTab] = useState<'adventure' | 'board' | 'tactics' | 'campaign'>('adventure');
   // The board tab exists in 5e scenes with a map; a fight on a map opens it.
@@ -160,8 +176,21 @@ export const StageView: React.FC = () => {
   const [newClockType, setNewClockType] = useState<'danger' | 'progress' | 'mystery'>('danger');
 
   useEffect(() => {
-    fetchStageState();
-  }, [fetchStageState]);
+    let active = true;
+    void (async () => {
+      await fetchStageState();
+      const restored = await restoreStageScene();
+      if (!active) return;
+      if (restored) setView('play');
+      else {
+        setGalleryFrom(useAppStore.getState().stageState?.definition.id ?? null);
+        setView('gallery');
+      }
+    })();
+    return () => {
+      active = false;
+    };
+  }, [fetchStageState, restoreStageScene]);
 
   const handleToggleWorldEditor = () => {
     if (!isEditingWorld && stageState?.world) {
@@ -234,6 +263,40 @@ export const StageView: React.FC = () => {
 
   const world = stageState?.world;
   const currentScene = stageState?.definition;
+
+  const closeLobby = () => {
+    setShowLobbyModal(false);
+    if (view === 'gallery' && useAppStore.getState().stageState?.definition.id !== galleryFrom) setView('play');
+  };
+
+  if (view !== 'play') {
+    return (
+      <div className="flex-1 flex flex-col h-full bg-app overflow-hidden relative">
+        {view === 'gallery' && (
+          <StoryGallery
+            onPlay={() => setView('play')}
+            onManage={() => {
+              setLobbyRules('all');
+              setShowLobbyModal(true);
+            }}
+            onCreate={() => setShowCreateStory(true)}
+            onBack={stageLastScene ? () => setView('play') : undefined}
+          />
+        )}
+        {showCreateStory && (
+          <SceneCreateModal
+            isOpen
+            onClose={() => setShowCreateStory(false)}
+            onCreated={(created) => {
+              void fetchStageScenes();
+              void loadStageScene(created.id).then(() => setView('play'));
+            }}
+          />
+        )}
+        <SceneLobbyModal isOpen={showLobbyModal} onClose={closeLobby} initialRules={lobbyRules} />
+      </div>
+    );
+  }
 
   return (
     <div className="flex-1 flex flex-col h-full bg-app overflow-hidden relative">
@@ -362,14 +425,11 @@ export const StageView: React.FC = () => {
           </div>
 
           <button
-            onClick={() => {
-              setLobbyRules('all');
-              setShowLobbyModal(true);
-            }}
+            onClick={openGallery}
             className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-accent-600/20 hover:bg-accent-600/30 text-accent-300 text-xs font-semibold border border-accent-500/30 transition"
           >
             <BookOpen className="w-3.5 h-3.5" />
-            <span className="whitespace-nowrap">{t('stage.sceneLobby')}</span>
+            <span className="whitespace-nowrap">{t('stage.stories')}</span>
           </button>
 
           <button
@@ -770,7 +830,7 @@ export const StageView: React.FC = () => {
       )}
       <SceneLobbyModal
         isOpen={showLobbyModal}
-        onClose={() => setShowLobbyModal(false)}
+        onClose={closeLobby}
         initialRules={lobbyRules}
       />
     </div>

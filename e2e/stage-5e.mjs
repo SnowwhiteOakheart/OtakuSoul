@@ -4,7 +4,7 @@
 // change through engine damage – the mock planner's `hp_delta: -5` must be ignored.
 import assert from 'node:assert/strict';
 import path from 'node:path';
-import { launch, screenshotDir } from './harness.mjs';
+import { launch, openSceneLobby, screenshotDir } from './harness.mjs';
 import { COMBAT_NARRATION } from './mock-llm.mjs';
 
 const { browser, mock, close } = await launch();
@@ -98,7 +98,7 @@ try {
   await browser.keys('Escape');
 
   // The scene editor shows the rules with a class per party member.
-  await browser.$('button=Szenen-Lobby').click();
+  await openSceneLobby(browser);
   await browser.$(`button[aria-label='Weitere Aktionen für „${ended.definition.title}“']`).click();
   await browser.$('button=Szene bearbeiten').click();
   const ruleset = await browser.$('#scene-ruleset');

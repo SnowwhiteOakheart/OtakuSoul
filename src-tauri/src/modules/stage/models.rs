@@ -378,13 +378,14 @@ pub const STORY_EXTENSION: &str = "otakusoul_story";
 #[derive(Debug, Clone, Default, PartialEq, Serialize, Deserialize, TS)]
 #[ts(export)]
 pub struct StoryInfo {
-    /// `fantasy`, `slice_of_life`, `mystery`, `scifi` or `horror`.
+    /// `fantasy`, `adventure`, `slice_of_life`, `comedy`, `romance`, `mystery`, `scifi` or `horror`.
     pub genre: String,
     /// Typical playing time of a first session in minutes.
     pub minutes: u32,
     /// `easy`, `medium` or `hard`.
     pub difficulty: String,
-    /// Content notes (ids translated by the frontend, e.g. `mild_violence`, `spooky`).
+    /// Content notes (ids translated by the frontend: `mild_danger`, `mild_violence`, `action`, `spooky`,
+    /// `suspense`, `flirting`, `romance`, `dark_themes`, `death`).
     #[serde(default)]
     pub notes: Vec<String>,
     /// Recommended for a first story.
