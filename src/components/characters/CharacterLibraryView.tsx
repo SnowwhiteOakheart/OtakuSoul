@@ -25,6 +25,7 @@ import {
 import { useVirtualizer } from '@tanstack/react-virtual';
 import { useGridCols } from '../../hooks/useGridCols';
 import { CharacterEditorModal } from './CharacterEditorModal';
+import { CharacterPreviewModal, isStarterCharacter } from './CharacterPreviewModal';
 import { translate, useTranslation } from '../../i18n';
 import { confirmDialog, toast } from '../ui/feedback';
 import { DropdownMenu } from '../ui/DropdownMenu';
@@ -98,8 +99,11 @@ export const CharacterLibraryView = () => {
         (data.tags ?? []).some((tag) => tag.toLowerCase().includes(query));
       const matchesTag = selectedTag === null || (data.tags ?? []).includes(selectedTag);
       return matchesSearch && matchesTag;
-    });
+    })
+      // Characters shipped for a first chat come first.
+      .sort((a, b) => Number(isStarterCharacter(b)) - Number(isStarterCharacter(a)));
   }, [availableCharacters, searchQuery, selectedTag, currentLanguage]);
+  const [previewing, setPreviewing] = useState<CharacterProfile | null>(null);
 
   const { ref: parentRef, cols } = useGridCols({ 640: 2, 768: 3, 1024: 4, 1280: 5 }, 1);
   // oxlint-disable-next-line react/incompatible-library
@@ -219,13 +223,9 @@ export const CharacterLibraryView = () => {
             <Upload className="w-3.5 h-3.5 text-cyan-400" />
             <span>{t('library.import')}</span>
           </button>
-          <button
-            onClick={() => setCharacterWizardOpen(true)}
-            title={t('library.aiAssistantHint')}
-            className={SECONDARY_BUTTON}
-          >
-            <Sparkles className="w-3.5 h-3.5 text-indigo-400" />
-            <span>{t('library.aiAssistant')}</span>
+          <button onClick={() => openEditor(null)} title={t('library.blankCardHint')} className={SECONDARY_BUTTON}>
+            <Plus className="w-3.5 h-3.5" />
+            <span>{t('library.newCharacter')}</span>
           </button>
           <DropdownMenu
             triggerLabel={t('library.more')}
@@ -237,9 +237,13 @@ export const CharacterLibraryView = () => {
               { label: t('library.restorePresets'), icon: RotateCcw, onSelect: handleRestorePresets },
             ]}
           />
-          <button onClick={() => openEditor(null)} className={PRIMARY_BUTTON}>
-            <Plus className="w-4 h-4" />
-            <span>{t('library.newCharacter')}</span>
+          <button
+            onClick={() => setCharacterWizardOpen(true)}
+            title={t('library.aiAssistantHint')}
+            className={PRIMARY_BUTTON}
+          >
+            <Sparkles className="w-3.5 h-3.5 text-white" />
+            <span>{t('library.aiAssistant')}</span>
           </button>
         </div>
       </div>
@@ -290,9 +294,9 @@ export const CharacterLibraryView = () => {
             description={t('library.emptyText')}
             actions={
               <>
-                <button onClick={() => openEditor(null)} className={PRIMARY_BUTTON}>
+                <button onClick={() => setCharacterWizardOpen(true)} className={PRIMARY_BUTTON}>
                   <Plus className="w-4 h-4" />
-                  <span>{t('library.newCharacter')}</span>
+                  <span>{t('library.aiAssistant')}</span>
                 </button>
                 <button onClick={handleImportCard} className={SECONDARY_BUTTON}>
                   <Upload className="w-3.5 h-3.5 text-cyan-400" />
@@ -356,8 +360,15 @@ export const CharacterLibraryView = () => {
                       : 'border-slate-800'
                   }`}
                 >
-                  {/* Avatar Image Header */}
+                  {/* Avatar Image Header: opens the preview */}
                   <div className="aspect-[4/5] w-full bg-app relative overflow-hidden flex items-center justify-center">
+                    <button
+                      type="button"
+                      onClick={() => setPreviewing(char)}
+                      aria-label={t('characterPreview.open', { name: data.name })}
+                      title={t('characterPreview.open', { name: data.name })}
+                      className="absolute inset-0 z-0 cursor-pointer outline-hidden focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-accent-400"
+                    />
                     {char.avatar_data_url ? (
                       <img
                         src={char.avatar_data_url}
@@ -370,8 +381,13 @@ export const CharacterLibraryView = () => {
                       </div>
                     )}
 
-                    <div className="absolute inset-0 bg-linear-to-t from-app via-app/20 to-transparent" />
+                    <div className="pointer-events-none absolute inset-0 bg-linear-to-t from-app via-app/20 to-transparent" />
 
+                    {!isActive && isStarterCharacter(char) && (
+                      <div className="pointer-events-none absolute top-2.5 left-2.5 px-2 py-0.5 rounded-full bg-accent-600/90 text-white text-[11px] font-semibold shadow-md">
+                        {t('characterPreview.starter')}
+                      </div>
+                    )}
                     {isActive && (
                       <div className="absolute top-2.5 left-2.5 px-2 py-0.5 rounded-full bg-emerald-500/90 text-app text-xs font-bold flex items-center gap-1 shadow-md">
                         <CheckCircle2 className="w-3 h-3" />
@@ -407,7 +423,7 @@ export const CharacterLibraryView = () => {
                       </button>
                     </div>
 
-                    <div className="absolute bottom-2.5 left-3 right-3">
+                    <div className="pointer-events-none absolute bottom-2.5 left-3 right-3">
                       <div className="text-sm font-bold text-slate-100 line-clamp-1 group-hover:text-accent-300 transition-colors">
                         {data.name}
                       </div>
@@ -456,6 +472,23 @@ export const CharacterLibraryView = () => {
           </div>
         )}
       </div>
+
+      {previewing && (
+        <CharacterPreviewModal
+          character={previewing}
+          onClose={() => setPreviewing(null)}
+          onChat={() => {
+            const target = previewing;
+            setPreviewing(null);
+            void handleSelectAndChat(target);
+          }}
+          onEdit={() => {
+            const target = previewing;
+            setPreviewing(null);
+            openEditor(target);
+          }}
+        />
+      )}
 
       {isEditorOpen && (
         <CharacterEditorModal

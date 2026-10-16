@@ -4,7 +4,7 @@ import assert from 'node:assert/strict';
 import path from 'node:path';
 import { launch, screenshotDir } from './harness.mjs';
 
-const { browser, mock, close } = await launch();
+const { browser, mock, close } = await launch({ expert_mode: true });
 const jsClick = (element) => browser.execute((el) => el.click(), element);
 const bodyText = () => browser.execute(() => document.body.textContent ?? '');
 

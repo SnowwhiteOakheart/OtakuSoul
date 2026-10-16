@@ -143,6 +143,7 @@ export const AdaptiveHud = ({ compact = false }: { compact?: boolean }) => {
             return (
               <div
                 key={i}
+                title={t('hud.stateHint', { name: v.name })}
                 className="flex items-center gap-2 px-2.5 py-1 rounded-lg bg-slate-800/60 border border-slate-700/60"
               >
                 {v.name === 'Zuneigung' ? (
@@ -171,6 +172,7 @@ export const AdaptiveHud = ({ compact = false }: { compact?: boolean }) => {
           return (
             <div
               key={i}
+              title={t('hud.stateHint', { name: v.name })}
               className="hidden md:flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-slate-800/60 border border-slate-700/60 text-xs"
             >
               <Smile className="w-3.5 h-3.5 text-accent-400" />

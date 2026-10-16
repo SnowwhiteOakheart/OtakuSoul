@@ -37,7 +37,8 @@ try {
     timeoutMsg: 'Antwort des Mock-LLM erscheint nicht',
   });
   const meter = () => browser.$('div[title*="Antwort frei"]');
-  assert.match(await meter().getText(), /Kontext ~[\d.]+k? \/ 4\.1k Tokens \(geschätzt\)/);
+  assert.match(await meter().getText(), /Gesprächsgedächtnis: \d+ % belegt/);
+  assert.match(await meter().getAttribute('title'), /Kontext ~[\d.]+k? \/ 4\.1k Tokens \(geschätzt\)/);
   await shot(browser, '02-erste-antwort');
 
   step('Weiterchatten, bis ältere Nachrichten aus dem Kontext fallen');

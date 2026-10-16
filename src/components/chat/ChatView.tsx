@@ -64,6 +64,7 @@ export const ChatView: React.FC = () => {
     clearChat,
     selectedBackend,
     setSelectedBackend,
+    expertMode,
     serverStatus,
     activeCharacter,
     activePersona,
@@ -77,7 +78,7 @@ export const ChatView: React.FC = () => {
     activeVoiceConfig,
     setActiveTab,
   } = useStoreFields(
-    'messages', 'storedMessages', 'isGenerating', 'generationChatId', 'generationId', 'isChatLoading', 'chatLoadError', 'clearChat', 'selectedBackend', 'setSelectedBackend',
+    'messages', 'storedMessages', 'isGenerating', 'generationChatId', 'generationId', 'isChatLoading', 'chatLoadError', 'clearChat', 'selectedBackend', 'setSelectedBackend', 'expertMode',
     'serverStatus', 'activeCharacter', 'activePersona', 'loadPresetCharacters', 'chatSidebarOpen',
     'setChatSidebarOpen', 'chatSessions', 'activeChatId', 'autoTtsEnabled', 'setAutoTtsEnabled',
     'activeVoiceConfig', 'setActiveTab',
@@ -289,8 +290,8 @@ export const ChatView: React.FC = () => {
             <span className="font-semibold max-w-40 truncate">{currentSession?.title || t('chat.sessions')}</span>
           </button>
 
-          {/* Backend Selector */}
-          <div
+          {/* Backend Selector (experts; the start page shows which AI answers) */}
+          {expertMode && <div
             role="group"
             aria-label={t('chat.backendLabel')}
             className="flex items-center bg-slate-800/80 p-0.5 rounded-lg border border-slate-700/60 text-xs font-medium"
@@ -319,7 +320,7 @@ export const ChatView: React.FC = () => {
               <Cloud className="w-3.5 h-3.5" />
               <span className="whitespace-nowrap">{t('chat.cloudApi')}</span>
             </button>
-          </div>
+          </div>}
 
           {selectedBackend === 'local' && serverStatus.state !== 'running' && (
             <button
@@ -378,6 +379,7 @@ export const ChatView: React.FC = () => {
             <span className="hidden xl:inline">{t('chat.avatar')}</span>
           </button>
 
+          {expertMode && (
           <button
             onClick={() => setChatTools(!chatTools)}
             aria-pressed={chatTools}
@@ -392,6 +394,7 @@ export const ChatView: React.FC = () => {
             <Wrench className="w-3.5 h-3.5" />
             <span className="hidden xl:inline">{t('chat.tools')}</span>
           </button>
+          )}
 
           <button
             onClick={() => setCompact(!compact)}
@@ -415,7 +418,7 @@ export const ChatView: React.FC = () => {
             trigger={<MoreHorizontal className="w-3.5 h-3.5" />}
             items={[
               { label: t('chat.voiceTooltip'), icon: Volume2, onSelect: () => setShowVoiceModal(true) },
-              { label: t('promptLog.open'), icon: FileText, onSelect: () => setShowPromptLog(true) },
+              ...(expertMode ? [{ label: t('promptLog.open'), icon: FileText, onSelect: () => setShowPromptLog(true) }] : []),
               ...(activeChatId ? [{ label: t('chat.deleteSession'), icon: Trash2, onSelect: () => void handleClearSession() }] : []),
             ]}
           />

@@ -48,7 +48,9 @@ Frontend `src/`: `services/api.ts` (ein Wrapper je Command), `store/slices/*.ts`
 `useStoreFields('a','b')`), `store/helpers.ts` (`resolvePromptWithLore`, `llmTarget`), `components/<bereich>/`,
 `i18n/locales/{de,en,ru}.ts` (en/ru laden bei Bedarf über `i18n/registry.ts`, Tests registrieren alle in `src/test/setup.ts`), `types/index.ts` (+ `generated/`), `utils/errors.ts`.
 Expertenmodus `AppSettings.expert_mode` (`expertMode`): blendet Server-Tuning, Sampler-Regler, „Als Vorlage speichern“,
-Prompt-Reiter, Voice-ID/RegEx/RVC sowie GPU-Anzeige und Protokoll in der Kopfzeile ein; neue Fachoptionen dort einordnen.
+Prompt-Reiter, Voice-ID/RegEx/RVC, GPU-Anzeige und Protokoll in der Kopfzeile, im Chat Lokal/Cloud-Umschalter, Werkzeuge,
+Prompt-Protokoll und Token-Zahlen der Kontextanzeige ein; neue Fachoptionen dort einordnen (E2E: `launch({ expert_mode: true })`).
+Figuren-Vorschau `characters/CharacterPreviewModal.tsx` (`isStarterCharacter` = Pfad unter `presets/characters`).
 Startseite `components/HomeView.tsx` (Reiter `home`, `AppSettings.start_tab` = `home`/`chat`, E2E-Harness setzt `chat`).
 Chat-UI: `ChatView.tsx` → `MessageList.tsx` (virtualisiert, `ChatMessageItem`) + `ChatComposer.tsx` + `ChatSidebar.tsx`.
 Ansichtsvorlieben pro Gerät über `hooks/usePersistentFlag.ts` (Kompakt = `data-density="compact"`, CSS in `App.css` über

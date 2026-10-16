@@ -116,12 +116,17 @@
 
 ## 4. Chat & Figuren
 
-- [ ] **Figurenwahl mit Vorschau:** Bibliothek zeigt Kurzbeschreibung, Stimmung/Genre und „Jetzt chatten“; neue Nutzer
+- [x] **Figurenwahl mit Vorschau (16.10.2026):** Klick aufs Bild öffnet `CharacterPreviewModal` (Wer ist das, Persönlichkeit,
+  Ausgangslage, Begrüßung, „Jetzt chatten“), mitgelieferte Figuren vorn mit „Gut für den Einstieg“. Ursprünglicher Plan: Bibliothek zeigt Kurzbeschreibung, Stimmung/Genre und „Jetzt chatten“; neue Nutzer
   sehen zuerst die mitgelieferten Figuren mit Empfehlung.
-- [ ] **HUD verständlich:** Werte wie Energie/Stimmung/Reasoning mit Tooltip-Erklärung, standardmäßig reduziert.
-- [ ] **Chat-Menü gruppieren:** häufige Aktionen (Neuer Chat, Stimme, Gestaltung) oben, Werkzeuge/Prompt-Log unter
+- [x] **HUD verständlich (16.10.2026):** „Nachdenken“ statt „Reasoning“ mit Erklärung, Zustandswerte mit Tooltip,
+  Kontextanzeige als „Gesprächsgedächtnis: x % belegt“ (Tokens im Expertenmodus). Offen: Variablennamen der Karten
+  übersetzen (z. B. Altheas „Affection“/„Energy“). Ursprünglicher Plan: Werte wie Energie/Stimmung/Reasoning mit Tooltip-Erklärung, standardmäßig reduziert.
+- [x] **Chat-Menü gruppieren (16.10.2026):** Lokal/Cloud-Umschalter, Werkzeuge und Prompt-Protokoll nur im Expertenmodus.
+  Ursprünglicher Plan: häufige Aktionen (Neuer Chat, Stimme, Gestaltung) oben, Werkzeuge/Prompt-Log unter
   „Erweitert“.
-- [ ] **Figur erstellen geführt:** Assistent (Name, Aussehen, Persönlichkeit per Vorlagen/Schiebereglern, Begrüßung),
+- [x] **Figur erstellen geführt (16.10.2026):** vorhandener KI-Assistent als Hauptknopf „Figur erstellen“, leerer Editor als
+  „Leere Karte“, leerer Zustand führt zum Assistenten. Ursprünglicher Plan: Assistent (Name, Aussehen, Persönlichkeit per Vorlagen/Schiebereglern, Begrüßung),
   optional mit KI-Vorschlag; der vollständige Karten-Editor bleibt.
 
 ## 5. Einstellungen

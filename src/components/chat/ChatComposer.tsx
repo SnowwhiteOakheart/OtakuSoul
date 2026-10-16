@@ -1,6 +1,6 @@
 import React, { useEffect, useMemo, useRef, useState } from 'react';
 import { FileText, Paperclip, Send, Square, X } from 'lucide-react';
-import { useStoreFields } from '../../store/useAppStore';
+import { useAppStore, useStoreFields } from '../../store/useAppStore';
 import { streamingTts } from '../../services/streamingTts';
 import { useTranslation } from '../../i18n';
 import { VoiceCallControls } from '../voice/VoiceCallControls';
@@ -205,13 +205,17 @@ const PendingFile: React.FC<{ file: File; onRemove: () => void }> = ({ file, onR
 /** How full the context window was for the last reply and how many old messages were left out. */
 const ContextMeter: React.FC<{ usage: ContextUsage }> = ({ usage }) => {
   const { t, tPlural } = useTranslation();
+  const expertMode = useAppStore((s) => s.expertMode);
   const room = Math.max(1, usage.context_tokens - usage.reserve_tokens);
   const percent = Math.min(100, Math.round((usage.prompt_tokens / room) * 100));
   const k = (n: number) => (n >= 1000 ? `${(n / 1000).toFixed(1)}k` : String(n));
   return (
     <div
       className="max-w-4xl mx-auto mt-1.5 flex items-center gap-2 text-xs text-slate-400"
-      title={t('chat.contextTitle', { reserve: k(usage.reserve_tokens) })}
+      title={`${expertMode ? '' : `${t('chat.contextSimpleHint')} `}${t(usage.estimated ? 'chat.contextEstimated' : 'chat.context', {
+        used: k(usage.prompt_tokens),
+        total: k(usage.context_tokens),
+      })}. ${t('chat.contextTitle', { reserve: k(usage.reserve_tokens) })}`}
     >
       <div className="h-1 w-16 rounded-full bg-slate-800 overflow-hidden" aria-hidden="true">
         <div
@@ -219,11 +223,13 @@ const ContextMeter: React.FC<{ usage: ContextUsage }> = ({ usage }) => {
           style={{ width: `${percent}%` }}
         />
       </div>
-      <span>
-        {t(usage.estimated ? 'chat.contextEstimated' : 'chat.context', {
-          used: k(usage.prompt_tokens),
-          total: k(usage.context_tokens),
-        })}
+      <span data-context-percent={percent}>
+        {expertMode
+          ? t(usage.estimated ? 'chat.contextEstimated' : 'chat.context', {
+              used: k(usage.prompt_tokens),
+              total: k(usage.context_tokens),
+            })
+          : t('chat.contextSimple', { percent })}
       </span>
       {usage.dropped_messages > 0 && (
         <span className="text-amber-400">
