@@ -1929,3 +1929,10 @@ veraltet und sind korrigiert: `chat-sidebar-errors` las die Sitzung, bevor der e
   „Installiert“/„Update verfügbar“ und „Alle aktualisieren“ im Hub. Szenen behalten beim Update den Spielstand, Karten werden
   ersetzt (alte in den Papierkorb), veränderte Lorebooks bleiben als Kopie. Behoben: Szenen-Downloads verwarfen Übersetzungen
   und Story-Daten und legten bei erneutem Download Kopien an.
+
+- [x] **READMEs für 0.5.0 (16.10.2026):** README.md/.de/.ru neu gegliedert – oben für Einsteiger (Was ist das, Download je
+  System, erste zehn Minuten, Rundgang, „Reicht mein PC?“), darunter für Fortgeschrittene (Funktionsübersicht, Architektur,
+  Messwerte, Daten, Bauen). Screenshots je Sprache aus `e2e/readme-screenshots.mjs` (Mock mit `calmPlanner`,
+  `stageNarration`, `stageReply`). Behoben: Stage-Kopf zeigte Titel/Ton der Geschichte nicht in der Antwortsprache,
+  Spielername „Spieler“ in fremdsprachigen Geschichten, HUD-Startwert „Glücklich“ und Porträt-Eigenschaften unübersetzt,
+  „Überspringen“ ragte im Einrichtungsassistenten über den Rand. Release-Workflow baut zusätzlich macOS (Apple Silicon).

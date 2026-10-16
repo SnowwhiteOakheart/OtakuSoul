@@ -148,11 +148,16 @@ export function startMockLlm() {
             spawn_npcs: stats.spawnNpc ? [stats.spawnNpc] : [],
             despawn_npcs: stats.despawnNpc ? [stats.despawnNpc] : [],
             ...(stats.stageEncounter ? { encounter: stats.stageEncounter } : {}),
-            resource_delta: { target: 'PLAYER', hp_delta: -5, stress_delta: 10 },
-            condition_updates: [{ target: 'PLAYER', add: 'Erschöpft', turns: 3 }],
+            // `calmPlanner`: no damage or condition (screenshots of a peaceful story).
+            ...(stats.calmPlanner ? {} : {
+              resource_delta: { target: 'PLAYER', hp_delta: -5, stress_delta: 10 },
+              condition_updates: [{ target: 'PLAYER', add: 'Erschöpft', turns: 3 }],
+            }),
           })
         : isNarrator
-          ? STAGE_NARRATION
+          ? stats.stageNarration ?? STAGE_NARRATION
+          : (isCompanion || isNpc) && stats.stageReply
+            ? stats.stageReply
           : isSummary
             ? SUMMARY
             : isTranslation

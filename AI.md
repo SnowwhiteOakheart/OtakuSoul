@@ -30,6 +30,7 @@ Nutzer mit „Du“ ansprechen. Antworten, Commits und Doku auf Deutsch.
 | TS-Typen aus Rust (ts-rs → `src/types/generated/`, mit einchecken) | `npm run types:gen` |
 | E2E-Rauchtest (baut nach `target/e2e`, tauri-driver + Mock-LLM) | `npm run e2e` (`e2e:run` ohne Build) |
 | Langchat-Messung (1000 Nachrichten) | `npm run e2e:perf` |
+| README-Screenshots (nach `e2e:build`, nicht Teil von `e2e`) | `xvfb-run -a node e2e/readme-screenshots.mjs de\|en\|ru` → `docs/assets/screenshots/<lang>/` |
 | GPU-Tests mit echten Modellen (lädt GBs, nur auf Wunsch) | `cargo test --test gpu_e2e -- --ignored --nocapture` in `src-tauri/` |
 
 ## Karte
