@@ -67,6 +67,21 @@ pub fn set_avatar_motion_mood(file: String, mood: String) -> Result<(), String> 
 }
 
 #[tauri::command]
+pub fn get_model_face(
+    model_path: String,
+) -> Result<crate::modules::avatar_motions::ModelFaceInfo, String> {
+    crate::modules::avatar_motions::model_face(&model_path)
+}
+
+#[tauri::command]
+pub fn set_model_face(
+    model_path: String,
+    face: crate::modules::avatar_motions::ModelFace,
+) -> Result<(), String> {
+    crate::modules::avatar_motions::set_model_face(&model_path, face)
+}
+
+#[tauri::command]
 pub fn delete_avatar_motion(file: String) -> Result<(), String> {
     crate::modules::avatar_motions::delete_avatar_motion(&file)
 }

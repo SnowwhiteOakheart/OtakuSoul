@@ -91,6 +91,16 @@ describe('BoneFace', () => {
     expect(worldOf(rig.lipLo).y).toBeCloseTo(animated.y - 0.5 * 0.15 * 0.08, 4);
   });
 
+  it('scales each key with the strength from the face editor', () => {
+    const rig = gameHead();
+    const face = BoneFace.detect(rig.root)!;
+    face.configure({ strength: { aa: 2 } });
+    face.restore();
+    face.set('aa', 0.5);
+    face.apply();
+    expect(worldOf(rig.lipLo).y).toBeCloseTo(1.277 - 0.15 * 0.08, 4);
+  });
+
   it('needs eyelids or lips', () => {
     const root = new THREE.Group();
     root.add(Object.assign(new THREE.Bone(), { name: 'Head' }));

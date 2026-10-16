@@ -98,8 +98,10 @@ name and moves them itself: eyelids (`…lid…_up`/`…_lo`), brows (`…brow�
 (`…uplip…`/`…lolip…`, `upper_lip`/`lower_lip`) and mouth corners (`…colip…`, `…corner…`), each with side `_L`/`_R`.
 Eyeballs (`…eyeball…`) serve as the scale. The bones must hang on the head bone and be weighted to the face.
 
-If your shape keys are named differently, rename the matching ones (Object Data properties → Shape Keys). An editor
-for mapping them directly in OtakuSoul is planned.
+If your shape keys are named differently, map them in OtakuSoul: **Settings → Appearance & Theme → Face in the model
+(glTF)**. There you pick one or more face shapes with a weight per expression and set its strength (also for face
+bones); the **live preview** shows the model, ▶ the expression. Renaming in Blender (Object Data properties → Shape
+Keys) works too.
 
 ## 7. Export as GLB
 
@@ -143,6 +145,6 @@ Feel free to scale textures down to 2048 px – it saves video memory and loadin
 | Figure distorts during animations | The animation belongs to a different skeleton |
 | Figure lies sideways, stands on its head or vanishes once an animation plays | Load the model and the animations through the **same** import path in Blender (e.g. both with the same add-on). Different importers use different axes (Z or Y up) and bone orientations; Blender already shows this on playback |
 | Figure walks out of the picture | Set the walk animation to "By hand only" or leave it out |
-| Face does not move | Rename shape keys as in section 6 – or name face bones after the patterns listed there |
+| Face does not move | Map face shapes in the face editor (section 6) – or name face bones after the patterns listed there |
 | “The model has no skeleton” | Static models (e.g. AI-generated figures, 3D scans) are refused. Rig them first – e.g. with Mixamo (auto-rig) or in Blender (Rigify) – and reduce the polygon count beforehand with “Decimate” to about 50,000–100,000 triangles |
 | Import fails or loads very slowly | `.glb`, `.gltf` with its folder or a ZIP, each without Draco compression; scale textures down |

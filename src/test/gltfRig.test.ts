@@ -83,6 +83,35 @@ describe('glTF rig', () => {
     expect(result.tracks.map((t) => t.name).sort()).toEqual([`${index.uuid}.quaternion`, `${thigh.uuid}.quaternion`].sort());
   });
 
+  it('takes own morphs and strengths from the face editor', () => {
+    const names = ['jawOpen', 'Face_Smile', 'Eye_Close'];
+    const geometry = new THREE.BufferGeometry();
+    geometry.setAttribute('position', new THREE.Float32BufferAttribute([0, 0, 0], 3));
+    geometry.morphAttributes.position = names.map(() => new THREE.Float32BufferAttribute([0, 0, 0], 3));
+    const mesh = new THREE.Mesh(geometry);
+    mesh.updateMorphTargets();
+    mesh.morphTargetDictionary = Object.fromEntries(names.map((n, i) => [n, i]));
+    const face = new MorphFace(mesh);
+    expect(face.supported).not.toContain('happy');
+    expect(face.morphNames).toEqual(names);
+
+    face.configure({
+      morphs: { happy: [{ morph: 'Face_Smile', weight: 0.5 }], blink: [{ morph: 'Eye_Close', weight: 1 }], sad: [{ morph: 'Missing', weight: 1 }] },
+      strength: { aa: 0.5, happy: 2 },
+    });
+    expect(face.supported).toEqual(expect.arrayContaining(['happy', 'blink', 'aa']));
+    expect(face.supported).not.toContain('sad');
+    face.set('happy', 0.6);
+    face.set('aa', 1);
+    face.apply();
+    // happy: 0.6 × strength 2 × weight 0.5; aa: 1 × strength 0.5 × jawOpen 0.8.
+    expect(mesh.morphTargetInfluences![1]).toBeCloseTo(0.6);
+    expect(mesh.morphTargetInfluences![0]).toBeCloseTo(0.4);
+    // Back to automatic.
+    face.configure({});
+    expect(face.supported).not.toContain('happy');
+  });
+
   it('uses the Japanese morphs of models converted from MMD', () => {
     const names = ['あ', 'まばたき', '笑い', 'a'];
     const geometry = new THREE.BufferGeometry();

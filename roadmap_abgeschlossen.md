@@ -1906,3 +1906,9 @@ veraltet und sind korrigiert: `chat-sidebar-errors` las die Sitzung, bevor der e
 - [x] **Soul Stage: 5e-Regeln & Spielbrett (07.10.2026):** Eigene Regel-Engine nach SRD 5.1, Spielbrett aus Raster/JSON
   mit eigenen Kachel-SVGs, Magie, Erkundung, Starter-Abenteuer *Die Gruft der vergessenen Schatten*, Stufen bis 3,
   Klassenmerkmale, Ausrüstung und Beute – alle Schritte 0–6 in [`Roadmap_DND.md`](Roadmap_DND.md).
+
+- [x] **3D-Avatare: Figuren aus Spielen (0.5.0, 16.10.2026):** GLB mit eingebetteten Animationen (Rollen und Stimmung je Clip,
+  Gesten von Hand), Root-Motion-Ausgleich auch für Biped-Rigs, Ablehnung von Modellen ohne Skelett, Knochenerkennung
+  für Rumpf, Arme, Hände, Beine und Finger (Mixamo, Unreal, Rigify, MakeHuman, VRoid, Biped, MMD), MMD-Gesichter,
+  Gesichter über Knochen, Gesichts-Editor mit Live-Vorschau, Toon-Look, Import als `.gltf`-Ordner oder ZIP und eine
+  dreisprachige Anleitung – Schritte in [`roadmap_ue5.md`](roadmap_ue5.md).

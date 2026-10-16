@@ -31,6 +31,22 @@ pub const MOODS: [&str; 5] = ["happy", "sad", "angry", "surprised", "relaxed"];
 const ROLES_FILE: &str = "roles.json";
 const MOODS_FILE: &str = "moods.json";
 const MODEL_ROLES_FILE: &str = "model_roles.json";
+const MODEL_FACES_FILE: &str = "model_faces.json";
+
+/// Face keys a glTF avatar can show: blinking, mouth shapes while speaking and emotions.
+pub const FACE_KEYS: [&str; 11] = [
+    "blink",
+    "aa",
+    "ih",
+    "ou",
+    "ee",
+    "oh",
+    "happy",
+    "angry",
+    "sad",
+    "surprised",
+    "relaxed",
+];
 /// Larger JSON chunks are no real avatar (the JSON only describes the model, the data is binary).
 const MAX_GLTF_JSON: u64 = 64 * 1024 * 1024;
 
@@ -551,6 +567,139 @@ fn update_clip_use(
     write_map(dir, MODEL_ROLES_FILE, &uses)
 }
 
+/// One morph target with its weight in a face key.
+#[derive(Debug, Clone, Serialize, Deserialize, TS, PartialEq)]
+#[ts(export)]
+pub struct FaceMorph {
+    pub morph: String,
+    pub weight: f32,
+}
+
+/// The face of one glTF avatar as the user set it up: morph targets per key (replacing the
+/// automatic choice) and a strength per key (also for faces driven by bones).
+#[derive(Debug, Clone, Default, Serialize, Deserialize, TS, PartialEq)]
+#[ts(export)]
+pub struct ModelFace {
+    #[serde(default)]
+    pub morphs: BTreeMap<String, Vec<FaceMorph>>,
+    #[serde(default)]
+    pub strength: BTreeMap<String, f32>,
+}
+
+/// The saved face of a model plus the morph target names the file offers.
+#[derive(Debug, Clone, Serialize, Deserialize, TS, PartialEq)]
+#[ts(export)]
+pub struct ModelFaceInfo {
+    pub available: Vec<String>,
+    pub face: ModelFace,
+}
+
+/// Morph target names of a glTF file (`extras.targetNames`, as Blender and three.js write them).
+fn gltf_morph_names(gltf: &serde_json::Value) -> Vec<String> {
+    let mut names: Vec<String> = Vec::new();
+    for mesh in gltf
+        .get("meshes")
+        .and_then(serde_json::Value::as_array)
+        .into_iter()
+        .flatten()
+    {
+        for name in mesh
+            .pointer("/extras/targetNames")
+            .and_then(serde_json::Value::as_array)
+            .into_iter()
+            .flatten()
+            .filter_map(serde_json::Value::as_str)
+        {
+            if !names.iter().any(|n| n == name) {
+                names.push(name.to_string());
+            }
+        }
+    }
+    names
+}
+
+fn read_model_faces(dir: &Path) -> BTreeMap<String, ModelFace> {
+    fs::read_to_string(dir.join(MODEL_FACES_FILE))
+        .ok()
+        .and_then(|text| serde_json::from_str(&text).ok())
+        .unwrap_or_default()
+}
+
+pub fn model_face(model_path: &str) -> Result<ModelFaceInfo, String> {
+    model_face_in(
+        model_path,
+        &crate::modules::paths::avatar_roots(),
+        &motions_dir(),
+    )
+}
+
+fn model_face_in(model_path: &str, roots: &[PathBuf], dir: &Path) -> Result<ModelFaceInfo, String> {
+    let (model, key) = model_key(model_path, roots)?;
+    Ok(ModelFaceInfo {
+        available: gltf_morph_names(&read_gltf_json(&model)?),
+        face: read_model_faces(dir).remove(&key).unwrap_or_default(),
+    })
+}
+
+pub fn set_model_face(model_path: &str, face: ModelFace) -> Result<(), String> {
+    set_model_face_in(
+        model_path,
+        face,
+        &crate::modules::paths::avatar_roots(),
+        &motions_dir(),
+    )
+}
+
+/// Saves a face; unknown keys are refused, weights kept in 0…1 and strengths in 0…2, empty
+/// entries dropped (the key then goes back to the automatic choice).
+fn set_model_face_in(
+    model_path: &str,
+    face: ModelFace,
+    roots: &[PathBuf],
+    dir: &Path,
+) -> Result<(), String> {
+    let (_, key) = model_key(model_path, roots)?;
+    if let Some(unknown) = face
+        .morphs
+        .keys()
+        .chain(face.strength.keys())
+        .find(|k| !FACE_KEYS.contains(&k.as_str()))
+    {
+        return Err(crate::err!("backend.avatarMotion.faceKey", key = unknown));
+    }
+    let clean = ModelFace {
+        morphs: face
+            .morphs
+            .into_iter()
+            .map(|(k, list)| {
+                let list: Vec<FaceMorph> = list
+                    .into_iter()
+                    .filter(|m| !m.morph.trim().is_empty())
+                    .map(|m| FaceMorph {
+                        weight: m.weight.clamp(0.0, 1.0),
+                        ..m
+                    })
+                    .collect();
+                (k, list)
+            })
+            .filter(|(_, list)| !list.is_empty())
+            .collect(),
+        strength: face
+            .strength
+            .into_iter()
+            .filter(|(_, s)| (*s - 1.0).abs() > f32::EPSILON)
+            .map(|(k, s)| (k, s.clamp(0.0, 2.0)))
+            .collect(),
+    };
+    let mut faces = read_model_faces(dir);
+    if clean == ModelFace::default() {
+        faces.remove(&key);
+    } else {
+        faces.insert(key, clean);
+    }
+    write_map(dir, MODEL_FACES_FILE, &faces)
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -746,6 +895,59 @@ mod tests {
         let broken = avatars.join("Broken.glb");
         fs::write(&broken, b"glTF\x02\0\0\0\x20\0\0\0\x99\0\0\0BIN\0").unwrap();
         assert!(model_clips_in(broken.to_str().unwrap(), &roots, &dir).is_err());
+        let _ = fs::remove_dir_all(&tmp);
+    }
+
+    #[test]
+    fn saves_a_model_face_and_lists_its_morphs() {
+        let tmp = std::env::temp_dir().join(format!("otakusoul-face-{}", std::process::id()));
+        let _ = fs::remove_dir_all(&tmp);
+        let avatars = tmp.join("avatars");
+        fs::create_dir_all(&avatars).unwrap();
+        let roots = [avatars.clone()];
+        let dir = tmp.join("animations");
+        let model = avatars.join("Figur.glb");
+        fs::write(
+            &model,
+            glb(r#"{"meshes":[{"extras":{"targetNames":["Face_Smile","Eye_Close"]}},{"extras":{"targetNames":["Eye_Close","Mouth_A"]}}]}"#),
+        )
+        .unwrap();
+        let path = model.to_str().unwrap();
+        let info = model_face_in(path, &roots, &dir).unwrap();
+        assert_eq!(info.available, ["Face_Smile", "Eye_Close", "Mouth_A"]);
+        assert_eq!(info.face, ModelFace::default());
+
+        let mut face = ModelFace::default();
+        face.morphs.insert(
+            "happy".into(),
+            vec![FaceMorph {
+                morph: "Face_Smile".into(),
+                weight: 1.5,
+            }],
+        );
+        face.morphs.insert(
+            "blink".into(),
+            vec![FaceMorph {
+                morph: " ".into(),
+                weight: 1.0,
+            }],
+        );
+        face.strength.insert("aa".into(), 3.0);
+        face.strength.insert("sad".into(), 1.0);
+        set_model_face_in(path, face, &roots, &dir).unwrap();
+        let saved = model_face_in(path, &roots, &dir).unwrap().face;
+        // Weights and strengths are clamped, empty entries and the neutral strength dropped.
+        assert_eq!(saved.morphs["happy"][0].weight, 1.0);
+        assert!(!saved.morphs.contains_key("blink"));
+        assert_eq!(saved.strength.get("aa"), Some(&2.0));
+        assert!(!saved.strength.contains_key("sad"));
+
+        let mut wrong = ModelFace::default();
+        wrong.strength.insert("wink".into(), 1.2);
+        assert!(set_model_face_in(path, wrong, &roots, &dir).is_err());
+        // Back to automatic: the entry disappears.
+        set_model_face_in(path, ModelFace::default(), &roots, &dir).unwrap();
+        assert!(read_model_faces(&dir).is_empty());
         let _ = fs::remove_dir_all(&tmp);
     }
 }

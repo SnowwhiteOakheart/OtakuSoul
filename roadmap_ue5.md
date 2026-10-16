@@ -47,11 +47,11 @@
       der Oberschenkel, wenn es „Left knee“ gibt. Geprüft an NTE (52 Rollen), MMD (48) und A010 (50).
 - [x] Retargeting fremder Mixamo-Bewegungen über alle Rollen (jede Rolle unter ihrem Mixamo-Namen).
 
-### Schritt 3 – Gesicht zuordnen
+### Schritt 3 – Gesicht zuordnen ✅
 - [x] Japanische MMD-Gesichtsformen (あ い う え お, まばたき, 笑い, 怒り, 困る, びっくり, なごみ) auch im glTF-Viewer
       (`MMD_MORPHS` in `gltfRig.ts`, geteilt mit dem MMD-Viewer).
-- [ ] Editor je Modell: Emotionen (fröhlich, traurig, wütend, überrascht, entspannt), Blinzeln und Mundformen
-      (aa/ih/ou/ee/oh) auf beliebige Morph Targets legen, mit Gewicht; gespeichert pro Modell.
+- [x] Gesichts-Editor je glTF-Modell (`ModelFaceSettings`): je Ausdruck eigene Gesichtsformen mit Gewicht und eine Stärke
+      (auch für Knochengesichter), gespeichert in `<Daten>/animations/model_faces.json`; Live-Vorschau im Editor.
 - [x] Gesichter mit Knochen statt Morphs (`boneFace.ts`): Augenlider, Brauen, Lippen und Mundwinkel nach Namensmuster,
       Bewegungen geometrisch in der Ruhepose (Augenabstand als Maß) und in den Elternraum umgerechnet; Blinzeln, Mundformen
       und Gefühle. Geprüft an Unreal-Figuren (NTE).
@@ -72,7 +72,7 @@
 - [x] Vollständige Anleitung inkl. Extraktion aus Unreal-Spielen nur lokal in `docs/private/` (per `.gitignore`
       nicht im Repository).
 - [x] Nachgezogen für Knochen (Beine, Hände, Finger, Gesichtsknochen), Toon-Schalter und Ordner/ZIP-Import.
-- [ ] Gesichts-Editor beschreiben, sobald es ihn gibt.
+- [x] Gesichts-Editor beschrieben.
 
 ## 4. Entschiedene Fragen (15.10.2026)
 

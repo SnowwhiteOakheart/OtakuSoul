@@ -403,6 +403,8 @@ pub fn run() {
             commands::avatar::list_model_clips,
             commands::avatar::set_model_clip_role,
             commands::avatar::set_model_clip_mood,
+            commands::avatar::get_model_face,
+            commands::avatar::set_model_face,
             commands::avatar::set_avatar_motion_mood,
             commands::avatar::import_avatar_motion,
             commands::avatar::set_avatar_motion_role,

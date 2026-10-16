@@ -54,6 +54,7 @@ export class BoneFace {
   private readonly bones: FaceBone[];
   private readonly moves = new Map<string, Move[]>();
   private readonly frame = new Map<string, number>();
+  private strength: Record<string, number | undefined> = {};
 
   private constructor(bones: FaceBone[]) {
     this.bones = bones;
@@ -88,7 +89,12 @@ export class BoneFace {
   }
 
   set(key: string, weight: number) {
-    if (this.moves.has(key)) this.frame.set(key, (this.frame.get(key) ?? 0) + weight);
+    if (this.moves.has(key)) this.frame.set(key, (this.frame.get(key) ?? 0) + weight * (this.strength[key] ?? 1));
+  }
+
+  /** Strength per key from the face editor (own morphs do not apply to bones). */
+  configure(setup: { strength?: Record<string, number | undefined> }) {
+    this.strength = setup.strength ?? {};
   }
 
   /** Puts the face bones back to rest; call before animations update them for the frame. */
@@ -102,7 +108,7 @@ export class BoneFace {
     for (const [key, weight] of this.frame) {
       if (weight <= 0) continue;
       for (const { bone, world } of this.moves.get(key) ?? []) {
-        bone.bone.position.add(offset.copy(world).multiplyScalar(Math.min(1, weight)).applyMatrix3(bone.toLocal));
+        bone.bone.position.add(offset.copy(world).multiplyScalar(Math.min(2, weight)).applyMatrix3(bone.toLocal));
       }
     }
     this.frame.clear();

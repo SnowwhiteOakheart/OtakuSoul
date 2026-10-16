@@ -1,4 +1,5 @@
 import { AvatarMotionsSettings } from '../AvatarMotionsSettings';
+import { ModelFaceSettings } from '../ModelFaceSettings';
 import { useStoreFields } from '../../../store/useAppStore';
 import { translate, useTranslation, type SupportedLanguage } from '../../../i18n';
 import { open } from '@tauri-apps/plugin-dialog';
@@ -347,6 +348,7 @@ export const GeneralSettings = () => {
       </div>
 
       <AvatarMotionsSettings />
+      <ModelFaceSettings />
 
       {/* 2D Live2D Standard-Auswahl & Import */}
       <div className="rounded-xl border border-slate-800 bg-slate-900/60 p-4 space-y-3">

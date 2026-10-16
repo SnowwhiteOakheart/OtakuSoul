@@ -75,6 +75,9 @@ import type { ScannedVoice } from './generated/ScannedVoice';
 import type { ScannedVrm } from './generated/ScannedVrm';
 import type { AvatarMotion } from './generated/AvatarMotion';
 import type { ModelClip } from './generated/ModelClip';
+import type { ModelFace } from './generated/ModelFace';
+import type { ModelFaceInfo } from './generated/ModelFaceInfo';
+import type { FaceMorph } from './generated/FaceMorph';
 import type { ScratchpadEntry } from './generated/ScratchpadEntry';
 import type { ServerState } from './generated/ServerState';
 import type { ServerStatus } from './generated/ServerStatus';
@@ -187,6 +190,9 @@ export type {
   ScannedVrm,
   AvatarMotion,
   ModelClip,
+  ModelFace,
+  ModelFaceInfo,
+  FaceMorph,
   ScratchpadEntry,
   ServerState,
   ServerStatus,

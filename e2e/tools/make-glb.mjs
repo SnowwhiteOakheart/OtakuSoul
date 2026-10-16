@@ -52,7 +52,11 @@ const FACE_BONES = [
   ['Bon_colip_L', [0.015, -0.005, 0.12]], ['Bon_colip_R', [-0.015, -0.005, 0.12]],
 ];
 
-export async function makeGlb({ clips = false, faceBones = false } = {}) {
+/** The same blendshapes under names OtakuSoul does not know, as some game exports have them. */
+const CUSTOM_MORPHS = ['Mouth_A', 'Eye_Close_L', 'Eye_Close_R', 'Face_Smile_L', 'Face_Smile_R'];
+
+export async function makeGlb({ clips = false, faceBones = false, customMorphs = false } = {}) {
+  const morphNames = customMorphs ? CUSTOM_MORPHS : MORPHS;
   const bones = new Map();
   for (const [name, position, parent] of BONES) {
     const bone = new THREE.Bone();
@@ -94,18 +98,18 @@ export async function makeGlb({ clips = false, faceBones = false } = {}) {
   geometry.computeVertexNormals();
   // Each morph moves the head vertices a little (jawOpen the most), enough to see a change.
   geometry.morphTargetsRelative = true;
-  geometry.morphAttributes.position = (faceBones ? [] : MORPHS).map((name) => {
+  geometry.morphAttributes.position = (faceBones ? [] : morphNames).map((name) => {
     const delta = new Float32Array(positions.length);
     for (let i = 0; i < positions.length; i += 3) {
-      if (positions[i + 1] > 1.5 && positions[i + 1] < 1.6) delta[i + 1] = name === 'jawOpen' ? -0.06 : -0.01;
+      if (positions[i + 1] > 1.5 && positions[i + 1] < 1.6) delta[i + 1] = name === 'jawOpen' || name === 'Mouth_A' ? -0.06 : -0.01;
     }
     return new THREE.Float32BufferAttribute(delta, 3);
   });
   const mesh = new THREE.SkinnedMesh(geometry, new THREE.MeshStandardMaterial({ color: 0xd8b4fe }));
   mesh.name = 'Body';
   if (!faceBones) {
-    mesh.morphTargetDictionary = Object.fromEntries(MORPHS.map((name, i) => [name, i]));
-    mesh.morphTargetInfluences = MORPHS.map(() => 0);
+    mesh.morphTargetDictionary = Object.fromEntries(morphNames.map((name, i) => [name, i]));
+    mesh.morphTargetInfluences = morphNames.map(() => 0);
   }
   const root = new THREE.Group();
   root.name = 'Avatar';

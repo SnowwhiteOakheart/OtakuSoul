@@ -106,6 +106,14 @@ export function withoutRootMotion(clips: THREE.AnimationClip[], scene: THREE.Obj
   });
 }
 
+/** What drives a face: morph targets or face bones. */
+interface FaceDriver {
+  supported: string[];
+  set: (key: string, weight: number) => void;
+  apply: () => void;
+  restore?: () => void;
+}
+
 /** Mixamo FBX motions, moved onto this rig. */
 async function loadFbxForRig(motion: AvatarMotion, rig: LoadedRig): Promise<THREE.AnimationClip | null> {
   const bytes = await api.readFileBinary(motion.path);
@@ -145,7 +153,13 @@ export const GltfViewer = ({
   const [ownClips, setOwnClips] = useState<Map<MotionRole, THREE.AnimationClip[]> | undefined>(undefined);
   const [extraClips, setExtraClips] = useState<THREE.AnimationClip[]>([]);
   const [playingClips, setPlayingClips] = useState({ idle: '', gesture: '' });
-  const [faceKind, setFaceKind] = useState('');
+  const [faceInfo, setFaceInfo] = useState({ kind: '', keys: '' });
+  // Both face drivers of the model; the frame loop uses the chosen one.
+  const facesRef = useRef<{ morphs: MorphFace; bones: BoneFace | null } | null>(null);
+  const faceRef = useRef<FaceDriver | null>(null);
+  const previewRef = useRef<{ key: string; until: number } | null>(null);
+  const { avatarFacePreview } = useStoreFields('avatarFacePreview');
+  const lastPreview = useRef(avatarFacePreview?.id ?? 0);
   const stageRef = useRef<AvatarStage | null>(null);
   // Cel shading per model and device; game figures usually look right with it, scans without.
   const [toon, setToon] = usePersistentFlag(`avatarToon:${modelPath}`, false);
@@ -175,8 +189,6 @@ export const GltfViewer = ({
     resetViewRef.current = stage.resetView;
 
     let root: THREE.Object3D | null = null;
-    // Morph targets if the model has them, else face bones (game rigs), else none.
-    let face: { set: (key: string, weight: number) => void; apply: () => void; restore?: () => void } | null = null;
     let posed: { bone: THREE.Object3D; rest: THREE.Quaternion }[] = [];
     let head: THREE.Object3D | undefined;
     let spine: THREE.Object3D | undefined;
@@ -211,10 +223,8 @@ export const GltfViewer = ({
         for (const [arm, forearm, side] of [[bones.leftArm, bones.leftForeArm, 1], [bones.rightArm, bones.rightForeArm, -1]] as const) {
           if (arm && forearm) posed.push({ bone: arm, rest: loweredArm(arm, forearm, side) });
         }
-        const morphs = new MorphFace(scene);
-        const boneFace = morphs.supported.length ? null : BoneFace.detect(scene);
-        face = boneFace ?? morphs;
-        setFaceKind(morphs.supported.length ? 'morphs' : boneFace ? 'bones' : 'none');
+        facesRef.current = { morphs: new MorphFace(scene), bones: BoneFace.detect(scene) };
+        chooseFace();
         const box = restPoseBounds(scene);
         stage.frameModel(head ? head.getWorldPosition(new THREE.Vector3()).y : box.max.y - 0.15, box.max.y);
         const rest = captureRest(scene);
@@ -245,6 +255,7 @@ export const GltfViewer = ({
       const animated = player?.bodyWeight ?? 0;
       // Posed bones start from rest each frame; motions overwrite what they animate.
       for (const { bone, rest } of posed) bone.quaternion.copy(rest);
+      const face = faceRef.current;
       face?.restore?.();
       player?.update(delta);
       if (animated > 0.001 && animated < 0.999) for (const { bone, rest } of posed) bone.quaternion.slerp(rest, 1 - animated);
@@ -254,6 +265,8 @@ export const GltfViewer = ({
       spine?.quaternion.multiply(turn.setFromEuler(euler.set(Math.sin(elapsed * 1.8) * 0.012 * (1 - animated), 0, 0)));
 
       if (face) {
+        const preview = previewRef.current && performance.now() < previewRef.current.until ? previewRef.current.key : '';
+        if (preview) face.set(preview, 1);
         face.set('blink', blink(elapsed));
         const weight = EXPRESSION_WEIGHTS[emotionRef.current];
         if (weight) face.set(emotionRef.current, weight);
@@ -279,8 +292,50 @@ export const GltfViewer = ({
       setEmbedded([]);
       setOwnClips(undefined);
       setExtraClips([]);
+      facesRef.current = null;
+      faceRef.current = null;
     };
   }, [modelPath]);
+
+  /** Morph targets (own or recognised) first, else face bones, else none. */
+  function chooseFace() {
+    const faces = facesRef.current;
+    if (!faces) return;
+    const driver: FaceDriver | null = faces.morphs.supported.length ? faces.morphs : faces.bones ?? null;
+    faceRef.current = driver ?? faces.morphs;
+    setFaceInfo({
+      kind: !driver ? 'none' : driver === faces.morphs ? 'morphs' : 'bones',
+      keys: [...(driver?.supported ?? [])].sort().join(' '),
+    });
+  }
+
+  // The face set up in the face editor (own morphs, strengths), again after every change there.
+  useEffect(() => {
+    if (!loaded) return;
+    let cancelled = false;
+    api
+      .getModelFace(modelPath)
+      .then(({ face: setup }) => {
+        const faces = facesRef.current;
+        if (cancelled || !faces) return;
+        faces.morphs.configure(setup);
+        faces.bones?.configure(setup);
+        chooseFace();
+      })
+      .catch((e) => console.warn('Gesicht des Modells konnte nicht geladen werden:', e));
+    return () => {
+      cancelled = true;
+    };
+    // `chooseFace` only reads refs and setters.
+    // oxlint-disable-next-line react-hooks/exhaustive-deps
+  }, [loaded, modelPath, modelClipRevision]);
+
+  // A preview from the face editor shows its key for a moment.
+  useEffect(() => {
+    if (!avatarFacePreview || avatarFacePreview.id === lastPreview.current) return;
+    lastPreview.current = avatarFacePreview.id;
+    previewRef.current = { key: avatarFacePreview.key, until: performance.now() + 1500 };
+  }, [avatarFacePreview]);
 
   useEffect(() => {
     if (!loaded) return;
@@ -337,7 +392,8 @@ export const GltfViewer = ({
         data-motions={motionCount}
         data-gesture={playingGesture}
         data-toon={toon}
-        data-face={faceKind}
+        data-face={faceInfo.kind}
+        data-face-keys={faceInfo.keys}
         data-idle-clip={playingClips.idle}
         data-gesture-clip={playingGesture ? playingClips.gesture : ''}
         className="w-full h-full cursor-grab active:cursor-grabbing"

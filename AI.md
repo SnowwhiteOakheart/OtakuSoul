@@ -151,6 +151,10 @@ Hub). Integrationen → Bildgenerierung enthält nur Studio und Galerie.
   `AvatarViewerChrome` über `playAvatarClip` (`GestureRequest.clip`); der Viewer zeigt `data-idle-clip`/`data-gesture-clip`.
   GLB ohne Skelett (`skins` leer, `avatar_motions::gltf_summary`) lehnt `import_vrm_into` mit `backend.vrm.noSkeleton` ab; von Hand
   abgelegte zeigt `GltfViewer` nicht (`avatar.noSkeleton`). `ScannedVrm.triangles` > 500.000 → Hinweis `settings.vrmHeavy`.
+  Gesichts-Editor: `ModelFaceSettings` ↔ `get_model_face`/`set_model_face` (`ModelFace`: `morphs` je Schlüssel aus `FACE_KEYS`,
+  `strength` 0–2, in `model_faces.json`, Morph-Namen aus `extras.targetNames`); `MorphFace.configure`/`BoneFace.configure`,
+  der Viewer wählt danach Morphs vor Knochen (`data-face`, `data-face-keys`). Vorschau `previewAvatarFace` →
+  `avatarFacePreview`; Live-Vorschau = eingebetteter `GltfViewer`. E2E `avatar-gltf-face.mjs` (`makeGlb({ customMorphs })`).
   glTF als Ordner/ZIP: `avatar_models::import_folder_model` (MMD, `.gltf` mit Ordner, ZIP mit MMD/`.gltf`/`.glb`, Skelett-
   Prüfung), Liste `find_gltf_models` (Unterordner); `gltfFile.ts` `loadGltfAvatar` liest `.bin`/Texturen über die App als
   Blob-URLs (case-insensitiv per `list_avatar_model_files`). E2E `avatar-gltf-folder.mjs` (`writeGltfFolder`).

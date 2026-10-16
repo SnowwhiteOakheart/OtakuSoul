@@ -51,6 +51,8 @@ import {
   ScannedVrm,
   AvatarMotion,
   ModelClip,
+  ModelFace,
+  ModelFaceInfo,
   AppSettings,
   UserPersona,
   ChatSession,
@@ -813,6 +815,15 @@ export const api = {
 
   setModelClipMood: async (modelPath: string, clip: string, mood: string): Promise<void> => {
     await invoke('set_model_clip_mood', { modelPath, clip, mood });
+  },
+
+  /** The face set up for a glTF avatar and the morph targets its file offers. */
+  getModelFace: async (modelPath: string): Promise<ModelFaceInfo> => {
+    return await invoke<ModelFaceInfo>('get_model_face', { modelPath });
+  },
+
+  setModelFace: async (modelPath: string, face: ModelFace): Promise<void> => {
+    await invoke('set_model_face', { modelPath, face });
   },
 
   /** Files next to a 3D model (relative, forward slashes), for textures in other cases. */

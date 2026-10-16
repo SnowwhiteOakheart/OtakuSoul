@@ -80,7 +80,7 @@ Engage with your characters in an atmospheric chat interface. The 3D VRM or Live
 * **Audio-Synchronized Lip Sync:** Voice models animate avatar mouth shapes precisely to the spoken waveforms in real time.
 * **Zero Context Amnesia:** When model context fills up, a background engine condenses older turns into a concise "Story So Far" narrative summary, fully editable at any point.
 * **Compact Density View:** Toggle between standard and compact UI layouts; HUD metrics can be collapsed to minimize screen clutter.
-* **Your own 3D models with animations:** A GLB file from Blender brings its animations along – idle loop and gestures by mood, further clips from a gestures menu. Guide: [Your own 3D model with animations](docs/guide-3d-avatars.md).
+* **Your own 3D models with animations:** A GLB file from Blender brings its animations along – idle loop and gestures by mood, further clips from a gestures menu. Faces run on blendshapes or face bones (game figures), a face editor with live preview maps unknown names; plus a toon-look switch and import as `.glb`, `.gltf` folder or ZIP. Guide: [Your own 3D model with animations](docs/guide-3d-avatars.md).
 * **Voice Effects:** Robot, radio, ghost, cave, deep or fairy – or your own pitch, reverb, echo and filter values, for every speech engine.
 * **Per-Chat Style:** Own background picture, text size, bubble style and an ambient sound with volume – stored per chat, sharing pictures and sounds with the Stage library.
 * **Chat Tools:** On request the model can use date/time, a calculator and web search – with every provider and local models; tool use shows up in the reasoning block.

@@ -149,24 +149,49 @@ const RECIPES: Record<string, MorphRecipe[]> = Object.fromEntries(
  * Drives the face of a glTF avatar: `set` collects weights per expression for one frame,
  * `apply` adds up what they mean per morph target (several share `jawOpen`) on every mesh.
  */
+/** What the user set up for a model's face: own morphs per key and a strength per key. */
+export interface FaceSetup {
+  morphs?: Record<string, { morph: string; weight: number }[] | undefined>;
+  strength?: Record<string, number | undefined>;
+}
+
 export class MorphFace {
   private readonly meshes: THREE.Mesh[] = [];
   private readonly recipes = new Map<string, MorphRecipe>();
   private readonly frame = new Map<string, number>();
+  private readonly names = new Set<string>();
+  private strength: Record<string, number | undefined> = {};
 
   constructor(root: THREE.Object3D) {
-    const names = new Set<string>();
     root.traverse((node) => {
       const mesh = node as THREE.Mesh;
       if (mesh.isMesh && mesh.morphTargetDictionary && mesh.morphTargetInfluences) {
         this.meshes.push(mesh);
-        Object.keys(mesh.morphTargetDictionary).forEach((name) => names.add(name));
+        Object.keys(mesh.morphTargetDictionary).forEach((name) => this.names.add(name));
       }
     });
+    this.configure({});
+  }
+
+  /** Own morphs replace the automatic choice of their key; strengths scale every key. */
+  configure(setup: FaceSetup) {
+    this.recipes.clear();
     for (const [key, options] of Object.entries(RECIPES)) {
-      const recipe = options.find((option) => option.some(([name]) => names.has(name)));
-      if (recipe) this.recipes.set(key, recipe.filter(([name]) => names.has(name)));
+      const recipe = options.find((option) => option.some(([name]) => this.names.has(name)));
+      if (recipe) this.recipes.set(key, recipe.filter(([name]) => this.names.has(name)));
     }
+    for (const [key, list] of Object.entries(setup.morphs ?? {})) {
+      const own = (list ?? []).filter((m) => this.names.has(m.morph)).map((m): [string, number] => [m.morph, m.weight]);
+      if (own.length) this.recipes.set(key, own);
+    }
+    this.strength = setup.strength ?? {};
+    // Morphs no recipe uses any more are left alone again (and reset once here).
+    for (const mesh of this.meshes) mesh.morphTargetInfluences?.fill(0);
+  }
+
+  /** Morph target names of the model, for the face editor. */
+  get morphNames(): string[] {
+    return [...this.names];
   }
 
   /** Which expressions and mouth shapes this face can show. */
@@ -175,7 +200,8 @@ export class MorphFace {
   }
 
   set(key: string, weight: number) {
-    for (const [name, factor] of this.recipes.get(key) ?? []) this.frame.set(name, (this.frame.get(name) ?? 0) + weight * factor);
+    const scaled = weight * (this.strength[key] ?? 1);
+    for (const [name, factor] of this.recipes.get(key) ?? []) this.frame.set(name, (this.frame.get(name) ?? 0) + scaled * factor);
   }
 
   apply() {
