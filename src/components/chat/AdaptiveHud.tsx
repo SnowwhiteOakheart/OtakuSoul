@@ -2,7 +2,7 @@ import { useAppStore, useStoreFields } from '../../store/useAppStore';
 import { Heart, Zap, Smile, Users, ChevronDown, ChevronLeft, ChevronRight, BookOpen, Brain, Sparkles, Camera, Loader2 } from 'lucide-react';
 import { usePersistentFlag } from '../../hooks/usePersistentFlag';
 import { CognitiveMemoryDrawer } from './CognitiveMemoryDrawer';
-import { translate, useTranslation } from '../../i18n';
+import { translate, useTranslation, type TranslationKey } from '../../i18n';
 import { toast } from '../ui/feedback';
 import { DropdownMenu } from '../ui/DropdownMenu';
 import { errorMessage } from '../../utils/errors';
@@ -12,6 +12,17 @@ import { localizeCard } from '../../utils/cardI18n';
  * Character, story state and quick actions above the chat. The state values (and the lorebook
  * badge) fold away; `compact` makes the bar denser.
  */
+/** State values the app ships (names stay as the AI writes them); shown in the interface language. */
+const STATE_LABELS: Record<string, TranslationKey> = {
+  affection: 'hud.var.affection',
+  zuneigung: 'hud.var.affection',
+  energy: 'hud.var.energy',
+  mood: 'hud.var.mood',
+  trust: 'hud.var.trust',
+  intimacy: 'hud.var.intimacy',
+  sanity: 'hud.var.sanity',
+};
+
 export const AdaptiveHud = ({ compact = false }: { compact?: boolean }) => {
   const {
     activeCharacter,
@@ -31,6 +42,10 @@ export const AdaptiveHud = ({ compact = false }: { compact?: boolean }) => {
   );
 
   const { t, currentLanguage } = useTranslation();
+  const label = (name: string) => {
+    const key = STATE_LABELS[name.toLowerCase()];
+    return key ? t(key) : name;
+  };
   const showMemoryDrawer = useAppStore((s) => s.isMemoryDrawerOpen);
   const setShowMemoryDrawer = useAppStore((s) => s.setMemoryDrawerOpen);
   const [showDetails, setShowDetails] = usePersistentFlag('otakusoul.hud.details', true);
@@ -143,19 +158,19 @@ export const AdaptiveHud = ({ compact = false }: { compact?: boolean }) => {
             return (
               <div
                 key={i}
-                title={t('hud.stateHint', { name: v.name })}
+                title={t('hud.stateHint', { name: label(v.name) })}
                 className="flex items-center gap-2 px-2.5 py-1 rounded-lg bg-slate-800/60 border border-slate-700/60"
               >
-                {v.name === 'Zuneigung' ? (
+                {['affection', 'zuneigung'].includes(v.name.toLowerCase()) ? (
                   <Heart className="w-3.5 h-3.5 text-accent2-400 fill-accent2-400/40" />
                 ) : (
                   <Zap className="w-3.5 h-3.5 text-cyan-400" />
                 )}
-                <span className="text-slate-300 text-xs font-sans">{v.name}:</span>
+                <span className="text-slate-300 text-xs font-sans">{label(v.name)}:</span>
                 <div className="w-16 bg-app rounded-full h-1.5 overflow-hidden">
                   <div
                     className={`h-1.5 rounded-full transition-all duration-500 ${
-                      v.name === 'Zuneigung'
+                      ['affection', 'zuneigung'].includes(v.name.toLowerCase())
                         ? 'bg-linear-to-r from-accent2-500 to-rose-400'
                         : 'bg-linear-to-r from-cyan-500 to-indigo-400'
                     }`}
@@ -172,11 +187,11 @@ export const AdaptiveHud = ({ compact = false }: { compact?: boolean }) => {
           return (
             <div
               key={i}
-              title={t('hud.stateHint', { name: v.name })}
+              title={t('hud.stateHint', { name: label(v.name) })}
               className="hidden md:flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-slate-800/60 border border-slate-700/60 text-xs"
             >
               <Smile className="w-3.5 h-3.5 text-accent-400" />
-              <span className="text-slate-400 font-sans">{v.name}:</span>
+              <span className="text-slate-400 font-sans">{label(v.name)}:</span>
               <span className="text-accent-200 font-medium">{v.value}</span>
             </div>
           );

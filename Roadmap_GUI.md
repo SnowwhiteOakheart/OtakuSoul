@@ -120,8 +120,8 @@
   Ausgangslage, Begrüßung, „Jetzt chatten“), mitgelieferte Figuren vorn mit „Gut für den Einstieg“. Ursprünglicher Plan: Bibliothek zeigt Kurzbeschreibung, Stimmung/Genre und „Jetzt chatten“; neue Nutzer
   sehen zuerst die mitgelieferten Figuren mit Empfehlung.
 - [x] **HUD verständlich (16.10.2026):** „Nachdenken“ statt „Reasoning“ mit Erklärung, Zustandswerte mit Tooltip,
-  Kontextanzeige als „Gesprächsgedächtnis: x % belegt“ (Tokens im Expertenmodus). Offen: Variablennamen der Karten
-  übersetzen (z. B. Altheas „Affection“/„Energy“). Ursprünglicher Plan: Werte wie Energie/Stimmung/Reasoning mit Tooltip-Erklärung, standardmäßig reduziert.
+  Kontextanzeige als „Gesprächsgedächtnis: x % belegt“ (Tokens im Expertenmodus). Mitgelieferte Zustandswerte (Affection,
+  Energy, Mood, Trust, Intimacy, Sanity) werden im HUD übersetzt angezeigt; ihre Namen bleiben für `<state>` gleich. Ursprünglicher Plan: Werte wie Energie/Stimmung/Reasoning mit Tooltip-Erklärung, standardmäßig reduziert.
 - [x] **Chat-Menü gruppieren (16.10.2026):** Lokal/Cloud-Umschalter, Werkzeuge und Prompt-Protokoll nur im Expertenmodus.
   Ursprünglicher Plan: häufige Aktionen (Neuer Chat, Stimme, Gestaltung) oben, Werkzeuge/Prompt-Log unter
   „Erweitert“.
