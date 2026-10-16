@@ -56,6 +56,7 @@ import type { MemoryChange } from './generated/MemoryChange';
 import type { GatewayCharacterEntry } from './generated/GatewayCharacterEntry';
 import type { GatewayLorebookEntry } from './generated/GatewayLorebookEntry';
 import type { GatewaySceneEntry } from './generated/GatewaySceneEntry';
+import type { InstalledHubItem } from './generated/InstalledHubItem';
 import type { GeneratedImageInfo } from './generated/GeneratedImageInfo';
 import type { GeneratedImageResult } from './generated/GeneratedImageResult';
 import type { GpuInfo } from './generated/GpuInfo';
@@ -171,6 +172,7 @@ export type {
   GatewayCharacterEntry,
   GatewayLorebookEntry,
   GatewaySceneEntry,
+  InstalledHubItem,
   GeneratedImageInfo,
   GeneratedImageResult,
   GpuInfo,

@@ -63,6 +63,7 @@ export async function launch(settings = {}) {
     env: {
       ...process.env,
       OTAKUSOUL_HOME: home,
+      OTAKUSOUL_HUB_BASE: mock.url.replace('/v1/chat/completions', '/hub'),
       GDK_BACKEND: process.env.GDK_BACKEND ?? 'x11',
       WEBKIT_DISABLE_DMABUF_RENDERER: '1',
     },

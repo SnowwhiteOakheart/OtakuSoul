@@ -12,12 +12,16 @@ pub async fn import_soul_gateway_character(
     author: String,
     download_url: String,
     overwrite: Option<bool>,
+    revision: Option<u32>,
+    updated: Option<String>,
 ) -> Result<crate::modules::hub::CharacterImportResult, String> {
     crate::modules::hub::import_soul_gateway_character(
         &name,
         &author,
         &download_url,
         overwrite.unwrap_or(false),
+        revision.unwrap_or(1),
+        updated.as_deref().unwrap_or(""),
     )
     .await
 }
@@ -67,8 +71,18 @@ pub async fn fetch_lorebooks_gateway_registry()
 pub async fn import_lorebook_from_gateway(
     download_url: String,
     fallback_name: String,
+    revision: Option<u32>,
+    updated: Option<String>,
+    keep_copy: Option<bool>,
 ) -> Result<crate::modules::lorebook::Lorebook, String> {
-    crate::modules::hub::import_lorebook_from_gateway(&download_url, &fallback_name).await
+    crate::modules::hub::import_lorebook_from_gateway(
+        &download_url,
+        &fallback_name,
+        revision.unwrap_or(1),
+        updated.as_deref().unwrap_or(""),
+        keep_copy.unwrap_or(false),
+    )
+    .await
 }
 
 #[tauri::command]
@@ -81,6 +95,22 @@ pub async fn fetch_stages_gateway_registry()
 pub async fn import_scene_from_gateway(
     download_url: String,
     fallback_title: String,
+    hub_id: Option<String>,
+    revision: Option<u32>,
+    updated: Option<String>,
 ) -> Result<crate::modules::stage::SceneState, String> {
-    crate::modules::hub::import_scene_from_gateway(&download_url, &fallback_title).await
+    crate::modules::hub::import_scene_from_gateway(
+        &download_url,
+        &fallback_title,
+        hub_id.as_deref().unwrap_or(""),
+        revision.unwrap_or(1),
+        updated.as_deref().unwrap_or(""),
+    )
+    .await
+}
+
+/// Hub contents installed so far, with their revisions (the hub compares them for updates).
+#[tauri::command]
+pub fn list_installed_hub_items() -> Vec<crate::modules::hub_installed::InstalledHubItem> {
+    crate::modules::hub_installed::list()
 }

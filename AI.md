@@ -282,6 +282,13 @@ Hub). Integrationen → Bildgenerierung enthält nur Studio und Galerie.
 - Start: `settingsLoaded` ist erst nach `initApp` wahr. Davor speichert `saveCurrentSettings` nichts (sonst überschreiben
   Standardwerte die Einstellungen) und `refreshCharacters` wählt keinen Charakter; `initApp` öffnet den gespeicherten
   direkt über `refreshCharacters(settings.active_character_id)`. Tests, die Speichern prüfen, setzen `settingsLoaded: true`.
+- Hub-Updates: Registry-Einträge tragen `revision`/`updated` (`hub::entry_revision`, fehlend = 1); installierte Inhalte stehen in
+  `<Daten>/hub_installed.json` (`hub_installed.rs`, Befehl `list_installed_hub_items`, Schlüssel Art + Registry-ID bzw. Name).
+  Szenen-Import behält `extensions` (`scene_definition_from_hub`, `null`-Felder = fehlend) und aktualisiert eine vorhandene Kopie
+  per `update_scene_definition` (Spielstand bleibt; alte Importe über Titel-Slug gefunden), neue IDs `hub_<id>`. Karten-Update =
+  `overwrite`. Lorebooks behalten ihre ID; lokal veränderte (Hash ≠ `local_sha256`) oder fremde gleichnamige lehnt der Import mit
+  `backend.hub.lorebookModified` ab, mit `keep_copy` wird die eigene Fassung als `<id>_own` gesichert. Frontend: `hubStatus`,
+  `HubStatusBadge`, `UpdateAllBar`. `OTAKUSOUL_HUB_BASE` lenkt die Registries um (E2E `hub-updates.mjs` über den Mock).
 - Charakter-Importe (Datei, Hub, Chub, URL) laufen über `characters::store_imported_card`: gleicher Name →
   `backend.characters.exists`, das Frontend fragt per `services/characterImport.ts` (`importWithOverwrite`) und ruft mit
   `overwrite` erneut auf. Nie umbenennen („_1“); alte Kopien gehen in den Papierkorb, gelöschte werden wieder sichtbar.

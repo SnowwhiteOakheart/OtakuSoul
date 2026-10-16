@@ -1,19 +1,26 @@
-import { useEffect } from 'react';
+import { useEffect, useState } from 'react';
 import { Dice5 } from 'lucide-react';
 import { useShallow } from 'zustand/react/shallow';
 import { api } from '../../../services/api';
 import { translate, useTranslation } from '../../../i18n';
 import { useAppStore } from '../../../store/useAppStore';
-import { matchesQuery, useHubStore } from '../hubStore';
-import { HubListState, ImportButton } from '../hubParts';
+import { hubStatus, matchesQuery, useHubStore } from '../hubStore';
+import { HubListState, HubStatusBadge, ImportButton, UpdateAllBar, hubButtonLabel } from '../hubParts';
+import { toast } from '../../ui/feedback';
+import { errorMessage } from '../../../utils/errors';
 import type { GatewaySceneEntry } from '../../../types';
 
 /** Soul Stage scenarios from the gateway registry. */
 export const GatewayScenesTab = () => {
-  const { t } = useTranslation();
-  const { list, query, importingId, ensureLoaded, load, runImport } = useHubStore(
-    useShallow((s) => ({ list: s.scenes, query: s.query, importingId: s.importingId, ensureLoaded: s.ensureLoaded, load: s.loadScenes, runImport: s.runImport }))
+  const { t, tPlural } = useTranslation();
+  const { list, query, importingId, ensureLoaded, load, runImport, installed, loadInstalled } = useHubStore(
+    useShallow((s) => ({ list: s.scenes, query: s.query, importingId: s.importingId, ensureLoaded: s.ensureLoaded, load: s.loadScenes, runImport: s.runImport, installed: s.installed, loadInstalled: s.loadInstalled }))
   );
+  const [updatingAll, setUpdatingAll] = useState(false);
+  const hubId = (scene: GatewaySceneEntry) => scene.id || scene.title;
+  const statusOf = (scene: GatewaySceneEntry) => hubStatus(installed, 'scene', hubId(scene), scene.revision);
+  const install = (scene: GatewaySceneEntry) =>
+    api.importSceneFromGateway(scene.download_url, scene.title, hubId(scene), scene.revision, scene.updated);
 
   useEffect(() => ensureLoaded('scenes'), [ensureLoaded]);
 
@@ -23,10 +30,11 @@ export const GatewayScenesTab = () => {
 
   const handleImport = (scene: GatewaySceneEntry) =>
     runImport(scene.title, async () => {
-      const res = await api.importSceneFromGateway(scene.download_url, scene.title);
+      const wasInstalled = statusOf(scene) !== 'new';
+      const res = await install(scene);
       await useAppStore.getState().fetchStageScenes();
       return {
-        message: translate('hub.importedScene', { name: res.definition.title }),
+        message: translate(wasInstalled ? 'hub.updatedScene' : 'hub.importedScene', { name: res.definition.title }),
         action: {
           label: translate('hub.startInStage'),
           onClick: async () => {
@@ -37,7 +45,27 @@ export const GatewayScenesTab = () => {
       };
     });
 
+  const outdated = list.items.filter((scene) => statusOf(scene) === 'update');
+  const updateAll = async () => {
+    setUpdatingAll(true);
+    let done = 0;
+    for (const scene of outdated) {
+      try {
+        await install(scene);
+        done += 1;
+      } catch (e) {
+        toast.error(translate('hub.importFailed', { error: `${scene.title}: ${errorMessage(e)}` }));
+      }
+    }
+    await useAppStore.getState().fetchStageScenes();
+    await loadInstalled();
+    setUpdatingAll(false);
+    if (done) toast.success(tPlural('hub.updatedCount', done));
+  };
+
   return (
+    <>
+    <UpdateAllBar count={outdated.length} busy={updatingAll} onClick={() => void updateAll()} />
     <HubListState
       list={list}
       visibleCount={visible.length}
@@ -61,6 +89,9 @@ export const GatewayScenesTab = () => {
                 </div>
                 <h3 className="font-bold text-sm text-slate-100 group-hover:text-emerald-300 transition-colors">{scene.title}</h3>
               </div>
+              <div className="mb-2">
+                <HubStatusBadge status={statusOf(scene)} updated={scene.updated} />
+              </div>
               <p className="text-xs text-slate-400 leading-relaxed mb-3">{scene.description || t('hub.noDescription')}</p>
               <div className="flex items-center justify-between text-xs text-slate-400">
                 <span>
@@ -74,7 +105,8 @@ export const GatewayScenesTab = () => {
             <ImportButton
               busy={importingId === scene.title}
               onClick={() => void handleImport(scene)}
-              label={t('hub.importScene')}
+              label={hubButtonLabel(statusOf(scene), t('hub.importScene'))}
+              status={statusOf(scene)}
               busyLabel={t('hub.importingScene')}
               className="mt-4 w-full py-2 px-4 rounded-xl bg-emerald-600 hover:bg-emerald-500 disabled:bg-emerald-900/50 text-app font-bold text-xs flex items-center justify-center gap-2 transition-colors shadow-sm"
             />
@@ -82,5 +114,6 @@ export const GatewayScenesTab = () => {
         ))}
       </div>
     </HubListState>
+    </>
   );
 };

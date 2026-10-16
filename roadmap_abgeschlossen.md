@@ -1924,3 +1924,8 @@ veraltet und sind korrigiert: `chat-sidebar-errors` las die Sitzung, bevor der e
   zu (Wellenform, Anfang/Ende, „Besten Abschnitt vorschlagen“, Ausschnitt anhören; Aufnahme bis 60 s). Geklonte Stimmen
   gehören jetzt zur Profil-Sicherung (Gruppe „App-Einstellungen & geklonte Stimmen“), der Hinweistext nennt alle
   klonfähigen Modelle (Qwen3-TTS, Chatterbox, TADA, F5-TTS).
+
+- [x] **Hub-Updates (16.10.2026):** Registry-Einträge mit `revision`/`updated`, installierte Inhalte in `hub_installed.json`,
+  „Installiert“/„Update verfügbar“ und „Alle aktualisieren“ im Hub. Szenen behalten beim Update den Spielstand, Karten werden
+  ersetzt (alte in den Papierkorb), veränderte Lorebooks bleiben als Kopie. Behoben: Szenen-Downloads verwarfen Übersetzungen
+  und Story-Daten und legten bei erneutem Download Kopien an.

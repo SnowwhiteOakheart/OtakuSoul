@@ -24,11 +24,11 @@ beforeEach(() => {
   useHubStore.setState(hubInitial, true);
   useAppStore.setState({ appLanguage: 'en', hubSubTab: 'soul_gateway' });
   vi.mocked(api.fetchSoulGatewayRegistry).mockResolvedValue([
-    { name: 'Ayu Ikue', author: 'snow', download_url: 'https://example.invalid/ayu.png' },
-    { name: 'Sakura', author: 'hana', download_url: 'https://example.invalid/sakura.png' },
+    { name: 'Ayu Ikue', author: 'snow', download_url: 'https://example.invalid/ayu.png', revision: 1, updated: '' },
+    { name: 'Sakura', author: 'hana', download_url: 'https://example.invalid/sakura.png', revision: 2, updated: '2026-10-16' },
   ]);
   vi.mocked(api.fetchLorebooksGatewayRegistry).mockResolvedValue([
-    { name: 'Welt', author: 'snow', description: 'Eine Welt', entry_count: 1, download_url: 'x' },
+    { name: 'Welt', author: 'snow', description: 'Eine Welt', entry_count: 1, download_url: 'x', revision: 3, updated: '' },
   ]);
 });
 
@@ -67,7 +67,7 @@ describe('HubView', () => {
     const card = (await screen.findByRole('heading', { name: 'Ayu Ikue' })).closest('div.group') as HTMLElement;
     await user.click(within(card).getByRole('button', { name: 'Import' }));
 
-    expect(api.importSoulGatewayCharacter).toHaveBeenCalledWith('Ayu Ikue', 'snow', 'https://example.invalid/ayu.png', false);
+    expect(api.importSoulGatewayCharacter).toHaveBeenCalledWith('Ayu Ikue', 'snow', 'https://example.invalid/ayu.png', false, 1, '');
     expect(api.scanCharacters).toHaveBeenCalled();
     const status = await screen.findByRole('status');
     await user.click(within(status).getByRole('button', { name: /Open in chat/ }));
@@ -89,7 +89,7 @@ describe('HubView', () => {
     const dialog = await screen.findByRole('dialog');
     expect(dialog).toHaveTextContent('“Ayu Ikue” already exists');
     await user.click(within(dialog).getByRole('button', { name: 'Overwrite' }));
-    await vi.waitFor(() => expect(api.importSoulGatewayCharacter).toHaveBeenLastCalledWith('Ayu Ikue', 'snow', 'https://example.invalid/ayu.png', true));
+    await vi.waitFor(() => expect(api.importSoulGatewayCharacter).toHaveBeenLastCalledWith('Ayu Ikue', 'snow', 'https://example.invalid/ayu.png', true, 1, ''));
     expect(await screen.findByRole('status')).toHaveTextContent('Ayu Ikue');
 
     // Declined: nothing replaced, no error.
@@ -98,6 +98,38 @@ describe('HubView', () => {
     await vi.waitFor(() => expect(screen.queryByRole('dialog')).not.toBeInTheDocument());
     expect(api.importSoulGatewayCharacter).toHaveBeenCalledTimes(3);
     expect(screen.queryByRole('alert')).not.toBeInTheDocument();
+  });
+
+  it('marks installed entries, offers updates and keeps an edited lorebook as copy', async () => {
+    const user = userEvent.setup();
+    const installed = (kind: string, hub_id: string, revision: number) =>
+      ({ kind, hub_id, local_id: hub_id.toLowerCase(), revision, updated: '', local_sha256: '', installed_at: '' });
+    vi.mocked(api.listInstalledHubItems).mockResolvedValue([
+      installed('character', 'Ayu Ikue', 1),
+      installed('character', 'Sakura', 1),
+      installed('lorebook', 'Welt', 1),
+    ]);
+    vi.mocked(api.importSoulGatewayCharacter).mockResolvedValue({ profile: ayu, imported_lorebook: null });
+    renderHub();
+
+    const ayuCard = (await screen.findByRole('heading', { name: 'Ayu Ikue' })).closest('div.group') as HTMLElement;
+    expect(within(ayuCard).getByText('Installed')).toBeInTheDocument();
+    const sakuraCard = screen.getByRole('heading', { name: 'Sakura' }).closest('div.group') as HTMLElement;
+    expect(within(sakuraCard).getByText('Update available')).toBeInTheDocument();
+    expect(screen.getByText('1 installed item has a newer version.')).toBeInTheDocument();
+    // An update replaces the installed card without asking.
+    await user.click(within(sakuraCard).getByRole('button', { name: 'Update' }));
+    expect(api.importSoulGatewayCharacter).toHaveBeenCalledWith('Sakura', 'hana', 'https://example.invalid/sakura.png', true, 2, '2026-10-16');
+
+    await user.click(screen.getByRole('tab', { name: /World lorebooks/ }));
+    vi.mocked(api.importLorebookFromGateway)
+      .mockRejectedValueOnce(new Error('{"code":"backend.hub.lorebookModified","params":{"name":"Welt"}}'))
+      .mockResolvedValueOnce({ id: 'welt', name: 'Welt', entries: [{}] } as never);
+    await user.click(screen.getByRole('button', { name: 'Update all' }));
+    const dialog = await screen.findByRole('dialog');
+    expect(dialog).toHaveTextContent('You changed "Welt"');
+    await user.click(within(dialog).getByRole('button', { name: 'Update and keep my version' }));
+    await vi.waitFor(() => expect(api.importLorebookFromGateway).toHaveBeenLastCalledWith('x', 'Welt', 3, '', true));
   });
 
   it('shows load errors with a retry that does not loop', async () => {

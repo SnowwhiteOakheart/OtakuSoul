@@ -79,6 +79,7 @@ import {
   GatewayCharacterEntry,
   GatewayLorebookEntry,
   GatewaySceneEntry,
+  InstalledHubItem,
   ChubSearchResult,
   ChubCharacterDetail,
   CharacterImportResult,
@@ -1293,13 +1294,17 @@ export const api = {
     name: string,
     author: string,
     downloadUrl: string,
-    overwrite = false
+    overwrite = false,
+    revision = 1,
+    updated = ''
   ): Promise<CharacterImportResult> => {
     return await invoke<CharacterImportResult>('import_soul_gateway_character', {
       name,
       author,
       downloadUrl,
       overwrite,
+      revision,
+      updated,
     });
   },
 
@@ -1342,13 +1347,20 @@ export const api = {
     return await invoke<GatewayLorebookEntry[]>('fetch_lorebooks_gateway_registry');
   },
 
+  /** Installs or updates a gateway lorebook; an own version is only kept as copy with `keepCopy`. */
   importLorebookFromGateway: async (
     downloadUrl: string,
-    fallbackName: string
+    fallbackName: string,
+    revision = 1,
+    updated = '',
+    keepCopy = false
   ): Promise<Lorebook> => {
     return await invoke<Lorebook>('import_lorebook_from_gateway', {
       downloadUrl,
       fallbackName,
+      revision,
+      updated,
+      keepCopy,
     });
   },
 
@@ -1356,14 +1368,26 @@ export const api = {
     return await invoke<GatewaySceneEntry[]>('fetch_stages_gateway_registry');
   },
 
+  /** Installs a gateway scene or updates the installed copy (progress stays). */
   importSceneFromGateway: async (
     downloadUrl: string,
-    fallbackTitle: string
+    fallbackTitle: string,
+    hubId = '',
+    revision = 1,
+    updated = ''
   ): Promise<SceneState> => {
     return await invoke<SceneState>('import_scene_from_gateway', {
       downloadUrl,
       fallbackTitle,
+      hubId,
+      revision,
+      updated,
     });
+  },
+
+  /** Hub contents installed so far, with their revisions. */
+  listInstalledHubItems: async (): Promise<InstalledHubItem[]> => {
+    return await invoke<InstalledHubItem[]>('list_installed_hub_items');
   },
 
   // Phase 17: Backups

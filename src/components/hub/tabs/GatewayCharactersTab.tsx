@@ -1,21 +1,29 @@
-import { useEffect } from 'react';
+import { useEffect, useState } from 'react';
 import { useVirtualizer } from '@tanstack/react-virtual';
 import { useGridCols } from '../../../hooks/useGridCols';
 import { Users } from 'lucide-react';
 import { useShallow } from 'zustand/react/shallow';
 import { api } from '../../../services/api';
-import { useTranslation } from '../../../i18n';
-import { matchesQuery, useHubStore } from '../hubStore';
-import { HubListState, ImportButton, characterImported } from '../hubParts';
+import { translate, useTranslation } from '../../../i18n';
+import { hubStatus, matchesQuery, useHubStore } from '../hubStore';
+import { HubListState, HubStatusBadge, ImportButton, UpdateAllBar, characterImported, hubButtonLabel } from '../hubParts';
+import { toast } from '../../ui/feedback';
+import { errorMessage } from '../../../utils/errors';
+import { useAppStore } from '../../../store/useAppStore';
 import { importWithOverwrite } from '../../../services/characterImport';
 import type { GatewayCharacterEntry } from '../../../types';
 
 /** Curated characters from the Soul Gateway registry. */
 export const GatewayCharactersTab = () => {
-  const { t } = useTranslation();
-  const { list, query, importingId, ensureLoaded, load, runImport } = useHubStore(
-    useShallow((s) => ({ list: s.gateway, query: s.query, importingId: s.importingId, ensureLoaded: s.ensureLoaded, load: s.loadGateway, runImport: s.runImport }))
+  const { t, tPlural } = useTranslation();
+  const { list, query, importingId, ensureLoaded, load, runImport, installed, loadInstalled } = useHubStore(
+    useShallow((s) => ({ list: s.gateway, query: s.query, importingId: s.importingId, ensureLoaded: s.ensureLoaded, load: s.loadGateway, runImport: s.runImport, installed: s.installed, loadInstalled: s.loadInstalled }))
   );
+  const [updatingAll, setUpdatingAll] = useState(false);
+  const statusOf = (char: GatewayCharacterEntry) => hubStatus(installed, 'character', char.name, char.revision);
+  // An update replaces the installed card (the old one goes to the trash); chats and memories stay.
+  const install = (char: GatewayCharacterEntry, overwrite: boolean) =>
+    api.importSoulGatewayCharacter(char.name, char.author, char.download_url, overwrite, char.revision, char.updated);
 
   useEffect(() => ensureLoaded('gateway'), [ensureLoaded]);
 
@@ -33,13 +41,34 @@ export const GatewayCharactersTab = () => {
 
   const handleImport = (char: GatewayCharacterEntry) =>
     runImport(char.name, async () => {
-      const res = await importWithOverwrite((overwrite) =>
-        api.importSoulGatewayCharacter(char.name, char.author, char.download_url, overwrite)
-      );
+      const res =
+        statusOf(char) === 'update'
+          ? await install(char, true)
+          : await importWithOverwrite((overwrite) => install(char, overwrite));
       return res && characterImported(res);
     });
 
+  const outdated = list.items.filter((char) => statusOf(char) === 'update');
+  const updateAll = async () => {
+    setUpdatingAll(true);
+    let done = 0;
+    for (const char of outdated) {
+      try {
+        await install(char, true);
+        done += 1;
+      } catch (e) {
+        toast.error(translate('hub.importFailed', { error: `${char.name}: ${errorMessage(e)}` }));
+      }
+    }
+    await useAppStore.getState().refreshCharacters();
+    await loadInstalled();
+    setUpdatingAll(false);
+    if (done) toast.success(tPlural('hub.updatedCount', done));
+  };
+
   return (
+    <>
+    <UpdateAllBar count={outdated.length} busy={updatingAll} onClick={() => void updateAll()} />
     <HubListState
       list={list}
       visibleCount={visible.length}
@@ -88,6 +117,9 @@ export const GatewayCharactersTab = () => {
                   {char.author}
                 </div>
               </div>
+              <div className="mb-1">
+                <HubStatusBadge status={statusOf(char)} updated={char.updated} />
+              </div>
               <h3 className="font-bold text-xs text-slate-100 truncate" title={char.name}>
                 {char.name}
               </h3>
@@ -98,7 +130,8 @@ export const GatewayCharactersTab = () => {
             <ImportButton
               busy={importingId === char.name}
               onClick={() => void handleImport(char)}
-              label={t('hub.import')}
+              label={hubButtonLabel(statusOf(char), t('hub.import'))}
+              status={statusOf(char)}
               busyLabel={t('hub.importing')}
               className="mt-3 w-full py-1.5 px-3 rounded-xl bg-accent-600 hover:bg-accent-500 disabled:bg-accent-900/50 text-white text-xs font-semibold flex items-center justify-center gap-1.5 transition-colors shadow-sm"
             />
@@ -110,5 +143,6 @@ export const GatewayCharactersTab = () => {
         })}
       </div>
     </HubListState>
+    </>
   );
 };

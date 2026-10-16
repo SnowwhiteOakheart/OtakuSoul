@@ -14,6 +14,7 @@ pub mod error;
 pub mod gguf;
 pub mod hardware;
 pub mod hub;
+pub mod hub_installed;
 pub mod image_generator;
 pub mod image_loras;
 pub mod inference;

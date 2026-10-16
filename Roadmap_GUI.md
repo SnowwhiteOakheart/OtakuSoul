@@ -96,6 +96,10 @@
 - [ ] E2E: Einsteiger startet eine mitgelieferte Story aus der Galerie, spielt zwei Runden und setzt sie fort;
   zweiter Durchlauf über den Story-Assistenten.
 
+- [ ] **Spieltexte übersetzen:** Texte, die die App selbst in Geschichten schreibt („Player“, „Dramatic tension“, Startvorschläge
+  der Demo), kommen aus `otakusoul-data/locales/*.json`, die nicht mit der App ausgeliefert werden → in deutschen Szenen
+  erscheint Englisch. Locales mitliefern (Ressourcen) oder beim Start aus dem Daten-Repo laden.
+
 ## 4. Chat & Figuren
 
 - [ ] **Figurenwahl mit Vorschau:** Bibliothek zeigt Kurzbeschreibung, Stimmung/Genre und „Jetzt chatten“; neue Nutzer

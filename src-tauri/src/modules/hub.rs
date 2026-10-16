@@ -10,17 +10,38 @@ use crate::modules::characters::{
     CharacterProfile, inject_character_metadata_png, parse_character_json, parse_character_png,
     store_imported_card,
 };
+use crate::modules::hub_installed;
 use crate::modules::lorebook::Lorebook;
 use crate::modules::paths::resolve_app_paths;
-use crate::modules::stage::{SceneDefinition, SceneState, create_custom_scene, save_scene_state};
+use crate::modules::stage::{
+    SceneDefinition, SceneState, create_custom_scene, find_scene_path, load_scene_by_id,
+    save_scene_state, update_scene_definition,
+};
 
 const BROWSER_USER_AGENT: &str = "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Safari/537.36";
 
-const SOUL_GATEWAY_REGISTRY_URL: &str =
-    "https://raw.githubusercontent.com/SnowwhiteOakheart/otakusoul-data/main/soul_registry.json";
-const LOREBOOKS_REGISTRY_URL: &str = "https://raw.githubusercontent.com/SnowwhiteOakheart/otakusoul-data/main/lorebooks_registry.json";
-const STAGES_REGISTRY_URL: &str =
-    "https://raw.githubusercontent.com/SnowwhiteOakheart/otakusoul-data/main/stages_registry.json";
+const HUB_BASE_URL: &str =
+    "https://raw.githubusercontent.com/SnowwhiteOakheart/otakusoul-data/main";
+
+/// Address of a registry file; `OTAKUSOUL_HUB_BASE` points the hub elsewhere (E2E mock server).
+fn registry_url(file: &str) -> String {
+    let base = std::env::var("OTAKUSOUL_HUB_BASE").unwrap_or_else(|_| HUB_BASE_URL.to_string());
+    format!("{}/{file}", base.trim_end_matches('/'))
+}
+
+/// Revision and date of a registry entry (entries without them count as revision 1).
+fn entry_revision(entry: &serde_json::Value) -> (u32, String) {
+    let revision = entry
+        .get("revision")
+        .and_then(|v| v.as_u64())
+        .map_or(1, |n| n.max(1) as u32);
+    let updated = entry
+        .get("updated")
+        .and_then(|v| v.as_str())
+        .unwrap_or("")
+        .to_string();
+    (revision, updated)
+}
 
 #[derive(Debug, Clone, Serialize, Deserialize, TS)]
 #[ts(export)]
@@ -28,6 +49,12 @@ pub struct GatewayCharacterEntry {
     pub name: String,
     pub author: String,
     pub download_url: String,
+    /// Increases with every change of the content; compared with the installed copy.
+    #[serde(default)]
+    pub revision: u32,
+    /// Date of the current revision (for display).
+    #[serde(default)]
+    pub updated: String,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize, TS)]
@@ -38,6 +65,12 @@ pub struct GatewayLorebookEntry {
     pub description: String,
     pub entry_count: u32,
     pub download_url: String,
+    /// Increases with every change of the content; compared with the installed copy.
+    #[serde(default)]
+    pub revision: u32,
+    /// Date of the current revision (for display).
+    #[serde(default)]
+    pub updated: String,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize, TS)]
@@ -50,6 +83,12 @@ pub struct GatewaySceneEntry {
     pub description: String,
     pub starting_location: String,
     pub download_url: String,
+    /// Increases with every change of the content; compared with the installed copy.
+    #[serde(default)]
+    pub revision: u32,
+    /// Date of the current revision (for display).
+    #[serde(default)]
+    pub updated: String,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize, TS)]
@@ -164,7 +203,7 @@ fn get_placeholder_png() -> Vec<u8> {
 pub async fn fetch_soul_gateway_registry() -> Result<Vec<GatewayCharacterEntry>, String> {
     let client = get_http_client()?;
     let res = client
-        .get(SOUL_GATEWAY_REGISTRY_URL)
+        .get(registry_url("soul_registry.json"))
         .send()
         .await
         .map_err(|e| crate::err!("backend.hub.gatewayFetch", error = e))?;
@@ -193,10 +232,13 @@ pub async fn fetch_soul_gateway_registry() -> Result<Vec<GatewayCharacterEntry>,
             c.get("author").and_then(|v| v.as_str()),
             c.get("download_url").and_then(|v| v.as_str()),
         ) {
+            let (revision, updated) = entry_revision(c);
             results.push(GatewayCharacterEntry {
                 name: name.to_string(),
                 author: author.to_string(),
                 download_url: download_url.to_string(),
+                revision,
+                updated,
             });
         }
     }
@@ -209,6 +251,8 @@ pub async fn import_soul_gateway_character(
     author: &str,
     download_url: &str,
     overwrite: bool,
+    revision: u32,
+    updated: &str,
 ) -> Result<CharacterImportResult, String> {
     let client = get_http_client()?;
     let res = client
@@ -244,7 +288,16 @@ pub async fn import_soul_gateway_character(
         card.data.creator = Some(author.to_string());
     }
 
-    store_imported_card(card, Some(avatar_data_url), overwrite)
+    let result = store_imported_card(card, Some(avatar_data_url), overwrite)?;
+    hub_installed::record(
+        "character",
+        name,
+        &result.profile.id,
+        revision.max(1),
+        updated,
+        None,
+    )?;
+    Ok(result)
 }
 
 // =========================================================================
@@ -675,7 +728,7 @@ pub async fn import_character_from_url(
 pub async fn fetch_lorebooks_gateway_registry() -> Result<Vec<GatewayLorebookEntry>, String> {
     let client = get_http_client()?;
     let res = client
-        .get(LOREBOOKS_REGISTRY_URL)
+        .get(registry_url("lorebooks_registry.json"))
         .send()
         .await
         .map_err(|e| crate::err!("backend.hub.lorebooksFetch", error = e))?;
@@ -711,12 +764,15 @@ pub async fn fetch_lorebooks_gateway_registry() -> Result<Vec<GatewayLorebookEnt
                 .to_string();
             let entry_count = b.get("entry_count").and_then(|v| v.as_u64()).unwrap_or(0) as u32;
 
+            let (revision, updated) = entry_revision(b);
             results.push(GatewayLorebookEntry {
                 name: name.to_string(),
                 author: author.to_string(),
                 description,
                 entry_count,
                 download_url: download_url.to_string(),
+                revision,
+                updated,
             });
         }
     }
@@ -724,9 +780,16 @@ pub async fn fetch_lorebooks_gateway_registry() -> Result<Vec<GatewayLorebookEnt
     Ok(results)
 }
 
+/// Downloads a lorebook from the gateway. An installed copy is updated in place (characters stay
+/// bound to its id); a copy the user changed, or an own lorebook of the same name, is kept: without
+/// `keep_copy` the call fails with `backend.hub.lorebookModified`, with it the own version is
+/// saved under a new name first.
 pub async fn import_lorebook_from_gateway(
     download_url: &str,
     fallback_name: &str,
+    revision: u32,
+    updated: &str,
+    keep_copy: bool,
 ) -> Result<Lorebook, String> {
     let client = get_http_client()?;
     let res = client
@@ -747,34 +810,82 @@ pub async fn import_lorebook_from_gateway(
         .await
         .map_err(|e| crate::err!("backend.hub.lorebookRead", error = e))?;
 
-    let mut lorebook = Lorebook::import_from_json_string(&content, Some(fallback_name))?;
+    let lorebook = Lorebook::import_from_json_string(&content, Some(fallback_name))?;
+    let lore_dir = PathBuf::from(&resolve_app_paths().lorebooks_dir);
+    install_lorebook(
+        &lore_dir,
+        lorebook,
+        fallback_name,
+        revision.max(1),
+        updated,
+        keep_copy,
+    )
+}
 
-    let paths = resolve_app_paths();
-    let lore_dir = PathBuf::from(&paths.lorebooks_dir);
-    let _ = fs::create_dir_all(&lore_dir);
+fn lorebook_slug(name: &str) -> String {
+    name.trim()
+        .to_lowercase()
+        .replace(|c: char| !c.is_alphanumeric() && c != '-' && c != '_', "_")
+}
 
-    // Ensure unique name
-    let mut candidate = lorebook.name.clone();
-    let mut suffix = 1;
-    let safe_slug = |n: &str| {
-        n.trim()
-            .to_lowercase()
-            .replace(|c: char| !c.is_alphanumeric() && c != '-' && c != '_', "_")
-    };
+fn install_lorebook(
+    lore_dir: &std::path::Path,
+    mut lorebook: Lorebook,
+    hub_id: &str,
+    revision: u32,
+    updated: &str,
+    keep_copy: bool,
+) -> Result<Lorebook, String> {
+    let _ = fs::create_dir_all(lore_dir);
+    let installed = hub_installed::find("lorebook", hub_id);
+    let id = installed
+        .as_ref()
+        .map(|item| item.local_id.clone())
+        .unwrap_or_else(|| lorebook_slug(&lorebook.name));
+    let target_path = lore_dir.join(format!("{id}.json"));
 
-    while lore_dir
-        .join(format!("{}.json", safe_slug(&candidate)))
-        .exists()
-    {
-        candidate = format!("{}_{}", lorebook.name, suffix);
-        suffix += 1;
+    if target_path.exists() && hub_installed::is_modified(&target_path, installed.as_ref()) {
+        if !keep_copy {
+            return Err(crate::err!(
+                "backend.hub.lorebookModified",
+                name = lorebook.name
+            ));
+        }
+        // The user's version stays as its own lorebook next to the update.
+        let mut own = Lorebook::load_from_file(&target_path)?;
+        let mut suffix = 1;
+        let (copy_id, copy_path) = loop {
+            let candidate = format!(
+                "{id}_own{}",
+                if suffix == 1 {
+                    String::new()
+                } else {
+                    format!("_{suffix}")
+                }
+            );
+            let path = lore_dir.join(format!("{candidate}.json"));
+            if !path.exists() {
+                break (candidate, path);
+            }
+            suffix += 1;
+        };
+        own.name = crate::modules::content_lang::ContentLang::current()
+            .t("{name} (own version)")
+            .replace("{name}", &own.name);
+        own.id = copy_id;
+        own.save_to_file(&copy_path)?;
     }
-    lorebook.name = candidate;
-    lorebook.id = safe_slug(&lorebook.name);
 
-    let target_path = lore_dir.join(format!("{}.json", lorebook.id));
+    lorebook.id = id;
     lorebook.save_to_file(&target_path)?;
-
+    hub_installed::record(
+        "lorebook",
+        hub_id,
+        &lorebook.id,
+        revision,
+        updated,
+        Some(&target_path),
+    )?;
     Ok(lorebook)
 }
 
@@ -785,7 +896,7 @@ pub async fn import_lorebook_from_gateway(
 pub async fn fetch_stages_gateway_registry() -> Result<Vec<GatewaySceneEntry>, String> {
     let client = get_http_client()?;
     let res = client
-        .get(STAGES_REGISTRY_URL)
+        .get(registry_url("stages_registry.json"))
         .send()
         .await
         .map_err(|e| crate::err!("backend.hub.stagesFetch", error = e))?;
@@ -830,6 +941,7 @@ pub async fn fetch_stages_gateway_registry() -> Result<Vec<GatewaySceneEntry>, S
                 .unwrap_or("Startgebiet")
                 .to_string();
 
+            let (revision, updated) = entry_revision(s);
             results.push(GatewaySceneEntry {
                 id,
                 title: title.to_string(),
@@ -837,6 +949,8 @@ pub async fn fetch_stages_gateway_registry() -> Result<Vec<GatewaySceneEntry>, S
                 description,
                 starting_location,
                 download_url: download_url.to_string(),
+                revision,
+                updated,
             });
         }
     }
@@ -844,9 +958,14 @@ pub async fn fetch_stages_gateway_registry() -> Result<Vec<GatewaySceneEntry>, S
     Ok(results)
 }
 
+/// Downloads a scene from the gateway. An installed copy is updated in place: its settings are
+/// replaced, progress (history, world state, party values) stays.
 pub async fn import_scene_from_gateway(
     download_url: &str,
     fallback_title: &str,
+    hub_id: &str,
+    revision: u32,
+    updated: &str,
 ) -> Result<SceneState, String> {
     let client = get_http_client()?;
     let res = client
@@ -866,164 +985,140 @@ pub async fn import_scene_from_gateway(
         .json()
         .await
         .map_err(|e| crate::err!("backend.hub.sceneParse", error = e))?;
-
-    let title = val
-        .get("title")
-        .and_then(|v| v.as_str())
-        .unwrap_or(fallback_title)
-        .to_string();
-
-    let paths = resolve_app_paths();
-    let scenes_dir = PathBuf::from(&paths.scenes_dir);
-    let _ = fs::create_dir_all(&scenes_dir);
-
-    let raw_slug = title
-        .trim()
-        .to_lowercase()
-        .replace(|c: char| !c.is_alphanumeric() && c != '-' && c != '_', "_");
-    let mut id = if raw_slug.trim().is_empty() {
-        format!("scene_{}", chrono::Utc::now().timestamp_millis())
+    let def = scene_definition_from_hub(val, fallback_title)?;
+    let hub_id = if hub_id.trim().is_empty() {
+        fallback_title
     } else {
-        raw_slug
+        hub_id
     };
+    install_hub_scene(def, hub_id, revision.max(1), updated)
+}
 
-    let mut suffix = 1;
-    let base_id = id.clone();
-    while scenes_dir.join(format!("{}.json", id)).exists() {
-        id = format!("{}_{}", base_id, suffix);
-        suffix += 1;
+/// A scene file from the gateway as definition, keeping translations and story data
+/// (`extensions`). Fields that are `null` in the file count as missing.
+pub(crate) fn scene_definition_from_hub(
+    mut val: serde_json::Value,
+    fallback_title: &str,
+) -> Result<SceneDefinition, String> {
+    // Some gateway files are whole scene states.
+    if let Some(definition) = val.get("definition").filter(|d| d.is_object()) {
+        val = definition.clone();
+    }
+    if let Some(object) = val.as_object_mut() {
+        object.retain(|_, value| !value.is_null());
+    }
+    let mut def: SceneDefinition = serde_json::from_value(val)
+        .map_err(|e| crate::err!("backend.hub.sceneParse", error = e))?;
+    if def.title.trim().is_empty() {
+        def.title = fallback_title.to_string();
+    }
+    if def.folder.trim().is_empty() {
+        def.folder = HUB_SCENE_FOLDER.to_string();
+    }
+    def.persona = def.persona.trim().trim_matches('"').to_string();
+    if def.persona.eq_ignore_ascii_case("none") {
+        def.persona.clear();
+    }
+    def.solo_mode = def.party.is_empty();
+    Ok(def)
+}
+
+const HUB_SCENE_FOLDER: &str = "Soul Hub";
+
+fn scene_slug(text: &str) -> String {
+    text.trim()
+        .to_lowercase()
+        .replace(|c: char| !c.is_alphanumeric() && c != '-' && c != '_', "_")
+}
+
+fn install_hub_scene(
+    mut def: SceneDefinition,
+    hub_id: &str,
+    revision: u32,
+    updated: &str,
+) -> Result<SceneState, String> {
+    // The installed copy: from the index, or one imported before the index existed (id = slug
+    // of the title, same title).
+    let existing = hub_installed::find("scene", hub_id)
+        .and_then(|item| load_scene_by_id(&item.local_id).ok())
+        .or_else(|| {
+            load_scene_by_id(&scene_slug(&def.title))
+                .ok()
+                .filter(|state| state.definition.title == def.title)
+        });
+    let state = match existing {
+        Some(mut state) => {
+            update_scene_definition(&mut state, def);
+            save_scene_state(&state)?;
+            state
+        }
+        None => {
+            let base = format!("hub_{}", scene_slug(hub_id));
+            let mut id = base.clone();
+            let mut suffix = 1;
+            while find_scene_path(&id).is_some() {
+                suffix += 1;
+                id = format!("{base}_{suffix}");
+            }
+            def.id = id;
+            create_custom_scene(def)?
+        }
+    };
+    hub_installed::record(
+        "scene",
+        hub_id,
+        &state.definition.id,
+        revision,
+        updated,
+        None,
+    )?;
+    Ok(state)
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn hub_scenes_keep_translations_and_story_data() {
+        let file = serde_json::json!({
+            "id": null,
+            "folder": null,
+            "title": "Matchball",
+            "description": "Tennis",
+            "party": ["Hazel Williams"],
+            "persona": "None",
+            "time_of_day": "Tag",
+            "conversation_method": "Local LLM",
+            "extensions": {
+                "otakusoul_i18n": { "source_language": "de", "translations": { "en": { "title": "Match point" } } },
+                "otakusoul_story": { "genre": "slice_of_life", "minutes": 30, "difficulty": "easy", "beginner": true }
+            }
+        });
+        let def = scene_definition_from_hub(file, "Fallback").unwrap();
+        assert_eq!(def.folder, HUB_SCENE_FOLDER);
+        assert_eq!(def.persona, "");
+        assert_eq!(def.localized("en").title, "Match point");
+        let story = def.story_info().unwrap();
+        assert_eq!(story.genre, "slice_of_life");
+        assert!(story.beginner);
+        assert!(!def.solo_mode);
     }
 
-    let description = val
-        .get("description")
-        .and_then(|v| v.as_str())
-        .unwrap_or("")
-        .to_string();
-    let world_context = val
-        .get("world_context")
-        .and_then(|v| v.as_str())
-        .unwrap_or("")
-        .to_string();
-    let starting_location = val
-        .get("starting_location")
-        .and_then(|v| v.as_str())
-        .unwrap_or("Startgebiet")
-        .to_string();
-    let time_of_day = val
-        .get("time_of_day")
-        .and_then(|v| v.as_str())
-        .unwrap_or("Dämmerung")
-        .to_string();
-    let opening_narration = val
-        .get("opening_narration")
-        .and_then(|v| v.as_str())
-        .unwrap_or("")
-        .to_string();
-    let first_message = val
-        .get("first_message")
-        .and_then(|v| v.as_str())
-        .unwrap_or("")
-        .to_string();
-    let party = val
-        .get("party")
-        .and_then(|v| v.as_array())
-        .map(|arr| {
-            arr.iter()
-                .filter_map(|x| x.as_str().map(|s| s.to_string()))
-                .collect()
-        })
-        .unwrap_or_default();
-    let gm_tone = val
-        .get("gm_tone")
-        .and_then(|v| v.as_str())
-        .unwrap_or("Epic Fantasy")
-        .to_string();
-    let narrator_style = val
-        .get("narrator_style")
-        .and_then(|v| v.as_str())
-        .unwrap_or("Getragene, bildstarke Prosa im Präsens.")
-        .to_string();
-    let persona = val
-        .get("persona")
-        .and_then(|v| v.as_str())
-        .unwrap_or("None")
-        .to_string();
-    let lorebook = val
-        .get("lorebook")
-        .and_then(|v| v.as_array())
-        .map(|arr| {
-            arr.iter()
-                .filter_map(|x| x.as_str().map(|s| s.to_string()))
-                .collect()
-        })
-        .unwrap_or_default();
-    let solo_mode = val
-        .get("solo_mode")
-        .and_then(|v| v.as_bool())
-        .unwrap_or(false);
-    let max_actor_depth = val
-        .get("max_actor_depth")
-        .and_then(|v| v.as_u64())
-        .map(|n| n as u32)
-        .unwrap_or(3);
-    let dice_rolls_enabled = val
-        .get("dice_rolls_enabled")
-        .and_then(|v| v.as_bool())
-        .unwrap_or(true);
-    let starting_bg = val
-        .get("starting_bg")
-        .and_then(|v| v.as_str())
-        .unwrap_or("")
-        .to_string();
-    let starting_ambient = val
-        .get("starting_ambient")
-        .and_then(|v| v.as_str())
-        .unwrap_or("")
-        .to_string();
-    let disable_ambient = val
-        .get("disable_ambient")
-        .and_then(|v| v.as_bool())
-        .unwrap_or(false);
-    let lock_bg = val
-        .get("lock_bg")
-        .and_then(|v| v.as_bool())
-        .unwrap_or(false);
-    let folder = val
-        .get("folder")
-        .and_then(|v| v.as_str())
-        .unwrap_or("Soul Hub")
-        .to_string();
+    #[test]
+    fn whole_scene_states_and_missing_titles_are_accepted() {
+        let file = serde_json::json!({ "definition": { "title": "", "description": "x" }, "chat_log": [] });
+        let def = scene_definition_from_hub(file, "Aus dem Hub").unwrap();
+        assert_eq!(def.title, "Aus dem Hub");
+        assert!(def.solo_mode, "no party = the game master plays everyone");
+    }
 
-    let def = SceneDefinition {
-        id,
-        title,
-        description,
-        world_context,
-        starting_location,
-        time_of_day,
-        opening_narration,
-        first_message,
-        party,
-        gm_tone,
-        narrator_style,
-        persona,
-        lorebook,
-        folder,
-        lock_bg,
-        disable_ambient,
-        solo_mode,
-        max_actor_depth,
-        dice_rolls_enabled,
-        starting_bg,
-        starting_ambient,
-        extensions: serde_json::Value::Null,
-        rules: None,
-        created_at: chrono::Utc::now().to_rfc3339(),
-        last_played: None,
-    };
-
-    let state = create_custom_scene(def)?;
-    save_scene_state(&state)?;
-
-    Ok(state)
+    #[test]
+    fn registry_entries_without_revision_count_as_first() {
+        assert_eq!(entry_revision(&serde_json::json!({})), (1, String::new()));
+        assert_eq!(
+            entry_revision(&serde_json::json!({ "revision": 4, "updated": "2026-10-16" })),
+            (4, "2026-10-16".to_string())
+        );
+    }
 }

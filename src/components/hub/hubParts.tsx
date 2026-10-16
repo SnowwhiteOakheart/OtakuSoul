@@ -1,10 +1,10 @@
 import type React from 'react';
-import { AlertCircle, Download, Loader2, type LucideIcon } from 'lucide-react';
+import { AlertCircle, Check, Download, Loader2, RefreshCw, type LucideIcon } from 'lucide-react';
 import { useTranslation, translate } from '../../i18n';
 import { useAppStore } from '../../store/useAppStore';
 import type { ToastAction } from '../ui/feedback';
 import type { CharacterImportResult } from '../../types';
-import type { RemoteList } from './hubStore';
+import type { HubStatus, RemoteList } from './hubStore';
 import { ListSkeleton } from '../ui';
 
 interface ListStateProps {
@@ -71,9 +71,11 @@ interface ImportButtonProps {
   busyLabel: string;
   className: string;
   iconClass?: string;
+  /** `update` shows a refresh icon instead of the download icon. */
+  status?: HubStatus;
 }
 
-export const ImportButton = ({ busy, onClick, label, busyLabel, className, iconClass = 'w-3.5 h-3.5' }: ImportButtonProps) => (
+export const ImportButton = ({ busy, onClick, label, busyLabel, className, iconClass = 'w-3.5 h-3.5', status }: ImportButtonProps) => (
   <button
     onClick={(event) => {
       event.stopPropagation();
@@ -83,7 +85,13 @@ export const ImportButton = ({ busy, onClick, label, busyLabel, className, iconC
     aria-busy={busy}
     className={className}
   >
-    {busy ? <Loader2 className={`${iconClass} animate-spin`} /> : <Download className={iconClass} />}
+    {busy ? (
+      <Loader2 className={`${iconClass} animate-spin`} />
+    ) : status === 'update' ? (
+      <RefreshCw className={iconClass} />
+    ) : (
+      <Download className={iconClass} />
+    )}
     <span>{busy ? busyLabel : label}</span>
   </button>
 );
@@ -112,4 +120,52 @@ export const characterImported = async (
       },
     },
   };
+};
+
+/** Label of the install button for a status: install, update, or load again. */
+export const hubButtonLabel = (status: HubStatus, installLabel: string) =>
+  status === 'update' ? translate('hub.update') : status === 'current' ? translate('hub.reinstall') : installLabel;
+
+/** "Installed" or "Update available" on a hub entry (nothing for entries not installed). */
+export const HubStatusBadge = ({ status, updated }: { status: HubStatus; updated?: string }) => {
+  const { t } = useTranslation();
+  if (status === 'new') return null;
+  return status === 'update' ? (
+    <span
+      data-hub-status="update"
+      title={updated ? t('hub.updatedOn', { date: updated }) : undefined}
+      className="inline-flex items-center gap-1 rounded-full border border-sky-500/40 bg-sky-500/15 px-2 py-0.5 text-[11px] font-semibold text-sky-200"
+    >
+      <RefreshCw className="w-3 h-3" />
+      {t('hub.updateAvailable')}
+    </span>
+  ) : (
+    <span
+      data-hub-status="current"
+      className="inline-flex items-center gap-1 rounded-full border border-emerald-500/40 bg-emerald-500/10 px-2 py-0.5 text-[11px] font-semibold text-emerald-200"
+    >
+      <Check className="w-3 h-3" />
+      {t('hub.installed')}
+    </span>
+  );
+};
+
+/** Bar above a hub list when installed entries have newer revisions. */
+export const UpdateAllBar = ({ count, busy, onClick }: { count: number; busy: boolean; onClick: () => void }) => {
+  const { tPlural } = useTranslation();
+  if (count === 0) return null;
+  return (
+    <div className="mb-4 flex flex-wrap items-center justify-between gap-3 rounded-xl border border-sky-500/40 bg-sky-500/10 px-4 py-3" data-hub-updates={count}>
+      <p className="text-sm text-sky-100">{tPlural('hub.updatesAvailable', count)}</p>
+      <button
+        type="button"
+        disabled={busy}
+        onClick={onClick}
+        className="inline-flex items-center gap-1.5 rounded-lg bg-sky-600 px-3 py-1.5 text-xs font-semibold text-white hover:bg-sky-500 disabled:opacity-50"
+      >
+        {busy ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <RefreshCw className="w-3.5 h-3.5" />}
+        {translate('hub.updateAll')}
+      </button>
+    </div>
+  );
 };

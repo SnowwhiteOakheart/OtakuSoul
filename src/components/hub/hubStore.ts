@@ -3,7 +3,7 @@ import { api } from '../../services/api';
 import { translate } from '../../i18n';
 import { errorMessage } from '../../utils/errors';
 import { toast, type ToastAction } from '../ui/feedback';
-import type { ChubSearchItem, GatewayCharacterEntry, GatewayLorebookEntry, GatewaySceneEntry } from '../../types';
+import type { ChubSearchItem, GatewayCharacterEntry, GatewayLorebookEntry, GatewaySceneEntry, InstalledHubItem } from '../../types';
 
 export type ChubSort = 'trending' | 'popular' | 'favorites' | 'recent';
 
@@ -40,6 +40,10 @@ interface HubState {
   loadScenes: () => Promise<void>;
   loadChub: (page?: number, append?: boolean) => Promise<void>;
 
+  /** Installed hub contents with their revisions (for "update available"). */
+  installed: InstalledHubItem[];
+  loadInstalled: () => Promise<void>;
+
   /** Id of the entry currently being imported, to disable its button. */
   importingId: string | null;
   /**
@@ -74,7 +78,17 @@ export const useHubStore = create<HubState>()((set, get) => {
     chubNsfw: false,
     setChubFilter: (filter) => set(filter),
 
+    installed: [],
+    loadInstalled: async () => {
+      try {
+        set({ installed: (await api.listInstalledHubItems()) ?? [] });
+      } catch (e) {
+        console.error('Failed to load installed hub items:', e);
+      }
+    },
+
     ensureLoaded: (key) => {
+      if (!get().installed.length) void get().loadInstalled();
       const list = get()[key];
       if (list.loaded || list.loading || list.error) return;
       void { gateway: get().loadGateway, lorebooks: get().loadLorebooks, scenes: get().loadScenes }[key]();
@@ -115,6 +129,7 @@ export const useHubStore = create<HubState>()((set, get) => {
         // `null`: the user kept an existing character instead of replacing it.
         if (!result) return false;
         toast.success(result.message, result.action);
+        void get().loadInstalled();
         return true;
       } catch (e) {
         console.error('Hub import failed:', e);
@@ -136,3 +151,13 @@ export const matchesQuery = (query: string, ...fields: (string | undefined)[]) =
 /** Identifies a Chub search, so switching tabs does not reload unchanged results. */
 export const chubFilterKey = (s: Pick<HubState, 'query' | 'chubSort' | 'chubTag' | 'chubNsfw'>) =>
   JSON.stringify([s.query.trim(), s.chubSort, s.chubTag, s.chubNsfw]);
+
+export type HubKind = 'character' | 'lorebook' | 'scene';
+/** `new`: not installed, `current`: installed in this revision, `update`: a newer revision exists. */
+export type HubStatus = 'new' | 'current' | 'update';
+
+export const hubStatus = (installed: InstalledHubItem[], kind: HubKind, hubId: string, revision: number): HubStatus => {
+  const item = installed.find((entry) => entry.kind === kind && entry.hub_id === hubId);
+  if (!item) return 'new';
+  return item.revision < Math.max(1, revision) ? 'update' : 'current';
+};

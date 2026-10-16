@@ -41,6 +41,13 @@ export function startMockLlm() {
         res.writeHead(200, { 'Content-Type': 'audio/wav' }).end(silentWav());
         return;
       }
+      // Hub registries and contents (OTAKUSOUL_HUB_BASE points here): tests fill `stats.hubFiles`.
+      if (req.method === 'GET' && req.url.startsWith('/hub/')) {
+        const file = stats.hubFiles?.[decodeURIComponent(req.url.slice('/hub/'.length))];
+        if (file === undefined) res.writeHead(404).end();
+        else res.writeHead(200, { 'Content-Type': 'application/json' }).end(JSON.stringify(file));
+        return;
+      }
       if (req.method !== 'POST' || !req.url.endsWith('/chat/completions')) {
         res.writeHead(404).end();
         return;
