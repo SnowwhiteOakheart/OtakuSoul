@@ -96,6 +96,10 @@ const SceneRulesFields: React.FC<{ rules: SceneRules | null; party: string[]; on
   );
 };
 
+/** Readable name of an imported image or sound: without the random number the import adds and the extension. */
+export const assetLabel = (name: string) =>
+  name.replace(/\.[a-z0-9]+$/i, '').replace(/_\d{6,}$/, '').replace(/[_-]+/g, ' ').trim() || name;
+
 interface SceneCreateModalProps {
   isOpen: boolean;
   definition?: SceneDefinition;
@@ -249,6 +253,7 @@ export const SceneCreateModal: React.FC<SceneCreateModalProps> = ({
 
         {/* Form Body */}
         <form onSubmit={handleSubmit} className="p-5 space-y-4 max-h-[75vh] overflow-y-auto text-xs">
+          <h3 className="text-[11px] font-bold uppercase tracking-wider text-slate-400 border-b border-slate-800 pb-1">{t('sceneEdit.sectionStory')}</h3>
           {/* Title & Location */}
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             <div>
@@ -351,6 +356,7 @@ export const SceneCreateModal: React.FC<SceneCreateModalProps> = ({
             />
           </div>
 
+          <h3 className="text-[11px] font-bold uppercase tracking-wider text-slate-400 border-b border-slate-800 pb-1">{t('sceneEdit.sectionCharacters')}</h3>
           {/* Party Members selection */}
           <div>
             <div className="font-semibold text-slate-300 mb-1.5 flex items-center justify-between">
@@ -387,39 +393,8 @@ export const SceneCreateModal: React.FC<SceneCreateModalProps> = ({
             </div>
           </div>
 
-          {/* GM Tone & Narrator Style */}
-          <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-            <div>
-              <label htmlFor="scene-tone" className="font-semibold text-slate-300 block mb-1">{t('sceneNew.gmTone')}</label>
-              <select
-                id="scene-tone"
-                value={gmTone}
-                onChange={(e) => setGmTone(e.target.value)}
-                className="w-full px-3 py-2 bg-app border border-slate-700 rounded-xl text-slate-100 focus:outline-hidden focus:border-accent-500"
-              >
-                {!['Epic Fantasy', 'Dark Fantasy', 'Sci-Fi Cyberpunk', 'Anime Comedy', 'Eldritch Mystery', 'Isekai Adventure'].includes(gmTone) && <option value={gmTone}>{gmTone}</option>}
-                <option value="Epic Fantasy">{t('sceneNew.tone.epic')}</option>
-                <option value="Dark Fantasy">{t('sceneNew.tone.dark')}</option>
-                <option value="Sci-Fi Cyberpunk">{t('sceneNew.tone.scifi')}</option>
-                <option value="Anime Comedy">{t('sceneNew.tone.comedy')}</option>
-                <option value="Eldritch Mystery">{t('sceneNew.tone.eldritch')}</option>
-                <option value="Isekai Adventure">{t('sceneNew.tone.isekai')}</option>
-              </select>
-            </div>
-
-            <div>
-              <label htmlFor="scene-style" className="font-semibold text-slate-300 block mb-1">{t('sceneNew.narratorStyle')}</label>
-              <input
-                id="scene-style"
-                type="text"
-                value={narratorStyle}
-                onChange={(e) => setNarratorStyle(e.target.value)}
-                placeholder={t('sceneNew.narratorStylePlaceholder')}
-                className="w-full px-3 py-2 bg-app border border-slate-700 rounded-xl text-slate-100 focus:outline-hidden focus:border-accent-500"
-              />
-            </div>
-
-            <div>
+          {/* The player's character */}
+          <div>
               <label htmlFor="scene-persona" className="font-semibold text-slate-300 block mb-1">{t('sceneNew.persona')}</label>
               <input
                 id="scene-persona"
@@ -429,25 +404,15 @@ export const SceneCreateModal: React.FC<SceneCreateModalProps> = ({
                 placeholder={t('sceneNew.personaPlaceholder')}
                 className="w-full px-3 py-2 bg-app border border-slate-700 rounded-xl text-slate-100 focus:outline-hidden focus:border-accent-500"
               />
-            </div>
           </div>
 
-          <fieldset className="p-3 border border-slate-700 rounded-xl space-y-2">
-            <legend className="text-slate-300 px-1">{t('sceneEdit.lorebooks')}</legend>
-            {loreOptions.map((book) => {
-              const bound = lorebooks.includes(book.id) || lorebooks.includes(book.name);
-              return <label key={book.id} className="flex items-center gap-2">
-                <input type="checkbox" checked={bound} onChange={() => setLorebooks((old) => bound ? old.filter((id) => id !== book.id && id !== book.name) : [...old, book.id])} />{book.name}
-              </label>;
-            })}
-            {loreOptions.length === 0 && <p className="text-slate-400">{t('sceneEdit.noLorebooks')}</p>}
-          </fieldset>
+          <h3 className="text-[11px] font-bold uppercase tracking-wider text-slate-400 border-b border-slate-800 pb-1">{t('sceneEdit.sectionMedia')}</h3>
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             <div>
               <label htmlFor="scene-background" className="block mb-1 text-slate-300">{t('sceneEdit.background')}</label>
               <select id="scene-background" value={background} onChange={(e) => setBackground(e.target.value)} className="w-full p-2 bg-app border border-slate-700 rounded-xl">
                 <option value="">{t('sceneEdit.none')}</option>
-                {[...new Set([...assets.backgrounds, ...(background ? [background] : [])])].map((name) => <option key={name} value={name}>{name}</option>)}
+                {[...new Set([...assets.backgrounds, ...(background ? [background] : [])])].map((name) => <option key={name} value={name}>{assetLabel(name)}</option>)}
               </select>
               <button type="button" disabled={importing || isSubmitting} onClick={() => void importAsset('backgrounds')} className="mt-2 text-accent-300">{t('sceneEdit.importImage')}</button>
             </div>
@@ -455,36 +420,87 @@ export const SceneCreateModal: React.FC<SceneCreateModalProps> = ({
               <label htmlFor="scene-ambient" className="block mb-1 text-slate-300">{t('sceneEdit.ambient')}</label>
               <select id="scene-ambient" value={ambient} onChange={(e) => setAmbient(e.target.value)} className="w-full p-2 bg-app border border-slate-700 rounded-xl">
                 <option value="None">{t('sceneEdit.none')}</option>
-                {[...new Set([...assets.ambient, ...(ambient && ambient !== 'None' ? [ambient] : [])])].map((name) => <option key={name} value={name}>{name}</option>)}
+                {[...new Set([...assets.ambient, ...(ambient && ambient !== 'None' ? [ambient] : [])])].map((name) => <option key={name} value={name}>{assetLabel(name)}</option>)}
               </select>
               <button type="button" disabled={importing || isSubmitting} onClick={() => void importAsset('ambient')} className="mt-2 text-accent-300">{t('sceneEdit.importAudio')}</button>
             </div>
           </div>
           {backgroundPreview?.name === background && <img src={backgroundPreview.url} alt={t('sceneEdit.background')} className="w-full max-h-40 rounded-xl object-cover" />}
           <p className="text-slate-400">{t('sceneEdit.ambientHint')}</p>
-          <div className="space-y-2">
-            <label className="flex gap-2"><input type="checkbox" checked={lockBg} onChange={(e) => setLockBg(e.target.checked)} />{t('sceneEdit.lockBg')}</label>
-            <label className="flex gap-2"><input type="checkbox" checked={disableAmbient} onChange={(e) => setDisableAmbient(e.target.checked)} />{t('sceneEdit.disableAmbient')}</label>
-            <label htmlFor="scene-actors" className="block">{t('sceneEdit.actors')}</label>
-            <input id="scene-actors" type="number" min={1} max={6} required value={actorDepth} onChange={(e) => setActorDepth(Number(e.target.value))} className="w-24 p-2 bg-app border border-slate-700 rounded-xl" />
-          </div>
           {assetError && <p role="alert" className="text-rose-300">{assetError}</p>}
 
-          {/* Dice toggle */}
-          <div className="flex items-center gap-3 p-3 bg-app/60 border border-slate-800 rounded-xl">
-            <input
-              type="checkbox"
-              id="diceToggle"
-              checked={diceEnabled}
-              onChange={(e) => setDiceEnabled(e.target.checked)}
-              className="w-4 h-4 accent-accent-600 rounded"
-            />
-            <label htmlFor="diceToggle" className="cursor-pointer text-xs text-slate-300 font-medium">
-              {t('sceneNew.dice')}
-            </label>
-          </div>
+          <details open={!!definition} data-scene-advanced className="rounded-xl border border-slate-800 bg-app/40 p-3 [&[open]>summary]:mb-3">
+            <summary className="cursor-pointer font-semibold text-slate-300">{t('sceneEdit.sectionAdvanced')}</summary>
+            <p className="mb-3 text-slate-400">{t('sceneEdit.advancedHint')}</p>
+            <div className="space-y-4">
+              {/* GM Tone & Narrator Style */}
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                <div>
+                  <label htmlFor="scene-tone" className="font-semibold text-slate-300 block mb-1">{t('sceneNew.gmTone')}</label>
+                  <select
+                    id="scene-tone"
+                    value={gmTone}
+                    onChange={(e) => setGmTone(e.target.value)}
+                    className="w-full px-3 py-2 bg-app border border-slate-700 rounded-xl text-slate-100 focus:outline-hidden focus:border-accent-500"
+                  >
+                    {!['Epic Fantasy', 'Dark Fantasy', 'Sci-Fi Cyberpunk', 'Anime Comedy', 'Eldritch Mystery', 'Isekai Adventure'].includes(gmTone) && <option value={gmTone}>{gmTone}</option>}
+                    <option value="Epic Fantasy">{t('sceneNew.tone.epic')}</option>
+                    <option value="Dark Fantasy">{t('sceneNew.tone.dark')}</option>
+                    <option value="Sci-Fi Cyberpunk">{t('sceneNew.tone.scifi')}</option>
+                    <option value="Anime Comedy">{t('sceneNew.tone.comedy')}</option>
+                    <option value="Eldritch Mystery">{t('sceneNew.tone.eldritch')}</option>
+                    <option value="Isekai Adventure">{t('sceneNew.tone.isekai')}</option>
+                  </select>
+                </div>
 
-          <SceneRulesFields rules={rules} party={selectedParty} onChange={setRules} />
+                <div>
+                  <label htmlFor="scene-style" className="font-semibold text-slate-300 block mb-1">{t('sceneNew.narratorStyle')}</label>
+                  <input
+                    id="scene-style"
+                    type="text"
+                    value={narratorStyle}
+                    onChange={(e) => setNarratorStyle(e.target.value)}
+                    placeholder={t('sceneNew.narratorStylePlaceholder')}
+                    className="w-full px-3 py-2 bg-app border border-slate-700 rounded-xl text-slate-100 focus:outline-hidden focus:border-accent-500"
+                  />
+                </div>
+              </div>
+
+              <fieldset className="p-3 border border-slate-700 rounded-xl space-y-2">
+                <legend className="text-slate-300 px-1">{t('sceneEdit.lorebooks')}</legend>
+                {loreOptions.map((book) => {
+                  const bound = lorebooks.includes(book.id) || lorebooks.includes(book.name);
+                  return <label key={book.id} className="flex items-center gap-2">
+                    <input type="checkbox" checked={bound} onChange={() => setLorebooks((old) => bound ? old.filter((id) => id !== book.id && id !== book.name) : [...old, book.id])} />{book.name}
+                  </label>;
+                })}
+                {loreOptions.length === 0 && <p className="text-slate-400">{t('sceneEdit.noLorebooks')}</p>}
+              </fieldset>
+              <div className="space-y-2">
+                <label className="flex gap-2"><input type="checkbox" checked={lockBg} onChange={(e) => setLockBg(e.target.checked)} />{t('sceneEdit.lockBg')}</label>
+                <label className="flex gap-2"><input type="checkbox" checked={disableAmbient} onChange={(e) => setDisableAmbient(e.target.checked)} />{t('sceneEdit.disableAmbient')}</label>
+                <label htmlFor="scene-actors" className="block">{t('sceneEdit.actors')}</label>
+                <input id="scene-actors" type="number" min={1} max={6} required value={actorDepth} onChange={(e) => setActorDepth(Number(e.target.value))} className="w-24 p-2 bg-app border border-slate-700 rounded-xl" />
+              </div>
+
+              {/* Dice toggle */}
+              <div className="flex items-center gap-3 p-3 bg-app/60 border border-slate-800 rounded-xl">
+                <input
+                  type="checkbox"
+                  id="diceToggle"
+                  checked={diceEnabled}
+                  onChange={(e) => setDiceEnabled(e.target.checked)}
+                  className="w-4 h-4 accent-accent-600 rounded"
+                />
+                <label htmlFor="diceToggle" className="cursor-pointer text-xs text-slate-300 font-medium">
+                  {t('sceneNew.dice')}
+                </label>
+              </div>
+
+              <SceneRulesFields rules={rules} party={selectedParty} onChange={setRules} />
+
+            </div>
+          </details>
 
           {submitError && (
             <p role="alert" className="rounded-lg border border-rose-500/40 bg-rose-500/10 px-3 py-2 text-xs text-rose-200">

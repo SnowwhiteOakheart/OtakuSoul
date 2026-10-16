@@ -33,7 +33,7 @@ const fight = async () => {
     if (!now.combat.is_active) return now;
     const actor = now.combat.combatants[now.combat.current_turn_index];
     if (actor.role !== 'player') {
-      await jsClick('[data-testid="combat-5e"] button:not([disabled])');
+      await jsClick('[data-testid="combat-5e"] button:not([disabled]):not([data-fight-help])');
       continue;
     }
     if (await exists('g[data-token][role="button"]')) {

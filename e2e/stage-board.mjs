@@ -77,7 +77,7 @@ try {
     assertBoardSane(now);
     const actor = now.combat.combatants[now.combat.current_turn_index];
     if (actor.role !== 'player') {
-      await jsClick('[data-testid="combat-5e"] button:not([disabled])');
+      await jsClick('[data-testid="combat-5e"] button:not([disabled]):not([data-fight-help])');
       continue;
     }
     if (!shotTaken) {

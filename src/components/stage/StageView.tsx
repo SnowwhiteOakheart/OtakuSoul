@@ -12,6 +12,7 @@ import { SceneLobbyModal, type LobbyRules } from './SceneLobbyModal';
 import { SceneCreateModal } from './SceneCreateModal';
 import { StoryGallery } from './StoryGallery';
 import { StoryWizard } from './StoryWizard';
+import { DropdownMenu } from '../ui/DropdownMenu';
 import { useStageAmbient } from './useStageAmbient';
 import { CharacterVoiceModal } from '../voice/CharacterVoiceModal';
 import { STAGE_NARRATOR_VOICE_ID } from '../../services/stageVoice';
@@ -40,6 +41,7 @@ import {
   AudioLines,
   Mic,
   Map as MapIcon,
+  MoreHorizontal,
 } from 'lucide-react';
 import { api } from '../../services/api';
 import { SceneState } from '../../types';
@@ -364,6 +366,7 @@ export const StageView: React.FC = () => {
             role="tab"
             aria-selected={activeTab === 'adventure'}
             onClick={() => setActiveTab('adventure')}
+            title={t('stage.tabAdventureHint')}
             className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg font-bold transition whitespace-nowrap outline-hidden focus-visible:ring-2 focus-visible:ring-accent-400 ${
               activeTab === 'adventure'
                 ? 'bg-accent-600 text-white shadow-md'
@@ -394,6 +397,7 @@ export const StageView: React.FC = () => {
             role="tab"
             aria-selected={activeTab === 'tactics'}
             onClick={() => setActiveTab('tactics')}
+            title={t('stage.tabTacticsHint')}
             className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg font-bold transition whitespace-nowrap outline-hidden focus-visible:ring-2 focus-visible:ring-accent-400 ${
               activeTab === 'tactics'
                 ? 'bg-accent-600 text-white shadow-md'
@@ -408,6 +412,7 @@ export const StageView: React.FC = () => {
             role="tab"
             aria-selected={activeTab === 'campaign'}
             onClick={() => setActiveTab('campaign')}
+            title={t('stage.tabCampaignHint')}
             className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg font-bold transition whitespace-nowrap outline-hidden focus-visible:ring-2 focus-visible:ring-accent-400 ${
               activeTab === 'campaign'
                 ? 'bg-accent-600 text-white shadow-md'
@@ -463,39 +468,44 @@ export const StageView: React.FC = () => {
             <span className="whitespace-nowrap">{t('stage.adventures')}</span>
           </button>
 
-          <button
-            onClick={handleExportMarkdown}
-            title={t('stage.exportMd')}
-            aria-label={t('stage.exportMd')}
-            className="p-2 rounded-xl bg-slate-800/80 hover:bg-slate-700 text-slate-300 hover:text-white border border-slate-700 transition"
-          >
-            <Download className="w-4 h-4" />
-          </button>
-
-          <button
-            type="button"
-            onClick={() => void handleGenerateBackground()}
-            disabled={isGeneratingSceneImage || !stageState}
-            title={isGeneratingSceneImage ? t('hud.generatingImage') : t('stage.generateBg')}
-            aria-label={t('stage.generateBg')}
-            className="p-2 rounded-xl bg-slate-800/80 hover:bg-slate-700 text-slate-300 hover:text-white border border-slate-700 transition disabled:opacity-50"
-          >
-            {isGeneratingSceneImage ? <LoaderCircle className="w-4 h-4 animate-spin" /> : <ImagePlus className="w-4 h-4" />}
-          </button>
-
-          <button
-            onClick={handleToggleLockBg}
-            title={stageState?.definition.lock_bg ? t('stage.bgLocked') : t('stage.bgDynamic')}
-            aria-label={stageState?.definition.lock_bg ? t('stage.bgLocked') : t('stage.bgDynamic')}
-            aria-pressed={!!stageState?.definition.lock_bg}
-            className={`p-2 rounded-xl border transition ${
-              stageState?.definition.lock_bg
-                ? 'bg-amber-950/40 text-amber-300 border-amber-500/50 shadow-sm'
-                : 'bg-slate-800/80 text-slate-400 border-slate-700 hover:text-slate-200'
-            }`}
-          >
-            {stageState?.definition.lock_bg ? <Lock className="w-4 h-4" /> : <Unlock className="w-4 h-4" />}
-          </button>
+          <DropdownMenu
+            triggerLabel={t('stage.moreActions')}
+            triggerClassName="flex items-center gap-1.5 px-2.5 py-1.5 rounded-xl bg-slate-800/80 hover:bg-slate-700 text-slate-300 hover:text-white border border-slate-700 text-xs font-semibold transition"
+            trigger={
+              <>
+                {isGeneratingSceneImage ? <LoaderCircle className="w-3.5 h-3.5 animate-spin" /> : <MoreHorizontal className="w-3.5 h-3.5" />}
+                <span className="hidden md:inline">{t('stage.more')}</span>
+              </>
+            }
+            items={[
+              {
+                label: isGeneratingSceneImage ? t('hud.generatingImage') : t('stage.menuGenerateBg'),
+                description: t('stage.generateBg'),
+                icon: ImagePlus,
+                onSelect: () => {
+                  if (!isGeneratingSceneImage && stageState) void handleGenerateBackground();
+                },
+              },
+              {
+                label: stageState?.definition.lock_bg ? t('stage.menuUnlockBg') : t('stage.menuLockBg'),
+                description: stageState?.definition.lock_bg ? t('stage.bgLocked') : t('stage.bgDynamic'),
+                icon: stageState?.definition.lock_bg ? Unlock : Lock,
+                onSelect: () => void handleToggleLockBg(),
+              },
+              {
+                label: t('stage.narratorVoice'),
+                description: t('stage.narratorVoiceHint'),
+                icon: Mic,
+                onSelect: () => setShowNarratorVoice(true),
+              },
+              {
+                label: t('stage.menuExport'),
+                description: t('stage.exportMd'),
+                icon: Download,
+                onSelect: () => void handleExportMarkdown(),
+              },
+            ]}
+          />
 
           {/* Sound Synthesizer Controls */}
           <button
@@ -526,15 +536,6 @@ export const StageView: React.FC = () => {
           >
             <AudioLines className="w-3.5 h-3.5" />
             <span className="hidden md:inline">{t('stage.readAloud')}</span>
-          </button>
-
-          <button
-            onClick={() => setShowNarratorVoice(true)}
-            title={t('stage.narratorVoiceHint')}
-            aria-label={t('stage.narratorVoice')}
-            className="p-2 rounded-xl border bg-slate-800/80 text-slate-300 border-slate-700 hover:text-white transition"
-          >
-            <Mic className="w-4 h-4" />
           </button>
 
           <button

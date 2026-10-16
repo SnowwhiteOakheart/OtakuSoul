@@ -71,6 +71,7 @@ export const AdventurePartyModal: React.FC<Props> = ({ scene, onStart, onClose }
           <Users className="w-5 h-5 text-accent-400" /> {t('adventureParty.title')}
         </h2>
         <p className="text-slate-400">{t('adventureParty.hint', { scene: scene.title })}</p>
+        <p className="rounded-lg border border-emerald-600/40 bg-emerald-950/30 px-3 py-2 text-xs text-emerald-100" data-testid="class-tip">{t('adventureParty.beginnerTip')}</p>
         <div className="flex flex-wrap gap-2">
           <button type="button" onClick={() => setSelected(classic)} className="rounded-lg border border-slate-600 px-2 py-1 text-xs font-semibold hover:bg-slate-800">
             {t('adventureParty.classic')}

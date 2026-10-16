@@ -1,11 +1,14 @@
-import React from 'react';
-import { Loader2, Shield, Swords } from 'lucide-react';
+import React, { useState } from 'react';
+import { CircleHelp, Loader2, Shield, Swords } from 'lucide-react';
 import { useStoreFields } from '../../store/useAppStore';
 import { combatAwaitsEngine } from '../../store/slices/stageSlice';
 import { useTranslation, type TranslationKey } from '../../i18n';
 import { combatEventText, localizedName, tierLabel } from '../../utils/combatEvents';
 import type { Combatant } from '../../types';
 import { Combat5eSpells } from './Combat5eSpells';
+import { usePersistentFlag } from '../../hooks/usePersistentFlag';
+
+const COMBAT_TIPS: TranslationKey[] = ['fightGuide.order', 'fightGuide.attack', 'fightGuide.hp', 'fightGuide.spells', 'fightGuide.engine'];
 
 /** Lines of the fight log shown under the actions. */
 const LOG_LINES = 8;
@@ -25,6 +28,9 @@ export const Combat5ePanel: React.FC = () => {
   const { stageState, runStageCombat, isProcessingStageTurn, appLanguage, stageCombatOptions } = useStoreFields(
     'stageState', 'runStageCombat', 'isProcessingStageTurn', 'appLanguage', 'stageCombatOptions',
   );
+  // The first fight explains the rules once on this device; the help button shows them again.
+  const [guideSeen, setGuideSeen] = usePersistentFlag('combat5eGuideSeen', false);
+  const [guideOpen, setGuideOpen] = useState(false);
   if (!stageState || stageState.definition.rules?.ruleset !== '5e' || !stageState.combat.is_active) return null;
 
   const combat = stageState.combat;
@@ -71,7 +77,42 @@ export const Combat5ePanel: React.FC = () => {
             {t(`fight.difficulty.${combat.difficulty}` as TranslationKey)}
           </span>
         )}
+        <button
+          type="button"
+          onClick={() => setGuideOpen(!guideOpen)}
+          aria-label={t('fightGuide.open')}
+          title={t('fightGuide.open')}
+          data-fight-help
+          aria-expanded={guideOpen || !guideSeen}
+          className="ml-auto rounded-lg p-1 text-slate-400 hover:bg-slate-800 hover:text-rose-200"
+        >
+          <CircleHelp className="w-4 h-4" />
+        </button>
       </header>
+
+      {(!guideSeen || guideOpen) && (
+        <section aria-labelledby="fight-guide-title" data-fight-guide className="rounded-xl border border-rose-500/30 bg-rose-950/30 p-3 space-y-2">
+          <h3 id="fight-guide-title" className="text-xs font-semibold text-rose-100">{t('fightGuide.title')}</h3>
+          <ul className="list-disc space-y-1 pl-4 text-slate-300">
+            {COMBAT_TIPS.map((key) => (
+              <li key={key}>{t(key)}</li>
+            ))}
+          </ul>
+          <div className="flex justify-end">
+            <button
+              type="button"
+              data-fight-help
+              onClick={() => {
+                setGuideSeen(true);
+                setGuideOpen(false);
+              }}
+              className="rounded-lg bg-rose-600 px-3 py-1 font-semibold text-white hover:bg-rose-500"
+            >
+              {t('stageGuide.understood')}
+            </button>
+          </div>
+        </section>
+      )}
 
       <ol aria-label={t('fight.order')} className="flex flex-wrap gap-1.5">
         {combat.combatants.map((c, index) => (
@@ -87,7 +128,7 @@ export const Combat5ePanel: React.FC = () => {
             } ${isUp(c) ? '' : 'opacity-40 line-through'}`}
           >
             <span className="font-semibold">{c.name}</span>{' '}
-            <span className="text-slate-400">
+            <span className="text-slate-400" title={isParty(c) ? t('fight.sheet.hp') : t('fight.tierHint')}>
               {isParty(c) ? t('fight.hp', { current: c.hp, max: c.max_hp }) : tierLabel(tierOf(c))}
             </span>
           </li>

@@ -7,7 +7,7 @@ vi.mock('../services/api', async () => (await import('./mockApi')).apiModule);
 
 import { api } from '../services/api';
 import { useAppStore } from '../store/useAppStore';
-import { SceneCreateModal } from '../components/stage/SceneCreateModal';
+import { SceneCreateModal, assetLabel } from '../components/stage/SceneCreateModal';
 import { resetApiMocks } from './mockApi';
 import type { SceneDefinition, SceneState } from '../types';
 
@@ -67,4 +67,12 @@ describe('SceneCreateModal', () => {
     expect(screen.getByLabelText('Maximum actors per turn (1–6)')).toHaveValue(4);
   });
 
+});
+
+describe('assetLabel', () => {
+  it('shows imported files without the random number and extension', () => {
+    expect(assetLabel('merchant_10470923241603096639.png')).toBe('merchant');
+    expect(assetLabel('wind_15374784784674392548.wav')).toBe('wind');
+    expect(assetLabel('forest-night.jpg')).toBe('forest night');
+  });
 });

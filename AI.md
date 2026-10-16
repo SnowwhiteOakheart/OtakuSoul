@@ -139,6 +139,8 @@ Hub). Integrationen → Bildgenerierung enthält nur Studio und Galerie.
   `stage_last_scene: "default_scene"`, Galerie-Test `stage-gallery.mjs`, Lobby über `openSceneLobby`.
   „Eigene Geschichte“ = `StoryWizard.tsx` (`buildStoryDefinition`; Vorlagen `storyWizard.premise.<genre>.<n>.*` in allen Locales,
   `PREMISES_PER_GENRE`), Kurzanleitung `StageGuide.tsx` in `TurnControlBar` (`usePersistentFlag('stageGuideSeen')`).
+  Kampf-Einführung im `Combat5ePanel` (`combat5eGuideSeen`); Hilfeknöpfe tragen `data-fight-help`, E2E-Tests klicken zum
+  Weiterlaufen `button:not([disabled]):not([data-fight-help])`. Seltene Stage-Aktionen im Menü „Mehr“ (`DropdownMenu`).
 - Lokale TTS (`tts_local.rs`, `crispasr --server`): F5 bekommt unter CUDA `CRISPASR_F5_EMBED_GPU=1` (sonst ~20× langsamer).
   VoiceDesign-Modelle (`voice_design`) brauchen eine Beschreibung (`openai_instructions` der Stimme → `instructions`).
   TADA: `CRISPASR_TADA_WAV_CLONE=1` (WAV-Klon, Encoder/Aligner neben dem Modell), `CRISPASR_TADA_NUM_CANDIDATES=4`.

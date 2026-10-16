@@ -34,7 +34,7 @@ const waitPlayerTurn = async () => {
       return again.combat.current_turn_index === s.combat.current_turn_index && again.combat.events.length === s.combat.events.length;
     }
     // A companion or monster is to move: let the engine go on.
-    await jsClick('[data-testid="combat-5e"] button:not([disabled])');
+    await jsClick('[data-testid="combat-5e"] button:not([disabled]):not([data-fight-help])');
     return false;
   }, { timeout: 60_000, interval: 300, timeoutMsg: 'Spieler kommt nicht an die Reihe' });
 };

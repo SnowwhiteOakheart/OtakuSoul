@@ -88,12 +88,17 @@
   Platzhalter.
 - [ ] **Sprache durchziehen:** Szenen, Vorschläge und Erzähler antworten in der App-Sprache (Szenen pflegen Übersetzungen
   wie Karten mit `otakusoul_i18n`).
-- [ ] **Stage-Kopfzeile ordnen:** wichtigste Aktionen (Lobby, Vorlesen, Atmosphäre) beschriftet, seltene (Export,
+- [x] **Stage-Kopfzeile ordnen (16.10.2026):** Bild erzeugen/festhalten, Erzählerstimme und Export im Menü „Mehr“ (mit
+  Erklärung), Reiter mit Kurzbeschreibung im Tooltip. Ursprünglicher Plan: wichtigste Aktionen (Lobby, Vorlesen, Atmosphäre) beschriftet, seltene (Export,
   Bild, Sperre) in ein Menü; Reiter „Abenteuer / Taktik & Würfel / Kampagne“ mit Kurzerklärung.
-- [ ] **Szenen-Editor entrümpeln:** Abschnitte *Geschichte* (Titel, Ort, Eröffnung, Bild), *Figuren*, *Atmosphäre*,
+- [x] **Szenen-Editor entrümpeln (16.10.2026):** Abschnitte Geschichte / Figuren / Bild & Klang, Erzählstil, Lorebooks,
+  Akteure, Würfel und Regeln unter „Erweitert“ (beim Bearbeiten offen), lesbare Dateinamen (`assetLabel`); Vorschau-Galerie
+  für Bilder und Klänge steht noch aus. Ursprünglicher Plan: Abschnitte *Geschichte* (Titel, Ort, Eröffnung, Bild), *Figuren*, *Atmosphäre*,
   *Regeln (Erweitert)*; Bild-/Tonauswahl als Vorschau-Galerie statt Dateinamen; veralteten Ambient-Hinweis entfernen
   (erledigt 16.10.2026).
-- [ ] **5e-Abenteuer einsteigerfreundlich:** kurze Regel-Einführung („So funktioniert ein Kampf“) beim ersten Kampf,
+- [x] **5e-Abenteuer einsteigerfreundlich (16.10.2026):** „So funktioniert ein Kampf“ beim ersten Kampf (Gerät,
+  `combat5eGuideSeen`, „?“ öffnet erneut), Tooltip für LP/Verletzungsstufe, Klassentipp in der Gruppenwahl.
+  Ursprünglicher Plan: kurze Regel-Einführung („So funktioniert ein Kampf“) beim ersten Kampf,
   Erklärungen zu RK/TP/Zaubergraden per Tooltip, empfohlene Klassen für Einsteiger.
 - [ ] E2E: Einsteiger startet eine mitgelieferte Story aus der Galerie, spielt zwei Runden und setzt sie fort;
   zweiter Durchlauf über den Story-Assistenten.
