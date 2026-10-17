@@ -12,15 +12,21 @@ const { browser, mock, close } = await launch();
 const invoke = (command, args = {}) => browser.execute((cmd, payload) => window.__TAURI_INTERNALS__.invoke(cmd, payload), command, args);
 const shot = (name) => browser.saveScreenshot(path.join(screenshotDir, `${name}.png`));
 
-/** Every lost hit point is explained by a damage event of the engine (no healing in step 1). */
+/**
+ * Every lost hit point is explained by the engine's damage and heal events (companions heal
+ * themselves with Second Wind, which a fight can trigger at random).
+ */
 const assertEngineHitPoints = (scene) => {
   const damage = {};
   for (const event of scene.combat.events ?? []) {
     if (event.type === 'damage') damage[event.target_id] = (damage[event.target_id] ?? 0) + event.amount;
+    if (event.type === 'heal') damage[event.target_id] = (damage[event.target_id] ?? 0) - event.amount;
   }
   for (const c of scene.combat.combatants) {
     const lost = c.max_hp - c.hp;
-    const expected = Math.min(c.max_hp, damage[c.id] ?? 0);
+    // Damage stops at 0 HP and healing at the maximum, so check the last known state instead of the sum.
+    const last = [...(scene.combat.events ?? [])].reverse().find((e) => (e.type === 'damage' || e.type === 'heal') && e.target_id === c.id);
+    const expected = last ? c.max_hp - last.hp_after : Math.min(c.max_hp, damage[c.id] ?? 0);
     assert.equal(lost, expected, `${c.name}: ${lost} LP verloren, Engine-Schaden ${expected}`);
   }
 };

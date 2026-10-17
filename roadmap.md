@@ -56,3 +56,4 @@
   danach wiederholt.
 - [ ] Wackeligen E2E-Test beobachten: `stage-5e` scheiterte einmal an einem veralteten Element (`button[aria-label*="gegen"]`
   im Kampfpanel, 16.10.2026) und bestand danach.
+  17.10.2026: zweite Ursache behoben – der Test übersah Heilung durch „Zweiter Atem“ (zählt jetzt Heal-Ereignisse).
