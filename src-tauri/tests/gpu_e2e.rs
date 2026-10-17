@@ -842,3 +842,197 @@ async fn loras() {
         "LoRA einer anderen Modellfamilie wurde mitgeschickt"
     );
 }
+
+/// Chat models as the app sets them up: each GGUF in `assets/models` (or `OTAKUSOUL_E2E_LLMS`,
+/// comma-separated paths) starts with the recommended context and GPU layers; checks the context
+/// the server reports, one slot, the VRAM estimate against `nvidia-smi`, the speed, and a prompt
+/// that fills the context almost completely.
+///
+/// ```text
+/// cargo test --test gpu_e2e llm -- --ignored --nocapture
+/// ```
+#[tokio::test(flavor = "multi_thread")]
+#[ignore = "needs a GPU and local chat models"]
+async fn llm() {
+    use otakusoul_lib::modules::hardware;
+    let models: Vec<PathBuf> = match std::env::var("OTAKUSOUL_E2E_LLMS") {
+        Ok(list) => list.split(',').map(PathBuf::from).collect(),
+        Err(_) => {
+            let dir = Path::new(env!("CARGO_MANIFEST_DIR")).join("../assets/models");
+            let mut found: Vec<PathBuf> = std::fs::read_dir(&dir)
+                .map(|entries| entries.flatten().map(|e| e.path()).collect())
+                .unwrap_or_default();
+            found.retain(|p| {
+                p.extension().is_some_and(|e| e == "gguf")
+                    && !p.to_string_lossy().contains("mmproj")
+            });
+            found.sort();
+            found
+        }
+    };
+    assert!(!models.is_empty(), "keine Chat-Modelle gefunden");
+    let prism = |p: &Path| {
+        let name = p.to_string_lossy().to_ascii_lowercase();
+        name.contains("pq2_0") || name.contains("ptq1_0")
+    };
+    if models.iter().any(|p| prism(p)) {
+        ensure_runtime(RuntimeKind::Prism, &["cuda-12", "vulkan"]).await;
+    }
+    if models.iter().any(|p| !prism(p)) {
+        ensure_runtime(RuntimeKind::Llama, &["cuda-12", "vulkan"]).await;
+    }
+    let client = reqwest::Client::builder()
+        .timeout(Duration::from_secs(1800))
+        .build()
+        .unwrap();
+    let base = "http://127.0.0.1:48697";
+    let mut rows = Vec::new();
+    for model in &models {
+        let name = model.file_stem().unwrap().to_string_lossy().to_string();
+        let bonsai = name.to_ascii_lowercase().contains("bonsai");
+        // As `selectLocalModel` does: Bonsai with a q4 cache, others f16.
+        let cache = if bonsai { "q4_0" } else { "f16" };
+        let path = model.to_string_lossy().to_string();
+        let rec = {
+            let path = path.clone();
+            tokio::task::spawn_blocking(move || {
+                hardware::recommend_gpu_layers(0, 0, 4096, Some(&path), Some(cache), Some(cache))
+            })
+            .await
+            .unwrap()
+        };
+        println!(
+            "\n[{name}] Empfehlung: Kontext {} (gelernt {}), {} GPU-Layer, geschätzt {} MB (Kontext {} MB)",
+            rec.recommended_context_size,
+            rec.trained_context_size,
+            rec.recommended_layers,
+            rec.estimated_vram_usage_mb,
+            rec.estimated_context_vram_mb
+        );
+        let llama = LlamaServerManager::new();
+        let config = LlamaServerConfig {
+            model_path: path.clone(),
+            port: 48_697,
+            context_size: rec.recommended_context_size,
+            gpu_layers: rec.recommended_layers,
+            flash_attn: true,
+            cache_type_k: Some(cache.into()),
+            cache_type_v: Some(cache.into()),
+            ..Default::default()
+        };
+        let idle = vram_used_mb();
+        let started = Instant::now();
+        if let Err(e) = llama.start(config).await {
+            println!(
+                "[{name}] Start fehlgeschlagen: {}",
+                e.chars().take(400).collect::<String>()
+            );
+            rows.push(format!(
+                "| {name} | – | – | – | Start fehlgeschlagen | – | – |"
+            ));
+            continue;
+        }
+        let load_secs = started.elapsed().as_secs_f32();
+        let loaded = vram_used_mb().saturating_sub(idle);
+        let props: serde_json::Value = client
+            .get(format!("{base}/props"))
+            .send()
+            .await
+            .unwrap()
+            .json()
+            .await
+            .unwrap();
+        let n_ctx = props["default_generation_settings"]["n_ctx"]
+            .as_u64()
+            .unwrap_or(0);
+        let slots = props["total_slots"].as_u64().unwrap_or(0);
+        assert_eq!(slots, 1, "--parallel 1 wirkt nicht");
+        assert_eq!(
+            n_ctx,
+            u64::from(rec.recommended_context_size),
+            "Server meldet anderen Kontext"
+        );
+
+        // Speed with a short request through the chat endpoint the app uses (with the model's
+        // chat template; some models end a raw prompt at once).
+        let short: serde_json::Value = client
+            .post(format!("{base}/v1/chat/completions"))
+            .json(&serde_json::json!({
+                "messages": [{ "role": "user", "content": "Write a short, friendly greeting from an anime character to a friend who just came home." }],
+                "max_tokens": 128, "temperature": 0.7
+            }))
+            .send().await.unwrap().json().await.unwrap();
+        let gen_speed = short["timings"]["predicted_per_second"]
+            .as_f64()
+            .unwrap_or(0.0);
+        assert!(
+            gen_speed > 0.0,
+            "{name}: keine Antwort über die Chat-Schnittstelle"
+        );
+
+        // A prompt filling ~90 % of the context (at most 32K tokens to keep the run short).
+        let target = (n_ctx as f64 * 0.9).min(32_768.0) as usize;
+        let sentence =
+            "The old library smelled of candle wax and dust, and somewhere a clock ticked slowly. ";
+        let per_sentence: serde_json::Value = client
+            .post(format!("{base}/tokenize"))
+            .json(&serde_json::json!({ "content": sentence }))
+            .send()
+            .await
+            .unwrap()
+            .json()
+            .await
+            .unwrap();
+        let per = per_sentence["tokens"]
+            .as_array()
+            .map_or(16, |t| t.len().max(1));
+        let long_prompt = sentence.repeat(target / per);
+        let peak = VramPeak::start();
+        let fill_started = Instant::now();
+        let fill = client
+            .post(format!("{base}/completion"))
+            .json(&serde_json::json!({ "prompt": long_prompt, "n_predict": 16, "cache_prompt": false }))
+            .send()
+            .await;
+        let fill_secs = fill_started.elapsed().as_secs_f32();
+        let peak_mb = peak.finish().saturating_sub(idle);
+        let (filled, prompt_speed) = match fill {
+            Ok(resp) if resp.status().is_success() => {
+                let body: serde_json::Value = resp.json().await.unwrap_or_default();
+                (
+                    body["timings"]["prompt_n"].as_u64().unwrap_or(0),
+                    body["timings"]["prompt_per_second"].as_f64().unwrap_or(0.0),
+                )
+            }
+            Ok(resp) => {
+                println!("[{name}] voller Kontext: HTTP {}", resp.status());
+                (0, 0.0)
+            }
+            Err(e) => {
+                println!("[{name}] voller Kontext: {e}");
+                (0, 0.0)
+            }
+        };
+        let alive = llama.get_status().await.state == ServerState::Running;
+        llama.stop().await.unwrap();
+        let deviation = peak_mb as f64 / rec.estimated_vram_usage_mb.max(1) as f64 * 100.0 - 100.0;
+        println!(
+            "[{name}] geladen in {load_secs:.0}s, {loaded} MB; voller Kontext ({filled} Tokens in {fill_secs:.0}s, {prompt_speed:.0} t/s) Spitze {peak_mb} MB = Schätzung {deviation:+.0} %; {gen_speed:.1} t/s; Server läuft weiter: {alive}"
+        );
+        rows.push(format!(
+            "| {name} | {} | {} | {} MB | {peak_mb} MB ({deviation:+.0} %) | {gen_speed:.1} t/s | {filled} Tokens, {prompt_speed:.0} t/s |",
+            rec.recommended_context_size,
+            if rec.recommended_layers >= 99 { "alle".to_string() } else { rec.recommended_layers.to_string() },
+            rec.estimated_vram_usage_mb,
+        ));
+        assert!(alive, "{name}: Server nach vollem Kontext abgestürzt");
+        assert!(filled > 0, "{name}: voller Kontext nicht verarbeitet");
+        tokio::time::sleep(Duration::from_secs(3)).await;
+    }
+    println!(
+        "\n| Modell | Kontext | GPU-Layer | Schätzung | Gemessen (Spitze) | Antwort | Voller Kontext |\n|---|---|---|---|---|---|---|"
+    );
+    for row in rows {
+        println!("{row}");
+    }
+}
