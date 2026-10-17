@@ -93,6 +93,8 @@ ru „персонаж/история/сцена“. Fachbegriffe nur im Experte
   `e2e/contrast.mjs` (Teil von `npm run e2e`) misst alle Themes hell/dunkel; neue Farbtöne für weiße Schrift mindestens
   Stufe 700 (bzw. `accent-600`), Hinweistext `slate-500` ist in `App.css` je Modus angepasst.
   Neue Einstellungen brauchen einen Satz darunter (`OptionHint` + `aria-describedby`); `e2e/settings-hints.mjs` prüft das.
+  Auswahlkarten mit `role="radio"` bekommen `radioGroupKeyDown`/`radioTabIndex` (`utils/radioGroup.ts`, Pfeiltasten, ein
+  Tab-Halt); Dialoge immer über `ModalOverlay` (Fokus-Falle, Escape, Fokus-Rückgabe) – `e2e/keyboard.mjs` prüft das.
 - **Hilfe:** `components/HelpDialog.tsx` (`GUIDE_STEPS`, `GLOSSARY_TERMS`, Texte `help.*`/`glossary.*`), geöffnet über
   `appSlice.isHelpOpen` (Kopfzeile, Befehlspalette); Anleitung `docs/guide-getting-started{,.de,.ru}.md` bei neuen
   Abläufen nachziehen.

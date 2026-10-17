@@ -173,11 +173,12 @@
 - [x] (16.10.2026) Begriffe festgelegt (AI.md), `e2e/a11y-sweep.mjs` prüft alle Ansichten auf Bedienelemente ohne Namen;
   gefundene behoben. Ursprünglich: Alle reinen Symbolknöpfe mit `aria-label` **und** sichtbarem Tooltip; einheitliche Begriffe (Szene/Story/
   Geschichte, Figur/Charakter) app-weit festlegen und in allen Locales durchziehen.
-- [ ] Tastaturbedienung der neuen Abläufe (Galerie, Assistenten), Fokus-Reihenfolge, Kontrast in allen Themes.
-  (17.10.2026: Kontrast erledigt – `e2e/contrast.mjs` misst jeden sichtbaren Text in 5 Themes × hell/dunkel gegen den
-  tatsächlichen Hintergrund; behoben: Hinweistexte `slate-500`, Akzentknöpfe Cyberpunk/Midnight/Emerald, helle
-  Akzenttexte, Abzeichen „Aktiv“/„Für Einsteiger“/Genre. 16.10.2026: Sweep prüft Enter/Escape und Fokus-Rückkehr der Story-Vorschau.
-  `a11y-sweep` scheiterte einmal ohne erkennbare Ursache und bestand danach zweimal – beobachten.)
+- [x] Tastaturbedienung der neuen Abläufe, Fokus-Reihenfolge, Kontrast in allen Themes (17.10.2026): `e2e/keyboard.mjs`
+  bedient Story-Assistent, Charakter-Vorschau, Hilfe und Einrichtung ohne Maus (Fokus im Dialog, Tab-Falle, Escape mit
+  Fokus-Rückgabe, kein positiver `tabindex`); Genre- und Anbieterwahl sind echte Radio-Gruppen mit Pfeiltasten und einem
+  Tab-Halt (`utils/radioGroup.ts`). Kontrast: `e2e/contrast.mjs` misst jeden sichtbaren Text in 5 Themes × hell/dunkel
+  gegen den tatsächlichen Hintergrund; behoben: Hinweistexte `slate-500`, Akzentknöpfe Cyberpunk/Midnight/Emerald, helle
+  Akzenttexte, Abzeichen „Aktiv“/„Für Einsteiger“/Genre. Der Sweep prüft daneben die Story-Vorschau und kleine Fenster.
 - [x] (16.10.2026) Kleine Fenster: der Sweep prüft 1024×700 auf seitlichen Überlauf und Dialoge außerhalb des Fensters –
   ohne Befund. Ursprünglich: Kleine Fenster (≥ 1024×700) ohne abgeschnittene Dialoge; Dialoge mit fester Fußzeile.
 

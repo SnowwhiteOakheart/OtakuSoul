@@ -1,4 +1,5 @@
 import React, { useEffect, useRef, useState } from 'react';
+import { radioGroupKeyDown, radioTabIndex } from '../../utils/radioGroup';
 import { useShallow } from 'zustand/react/shallow';
 import {
   ArrowLeft,
@@ -50,6 +51,7 @@ const CLOUD_PROVIDERS: { id: LlmProviderType; labelKey: TranslationKey; keyUrl?:
   { id: 'mistral', labelKey: 'settings.providerMistral', keyUrl: 'https://console.mistral.ai/api-keys' },
   { id: 'custom', labelKey: 'settings.providerCustom' },
 ];
+const PROVIDER_IDS = CLOUD_PROVIDERS.map((p) => p.id);
 /** Graphics memory from which the local way is recommended (smaller cards: cloud). */
 const LOCAL_RECOMMENDED_VRAM_MB = 6 * 1024;
 
@@ -345,13 +347,21 @@ export const FirstRunWizard: React.FC = () => {
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                   <fieldset className="space-y-2 sm:col-span-2">
                     <legend className="mb-1 text-xs font-medium text-slate-300">{t('onboarding.providerLabel')}</legend>
-                    <div role="radiogroup" aria-label={t('onboarding.providerLabel')} className="grid grid-cols-2 sm:grid-cols-3 gap-2">
+                    <div
+                      role="radiogroup"
+                      aria-label={t('onboarding.providerLabel')}
+                      tabIndex={-1}
+                      className="grid grid-cols-2 sm:grid-cols-3 gap-2"
+                      onKeyDown={(event) => radioGroupKeyDown(event, PROVIDER_IDS, store.cloudProvider, handleProviderChange)}
+                    >
                       {CLOUD_PROVIDERS.map((provider) => (
                         <button
                           key={provider.id}
                           type="button"
                           role="radio"
                           aria-checked={store.cloudProvider === provider.id}
+                          tabIndex={radioTabIndex(provider.id, PROVIDER_IDS, store.cloudProvider)}
+                          data-radio-value={provider.id}
                           onClick={() => handleProviderChange(provider.id)}
                           className={`${CHOICE_CARD} ${choiceState(store.cloudProvider === provider.id)} flex-col gap-0.5 p-2.5`}
                         >

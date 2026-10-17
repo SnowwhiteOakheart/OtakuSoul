@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import { radioGroupKeyDown, radioTabIndex } from '../../utils/radioGroup';
 import { ArrowLeft, ArrowRight, Check, Dices, Loader2, Play, Settings2, User, Users, X } from 'lucide-react';
 import { useStoreFields } from '../../store/useAppStore';
 import { translate, useTranslation, type TranslationKey } from '../../i18n';
@@ -158,7 +159,15 @@ export const StoryWizard: React.FC<StoryWizardProps> = ({ onClose, onCreated, on
           {stepId === 'genre' && (
             <>
               <p className="text-sm text-slate-300">{t('storyWizard.genreQuestion')}</p>
-              <div role="radiogroup" aria-label={t('storyWizard.step.genre')} className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+              <div
+                role="radiogroup"
+                aria-label={t('storyWizard.step.genre')}
+                tabIndex={-1}
+                className="grid grid-cols-2 sm:grid-cols-4 gap-3"
+                onKeyDown={(event) =>
+                  radioGroupKeyDown(event, WIZARD_GENRES, draft.genre, (genre) => update({ genre, premise: draft.premise === null ? null : 0 }))
+                }
+              >
                 {WIZARD_GENRES.map((genre) => {
                   const kind = KINDS[genre as StoryKind];
                   const selected = draft.genre === genre;
@@ -168,6 +177,9 @@ export const StoryWizard: React.FC<StoryWizardProps> = ({ onClose, onCreated, on
                       type="button"
                       role="radio"
                       aria-checked={selected}
+                      tabIndex={radioTabIndex(genre, WIZARD_GENRES, draft.genre)}
+                      data-genre={genre}
+                      data-radio-value={genre}
                       aria-label={t(`gallery.filter.${genre}` as TranslationKey)}
                       onClick={() => update({ genre, premise: draft.premise === null ? null : 0 })}
                       className={`rounded-xl overflow-hidden border text-left transition ${selected ? 'border-accent-400 ring-2 ring-accent-500/40' : 'border-slate-700 hover:border-slate-500'}`}
