@@ -169,18 +169,24 @@ export const AvatarCanvas: React.FC<AvatarCanvasProps> = ({
     avatarMotions,
     avatarGesture,
     replyLanguage,
+    scannedVrms,
   } = useStoreFields(
     'activeVrmPath', 'activeLive2dPath', 'avatarMode', 'setAvatarMode', 'scannedLive2ds',
-    'currentEmotion', 'setCurrentEmotion', 'avatarMotions', 'avatarGesture', 'replyLanguage',
+    'currentEmotion', 'setCurrentEmotion', 'avatarMotions', 'avatarGesture', 'replyLanguage', 'scannedVrms',
   );
   const { t, tEmotion } = useTranslation();
 
-  // 1. Resolve VRM path (Character override or global setting)
-  const vrmPath =
+  // 1. Resolve VRM path (Character override or global setting). A character's model that is no
+  // longer in the list (removed in the settings) falls back to the default avatar.
+  const characterVrm =
     (character?.card.data.extensions?.custom_vrm as string) ||
     (character?.card.data.extensions?.sow_vrm as string) ||
-    activeVrmPath ||
     '';
+  const normalize = (path: string) => path.replace(/\\/g, '/').toLowerCase();
+  const characterVrmKnown =
+    !!characterVrm &&
+    (scannedVrms.length === 0 || scannedVrms.some((vrm) => normalize(vrm.path).endsWith(normalize(characterVrm))));
+  const vrmPath = (characterVrmKnown ? characterVrm : '') || activeVrmPath || '';
 
   // 2. Resolve Live2D model path (Character override or global setting fallback)
   const live2dKey =

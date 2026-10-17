@@ -836,6 +836,8 @@ export interface ScannedLive2d {
   model_path: string;
   preview_image?: string | null;
   version: string;
+  /** Imported or downloaded by the user: can be removed. */
+  removable: boolean;
 }
 
 export interface EmotionResult {

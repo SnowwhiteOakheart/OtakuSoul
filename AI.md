@@ -192,6 +192,14 @@ ru „персонаж/история/сцена“. Fachbegriffe nur im Experte
   `AvatarMotionPlayer` wählt per `pickByMood`/`bestByMood` (`utils/avatarGestures.ts`, Stimmung = VRM-Ausdruck) und
   wechselt die Ruhe-Schleife in `setMood`. Clips ohne Verwendung (`extraClips`) startet das Gesten-Menü in
   `AvatarViewerChrome` über `playAvatarClip` (`GestureRequest.clip`); der Viewer zeigt `data-idle-clip`/`data-gesture-clip`.
+  Clips eines anders gebauten Skeletts (Spiel-Rips: andere Knochenlängen/Achsen) sortiert `clipFit.ts` `clipFitsRig` beim Laden
+  aus (Median der Knochenlängen, Oberschenkelrichtung im ersten Bild); `avatarSlice.clipMisfits` markiert sie in
+  `ModelClipsSettings`, der Viewer zeigt `data-clip-misfits`. Prüfen mit echten Modellen: `OTAKUSOUL_AVATAR=<Name> xvfb-run -a node e2e/local-avatars.mjs`.
+  Avatar-Bibliothek (`avatar_library.rs`): eigene Namen in `<Daten>/avatar_names.json` (3D nach Pfad relativ zu
+  `avatar_roots`, Live2D nach Ordner-ID; Dateien behalten ihre Namen), `delete_avatar` verschiebt nur Importe aus
+  `<Daten>/avatars|live2d` (ganzer Ordner) nach `.trash/avatars`; `ScannedVrm`/`ScannedLive2d.removable`. UI `AvatarActions.tsx`
+  (Namensfeld nach Import, Entfernen mit 8 s Rückgängig), Charakterkarten mit entferntem Modell fallen auf den Standard
+  zurück (`AvatarCanvas`). E2E `avatar-library.mjs`.
   GLB ohne Skelett (`skins` leer, `avatar_motions::gltf_summary`) lehnt `import_vrm_into` mit `backend.vrm.noSkeleton` ab; von Hand
   abgelegte zeigt `GltfViewer` nicht (`avatar.noSkeleton`). `ScannedVrm.triangles` > 500.000 → Hinweis `settings.vrmHeavy`.
   Gesichts-Editor: `ModelFaceSettings` ↔ `get_model_face`/`set_model_face` (`ModelFace`: `morphs` je Schlüssel aus `FACE_KEYS`,

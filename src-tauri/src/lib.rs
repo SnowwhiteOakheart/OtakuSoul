@@ -412,6 +412,8 @@ pub fn run() {
             commands::avatar::import_avatar_motion,
             commands::avatar::set_avatar_motion_role,
             commands::avatar::delete_avatar_motion,
+            commands::avatar::rename_avatar,
+            commands::avatar::delete_avatar,
             // Soul Hub (Soul Gateway, Chub AI, Lorebooks, Stage Scenarios)
             commands::hub::fetch_soul_gateway_registry,
             commands::hub::import_soul_gateway_character,

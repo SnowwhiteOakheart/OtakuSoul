@@ -1,7 +1,8 @@
 // Local check with real third-party avatars from assets/test-avatars/ (gitignored, never
 // committed): each .vrm, .glb and .pmx is imported into a throwaway profile, shown as the
 // 3D avatar, and screenshotted neutral and happy into assets/test-avatars/screenshots/.
-// Not part of `npm run e2e`; run with `xvfb-run -a node e2e/local-avatars.mjs`.
+// Not part of `npm run e2e`; run with `xvfb-run -a node e2e/local-avatars.mjs`
+// (`OTAKUSOUL_AVATAR=part-of-name` for single models).
 import { existsSync, mkdirSync, readdirSync } from 'node:fs';
 import path from 'node:path';
 import { launch } from './harness.mjs';
@@ -15,7 +16,9 @@ const out = path.join(root, 'screenshots');
 mkdirSync(out, { recursive: true });
 const models = readdirSync(root, { recursive: true })
   .map((file) => path.join(root, String(file)))
-  .filter((file) => /\.(vrm|glb|pmx|pmd)$/i.test(file) && !file.includes(`${path.sep}screenshots${path.sep}`));
+  .filter((file) => /\.(vrm|glb|pmx|pmd)$/i.test(file) && !file.includes(`${path.sep}screenshots${path.sep}`))
+  // `OTAKUSOUL_AVATAR=name` checks only the models whose file name contains it.
+  .filter((file) => !process.env.OTAKUSOUL_AVATAR || path.basename(file).includes(process.env.OTAKUSOUL_AVATAR));
 
 const { browser, close } = await launch({ avatar_mode: '3d' });
 // oxlint-disable-next-line no-underscore-dangle -- Tauri IPC in a disposable profile

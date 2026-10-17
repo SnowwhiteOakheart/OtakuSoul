@@ -1942,3 +1942,8 @@ veraltet und sind korrigiert: `chat-sidebar-errors` las die Sitzung, bevor der e
   gegen llama.cpp b11429: Nemo 2560 MiB, Qwen3.5 1024 MiB, Gemma 4 256 + 480 MiB bei 16K). Auswahl in den Einstellungen
   nur bis zur gelernten Länge, Start begrenzt zusätzlich. `--parallel 1` statt vier geteilter Slots. Die lokale KI startet
   beim ersten Senden selbst (vorher stimmte der Hinweis „startet mit der ersten Nachricht“ nicht).
+
+- [x] **Avatare umbenennen und entfernen, Clips fremder Skelette (17.10.2026):** 3D- und Live2D-Avatare bekommen eigene Namen
+  (Namensfeld direkt nach dem Import) und lassen sich entfernen (in den Papierkorb, 8 s Rückgängig, mitgelieferte bleiben).
+  glTF-Clips eines anders gebauten Skeletts werden erkannt und nicht abgespielt – `player_051_female_skin_textured` wurde
+  dadurch gestreckt und verschoben dargestellt (Clips mit doppelten Knochenlängen und Beinen nach oben).

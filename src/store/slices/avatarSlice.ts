@@ -33,6 +33,9 @@ export interface AvatarSlice {
   /** Counts changes to the uses of animations inside glTF models; viewers reload on it. */
   modelClipRevision: number;
   bumpModelClipRevision: () => void;
+  /** Per glTF model: its own clips made for another skeleton, which the viewer leaves out. */
+  clipMisfits: Record<string, string[]>;
+  setClipMisfits: (modelPath: string, clips: string[]) => void;
   /** A face key (blink, aa, happy …) the 3D avatar shows for a moment, from the face editor. */
   avatarFacePreview: { key: string; id: number } | null;
   previewAvatarFace: (key: string) => void;
@@ -40,6 +43,10 @@ export interface AvatarSlice {
 
 export const createAvatarSlice: SliceCreator<AvatarSlice> = (set, get) => ({
   scannedVrms: [],
+
+  clipMisfits: {},
+
+  setClipMisfits: (modelPath, clips) => set((state) => ({ clipMisfits: { ...state.clipMisfits, [modelPath]: clips } })),
 
   activeVrmPath: null,
 

@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState } from 'react';
 import * as THREE from 'three';
+import { clipFitsRig } from './clipFit';
 import { api } from '../../services/api';
 import { audioPlayer } from '../../services/audioPlayer';
 import { mouthTarget, SILENT_VISEMES, type Visemes } from '../../services/lipSync';
@@ -163,7 +164,9 @@ export const GltfViewer = ({
   const stageRef = useRef<AvatarStage | null>(null);
   // Cel shading per model and device; game figures usually look right with it, scans without.
   const [toon, setToon] = usePersistentFlag(`avatarToon:${modelPath}`, false);
-  const { modelClipRevision, playAvatarClip } = useStoreFields('modelClipRevision', 'playAvatarClip');
+  const { modelClipRevision, playAvatarClip, setClipMisfits, clipMisfits } = useStoreFields(
+    'modelClipRevision', 'playAvatarClip', 'setClipMisfits', 'clipMisfits',
+  );
 
   useEffect(() => {
     emotionRef.current = emotion;
@@ -228,7 +231,12 @@ export const GltfViewer = ({
         const box = restPoseBounds(scene);
         stage.frameModel(head ? head.getWorldPosition(new THREE.Vector3()).y : box.max.y - 0.15, box.max.y);
         const rest = captureRest(scene);
-        setEmbedded(withoutRootMotion(gltf.animations, scene, bones.hips));
+        // Clips of another skeleton (common in game rips) would stretch the figure: left out.
+        const fitting = gltf.animations.filter((clip) => clipFitsRig(clip, scene, bones));
+        const misfits = gltf.animations.filter((clip) => !fitting.includes(clip)).map((clip) => clip.name);
+        if (misfits.length) console.warn(`glTF-Avatar: ${misfits.length} Animation(en) passen nicht zum Skelett:`, misfits);
+        setClipMisfits(modelPath, misfits);
+        setEmbedded(withoutRootMotion(fitting, scene, bones.hips));
         root = scene;
         motionPlayerRef.current = new AvatarMotionPlayer(scene, () => setPlayingGesture(''));
         motionPlayerRef.current.onClipChange = (kind, name) => setPlayingClips((now) => ({ ...now, [kind]: name }));
@@ -395,6 +403,7 @@ export const GltfViewer = ({
         data-face={faceInfo.kind}
         data-face-keys={faceInfo.keys}
         data-idle-clip={playingClips.idle}
+        data-clip-misfits={clipMisfits[modelPath]?.length ?? 0}
         data-gesture-clip={playingGesture ? playingClips.gesture : ''}
         className="w-full h-full cursor-grab active:cursor-grabbing"
       />

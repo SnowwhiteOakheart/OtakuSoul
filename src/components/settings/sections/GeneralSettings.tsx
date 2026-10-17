@@ -1,5 +1,7 @@
 import { AvatarMotionsSettings } from '../AvatarMotionsSettings';
 import { ModelFaceSettings } from '../ModelFaceSettings';
+import { AvatarActions } from '../AvatarActions';
+import { useState } from 'react';
 import { useStoreFields } from '../../../store/useAppStore';
 import { translate, useTranslation, type SupportedLanguage } from '../../../i18n';
 import { open } from '@tauri-apps/plugin-dialog';
@@ -44,6 +46,28 @@ export const GeneralSettings = () => {
     'setActiveLive2dPath', 'refreshLive2dModels', 'replyLanguage', 'setReplyLanguage', 'closeToTray', 'setCloseToTray',
   );
 
+  // Avatars removed a moment ago (undo still possible) are left out of the lists.
+  const [hidden, setHidden] = useState<string[]>([]);
+  // The avatar imported last gets its name field opened once.
+  const [justImported, setJustImported] = useState<string | null>(null);
+  const vrms = scannedVrms.filter((vrm) => !hidden.includes(vrm.path));
+  const live2ds = scannedLive2ds.filter((l2d) => !hidden.includes(l2d.model_path));
+  const selectedVrm = vrms.find((vrm) => vrm.path === activeVrmPath);
+  const selectedLive2d = live2ds.find((l2d) => l2d.model_path === activeLive2dPath);
+  // Removing the chosen avatar picks another one; undo returns to it.
+  const hideAvatar = (kind: 'vrm' | 'live2d', path: string) => {
+    setHidden((list) => [...list, path]);
+    if (kind === 'vrm' && activeVrmPath === path) setActiveVrmPath(vrms.find((v) => v.path !== path)?.path ?? null);
+    if (kind === 'live2d' && activeLive2dPath === path) {
+      setActiveLive2dPath(live2ds.find((l) => l.model_path !== path)?.model_path ?? null);
+    }
+  };
+  const unhideAvatar = (kind: 'vrm' | 'live2d', path: string) => {
+    setHidden((list) => list.filter((p) => p !== path));
+    if (kind === 'vrm') setActiveVrmPath(path);
+    else setActiveLive2dPath(path);
+  };
+
   const handleBrowseVrm = async () => {
     try {
       const selected = await open({
@@ -60,6 +84,7 @@ export const GeneralSettings = () => {
         const imported = await api.importVrmModel(selected);
         await refreshVrmModels();
         setActiveVrmPath(imported.path);
+        setJustImported(imported.path);
         toast.success(translate('settings.vrmImported', { name: imported.name }));
         if (imported.triangles > HEAVY_MODEL_TRIANGLES) {
           toast.info(translate('settings.vrmHeavy', { name: imported.name, count: imported.triangles.toLocaleString() }));
@@ -87,6 +112,7 @@ export const GeneralSettings = () => {
         const imported = await api.importLive2dModel(selected);
         await refreshLive2dModels();
         setActiveLive2dPath(imported.model_path);
+        setJustImported(imported.model_path);
         toast.success(translate('settings.live2dImported', { name: imported.name }));
       }
     } catch (e) {
@@ -319,7 +345,7 @@ export const GeneralSettings = () => {
             onChange={(e) => setActiveVrmPath(e.target.value || null)}
             className="flex-1 bg-app border border-slate-800 rounded-lg px-3 py-2 text-slate-200 focus:outline-hidden focus:border-accent-500"
           >
-            {scannedVrms.map((vrm, idx) => (
+            {vrms.map((vrm, idx) => (
               <option key={idx} value={vrm.path}>
                 {vrm.name} ({vrm.format === 'mmd' ? 'MMD, ' : vrm.format === 'gltf' ? 'glTF, ' : ''}{vrm.size_mb.toFixed(0)} MB)
               </option>
@@ -334,6 +360,15 @@ export const GeneralSettings = () => {
             <span className="whitespace-nowrap">{t('settings.importVrm')}</span>
           </button>
         </div>
+        <AvatarActions
+          key={`vrm:${selectedVrm?.path}:${justImported === selectedVrm?.path}`}
+          startEditing={!!selectedVrm && justImported === selectedVrm.path}
+          kind="vrm"
+          entry={selectedVrm}
+          refresh={refreshVrmModels}
+          hide={(path) => hideAvatar('vrm', path)}
+          unhide={(path) => unhideAvatar('vrm', path)}
+        />
         <div className="flex flex-wrap items-center justify-between gap-2 text-xs text-slate-400">
           <p className="max-w-xl">{t('settings.avatarPackHint')}</p>
           <button
@@ -365,7 +400,7 @@ export const GeneralSettings = () => {
             onChange={(e) => setActiveLive2dPath(e.target.value || null)}
             className="flex-1 min-w-[200px] bg-app border border-slate-800 rounded-lg px-3 py-2 text-slate-200 focus:outline-hidden focus:border-accent-500"
           >
-            {scannedLive2ds.map((l2d, idx) => (
+            {live2ds.map((l2d, idx) => (
               <option key={idx} value={l2d.model_path}>
                 {l2d.name} ({l2d.id})
               </option>
@@ -382,6 +417,15 @@ export const GeneralSettings = () => {
             <span className="whitespace-nowrap">{t('settings.importLive2d')}</span>
           </button>
         </div>
+        <AvatarActions
+          key={`live2d:${selectedLive2d?.model_path}:${justImported === selectedLive2d?.model_path}`}
+          startEditing={!!selectedLive2d && justImported === selectedLive2d.model_path}
+          kind="live2d"
+          entry={selectedLive2d && { name: selectedLive2d.name, path: selectedLive2d.model_path, removable: selectedLive2d.removable }}
+          refresh={refreshLive2dModels}
+          hide={(path) => hideAvatar('live2d', path)}
+          unhide={(path) => unhideAvatar('live2d', path)}
+        />
       </div>
     </div>
   );

@@ -49,6 +49,9 @@ pub struct ScannedVrm {
     /// Triangles of an imported glTF model (0 when not counted), for a hint on heavy models.
     #[serde(default)]
     pub triangles: u64,
+    /// Imported by the user (in `<data>/avatars`): can be removed. Bundled models cannot.
+    #[serde(default)]
+    pub removable: bool,
 }
 
 /// `(config_dir, data_dir)`: the platform folders, or `$OTAKUSOUL_HOME/config|data` when set
@@ -602,6 +605,7 @@ pub fn scan_available_vrm_models() -> Vec<ScannedVrm> {
                         size_mb,
                         format: format.into(),
                         triangles: 0,
+                        removable: false,
                     });
                 }
             }
@@ -620,6 +624,7 @@ pub fn scan_available_vrm_models() -> Vec<ScannedVrm> {
                 path: model.to_string_lossy().to_string(),
                 format: "gltf".into(),
                 triangles: 0,
+                removable: false,
             });
         }
         // MMD models live in their own folders (textures next to them).
@@ -638,10 +643,26 @@ pub fn scan_available_vrm_models() -> Vec<ScannedVrm> {
                 size_mb,
                 format: "mmd".into(),
                 triangles: 0,
+                removable: false,
             });
         }
     }
 
+    label_vrms(vrms)
+}
+
+/// Own names (`avatar_library`) and whether a model was imported, for the list and the import result.
+pub fn label_vrms(mut vrms: Vec<ScannedVrm>) -> Vec<ScannedVrm> {
+    use crate::modules::avatar_library::{AvatarKind, custom_name, key_for, removable};
+    let data_dir = PathBuf::from(resolve_app_paths().data_dir);
+    let roots = avatar_roots();
+    for vrm in &mut vrms {
+        let path = Path::new(&vrm.path);
+        if let Some(name) = custom_name(&data_dir, AvatarKind::Vrm, &key_for(path, &roots)) {
+            vrm.name = name;
+        }
+        vrm.removable = removable(&data_dir, AvatarKind::Vrm, path);
+    }
     vrms
 }
 
@@ -692,6 +713,7 @@ pub fn import_vrm_model(source_path: &str) -> Result<ScannedVrm, String> {
         path: model.to_string_lossy().to_string(),
         format: format.into(),
         triangles: 0,
+        removable: false,
     })
 }
 
@@ -754,6 +776,7 @@ fn import_vrm_into(src: &Path, dest_dir: &Path) -> Result<ScannedVrm, String> {
         size_mb: src_len / (1024 * 1024),
         format: format.into(),
         triangles,
+        removable: false,
     })
 }
 

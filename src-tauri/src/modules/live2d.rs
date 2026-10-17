@@ -14,6 +14,9 @@ pub struct ScannedLive2d {
     pub model_path: String,
     pub preview_image: Option<String>,
     pub version: String, // "cubism3_4" | "cubism2"
+    /// Imported or downloaded by the user (in `<data>/live2d`): can be removed.
+    #[serde(default)]
+    pub removable: bool,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize, TS)]
@@ -140,6 +143,14 @@ pub fn scan_available_live2d_models() -> Vec<ScannedLive2d> {
         }
     }
 
+    let data_dir = PathBuf::from(&paths.data_dir);
+    for model in &mut found_models {
+        use crate::modules::avatar_library::{AvatarKind, custom_name, removable};
+        if let Some(name) = custom_name(&data_dir, AvatarKind::Live2d, &model.id) {
+            model.name = name;
+        }
+        model.removable = removable(&data_dir, AvatarKind::Live2d, Path::new(&model.model_path));
+    }
     found_models.sort_by_key(|a| a.name.to_lowercase());
     found_models
 }
@@ -179,6 +190,7 @@ fn inspect_live2d_dir(dir: &Path) -> Option<ScannedLive2d> {
         model_path: model_path.to_string_lossy().to_string(),
         preview_image,
         version,
+        removable: false,
     })
 }
 

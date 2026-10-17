@@ -14,8 +14,8 @@ import { toast } from '../ui/feedback';
  */
 export const ModelClipsSettings = () => {
   const { t } = useTranslation();
-  const { scannedVrms, activeVrmPath, playAvatarClip, bumpModelClipRevision } = useStoreFields(
-    'scannedVrms', 'activeVrmPath', 'playAvatarClip', 'bumpModelClipRevision',
+  const { scannedVrms, activeVrmPath, playAvatarClip, bumpModelClipRevision, clipMisfits } = useStoreFields(
+    'scannedVrms', 'activeVrmPath', 'playAvatarClip', 'bumpModelClipRevision', 'clipMisfits',
   );
   const models = scannedVrms.filter((m) => m.format === 'gltf');
   const [chosen, setChosen] = useState('');
@@ -23,6 +23,8 @@ export const ModelClipsSettings = () => {
     ? chosen
     : (models.find((m) => m.path === activeVrmPath) ?? models[0])?.path ?? '';
   const [clips, setClips] = useState<ModelClip[]>([]);
+  // Clips the viewer left out because they belong to another skeleton (known once the model was shown).
+  const misfits = clipMisfits[modelPath] ?? [];
   const [error, setError] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
 
@@ -89,9 +91,17 @@ export const ModelClipsSettings = () => {
         <p className="text-xs text-slate-500 italic">{t('modelClips.empty')}</p>
       ) : (
         <ul className="space-y-1.5" data-model-clips={clips.length}>
+          {misfits.length > 0 && (
+            <li className="rounded-lg border border-amber-500/30 bg-amber-500/10 px-3 py-2 text-xs text-amber-200" data-clip-misfits={misfits.length}>
+              {t(misfits.length === clips.length ? 'modelClips.misfitAll' : 'modelClips.misfitSome')}
+            </li>
+          )}
           {clips.map((clip) => (
-            <li key={clip.name} className="flex items-center gap-2 text-xs">
-              <span className="flex-1 truncate text-slate-200" title={clip.name}>{clip.name}</span>
+            <li key={clip.name} className={`flex items-center gap-2 text-xs ${misfits.includes(clip.name) ? 'opacity-50' : ''}`}>
+              <span className="flex-1 truncate text-slate-200" title={clip.name}>
+                {clip.name}
+                {misfits.includes(clip.name) && <span className="ml-1.5 text-amber-300">({t('modelClips.misfitTag')})</span>}
+              </span>
               <select
                 aria-label={t('motions.roleFor', { name: clip.name })}
                 value={clip.role}

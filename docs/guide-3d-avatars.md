@@ -132,6 +132,9 @@ Feel free to scale textures down to 2048 px – it saves video memory and loadin
 4. In the chat the figure plays gestures on roleplay actions (`*waves*`, `*nods*`, `*laughs*`) and detected
    emotions. Start "by hand only" clips from the **"Gestures from the model"** menu (clapperboard icon at the bottom left of the
    avatar).
+5. **Rename and remove:** after the import a name field opens; later use **"Rename"** below the list (the file keeps its
+   name, leaving the field empty restores the original). **"Remove"** moves an imported model with its folder into the
+   app's trash (with "Undo" for 8 seconds); bundled models stay. The same works for Live2D models.
 
 ## 9. Troubleshooting
 
@@ -142,7 +145,7 @@ Feel free to scale textures down to 2048 px – it saves video memory and loadin
 | Hair/eyelashes show as blocks | Connect the base color's alpha (section 4) |
 | Black frayed spots on hair or clothes | Export cut-out parts as alpha clip (Math node "Round"), not as blending |
 | Animations are missing | Set "Fake User", export with animation mode **Actions** |
-| Figure distorts during animations | The animation belongs to a different skeleton |
+| Figure distorts during animations | The animation belongs to a different skeleton. OtakuSoul detects such clips (other bone lengths, legs pointing up) and does not play them – they are marked in the clip list, the figure uses the other motions instead |
 | Figure lies sideways, stands on its head or vanishes once an animation plays | Load the model and the animations through the **same** import path in Blender (e.g. both with the same add-on). Different importers use different axes (Z or Y up) and bone orientations; Blender already shows this on playback |
 | Figure walks out of the picture | Set the walk animation to "By hand only" or leave it out |
 | Face does not move | Map face shapes in the face editor (section 6) – or name face bones after the patterns listed there |

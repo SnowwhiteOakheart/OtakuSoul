@@ -8,4 +8,8 @@ format: string,
 /**
  * Triangles of an imported glTF model (0 when not counted), for a hint on heavy models.
  */
-triangles: number, };
+triangles: number, 
+/**
+ * Imported by the user (in `<data>/avatars`): can be removed. Bundled models cannot.
+ */
+removable: boolean, };

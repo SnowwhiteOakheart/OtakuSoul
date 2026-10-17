@@ -85,3 +85,41 @@ pub fn set_model_face(
 pub fn delete_avatar_motion(file: String) -> Result<(), String> {
     crate::modules::avatar_motions::delete_avatar_motion(&file)
 }
+
+/// Key of an avatar in the name list: a 3D model by its path below the avatar folders, a Live2D
+/// model by its folder.
+fn avatar_key(kind: crate::modules::avatar_library::AvatarKind, path: &str) -> String {
+    use crate::modules::avatar_library::{AvatarKind, key_for};
+    let path = std::path::Path::new(path);
+    match kind {
+        AvatarKind::Vrm => key_for(path, &crate::modules::paths::avatar_roots()),
+        AvatarKind::Live2d => path
+            .parent()
+            .and_then(|p| p.file_name())
+            .map(|n| n.to_string_lossy().into_owned())
+            .unwrap_or_default(),
+    }
+}
+
+/// Gives an avatar (`kind` = `vrm` or `live2d`) an own name; an empty name restores the original.
+#[tauri::command]
+pub fn rename_avatar(kind: String, path: String, name: String) -> Result<(), String> {
+    let kind = crate::modules::avatar_library::AvatarKind::parse(&kind)?;
+    let data_dir = std::path::PathBuf::from(crate::modules::paths::resolve_app_paths().data_dir);
+    crate::modules::avatar_library::rename(&data_dir, kind, &avatar_key(kind, &path), &name)
+}
+
+/// Moves an imported avatar with its folder to the app's trash.
+#[tauri::command]
+pub fn delete_avatar(kind: String, path: String) -> Result<(), String> {
+    let kind = crate::modules::avatar_library::AvatarKind::parse(&kind)?;
+    let paths = crate::modules::paths::resolve_app_paths();
+    crate::modules::avatar_library::remove(
+        std::path::Path::new(&paths.data_dir),
+        std::path::Path::new(&paths.trash_dir),
+        kind,
+        std::path::Path::new(&path),
+        &avatar_key(kind, &path),
+    )
+    .map(|_| ())
+}

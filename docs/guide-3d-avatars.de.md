@@ -133,6 +133,10 @@ Texturen ruhig auf 2048 px verkleinern – das spart Grafikspeicher und Ladezeit
    - **▶** spielt den Clip zur Kontrolle ab
 4. Im Chat startet die Figur Gesten bei Rollenspiel-Aktionen (`*winkt*`, `*nickt*`, `*lacht*`) und erkannten
    Gefühlen. Clips „nur von Hand“ startest Du über das Menü **„Gesten aus dem Modell“** (Klappe-Symbol unten links am Avatar).
+5. **Umbenennen und Entfernen:** Nach dem Import öffnet sich ein Namensfeld; später geht es über **„Umbenennen“** unter der
+   Auswahl (die Datei behält ihren Namen, leer lassen stellt den ursprünglichen wieder her). **„Entfernen“** legt ein
+   importiertes Modell samt Ordner in den Papierkorb der App (8 Sekunden lang mit „Rückgängig“); mitgelieferte Modelle
+   bleiben. Dasselbe gilt für Live2D-Modelle.
 
 ## 9. Fehlerbehebung
 
@@ -143,7 +147,7 @@ Texturen ruhig auf 2048 px verkleinern – das spart Grafikspeicher und Ladezeit
 | Haare/Wimpern als Blöcke | Alpha der Grundfarbe verbinden (Abschnitt 4) |
 | Schwarze, ausgefranste Flecken an Haaren oder Kleidung | Ausgeschnittene Teile als Alpha-Clip exportieren (Mathe-Knoten „Runden“), nicht als Überblendung |
 | Animationen fehlen | „Fake User“ setzen, beim Export Animation-Modus **Aktionen** |
-| Figur verzerrt sich bei Animationen | Animation gehört zu einem anderen Skelett |
+| Figur verzerrt sich bei Animationen | Animation gehört zu einem anderen Skelett. OtakuSoul erkennt solche Clips (andere Knochenlängen, Beine zeigen nach oben) und spielt sie nicht ab – sie sind in der Clip-Liste markiert, die Figur nutzt stattdessen die übrigen Bewegungen |
 | Figur liegt quer, steht kopf oder verschwindet, sobald eine Animation läuft | Modell und Animationen über **denselben** Importweg in Blender laden (z. B. beides mit demselben Add-on). Verschiedene Importer verwenden unterschiedliche Achsen (Z- oder Y-oben) und Knochenausrichtungen; in Blender zeigt sich das schon beim Abspielen |
 | Figur läuft aus dem Bild | Lauf-Animation als „Nur von Hand“ einstellen oder weglassen |
 | Gesicht bewegt sich nicht | Gesichtsformen im Gesichts-Editor zuordnen (Abschnitt 6) – oder Gesichtsknochen nach den dort genannten Mustern benennen |

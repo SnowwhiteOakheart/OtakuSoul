@@ -836,6 +836,16 @@ export const api = {
     return await invoke<ScannedVrm>('import_vrm_model', { sourcePath });
   },
 
+  /** Own name for an avatar (`kind` = `vrm` or `live2d`); an empty name restores the original. */
+  renameAvatar: async (kind: 'vrm' | 'live2d', path: string, name: string): Promise<void> => {
+    await invoke('rename_avatar', { kind, path, name });
+  },
+
+  /** Moves an imported avatar with its folder to the app's trash. */
+  deleteAvatar: async (kind: 'vrm' | 'live2d', path: string): Promise<void> => {
+    await invoke('delete_avatar', { kind, path });
+  },
+
   loadSettings: async (): Promise<AppSettings> => {
     return await invoke<AppSettings>('load_settings');
   },

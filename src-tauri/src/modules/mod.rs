@@ -1,4 +1,5 @@
 pub mod attachments;
+pub mod avatar_library;
 pub mod avatar_models;
 pub mod avatar_motions;
 pub mod characters;
