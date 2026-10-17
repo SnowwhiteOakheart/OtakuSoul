@@ -1,4 +1,6 @@
 import { useState } from 'react';
+import { ResetSection } from '../ResetSection';
+import { EXTRA_SAMPLING_FIELDS, changedFields, samplingDefaults } from '../../../utils/settingDefaults';
 import { useStoreFields } from '../../../store/useAppStore';
 import { translate, useTranslation } from '../../../i18n';
 import { confirmDialog } from '../../ui/feedback';
@@ -17,11 +19,19 @@ export const SamplerSettings = () => {
     p.is_builtin ? tOptional(`preset.${p.id}.${field}`, p[field]) : p[field];
   const {
     llmPresets, activePresetId, applyLlmPreset, saveLlmPreset, deleteLlmPreset, sampling,
-    setSampling, lorebookScanDepth, setLorebookScanDepth, expertMode,
+    setSampling, lorebookScanDepth, setLorebookScanDepth, expertMode, serverConfig, selectedBackend,
   } = useStoreFields(
     'llmPresets', 'activePresetId', 'applyLlmPreset', 'saveLlmPreset', 'deleteLlmPreset',
-    'sampling', 'setSampling', 'lorebookScanDepth', 'setLorebookScanDepth', 'expertMode',
+    'sampling', 'setSampling', 'lorebookScanDepth', 'setLorebookScanDepth', 'expertMode', 'serverConfig', 'selectedBackend',
   );
+  const defaults = samplingDefaults(serverConfig.model_path, selectedBackend === 'local');
+  const changedSampling = changedFields(sampling, defaults, EXTRA_SAMPLING_FIELDS).length;
+  const resetSampling = () => {
+    const previous = { ...sampling };
+    const cleared = Object.fromEntries(EXTRA_SAMPLING_FIELDS.map((key) => [key, key === 'stop_strings' ? [] : null]));
+    setSampling({ ...cleared, ...defaults });
+    return () => setSampling(previous);
+  };
 
   // New preset modal state
   const [isCreatingPreset, setIsCreatingPreset] = useState(false);
@@ -55,6 +65,9 @@ export const SamplerSettings = () => {
               {t('settings.presetsTitle')}
             </h2>
             <p className="text-xs text-slate-400 mt-0.5">{t('settings.presetsIntro')}</p>
+            <div className="mt-1.5">
+              <ResetSection area={t('settings.tabSampler')} changed={changedSampling} reset={resetSampling} />
+            </div>
           </div>
 
           {expertMode && <button

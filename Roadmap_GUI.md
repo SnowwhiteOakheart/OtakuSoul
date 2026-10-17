@@ -142,7 +142,10 @@
 - [ ] **Stimme vereinfachen:** (teilweise 16.10.2026: Voice-ID, Ausschluss-RegEx und RVC nur im Expertenmodus, Texte ohne
   Fachbegriffe; Probehör-Liste über alle Engines fehlt noch) „Stimme wählen“ mit Probehören-Liste über alle Engines; Voice-ID, RegEx, RVC unter
   „Erweitert“; Klon-Dialog als eigener, geführter Ablauf.
-- [ ] **Zurücksetzen pro Bereich** und Hinweis, welche Werte vom Standard abweichen.
+- [x] **Zurücksetzen pro Bereich (17.10.2026):** Antwortstil, Lokale KI (Tuning + Kontext/GPU-Layer nach Empfehlung) und
+  Farb-Theme zeigen „N Werte weichen vom Standard ab“ und setzen mit Rückgängig zurück (`ResetSection`,
+  `utils/settingDefaults.ts`, Bonsai mit eigenen Standards; E2E `settings-reset.mjs`). Ursprünglich: Zurücksetzen pro Bereich
+  und Hinweis, welche Werte vom Standard abweichen.
 
 ## 6. Hilfe, Fehler & leere Zustände
 
@@ -166,7 +169,9 @@
   gefundene behoben. Ursprünglich: Alle reinen Symbolknöpfe mit `aria-label` **und** sichtbarem Tooltip; einheitliche Begriffe (Szene/Story/
   Geschichte, Figur/Charakter) app-weit festlegen und in allen Locales durchziehen.
 - [ ] Tastaturbedienung der neuen Abläufe (Galerie, Assistenten), Fokus-Reihenfolge, Kontrast in allen Themes.
-  (16.10.2026: Sweep prüft Enter/Escape und Fokus-Rückkehr der Story-Vorschau; Kontrast je Theme noch ungeprüft.
+  (17.10.2026: Kontrast erledigt – `e2e/contrast.mjs` misst jeden sichtbaren Text in 5 Themes × hell/dunkel gegen den
+  tatsächlichen Hintergrund; behoben: Hinweistexte `slate-500`, Akzentknöpfe Cyberpunk/Midnight/Emerald, helle
+  Akzenttexte, Abzeichen „Aktiv“/„Für Einsteiger“/Genre. 16.10.2026: Sweep prüft Enter/Escape und Fokus-Rückkehr der Story-Vorschau.
   `a11y-sweep` scheiterte einmal ohne erkennbare Ursache und bestand danach zweimal – beobachten.)
 - [x] (16.10.2026) Kleine Fenster: der Sweep prüft 1024×700 auf seitlichen Überlauf und Dialoge außerhalb des Fensters –
   ohne Befund. Ursprünglich: Kleine Fenster (≥ 1024×700) ohne abgeschnittene Dialoge; Dialoge mit fester Fußzeile.

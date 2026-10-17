@@ -389,7 +389,7 @@ export const CharacterLibraryView = () => {
                       </div>
                     )}
                     {isActive && (
-                      <div className="absolute top-2.5 left-2.5 px-2 py-0.5 rounded-full bg-emerald-500/90 text-app text-xs font-bold flex items-center gap-1 shadow-md">
+                      <div className="absolute top-2.5 left-2.5 px-2 py-0.5 rounded-full bg-emerald-700 text-white text-xs font-bold flex items-center gap-1 shadow-md">
                         <CheckCircle2 className="w-3 h-3" />
                         <span>{t('library.active')}</span>
                       </div>

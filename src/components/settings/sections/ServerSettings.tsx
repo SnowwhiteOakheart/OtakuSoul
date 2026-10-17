@@ -1,4 +1,6 @@
 import { useEffect, useState } from 'react';
+import { ResetSection } from '../ResetSection';
+import { changedFields, serverTuningDefaults } from '../../../utils/settingDefaults';
 import { useAppStore, useStoreFields } from '../../../store/useAppStore';
 import { translate, useTranslation } from '../../../i18n';
 import { errorMessage } from '../../../utils/errors';
@@ -54,6 +56,15 @@ export const ServerSettings = () => {
     }
   };
   const mmproj = serverConfig.mmproj_path ?? '';
+  // Tuning plus context and GPU layers apart from what the planner recommends for this model.
+  const changedServer =
+    changedFields(serverConfig, serverTuningDefaults(serverConfig.model_path)).length +
+    (layerRecommendation && serverConfig.context_size !== layerRecommendation.recommended_context_size ? 1 : 0) +
+    (layerRecommendation && layerRecommendation.available_vram_mb > 0 && serverConfig.gpu_layers !== layerRecommendation.recommended_layers ? 1 : 0);
+  const resetServer = async () => {
+    const previous = await useAppStore.getState().resetServerTuning();
+    return () => setServerConfig(previous);
+  };
   // What the chosen model was trained for limits the context choices (0 = unknown).
   const trainedContext = layerRecommendation?.trained_context_size ?? 0;
   const gpu = hardware?.gpus[0];
@@ -180,6 +191,9 @@ export const ServerSettings = () => {
             <Cpu className="w-4 h-4 text-accent-400" />
             {t('settings.serverTitle')}
           </h2>
+          {serverConfig.model_path && (
+            <ResetSection area={t('settings.tabServer')} changed={changedServer} reset={resetServer} />
+          )}
 
           <div className="flex items-center gap-2">
             {serverStatus.state === 'running' && (

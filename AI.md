@@ -88,6 +88,10 @@ ru „персонаж/история/сцена“. Fachbegriffe nur im Experte
 - **Fehler im Store:** Aktion mit eigener Rückmeldung im Aufrufer (Erfolgs-Toast, Formular) → `throw e`; Knopf ohne eigene
   Rückmeldung → `reportFailure` (`store/reportFailure.ts`, Toast mit Ursache); reine Hintergrundabrufe → nur Log. Ausnahme `saveCurrentSettings`: Fehler einmalig melden, erneut erst nach einem
   zwischenzeitlich erfolgreichen Speichern.
+- **Zurücksetzen & Kontrast:** Standardwerte je Bereich in `utils/settingDefaults.ts` (Sampler wie `SamplingParams::default`,
+  Server-Tuning, Theme; Bonsai eigene), Anzeige/Knopf `settings/ResetSection.tsx`. Theme-Farben müssen WCAG AA halten:
+  `e2e/contrast.mjs` (Teil von `npm run e2e`) misst alle Themes hell/dunkel; neue Farbtöne für weiße Schrift mindestens
+  Stufe 700 (bzw. `accent-600`), Hinweistext `slate-500` ist in `App.css` je Modus angepasst.
 - **Hilfe:** `components/HelpDialog.tsx` (`GUIDE_STEPS`, `GLOSSARY_TERMS`, Texte `help.*`/`glossary.*`), geöffnet über
   `appSlice.isHelpOpen` (Kopfzeile, Befehlspalette); Anleitung `docs/guide-getting-started{,.de,.ru}.md` bei neuen
   Abläufen nachziehen.

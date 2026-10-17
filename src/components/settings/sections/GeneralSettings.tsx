@@ -1,6 +1,8 @@
 import { AvatarMotionsSettings } from '../AvatarMotionsSettings';
 import { ModelFaceSettings } from '../ModelFaceSettings';
 import { AvatarActions } from '../AvatarActions';
+import { ResetSection } from '../ResetSection';
+import { APPEARANCE_DEFAULTS } from '../../../utils/settingDefaults';
 import { useState } from 'react';
 import { useStoreFields } from '../../../store/useAppStore';
 import { translate, useTranslation, type SupportedLanguage } from '../../../i18n';
@@ -131,6 +133,21 @@ export const GeneralSettings = () => {
             {t('settings.theme')}
           </h2>
           <p className="text-xs text-slate-400 mt-0.5">{t('settings.themeIntro')}</p>
+          <div className="mt-1.5">
+            <ResetSection
+              area={t('settings.theme')}
+              changed={(theme !== APPEARANCE_DEFAULTS.theme ? 1 : 0) + (colorMode !== APPEARANCE_DEFAULTS.colorMode ? 1 : 0)}
+              reset={() => {
+                const [previousTheme, previousMode] = [theme, colorMode];
+                setTheme(APPEARANCE_DEFAULTS.theme);
+                setColorMode(APPEARANCE_DEFAULTS.colorMode);
+                return () => {
+                  setTheme(previousTheme);
+                  setColorMode(previousMode);
+                };
+              }}
+            />
+          </div>
         </div>
 
         <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 border-y border-slate-800 py-3">

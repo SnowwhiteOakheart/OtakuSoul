@@ -262,11 +262,11 @@ const StoryCard = ({ scene, onOpen }: { scene: ScenePreview; onOpen: () => void 
       <button type="button" onClick={onOpen} className="text-left flex-1 flex flex-col">
         <div className={`relative h-28 bg-linear-to-br ${kind.cover} flex items-center justify-center`}>
           <kind.icon className={`w-12 h-12 ${kind.accent} opacity-80 group-hover:scale-110 transition-transform`} />
-          <span className={`absolute left-3 top-3 rounded-full bg-black/30 px-2 py-0.5 text-[11px] font-semibold ${kind.accent}`}>
+          <span className="absolute left-3 top-3 rounded-full bg-black/55 px-2 py-0.5 text-[11px] font-semibold text-white">
             {t(`gallery.filter.${kindId}` as TranslationKey)}
           </span>
           {scene.story?.beginner && (
-            <span className="absolute right-3 top-3 rounded-full bg-emerald-500/90 px-2 py-0.5 text-[11px] font-semibold text-white">
+            <span className="absolute right-3 top-3 rounded-full bg-emerald-700 px-2 py-0.5 text-[11px] font-semibold text-white">
               {t('gallery.beginner')}
             </span>
           )}

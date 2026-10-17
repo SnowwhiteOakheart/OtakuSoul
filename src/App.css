@@ -35,6 +35,9 @@
     --theme-bg: #020617;
     --theme-accent: #a855f7;
     --theme-accent2: #ec4899;
+    /* Hint text (slate-500) a little lighter than Tailwind's, so it reaches WCAG AA (4.5:1) on the
+       dark surfaces; light mode sets its own scale below. */
+    --color-slate-500: #7a8aa3;
     --scrollbar-thumb: rgba(148, 163, 184, 0.2);
     --scrollbar-thumb-hover: rgba(148, 163, 184, 0.4);
   }
@@ -78,7 +81,7 @@
     --color-accent-300: var(--color-yellow-300);
     --color-accent-400: var(--color-yellow-400);
     --color-accent-500: var(--color-yellow-500);
-    --color-accent-600: var(--color-yellow-600);
+    --color-accent-600: var(--color-yellow-700); /* white text needs the darker shade */
     --color-accent-700: var(--color-yellow-700);
     --color-accent-800: var(--color-yellow-800);
     --color-accent-900: var(--color-yellow-900);
@@ -134,7 +137,7 @@
     --color-accent-300: var(--color-sky-300);
     --color-accent-400: var(--color-sky-400);
     --color-accent-500: var(--color-sky-500);
-    --color-accent-600: var(--color-sky-600);
+    --color-accent-600: var(--color-sky-700); /* white text needs the darker shade */
     --color-accent-700: var(--color-sky-700);
     --color-accent-800: var(--color-sky-800);
     --color-accent-900: var(--color-sky-900);
@@ -162,7 +165,7 @@
     --color-accent-300: var(--color-emerald-300);
     --color-accent-400: var(--color-emerald-400);
     --color-accent-500: var(--color-emerald-500);
-    --color-accent-600: var(--color-emerald-600);
+    --color-accent-600: var(--color-emerald-700); /* white text needs the darker shade */
     --color-accent-700: var(--color-emerald-700);
     --color-accent-800: var(--color-emerald-800);
     --color-accent-900: var(--color-emerald-900);
@@ -194,7 +197,7 @@
     --color-slate-200: #1e293b;
     --color-slate-300: #334155;
     --color-slate-400: #475569;
-    --color-slate-500: #64748b;
+    --color-slate-500: #5a6a80;
     --color-slate-600: #94a3b8;
     --color-slate-700: #cbd5e1;
     --color-slate-800: #e2e8f0;
@@ -202,24 +205,25 @@
     --color-slate-950: #f8fafc;
     --scrollbar-thumb: rgba(71, 85, 105, 0.24);
     --scrollbar-thumb-hover: rgba(71, 85, 105, 0.42);
-    --color-accent-50: color-mix(in oklab, var(--theme-accent) 35%, black);
-    --color-accent-100: color-mix(in oklab, var(--theme-accent) 45%, black);
-    --color-accent-200: color-mix(in oklab, var(--theme-accent) 55%, black);
-    --color-accent-300: color-mix(in oklab, var(--theme-accent) 65%, black);
-    --color-accent-400: color-mix(in oklab, var(--theme-accent) 80%, black);
-    --color-accent-500: color-mix(in oklab, var(--theme-accent) 80%, black);
-    --color-accent-600: color-mix(in oklab, var(--theme-accent) 65%, black);
+    /* Text shades dark enough for 4.5:1 on light surfaces even with bright accents (Cyberpunk yellow). */
+    --color-accent-50: color-mix(in oklab, var(--theme-accent) 30%, black);
+    --color-accent-100: color-mix(in oklab, var(--theme-accent) 38%, black);
+    --color-accent-200: color-mix(in oklab, var(--theme-accent) 45%, black);
+    --color-accent-300: color-mix(in oklab, var(--theme-accent) 50%, black);
+    --color-accent-400: color-mix(in oklab, var(--theme-accent) 55%, black);
+    --color-accent-500: color-mix(in oklab, var(--theme-accent) 60%, black);
+    --color-accent-600: color-mix(in oklab, var(--theme-accent) 50%, black);
     --color-accent-700: color-mix(in oklab, var(--theme-accent) 30%, white);
     --color-accent-800: color-mix(in oklab, var(--theme-accent) 20%, white);
     --color-accent-900: color-mix(in oklab, var(--theme-accent) 12%, white);
     --color-accent-950: color-mix(in oklab, var(--theme-accent) 6%, white);
-    --color-accent2-50: color-mix(in oklab, var(--theme-accent2) 35%, black);
-    --color-accent2-100: color-mix(in oklab, var(--theme-accent2) 45%, black);
-    --color-accent2-200: color-mix(in oklab, var(--theme-accent2) 55%, black);
-    --color-accent2-300: color-mix(in oklab, var(--theme-accent2) 65%, black);
-    --color-accent2-400: color-mix(in oklab, var(--theme-accent2) 80%, black);
-    --color-accent2-500: color-mix(in oklab, var(--theme-accent2) 80%, black);
-    --color-accent2-600: color-mix(in oklab, var(--theme-accent2) 65%, black);
+    --color-accent2-50: color-mix(in oklab, var(--theme-accent2) 30%, black);
+    --color-accent2-100: color-mix(in oklab, var(--theme-accent2) 38%, black);
+    --color-accent2-200: color-mix(in oklab, var(--theme-accent2) 45%, black);
+    --color-accent2-300: color-mix(in oklab, var(--theme-accent2) 50%, black);
+    --color-accent2-400: color-mix(in oklab, var(--theme-accent2) 55%, black);
+    --color-accent2-500: color-mix(in oklab, var(--theme-accent2) 60%, black);
+    --color-accent2-600: color-mix(in oklab, var(--theme-accent2) 50%, black);
     --color-accent2-700: color-mix(in oklab, var(--theme-accent2) 30%, white);
     --color-accent2-800: color-mix(in oklab, var(--theme-accent2) 20%, white);
     --color-accent2-900: color-mix(in oklab, var(--theme-accent2) 12%, white);

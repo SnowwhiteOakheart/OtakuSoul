@@ -20,6 +20,7 @@ import { reportFailure } from '../reportFailure';
 import { errorCode, errorMessage } from '../../utils/errors';
 import { translate } from '../../i18n';
 import { trackTask } from './taskSlice';
+import { serverTuningDefaults } from '../../utils/settingDefaults';
 
 /** The task of the model being loaded; the server status says when it is ready. */
 let serverTaskId: string | null = null;
@@ -44,6 +45,10 @@ export interface LlmSlice {
   serverConfig: LlamaServerConfig;
   setServerConfig: (config: Partial<LlamaServerConfig>) => void;
   selectLocalModel: (path: string) => Promise<void>;
+  /** Context size and GPU layers for the chosen model (from its file and the graphics card). */
+  fitServerToModel: () => Promise<void>;
+  /** Server tuning back to its defaults for the chosen model; returns the old settings for undo. */
+  resetServerTuning: () => Promise<LlamaServerConfig>;
   fetchServerStatus: () => Promise<void>;
   /** `quiet`: the caller shows the error itself (no toast). */
   startServer: (options?: { quiet?: boolean }) => Promise<void>;
@@ -188,16 +193,22 @@ export const createLlmSlice: SliceCreator<LlmSlice> = (set, get) => ({
           : state.sampling,
       };
     });
-    // Context and GPU layers for this model: what fits into the graphics memory, never more
+    await get().fitServerToModel();
+    await get().saveCurrentSettings();
+  },
+
+  fitServerToModel: async () => {
+    // Context and GPU layers for the chosen model: what fits into the graphics memory, never more
     // than the model was trained for.
+    const config = get().serverConfig;
+    if (!config.model_path) return;
     try {
-      const config = get().serverConfig;
-      const model = get().scannedModels.find((item) => item.path === path);
+      const model = get().scannedModels.find((item) => item.path === config.model_path);
       const rec = await api.getLayerRecommendation(
         model?.size_mb ?? 0,
         0,
         config.context_size,
-        path,
+        config.model_path,
         config.cache_type_k ?? 'f16',
         config.cache_type_v ?? 'f16',
       );
@@ -212,7 +223,14 @@ export const createLlmSlice: SliceCreator<LlmSlice> = (set, get) => ({
     } catch (e) {
       console.error('Failed to size the context for the model:', e);
     }
+  },
+
+  resetServerTuning: async () => {
+    const previous = get().serverConfig;
+    set((state) => ({ serverConfig: { ...state.serverConfig, ...serverTuningDefaults(state.serverConfig.model_path) } }));
+    await get().fitServerToModel();
     await get().saveCurrentSettings();
+    return previous;
   },
 
   fetchServerStatus: async () => {
