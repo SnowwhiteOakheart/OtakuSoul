@@ -334,7 +334,8 @@ ru „персонаж/история/сцена“. Fachbegriffe nur im Experte
   Hintergründe einer Szene stehen in `extensions.otakusoul_assets.backgrounds` (`[{file, path}]`, `path` relativ zum
   Daten-Repo unter `presets/`); `hub::download_scene_assets` lädt fehlende Bilder nach `<Daten>/backgrounds` (Fehler nur Log).
   Lorebook-Import (`import_from_json_string`) behält Buch-`extensions` (Übersetzungen) und wandelt Soul-of-Waifu-Einträge
-  um (`upgrade_legacy_entry`: `depends_on` → `chain_requires`, `random` → `always_on`, `semantic`/`chain`/`range` → `keyword`).
+  um (`upgrade_legacy_entry`: `depends_on` → `chain_requires`, `random` und `chain` mit Voraussetzung → `always_on`,
+  `semantic`/`range` → `keyword`); das Daten-Repo steht bereits im App-Format.
   Stage bindet Lorebooks einer Szene über Originalname oder ID (nicht den übersetzten Namen). Karten-Update =
   `overwrite`. Lorebooks behalten ihre ID; lokal veränderte (Hash ≠ `local_sha256`) oder fremde gleichnamige lehnt der Import mit
   `backend.hub.lorebookModified` ab, mit `keep_copy` wird die eigene Fassung als `<id>_own` gesichert. Frontend: `hubStatus`,

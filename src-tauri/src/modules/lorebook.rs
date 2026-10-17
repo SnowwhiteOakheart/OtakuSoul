@@ -202,7 +202,8 @@ impl Lorebook {
 }
 /// Older lorebooks (Soul of Waifu, earlier content packs) use triggers and fields the app does not
 /// evaluate: `depends_on` (UID, -1 = none) becomes `chain_requires`, `random` fires by its probability
-/// like an always-on entry, and `semantic`, `chain` and `range` work through their keywords.
+/// like an always-on entry, a `chain` entry fires while its prerequisite is active, and `semantic`,
+/// `range` (and a chain without prerequisite) work through their keywords.
 /// `sticky`, `cooldown`, `delay`, `min_msg`/`max_msg` and `semantic_trigger` have no effect.
 fn upgrade_legacy_entry(entry: &mut LorebookEntry, raw: &serde_json::Value) {
     if entry.chain_requires.is_empty()
@@ -215,6 +216,7 @@ fn upgrade_legacy_entry(entry: &mut LorebookEntry, raw: &serde_json::Value) {
     }
     entry.trigger_type = match entry.trigger_type.to_ascii_lowercase().as_str() {
         "random" => "always_on".to_string(),
+        "chain" if !entry.chain_requires.is_empty() => "always_on".to_string(),
         "semantic" | "chain" | "range" => "keyword".to_string(),
         _ => std::mem::take(&mut entry.trigger_type),
     };
@@ -795,7 +797,7 @@ mod tests {
         );
         let entry = |uid: u64| book.entries.iter().find(|e| e.uid == Some(uid)).unwrap();
         assert_eq!(entry(5).chain_requires, vec!["4".to_string()]);
-        assert_eq!(entry(5).trigger_type, "keyword");
+        assert_eq!(entry(5).trigger_type, "always_on");
         assert_eq!(entry(6).trigger_type, "always_on");
         assert_eq!(entry(6).probability, Some(45));
         assert!(entry(6).chain_requires.is_empty());
