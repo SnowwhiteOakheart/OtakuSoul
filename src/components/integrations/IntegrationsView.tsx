@@ -39,7 +39,7 @@ export const IntegrationsView: React.FC = () => {
             onClick={() => setActiveTab('web')}
             className={`flex items-center gap-2 px-3 py-1.5 rounded-lg text-xs font-medium whitespace-nowrap transition outline-hidden focus-visible:ring-2 focus-visible:ring-accent-400 ${
               activeTab === 'web'
-                ? 'bg-cyan-600 text-white shadow-sm'
+                ? 'bg-cyan-700 text-white shadow-sm'
                 : 'text-slate-400 hover:text-slate-200'
             }`}
           >
@@ -87,7 +87,7 @@ export const IntegrationsView: React.FC = () => {
             onClick={() => setActiveTab('backup')}
             className={`flex items-center gap-2 px-3 py-1.5 rounded-lg text-xs font-medium whitespace-nowrap transition outline-hidden focus-visible:ring-2 focus-visible:ring-accent-400 ${
               activeTab === 'backup'
-                ? 'bg-emerald-600 text-white shadow-sm'
+                ? 'bg-emerald-700 text-white shadow-sm'
                 : 'text-slate-400 hover:text-slate-200'
             }`}
           >

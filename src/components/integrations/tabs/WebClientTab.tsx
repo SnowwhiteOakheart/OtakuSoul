@@ -110,7 +110,7 @@ export const WebClientTab: React.FC = () => {
               ) : (
                 <button
                   onClick={startWebServer}
-                  className="flex items-center gap-1.5 px-4 py-2 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white font-medium text-xs shadow-md shadow-emerald-600/20 transition"
+                  className="flex items-center gap-1.5 px-4 py-2 rounded-xl bg-emerald-700 hover:bg-emerald-800 text-white font-medium text-xs shadow-md shadow-emerald-600/20 transition"
                 >
                   <Play className="w-3.5 h-3.5 fill-current" />
                   <span>{t('int.startServer')}</span>
@@ -250,7 +250,7 @@ export const WebClientTab: React.FC = () => {
           <div className="w-48 h-48 rounded-2xl bg-app border border-dashed border-slate-800 flex flex-col items-center justify-center p-4 text-slate-400">
             <Smartphone className="w-8 h-8 mb-2 opacity-40" />
             <span className="text-xs">{t('int.serverStopped')}</span>
-            <span className="text-[11px] text-slate-600 mt-1">{t('int.qrHint')}</span>
+            <span className="text-[11px] text-slate-500 mt-1">{t('int.qrHint')}</span>
           </div>
         )}
 
