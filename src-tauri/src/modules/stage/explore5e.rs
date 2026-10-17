@@ -1,4 +1,4 @@
-//! Exploring the map of a 5e scene between fights (`roadmap_abgeschlossen.md`, section 8, step 4): the party walks
+//! Exploring the map of a 5e scene between fights (step 4 of the 5e plan): the party walks
 //! as a group behind the player, sees by its light (fog of war), opens doors and chests,
 //! picks or forces locks with skill checks, finds or springs traps, enters rooms whose
 //! prepared encounter then starts, and leaves through exits to other maps. The engine

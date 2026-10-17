@@ -69,3 +69,6 @@ e2e/screenshots/
 
 # Private notes that stay local (e.g. the full guide for extracting figures from games)
 /docs/private/
+
+# Abgeschlossene Roadmap nur lokal (nicht öffentlich)
+roadmap_abgeschlossen.md

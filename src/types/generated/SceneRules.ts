@@ -2,7 +2,7 @@
 import type { SceneGoal } from "./SceneGoal";
 
 /**
- * A scene played with the 5e rules engine (`roadmap_abgeschlossen.md`, section 8).
+ * A scene played with the 5e rules engine.
  */
 export type SceneRules = { 
 /**

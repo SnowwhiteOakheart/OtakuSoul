@@ -450,7 +450,7 @@ pub struct SceneDefinition {
     pub rules: Option<SceneRules>,
 }
 
-/// A scene played with the 5e rules engine (`roadmap_abgeschlossen.md`, section 8).
+/// A scene played with the 5e rules engine.
 #[derive(Debug, Clone, Default, PartialEq, Serialize, Deserialize, TS)]
 #[ts(export)]
 pub struct SceneRules {

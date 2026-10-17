@@ -1,7 +1,7 @@
 # 🗺️ OtakuSoul – Roadmap (offen)
 
-> Stand: 17.10.2026. Diese Datei ist die **einzige** Liste offener Punkte; `roadmap_abgeschlossen.md` enthält alles
-> Erledigte (Portierung Phasen 1–18, Verbesserungen, Sprachausgabe, Neutralisierung, optionale Inhalte, Qualität &
+> Stand: 17.10.2026. Diese Datei ist die **einzige** Liste offener Punkte; `roadmap_abgeschlossen.md` (nur lokal, nicht im
+> Repository) enthält alles Erledigte (Portierung Phasen 1–18, Verbesserungen, Sprachausgabe, Neutralisierung, optionale Inhalte, Qualität &
 > Bedienung, 5e-Regeln, 3D-Figuren aus Spielen, Bedienbarkeit & Story-Einstieg). Sie ersetzt `ROADMAP.md`,
 > `ROADMAP_ABGESCHLOSSEN.md`, `Roadmap_abgeschlossen.md`, `Roadmap_TTS.md`, `Roadmap_rename.md`, `roadmap_chatgpt.md`,
 > `roadmap_optional_content.md` und seit 17.10.2026 auch `Roadmap_DND.md`, `roadmap_ue5.md`, `Roadmap_GUI.md` und
