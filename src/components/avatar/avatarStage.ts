@@ -38,6 +38,8 @@ export interface AvatarStage {
    */
   setToon: (enabled: boolean) => void;
   start: (onFrame: (delta: number, elapsed: number) => void) => void;
+  /** Times the next rendered frame (shader compile and texture upload of a new model) as `avatar:firstFrame`. */
+  timeNextFrame: (modelPath: string) => void;
   dispose: () => void;
 }
 
@@ -140,6 +142,7 @@ export function createAvatarStage(container: HTMLElement, modelPath: string): Av
   let environment: THREE.Texture | null = null;
   let outline: OutlineEffect | null = null;
   let toon = false;
+  let timedFrame: string | null = null;
   return {
     scene,
     camera,
@@ -174,6 +177,9 @@ export function createAvatarStage(container: HTMLElement, modelPath: string): Av
         for (const m of Array.isArray(material) ? material : material ? [material] : []) m.needsUpdate = true;
       });
     },
+    timeNextFrame: (modelPath) => {
+      timedFrame = modelPath;
+    },
     start: (onFrame) => {
       let lastTime = performance.now();
       const startTime = lastTime;
@@ -185,8 +191,19 @@ export function createAvatarStage(container: HTMLElement, modelPath: string): Av
         lastTime = now;
         controls.update();
         onFrame(delta, (now - startTime) / 1000);
+        const frameStart = timedFrame === null ? 0 : performance.now();
         if (toon && outline) outline.render(scene, camera);
         else renderer.render(scene, camera);
+        if (timedFrame !== null) {
+          // A WebGL call returns before the GPU finishes; reading one pixel waits for it.
+          renderer.getContext().readPixels(0, 0, 1, 1, WebGL2RenderingContext.RGBA, WebGL2RenderingContext.UNSIGNED_BYTE, new Uint8Array(4));
+          try {
+            performance.measure('avatar:firstFrame', { start: frameStart, end: performance.now(), detail: timedFrame });
+          } catch {
+            // Diagnostic only.
+          }
+          timedFrame = null;
+        }
       };
       animate();
     },

@@ -1,3 +1,4 @@
+import { avatarTimer } from './avatarTiming';
 import * as THREE from 'three';
 import { GLTFLoader, type GLTF } from 'three/examples/jsm/loaders/GLTFLoader.js';
 import { api } from '../../services/api';
@@ -29,8 +30,14 @@ const normalise = (uri: string) => {
  * `asset://` images.
  */
 export async function loadGltfAvatar(modelPath: string): Promise<GLTF> {
+  const lap = avatarTimer(modelPath);
   const bytes = await api.readFileBinary(modelPath);
-  if (!/\.gltf$/i.test(modelPath)) return new GLTFLoader().parseAsync(bytes.buffer as ArrayBuffer, '');
+  if (!/\.gltf$/i.test(modelPath)) {
+    lap('read');
+    const gltf = await new GLTFLoader().parseAsync(bytes.buffer as ArrayBuffer, '');
+    lap('parse');
+    return gltf;
+  }
 
   const text = new TextDecoder().decode(bytes);
   const json = JSON.parse(text) as { buffers?: { uri?: string }[]; images?: { uri?: string }[] };
@@ -47,10 +54,13 @@ export async function loadGltfAvatar(modelPath: string): Promise<GLTF> {
     const type = MIME[relative.split('.').pop()?.toLowerCase() ?? ''] ?? 'application/octet-stream';
     blobs.set(normalise(uri), URL.createObjectURL(new Blob([data as BlobPart], { type })));
   }
+  lap('read');
   const manager = new THREE.LoadingManager();
   manager.setURLModifier((url) => blobs.get(normalise(url)) ?? url);
   try {
-    return await new GLTFLoader(manager).parseAsync(text, '');
+    const gltf = await new GLTFLoader(manager).parseAsync(text, '');
+    lap('parse');
+    return gltf;
   } finally {
     for (const url of blobs.values()) URL.revokeObjectURL(url);
   }

@@ -1,3 +1,4 @@
+import { avatarTimer } from './avatarTiming';
 import { useEffect, useRef, useState } from 'react';
 import * as THREE from 'three';
 import { convertFileSrc } from '@tauri-apps/api/core';
@@ -97,7 +98,9 @@ export const MmdViewer = ({
         });
         const loader = new MMDLoader(manager).register(MMDSpringBonePlugin);
         loader.setResourcePath(RESOURCE_PREFIX);
+        const lap = avatarTimer(modelPath);
         const model = await loader.loadAsync(convertFileSrc(modelPath));
+        lap('parse');
         if (isDisposed) {
           model.dispose();
           return;
@@ -134,6 +137,8 @@ export const MmdViewer = ({
         mmd = model;
         motionPlayerRef.current = new AvatarMotionPlayer(model.mesh, () => setPlayingGesture(''));
         setLoaded(model);
+        lap('setup');
+        stage.timeNextFrame(modelPath);
         setLoading(false);
       } catch (err) {
         if (isDisposed) return;

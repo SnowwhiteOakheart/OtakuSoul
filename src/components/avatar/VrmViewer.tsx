@@ -1,3 +1,4 @@
+import { avatarTimer } from './avatarTiming';
 import { useEffect, useRef, useState } from 'react';
 import * as THREE from 'three';
 import { GLTFLoader } from 'three/examples/jsm/loaders/GLTFLoader.js';
@@ -85,9 +86,12 @@ export const VrmViewer = ({
         return;
       }
       try {
+        const lap = avatarTimer(modelPath);
         const bytes = await api.readFileBinary(modelPath);
+        lap('read');
         if (isDisposed) return;
         const gltf = await loader.parseAsync(bytes.buffer as ArrayBuffer, '');
+        lap('parse');
         if (isDisposed) return;
         const loaded = gltf.userData.vrm as VRM | undefined;
         if (!loaded) {
@@ -114,6 +118,8 @@ export const VrmViewer = ({
         if (head) {
           stage.frameModel(head.getWorldPosition(new THREE.Vector3()).y, new THREE.Box3().setFromObject(loaded.scene).max.y);
         }
+        lap('setup');
+        stage.timeNextFrame(modelPath);
         setLoading(false);
       } catch (err) {
         if (isDisposed) return;

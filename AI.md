@@ -193,7 +193,8 @@ ru „персонаж/история/сцена“. Fachbegriffe nur im Experte
   `LoadingManager`-URL-Modifier, Groß-/Kleinschreibung per `list_avatar_model_files`. Import (`avatar_models.rs`): ZIP
   (Shift_JIS-Namen) oder PMX mit Ordner (max. 1 GB/5000 Dateien). E2E: `e2e/tools/make-mmd.mjs` (PMX + VMD), `make-glb.mjs` (GLB über three.js-Exporter).
   Echte Fremdmodelle nur lokal in `assets/test-avatars/` (gitignored); `xvfb-run -a node e2e/local-avatars.mjs` importiert
-  jedes davon und legt Screenshots in `assets/test-avatars/screenshots/` ab (nicht Teil von `npm run e2e`).
+  jedes davon und legt Screenshots in `assets/test-avatars/screenshots/` ab (nicht Teil von `npm run e2e`); es gibt je Modell
+  die Ladephasen aus (`avatarTiming.ts`: `performance.measure` `avatar:read|parse|setup|firstFrame`, `stage.timeNextFrame`).
   glTF-Eigenanimationen (Plan lokal in `roadmap_abgeschlossen.md`, Abschnitt 9): `avatar_motions::model_clips` liest Clipnamen nur aus dem JSON-Teil
   der GLB/glTF (unbenannte wie three.js `animation_<n>`), Rollen je Modell-Dateiname in `<Daten>/animations/model_roles.json`
   (sonst `guess_role`). `GltfViewer` spielt sie ohne Retargeting (`withoutRootMotion` hält Hüfte und alle Knoten darüber,

@@ -1,3 +1,4 @@
+import { avatarTimer } from './avatarTiming';
 import { useEffect, useRef, useState } from 'react';
 import * as THREE from 'three';
 import { clipFitsRig } from './clipFit';
@@ -199,6 +200,7 @@ export const GltfViewer = ({
     const load = async () => {
       try {
         const gltf = await loadGltfAvatar(modelPath);
+        const lap = avatarTimer(modelPath);
         if (isDisposed) return;
         const scene = gltf.scene;
         // Models copied into the folder by hand skip the import check: no skeleton, no avatar.
@@ -241,6 +243,8 @@ export const GltfViewer = ({
         motionPlayerRef.current = new AvatarMotionPlayer(scene, () => setPlayingGesture(''));
         motionPlayerRef.current.onClipChange = (kind, name) => setPlayingClips((now) => ({ ...now, [kind]: name }));
         setLoaded({ root: scene, rest });
+        lap('setup');
+        stage.timeNextFrame(modelPath);
         setLoading(false);
       } catch (err) {
         if (isDisposed) return;

@@ -1,6 +1,7 @@
 // Local check with real third-party avatars from assets/test-avatars/ (gitignored, never
 // committed): each .vrm, .glb and .pmx is imported into a throwaway profile, shown as the
-// 3D avatar, and screenshotted neutral and happy into assets/test-avatars/screenshots/.
+// 3D avatar, and screenshotted neutral and happy into assets/test-avatars/screenshots/; the log
+// shows the viewer's load phases (read, parse, setup, first frame).
 // Not part of `npm run e2e`; run with `xvfb-run -a node e2e/local-avatars.mjs`
 // (`OTAKUSOUL_AVATAR=part-of-name` for single models).
 import { existsSync, mkdirSync, readdirSync } from 'node:fs';
@@ -55,8 +56,13 @@ try {
     const messages = (await browser.execute(() => window.__messages)).filter((m) => !m.includes("Couldn't find callback id"));
     const format = await browser.execute(() => document.querySelector('[data-avatar-format]')?.getAttribute('data-avatar-format') ?? 'vrm');
     const error = await browser.execute(() => document.body.innerText.includes('konnte nicht geladen werden'));
+    // Load phases measured by the viewer (avatarTiming.ts), in ms.
+    const phases = await browser.execute((p) => Object.fromEntries(performance.getEntriesByType('measure')
+      .filter((m) => m.name.startsWith('avatar:') && m.detail === p)
+      .map((m) => [m.name.slice('avatar:'.length), Math.round(m.duration)])), model.path);
+    const timing = Object.entries(phases).map(([phase, ms]) => `${phase} ${ms} ms`).join(', ');
     if (error) failed += 1;
-    console.log(`${error ? '✘' : '✔'} ${name} (${format}, ${Math.round((Date.now() - started) / 1000)} s)${messages.length ? `\n    ${messages.join('\n    ')}` : ''}`);
+    console.log(`${error ? '✘' : '✔'} ${name} (${format}, ${Math.round((Date.now() - started) / 1000)} s${timing ? `; ${timing}` : ''})${messages.length ? `\n    ${messages.join('\n    ')}` : ''}`);
   }
 } finally {
   await close();
