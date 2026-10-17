@@ -51,7 +51,9 @@ With **"Your own story"** you build your own in four steps: genre, your characte
 ## 5. Voice and images
 
 In the **settings** you set up speech under **"Voice"** and image generation under **"Images"** – locally or through
-a service.
+a service. **"Listen to and compare voices"** at the top of the voice section plays every available voice; "Use" picks
+it together with the matching speech engine. Every setting explains itself in a sentence below it, and **"Reset to
+defaults"** returns an area to its starting state at any time.
 
 ## 6. When something goes wrong
 

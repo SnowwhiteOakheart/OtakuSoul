@@ -142,9 +142,11 @@
   per `aria-describedby` verknüpft (`settings/OptionHint.tsx`), Fachbegriff in Klammern; Sampler-Stichworte als Sätze neu.
   `e2e/settings-hints.mjs` (Teil von `npm run e2e`) meldet jede Option ohne Beschreibung. Ursprünglich: Kurzbeschreibung
   unter jeder Einstellung; Fachbegriff in Klammern; Glossar-Link.
-- [ ] **Stimme vereinfachen:** (teilweise 16.10.2026: Voice-ID, Ausschluss-RegEx und RVC nur im Expertenmodus, Texte ohne
-  Fachbegriffe; Probehör-Liste über alle Engines fehlt noch) „Stimme wählen“ mit Probehören-Liste über alle Engines; Voice-ID, RegEx, RVC unter
-  „Erweitert“; Klon-Dialog als eigener, geführter Ablauf.
+- [x] **Stimme vereinfachen (17.10.2026):** „Stimmen anhören und vergleichen“ (`voice/VoiceGallery.tsx`) listet alle Stimmen
+  ohne Schlüssel – installierte lokale Modelle (Vorgaben und Klone), Kokoro, Edge-TTS in der Antwortsprache (Hauptregion
+  zuerst) – mit Probehören und „Übernehmen“ (Engine + Stimme zusammen; E2E `voice-gallery.mjs`). Voice-ID, RegEx und RVC
+  nur im Expertenmodus (16.10.), Klon-Dialog mit Zuschnitt als geführter Ablauf. Ursprünglich: „Stimme wählen“ mit
+  Probehören-Liste über alle Engines; Voice-ID, RegEx, RVC unter „Erweitert“; Klon-Dialog als eigener, geführter Ablauf.
 - [x] **Zurücksetzen pro Bereich (17.10.2026):** Antwortstil, Lokale KI (Tuning + Kontext/GPU-Layer nach Empfehlung) und
   Farb-Theme zeigen „N Werte weichen vom Standard ab“ und setzen mit Rückgängig zurück (`ResetSection`,
   `utils/settingDefaults.ts`, Bonsai mit eigenen Standards; E2E `settings-reset.mjs`). Ursprünglich: Zurücksetzen pro Bereich

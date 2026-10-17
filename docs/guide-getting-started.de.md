@@ -52,7 +52,9 @@ Mit **„Eigene Geschichte“** baust Du in vier Schritten Deine eigene: Genre, 
 ## 5. Stimme und Bilder
 
 In den **Einstellungen** richtest Du unter **„Stimme“** die Sprachausgabe und unter **„Bilder“** die
-Bilderzeugung ein – lokal oder über einen Dienst.
+Bilderzeugung ein – lokal oder über einen Dienst. **„Stimmen anhören und vergleichen“** oben im Stimmen-Bereich spielt
+jede verfügbare Stimme kurz vor; „Übernehmen“ wählt sie mit der passenden Sprachausgabe. Jede Einstellung erklärt sich in
+einem Satz darunter, und **„Auf Standard zurücksetzen“** bringt einen Bereich jederzeit in den Ausgangszustand.
 
 ## 6. Wenn etwas nicht klappt
 

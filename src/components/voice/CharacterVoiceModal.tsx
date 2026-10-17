@@ -9,6 +9,8 @@ import { KokoroDownloadProgress, ScannedVoice, SttEngine, TtsEngine, TtsFilterMo
 import { audioPlayer, gainFromVoiceVolume } from '../../services/audioPlayer';
 import { ModalOverlay } from '../ui/ModalOverlay';
 import { LocalTtsSettings } from './LocalTtsSettings';
+import { VoiceGallery } from './VoiceGallery';
+import { languageCode } from '../../utils/cardI18n';
 import { translate, useTranslation } from '../../i18n';
 import { errorMessage } from '../../utils/errors';
 import { toast } from '../ui/feedback';
@@ -87,8 +89,8 @@ function testText(config: VoiceConfig) {
 
 export function CharacterVoiceModal({ onClose, target, embedded = false, autoSave = false }: CharacterVoiceModalProps) {
   const { t } = useTranslation();
-  const { activeCharacter, activeVoiceConfig, saveVoiceConfigForCharacter, expertMode } = useStoreFields(
-    'activeCharacter', 'activeVoiceConfig', 'saveVoiceConfigForCharacter', 'expertMode',
+  const { activeCharacter, activeVoiceConfig, saveVoiceConfigForCharacter, expertMode, replyLanguage } = useStoreFields(
+    'activeCharacter', 'activeVoiceConfig', 'saveVoiceConfigForCharacter', 'expertMode', 'replyLanguage',
   );
   const [tab, setTab] = useState<VoiceTab>('tts');
   const [draft, setDraft] = useState<VoiceConfig>(activeVoiceConfig ?? DEFAULT_CONFIG);
@@ -349,6 +351,22 @@ export function CharacterVoiceModal({ onClose, target, embedded = false, autoSav
         <div className="p-6 overflow-y-auto flex-1 space-y-5">
           {tab === 'tts' && (
             <>
+              <VoiceGallery
+                draft={draft}
+                language={languageCode(replyLanguage)}
+                sampleText={testText}
+                gain={(config) => gainFromVoiceVolume(config.volume)}
+                onPick={(config) => {
+                  edit((current) => ({
+                    ...current,
+                    engine: config.engine,
+                    voice_id: config.voice_id,
+                    local_model_id: config.local_model_id,
+                    kokoro: config.kokoro,
+                  }));
+                  setError('');
+                }}
+              />
               <div className="grid sm:grid-cols-2 gap-4">
                 <label>
                   <span className={labelClass}>{t('voiceCfg.ttsEngine')}</span>
