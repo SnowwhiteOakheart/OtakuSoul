@@ -1,6 +1,6 @@
 // @vitest-environment jsdom
 /**
- * Rules for the Stage graphics in public/stage (todo_assets.md): plain SVG with a fixed set of
+ * Rules for the Stage graphics in public/stage (docs/stage_assets.md): plain SVG with a fixed set of
  * elements, the right size per kind, no external links or scripts, unique ids, size limits.
  * Regenerated assets are checked here before they reach the board.
  */

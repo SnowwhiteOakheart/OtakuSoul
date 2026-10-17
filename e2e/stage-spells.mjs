@@ -1,4 +1,4 @@
-// 5e magic (Roadmap_DND.md, step 3): the cleric companion brings an unconscious hero back on
+// 5e magic (roadmap_abgeschlossen.md section 8, step 3): the cleric companion brings an unconscious hero back on
 // her own, and the wizard aims Burning Hands on the board – the preview lights the cone, both
 // zombies in it roll their own Dexterity saves against the wizard's DC.
 import assert from 'node:assert/strict';

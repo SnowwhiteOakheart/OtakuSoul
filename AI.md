@@ -159,7 +159,7 @@ ru „персонаж/история/сцена“. Fachbegriffe nur im Experte
   Ansprache-Erkennung, sonst Routing-LLM (Mock erkennt „[STAGE — ROUTING]“). `turn_mode: "continue"` = Runde ohne
   Spieleraktion (Weiter/Auto-Play).
   Der Abbruch-Merker wird nur am Runden-/Chat-Start zurückgesetzt (`reset_abort`), damit „Stopp“ die ganze Runde beendet.
-  Story-Galerie (`Roadmap_GUI.md`): `StoryGallery.tsx` ist der Einstieg in Stage, wenn keine Szene gemerkt ist
+  Story-Galerie: `StoryGallery.tsx` ist der Einstieg in Stage, wenn keine Szene gemerkt ist
   (`AppSettings.stage_last_scene`, `stageSlice.rememberStageScene`/`restoreStageScene`; fehlt die gemerkte Szene, bleibt eine
   aktive gespeicherte). Story-Daten in `extensions.otakusoul_story` (`StoryInfo`: Genre fantasy/adventure/slice_of_life/
   comedy/romance/mystery/scifi/horror, Minuten, Schwierigkeit, Hinweise, `beginner`, Startvorschläge je Sprache → ersetzen
@@ -190,7 +190,7 @@ ru „персонаж/история/сцена“. Fachbegriffe nur im Experte
   (Shift_JIS-Namen) oder PMX mit Ordner (max. 1 GB/5000 Dateien). E2E: `e2e/tools/make-mmd.mjs` (PMX + VMD), `make-glb.mjs` (GLB über three.js-Exporter).
   Echte Fremdmodelle nur lokal in `assets/test-avatars/` (gitignored); `xvfb-run -a node e2e/local-avatars.mjs` importiert
   jedes davon und legt Screenshots in `assets/test-avatars/screenshots/` ab (nicht Teil von `npm run e2e`).
-  glTF-Eigenanimationen (Plan in `roadmap_ue5.md`): `avatar_motions::model_clips` liest Clipnamen nur aus dem JSON-Teil
+  glTF-Eigenanimationen (Plan: `roadmap_abgeschlossen.md`, Abschnitt 9): `avatar_motions::model_clips` liest Clipnamen nur aus dem JSON-Teil
   der GLB/glTF (unbenannte wie three.js `animation_<n>`), Rollen je Modell-Dateiname in `<Daten>/animations/model_roles.json`
   (sonst `guess_role`). `GltfViewer` spielt sie ohne Retargeting (`withoutRootMotion` hält Hüfte und alle Knoten darüber,
   z. B. Unreal `root` und Biped-`Bip001`, waagerecht auf ihrer Ruheposition, senkrecht bleibt), `useAvatarMotions` `ownClips` haben je Rolle Vorrang vor FBX; Änderungen in
@@ -249,7 +249,7 @@ ru „персонаж/история/сцена“. Fachbegriffe nur im Experte
   Mundformen aa/ih/ou/ee/oh aus Formanten (`services/lipSync.ts`, `audioPlayer.onAudioFrame(amplitude, visemes)`).
   E2E: `e2e/tools/make-vrma.mjs` und `make-fbx.mjs` (ASCII-FBX im Mixamo-Format) bauen Test-Animationen; der Viewer zeigt `data-motions`/`data-gesture`,
   das Mock antwortet mit `stats.chatReply`.
-- 5e-Regeln (`stage/rules5e/`, Plan in `Roadmap_DND.md`): reine Funktionen mit injiziertem Zufall (`impl Rng`, Tests mit
+- 5e-Regeln (`stage/rules5e/`, Plan: `roadmap_abgeschlossen.md`, Abschnitt 8): reine Funktionen mit injiziertem Zufall (`impl Rng`, Tests mit
   `StdRng::seed_from_u64`); die Engine entscheidet alle Zahlen, das LLM erzählt nur aus `CombatEvent`s. Gespeichert werden
   nur Grundwerte (`Stats5e` an `Combatant`), Modifikatoren/Übungsbonus werden berechnet. Monster/Klassen kommen aus
   `presets/srd5/*.json` (per `include_str!`, Namen de/en/ru); SRD-Namensnennung (CC-BY-4.0) steht in den READMEs.
@@ -271,7 +271,7 @@ ru „персонаж/история/сцена“. Fachbegriffe nur im Experte
   `get_stage_combat_options` liefert erreichbare Felder und Angriffe in Reichweite (`stageSlice.stageCombatOptions`).
   UI: Reiter „Spielbrett“ (`StageBoardView`, öffnet sich bei Kampf mit Karte), `StageBattleMap.tsx` (Kacheln/Tokens aus
   `public/stage/`, Wände abgedunkelt, Raster; Tokens: Monster per SRD-ID, klassische Helden per Name, sonst Porträt).
-  Grafiken nach `todo_assets.md`, Regeln geprüft von `stageAssets.test.ts`. E2E `stage-board.mjs` wartet auf `data-busy`.
+  Grafiken nach den Vorgaben in `docs/stage_assets.md`, Regeln geprüft von `stageAssets.test.ts`. E2E `stage-board.mjs` wartet auf `data-busy`.
   Magie (Schritt 3): Zauber in `presets/srd5/spells.json`, `rules5e/spells.rs` (`check_cast` → `cast_spell`, Flächen
   `area_squares` – gespiegelt in `utils/spellArea.ts`, Konzentration, wiederholte Rettungswürfe), Zustände mit Wirkung in
   `rules5e/conditions.rs` (GM-Namen per `normalize_condition`), Todesrettung in `combat.rs` (`SceneRules.heroic_death`),
@@ -468,7 +468,7 @@ ru „персонаж/история/сцена“. Fachbegriffe nur im Experte
 
 Erledigtes (Portierung Phasen 1–18, Verbesserungen, TTS, Neutralisierung, Inhalte, Qualität) steht in
 `roadmap_abgeschlossen.md`, alles Offene in `roadmap.md`. Aktueller Schwerpunkt: Bedienbarkeit für Einsteiger und
-Story-Einstieg nach `Roadmap_GUI.md` (Leitlinien dort gelten für neue Oberflächen). Mitgelieferte Figuren: `presets/characters/` (Ayu, Cosmos,
+Story-Einstieg (Plan: `roadmap_abgeschlossen.md`, Abschnitt 10; die Leitlinien für neue Oberflächen stehen oben in `roadmap.md`). Mitgelieferte Figuren: `presets/characters/` (Ayu, Cosmos,
 Emilia) und `presets/crypt-of-shadows/`; weitere Figuren/Pakete (NGNL, Sakura Succubus 3, Einzelkarten) liegen in
 `SnowwhiteOakheart/otakusoul-data` (Hub-Registries in `hub.rs`). Karten pflegen Übersetzungen in `otakusoul_i18n` und
 verwenden `custom_*`-Schlüssel (`sow_*` wird nur noch gelesen). Daten: `<Daten>` = `~/.local/share/otakusoul` (Linux) mit `runtimes/`, `image-models/`, `tts-models/`,

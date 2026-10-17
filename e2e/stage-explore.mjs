@@ -1,4 +1,4 @@
-// 5e exploration (Roadmap_DND.md, step 4): the board opens with fog of war, the party opens a
+// 5e exploration (roadmap_abgeschlossen.md section 8, step 4): the board opens with fog of war, the party opens a
 // door with a click, a locked door needs a skill check, entering the burial hall starts its
 // prepared fight, and one "Undo" brings back map and party from before that step.
 import assert from 'node:assert/strict';

@@ -1,4 +1,4 @@
-// The 5e starter adventure (Roadmap_DND.md, step 5): act 1 from the lobby with the four classic
+// The 5e starter adventure (roadmap_abgeschlossen.md section 8, step 5): act 1 from the lobby with the four classic
 // heroes – party choice, the ambush on the forest road, the fight, the road west to the crypt,
 // "act complete" and on into act 2 with the same party.
 import assert from 'node:assert/strict';

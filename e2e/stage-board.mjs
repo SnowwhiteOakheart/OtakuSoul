@@ -1,4 +1,4 @@
-// 5e fights on the battle map (Roadmap_DND.md, step 2): the board tab opens with the fight,
+// 5e fights on the battle map (roadmap_abgeschlossen.md section 8, step 2): the board tab opens with the fight,
 // the player moves by clicking a green square, attacks by clicking an enemy token in reach and
 // ends the turn; enemies and companions move on their own. Nobody ever stands on a wall or on
 // another fighter's square, and hit points only change through engine damage.

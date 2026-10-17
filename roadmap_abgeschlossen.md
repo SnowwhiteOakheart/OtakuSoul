@@ -2,7 +2,8 @@
 
 > Zusammengeführt am 05.10.2026 aus `Roadmap_abgeschlossen.md`, `ROADMAP_ABGESCHLOSSEN.md`, `ROADMAP.md`,
 > `Roadmap_TTS.md`, `Roadmap_rename.md`, `roadmap_optional_content.md` und `roadmap_chatgpt.md`.
-> Offene Punkte stehen in `roadmap.md`. Die Abschnitte geben den jeweiligen Stand ihrer Entstehung wieder
+> Am 17.10.2026 kamen `Roadmap_DND.md`, `roadmap_ue5.md` und `Roadmap_GUI.md` hinzu (Abschnitte 8–10), die
+> Grafik-Vorgaben aus `todo_assets.md` stehen jetzt in `docs/stage_assets.md`. Offene Punkte stehen in `roadmap.md`. Die Abschnitte geben den jeweiligen Stand ihrer Entstehung wieder
 > (Testzahlen, Dateinamen und Bezeichnungen wie „Soul Stage“ sind teils historisch).
 
 ## Inhalt
@@ -14,6 +15,9 @@
 5. Optionale Inhalte (`otakusoul-data`)
 6. Qualität & Bedienung (unabhängige App-Durchsicht, Abschnitte 1–9 mit Arbeitsprotokoll)
 7. Abgearbeitet aus `roadmap.md` (ab 05.10.2026)
+8. 5e-Regeln, Spielbrett & Starter-Abenteuer (aus `Roadmap_DND.md`)
+9. Figuren aus Unreal-Spielen als 3D-Avatar (aus `roadmap_ue5.md`)
+10. Bedienbarkeit & Story-Einstieg (aus `Roadmap_GUI.md`)
 
 ---
 
@@ -1947,3 +1951,506 @@ veraltet und sind korrigiert: `chat-sidebar-errors` las die Sitzung, bevor der e
   (Namensfeld direkt nach dem Import) und lassen sich entfernen (in den Papierkorb, 8 s Rückgängig, mitgelieferte bleiben).
   glTF-Clips eines anders gebauten Skeletts werden erkannt und nicht abgespielt – `player_051_female_skin_textured` wurde
   dadurch gestreckt und verschoben dargestellt (Clips mit doppelten Knochenlängen und Beinen nach oben).
+
+---
+
+## 8. 5e-Regeln, Spielbrett & Starter-Abenteuer (aus `Roadmap_DND.md`, 06.–15.10.2026)
+
+> **Status:** Arbeitsentwurf, gemeinsam fortgeschrieben (Stand 06.10.2026). Offene Punkte dieser Erweiterung stehen
+> hier; `roadmap.md` verweist auf diese Datei. Erledigtes wird abgehakt und bei Abschluss eines Schritts nach
+> `roadmap_abgeschlossen.md` übertragen.
+> **Regelgrundlage:** System Reference Document 5.1 (SRD 5.1, CC-BY-4.0) – „5e-kompatibel“, nicht „D&D“ (Marke von
+> Wizards of the Coast). Namensnennung siehe [Lizenz & Namensnennung](#lizenz--namensnennung).
+
+---
+
+### 1. Festgelegte Entscheidungen
+
+| # | Entscheidung | Folge |
+|---|---|---|
+| E1 | **Die Regel-Engine ist maßgeblich.** Würfe, Treffer, Schaden, Bewegung, Reichweite und Monsterzüge berechnet Rust deterministisch. | Das LLM erzählt und äußert höchstens *Absichten*; Zahlen aus dem LLM werden im 5e-Modus ignoriert. |
+| E2 | **Monster steuert ausschließlich die Engine** (eigene Monster-KI). | Kein LLM-Aufruf pro Monsterzug, reproduzierbar und testbar. |
+| E3 | **Karten sind Raster als JSON, gezeichnet mit eigenen Kachel-SVGs.** | Wände, Türen, Gelände und Startzonen sind exakt bekannt; keine Fremd-Assets. Was gezeichnet werden muss, steht in [`todo_assets.md`](todo_assets.md). |
+| E4 | **Regelwerk pro Szene:** `ruleset: "standard" \| "5e"`. | Bestehende Erzähl-Szenen (Stress, freie Proben) bleiben unverändert. |
+| E5 | **Daten statt Code:** Monster, Zauber, Klassen-Vorlagen als SRD-Daten (JSON, gebündelt). | Ausbau ohne Rust-Änderungen; Übersetzungen der Namen in den Daten (de/en/ru). |
+| E6 | **Jeder Schritt ist spielbar und getestet** (Rust-Unit-Tests mit festem Zufalls-Seed, E2E mit Mock-LLM, i18n in allen Locales, AI.md/README). | Keine „Test-Phase“ am Ende. |
+
+#### Rollen im Kampf
+
+| Wer | Entscheidet | Wie |
+|---|---|---|
+| Spieler | eigene Aktionen | Aktionsleiste und Spielbrett; die Engine bietet nur erlaubte Aktionen an. |
+| Gefährten (LLM-Figuren) | eigene Aktionen | Die Engine erzeugt eine Liste erlaubter Aktionen; das LLM wählt **eine ID** (+ kurzer Satz). Ungültig/Timeout → Engine-Heuristik. Schalter „Gefährten selbst steuern“ (F2). |
+| Monster | – | Engine-KI (Ziel wählen, bewegen, angreifen, fliehen). |
+| KI-Spielleiter | Szene, Begegnungen, Erzählung | Wählt Begegnung (Monster-IDs aus der Liste) und Startzone; erzählt aus dem **Kampfbericht** der Engine. |
+
+---
+
+### 2. Architektur
+
+```mermaid
+flowchart LR
+    UI["Spieler-Aktion (UI/Brett)"] --> V
+    LLM1["Gefährte: Aktions-ID (LLM)"] --> V
+    AI["Monster-KI (Rust)"] --> V
+    V["Engine: prüfen<br/>(Zug, Reichweite, Sicht, Ressourcen)"] --> R["Auflösen<br/>(Würfel, Schaden, Zustände)"]
+    R --> E["CombatEvent-Liste"]
+    E --> S["SceneState (Snapshot, Undo)"]
+    E --> UI2["Anzeige: Log, Brett, Würfel"]
+    E --> N["Kampfbericht → GM erzählt (LLM)"]
+```
+
+* **Neues Modul `src-tauri/src/modules/stage/rules5e/`** – reine Funktionen ohne Datei-/Netzzugriff:
+  `stats.rs` (Werte, abgeleitete Größen), `dice.rs`-Erweiterung (Vorteil/Nachteil), `combat.rs` (Initiative, Zug,
+  Angriff, Schaden), `map.rs` (Raster, Wegfindung, Sichtlinie, Reichweite), `ai.rs` (Monster), `spells.rs`,
+  `conditions.rs`, `data.rs` (SRD-Daten laden). Zufall wird injiziert (`impl Rng`), Tests nutzen `StdRng::seed_from_u64`.
+* **Ergebnis jeder Aktion ist eine Liste `CombatEvent`** (Wurf, Treffer/Fehlschlag, Schaden, Bewegung, Zustand, Tod …).
+  Sie speist Log, Brett-Animation und den Kampfbericht fürs LLM – eine Quelle der Wahrheit.
+* **Zustand** liegt in `SceneState` (`combat`, neu `map`); damit gelten Snapshots/Undo (`undoStageTurn`), die
+  `stage_turn`-Sperre und der Stage-Abbruch automatisch. Abbruch während einer Erzählung lässt die bereits
+  aufgelösten Ereignisse bestehen.
+* **GM-Plan im 5e-Modus:** `encounter.enemies` enthält Monster-**IDs** und eine Startzone statt LP; `hp_updates`,
+  `resource_delta` und `dice_check`-Zahlen werden ignoriert (Proben laufen über 5e-Fertigkeiten, s. Schritt 3).
+  Das Mock-LLM erkennt den Kampfbericht an „[STAGE — COMBAT REPORT]“ und die Gefährtenwahl an „[STAGE — COMBAT ACTION]“.
+
+#### Datenmodell (Skizze)
+
+```rust
+// Gespeichert werden nur Grundwerte; Modifikatoren, Übungsbonus, Felder-Tempo usw. sind Funktionen.
+pub struct Stats5e {
+    pub level: u32,
+    pub class_id: String,             // "fighter" | "wizard" | "rogue" | "cleric" | Monster: ""
+    pub abilities: [u8; 6],           // STR DEX CON INT WIS CHA
+    pub armor_class: i32,
+    pub speed_ft: u32,                // 30 → 6 Felder
+    pub save_proficiencies: Vec<Ability>,
+    pub skill_proficiencies: Vec<Skill>,
+    pub attacks: Vec<Attack>,         // Name, Bonus-Quelle, Reichweite (Nah/Fern normal/lang), Schaden, Typ
+    pub hit_dice: HitDice,            // Typ (d8), verbleibend
+    pub spell_slots: [SlotState; 9],  // ab Schritt 3
+    pub death_saves: DeathSaves,      // ab Schritt 3
+}
+// Combatant: + stats5e: Option<Stats5e>, position: Option<GridPos>
+// SceneState: + map: Option<StageMap>
+```
+
+#### Kartenformat (Skizze)
+
+```json
+{
+  "id": "crypt_entrance",
+  "name": { "de": "Eingang der Gruft", "en": "Crypt entrance", "ru": "Вход в склеп" },
+  "tileset": "dungeon",
+  "rows": ["##########", "#..D....s#", "#..#..~~.#", "#p.#.....#", "##########"],
+  "legend": { "#": "wall", ".": "floor", "D": "door", "~": "difficult", "p": "start_party", "s": "spawn" },
+  "zones": { "spawn": { "description": "Hinter dem Altar" } },
+  "rooms": [{ "id": "hall", "description": "Kalte, feuchte Halle …" }]
+}
+```
+
+Kachel-SVGs (Boden, Wand, Tür offen/zu, schwieriges Gelände, Wasser, Säule, Treppe, Truhe …) liegen gebündelt wie die
+NPC-Archetypen unter `public/` und werden selbst gezeichnet.
+
+---
+
+### 3. Schritte
+
+Jeder Schritt endet mit einem **„Fertig, wenn …“**, das per E2E geprüft wird.
+
+#### ✅ Schritt 0 – Aufräumen
+
+- [x] Patch-Reste `stage/models.rs|scenes.rs .orig/.rej` entfernt, `*.orig`/`*.rej` ignoriert.
+- [x] `dice.rs`: Fehlertexte als i18n-Codes; Dokukommentar korrigiert.
+
+#### ✅ Schritt 1 – Regelkern: ein Kampf ohne Brett
+
+Ziel: Eine 5e-Szene, in der der GM eine Begegnung auslöst und der Kampf vollständig von der Engine entschieden wird.
+
+- [x] `ruleset` in `SceneDefinition` (`rules: SceneRules`, fehlt = Erzähl-Szene), Klassen je Gruppenmitglied.
+- [x] Szenen-Editor und Lobby: Regelwerk, Klassen und „Gefährten selbst steuern“ einstellen/anzeigen.
+- [x] `Stats5e` mit abgeleiteten Werten (Modifikator ⌊(Wert−10)/2⌋, Übungsbonus nach Stufe, passive Wahrnehmung).
+- [x] Würfel: Vorteil/Nachteil (2W20, höherer/niedrigerer), injizierbarer Zufall.
+- [x] Anzeige von Vorteil/Nachteil im Kampflog (beide W20 und Modus); der freie `DiceRoller` der Erzähl-Szenen bleibt unverändert.
+- [x] SRD-Daten v1: ~10 Monster (Goblin, Kobold, Wolf, Skelett, Zombie, Bandit, Riesenratte, Ork, Ghul, Schatten),
+  Klassen-Vorlagen Stufe 1 für Kämpfer, Magier, Schurke, Kleriker (ohne Zauber, nur Waffen/Zaubertrick-Angriff).
+- [x] Kampfablauf: Initiative (W20+GES), Reihenfolge, Zug mit Aktion/Bonusaktion/Bewegung (Bewegung abstrakt), Angriff
+  gegen RK, Schaden + Modifikator, Krit (doppelte Würfel) und Patzer, 0 LP: Monster sterben, Helden sind bewusstlos.
+- [x] Monster-KI v1: Ziel nach Bedrohung/niedrigster RK, bester Angriff, Flucht unter 25 % LP (je Monster-Typ abschaltbar).
+- [x] Gefährten-Aktion: Liste erlaubter Aktionen → LLM wählt ID; Fallback-Heuristik.
+- [x] GM-Vertrag: Begegnung per Monster-ID, Erzählung aus `CombatEvent`-Kampfbericht; LLM-Zahlen werden ignoriert.
+- [x] UI: Aktionsleiste im Kampf (Angriff → Ziel, Ausweichen, Spurt, Rückzug), Kampflog aus Events,
+  kompakter Bogen (Attribute, RK, LP, Angriffe) per Klick im Party-Header.
+- [x] Tests: Rust (Modifikatoren, Vorteil, Angriff/Krit, Initiative, KI-Zielwahl, Seed-Kampf bis Ende), E2E (5e-Szene,
+  Begegnung, drei Züge, Sieg).
+
+**Fertig, wenn:** Spieler und ein Gefährte besiegen zwei Goblins; jede Zahl im Log stammt aus der Engine, das LLM
+erzählt nur.
+
+#### ✅ Schritt 2 – Spielbrett: Raster, Tokens, Bewegung, Reichweite
+
+- [x] Kartenformat (JSON, s. o.) + Validierung beim Laden (Rechteck, bekannte Zeichen, Startzonen vorhanden).
+- [x] Kachel-SVG-Satz „Dungeon“ (aus [`todo_assets.md`](todo_assets.md), A) und `StageBattleMap.tsx` (SVG, zoombar, per Tastatur bedienbar).
+- [x] Tokens: Porträt (Charakterbild bzw. NPC-Archetyp), LP-Ring, Initiativ-Rang, Zustands-Badges.
+- [x] Bewegung: Tempo in Feldern, Diagonale = 5 ft *(F1)*, schwieriges Gelände ×2, Wände/geschlossene Türen und
+  besetzte Felder blockieren; Wegfindung (A*) zeigt erreichbare Felder.
+- [x] Reichweite: Nahkampf 5 ft (auch diagonal), Fernkampf normal/lang (lang = Nachteil), Sichtlinie per Raster-Strahl
+  (Wände blockieren), Deckung zunächst nur „voll“ (kein Ziel).
+- [x] Gelegenheitsangriff beim Verlassen der Reichweite (einzige Reaktion in diesem Schritt).
+- [x] Platzierung: Party auf `start_party`, Monster auf vom GM gewählter Spawn-Zone (Engine verteilt auf freie Felder).
+- [x] Monster-KI v2: vorrücken (Pfad), Fernkämpfer halten Abstand, Nahkämpfer umgehen Hindernisse.
+- [x] Stage-Ansicht „Spielbrett“ neben Abenteuer/Taktik/Kampagne; Kampfaktionen direkt vom Brett.
+- [x] Tests: Wegfindung, Sichtlinie, Reichweite, Gelegenheitsangriff (Rust); E2E Bewegung + Angriff auf dem Brett.
+
+**Fertig, wenn:** Der Goblin-Kampf aus Schritt 1 läuft auf einer Karte; Bogenschützen halten Abstand, Wände
+blockieren Sicht und Weg.
+
+#### ✨ Schritt 3 – Magie, Rettungswürfe, Zustände & Rasten ✅
+
+- [x] SRD-Zauberdaten: Zaubertricks + Grad 1–2 als Startsatz (~25 Zauber), Zauberplätze nach Klasse/Stufe,
+  Konzentration.
+- [x] Zauberangriff, Rettungswurf gegen SG (8 + Übung + Mod), halber Schaden bei Erfolg.
+- [x] Flächen-Schablonen auf dem Brett (Kugel, Kegel, Linie, Würfel) mit Vorschau der getroffenen Felder.
+- [x] Zustände nach SRD mit Wirkung (Vorteil/Nachteil, Tempo 0, automatische Krits bei Gelähmt …); bestehende
+  `CombatCondition` wird im 5e-Modus darauf abgebildet.
+- [x] Todesrettungswürfe, Stabilisieren, Heilung aus 0 LP.
+- [x] Rasten im 5e-Modus über `rest_stage_party`: kurz (Trefferwürfel), lang (LP, Plätze, halbe Trefferwürfel).
+- [x] Proben außerhalb des Kampfs: `dice_check` des GM nennt eine 5e-Fertigkeit, die Engine rechnet mit Übung.
+- [x] UI: Zauberbuch (nach Graden, Platzverbrauch), vollständiger Bogen (Fertigkeiten, Rettungswürfe, Trefferwürfel,
+  Todesrettungswürfe).
+- [x] Tests: Rettungswurf/Halbschaden, Konzentration, Zustandswirkungen, Todesrettung, Rasten; E2E Zauber auf dem Brett.
+
+**Fertig, wenn:** Die Magierin wirkt *Brennende Hände* (Kegel) auf zwei Gegner mit korrekten Rettungswürfen, und die
+Klerikerin holt einen bewusstlosen Helden zurück.
+
+#### 🔦 Schritt 4 – Erkundung & Spielleitung auf der Karte ✅
+
+- [x] Nebel des Krieges: aufgedeckt, was die Party sieht (Radius + Sichtlinie); Dunkelsicht/Licht vereinfacht.
+- [x] Türen öffnen/schließen, Fallen und Objekte mit Proben, Kartenübergänge (Ausgangsfelder → nächste Karte).
+- [x] GM-Kontext: Raumbeschreibungen der Karte im Planer; GM wählt Karte/Begegnung/Spawn-Zone nur aus Listen.
+- [x] Prüfen: Undo, Bearbeiten/Löschen im Verlauf und Abbruch mit Kartenzustand (Snapshots, `reconcile_*`).
+- [x] Tests: Sicht-/Aufdeck-Logik (Rust); E2E Erkundung zweier Räume mit Tür.
+
+**Fertig, wenn:** Die Party erkundet eine Karte mit zwei Räumen, öffnet eine Tür, löst eine Begegnung aus, und
+Rückgängig stellt Karte und Kampf korrekt wieder her.
+
+#### 🏰 Schritt 5 – Starter-Abenteuer & Heldengruppe ✅
+
+- [x] Vier Helden als V2-Karten mit 5e-Erweiterung (`extensions.otakusoul_5e`), Porträts und Tokens aus
+  [`todo_assets.md`](todo_assets.md) (C, D):
+  Thorin (Zwerg, Kämpfer), Lyra (Hochelfe, Magierin), Finn (Halbling, Schurke), Althea (Mensch, Klerikerin).
+- [x] Eigene Gefährten bekommen per Klassen-Vorlage 5e-Werte (Charakter-Editor: Klasse wählen → Stufe-1-Werte).
+- [x] Lobby: klassische Helden, eigene Gefährten oder gemischt.
+- [x] Abenteuer „Die Gruft der vergessenen Schatten“ (3 Akte, je 1–2 Karten, Monster aus den SRD-Daten) im bestehenden
+  Szenenformat (erweitert um Karten/`ruleset`), kein zweites `campaign.json`-Format; später über Hub verteilbar.
+- [x] SRD-Namensnennung in README und im Info-Dialog der App.
+- [x] E2E: Akt 1 vollständig spielbar (Mock-LLM).
+
+**Fertig, wenn:** Eine neue Nutzerin startet das Abenteuer mit den vier Helden und spielt Akt 1 ohne Vorwissen durch.
+
+#### 💎 Schritt 6 – Ausbau (nach Bedarf) ✅
+
+- [x] Stufenaufstieg 1 → 3 (Meilenstein), Klassenmerkmale (Zweiter Atem, Hinterhältiger Angriff, Göttliche Macht …).
+- [x] Weitere Reaktionen (*Schild*), mehr Zauber/Monster, Begegnungs-Schwierigkeit (EP-Budget).
+- [x] Ausrüstung: RK aus Rüstung, Waffen aus dem Inventar, Beute.
+
+---
+
+### 4. Entschiedene Fragen (06.10.2026)
+
+| # | Frage | Entscheidung | Ab |
+|---|---|---|---|
+| F1 | Diagonalregel | SRD-Standard: jedes Feld 5 ft, auch diagonal (Variante 5/10/5 höchstens später als Option) | Schritt 2 |
+| F2 | Gefährten im Kampf | LLM wählt aus der erlaubten Liste; Schalter „Gefährten selbst steuern“ übergibt sie dem Spieler | Schritt 1 |
+| F3 | Gegner-LP sichtbar? | Nein – Zustandsstufen („unverletzt / angeschlagen / schwer verletzt / am Boden“) | Schritt 1 |
+| F4 | Übersetzung der SRD-Begriffe | Kernbegriffe (Attribute, Fertigkeiten, Zustände) über i18n; Monster-/Zaubernamen in den Daten mit de/en/ru | Schritt 1 |
+| F6 | Tod nach drei gescheiterten Todesrettungswürfen? | Szenen-Schalter „Heldentod“, Standard **aus**: dann nur „außer Gefecht“, Aufwachen nach dem Kampf mit 1 LP (eigene Gefährten sterben nicht durch einen Wurf). Vom Nutzer bestätigt (07.10.2026). | Schritt 3 |
+| F5 | Ort der SRD-Daten | gebündelt wie die Presets (`assets/…`), Nutzer-Erweiterungen im Datenordner | Schritt 1 |
+
+Neue Fragen werden hier mit Vorschlag ergänzt und vor dem betroffenen Schritt entschieden.
+
+### 5. Nicht-Ziele
+
+Kein vollständiges SRD auf einmal, kein Multiclassing, keine Talente (Feats), kein Online-Mehrspieler, keine
+Kampfwerte aus dem LLM, keine Fremd-Grafiken.
+
+### Lizenz & Namensnennung
+
+Die Regeln stammen aus dem *System Reference Document 5.1* von Wizards of the Coast LLC, lizenziert unter
+[CC-BY-4.0](https://creativecommons.org/licenses/by/4.0/legalcode). Diese Namensnennung gehört in README und App,
+sobald SRD-Inhalte ausgeliefert werden (Schritt 1). Begriffe außerhalb des SRD und die Marke „Dungeons & Dragons“
+werden nicht verwendet.
+
+---
+
+## 9. Figuren aus Unreal-Spielen als 3D-Avatar (aus `roadmap_ue5.md`, 15.–16.10.2026)
+
+> Stand: 15.10.2026. Ziel: Eine Figur samt ihren Bewegungen, die aus einem Unreal-Spiel stammt (oder in
+> Blender entstanden ist), als **eine GLB-Datei** importieren – OtakuSoul spielt die eingebetteten Animationen ab,
+> zeigt das Gesicht passend zur Emotion und sieht im Anime-Stil richtig aus.
+> Offene Punkte stehen hier, Erledigtes wird abgehakt und später nach `roadmap_abgeschlossen.md` verschoben.
+
+### 1. Rahmen
+
+- **Kein Extraktor in der App.** OtakuSoul liest keine Spielarchive (`.pak`/`.utoc`/`.ucas`). Austauschformat ist
+  glTF/GLB, wie es Blender exportiert; damit funktioniert der Import für jede Quelle (Spiel, Blender, VRoid, Kauf).
+- **Private Nutzung.** Figuren aus Spielen werden nicht veröffentlicht. Die Nutzeranleitung beschreibt den Weg
+  *Blender → GLB → OtakuSoul* allgemein; wie man an Modelle kommt, müssen Nutzer selbst herausfinden. Die vollständige
+  Anleitung mit Extraktion liegt nur lokal (`docs/private/`, nicht im Repository).
+- **Keine Umgehung von Schutzmaßnahmen.** Verschlüsselte Archive (AES) oder Anti-Cheat werden nicht angegangen,
+  auch nicht in der Anleitung (§ 95a UrhG; Anti-Cheat-Sperren). Beispiel *Neverness to Everness*: UE-IoStore
+  (`.utoc` Version 8, `.pak` Version 12), 12 von 22 Containern verschlüsselt, Anti-Cheat Expert (ACE).
+
+### 2. Weg einer Figur (Referenz, privat)
+
+1. Archive mit FModel (CUE4Parse) öffnen – nur unverschlüsselte Inhalte oder mit rechtmäßig vorliegendem Schlüssel.
+2. Skeletal Mesh und Animation Sequences als UEFormat (`.uemodel`/`.ueanim`) oder `psk`/`psa` exportieren,
+   Texturen als PNG.
+3. In Blender mit dem passenden Add-on importieren, Materialien mit den Texturen verbinden (Spiel-Shader kommen
+   nicht mit), Maßstab prüfen (Unreal: cm, glTF: m – die App gleicht 0,5–3 m ohnehin aus).
+4. Als **GLB** exportieren: Netz, Skelett, Shape Keys und alle Animationen als **benannte Clips** (z. B. `Idle`,
+   `Wave`, `Nod`, `Laugh`).
+
+### 3. Schritte
+
+#### Schritt 1 – Eingebettete Animationen der GLB abspielen ✅
+- [x] Backend liest die Clipnamen aus GLB/glTF (`avatar_motions::model_clips`, ohne die Datei zu laden) und
+      speichert die Rolle je Modell und Clip (`<Daten>/animations/model_roles.json`); unbekannte Clips bekommen
+      die Rolle aus dem Namen geraten (`guess_role`).
+- [x] glTF-Viewer spielt die Clips direkt auf dem eigenen Skelett (ohne Retargeting); Wurzelbewegung (Root
+      Motion) wird entfernt, damit die Figur nicht aus dem Bild läuft.
+- [x] Eigene Clips haben Vorrang je Rolle; importierte Mixamo-/VRMA-Bewegungen füllen nur fehlende Rollen.
+- [x] Einstellungen → Avatar-Bewegungen: Abschnitt „Bewegungen im Modell“ mit Rollenwahl und Vorschau.
+- [x] Tests: Rust (Clipnamen, Rollen), E2E mit GLB samt eingebetteten Clips (Ruhe + Geste).
+
+#### Schritt 2 – Mehr Knochen erkennen ✅
+- [x] Aliase für 3ds-Max-Biped (`Bip001 …`) und nach glTF konvertierte MMD-Modelle (englisch „Left elbow“, japanisch
+      „左ひじ“/„上半身“); Knochennamen behalten dafür Buchstaben anderer Schriften. Geprüft an einem echten MMD-Modell
+      (Arme hängen statt T-Pose).
+- [x] Rollen für Brust, Schultern, Hände, Beine, Füße, Zehen und alle Finger (je drei Glieder) mit Namen für Mixamo,
+      Unreal, Blender/Rigify, MakeHuman, VRoid, Biped, MMD englisch/japanisch und `finger1-1_L`; MMD-„Left leg“ ist
+      der Oberschenkel, wenn es „Left knee“ gibt. Geprüft an NTE (52 Rollen), MMD (48) und A010 (50).
+- [x] Retargeting fremder Mixamo-Bewegungen über alle Rollen (jede Rolle unter ihrem Mixamo-Namen).
+
+#### Schritt 3 – Gesicht zuordnen ✅
+- [x] Japanische MMD-Gesichtsformen (あ い う え お, まばたき, 笑い, 怒り, 困る, びっくり, なごみ) auch im glTF-Viewer
+      (`MMD_MORPHS` in `gltfRig.ts`, geteilt mit dem MMD-Viewer).
+- [x] Gesichts-Editor je glTF-Modell (`ModelFaceSettings`): je Ausdruck eigene Gesichtsformen mit Gewicht und eine Stärke
+      (auch für Knochengesichter), gespeichert in `<Daten>/animations/model_faces.json`; Live-Vorschau im Editor.
+- [x] Gesichter mit Knochen statt Morphs (`boneFace.ts`): Augenlider, Brauen, Lippen und Mundwinkel nach Namensmuster,
+      Bewegungen geometrisch in der Ruhepose (Augenabstand als Maß) und in den Elternraum umgerechnet; Blinzeln, Mundformen
+      und Gefühle. Geprüft an Unreal-Figuren (NTE).
+
+#### Schritt 4 – Anime-Look ✅
+- [x] Toon-Schalter am glTF-Avatar (`toonLook.ts`: `MeshToonMaterial` mit drei Lichtstufen, Konturen über
+      `OutlineEffect` nur für deckende Teile, neutrales Tone-Mapping, mehr Umgebungslicht), gemerkt pro Modell und Gerät.
+      VRM (MToon) und MMD bringen eigene Toon-Shader mit.
+
+#### Schritt 5 – Import als Ordner/ZIP ✅
+- [x] `.gltf` + `.bin` + Texturen als Ordner oder ZIP importieren (`avatar_models::import_folder_model`, Skelett-Prüfung,
+      Liste über `find_gltf_models`); der Viewer lädt Puffer und Texturen per Blob-URL, Namen case-insensitiv (`gltfFile.ts`).
+
+#### Schritt 6 – Nutzeranleitung ✅
+- [x] Anleitung „Eigenes 3D-Modell mit Animationen“ (Blender-Export, Clipnamen, Stimmungen, Gesichts-Morphs,
+      Grenzen) dreisprachig in `docs/guide-3d-avatars{,.de,.ru}.md`, verlinkt aus den READMEs. Die Herkunft der
+      Modelle bleibt bewusst offen („musst Du selbst herausfinden“).
+- [x] Vollständige Anleitung inkl. Extraktion aus Unreal-Spielen nur lokal in `docs/private/` (per `.gitignore`
+      nicht im Repository).
+- [x] Nachgezogen für Knochen (Beine, Hände, Finger, Gesichtsknochen), Toon-Schalter und Ordner/ZIP-Import.
+- [x] Gesichts-Editor beschrieben.
+
+### 4. Entschiedene Fragen (15.10.2026)
+
+- **Clips ohne Verwendung** (z. B. Kampfanimationen) sind als manuelle Gesten auswählbar: Verwendung „Nur von Hand“,
+  Gesten-Menü am Avatar und Vorschau in den Einstellungen. ✅
+- **Mehrere Clips je Verwendung** werden **nach Stimmung** gewählt: Jeder Clip und jede importierte Bewegung hat eine
+  optionale Stimmung (aus dem Namen geraten, änderbar); passende werden bevorzugt (Gewicht 4, „jede Stimmung“ 1,
+  andere 0,25), die Ruhe-Schleife wechselt mit der Stimmung zur passendsten. ✅
+
+---
+
+## 10. Bedienbarkeit & Story-Einstieg (aus `Roadmap_GUI.md`, 16.–17.10.2026)
+
+> Abgeschlossen am 17.10.2026 (bis auf die Nutzertests, die in `roadmap.md` stehen; die Leitlinien stehen dort
+> ebenfalls). Ziel: Wer die App zum ersten Mal öffnet, soll ohne Vorwissen über LLMs, GGUF, Sampler oder
+> Prompts in wenigen Minuten chatten **und** eine Geschichte beginnen können – und Fortgeschrittene behalten die volle
+> Kontrolle. Erledigtes wird hier abgehakt und nach Abschluss eines Abschnitts in `roadmap_abgeschlossen.md`
+> zusammengefasst.
+
+### 0. Bestandsaufnahme (Befunde aus den E2E-Screenshots)
+
+| Bereich | Befund | Screenshot |
+|---|---|---|
+| Kopfzeile | Umschalter „Lokales LLM / Cloud-API“, GPU-Anzeige, „Cloud mock“ und vier Symbolknöpfe ohne Beschriftung (⌘, >_, ✨, ⓘ) – für Einsteiger nicht deutbar. | `01-start.png` |
+| Einrichtung | Begriffe „GGUF-Modell“, „llama.cpp-Laufzeit“, „Eigener OpenAI-kompatibler Endpunkt“; installierte Modelle erscheinen als Dateinamen (`Ternary-Bonsai-27B-PQ2_0`). | `35-…`, `37-assistent-lokal.png` |
+| Einstellungen | Reiter „llama-server & Tuning“, „Sampler & Presets“, „Modell-Hub (GGUF)“; kein Einfach-/Expertenmodus. | `51-einstellungen-stimme.png` |
+| Stimme | „TTS-Engine“, „Voice-ID (manuell)“, „Zusätzlicher Ausschluss-RegEx“ und RVC stehen gleichrangig neben den Grundfunktionen. | `51-…` |
+| Stage-Start | Ohne Szene nur Lade-Platzhalter; kein Willkommen, keine Erklärung, was Stage ist. | `09-stage-start.png` |
+| Story-Lobby | Drei Filterzeilen (Ordner, Presets/Eigene, Regelwerk) übereinander; **„Presets (0)“** – außer dem 5e-Abenteuer gibt es keine mitgelieferten Erzählgeschichten. | `79-abenteuer-lobby.png` |
+| Stage-Spiel | Eingabearten Sagen/Tun/Denken/Regie/Flüstern ohne Erklärung; mehrere reine Symbolknöpfe; Standardszene und Vorschläge auf Englisch bei deutscher Oberfläche. | `10-stage-live.png` |
+| Szenen-Editor | Technische Felder („Maximale Akteure pro Runde“, SG-Würfelproben) gleichrangig mit Titel/Ort; Dateinamen statt Vorschauen; **veralteter Hinweis** „Ambient-Ton erst in einem späteren Update“ (wird längst abgespielt). | `19-szenen-editor.png` |
+
+### 1. Erster Start & Einrichtung
+
+- [x] **Einstiegsfrage statt Technikwahl (16.10.2026, als Empfehlung umgesetzt):** „Empfohlen für deinen PC“ an Lokal (ab
+  6 GB Grafikspeicher) bzw. Cloud; eine eigene dritte Frage war nicht nötig. Ursprünglicher Plan: „Wie möchtest du starten?“ – *Einfach loslegen* (empfohlener Weg je nach
+  Hardware), *Mit eigenem Cloud-Konto*, *Ich kenne mich aus* (heutiger Assistent). Hardware-Erkennung entscheidet die
+  Empfehlung, der Nutzer bestätigt nur.
+- [x] **Modelle mit Klarnamen (16.10.2026):** `prettyModelName`, Ampel `ModelFit` (passt/knapp/zu groß). Ursprünglicher Plan: Anzeige „Bonsai 27B – sehr gut, braucht 7 GB Grafikspeicher“ statt Dateiname;
+  Eignung als Ampel (passt / knapp / zu groß), Dateiname nur im Tooltip.
+- [x] **Laufzeit unsichtbar machen (16.10.2026):** „Alles automatisch einrichten“ installiert fehlende Laufzeiten (empfohlene
+  Variante) und das empfohlene Modell; Laufzeitkarten unter „Selbst auswählen“. Ursprünglicher Plan: llama.cpp-Laufzeit wird im einfachen Weg automatisch passend geladen; die
+  Laufzeitkarte erscheint nur im Expertenweg oder bei Fehlern.
+- [x] **Cloud-Anbieter geführt (16.10.2026):** Anbieter als Karten mit Kurzbeschreibung und „Wo bekomme ich einen
+  Schlüssel?“ (Kosten-Hinweis fehlt noch). Ursprünglicher Plan: Anbieter als Karten mit Kurzbeschreibung, Kosten-Hinweis und Link „Wo bekomme ich
+  einen Schlüssel?“; „Eigener Endpunkt“ unter „Weitere“.
+- [x] **Fortschritt und Wartezeiten erklären (16.10.2026):** Restzeit „noch ca. x Min.“ beim Ein-Klick-Weg und in der
+  Modellliste (`etaText`). Ursprünglicher Plan: Download-/Startzeiten realistisch anzeigen („ca. 4 Minuten“), App bleibt
+  währenddessen bedienbar (Charakter wählen, Story ansehen).
+- [x] **Abschluss mit Wahl (16.10.2026):** „Geschichte beginnen“ neben „Los geht's“. Ursprünglicher Plan: Letzter Schritt bietet „Mit einer Figur chatten“ oder „Eine Geschichte beginnen“.
+- [x] E2E: Einsteiger-Durchlauf von leerem Profil bis zur ersten Antwort ohne Expertenbildschirm (`beginner-journey.mjs`).
+
+### 2. Startseite & Navigation
+
+- [x] **Startseite „Was möchtest du tun?“ (16.10.2026):** `HomeView.tsx` als erster Reiter „Start“ (Einstellung `start_tab`,
+  abschaltbar), KI-Status mit „KI ändern“ bzw. „Jetzt einrichten“, Karten Weiterchatten / Geschichte / Hub.
+  Ursprünglicher Plan: (statt leerem Chat): Weiterspielen (letzter Chat/letzte Szene), Mit einer
+  Figur chatten, Geschichte beginnen, Figur entdecken (Hub). Leere Zustände führen hierher.
+- [x] **Kopfzeile aufräumen (16.10.2026):** GPU-Anzeige und Protokoll nur im Expertenmodus, KI-Status auf der Startseite. Symbolknöpfe beschriften oder mit Tooltip + Kurztext versehen; Lokal/Cloud-Umschalter
+  als verständlicher Status („Antworten kommen von: Bonsai 27B auf deinem PC“) mit Klick zur Auswahl; GPU-Anzeige nur
+  im Expertenmodus oder als Detail.
+- [x] **Navigation benennen (16.10.2026):** Untertitel unter jedem Eintrag, unten ausblendbar (`navHints`).
+  Ursprünglicher Plan: Seitenleiste mit Untertiteln beim ersten Start („Stage – Geschichten mit mehreren
+  Figuren“, „Companion – Assistent auf dem Desktop“), danach kompakt.
+- [x] **Einfach-/Expertenmodus (16.10.2026):** `AppSettings.expert_mode`, Schalter oben in den Einstellungen.
+  Ursprünglicher Plan: als globale Einstellung (Standard: einfach), schaltet erweiterte Bereiche überall
+  zu; Befehlspalette findet auch versteckte Optionen.
+
+### 3. Einstieg in Geschichten (Stage) – Schwerpunkt
+
+> 16.10.2026: Galerie, Vorschau, Weiterspielen und Wiederaufnahme der letzten Geschichte umgesetzt (siehe Häkchen).
+
+- [x] **Story-Galerie statt Lobby-Verwaltung:** umgesetzt in `StoryGallery.tsx` (Genre-Titelkarten statt Bildern; echte
+  Titelbilder später). große Karten mit Titelbild, Genre, Dauer („ca. 30–60 Min.“),
+  Schwierigkeit, Spielerzahl/Gefährten und Inhaltshinweisen; Filter in *einer* Zeile (Genre, Länge, Regeln), Ordner
+  und Import unter „Verwalten“.
+- [x] **Mitgelieferte Erzählgeschichten (Inhalte, 16.10.2026):** `presets/stories/scenes/` mit fünf Geschichten
+  (Fantasy/Emilia, Alltag, Krimi, Horror light mit Ayu & Cosmos, Sci-Fi solo), de/en/ru, Story-Daten
+  `extensions.otakusoul_story` (`StoryInfo` in `ScenePreview.story`, eigene Startvorschläge); Galerie-Anzeige folgt.
+  Ursprünglicher Plan (Galerie-Anzeige erledigt): 3–5 kurze, hochwertige Starter-Stories (z. B. Fantasy-Abenteuer,
+  Slice-of-Life-Schulfest, Krimi, Science-Fiction, Horror light) – dreisprachig, mit Startbild, Ambient, Zielen und
+  passenden Gefährten aus den mitgelieferten Figuren; die englische Standardszene ersetzen.
+- [x] **Hub-Szenen mit Story-Daten (16.10.2026):** alle 45 Szenen in `otakusoul-data` (plus Paket-Kopien) tragen
+  `otakusoul_story`, übersetzte Startorte und Tageszeiten; Format in dessen `AI.md` beschrieben.
+- [x] **Story-Assistent „Eigene Geschichte“ (16.10.2026):** `StoryWizard.tsx` (Genre → Figur → Gefährten → Ausgangslage mit
+  zwei Vorlagen je Genre, Würfeln oder eigener Idee), Editor über „Erweiterter Editor“. Ursprünglicher Plan: 4 Schritte – Genre/Stimmung → Wer bist du? (Persona) → Wer begleitet
+  dich? (Figuren, Vorschläge) → Ausgangslage (Vorlagen oder eigener Satz, „Würfel mir etwas aus“). Regeln/Technik
+  (Akteure pro Runde, SG, Regelwerk) nur unter „Erweitert“; der heutige Editor bleibt für Fortgeschrittene.
+- [x] **Vorschau vor dem Start:** Karte zeigt Ausgangslage, Gruppe, was man tun kann; „Starten“ mit einem Klick, ohne
+  Zwischenschritte; „Weiterspielen“ für begonnene Geschichten an erster Stelle.
+- [x] **Geführte erste Runde (16.10.2026):** `StageGuide.tsx` beim ersten Spiel (Gerät, `stageGuideSeen`), „?“ öffnet sie
+  wieder, Erklärung der gewählten Eingabeart unter den Knöpfen. Ursprünglicher Plan: Bei der ersten Szene kurze Einblendungen zu Sagen/Tun/Denken/Regie/Flüstern,
+  Vorschlägen, „Weiter“ und Auto-Play (überspringbar, später unter Hilfe abrufbar); Eingabearten mit Beispieltext im
+  Platzhalter.
+- [x] **Sprache durchziehen (16.10.2026):** Geschichten dreisprachig inkl. Ort/Tageszeit/Vorschläge, Spieltexte
+  mitgeliefert, Spielleiter-Name und HUD-Werte übersetzt. Ursprünglicher Plan: Szenen, Vorschläge und Erzähler antworten in der App-Sprache (Szenen pflegen Übersetzungen
+  wie Karten mit `otakusoul_i18n`).
+- [x] **Stage-Kopfzeile ordnen (16.10.2026):** Bild erzeugen/festhalten, Erzählerstimme und Export im Menü „Mehr“ (mit
+  Erklärung), Reiter mit Kurzbeschreibung im Tooltip. Ursprünglicher Plan: wichtigste Aktionen (Lobby, Vorlesen, Atmosphäre) beschriftet, seltene (Export,
+  Bild, Sperre) in ein Menü; Reiter „Abenteuer / Taktik & Würfel / Kampagne“ mit Kurzerklärung.
+- [x] **Szenen-Editor entrümpeln (16.10.2026):** Abschnitte Geschichte / Figuren / Bild & Klang, Erzählstil, Lorebooks,
+  Akteure, Würfel und Regeln unter „Erweitert“ (beim Bearbeiten offen), lesbare Dateinamen (`assetLabel`); Vorschau-Galerie
+  für Bilder und Klänge steht noch aus. Ursprünglicher Plan: Abschnitte *Geschichte* (Titel, Ort, Eröffnung, Bild), *Figuren*, *Atmosphäre*,
+  *Regeln (Erweitert)*; Bild-/Tonauswahl als Vorschau-Galerie statt Dateinamen; veralteten Ambient-Hinweis entfernen
+  (erledigt 16.10.2026).
+- [x] **5e-Abenteuer einsteigerfreundlich (16.10.2026):** „So funktioniert ein Kampf“ beim ersten Kampf (Gerät,
+  `combat5eGuideSeen`, „?“ öffnet erneut), Tooltip für LP/Verletzungsstufe, Klassentipp in der Gruppenwahl.
+  Ursprünglicher Plan: kurze Regel-Einführung („So funktioniert ein Kampf“) beim ersten Kampf,
+  Erklärungen zu RK/TP/Zaubergraden per Tooltip, empfohlene Klassen für Einsteiger.
+- [x] E2E (`stage-gallery.mjs`, `beginner-journey.mjs`): Einsteiger startet eine mitgelieferte Story aus der Galerie, spielt zwei Runden und setzt sie fort;
+  zweiter Durchlauf über den Story-Assistenten.
+
+- [x] **Spieltexte übersetzen (16.10.2026):** Kopie in `presets/locales/`, Laden nach dem Ressourcenpfad, Nachladen aus dem
+  Daten-Repo beim Start. Ursprünglicher Befund: Texte, die die App selbst in Geschichten schreibt („Player“, „Dramatic tension“, Startvorschläge
+  der Demo), kommen aus `otakusoul-data/locales/*.json`, die nicht mit der App ausgeliefert werden → in deutschen Szenen
+  erscheint Englisch. Locales mitliefern (Ressourcen) oder beim Start aus dem Daten-Repo laden.
+
+### 4. Chat & Figuren
+
+- [x] **Figurenwahl mit Vorschau (16.10.2026):** Klick aufs Bild öffnet `CharacterPreviewModal` (Wer ist das, Persönlichkeit,
+  Ausgangslage, Begrüßung, „Jetzt chatten“), mitgelieferte Figuren vorn mit „Gut für den Einstieg“. Ursprünglicher Plan: Bibliothek zeigt Kurzbeschreibung, Stimmung/Genre und „Jetzt chatten“; neue Nutzer
+  sehen zuerst die mitgelieferten Figuren mit Empfehlung.
+- [x] **HUD verständlich (16.10.2026):** „Nachdenken“ statt „Reasoning“ mit Erklärung, Zustandswerte mit Tooltip,
+  Kontextanzeige als „Gesprächsgedächtnis: x % belegt“ (Tokens im Expertenmodus). Mitgelieferte Zustandswerte (Affection,
+  Energy, Mood, Trust, Intimacy, Sanity) werden im HUD übersetzt angezeigt; ihre Namen bleiben für `<state>` gleich. Ursprünglicher Plan: Werte wie Energie/Stimmung/Reasoning mit Tooltip-Erklärung, standardmäßig reduziert.
+- [x] **Chat-Menü gruppieren (16.10.2026):** Lokal/Cloud-Umschalter, Werkzeuge und Prompt-Protokoll nur im Expertenmodus.
+  Ursprünglicher Plan: häufige Aktionen (Neuer Chat, Stimme, Gestaltung) oben, Werkzeuge/Prompt-Log unter
+  „Erweitert“.
+- [x] **Figur erstellen geführt (16.10.2026):** vorhandener KI-Assistent als Hauptknopf „Figur erstellen“, leerer Editor als
+  „Leere Karte“, leerer Zustand führt zum Assistenten. Ursprünglicher Plan: Assistent (Name, Aussehen, Persönlichkeit per Vorlagen/Schiebereglern, Begrüßung),
+  optional mit KI-Vorschlag; der vollständige Karten-Editor bleibt.
+
+### 5. Einstellungen
+
+- [x] **Reiter umbenennen und ordnen (16.10.2026):** „Lokale KI“, „Cloud-KI“, „Antwortstil“, „Modelle herunterladen“,
+  „Prompt (Experten)“ nur im Expertenmodus; Antwortstil zeigt die Vorlagen mit Beschreibung, Regler nur für Experten,
+  Server-Tuning ebenso. Ursprünglicher Plan: „KI-Modell“ (lokal/Cloud zusammen), „Antwortstil“ (statt Sampler, mit Vorlagen
+  *Kreativ / Ausgewogen / Genau*), „Stimme“, „Bilder“, „Aussehen“, „Erweitert“ (llama-server, Prompt, Sampler-Rohwerte).
+- [x] **Jede Option mit Satz (17.10.2026):** Jede Einstellung in allen Reitern (einfach und Experte) hat einen Satz darunter,
+  per `aria-describedby` verknüpft (`settings/OptionHint.tsx`), Fachbegriff in Klammern; Sampler-Stichworte als Sätze neu.
+  `e2e/settings-hints.mjs` (Teil von `npm run e2e`) meldet jede Option ohne Beschreibung. Ursprünglich: Kurzbeschreibung
+  unter jeder Einstellung; Fachbegriff in Klammern; Glossar-Link.
+- [x] **Stimme vereinfachen (17.10.2026):** „Stimmen anhören und vergleichen“ (`voice/VoiceGallery.tsx`) listet alle Stimmen
+  ohne Schlüssel – installierte lokale Modelle (Vorgaben und Klone), Kokoro, Edge-TTS in der Antwortsprache (Hauptregion
+  zuerst) – mit Probehören und „Übernehmen“ (Engine + Stimme zusammen; E2E `voice-gallery.mjs`). Voice-ID, RegEx und RVC
+  nur im Expertenmodus (16.10.), Klon-Dialog mit Zuschnitt als geführter Ablauf. Ursprünglich: „Stimme wählen“ mit
+  Probehören-Liste über alle Engines; Voice-ID, RegEx, RVC unter „Erweitert“; Klon-Dialog als eigener, geführter Ablauf.
+- [x] **Zurücksetzen pro Bereich (17.10.2026):** Antwortstil, Lokale KI (Tuning + Kontext/GPU-Layer nach Empfehlung) und
+  Farb-Theme zeigen „N Werte weichen vom Standard ab“ und setzen mit Rückgängig zurück (`ResetSection`,
+  `utils/settingDefaults.ts`, Bonsai mit eigenen Standards; E2E `settings-reset.mjs`). Ursprünglich: Zurücksetzen pro Bereich
+  und Hinweis, welche Werte vom Standard abweichen.
+
+### 6. Hilfe, Fehler & leere Zustände
+
+- [x] **Kontext-Hilfe (16.10.2026, global):** Fragezeichen in der Kopfzeile und Befehlspalette öffnen `HelpDialog`
+  (Erste Schritte, Glossar, Link zur Online-Anleitung); einzelne „?“ gibt es in Stage-Eingabe und Kampf. Ursprünglicher Plan: „?“-Symbol an komplexen Stellen mit Kurztext und Link zur passenden Anleitung (`docs/`).
+- [x] **Glossar (16.10.2026):** 18 Begriffe dreisprachig mit Suche im Hilfe-Dialog. Ursprünglicher Plan: (dreisprachig) für LLM, Kontext, Token, GGUF, Quantisierung, LoRA, TTS, Klonen … – aus der App
+  erreichbar.
+- [x] **Fehlermeldungen mit Lösung (16.10.2026):** `utils/errorFixes.ts` (Schlüssel prüfen, Modell prüfen, lokale KI starten,
+  Verbindung prüfen, kleineres Modell, Laufzeit einrichten, KI einrichten) im Chat-Fehlerbanner und in `reportFailure`.
+  Ursprünglicher Plan: jede häufige Meldung (kein Modell, zu wenig VRAM, Schlüssel ungültig, Server
+  startet nicht, Download abgebrochen) bekommt einen Lösungsknopf („Kleineres Modell wählen“, „Schlüssel prüfen“).
+- [x] **Leere Zustände (16.10.2026):** Stage (Galerie), Bibliothek (Assistent), Lorebooks (Erklärung + Hub), Galerie hatte
+  bereits einen Hinweis; Seitenleiste „x Bücher“ übersetzt. Ursprünglicher Plan: Stage, Lorebooks, Galerie, Erinnerungen, Companion erklären in einem Satz, wozu sie
+  da sind, und bieten den ersten Schritt an.
+- [x] **Einsteiger-Anleitung (16.10.2026):** `docs/guide-getting-started{,.de,.ru}.md`, in den READMEs verlinkt. Ursprünglicher
+  Plan: `docs/guide-getting-started{,.de,.ru}.md` mit Screenshots (Chat, Story, Stimme).
+
+### 7. Konsistenz & Barrierefreiheit
+
+- [x] (16.10.2026) Begriffe festgelegt (AI.md), `e2e/a11y-sweep.mjs` prüft alle Ansichten auf Bedienelemente ohne Namen;
+  gefundene behoben. Ursprünglich: Alle reinen Symbolknöpfe mit `aria-label` **und** sichtbarem Tooltip; einheitliche Begriffe (Szene/Story/
+  Geschichte, Figur/Charakter) app-weit festlegen und in allen Locales durchziehen.
+- [x] Tastaturbedienung der neuen Abläufe, Fokus-Reihenfolge, Kontrast in allen Themes (17.10.2026): `e2e/keyboard.mjs`
+  bedient Story-Assistent, Charakter-Vorschau, Hilfe und Einrichtung ohne Maus (Fokus im Dialog, Tab-Falle, Escape mit
+  Fokus-Rückgabe, kein positiver `tabindex`); Genre- und Anbieterwahl sind echte Radio-Gruppen mit Pfeiltasten und einem
+  Tab-Halt (`utils/radioGroup.ts`). Kontrast: `e2e/contrast.mjs` misst jeden sichtbaren Text in 5 Themes × hell/dunkel
+  gegen den tatsächlichen Hintergrund; behoben: Hinweistexte `slate-500`, Akzentknöpfe Cyberpunk/Midnight/Emerald, helle
+  Akzenttexte, Abzeichen „Aktiv“/„Für Einsteiger“/Genre. Der Sweep prüft daneben die Story-Vorschau und kleine Fenster.
+- [x] (16.10.2026) Kleine Fenster: der Sweep prüft 1024×700 auf seitlichen Überlauf und Dialoge außerhalb des Fensters –
+  ohne Befund. Ursprünglich: Kleine Fenster (≥ 1024×700) ohne abgeschnittene Dialoge; Dialoge mit fester Fußzeile.
+
+### 8. Qualitätssicherung
+
+- [x] (16.10.2026) E2E-Szenario `e2e/beginner-journey.mjs` umgesetzt (Einrichtung → „Geschichte beginnen“ → Hanami-Live
+  zwei Runden → Startseite „Weiterspielen“ → Chat), Screenshots 92–95. Ursprünglich: frisches Profil → Einrichtung (einfacher Weg, Mock) → Startseite →
+  Story aus der Galerie → zwei Runden → zurück → Chat mit Figur; Screenshots je Schritt.
+- [x] (16.10.2026) Textprüfung im Einsteiger-Durchlauf (llama-server, Sampler, Tokens, Reasoning, RegEx, GGUF, SillyTavern,
+  „GAME MASTER“ – gefunden und behoben: Spielleiter-Name im Stage-Verlauf). Ursprünglich: Test, der in einfachen Ansichten verbotene Fachbegriffe (GGUF, llama-server, Sampler, RegEx …)
+  außerhalb von „Erweitert“ meldet.
+### Reihenfolge (Vorschlag)
+
+1. Abschnitt 3 *Story-Galerie + mitgelieferte Erzählgeschichten + Vorschau/Weiterspielen* (größter Hebel für den
+   Einstieg), dazu die Schnellkorrekturen aus Abschnitt 0 (Ambient-Hinweis, englische Standardszene).
+2. Abschnitt 1 + 2 *Einrichtung und Startseite* (erster Eindruck).
+3. Abschnitt 3 *Story-Assistent und geführte erste Runde*.
+4. Abschnitt 5 *Einstellungen mit Einfach/Experte*, dann 4, 6, 7; Abschnitt 8 begleitet jeden Schritt.

@@ -1,4 +1,4 @@
-// 5e fights (Roadmap_DND.md, step 1): the game master starts an encounter with SRD monster
+// 5e fights (roadmap_abgeschlossen.md section 8, step 1): the game master starts an encounter with SRD monster
 // ids, the rules engine decides every number, the player attacks from the combat panel,
 // companions pick listed actions, the narrator retells the engine's report. Hit points may only
 // change through engine damage – the mock planner's `hp_delta: -5` must be ignored.
