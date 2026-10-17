@@ -1,3 +1,4 @@
+import { answerSnapshots } from '../../services/avatarSnapshot';
 import * as THREE from 'three';
 import { OutlineEffect } from 'three/examples/jsm/effects/OutlineEffect.js';
 import { OrbitControls } from 'three/examples/jsm/controls/OrbitControls.js';
@@ -52,6 +53,11 @@ export function createAvatarStage(container: HTMLElement, modelPath: string): Av
   renderer.toneMapping = THREE.ACESFilmicToneMapping;
   renderer.toneMappingExposure = 1.05;
   container.appendChild(renderer.domElement);
+  // Preview pictures for the avatar manager (drawn again in the same call, see avatarSnapshot).
+  const stopSnapshots = answerSnapshots(renderer.domElement, () => {
+    if (toon && outline) outline.render(scene, camera);
+    else renderer.render(scene, camera);
+  });
 
   const controls = new OrbitControls(camera, renderer.domElement);
   controls.target.fromArray(DEFAULT_CAMERA_TARGET);
@@ -188,6 +194,7 @@ export function createAvatarStage(container: HTMLElement, modelPath: string): Av
       if (saveTimer !== null) window.clearTimeout(saveTimer);
       saveViewState();
       cancelAnimationFrame(animationFrameId);
+      stopSnapshots();
       controls.removeEventListener('start', markMoved);
       controls.removeEventListener('change', scheduleViewSave);
       controls.dispose();

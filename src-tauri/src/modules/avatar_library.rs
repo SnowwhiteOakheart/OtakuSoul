@@ -1,7 +1,7 @@
 //! Own names for avatars and removing imported ones. Files keep their names (settings, character
 //! cards, face and clip settings point to the paths); the name shown comes from
 //! `<data>/avatar_names.json`. Removing moves an imported model to the app's trash, bundled models
-//! stay.
+//! stay. Preview pictures the avatar manager takes of a model lie in `<data>/avatar_thumbs/`.
 
 use serde::{Deserialize, Serialize};
 use std::collections::BTreeMap;
@@ -69,6 +69,67 @@ fn store(data_dir: &Path, names: &Names) -> Result<(), String> {
         .map_err(|e| crate::err!("backend.common.fileWrite", error = e))?;
     fs::write(names_file(data_dir), json)
         .map_err(|e| crate::err!("backend.common.fileWrite", error = e))
+}
+
+/// Largest preview picture accepted (a 4:3 WebP of a few hundred pixels is far smaller).
+const MAX_THUMBNAIL_BYTES: usize = 2 * 1024 * 1024;
+
+impl AvatarKind {
+    fn label(self) -> &'static str {
+        match self {
+            Self::Vrm => "vrm",
+            Self::Live2d => "live2d",
+        }
+    }
+}
+
+/// Where the preview picture of a model goes: named after a hash of its key, so names with any
+/// characters and moved app folders work.
+fn thumbnail_file(data_dir: &Path, kind: AvatarKind, key: &str) -> PathBuf {
+    use sha2::{Digest, Sha256};
+    let hash = Sha256::digest(key.as_bytes());
+    let short: String = hash.iter().take(10).map(|b| format!("{b:02x}")).collect();
+    data_dir
+        .join("avatar_thumbs")
+        .join(format!("{}-{short}.webp", kind.label()))
+}
+
+/// The saved preview picture of a model, if there is one.
+pub fn thumbnail(data_dir: &Path, kind: AvatarKind, key: &str) -> Option<String> {
+    let file = thumbnail_file(data_dir, kind, key);
+    file.is_file().then(|| file.to_string_lossy().into_owned())
+}
+
+/// Stores a preview picture (`data:image/webp;base64,…` or PNG) and returns its file.
+pub fn save_thumbnail(
+    data_dir: &Path,
+    kind: AvatarKind,
+    key: &str,
+    data_url: &str,
+) -> Result<String, String> {
+    use base64::Engine as _;
+    let invalid = || crate::err!("backend.avatar.invalidThumbnail");
+    let encoded = data_url
+        .strip_prefix("data:image/webp;base64,")
+        .or_else(|| data_url.strip_prefix("data:image/png;base64,"))
+        .ok_or_else(invalid)?;
+    if encoded.len() > MAX_THUMBNAIL_BYTES * 4 / 3 + 4 {
+        return Err(invalid());
+    }
+    let bytes = base64::engine::general_purpose::STANDARD
+        .decode(encoded)
+        .map_err(|_| invalid())?;
+    let webp = bytes.len() > 12 && &bytes[..4] == b"RIFF" && &bytes[8..12] == b"WEBP";
+    let png = bytes.starts_with(b"\x89PNG\r\n\x1a\n");
+    if !(webp || png) || bytes.len() > MAX_THUMBNAIL_BYTES {
+        return Err(invalid());
+    }
+    let file = thumbnail_file(data_dir, kind, key);
+    if let Some(dir) = file.parent() {
+        fs::create_dir_all(dir).map_err(|e| crate::err!("backend.common.dirCreate", error = e))?;
+    }
+    fs::write(&file, bytes).map_err(|e| crate::err!("backend.common.fileWrite", error = e))?;
+    Ok(file.to_string_lossy().into_owned())
 }
 
 /// Key of a model in the name list: its path below one of `roots` with `/`, else the whole
@@ -149,6 +210,8 @@ pub fn remove(
     if names.of(kind).remove(key).is_some() {
         store(data_dir, &names)?;
     }
+    // The preview picture is made from the model again when it comes back.
+    let _ = fs::remove_file(thumbnail_file(data_dir, kind, key));
     Ok(target)
 }
 
@@ -181,6 +244,45 @@ mod tests {
         assert_eq!(
             custom_name(&data, AvatarKind::Live2d, "haru").as_deref(),
             Some("Haru")
+        );
+        let _ = fs::remove_dir_all(data);
+    }
+
+    #[test]
+    fn thumbnails_are_checked_and_found_by_key() {
+        use base64::Engine as _;
+        let data = temp("thumbs");
+        let webp = [b"RIFF".as_slice(), &[8, 0, 0, 0], b"WEBPVP8 "].concat();
+        let url = format!(
+            "data:image/webp;base64,{}",
+            base64::engine::general_purpose::STANDARD.encode(&webp)
+        );
+        assert_eq!(thumbnail(&data, AvatarKind::Vrm, "Mika.vrm"), None);
+        let file = save_thumbnail(&data, AvatarKind::Vrm, "Mika.vrm", &url).unwrap();
+        assert_eq!(fs::read(&file).unwrap(), webp);
+        assert_eq!(thumbnail(&data, AvatarKind::Vrm, "Mika.vrm"), Some(file));
+        assert_eq!(thumbnail(&data, AvatarKind::Live2d, "Mika.vrm"), None);
+        // Not a picture, wrong type or too large: refused.
+        let text = base64::engine::general_purpose::STANDARD.encode(b"<script>");
+        assert!(
+            save_thumbnail(
+                &data,
+                AvatarKind::Vrm,
+                "x",
+                &format!("data:image/webp;base64,{text}")
+            )
+            .is_err()
+        );
+        assert!(save_thumbnail(&data, AvatarKind::Vrm, "x", "data:text/html;base64,AAAA").is_err());
+        let huge = "A".repeat(MAX_THUMBNAIL_BYTES * 2);
+        assert!(
+            save_thumbnail(
+                &data,
+                AvatarKind::Vrm,
+                "x",
+                &format!("data:image/png;base64,{huge}")
+            )
+            .is_err()
         );
         let _ = fs::remove_dir_all(data);
     }

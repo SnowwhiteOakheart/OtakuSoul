@@ -12,4 +12,8 @@ triangles: number,
 /**
  * Imported by the user (in `<data>/avatars`): can be removed. Bundled models cannot.
  */
-removable: boolean, };
+removable: boolean, 
+/**
+ * Preview picture taken in the avatar manager.
+ */
+thumbnail: string | null, };

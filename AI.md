@@ -206,6 +206,12 @@ ru „персонаж/история/сцена“. Fachbegriffe nur im Experte
   Filter/Suche, Live-Vorschau `AvatarPreview`, Standard, Zuweisung per Haken → `characterSlice.assignCharacterAvatar`
   schreibt `custom_vrm` (Pfad) bzw. `custom_live2d` (Ordner-ID) in die Karte und entfernt `sow_*`); „wer nutzt was“ in
   `avatarMatch.ts` (gleiche Regel wie `AvatarCanvas`), Import geteilt mit den Einstellungen in `avatarImport.ts`. E2E `avatar-manager.mjs`.
+  Vorschaubilder: `services/avatarSnapshot.ts` – der Manager schickt ein Ereignis an den Viewer-Canvas, `avatarStage` bzw.
+  `Live2DViewer` rendern im selben Aufruf neu (`answerSnapshots`, WebGL ohne `preserveDrawingBuffer`); zugeschnitten auf die
+  sichtbaren Pixel (oberer Teil, 320×240). Automatisch beim ersten Ansehen ohne Bild (zweiter Treffer in Folge), von Hand
+  „Vorschaubild aus aktueller Ansicht“; gespeichert über `save_avatar_thumbnail` in `<Daten>/avatar_thumbs/<art>-<hash>.webp`
+  (`avatar_library::save_thumbnail` prüft WebP/PNG, max. 2 MB), geliefert als `ScannedVrm.thumbnail`/`ScannedLive2d.thumbnail`
+  (Live2D-eigenes `preview_image` hat Vorrang); `remove` löscht das Bild mit.
   Avatar-Bibliothek (`avatar_library.rs`): eigene Namen in `<Daten>/avatar_names.json` (3D nach Pfad relativ zu
   `avatar_roots`, Live2D nach Ordner-ID; Dateien behalten ihre Namen), `delete_avatar` verschiebt nur Importe aus
   `<Daten>/avatars|live2d` (ganzer Ordner) nach `.trash/avatars`; `ScannedVrm`/`ScannedLive2d.removable`. UI `AvatarActions.tsx`

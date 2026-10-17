@@ -854,6 +854,9 @@ export const api = {
     return await invoke<void>('save_settings', { settings });
   },
 
+  saveAvatarThumbnail: async (kind: 'vrm' | 'live2d', path: string, dataUrl: string): Promise<string> =>
+    await invoke<string>('save_avatar_thumbnail', { kind, path, dataUrl }),
+
   saveCharacterCard: async (
     profile: CharacterProfile
   ): Promise<CharacterProfile> => {

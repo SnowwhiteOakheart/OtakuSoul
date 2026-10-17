@@ -1,3 +1,4 @@
+import { answerSnapshots } from '../../services/avatarSnapshot';
 import React, { useEffect, useLayoutEffect, useRef, useState } from 'react';
 import { Application, extensions } from 'pixi.js';
 // Lets pixi.js compile shaders without `eval`, so the CSP can forbid 'unsafe-eval'.
@@ -180,6 +181,7 @@ export const Live2DViewer: React.FC<Live2DViewerProps> = ({
     });
 
     let cleanupAudio: (() => void) | null = null;
+    let stopSnapshots: (() => void) | null = null;
     let saveTimer: number | null = null;
 
     const saveViewState = () => {
@@ -208,6 +210,7 @@ export const Live2DViewer: React.FC<Live2DViewerProps> = ({
         if (isDisposed) return;
 
         container.appendChild(app.canvas);
+        stopSnapshots = answerSnapshots(app.canvas, () => app.render());
 
         // Convert filesystem path to Tauri Asset URL
         const assetUrl = convertFileSrc(modelPath);
@@ -372,6 +375,7 @@ export const Live2DViewer: React.FC<Live2DViewerProps> = ({
       if (saveTimer !== null) window.clearTimeout(saveTimer);
       saveViewState();
       if (cleanupAudio) cleanupAudio();
+      stopSnapshots?.();
       container.removeEventListener('click', handleCanvasClick);
       container.removeEventListener('pointermove', handlePointerMove);
       container.removeEventListener('pointerdown', handlePointerDown);

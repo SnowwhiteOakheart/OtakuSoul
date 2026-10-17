@@ -838,6 +838,8 @@ export interface ScannedLive2d {
   version: string;
   /** Imported or downloaded by the user: can be removed. */
   removable: boolean;
+  /** Preview picture taken in the avatar manager. */
+  thumbnail?: string | null;
 }
 
 export interface EmotionResult {

@@ -3395,4 +3395,9 @@ export const en: TranslationDictionary = {
   "avatars.motionsAndFace": "Set up motions and face (Settings → General)",
   "avatars.tryEmotion": "Try a feeling",
   "avatars.openManager": "Manage avatars",
+  "backend.avatar.invalidThumbnail": "The preview picture is not a valid WebP or PNG image (2 MB at most).",
+  "avatars.retakeThumbnail": "Preview picture from current view",
+  "avatars.retakeThumbnailHint": "Turn and zoom the model in the preview; this button then uses exactly that view as the picture in the overview.",
+  "avatars.thumbnailSaved": "Preview picture saved.",
+  "avatars.thumbnailFailed": "Preview picture not saved: {{error}}",
 };

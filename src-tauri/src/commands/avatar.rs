@@ -109,6 +109,23 @@ pub fn rename_avatar(kind: String, path: String, name: String) -> Result<(), Str
     crate::modules::avatar_library::rename(&data_dir, kind, &avatar_key(kind, &path), &name)
 }
 
+/// Stores the preview picture the avatar manager took of a model (`data_url`: WebP or PNG).
+#[tauri::command]
+pub fn save_avatar_thumbnail(
+    kind: String,
+    path: String,
+    data_url: String,
+) -> Result<String, String> {
+    let kind = crate::modules::avatar_library::AvatarKind::parse(&kind)?;
+    let data_dir = std::path::PathBuf::from(crate::modules::paths::resolve_app_paths().data_dir);
+    crate::modules::avatar_library::save_thumbnail(
+        &data_dir,
+        kind,
+        &avatar_key(kind, &path),
+        &data_url,
+    )
+}
+
 /// Moves an imported avatar with its folder to the app's trash.
 #[tauri::command]
 pub fn delete_avatar(kind: String, path: String) -> Result<(), String> {

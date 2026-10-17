@@ -3395,4 +3395,9 @@ export const ru: TranslationDictionary = {
   "avatars.motionsAndFace": "Настроить движения и лицо (Настройки → Общие)",
   "avatars.tryEmotion": "Попробовать эмоцию",
   "avatars.openManager": "Управление аватарами",
+  "backend.avatar.invalidThumbnail": "Превью не является корректным изображением WebP или PNG (не больше 2 МБ).",
+  "avatars.retakeThumbnail": "Превью из текущего вида",
+  "avatars.retakeThumbnailHint": "Поверните и приблизьте модель в предпросмотре — кнопка сохранит именно этот вид как картинку для обзора.",
+  "avatars.thumbnailSaved": "Превью сохранено.",
+  "avatars.thumbnailFailed": "Превью не сохранено: {{error}}",
 };

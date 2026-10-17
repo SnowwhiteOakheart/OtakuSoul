@@ -4,4 +4,8 @@ export type ScannedLive2d = { id: string, name: string, model_path: string, prev
 /**
  * Imported or downloaded by the user (in `<data>/live2d`): can be removed.
  */
-removable: boolean, };
+removable: boolean, 
+/**
+ * Preview picture taken in the avatar manager (the model's own `preview_image` comes first).
+ */
+thumbnail: string | null, };

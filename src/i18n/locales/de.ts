@@ -3397,4 +3397,9 @@ export const de = {
   "avatars.motionsAndFace": "Bewegungen und Gesicht einstellen (Einstellungen → Allgemein)",
   "avatars.tryEmotion": "Gefühl ausprobieren",
   "avatars.openManager": "Avatare verwalten",
+  "backend.avatar.invalidThumbnail": "Das Vorschaubild ist kein gültiges WebP- oder PNG-Bild (höchstens 2 MB).",
+  "avatars.retakeThumbnail": "Vorschaubild aus aktueller Ansicht",
+  "avatars.retakeThumbnailHint": "Dreh und zoom das Modell in der Vorschau, dann übernimmt dieser Knopf genau diesen Ausschnitt als Bild für die Übersicht.",
+  "avatars.thumbnailSaved": "Vorschaubild gespeichert.",
+  "avatars.thumbnailFailed": "Vorschaubild nicht gespeichert: {{error}}",
 } as const;

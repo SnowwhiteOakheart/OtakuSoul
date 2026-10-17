@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { convertFileSrc } from '@tauri-apps/api/core';
-import { Box, Check, Search, Sparkles, Star, Upload, UserRound, Wand2 } from 'lucide-react';
+import { Box, Camera, Check, Search, Sparkles, Star, Upload, UserRound, Wand2 } from 'lucide-react';
+import { api } from '../../services/api';
 import { translate, useTranslation, type TranslationKey } from '../../i18n';
 import { useStoreFields } from '../../store/useAppStore';
 import { loadDisplayableImage } from '../../utils/characterPortraits';
@@ -29,18 +30,24 @@ interface ManagedAvatar {
   removable: boolean;
   /** What a character card stores for this model: the path (3D) or the folder id (Live2D). */
   cardValue: string;
+  /** The model's own preview picture (Live2D) or one taken here. */
   previewImage: string | null;
+  /** Whether the picture was taken here (it can be taken again). */
+  ownPicture: boolean;
   uses: (character: CharacterProfile) => boolean;
 }
 
 const FORMAT_LABELS: Record<string, string> = { vrm: 'VRM', gltf: 'glTF', mmd: 'MMD' };
 const LIVE2D_VERSIONS: Record<string, string> = { cubism3_4: 'Cubism 3/4', cubism2: 'Cubism 2' };
 
-/** Live2D models bring a preview picture; 3D models get an icon (their preview is live on the right). */
-function Thumbnail({ avatar }: { avatar: ManagedAvatar }) {
+/**
+ * The model's picture: its own (Live2D), one taken in the manager, or an icon until the first look
+ * at the model takes one. `fresh` is a picture just taken (shown before the list is reloaded).
+ */
+function Thumbnail({ avatar, fresh }: { avatar: ManagedAvatar; fresh?: string }) {
   const [src, setSrc] = useState<string | null>(null);
   useEffect(() => {
-    if (!avatar.previewImage) return;
+    if (fresh || !avatar.previewImage) return;
     let cancelled = false;
     loadDisplayableImage(convertFileSrc(avatar.previewImage))
       .then((url) => !cancelled && setSrc(url))
@@ -48,8 +55,9 @@ function Thumbnail({ avatar }: { avatar: ManagedAvatar }) {
     return () => {
       cancelled = true;
     };
-  }, [avatar.previewImage]);
-  if (src) return <img src={src} alt="" className="h-full w-full object-cover object-top" />;
+  }, [avatar.previewImage, fresh]);
+  const shown = fresh ?? src;
+  if (shown) return <img src={shown} alt="" className="h-full w-full object-cover object-top" data-avatar-thumbnail />;
   const Icon = avatar.kind === 'vrm' ? Box : Sparkles;
   return <Icon className="h-10 w-10 text-accent-300/70" aria-hidden />;
 }
@@ -87,6 +95,9 @@ export function AvatarManagerView() {
   const [hidden, setHidden] = useState<string[]>([]);
   const [justImported, setJustImported] = useState<string | null>(null);
   const [saving, setSaving] = useState<string | null>(null);
+  // Pictures taken in this visit, by model path.
+  const [fresh, setFresh] = useState<Record<string, string>>({});
+  const capture = useRef<(() => string | null) | null>(null);
   // Removed models that were the default: undo makes them the default again.
   const wasDefault = useRef(new Set<string>());
 
@@ -103,7 +114,8 @@ export function AvatarManagerView() {
       detail: `${FORMAT_LABELS[vrm.format] ?? vrm.format.toUpperCase()} · ${vrm.size_mb.toFixed(0)} MB`,
       removable: vrm.removable,
       cardValue: vrm.path,
-      previewImage: null,
+      previewImage: vrm.thumbnail ?? null,
+      ownPicture: true,
       uses: (c: CharacterProfile) => usesVrm(c, vrm),
     })),
     ...scannedLive2ds.map((model) => ({
@@ -113,7 +125,8 @@ export function AvatarManagerView() {
       detail: `Live2D${model.version ? ` · ${LIVE2D_VERSIONS[model.version] ?? model.version}` : ''}`,
       removable: model.removable,
       cardValue: model.id,
-      previewImage: model.preview_image ?? null,
+      previewImage: model.preview_image ?? model.thumbnail ?? null,
+      ownPicture: !model.preview_image,
       uses: (c: CharacterProfile) => usesLive2d(c, model),
     })),
   ], [scannedVrms, scannedLive2ds]);
@@ -162,6 +175,23 @@ export function AvatarManagerView() {
     } finally {
       setSaving(null);
     }
+  };
+
+  /** Stores a picture; one taken by hand reports back, an automatic one only logs a failure. */
+  const savePicture = async (a: ManagedAvatar, picture: string, byHand: boolean) => {
+    try {
+      await api.saveAvatarThumbnail(a.kind, a.path, picture);
+      setFresh((pictures) => ({ ...pictures, [a.path]: picture }));
+      if (byHand) toast.success(translate('avatars.thumbnailSaved'));
+    } catch (e) {
+      if (byHand) toast.error(translate('avatars.thumbnailFailed', { error: errorMessage(e) }));
+      else console.warn('Vorschaubild nicht gespeichert:', e);
+    }
+  };
+  const retakePicture = (a: ManagedAvatar) => {
+    const picture = capture.current?.();
+    if (picture) void savePicture(a, picture, true);
+    else toast.error(translate('avatars.thumbnailFailed', { error: translate('avatar.vrmLoading') }));
   };
 
   /** The model a character uses now, when it is another one than `a`. */
@@ -262,7 +292,7 @@ export function AvatarManagerView() {
                     className={`flex w-full flex-col overflow-hidden rounded-xl border text-left transition-colors ${active ? 'border-accent-400 bg-accent-500/10' : 'border-slate-800 bg-slate-900/50 hover:border-slate-600'}`}
                   >
                     <span className="grid aspect-[4/3] w-full place-items-center overflow-hidden bg-linear-to-b from-slate-800/60 to-slate-900">
-                      <Thumbnail avatar={a} />
+                      <Thumbnail avatar={a} fresh={fresh[a.path]} />
                     </span>
                     <span className="space-y-1 p-2.5">
                       <span className="block truncate text-sm font-medium text-slate-100">{a.name}</span>
@@ -289,7 +319,15 @@ export function AvatarManagerView() {
           {selected && (
             <aside className="flex min-h-0 flex-col gap-4 rounded-xl border border-slate-800 bg-slate-900/60 p-4 lg:sticky lg:top-0 lg:self-start" data-avatar-detail={selected.kind} aria-label={selected.name}>
               <div className="h-80 overflow-hidden rounded-lg border border-slate-800 bg-app">
-                <AvatarPreview key={selected.path} kind={selected.kind} path={selected.path} />
+                <AvatarPreview
+                  key={selected.path}
+                  kind={selected.kind}
+                  path={selected.path}
+                  captureRef={capture}
+                  onAutoSnapshot={
+                    selected.previewImage || fresh[selected.path] ? undefined : (picture) => void savePicture(selected, picture, false)
+                  }
+                />
               </div>
 
               <div className="space-y-2">
@@ -367,6 +405,22 @@ export function AvatarManagerView() {
                   })}
                 </ul>
               </fieldset>
+
+              {selected.ownPicture && (
+                <div className="space-y-1">
+                  <button
+                    type="button"
+                    onClick={() => retakePicture(selected)}
+                    aria-describedby="avatar-retake-hint"
+                    className="flex items-center gap-1.5 rounded-lg border border-slate-700 px-3 py-1.5 text-xs text-slate-200 hover:bg-slate-800"
+                    data-avatar-retake
+                  >
+                    <Camera className="h-3.5 w-3.5" aria-hidden />
+                    {t('avatars.retakeThumbnail')}
+                  </button>
+                  <p id="avatar-retake-hint" className="text-[11px] text-slate-400">{t('avatars.retakeThumbnailHint')}</p>
+                </div>
+              )}
 
               {selected.kind === 'vrm' && (
                 <button
