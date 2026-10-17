@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import { ResetSection } from '../ResetSection';
+import { OptionHint } from '../OptionHint';
 import { EXTRA_SAMPLING_FIELDS, changedFields, samplingDefaults } from '../../../utils/settingDefaults';
 import { useStoreFields } from '../../../store/useAppStore';
 import { translate, useTranslation } from '../../../i18n';
@@ -371,6 +372,7 @@ export const SamplerSettings = () => {
               </label>
               <input
                 id="settings-lore-depth"
+                aria-describedby="settings-lore-depth-hint"
                 type="number"
                 min="1"
                 max="30"
@@ -379,6 +381,7 @@ export const SamplerSettings = () => {
                 className="bg-slate-900 border border-slate-700 rounded px-2 py-0.5 text-slate-200 text-xs w-20 font-mono"
               />
             </div>
+            <OptionHint id="settings-lore-depth-hint">{t('settings.lorebookDepthHint')}</OptionHint>
           </div>
         </div>
       </div>

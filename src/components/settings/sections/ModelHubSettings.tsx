@@ -94,7 +94,7 @@ export const ModelHubSettings = ({ onNavigate }: { onNavigate: (section: Setting
           <div className="relative flex-1">
             <Search className="w-4 h-4 absolute left-3 top-2.5 text-slate-400" />
             <input
-              type="text"
+              type="search"
               value={hfQuery}
               onChange={(e) => {
                 setHfQuery(e.target.value);

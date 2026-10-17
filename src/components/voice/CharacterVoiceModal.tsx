@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
+import { OptionHint } from '../settings/OptionHint';
 import { open } from '@tauri-apps/plugin-dialog';
 import { Download, FolderOpen, Headphones, Mic, Play, RefreshCw, Save, SlidersHorizontal, Wand2, X } from 'lucide-react';
 import { VoiceEffectsPanel } from './VoiceEffectsPanel';
@@ -351,7 +352,7 @@ export function CharacterVoiceModal({ onClose, target, embedded = false, autoSav
               <div className="grid sm:grid-cols-2 gap-4">
                 <label>
                   <span className={labelClass}>{t('voiceCfg.ttsEngine')}</span>
-                  <select value={draft.engine} onChange={(event) => changeEngine(event.target.value as TtsEngine)} className={fieldClass}>
+                  <select value={draft.engine} onChange={(event) => changeEngine(event.target.value as TtsEngine)} className={fieldClass} aria-describedby="voice-engine-hint">
                     <option value="disabled">{t('voiceCfg.disabled')}</option>
                     <option value="edge">Edge-TTS</option>
                     <option value="local">{t('voiceCfg.local')}</option>
@@ -359,15 +360,17 @@ export function CharacterVoiceModal({ onClose, target, embedded = false, autoSav
                     <option value="elevenlabs">ElevenLabs</option>
                     <option value="openai">{t('voiceCfg.openaiCompatible')}</option>
                   </select>
+                  <OptionHint id="voice-engine-hint">{t('voiceCfg.ttsEngineHint')}</OptionHint>
                 </label>
                 <label>
                   <span className={labelClass}>{t('voiceCfg.outputDevice')}</span>
-                  <select value={draft.output_device_id} onChange={(event) => update('output_device_id', event.target.value)} className={fieldClass}>
+                  <select value={draft.output_device_id} onChange={(event) => update('output_device_id', event.target.value)} className={fieldClass} aria-describedby="voice-output-hint">
                     <option value="">{t('voiceCfg.systemDefault')}</option>
                     {outputDevices.map((device, index) => (
                       <option key={device.deviceId} value={device.deviceId}>{device.label || t('voiceCfg.outputN', { n: index + 1 })}</option>
                     ))}
                   </select>
+                  <OptionHint id="voice-output-hint">{t('voiceCfg.outputDeviceHint')}</OptionHint>
                 </label>
               </div>
 
@@ -437,12 +440,13 @@ export function CharacterVoiceModal({ onClose, target, embedded = false, autoSav
                   <div className="grid sm:grid-cols-2 gap-4">
                     <label>
                       <span className={labelClass}>{t('voiceCfg.foundVoice')} {isLoadingVoices && t('voiceCfg.loading')}</span>
-                      <select value={draft.voice_id} onChange={(event) => update('voice_id', event.target.value)} className={fieldClass}>
+                      <select value={draft.voice_id} onChange={(event) => update('voice_id', event.target.value)} className={fieldClass} aria-describedby="voice-found-hint">
                         <option value={draft.voice_id}>{draft.voice_id || t('voiceCfg.chooseVoice')}</option>
                         {availableVoices.filter((voice) => voice.id !== draft.voice_id).map((voice) => (
                           <option key={voice.id} value={voice.id}>{voice.name} · {voice.locale} · {voice.gender}</option>
                         ))}
                       </select>
+                      <OptionHint id="voice-found-hint">{t('voiceCfg.foundVoiceHint')}</OptionHint>
                     </label>
                     {expertMode && (
                       <label>
@@ -473,13 +477,14 @@ export function CharacterVoiceModal({ onClose, target, embedded = false, autoSav
 
                   <div className="grid sm:grid-cols-3 gap-4">
                     {([
-                      ['rate', t('voiceCfg.rate'), '%', -50, 50],
-                      ['pitch', t('voiceCfg.pitch'), 'Hz', -20, 20],
-                      ['volume', t('voiceCfg.volume'), '%', -100, 100],
-                    ] as const).map(([key, label, suffix, min, max]) => (
+                      ['rate', t('voiceCfg.rate'), '%', -50, 50, t('voiceCfg.rateHint')],
+                      ['pitch', t('voiceCfg.pitch'), 'Hz', -20, 20, t('voiceCfg.pitchHint')],
+                      ['volume', t('voiceCfg.volume'), '%', -100, 100, t('voiceCfg.volumeHint')],
+                    ] as const).map(([key, label, suffix, min, max, hint]) => (
                       <label key={key}>
                         <span className={`${labelClass} flex justify-between`}><span>{label}</span><span>{draft[key]}</span></span>
-                        <input type="range" min={min} max={max} value={numericValue(draft[key])} onChange={(event) => update(key, signedValue(Number(event.target.value), suffix))} disabled={(draft.engine === 'kokoro' || draft.engine === 'local') && key === 'pitch'} className="w-full accent-accent-500 disabled:opacity-35" />
+                        <input type="range" min={min} max={max} value={numericValue(draft[key])} onChange={(event) => update(key, signedValue(Number(event.target.value), suffix))} disabled={(draft.engine === 'kokoro' || draft.engine === 'local') && key === 'pitch'} aria-describedby={`voice-${key}-hint`} className="w-full accent-accent-500 disabled:opacity-35" />
+                        <OptionHint id={`voice-${key}-hint`}>{hint}</OptionHint>
                       </label>
                     ))}
                   </div>
@@ -491,13 +496,20 @@ export function CharacterVoiceModal({ onClose, target, embedded = false, autoSav
                   <div className="grid sm:grid-cols-2 gap-4">
                     <label>
                       <span className={labelClass}>{t('voiceCfg.filter')}</span>
-                      <select value={draft.filter_mode} onChange={(event) => update('filter_mode', event.target.value as TtsFilterMode)} className={fieldClass}>
+                      <select value={draft.filter_mode} onChange={(event) => update('filter_mode', event.target.value as TtsFilterMode)} className={fieldClass} aria-describedby="voice-filter-hint">
                         <option value="all">{t('voiceCfg.filterAll')}</option>
                         <option value="dialogue_only">{t('voiceCfg.filterDialogue')}</option>
                         <option value="strip_actions">{t('voiceCfg.filterActions')}</option>
                       </select>
+                      <OptionHint id="voice-filter-hint">{t('voiceCfg.filterHint')}</OptionHint>
                     </label>
-                    {expertMode && <label><span className={labelClass}>{t('voiceCfg.customRegex')}</span><input value={draft.custom_regex} onChange={(event) => update('custom_regex', event.target.value)} className={fieldClass} placeholder="\[System:.*?\]" /></label>}
+                    {expertMode && (
+                      <label>
+                        <span className={labelClass}>{t('voiceCfg.customRegex')}</span>
+                        <input value={draft.custom_regex} onChange={(event) => update('custom_regex', event.target.value)} className={fieldClass} placeholder="\[System:.*?\]" aria-describedby="voice-regex-hint" />
+                        <OptionHint id="voice-regex-hint">{t('voiceCfg.customRegexHint')}</OptionHint>
+                      </label>
+                    )}
                   </div>
                 </>
               )}

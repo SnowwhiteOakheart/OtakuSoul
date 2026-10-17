@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react';
 import { ResetSection } from '../ResetSection';
+import { OptionHint } from '../OptionHint';
 import { changedFields, serverTuningDefaults } from '../../../utils/settingDefaults';
 import { useAppStore, useStoreFields } from '../../../store/useAppStore';
 import { translate, useTranslation } from '../../../i18n';
@@ -346,6 +347,7 @@ export const ServerSettings = () => {
             </div>
             <input
               id="settings-ngl"
+              aria-describedby="settings-ngl-hint"
               type="range"
               min="0"
               max="99"
@@ -358,6 +360,7 @@ export const ServerSettings = () => {
               <span>{t('settings.gpuLayersPartial')}</span>
               <span>{t('settings.gpuLayersMax')}</span>
             </div>
+            <OptionHint id="settings-ngl-hint">{t('settings.gpuLayersHint')}</OptionHint>
           </div>
 
           {/* Port */}
@@ -367,11 +370,13 @@ export const ServerSettings = () => {
             </label>
             <input
               id="settings-port"
+              aria-describedby="settings-port-hint"
               type="number"
               value={serverConfig.port}
               onChange={(e) => setServerConfig({ port: parseInt(e.target.value) || 48596 })}
               className="w-full bg-app border border-slate-800 rounded-lg px-3 py-1.5 text-slate-200 font-mono focus:outline-hidden focus:border-accent-500"
             />
+            <OptionHint id="settings-port-hint">{t('settings.portHint')}</OptionHint>
           </div>
         </div>
 
@@ -391,6 +396,7 @@ export const ServerSettings = () => {
               </label>
               <select
                 id="settings-batch"
+                aria-describedby="settings-batch-hint"
                 value={serverConfig.batch_size ?? 2048}
                 onChange={(e) => setServerConfig({ batch_size: parseInt(e.target.value) })}
                 className="w-full bg-app border border-slate-800 rounded px-2.5 py-1 text-slate-200 font-mono"
@@ -400,6 +406,7 @@ export const ServerSettings = () => {
                 <option value={2048}>{t('settings.batch2048')}</option>
                 <option value={4096}>{t('settings.batch4096')}</option>
               </select>
+              <OptionHint id="settings-batch-hint">{t('settings.batchHint')}</OptionHint>
             </div>
 
             {/* UBatch Size */}
@@ -409,6 +416,7 @@ export const ServerSettings = () => {
               </label>
               <select
                 id="settings-ubatch"
+                aria-describedby="settings-ubatch-hint"
                 value={serverConfig.ubatch_size ?? 512}
                 onChange={(e) => setServerConfig({ ubatch_size: parseInt(e.target.value) })}
                 className="w-full bg-app border border-slate-800 rounded px-2.5 py-1 text-slate-200 font-mono"
@@ -417,6 +425,7 @@ export const ServerSettings = () => {
                 <option value={512}>{t('settings.defaultSuffix', { value: 512 })}</option>
                 <option value={1024}>1024</option>
               </select>
+              <OptionHint id="settings-ubatch-hint">{t('settings.ubatchHint')}</OptionHint>
             </div>
 
             {/* KV Cache K Quantization */}
@@ -426,6 +435,7 @@ export const ServerSettings = () => {
               </label>
               <select
                 id="settings-kv"
+                aria-describedby="settings-kv-hint"
                 value={serverConfig.cache_type_k ?? 'f16'}
                 onChange={(e) =>
                   setServerConfig({
@@ -439,50 +449,67 @@ export const ServerSettings = () => {
                 <option value="q8_0">{t('settings.kvQ8')}</option>
                 <option value="q4_0">{t('settings.kvQ4')}</option>
               </select>
+              <OptionHint id="settings-kv-hint">{t('settings.kvHint')}</OptionHint>
             </div>
           </div>
 
           {/* Checkboxes row */}
-          <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 pt-1 text-xs">
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 pt-1 text-xs">
+            <div className="space-y-0.5">
             <label className="flex items-center gap-2 cursor-pointer">
               <input
                 type="checkbox"
+                aria-describedby="settings-flashAttn-hint"
                 checked={serverConfig.flash_attn}
                 onChange={(e) => setServerConfig({ flash_attn: e.target.checked })}
                 className="rounded border-slate-700 bg-slate-900 text-accent-600 focus:ring-0"
               />
               <span className="text-slate-300">{t('settings.flashAttn')}</span>
             </label>
+              <OptionHint id="settings-flashAttn-hint">{t('settings.flashAttnHint')}</OptionHint>
+            </div>
 
+            <div className="space-y-0.5">
             <label className="flex items-center gap-2 cursor-pointer">
               <input
                 type="checkbox"
+                aria-describedby="settings-mlock-hint"
                 checked={serverConfig.mlock ?? false}
                 onChange={(e) => setServerConfig({ mlock: e.target.checked })}
                 className="rounded border-slate-700 bg-slate-900 text-accent-600 focus:ring-0"
               />
               <span className="text-slate-300">{t('settings.mlock')}</span>
             </label>
+              <OptionHint id="settings-mlock-hint">{t('settings.mlockHint')}</OptionHint>
+            </div>
 
+            <div className="space-y-0.5">
             <label className="flex items-center gap-2 cursor-pointer">
               <input
                 type="checkbox"
+                aria-describedby="settings-cpuMoe-hint"
                 checked={serverConfig.cpu_moe ?? false}
                 onChange={(e) => setServerConfig({ cpu_moe: e.target.checked })}
                 className="rounded border-slate-700 bg-slate-900 text-accent-600 focus:ring-0"
               />
               <span className="text-slate-300">{t('settings.cpuMoe')}</span>
             </label>
+              <OptionHint id="settings-cpuMoe-hint">{t('settings.cpuMoeHint')}</OptionHint>
+            </div>
 
+            <div className="space-y-0.5">
             <label className="flex items-center gap-2 cursor-pointer">
               <input
                 type="checkbox"
+                aria-describedby="settings-reasoningMode-hint"
                 checked={serverConfig.reasoning_mode ?? false}
                 onChange={(e) => setServerConfig({ reasoning_mode: e.target.checked })}
                 className="rounded border-slate-700 bg-slate-900 text-accent-600 focus:ring-0"
               />
               <span className="text-slate-300">{t('settings.reasoningMode')}</span>
             </label>
+              <OptionHint id="settings-reasoningMode-hint">{t('settings.reasoningModeHint')}</OptionHint>
+            </div>
           </div>
         </div>
         )}

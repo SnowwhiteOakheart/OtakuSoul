@@ -138,7 +138,10 @@
   „Prompt (Experten)“ nur im Expertenmodus; Antwortstil zeigt die Vorlagen mit Beschreibung, Regler nur für Experten,
   Server-Tuning ebenso. Ursprünglicher Plan: „KI-Modell“ (lokal/Cloud zusammen), „Antwortstil“ (statt Sampler, mit Vorlagen
   *Kreativ / Ausgewogen / Genau*), „Stimme“, „Bilder“, „Aussehen“, „Erweitert“ (llama-server, Prompt, Sampler-Rohwerte).
-- [ ] **Jede Option mit Satz:** Kurzbeschreibung unter jeder Einstellung; Fachbegriff in Klammern; Glossar-Link.
+- [x] **Jede Option mit Satz (17.10.2026):** Jede Einstellung in allen Reitern (einfach und Experte) hat einen Satz darunter,
+  per `aria-describedby` verknüpft (`settings/OptionHint.tsx`), Fachbegriff in Klammern; Sampler-Stichworte als Sätze neu.
+  `e2e/settings-hints.mjs` (Teil von `npm run e2e`) meldet jede Option ohne Beschreibung. Ursprünglich: Kurzbeschreibung
+  unter jeder Einstellung; Fachbegriff in Klammern; Glossar-Link.
 - [ ] **Stimme vereinfachen:** (teilweise 16.10.2026: Voice-ID, Ausschluss-RegEx und RVC nur im Expertenmodus, Texte ohne
   Fachbegriffe; Probehör-Liste über alle Engines fehlt noch) „Stimme wählen“ mit Probehören-Liste über alle Engines; Voice-ID, RegEx, RVC unter
   „Erweitert“; Klon-Dialog als eigener, geführter Ablauf.

@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react';
+import { OptionHint } from '../OptionHint';
 import { Eye, EyeOff, Palette, Save } from 'lucide-react';
 import { useStoreFields } from '../../../store/useAppStore';
 import { useTranslation } from '../../../i18n';
@@ -99,11 +100,14 @@ export const ImageSettings = ({ autoSave = false }: { autoSave?: boolean } = {})
         </label>
         <textarea
           rows={2}
+          aria-label={t('settings.imagePrefix')}
+          aria-describedby="settings-image-prefix-hint"
           value={localImgConfig.positive_prompt_prefix}
           onChange={(e) => setLocalImgConfig({ ...localImgConfig, positive_prompt_prefix: e.target.value })}
           placeholder="masterpiece, best quality..."
           className="w-full bg-app border border-slate-700 rounded-xl p-3 text-xs text-slate-100 focus:outline-hidden focus:border-accent-500 resize-none font-mono"
         />
+        <OptionHint id="settings-image-prefix-hint">{t('settings.imagePrefixHint')}</OptionHint>
       </div>
 
       <div className="grid grid-cols-2 gap-3">
@@ -121,6 +125,7 @@ export const ImageSettings = ({ autoSave = false }: { autoSave?: boolean } = {})
               })
             }
             aria-label={t('int.provider')}
+            aria-describedby="settings-image-provider-hint"
             className="w-full bg-app border border-slate-700 rounded-xl px-3 py-2 text-xs text-slate-100"
           >
             <option value="local">{t('int.providerLocal')}</option>
@@ -129,6 +134,7 @@ export const ImageSettings = ({ autoSave = false }: { autoSave?: boolean } = {})
             <option value="dall_e_3">OpenAI DALL-E 3</option>
             <option value="novel_ai">NovelAI Image Gen</option>
           </select>
+          <OptionHint id="settings-image-provider-hint">{t('settings.imageProviderHint')}</OptionHint>
         </div>
 
         {!isLocal && (

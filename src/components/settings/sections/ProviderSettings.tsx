@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react';
+import { OptionHint } from '../OptionHint';
 import { useStoreFields } from '../../../store/useAppStore';
 import { useTranslation } from '../../../i18n';
 import {
@@ -140,11 +141,13 @@ export const ProviderSettings = () => {
             </label>
             <input
               id="settings-endpoint"
+              aria-describedby="settings-endpoint-hint"
               type="text"
               value={cloudEndpoint}
               onChange={(e) => setCloudEndpoint(e.target.value)}
               className="w-full bg-app border border-slate-800 rounded-lg px-3 py-2 text-slate-200 font-mono focus:outline-hidden focus:border-accent-500"
             />
+            <OptionHint id="settings-endpoint-hint">{t('settings.endpointHint')}</OptionHint>
           </div>
 
           {/* Model Identifier */}
@@ -154,11 +157,13 @@ export const ProviderSettings = () => {
             </label>
             <input
               id="settings-modelid"
+              aria-describedby="settings-modelid-hint"
               type="text"
               value={cloudModel}
               onChange={(e) => setCloudModel(e.target.value)}
               className="w-full bg-app border border-slate-800 rounded-lg px-3 py-2 text-slate-200 font-mono focus:outline-hidden focus:border-accent-500"
             />
+            <OptionHint id="settings-modelid-hint">{t('settings.modelIdHint')}</OptionHint>
           </div>
 
           <div className="space-y-1.5">
