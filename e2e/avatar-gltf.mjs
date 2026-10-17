@@ -44,6 +44,8 @@ try {
   await browser.pause(500);
   await shot('63b-gltf-toon');
   await browser.execute(() => location.reload());
+  // Asking the page right away can leave WebKit's driver on the old document.
+  await browser.pause(1000);
   await browser.$('[data-avatar-format="gltf"][data-toon="true"][data-motions="1"]').waitForExist({ timeout: 30_000, timeoutMsg: 'Toon-Look nach Neuladen vergessen' });
   await browser.$(toonButton).click();
   await browser.$('[data-avatar-format="gltf"][data-toon="false"]').waitForExist({ timeout: 5_000, timeoutMsg: 'Toon-Look schaltet nicht aus' });

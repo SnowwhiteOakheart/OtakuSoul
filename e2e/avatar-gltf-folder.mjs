@@ -26,6 +26,8 @@ try {
 
   await invoke('save_settings', { settings: { ...(await invoke('load_settings')), active_vrm_path: model.path } });
   await browser.execute(() => location.reload());
+  // Asking the page right away can leave WebKit's driver on the old document.
+  await browser.pause(1000);
   await browser.$('[data-avatar-format="gltf"][data-face="morphs"]').waitForExist({ timeout: 30_000, timeoutMsg: 'glTF-Ordnermodell wird nicht angezeigt' });
   assert.ok(!(await browser.$('body').getText()).includes('konnte nicht geladen werden'), 'Fehlermeldung im Viewer');
   await browser.pause(500);
