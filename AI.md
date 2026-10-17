@@ -346,6 +346,10 @@ ru „персонаж/история/сцена“. Fachbegriffe nur im Experte
 - Start: `settingsLoaded` ist erst nach `initApp` wahr. Davor speichert `saveCurrentSettings` nichts (sonst überschreiben
   Standardwerte die Einstellungen) und `refreshCharacters` wählt keinen Charakter; `initApp` öffnet den gespeicherten
   direkt über `refreshCharacters(settings.active_character_id)`. Tests, die Speichern prüfen, setzen `settingsLoaded: true`.
+- Hub-Listen: Szenen-/Lorebook-Einträge der Registry können `translations.<sprache>.<feld>` tragen (`hub::entry_translations`,
+  Anzeige über `components/hub/registryText.ts`; Name/Titel bleiben Update-Schlüssel), gepflegt im Daten-Repo mit
+  `tools/validate_content.py --sync-registry`. Stage findet Karten über `characters::find_by_name` bzw. `findCharacterByName`
+  (exakt, sonst Name vor der Klammer).
 - Hub-Updates: Registry-Einträge tragen `revision`/`updated` (`hub::entry_revision`, fehlend = 1); installierte Inhalte stehen in
   `<Daten>/hub_installed.json` (`hub_installed.rs`, Befehl `list_installed_hub_items`, Schlüssel Art + Registry-ID bzw. Name).
   Szenen-Import behält `extensions` (`scene_definition_from_hub`, `null`-Felder = fehlend) und aktualisiert eine vorhandene Kopie

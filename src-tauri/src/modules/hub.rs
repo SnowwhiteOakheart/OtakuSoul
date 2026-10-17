@@ -30,6 +30,30 @@ pub fn hub_url(file: &str) -> String {
     format!("{}/{file}", base.trim_end_matches('/'))
 }
 
+/// Texts of a registry entry in other languages (`translations.<lang>.<field>`); anything that is
+/// not a string is left out.
+fn entry_translations(
+    entry: &serde_json::Value,
+) -> std::collections::HashMap<String, std::collections::HashMap<String, String>> {
+    entry
+        .get("translations")
+        .and_then(|v| v.as_object())
+        .map(|langs| {
+            langs
+                .iter()
+                .filter_map(|(lang, fields)| {
+                    let texts: std::collections::HashMap<String, String> = fields
+                        .as_object()?
+                        .iter()
+                        .filter_map(|(k, v)| Some((k.clone(), v.as_str()?.to_string())))
+                        .collect();
+                    (!texts.is_empty()).then(|| (lang.clone(), texts))
+                })
+                .collect()
+        })
+        .unwrap_or_default()
+}
+
 /// Revision and date of a registry entry (entries without them count as revision 1).
 fn entry_revision(entry: &serde_json::Value) -> (u32, String) {
     let revision = entry
@@ -72,6 +96,11 @@ pub struct GatewayLorebookEntry {
     /// Date of the current revision (for display).
     #[serde(default)]
     pub updated: String,
+    /// Texts for the list in other languages (`{"en": {"description": "…"}}`); the original
+    /// name or title stays the key for updates.
+    #[serde(default)]
+    #[ts(type = "Record<string, Record<string, string>>")]
+    pub translations: std::collections::HashMap<String, std::collections::HashMap<String, String>>,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize, TS)]
@@ -90,6 +119,10 @@ pub struct GatewaySceneEntry {
     /// Date of the current revision (for display).
     #[serde(default)]
     pub updated: String,
+    /// Texts for the list in other languages (see `GatewayLorebookEntry::translations`).
+    #[serde(default)]
+    #[ts(type = "Record<string, Record<string, string>>")]
+    pub translations: std::collections::HashMap<String, std::collections::HashMap<String, String>>,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize, TS)]
@@ -774,6 +807,7 @@ pub async fn fetch_lorebooks_gateway_registry() -> Result<Vec<GatewayLorebookEnt
                 download_url: download_url.to_string(),
                 revision,
                 updated,
+                translations: entry_translations(b),
             });
         }
     }
@@ -952,6 +986,7 @@ pub async fn fetch_stages_gateway_registry() -> Result<Vec<GatewaySceneEntry>, S
                 download_url: download_url.to_string(),
                 revision,
                 updated,
+                translations: entry_translations(s),
             });
         }
     }
@@ -1152,6 +1187,23 @@ fn install_hub_scene(
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    #[test]
+    fn registry_entries_bring_their_list_texts_per_language() {
+        let entry = serde_json::json!({
+            "title": "Matchball",
+            "translations": {
+                "en": {"title": "Match point", "description": "Hazel's final.", "count": 3},
+                "ru": "kaputt",
+                "fr": {}
+            }
+        });
+        let texts = super::entry_translations(&entry);
+        assert_eq!(texts.len(), 1, "only languages with texts");
+        assert_eq!(texts["en"]["title"], "Match point");
+        assert!(!texts["en"].contains_key("count"), "only strings");
+        assert!(super::entry_translations(&serde_json::json!({})).is_empty());
+    }
 
     #[test]
     fn scene_backgrounds_are_only_fetched_from_safe_paths() {

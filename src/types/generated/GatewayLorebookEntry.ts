@@ -8,4 +8,9 @@ revision: number,
 /**
  * Date of the current revision (for display).
  */
-updated: string, };
+updated: string, 
+/**
+ * Texts for the list in other languages (`{"en": {"description": "…"}}`); the original
+ * name or title stays the key for updates.
+ */
+translations: Record<string, Record<string, string>>, };

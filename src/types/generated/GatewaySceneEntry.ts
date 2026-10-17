@@ -8,4 +8,8 @@ revision: number,
 /**
  * Date of the current revision (for display).
  */
-updated: string, };
+updated: string, 
+/**
+ * Texts for the list in other languages (see `GatewayLorebookEntry::translations`).
+ */
+translations: Record<string, Record<string, string>>, };

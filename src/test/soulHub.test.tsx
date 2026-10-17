@@ -28,7 +28,7 @@ beforeEach(() => {
     { name: 'Sakura', author: 'hana', download_url: 'https://example.invalid/sakura.png', revision: 2, updated: '2026-10-16' },
   ]);
   vi.mocked(api.fetchLorebooksGatewayRegistry).mockResolvedValue([
-    { name: 'Welt', author: 'snow', description: 'Eine Welt', entry_count: 1, download_url: 'x', revision: 3, updated: '' },
+    { name: 'Welt', author: 'snow', description: 'Eine Welt', entry_count: 1, download_url: 'x', revision: 3, updated: '', translations: { en: { name: 'World', description: 'A world' } } },
   ]);
 });
 
@@ -122,6 +122,9 @@ describe('HubView', () => {
     expect(api.importSoulGatewayCharacter).toHaveBeenCalledWith('Sakura', 'hana', 'https://example.invalid/sakura.png', true, 2, '2026-10-16');
 
     await user.click(screen.getByRole('tab', { name: /World lorebooks/ }));
+    // List texts in the app language; the original name stays the key for the update.
+    expect(await screen.findByRole('heading', { name: 'World' })).toBeInTheDocument();
+    expect(screen.getByText('A world')).toBeInTheDocument();
     vi.mocked(api.importLorebookFromGateway)
       .mockRejectedValueOnce(new Error('{"code":"backend.hub.lorebookModified","params":{"name":"Welt"}}'))
       .mockResolvedValueOnce({ id: 'welt', name: 'Welt', entries: [{}] } as never);

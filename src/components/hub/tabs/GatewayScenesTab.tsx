@@ -1,3 +1,4 @@
+import { registryText } from '../registryText';
 import { useEffect, useState } from 'react';
 import { Dice5 } from 'lucide-react';
 import { useShallow } from 'zustand/react/shallow';
@@ -12,7 +13,9 @@ import type { GatewaySceneEntry } from '../../../types';
 
 /** Soul Stage scenarios from the gateway registry. */
 export const GatewayScenesTab = () => {
-  const { t, tPlural } = useTranslation();
+  const { t, tPlural, currentLanguage } = useTranslation();
+  const text = (scene: GatewaySceneEntry, field: 'title' | 'description' | 'starting_location') =>
+    registryText(scene, field, scene[field], currentLanguage);
   const { list, query, importingId, ensureLoaded, load, runImport, installed, loadInstalled } = useHubStore(
     useShallow((s) => ({ list: s.scenes, query: s.query, importingId: s.importingId, ensureLoaded: s.ensureLoaded, load: s.loadScenes, runImport: s.runImport, installed: s.installed, loadInstalled: s.loadInstalled }))
   );
@@ -25,7 +28,7 @@ export const GatewayScenesTab = () => {
   useEffect(() => ensureLoaded('scenes'), [ensureLoaded]);
 
   const visible = list.items.filter((sc) =>
-    matchesQuery(query, sc.title, sc.description, sc.author, sc.starting_location)
+    matchesQuery(query, sc.title, text(sc, 'title'), sc.description, text(sc, 'description'), sc.author, text(sc, 'starting_location'))
   );
 
   const handleImport = (scene: GatewaySceneEntry) =>
@@ -87,15 +90,15 @@ export const GatewayScenesTab = () => {
                 <div className="w-8 h-8 rounded-lg bg-emerald-500/10 border border-emerald-500/20 flex items-center justify-center text-emerald-400">
                   <Dice5 className="w-4 h-4" />
                 </div>
-                <h3 className="font-bold text-sm text-slate-100 group-hover:text-emerald-300 transition-colors">{scene.title}</h3>
+                <h3 className="font-bold text-sm text-slate-100 group-hover:text-emerald-300 transition-colors">{text(scene, 'title')}</h3>
               </div>
               <div className="mb-2">
                 <HubStatusBadge status={statusOf(scene)} updated={scene.updated} />
               </div>
-              <p className="text-xs text-slate-400 leading-relaxed mb-3">{scene.description || t('hub.noDescription')}</p>
+              <p className="text-xs text-slate-400 leading-relaxed mb-3">{text(scene, 'description') || t('hub.noDescription')}</p>
               <div className="flex items-center justify-between text-xs text-slate-400">
                 <span>
-                  {t('hub.startLocation')}: <span className="text-slate-300">{scene.starting_location}</span>
+                  {t('hub.startLocation')}: <span className="text-slate-300">{text(scene, 'starting_location')}</span>
                 </span>
                 <span>
                   {t('hub.author')}: <span className="text-slate-300">{scene.author}</span>

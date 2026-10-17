@@ -1,3 +1,4 @@
+import { registryText } from '../registryText';
 import { useEffect, useState } from 'react';
 import { BookOpen } from 'lucide-react';
 import { useShallow } from 'zustand/react/shallow';
@@ -33,7 +34,8 @@ async function installLorebook(lb: GatewayLorebookEntry) {
 
 /** World lorebooks from the gateway registry. */
 export const GatewayLorebooksTab = () => {
-  const { t, tPlural } = useTranslation();
+  const { t, tPlural, currentLanguage } = useTranslation();
+  const text = (lb: GatewayLorebookEntry, field: 'name' | 'description') => registryText(lb, field, lb[field], currentLanguage);
   const { list, query, importingId, ensureLoaded, load, runImport, installed, loadInstalled } = useHubStore(
     useShallow((s) => ({ list: s.lorebooks, query: s.query, importingId: s.importingId, ensureLoaded: s.ensureLoaded, load: s.loadLorebooks, runImport: s.runImport, installed: s.installed, loadInstalled: s.loadInstalled }))
   );
@@ -42,7 +44,7 @@ export const GatewayLorebooksTab = () => {
 
   useEffect(() => ensureLoaded('lorebooks'), [ensureLoaded]);
 
-  const visible = list.items.filter((lb) => matchesQuery(query, lb.name, lb.description, lb.author));
+  const visible = list.items.filter((lb) => matchesQuery(query, lb.name, text(lb, 'name'), lb.description, text(lb, 'description'), lb.author));
 
   const handleImport = (lb: GatewayLorebookEntry) =>
     runImport(lb.name, async () => {
@@ -98,7 +100,7 @@ export const GatewayLorebooksTab = () => {
                   <div className="w-8 h-8 rounded-lg bg-amber-500/10 border border-amber-500/20 flex items-center justify-center text-amber-400">
                     <BookOpen className="w-4 h-4" />
                   </div>
-                  <h3 className="font-bold text-sm text-slate-100 group-hover:text-amber-300 transition-colors">{lb.name}</h3>
+                  <h3 className="font-bold text-sm text-slate-100 group-hover:text-amber-300 transition-colors">{text(lb, 'name')}</h3>
                 </div>
                 <span className="px-2 py-0.5 rounded-full bg-amber-500/15 text-amber-300 border border-amber-500/30 text-[11px] font-mono font-medium shrink-0">
                   {tPlural('hub.entryCount', lb.entry_count)}
@@ -107,7 +109,7 @@ export const GatewayLorebooksTab = () => {
               <div className="mb-2">
                 <HubStatusBadge status={statusOf(lb)} updated={lb.updated} />
               </div>
-              <p className="text-xs text-slate-400 leading-relaxed mb-3">{lb.description || t('hub.noDescription')}</p>
+              <p className="text-xs text-slate-400 leading-relaxed mb-3">{text(lb, 'description') || t('hub.noDescription')}</p>
               <div className="text-xs text-slate-400">
                 {t('hub.author')}: <span className="text-slate-300">{lb.author}</span>
               </div>
