@@ -217,6 +217,10 @@ ru „персонаж/история/сцена“. Fachbegriffe nur im Experte
   „Vorschaubild aus aktueller Ansicht“; gespeichert über `save_avatar_thumbnail` in `<Daten>/avatar_thumbs/<art>-<hash>.webp`
   (`avatar_library::save_thumbnail` prüft WebP/PNG, max. 2 MB), geliefert als `ScannedVrm.thumbnail`/`ScannedLive2d.thumbnail`
   (Live2D-eigenes `preview_image` hat Vorrang); `remove` löscht das Bild mit.
+  Zwischenspeicher `avatar/avatarCache.ts`: VRM- und glTF-Viewer leihen geparste Modelle (`takeAvatar`/`leaseAvatar`/
+  `releaseAvatar`), beim Schließen zurück in die Ladepose (Transformationen + Morphs, VRM: Normalpose, Ausdrücke, Federknochen;
+  glTF: Toon aus), höchstens `AVATAR_CACHE_SIZE` wartende; ein geliehenes Modell bekommt kein zweiter Viewer (lädt selbst).
+  Import/Entfernen rufen `forgetAvatar`. MMD bleibt ungespeichert (Physik mit Zustand, lädt ohnehin schnell).
   Avatar-Bibliothek (`avatar_library.rs`): eigene Namen in `<Daten>/avatar_names.json` (3D nach Pfad relativ zu
   `avatar_roots`, Live2D nach Ordner-ID; Dateien behalten ihre Namen), `delete_avatar` verschiebt nur Importe aus
   `<Daten>/avatars|live2d` (ganzer Ordner) nach `.trash/avatars`; `ScannedVrm`/`ScannedLive2d.removable`. UI `AvatarActions.tsx`

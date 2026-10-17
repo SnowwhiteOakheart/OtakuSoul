@@ -1,3 +1,5 @@
+import type { GLTF } from 'three/examples/jsm/loaders/GLTFLoader.js';
+import { leaseAvatar, releaseAvatar, takeAvatar } from './avatarCache';
 import { avatarTimer } from './avatarTiming';
 import { useEffect, useRef, useState } from 'react';
 import * as THREE from 'three';
@@ -193,26 +195,42 @@ export const GltfViewer = ({
     resetViewRef.current = stage.resetView;
 
     let root: THREE.Object3D | null = null;
+    // The parsed model while this viewer holds it; goes back to avatarCache on close.
+    let held: GLTF | null = null;
     let posed: { bone: THREE.Object3D; rest: THREE.Quaternion }[] = [];
     let head: THREE.Object3D | undefined;
     let spine: THREE.Object3D | undefined;
 
     const load = async () => {
       try {
-        const gltf = await loadGltfAvatar(modelPath);
+        // A model shown a moment ago is still parsed (avatarCache).
+        let gltf = takeAvatar<GLTF>(modelPath);
+        const fromCache = !!gltf;
+        if (!gltf) {
+          const parsed = await loadGltfAvatar(modelPath);
+          // Models copied into the folder by hand skip the import check: no skeleton, no avatar.
+          let rigged = false;
+          parsed.scene.traverse((node) => {
+            if ((node as THREE.SkinnedMesh).isSkinnedMesh) rigged = true;
+          });
+          if (!rigged) {
+            if (isDisposed) return;
+            setError(translate('avatar.noSkeleton'));
+            setLoading(false);
+            return;
+          }
+          leaseAvatar(modelPath, parsed, parsed.scene, () => applyToonLook(parsed.scene, false));
+          gltf = parsed;
+        }
+        held = gltf;
         const lap = avatarTimer(modelPath);
-        if (isDisposed) return;
-        const scene = gltf.scene;
-        // Models copied into the folder by hand skip the import check: no skeleton, no avatar.
-        let rigged = false;
-        scene.traverse((node) => {
-          if ((node as THREE.SkinnedMesh).isSkinnedMesh) rigged = true;
-        });
-        if (!rigged) {
-          setError(translate('avatar.noSkeleton'));
-          setLoading(false);
+        if (fromCache) lap('cache');
+        if (isDisposed) {
+          releaseAvatar(gltf);
+          held = null;
           return;
         }
+        const scene = gltf.scene;
         stage.scene.add(scene);
         // Exports in other units (centimetres, decimetres …) are brought to human size; models
         // between half a metre (chibi) and three metres keep theirs.
@@ -299,6 +317,8 @@ export const GltfViewer = ({
       stage.dispose();
       motionPlayerRef.current?.dispose();
       motionPlayerRef.current = null;
+      // Back to the cache in its loaded pose, for the next viewer of this model.
+      if (held) releaseAvatar(held);
       setLoaded(null);
       setPlayingGesture('');
       setEmbedded([]);

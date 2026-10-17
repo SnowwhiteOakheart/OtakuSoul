@@ -1,3 +1,4 @@
+import { forgetAvatar } from '../avatar/avatarCache';
 import { useState } from 'react';
 import { Check, Pencil, Trash2, X } from 'lucide-react';
 import { translate, useTranslation } from '../../i18n';
@@ -57,6 +58,7 @@ export const AvatarActions = ({ kind, entry, refresh, hide, unhide, startEditing
     let undone = false;
     const timer = setTimeout(() => {
       if (undone) return;
+      forgetAvatar(path);
       api
         .deleteAvatar(kind, path)
         .then(refresh)

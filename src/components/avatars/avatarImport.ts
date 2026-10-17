@@ -1,3 +1,4 @@
+import { forgetAvatar } from '../avatar/avatarCache';
 import { open } from '@tauri-apps/plugin-dialog';
 import { translate } from '../../i18n';
 import { api } from '../../services/api';
@@ -17,6 +18,8 @@ export async function importVrmFromDialog(): Promise<string | null> {
     });
     if (!selected || typeof selected !== 'string') return null;
     const imported = await api.importVrmModel(selected);
+    // A file of the same name may have been replaced: the old parsed copy must not come back.
+    forgetAvatar(imported.path);
     await useAppStore.getState().refreshVrmModels();
     toast.success(translate('settings.vrmImported', { name: imported.name }));
     if (imported.triangles > HEAVY_MODEL_TRIANGLES) {

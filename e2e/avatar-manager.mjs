@@ -91,7 +91,14 @@ try {
   await assignedRow.click();
   await browser.waitUntil(async () => !(await usesModel()), { timeout: 10_000, timeoutMsg: 'Zuweisung nicht entfernt' });
 
-  console.log(`Avatar-Manager: ${all} Modelle (${vrm} 3D, ${live2d} Live2D), Filter, Suche, Vorschau, Vorschaubilder, Standard und Zuweisung an ${name} bestanden.`);
+  // Back in the chat the model just shown comes from the cache instead of being read and parsed again.
+  await browser.$('button=Chat').click();
+  const phases = () => browser.execute((p) => performance.getEntriesByType('measure')
+    .filter((m) => m.name.startsWith('avatar:') && m.detail === p).map((m) => m.name), model.path);
+  await browser.waitUntil(async () => (await phases()).includes('avatar:cache'), { timeout: 15_000, timeoutMsg: 'Chat lädt das Modell neu statt aus dem Zwischenspeicher' });
+  await browser.$('[data-avatar-format="gltf"] canvas').waitForExist({ timeout: 10_000, timeoutMsg: 'Kein Avatar im Chat' });
+
+  console.log(`Avatar-Manager: ${all} Modelle (${vrm} 3D, ${live2d} Live2D), Filter, Suche, Vorschau, Vorschaubilder, Standard, Zuweisung und Zwischenspeicher an ${name} bestanden.`);
 } finally {
   await close();
 }

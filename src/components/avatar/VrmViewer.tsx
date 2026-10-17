@@ -1,3 +1,4 @@
+import { leaseAvatar, releaseAvatar, takeAvatar } from './avatarCache';
 import { avatarTimer } from './avatarTiming';
 import { useEffect, useRef, useState } from 'react';
 import * as THREE from 'three';
@@ -87,21 +88,37 @@ export const VrmViewer = ({
       }
       try {
         const lap = avatarTimer(modelPath);
-        const bytes = await api.readFileBinary(modelPath);
-        lap('read');
-        if (isDisposed) return;
-        const gltf = await loader.parseAsync(bytes.buffer as ArrayBuffer, '');
-        lap('parse');
-        if (isDisposed) return;
-        const loaded = gltf.userData.vrm as VRM | undefined;
-        if (!loaded) {
-          setError(translate('avatar.vrmInvalid'));
-          setLoading(false);
+        // A model shown a moment ago is still parsed (avatarCache).
+        let loaded = takeAvatar<VRM>(modelPath);
+        if (loaded) {
+          lap('cache');
+        } else {
+          const bytes = await api.readFileBinary(modelPath);
+          lap('read');
+          if (isDisposed) return;
+          const gltf = await loader.parseAsync(bytes.buffer as ArrayBuffer, '');
+          lap('parse');
+          const parsed = gltf.userData.vrm as VRM | undefined;
+          if (!parsed) {
+            if (isDisposed) return;
+            setError(translate('avatar.vrmInvalid'));
+            setLoading(false);
+            return;
+          }
+          VRMUtils.removeUnnecessaryVertices(gltf.scene);
+          VRMUtils.combineSkeletons(gltf.scene);
+          VRMUtils.rotateVRM0(parsed);
+          leaseAvatar(modelPath, parsed, parsed.scene, () => {
+            parsed.humanoid.resetNormalizedPose();
+            parsed.expressionManager?.resetValues();
+            parsed.springBoneManager?.reset();
+          });
+          loaded = parsed;
+        }
+        if (isDisposed) {
+          releaseAvatar(loaded);
           return;
         }
-        VRMUtils.removeUnnecessaryVertices(gltf.scene);
-        VRMUtils.combineSkeletons(gltf.scene);
-        VRMUtils.rotateVRM0(loaded);
 
         // Normalized VRM 0.x rigs can still point their arm chains along the opposite X axis
         // from VRM 1.0 rigs; take the direction from the skeleton instead of assuming one.
@@ -196,6 +213,8 @@ export const VrmViewer = ({
       stage.dispose();
       motionPlayerRef.current?.dispose();
       motionPlayerRef.current = null;
+      // Back to the cache in its loaded pose, for the next viewer of this model.
+      if (vrm) releaseAvatar(vrm);
       setLoadedVrm(null);
       setPlayingGesture('');
     };
