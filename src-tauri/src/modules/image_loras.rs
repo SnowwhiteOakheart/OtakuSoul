@@ -202,6 +202,17 @@ pub async fn download_lora<R: tauri::Runtime>(
     app: &tauri::AppHandle<R>,
     id: &str,
 ) -> Result<(), String> {
+    download_lora_with(id, &|progress| {
+        let _ = app.emit("image-model-progress", progress);
+    })
+    .await
+}
+
+/// Downloads a catalog LoRA and reports progress to `report` (also used by the GPU tests).
+pub async fn download_lora_with(
+    id: &str,
+    report: &(dyn Fn(ImageModelProgress) + Sync),
+) -> Result<(), String> {
     let lora = CATALOG
         .iter()
         .find(|l| l.id == id)
@@ -214,17 +225,14 @@ pub async fn download_lora<R: tauri::Runtime>(
     let client = crate::modules::model_files::http_client()?;
     let total = lora.remote.size;
     let progress = |downloaded: u64, finished: bool| {
-        let _ = app.emit(
-            "image-model-progress",
-            ImageModelProgress {
-                model_id: lora.id.to_string(),
-                file_name: lora.file.to_string(),
-                downloaded_bytes: downloaded,
-                total_bytes: total,
-                percent: (downloaded as f32 / total.max(1) as f32 * 100.0).min(100.0),
-                finished,
-            },
-        );
+        report(ImageModelProgress {
+            model_id: lora.id.to_string(),
+            file_name: lora.file.to_string(),
+            downloaded_bytes: downloaded,
+            total_bytes: total,
+            percent: (downloaded as f32 / total.max(1) as f32 * 100.0).min(100.0),
+            finished,
+        });
     };
     crate::modules::model_files::download_file_as(
         &client,

@@ -83,6 +83,17 @@ impl VramPeak {
 /// Installs the variant the app recommends for this system (reinstalling when a different
 /// one is installed), or the first match of `prefer` when the app has no recommendation.
 async fn ensure_runtime(kind: RuntimeKind, prefer: &[&str]) -> runtimes::RuntimeInfo {
+    // `OTAKUSOUL_E2E_KEEP_RUNTIME=1`: test the installed build as it is (e.g. an older one when
+    // comparing versions).
+    if std::env::var("OTAKUSOUL_E2E_KEEP_RUNTIME").is_ok()
+        && let Some(info) = runtimes::installed(kind)
+    {
+        println!(
+            "[{kind:?}] behalte installierte Laufzeit: {} {}",
+            info.build, info.backend
+        );
+        return info;
+    }
     let variants = runtimes::list_variants(kind).await.unwrap();
     let variant = variants
         .iter()
@@ -783,6 +794,9 @@ async fn loras() {
     for id in ["counterfeit-v3-sd15", "animagine-xl-4"] {
         local_image::download_model_with(id, &|_| {}).await.unwrap();
     }
+    image_loras::download_lora_with("pastel-anime-xl", &|_| {})
+        .await
+        .expect("Pastel Anime XL herunterladen");
     let pastel = image_loras::list_loras()
         .into_iter()
         .find(|l| l.catalog_id.as_deref() == Some("pastel-anime-xl"))
