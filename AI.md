@@ -17,8 +17,10 @@ Nutzer mit „Du“ ansprechen. Antworten, Commits und Doku auf Deutsch.
 - Der Nutzer arbeitet parallel im Repo: fremde uncommittete Änderungen nie mitcommitten.
 - `roadmap.md` (offene Punkte) im selben Commit abhaken, Erledigtes nach `roadmap_abgeschlossen.md` verschieben (nur lokal, in `.gitignore`, nie committen); `README.md`/`AI.md` bei neuen Modulen/Features anpassen.
 - Pfade nur über `paths::base_dirs()` (ProjectDirs bzw. `$OTAKUSOUL_HOME/config|data`); OS-Code mit `#[cfg]`.
-- Modelle nie mitliefern, nur von der Quelle laden (SHA-256); nicht-kommerzielle Sprachmodelle gesperrt, bis freigeschaltet;
-  Bildmodelle und LoRAs nur gekennzeichnet (Bilder bleiben privat in der App, Entscheidung des Nutzers).
+- Modelle nie mitliefern, nur von der Quelle laden (SHA-256); nicht-kommerzielle Stimmmodelle (TTS) gesperrt, bis freigeschaltet;
+  Chat-Modelle (LLM) nur ohne Login an der Quelle, eingeschränkte oder fehlende Lizenzen nur gekennzeichnet (`license_kind`,
+  automatische Empfehlung nur frei lizenziert); Bildmodelle und LoRAs nur gekennzeichnet (Bilder bleiben privat in der App,
+  Entscheidung des Nutzers).
   Stimmklonen nur mit Einwilligung.
 
 ## Befehle
@@ -480,9 +482,11 @@ ru „персонаж/история/сцена“. Fachbegriffe nur im Experte
 - Einrichtungsassistent: `components/onboarding/OnboardingParts.tsx` (Cloud-Test, lokaler Weg, erste Antwort) nutzt
   `quick_reply` (eine kurze Antwort außerhalb eines Chats, 90 s) und `list_starter_models` (Katalog `model_catalog.rs`:
   mitgeliefert `presets/recommended_models.json`, beim Start lädt `model_catalog::refresh` die Fassung aus `otakusoul-data`
-  nach `<Daten>/recommended_models.json`; die höhere `version` gilt, Einträge nur mit SHA-256, Hugging-Face-Datei, freier
-  Lizenz und bekannter Laufzeit; bei neuen Releases die mitgelieferte Kopie mit dem Daten-Repo abgleichen;
-  Empfehlung = `preferred`-Modell (Ternary Bonsai 2 27B), wenn es in VRAM − 1,5 GB passt, sonst das größte passende).
+  nach `<Daten>/recommended_models.json`; die höhere `version` gilt, Einträge nur mit SHA-256, Hugging-Face-Datei, angegebener
+  Lizenz und bekannter Laufzeit; `license_kind` = open (Apache/MIT/BSD) | restricted | noncommercial, nicht offene zeigt der
+  Assistent mit `license_note` und Link; bei neuen Releases die mitgelieferte Kopie mit dem Daten-Repo abgleichen;
+  Empfehlung = `preferred`-Modell (Ternary Bonsai 2 27B), wenn es in VRAM − 1,5 GB passt, sonst das größte passende – nur
+  unter frei lizenzierten).
   Starter mit `runtime: "prism"` blenden im Assistenten zusätzlich die PrismML-Laufzeitkarte ein.
   Einfacher Weg: `LocalModelSetup` „Alles automatisch einrichten“ (fehlende Laufzeiten mit empfohlener Variante, dann Starter
   laden/auswählen; Details unter „Selbst auswählen“), Modellnamen über `prettyModelName`, Ampel `ModelFit`/`modelFit`.

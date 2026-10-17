@@ -16,4 +16,12 @@ recommended: boolean, fits_gpu: boolean, installed: boolean, file: HfGgufFile,
 /**
  * Short description per language code.
  */
-description: { [key in string]: string }, };
+description: { [key in string]: string }, 
+/**
+ * `open`, `restricted` or `noncommercial` (see `CatalogModel::license_kind`).
+ */
+license_kind: string, 
+/**
+ * What the licence restricts, per language code.
+ */
+license_note: { [key in string]: string }, license_url: string, };

@@ -1,9 +1,11 @@
 // @vitest-environment jsdom
 import { beforeEach, describe, expect, it, vi } from 'vitest';
-import { render, screen, waitFor } from '@testing-library/react';
+import { render, screen, waitFor, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
+vi.mock('@tauri-apps/plugin-opener', () => ({ openUrl: vi.fn().mockResolvedValue(undefined) }));
 vi.mock('../services/api', async () => (await import('./mockApi')).apiModule);
 import { api } from '../services/api';
+import { openUrl } from '@tauri-apps/plugin-opener';
 import { useAppStore } from '../store/useAppStore';
 import { CloudConnectionTest, FirstReply, LocalModelSetup } from '../components/onboarding/OnboardingParts';
 import { resetApiMocks } from './mockApi';
@@ -14,6 +16,7 @@ const starter = (over: Partial<StarterModel>): StarterModel => ({
   id: 'qwen3-8b', name: 'Qwen3 8B', license: 'Apache-2.0', vram_mb: 6800, recommended: false, fits_gpu: true, installed: false,
   file: { filename: 'Qwen_Qwen3-8B-Q4_K_M.gguf', size_bytes: 5e9, sha256: 'x', size_formatted: '4.7 GB', download_url: 'https://huggingface.co/x', quantization: 'Q4_K_M', runtime: 'standard', recommended: false, compatibility_note: '' },
   description: { de: 'Solider Allrounder.', en: 'Solid all-rounder.' },
+  license_kind: 'open', license_note: {}, license_url: 'https://huggingface.co/x',
   ...over,
 });
 const ayu = { id: 'ayu', card: { data: { name: 'Ayu', description: 'Studentin.', personality: 'warm' } } } as CharacterProfile;
@@ -56,6 +59,20 @@ describe('setup wizard parts', () => {
     expect(recommended).toHaveTextContent('Solid all-rounder.');
     await user.click(screen.getByRole('button', { name: 'Download Qwen3 8B' }));
     await waitFor(() => expect(download).toHaveBeenCalledWith(expect.objectContaining({ filename: 'Qwen_Qwen3-8B-Q4_K_M.gguf' })));
+  });
+
+  it('marks models with a restricted licence and links the licence', async () => {
+    const user = userEvent.setup();
+    useAppStore.setState({ hardware: { gpus: [{ name: 'RTX 4060', total_vram_mb: 8192 }] } as never });
+    vi.mocked(api.listStarterModels).mockResolvedValue([
+      starter({ recommended: true }),
+      starter({ id: 'cydonia', name: 'Cydonia 24B', license: 'unknown', license_kind: 'restricted', license_note: { en: 'No licence stated.' }, license_url: 'https://huggingface.co/TheDrummer/Cydonia' }),
+    ]);
+    render(<LocalModelSetup />);
+    const item = (await screen.findByText('Cydonia 24B')).closest('li')!;
+    expect(item).toHaveTextContent('Restricted licence. No licence stated.');
+    await user.click(within(item).getByRole('button', { name: 'View licence' }));
+    expect(openUrl).toHaveBeenCalledWith('https://huggingface.co/TheDrummer/Cydonia');
   });
 
   it('sets up runtime and recommended model with one click', async () => {

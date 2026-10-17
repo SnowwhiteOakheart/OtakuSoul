@@ -1,3 +1,4 @@
+import { openUrl } from '@tauri-apps/plugin-opener';
 import { useEffect, useState } from 'react';
 import { CheckCircle2, Cpu, Download, Loader2, MessageCircle, PlugZap, RefreshCw, Wand2, XCircle } from 'lucide-react';
 import { api } from '../../services/api';
@@ -269,6 +270,21 @@ export const LocalModelSetup = () => {
                       {(starter.description[currentLanguage] || starter.description.en) && (
                         <span className="block text-xs text-slate-300" data-starter-description>
                           {starter.description[currentLanguage] || starter.description.en}
+                        </span>
+                      )}
+                      {starter.license_kind !== 'open' && (
+                        <span className="mt-1 block text-xs text-amber-200/90" data-starter-license={starter.license_kind}>
+                          <span className="font-semibold">
+                            {t(starter.license_kind === 'noncommercial' ? 'onboarding.licenseNoncommercial' : 'onboarding.licenseRestricted')}
+                          </span>{' '}
+                          {starter.license_note[currentLanguage] || starter.license_note.en || t('onboarding.licenseRestrictedHint')}{' '}
+                          <button
+                            type="button"
+                            onClick={() => void openUrl(starter.license_url).catch(() => {})}
+                            className="underline hover:text-amber-100"
+                          >
+                            {t('onboarding.licenseView')}
+                          </button>
                         </span>
                       )}
                       {!starter.fits_gpu && <span className="block text-xs text-amber-300/90">{t('onboarding.starterTooBig')}</span>}

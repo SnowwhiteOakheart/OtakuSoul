@@ -3400,4 +3400,8 @@ export const en: TranslationDictionary = {
   "avatars.retakeThumbnailHint": "Turn and zoom the model in the preview; this button then uses exactly that view as the picture in the overview.",
   "avatars.thumbnailSaved": "Preview picture saved.",
   "avatars.thumbnailFailed": "Preview picture not saved: {{error}}",
+  "onboarding.licenseRestricted": "Restricted licence.",
+  "onboarding.licenseNoncommercial": "Non-commercial use only.",
+  "onboarding.licenseRestrictedHint": "Downloadable without sign-in, but the licence sets conditions on use – please read it first.",
+  "onboarding.licenseView": "View licence",
 };

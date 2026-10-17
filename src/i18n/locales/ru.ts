@@ -3400,4 +3400,8 @@ export const ru: TranslationDictionary = {
   "avatars.retakeThumbnailHint": "Поверните и приблизьте модель в предпросмотре — кнопка сохранит именно этот вид как картинку для обзора.",
   "avatars.thumbnailSaved": "Превью сохранено.",
   "avatars.thumbnailFailed": "Превью не сохранено: {{error}}",
+  "onboarding.licenseRestricted": "Лицензия с ограничениями.",
+  "onboarding.licenseNoncommercial": "Только некоммерческое использование.",
+  "onboarding.licenseRestrictedHint": "Скачивается без входа, но лицензия ставит условия использования — прочитайте её заранее.",
+  "onboarding.licenseView": "Открыть лицензию",
 };

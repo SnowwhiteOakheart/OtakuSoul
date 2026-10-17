@@ -304,18 +304,25 @@ pub struct StarterModel {
     pub file: HfGgufFile,
     /// Short description per language code.
     pub description: std::collections::HashMap<String, String>,
+    /// `open`, `restricted` or `noncommercial` (see `CatalogModel::license_kind`).
+    pub license_kind: String,
+    /// What the licence restricts, per language code.
+    pub license_note: std::collections::HashMap<String, String>,
+    pub license_url: String,
 }
 
 /// Index of the recommended starter for `vram_mb` (0 = no GPU): a preferred one that fits,
-/// else the largest that fits.
+/// else the largest that fits, else the smallest; only openly licensed models are recommended.
 fn recommended_starter(catalog: &Catalog, vram_mb: u64) -> usize {
     let usable = vram_mb.saturating_sub(catalog.desktop_reserve_mb);
-    let fits = |s: &CatalogModel| s.vram_mb <= usable;
+    let open = |s: &CatalogModel| s.license_kind() == "open";
+    let fits = |s: &CatalogModel| open(s) && s.vram_mb <= usable;
     let models = &catalog.models;
     models
         .iter()
         .position(|s| s.preferred && fits(s))
         .or_else(|| models.iter().rposition(fits))
+        .or_else(|| models.iter().position(open))
         .unwrap_or(0)
 }
 
@@ -334,6 +341,12 @@ pub fn starter_models() -> Vec<StarterModel> {
         .into_iter()
         .enumerate()
         .map(|(i, s)| StarterModel {
+            license_kind: s.license_kind().to_string(),
+            license_url: s
+                .license_url
+                .clone()
+                .unwrap_or_else(|| format!("https://huggingface.co/{}", s.hf_id)),
+            license_note: s.license_note.clone(),
             installed: std::fs::metadata(models_dir.join(&s.file))
                 .is_ok_and(|m| m.len() == s.size_bytes),
             fits_gpu: s.vram_mb <= usable,

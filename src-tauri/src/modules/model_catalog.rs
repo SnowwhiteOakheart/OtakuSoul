@@ -3,6 +3,10 @@
 //! `<Daten>/recommended_models.json`. The catalog with the higher `version` wins, so new models
 //! can be recommended without an app release, and a newer release is not held back by an older
 //! download. Entries are checked before use; a broken or empty file falls back to the shipped one.
+//!
+//! Licences: chat models need no sign-in at the source; their licence may restrict use (Llama,
+//! Gemma, NVIDIA, non-commercial, none stated). Such models are listed with that marked
+//! (`license_kind`, `license_note`), and the automatic recommendation only picks openly licensed ones.
 use serde::Deserialize;
 use std::collections::HashMap;
 use std::path::PathBuf;
@@ -10,7 +14,7 @@ use std::sync::atomic::{AtomicBool, Ordering};
 
 const BUNDLED: &str = include_str!("../../../presets/recommended_models.json");
 const FILE_NAME: &str = "recommended_models.json";
-/// Licences the wizard may offer without asking (no non-commercial or gated models).
+/// Licences without conditions on use; everything else is marked in the list.
 const OPEN_LICENSES: &[&str] = &["Apache-2.0", "MIT", "BSD-2-Clause", "BSD-3-Clause"];
 const RUNTIMES: &[&str] = &["standard", "prism"];
 const DEFAULT_RESERVE_MB: u64 = 1_536;
@@ -34,6 +38,32 @@ pub struct CatalogModel {
     /// Short description per language code.
     #[serde(default)]
     pub description: HashMap<String, String>,
+    /// What the licence restricts, per language code (for models without an open licence).
+    #[serde(default)]
+    pub license_note: HashMap<String, String>,
+    /// Page with the licence text; the model page when missing.
+    #[serde(default)]
+    pub license_url: Option<String>,
+}
+
+impl CatalogModel {
+    /// `open` (Apache-2.0, MIT, BSD), `noncommercial` or `restricted` (any other or no licence).
+    pub fn license_kind(&self) -> &'static str {
+        let license = self.license.to_ascii_lowercase();
+        if OPEN_LICENSES
+            .iter()
+            .any(|open| open.eq_ignore_ascii_case(&self.license))
+        {
+            "open"
+        } else if license.contains("-nc")
+            || license.contains("noncommercial")
+            || license.contains("non-commercial")
+        {
+            "noncommercial"
+        } else {
+            "restricted"
+        }
+    }
 }
 
 #[derive(Debug, Clone)]
@@ -102,7 +132,11 @@ fn usable(model: &CatalogModel) -> bool {
         && model.vram_mb > 0
         && model.sha256.len() == 64
         && model.sha256.chars().all(|c| c.is_ascii_hexdigit())
-        && OPEN_LICENSES.contains(&model.license.as_str())
+        && !model.license.trim().is_empty()
+        && model
+            .license_url
+            .as_deref()
+            .is_none_or(|url| url.starts_with("https://"))
         && RUNTIMES.contains(&model.runtime.as_str())
 }
 
@@ -241,9 +275,25 @@ mod tests {
     }
 
     #[test]
+    fn licences_are_sorted_into_open_restricted_and_noncommercial() {
+        let kind = |license: &str| {
+            let mut m = model("x", 1000);
+            m["license"] = license.into();
+            serde_json::from_value::<CatalogModel>(m)
+                .unwrap()
+                .license_kind()
+        };
+        assert_eq!(kind("Apache-2.0"), "open");
+        assert_eq!(kind("mit"), "open");
+        assert_eq!(kind("llama3.3"), "restricted");
+        assert_eq!(kind("unknown"), "restricted");
+        assert_eq!(kind("CC-BY-NC-4.0"), "noncommercial");
+    }
+
+    #[test]
     fn unsafe_or_closed_entries_are_dropped() {
-        let mut bad_license = model("nc", 4000);
-        bad_license["license"] = "CC-BY-NC-4.0".into();
+        let mut bad_license = model("nolicense", 4000);
+        bad_license["license"] = "".into();
         let mut bad_path = model("path", 4000);
         bad_path["file"] = "../evil.gguf".into();
         let mut bad_repo = model("repo", 4000);

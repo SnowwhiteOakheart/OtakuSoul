@@ -3402,4 +3402,8 @@ export const de = {
   "avatars.retakeThumbnailHint": "Dreh und zoom das Modell in der Vorschau, dann übernimmt dieser Knopf genau diesen Ausschnitt als Bild für die Übersicht.",
   "avatars.thumbnailSaved": "Vorschaubild gespeichert.",
   "avatars.thumbnailFailed": "Vorschaubild nicht gespeichert: {{error}}",
+  "onboarding.licenseRestricted": "Eingeschränkte Lizenz.",
+  "onboarding.licenseNoncommercial": "Nur nicht-kommerziell.",
+  "onboarding.licenseRestrictedHint": "Ohne Anmeldung ladbar, aber die Lizenz stellt Bedingungen an die Nutzung – bitte vorher lesen.",
+  "onboarding.licenseView": "Lizenz ansehen",
 } as const;
