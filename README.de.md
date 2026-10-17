@@ -14,7 +14,7 @@
 </p>
 
 <p align="center">
-  <a href="https://github.com/SnowwhiteOakheart/OtakuSoul/releases/latest"><img alt="Version" src="https://img.shields.io/badge/OtakuSoul-v0.5.0-8b5cf6?style=for-the-badge&logo=sparkles&logoColor=white" /></a>
+  <a href="https://github.com/SnowwhiteOakheart/OtakuSoul/releases/latest"><img alt="Version" src="https://img.shields.io/badge/OtakuSoul-v0.5.1-8b5cf6?style=for-the-badge&logo=sparkles&logoColor=white" /></a>
   <a href="https://github.com/SnowwhiteOakheart/OtakuSoul/releases"><img alt="Downloads" src="https://img.shields.io/github/downloads/SnowwhiteOakheart/OtakuSoul/total?style=for-the-badge&logo=github" /></a>
   <a href="https://github.com/SnowwhiteOakheart/OtakuSoul/stargazers"><img alt="Stars" src="https://img.shields.io/github/stars/SnowwhiteOakheart/OtakuSoul?style=for-the-badge&logo=github" /></a>
   <a href="https://github.com/SnowwhiteOakheart/OtakuSoul/network/members"><img alt="Forks" src="https://img.shields.io/github/forks/SnowwhiteOakheart/OtakuSoul?style=for-the-badge&logo=github" /></a>
@@ -58,10 +58,10 @@ Die neueste Version gibt es auf der **[Release-Seite](https://github.com/Snowwhi
 
 | System | Datei | So startest du |
 |---|---|---|
-| 🪟 **Windows 10 / 11** | `OtakuSoul_0.5.0_x64-setup.exe` | Doppelklick und dem Installer folgen. |
-| 🐧 **Linux** (jede Distribution) | `OtakuSoul_0.5.0_amd64.AppImage` | Ausführbar machen (`chmod +x`) und starten. |
-| 🐧 **Debian / Ubuntu** | `OtakuSoul_0.5.0_amd64.deb` | `sudo apt install ./OtakuSoul_0.5.0_amd64.deb` |
-| 🍏 **macOS** (Apple Silicon) | `OtakuSoul_0.5.0_aarch64.dmg` | OtakuSoul in *Programme* ziehen. Die App ist nicht notarisiert: beim ersten Start Rechtsklick → *Öffnen* (oder `xattr -dr com.apple.quarantine /Applications/OtakuSoul.app`). |
+| 🪟 **Windows 10 / 11** | `OtakuSoul_0.5.1_x64-setup.exe` | Doppelklick und dem Installer folgen. |
+| 🐧 **Linux** (jede Distribution) | `OtakuSoul_0.5.1_amd64.AppImage` | Ausführbar machen (`chmod +x`) und starten. |
+| 🐧 **Debian / Ubuntu** | `OtakuSoul_0.5.1_amd64.deb` | `sudo apt install ./OtakuSoul_0.5.1_amd64.deb` |
+| 🍏 **macOS** (Apple Silicon) | `OtakuSoul_0.5.1_aarch64.dmg` | OtakuSoul in *Programme* ziehen. Die App ist nicht notarisiert: beim ersten Start Rechtsklick → *Öffnen* (oder `xattr -dr com.apple.quarantine /Applications/OtakuSoul.app`). |
 
 OtakuSoul aktualisiert sich selbst: Gibt es eine neue Version, erscheint ein Knopf in der Kopfzeile.
 

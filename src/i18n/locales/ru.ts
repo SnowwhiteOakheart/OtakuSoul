@@ -65,7 +65,7 @@ export const ru: TranslationDictionary = {
   "palette.noResults": "Подходящие команды не найдены.",
   "palette.actions": "Действия",
 
-  "header.version": "v0.5.0",
+  "header.version": "v0.5.1",
   "header.logs": "Системные логи",
   "header.update": "Проверить обновления",
   "header.about": "О программе",
