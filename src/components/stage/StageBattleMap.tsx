@@ -1,9 +1,10 @@
+import { findCharacterByName } from '../../utils/characterName';
 import React, { useMemo, useState } from 'react';
 import { useStoreFields } from '../../store/useAppStore';
 import { useTranslation, type TranslationKey } from '../../i18n';
 import { localizedName, tierLabel } from '../../utils/combatEvents';
 import { areaSquares, squaresBetween } from '../../utils/spellArea';
-import type { BattleMap, Combatant, CombatOptions, GridPos } from '../../types';
+import type { BattleMap, CharacterProfile, Combatant, CombatOptions, GridPos } from '../../types';
 
 /** Pixels per square in the SVG (tiles are drawn 64×64). */
 const TILE = 64;
@@ -39,12 +40,12 @@ const doorRotation = (map: BattleMap, x: number, y: number) => {
 };
 
 /** Token image of a combatant: monsters by SRD id, the classic heroes by name, others by portrait. */
-const tokenImage = (c: Combatant, portraits: Map<string, string>) => {
+const tokenImage = (c: Combatant, characters: CharacterProfile[]) => {
   // Every SRD monster has a token (checked by stageAssets.test.ts).
   if (c.stats5e?.monster_id) return `/stage/tokens/monster_${c.stats5e.monster_id}.svg`;
   const first = c.name.split(' ')[0]!.toLowerCase();
   if (CLASSIC_HEROES.includes(first)) return `/stage/tokens/hero_${first}.svg`;
-  return portraits.get(c.name.toLowerCase()) ?? null;
+  return findCharacterByName(characters, c.name)?.avatar_data_url ?? null;
 };
 
 interface Props {
@@ -66,10 +67,6 @@ export const StageBattleMap: React.FC<Props> = ({ map, combatants, currentIndex,
   const { t } = useTranslation();
   const { availableCharacters, stageAimedSpell, appLanguage } = useStoreFields('availableCharacters', 'stageAimedSpell', 'appLanguage');
   const [hover, setHover] = useState<GridPos | null>(null);
-  const portraits = useMemo(
-    () => new Map(availableCharacters.filter((c) => c.avatar_data_url).map((c) => [c.card.data.name.toLowerCase(), c.avatar_data_url!])),
-    [availableCharacters],
-  );
   // An area spell being aimed: squares it may be aimed at, and what it would cover from the hovered one.
   const aimed = stageAimedSpell ? options?.spells.find((s) => s.spell_id === stageAimedSpell.spellId) : undefined;
   const caster = combatants[currentIndex]?.position;
@@ -248,7 +245,7 @@ export const StageBattleMap: React.FC<Props> = ({ map, combatants, currentIndex,
         if (!c.position || !isUp(c) || !revealed(c.position.x, c.position.y)) return null;
         const cx = c.position.x * TILE + TILE / 2;
         const cy = c.position.y * TILE + TILE / 2;
-        const image = tokenImage(c, portraits);
+        const image = tokenImage(c, availableCharacters);
         const current = index === currentIndex;
         const ratio = Math.max(0, Math.min(1, c.hp / Math.max(1, c.max_hp)));
         const ring = isParty(c) ? (ratio > 0.5 ? '#22c55e' : ratio > 0.25 ? '#f59e0b' : '#ef4444') : '#e11d48';

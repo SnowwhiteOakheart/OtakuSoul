@@ -146,6 +146,30 @@ impl Default for UserPersona {
     }
 }
 
+/// The card a scene or a story names: the exact name first, otherwise the name before a bracket,
+/// so a party entry "Klein" finds the card "Klein (Ryoutarou Tsuboi)". Case does not matter.
+pub fn find_by_name<'a>(
+    characters: &'a [CharacterProfile],
+    name: &str,
+) -> Option<&'a CharacterProfile> {
+    let name = name.trim();
+    characters
+        .iter()
+        .find(|c| c.card.data.name.trim().eq_ignore_ascii_case(name))
+        .or_else(|| {
+            characters
+                .iter()
+                .find(|c| short_name(&c.card.data.name).eq_ignore_ascii_case(name))
+        })
+}
+
+/// "Klein (Ryoutarou Tsuboi)" → "Klein".
+fn short_name(name: &str) -> &str {
+    name.split_once(" (")
+        .map_or(name, |(short, _)| short)
+        .trim()
+}
+
 pub fn parse_character_json(content: &str) -> Result<CharacterCardV2, String> {
     if let Ok(mut card_v2) = serde_json::from_str::<CharacterCardV2>(content) {
         if card_v2.data.personality.trim().is_empty()
@@ -1082,6 +1106,37 @@ pub fn parse_character_wizard_draft(raw_text: &str) -> Result<CharacterDraft, St
 
 #[cfg(test)]
 mod tests {
+
+    #[test]
+    fn scene_names_find_cards_with_a_bracketed_full_name() {
+        let profile = |name: &str| {
+            CharacterProfile {
+            id: name.to_lowercase(),
+            card: serde_json::from_value(serde_json::json!({
+                "spec": "chara_card_v2", "spec_version": "2.0",
+                "data": {"name": name, "description": "", "personality": "", "scenario": "", "first_mes": ""}
+            }))
+            .unwrap(),
+            avatar_data_url: None,
+            source_path: None,
+            bound_lorebooks: Vec::new(),
+        }
+        };
+        let cards = vec![
+            profile("Klein (Ryoutarou Tsuboi)"),
+            profile("Kirito"),
+            profile("Kirito (Kazuto Kirigaya)"),
+        ];
+        let id = |name: &str| super::find_by_name(&cards, name).map(|c| c.id.clone());
+        assert_eq!(id("klein").as_deref(), Some("klein (ryoutarou tsuboi)"));
+        assert_eq!(
+            id("Klein (Ryoutarou Tsuboi)").as_deref(),
+            Some("klein (ryoutarou tsuboi)")
+        );
+        // The exact name wins over a short one.
+        assert_eq!(id("Kirito").as_deref(), Some("kirito"));
+        assert_eq!(id("Asuna"), None);
+    }
 
     #[test]
     fn exported_cards_carry_no_local_picture_paths() {

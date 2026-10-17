@@ -1,6 +1,7 @@
 import { api } from './api';
 import { audioPlayer, gainFromVoiceVolume } from './audioPlayer';
 import type { CharacterProfile, SceneTurnMessage, VoiceConfig } from '../types';
+import { findCharacterByName } from '../utils/characterName';
 
 /** Voice profile of the Soul Stage narrator (game master and NPCs), edited like a character's. */
 export const STAGE_NARRATOR_VOICE_ID = 'stage_narrator';
@@ -9,7 +10,7 @@ export const STAGE_NARRATOR_VOICE_ID = 'stage_narrator';
 async function voiceFor(message: SceneTurnMessage, characters: CharacterProfile[]): Promise<VoiceConfig | null> {
   let id = STAGE_NARRATOR_VOICE_ID;
   if (message.sender_role === 'companion') {
-    const character = characters.find((c) => c.card.data.name.toLowerCase() === message.sender_name.toLowerCase());
+    const character = findCharacterByName(characters, message.sender_name);
     if (character) id = character.id;
   }
   const config = await api.getCharacterVoiceConfig(id).catch(() => null);

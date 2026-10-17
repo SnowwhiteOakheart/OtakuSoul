@@ -1069,9 +1069,7 @@ RULES:
                 .any(|p| p.eq_ignore_ascii_case(&current_actor))
         {
             let all_chars = scan_available_characters();
-            let matched_char = all_chars
-                .iter()
-                .find(|c| c.card.data.name.eq_ignore_ascii_case(&current_actor));
+            let matched_char = crate::modules::characters::find_by_name(&all_chars, &current_actor);
 
             let lore_section = if !active_lore_snippets.is_empty() {
                 format!(

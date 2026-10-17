@@ -43,9 +43,7 @@ pub fn ensure_party_stats(state: &mut SceneState) {
         Vec::new()
     };
     ensure_party_stats_with(state, |name| {
-        cards
-            .iter()
-            .find(|c| c.card.data.name.eq_ignore_ascii_case(name))
+        crate::modules::characters::find_by_name(&cards, name)
             .and_then(|c| card_class(&c.card.data.extensions))
     });
 }
