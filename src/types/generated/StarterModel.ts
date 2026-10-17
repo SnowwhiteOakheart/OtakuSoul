@@ -12,4 +12,8 @@ vram_mb: number,
 /**
  * The largest model that fits the GPU (the smallest one without a GPU).
  */
-recommended: boolean, fits_gpu: boolean, installed: boolean, file: HfGgufFile, };
+recommended: boolean, fits_gpu: boolean, installed: boolean, file: HfGgufFile, 
+/**
+ * Short description per language code.
+ */
+description: { [key in string]: string }, };

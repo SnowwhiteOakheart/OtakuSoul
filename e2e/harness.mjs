@@ -37,8 +37,10 @@ const waitForPort = async (port, timeoutMs = 20_000) => {
 /** The app may still write its profile while shutting down; retry instead of failing (ENOTEMPTY). */
 const removeHome = (home) => rmSync(home, { recursive: true, force: true, maxRetries: 10, retryDelay: 200 });
 
-export async function launch(settings = {}) {
+/** `hubFiles`: files the mock serves as the data repository from the start (e.g. catalogs fetched at launch). */
+export async function launch(settings = {}, { hubFiles } = {}) {
   const mock = await startMockLlm();
+  if (hubFiles) mock.stats.hubFiles = hubFiles;
   const home = mkdtempSync(path.join(tmpdir(), 'otakusoul-e2e-'));
   mkdirSync(path.join(home, 'config'), { recursive: true });
   writeFileSync(

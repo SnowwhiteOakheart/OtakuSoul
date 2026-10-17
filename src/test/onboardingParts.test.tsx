@@ -13,6 +13,7 @@ const initial = useAppStore.getState();
 const starter = (over: Partial<StarterModel>): StarterModel => ({
   id: 'qwen3-8b', name: 'Qwen3 8B', license: 'Apache-2.0', vram_mb: 6800, recommended: false, fits_gpu: true, installed: false,
   file: { filename: 'Qwen_Qwen3-8B-Q4_K_M.gguf', size_bytes: 5e9, sha256: 'x', size_formatted: '4.7 GB', download_url: 'https://huggingface.co/x', quantization: 'Q4_K_M', runtime: 'standard', recommended: false, compatibility_note: '' },
+  description: { de: 'Solider Allrounder.', en: 'Solid all-rounder.' },
   ...over,
 });
 const ayu = { id: 'ayu', card: { data: { name: 'Ayu', description: 'Studentin.', personality: 'warm' } } } as CharacterProfile;
@@ -51,6 +52,8 @@ describe('setup wizard parts', () => {
     expect(screen.getByText(/RTX 4060 with 8 GB/)).toBeInTheDocument();
     const recommended = (await screen.findByText('fits your GPU')).closest('li')!;
     expect(recommended).toHaveTextContent('Qwen3 8B');
+    // The catalog's description in the app language.
+    expect(recommended).toHaveTextContent('Solid all-rounder.');
     await user.click(screen.getByRole('button', { name: 'Download Qwen3 8B' }));
     await waitFor(() => expect(download).toHaveBeenCalledWith(expect.objectContaining({ filename: 'Qwen_Qwen3-8B-Q4_K_M.gguf' })));
   });

@@ -127,7 +127,7 @@ type Express = { phase: 'idle' | 'runtime' | 'model' | 'done' } | { phase: 'fail
  * (runtime and model) and, for those who want to choose, the runtimes and all starter models.
  */
 export const LocalModelSetup = () => {
-  const { t } = useTranslation();
+  const { t, currentLanguage } = useTranslation();
   const { hardware, scannedModels, serverConfig, selectLocalModel, downloadGgufModel, downloadProgress, hfError } = useStoreFields(
     'hardware', 'scannedModels', 'serverConfig', 'selectLocalModel', 'downloadGgufModel', 'downloadProgress', 'hfError',
   );
@@ -266,6 +266,11 @@ export const LocalModelSetup = () => {
                       <span className="block text-xs text-slate-400">
                         {t('onboarding.starterMeta', { size: starter.file.size_formatted, vram: (starter.vram_mb / 1024).toFixed(0), license: starter.license })}
                       </span>
+                      {(starter.description[currentLanguage] || starter.description.en) && (
+                        <span className="block text-xs text-slate-300" data-starter-description>
+                          {starter.description[currentLanguage] || starter.description.en}
+                        </span>
+                      )}
                       {!starter.fits_gpu && <span className="block text-xs text-amber-300/90">{t('onboarding.starterTooBig')}</span>}
                     </span>
                     {path ? (

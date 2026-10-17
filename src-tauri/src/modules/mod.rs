@@ -29,6 +29,7 @@ pub mod lorebook;
 pub mod mcp_client;
 pub mod memory;
 pub mod memory_pipeline;
+pub mod model_catalog;
 pub mod model_files;
 pub mod models_hub;
 pub mod paths;

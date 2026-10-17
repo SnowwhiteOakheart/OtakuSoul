@@ -7,6 +7,8 @@ use tokio::io::AsyncWriteExt;
 use tracing::info;
 use ts_rs::TS;
 
+use crate::modules::model_catalog::{Catalog, CatalogModel};
+
 #[derive(Debug, Clone, Serialize, Deserialize, TS)]
 #[ts(export)]
 pub struct HfModelSummary {
@@ -300,139 +302,58 @@ pub struct StarterModel {
     pub fits_gpu: bool,
     pub installed: bool,
     pub file: HfGgufFile,
+    /// Short description per language code.
+    pub description: std::collections::HashMap<String, String>,
 }
-
-struct StarterSpec {
-    id: &'static str,
-    name: &'static str,
-    repo: &'static str,
-    file: &'static str,
-    size: u64,
-    sha256: &'static str,
-    license: &'static str,
-    vram_mb: u64,
-    quantization: &'static str,
-    /// `"prism"` for PQ2_0/PTQ1_0 files that need the PrismML runtime.
-    runtime: &'static str,
-    /// Recommended whenever it fits, even over larger models.
-    preferred: bool,
-}
-
-/// One per VRAM tier, sorted by VRAM; Apache-2.0, ungated, checked against Hugging Face's SHA-256.
-const STARTERS: &[StarterSpec] = &[
-    StarterSpec {
-        id: "qwen3-4b",
-        name: "Qwen3 4B Instruct",
-        repo: "bartowski/Qwen_Qwen3-4B-Instruct-2507-GGUF",
-        file: "Qwen_Qwen3-4B-Instruct-2507-Q4_K_M.gguf",
-        size: 2_497_280_736,
-        sha256: "2fde00ce69dd4899c70d020845e2638353015bba0fdf161b3eb965f2bca4464e",
-        license: "Apache-2.0",
-        vram_mb: 4_000,
-        quantization: "Q4_K_M",
-        runtime: "standard",
-        preferred: false,
-    },
-    StarterSpec {
-        id: "qwen3-8b",
-        name: "Qwen3 8B",
-        repo: "bartowski/Qwen_Qwen3-8B-GGUF",
-        file: "Qwen_Qwen3-8B-Q4_K_M.gguf",
-        size: 5_027_784_224,
-        sha256: "54fffa050078e984116639c83dfb64b5aa6d4cd474e018b076777c632bbccccd",
-        license: "Apache-2.0",
-        // 4.7 GiB of weights plus ~1 GB for an 8k context: fits an 8 GB card.
-        vram_mb: 6_400,
-        quantization: "Q4_K_M",
-        runtime: "standard",
-        preferred: false,
-    },
-    StarterSpec {
-        id: "ternary-bonsai-2-27b",
-        name: "Ternary Bonsai 2 27B",
-        repo: "prism-ml/Ternary-Bonsai-2-27B-gguf",
-        file: "Ternary-Bonsai-2-27B-PQ2_0.gguf",
-        size: 7_206_168_928,
-        sha256: "3907dc1658db1f78a9826bf8d5bcb8dc65db0d466388937af57f2294fae62ec1",
-        license: "Apache-2.0",
-        // 6.7 GiB of weights, ~1.2 GB runtime and ~0.5 GB for the 32k start context with Q4 KV.
-        vram_mb: 9_000,
-        quantization: "PQ2_0",
-        runtime: "prism",
-        preferred: true,
-    },
-    StarterSpec {
-        id: "mistral-nemo-12b",
-        name: "Mistral Nemo 12B",
-        repo: "bartowski/Mistral-Nemo-Instruct-2407-GGUF",
-        file: "Mistral-Nemo-Instruct-2407-Q4_K_M.gguf",
-        size: 7_477_208_192,
-        sha256: "7c1a10d202d8788dbe5628dc962254d10654c853cae6aaeca0618f05490d4a46",
-        license: "Apache-2.0",
-        vram_mb: 9_800,
-        quantization: "Q4_K_M",
-        runtime: "standard",
-        preferred: false,
-    },
-    StarterSpec {
-        id: "mistral-small-24b",
-        name: "Mistral Small 3.2 24B",
-        repo: "bartowski/mistralai_Mistral-Small-3.2-24B-Instruct-2506-GGUF",
-        file: "mistralai_Mistral-Small-3.2-24B-Instruct-2506-Q4_K_M.gguf",
-        size: 14_333_915_264,
-        sha256: "80f5bda68f156f12650ca03a0a2dbfae06a215ac41caa773b8631a479f82415e",
-        license: "Apache-2.0",
-        vram_mb: 17_500,
-        quantization: "Q4_K_M",
-        runtime: "standard",
-        preferred: false,
-    },
-];
-
-/// VRAM left for the model after the desktop and the driver take theirs.
-const DESKTOP_RESERVE_MB: u64 = 1_536;
 
 /// Index of the recommended starter for `vram_mb` (0 = no GPU): a preferred one that fits,
 /// else the largest that fits.
-fn recommended_starter(vram_mb: u64) -> usize {
-    let usable = vram_mb.saturating_sub(DESKTOP_RESERVE_MB);
-    let fits = |s: &StarterSpec| s.vram_mb <= usable;
-    STARTERS
+fn recommended_starter(catalog: &Catalog, vram_mb: u64) -> usize {
+    let usable = vram_mb.saturating_sub(catalog.desktop_reserve_mb);
+    let fits = |s: &CatalogModel| s.vram_mb <= usable;
+    let models = &catalog.models;
+    models
         .iter()
         .position(|s| s.preferred && fits(s))
-        .or_else(|| STARTERS.iter().rposition(fits))
+        .or_else(|| models.iter().rposition(fits))
         .unwrap_or(0)
 }
 
-/// The starter models with install state and the recommendation for this machine's GPU.
+/// The starter models (catalog in `model_catalog`) with install state and the recommendation for
+/// this machine's GPU.
 pub fn starter_models() -> Vec<StarterModel> {
     let vram = crate::modules::hardware::probe_hardware()
         .primary_gpu()
         .map_or(0, |g| g.total_vram_mb);
-    let recommended = recommended_starter(vram);
+    let catalog = crate::modules::model_catalog::catalog();
+    let recommended = recommended_starter(&catalog, vram);
     let models_dir = PathBuf::from(crate::modules::paths::resolve_app_paths().bundled_models_dir);
-    STARTERS
-        .iter()
+    let usable = vram.saturating_sub(catalog.desktop_reserve_mb);
+    catalog
+        .models
+        .into_iter()
         .enumerate()
         .map(|(i, s)| StarterModel {
-            id: s.id.to_string(),
-            name: s.name.to_string(),
-            license: s.license.to_string(),
-            vram_mb: s.vram_mb,
+            installed: std::fs::metadata(models_dir.join(&s.file))
+                .is_ok_and(|m| m.len() == s.size_bytes),
+            fits_gpu: s.vram_mb <= usable,
             recommended: i == recommended,
-            fits_gpu: s.vram_mb <= vram.saturating_sub(DESKTOP_RESERVE_MB),
-            installed: std::fs::metadata(models_dir.join(s.file)).is_ok_and(|m| m.len() == s.size),
+            vram_mb: s.vram_mb,
             file: HfGgufFile {
-                filename: s.file.to_string(),
-                size_bytes: s.size,
-                sha256: Some(s.sha256.to_string()),
-                size_formatted: format!("{:.1} GB", s.size as f64 / 1_073_741_824.0),
-                download_url: format!("https://huggingface.co/{}/resolve/main/{}", s.repo, s.file),
-                quantization: s.quantization.to_string(),
-                runtime: s.runtime.to_string(),
+                size_formatted: format!("{:.1} GB", s.size_bytes as f64 / 1_073_741_824.0),
+                download_url: format!("https://huggingface.co/{}/resolve/main/{}", s.hf_id, s.file),
+                filename: s.file,
+                size_bytes: s.size_bytes,
+                sha256: Some(s.sha256),
+                quantization: s.quantization,
+                runtime: s.runtime,
                 recommended: i == recommended,
                 compatibility_note: String::new(),
             },
+            id: s.id,
+            name: s.name,
+            license: s.license,
+            description: s.description,
         })
         .collect()
 }
@@ -635,7 +556,12 @@ mod tests {
 
     #[test]
     fn starter_recommendation_follows_vram() {
-        let pick = |vram| STARTERS[recommended_starter(vram)].id;
+        let catalog = crate::modules::model_catalog::catalog();
+        let pick = |vram| {
+            catalog.models[recommended_starter(&catalog, vram)]
+                .id
+                .as_str()
+        };
         assert_eq!(pick(0), "qwen3-4b", "without a GPU the smallest one");
         assert_eq!(
             pick(4_096),
@@ -647,20 +573,18 @@ mod tests {
         assert_eq!(pick(12_288), "ternary-bonsai-2-27b");
         assert_eq!(pick(16_384), "ternary-bonsai-2-27b");
         assert_eq!(pick(24_576), "ternary-bonsai-2-27b");
-        assert!(STARTERS.windows(2).all(|w| w[0].vram_mb <= w[1].vram_mb));
-        for s in STARTERS {
-            assert_eq!(s.sha256.len(), 64, "{}", s.id);
+        for s in &catalog.models {
             assert!(
                 s.file.ends_with(&format!("{}.gguf", s.quantization)),
                 "{}",
                 s.id
             );
-            let (runtime, _, _) = classify_gguf(s.repo, s.file);
+            let (runtime, _, _) = classify_gguf(&s.hf_id, &s.file);
             assert_eq!(runtime, s.runtime, "{}", s.id);
         }
     }
 
-    use super::{STARTERS, recommended_starter, verify_download};
+    use super::{recommended_starter, verify_download};
 
     #[test]
     fn rejects_incomplete_or_changed_model_data() {

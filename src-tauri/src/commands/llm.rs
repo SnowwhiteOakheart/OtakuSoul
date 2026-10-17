@@ -197,6 +197,8 @@ pub async fn quick_reply(
 /// Chat models for getting started, with the recommendation for this GPU.
 #[tauri::command]
 pub async fn list_starter_models() -> Vec<crate::modules::models_hub::StarterModel> {
+    // A wizard opened right after the start shows the catalog from the data repository.
+    crate::modules::model_catalog::wait_for_refresh(std::time::Duration::from_secs(5)).await;
     tokio::task::spawn_blocking(crate::modules::models_hub::starter_models)
         .await
         .unwrap_or_default()

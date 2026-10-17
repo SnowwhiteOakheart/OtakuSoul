@@ -1,0 +1,107 @@
+{
+  "version": "3.0.0",
+  "last_updated": "2026-10-17",
+  "notes": {
+    "de": "Empfohlene Startmodelle für den Einrichtungsassistenten von OtakuSoul. Die App bringt eine Kopie mit und lädt beim Start diese Datei; die höhere `version` gilt. Für neue Empfehlungen hier Einträge ändern und `version` erhöhen. Nur Modelle mit freier Lizenz (Apache-2.0, MIT, BSD), ohne Anmeldung ladbar, mit SHA-256 der Datei auf Hugging Face; ungültige Einträge überspringt die App. Empfohlen wird das bevorzugte Modell, wenn es in Grafikspeicher − `desktop_reserve_mb` passt, sonst das größte passende. Keine Modellgewichte in diesem Repository.",
+    "en": "Recommended starter models for the OtakuSoul setup wizard. The app ships a copy and loads this file at start; the higher `version` wins. For new recommendations, change the entries here and raise `version`. Only freely licensed models (Apache-2.0, MIT, BSD), downloadable without sign-in, with the SHA-256 of the file on Hugging Face; the app skips invalid entries. The preferred model is recommended when it fits into VRAM − `desktop_reserve_mb`, otherwise the largest one that fits. No model weights in this repository.",
+    "ru": "Рекомендуемые стартовые модели для мастера настройки OtakuSoul. Приложение содержит копию и при запуске загружает этот файл; действует более высокая `version`. Для новых рекомендаций измените записи здесь и увеличьте `version`. Только модели со свободной лицензией (Apache-2.0, MIT, BSD), доступные без входа, с SHA-256 файла на Hugging Face; некорректные записи приложение пропускает. Рекомендуется предпочтительная модель, если она помещается в видеопамять минус `desktop_reserve_mb`, иначе самая большая из подходящих. Весов моделей в репозитории нет."
+  },
+  "desktop_reserve_mb": 1536,
+  "models": [
+    {
+      "id": "qwen3-4b",
+      "name": "Qwen3 4B Instruct",
+      "hf_id": "bartowski/Qwen_Qwen3-4B-Instruct-2507-GGUF",
+      "file": "Qwen_Qwen3-4B-Instruct-2507-Q4_K_M.gguf",
+      "size_bytes": 2497280736,
+      "sha256": "2fde00ce69dd4899c70d020845e2638353015bba0fdf161b3eb965f2bca4464e",
+      "license": "Apache-2.0",
+      "quantization": "Q4_K_M",
+      "runtime": "standard",
+      "preferred": false,
+      "vram_mb": 4000,
+      "min_vram_gb": 6,
+      "description": {
+        "de": "Klein und schnell. Läuft auf fast jeder Grafikkarte und notfalls auf dem Prozessor – gut zum Ausprobieren.",
+        "en": "Small and fast. Runs on almost any graphics card and, if need be, on the CPU – good for trying things out.",
+        "ru": "Маленькая и быстрая. Работает почти на любой видеокарте, а при необходимости и на процессоре – удобно для знакомства."
+      }
+    },
+    {
+      "id": "qwen3-8b",
+      "name": "Qwen3 8B",
+      "hf_id": "bartowski/Qwen_Qwen3-8B-GGUF",
+      "file": "Qwen_Qwen3-8B-Q4_K_M.gguf",
+      "size_bytes": 5027784224,
+      "sha256": "54fffa050078e984116639c83dfb64b5aa6d4cd474e018b076777c632bbccccd",
+      "license": "Apache-2.0",
+      "quantization": "Q4_K_M",
+      "runtime": "standard",
+      "preferred": false,
+      "vram_mb": 6400,
+      "min_vram_gb": 8,
+      "description": {
+        "de": "Solider Allrounder für 8-GB-Karten: versteht Figuren und Anweisungen deutlich besser als das 4B-Modell.",
+        "en": "Solid all-rounder for 8 GB cards: follows characters and instructions much better than the 4B model.",
+        "ru": "Надёжная универсальная модель для карт на 8 ГБ: заметно лучше 4B держит персонажей и инструкции."
+      }
+    },
+    {
+      "id": "ternary-bonsai-2-27b",
+      "name": "Ternary Bonsai 2 27B",
+      "hf_id": "prism-ml/Ternary-Bonsai-2-27B-gguf",
+      "file": "Ternary-Bonsai-2-27B-PQ2_0.gguf",
+      "size_bytes": 7206168928,
+      "sha256": "3907dc1658db1f78a9826bf8d5bcb8dc65db0d466388937af57f2294fae62ec1",
+      "license": "Apache-2.0",
+      "quantization": "PQ2_0",
+      "runtime": "prism",
+      "preferred": true,
+      "vram_mb": 9000,
+      "min_vram_gb": 11,
+      "description": {
+        "de": "Empfehlung der App, sobald sie passt: ein 27B-Modell in ternärer Quantisierung, das in rund 9 GB Grafikspeicher mit 32K Kontext läuft. Braucht die PrismML-Laufzeit (lädt die App selbst).",
+        "en": "The app's pick whenever it fits: a 27B model in ternary quantisation that runs in about 9 GB of VRAM with a 32K context. Needs the PrismML runtime (the app downloads it).",
+        "ru": "Выбор приложения, если хватает памяти: модель 27B в тернарной квантизации, работает примерно в 9 ГБ видеопамяти с контекстом 32K. Нужна среда PrismML (приложение скачает её само)."
+      }
+    },
+    {
+      "id": "mistral-nemo-12b",
+      "name": "Mistral Nemo 12B",
+      "hf_id": "bartowski/Mistral-Nemo-Instruct-2407-GGUF",
+      "file": "Mistral-Nemo-Instruct-2407-Q4_K_M.gguf",
+      "size_bytes": 7477208192,
+      "sha256": "7c1a10d202d8788dbe5628dc962254d10654c853cae6aaeca0618f05490d4a46",
+      "license": "Apache-2.0",
+      "quantization": "Q4_K_M",
+      "runtime": "standard",
+      "preferred": false,
+      "vram_mb": 9800,
+      "min_vram_gb": 12,
+      "description": {
+        "de": "Beliebtes Rollenspiel-Modell mit lebendigem Erzählstil und gutem Deutsch; Alternative zu Bonsai ohne Zusatzlaufzeit.",
+        "en": "Popular roleplay model with a lively narrative style and good multilingual output; an alternative to Bonsai without an extra runtime.",
+        "ru": "Популярная модель для ролевых игр с живым стилем повествования и хорошей мультиязычностью; альтернатива Bonsai без дополнительной среды."
+      }
+    },
+    {
+      "id": "mistral-small-24b",
+      "name": "Mistral Small 3.2 24B",
+      "hf_id": "bartowski/mistralai_Mistral-Small-3.2-24B-Instruct-2506-GGUF",
+      "file": "mistralai_Mistral-Small-3.2-24B-Instruct-2506-Q4_K_M.gguf",
+      "size_bytes": 14333915264,
+      "sha256": "80f5bda68f156f12650ca03a0a2dbfae06a215ac41caa773b8631a479f82415e",
+      "license": "Apache-2.0",
+      "quantization": "Q4_K_M",
+      "runtime": "standard",
+      "preferred": false,
+      "vram_mb": 17500,
+      "min_vram_gb": 19,
+      "description": {
+        "de": "Für Karten ab 20 GB: die beste Erzählqualität im Katalog, hält lange Geschichten und viele Figuren auseinander.",
+        "en": "For cards with 20 GB or more: the best storytelling in the catalogue, keeps long stories and many characters apart.",
+        "ru": "Для карт от 20 ГБ: лучшее качество повествования в каталоге, хорошо держит длинные истории и множество персонажей."
+      }
+    }
+  ]
+}

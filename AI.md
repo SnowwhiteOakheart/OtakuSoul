@@ -455,7 +455,10 @@ ru „персонаж/история/сцена“. Fachbegriffe nur im Experte
   virtualisierte Liste, Klasse `message-flash`). Lesezeichen in `chat_bookmarks` (per Join an Nachrichten gebunden),
   „Ab hier neu“ = `branch_chat` (kopiert Verlauf, Varianten, Anhänge per `attachments::copy_to_chat`, Lesezeichen).
 - Einrichtungsassistent: `components/onboarding/OnboardingParts.tsx` (Cloud-Test, lokaler Weg, erste Antwort) nutzt
-  `quick_reply` (eine kurze Antwort außerhalb eines Chats, 90 s) und `list_starter_models` (`models_hub::STARTERS`,
+  `quick_reply` (eine kurze Antwort außerhalb eines Chats, 90 s) und `list_starter_models` (Katalog `model_catalog.rs`:
+  mitgeliefert `presets/recommended_models.json`, beim Start lädt `model_catalog::refresh` die Fassung aus `otakusoul-data`
+  nach `<Daten>/recommended_models.json`; die höhere `version` gilt, Einträge nur mit SHA-256, Hugging-Face-Datei, freier
+  Lizenz und bekannter Laufzeit; bei neuen Releases die mitgelieferte Kopie mit dem Daten-Repo abgleichen;
   Empfehlung = `preferred`-Modell (Ternary Bonsai 2 27B), wenn es in VRAM − 1,5 GB passt, sonst das größte passende).
   Starter mit `runtime: "prism"` blenden im Assistenten zusätzlich die PrismML-Laufzeitkarte ein.
   Einfacher Weg: `LocalModelSetup` „Alles automatisch einrichten“ (fehlende Laufzeiten mit empfohlener Variante, dann Starter

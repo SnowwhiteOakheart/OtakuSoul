@@ -4,7 +4,16 @@ import assert from 'node:assert/strict';
 import path from 'node:path';
 import { launch, screenshotDir } from './harness.mjs';
 
-const { browser, mock, close } = await launch({ onboarding_completed: false });
+// The data repository recommends a newer model catalog than the shipped one: the wizard offers it.
+const catalog = {
+  version: '999.0.0',
+  models: [{
+    id: 'e2e-model', name: 'E2E Testmodell', hf_id: 'owner/E2E-GGUF', file: 'E2E-Q4_K_M.gguf', size_bytes: 1_000_000,
+    sha256: 'a'.repeat(64), license: 'Apache-2.0', quantization: 'Q4_K_M', runtime: 'standard', vram_mb: 2000,
+    description: { de: 'Kommt aus dem Daten-Repo.', en: 'Comes from the data repository.' },
+  }],
+};
+const { browser, mock, close } = await launch({ onboarding_completed: false }, { hubFiles: { 'recommended_models.json': catalog } });
 const shot = (name) => browser.saveScreenshot(path.join(screenshotDir, `${name}.png`));
 // Scoped to the wizard: the chat behind it has a "Weiter" (continue) button too.
 const next = () => browser.$('[role="dialog"]').$('button=Weiter').click();
@@ -16,6 +25,11 @@ try {
   // The local way: one-click setup of the recommended model, the rest under "choose yourself".
   await browser.$('[role="dialog"]').$('button*=Lokal').click();
   await browser.$('[data-express-setup]').waitForDisplayed({ timeout: 15_000, timeoutMsg: 'Kein Ein-Klick-Weg für lokale Modelle' });
+  const chooseYourself = await browser.$('[role="dialog"]').$('summary*=Selbst auswählen');
+  // WebKit's driver reports <summary> as not interactable; a DOM click opens it the same way.
+  await browser.execute((el) => el.click(), chooseYourself);
+  await browser.$('[data-starter-description]').waitForDisplayed({ timeout: 10_000 });
+  assert.equal(await browser.$('[data-starter-description]').getText(), 'Kommt aus dem Daten-Repo.', 'neuerer Modellkatalog aus dem Daten-Repo nicht verwendet');
   await browser.pause(300);
   await shot('37-assistent-lokal');
   await browser.$('[role="dialog"]').$('button*=Cloud').click();
