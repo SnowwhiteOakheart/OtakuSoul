@@ -202,6 +202,10 @@ ru „персонаж/история/сцена“. Fachbegriffe nur im Experte
   Clips eines anders gebauten Skeletts (Spiel-Rips: andere Knochenlängen/Achsen) sortiert `clipFit.ts` `clipFitsRig` beim Laden
   aus (Median der Knochenlängen, Oberschenkelrichtung im ersten Bild); `avatarSlice.clipMisfits` markiert sie in
   `ModelClipsSettings`, der Viewer zeigt `data-clip-misfits`. Prüfen mit echten Modellen: `OTAKUSOUL_AVATAR=<Name> xvfb-run -a node e2e/local-avatars.mjs`.
+  Avatar-Manager (Reiter `avatars`, Bibliothek): `components/avatars/AvatarManagerView.tsx` (Raster aller 3D-/Live2D-Modelle,
+  Filter/Suche, Live-Vorschau `AvatarPreview`, Standard, Zuweisung per Haken → `characterSlice.assignCharacterAvatar`
+  schreibt `custom_vrm` (Pfad) bzw. `custom_live2d` (Ordner-ID) in die Karte und entfernt `sow_*`); „wer nutzt was“ in
+  `avatarMatch.ts` (gleiche Regel wie `AvatarCanvas`), Import geteilt mit den Einstellungen in `avatarImport.ts`. E2E `avatar-manager.mjs`.
   Avatar-Bibliothek (`avatar_library.rs`): eigene Namen in `<Daten>/avatar_names.json` (3D nach Pfad relativ zu
   `avatar_roots`, Live2D nach Ordner-ID; Dateien behalten ihre Namen), `delete_avatar` verschiebt nur Importe aus
   `<Daten>/avatars|live2d` (ganzer Ordner) nach `.trash/avatars`; `ScannedVrm`/`ScannedLive2d.removable`. UI `AvatarActions.tsx`

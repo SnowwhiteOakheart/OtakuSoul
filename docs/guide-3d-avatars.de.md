@@ -121,10 +121,12 @@ Texturen ruhig auf 2048 px verkleinern – das spart Grafikspeicher und Ladezeit
 
 ## 8. In OtakuSoul importieren
 
-1. **Einstellungen → Erscheinungsbild & Theme → Standard-Avatare → 3D-Avatar (VRM, glTF oder MMD) → „3D-Modell importieren …“** und
+1. **Bibliothek → Avatare → „3D-Modell importieren“** (oder Einstellungen → Erscheinungsbild & Theme → Standard-Avatare) und
    die `.glb` wählen – oder die `.gltf` (der Ordner mit `.bin` und Texturen wird mitkopiert) bzw. ein ZIP mit einer
    `.gltf`/`.glb`. Das Modell wird in den Avatar-Ordner kopiert.
-2. Das Modell auswählen (global oder pro Figur im Charakter-Editor) und im Chat den Avatar-Modus **3D** wählen.
+2. Im Avatar-Manager (**Bibliothek → Avatare**) erscheint das Modell mit Live-Vorschau. Dort **„Als Standard verwenden“**
+   oder unter **„Charaktere mit diesem Modell“** einzelne Figuren anhaken (alternativ im Charakter-Editor). Steht der Chat
+   nicht auf **3D**, bietet der Manager das Umschalten an.
 3. **Einstellungen → Erscheinungsbild & Theme → Bewegungen des 3D-Avatars (VRMA, Mixamo) → „Bewegungen im Modell (glTF)“** zeigt
    alle Clips der Datei:
    - **Verwendung:** Ruhe-Schleife, Gesten (Winken, Nicken, Gefühle …) oder **„Nur von Hand“**
@@ -133,8 +135,8 @@ Texturen ruhig auf 2048 px verkleinern – das spart Grafikspeicher und Ladezeit
    - **▶** spielt den Clip zur Kontrolle ab
 4. Im Chat startet die Figur Gesten bei Rollenspiel-Aktionen (`*winkt*`, `*nickt*`, `*lacht*`) und erkannten
    Gefühlen. Clips „nur von Hand“ startest Du über das Menü **„Gesten aus dem Modell“** (Klappe-Symbol unten links am Avatar).
-5. **Umbenennen und Entfernen:** Nach dem Import öffnet sich ein Namensfeld; später geht es über **„Umbenennen“** unter der
-   Auswahl (die Datei behält ihren Namen, leer lassen stellt den ursprünglichen wieder her). **„Entfernen“** legt ein
+5. **Umbenennen und Entfernen:** Nach dem Import öffnet sich ein Namensfeld; später geht es über **„Umbenennen“** im
+   Avatar-Manager oder unter der Auswahl in den Einstellungen (die Datei behält ihren Namen, leer lassen stellt den ursprünglichen wieder her). **„Entfernen“** legt ein
    importiertes Modell samt Ordner in den Papierkorb der App (8 Sekunden lang mit „Rückgängig“); mitgelieferte Modelle
    bleiben. Dasselbe gilt für Live2D-Modelle.
 

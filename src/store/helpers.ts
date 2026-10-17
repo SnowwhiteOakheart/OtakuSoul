@@ -166,4 +166,4 @@ export type SettingsSection = 'general' | 'server' | 'providers' | 'sampler' | '
 
 export type IntegrationsTab = 'web' | 'discord' | 'image' | 'backup';
 
-export type AppTab = 'home' | 'chat' | 'characters' | 'lorebooks' | 'stage' | 'companion' | 'settings' | 'hub' | 'integrations';
+export type AppTab = 'home' | 'chat' | 'characters' | 'avatars' | 'lorebooks' | 'stage' | 'companion' | 'settings' | 'hub' | 'integrations';

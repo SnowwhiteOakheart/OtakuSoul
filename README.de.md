@@ -113,7 +113,7 @@ Die Story-Galerie zeigt fertige Abenteuer mit Genre, Spieldauer und Schwierigkei
   <img src="docs/assets/screenshots/de/chat.png" alt="Chat mit Ayu: Porträt mit Gefühl, Stimmungsanzeige und Antwort" width="95%" />
 </p>
 
-* Das **Bild wechselt mit dem Gefühl** der Antwort; alternativ ein **3D-Avatar** (VRM, MMD, glTF aus Spielen) oder **Live2D** mit Lippensynchronität.
+* Das **Bild wechselt mit dem Gefühl** der Antwort; alternativ ein **3D-Avatar** (VRM, MMD, glTF aus Spielen) oder **Live2D** mit Lippensynchronität. Alle Modelle verwaltest Du in der **Bibliothek → Avatare**: ansehen, umbenennen und Charakteren per Haken zuweisen.
 * **Zuneigung, Energie, Stimmung:** Die Leiste oben zeigt, wie es der Figur geht – die KI pflegt sie selbst.
 * **Antwort gefällt nicht?** Neu erzeugen (Swipe), bearbeiten oder ab einer beliebigen Nachricht als neuen Chat weiterführen.
 * **Lange Chats** bleiben schnell; ältere Teile werden automatisch zusammengefasst, damit die Figur nie den Faden verliert.

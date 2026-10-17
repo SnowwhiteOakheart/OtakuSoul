@@ -113,7 +113,7 @@ The story gallery shows ready-made adventures with genre, playing time and diffi
   <img src="docs/assets/screenshots/en/chat.png" alt="Chat with Ayu: portrait with emotion, mood display and reply" width="95%" />
 </p>
 
-* The **picture changes with the emotion** of the reply; alternatively a **3D avatar** (VRM, MMD, glTF from games) or **Live2D** with lip sync.
+* The **picture changes with the emotion** of the reply; alternatively a **3D avatar** (VRM, MMD, glTF from games) or **Live2D** with lip sync. All models live in **Library → Avatars**: look at them, rename them and give them to characters with a tick.
 * **Affection, energy, mood:** the bar at the top shows how the character feels – the AI updates it itself.
 * **Replies you don't like?** Generate a new one (swipe), edit it or continue from any message as a new chat.
 * **Long chats** stay fast; older parts are summarised automatically so the character never loses the thread.

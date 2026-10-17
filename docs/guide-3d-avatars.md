@@ -119,10 +119,12 @@ Feel free to scale textures down to 2048 px – it saves video memory and loadin
 
 ## 8. Import into OtakuSoul
 
-1. **Settings → Appearance & Theme → Default avatars → 3D avatar (VRM, glTF or MMD) → "Import 3D model …"** and choose the `.glb`.
+1. **Library → Avatars → "Import 3D model"** (or Settings → Appearance & Theme → Default avatars) and choose the `.glb`.
    You can also pick the `.gltf` (its folder with `.bin` and textures is copied along) or a ZIP holding a `.gltf`/`.glb`.
    The model is copied into the avatar folder.
-2. Select the model (globally or per character in the character editor) and switch the chat's avatar mode to **3D**.
+2. The avatar manager (**Library → Avatars**) shows the model with a live preview. Use **"Use as default"** there, or tick
+   single characters under **"Characters with this model"** (the character editor works too). If the chat is not set to
+   **3D**, the manager offers to switch.
 3. **Settings → Appearance & Theme → 3D avatar motions (VRMA, Mixamo) → "Motions inside the model (glTF)"** lists all clips of the
    file:
    - **Use:** idle loop, gestures (waving, nodding, emotions …) or **"By hand only"**
@@ -132,7 +134,7 @@ Feel free to scale textures down to 2048 px – it saves video memory and loadin
 4. In the chat the figure plays gestures on roleplay actions (`*waves*`, `*nods*`, `*laughs*`) and detected
    emotions. Start "by hand only" clips from the **"Gestures from the model"** menu (clapperboard icon at the bottom left of the
    avatar).
-5. **Rename and remove:** after the import a name field opens; later use **"Rename"** below the list (the file keeps its
+5. **Rename and remove:** after the import a name field opens; later use **"Rename"** in the avatar manager or below the list in the settings (the file keeps its
    name, leaving the field empty restores the original). **"Remove"** moves an imported model with its folder into the
    app's trash (with "Undo" for 8 seconds); bundled models stay. The same works for Live2D models.
 

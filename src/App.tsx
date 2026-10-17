@@ -15,6 +15,7 @@ import './App.css';
 
 const ChatView = lazy(() => import('./components/chat/ChatView').then((module) => ({ default: module.ChatView })));
 const CharacterLibraryView = lazy(() => import('./components/characters/CharacterLibraryView').then((module) => ({ default: module.CharacterLibraryView })));
+const AvatarManagerView = lazy(() => import('./components/avatars/AvatarManagerView').then((module) => ({ default: module.AvatarManagerView })));
 const LorebookView = lazy(() => import('./components/lorebook/LorebookView').then((module) => ({ default: module.LorebookView })));
 const SettingsView = lazy(() => import('./components/settings/SettingsView').then((module) => ({ default: module.SettingsView })));
 const StageView = lazy(() => import('./components/stage/StageView').then((module) => ({ default: module.StageView })));
@@ -62,6 +63,7 @@ export function App() {
             {activeTab === 'chat' && <ChatView />}
             {activeTab === 'characters' && <CharacterLibraryView />}
             {activeTab === 'hub' && <HubView />}
+            {activeTab === 'avatars' && <AvatarManagerView />}
             {activeTab === 'lorebooks' && <LorebookView />}
             {activeTab === 'stage' && <StageView />}
             {activeTab === 'companion' && <CompanionView />}

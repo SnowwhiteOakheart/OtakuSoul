@@ -173,8 +173,9 @@ fn inspect_live2d_dir(dir: &Path) -> Option<ScannedLive2d> {
         } else if fname.ends_with(".model.json") && model_file.is_none() {
             model_file = Some(p.clone());
             version = "cubism2".to_string();
-        } else if (fname.ends_with(".png") || fname.ends_with(".jpg"))
-            && (fname.contains("icon") || fname.contains("preview") || fname.contains("thumbnail"))
+        } else if let lower = fname.to_lowercase()
+            && (lower.ends_with(".png") || lower.ends_with(".jpg") || lower.ends_with(".webp"))
+            && (lower.contains("icon") || lower.contains("preview") || lower.contains("thumbnail"))
         {
             preview_image = Some(p.to_string_lossy().to_string());
         }

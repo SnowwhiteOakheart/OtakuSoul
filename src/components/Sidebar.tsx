@@ -92,7 +92,8 @@ export const Sidebar = () => {
             )}
             {group.items.map(({ tab, label, icon: Icon }) => {
               const isActive = activeTab === tab;
-              const shortcut = t('nav.shortcut', { key: SHORTCUT_TABS.indexOf(tab) + 1 });
+              const index = SHORTCUT_TABS.indexOf(tab);
+              const shortcut = tab === 'settings' ? t('nav.shortcut', { key: ',' }) : index < 9 ? t('nav.shortcut', { key: index + 1 }) : '';
               return (
                 <button
                   key={tab}
@@ -100,7 +101,7 @@ export const Sidebar = () => {
                   onClick={() => setActiveTab(tab)}
                   aria-current={isActive ? 'page' : undefined}
                   aria-label={collapsed ? t(label) : undefined}
-                  title={collapsed ? `${t(label)} (${shortcut})` : shortcut}
+                  title={collapsed ? (shortcut ? `${t(label)} (${shortcut})` : t(label)) : shortcut || undefined}
                   className={`group relative w-full flex rounded-xl text-sm outline-hidden transition-all focus-visible:ring-2 focus-visible:ring-accent-400 ${
                     collapsed
                       ? 'items-center justify-center px-2.5 py-2'

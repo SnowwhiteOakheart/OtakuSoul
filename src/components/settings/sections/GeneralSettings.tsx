@@ -5,8 +5,8 @@ import { ResetSection } from '../ResetSection';
 import { APPEARANCE_DEFAULTS } from '../../../utils/settingDefaults';
 import { useState } from 'react';
 import { useStoreFields } from '../../../store/useAppStore';
-import { translate, useTranslation, type SupportedLanguage } from '../../../i18n';
-import { open } from '@tauri-apps/plugin-dialog';
+import { useTranslation, type SupportedLanguage } from '../../../i18n';
+import { importLive2dFromDialog, importVrmFromDialog } from '../../avatars/avatarImport';
 import { api } from '../../../services/api';
 import { toast } from '../../ui/feedback';
 import { Toggle } from '../../ui/Toggle';
@@ -24,6 +24,7 @@ import {
   Monitor,
   Moon,
   Sun,
+  UserRound,
 } from 'lucide-react';
 import type { ColorModePreference } from '../../../services/theme';
 
@@ -33,19 +34,18 @@ const COLOR_MODES: { id: ColorModePreference; icon: typeof Monitor }[] = [
   { id: 'dark', icon: Moon },
 ];
 
-/** Above this many triangles a model loads slowly; the import suggests reducing it. */
-const HEAVY_MODEL_TRIANGLES = 500_000;
-
 export const GeneralSettings = () => {
   const { t } = useTranslation();
   const {
     appPaths, theme, setTheme, colorMode, setColorMode, appLanguage, setAppLanguage, setIsLogViewerOpen, setIsUpdaterOpen,
     scannedVrms, activeVrmPath, setActiveVrmPath, refreshVrmModels, scannedLive2ds, activeLive2dPath,
     setActiveLive2dPath, refreshLive2dModels, replyLanguage, setReplyLanguage, closeToTray, setCloseToTray,
+    setActiveTab,
   } = useStoreFields(
     'appPaths', 'theme', 'setTheme', 'colorMode', 'setColorMode', 'appLanguage', 'setAppLanguage', 'setIsLogViewerOpen', 'setIsUpdaterOpen',
     'scannedVrms', 'activeVrmPath', 'setActiveVrmPath', 'refreshVrmModels', 'scannedLive2ds', 'activeLive2dPath',
     'setActiveLive2dPath', 'refreshLive2dModels', 'replyLanguage', 'setReplyLanguage', 'closeToTray', 'setCloseToTray',
+    'setActiveTab',
   );
 
   // Avatars removed a moment ago (undo still possible) are left out of the lists.
@@ -71,56 +71,17 @@ export const GeneralSettings = () => {
   };
 
   const handleBrowseVrm = async () => {
-    try {
-      const selected = await open({
-        multiple: false,
-        filters: [
-          {
-            name: translate('settings.fileFilterVrm'),
-            extensions: ['vrm', 'glb', 'gltf', 'pmx', 'pmd', 'zip'],
-          },
-        ],
-      });
-
-      if (selected && typeof selected === 'string') {
-        const imported = await api.importVrmModel(selected);
-        await refreshVrmModels();
-        setActiveVrmPath(imported.path);
-        setJustImported(imported.path);
-        toast.success(translate('settings.vrmImported', { name: imported.name }));
-        if (imported.triangles > HEAVY_MODEL_TRIANGLES) {
-          toast.info(translate('settings.vrmHeavy', { name: imported.name, count: imported.triangles.toLocaleString() }));
-        }
-      }
-    } catch (e) {
-      console.error('Failed to import VRM:', e);
-      toast.error(translate('settings.importFailed', { error: errorMessage(e) }));
-    }
+    const path = await importVrmFromDialog();
+    if (!path) return;
+    setActiveVrmPath(path);
+    setJustImported(path);
   };
 
   const handleBrowseLive2d = async () => {
-    try {
-      const selected = await open({
-        multiple: false,
-        filters: [
-          {
-            name: translate('settings.fileFilterLive2d'),
-            extensions: ['zip', 'json'],
-          },
-        ],
-      });
-
-      if (selected && typeof selected === 'string') {
-        const imported = await api.importLive2dModel(selected);
-        await refreshLive2dModels();
-        setActiveLive2dPath(imported.model_path);
-        setJustImported(imported.model_path);
-        toast.success(translate('settings.live2dImported', { name: imported.name }));
-      }
-    } catch (e) {
-      console.error('Failed to import Live2D model:', e);
-      toast.error(translate('settings.importFailed', { error: errorMessage(e) }));
-    }
+    const path = await importLive2dFromDialog();
+    if (!path) return;
+    setActiveLive2dPath(path);
+    setJustImported(path);
   };
 
   return (
@@ -348,7 +309,18 @@ export const GeneralSettings = () => {
         </div>
       </div>
       {/* 4. Standard-Avatare (VRM & Live2D) */}
-      <h2 id="setting-avatars" className="text-sm font-semibold text-slate-200 pt-2">{t('settings.avatarDefaults')}</h2>
+      <div className="flex flex-wrap items-center justify-between gap-2 pt-2">
+        <h2 id="setting-avatars" className="text-sm font-semibold text-slate-200">{t('settings.avatarDefaults')}</h2>
+        <button
+          type="button"
+          onClick={() => setActiveTab('avatars')}
+          className="flex items-center gap-1.5 rounded-lg border border-slate-700 px-3 py-1.5 text-xs text-slate-200 hover:bg-slate-800"
+          data-open-avatar-manager
+        >
+          <UserRound className="h-3.5 w-3.5 text-accent-400" aria-hidden />
+          {t('avatars.openManager')}
+        </button>
+      </div>
       {/* 3D Avatar (VRM) Standard-Auswahl */}
       <div className="rounded-xl border border-slate-800 bg-slate-900/60 p-4 space-y-3">
         <h3 className="text-xs font-semibold text-slate-300 flex items-center gap-1.5">

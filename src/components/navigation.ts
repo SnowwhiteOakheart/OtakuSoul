@@ -7,6 +7,7 @@ import {
   Layers,
   MessageSquare,
   Settings,
+  UserRound,
   Users,
   type LucideIcon,
 } from 'lucide-react';
@@ -38,6 +39,7 @@ export const NAV_GROUPS: NavGroup[] = [
     label: 'nav.groupLibrary',
     items: [
       { tab: 'characters', label: 'nav.characters', icon: Users },
+      { tab: 'avatars', label: 'nav.avatars', icon: UserRound },
       { tab: 'lorebooks', label: 'nav.lorebooks', icon: BookOpen },
       { tab: 'hub', label: 'nav.hub', icon: Compass },
     ],
@@ -51,5 +53,5 @@ export const NAV_GROUPS: NavGroup[] = [
   },
 ];
 
-/** Tabs in display order; Ctrl+1...9 follows this order. */
+/** Tabs in display order; Ctrl+1...9 follows this order (settings: Ctrl+,). */
 export const SHORTCUT_TABS = NAV_GROUPS.flatMap((group) => group.items.map((item) => item.tab));

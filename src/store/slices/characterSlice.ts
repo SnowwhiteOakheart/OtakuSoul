@@ -19,6 +19,11 @@ export interface CharacterSlice {
   refreshCharacters: (preferredId?: string | null) => Promise<void>;
   loadPresetCharacters: () => Promise<void>;
   deleteCharacter: (charId: string) => Promise<void>;
+  /**
+   * Gives a character its own 3D or Live2D model (`null` = back to the default avatar). The card is
+   * saved; errors go to the caller.
+   */
+  assignCharacterAvatar: (charId: string, kind: 'vrm' | 'live2d', model: string | null) => Promise<void>;
   restoreHiddenCharacters: () => Promise<void>;
   updateStateVariable: (name: string, value: string) => void;
   personas: UserPersona[];
@@ -129,6 +134,21 @@ export const createCharacterSlice: SliceCreator<CharacterSlice> = (set, get) => 
     } catch (e) {
       console.error('Failed to scan characters:', e);
     }
+  },
+
+  assignCharacterAvatar: async (charId, kind, model) => {
+    const char = get().availableCharacters.find((c) => c.id === charId);
+    if (!char) return;
+    const extensions = { ...(char.card.data.extensions || {}) };
+    // The old Soul of Waifu keys would win over an emptied custom key.
+    const [key, legacy] = kind === 'vrm' ? ['custom_vrm', 'sow_vrm'] : ['custom_live2d', 'sow_live2d'];
+    delete extensions[legacy];
+    if (model) extensions[key] = model;
+    else delete extensions[key];
+    const updated: CharacterProfile = { ...char, card: { ...char.card, data: { ...char.card.data, extensions } } };
+    const saved = await api.saveCharacterCard(updated);
+    await get().refreshCharacters();
+    if (get().activeCharacter?.id === charId) set({ activeCharacter: saved });
   },
 
   loadPresetCharacters: async () => {
