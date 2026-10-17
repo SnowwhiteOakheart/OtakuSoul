@@ -136,6 +136,10 @@ ru „персонаж/история/сцена“. Fachbegriffe nur im Experte
 - Neue Rust-Felder in Typen, die auch handgeschrieben in `src/types/index.ts` stehen: `src/types/wireCheck.ts` meldet
   Abweichungen; dort und in `index.ts` nachziehen.
 - Tauri-Listener mit `isSubscribed`-Guard (StrictMode), sonst doppelte Tokens.
+- Große Dateien (Avatare, Bewegungen) über `read_file_binary` als `tauri::ipc::Response` (Rohbytes → `ArrayBuffer`); ein
+  `Vec<u8>` ginge als JSON-Zahlenliste über die Brücke (17-MB-VRM: 2,9 s statt 45 ms).
+- E2E, die Einstellungen direkt schreiben: `saveSettingsAndReload` aus `harness.mjs` (wartet auf das Startspeichern der App,
+  das sonst die geschriebenen Werte überschreibt, und lädt danach neu).
 - Stage streamt über `stage-stream` (`InferenceClient::stream_text`), nicht über `llm-token` (das hört der Chat).
   `stage/history.rs` passt alle Sprecher-Anfragen ins Kontextfenster ein und speichert Zusammenfassungen getrennt
   nach Publikum (`history_summaries`); Änderungen am Verlauf müssen diese verwerfen.

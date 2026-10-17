@@ -1,14 +1,18 @@
 //! Paths, settings, logs, updates and file helpers.
 
+/// Reads a file for the webview as raw bytes (an `ArrayBuffer` there). Avatars and motions run to
+/// tens of MB; as a JSON number list they took seconds to send and parse.
 #[tauri::command]
-pub fn read_file_binary(file_path: String) -> Result<Vec<u8>, String> {
-    std::fs::read(&file_path).map_err(|e| {
-        crate::err!(
-            "backend.common.fileReadPath",
-            path = format!("{:?}", file_path),
-            error = e
-        )
-    })
+pub fn read_file_binary(file_path: String) -> Result<tauri::ipc::Response, String> {
+    std::fs::read(&file_path)
+        .map(tauri::ipc::Response::new)
+        .map_err(|e| {
+            crate::err!(
+                "backend.common.fileReadPath",
+                path = format!("{:?}", file_path),
+                error = e
+            )
+        })
 }
 
 #[tauri::command]

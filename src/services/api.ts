@@ -231,8 +231,8 @@ export const api = {
   },
 
   readFileBinary: async (filePath: string): Promise<Uint8Array> => {
-    const bytes = await invoke<number[]>('read_file_binary', { filePath });
-    return new Uint8Array(bytes);
+    // Raw bytes over IPC (an ArrayBuffer), not a JSON number list.
+    return new Uint8Array(await invoke<ArrayBuffer>('read_file_binary', { filePath }));
   },
 
   // Phase 5: Cognitive Soul Memory
