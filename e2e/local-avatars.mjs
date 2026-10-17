@@ -5,7 +5,7 @@
 // (`OTAKUSOUL_AVATAR=part-of-name` for single models).
 import { existsSync, mkdirSync, readdirSync } from 'node:fs';
 import path from 'node:path';
-import { launch } from './harness.mjs';
+import { launch, saveSettingsAndReload } from './harness.mjs';
 
 const root = path.resolve('assets/test-avatars');
 if (!existsSync(root)) {
@@ -31,9 +31,7 @@ try {
     const name = path.basename(file).replace(/\.[^.]+$/, '');
     const started = Date.now();
     const model = await invoke('import_vrm_model', { sourcePath: file });
-    await invoke('save_settings', { settings: { ...(await invoke('load_settings')), active_vrm_path: model.path } });
-    await browser.execute(() => location.reload());
-    await browser.pause(1000);
+    await saveSettingsAndReload(browser, { active_vrm_path: model.path });
     await browser.execute(() => {
       window.__messages = [];
       window.addEventListener('error', (e) => window.__messages.push(`error ${e.message}`));

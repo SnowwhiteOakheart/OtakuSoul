@@ -3,7 +3,7 @@
 import assert from 'node:assert/strict';
 import { existsSync, mkdirSync } from 'node:fs';
 import path from 'node:path';
-import { launch, screenshotDir } from './harness.mjs';
+import { launch, saveSettingsAndReload, screenshotDir } from './harness.mjs';
 import { writeGltfFolder } from './tools/make-glb.mjs';
 
 const { browser, home, close } = await launch({ avatar_mode: '3d' });
@@ -24,10 +24,7 @@ try {
   }
   assert.ok((await invoke('scan_vrm_models')).some((m) => m.path === model.path && m.format === 'gltf'), 'Ordnermodell fehlt in der Liste');
 
-  await invoke('save_settings', { settings: { ...(await invoke('load_settings')), active_vrm_path: model.path } });
-  await browser.execute(() => location.reload());
-  // Asking the page right away can leave WebKit's driver on the old document.
-  await browser.pause(1000);
+  await saveSettingsAndReload(browser, { active_vrm_path: model.path });
   await browser.$('[data-avatar-format="gltf"][data-face="morphs"]').waitForExist({ timeout: 30_000, timeoutMsg: 'glTF-Ordnermodell wird nicht angezeigt' });
   assert.ok(!(await browser.$('body').getText()).includes('konnte nicht geladen werden'), 'Fehlermeldung im Viewer');
   await browser.pause(500);

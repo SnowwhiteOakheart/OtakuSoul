@@ -3,7 +3,7 @@
 import assert from 'node:assert/strict';
 import { writeFileSync } from 'node:fs';
 import path from 'node:path';
-import { launch, screenshotDir } from './harness.mjs';
+import { launch, saveSettingsAndReload, screenshotDir } from './harness.mjs';
 import { makeGlb } from './tools/make-glb.mjs';
 
 const { browser, home, close } = await launch({ avatar_mode: '3d' });
@@ -19,10 +19,7 @@ try {
   const model = await invoke('import_vrm_model', { sourcePath: glb });
   assert.deepEqual((await invoke('get_model_face', { modelPath: model.path })).available, ['Mouth_A', 'Eye_Close_L', 'Eye_Close_R', 'Face_Smile_L', 'Face_Smile_R']);
 
-  await invoke('save_settings', { settings: { ...(await invoke('load_settings')), active_vrm_path: model.path } });
-  await browser.execute(() => location.reload());
-  // Asking the page right away can leave WebKit's driver on the old document.
-  await browser.pause(1000);
+  await saveSettingsAndReload(browser, { active_vrm_path: model.path });
   await browser.$(`${viewer}[data-face="none"]`).waitForExist({ timeout: 30_000, timeoutMsg: 'unbekannte Gesichtsformen wurden fälschlich erkannt' });
 
   await browser.$('button=Einstellungen').click();

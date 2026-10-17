@@ -118,3 +118,26 @@ export async function openSceneLobby(browser) {
   await browser.$('button=Szenen verwalten').click();
   await browser.$('#scene-lobby-title').waitForDisplayed({ timeout: 10_000 });
 }
+
+/**
+ * Writes settings straight to the settings file and reloads the page. The app saves its own state
+ * while starting (e.g. once it opened the first character), which would overwrite a write made
+ * too early: wait for that, write, and write again if the app still got in between.
+ */
+export async function saveSettingsAndReload(browser, patch) {
+  // oxlint-disable-next-line no-underscore-dangle -- Tauri IPC in a disposable profile
+  const invoke = (command, args = {}) => browser.execute((cmd, payload) => window.__TAURI_INTERNALS__.invoke(cmd, payload), command, args);
+  await browser.waitUntil(async () => !!(await invoke('load_settings')).active_character_id, {
+    timeout: 30_000,
+    timeoutMsg: 'App hat ihren Startzustand nicht gespeichert',
+  });
+  const applied = (settings) => Object.entries(patch).every(([key, value]) => JSON.stringify(settings[key]) === JSON.stringify(value));
+  for (let attempt = 0; attempt < 3; attempt += 1) {
+    await invoke('save_settings', { settings: { ...(await invoke('load_settings')), ...patch } });
+    await browser.pause(1500);
+    if (applied(await invoke('load_settings'))) break;
+  }
+  await browser.execute(() => location.reload());
+  // Asking the page right away can leave WebKit's driver on the old document.
+  await browser.pause(1000);
+}
