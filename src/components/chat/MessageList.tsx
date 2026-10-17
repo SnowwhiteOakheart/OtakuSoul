@@ -1,4 +1,4 @@
-import React, { useEffect, useRef, useState } from 'react';
+import React, { useEffect, useReducer, useRef, useState } from 'react';
 import { useVirtualizer } from '@tanstack/react-virtual';
 import {
   Bookmark,
@@ -56,6 +56,20 @@ export const MessageList = React.memo<MessageListProps>(
       estimateSize: () => 140,
       overscan: 6,
       getItemKey: (index) => messages[index]?.id ?? index,
+    });
+
+    // The scroll container is the parent: React attaches its ref after this component's layout
+    // effects, so the virtualizer may first see none. Opening the chat again (messages already
+    // loaded, nothing else re-renders the list) then showed no messages; one more render picks it up.
+    const [, rerender] = useReducer((n: number) => n + 1, 0);
+    const handedOver = useRef<HTMLElement | null>(null);
+    useEffect(() => {
+      const el = scrollRef.current;
+      // Once per container, so an engine that never takes it cannot loop.
+      if (el && virtualizer.scrollElement !== el && handedOver.current !== el) {
+        handedOver.current = el;
+        rerender();
+      }
     });
 
     // Follow the conversation: jump to the newest message when one arrives or a chat opens.
