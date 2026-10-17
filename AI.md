@@ -330,7 +330,12 @@ ru „персонаж/история/сцена“. Fachbegriffe nur im Experte
 - Hub-Updates: Registry-Einträge tragen `revision`/`updated` (`hub::entry_revision`, fehlend = 1); installierte Inhalte stehen in
   `<Daten>/hub_installed.json` (`hub_installed.rs`, Befehl `list_installed_hub_items`, Schlüssel Art + Registry-ID bzw. Name).
   Szenen-Import behält `extensions` (`scene_definition_from_hub`, `null`-Felder = fehlend) und aktualisiert eine vorhandene Kopie
-  per `update_scene_definition` (Spielstand bleibt; alte Importe über Titel-Slug gefunden), neue IDs `hub_<id>`. Karten-Update =
+  per `update_scene_definition` (Spielstand bleibt; alte Importe über Titel-Slug gefunden), neue IDs `hub_<id>`.
+  Hintergründe einer Szene stehen in `extensions.otakusoul_assets.backgrounds` (`[{file, path}]`, `path` relativ zum
+  Daten-Repo unter `presets/`); `hub::download_scene_assets` lädt fehlende Bilder nach `<Daten>/backgrounds` (Fehler nur Log).
+  Lorebook-Import (`import_from_json_string`) behält Buch-`extensions` (Übersetzungen) und wandelt Soul-of-Waifu-Einträge
+  um (`upgrade_legacy_entry`: `depends_on` → `chain_requires`, `random` → `always_on`, `semantic`/`chain`/`range` → `keyword`).
+  Stage bindet Lorebooks einer Szene über Originalname oder ID (nicht den übersetzten Namen). Karten-Update =
   `overwrite`. Lorebooks behalten ihre ID; lokal veränderte (Hash ≠ `local_sha256`) oder fremde gleichnamige lehnt der Import mit
   `backend.hub.lorebookModified` ab, mit `keep_copy` wird die eigene Fassung als `<id>_own` gesichert. Frontend: `hubStatus`,
   `HubStatusBadge`, `UpdateAllBar`. `OTAKUSOUL_HUB_BASE` lenkt die Registries um (E2E `hub-updates.mjs` über den Mock).

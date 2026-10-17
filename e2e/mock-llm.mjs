@@ -45,6 +45,7 @@ export function startMockLlm() {
       if (req.method === 'GET' && req.url.startsWith('/hub/')) {
         const file = stats.hubFiles?.[decodeURIComponent(req.url.slice('/hub/'.length))];
         if (file === undefined) res.writeHead(404).end();
+        else if (Buffer.isBuffer(file)) res.writeHead(200, { 'Content-Type': 'application/octet-stream' }).end(file);
         else res.writeHead(200, { 'Content-Type': 'application/json' }).end(JSON.stringify(file));
         return;
       }

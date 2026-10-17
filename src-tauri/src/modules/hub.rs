@@ -987,12 +987,85 @@ pub async fn import_scene_from_gateway(
         .await
         .map_err(|e| crate::err!("backend.hub.sceneParse", error = e))?;
     let def = scene_definition_from_hub(val, fallback_title)?;
+    download_scene_assets(&client, &def).await;
     let hub_id = if hub_id.trim().is_empty() {
         fallback_title
     } else {
         hub_id
     };
     install_hub_scene(def, hub_id, revision.max(1), updated)
+}
+
+/// One picture a hub scene can use: its file name in the app and its path in the content repository.
+#[derive(Debug, Clone, PartialEq, Deserialize)]
+struct SceneAsset {
+    file: String,
+    path: String,
+}
+
+/// Backgrounds listed in `extensions.otakusoul_assets.backgrounds` that are safe to fetch: a plain
+/// file name with a picture extension, and a repository path below `presets/` without `..`.
+fn scene_background_assets(def: &SceneDefinition) -> Vec<SceneAsset> {
+    let Some(list) = def
+        .extensions
+        .get("otakusoul_assets")
+        .and_then(|assets| assets.get("backgrounds"))
+        .and_then(|list| list.as_array())
+    else {
+        return Vec::new();
+    };
+    list.iter()
+        .filter_map(|item| serde_json::from_value::<SceneAsset>(item.clone()).ok())
+        .filter(|asset| {
+            let picture = std::path::Path::new(&asset.file)
+                .extension()
+                .and_then(|e| e.to_str())
+                .is_some_and(|e| {
+                    matches!(
+                        e.to_ascii_lowercase().as_str(),
+                        "png" | "jpg" | "jpeg" | "webp"
+                    )
+                });
+            let plain_name = !asset.file.contains(['/', '\\']) && !asset.file.starts_with('.');
+            let safe_path = asset.path.starts_with("presets/")
+                && !asset
+                    .path
+                    .split(['/', '\\'])
+                    .any(|part| part == ".." || part.is_empty());
+            picture && plain_name && safe_path
+        })
+        .collect()
+}
+
+/// Fetches the backgrounds of a hub scene that are not in `<data>/backgrounds` yet, so the opening
+/// picture and the ones the game master switches to are there. Failures only cost the picture.
+async fn download_scene_assets(client: &reqwest::Client, def: &SceneDefinition) {
+    let dir = PathBuf::from(resolve_app_paths().data_dir).join("backgrounds");
+    for asset in scene_background_assets(def) {
+        let target = dir.join(&asset.file);
+        if target.exists() {
+            continue;
+        }
+        let encoded: Vec<String> = asset
+            .path
+            .split('/')
+            .map(|part| urlencoding::encode(part).into_owned())
+            .collect();
+        let url = hub_url(&encoded.join("/"));
+        let bytes = match client.get(&url).send().await {
+            Ok(res) if res.status().is_success() => res.bytes().await.ok(),
+            _ => None,
+        };
+        match bytes {
+            Some(bytes) if !bytes.is_empty() => {
+                let _ = fs::create_dir_all(&dir);
+                if let Err(e) = fs::write(&target, &bytes) {
+                    tracing::warn!("Hintergrund {} nicht gespeichert: {e}", asset.file);
+                }
+            }
+            _ => tracing::warn!("Hintergrund {} nicht geladen ({url})", asset.file),
+        }
+    }
 }
 
 /// A scene file from the gateway as definition, keeping translations and story data
@@ -1079,6 +1152,25 @@ fn install_hub_scene(
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    #[test]
+    fn scene_backgrounds_are_only_fetched_from_safe_paths() {
+        let file = serde_json::json!({
+            "title": "Audienz",
+            "description": "Thronsaal",
+            "extensions": { "otakusoul_assets": { "backgrounds": [
+                { "file": "Horizontal Elkia Throne Room.png", "path": "presets/no-game-no-life/backgrounds/Horizontal Elkia Throne Room.png" },
+                { "file": "../evil.png", "path": "presets/x/evil.png" },
+                { "file": "evil.png", "path": "presets/../../etc/evil.png" },
+                { "file": "notes.txt", "path": "presets/x/notes.txt" },
+                { "file": "outside.png", "path": "tools/outside.png" }
+            ] } }
+        });
+        let def = scene_definition_from_hub(file, "Fallback").unwrap();
+        let assets = scene_background_assets(&def);
+        assert_eq!(assets.len(), 1);
+        assert_eq!(assets[0].file, "Horizontal Elkia Throne Room.png");
+    }
 
     #[test]
     fn hub_scenes_keep_translations_and_story_data() {

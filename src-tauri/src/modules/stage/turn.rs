@@ -175,15 +175,19 @@ pub async fn execute_stage_turn(
     // Scan bound lorebooks for Stage-Lore
     let mut active_lore_snippets = Vec::new();
     if !state.definition.lorebook.is_empty() {
-        let all_lorebooks = crate::modules::lorebook::scan_available_lorebooks()
-            .into_iter()
-            .map(|lb| lb.localized(&lang_code))
-            .collect::<Vec<_>>();
+        // Scenes name their lorebooks in the source language (or by id): look them up before
+        // translating, otherwise a story in another language would find none.
+        let all_lorebooks = crate::modules::lorebook::scan_available_lorebooks();
         let text_to_scan = recent_history.join("\n");
         for lb_name in &state.definition.lorebook {
-            if let Some(lb) = all_lorebooks.iter().find(|l| {
-                l.name.eq_ignore_ascii_case(lb_name) || l.id.eq_ignore_ascii_case(lb_name)
-            }) {
+            if let Some(lb) = all_lorebooks
+                .iter()
+                .find(|l| {
+                    l.name.eq_ignore_ascii_case(lb_name) || l.id.eq_ignore_ascii_case(lb_name)
+                })
+                .map(|l| l.localized(&lang_code))
+                .as_ref()
+            {
                 let triggered = crate::modules::lorebook::evaluate_lorebooks(
                     std::slice::from_ref(lb),
                     &text_to_scan,

@@ -200,6 +200,26 @@ impl Lorebook {
         loc
     }
 }
+/// Older lorebooks (Soul of Waifu, earlier content packs) use triggers and fields the app does not
+/// evaluate: `depends_on` (UID, -1 = none) becomes `chain_requires`, `random` fires by its probability
+/// like an always-on entry, and `semantic`, `chain` and `range` work through their keywords.
+/// `sticky`, `cooldown`, `delay`, `min_msg`/`max_msg` and `semantic_trigger` have no effect.
+fn upgrade_legacy_entry(entry: &mut LorebookEntry, raw: &serde_json::Value) {
+    if entry.chain_requires.is_empty()
+        && let Some(uid) = raw
+            .get("depends_on")
+            .and_then(|v| v.as_i64())
+            .filter(|uid| *uid >= 0)
+    {
+        entry.chain_requires = vec![uid.to_string()];
+    }
+    entry.trigger_type = match entry.trigger_type.to_ascii_lowercase().as_str() {
+        "random" => "always_on".to_string(),
+        "semantic" | "chain" | "range" => "keyword".to_string(),
+        _ => std::mem::take(&mut entry.trigger_type),
+    };
+}
+
 impl Lorebook {
     pub fn load_from_file(path: &Path) -> Result<Self, String> {
         let content = fs::read_to_string(path).map_err(|e| {
@@ -281,22 +301,19 @@ impl Lorebook {
         let mut parsed_entries = Vec::new();
 
         if let Some(entries_val) = val.get("entries") {
-            if let Some(arr) = entries_val.as_array() {
-                for item in arr {
-                    if let Ok(entry) = serde_json::from_value::<LorebookEntry>(item.clone()) {
-                        parsed_entries.push(entry);
-                    } else if let Some(entry) = Self::parse_sillytavern_entry(item) {
-                        parsed_entries.push(entry);
-                    }
-                }
-            } else if let Some(map) = entries_val.as_object() {
-                // SillyTavern dictionary of entries keyed by index or UID
-                for (_k, item) in map {
-                    if let Ok(entry) = serde_json::from_value::<LorebookEntry>(item.clone()) {
-                        parsed_entries.push(entry);
-                    } else if let Some(entry) = Self::parse_sillytavern_entry(item) {
-                        parsed_entries.push(entry);
-                    }
+            // An array, or a SillyTavern dictionary of entries keyed by index or UID.
+            let items: Vec<&serde_json::Value> = match entries_val {
+                serde_json::Value::Array(arr) => arr.iter().collect(),
+                serde_json::Value::Object(map) => map.values().collect(),
+                _ => Vec::new(),
+            };
+            for item in items {
+                let entry = serde_json::from_value::<LorebookEntry>(item.clone())
+                    .ok()
+                    .or_else(|| Self::parse_sillytavern_entry(item));
+                if let Some(mut entry) = entry {
+                    upgrade_legacy_entry(&mut entry, item);
+                    parsed_entries.push(entry);
                 }
             }
         }
@@ -309,7 +326,11 @@ impl Lorebook {
             is_global,
             file_path: None,
             entries: parsed_entries,
-            extensions: serde_json::Value::Null,
+            // Translations of name and description (`otakusoul_i18n`) and other extensions stay.
+            extensions: val
+                .get("extensions")
+                .cloned()
+                .unwrap_or(serde_json::Value::Null),
         })
     }
 
@@ -750,6 +771,50 @@ pub fn scan_available_lorebooks() -> Vec<Lorebook> {
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    #[test]
+    fn imports_keep_translations_and_upgrade_legacy_entries() {
+        let json = serde_json::json!({
+            "name": "Dungeon Meshi – Ökologie",
+            "n_depth": 4,
+            "extensions": { "otakusoul_i18n": { "source_language": "de", "translations": { "en": { "name": "Dungeon Meshi – Ecology" } } } },
+            "entries": [
+                { "uid": 4, "name": "Hack", "key": ["hack"], "content": "A", "trigger_type": "keyword" },
+                { "uid": 5, "name": "Gegenmaßnahme", "key": ["daemon"], "content": "B", "trigger_type": "chain", "depends_on": 4, "sticky": 1 },
+                { "uid": 6, "name": "Bande", "key": ["gang"], "content": "C", "trigger_type": "random", "probability": 45, "depends_on": -1 },
+                { "uid": 7, "name": "Psychose", "key": ["chrome"], "content": "D", "trigger_type": "semantic", "semantic_trigger": "…" }
+            ]
+        })
+        .to_string();
+        let book = Lorebook::import_from_json_string(&json, None).unwrap();
+        assert_eq!(book.scan_depth, 4);
+        assert_eq!(
+            book.localized("en").name,
+            "Dungeon Meshi – Ecology",
+            "book translations are kept"
+        );
+        let entry = |uid: u64| book.entries.iter().find(|e| e.uid == Some(uid)).unwrap();
+        assert_eq!(entry(5).chain_requires, vec!["4".to_string()]);
+        assert_eq!(entry(5).trigger_type, "keyword");
+        assert_eq!(entry(6).trigger_type, "always_on");
+        assert_eq!(entry(6).probability, Some(45));
+        assert!(entry(6).chain_requires.is_empty());
+        assert_eq!(entry(7).trigger_type, "keyword");
+        // The chain only fires with its prerequisite.
+        let without = evaluate_lorebooks(std::slice::from_ref(&book), "a daemon appears", 0);
+        assert!(
+            !without
+                .activated_entry_names
+                .iter()
+                .any(|n| n == "Gegenmaßnahme")
+        );
+        let with = evaluate_lorebooks(std::slice::from_ref(&book), "hack the daemon", 0);
+        assert!(
+            with.activated_entry_names
+                .iter()
+                .any(|n| n == "Gegenmaßnahme")
+        );
+    }
 
     #[test]
     fn test_keyword_matching_with_word_boundaries() {
