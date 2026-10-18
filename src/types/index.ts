@@ -420,6 +420,8 @@ export interface MemoryPipelineRequest {
   include_diary?: boolean;
   /** Dialogue to learn from instead of the chat (Stage). */
   transcript?: string;
+  /** Group chat: names by speaker ID ('' = the chat's own character). */
+  speaker_names?: Record<string, string>;
 }
 export type SoulMemoryPipelineRequest = MemoryPipelineRequest;
 

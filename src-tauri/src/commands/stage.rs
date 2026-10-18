@@ -491,6 +491,7 @@ fn sync_party_memory(
                 recent_turn_count: None,
                 include_diary: Some(false),
                 transcript: Some(transcript),
+                speaker_names: None,
             };
             if let Err(error) =
                 crate::modules::memory_pipeline::execute_soul_memory_pipeline(&app_state, request)

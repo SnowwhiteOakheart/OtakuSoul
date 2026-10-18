@@ -6,4 +6,9 @@ export type SoulMemoryPipelineRequest = { character_id: string, user_name: strin
  * Already formatted dialogue to learn from instead of the chat (e.g. a Soul Stage scene,
  * filtered to what this character witnessed).
  */
-transcript?: string, };
+transcript?: string, 
+/**
+ * Group chat: names by speaker ID ('' = the chat's own character). The transcript then
+ * says who spoke instead of "user"/"assistant".
+ */
+speaker_names?: { [key in string]: string }, };

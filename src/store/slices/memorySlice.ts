@@ -22,6 +22,7 @@ const withoutPending = (overview: CognitiveOverview): CognitiveOverview =>
     ? overview
     : { ...overview, recent_memories: overview.recent_memories.filter((m) => !pendingForgets.has(m.id)) };
 import { trackTask } from './taskSlice';
+import { chatSpeakers, presentedAs } from '../../utils/groupChat';
 
 /** Cognitive soul memory: psychology, relationship, diary, reflection and memory backups. */
 export interface MemorySlice {
@@ -59,7 +60,8 @@ export interface MemorySlice {
   setMemoryDrawerOpen: (open: boolean) => void;
   addManualDiary: (title: string, entryText: string, mood: string) => Promise<void>;
   triggerEmotionalDecay: () => Promise<void>;
-  triggerMemoryPipeline: (recentTurns?: number) => Promise<SoulMemoryPipelineResult | null>;
+  /** Reflects on the open chat; `characterId` = a guest of a group chat learning into their own memory. */
+  triggerMemoryPipeline: (recentTurns?: number, characterId?: string) => Promise<SoulMemoryPipelineResult | null>;
   fetchMemoryMarkdown: () => Promise<{ charMd: string; userMd: string }>;
   saveCharacterMarkdown: (markdown: string) => Promise<void>;
   saveUserMarkdown: (markdown: string) => Promise<void>;
@@ -260,7 +262,7 @@ export const createMemorySlice: SliceCreator<MemorySlice> = (set, get) => {
       }
     },
 
-    triggerMemoryPipeline: async (recentTurns) => {
+    triggerMemoryPipeline: async (recentTurns, characterId) => {
       const {
         activeCharacter,
         activePersona,
@@ -275,8 +277,16 @@ export const createMemorySlice: SliceCreator<MemorySlice> = (set, get) => {
 
       if (!activeCharacter) throw new Error(translate('int.noCharacter'));
       if (get().isReflecting || get().memoryOperation) throw new Error(translate('memory.busy'));
-      const cid = activeCharacter.id;
+      // In a group chat a guest learns from the same chat into their own memory.
+      const cid = characterId ?? activeCharacter.id;
+      const learner = cid === activeCharacter.id ? activeCharacter : get().availableCharacters.find((c) => c.id === cid);
+      if (!learner) throw new Error(translate('int.noCharacter'));
       const userName = activePersona.name;
+      const session = get().chatSessions.find((s) => s.id === activeChatId);
+      const speakers = chatSpeakers(activeCharacter, session, get().availableCharacters);
+      const speakerNames = speakers.length > 1
+        ? Object.fromEntries(speakers.map((s) => [s.id, presentedAs(s.character, get().replyLanguage).name]))
+        : undefined;
 
       const endpoint =
         selectedBackend === 'local'
@@ -286,9 +296,9 @@ export const createMemorySlice: SliceCreator<MemorySlice> = (set, get) => {
       set({ isReflecting: true, memoryReflectionError: null });
       try {
         const retry = () => {
-          if (get().activeCharacter?.id === cid) void get().triggerMemoryPipeline(recentTurns).catch(() => undefined);
+          if (get().activeCharacter?.id === activeCharacter.id) void get().triggerMemoryPipeline(recentTurns, characterId).catch(() => undefined);
         };
-        const task = { kind: 'reflection' as const, title: translate('task.reflection', { name: activeCharacter.card.data.name }), retry };
+        const task = { kind: 'reflection' as const, title: translate('task.reflection', { name: learner.card.data.name }), retry };
         const res = await trackTask(get(), task, () => api.triggerMemoryPipeline({
           character_id: cid,
           user_name: userName,
@@ -299,6 +309,7 @@ export const createMemorySlice: SliceCreator<MemorySlice> = (set, get) => {
           provider: selectedBackend === 'cloud' ? cloudProvider : 'local_llama',
           recent_turn_count: recentTurns || 8,
           include_diary: true,
+          speaker_names: speakerNames,
         }));
 
         if (get().activeCharacter?.id === cid && get().activePersona.name === userName) {

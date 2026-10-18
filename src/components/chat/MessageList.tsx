@@ -43,7 +43,7 @@ interface MessageListProps {
   persona: UserPersona;
   isGenerating: boolean;
   /** Read a message aloud; undefined when no voice is set up. */
-  onSpeak?: (text: string) => void;
+  onSpeak?: (text: string, speakerId?: string) => void;
   /** Scroll to this message and highlight it (search, bookmarks). */
   jumpTo?: { messageId: string; nonce: number } | null;
 }
@@ -179,7 +179,7 @@ interface ChatMessageItemProps {
   characterName: string;
   persona: UserPersona;
   isGenerating: boolean;
-  onSpeak?: (text: string) => void;
+  onSpeak?: (text: string, speakerId?: string) => void;
 }
 
 const ChatMessageItem = React.memo<ChatMessageItemProps>(
@@ -389,7 +389,7 @@ const ChatMessageItem = React.memo<ChatMessageItemProps>(
               <RoleplayMessage
                 content={msg.content}
                 isUser={isUser}
-                onSpeak={!isUser && onSpeak ? () => onSpeak(msg.content) : undefined}
+                onSpeak={!isUser && onSpeak ? () => onSpeak(msg.content, msg.speaker_id ?? '') : undefined}
               />
               {shownTranslation !== null && (
                 <div className={`mt-2 pt-2 border-t ${isUser ? 'border-white/30' : 'border-slate-700'}`}>

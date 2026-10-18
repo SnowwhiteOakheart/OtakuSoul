@@ -125,6 +125,27 @@ pub struct SoulMemoryPipelineRequest {
     #[serde(default)]
     #[ts(optional)]
     pub transcript: Option<String>,
+    /// Group chat: names by speaker ID ('' = the chat's own character). The transcript then
+    /// says who spoke instead of "user"/"assistant".
+    #[serde(default)]
+    #[ts(optional)]
+    pub speaker_names: Option<std::collections::HashMap<String, String>>,
+}
+
+/// Who wrote a message, as the memory pipeline's transcript names them.
+fn transcript_speaker(
+    msg: &crate::modules::memory::StoredChatMessage,
+    user_name: &str,
+    names: Option<&std::collections::HashMap<String, String>>,
+) -> String {
+    match (names, msg.role.as_str()) {
+        (Some(_), "user") => user_name.to_string(),
+        (Some(names), "assistant") => names
+            .get(&msg.speaker_id)
+            .cloned()
+            .unwrap_or_else(|| msg.role.clone()),
+        _ => msg.role.clone(),
+    }
 }
 
 pub type MemoryPipelineRequest = SoulMemoryPipelineRequest;
@@ -375,7 +396,9 @@ pub async fn execute_memory_pipeline(
             for msg in recent_slice {
                 let text = crate::modules::ooc::strip(&msg.content);
                 if !text.is_empty() {
-                    dialog_formatted.push_str(&format!("{}: {}\n", msg.role, text));
+                    let speaker =
+                        transcript_speaker(msg, &req.user_name, req.speaker_names.as_ref());
+                    dialog_formatted.push_str(&format!("{speaker}: {text}\n"));
                 }
             }
         }
@@ -762,6 +785,44 @@ pub async fn execute_memory_pipeline(
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    #[test]
+    fn a_group_chat_transcript_names_every_speaker() {
+        let msg = |role: &str, speaker: &str| crate::modules::memory::StoredChatMessage {
+            id: String::new(),
+            chat_id: "c".into(),
+            role: role.into(),
+            content: String::new(),
+            thought: None,
+            order_index: 0,
+            swipe_index: 0,
+            swipes: Vec::new(),
+            created_at: 0,
+            attachments: Vec::new(),
+            speaker_id: speaker.into(),
+        };
+        let names = std::collections::HashMap::from([
+            (String::new(), "Ayu".to_string()),
+            ("sora".to_string(), "Sora".to_string()),
+        ]);
+        assert_eq!(
+            transcript_speaker(&msg("user", ""), "Kai", Some(&names)),
+            "Kai"
+        );
+        assert_eq!(
+            transcript_speaker(&msg("assistant", ""), "Kai", Some(&names)),
+            "Ayu"
+        );
+        assert_eq!(
+            transcript_speaker(&msg("assistant", "sora"), "Kai", Some(&names)),
+            "Sora"
+        );
+        // A normal chat keeps the roles.
+        assert_eq!(
+            transcript_speaker(&msg("assistant", ""), "Kai", None),
+            "assistant"
+        );
+    }
 
     #[test]
     fn test_extract_json_object_variations() {

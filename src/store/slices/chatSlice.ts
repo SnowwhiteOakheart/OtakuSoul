@@ -85,6 +85,10 @@ export interface ChatSlice {
   setChatMembers: (chatId: string, members: string[]) => Promise<void>;
   /** Who writes the running (or last) reply: '' = the chat's own character, else a guest's ID. */
   generationSpeakerId: string;
+  /** Voices of group chat guests by character ID (loaded when they first speak). */
+  speakerVoices: Record<string, VoiceConfig | null>;
+  /** The voice of a speaker of the open chat ('' = the chat's own character), loading a guest's once. */
+  loadSpeakerVoice: (speakerId: string) => Promise<VoiceConfig | null>;
   generationId: string | null;
   abortGeneration: () => Promise<void>;
   clearChat: () => void;
@@ -278,6 +282,8 @@ export const createChatSlice: SliceCreator<ChatSlice> = (set, get) => {
     payloadMessages.push(...postHistory(prompt));
     if (run.nudge) payloadMessages.push({ role: 'system', content: `[It is ${setup.name}'s turn to speak.]` });
 
+    // A guest reads aloud with their own voice: load it before the first token arrives.
+    if (speakerId) await get().loadSpeakerVoice(speakerId);
     const state = get();
     set({ generationSpeakerId: speakerId });
     const done = await api.sendChatMessage({
@@ -335,7 +341,7 @@ export const createChatSlice: SliceCreator<ChatSlice> = (set, get) => {
       if (signal.aborted) throw e;
       console.warn('Group chat routing failed:', e);
     }
-    const found = named.find((n) => n.name.toLowerCase() === answer.trim().toLowerCase());
+    const found = named.find((n) => n.name.toLowerCase() === String(answer ?? '').trim().toLowerCase());
     if (found) return found.id;
     return firstReply ? '' : null;
   };
@@ -430,6 +436,16 @@ export const createChatSlice: SliceCreator<ChatSlice> = (set, get) => {
   promptHits: {},
 
   generationSpeakerId: '',
+
+  speakerVoices: {},
+
+  loadSpeakerVoice: async (speakerId) => {
+    if (!speakerId) return get().activeVoiceConfig;
+    if (speakerId in get().speakerVoices) return get().speakerVoices[speakerId] ?? null;
+    const config = await api.getCharacterVoiceConfig(speakerId).catch(() => null);
+    set((st) => ({ speakerVoices: { ...st.speakerVoices, [speakerId]: config } }));
+    return config;
+  },
 
   setChatMembers: async (chatId, members) => {
     const stored = await api.setChatMembers(chatId, members);
@@ -824,6 +840,7 @@ export const createChatSlice: SliceCreator<ChatSlice> = (set, get) => {
         () => resolvePromptWithLore(get(), setup.flat, undefined, preparation.signal, setup.speaker), preparation.signal);
       if (!inContext(activeChatId, activeCharacter.id)) return;
       const systemPromptMsg: ChatMessage = { role: 'system', content: prompt.system };
+      if (speakerId) await get().loadSpeakerVoice(speakerId);
       set({ generationSpeakerId: speakerId });
 
       const payloadMessages = [systemPromptMsg, ...setup.flat];
@@ -931,6 +948,7 @@ export const createChatSlice: SliceCreator<ChatSlice> = (set, get) => {
       const prompt = await waitWithAbort(
         () => resolvePromptWithLore(get(), historyFlat, undefined, preparation.signal, setup.speaker), preparation.signal);
       if (!inContext(activeChatId, activeCharacter.id)) return;
+      if (speakerId) await get().loadSpeakerVoice(speakerId);
       set({ generationSpeakerId: speakerId });
       const systemPromptMsg: ChatMessage = { role: 'system', content: prompt.system };
       const continueInstruction: ChatMessage = {
@@ -1143,9 +1161,15 @@ export const createChatSlice: SliceCreator<ChatSlice> = (set, get) => {
         finalStored.length >= autoReflectionThreshold &&
         finalStored.length % autoReflectionThreshold === 0
       ) {
-        get().triggerMemoryPipeline(autoReflectionThreshold).catch((err) => {
-          console.warn('Auto-reflection error:', err);
-        });
+        // In a group chat every character present learns into their own memory, one after another.
+        const learners = chatSpeakers(activeCharacter ?? null, get().chatSessions.find((s) => s.id === chatId), get().availableCharacters);
+        void (async () => {
+          for (const learner of learners.length > 0 ? learners : [{ id: '' }]) {
+            await get().triggerMemoryPipeline(autoReflectionThreshold, learner.id || undefined).catch((err) => {
+              console.warn('Auto-reflection error:', err);
+            });
+          }
+        })();
       }
     } catch (e) {
       console.error('Chat error:', e);

@@ -42,6 +42,10 @@ import { CharacterVoiceModal } from '../voice/CharacterVoiceModal';
 import { PromptLogModal } from './PromptLogModal';
 import { useTranslation } from '../../i18n';
 import { applyReplacements } from '../../utils/replyFilters';
+
+/** The voice of whoever writes the running reply (a guest's own voice in a group chat). */
+const speakerVoice = (state: ReturnType<typeof useAppStore.getState>) =>
+  state.generationSpeakerId ? state.speakerVoices[state.generationSpeakerId] ?? null : state.activeVoiceConfig;
 import { EmptyState } from '../ui/EmptyState';
 import { AvatarSkeleton } from '../ui';
 
@@ -132,7 +136,7 @@ export const ChatView: React.FC = () => {
         if (acceptsStream(token.generation_id)) {
           setStreamText((prev) => prev + token.text);
           const state = useAppStore.getState();
-          const voiceConfig = state.activeVoiceConfig;
+          const voiceConfig = speakerVoice(state);
           if (state.autoTtsEnabled && voiceConfig && voiceConfig.engine !== 'disabled') {
             streamingTts.push(token.text, voiceConfig);
           }
@@ -159,7 +163,7 @@ export const ChatView: React.FC = () => {
           setStreamThought('');
           
           const state = useAppStore.getState();
-          const voiceConfig = state.activeVoiceConfig;
+          const voiceConfig = speakerVoice(state);
           if (state.autoTtsEnabled && voiceConfig && voiceConfig.engine !== 'disabled') {
             streamingTts.flush(data.full_text, voiceConfig);
           }
@@ -216,20 +220,25 @@ export const ChatView: React.FC = () => {
   const handleClearSession = () => void clearChat();
 
   const canSpeak = !!activeVoiceConfig && activeVoiceConfig.engine !== 'disabled';
-  const handleSpeak = useCallback(async (text: string) => {
-    if (!activeVoiceConfig) return;
+  // A guest's reply in a group chat is read with the guest's voice; only the chat's own
+  // character moves the avatar.
+  const handleSpeak = useCallback(async (text: string, speakerId = '') => {
+    const voice = speakerId ? await useAppStore.getState().loadSpeakerVoice(speakerId) : activeVoiceConfig;
+    if (!voice || voice.engine === 'disabled') return;
     try {
       // Phase 14: update avatar emotion to match spoken message
-      api.classifyTextEmotion(text).then((res) => {
-        useAppStore.getState().setCurrentEmotion(res);
-      }).catch(() => {});
+      if (!speakerId) {
+        api.classifyTextEmotion(text).then((res) => {
+          useAppStore.getState().setCurrentEmotion(res);
+        }).catch(() => {});
+      }
 
-      const audioUrl = await api.synthesizeSpeech(text, activeVoiceConfig);
+      const audioUrl = await api.synthesizeSpeech(text, voice);
       await audioPlayer.playDataUrl(
         audioUrl,
-        gainFromVoiceVolume(activeVoiceConfig.volume),
-        activeVoiceConfig.output_device_id,
-        activeVoiceConfig.effects,
+        gainFromVoiceVolume(voice.volume),
+        voice.output_device_id,
+        voice.effects,
       );
     } catch (e) {
       console.error('Speech synthesis failed:', e);

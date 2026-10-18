@@ -116,6 +116,33 @@ describe('group chats', () => {
     expect(useAppStore.getState().isGenerating).toBe(false);
   });
 
+  it('lets every character present learn from the chat into their own memory', async () => {
+    const triggerMemoryPipeline = vi.fn().mockResolvedValue(null);
+    useAppStore.setState({ autoReflectionEnabled: true, autoReflectionThreshold: 5, triggerMemoryPipeline });
+    vi.mocked(api.routeGroupChat).mockResolvedValue('PLAYER');
+    await useAppStore.getState().sendMessage('Gute Nacht!');
+    await vi.waitFor(() => expect(triggerMemoryPipeline).toHaveBeenCalledTimes(2));
+    expect(triggerMemoryPipeline.mock.calls).toEqual([[5, undefined], [5, 'sora']]);
+  });
+
+  it('names the speakers in the memory transcript of a guest', async () => {
+    vi.mocked(api.triggerMemoryPipeline).mockResolvedValue(null as never);
+    await useAppStore.getState().triggerMemoryPipeline(8, 'sora');
+    expect(api.triggerMemoryPipeline).toHaveBeenCalledWith(expect.objectContaining({
+      character_id: 'sora', chat_id: 'chat-1', speaker_names: { '': 'Ayu', sora: 'Sora' },
+    }));
+  });
+
+  it('reads a guest\'s reply with the guest\'s voice, loaded once', async () => {
+    const voice = { engine: 'kokoro', voice_id: 'sora' } as never;
+    vi.mocked(api.getCharacterVoiceConfig).mockResolvedValue(voice);
+    await useAppStore.getState().replyAs('sora');
+    await useAppStore.getState().replyAs('sora');
+    expect(api.getCharacterVoiceConfig).toHaveBeenCalledTimes(1);
+    expect(useAppStore.getState().speakerVoices.sora).toBe(voice);
+    expect(await useAppStore.getState().loadSpeakerVoice('')).toBe(useAppStore.getState().activeVoiceConfig);
+  });
+
   it('offers a button per speaker above the composer', async () => {
     const user = userEvent.setup();
     const replyAs = vi.fn().mockResolvedValue(undefined);
