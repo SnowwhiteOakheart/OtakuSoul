@@ -105,6 +105,9 @@ export function startMockLlm() {
         stats.toolCalls = (stats.toolCalls ?? 0) + 1;
         return 'Moment … <tool_call>{"name": "calculate", "arguments": {"expression": "19 * 21"}}</tool_call>';
       };
+      // Group chat director: `stats.chatRoutes` is a queue of answers (names or PLAYER), empty = PLAYER.
+      const isChatRouting = system.includes('[CHAT — ROUTING]');
+      if (isChatRouting) { stats.chatRouting = (stats.chatRouting ?? 0) + 1; stats.lastChatRoutingPrompt = system; }
       const isRouting = system.includes('[SOUL STAGE — ROUTING]') || system.includes('[STAGE — ROUTING]');
       if (isRouting) {
         stats.routing = (stats.routing ?? 0) + 1;
@@ -154,6 +157,7 @@ export function startMockLlm() {
         ? JSON.stringify(stats.memoryRouterResult)
         : isArcArchive ? 'ARC_SUMMARY: Das Tor wurde geöffnet, der Wächter ist frei.'
         : isAudit ? JSON.stringify(stats.auditResult ?? { prune_keys: [], updated_facts: {} })
+        : isChatRouting ? JSON.stringify({ next_actor: stats.chatRoutes?.shift() ?? 'PLAYER' })
         : isRouting ? JSON.stringify({ next_actor: stats.routeTo ?? 'PLAYER' }) : isStageSummary ? stageSummary
         : isCombatAction ? ((stats.preferCast && system.match(/^(cast:\S+) —/m)?.[1]) || system.match(/^(attack:\S+) —/m)?.[1] || 'dodge')
         : isCombatReport ? COMBAT_NARRATION

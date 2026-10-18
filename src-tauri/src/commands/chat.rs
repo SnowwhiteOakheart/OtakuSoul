@@ -348,6 +348,15 @@ pub fn add_chat_message(
         .map_err(|e| e.to_string())
 }
 
+/// Group chat: who answers next – a character's name or "PLAYER" (the user's turn).
+#[tauri::command]
+pub async fn route_group_chat(
+    state: State<'_, AppState>,
+    request: crate::modules::group_chat::GroupRouteRequest,
+) -> Result<String, String> {
+    Ok(crate::modules::group_chat::route(&state.inference_client, request).await)
+}
+
 /// Invites characters into a chat (group chat) or removes them; returns the stored guests.
 #[tauri::command]
 pub fn set_chat_members(

@@ -61,6 +61,7 @@ import {
   TranslateRequest,
   ReplyIdeasRequest,
   MacroInput,
+  GroupRouteRequest,
   Attachment,
   AssembledPrompt,
   BuiltinPromptTemplate,
@@ -995,6 +996,11 @@ export const api = {
       attachments: attachments ?? null,
       speakerId: speakerId || null,
     });
+  },
+
+  /** Group chat: the name of who answers next, or "PLAYER" for the user's turn. */
+  routeGroupChat: async (request: GroupRouteRequest): Promise<string> => {
+    return await invoke<string>('route_group_chat', { request });
   },
 
   /** Invites characters into a chat (group chat); returns the stored guest IDs. */

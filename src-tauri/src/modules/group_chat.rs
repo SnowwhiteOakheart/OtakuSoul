@@ -1,0 +1,118 @@
+//! Group chats: who answers next. Someone addressed by name answers first; otherwise a short
+//! routing request to the chat model decides (the same rules as Stage's director, without the
+//! game master).
+
+use crate::modules::inference::{ChatMessage, ChatRequest, InferenceClient, SamplingParams};
+use crate::modules::stage::{detect_direct_address, parse_routing, routing_prompt_with};
+use serde::{Deserialize, Serialize};
+use ts_rs::TS;
+
+/// Answer meaning "it is the user's turn".
+pub const PLAYER: &str = "PLAYER";
+
+#[derive(Debug, Clone, Serialize, Deserialize, TS)]
+#[ts(export)]
+pub struct GroupRouteRequest {
+    /// Name of who wrote the last message (the user's or a character's).
+    pub last_speaker: String,
+    pub last_text: String,
+    /// Names of the characters present.
+    pub candidates: Vec<String>,
+    /// Characters who already answered since the user's message, in order.
+    pub this_turn: Vec<String>,
+    /// Speakers of the last messages, oldest first.
+    pub recent: Vec<String>,
+    pub endpoint_url: String,
+    pub api_key: Option<String>,
+    pub model: Option<String>,
+    pub provider: Option<crate::modules::providers::LlmProviderType>,
+}
+
+/// The name of the next speaker or [`PLAYER`]. A failed routing request means the user's turn.
+pub async fn route(client: &InferenceClient, req: GroupRouteRequest) -> String {
+    // Nobody answers themselves.
+    let others: Vec<String> = req
+        .candidates
+        .iter()
+        .filter(|name| !name.eq_ignore_ascii_case(req.last_speaker.trim()))
+        .cloned()
+        .collect();
+    if others.is_empty() {
+        return PLAYER.to_string();
+    }
+    if let Some(name) = detect_direct_address(&req.last_text, &others) {
+        return name;
+    }
+    let prompt = routing_prompt_with(
+        "[CHAT — ROUTING]",
+        &req.last_speaker,
+        &req.last_text,
+        &others,
+        &req.this_turn,
+        &req.recent,
+    );
+    let request = ChatRequest {
+        endpoint_url: req.endpoint_url,
+        api_key: req.api_key,
+        model: req.model,
+        messages: vec![ChatMessage {
+            role: "user".into(),
+            content: prompt,
+            attachments: Vec::new(),
+        }],
+        sampling: Some(SamplingParams {
+            temperature: Some(0.2),
+            max_tokens: Some(60),
+            ..SamplingParams::default()
+        }),
+        reasoning_mode: Some(false),
+        provider: req.provider,
+    };
+    let answer = tokio::time::timeout(
+        std::time::Duration::from_secs(60),
+        client.generate_direct(request),
+    )
+    .await;
+    match answer {
+        Ok(Ok(raw)) => parse_routing(&raw, &others).unwrap_or_else(|| PLAYER.to_string()),
+        _ => PLAYER.to_string(),
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    fn request(last_speaker: &str, last_text: &str) -> GroupRouteRequest {
+        GroupRouteRequest {
+            last_speaker: last_speaker.into(),
+            last_text: last_text.into(),
+            candidates: vec!["Ayu".into(), "Sora".into()],
+            this_turn: Vec::new(),
+            recent: Vec::new(),
+            // Nothing listens here: a routing request fails at once.
+            endpoint_url: "http://127.0.0.1:9/v1/chat/completions".into(),
+            api_key: None,
+            model: None,
+            provider: None,
+        }
+    }
+
+    #[tokio::test]
+    async fn the_addressed_character_answers_first_and_nobody_answers_themselves() {
+        let client = InferenceClient::new();
+        assert_eq!(
+            route(&client, request("Kai", "Sora, was meinst du?")).await,
+            "Sora"
+        );
+        // Sora addressing herself does not make her speak twice; the failed request means the user.
+        assert_eq!(
+            route(&client, request("Sora", "Sora, reiß dich zusammen.")).await,
+            PLAYER
+        );
+        assert_eq!(
+            route(&client, request("Ayu", "Hey Sora, komm!")).await,
+            "Sora"
+        );
+    }
+}

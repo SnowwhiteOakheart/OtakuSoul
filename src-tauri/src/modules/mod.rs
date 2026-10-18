@@ -13,6 +13,7 @@ pub mod discord;
 pub mod emotions;
 pub mod error;
 pub mod gguf;
+pub mod group_chat;
 pub mod hardware;
 pub mod hub;
 pub mod hub_installed;

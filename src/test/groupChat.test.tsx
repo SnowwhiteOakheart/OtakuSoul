@@ -80,6 +80,42 @@ describe('group chats', () => {
     expect(api.addChatMessage).toHaveBeenLastCalledWith('chat-1', 'assistant', 'Bin dabei.', null);
   });
 
+  it('lets the addressed or routed characters answer in turn until it is the user\'s turn', async () => {
+    vi.mocked(api.routeGroupChat).mockResolvedValueOnce('Sora').mockResolvedValueOnce('Ayu').mockResolvedValueOnce('PLAYER');
+    await useAppStore.getState().sendMessage('Sora, Ayu – was meint ihr?');
+    const speakers = vi.mocked(api.addChatMessage).mock.calls.filter((c) => c[1] === 'assistant').map((c) => c[5] ?? '');
+    expect(speakers).toEqual(['sora', '']);
+    const firstRoute = vi.mocked(api.routeGroupChat).mock.calls[0]![0];
+    expect(firstRoute).toMatchObject({ last_speaker: 'Kai', last_text: 'Sora, Ayu – was meint ihr?', candidates: ['Ayu', 'Sora'], this_turn: [] });
+    expect(vi.mocked(api.routeGroupChat).mock.calls[1]![0]).toMatchObject({ last_speaker: 'Sora', this_turn: ['Sora'] });
+    // Each reply streams under its own ID.
+    const ids = vi.mocked(api.sendChatMessage).mock.calls.map((c) => c[1]);
+    expect(new Set(ids).size).toBe(2);
+  });
+
+  it('stops after a few replies and lets the chat\'s own character answer when routing names nobody', async () => {
+    vi.mocked(api.routeGroupChat).mockResolvedValue('Sora');
+    await useAppStore.getState().sendMessage('Und jetzt?');
+    expect(vi.mocked(api.sendChatMessage).mock.calls).toHaveLength(3);
+    vi.mocked(api.sendChatMessage).mockClear();
+    vi.mocked(api.addChatMessage).mockClear();
+    vi.mocked(api.routeGroupChat).mockReset().mockResolvedValue('PLAYER');
+    await useAppStore.getState().sendMessage('Hallo?');
+    expect(vi.mocked(api.addChatMessage).mock.calls.filter((c) => c[1] === 'assistant').map((c) => c[5] ?? '')).toEqual(['']);
+  });
+
+  it('ends the round when the user stops', async () => {
+    vi.mocked(api.routeGroupChat).mockResolvedValue('Sora');
+    vi.mocked(api.sendChatMessage).mockImplementationOnce(async () => {
+      await useAppStore.getState().abortGeneration();
+      return { ...done, aborted: true };
+    });
+    vi.mocked(api.abortChatGeneration).mockResolvedValue(undefined);
+    await useAppStore.getState().sendMessage('Erzählt mal.');
+    expect(api.sendChatMessage).toHaveBeenCalledTimes(1);
+    expect(useAppStore.getState().isGenerating).toBe(false);
+  });
+
   it('offers a button per speaker above the composer', async () => {
     const user = userEvent.setup();
     const replyAs = vi.fn().mockResolvedValue(undefined);

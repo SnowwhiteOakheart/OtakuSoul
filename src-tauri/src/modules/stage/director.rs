@@ -70,9 +70,28 @@ pub fn routing_prompt(
     this_turn: &[String],
     recent: &[String],
 ) -> String {
+    routing_prompt_with(
+        "[STAGE — ROUTING]",
+        last_speaker,
+        last_text,
+        candidates,
+        this_turn,
+        recent,
+    )
+}
+
+/// The routing prompt with its own marker line (the group chat uses "[CHAT — ROUTING]").
+pub fn routing_prompt_with(
+    marker: &str,
+    last_speaker: &str,
+    last_text: &str,
+    candidates: &[String],
+    this_turn: &[String],
+    recent: &[String],
+) -> String {
     let short: String = last_text.chars().take(400).collect();
     format!(
-        r#"[STAGE — ROUTING]
+        r#"{marker}
 Your only job: decide who speaks next.
 
 {last_speaker} just said: "{short}"

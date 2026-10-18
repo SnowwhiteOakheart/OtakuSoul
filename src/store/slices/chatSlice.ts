@@ -29,7 +29,7 @@ import { waitWithAbort } from '../../utils/cancellation';
 import { languageCode, localizeCard } from '../../utils/cardI18n';
 import { isRepeat } from '../../utils/repetition';
 import { applyReplacements } from '../../utils/replyFilters';
-import { chatSpeakers, groupHistory, presentedAs } from '../../utils/groupChat';
+import { GROUP_MAX_REPLIES, chatSpeakers, groupHistory, presentedAs } from '../../utils/groupChat';
 
 type GenerationFailure = {
   chatId: string;
@@ -306,6 +306,38 @@ export const createChatSlice: SliceCreator<ChatSlice> = (set, get) => {
     const finalStored = [...get().storedMessages, stored];
     set({ storedMessages: finalStored, messages: finalStored.map(toFlat), streamingText: '', streamingThought: '' });
     return { stored, done, cleanedText };
+  };
+
+  /**
+   * Group chat: who answers next after `last` – someone addressed by name, else the routing
+   * model. `null` = the user's turn; right after the user's message someone always answers (the
+   * chat's own character if routing gives none).
+   */
+  const nextSpeaker = async (
+    chatId: string,
+    last: { name: string; text: string },
+    thisTurn: string[],
+    firstReply: boolean,
+    signal: AbortSignal,
+  ): Promise<string | null> => {
+    const state = get();
+    const speakers = chatSpeakers(state.activeCharacter, state.chatSessions.find((s) => s.id === chatId), state.availableCharacters);
+    const named = speakers.map((s) => ({ id: s.id, name: presentedAs(s.character, state.replyLanguage).name }));
+    const userName = state.activePersona.name;
+    const recent = state.storedMessages.slice(-8).filter((m) => m.role !== 'system').map((m) =>
+      m.role === 'user' ? userName : (named.find((n) => n.id === (m.speaker_id ?? '')) ?? named[0])?.name ?? '');
+    let answer = 'PLAYER';
+    try {
+      answer = await waitWithAbort(() => api.routeGroupChat({
+        last_speaker: last.name, last_text: last.text, candidates: named.map((n) => n.name), this_turn: [...thisTurn], recent, ...llmTarget(state),
+      }), signal);
+    } catch (e) {
+      if (signal.aborted) throw e;
+      console.warn('Group chat routing failed:', e);
+    }
+    const found = named.find((n) => n.name.toLowerCase() === answer.trim().toLowerCase());
+    if (found) return found.id;
+    return firstReply ? '' : null;
   };
 
   const finishGeneration = async () => {
@@ -1052,11 +1084,35 @@ export const createChatSlice: SliceCreator<ChatSlice> = (set, get) => {
       });
 
       if (cancelled) return;
-      // A group chat answers with whoever the user picked; otherwise the chat's own character.
-      const written = await writeReply({ chatId, charId: activeCharacter?.id, history: updatedStored, speakerId: replySpeaker ?? '',
+      // A group chat answers with whoever the user picked or addressed, else the director decides.
+      const state = get();
+      const speakers = chatSpeakers(activeCharacter, state.chatSessions.find((s) => s.id === chatId), state.availableCharacters);
+      const round = speakers.length > 1 && replySpeaker === undefined;
+      const nameOf = (id: string) => presentedAs((speakers.find((s) => s.id === id) ?? speakers[0]!).character, state.replyLanguage).name;
+      const firstSpeaker = round
+        ? (await nextSpeaker(chatId, { name: state.activePersona.name, text: content }, [], true, preparation.signal)) ?? ''
+        : replySpeaker ?? '';
+      const written = await writeReply({ chatId, charId: activeCharacter?.id, history: updatedStored, speakerId: firstSpeaker,
         latestUserText: content, generationId, preparation });
       if (!written) return;
       const { stored: asstStored, done, cleanedText } = written;
+
+      // Group round: more characters may react until it is the user's turn (Stop ends the round).
+      if (round) {
+        const thisTurn = [nameOf(firstSpeaker)];
+        let last = { name: nameOf(firstSpeaker), text: cleanedText };
+        for (let n = 1; n < GROUP_MAX_REPLIES && !cancelled && !done.aborted; n += 1) {
+          const next = await nextSpeaker(chatId, last, thisTurn, false, preparation.signal);
+          if (next === null || cancelled) break;
+          const replyId = crypto.randomUUID();
+          set({ generationId: replyId });
+          const more = await writeReply({ chatId, charId: activeCharacter?.id, history: get().storedMessages, speakerId: next,
+            generationId: replyId, preparation });
+          if (!more || more.done.aborted) break;
+          thisTurn.push(nameOf(next));
+          last = { name: nameOf(next), text: more.cleanedText };
+        }
+      }
       if (get().rerollRepeats && !done.aborted) {
         const earlier = updatedStored.filter((m) => m.role === 'assistant').map((m) => m.content);
         if (isRepeat(cleanedText, earlier)) repeatedReplyId = asstStored.id;

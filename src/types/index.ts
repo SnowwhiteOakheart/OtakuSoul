@@ -45,6 +45,7 @@ import type { ReplyIdeasRequest } from './generated/ReplyIdeasRequest';
 import type { MacroInput } from './generated/MacroInput';
 import type { ReplyReplacement } from './generated/ReplyReplacement';
 import type { GroupMember } from './generated/GroupMember';
+import type { GroupRouteRequest } from './generated/GroupRouteRequest';
 import type { PromptTemplate } from './generated/PromptTemplate';
 import type { BuiltinPromptTemplate } from './generated/BuiltinPromptTemplate';
 import type { AssembledPrompt } from './generated/AssembledPrompt';
@@ -167,6 +168,7 @@ export type {
   MacroInput,
   ReplyReplacement,
   GroupMember,
+  GroupRouteRequest,
   PromptTemplate,
   BuiltinPromptTemplate,
   AssembledPrompt,
