@@ -7,7 +7,8 @@ import type { LlmProviderType } from "./LlmProviderType";
  */
 export type ImagePromptRequest = { endpoint_url: string, api_key: string | null, model: string | null, provider: LlmProviderType | null, 
 /**
- * `portrait` of a character or `scene` for the stage.
+ * `portrait` of a character, `moment` (the character in the current scene, for a chat) or
+ * `scene` for the stage.
  */
 kind: string, 
 /**
