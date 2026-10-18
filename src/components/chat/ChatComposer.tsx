@@ -1,5 +1,5 @@
 import React, { useEffect, useMemo, useRef, useState } from 'react';
-import { FileText, Lightbulb, Loader2, Paperclip, PenLine, Send, Square, X } from 'lucide-react';
+import { Clapperboard, FileText, Lightbulb, Loader2, Paperclip, PenLine, Send, Square, X } from 'lucide-react';
 import { useAppStore, useStoreFields } from '../../store/useAppStore';
 import { errorFix } from '../../utils/errorFixes';
 import { streamingTts } from '../../services/streamingTts';
@@ -38,6 +38,8 @@ export const ChatComposer: React.FC = () => {
     if (shownKey) writeDraft(shownKey, input);
   }, [shownKey, input]);
   const [files, setFiles] = useState<File[]>([]);
+  // Direction mode: the next message is a note to the AI, sent as ((…)).
+  const [directing, setDirecting] = useState(false);
   const fileInput = useRef<HTMLInputElement>(null);
   const textInput = useRef<HTMLTextAreaElement>(null);
   // Reply ideas and drafts belong to the chat they were asked for; another chat shows none.
@@ -103,10 +105,11 @@ export const ChatComposer: React.FC = () => {
   const handleSend = () => {
     if ((!input.trim() && files.length === 0) || isGenerating || !activeChatId || isChatLoading || chatLoadError) return;
     streamingTts.cancel();
-    const [text, attached] = [input, files];
+    const [text, attached] = [directing ? asDirection(input) : input, files];
     setInput('');
     setFiles([]);
     setIdeas({ key: null, items: [] });
+    setDirecting(false);
     sendMessage(text, attached).catch((e) => {
       // Upload/user-write failure: restore the unsaved draft without discarding new typing.
       toast.error(errorMessage(e));
@@ -240,6 +243,24 @@ export const ChatComposer: React.FC = () => {
         >
           <PenLine className="w-4 h-4" />
         </button>
+        <button
+          type="button"
+          onClick={() => {
+            setDirecting((on) => !on);
+            textInput.current?.focus();
+          }}
+          aria-pressed={directing}
+          className={`p-2.5 rounded-xl border transition-colors ${
+            directing
+              ? 'bg-amber-500/20 border-amber-500/60 text-amber-200'
+              : 'bg-slate-800 hover:bg-slate-700 border-slate-700/80 text-slate-300'
+          }`}
+          title={t('chat.directionHint')}
+          aria-label={t('chat.directionLabel')}
+          data-direction-toggle
+        >
+          <Clapperboard className="w-4 h-4" />
+        </button>
         <textarea
           ref={textInput}
           value={input}
@@ -260,10 +281,10 @@ export const ChatComposer: React.FC = () => {
               handleSend();
             }
           }}
-          placeholder={t('chat.inputPlaceholder')}
+          placeholder={t(directing ? 'chat.directionPlaceholder' : 'chat.inputPlaceholder')}
           title={t('chat.inputHint')}
           aria-label={t('chat.inputLabel')}
-          className="flex-1 bg-app/80 border border-slate-700/80 rounded-xl px-4 py-2.5 text-sm text-slate-100 placeholder-slate-500 focus:outline-hidden focus:border-accent-500 focus:ring-1 focus:ring-accent-500 resize-none max-h-32 transition-colors"
+          className={`flex-1 bg-app/80 border ${directing ? 'border-amber-500/70 border-dashed' : 'border-slate-700/80'} rounded-xl px-4 py-2.5 text-sm text-slate-100 placeholder-slate-500 focus:outline-hidden focus:border-accent-500 focus:ring-1 focus:ring-accent-500 resize-none max-h-32 transition-colors`}
           rows={1}
         />
 
@@ -299,6 +320,12 @@ export const ChatComposer: React.FC = () => {
       {contextUsage && <ContextMeter usage={contextUsage} />}
     </div>
   );
+};
+
+/** A direction to the AI as it is stored and sent: wrapped in ((…)) unless the user already did. */
+export const asDirection = (text: string): string => {
+  const trimmed = text.trim();
+  return !trimmed || (trimmed.startsWith('((') && trimmed.endsWith('))')) ? trimmed : `((${trimmed}))`;
 };
 
 const MAX_FILES = 6;

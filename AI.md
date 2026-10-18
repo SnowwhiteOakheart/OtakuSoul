@@ -73,6 +73,10 @@ ru „персонаж/история/сцена“. Fachbegriffe nur im Experte
   (Lorebooks, `assemble_prompt` = System-Prompt + Nachspann) → Payload (+ Author's Note in Tiefe N, Nachspann am Ende)
   → `send_chat_message`: `attachments::prepare` → `context_window::fit` (kürzt von vorn) → `stream_chat` (Events
   `llm-token`/`llm-thought`/`llm-done`) → Antwort speichern → ggf. `summarizeDroppedMessages` im Hintergrund.
+- **Regieanweisungen:** Text in `((…))` ist eine Anweisung an die KI außerhalb der Geschichte (`modules/ooc.rs`): Regel
+  `ooc::prompt_rule` steht immer in den Formatierungsregeln, `ooc::strip` hält sie aus Chat-Zusammenfassung und
+  Memory-Pipeline heraus. Composer-Umschalter (Filmklappe, `asDirection`), Anzeige `RoleplayMessage` `splitDirections`
+  (`data-ooc`). E2E `chat-direction.mjs`.
 - **Makros:** `modules/macros.rs` (`expand`, Eingabe `MacroInput`) füllt `{{char}}`/`{{user}}`, `{{random:a,b}}` (jede Antwort neu),
   `{{pick:a,b}}` (stabil je Chat über `PromptContext.macro_seed` = Chat-ID), `{{roll:2d6+1}}`, `{{time}}`/`{{date}}`/`{{weekday}}`/
   `{{isodate}}`/`{{isotime}}`, `{{idle_duration}}` (`PromptContext.idle_seconds`, `helpers.ts` `idleSeconds`), `{{newline}}`, `{{trim}}`,

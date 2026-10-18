@@ -53,16 +53,18 @@ fn chunks(
     chunks
 }
 
+/// The messages with names; out-of-character directions are no part of the story.
 fn transcript(chunk: &[&StoredChatMessage], char_name: &str, user_name: &str) -> String {
     chunk
         .iter()
-        .map(|m| {
+        .filter_map(|m| {
             let speaker = if m.role == "user" {
                 user_name
             } else {
                 char_name
             };
-            format!("{speaker}: {}", m.content.trim())
+            let text = crate::modules::ooc::strip(&m.content);
+            (!text.is_empty()).then(|| format!("{speaker}: {text}"))
         })
         .collect::<Vec<_>>()
         .join("\n\n")
@@ -108,6 +110,13 @@ pub async fn summarize(
         let Some(last) = chunk.last().map(|m| i64::from(m.order_index)) else {
             continue;
         };
+        let new_messages = transcript(&chunk, &req.char_name, &req.user_name);
+        if new_messages.is_empty() {
+            // Only directions to the AI: nothing to tell, but the messages count as covered.
+            db.update_chat_summary(&req.chat_id, &summary, last)
+                .map_err(|e| e.to_string())?;
+            continue;
+        }
         let current = if summary.trim().is_empty() {
             "(none yet)".to_string()
         } else {
@@ -126,8 +135,7 @@ pub async fn summarize(
                 ChatMessage {
                     role: "user".into(),
                     content: format!(
-                        "Current summary:\n{current}\n\nNew messages:\n{}",
-                        transcript(&chunk, &req.char_name, &req.user_name)
+                        "Current summary:\n{current}\n\nNew messages:\n{new_messages}"
                     ),
                     attachments: Vec::new(),
                 },
@@ -189,6 +197,18 @@ mod tests {
             .map(|c| c.iter().map(|m| m.order_index).collect())
             .collect();
         assert_eq!(indices, vec![vec![3, 4], vec![5, 6], vec![7]]);
+    }
+
+    #[test]
+    fn the_transcript_leaves_out_directions_to_the_ai() {
+        let first = stored(0, "user", "((mach es spannend))");
+        let second = stored(1, "user", "*zieht das Schwert* ((Kampf!)) \"Halt!\"");
+        let third = stored(2, "assistant", "*weicht zurück*");
+        assert_eq!(transcript(&[&first], "Ayu", "Kai"), "");
+        assert_eq!(
+            transcript(&[&first, &second, &third], "Ayu", "Kai"),
+            "Kai: *zieht das Schwert* \"Halt!\"\n\nAyu: *weicht zurück*"
+        );
     }
 
     /// Against a running llama-server: `OTAKUSOUL_LLAMA_URL=http://127.0.0.1:48777 cargo test

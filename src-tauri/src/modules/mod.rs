@@ -33,6 +33,7 @@ pub mod memory_pipeline;
 pub mod model_catalog;
 pub mod model_files;
 pub mod models_hub;
+pub mod ooc;
 pub mod paths;
 pub mod profile_backup;
 pub mod prompt_builder;

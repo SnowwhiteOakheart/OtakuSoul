@@ -371,8 +371,12 @@ pub async fn execute_memory_pipeline(
     match req.transcript.as_deref().filter(|t| !t.trim().is_empty()) {
         Some(transcript) => dialog_formatted.push_str(transcript),
         None => {
+            // Out-of-character directions to the AI are nothing to remember.
             for msg in recent_slice {
-                dialog_formatted.push_str(&format!("{}: {}\n", msg.role, msg.content));
+                let text = crate::modules::ooc::strip(&msg.content);
+                if !text.is_empty() {
+                    dialog_formatted.push_str(&format!("{}: {}\n", msg.role, text));
+                }
             }
         }
     }

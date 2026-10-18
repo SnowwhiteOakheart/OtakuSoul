@@ -422,7 +422,12 @@ pub fn build_system_prompt(ctx: &PromptContext) -> String {
             .push("- Start your reply directly with your character's words or actions.");
     }
 
-    if !formatting_rules.is_empty() {
+    // Directions in ((…)) work with any template, also one without formatting rules.
+    let ooc_rule = crate::modules::ooc::prompt_rule(&ctx.user_name);
+    if formatting_rules.is_empty() {
+        parts.push(format!("## Out-of-Character Directions\n{ooc_rule}"));
+    } else {
+        formatting_rules.push(&ooc_rule);
         parts.push(format!(
             "## Formatting & Roleplay Conventions\n{}",
             formatting_rules.join("\n")
@@ -447,6 +452,14 @@ mod tests {
             },
             ..PromptContext::default()
         }
+    }
+
+    #[test]
+    fn out_of_character_directions_are_explained() {
+        let prompt = build_system_prompt(&context(None));
+        assert!(prompt.contains(
+            "- Text from Kai in ((double parentheses)) is an out-of-character direction"
+        ));
     }
 
     #[test]
@@ -503,6 +516,10 @@ mod tests {
         let prompt = build_system_prompt(&ctx);
         assert!(prompt.starts_with("Be Aiko."));
         assert!(!prompt.contains("Formatting & Roleplay Conventions"));
+        assert!(prompt.ends_with(&format!(
+            "## Out-of-Character Directions\n{}",
+            crate::modules::ooc::prompt_rule("Kai")
+        )));
         assert_eq!(
             post_history_instruction(&ctx).as_deref(),
             Some("Stay short, Kai.")
