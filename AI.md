@@ -3,7 +3,7 @@
 OtakuSoul: Desktop-App für KI-Rollenspiel-Charaktere (Tauri 2, Rust-Backend, React 19/TS/Vite/Tailwind 4/Zustand).
 Port des Python-Projekts *Soul of Waifu* (vollständig eigenständig und entkoppelt); **kein Python in der App**. Repo öffentlich: github.com/SnowwhiteOakheart/OtakuSoul.
 Nutzer mit „Du“ ansprechen. Antworten, Commits und Doku auf Deutsch.
-`CLAUDE.md` (Claude Code) und `AGENTS.md` (Codex, Cursor u. a.) verweisen nur hierher – Inhalte nur in dieser Datei pflegen.
+`CLAUDE.md` (Claude Code) und `AGENTS.md` (Codex, Cursor u. a.) verweisen hierher – Inhalte und Regeln nur in dieser Datei pflegen. Für eine tokensparende Schnellreferenz der Module, Befehle und Themenbereiche existiert `ARCHITECTURE_INDEX.md`.
 
 ## Regeln
 
