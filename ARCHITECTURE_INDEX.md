@@ -65,14 +65,29 @@
 
 Wenn Du an einem bestimmten Subsystem arbeitest, lies gezielt die angegebenen Zeilen in [`AI.md`](AI.md), anstatt die gesamte Datei zu laden:
 
-| Thema / Subsystem | Relevante Quellcode-Dateien | Abschnitt in `AI.md` | Wichtigste Aspekte |
+| Thema / Subsystem | Relevante Quellcode-Dateien | H3-Abschnitt in `AI.md` | Wichtigste Aspekte |
 |---|---|---|---|
-| **Chat-Pipeline & Prompt** | `src-tauri/src/modules/inference.rs`<br>`src/store/slices/chatSlice.ts` | Zeilen 72–129 & 420–465 | Streaming-Lifecycle, `generationId`, Abbrüche via `with_abort`, Kontextfenster-Einpassung, Swipes, Entwürfe. |
-| **Stage, GM & Story-Galerie** | `src-tauri/src/modules/stage/`<br>`src/components/stage/` | Zeilen 187–220 & 441–457 | Separater `stage-stream`, Sprecherreihenfolge (`director.rs`), NPC-Gedächtnis, dynamische Hintergründe, Story-Galerie. |
-| **D&D 5e Regelsystem** | `src-tauri/src/modules/stage/rules5e/`<br>`src/components/stage/Combat5e*.tsx` | Zeilen 315–384 | Engine entscheidet Regeln deterministisch (`CombatEvent`), LLM erzählt nur; Spielbrett-Wegfindung, Zauber, Nebel. |
-| **3D-Avatare (VRM, glTF, MMD)** | `src/components/avatars/`<br>`src/services/avatarStage.ts` | Zeilen 231–295 & 305–314 | Knochen-Retargeting (`gltfRig.ts`), Morphs vs. Knochen im Gesicht, MMD-Physik-Reihenfolge, Gesten & Formanten-Lipsync. |
-| **Lokale Server & GPU/VRAM** | `src-tauri/src/modules/llama_manager.rs`<br>`src-tauri/src/modules/runtimes.rs` | Zeilen 161–175 & 530–544 | VRAM-Vorabprüfung, iGPU-Filterung (`primary_gpu`), Linux-CUDA ohne UMD vs. Vulkan, Starter-Modell-Katalog. |
-| **Lokale TTS & Stimmklonen** | `src-tauri/src/modules/tts_local.rs`<br>`src/services/voiceEffects.ts` | Zeilen 221–230 & 385–386 | CrispASR / F5 / Chatterbox-Klonen (24-kHz-WAV), Pitch-Effekte via WebAudio WSOLA, Stimm-Audioschnitt (`CloneTrimmer`). |
-| **Gedächtnis & SQLite (Memory)** | `src-tauri/src/modules/memory/`<br>`src/store/slices/memorySlice.ts` | Zeilen 493–526 | Transaktionen für Snapshots/Importe, gegenseitige Sperrung bei Reflexionen, Entwürfe im Drawer, Herkunft episodischer Fakten. |
-| **Hub-Synchronisation & Updates** | `src-tauri/src/modules/hub.rs`<br>`src/components/hub/` | Zeilen 393–409 | Versionsprüfung via `revision`, Übersetzungsschlüssel, automatische Asset-Downloads (`backgrounds`), Konfliktbehandlung. |
-| **Fenster, Tray & Lifecycles** | `src-tauri/src/lib.rs`<br>`src/hooks/useCloseToTray.ts` | Zeilen 156–160 & 174–177 | `close_to_tray`, `PR_SET_PDEATHSIG` für Server-Kindprozesse, `target/e2e` gegen Überschreiben durch `cargo test`. |
+| **Chat-Pipeline & Prompt** | `src-tauri/src/modules/inference.rs`<br>`src/store/slices/chatSlice.ts` | `### 3. Chat-Pipeline, Streaming, Abbrüche & Verlauf` | Streaming-Lifecycle, `generationId`, Abbrüche via `with_abort`, Kontextfenster-Einpassung, Swipes, Entwürfe. |
+| **Stage, GM & Story-Galerie** | `src-tauri/src/modules/stage/`<br>`src/components/stage/` | `### 4. Stage (Rollenspiel), GM-Director, NPCs & Story-Galerie` | Separater `stage-stream`, Sprecherreihenfolge (`director.rs`), NPC-Gedächtnis, dynamische Hintergründe, Story-Galerie. |
+| **D&D 5e Regelsystem** | `src-tauri/src/modules/stage/rules5e/`<br>`src/components/stage/Combat5e*.tsx` | `### 5. D&D 5e-Regelsystem (Kampf, Spielbrett, Magie, Erkundung)` | Engine entscheidet Regeln deterministisch (`CombatEvent`), LLM erzählt nur; Spielbrett-Wegfindung, Zauber, Nebel. |
+| **3D-Avatare (VRM, glTF, MMD)** | `src/components/avatars/`<br>`src/services/avatarStage.ts` | `### 6. 3D-Avatare (VRM, GLB, MMD), Gesten & 2D-Porträts` | Knochen-Retargeting (`gltfRig.ts`), Morphs vs. Knochen im Gesicht, MMD-Physik-Reihenfolge, Gesten & Formanten-Lipsync. |
+| **Lokale Server & GPU/VRAM** | `src-tauri/src/modules/llama_manager.rs`<br>`src-tauri/src/modules/runtimes.rs` | `### 2. Hardware, GPU-Auswahl & Lokale Modell-Server` | VRAM-Vorabprüfung, iGPU-Filterung (`primary_gpu`), Linux-CUDA ohne UMD vs. Vulkan, Starter-Modell-Katalog. |
+| **Lokale TTS & Stimmklonen** | `src-tauri/src/modules/tts_local.rs`<br>`src/services/voiceEffects.ts` | `### 7. Audio, Lokale TTS, Stimmklonen & Effekte` | CrispASR / F5 / Chatterbox-Klonen (24-kHz-WAV), Pitch-Effekte via WebAudio WSOLA, Stimm-Audioschnitt (`CloneTrimmer`). |
+| **Gedächtnis & SQLite (Memory)** | `src-tauri/src/modules/memory/`<br>`src/store/slices/memorySlice.ts` | `### 8. Kognitives Gedächtnis, SQLite & Reflexion` | Transaktionen für Snapshots/Importe, gegenseitige Sperrung bei Reflexionen, Entwürfe im Drawer, Herkunft episodischer Fakten. |
+| **Hub-Synchronisation & Updates** | `src-tauri/src/modules/hub.rs`<br>`src/components/hub/` | `### 9. Hub-Synchronisation, Registries & Daten-Pakete` | Versionsprüfung via `revision`, Übersetzungsschlüssel, automatische Asset-Downloads (`backgrounds`), Konfliktbehandlung. |
+| **Fenster, Tray & Lifecycles** | `src-tauri/src/lib.rs`<br>`src/hooks/useCloseToTray.ts` | `### 1. App-Lifecycle, Fenster, IPC & E2E-Harness` | `close_to_tray`, `PR_SET_PDEATHSIG` für Server-Kindprozesse, `target/e2e` gegen Überschreiben durch `cargo test`. |
+| **Begleiter & Sicherheit** | `src-tauri/src/modules/companion.rs`<br>`src/components/companion/` | `### 10. Begleiter (Companion) & Befehlspalette` | `execute_code`-Sicherheitsflag, HITL-Bestätigungsbanner für Tools/Dateizugriffe, Befehlspalette-Verknüpfung. |
+
+---
+
+## 🔄 Cross-Repository Synchronisation (`OtakuSoul` ↔ `otakusoul-data`)
+
+Einige Inhalte in `OtakuSoul` sind gebündelte Standard-Kopien (Bundles) aus dem Inhalts-Repository [`otakusoul-data`](../otakusoul-data/). Vor Änderungen an diesen Inhalten immer prüfen, wo die primäre Quelle gepflegt wird:
+
+| Datei / Verzeichnis in `OtakuSoul` | Primäre Quelle (`otakusoul-data`) | Synchronisations- & Update-Mechanismus |
+|---|---|---|
+| `presets/locales/{de,ru}.json` | `locales/{de,ru}.json` | `content_lang::refresh_locales` lädt bei App-Start nach `<Daten>/locales/` |
+| `presets/recommended_models.json` | `recommended_models.json` | `model_catalog::refresh` lädt bei App-Start neuere Versionen nach |
+| `presets/characters/*` | `cards_gateway/*.png` / `presets/*` | Werden im Hub über `soul_registry.json` als V2-Karten bereitgestellt |
+| `presets/stories/scenes/*` | `stages_gateway/*.json` | Werden im Hub über `stages_registry.json` bezogen |
+
