@@ -14,6 +14,7 @@ import type {
   ChatSession,
   ChatStyle,
   ContextUsage,
+  ReplyIdeasRequest,
   StoredChatMessage,
   UserPersona,
   VoiceConfig,
@@ -63,8 +64,10 @@ export interface ChatSlice {
   updateChatSummary: (summary: string, summaryUntil: number) => Promise<void>;
   /** Translates a message into the app language with the chat model. */
   translateText: (text: string) => Promise<string>;
-  /** A few short ideas for the user's next message in the open chat (throws on failure). */
-  suggestReplies: () => Promise<string[]>;
+  /** A few short ideas for the user's next message in the open chat, built on `notes` (throws on failure). */
+  suggestReplies: (notes?: string) => Promise<string[]>;
+  /** "Write for me": the user's next message, built from `notes` if any (throws on failure). */
+  draftReply: (notes?: string) => Promise<string>;
   /** Sends a message; retries pass the ID of the already saved user message. */
   sendMessage: (content: string, files?: File[], storedMessageId?: string) => Promise<void>;
   generationId: string | null;
@@ -174,6 +177,23 @@ export const createChatSlice: SliceCreator<ChatSlice> = (set, get) => {
   let generationSequence = 0;
   let abortPending: Promise<void> | null = null;
   let generationPreparation: AbortController | null = null;
+  /** What reply ideas and "Write for me" send: names, persona, language and the end of the open chat. */
+  const replyHelpRequest = async (notes: string): Promise<ReplyIdeasRequest | null> => {
+    const chatId = get().activeChatId;
+    const char = get().activeCharacter;
+    if (!chatId || !char) return null;
+    await get().ensureLocalAi();
+    const state = get();
+    return {
+      chat_id: chatId,
+      char_name: localizeCard(char.card.data, languageCode(state.replyLanguage)).name || char.card.data.name,
+      user_name: state.activePersona.name,
+      user_description: state.activePersona.description ?? '',
+      language: state.replyLanguage,
+      notes,
+      ...llmTarget(state),
+    };
+  };
   const isCurrentContext = (chatId: string, charId: string | undefined) =>
     generationSessionRequest === sessionRequest && get().activeChatId === chatId && get().activeCharacter?.id === charId;
   const inContext = (chatId: string, charId: string | undefined) =>
@@ -275,21 +295,14 @@ export const createChatSlice: SliceCreator<ChatSlice> = (set, get) => {
     });
   },
 
-  suggestReplies: async () => {
-    const chatId = get().activeChatId;
-    const char = get().activeCharacter;
-    if (!chatId || !char) return [];
-    await get().ensureLocalAi();
-    const state = get();
-    const name = localizeCard(char.card.data, languageCode(state.replyLanguage)).name || char.card.data.name;
-    return api.suggestChatReplies({
-      chat_id: chatId,
-      char_name: name,
-      user_name: state.activePersona.name,
-      user_description: state.activePersona.description ?? '',
-      language: state.replyLanguage,
-      ...llmTarget(state),
-    });
+  suggestReplies: async (notes = '') => {
+    const request = await replyHelpRequest(notes);
+    return request ? api.suggestChatReplies(request) : [];
+  },
+
+  draftReply: async (notes = '') => {
+    const request = await replyHelpRequest(notes);
+    return request ? api.draftChatReply(request) : '';
   },
 
   updateChatSummary: async (summary, summaryUntil) => {

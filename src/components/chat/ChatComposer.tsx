@@ -1,5 +1,5 @@
 import React, { useEffect, useMemo, useRef, useState } from 'react';
-import { FileText, Lightbulb, Loader2, Paperclip, Send, Square, X } from 'lucide-react';
+import { FileText, Lightbulb, Loader2, Paperclip, PenLine, Send, Square, X } from 'lucide-react';
 import { useAppStore, useStoreFields } from '../../store/useAppStore';
 import { errorFix } from '../../utils/errorFixes';
 import { streamingTts } from '../../services/streamingTts';
@@ -18,10 +18,10 @@ import { reportFailure } from '../../store/reportFailure';
 export const ChatComposer: React.FC = () => {
   const { t } = useTranslation();
   const {
-    sendMessage, suggestReplies, isGenerating, abortGeneration, activeVoiceConfig, setAutoTtsEnabled, contextUsage,
+    sendMessage, suggestReplies, draftReply, isGenerating, abortGeneration, activeVoiceConfig, setAutoTtsEnabled, contextUsage,
     selectedBackend, serverConfig, generationFailure, retryGeneration, activeChatId, isChatLoading, chatLoadError, retryChatLoad,
   } = useStoreFields(
-    'sendMessage', 'suggestReplies', 'isGenerating', 'abortGeneration', 'activeVoiceConfig', 'setAutoTtsEnabled', 'contextUsage',
+    'sendMessage', 'suggestReplies', 'draftReply', 'isGenerating', 'abortGeneration', 'activeVoiceConfig', 'setAutoTtsEnabled', 'contextUsage',
     'selectedBackend', 'serverConfig', 'generationFailure', 'retryGeneration', 'activeChatId', 'isChatLoading', 'chatLoadError', 'retryChatLoad',
   );
   // The text of each chat survives switching chats and restarts (files don't).
@@ -40,25 +40,54 @@ export const ChatComposer: React.FC = () => {
   const [files, setFiles] = useState<File[]>([]);
   const fileInput = useRef<HTMLInputElement>(null);
   const textInput = useRef<HTMLTextAreaElement>(null);
-  // Reply ideas belong to the chat they were asked for; another chat shows none.
+  // Reply ideas and drafts belong to the chat they were asked for; another chat shows none.
   const [ideas, setIdeas] = useState<{ key: string | null; items: string[] }>({ key: null, items: [] });
-  const [ideasFor, setIdeasFor] = useState<string | null>(null);
+  const [helping, setHelping] = useState<{ key: string; kind: 'ideas' | 'draft' } | null>(null);
   const shownIdeas = ideas.key === draftKey ? ideas.items : [];
-  const loadingIdeas = ideasFor !== null && ideasFor === draftKey;
+  const helpKind = helping?.key === draftKey ? helping.kind : null;
+  const currentKey = useRef(draftKey);
+  useEffect(() => {
+    currentKey.current = draftKey;
+  }, [draftKey]);
 
-  const askForIdeas = async () => {
+  /** Runs one request for help with the next message; the input is read-only meanwhile. */
+  const helpWith = async (kind: 'ideas' | 'draft', run: (key: string, notes: string) => Promise<void>) => {
     const key = draftKey;
     if (!key) return;
-    setIdeasFor(key);
+    setHelping({ key, kind });
     try {
-      const items = await suggestReplies();
-      setIdeas({ key, items });
+      await run(key, input);
     } catch (e) {
-      reportFailure('Reply ideas failed:', e);
+      reportFailure(kind === 'ideas' ? 'Reply ideas failed:' : 'Reply draft failed:', e);
     } finally {
-      setIdeasFor((current) => (current === key ? null : current));
+      setHelping((current) => (current?.key === key ? null : current));
     }
   };
+
+  const askForIdeas = () => helpWith('ideas', async (key, notes) => {
+    const items = await suggestReplies(notes);
+    setIdeas({ key, items });
+  });
+
+  const writeForMe = () => helpWith('draft', async (key, notes) => {
+    const text = await draftReply(notes);
+    if (currentKey.current !== key) {
+      // The user moved on to another chat: keep the draft for this one.
+      writeDraft(key, text);
+      return;
+    }
+    setInput(text);
+    setIdeas({ key: null, items: [] });
+    textInput.current?.focus();
+    if (notes.trim()) {
+      toast.info(t('chat.draftWritten'), {
+        label: t('common.undo'),
+        onClick: () => {
+          if (currentKey.current === key) setInput((current) => (current === text ? notes : current));
+        },
+      });
+    }
+  });
 
   const pickIdea = (idea: string) => {
     setInput(idea);
@@ -125,9 +154,15 @@ export const ChatComposer: React.FC = () => {
           ))}
         </div>
       )}
-      {(loadingIdeas || shownIdeas.length > 0) && (
+      {helpKind === 'draft' && (
+        <p role="status" className="max-w-4xl mx-auto mb-2 flex items-center gap-2 text-xs text-slate-400">
+          <Loader2 className="w-3.5 h-3.5 animate-spin" aria-hidden="true" />
+          {t('chat.draftLoading')}
+        </p>
+      )}
+      {(helpKind === 'ideas' || shownIdeas.length > 0) && (
         <div className="max-w-4xl mx-auto mb-2 flex flex-wrap items-center gap-2" role="group" aria-label={t('chat.replyIdeasTitle')} data-reply-ideas>
-          {loadingIdeas ? (
+          {helpKind === 'ideas' ? (
             <span role="status" className="flex items-center gap-2 text-xs text-slate-400">
               <Loader2 className="w-3.5 h-3.5 animate-spin" aria-hidden="true" />
               {t('chat.replyIdeasLoading')}
@@ -186,7 +221,7 @@ export const ChatComposer: React.FC = () => {
         <button
           type="button"
           onClick={() => void askForIdeas()}
-          disabled={!activeChatId || isChatLoading || !!chatLoadError || isGenerating || loadingIdeas}
+          disabled={!activeChatId || isChatLoading || !!chatLoadError || isGenerating || helpKind !== null}
           className="p-2.5 rounded-xl bg-slate-800 hover:bg-slate-700 disabled:opacity-40 text-slate-300 transition-colors border border-slate-700/80"
           title={t('chat.replyIdeasHint')}
           aria-label={t('chat.replyIdeas')}
@@ -194,9 +229,22 @@ export const ChatComposer: React.FC = () => {
         >
           <Lightbulb className="w-4 h-4" />
         </button>
+        <button
+          type="button"
+          onClick={() => void writeForMe()}
+          disabled={!activeChatId || isChatLoading || !!chatLoadError || isGenerating || helpKind !== null}
+          className="p-2.5 rounded-xl bg-slate-800 hover:bg-slate-700 disabled:opacity-40 text-slate-300 transition-colors border border-slate-700/80"
+          title={t('chat.writeForMeHint')}
+          aria-label={t('chat.writeForMe')}
+          data-write-for-me
+        >
+          <PenLine className="w-4 h-4" />
+        </button>
         <textarea
           ref={textInput}
           value={input}
+          readOnly={helpKind !== null}
+          aria-busy={helpKind !== null}
           onChange={(e) => setInput(e.target.value)}
           onPaste={(e) => {
             // Screenshots and copied images from the clipboard become attachments.

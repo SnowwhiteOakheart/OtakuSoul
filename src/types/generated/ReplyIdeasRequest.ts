@@ -9,4 +9,8 @@ user_description: string,
 /**
  * Language name as written into the prompt, e.g. "Deutsch".
  */
-language: string, endpoint_url: string, api_key: string | null, model: string | null, provider: LlmProviderType | null, };
+language: string, 
+/**
+ * What the user has typed so far: a start or notes to build on (may be empty).
+ */
+notes: string, endpoint_url: string, api_key: string | null, model: string | null, provider: LlmProviderType | null, };

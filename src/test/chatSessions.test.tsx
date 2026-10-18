@@ -9,6 +9,7 @@ import { streamingTts } from '../services/streamingTts';
 import { useAppStore } from '../store/useAppStore';
 import { ChatComposer } from '../components/chat/ChatComposer';
 import { resetApiMocks } from './mockApi';
+import { readDraft } from '../utils/drafts';
 import type { CharacterProfile, ChatSession, StoredChatMessage, VoiceConfig } from '../types';
 const initial = useAppStore.getState();
 const character = { id: 'ayu', card: { data: { name: 'Ayu' } } } as CharacterProfile;
@@ -138,6 +139,34 @@ describe('chat session loading', () => {
     vi.mocked(api.getChatMessages).mockResolvedValueOnce([other]);
     await useAppStore.getState().switchChatSession('chat-2');
     await waitFor(() => expect(screen.queryByRole('button', { name: 'Hallo?' })).toBeNull());
+  });
+  it('writes the next message from the typed notes and can undo it', async () => {
+    const user = userEvent.setup();
+    useAppStore.setState({ ensureLocalAi: vi.fn().mockResolvedValue(undefined) });
+    let finish!: (text: string) => void;
+    vi.mocked(api.draftChatReply).mockImplementationOnce(() => new Promise((resolve) => { finish = resolve; }));
+    render(<ChatComposer />);
+    await user.type(screen.getByRole('textbox'), 'Weg fragen');
+    await user.click(screen.getByRole('button', { name: 'Write for me' }));
+    expect(api.draftChatReply).toHaveBeenCalledWith(expect.objectContaining({ chat_id: 'chat-1', notes: 'Weg fragen' }));
+    expect(screen.getByRole('textbox')).toHaveAttribute('readonly');
+    expect(screen.getByRole('button', { name: 'What could I say?' })).toBeDisabled();
+    finish('*zeigt auf die Karte* "Wohin geht es?"');
+    await waitFor(() => expect(screen.getByRole('textbox')).toHaveValue('*zeigt auf die Karte* "Wohin geht es?"'));
+    expect(screen.getByRole('textbox')).not.toHaveAttribute('readonly');
+  });
+  it('keeps a draft that arrives after switching chats for its own chat', async () => {
+    const user = userEvent.setup();
+    useAppStore.setState({ ensureLocalAi: vi.fn().mockResolvedValue(undefined) });
+    let finish!: (text: string) => void;
+    vi.mocked(api.draftChatReply).mockImplementationOnce(() => new Promise((resolve) => { finish = resolve; }));
+    render(<ChatComposer />);
+    await user.click(screen.getByRole('button', { name: 'Write for me' }));
+    vi.mocked(api.getChatMessages).mockResolvedValueOnce([other]);
+    await useAppStore.getState().switchChatSession('chat-2');
+    finish('Für den ersten Chat');
+    await waitFor(() => expect(readDraft('composer:chat-1')).toBe('Für den ersten Chat'));
+    expect(screen.getByRole('textbox')).toHaveValue('');
   });
   it('does not activate a new chat created for an outdated character', async () => {
     let finish!: (value: ChatSession) => void;

@@ -442,6 +442,9 @@ ru „персонаж/история/сцена“. Fachbegriffe nur im Experte
 - Antwortvorschläge („Was könnte ich sagen?“, Glühbirne im `ChatComposer`): `chatSlice.suggestReplies` → `suggest_chat_replies`
   (`modules/reply_ideas.rs`: letzte 12 Nachrichten, JSON-Liste mit 3 Ideen, sonst zeilenweise); Vorschläge gehören zum Chat,
   in dem sie angefragt wurden, ein Klick übernimmt ins Eingabefeld. Mock erkennt „[CHAT — REPLY IDEAS]“ (`stats.replyIdeas`).
+  „Schreib für mich“ (Stift): `draftReply` → `draft_chat_reply` (`reply_ideas::draft`, Stichworte im Eingabefeld = `notes`,
+  `clean_draft` entfernt „Name:“/Zitatklammer); Eingabefeld währenddessen `readOnly`, „Rückgängig“-Toast stellt Stichworte her,
+  Ergebnis nach Chatwechsel landet im Entwurf des alten Chats. Mock: „[CHAT — USER DRAFT]“ (`stats.userDraft`).
 - Prompt-Log: `send_chat_message` legt den gekürzten Prompt in `AppState.last_prompt` ab (`modules/prompt_log.rs`,
   ohne API-Schlüssel); Anzeige `components/chat/PromptLogModal.tsx` über das Chat-Menü.
 - `<state>{…}</state>` am Antwortende aktualisiert HUD-Variablen (`utils/stateParser.ts`) und wird ausgeblendet.

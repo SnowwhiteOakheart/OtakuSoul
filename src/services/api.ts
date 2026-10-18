@@ -950,6 +950,11 @@ export const api = {
     return await invoke<string[]>('suggest_chat_replies', { request });
   },
 
+  /** "Write for me": the user's next message, built from their notes if any. */
+  draftChatReply: async (request: ReplyIdeasRequest): Promise<string> => {
+    return await invoke<string>('draft_chat_reply', { request });
+  },
+
   /** Translates one chat message with the chat model. */
   translateMessage: async (request: TranslateRequest): Promise<string> => {
     return await invoke<string>('translate_message', { request });

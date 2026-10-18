@@ -35,6 +35,8 @@ the character is and how your chat begins; **"Chat now"** starts the conversatio
 - Don't like a reply? Have it rewritten – the old one stays as a variant.
 - Stuck for words? The **light bulb** next to the message field ("What could I say?") suggests three replies – a
   click puts one into the field, where you can adjust it before sending.
+- The **pen** ("Write for me") writes your next message. If the field already holds notes (e.g. "ask for the way"), it
+  turns them into a message; "Undo" brings the notes back.
 - The character remembers your conversation. **"Conversation memory"** below the input shows how full it is; the app
   summarises older messages when needed.
 

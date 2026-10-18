@@ -1,6 +1,7 @@
-//! Reply ideas for the user ("What could I say?"): the chat model suggests a few short next
-//! messages in the user's voice, based on the end of the chat. Nothing is stored; the user picks
-//! one into the composer and edits it before sending.
+//! Help with the user's next message, based on the end of the chat: reply ideas ("What could I
+//! say?", a few short suggestions) and a full draft ("Write for me", impersonate; turns the
+//! user's notes into a message). Nothing is stored; the result goes into the composer, where the
+//! user edits it before sending.
 
 use crate::modules::inference::{ChatMessage, ChatRequest, InferenceClient, SamplingParams};
 use crate::modules::memory::StoredChatMessage;
@@ -24,6 +25,9 @@ pub struct ReplyIdeasRequest {
     pub user_description: String,
     /// Language name as written into the prompt, e.g. "Deutsch".
     pub language: String,
+    /// What the user has typed so far: a start or notes to build on (may be empty).
+    #[serde(default)]
+    pub notes: String,
     pub endpoint_url: String,
     pub api_key: Option<String>,
     pub model: Option<String>,
@@ -43,9 +47,40 @@ fn instructions(req: &ReplyIdeasRequest) -> String {
          Reply with a JSON array of {IDEA_COUNT} strings and nothing else.",
         lang = req.language,
     );
+    if !req.notes.trim().is_empty() {
+        text.push_str(&format!(
+            "\n{user} has started writing: \"{}\". Build the ideas on that.",
+            req.notes.trim()
+        ));
+    }
+    with_persona(text, req)
+}
+
+fn draft_instructions(req: &ReplyIdeasRequest) -> String {
+    let (user, char) = (&req.user_name, &req.char_name);
+    let mut text = format!(
+        "[CHAT — USER DRAFT]\nWrite {user}'s next message in a roleplay chat with {char}, as {user} in the \
+         first person and in {lang}. Match the chat's style (actions in *asterisks*, speech in quotation \
+         marks) and the usual length of {user}'s earlier messages; if unsure, two to four sentences.\n\
+         Never write {char}'s lines or decide what {char} does or says.\n\
+         Reply with the message only: no name in front, no explanation.",
+        lang = req.language,
+    );
+    if !req.notes.trim().is_empty() {
+        text.push_str(&format!(
+            "\nBuild the message from {user}'s notes below. Keep their intent and any wording already \
+             written, and turn keywords into a natural message:\n{}",
+            req.notes.trim()
+        ));
+    }
+    with_persona(text, req)
+}
+
+fn with_persona(mut text: String, req: &ReplyIdeasRequest) -> String {
     if !req.user_description.trim().is_empty() {
         text.push_str(&format!(
-            "\n\nAbout {user}: {}",
+            "\n\nAbout {}: {}",
+            req.user_name,
             req.user_description.trim()
         ));
     }
@@ -80,7 +115,7 @@ fn transcript(messages: &[StoredChatMessage], req: &ReplyIdeasRequest) -> String
     lines.reverse();
     if lines.is_empty() {
         format!(
-            "(The chat has not started yet. Suggest ways for {} to open it.)",
+            "(The chat has not started yet; {} writes the first message.)",
             req.user_name
         )
     } else {
@@ -128,11 +163,40 @@ pub fn parse_ideas(text: &str) -> Vec<String> {
     ideas
 }
 
-pub async fn suggest(
+/// The draft from the model's answer, without a code fence, a "Name:" prefix or quotes around
+/// the whole message (quotes around speech inside stay).
+pub fn clean_draft(text: &str, user_name: &str) -> String {
+    let mut text = text.trim();
+    if let Some(inner) = text.strip_prefix("```") {
+        text = inner.split_once('\n').map_or(inner, |(_, rest)| rest);
+        text = text.trim_end().strip_suffix("```").unwrap_or(text).trim();
+    }
+    if let Some(rest) = text
+        .strip_prefix(user_name)
+        .and_then(|rest| rest.strip_prefix(':'))
+    {
+        text = rest.trim();
+    }
+    let quoted = text.len() >= 2
+        && text.starts_with('"')
+        && text.ends_with('"')
+        && text.matches('"').count() == 2;
+    if quoted {
+        text = &text[1..text.len() - 1];
+    }
+    text.trim().to_string()
+}
+
+/// One request to the chat model without streaming, bounded so a stuck server doesn't leave the
+/// button waiting.
+async fn ask(
     client: &InferenceClient,
-    messages: &[StoredChatMessage],
-    req: ReplyIdeasRequest,
-) -> Result<Vec<String>, String> {
+    req: &ReplyIdeasRequest,
+    system: String,
+    user: String,
+    temperature: f32,
+    max_tokens: u32,
+) -> Result<String, String> {
     let request = ChatRequest {
         endpoint_url: req.endpoint_url.clone(),
         api_key: req.api_key.clone(),
@@ -140,37 +204,61 @@ pub async fn suggest(
         messages: vec![
             ChatMessage {
                 role: "system".into(),
-                content: instructions(&req),
+                content: system,
                 attachments: Vec::new(),
             },
             ChatMessage {
                 role: "user".into(),
-                content: transcript(messages, &req),
+                content: user,
                 attachments: Vec::new(),
             },
         ],
         sampling: Some(SamplingParams {
-            temperature: Some(0.9),
-            max_tokens: Some(400),
+            temperature: Some(temperature),
+            max_tokens: Some(max_tokens),
             ..SamplingParams::default()
         }),
         reasoning_mode: Some(false),
         provider: req.provider.clone(),
     };
-    let answer = match tokio::time::timeout(
+    match tokio::time::timeout(
         std::time::Duration::from_secs(120),
         client.generate_direct(request),
     )
     .await
     {
-        Ok(result) => result?,
-        Err(_) => return Err(crate::err!("backend.llm.timeout", seconds = 120)),
-    };
+        Ok(result) => result,
+        Err(_) => Err(crate::err!("backend.llm.timeout", seconds = 120)),
+    }
+}
+
+pub async fn suggest(
+    client: &InferenceClient,
+    messages: &[StoredChatMessage],
+    req: ReplyIdeasRequest,
+) -> Result<Vec<String>, String> {
+    let (system, user) = (instructions(&req), transcript(messages, &req));
+    let answer = ask(client, &req, system, user, 0.9, 400).await?;
     let ideas = parse_ideas(&answer);
     if ideas.is_empty() {
         return Err(crate::err!("backend.chat.noReplyIdeas"));
     }
     Ok(ideas)
+}
+
+/// "Write for me": the user's next message, built from their notes if they typed any.
+pub async fn draft(
+    client: &InferenceClient,
+    messages: &[StoredChatMessage],
+    req: ReplyIdeasRequest,
+) -> Result<String, String> {
+    let (system, user) = (draft_instructions(&req), transcript(messages, &req));
+    let answer = ask(client, &req, system, user, 0.8, 350).await?;
+    let text = clean_draft(&answer, &req.user_name);
+    if text.is_empty() {
+        return Err(crate::err!("backend.chat.noReplyDraft"));
+    }
+    Ok(text)
 }
 
 #[cfg(test)]
@@ -199,6 +287,7 @@ mod tests {
             user_name: "Kai".into(),
             user_description: "Ein Reisender.".into(),
             language: "Deutsch".into(),
+            notes: String::new(),
             endpoint_url: String::new(),
             api_key: None,
             model: None,
@@ -235,6 +324,28 @@ mod tests {
         assert!(text.ends_with("Kai: Nachricht 19"));
         assert!(!text.contains("intern"));
         assert!(instructions(&request()).contains("About Kai: Ein Reisender."));
-        assert!(transcript(&[], &request()).contains("open it"));
+        assert!(transcript(&[], &request()).contains("first message"));
+    }
+
+    #[test]
+    fn a_draft_loses_wrappers_but_keeps_speech_quotes() {
+        assert_eq!(
+            clean_draft("Kai: *winkt* \"Hallo!\"", "Kai"),
+            "*winkt* \"Hallo!\""
+        );
+        assert_eq!(clean_draft("\"Lass uns gehen.\"", "Kai"), "Lass uns gehen.");
+        assert_eq!(clean_draft("```\n*nickt*\n```", "Kai"), "*nickt*");
+        assert_eq!(clean_draft("Kaito ist da.", "Kai"), "Kaito ist da.");
+    }
+
+    #[test]
+    fn notes_steer_the_draft_and_the_ideas() {
+        let mut req = request();
+        assert!(!draft_instructions(&req).contains("notes below"));
+        req.notes = "nach dem Weg fragen".into();
+        assert!(draft_instructions(&req).ends_with("Ein Reisender."));
+        assert!(draft_instructions(&req).contains("notes below. Keep their intent"));
+        assert!(draft_instructions(&req).contains("nach dem Weg fragen"));
+        assert!(instructions(&req).contains("started writing: \"nach dem Weg fragen\""));
     }
 }

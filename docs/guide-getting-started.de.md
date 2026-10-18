@@ -36,6 +36,8 @@ zeigt, wer die Figur ist und wie euer Chat beginnt; **„Jetzt chatten“** star
 - Gefällt Dir eine Antwort nicht, lass sie neu schreiben – die alte bleibt als Variante erhalten.
 - Fällt Dir nichts ein? Die **Glühbirne** neben dem Eingabefeld („Was könnte ich sagen?“) schlägt drei Antworten vor –
   ein Klick übernimmt eine ins Eingabefeld, dort kannst Du sie vor dem Senden anpassen.
+- Der **Stift** („Schreib für mich“) schreibt Deine nächste Nachricht. Stehen schon Stichworte im Eingabefeld (z. B.
+  „nach dem Weg fragen“), macht er daraus eine Nachricht; „Rückgängig“ holt die Stichworte zurück.
 - Die Figur erinnert sich an euer Gespräch. Die Anzeige **„Gesprächsgedächtnis“** unter dem Eingabefeld zeigt, wie
   voll es ist; ältere Nachrichten fasst die App bei Bedarf zusammen.
 
