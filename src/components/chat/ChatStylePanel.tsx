@@ -15,6 +15,7 @@ export const DEFAULT_CHAT_STYLE: ChatStyle = {
   bubbles: '',
   ambient: null,
   ambient_volume: 35,
+  reply_length: '',
 };
 
 /** Changes are saved shortly after the last edit (sliders send many). */
@@ -41,9 +42,12 @@ export const ChatStylePanel = ({ chatId }: { chatId: string }) => {
 
   const store = (next: ChatStyle | null) => {
     pending.current = null;
+    // The reply length is chosen at the composer: keep the current one, also on reset.
+    const length = useAppStore.getState().chatSessions.find((s) => s.id === chatId)?.style?.reply_length ?? '';
+    const merged = next ? { ...next, reply_length: length } : length ? { ...DEFAULT_CHAT_STYLE, reply_length: length } : null;
     useAppStore
       .getState()
-      .updateChatStyle(chatId, next)
+      .updateChatStyle(chatId, merged)
       .catch((e) => toast.error(translate('chatStyle.saveFailed', { error: errorMessage(e) })));
   };
 

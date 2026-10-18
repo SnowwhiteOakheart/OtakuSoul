@@ -116,6 +116,22 @@ pub struct PromptContext {
     #[serde(default)]
     #[ts(optional)]
     pub idle_seconds: Option<u64>,
+    /// The chat's reply length (`short`, `medium`, `long`; empty = as the template says).
+    #[serde(default)]
+    #[ts(optional)]
+    pub reply_length: Option<String>,
+}
+
+/// The instruction for a chosen reply length; it goes last, where models heed it most.
+fn reply_length_rule(length: Option<&str>) -> Option<&'static str> {
+    match length? {
+        "short" => Some("Keep this reply short: one to three sentences."),
+        "medium" => Some("Keep this reply to a medium length: about one or two paragraphs."),
+        "long" => Some(
+            "Write a detailed reply: several paragraphs with vivid description, actions and dialogue.",
+        ),
+        _ => None,
+    }
 }
 
 impl PromptContext {
@@ -161,7 +177,15 @@ pub fn post_history_instruction(ctx: &PromptContext) -> Option<String> {
         ctx.character.post_history_instructions.as_deref(),
         &template.post_history,
     );
-    let text = crate::modules::macros::expand(&text, &ctx.macro_input());
+    let mut text = crate::modules::macros::expand(&text, &ctx.macro_input())
+        .trim()
+        .to_string();
+    if let Some(rule) = reply_length_rule(ctx.reply_length.as_deref()) {
+        if !text.is_empty() {
+            text.push('\n');
+        }
+        text.push_str(rule);
+    }
     (!text.trim().is_empty()).then(|| text.trim().to_string())
 }
 
@@ -452,6 +476,32 @@ mod tests {
             },
             ..PromptContext::default()
         }
+    }
+
+    #[test]
+    fn the_chosen_reply_length_comes_last() {
+        let mut ctx = context(None);
+        assert!(
+            !post_history_instruction(&ctx)
+                .unwrap_or_default()
+                .contains("reply short")
+        );
+        ctx.reply_length = Some("short".into());
+        let text = post_history_instruction(&ctx).unwrap();
+        assert!(text.ends_with("Keep this reply short: one to three sentences."));
+        // Also without a post-history text in the template.
+        ctx.template = Some(PromptTemplate {
+            post_history: String::new(),
+            ..PromptTemplate::default()
+        });
+        ctx.reply_length = Some("long".into());
+        assert!(
+            post_history_instruction(&ctx)
+                .unwrap()
+                .starts_with("Write a detailed reply")
+        );
+        ctx.reply_length = Some(String::new());
+        assert_eq!(post_history_instruction(&ctx), None);
     }
 
     #[test]

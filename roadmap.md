@@ -69,7 +69,7 @@
 - [x] **Wiederholungen eindämmen in Klartext:** Schalter „Abwechslungsreicher schreiben“ (DRY/XTC mit guten Werten), optional automatisches
   Neu-Würfeln bei fast gleicher Antwort.
 - [ ] **Ausgabe-Filter:** einfache Liste „Diese Wörter/Muster vermeiden“, Ersetzungsregeln für Antworten (Expertenmodus: RegEx, Logit-Bias).
-- [ ] **Antwortlänge pro Chat:** kurz/mittel/ausführlich, passt Prompt und `max_tokens` gemeinsam an.
+- [x] **Antwortlänge pro Chat:** kurz/mittel/ausführlich, passt Prompt und `max_tokens` gemeinsam an.
 - [ ] **Sichtbare Lorebook-/Gedächtnis-Treffer** je Antwort (welche Einträge einbezogen wurden).
 - [ ] **„Diese Nachricht merken“** im Nachrichtenmenü (`add_episodic_memory_from`).
 - [ ] **Szenenbild per Knopf** aus dem aktuellen Chat-Kontext.

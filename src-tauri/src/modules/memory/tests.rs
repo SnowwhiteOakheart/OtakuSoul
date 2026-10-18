@@ -1044,6 +1044,7 @@ fn chat_style_is_stored_reset_and_kept_by_a_branch() {
         bubbles: "subtle".into(),
         ambient: Some("regen.ogg".into()),
         ambient_volume: 30,
+        reply_length: "short".into(),
     };
     db.update_chat_style(&chat.id, Some(&style)).unwrap();
     assert_eq!(

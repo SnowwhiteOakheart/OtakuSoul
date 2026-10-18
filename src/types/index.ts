@@ -452,6 +452,7 @@ export interface PromptContext {
   template?: PromptTemplate;
   macro_seed?: string;
   idle_seconds?: number;
+  reply_length?: string;
 }
 
 // Phase 6: Soul Stage Tabletop RPG

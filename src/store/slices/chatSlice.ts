@@ -4,7 +4,7 @@ import { soundFx } from '../../services/soundFx';
 import { streamingTts } from '../../services/streamingTts';
 import { extractStateUpdates, applyStateUpdates } from '../../utils/stateParser';
 import { HUD_PRESETS } from '../../constants/hudPresets';
-import { APP_LANGUAGE_NAMES, llmTarget, resolvePromptWithLore } from '../helpers';
+import { APP_LANGUAGE_NAMES, chatSampling, llmTarget, resolvePromptWithLore } from '../helpers';
 import type {
   DoneEvent,
   AssembledPrompt,
@@ -626,7 +626,6 @@ export const createChatSlice: SliceCreator<ChatSlice> = (set, get) => {
       cloudModel,
       cloudProvider,
       activeCharacter,
-      sampling,
       chatSessions,
     } = get();
 
@@ -680,9 +679,7 @@ export const createChatSlice: SliceCreator<ChatSlice> = (set, get) => {
         model: selectedBackend === 'cloud' ? cloudModel : undefined,
         messages: payloadMessages,
         reasoning_mode: serverConfig.reasoning_mode,
-        sampling: {
-          ...sampling,
-        },
+        sampling: chatSampling(get()),
       }, generationId, selectedBackend === 'cloud' ? get().cloudContextTokens : undefined, get().chatTools);
       if (!inContext(activeChatId, activeCharacter.id) && !keepsPartial(done, activeChatId, activeCharacter.id)) return;
 
@@ -732,7 +729,6 @@ export const createChatSlice: SliceCreator<ChatSlice> = (set, get) => {
       cloudModel,
       cloudProvider,
       activeCharacter,
-      sampling,
     } = get();
 
     if (get().isGenerating || get().isChatLoading || get().chatLoadError || !activeChatId || !activeCharacter) return;
@@ -776,9 +772,7 @@ export const createChatSlice: SliceCreator<ChatSlice> = (set, get) => {
         model: selectedBackend === 'cloud' ? cloudModel : undefined,
         messages: payloadMessages,
         reasoning_mode: serverConfig.reasoning_mode,
-        sampling: {
-          ...sampling,
-        },
+        sampling: chatSampling(get()),
       }, generationId, selectedBackend === 'cloud' ? get().cloudContextTokens : undefined, get().chatTools);
       if (!inContext(activeChatId, activeCharacter.id) && !keepsPartial(done, activeChatId, activeCharacter.id)) return;
 
@@ -859,7 +853,6 @@ export const createChatSlice: SliceCreator<ChatSlice> = (set, get) => {
       cloudApiKey,
       cloudModel,
       cloudProvider,
-      sampling,
       chatSessions,
     } = get();
 
@@ -959,9 +952,7 @@ export const createChatSlice: SliceCreator<ChatSlice> = (set, get) => {
         model: selectedBackend === 'cloud' ? cloudModel : undefined,
         messages: payloadMessages,
         reasoning_mode: serverConfig.reasoning_mode,
-        sampling: {
-          ...sampling,
-        },
+        sampling: chatSampling(get()),
       }, generationId, selectedBackend === 'cloud' ? get().cloudContextTokens : undefined, get().chatTools);
       if (!inContext(chatId, activeCharacter?.id) && !keepsPartial(done, chatId, activeCharacter?.id)) return;
 

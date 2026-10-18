@@ -73,6 +73,10 @@ ru „персонаж/история/сцена“. Fachbegriffe nur im Experte
   (Lorebooks, `assemble_prompt` = System-Prompt + Nachspann) → Payload (+ Author's Note in Tiefe N, Nachspann am Ende)
   → `send_chat_message`: `attachments::prepare` → `context_window::fit` (kürzt von vorn) → `stream_chat` (Events
   `llm-token`/`llm-thought`/`llm-done`) → Antwort speichern → ggf. `summarizeDroppedMessages` im Hintergrund.
+- **Antwortlänge pro Chat:** `ChatStyle.reply_length` (`short`/`medium`/`long`, leer = Vorlage), Auswahl `ReplyLengthPicker` unter dem
+  Eingabefeld; `ChatStylePanel` behält den Wert beim Speichern/Zurücksetzen. Prompt: `PromptContext.reply_length` →
+  `reply_length_rule` am Ende des Nachspanns; `helpers.ts` `chatSampling` begrenzt `max_tokens` (400/900, ausführlich ≥ 2048,
+  nicht bei Denkmodus). E2E `chat-reply-length.mjs`.
 - **Wiederholungen:** Antwortstil → „Abwechslung“: `settingDefaults.ts` `VARIETY_SAMPLING` (DRY, XTC, Presence/Frequency;
   an = `varietyOn`, d. h. DRY > 0) und `AppSettings.reroll_repeats` (`rerollRepeats`, Standard an): `chatSlice.sendMessage`
   prüft die gespeicherte Antwort mit `utils/repetition.ts` `isRepeat` (Wort-Tripel gegen die letzten 3 Antworten) und ruft

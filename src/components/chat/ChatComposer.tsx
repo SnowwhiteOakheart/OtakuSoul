@@ -3,13 +3,15 @@ import { Clapperboard, FileText, Lightbulb, Loader2, Paperclip, PenLine, Send, S
 import { useAppStore, useStoreFields } from '../../store/useAppStore';
 import { errorFix } from '../../utils/errorFixes';
 import { streamingTts } from '../../services/streamingTts';
-import { useTranslation } from '../../i18n';
+import { useTranslation, type TranslationKey } from '../../i18n';
 import { VoiceCallControls } from '../voice/VoiceCallControls';
 import { toast } from '../ui/feedback';
 import { errorMessage } from '../../utils/errors';
 import type { ContextUsage } from '../../types';
 import { readDraft, writeDraft } from '../../utils/drafts';
 import { reportFailure } from '../../store/reportFailure';
+import { REPLY_LENGTHS } from '../../store/helpers';
+import { DEFAULT_CHAT_STYLE } from './ChatStylePanel';
 
 /**
  * Message input with send/abort, voice controls and the context meter. Owns the draft so
@@ -317,7 +319,10 @@ export const ChatComposer: React.FC = () => {
           onEnsureAutoTts={() => setAutoTtsEnabled(true)}
         />
       </div>
-      {contextUsage && <ContextMeter usage={contextUsage} />}
+      <div className="max-w-4xl mx-auto mt-1.5 flex flex-wrap items-center justify-between gap-x-4 gap-y-1">
+        {contextUsage ? <ContextMeter usage={contextUsage} /> : <span />}
+        {activeChatId && <ReplyLengthPicker chatId={activeChatId} />}
+      </div>
     </div>
   );
 };
@@ -358,6 +363,32 @@ const PendingFile: React.FC<{ file: File; onRemove: () => void }> = ({ file, onR
   );
 };
 
+/** How long the replies of this chat should be; saved with the chat (empty = as the template says). */
+const ReplyLengthPicker: React.FC<{ chatId: string }> = ({ chatId }) => {
+  const { t } = useTranslation();
+  const style = useAppStore((s) => s.chatSessions.find((session) => session.id === chatId)?.style);
+  const updateChatStyle = useAppStore((s) => s.updateChatStyle);
+  const value = style?.reply_length ?? '';
+  return (
+    <label className="flex items-center gap-1.5 text-xs text-slate-400" title={t('chat.replyLengthHint')}>
+      {t('chat.replyLength')}
+      <select
+        value={value}
+        onChange={(e) => {
+          updateChatStyle(chatId, { ...DEFAULT_CHAT_STYLE, ...style, reply_length: e.target.value })
+            .catch((err) => reportFailure('Saving the reply length failed:', err));
+        }}
+        className="rounded-md border border-slate-700 bg-app px-1.5 py-0.5 text-xs text-slate-200"
+        data-reply-length
+      >
+        {REPLY_LENGTHS.map((length) => (
+          <option key={length} value={length}>{t(`chat.replyLength.${length || 'default'}` as TranslationKey)}</option>
+        ))}
+      </select>
+    </label>
+  );
+};
+
 /** How full the context window was for the last reply and how many old messages were left out. */
 const ContextMeter: React.FC<{ usage: ContextUsage }> = ({ usage }) => {
   const { t, tPlural } = useTranslation();
@@ -367,7 +398,7 @@ const ContextMeter: React.FC<{ usage: ContextUsage }> = ({ usage }) => {
   const k = (n: number) => (n >= 1000 ? `${(n / 1000).toFixed(1)}k` : String(n));
   return (
     <div
-      className="max-w-4xl mx-auto mt-1.5 flex items-center gap-2 text-xs text-slate-400"
+      className="flex items-center gap-2 text-xs text-slate-400"
       title={`${expertMode ? '' : `${t('chat.contextSimpleHint')} `}${t(usage.estimated ? 'chat.contextEstimated' : 'chat.context', {
         used: k(usage.prompt_tokens),
         total: k(usage.context_tokens),

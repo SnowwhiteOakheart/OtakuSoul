@@ -28,4 +28,8 @@ ambient: string | null,
 /**
  * 0–100 (%).
  */
-ambient_volume: number, };
+ambient_volume: number, 
+/**
+ * How long replies should be: `short`, `medium`, `long` or empty (as the prompt template says).
+ */
+reply_length: string, };

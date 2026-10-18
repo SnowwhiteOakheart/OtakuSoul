@@ -41,6 +41,7 @@ the character is and how your chat begins; **"Chat now"** starts the conversatio
   written in `(( ))` – you can also type them directly – and stay out of the memory.
 - Replies always sound the same? Turn on "Write with more variety" under **Settings → Reply style → Variety**. If the
   AI copies one of its last replies, the app rewrites it automatically.
+- Below the message field you choose the **reply length** for this chat: short, medium or detailed.
 - The character remembers your conversation. **"Conversation memory"** below the input shows how full it is; the app
   summarises older messages when needed.
 

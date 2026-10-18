@@ -1,7 +1,7 @@
 import { api } from '../services/api';
 import { soundFx } from '../services/soundFx';
 import { waitWithAbort } from '../utils/cancellation';
-import type { AssembledPrompt, ChatMessage, LorebookEntry, LlmProviderType } from '../types';
+import type { AssembledPrompt, ChatMessage, LorebookEntry, LlmProviderType, SamplingParams } from '../types';
 import type { AppStoreState } from './storeTypes';
 
 export async function resolvePromptWithLore(
@@ -118,7 +118,28 @@ export async function resolvePromptWithLore(
     template: promptTemplate ?? undefined,
     macro_seed: activeChatId ?? undefined,
     idle_seconds: idleSeconds(storedMessages),
+    reply_length: activeSession?.style?.reply_length || undefined,
   }), signal);
+}
+
+/** Reply lengths a chat can choose; empty = as the prompt template says. */
+export const REPLY_LENGTHS = ['', 'short', 'medium', 'long'] as const;
+export type ReplyLength = (typeof REPLY_LENGTHS)[number];
+
+/** Token room per reply length: short replies don't run on, long ones aren't cut off. */
+const REPLY_LENGTH_TOKENS: Record<Exclude<ReplyLength, ''>, number> = { short: 400, medium: 900, long: 2048 };
+
+/**
+ * The sampler for a reply in the open chat: its reply length bounds `max_tokens` (a long one
+ * raises it). With thinking on, the thoughts count against the limit too, so it stays untouched.
+ */
+export function chatSampling(state: AppStoreState): SamplingParams {
+  const session = state.chatSessions.find((s) => s.id === state.activeChatId);
+  const length = session?.style?.reply_length as ReplyLength | undefined;
+  if (!length || state.serverConfig.reasoning_mode) return { ...state.sampling };
+  const current = state.sampling.max_tokens ?? 2048;
+  const room = REPLY_LENGTH_TOKENS[length];
+  return { ...state.sampling, max_tokens: length === 'long' ? Math.max(current, room) : Math.min(current, room) };
 }
 
 /**

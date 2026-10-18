@@ -180,6 +180,8 @@ pub struct ChatStyle {
     pub ambient: Option<String>,
     /// 0–100 (%).
     pub ambient_volume: u8,
+    /// How long replies should be: `short`, `medium`, `long` or empty (as the prompt template says).
+    pub reply_length: String,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq, TS)]

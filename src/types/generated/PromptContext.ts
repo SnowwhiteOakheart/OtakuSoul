@@ -21,4 +21,8 @@ macro_seed?: string,
 /**
  * Seconds since the user's previous message (`{{idle_duration}}`).
  */
-idle_seconds?: number, };
+idle_seconds?: number, 
+/**
+ * The chat's reply length (`short`, `medium`, `long`; empty = as the template says).
+ */
+reply_length?: string, };
