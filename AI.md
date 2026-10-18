@@ -583,7 +583,9 @@ ru „персонаж/история/сцена“. Fachbegriffe nur im Experte
   `seductive`, `aroused`, `ecstasy`, `afterglow` (`emotions::EXTRA_PORTRAITS`, `EmotionResult.portrait`; Bildwahl
   `selectCharacterPortrait`: Zusatzplatz → Emotion → Stimmung → neutral) – für alle Karten nutzbar.
   Chat-Antworten enden mit einem Tag `[emotion: NAME]` (`PromptContext.emotion_tags`, Nachspann bietet von allen 15 Plätzen
-  nur die an, deren Bild vor jeder Antwort existiert – `prompt_builder::picture_exists`; ohne Bild kein Tag); `utils/replyTags.ts` entfernt ihn vor dem Speichern und im Live-Text, `chatSlice.replyEmotionTags`
+  nur die an, deren Bild vor jeder Antwort existiert – `prompt_builder::picture_exists`; die sechs Stimmungen auch, wenn
+  ein 3D-/Live2D-Avatar sie zeigt: `avatar_moods` aus `helpers.avatarShowsMoods`, nicht bei „Alle zeigen“ im Gruppen-Chat;
+  sonst ohne Bild kein Tag; E2E `chat-emotion-tag.mjs`); `utils/replyTags.ts` entfernt ihn vor dem Speichern und im Live-Text, `chatSlice.replyEmotionTags`
   merkt ihn je `hitKey` (nur Sitzung), `voice::clean_text_for_tts` liest ihn (und `<state>`) nicht vor.
   Ohne Tag entscheiden Hinweiswörter aus `presets/cues/<sprache>.json` (+ `common.json` für Emoticons; Abschnitte `emotions`,
   `portraits` = Backend `emotions::Cue`, `gestures` = Frontend `avatarGestures.ts` per `import.meta.glob`). Ganze Wörter,

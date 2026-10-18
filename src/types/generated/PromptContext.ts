@@ -39,4 +39,9 @@ group?: Array<GroupMember>,
  * Ask for an expression tag at the reply's end (`[emotion: …]`, chat replies only); it picks
  * the portrait language independently (`emotions::classify_emotion`).
  */
-emotion_tags?: boolean, };
+emotion_tags?: boolean, 
+/**
+ * The avatar on screen (3D, Live2D) shows the six moods itself: the tag offers them even
+ * without portrait pictures.
+ */
+avatar_moods?: boolean, };

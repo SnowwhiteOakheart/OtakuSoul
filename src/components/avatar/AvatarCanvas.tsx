@@ -7,6 +7,7 @@ import { PORTRAIT_MOODS, assetAsBlobUrl, getPortraitExpressions, loadDisplayable
 import { useAppStore, useStoreFields } from '../../store/useAppStore';
 import { translate, useTranslation, type TranslationKey } from '../../i18n';
 import { DropdownMenu } from '../ui/DropdownMenu';
+import { resolveLive2dPath } from '../avatars/avatarMatch';
 import { AvatarSkeleton, ScrollText } from '../ui';
 import { languageCode, localizeCard } from '../../utils/cardI18n';
 
@@ -195,19 +196,7 @@ export const AvatarCanvas: React.FC<AvatarCanvasProps> = ({
   const vrmPath = (characterVrmKnown ? characterVrm : '') || activeVrmPath || '';
 
   // 2. Resolve Live2D model path (Character override or global setting fallback)
-  const live2dKey =
-    (character?.card.data.extensions?.custom_live2d as string) ||
-    (character?.card.data.extensions?.sow_live2d as string) ||
-    '';
-  const matchedLive2d = live2dKey
-    ? scannedLive2ds.find(
-        (m) =>
-          m.id.toLowerCase() === live2dKey.toLowerCase() ||
-          m.model_path.toLowerCase().includes(live2dKey.toLowerCase())
-      )
-    : scannedLive2ds.find((m) => m.model_path === activeLive2dPath) || scannedLive2ds[0];
-
-  const live2dPath = matchedLive2d?.model_path || activeLive2dPath || '';
+  const live2dPath = resolveLive2dPath(character, scannedLive2ds, activeLive2dPath);
 
   // 3. Resolve granular/canonical emotion portrait, then fall back to neutral/base avatar.
   const emotionImage = selectCharacterPortrait(

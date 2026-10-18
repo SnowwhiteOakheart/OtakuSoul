@@ -1,6 +1,7 @@
 import { api } from '../services/api';
 import { soundFx } from '../services/soundFx';
 import { waitWithAbort } from '../utils/cancellation';
+import { resolveLive2dPath } from '../components/avatars/avatarMatch';
 import type { AssembledPrompt, CharacterProfile, ChatMessage, CognitiveOverview, GroupMember, LorebookEntry, LlmProviderType, SamplingParams } from '../types';
 import type { AppStoreState } from './storeTypes';
 
@@ -161,8 +162,27 @@ export async function resolvePromptWithLore(
     avoid_phrases: state.avoidPhrases.length > 0 ? state.avoidPhrases : undefined,
     group: speaker && speaker.others.length > 0 ? speaker.others : undefined,
     emotion_tags: true,
+    avatar_moods: avatarShowsMoods(state, activeCharacter) || undefined,
   }), signal);
   return { ...assembled, hits };
+}
+
+/**
+ * Whether the avatar on screen shows the six moods itself (3D, or Live2D with a model): then the
+ * expression tag offers them even without portrait pictures. "Show everyone" in a group chat
+ * shows portraits instead.
+ */
+export function avatarShowsMoods(state: AppStoreState, character: CharacterProfile): boolean {
+  const session = state.chatSessions.find((s) => s.id === state.activeChatId);
+  let everyone = false;
+  try {
+    everyone = (session?.members.length ?? 0) > 0 && localStorage.getItem('otakusoul.chat.groupEveryone') === 'true';
+  } catch {
+    // no storage: the default view (one avatar)
+  }
+  if (everyone) return false;
+  if (state.avatarMode === '3d') return true;
+  return state.avatarMode === 'live2d' && !!resolveLive2dPath(character, state.scannedLive2ds, state.activeLive2dPath);
 }
 
 /** Key of a reply variant in `promptHits` (each swipe was written with its own prompt). */

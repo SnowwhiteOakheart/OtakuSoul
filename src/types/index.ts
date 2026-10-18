@@ -465,6 +465,8 @@ export interface PromptContext {
   group?: GroupMember[];
   /** Ask for an expression tag at the reply's end (`[emotion: …]`). */
   emotion_tags?: boolean;
+  /** The avatar (3D/Live2D) shows the six moods: offer them without portrait pictures. */
+  avatar_moods?: boolean;
 }
 
 // Phase 6: Soul Stage Tabletop RPG

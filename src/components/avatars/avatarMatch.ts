@@ -20,3 +20,19 @@ export const usesLive2d = (character: CharacterProfile, model: Pick<ScannedLive2
   const own = characterLive2d(character).toLowerCase();
   return !!own && (model.id.toLowerCase() === own || model.model_path.toLowerCase().includes(own));
 };
+
+/**
+ * The Live2D model the viewer shows for a character: the card's own (by id or part of the path),
+ * else the chosen default, else the first one; empty = none to show.
+ */
+export const resolveLive2dPath = (
+  character: CharacterProfile | null,
+  scanned: Pick<ScannedLive2d, 'id' | 'model_path'>[],
+  activeLive2dPath: string | null,
+): string => {
+  const own = character ? characterLive2d(character) : '';
+  const matched = own
+    ? scanned.find((m) => usesLive2d(character!, m))
+    : scanned.find((m) => m.model_path === activeLive2dPath) || scanned[0];
+  return matched?.model_path || activeLive2dPath || '';
+};

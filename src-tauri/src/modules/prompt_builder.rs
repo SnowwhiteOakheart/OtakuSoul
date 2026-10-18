@@ -133,6 +133,11 @@ pub struct PromptContext {
     #[serde(default)]
     #[ts(optional)]
     pub emotion_tags: Option<bool>,
+    /// The avatar on screen (3D, Live2D) shows the six moods itself: the tag offers them even
+    /// without portrait pictures.
+    #[serde(default)]
+    #[ts(optional)]
+    pub avatar_moods: Option<bool>,
 }
 
 /// Another character present in a group chat, as the speaker sees them.
@@ -199,8 +204,8 @@ fn reply_length_rule(length: Option<&str>) -> Option<&'static str> {
 }
 
 /// The expression tag the reply should end with: every portrait slot (six moods and the extra
-/// ones) the card really has a picture for, checked before each reply. Without any picture there
-/// is no tag; the cue words decide then.
+/// ones) the card really has a picture for, checked before each reply; the six moods also when a
+/// 3D/Live2D avatar shows them. Without any of these there is no tag; the cue words decide then.
 fn emotion_tag_rule(ctx: &PromptContext) -> Option<String> {
     if !ctx.emotion_tags.unwrap_or(false) {
         return None;
@@ -208,16 +213,22 @@ fn emotion_tag_rule(ctx: &PromptContext) -> Option<String> {
     let extensions = &ctx.character.extensions;
     let pictures = ["expressions", "custom_expressions", "sow_expressions"]
         .iter()
-        .find_map(|key| extensions.get(*key).and_then(serde_json::Value::as_object))?;
+        .find_map(|key| extensions.get(*key).and_then(serde_json::Value::as_object));
+    let has_picture = |slot: &str| {
+        pictures
+            .and_then(|p| p.get(slot))
+            .and_then(serde_json::Value::as_str)
+            .is_some_and(picture_exists)
+    };
+    let avatar_moods = ctx.avatar_moods.unwrap_or(false);
     let names: Vec<&str> = crate::modules::emotions::MOODS
         .into_iter()
-        .chain(crate::modules::emotions::EXTRA_PORTRAITS)
-        .filter(|slot| {
-            pictures
-                .get(*slot)
-                .and_then(serde_json::Value::as_str)
-                .is_some_and(picture_exists)
-        })
+        .filter(|mood| avatar_moods || has_picture(mood))
+        .chain(
+            crate::modules::emotions::EXTRA_PORTRAITS
+                .into_iter()
+                .filter(|slot| has_picture(slot)),
+        )
         .collect();
     if names.is_empty() {
         return None;
@@ -636,6 +647,18 @@ mod tests {
         assert!(post_history_instruction(&ctx).is_none_or(|p| !p.contains("[emotion:")));
         ctx.character.extensions = serde_json::json!({});
         assert!(post_history_instruction(&ctx).is_none_or(|p| !p.contains("[emotion:")));
+
+        // A 3D/Live2D avatar shows the six moods; extra slots still need their picture.
+        ctx.avatar_moods = Some(true);
+        let rule = post_history_instruction(&ctx).unwrap();
+        assert!(
+            rule.contains("NAME one of: neutral, happy, sad, angry, surprised, relaxed."),
+            "{rule}"
+        );
+        ctx.character.extensions =
+            serde_json::json!({"expressions": {"crying": file("crying.png")}});
+        let rule = post_history_instruction(&ctx).unwrap();
+        assert!(rule.contains("relaxed, crying."), "{rule}");
         let _ = std::fs::remove_dir_all(&dir);
     }
 
