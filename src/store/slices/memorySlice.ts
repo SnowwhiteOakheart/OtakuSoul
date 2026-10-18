@@ -22,11 +22,16 @@ const withoutPending = (overview: CognitiveOverview): CognitiveOverview =>
     ? overview
     : { ...overview, recent_memories: overview.recent_memories.filter((m) => !pendingForgets.has(m.id)) };
 import { trackTask } from './taskSlice';
-import { chatSpeakers, presentedAs } from '../../utils/groupChat';
+import { chatSpeakers, memoryCharacter, presentedAs } from '../../utils/groupChat';
 
 /** Cognitive soul memory: psychology, relationship, diary, reflection and memory backups. */
 export interface MemorySlice {
+  /** The memory of the character `memoryCharacter` names (the active one, or a guest the drawer shows). */
   cognitiveOverview: CognitiveOverview | null;
+  /** A guest of the open group chat whose memory the drawer shows; null = the active character. */
+  memoryCharacterId: string | null;
+  /** Shows another character's memory in the drawer (null = the active character) and loads it. */
+  setMemoryCharacter: (id: string | null) => void;
   isMemoryLoading: boolean;
   memoryOverviewError: string | null;
   isReflecting: boolean;
@@ -75,8 +80,10 @@ export const createMemorySlice: SliceCreator<MemorySlice> = (set, get) => {
   let overviewRequest = 0;
   let backupsRequest = 0;
   let markdownRequest = 0;
+  /** Whose memory the drawer shows: a guest of the open group chat, else the active character. */
+  const memoryCid = () => memoryCharacter(get())?.id;
   const refreshContext = async (cid: string, userName: string) => {
-    const isCurrent = () => get().activeCharacter?.id === cid && get().activePersona.name === userName;
+    const isCurrent = () => memoryCid() === cid && get().activePersona.name === userName;
     if (!isCurrent()) return;
     await get().fetchCognitiveOverview(cid, userName);
     if (!isCurrent()) return;
@@ -86,6 +93,20 @@ export const createMemorySlice: SliceCreator<MemorySlice> = (set, get) => {
   };
   return {
     cognitiveOverview: null,
+
+    memoryCharacterId: null,
+
+    setMemoryCharacter: (id) => {
+      const shown = memoryCid();
+      set({ memoryCharacterId: id });
+      if (memoryCid() === shown) return;
+      // Another character's memory: clear what belongs to the previous one, then load.
+      set({ cognitiveOverview: null, memoryOverviewError: null, characterMarkdown: '', userMarkdown: '', memoryMarkdownError: null,
+        memoryBackups: [], memoryBackupsError: null, lastReflectionResult: null, memoryReflectionError: null });
+      void get().fetchCognitiveOverview();
+      void get().fetchMemoryMarkdown().catch(() => {});
+      void get().fetchMemoryBackups();
+    },
 
     isMemoryLoading: false,
 
@@ -118,13 +139,12 @@ export const createMemorySlice: SliceCreator<MemorySlice> = (set, get) => {
     setAutoReflectionThreshold: (count) => set({ autoReflectionThreshold: count }),
 
     fetchCognitiveOverview: async (charId, userName) => {
-      const activeChar = get().activeCharacter;
-      const cid = charId || activeChar?.id;
+      const cid = charId || memoryCid();
       const uid = userName || get().activePersona.name;
 
-      if (!cid || get().activeCharacter?.id !== cid || get().activePersona.name !== uid) return;
+      if (!cid || memoryCid() !== cid || get().activePersona.name !== uid) return;
       const request = ++overviewRequest;
-      const isCurrent = () => request === overviewRequest && get().activeCharacter?.id === cid && get().activePersona.name === uid;
+      const isCurrent = () => request === overviewRequest && memoryCid() === cid && get().activePersona.name === uid;
       set({ isMemoryLoading: true });
       try {
         const overview = await api.getCognitiveOverview(cid, uid);
@@ -138,12 +158,12 @@ export const createMemorySlice: SliceCreator<MemorySlice> = (set, get) => {
     },
 
     updatePsychology: async (psych) => {
-      const cid = get().activeCharacter?.id;
+      const cid = memoryCid();
       const uid = get().activePersona.name;
       if (!cid) throw new Error(translate('int.noCharacter'));
       try {
         await api.updatePsychology(cid, psych);
-        if (get().activeCharacter?.id === cid && get().activePersona.name === uid) {
+        if (memoryCid() === cid && get().activePersona.name === uid) {
           set((state) => ({ cognitiveOverview: state.cognitiveOverview ? { ...state.cognitiveOverview, psychology: psych } : null }));
           await get().fetchCognitiveOverview(cid, uid);
         }
@@ -154,12 +174,12 @@ export const createMemorySlice: SliceCreator<MemorySlice> = (set, get) => {
     },
 
     updateRelationship: async (rel) => {
-      const cid = get().activeCharacter?.id;
+      const cid = memoryCid();
       const uid = get().activePersona.name;
       if (!cid) throw new Error(translate('int.noCharacter'));
       try {
         await api.updateRelationship(cid, rel);
-        if (get().activeCharacter?.id === cid && get().activePersona.name === uid) {
+        if (memoryCid() === cid && get().activePersona.name === uid) {
           set((state) => ({ cognitiveOverview: state.cognitiveOverview ? { ...state.cognitiveOverview, relationship: rel } : null }));
           await get().fetchCognitiveOverview(cid, uid);
         }
@@ -170,7 +190,7 @@ export const createMemorySlice: SliceCreator<MemorySlice> = (set, get) => {
     },
 
     addManualMemory: async (category, content, significance, source) => {
-      const cid = get().activeCharacter?.id;
+      const cid = memoryCid();
       if (!cid) throw new Error(translate('int.noCharacter'));
       try {
         await api.addEpisodicMemory(cid, category, content, significance, source);
@@ -182,7 +202,7 @@ export const createMemorySlice: SliceCreator<MemorySlice> = (set, get) => {
     },
 
     editMemory: async (id, category, content, significance) => {
-      const cid = get().activeCharacter?.id;
+      const cid = memoryCid();
       if (!cid) throw new Error(translate('int.noCharacter'));
       await api.updateEpisodicMemory(cid, id, category, content, significance);
       await get().fetchCognitiveOverview();
@@ -190,7 +210,7 @@ export const createMemorySlice: SliceCreator<MemorySlice> = (set, get) => {
 
     forgetMemory: async (id) => {
       // Hidden at once, forgotten after the undo window (the toast offers "Undo").
-      const cid = get().activeCharacter?.id;
+      const cid = memoryCid();
       if (!cid) throw new Error(translate('int.noCharacter'));
       if (pendingForgets.has(id)) return;
       pendingForgets.add(id);
@@ -203,7 +223,7 @@ export const createMemorySlice: SliceCreator<MemorySlice> = (set, get) => {
           reportFailure('Failed to forget memory:', e);
         } finally {
           pendingForgets.delete(id);
-          if (get().activeCharacter?.id === cid) await get().fetchCognitiveOverview();
+          if (memoryCid() === cid) await get().fetchCognitiveOverview();
         }
       };
       const timer = setTimeout(() => void commit(), UNDO_FORGET_MS);
@@ -212,20 +232,20 @@ export const createMemorySlice: SliceCreator<MemorySlice> = (set, get) => {
         onClick: () => {
           clearTimeout(timer);
           pendingForgets.delete(id);
-          if (get().activeCharacter?.id === cid) void get().fetchCognitiveOverview();
+          if (memoryCid() === cid) void get().fetchCognitiveOverview();
         },
       });
     },
 
     setMemoryPinned: async (id, pinned) => {
-      const cid = get().activeCharacter?.id;
+      const cid = memoryCid();
       if (!cid) throw new Error(translate('int.noCharacter'));
       await api.setEpisodicMemoryPinned(cid, id, pinned);
       await get().fetchCognitiveOverview();
     },
 
     confirmMemory: async (id) => {
-      const cid = get().activeCharacter?.id;
+      const cid = memoryCid();
       if (!cid) throw new Error(translate('int.noCharacter'));
       await api.confirmEpisodicMemory(cid, id);
       await get().fetchCognitiveOverview();
@@ -236,7 +256,7 @@ export const createMemorySlice: SliceCreator<MemorySlice> = (set, get) => {
     setMemoryDrawerOpen: (isMemoryDrawerOpen) => set({ isMemoryDrawerOpen }),
 
     addManualDiary: async (title, entryText, mood) => {
-      const cid = get().activeCharacter?.id;
+      const cid = memoryCid();
       if (!cid) throw new Error(translate('int.noCharacter'));
       try {
         await api.addDiaryEntry(cid, title, entryText, mood);
@@ -248,7 +268,7 @@ export const createMemorySlice: SliceCreator<MemorySlice> = (set, get) => {
     },
 
     triggerEmotionalDecay: async () => {
-      const cid = get().activeCharacter?.id;
+      const cid = memoryCid();
       if (!cid) throw new Error(translate('int.noCharacter'));
       try {
         const log = await api.applyEmotionalDecay(cid);
@@ -312,14 +332,14 @@ export const createMemorySlice: SliceCreator<MemorySlice> = (set, get) => {
           speaker_names: speakerNames,
         }));
 
-        if (get().activeCharacter?.id === cid && get().activePersona.name === userName) {
+        if (memoryCid() === cid && get().activePersona.name === userName) {
           set({ lastReflectionResult: res });
           await refreshContext(cid, userName);
         }
         return res;
       } catch (e) {
         console.error('Memory pipeline error:', e);
-        if (get().activeCharacter?.id === cid && get().activePersona.name === userName) {
+        if (memoryCid() === cid && get().activePersona.name === userName) {
           set({ memoryReflectionError: errorMessage(e) });
           await refreshContext(cid, userName);
         }
@@ -330,12 +350,12 @@ export const createMemorySlice: SliceCreator<MemorySlice> = (set, get) => {
     },
 
     fetchMemoryMarkdown: async () => {
-      const cid = get().activeCharacter?.id;
+      const cid = memoryCid();
       const userName = get().activePersona.name;
       if (!cid) throw new Error(translate('int.noCharacter'));
 
       const request = ++markdownRequest;
-      const isCurrent = () => request === markdownRequest && get().activeCharacter?.id === cid && get().activePersona.name === userName;
+      const isCurrent = () => request === markdownRequest && memoryCid() === cid && get().activePersona.name === userName;
       set({ isMemoryMarkdownLoading: true });
       try {
         const [charMd, userMd] = await Promise.all([
@@ -353,11 +373,11 @@ export const createMemorySlice: SliceCreator<MemorySlice> = (set, get) => {
     },
 
     saveCharacterMarkdown: async (markdown: string) => {
-      const cid = get().activeCharacter?.id;
+      const cid = memoryCid();
       if (!cid) throw new Error(translate('int.noCharacter'));
       try {
         await api.saveCharacterMemoryMarkdown(cid, markdown);
-        if (get().activeCharacter?.id === cid) {
+        if (memoryCid() === cid) {
           set({ characterMarkdown: markdown });
           await get().fetchCognitiveOverview();
         }
@@ -368,12 +388,12 @@ export const createMemorySlice: SliceCreator<MemorySlice> = (set, get) => {
     },
 
     saveUserMarkdown: async (markdown: string) => {
-      const cid = get().activeCharacter?.id;
+      const cid = memoryCid();
       const userName = get().activePersona.name;
       if (!cid) throw new Error(translate('int.noCharacter'));
       try {
         await api.saveUserMemoryMarkdown(cid, userName, markdown);
-        if (get().activeCharacter?.id === cid && get().activePersona.name === userName) {
+        if (memoryCid() === cid && get().activePersona.name === userName) {
           set({ userMarkdown: markdown });
           await get().fetchCognitiveOverview();
         }
@@ -404,7 +424,7 @@ export const createMemorySlice: SliceCreator<MemorySlice> = (set, get) => {
 
       try {
         const entry = await api.generateManualDiaryEntry({
-          character_id: activeCharacter.id,
+          character_id: memoryCid() ?? activeCharacter.id,
           user_name: activePersona.name,
           chat_id: activeChatId || undefined,
           endpoint_url: endpoint,
@@ -421,10 +441,10 @@ export const createMemorySlice: SliceCreator<MemorySlice> = (set, get) => {
     },
 
     fetchMemoryBackups: async () => {
-      const cid = get().activeCharacter?.id;
+      const cid = memoryCid();
       if (!cid) return;
       const request = ++backupsRequest;
-      const isCurrent = () => request === backupsRequest && get().activeCharacter?.id === cid;
+      const isCurrent = () => request === backupsRequest && memoryCid() === cid;
       set({ isLoadingBackups: true });
       try {
         const backups = await api.listMemoryBackups(cid);
@@ -438,14 +458,14 @@ export const createMemorySlice: SliceCreator<MemorySlice> = (set, get) => {
     },
 
     createMemoryBackup: async () => {
-      const cid = get().activeCharacter?.id;
+      const cid = memoryCid();
       const userName = get().activePersona.name;
       if (!cid) throw new Error(translate('int.noCharacter'));
       if (get().memoryOperation || get().isReflecting) throw new Error(translate('memory.busy'));
       set({ memoryOperation: 'backup' });
       try {
         const info = await api.backupMemoryState(cid, userName);
-        if (get().activeCharacter?.id === cid) await get().fetchMemoryBackups();
+        if (memoryCid() === cid) await get().fetchMemoryBackups();
         return info;
       } catch (e) {
         console.error('Failed to create memory backup:', e);
@@ -456,14 +476,14 @@ export const createMemorySlice: SliceCreator<MemorySlice> = (set, get) => {
     },
 
     restoreMemoryBackup: async (backupFilePath: string) => {
-      const cid = get().activeCharacter?.id;
+      const cid = memoryCid();
       const userName = get().activePersona.name;
       if (!cid) throw new Error(translate('int.noCharacter'));
       if (get().memoryOperation || get().isReflecting) throw new Error(translate('memory.busy'));
       set({ memoryOperation: 'restore' });
       try {
         await api.restoreMemoryBackup(backupFilePath, cid);
-        if (get().activeCharacter?.id === cid && get().activePersona.name === userName) {
+        if (memoryCid() === cid && get().activePersona.name === userName) {
           await refreshContext(cid, userName);
         }
       } catch (e) {

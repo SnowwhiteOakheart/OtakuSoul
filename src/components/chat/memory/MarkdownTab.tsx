@@ -1,5 +1,6 @@
 import { useState } from 'react';
-import { useStoreFields } from '../../../store/useAppStore';
+import { useAppStore, useStoreFields } from '../../../store/useAppStore';
+import { memoryCharacter } from '../../../utils/groupChat';
 import { translate, useTranslation } from '../../../i18n';
 import { toast } from '../../ui/feedback';
 import { errorMessage } from '../../../utils/errors';
@@ -22,7 +23,8 @@ export const MarkdownTab = ({ drafts, pending, onDraftsChange, onPendingChange }
     'fetchMemoryMarkdown', 'saveCharacterMarkdown', 'saveUserMarkdown',
   );
 
-  const charName = activeCharacter?.card.data.name ?? '';
+  const shown = useAppStore(memoryCharacter) ?? activeCharacter;
+  const charName = shown?.card.data.name ?? '';
   const rel = cognitiveOverview?.relationship;
   const [mdMode, setMdMode] = useState<'character' | 'user'>('character');
   // Unsaved edits per file; without a draft the editor shows the stored markdown.

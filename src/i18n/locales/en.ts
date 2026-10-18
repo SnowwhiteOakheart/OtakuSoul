@@ -928,6 +928,7 @@ export const en: TranslationDictionary = {
 
   "memory.title": "Cognitive Memory",
   "memory.subtitle": "Autonomous cognition, router agent, Markdown sync & lore archive",
+  "memory.whose": "Memory of",
   "memory.reflect": "Start reflection",
   "memory.reflecting": "Reflecting…",
   "memory.reflectHint": "Run an autonomous reflection",

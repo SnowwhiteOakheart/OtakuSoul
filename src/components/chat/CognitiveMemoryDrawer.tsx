@@ -2,7 +2,8 @@ import React, { useState, useEffect } from 'react';
 import { readDraft, writeDraft } from '../../utils/drafts';
 import { createPortal } from 'react-dom';
 import type { PsychologyState, RelationshipState } from '../../types';
-import { useStoreFields } from '../../store/useAppStore';
+import { useAppStore, useStoreFields } from '../../store/useAppStore';
+import { chatSpeakers, memoryCharacter, presentedAs } from '../../utils/groupChat';
 import { Brain, X, Heart, RefreshCw, BookHeart, Clock, Sparkles, Bookmark, FileCode, RotateCcw, Sliders } from 'lucide-react';
 import { translate, useTranslation } from '../../i18n';
 import { toast } from '../ui/feedback';
@@ -67,6 +68,17 @@ export const CognitiveMemoryDrawer: React.FC<CognitiveMemoryDrawerProps> = ({
     'triggerMemoryPipeline', 'fetchMemoryMarkdown', 'fetchMemoryBackups', 'memoryOverviewError', 'memoryReflectionError', 'memoryOperation', 'memoryMarkdownError', 'isMemoryMarkdownLoading',
   );
   const { t } = useTranslation();
+  // In a group chat the drawer can show a guest's memory; it starts with the chat's own character.
+  const shown = useAppStore(memoryCharacter);
+  const setMemoryCharacter = useAppStore((s) => s.setMemoryCharacter);
+  const memoryCharacterId = useAppStore((s) => s.memoryCharacterId);
+  const { chatSessions, activeChatId, availableCharacters, replyLanguage } = useStoreFields(
+    'chatSessions', 'activeChatId', 'availableCharacters', 'replyLanguage',
+  );
+  const speakers = chatSpeakers(activeCharacter, chatSessions.find((s) => s.id === activeChatId), availableCharacters);
+  useEffect(() => {
+    if (!isOpen && memoryCharacterId) setMemoryCharacter(null);
+  }, [isOpen, memoryCharacterId, setMemoryCharacter]);
 
   const [activeTab, setActiveTab] = useState<
     'psychology' | 'relationship' | 'markdown' | 'memories' | 'diary' | 'healing' | 'backups'
@@ -78,26 +90,27 @@ export const CognitiveMemoryDrawer: React.FC<CognitiveMemoryDrawerProps> = ({
     const stored = storableDrafts(drafts);
     writeDraft('memory', Object.keys(stored).length > 0 ? JSON.stringify(stored) : '');
   }, [drafts]);
-  const draftKey = JSON.stringify([activeCharacter?.id, activePersona.name]);
+  const draftKey = JSON.stringify([shown?.id, activePersona.name]);
   const draft = drafts[draftKey];
   const changeDraft = (changes: MemoryEditorDraft) =>
     setDrafts((previous) => ({ ...previous, [draftKey]: { ...previous[draftKey], ...changes } }));
 
   useEffect(() => {
-    if (isOpen && activeCharacter) {
+    if (isOpen && shown) {
       fetchCognitiveOverview();
       fetchMemoryMarkdown().catch(() => {});
       fetchMemoryBackups();
     }
-  }, [isOpen, activeCharacter, activePersona.name, fetchCognitiveOverview, fetchMemoryMarkdown, fetchMemoryBackups]);
+  }, [isOpen, shown, activePersona.name, fetchCognitiveOverview, fetchMemoryMarkdown, fetchMemoryBackups]);
 
-  if (!isOpen || !activeCharacter) return null;
+  if (!isOpen || !activeCharacter || !shown) return null;
 
-  const charName = activeCharacter.card.data.name;
+  const charName = shown.card.data.name;
+  const shownGuest = shown.id !== activeCharacter.id ? shown.id : undefined;
 
   const handleTriggerReflection = async () => {
     try {
-      const res = await triggerMemoryPipeline();
+      const res = await triggerMemoryPipeline(undefined, shownGuest);
       if (res) {
         if (res.no_change) {
           toast.success(translate('memory.reflectNoChange'));
@@ -131,6 +144,22 @@ export const CognitiveMemoryDrawer: React.FC<CognitiveMemoryDrawerProps> = ({
                 </span>
               </h2>
               <p className="text-xs text-slate-400">{t('memory.subtitle')}</p>
+              {speakers.length > 1 && (
+                <label className="mt-1.5 flex items-center gap-1.5 text-xs text-slate-400">
+                  {t('memory.whose')}
+                  <select
+                    value={shownGuest ?? ''}
+                    onChange={(e) => setMemoryCharacter(e.target.value || null)}
+                    disabled={isReflecting || !!memoryOperation}
+                    className="rounded-md border border-slate-700 bg-app px-1.5 py-0.5 text-xs text-slate-200"
+                    data-memory-character
+                  >
+                    {speakers.map(({ id, character }) => (
+                      <option key={id || 'host'} value={id}>{presentedAs(character, replyLanguage).name}</option>
+                    ))}
+                  </select>
+                </label>
+              )}
             </div>
           </div>
 

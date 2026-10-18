@@ -928,6 +928,7 @@ export const ru: TranslationDictionary = {
 
   "memory.title": "Когнитивная память",
   "memory.subtitle": "Автономное мышление, агент-маршрутизатор, синхронизация Markdown и архив лора",
+  "memory.whose": "Память персонажа",
   "memory.reflect": "Начать рефлексию",
   "memory.reflecting": "Рефлексия…",
   "memory.reflectHint": "Запустить автономную рефлексию",

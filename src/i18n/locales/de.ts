@@ -930,6 +930,7 @@ export const de = {
 
   "memory.title": "Kognitives Gedächtnis",
   "memory.subtitle": "Autonome Kognition, Router-Agent, Markdown-Sync & Lore-Archiv",
+  "memory.whose": "Gedächtnis von",
   "memory.reflect": "Reflexion starten",
   "memory.reflecting": "Reflektiert…",
   "memory.reflectHint": "Autonome Reflexion durchführen",

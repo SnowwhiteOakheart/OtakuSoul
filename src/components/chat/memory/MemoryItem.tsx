@@ -2,6 +2,7 @@ import { useState } from 'react';
 import { AlertTriangle, Check, History, Link2, Pencil, Pin, PinOff, Star, Trash2 } from 'lucide-react';
 import { api } from '../../../services/api';
 import { useAppStore } from '../../../store/useAppStore';
+import { memoryCharacter } from '../../../utils/groupChat';
 import { translate, useTranslation, type TranslationKey } from '../../../i18n';
 import { toast } from '../../ui/feedback';
 import { errorMessage } from '../../../utils/errors';
@@ -55,7 +56,7 @@ export const MemoryItem = ({ memory }: { memory: EpisodicMemory }) => {
 
   const toggleHistory = async () => {
     if (history) return setHistory(null);
-    const cid = store().activeCharacter?.id;
+    const cid = memoryCharacter(store())?.id;
     if (!cid) return;
     try {
       setHistory(await api.getMemoryHistory(cid, memory.id));

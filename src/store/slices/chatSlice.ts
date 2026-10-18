@@ -29,7 +29,7 @@ import { waitWithAbort } from '../../utils/cancellation';
 import { languageCode, localizeCard } from '../../utils/cardI18n';
 import { isRepeat } from '../../utils/repetition';
 import { applyReplacements } from '../../utils/replyFilters';
-import { GROUP_MAX_REPLIES, chatSpeakers, groupHistory, presentedAs } from '../../utils/groupChat';
+import { GROUP_MAX_REPLIES, chatSpeakers, groupHistory, memoryCharacter, presentedAs } from '../../utils/groupChat';
 
 type GenerationFailure = {
   chatId: string;
@@ -237,7 +237,9 @@ export const createChatSlice: SliceCreator<ChatSlice> = (set, get) => {
     // A guest who left the chat (or whose card is gone) falls back to the chat's own character.
     const self = speakers.find((s) => s.id === speakerId) ?? speakers[0]!;
     const nameOf = (id: string) => presentedAs((speakers.find((s) => s.id === id) ?? speakers[0]!).character, state.replyLanguage).name;
-    const cognitive = self.id === ''
+    // The loaded overview is the host's unless the memory drawer shows a guest right now.
+    const showsHost = memoryCharacter(state)?.id === state.activeCharacter?.id;
+    const cognitive = self.id === '' && showsHost
       ? state.cognitiveOverview
       : await waitWithAbort(() => api.getCognitiveOverview(self.character.id, state.activePersona.name).catch(() => null), signal);
     const speaker: PromptSpeaker = {

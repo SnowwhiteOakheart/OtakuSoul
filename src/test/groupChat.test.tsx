@@ -143,6 +143,12 @@ describe('group chats', () => {
     expect(await useAppStore.getState().loadSpeakerVoice('')).toBe(useAppStore.getState().activeVoiceConfig);
   });
 
+  it('gives the host their own memory while the drawer shows a guest', async () => {
+    useAppStore.setState({ memoryCharacterId: 'sora', cognitiveOverview: { recent_memories: [] } as unknown as CognitiveOverview });
+    await useAppStore.getState().replyAs('');
+    expect(api.getCognitiveOverview).toHaveBeenCalledWith('ayu', 'Kai');
+  });
+
   it('offers a button per speaker above the composer', async () => {
     const user = userEvent.setup();
     const replyAs = vi.fn().mockResolvedValue(undefined);

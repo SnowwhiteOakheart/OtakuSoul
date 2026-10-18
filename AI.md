@@ -83,6 +83,10 @@ ru „персонаж/история/сцена“. Fachbegriffe nur im Experte
   = `replyAs` (Nachspann „It is X's turn“). Auto-Reflexion je Figur (`triggerMemoryPipeline(n, characterId)`, Transkript mit
   `speaker_names`), Stimme je Gast (`loadSpeakerVoice`), Avatar-Emotion nur bei der Gastgeberin. JSONL: `name` = Sprecher,
   Import erkennt Gäste über `speaker_id` oder bekannte Namen. Mock: `stats.chatRoutes`. E2E `chat-group.mjs`.
+  Memory-Drawer: Auswahl „Gedächtnis von“ setzt `memorySlice.memoryCharacterId`; `utils/groupChat.ts` `memoryCharacter(state)`
+  liefert die angezeigte Figur (Gast nur, solange er Gast im offenen Chat ist, sonst die aktive) – alle Memory-Aktionen nutzen
+  sie, `cognitiveOverview` gehört dann dem Gast (Host-Prompt holt sein Gedächtnis in `speakerSetup` selbst). Schließen setzt
+  zurück. E2E `chat-memory-guests.mjs`.
 - **Chat-Export/-Import (SillyTavern-JSONL):** Seitenleiste → `export_chat_jsonl` (mit `target_path` schreibt das Backend die
   Datei; der Webview kann nicht herunterladen) / `import_chat_jsonl`. Export schreibt eigene Felder (`role`, `swipe_variants`,
   `author_note`) plus ST-Felder (`extra.reasoning`, `swipe_info[i].extra.reasoning`, `chat_metadata.note_prompt/note_depth`);

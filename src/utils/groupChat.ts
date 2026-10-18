@@ -54,3 +54,23 @@ export function groupHistory(
     return { ...flat, role: 'user', thought: undefined, content: `${name}: ${m.content}` };
   });
 }
+
+/**
+ * Whose memory the memory drawer shows: the chosen guest while they are a guest of the open
+ * chat, otherwise the active character (also after switching chats or characters).
+ */
+export function memoryCharacter(state: {
+  memoryCharacterId: string | null;
+  activeCharacter: CharacterProfile | null;
+  activeChatId: string | null;
+  chatSessions: ChatSession[];
+  availableCharacters: CharacterProfile[];
+}): CharacterProfile | null {
+  const id = state.memoryCharacterId;
+  if (id && state.activeCharacter && id !== state.activeCharacter.id) {
+    const guest = chatGuests(state.chatSessions.find((s) => s.id === state.activeChatId), state.availableCharacters)
+      .find((c) => c.id === id);
+    if (guest) return guest;
+  }
+  return state.activeCharacter;
+}
