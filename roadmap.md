@@ -75,4 +75,5 @@
 - [x] **„Diese Nachricht merken“** im Nachrichtenmenü (`add_episodic_memory_from`).
 - [x] **Szenenbild per Knopf** aus dem aktuellen Chat-Kontext (gab es als HUD-„Foto“ schon als Porträt; ergänzt: Bildart
   „Moment“ je Antwort im Nachrichtenmenü, Bild als Chat-Hintergrund übernehmen).
-- [ ] **Chat-Export/-Import im SillyTavern-Format (JSONL)** für Umsteiger.
+- [x] **Chat-Export/-Import im SillyTavern-Format (JSONL)** für Umsteiger (gab es schon in der Chat-Seitenleiste; ergänzt:
+  ST-Felder `extra.reasoning`/`swipe_info`/`note_prompt`, Zeitstempel, versteckte `is_system`-Zeilen, Export per Speichern-Dialog).

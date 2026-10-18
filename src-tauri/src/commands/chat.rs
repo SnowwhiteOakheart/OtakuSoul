@@ -403,17 +403,24 @@ pub fn delete_messages_after(
         .map_err(|e| e.to_string())
 }
 
+/// The chat in SillyTavern's JSONL format; with `target_path` also written to that file (the
+/// webview cannot download files itself).
 #[tauri::command]
 pub fn export_chat_jsonl(
     state: State<'_, AppState>,
     chat_id: String,
     char_name: String,
     user_name: String,
+    target_path: Option<String>,
 ) -> Result<String, String> {
-    state
+    let jsonl = state
         .memory_db
         .export_chat_jsonl(&chat_id, &char_name, &user_name)
-        .map_err(|e| e.to_string())
+        .map_err(|e| e.to_string())?;
+    if let Some(path) = target_path.filter(|p| !p.trim().is_empty()) {
+        std::fs::write(&path, format!("{jsonl}\n")).map_err(|e| e.to_string())?;
+    }
+    Ok(jsonl)
 }
 
 #[tauri::command]

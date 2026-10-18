@@ -366,6 +366,58 @@ fn test_chat_jsonl_export_and_import() {
     assert_eq!(imp_msgs[1].swipes.len(), 2);
     assert_eq!(imp_msgs[1].swipe_index, 1);
     assert_eq!(imp_msgs[1].content, "*hüpft auf* Na klar doch!");
+    assert_eq!(imp_msgs[1].swipes[0].thought.as_deref(), Some("Aufgeregt"));
+    // Timestamps survive the round trip; SillyTavern finds the note and the reasoning.
+    assert_eq!(imp_msgs[1].created_at, asst.created_at);
+    assert!(jsonl.contains("\"note_prompt\":\"[Wetter ist sonnig]\""));
+    assert!(jsonl.contains("\"reasoning\":\"Voller Energie\""));
+}
+
+#[test]
+fn imports_a_sillytavern_chat() {
+    let db = MemoryDb::new_in_memory().expect("in-memory db failed");
+    // As SillyTavern writes it: text dates, reasoning per swipe, a hidden system line.
+    let jsonl = [
+        r#"{"user_name":"Kai","character_name":"Ayu","create_date":"2026-10-01@12h00m00s","chat_metadata":{"note_prompt":"Es regnet.","note_depth":4}}"#,
+        r#"{"name":"Ayu","is_user":false,"send_date":"October 1, 2026 12:00pm","mes":"Hallo!"}"#,
+        r#"{"name":"Kai","is_user":true,"send_date":"October 1, 2026 12:05pm","mes":"Hi"}"#,
+        r#"{"name":"System","is_user":false,"is_system":true,"send_date":"October 1, 2026 12:06pm","mes":"(versteckt)"}"#,
+        r#"{"name":"Ayu","is_user":false,"send_date":"October 1, 2026 12:07pm","mes":"B","swipe_id":1,"swipes":["A","B"],"swipe_info":[{"extra":{"reasoning":"erst"}},{"extra":{"reasoning":"dann"}}],"extra":{"reasoning":"dann"}}"#,
+    ]
+    .join("\n");
+    let chat = db.import_chat_jsonl("ayu", &jsonl, Some("Aus ST")).unwrap();
+    assert_eq!(
+        (chat.author_note.as_str(), chat.author_note_depth),
+        ("Es regnet.", 4)
+    );
+    let messages = db.get_chat_messages(&chat.id).unwrap();
+    let roles: Vec<&str> = messages.iter().map(|m| m.role.as_str()).collect();
+    assert_eq!(roles, ["assistant", "user", "assistant"]);
+    assert_eq!(messages[2].content, "B");
+    assert_eq!(messages[2].thought.as_deref(), Some("dann"));
+    assert_eq!(messages[2].swipes[0].thought.as_deref(), Some("erst"));
+    assert_eq!(messages[1].created_at - messages[0].created_at, 5 * 60);
+}
+
+#[test]
+fn send_dates_in_every_known_form() {
+    use crate::modules::memory::chats::send_date_secs;
+    use serde_json::json;
+    assert_eq!(
+        send_date_secs(&json!(1_760_000_000_000u64)),
+        Some(1_760_000_000)
+    );
+    assert_eq!(
+        send_date_secs(&json!(1_760_000_000u64)),
+        Some(1_760_000_000)
+    );
+    assert_eq!(
+        send_date_secs(&json!("2026-10-01T12:00:00Z")),
+        Some(1_790_856_000)
+    );
+    assert!(send_date_secs(&json!("October 1, 2026 9:05am")).is_some());
+    assert!(send_date_secs(&json!("2026-10-01@12h00m00s")).is_some());
+    assert_eq!(send_date_secs(&json!("gestern")), None);
 }
 
 #[test]

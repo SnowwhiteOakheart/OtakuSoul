@@ -879,6 +879,7 @@ export const de = {
   "chatSidebar.importing": "Wird geladen…",
   "chatSidebar.importFailed": "Import fehlgeschlagen: {{error}}",
   "chatSidebar.imported": "Gespräch „{{title}}“ importiert.",
+  "chatSidebar.exported": "Gespräch exportiert (SillyTavern-Format).",
   "chatSidebar.noteIntro": "Direkte Regieanweisung an das Modell. Sie wird in den System-Prompt oder N Nachrichten vor dem Ende des Gesprächs eingefügt.",
   "chatSidebar.noteLabel": "Regieanweisung",
   "chatSidebar.notePlaceholder": "z. B. [Ayu wirkt besonders nachdenklich und spricht leiser …]",

@@ -48,6 +48,8 @@ the character is and how your chat begins; **"Chat now"** starts the conversatio
   it into a memory.
 - **"This moment as a picture"** in a reply's menu paints the scene up to there (image generation must be set up); the
   picture card lets you make it the chat background.
+- Coming from SillyTavern? The chat sidebar (**Conversations**) imports its chats (`.jsonl`) with their variants and
+  exports yours in the same format.
 - The character remembers your conversation. **"Conversation memory"** below the input shows how full it is; the app
   summarises older messages when needed.
 

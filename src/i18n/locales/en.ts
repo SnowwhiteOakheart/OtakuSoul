@@ -877,6 +877,7 @@ export const en: TranslationDictionary = {
   "chatSidebar.importing": "Loading…",
   "chatSidebar.importFailed": "Import failed: {{error}}",
   "chatSidebar.imported": "Imported conversation “{{title}}”.",
+  "chatSidebar.exported": "Conversation exported (SillyTavern format).",
   "chatSidebar.noteIntro": "A direct stage direction for the model. It is inserted into the system prompt or N messages before the end of the conversation.",
   "chatSidebar.noteLabel": "Stage direction",
   "chatSidebar.notePlaceholder": "e.g. [Ayu seems especially thoughtful and speaks more quietly …]",

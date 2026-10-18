@@ -781,7 +781,10 @@ impl MemoryDb {
             "chat_metadata": {
                 "title": session.title,
                 "author_note": session.author_note,
-                "author_note_depth": session.author_note_depth
+                "author_note_depth": session.author_note_depth,
+                // SillyTavern's Author's Note extension reads these.
+                "note_prompt": session.author_note,
+                "note_depth": session.author_note_depth
             }
         });
         lines.push(header.to_string());
@@ -804,6 +807,18 @@ impl MemoryDb {
                 })
                 .collect();
 
+            // SillyTavern keeps each swipe's reasoning in `swipe_info[i].extra.reasoning`.
+            let swipe_info: Vec<serde_json::Value> = msg
+                .swipes
+                .iter()
+                .map(|s| {
+                    serde_json::json!({
+                        "send_date": msg.created_at * 1000,
+                        "extra": { "reasoning": s.thought.clone().unwrap_or_default() }
+                    })
+                })
+                .collect();
+
             let msg_obj = serde_json::json!({
                 "name": name,
                 "role": msg.role,
@@ -812,9 +827,11 @@ impl MemoryDb {
                 "send_date": msg.created_at * 1000,
                 "mes": msg.content,
                 "extra": {
-                    "thought": msg.thought
+                    "thought": msg.thought,
+                    "reasoning": msg.thought.clone().unwrap_or_default()
                 },
                 "swipes": swipe_texts,
+                "swipe_info": swipe_info,
                 "swipe_variants": swipe_variants,
                 "swipe_id": msg.swipe_index
             });
@@ -859,14 +876,17 @@ impl MemoryDb {
             {
                 initial_title = Some(t.to_string());
             }
+            // Own exports write `author_note`, SillyTavern `note_prompt`/`note_depth`.
             if let Some(an) = first_val
                 .pointer("/chat_metadata/author_note")
+                .or_else(|| first_val.pointer("/chat_metadata/note_prompt"))
                 .and_then(|v| v.as_str())
             {
                 author_note = an.to_string();
             }
             if let Some(d) = first_val
                 .pointer("/chat_metadata/author_note_depth")
+                .or_else(|| first_val.pointer("/chat_metadata/note_depth"))
                 .and_then(|v| v.as_u64())
             {
                 author_note_depth = d as u32;
@@ -897,16 +917,20 @@ impl MemoryDb {
                     .and_then(|b| b.as_bool())
                     .unwrap_or(false)
                 {
-                    "system".to_string()
+                    // In SillyTavern `is_system` hides a message from the AI: leave it out.
+                    continue;
                 } else {
                     "assistant".to_string()
                 };
 
                 let thought = v
                     .pointer("/extra/thought")
+                    .or_else(|| v.pointer("/extra/reasoning"))
                     .or_else(|| v.get("thought"))
                     .and_then(|s| s.as_str())
+                    .filter(|s| !s.trim().is_empty())
                     .map(|s| s.to_string());
+                let created_at = v.get("send_date").and_then(send_date_secs);
 
                 // Read swipes
                 let mut parsed_swipes = Vec::new();
@@ -924,11 +948,19 @@ impl MemoryDb {
                         }
                     }
                 } else if let Some(arr) = v.get("swipes").and_then(|a| a.as_array()) {
-                    for it in arr {
+                    // SillyTavern: texts in `swipes`, each one's reasoning in `swipe_info`.
+                    let info = v.get("swipe_info").and_then(|a| a.as_array());
+                    for (i, it) in arr.iter().enumerate() {
                         if let Some(c) = it.as_str() {
+                            let th = info
+                                .and_then(|info| info.get(i))
+                                .and_then(|entry| entry.pointer("/extra/reasoning"))
+                                .and_then(|s| s.as_str())
+                                .filter(|s| !s.trim().is_empty())
+                                .map(|s| s.to_string());
                             parsed_swipes.push(SwipeVariant {
                                 content: c.to_string(),
-                                thought: None,
+                                thought: th,
                             });
                         }
                     }
@@ -948,7 +980,7 @@ impl MemoryDb {
                 } else {
                     0
                 };
-                parsed.push((role, parsed_swipes, swipe_idx));
+                parsed.push((role, parsed_swipes, swipe_idx, created_at));
             }
         }
 
@@ -968,7 +1000,7 @@ impl MemoryDb {
                  VALUES (?1, ?2, ?3, ?4, ?4, ?5, ?6)",
                 params![id, character_id, title, now, author_note, author_note_depth],
             )?;
-            for (order, (role, swipes, swipe_idx)) in parsed.iter().enumerate() {
+            for (order, (role, swipes, swipe_idx, created_at)) in parsed.iter().enumerate() {
                 let active = &swipes[*swipe_idx];
                 let swipes_json =
                     serde_json::to_string(swipes).unwrap_or_else(|_| "[]".to_string());
@@ -984,7 +1016,7 @@ impl MemoryDb {
                         order as i64,
                         *swipe_idx as i64,
                         swipes_json,
-                        now
+                        created_at.unwrap_or(now)
                     ],
                 )?;
             }
@@ -994,6 +1026,30 @@ impl MemoryDb {
         self.get_chat_session(&id)?
             .ok_or(rusqlite::Error::QueryReturnedNoRows)
     }
+}
+
+/// When a message was sent, in seconds: milliseconds or seconds as a number (own exports, older
+/// SillyTavern) or SillyTavern's text ("October 18, 2026 9:05am", ISO 8601), read as local time.
+pub(crate) fn send_date_secs(value: &serde_json::Value) -> Option<u64> {
+    use chrono::{Local, NaiveDateTime, TimeZone};
+    if let Some(n) = value.as_f64() {
+        let secs = if n > 1e11 { n / 1000.0 } else { n };
+        return (secs > 0.0).then_some(secs as u64);
+    }
+    let text = value.as_str()?.trim();
+    if let Ok(date) = chrono::DateTime::parse_from_rfc3339(text) {
+        return u64::try_from(date.timestamp()).ok();
+    }
+    [
+        "%B %d, %Y %I:%M%p",
+        "%B %d, %Y %I:%M %p",
+        "%Y-%m-%d@%Hh%Mm%Ss",
+        "%Y-%m-%d %H:%M:%S",
+    ]
+    .iter()
+    .find_map(|format| NaiveDateTime::parse_from_str(text, format).ok())
+    .and_then(|naive| Local.from_local_datetime(&naive).earliest())
+    .and_then(|date| u64::try_from(date.timestamp()).ok())
 }
 
 fn parse_attachments(json: &str) -> Vec<crate::modules::attachments::Attachment> {

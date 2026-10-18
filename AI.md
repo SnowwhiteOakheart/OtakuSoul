@@ -73,6 +73,11 @@ ru „персонаж/история/сцена“. Fachbegriffe nur im Experte
   (Lorebooks, `assemble_prompt` = System-Prompt + Nachspann) → Payload (+ Author's Note in Tiefe N, Nachspann am Ende)
   → `send_chat_message`: `attachments::prepare` → `context_window::fit` (kürzt von vorn) → `stream_chat` (Events
   `llm-token`/`llm-thought`/`llm-done`) → Antwort speichern → ggf. `summarizeDroppedMessages` im Hintergrund.
+- **Chat-Export/-Import (SillyTavern-JSONL):** Seitenleiste → `export_chat_jsonl` (mit `target_path` schreibt das Backend die
+  Datei; der Webview kann nicht herunterladen) / `import_chat_jsonl`. Export schreibt eigene Felder (`role`, `swipe_variants`,
+  `author_note`) plus ST-Felder (`extra.reasoning`, `swipe_info[i].extra.reasoning`, `chat_metadata.note_prompt/note_depth`);
+  Import liest beide, übernimmt `send_date` (`send_date_secs`: Zahl in ms/s, ST-Text, ISO) und lässt ST-`is_system`-Zeilen
+  ohne `role` weg (dort für die KI ausgeblendet).
 - **Szenenbild:** HUD „Foto“ = `generateSceneImage('chat')` (Porträt), Nachrichtenmenü „Diesen Moment als Bild“ =
   `generateSceneImage('chat', { kind: 'moment', upToMessageId })` (Verlauf bis zu dieser Antwort; `image_generator::image_kind`).
   Bild erscheint in `SceneImageCard` (nur Sitzung) und der Galerie; „Als Chat-Hintergrund“ = `setSceneImageAsBackground`

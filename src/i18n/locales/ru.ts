@@ -877,6 +877,7 @@ export const ru: TranslationDictionary = {
   "chatSidebar.importing": "Загрузка…",
   "chatSidebar.importFailed": "Ошибка импорта: {{error}}",
   "chatSidebar.imported": "Диалог «{{title}}» импортирован.",
+  "chatSidebar.exported": "Диалог экспортирован (формат SillyTavern).",
   "chatSidebar.noteIntro": "Прямая режиссёрская инструкция для модели. Вставляется в системный промпт или за N сообщений до конца диалога.",
   "chatSidebar.noteLabel": "Режиссёрская инструкция",
   "chatSidebar.notePlaceholder": "напр. [Аю выглядит задумчивой и говорит тише …]",

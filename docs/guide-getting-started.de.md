@@ -49,6 +49,8 @@ zeigt, wer die Figur ist und wie euer Chat beginnt; **„Jetzt chatten“** star
   daraus eine Erinnerung.
 - **„Diesen Moment als Bild“** im Menü einer Antwort malt die Szene bis dahin (Bildgenerierung muss eingerichtet sein);
   über der Bildkarte machst Du das Bild auf Wunsch zum Chat-Hintergrund.
+- Von SillyTavern umgestiegen? In der Chat-Seitenleiste (**Gespräche**) importierst Du dortige Chats (`.jsonl`) samt
+  Varianten und exportierst eigene im selben Format.
 - Die Figur erinnert sich an euer Gespräch. Die Anzeige **„Gesprächsgedächtnis“** unter dem Eingabefeld zeigt, wie
   voll es ist; ältere Nachrichten fasst die App bei Bedarf zusammen.
 

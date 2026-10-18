@@ -1051,15 +1051,18 @@ export const api = {
     });
   },
 
+  /** The chat as SillyTavern JSONL; with `targetPath` the backend also writes it there. */
   exportChatJsonl: async (
     chatId: string,
     charName: string,
-    userName: string
+    userName: string,
+    targetPath?: string | null,
   ): Promise<string> => {
     return await invoke<string>('export_chat_jsonl', {
       chatId,
       charName,
       userName,
+      targetPath: targetPath ?? null,
     });
   },
 

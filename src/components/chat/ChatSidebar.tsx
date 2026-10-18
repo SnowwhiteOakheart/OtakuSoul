@@ -1,4 +1,5 @@
 import React, { useEffect, useRef, useState } from 'react';
+import { save as saveDialog } from '@tauri-apps/plugin-dialog';
 import { readDraft, writeDraft } from '../../utils/drafts';
 import { ChatStylePanel } from './ChatStylePanel';
 import { useAppStore, useStoreFields } from '../../store/useAppStore';
@@ -156,17 +157,14 @@ export const ChatSidebar: React.FC<ChatSidebarProps> = ({ isOpen, onClose }) => 
     }, 'chatSidebar.summarySaveFailed');
   };
 
+  // The webview can't download files: ask where to save, the backend writes the file.
   const handleExport = async () => {
-    const jsonl = await exportCurrentChat();
-    if (!jsonl) return;
-
-    const blob = new Blob([jsonl], { type: 'application/jsonl;charset=utf-8' });
-    const url = URL.createObjectURL(blob);
-    const link = document.createElement('a');
-    link.href = url;
-    link.download = `${activeCharacter?.card.data.name || 'chat'}_${new Date().toISOString().slice(0, 10)}.jsonl`;
-    link.click();
-    URL.revokeObjectURL(url);
+    const target = await saveDialog({
+      defaultPath: `${activeCharacter?.card.data.name || 'chat'}_${new Date().toISOString().slice(0, 10)}.jsonl`,
+      filters: [{ name: 'SillyTavern JSONL', extensions: ['jsonl'] }],
+    });
+    if (!target) return;
+    if (await exportCurrentChat(target)) toast.success(translate('chatSidebar.exported'));
   };
 
   const handleImportFile = async (e: React.ChangeEvent<HTMLInputElement>) => {
