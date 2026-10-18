@@ -566,6 +566,17 @@ ru „персонаж/история/сцена“. Fachbegriffe nur im Experte
   Anzeige über `components/hub/registryText.ts`; Name/Titel bleiben Update-Schlüssel), gepflegt im Daten-Repo mit
   `tools/validate_content.py --sync-registry`. Stage findet Karten über `characters::find_by_name` bzw. `findCharacterByName`
   (exakt, sonst Name vor der Klammer).
+- Inhalte für Erwachsene: `AppSettings.nsfw_enabled` + `adult_confirmed` (einmalige Bestätigung „mindestens 18“, kein
+  Geburtsdatum; UI `settings/NsfwSettings.tsx`, Standard aus). Das Backend prüft selbst (`settings::nsfw_allowed`, liest nur
+  die zwei Felder – ein volles `load_app_settings` scannt Charaktere und würde sich rekursiv aufrufen): Erst dann lädt der Hub
+  zusätzlich die Registries aus `otakusoul-data-nsfw` (`hub::nsfw_registry_items`, Fehler nur Log; `OTAKUSOUL_NSFW_HUB_BASE`
+  für E2E), zeigt `nsfw`-Einträge mit „18+“ (`NsfwBadge`), erlaubt Downloads daraus (`ensure_source_allowed`) und den
+  Chub-NSFW-Filter. Importe aus der 18+-Quelle bekommen `extensions.otakusoul_nsfw` (`modules/nsfw.rs`); markierte Karten,
+  Lorebooks und Geschichten blenden `scan_available_characters`, `list_all_lorebooks` und `scan_available_scenes` aus,
+  solange die Freigabe fehlt (nichts wird gelöscht). Umschalten lädt Hub-Listen und Bibliotheken neu. E2E `hub-nsfw.mjs`.
+  Emotionsbilder: neben den sechs Stimmungen die Plätze `blush`, `teasing`, `fear`, `disgust`, `crying` und (Romance)
+  `seductive`, `aroused`, `ecstasy`, `afterglow` (`emotions::EXTRA_PORTRAITS`, `EmotionResult.portrait`; Bildwahl
+  `selectCharacterPortrait`: Zusatzplatz → Emotion → Stimmung → neutral) – für alle Karten nutzbar.
 - Hub-Updates: Registry-Einträge tragen `revision`/`updated` (`hub::entry_revision`, fehlend = 1); installierte Inhalte stehen in
   `<Daten>/hub_installed.json` (`hub_installed.rs`, Befehl `list_installed_hub_items`, Schlüssel Art + Registry-ID bzw. Name).
   Szenen-Import behält `extensions` (`scene_definition_from_hub`, `null`-Felder = fehlend) und aktualisiert eine vorhandene Kopie

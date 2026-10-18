@@ -37,12 +37,15 @@ pub fn nsfw_hub_url(file: &str) -> String {
     format!("{}/{file}", nsfw_base().trim_end_matches('/'))
 }
 
+/// The download comes from the adult content repository.
+fn from_nsfw_source(download_url: &str) -> bool {
+    download_url.starts_with(nsfw_base().trim_end_matches('/'))
+        || download_url.starts_with(NSFW_HUB_BASE_URL)
+}
+
 /// Downloads from the adult repository need NSFW on and a confirmed age.
 fn ensure_source_allowed(download_url: &str) -> Result<(), String> {
-    let base = nsfw_base();
-    let from_nsfw = download_url.starts_with(base.trim_end_matches('/'))
-        || download_url.starts_with(NSFW_HUB_BASE_URL);
-    if from_nsfw && !crate::modules::settings::nsfw_allowed() {
+    if from_nsfw_source(download_url) && !crate::modules::settings::nsfw_allowed() {
         return Err(crate::err!("backend.hub.nsfwDisabled"));
     }
     Ok(())
@@ -394,6 +397,10 @@ pub async fn import_soul_gateway_character(
     }
     if card.data.creator.is_none() && !author.trim().is_empty() {
         card.data.creator = Some(author.to_string());
+    }
+    // Adult content stays hidden while adult content is off.
+    if from_nsfw_source(download_url) {
+        crate::modules::nsfw::mark(&mut card.data.extensions);
     }
 
     let result = store_imported_card(card, Some(avatar_data_url), overwrite)?;
@@ -924,7 +931,10 @@ pub async fn import_lorebook_from_gateway(
         .await
         .map_err(|e| crate::err!("backend.hub.lorebookRead", error = e))?;
 
-    let lorebook = Lorebook::import_from_json_string(&content, Some(fallback_name))?;
+    let mut lorebook = Lorebook::import_from_json_string(&content, Some(fallback_name))?;
+    if from_nsfw_source(download_url) {
+        crate::modules::nsfw::mark(&mut lorebook.extensions);
+    }
     let lore_dir = PathBuf::from(&resolve_app_paths().lorebooks_dir);
     install_lorebook(
         &lore_dir,
@@ -1096,7 +1106,10 @@ pub async fn import_scene_from_gateway(
         .json()
         .await
         .map_err(|e| crate::err!("backend.hub.sceneParse", error = e))?;
-    let def = scene_definition_from_hub(val, fallback_title)?;
+    let mut def = scene_definition_from_hub(val, fallback_title)?;
+    if from_nsfw_source(download_url) {
+        crate::modules::nsfw::mark(&mut def.extensions);
+    }
     download_scene_assets(&client, &def).await;
     let hub_id = if hub_id.trim().is_empty() {
         fallback_title

@@ -206,10 +206,19 @@ pub fn get_settings_file_path() -> PathBuf {
 }
 
 /// Adult content may be fetched and shown: NSFW is on and the age was confirmed. Checked by the
-/// backend itself, so a request from the page cannot get around the setting.
+/// backend itself, so a request from the page cannot get around the setting. Reads only these two
+/// fields: a full settings load scans the characters, which ask this while scanning.
 pub fn nsfw_allowed() -> bool {
-    let settings = load_app_settings();
-    settings.nsfw_enabled && settings.adult_confirmed
+    let value = fs::read_to_string(get_settings_file_path())
+        .ok()
+        .and_then(|content| serde_json::from_str::<serde_json::Value>(&content).ok());
+    let flag = |key: &str| {
+        value
+            .as_ref()
+            .and_then(|v| v.get(key)?.as_bool())
+            .unwrap_or(false)
+    };
+    flag("nsfw_enabled") && flag("adult_confirmed")
 }
 
 pub fn load_app_settings() -> AppSettings {

@@ -77,3 +77,5 @@
   „Moment“ je Antwort im Nachrichtenmenü, Bild als Chat-Hintergrund übernehmen).
 - [x] **Chat-Export/-Import im SillyTavern-Format (JSONL)** für Umsteiger (gab es schon in der Chat-Seitenleiste; ergänzt:
   ST-Felder `extra.reasoning`/`swipe_info`/`note_prompt`, Zeitstempel, versteckte `is_system`-Zeilen, Export per Speichern-Dialog).
+- [x] **Inhalte für Erwachsene (18+)** optional mit einmaliger Altersbestätigung: zweite Hub-Quelle `otakusoul-data-nsfw`,
+  18+-Kennzeichnung, installierte 18+-Inhalte ausgeblendet, solange aus; neun weitere Emotionsbilder für alle Karten.

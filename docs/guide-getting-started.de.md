@@ -27,6 +27,8 @@ Unter **Charaktere** liegen die Figuren. Die mitgelieferten tragen **„Gut für
 zeigt, wer die Figur ist und wie euer Chat beginnt; **„Jetzt chatten“** startet das Gespräch.
 
 - Weitere Figuren findest Du im **Hub**.
+- Inhalte für Erwachsene sind ausgeschaltet. Unter **Einstellungen → Inhalte für Erwachsene (18+)** schaltest Du sie nach
+  einer einmaligen Altersbestätigung ein; der Hub zeigt sie dann mit „18+“.
 - Eigene Charaktere erstellst Du mit **„Charakter erstellen“** – ein Assistent führt Dich durch Konzept, Aussehen und
   Persönlichkeit.
 

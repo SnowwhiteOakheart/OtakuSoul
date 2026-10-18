@@ -362,6 +362,8 @@ pub fn scan_available_characters() -> Vec<CharacterProfile> {
     let mut profiles = Vec::new();
     let mut seen_identifiers = std::collections::HashSet::new();
     let hidden = load_hidden_character_ids();
+    // Adult content stays hidden (not deleted) while adult content is off.
+    let adult_allowed = crate::modules::nsfw::allowed();
     let bundled_expression_sets =
         collect_bundled_expression_sets(Path::new(&paths.bundled_presets_dir));
 
@@ -423,6 +425,11 @@ pub fn scan_available_characters() -> Vec<CharacterProfile> {
                     let norm_name = normalize_identifier(&profile.card.data.name);
 
                     if hidden.contains(&norm_id) || hidden.contains(&norm_name) {
+                        continue;
+                    }
+                    if !adult_allowed
+                        && crate::modules::nsfw::is_marked(&profile.card.data.extensions)
+                    {
                         continue;
                     }
 

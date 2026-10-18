@@ -311,6 +311,7 @@ pub(super) fn parse_scene_file_preview(
                 .as_ref()
                 .is_some_and(|r| !r.goals.is_empty()),
             story: state.definition.story_info(),
+            nsfw: crate::modules::nsfw::is_marked(&state.definition.extensions),
         });
     }
 
@@ -350,6 +351,7 @@ pub(super) fn parse_scene_file_preview(
             rules_5e: def.is_5e(),
             adventure: def.rules.as_ref().is_some_and(|r| !r.goals.is_empty()),
             story: def.story_info(),
+            nsfw: crate::modules::nsfw::is_marked(&def.extensions),
         });
     }
 
@@ -451,6 +453,11 @@ pub fn scan_available_scenes() -> Vec<ScenePreview> {
                 }
             }
         }
+    }
+
+    // Adult stories stay hidden (not deleted) while adult content is off.
+    if !crate::modules::nsfw::allowed() {
+        results.retain(|preview| !preview.nsfw);
     }
 
     // Sort by folder, then chapter number, then title

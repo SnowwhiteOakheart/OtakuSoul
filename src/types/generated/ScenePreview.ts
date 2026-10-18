@@ -13,4 +13,8 @@ adventure: boolean,
 /**
  * Gallery data of a bundled story.
  */
-story?: StoryInfo, };
+story?: StoryInfo, 
+/**
+ * Content for adults (`extensions.otakusoul_nsfw`): hidden while adult content is off.
+ */
+nsfw: boolean, };

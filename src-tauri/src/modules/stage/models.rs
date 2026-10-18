@@ -545,6 +545,9 @@ pub struct ScenePreview {
     #[serde(default)]
     #[ts(optional)]
     pub story: Option<StoryInfo>,
+    /// Content for adults (`extensions.otakusoul_nsfw`): hidden while adult content is off.
+    #[serde(default)]
+    pub nsfw: bool,
 }
 
 /// A piece of live text during a Stage turn (event `stage-stream`); the message with the same

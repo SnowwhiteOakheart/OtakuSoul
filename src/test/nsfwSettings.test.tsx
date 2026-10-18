@@ -10,7 +10,9 @@ import { resetApiMocks } from './mockApi';
 const initial = useAppStore.getState();
 beforeEach(() => {
   resetApiMocks();
-  useAppStore.setState({ ...initial, appLanguage: 'en', saveCurrentSettings: vi.fn().mockResolvedValue(undefined) }, true);
+  useAppStore.setState({ ...initial, appLanguage: 'en', saveCurrentSettings: vi.fn().mockResolvedValue(undefined),
+    refreshCharacters: vi.fn().mockResolvedValue(undefined), refreshLorebooks: vi.fn().mockResolvedValue(undefined),
+    fetchStageScenes: vi.fn().mockResolvedValue(undefined) }, true);
 });
 
 describe('adult content setting', () => {
@@ -30,6 +32,10 @@ describe('adult content setting', () => {
     await user.click(screen.getByRole('button', { name: 'Turn on' }));
     expect(useAppStore.getState()).toMatchObject({ nsfwEnabled: true, adultConfirmed: true });
     expect(useAppStore.getState().saveCurrentSettings).toHaveBeenCalled();
+    // Installed adult content shows: the lists reload.
+    await vi.waitFor(() => expect(useAppStore.getState().refreshCharacters).toHaveBeenCalled());
+    expect(useAppStore.getState().refreshLorebooks).toHaveBeenCalled();
+    expect(useAppStore.getState().fetchStageScenes).toHaveBeenCalled();
 
     // Off and on again: no second question.
     await user.click(toggle);

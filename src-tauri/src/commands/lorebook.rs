@@ -3,10 +3,14 @@
 #[tauri::command]
 pub fn list_all_lorebooks() -> Result<Vec<crate::modules::lorebook::Lorebook>, String> {
     let paths = crate::modules::paths::resolve_app_paths();
-    let books = crate::modules::lorebook::list_all_lorebooks(
+    let mut books = crate::modules::lorebook::list_all_lorebooks(
         std::path::Path::new(&paths.lorebooks_dir),
         std::path::Path::new(&paths.bundled_presets_dir),
     );
+    // Adult lorebooks stay hidden while adult content is off.
+    if !crate::modules::nsfw::allowed() {
+        books.retain(|book| !crate::modules::nsfw::is_marked(&book.extensions));
+    }
     Ok(books)
 }
 

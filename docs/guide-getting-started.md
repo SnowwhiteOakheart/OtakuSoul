@@ -27,6 +27,8 @@ page** under **"Change AI"**.
 the character is and how your chat begins; **"Chat now"** starts the conversation.
 
 - More characters are in the **hub**.
+- Adult content is turned off. Under **Settings → Adult content (18+)** you turn it on after a one-time age
+  confirmation; the hub then shows it marked “18+”.
 - Create your own with **"Create character"** – an assistant guides you through concept, looks and personality.
 
 ## 3. Chatting

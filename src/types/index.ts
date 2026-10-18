@@ -533,6 +533,8 @@ export interface ScenePreview {
   adventure?: boolean;
   /** Gallery data of a bundled story (genre, length, difficulty, notes, first suggestions). */
   story?: import('./generated/StoryInfo').StoryInfo;
+  /** Content for adults: hidden while adult content is off. */
+  nsfw?: boolean;
 }
 
 export interface SceneDefinition {

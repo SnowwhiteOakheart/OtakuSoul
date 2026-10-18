@@ -368,6 +368,12 @@ export const createAppSlice: SliceCreator<AppSlice> = (set, get) => ({
     // reads the setting from the file.
     set({ nsfwEnabled: on && adultConfirmed, adultConfirmed });
     await get().saveCurrentSettings();
+    // Installed adult content shows or hides (the backend lists it by the saved setting).
+    await Promise.all([
+      get().refreshCharacters(get().activeCharacter?.id),
+      get().refreshLorebooks(),
+      get().fetchStageScenes(),
+    ]).catch((e) => console.warn('Reloading after the adult content switch failed:', e));
   },
 
   setRerollRepeats: (on) => {
