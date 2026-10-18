@@ -20,7 +20,7 @@ import { reportFailure } from '../reportFailure';
 import { errorCode, errorMessage } from '../../utils/errors';
 import { translate } from '../../i18n';
 import { trackTask } from './taskSlice';
-import { serverTuningDefaults } from '../../utils/settingDefaults';
+import { DEFAULT_CONTEXT_SIZE, serverTuningDefaults } from '../../utils/settingDefaults';
 
 /** The task of the model being loaded; the server status says when it is ready. */
 let serverTaskId: string | null = null;
@@ -143,7 +143,7 @@ export const createLlmSlice: SliceCreator<LlmSlice> = (set, get) => ({
   serverConfig: {
     model_path: '',
     port: 48596,
-    context_size: 4096,
+    context_size: DEFAULT_CONTEXT_SIZE,
     gpu_layers: 99,
     flash_attn: true,
     reasoning_mode: false,

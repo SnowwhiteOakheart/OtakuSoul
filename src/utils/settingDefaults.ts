@@ -39,6 +39,9 @@ export function samplingDefaults(modelPath: string, local: boolean): Partial<Sam
   return local && isBonsaiModel(modelPath) ? { ...base, top_p: 0.95, top_k: 20 } : base;
 }
 
+/** The context a server config starts with before it is fitted to a model (`LlamaServerConfig::default`). */
+export const DEFAULT_CONTEXT_SIZE = 4096;
+
 /** Server tuning defaults (model, port and vision projector are not tuning and stay). */
 export function serverTuningDefaults(modelPath: string): Partial<LlamaServerConfig> {
   const bonsai = isBonsaiModel(modelPath);

@@ -141,7 +141,9 @@ ru „персонаж/история/сцена“. Fachbegriffe nur im Experte
   Token aus dem Header (KV-Köpfe je Schicht, `full_attention_interval` bei Hybrid-Modellen, Gleitfenster-Schichten mit
   festem Block `window + ub`; MLA → unbekannt, dann Schätzung). `hardware::MemoryProfile::context_mb` nutzt das;
   `selectLocalModel` setzt Kontext und GPU-Layer per `get_layer_recommendation` (bis 32K, Bonsai so viel wie passt,
-  nie über die gelernte Länge – `llama_manager` begrenzt beim Start zusätzlich). llama-server läuft mit `--parallel 1`
+  nie über die gelernte Länge – `llama_manager` begrenzt beim Start zusätzlich). Auch `initApp` passt an (`fitServerToModel`):
+  ein selbst gewähltes Modell (kein gespeichertes) und – außer im Expertenmodus – ein Profil noch auf `DEFAULT_CONTEXT_SIZE`
+  (4096, nie angepasst); erst nach `refreshCharacters`, sonst wählt die Chat-Ansicht zwischendurch die erste Figur. llama-server läuft mit `--parallel 1`
   (Hintergrundanfragen warten, statt sich den KV-Cache zu teilen). Lokale KI startet bei Bedarf: `ensureLocalAi` vor
   Chat-Senden/Swipe/Fortsetzen und Stage-Aktionen (Fehler ohne Toast an den Aufrufer, `startServer({ quiet })`).
 - **Bilder lokal:** `local_image::plan` prüft VRAM (nvidia-smi/Vulkan) und entlädt nur bei Bedarf gestuft: TTS → Chat-Modell

@@ -127,6 +127,44 @@ describe('local model selection', () => {
   });
 });
 
+describe('context of the local model at start', () => {
+  const recommendation = {
+    recommended_layers: 99,
+    recommended_context_size: 65_536,
+    trained_context_size: 262_144,
+    available_vram_mb: 14_840,
+  } as Awaited<ReturnType<typeof api.getLayerRecommendation>>;
+  const start = async (serverConfig: Record<string, unknown>, extra: Partial<AppSettings> = {}) => {
+    useAppStore.setState({ settingsLoaded: false });
+    vi.mocked(api.getAppPaths).mockResolvedValue({} as never);
+    vi.mocked(api.scanModels).mockResolvedValue([{ name: 'Ternary-Bonsai-2-27B', path: '/m/bonsai.gguf', size_mb: 6900 }] as never);
+    vi.mocked(api.scanVrmModels).mockResolvedValue([]);
+    vi.mocked(api.loadPersonas).mockResolvedValue([]);
+    vi.mocked(api.getLayerRecommendation).mockResolvedValue(recommendation);
+    vi.mocked(api.loadSettings).mockResolvedValue({ server_config: serverConfig, ...extra } as unknown as AppSettings);
+    await useAppStore.getState().initApp();
+  };
+
+  it('fits a model the app chose itself (none saved yet)', async () => {
+    await start({ model_path: '', context_size: 4096, gpu_layers: 99 });
+    expect(useAppStore.getState().serverConfig).toMatchObject({ model_path: '/m/bonsai.gguf', context_size: 65_536, cache_type_k: 'q4_0' });
+    expect(lastSavedSettings().server_config.context_size).toBe(65_536);
+  });
+
+  it('fits a saved model once that is still on the bare default context', async () => {
+    await start({ model_path: '/m/bonsai.gguf', context_size: 4096, gpu_layers: 99, cache_type_k: 'f16', cache_type_v: 'f16' });
+    expect(api.getLayerRecommendation).toHaveBeenCalledWith(6900, 0, 4096, '/m/bonsai.gguf', 'f16', 'f16');
+    expect(useAppStore.getState().serverConfig).toMatchObject({ context_size: 65_536, cache_type_k: 'f16' });
+  });
+
+  it('keeps a context that was fitted or set by hand', async () => {
+    await start({ model_path: '/m/bonsai.gguf', context_size: 16_384, gpu_layers: 99 });
+    await start({ model_path: '/m/bonsai.gguf', context_size: 4096, gpu_layers: 99 }, { expert_mode: true });
+    expect(api.getLayerRecommendation).not.toHaveBeenCalled();
+    expect(useAppStore.getState().serverConfig.context_size).toBe(4096);
+  });
+});
+
 describe('local AI on demand', () => {
   const status = (state: string) => ({ state, port: 48596, pid: null, model_name: null, error_message: null, recent_logs: [] });
 

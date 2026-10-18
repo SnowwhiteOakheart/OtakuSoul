@@ -10,6 +10,7 @@ import type {
 import type { SliceCreator } from '../storeTypes';
 import { reportFailure } from '../reportFailure';
 import { translate } from '../../i18n';
+import { DEFAULT_CONTEXT_SIZE, serverTuningDefaults } from '../../utils/settingDefaults';
 import { toast } from '../../components/ui/feedback';
 import { errorMessage } from '../../utils/errors';
 import { loadLocale } from '../../i18n/registry';
@@ -233,6 +234,21 @@ export const createAppSlice: SliceCreator<AppSlice> = (set, get) => ({
 
       // 5. Scan Characters (opening the last one right away), Lorebooks & Live2D Models
       await get().refreshCharacters(settings.active_character_id);
+
+      // The local model's context: one chosen here (none saved yet) gets the model's tuning and the
+      // context that fits the graphics memory. A profile still on the bare default context was never
+      // fitted (e.g. a model chosen this way by an older version) and is fitted once; the expert
+      // mode keeps a context set by hand. After opening the character: an await before it would let the
+      // chat view pick the first character in the meantime.
+      const autoChosen = !settings.server_config.model_path && !!modelPath;
+      const neverFitted = !!modelPath && !settings.expert_mode && settings.server_config.context_size === DEFAULT_CONTEXT_SIZE;
+      if (autoChosen) {
+        set((state) => ({ serverConfig: { ...state.serverConfig, ...serverTuningDefaults(modelPath), gpu_layers: 99 } }));
+      }
+      if (autoChosen || neverFitted) {
+        await get().fitServerToModel();
+        await get().saveCurrentSettings();
+      }
       await get().refreshLorebooks();
       await get().refreshLive2dModels();
 
