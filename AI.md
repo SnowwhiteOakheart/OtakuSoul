@@ -81,7 +81,10 @@ ru „персонаж/история/сцена“. Fachbegriffe nur im Experte
   Nutzernachricht: `nextSpeaker` → `route_group_chat` (`modules/group_chat.rs`: Ansprache, sonst Routing-Prompt aus Stage
   mit „[CHAT — ROUTING]“), höchstens `GROUP_MAX_REPLIES` = 3, Ende bei `PLAYER`, „Stopp“ beendet die Runde; „Jetzt antwortet …“
   = `replyAs` (Nachspann „It is X's turn“). Auto-Reflexion je Figur (`triggerMemoryPipeline(n, characterId)`, Transkript mit
-  `speaker_names`), Stimme je Gast (`loadSpeakerVoice`), Avatar-Emotion nur bei der Gastgeberin. JSONL: `name` = Sprecher,
+  `speaker_names`), Stimme je Gast (`loadSpeakerVoice`). Avatar: `ChatView` zeigt den Sprecher (`generationSpeakerId`, bleibt bis
+  zum nächsten; Chatwechsel setzt ihn zurück), jede Figur behält ihren Ausdruck (`avatarSlice.speakerEmotions`), Gesten nur
+  für die gerade gezeigte, laufende Antwort. Kopfleiste „Alle zeigen“ (`usePersistentFlag` `otakusoul.chat.groupEveryone`) =
+  `avatar/GroupPortraits.tsx`: alle als 2D-Porträt (3D/Live2D nur in der Einzelansicht), Sprecher hervorgehoben. JSONL: `name` = Sprecher,
   Import erkennt Gäste über `speaker_id` oder bekannte Namen. Mock: `stats.chatRoutes`. E2E `chat-group.mjs`.
   Memory-Drawer: Auswahl „Gedächtnis von“ setzt `memorySlice.memoryCharacterId`; `utils/groupChat.ts` `memoryCharacter(state)`
   liefert die angezeigte Figur (Gast nur, solange er Gast im offenen Chat ist, sonst die aktive) – alle Memory-Aktionen nutzen

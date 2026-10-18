@@ -48,6 +48,8 @@ try {
   assert.deepEqual(replies.map((m) => m.speaker_id), [emilia.id, '']);
   assert.ok(mock.stats.lastChatRoutingPrompt.includes('[CHAT — ROUTING]'), 'Regie nicht gefragt');
   assert.ok(mock.stats.lastChatSystemPrompt.includes('## Others in this conversation'), 'Gruppenabschnitt fehlt');
+  // The avatar shows who spoke last: Althea, the chat's own character.
+  assert.equal(await browser.$('[data-avatar-speaker]').getAttribute('data-avatar-speaker'), 'host');
   await browser.saveScreenshot(path.join(screenshotDir, '104-gruppen-chat.png'));
 
   // A new variant of Emilia's reply stays Emilia's.
@@ -65,7 +67,16 @@ try {
   stored = await messages();
   assert.equal(stored.at(-1).speaker_id, emilia.id);
   assert.equal(stored.at(-2).role, 'assistant', 'Es wurde eine Nutzernachricht angelegt');
-  console.log('Gruppen-Chat: Einladen, Ansprache vor Regie, Runde bis zum Nutzer, Variante und „Jetzt antwortet“ bestanden.');
+  await browser.waitUntil(async () => (await browser.$('[data-avatar-speaker]').getAttribute('data-avatar-speaker')) === emilia.id,
+    { timeout: 5000, timeoutMsg: 'Avatar folgt nicht dem Sprecher' });
+
+  // "Show everyone": all characters as portraits, the last speaker highlighted.
+  await jsClick(await browser.$('button[aria-label="Alle zeigen"]'));
+  const tiles = await browser.$$('[data-group-portraits] [data-portrait-speaker]');
+  assert.equal(tiles.length, 2);
+  assert.equal(await browser.$(`[data-portrait-speaker="${emilia.id}"]`).getAttribute('aria-current'), 'true');
+  await browser.saveScreenshot(path.join(screenshotDir, '106-gruppe-alle-zeigen.png'));
+  console.log('Gruppen-Chat: Einladen, Ansprache vor Regie, Runde bis zum Nutzer, Variante, „Jetzt antwortet“ und Avatare bestanden.');
 } finally {
   await close();
 }

@@ -52,7 +52,8 @@ the character is and how your chat begins; **"Chat now"** starts the conversatio
   exports yours in the same format.
 - **Group chat:** invite more characters under **Group** in the chat sidebar. Whoever is addressed ("Emilia, what do you
   think?") answers first; otherwise the AI decides who reacts. "Answer now" above the message field lets a particular
-  character speak. Each keeps their own memory and voice.
+  character speak. Each keeps their own memory and voice. The avatar shows who is speaking; **"Show everyone"** in the bar
+  above the chat shows all characters side by side as pictures.
 - The character remembers your conversation. **"Conversation memory"** below the input shows how full it is; the app
   summarises older messages when needed.
 

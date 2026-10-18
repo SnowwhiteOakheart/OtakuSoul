@@ -53,7 +53,8 @@ zeigt, wer die Figur ist und wie euer Chat beginnt; **„Jetzt chatten“** star
   Varianten und exportierst eigene im selben Format.
 - **Gruppen-Chat:** In der Chat-Seitenleiste unter **Gruppe** lädst Du weitere Charaktere ein. Wer angesprochen wird
   („Emilia, was meinst du?“), antwortet zuerst; sonst entscheidet die KI, wer reagiert. „Jetzt antwortet …“ über dem
-  Eingabefeld lässt eine bestimmte Figur sprechen. Jede behält ihr eigenes Gedächtnis und ihre Stimme.
+  Eingabefeld lässt eine bestimmte Figur sprechen. Jede behält ihr eigenes Gedächtnis und ihre Stimme. Der Avatar zeigt,
+  wer gerade spricht; **„Alle zeigen“** in der Leiste über dem Chat zeigt alle Charaktere nebeneinander als Bild.
 - Die Figur erinnert sich an euer Gespräch. Die Anzeige **„Gesprächsgedächtnis“** unter dem Eingabefeld zeigt, wie
   voll es ist; ältere Nachrichten fasst die App bei Bedarf zusammen.
 

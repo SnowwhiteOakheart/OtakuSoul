@@ -9,6 +9,15 @@ import type { SliceCreator } from '../storeTypes';
 import type { GestureRequest, MotionRole } from '../../utils/avatarGestures';
 
 /** 3D/Live2D avatar models, avatar mode and the current emotion. */
+/** A calm face: the start and what a character shows before their first reply. */
+export const NEUTRAL_EMOTION: EmotionResult = {
+  emotion: 'neutral',
+  vrm_expression: 'relaxed',
+  live2d_expression: 'neutral_animation',
+  confidence: 1.0,
+  intensity: 0.5,
+};
+
 export interface AvatarSlice {
   scannedVrms: ScannedVrm[];
   activeVrmPath: string | null;
@@ -20,8 +29,12 @@ export interface AvatarSlice {
   refreshLive2dModels: () => Promise<void>;
   avatarMode: '3d' | 'live2d' | '2d';
   setAvatarMode: (mode: '3d' | 'live2d' | '2d') => void;
+  /** The expression of the avatar on screen (in a group chat: the speaker shown). */
   currentEmotion: EmotionResult;
   setCurrentEmotion: (em: EmotionResult) => void;
+  /** Group chat: each character's last expression by speaker ID ('' = the chat's own character). */
+  speakerEmotions: Record<string, EmotionResult>;
+  setSpeakerEmotion: (speakerId: string, em: EmotionResult) => void;
   /** Imported body motions (VRMA) with their use. */
   avatarMotions: AvatarMotion[];
   refreshAvatarMotions: () => Promise<void>;
@@ -93,15 +106,13 @@ export const createAvatarSlice: SliceCreator<AvatarSlice> = (set, get) => ({
     get().saveCurrentSettings();
   },
 
-  currentEmotion: {
-    emotion: 'neutral',
-    vrm_expression: 'relaxed',
-    live2d_expression: 'neutral_animation',
-    confidence: 1.0,
-    intensity: 0.5,
-  },
+  currentEmotion: NEUTRAL_EMOTION,
 
   setCurrentEmotion: (currentEmotion) => set({ currentEmotion }),
+
+  speakerEmotions: {},
+
+  setSpeakerEmotion: (speakerId, em) => set((st) => ({ speakerEmotions: { ...st.speakerEmotions, [speakerId]: em } })),
 
   avatarMotions: [],
 

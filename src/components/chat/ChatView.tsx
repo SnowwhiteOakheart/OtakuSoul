@@ -42,6 +42,10 @@ import { CharacterVoiceModal } from '../voice/CharacterVoiceModal';
 import { PromptLogModal } from './PromptLogModal';
 import { useTranslation } from '../../i18n';
 import { applyReplacements } from '../../utils/replyFilters';
+import { chatSpeakers } from '../../utils/groupChat';
+import type { CharacterProfile } from '../../types';
+import { NEUTRAL_EMOTION } from '../../store/slices/avatarSlice';
+import { GroupPortraits } from '../avatar/GroupPortraits';
 
 /** The voice of whoever writes the running reply (a guest's own voice in a group chat). */
 const speakerVoice = (state: ReturnType<typeof useAppStore.getState>) =>
@@ -95,6 +99,8 @@ export const ChatView: React.FC = () => {
   const [showCurrentThought, setShowCurrentThought] = useState(true);
   const [showAvatar, setShowAvatar] = usePersistentFlag('otakusoul.chat.avatar', true);
   const [compact, setCompact] = usePersistentFlag('otakusoul.chat.compact', false);
+  // Group chat: everyone as portraits, or (default) only who speaks or spoke last.
+  const [showEveryone, setShowEveryone] = usePersistentFlag('otakusoul.chat.groupEveryone', false);
   const chatTools = useAppStore((s) => s.chatTools);
   const setChatTools = useAppStore((s) => s.setChatTools);
   const [showSearch, setShowSearch] = useState(false);
@@ -168,16 +174,21 @@ export const ChatView: React.FC = () => {
             streamingTts.flush(data.full_text, voiceConfig);
           }
 
-          // Trigger Phase 14 Emotion update for VRM & Live2D (the avatar is the chat's own character,
-          // so a guest's reply in a group chat leaves it alone)
-          if (state.generationSpeakerId === '') try {
+          // Trigger Phase 14 Emotion update for VRM & Live2D. In a group chat each character keeps
+          // their own expression; the avatar on screen (the speaker) shows it and gestures.
+          const speaker = state.generationSpeakerId;
+          try {
             const detected = await api.classifyTextEmotion(data.full_text);
             const currentState = useAppStore.getState();
-            if (isSubscribed && currentState.generationId === data.generation_id && currentState.activeChatId === state.activeChatId) {
-              currentState.setCurrentEmotion(detected);
-              // Body motion: a roleplay action like *winkt* first, else the emotion.
-              const gesture = gestureForReply(data.full_text, detected.vrm_expression);
-              if (gesture) currentState.playAvatarGesture(gesture);
+            if (isSubscribed && currentState.activeChatId === state.activeChatId) {
+              currentState.setSpeakerEmotion(speaker, detected);
+              // Only while this reply is still the latest one (a group round may have moved on).
+              if (currentState.generationId === data.generation_id && currentState.generationSpeakerId === speaker) {
+                currentState.setCurrentEmotion(detected);
+                // Body motion: a roleplay action like *winkt* first, else the emotion.
+                const gesture = gestureForReply(data.full_text, detected.vrm_expression);
+                if (gesture) currentState.playAvatarGesture(gesture);
+              }
             }
           } catch (e) {
             console.warn('Emotion classification failed:', e);
@@ -226,12 +237,12 @@ export const ChatView: React.FC = () => {
     const voice = speakerId ? await useAppStore.getState().loadSpeakerVoice(speakerId) : activeVoiceConfig;
     if (!voice || voice.engine === 'disabled') return;
     try {
-      // Phase 14: update avatar emotion to match spoken message
-      if (!speakerId) {
-        api.classifyTextEmotion(text).then((res) => {
-          useAppStore.getState().setCurrentEmotion(res);
-        }).catch(() => {});
-      }
+      // Phase 14: update avatar emotion to match spoken message (the speaker's own in a group chat)
+      api.classifyTextEmotion(text).then((res) => {
+        const state = useAppStore.getState();
+        state.setSpeakerEmotion(speakerId, res);
+        if (state.generationSpeakerId === speakerId) state.setCurrentEmotion(res);
+      }).catch(() => {});
 
       const audioUrl = await api.synthesizeSpeech(text, voice);
       await audioPlayer.playDataUrl(
@@ -246,6 +257,19 @@ export const ChatView: React.FC = () => {
   }, [activeVoiceConfig]);
 
   const currentSession = chatSessions.find((s) => s.id === activeChatId);
+  // Group chat: the avatar shows who speaks or spoke last (a guest who left falls back to the host).
+  const generationSpeakerId = useAppStore((s) => s.generationSpeakerId);
+  const availableCharacters = useAppStore((s) => s.availableCharacters);
+  const speakers = chatSpeakers(activeCharacter, currentSession, availableCharacters);
+  const shownSpeaker: { id: string; character: CharacterProfile | null } =
+    speakers.find((s) => s.id === generationSpeakerId) ?? speakers[0] ?? { id: '', character: activeCharacter };
+  // Switching to another speaker shows their last expression, not the previous one's.
+  const shownSpeakerId = shownSpeaker.id;
+  useEffect(() => {
+    const state = useAppStore.getState();
+    if (chatSpeakers(state.activeCharacter, state.chatSessions.find((s) => s.id === state.activeChatId), state.availableCharacters).length < 2) return;
+    state.setCurrentEmotion(state.speakerEmotions[shownSpeakerId] ?? NEUTRAL_EMOTION);
+  }, [shownSpeakerId]);
   const chatStyle = currentSession?.style;
   // The picture of the chat (Stage library), loaded once per file name.
   const [background, setBackground] = useState<{ name: string; url: string } | null>(null);
@@ -390,6 +414,22 @@ export const ChatView: React.FC = () => {
             {showAvatar ? <Eye className="w-3.5 h-3.5" /> : <EyeOff className="w-3.5 h-3.5" />}
             <span className="hidden xl:inline">{t('chat.avatar')}</span>
           </button>
+          {showAvatar && speakers.length > 1 && (
+            <button
+              onClick={() => setShowEveryone(!showEveryone)}
+              aria-pressed={showEveryone}
+              aria-label={t('group.showEveryone')}
+              className={`${TOOLBAR_TOGGLE} ${
+                showEveryone
+                  ? 'bg-accent-950/40 text-accent-300 border-accent-500/40'
+                  : 'bg-slate-800/60 text-slate-400 border-slate-700/60 hover:text-slate-200'
+              }`}
+              title={t('group.showEveryoneHint')}
+            >
+              <Users className="w-3.5 h-3.5" />
+              <span className="hidden xl:inline">{t('group.showEveryone')}</span>
+            </button>
+          )}
 
           {expertMode && (
           <button
@@ -443,13 +483,17 @@ export const ChatView: React.FC = () => {
       {/* Main Split Layout: Avatar (Left) + Chat (Right) */}
       <div className="flex-1 flex overflow-hidden">
         {showAvatar && activeCharacter && (
-          <div className="hidden md:flex w-5/12 lg:w-1/3 h-full">
-            <React.Suspense fallback={<AvatarSkeleton label={t('chat.avatarLoading')} />}>
-              <AvatarCanvas
-                character={activeCharacter}
-                isSpeaking={isAudioSpeaking}
-              />
-            </React.Suspense>
+          <div className="hidden md:flex w-5/12 lg:w-1/3 h-full" data-avatar-speaker={shownSpeaker.id || 'host'}>
+            {showEveryone && speakers.length > 1 ? (
+              <GroupPortraits speakers={speakers} speakerId={shownSpeaker.id} isSpeaking={isAudioSpeaking} />
+            ) : (
+              <React.Suspense fallback={<AvatarSkeleton label={t('chat.avatarLoading')} />}>
+                <AvatarCanvas
+                  character={shownSpeaker.character}
+                  isSpeaking={isAudioSpeaking}
+                />
+              </React.Suspense>
+            )}
           </div>
         )}
 

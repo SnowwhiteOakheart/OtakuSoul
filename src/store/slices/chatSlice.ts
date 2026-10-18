@@ -359,7 +359,7 @@ export const createChatSlice: SliceCreator<ChatSlice> = (set, get) => {
     if (get().isGenerating && get().generationChatId) {
       void get().abortGeneration().catch((error) => console.warn('Navigation abort failed:', error));
     }
-    set({ activeChatId: chatId, storedMessages: [], messages: [], contextUsage: null,
+    set({ activeChatId: chatId, storedMessages: [], messages: [], contextUsage: null, generationSpeakerId: '', speakerEmotions: {},
       generationId: null, generationFailure: null, streamingText: '', streamingThought: '', isChatLoading: true, chatLoadError: null });
     return request;
   };

@@ -45,7 +45,7 @@ interface MorphingPortraitProps {
   isSpeaking: boolean;
 }
 
-const MorphingPortrait: React.FC<MorphingPortraitProps> = ({
+export const MorphingPortrait: React.FC<MorphingPortraitProps> = ({
   src,
   fallbackSrc,
   alt,
