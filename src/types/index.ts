@@ -41,6 +41,7 @@ import type { StageLoreCard } from './generated/StageLoreCard';
 import type { StageStreamEvent } from './generated/StageStreamEvent';
 import type { Attachment } from './generated/Attachment';
 import type { TranslateRequest } from './generated/TranslateRequest';
+import type { ReplyIdeasRequest } from './generated/ReplyIdeasRequest';
 import type { PromptTemplate } from './generated/PromptTemplate';
 import type { BuiltinPromptTemplate } from './generated/BuiltinPromptTemplate';
 import type { AssembledPrompt } from './generated/AssembledPrompt';
@@ -159,6 +160,7 @@ export type {
   StageStreamEvent,
   Attachment,
   TranslateRequest,
+  ReplyIdeasRequest,
   PromptTemplate,
   BuiltinPromptTemplate,
   AssembledPrompt,

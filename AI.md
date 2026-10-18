@@ -439,6 +439,9 @@ ru „персонаж/история/сцена“. Fachbegriffe nur im Experte
 - Chat-Werkzeuge (`chat_tools.rs`, Schalter `chatTools`): Text-Protokoll `<tool_call>{name, arguments}</tool_call>` statt
   nativer Tool-Calls; `InferenceClient::stream_chat_with_tools` filtert die Tags (`ToolCallFilter`), führt aus und fragt mit
   `[TOOL RESULT]` erneut (max. 3 Runden). Anbieter fassen System-Nachrichten zusammen; das Mock erkennt „# Tools“ im Text.
+- Antwortvorschläge („Was könnte ich sagen?“, Glühbirne im `ChatComposer`): `chatSlice.suggestReplies` → `suggest_chat_replies`
+  (`modules/reply_ideas.rs`: letzte 12 Nachrichten, JSON-Liste mit 3 Ideen, sonst zeilenweise); Vorschläge gehören zum Chat,
+  in dem sie angefragt wurden, ein Klick übernimmt ins Eingabefeld. Mock erkennt „[CHAT — REPLY IDEAS]“ (`stats.replyIdeas`).
 - Prompt-Log: `send_chat_message` legt den gekürzten Prompt in `AppState.last_prompt` ab (`modules/prompt_log.rs`,
   ohne API-Schlüssel); Anzeige `components/chat/PromptLogModal.tsx` über das Chat-Menü.
 - `<state>{…}</state>` am Antwortende aktualisiert HUD-Variablen (`utils/stateParser.ts`) und wird ausgeblendet.

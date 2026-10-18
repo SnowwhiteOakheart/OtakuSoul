@@ -59,6 +59,7 @@ import {
   ChatSummaryRequest,
   StageStreamEvent,
   TranslateRequest,
+  ReplyIdeasRequest,
   Attachment,
   AssembledPrompt,
   BuiltinPromptTemplate,
@@ -942,6 +943,11 @@ export const api = {
   /** Folds the messages that left the context window into the chat's running summary. */
   summarizeChat: async (request: ChatSummaryRequest): Promise<ChatSession> => {
     return await invoke<ChatSession>('summarize_chat', { request });
+  },
+
+  /** A few short ideas for the user's next message, from the end of the chat. */
+  suggestChatReplies: async (request: ReplyIdeasRequest): Promise<string[]> => {
+    return await invoke<string[]>('suggest_chat_replies', { request });
   },
 
   /** Translates one chat message with the chat model. */

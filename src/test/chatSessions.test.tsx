@@ -120,6 +120,25 @@ describe('chat session loading', () => {
     await useAppStore.getState().createNewChat('Neu');
     expect(api.createChatSession).toHaveBeenCalledWith('ayu', 'Neu', ['Hallo Kai!', 'Na, Kai?']);
   });
+  it('offers reply ideas for the open chat and puts a picked one into the input', async () => {
+    const user = userEvent.setup();
+    useAppStore.setState({ ensureLocalAi: vi.fn().mockResolvedValue(undefined), activePersona: { ...initial.activePersona, name: 'Kai', description: 'Reisender' } });
+    vi.mocked(api.suggestChatReplies).mockResolvedValueOnce(['*nickt*', 'Wohin?']);
+    render(<ChatComposer />);
+    await user.click(screen.getByRole('button', { name: 'What could I say?' }));
+    expect(api.suggestChatReplies).toHaveBeenCalledWith(expect.objectContaining({ chat_id: 'chat-1', char_name: 'Ayu', user_name: 'Kai', user_description: 'Reisender' }));
+    await user.click(await screen.findByRole('button', { name: 'Wohin?' }));
+    expect(screen.getByRole('textbox')).toHaveValue('Wohin?');
+    expect(screen.queryByRole('group', { name: 'Reply ideas' })).toBeNull();
+
+    // Ideas belong to their chat: another chat doesn't show them.
+    vi.mocked(api.suggestChatReplies).mockResolvedValueOnce(['Hallo?']);
+    await user.click(screen.getByRole('button', { name: 'What could I say?' }));
+    await screen.findByRole('button', { name: 'Hallo?' });
+    vi.mocked(api.getChatMessages).mockResolvedValueOnce([other]);
+    await useAppStore.getState().switchChatSession('chat-2');
+    await waitFor(() => expect(screen.queryByRole('button', { name: 'Hallo?' })).toBeNull());
+  });
   it('does not activate a new chat created for an outdated character', async () => {
     let finish!: (value: ChatSession) => void;
     vi.mocked(api.createChatSession).mockImplementationOnce(() => new Promise((resolve) => { finish = resolve; }));

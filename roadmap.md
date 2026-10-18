@@ -61,7 +61,7 @@
 ## 3. Chat & Rollenspiel (Vorschläge vom 18.10.2026)
 
 - [x] **Alternative Begrüßungen** einer Karte als Swipes der ersten Nachricht eines neuen Chats (übersetzt, Makros gefüllt).
-- [ ] **Antwortvorschläge im Chat:** Knopf „Was könnte ich sagen?“ mit 2–3 kurzen Ideen im Stil der Persona (wie `pending_choices` in Stage).
+- [x] **Antwortvorschläge im Chat:** Knopf „Was könnte ich sagen?“ mit 2–3 kurzen Ideen im Stil der Persona (wie `pending_choices` in Stage).
 - [ ] **„Schreib für mich“ (Impersonate):** KI entwirft die nächste Nutzernachricht in den Composer, Nutzer bearbeitet vor dem Senden.
 - [ ] **Gruppen-Chats** mit mehreren Charakteren; Sprecherwahl/Ansprache-Erkennung aus `stage/director.rs` wiederverwenden, ohne Spielmechanik.
 - [ ] **OOC-/Regie-Nachrichten:** `(( … ))` oder Umschalter „Regieanweisung“ geht als Hinweis ans Modell statt in die Erzählung.

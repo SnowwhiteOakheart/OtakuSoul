@@ -33,6 +33,8 @@ the character is and how your chat begins; **"Chat now"** starts the conversatio
 
 - Just start writing. Text between asterisks (`*smiles*`) is an action.
 - Don't like a reply? Have it rewritten – the old one stays as a variant.
+- Stuck for words? The **light bulb** next to the message field ("What could I say?") suggests three replies – a
+  click puts one into the field, where you can adjust it before sending.
 - The character remembers your conversation. **"Conversation memory"** below the input shows how full it is; the app
   summarises older messages when needed.
 

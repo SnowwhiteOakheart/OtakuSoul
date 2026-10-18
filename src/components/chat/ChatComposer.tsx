@@ -1,5 +1,5 @@
 import React, { useEffect, useMemo, useRef, useState } from 'react';
-import { FileText, Paperclip, Send, Square, X } from 'lucide-react';
+import { FileText, Lightbulb, Loader2, Paperclip, Send, Square, X } from 'lucide-react';
 import { useAppStore, useStoreFields } from '../../store/useAppStore';
 import { errorFix } from '../../utils/errorFixes';
 import { streamingTts } from '../../services/streamingTts';
@@ -9,6 +9,7 @@ import { toast } from '../ui/feedback';
 import { errorMessage } from '../../utils/errors';
 import type { ContextUsage } from '../../types';
 import { readDraft, writeDraft } from '../../utils/drafts';
+import { reportFailure } from '../../store/reportFailure';
 
 /**
  * Message input with send/abort, voice controls and the context meter. Owns the draft so
@@ -17,10 +18,10 @@ import { readDraft, writeDraft } from '../../utils/drafts';
 export const ChatComposer: React.FC = () => {
   const { t } = useTranslation();
   const {
-    sendMessage, isGenerating, abortGeneration, activeVoiceConfig, setAutoTtsEnabled, contextUsage,
+    sendMessage, suggestReplies, isGenerating, abortGeneration, activeVoiceConfig, setAutoTtsEnabled, contextUsage,
     selectedBackend, serverConfig, generationFailure, retryGeneration, activeChatId, isChatLoading, chatLoadError, retryChatLoad,
   } = useStoreFields(
-    'sendMessage', 'isGenerating', 'abortGeneration', 'activeVoiceConfig', 'setAutoTtsEnabled', 'contextUsage',
+    'sendMessage', 'suggestReplies', 'isGenerating', 'abortGeneration', 'activeVoiceConfig', 'setAutoTtsEnabled', 'contextUsage',
     'selectedBackend', 'serverConfig', 'generationFailure', 'retryGeneration', 'activeChatId', 'isChatLoading', 'chatLoadError', 'retryChatLoad',
   );
   // The text of each chat survives switching chats and restarts (files don't).
@@ -38,6 +39,32 @@ export const ChatComposer: React.FC = () => {
   }, [shownKey, input]);
   const [files, setFiles] = useState<File[]>([]);
   const fileInput = useRef<HTMLInputElement>(null);
+  const textInput = useRef<HTMLTextAreaElement>(null);
+  // Reply ideas belong to the chat they were asked for; another chat shows none.
+  const [ideas, setIdeas] = useState<{ key: string | null; items: string[] }>({ key: null, items: [] });
+  const [ideasFor, setIdeasFor] = useState<string | null>(null);
+  const shownIdeas = ideas.key === draftKey ? ideas.items : [];
+  const loadingIdeas = ideasFor !== null && ideasFor === draftKey;
+
+  const askForIdeas = async () => {
+    const key = draftKey;
+    if (!key) return;
+    setIdeasFor(key);
+    try {
+      const items = await suggestReplies();
+      setIdeas({ key, items });
+    } catch (e) {
+      reportFailure('Reply ideas failed:', e);
+    } finally {
+      setIdeasFor((current) => (current === key ? null : current));
+    }
+  };
+
+  const pickIdea = (idea: string) => {
+    setInput(idea);
+    setIdeas({ key: null, items: [] });
+    textInput.current?.focus();
+  };
 
   const addFiles = (list: Iterable<File>) => {
     const added = [...list];
@@ -50,6 +77,7 @@ export const ChatComposer: React.FC = () => {
     const [text, attached] = [input, files];
     setInput('');
     setFiles([]);
+    setIdeas({ key: null, items: [] });
     sendMessage(text, attached).catch((e) => {
       // Upload/user-write failure: restore the unsaved draft without discarding new typing.
       toast.error(errorMessage(e));
@@ -97,6 +125,39 @@ export const ChatComposer: React.FC = () => {
           ))}
         </div>
       )}
+      {(loadingIdeas || shownIdeas.length > 0) && (
+        <div className="max-w-4xl mx-auto mb-2 flex flex-wrap items-center gap-2" role="group" aria-label={t('chat.replyIdeasTitle')} data-reply-ideas>
+          {loadingIdeas ? (
+            <span role="status" className="flex items-center gap-2 text-xs text-slate-400">
+              <Loader2 className="w-3.5 h-3.5 animate-spin" aria-hidden="true" />
+              {t('chat.replyIdeasLoading')}
+            </span>
+          ) : (
+            <>
+              {shownIdeas.map((idea) => (
+                <button
+                  key={idea}
+                  type="button"
+                  onClick={() => pickIdea(idea)}
+                  title={t('chat.replyIdeasUse')}
+                  className="max-w-full rounded-xl border border-accent-500/40 bg-accent-500/10 px-3 py-1.5 text-left text-sm text-slate-100 hover:bg-accent-500/20 transition-colors"
+                >
+                  {idea}
+                </button>
+              ))}
+              <button
+                type="button"
+                onClick={() => setIdeas({ key: null, items: [] })}
+                className="p-1 text-slate-400 hover:text-slate-200"
+                aria-label={t('chat.replyIdeasClose')}
+                title={t('chat.replyIdeasClose')}
+              >
+                <X className="w-3.5 h-3.5" />
+              </button>
+            </>
+          )}
+        </div>
+      )}
       {imagesWithoutVision && (
         <p className="max-w-4xl mx-auto mb-2 text-xs text-amber-300">{t('chat.noVisionHint')}</p>
       )}
@@ -122,7 +183,19 @@ export const ChatComposer: React.FC = () => {
         >
           <Paperclip className="w-4 h-4" />
         </button>
+        <button
+          type="button"
+          onClick={() => void askForIdeas()}
+          disabled={!activeChatId || isChatLoading || !!chatLoadError || isGenerating || loadingIdeas}
+          className="p-2.5 rounded-xl bg-slate-800 hover:bg-slate-700 disabled:opacity-40 text-slate-300 transition-colors border border-slate-700/80"
+          title={t('chat.replyIdeasHint')}
+          aria-label={t('chat.replyIdeas')}
+          data-reply-ideas-button
+        >
+          <Lightbulb className="w-4 h-4" />
+        </button>
         <textarea
+          ref={textInput}
           value={input}
           onChange={(e) => setInput(e.target.value)}
           onPaste={(e) => {

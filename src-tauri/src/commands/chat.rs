@@ -197,6 +197,19 @@ pub async fn summarize_chat(
         .await
 }
 
+/// A few short ideas for the user's next message, from the end of the chat ("What could I say?").
+#[tauri::command]
+pub async fn suggest_chat_replies(
+    state: State<'_, AppState>,
+    request: crate::modules::reply_ideas::ReplyIdeasRequest,
+) -> Result<Vec<String>, String> {
+    let messages = state
+        .memory_db
+        .get_chat_messages(&request.chat_id)
+        .map_err(|e| e.to_string())?;
+    crate::modules::reply_ideas::suggest(&state.inference_client, &messages, request).await
+}
+
 /// Translates one chat message with the chat model.
 #[tauri::command]
 pub async fn translate_message(

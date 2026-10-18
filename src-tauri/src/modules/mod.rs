@@ -43,6 +43,7 @@ pub mod settings;
 pub mod stage;
 pub use hub as soul_hub;
 pub use memory_pipeline as soul_memory_pipeline;
+pub mod reply_ideas;
 pub mod translate;
 pub mod tts_local;
 pub mod updater;

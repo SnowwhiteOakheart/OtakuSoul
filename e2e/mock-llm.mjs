@@ -8,6 +8,7 @@ const REPLY =
   'Dort gibt es tausend rote Tore, und am Ende des Weges hat man einen wunderschönen Blick über ganz Kyoto. ' +
   'Bring bequeme Schuhe mit, es sind viele Stufen, und vergiss deine Kamera nicht."';
 export const TRANSLATION = '*lächelt* "Testübersetzung: Das ist eine gute Frage!"';
+export const REPLY_IDEAS = ['*nickt* "Erzähl mir mehr."', 'Wohin führt dieser Weg?', '*zieht die Karte hervor* "Lass uns aufbrechen!"'];
 export const STAGE_NARRATION =
   'Der Nebel lichtet sich, und vor euch ragt ein uraltes Tor aus schwarzem Stein auf. Runen glimmen schwach in der Dämmerung, ' +
   'und irgendwo hinter den Mauern schlägt eine Glocke dreimal.';
@@ -65,6 +66,9 @@ export function startMockLlm() {
       // the memory pipeline only get the canned reply.
       const isChat = system.includes('# Role & Identity');
       const isTranslation = system.includes('translator for roleplay');
+      // „Was könnte ich sagen?“: `stats.replyIdeas` (Array) überschreibt die Vorschläge.
+      const isReplyIdeas = system.includes('[CHAT — REPLY IDEAS]');
+      if (isReplyIdeas) { stats.replyIdeasRequests = (stats.replyIdeasRequests ?? 0) + 1; stats.lastReplyIdeasMessages = request.messages ?? []; }
       if (isSummary) stats.summary += 1;
       if (isTranslation) stats.translate += 1;
       if (isChat) {
@@ -163,6 +167,8 @@ export function startMockLlm() {
             ? SUMMARY
             : isTranslation
               ? TRANSLATION
+              : isReplyIdeas
+                ? JSON.stringify(stats.replyIdeas ?? REPLY_IDEAS)
               : (isChat && stats.chatReply) || (toolReply(request.messages ?? []) ?? REPLY);
       for (const [matches, flag, cancelled] of [
         [isRouting, 'stallRouting', 'cancelledRouting'],
