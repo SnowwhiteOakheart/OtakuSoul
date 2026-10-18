@@ -73,5 +73,6 @@
 - [x] **Antwortlänge pro Chat:** kurz/mittel/ausführlich, passt Prompt und `max_tokens` gemeinsam an.
 - [x] **Sichtbare Lorebook-/Gedächtnis-Treffer** je Antwort (welche Einträge einbezogen wurden).
 - [x] **„Diese Nachricht merken“** im Nachrichtenmenü (`add_episodic_memory_from`).
-- [ ] **Szenenbild per Knopf** aus dem aktuellen Chat-Kontext.
+- [x] **Szenenbild per Knopf** aus dem aktuellen Chat-Kontext (gab es als HUD-„Foto“ schon als Porträt; ergänzt: Bildart
+  „Moment“ je Antwort im Nachrichtenmenü, Bild als Chat-Hintergrund übernehmen).
 - [ ] **Chat-Export/-Import im SillyTavern-Format (JSONL)** für Umsteiger.

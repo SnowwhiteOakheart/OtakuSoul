@@ -7,16 +7,8 @@ import { translate, useTranslation, type TranslationKey } from '../../i18n';
 import { toast } from '../ui/feedback';
 import { errorMessage } from '../../utils/errors';
 import type { ChatStyle } from '../../types';
+import { DEFAULT_CHAT_STYLE } from '../../utils/settingDefaults';
 
-export const DEFAULT_CHAT_STYLE: ChatStyle = {
-  background: null,
-  background_dim: 40,
-  text_size: '',
-  bubbles: '',
-  ambient: null,
-  ambient_volume: 35,
-  reply_length: '',
-};
 
 /** Changes are saved shortly after the last edit (sliders send many). */
 const SAVE_DELAY_MS = 400;

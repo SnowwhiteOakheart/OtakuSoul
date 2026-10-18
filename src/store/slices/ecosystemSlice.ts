@@ -16,6 +16,7 @@ import type { SliceCreator } from '../storeTypes';
 import { trackTask } from './taskSlice';
 import { translate } from '../../i18n';
 import { reportFailure } from '../reportFailure';
+import { DEFAULT_CHAT_STYLE } from '../../utils/settingDefaults';
 
 /** Profile backups, image generation, Discord and the mobile web server. */
 export interface EcosystemSlice {
@@ -42,9 +43,16 @@ export interface EcosystemSlice {
   isGeneratingSceneImage: boolean;
   /**
    * Lets the chat model write a prompt from the active character (chat) or scene (stage) and the
-   * recent story, then generates the image. In the stage it becomes the scene background.
+   * recent story, then generates the image. In the stage it becomes the scene background. In the
+   * chat `kind` picks a portrait (default) or the moment of the story; `upToMessageId` ends the
+   * story at that message ("this moment as a picture").
    */
-  generateSceneImage: (target: 'chat' | 'stage') => Promise<GeneratedImageResult | null>;
+  generateSceneImage: (
+    target: 'chat' | 'stage',
+    options?: { kind?: 'portrait' | 'moment'; upToMessageId?: string },
+  ) => Promise<GeneratedImageResult | null>;
+  /** Makes a chat scene image the chat's background (copied into the Stage backgrounds). */
+  setSceneImageAsBackground: (chatId: string) => Promise<void>;
   dismissChatSceneImage: (chatId: string) => void;
   fetchGeneratedImages: () => Promise<void>;
   discordRpcEnabled: boolean;
@@ -163,7 +171,7 @@ export const createEcosystemSlice: SliceCreator<EcosystemSlice> = (set, get) => 
       return { chatSceneImages: next };
     }),
 
-  generateSceneImage: async (target) => {
+  generateSceneImage: async (target, options = {}) => {
     const state = get();
     if (state.isGeneratingSceneImage) return null;
     set({ isGeneratingSceneImage: true });
@@ -195,7 +203,10 @@ export const createEcosystemSlice: SliceCreator<EcosystemSlice> = (set, get) => 
         const userName = state.activePersona.name;
         subject = character.name;
         description = fillCardMacros(character.description, character.name, userName);
-        context = state.messages
+        // The last six turns, up to the chosen message ("this moment") or the end of the chat.
+        const end = options.upToMessageId ? state.storedMessages.findIndex((m) => m.id === options.upToMessageId) + 1 : 0;
+        context = (end > 0 ? state.storedMessages.slice(0, end) : state.messages)
+          .filter((m) => m.role !== 'system')
           .slice(-6)
           .map((m) => `${m.role === 'user' ? userName : character.name}: ${fillCardMacros(m.content, character.name, userName)}`);
       }
@@ -214,7 +225,7 @@ export const createEcosystemSlice: SliceCreator<EcosystemSlice> = (set, get) => 
             api_key: state.selectedBackend === 'cloud' ? state.cloudApiKey : null,
             model: state.selectedBackend === 'cloud' ? state.cloudModel : null,
             provider: state.selectedBackend === 'cloud' ? state.cloudProvider : 'local_llama',
-            kind: target === 'stage' ? 'scene' : 'portrait',
+            kind: target === 'stage' ? 'scene' : (options.kind ?? 'portrait'),
             style,
             subject,
             description,
@@ -248,6 +259,14 @@ export const createEcosystemSlice: SliceCreator<EcosystemSlice> = (set, get) => 
     } finally {
       set({ isGeneratingSceneImage: false });
     }
+  },
+
+  setSceneImageAsBackground: async (chatId) => {
+    const image = get().chatSceneImages[chatId];
+    if (!image) return;
+    const name = await api.saveStageBackground(image.file_path);
+    const style = get().chatSessions.find((s) => s.id === chatId)?.style;
+    await get().updateChatStyle(chatId, { ...DEFAULT_CHAT_STYLE, ...style, background: name });
   },
 
   fetchGeneratedImages: async () => {

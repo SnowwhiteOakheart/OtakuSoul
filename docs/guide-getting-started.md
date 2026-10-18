@@ -46,6 +46,8 @@ the character is and how your chat begins; **"Chat now"** starts the conversatio
 - The **book icon** above a reply shows which lorebook entries and memories went into it.
 - Want the character to remember something for sure? **"Remember this message"** in a message's menu (on hover) turns
   it into a memory.
+- **"This moment as a picture"** in a reply's menu paints the scene up to there (image generation must be set up); the
+  picture card lets you make it the chat background.
 - The character remembers your conversation. **"Conversation memory"** below the input shows how full it is; the app
   summarises older messages when needed.
 

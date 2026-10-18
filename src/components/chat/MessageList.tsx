@@ -11,6 +11,7 @@ import {
   FastForward,
   FileText,
   GitBranch,
+  ImageIcon,
   Languages,
   Loader2,
   RotateCcw,
@@ -25,6 +26,7 @@ import { PersonaAvatar } from '../characters/PersonaAvatar';
 import { RoleplayMessage } from './RoleplayMessage';
 import { PromptHitsButton, PromptHitsList } from './PromptHitsView';
 import { RememberMessageDialog } from './RememberMessageDialog';
+import { reportFailure } from '../../store/reportFailure';
 import { hitKey } from '../../store/helpers';
 import { api } from '../../services/api';
 import type { Attachment, StoredChatMessage, UserPersona } from '../../types';
@@ -195,6 +197,16 @@ const ChatMessageItem = React.memo<ChatMessageItemProps>(
     const hits = useAppStore((s) => (msg.role === 'assistant' ? s.promptHits[hitKey(msg.id, msg.swipe_index)] : undefined));
     const [hitsOpen, setHitsOpen] = useState(false);
     const [remembering, setRemembering] = useState(false);
+    const generateSceneImage = useAppStore((s) => s.generateSceneImage);
+    const isGeneratingSceneImage = useAppStore((s) => s.isGeneratingSceneImage);
+    // The story up to this reply as a picture; it shows in the scene image card above the chat.
+    const pictureMoment = async () => {
+      try {
+        if (await generateSceneImage('chat', { kind: 'moment', upToMessageId: msg.id })) toast.success(translate('hud.imageDone'));
+      } catch (e) {
+        reportFailure('Scene image failed:', e);
+      }
+    };
 
     const [thoughtOpen, setThoughtOpen] = useState(false);
     const [editContent, setEditContent] = useState<string | null>(null);
@@ -402,6 +414,15 @@ const ChatMessageItem = React.memo<ChatMessageItemProps>(
                   >
                     <RotateCcw className="w-3 h-3" />
                     <span className="hidden sm:inline">{t('chat.regenerate')}</span>
+                  </button>
+                  <button
+                    onClick={() => void pictureMoment()}
+                    disabled={isGeneratingSceneImage || !msg.content.trim()}
+                    className={BUBBLE_ACTION}
+                    title={t('chat.pictureMomentHint')}
+                    aria-label={t('chat.pictureMoment')}
+                  >
+                    {isGeneratingSceneImage ? <Loader2 className="w-3 h-3 animate-spin" /> : <ImageIcon className="w-3 h-3" />}
                   </button>
                   <button
                     onClick={() => continueChatMessage(msg.id)}

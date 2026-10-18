@@ -1,13 +1,15 @@
 import { useState } from 'react';
-import { ImageIcon, Maximize2, Minimize2, X } from 'lucide-react';
+import { ImageIcon, Maximize2, Minimize2, Wallpaper, X } from 'lucide-react';
 import { useStoreFields } from '../../store/useAppStore';
-import { useTranslation } from '../../i18n';
+import { translate, useTranslation } from '../../i18n';
+import { toast } from '../ui/feedback';
+import { reportFailure } from '../../store/reportFailure';
 
 /** The latest scene image of the open chat, generated from the story (HUD camera button). */
 export const SceneImageCard = () => {
   const { t } = useTranslation();
-  const { activeChatId, chatSceneImages, dismissChatSceneImage } = useStoreFields(
-    'activeChatId', 'chatSceneImages', 'dismissChatSceneImage',
+  const { activeChatId, chatSceneImages, dismissChatSceneImage, setSceneImageAsBackground } = useStoreFields(
+    'activeChatId', 'chatSceneImages', 'dismissChatSceneImage', 'setSceneImageAsBackground',
   );
   const [expanded, setExpanded] = useState(false);
   const image = activeChatId ? chatSceneImages[activeChatId] : undefined;
@@ -45,6 +47,19 @@ export const SceneImageCard = () => {
           className="p-1 rounded text-slate-400 hover:text-slate-100 hover:bg-slate-800"
         >
           {expanded ? <Minimize2 className="w-3.5 h-3.5" /> : <Maximize2 className="w-3.5 h-3.5" />}
+        </button>
+        <button
+          type="button"
+          onClick={() => {
+            setSceneImageAsBackground(activeChatId)
+              .then(() => toast.success(translate('chat.sceneImageBackgroundSet')))
+              .catch((e) => reportFailure('Scene image as background failed:', e));
+          }}
+          aria-label={t('chat.sceneImageAsBackground')}
+          title={t('chat.sceneImageAsBackground')}
+          className="p-1 rounded text-slate-400 hover:text-slate-100 hover:bg-slate-800"
+        >
+          <Wallpaper className="w-3.5 h-3.5" />
         </button>
         <button
           type="button"

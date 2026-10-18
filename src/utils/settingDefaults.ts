@@ -1,4 +1,15 @@
-import type { LlamaServerConfig, SamplingParams } from '../types';
+import type { ChatStyle, LlamaServerConfig, SamplingParams } from '../types';
+
+/** Look of a chat without own choices (sliders start here; empty texts = app defaults). */
+export const DEFAULT_CHAT_STYLE: ChatStyle = {
+  background: null,
+  background_dim: 40,
+  text_size: '',
+  bubbles: '',
+  ambient: null,
+  ambient_volume: 35,
+  reply_length: '',
+};
 
 /** Ternary Bonsai runs with a q4 KV cache, thinking on and its own sampler (PrismML's advice). */
 export const isBonsaiModel = (modelPath: string) => modelPath.toLowerCase().includes('bonsai');

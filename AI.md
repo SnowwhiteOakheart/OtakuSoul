@@ -73,6 +73,11 @@ ru „персонаж/история/сцена“. Fachbegriffe nur im Experte
   (Lorebooks, `assemble_prompt` = System-Prompt + Nachspann) → Payload (+ Author's Note in Tiefe N, Nachspann am Ende)
   → `send_chat_message`: `attachments::prepare` → `context_window::fit` (kürzt von vorn) → `stream_chat` (Events
   `llm-token`/`llm-thought`/`llm-done`) → Antwort speichern → ggf. `summarizeDroppedMessages` im Hintergrund.
+- **Szenenbild:** HUD „Foto“ = `generateSceneImage('chat')` (Porträt), Nachrichtenmenü „Diesen Moment als Bild“ =
+  `generateSceneImage('chat', { kind: 'moment', upToMessageId })` (Verlauf bis zu dieser Antwort; `image_generator::image_kind`).
+  Bild erscheint in `SceneImageCard` (nur Sitzung) und der Galerie; „Als Chat-Hintergrund“ = `setSceneImageAsBackground`
+  (`save_stage_background` + `ChatStyle.background`). `DEFAULT_CHAT_STYLE` liegt in `utils/settingDefaults.ts`. Mock bietet
+  `/sdapi/v1/txt2img` (Anbieter `automatic1111`), E2E `chat-scene-image.mjs`.
 - **Nachricht merken:** Aktion im Nachrichtenmenü (Gehirn) → `chat/RememberMessageDialog.tsx` (Vorschlag `memorySuggestion` ohne
   `*…*`/`((…))`, Kategorie, Wichtigkeit) → `addManualMemory(…, source)` → `add_episodic_memory` mit optionalem `chat_id`/
   `message_ids` (Herkunft `manual`, Quelle markiert die Erinnerung bei späteren Änderungen). E2E `chat-remember.mjs`.

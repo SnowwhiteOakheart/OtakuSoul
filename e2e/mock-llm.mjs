@@ -8,6 +8,8 @@ const REPLY =
   'Dort gibt es tausend rote Tore, und am Ende des Weges hat man einen wunderschönen Blick über ganz Kyoto. ' +
   'Bring bequeme Schuhe mit, es sind viele Stufen, und vergiss deine Kamera nicht."';
 export const TRANSLATION = '*lächelt* "Testübersetzung: Das ist eine gute Frage!"';
+/** 1×1 transparent PNG (base64) for the image mock. */
+const TINY_PNG = 'iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mNkYAAAAAYAAjCB0C8AAAAASUVORK5CYII=';
 export const USER_DRAFT = '*breitet die Karte auf dem Tisch aus* "Weißt du, wohin dieser Weg führt?"';
 export const REPLY_IDEAS = ['*nickt* "Erzähl mir mehr."', 'Wohin führt dieser Weg?', '*zieht die Karte hervor* "Lass uns aufbrechen!"'];
 export const STAGE_NARRATION =
@@ -51,6 +53,13 @@ export function startMockLlm() {
         else res.writeHead(200, { 'Content-Type': 'application/json' }).end(JSON.stringify(file));
         return;
       }
+      // Automatic1111-compatible image generation (image provider `automatic1111` with this server's base URL).
+      if (req.method === 'POST' && req.url.endsWith('/sdapi/v1/txt2img')) {
+        const { prompt = '' } = JSON.parse(body || '{}');
+        (stats.imagePrompts ??= []).push(prompt);
+        res.writeHead(200, { 'Content-Type': 'application/json' }).end(JSON.stringify({ images: [TINY_PNG] }));
+        return;
+      }
       if (req.method !== 'POST' || !req.url.endsWith('/chat/completions')) {
         res.writeHead(404).end();
         return;
@@ -69,6 +78,9 @@ export function startMockLlm() {
       const isTranslation = system.includes('translator for roleplay');
       // „Was könnte ich sagen?“: `stats.replyIdeas` (Array) überschreibt die Vorschläge.
       const isReplyIdeas = system.includes('[CHAT — REPLY IDEAS]');
+      // Image prompts written by the chat model (scene image, portrait, stage background).
+      const isImagePrompt = system.includes('You write prompts for an anime image generator');
+      if (isImagePrompt) stats.lastImagePromptRequest = request.messages ?? [];
       // „Schreib für mich“: `stats.userDraft` überschreibt den Entwurf.
       const isUserDraft = system.includes('[CHAT — USER DRAFT]');
       if (isUserDraft) { stats.userDraftRequests = (stats.userDraftRequests ?? 0) + 1; stats.lastUserDraftSystem = system; }
@@ -176,6 +188,8 @@ export function startMockLlm() {
                 ? JSON.stringify(stats.replyIdeas ?? REPLY_IDEAS)
               : isUserDraft
                 ? stats.userDraft ?? USER_DRAFT
+              : isImagePrompt
+                ? '1girl, shrine gate, night, lanterns'
               : (isChat && stats.chatReply) || (toolReply(request.messages ?? []) ?? REPLY);
       for (const [matches, flag, cancelled] of [
         [isRouting, 'stallRouting', 'cancelledRouting'],

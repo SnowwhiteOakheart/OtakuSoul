@@ -92,7 +92,8 @@ pub struct ImagePromptRequest {
     pub api_key: Option<String>,
     pub model: Option<String>,
     pub provider: Option<crate::modules::providers::LlmProviderType>,
-    /// `portrait` of a character or `scene` for the stage.
+    /// `portrait` of a character, `moment` (the character in the current scene, for a chat) or
+    /// `scene` for the stage.
     pub kind: String,
     /// `tags` (SDXL anime models) or `natural` (FLUX, Qwen-Image).
     pub style: String,
@@ -106,6 +107,17 @@ const IMAGE_PROMPT_SYSTEM: &str = r#"You write prompts for an anime image genera
 Reply with the prompt only: one line in English, no quotes, no explanations, no text or speech bubbles in the image.
 Describe the {kind} so it matches the current moment of the story: appearance from the description, pose, expression, clothing, location, time of day and lighting from the recent events.
 {style}"#;
+
+/// What the image shows, as told to the prompt writer.
+fn image_kind(kind: &str) -> &'static str {
+    match kind {
+        "scene" => "scene (environment first, characters small or absent)",
+        "moment" => {
+            "moment of the story (the character in the surroundings, showing the current action and mood; medium or wide shot, not a close-up)"
+        }
+        _ => "character portrait (upper body, looking at the viewer)",
+    }
+}
 
 fn clean_prompt(raw: &str) -> String {
     let line = raw
@@ -215,11 +227,7 @@ impl ImageGenerator {
         } else {
             "Use one or two vivid natural-language sentences, at most 70 words, ending with: anime illustration, detailed."
         };
-        let kind = if request.kind == "scene" {
-            "scene (environment first, characters small or absent)"
-        } else {
-            "character portrait (upper body, looking at the viewer)"
-        };
+        let kind = image_kind(&request.kind);
         let system = IMAGE_PROMPT_SYSTEM
             .replace("{kind}", kind)
             .replace("{style}", style);
@@ -947,6 +955,14 @@ mod fastrand {
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    #[test]
+    fn image_kinds_tell_the_prompt_writer_what_to_show() {
+        assert!(image_kind("moment").starts_with("moment of the story"));
+        assert!(image_kind("scene").starts_with("scene"));
+        assert!(image_kind("portrait").starts_with("character portrait"));
+        assert!(image_kind("").starts_with("character portrait"));
+    }
 
     #[test]
     fn provider_names_match_in_any_spelling() {

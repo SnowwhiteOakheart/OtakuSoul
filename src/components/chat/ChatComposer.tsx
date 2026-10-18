@@ -11,7 +11,7 @@ import type { ContextUsage } from '../../types';
 import { readDraft, writeDraft } from '../../utils/drafts';
 import { reportFailure } from '../../store/reportFailure';
 import { REPLY_LENGTHS } from '../../store/helpers';
-import { DEFAULT_CHAT_STYLE } from './ChatStylePanel';
+import { DEFAULT_CHAT_STYLE } from '../../utils/settingDefaults';
 
 /**
  * Message input with send/abort, voice controls and the context meter. Owns the draft so
