@@ -45,6 +45,14 @@ export function startMockLlm() {
         res.writeHead(200, { 'Content-Type': 'audio/wav' }).end(silentWav());
         return;
       }
+      // Adult hub source (OTAKUSOUL_NSFW_HUB_BASE): `stats.nsfwHubFiles`; every request is counted.
+      if (req.method === 'GET' && req.url.startsWith('/hub-nsfw/')) {
+        stats.nsfwHubRequests = (stats.nsfwHubRequests ?? 0) + 1;
+        const file = stats.nsfwHubFiles?.[decodeURIComponent(req.url.slice('/hub-nsfw/'.length))];
+        if (file === undefined) res.writeHead(404).end();
+        else res.writeHead(200, { 'Content-Type': 'application/json' }).end(JSON.stringify(file));
+        return;
+      }
       // Hub registries and contents (OTAKUSOUL_HUB_BASE points here): tests fill `stats.hubFiles`.
       if (req.method === 'GET' && req.url.startsWith('/hub/')) {
         const file = stats.hubFiles?.[decodeURIComponent(req.url.slice('/hub/'.length))];

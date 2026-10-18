@@ -1,5 +1,6 @@
 import { create } from 'zustand';
 import { api } from '../../services/api';
+import { useAppStore } from '../../store/useAppStore';
 import { translate } from '../../i18n';
 import { errorMessage } from '../../utils/errors';
 import { toast, type ToastAction } from '../ui/feedback';
@@ -13,9 +14,17 @@ export interface RemoteList<T> {
   loading: boolean;
   error: string | null;
   loaded: boolean;
+  /** Adult content was allowed when the list was loaded; switching NSFW reloads it. */
+  nsfw?: boolean;
 }
 
 const emptyList = <T,>(): RemoteList<T> => ({ items: [], loading: false, error: null, loaded: false });
+
+/** NSFW is on and the age confirmed (the backend checks the same itself). */
+export const nsfwAllowed = () => {
+  const { nsfwEnabled, adultConfirmed } = useAppStore.getState();
+  return nsfwEnabled && adultConfirmed;
+};
 
 export type ListKey = 'gateway' | 'lorebooks' | 'scenes';
 
@@ -56,9 +65,10 @@ interface HubState {
 export const useHubStore = create<HubState>()((set, get) => {
   const loadList = async <K extends ListKey>(key: K, fetch: () => Promise<HubState[K]['items']>) => {
     set((state) => ({ [key]: { ...state[key], loading: true, error: null } }) as Partial<HubState>);
+    const nsfw = nsfwAllowed();
     try {
       const items = await fetch();
-      set({ [key]: { items, loading: false, error: null, loaded: true } } as Partial<HubState>);
+      set({ [key]: { items, loading: false, error: null, loaded: true, nsfw } } as Partial<HubState>);
     } catch (e) {
       console.error(`Failed to load hub list "${key}":`, e);
       set((state) => ({ [key]: { ...state[key], loading: false, error: errorMessage(e) } }) as Partial<HubState>);
@@ -90,7 +100,8 @@ export const useHubStore = create<HubState>()((set, get) => {
     ensureLoaded: (key) => {
       if (!get().installed.length) void get().loadInstalled();
       const list = get()[key];
-      if (list.loaded || list.loading || list.error) return;
+      const nsfwChanged = list.loaded && (list.nsfw ?? false) !== nsfwAllowed();
+      if (!nsfwChanged && (list.loaded || list.loading || list.error)) return;
       void { gateway: get().loadGateway, lorebooks: get().loadLorebooks, scenes: get().loadScenes }[key]();
     },
 
@@ -103,7 +114,7 @@ export const useHubStore = create<HubState>()((set, get) => {
       const loadedKey = chubFilterKey(get());
       set((state) => ({ chub: { ...state.chub, loading: true, error: null } }));
       try {
-        const res = await api.searchChubCharacters(query, page, 24, chubSort, chubTag ? [chubTag] : undefined, chubNsfw);
+        const res = await api.searchChubCharacters(query, page, 24, chubSort, chubTag ? [chubTag] : undefined, chubNsfw && nsfwAllowed());
         set((state) => ({
           chub: {
             items: append ? [...state.chub.items, ...res.items] : res.items,

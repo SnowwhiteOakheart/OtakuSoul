@@ -6,7 +6,7 @@ import { api } from '../../../services/api';
 import { translate, useTranslation } from '../../../i18n';
 import { useAppStore } from '../../../store/useAppStore';
 import { hubStatus, matchesQuery, useHubStore } from '../hubStore';
-import { HubListState, HubStatusBadge, ImportButton, UpdateAllBar, hubButtonLabel } from '../hubParts';
+import { HubListState, HubStatusBadge, NsfwBadge, ImportButton, UpdateAllBar, hubButtonLabel } from '../hubParts';
 import { confirmDialog, toast } from '../../ui/feedback';
 import { errorCode, errorMessage } from '../../../utils/errors';
 import type { GatewayLorebookEntry } from '../../../types';
@@ -108,6 +108,7 @@ export const GatewayLorebooksTab = () => {
               </div>
               <div className="mb-2">
                 <HubStatusBadge status={statusOf(lb)} updated={lb.updated} />
+                <NsfwBadge nsfw={lb.nsfw} />
               </div>
               <p className="text-xs text-slate-400 leading-relaxed mb-3">{text(lb, 'description') || t('hub.noDescription')}</p>
               <div className="text-xs text-slate-400">

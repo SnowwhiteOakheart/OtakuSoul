@@ -6,7 +6,7 @@ import { api } from '../../../services/api';
 import { translate, useTranslation } from '../../../i18n';
 import { useAppStore } from '../../../store/useAppStore';
 import { hubStatus, matchesQuery, useHubStore } from '../hubStore';
-import { HubListState, HubStatusBadge, ImportButton, UpdateAllBar, hubButtonLabel } from '../hubParts';
+import { HubListState, HubStatusBadge, NsfwBadge, ImportButton, UpdateAllBar, hubButtonLabel } from '../hubParts';
 import { toast } from '../../ui/feedback';
 import { errorMessage } from '../../../utils/errors';
 import type { GatewaySceneEntry } from '../../../types';
@@ -94,6 +94,7 @@ export const GatewayScenesTab = () => {
               </div>
               <div className="mb-2">
                 <HubStatusBadge status={statusOf(scene)} updated={scene.updated} />
+                <NsfwBadge nsfw={scene.nsfw} />
               </div>
               <p className="text-xs text-slate-400 leading-relaxed mb-3">{text(scene, 'description') || t('hub.noDescription')}</p>
               <div className="flex items-center justify-between text-xs text-slate-400">

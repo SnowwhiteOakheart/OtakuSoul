@@ -126,6 +126,18 @@ export const characterImported = async (
 export const hubButtonLabel = (status: HubStatus, installLabel: string) =>
   status === 'update' ? translate('hub.update') : status === 'current' ? translate('hub.reinstall') : installLabel;
 
+/** Marks adult content in the hub lists (only shown at all with NSFW on). */
+export const NsfwBadge = ({ nsfw }: { nsfw?: boolean }) => {
+  const { t } = useTranslation();
+  if (!nsfw) return null;
+  return (
+    <span data-nsfw title={t('nsfw.badgeTitle')}
+      className="ml-1 inline-flex items-center rounded-full border border-rose-500/50 bg-rose-500/15 px-2 py-0.5 text-[11px] font-bold text-rose-200">
+      18+
+    </span>
+  );
+};
+
 /** "Installed" or "Update available" on a hub entry (nothing for entries not installed). */
 export const HubStatusBadge = ({ status, updated }: { status: HubStatus; updated?: string }) => {
   const { t } = useTranslation();

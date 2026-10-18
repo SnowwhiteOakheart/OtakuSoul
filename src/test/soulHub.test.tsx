@@ -24,11 +24,11 @@ beforeEach(() => {
   useHubStore.setState(hubInitial, true);
   useAppStore.setState({ appLanguage: 'en', hubSubTab: 'soul_gateway' });
   vi.mocked(api.fetchSoulGatewayRegistry).mockResolvedValue([
-    { name: 'Ayu Ikue', author: 'snow', download_url: 'https://example.invalid/ayu.png', revision: 1, updated: '' },
-    { name: 'Sakura', author: 'hana', download_url: 'https://example.invalid/sakura.png', revision: 2, updated: '2026-10-16' },
+    { name: 'Ayu Ikue', author: 'snow', download_url: 'https://example.invalid/ayu.png', revision: 1, updated: '', nsfw: false },
+    { name: 'Sakura', author: 'hana', download_url: 'https://example.invalid/sakura.png', revision: 2, updated: '2026-10-16', nsfw: true },
   ]);
   vi.mocked(api.fetchLorebooksGatewayRegistry).mockResolvedValue([
-    { name: 'Welt', author: 'snow', description: 'Eine Welt', entry_count: 1, download_url: 'x', revision: 3, updated: '', translations: { en: { name: 'World', description: 'A world' } } },
+    { name: 'Welt', author: 'snow', description: 'Eine Welt', entry_count: 1, download_url: 'x', revision: 3, updated: '', translations: { en: { name: 'World', description: 'A world' } }, nsfw: false },
   ]);
 });
 
@@ -57,6 +57,16 @@ describe('HubView', () => {
     await user.click(screen.getByRole('tab', { name: /Curated characters/ }));
     expect(screen.getByRole('tab', { name: /Curated characters/ })).toHaveAttribute('aria-selected', 'true');
     expect(api.fetchSoulGatewayRegistry).toHaveBeenCalledTimes(1);
+  });
+
+  it('marks adult entries and reloads the lists when adult content is switched', async () => {
+    renderHub();
+    const sakura = (await screen.findByText('Sakura')).closest('article, li, div') as HTMLElement;
+    expect(within(sakura.parentElement as HTMLElement).getByText('18+')).toBeInTheDocument();
+    expect(api.fetchSoulGatewayRegistry).toHaveBeenCalledTimes(1);
+    useAppStore.setState({ nsfwEnabled: true, adultConfirmed: true });
+    useHubStore.getState().ensureLoaded('gateway');
+    expect(api.fetchSoulGatewayRegistry).toHaveBeenCalledTimes(2);
   });
 
   it('imports a character and offers to open it in the chat', async () => {

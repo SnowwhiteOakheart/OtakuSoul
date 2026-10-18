@@ -841,6 +841,8 @@ export interface AppSettings {
   /** Closing the window keeps the app running in the tray. */
   close_to_tray?: boolean;
   reroll_repeats?: boolean;
+  nsfw_enabled?: boolean;
+  adult_confirmed?: boolean;
   avoid_phrases?: string[];
   reply_replacements?: ReplyReplacement[];
   tray_hint_shown?: boolean;

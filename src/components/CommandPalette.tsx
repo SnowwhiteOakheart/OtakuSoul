@@ -84,6 +84,7 @@ export const CommandPalette = ({ open, onOpen, onClose }: CommandPaletteProps) =
       ['setting-reply-language', 'settings.replyLanguage', Globe, 'reply language antwortsprache язык ответов'],
       ['setting-theme', 'settings.theme', Palette, 'theme farbe dark light hell dunkel тема цвет'],
       ['setting-close-to-tray', 'settings.closeToTray', Settings2, 'tray close schließen beenden quit трей закрыть'],
+      ['setting-nsfw', 'nsfw.title', Settings2, 'nsfw 18+ adult erwachsene erotik freigabe взрослые'],
       ['setting-avatars', 'settings.avatarDefaults', Users, 'avatar vrm live2d аватар'],
       ['setting-avatar-motions', 'motions.title', Users, 'motion bewegung animation vrma geste gesture движение анимация'],
       ['setting-system', 'settings.systemTitle', Terminal, 'logs version update daten data логи'],

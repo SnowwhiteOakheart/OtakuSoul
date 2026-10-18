@@ -79,6 +79,13 @@ pub struct AppSettings {
     /// Closing the window keeps the app (and its loaded models) running in the tray.
     #[serde(default = "default_true")]
     pub close_to_tray: bool,
+    /// Content for adults (the NSFW hub source and installed NSFW content) is shown; only together
+    /// with `adult_confirmed`.
+    #[serde(default)]
+    pub nsfw_enabled: bool,
+    /// The user confirmed once to be at least 18 years old (no birth date is stored).
+    #[serde(default)]
+    pub adult_confirmed: bool,
     /// A reply that nearly repeats one of the last replies is written anew once (as a new swipe).
     #[serde(default = "default_true")]
     pub reroll_repeats: bool,
@@ -178,6 +185,8 @@ impl Default for AppSettings {
             color_mode: "system".to_string(),
             onboarding_completed: false,
             close_to_tray: true,
+            nsfw_enabled: false,
+            adult_confirmed: false,
             reroll_repeats: true,
             tray_hint_shown: false,
             stage_last_scene: String::new(),
@@ -194,6 +203,13 @@ impl Default for AppSettings {
 pub fn get_settings_file_path() -> PathBuf {
     let paths = resolve_app_paths();
     PathBuf::from(paths.config_dir).join("settings.json")
+}
+
+/// Adult content may be fetched and shown: NSFW is on and the age was confirmed. Checked by the
+/// backend itself, so a request from the page cannot get around the setting.
+pub fn nsfw_allowed() -> bool {
+    let settings = load_app_settings();
+    settings.nsfw_enabled && settings.adult_confirmed
 }
 
 pub fn load_app_settings() -> AppSettings {

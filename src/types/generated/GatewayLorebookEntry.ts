@@ -13,4 +13,8 @@ updated: string,
  * Texts for the list in other languages (`{"en": {"description": "…"}}`); the original
  * name or title stays the key for updates.
  */
-translations: Record<string, Record<string, string>>, };
+translations: Record<string, Record<string, string>>, 
+/**
+ * Content for adults (from the NSFW source or marked so).
+ */
+nsfw: boolean, };

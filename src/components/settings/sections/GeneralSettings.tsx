@@ -10,6 +10,7 @@ import { importLive2dFromDialog, importVrmFromDialog } from '../../avatars/avata
 import { api } from '../../../services/api';
 import { toast } from '../../ui/feedback';
 import { Toggle } from '../../ui/Toggle';
+import { NsfwSettings } from '../NsfwSettings';
 import { errorMessage } from '../../../utils/errors';
 import { APP_THEMES } from '../themes';
 import {
@@ -258,6 +259,8 @@ export const GeneralSettings = () => {
       </div>
 
       {/* 4. System-Diagnose & Updates */}
+      <NsfwSettings />
+
       <div id="setting-system" className="rounded-xl border border-slate-800 bg-slate-900/60 p-5 space-y-4">
         <div>
           <h2 className="text-sm font-semibold text-slate-200 flex items-center gap-2">

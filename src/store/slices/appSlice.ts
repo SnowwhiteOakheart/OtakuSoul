@@ -45,6 +45,12 @@ export interface AppSlice {
   /** A reply that nearly repeats a recent one is written anew once (new swipe). */
   rerollRepeats: boolean;
   setRerollRepeats: (on: boolean) => void;
+  /** Content for adults (NSFW hub source, installed NSFW content); counts only with `adultConfirmed`. */
+  nsfwEnabled: boolean;
+  /** The user confirmed once to be at least 18 (no birth date stored). */
+  adultConfirmed: boolean;
+  /** Turns adult content on (with the age confirmation, given once) or off. */
+  setNsfwEnabled: (on: boolean, confirmAge?: boolean) => Promise<void>;
   /** Words and phrases the AI is asked not to use. */
   avoidPhrases: string[];
   setAvoidPhrases: (phrases: string[]) => void;
@@ -169,6 +175,8 @@ export const createAppSlice: SliceCreator<AppSlice> = (set, get) => ({
         onboardingCompleted: settings.onboarding_completed !== false,
         closeToTray: settings.close_to_tray !== false,
         rerollRepeats: settings.reroll_repeats !== false,
+        nsfwEnabled: settings.nsfw_enabled === true,
+        adultConfirmed: settings.adult_confirmed === true,
         avoidPhrases: settings.avoid_phrases ?? [],
         replyReplacements: settings.reply_replacements ?? [],
         chatTools: settings.chat_tools === true,
@@ -277,6 +285,8 @@ export const createAppSlice: SliceCreator<AppSlice> = (set, get) => ({
         onboarding_completed: state.onboardingCompleted,
         close_to_tray: state.closeToTray,
         reroll_repeats: state.rerollRepeats,
+        nsfw_enabled: state.nsfwEnabled,
+        adult_confirmed: state.adultConfirmed,
         avoid_phrases: state.avoidPhrases,
         reply_replacements: state.replyReplacements,
         chat_tools: state.chatTools,
@@ -347,6 +357,18 @@ export const createAppSlice: SliceCreator<AppSlice> = (set, get) => ({
   },
 
   rerollRepeats: true,
+
+  nsfwEnabled: false,
+
+  adultConfirmed: false,
+
+  setNsfwEnabled: async (on, confirmAge) => {
+    const adultConfirmed = get().adultConfirmed || confirmAge === true;
+    // Without a confirmed age adult content stays off. Saved before anything reloads: the backend
+    // reads the setting from the file.
+    set({ nsfwEnabled: on && adultConfirmed, adultConfirmed });
+    await get().saveCurrentSettings();
+  },
 
   setRerollRepeats: (on) => {
     set({ rerollRepeats: on });

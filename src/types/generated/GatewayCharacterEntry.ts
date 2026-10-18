@@ -8,4 +8,8 @@ revision: number,
 /**
  * Date of the current revision (for display).
  */
-updated: string, };
+updated: string, 
+/**
+ * Content for adults (from the NSFW source or marked so).
+ */
+nsfw: boolean, };

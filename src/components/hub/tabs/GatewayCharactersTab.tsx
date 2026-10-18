@@ -6,7 +6,7 @@ import { useShallow } from 'zustand/react/shallow';
 import { api } from '../../../services/api';
 import { translate, useTranslation } from '../../../i18n';
 import { hubStatus, matchesQuery, useHubStore } from '../hubStore';
-import { HubListState, HubStatusBadge, ImportButton, UpdateAllBar, characterImported, hubButtonLabel } from '../hubParts';
+import { HubListState, HubStatusBadge, NsfwBadge, ImportButton, UpdateAllBar, characterImported, hubButtonLabel } from '../hubParts';
 import { toast } from '../../ui/feedback';
 import { errorMessage } from '../../../utils/errors';
 import { useAppStore } from '../../../store/useAppStore';
@@ -119,6 +119,7 @@ export const GatewayCharactersTab = () => {
               </div>
               <div className="mb-1">
                 <HubStatusBadge status={statusOf(char)} updated={char.updated} />
+                <NsfwBadge nsfw={char.nsfw} />
               </div>
               <h3 className="font-bold text-xs text-slate-100 truncate" title={char.name}>
                 {char.name}

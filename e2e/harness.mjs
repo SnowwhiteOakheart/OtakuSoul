@@ -70,6 +70,7 @@ export async function launch(settings = {}, { hubFiles } = {}) {
       ...process.env,
       OTAKUSOUL_HOME: home,
       OTAKUSOUL_HUB_BASE: mock.url.replace('/v1/chat/completions', '/hub'),
+      OTAKUSOUL_NSFW_HUB_BASE: mock.url.replace('/v1/chat/completions', '/hub-nsfw'),
       GDK_BACKEND: process.env.GDK_BACKEND ?? 'x11',
       WEBKIT_DISABLE_DMABUF_RENDERER: '1',
     },

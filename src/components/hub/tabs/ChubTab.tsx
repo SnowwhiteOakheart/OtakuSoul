@@ -7,6 +7,7 @@ import { pressable } from '../../../utils/pressable';
 import { chubFilterKey, useHubStore, type ChubSort } from '../hubStore';
 import { HubListState, ImportButton, characterImported } from '../hubParts';
 import { importWithOverwrite } from '../../../services/characterImport';
+import { useAppStore } from '../../../store/useAppStore';
 import { ChubDetailModal, type ChubDetailState } from './ChubDetailModal';
 import type { ChubSearchItem } from '../../../types';
 
@@ -28,6 +29,8 @@ const SORTS: { id: ChubSort; icon: typeof Flame; iconClass: string; labelKey: 'h
 /** Sort, tag and NSFW filters; shown in the hub's tab bar while Chub is active. */
 export const ChubFilters = () => {
   const { t } = useTranslation();
+  // Adult results only with NSFW on in the settings (age confirmed).
+  const nsfwOn = useAppStore((s) => s.nsfwEnabled && s.adultConfirmed);
   const { chubSort, chubTag, chubNsfw, setChubFilter } = useHubStore(
     useShallow((s) => ({ chubSort: s.chubSort, chubTag: s.chubTag, chubNsfw: s.chubNsfw, setChubFilter: s.setChubFilter }))
   );
@@ -65,7 +68,7 @@ export const ChubFilters = () => {
         ))}
       </select>
 
-      <label className="flex items-center gap-1.5 cursor-pointer bg-app/80 px-2.5 py-1 rounded-xl border border-slate-800 text-xs">
+      {nsfwOn && <label className="flex items-center gap-1.5 cursor-pointer bg-app/80 px-2.5 py-1 rounded-xl border border-slate-800 text-xs">
         <input
           type="checkbox"
           checked={chubNsfw}
@@ -73,7 +76,7 @@ export const ChubFilters = () => {
           className="rounded border-slate-700 text-rose-500 focus:ring-0 focus:ring-offset-0 bg-slate-900"
         />
         <span className={`text-xs font-medium ${chubNsfw ? 'text-rose-400 font-bold' : 'text-slate-400'}`}>NSFW</span>
-      </label>
+      </label>}
     </div>
   );
 };

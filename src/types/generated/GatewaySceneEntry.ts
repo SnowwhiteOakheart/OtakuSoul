@@ -12,4 +12,8 @@ updated: string,
 /**
  * Texts for the list in other languages (see `GatewayLorebookEntry::translations`).
  */
-translations: Record<string, Record<string, string>>, };
+translations: Record<string, Record<string, string>>, 
+/**
+ * Content for adults (from the NSFW source or marked so).
+ */
+nsfw: boolean, };

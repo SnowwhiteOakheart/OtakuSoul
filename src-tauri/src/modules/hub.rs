@@ -23,6 +23,65 @@ const BROWSER_USER_AGENT: &str = "Mozilla/5.0 (Windows NT 10.0; Win64; x64) Appl
 const HUB_BASE_URL: &str =
     "https://raw.githubusercontent.com/SnowwhiteOakheart/otakusoul-data/main";
 
+/// The adult content repository: a second source, only fetched when NSFW is on and the age was
+/// confirmed (`settings::nsfw_allowed`).
+const NSFW_HUB_BASE_URL: &str =
+    "https://raw.githubusercontent.com/SnowwhiteOakheart/otakusoul-data-nsfw/main";
+
+fn nsfw_base() -> String {
+    std::env::var("OTAKUSOUL_NSFW_HUB_BASE").unwrap_or_else(|_| NSFW_HUB_BASE_URL.to_string())
+}
+
+/// Address of a file in the adult content repository (`OTAKUSOUL_NSFW_HUB_BASE` for E2E).
+pub fn nsfw_hub_url(file: &str) -> String {
+    format!("{}/{file}", nsfw_base().trim_end_matches('/'))
+}
+
+/// Downloads from the adult repository need NSFW on and a confirmed age.
+fn ensure_source_allowed(download_url: &str) -> Result<(), String> {
+    let base = nsfw_base();
+    let from_nsfw = download_url.starts_with(base.trim_end_matches('/'))
+        || download_url.starts_with(NSFW_HUB_BASE_URL);
+    if from_nsfw && !crate::modules::settings::nsfw_allowed() {
+        return Err(crate::err!("backend.hub.nsfwDisabled"));
+    }
+    Ok(())
+}
+
+/// The entries of a registry in the adult repository; it is optional, so a failure (offline,
+/// not yet public) only logs and gives none.
+async fn nsfw_registry_items(file: &str, key: &str) -> Vec<serde_json::Value> {
+    let fetch = async {
+        let res = get_http_client()?
+            .get(nsfw_hub_url(file))
+            .send()
+            .await
+            .map_err(|e| e.to_string())?;
+        if !res.status().is_success() {
+            return Err(format!("HTTP {}", res.status()));
+        }
+        res.json::<serde_json::Value>()
+            .await
+            .map_err(|e| e.to_string())
+    };
+    match fetch.await {
+        Ok(value) => value
+            .get(key)
+            .and_then(|v| v.as_array())
+            .cloned()
+            .unwrap_or_default(),
+        Err(error) => {
+            tracing::warn!("NSFW-Registry {file} nicht erreichbar: {error}");
+            Vec::new()
+        }
+    }
+}
+
+/// Whether a registry entry is marked as adult content.
+fn is_nsfw(entry: &serde_json::Value) -> bool {
+    entry.get("nsfw").and_then(|v| v.as_bool()).unwrap_or(false)
+}
+
 /// Address of a file in the data repository; `OTAKUSOUL_HUB_BASE` points the hub elsewhere (E2E
 /// mock server).
 pub fn hub_url(file: &str) -> String {
@@ -80,6 +139,9 @@ pub struct GatewayCharacterEntry {
     /// Date of the current revision (for display).
     #[serde(default)]
     pub updated: String,
+    /// Content for adults (from the NSFW source or marked so).
+    #[serde(default)]
+    pub nsfw: bool,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize, TS)]
@@ -101,6 +163,9 @@ pub struct GatewayLorebookEntry {
     #[serde(default)]
     #[ts(type = "Record<string, Record<string, string>>")]
     pub translations: std::collections::HashMap<String, std::collections::HashMap<String, String>>,
+    /// Content for adults (from the NSFW source or marked so).
+    #[serde(default)]
+    pub nsfw: bool,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize, TS)]
@@ -123,6 +188,9 @@ pub struct GatewaySceneEntry {
     #[serde(default)]
     #[ts(type = "Record<string, Record<string, string>>")]
     pub translations: std::collections::HashMap<String, std::collections::HashMap<String, String>>,
+    /// Content for adults (from the NSFW source or marked so).
+    #[serde(default)]
+    pub nsfw: bool,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize, TS)]
@@ -259,25 +327,30 @@ pub async fn fetch_soul_gateway_registry() -> Result<Vec<GatewayCharacterEntry>,
         .and_then(|v| v.as_array())
         .ok_or_else(|| crate::err!("backend.hub.gatewayNoCharacters"))?;
 
-    let mut results = Vec::new();
-    for c in characters {
-        if let (Some(name), Some(author), Some(download_url)) = (
-            c.get("name").and_then(|v| v.as_str()),
-            c.get("author").and_then(|v| v.as_str()),
-            c.get("download_url").and_then(|v| v.as_str()),
-        ) {
-            let (revision, updated) = entry_revision(c);
-            results.push(GatewayCharacterEntry {
-                name: name.to_string(),
-                author: author.to_string(),
-                download_url: download_url.to_string(),
-                revision,
-                updated,
-            });
+    let nsfw = crate::modules::settings::nsfw_allowed();
+    let mut results: Vec<GatewayCharacterEntry> = characters
+        .iter()
+        .filter(|c| nsfw || !is_nsfw(c))
+        .filter_map(|c| character_entry(c, false))
+        .collect();
+    if nsfw {
+        for c in nsfw_registry_items("soul_registry.json", "characters").await {
+            results.extend(character_entry(&c, true));
         }
     }
-
     Ok(results)
+}
+
+fn character_entry(c: &serde_json::Value, from_nsfw: bool) -> Option<GatewayCharacterEntry> {
+    let (revision, updated) = entry_revision(c);
+    Some(GatewayCharacterEntry {
+        name: c.get("name")?.as_str()?.to_string(),
+        author: c.get("author")?.as_str()?.to_string(),
+        download_url: c.get("download_url")?.as_str()?.to_string(),
+        revision,
+        updated,
+        nsfw: from_nsfw || is_nsfw(c),
+    })
 }
 
 pub async fn import_soul_gateway_character(
@@ -288,6 +361,7 @@ pub async fn import_soul_gateway_character(
     revision: u32,
     updated: &str,
 ) -> Result<CharacterImportResult, String> {
+    ensure_source_allowed(download_url)?;
     let client = get_http_client()?;
     let res = client
         .get(download_url)
@@ -346,6 +420,8 @@ pub async fn search_chub_characters(
     topics: Option<Vec<String>>,
     nsfw: bool,
 ) -> Result<ChubSearchResult, String> {
+    // Adult results only with NSFW on and a confirmed age (also when the page asks for them).
+    let nsfw = nsfw && crate::modules::settings::nsfw_allowed();
     let client = get_http_client()?;
     let safe_page = page.max(1);
     let safe_first = first.clamp(1, 100);
@@ -784,35 +860,37 @@ pub async fn fetch_lorebooks_gateway_registry() -> Result<Vec<GatewayLorebookEnt
         .and_then(|v| v.as_array())
         .ok_or_else(|| crate::err!("backend.hub.lorebooksMissing"))?;
 
-    let mut results = Vec::new();
-    for b in books {
-        if let (Some(name), Some(author), Some(download_url)) = (
-            b.get("name").and_then(|v| v.as_str()),
-            b.get("author").and_then(|v| v.as_str()),
-            b.get("download_url").and_then(|v| v.as_str()),
-        ) {
-            let description = b
-                .get("description")
-                .and_then(|v| v.as_str())
-                .unwrap_or("")
-                .to_string();
-            let entry_count = b.get("entry_count").and_then(|v| v.as_u64()).unwrap_or(0) as u32;
-
-            let (revision, updated) = entry_revision(b);
-            results.push(GatewayLorebookEntry {
-                name: name.to_string(),
-                author: author.to_string(),
-                description,
-                entry_count,
-                download_url: download_url.to_string(),
-                revision,
-                updated,
-                translations: entry_translations(b),
-            });
+    let nsfw = crate::modules::settings::nsfw_allowed();
+    let mut results: Vec<GatewayLorebookEntry> = books
+        .iter()
+        .filter(|b| nsfw || !is_nsfw(b))
+        .filter_map(|b| lorebook_entry(b, false))
+        .collect();
+    if nsfw {
+        for b in nsfw_registry_items("lorebooks_registry.json", "lorebooks").await {
+            results.extend(lorebook_entry(&b, true));
         }
     }
-
     Ok(results)
+}
+
+fn lorebook_entry(b: &serde_json::Value, from_nsfw: bool) -> Option<GatewayLorebookEntry> {
+    let (revision, updated) = entry_revision(b);
+    Some(GatewayLorebookEntry {
+        name: b.get("name")?.as_str()?.to_string(),
+        author: b.get("author")?.as_str()?.to_string(),
+        description: b
+            .get("description")
+            .and_then(|v| v.as_str())
+            .unwrap_or("")
+            .to_string(),
+        entry_count: b.get("entry_count").and_then(|v| v.as_u64()).unwrap_or(0) as u32,
+        download_url: b.get("download_url")?.as_str()?.to_string(),
+        revision,
+        updated,
+        translations: entry_translations(b),
+        nsfw: from_nsfw || is_nsfw(b),
+    })
 }
 
 /// Downloads a lorebook from the gateway. An installed copy is updated in place (characters stay
@@ -826,6 +904,7 @@ pub async fn import_lorebook_from_gateway(
     updated: &str,
     keep_copy: bool,
 ) -> Result<Lorebook, String> {
+    ensure_source_allowed(download_url)?;
     let client = get_http_client()?;
     let res = client
         .get(download_url)
@@ -953,45 +1032,40 @@ pub async fn fetch_stages_gateway_registry() -> Result<Vec<GatewaySceneEntry>, S
         .and_then(|v| v.as_array())
         .ok_or_else(|| crate::err!("backend.hub.scenesMissing"))?;
 
-    let mut results = Vec::new();
-    for s in scenes {
-        if let (Some(title), Some(author), Some(download_url)) = (
-            s.get("title").and_then(|v| v.as_str()),
-            s.get("author").and_then(|v| v.as_str()),
-            s.get("download_url").and_then(|v| v.as_str()),
-        ) {
-            let id = s
-                .get("id")
-                .and_then(|v| v.as_str())
-                .unwrap_or("")
-                .to_string();
-            let description = s
-                .get("description")
-                .and_then(|v| v.as_str())
-                .unwrap_or("")
-                .to_string();
-            let starting_location = s
-                .get("starting_location")
-                .and_then(|v| v.as_str())
-                .unwrap_or("Startgebiet")
-                .to_string();
-
-            let (revision, updated) = entry_revision(s);
-            results.push(GatewaySceneEntry {
-                id,
-                title: title.to_string(),
-                author: author.to_string(),
-                description,
-                starting_location,
-                download_url: download_url.to_string(),
-                revision,
-                updated,
-                translations: entry_translations(s),
-            });
+    let nsfw = crate::modules::settings::nsfw_allowed();
+    let mut results: Vec<GatewaySceneEntry> = scenes
+        .iter()
+        .filter(|s| nsfw || !is_nsfw(s))
+        .filter_map(|s| scene_entry(s, false))
+        .collect();
+    if nsfw {
+        for s in nsfw_registry_items("stages_registry.json", "scenes").await {
+            results.extend(scene_entry(&s, true));
         }
     }
-
     Ok(results)
+}
+
+fn scene_entry(s: &serde_json::Value, from_nsfw: bool) -> Option<GatewaySceneEntry> {
+    let text = |key: &str, default: &str| {
+        s.get(key)
+            .and_then(|v| v.as_str())
+            .unwrap_or(default)
+            .to_string()
+    };
+    let (revision, updated) = entry_revision(s);
+    Some(GatewaySceneEntry {
+        id: text("id", ""),
+        title: s.get("title")?.as_str()?.to_string(),
+        author: s.get("author")?.as_str()?.to_string(),
+        description: text("description", ""),
+        starting_location: text("starting_location", "Startgebiet"),
+        download_url: s.get("download_url")?.as_str()?.to_string(),
+        revision,
+        updated,
+        translations: entry_translations(s),
+        nsfw: from_nsfw || is_nsfw(s),
+    })
 }
 
 /// Downloads a scene from the gateway. An installed copy is updated in place: its settings are
@@ -1003,6 +1077,7 @@ pub async fn import_scene_from_gateway(
     revision: u32,
     updated: &str,
 ) -> Result<SceneState, String> {
+    ensure_source_allowed(download_url)?;
     let client = get_http_client()?;
     let res = client
         .get(download_url)
@@ -1256,6 +1331,29 @@ mod tests {
         let def = scene_definition_from_hub(file, "Aus dem Hub").unwrap();
         assert_eq!(def.title, "Aus dem Hub");
         assert!(def.solo_mode, "no party = the game master plays everyone");
+    }
+
+    #[test]
+    fn registry_entries_carry_their_adult_marking() {
+        let marked =
+            serde_json::json!({"name": "Mint", "author": "a", "download_url": "u", "nsfw": true});
+        let plain = serde_json::json!({"name": "Ayu", "author": "a", "download_url": "u"});
+        assert!(is_nsfw(&marked) && !is_nsfw(&plain));
+        assert!(character_entry(&marked, false).unwrap().nsfw);
+        assert!(!character_entry(&plain, false).unwrap().nsfw);
+        // Everything from the adult source counts as adult content.
+        assert!(character_entry(&plain, true).unwrap().nsfw);
+        let scene = serde_json::json!({"title": "T", "author": "a", "download_url": "u"});
+        assert!(scene_entry(&scene, true).unwrap().nsfw);
+        assert_eq!(
+            scene_entry(&scene, false).unwrap().starting_location,
+            "Startgebiet"
+        );
+        let book =
+            serde_json::json!({"name": "B", "author": "a", "download_url": "u", "nsfw": true});
+        assert!(lorebook_entry(&book, false).unwrap().nsfw);
+        // Incomplete entries are skipped.
+        assert!(character_entry(&serde_json::json!({"name": "X"}), false).is_none());
     }
 
     #[test]

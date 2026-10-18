@@ -19,6 +19,15 @@ onboarding_completed: boolean,
  */
 close_to_tray: boolean, 
 /**
+ * Content for adults (the NSFW hub source and installed NSFW content) is shown; only together
+ * with `adult_confirmed`.
+ */
+nsfw_enabled: boolean, 
+/**
+ * The user confirmed once to be at least 18 years old (no birth date is stored).
+ */
+adult_confirmed: boolean, 
+/**
  * A reply that nearly repeats one of the last replies is written anew once (as a new swipe).
  */
 reroll_repeats: boolean, 
