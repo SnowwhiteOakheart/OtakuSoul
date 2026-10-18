@@ -142,6 +142,17 @@ describe('characterPortraits', () => {
       expect(portrait).toBe('data:image/png;base64,fallbackImageData');
     });
 
+    it('prefers an extra portrait the card has and otherwise falls back to the emotion and mood', () => {
+      const char = createMockCharacter();
+      const blushing = { ...char, card: { ...char.card, data: { ...char.card.data, extensions: { expressions: {
+        neutral: 'https://example.org/neutral.webp', happy: 'https://example.org/happy.webp', blush: 'https://example.org/blush.webp',
+      } } } } };
+      expect(selectCharacterPortrait(blushing, 'embarrassment', 'sad', 'blush')).toBe('https://example.org/blush.webp');
+      // A card without that slot uses the mood (here: none for "sad", so neutral).
+      expect(selectCharacterPortrait(blushing, 'sadness', 'sad', 'crying')).toBe('https://example.org/neutral.webp');
+      expect(selectCharacterPortrait(blushing, 'joy', 'happy', '')).toBe('https://example.org/happy.webp');
+    });
+
     it('falls back to avatar_data_url when character is null or expressions are empty', () => {
       expect(selectCharacterPortrait(null, 'happy', 'happy')).toBeUndefined();
     });

@@ -20,4 +20,9 @@ confidence: number,
 /**
  * Intensity between 0.0 and 1.0
  */
-intensity: number, };
+intensity: number, 
+/**
+ * An extra portrait slot this text calls for ([`EXTRA_PORTRAITS`]); empty = one of the six
+ * standard moods. A card without that picture falls back to the emotion and the mood.
+ */
+portrait: string, };

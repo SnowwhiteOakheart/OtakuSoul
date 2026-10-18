@@ -3,9 +3,9 @@ import { VrmViewer } from './VrmViewer';
 import { loadCubismCore } from '../../services/live2dRuntime';
 import { Box, Image, Sparkles, Smile, ChevronDown } from 'lucide-react';
 import { CharacterProfile } from '../../types';
-import { useStoreFields } from '../../store/useAppStore';
-import { assetAsBlobUrl, loadDisplayableImage, selectCharacterPortrait } from '../../utils/characterPortraits';
-import { translate, useTranslation } from '../../i18n';
+import { PORTRAIT_MOODS, assetAsBlobUrl, getPortraitExpressions, loadDisplayableImage, selectCharacterPortrait } from '../../utils/characterPortraits';
+import { useAppStore, useStoreFields } from '../../store/useAppStore';
+import { translate, useTranslation, type TranslationKey } from '../../i18n';
 import { DropdownMenu } from '../ui/DropdownMenu';
 import { AvatarSkeleton, ScrollText } from '../ui';
 import { languageCode, localizeCard } from '../../utils/cardI18n';
@@ -29,6 +29,12 @@ const ALL_GO_EMOTIONS = [
   'joy', 'love', 'nervousness', 'optimism', 'pride', 'realization',
   'relief', 'remorse', 'sadness', 'surprise', 'neutral',
 ];
+
+/** The emotion behind each extra portrait (as `emotion_of_portrait` in `emotions.rs`). */
+const PORTRAIT_EMOTIONS: Record<string, string> = {
+  blush: 'embarrassment', teasing: 'amusement', fear: 'fear', disgust: 'disgust', crying: 'sadness',
+  seductive: 'desire', aroused: 'desire', ecstasy: 'excitement', afterglow: 'relief',
+};
 
 interface AvatarCanvasProps {
   character: CharacterProfile | null;
@@ -207,7 +213,8 @@ export const AvatarCanvas: React.FC<AvatarCanvasProps> = ({
   const emotionImage = selectCharacterPortrait(
     character,
     currentEmotion.emotion,
-    currentEmotion.vrm_expression
+    currentEmotion.vrm_expression,
+    currentEmotion.portrait,
   );
 
   const charName = character?.card.data.name || 'OtakuSoul Companion';
@@ -234,6 +241,14 @@ export const AvatarCanvas: React.FC<AvatarCanvasProps> = ({
     });
   };
 
+  // The extra portraits this card has can be tried out too (the emotion behind each drives 3D).
+  const extraPortraits = PORTRAIT_MOODS.filter((m) => m.group !== 'standard' && getPortraitExpressions(character)[m.key]);
+  const handleSelectPortrait = (key: string) => {
+    const emotion = PORTRAIT_EMOTIONS[key] ?? 'neutral';
+    handleSelectManualEmotion(emotion);
+    setCurrentEmotion({ ...useAppStore.getState().currentEmotion, portrait: key });
+  };
+
   return (
     <div className="@container relative w-full h-full flex flex-col items-center justify-center overflow-hidden border-r border-slate-800 bg-app/80">
       {/* Top Controls: 3-way Mode Selector & Emotion Badge; wraps instead of leaving narrow columns */}
@@ -251,11 +266,18 @@ export const AvatarCanvas: React.FC<AvatarCanvasProps> = ({
           }
           heading={t('avatar.emotionMenu')}
           menuClassName="max-h-72 overflow-y-auto"
-          items={ALL_GO_EMOTIONS.map((em) => ({
-            label: tEmotion(em),
-            checked: currentEmotion.emotion === em,
-            onSelect: () => handleSelectManualEmotion(em),
-          }))}
+          items={[
+            ...extraPortraits.map((m) => ({
+              label: t(`portrait.${m.key}` as TranslationKey),
+              checked: currentEmotion.portrait === m.key,
+              onSelect: () => handleSelectPortrait(m.key),
+            })),
+            ...ALL_GO_EMOTIONS.map((em) => ({
+              label: tEmotion(em),
+              checked: !currentEmotion.portrait && currentEmotion.emotion === em,
+              onSelect: () => handleSelectManualEmotion(em),
+            })),
+          ]}
         />
 
 

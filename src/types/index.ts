@@ -868,6 +868,8 @@ export interface EmotionResult {
   live2d_expression: string;
   confidence: number;
   intensity: number;
+  /** An extra portrait slot (blush, teasing, …); empty = one of the six moods. */
+  portrait?: string;
 }
 
 export interface UserPersona {

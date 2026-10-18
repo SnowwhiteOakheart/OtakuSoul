@@ -1,15 +1,30 @@
 import { convertFileSrc } from '@tauri-apps/api/core';
 import { CharacterProfile } from '../types';
 
-/** Expression slots a character can have a portrait for; labels are the `portrait.<key>` translations. */
+/**
+ * Expression slots a character can have a portrait for; labels are the `portrait.<key>`
+ * translations. Besides the six moods (which VRM/Live2D know too) cards may bring extra slots
+ * (`EXTRA_PORTRAITS` in `emotions.rs`), the romance ones mainly for adult cards.
+ */
 export const PORTRAIT_MOODS = [
-  { key: 'neutral' },
-  { key: 'happy' },
-  { key: 'sad' },
-  { key: 'angry' },
-  { key: 'surprised' },
-  { key: 'relaxed' },
+  { key: 'neutral', group: 'standard' },
+  { key: 'happy', group: 'standard' },
+  { key: 'sad', group: 'standard' },
+  { key: 'angry', group: 'standard' },
+  { key: 'surprised', group: 'standard' },
+  { key: 'relaxed', group: 'standard' },
+  { key: 'blush', group: 'extra' },
+  { key: 'teasing', group: 'extra' },
+  { key: 'fear', group: 'extra' },
+  { key: 'disgust', group: 'extra' },
+  { key: 'crying', group: 'extra' },
+  { key: 'seductive', group: 'romance' },
+  { key: 'aroused', group: 'romance' },
+  { key: 'ecstasy', group: 'romance' },
+  { key: 'afterglow', group: 'romance' },
 ] as const;
+
+export const PORTRAIT_GROUPS = ['standard', 'extra', 'romance'] as const;
 
 export type PortraitMood = (typeof PORTRAIT_MOODS)[number]['key'];
 export type PortraitExpressionMap = Record<string, string>;
@@ -71,10 +86,13 @@ export const resolveCharacterImagePath = (
 export const selectCharacterPortrait = (
   character: CharacterProfile | null,
   detectedEmotion: string,
-  canonicalMood: string
+  canonicalMood: string,
+  extraPortrait?: string,
 ): string | undefined => {
   const expressions = getPortraitExpressions(character);
+  // An extra slot (blush, …) first when the card has it, then the emotion and its mood.
   const selected =
+    (extraPortrait ? expressions[extraPortrait] : undefined) ||
     expressions[detectedEmotion] ||
     expressions[canonicalMood] ||
     expressions.neutral;

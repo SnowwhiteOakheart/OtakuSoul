@@ -24,7 +24,7 @@ export const GroupPortraits = ({ speakers, speakerId, isSpeaking }: {
       role="list" aria-label={t('group.everyone')} data-group-portraits>
       {speakers.map(({ id, character }) => {
         const emotion = emotions[id] ?? NEUTRAL_EMOTION;
-        const src = selectCharacterPortrait(character, emotion.emotion, emotion.vrm_expression) || character.avatar_data_url;
+        const src = selectCharacterPortrait(character, emotion.emotion, emotion.vrm_expression, emotion.portrait) || character.avatar_data_url;
         const name = presentedAs(character, replyLanguage).name;
         const active = id === speakerId;
         return (

@@ -6,6 +6,7 @@ import { X, Save, Image, Plus, Trash2, Sparkles, User, FileText, Settings2, Book
 import {
   assetAsBlobUrl,
   getPortraitExpressions,
+  PORTRAIT_GROUPS,
   PORTRAIT_MOODS,
   PortraitMood,
   resolveCharacterImagePath,
@@ -513,8 +514,12 @@ export const CharacterEditorModal = ({
                 {t('editor.emotionsIntro')}
               </div>
 
+              {PORTRAIT_GROUPS.map((group) => (
+              <section key={group} className="space-y-2" data-portrait-group={group}>
+                <h3 className="text-xs font-semibold uppercase tracking-wider text-slate-400">{t(`editor.portraitGroup.${group}`)}</h3>
+                {group !== 'standard' && <p className="text-xs text-slate-500">{t(`editor.portraitGroupHint.${group}`)}</p>}
               <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
-                {PORTRAIT_MOODS.map((mood) => {
+                {PORTRAIT_MOODS.filter((mood) => mood.group === group).map((mood) => {
                   const storedImage = expressionImages[mood.key];
                   const previewImage = resolveCharacterImageSource(storedImage, character?.source_path);
                   const fallbackImage = mood.key === 'neutral' ? avatarDataUrl : null;
@@ -588,6 +593,8 @@ export const CharacterEditorModal = ({
                   );
                 })}
               </div>
+              </section>
+              ))}
             </div>
           )}
 
