@@ -23,6 +23,8 @@ import { confirmDialog, toast } from '../ui/feedback';
 import { errorMessage } from '../../utils/errors';
 import { PersonaAvatar } from '../characters/PersonaAvatar';
 import { RoleplayMessage } from './RoleplayMessage';
+import { PromptHitsButton, PromptHitsList } from './PromptHitsView';
+import { hitKey } from '../../store/helpers';
 import { api } from '../../services/api';
 import type { Attachment, StoredChatMessage, UserPersona } from '../../types';
 
@@ -189,6 +191,8 @@ const ChatMessageItem = React.memo<ChatMessageItemProps>(
     const toggleBookmark = useAppStore((s) => s.toggleBookmark);
     const branchChatFrom = useAppStore((s) => s.branchChatFrom);
     const bookmarked = useAppStore((s) => s.bookmarkedMessageIds.includes(msg.id));
+    const hits = useAppStore((s) => (msg.role === 'assistant' ? s.promptHits[hitKey(msg.id, msg.swipe_index)] : undefined));
+    const [hitsOpen, setHitsOpen] = useState(false);
 
     const [thoughtOpen, setThoughtOpen] = useState(false);
     const [editContent, setEditContent] = useState<string | null>(null);
@@ -288,7 +292,10 @@ const ChatMessageItem = React.memo<ChatMessageItemProps>(
               </button>
             </div>
           )}
+          {hits && <PromptHitsButton hits={hits} open={hitsOpen} onToggle={() => setHitsOpen((open) => !open)} />}
         </div>
+
+        {hits && hitsOpen && <PromptHitsList hits={hits} />}
 
         {/* Past Reasoning block */}
         {msg.thought && (

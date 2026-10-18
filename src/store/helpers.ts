@@ -4,12 +4,25 @@ import { waitWithAbort } from '../utils/cancellation';
 import type { AssembledPrompt, ChatMessage, LorebookEntry, LlmProviderType, SamplingParams } from '../types';
 import type { AppStoreState } from './storeTypes';
 
+/** What a reply could draw on beyond the chat: lorebook entries, memories, the summary. */
+export interface PromptHits {
+  lore: { name: string; book: string; directive: boolean }[];
+  memories: { id: number; category: string; content: string }[];
+  /** The summary of earlier messages was in the prompt. */
+  summary: boolean;
+}
+
+export const NO_PROMPT_HITS: PromptHits = { lore: [], memories: [], summary: false };
+
+/** The assembled prompt plus what went into it (shown at the reply). */
+export type ResolvedPrompt = AssembledPrompt & { hits: PromptHits };
+
 export async function resolvePromptWithLore(
   state: AppStoreState,
   recentMessages: ChatMessage[],
   latestUserText?: string,
   signal?: AbortSignal,
-): Promise<AssembledPrompt> {
+): Promise<ResolvedPrompt> {
   signal?.throwIfAborted();
   const {
     activeCharacter,
@@ -30,7 +43,7 @@ export async function resolvePromptWithLore(
     sceneTensionEnabled,
   } = state;
 
-  if (!activeCharacter) return { system: '', post_history: null };
+  if (!activeCharacter) return { system: '', post_history: null, hits: NO_PROMPT_HITS };
 
   const activeSession = chatSessions.find((s) => s.id === activeChatId);
   const scanDepth = Math.max(1, lorebookScanDepth || 5);
@@ -102,7 +115,18 @@ export async function resolvePromptWithLore(
   }
 
   // 4. Assemble system prompt
-  return await waitWithAbort(() => api.assemblePrompt({
+  const bookOf = (entry: LorebookEntry) =>
+    candidateLorebooks.find((book) => book.entries.some((e) => e.name === entry.name && e.content === entry.content))?.name ?? '';
+  const isDirective = (entry: LorebookEntry) => ['active', 'directive'].includes((entry.injection_behavior ?? '').toLowerCase());
+  const hits: PromptHits = {
+    lore: [
+      ...activeDirectives.map((entry) => ({ name: entry.name, book: bookOf(entry), directive: true })),
+      ...passiveEntries.map((entry) => ({ name: entry.name, book: bookOf(entry), directive: isDirective(entry) })),
+    ],
+    memories: (cognitiveOverview?.recent_memories ?? []).map(({ id, category, content }) => ({ id, category, content })),
+    summary: !!activeSession?.summary?.trim(),
+  };
+  const assembled = await waitWithAbort(() => api.assemblePrompt({
     char_name: activeCharacter.card.data.name,
     user_name: activePersona.name,
     character: activeCharacter.card.data,
@@ -121,6 +145,18 @@ export async function resolvePromptWithLore(
     reply_length: activeSession?.style?.reply_length || undefined,
     avoid_phrases: state.avoidPhrases.length > 0 ? state.avoidPhrases : undefined,
   }), signal);
+  return { ...assembled, hits };
+}
+
+/** Key of a reply variant in `promptHits` (each swipe was written with its own prompt). */
+export const hitKey = (messageId: string, swipeIndex: number) => `${messageId}:${swipeIndex}`;
+
+/** Hits of a continued reply: what the first part and the continuation drew on. */
+export function mergeHits(a: PromptHits | undefined, b: PromptHits): PromptHits {
+  if (!a) return b;
+  const lore = [...a.lore, ...b.lore.filter((x) => !a.lore.some((y) => y.name === x.name && y.book === x.book))];
+  const memories = [...a.memories, ...b.memories.filter((x) => !a.memories.some((y) => y.id === x.id))];
+  return { lore, memories, summary: a.summary || b.summary };
 }
 
 /** Reply lengths a chat can choose; empty = as the prompt template says. */

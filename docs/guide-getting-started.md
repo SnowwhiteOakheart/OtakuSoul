@@ -43,6 +43,7 @@ the character is and how your chat begins; **"Chat now"** starts the conversatio
   AI copies one of its last replies, the app rewrites it automatically.
 - Below the message field you choose the **reply length** for this chat: short, medium or detailed.
 - Tired of the AI's pet phrases? Add them under **Settings → Reply style → Words & phrases**.
+- The **book icon** above a reply shows which lorebook entries and memories went into it.
 - The character remembers your conversation. **"Conversation memory"** below the input shows how full it is; the app
   summarises older messages when needed.
 

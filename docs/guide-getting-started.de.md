@@ -44,6 +44,7 @@ zeigt, wer die Figur ist und wie euer Chat beginnt; **„Jetzt chatten“** star
   „Abwechslungsreicher schreiben“ ein. Kopiert die KI eine ihrer letzten Antworten, schreibt die App sie automatisch neu.
 - Unter dem Eingabefeld wählst Du die **Antwortlänge** für diesen Chat: kurz, mittel oder ausführlich.
 - Nerven Dich Lieblingsfloskeln der KI? Trag sie unter **Einstellungen → Antwortstil → Wörter & Wendungen** ein.
+- Das **Buch-Symbol** über einer Antwort zeigt, welche Lorebook-Einträge und Erinnerungen in sie eingeflossen sind.
 - Die Figur erinnert sich an euer Gespräch. Die Anzeige **„Gesprächsgedächtnis“** unter dem Eingabefeld zeigt, wie
   voll es ist; ältere Nachrichten fasst die App bei Bedarf zusammen.
 

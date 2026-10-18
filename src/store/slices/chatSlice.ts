@@ -4,7 +4,7 @@ import { soundFx } from '../../services/soundFx';
 import { streamingTts } from '../../services/streamingTts';
 import { extractStateUpdates, applyStateUpdates } from '../../utils/stateParser';
 import { HUD_PRESETS } from '../../constants/hudPresets';
-import { APP_LANGUAGE_NAMES, chatSampling, llmTarget, resolvePromptWithLore } from '../helpers';
+import { APP_LANGUAGE_NAMES, chatSampling, llmTarget, hitKey, mergeHits, resolvePromptWithLore, type PromptHits, type ResolvedPrompt } from '../helpers';
 import type {
   DoneEvent,
   AssembledPrompt,
@@ -66,6 +66,8 @@ export interface ChatSlice {
   updateChatSummary: (summary: string, summaryUntil: number) => Promise<void>;
   /** Translates a message into the app language with the chat model. */
   translateText: (text: string) => Promise<string>;
+  /** Lorebook entries, memories and summary each reply could draw on, by `hitKey` (this session only). */
+  promptHits: Record<string, PromptHits>;
   /** A few short ideas for the user's next message in the open chat, built on `notes` (throws on failure). */
   suggestReplies: (notes?: string) => Promise<string[]>;
   /** "Write for me": the user's next message, built from `notes` if any (throws on failure). */
@@ -291,6 +293,8 @@ export const createChatSlice: SliceCreator<ChatSlice> = (set, get) => {
       .catch((e) => console.warn('Chat summary failed:', e))
       .finally(() => set({ isSummarizing: false }));
   },
+
+  promptHits: {},
 
   translateText: async (text) => {
     const state = get();
@@ -691,7 +695,10 @@ export const createChatSlice: SliceCreator<ChatSlice> = (set, get) => {
         cleanedText,
         done.full_thought.trim() ? done.full_thought : null
       );
-      set((state) => ({ chatSessions: withoutStaleSummary(state.chatSessions, updatedMsg) }));
+      set((state) => ({
+        chatSessions: withoutStaleSummary(state.chatSessions, updatedMsg),
+        promptHits: { ...state.promptHits, [hitKey(updatedMsg.id, updatedMsg.swipe_index)]: prompt.hits },
+      }));
 
       if (!isCurrentContext(activeChatId, activeCharacter.id)) return;
       set({ contextUsage: done.context ?? null });
@@ -785,7 +792,11 @@ export const createChatSlice: SliceCreator<ChatSlice> = (set, get) => {
         mergedContent,
         targetMsg.thought
       );
-      set((state) => ({ chatSessions: withoutStaleSummary(state.chatSessions, updatedMsg) }));
+      const key = hitKey(updatedMsg.id, updatedMsg.swipe_index);
+      set((state) => ({
+        chatSessions: withoutStaleSummary(state.chatSessions, updatedMsg),
+        promptHits: { ...state.promptHits, [key]: mergeHits(state.promptHits[key], prompt.hits) },
+      }));
 
       if (!isCurrentContext(activeChatId, activeCharacter.id)) return;
       set({ contextUsage: done.context ?? null });
@@ -919,7 +930,7 @@ export const createChatSlice: SliceCreator<ChatSlice> = (set, get) => {
       await waitWithAbort(() => get().ensureLocalAi(), preparation.signal);
       // 2. Build context-aware system prompt
       let systemPromptMsg: ChatMessage | null = null;
-      let prompt: AssembledPrompt | null = null;
+      let prompt: ResolvedPrompt | null = null;
       if (activeCharacter) {
         prompt = await waitWithAbort(() => resolvePromptWithLore(get(), updatedFlat, content, preparation.signal), preparation.signal);
         systemPromptMsg = { role: 'system', content: prompt.system };
@@ -967,6 +978,8 @@ export const createChatSlice: SliceCreator<ChatSlice> = (set, get) => {
         cleanedText,
         done.full_thought.trim() ? done.full_thought : null
       );
+      const sentHits = prompt?.hits;
+      if (sentHits) set((state) => ({ promptHits: { ...state.promptHits, [hitKey(asstStored.id, asstStored.swipe_index)]: sentHits } }));
 
       if (!isCurrentContext(chatId, activeCharacter?.id)) return;
       if (get().rerollRepeats && !done.aborted) {

@@ -7,17 +7,17 @@ vi.mock('../store/helpers', async (original) => ({ ...await original<object>(), 
 vi.mock('../components/voice/VoiceCallControls', () => ({ VoiceCallControls: () => null }));
 vi.mock('../services/soundFx', () => ({ soundFx: { playMessageSent: vi.fn() } }));
 import { api } from '../services/api';
-import { resolvePromptWithLore } from '../store/helpers';
+import { NO_PROMPT_HITS, resolvePromptWithLore, type ResolvedPrompt } from '../store/helpers';
 import { useAppStore } from '../store/useAppStore';
 import { ChatComposer } from '../components/chat/ChatComposer';
 import { toast } from '../components/ui/feedback';
 import { resetApiMocks } from './mockApi';
-import type { AssembledPrompt, CharacterProfile, StoredChatMessage } from '../types';
+import type { CharacterProfile, StoredChatMessage } from '../types';
 const initial = useAppStore.getState();
 const character = { id: 'ayu', card: { data: { name: 'Ayu' } } } as CharacterProfile;
 const message: StoredChatMessage = { id: 'user-1', chat_id: 'chat-1', role: 'user', content: 'Hello', thought: null, order_index: 0, swipe_index: 0, swipes: [{ content: 'Hello', thought: null }], created_at: 0, attachments: [] };
 const reply: StoredChatMessage = { ...message, id: 'reply-1', role: 'assistant', content: 'Welcome', order_index: 1 };
-const prompt = { system: 'System', post_history: '' } as AssembledPrompt;
+const prompt: ResolvedPrompt = { system: 'System', post_history: '', hits: NO_PROMPT_HITS };
 const done = { generation_id: 'test-generation', full_text: 'Welcome', full_thought: '', aborted: false };
 beforeEach(() => {
   resetApiMocks();
@@ -192,7 +192,7 @@ describe('chat generation failures', () => {
     expect(api.addChatMessage).toHaveBeenCalledOnce();
   });
   it('ends prompt preparation immediately and ignores its late result after a new request', async () => {
-    let finish!: (value: AssembledPrompt) => void;
+    let finish!: (value: ResolvedPrompt) => void;
     vi.mocked(resolvePromptWithLore).mockImplementationOnce(() => new Promise((resolve) => { finish = resolve; }));
     const pending = useAppStore.getState().sendMessage('Hello');
     await waitFor(() => expect(resolvePromptWithLore).toHaveBeenCalledOnce());
@@ -265,7 +265,7 @@ describe('chat generation failures', () => {
     expect(api.sendChatMessage).not.toHaveBeenCalled();
   });
   it('keeps prompt preparation usable if native cancellation fails', async () => {
-    let finish!: (value: AssembledPrompt) => void;
+    let finish!: (value: ResolvedPrompt) => void;
     vi.mocked(resolvePromptWithLore).mockImplementationOnce(() => new Promise((resolve) => { finish = resolve; }));
     vi.mocked(api.abortChatGeneration).mockRejectedValueOnce(new Error('Stop failed'));
     const pending = useAppStore.getState().sendMessage('Hello');

@@ -73,6 +73,10 @@ ru „персонаж/история/сцена“. Fachbegriffe nur im Experte
   (Lorebooks, `assemble_prompt` = System-Prompt + Nachspann) → Payload (+ Author's Note in Tiefe N, Nachspann am Ende)
   → `send_chat_message`: `attachments::prepare` → `context_window::fit` (kürzt von vorn) → `stream_chat` (Events
   `llm-token`/`llm-thought`/`llm-done`) → Antwort speichern → ggf. `summarizeDroppedMessages` im Hintergrund.
+- **Treffer je Antwort:** `resolvePromptWithLore` liefert `ResolvedPrompt` mit `hits` (`PromptHits`: Lorebook-Einträge mit Buch und
+  Anweisungs-Kennung, Erinnerungen aus `recent_memories`, Zusammenfassung ja/nein); `chatSlice.promptHits` hält sie je
+  `hitKey(messageId, swipeIndex)` nur für die laufende Sitzung (Fortsetzen über `mergeHits`). Anzeige `chat/PromptHitsView.tsx`
+  (Knopf in der Kopfzeile der Antwort, `data-prompt-hits`). E2E `chat-prompt-hits.mjs`.
 - **Wörter & Wendungen:** `AppSettings.avoid_phrases` (`avoidPhrases`) → `PromptContext.avoid_phrases` → `avoid_rule` im Nachspann
   (vor der Antwortlänge); `AppSettings.reply_replacements` (`ReplyReplacement` find/replace/regex, nur Expertenmodus) wendet
   `utils/replyFilters.ts` `applyReplacements` vor `extractStateUpdates` beim Speichern (Senden, Swipe, Fortsetzen) und auf den

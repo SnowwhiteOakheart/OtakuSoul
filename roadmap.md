@@ -71,7 +71,7 @@
 - [x] **Ausgabe-Filter:** einfache Liste „Diese Wörter/Muster vermeiden“, Ersetzungsregeln für Antworten (Expertenmodus: RegEx).
   Logit-Bias bewusst nicht: llama.cpp sperrt nur Einzeltokens, mehrteilige Wendungen träfen häufige Wortteile.
 - [x] **Antwortlänge pro Chat:** kurz/mittel/ausführlich, passt Prompt und `max_tokens` gemeinsam an.
-- [ ] **Sichtbare Lorebook-/Gedächtnis-Treffer** je Antwort (welche Einträge einbezogen wurden).
+- [x] **Sichtbare Lorebook-/Gedächtnis-Treffer** je Antwort (welche Einträge einbezogen wurden).
 - [ ] **„Diese Nachricht merken“** im Nachrichtenmenü (`add_episodic_memory_from`).
 - [ ] **Szenenbild per Knopf** aus dem aktuellen Chat-Kontext.
 - [ ] **Chat-Export/-Import im SillyTavern-Format (JSONL)** für Umsteiger.
