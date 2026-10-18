@@ -164,8 +164,9 @@ export const ChatView: React.FC = () => {
             streamingTts.flush(data.full_text, voiceConfig);
           }
 
-          // Trigger Phase 14 Emotion update for VRM & Live2D
-          try {
+          // Trigger Phase 14 Emotion update for VRM & Live2D (the avatar is the chat's own character,
+          // so a guest's reply in a group chat leaves it alone)
+          if (state.generationSpeakerId === '') try {
             const detected = await api.classifyTextEmotion(data.full_text);
             const currentState = useAppStore.getState();
             if (isSubscribed && currentState.generationId === data.generation_id && currentState.activeChatId === state.activeChatId) {

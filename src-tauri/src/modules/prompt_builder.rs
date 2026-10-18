@@ -124,6 +124,45 @@ pub struct PromptContext {
     #[serde(default)]
     #[ts(optional)]
     pub avoid_phrases: Option<Vec<String>>,
+    /// The other characters of a group chat (the speaker is `character`).
+    #[serde(default)]
+    #[ts(optional)]
+    pub group: Option<Vec<GroupMember>>,
+}
+
+/// Another character present in a group chat, as the speaker sees them.
+#[derive(Debug, Clone, Serialize, Deserialize, Default, TS)]
+#[ts(export)]
+pub struct GroupMember {
+    pub name: String,
+    /// Short description (appearance, role); may be empty.
+    pub description: String,
+}
+
+/// Who else is in a group chat and that the speaker writes only their own part.
+fn group_section(others: &[GroupMember], char_name: &str, user_name: &str) -> Option<String> {
+    let others: Vec<&GroupMember> = others
+        .iter()
+        .filter(|m| !m.name.trim().is_empty())
+        .collect();
+    if others.is_empty() {
+        return None;
+    }
+    let mut text = String::from("## Others in this conversation\n");
+    for member in &others {
+        let description: String = member.description.trim().chars().take(300).collect();
+        if description.is_empty() {
+            text.push_str(&format!("- **{}**\n", member.name.trim()));
+        } else {
+            text.push_str(&format!("- **{}**: {}\n", member.name.trim(), description));
+        }
+    }
+    let names: Vec<&str> = others.iter().map(|m| m.name.trim()).collect();
+    text.push_str(&format!(
+        "\nThis is a group conversation. Write only {char_name}'s reply. Never write lines, actions or thoughts for {} or {user_name}; they speak for themselves. Messages from others start with their name.",
+        names.join(", ")
+    ));
+    Some(text)
 }
 
 /// Asks the model to leave out the user's unwanted words and phrases.
@@ -258,6 +297,15 @@ pub fn build_system_prompt(ctx: &PromptContext) -> String {
             "## Personality\n{}",
             replace_macros(&ctx.character.personality)
         ));
+    }
+
+    // 3.9 Group chat: who else is present
+    if let Some(section) = ctx
+        .group
+        .as_deref()
+        .and_then(|others| group_section(others, &ctx.char_name, &ctx.user_name))
+    {
+        parts.push(section);
     }
 
     // 4. Scenario / Current Situation
@@ -499,6 +547,30 @@ mod tests {
             },
             ..PromptContext::default()
         }
+    }
+
+    #[test]
+    fn a_group_chat_names_the_others_and_keeps_the_speaker_to_their_part() {
+        let mut ctx = context(None);
+        assert!(!build_system_prompt(&ctx).contains("Others in this conversation"));
+        ctx.group = Some(vec![
+            GroupMember {
+                name: "Sora".into(),
+                description: "Ein ruhiger Bogenschütze.".into(),
+            },
+            GroupMember {
+                name: " ".into(),
+                description: String::new(),
+            },
+        ]);
+        let prompt = build_system_prompt(&ctx);
+        assert!(
+            prompt
+                .contains("## Others in this conversation\n- **Sora**: Ein ruhiger Bogenschütze.")
+        );
+        assert!(prompt.contains(
+            "Write only Aiko's reply. Never write lines, actions or thoughts for Sora or Kai"
+        ));
     }
 
     #[test]

@@ -44,6 +44,7 @@ import type { TranslateRequest } from './generated/TranslateRequest';
 import type { ReplyIdeasRequest } from './generated/ReplyIdeasRequest';
 import type { MacroInput } from './generated/MacroInput';
 import type { ReplyReplacement } from './generated/ReplyReplacement';
+import type { GroupMember } from './generated/GroupMember';
 import type { PromptTemplate } from './generated/PromptTemplate';
 import type { BuiltinPromptTemplate } from './generated/BuiltinPromptTemplate';
 import type { AssembledPrompt } from './generated/AssembledPrompt';
@@ -165,6 +166,7 @@ export type {
   ReplyIdeasRequest,
   MacroInput,
   ReplyReplacement,
+  GroupMember,
   PromptTemplate,
   BuiltinPromptTemplate,
   AssembledPrompt,
@@ -456,6 +458,7 @@ export interface PromptContext {
   idle_seconds?: number;
   reply_length?: string;
   avoid_phrases?: string[];
+  group?: GroupMember[];
 }
 
 // Phase 6: Soul Stage Tabletop RPG

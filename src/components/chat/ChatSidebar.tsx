@@ -2,6 +2,7 @@ import React, { useEffect, useRef, useState } from 'react';
 import { save as saveDialog } from '@tauri-apps/plugin-dialog';
 import { readDraft, writeDraft } from '../../utils/drafts';
 import { ChatStylePanel } from './ChatStylePanel';
+import { ChatGuestsPanel } from './ChatGuestsPanel';
 import { useAppStore, useStoreFields } from '../../store/useAppStore';
 import { HUD_PRESETS } from '../../constants/hudPresets';
 import {
@@ -70,7 +71,7 @@ export const ChatSidebar: React.FC<ChatSidebarProps> = ({ isOpen, onClose }) => 
   // Unsaved notes and summaries per chat; kept on this device across restarts.
   const [drafts, setDrafts] = useState<SidebarDrafts>(readSidebarDrafts);
   useEffect(() => writeDraft('sidebar', Object.keys(drafts).length > 0 ? JSON.stringify(drafts) : ''), [drafts]);
-  const [activeTab, setActiveTab] = useState<'chats' | 'author_note' | 'presets' | 'style'>('chats');
+  const [activeTab, setActiveTab] = useState<'chats' | 'author_note' | 'presets' | 'style' | 'group'>('chats');
   const [isImporting, setIsImporting] = useState(false);
   const pending = useRef(new Set<string>());
   const [saving, setSaving] = useState<string[]>([]);
@@ -210,7 +211,7 @@ export const ChatSidebar: React.FC<ChatSidebarProps> = ({ isOpen, onClose }) => 
       </div>
 
       {/* Sub Tabs */}
-      <div role="tablist" aria-label={t('chatSidebar.tabs')} className="grid grid-cols-4 p-1.5 gap-1 bg-app/60 border-b border-slate-800/80 text-xs">
+      <div role="tablist" aria-label={t('chatSidebar.tabs')} className="grid grid-cols-5 p-1.5 gap-1 bg-app/60 border-b border-slate-800/80 text-xs">
         <button
           role="tab"
           aria-selected={activeTab === 'chats'}
@@ -259,9 +260,22 @@ export const ChatSidebar: React.FC<ChatSidebarProps> = ({ isOpen, onClose }) => 
         >
           {t('chatSidebar.tabStyle')}
         </button>
+        <button
+          role="tab"
+          aria-selected={activeTab === 'group'}
+          onClick={() => setActiveTab('group')}
+          className={`py-1.5 px-2 rounded-md font-medium transition-all whitespace-nowrap outline-hidden focus-visible:ring-2 focus-visible:ring-accent-400 ${
+            activeTab === 'group'
+              ? 'bg-accent-600/30 text-accent-300 border border-accent-500/40 shadow-sm'
+              : 'text-slate-400 hover:text-slate-200 hover:bg-slate-800/40'
+          }`}
+        >
+          {t('chatSidebar.tabGroup')}
+        </button>
       </div>
 
       {activeTab === 'style' && activeChatId && <ChatStylePanel key={activeChatId} chatId={activeChatId} />}
+      {activeTab === 'group' && activeChatId && <ChatGuestsPanel key={activeChatId} chatId={activeChatId} />}
 
       {/* Tab 1: Chats List */}
       {activeTab === 'chats' && (

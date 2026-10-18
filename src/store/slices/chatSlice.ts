@@ -4,7 +4,7 @@ import { soundFx } from '../../services/soundFx';
 import { streamingTts } from '../../services/streamingTts';
 import { extractStateUpdates, applyStateUpdates } from '../../utils/stateParser';
 import { HUD_PRESETS } from '../../constants/hudPresets';
-import { APP_LANGUAGE_NAMES, chatSampling, llmTarget, hitKey, mergeHits, resolvePromptWithLore, type PromptHits, type ResolvedPrompt } from '../helpers';
+import { APP_LANGUAGE_NAMES, chatSampling, llmTarget, hitKey, mergeHits, resolvePromptWithLore, type PromptHits, type PromptSpeaker } from '../helpers';
 import type {
   DoneEvent,
   AssembledPrompt,
@@ -29,13 +29,15 @@ import { waitWithAbort } from '../../utils/cancellation';
 import { languageCode, localizeCard } from '../../utils/cardI18n';
 import { isRepeat } from '../../utils/repetition';
 import { applyReplacements } from '../../utils/replyFilters';
+import { chatSpeakers, groupHistory, presentedAs } from '../../utils/groupChat';
 
 type GenerationFailure = {
   chatId: string;
   message: string;
   /** The error as thrown (coded backend text), for the fix button. */
   cause?: string;
-  kind: 'send' | 'swipe' | 'continue';
+  /** `speak`: a reply by `messageId` (a speaker ID) without a new user message ("reply as"). */
+  kind: 'send' | 'swipe' | 'continue' | 'speak';
   messageId: string;
 };
 
@@ -72,8 +74,17 @@ export interface ChatSlice {
   suggestReplies: (notes?: string) => Promise<string[]>;
   /** "Write for me": the user's next message, built from `notes` if any (throws on failure). */
   draftReply: (notes?: string) => Promise<string>;
-  /** Sends a message; retries pass the ID of the already saved user message. */
-  sendMessage: (content: string, files?: File[], storedMessageId?: string) => Promise<void>;
+  /**
+   * Sends a message; retries pass the ID of the already saved user message. In a group chat
+   * `replySpeaker` picks who answers ('' = the chat's own character).
+   */
+  sendMessage: (content: string, files?: File[], storedMessageId?: string, replySpeaker?: string) => Promise<void>;
+  /** A reply by one character of a group chat ('' = the chat's own) without a new user message. */
+  replyAs: (speakerId: string) => Promise<void>;
+  /** Invites characters into a chat or removes them (group chat); throws on failure. */
+  setChatMembers: (chatId: string, members: string[]) => Promise<void>;
+  /** Who writes the running (or last) reply: '' = the chat's own character, else a guest's ID. */
+  generationSpeakerId: string;
   generationId: string | null;
   abortGeneration: () => Promise<void>;
   clearChat: () => void;
@@ -210,6 +221,93 @@ export const createChatSlice: SliceCreator<ChatSlice> = (set, get) => {
   /** A reply the user stopped keeps the text so far (and can be continued) while its chat stays open. */
   const keepsPartial = (done: DoneEvent, chatId: string, charId: string | undefined) =>
     cancelled && done.aborted && done.full_text.trim() !== '' && isCurrentContext(chatId, charId);
+  /**
+   * How one speaker sees the chat: in a group chat their own card and memory, the others present
+   * and the history with names; in a normal chat the history as it is.
+   */
+  const speakerSetup = async (chatId: string, speakerId: string, stored: StoredChatMessage[], signal: AbortSignal) => {
+    const state = get();
+    const session = state.chatSessions.find((s) => s.id === chatId);
+    const speakers = chatSpeakers(state.activeCharacter, session, state.availableCharacters);
+    if (speakers.length < 2) return { speaker: undefined, flat: stored.map(toFlat), name: state.activeCharacter?.card.data.name ?? '' };
+    // A guest who left the chat (or whose card is gone) falls back to the chat's own character.
+    const self = speakers.find((s) => s.id === speakerId) ?? speakers[0]!;
+    const nameOf = (id: string) => presentedAs((speakers.find((s) => s.id === id) ?? speakers[0]!).character, state.replyLanguage).name;
+    const cognitive = self.id === ''
+      ? state.cognitiveOverview
+      : await waitWithAbort(() => api.getCognitiveOverview(self.character.id, state.activePersona.name).catch(() => null), signal);
+    const speaker: PromptSpeaker = {
+      character: self.character,
+      cognitive,
+      others: speakers.filter((s) => s.id !== self.id).map((s) => presentedAs(s.character, state.replyLanguage)),
+    };
+    return { speaker, flat: groupHistory(stored, self.id, nameOf, state.activePersona.name), name: nameOf(self.id) };
+  };
+
+  /**
+   * Prompt, request and saving of one new reply by `speakerId` ('' = the chat's own character)
+   * after `history`. Runs inside a generation its caller started (lock, abort, failure handling);
+   * returns null when the chat changed meanwhile.
+   */
+  const writeReply = async (run: {
+    chatId: string;
+    charId: string | undefined;
+    history: StoredChatMessage[];
+    speakerId: string;
+    latestUserText?: string;
+    generationId: string;
+    preparation: AbortController;
+    /** No new user message before this reply ("reply as …"): tell the model whose turn it is. */
+    nudge?: boolean;
+  }) => {
+    const { chatId, charId, history, speakerId, generationId, preparation } = run;
+    // The local AI starts with the first message (the task list shows the loading).
+    await waitWithAbort(() => get().ensureLocalAi(), preparation.signal);
+    const setup = await speakerSetup(chatId, speakerId, history, preparation.signal);
+    const prompt = await waitWithAbort(
+      () => resolvePromptWithLore(get(), setup.flat, run.latestUserText, preparation.signal, setup.speaker), preparation.signal);
+    if (!inContext(chatId, charId)) return null;
+    const payloadMessages: ChatMessage[] = prompt.system ? [{ role: 'system', content: prompt.system }, ...setup.flat] : [...setup.flat];
+
+    // Author's Note at its depth
+    const session = get().chatSessions.find((s) => s.id === chatId);
+    if (session?.author_note && (session.author_note_depth || 0) > 0) {
+      const insertIdx = Math.max(1, payloadMessages.length - session.author_note_depth);
+      payloadMessages.splice(insertIdx, 0, { role: 'system', content: `[Author's note: ${session.author_note}]` });
+    }
+    payloadMessages.push(...postHistory(prompt));
+    if (run.nudge) payloadMessages.push({ role: 'system', content: `[It is ${setup.name}'s turn to speak.]` });
+
+    const state = get();
+    set({ generationSpeakerId: speakerId });
+    const done = await api.sendChatMessage({
+      endpoint_url: state.selectedBackend === 'local' ? `http://127.0.0.1:${state.serverConfig.port}/v1/chat/completions` : state.cloudEndpoint,
+      provider: state.selectedBackend === 'cloud' ? state.cloudProvider : 'local_llama',
+      api_key: state.selectedBackend === 'cloud' ? state.cloudApiKey : undefined,
+      model: state.selectedBackend === 'cloud' ? state.cloudModel : undefined,
+      messages: payloadMessages,
+      reasoning_mode: state.serverConfig.reasoning_mode,
+      sampling: chatSampling(state),
+    }, generationId, state.selectedBackend === 'cloud' ? state.cloudContextTokens : undefined, state.chatTools);
+    if (!inContext(chatId, charId) && !keepsPartial(done, chatId, charId)) return null;
+
+    // <state> tags update the HUD; the user's replacement rules apply first.
+    const { cleanedText, stateUpdates } = extractStateUpdates(applyReplacements(done.full_text, get().replyReplacements));
+    const thought = done.full_thought.trim() ? done.full_thought : null;
+    const stored = speakerId
+      ? await api.addChatMessage(chatId, 'assistant', cleanedText, thought, undefined, speakerId)
+      : await api.addChatMessage(chatId, 'assistant', cleanedText, thought);
+    set((st) => ({ promptHits: { ...st.promptHits, [hitKey(stored.id, stored.swipe_index)]: prompt.hits } }));
+
+    if (!isCurrentContext(chatId, charId)) return null;
+    set({ contextUsage: done.context ?? null });
+    if (stateUpdates) set({ stateVariables: applyStateUpdates(get().stateVariables, stateUpdates) });
+    get().summarizeDroppedMessages(done.context, history);
+    const finalStored = [...get().storedMessages, stored];
+    set({ storedMessages: finalStored, messages: finalStored.map(toFlat), streamingText: '', streamingThought: '' });
+    return { stored, done, cleanedText };
+  };
+
   const finishGeneration = async () => {
     if (abortPending) await abortPending.catch(() => {});
     generationPreparation = null;
@@ -245,6 +343,8 @@ export const createChatSlice: SliceCreator<ChatSlice> = (set, get) => {
       if (message) await get().sendMessage(message.content, [], message.id);
     } else if (failure.kind === 'swipe') {
       await get().regenerateMessageSwipe(failure.messageId);
+    } else if (failure.kind === 'speak') {
+      await get().replyAs(failure.messageId);
     } else {
       await get().continueChatMessage(failure.messageId);
     }
@@ -296,6 +396,36 @@ export const createChatSlice: SliceCreator<ChatSlice> = (set, get) => {
   },
 
   promptHits: {},
+
+  generationSpeakerId: '',
+
+  setChatMembers: async (chatId, members) => {
+    const stored = await api.setChatMembers(chatId, members);
+    set((st) => ({ chatSessions: st.chatSessions.map((s) => (s.id === chatId ? { ...s, members: stored } : s)) }));
+  },
+
+  replyAs: async (speakerId) => {
+    const { activeChatId, activeCharacter } = get();
+    if (get().isGenerating || get().isChatLoading || get().chatLoadError || !activeChatId || !activeCharacter) return;
+    cancelled = false;
+    generationSessionRequest = sessionRequest;
+    generationSequence += 1;
+    const preparation = new AbortController();
+    generationPreparation = preparation;
+    const generationId = crypto.randomUUID();
+    set({ isGenerating: true, generationId, generationChatId: activeChatId, generationFailure: null, streamingText: '', streamingThought: '' });
+    try {
+      await writeReply({ chatId: activeChatId, charId: activeCharacter.id, history: get().storedMessages, speakerId,
+        generationId, preparation, nudge: true });
+    } catch (e) {
+      console.error('Reply as speaker error:', e);
+      if (inContext(activeChatId, activeCharacter.id)) {
+        set({ generationFailure: { chatId: activeChatId, message: errorMessage(e), cause: e instanceof Error ? e.message : String(e), kind: 'speak', messageId: speakerId } });
+      }
+    } finally {
+      await finishGeneration();
+    }
+  },
 
   translateText: async (text) => {
     const state = get();
@@ -643,7 +773,7 @@ export const createChatSlice: SliceCreator<ChatSlice> = (set, get) => {
 
     // Messages before this message
     const priorStored = storedMessages.filter((m) => m.order_index < targetMsg.order_index);
-    const priorFlat: ChatMessage[] = priorStored.map(toFlat);
+    const speakerId = targetMsg.speaker_id ?? '';
 
     cancelled = false;
     generationSessionRequest = sessionRequest;
@@ -656,11 +786,15 @@ export const createChatSlice: SliceCreator<ChatSlice> = (set, get) => {
     try {
       // The local AI starts with the first message (the task list shows the loading).
       await waitWithAbort(() => get().ensureLocalAi(), preparation.signal);
-      const prompt = await waitWithAbort(() => resolvePromptWithLore(get(), priorFlat, undefined, preparation.signal), preparation.signal);
+      // A new variant comes from the same speaker as the reply it replaces.
+      const setup = await speakerSetup(activeChatId, speakerId, priorStored, preparation.signal);
+      const prompt = await waitWithAbort(
+        () => resolvePromptWithLore(get(), setup.flat, undefined, preparation.signal, setup.speaker), preparation.signal);
       if (!inContext(activeChatId, activeCharacter.id)) return;
       const systemPromptMsg: ChatMessage = { role: 'system', content: prompt.system };
+      set({ generationSpeakerId: speakerId });
 
-      const payloadMessages = [systemPromptMsg, ...priorFlat];
+      const payloadMessages = [systemPromptMsg, ...setup.flat];
 
       // Inject author note at depth if requested
       if (activeSession?.author_note && (activeSession.author_note_depth || 0) > 0) {
@@ -746,7 +880,7 @@ export const createChatSlice: SliceCreator<ChatSlice> = (set, get) => {
 
     // All messages up to and including targetMsg
     const historyStored = storedMessages.filter((m) => m.order_index <= targetMsg.order_index);
-    const historyFlat: ChatMessage[] = historyStored.map(toFlat);
+    const speakerId = targetMsg.speaker_id ?? '';
 
     cancelled = false;
     generationSessionRequest = sessionRequest;
@@ -759,8 +893,13 @@ export const createChatSlice: SliceCreator<ChatSlice> = (set, get) => {
     try {
       // The local AI starts with the first message (the task list shows the loading).
       await waitWithAbort(() => get().ensureLocalAi(), preparation.signal);
-      const prompt = await waitWithAbort(() => resolvePromptWithLore(get(), historyFlat, undefined, preparation.signal), preparation.signal);
+      // The same speaker carries on with their reply.
+      const setup = await speakerSetup(activeChatId, speakerId, historyStored, preparation.signal);
+      const historyFlat = setup.flat;
+      const prompt = await waitWithAbort(
+        () => resolvePromptWithLore(get(), historyFlat, undefined, preparation.signal, setup.speaker), preparation.signal);
       if (!inContext(activeChatId, activeCharacter.id)) return;
+      set({ generationSpeakerId: speakerId });
       const systemPromptMsg: ChatMessage = { role: 'system', content: prompt.system };
       const continueInstruction: ChatMessage = {
         role: 'system',
@@ -851,20 +990,11 @@ export const createChatSlice: SliceCreator<ChatSlice> = (set, get) => {
     }
   },
 
-  sendMessage: async (content: string, files: File[] = [], storedMessageId?: string) => {
+  sendMessage: async (content: string, files: File[] = [], storedMessageId?: string, replySpeaker?: string) => {
     let { activeChatId } = get();
     /** The saved reply nearly repeats an earlier one: it is written anew once the send is done. */
     let repeatedReplyId: string | null = null;
-    const {
-      activeCharacter,
-      selectedBackend,
-      serverConfig,
-      cloudEndpoint,
-      cloudApiKey,
-      cloudModel,
-      cloudProvider,
-      chatSessions,
-    } = get();
+    const { activeCharacter } = get();
 
     if (get().isChatLoading || get().chatLoadError) throw new Error(get().chatLoadError ?? translate('chat.historyLoading'));
     if (get().isGenerating || (!content.trim() && files.length === 0 && !storedMessageId)) return;
@@ -922,80 +1052,16 @@ export const createChatSlice: SliceCreator<ChatSlice> = (set, get) => {
       });
 
       if (cancelled) return;
-      const activeSession = chatSessions.find((s) => s.id === activeChatId);
-
-      // The local AI starts with the first message (the task list shows the loading).
-      await waitWithAbort(() => get().ensureLocalAi(), preparation.signal);
-      // 2. Build context-aware system prompt
-      let systemPromptMsg: ChatMessage | null = null;
-      let prompt: ResolvedPrompt | null = null;
-      if (activeCharacter) {
-        prompt = await waitWithAbort(() => resolvePromptWithLore(get(), updatedFlat, content, preparation.signal), preparation.signal);
-        systemPromptMsg = { role: 'system', content: prompt.system };
-      }
-
-      if (!inContext(chatId, activeCharacter?.id)) return;
-      const payloadMessages = systemPromptMsg
-        ? [systemPromptMsg, ...updatedFlat]
-        : updatedFlat;
-
-      // 3. Inject Author's Note at depth if configured
-      if (activeSession?.author_note && (activeSession.author_note_depth || 0) > 0) {
-        const depth = activeSession.author_note_depth;
-        const insertIdx = Math.max(1, payloadMessages.length - depth);
-        payloadMessages.splice(insertIdx, 0, {
-          role: 'system',
-          content: `[Author's note: ${activeSession.author_note}]`,
-        });
-      }
-      payloadMessages.push(...postHistory(prompt));
-
-      const endpoint =
-        selectedBackend === 'local'
-          ? `http://127.0.0.1:${serverConfig.port}/v1/chat/completions`
-          : cloudEndpoint;
-
-      const done = await api.sendChatMessage({
-        endpoint_url: endpoint,
-        provider: selectedBackend === 'cloud' ? cloudProvider : 'local_llama',
-        api_key: selectedBackend === 'cloud' ? cloudApiKey : undefined,
-        model: selectedBackend === 'cloud' ? cloudModel : undefined,
-        messages: payloadMessages,
-        reasoning_mode: serverConfig.reasoning_mode,
-        sampling: chatSampling(get()),
-      }, generationId, selectedBackend === 'cloud' ? get().cloudContextTokens : undefined, get().chatTools);
-      if (!inContext(chatId, activeCharacter?.id) && !keepsPartial(done, chatId, activeCharacter?.id)) return;
-
-      // 4. Parse <state> tags
-      const { cleanedText, stateUpdates } = extractStateUpdates(applyReplacements(done.full_text, get().replyReplacements));
-
-      // 5. Add assistant message to DB
-      const asstStored = await api.addChatMessage(
-        activeChatId,
-        'assistant',
-        cleanedText,
-        done.full_thought.trim() ? done.full_thought : null
-      );
-      const sentHits = prompt?.hits;
-      if (sentHits) set((state) => ({ promptHits: { ...state.promptHits, [hitKey(asstStored.id, asstStored.swipe_index)]: sentHits } }));
-
-      if (!isCurrentContext(chatId, activeCharacter?.id)) return;
+      // A group chat answers with whoever the user picked; otherwise the chat's own character.
+      const written = await writeReply({ chatId, charId: activeCharacter?.id, history: updatedStored, speakerId: replySpeaker ?? '',
+        latestUserText: content, generationId, preparation });
+      if (!written) return;
+      const { stored: asstStored, done, cleanedText } = written;
       if (get().rerollRepeats && !done.aborted) {
         const earlier = updatedStored.filter((m) => m.role === 'assistant').map((m) => m.content);
         if (isRepeat(cleanedText, earlier)) repeatedReplyId = asstStored.id;
       }
-      set({ contextUsage: done.context ?? null });
-      if (stateUpdates) set({ stateVariables: applyStateUpdates(get().stateVariables, stateUpdates) });
-      get().summarizeDroppedMessages(done.context, updatedStored);
-      const finalStored = [...get().storedMessages, asstStored];
-      const finalFlat: ChatMessage[] = finalStored.map(toFlat);
-
-      set({
-        storedMessages: finalStored,
-        messages: finalFlat,
-        streamingText: '',
-        streamingThought: '',
-      });
+      const finalStored = get().storedMessages;
 
       // Refresh chat sessions to update message count badges
       if (activeCharacter?.id) {

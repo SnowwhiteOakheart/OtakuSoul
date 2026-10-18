@@ -28,6 +28,7 @@ import { PromptHitsButton, PromptHitsList } from './PromptHitsView';
 import { RememberMessageDialog } from './RememberMessageDialog';
 import { reportFailure } from '../../store/reportFailure';
 import { hitKey } from '../../store/helpers';
+import { presentedAs } from '../../utils/groupChat';
 import { api } from '../../services/api';
 import type { Attachment, StoredChatMessage, UserPersona } from '../../types';
 
@@ -195,6 +196,10 @@ const ChatMessageItem = React.memo<ChatMessageItemProps>(
     const branchChatFrom = useAppStore((s) => s.branchChatFrom);
     const bookmarked = useAppStore((s) => s.bookmarkedMessageIds.includes(msg.id));
     const hits = useAppStore((s) => (msg.role === 'assistant' ? s.promptHits[hitKey(msg.id, msg.swipe_index)] : undefined));
+    // A guest's reply in a group chat shows the guest's name.
+    const guest = useAppStore((s) => (msg.speaker_id ? s.availableCharacters.find((c) => c.id === msg.speaker_id) : undefined));
+    const replyLanguage = useAppStore((s) => s.replyLanguage);
+    const speakerName = guest ? presentedAs(guest, replyLanguage).name : characterName;
     const [hitsOpen, setHitsOpen] = useState(false);
     const [remembering, setRemembering] = useState(false);
     const generateSceneImage = useAppStore((s) => s.generateSceneImage);
@@ -274,7 +279,7 @@ const ChatMessageItem = React.memo<ChatMessageItemProps>(
         <div className="chat-sender flex items-center gap-2 mb-1 px-1">
           {isUser && <PersonaAvatar persona={persona} className="w-5 h-5 text-[10px]" />}
           <span className="text-xs font-semibold text-slate-400">
-            {isUser ? t('chat.you') : characterName}
+            {isUser ? t('chat.you') : speakerName}
           </span>
 
           {/* SillyTavern Swipes Pagination for Assistant */}

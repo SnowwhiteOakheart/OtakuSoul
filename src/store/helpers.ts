@@ -1,7 +1,7 @@
 import { api } from '../services/api';
 import { soundFx } from '../services/soundFx';
 import { waitWithAbort } from '../utils/cancellation';
-import type { AssembledPrompt, ChatMessage, LorebookEntry, LlmProviderType, SamplingParams } from '../types';
+import type { AssembledPrompt, CharacterProfile, ChatMessage, CognitiveOverview, GroupMember, LorebookEntry, LlmProviderType, SamplingParams } from '../types';
 import type { AppStoreState } from './storeTypes';
 
 /** What a reply could draw on beyond the chat: lorebook entries, memories, the summary. */
@@ -17,19 +17,30 @@ export const NO_PROMPT_HITS: PromptHits = { lore: [], memories: [], summary: fal
 /** The assembled prompt plus what went into it (shown at the reply). */
 export type ResolvedPrompt = AssembledPrompt & { hits: PromptHits };
 
+/**
+ * The character who writes a reply in a group chat, with their own memory, and who else is
+ * present. Without it the prompt is the open chat's character, as in a normal chat.
+ */
+export interface PromptSpeaker {
+  character: CharacterProfile;
+  cognitive: CognitiveOverview | null;
+  others: GroupMember[];
+}
+
 export async function resolvePromptWithLore(
   state: AppStoreState,
   recentMessages: ChatMessage[],
   latestUserText?: string,
   signal?: AbortSignal,
+  speaker?: PromptSpeaker,
 ): Promise<ResolvedPrompt> {
   signal?.throwIfAborted();
   const {
-    activeCharacter,
+    activeCharacter: chatCharacter,
     promptTemplate,
     activePersona,
     stateVariables,
-    cognitiveOverview,
+    cognitiveOverview: chatCognitive,
     replyLanguage,
     serverConfig,
     chatSessions,
@@ -43,7 +54,10 @@ export async function resolvePromptWithLore(
     sceneTensionEnabled,
   } = state;
 
-  if (!activeCharacter) return { system: '', post_history: null, hits: NO_PROMPT_HITS };
+  if (!chatCharacter) return { system: '', post_history: null, hits: NO_PROMPT_HITS };
+  // In a group chat the speaker writes with their own card and memory.
+  const activeCharacter = speaker?.character ?? chatCharacter;
+  const cognitiveOverview = speaker ? speaker.cognitive : chatCognitive;
 
   const activeSession = chatSessions.find((s) => s.id === activeChatId);
   const scanDepth = Math.max(1, lorebookScanDepth || 5);
@@ -53,7 +67,8 @@ export async function resolvePromptWithLore(
     .join(' ');
 
   // 1. Gather all candidate lorebooks (bound to character or global)
-  const boundSet = new Set(activeCharacter.bound_lorebooks || []);
+  // A guest also knows the lorebooks of the chat's own character (the shared world).
+  const boundSet = new Set([...(activeCharacter.bound_lorebooks || []), ...(chatCharacter.bound_lorebooks || [])]);
   const globalSet = new Set(globalLorebookIds || []);
 
   let candidateLorebooks = allLorebooks.filter(
@@ -144,6 +159,7 @@ export async function resolvePromptWithLore(
     idle_seconds: idleSeconds(storedMessages),
     reply_length: activeSession?.style?.reply_length || undefined,
     avoid_phrases: state.avoidPhrases.length > 0 ? state.avoidPhrases : undefined,
+    group: speaker && speaker.others.length > 0 ? speaker.others : undefined,
   }), signal);
   return { ...assembled, hits };
 }

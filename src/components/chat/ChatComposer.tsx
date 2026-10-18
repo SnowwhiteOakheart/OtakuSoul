@@ -12,6 +12,7 @@ import { readDraft, writeDraft } from '../../utils/drafts';
 import { reportFailure } from '../../store/reportFailure';
 import { REPLY_LENGTHS } from '../../store/helpers';
 import { DEFAULT_CHAT_STYLE } from '../../utils/settingDefaults';
+import { chatSpeakers, presentedAs } from '../../utils/groupChat';
 
 /**
  * Message input with send/abort, voice controls and the context meter. Owns the draft so
@@ -198,6 +199,7 @@ export const ChatComposer: React.FC = () => {
           )}
         </div>
       )}
+      <SpeakerChips />
       {imagesWithoutVision && (
         <p className="max-w-4xl mx-auto mb-2 text-xs text-amber-300">{t('chat.noVisionHint')}</p>
       )}
@@ -359,6 +361,37 @@ const PendingFile: React.FC<{ file: File; onRemove: () => void }> = ({ file, onR
       >
         <X className="w-3.5 h-3.5" />
       </button>
+    </div>
+  );
+};
+
+/** Group chat: let one of the characters answer now, without a new message of the user. */
+const SpeakerChips: React.FC = () => {
+  const { t } = useTranslation();
+  const { activeChatId, chatSessions, activeCharacter, availableCharacters, replyLanguage, replyAs, isGenerating, isChatLoading, chatLoadError } = useStoreFields(
+    'activeChatId', 'chatSessions', 'activeCharacter', 'availableCharacters', 'replyLanguage', 'replyAs', 'isGenerating', 'isChatLoading', 'chatLoadError',
+  );
+  const speakers = chatSpeakers(activeCharacter, chatSessions.find((s) => s.id === activeChatId), availableCharacters);
+  if (speakers.length < 2) return null;
+  return (
+    <div role="group" aria-label={t('chat.replyAsLabel')} className="max-w-4xl mx-auto mb-2 flex flex-wrap items-center gap-1.5 text-xs" data-speaker-chips>
+      <span className="text-slate-400">{t('chat.replyAsLabel')}</span>
+      {speakers.map(({ id, character }) => {
+        const name = presentedAs(character, replyLanguage).name;
+        return (
+          <button
+            key={id || 'host'}
+            type="button"
+            onClick={() => void replyAs(id)}
+            disabled={isGenerating || isChatLoading || !!chatLoadError}
+            aria-label={t('chat.replyAs', { name })}
+            title={t('chat.replyAs', { name })}
+            className="rounded-full border border-slate-700 px-2.5 py-0.5 text-slate-200 hover:bg-slate-800 disabled:opacity-40"
+          >
+            {name}
+          </button>
+        );
+      })}
     </div>
   );
 };
