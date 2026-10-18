@@ -73,6 +73,16 @@ ru „персонаж/история/сцена“. Fachbegriffe nur im Experte
   (Lorebooks, `assemble_prompt` = System-Prompt + Nachspann) → Payload (+ Author's Note in Tiefe N, Nachspann am Ende)
   → `send_chat_message`: `attachments::prepare` → `context_window::fit` (kürzt von vorn) → `stream_chat` (Events
   `llm-token`/`llm-thought`/`llm-done`) → Antwort speichern → ggf. `summarizeDroppedMessages` im Hintergrund.
+- **Gruppen-Chats:** Ein Chat einer Figur (Gastgeberin, `character_id`) lädt bis zu `MAX_CHAT_GUESTS` = 4 Gäste ein
+  (`chat_sessions.members_json`, `set_chat_members`, Reiter „Gruppe“ = `ChatGuestsPanel`). Antworten tragen
+  `chat_messages.speaker_id` ('' = Gastgeberin; Swipe/Fortsetzen/Zweig behalten ihn). `chatSlice.writeReply` schreibt eine
+  Antwort je Sprecher: `speakerSetup` → eigene Karte, eigenes Gedächtnis, `PromptContext.group` (andere Anwesende) und
+  `utils/groupChat.ts` `groupHistory` (eigene Zeilen `assistant`, fremde als `user` mit „Name: “). Runde nach einer
+  Nutzernachricht: `nextSpeaker` → `route_group_chat` (`modules/group_chat.rs`: Ansprache, sonst Routing-Prompt aus Stage
+  mit „[CHAT — ROUTING]“), höchstens `GROUP_MAX_REPLIES` = 3, Ende bei `PLAYER`, „Stopp“ beendet die Runde; „Jetzt antwortet …“
+  = `replyAs` (Nachspann „It is X's turn“). Auto-Reflexion je Figur (`triggerMemoryPipeline(n, characterId)`, Transkript mit
+  `speaker_names`), Stimme je Gast (`loadSpeakerVoice`), Avatar-Emotion nur bei der Gastgeberin. JSONL: `name` = Sprecher,
+  Import erkennt Gäste über `speaker_id` oder bekannte Namen. Mock: `stats.chatRoutes`. E2E `chat-group.mjs`.
 - **Chat-Export/-Import (SillyTavern-JSONL):** Seitenleiste → `export_chat_jsonl` (mit `target_path` schreibt das Backend die
   Datei; der Webview kann nicht herunterladen) / `import_chat_jsonl`. Export schreibt eigene Felder (`role`, `swipe_variants`,
   `author_note`) plus ST-Felder (`extra.reasoning`, `swipe_info[i].extra.reasoning`, `chat_metadata.note_prompt/note_depth`);

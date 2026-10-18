@@ -8,7 +8,7 @@ import { ModalOverlay } from './ui/ModalOverlay';
 /** Terms of the glossary (`glossary.<id>.term` / `.text`), in the order they are shown. */
 export const GLOSSARY_TERMS = [
   'ai_model', 'local_cloud', 'api_key', 'context', 'token', 'gguf', 'quantization', 'vram', 'runtime',
-  'reply_style', 'prompt', 'persona', 'macros', 'lorebook', 'stage', 'hub', 'tts', 'voice_clone', 'lora',
+  'reply_style', 'prompt', 'persona', 'macros', 'group_chat', 'lorebook', 'stage', 'hub', 'tts', 'voice_clone', 'lora',
 ] as const;
 
 /** Steps of the beginner's guide (`help.step.<n>.title` / `.text`). */

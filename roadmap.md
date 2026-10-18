@@ -63,7 +63,7 @@
 - [x] **Alternative Begrüßungen** einer Karte als Swipes der ersten Nachricht eines neuen Chats (übersetzt, Makros gefüllt).
 - [x] **Antwortvorschläge im Chat:** Knopf „Was könnte ich sagen?“ mit 2–3 kurzen Ideen im Stil der Persona (wie `pending_choices` in Stage).
 - [x] **„Schreib für mich“ (Impersonate):** KI entwirft die nächste Nutzernachricht in den Composer, Nutzer bearbeitet vor dem Senden.
-- [ ] **Gruppen-Chats** mit mehreren Charakteren; Sprecherwahl/Ansprache-Erkennung aus `stage/director.rs` wiederverwenden, ohne Spielmechanik.
+- [x] **Gruppen-Chats** mit mehreren Charakteren; Sprecherwahl/Ansprache-Erkennung aus `stage/director.rs` wiederverwenden, ohne Spielmechanik.
 - [x] **OOC-/Regie-Nachrichten:** `(( … ))` oder Umschalter „Regieanweisung“ geht als Hinweis ans Modell statt in die Erzählung.
 - [x] **Weitere Kartenmakros:** `{{random:a,b}}`, `{{roll:1d20}}`, `{{time}}`/`{{date}}`, `{{idle_duration}}` (Community-Karten zeigen sie sonst roh).
 - [x] **Wiederholungen eindämmen in Klartext:** Schalter „Abwechslungsreicher schreiben“ (DRY/XTC mit guten Werten), optional automatisches

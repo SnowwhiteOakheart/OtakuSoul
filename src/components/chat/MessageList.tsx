@@ -200,6 +200,11 @@ const ChatMessageItem = React.memo<ChatMessageItemProps>(
     const guest = useAppStore((s) => (msg.speaker_id ? s.availableCharacters.find((c) => c.id === msg.speaker_id) : undefined));
     const replyLanguage = useAppStore((s) => s.replyLanguage);
     const speakerName = guest ? presentedAs(guest, replyLanguage).name : characterName;
+    // In a group chat every reply shows a small portrait of who wrote it.
+    const portrait = useAppStore((s) => {
+      if (msg.role !== 'assistant' || !(s.chatSessions.find((c) => c.id === msg.chat_id)?.members?.length)) return undefined;
+      return (guest ?? s.activeCharacter)?.avatar_data_url ?? null;
+    });
     const [hitsOpen, setHitsOpen] = useState(false);
     const [remembering, setRemembering] = useState(false);
     const generateSceneImage = useAppStore((s) => s.generateSceneImage);
@@ -278,6 +283,7 @@ const ChatMessageItem = React.memo<ChatMessageItemProps>(
         {/* Sender Header + Swipes Navigation */}
         <div className="chat-sender flex items-center gap-2 mb-1 px-1">
           {isUser && <PersonaAvatar persona={persona} className="w-5 h-5 text-[10px]" />}
+          {portrait && <img src={portrait} alt="" className="w-5 h-5 rounded-full object-cover" />}
           <span className="text-xs font-semibold text-slate-400">
             {isUser ? t('chat.you') : speakerName}
           </span>

@@ -1,0 +1,71 @@
+// Gruppen-Chat: Emilia in Altheas Chat einladen; die Angesprochene antwortet zuerst, die Regie reicht an Althea weiter,
+// dann ist der Nutzer dran. Variante bleibt beim Sprecher, „Jetzt antwortet …“ lässt eine Figur gezielt sprechen.
+import assert from 'node:assert/strict';
+import path from 'node:path';
+import { clickSend, launch, screenshotDir } from './harness.mjs';
+
+const { browser, mock, close } = await launch();
+// oxlint-disable-next-line no-underscore-dangle -- Tauri IPC in a disposable profile
+const invoke = (command, args = {}) => browser.execute((cmd, payload) => window.__TAURI_INTERNALS__.invoke(cmd, payload), command, args);
+const jsClick = (element) => browser.execute((el) => el.click(), element);
+const messages = async () => {
+  const settings = await invoke('load_settings');
+  const [session] = await invoke('list_chat_sessions', { characterId: settings.active_character_id });
+  return invoke('get_chat_messages', { chatId: session.id });
+};
+const idle = () => browser.$('button[aria-label="Nachricht senden"]').waitForExist({ timeout: 30_000 });
+
+try {
+  const input = await browser.$('textarea[aria-label="Nachricht"]');
+  await input.waitForDisplayed({ timeout: 30_000 });
+  const host = (await invoke('load_settings')).active_character_id;
+  const emilia = (await invoke('scan_characters')).find((c) => c.card.data.name === 'Emilia');
+
+  // Invite Emilia from the chat sidebar.
+  await browser.$('button[title^="Gespräche, Author"]').click();
+  await jsClick(await browser.$('button[role="tab"]=Gruppe'));
+  await jsClick(await browser.$('button=Charakter einladen'));
+  const picker = await browser.$('[data-guest-picker]');
+  await picker.waitForDisplayed({ timeout: 5000 });
+  await picker.$('input[type="search"]').setValue('Emil');
+  await jsClick(await picker.$('button*=Emilia'));
+  await browser.$(`[data-guest="${emilia.id}"]`).waitForDisplayed({ timeout: 5000 });
+  await browser.$('[data-guest-avatars]').waitForExist({ timeout: 5000 });
+  await jsClick(await browser.$('aside button[aria-label="Schließen"]'));
+
+  // Emilia is addressed (no routing needed), then the director hands over to Althea, then it is the user's turn.
+  const hostName = (await invoke('scan_characters')).find((c) => c.id === host).card.data.name;
+  mock.stats.chatRoutes = [hostName];
+  const before = mock.stats.chat;
+  await input.setValue('Emilia, was meinst du?');
+  await clickSend(browser);
+  await browser.waitUntil(() => mock.stats.chat >= before + 2, { timeout: 30_000, timeoutMsg: 'Keine zwei Antworten' });
+  await idle();
+  await browser.pause(500);
+  assert.equal(mock.stats.chat, before + 2, 'Die Runde endet nicht beim Nutzer');
+  let stored = await messages();
+  const replies = stored.filter((m) => m.role === 'assistant').slice(-2);
+  assert.deepEqual(replies.map((m) => m.speaker_id), [emilia.id, '']);
+  assert.ok(mock.stats.lastChatRoutingPrompt.includes('[CHAT — ROUTING]'), 'Regie nicht gefragt');
+  assert.ok(mock.stats.lastChatSystemPrompt.includes('## Others in this conversation'), 'Gruppenabschnitt fehlt');
+  await browser.saveScreenshot(path.join(screenshotDir, '104-gruppen-chat.png'));
+
+  // A new variant of Emilia's reply stays Emilia's.
+  const emiliaReply = replies[0];
+  await jsClick(await browser.$(`[data-message-id="${emiliaReply.id}"] button[aria-label="Neu generieren"]`));
+  await browser.waitUntil(async () => (await messages()).find((m) => m.id === emiliaReply.id)?.swipes.length === 2,
+    { timeout: 20_000, timeoutMsg: 'Keine neue Variante' });
+  await idle();
+  assert.equal((await messages()).find((m) => m.id === emiliaReply.id).speaker_id, emilia.id);
+
+  // "Answer now" lets Emilia speak without a new message.
+  const count = (await messages()).length;
+  await jsClick(await browser.$('button[aria-label="Emilia jetzt antworten lassen"]'));
+  await browser.waitUntil(async () => (await messages()).length === count + 1, { timeout: 20_000, timeoutMsg: '„Jetzt antwortet“ ohne Antwort' });
+  stored = await messages();
+  assert.equal(stored.at(-1).speaker_id, emilia.id);
+  assert.equal(stored.at(-2).role, 'assistant', 'Es wurde eine Nutzernachricht angelegt');
+  console.log('Gruppen-Chat: Einladen, Ansprache vor Regie, Runde bis zum Nutzer, Variante und „Jetzt antwortet“ bestanden.');
+} finally {
+  await close();
+}

@@ -50,6 +50,9 @@ the character is and how your chat begins; **"Chat now"** starts the conversatio
   picture card lets you make it the chat background.
 - Coming from SillyTavern? The chat sidebar (**Conversations**) imports its chats (`.jsonl`) with their variants and
   exports yours in the same format.
+- **Group chat:** invite more characters under **Group** in the chat sidebar. Whoever is addressed ("Emilia, what do you
+  think?") answers first; otherwise the AI decides who reacts. "Answer now" above the message field lets a particular
+  character speak. Each keeps their own memory and voice.
 - The character remembers your conversation. **"Conversation memory"** below the input shows how full it is; the app
   summarises older messages when needed.
 

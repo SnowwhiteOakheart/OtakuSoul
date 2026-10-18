@@ -7,6 +7,7 @@ import { toast } from '../ui/feedback';
 import { DropdownMenu } from '../ui/DropdownMenu';
 import { errorMessage } from '../../utils/errors';
 import { localizeCard } from '../../utils/cardI18n';
+import { chatGuests, presentedAs } from '../../utils/groupChat';
 
 /**
  * Character, story state and quick actions above the chat. The state values (and the lorebook
@@ -90,6 +91,7 @@ export const AdaptiveHud = ({ compact = false }: { compact?: boolean }) => {
           )}
           <div className="absolute bottom-0 right-0 w-3 h-3 bg-emerald-500 rounded-full border-2 border-slate-900" />
         </div>
+        <GuestAvatars compact={compact} />
 
         <div className="min-w-0">
           <DropdownMenu
@@ -253,3 +255,29 @@ export const AdaptiveHud = ({ compact = false }: { compact?: boolean }) => {
   );
 };
 
+/** Group chat: the invited characters next to the chat's own one. */
+const GuestAvatars = ({ compact }: { compact: boolean }) => {
+  const { t } = useTranslation();
+  // Read the fields, then derive: a selector returning a new array would re-render forever.
+  const { chatSessions, activeChatId, availableCharacters, replyLanguage } = useStoreFields(
+    'chatSessions', 'activeChatId', 'availableCharacters', 'replyLanguage',
+  );
+  const guests = chatGuests(chatSessions.find((c) => c.id === activeChatId), availableCharacters);
+  if (guests.length === 0) return null;
+  const names = guests.map((g) => presentedAs(g, replyLanguage).name);
+  const size = compact ? 'w-6 h-6 text-[10px]' : 'w-8 h-8 text-xs';
+  return (
+    <div className="flex -space-x-2" role="img" aria-label={t('group.presentLabel', { names: names.join(', ') })}
+      title={t('group.presentLabel', { names: names.join(', ') })} data-guest-avatars>
+      {guests.map((guest, i) =>
+        guest.avatar_data_url ? (
+          <img key={guest.id} src={guest.avatar_data_url} alt="" className={`${size} rounded-full object-cover border-2 border-slate-900`} />
+        ) : (
+          <span key={guest.id} className={`${size} rounded-full bg-slate-700 border-2 border-slate-900 flex items-center justify-center font-bold text-slate-100`}>
+            {names[i]?.charAt(0)}
+          </span>
+        ),
+      )}
+    </div>
+  );
+};

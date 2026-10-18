@@ -51,6 +51,9 @@ zeigt, wer die Figur ist und wie euer Chat beginnt; **„Jetzt chatten“** star
   über der Bildkarte machst Du das Bild auf Wunsch zum Chat-Hintergrund.
 - Von SillyTavern umgestiegen? In der Chat-Seitenleiste (**Gespräche**) importierst Du dortige Chats (`.jsonl`) samt
   Varianten und exportierst eigene im selben Format.
+- **Gruppen-Chat:** In der Chat-Seitenleiste unter **Gruppe** lädst Du weitere Charaktere ein. Wer angesprochen wird
+  („Emilia, was meinst du?“), antwortet zuerst; sonst entscheidet die KI, wer reagiert. „Jetzt antwortet …“ über dem
+  Eingabefeld lässt eine bestimmte Figur sprechen. Jede behält ihr eigenes Gedächtnis und ihre Stimme.
 - Die Figur erinnert sich an euer Gespräch. Die Anzeige **„Gesprächsgedächtnis“** unter dem Eingabefeld zeigt, wie
   voll es ist; ältere Nachrichten fasst die App bei Bedarf zusammen.
 
