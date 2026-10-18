@@ -210,6 +210,12 @@ pub async fn suggest_chat_replies(
     crate::modules::reply_ideas::suggest(&state.inference_client, &messages, request).await
 }
 
+/// Fills the macros of texts that are stored as they are (greetings of a new chat).
+#[tauri::command]
+pub fn expand_macros(texts: Vec<String>, input: crate::modules::macros::MacroInput) -> Vec<String> {
+    crate::modules::macros::expand_all(&texts, &input)
+}
+
 /// "Write for me": the user's next message (from their notes, if any), for the composer.
 #[tauri::command]
 pub async fn draft_chat_reply(

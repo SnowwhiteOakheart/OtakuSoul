@@ -679,8 +679,10 @@ export const CharacterEditorModal = ({
                   value={firstMes}
                   onChange={(e) => setFirstMes(e.target.value)}
                   placeholder={t('editor.firstMessagePlaceholder')}
+                  aria-describedby={`${fieldId}-macrosHint`}
                   className="w-full px-3 py-2 bg-app border border-slate-800 rounded-xl text-slate-200 placeholder-slate-500 focus:outline-hidden focus:border-accent-500 resize-y"
                 />
+                <p id={`${fieldId}-macrosHint`} className="mt-1 text-xs text-slate-500">{t('editor.macrosHint')}</p>
               </div>
 
               <div>

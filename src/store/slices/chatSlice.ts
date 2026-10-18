@@ -26,7 +26,7 @@ import { toast } from '../../components/ui/feedback';
 import { errorMessage } from '../../utils/errors';
 import { fileToBase64 } from '../../utils/files';
 import { waitWithAbort } from '../../utils/cancellation';
-import { fillCardMacros, languageCode, localizeCard } from '../../utils/cardI18n';
+import { languageCode, localizeCard } from '../../utils/cardI18n';
 
 type GenerationFailure = {
   chatId: string;
@@ -156,18 +156,22 @@ const SUMMARY_BATCH = 6;
 
 /**
  * The active character's greetings in the reply language (first message, then the alternatives as
- * swipes), with {{char}}/{{user}} filled in.
+ * swipes), with their macros filled in once: a greeting is stored as the chat began.
  */
-const greetingsFor = (state: {
+const greetingsFor = async (state: {
   activeCharacter: CharacterProfile | null;
   activePersona: UserPersona;
   replyLanguage: string;
-}): string[] => {
+}): Promise<string[]> => {
   if (!state.activeCharacter) return [];
   const data = localizeCard(state.activeCharacter.card.data, languageCode(state.replyLanguage));
-  return [data.first_mes, ...(data.alternate_greetings ?? [])]
-    .filter((text) => text?.trim())
-    .map((text) => fillCardMacros(text, data.name, state.activePersona.name));
+  const greetings = [data.first_mes, ...(data.alternate_greetings ?? [])].filter((text) => text?.trim());
+  if (greetings.length === 0) return [];
+  return api.expandMacros(greetings, {
+    char_name: data.name,
+    user_name: state.activePersona.name,
+    language: state.replyLanguage,
+  });
 };
 
 export const createChatSlice: SliceCreator<ChatSlice> = (set, get) => {
@@ -392,7 +396,6 @@ export const createChatSlice: SliceCreator<ChatSlice> = (set, get) => {
   loadChatSessions: async (charId: string) => {
     if (get().activeCharacter?.id !== charId) return;
     const previousChatId = get().activeChatId;
-    const greetings = greetingsFor(get());
     const request = beginSessionLoad(null);
     set({ chatSessions: [] });
     try {
@@ -400,6 +403,8 @@ export const createChatSlice: SliceCreator<ChatSlice> = (set, get) => {
       if (!isSessionCurrent(request, charId)) return;
       let targetId = sessions.find((session) => session.id === previousChatId)?.id ?? sessions[0]?.id;
       if (!targetId) {
+        const greetings = await greetingsFor(get());
+        if (!isSessionCurrent(request, charId)) return;
         const session = await api.createChatSession(charId, translate('chat.newChatTitle'), greetings);
         if (!isSessionCurrent(request, charId)) return;
         sessions = visibleSessions(await api.listChatSessions(charId));
@@ -436,10 +441,11 @@ export const createChatSlice: SliceCreator<ChatSlice> = (set, get) => {
   createNewChat: async (title?: string) => {
     const char = get().activeCharacter;
     if (!char) return null;
-    const greetings = greetingsFor(get());
     const sessionTitle = title || translate('chat.defaultSessionTitle', { n: get().chatSessions.length + 1 });
     const request = beginSessionLoad(null);
     try {
+      const greetings = await greetingsFor(get());
+      if (!isSessionCurrent(request, char.id)) return null;
       const session = await api.createChatSession(char.id, sessionTitle, greetings);
       if (!isSessionCurrent(request, char.id)) return null;
       const sessions = await api.listChatSessions(char.id);

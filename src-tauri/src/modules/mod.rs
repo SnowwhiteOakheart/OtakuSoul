@@ -26,6 +26,7 @@ pub mod llm_presets;
 pub mod local_image;
 pub mod logger;
 pub mod lorebook;
+pub mod macros;
 pub mod mcp_client;
 pub mod memory;
 pub mod memory_pipeline;

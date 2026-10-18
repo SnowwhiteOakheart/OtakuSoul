@@ -13,4 +13,12 @@ chat_summary?: string,
 /**
  * Editable prompt parts; the default template when missing.
  */
-template?: PromptTemplate, };
+template?: PromptTemplate, 
+/**
+ * Keeps `{{pick}}` stable within a chat (the chat ID).
+ */
+macro_seed?: string, 
+/**
+ * Seconds since the user's previous message (`{{idle_duration}}`).
+ */
+idle_seconds?: number, };

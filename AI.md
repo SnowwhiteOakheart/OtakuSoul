@@ -73,6 +73,12 @@ ru „персонаж/история/сцена“. Fachbegriffe nur im Experte
   (Lorebooks, `assemble_prompt` = System-Prompt + Nachspann) → Payload (+ Author's Note in Tiefe N, Nachspann am Ende)
   → `send_chat_message`: `attachments::prepare` → `context_window::fit` (kürzt von vorn) → `stream_chat` (Events
   `llm-token`/`llm-thought`/`llm-done`) → Antwort speichern → ggf. `summarizeDroppedMessages` im Hintergrund.
+- **Makros:** `modules/macros.rs` (`expand`, Eingabe `MacroInput`) füllt `{{char}}`/`{{user}}`, `{{random:a,b}}` (jede Antwort neu),
+  `{{pick:a,b}}` (stabil je Chat über `PromptContext.macro_seed` = Chat-ID), `{{roll:2d6+1}}`, `{{time}}`/`{{date}}`/`{{weekday}}`/
+  `{{isodate}}`/`{{isotime}}`, `{{idle_duration}}` (`PromptContext.idle_seconds`, `helpers.ts` `idleSeconds`), `{{newline}}`, `{{trim}}`,
+  `{{// Notiz}}`, `{{noop}}`; Unbekanntes bleibt stehen. Im Prompt überall über `replace_macros`; Begrüßungen einmalig beim Anlegen
+  über den Befehl `expand_macros`. Vorschauen (Bibliothek) nutzen nur `fillCardMacros` (Namen). Zufall/Uhrzeit im System-Prompt
+  ändern ihn je Antwort (lokal kein Prompt-Cache-Treffer) – wie in SillyTavern.
 - **Prompt:** `PromptTemplate` (Rolle/Stil/Nachspann, Vorlagen in `builtin_prompt_templates`); Karten-`system_prompt`/
   `post_history_instructions` ersetzen Rolle/Nachspann, `{{original}}` bindet die Vorlage ein. Abschnitte beginnen mit
   „# Role & Identity“ (das E2E-Mock erkennt Chat-Anfragen daran).

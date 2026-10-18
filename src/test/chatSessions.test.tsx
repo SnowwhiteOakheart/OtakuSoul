@@ -117,8 +117,11 @@ describe('chat session loading', () => {
       activePersona: { ...initial.activePersona, name: 'Kai' },
       activeCharacter: { ...character, card: { data: { name: 'Ayu', first_mes: 'Hi {{user}}!', alternate_greetings: ['Hey?', ' '], extensions: { otakusoul_i18n: { translations: { de: translated } } } } } } as unknown as CharacterProfile,
     });
+    vi.mocked(api.expandMacros).mockImplementationOnce(async (texts, input) => texts.map((text) => text.replace('{{user}}', input.user_name)));
     vi.mocked(api.createChatSession).mockResolvedValueOnce(session);
     await useAppStore.getState().createNewChat('Neu');
+    // Macros are filled once by the backend (names, chance, time), the language picks the texts.
+    expect(api.expandMacros).toHaveBeenCalledWith(['Hallo {{user}}!', 'Na, {{user}}?'], { char_name: 'Ayu', user_name: 'Kai', language: 'Deutsch' });
     expect(api.createChatSession).toHaveBeenCalledWith('ayu', 'Neu', ['Hallo Kai!', 'Na, Kai?']);
   });
   it('offers reply ideas for the open chat and puts a picked one into the input', async () => {
@@ -172,6 +175,7 @@ describe('chat session loading', () => {
     let finish!: (value: ChatSession) => void;
     vi.mocked(api.createChatSession).mockImplementationOnce(() => new Promise((resolve) => { finish = resolve; }));
     const pending = useAppStore.getState().createNewChat();
+    await waitFor(() => expect(api.createChatSession).toHaveBeenCalled());
     useAppStore.setState({ activeCharacter: { ...character, id: 'sora' } });
     finish(session);
     expect(await pending).toBeNull();

@@ -60,6 +60,7 @@ import {
   StageStreamEvent,
   TranslateRequest,
   ReplyIdeasRequest,
+  MacroInput,
   Attachment,
   AssembledPrompt,
   BuiltinPromptTemplate,
@@ -948,6 +949,11 @@ export const api = {
   /** A few short ideas for the user's next message, from the end of the chat. */
   suggestChatReplies: async (request: ReplyIdeasRequest): Promise<string[]> => {
     return await invoke<string[]>('suggest_chat_replies', { request });
+  },
+
+  /** Fills the macros ({{char}}, {{random:…}}, {{roll:…}}, {{time}} …) of texts stored as they are. */
+  expandMacros: async (texts: string[], input: MacroInput): Promise<string[]> => {
+    return await invoke<string[]>('expand_macros', { texts, input });
   },
 
   /** "Write for me": the user's next message, built from their notes if any. */

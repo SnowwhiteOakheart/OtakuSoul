@@ -235,6 +235,7 @@ pub fn run() {
             commands::chat::save_attachment,
             commands::chat::suggest_chat_replies,
             commands::chat::draft_chat_reply,
+            commands::chat::expand_macros,
             commands::chat::translate_message,
             commands::chat::get_attachment_data_url,
             commands::app::read_file_binary,

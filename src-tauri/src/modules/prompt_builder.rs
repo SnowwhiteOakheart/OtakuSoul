@@ -108,6 +108,26 @@ pub struct PromptContext {
     #[serde(default)]
     #[ts(optional)]
     pub template: Option<PromptTemplate>,
+    /// Keeps `{{pick}}` stable within a chat (the chat ID).
+    #[serde(default)]
+    #[ts(optional)]
+    pub macro_seed: Option<String>,
+    /// Seconds since the user's previous message (`{{idle_duration}}`).
+    #[serde(default)]
+    #[ts(optional)]
+    pub idle_seconds: Option<u64>,
+}
+
+impl PromptContext {
+    fn macro_input(&self) -> crate::modules::macros::MacroInput {
+        crate::modules::macros::MacroInput {
+            char_name: self.char_name.clone(),
+            user_name: self.user_name.clone(),
+            language: self.reply_language.clone().unwrap_or_default(),
+            pick_seed: self.macro_seed.clone(),
+            idle_seconds: self.idle_seconds,
+        }
+    }
 }
 
 /// System prompt plus the instruction that goes after the chat history.
@@ -141,11 +161,7 @@ pub fn post_history_instruction(ctx: &PromptContext) -> Option<String> {
         ctx.character.post_history_instructions.as_deref(),
         &template.post_history,
     );
-    let text = text
-        .replace("{{char}}", &ctx.char_name)
-        .replace("{{Char}}", &ctx.char_name)
-        .replace("{{user}}", &ctx.user_name)
-        .replace("{{User}}", &ctx.user_name);
+    let text = crate::modules::macros::expand(&text, &ctx.macro_input());
     (!text.trim().is_empty()).then(|| text.trim().to_string())
 }
 
@@ -169,12 +185,9 @@ pub fn build_system_prompt(ctx: &PromptContext) -> String {
     let ctx = &localized;
     let mut parts = Vec::new();
 
-    let replace_macros = |text: &str| -> String {
-        text.replace("{{char}}", &ctx.char_name)
-            .replace("{{Char}}", &ctx.char_name)
-            .replace("{{user}}", &ctx.user_name)
-            .replace("{{User}}", &ctx.user_name)
-    };
+    let macro_input = ctx.macro_input();
+    let replace_macros =
+        |text: &str| -> String { crate::modules::macros::expand(text, &macro_input) };
 
     let template = ctx.template.clone().unwrap_or_default();
 
@@ -434,6 +447,21 @@ mod tests {
             },
             ..PromptContext::default()
         }
+    }
+
+    #[test]
+    fn card_macros_are_expanded_everywhere() {
+        let mut ctx = context(Some("{{original}}\nHeute ist {{weekday}}. {{// Notiz}}"));
+        ctx.reply_language = Some("Deutsch".into());
+        ctx.macro_seed = Some("chat_1".into());
+        ctx.character.description = "{{char}} trägt {{pick:rot,blau}}.".into();
+        ctx.author_note = Some("Würfel: {{roll:1d1+1}}".into());
+        let first = build_system_prompt(&ctx);
+        assert!(first.contains("Aiko trägt "));
+        assert!(first.contains("Würfel: 2"));
+        assert!(!first.contains("{{") && !first.contains("Notiz"));
+        // `{{pick}}` keeps its choice for the whole chat.
+        assert!((0..10).all(|_| build_system_prompt(&ctx) == first));
     }
 
     #[test]

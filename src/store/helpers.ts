@@ -21,6 +21,7 @@ export async function resolvePromptWithLore(
     serverConfig,
     chatSessions,
     activeChatId,
+    storedMessages,
     lorebookScanDepth,
     allLorebooks,
     activeLorebooks,
@@ -115,7 +116,22 @@ export async function resolvePromptWithLore(
     author_note_depth: activeSession?.author_note_depth,
     chat_summary: activeSession?.summary || undefined,
     template: promptTemplate ?? undefined,
+    macro_seed: activeChatId ?? undefined,
+    idle_seconds: idleSeconds(storedMessages),
   }), signal);
+}
+
+/**
+ * `{{idle_duration}}`: how long the user was away before their latest message (seconds since the
+ * message before it). Swipes and continuing count from the last user message.
+ */
+export function idleSeconds(messages: { role: string; created_at: number }[], now = Date.now() / 1000): number | undefined {
+  const userTimes = messages.filter((m) => m.role === 'user').map((m) => m.created_at);
+  const lastIsUser = messages.at(-1)?.role === 'user';
+  const previous = lastIsUser ? messages.at(-2)?.created_at : userTimes.at(-1);
+  if (previous === undefined) return undefined;
+  const until = lastIsUser ? messages.at(-1)!.created_at : now;
+  return Math.max(0, Math.round(until - previous));
 }
 
 /** Endpoint, key, model and provider of the chat model the user selected (local or cloud). */

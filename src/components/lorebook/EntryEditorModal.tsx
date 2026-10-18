@@ -313,7 +313,7 @@ export const EntryEditorModal: React.FC<EntryEditorModalProps> = ({ initialEntry
                 {t('lore.content')}
               </label>
               <span className="text-[11px] text-slate-400 font-mono">
-                {t('lore.supportsMacros', { macros: '{{char}} & {{user}}' })}
+                {t('lore.supportsMacros', { macros: '{{char}}, {{user}}, {{random:…}}, {{roll:…}}, {{time}} …' })}
               </span>
             </div>
             <textarea
