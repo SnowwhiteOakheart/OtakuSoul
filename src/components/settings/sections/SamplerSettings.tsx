@@ -1,7 +1,8 @@
 import { useState } from 'react';
 import { ResetSection } from '../ResetSection';
 import { OptionHint } from '../OptionHint';
-import { EXTRA_SAMPLING_FIELDS, changedFields, samplingDefaults } from '../../../utils/settingDefaults';
+import { EXTRA_SAMPLING_FIELDS, VARIETY_OFF, VARIETY_SAMPLING, changedFields, samplingDefaults, varietyOn } from '../../../utils/settingDefaults';
+import { Toggle } from '../../ui/Toggle';
 import { useStoreFields } from '../../../store/useAppStore';
 import { translate, useTranslation } from '../../../i18n';
 import { confirmDialog } from '../../ui/feedback';
@@ -10,6 +11,7 @@ import {
   Trash2,
   Plus,
   Flame,
+  Shuffle,
 } from 'lucide-react';
 import type { LlmPreset } from '../../../types';
 
@@ -21,10 +23,13 @@ export const SamplerSettings = () => {
   const {
     llmPresets, activePresetId, applyLlmPreset, saveLlmPreset, deleteLlmPreset, sampling,
     setSampling, lorebookScanDepth, setLorebookScanDepth, expertMode, serverConfig, selectedBackend,
+    rerollRepeats, setRerollRepeats,
   } = useStoreFields(
     'llmPresets', 'activePresetId', 'applyLlmPreset', 'saveLlmPreset', 'deleteLlmPreset',
     'sampling', 'setSampling', 'lorebookScanDepth', 'setLorebookScanDepth', 'expertMode', 'serverConfig', 'selectedBackend',
+    'rerollRepeats', 'setRerollRepeats',
   );
+  const variety = varietyOn(sampling);
   const defaults = samplingDefaults(serverConfig.model_path, selectedBackend === 'local');
   const changedSampling = changedFields(sampling, defaults, EXTRA_SAMPLING_FIELDS).length;
   const resetSampling = () => {
@@ -170,6 +175,30 @@ export const SamplerSettings = () => {
             </div>
           </div>
         )}
+      </div>
+
+      {/* Less repetition, in plain words (expert mode shows the sliders below) */}
+      <div className="rounded-xl border border-slate-800 bg-slate-900/60 p-4 space-y-2">
+        <h2 className="text-sm font-semibold text-slate-200 flex items-center gap-2">
+          <Shuffle className="w-4 h-4 text-accent-400" />
+          {t('settings.varietyTitle')}
+        </h2>
+        <Toggle
+          id="setting-vary-wording"
+          checked={variety}
+          onCheckedChange={(on) => setSampling(on ? VARIETY_SAMPLING : VARIETY_OFF)}
+          label={t('settings.varyWording')}
+          description={t(variety ? 'settings.varyWordingOn' : 'settings.varyWordingOff')}
+          className="-mx-2"
+        />
+        <Toggle
+          id="setting-reroll-repeats"
+          checked={rerollRepeats}
+          onCheckedChange={setRerollRepeats}
+          label={t('settings.rerollRepeats')}
+          description={t(rerollRepeats ? 'settings.rerollRepeatsOn' : 'settings.rerollRepeatsOff')}
+          className="-mx-2"
+        />
       </div>
 
       {!expertMode && <p className="text-xs text-slate-500">{t('settings.samplerExpertHint')}</p>}

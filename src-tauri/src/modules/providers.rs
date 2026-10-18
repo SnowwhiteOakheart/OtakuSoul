@@ -267,7 +267,27 @@ impl ProviderRegistry {
             body["repeat_penalty"] = serde_json::json!(rp);
         }
 
-        // llama.cpp & OpenRouter advanced extensions (DRY, XTC, Dynatemp)
+        // llama.cpp extensions (DRY, XTC, Dynatemp): only for servers that know them; cloud
+        // APIs may reject unknown parameters.
+        let llama_extensions = matches!(
+            provider,
+            LlmProviderType::LocalLlama | LlmProviderType::Custom
+        );
+        let sampling = if llama_extensions {
+            sampling
+        } else {
+            crate::modules::inference::SamplingParams {
+                dynatemp_range: None,
+                dynatemp_exponent: None,
+                dry_multiplier: None,
+                dry_base: None,
+                dry_allowed_length: None,
+                dry_penalty_last_n: None,
+                xtc_threshold: None,
+                xtc_probability: None,
+                ..sampling
+            }
+        };
         if let Some(d_range) = sampling.dynatemp_range {
             body["dynatemp_range"] = serde_json::json!(d_range);
         }
@@ -570,6 +590,43 @@ mod tests {
             content: content.into(),
             attachments: Vec::new(),
         }
+    }
+
+    #[test]
+    fn llama_samplers_go_only_to_servers_that_know_them() {
+        let body = |provider: LlmProviderType, url: &str| -> serde_json::Value {
+            let request = ChatRequest {
+                endpoint_url: url.into(),
+                api_key: None,
+                model: None,
+                messages: vec![msg("user", "Hi")],
+                sampling: Some(crate::modules::inference::SamplingParams {
+                    dry_multiplier: Some(0.8),
+                    xtc_threshold: Some(0.1),
+                    presence_penalty: Some(0.3),
+                    ..Default::default()
+                }),
+                reasoning_mode: None,
+                provider: Some(provider),
+            };
+            let built = ProviderRegistry::build_http_request(&reqwest::Client::new(), &request)
+                .unwrap()
+                .build()
+                .unwrap();
+            serde_json::from_slice(built.body().unwrap().as_bytes().unwrap()).unwrap()
+        };
+        let local = body(
+            LlmProviderType::LocalLlama,
+            "http://127.0.0.1:1/v1/chat/completions",
+        );
+        assert_eq!(local["dry_multiplier"], serde_json::json!(0.8f32));
+        assert!(local.get("xtc_threshold").is_some());
+        let cloud = body(
+            LlmProviderType::OpenAi,
+            "https://api.openai.com/v1/chat/completions",
+        );
+        assert!(cloud.get("dry_multiplier").is_none() && cloud.get("xtc_threshold").is_none());
+        assert_eq!(cloud["presence_penalty"], serde_json::json!(0.3f32));
     }
 
     #[test]

@@ -57,6 +57,8 @@ export async function launch(settings = {}, { hubFiles } = {}) {
       stage_last_scene: 'default_scene',
       // Tests start in the chat; the start page has its own test.
       start_tab: 'chat',
+      // The mock answers every chat with the same text: no automatic rewrite (own test: chat-repeats).
+      reroll_repeats: false,
       ...settings,
     }),
   );

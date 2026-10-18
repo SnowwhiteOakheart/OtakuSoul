@@ -79,6 +79,7 @@ export function startMockLlm() {
         stats.chat += 1;
         stats.lastChatSystemPrompt = system;
         stats.lastChatMessages = request.messages ?? [];
+        stats.lastChatRequest = request;
       }
       // Chat tools: with the tool instructions present the reply first calls the calculator,
       // then answers with the result it got back.

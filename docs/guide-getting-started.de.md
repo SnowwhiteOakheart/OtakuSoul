@@ -40,6 +40,8 @@ zeigt, wer die Figur ist und wie euer Chat beginnt; **„Jetzt chatten“** star
   „nach dem Weg fragen“), macht er daraus eine Nachricht; „Rückgängig“ holt die Stichworte zurück.
 - Mit der **Filmklappe** („Regieanweisung“) sagst Du der KI etwas außerhalb der Geschichte, z. B. „Lass es regnen“.
   Solche Anweisungen stehen in `(( ))` – Du kannst sie auch direkt tippen – und kommen nicht ins Gedächtnis.
+- Klingen die Antworten immer gleich? Unter **Einstellungen → Antwortstil → Abwechslung** schaltest Du
+  „Abwechslungsreicher schreiben“ ein. Kopiert die KI eine ihrer letzten Antworten, schreibt die App sie automatisch neu.
 - Die Figur erinnert sich an euer Gespräch. Die Anzeige **„Gesprächsgedächtnis“** unter dem Eingabefeld zeigt, wie
   voll es ist; ältere Nachrichten fasst die App bei Bedarf zusammen.
 

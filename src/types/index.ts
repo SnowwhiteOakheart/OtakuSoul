@@ -829,6 +829,7 @@ export interface AppSettings {
   expert_mode?: boolean;
   /** Closing the window keeps the app running in the tray. */
   close_to_tray?: boolean;
+  reroll_repeats?: boolean;
   tray_hint_shown?: boolean;
   /** The chat model may use tools (date/time, calculator, web search). */
   chat_tools?: boolean;

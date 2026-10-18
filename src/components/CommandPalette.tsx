@@ -99,6 +99,20 @@ export const CommandPalette = ({ open, onOpen, onClose }: CommandPaletteProps) =
       },
     })),
     ...([
+      ['setting-vary-wording', 'settings.varyWording', 'repeat wiederholung abwechslung variety dry xtc повтор разнообразие'],
+      ['setting-reroll-repeats', 'settings.rerollRepeats', 'repeat wiederholung neu schreiben reroll swipe повтор'],
+    ] as const).map(([anchor, label, keywords]) => ({
+      id: `option-${anchor}`,
+      label: t(label),
+      category: t('settings.title'),
+      icon: Sliders,
+      keywords,
+      run: () => {
+        openSettingsSection('sampler');
+        revealSetting(anchor);
+      },
+    })),
+    ...([
       ['web', 'int.tabWeb', Globe, 'web client mobile handy phone веб'],
       ['discord', 'Discord', Layers, 'discord bot rpc'],
       ['image', 'int.tabImage', Image, 'studio galerie gallery generate erzeugen галерея'],

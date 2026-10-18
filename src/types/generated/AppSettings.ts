@@ -18,6 +18,10 @@ onboarding_completed: boolean,
  */
 close_to_tray: boolean, 
 /**
+ * A reply that nearly repeats one of the last replies is written anew once (as a new swipe).
+ */
+reroll_repeats: boolean, 
+/**
  * The hint about the tray was shown on the first close.
  */
 tray_hint_shown: boolean, 

@@ -3,6 +3,24 @@ import type { LlamaServerConfig, SamplingParams } from '../types';
 /** Ternary Bonsai runs with a q4 KV cache, thinking on and its own sampler (PrismML's advice). */
 export const isBonsaiModel = (modelPath: string) => modelPath.toLowerCase().includes('bonsai');
 
+/**
+ * "Write with more variety": DRY (penalizes repeating word sequences) and XTC (sometimes skips the
+ * most obvious word) on the local server, presence/frequency penalties for cloud models. Values as
+ * recommended by the llama.cpp/SillyTavern community for roleplay.
+ */
+export const VARIETY_SAMPLING: Partial<SamplingParams> = {
+  dry_multiplier: 0.8, dry_base: 1.75, dry_allowed_length: 2, dry_penalty_last_n: -1,
+  xtc_threshold: 0.1, xtc_probability: 0.5, presence_penalty: 0.3, frequency_penalty: 0.2,
+};
+
+/** Variety is on while DRY is active (also when set by hand in expert mode). */
+export const varietyOn = (sampling: Partial<SamplingParams>) => (sampling.dry_multiplier ?? 0) > 0;
+
+/** Turning variety off clears exactly what turning it on set. */
+export const VARIETY_OFF: Partial<SamplingParams> = Object.fromEntries(
+  Object.keys(VARIETY_SAMPLING).map((key) => [key, undefined]),
+);
+
 /** Reply style defaults (as `SamplingParams::default` in `inference.rs` gives new profiles); Bonsai on
  * the local server has its own. */
 export function samplingDefaults(modelPath: string, local: boolean): Partial<SamplingParams> {

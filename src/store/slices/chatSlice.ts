@@ -27,6 +27,7 @@ import { errorMessage } from '../../utils/errors';
 import { fileToBase64 } from '../../utils/files';
 import { waitWithAbort } from '../../utils/cancellation';
 import { languageCode, localizeCard } from '../../utils/cardI18n';
+import { isRepeat } from '../../utils/repetition';
 
 type GenerationFailure = {
   chatId: string;
@@ -848,6 +849,8 @@ export const createChatSlice: SliceCreator<ChatSlice> = (set, get) => {
 
   sendMessage: async (content: string, files: File[] = [], storedMessageId?: string) => {
     let { activeChatId } = get();
+    /** The saved reply nearly repeats an earlier one: it is written anew once the send is done. */
+    let repeatedReplyId: string | null = null;
     const {
       activeCharacter,
       selectedBackend,
@@ -974,6 +977,10 @@ export const createChatSlice: SliceCreator<ChatSlice> = (set, get) => {
       );
 
       if (!isCurrentContext(chatId, activeCharacter?.id)) return;
+      if (get().rerollRepeats && !done.aborted) {
+        const earlier = updatedStored.filter((m) => m.role === 'assistant').map((m) => m.content);
+        if (isRepeat(cleanedText, earlier)) repeatedReplyId = asstStored.id;
+      }
       set({ contextUsage: done.context ?? null });
       if (stateUpdates) set({ stateVariables: applyStateUpdates(get().stateVariables, stateUpdates) });
       get().summarizeDroppedMessages(done.context, updatedStored);
@@ -1023,6 +1030,11 @@ export const createChatSlice: SliceCreator<ChatSlice> = (set, get) => {
       }
     } finally {
       await finishGeneration();
+    }
+    // Local models sometimes copy their last answer: write it anew once (the copy stays a swipe).
+    if (repeatedReplyId && get().storedMessages.at(-1)?.id === repeatedReplyId && !get().isGenerating) {
+      toast.info(translate('chat.repeatRewritten'));
+      await get().regenerateMessageSwipe(repeatedReplyId);
     }
   },
 

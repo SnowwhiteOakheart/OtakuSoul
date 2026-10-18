@@ -39,6 +39,8 @@ the character is and how your chat begins; **"Chat now"** starts the conversatio
   turns them into a message; "Undo" brings the notes back.
 - The **clapperboard** ("Direction") tells the AI something outside the story, e.g. "Let it rain". Directions are
   written in `(( ))` – you can also type them directly – and stay out of the memory.
+- Replies always sound the same? Turn on "Write with more variety" under **Settings → Reply style → Variety**. If the
+  AI copies one of its last replies, the app rewrites it automatically.
 - The character remembers your conversation. **"Conversation memory"** below the input shows how full it is; the app
   summarises older messages when needed.
 

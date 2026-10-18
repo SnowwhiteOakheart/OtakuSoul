@@ -41,6 +41,9 @@ export interface AppSlice {
   /** Closing the window hides it into the tray instead of quitting. */
   closeToTray: boolean;
   setCloseToTray: (on: boolean) => void;
+  /** A reply that nearly repeats a recent one is written anew once (new swipe). */
+  rerollRepeats: boolean;
+  setRerollRepeats: (on: boolean) => void;
   /** The chat model may use tools (date/time, calculator, web search). */
   chatTools: boolean;
   setChatTools: (on: boolean) => void;
@@ -158,6 +161,7 @@ export const createAppSlice: SliceCreator<AppSlice> = (set, get) => ({
         colorMode,
         onboardingCompleted: settings.onboarding_completed !== false,
         closeToTray: settings.close_to_tray !== false,
+        rerollRepeats: settings.reroll_repeats !== false,
         chatTools: settings.chat_tools === true,
         trayHintShown: settings.tray_hint_shown === true,
         stageLastScene: settings.stage_last_scene || '',
@@ -263,6 +267,7 @@ export const createAppSlice: SliceCreator<AppSlice> = (set, get) => ({
         color_mode: state.colorMode,
         onboarding_completed: state.onboardingCompleted,
         close_to_tray: state.closeToTray,
+        reroll_repeats: state.rerollRepeats,
         chat_tools: state.chatTools,
         tray_hint_shown: state.trayHintShown,
         stage_last_scene: state.stageLastScene,
@@ -327,6 +332,13 @@ export const createAppSlice: SliceCreator<AppSlice> = (set, get) => ({
 
   setCloseToTray: (on) => {
     set({ closeToTray: on });
+    get().saveCurrentSettings();
+  },
+
+  rerollRepeats: true,
+
+  setRerollRepeats: (on) => {
+    set({ rerollRepeats: on });
     get().saveCurrentSettings();
   },
 

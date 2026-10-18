@@ -73,6 +73,11 @@ ru „персонаж/история/сцена“. Fachbegriffe nur im Experte
   (Lorebooks, `assemble_prompt` = System-Prompt + Nachspann) → Payload (+ Author's Note in Tiefe N, Nachspann am Ende)
   → `send_chat_message`: `attachments::prepare` → `context_window::fit` (kürzt von vorn) → `stream_chat` (Events
   `llm-token`/`llm-thought`/`llm-done`) → Antwort speichern → ggf. `summarizeDroppedMessages` im Hintergrund.
+- **Wiederholungen:** Antwortstil → „Abwechslung“: `settingDefaults.ts` `VARIETY_SAMPLING` (DRY, XTC, Presence/Frequency;
+  an = `varietyOn`, d. h. DRY > 0) und `AppSettings.reroll_repeats` (`rerollRepeats`, Standard an): `chatSlice.sendMessage`
+  prüft die gespeicherte Antwort mit `utils/repetition.ts` `isRepeat` (Wort-Tripel gegen die letzten 3 Antworten) und ruft
+  danach einmal `regenerateMessageSwipe` (Kopie bleibt Swipe). DRY/XTC/Dynatemp gehen nur an `local_llama`/`custom`
+  (`providers.rs`). E2E-Harness setzt `reroll_repeats: false` (Mock antwortet immer gleich), Test `chat-repeats.mjs`.
 - **Regieanweisungen:** Text in `((…))` ist eine Anweisung an die KI außerhalb der Geschichte (`modules/ooc.rs`): Regel
   `ooc::prompt_rule` steht immer in den Formatierungsregeln, `ooc::strip` hält sie aus Chat-Zusammenfassung und
   Memory-Pipeline heraus. Composer-Umschalter (Filmklappe, `asDirection`), Anzeige `RoleplayMessage` `splitDirections`

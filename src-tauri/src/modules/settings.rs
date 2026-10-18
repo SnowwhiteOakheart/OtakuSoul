@@ -68,6 +68,9 @@ pub struct AppSettings {
     /// Closing the window keeps the app (and its loaded models) running in the tray.
     #[serde(default = "default_true")]
     pub close_to_tray: bool,
+    /// A reply that nearly repeats one of the last replies is written anew once (as a new swipe).
+    #[serde(default = "default_true")]
+    pub reroll_repeats: bool,
     /// The hint about the tray was shown on the first close.
     #[serde(default)]
     pub tray_hint_shown: bool,
@@ -158,6 +161,7 @@ impl Default for AppSettings {
             color_mode: "system".to_string(),
             onboarding_completed: false,
             close_to_tray: true,
+            reroll_repeats: true,
             tray_hint_shown: false,
             stage_last_scene: String::new(),
             start_tab: default_start_tab(),
