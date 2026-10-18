@@ -307,6 +307,7 @@ mod tests {
             swipes: Vec::new(),
             created_at: 0,
             attachments: Vec::new(),
+            speaker_id: String::new(),
         }
     }
 

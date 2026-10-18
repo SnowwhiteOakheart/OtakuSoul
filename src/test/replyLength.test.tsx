@@ -11,7 +11,7 @@ import { ChatComposer } from '../components/chat/ChatComposer';
 import { resetApiMocks } from './mockApi';
 import type { ChatSession } from '../types';
 
-const session: ChatSession = { id: 'chat-1', character_id: 'ayu', title: 'Eins', created_at: 0, updated_at: 0, author_note: '', author_note_depth: 0, message_count: 0, summary: '', summary_until: -1 };
+const session: ChatSession = { id: 'chat-1', character_id: 'ayu', title: 'Eins', created_at: 0, updated_at: 0, author_note: '', author_note_depth: 0, message_count: 0, summary: '', summary_until: -1, members: [] };
 const initial = useAppStore.getState();
 const withLength = (reply_length: string) => ({ ...session, style: { background: 'wald.png', background_dim: 40, text_size: '', bubbles: '', ambient: null, ambient_volume: 35, reply_length } });
 beforeEach(() => {

@@ -15,7 +15,11 @@ type BranchRow = (
     String,
     u64,
     String,
+    String,
 );
+
+/// Invited characters a group chat can have besides its own (5 speakers in all).
+pub const MAX_CHAT_GUESTS: usize = 4;
 
 /// A message the running summary already covers changed (edit, swipe, delete): the summary
 /// still tells the old version, so it is dropped and rebuilt from the start the next time
@@ -99,10 +103,41 @@ impl MemoryDb {
             summary: String::new(),
             summary_until: -1,
             style: None,
+            members: Vec::new(),
         })
     }
 
     /// Stores the look and sound of a chat; `None` restores the defaults.
+    /// Sets the guests of a group chat: known IDs only once, never the chat's own character,
+    /// at most [`MAX_CHAT_GUESTS`]. Returns the stored list.
+    pub fn set_chat_members(
+        &self,
+        chat_id: &str,
+        members: &[String],
+    ) -> Result<Vec<String>, rusqlite::Error> {
+        let conn = self.conn.lock();
+        let host: String = conn.query_row(
+            "SELECT character_id FROM chat_sessions WHERE id = ?1",
+            params![chat_id],
+            |row| row.get(0),
+        )?;
+        let mut clean: Vec<String> = Vec::new();
+        for id in members.iter().map(|m| m.trim()) {
+            if !id.is_empty() && id != host && !clean.iter().any(|c| c == id) {
+                clean.push(id.to_string());
+            }
+        }
+        clean.truncate(MAX_CHAT_GUESTS);
+        conn.execute(
+            "UPDATE chat_sessions SET members_json = ?1 WHERE id = ?2",
+            params![
+                serde_json::to_string(&clean).unwrap_or_else(|_| "[]".into()),
+                chat_id
+            ],
+        )?;
+        Ok(clean)
+    }
+
     pub fn update_chat_style(
         &self,
         chat_id: &str,
@@ -161,7 +196,7 @@ impl MemoryDb {
         let mut stmt = conn.prepare(
             "SELECT s.id, s.character_id, s.title, s.created_at, s.updated_at, s.author_note, s.author_note_depth,
                     (SELECT COUNT(*) FROM chat_messages m WHERE m.chat_id = s.id) AS msg_count,
-                    s.summary, s.summary_until, s.style_json
+                    s.summary, s.summary_until, s.style_json, s.members_json
              FROM chat_sessions s
              WHERE s.character_id = ?1
              ORDER BY s.updated_at DESC",
@@ -181,6 +216,7 @@ impl MemoryDb {
                 summary: row.get(8)?,
                 summary_until: row.get(9)?,
                 style: parse_style(&row.get::<_, String>(10)?),
+                members: serde_json::from_str(&row.get::<_, String>(11)?).unwrap_or_default(),
             })
         })?;
 
@@ -196,7 +232,7 @@ impl MemoryDb {
         let mut stmt = conn.prepare(
             "SELECT s.id, s.character_id, s.title, s.created_at, s.updated_at, s.author_note, s.author_note_depth,
                     (SELECT COUNT(*) FROM chat_messages m WHERE m.chat_id = s.id) AS msg_count,
-                    s.summary, s.summary_until, s.style_json
+                    s.summary, s.summary_until, s.style_json, s.members_json
              FROM chat_sessions s
              WHERE s.id = ?1",
         )?;
@@ -216,6 +252,7 @@ impl MemoryDb {
                 summary: row.get(8)?,
                 summary_until: row.get(9)?,
                 style: parse_style(&row.get::<_, String>(10)?),
+                members: serde_json::from_str(&row.get::<_, String>(11)?).unwrap_or_default(),
             }))
         } else {
             Ok(None)
@@ -314,9 +351,9 @@ impl MemoryDb {
                  VALUES (?1, ?2, ?3, ?4, ?4, ?5, ?6, ?7, ?8)",
                 params![new_id, character_id, title.trim(), now, author_note, depth, summary, summary_until],
             )?;
-            // The continued story keeps the look and sound of its chat.
+            // The continued story keeps the look and sound and the guests of its chat.
             tx.execute(
-                "UPDATE chat_sessions SET style_json = (SELECT style_json FROM chat_sessions WHERE id = ?1) WHERE id = ?2",
+                "UPDATE chat_sessions SET (style_json, members_json) = (SELECT style_json, members_json FROM chat_sessions WHERE id = ?1) WHERE id = ?2",
                 params![chat_id, new_id],
             )?;
 
@@ -328,7 +365,7 @@ impl MemoryDb {
             };
             let rows: Vec<BranchRow> = {
                 let mut stmt = tx.prepare(
-                    "SELECT id, role, content, thought, order_index, swipe_index, swipes_json, created_at, attachments_json
+                    "SELECT id, role, content, thought, order_index, swipe_index, swipes_json, created_at, attachments_json, speaker_id
                      FROM chat_messages WHERE chat_id = ?1 AND order_index <= ?2 ORDER BY order_index ASC",
                 )?;
                 stmt.query_map(params![chat_id, up_to], |row| {
@@ -342,6 +379,7 @@ impl MemoryDb {
                         row.get(6)?,
                         row.get(7)?,
                         row.get(8)?,
+                        row.get(9)?,
                     ))
                 })?
                 .collect::<Result<_, _>>()?
@@ -358,6 +396,7 @@ impl MemoryDb {
                     swipes_json,
                     created_at,
                     attachments_json,
+                    speaker_id,
                 ),
             ) in rows.into_iter().enumerate()
             {
@@ -369,8 +408,8 @@ impl MemoryDb {
                     .map(|a| crate::modules::attachments::copy_to_chat(a, &new_id))
                     .collect();
                 tx.execute(
-                    "INSERT INTO chat_messages (id, chat_id, role, content, thought, order_index, swipe_index, swipes_json, created_at, attachments_json)
-                     VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?7, ?8, ?9, ?10)",
+                    "INSERT INTO chat_messages (id, chat_id, role, content, thought, order_index, swipe_index, swipes_json, created_at, attachments_json, speaker_id)
+                     VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?7, ?8, ?9, ?10, ?11)",
                     params![
                         id,
                         new_id,
@@ -381,7 +420,8 @@ impl MemoryDb {
                         swipe_index,
                         swipes_json,
                         created_at,
-                        serde_json::to_string(&attachments).unwrap_or_else(|_| "[]".into())
+                        serde_json::to_string(&attachments).unwrap_or_else(|_| "[]".into()),
+                        speaker_id
                     ],
                 )?;
                 if bookmarked.contains(&old_id) {
@@ -441,7 +481,7 @@ impl MemoryDb {
         let conn = self.conn.lock();
         let mut stmt = conn.prepare(
             "SELECT id, chat_id, role, content, thought, order_index, swipe_index, swipes_json, created_at,
-                    attachments_json
+                    attachments_json, speaker_id
              FROM chat_messages
              WHERE chat_id = ?1
              ORDER BY order_index ASC",
@@ -472,6 +512,7 @@ impl MemoryDb {
                 swipes,
                 created_at: row.get(8)?,
                 attachments: parse_attachments(&row.get::<_, String>(9)?),
+                speaker_id: row.get(10)?,
             })
         })?;
 
@@ -490,6 +531,20 @@ impl MemoryDb {
         thought: Option<&str>,
         attachments: &[crate::modules::attachments::Attachment],
     ) -> Result<StoredChatMessage, rusqlite::Error> {
+        self.add_chat_message_by(chat_id, role, content, thought, attachments, "")
+    }
+
+    /// A new message; `speaker_id` names the character of a reply in a group chat ('' = the
+    /// chat's own character).
+    pub fn add_chat_message_by(
+        &self,
+        chat_id: &str,
+        role: &str,
+        content: &str,
+        thought: Option<&str>,
+        attachments: &[crate::modules::attachments::Attachment],
+        speaker_id: &str,
+    ) -> Result<StoredChatMessage, rusqlite::Error> {
         let conn = self.conn.lock();
         let now = current_timestamp();
         let id = format!("msg_{}_{:08x}", now, rand::random::<u32>());
@@ -507,9 +562,9 @@ impl MemoryDb {
         let swipes_json = serde_json::to_string(&swipes).unwrap_or_else(|_| "[]".to_string());
 
         conn.execute(
-            "INSERT INTO chat_messages (id, chat_id, role, content, thought, order_index, swipe_index, swipes_json, created_at, attachments_json)
-             VALUES (?1, ?2, ?3, ?4, ?5, ?6, 0, ?7, ?8, ?9)",
-            params![id, chat_id, role, content, thought, next_order, swipes_json, now, attachments_json],
+            "INSERT INTO chat_messages (id, chat_id, role, content, thought, order_index, swipe_index, swipes_json, created_at, attachments_json, speaker_id)
+             VALUES (?1, ?2, ?3, ?4, ?5, ?6, 0, ?7, ?8, ?9, ?10)",
+            params![id, chat_id, role, content, thought, next_order, swipes_json, now, attachments_json, speaker_id],
         )?;
 
         conn.execute(
@@ -528,6 +583,7 @@ impl MemoryDb {
             swipes,
             created_at: now,
             attachments: attachments.to_vec(),
+            speaker_id: speaker_id.to_string(),
         })
     }
 
@@ -599,6 +655,7 @@ impl MemoryDb {
             swipes,
             created_at,
             attachments: stored_attachments(&conn, msg_id),
+            speaker_id: stored_speaker(&conn, msg_id),
         })
     }
 
@@ -661,6 +718,7 @@ impl MemoryDb {
             swipes,
             created_at,
             attachments: stored_attachments(&conn, msg_id),
+            speaker_id: stored_speaker(&conn, msg_id),
         })
     }
 
@@ -718,6 +776,7 @@ impl MemoryDb {
             swipes,
             created_at,
             attachments: stored_attachments(&conn, msg_id),
+            speaker_id: stored_speaker(&conn, msg_id),
         })
     }
 
@@ -759,11 +818,14 @@ impl MemoryDb {
         Ok(())
     }
 
+    /// `speaker_names` maps the guests of a group chat (IDs) to their names; replies show the
+    /// speaker's name, as SillyTavern stores group chats.
     pub fn export_chat_jsonl(
         &self,
         chat_id: &str,
         char_name: &str,
         user_name: &str,
+        speaker_names: &std::collections::HashMap<String, String>,
     ) -> Result<String, rusqlite::Error> {
         let session = match self.get_chat_session(chat_id)? {
             Some(s) => s,
@@ -793,7 +855,13 @@ impl MemoryDb {
         for msg in messages {
             let is_user = msg.role == "user";
             let is_system = msg.role == "system";
-            let name = if is_user { user_name } else { char_name };
+            let name = if is_user {
+                user_name
+            } else {
+                speaker_names
+                    .get(&msg.speaker_id)
+                    .map_or(char_name, String::as_str)
+            };
 
             let swipe_texts: Vec<String> = msg.swipes.iter().map(|s| s.content.clone()).collect();
             let swipe_variants: Vec<serde_json::Value> = msg
@@ -833,7 +901,8 @@ impl MemoryDb {
                 "swipes": swipe_texts,
                 "swipe_info": swipe_info,
                 "swipe_variants": swipe_variants,
-                "swipe_id": msg.swipe_index
+                "swipe_id": msg.swipe_index,
+                "speaker_id": msg.speaker_id
             });
             lines.push(msg_obj.to_string());
         }
@@ -841,11 +910,15 @@ impl MemoryDb {
         Ok(lines.join("\n"))
     }
 
+    /// `known_speakers` maps lower-case character names to IDs: replies by another known
+    /// character than the chat's own (a SillyTavern group chat) keep their speaker, and those
+    /// characters become guests of the imported chat.
     pub fn import_chat_jsonl(
         &self,
         character_id: &str,
         jsonl_content: &str,
         title_override: Option<&str>,
+        known_speakers: &std::collections::HashMap<String, String>,
     ) -> Result<ChatSession, rusqlite::Error> {
         let raw_lines: Vec<&str> = jsonl_content
             .lines()
@@ -858,6 +931,7 @@ impl MemoryDb {
         }
 
         let mut initial_title = title_override.map(|s| s.to_string());
+        let mut host_name = String::new();
         let mut author_note = String::new();
         let mut author_note_depth: u32 = 2;
         let mut start_idx = 0;
@@ -869,6 +943,11 @@ impl MemoryDb {
                 || first_val.get("chat_metadata").is_some())
         {
             start_idx = 1;
+            host_name = first_val
+                .get("character_name")
+                .and_then(|v| v.as_str())
+                .unwrap_or_default()
+                .to_lowercase();
             if initial_title.is_none()
                 && let Some(t) = first_val
                     .pointer("/chat_metadata/title")
@@ -980,7 +1059,28 @@ impl MemoryDb {
                 } else {
                     0
                 };
-                parsed.push((role, parsed_swipes, swipe_idx, created_at));
+                // Own exports name the speaker by ID, SillyTavern by name.
+                let speaker_id = if role == "assistant" {
+                    v.get("speaker_id")
+                        .and_then(|s| s.as_str())
+                        .map(str::to_string)
+                        .filter(|id| !id.is_empty() && id != character_id)
+                        .or_else(|| {
+                            let name = v
+                                .get("name")
+                                .and_then(|s| s.as_str())?
+                                .trim()
+                                .to_lowercase();
+                            (name != host_name)
+                                .then(|| known_speakers.get(&name).cloned())
+                                .flatten()
+                                .filter(|id| id != character_id)
+                        })
+                        .unwrap_or_default()
+                } else {
+                    String::new()
+                };
+                parsed.push((role, parsed_swipes, swipe_idx, created_at, speaker_id));
             }
         }
 
@@ -995,18 +1095,33 @@ impl MemoryDb {
             } else {
                 title.trim()
             };
+            let mut members: Vec<&String> = Vec::new();
+            for (_, _, _, _, speaker) in &parsed {
+                if !speaker.is_empty() && !members.contains(&speaker) {
+                    members.push(speaker);
+                }
+            }
             tx.execute(
-                "INSERT INTO chat_sessions (id, character_id, title, created_at, updated_at, author_note, author_note_depth)
-                 VALUES (?1, ?2, ?3, ?4, ?4, ?5, ?6)",
-                params![id, character_id, title, now, author_note, author_note_depth],
+                "INSERT INTO chat_sessions (id, character_id, title, created_at, updated_at, author_note, author_note_depth, members_json)
+                 VALUES (?1, ?2, ?3, ?4, ?4, ?5, ?6, ?7)",
+                params![
+                    id,
+                    character_id,
+                    title,
+                    now,
+                    author_note,
+                    author_note_depth,
+                    serde_json::to_string(&members).unwrap_or_else(|_| "[]".into())
+                ],
             )?;
-            for (order, (role, swipes, swipe_idx, created_at)) in parsed.iter().enumerate() {
+            for (order, (role, swipes, swipe_idx, created_at, speaker)) in parsed.iter().enumerate()
+            {
                 let active = &swipes[*swipe_idx];
                 let swipes_json =
                     serde_json::to_string(swipes).unwrap_or_else(|_| "[]".to_string());
                 tx.execute(
-                    "INSERT INTO chat_messages (id, chat_id, role, content, thought, order_index, swipe_index, swipes_json, created_at, attachments_json)
-                     VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?7, ?8, ?9, '[]')",
+                    "INSERT INTO chat_messages (id, chat_id, role, content, thought, order_index, swipe_index, swipes_json, created_at, attachments_json, speaker_id)
+                     VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?7, ?8, ?9, '[]', ?10)",
                     params![
                         format!("msg_{}_{:08x}", now, rand::random::<u32>()),
                         id,
@@ -1016,7 +1131,8 @@ impl MemoryDb {
                         order as i64,
                         *swipe_idx as i64,
                         swipes_json,
-                        created_at.unwrap_or(now)
+                        created_at.unwrap_or(now),
+                        speaker
                     ],
                 )?;
             }
@@ -1066,6 +1182,15 @@ fn stored_attachments(
         |row| row.get::<_, String>(0),
     )
     .map(|json| parse_attachments(&json))
+    .unwrap_or_default()
+}
+
+fn stored_speaker(conn: &rusqlite::Connection, msg_id: &str) -> String {
+    conn.query_row(
+        "SELECT speaker_id FROM chat_messages WHERE id = ?1",
+        params![msg_id],
+        |row| row.get(0),
+    )
     .unwrap_or_default()
 }
 

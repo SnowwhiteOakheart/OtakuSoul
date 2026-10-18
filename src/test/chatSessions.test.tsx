@@ -13,7 +13,7 @@ import { readDraft } from '../utils/drafts';
 import type { CharacterProfile, ChatSession, StoredChatMessage, VoiceConfig } from '../types';
 const initial = useAppStore.getState();
 const character = { id: 'ayu', card: { data: { name: 'Ayu' } } } as CharacterProfile;
-const session: ChatSession = { id: 'chat-1', character_id: 'ayu', title: 'First', created_at: 0, updated_at: 0, author_note: '', author_note_depth: 0, message_count: 1, summary: '', summary_until: -1 };
+const session: ChatSession = { id: 'chat-1', character_id: 'ayu', title: 'First', created_at: 0, updated_at: 0, author_note: '', author_note_depth: 0, message_count: 1, summary: '', summary_until: -1, members: [] };
 const message: StoredChatMessage = { id: 'message-1', chat_id: 'chat-1', role: 'user', content: 'First chat', thought: null, order_index: 0, swipe_index: 0, swipes: [], created_at: 0, attachments: [] };
 const other = { ...message, id: 'message-2', chat_id: 'chat-2', content: 'Second chat' };
 beforeEach(() => {

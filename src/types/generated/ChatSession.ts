@@ -13,4 +13,8 @@ summary_until: number,
 /**
  * Look and sound of this chat; `None` = the app's defaults.
  */
-style?: ChatStyle, };
+style?: ChatStyle, 
+/**
+ * Invited characters of a group chat (IDs, without the chat's own character).
+ */
+members: Array<string>, };

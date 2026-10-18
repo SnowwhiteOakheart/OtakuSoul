@@ -20,7 +20,7 @@ beforeEach(() => {
     imageGenConfig: { provider: 'automatic1111' } as ImageGenConfig,
     storedMessages: [stored('a', 'assistant', 'Willkommen'), stored('u', 'user', 'Zum Tor'), stored('b', 'assistant', 'Am Tor')],
     messages: [{ role: 'assistant', content: 'Willkommen' }, { role: 'user', content: 'Zum Tor' }, { role: 'assistant', content: 'Am Tor' }],
-    chatSessions: [{ id: 'c1', character_id: 'ayu', title: '', created_at: 0, updated_at: 0, author_note: '', author_note_depth: 0, message_count: 3, summary: '', summary_until: -1 }],
+    chatSessions: [{ id: 'c1', character_id: 'ayu', title: '', created_at: 0, updated_at: 0, author_note: '', author_note_depth: 0, message_count: 3, summary: '', summary_until: -1, members: [] }],
   }, true);
   vi.mocked(api.writeImagePrompt).mockResolvedValue('1girl, gate');
   vi.mocked(api.generateImageAction).mockResolvedValue(image);

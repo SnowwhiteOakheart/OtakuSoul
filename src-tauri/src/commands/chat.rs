@@ -325,6 +325,7 @@ pub fn get_chat_messages(
 }
 
 #[tauri::command]
+/// A new message; `speaker_id` names the character of a reply in a group chat.
 pub fn add_chat_message(
     state: State<'_, AppState>,
     chat_id: String,
@@ -332,17 +333,46 @@ pub fn add_chat_message(
     content: String,
     thought: Option<String>,
     attachments: Option<Vec<crate::modules::attachments::Attachment>>,
+    speaker_id: Option<String>,
 ) -> Result<crate::modules::memory::StoredChatMessage, String> {
     state
         .memory_db
-        .add_chat_message(
+        .add_chat_message_by(
             &chat_id,
             &role,
             &content,
             thought.as_deref(),
             attachments.as_deref().unwrap_or_default(),
+            speaker_id.as_deref().unwrap_or_default(),
         )
         .map_err(|e| e.to_string())
+}
+
+/// Invites characters into a chat (group chat) or removes them; returns the stored guests.
+#[tauri::command]
+pub fn set_chat_members(
+    state: State<'_, AppState>,
+    chat_id: String,
+    members: Vec<String>,
+) -> Result<Vec<String>, String> {
+    state
+        .memory_db
+        .set_chat_members(&chat_id, &members)
+        .map_err(|e| e.to_string())
+}
+
+/// Names of all known characters (lower case, also the short form before a bracket) → ID.
+fn character_ids_by_name() -> std::collections::HashMap<String, String> {
+    let mut map = std::collections::HashMap::new();
+    for card in crate::modules::paths::scan_available_characters() {
+        let name = card.card.data.name.trim().to_lowercase();
+        if let Some((short, _)) = name.split_once(" (") {
+            map.entry(short.trim().to_string())
+                .or_insert_with(|| card.id.clone());
+        }
+        map.insert(name, card.id);
+    }
+    map
 }
 
 #[tauri::command]
@@ -413,9 +443,24 @@ pub fn export_chat_jsonl(
     user_name: String,
     target_path: Option<String>,
 ) -> Result<String, String> {
+    let members = state
+        .memory_db
+        .get_chat_session(&chat_id)
+        .map_err(|e| e.to_string())?
+        .map(|s| s.members)
+        .unwrap_or_default();
+    let speaker_names: std::collections::HashMap<String, String> = if members.is_empty() {
+        Default::default()
+    } else {
+        crate::modules::paths::scan_available_characters()
+            .into_iter()
+            .filter(|c| members.contains(&c.id))
+            .map(|c| (c.id, c.card.data.name))
+            .collect()
+    };
     let jsonl = state
         .memory_db
-        .export_chat_jsonl(&chat_id, &char_name, &user_name)
+        .export_chat_jsonl(&chat_id, &char_name, &user_name, &speaker_names)
         .map_err(|e| e.to_string())?;
     if let Some(path) = target_path.filter(|p| !p.trim().is_empty()) {
         std::fs::write(&path, format!("{jsonl}\n")).map_err(|e| e.to_string())?;
@@ -432,7 +477,12 @@ pub fn import_chat_jsonl(
 ) -> Result<crate::modules::memory::ChatSession, String> {
     state
         .memory_db
-        .import_chat_jsonl(&character_id, &jsonl_content, title_override.as_deref())
+        .import_chat_jsonl(
+            &character_id,
+            &jsonl_content,
+            title_override.as_deref(),
+            &character_ids_by_name(),
+        )
         .map_err(|e| e.to_string())
 }
 

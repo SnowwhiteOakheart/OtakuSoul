@@ -10,6 +10,7 @@ pub(super) const MIGRATIONS: &[fn(&Connection) -> rusqlite::Result<()>] = &[
     migrate_v3_chat_bookmarks,
     migrate_v4_memory_sources,
     migrate_v5_chat_style,
+    migrate_v6_group_chats,
 ];
 
 /// Brings the database to the latest schema, one transaction per step. A database written by a
@@ -240,6 +241,34 @@ pub(super) fn migrate_v5_chat_style(conn: &Connection) -> rusqlite::Result<()> {
             conn,
             "chat_sessions",
             "style_json",
+            "TEXT NOT NULL DEFAULT ''",
+        )?;
+    }
+    Ok(())
+}
+
+/// v6: group chats – invited characters per chat and the speaker of each reply.
+pub(super) fn migrate_v6_group_chats(conn: &Connection) -> rusqlite::Result<()> {
+    let has_table = |name: &str| -> rusqlite::Result<bool> {
+        conn.query_row(
+            "SELECT EXISTS(SELECT 1 FROM sqlite_master WHERE type = 'table' AND name = ?1)",
+            [name],
+            |row| row.get(0),
+        )
+    };
+    if has_table("chat_sessions")? {
+        add_column_if_missing(
+            conn,
+            "chat_sessions",
+            "members_json",
+            "TEXT NOT NULL DEFAULT '[]'",
+        )?;
+    }
+    if has_table("chat_messages")? {
+        add_column_if_missing(
+            conn,
+            "chat_messages",
+            "speaker_id",
             "TEXT NOT NULL DEFAULT ''",
         )?;
     }

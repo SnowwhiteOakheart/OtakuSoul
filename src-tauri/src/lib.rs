@@ -376,6 +376,7 @@ pub fn run() {
             commands::chat::delete_messages_after,
             commands::chat::export_chat_jsonl,
             commands::chat::import_chat_jsonl,
+            commands::chat::set_chat_members,
             commands::chat::fetch_openrouter_models,
             commands::llm::load_llm_presets,
             commands::llm::save_llm_preset,

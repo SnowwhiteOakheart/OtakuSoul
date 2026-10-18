@@ -305,7 +305,7 @@ describe('chat generation failures', () => {
   });
   it('does not replace a new chat list with an older background refresh', async () => {
     let finish!: (value: Awaited<ReturnType<typeof api.listChatSessions>>) => void;
-    const newSession = { id: 'chat-new', character_id: character.id, title: 'New', created_at: 0, updated_at: 0, author_note: '', author_note_depth: 0, message_count: 0, summary: '', summary_until: -1 };
+    const newSession = { id: 'chat-new', character_id: character.id, title: 'New', created_at: 0, updated_at: 0, author_note: '', author_note_depth: 0, message_count: 0, summary: '', summary_until: -1, members: [] };
     vi.mocked(api.listChatSessions).mockImplementationOnce(() => new Promise((resolve) => { finish = resolve; })).mockResolvedValueOnce([newSession]);
     vi.mocked(api.createChatSession).mockResolvedValueOnce(newSession);
     vi.mocked(api.getChatMessages).mockResolvedValueOnce([]);

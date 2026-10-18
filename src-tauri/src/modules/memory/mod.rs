@@ -10,6 +10,7 @@ use std::time::{SystemTime, UNIX_EPOCH};
 use tracing::{info, warn};
 
 mod chats;
+pub use chats::MAX_CHAT_GUESTS;
 mod markdown;
 mod models;
 mod schema;

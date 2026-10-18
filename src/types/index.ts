@@ -888,6 +888,8 @@ export interface StoredChatMessage {
   swipes: SwipeVariant[];
   created_at: number;
   attachments: Attachment[];
+  /** Character of a reply in a group chat; empty or missing = the chat's own character. */
+  speaker_id?: string;
 }
 
 export interface HudPreset {

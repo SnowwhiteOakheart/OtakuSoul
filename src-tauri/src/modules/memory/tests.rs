@@ -39,6 +39,8 @@ fn legacy_database_is_upgraded_without_losing_data() {
 
     assert_eq!(schema_version(&conn), MIGRATIONS.len() as i64);
     assert!(has_column(&conn, "soul_psychology", "core_identity").unwrap());
+    assert!(has_column(&conn, "chat_sessions", "members_json").unwrap());
+    assert!(has_column(&conn, "chat_messages", "speaker_id").unwrap());
     let (emotion, identity): (String, String) = conn
         .query_row(
             "SELECT primary_emotion, core_identity FROM soul_psychology WHERE character_id = 'ayu'",
@@ -346,7 +348,9 @@ fn test_chat_jsonl_export_and_import() {
     )
     .unwrap();
 
-    let jsonl = db.export_chat_jsonl(&session.id, "Ayu", "Hiroki").unwrap();
+    let jsonl = db
+        .export_chat_jsonl(&session.id, "Ayu", "Hiroki", &Default::default())
+        .unwrap();
     assert!(jsonl.contains("Reise nach Kyoto"));
     assert!(jsonl.contains("[Wetter ist sonnig]"));
     assert!(jsonl.contains("Kommst du mit zum Schrein?"));
@@ -354,7 +358,9 @@ fn test_chat_jsonl_export_and_import() {
     assert!(jsonl.contains("Na klar doch!"));
 
     // Now import into new session
-    let imported = db.import_chat_jsonl("ayu", &jsonl, None).unwrap();
+    let imported = db
+        .import_chat_jsonl("ayu", &jsonl, None, &Default::default())
+        .unwrap();
     assert_eq!(imported.title, "Reise nach Kyoto");
     assert_eq!(imported.author_note, "[Wetter ist sonnig]");
     assert_eq!(imported.message_count, 2);
@@ -385,7 +391,9 @@ fn imports_a_sillytavern_chat() {
         r#"{"name":"Ayu","is_user":false,"send_date":"October 1, 2026 12:07pm","mes":"B","swipe_id":1,"swipes":["A","B"],"swipe_info":[{"extra":{"reasoning":"erst"}},{"extra":{"reasoning":"dann"}}],"extra":{"reasoning":"dann"}}"#,
     ]
     .join("\n");
-    let chat = db.import_chat_jsonl("ayu", &jsonl, Some("Aus ST")).unwrap();
+    let chat = db
+        .import_chat_jsonl("ayu", &jsonl, Some("Aus ST"), &Default::default())
+        .unwrap();
     assert_eq!(
         (chat.author_note.as_str(), chat.author_note_depth),
         ("Es regnet.", 4)
@@ -1019,7 +1027,10 @@ fn a_failed_chat_import_leaves_no_partial_chat() {
         )
         .unwrap();
     let jsonl = "{\"mes\":\"Hallo\",\"is_user\":true}\n{\"mes\":\"BOOM\",\"is_user\":false}";
-    assert!(db.import_chat_jsonl("ayu", jsonl, Some("Kaputt")).is_err());
+    assert!(
+        db.import_chat_jsonl("ayu", jsonl, Some("Kaputt"), &Default::default())
+            .is_err()
+    );
     assert!(db.list_chat_sessions("ayu").unwrap().is_empty());
 }
 
@@ -1123,4 +1134,108 @@ fn chat_style_is_stored_reset_and_kept_by_a_branch() {
             .is_none()
     );
     assert!(db.update_chat_style("gibt-es-nicht", None).is_err());
+}
+
+#[test]
+fn group_chats_keep_guests_and_speakers() {
+    let db = MemoryDb::new_in_memory().expect("in-memory db failed");
+    let chat = db
+        .create_chat_session_with_greeting("ayu", "Gruppe", &["Hallo!"])
+        .unwrap();
+    // The chat's own character, duplicates and empty IDs are left out.
+    let members = db
+        .set_chat_members(
+            &chat.id,
+            &[
+                "sora".into(),
+                "ayu".into(),
+                "sora".into(),
+                " ".into(),
+                "shiro".into(),
+            ],
+        )
+        .unwrap();
+    assert_eq!(members, ["sora", "shiro"]);
+    assert_eq!(
+        db.get_chat_session(&chat.id).unwrap().unwrap().members,
+        members
+    );
+    assert_eq!(db.list_chat_sessions("ayu").unwrap()[0].members, members);
+    let many: Vec<String> = (0..9).map(|i| format!("gast{i}")).collect();
+    assert_eq!(
+        db.set_chat_members(&chat.id, &many).unwrap().len(),
+        MAX_CHAT_GUESTS
+    );
+    db.set_chat_members(&chat.id, &["sora".into()]).unwrap();
+
+    db.add_chat_message(&chat.id, "user", "Sora, was meinst du?", None, &[])
+        .unwrap();
+    let reply = db
+        .add_chat_message_by(&chat.id, "assistant", "Ich bin dabei.", None, &[], "sora")
+        .unwrap();
+    assert_eq!(reply.speaker_id, "sora");
+    // A new variant or a switch keeps the speaker.
+    assert_eq!(
+        db.add_message_swipe(&reply.id, "Klar!", None)
+            .unwrap()
+            .speaker_id,
+        "sora"
+    );
+    assert_eq!(
+        db.switch_message_swipe(&reply.id, 0).unwrap().speaker_id,
+        "sora"
+    );
+    assert_eq!(
+        db.update_chat_message(&reply.id, "Bin dabei.", None)
+            .unwrap()
+            .speaker_id,
+        "sora"
+    );
+    let messages = db.get_chat_messages(&chat.id).unwrap();
+    assert_eq!(
+        (
+            messages[0].speaker_id.as_str(),
+            messages[2].speaker_id.as_str()
+        ),
+        ("", "sora")
+    );
+
+    // A branch keeps guests and speakers.
+    let branch = db.branch_chat(&chat.id, &reply.id, "Zweig").unwrap();
+    assert_eq!(branch.members, ["sora"]);
+    assert_eq!(
+        db.get_chat_messages(&branch.id).unwrap()[2].speaker_id,
+        "sora"
+    );
+
+    // Export names the speaker; the import finds guests by ID or by name (SillyTavern).
+    let names = std::collections::HashMap::from([("sora".to_string(), "Sora".to_string())]);
+    let jsonl = db
+        .export_chat_jsonl(&chat.id, "Ayu", "Kai", &names)
+        .unwrap();
+    assert!(jsonl.contains("\"name\":\"Sora\""));
+    let back = db
+        .import_chat_jsonl("ayu", &jsonl, None, &Default::default())
+        .unwrap();
+    assert_eq!(back.members, ["sora"]);
+    let st = [
+        r#"{"user_name":"Kai","character_name":"Ayu","chat_metadata":{}}"#,
+        r#"{"name":"Ayu","is_user":false,"mes":"Hallo!"}"#,
+        r#"{"name":"Sora","is_user":false,"mes":"Hi!"}"#,
+        r#"{"name":"Fremd","is_user":false,"mes":"Wer bin ich?"}"#,
+    ]
+    .join("\n");
+    let known = std::collections::HashMap::from([
+        ("sora".to_string(), "sora".to_string()),
+        ("ayu".to_string(), "ayu".to_string()),
+    ]);
+    let imported = db.import_chat_jsonl("ayu", &st, None, &known).unwrap();
+    assert_eq!(imported.members, ["sora"]);
+    let speakers: Vec<String> = db
+        .get_chat_messages(&imported.id)
+        .unwrap()
+        .into_iter()
+        .map(|m| m.speaker_id)
+        .collect();
+    assert_eq!(speakers, ["", "sora", ""]);
 }

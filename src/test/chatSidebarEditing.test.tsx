@@ -11,7 +11,7 @@ import { resetApiMocks } from './mockApi';
 import type { ChatSession } from '../types';
 
 const initial = useAppStore.getState();
-const session: ChatSession = { id: 'chat-1', character_id: 'ayu', title: 'First chat', author_note: 'Original note', author_note_depth: 0, summary: 'Original summary', summary_until: 5, message_count: 6, created_at: 0, updated_at: 0 };
+const session: ChatSession = { id: 'chat-1', character_id: 'ayu', title: 'First chat', author_note: 'Original note', author_note_depth: 0, summary: 'Original summary', summary_until: 5, message_count: 6, created_at: 0, updated_at: 0, members: [] };
 const other: ChatSession = { ...session, id: 'chat-2', title: 'Second chat', author_note: 'Other note', summary: 'Other summary' };
 beforeEach(() => {
   resetApiMocks();

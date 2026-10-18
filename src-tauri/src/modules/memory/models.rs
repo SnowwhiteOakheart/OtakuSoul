@@ -160,6 +160,9 @@ pub struct ChatSession {
     #[serde(default)]
     #[ts(optional)]
     pub style: Option<ChatStyle>,
+    /// Invited characters of a group chat (IDs, without the chat's own character).
+    #[serde(default)]
+    pub members: Vec<String>,
 }
 
 /// Per-chat look and sound. Pictures and sounds come from the Stage library
@@ -206,4 +209,7 @@ pub struct StoredChatMessage {
     /// Files the user attached (images, text, PDF).
     #[serde(default)]
     pub attachments: Vec<crate::modules::attachments::Attachment>,
+    /// Character that wrote an assistant message in a group chat; empty = the chat's character.
+    #[serde(default)]
+    pub speaker_id: String,
 }

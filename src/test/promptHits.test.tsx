@@ -31,7 +31,7 @@ describe('prompt hits', () => {
       allLorebooks: [{ name: 'Kyoto', description: '', entries: [tor, regel], is_global: true }],
       cognitiveOverview: { recent_memories: [{ id: 7, category: 'promise', content: 'Morgen zum Schrein' }] } as unknown as CognitiveOverview,
       activeChatId: 'c',
-      chatSessions: [{ id: 'c', character_id: 'ayu', title: '', created_at: 0, updated_at: 0, author_note: '', author_note_depth: 0, message_count: 0, summary: 'Bisher …', summary_until: 3 }],
+      chatSessions: [{ id: 'c', character_id: 'ayu', title: '', created_at: 0, updated_at: 0, author_note: '', author_note_depth: 0, message_count: 0, summary: 'Bisher …', summary_until: 3, members: [] }],
     };
     const prompt = await resolvePromptWithLore(state, [], 'hi');
     expect(prompt.system).toBe('S');

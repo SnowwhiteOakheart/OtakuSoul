@@ -978,12 +978,14 @@ export const api = {
     return await invoke<StoredChatMessage[]>('get_chat_messages', { chatId });
   },
 
+  /** `speakerId`: the character of a reply in a group chat (empty = the chat's own). */
   addChatMessage: async (
     chatId: string,
     role: string,
     content: string,
     thought?: string | null,
     attachments?: Attachment[],
+    speakerId?: string | null,
   ): Promise<StoredChatMessage> => {
     return await invoke<StoredChatMessage>('add_chat_message', {
       chatId,
@@ -991,7 +993,13 @@ export const api = {
       content,
       thought: thought ?? null,
       attachments: attachments ?? null,
+      speakerId: speakerId || null,
     });
+  },
+
+  /** Invites characters into a chat (group chat); returns the stored guest IDs. */
+  setChatMembers: async (chatId: string, members: string[]): Promise<string[]> => {
+    return await invoke<string[]>('set_chat_members', { chatId, members });
   },
 
   /** Stores a file for the next message; `data` is base64. */

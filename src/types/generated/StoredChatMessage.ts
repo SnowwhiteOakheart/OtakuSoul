@@ -6,4 +6,8 @@ export type StoredChatMessage = { id: string, chat_id: string, role: string, con
 /**
  * Files the user attached (images, text, PDF).
  */
-attachments: Array<Attachment>, };
+attachments: Array<Attachment>, 
+/**
+ * Character that wrote an assistant message in a group chat; empty = the chat's character.
+ */
+speaker_id: string, };
