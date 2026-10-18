@@ -1,7 +1,7 @@
 // Measures how the chat view copes with a long chat: import 1000 messages, open the chat,
 // then time keystrokes in the input (every keystroke re-renders the chat view).
 import path from 'node:path';
-import { launch, screenshotDir } from './harness.mjs';
+import { launch, saveSettingsAndReload, screenshotDir } from './harness.mjs';
 
 const COUNT = Number(process.env.E2E_MESSAGES ?? 1000);
 const { browser, close } = await launch({ cloud_context_tokens: 4096 });
@@ -22,9 +22,8 @@ try {
     emilia.id, lines.join('\n'),
   );
 
-  // Reopen the character's chats so the import shows up, then open it.
-  await browser.$('button[title^="Gespräche, Author"]').click();
-  await browser.execute(() => window.location.reload());
+  // The harness opens another character first: switch to Emilia and reload so the import shows up.
+  await saveSettingsAndReload(browser, { active_character_id: emilia.id });
   await browser.$('textarea[aria-label="Nachricht"]').waitForDisplayed({ timeout: 30_000 });
   await browser.$('button[title^="Gespräche, Author"]').click();
   const started = Date.now();
