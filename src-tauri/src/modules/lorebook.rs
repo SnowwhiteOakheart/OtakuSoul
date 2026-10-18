@@ -759,6 +759,10 @@ pub fn list_all_lorebooks(user_lorebooks_dir: &Path, presets_dir: &Path) -> Vec<
     }
 
     books.sort_by(|a, b| a.name.cmp(&b.name));
+    // Adult lorebooks stay hidden (not deleted) while adult content is off.
+    if !crate::modules::nsfw::allowed() {
+        books.retain(|book| !crate::modules::nsfw::is_marked(&book.extensions));
+    }
     books
 }
 

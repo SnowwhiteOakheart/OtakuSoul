@@ -199,7 +199,8 @@ const ChatMessageItem = React.memo<ChatMessageItemProps>(
     // A guest's reply in a group chat shows the guest's name.
     const guest = useAppStore((s) => (msg.speaker_id ? s.availableCharacters.find((c) => c.id === msg.speaker_id) : undefined));
     const replyLanguage = useAppStore((s) => s.replyLanguage);
-    const speakerName = guest ? presentedAs(guest, replyLanguage).name : characterName;
+    // A guest who is hidden (adult content off) or gone is not named as somebody else.
+    const speakerName = guest ? presentedAs(guest, replyLanguage).name : msg.speaker_id ? t('group.hiddenSpeaker') : characterName;
     // In a group chat every reply shows a small portrait of who wrote it.
     const portrait = useAppStore((s) => {
       if (msg.role !== 'assistant' || !(s.chatSessions.find((c) => c.id === msg.chat_id)?.members?.length)) return undefined;

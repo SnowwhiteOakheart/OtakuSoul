@@ -27,7 +27,14 @@ pub fn roll_stage_dice(
 
 #[tauri::command]
 pub fn get_stage_state(state: State<'_, AppState>) -> crate::modules::stage::SceneState {
-    state.stage_engine.get_state()
+    let scene = state.stage_engine.get_state();
+    // An open adult story closes once adult content is off: the engine falls back to its start state.
+    if crate::modules::nsfw::ensure_visible(&scene.definition.extensions).is_err() {
+        let fresh = crate::modules::stage::StageEngine::new().get_state();
+        state.stage_engine.set_state(fresh.clone());
+        return fresh;
+    }
+    scene
 }
 
 #[tauri::command]

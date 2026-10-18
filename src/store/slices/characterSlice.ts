@@ -1,5 +1,6 @@
 import { api } from '../../services/api';
 import { soundFx } from '../../services/soundFx';
+import { isAdultMarked } from '../../utils/adultContent';
 import type {
   CharacterProfile,
   StateVariable,
@@ -127,8 +128,11 @@ export const createCharacterSlice: SliceCreator<CharacterSlice> = (set, get) => 
       const firstChar = chars[0];
       if (firstChar) {
         set({ availableCharacters: chars });
-        if (!get().activeCharacter && knewSettings && get().settingsLoaded) {
-          await get().selectCharacter(chars.find((c) => c.id === preferredId) ?? firstChar);
+        // An open adult character that is now hidden (adult content turned off) closes.
+        const active = get().activeCharacter;
+        const hiddenActive = !!active && isAdultMarked(active.card.data.extensions) && !chars.some((c) => c.id === active.id);
+        if ((!active || hiddenActive) && knewSettings && get().settingsLoaded) {
+          await get().selectCharacter(chars.find((c) => c.id === preferredId && !hiddenActive) ?? firstChar);
         }
       }
     } catch (e) {

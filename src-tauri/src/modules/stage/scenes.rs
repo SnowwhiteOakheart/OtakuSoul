@@ -489,10 +489,13 @@ pub fn load_scene_by_id(scene_id: &str) -> Result<SceneState, String> {
         let content = fs::read_to_string(&path)
             .map_err(|e| crate::err!("backend.stage.sceneRead", error = e))?;
         if let Ok(mut state) = serde_json::from_str::<SceneState>(&content) {
+            // A hidden adult story does not open (e.g. the remembered last scene).
+            crate::modules::nsfw::ensure_visible(&state.definition.extensions)?;
             ensure_party_vitals(&mut state);
             return Ok(state);
         }
         if let Ok(def) = serde_json::from_str::<SceneDefinition>(&content) {
+            crate::modules::nsfw::ensure_visible(&def.extensions)?;
             let state = build_initial_scene_state(&def);
             let _ = save_scene_state(&state);
             return Ok(state);
@@ -675,6 +678,8 @@ pub fn import_stage_scene_json(
 ) -> Result<SceneState, String> {
     let clean_folder = target_folder.unwrap_or("Eigene Szenen");
     if let Ok(mut state) = serde_json::from_str::<SceneState>(json_content) {
+        // An adult story would be stored and then hidden: refuse it while adult content is off.
+        crate::modules::nsfw::ensure_visible(&state.definition.extensions)?;
         if state.definition.id.trim().is_empty() {
             state.definition.id = format!("scene_{}", Utc::now().timestamp_millis());
         }
@@ -684,6 +689,7 @@ pub fn import_stage_scene_json(
     }
 
     if let Ok(mut def) = serde_json::from_str::<SceneDefinition>(json_content) {
+        crate::modules::nsfw::ensure_visible(&def.extensions)?;
         if def.id.trim().is_empty() {
             def.id = format!("scene_{}", Utc::now().timestamp_millis());
         }

@@ -574,6 +574,11 @@ ru „персонаж/история/сцена“. Fachbegriffe nur im Experte
   Chub-NSFW-Filter. Importe aus der 18+-Quelle bekommen `extensions.otakusoul_nsfw` (`modules/nsfw.rs`); markierte Karten,
   Lorebooks und Geschichten blenden `scan_available_characters`, `list_all_lorebooks` und `scan_available_scenes` aus,
   solange die Freigabe fehlt (nichts wird gelöscht). Umschalten lädt Hub-Listen und Bibliotheken neu. E2E `hub-nsfw.mjs`.
+  Einzelabrufe und Importe prüfen `nsfw::ensure_visible` (`backend.nsfw.disabled`): `load_character_card`, `load_lorebook`,
+  `import_lorebook_file`, `store_imported_card` (alle Karten-Importe), `load_scene_by_id`, `import_stage_scene_json`;
+  `get_stage_state` setzt eine offene markierte Geschichte auf den Startzustand zurück. Das Frontend schließt offene markierte
+  Figuren/Lorebooks/Geschichten, die nach dem Neuladen fehlen (`utils/adultContent.ts`, vergisst `stage_last_scene`);
+  Gruppen-Antworten ausgeblendeter Gäste heißen „Ausgeblendeter Charakter“. E2E `adult-content-hiding.mjs`.
   Emotionsbilder: neben den sechs Stimmungen die Plätze `blush`, `teasing`, `fear`, `disgust`, `crying` und (Romance)
   `seductive`, `aroused`, `ecstasy`, `afterglow` (`emotions::EXTRA_PORTRAITS`, `EmotionResult.portrait`; Bildwahl
   `selectCharacterPortrait`: Zusatzplatz → Emotion → Stimmung → neutral) – für alle Karten nutzbar.

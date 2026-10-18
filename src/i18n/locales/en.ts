@@ -3419,6 +3419,8 @@ export const en: TranslationDictionary = {
   "group.search": "Search character",
   "group.noCandidates": "No more characters found.",
   "group.presentLabel": "Also in this chat: {{names}}",
+  "backend.nsfw.disabled": "This is adult content. It is hidden while “Adult content (18+)” is off in the settings.",
+  "group.hiddenSpeaker": "Hidden character",
   "nsfw.title": "Adult content (18+)",
   "nsfw.intro": "Romance and erotic content is turned off. When on, the hub also shows the adult source and installed 18+ content becomes visible.",
   "nsfw.toggle": "Show 18+ content",

@@ -1,4 +1,5 @@
 import { api } from '../../services/api';
+import { isAdultMarked } from '../../utils/adultContent';
 import { soundFx } from '../../services/soundFx';
 import { audioPlayer } from '../../services/audioPlayer';
 import { speakStageMessages, stopStageVoice } from '../../services/stageVoice';
@@ -377,6 +378,15 @@ export const createStageSlice: SliceCreator<StageSlice> = (set, get) => ({
     try {
       const scenes = await api.listStageScenes();
       set({ stageScenes: scenes });
+      // An open adult story that is now hidden (adult content turned off) closes; Stage shows the gallery.
+      const open = get().stageState;
+      if (open && isAdultMarked(open.definition.extensions) && !scenes.some((s) => s.id === open.definition.id)) {
+        set({ stageState: null });
+        if (get().stageLastScene === open.definition.id) {
+          set({ stageLastScene: '' });
+          void get().saveCurrentSettings();
+        }
+      }
     } catch (e) {
       console.error('Failed to fetch stage scenes:', e);
     }

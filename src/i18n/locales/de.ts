@@ -3421,6 +3421,8 @@ export const de = {
   "group.search": "Charakter suchen",
   "group.noCandidates": "Keine weiteren Charaktere gefunden.",
   "group.presentLabel": "Ebenfalls im Chat: {{names}}",
+  "backend.nsfw.disabled": "Das ist ein Inhalt für Erwachsene. Er ist ausgeblendet, solange „Inhalte für Erwachsene (18+)“ in den Einstellungen aus ist.",
+  "group.hiddenSpeaker": "Ausgeblendeter Charakter",
   "nsfw.title": "Inhalte für Erwachsene (18+)",
   "nsfw.intro": "Romance- und Erotik-Inhalte sind ausgeschaltet. Eingeschaltet zeigt der Hub zusätzlich die Quelle für Erwachsene, und installierte 18+-Inhalte werden sichtbar.",
   "nsfw.toggle": "18+-Inhalte anzeigen",

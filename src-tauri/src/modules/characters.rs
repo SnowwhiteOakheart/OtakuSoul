@@ -719,6 +719,8 @@ pub fn store_imported_card(
     avatar_data_url: Option<String>,
     overwrite: bool,
 ) -> Result<crate::modules::hub::CharacterImportResult, String> {
+    // An adult card would be stored and then hidden: refuse it while adult content is off.
+    crate::modules::nsfw::ensure_visible(&card.data.extensions)?;
     let existing = find_character_by_name(&card.data.name);
     if existing.is_some() && !overwrite {
         return Err(crate::err!(

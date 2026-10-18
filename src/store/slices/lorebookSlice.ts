@@ -1,4 +1,5 @@
 import { api } from '../../services/api';
+import { isAdultMarked } from '../../utils/adultContent';
 import type {
   CharacterProfile,
   Lorebook,
@@ -68,7 +69,11 @@ export const createLorebookSlice: SliceCreator<LorebookSlice> = (set, get) => ({
     try {
       const books = await api.listAllLorebooks();
       set({ allLorebooks: books });
-      if (!get().activeLorebook && books.length > 0) {
+      // An open adult lorebook that is now hidden (adult content turned off) closes.
+      const active = get().activeLorebook;
+      if (active && isAdultMarked(active.extensions) && !books.some((b) => b.id === active.id)) {
+        set({ activeLorebook: books[0] ?? null });
+      } else if (!active && books.length > 0) {
         set({ activeLorebook: books[0] });
       }
     } catch (e) {

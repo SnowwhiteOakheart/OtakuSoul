@@ -62,7 +62,10 @@ pub async fn get_llama_server_status(state: State<'_, AppState>) -> Result<Serve
 pub fn load_character_card(
     file_path: String,
 ) -> Result<crate::modules::characters::CharacterProfile, String> {
-    crate::modules::characters::load_character_from_file(std::path::Path::new(&file_path))
+    let profile =
+        crate::modules::characters::load_character_from_file(std::path::Path::new(&file_path))?;
+    crate::modules::nsfw::ensure_visible(&profile.card.data.extensions)?;
+    Ok(profile)
 }
 
 #[tauri::command]
