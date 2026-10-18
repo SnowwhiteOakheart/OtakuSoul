@@ -129,52 +129,60 @@ pub fn map_go_emotion_to_live2d(emotion: &str) -> String {
     format!("{}_animation", emotion)
 }
 
-/// Classifies the emotional tone of text using tags, roleplay asterisks, and a rich bilingual lexicon.
 /// Roleplay actions written as `*…*`.
 static ASTERISK_ACTION_RE: LazyLock<regex::Regex> =
     LazyLock::new(|| regex::Regex::new(r"\*([^*]+)\*").expect("static regex is valid"));
 
+/// The six moods every portrait set, VRM and Live2D know; the chat prompt offers them as tags.
+pub const MOODS: [&str; 6] = ["neutral", "happy", "sad", "angry", "surprised", "relaxed"];
+
+/// The GoEmotion a mood tag stands for.
+fn emotion_of_mood(mood: &str) -> &'static str {
+    match mood {
+        "happy" => "joy",
+        "sad" => "sadness",
+        "angry" => "anger",
+        "surprised" => "surprise",
+        _ => "neutral",
+    }
+}
+
+/// The expression tag the model ends a chat reply with (`[emotion: blush]`, asked for by
+/// `prompt_builder`); also `<emotion>…</emotion>`.
+static EMOTION_TAG_RE: LazyLock<regex::Regex> = LazyLock::new(|| {
+    regex::Regex::new(r"\[emotion:\s*([a-z_]+)\s*\]|<emotion>\s*([a-z_]+)\s*</emotion>")
+        .expect("static regex is valid")
+});
+
+/// Classifies the emotional tone of a reply: its expression tag first (language independent),
+/// otherwise the cue words of all languages (`presets/cues/*.json`), roleplay actions weighted
+/// higher.
 pub fn classify_emotion(text: &str) -> EmotionResult {
-    let lower = text.to_lowercase();
-
-    // 1. Check for explicit emotion directives or tags (e.g. [emotion: joy], <emotion:happy>,
-    // also the extra portraits: [emotion: blush])
-    if let Some(explicit) = extract_explicit_emotion(&lower) {
-        let (emotion, portrait) = if EXTRA_PORTRAITS.contains(&explicit.as_str()) {
-            (emotion_of_portrait(&explicit).to_string(), explicit)
-        } else {
-            let portrait = portrait_of_emotion(&explicit).to_string();
-            (explicit, portrait)
-        };
-        return EmotionResult {
-            vrm_expression: map_go_emotion_to_vrm(&emotion).to_string(),
-            live2d_expression: map_go_emotion_to_live2d(&emotion),
-            emotion,
-            confidence: 0.95,
-            intensity: 0.8,
-            portrait,
-        };
+    let lower = normalize(text);
+    if let Some(tagged) = tagged_emotion(&lower) {
+        return tagged;
     }
-    let portrait_cue = strongest_portrait_cue(&lower);
+    let cues = cues();
+    let portrait_cue = cues.strongest_portrait(&lower);
 
-    // 2. Scan for roleplay actions inside asterisks, e.g. *lächelt sanft*, *weint leise*, *blushes*
-    let mut scores = std::collections::HashMap::new();
-    for cap in ASTERISK_ACTION_RE.captures_iter(&lower) {
-        let action = &cap[1];
-        score_action_segment(action, &mut scores);
-    }
-
-    // 3. Scan the full dialogue text for keyword cues and emoticons
-    score_text_tokens(&lower, &mut scores);
-
-    // 4. Find the highest scored emotion
+    // Roleplay actions (*lächelt sanft*) count three times, the whole text once per emotion.
+    let actions: Vec<&str> = ASTERISK_ACTION_RE
+        .captures_iter(&lower)
+        .filter_map(|cap| cap.get(1).map(|m| m.as_str()))
+        .collect();
     let mut best_emotion = "neutral";
     let mut highest_score = 0.0f32;
-
-    for (em, score) in &scores {
-        if *score > highest_score {
-            highest_score = *score;
-            best_emotion = em;
+    for (emotion, list) in &cues.emotions {
+        let in_actions = actions.iter().filter(|a| list.any(a)).count() as f32;
+        let in_text = if list.any(&lower) {
+            text_weight(emotion)
+        } else {
+            0.0
+        };
+        let score = in_actions * 3.0 + in_text;
+        if score > highest_score {
+            highest_score = score;
+            best_emotion = emotion;
         }
     }
 
@@ -211,425 +219,203 @@ pub fn classify_emotion(text: &str) -> EmotionResult {
     }
 }
 
-/// Cues for the extra portraits, in roleplay actions (`*…*`, weighted higher) and in the text.
-const PORTRAIT_CUES: [(&str, &[&str]); 9] = [
-    (
-        "blush",
-        &[
-            "erröt",
-            "wird rot",
-            "rot wird",
-            "blush",
-            "verlegen",
-            "красне",
-            "покрасне",
-            "смущ",
-        ],
-    ),
-    (
-        "teasing",
-        &[
-            "neckt",
-            "neckisch",
-            "necken",
-            "zwinker",
-            "tease",
-            "teasing",
-            "winks",
-            "winking",
-            "winked",
-            "smirk",
-            "frech",
-            "дразн",
-            "подмигива",
-            "ухмыл",
-        ],
-    ),
-    (
-        "fear",
-        &[
-            "zitter",
-            "fürchte",
-            "angst",
-            "panik",
-            "tremble",
-            "afraid",
-            "scared",
-            "terrified",
-            "дрож",
-            "боюсь",
-            "страшно",
-            "испуг",
-            "паник",
-        ],
-    ),
-    (
-        "disgust",
-        &[
-            "ekel",
-            "angewidert",
-            "rümpft",
-            "disgust",
-            "grimace",
-            "eww",
-            "igitt",
-            "отвращ",
-            "морщит нос",
-            "брезглив",
-        ],
-    ),
-    (
-        "crying",
-        &[
-            "weint",
-            "weinen",
-            "tränen",
-            "schluchz",
-            "cries",
-            "crying",
-            "sobs",
-            "sobbing",
-            "tears",
-            "плачет",
-            "плакать",
-            "слёз",
-            "слез",
-            "всхлип",
-            "рыда",
-        ],
-    ),
-    (
-        "seductive",
-        &[
-            "verführerisch",
-            "lasziv",
-            "lockend",
-            "beißt sich auf die lippe",
-            "seductive",
-            "sultry",
-            "bites her lip",
-            "bites his lip",
-            "соблазнительн",
-            "томно",
-            "прикусывает губу",
-            "кусает губу",
-        ],
-    ),
-    (
-        "aroused",
-        &[
-            "erregt",
-            "atem stockt",
-            "atmet schwer",
-            "keucht",
-            "aroused",
-            "panting",
-            "breathes heavily",
-            "flushed with desire",
-            "возбужд",
-            "тяжело дышит",
-            "прерывисто дышит",
-        ],
-    ),
-    (
-        "ecstasy",
-        &[
-            "höhepunkt",
-            "ekstase",
-            "ekstatisch",
-            "climax",
-            "ecstasy",
-            "ecstatic",
-            "экстаз",
-            "оргазм",
-        ],
-    ),
-    (
-        "afterglow",
-        &[
-            "erschöpft und zufrieden",
-            "glücklich erschöpft",
-            "nachglühen",
-            "afterglow",
-            "contentedly exhausted",
-            "basks in the afterglow",
-            "блаженно устал",
-            "приятная усталость",
-        ],
-    ),
-];
-
-/// The extra portrait the text points to most clearly, if any.
-fn strongest_portrait_cue(lower: &str) -> Option<&'static str> {
-    let actions: Vec<String> = ASTERISK_ACTION_RE
+/// The result an expression tag names: a portrait slot, a mood or a GoEmotion; unknown names are
+/// ignored (the cue words decide).
+fn tagged_emotion(lower: &str) -> Option<EmotionResult> {
+    let tag = EMOTION_TAG_RE
         .captures_iter(lower)
-        .map(|cap| cap[1].to_string())
-        .collect();
-    let mut best: Option<(&'static str, f32)> = None;
-    for (portrait, cues) in PORTRAIT_CUES {
-        let in_actions = cues
-            .iter()
-            .filter(|cue| actions.iter().any(|a| a.contains(*cue)))
-            .count() as f32;
-        let in_text = cues.iter().filter(|cue| lower.contains(*cue)).count() as f32;
-        let score = in_actions * 3.0 + in_text;
-        if score >= 1.0 && best.is_none_or(|(_, top)| score > top) {
-            best = Some((portrait, score));
+        .filter_map(|cap| cap.get(1).or_else(|| cap.get(2)))
+        .map(|m| m.as_str())
+        .last()?;
+    let (emotion, vrm, portrait) = if EXTRA_PORTRAITS.contains(&tag) {
+        let emotion = emotion_of_portrait(tag);
+        (emotion, map_go_emotion_to_vrm(emotion), tag)
+    } else if MOODS.contains(&tag) {
+        let emotion = emotion_of_mood(tag);
+        // "relaxed" has no GoEmotion of its own: the portrait slot carries it.
+        let portrait = if tag == "relaxed" { "relaxed" } else { "" };
+        let vrm = if tag == "neutral" {
+            map_go_emotion_to_vrm(emotion)
+        } else {
+            tag
+        };
+        (emotion, vrm, portrait)
+    } else {
+        let emotion = *GO_EMOTIONS.iter().find(|e| **e == tag)?;
+        (
+            emotion,
+            map_go_emotion_to_vrm(emotion),
+            portrait_of_emotion(emotion),
+        )
+    };
+    Some(EmotionResult {
+        emotion: emotion.to_string(),
+        vrm_expression: vrm.to_string(),
+        live2d_expression: map_go_emotion_to_live2d(emotion),
+        confidence: 0.95,
+        intensity: 0.8,
+        portrait: portrait.to_string(),
+    })
+}
+
+/// How much one emotion's cue words in the whole text count (actions count 3).
+fn text_weight(emotion: &str) -> f32 {
+    match emotion {
+        "love" => 2.5,
+        "amusement" | "gratitude" | "anger" | "surprise" => 2.0,
+        "sadness" | "embarrassment" => 1.8,
+        "curiosity" => 1.2,
+        _ => 1.5,
+    }
+}
+
+/// One cue word: whole words (`neckt` does not match `necken`), a trailing `*` for any ending
+/// (`schluchz*`), a space for any whitespace. Word edges count for all scripts. Plain string search
+/// (no regex to compile, so the first reply is not held up).
+struct Cue {
+    body: String,
+    stem: bool,
+}
+
+impl Cue {
+    fn parse(cue: &str) -> Option<Self> {
+        let cue = normalize(cue);
+        let (body, stem) = match cue.strip_suffix('*') {
+            Some(body) => (body.trim_end().to_string(), true),
+            None => (cue, false),
+        };
+        (!body.is_empty()).then_some(Self { body, stem })
+    }
+
+    /// Whether the cue occurs in `text` (lowercase, spaces collapsed: [`normalize`]).
+    fn matches(&self, text: &str) -> bool {
+        let check_start = self.body.starts_with(char::is_alphabetic);
+        let check_end = !self.stem && self.body.ends_with(char::is_alphabetic);
+        text.match_indices(self.body.as_str()).any(|(at, _)| {
+            let before = text[..at].chars().next_back();
+            let after = text[at + self.body.len()..].chars().next();
+            !(check_start && before.is_some_and(char::is_alphabetic))
+                && !(check_end && after.is_some_and(char::is_alphabetic))
+        })
+    }
+}
+
+/// Lowercase with every run of whitespace as one space (how cues and texts are compared).
+fn normalize(text: &str) -> String {
+    text.to_lowercase()
+        .split_whitespace()
+        .collect::<Vec<_>>()
+        .join(" ")
+}
+
+/// Cue words of one emotion or portrait slot from all language files.
+struct CueList(Vec<Cue>);
+
+impl CueList {
+    fn any(&self, text: &str) -> bool {
+        self.0.iter().any(|cue| cue.matches(text))
+    }
+
+    /// How many different cues of the list occur.
+    fn count(&self, text: &str) -> usize {
+        self.0.iter().filter(|cue| cue.matches(text)).count()
+    }
+}
+
+/// One language file in `presets/cues/` (gestures are read by the frontend).
+#[derive(Deserialize, Default)]
+struct CueFile {
+    #[serde(default)]
+    emotions: std::collections::BTreeMap<String, Vec<String>>,
+    #[serde(default)]
+    portraits: std::collections::BTreeMap<String, Vec<String>>,
+}
+
+/// The cue words of all languages, in the order of [`GO_EMOTIONS`] and [`EXTRA_PORTRAITS`]
+/// (ties go to the earlier one).
+#[derive(Default)]
+struct Cues {
+    emotions: Vec<(&'static str, CueList)>,
+    portraits: Vec<(&'static str, CueList)>,
+}
+
+impl Cues {
+    fn from_files(files: &[CueFile]) -> Self {
+        let collect = |keys: &[&'static str],
+                       pick: &dyn Fn(
+            &CueFile,
+        )
+            -> &std::collections::BTreeMap<String, Vec<String>>| {
+            keys.iter()
+                .filter_map(|key| {
+                    let cues: Vec<Cue> = files
+                        .iter()
+                        .filter_map(|file| pick(file).get(*key))
+                        .flatten()
+                        .filter_map(|cue| Cue::parse(cue))
+                        .collect();
+                    (!cues.is_empty()).then_some((*key, CueList(cues)))
+                })
+                .collect()
+        };
+        Self {
+            emotions: collect(&GO_EMOTIONS, &|file| &file.emotions),
+            portraits: collect(&EXTRA_PORTRAITS, &|file| &file.portraits),
         }
     }
-    best.map(|(portrait, _)| portrait)
-}
 
-fn extract_explicit_emotion(text: &str) -> Option<String> {
-    for em in GO_EMOTIONS.iter().chain(EXTRA_PORTRAITS.iter()) {
-        if text.contains(&format!("[emotion: {}]", em))
-            || text.contains(&format!("[emotion:{}]", em))
-            || text.contains(&format!("<emotion>{}</emotion>", em))
-        {
-            return Some(em.to_string());
+    /// The extra portrait the text points to most clearly, if any.
+    fn strongest_portrait(&self, lower: &str) -> Option<&'static str> {
+        let actions: Vec<&str> = ASTERISK_ACTION_RE
+            .captures_iter(lower)
+            .filter_map(|cap| cap.get(1).map(|m| m.as_str()))
+            .collect();
+        let mut best: Option<(&'static str, f32)> = None;
+        for (portrait, list) in &self.portraits {
+            let in_actions: usize = actions.iter().map(|a| list.count(a)).sum();
+            let score = in_actions as f32 * 3.0 + list.count(lower) as f32;
+            if score >= 1.0 && best.is_none_or(|(_, top)| score > top) {
+                best = Some((portrait, score));
+            }
         }
-    }
-    None
-}
-
-fn score_action_segment(action: &str, scores: &mut std::collections::HashMap<&'static str, f32>) {
-    let weight = 3.0; // Asterisk actions are weighted heavily
-
-    if action.contains("lächel")
-        || action.contains("grins")
-        || action.contains("smile")
-        || action.contains("smirk")
-    {
-        *scores.entry("joy").or_insert(0.0) += weight;
-    }
-    if action.contains("kicher")
-        || action.contains("lachen")
-        || action.contains("lacht")
-        || action.contains("giggle")
-        || action.contains("chuckle")
-    {
-        *scores.entry("amusement").or_insert(0.0) += weight;
-    }
-    if action.contains("erröt")
-        || action.contains("rot werd")
-        || action.contains("wird rot")
-        || action.contains("verlegen")
-        || action.contains("blush")
-        || action.contains("embarrass")
-    {
-        *scores.entry("embarrassment").or_insert(0.0) += weight;
-    }
-    if action.contains("wein")
-        || action.contains("träne")
-        || action.contains("cries")
-        || action.contains("crying")
-        || action.contains("cried")
-        || action.contains("tears")
-        || action.contains("tearful")
-        || action.contains("schluchz")
-    {
-        *scores.entry("sadness").or_insert(0.0) += weight;
-    }
-    if action.contains("wütend")
-        || action.contains("knurr")
-        || action.contains("funkel")
-        || action.contains("angry")
-        || action.contains("frown")
-    {
-        *scores.entry("anger").or_insert(0.0) += weight;
-    }
-    if action.contains("überrascht")
-        || action.contains("augen weit")
-        || action.contains("gasp")
-        || action.contains("keuch")
-    {
-        *scores.entry("surprise").or_insert(0.0) += weight;
-    }
-    if action.contains("umarm")
-        || action.contains("streichel")
-        || action.contains("kuschel")
-        || action.contains("hug")
-        || action.contains("cuddle")
-    {
-        *scores.entry("love").or_insert(0.0) += weight;
-    }
-    if action.contains("zwinker") || action.contains("winks") || action.contains("winking") {
-        *scores.entry("amusement").or_insert(0.0) += weight;
-    }
-    if action.contains("seufz") || action.contains("sigh") {
-        *scores.entry("relief").or_insert(0.0) += weight;
-    }
-    if action.contains("zitter")
-        || action.contains("schauder")
-        || action.contains("tremble")
-        || action.contains("shiver")
-    {
-        *scores.entry("fear").or_insert(0.0) += weight;
-    }
-    score_russian(action, weight, scores);
-}
-
-/// Russian cues (word stems; Russian replies would otherwise always stay neutral).
-const RUSSIAN_CUES: [(&str, &[&str]); 12] = [
-    ("joy", &["улыба", "радост", "счастлив", "рада ", "рад "]),
-    (
-        "amusement",
-        &["смеётся", "смеется", "хихика", "хаха", "хихи"],
-    ),
-    ("embarrassment", &["красне", "смущ"]),
-    (
-        "sadness",
-        &[
-            "плач",
-            "слёз",
-            "слез",
-            "всхлип",
-            "грустн",
-            "печальн",
-            "жаль",
-        ],
-    ),
-    (
-        "anger",
-        &["злит", "злой", "злая", "сердит", "рычит", "ярост", "чёрт"],
-    ),
-    ("surprise", &["удивл", "ахает", "что?!", "неужели"]),
-    (
-        "love",
-        &[
-            "обнима",
-            "гладит",
-            "прижима",
-            "люблю тебя",
-            "милый",
-            "милая",
-        ],
-    ),
-    ("relief", &["вздыха", "облегчен"]),
-    ("fear", &["дрож", "боюсь", "страшно", "испуг"]),
-    ("curiosity", &["интересно", "любопыт"]),
-    ("gratitude", &["спасибо", "благодар"]),
-    ("disgust", &["отвращ", "мерзк", "брезглив"]),
-];
-
-fn score_russian(
-    text: &str,
-    weight: f32,
-    scores: &mut std::collections::HashMap<&'static str, f32>,
-) {
-    for (emotion, cues) in RUSSIAN_CUES {
-        if cues.iter().any(|cue| text.contains(cue)) {
-            *scores.entry(emotion).or_insert(0.0) += weight;
-        }
+        best.map(|(portrait, _)| portrait)
     }
 }
 
-fn score_text_tokens(text: &str, scores: &mut std::collections::HashMap<&'static str, f32>) {
-    // Joy / Amusement
-    if text.contains("haha")
-        || text.contains("hehe")
-        || text.contains("hihi")
-        || text.contains("lol")
-        || text.contains("xd")
-        || text.contains("^-^")
-        || text.contains("^^")
-    {
-        *scores.entry("amusement").or_insert(0.0) += 2.0;
-    }
-    if text.contains("freue")
-        || text.contains("wunderbar")
-        || text.contains("toll")
-        || text.contains("glücklich")
-        || text.contains("happy")
-        || text.contains("yay")
-    {
-        *scores.entry("joy").or_insert(0.0) += 1.5;
-    }
+/// Folder of the language files: one `<lang>.json` per language plus `common.json` (emoticons).
+/// A new language needs only a new file.
+fn cues_dir() -> std::path::PathBuf {
+    let paths = crate::modules::paths::resolve_app_paths();
+    std::path::PathBuf::from(paths.bundled_presets_dir).join("cues")
+}
 
-    // Love / Caring
-    if text.contains("ich liebe dich")
-        || text.contains("hab dich lieb")
-        || text.contains("love you")
-        || text.contains("<3")
-        || text.contains("liebling")
-        || text.contains("schatz")
-    {
-        *scores.entry("love").or_insert(0.0) += 2.5;
-    }
-    if text.contains("pass auf dich auf")
-        || text.contains("sorge")
-        || text.contains("beschützen")
-        || text.contains("care")
-    {
-        *scores.entry("caring").or_insert(0.0) += 1.5;
-    }
+fn read_cue_files(dir: &std::path::Path) -> Vec<CueFile> {
+    let mut paths: Vec<_> = std::fs::read_dir(dir)
+        .map(|entries| {
+            entries
+                .flatten()
+                .map(|e| e.path())
+                .filter(|p| p.extension().is_some_and(|ext| ext == "json"))
+                .collect()
+        })
+        .unwrap_or_default();
+    paths.sort();
+    paths
+        .iter()
+        .filter_map(|path| {
+            let parsed = std::fs::read_to_string(path)
+                .map_err(|e| e.to_string())
+                .and_then(|text| serde_json::from_str::<CueFile>(&text).map_err(|e| e.to_string()));
+            parsed
+                .map_err(|e| tracing::warn!("Hinweiswörter {} unlesbar: {e}", path.display()))
+                .ok()
+        })
+        .collect()
+}
 
-    // Gratitude / Admiration
-    if text.contains("danke")
-        || text.contains("vielen dank")
-        || text.contains("thank")
-        || text.contains("dankbar")
-    {
-        *scores.entry("gratitude").or_insert(0.0) += 2.0;
-    }
-    if text.contains("beeindruckend")
-        || text.contains("großartig")
-        || text.contains("faszinierend")
-        || text.contains("amazing")
-        || text.contains("wow")
-    {
-        *scores.entry("admiration").or_insert(0.0) += 1.5;
-    }
-
-    // Anger / Annoyance
-    if text.contains("verdammt")
-        || text.contains("hasserfüllt")
-        || text.contains("scheiße")
-        || text.contains("idiot")
-        || text.contains("nerv")
-        || text.contains("shut up")
-    {
-        *scores.entry("anger").or_insert(0.0) += 2.0;
-    }
-
-    // Sadness / Grief
-    if text.contains("traurig")
-        || text.contains("schade")
-        || text.contains("tut mir leid")
-        || text.contains("einsam")
-        || text.contains("sad")
-        || text.contains(":(")
-    {
-        *scores.entry("sadness").or_insert(0.0) += 1.8;
-    }
-
-    // Surprise / Curiosity
-    if text.contains("was?!")
-        || text.contains("wie bitte?")
-        || text.contains("wirklich?!")
-        || text.contains("o_o")
-        || text.contains("omg")
-    {
-        *scores.entry("surprise").or_insert(0.0) += 2.0;
-    }
-    if text.contains("warum?")
-        || text.contains("wieso?")
-        || text.contains("neugierig")
-        || text.contains("interessant")
-    {
-        *scores.entry("curiosity").or_insert(0.0) += 1.2;
-    }
-
-    // Embarrassment / Nervousness
-    if text.contains("peinlich")
-        || text.contains("nervös")
-        || text.contains("uhm")
-        || text.contains("äh...")
-        || text.contains("stotter")
-    {
-        *scores.entry("embarrassment").or_insert(0.0) += 1.8;
-    }
-    score_russian(text, 1.5, scores);
+fn cues() -> &'static Cues {
+    static CUES: LazyLock<Cues> = LazyLock::new(|| Cues::from_files(&read_cue_files(&cues_dir())));
+    &CUES
 }
 
 #[cfg(test)]
@@ -687,6 +473,98 @@ mod tests {
             classify_emotion("*holds up the crystal*").emotion,
             "neutral"
         );
+    }
+
+    #[test]
+    fn mood_tags_and_unknown_tags() {
+        let happy = classify_emotion("*weint* Schon gut. [emotion: happy]");
+        assert_eq!(
+            (happy.emotion.as_str(), happy.vrm_expression.as_str()),
+            ("joy", "happy")
+        );
+        let relaxed = classify_emotion("Schön ruhig hier. [emotion: Relaxed]");
+        assert_eq!(
+            (relaxed.vrm_expression.as_str(), relaxed.portrait.as_str()),
+            ("relaxed", "relaxed")
+        );
+        let neutral = classify_emotion("[emotion: neutral] Ja.");
+        assert_eq!(
+            (neutral.emotion.as_str(), neutral.portrait.as_str()),
+            ("neutral", "")
+        );
+        // An unknown name leaves it to the cue words; the last tag counts.
+        assert_eq!(
+            classify_emotion("*weint* [emotion: sparkly]").portrait,
+            "crying"
+        );
+        assert_eq!(
+            classify_emotion("[emotion: sad] … [emotion: blush]").portrait,
+            "blush"
+        );
+    }
+
+    #[test]
+    fn cues_match_whole_words_or_stems() {
+        let cue = |c: &str| Cue::parse(c).unwrap();
+        let word = cue("neckt");
+        assert!(
+            word.matches("sie neckt dich")
+                && !word.matches("necktie")
+                && !word.matches("ich necke")
+        );
+        let stem = cue("schluchz*");
+        assert!(stem.matches("*schluchzt leise*") && !stem.matches("aufschluchzen"));
+        assert!(cue("Wird  Rot").matches(&normalize("sie wird\nrot.")));
+        let ru = cue("плач*");
+        assert!(ru.matches("она плачет") && !ru.matches("заплачет"));
+        assert!(cue("^^").matches("hallo^^"));
+        assert!(Cue::parse(" * ").is_none());
+    }
+
+    #[test]
+    fn language_files_load_quickly() {
+        let started = std::time::Instant::now();
+        let cues = Cues::from_files(&read_cue_files(
+            &std::path::Path::new(env!("CARGO_MANIFEST_DIR")).join("../presets/cues"),
+        ));
+        eprintln!("Hinweiswörter geladen in {:?}", started.elapsed());
+        assert!(cues.emotions.len() >= 12 && cues.portraits.len() == EXTRA_PORTRAITS.len());
+    }
+
+    #[test]
+    fn language_files_use_known_keys() {
+        let dir = std::path::Path::new(env!("CARGO_MANIFEST_DIR")).join("../presets/cues");
+        let mut languages = 0;
+        for entry in std::fs::read_dir(&dir).unwrap().flatten() {
+            let text = std::fs::read_to_string(entry.path()).unwrap();
+            let file: serde_json::Value = serde_json::from_str(&text).unwrap();
+            let name = entry.file_name().to_string_lossy().to_string();
+            for (section, known) in [
+                ("emotions", &GO_EMOTIONS[..]),
+                ("portraits", &EXTRA_PORTRAITS[..]),
+                ("gestures", &crate::modules::avatar_motions::ROLES[..]),
+            ] {
+                for (key, cues) in file
+                    .get(section)
+                    .and_then(|v| v.as_object())
+                    .into_iter()
+                    .flatten()
+                {
+                    assert!(
+                        known.contains(&key.as_str()),
+                        "{name}: {section}.{key} unbekannt"
+                    );
+                    for cue in cues.as_array().unwrap() {
+                        assert!(
+                            Cue::parse(cue.as_str().unwrap()).is_some(),
+                            "{name}: {cue} ungültig"
+                        );
+                    }
+                }
+            }
+            languages += 1;
+        }
+        assert!(languages >= 4);
     }
 
     #[test]

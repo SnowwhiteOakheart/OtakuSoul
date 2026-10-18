@@ -11,6 +11,15 @@ const jsClick = (element) => browser.execute((el) => el.click(), element);
 
 try {
   await browser.$('textarea[aria-label="Nachricht"]').waitForDisplayed({ timeout: 30_000 });
+  const characterId = (await invoke('load_settings')).active_character_id;
+  const speechUrl = mock.url.replace('/chat/completions', '/audio/speech');
+  const config = await invoke('get_character_voice_config', { charId: characterId });
+  const voice = { ...config, engine: 'openai', openai_endpoint: speechUrl, openai_model: 'fx-voice' };
+  await invoke('save_character_voice_config', { charId: characterId, config: voice });
+  const plain = await invoke('synthesize_speech', { text: 'Probe', config: voice });
+  // The app loaded the voice before it was written here: reload so the dialog starts from it.
+  await browser.refresh();
+  await browser.$('textarea[aria-label="Nachricht"]').waitForDisplayed({ timeout: 30_000 });
   // Every Audio element the page creates is kept, so the played source can be inspected.
   await browser.execute(() => {
     const Original = window.Audio;
@@ -21,12 +30,6 @@ try {
       return audio;
     };
   });
-  const characterId = (await invoke('load_settings')).active_character_id;
-  const speechUrl = mock.url.replace('/chat/completions', '/audio/speech');
-  const config = await invoke('get_character_voice_config', { charId: characterId });
-  const voice = { ...config, engine: 'openai', openai_endpoint: speechUrl, openai_model: 'fx-voice' };
-  await invoke('save_character_voice_config', { charId: characterId, config: voice });
-  const plain = await invoke('synthesize_speech', { text: 'Probe', config: voice });
 
   await jsClick(await browser.$('button[aria-label="Weitere Chat-Aktionen"]'));
   await jsClick(await browser.$('button*=Stimme & Sprachausgabe anpassen'));

@@ -34,4 +34,9 @@ avoid_phrases?: Array<string>,
 /**
  * The other characters of a group chat (the speaker is `character`).
  */
-group?: Array<GroupMember>, };
+group?: Array<GroupMember>, 
+/**
+ * Ask for an expression tag at the reply's end (`[emotion: …]`, chat replies only); it picks
+ * the portrait language independently (`emotions::classify_emotion`).
+ */
+emotion_tags?: boolean, };

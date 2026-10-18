@@ -1,0 +1,9 @@
+{
+  "emotions": {
+    "amusement": ["haha*", "hehe*", "hihi*", "lol", "xd", "^^", "^-^"],
+    "love": ["<3"],
+    "sadness": [":("],
+    "surprise": ["o_o", "omg"],
+    "admiration": ["wow"]
+  }
+}

@@ -290,6 +290,11 @@ static THINK_RE: LazyLock<regex::Regex> = LazyLock::new(|| regex(r"(?is)<think>.
 static CODE_BLOCK_RE: LazyLock<regex::Regex> = LazyLock::new(|| regex(r"(?s)```.*?```"));
 static INLINE_CODE_RE: LazyLock<regex::Regex> = LazyLock::new(|| regex(r"`[^`]+`"));
 static URL_RE: LazyLock<regex::Regex> = LazyLock::new(|| regex(r"https?://\S+"));
+/// Tags the chat reply carries for the app, not the listener: HUD values and the expression tag
+/// (also unfinished ones at the end of a streamed piece).
+static REPLY_TAG_RE: LazyLock<regex::Regex> = LazyLock::new(|| {
+    regex(r"(?is)<state>.*?(?:</state>|$)|\[emotion:[^\]]*(?:\]|$)|<emotion>.*?(?:</emotion>|$)")
+});
 static HEADER_RE: LazyLock<regex::Regex> = LazyLock::new(|| regex(r"(?m)^#{1,6}\s+"));
 /// Spoken text inside "…", “…”, „…“, »…«, «…» or 「…」.
 static DIALOGUE_RE: LazyLock<regex::Regex> =
@@ -332,8 +337,9 @@ pub fn actions_to_sound_tags(text: &str) -> String {
 pub fn clean_text_for_tts(raw: &str, filter_mode: &TtsFilterMode, custom_regex: &str) -> String {
     let mut text = raw.to_string();
 
-    // 1. Remove <think>…</think> blocks (greedy within each match)
+    // 1. Remove <think>…</think> blocks (greedy within each match) and the reply's tags
     text = THINK_RE.replace_all(&text, "").to_string();
+    text = REPLY_TAG_RE.replace_all(&text, "").to_string();
 
     // 2. Remove markdown code blocks
     text = CODE_BLOCK_RE.replace_all(&text, "").to_string();
@@ -1729,6 +1735,20 @@ mod tests {
         assert!(result.contains("Schau dir das an:"));
         assert!(result.contains("und das hier."));
         assert!(!result.contains("fn main()"));
+    }
+
+    #[test]
+    fn reply_tags_are_not_read_aloud() {
+        let text = clean_text_for_tts(
+            "\"Hallo!\" <state>{\"Mood\": \"Happy\"}</state> [emotion: blush]",
+            &TtsFilterMode::All,
+            "",
+        );
+        assert_eq!(text, "\"Hallo!\"");
+        assert_eq!(
+            clean_text_for_tts("Ja. [emotion: bl", &TtsFilterMode::All, ""),
+            "Ja."
+        );
     }
 
     #[test]

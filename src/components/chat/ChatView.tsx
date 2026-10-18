@@ -42,6 +42,9 @@ import { CharacterVoiceModal } from '../voice/CharacterVoiceModal';
 import { PromptLogModal } from './PromptLogModal';
 import { useTranslation } from '../../i18n';
 import { applyReplacements } from '../../utils/replyFilters';
+import { withoutEmotionTag } from '../../utils/replyTags';
+import { extractStateUpdates } from '../../utils/stateParser';
+import { hitKey } from '../../store/helpers';
 import { chatSpeakers } from '../../utils/groupChat';
 import type { CharacterProfile } from '../../types';
 import { NEUTRAL_EMOTION } from '../../store/slices/avatarSlice';
@@ -273,7 +276,9 @@ export const ChatView: React.FC = () => {
   // The expression follows the reply on screen, also without a new one: opening a chat (or the app),
   // switching a swipe, editing. A fresh reply sets it in `onLlmDone` (with a gesture).
   const lastReply = isGenerating || isChatLoading ? undefined : [...storedMessages].reverse().find((m) => m.role === 'assistant');
-  const lastReplyKey = isGenerating || isChatLoading ? null : `${activeChatId}\n${lastReply?.speaker_id ?? ''}\n${lastReply?.content ?? ''}`;
+  // The tag the model gave this reply (removed from the text) decides before the cue words.
+  const lastReplyTag = useAppStore((s) => (lastReply ? s.replyEmotionTags[hitKey(lastReply.id, lastReply.swipe_index)] : undefined));
+  const lastReplyKey = isGenerating || isChatLoading ? null : `${activeChatId}\n${lastReply?.speaker_id ?? ''}\n${lastReplyTag ?? ''}\n${lastReply?.content ?? ''}`;
   useEffect(() => {
     if (lastReplyKey === null) return;
     const chatId = useAppStore.getState().activeChatId;
@@ -284,7 +289,7 @@ export const ChatView: React.FC = () => {
       return;
     }
     let cancelled = false;
-    api.classifyTextEmotion(text).then((res) => {
+    api.classifyTextEmotion(lastReplyTag ? `${text}\n[emotion: ${lastReplyTag}]` : text).then((res) => {
       const state = useAppStore.getState();
       if (cancelled || state.activeChatId !== chatId || state.isGenerating) return;
       state.setSpeakerEmotion(speaker, res);
@@ -641,7 +646,7 @@ export const ChatView: React.FC = () => {
                 {streamText && (
                   <div className="max-w-[85%] rounded-2xl px-4 py-2.5 text-sm leading-relaxed bg-slate-900 border border-accent-500/30 text-slate-100 shadow-md">
                     <RoleplayMessage 
-                      content={applyReplacements(streamText, replyReplacements)} 
+                      content={extractStateUpdates(withoutEmotionTag(applyReplacements(streamText, replyReplacements))).cleanedText} 
                       isUser={false} 
                       onSpeak={activeVoiceConfig?.engine !== 'disabled' ? () => handleSpeak(streamText) : undefined}
                     />

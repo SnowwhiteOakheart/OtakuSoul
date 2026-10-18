@@ -128,6 +128,11 @@ pub struct PromptContext {
     #[serde(default)]
     #[ts(optional)]
     pub group: Option<Vec<GroupMember>>,
+    /// Ask for an expression tag at the reply's end (`[emotion: …]`, chat replies only); it picks
+    /// the portrait language independently (`emotions::classify_emotion`).
+    #[serde(default)]
+    #[ts(optional)]
+    pub emotion_tags: Option<bool>,
 }
 
 /// Another character present in a group chat, as the speaker sees them.
@@ -193,6 +198,31 @@ fn reply_length_rule(length: Option<&str>) -> Option<&'static str> {
     }
 }
 
+/// The expression tag the reply should end with: the six moods plus the extra portrait slots the
+/// card has pictures for (so the model picks what can be shown).
+fn emotion_tag_rule(ctx: &PromptContext) -> Option<String> {
+    if !ctx.emotion_tags.unwrap_or(false) {
+        return None;
+    }
+    let extensions = &ctx.character.extensions;
+    let pictures = ["expressions", "custom_expressions", "sow_expressions"]
+        .iter()
+        .find_map(|key| extensions.get(*key).and_then(serde_json::Value::as_object));
+    let names: Vec<&str> = crate::modules::emotions::MOODS
+        .into_iter()
+        .chain(
+            crate::modules::emotions::EXTRA_PORTRAITS
+                .into_iter()
+                .filter(|slot| pictures.is_some_and(|p| p.contains_key(*slot))),
+        )
+        .collect();
+    Some(format!(
+        "End your reply with one tag for {}'s facial expression at its end: [emotion: NAME], NAME one of: {}. Write nothing after the tag.",
+        ctx.char_name,
+        names.join(", ")
+    ))
+}
+
 impl PromptContext {
     fn macro_input(&self) -> crate::modules::macros::MacroInput {
         crate::modules::macros::MacroInput {
@@ -242,6 +272,7 @@ pub fn post_history_instruction(ctx: &PromptContext) -> Option<String> {
     for rule in avoid_rule(ctx.avoid_phrases.as_deref())
         .into_iter()
         .chain(reply_length_rule(ctx.reply_length.as_deref()).map(str::to_string))
+        .chain(emotion_tag_rule(ctx))
     {
         if !text.is_empty() {
             text.push('\n');
@@ -547,6 +578,22 @@ mod tests {
             },
             ..PromptContext::default()
         }
+    }
+
+    #[test]
+    fn chat_replies_end_with_an_expression_tag_the_card_can_show() {
+        let mut ctx = context(None);
+        assert!(post_history_instruction(&ctx).is_none_or(|p| !p.contains("[emotion:")));
+        ctx.emotion_tags = Some(true);
+        ctx.character.extensions =
+            serde_json::json!({"expressions": {"happy": "h.png", "blush": "b.png"}});
+        let rule = post_history_instruction(&ctx).unwrap();
+        assert!(rule.contains("[emotion: NAME]"), "{rule}");
+        assert!(
+            rule.contains("neutral, happy, sad, angry, surprised, relaxed, blush."),
+            "{rule}"
+        );
+        assert!(!rule.contains("crying"));
     }
 
     #[test]

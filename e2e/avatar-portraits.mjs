@@ -1,5 +1,5 @@
 // Emotionsbilder müssen im Chat, im Testmenü und nach dem Speichern weiter funktionieren; ein Zusatzbild (Erröten)
-// folgt der Antwort, und ein wieder geöffneter Chat zeigt den Ausdruck seiner letzten Antwort.
+// folgt der Antwort, der Emotions-Tag des Modells entscheidet unsichtbar, und ein wieder geöffneter Chat zeigt den Ausdruck seiner letzten Antwort.
 import assert from 'node:assert/strict';
 import { copyFileSync, existsSync, rmSync, writeFileSync } from 'node:fs';
 import path from 'node:path';
@@ -76,7 +76,16 @@ try {
   await waitForPortrait('sad');
   await selectMood('Wut', 'angry');
   await browser.saveScreenshot(path.join(screenshotDir, 'avatar-portrait-repaired-angry.png'));
-  console.log('Portraits: manuelle Emotionen, Chatantwort, Erröten, wieder geöffneter Chat, gespeicherte Karte und Reparatur alter Pfade bestanden.');
+
+  // The model's expression tag decides without any cue word and never shows in the chat.
+  mock.stats.chatReply = '„Na gut, dann eben so.“ [emotion: surprised]';
+  await browser.$('textarea[aria-label="Nachricht"]').setValue('Ich habe eine Neuigkeit.');
+  await clickSend(browser);
+  await waitForPortrait('surprised');
+  await browser.waitUntil(async () => (await browser.execute(() => document.body.innerText)).includes('Na gut, dann eben so.'),
+    { timeout: 10000, timeoutMsg: 'Antwort fehlt' });
+  assert.ok(!(await browser.execute(() => document.body.innerText)).includes('[emotion'), 'Tag im Chat sichtbar');
+  console.log('Portraits: manuelle Emotionen, Chatantwort, Erröten, Emotions-Tag, wieder geöffneter Chat, gespeicherte Karte und Reparatur alter Pfade bestanden.');
 } finally {
   await close();
 }

@@ -463,6 +463,8 @@ export interface PromptContext {
   reply_length?: string;
   avoid_phrases?: string[];
   group?: GroupMember[];
+  /** Ask for an expression tag at the reply's end (`[emotion: …]`). */
+  emotion_tags?: boolean;
 }
 
 // Phase 6: Soul Stage Tabletop RPG

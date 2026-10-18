@@ -1,0 +1,37 @@
+{
+  "emotions": {
+    "joy": ["lächel*", "grins*", "freue*", "freut mich", "wunderbar", "toll", "glücklich*"],
+    "amusement": ["kicher*", "lacht*", "lachen", "zwinker*"],
+    "embarrassment": ["erröt*", "rot werd*", "wird rot", "verlegen*", "peinlich*", "nervös*", "stotter*", "äh..."],
+    "sadness": ["weint*", "weinen*", "träne*", "schluchz*", "traurig*", "schade", "tut mir leid", "einsam*"],
+    "anger": ["wütend*", "knurr*", "funkel*", "verdammt*", "hasserfüllt*", "scheiße", "idiot*", "nervt", "nervig*"],
+    "surprise": ["überrascht*", "augen weit", "keuch*", "was?!", "wie bitte?", "wirklich?!"],
+    "love": ["umarm*", "streichel*", "kuschel*", "ich liebe dich", "hab dich lieb", "liebling*", "schatz*"],
+    "relief": ["seufz*"],
+    "fear": ["zitter*", "schauder*"],
+    "caring": ["pass auf dich auf", "sorge", "sorgen", "beschützen"],
+    "gratitude": ["danke*", "vielen dank", "dankbar*"],
+    "admiration": ["beeindruckend*", "großartig*", "faszinierend*"],
+    "curiosity": ["warum?", "wieso?", "neugierig*", "interessant*"]
+  },
+  "portraits": {
+    "blush": ["erröt*", "wird rot", "rot wird", "verlegen*"],
+    "teasing": ["neckt", "neckisch*", "necken", "zwinker*", "frech*"],
+    "fear": ["zitter*", "fürchte*", "angst*", "ängstlich*", "panik*"],
+    "disgust": ["ekel*", "angewidert*", "rümpft*", "igitt"],
+    "crying": ["weint*", "weinen*", "träne*", "schluchz*"],
+    "seductive": ["verführerisch*", "lasziv*", "lockend*", "beißt sich auf die lippe"],
+    "aroused": ["erregt*", "atem stockt", "atmet schwer", "keucht"],
+    "ecstasy": ["höhepunkt*", "ekstase", "ekstatisch*"],
+    "afterglow": ["erschöpft und zufrieden", "glücklich erschöpft", "nachglühen"]
+  },
+  "gestures": {
+    "greeting": ["winkt", "winkend", "grüßt", "grüsst", "gruesst"],
+    "nod": ["nickt", "nickend"],
+    "thinking": ["überlegt", "ueberlegt", "denkt nach", "nachdenklich", "grübelt", "gruebelt"],
+    "surprised": ["zuckt zusammen", "erschrickt", "staunt", "keucht"],
+    "happy": ["lacht", "kichert", "strahlt", "grinst", "jubelt"],
+    "sad": ["weint", "schluchzt", "seufzt traurig"],
+    "angry": ["funkelt", "schnaubt", "stampft", "ballt die fäuste", "ballt die faeuste"]
+  }
+}

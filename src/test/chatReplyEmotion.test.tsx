@@ -61,3 +61,13 @@ describe('expression of the reply on screen', () => {
     expect(api.classifyTextEmotion).not.toHaveBeenCalled();
   });
 });
+
+describe('expression tag the model gave', () => {
+  it('decides over the cue words of the stored text', async () => {
+    vi.mocked(api.classifyTextEmotion).mockImplementation(async (text) => emotion(text.includes('[emotion: blush]') ? 'blush' : 'crying'));
+    useAppStore.setState({ storedMessages: [reply('*weint*')], replyEmotionTags: { 'm1:0': 'blush' } });
+    render(<ChatView />);
+    await waitFor(() => expect(api.classifyTextEmotion).toHaveBeenCalledWith('*weint*\n[emotion: blush]'));
+    await waitFor(() => expect(useAppStore.getState().currentEmotion.portrait).toBe('blush'));
+  });
+});

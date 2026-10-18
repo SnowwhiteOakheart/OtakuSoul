@@ -3,6 +3,7 @@ import { api } from '../../services/api';
 import { soundFx } from '../../services/soundFx';
 import { streamingTts } from '../../services/streamingTts';
 import { extractStateUpdates, applyStateUpdates } from '../../utils/stateParser';
+import { emotionTagOf, withoutEmotionTag } from '../../utils/replyTags';
 import { HUD_PRESETS } from '../../constants/hudPresets';
 import { APP_LANGUAGE_NAMES, chatSampling, llmTarget, hitKey, mergeHits, resolvePromptWithLore, type PromptHits, type PromptSpeaker } from '../helpers';
 import type {
@@ -70,6 +71,8 @@ export interface ChatSlice {
   translateText: (text: string) => Promise<string>;
   /** Lorebook entries, memories and summary each reply could draw on, by `hitKey` (this session only). */
   promptHits: Record<string, PromptHits>;
+  /** The expression tag each reply ended with (`[emotion: …]`, removed from the text), by `hitKey`; this session only. */
+  replyEmotionTags: Record<string, string>;
   /** A few short ideas for the user's next message in the open chat, built on `notes` (throws on failure). */
   suggestReplies: (notes?: string) => Promise<string[]>;
   /** "Write for me": the user's next message, built from `notes` if any (throws on failure). */
@@ -141,6 +144,12 @@ const toFlat = (m: StoredChatMessage): ChatMessage => ({
 });
 
 /** The card's or template's post-history instruction as a trailing system message. */
+/** Remembers a reply's expression tag (a continuation's own tag replaces the earlier one). */
+const withEmotionTag = (tags: Record<string, string>, key: string, fullText: string): Record<string, string> => {
+  const tag = emotionTagOf(fullText);
+  return tag ? { ...tags, [key]: tag } : tags;
+};
+
 const postHistory = (prompt: AssembledPrompt | null): ChatMessage[] =>
   prompt?.post_history ? [{ role: 'system', content: prompt.post_history }] : [];
 
@@ -300,12 +309,15 @@ export const createChatSlice: SliceCreator<ChatSlice> = (set, get) => {
     if (!inContext(chatId, charId) && !keepsPartial(done, chatId, charId)) return null;
 
     // <state> tags update the HUD; the user's replacement rules apply first.
-    const { cleanedText, stateUpdates } = extractStateUpdates(applyReplacements(done.full_text, get().replyReplacements));
+    const { cleanedText, stateUpdates } = extractStateUpdates(withoutEmotionTag(applyReplacements(done.full_text, get().replyReplacements)));
     const thought = done.full_thought.trim() ? done.full_thought : null;
     const stored = speakerId
       ? await api.addChatMessage(chatId, 'assistant', cleanedText, thought, undefined, speakerId)
       : await api.addChatMessage(chatId, 'assistant', cleanedText, thought);
-    set((st) => ({ promptHits: { ...st.promptHits, [hitKey(stored.id, stored.swipe_index)]: prompt.hits } }));
+    set((st) => ({
+      promptHits: { ...st.promptHits, [hitKey(stored.id, stored.swipe_index)]: prompt.hits },
+      replyEmotionTags: withEmotionTag(st.replyEmotionTags, hitKey(stored.id, stored.swipe_index), done.full_text),
+    }));
 
     if (!isCurrentContext(chatId, charId)) return null;
     set({ contextUsage: done.context ?? null });
@@ -436,6 +448,7 @@ export const createChatSlice: SliceCreator<ChatSlice> = (set, get) => {
   },
 
   promptHits: {},
+  replyEmotionTags: {},
 
   generationSpeakerId: '',
 
@@ -874,7 +887,7 @@ export const createChatSlice: SliceCreator<ChatSlice> = (set, get) => {
       }, generationId, selectedBackend === 'cloud' ? get().cloudContextTokens : undefined, get().chatTools);
       if (!inContext(activeChatId, activeCharacter.id) && !keepsPartial(done, activeChatId, activeCharacter.id)) return;
 
-      const { cleanedText, stateUpdates } = extractStateUpdates(applyReplacements(done.full_text, get().replyReplacements));
+      const { cleanedText, stateUpdates } = extractStateUpdates(withoutEmotionTag(applyReplacements(done.full_text, get().replyReplacements)));
 
       const updatedMsg = await api.addMessageSwipe(
         msgId,
@@ -884,6 +897,7 @@ export const createChatSlice: SliceCreator<ChatSlice> = (set, get) => {
       set((state) => ({
         chatSessions: withoutStaleSummary(state.chatSessions, updatedMsg),
         promptHits: { ...state.promptHits, [hitKey(updatedMsg.id, updatedMsg.swipe_index)]: prompt.hits },
+        replyEmotionTags: withEmotionTag(state.replyEmotionTags, hitKey(updatedMsg.id, updatedMsg.swipe_index), done.full_text),
       }));
 
       if (!isCurrentContext(activeChatId, activeCharacter.id)) return;
@@ -976,7 +990,7 @@ export const createChatSlice: SliceCreator<ChatSlice> = (set, get) => {
       }, generationId, selectedBackend === 'cloud' ? get().cloudContextTokens : undefined, get().chatTools);
       if (!inContext(activeChatId, activeCharacter.id) && !keepsPartial(done, activeChatId, activeCharacter.id)) return;
 
-      const { cleanedText, stateUpdates } = extractStateUpdates(applyReplacements(done.full_text, get().replyReplacements));
+      const { cleanedText, stateUpdates } = extractStateUpdates(withoutEmotionTag(applyReplacements(done.full_text, get().replyReplacements)));
 
       const mergedContent = `${targetMsg.content} ${cleanedText}`.trim();
       const updatedMsg = await api.updateChatMessage(
@@ -988,6 +1002,7 @@ export const createChatSlice: SliceCreator<ChatSlice> = (set, get) => {
       set((state) => ({
         chatSessions: withoutStaleSummary(state.chatSessions, updatedMsg),
         promptHits: { ...state.promptHits, [key]: mergeHits(state.promptHits[key], prompt.hits) },
+        replyEmotionTags: withEmotionTag(state.replyEmotionTags, key, done.full_text),
       }));
 
       if (!isCurrentContext(activeChatId, activeCharacter.id)) return;

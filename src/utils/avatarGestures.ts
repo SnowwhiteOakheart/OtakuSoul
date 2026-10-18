@@ -12,40 +12,37 @@ export interface GestureRequest {
   id: number;
 }
 
-/**
- * Russian words start with one of these stems (any ending: кивает, кивнула, кивая). `\b` only knows
- * Latin letters, so the start of a word is checked against any letter instead.
- */
-const ru = (stems: string) => new RegExp(`(?<!\\p{L})(?:${stems})\\p{L}*`, 'iu');
+/** One language file in `presets/cues/` (emotions and portrait slots are read by the backend). */
+interface CueFile { gestures?: Partial<Record<MotionRole, string[]>> }
 
-/** Keywords in roleplay actions (`*waves*`, `*nickt*`, `*кивает*`) and the gesture they start. */
-const ACTION_GESTURES: [MotionRole, RegExp[]][] = [
-  ['greeting', [
-    /\b(wave[sd]?|waving|greets?|winkt|winkend|gr(ü|ue)(ß|ss)t)\b/i,
-    ru('машет|машут|машу|помаха|махну|махая|здорова|поздорова|приветству'),
-  ]],
-  ['nod', [/\b(nods?|nodding|nickt|nickend)\b/i, ru('кива|кивн|кивок')]],
-  ['thinking', [
-    /\b(thinks?|ponders?|thoughtful|tilts (her|his|their) head|(ü|ue)berlegt|denkt nach|nachdenklich|gr(ü|ue)belt)\b/i,
-    ru('задум|размышля|думает|наклоняет голову|склоняет голову'),
-  ]],
-  ['surprised', [
-    /\b(gasps?|startled|jumps|blinks in surprise|zuckt zusammen|erschrickt|staunt|keucht)\b/i,
-    ru('ахае|ахну|вздраг|вздрогн|удивл[её]нно|изумл|опешил|испуганно'),
-  ]],
-  ['happy', [
-    /\b(laughs?|giggles?|grins|cheers?|beams|lacht|kichert|strahlt|grinst|jubelt)\b/i,
-    ru('смеётся|смеется|смеясь|засмея|рассмея|хихик|хохоч|хохот|ухмыля|сияет|ликует'),
-  ]],
-  ['sad', [
-    /\b(sighs? sadly|cries|sobs|tears up|weint|schluchzt|seufzt traurig)\b/i,
-    ru('плач|запла|всхлип|рыда|грустно вздых|печально вздых'),
-  ]],
-  ['angry', [
-    /\b(glares|scowls|huffs|stomps|funkelt|schnaubt|stampft|ballt die f(ä|ae)uste)\b/i,
-    ru('хмур|нахмур|фырка|фыркн|топа[еюя]|топну|сердито смотр|свирепо смотр|сжимает кулаки|сжала кулаки|сжал кулаки'),
-  ]],
-];
+/** All language files, bundled at build time: a new language is just a new `<lang>.json`. */
+const CUE_FILES = import.meta.glob<CueFile>('../../presets/cues/*.json', { eager: true, import: 'default' });
+
+/**
+ * A cue as pattern (same rules as `emotions::Cue`): whole words, a trailing `*` for any
+ * ending (кивает, кивнула), spaces for any whitespace. `\b` only knows Latin letters, so word edges
+ * are checked against any letter.
+ */
+export function cuePattern(cue: string): RegExp | null {
+  const lower = cue.trim().toLowerCase();
+  const stem = lower.endsWith('*');
+  const body = stem ? lower.slice(0, -1) : lower;
+  if (!body.trim()) return null;
+  const isLetter = (ch: string) => /\p{L}/u.test(ch);
+  const escaped = body.replace(/[.*+?^${}()|[\]\\]/g, '\\$&').replace(/ /g, '\\s+');
+  const start = isLetter(body[0]!) ? '(?<!\\p{L})' : '';
+  const end = stem ? '\\p{L}*' : isLetter(body.at(-1)!) ? '(?!\\p{L})' : '';
+  return new RegExp(`${start}${escaped}${end}`, 'iu');
+}
+
+/** Gesture order: the first one an action names wins. */
+const GESTURE_ORDER: MotionRole[] = ['greeting', 'nod', 'thinking', 'surprised', 'happy', 'sad', 'angry'];
+
+/** Keywords in roleplay actions (`*waves*`, `*nickt*`, `*кивает*`) of all languages and the gesture they start. */
+const ACTION_GESTURES: [MotionRole, RegExp[]][] = GESTURE_ORDER.map((role) => [
+  role,
+  Object.values(CUE_FILES).flatMap((file) => file.gestures?.[role] ?? []).map(cuePattern).filter((re): re is RegExp => !!re),
+]);
 
 /** VRM expressions from the emotion detection and the gesture that fits them. */
 const EMOTION_GESTURES: Partial<Record<string, MotionRole>> = {

@@ -1,0 +1,36 @@
+{
+  "emotions": {
+    "joy": ["smile*", "smiling", "smirk*", "happy", "yay"],
+    "amusement": ["giggle*", "chuckle*", "winks", "winking", "winked"],
+    "embarrassment": ["blush*", "embarrass*"],
+    "sadness": ["cries", "crying", "cried", "tears", "tearful", "teary", "sobs", "sobbing", "sobbed", "sad"],
+    "anger": ["angry", "angrily", "frown*", "shut up"],
+    "surprise": ["gasp*"],
+    "love": ["hug", "hugs", "hugging", "hugged", "cuddle*", "love you"],
+    "relief": ["sigh", "sighs", "sighing", "sighed"],
+    "fear": ["tremble*", "trembling", "shiver*"],
+    "caring": ["i care", "care about"],
+    "gratitude": ["thank*"],
+    "admiration": ["amazing"]
+  },
+  "portraits": {
+    "blush": ["blush*"],
+    "teasing": ["tease*", "teasing", "winks", "winking", "winked", "smirk*"],
+    "fear": ["tremble*", "trembling", "afraid", "scared", "terrified"],
+    "disgust": ["disgust*", "grimace*", "eww*"],
+    "crying": ["cries", "crying", "sobs", "sobbing", "tears"],
+    "seductive": ["seductive*", "sultry", "bites her lip", "bites his lip", "bites their lip"],
+    "aroused": ["aroused", "panting", "breathes heavily", "flushed with desire"],
+    "ecstasy": ["climax*", "ecstasy", "ecstatic*"],
+    "afterglow": ["afterglow", "contentedly exhausted"]
+  },
+  "gestures": {
+    "greeting": ["wave", "waves", "waved", "waving", "greet", "greets"],
+    "nod": ["nod", "nods", "nodding"],
+    "thinking": ["think", "thinks", "ponder", "ponders", "thoughtful", "tilts her head", "tilts his head", "tilts their head"],
+    "surprised": ["gasp", "gasps", "startled", "jumps", "blinks in surprise"],
+    "happy": ["laugh", "laughs", "giggle", "giggles", "grins", "cheer", "cheers", "beams"],
+    "sad": ["sigh sadly", "sighs sadly", "cries", "sobs", "tears up"],
+    "angry": ["glares", "scowls", "huffs", "stomps"]
+  }
+}

@@ -112,6 +112,12 @@ describe('chat generation failures', () => {
     await useAppStore.getState().retryGeneration();
     expect(useAppStore.getState().storedMessages).toEqual([message, reply]);
   });
+  it('stores the reply without its expression tag and remembers the tag', async () => {
+    vi.mocked(api.sendChatMessage).mockResolvedValueOnce({ ...done, full_text: '*wird rot* Danke. [emotion: blush]' });
+    await useAppStore.getState().sendMessage('Hello');
+    expect(api.addChatMessage).toHaveBeenLastCalledWith(expect.any(String), 'assistant', '*wird rot* Danke.', null);
+    expect(useAppStore.getState().replyEmotionTags[`${reply.id}:${reply.swipe_index}`]).toBe('blush');
+  });
   it('does not update HUD or summaries if saving the generated reply fails', async () => {
     const summarize = vi.fn();
     useAppStore.setState({ summarizeDroppedMessages: summarize });

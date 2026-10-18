@@ -160,6 +160,7 @@ export async function resolvePromptWithLore(
     reply_length: activeSession?.style?.reply_length || undefined,
     avoid_phrases: state.avoidPhrases.length > 0 ? state.avoidPhrases : undefined,
     group: speaker && speaker.others.length > 0 ? speaker.others : undefined,
+    emotion_tags: true,
   }), signal);
   return { ...assembled, hits };
 }

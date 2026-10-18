@@ -582,7 +582,13 @@ ru „персонаж/история/сцена“. Fachbegriffe nur im Experte
   Emotionsbilder: neben den sechs Stimmungen die Plätze `blush`, `teasing`, `fear`, `disgust`, `crying` und (Romance)
   `seductive`, `aroused`, `ecstasy`, `afterglow` (`emotions::EXTRA_PORTRAITS`, `EmotionResult.portrait`; Bildwahl
   `selectCharacterPortrait`: Zusatzplatz → Emotion → Stimmung → neutral) – für alle Karten nutzbar.
-  Erkennung über Hinweiswörter de/en/ru (`PORTRAIT_CUES`, `RUSSIAN_CUES`; Teilwörter, daher keine mehrdeutigen wie „neck“/„wink“).
+  Chat-Antworten enden mit einem Tag `[emotion: NAME]` (`PromptContext.emotion_tags`, Nachspann bietet die sechs Stimmungen und
+  die Zusatzplätze mit Bild an); `utils/replyTags.ts` entfernt ihn vor dem Speichern und im Live-Text, `chatSlice.replyEmotionTags`
+  merkt ihn je `hitKey` (nur Sitzung), `voice::clean_text_for_tts` liest ihn (und `<state>`) nicht vor.
+  Ohne Tag entscheiden Hinweiswörter aus `presets/cues/<sprache>.json` (+ `common.json` für Emoticons; Abschnitte `emotions`,
+  `portraits` = Backend `emotions::Cue`, `gestures` = Frontend `avatarGestures.ts` per `import.meta.glob`). Ganze Wörter,
+  `*` am Ende = beliebige Endung, Wortgrenzen für alle Schriften; alle Sprachen gelten gleichzeitig. Neue Sprache = neue Datei,
+  kein Code; `language_files_use_known_keys` prüft die Schlüssel.
   Der Ausdruck folgt der angezeigten letzten Antwort auch ohne neue Generierung (Chat öffnen, Swipe, Bearbeiten; Effekt
   in `ChatView`), eine neue Antwort setzt ihn in `onLlmDone` samt Geste. E2E `avatar-portraits.mjs`.
 - Hub-Updates: Registry-Einträge tragen `revision`/`updated` (`hub::entry_revision`, fehlend = 1); installierte Inhalte stehen in

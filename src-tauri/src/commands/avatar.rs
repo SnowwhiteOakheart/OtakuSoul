@@ -15,8 +15,9 @@ pub async fn download_live2d_model(model_id: String) -> Result<String, String> {
     crate::modules::live2d::download_live2d_model(&model_id).await
 }
 
+/// Async so the first call (loading the cue words) does not hold up the main thread.
 #[tauri::command]
-pub fn classify_text_emotion(text: String) -> crate::modules::emotions::EmotionResult {
+pub async fn classify_text_emotion(text: String) -> crate::modules::emotions::EmotionResult {
     crate::modules::emotions::classify_emotion(&text)
 }
 
