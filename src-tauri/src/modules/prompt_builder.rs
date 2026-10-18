@@ -198,8 +198,9 @@ fn reply_length_rule(length: Option<&str>) -> Option<&'static str> {
     }
 }
 
-/// The expression tag the reply should end with: the six moods plus the extra portrait slots the
-/// card has pictures for (so the model picks what can be shown).
+/// The expression tag the reply should end with: every portrait slot (six moods and the extra
+/// ones) the card really has a picture for, checked before each reply. Without any picture there
+/// is no tag; the cue words decide then.
 fn emotion_tag_rule(ctx: &PromptContext) -> Option<String> {
     if !ctx.emotion_tags.unwrap_or(false) {
         return None;
@@ -207,20 +208,42 @@ fn emotion_tag_rule(ctx: &PromptContext) -> Option<String> {
     let extensions = &ctx.character.extensions;
     let pictures = ["expressions", "custom_expressions", "sow_expressions"]
         .iter()
-        .find_map(|key| extensions.get(*key).and_then(serde_json::Value::as_object));
+        .find_map(|key| extensions.get(*key).and_then(serde_json::Value::as_object))?;
     let names: Vec<&str> = crate::modules::emotions::MOODS
         .into_iter()
-        .chain(
-            crate::modules::emotions::EXTRA_PORTRAITS
-                .into_iter()
-                .filter(|slot| pictures.is_some_and(|p| p.contains_key(*slot))),
-        )
+        .chain(crate::modules::emotions::EXTRA_PORTRAITS)
+        .filter(|slot| {
+            pictures
+                .get(*slot)
+                .and_then(serde_json::Value::as_str)
+                .is_some_and(picture_exists)
+        })
         .collect();
+    if names.is_empty() {
+        return None;
+    }
     Some(format!(
         "End your reply with one tag for {}'s facial expression at its end: [emotion: NAME], NAME one of: {}. Write nothing after the tag.",
         ctx.char_name,
         names.join(", ")
     ))
+}
+
+/// Whether a portrait entry points to a picture: embedded or remote ones count, files must exist
+/// (cards hold absolute paths once loaded, `characters::resolve_profile_expression_paths`).
+fn picture_exists(source: &str) -> bool {
+    let source = source.trim();
+    if source.is_empty() {
+        return false;
+    }
+    let lower = source.to_ascii_lowercase();
+    if ["data:", "http://", "https://", "asset:", "blob:"]
+        .iter()
+        .any(|scheme| lower.starts_with(scheme))
+    {
+        return true;
+    }
+    std::path::Path::new(source).is_file()
 }
 
 impl PromptContext {
@@ -582,18 +605,38 @@ mod tests {
 
     #[test]
     fn chat_replies_end_with_an_expression_tag_the_card_can_show() {
+        let dir =
+            std::env::temp_dir().join(format!("otakusoul-tag-pictures-{}", std::process::id()));
+        std::fs::create_dir_all(&dir).unwrap();
+        let file = |name: &str| {
+            let path = dir.join(name);
+            std::fs::write(&path, b"x").unwrap();
+            path.to_string_lossy().to_string()
+        };
         let mut ctx = context(None);
         assert!(post_history_instruction(&ctx).is_none_or(|p| !p.contains("[emotion:")));
         ctx.emotion_tags = Some(true);
-        ctx.character.extensions =
-            serde_json::json!({"expressions": {"happy": "h.png", "blush": "b.png"}});
+        ctx.character.extensions = serde_json::json!({"expressions": {
+            "happy": file("happy.png"),
+            "sad": dir.join("fehlt.png").to_string_lossy(),
+            "neutral": "",
+            "blush": file("blush.png"),
+            "aroused": "data:image/png;base64,AAAA",
+        }});
         let rule = post_history_instruction(&ctx).unwrap();
         assert!(rule.contains("[emotion: NAME]"), "{rule}");
+        // Only slots with a picture, in the order moods → extra slots.
         assert!(
-            rule.contains("neutral, happy, sad, angry, surprised, relaxed, blush."),
+            rule.contains("NAME one of: happy, blush, aroused."),
             "{rule}"
         );
-        assert!(!rule.contains("crying"));
+
+        // No picture at all: no tag.
+        ctx.character.extensions = serde_json::json!({"expressions": {"sad": "/nicht/da.png"}});
+        assert!(post_history_instruction(&ctx).is_none_or(|p| !p.contains("[emotion:")));
+        ctx.character.extensions = serde_json::json!({});
+        assert!(post_history_instruction(&ctx).is_none_or(|p| !p.contains("[emotion:")));
+        let _ = std::fs::remove_dir_all(&dir);
     }
 
     #[test]

@@ -38,6 +38,10 @@ try {
   await clickSend(browser);
   await waitForPortrait('sad');
   await browser.saveScreenshot(path.join(screenshotDir, 'avatar-portrait-chat-sad.png'));
+  // The prompt offers only the expressions the card has pictures for (Cosmos: the six moods).
+  const tagRule = async () => ((await invoke('get_last_prompt'))?.messages ?? []).map((m) => m.content).join('\n')
+    .match(/NAME one of: ([^.]*)\./)?.[1];
+  assert.equal(await tagRule(), 'neutral, happy, sad, angry, surprised, relaxed');
 
   const cosmos = (await invoke('scan_characters')).find(c => c.id === 'cosmos');
   // Auch ein direkt übergebener relativer Pfad wird vor dem Ordnerwechsel aufgelöst.
@@ -64,6 +68,7 @@ try {
   await clickSend(browser);
   await waitForPortrait('blush');
   await browser.saveScreenshot(path.join(screenshotDir, 'avatar-portrait-chat-blush.png'));
+  assert.equal(await tagRule(), 'neutral, happy, sad, angry, surprised, relaxed, blush');
   await reloadSaved(withBlush.id);
   await waitForPortrait('blush');
 

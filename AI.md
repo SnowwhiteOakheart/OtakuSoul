@@ -582,8 +582,8 @@ ru „персонаж/история/сцена“. Fachbegriffe nur im Experte
   Emotionsbilder: neben den sechs Stimmungen die Plätze `blush`, `teasing`, `fear`, `disgust`, `crying` und (Romance)
   `seductive`, `aroused`, `ecstasy`, `afterglow` (`emotions::EXTRA_PORTRAITS`, `EmotionResult.portrait`; Bildwahl
   `selectCharacterPortrait`: Zusatzplatz → Emotion → Stimmung → neutral) – für alle Karten nutzbar.
-  Chat-Antworten enden mit einem Tag `[emotion: NAME]` (`PromptContext.emotion_tags`, Nachspann bietet die sechs Stimmungen und
-  die Zusatzplätze mit Bild an); `utils/replyTags.ts` entfernt ihn vor dem Speichern und im Live-Text, `chatSlice.replyEmotionTags`
+  Chat-Antworten enden mit einem Tag `[emotion: NAME]` (`PromptContext.emotion_tags`, Nachspann bietet von allen 15 Plätzen
+  nur die an, deren Bild vor jeder Antwort existiert – `prompt_builder::picture_exists`; ohne Bild kein Tag); `utils/replyTags.ts` entfernt ihn vor dem Speichern und im Live-Text, `chatSlice.replyEmotionTags`
   merkt ihn je `hitKey` (nur Sitzung), `voice::clean_text_for_tts` liest ihn (und `<state>`) nicht vor.
   Ohne Tag entscheiden Hinweiswörter aus `presets/cues/<sprache>.json` (+ `common.json` für Emoticons; Abschnitte `emotions`,
   `portraits` = Backend `emotions::Cue`, `gestures` = Frontend `avatarGestures.ts` per `import.meta.glob`). Ganze Wörter,
