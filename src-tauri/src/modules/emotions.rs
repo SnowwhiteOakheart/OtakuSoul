@@ -215,12 +215,34 @@ pub fn classify_emotion(text: &str) -> EmotionResult {
 const PORTRAIT_CUES: [(&str, &[&str]); 9] = [
     (
         "blush",
-        &["erröt", "wird rot", "rot wird", "blush", "verlegen"],
+        &[
+            "erröt",
+            "wird rot",
+            "rot wird",
+            "blush",
+            "verlegen",
+            "красне",
+            "покрасне",
+            "смущ",
+        ],
     ),
     (
         "teasing",
         &[
-            "neck", "zwinker", "tease", "teasing", "wink", "smirk", "frech",
+            "neckt",
+            "neckisch",
+            "necken",
+            "zwinker",
+            "tease",
+            "teasing",
+            "winks",
+            "winking",
+            "winked",
+            "smirk",
+            "frech",
+            "дразн",
+            "подмигива",
+            "ухмыл",
         ],
     ),
     (
@@ -234,6 +256,11 @@ const PORTRAIT_CUES: [(&str, &[&str]); 9] = [
             "afraid",
             "scared",
             "terrified",
+            "дрож",
+            "боюсь",
+            "страшно",
+            "испуг",
+            "паник",
         ],
     ),
     (
@@ -246,12 +273,29 @@ const PORTRAIT_CUES: [(&str, &[&str]); 9] = [
             "grimace",
             "eww",
             "igitt",
+            "отвращ",
+            "морщит нос",
+            "брезглив",
         ],
     ),
     (
         "crying",
         &[
-            "weint", "weinen", "tränen", "schluchz", "cries", "crying", "sobs", "sobbing", "tears",
+            "weint",
+            "weinen",
+            "tränen",
+            "schluchz",
+            "cries",
+            "crying",
+            "sobs",
+            "sobbing",
+            "tears",
+            "плачет",
+            "плакать",
+            "слёз",
+            "слез",
+            "всхлип",
+            "рыда",
         ],
     ),
     (
@@ -265,6 +309,10 @@ const PORTRAIT_CUES: [(&str, &[&str]); 9] = [
             "sultry",
             "bites her lip",
             "bites his lip",
+            "соблазнительн",
+            "томно",
+            "прикусывает губу",
+            "кусает губу",
         ],
     ),
     (
@@ -278,6 +326,9 @@ const PORTRAIT_CUES: [(&str, &[&str]); 9] = [
             "panting",
             "breathes heavily",
             "flushed with desire",
+            "возбужд",
+            "тяжело дышит",
+            "прерывисто дышит",
         ],
     ),
     (
@@ -289,6 +340,8 @@ const PORTRAIT_CUES: [(&str, &[&str]); 9] = [
             "climax",
             "ecstasy",
             "ecstatic",
+            "экстаз",
+            "оргазм",
         ],
     ),
     (
@@ -300,6 +353,8 @@ const PORTRAIT_CUES: [(&str, &[&str]); 9] = [
             "afterglow",
             "contentedly exhausted",
             "basks in the afterglow",
+            "блаженно устал",
+            "приятная усталость",
         ],
     ),
 ];
@@ -366,8 +421,11 @@ fn score_action_segment(action: &str, scores: &mut std::collections::HashMap<&'s
     }
     if action.contains("wein")
         || action.contains("träne")
-        || action.contains("cry")
-        || action.contains("tear")
+        || action.contains("cries")
+        || action.contains("crying")
+        || action.contains("cried")
+        || action.contains("tears")
+        || action.contains("tearful")
         || action.contains("schluchz")
     {
         *scores.entry("sadness").or_insert(0.0) += weight;
@@ -395,7 +453,7 @@ fn score_action_segment(action: &str, scores: &mut std::collections::HashMap<&'s
     {
         *scores.entry("love").or_insert(0.0) += weight;
     }
-    if action.contains("zwinker") || action.contains("wink") {
+    if action.contains("zwinker") || action.contains("winks") || action.contains("winking") {
         *scores.entry("amusement").or_insert(0.0) += weight;
     }
     if action.contains("seufz") || action.contains("sigh") {
@@ -407,6 +465,62 @@ fn score_action_segment(action: &str, scores: &mut std::collections::HashMap<&'s
         || action.contains("shiver")
     {
         *scores.entry("fear").or_insert(0.0) += weight;
+    }
+    score_russian(action, weight, scores);
+}
+
+/// Russian cues (word stems; Russian replies would otherwise always stay neutral).
+const RUSSIAN_CUES: [(&str, &[&str]); 12] = [
+    ("joy", &["улыба", "радост", "счастлив", "рада ", "рад "]),
+    (
+        "amusement",
+        &["смеётся", "смеется", "хихика", "хаха", "хихи"],
+    ),
+    ("embarrassment", &["красне", "смущ"]),
+    (
+        "sadness",
+        &[
+            "плач",
+            "слёз",
+            "слез",
+            "всхлип",
+            "грустн",
+            "печальн",
+            "жаль",
+        ],
+    ),
+    (
+        "anger",
+        &["злит", "злой", "злая", "сердит", "рычит", "ярост", "чёрт"],
+    ),
+    ("surprise", &["удивл", "ахает", "что?!", "неужели"]),
+    (
+        "love",
+        &[
+            "обнима",
+            "гладит",
+            "прижима",
+            "люблю тебя",
+            "милый",
+            "милая",
+        ],
+    ),
+    ("relief", &["вздыха", "облегчен"]),
+    ("fear", &["дрож", "боюсь", "страшно", "испуг"]),
+    ("curiosity", &["интересно", "любопыт"]),
+    ("gratitude", &["спасибо", "благодар"]),
+    ("disgust", &["отвращ", "мерзк", "брезглив"]),
+];
+
+fn score_russian(
+    text: &str,
+    weight: f32,
+    scores: &mut std::collections::HashMap<&'static str, f32>,
+) {
+    for (emotion, cues) in RUSSIAN_CUES {
+        if cues.iter().any(|cue| text.contains(cue)) {
+            *scores.entry(emotion).or_insert(0.0) += weight;
+        }
     }
 }
 
@@ -515,6 +629,7 @@ fn score_text_tokens(text: &str, scores: &mut std::collections::HashMap<&'static
     {
         *scores.entry("embarrassment").or_insert(0.0) += 1.8;
     }
+    score_russian(text, 1.5, scores);
 }
 
 #[cfg(test)]
@@ -544,6 +659,34 @@ mod tests {
             "*wird rot und schaut verlegen zur Seite* D-das hättest du nicht sagen müssen...",
         );
         assert_eq!(result.emotion, "embarrassment");
+    }
+
+    #[test]
+    fn russian_replies_and_misleading_english_words() {
+        let ru = classify_emotion("*краснеет и смущённо отводит взгляд* Н-не говори так…");
+        assert_eq!(
+            (ru.emotion.as_str(), ru.portrait.as_str()),
+            ("embarrassment", "blush")
+        );
+        assert_eq!(
+            classify_emotion("*тихо плачет, слёзы текут*").portrait,
+            "crying"
+        );
+        assert_eq!(
+            classify_emotion("*улыбается* Я так рада тебя видеть!").vrm_expression,
+            "happy"
+        );
+        assert_eq!(
+            classify_emotion("*подмигивает* Попался!").portrait,
+            "teasing"
+        );
+        // "neck", "winkt" (waves) and "crystal" are no teasing or crying cues.
+        assert_eq!(classify_emotion("*kisses her neck softly*").portrait, "");
+        assert_eq!(classify_emotion("*winkt dir zum Abschied*").portrait, "");
+        assert_eq!(
+            classify_emotion("*holds up the crystal*").emotion,
+            "neutral"
+        );
     }
 
     #[test]

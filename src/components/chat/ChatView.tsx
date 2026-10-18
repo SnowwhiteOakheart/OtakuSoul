@@ -270,6 +270,29 @@ export const ChatView: React.FC = () => {
     if (chatSpeakers(state.activeCharacter, state.chatSessions.find((s) => s.id === state.activeChatId), state.availableCharacters).length < 2) return;
     state.setCurrentEmotion(state.speakerEmotions[shownSpeakerId] ?? NEUTRAL_EMOTION);
   }, [shownSpeakerId]);
+  // The expression follows the reply on screen, also without a new one: opening a chat (or the app),
+  // switching a swipe, editing. A fresh reply sets it in `onLlmDone` (with a gesture).
+  const lastReply = isGenerating || isChatLoading ? undefined : [...storedMessages].reverse().find((m) => m.role === 'assistant');
+  const lastReplyKey = isGenerating || isChatLoading ? null : `${activeChatId}\n${lastReply?.speaker_id ?? ''}\n${lastReply?.content ?? ''}`;
+  useEffect(() => {
+    if (lastReplyKey === null) return;
+    const chatId = useAppStore.getState().activeChatId;
+    const text = lastReply?.content.trim();
+    const speaker = lastReply?.speaker_id ?? '';
+    if (!text) {
+      useAppStore.getState().setCurrentEmotion(NEUTRAL_EMOTION);
+      return;
+    }
+    let cancelled = false;
+    api.classifyTextEmotion(text).then((res) => {
+      const state = useAppStore.getState();
+      if (cancelled || state.activeChatId !== chatId || state.isGenerating) return;
+      state.setSpeakerEmotion(speaker, res);
+      if (state.generationSpeakerId === speaker) state.setCurrentEmotion(res);
+    }).catch(() => {});
+    return () => { cancelled = true; };
+    // oxlint-disable-next-line react-hooks/exhaustive-deps -- the key holds chat, speaker and text
+  }, [lastReplyKey]);
   const chatStyle = currentSession?.style;
   // The picture of the chat (Stage library), loaded once per file name.
   const [background, setBackground] = useState<{ name: string; url: string } | null>(null);

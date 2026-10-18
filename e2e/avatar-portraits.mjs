@@ -1,6 +1,7 @@
-// Emotionsbilder müssen im Chat, im Testmenü und nach dem Speichern weiter funktionieren.
+// Emotionsbilder müssen im Chat, im Testmenü und nach dem Speichern weiter funktionieren; ein Zusatzbild (Erröten)
+// folgt der Antwort, und ein wieder geöffneter Chat zeigt den Ausdruck seiner letzten Antwort.
 import assert from 'node:assert/strict';
-import { existsSync, rmSync, writeFileSync } from 'node:fs';
+import { copyFileSync, existsSync, rmSync, writeFileSync } from 'node:fs';
 import path from 'node:path';
 import { clickSend, launch, screenshotDir } from './harness.mjs';
 
@@ -29,7 +30,6 @@ const reloadSaved = async (id) => {
 
 try {
   await browser.$('textarea[aria-label="Nachricht"]').waitForDisplayed({ timeout: 30000 });
-  await waitForPortrait('neutral');
   await selectMood('Freude', 'happy');
   await selectMood('Wut', 'angry');
   await selectMood('Überraschung', 'surprised');
@@ -52,15 +52,31 @@ try {
   await selectMood('Freude', 'happy');
   await browser.saveScreenshot(path.join(screenshotDir, 'avatar-portrait-saved-happy.png'));
 
+  // An extra slot: a blushing reply shows the card's blush picture, also after reopening the chat.
+  const blush = path.join(path.dirname(saved.card.data.extensions.expressions.happy), 'blush.webp');
+  copyFileSync(saved.card.data.extensions.expressions.happy, blush);
+  const withBlush = await invoke('save_character_card', { profile: { ...saved,
+    card: { ...saved.card, data: { ...saved.card.data, extensions: { ...saved.card.data.extensions,
+      expressions: { ...saved.card.data.extensions.expressions, blush } } } } } });
+  await reloadSaved(withBlush.id);
+  mock.stats.chatReply = '*wird rot und schaut verlegen zur Seite* „D-das hättest du nicht sagen müssen …“';
+  await browser.$('textarea[aria-label="Nachricht"]').setValue('Du siehst süß aus.');
+  await clickSend(browser);
+  await waitForPortrait('blush');
+  await browser.saveScreenshot(path.join(screenshotDir, 'avatar-portrait-chat-blush.png'));
+  await reloadSaved(withBlush.id);
+  await waitForPortrait('blush');
+
   // Bereits beschädigte Nutzerkopien aus älteren Versionen bekommen fehlende Presetbilder.
   saved.card.data.extensions.expressions = originalRelative;
   writeFileSync(path.join(home, 'data/characters/Cosmos.json'), JSON.stringify(saved.card));
   rmSync(saved.source_path);
   await reloadSaved(saved.id);
-  await waitForPortrait('neutral');
+  // Without a blush picture the blushing reply falls back to its mood (embarrassment → sad).
+  await waitForPortrait('sad');
   await selectMood('Wut', 'angry');
   await browser.saveScreenshot(path.join(screenshotDir, 'avatar-portrait-repaired-angry.png'));
-  console.log('Portraits: manuelle Emotionen, Chatantwort, gespeicherte Karte und Reparatur alter Pfade bestanden.');
+  console.log('Portraits: manuelle Emotionen, Chatantwort, Erröten, wieder geöffneter Chat, gespeicherte Karte und Reparatur alter Pfade bestanden.');
 } finally {
   await close();
 }

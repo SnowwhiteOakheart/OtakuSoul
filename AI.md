@@ -582,6 +582,9 @@ ru „персонаж/история/сцена“. Fachbegriffe nur im Experte
   Emotionsbilder: neben den sechs Stimmungen die Plätze `blush`, `teasing`, `fear`, `disgust`, `crying` und (Romance)
   `seductive`, `aroused`, `ecstasy`, `afterglow` (`emotions::EXTRA_PORTRAITS`, `EmotionResult.portrait`; Bildwahl
   `selectCharacterPortrait`: Zusatzplatz → Emotion → Stimmung → neutral) – für alle Karten nutzbar.
+  Erkennung über Hinweiswörter de/en/ru (`PORTRAIT_CUES`, `RUSSIAN_CUES`; Teilwörter, daher keine mehrdeutigen wie „neck“/„wink“).
+  Der Ausdruck folgt der angezeigten letzten Antwort auch ohne neue Generierung (Chat öffnen, Swipe, Bearbeiten; Effekt
+  in `ChatView`), eine neue Antwort setzt ihn in `onLlmDone` samt Geste. E2E `avatar-portraits.mjs`.
 - Hub-Updates: Registry-Einträge tragen `revision`/`updated` (`hub::entry_revision`, fehlend = 1); installierte Inhalte stehen in
   `<Daten>/hub_installed.json` (`hub_installed.rs`, Befehl `list_installed_hub_items`, Schlüssel Art + Registry-ID bzw. Name).
   Szenen-Import behält `extensions` (`scene_definition_from_hub`, `null`-Felder = fehlend) und aktualisiert eine vorhandene Kopie
