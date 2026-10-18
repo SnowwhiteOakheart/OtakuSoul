@@ -41,22 +41,26 @@ pub fn update_relationship(
 }
 
 #[tauri::command]
+/// A memory the user adds; `chat_id`/`message_ids` name the message it was taken from
+/// ("Remember this message"), so a later change to that message flags it for review.
 pub fn add_episodic_memory(
     state: State<'_, AppState>,
     char_id: String,
     category: String,
     content: String,
     significance: u32,
+    chat_id: Option<String>,
+    message_ids: Option<Vec<String>>,
 ) -> Result<i64, String> {
+    let message_ids = message_ids.unwrap_or_default();
+    let source = crate::modules::memory::MemorySource {
+        chat_id: chat_id.as_deref(),
+        message_ids: &message_ids,
+        ..crate::modules::memory::MemorySource::manual()
+    };
     state
         .memory_db
-        .add_episodic_memory_from(
-            &char_id,
-            &category,
-            &content,
-            significance,
-            &crate::modules::memory::MemorySource::manual(),
-        )
+        .add_episodic_memory_from(&char_id, &category, &content, significance, &source)
         .map_err(|e| e.to_string())
 }
 

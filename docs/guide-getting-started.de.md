@@ -45,6 +45,8 @@ zeigt, wer die Figur ist und wie euer Chat beginnt; **„Jetzt chatten“** star
 - Unter dem Eingabefeld wählst Du die **Antwortlänge** für diesen Chat: kurz, mittel oder ausführlich.
 - Nerven Dich Lieblingsfloskeln der KI? Trag sie unter **Einstellungen → Antwortstil → Wörter & Wendungen** ein.
 - Das **Buch-Symbol** über einer Antwort zeigt, welche Lorebook-Einträge und Erinnerungen in sie eingeflossen sind.
+- Soll sich die Figur etwas sicher merken? Im Menü einer Nachricht (beim Darüberfahren) macht **„Diese Nachricht merken“**
+  daraus eine Erinnerung.
 - Die Figur erinnert sich an euer Gespräch. Die Anzeige **„Gesprächsgedächtnis“** unter dem Eingabefeld zeigt, wie
   voll es ist; ältere Nachrichten fasst die App bei Bedarf zusammen.
 

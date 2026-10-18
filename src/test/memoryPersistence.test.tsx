@@ -45,7 +45,7 @@ describe('memory persistence', () => {
     await user.click(screen.getByRole('button', { name: translate('memory.save') }));
     await waitFor(() => expect(toast.success).toHaveBeenCalledOnce());
     expect(editor).toHaveValue('');
-    expect(api.addEpisodicMemory).toHaveBeenNthCalledWith(2, 'ayu', 'fact', 'Our promise', 3);
+    expect(api.addEpisodicMemory).toHaveBeenNthCalledWith(2, 'ayu', 'fact', 'Our promise', 3, undefined);
   });
 
   it('preserves all diary fields on failure and saves the same draft on retry', async () => {

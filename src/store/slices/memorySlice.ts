@@ -46,7 +46,8 @@ export interface MemorySlice {
   fetchCognitiveOverview: (charId?: string, userName?: string) => Promise<void>;
   updatePsychology: (psych: PsychologyState) => Promise<void>;
   updateRelationship: (rel: RelationshipState) => Promise<void>;
-  addManualMemory: (category: string, content: string, significance: number) => Promise<void>;
+  /** Adds a memory; `source` = the chat message it was taken from. Throws on failure. */
+  addManualMemory: (category: string, content: string, significance: number, source?: { chatId: string; messageIds: string[] }) => Promise<void>;
   /** Corrects a memory; it counts as confirmed afterwards. */
   editMemory: (id: number, category: string, content: string, significance: number) => Promise<void>;
   forgetMemory: (id: number) => Promise<void>;
@@ -166,11 +167,11 @@ export const createMemorySlice: SliceCreator<MemorySlice> = (set, get) => {
       }
     },
 
-    addManualMemory: async (category, content, significance) => {
+    addManualMemory: async (category, content, significance, source) => {
       const cid = get().activeCharacter?.id;
       if (!cid) throw new Error(translate('int.noCharacter'));
       try {
-        await api.addEpisodicMemory(cid, category, content, significance);
+        await api.addEpisodicMemory(cid, category, content, significance, source);
         await get().fetchCognitiveOverview();
       } catch (e) {
         console.error('Failed to add episodic memory:', e);

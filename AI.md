@@ -73,6 +73,9 @@ ru „персонаж/история/сцена“. Fachbegriffe nur im Experte
   (Lorebooks, `assemble_prompt` = System-Prompt + Nachspann) → Payload (+ Author's Note in Tiefe N, Nachspann am Ende)
   → `send_chat_message`: `attachments::prepare` → `context_window::fit` (kürzt von vorn) → `stream_chat` (Events
   `llm-token`/`llm-thought`/`llm-done`) → Antwort speichern → ggf. `summarizeDroppedMessages` im Hintergrund.
+- **Nachricht merken:** Aktion im Nachrichtenmenü (Gehirn) → `chat/RememberMessageDialog.tsx` (Vorschlag `memorySuggestion` ohne
+  `*…*`/`((…))`, Kategorie, Wichtigkeit) → `addManualMemory(…, source)` → `add_episodic_memory` mit optionalem `chat_id`/
+  `message_ids` (Herkunft `manual`, Quelle markiert die Erinnerung bei späteren Änderungen). E2E `chat-remember.mjs`.
 - **Treffer je Antwort:** `resolvePromptWithLore` liefert `ResolvedPrompt` mit `hits` (`PromptHits`: Lorebook-Einträge mit Buch und
   Anweisungs-Kennung, Erinnerungen aus `recent_memories`, Zusammenfassung ja/nein); `chatSlice.promptHits` hält sie je
   `hitKey(messageId, swipeIndex)` nur für die laufende Sitzung (Fortsetzen über `mergeHits`). Anzeige `chat/PromptHitsView.tsx`

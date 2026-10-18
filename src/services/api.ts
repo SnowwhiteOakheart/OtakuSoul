@@ -262,17 +262,21 @@ export const api = {
     return await invoke<void>('update_relationship', { charId, relationship });
   },
 
+  /** `source` names the chat message the memory was taken from ("Remember this message"). */
   addEpisodicMemory: async (
     charId: string,
     category: string,
     content: string,
-    significance: number
+    significance: number,
+    source?: { chatId: string; messageIds: string[] },
   ): Promise<number> => {
     return await invoke<number>('add_episodic_memory', {
       charId,
       category,
       content,
       significance,
+      chatId: source?.chatId ?? null,
+      messageIds: source?.messageIds ?? null,
     });
   },
 

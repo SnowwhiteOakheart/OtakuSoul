@@ -24,6 +24,7 @@ import { errorMessage } from '../../utils/errors';
 import { PersonaAvatar } from '../characters/PersonaAvatar';
 import { RoleplayMessage } from './RoleplayMessage';
 import { PromptHitsButton, PromptHitsList } from './PromptHitsView';
+import { RememberMessageDialog } from './RememberMessageDialog';
 import { hitKey } from '../../store/helpers';
 import { api } from '../../services/api';
 import type { Attachment, StoredChatMessage, UserPersona } from '../../types';
@@ -193,6 +194,7 @@ const ChatMessageItem = React.memo<ChatMessageItemProps>(
     const bookmarked = useAppStore((s) => s.bookmarkedMessageIds.includes(msg.id));
     const hits = useAppStore((s) => (msg.role === 'assistant' ? s.promptHits[hitKey(msg.id, msg.swipe_index)] : undefined));
     const [hitsOpen, setHitsOpen] = useState(false);
+    const [remembering, setRemembering] = useState(false);
 
     const [thoughtOpen, setThoughtOpen] = useState(false);
     const [editContent, setEditContent] = useState<string | null>(null);
@@ -441,6 +443,15 @@ const ChatMessageItem = React.memo<ChatMessageItemProps>(
                 <GitBranch className="w-3 h-3" />
               </button>
               <button
+                onClick={() => setRemembering(true)}
+                disabled={!msg.content.trim()}
+                className={BUBBLE_ACTION}
+                title={t('chat.rememberHint')}
+                aria-label={t('chat.remember')}
+              >
+                <Brain className="w-3 h-3" />
+              </button>
+              <button
                 onClick={() => void toggleBookmark(msg.id)}
                 className={`${BUBBLE_ACTION} ${bookmarked ? 'text-amber-300' : ''}`}
                 title={t(bookmarked ? 'chat.removeBookmark' : 'chat.addBookmark')}
@@ -460,6 +471,7 @@ const ChatMessageItem = React.memo<ChatMessageItemProps>(
             </div>
           </div>
         )}
+        {remembering && <RememberMessageDialog message={msg} onClose={() => setRemembering(false)} />}
       </div>
     );
   },
