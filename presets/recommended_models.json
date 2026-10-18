@@ -1,39 +1,39 @@
 {
-  "version": "3.0.0",
-  "last_updated": "2026-10-17",
+  "version": "3.1.0",
+  "last_updated": "2026-10-18",
   "notes": {
-    "de": "Empfohlene Startmodelle für den Einrichtungsassistenten von OtakuSoul. Die App bringt eine Kopie mit und lädt beim Start diese Datei; die höhere `version` gilt. Für neue Empfehlungen hier Einträge ändern und `version` erhöhen. Nur Modelle mit freier Lizenz (Apache-2.0, MIT, BSD), ohne Anmeldung ladbar, mit SHA-256 der Datei auf Hugging Face; ungültige Einträge überspringt die App. Empfohlen wird das bevorzugte Modell, wenn es in Grafikspeicher − `desktop_reserve_mb` passt, sonst das größte passende. Keine Modellgewichte in diesem Repository.",
-    "en": "Recommended starter models for the OtakuSoul setup wizard. The app ships a copy and loads this file at start; the higher `version` wins. For new recommendations, change the entries here and raise `version`. Only freely licensed models (Apache-2.0, MIT, BSD), downloadable without sign-in, with the SHA-256 of the file on Hugging Face; the app skips invalid entries. The preferred model is recommended when it fits into VRAM − `desktop_reserve_mb`, otherwise the largest one that fits. No model weights in this repository.",
-    "ru": "Рекомендуемые стартовые модели для мастера настройки OtakuSoul. Приложение содержит копию и при запуске загружает этот файл; действует более высокая `version`. Для новых рекомендаций измените записи здесь и увеличьте `version`. Только модели со свободной лицензией (Apache-2.0, MIT, BSD), доступные без входа, с SHA-256 файла на Hugging Face; некорректные записи приложение пропускает. Рекомендуется предпочтительная модель, если она помещается в видеопамять минус `desktop_reserve_mb`, иначе самая большая из подходящих. Весов моделей в репозитории нет."
+    "de": "Empfohlene Startmodelle für den Einrichtungsassistenten von OtakuSoul. Die App bringt eine Kopie mit und lädt beim Start diese Datei; die höhere `version` gilt. Für neue Empfehlungen hier Einträge ändern und `version` erhöhen. Nur Modelle, die ohne Anmeldung ladbar sind, mit SHA-256 der Datei auf Hugging Face; Modelle ohne freie Lizenz tragen license_note und werden in der App gekennzeichnet; ungültige Einträge überspringt die App. Automatisch empfohlen wird (nur unter frei lizenzierten) das bevorzugte Modell, wenn es in Grafikspeicher − `desktop_reserve_mb` passt, sonst das größte passende. Keine Modellgewichte in diesem Repository.",
+    "en": "Recommended starter models for the OtakuSoul setup wizard. The app ships a copy and loads this file at start; the higher `version` wins. For new recommendations, change the entries here and raise `version`. Only models downloadable without sign-in, with the SHA-256 of the file on Hugging Face; models without an open licence carry license_note and are marked in the app; the app skips invalid entries. Among openly licensed models, the preferred one is recommended when it fits into VRAM − `desktop_reserve_mb`, otherwise the largest one that fits. No model weights in this repository.",
+    "ru": "Рекомендуемые стартовые модели для мастера настройки OtakuSoul. Приложение содержит копию и при запуске загружает этот файл; действует более высокая `version`. Для новых рекомендаций измените записи здесь и увеличьте `version`. Только модели, доступные без входа, с SHA-256 файла на Hugging Face; модели без свободной лицензии содержат license_note и помечаются в приложении; некорректные записи приложение пропускает. Среди свободно лицензированных рекомендуется предпочтительная модель, если она помещается в видеопамять минус `desktop_reserve_mb`, иначе самая большая из подходящих. Весов моделей в репозитории нет."
   },
   "desktop_reserve_mb": 1536,
   "models": [
     {
-      "id": "qwen3-4b",
-      "name": "Qwen3 4B Instruct",
-      "hf_id": "bartowski/Qwen_Qwen3-4B-Instruct-2507-GGUF",
-      "file": "Qwen_Qwen3-4B-Instruct-2507-Q4_K_M.gguf",
-      "size_bytes": 2497280736,
-      "sha256": "2fde00ce69dd4899c70d020845e2638353015bba0fdf161b3eb965f2bca4464e",
+      "id": "gemma-4-e4b",
+      "name": "Gemma 4 E4B",
+      "hf_id": "unsloth/gemma-4-E4B-it-GGUF",
+      "file": "gemma-4-E4B-it-Q4_K_M.gguf",
+      "size_bytes": 4977171584,
+      "sha256": "85a896a047553e842f25297ee5b031d64ff30147d9c4af17b1e4b394cd1fab87",
       "license": "Apache-2.0",
       "quantization": "Q4_K_M",
       "runtime": "standard",
       "preferred": false,
-      "vram_mb": 4000,
+      "vram_mb": 4500,
       "min_vram_gb": 6,
       "description": {
-        "de": "Klein und schnell. Läuft auf fast jeder Grafikkarte und notfalls auf dem Prozessor – gut zum Ausprobieren.",
-        "en": "Small and fast. Runs on almost any graphics card and, if need be, on the CPU – good for trying things out.",
-        "ru": "Маленькая и быстрая. Работает почти на любой видеокарте, а при необходимости и на процессоре – удобно для знакомства."
+        "de": "Klein, sehr schnell und überraschend gut: läuft auf fast jeder Grafikkarte (gemessen 3,9 GB bei 32K Kontext). Kann mit passender mmproj-Datei auch Bilder sehen.",
+        "en": "Small, very fast and surprisingly good: runs on almost any graphics card (measured 3.9 GB at 32K context). Can also see pictures with the matching mmproj file.",
+        "ru": "Маленькая, очень быстрая и на удивление хорошая: работает почти на любой видеокарте (3,9 ГБ при контексте 32K). С подходящим файлом mmproj видит и изображения."
       }
     },
     {
-      "id": "qwen3-8b",
-      "name": "Qwen3 8B",
-      "hf_id": "bartowski/Qwen_Qwen3-8B-GGUF",
-      "file": "Qwen_Qwen3-8B-Q4_K_M.gguf",
-      "size_bytes": 5027784224,
-      "sha256": "54fffa050078e984116639c83dfb64b5aa6d4cd474e018b076777c632bbccccd",
+      "id": "qwen3.5-9b",
+      "name": "Qwen3.5 9B",
+      "hf_id": "unsloth/Qwen3.5-9B-GGUF",
+      "file": "Qwen3.5-9B-Q4_K_M.gguf",
+      "size_bytes": 5680522464,
+      "sha256": "03b74727a860a56338e042c4420bb3f04b2fec5734175f4cb9fa853daf52b7e8",
       "license": "Apache-2.0",
       "quantization": "Q4_K_M",
       "runtime": "standard",
@@ -41,9 +41,28 @@
       "vram_mb": 6400,
       "min_vram_gb": 8,
       "description": {
-        "de": "Solider Allrounder für 8-GB-Karten: versteht Figuren und Anweisungen deutlich besser als das 4B-Modell.",
-        "en": "Solid all-rounder for 8 GB cards: follows characters and instructions much better than the 4B model.",
-        "ru": "Надёжная универсальная модель для карт на 8 ГБ: заметно лучше 4B держит персонажей и инструкции."
+        "de": "Allrounder für 8-GB-Karten: versteht Figuren, Anweisungen und Deutsch gut, langer Kontext (gemessen 6,3 GB bei 32K).",
+        "en": "All-rounder for 8 GB cards: follows characters, instructions and many languages well, long context (measured 6.3 GB at 32K).",
+        "ru": "Универсальная модель для карт на 8 ГБ: хорошо держит персонажей, инструкции и разные языки, длинный контекст (6,3 ГБ при 32K)."
+      }
+    },
+    {
+      "id": "gemma-4-12b",
+      "name": "Gemma 4 12B",
+      "hf_id": "unsloth/gemma-4-12b-it-GGUF",
+      "file": "gemma-4-12b-it-Q4_K_M.gguf",
+      "size_bytes": 7121861440,
+      "sha256": "0a270ec9fe6b34f4a0d33992b6135117b484ebc4766ab76b51d4ae8c457e4c42",
+      "license": "Apache-2.0",
+      "quantization": "Q4_K_M",
+      "runtime": "standard",
+      "preferred": false,
+      "vram_mb": 8300,
+      "min_vram_gb": 10,
+      "description": {
+        "de": "Starke Erzählerin für 10–12-GB-Karten: lebendiger Stil, gutes Deutsch, schnell (gemessen 8,2 GB bei 32K). Kann mit mmproj-Datei Bilder sehen.",
+        "en": "Strong storyteller for 10–12 GB cards: lively style, good multilingual output, fast (measured 8.2 GB at 32K). Can see pictures with the mmproj file.",
+        "ru": "Сильная рассказчица для карт на 10–12 ГБ: живой стиль, хорошая мультиязычность, быстрая (8,2 ГБ при 32K). С файлом mmproj видит изображения."
       }
     },
     {
@@ -66,31 +85,74 @@
       }
     },
     {
-      "id": "mistral-nemo-12b",
-      "name": "Mistral Nemo 12B",
-      "hf_id": "bartowski/Mistral-Nemo-Instruct-2407-GGUF",
-      "file": "Mistral-Nemo-Instruct-2407-Q4_K_M.gguf",
-      "size_bytes": 7477208192,
-      "sha256": "7c1a10d202d8788dbe5628dc962254d10654c853cae6aaeca0618f05490d4a46",
+      "id": "rocinante-x-12b",
+      "name": "Rocinante-X 12B",
+      "hf_id": "TheDrummer/Rocinante-X-12B-v1-GGUF",
+      "file": "Rocinante-X-12B-v1b-Q4_K_M.gguf",
+      "size_bytes": 7477207328,
+      "sha256": "ab75c5bc0da7c7d447a8385af86c7499a13aac30882ec7a47e4e01d9d8730ef7",
+      "license": "unknown",
+      "quantization": "Q4_K_M",
+      "runtime": "standard",
+      "preferred": false,
+      "vram_mb": 10300,
+      "min_vram_gb": 12,
+      "description": {
+        "de": "Beliebtes Rollenspiel-Modell auf Basis von Mistral Nemo: klassischer, lebhafter Erzählstil, auch für Inhalte für Erwachsene trainiert.",
+        "en": "Popular roleplay model based on Mistral Nemo: classic, lively narration, also trained for adult content.",
+        "ru": "Популярная ролевая модель на базе Mistral Nemo: классическое живое повествование, обучена и на контенте для взрослых."
+      },
+      "license_note": {
+        "de": "Der Autor gibt keine Lizenz an; das Basismodell (Mistral Nemo) steht unter Apache-2.0. Nutzung auf eigene Verantwortung.",
+        "en": "The author states no licence; the base model (Mistral Nemo) is Apache-2.0. Use at your own discretion.",
+        "ru": "Автор не указал лицензию; базовая модель (Mistral Nemo) распространяется под Apache-2.0. Используйте на своё усмотрение."
+      }
+    },
+    {
+      "id": "qwen3.6-35b-a3b",
+      "name": "Qwen3.6 35B-A3B (MoE)",
+      "hf_id": "unsloth/Qwen3.6-35B-A3B-GGUF",
+      "file": "Qwen3.6-35B-A3B-UD-Q4_K_M.gguf",
+      "size_bytes": 22134528992,
+      "sha256": "ac0e2c1189e055faa36eff361580e79c5bd6f8e76bffb4ce547f167d53e31a61",
       "license": "Apache-2.0",
       "quantization": "Q4_K_M",
       "runtime": "standard",
       "preferred": false,
-      "vram_mb": 9800,
-      "min_vram_gb": 12,
+      "vram_mb": 13800,
+      "min_vram_gb": 15,
       "description": {
-        "de": "Beliebtes Rollenspiel-Modell mit lebendigem Erzählstil und gutem Deutsch; Alternative zu Bonsai ohne Zusatzlaufzeit.",
-        "en": "Popular roleplay model with a lively narrative style and good multilingual output; an alternative to Bonsai without an extra runtime.",
-        "ru": "Популярная модель для ролевых игр с живым стилем повествования и хорошей мультиязычностью; альтернатива Bonsai без дополнительной среды."
+        "de": "Mixture-of-Experts: 35 Milliarden Parameter, je Wort rechnen nur 3 Milliarden. Läuft auf 16 GB teilweise ausgelagert flott (gemessen 39 Tokens/s), stark bei komplexen Szenen.",
+        "en": "Mixture of experts: 35 billion parameters, only 3 billion work per word. Runs fast on 16 GB partly offloaded (measured 39 tokens/s), strong in complex scenes.",
+        "ru": "Mixture of Experts: 35 млрд параметров, на каждое слово работают только 3 млрд. На 16 ГБ с частичной выгрузкой работает быстро (39 токенов/с), сильна в сложных сценах."
       }
     },
     {
-      "id": "mistral-small-24b",
-      "name": "Mistral Small 3.2 24B",
-      "hf_id": "bartowski/mistralai_Mistral-Small-3.2-24B-Instruct-2506-GGUF",
-      "file": "mistralai_Mistral-Small-3.2-24B-Instruct-2506-Q4_K_M.gguf",
-      "size_bytes": 14333915264,
-      "sha256": "80f5bda68f156f12650ca03a0a2dbfae06a215ac41caa773b8631a479f82415e",
+      "id": "gemma-4-26b-a4b",
+      "name": "Gemma 4 26B-A4B (MoE)",
+      "hf_id": "unsloth/gemma-4-26B-A4B-it-GGUF",
+      "file": "gemma-4-26B-A4B-it-UD-Q4_K_M.gguf",
+      "size_bytes": 16947541728,
+      "sha256": "f2c28b3dc4776931ac6f879e11f203dec637ea0f14267a86ec8f6165f63f293f",
+      "license": "Apache-2.0",
+      "quantization": "Q4_K_M",
+      "runtime": "standard",
+      "preferred": false,
+      "vram_mb": 14100,
+      "min_vram_gb": 16,
+      "description": {
+        "de": "Mixture-of-Experts für 16-GB-Karten: Qualität eines großen Modells, Tempo eines kleinen (gemessen 62 Tokens/s, teilweise ausgelagert). Kann mit mmproj-Datei Bilder sehen.",
+        "en": "Mixture of experts for 16 GB cards: quality of a large model at the speed of a small one (measured 62 tokens/s, partly offloaded). Can see pictures with the mmproj file.",
+        "ru": "Mixture of Experts для карт на 16 ГБ: качество большой модели со скоростью маленькой (62 токена/с при частичной выгрузке). С файлом mmproj видит изображения."
+      }
+    },
+    {
+      "id": "hearthfire-24b",
+      "name": "Hearthfire 24B",
+      "hf_id": "LatitudeGames/Hearthfire-24B-GGUF",
+      "file": "Hearthfire-24B-Q4_K_M.gguf",
+      "size_bytes": 14333907968,
+      "sha256": "d3f5017247a126dae5eca02a0f6639ab57639ee73559e4939c278b571825992d",
       "license": "Apache-2.0",
       "quantization": "Q4_K_M",
       "runtime": "standard",
@@ -98,9 +160,52 @@
       "vram_mb": 17500,
       "min_vram_gb": 19,
       "description": {
-        "de": "Für Karten ab 20 GB: die beste Erzählqualität im Katalog, hält lange Geschichten und viele Figuren auseinander.",
-        "en": "For cards with 20 GB or more: the best storytelling in the catalogue, keeps long stories and many characters apart.",
-        "ru": "Для карт от 20 ГБ: лучшее качество повествования в каталоге, хорошо держит длинные истории и множество персонажей."
+        "de": "Von den Machern von AI Dungeon auf Rollenspiel trainiert (Basis Mistral Small 3.2): hält Figuren und Geschichten sehr gut fest. Für Karten ab 20 GB, auf 16 GB teilweise ausgelagert (23 Tokens/s).",
+        "en": "Trained for roleplay by the makers of AI Dungeon (based on Mistral Small 3.2): keeps characters and stories very consistent. For cards from 20 GB, on 16 GB partly offloaded (23 tokens/s).",
+        "ru": "Обучена для ролевых игр создателями AI Dungeon (база Mistral Small 3.2): очень последовательно держит персонажей и сюжет. Для карт от 20 ГБ, на 16 ГБ с частичной выгрузкой (23 токена/с)."
+      }
+    },
+    {
+      "id": "cydonia-24b",
+      "name": "Cydonia 24B v4.3",
+      "hf_id": "TheDrummer/Cydonia-24B-v4.3-GGUF",
+      "file": "Cydonia-24B-v4zg-Q4_K_M.gguf",
+      "size_bytes": 14333910144,
+      "sha256": "1df364399168f94e32af74a5794617b922b1db7590658a6823c65286c49812d6",
+      "license": "unknown",
+      "quantization": "Q4_K_M",
+      "runtime": "standard",
+      "preferred": false,
+      "vram_mb": 17500,
+      "min_vram_gb": 19,
+      "description": {
+        "de": "Eines der beliebtesten Rollenspiel-Modelle (Basis Mistral Small 3.2): viel Eigeninitiative, natürliche Dialoge, auch für Inhalte für Erwachsene trainiert. Für Karten ab 20 GB.",
+        "en": "One of the most popular roleplay models (based on Mistral Small 3.2): lots of initiative, natural dialogue, also trained for adult content. For cards from 20 GB.",
+        "ru": "Одна из самых популярных ролевых моделей (база Mistral Small 3.2): много инициативы, естественные диалоги, обучена и на контенте для взрослых. Для карт от 20 ГБ."
+      },
+      "license_note": {
+        "de": "Der Autor gibt keine Lizenz an; das Basismodell (Mistral Small 3.2) steht unter Apache-2.0. Nutzung auf eigene Verantwortung.",
+        "en": "The author states no licence; the base model (Mistral Small 3.2) is Apache-2.0. Use at your own discretion.",
+        "ru": "Автор не указал лицензию; базовая модель (Mistral Small 3.2) распространяется под Apache-2.0. Используйте на своё усмотрение."
+      }
+    },
+    {
+      "id": "gemma-4-31b",
+      "name": "Gemma 4 31B",
+      "hf_id": "unsloth/gemma-4-31B-it-GGUF",
+      "file": "gemma-4-31B-it-Q4_K_M.gguf",
+      "size_bytes": 18323733440,
+      "sha256": "38bd64c852c4b460434cc7162fa9bdcf242faf86502581a754cb72956bb17f84",
+      "license": "Apache-2.0",
+      "quantization": "Q4_K_M",
+      "runtime": "standard",
+      "preferred": false,
+      "vram_mb": 20000,
+      "min_vram_gb": 22,
+      "description": {
+        "de": "Das große Gemma-4-Modell für 24-GB-Karten: beste Erzählqualität der Familie. Auf 16 GB nur langsam (8 Tokens/s).",
+        "en": "The large Gemma 4 model for 24 GB cards: the family's best storytelling. Slow on 16 GB (8 tokens/s).",
+        "ru": "Большая модель Gemma 4 для карт на 24 ГБ: лучшее повествование в семействе. На 16 ГБ медленно (8 токенов/с)."
       }
     }
   ]
