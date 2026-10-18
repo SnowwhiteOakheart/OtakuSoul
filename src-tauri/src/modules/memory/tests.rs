@@ -933,7 +933,11 @@ fn new_chat_and_greeting_are_stored_together() {
         ("assistant", "Hallo!")
     );
     // Alternative greetings are swipes of the first message; empty ones are skipped.
-    let swipes: Vec<&str> = messages[0].swipes.iter().map(|s| s.content.as_str()).collect();
+    let swipes: Vec<&str> = messages[0]
+        .swipes
+        .iter()
+        .map(|s| s.content.as_str())
+        .collect();
     assert_eq!(swipes, ["Hallo!", "Na du?"]);
     assert_eq!(messages[0].swipe_index, 0);
     // The greeting is a normal first message: the next one follows it.
