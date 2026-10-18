@@ -494,7 +494,11 @@ ru „персонаж/история/сцена“. Fachbegriffe nur im Experte
 - Porträts/Emotionsbilder: `utils/characterPortraits.ts` wählt das Bild je Emotion und macht Dateipfade über
   `convertFileSrc` zu `asset://`-URLs. Unter `tauri dev` (Seite von `http://localhost:1420`) lädt WebKitGTK solche
   Bilder nicht in `<img>`, `fetch` aber schon → `loadDisplayableImage`/`assetAsBlobUrl` laden sie als Blob-URL;
-  `MorphingPortrait` lädt vor dem Überblenden vollständig und trägt die Quelle in `data-portrait`. Die Asset-Freigabe
+  `MorphingPortrait` lädt vor dem Überblenden vollständig und trägt die Quelle in `data-portrait`.
+  Lebendiges Bild: `MorphingPortrait` atmet und wiegt sich per CSS (`.portrait-alive`/`.portrait-breath` in `App.css`, Tempo je
+  Ausdruck `utils/portraitMotion.ts` `breathSeconds`, zufällige Phase), beim Sprechen wippt `.portrait-speech` mit dem Pegel aus
+  `audioPlayer.onAudioFrame` (CSS-Variable `--speech`, kein Re-Render); Schalter `avatarSlice.portraitMotion` (localStorage,
+  Knopf `#setting-portrait-motion` im Bildmodus), `prefers-reduced-motion` hält es still; `data-alive`/`data-breath`. Die Asset-Freigabe
   bleibt eng (`tauri.conf.json` `scope: []`, Laufzeit-Freigabe in `lib.rs` `allow_app_asset_dirs`), niemals `**`.
   Relative Bildpfade einer Karte werden beim Laden/Speichern auf ihren Ordner bezogen
   (`characters::resolve_profile_expression_paths`), fehlende Dateien alter Nutzerkopien ersetzt

@@ -778,6 +778,8 @@ export const ru: TranslationDictionary = {
   "avatar.modeLive2dHint": "Показать анимированный аватар Live2D",
   "avatar.modeImage": "Изображение",
   "avatar.modeImageHint": "Показать 2D-портрет со спрайтами эмоций",
+  "avatar.portraitMotion": "Живой портрет",
+  "avatar.portraitMotionHint": "Изображение слегка дышит, покачивается и двигается в такт голосу во время речи. При включённом в системе «уменьшении движения» остаётся неподвижным.",
   "avatar.live2dLoading": "Загрузка Live2D…",
   "avatar.noLive2dTitle": "Модель Live2D не назначена",
   "avatar.noLive2dText": "Назначьте этому персонажу модель Live2D в редакторе персонажа.",

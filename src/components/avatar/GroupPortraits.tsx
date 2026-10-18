@@ -3,6 +3,7 @@ import { useTranslation } from '../../i18n';
 import { NEUTRAL_EMOTION } from '../../store/slices/avatarSlice';
 import { selectCharacterPortrait } from '../../utils/characterPortraits';
 import { presentedAs } from '../../utils/groupChat';
+import { breathSeconds } from '../../utils/portraitMotion';
 import { MorphingPortrait } from './AvatarCanvas';
 import type { CharacterProfile } from '../../types';
 
@@ -31,7 +32,7 @@ export const GroupPortraits = ({ speakers, speakerId, isSpeaking }: {
           <figure key={id || 'host'} role="listitem" aria-current={active || undefined} data-portrait-speaker={id || 'host'}
             className={`flex flex-col items-center gap-1.5 rounded-2xl p-1.5 transition-opacity ${active ? 'bg-accent-500/10 ring-2 ring-accent-400/70' : 'opacity-75'}`}>
             {src ? (
-              <MorphingPortrait src={src} fallbackSrc={character.avatar_data_url} alt={name} isSpeaking={active && isSpeaking} />
+              <MorphingPortrait src={src} fallbackSrc={character.avatar_data_url} alt={name} isSpeaking={active && isSpeaking} breath={breathSeconds(emotion)} />
             ) : (
               <div className="w-full aspect-[4/5] rounded-3xl bg-linear-to-tr from-accent-600 to-accent2-600 flex items-center justify-center text-white text-4xl font-bold">
                 {name.charAt(0)}

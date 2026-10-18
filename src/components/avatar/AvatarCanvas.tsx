@@ -1,7 +1,7 @@
 import React, { lazy, Suspense, useEffect, useRef, useState } from 'react';
 import { VrmViewer } from './VrmViewer';
 import { loadCubismCore } from '../../services/live2dRuntime';
-import { Box, Image, Sparkles, Smile, ChevronDown } from 'lucide-react';
+import { Box, Image, Sparkles, Smile, ChevronDown, Wind } from 'lucide-react';
 import { CharacterProfile } from '../../types';
 import { PORTRAIT_MOODS, assetAsBlobUrl, getPortraitExpressions, loadDisplayableImage, selectCharacterPortrait } from '../../utils/characterPortraits';
 import { useAppStore, useStoreFields } from '../../store/useAppStore';
@@ -10,6 +10,8 @@ import { DropdownMenu } from '../ui/DropdownMenu';
 import { resolveLive2dPath } from '../avatars/avatarMatch';
 import { AvatarSkeleton, ScrollText } from '../ui';
 import { languageCode, localizeCard } from '../../utils/cardI18n';
+import { audioPlayer } from '../../services/audioPlayer';
+import { breathSeconds } from '../../utils/portraitMotion';
 
 // MMD brings its own loader and physics; only loaded for MMD avatars.
 const MmdViewer = lazy(() => import('./MmdViewer'));
@@ -50,6 +52,8 @@ interface MorphingPortraitProps {
   fallbackSrc?: string | null;
   alt: string;
   isSpeaking: boolean;
+  /** Seconds per breath (`breathSeconds`): the expression sets the pace. */
+  breath?: number;
 }
 
 export const MorphingPortrait: React.FC<MorphingPortraitProps> = ({
@@ -57,7 +61,27 @@ export const MorphingPortrait: React.FC<MorphingPortraitProps> = ({
   fallbackSrc,
   alt,
   isSpeaking,
+  breath = 4.2,
 }) => {
+  // Living portrait: breathing and swaying in CSS (off with "reduce motion"), while speaking the
+  // picture bobs with the voice's level (written to a CSS variable, no re-render per frame).
+  const alive = useAppStore((s) => s.portraitMotion);
+  const speechRef = useRef<HTMLDivElement>(null);
+  // Each portrait starts somewhere in its breath, so several side by side don't move in step.
+  const [phase] = useState(() => Math.random());
+  useEffect(() => {
+    const element = speechRef.current;
+    if (!alive || !isSpeaking || !element) return;
+    let level = 0;
+    const stop = audioPlayer.onAudioFrame((amplitude) => {
+      level = level * 0.6 + amplitude * 0.4;
+      element.style.setProperty('--speech', level.toFixed(3));
+    });
+    return () => {
+      stop();
+      element.style.setProperty('--speech', '0');
+    };
+  }, [alive, isSpeaking]);
   // The first picture shows right away; later ones are loaded first and then cross-faded.
   // `origin` is the portrait a layer stands for (its URL may be a blob under `tauri dev`).
   const [layers, setLayers] = useState<[PortraitLayer, PortraitLayer]>([{ url: src, origin: src }, null]);
@@ -119,7 +143,12 @@ export const MorphingPortrait: React.FC<MorphingPortraitProps> = ({
   }, []);
 
   return (
-    <div className="relative w-full max-w-sm aspect-[4/5] rounded-3xl overflow-hidden border-2 border-accent-500/40 shadow-2xl shadow-accent-500/10 transition-transform duration-700 hover:scale-[1.02]">
+    <div className="relative w-full max-w-sm aspect-[4/5] rounded-3xl overflow-hidden border-2 border-accent-500/40 shadow-2xl shadow-accent-500/10 transition-transform duration-700 hover:scale-[1.02]"
+      data-alive={alive || undefined} data-breath={alive ? breath : undefined}>
+      {/* A little larger than the frame, so swaying never shows an edge. */}
+      <div className={`absolute ${alive ? '-inset-[3%] portrait-alive' : 'inset-0'}`} style={{ '--breath': `${breath}s`, '--breath-phase': phase } as React.CSSProperties}>
+      <div className="absolute inset-0 portrait-breath">
+      <div ref={speechRef} className="absolute inset-0 portrait-speech">
       {layers.map((layer, index) => layer && (
         <img
           key={`${index}-${layer.url}`}
@@ -147,9 +176,12 @@ export const MorphingPortrait: React.FC<MorphingPortraitProps> = ({
             index === visibleLayer
               ? 'opacity-100 blur-0 scale-100'
               : 'opacity-0 blur-sm scale-[1.03]'
-          } ${isSpeaking && index === visibleLayer ? 'brightness-105 scale-[1.02]' : ''}`}
+          } ${isSpeaking && index === visibleLayer ? `brightness-105 ${alive ? '' : 'scale-[1.02]'}` : ''}`}
         />
       ))}
+      </div>
+      </div>
+      </div>
 
       {isSpeaking && (
         <div className="absolute top-4 left-4 flex items-center gap-1.5 px-3 py-1 rounded-full bg-accent-900/80 border border-accent-500/60 text-accent-200 text-xs font-mono animate-pulse backdrop-blur">
@@ -169,6 +201,8 @@ export const AvatarCanvas: React.FC<AvatarCanvasProps> = ({
     activeVrmPath,
     activeLive2dPath,
     avatarMode,
+    portraitMotion,
+    setPortraitMotion,
     setAvatarMode,
     scannedLive2ds,
     currentEmotion,
@@ -178,7 +212,7 @@ export const AvatarCanvas: React.FC<AvatarCanvasProps> = ({
     replyLanguage,
     scannedVrms,
   } = useStoreFields(
-    'activeVrmPath', 'activeLive2dPath', 'avatarMode', 'setAvatarMode', 'scannedLive2ds',
+    'activeVrmPath', 'activeLive2dPath', 'avatarMode', 'setAvatarMode', 'scannedLive2ds', 'portraitMotion', 'setPortraitMotion',
     'currentEmotion', 'setCurrentEmotion', 'avatarMotions', 'avatarGesture', 'replyLanguage', 'scannedVrms',
   );
   const { t, tEmotion } = useTranslation();
@@ -321,6 +355,21 @@ export const AvatarCanvas: React.FC<AvatarCanvasProps> = ({
             <span className="hidden @sm:inline">{t('avatar.modeImage')}</span>
           </button>
         </div>
+
+        {avatarMode === '2d' && (
+          <button
+            id="setting-portrait-motion"
+            onClick={() => setPortraitMotion(!portraitMotion)}
+            aria-pressed={portraitMotion}
+            aria-label={t('avatar.portraitMotion')}
+            title={t('avatar.portraitMotionHint')}
+            className={`flex items-center gap-1 px-2 py-1 rounded-lg border text-xs backdrop-blur shadow-md transition-colors outline-hidden focus-visible:ring-2 focus-visible:ring-accent-400 ${
+              portraitMotion ? 'bg-accent-600 border-accent-500 text-white' : 'bg-slate-900/80 border-slate-700/60 text-slate-400 hover:text-slate-200'
+            }`}
+          >
+            <Wind className="w-3 h-3" />
+          </button>
+        )}
       </div>
 
       {/* Main Avatar Viewport */}
@@ -387,6 +436,7 @@ export const AvatarCanvas: React.FC<AvatarCanvasProps> = ({
               fallbackSrc={character?.avatar_data_url}
               alt={charName}
               isSpeaking={isSpeaking}
+              breath={breathSeconds(currentEmotion)}
             />
           ) : (
             <div className="w-48 h-48 rounded-full bg-linear-to-tr from-accent-600 to-accent2-600 flex items-center justify-center text-white text-5xl font-bold border-4 border-accent-500/50 shadow-2xl">

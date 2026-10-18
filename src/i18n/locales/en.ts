@@ -778,6 +778,8 @@ export const en: TranslationDictionary = {
   "avatar.modeLive2dHint": "Show animated Live2D avatar",
   "avatar.modeImage": "Image",
   "avatar.modeImageHint": "Show 2D portrait with emotion sprites",
+  "avatar.portraitMotion": "Living portrait",
+  "avatar.portraitMotionHint": "The picture breathes gently, sways a little and moves with the voice while speaking. With “reduce motion” in your system it stays still.",
   "avatar.live2dLoading": "Loading Live2D…",
   "avatar.noLive2dTitle": "No Live2D model assigned",
   "avatar.noLive2dText": "Assign a Live2D model to this character in the character editor.",

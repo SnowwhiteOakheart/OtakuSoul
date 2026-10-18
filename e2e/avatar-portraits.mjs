@@ -31,6 +31,20 @@ const reloadSaved = async (id) => {
 try {
   await browser.$('textarea[aria-label="Nachricht"]').waitForDisplayed({ timeout: 30000 });
   await selectMood('Freude', 'happy');
+  // The portrait breathes and sways (CSS animations), the switch keeps it still.
+  const motion = () => browser.execute(() => {
+    const frame = document.querySelector('[data-alive]');
+    const sway = document.querySelector('.portrait-alive');
+    const breath = document.querySelector('.portrait-alive > .portrait-breath');
+    return { alive: !!frame, sway: sway ? getComputedStyle(sway).animationName : '', breath: breath ? getComputedStyle(breath).animationName : '' };
+  });
+  assert.deepEqual(await motion(), { alive: true, sway: 'portrait-sway', breath: 'portrait-breathe' });
+  await browser.saveScreenshot(path.join(screenshotDir, 'avatar-portrait-lebendig.png'));
+  const motionSwitch = await browser.$('#setting-portrait-motion');
+  await motionSwitch.click();
+  assert.deepEqual(await motion(), { alive: false, sway: '', breath: '' });
+  assert.equal(await motionSwitch.getAttribute('aria-pressed'), 'false');
+  await motionSwitch.click();
   await selectMood('Wut', 'angry');
   await selectMood('Überraschung', 'surprised');
   mock.stats.chatReply = '*weint traurig* "Ich bin traurig und enttäuscht."';

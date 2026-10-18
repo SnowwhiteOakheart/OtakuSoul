@@ -393,3 +393,31 @@
 [data-has-background] .chat-sender {
   text-shadow: 0 1px 3px rgb(0 0 0 / 0.85);
 }
+
+/* Living 2D portrait (MorphingPortrait): breathing from the bottom edge, a slow sway at another
+   pace, and a bob with the voice (--speech 0-1, set per audio frame). */
+.portrait-alive {
+  transform-origin: 50% 100%;
+  animation: portrait-sway calc(var(--breath, 4.2s) * 1.73) ease-in-out calc(var(--breath-phase, 0) * -9s) infinite alternate;
+}
+.portrait-alive > .portrait-breath {
+  transform-origin: 50% 100%;
+  animation: portrait-breathe var(--breath, 4.2s) ease-in-out calc(var(--breath-phase, 0) * -5s) infinite;
+}
+.portrait-alive .portrait-speech {
+  transform-origin: 50% 100%;
+  transform: translateY(calc(var(--speech, 0) * -1.4%)) scale(calc(1 + var(--speech, 0) * 0.018));
+  transition: transform 90ms linear;
+}
+@keyframes portrait-breathe {
+  0%, 100% { transform: scale(1, 1); }
+  45% { transform: scale(1.005, 1.014) translateY(-0.35%); }
+}
+@keyframes portrait-sway {
+  from { transform: rotate(-0.3deg) translateX(-0.25%); }
+  to { transform: rotate(0.3deg) translateX(0.25%); }
+}
+@media (prefers-reduced-motion: reduce) {
+  .portrait-alive, .portrait-alive > .portrait-breath { animation: none; }
+  .portrait-alive .portrait-speech { transform: none; }
+}

@@ -1,3 +1,4 @@
+import { readPortraitMotion, storePortraitMotion } from '../../utils/portraitMotion';
 import { api } from '../../services/api';
 import type {
   ScannedVrm,
@@ -29,6 +30,9 @@ export interface AvatarSlice {
   refreshLive2dModels: () => Promise<void>;
   avatarMode: '3d' | 'live2d' | '2d';
   setAvatarMode: (mode: '3d' | 'live2d' | '2d') => void;
+  /** 2D portraits breathe, sway and move with the voice (per device). */
+  portraitMotion: boolean;
+  setPortraitMotion: (on: boolean) => void;
   /** The expression of the avatar on screen (in a group chat: the speaker shown). */
   currentEmotion: EmotionResult;
   setCurrentEmotion: (em: EmotionResult) => void;
@@ -104,6 +108,13 @@ export const createAvatarSlice: SliceCreator<AvatarSlice> = (set, get) => ({
   setAvatarMode: (mode) => {
     set({ avatarMode: mode });
     get().saveCurrentSettings();
+  },
+
+  portraitMotion: readPortraitMotion(),
+
+  setPortraitMotion: (on) => {
+    storePortraitMotion(on);
+    set({ portraitMotion: on });
   },
 
   currentEmotion: NEUTRAL_EMOTION,

@@ -780,6 +780,8 @@ export const de = {
   "avatar.modeLive2dHint": "Animierten Live2D-Avatar anzeigen",
   "avatar.modeImage": "Bild",
   "avatar.modeImageHint": "2D-Porträt mit Emotions-Sprites anzeigen",
+  "avatar.portraitMotion": "Lebendiges Bild",
+  "avatar.portraitMotionHint": "Das Bild atmet leicht, wiegt sich und bewegt sich beim Sprechen mit der Stimme. Mit „Bewegung reduzieren“ im System bleibt es still.",
   "avatar.live2dLoading": "Live2D wird geladen…",
   "avatar.noLive2dTitle": "Kein Live2D-Modell zugewiesen",
   "avatar.noLive2dText": "Weise diesem Charakter im Charakter-Editor ein Live2D-Modell zu.",
