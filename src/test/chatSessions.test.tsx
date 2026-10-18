@@ -109,6 +109,17 @@ describe('chat session loading', () => {
     expect(useAppStore.getState().activeChatId).toBe('chat-2');
     expect(useAppStore.getState().storedMessages).toEqual([other]);
   });
+  it('offers the alternative greetings in the reply language as swipes of a new chat', async () => {
+    const translated = { first_mes: 'Hallo {{user}}!', alternate_greetings: ['Na, {{user}}?'] };
+    useAppStore.setState({
+      replyLanguage: 'Deutsch',
+      activePersona: { ...initial.activePersona, name: 'Kai' },
+      activeCharacter: { ...character, card: { data: { name: 'Ayu', first_mes: 'Hi {{user}}!', alternate_greetings: ['Hey?', ' '], extensions: { otakusoul_i18n: { translations: { de: translated } } } } } } as unknown as CharacterProfile,
+    });
+    vi.mocked(api.createChatSession).mockResolvedValueOnce(session);
+    await useAppStore.getState().createNewChat('Neu');
+    expect(api.createChatSession).toHaveBeenCalledWith('ayu', 'Neu', ['Hallo Kai!', 'Na, Kai?']);
+  });
   it('does not activate a new chat created for an outdated character', async () => {
     let finish!: (value: ChatSession) => void;
     vi.mocked(api.createChatSession).mockImplementationOnce(() => new Promise((resolve) => { finish = resolve; }));

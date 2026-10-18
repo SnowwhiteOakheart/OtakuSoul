@@ -149,15 +149,20 @@ const hintMemorySources = async (chatId: string, messageId: string, openDrawer: 
 /** Summarize once this many conversation messages have left the context window. */
 const SUMMARY_BATCH = 6;
 
-/** The active character's first message in the reply language, with {{char}}/{{user}} filled in. */
-const greetingFor = (state: {
+/**
+ * The active character's greetings in the reply language (first message, then the alternatives as
+ * swipes), with {{char}}/{{user}} filled in.
+ */
+const greetingsFor = (state: {
   activeCharacter: CharacterProfile | null;
   activePersona: UserPersona;
   replyLanguage: string;
-}): string => {
-  if (!state.activeCharacter) return '';
+}): string[] => {
+  if (!state.activeCharacter) return [];
   const data = localizeCard(state.activeCharacter.card.data, languageCode(state.replyLanguage));
-  return data.first_mes ? fillCardMacros(data.first_mes, data.name, state.activePersona.name) : '';
+  return [data.first_mes, ...(data.alternate_greetings ?? [])]
+    .filter((text) => text?.trim())
+    .map((text) => fillCardMacros(text, data.name, state.activePersona.name));
 };
 
 export const createChatSlice: SliceCreator<ChatSlice> = (set, get) => {
@@ -355,7 +360,7 @@ export const createChatSlice: SliceCreator<ChatSlice> = (set, get) => {
   loadChatSessions: async (charId: string) => {
     if (get().activeCharacter?.id !== charId) return;
     const previousChatId = get().activeChatId;
-    const greeting = greetingFor(get());
+    const greetings = greetingsFor(get());
     const request = beginSessionLoad(null);
     set({ chatSessions: [] });
     try {
@@ -363,7 +368,7 @@ export const createChatSlice: SliceCreator<ChatSlice> = (set, get) => {
       if (!isSessionCurrent(request, charId)) return;
       let targetId = sessions.find((session) => session.id === previousChatId)?.id ?? sessions[0]?.id;
       if (!targetId) {
-        const session = await api.createChatSession(charId, translate('chat.newChatTitle'), greeting);
+        const session = await api.createChatSession(charId, translate('chat.newChatTitle'), greetings);
         if (!isSessionCurrent(request, charId)) return;
         sessions = visibleSessions(await api.listChatSessions(charId));
         if (!isSessionCurrent(request, charId)) return;
@@ -399,11 +404,11 @@ export const createChatSlice: SliceCreator<ChatSlice> = (set, get) => {
   createNewChat: async (title?: string) => {
     const char = get().activeCharacter;
     if (!char) return null;
-    const greeting = greetingFor(get());
+    const greetings = greetingsFor(get());
     const sessionTitle = title || translate('chat.defaultSessionTitle', { n: get().chatSessions.length + 1 });
     const request = beginSessionLoad(null);
     try {
-      const session = await api.createChatSession(char.id, sessionTitle, greeting);
+      const session = await api.createChatSession(char.id, sessionTitle, greetings);
       if (!isSessionCurrent(request, char.id)) return null;
       const sessions = await api.listChatSessions(char.id);
       if (!isSessionCurrent(request, char.id)) return null;

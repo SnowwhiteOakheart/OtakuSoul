@@ -40,16 +40,17 @@ impl MemoryDb {
         character_id: &str,
         title: &str,
     ) -> Result<ChatSession, rusqlite::Error> {
-        self.create_chat_session_with_greeting(character_id, title, None)
+        self.create_chat_session_with_greeting(character_id, title, &[])
     }
 
     /// A new chat together with the character's first message, in one transaction: a failure
-    /// leaves neither an empty session nor a lone greeting behind.
+    /// leaves neither an empty session nor a lone greeting behind. Each greeting (main, then the
+    /// card's alternatives) becomes a swipe of that message; the first one is shown.
     pub fn create_chat_session_with_greeting(
         &self,
         character_id: &str,
         title: &str,
-        greeting: Option<&str>,
+        greetings: &[&str],
     ) -> Result<ChatSession, rusqlite::Error> {
         let conn = self.conn.lock();
         let tx = conn.unchecked_transaction()?;
@@ -66,13 +67,18 @@ impl MemoryDb {
              VALUES (?1, ?2, ?3, ?4, ?4, '', 2)",
             params![id, character_id, effective_title, now],
         )?;
-        let greeting = greeting.map(str::trim).filter(|text| !text.is_empty());
-        if let Some(text) = greeting {
-            let swipes = serde_json::to_string(&[SwipeVariant {
+        let variants: Vec<SwipeVariant> = greetings
+            .iter()
+            .map(|text| text.trim())
+            .filter(|text| !text.is_empty())
+            .map(|text| SwipeVariant {
                 content: text.to_string(),
                 thought: None,
-            }])
-            .unwrap_or_else(|_| "[]".into());
+            })
+            .collect();
+        let greeting = variants.first().map(|variant| variant.content.clone());
+        if let Some(text) = &greeting {
+            let swipes = serde_json::to_string(&variants).unwrap_or_else(|_| "[]".into());
             tx.execute(
                 "INSERT INTO chat_messages (id, chat_id, role, content, thought, order_index, swipe_index, swipes_json, created_at, attachments_json)
                  VALUES (?1, ?2, 'assistant', ?3, NULL, 0, 0, ?4, ?5, '[]')",

@@ -57,3 +57,20 @@
 - [ ] Wackeligen E2E-Test beobachten: `stage-5e` scheiterte einmal an einem veralteten Element (`button[aria-label*="gegen"]`
   im Kampfpanel, 16.10.2026) und bestand danach.
   17.10.2026: zweite Ursache behoben – der Test übersah Heilung durch „Zweiter Atem“ (zählt jetzt Heal-Ereignisse).
+
+## 3. Chat & Rollenspiel (Vorschläge vom 18.10.2026)
+
+- [x] **Alternative Begrüßungen** einer Karte als Swipes der ersten Nachricht eines neuen Chats (übersetzt, Makros gefüllt).
+- [ ] **Antwortvorschläge im Chat:** Knopf „Was könnte ich sagen?“ mit 2–3 kurzen Ideen im Stil der Persona (wie `pending_choices` in Stage).
+- [ ] **„Schreib für mich“ (Impersonate):** KI entwirft die nächste Nutzernachricht in den Composer, Nutzer bearbeitet vor dem Senden.
+- [ ] **Gruppen-Chats** mit mehreren Charakteren; Sprecherwahl/Ansprache-Erkennung aus `stage/director.rs` wiederverwenden, ohne Spielmechanik.
+- [ ] **OOC-/Regie-Nachrichten:** `(( … ))` oder Umschalter „Regieanweisung“ geht als Hinweis ans Modell statt in die Erzählung.
+- [ ] **Weitere Kartenmakros:** `{{random:a,b}}`, `{{roll:1d20}}`, `{{time}}`/`{{date}}`, `{{idle_duration}}` (Community-Karten zeigen sie sonst roh).
+- [ ] **Wiederholungen eindämmen in Klartext:** Schalter „Abwechslungsreicher schreiben“ (DRY/XTC mit guten Werten), optional automatisches
+  Neu-Würfeln bei fast gleicher Antwort.
+- [ ] **Ausgabe-Filter:** einfache Liste „Diese Wörter/Muster vermeiden“, Ersetzungsregeln für Antworten (Expertenmodus: RegEx, Logit-Bias).
+- [ ] **Antwortlänge pro Chat:** kurz/mittel/ausführlich, passt Prompt und `max_tokens` gemeinsam an.
+- [ ] **Sichtbare Lorebook-/Gedächtnis-Treffer** je Antwort (welche Einträge einbezogen wurden).
+- [ ] **„Diese Nachricht merken“** im Nachrichtenmenü (`add_episodic_memory_from`).
+- [ ] **Szenenbild per Knopf** aus dem aktuellen Chat-Kontext.
+- [ ] **Chat-Export/-Import im SillyTavern-Format (JSONL)** für Umsteiger.

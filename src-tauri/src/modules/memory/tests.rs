@@ -923,7 +923,7 @@ fn restoring_a_snapshot_keeps_memory_origin_sources_and_pins() {
 fn new_chat_and_greeting_are_stored_together() {
     let db = MemoryDb::new_in_memory().expect("in-memory db failed");
     let session = db
-        .create_chat_session_with_greeting("ayu", "Neu", Some("  Hallo!  "))
+        .create_chat_session_with_greeting("ayu", "Neu", &["  Hallo!  ", " ", "Na du?"])
         .unwrap();
     assert_eq!(session.message_count, 1);
     let messages = db.get_chat_messages(&session.id).unwrap();
@@ -932,6 +932,10 @@ fn new_chat_and_greeting_are_stored_together() {
         (messages[0].role.as_str(), messages[0].content.as_str()),
         ("assistant", "Hallo!")
     );
+    // Alternative greetings are swipes of the first message; empty ones are skipped.
+    let swipes: Vec<&str> = messages[0].swipes.iter().map(|s| s.content.as_str()).collect();
+    assert_eq!(swipes, ["Hallo!", "Na du?"]);
+    assert_eq!(messages[0].swipe_index, 0);
     // The greeting is a normal first message: the next one follows it.
     let next = db
         .add_chat_message(&session.id, "user", "Hi", None, &[])
@@ -943,7 +947,7 @@ fn new_chat_and_greeting_are_stored_together() {
     assert!(chats.contains(&session.id));
 
     let empty = db
-        .create_chat_session_with_greeting("ayu", "Leer", Some("   "))
+        .create_chat_session_with_greeting("ayu", "Leer", &["   "])
         .unwrap();
     assert_eq!(empty.message_count, 0);
 }
@@ -1026,7 +1030,7 @@ fn a_failed_reflection_write_changes_nothing() {
 fn chat_style_is_stored_reset_and_kept_by_a_branch() {
     let db = MemoryDb::new_in_memory().expect("in-memory db failed");
     let chat = db
-        .create_chat_session_with_greeting("ayu", "Kyoto", Some("Hallo"))
+        .create_chat_session_with_greeting("ayu", "Kyoto", &["Hallo"])
         .unwrap();
     assert!(chat.style.is_none());
     let style = ChatStyle {

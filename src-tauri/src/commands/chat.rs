@@ -111,11 +111,12 @@ pub fn create_chat_session(
     state: State<'_, AppState>,
     character_id: String,
     title: String,
-    greeting: Option<String>,
+    greetings: Vec<String>,
 ) -> Result<crate::modules::memory::ChatSession, String> {
+    let greetings: Vec<&str> = greetings.iter().map(String::as_str).collect();
     state
         .memory_db
-        .create_chat_session_with_greeting(&character_id, &title, greeting.as_deref())
+        .create_chat_session_with_greeting(&character_id, &title, &greetings)
         .map_err(|e| e.to_string())
 }
 

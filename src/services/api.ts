@@ -901,9 +901,9 @@ export const api = {
     return await invoke<PromptLog | null>('get_last_prompt');
   },
 
-  /** Creates the chat and (optionally) the character's greeting in one step. */
-  createChatSession: async (characterId: string, title: string, greeting?: string | null): Promise<ChatSession> => {
-    return await invoke<ChatSession>('create_chat_session', { characterId, title, greeting: greeting || null });
+  /** Creates the chat and the character's greetings (first one shown, the rest as swipes) in one step. */
+  createChatSession: async (characterId: string, title: string, greetings: string[] = []): Promise<ChatSession> => {
+    return await invoke<ChatSession>('create_chat_session', { characterId, title, greetings });
   },
 
   /** Look and sound of one chat; null restores the defaults. */
