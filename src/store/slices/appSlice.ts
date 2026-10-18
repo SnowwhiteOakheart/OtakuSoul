@@ -4,6 +4,7 @@ import type {
   AppPaths,
   AppSettings,
   LogEntry,
+  ReplyReplacement,
   UpdateInfo,
 } from '../../types';
 import type { SliceCreator } from '../storeTypes';
@@ -44,6 +45,12 @@ export interface AppSlice {
   /** A reply that nearly repeats a recent one is written anew once (new swipe). */
   rerollRepeats: boolean;
   setRerollRepeats: (on: boolean) => void;
+  /** Words and phrases the AI is asked not to use. */
+  avoidPhrases: string[];
+  setAvoidPhrases: (phrases: string[]) => void;
+  /** Find/replace rules for every reply (expert mode). */
+  replyReplacements: ReplyReplacement[];
+  setReplyReplacements: (rules: ReplyReplacement[]) => void;
   /** The chat model may use tools (date/time, calculator, web search). */
   chatTools: boolean;
   setChatTools: (on: boolean) => void;
@@ -162,6 +169,8 @@ export const createAppSlice: SliceCreator<AppSlice> = (set, get) => ({
         onboardingCompleted: settings.onboarding_completed !== false,
         closeToTray: settings.close_to_tray !== false,
         rerollRepeats: settings.reroll_repeats !== false,
+        avoidPhrases: settings.avoid_phrases ?? [],
+        replyReplacements: settings.reply_replacements ?? [],
         chatTools: settings.chat_tools === true,
         trayHintShown: settings.tray_hint_shown === true,
         stageLastScene: settings.stage_last_scene || '',
@@ -268,6 +277,8 @@ export const createAppSlice: SliceCreator<AppSlice> = (set, get) => ({
         onboarding_completed: state.onboardingCompleted,
         close_to_tray: state.closeToTray,
         reroll_repeats: state.rerollRepeats,
+        avoid_phrases: state.avoidPhrases,
+        reply_replacements: state.replyReplacements,
         chat_tools: state.chatTools,
         tray_hint_shown: state.trayHintShown,
         stage_last_scene: state.stageLastScene,
@@ -339,6 +350,20 @@ export const createAppSlice: SliceCreator<AppSlice> = (set, get) => ({
 
   setRerollRepeats: (on) => {
     set({ rerollRepeats: on });
+    get().saveCurrentSettings();
+  },
+
+  avoidPhrases: [],
+
+  setAvoidPhrases: (phrases) => {
+    set({ avoidPhrases: phrases.map((p) => p.trim()).filter(Boolean) });
+    get().saveCurrentSettings();
+  },
+
+  replyReplacements: [],
+
+  setReplyReplacements: (rules) => {
+    set({ replyReplacements: rules });
     get().saveCurrentSettings();
   },
 

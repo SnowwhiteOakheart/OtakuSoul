@@ -101,6 +101,7 @@ export const CommandPalette = ({ open, onOpen, onClose }: CommandPaletteProps) =
     ...([
       ['setting-vary-wording', 'settings.varyWording', 'repeat wiederholung abwechslung variety dry xtc повтор разнообразие'],
       ['setting-reroll-repeats', 'settings.rerollRepeats', 'repeat wiederholung neu schreiben reroll swipe повтор'],
+      ['setting-avoid-phrases', 'settings.avoidPhrases', 'avoid vermeiden wörter phrasen floskeln filter regex ersetzen replace избегать фразы'],
     ] as const).map(([anchor, label, keywords]) => ({
       id: `option-${anchor}`,
       label: t(label),

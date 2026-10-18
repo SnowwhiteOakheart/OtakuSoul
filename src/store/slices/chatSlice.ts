@@ -28,6 +28,7 @@ import { fileToBase64 } from '../../utils/files';
 import { waitWithAbort } from '../../utils/cancellation';
 import { languageCode, localizeCard } from '../../utils/cardI18n';
 import { isRepeat } from '../../utils/repetition';
+import { applyReplacements } from '../../utils/replyFilters';
 
 type GenerationFailure = {
   chatId: string;
@@ -683,7 +684,7 @@ export const createChatSlice: SliceCreator<ChatSlice> = (set, get) => {
       }, generationId, selectedBackend === 'cloud' ? get().cloudContextTokens : undefined, get().chatTools);
       if (!inContext(activeChatId, activeCharacter.id) && !keepsPartial(done, activeChatId, activeCharacter.id)) return;
 
-      const { cleanedText, stateUpdates } = extractStateUpdates(done.full_text);
+      const { cleanedText, stateUpdates } = extractStateUpdates(applyReplacements(done.full_text, get().replyReplacements));
 
       const updatedMsg = await api.addMessageSwipe(
         msgId,
@@ -776,7 +777,7 @@ export const createChatSlice: SliceCreator<ChatSlice> = (set, get) => {
       }, generationId, selectedBackend === 'cloud' ? get().cloudContextTokens : undefined, get().chatTools);
       if (!inContext(activeChatId, activeCharacter.id) && !keepsPartial(done, activeChatId, activeCharacter.id)) return;
 
-      const { cleanedText, stateUpdates } = extractStateUpdates(done.full_text);
+      const { cleanedText, stateUpdates } = extractStateUpdates(applyReplacements(done.full_text, get().replyReplacements));
 
       const mergedContent = `${targetMsg.content} ${cleanedText}`.trim();
       const updatedMsg = await api.updateChatMessage(
@@ -957,7 +958,7 @@ export const createChatSlice: SliceCreator<ChatSlice> = (set, get) => {
       if (!inContext(chatId, activeCharacter?.id) && !keepsPartial(done, chatId, activeCharacter?.id)) return;
 
       // 4. Parse <state> tags
-      const { cleanedText, stateUpdates } = extractStateUpdates(done.full_text);
+      const { cleanedText, stateUpdates } = extractStateUpdates(applyReplacements(done.full_text, get().replyReplacements));
 
       // 5. Add assistant message to DB
       const asstStored = await api.addChatMessage(

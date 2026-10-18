@@ -120,6 +120,26 @@ pub struct PromptContext {
     #[serde(default)]
     #[ts(optional)]
     pub reply_length: Option<String>,
+    /// Words and phrases the reply must not use (settings → reply style).
+    #[serde(default)]
+    #[ts(optional)]
+    pub avoid_phrases: Option<Vec<String>>,
+}
+
+/// Asks the model to leave out the user's unwanted words and phrases.
+fn avoid_rule(phrases: Option<&[String]>) -> Option<String> {
+    let phrases: Vec<String> = phrases?
+        .iter()
+        .map(|p| p.trim())
+        .filter(|p| !p.is_empty())
+        .map(|p| format!("\"{p}\""))
+        .collect();
+    (!phrases.is_empty()).then(|| {
+        format!(
+            "Never use these words or phrases, not even in other forms: {}.",
+            phrases.join(", ")
+        )
+    })
 }
 
 /// The instruction for a chosen reply length; it goes last, where models heed it most.
@@ -180,11 +200,14 @@ pub fn post_history_instruction(ctx: &PromptContext) -> Option<String> {
     let mut text = crate::modules::macros::expand(&text, &ctx.macro_input())
         .trim()
         .to_string();
-    if let Some(rule) = reply_length_rule(ctx.reply_length.as_deref()) {
+    for rule in avoid_rule(ctx.avoid_phrases.as_deref())
+        .into_iter()
+        .chain(reply_length_rule(ctx.reply_length.as_deref()).map(str::to_string))
+    {
         if !text.is_empty() {
             text.push('\n');
         }
-        text.push_str(rule);
+        text.push_str(&rule);
     }
     (!text.trim().is_empty()).then(|| text.trim().to_string())
 }
@@ -502,6 +525,27 @@ mod tests {
         );
         ctx.reply_length = Some(String::new());
         assert_eq!(post_history_instruction(&ctx), None);
+    }
+
+    #[test]
+    fn unwanted_phrases_are_named_at_the_end() {
+        let mut ctx = context(None);
+        ctx.avoid_phrases = Some(vec![
+            "Schauer über den Rücken".into(),
+            " ".into(),
+            "Ozon".into(),
+        ]);
+        ctx.reply_length = Some("short".into());
+        let text = post_history_instruction(&ctx).unwrap();
+        assert!(text.contains(
+            "Never use these words or phrases, not even in other forms: \"Schauer über den Rücken\", \"Ozon\".\nKeep this reply short"
+        ));
+        ctx.avoid_phrases = Some(vec![" ".into()]);
+        assert!(
+            !post_history_instruction(&ctx)
+                .unwrap()
+                .contains("Never use")
+        );
     }
 
     #[test]

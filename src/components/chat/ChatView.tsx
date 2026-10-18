@@ -41,6 +41,7 @@ import { streamingTts } from '../../services/streamingTts';
 import { CharacterVoiceModal } from '../voice/CharacterVoiceModal';
 import { PromptLogModal } from './PromptLogModal';
 import { useTranslation } from '../../i18n';
+import { applyReplacements } from '../../utils/replyFilters';
 import { EmptyState } from '../ui/EmptyState';
 import { AvatarSkeleton } from '../ui';
 
@@ -77,11 +78,12 @@ export const ChatView: React.FC = () => {
     setAutoTtsEnabled,
     activeVoiceConfig,
     setActiveTab,
+    replyReplacements,
   } = useStoreFields(
     'messages', 'storedMessages', 'isGenerating', 'generationChatId', 'generationId', 'isChatLoading', 'chatLoadError', 'clearChat', 'selectedBackend', 'setSelectedBackend', 'expertMode',
     'serverStatus', 'activeCharacter', 'activePersona', 'loadPresetCharacters', 'chatSidebarOpen',
     'setChatSidebarOpen', 'chatSessions', 'activeChatId', 'autoTtsEnabled', 'setAutoTtsEnabled',
-    'activeVoiceConfig', 'setActiveTab',
+    'activeVoiceConfig', 'setActiveTab', 'replyReplacements',
   );
 
   const [streamText, setStreamText] = useState('');
@@ -562,7 +564,7 @@ export const ChatView: React.FC = () => {
                 {streamText && (
                   <div className="max-w-[85%] rounded-2xl px-4 py-2.5 text-sm leading-relaxed bg-slate-900 border border-accent-500/30 text-slate-100 shadow-md">
                     <RoleplayMessage 
-                      content={streamText} 
+                      content={applyReplacements(streamText, replyReplacements)} 
                       isUser={false} 
                       onSpeak={activeVoiceConfig?.engine !== 'disabled' ? () => handleSpeak(streamText) : undefined}
                     />

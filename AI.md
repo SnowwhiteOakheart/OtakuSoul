@@ -73,6 +73,12 @@ ru „персонаж/история/сцена“. Fachbegriffe nur im Experte
   (Lorebooks, `assemble_prompt` = System-Prompt + Nachspann) → Payload (+ Author's Note in Tiefe N, Nachspann am Ende)
   → `send_chat_message`: `attachments::prepare` → `context_window::fit` (kürzt von vorn) → `stream_chat` (Events
   `llm-token`/`llm-thought`/`llm-done`) → Antwort speichern → ggf. `summarizeDroppedMessages` im Hintergrund.
+- **Wörter & Wendungen:** `AppSettings.avoid_phrases` (`avoidPhrases`) → `PromptContext.avoid_phrases` → `avoid_rule` im Nachspann
+  (vor der Antwortlänge); `AppSettings.reply_replacements` (`ReplyReplacement` find/replace/regex, nur Expertenmodus) wendet
+  `utils/replyFilters.ts` `applyReplacements` vor `extractStateUpdates` beim Speichern (Senden, Swipe, Fortsetzen) und auf den
+  Live-Text in `ChatView` an; ungültige RegEx überspringt `ruleError`. UI `settings/ReplyFilterSettings.tsx` im Antwortstil,
+  Textfelder speichern beim Verlassen. Logit-Bias/gesperrte Tokens bewusst nicht (llama.cpp sperrt nur Einzeltokens).
+  E2E `chat-reply-filters.mjs`.
 - **Antwortlänge pro Chat:** `ChatStyle.reply_length` (`short`/`medium`/`long`, leer = Vorlage), Auswahl `ReplyLengthPicker` unter dem
   Eingabefeld; `ChatStylePanel` behält den Wert beim Speichern/Zurücksetzen. Prompt: `PromptContext.reply_length` →
   `reply_length_rule` am Ende des Nachspanns; `helpers.ts` `chatSampling` begrenzt `max_tokens` (400/900, ausführlich ≥ 2048,

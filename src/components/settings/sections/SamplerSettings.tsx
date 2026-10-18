@@ -3,6 +3,7 @@ import { ResetSection } from '../ResetSection';
 import { OptionHint } from '../OptionHint';
 import { EXTRA_SAMPLING_FIELDS, VARIETY_OFF, VARIETY_SAMPLING, changedFields, samplingDefaults, varietyOn } from '../../../utils/settingDefaults';
 import { Toggle } from '../../ui/Toggle';
+import { ReplyFilterSettings } from '../ReplyFilterSettings';
 import { useStoreFields } from '../../../store/useAppStore';
 import { translate, useTranslation } from '../../../i18n';
 import { confirmDialog } from '../../ui/feedback';
@@ -200,6 +201,8 @@ export const SamplerSettings = () => {
           className="-mx-2"
         />
       </div>
+
+      <ReplyFilterSettings />
 
       {!expertMode && <p className="text-xs text-slate-500">{t('settings.samplerExpertHint')}</p>}
       {expertMode && (<>

@@ -25,4 +25,8 @@ idle_seconds?: number,
 /**
  * The chat's reply length (`short`, `medium`, `long`; empty = as the template says).
  */
-reply_length?: string, };
+reply_length?: string, 
+/**
+ * Words and phrases the reply must not use (settings → reply style).
+ */
+avoid_phrases?: Array<string>, };

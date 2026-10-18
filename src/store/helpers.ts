@@ -119,6 +119,7 @@ export async function resolvePromptWithLore(
     macro_seed: activeChatId ?? undefined,
     idle_seconds: idleSeconds(storedMessages),
     reply_length: activeSession?.style?.reply_length || undefined,
+    avoid_phrases: state.avoidPhrases.length > 0 ? state.avoidPhrases : undefined,
   }), signal);
 }
 

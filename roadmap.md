@@ -68,7 +68,8 @@
 - [x] **Weitere Kartenmakros:** `{{random:a,b}}`, `{{roll:1d20}}`, `{{time}}`/`{{date}}`, `{{idle_duration}}` (Community-Karten zeigen sie sonst roh).
 - [x] **Wiederholungen eindämmen in Klartext:** Schalter „Abwechslungsreicher schreiben“ (DRY/XTC mit guten Werten), optional automatisches
   Neu-Würfeln bei fast gleicher Antwort.
-- [ ] **Ausgabe-Filter:** einfache Liste „Diese Wörter/Muster vermeiden“, Ersetzungsregeln für Antworten (Expertenmodus: RegEx, Logit-Bias).
+- [x] **Ausgabe-Filter:** einfache Liste „Diese Wörter/Muster vermeiden“, Ersetzungsregeln für Antworten (Expertenmodus: RegEx).
+  Logit-Bias bewusst nicht: llama.cpp sperrt nur Einzeltokens, mehrteilige Wendungen träfen häufige Wortteile.
 - [x] **Antwortlänge pro Chat:** kurz/mittel/ausführlich, passt Prompt und `max_tokens` gemeinsam an.
 - [ ] **Sichtbare Lorebook-/Gedächtnis-Treffer** je Antwort (welche Einträge einbezogen wurden).
 - [ ] **„Diese Nachricht merken“** im Nachrichtenmenü (`add_episodic_memory_from`).

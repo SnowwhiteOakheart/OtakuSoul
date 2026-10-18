@@ -22,6 +22,17 @@ fn default_cloud_provider() -> String {
     "open_router".to_string()
 }
 
+/// One find/replace rule for replies: plain text, or a regular expression (JavaScript syntax,
+/// `$1` in `replace` for groups) when `regex` is set.
+#[derive(Debug, Clone, Default, Serialize, Deserialize, PartialEq, TS)]
+#[serde(default)]
+#[ts(export)]
+pub struct ReplyReplacement {
+    pub find: String,
+    pub replace: String,
+    pub regex: bool,
+}
+
 #[derive(Debug, Clone, Serialize, Deserialize, TS)]
 #[ts(export)]
 // Missing fields fall back to the defaults instead of discarding the whole file.
@@ -88,6 +99,12 @@ pub struct AppSettings {
     /// because a web search sends the query to a search engine.
     #[serde(default)]
     pub chat_tools: bool,
+    /// Words and phrases the AI is asked not to use (one entry each).
+    #[serde(default)]
+    pub avoid_phrases: Vec<String>,
+    /// Find/replace rules applied to every reply before it is shown and saved (expert mode).
+    #[serde(default)]
+    pub reply_replacements: Vec<ReplyReplacement>,
     /// Editable parts of the chat system prompt.
     pub prompt_template: crate::modules::prompt_builder::PromptTemplate,
 }
@@ -167,6 +184,8 @@ impl Default for AppSettings {
             start_tab: default_start_tab(),
             expert_mode: false,
             chat_tools: false,
+            avoid_phrases: Vec::new(),
+            reply_replacements: Vec::new(),
             prompt_template: Default::default(),
         }
     }
