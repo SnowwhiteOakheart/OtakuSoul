@@ -17,6 +17,7 @@ import {
   Bookmark,
   Sliders,
   ChevronRight,
+  Users,
 } from 'lucide-react';
 import { translate, useTranslation, type TranslationKey } from '../../i18n';
 import { toast } from '../ui/feedback';
@@ -81,6 +82,17 @@ export const ChatSidebar: React.FC<ChatSidebarProps> = ({ isOpen, onClose }) => 
   const [drafts, setDrafts] = useState<SidebarDrafts>(readSidebarDrafts);
   useEffect(() => writeDraft('sidebar', Object.keys(drafts).length > 0 ? JSON.stringify(drafts) : ''), [drafts]);
   const [activeTab, setActiveTab] = useState<SidebarTab>('chats');
+  // A group chat just started: its guest panel opens the invitation right away (once).
+  const [groupStartedFor, setGroupStartedFor] = useState<string | null>(null);
+  const startGroupChat = async () => {
+    const session = await createNewChat(translate('chatSidebar.groupChatTitle', { n: chatSessions.length + 1 }));
+    if (!session) return;
+    setGroupStartedFor(session.id);
+    setActiveTab('group');
+  };
+  useEffect(() => {
+    if (activeTab !== 'group') setGroupStartedFor(null);
+  }, [activeTab]);
   const [isImporting, setIsImporting] = useState(false);
   const pending = useRef(new Set<string>());
   const [saving, setSaving] = useState<string[]>([]);
@@ -239,22 +251,34 @@ export const ChatSidebar: React.FC<ChatSidebarProps> = ({ isOpen, onClose }) => 
       </div>
 
       {activeTab === 'style' && activeChatId && <ChatStylePanel key={activeChatId} chatId={activeChatId} />}
-      {activeTab === 'group' && activeChatId && <ChatGuestsPanel key={activeChatId} chatId={activeChatId} />}
+      {activeTab === 'group' && activeChatId && (
+        <ChatGuestsPanel key={activeChatId} chatId={activeChatId} startPicking={groupStartedFor === activeChatId} />
+      )}
 
       {/* Tab 1: Chats List */}
       {activeTab === 'chats' && (
         <div className="flex-1 flex flex-col overflow-hidden">
-          <div className="p-3 border-b border-slate-800 flex items-center justify-between">
+          <div className="p-3 border-b border-slate-800 flex flex-wrap items-center justify-between gap-2">
             <span className="text-xs text-slate-400 font-medium">
               {tPlural('chat.sessionCount', chatSessions.length)}
             </span>
-            <button
-              onClick={() => createNewChat()}
-              className="flex items-center gap-1.5 px-3 py-1 bg-accent-600 hover:bg-accent-500 text-white rounded-lg text-xs font-medium transition-all shadow-md"
-            >
-              <Plus className="w-3.5 h-3.5" />
-              <span>{t('chatSidebar.newChat')}</span>
-            </button>
+            <div className="flex items-center gap-1.5">
+              <button
+                onClick={() => void startGroupChat()}
+                title={t('chatSidebar.groupChatHint')}
+                className="flex items-center gap-1.5 px-2.5 py-1 bg-slate-800 hover:bg-slate-700 border border-slate-700 text-slate-200 rounded-lg text-xs font-medium transition-all"
+              >
+                <Users className="w-3.5 h-3.5" />
+                <span>{t('chatSidebar.groupChat')}</span>
+              </button>
+              <button
+                onClick={() => createNewChat()}
+                className="flex items-center gap-1.5 px-3 py-1 bg-accent-600 hover:bg-accent-500 text-white rounded-lg text-xs font-medium transition-all shadow-md"
+              >
+                <Plus className="w-3.5 h-3.5" />
+                <span>{t('chatSidebar.newChat')}</span>
+              </button>
+            </div>
           </div>
 
           <div className="flex-1 overflow-y-auto p-2 space-y-1">

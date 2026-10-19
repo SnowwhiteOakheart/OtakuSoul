@@ -76,7 +76,22 @@ try {
   assert.equal(tiles.length, 2);
   assert.equal(await browser.$(`[data-portrait-speaker="${emilia.id}"]`).getAttribute('aria-current'), 'true');
   await browser.saveScreenshot(path.join(screenshotDir, '106-gruppe-alle-zeigen.png'));
-  console.log('Gruppen-Chat: Einladen, Ansprache vor Regie, Runde bis zum Nutzer, Variante, „Jetzt antwortet“ und Avatare bestanden.');
+  // "Group chat" next to "New chat": a new chat with the invitation already open.
+  const chatsBefore = (await invoke('list_chat_sessions', { characterId: host })).length;
+  await jsClick(await browser.$('button[title^="Gespräche, Author"]'));
+  await jsClick(await browser.$('button[role="tab"]=Chats'));
+  await jsClick(await browser.$('button=Gruppenchat'));
+  const startPicker = await browser.$('[data-guest-picker]');
+  await startPicker.waitForDisplayed({ timeout: 10_000 });
+  await jsClick(await startPicker.$('button*=Emilia'));
+  await browser.$(`[data-guest="${emilia.id}"]`).waitForDisplayed({ timeout: 5000 });
+  const sessions = await invoke('list_chat_sessions', { characterId: host });
+  assert.equal(sessions.length, chatsBefore + 1, 'Kein neuer Chat angelegt');
+  const started = sessions.find((s) => s.title.startsWith('Gruppenchat'));
+  assert.ok(started?.title.startsWith('Gruppenchat'), `Titel: ${started?.title}`);
+  assert.deepEqual(started.members, [emilia.id]);
+  await browser.saveScreenshot(path.join(screenshotDir, '107-gruppenchat-starten.png'));
+  console.log('Gruppen-Chat: Einladen, Ansprache vor Regie, Runde bis zum Nutzer, Variante, „Jetzt antwortet“, Avatare und „Gruppenchat“-Start bestanden.');
 } finally {
   await close();
 }

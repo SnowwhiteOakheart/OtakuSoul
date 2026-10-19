@@ -10,15 +10,16 @@ import type { CharacterProfile } from '../../types';
 /**
  * Who takes part in the open chat: its own character and invited guests (group chat). Guests
  * answer with their own card and memory; the user picks or addresses who speaks.
+ * `startPicking` opens the invitation right away (a group chat just started).
  */
-export const ChatGuestsPanel = ({ chatId }: { chatId: string }) => {
+export const ChatGuestsPanel = ({ chatId, startPicking = false }: { chatId: string; startPicking?: boolean }) => {
   const { t } = useTranslation();
   const { activeCharacter, availableCharacters, chatSessions, setChatMembers, replyLanguage } = useStoreFields(
     'activeCharacter', 'availableCharacters', 'chatSessions', 'setChatMembers', 'replyLanguage',
   );
   const session = chatSessions.find((s) => s.id === chatId);
   const guests = chatGuests(session, availableCharacters);
-  const [picking, setPicking] = useState(false);
+  const [picking, setPicking] = useState(startPicking);
   const save = (members: string[]) => setChatMembers(chatId, members).catch((e) => reportFailure('Saving chat guests failed:', e));
   if (!activeCharacter) return null;
 

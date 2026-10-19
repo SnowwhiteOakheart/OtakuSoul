@@ -74,7 +74,8 @@ ru „персонаж/история/сцена“. Fachbegriffe nur im Experte
   → `send_chat_message`: `attachments::prepare` → `context_window::fit` (kürzt von vorn) → `stream_chat` (Events
   `llm-token`/`llm-thought`/`llm-done`) → Antwort speichern → ggf. `summarizeDroppedMessages` im Hintergrund.
 - **Gruppen-Chats:** Ein Chat einer Figur (Gastgeberin, `character_id`) lädt bis zu `MAX_CHAT_GUESTS` = 4 Gäste ein
-  (`chat_sessions.members_json`, `set_chat_members`, Reiter „Gruppe“ = `ChatGuestsPanel`). Antworten tragen
+  (`chat_sessions.members_json`, `set_chat_members`, Reiter „Gruppe“ = `ChatGuestsPanel`; Knopf „Gruppenchat“ im Reiter
+  „Chats“ legt einen Chat an und öffnet die Einladung per `startPicking`). Antworten tragen
   `chat_messages.speaker_id` ('' = Gastgeberin; Swipe/Fortsetzen/Zweig behalten ihn). `chatSlice.writeReply` schreibt eine
   Antwort je Sprecher: `speakerSetup` → eigene Karte, eigenes Gedächtnis, `PromptContext.group` (andere Anwesende) und
   `utils/groupChat.ts` `groupHistory` (eigene Zeilen `assistant`, fremde als `user` mit „Name: “). Runde nach einer
