@@ -91,7 +91,7 @@ erwachsen wirkende Gesichtszüge, Uniform korrekt und vollständig, keinerlei se
 
 **lirwen** (`presets/characters/lirwen.png`, Anime):
 
-> Lirwen, young elf maiden of Tolkien-inspired high fantasy, slender, long chestnut brown hair with thin braids
+> Lirwen, young elf maiden from the original high fantasy world of Sylvaren, slender, long chestnut brown hair with thin braids
 > at the temples woven with a silver ribbon, bright moss-green eyes, pointed elven ears, curious open expression,
 > faint ink stains on fingertips if visible. Simple long-sleeved moss green and silver grey gown, leather satchel
 > strap across the chest with a quill tucked in. Elegant elven colonnade in a valley with a waterfall, golden
@@ -99,7 +99,7 @@ erwachsen wirkende Gesichtszüge, Uniform korrekt und vollständig, keinerlei se
 
 **faelion** (`presets/characters/faelion.png`, realistisch):
 
-> Faelion, elven warrior of Tolkien-inspired high fantasy, tall lean adult man, long dark brown hair with warrior
+> Faelion, elven warrior from the original high fantasy world of Sylvaren, tall lean adult man, long dark brown hair with warrior
 > braids at the sides tied back at the nape, storm-grey eyes, thin pale scar through the left eyebrow, pointed
 > elven ears, calm watchful expression. Fitted leather armour in forest green and grey with a grey hooded elven
 > cloak, longbow over the shoulder, small carved wooden bird pendant on a worn leather cord. Ancient forest with
