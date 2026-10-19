@@ -85,6 +85,23 @@ try {
   await browser.$('button*=Chat').click();
   await browser.$('textarea[aria-label="Nachricht"]').waitForDisplayed({ timeout: 10_000 });
 
+  // The sidebar tabs wrap instead of overlapping in the narrow panel.
+  await browser.execute(() => document.querySelector('button[title^="Gespräche, Author"]').click());
+  await browser.$('[role="tablist"][aria-label="Bereiche"]').waitForDisplayed();
+  const tabClash = await browser.execute(() => {
+    const list = document.querySelector('[role="tablist"][aria-label="Bereiche"]');
+    const box = list.getBoundingClientRect();
+    const tabs = [...list.querySelectorAll('[role="tab"]')].map((tab) => ({ name: tab.textContent, r: tab.getBoundingClientRect(), fits: tab.scrollWidth <= tab.clientWidth }));
+    const problems = tabs.filter((t) => !t.fits || t.r.left < box.left || t.r.right > box.right).map((t) => `${t.name} passt nicht`);
+    tabs.forEach((a, i) => tabs.slice(i + 1).forEach((b) => {
+      if (a.r.left < b.r.right && b.r.left < a.r.right && a.r.top < b.r.bottom && b.r.top < a.r.bottom) problems.push(`${a.name} überlappt ${b.name}`);
+    }));
+    return problems;
+  });
+  assert.deepEqual(tabClash, [], 'Tabs der Chat-Seitenleiste');
+  await shot('48b-chat-seitenleiste-tabs');
+  await browser.keys('Escape');
+
   // Themes and light mode (applied the same way the settings do).
   for (const [theme, mode] of [['sakura', 'light'], ['midnight', 'dark'], ['cyberpunk', 'dark']]) {
     await browser.execute((t, m) => {
@@ -95,7 +112,7 @@ try {
     await assertNoOverflow(theme);
     await shot(`50-theme-${theme}-${mode}`);
   }
-  console.log('Oberfläche: Kompaktansicht, einklappbares HUD, Tastaturmenü, Menüs über den Leisten, kleines Fenster und Themes bestanden.');
+  console.log('Oberfläche: Kompaktansicht, einklappbares HUD, Tastaturmenü, Menüs über den Leisten, Seitenleisten-Tabs, kleines Fenster und Themes bestanden.');
 } finally {
   await close();
 }

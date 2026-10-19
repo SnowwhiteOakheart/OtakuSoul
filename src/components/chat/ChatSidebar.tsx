@@ -38,6 +38,15 @@ const readSidebarDrafts = (): SidebarDrafts => {
   }
 };
 
+type SidebarTab = 'chats' | 'author_note' | 'presets' | 'style' | 'group';
+const SIDEBAR_TABS: [SidebarTab, TranslationKey][] = [
+  ['chats', 'chatSidebar.tabChats'],
+  ['author_note', 'chatSidebar.tabAuthorNote'],
+  ['presets', 'chatSidebar.tabPresets'],
+  ['style', 'chatSidebar.tabStyle'],
+  ['group', 'chatSidebar.tabGroup'],
+];
+
 export const ChatSidebar: React.FC<ChatSidebarProps> = ({ isOpen, onClose }) => {
   const { t, tPlural } = useTranslation();
   const {
@@ -71,7 +80,7 @@ export const ChatSidebar: React.FC<ChatSidebarProps> = ({ isOpen, onClose }) => 
   // Unsaved notes and summaries per chat; kept on this device across restarts.
   const [drafts, setDrafts] = useState<SidebarDrafts>(readSidebarDrafts);
   useEffect(() => writeDraft('sidebar', Object.keys(drafts).length > 0 ? JSON.stringify(drafts) : ''), [drafts]);
-  const [activeTab, setActiveTab] = useState<'chats' | 'author_note' | 'presets' | 'style' | 'group'>('chats');
+  const [activeTab, setActiveTab] = useState<SidebarTab>('chats');
   const [isImporting, setIsImporting] = useState(false);
   const pending = useRef(new Set<string>());
   const [saving, setSaving] = useState<string[]>([]);
@@ -192,7 +201,7 @@ export const ChatSidebar: React.FC<ChatSidebarProps> = ({ isOpen, onClose }) => 
     // the character bar (z-40), which comes later in the DOM.
     <aside
       aria-label={t('chatSidebar.title')}
-      className="absolute inset-y-0 left-0 z-45 w-80 bg-slate-900/95 backdrop-blur-md border-r border-slate-800 shadow-2xl flex flex-col text-slate-200"
+      className="absolute inset-y-0 left-0 z-45 w-80 bg-slate-900 border-r border-slate-800 shadow-2xl flex flex-col text-slate-200"
     >
       {/* Sidebar Header */}
       <div className="p-3 border-b border-slate-800 flex items-center justify-between">
@@ -210,68 +219,23 @@ export const ChatSidebar: React.FC<ChatSidebarProps> = ({ isOpen, onClose }) => 
         </button>
       </div>
 
-      {/* Sub Tabs */}
-      <div role="tablist" aria-label={t('chatSidebar.tabs')} className="grid grid-cols-5 p-1.5 gap-1 bg-app/60 border-b border-slate-800/80 text-xs">
-        <button
-          role="tab"
-          aria-selected={activeTab === 'chats'}
-          onClick={() => setActiveTab('chats')}
-          className={`py-1.5 px-2 rounded-md font-medium transition-all whitespace-nowrap outline-hidden focus-visible:ring-2 focus-visible:ring-accent-400 ${
-            activeTab === 'chats'
-              ? 'bg-accent-600/30 text-accent-300 border border-accent-500/40 shadow-sm'
-              : 'text-slate-400 hover:text-slate-200 hover:bg-slate-800/40'
-          }`}
-        >
-          {t('chatSidebar.tabChats')}
-        </button>
-        <button
-          role="tab"
-          aria-selected={activeTab === 'author_note'}
-          onClick={() => setActiveTab('author_note')}
-          className={`py-1.5 px-2 rounded-md font-medium transition-all whitespace-nowrap outline-hidden focus-visible:ring-2 focus-visible:ring-accent-400 ${
-            activeTab === 'author_note'
-              ? 'bg-accent-600/30 text-accent-300 border border-accent-500/40 shadow-sm'
-              : 'text-slate-400 hover:text-slate-200 hover:bg-slate-800/40'
-          }`}
-        >
-          {t('chatSidebar.tabAuthorNote')}
-        </button>
-        <button
-          role="tab"
-          aria-selected={activeTab === 'presets'}
-          onClick={() => setActiveTab('presets')}
-          className={`py-1.5 px-2 rounded-md font-medium transition-all whitespace-nowrap outline-hidden focus-visible:ring-2 focus-visible:ring-accent-400 ${
-            activeTab === 'presets'
-              ? 'bg-accent-600/30 text-accent-300 border border-accent-500/40 shadow-sm'
-              : 'text-slate-400 hover:text-slate-200 hover:bg-slate-800/40'
-          }`}
-        >
-          {t('chatSidebar.tabPresets')}
-        </button>
-        <button
-          role="tab"
-          aria-selected={activeTab === 'style'}
-          onClick={() => setActiveTab('style')}
-          className={`py-1.5 px-2 rounded-md font-medium transition-all whitespace-nowrap outline-hidden focus-visible:ring-2 focus-visible:ring-accent-400 ${
-            activeTab === 'style'
-              ? 'bg-accent-600/30 text-accent-300 border border-accent-500/40 shadow-sm'
-              : 'text-slate-400 hover:text-slate-200 hover:bg-slate-800/40'
-          }`}
-        >
-          {t('chatSidebar.tabStyle')}
-        </button>
-        <button
-          role="tab"
-          aria-selected={activeTab === 'group'}
-          onClick={() => setActiveTab('group')}
-          className={`py-1.5 px-2 rounded-md font-medium transition-all whitespace-nowrap outline-hidden focus-visible:ring-2 focus-visible:ring-accent-400 ${
-            activeTab === 'group'
-              ? 'bg-accent-600/30 text-accent-300 border border-accent-500/40 shadow-sm'
-              : 'text-slate-400 hover:text-slate-200 hover:bg-slate-800/40'
-          }`}
-        >
-          {t('chatSidebar.tabGroup')}
-        </button>
+      {/* Sub Tabs: wrap onto a second row instead of squeezing into the narrow panel. */}
+      <div role="tablist" aria-label={t('chatSidebar.tabs')} className="flex flex-wrap p-1.5 gap-1 bg-app/60 border-b border-slate-800/80 text-xs">
+        {SIDEBAR_TABS.map(([tab, label]) => (
+          <button
+            key={tab}
+            role="tab"
+            aria-selected={activeTab === tab}
+            onClick={() => setActiveTab(tab)}
+            className={`flex-auto py-1.5 px-2.5 rounded-md font-medium text-center transition-all whitespace-nowrap outline-hidden focus-visible:ring-2 focus-visible:ring-accent-400 ${
+              activeTab === tab
+                ? 'bg-accent-600/30 text-accent-300 border border-accent-500/40 shadow-sm'
+                : 'border border-transparent text-slate-400 hover:text-slate-200 hover:bg-slate-800/40'
+            }`}
+          >
+            {t(label)}
+          </button>
+        ))}
       </div>
 
       {activeTab === 'style' && activeChatId && <ChatStylePanel key={activeChatId} chatId={activeChatId} />}
