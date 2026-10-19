@@ -200,7 +200,7 @@ export const CharacterLibraryView = () => {
   return (
     <div className="flex-1 flex flex-col h-full bg-app overflow-hidden">
       {/* Top Header Bar */}
-      <div className="px-6 py-4 border-b border-slate-800 bg-slate-900/60 backdrop-blur flex items-center justify-between gap-4 select-none">
+      <div className="relative z-20 px-6 py-4 border-b border-slate-800 bg-slate-900/60 backdrop-blur flex items-center justify-between gap-4 select-none">
         <div className="flex items-center gap-3 min-w-0">
           <div className="w-10 h-10 shrink-0 rounded-xl bg-accent-600/20 border border-accent-500/30 flex items-center justify-center text-accent-400 shadow-sm">
             <Users className="w-5 h-5" />
