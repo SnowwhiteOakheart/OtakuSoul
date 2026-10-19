@@ -51,7 +51,7 @@ try {
   assert.equal(await gallery.isExisting(), false);
   const state = await invoke('get_stage_state');
   assert.equal(state.definition.id, 'story_frozen_bells');
-  assert.match(state.chat_log[0].content, /Ich bin Emilia/);
+  assert.match(state.chat_log[0].content, /Ich bin Lirwen/);
   assert.equal(state.world.location, 'Der verschneite Dorfplatz von Frostweiler');
   assert.equal(state.pending_choices[1].text, 'Untersuche die gefrorene Glocke im Turm');
   // Story texts of the app follow the reply language (shipped locales).

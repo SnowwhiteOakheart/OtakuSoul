@@ -5,7 +5,7 @@ import { copyFileSync, existsSync, rmSync, writeFileSync } from 'node:fs';
 import path from 'node:path';
 import { clickSend, launch, screenshotDir } from './harness.mjs';
 
-const { browser, mock, home, close } = await launch({ avatar_mode: '2d', active_character_id: 'cosmos' });
+const { browser, mock, close } = await launch({ avatar_mode: '2d', active_character_id: 'lyra' });
 // oxlint-disable-next-line no-underscore-dangle -- IPC ausschließlich im isolierten Testprofil
 const invoke = (command, args = {}) => browser.execute((cmd, payload) => window.__TAURI_INTERNALS__.invoke(cmd, payload), command, args);
 const portrait = () => browser.execute(() => {
@@ -56,17 +56,17 @@ try {
   await clickSend(browser);
   await waitForPortrait('sad');
   await browser.saveScreenshot(path.join(screenshotDir, 'avatar-portrait-chat-sad.png'));
-  // The prompt offers only the expressions the card has pictures for (Cosmos: the six moods).
+  // The prompt offers only the expressions the card has pictures for (Lyra: the six moods).
   const tagRule = async () => ((await invoke('get_last_prompt'))?.messages ?? []).map((m) => m.content).join('\n')
     .match(/NAME one of: ([^.]*)\./)?.[1];
   assert.equal(await tagRule(), 'neutral, happy, sad, angry, surprised, relaxed');
 
-  const cosmos = (await invoke('scan_characters')).find(c => c.id === 'cosmos');
+  const lyra = (await invoke('scan_characters')).find(c => c.id === 'lyra');
   // Auch ein direkt übergebener relativer Pfad wird vor dem Ordnerwechsel aufgelöst.
   const originalRelative = Object.fromEntries(['neutral', 'happy', 'sad', 'angry', 'surprised', 'relaxed']
-    .map(mood => [mood, `expressions/cosmos/${mood}.webp`]));
-  cosmos.card.data.extensions.expressions = originalRelative;
-  const saved = await invoke('save_character_card', { profile: cosmos });
+    .map(mood => [mood, `expressions/lyra/${mood}.webp`]));
+  lyra.card.data.extensions.expressions = originalRelative;
+  const saved = await invoke('save_character_card', { profile: lyra });
   for (const image of Object.values(saved.card.data.extensions.expressions)) {
     assert.ok(path.isAbsolute(image) && existsSync(image), `Ungültiger gespeicherter Portraitpfad: ${image}`);
   }
@@ -92,7 +92,7 @@ try {
 
   // Bereits beschädigte Nutzerkopien aus älteren Versionen bekommen fehlende Presetbilder.
   saved.card.data.extensions.expressions = originalRelative;
-  writeFileSync(path.join(home, 'data/characters/Cosmos.json'), JSON.stringify(saved.card));
+  writeFileSync(saved.source_path.replace(/\.[^.]+$/, '.json'), JSON.stringify(saved.card));
   rmSync(saved.source_path);
   await reloadSaved(saved.id);
   // Without a blush picture the blushing reply falls back to its mood (embarrassment → sad).

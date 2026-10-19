@@ -23,49 +23,49 @@ const TEXT = {
   de: {
     reply: 'Deutsch',
     persona: 'Kai',
-    chatMessage: 'Hey Ayu! Hast du Lust, morgen mit mir zum Hanami in den Ueno-Park zu gehen?',
+    chatMessage: 'Hey Shiori! Hast du einen Buchtipp für die Frühlingsferien?',
     chatReply:
-      '*Ayus Augen leuchten auf, und sie klatscht begeistert in die Hände.* „Hanami? Mit dir? Natürlich! Ich packe Onigiri ein ' +
-      'und die Thermoskanne mit Matcha – und du bringst die Picknickdecke mit, ja?“ *Sie lächelt verlegen.* ' +
-      '„Ich hab sogar einen Lieblingsplatz unter der alten Kirsche am Teich. Da ist es abends wunderschön, wenn die Laternen angehen.“',
+      '*Shiori schiebt die Brille hoch, und ihre Augen leuchten auf.* „Einen? Ich habe eine Liste. Nein, warte – drei Listen.“ ' +
+      '*Sie zieht ein abgegriffenes Taschenbuch aus der Strickjacke.* „Fang mit diesem hier an. Ein Leuchtturmwärter, ein Sturm ' +
+      'und ein Brief, der vierzig Jahre zu spät ankommt … Entschuldige, ich bin abgeschweift. Du gibst es mir aber zurück, ja?“',
     narration:
-      'Ayu holt tief Luft und klammert sich an deine Worte, als wären sie ein Rettungsring. „So wie immer … ja.“ ' +
-      'Cosmos kramt derweil in ihrem Rucksack und zieht triumphierend eine Sicherheitsnadel hervor. ' +
-      'Draußen zählt der Moderator schon die Minuten herunter, und die Kirschblüten wehen bis hinter den Vorhang.',
+      'Shiori holt tief Luft und klammert sich an deine Worte, als wären sie ein Rettungsring. „Einfach lesen … ja.“ ' +
+      'Sota hat derweil den Stapel Hefte auf zwei Tische verteilt und sortiert mit Speedrun-Tempo die Seiten. ' +
+      'Draußen füllen sich die letzten Stuhlreihen, und die Kirschblüten wehen bis hinter die Bühne.',
     crypt: { title: 'Die Halle der Gruft', location: 'Unter dem alten Kloster', time: 'Mitternacht', tone: 'Düstere Fantasy', action: 'Ich betrete die Gruft.' },
     stageReply:
-      '*Ayu atmet tief durch und nickt dir dankbar zu.* „Okay … okay. Wenn du da bist, schaffe ich das. Hilfst du mir mit dem Ärmel?“',
+      '*Shiori atmet tief durch und nickt dir dankbar zu.* „Okay … okay. Wie eine Heldin im letzten Kapitel. Hältst du mir das Heft?“',
   },
   en: {
     reply: 'English',
     persona: 'Kai',
-    chatMessage: 'Hey Ayu! Do you want to go to the hanami in Ueno Park with me tomorrow?',
+    chatMessage: 'Hey Shiori! Do you have a book tip for the spring break?',
     chatReply:
-      '*Ayu\'s eyes light up and she claps her hands excitedly.* "Hanami? With you? Of course! I\'ll pack onigiri and the ' +
-      'thermos with matcha – and you bring the picnic blanket, okay?" *She smiles shyly.* "I even have a favourite spot ' +
-      'under the old cherry tree by the pond. It\'s beautiful in the evening when the lanterns come on."',
+      '*Shiori pushes up her glasses and her eyes light up.* "One? I have a list. No, wait – three lists." ' +
+      '*She pulls a well-worn paperback out of her cardigan.* "Start with this one. A lighthouse keeper, a storm ' +
+      'and a letter that arrives forty years too late … Sorry, I got carried away. You will give it back, right?"',
     narration:
-      'Ayu takes a deep breath and clings to your words like a lifebuoy. "Like always … yes." ' +
-      'Meanwhile Cosmos rummages through her backpack and triumphantly pulls out a safety pin. ' +
-      'Outside, the host is already counting down the minutes, and cherry blossoms drift all the way behind the curtain.',
+      'Shiori takes a deep breath and clings to your words like a lifebuoy. "Just read it … yes." ' +
+      'Meanwhile Sota has spread the pile of booklets over two tables and is sorting the pages at speedrun pace. ' +
+      'Outside, the last rows of chairs are filling up, and cherry blossoms drift all the way behind the stage.',
     crypt: { title: 'The Crypt Hall', location: 'Beneath the old monastery', time: 'Midnight', tone: 'Dark fantasy', action: 'I enter the crypt.' },
     stageReply:
-      '*Ayu takes a deep breath and gives you a grateful nod.* "Okay … okay. If you\'re here, I can do this. Will you help me with the sleeve?"',
+      '*Shiori takes a deep breath and gives you a grateful nod.* "Okay … okay. Like a heroine in the final chapter. Will you hold the booklet for me?"',
   },
   ru: {
     reply: 'Русский',
     persona: 'Кай',
-    chatMessage: 'Привет, Аю! Пойдёшь со мной завтра на ханами в парк Уэно?',
+    chatMessage: 'Привет, Сиори! Посоветуешь книгу на весенние каникулы?',
     chatReply:
-      '*Глаза Аю загораются, и она восторженно хлопает в ладоши.* «Ханами? С тобой? Конечно! Я возьму онигири и термос с матчей, ' +
-      'а ты принесёшь плед для пикника, ладно?» *Она смущённо улыбается.* «У меня даже есть любимое место под старой вишней у пруда. ' +
-      'Вечером там чудесно, когда зажигаются фонарики».',
+      '*Сиори поправляет очки, и глаза её загораются.* «Одну? У меня есть список. Нет, подожди – три списка». ' +
+      '*Она достаёт из кармана кофты потрёпанную книжку в мягкой обложке.* «Начни с этой. Смотритель маяка, шторм ' +
+      'и письмо, которое пришло на сорок лет позже… Прости, я отвлеклась. Ты ведь вернёшь её, да?»',
     narration:
-      'Аю глубоко вдыхает и цепляется за твои слова, как за спасательный круг. «Как всегда… да». ' +
-      'Тем временем Космос роется в рюкзаке и торжествующе вытаскивает английскую булавку. ' +
-      'Снаружи ведущий уже отсчитывает минуты, а лепестки сакуры залетают прямо за занавес.',
+      'Сиори глубоко вдыхает и цепляется за твои слова, как за спасательный круг. «Просто прочитать… да». ' +
+      'Тем временем Сота разложил стопку брошюр на двух столах и сортирует страницы в темпе спидрана. ' +
+      'Снаружи заполняются последние ряды стульев, а лепестки сакуры залетают прямо за сцену.',
     crypt: { title: 'Зал склепа', location: 'Под старым монастырём', time: 'Полночь', tone: 'Мрачное фэнтези', action: 'Я вхожу в склеп.' },
-    stageReply: '*Аю глубоко вдыхает и благодарно кивает тебе.* «Ладно… ладно. Если ты рядом, я справлюсь. Поможешь мне с рукавом?»',
+    stageReply: '*Сиори глубоко вдыхает и благодарно кивает тебе.* «Ладно… ладно. Как героиня в последней главе. Подержишь мне брошюру?»',
   },
 }[lang];
 
@@ -97,7 +97,7 @@ async function session(settings, run) {
 }
 
 // 1. Stories, start page and chat in one profile, as a newcomer would meet them.
-await session({ start_tab: 'home', stage_last_scene: '', active_character_id: 'ayu_ikue' }, async ({ browser, mock, shot, click, tab, invoke }) => {
+await session({ start_tab: 'home', stage_last_scene: '', active_character_id: 'shiori_amane' }, async ({ browser, mock, shot, click, tab, invoke }) => {
   Object.assign(mock.stats, { calmPlanner: true, stageNarration: TEXT.narration, stageReply: TEXT.stageReply, chatReply: TEXT.chatReply });
   await browser.$('[data-home]').waitForDisplayed({ timeout: 30_000 });
   // A named player instead of "User" (the persona is read at start).
@@ -169,7 +169,7 @@ await session({ start_tab: 'home', stage_last_scene: '', active_character_id: 'a
 
 // 2. First start: the local way (automatic setup, models installed for development) and
 // the cloud providers.
-await session({ onboarding_completed: false, active_character_id: 'ayu_ikue' }, async ({ browser, shot, click }) => {
+await session({ onboarding_completed: false, active_character_id: 'shiori_amane' }, async ({ browser, shot, click }) => {
   const dialog = await browser.$('[role="dialog"]');
   await dialog.waitForDisplayed({ timeout: 30_000 });
   await click(await dialog.$(`button=${t('onboarding.next')}`));
@@ -198,7 +198,7 @@ await session({}, async ({ browser, mock, shot, click, invoke }) => {
         starting_location: TEXT.crypt.location,
         time_of_day: TEXT.crypt.time,
         gm_tone: TEXT.crypt.tone,
-        rules: { ruleset: '5e', hero_classes: { player: 'fighter', 'Ayu Ikue': 'wizard' }, control_companions: false, map_id: 'crypt_hall' },
+        rules: { ruleset: '5e', hero_classes: { player: 'fighter', 'Lirwen': 'wizard' }, control_companions: false, map_id: 'crypt_hall' },
       },
       world: { ...scene.world, location: TEXT.crypt.location, time_of_day: TEXT.crypt.time },
       combat: { ...scene.combat, is_active: false, combatants: [], events: [] },

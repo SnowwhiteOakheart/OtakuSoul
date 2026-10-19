@@ -10,7 +10,7 @@ const shot = (name) => browser.saveScreenshot(path.join(screenshotDir, `${name}.
 try {
   await browser.$('button=Stage').waitForExist({ timeout: 20_000 });
   const initial = await invoke('get_stage_state');
-  const definition = { ...initial.definition, id: 'scene_custom_editor', title: 'Editor-Kampagne', party: ['Ayu Ikue', 'Missing companion'], starting_bg: '', max_actor_depth: 3 };
+  const definition = { ...initial.definition, id: 'scene_custom_editor', title: 'Editor-Kampagne', party: ['Lirwen', 'Missing companion'], starting_bg: '', max_actor_depth: 3 };
   const created = await invoke('create_stage_scene', { definition });
   created.world.location = 'Erreichter Ort';
   created.chat_log.push({ ...created.chat_log[0], id: 'progress-test', content: 'KEEP_PROGRESS', turn_mode: 'say' });

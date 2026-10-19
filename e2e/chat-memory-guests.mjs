@@ -13,9 +13,9 @@ const memories = async (characterId) => (await invoke('get_cognitive_overview', 
 try {
   await browser.$('textarea[aria-label="Nachricht"]').waitForDisplayed({ timeout: 30_000 });
   const host = (await invoke('load_settings')).active_character_id;
-  const emilia = (await invoke('scan_characters')).find((c) => c.card.data.name === 'Emilia');
+  const lirwen = (await invoke('scan_characters')).find((c) => c.card.data.name === 'Lirwen');
   const [session] = await invoke('list_chat_sessions', { characterId: host });
-  await invoke('set_chat_members', { chatId: session.id, members: [emilia.id] });
+  await invoke('set_chat_members', { chatId: session.id, members: [lirwen.id] });
   await browser.execute(() => window.location.reload());
   await browser.$('textarea[aria-label="Nachricht"]').waitForDisplayed({ timeout: 30_000 });
 
@@ -25,16 +25,16 @@ try {
   const whose = await browser.$('select[data-memory-character]');
   await whose.waitForDisplayed({ timeout: 10_000 });
   assert.equal(await whose.getValue(), '', 'Drawer beginnt nicht mit der Gastgeberin');
-  await whose.selectByVisibleText('Emilia');
-  await browser.waitUntil(async () => (await browser.$('#memory-drawer-title').getText()).includes('Emilia'), { timeout: 10_000, timeoutMsg: 'Drawer zeigt Emilia nicht' });
+  await whose.selectByVisibleText('Lirwen');
+  await browser.waitUntil(async () => (await browser.$('#memory-drawer-title').getText()).includes('Lirwen'), { timeout: 10_000, timeoutMsg: 'Drawer zeigt Lirwen nicht' });
 
   await jsClick(await browser.$('button*=Episoden & Themen'));
   const field = await browser.$('input[aria-label="Neues Wissen / Notiz manuell hinzufügen"]');
   await field.waitForDisplayed({ timeout: 5000 });
-  await field.setValue('Emilia hat Angst vor Gewittern');
+  await field.setValue('Lirwen hat Angst vor Gewittern');
   await jsClick(await browser.$('button=Speichern'));
-  await browser.waitUntil(async () => (await memories(emilia.id)).includes('Emilia hat Angst vor Gewittern'), { timeout: 10_000, timeoutMsg: 'Erinnerung nicht bei Emilia' });
-  assert.ok(!(await memories(host)).includes('Emilia hat Angst vor Gewittern'), 'Erinnerung bei der Gastgeberin gelandet');
+  await browser.waitUntil(async () => (await memories(lirwen.id)).includes('Lirwen hat Angst vor Gewittern'), { timeout: 10_000, timeoutMsg: 'Erinnerung nicht bei Lirwen' });
+  assert.ok(!(await memories(host)).includes('Lirwen hat Angst vor Gewittern'), 'Erinnerung bei der Gastgeberin gelandet');
   await browser.saveScreenshot(path.join(screenshotDir, '105-gedaechtnis-gast.png'));
 
   await browser.keys('Escape');

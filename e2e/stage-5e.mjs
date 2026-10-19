@@ -40,7 +40,7 @@ try {
       ...scene,
       definition: {
         ...scene.definition,
-        rules: { ruleset: '5e', hero_classes: { player: 'fighter', 'Ayu Ikue': 'fighter' }, control_companions: false },
+        rules: { ruleset: '5e', hero_classes: { player: 'fighter', 'Lirwen': 'fighter' }, control_companions: false },
       },
       combat: { ...scene.combat, is_active: false, combatants: [], events: [] },
     },

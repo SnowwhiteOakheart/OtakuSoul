@@ -127,7 +127,7 @@ The story gallery shows ready-made adventures with genre, playing time and diffi
   <img src="docs/assets/screenshots/en/character-preview.png" alt="Character preview before chatting" width="48%" />
 </p>
 
-* **Included:** Ayu Ikue, Cosmos, Emilia and the four heroes of the 5e adventure. *Good to start with* marks the recommended ones.
+* **Included:** Shiori Amane, Sota Minase, Lirwen, Faelion and the four heroes of the 5e adventure. *Good to start with* marks the recommended ones.
 * **More in the Hub:** characters, worlds and stories (e.g. *No Game No Life*, *Sakura Succubus 3*) in German, English and Russian – with update notices when a new version is available. An optional 18+ section needs a one-time age confirmation and stays hidden otherwise.
 * **Create your own:** a guided assistant turns a rough idea into a complete character; SillyTavern cards (PNG/JSON) can be imported and exported.
 

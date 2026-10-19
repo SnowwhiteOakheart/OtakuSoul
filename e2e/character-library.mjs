@@ -13,7 +13,7 @@ try {
   const firstPreview = await browser.$('button[aria-label^="Mehr über"]');
   await firstPreview.waitForExist({ timeout: 15_000 });
   const name = (await firstPreview.getAttribute('aria-label')).replace('Mehr über ', '');
-  assert.ok(['Ayu Ikue', 'Cosmos', 'Emilia', 'Shiori Amane', 'Sota Minase', 'Lirwen', 'Faelion'].includes(name), `Erste Karte ist keine Einsteiger-Figur: ${name}`);
+  assert.ok(['Shiori Amane', 'Sota Minase', 'Lirwen', 'Faelion'].includes(name), `Erste Karte ist keine Einsteiger-Figur: ${name}`);
   await jsClick(firstPreview);
 
   const preview = await browser.$('[data-character-preview]');

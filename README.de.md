@@ -127,7 +127,7 @@ Die Story-Galerie zeigt fertige Abenteuer mit Genre, Spieldauer und Schwierigkei
   <img src="docs/assets/screenshots/de/character-preview.png" alt="Vorschau eines Charakters vor dem Chat" width="48%" />
 </p>
 
-* **Mitgeliefert:** Ayu Ikue, Cosmos, Emilia und die vier Helden des 5e-Abenteuers. *Gut für den Einstieg* markiert die empfohlenen.
+* **Mitgeliefert:** Shiori Amane, Sota Minase, Lirwen, Faelion und die vier Helden des 5e-Abenteuers. *Gut für den Einstieg* markiert die empfohlenen.
 * **Mehr im Hub:** Charaktere, Welten und Geschichten (z. B. *No Game No Life*, *Sakura Succubus 3*) auf Deutsch, Englisch und Russisch – mit Hinweis, wenn eine neue Fassung bereitsteht. Ein optionaler 18+-Bereich braucht eine einmalige Altersbestätigung und bleibt sonst verborgen.
 * **Selbst erschaffen:** Ein geführter Assistent macht aus einer groben Idee einen vollständigen Charakter; SillyTavern-Karten (PNG/JSON) lassen sich importieren und exportieren.
 

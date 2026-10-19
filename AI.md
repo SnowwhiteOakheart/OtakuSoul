@@ -705,8 +705,8 @@ ru „персонаж/история/сцена“. Fachbegriffe nur im Experte
 
 Erledigtes (Portierung Phasen 1–18, Verbesserungen, TTS, Neutralisierung, Inhalte, Qualität) steht in
 `roadmap_abgeschlossen.md` (nur lokal, nicht im Repository), alles Offene in `roadmap.md`. Aktueller Schwerpunkt: Bedienbarkeit für Einsteiger und
-Story-Einstieg (Plan lokal in `roadmap_abgeschlossen.md`, Abschnitt 10; die Leitlinien für neue Oberflächen stehen oben in `roadmap.md`). Mitgelieferte Figuren: `presets/characters/` (Ayu, Cosmos,
-Emilia) und `presets/crypt-of-shadows/`; weitere Figuren/Pakete (NGNL, Sakura Succubus 3, Einzelkarten) liegen in
+Story-Einstieg (Plan lokal in `roadmap_abgeschlossen.md`, Abschnitt 10; die Leitlinien für neue Oberflächen stehen oben in `roadmap.md`). Mitgelieferte Figuren: `presets/characters/` (Shiori Amane,
+Sota Minase, Lirwen, Faelion) und `presets/crypt-of-shadows/`; weitere Figuren/Pakete (NGNL, Sakura Succubus 3 mit Ayu und Cosmos, Re:Zero mit Emilia, Einzelkarten) liegen in
 `SnowwhiteOakheart/otakusoul-data` (Hub-Registries in `hub.rs`). Karten pflegen Übersetzungen in `otakusoul_i18n` und
 verwenden `custom_*`-Schlüssel (`sow_*` wird nur noch gelesen). Daten: `<Daten>` = `~/.local/share/otakusoul` (Linux) mit `runtimes/`, `image-models/`, `tts-models/`,
 `voices/`, `attachments/`, `otakusoul.db`; Entwickler-Modelle in `assets/models/` (gitignored).

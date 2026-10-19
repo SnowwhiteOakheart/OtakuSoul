@@ -38,7 +38,7 @@ try {
       ...scene,
       definition: {
         ...scene.definition,
-        rules: { ruleset: '5e', hero_classes: { player: 'fighter', 'Ayu Ikue': 'rogue' }, control_companions: false, map_id: 'crypt_hall' },
+        rules: { ruleset: '5e', hero_classes: { player: 'fighter', 'Lirwen': 'rogue' }, control_companions: false, map_id: 'crypt_hall' },
       },
       combat: { ...scene.combat, is_active: false, combatants: [], events: [] },
       map: null,

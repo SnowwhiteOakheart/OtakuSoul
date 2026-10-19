@@ -63,7 +63,7 @@ try {
       ...scene,
       definition: {
         ...scene.definition,
-        rules: { ruleset: '5e', hero_classes: { player: 'wizard', 'Ayu Ikue': 'cleric' }, control_companions: false, map_id: 'crypt_hall' },
+        rules: { ruleset: '5e', hero_classes: { player: 'wizard', 'Lirwen': 'cleric' }, control_companions: false, map_id: 'crypt_hall' },
       },
       combat: { ...scene.combat, is_active: false, combatants: [], events: [] },
     },
@@ -84,14 +84,14 @@ try {
     const player = s.combat.combatants.find((c) => c.role === 'player');
     player.hp = 0;
     player.conditions = [{ name: 'unconscious', rounds_remaining: 0 }];
-    s.combat.current_turn_index = s.combat.combatants.findIndex((c) => c.name === 'Ayu Ikue');
+    s.combat.current_turn_index = s.combat.combatants.findIndex((c) => c.name === 'Lirwen');
     s.combat.turn = freshTurn;
   });
   // The Stage view may already let the engine continue on its own; otherwise "Weiter" starts it.
   await waitPlayerTurn();
   const healed = await invoke('get_stage_state');
   const newEvents = healed.combat.events.slice(mark);
-  const cast = newEvents.find((e) => e.type === 'spell_cast' && e.caster_name === 'Ayu Ikue');
+  const cast = newEvents.find((e) => e.type === 'spell_cast' && e.caster_name === 'Lirwen');
   assert.ok(cast && ['healing_word', 'cure_wounds'].includes(cast.spell_id), `Klerikerin heilt nicht: ${JSON.stringify(newEvents.map((e) => e.type))}`);
   assert.ok(newEvents.some((e) => e.type === 'heal' && e.target_id === 'player'), 'keine Heilung für den Helden');
 
@@ -108,10 +108,10 @@ try {
       g.conditions = [];
       g.position = { x: 2 + i, y: 4 };
     });
-    const ayu = s.combat.combatants.find((c) => c.name === 'Ayu Ikue');
-    ayu.hp = Math.max(ayu.hp, 1);
-    ayu.conditions = [];
-    ayu.position = { x: 1, y: 1 };
+    const lirwen = s.combat.combatants.find((c) => c.name === 'Lirwen');
+    lirwen.hp = Math.max(lirwen.hp, 1);
+    lirwen.conditions = [];
+    lirwen.position = { x: 1, y: 1 };
     s.combat.current_turn_index = s.combat.combatants.indexOf(player);
     s.combat.turn = freshTurn;
   });
@@ -141,7 +141,7 @@ try {
   const log = await browser.$('[aria-label="Kampfverlauf"]').getText().catch(() => '');
   console.log(log.split('\n').slice(-4).join('\n'));
   await shot('71-zauber-gewirkt');
-  console.log(`Zauber: ${cast.spell_id} von Ayu, Brennende Hände mit ${saves.length} Rettungswürfen.`);
+  console.log(`Zauber: ${cast.spell_id} von Lirwen, Brennende Hände mit ${saves.length} Rettungswürfen.`);
 } finally {
   await close();
 }

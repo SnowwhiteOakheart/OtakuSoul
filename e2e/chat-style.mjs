@@ -43,7 +43,7 @@ try {
       return audio;
     };
   });
-  const picture = await invoke('import_stage_asset', { filePath: path.resolve('presets/characters/cosmos.png'), kind: 'backgrounds' });
+  const picture = await invoke('import_stage_asset', { filePath: path.resolve('presets/characters/shiori_amane.png'), kind: 'backgrounds' });
   const rain = await invoke('import_stage_asset', { filePath: wavFile(), kind: 'ambient' });
 
   await browser.waitUntil(() => sql('SELECT count(*) FROM chat_sessions;') !== '0', { timeout: 15_000 });

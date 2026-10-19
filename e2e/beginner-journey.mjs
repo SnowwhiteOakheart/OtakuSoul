@@ -48,9 +48,9 @@ try {
     const before = mock.stats.stageNarrator ?? 0;
     if (round === 1) {
       // A suggestion is sent as the turn right away.
-      await jsClick(await browser.$('button*=Beruhige Ayu'));
+      await jsClick(await browser.$('button*=Beruhige Shiori'));
     } else {
-      await input.setValue('Ich hole Nadel und Faden aus meiner Tasche.');
+      await input.setValue('Ich nehme mir den Stapel Hefte und fange an zu sortieren.');
       await browser.keys('Enter');
     }
     await browser.waitUntil(() => (mock.stats.stageNarrator ?? 0) > before, { timeout: 30_000, timeoutMsg: `Runde ${round}: kein Erzähler` });
