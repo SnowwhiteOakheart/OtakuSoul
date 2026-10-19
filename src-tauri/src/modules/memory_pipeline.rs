@@ -198,43 +198,55 @@ pub type MemoryPipelineResult = SoulMemoryPipelineResult;
 #[derive(Debug, Clone, Serialize, Deserialize, Default, TS)]
 #[ts(export)]
 pub struct RouterInternalStatePatch {
+    #[serde(default, deserialize_with = "lenient::opt_text")]
     pub primary_emotion: Option<String>,
+    #[serde(default, deserialize_with = "lenient::opt_u32")]
     pub intensity: Option<u32>,
+    #[serde(default, deserialize_with = "lenient::opt_text")]
     pub psychological_tension: Option<String>,
+    #[serde(default, deserialize_with = "lenient::opt_bool")]
     pub emotion_active: Option<bool>,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize, Default, TS)]
 #[ts(export)]
 pub struct RouterCognitiveDrivePatch {
+    #[serde(default, deserialize_with = "lenient::opt_text")]
     pub active_agenda: Option<String>,
+    #[serde(default, deserialize_with = "lenient::opt_text")]
     pub immediate_focus: Option<String>,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize, Default, TS)]
 #[ts(export)]
 pub struct RouterCharacterMemoryPatch {
-    #[serde(default)]
+    #[serde(default, deserialize_with = "lenient::text_list")]
     pub core_identity_add: Vec<String>,
-    #[serde(default)]
+    #[serde(default, deserialize_with = "lenient::text_list")]
     pub core_identity_remove: Vec<String>,
     pub internal_state: Option<RouterInternalStatePatch>,
     pub cognitive_drive: Option<RouterCognitiveDrivePatch>,
+    #[serde(default, deserialize_with = "lenient::opt_text")]
     pub cognitive_dissonance: Option<String>,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize, Default, TS)]
 #[ts(export)]
 pub struct RouterUserIdentityPatch {
+    #[serde(default, deserialize_with = "lenient::opt_text")]
     pub role_in_story: Option<String>,
+    #[serde(default, deserialize_with = "lenient::opt_text")]
     pub known_attributes: Option<String>,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize, Default, TS)]
 #[ts(export)]
 pub struct RouterRelationshipMetadataPatch {
+    #[serde(default, deserialize_with = "lenient::opt_text")]
     pub trust_level: Option<String>,
+    #[serde(default, deserialize_with = "lenient::opt_text")]
     pub dynamic_description: Option<String>,
+    #[serde(default, deserialize_with = "lenient::opt_text")]
     pub unspoken_tension: Option<String>,
 }
 
@@ -243,30 +255,34 @@ pub struct RouterRelationshipMetadataPatch {
 pub struct RouterUserMemoryPatch {
     pub user_identity_status: Option<RouterUserIdentityPatch>,
     pub relationship_metadata: Option<RouterRelationshipMetadataPatch>,
-    #[serde(default)]
+    #[serde(default, deserialize_with = "lenient::text_list")]
     pub preferences_habits_add: Vec<String>,
-    #[serde(default)]
+    #[serde(default, deserialize_with = "lenient::text_list")]
     pub preferences_habits_remove: Vec<String>,
     /// The whole list, merged; only accepted when the router was asked to consolidate.
-    #[serde(default)]
+    #[serde(default, deserialize_with = "lenient::text_list")]
     pub preferences_habits_replace: Vec<String>,
-    #[serde(default)]
+    #[serde(default, deserialize_with = "lenient::text_list")]
     pub shared_milestones_promises_add: Vec<String>,
-    #[serde(default)]
+    #[serde(default, deserialize_with = "lenient::text_list")]
     pub shared_milestones_promises_remove: Vec<String>,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize, TS)]
 #[ts(export)]
 pub struct TopicAction {
+    #[serde(default, deserialize_with = "lenient::text")]
     pub action: String, // "create" | "update"
+    #[serde(default, deserialize_with = "lenient::text")]
     pub filename: String,
+    #[serde(default, deserialize_with = "lenient::text")]
     pub summary: String,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize, Default, TS)]
 #[ts(export)]
 pub struct TopicPlan {
+    #[serde(default, deserialize_with = "lenient::opt_text")]
     pub reasoning: Option<String>,
     #[serde(default)]
     pub actions: Vec<TopicAction>,
@@ -275,11 +291,11 @@ pub struct TopicPlan {
 #[derive(Debug, Clone, Serialize, Deserialize, Default, TS)]
 #[ts(export)]
 pub struct RouterResponse {
-    #[serde(default)]
+    #[serde(default, deserialize_with = "lenient::opt_bool")]
     pub no_significant_change: Option<bool>,
     pub character_memory_patch: Option<RouterCharacterMemoryPatch>,
     pub user_memory_patch: Option<RouterUserMemoryPatch>,
-    #[serde(default)]
+    #[serde(default, deserialize_with = "lenient::text_list")]
     pub healing_log_add: Vec<String>,
     pub topic_plan: Option<TopicPlan>,
     #[serde(default)]
@@ -300,22 +316,25 @@ pub struct RouterIntentionsPatch {
 #[derive(Debug, Clone, Serialize, Deserialize, Default, TS)]
 #[ts(export)]
 pub struct RouterIntentionCreate {
+    #[serde(default, deserialize_with = "lenient::text")]
     pub title: String,
-    #[serde(default)]
+    #[serde(default, deserialize_with = "lenient::text")]
     pub details: String,
-    #[serde(default)]
+    #[serde(default, deserialize_with = "lenient::text")]
     pub initiator: String,
-    #[serde(default)]
+    #[serde(default, deserialize_with = "lenient::text")]
     pub time_basis: String,
     /// `YYYY-MM-DD` or `YYYY-MM-DDTHH:MM` (local time).
-    #[serde(default)]
+    #[serde(default, deserialize_with = "lenient::opt_text")]
     pub due: Option<String>,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize, Default, TS)]
 #[ts(export)]
 pub struct RouterIntentionResolve {
+    #[serde(default, deserialize_with = "lenient::id")]
     pub id: i64,
+    #[serde(default, deserialize_with = "lenient::text")]
     pub status: String,
 }
 
@@ -323,11 +342,83 @@ pub struct RouterIntentionResolve {
 #[derive(Debug, Clone, Serialize, Deserialize, Default, TS)]
 #[ts(export)]
 pub struct RouterMemorySupersede {
+    #[serde(default, deserialize_with = "lenient::id")]
     pub id: i64,
-    #[serde(default)]
+    #[serde(default, deserialize_with = "lenient::text")]
     pub reason: String,
-    #[serde(default)]
+    #[serde(default, deserialize_with = "lenient::opt_text")]
     pub replaced_by_topic: Option<String>,
+}
+
+/// Router answers as local models write them: a text field may come as a list, a list as
+/// one text, a number as a string. Strict types threw away the whole reflection for that.
+mod lenient {
+    use serde::{Deserialize, Deserializer};
+    use serde_json::Value;
+
+    fn flatten(value: Value) -> Vec<String> {
+        match value {
+            Value::Null => Vec::new(),
+            Value::String(s) => vec![s],
+            Value::Array(items) => items.into_iter().flat_map(flatten).collect(),
+            Value::Object(map) => map.into_values().flat_map(flatten).collect(),
+            other => vec![other.to_string()],
+        }
+    }
+
+    pub fn opt_text<'de, D: Deserializer<'de>>(d: D) -> Result<Option<String>, D::Error> {
+        let parts: Vec<String> = flatten(Value::deserialize(d)?)
+            .into_iter()
+            .map(|p| p.trim().to_string())
+            .filter(|p| !p.is_empty())
+            .collect();
+        Ok((!parts.is_empty()).then(|| parts.join("; ")))
+    }
+
+    pub fn text<'de, D: Deserializer<'de>>(d: D) -> Result<String, D::Error> {
+        Ok(opt_text(d)?.unwrap_or_default())
+    }
+
+    pub fn text_list<'de, D: Deserializer<'de>>(d: D) -> Result<Vec<String>, D::Error> {
+        Ok(flatten(Value::deserialize(d)?)
+            .into_iter()
+            .map(|p| p.trim().to_string())
+            .filter(|p| !p.is_empty())
+            .collect())
+    }
+
+    pub fn opt_u32<'de, D: Deserializer<'de>>(d: D) -> Result<Option<u32>, D::Error> {
+        Ok(match Value::deserialize(d)? {
+            Value::Number(n) => n.as_f64().map(|f| f.round().max(0.0) as u32),
+            Value::String(s) => s
+                .trim()
+                .parse::<f64>()
+                .ok()
+                .map(|f| f.round().max(0.0) as u32),
+            _ => None,
+        })
+    }
+
+    pub fn opt_bool<'de, D: Deserializer<'de>>(d: D) -> Result<Option<bool>, D::Error> {
+        Ok(match Value::deserialize(d)? {
+            Value::Bool(b) => Some(b),
+            Value::String(s) => match s.trim().to_lowercase().as_str() {
+                "true" | "yes" => Some(true),
+                "false" | "no" => Some(false),
+                _ => None,
+            },
+            _ => None,
+        })
+    }
+
+    /// An id as a number, `"12"` or `"#12"`; 0 (never a real id) when unreadable.
+    pub fn id<'de, D: Deserializer<'de>>(d: D) -> Result<i64, D::Error> {
+        Ok(match Value::deserialize(d)? {
+            Value::Number(n) => n.as_i64().unwrap_or(0),
+            Value::String(s) => s.trim().trim_start_matches('#').parse().unwrap_or(0),
+            _ => 0,
+        })
+    }
 }
 
 pub fn extract_json_object(raw: &str) -> Option<String> {
@@ -432,6 +523,10 @@ fn router_intention_line(entry: &crate::modules::memory::IntentionEntry) -> Stri
 const HABITS_SOFT_CAP: usize = 12;
 /// Never more than this, even when a reflection only adds (the oldest go).
 const HABITS_HARD_CAP: usize = 25;
+/// A merged list keeps at least this many patterns.
+const HABITS_MIN_MERGED: usize = 3;
+/// One merged pattern is a phrase, not a paragraph.
+const HABIT_MAX_CHARS: usize = 160;
 
 /// The task for the router when the preferences and habits grew too long.
 fn consolidation_task(habits: &[String]) -> Option<String> {
@@ -451,7 +546,11 @@ fn accept_habits_replace(asked: bool, replace: &[String]) -> Option<Vec<String>>
         .map(|h| h.trim().to_string())
         .filter(|h| !h.is_empty())
         .collect();
-    (asked && !cleaned.is_empty() && cleaned.len() <= HABITS_SOFT_CAP).then_some(cleaned)
+    // A few short patterns, not one paragraph that swallowed everything.
+    let usable = cleaned.len() >= HABITS_MIN_MERGED
+        && cleaned.len() <= HABITS_SOFT_CAP
+        && cleaned.iter().all(|h| h.chars().count() <= HABIT_MAX_CHARS);
+    (asked && usable).then_some(cleaned)
 }
 
 /// Characters of one memory the router sees; topic files can be long.
@@ -1065,6 +1164,47 @@ mod tests {
     use super::*;
 
     #[test]
+    fn router_answers_of_local_models_are_read_leniently() {
+        // As Qwen 3.6 and Mistral Nemo answer: a list where a text belongs, numbers as strings.
+        let parsed = parse_router_json(
+            r##"{
+              "character_memory_patch": {"core_identity_add": "Ein einzelner Glaubenssatz",
+                "internal_state": {"primary_emotion": ["Freude"], "intensity": "4", "emotion_active": "true"}},
+              "user_memory_patch": {"user_identity_status": {"known_attributes": ["Zog nach Hamburg.", "Mag den Hafen."]},
+                "preferences_habits_add": null},
+              "memory_supersede": [{"id": "#27", "reason": ["umgezogen"]}],
+              "intentions_patch": {"resolve": [{"id": "9", "status": "fulfilled"}]}
+            }"##,
+        )
+        .unwrap();
+        let cp = parsed.character_memory_patch.unwrap();
+        assert_eq!(cp.core_identity_add, ["Ein einzelner Glaubenssatz"]);
+        let ist = cp.internal_state.unwrap();
+        assert_eq!(
+            (
+                ist.primary_emotion.as_deref(),
+                ist.intensity,
+                ist.emotion_active
+            ),
+            (Some("Freude"), Some(4), Some(true))
+        );
+        let up = parsed.user_memory_patch.unwrap();
+        assert_eq!(
+            up.user_identity_status.unwrap().known_attributes.as_deref(),
+            Some("Zog nach Hamburg.; Mag den Hafen.")
+        );
+        assert!(up.preferences_habits_add.is_empty());
+        assert_eq!(
+            (
+                parsed.memory_supersede[0].id,
+                parsed.memory_supersede[0].reason.as_str()
+            ),
+            (27, "umgezogen")
+        );
+        assert_eq!(parsed.intentions_patch.unwrap().resolve[0].id, 9);
+    }
+
+    #[test]
     fn long_habit_lists_are_merged_only_when_asked() {
         let habits = |n: usize| {
             (0..n)
@@ -1077,17 +1217,28 @@ mod tests {
                 .unwrap()
                 .contains("has 13 entries")
         );
-        let merged = vec!["Liebt süße Snacks".to_string(), " ".to_string()];
+        let list = |items: &[&str]| items.iter().map(|s| s.to_string()).collect::<Vec<_>>();
+        let merged = list(&["Liebt süße Snacks", "Trinkt Tee", " ", "Joggt"]);
         assert_eq!(accept_habits_replace(false, &merged), None);
         assert_eq!(
             accept_habits_replace(true, &merged),
-            Some(vec!["Liebt süße Snacks".to_string()])
+            Some(list(&["Liebt süße Snacks", "Trinkt Tee", "Joggt"]))
         );
         assert_eq!(
             accept_habits_replace(true, &habits(HABITS_SOFT_CAP + 1)),
             None
         );
         assert_eq!(accept_habits_replace(true, &[]), None);
+        // One paragraph that swallowed everything (seen with Cydonia 24B) is no pattern list.
+        assert_eq!(
+            accept_habits_replace(true, &list(&["Mag Dango", "Trinkt Tee"])),
+            None
+        );
+        let paragraph = "Mag süße Snacks. ".repeat(12);
+        assert_eq!(
+            accept_habits_replace(true, &list(&[&paragraph, "Trinkt Tee", "Joggt"])),
+            None
+        );
         let parsed = parse_router_json(
             r#"{"user_memory_patch": {"preferences_habits_replace": ["Liebt Dango"]}}"#,
         )

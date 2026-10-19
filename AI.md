@@ -615,6 +615,14 @@ ru „персонаж/история/сцена“. Fachbegriffe nur im Experte
   legt je Gruppe eine Erinnerung an und löst die Quellen per `supersede_memory_on` ab (wiederherstellbar). Sperre über
   `memoryOperation = 'cleanup'`. Mock-LLM: `stats.cleanupResult`.
 - Raw-Strings für Prompts: ein `"#` (z. B. `"#12"`) beendet `r#"…"#` – dann `r##"…"##` nehmen.
+- Router-JSON wird tolerant gelesen (`memory_pipeline::lenient`): lokale Modelle (Qwen 3.6, Mistral Nemo) schreiben
+  Textfelder wie `known_attributes` als Liste, Listen als einzelnen Text, Zahlen/IDs als String (`"#27"`). Strenge
+  Typen verwarfen dafür früher die **ganze** Reflexion. Neue Router-Felder immer mit `deserialize_with = "lenient::…"`.
+  Zusammengefasste Gewohnheiten brauchen ≥ 3 Muster à ≤ 160 Zeichen (Cydonia lieferte einen einzigen Absatz).
+- Echtmodell-Test: `OTAKUSOUL_E2E_LLMS=a.gguf,b.gguf cargo test --test gpu_e2e memory -- --ignored --nocapture`
+  (Wegwerf-Profil, nutzt die installierte llama.cpp-Laufzeit per Symlink, Tabelle je Modell). Stand 19.10.2026:
+  Gemma 4 12B alles ✅; Mistral Nemo, Cydonia 24B, Qwen 3.6 35B-A3B je ein Aussetzer (Vorhaben in der Geschichte
+  bzw. „erledigt“ übersehen).
 
 ### 9. Hub-Synchronisation, Registries & Daten-Pakete
 

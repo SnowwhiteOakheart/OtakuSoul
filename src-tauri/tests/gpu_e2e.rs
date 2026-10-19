@@ -1050,3 +1050,334 @@ async fn llm() {
         println!("{row}");
     }
 }
+
+/// Memory pipeline against real chat models: does the reflection retire contradicted facts,
+/// plan real and story intentions, resolve done ones, merge long habit lists, and does the
+/// cleanup propose sensible groups? Runs in a throw-away profile; prints one row per model.
+///
+/// ```text
+/// OTAKUSOUL_E2E_LLMS=/path/a.gguf,/path/b.gguf cargo test --test gpu_e2e memory -- --ignored --nocapture
+/// ```
+#[tokio::test(flavor = "multi_thread")]
+#[ignore = "needs a GPU and local chat models"]
+async fn memory() {
+    use otakusoul_lib::modules::{
+        hardware,
+        memory::IntentionDraft,
+        memory_pipeline::{self, MemoryCleanupRequest, SoulMemoryPipelineRequest},
+        providers::LlmProviderType,
+    };
+    use otakusoul_lib::state::AppState;
+
+    // A throw-away profile that uses the installed llama.cpp build (no download, no update).
+    let real_data = otakusoul_lib::modules::paths::base_dirs().1;
+    let home = std::env::temp_dir().join(format!("otakusoul-memory-e2e-{}", std::process::id()));
+    std::fs::create_dir_all(home.join("config")).unwrap();
+    std::fs::create_dir_all(home.join("data")).unwrap();
+    #[cfg(unix)]
+    std::os::unix::fs::symlink(real_data.join("runtimes"), home.join("data/runtimes")).unwrap();
+    // SAFETY: set once before anything reads the environment.
+    unsafe { std::env::set_var("OTAKUSOUL_HOME", &home) };
+    let models: Vec<PathBuf> = std::env::var("OTAKUSOUL_E2E_LLMS")
+        .expect("OTAKUSOUL_E2E_LLMS=/pfad/modell.gguf[,…]")
+        .split(',')
+        .map(PathBuf::from)
+        .collect();
+    let runtime = runtimes::installed(RuntimeKind::Llama).expect("llama.cpp ist nicht installiert");
+    println!("llama.cpp {} {}", runtime.build, runtime.backend);
+    let state = AppState::new();
+    let db = state.memory_db.clone();
+    let port = 48_698;
+    let endpoint = format!("http://127.0.0.1:{port}/v1/chat/completions");
+    let today = chrono::Local::now().date_naive();
+    let tomorrow = today.succ_opt().unwrap();
+    let mut rows = Vec::new();
+
+    for model in &models {
+        let name = model.file_stem().unwrap().to_string_lossy().to_string();
+        let path = model.to_string_lossy().to_string();
+        let rec = {
+            let path = path.clone();
+            tokio::task::spawn_blocking(move || {
+                hardware::recommend_gpu_layers(0, 0, 16_384, Some(&path), Some("f16"), Some("f16"))
+            })
+            .await
+            .unwrap()
+        };
+        let llama = LlamaServerManager::new();
+        let config = LlamaServerConfig {
+            model_path: path,
+            port,
+            context_size: rec.recommended_context_size.min(16_384),
+            gpu_layers: rec.recommended_layers,
+            flash_attn: true,
+            ..Default::default()
+        };
+        if let Err(e) = llama.start(config).await {
+            println!(
+                "[{name}] Start fehlgeschlagen: {}",
+                e.chars().take(300).collect::<String>()
+            );
+            continue;
+        }
+        let tag = name
+            .chars()
+            .filter(char::is_ascii_alphanumeric)
+            .take(12)
+            .collect::<String>();
+        let reflect = |char_id: String, lines: Vec<(&'static str, &'static str)>| {
+            let state = &state;
+            let endpoint = endpoint.clone();
+            async move {
+                let session = state
+                    .memory_db
+                    .create_chat_session(&char_id, "Test")
+                    .unwrap();
+                for (role, text) in lines {
+                    state
+                        .memory_db
+                        .add_chat_message(&session.id, role, text, None, &[])
+                        .unwrap();
+                }
+                let started = Instant::now();
+                let result = memory_pipeline::execute_memory_pipeline(
+                    state,
+                    SoulMemoryPipelineRequest {
+                        character_id: char_id.clone(),
+                        user_name: "Kai".into(),
+                        chat_id: Some(session.id),
+                        endpoint_url: endpoint,
+                        api_key: None,
+                        model: None,
+                        provider: Some(LlmProviderType::LocalLlama),
+                        recent_turn_count: Some(8),
+                        include_diary: Some(false),
+                        transcript: None,
+                        speaker_names: None,
+                    },
+                )
+                .await;
+                (result, started.elapsed().as_secs())
+            }
+        };
+
+        // 1. A contradicted fact is retired (or the router at least writes a new version).
+        let who = format!("Aiko{tag}1");
+        let munich = db
+            .add_episodic_memory(&who, "fact", "Kai wohnt in München", 3)
+            .unwrap();
+        let (result, secs1) = reflect(who.clone(), vec![
+            ("user", "Ich muss dir was erzählen: Ich bin letzte Woche von München nach Hamburg gezogen!"),
+            ("assistant", "*reißt die Augen auf* Nach Hamburg? Wow, das ist ja ein riesiger Schritt! Wie ist die neue Wohnung?"),
+            ("user", "Klein, aber mit Blick auf den Hafen. München vermisse ich gar nicht mehr."),
+            ("assistant", "*lächelt* Dann musst du mir unbedingt Fotos vom Hafen zeigen."),
+        ]).await;
+        let error1 = result.err();
+        let superseded = db
+            .get_superseded_memories(&who, 10)
+            .unwrap()
+            .iter()
+            .any(|m| m.id == munich);
+        let hamburg = db
+            .get_episodic_memories(&who, 20)
+            .unwrap()
+            .iter()
+            .any(|m| m.content.contains("Hamburg"))
+            || db
+                .get_or_create_relationship(&who, "Kai")
+                .unwrap()
+                .known_attributes
+                .contains("Hamburg");
+
+        // 2. Real and story intentions with the right time basis and date.
+        let who = format!("Aiko{tag}2");
+        let (result, secs2) = reflect(who.clone(), vec![
+            ("user", "Kannst du mich morgen um 9 Uhr an mein Vorstellungsgespräch erinnern? Ich bin so nervös."),
+            ("assistant", "Na klar! Morgen um neun denke ich an dich und drück dir die Daumen."),
+            ("user", "*sattelt die Pferde* Und in unserer Geschichte: Bei Sonnenaufgang reiten wir zur Burg der Nebelkönigin."),
+            ("assistant", "*zieht den Umhang fester* Bei Sonnenaufgang also. Ich bringe die Karte mit, die ich dir versprochen habe."),
+        ]).await;
+        let error2 = result.err();
+        let plans = db.get_intentions(&who, "Kai", true).unwrap();
+        let interview = plans.iter().find(|p| {
+            let t = p.title.to_lowercase();
+            t.contains("vorstellung") || t.contains("interview") || t.contains("gespräch")
+        });
+        let interview_ok = interview.is_some_and(|p| {
+            p.time_basis == "real"
+                && p.due_at
+                    .and_then(|d| {
+                        chrono::TimeZone::timestamp_opt(&chrono::Local, d as i64, 0).single()
+                    })
+                    .is_some_and(|d| d.date_naive() == tomorrow)
+        });
+        let castle_story = plans.iter().any(|p| {
+            p.time_basis == "story" && {
+                let t = p.title.to_lowercase();
+                ["burg", "reit", "karte", "castle", "ride", "journey", "map"]
+                    .iter()
+                    .any(|w| t.contains(w))
+            }
+        });
+        let story_dated = plans
+            .iter()
+            .any(|p| p.time_basis == "story" && p.due_at.is_some());
+
+        // 3. A done plan is resolved.
+        let who = format!("Aiko{tag}3");
+        db.add_intention(
+            &who,
+            "Kai",
+            &IntentionDraft {
+                title: "Zusammen italienisch kochen".into(),
+                initiator: "both".into(),
+                time_basis: "real".into(),
+                ..Default::default()
+            },
+        )
+        .unwrap();
+        let (result, secs3) = reflect(who.clone(), vec![
+            ("user", "Das Kochen gestern Abend mit dir war so schön! Die selbstgemachte Pasta war perfekt."),
+            ("assistant", "*strahlt* Fand ich auch! Endlich haben wir unser italienisches Kochabend-Versprechen eingelöst."),
+        ]).await;
+        let error3 = result.err();
+        let cooking = db.get_intentions(&who, "Kai", true).unwrap();
+        let fulfilled = cooking
+            .iter()
+            .any(|p| p.title.contains("italienisch") && p.status == "fulfilled");
+
+        // 4. A long habit list is merged.
+        let who = format!("Aiko{tag}4");
+        let mut rel = db.get_or_create_relationship(&who, "Kai").unwrap();
+        rel.preferences_habits = [
+            "Mag Dango",
+            "Mag Mochi",
+            "Mag Taiyaki",
+            "Trinkt morgens Grüntee",
+            "Trinkt abends Jasmintee",
+            "Hört Lo-Fi beim Lernen",
+            "Hört Jazz beim Kochen",
+            "Joggt sonntags",
+            "Joggt mittwochs",
+            "Liest Fantasy-Romane",
+            "Liest Mangas vor dem Schlafen",
+            "Mag Regen",
+            "Mag Gewitter",
+            "Hasst laute Bars",
+        ]
+        .iter()
+        .map(|s| s.to_string())
+        .collect();
+        db.update_relationship(&who, &rel).unwrap();
+        let (result, secs4) = reflect(who.clone(), vec![
+            ("user", "Heute war ein langer Tag. Ich hab nach der Arbeit noch Mochi gekauft, die mit Erdbeere."),
+            ("assistant", "*nimmt sich einen* Erdbeer-Mochi! Du kennst mich einfach zu gut."),
+        ]).await;
+        let error4 = result.err();
+        let habits = db
+            .get_or_create_relationship(&who, "Kai")
+            .unwrap()
+            .preferences_habits;
+        let merged = habits.len() <= 12;
+
+        // 5. Cleanup proposes groups of overlapping memories.
+        let who = format!("Aiko{tag}5");
+        for text in [
+            "Kai trinkt morgens Grüntee",
+            "Kai mag grünen Tee am liebsten am Morgen",
+            "Kai hat eine Katze namens Mochi",
+            "Kais Katze Mochi ist drei Jahre alt",
+            "Kai arbeitet als Grafikdesigner",
+        ] {
+            db.add_episodic_memory(&who, "fact", text, 3).unwrap();
+        }
+        let started = Instant::now();
+        let proposal = memory_pipeline::propose_memory_cleanup(
+            &state,
+            MemoryCleanupRequest {
+                character_id: who.clone(),
+                endpoint_url: endpoint.clone(),
+                api_key: None,
+                model: None,
+                provider: Some(LlmProviderType::LocalLlama),
+            },
+        )
+        .await;
+        let secs5 = started.elapsed().as_secs();
+        let (groups, cleanup_note) = match &proposal {
+            Ok(p) => (
+                p.groups.len(),
+                p.groups
+                    .iter()
+                    .map(|g| format!("{:?}: {}", g.memory_ids, g.summary))
+                    .collect::<Vec<_>>()
+                    .join(" | "),
+            ),
+            Err(e) => (0, format!("Fehler: {e}")),
+        };
+        llama.stop().await.ok();
+
+        let mark = |ok: bool| if ok { "✅" } else { "❌" };
+        println!("\n[{name}]");
+        println!(
+            "  1 Widerspruch ({secs1}s): abgelöst {} · neue Fassung {} {}",
+            mark(superseded),
+            mark(hamburg),
+            error1.unwrap_or_default()
+        );
+        println!(
+            "  2 Vorhaben ({secs2}s): echt+morgen {} · Geschichte {} · Geschichte ohne Datum {} {}",
+            mark(interview_ok),
+            mark(castle_story),
+            mark(!story_dated),
+            error2.unwrap_or_default()
+        );
+        for p in &plans {
+            println!(
+                "      - [{} {:?} {}] {} ({})",
+                p.time_basis, p.due_at, p.due_has_time, p.title, p.initiator
+            );
+        }
+        println!(
+            "  3 Erledigt ({secs3}s): {} {}",
+            mark(fulfilled),
+            error3.unwrap_or_default()
+        );
+        for p in &cooking {
+            println!("      - [{}] {}", p.status, p.title);
+        }
+        println!(
+            "  4 Gewohnheiten ({secs4}s): {} → {} {} {:?}",
+            14,
+            habits.len(),
+            mark(merged),
+            error4.unwrap_or_default()
+        );
+        println!("      {habits:?}");
+        println!(
+            "  5 Aufräumen ({secs5}s): {groups} Gruppe(n) {} – {cleanup_note}",
+            mark(groups >= 1)
+        );
+        rows.push(format!(
+            "| {name} | {} {} | {} {} {} | {} | {} ({}) | {} ({groups}) |",
+            mark(superseded),
+            mark(hamburg),
+            mark(interview_ok),
+            mark(castle_story),
+            mark(!story_dated),
+            mark(fulfilled),
+            mark(merged),
+            habits.len(),
+            mark(groups >= 1),
+        ));
+        tokio::time::sleep(Duration::from_secs(3)).await;
+    }
+    println!(
+        "\n| Modell | Widerspruch (abgelöst, neu) | Vorhaben (echt, Geschichte, ohne Datum) | Erledigt | Gewohnheiten | Aufräumen |"
+    );
+    println!("|---|---|---|---|---|---|");
+    for row in rows {
+        println!("{row}");
+    }
+    let _ = std::fs::remove_dir_all(&home);
+}
