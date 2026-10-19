@@ -22,6 +22,9 @@ function hasUnclosedAsteriskSpan(text: string) {
 /**
  * Converts completed sentences while an LLM response is still streaming.
  * Synthesis stays serialized so audio is always queued in textual order.
+ * Local speech shares the GPU with the chat model and runs slower than real time while that
+ * still generates, so its audio is held back until the reply is complete and then plays
+ * without gaps.
  */
 export class StreamingTtsManager {
   private buffer = '';
@@ -30,11 +33,14 @@ export class StreamingTtsManager {
   private session = 0;
   private config: VoiceConfig | null = null;
   private synthesisChain: Promise<void> = Promise.resolve();
+  private holding = false;
+  private held: (() => void)[] = [];
 
   public begin(config: VoiceConfig) {
     this.cancel(false);
     this.active = true;
     this.config = config;
+    this.holding = config.engine === 'local';
   }
 
   public push(token: string, config: VoiceConfig) {
@@ -71,12 +77,15 @@ export class StreamingTtsManager {
       try {
         const audioUrl = await api.synthesizeSpeech(text, config);
         if (session !== this.session || !this.active) return;
-        audioPlayer.enqueue(
-          audioUrl,
-          gainFromVoiceVolume(config.volume),
-          config.output_device_id,
-          config.effects,
-        );
+        const play = () =>
+          audioPlayer.enqueue(
+            audioUrl,
+            gainFromVoiceVolume(config.volume),
+            config.output_device_id,
+            config.effects,
+          );
+        if (this.holding) this.held.push(play);
+        else play();
       } catch (error) {
         console.error('Satzweises TTS fehlgeschlagen:', error);
       }
@@ -89,6 +98,15 @@ export class StreamingTtsManager {
     const remainder = (this.receivedText ? this.buffer : fallbackFullText).trim();
     this.buffer = '';
     if (remainder) this.queueSynthesis(remainder);
+    this.releaseHeld();
+  }
+
+  /** The reply is complete: play what was held back, later sentences play right away. */
+  private releaseHeld() {
+    this.holding = false;
+    const held = this.held;
+    this.held = [];
+    held.forEach((play) => play());
   }
 
   public async waitForIdle() {
@@ -102,6 +120,8 @@ export class StreamingTtsManager {
     this.receivedText = false;
     this.active = false;
     this.config = null;
+    this.holding = false;
+    this.held = [];
     this.synthesisChain = Promise.resolve();
     if (stopPlayback) audioPlayer.stop();
   }

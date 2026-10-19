@@ -524,6 +524,8 @@ ru „персонаж/история/сцена“. Fachbegriffe nur im Experte
 ### 7. Audio, Lokale TTS, Stimmklonen & Effekte
 
 - Lokale TTS (`tts_local.rs`, `crispasr --server`): F5 bekommt unter CUDA `CRISPASR_F5_EMBED_GPU=1` (sonst ~20× langsamer).
+  Parallel zum generierenden LLM läuft lokale TTS langsamer als Echtzeit (gemessen 7,3 s für 6,6 s Audio): `streamingTts`
+  synthetisiert bei `engine === 'local'` weiter satzweise, hält die Wiedergabe aber bis `flush()` (Antwortende) zurück.
   VoiceDesign-Modelle (`voice_design`) brauchen eine Beschreibung (`openai_instructions` der Stimme → `instructions`).
   TADA: `CRISPASR_TADA_WAV_CLONE=1` (WAV-Klon, Encoder/Aligner neben dem Modell), `CRISPASR_TADA_NUM_CANDIDATES=4`.
   Chatterbox klont nativ nur aus 24-kHz-WAV und braucht im Server die Stimme als `<id>.wav` (`clone_voice_name`);
