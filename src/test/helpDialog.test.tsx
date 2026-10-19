@@ -1,12 +1,10 @@
 // @vitest-environment jsdom
+import { de, en, ru } from './locales';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { render, screen } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { useAppStore } from '../store/useAppStore';
 import { GLOSSARY_TERMS, GUIDE_STEPS, HelpDialog } from '../components/HelpDialog';
-import { de } from '../i18n/locales/de';
-import { en } from '../i18n/locales/en';
-import { ru } from '../i18n/locales/ru';
 
 beforeEach(() => useAppStore.setState({ appLanguage: 'en' }));
 

@@ -15,6 +15,8 @@ export const GLOSSARY_TERMS = [
 export const GUIDE_STEPS = [1, 2, 3, 4, 5, 6] as const;
 
 const GUIDE_URL = 'https://github.com/SnowwhiteOakheart/OtakuSoul/blob/main/docs/guide-getting-started';
+/** Languages with their own guide file; the others link the English one. */
+const GUIDE_LANGUAGES = ['de', 'ru'];
 
 /** Help for beginners: the first steps through the app and a searchable glossary of its terms. */
 export const HelpDialog: React.FC<{ onClose: () => void; initialTab?: 'guide' | 'glossary' }> = ({ onClose, initialTab = 'guide' }) => {
@@ -22,7 +24,7 @@ export const HelpDialog: React.FC<{ onClose: () => void; initialTab?: 'guide' | 
   const [tab, setTab] = useState<'guide' | 'glossary'>(initialTab);
   const [query, setQuery] = useState('');
   const language = useAppStore((s) => s.appLanguage);
-  const guideUrl = `${GUIDE_URL}${language === 'en' ? '' : `.${language}`}.md`;
+  const guideUrl = `${GUIDE_URL}${GUIDE_LANGUAGES.includes(language) ? `.${language}` : ''}.md`;
   const q = query.trim().toLowerCase();
   const terms = GLOSSARY_TERMS.filter((id) => {
     if (!q) return true;

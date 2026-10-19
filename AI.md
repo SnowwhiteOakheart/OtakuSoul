@@ -49,7 +49,7 @@ Backend `src-tauri/src/`: `lib.rs` (Plugins, Command-Registrierung), `state.rs` 
 
 Frontend `src/`: `services/api.ts` (ein Wrapper je Command), `store/slices/*.ts` (Zustand, Zugriff per
 `useStoreFields('a','b')`), `store/helpers.ts` (`resolvePromptWithLore`, `llmTarget`), `components/<bereich>/`,
-`i18n/locales/{de,en,ru}.ts` (en/ru laden bei Bedarf über `i18n/registry.ts`, Tests registrieren alle in `src/test/setup.ts`), `types/index.ts` (+ `generated/`), `utils/errors.ts`.
+`presets/locales/ui/*.json` (Oberflächentexte, siehe „Oberflächensprachen“), `types/index.ts` (+ `generated/`), `utils/errors.ts`.
 Expertenmodus `AppSettings.expert_mode` (`expertMode`): blendet Server-Tuning, Sampler-Regler, „Als Vorlage speichern“,
 Prompt-Reiter, Voice-ID/RegEx/RVC, GPU-Anzeige und Protokoll in der Kopfzeile, im Chat Lokal/Cloud-Umschalter, Werkzeuge,
 Prompt-Protokoll und Token-Zahlen der Kontextanzeige ein; neue Fachoptionen dort einordnen (E2E: `launch({ expert_mode: true })`).
@@ -164,11 +164,24 @@ ru „персонаж/история/сцена“. Fachbegriffe nur im Experte
   Abläufen nachziehen.
 - **Lösungsknöpfe:** `utils/errorFixes.ts` `errorFix(error, store)` ordnet häufige Codes einem Schritt zu (Chat-Banner über
   `generationFailure.cause`, Toasts über `reportFailure`); neue Codes mit klarer Abhilfe dort ergänzen.
+- **Oberflächensprachen:** je Sprache eine JSON-Datei, damit neue Sprachen ohne neuen Build gehen. Mitgeliefert
+  `presets/locales/ui/{de,en,ru}.json`, eigene/Community-Dateien in `<Daten>/locales/ui/<kürzel>.json` (überleben Updates;
+  gleiche ID überschreibt nur die enthaltenen Schlüssel). Flache `"schlüssel": "text"`-Paare plus `__meta` (`name`,
+  `englishName`, `author`, `version`, `fallback`); Dateiname = Sprachkürzel (`is_language_id`, `_template.json` wird
+  ignoriert). Backend `modules/ui_locales.rs` (`list_ui_languages`, `load_ui_language`, `open_ui_locales_folder` legt
+  `_template.json` aus Englisch an; `ui_text` für das Tray-Menü). Frontend: Deutsch ist eingebaut und Typquelle
+  (`i18n/types.ts` → `TranslationKey` aus `de.json`), andere Sprachen lädt `loadLocale` über das Backend;
+  `t()` fällt `Sprache → __meta.fallback → Deutsch → Schlüssel` zurück. Sprachlisten nie hart verdrahten, sondern
+  `availableLanguages` aus dem Store nutzen; `refreshLanguages` liest Dateien neu (`localeRevision` rendert neu).
+  Neue Schlüssel in **allen drei** mitgelieferten JSON-Dateien ergänzen (`src/test/i18n.test.ts` prüft Vollständigkeit
+  und Platzhalter); `npm run i18n:check [-- datei.json]` prüft fremde Übersetzungen.
 - **Fehler:** Backend `crate::err!("backend.x.y", key = wert)` → JSON-Code → Frontend `errorMessage()` übersetzt über
   i18n; jeder neue Code braucht Einträge in allen Locales.
 - **Spieltexte** (was die App selbst in Geschichten schreibt, `ContentLang::t("englischer Text")`, Sprache = Antwortsprache):
-  Übersetzungen in `otakusoul-data/locales/{de,ru}.json`; die App liefert eine Kopie in `presets/locales/` mit und lädt beim
+  Übersetzungen in `otakusoul-data/locales/<kürzel>.json`; die App liefert eine Kopie in `presets/locales/` mit und lädt beim
   Start im Hintergrund die aktuelle Fassung nach (`content_lang::refresh_locales` → `<Daten>/locales/`, überschreibt die Kopie).
+  Jede Datei dort zählt als Spielsprache; nachgeladen werden die bekannten plus alle installierten Oberflächensprachen.
+  `language_code` erkennt auch Namen installierter Oberflächensprachen („Polski“ → `pl`).
   `load_locales` erst in `setup` nach `set_resource_dir`. Neue `t()`-Texte im Daten-Repo ergänzen und die Kopie hier aktualisieren.
 
 ## Stolperfallen

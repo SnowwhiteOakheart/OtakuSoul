@@ -1,7 +1,6 @@
 import { useEffect, useState } from 'react';
 import { api } from '../services/api';
 import type { SpellData } from '../types';
-import type { LocalizedName } from '../types/generated/LocalizedName';
 
 let cache: Map<string, SpellData> | null = null;
 let loading: Promise<Map<string, SpellData>> | null = null;
@@ -24,9 +23,9 @@ export function loadSrdSpells(): Promise<Map<string, SpellData>> {
 }
 
 /** Spell name in the app language; the id until the spells are loaded. */
-export const spellName = (id: string, language: keyof LocalizedName) => {
+export const spellName = (id: string, language: string) => {
   const spell = cache?.get(id);
-  return spell ? spell.name[language] || spell.name.en : id.replace(/_/g, ' ');
+  return spell ? (spell.name as Partial<Record<string, string>>)[language] || spell.name.en : id.replace(/_/g, ' ');
 };
 
 /** The SRD spells for a component (empty until loaded). */

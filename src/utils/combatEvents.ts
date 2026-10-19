@@ -1,4 +1,4 @@
-import { tOptional, translate, type TranslationKey } from '../i18n';
+import { tOptional, translate, type SupportedLanguage, type TranslationKey } from '../i18n';
 import { useAppStore } from '../store/useAppStore';
 import type { CombatEvent } from '../types/generated/CombatEvent';
 import type { D20Roll } from '../types/generated/D20Roll';
@@ -6,9 +6,11 @@ import type { HealthTier } from '../types/generated/HealthTier';
 import type { LocalizedName } from '../types/generated/LocalizedName';
 import { spellName } from './srdSpells';
 
-type Language = 'de' | 'en' | 'ru';
+type Language = SupportedLanguage;
 
-export const localizedName = (name: LocalizedName, language: Language) => name[language] || name.en;
+/** Rule names exist in de/en/ru; other interface languages see the English one. */
+export const localizedName = (name: LocalizedName, language: Language) =>
+  (name as Partial<Record<string, string>>)[language] || name.en;
 
 export const tierLabel = (tier: HealthTier) => translate(`fight.tier.${tier}` as TranslationKey);
 

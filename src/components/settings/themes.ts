@@ -8,9 +8,3 @@ export const APP_THEMES = [
 ] as const;
 
 export type AppThemeId = (typeof APP_THEMES)[number]['id'];
-
-export const APP_LANGUAGES = [
-  { id: 'de', label: 'Deutsch' },
-  { id: 'en', label: 'English' },
-  { id: 'ru', label: 'Русский' },
-] as const;

@@ -1,5 +1,6 @@
 import type { TokenEvent } from '../types/generated/TokenEvent';
 import type { ThoughtEvent } from '../types/generated/ThoughtEvent';
+import type { UiLanguage } from '../types/generated/UiLanguage';
 import { invoke } from '@tauri-apps/api/core';
 import { listen, UnlistenFn } from '@tauri-apps/api/event';
 import {
@@ -822,6 +823,21 @@ export const api = {
   // Technical Debt & Phase 8: Data Foundation, Settings & Character Library
   getAppPaths: async (): Promise<AppPaths> => {
     return await invoke<AppPaths>('get_app_paths');
+  },
+
+  /** Interface languages from the shipped and the user folder. */
+  listUiLanguages: async (): Promise<UiLanguage[]> => {
+    return await invoke('list_ui_languages');
+  },
+
+  /** All texts of one interface language (shipped file plus the user's changes). */
+  loadUiLanguage: async (id: string): Promise<Record<string, string>> => {
+    return await invoke('load_ui_language', { id });
+  },
+
+  /** Opens the folder for own translations (with `_template.json` to copy). */
+  openUiLocalesFolder: async (): Promise<void> => {
+    await invoke('open_ui_locales_folder');
   },
 
   openAvatarFolder: async (): Promise<void> => {

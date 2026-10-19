@@ -19,8 +19,39 @@ fn translations() -> &'static RwLock<HashMap<String, HashMap<String, String>>> {
     TRANSLATIONS.get_or_init(|| RwLock::new(HashMap::new()))
 }
 
-/// Languages with translations of the story texts (English is the source in the code).
-pub const STORY_LANGUAGES: [&str; 2] = ["de", "ru"];
+/// Story-text files in `dir` (`<id>.json`); any language with a file there counts.
+fn story_languages_in(dir: &Path) -> Vec<String> {
+    let Ok(entries) = std::fs::read_dir(dir) else {
+        return Vec::new();
+    };
+    entries
+        .flatten()
+        .filter_map(|entry| {
+            let path = entry.path();
+            if !path.is_file() || path.extension().and_then(|ext| ext.to_str()) != Some("json") {
+                return None;
+            }
+            let id = path.file_stem()?.to_str()?.to_string();
+            crate::modules::ui_locales::is_language_id(&id).then_some(id)
+        })
+        .collect()
+}
+
+/// Languages to fetch story texts for: the ones already known plus every installed interface
+/// language, so a new translation also gets story texts once the data repository has them.
+/// English is the source in the code.
+fn story_languages() -> Vec<String> {
+    let mut languages: Vec<String> = translations().read().unwrap().keys().cloned().collect();
+    languages.extend(
+        crate::modules::ui_locales::available_languages()
+            .into_iter()
+            .map(|language| language.id),
+    );
+    languages.retain(|id| id != "en");
+    languages.sort();
+    languages.dedup();
+    languages
+}
 
 fn downloaded_locales_dir() -> std::path::PathBuf {
     std::path::PathBuf::from(crate::modules::paths::resolve_app_paths().data_dir).join("locales")
@@ -49,9 +80,9 @@ pub fn load_locales() {
     let paths = crate::modules::paths::resolve_app_paths();
     let bundled = std::path::PathBuf::from(&paths.bundled_presets_dir).join("locales");
     for dir in [bundled, downloaded_locales_dir()] {
-        for lang in STORY_LANGUAGES {
+        for lang in story_languages_in(&dir) {
             if let Some(dict) = read_locale(&dir.join(format!("{lang}.json"))) {
-                merge_locale(lang, dict);
+                merge_locale(&lang, dict);
             }
         }
     }
@@ -67,7 +98,7 @@ pub async fn refresh_locales() {
         return;
     };
     let dir = downloaded_locales_dir();
-    for lang in STORY_LANGUAGES {
+    for lang in story_languages() {
         let url = crate::modules::hub::hub_url(&format!("locales/{lang}.json"));
         let text = match client
             .get(&url)
@@ -98,7 +129,7 @@ pub async fn refresh_locales() {
         if let Err(e) = std::fs::write(dir.join(format!("{lang}.json")), &text) {
             tracing::warn!("Spieltexte {lang} nicht gespeichert: {e}");
         }
-        merge_locale(lang, dict);
+        merge_locale(&lang, dict);
     }
 }
 
@@ -166,7 +197,10 @@ pub fn language_code(reply_language: &str) -> String {
         "日本語" | "japanese" => "ja",
         "français" | "francais" | "french" => "fr",
         "español" | "espanol" | "spanish" => "es",
-        other => return other.to_string(),
+        other => {
+            return crate::modules::ui_locales::language_id_for_name(other)
+                .unwrap_or_else(|| other.to_string());
+        }
     }
     .to_string()
 }

@@ -22,9 +22,9 @@ import {
 } from 'lucide-react';
 import { openUrl } from '@tauri-apps/plugin-opener';
 import { useAppStore } from '../../store/useAppStore';
-import { useTranslation, type SupportedLanguage, type TranslationKey } from '../../i18n';
+import { useTranslation, type TranslationKey } from '../../i18n';
 import { ModalOverlay } from '../ui/ModalOverlay';
-import { APP_LANGUAGES, APP_THEMES } from '../settings/themes';
+import { APP_THEMES } from '../settings/themes';
 import type { LlmProviderType } from '../../types';
 import { CloudConnectionTest, FirstReply, LocalModelSetup, ModelFit, prettyModelName } from './OnboardingParts';
 import { CharacterVoiceModal } from '../voice/CharacterVoiceModal';
@@ -75,6 +75,7 @@ export const FirstRunWizard: React.FC = () => {
     useShallow((s) => ({
       appLanguage: s.appLanguage,
       setAppLanguage: s.setAppLanguage,
+      availableLanguages: s.availableLanguages,
       theme: s.theme,
       setTheme: s.setTheme,
       scannedModels: s.scannedModels,
@@ -220,16 +221,16 @@ export const FirstRunWizard: React.FC = () => {
                   {t('onboarding.languageLabel')}
                 </legend>
                 <div className="grid grid-cols-3 gap-2">
-                  {APP_LANGUAGES.map((lang) => (
+                  {store.availableLanguages.map((lang) => (
                     <button
                       key={lang.id}
                       type="button"
                       lang={lang.id}
                       aria-pressed={store.appLanguage === lang.id}
-                      onClick={() => store.setAppLanguage(lang.id as SupportedLanguage)}
+                      onClick={() => store.setAppLanguage(lang.id)}
                       className={`${CHOICE_CARD} ${choiceState(store.appLanguage === lang.id)} justify-center p-3.5 text-sm font-medium`}
                     >
-                      {lang.label}
+                      {lang.name}
                     </button>
                   ))}
                 </div>
@@ -531,7 +532,7 @@ export const FirstRunWizard: React.FC = () => {
 
               <dl className="divide-y divide-slate-800 rounded-xl border border-slate-800 bg-app/60 text-sm">
                 {[
-                  { label: t('onboarding.summaryLanguage'), value: APP_LANGUAGES.find((l) => l.id === store.appLanguage)?.label },
+                  { label: t('onboarding.summaryLanguage'), value: store.availableLanguages.find((l) => l.id === store.appLanguage)?.name },
                   {
                     label: t('onboarding.summaryModel'),
                     value: isCloud ? `${cloudProviderLabel} · ${store.cloudModel}` : localModel && prettyModelName(localModel.name),

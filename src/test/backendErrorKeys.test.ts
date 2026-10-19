@@ -37,7 +37,7 @@ describe('backend error codes', () => {
 
   it('has a translation for every code in every language', () => {
     for (const [lang, dict] of Object.entries(LOCALES)) {
-      const missing = errCalls.filter(({ key }) => !(key in dict)).map(({ key }) => key);
+      const missing = errCalls.filter(({ key }) => !(key in (dict ?? {}))).map(({ key }) => key);
       expect(missing, lang).toEqual([]);
     }
   });

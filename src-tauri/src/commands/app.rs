@@ -33,6 +33,29 @@ pub fn open_avatar_folder(app: tauri::AppHandle) -> Result<(), String> {
         .map_err(|e| crate::err!("backend.common.openFolder", error = e))
 }
 
+/// Interface languages found in the shipped and the user folder (see `ui_locales`).
+#[tauri::command]
+pub fn list_ui_languages() -> Vec<crate::modules::ui_locales::UiLanguage> {
+    crate::modules::ui_locales::available_languages()
+}
+
+/// All texts of one interface language; missing keys fall back in the frontend.
+#[tauri::command]
+pub fn load_ui_language(id: String) -> Result<std::collections::HashMap<String, String>, String> {
+    crate::modules::ui_locales::load_language(&id)
+        .ok_or_else(|| crate::err!("backend.uiLanguage.notFound", id = id))
+}
+
+/// Opens the folder for own translations, with a fresh template to copy, in the file manager.
+#[tauri::command]
+pub fn open_ui_locales_folder(app: tauri::AppHandle) -> Result<(), String> {
+    use tauri_plugin_opener::OpenerExt;
+    let dir = crate::modules::ui_locales::prepare_user_dir()?;
+    app.opener()
+        .open_path(dir.to_string_lossy(), None::<&str>)
+        .map_err(|e| crate::err!("backend.common.openFolder", error = e))
+}
+
 #[tauri::command]
 pub async fn scan_models() -> Vec<crate::modules::paths::ScannedModel> {
     tokio::task::spawn_blocking(crate::modules::paths::scan_available_models)

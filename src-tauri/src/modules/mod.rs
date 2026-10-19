@@ -50,6 +50,7 @@ pub use memory_pipeline as soul_memory_pipeline;
 pub mod reply_ideas;
 pub mod translate;
 pub mod tts_local;
+pub mod ui_locales;
 pub mod updater;
 pub mod voice;
 pub mod web_server;

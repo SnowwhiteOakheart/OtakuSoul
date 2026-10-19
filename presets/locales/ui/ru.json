@@ -1,6 +1,11 @@
-import type { TranslationDictionary } from './types';
-
-export const ru: TranslationDictionary = {
+{
+  "__meta": {
+    "id": "ru",
+    "name": "Русский",
+    "englishName": "Russian",
+    "author": "OtakuSoul",
+    "version": "1.0.0"
+  },
   "nav.chat": "Чат",
   "nav.home": "Главная",
   "nav.hint.home": "Чем заняться сегодня?",
@@ -59,14 +64,12 @@ export const ru: TranslationDictionary = {
   "nav.expand": "Развернуть панель",
   "nav.main": "Основная навигация",
   "nav.shortcut": "Ctrl+{{key}}",
-
   "palette.title": "Палитра команд",
   "palette.open": "Открыть палитру команд (Ctrl+K)",
   "palette.searchLabel": "Поиск команд",
   "palette.placeholder": "Найти раздел или команду…",
   "palette.noResults": "Подходящие команды не найдены.",
   "palette.actions": "Действия",
-
   "header.version": "v0.5.1",
   "header.logs": "Системные логи",
   "header.update": "Проверить обновления",
@@ -140,7 +143,6 @@ export const ru: TranslationDictionary = {
   "header.openServerSettings": "Открыть настройки сервера",
   "header.gpuTooltip": "{{name}} – свободно {{free}} МБ из {{total}} МБ",
   "header.home": "К чату",
-
   "common.save": "Сохранить",
   "common.saved": "Сохранено!",
   "common.cancel": "Отмена",
@@ -164,7 +166,6 @@ export const ru: TranslationDictionary = {
   "common.actionFailed": "Не получилось: {{error}}",
   "common.retry": "Повторить",
   "common.loadingView": "Загрузка…",
-
   "chat.historyLoading": "Загрузка истории чата…",
   "chat.historyLoadError": "Не удалось загрузить историю чата: {{error}}",
   "chat.sendCancelled": "Отправка отменена до сохранения сообщения.",
@@ -177,7 +178,6 @@ export const ru: TranslationDictionary = {
   "errorFix.checkConnection": "Проверить подключение",
   "errorFix.smallerModel": "Выбрать модель поменьше",
   "errorFix.installRuntime": "Установить среду ИИ",
-
   "settings.title": "Настройки",
   "settings.subtitle": "Модель ИИ, стиль ответов, изображения, голоса и загрузки в одном месте.",
   "settings.appearance": "Внешний вид и тема",
@@ -264,9 +264,16 @@ export const ru: TranslationDictionary = {
   "settings.swatchPrimary": "Основной цвет",
   "settings.swatchAccent": "Акцентный цвет",
   "settings.languageIntro": "Язык всех текстов, меню и кнопок OtakuSoul.",
-  "settings.langDeSub": "Немецкий",
-  "settings.langEnSub": "Английский",
-  "settings.langRuSub": "Русский",
+  "settings.langTranslated": "Переведено: {{percent}} %",
+  "settings.langCustom": "Свой файл",
+  "settings.langAddOwn": "Добавить свой перевод",
+  "settings.langAddOwnHint": "Открывает папку с языковыми файлами. Скопируйте «_template.json», например, в «pl.json», переведите тексты и перечитайте языки – новая версия приложения не нужна.",
+  "settings.langReload": "Перечитать языки",
+  "settings.langReloaded": "Найдено языков: {{count}}.",
+  "settings.langFolderFailed": "Папка не открыта: {{error}}",
+  "tray.show": "Показать",
+  "tray.quit": "Выход",
+  "backend.uiLanguage.notFound": "Языковой файл «{{id}}» не найден.",
   "settings.replyLanguage": "Предпочтительный язык ответов ИИ",
   "settings.replyLanguageIntro": "Определяет язык, на котором отвечают персонажи и описываются сцены.",
   "settings.closeToTray": "При закрытии продолжать работу в трее",
@@ -484,13 +491,11 @@ export const ru: TranslationDictionary = {
   "settings.runtimeStandardLabel": "Стандартная среда",
   "settings.doNotUse": "Не использовать",
   "settings.downloadSelect": "Загрузить и выбрать",
-
   "theme.obsidian": "Обсидиановый фиолетовый (По умолчанию)",
   "theme.cyberpunk": "Киберпанк неон",
   "theme.sakura": "Сакура",
   "theme.midnight": "Полночный OLED",
   "theme.emerald": "Матричный изумруд",
-
   "chat.placeholder": "Напишите сообщение для {{char}}...",
   "chat.voiceRecording": "Запись...",
   "chat.takePhoto": "Сделать фото",
@@ -624,13 +629,11 @@ export const ru: TranslationDictionary = {
   "chat.sessionCount_other": "{{count}} диалога",
   "chat.defaultSessionTitle": "Диалог {{n}}",
   "chat.newChatTitle": "Новый чат",
-
   "integrations.title": "Экосистема и интеграции",
   "integrations.web": "Мобильный веб-клиент",
   "integrations.discord": "Discord",
   "integrations.image": "Генерация изображений",
   "integrations.backup": "Резервные копии",
-
   "updater.title": "Обновления OtakuSoul",
   "updater.checking": "Проверка обновлений...",
   "updater.upToDate": "У вас установлена последняя версия OtakuSoul!",
@@ -641,17 +644,14 @@ export const ru: TranslationDictionary = {
   "updater.openDownload": "Открыть на GitHub и скачать",
   "updater.subtitle": "Релизы GitHub и проверка версии",
   "updater.checkAgain": "Проверить снова",
-
   "logger.title": "Системный журнал и ошибки",
   "logger.subtitle": "Журнал работы бэкенда, инференса и сетевых служб",
   "logger.clear": "Очистить журнал",
   "logger.export": "Экспорт (.txt)",
   "logger.noLogs": "Журнал пуст.",
   "logger.searchPlaceholder": "Фильтр по сообщению, модулю или времени...",
-
   "errors.viewCrashedTitle": "В этом разделе произошла ошибка",
   "errors.viewCrashedHint": "Ваши данные в безопасности. Можно перезагрузить раздел или перейти в другой.",
-
   "confirm.restoreSnapshotTitle": "Восстановить снимок «{{name}}»?",
   "confirm.restoreSnapshotText": "Снимок заменит психологию и отношения. Воспоминания, дневник и журнал исцеления будут дополнены.",
   "confirm.restore": "Восстановить",
@@ -677,7 +677,6 @@ export const ru: TranslationDictionary = {
   "confirm.deleteEntryTitle": "Удалить запись «{{name}}»?",
   "confirm.deleteEntryText": "Изменение вступит в силу при сохранении лорбука.",
   "confirm.deletePersonaTitle": "Удалить персону «{{name}}»?",
-
   "toast.folderCreateFailed": "Не удалось создать папку: {{error}}",
   "toast.folderDeleteFailed": "Не удалось удалить папку: {{error}}",
   "toast.sceneImported": "Сцена импортирована в «{{folder}}».",
@@ -686,7 +685,6 @@ export const ru: TranslationDictionary = {
   "toast.editFailed": "Не удалось изменить: {{error}}",
   "toast.deleteFailed": "Не удалось удалить: {{error}}",
   "toast.regenerateFailed": "Не удалось сгенерировать заново: {{error}}",
-
   "library.title": "Библиотека персонажей",
   "characterPreview.open": "Подробнее о {{name}}",
   "characterPreview.starter": "Хорошо для начала",
@@ -739,7 +737,6 @@ export const ru: TranslationDictionary = {
   "library.trashed": "«{{name}}» перемещён в корзину.",
   "library.presetsRestored": "Скрытые пресеты восстановлены.",
   "library.restoreFailed": "Не удалось восстановить: {{error}}",
-
   "emotion.admiration": "Восхищение",
   "emotion.amusement": "Веселье",
   "emotion.anger": "Гнев",
@@ -768,7 +765,6 @@ export const ru: TranslationDictionary = {
   "emotion.sadness": "Грусть",
   "emotion.surprise": "Удивление",
   "emotion.neutral": "Нейтрально",
-
   "avatar.speaking": "Говорит…",
   "avatar.emotionMenu": "Текущая эмоция — выберите для ручной проверки",
   "avatar.modeLabel": "Отображение аватара",
@@ -862,7 +858,6 @@ export const ru: TranslationDictionary = {
   "avatar.quickAngry": "Злость",
   "avatar.quickSad": "Грусть",
   "avatar.quickRelaxed": "Нежность",
-
   "chatSidebar.title": "Диалоги",
   "chatSidebar.tabs": "Разделы",
   "chatSidebar.tabChats": "Чаты",
@@ -905,7 +900,6 @@ export const ru: TranslationDictionary = {
   "chatSidebar.noteSaved": "Заметка автора сохранена.",
   "chatSidebar.presetsIntro": "Выберите жанровый пресет для строки состояния над чатом:",
   "chatSidebar.presetApplied": "Пресет «{{name}}» применён.",
-
   "hud.switchCharacter": "Сменить персонажа",
   "hud.availableCharacters": "Доступные персонажи",
   "hud.noDescription": "Без описания",
@@ -930,7 +924,6 @@ export const ru: TranslationDictionary = {
   "hud.generatingImage": "Создание изображения…",
   "hud.imageDone": "Изображение создано — см. Интеграции › Генерация изображений.",
   "hud.imageFailed": "Не удалось создать изображение: {{error}}",
-
   "memory.title": "Когнитивная память",
   "memory.subtitle": "Автономное мышление, агент-маршрутизатор, синхронизация Markdown и архив лора",
   "memory.whose": "Память персонажа",
@@ -1166,7 +1159,6 @@ export const ru: TranslationDictionary = {
   "memory.beliefRemoved": "Принцип удалён.",
   "memory.reflectNoChange": "Рефлексия завершена: существенных изменений нет.",
   "memory.reflectDone": "Рефлексия завершена: обработано тем — {{topics}}, противоречий — {{conflicts}}.",
-
   "stage.defaultTitle": "Stage: ИИ-ведущий",
   "stage.unknownLocation": "Неизвестное место",
   "stage.defaultTime": "Сумерки",
@@ -1879,7 +1871,6 @@ export const ru: TranslationDictionary = {
   "stage.conditionDuration": "Длительность (раунды)",
   "stage.add": "Добавить",
   "stage.role.boss": "Босс",
-
   "lobby.title": "Stage — сцены и папки",
   "lobby.adventureCount": "Приключений: {{count}}",
   "lobby.intro": "Выберите ролевой сценарий, управляйте папками или начните приключение 5e.",
@@ -1937,7 +1928,6 @@ export const ru: TranslationDictionary = {
   "lobby.folderPlaceholder": "напр. Фэнтези-кампания …",
   "lobby.createFolder": "Создать папку",
   "lobby.moveIntro": "Выберите папку для этого приключения:",
-
   "sceneEdit.title": "Редактировать сцену",
   "sceneEdit.intro": "Прогресс сохраняется. Начальные место, время, вступление и фон применяются при следующем перезапуске.",
   "sceneEdit.save": "Сохранить изменения",
@@ -2000,7 +1990,6 @@ export const ru: TranslationDictionary = {
   "sceneNew.creating": "Создание …",
   "sceneNew.start": "Начать сцену",
   "sceneNew.defaultOpening": "Спутники прибывают в {{location}}. Перед вами открывается новый путь.",
-
   "lore.newBookName": "Новый лорбук",
   "lore.newBookDesc": "Описание вселенной или её локаций …",
   "lore.firstEntry": "Первая запись",
@@ -2096,7 +2085,6 @@ export const ru: TranslationDictionary = {
   "lore.editorNew": "Создать запись лорбука",
   "lore.editorEdit": "Редактировать запись: {{name}}",
   "lore.entryEnabledLabel": "Запись «{{name}}» активна",
-
   "hub.title": "Community Hub",
   "hub.subtitleBadge": "Шлюз и сообщество",
   "hub.intro": "Подборка персонажей, архив карточек Chub AI, лорбуки миров и сценарии Stage.",
@@ -2180,7 +2168,6 @@ export const ru: TranslationDictionary = {
   "hub.lorebookKeepCopy": "Обновить и сохранить мою версию",
   "hub.startInStage": "Запустить в Stage",
   "hub.dismiss": "Закрыть уведомление",
-
   "persona.nameRequired": "Введите имя персоны.",
   "persona.defaultDesc": "Внимательный собеседник.",
   "persona.title": "Управление персонами",
@@ -2197,7 +2184,6 @@ export const ru: TranslationDictionary = {
   "persona.done": "Готово",
   "persona.intro": "Выберите свою роль в игре (макрос {{macro}})",
   "persona.defaultUserDesc": "Любознательный искатель приключений и собеседник.",
-
   "about.localCloudAi": "Локальный и облачный ИИ",
   "about.soulMemory": "Когнитивная память",
   "about.avatars": "Аватары VRM и Live2D",
@@ -2223,18 +2209,15 @@ export const ru: TranslationDictionary = {
   "about.close": "Закрыть окно «О программе»",
   "about.text": "Иммерсивная настольная платформа для личных ИИ-персонажей, живых аватаров, долгой памяти и совместно рассказанных миров.",
   "about.developedBy": "Разработчик: {{author}}",
-
   "overlay.close": "Закрыть оверлей",
   "overlay.feeling": "Чувство:",
   "overlay.active": "Активен",
-
   "safety.title": "Проверка безопасности: вызов инструмента",
   "safety.hitl": "Нужно подтверждение",
   "safety.tool": "Инструмент:",
   "safety.deny": "Отклонить",
   "safety.approve": "Разрешить ({{seconds}} с)",
   "safety.remaining": "Оставшееся время",
-
   "voice.state.idle": "Готово",
   "voice.state.listening": "Слушаю …",
   "voice.state.transcribing": "Распознаю …",
@@ -2248,7 +2231,6 @@ export const ru: TranslationDictionary = {
   "voice.startRecording": "Начать голосовой ввод",
   "voice.endCall": "Завершить голосовой звонок",
   "voice.startCall": "Начать голосовой звонок",
-
   "editor.subtitle": "Совместимо с SillyTavern V2",
   "editor.tabBasics": "Основное и аватар",
   "editor.tabPrompts": "Личность и промпты",
@@ -2309,7 +2291,6 @@ export const ru: TranslationDictionary = {
   "editor.embedFailed": "Не удалось встроить изображение эмоции: {{error}}",
   "editor.saveFailed": "Не удалось сохранить: {{error}}",
   "editor.defaultName": "Персонаж",
-
   "portrait.neutral": "Нейтрально",
   "portrait.neutralDesc": "Спокойное выражение по умолчанию",
   "portrait.happy": "Радость",
@@ -2345,7 +2326,6 @@ export const ru: TranslationDictionary = {
   "editor.portraitGroup.romance": "Романтика",
   "editor.portraitGroupHint.extra": "Показываются, когда ответ звучит соответствующе (например, *краснеет*); без картинки приложение берёт подходящее базовое настроение.",
   "editor.portraitGroupHint.romance": "Предназначены в основном для романтических и взрослых карточек; оставьте пустыми, если не подходят.",
-
   "wizard.nameRequired": "Дайте персонажу хотя бы имя.",
   "wizard.promptFailed": "Не удалось создать промпт.",
   "wizard.enterName": "Введите имя.",
@@ -2421,7 +2401,6 @@ export const ru: TranslationDictionary = {
   "wizard.fallbackExample": "<START>\n{{user}}: Привет, как ты?\n{{name}}: *слегка улыбается* Спасибо, хорошо. А ты?",
   "wizard.fallbackSystem": "Пиши ответы {{name}} иммерсивно, в ролевом стиле. Реагируй на {{user}} в соответствии с личностью и сценарием.",
   "wizard.fallbackCharacter": "персонажа",
-
   "voiceCfg.title": "Голос и голосовой звонок",
   "voiceCfg.tabTts": "Синтез речи",
   "voiceCfg.tabStt": "Распознавание речи",
@@ -2490,7 +2469,6 @@ export const ru: TranslationDictionary = {
   "voiceCfg.micN": "Микрофон {{n}}",
   "voiceCfg.tabs": "Разделы голоса",
   "voiceCfg.testText": "Привет! Как у тебя дела? Это проверка моего голоса.",
-
   "comp.title": "Soul Companion: настольный агент и нейрогормональная система",
   "comp.subtitle": "Гормональная система • 10 эмоций • заметки • обещания • системные инструменты • MCP-клиент",
   "comp.mood": "Настроение:",
@@ -2614,7 +2592,6 @@ export const ru: TranslationDictionary = {
   "comp.emo.sleepy": "Сонливость",
   "comp.emo.melancholy": "Меланхолия",
   "comp.emo.excited": "Восторг",
-
   "int.title": "Экосистема и интеграции",
   "int.subtitle": "Мобильный веб-клиент, Discord RPC и бот, генерация изображений и резервные копии",
   "int.tabWeb": "Мобильный веб-клиент",
@@ -2715,7 +2692,6 @@ export const ru: TranslationDictionary = {
   "int.deleteFailed": "Не удалось удалить: {{error}}",
   "int.zipArchive": "ZIP-архив",
   "int.tabs": "Интеграции",
-
   "hudPreset.romance": "Романтика и отношения",
   "hudPreset.romanceDesc": "Отслеживайте привязанность, настроение, доверие и глубину отношений.",
   "hudPreset.rpg_adventure": "Фэнтези-RPG",
@@ -3597,5 +3573,5 @@ export const ru: TranslationDictionary = {
   "onboarding.licenseRestricted": "Лицензия с ограничениями.",
   "onboarding.licenseNoncommercial": "Только некоммерческое использование.",
   "onboarding.licenseRestrictedHint": "Скачивается без входа, но лицензия ставит условия использования — прочитайте её заранее.",
-  "onboarding.licenseView": "Открыть лицензию",
-};
+  "onboarding.licenseView": "Открыть лицензию"
+}

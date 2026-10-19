@@ -5,7 +5,7 @@ import { streamingTts } from '../../services/streamingTts';
 import { extractStateUpdates, applyStateUpdates } from '../../utils/stateParser';
 import { emotionTagOf, withoutEmotionTag } from '../../utils/replyTags';
 import { HUD_PRESETS } from '../../constants/hudPresets';
-import { APP_LANGUAGE_NAMES, chatSampling, llmTarget, hitKey, mergeHits, resolvePromptWithLore, type PromptHits, type PromptSpeaker } from '../helpers';
+import { chatSampling, llmTarget, hitKey, mergeHits, resolvePromptWithLore, type PromptHits, type PromptSpeaker } from '../helpers';
 import type {
   DoneEvent,
   AssembledPrompt,
@@ -494,7 +494,7 @@ export const createChatSlice: SliceCreator<ChatSlice> = (set, get) => {
     const state = get();
     return api.translateMessage({
       text,
-      target_language: APP_LANGUAGE_NAMES[state.appLanguage] ?? 'Deutsch',
+      target_language: state.availableLanguages.find((l) => l.id === state.appLanguage)?.name ?? 'Deutsch',
       ...llmTarget(state),
     });
   },

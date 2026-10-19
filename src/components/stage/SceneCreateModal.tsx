@@ -7,6 +7,7 @@ import { translate, useTranslation } from '../../i18n';
 import { open } from '@tauri-apps/plugin-dialog';
 import { api } from '../../services/api';
 import { errorMessage } from '../../utils/errors';
+import { localizedName } from '../../utils/combatEvents';
 
 const FIVE_E_CLASSES = ['fighter', 'wizard', 'rogue', 'cleric'] as const;
 
@@ -68,7 +69,7 @@ const SceneRulesFields: React.FC<{ rules: SceneRules | null; party: string[]; on
           >
             <option value="">{t('sceneRules.noMap')}</option>
             {maps.map((map) => (
-              <option key={map.id} value={map.id}>{map.name[appLanguage] || map.name.en}</option>
+              <option key={map.id} value={map.id}>{localizedName(map.name, appLanguage)}</option>
             ))}
           </select>
           <label className="flex items-center gap-2 text-slate-300">

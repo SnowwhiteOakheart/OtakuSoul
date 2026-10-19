@@ -106,7 +106,7 @@ pub fn run() {
             if let Ok(resource_dir) = app.path().resource_dir() {
                 modules::paths::set_resource_dir(resource_dir);
             }
-            // Story texts (de/ru): shipped copy now, the current one from the data repo in the background.
+            // Story texts (every language with a file): shipped copy now, the current one from the data repo in the background.
             modules::content_lang::load_locales();
             tauri::async_runtime::spawn(modules::content_lang::refresh_locales());
             // Starter models: the data repository may recommend newer ones than this release.
@@ -160,14 +160,15 @@ pub fn run() {
 
                 if let Some(icon) = app.default_window_icon().cloned() {
                     // In the interface language; the first-close hint refers to "Beenden"/"Quit".
-                    let (show_label, quit_label) =
-                        match modules::settings::load_app_settings().app_language.as_str() {
-                            "en" => ("Show", "Quit"),
-                            "ru" => ("Показать", "Выход"),
-                            _ => ("Anzeigen", "Beenden"),
-                        };
-                    let show_i = MenuItem::with_id(app, "show", show_label, true, None::<&str>)?;
-                    let quit_i = MenuItem::with_id(app, "quit", quit_label, true, None::<&str>)?;
+                    let language = modules::settings::load_app_settings().app_language;
+                    let label = |key: &str, german: &str| {
+                        modules::ui_locales::ui_text(&language, key)
+                            .unwrap_or_else(|| german.to_string())
+                    };
+                    let show_label = label("tray.show", "Anzeigen");
+                    let quit_label = label("tray.quit", "Beenden");
+                    let show_i = MenuItem::with_id(app, "show", &show_label, true, None::<&str>)?;
+                    let quit_i = MenuItem::with_id(app, "quit", &quit_label, true, None::<&str>)?;
                     let menu = Menu::with_items(app, &[&show_i, &quit_i])?;
 
                     let _tray = TrayIconBuilder::new()
@@ -349,6 +350,9 @@ pub fn run() {
             commands::app::hide_main_window,
             commands::app::log_frontend,
             commands::app::open_avatar_folder,
+            commands::app::list_ui_languages,
+            commands::app::load_ui_language,
+            commands::app::open_ui_locales_folder,
             commands::characters::scan_characters,
             commands::app::scan_models,
             commands::app::scan_loras,

@@ -1,8 +1,8 @@
-import { translate, type TranslationKey } from '../i18n';
+import { translate, type SupportedLanguage, type TranslationKey } from '../i18n';
 import type { ExploreEvent } from '../types';
 import { localizedName } from './combatEvents';
 
-type Language = 'de' | 'en' | 'ru';
+type Language = SupportedLanguage;
 
 const signed = (value: number) => (value >= 0 ? `+${value}` : `${value}`);
 

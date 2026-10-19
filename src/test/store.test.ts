@@ -6,6 +6,7 @@ import { api } from '../services/api';
 import { CLOUD_PROVIDER_DEFAULTS, normalizeReplyLanguage, useAppStore } from '../store/useAppStore';
 import { resetApiMocks } from './mockApi';
 import type { AppSettings } from '../types';
+import { t } from '../i18n';
 
 const initialState = useAppStore.getState();
 
@@ -226,6 +227,28 @@ describe('startup', () => {
     await useAppStore.getState().saveCurrentSettings();
     expect(useAppStore.getState().activeCharacter).toBeNull();
     expect(api.saveSettings).not.toHaveBeenCalled();
+  });
+
+  it('lists the language files and loads the saved language with its fallback', async () => {
+    // The i18n registry was loaded by the test setup with the real api object.
+    const real = await vi.importActual<typeof import('../services/api')>('../services/api');
+    const load = vi.spyOn(real.api, 'loadUiLanguage').mockResolvedValue({ 'nav.chat': 'Czat' });
+    vi.mocked(api.getAppPaths).mockResolvedValue({} as never);
+    vi.mocked(api.scanModels).mockResolvedValue([]);
+    vi.mocked(api.scanVrmModels).mockResolvedValue([]);
+    vi.mocked(api.loadSettings).mockResolvedValue({ server_config: { model_path: '' }, app_language: 'pl' } as unknown as AppSettings);
+    const language = { author: '', version: '', translated: 1, total: 3 };
+    vi.mocked(api.listUiLanguages).mockResolvedValue([
+      { ...language, id: 'de', name: 'Deutsch', english_name: 'German', fallback: null, custom: false },
+      { ...language, id: 'pl', name: 'Polski', english_name: 'Polish', fallback: 'en', custom: true },
+    ]);
+    await useAppStore.getState().initApp();
+    expect(useAppStore.getState().availableLanguages.map((l) => l.id)).toEqual(['de', 'pl']);
+    expect(useAppStore.getState().appLanguage).toBe('pl');
+    expect(load).toHaveBeenCalledWith('pl');
+    expect(t('nav.chat', 'pl')).toBe('Czat');
+    expect(t('nav.characters', 'pl')).toBe('Characters');
+    load.mockRestore();
   });
 
   it('opens the last used character right away, not the first one', async () => {

@@ -38,7 +38,7 @@ const waitForPort = async (port, timeoutMs = 20_000) => {
 const removeHome = (home) => rmSync(home, { recursive: true, force: true, maxRetries: 10, retryDelay: 200 });
 
 /** `hubFiles`: files the mock serves as the data repository from the start (e.g. catalogs fetched at launch). */
-export async function launch(settings = {}, { hubFiles } = {}) {
+export async function launch(settings = {}, { hubFiles, homeFiles = {} } = {}) {
   const mock = await startMockLlm();
   if (hubFiles) mock.stats.hubFiles = hubFiles;
   const home = mkdtempSync(path.join(tmpdir(), 'otakusoul-e2e-'));
@@ -62,6 +62,11 @@ export async function launch(settings = {}, { hubFiles } = {}) {
       ...settings,
     }),
   );
+  // Files placed before the start, relative to OTAKUSOUL_HOME (e.g. data/locales/ui/pl.json).
+  for (const [file, content] of Object.entries(homeFiles)) {
+    mkdirSync(path.dirname(path.join(home, file)), { recursive: true });
+    writeFileSync(path.join(home, file), content);
+  }
   mkdirSync(screenshotDir, { recursive: true });
 
   const driver = spawn('tauri-driver', [], {

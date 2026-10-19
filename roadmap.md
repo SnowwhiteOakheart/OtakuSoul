@@ -20,7 +20,7 @@
    (mit Knopf, wenn möglich).
 4. **Sinnvolle Vorgaben.** Was der Nutzer nicht einstellt, funktioniert trotzdem gut (Hardware-Erkennung, empfohlene
    Modelle, Vorlagen).
-5. **Eine Sprache.** Oberfläche, mitgelieferte Inhalte und Antworten folgen der gewählten App-Sprache (de/en/ru).
+5. **Eine Sprache.** Oberfläche, mitgelieferte Inhalte und Antworten folgen der gewählten App-Sprache (de/en/ru mitgeliefert, weitere als JSON-Datei in `<Daten>/locales/ui/` ohne neuen Build).
 6. **Prüfbar.** Jeder Schritt endet mit einem E2E-Durchlauf aus Einsteigersicht und Screenshots in
    `e2e/screenshots/`, die vor dem Abhaken angesehen werden.
 

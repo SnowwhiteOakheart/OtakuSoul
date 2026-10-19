@@ -1,8 +1,11 @@
-/**
- * German is the reference language: every key must exist here first.
- * `en` and `ru` are typed against these keys, so a missing translation fails `tsc`.
- */
-export const de = {
+{
+  "__meta": {
+    "id": "de",
+    "name": "Deutsch",
+    "englishName": "German",
+    "author": "OtakuSoul",
+    "version": "1.0.0"
+  },
   "nav.chat": "Chat",
   "nav.home": "Start",
   "nav.hint.home": "Was möchtest du heute tun?",
@@ -61,14 +64,12 @@ export const de = {
   "nav.expand": "Seitenleiste ausklappen",
   "nav.main": "Hauptnavigation",
   "nav.shortcut": "Strg+{{key}}",
-
   "palette.title": "Befehlspalette",
   "palette.open": "Befehlspalette öffnen (Strg+K)",
   "palette.searchLabel": "Befehle durchsuchen",
   "palette.placeholder": "Ansicht oder Befehl suchen…",
   "palette.noResults": "Keine passenden Befehle gefunden.",
   "palette.actions": "Aktionen",
-
   "header.version": "v0.5.1",
   "header.logs": "System-Logs",
   "header.update": "Updates prüfen",
@@ -142,7 +143,6 @@ export const de = {
   "header.openServerSettings": "Server-Einstellungen öffnen",
   "header.gpuTooltip": "{{name}} – {{free}} MB frei von {{total}} MB",
   "header.home": "Zum Chat",
-
   "common.save": "Speichern",
   "common.saved": "Gespeichert!",
   "common.cancel": "Abbrechen",
@@ -166,7 +166,6 @@ export const de = {
   "common.actionFailed": "Das hat nicht geklappt: {{error}}",
   "common.retry": "Erneut versuchen",
   "common.loadingView": "Ansicht wird geladen…",
-
   "chat.historyLoading": "Chatverlauf wird geladen…",
   "chat.historyLoadError": "Chatverlauf konnte nicht geladen werden: {{error}}",
   "chat.sendCancelled": "Nachricht wurde vor dem Speichern abgebrochen.",
@@ -179,7 +178,6 @@ export const de = {
   "errorFix.checkConnection": "Verbindung prüfen",
   "errorFix.smallerModel": "Kleineres Modell wählen",
   "errorFix.installRuntime": "KI-Laufzeit einrichten",
-
   "settings.title": "Einstellungen",
   "settings.subtitle": "KI-Modell, Antwortstil, Bilder, Stimmen und Downloads an einem Ort.",
   "settings.appearance": "Erscheinungsbild & Theme",
@@ -266,9 +264,16 @@ export const de = {
   "settings.swatchPrimary": "Primärfarbe",
   "settings.swatchAccent": "Akzentfarbe",
   "settings.languageIntro": "Sprache aller Texte, Menüs und Schaltflächen in OtakuSoul.",
-  "settings.langDeSub": "Deutsch",
-  "settings.langEnSub": "Englisch",
-  "settings.langRuSub": "Russisch",
+  "settings.langTranslated": "{{percent}} % übersetzt",
+  "settings.langCustom": "Eigene Datei",
+  "settings.langAddOwn": "Eigene Übersetzung hinzufügen",
+  "settings.langAddOwnHint": "Öffnet den Ordner für Sprachdateien. Kopiere „_template.json“ zum Beispiel nach „pl.json“, übersetze die Texte und lies die Sprachen neu ein – ohne neue App-Version.",
+  "settings.langReload": "Sprachen neu einlesen",
+  "settings.langReloaded": "{{count}} Sprachen gefunden.",
+  "settings.langFolderFailed": "Ordner nicht geöffnet: {{error}}",
+  "tray.show": "Anzeigen",
+  "tray.quit": "Beenden",
+  "backend.uiLanguage.notFound": "Sprachdatei „{{id}}“ nicht gefunden.",
   "settings.replyLanguage": "Bevorzugte Antwortsprache der KI",
   "settings.replyLanguageIntro": "Legt fest, in welcher Sprache Charaktere antworten und Szenen beschrieben werden.",
   "settings.closeToTray": "Beim Schließen im Tray weiterlaufen",
@@ -486,13 +491,11 @@ export const de = {
   "settings.runtimeStandardLabel": "Standard-Laufzeit",
   "settings.doNotUse": "Nicht verwenden",
   "settings.downloadSelect": "Laden & auswählen",
-
   "theme.obsidian": "Obsidian Violett (Standard)",
   "theme.cyberpunk": "Cyberpunk Neon",
   "theme.sakura": "Sakura Kirschblüte",
   "theme.midnight": "Midnight OLED",
   "theme.emerald": "Matrix Smaragd",
-
   "chat.placeholder": "Schreibe eine Nachricht an {{char}}...",
   "chat.voiceRecording": "Aufnahme läuft...",
   "chat.takePhoto": "Foto aufnehmen",
@@ -626,13 +629,11 @@ export const de = {
   "chat.sessionCount_other": "{{count}} Gespräche",
   "chat.defaultSessionTitle": "Gespräch {{n}}",
   "chat.newChatTitle": "Neuer Chat",
-
   "integrations.title": "Ökosystem & Integrationen",
   "integrations.web": "Mobiler Web-Client",
   "integrations.discord": "Discord",
   "integrations.image": "Bildgenerierung",
   "integrations.backup": "Profil-Backup",
-
   "updater.title": "OtakuSoul Aktualisierungen",
   "updater.checking": "Prüfe auf neue Versionen...",
   "updater.upToDate": "OtakuSoul ist auf dem neuesten Stand!",
@@ -643,17 +644,14 @@ export const de = {
   "updater.openDownload": "Auf GitHub ansehen & herunterladen",
   "updater.subtitle": "GitHub-Releases & Versionsprüfung",
   "updater.checkAgain": "Erneut prüfen",
-
   "logger.title": "System- & Fehlerprotokoll",
   "logger.subtitle": "Live-Aufzeichnung des Backends, der Inferenz und der Netzwerk-Dienste",
   "logger.clear": "Protokoll leeren",
   "logger.export": "Exportieren (.txt)",
   "logger.noLogs": "Keine Log-Einträge vorhanden.",
   "logger.searchPlaceholder": "Filter nach Meldung, Modul oder Zeit...",
-
   "errors.viewCrashedTitle": "In dieser Ansicht ist ein Fehler aufgetreten",
   "errors.viewCrashedHint": "Deine Daten sind sicher. Du kannst die Ansicht neu laden oder zu einem anderen Bereich wechseln.",
-
   "confirm.restoreSnapshotTitle": "Snapshot „{{name}}“ wiederherstellen?",
   "confirm.restoreSnapshotText": "Psychologie und Beziehung werden durch den Snapshot ersetzt. Erinnerungen, Tagebuch und Heilungsprotokoll werden ergänzt.",
   "confirm.restore": "Wiederherstellen",
@@ -679,7 +677,6 @@ export const de = {
   "confirm.deleteEntryTitle": "Eintrag „{{name}}“ löschen?",
   "confirm.deleteEntryText": "Die Änderung wird beim Speichern des Lorebooks übernommen.",
   "confirm.deletePersonaTitle": "Persona „{{name}}“ löschen?",
-
   "toast.folderCreateFailed": "Ordner konnte nicht erstellt werden: {{error}}",
   "toast.folderDeleteFailed": "Ordner konnte nicht gelöscht werden: {{error}}",
   "toast.sceneImported": "Szene in „{{folder}}“ importiert.",
@@ -688,7 +685,6 @@ export const de = {
   "toast.editFailed": "Bearbeiten fehlgeschlagen: {{error}}",
   "toast.deleteFailed": "Löschen fehlgeschlagen: {{error}}",
   "toast.regenerateFailed": "Neugenerierung fehlgeschlagen: {{error}}",
-
   "library.title": "Charakterbibliothek",
   "characterPreview.open": "Mehr über {{name}}",
   "characterPreview.starter": "Gut für den Einstieg",
@@ -741,7 +737,6 @@ export const de = {
   "library.trashed": "„{{name}}“ wurde in den Papierkorb verschoben.",
   "library.presetsRestored": "Ausgeblendete Presets wurden wiederhergestellt.",
   "library.restoreFailed": "Wiederherstellen fehlgeschlagen: {{error}}",
-
   "emotion.admiration": "Bewunderung",
   "emotion.amusement": "Belustigung",
   "emotion.anger": "Wut",
@@ -770,7 +765,6 @@ export const de = {
   "emotion.sadness": "Traurigkeit",
   "emotion.surprise": "Überraschung",
   "emotion.neutral": "Neutral",
-
   "avatar.speaking": "Spricht…",
   "avatar.emotionMenu": "Aktuelle Emotion – zum manuellen Testen auswählen",
   "avatar.modeLabel": "Avatar-Darstellung",
@@ -864,7 +858,6 @@ export const de = {
   "avatar.quickAngry": "Wütend",
   "avatar.quickSad": "Traurig",
   "avatar.quickRelaxed": "Sanft",
-
   "chatSidebar.title": "Gespräche",
   "chatSidebar.tabs": "Bereiche",
   "chatSidebar.tabChats": "Chats",
@@ -907,7 +900,6 @@ export const de = {
   "chatSidebar.noteSaved": "Author's Note gespeichert.",
   "chatSidebar.presetsIntro": "Wähle ein Genre-Preset für die Statusleiste über dem Chat:",
   "chatSidebar.presetApplied": "Preset „{{name}}“ aktiviert.",
-
   "hud.switchCharacter": "Charakter wechseln",
   "hud.availableCharacters": "Verfügbare Charaktere",
   "hud.noDescription": "Keine Beschreibung",
@@ -932,7 +924,6 @@ export const de = {
   "hud.generatingImage": "Bild wird erzeugt…",
   "hud.imageDone": "Bild erzeugt – zu finden unter Integrationen › Bildgenerierung.",
   "hud.imageFailed": "Bild konnte nicht erzeugt werden: {{error}}",
-
   "memory.title": "Kognitives Gedächtnis",
   "memory.subtitle": "Autonome Kognition, Router-Agent, Markdown-Sync & Lore-Archiv",
   "memory.whose": "Gedächtnis von",
@@ -1168,7 +1159,6 @@ export const de = {
   "memory.beliefRemoved": "Leitsatz entfernt.",
   "memory.reflectNoChange": "Reflexion abgeschlossen: keine wesentlichen Änderungen.",
   "memory.reflectDone": "Reflexion abgeschlossen: {{topics}} Themen und {{conflicts}} Widersprüche verarbeitet.",
-
   "stage.defaultTitle": "Stage: KI-Spielleiter",
   "stage.unknownLocation": "Unbekannter Ort",
   "stage.defaultTime": "Dämmerung",
@@ -1881,7 +1871,6 @@ export const de = {
   "stage.conditionDuration": "Dauer (Runden)",
   "stage.add": "Hinzufügen",
   "stage.role.boss": "Boss",
-
   "lobby.title": "Stage – Szenen & Ordner",
   "lobby.adventureCount": "{{count}} Abenteuer",
   "lobby.intro": "Wähle ein Rollenspiel-Szenario, verwalte deine Ordner oder starte das 5e-Abenteuer.",
@@ -1939,7 +1928,6 @@ export const de = {
   "lobby.folderPlaceholder": "z. B. Fantasy-Kampagne …",
   "lobby.createFolder": "Ordner anlegen",
   "lobby.moveIntro": "Wähle den Zielordner für dieses Abenteuer:",
-
   "sceneEdit.title": "Szene bearbeiten",
   "sceneEdit.intro": "Der Spielstand bleibt erhalten. Startort, Startzeit, Eröffnung und Startbild gelten beim nächsten Neustart.",
   "sceneEdit.save": "Änderungen speichern",
@@ -2002,7 +1990,6 @@ export const de = {
   "sceneNew.creating": "Wird erstellt …",
   "sceneNew.start": "Szene starten",
   "sceneNew.defaultOpening": "Die Gefährten erreichen {{location}}. Ein neuer Pfad öffnet sich vor euch.",
-
   "lore.newBookName": "Neues Lorebook",
   "lore.newBookDesc": "Beschreibung des Universums oder der Schauplätze...",
   "lore.firstEntry": "Erster Eintrag",
@@ -2098,7 +2085,6 @@ export const de = {
   "lore.editorNew": "Neuen Lorebook-Eintrag anlegen",
   "lore.editorEdit": "Eintrag bearbeiten: {{name}}",
   "lore.entryEnabledLabel": "Eintrag „{{name}}“ aktiv",
-
   "hub.title": "Community Hub",
   "hub.subtitleBadge": "Gateway & Community",
   "hub.intro": "Kuratierte Charaktere, Chub AI Kartenarchiv, Welt-Lorebooks & Stage-Szenarien.",
@@ -2182,7 +2168,6 @@ export const de = {
   "hub.lorebookKeepCopy": "Aktualisieren und meine Fassung behalten",
   "hub.startInStage": "In Stage starten",
   "hub.dismiss": "Hinweis schließen",
-
   "persona.nameRequired": "Bitte gib einen Persona-Namen ein.",
   "persona.defaultDesc": "Ein aufmerksamer Gesprächspartner.",
   "persona.title": "User-Personas verwalten",
@@ -2199,7 +2184,6 @@ export const de = {
   "persona.done": "Fertig",
   "persona.intro": "Wähle deine Identität für das Rollenspiel (Makro {{macro}})",
   "persona.defaultUserDesc": "Ein wissbegieriger Abenteurer und Gesprächspartner.",
-
   "about.localCloudAi": "Lokale & Cloud-KI",
   "about.soulMemory": "Kognitives Gedächtnis",
   "about.avatars": "VRM- & Live2D-Avatare",
@@ -2225,18 +2209,15 @@ export const de = {
   "about.close": "Über-Dialog schließen",
   "about.text": "Eine immersive Desktop-Plattform für persönliche KI-Charaktere, lebendige Avatare, langfristige Erinnerungen und gemeinsam erzählte Welten.",
   "about.developedBy": "Entwickelt von {{author}}",
-
   "overlay.close": "Overlay schließen",
   "overlay.feeling": "Gefühl:",
   "overlay.active": "Aktiv",
-
   "safety.title": "Sicherheitsabfrage: Werkzeug-Aufruf",
   "safety.hitl": "Freigabe nötig",
   "safety.tool": "Werkzeug:",
   "safety.deny": "Ablehnen",
   "safety.approve": "Freigeben ({{seconds}} s)",
   "safety.remaining": "Verbleibende Zeit",
-
   "voice.state.idle": "Bereit",
   "voice.state.listening": "Hört zu …",
   "voice.state.transcribing": "Transkribiert …",
@@ -2250,7 +2231,6 @@ export const de = {
   "voice.startRecording": "Spracheingabe starten",
   "voice.endCall": "Sprachanruf beenden",
   "voice.startCall": "Sprachanruf starten",
-
   "editor.subtitle": "SillyTavern V2 Standard-Konformität",
   "editor.tabBasics": "Stammdaten & Avatar",
   "editor.tabPrompts": "Persönlichkeit & Prompts",
@@ -2311,7 +2291,6 @@ export const de = {
   "editor.embedFailed": "Emotionsbild konnte nicht eingebettet werden: {{error}}",
   "editor.saveFailed": "Speichern fehlgeschlagen: {{error}}",
   "editor.defaultName": "Charakter",
-
   "portrait.neutral": "Neutral",
   "portrait.neutralDesc": "Ruhiger Standardausdruck",
   "portrait.happy": "Fröhlich",
@@ -2347,7 +2326,6 @@ export const de = {
   "editor.portraitGroup.romance": "Romance",
   "editor.portraitGroupHint.extra": "Werden gezeigt, wenn die Antwort danach klingt (z. B. *errötet*); fehlt ein Bild, nimmt die App die passende Grundstimmung.",
   "editor.portraitGroupHint.romance": "Vor allem für Romance- und Erwachsenen-Karten gedacht; leer lassen, wenn sie nicht passen.",
-
   "wizard.nameRequired": "Bitte gib dem Charakter mindestens einen Namen.",
   "wizard.promptFailed": "Fehler beim Erstellen des Prompts.",
   "wizard.enterName": "Bitte gib einen Namen ein.",
@@ -2423,7 +2401,6 @@ export const de = {
   "wizard.fallbackExample": "<START>\n{{user}}: Hallo, wie geht es dir?\n{{name}}: *lächelt leicht* Danke der Nachfrage, mir geht es gut. Und dir?",
   "wizard.fallbackSystem": "Schreibe die Antworten von {{name}} immersiv im Rollenspiel. Reagiere auf {{user}} passend zu Persönlichkeit und Szenario.",
   "wizard.fallbackCharacter": "dem Charakter",
-
   "voiceCfg.title": "Stimme & Sprachanruf",
   "voiceCfg.tabTts": "Sprachausgabe",
   "voiceCfg.tabStt": "Spracherkennung",
@@ -2492,7 +2469,6 @@ export const de = {
   "voiceCfg.micN": "Mikrofon {{n}}",
   "voiceCfg.tabs": "Stimmen-Bereiche",
   "voiceCfg.testText": "Hallo! Wie geht es dir heute? Das ist ein Test meiner Stimme.",
-
   "comp.title": "Soul Companion: Desktop-Agent & Neurohormonales Bio-System",
   "comp.subtitle": "Biometrisches Hormonsystem • 10 Emotionen • Scratchpad • Fällige Versprechen • Echte System-Tools • MCP-Client",
   "comp.mood": "Gemüt:",
@@ -2616,7 +2592,6 @@ export const de = {
   "comp.emo.sleepy": "Schläfrig",
   "comp.emo.melancholy": "Melancholisch",
   "comp.emo.excited": "Begeistert",
-
   "int.title": "Ökosystem & Integrationen",
   "int.subtitle": "Mobiler Web-Client, Discord RPC & Bot, KI-Bildgenerierung und Profil-Backups",
   "int.tabWeb": "Mobiler Web-Client",
@@ -2717,7 +2692,6 @@ export const de = {
   "int.deleteFailed": "Löschen fehlgeschlagen: {{error}}",
   "int.zipArchive": "ZIP-Archiv",
   "int.tabs": "Integrationen",
-
   "hudPreset.romance": "Romance & Beziehung",
   "hudPreset.romanceDesc": "Verfolge Zuneigung, Stimmung, Vertrauen und Beziehungsintensität.",
   "hudPreset.rpg_adventure": "Fantasy-RPG-Abenteuer",
@@ -3599,5 +3573,5 @@ export const de = {
   "onboarding.licenseRestricted": "Eingeschränkte Lizenz.",
   "onboarding.licenseNoncommercial": "Nur nicht-kommerziell.",
   "onboarding.licenseRestrictedHint": "Ohne Anmeldung ladbar, aber die Lizenz stellt Bedingungen an die Nutzung – bitte vorher lesen.",
-  "onboarding.licenseView": "Lizenz ansehen",
-} as const;
+  "onboarding.licenseView": "Lizenz ansehen"
+}

@@ -851,7 +851,7 @@ export interface AppSettings {
   global_lorebooks?: string[];
   scene_tension_enabled?: boolean;
   avatar_mode?: '3d' | 'live2d' | '2d';
-  app_language?: 'de' | 'en' | 'ru';
+  app_language?: string;
   theme?: 'obsidian' | 'cyberpunk' | 'sakura' | 'midnight' | 'emerald' | string;
   color_mode?: 'system' | 'light' | 'dark';
   onboarding_completed?: boolean;

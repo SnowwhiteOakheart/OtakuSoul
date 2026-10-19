@@ -5,7 +5,7 @@ import { ResetSection } from '../ResetSection';
 import { APPEARANCE_DEFAULTS } from '../../../utils/settingDefaults';
 import { useState } from 'react';
 import { useStoreFields } from '../../../store/useAppStore';
-import { useTranslation, type SupportedLanguage } from '../../../i18n';
+import { useTranslation } from '../../../i18n';
 import { importLive2dFromDialog, importVrmFromDialog } from '../../avatars/avatarImport';
 import { api } from '../../../services/api';
 import { toast } from '../../ui/feedback';
@@ -26,6 +26,7 @@ import {
   Moon,
   Sun,
   UserRound,
+  RefreshCw,
 } from 'lucide-react';
 import type { ColorModePreference } from '../../../services/theme';
 
@@ -41,12 +42,12 @@ export const GeneralSettings = () => {
     appPaths, theme, setTheme, colorMode, setColorMode, appLanguage, setAppLanguage, setIsLogViewerOpen, setIsUpdaterOpen,
     scannedVrms, activeVrmPath, setActiveVrmPath, refreshVrmModels, scannedLive2ds, activeLive2dPath,
     setActiveLive2dPath, refreshLive2dModels, replyLanguage, setReplyLanguage, closeToTray, setCloseToTray,
-    setActiveTab,
+    setActiveTab, availableLanguages, refreshLanguages,
   } = useStoreFields(
     'appPaths', 'theme', 'setTheme', 'colorMode', 'setColorMode', 'appLanguage', 'setAppLanguage', 'setIsLogViewerOpen', 'setIsUpdaterOpen',
     'scannedVrms', 'activeVrmPath', 'setActiveVrmPath', 'refreshVrmModels', 'scannedLive2ds', 'activeLive2dPath',
     'setActiveLive2dPath', 'refreshLive2dModels', 'replyLanguage', 'setReplyLanguage', 'closeToTray', 'setCloseToTray',
-    'setActiveTab',
+    'setActiveTab', 'availableLanguages', 'refreshLanguages',
   );
 
   // Avatars removed a moment ago (undo still possible) are left out of the lists.
@@ -200,17 +201,19 @@ export const GeneralSettings = () => {
         </div>
 
         <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
-          {[
-            { id: 'de', label: 'Deutsch', sub: t('settings.langDeSub') },
-            { id: 'en', label: 'English', sub: t('settings.langEnSub') },
-            { id: 'ru', label: 'Русский', sub: t('settings.langRuSub') },
-          ].map((l) => {
+          {availableLanguages.map((l) => {
             const isSelected = (appLanguage || 'de') === l.id;
+            const percent = l.total ? Math.floor((l.translated / l.total) * 100) : 100;
+            const sub = [
+              l.english_name && l.english_name !== l.name ? l.english_name : '',
+              percent < 100 ? t('settings.langTranslated', { percent }) : '',
+              l.custom ? t('settings.langCustom') : '',
+            ].filter(Boolean).join(' · ');
             return (
               <button
                 key={l.id}
                 type="button"
-                onClick={() => setAppLanguage(l.id as SupportedLanguage)}
+                onClick={() => setAppLanguage(l.id)}
                 aria-pressed={isSelected}
                 lang={l.id}
                 className={`flex items-center justify-between p-3 rounded-xl border text-left transition-all ${
@@ -220,13 +223,41 @@ export const GeneralSettings = () => {
                 }`}
               >
                 <div>
-                  <div className="font-semibold text-xs text-slate-200">{l.label}</div>
-                  <div className="text-[11px] text-slate-400">{l.sub}</div>
+                  <div className="font-semibold text-xs text-slate-200">{l.name}</div>
+                  {sub && <div className="text-[11px] text-slate-400">{sub}</div>}
                 </div>
                 {isSelected && <Check className="w-4 h-4 text-cyan-400" />}
               </button>
             );
           })}
+        </div>
+
+        <div className="flex flex-wrap items-center justify-between gap-2 text-xs text-slate-400">
+          <p className="max-w-xl">{t('settings.langAddOwnHint')}</p>
+          <div className="flex flex-wrap gap-2">
+            <button
+              type="button"
+              onClick={() =>
+                void api.openUiLocalesFolder().catch((e) => toast.error(t('settings.langFolderFailed', { error: errorMessage(e) })))
+              }
+              className="px-3 py-1.5 rounded-lg border border-slate-700 bg-slate-800/60 hover:bg-slate-800 text-slate-200 flex items-center gap-1.5 transition-colors"
+            >
+              <FolderOpen className="w-3.5 h-3.5" />
+              <span className="whitespace-nowrap">{t('settings.langAddOwn')}</span>
+            </button>
+            <button
+              type="button"
+              onClick={() =>
+                void refreshLanguages()
+                  .then((list) => toast.success(t('settings.langReloaded', { count: list.length })))
+                  .catch((e) => toast.error(errorMessage(e)))
+              }
+              className="px-3 py-1.5 rounded-lg border border-slate-700 bg-slate-800/60 hover:bg-slate-800 text-slate-200 flex items-center gap-1.5 transition-colors"
+            >
+              <RefreshCw className="w-3.5 h-3.5" />
+              <span className="whitespace-nowrap">{t('settings.langReload')}</span>
+            </button>
+          </div>
         </div>
       </div>
 

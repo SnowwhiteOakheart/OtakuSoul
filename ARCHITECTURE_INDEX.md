@@ -22,6 +22,7 @@
 |---|---|---|
 | **App starten (Dev)** | `npm run tauri dev` (Linux: `npm run tauri:linux`) | Startet Vite-Frontend + Rust-Backend |
 | **Alle Prüfungen** | `npm run check` | Führt Oxlint, TypeScript TypeCheck und Cargo Clippy aus |
+| **Übersetzungen prüfen** | `npm run i18n:check [-- datei.json]` | Fehlende/unbekannte Schlüssel, Platzhalter gegen `de.json` |
 | **Typen synchronisieren** | `npm run types:gen` | Generiert TS-Typen aus Rust via `ts-rs` nach `src/types/generated/` |
 | **E2E-Tests (Mock-LLM)** | `npm run e2e` (`npm run e2e:run` ohne Build) | Baut nach `target/e2e`, nutzt tauri-driver + Mock-LLM |
 | **Perf-Messung** | `npm run e2e:perf` | Langchat-Stresstest (1.000 Nachrichten) |
@@ -49,7 +50,7 @@
 * **API-Brücke:** `services/api.ts` (Typsichere Wrapper um alle Tauri `invoke`-Befehle).
 * **Zustandsverwaltung (Zustand):** `store/slices/*.ts` (z. B. `chatSlice.ts`, `stageSlice.ts`, `characterSlice.ts`, `settingsSlice.ts`, `avatarSlice.ts`, `memorySlice.ts`). Zugriff per `useStoreFields('fieldA', 'fieldB')`.
 * **Prompt & Lore Hilfsfunktionen:** `store/helpers.ts` (`resolvePromptWithLore`, `llmTarget`).
-* **Internationalisierung:** `i18n/locales/{de,en,ru}.ts` (de ist Standard, en/ru laden bedarfsgesteuert via `i18n/registry.ts`).
+* **Internationalisierung:** JSON je Sprache in `presets/locales/ui/` (mitgeliefert) und `<Daten>/locales/ui/` (eigene, ohne Build); `modules/ui_locales.rs` erkennt/lädt sie, `i18n/registry.ts` (`loadLocale`, Fallback-Kette), Deutsch eingebaut als Typquelle. `npm run i18n:check` prüft Übersetzungen.
 
 | UI-Bereich | Komponenten (`components/`) | Beschreibung |
 |---|---|---|
@@ -86,7 +87,7 @@ Einige Inhalte in `OtakuSoul` sind gebündelte Standard-Kopien (Bundles) aus dem
 
 | Datei / Verzeichnis in `OtakuSoul` | Primäre Quelle (`otakusoul-data`) | Synchronisations- & Update-Mechanismus |
 |---|---|---|
-| `presets/locales/{de,ru}.json` | `locales/{de,ru}.json` | `content_lang::refresh_locales` lädt bei App-Start nach `<Daten>/locales/` |
+| `presets/locales/{de,ru}.json` (Spieltexte; jede Datei = Sprache) | `locales/<kürzel>.json` | `content_lang::refresh_locales` lädt bei App-Start nach `<Daten>/locales/` |
 | `presets/recommended_models.json` | `recommended_models.json` | `model_catalog::refresh` lädt bei App-Start neuere Versionen nach |
 | `presets/characters/*` | `cards_gateway/*.png` / `presets/*` | Werden im Hub über `soul_registry.json` als V2-Karten bereitgestellt |
 | `presets/stories/scenes/*` | `stages_gateway/*.json` | Werden im Hub über `stages_registry.json` bezogen |

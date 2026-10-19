@@ -13,7 +13,8 @@ import { translate } from '../../i18n';
 import { DEFAULT_CONTEXT_SIZE, serverTuningDefaults } from '../../utils/settingDefaults';
 import { toast } from '../../components/ui/feedback';
 import { errorMessage } from '../../utils/errors';
-import { loadLocale } from '../../i18n/registry';
+import { SHIPPED_LANGUAGES, loadLocale, type SupportedLanguage } from '../../i18n/registry';
+import type { UiLanguage } from '../../types/generated/UiLanguage';
 import { normalizeColorMode, syncColorMode, type ColorModePreference } from '../../services/theme';
 
 /** Navigation, app lifecycle (init/save settings), language, theme, onboarding, logs and updater. */
@@ -31,8 +32,14 @@ export interface AppSlice {
    */
   settingsLoaded: boolean;
   saveCurrentSettings: () => Promise<void>;
-  appLanguage: 'de' | 'en' | 'ru';
-  setAppLanguage: (lang: 'de' | 'en' | 'ru') => void;
+  appLanguage: SupportedLanguage;
+  setAppLanguage: (lang: SupportedLanguage) => void;
+  /** Interface languages found as JSON files (shipped and in the user folder). */
+  availableLanguages: UiLanguage[];
+  /** Scans the language folders again and rereads the current language (after editing a file). */
+  refreshLanguages: () => Promise<UiLanguage[]>;
+  /** Counts rereads of the language files; `useTranslation` re-renders on a change. */
+  localeRevision: number;
   theme: string;
   setTheme: (theme: string) => void;
   colorMode: ColorModePreference;
@@ -142,7 +149,14 @@ export const createAppSlice: SliceCreator<AppSlice> = (set, get) => ({
 
       const colorMode = normalizeColorMode(settings.color_mode);
       // A missing language file falls back to German text.
-      await loadLocale(settings.app_language || 'de').catch(() => {});
+      const listed = await api.listUiLanguages().catch(() => null);
+      const languages = listed?.length ? listed : get().availableLanguages;
+      const language = languages.find((l) => l.id === (settings.app_language || 'de'));
+      set({ availableLanguages: languages });
+      await loadLocale(settings.app_language || 'de', {
+        fallback: language?.fallback,
+        custom: language?.custom,
+      }).catch(() => {});
 
       set({
         serverConfig: {
@@ -326,9 +340,23 @@ export const createAppSlice: SliceCreator<AppSlice> = (set, get) => ({
 
   appLanguage: 'de',
 
+  availableLanguages: SHIPPED_LANGUAGES,
+
+  localeRevision: 0,
+
+  refreshLanguages: async () => {
+    const languages = await api.listUiLanguages();
+    const lang = get().appLanguage;
+    const language = languages.find((l) => l.id === lang);
+    await loadLocale(lang, { fallback: language?.fallback, custom: language?.custom, force: true }).catch(() => {});
+    set({ availableLanguages: languages, localeRevision: get().localeRevision + 1 });
+    return languages;
+  },
+
   setAppLanguage: (lang) => {
+    const language = get().availableLanguages.find((l) => l.id === lang);
     // Switch once the language is loaded; until then the old one stays.
-    void loadLocale(lang)
+    void loadLocale(lang, { fallback: language?.fallback, custom: language?.custom })
       .catch(() => {})
       .then(() => {
         set({ appLanguage: lang });

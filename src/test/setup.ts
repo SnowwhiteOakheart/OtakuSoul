@@ -1,7 +1,6 @@
 import '@testing-library/jest-dom/vitest';
 import { LOCALES } from '../i18n/registry';
-import { en } from '../i18n/locales/en';
-import { ru } from '../i18n/locales/ru';
+import { en, ru } from './locales';
 
 // The app loads languages on demand; tests switch `appLanguage` directly, so all are there.
 LOCALES.en = en;

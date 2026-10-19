@@ -1,4 +1,5 @@
 // @vitest-environment jsdom
+import { de, en, ru } from './locales';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { render, screen, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
@@ -10,9 +11,6 @@ import { useAppStore } from '../store/useAppStore';
 import { PREMISES_PER_GENRE, StoryWizard, WIZARD_GENRES, buildStoryDefinition } from '../components/stage/StoryWizard';
 import { resetApiMocks } from './mockApi';
 import { translate } from '../i18n';
-import { en } from '../i18n/locales/en';
-import { de } from '../i18n/locales/de';
-import { ru } from '../i18n/locales/ru';
 import type { CharacterProfile, SceneState } from '../types';
 
 const character = (name: string) => ({ id: name, card: { data: { name } }, avatar_data_url: null }) as unknown as CharacterProfile;
