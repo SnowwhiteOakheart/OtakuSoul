@@ -70,7 +70,7 @@
   "palette.placeholder": "Найти раздел или команду…",
   "palette.noResults": "Подходящие команды не найдены.",
   "palette.actions": "Действия",
-  "header.version": "v0.5.1",
+  "header.version": "v0.6.0",
   "header.logs": "Системные логи",
   "header.update": "Проверить обновления",
   "header.about": "О программе",
