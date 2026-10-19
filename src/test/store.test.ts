@@ -6,7 +6,8 @@ import { api } from '../services/api';
 import { CLOUD_PROVIDER_DEFAULTS, normalizeReplyLanguage, useAppStore } from '../store/useAppStore';
 import { resetApiMocks } from './mockApi';
 import type { AppSettings } from '../types';
-import { t } from '../i18n';
+import { LOCALES, t } from '../i18n';
+import { en, ru } from './locales';
 
 const initialState = useAppStore.getState();
 
@@ -237,7 +238,7 @@ describe('startup', () => {
     vi.mocked(api.scanModels).mockResolvedValue([]);
     vi.mocked(api.scanVrmModels).mockResolvedValue([]);
     vi.mocked(api.loadSettings).mockResolvedValue({ server_config: { model_path: '' }, app_language: 'pl' } as unknown as AppSettings);
-    const language = { author: '', version: '', translated: 1, total: 3 };
+    const language = { author: '', version: '', translated: 1, total: 3, downloaded: false };
     vi.mocked(api.listUiLanguages).mockResolvedValue([
       { ...language, id: 'de', name: 'Deutsch', english_name: 'German', fallback: null, custom: false },
       { ...language, id: 'pl', name: 'Polski', english_name: 'Polish', fallback: 'en', custom: true },
@@ -249,6 +250,28 @@ describe('startup', () => {
     expect(t('nav.chat', 'pl')).toBe('Czat');
     expect(t('nav.characters', 'pl')).toBe('Characters');
     load.mockRestore();
+  });
+
+  it('imports a language file and switches to German when the own language is removed', async () => {
+    const real = await vi.importActual<typeof import('../services/api')>('../services/api');
+    const load = vi.spyOn(real.api, 'loadUiLanguage').mockResolvedValue({ 'nav.chat': 'Czat' });
+    const language = { author: '', version: '', translated: 1, total: 3, fallback: null, downloaded: false };
+    const de = { ...language, id: 'de', name: 'Deutsch', english_name: 'German', custom: false };
+    const pl = { ...language, id: 'pl', name: 'Polski', english_name: 'Polish', custom: true };
+    vi.mocked(api.importUiLanguage).mockResolvedValue('pl');
+    vi.mocked(api.listUiLanguages).mockResolvedValue([de, pl]);
+    expect(await useAppStore.getState().importUiLanguage('/x/polski.json')).toEqual(pl);
+    expect(api.importUiLanguage).toHaveBeenCalledWith('/x/polski.json');
+    expect(useAppStore.getState().availableLanguages).toHaveLength(2);
+
+    useAppStore.setState({ appLanguage: 'pl' });
+    vi.mocked(api.listUiLanguages).mockResolvedValue([de]);
+    await useAppStore.getState().removeUiLanguage('pl');
+    expect(api.removeUiLanguage).toHaveBeenCalledWith('pl');
+    await vi.waitFor(() => expect(useAppStore.getState().appLanguage).toBe('de'));
+    load.mockRestore();
+    // `refreshLanguages` drops loaded languages; the other tests expect the setup's.
+    Object.assign(LOCALES, { en, ru });
   });
 
   it('opens the last used character right away, not the first one', async () => {

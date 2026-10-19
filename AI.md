@@ -164,9 +164,12 @@ ru „персонаж/история/сцена“. Fachbegriffe nur im Experte
   Abläufen nachziehen.
 - **Lösungsknöpfe:** `utils/errorFixes.ts` `errorFix(error, store)` ordnet häufige Codes einem Schritt zu (Chat-Banner über
   `generationFailure.cause`, Toasts über `reportFailure`); neue Codes mit klarer Abhilfe dort ergänzen.
-- **Oberflächensprachen:** je Sprache eine JSON-Datei, damit neue Sprachen ohne neuen Build gehen. Mitgeliefert
-  `presets/locales/ui/{de,en,ru}.json`, eigene/Community-Dateien in `<Daten>/locales/ui/<kürzel>.json` (überleben Updates;
-  gleiche ID überschreibt nur die enthaltenen Schlüssel). Flache `"schlüssel": "text"`-Paare plus `__meta` (`name`,
+- **Oberflächensprachen:** je Sprache eine JSON-Datei, damit neue Sprachen ohne neuen Build gehen. Drei Ebenen, spätere
+  gewinnen je Schlüssel: mitgeliefert `presets/locales/ui/{de,en,ru}.json` → Daten-Repo (`locales/ui_registry.json` +
+  `locales/ui/<kürzel>.json`, beim Start nach `<Daten>/locales/ui-hub/`, für mitgelieferte Sprachen nur mit höherer
+  `__meta.version`; Event `ui-languages-changed` → `refreshLanguages`) → eigene Dateien in `<Daten>/locales/ui/`
+  (Import über die Einstellungen `import_ui_language`, Entfernen `remove_ui_language` in den Papierkorb; überleben Updates).
+  Import-ID: `__meta.id`, sonst Dateiname. Flache `"schlüssel": "text"`-Paare plus `__meta` (`name`,
   `englishName`, `author`, `version`, `fallback`); Dateiname = Sprachkürzel (`is_language_id`, `_template.json` wird
   ignoriert). Backend `modules/ui_locales.rs` (`list_ui_languages`, `load_ui_language`, `open_ui_locales_folder` legt
   `_template.json` aus Englisch an; `ui_text` für das Tray-Menü). Frontend: Deutsch ist eingebaut und Typquelle

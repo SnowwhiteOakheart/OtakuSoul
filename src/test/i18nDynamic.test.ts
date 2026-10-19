@@ -36,7 +36,7 @@ describe('languages from JSON files', () => {
     const load = vi.spyOn(api, 'loadUiLanguage').mockResolvedValue({ 'nav.chat': 'Plaudern' });
     await loadLocale('de');
     expect(load).not.toHaveBeenCalled();
-    await loadLocale('de', { custom: true });
+    await loadLocale('de', { fromDisk: true });
     expect(t('nav.chat', 'de')).toBe('Plaudern');
     expect(t('nav.characters', 'de')).toBe('Charaktere');
     await loadLocale('de', { force: true });

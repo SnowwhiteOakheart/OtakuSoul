@@ -1,12 +1,16 @@
 //! Interface languages: one JSON dictionary per language, so a new language needs no new build.
-//! The shipped ones live in `presets/locales/ui/`, own and community translations in
-//! `<Daten>/locales/ui/` (survives updates). A file there with the id of a shipped language only
-//! overrides the keys it contains. German is the reference; the frontend also has it built in.
+//! Three layers, later ones win key by key:
+//! 1. shipped with the app: `presets/locales/ui/`,
+//! 2. from the data repository (`locales/ui_registry.json` + `locales/ui/<id>.json`), fetched at
+//!    start into `<Daten>/locales/ui-hub/`; a shipped language only takes it with a higher `version`,
+//! 3. own and community files in `<Daten>/locales/ui/` (added by hand or via import; survive updates).
+//!
+//! German is the reference; the frontend also has it built in.
 //!
 //! File format: flat `"key": "text"` pairs plus an optional `"__meta"` object
-//! (`name`, `englishName`, `author`, `version`, `fallback`). The file name is the language id.
+//! (`id`, `name`, `englishName`, `author`, `version`, `fallback`). The file name is the language id.
 
-use serde::Serialize;
+use serde::{Deserialize, Serialize};
 use std::collections::HashMap;
 use std::path::{Path, PathBuf};
 use ts_rs::TS;
@@ -14,6 +18,9 @@ use ts_rs::TS;
 const META_KEY: &str = "__meta";
 /// Copy of the English texts for translators; the leading underscore keeps it out of the list.
 const TEMPLATE_FILE: &str = "_template.json";
+const HUB_REGISTRY: &str = "locales/ui_registry.json";
+/// Event to the frontend once the data repository brought new or changed languages.
+pub const CHANGED_EVENT: &str = "ui-languages-changed";
 
 #[derive(Debug, Clone, Serialize, TS)]
 #[ts(export)]
@@ -31,12 +38,15 @@ pub struct UiLanguage {
     pub translated: u32,
     /// Keys of the German reference.
     pub total: u32,
-    /// A file in the user folder adds or changes this language.
+    /// A file in the user folder adds or changes this language (it can be removed again).
     pub custom: bool,
+    /// Texts from the data repository are in use (newer than the shipped ones or not shipped).
+    pub downloaded: bool,
 }
 
 #[derive(Default)]
 struct Meta {
+    id: Option<String>,
     name: Option<String>,
     english_name: Option<String>,
     author: Option<String>,
@@ -44,21 +54,54 @@ struct Meta {
     fallback: Option<String>,
 }
 
+impl Meta {
+    /// `self` wins where it has a value.
+    fn over(self, base: Meta) -> Meta {
+        Meta {
+            id: self.id.or(base.id),
+            name: self.name.or(base.name),
+            english_name: self.english_name.or(base.english_name),
+            author: self.author.or(base.author),
+            version: self.version.or(base.version),
+            fallback: self.fallback.or(base.fallback),
+        }
+    }
+}
+
 struct LocaleFile {
     meta: Meta,
     texts: HashMap<String, String>,
 }
 
-pub fn bundled_dir() -> PathBuf {
-    PathBuf::from(crate::modules::paths::resolve_app_paths().bundled_presets_dir)
-        .join("locales")
-        .join("ui")
+struct Merged {
+    file: LocaleFile,
+    custom: bool,
+    downloaded: bool,
+}
+
+/// The three folders; tests point them elsewhere.
+struct Dirs {
+    bundled: PathBuf,
+    hub: PathBuf,
+    user: PathBuf,
+}
+
+impl Dirs {
+    fn current() -> Self {
+        let paths = crate::modules::paths::resolve_app_paths();
+        let data = PathBuf::from(paths.data_dir).join("locales");
+        Dirs {
+            bundled: PathBuf::from(paths.bundled_presets_dir)
+                .join("locales")
+                .join("ui"),
+            hub: data.join("ui-hub"),
+            user: data.join("ui"),
+        }
+    }
 }
 
 pub fn user_dir() -> PathBuf {
-    PathBuf::from(crate::modules::paths::resolve_app_paths().data_dir)
-        .join("locales")
-        .join("ui")
+    Dirs::current().user
 }
 
 /// Language tags only (`de`, `pt-BR`, `zh-Hant`): the id becomes a file name.
@@ -70,6 +113,27 @@ pub fn is_language_id(id: &str) -> bool {
         && parts.all(|part| {
             (2..=8).contains(&part.len()) && part.chars().all(|c| c.is_ascii_alphanumeric())
         })
+}
+
+/// `1.2.10` > `1.2.9`; missing parts count as 0, anything unreadable as "not newer".
+fn version_newer(candidate: Option<&str>, current: Option<&str>) -> bool {
+    let parse = |v: &str| -> Option<Vec<u32>> {
+        v.trim()
+            .trim_start_matches('v')
+            .split('.')
+            .map(|part| part.parse().ok())
+            .collect()
+    };
+    let Some(candidate) = candidate.and_then(parse) else {
+        return false;
+    };
+    let current = current.and_then(parse).unwrap_or_default();
+    let len = candidate.len().max(current.len());
+    let pad = |mut v: Vec<u32>| {
+        v.resize(len, 0);
+        v
+    };
+    pad(candidate) > pad(current)
 }
 
 fn meta_text(meta: &serde_json::Map<String, serde_json::Value>, key: &str) -> Option<String> {
@@ -93,6 +157,7 @@ fn parse_locale(content: &str) -> Option<LocaleFile> {
             }
             serde_json::Value::Object(fields) if key == META_KEY => {
                 meta = Meta {
+                    id: meta_text(&fields, "id").filter(|id| is_language_id(id)),
                     name: meta_text(&fields, "name"),
                     english_name: meta_text(&fields, "englishName"),
                     author: meta_text(&fields, "author"),
@@ -136,46 +201,61 @@ fn language_ids(dir: &Path) -> Vec<String> {
         .collect()
 }
 
-/// Shipped file first, then the user's: later keys and metadata win.
-fn load_merged(bundled: &Path, user: &Path, id: &str) -> Option<(LocaleFile, bool)> {
+fn merge(base: Option<LocaleFile>, over: LocaleFile) -> LocaleFile {
+    match base {
+        None => over,
+        Some(mut base) => {
+            base.texts.extend(over.texts);
+            base.meta = over.meta.over(base.meta);
+            base
+        }
+    }
+}
+
+/// Shipped file, then the data repository's (if newer or not shipped), then the user's.
+fn load_merged(dirs: &Dirs, id: &str) -> Option<Merged> {
     if !is_language_id(id) {
         return None;
     }
     let file = format!("{id}.json");
-    let base = read_locale(&bundled.join(&file));
-    let custom = read_locale(&user.join(&file));
-    let has_custom = custom.is_some();
-    let merged = match (base, custom) {
-        (None, None) => return None,
-        (Some(only), None) | (None, Some(only)) => only,
-        (Some(mut base), Some(custom)) => {
-            base.texts.extend(custom.texts);
-            let meta = custom.meta;
-            base.meta = Meta {
-                name: meta.name.or(base.meta.name),
-                english_name: meta.english_name.or(base.meta.english_name),
-                author: meta.author.or(base.meta.author),
-                version: meta.version.or(base.meta.version),
-                fallback: meta.fallback.or(base.meta.fallback),
-            };
-            base
+    let mut merged = read_locale(&dirs.bundled.join(&file));
+    let mut downloaded = false;
+    if let Some(hub) = read_locale(&dirs.hub.join(&file)) {
+        let shipped_version = merged.as_ref().and_then(|m| m.meta.version.as_deref());
+        if merged.is_none() || version_newer(hub.meta.version.as_deref(), shipped_version) {
+            merged = Some(merge(merged, hub));
+            downloaded = true;
         }
-    };
-    Some((merged, has_custom))
+    }
+    let custom = read_locale(&dirs.user.join(&file));
+    let has_custom = custom.is_some();
+    if let Some(custom) = custom {
+        merged = Some(merge(merged, custom));
+    }
+    Some(Merged {
+        file: merged?,
+        custom: has_custom,
+        downloaded,
+    })
 }
 
-fn list_in(bundled: &Path, user: &Path) -> Vec<UiLanguage> {
-    let mut ids = language_ids(bundled);
-    ids.extend(language_ids(user));
+fn list_in(dirs: &Dirs) -> Vec<UiLanguage> {
+    let mut ids = language_ids(&dirs.bundled);
+    ids.extend(language_ids(&dirs.hub));
+    ids.extend(language_ids(&dirs.user));
     ids.sort();
     ids.dedup();
-    let reference = load_merged(bundled, user, "de")
-        .map(|(file, _)| file.texts)
+    let reference = load_merged(dirs, "de")
+        .map(|merged| merged.file.texts)
         .unwrap_or_default();
     let mut languages: Vec<UiLanguage> = ids
         .into_iter()
         .filter_map(|id| {
-            let (file, custom) = load_merged(bundled, user, &id)?;
+            let Merged {
+                file,
+                custom,
+                downloaded,
+            } = load_merged(dirs, &id)?;
             let translated = file
                 .texts
                 .keys()
@@ -190,6 +270,7 @@ fn list_in(bundled: &Path, user: &Path) -> Vec<UiLanguage> {
                 translated: translated as u32,
                 total: reference.len() as u32,
                 custom,
+                downloaded,
                 id,
             })
         })
@@ -213,7 +294,7 @@ fn list_in(bundled: &Path, user: &Path) -> Vec<UiLanguage> {
 static NAMES: std::sync::RwLock<Vec<(String, String)>> = std::sync::RwLock::new(Vec::new());
 
 pub fn available_languages() -> Vec<UiLanguage> {
-    let languages = list_in(&bundled_dir(), &user_dir());
+    let languages = list_in(&Dirs::current());
     let names = languages
         .iter()
         .flat_map(|language| {
@@ -238,33 +319,33 @@ pub fn language_id_for_name(name: &str) -> Option<String> {
         .map(|(_, id)| id.clone())
 }
 
-/// All texts of `id` (shipped and user file merged); `None` if neither exists.
+/// All texts of `id` (all layers merged); `None` if no file exists.
 pub fn load_language(id: &str) -> Option<HashMap<String, String>> {
-    load_merged(&bundled_dir(), &user_dir(), id).map(|(file, _)| file.texts)
+    load_merged(&Dirs::current(), id).map(|merged| merged.file.texts)
 }
 
 /// A single interface text for the backend (tray menu): `lang`, its fallback, German.
 pub fn ui_text(lang: &str, key: &str) -> Option<String> {
-    let (bundled, user) = (bundled_dir(), user_dir());
-    let own = load_merged(&bundled, &user, lang);
-    if let Some(text) = own.as_ref().and_then(|(file, _)| file.texts.get(key)) {
+    let dirs = Dirs::current();
+    let own = load_merged(&dirs, lang);
+    if let Some(text) = own.as_ref().and_then(|m| m.file.texts.get(key)) {
         return Some(text.clone());
     }
-    let fallback = own.and_then(|(file, _)| file.meta.fallback);
+    let fallback = own.and_then(|m| m.file.meta.fallback);
     // Same order as `t()` in the frontend.
     fallback
         .into_iter()
         .chain(["de".to_string()])
         .filter(|id| id.as_str() != lang)
-        .find_map(|id| load_merged(&bundled, &user, &id)?.0.texts.remove(key))
+        .find_map(|id| load_merged(&dirs, &id)?.file.texts.remove(key))
 }
 
 /// Creates the user folder and refreshes the translation template in it.
 pub fn prepare_user_dir() -> Result<PathBuf, String> {
-    let dir = user_dir();
-    std::fs::create_dir_all(&dir)
+    let dirs = Dirs::current();
+    std::fs::create_dir_all(&dirs.user)
         .map_err(|e| crate::err!("backend.common.dirCreate", error = e))?;
-    if let Some(mut template) = std::fs::read_to_string(bundled_dir().join("en.json"))
+    if let Some(mut template) = std::fs::read_to_string(dirs.bundled.join("en.json"))
         .ok()
         .and_then(|content| {
             serde_json::from_str::<serde_json::Map<String, serde_json::Value>>(&content).ok()
@@ -281,10 +362,160 @@ pub fn prepare_user_dir() -> Result<PathBuf, String> {
             }),
         );
         if let Ok(text) = serde_json::to_string_pretty(&template) {
-            let _ = std::fs::write(dir.join(TEMPLATE_FILE), text + "\n");
+            let _ = std::fs::write(dirs.user.join(TEMPLATE_FILE), text + "\n");
         }
     }
-    Ok(dir)
+    Ok(dirs.user)
+}
+
+/// Id for an imported file: `__meta.id`, else the file name (`pl.json`).
+fn import_id(path: &Path, file: &LocaleFile) -> Option<String> {
+    file.meta.id.clone().or_else(|| {
+        path.file_stem()
+            .and_then(|stem| stem.to_str())
+            .filter(|stem| is_language_id(stem))
+            .map(str::to_string)
+    })
+}
+
+fn import_into(user: &Path, path: &Path) -> Result<String, String> {
+    let content = std::fs::read_to_string(path).map_err(|e| {
+        crate::err!(
+            "backend.common.fileReadPath",
+            path = path.display(),
+            error = e
+        )
+    })?;
+    let file = parse_locale(&content)
+        .filter(|file| !file.texts.is_empty())
+        .ok_or_else(|| crate::err!("backend.uiLanguage.invalidFile"))?;
+    let id = import_id(path, &file).ok_or_else(|| crate::err!("backend.uiLanguage.invalidId"))?;
+    std::fs::create_dir_all(user)
+        .map_err(|e| crate::err!("backend.common.dirCreate", error = e))?;
+    std::fs::write(user.join(format!("{id}.json")), content)
+        .map_err(|e| crate::err!("backend.common.fileWrite", error = e))?;
+    Ok(id)
+}
+
+/// Copies a language file chosen by the user into the user folder; returns its id.
+/// A file with the same id there is replaced.
+pub fn import_file(path: &Path) -> Result<String, String> {
+    import_into(&Dirs::current().user, path)
+}
+
+/// Moves the user's file for `id` into the trash folder (shipped and downloaded texts stay).
+pub fn remove_user_file(id: &str) -> Result<(), String> {
+    if !is_language_id(id) {
+        return Err(crate::err!("backend.uiLanguage.notFound", id = id));
+    }
+    let path = Dirs::current().user.join(format!("{id}.json"));
+    if !path.is_file() {
+        return Err(crate::err!("backend.uiLanguage.notFound", id = id));
+    }
+    let trash = PathBuf::from(crate::modules::paths::resolve_app_paths().trash_dir).join("locales");
+    std::fs::create_dir_all(&trash)
+        .map_err(|e| crate::err!("backend.common.dirCreate", error = e))?;
+    let stamp = std::time::SystemTime::now()
+        .duration_since(std::time::UNIX_EPOCH)
+        .map(|d| d.as_secs())
+        .unwrap_or_default();
+    std::fs::rename(&path, trash.join(format!("{id}-{stamp}.json")))
+        .map_err(|e| crate::err!("backend.common.fileWrite", error = e))
+}
+
+#[derive(Deserialize)]
+struct HubRegistry {
+    languages: Vec<HubEntry>,
+}
+
+#[derive(Deserialize)]
+struct HubEntry {
+    id: String,
+    version: String,
+}
+
+/// Brings `<Daten>/locales/ui-hub/` in line with the data repository: new or changed versions are
+/// downloaded, withdrawn languages removed. Returns whether anything changed. Without a reachable
+/// registry nothing is touched (the last download stays in use).
+async fn sync_hub(client: &reqwest::Client, dirs: &Dirs) -> Result<bool, String> {
+    let hub = dirs.hub.as_path();
+    let fetch = |file: String| async move {
+        client
+            .get(crate::modules::hub::hub_url(&file))
+            .send()
+            .await
+            .and_then(reqwest::Response::error_for_status)
+            .map_err(|e| e.to_string())?
+            .text()
+            .await
+            .map_err(|e| e.to_string())
+    };
+    let registry: HubRegistry =
+        serde_json::from_str(&fetch(HUB_REGISTRY.to_string()).await?).map_err(|e| e.to_string())?;
+    std::fs::create_dir_all(hub).map_err(|e| e.to_string())?;
+    let mut changed = false;
+    let listed: Vec<&HubEntry> = registry
+        .languages
+        .iter()
+        .filter(|entry| is_language_id(&entry.id))
+        .collect();
+    for entry in &listed {
+        let path = hub.join(format!("{}.json", entry.id));
+        let local = read_locale(&path).and_then(|file| file.meta.version);
+        if local.as_deref() == Some(entry.version.as_str()) {
+            continue;
+        }
+        // The release already ships these texts or newer ones: nothing to fetch.
+        let shipped = read_locale(&dirs.bundled.join(format!("{}.json", entry.id)));
+        if shipped
+            .is_some_and(|file| !version_newer(Some(&entry.version), file.meta.version.as_deref()))
+        {
+            continue;
+        }
+        let text = match fetch(format!("locales/ui/{}.json", entry.id)).await {
+            Ok(text) => text,
+            Err(e) => {
+                tracing::debug!("Oberflächensprache {} nicht geladen: {e}", entry.id);
+                continue;
+            }
+        };
+        if parse_locale(&text).is_none_or(|file| file.texts.is_empty()) {
+            tracing::warn!(
+                "Oberflächensprache {} aus dem Daten-Repo ist ungültig",
+                entry.id
+            );
+            continue;
+        }
+        if std::fs::write(&path, text).is_ok() {
+            changed = true;
+        }
+    }
+    for id in language_ids(hub) {
+        if !listed.iter().any(|entry| entry.id == id) {
+            let _ = std::fs::remove_file(hub.join(format!("{id}.json")));
+            changed = true;
+        }
+    }
+    Ok(changed)
+}
+
+/// Start-up download of interface languages from the data repository; tells the frontend when
+/// the list or texts changed.
+pub async fn refresh_hub(app: tauri::AppHandle) {
+    use tauri::Emitter;
+    let Ok(client) = reqwest::Client::builder()
+        .timeout(std::time::Duration::from_secs(20))
+        .build()
+    else {
+        return;
+    };
+    match sync_hub(&client, &Dirs::current()).await {
+        Ok(true) => {
+            let _ = app.emit(CHANGED_EVENT, ());
+        }
+        Ok(false) => {}
+        Err(e) => tracing::debug!("Oberflächensprachen aus dem Daten-Repo nicht geladen: {e}"),
+    }
 }
 
 #[cfg(test)]
@@ -315,33 +546,43 @@ mod tests {
         }
     }
 
+    fn temp_dirs(name: &str) -> (PathBuf, Dirs) {
+        let root = std::env::temp_dir().join(format!(
+            "otakusoul-ui-locales-{name}-{}",
+            std::process::id()
+        ));
+        let _ = std::fs::remove_dir_all(&root);
+        let dirs = Dirs {
+            bundled: root.join("bundled"),
+            hub: root.join("hub"),
+            user: root.join("user"),
+        };
+        (root, dirs)
+    }
+
     #[test]
     fn user_files_add_languages_and_override_keys() {
-        let root =
-            std::env::temp_dir().join(format!("otakusoul-ui-locales-{}", std::process::id()));
-        let _ = std::fs::remove_dir_all(&root);
-        let bundled = root.join("bundled");
-        let user = root.join("user");
+        let (root, dirs) = temp_dirs("user");
         write(
-            &bundled,
+            &dirs.bundled,
             "de.json",
             r#"{"__meta":{"name":"Deutsch"},"a":"A","b":"B","c":"C"}"#,
         );
         write(
-            &bundled,
+            &dirs.bundled,
             "en.json",
             r#"{"__meta":{"name":"English"},"a":"A","b":"B","c":"C"}"#,
         );
-        write(&user, "en.json", r#"{"b":"Bee"}"#);
+        write(&dirs.user, "en.json", r#"{"b":"Bee"}"#);
         write(
-            &user,
+            &dirs.user,
             "fr.json",
             r#"{"__meta":{"name":"Français","fallback":"en"},"a":"À","x":"extra"}"#,
         );
-        write(&user, "_template.json", r#"{"a":"A"}"#);
-        write(&user, "broken.json", "{");
+        write(&dirs.user, "_template.json", r#"{"a":"A"}"#);
+        write(&dirs.user, "broken.json", "{");
 
-        let languages = list_in(&bundled, &user);
+        let languages = list_in(&dirs);
         let ids: Vec<&str> = languages.iter().map(|l| l.id.as_str()).collect();
         assert_eq!(ids, ["de", "en", "fr"]);
         let en = &languages[1];
@@ -351,10 +592,105 @@ mod tests {
         assert_eq!((fr.translated, fr.total), (1, 3));
         assert_eq!(fr.fallback.as_deref(), Some("en"));
 
-        let (en_texts, _) = load_merged(&bundled, &user, "en").unwrap();
-        assert_eq!(en_texts.texts["b"], "Bee");
-        assert_eq!(en_texts.texts["c"], "C");
-        assert!(load_merged(&bundled, &user, "../de").is_none());
+        let en_texts = load_merged(&dirs, "en").unwrap().file.texts;
+        assert_eq!(en_texts["b"], "Bee");
+        assert_eq!(en_texts["c"], "C");
+        assert!(load_merged(&dirs, "../de").is_none());
+        let _ = std::fs::remove_dir_all(&root);
+    }
+
+    #[test]
+    fn downloaded_texts_need_a_newer_version_than_the_shipped_ones() {
+        let (root, dirs) = temp_dirs("hub");
+        write(
+            &dirs.bundled,
+            "en.json",
+            r#"{"__meta":{"name":"English","version":"1.2.0"},"a":"A","b":"B"}"#,
+        );
+        write(
+            &dirs.hub,
+            "en.json",
+            r#"{"__meta":{"version":"1.1.9"},"a":"old"}"#,
+        );
+        write(
+            &dirs.hub,
+            "pl.json",
+            r#"{"__meta":{"name":"Polski","version":"1.0.0"},"a":"Ą"}"#,
+        );
+        write(&dirs.user, "pl.json", r#"{"b":"Bę"}"#);
+
+        let en = load_merged(&dirs, "en").unwrap();
+        assert!(!en.downloaded);
+        assert_eq!(en.file.texts["a"], "A");
+        write(
+            &dirs.hub,
+            "en.json",
+            r#"{"__meta":{"version":"1.10.0"},"a":"new"}"#,
+        );
+        let en = load_merged(&dirs, "en").unwrap();
+        assert!(en.downloaded);
+        assert_eq!(
+            (en.file.texts["a"].as_str(), en.file.texts["b"].as_str()),
+            ("new", "B")
+        );
+        assert_eq!(en.file.meta.name.as_deref(), Some("English"));
+
+        // Not shipped: the download counts as is, the user's file still wins.
+        let pl = load_merged(&dirs, "pl").unwrap();
+        assert!(pl.downloaded && pl.custom);
+        assert_eq!(
+            (pl.file.texts["a"].as_str(), pl.file.texts["b"].as_str()),
+            ("Ą", "Bę")
+        );
+        assert!(
+            list_in(&dirs)
+                .iter()
+                .any(|l| l.id == "pl" && l.name == "Polski")
+        );
+        let _ = std::fs::remove_dir_all(&root);
+    }
+
+    #[test]
+    fn versions_compare_by_number() {
+        assert!(version_newer(Some("1.10.0"), Some("1.9.3")));
+        assert!(version_newer(Some("1.0.1"), Some("1.0")));
+        assert!(version_newer(Some("1.0.0"), None));
+        assert!(!version_newer(Some("1.0.0"), Some("1.0.0")));
+        assert!(!version_newer(Some("beta"), Some("1.0.0")));
+        assert!(!version_newer(None, Some("1.0.0")));
+    }
+
+    #[test]
+    fn import_takes_the_id_from_meta_or_the_file_name() {
+        let (root, dirs) = temp_dirs("import");
+        write(
+            &root,
+            "uebersetzung.json",
+            r#"{"__meta":{"id":"pl"},"a":"Ą"}"#,
+        );
+        write(&root, "uk.json", r#"{"a":"А"}"#);
+        write(&root, "meine.json", r#"{"a":"A"}"#);
+        write(&root, "leer.json", r#"{"__meta":{"id":"cs"}}"#);
+
+        assert_eq!(
+            import_into(&dirs.user, &root.join("uebersetzung.json")).unwrap(),
+            "pl"
+        );
+        assert_eq!(
+            import_into(&dirs.user, &root.join("uk.json")).unwrap(),
+            "uk"
+        );
+        assert!(dirs.user.join("pl.json").is_file());
+        assert!(
+            import_into(&dirs.user, &root.join("meine.json"))
+                .unwrap_err()
+                .contains("backend.uiLanguage.invalidId")
+        );
+        assert!(
+            import_into(&dirs.user, &root.join("leer.json"))
+                .unwrap_err()
+                .contains("backend.uiLanguage.invalidFile")
+        );
         let _ = std::fs::remove_dir_all(&root);
     }
 

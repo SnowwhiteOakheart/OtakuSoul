@@ -4,6 +4,7 @@ import { AvatarActions } from '../AvatarActions';
 import { ResetSection } from '../ResetSection';
 import { APPEARANCE_DEFAULTS } from '../../../utils/settingDefaults';
 import { useState } from 'react';
+import { open } from '@tauri-apps/plugin-dialog';
 import { useStoreFields } from '../../../store/useAppStore';
 import { useTranslation } from '../../../i18n';
 import { importLive2dFromDialog, importVrmFromDialog } from '../../avatars/avatarImport';
@@ -27,6 +28,8 @@ import {
   Sun,
   UserRound,
   RefreshCw,
+  Upload,
+  X,
 } from 'lucide-react';
 import type { ColorModePreference } from '../../../services/theme';
 
@@ -42,13 +45,29 @@ export const GeneralSettings = () => {
     appPaths, theme, setTheme, colorMode, setColorMode, appLanguage, setAppLanguage, setIsLogViewerOpen, setIsUpdaterOpen,
     scannedVrms, activeVrmPath, setActiveVrmPath, refreshVrmModels, scannedLive2ds, activeLive2dPath,
     setActiveLive2dPath, refreshLive2dModels, replyLanguage, setReplyLanguage, closeToTray, setCloseToTray,
-    setActiveTab, availableLanguages, refreshLanguages,
+    setActiveTab, availableLanguages, refreshLanguages, importUiLanguage, removeUiLanguage,
   } = useStoreFields(
     'appPaths', 'theme', 'setTheme', 'colorMode', 'setColorMode', 'appLanguage', 'setAppLanguage', 'setIsLogViewerOpen', 'setIsUpdaterOpen',
     'scannedVrms', 'activeVrmPath', 'setActiveVrmPath', 'refreshVrmModels', 'scannedLive2ds', 'activeLive2dPath',
     'setActiveLive2dPath', 'refreshLive2dModels', 'replyLanguage', 'setReplyLanguage', 'closeToTray', 'setCloseToTray',
-    'setActiveTab', 'availableLanguages', 'refreshLanguages',
+    'setActiveTab', 'availableLanguages', 'refreshLanguages', 'importUiLanguage', 'removeUiLanguage',
   );
+  const ownLanguages = availableLanguages.filter((l) => l.custom);
+
+  const importLanguage = async () => {
+    try {
+      const selected = await open({
+        multiple: false,
+        directory: false,
+        filters: [{ name: t('settings.langImportFilter'), extensions: ['json'] }],
+      });
+      if (typeof selected !== 'string') return;
+      const language = await importUiLanguage(selected);
+      if (language) toast.success(t('settings.langImported', { name: language.name }));
+    } catch (e) {
+      toast.error(t('settings.langImportFailed', { error: errorMessage(e) }));
+    }
+  };
 
   // Avatars removed a moment ago (undo still possible) are left out of the lists.
   const [hidden, setHidden] = useState<string[]>([]);
@@ -207,7 +226,7 @@ export const GeneralSettings = () => {
             const sub = [
               l.english_name && l.english_name !== l.name ? l.english_name : '',
               percent < 100 ? t('settings.langTranslated', { percent }) : '',
-              l.custom ? t('settings.langCustom') : '',
+              l.custom ? t('settings.langCustom') : l.downloaded ? t('settings.langDownloaded') : '',
             ].filter(Boolean).join(' · ');
             return (
               <button
@@ -232,9 +251,41 @@ export const GeneralSettings = () => {
           })}
         </div>
 
+        {ownLanguages.length > 0 && (
+          <div className="flex flex-wrap items-center gap-2 text-xs text-slate-400">
+            <span>{t('settings.langOwnFiles')}:</span>
+            {ownLanguages.map((l) => (
+              <span key={l.id} className="inline-flex items-center gap-1 rounded-full border border-slate-700 bg-slate-800/60 py-0.5 pl-2.5 pr-1 text-slate-200">
+                {l.name} <span className="text-slate-500">({l.id}.json)</span>
+                <button
+                  type="button"
+                  onClick={() =>
+                    void removeUiLanguage(l.id)
+                      .then(() => toast.success(t('settings.langRemoved', { name: l.name })))
+                      .catch((e) => toast.error(errorMessage(e)))
+                  }
+                  aria-label={t('settings.langRemove', { name: l.name })}
+                  title={t('settings.langRemove', { name: l.name })}
+                  className="rounded-full p-0.5 text-slate-400 hover:bg-slate-700 hover:text-rose-300"
+                >
+                  <X className="w-3 h-3" />
+                </button>
+              </span>
+            ))}
+          </div>
+        )}
+
         <div className="flex flex-wrap items-center justify-between gap-2 text-xs text-slate-400">
           <p className="max-w-xl">{t('settings.langAddOwnHint')}</p>
           <div className="flex flex-wrap gap-2">
+            <button
+              type="button"
+              onClick={() => void importLanguage()}
+              className="px-3 py-1.5 rounded-lg border border-cyan-700/70 bg-cyan-950/30 hover:bg-cyan-900/40 text-cyan-200 flex items-center gap-1.5 transition-colors"
+            >
+              <Upload className="w-3.5 h-3.5" />
+              <span className="whitespace-nowrap">{t('settings.langImport')}</span>
+            </button>
             <button
               type="button"
               onClick={() =>

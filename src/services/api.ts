@@ -835,6 +835,21 @@ export const api = {
     return await invoke('load_ui_language', { id });
   },
 
+  /** Copies a language file into the user folder; returns the language id. */
+  importUiLanguage: async (path: string): Promise<string> => {
+    return await invoke('import_ui_language', { path });
+  },
+
+  /** Removes the user's own file for a language (shipped and downloaded texts stay). */
+  removeUiLanguage: async (id: string): Promise<void> => {
+    await invoke('remove_ui_language', { id });
+  },
+
+  /** The data repository brought new or changed interface languages (start-up download). */
+  onUiLanguagesChanged: async (callback: () => void): Promise<UnlistenFn> => {
+    return await listen('ui-languages-changed', () => callback());
+  },
+
   /** Opens the folder for own translations (with `_template.json` to copy). */
   openUiLocalesFolder: async (): Promise<void> => {
     await invoke('open_ui_locales_folder');

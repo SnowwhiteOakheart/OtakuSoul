@@ -46,6 +46,18 @@ pub fn load_ui_language(id: String) -> Result<std::collections::HashMap<String, 
         .ok_or_else(|| crate::err!("backend.uiLanguage.notFound", id = id))
 }
 
+/// Copies a language file chosen by the user into the language folder; returns its id.
+#[tauri::command]
+pub fn import_ui_language(path: String) -> Result<String, String> {
+    crate::modules::ui_locales::import_file(std::path::Path::new(&path))
+}
+
+/// Removes the user's own file for a language (into the trash folder).
+#[tauri::command]
+pub fn remove_ui_language(id: String) -> Result<(), String> {
+    crate::modules::ui_locales::remove_user_file(&id)
+}
+
 /// Opens the folder for own translations, with a fresh template to copy, in the file manager.
 #[tauri::command]
 pub fn open_ui_locales_folder(app: tauri::AppHandle) -> Result<(), String> {

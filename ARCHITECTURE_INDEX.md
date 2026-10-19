@@ -50,7 +50,7 @@
 * **API-Brücke:** `services/api.ts` (Typsichere Wrapper um alle Tauri `invoke`-Befehle).
 * **Zustandsverwaltung (Zustand):** `store/slices/*.ts` (z. B. `chatSlice.ts`, `stageSlice.ts`, `characterSlice.ts`, `settingsSlice.ts`, `avatarSlice.ts`, `memorySlice.ts`). Zugriff per `useStoreFields('fieldA', 'fieldB')`.
 * **Prompt & Lore Hilfsfunktionen:** `store/helpers.ts` (`resolvePromptWithLore`, `llmTarget`).
-* **Internationalisierung:** JSON je Sprache in `presets/locales/ui/` (mitgeliefert) und `<Daten>/locales/ui/` (eigene, ohne Build); `modules/ui_locales.rs` erkennt/lädt sie, `i18n/registry.ts` (`loadLocale`, Fallback-Kette), Deutsch eingebaut als Typquelle. `npm run i18n:check` prüft Übersetzungen.
+* **Internationalisierung:** JSON je Sprache in `presets/locales/ui/` (mitgeliefert), aus dem Daten-Repo (`<Daten>/locales/ui-hub/`) und `<Daten>/locales/ui/` (eigene/importierte, ohne Build); `modules/ui_locales.rs` erkennt/lädt sie, `i18n/registry.ts` (`loadLocale`, Fallback-Kette), Deutsch eingebaut als Typquelle. `npm run i18n:check` prüft Übersetzungen.
 
 | UI-Bereich | Komponenten (`components/`) | Beschreibung |
 |---|---|---|
@@ -88,6 +88,7 @@ Einige Inhalte in `OtakuSoul` sind gebündelte Standard-Kopien (Bundles) aus dem
 | Datei / Verzeichnis in `OtakuSoul` | Primäre Quelle (`otakusoul-data`) | Synchronisations- & Update-Mechanismus |
 |---|---|---|
 | `presets/locales/{de,ru}.json` (Spieltexte; jede Datei = Sprache) | `locales/<kürzel>.json` | `content_lang::refresh_locales` lädt bei App-Start nach `<Daten>/locales/` |
+| `presets/locales/ui/*.json` (Oberflächensprachen) | `locales/ui/*.json` + `locales/ui_registry.json` | `ui_locales::refresh_hub` lädt beim Start nach `<Daten>/locales/ui-hub/` (mitgelieferte Sprachen nur bei höherer `version`) |
 | `presets/recommended_models.json` | `recommended_models.json` | `model_catalog::refresh` lädt bei App-Start neuere Versionen nach |
 | `presets/characters/*` | `cards_gateway/*.png` / `presets/*` | Werden im Hub über `soul_registry.json` als V2-Karten bereitgestellt |
 | `presets/stories/scenes/*` | `stages_gateway/*.json` | Werden im Hub über `stages_registry.json` bezogen |

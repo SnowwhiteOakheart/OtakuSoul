@@ -22,6 +22,10 @@ translated: number,
  */
 total: number, 
 /**
- * A file in the user folder adds or changes this language.
+ * A file in the user folder adds or changes this language (it can be removed again).
  */
-custom: boolean, };
+custom: boolean, 
+/**
+ * Texts from the data repository are in use (newer than the shipped ones or not shipped).
+ */
+downloaded: boolean, };

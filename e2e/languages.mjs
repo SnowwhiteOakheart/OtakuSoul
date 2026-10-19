@@ -1,7 +1,7 @@
 // English and Russian load on demand: the saved language shows from the start, and switching
 // in the settings loads the next one before the interface changes. A language file the app does
 // not ship (here Polish in the user folder) shows up without a new build; missing texts come
-// from its fallback language.
+// from its fallback language. Languages listed in the data repository arrive after the start.
 import path from 'node:path';
 import { launch, screenshotDir } from './harness.mjs';
 
@@ -38,6 +38,36 @@ import { launch, screenshotDir } from './harness.mjs';
     await browser.$('button=Einstellungen').waitForExist({ timeout: 5000 });
     await browser.saveScreenshot(path.join(screenshotDir, '29-sprache-eigene-datei.png'));
     console.log('Sprachen: eigene Sprachdatei ohne neuen Build erkannt, Rückfall auf Englisch bestanden.');
+  } finally {
+    await close();
+  }
+}
+
+{
+  const ukrainian = {
+    __meta: { name: 'Українська', englishName: 'Ukrainian', author: 'E2E', version: '1.0.0', fallback: 'en' },
+    'nav.settings': 'Налаштування',
+  };
+  const { browser, close } = await launch(
+    {},
+    {
+      hubFiles: {
+        'locales/ui_registry.json': {
+          languages: [{ id: 'uk', name: 'Українська', english_name: 'Ukrainian', version: '1.0.0' }],
+        },
+        'locales/ui/uk.json': ukrainian,
+      },
+    },
+  );
+  try {
+    await browser.$('button=Einstellungen').waitForExist({ timeout: 20_000 });
+    await browser.$('button=Einstellungen').click();
+    // The download finishes in the background; the list updates without a restart.
+    await browser.$('button*=Українська').waitForExist({ timeout: 20_000 });
+    await browser.$('button*=Українська').click();
+    await browser.$('button=Налаштування').waitForExist({ timeout: 5000 });
+    await browser.$('button=Integrations').waitForExist({ timeout: 5000 });
+    console.log('Sprachen: Sprache aus dem Daten-Repo nachgeladen und gewählt bestanden.');
   } finally {
     await close();
   }

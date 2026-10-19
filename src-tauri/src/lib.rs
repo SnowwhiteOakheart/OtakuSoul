@@ -109,6 +109,8 @@ pub fn run() {
             // Story texts (every language with a file): shipped copy now, the current one from the data repo in the background.
             modules::content_lang::load_locales();
             tauri::async_runtime::spawn(modules::content_lang::refresh_locales());
+            // Interface languages: new or newer ones from the data repository.
+            tauri::async_runtime::spawn(modules::ui_locales::refresh_hub(app.handle().clone()));
             // Starter models: the data repository may recommend newer ones than this release.
             tauri::async_runtime::spawn(modules::model_catalog::refresh());
             allow_app_asset_dirs(app);
@@ -353,6 +355,8 @@ pub fn run() {
             commands::app::list_ui_languages,
             commands::app::load_ui_language,
             commands::app::open_ui_locales_folder,
+            commands::app::import_ui_language,
+            commands::app::remove_ui_language,
             commands::characters::scan_characters,
             commands::app::scan_models,
             commands::app::scan_loras,
