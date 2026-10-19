@@ -93,6 +93,12 @@ pub struct PromptContext {
     pub state_variables: Vec<StateVariable>,
     #[serde(default)]
     pub cognitive: Option<crate::modules::memory::CognitiveOverview>,
+    /// Memories picked for this reply (`get_prompt_memories`): the core goes into the system
+    /// prompt, the ones fitting the conversation after the history. Without it the overview's
+    /// memories are used.
+    #[serde(default)]
+    #[ts(optional)]
+    pub memories: Option<crate::modules::memory::PromptMemories>,
     pub reply_language: Option<String>, // e.g. "Deutsch", "English"
     #[serde(default)]
     pub allow_reasoning: Option<bool>,
@@ -303,6 +309,15 @@ pub fn post_history_instruction(ctx: &PromptContext) -> Option<String> {
     let mut text = crate::modules::macros::expand(&text, &ctx.macro_input())
         .trim()
         .to_string();
+    // Memories that fit the conversation change with every reply: after the history they leave
+    // the cached beginning of the prompt alone.
+    if let Some(block) = relevant_memories_block(ctx) {
+        text = if text.is_empty() {
+            block
+        } else {
+            format!("{block}\n\n{text}")
+        };
+    }
     for rule in avoid_rule(ctx.avoid_phrases.as_deref())
         .into_iter()
         .chain(reply_length_rule(ctx.reply_length.as_deref()).map(str::to_string))
@@ -314,6 +329,21 @@ pub fn post_history_instruction(ctx: &PromptContext) -> Option<String> {
         text.push_str(&rule);
     }
     (!text.trim().is_empty()).then(|| text.trim().to_string())
+}
+
+/// The memories that fit the current conversation, for after the history.
+fn relevant_memories_block(ctx: &PromptContext) -> Option<String> {
+    let relevant = &ctx.memories.as_ref()?.relevant;
+    if relevant.is_empty() {
+        return None;
+    }
+    let mut block = String::from(
+        "[Memories of yours that may matter right now – use them only where they fit naturally]",
+    );
+    for mem in relevant {
+        block.push_str(&format!("\n- [{}] {}", mem.category, mem.content));
+    }
+    Some(block)
 }
 
 /// Placeholder that memory fields hold when there is nothing to say (in any content language).
@@ -526,9 +556,14 @@ pub fn build_system_prompt(ctx: &PromptContext) -> String {
                 cog.relationship.shared_milestones.join("; ")
             ));
         }
-        if !cog.recent_memories.is_empty() {
+        // The core stays the same between replies, so the system prompt can be cached.
+        let long_term = match &ctx.memories {
+            Some(memories) => &memories.core,
+            None => &cog.recent_memories,
+        };
+        if !long_term.is_empty() {
             cog_str.push_str("\n### Long-Term Memories (facts, promises, experiences):\n");
-            for mem in &cog.recent_memories {
+            for mem in long_term {
                 cog_str.push_str(&format!("- [{}] {}\n", mem.category, mem.content));
             }
         }
@@ -731,6 +766,41 @@ mod tests {
                 .unwrap()
                 .contains("Never use")
         );
+    }
+
+    #[test]
+    fn recalled_memories_go_after_the_history_and_the_core_stays_in_the_system_prompt() {
+        let db = crate::modules::memory::MemoryDb::new_in_memory().unwrap();
+        let mem = |id: i64, content: &str| crate::modules::memory::EpisodicMemory {
+            id,
+            category: "fact".into(),
+            content: content.into(),
+            significance: 3,
+            created_at: 0,
+            last_accessed_at: 0,
+            source_chat_id: None,
+            source_message_ids: Vec::new(),
+            origin: "auto".into(),
+            pinned: false,
+            needs_review: false,
+        };
+        let mut ctx = context(None);
+        let mut overview = db.get_cognitive_overview("aiko", "Kai").unwrap();
+        overview.recent_memories = vec![mem(9, "Alte Übersicht")];
+        ctx.cognitive = Some(overview);
+        ctx.memories = Some(crate::modules::memory::PromptMemories {
+            core: vec![mem(1, "Kai heißt eigentlich Kaito")],
+            relevant: vec![mem(2, "Lieblingstee ist Jasmin")],
+        });
+        let system = build_system_prompt(&ctx);
+        assert!(system.contains("- [fact] Kai heißt eigentlich Kaito"));
+        assert!(!system.contains("Jasmin") && !system.contains("Alte Übersicht"));
+        let after = post_history_instruction(&ctx).unwrap();
+        assert!(after.contains("- [fact] Lieblingstee ist Jasmin"));
+
+        // Other relevant memories leave the system prompt as it was (prompt cache).
+        ctx.memories.as_mut().unwrap().relevant = vec![mem(3, "Mag Regen")];
+        assert_eq!(build_system_prompt(&ctx), system);
     }
 
     #[test]

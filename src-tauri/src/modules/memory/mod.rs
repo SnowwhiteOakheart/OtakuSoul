@@ -13,6 +13,7 @@ mod chats;
 pub use chats::MAX_CHAT_GUESTS;
 mod markdown;
 mod models;
+mod recall;
 mod schema;
 mod snapshots;
 mod soul;
@@ -20,6 +21,7 @@ mod soul;
 mod tests;
 
 pub use models::*;
+pub use recall::{MemoryBudget, PROMPT_MEMORY_BUDGET};
 use schema::migrate;
 pub use soul::{MemorySource, ReflectionChanges};
 

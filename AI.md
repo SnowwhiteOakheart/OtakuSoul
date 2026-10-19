@@ -575,6 +575,16 @@ ru „персонаж/история/сцена“. Fachbegriffe nur im Experte
   auto/manual/edited, '' = alt), `pinned` (zuerst im Kontext), `needs_review`. Neue Erinnerungen mit Quelle über
   `add_episodic_memory_from` + `MemorySource`. Nachrichtenänderungen in `memory/chats.rs` rufen
   `flag_memories_from_messages`; jede Änderung landet in `soul_memory_history` (`log_memory_change`).
+- Relevanz-Abruf (Migration v7, `memory/recall.rs`): FTS5-Index `soul_episodic_memory_fts` (External Content,
+  `trigram remove_diacritics 1`, findet Wortteile/Komposita, Suchbegriffe ab 3 Zeichen), per Trigger synchron –
+  bei External Content nur die `'delete'`-Sonderform, nie `DELETE FROM …_fts`. `fts_query` macht aus Freitext eine
+  sichere OR-Abfrage (Stoppwörter de/en/ru). `select_prompt_memories` liefert `PromptMemories { core, relevant }`:
+  `core` (alle angepinnten + 5 wichtigste) hängt nicht vom Gespräch ab und bleibt im System-Prompt (Abschnitt 6.5);
+  `relevant` (FTS-Treffer, aufgefüllt mit den neuesten) hängt `post_history_instruction` hinter den Verlauf, damit
+  der Prompt-Cache (llama-server) nicht bei jeder Antwort verfällt. Das Frontend holt sie pro Antwort in
+  `resolvePromptWithLore` (`get_prompt_memories`, Query = letzte 2 Nutzer-Nachrichten + letzte Antwort, OOC
+  entfernt); bei Fehler gilt `cognitive.recent_memories`. Budget über `MemoryBudget` (Chat 1.500 Tokens; der Router
+  zählt nur die gezeigten 300 Zeichen). Der Reflexions-Router bekommt dieselbe Auswahl als `- #id [Kategorie] Text`.
 
 ### 9. Hub-Synchronisation, Registries & Daten-Pakete
 

@@ -1,12 +1,18 @@
-import { useState } from 'react';
-import { useStoreFields } from '../../../store/useAppStore';
+import { useEffect, useState } from 'react';
+import { useAppStore, useStoreFields } from '../../../store/useAppStore';
+import { api } from '../../../services/api';
+import { memoryCharacter } from '../../../utils/groupChat';
+import type { EpisodicMemory } from '../../../types';
 import { translate, useTranslation } from '../../../i18n';
 import { toast } from '../../ui/feedback';
 import { errorMessage } from '../../../utils/errors';
-import { Sparkles } from 'lucide-react';
+import { Search, Sparkles, X } from 'lucide-react';
 import { MemoryItem } from './MemoryItem';
 
 type MemoryCategory = 'fact' | 'secret' | 'promise' | 'event' | 'location';
+
+/** The full-text search needs three letters (trigrams). */
+const MIN_SEARCH_CHARS = 3;
 
 export const MemoriesTab = () => {
   const { t } = useTranslation();
@@ -20,6 +26,32 @@ export const MemoriesTab = () => {
   const [newMemContent, setNewMemContent] = useState('');
   const [newMemSignificance, setNewMemSignificance] = useState(3);
   const [isSaving, setIsSaving] = useState(false);
+  const characterId = useAppStore((state) => memoryCharacter(state)?.id);
+  const [search, setSearch] = useState('');
+  const [searchHits, setSearchHits] = useState<EpisodicMemory[] | null>(null);
+  const [searchError, setSearchError] = useState<string | null>(null);
+  const searching = search.trim().length >= MIN_SEARCH_CHARS;
+
+  // Searches again after typing stops and whenever the memories change (edit, pin, forget).
+  useEffect(() => {
+    const query = search.trim();
+    if (!characterId || query.length < MIN_SEARCH_CHARS) {
+      setSearchHits(null);
+      setSearchError(null);
+      return;
+    }
+    let current = true;
+    const timer = setTimeout(() => {
+      api.searchEpisodicMemories(characterId, query)
+        .then((hits) => {
+          if (current) { setSearchHits(hits); setSearchError(null); }
+        })
+        .catch((error) => {
+          if (current) setSearchError(errorMessage(error));
+        });
+    }, 250);
+    return () => { current = false; clearTimeout(timer); };
+  }, [characterId, search, cognitiveOverview]);
 
   const handleAddMemory = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -94,18 +126,56 @@ export const MemoriesTab = () => {
           </fieldset>
         </form>
 
-        <div className="space-y-2">
-          {cognitiveOverview?.recent_memories.map((mem) => (
-            <MemoryItem key={mem.id} memory={mem} />
-          ))}
-
-          {!memoryOverviewError && !isMemoryLoading && (!cognitiveOverview?.recent_memories ||
-            cognitiveOverview.recent_memories.length === 0) && (
-            <div className="p-8 text-center text-xs text-slate-400 italic">
-              {t('memory.noMemories')}
-            </div>
+        <div className="relative">
+          <Search className="w-3.5 h-3.5 text-slate-500 absolute left-2.5 top-1/2 -translate-y-1/2 pointer-events-none" />
+          <input
+            type="search"
+            value={search}
+            onChange={(e) => setSearch(e.target.value)}
+            placeholder={t('memory.searchPlaceholder')}
+            aria-label={t('memory.search')}
+            className="w-full pl-8 pr-8 py-1.5 [&::-webkit-search-cancel-button]:hidden bg-slate-900/90 border border-slate-700 rounded-lg text-xs text-slate-200 focus:outline-hidden focus:border-accent-500"
+          />
+          {search && (
+            <button
+              type="button"
+              onClick={() => setSearch('')}
+              aria-label={t('memory.searchClear')}
+              className="absolute right-2 top-1/2 -translate-y-1/2 text-slate-500 hover:text-slate-300"
+            >
+              <X className="w-3.5 h-3.5" />
+            </button>
           )}
         </div>
+
+        {searching ? (
+          <div className="space-y-2">
+            {searchError && (
+              <div className="p-3 text-xs text-red-300">{t('memory.searchFailed', { error: searchError })}</div>
+            )}
+            {searchHits?.map((mem) => (
+              <MemoryItem key={mem.id} memory={mem} />
+            ))}
+            {!searchError && searchHits?.length === 0 && (
+              <div className="p-8 text-center text-xs text-slate-400 italic">
+                {t('memory.searchNoHits')}
+              </div>
+            )}
+          </div>
+        ) : (
+          <div className="space-y-2">
+            {cognitiveOverview?.recent_memories.map((mem) => (
+              <MemoryItem key={mem.id} memory={mem} />
+            ))}
+
+            {!memoryOverviewError && !isMemoryLoading && (!cognitiveOverview?.recent_memories ||
+              cognitiveOverview.recent_memories.length === 0) && (
+              <div className="p-8 text-center text-xs text-slate-400 italic">
+                {t('memory.noMemories')}
+              </div>
+            )}
+          </div>
+        )}
       </div>
   );
 };

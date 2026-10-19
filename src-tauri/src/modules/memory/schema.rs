@@ -11,6 +11,7 @@ pub(super) const MIGRATIONS: &[fn(&Connection) -> rusqlite::Result<()>] = &[
     migrate_v4_memory_sources,
     migrate_v5_chat_style,
     migrate_v6_group_chats,
+    migrate_v7_memory_fts,
 ];
 
 /// Brings the database to the latest schema, one transaction per step. A database written by a
@@ -273,6 +274,42 @@ pub(super) fn migrate_v6_group_chats(conn: &Connection) -> rusqlite::Result<()> 
         )?;
     }
     Ok(())
+}
+
+/// v7: full-text index over episodic memories, so the prompt can recall the ones that fit the
+/// conversation. Trigrams also find parts of words (German compounds, Russian word forms).
+/// Triggers keep the index in sync; an external-content index only accepts the `'delete'` form.
+pub(super) fn migrate_v7_memory_fts(conn: &Connection) -> rusqlite::Result<()> {
+    // Created by v1; only partial test databases lack it.
+    let has_memories: bool = conn.query_row(
+        "SELECT EXISTS(SELECT 1 FROM sqlite_master WHERE type = 'table' AND name = 'soul_episodic_memory')",
+        [],
+        |row| row.get(0),
+    )?;
+    if !has_memories {
+        return Ok(());
+    }
+    conn.execute_batch(
+        "CREATE VIRTUAL TABLE IF NOT EXISTS soul_episodic_memory_fts USING fts5(
+            content,
+            content='soul_episodic_memory',
+            content_rowid='id',
+            tokenize='trigram remove_diacritics 1'
+        );
+        CREATE TRIGGER IF NOT EXISTS soul_mem_fts_ai AFTER INSERT ON soul_episodic_memory BEGIN
+            INSERT INTO soul_episodic_memory_fts(rowid, content) VALUES (new.id, new.content);
+        END;
+        CREATE TRIGGER IF NOT EXISTS soul_mem_fts_ad AFTER DELETE ON soul_episodic_memory BEGIN
+            INSERT INTO soul_episodic_memory_fts(soul_episodic_memory_fts, rowid, content)
+            VALUES ('delete', old.id, old.content);
+        END;
+        CREATE TRIGGER IF NOT EXISTS soul_mem_fts_au AFTER UPDATE OF content ON soul_episodic_memory BEGIN
+            INSERT INTO soul_episodic_memory_fts(soul_episodic_memory_fts, rowid, content)
+            VALUES ('delete', old.id, old.content);
+            INSERT INTO soul_episodic_memory_fts(rowid, content) VALUES (new.id, new.content);
+        END;
+        INSERT INTO soul_episodic_memory_fts(soul_episodic_memory_fts) VALUES ('rebuild');",
+    )
 }
 
 fn add_column_if_missing(

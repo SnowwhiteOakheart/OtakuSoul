@@ -130,7 +130,19 @@ export async function resolvePromptWithLore(
     }
   }
 
-  // 4. Assemble system prompt
+  // 4. Memories for this reply: a stable core plus what fits the recent messages. Without
+  // them (old backend, error) the overview's memories are used.
+  const memoryQuery = recentMemoryQuery(recentMessages);
+  const memories = memoryQuery
+    ? await waitWithAbort(() => api.getPromptMemories(activeCharacter.id, memoryQuery).catch((e) => {
+      console.warn('Failed getPromptMemories, using the overview:', e);
+      return null;
+    }), signal)
+    : null;
+  signal?.throwIfAborted();
+  const promptMemories = memories ? [...memories.core, ...memories.relevant] : cognitiveOverview?.recent_memories ?? [];
+
+  // 5. Assemble system prompt
   const bookOf = (entry: LorebookEntry) =>
     candidateLorebooks.find((book) => book.entries.some((e) => e.name === entry.name && e.content === entry.content))?.name ?? '';
   const isDirective = (entry: LorebookEntry) => ['active', 'directive'].includes((entry.injection_behavior ?? '').toLowerCase());
@@ -139,7 +151,7 @@ export async function resolvePromptWithLore(
       ...activeDirectives.map((entry) => ({ name: entry.name, book: bookOf(entry), directive: true })),
       ...passiveEntries.map((entry) => ({ name: entry.name, book: bookOf(entry), directive: isDirective(entry) })),
     ],
-    memories: (cognitiveOverview?.recent_memories ?? []).map(({ id, category, content }) => ({ id, category, content })),
+    memories: promptMemories.map(({ id, category, content }) => ({ id, category, content })),
     summary: !!activeSession?.summary?.trim(),
   };
   const assembled = await waitWithAbort(() => api.assemblePrompt({
@@ -150,6 +162,7 @@ export async function resolvePromptWithLore(
     active_directives: activeDirectives,
     state_variables: stateVariables,
     cognitive: cognitiveOverview || undefined,
+    memories: memories ?? undefined,
     reply_language: replyLanguage || 'Deutsch',
     allow_reasoning: serverConfig.reasoning_mode,
     author_note: activeSession?.author_note,
@@ -165,6 +178,13 @@ export async function resolvePromptWithLore(
     avatar_moods: avatarShowsMoods(state, activeCharacter) || undefined,
   }), signal);
   return { ...assembled, hits };
+}
+
+/** Search text for recalling memories: the last two user messages and the last reply. */
+export function recentMemoryQuery(messages: ChatMessage[]): string {
+  const userTexts = messages.filter((m) => m.role === 'user').slice(-2).map((m) => m.content);
+  const lastReply = [...messages].reverse().find((m) => m.role === 'assistant')?.content ?? '';
+  return [...userTexts, lastReply].join('\n').trim();
 }
 
 /**

@@ -1258,3 +1258,169 @@ fn a_snapshot_keeps_every_memory() {
     assert_eq!(snapshot.episodic_memories.len(), 150);
     let _ = std::fs::remove_dir_all(&dir);
 }
+
+#[test]
+fn fts_query_quotes_words_and_drops_filler() {
+    use super::recall::fts_query;
+    assert_eq!(
+        fts_query("Welchen Tee magst du? Ich mag Tee!").as_deref(),
+        Some("\"welchen\" OR \"tee\" OR \"magst\" OR \"mag\"")
+    );
+    // FTS syntax and quotes cannot break out of the query.
+    assert_eq!(
+        fts_query("\"NEAR(a b)\" OR * col:wert").as_deref(),
+        Some("\"near\" OR \"col\" OR \"wert\"")
+    );
+    assert_eq!(fts_query("Где ты живёшь?").as_deref(), Some("\"живёшь\""));
+    assert_eq!(fts_query("ja, ok 🙂"), None);
+}
+
+#[test]
+fn recall_finds_an_old_memory_that_fits_before_newer_ones() {
+    let db = MemoryDb::new_in_memory().unwrap();
+    let old = db
+        .add_episodic_memory("ayu", "fact", "Ihr Lieblingstee ist Jasmintee", 3)
+        .unwrap();
+    for i in 0..20 {
+        db.add_episodic_memory(
+            "ayu",
+            "event",
+            &format!("Spaziergang am Fluss Nummer {i}"),
+            4,
+        )
+        .unwrap();
+    }
+    db.add_episodic_memory("sora", "fact", "Sora trinkt nur Tee", 3)
+        .unwrap();
+
+    // A part of a word is enough ("Tee" in "Lieblingstee"), other characters stay apart.
+    let hits = db
+        .search_episodic_memories("ayu", "Welchen Tee magst du?", 10)
+        .unwrap();
+    assert_eq!(hits.iter().map(|m| m.id).collect::<Vec<_>>(), [old]);
+
+    let picked = db
+        .select_prompt_memories("ayu", "Welchen Tee magst du?", PROMPT_MEMORY_BUDGET)
+        .unwrap();
+    assert_eq!(picked.relevant.first().map(|m| m.id), Some(old));
+    assert!(!picked.core.iter().any(|m| m.id == old));
+}
+
+#[test]
+fn recall_ignores_accents_and_cyrillic_case() {
+    let db = MemoryDb::new_in_memory().unwrap();
+    let cafe = db
+        .add_episodic_memory("ayu", "fact", "Trifft sich gern im Café Mond", 3)
+        .unwrap();
+    let moscow = db
+        .add_episodic_memory("ayu", "fact", "Выросла в Москве", 3)
+        .unwrap();
+    assert_eq!(
+        db.search_episodic_memories("ayu", "cafe", 5).unwrap()[0].id,
+        cafe
+    );
+    assert_eq!(
+        db.search_episodic_memories("ayu", "москве", 5).unwrap()[0].id,
+        moscow
+    );
+}
+
+#[test]
+fn recall_keeps_the_index_in_sync_with_edits_and_forgetting() {
+    let db = MemoryDb::new_in_memory().unwrap();
+    let id = db
+        .add_episodic_memory("ayu", "fact", "Wohnt in München", 3)
+        .unwrap();
+    db.update_episodic_memory("ayu", id, "fact", "Wohnt in Hamburg", 3)
+        .unwrap();
+    assert!(
+        db.search_episodic_memories("ayu", "München", 5)
+            .unwrap()
+            .is_empty()
+    );
+    assert_eq!(
+        db.search_episodic_memories("ayu", "Hamburg", 5).unwrap()[0].id,
+        id
+    );
+    db.forget_episodic_memory("ayu", id).unwrap();
+    assert!(
+        db.search_episodic_memories("ayu", "Hamburg", 5)
+            .unwrap()
+            .is_empty()
+    );
+    db.conn
+        .lock()
+        .execute(
+            "INSERT INTO soul_episodic_memory_fts(soul_episodic_memory_fts) VALUES ('integrity-check')",
+            [],
+        )
+        .unwrap();
+}
+
+#[test]
+fn prompt_memories_keep_pins_a_stable_core_and_the_budget() {
+    let db = MemoryDb::new_in_memory().unwrap();
+    let pinned = db
+        .add_episodic_memory("ayu", "fact", "Angepinnt", 1)
+        .unwrap();
+    db.set_episodic_memory_pinned("ayu", pinned, true).unwrap();
+    for i in 0..40 {
+        db.add_episodic_memory(
+            "ayu",
+            "event",
+            &format!("Ereignis {i} {}", "x".repeat(300)),
+            3,
+        )
+        .unwrap();
+    }
+    let budget = MemoryBudget {
+        tokens: 600,
+        shown_chars: usize::MAX,
+    };
+    let a = db
+        .select_prompt_memories("ayu", "Ereignis 7", budget)
+        .unwrap();
+    let b = db
+        .select_prompt_memories("ayu", "etwas ganz anderes", budget)
+        .unwrap();
+    assert_eq!(a.core.first().map(|m| m.id), Some(pinned));
+    assert_eq!(
+        a.core.iter().map(|m| m.id).collect::<Vec<_>>(),
+        b.core.iter().map(|m| m.id).collect::<Vec<_>>()
+    );
+    let tokens: usize = a
+        .core
+        .iter()
+        .chain(&a.relevant)
+        .map(|m| crate::modules::context_window::estimate_tokens(&m.content) + 4)
+        .sum();
+    assert!(tokens <= 600, "{tokens} tokens");
+    assert!(!a.relevant.is_empty());
+}
+
+#[test]
+fn memory_index_migration_skips_databases_without_memories() {
+    let conn = Connection::open_in_memory().unwrap();
+    super::schema::migrate_v7_memory_fts(&conn).unwrap();
+    assert!(!has_column(&conn, "soul_episodic_memory_fts", "content").unwrap());
+}
+
+#[test]
+fn memory_index_migration_indexes_existing_memories() {
+    let conn = Connection::open_in_memory().unwrap();
+    super::schema::migrate_v1_baseline(&conn).unwrap();
+    conn.execute(
+        "INSERT INTO soul_episodic_memory (character_id, content, created_at, last_accessed_at) VALUES ('ayu', 'Mag Erdbeeren', 1, 1)",
+        [],
+    )
+    .unwrap();
+    super::schema::migrate_v7_memory_fts(&conn).unwrap();
+    let found: i64 = conn
+        .query_row(
+            "SELECT COUNT(*) FROM soul_episodic_memory_fts WHERE soul_episodic_memory_fts MATCH '\"erdbeer\"'",
+            [],
+            |row| row.get(0),
+        )
+        .unwrap();
+    assert_eq!(found, 1);
+}

@@ -356,11 +356,6 @@ pub async fn execute_memory_pipeline(
         .memory_db
         .render_user_markdown(char_id, user_name)
         .map_err(|e| e.to_string())?;
-    let episodic_mems = state
-        .memory_db
-        .get_episodic_memories(char_id, 10)
-        .map_err(|e| e.to_string())?;
-
     // 2. Fetch recent conversation messages
     let turn_limit = req.recent_turn_count.unwrap_or(8);
     let messages = if let Some(cid) = &req.chat_id {
@@ -421,9 +416,21 @@ pub async fn execute_memory_pipeline(
         dialog_formatted = "(no recent messages in the chat)".to_string();
     }
 
+    // The router sees the memories that fit this conversation, so it can spot contradictions.
+    let recalled = state
+        .memory_db
+        .select_prompt_memories(
+            char_id,
+            &dialog_formatted,
+            crate::modules::memory::MemoryBudget {
+                tokens: 800,
+                shown_chars: ROUTER_MEMORY_CHARS,
+            },
+        )
+        .map_err(|e| e.to_string())?;
     let mut topic_section = String::new();
-    for mem in episodic_mems {
-        topic_section.push_str(&router_memory_line(&mem));
+    for mem in recalled.core.iter().chain(&recalled.relevant) {
+        topic_section.push_str(&router_memory_line(mem));
     }
     if topic_section.is_empty() {
         topic_section = "(no topics or notes yet)".to_string();

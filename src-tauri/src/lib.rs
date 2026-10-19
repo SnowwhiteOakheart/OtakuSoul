@@ -240,6 +240,8 @@ pub fn run() {
             commands::chat::get_attachment_data_url,
             commands::app::read_file_binary,
             commands::memory::get_cognitive_overview,
+            commands::memory::get_prompt_memories,
+            commands::memory::search_episodic_memories,
             commands::memory::update_psychology,
             commands::memory::update_relationship,
             commands::memory::add_episodic_memory,

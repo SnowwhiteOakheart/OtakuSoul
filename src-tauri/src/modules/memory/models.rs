@@ -131,6 +131,16 @@ pub struct HealingLogEntry {
     pub created_at: u64,
 }
 
+/// Memories for one prompt (`select_prompt_memories`).
+#[derive(Debug, Clone, Default, Serialize, Deserialize, TS)]
+#[ts(export)]
+pub struct PromptMemories {
+    /// Pinned and most significant memories; independent of the conversation.
+    pub core: Vec<EpisodicMemory>,
+    /// Memories that fit the conversation, filled up with the newest.
+    pub relevant: Vec<EpisodicMemory>,
+}
+
 #[derive(Debug, Clone, Serialize, Deserialize, TS)]
 #[ts(export)]
 pub struct CognitiveOverview {

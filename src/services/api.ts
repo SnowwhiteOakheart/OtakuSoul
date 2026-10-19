@@ -15,6 +15,8 @@ import {
   EvaluatedLoreResult,
   PromptContext,
   CognitiveOverview,
+  PromptMemories,
+  EpisodicMemory,
   PsychologyState,
   RelationshipState,
   DiaryEntry,
@@ -239,6 +241,15 @@ export const api = {
   },
 
   // Phase 5: Cognitive Soul Memory
+  /** Memories for the next reply: a stable core and the ones that fit `query` (recent messages). */
+  getPromptMemories: async (charId: string, query: string): Promise<PromptMemories> => {
+    return await invoke<PromptMemories>('get_prompt_memories', { charId, query });
+  },
+
+  searchEpisodicMemories: async (charId: string, query: string): Promise<EpisodicMemory[]> => {
+    return await invoke<EpisodicMemory[]>('search_episodic_memories', { charId, query });
+  },
+
   getCognitiveOverview: async (
     charId: string,
     userName: string

@@ -16,6 +16,35 @@ pub fn get_cognitive_overview(
         .map_err(|e| e.to_string())
 }
 
+/// Memories for the next reply: a stable core and the ones that fit `query` (recent messages).
+#[tauri::command]
+pub fn get_prompt_memories(
+    state: State<'_, AppState>,
+    char_id: String,
+    query: String,
+) -> Result<crate::modules::memory::PromptMemories, String> {
+    state
+        .memory_db
+        .select_prompt_memories(
+            &char_id,
+            &query,
+            crate::modules::memory::PROMPT_MEMORY_BUDGET,
+        )
+        .map_err(|e| e.to_string())
+}
+
+#[tauri::command]
+pub fn search_episodic_memories(
+    state: State<'_, AppState>,
+    char_id: String,
+    query: String,
+) -> Result<Vec<crate::modules::memory::EpisodicMemory>, String> {
+    state
+        .memory_db
+        .search_episodic_memories(&char_id, &query, 50)
+        .map_err(|e| e.to_string())
+}
+
 #[tauri::command]
 pub fn update_psychology(
     state: State<'_, AppState>,
