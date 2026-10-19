@@ -316,6 +316,7 @@ The README screenshots are generated with `xvfb-run -a node e2e/readme-screensho
 * **Frontend:** [React 19](https://react.dev/), [TypeScript](https://www.typescriptlang.org/), [Vite](https://vitejs.dev/), [Tailwind CSS 4](https://tailwindcss.com/), [Zustand](https://github.com/pmndrs/zustand)
 * **Avatars:** [Three.js](https://threejs.org/), [@pixiv/three-vrm](https://github.com/pixiv/three-vrm), `@moeru/three-mmd`, [PixiJS](https://pixijs.com/) & Live2D Cubism Core
 * **Local AI:** llama.cpp & PrismML, stable-diffusion.cpp, CrispASR, whisper.cpp
+* **Vibe-coding & AI:** Built primarily through vibe-coding and AI pair-programming with assistance from Claude, ChatGPT, and Gemini (Antigravity) – reinforced by strict typing (`ts-rs`), clippy, e2e tests, and architectural guidelines ([`AI.md`](AI.md)).
 
 ---
 

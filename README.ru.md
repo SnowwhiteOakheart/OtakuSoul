@@ -316,6 +316,7 @@ npm run e2e:perf   # замер длинного чата (1000 сообщени
 * **Фронтенд:** [React 19](https://react.dev/), [TypeScript](https://www.typescriptlang.org/), [Vite](https://vitejs.dev/), [Tailwind CSS 4](https://tailwindcss.com/), [Zustand](https://github.com/pmndrs/zustand)
 * **Аватары:** [Three.js](https://threejs.org/), [@pixiv/three-vrm](https://github.com/pixiv/three-vrm), `@moeru/three-mmd`, [PixiJS](https://pixijs.com/) и Live2D Cubism Core
 * **Локальный ИИ:** llama.cpp и PrismML, stable-diffusion.cpp, CrispASR, whisper.cpp
+* **Вайб-кодинг и ИИ:** Создано преимущественно через вайб-кодинг и парное программирование с ИИ при поддержке Claude, ChatGPT и Gemini (Antigravity) — с контролем строгой типизации (`ts-rs`), clippy, сквозных e2e-тестов и архитектурных правил ([`AI.md`](AI.md)).
 
 ---
 
