@@ -1,17 +1,17 @@
 {
  "id": "story_missing_mic",
- "title": "Das verschwundene Mikrofon",
- "description": "Eine Stunde vor der Live-Sendung ist Ayus goldenes Glücksmikrofon aus der Garderobe verschwunden. Vier Verdächtige, eine Uhr, die tickt – finde den Täter.",
- "world_context": "Tokio, Gegenwart, ein großes Fernsehstudio in Minato. Ayu Ikue tritt heute Abend live in der beliebten Musikshow „Starlight Stage“ auf. Ihr goldenes Mikrofon – ein Geschenk ihres ersten Fanclubs, ohne das sie nie auftritt – ist aus der verschlossenen Garderobe verschwunden. Verdächtige: die gestresste Aufnahmeleiterin Frau Kanda (hat einen Generalschlüssel), das Rivalen-Idol Rei Hoshino (zufällig in der Nachbargarderobe), der nervöse Praktikant Daichi (hat etwas Glänzendes in seiner Tasche versteckt) und der freundliche Hausmeister Herr Mori. Die Wahrheit: Daichi hat das Mikrofon nur zum Polieren geholt und es dann aus Angst versteckt, als Frau Kanda ihn anschrie; Rei hat es gesehen, schweigt aber. Der Spielleiter verteilt Hinweise fair und lässt den Spieler kombinieren. Die Spielerfigur ist Ayus Mitbewohner und hat einen Backstage-Ausweis.",
- "starting_location": "Ayus Garderobe im Fernsehstudio",
- "time_of_day": "Früher Abend",
- "opening_narration": "Die Garderobe riecht nach Haarspray und frischen Blumen. Auf dem Schminktisch liegt ein leerer, mit Samt ausgeschlagener Koffer – genau dort, wo sonst Ayus goldenes Mikrofon ruht. Ayu läuft auf und ab, die Fäuste geballt. „Ich habe die Tür abgeschlossen! Ich bin mir hundertprozentig sicher!“ Cosmos hockt auf dem Sofa und scrollt durch ihre Fotos. „Ich hab vor einer Stunde ein Selfie hier gemacht … da war es noch da, nya.“ Draußen ruft jemand durch den Flur: „Noch sechzig Minuten bis zur Sendung!“",
+ "title": "Der verschwundene Arcade-Stick",
+ "description": "Eine Stunde vor dem Showmatch beim Schulfest ist Sotas Glücks-Arcade-Stick aus dem abgeschlossenen Computerraum verschwunden. Vier Verdächtige, eine Uhr, die tickt – finde mit Shiori den Täter.",
+ "world_context": "Kamakura, Gegenwart, Kulturfest der Seiryō-Oberschule. Sota Minase soll heute im Festsaal ein Showmatch gegen einen bekannten Spieler einer Nachbarschule bestreiten, live gestreamt. Sein selbst gebauter Arcade-Stick mit goldener Frontplatte – ohne den er nie antritt – ist aus dem abgeschlossenen Computerraum verschwunden. Verdächtige: die gestresste Aufsichtslehrerin Frau Kanda (hat einen Generalschlüssel), der Rivale Rei Hoshino von der Nachbarschule (wartete zufällig im Raum nebenan), der nervöse Erstklässler Daichi aus dem Festkomitee (hat etwas Glänzendes in seiner Tasche versteckt) und der freundliche Hausmeister Herr Mori. Die Wahrheit: Daichi hat den Stick nur geholt, um die Knöpfe zu putzen, und ihn dann aus Angst versteckt, als Frau Kanda ihn anschrie; Rei hat es gesehen, schweigt aber. Shiori, die jeden Kriminalroman der Schulbibliothek kennt, ermittelt begeistert mit. Der Spielleiter verteilt Hinweise fair und lässt den Spieler kombinieren. Die Spielerfigur geht in Shioris und Sotas Jahrgang und trägt einen Helferausweis des Festkomitees.",
+ "starting_location": "Der Computerraum der Seiryō-Oberschule",
+ "time_of_day": "Früher Nachmittag",
+ "opening_narration": "Der Computerraum riecht nach warmen Lüftern und Kreidestaub; von draußen dringen Festmusik und das Rufen der Imbissstände herein. Auf dem Tisch am Fenster liegt eine leere, mit Schaumstoff ausgeschlagene Tasche – genau dort, wo sonst Sotas Arcade-Stick ruht. Sota läuft auf und ab und trommelt nervös Kombos auf jede Tischkante. „Ich hab abgeschlossen! Hundertprozentig! Das ist kein Bug, das ist Sabotage!“ Shiori sitzt auf einem Drehstuhl, schiebt die Brille hoch und betrachtet die Tür, als wäre sie das erste Kapitel eines Krimis. „Ein verschlossener Raum“, murmelt sie, und ihre Augen leuchten. „Entschuldige, das ist natürlich furchtbar. Aber … ein verschlossener Raum!“ Draußen ruft jemand durch den Flur: „Noch sechzig Minuten bis zum Showmatch!“",
  "gm_tone": "Gemütlicher Krimi",
  "narrator_style": "Spannend, aber gemütlich wie ein Detektiv-Anime; beschreibe Hinweise genau, verrate nie die Lösung. Lass Verdächtige glaubwürdig ausweichen und belohne gute Fragen mit neuen Spuren.",
  "first_message": "",
  "party": [
-  "Ayu Ikue",
-  "Cosmos"
+  "Shiori Amane",
+  "Sota Minase"
  ],
  "persona": "",
  "lorebook": [],
@@ -26,24 +26,24 @@
    "source_language": "de",
    "translations": {
     "en": {
-     "title": "The Missing Microphone",
-     "description": "One hour before the live broadcast, Ayu's golden lucky microphone has vanished from her dressing room. Four suspects, a ticking clock – find the culprit.",
-     "world_context": "Tokyo, present day, a large TV studio in Minato. Ayu Ikue is performing live tonight on the popular music show \"Starlight Stage\". Her golden microphone – a gift from her first fan club, without which she never performs – has vanished from the locked dressing room. Suspects: the stressed floor manager Ms Kanda (has a master key), rival idol Rei Hoshino (conveniently in the neighbouring dressing room), the nervous intern Daichi (has hidden something shiny in his bag) and the friendly caretaker Mr Mori. The truth: Daichi only took the microphone to polish it, then hid it out of fear when Ms Kanda shouted at him; Rei saw it but keeps quiet. The game master hands out clues fairly and lets the player deduce. The player character is Ayu's housemate and has a backstage pass.",
-     "starting_location": "Ayu's dressing room at the TV studio",
-     "time_of_day": "Early evening",
-     "opening_narration": "The dressing room smells of hairspray and fresh flowers. On the make-up table lies an empty velvet-lined case – exactly where Ayu's golden microphone usually rests. Ayu paces up and down, fists clenched. \"I locked the door! I'm one hundred percent sure!\" Cosmos is curled up on the sofa, scrolling through her photos. \"I took a selfie in here an hour ago … it was still there then, nya.\" Outside someone calls down the corridor: \"Sixty minutes to air!\"",
-     "gm_tone": "Cosy mystery",
-     "narrator_style": "Suspenseful but cosy like a detective anime; describe clues precisely, never reveal the solution. Let suspects dodge believably and reward good questions with new leads."
+     "title": "The Missing Arcade Stick",
+     "description": "An hour before the showmatch at the school festival, Sota's lucky arcade stick has vanished from the locked computer room. Four suspects, a ticking clock – find the culprit together with Shiori.",
+     "world_context": "Kamakura, present day, the cultural festival of Seiryō High School. Today Sota Minase is to play a showmatch in the assembly hall against a well-known player from a neighbouring school, streamed live. His self-built arcade stick with a golden faceplate – he never competes without it – has vanished from the locked computer room. Suspects: the stressed supervising teacher Ms Kanda (has a master key), the rival Rei Hoshino from the neighbouring school (happened to be waiting in the next room), the nervous first-year Daichi from the festival committee (has hidden something shiny in his bag) and the friendly caretaker Mr Mori. The truth: Daichi only took the stick to clean the buttons, then hid it in fright when Ms Kanda shouted at him; Rei saw it but keeps quiet. Shiori, who knows every crime novel in the school library, eagerly joins the investigation. The game master hands out clues fairly and lets the player put them together. The player character is in Shiori's and Sota's year and wears a festival committee helper badge.",
+     "starting_location": "The computer room of Seiryō High School",
+     "time_of_day": "Early afternoon",
+     "opening_narration": "The computer room smells of warm fans and chalk dust; festival music and the calls of the food stalls drift in from outside. On the table by the window lies an empty, foam-lined bag – exactly where Sota's arcade stick usually rests. Sota paces up and down, nervously drumming combos on every table edge. \"I locked it! A hundred percent! This isn't a bug, it's sabotage!\" Shiori sits on a swivel chair, pushes up her glasses and studies the door as if it were the first chapter of a mystery novel. \"A locked room,\" she murmurs, her eyes shining. \"Sorry, of course this is terrible. But … a locked room!\" Someone calls down the corridor outside: \"Sixty minutes until the showmatch!\"",
+     "gm_tone": "Cozy mystery",
+     "narrator_style": "Suspenseful but cozy like a detective anime; describe clues precisely, never reveal the solution. Let suspects dodge believably and reward good questions with new leads."
     },
     "ru": {
-     "title": "Пропавший микрофон",
-     "description": "За час до прямого эфира из гримёрки исчез золотой счастливый микрофон Аю. Четверо подозреваемых, тикающие часы – найди виновного.",
-     "world_context": "Токио, наши дни, большая телестудия в Минато. Сегодня вечером Аю Икуэ выступает в прямом эфире популярного музыкального шоу «Starlight Stage». Её золотой микрофон – подарок первого фан-клуба, без которого она никогда не выступает, – исчез из запертой гримёрки. Подозреваемые: замотанная помощница режиссёра госпожа Канда (у неё универсальный ключ), айдол-соперница Рэй Хосино (как раз в соседней гримёрке), нервный стажёр Дайти (спрятал что-то блестящее в сумку) и приветливый завхоз господин Мори. Правда: Дайти взял микрофон лишь чтобы отполировать, а потом спрятал от страха, когда на него накричала госпожа Канда; Рэй это видела, но молчит. Ведущий честно раздаёт улики и даёт игроку делать выводы. Персонаж игрока – сосед Аю с пропуском за кулисы.",
-     "starting_location": "Гримёрка Аю в телестудии",
-     "time_of_day": "Ранний вечер",
-     "opening_narration": "В гримёрке пахнет лаком для волос и свежими цветами. На туалетном столике лежит пустой футляр, обитый бархатом, – ровно там, где обычно лежит золотой микрофон Аю. Аю ходит туда-сюда, сжав кулаки. «Я заперла дверь! Я уверена на сто процентов!» Космос свернулась на диване и листает фотографии. «Час назад я делала здесь селфи… тогда он ещё был на месте, ня». Снаружи кто-то кричит в коридоре: «Шестьдесят минут до эфира!»",
+     "title": "Пропавший аркадный джойстик",
+     "description": "За час до показательного матча на школьном фестивале из запертого компьютерного класса пропал счастливый аркадный джойстик Соты. Четверо подозреваемых, часы тикают – найди виновника вместе с Сиори.",
+     "world_context": "Камакура, наши дни, школьный фестиваль культуры в старшей школе Сэйрё. Сегодня Сота Минасэ должен сыграть в актовом зале показательный матч против известного игрока из соседней школы – в прямом эфире. Его самодельный аркадный джойстик с золотой лицевой панелью, без которого он никогда не выходит на матч, исчез из запертого компьютерного класса. Подозреваемые: нервная дежурная учительница госпожа Канда (у неё есть общий ключ), соперник Рэй Хосино из соседней школы (случайно ждал в соседнем кабинете), робкий первоклассник Дайти из фестивального комитета (прячет что-то блестящее в сумке) и добродушный завхоз господин Мори. Правда: Дайти взял джойстик лишь затем, чтобы почистить кнопки, а потом в испуге спрятал его, когда госпожа Канда на него накричала; Рэй это видел, но молчит. Сиори, знающая каждый детектив в школьной библиотеке, с восторгом расследует вместе со всеми. Ведущий честно раздаёт улики и даёт игроку самому сложить картину. Персонаж игрока учится в одном классе с Сиори и Сотой и носит бейдж помощника фестивального комитета.",
+     "starting_location": "Компьютерный класс старшей школы Сэйрё",
+     "time_of_day": "Начало дня",
+     "opening_narration": "В компьютерном классе пахнет тёплыми вентиляторами и меловой пылью; снаружи доносятся фестивальная музыка и зазывания лотков. На столе у окна лежит пустая сумка с поролоновой вставкой – ровно там, где обычно лежит аркадный джойстик Соты. Сота ходит взад-вперёд и нервно выстукивает комбо по краю каждого стола. «Я запирал! На сто процентов! Это не баг, это саботаж!» Сиори сидит на вращающемся стуле, поправляет очки и разглядывает дверь, словно первую главу детектива. «Запертая комната, – бормочет она, и глаза её сияют. – Прости, это, конечно, ужасно. Но… запертая комната!» В коридоре кто-то кричит: «Шестьдесят минут до матча!»",
      "gm_tone": "Уютный детектив",
-     "narrator_style": "Напряжённо, но уютно, как в детективном аниме; описывай улики точно, никогда не раскрывай разгадку. Пусть подозреваемые правдоподобно увиливают, а удачные вопросы приносят новые зацепки."
+     "narrator_style": "Напряжённо, но уютно, как в детективном аниме; точно описывай улики, никогда не раскрывай разгадку. Пусть подозреваемые правдоподобно уклоняются, а хорошие вопросы вознаграждаются новыми следами."
     }
    }
   },
@@ -56,51 +56,51 @@
    "choices": {
     "de": [
      {
-      "text": "Untersuche den leeren Koffer und das Türschloss",
+      "text": "Untersuche die leere Tasche und das Türschloss",
       "badge": "Nachforschung",
       "action_type": "do"
      },
      {
-      "text": "Lass dir von Cosmos das Selfie von vorhin zeigen",
+      "text": "Frage Shiori, was ihr an der Tür aufgefallen ist",
       "badge": null,
       "action_type": "say"
      },
      {
-      "text": "Frage Ayu, wer heute alles in der Garderobe war",
+      "text": "Frage Sota, wer heute alles im Computerraum war",
       "badge": null,
       "action_type": "say"
      }
     ],
     "en": [
      {
-      "text": "Examine the empty case and the door lock",
+      "text": "Examine the empty bag and the door lock",
       "badge": "Investigation",
       "action_type": "do"
      },
      {
-      "text": "Ask Cosmos to show you the selfie from earlier",
+      "text": "Ask Shiori what she noticed about the door",
       "badge": null,
       "action_type": "say"
      },
      {
-      "text": "Ask Ayu who has been in the dressing room today",
+      "text": "Ask Sota who was in the computer room today",
       "badge": null,
       "action_type": "say"
      }
     ],
     "ru": [
      {
-      "text": "Осмотреть пустой футляр и дверной замок",
+      "text": "Осмотреть пустую сумку и дверной замок",
       "badge": "Анализ",
       "action_type": "do"
      },
      {
-      "text": "Попросить Космос показать то самое селфи",
+      "text": "Спросить Сиори, что она заметила у двери",
       "badge": null,
       "action_type": "say"
      },
      {
-      "text": "Спросить Аю, кто сегодня заходил в гримёрку",
+      "text": "Спросить Соту, кто сегодня заходил в компьютерный класс",
       "badge": null,
       "action_type": "say"
      }

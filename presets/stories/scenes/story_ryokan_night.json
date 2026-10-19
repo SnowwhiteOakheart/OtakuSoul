@@ -1,17 +1,17 @@
 {
  "id": "story_ryokan_night",
  "title": "Eine Nacht im Ryokan Tsukimi",
- "description": "Für eine Gruselfolge ihrer TV-Show übernachtet Ayu in einem alten Gasthaus in den Bergen. Dann schneit es euch ein – und im leeren Flur klappern Teetassen.",
- "world_context": "Ein abgelegenes, traditionelles Gasthaus (Ryokan) in den Bergen von Nagano, Winter. Ayu Ikue dreht für ihre Varieté-Show die Folge „Mutprobe im Spukhaus“ – obwohl sie Gespenster panisch fürchtet (was sie nie zugeben würde). Cosmos filmt begeistert jede Sekunde für ihre Follower. Das Kamerateam ist ins Tal gefahren, ein Schneesturm hat die Straße blockiert, nur die alte Wirtin Frau Shirakawa ist noch da. In Wahrheit spukt der einsame Geist des früheren Wirts Tsukimi-san, der seit Jahrzehnten auf Gäste wartet, um ihnen ein letztes Mal Tee zu servieren und sich zu verabschieden. Grusel mit Herz: unheimliche Geräusche, flackernde Laternen, kein Blut. Die Spielerfigur begleitet Ayu als Mitbewohner.",
+ "description": "Auf der Abschlussfahrt schneit eure Klasse in einem alten Gasthaus in den Bergen ein. Sota will für seinen Stream eine Mutprobe drehen – und im leeren Flur klappern Teetassen.",
+ "world_context": "Ein abgelegenes, traditionelles Gasthaus (Ryokan) in den Bergen von Nagano, Winter. Der Abschlussjahrgang der Seiryō-Oberschule übernachtet hier auf seiner Abschlussfahrt; ein Schneesturm hat die Straße ins Tal blockiert. Der Rest der Klasse und der Klassenlehrer Herr Ono schlafen längst im Hauptflügel, nur die alte Wirtin Frau Shirakawa ist noch wach. Sota Minase will für seine Stream-Community eine nächtliche „Mutprobe im Spukhaus“ aufnehmen – obwohl er Gespenster insgeheim panisch fürchtet (was er nie zugeben würde). Shiori Amane hat in der Gasthausbibliothek eine alte Ortschronik gefunden und kennt die Legende des Hauses. In Wahrheit spukt der einsame Geist des früheren Wirts Tsukimi-san, der seit Jahrzehnten auf Gäste wartet, um ihnen ein letztes Mal Tee zu servieren und sich zu verabschieden. Grusel mit Herz: unheimliche Geräusche, flackernde Laternen, kein Blut. Die Spielerfigur ist ein Klassenkamerad bzw. eine Klassenkameradin der beiden.",
  "starting_location": "Der Empfangsraum des Ryokan Tsukimi",
  "time_of_day": "Nacht",
- "opening_narration": "Draußen heult der Schneesturm um das alte Holzhaus, und die Papierlaternen im Empfangsraum werfen zitternde Schatten an die Wände. Ayu klammert sich mit einer Hand an deinen Ärmel und hält mit der anderen ein Mikrofon hoch. „Ich habe überhaupt keine Angst“, verkündet sie mit dünner Stimme in Cosmos‘ Kamera. „Gespenster gibt es nicht. Punkt.“ In diesem Moment klappert irgendwo im dunklen Flur leise Porzellan – wie Teetassen, die jemand auf ein Tablett stellt. Cosmos‘ Ohren stellen sich auf. „Nyaa … habt ihr das gehört?“",
+ "opening_narration": "Draußen heult der Schneesturm um das alte Holzhaus, und die Papierlaternen im Empfangsraum werfen zitternde Schatten an die Wände. Sota hält mit einer Hand sein Handy samt Mini-Stativ hoch und mit der anderen – ganz zufällig – deinen Ärmel fest. „Ich habe überhaupt keine Angst“, verkündet er mit dünner Stimme in die Kamera. „Gespenster sind nur schlecht programmierte NPCs. Punkt.“ Shiori sitzt im Schneidersitz neben dem Kotatsu, eine vergilbte Chronik auf dem Schoß, und blättert seelenruhig um. „Laut Seite vierzig“, sagt sie leise, „hat der alte Wirt seinen Gästen jede Nacht um diese Zeit Tee gebracht. Auch nach seinem Tod.“ In diesem Moment klappert irgendwo im dunklen Flur leise Porzellan – wie Teetassen, die jemand auf ein Tablett stellt. Sota erstarrt. „… Das war ein Soundbug. Oder?“",
  "gm_tone": "Gemütlicher Grusel",
- "narrator_style": "Unheimlich, aber nie grausam – wie eine Gruselgeschichte am Lagerfeuer; Spannung über Geräusche, Schatten und Andeutungen, mit humorvollen Momenten zwischen Ayu und Cosmos. Das Ende soll berühren statt schocken.",
+ "narrator_style": "Unheimlich, aber nie grausam – wie eine Gruselgeschichte am Lagerfeuer; Spannung über Geräusche, Schatten und Andeutungen, mit humorvollen Momenten zwischen Sota und Shiori, freundschaftlich statt romantisch. Das Ende soll berühren statt schocken.",
  "first_message": "",
  "party": [
-  "Ayu Ikue",
-  "Cosmos"
+  "Shiori Amane",
+  "Sota Minase"
  ],
  "persona": "",
  "lorebook": [],
@@ -27,23 +27,23 @@
    "translations": {
     "en": {
      "title": "A Night at Ryokan Tsukimi",
-     "description": "For a spooky episode of her TV show, Ayu stays overnight at an old inn in the mountains. Then you get snowed in – and in the empty corridor, teacups rattle.",
-     "world_context": "A remote traditional inn (ryokan) in the mountains of Nagano, winter. Ayu Ikue is shooting the episode \"Courage Test in the Haunted House\" for her variety show – even though she is terrified of ghosts (which she would never admit). Cosmos excitedly films every second for her followers. The camera crew has driven down to the valley, a snowstorm has blocked the road, and only the old landlady Mrs Shirakawa is still there. In truth the lonely ghost of the former innkeeper, Tsukimi-san, haunts the house; for decades he has been waiting for guests so he can serve them tea one last time and say goodbye. Horror with heart: eerie sounds, flickering lanterns, no blood. The player character accompanies Ayu as her housemate.",
+     "description": "On the graduation trip your class gets snowed in at an old inn in the mountains. Sota wants to film a test of courage for his stream – and teacups rattle in the empty corridor.",
+     "world_context": "A remote traditional inn (ryokan) in the mountains of Nagano, winter. The final-year class of Seiryō High School is staying here on its graduation trip; a snowstorm has blocked the road down to the valley. The rest of the class and their homeroom teacher Mr Ono have long been asleep in the main wing; only the old innkeeper Mrs Shirakawa is still awake. Sota Minase wants to record a night-time \"haunted house test of courage\" for his stream community – although he is secretly terrified of ghosts (which he would never admit). Shiori Amane has found an old local chronicle in the inn's library and knows the legend of the house. In truth, the lonely ghost of the former innkeeper Tsukimi-san haunts the place, having waited for decades for guests so he can serve them tea one last time and say goodbye. Horror with heart: eerie sounds, flickering lanterns, no blood. The player character is one of their classmates.",
      "starting_location": "The reception room of Ryokan Tsukimi",
      "time_of_day": "Night",
-     "opening_narration": "Outside the snowstorm howls around the old wooden house, and the paper lanterns in the reception room cast trembling shadows on the walls. Ayu clings to your sleeve with one hand and holds up a microphone with the other. \"I'm not scared at all,\" she announces in a thin voice into Cosmos' camera. \"Ghosts don't exist. Period.\" At that very moment, somewhere in the dark corridor, porcelain rattles softly – like teacups being set on a tray. Cosmos' ears prick up. \"Nyaa … did you hear that?\"",
-     "gm_tone": "Cosy horror",
-     "narrator_style": "Eerie but never cruel – like a ghost story by the campfire; suspense through sounds, shadows and hints, with humorous moments between Ayu and Cosmos. The ending should touch rather than shock."
+     "opening_narration": "Outside, the snowstorm howls around the old wooden house, and the paper lanterns in the reception room cast trembling shadows on the walls. Sota holds up his phone on a mini tripod with one hand and – purely by chance – clutches your sleeve with the other. \"I'm not scared at all,\" he announces into the camera in a thin voice. \"Ghosts are just badly programmed NPCs. Period.\" Shiori sits cross-legged by the kotatsu, a yellowed chronicle in her lap, calmly turning a page. \"According to page forty,\" she says quietly, \"the old innkeeper brought his guests tea every night at this hour. Even after his death.\" At that moment, somewhere in the dark corridor, porcelain rattles softly – like teacups being set on a tray. Sota freezes. \"… That was a sound bug. Right?\"",
+     "gm_tone": "Cozy horror",
+     "narrator_style": "Eerie but never cruel – like a ghost story by the campfire; build suspense through sounds, shadows and hints, with humorous moments between Sota and Shiori, friendly rather than romantic. The ending should move rather than shock."
     },
     "ru": {
-     "title": "Ночь в рёкане «Цукими»",
-     "description": "Ради страшного выпуска своего шоу Аю ночует в старой гостинице в горах. Потом вас заметает снегом – а в пустом коридоре звенят чайные чашки.",
-     "world_context": "Уединённая традиционная гостиница (рёкан) в горах Нагано, зима. Аю Икуэ снимает для своего развлекательного шоу выпуск «Проверка на смелость в доме с привидениями» – хотя до ужаса боится призраков (в чём никогда не признается). Космос с восторгом снимает каждую секунду для подписчиков. Съёмочная группа уехала в долину, метель перекрыла дорогу, в доме осталась только старая хозяйка госпожа Сиракава. На самом деле здесь обитает одинокий призрак прежнего хозяина, Цукими-сана, который десятилетиями ждёт гостей, чтобы в последний раз подать им чай и попрощаться. Страшилка с душой: жуткие звуки, мерцающие фонари, никакой крови. Персонаж игрока сопровождает Аю как её сосед.",
-     "starting_location": "Приёмная рёкана «Цукими»",
+     "title": "Ночь в рёкане Цукими",
+     "description": "В выпускной поездке ваш класс заносит снегом в старой гостинице в горах. Сота хочет снять для стрима испытание на храбрость – а в пустом коридоре звенят чайные чашки.",
+     "world_context": "Уединённая традиционная гостиница (рёкан) в горах Нагано, зима. Выпускной класс старшей школы Сэйрё остановился здесь во время выпускной поездки; снежная буря перекрыла дорогу в долину. Остальной класс и классный руководитель господин Оно давно спят в главном крыле, не спит лишь старая хозяйка госпожа Сиракава. Сота Минасэ хочет записать для своего сообщества ночное «испытание храбрости в доме с привидениями» – хотя втайне панически боится призраков (в чём никогда не признается). Сиори Аманэ нашла в библиотеке гостиницы старую местную хронику и знает легенду дома. На самом деле здесь бродит одинокий дух прежнего хозяина Цукими-сана, который десятилетиями ждёт гостей, чтобы в последний раз подать им чай и попрощаться. Хоррор с душой: жуткие звуки, мерцающие фонари, никакой крови. Персонаж игрока – их одноклассник или одноклассница.",
+     "starting_location": "Приёмная рёкана Цукими",
      "time_of_day": "Ночь",
-     "opening_narration": "Снаружи вокруг старого деревянного дома воет метель, и бумажные фонари в приёмной отбрасывают на стены дрожащие тени. Аю одной рукой вцепилась в твой рукав, а другой держит микрофон. «Мне совсем не страшно, – тонким голосом объявляет она в камеру Космос. – Призраков не существует. Точка». В тот же миг где-то в тёмном коридоре тихо звякает фарфор – будто кто-то ставит чашки на поднос. Ушки Космос встают торчком. «Ня-а… вы это слышали?»",
-     "gm_tone": "Уютная страшилка",
-     "narrator_style": "Жутко, но никогда не жестоко – как страшная история у костра; напряжение через звуки, тени и намёки, с забавными моментами между Аю и Космос. Финал должен трогать, а не пугать."
+     "opening_narration": "Снаружи вокруг старого деревянного дома воет снежная буря, и бумажные фонари в приёмной отбрасывают на стены дрожащие тени. Одной рукой Сота держит телефон на мини-штативе, а другой – совершенно случайно – вцепился в твой рукав. «Мне ни капельки не страшно, – тонким голосом объявляет он в камеру. – Призраки – это просто криво запрограммированные NPC. Точка». Сиори сидит, скрестив ноги, у котацу, на коленях у неё пожелтевшая хроника, и невозмутимо переворачивает страницу. «Если верить сороковой странице, – тихо говорит она, – старый хозяин каждую ночь в это время приносил гостям чай. Даже после смерти». В этот миг где-то в тёмном коридоре тихо звякает фарфор – словно кто-то ставит чашки на поднос. Сота замирает. «…Это был звуковой баг. Да?»",
+     "gm_tone": "Уютный хоррор",
+     "narrator_style": "Жутко, но никогда не жестоко – как страшилка у костра; напряжение через звуки, тени и намёки, с забавными моментами между Сотой и Сиори, дружески, а не романтично. Финал должен трогать, а не шокировать."
     }
    }
   },
@@ -68,24 +68,24 @@
       "action_type": "say"
      },
      {
-      "text": "Nimm Ayus Hand: „Ich bleibe bei dir.“",
+      "text": "Bitte Shiori, die Legende aus der Chronik vorzulesen",
       "badge": null,
       "action_type": "say"
      }
     ],
     "en": [
      {
-      "text": "Go into the dark corridor with a lantern",
+      "text": "Walk into the dark corridor with a lantern",
       "badge": "Courage",
       "action_type": "do"
      },
      {
-      "text": "Ask the old landlady who else is in the house",
+      "text": "Ask the old innkeeper who else is in the house",
       "badge": null,
       "action_type": "say"
      },
      {
-      "text": "Take Ayu's hand: \"I'll stay with you.\"",
+      "text": "Ask Shiori to read the legend from the chronicle",
       "badge": null,
       "action_type": "say"
      }
@@ -93,7 +93,7 @@
     "ru": [
      {
       "text": "Пойти с фонарём в тёмный коридор",
-      "badge": "Смелость",
+      "badge": "Храбрость",
       "action_type": "do"
      },
      {
@@ -102,7 +102,7 @@
       "action_type": "say"
      },
      {
-      "text": "Взять Аю за руку: «Я останусь с тобой».",
+      "text": "Попросить Сиори прочитать легенду из хроники",
       "badge": null,
       "action_type": "say"
      }

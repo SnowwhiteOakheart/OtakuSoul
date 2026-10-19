@@ -1,16 +1,17 @@
 {
  "id": "story_frozen_bells",
  "title": "Die Glocken von Frostweiler",
- "description": "In einem Bergdorf sind alle Glocken zu Eis erstarrt – und wer ihren letzten Ton gehört hat, wacht nicht mehr auf. Emilia bittet dich um Hilfe.",
- "world_context": "Frostweiler ist ein kleines Bergdorf im Hochland, bekannt für seine sieben Glocken, die seit Generationen die Geister des Berges besänftigen. Vor drei Tagen sind alle Glocken über Nacht zu Eis erstarrt, und jeder, der ihren letzten, falschen Ton gehört hat, liegt seitdem in einem tiefen, kalten Schlaf. Die Dorfbewohner misstrauen Fremden – besonders einer silberhaarigen Halbelfe. Emilia, eine junge Geistermagierin mit einem kleinen Feuergeist als Begleiter, spürt, dass ein verletzter Wintergeist hinter allem steckt, und will ihn retten statt bekämpfen. Die Spielerfigur ist eine Reisende bzw. ein Reisender, der zufällig im Dorf ist.",
+ "description": "In einem Bergdorf am Rand des Goldenen Waldes sind alle Glocken zu Eis erstarrt – und wer ihren letzten Ton gehört hat, wacht nicht mehr auf. Die Elbin Lirwen und der Grenzwächter Faelion bitten dich um Hilfe.",
+ "world_context": "Sylvaren, Zeitalter der Dämmerung. Frostweiler ist ein kleines Bergdorf der Westlande, nur einen Tagesmarsch von den Grenzen Aurendals, des Goldenen Waldes, entfernt. Seine sieben Glocken besänftigen seit Generationen die Geister des Berges. Vor drei Tagen sind alle Glocken über Nacht zu Eis erstarrt, und jeder, der ihren letzten, falschen Ton gehört hat, liegt seitdem in einem tiefen, kalten Schlaf. Die Dorfbewohner misstrauen Fremden – und Elben ganz besonders. Faelion, ein wortkarger Krieger der Grenzwache von Aurendal, wurde geschickt, um herauszufinden, ob die Kälte den Wald bedroht. Lirwen, eine junge, grenzenlos neugierige Schreiberin aus dem verborgenen Tal Elanthil, ist ihm gefolgt, weil in den alten Liedern von singenden Wintergeistern die Rede ist. Faelion will die Ursache finden und beseitigen; Lirwen spürt, dass ein verletzter Wintergeist hinter allem steckt, und will ihn retten statt bekämpfen. Die Spielerfigur ist eine menschliche Reisende bzw. ein menschlicher Reisender, der zufällig im Dorf ist und zwischen Dorf und Elben vermitteln kann.",
  "starting_location": "Der verschneite Dorfplatz von Frostweiler",
  "time_of_day": "Abenddämmerung",
- "opening_narration": "Der Schnee knirscht unter deinen Stiefeln, als du den Dorfplatz von Frostweiler betrittst. Über dir hängt die große Glocke im Turm – vollständig von klarem Eis umschlossen, als hätte jemand die Zeit angehalten. Kein Laut, kein Kinderlachen, nur das leise Klirren von Eiskristallen im Wind. Vor dem Brunnen kniet eine junge Frau mit silbernem Haar und legt behutsam die Hand auf das gefrorene Wasser. Als sie dich bemerkt, steht sie hastig auf. „Bitte erschrick nicht“, sagt sie leise. „Ich bin Emilia. Ich glaube, die Glocken weinen … und ich könnte Hilfe gebrauchen.“",
+ "opening_narration": "Der Schnee knirscht unter deinen Stiefeln, als du den Dorfplatz von Frostweiler betrittst. Über dir hängt die große Glocke im Turm – vollständig von klarem Eis umschlossen, als hätte jemand die Zeit angehalten. Kein Laut, kein Kinderlachen, nur das leise Klirren von Eiskristallen im Wind. Vor dem Brunnen kniet eine junge Elbin mit kastanienbraunem Haar, ein aufgeschlagenes Notizbuch auf dem Knie, und legt behutsam die Hand auf das gefrorene Wasser. Im Schatten des Glockenturms lehnt ein hochgewachsener Elbenkrieger im grauen Umhang, die Hand nahe am Messer, und mustert dich, seit du den Platz betreten hast. Die junge Elbin springt auf. „Ithar venn! Du bist ein Mensch – aus diesem Dorf? Nein, deine Stiefel sind zu staubig …“ Sie hält inne, die Ohrspitzen färben sich rosa. „Verzeih. Ich bin Lirwen. Ich glaube, die Glocken weinen … und wir könnten Hilfe gebrauchen.“ Der Krieger rührt sich nicht. „Faelion“, sagt er knapp. „Und ‚wir‘ hat noch niemand beschlossen.“",
  "gm_tone": "Märchenhafte Fantasy",
- "narrator_style": "Warm, bildhaft und märchenhaft wie ein Wintermärchen; kurze Absätze, sanfte Spannung statt Gewalt. Gib dem Spieler pro Antwort einen klaren Hinweis, was er als Nächstes erkunden könnte.",
+ "narrator_style": "Warm, bildhaft und märchenhaft wie ein Wintermärchen; kurze Absätze, sanfte Spannung statt Gewalt. Lirwen stellt neugierige Fragen, Faelion spricht wenig und schützt still. Gib dem Spieler pro Antwort einen klaren Hinweis, was er als Nächstes erkunden könnte.",
  "first_message": "",
  "party": [
-  "Emilia"
+  "Lirwen",
+  "Faelion"
  ],
  "persona": "",
  "lorebook": [],
@@ -26,23 +27,23 @@
    "translations": {
     "en": {
      "title": "The Bells of Frostweiler",
-     "description": "In a mountain village every bell has turned to ice – and whoever heard their last note no longer wakes up. Emilia asks for your help.",
-     "world_context": "Frostweiler is a small highland village famous for its seven bells, which have soothed the spirits of the mountain for generations. Three days ago all the bells froze overnight, and everyone who heard their last, false note has been lying in a deep, cold sleep ever since. The villagers distrust strangers – especially a silver-haired half-elf. Emilia, a young spirit mage with a small fire spirit as her companion, senses that a wounded winter spirit is behind it all and wants to save it rather than fight it. The player character is a traveller who happens to be in the village.",
+     "description": "In a mountain village at the edge of the Golden Wood every bell has turned to ice – and whoever heard their last note no longer wakes up. The elf Lirwen and the border warden Faelion ask for your help.",
+     "world_context": "Sylvaren, the Age of Twilight. Frostweiler is a small mountain village of the Westlands, only a day's march from the borders of Aurendal, the Golden Wood. For generations its seven bells have soothed the spirits of the mountain. Three days ago all the bells froze overnight, and everyone who heard their last, false note has been lying in a deep, cold sleep ever since. The villagers distrust strangers – and elves most of all. Faelion, a taciturn warrior of Aurendal's border guard, has been sent to find out whether the cold threatens the forest. Lirwen, a young and endlessly curious scribe from the hidden valley of Elanthil, followed him because the old songs speak of singing winter spirits. Faelion wants to find the cause and end it; Lirwen senses that a wounded winter spirit is behind it all and wants to save it rather than fight it. The player character is a human traveller who happens to be in the village and can mediate between the villagers and the elves.",
      "starting_location": "The snowy village square of Frostweiler",
      "time_of_day": "Dusk",
-     "opening_narration": "Snow crunches under your boots as you step onto the village square of Frostweiler. Above you the great bell hangs in its tower – completely encased in clear ice, as if someone had stopped time. No sound, no children laughing, only the soft clinking of ice crystals in the wind. By the well kneels a young woman with silver hair, gently laying her hand on the frozen water. When she notices you, she hurriedly stands up. \"Please don't be afraid,\" she says quietly. \"I'm Emilia. I think the bells are crying … and I could use some help.\"",
+     "opening_narration": "Snow crunches under your boots as you step onto the village square of Frostweiler. Above you the great bell hangs in its tower – completely encased in clear ice, as if someone had stopped time. No sound, no children laughing, only the soft clinking of ice crystals in the wind. By the well kneels a young elf with chestnut hair, an open notebook on her knee, gently laying her hand on the frozen water. In the shadow of the bell tower a tall elven warrior in a grey cloak leans against the wall, his hand close to his knife, watching you since the moment you stepped onto the square. The young elf jumps up. \"Ithar venn! You're a human – from this village? No, your boots are far too dusty …\" She stops, the tips of her ears turning pink. \"Forgive me. I'm Lirwen. I think the bells are crying … and we could use some help.\" The warrior doesn't move. \"Faelion,\" he says curtly. \"And nobody has agreed on 'we' yet.\"",
      "gm_tone": "Fairy-tale fantasy",
-     "narrator_style": "Warm, vivid and fairy-tale-like, like a winter tale; short paragraphs, gentle suspense instead of violence. Give the player one clear hint per reply about what they could explore next."
+     "narrator_style": "Warm, vivid and fairy-tale-like, like a winter tale; short paragraphs, gentle suspense instead of violence. Lirwen asks curious questions, Faelion says little and protects quietly. Give the player one clear hint per reply about what they could explore next."
     },
     "ru": {
      "title": "Колокола Фроствайлера",
-     "description": "В горной деревне все колокола превратились в лёд – а тот, кто слышал их последний звон, больше не просыпается. Эмилия просит тебя о помощи.",
-     "world_context": "Фроствайлер – маленькая высокогорная деревня, известная своими семью колоколами, которые поколениями успокаивали духов горы. Три дня назад все колокола за одну ночь превратились в лёд, и каждый, кто слышал их последний фальшивый звон, с тех пор лежит в глубоком холодном сне. Жители не доверяют чужакам – особенно серебровласой полуэльфийке. Эмилия, юная заклинательница духов с маленьким огненным духом-спутником, чувствует, что за всем стоит раненый дух зимы, и хочет спасти его, а не сражаться с ним. Персонаж игрока – путник, случайно оказавшийся в деревне.",
+     "description": "В горной деревне на краю Золотого леса все колокола превратились в лёд – а тот, кто слышал их последний звон, больше не просыпается. Эльфийка Лирвен и пограничный страж Фаэлион просят тебя о помощи.",
+     "world_context": "Сильварен, Эпоха Сумерек. Фроствайлер – маленькая горная деревня Западных земель, всего в дне пути от границ Аурендала, Золотого леса. Поколениями его семь колоколов успокаивали духов горы. Три дня назад все колокола за одну ночь превратились в лёд, и каждый, кто слышал их последний фальшивый звон, с тех пор лежит в глубоком холодном сне. Жители не доверяют чужакам – а эльфам особенно. Фаэлиона, немногословного воина пограничной стражи Аурендала, послали выяснить, не угрожает ли холод лесу. Лирвен, юная и бесконечно любопытная писарица из сокрытой долины Элантил, последовала за ним, потому что в старых песнях говорится о поющих духах зимы. Фаэлион хочет найти причину и устранить её; Лирвен чувствует, что за всем стоит раненый дух зимы, и хочет спасти его, а не сражаться с ним. Персонаж игрока – путник из людей, случайно оказавшийся в деревне и способный стать посредником между жителями и эльфами.",
      "starting_location": "Заснеженная деревенская площадь Фроствайлера",
      "time_of_day": "Сумерки",
-     "opening_narration": "Снег хрустит под твоими сапогами, когда ты выходишь на деревенскую площадь Фроствайлера. Над тобой в башне висит большой колокол – целиком заключённый в прозрачный лёд, будто кто-то остановил время. Ни звука, ни детского смеха, лишь тихий звон льдинок на ветру. У колодца стоит на коленях девушка с серебряными волосами и осторожно кладёт ладонь на замёрзшую воду. Заметив тебя, она поспешно поднимается. «Пожалуйста, не пугайся, – тихо говорит она. – Я Эмилия. Мне кажется, колокола плачут… и мне бы пригодилась помощь».",
+     "opening_narration": "Снег хрустит под твоими сапогами, когда ты выходишь на деревенскую площадь Фроствайлера. Над тобой в башне висит большой колокол – целиком заключённый в прозрачный лёд, будто кто-то остановил время. Ни звука, ни детского смеха, лишь тихий звон льдинок на ветру. У колодца стоит на коленях юная эльфийка с каштановыми волосами, на колене у неё раскрытая записная книжка, и она осторожно кладёт ладонь на замёрзшую воду. В тени колокольни, прислонившись к стене, стоит высокий эльфийский воин в сером плаще – рука рядом с ножом, взгляд не отрывается от тебя с той секунды, как ты вышел на площадь. Юная эльфийка вскакивает. «Итар венн! Ты человек – из этой деревни? Нет, сапоги слишком пыльные…» Она осекается, кончики ушей розовеют. «Прости. Я Лирвен. Мне кажется, колокола плачут… и нам бы пригодилась помощь». Воин не шевелится. «Фаэлион, – коротко говорит он. – И насчёт „нам“ ещё никто не решал».",
      "gm_tone": "Сказочное фэнтези",
-     "narrator_style": "Тепло, образно и сказочно, как зимняя сказка; короткие абзацы, мягкое напряжение вместо насилия. В каждом ответе давай игроку одну ясную подсказку, что можно исследовать дальше."
+     "narrator_style": "Тепло, образно и сказочно, как зимняя сказка; короткие абзацы, мягкое напряжение вместо насилия. Лирвен задаёт любопытные вопросы, Фаэлион говорит мало и молча защищает. В каждом ответе давай игроку одну ясную подсказку, что можно исследовать дальше."
     }
    }
   },
@@ -57,7 +58,7 @@
    "choices": {
     "de": [
      {
-      "text": "Frage Emilia, was sie über die Glocken herausgefunden hat",
+      "text": "Frage Lirwen, was sie über die Glocken herausgefunden hat",
       "badge": null,
       "action_type": "say"
      },
@@ -74,7 +75,7 @@
     ],
     "en": [
      {
-      "text": "Ask Emilia what she has found out about the bells",
+      "text": "Ask Lirwen what she has found out about the bells",
       "badge": null,
       "action_type": "say"
      },
@@ -91,7 +92,7 @@
     ],
     "ru": [
      {
-      "text": "Спросить Эмилию, что она узнала о колоколах",
+      "text": "Спросить Лирвен, что она узнала о колоколах",
       "badge": null,
       "action_type": "say"
      },

@@ -50,7 +50,7 @@ impl StageEngine {
             },
             Combatant {
                 id: "comb_companion".to_string(),
-                name: "Ayu Ikue".to_string(),
+                name: "Lirwen".to_string(),
                 role: "companion".to_string(),
                 hp: 38,
                 max_hp: 40,
@@ -58,7 +58,7 @@ impl StageEngine {
                 max_stress: 100,
                 initiative: 19,
                 conditions: vec![CombatCondition {
-                    name: lang.t("Alluring aura").to_string(),
+                    name: lang.t("Keen mind").to_string(),
                     rounds_remaining: 3,
                 }],
                 skills: HashMap::new(),
@@ -97,7 +97,7 @@ extensions: serde_json::Value::Null,
             time_of_day: lang.t("Dusk").to_string(),
             opening_narration: lang.t("The portal closes quietly behind you. Dust dances in the fading beams of light. Endless shelves of ancient writings stretch out before you.").to_string(),
             first_message: "".to_string(),
-            party: vec!["Ayu Ikue".to_string()],
+            party: vec!["Lirwen".to_string()],
             gm_tone: "Epic Fantasy".to_string(),
             narrator_style: lang.t("Atmospheric and detailed.").to_string(),
             persona: "Hiroki".to_string(),
@@ -178,7 +178,7 @@ extensions: serde_json::Value::Null,
                 status: "active".to_string(),
             }],
             relationships: vec![StageRelationship {
-                subject: "Ayu Ikue".to_string(),
+                subject: "Lirwen".to_string(),
                 target: "Hiroki".to_string(),
                 affinity: 10,
                 tags: vec![lang.t("Companion").to_string()],
@@ -197,7 +197,7 @@ extensions: serde_json::Value::Null,
                 },
                 TaggedChoice {
                     text: lang
-                        .t("Ask Ayu whether she can decipher these runes")
+                        .t("Ask Lirwen whether she can decipher these runes")
                         .to_string(),
                     badge: None,
                     action_type: "say".to_string(),

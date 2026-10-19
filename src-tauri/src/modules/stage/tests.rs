@@ -101,8 +101,8 @@ fn test_stage_engine_clocks_and_combat() {
     engine.start_encounter();
     let combat_st = engine.get_state();
     assert!(combat_st.combat.is_active);
-    // Ayu has highest initiative (19), so she should be first
-    assert_eq!(combat_st.combat.combatants[0].name, "Ayu Ikue");
+    // Lirwen has the highest initiative (19), so she should be first
+    assert_eq!(combat_st.combat.combatants[0].name, "Lirwen");
 
     // Next turn
     engine.next_turn();

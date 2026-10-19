@@ -1,17 +1,17 @@
 {
  "id": "story_hanami_live",
- "title": "Hanami-Live im Ueno-Park",
- "description": "Ayu gibt ein Überraschungskonzert beim Kirschblütenfest – doch eine Stunde vorher ist ihr Kostüm zerrissen und Cosmos hat das Geheimnis schon gepostet. Rette den Tag!",
- "world_context": "Tokio, Gegenwart, Kirschblütenzeit. Das Pop-Idol Ayu Ikue (stolz, tsundere, heimlich nervös) plant ein geheimes Mini-Konzert auf der kleinen Bühne im Ueno-Park. Ihre Mitbewohnerin Cosmos (verspieltes Katzenmädchen, Social-Media-Star) sollte nur Fotos machen, hat aber versehentlich den Ort gepostet – jetzt strömen Fans herbei. Dazu ist beim Ausladen Ayus Bühnenkostüm am Saum gerissen. Die Spielerfigur ist Ayus Mitbewohner und heimliche Stütze. Eine leichte, humorvolle Alltagsgeschichte voller kleiner Aufgaben: Kostüm flicken, Fans beruhigen, Technik retten, Ayu Mut machen.",
- "starting_location": "Hinter der kleinen Festbühne im Ueno-Park",
+ "title": "Lesung unter Kirschblüten",
+ "description": "Beim Kirschblütenfest der Seiryō-Oberschule soll Shiori zum ersten Mal ihre eigene Geschichte vorlesen – doch eine Stunde vorher sind die Hefte durcheinander und Sota hat die Lesung schon live angekündigt. Rette den Tag!",
+ "world_context": "Kamakura, Gegenwart, Kirschblütenzeit. Auf dem Schulhof der Seiryō-Oberschule feiern Schüler, Eltern und Nachbarn das Hanami-Fest. Shiori Amane (schüchtern, belesen, Vorsitzende des fast leeren Literaturclubs) hat sich überreden lassen, auf der kleinen Bühne unter den Kirschbäumen ihre eigene Kurzgeschichte vorzulesen – zum ersten Mal überhaupt. Sota Minase (lässiger Gamer und Streamer „MinaSo“) sollte nur die Lautsprecher anschließen, hat die Lesung aber nebenbei in seinem Stream erwähnt – jetzt kommen viel mehr Leute als geplant, darunter seine halbe Community. Dazu hat der Copyshop die Seiten der selbst gebundenen Club-Hefte vertauscht, und der alte Lautsprecher knackt. Die Spielerfigur geht in Shioris und Sotas Jahrgang und ist ihre heimliche Stütze. Eine leichte, humorvolle Alltagsgeschichte voller kleiner Aufgaben: Hefte sortieren, Technik retten, Publikum beschäftigen, Shiori Mut machen.",
+ "starting_location": "Hinter der kleinen Festbühne auf dem Schulhof",
  "time_of_day": "Nachmittag",
- "opening_narration": "Rosa Blütenblätter wirbeln über die Wege des Ueno-Parks, und überall duftet es nach gegrilltem Tintenfisch und süßen Dango. Hinter der kleinen Festbühne sitzt Ayu auf einer Kiste, hält ihr glitzerndes Kostüm hoch und starrt fassungslos auf einen langen Riss im Saum. „Das ist eine Katastrophe!“, zischt sie. „In einer Stunde fange ich an!“ Neben ihr hält Cosmos ihr Handy hoch, die Katzenohren schuldbewusst angelegt. „Ähm … also … der Post hat schon zwanzigtausend Likes, nya~“ Von der Wiese her hört man die ersten Fans Ayus Namen rufen.",
+ "opening_narration": "Rosa Blütenblätter wirbeln über den Schulhof der Seiryō-Oberschule, und vom Imbissstand des Kochclubs duftet es nach süßen Dango. Hinter der kleinen Festbühne sitzt Shiori auf einem Getränkekasten, ein Heft in der Hand, und blättert immer hektischer. „Seite sieben kommt nach Seite zwölf“, flüstert sie und schiebt die Brille hoch. „In allen fünfzig Heften. Das ist wie im dritten Akt einer Tragödie.“ Neben ihr hält Sota sein Handy hoch und reibt sich verlegen den Nacken. „Ähm … also … ich hab’s vielleicht im Stream erwähnt. Nur ganz kurz. Zweihundert Leute haben ‚komme vorbei‘ geschrieben.“ Vom Hof her hört man, wie sich die Stuhlreihen füllen.",
  "gm_tone": "Fröhliche Alltagskomödie",
- "narrator_style": "Leicht, witzig und herzlich wie ein Slice-of-Life-Anime; lebendige Dialoge, kleine Missgeschicke, nie gemein. Biete regelmäßig zwei, drei konkrete Möglichkeiten an, wie es weitergehen kann.",
+ "narrator_style": "Leicht, witzig und herzlich wie ein Slice-of-Life-Anime; lebendige Dialoge, kleine Missgeschicke, nie gemein, freundschaftlich statt romantisch. Biete regelmäßig zwei, drei konkrete Möglichkeiten an, wie es weitergehen kann.",
  "first_message": "",
  "party": [
-  "Ayu Ikue",
-  "Cosmos"
+  "Shiori Amane",
+  "Sota Minase"
  ],
  "persona": "",
  "lorebook": [],
@@ -26,24 +26,24 @@
    "source_language": "de",
    "translations": {
     "en": {
-     "title": "Hanami Live at Ueno Park",
-     "description": "Ayu is giving a surprise concert at the cherry blossom festival – but an hour before, her costume is torn and Cosmos has already posted the secret. Save the day!",
-     "world_context": "Tokyo, present day, cherry blossom season. Pop idol Ayu Ikue (proud, tsundere, secretly nervous) is planning a secret mini concert on the small stage in Ueno Park. Her housemate Cosmos (playful cat girl, social media star) was only supposed to take photos but accidentally posted the location – now fans are flocking in. On top of that, Ayu's stage costume tore at the hem while unloading. The player character is Ayu's housemate and secret support. A light, humorous slice-of-life story full of small tasks: mend the costume, calm the fans, rescue the sound system, give Ayu courage.",
-     "starting_location": "Behind the small festival stage in Ueno Park",
+     "title": "A Reading Under the Cherry Blossoms",
+     "description": "At Seiryō High's cherry blossom festival Shiori is supposed to read her own story aloud for the first time – but an hour before, the booklets are jumbled and Sota has already announced the reading on his stream. Save the day!",
+     "world_context": "Kamakura, present day, cherry blossom season. In the schoolyard of Seiryō High School, students, parents and neighbours are celebrating the hanami festival. Shiori Amane (shy, well-read, president of the nearly empty literature club) has been talked into reading her own short story on the little stage under the cherry trees – for the very first time. Sota Minase (laid-back gamer and streamer \"MinaSo\") was only supposed to set up the speakers, but casually mentioned the reading on his stream – now far more people are coming than planned, including half his community. On top of that, the copy shop mixed up the pages of the club's hand-bound booklets, and the old speaker keeps crackling. The player character is in Shiori's and Sota's year and their quiet support. A light, humorous slice-of-life story full of small tasks: sort the booklets, rescue the tech, keep the audience entertained, give Shiori courage.",
+     "starting_location": "Behind the little festival stage in the schoolyard",
      "time_of_day": "Afternoon",
-     "opening_narration": "Pink petals whirl across the paths of Ueno Park, and everywhere it smells of grilled squid and sweet dango. Behind the small festival stage Ayu sits on a crate, holding up her glittering costume and staring in disbelief at a long tear in the hem. \"This is a disaster!\" she hisses. \"I start in an hour!\" Next to her Cosmos holds up her phone, cat ears flattened guiltily. \"Um … so … the post already has twenty thousand likes, nya~\" From the meadow you can hear the first fans calling Ayu's name.",
+     "opening_narration": "Pink petals swirl across the schoolyard of Seiryō High, and the cooking club's stall smells of sweet dango. Behind the little festival stage Shiori sits on a drinks crate, a booklet in her hands, flipping through it faster and faster. \"Page seven comes after page twelve,\" she whispers, pushing up her glasses. \"In all fifty booklets. This is like the third act of a tragedy.\" Next to her Sota holds up his phone and sheepishly rubs the back of his neck. \"Uh … so … I might have mentioned it on stream. Just briefly. Two hundred people wrote 'coming by'.\" From the yard you can hear the rows of chairs filling up.",
      "gm_tone": "Cheerful slice-of-life comedy",
-     "narrator_style": "Light, funny and warm like a slice-of-life anime; lively dialogue, small mishaps, never mean. Regularly offer two or three concrete options for how things could continue."
+     "narrator_style": "Light, funny and warm-hearted like a slice-of-life anime; lively dialogue, small mishaps, never mean, friendly rather than romantic. Regularly offer two or three concrete options for how things could continue."
     },
     "ru": {
-     "title": "Ханами-лайв в парке Уэно",
-     "description": "Аю даёт концерт-сюрприз на фестивале цветения сакуры – но за час до начала её костюм порван, а Космос уже выложила секрет в сеть. Спаси положение!",
-     "world_context": "Токио, наши дни, время цветения сакуры. Поп-айдол Аю Икуэ (гордая, цундэрэ, втайне волнуется) готовит секретный мини-концерт на маленькой сцене в парке Уэно. Её соседка Космос (игривая девушка-кошка, звезда соцсетей) должна была только фотографировать, но случайно выложила место – теперь сюда стекаются фанаты. Вдобавок при разгрузке у сценического костюма Аю порвался подол. Персонаж игрока – сосед Аю и её тайная опора. Лёгкая, смешная повседневная история с маленькими задачами: зашить костюм, успокоить фанатов, спасти технику, подбодрить Аю.",
-     "starting_location": "За маленькой фестивальной сценой в парке Уэно",
+     "title": "Чтения под сакурой",
+     "description": "На празднике цветения сакуры в школе Сэйрё Сиори впервые должна прочитать вслух свой собственный рассказ – но за час до начала брошюры перепутаны, а Сота уже объявил чтения на стриме. Спаси положение!",
+     "world_context": "Камакура, наши дни, пора цветения сакуры. Во дворе старшей школы Сэйрё ученики, родители и соседи празднуют ханами. Сиори Аманэ (застенчивая, начитанная, председатель почти пустого литературного клуба) позволила уговорить себя впервые прочитать свой рассказ на маленькой сцене под сакурами. Сота Минасэ (беспечный геймер и стример «MinaSo») должен был только подключить колонки, но между делом упомянул чтения на стриме – теперь придёт гораздо больше людей, чем планировалось, включая половину его сообщества. Вдобавок копицентр перепутал страницы самодельных брошюр клуба, а старая колонка хрипит. Персонаж игрока учится в одном классе с Сиори и Сотой и тайно их поддерживает. Лёгкая, весёлая повседневная история с маленькими задачами: разобрать брошюры, спасти технику, занять публику, подбодрить Сиори.",
+     "starting_location": "За маленькой праздничной сценой на школьном дворе",
      "time_of_day": "День",
-     "opening_narration": "Розовые лепестки кружатся над дорожками парка Уэно, и повсюду пахнет жареным кальмаром и сладкими данго. За маленькой фестивальной сценой Аю сидит на ящике, держит перед собой сверкающий костюм и потрясённо смотрит на длинную прореху в подоле. «Это катастрофа! – шипит она. – Через час мой выход!» Рядом Космос поднимает телефон, виновато прижав кошачьи ушки. «Эм… в общем… у поста уже двадцать тысяч лайков, ня~» С лужайки доносятся первые крики фанатов, зовущих Аю.",
+     "opening_narration": "Розовые лепестки кружатся над двором школы Сэйрё, от лотка кулинарного клуба пахнет сладкими данго. За маленькой праздничной сценой Сиори сидит на ящике из-под напитков с брошюрой в руках и листает её всё лихорадочнее. «Седьмая страница идёт после двенадцатой, – шепчет она и поправляет очки. – Во всех пятидесяти брошюрах. Прямо третий акт трагедии». Рядом Сота держит телефон и смущённо трёт затылок. «Э-э… ну… я, может, упомянул это на стриме. Совсем чуть-чуть. Двести человек написали „приду“». Со двора слышно, как заполняются ряды стульев.",
      "gm_tone": "Весёлая повседневная комедия",
-     "narrator_style": "Легко, смешно и тепло, как в аниме о повседневности; живые диалоги, мелкие неурядицы, никакой злобы. Регулярно предлагай два-три конкретных варианта развития событий."
+     "narrator_style": "Легко, смешно и душевно, как в повседневном аниме; живые диалоги, мелкие неурядицы, никогда не зло, дружески, а не романтично. Регулярно предлагай два-три конкретных варианта, как может развиваться история."
     }
    }
   },
@@ -51,58 +51,56 @@
    "genre": "slice_of_life",
    "minutes": 30,
    "difficulty": "easy",
-   "notes": [
-    "flirting"
-   ],
+   "notes": [],
    "beginner": true,
    "choices": {
     "de": [
      {
-      "text": "Biete an, das Kostüm zu flicken – irgendwo gibt es doch Nadel und Faden",
+      "text": "Hilf beim Sortieren der Hefte – zu zweit geht es schneller",
       "badge": "Geschick",
       "action_type": "do"
      },
      {
-      "text": "Beruhige Ayu: „Du schaffst das, so wie immer.“",
+      "text": "Beruhige Shiori: „Deine Geschichte ist gut. Lies sie einfach.“",
       "badge": null,
       "action_type": "say"
      },
      {
-      "text": "Frage Cosmos, wie viele Fans genau kommen werden",
+      "text": "Frage Sota, wie viele Leute genau kommen werden",
       "badge": null,
       "action_type": "say"
      }
     ],
     "en": [
      {
-      "text": "Offer to mend the costume – there must be a needle and thread somewhere",
+      "text": "Help sort the booklets – two pairs of hands are faster",
       "badge": "Dexterity",
       "action_type": "do"
      },
      {
-      "text": "Calm Ayu down: \"You've got this, like always.\"",
+      "text": "Reassure Shiori: \"Your story is good. Just read it.\"",
       "badge": null,
       "action_type": "say"
      },
      {
-      "text": "Ask Cosmos how many fans exactly are coming",
+      "text": "Ask Sota how many people exactly are coming",
       "badge": null,
       "action_type": "say"
      }
     ],
     "ru": [
      {
-      "text": "Предложить зашить костюм – где-то же есть иголка с ниткой",
+      "text": "Помочь разобрать брошюры – вдвоём быстрее",
       "badge": "Ловкость",
       "action_type": "do"
      },
      {
-      "text": "Успокоить Аю: «Ты справишься, как всегда».",
+      "text": "Успокоить Сиори: «Твой рассказ хороший. Просто прочитай его».",
       "badge": null,
       "action_type": "say"
      },
      {
-      "text": "Спросить Космос, сколько именно фанатов придёт",
+      "text": "Спросить Соту, сколько точно придёт людей",
       "badge": null,
       "action_type": "say"
      }
