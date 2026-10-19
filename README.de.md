@@ -14,7 +14,7 @@
 </p>
 
 <p align="center">
-  <a href="https://github.com/SnowwhiteOakheart/OtakuSoul/releases/latest"><img alt="Version" src="https://img.shields.io/badge/OtakuSoul-v0.5.1-8b5cf6?style=for-the-badge&logo=sparkles&logoColor=white" /></a>
+  <a href="https://github.com/SnowwhiteOakheart/OtakuSoul/releases/latest"><img alt="Version" src="https://img.shields.io/badge/OtakuSoul-v0.6.0-8b5cf6?style=for-the-badge&logo=sparkles&logoColor=white" /></a>
   <a href="https://github.com/SnowwhiteOakheart/OtakuSoul/releases"><img alt="Downloads" src="https://img.shields.io/github/downloads/SnowwhiteOakheart/OtakuSoul/total?style=for-the-badge&logo=github" /></a>
   <a href="https://github.com/SnowwhiteOakheart/OtakuSoul/stargazers"><img alt="Stars" src="https://img.shields.io/github/stars/SnowwhiteOakheart/OtakuSoul?style=for-the-badge&logo=github" /></a>
   <a href="https://github.com/SnowwhiteOakheart/OtakuSoul/network/members"><img alt="Forks" src="https://img.shields.io/github/forks/SnowwhiteOakheart/OtakuSoul?style=for-the-badge&logo=github" /></a>
@@ -58,10 +58,10 @@ Die neueste Version gibt es auf der **[Release-Seite](https://github.com/Snowwhi
 
 | System | Datei | So startest du |
 |---|---|---|
-| 🪟 **Windows 10 / 11** | `OtakuSoul_0.5.1_x64-setup.exe` | Doppelklick und dem Installer folgen. |
-| 🐧 **Linux** (jede Distribution) | `OtakuSoul_0.5.1_amd64.AppImage` | Ausführbar machen (`chmod +x`) und starten. |
-| 🐧 **Debian / Ubuntu** | `OtakuSoul_0.5.1_amd64.deb` | `sudo apt install ./OtakuSoul_0.5.1_amd64.deb` |
-| 🍏 **macOS** (Apple Silicon) | `OtakuSoul_0.5.1_aarch64.dmg` | OtakuSoul in *Programme* ziehen. Die App ist nicht notarisiert: beim ersten Start Rechtsklick → *Öffnen* (oder `xattr -dr com.apple.quarantine /Applications/OtakuSoul.app`). |
+| 🪟 **Windows 10 / 11** | `OtakuSoul_0.6.0_x64-setup.exe` | Doppelklick und dem Installer folgen. |
+| 🐧 **Linux** (jede Distribution) | `OtakuSoul_0.6.0_amd64.AppImage` | Ausführbar machen (`chmod +x`) und starten. |
+| 🐧 **Debian / Ubuntu** | `OtakuSoul_0.6.0_amd64.deb` | `sudo apt install ./OtakuSoul_0.6.0_amd64.deb` |
+| 🍏 **macOS** (Apple Silicon) | `OtakuSoul_0.6.0_aarch64.dmg` | OtakuSoul in *Programme* ziehen. Die App ist nicht notarisiert: beim ersten Start Rechtsklick → *Öffnen* (oder `xattr -dr com.apple.quarantine /Applications/OtakuSoul.app`). |
 
 OtakuSoul aktualisiert sich selbst: Gibt es eine neue Version, erscheint ein Knopf in der Kopfzeile.
 
@@ -113,9 +113,11 @@ Die Story-Galerie zeigt fertige Abenteuer mit Genre, Spieldauer und Schwierigkei
   <img src="docs/assets/screenshots/de/chat.png" alt="Chat mit Ayu: Porträt mit Gefühl, Stimmungsanzeige und Antwort" width="95%" />
 </p>
 
-* Das **Bild wechselt mit dem Gefühl** der Antwort; alternativ ein **3D-Avatar** (VRM, MMD, glTF aus Spielen) oder **Live2D** mit Lippensynchronität. Alle Modelle verwaltest Du in der **Bibliothek → Avatare**: ansehen, umbenennen und Charakteren per Haken zuweisen.
+* Das **Bild wechselt mit dem Gefühl** der Antwort – bis zu **15 Emotionsbilder** pro Figur: sechs Stimmungen plus Erröten, Necken, Angst, Ekel, Weinen und vier Romance-Bilder (die meisten Hub-Figuren bringen alle mit). Den Ausdruck wählt die KI selbst; das Porträt atmet leicht und bewegt sich beim Sprechen. Alternativ ein **3D-Avatar** (VRM, MMD, glTF aus Spielen) oder **Live2D** mit Lippensynchronität. Alle Modelle verwaltest Du in der **Bibliothek → Avatare**: ansehen, umbenennen und Charakteren per Haken zuweisen.
 * **Zuneigung, Energie, Stimmung:** Die Leiste oben zeigt, wie es der Figur geht – die KI pflegt sie selbst.
 * **Antwort gefällt nicht?** Neu erzeugen (Swipe), bearbeiten oder ab einer beliebigen Nachricht als neuen Chat weiterführen.
+* **Gruppen-Chats:** Lade weitere Figuren in einen Chat ein – jede behält ihr eigenes Gedächtnis und ihre Stimme. Bestimme, wer als Nächstes antwortet, oder lass sie reihum sprechen.
+* **Hilfe beim Schreiben:** *Was könnte ich sagen?* schlägt Antworten vor, *Schreib für mich* formuliert deine nächste Nachricht, Hinweise in ((doppelten Klammern)) lenken die KI, die Antwortlänge lässt sich pro Chat einstellen und unerwünschte Wörter und Wendungen herausfiltern.
 * **Lange Chats** bleiben schnell; ältere Teile werden automatisch zusammengefasst, damit die Figur nie den Faden verliert.
 
 ### 👥 Charaktere – finden, ansehen, erschaffen
@@ -126,7 +128,7 @@ Die Story-Galerie zeigt fertige Abenteuer mit Genre, Spieldauer und Schwierigkei
 </p>
 
 * **Mitgeliefert:** Ayu Ikue, Cosmos, Emilia und die vier Helden des 5e-Abenteuers. *Gut für den Einstieg* markiert die empfohlenen.
-* **Mehr im Hub:** Charaktere, Welten und Geschichten (z. B. *No Game No Life*, *Sakura Succubus 3*) auf Deutsch, Englisch und Russisch – mit Hinweis, wenn eine neue Fassung bereitsteht.
+* **Mehr im Hub:** Charaktere, Welten und Geschichten (z. B. *No Game No Life*, *Sakura Succubus 3*) auf Deutsch, Englisch und Russisch – mit Hinweis, wenn eine neue Fassung bereitsteht. Ein optionaler 18+-Bereich braucht eine einmalige Altersbestätigung und bleibt sonst verborgen.
 * **Selbst erschaffen:** Ein geführter Assistent macht aus einer groben Idee einen vollständigen Charakter; SillyTavern-Karten (PNG/JSON) lassen sich importieren und exportieren.
 
 ### 🎲 5e-Abenteuer – Taktik mit echten Regeln
@@ -139,10 +141,11 @@ Eine Regel-Engine nach SRD 5.1 entscheidet jeden Wurf, Treffer und Gegnerzug –
 
 ### 🧠 Gedächtnis, Stimme und mehr
 
-* **Charaktere erinnern sich an dich:** Nach einem Gespräch wird das Gedächtnis aktualisiert – Überzeugungen, Stimmung, eure Beziehung, Themen und ein Tagebuch in der Ich-Form. Jede Erinnerung zeigt ihre Herkunft und lässt sich korrigieren, anheften oder vergessen.
+* **Charaktere erinnern sich an dich:** Nach einem Gespräch wird das Gedächtnis aktualisiert – Überzeugungen, Stimmung, eure Beziehung, Themen und ein Tagebuch in der Ich-Form. Zu jeder Antwort holt sich die Figur die Erinnerungen, die zum Gespräch passen; Überholtes wird abgelöst statt doppelt gespeichert (und lässt sich wiederherstellen). **Vorhaben und Versprechen** („Ich ruf dich morgen an“) merkt sie sich mit Fälligkeit und kommt darauf zurück, wenn es so weit ist. *Gedächtnis aufräumen* fasst überlappende Einträge nach deiner Bestätigung zusammen. Jede Erinnerung zeigt ihre Herkunft und lässt sich korrigieren, anheften oder vergessen.
 * **Stimmen:** Sprachausgabe und -erkennung laufen lokal (Qwen3-TTS, Chatterbox, Kokoro, TADA) oder über Edge-TTS/ElevenLabs. **Stimme klonen** aus einer kurzen Aufnahme – der Dialog schlägt den besten Ausschnitt vor; nur mit Einwilligung der sprechenden Person.
 * **Bilder:** Szenenbilder lokal mit stable-diffusion.cpp erzeugen (SD 1.5 bis FLUX.2).
 * **Desktop-Companion:** Deine Figur schwebt über deinen Fenstern und kann im Web suchen, die Zwischenablage lesen oder Musik steuern – jede heikle Aktion braucht deine Zustimmung.
+* **Deine Sprache:** Deutsch, Englisch und Russisch sind dabei. Weitere Oberflächensprachen kommen aus dem Hub oder als JSON-Datei, die du in den Einstellungen importierst – ohne neue App-Version.
 * **Auf dem Handy:** Im selben WLAN per QR-Code vom Smartphone oder Tablet chatten.
 
 <p align="center">
@@ -173,17 +176,17 @@ Speicherplatz: Die App selbst ist klein; lokale Modelle brauchen je etwa 2–15 
 
 | Bereich | Details |
 |---|---|
-| 💬 **Chat** | Kontextverwaltung mit exakter Token-Zählung (llama-server `/tokenize`) bzw. Schätzung für Cloud, automatische Zusammenfassung herausgefallener Runden, Swipes, Inline-Editor mit Entwurfsschutz, Anhänge (Bilder, PDF, Text; lokale Bilderkennung über `mmproj`), Übersetzung, Suche (Strg+F), Lesezeichen, Verzweigen, Gestaltung pro Chat (Hintergrund, Textgröße, Ambient-Klang), Chat-Werkzeuge (Datum/Uhrzeit, Rechner, Websuche über ein Text-Werkzeugprotokoll für jeden Anbieter), Prompt-Protokoll. |
-| 🎭 **Avatare** | VRM 0.x/1.0, MMD (PMX/PMD + VMD, Spring-Bone-Physik), glTF/GLB (Knochen-Aliase für Mixamo/Unreal/Blender/VRoid/Bip001/MMD, ARKit-Morphs, Gesichter über Knochen, eingebettete Clips nach Rolle und Stimmung, Gesichts-Editor, Toon-Look), Live2D Cubism 2/4; VRMA- und Mixamo-FBX-Bewegungen mit Retargeting; Mundformen aus Formanten. Anleitung: [Eigenes 3D-Modell mit Animationen](docs/guide-3d-avatars.de.md). |
-| 🧠 **Kognitives Gedächtnis** | Vier Schichten (Psyche, Beziehung, episodische Themen, Tagebuch) in SQLite; Router-/Archivar-/Tagebuch-Agenten schreiben eine Reflexion in einer Transaktion; Quellen, Herkunft, Anheften, Prüfmarkierungen und Änderungsverlauf; Snapshots, Import/Export und Markdown-Abgleich (`MEMORY.md`, `USER.md`). |
+| 💬 **Chat** | Kontextverwaltung mit exakter Token-Zählung (llama-server `/tokenize`) bzw. Schätzung für Cloud, automatische Zusammenfassung herausgefallener Runden, Swipes, Inline-Editor mit Entwurfsschutz, Anhänge (Bilder, PDF, Text; lokale Bilderkennung über `mmproj`), Übersetzung, Suche (Strg+F), Lesezeichen, Verzweigen, Gestaltung pro Chat (Hintergrund, Textgröße, Ambient-Klang), Chat-Werkzeuge (Datum/Uhrzeit, Rechner, Websuche über ein Text-Werkzeugprotokoll für jeden Anbieter), Prompt-Protokoll. Gruppen-Chats (Gäste mit eigenem Gedächtnis und eigener Stimme, Sprecherwahl, automatische Runden), Antwortvorschläge und „Schreib für mich“, Regieanweisungen in ((…)), Antwortlänge pro Chat, Filter für Wörter & Wendungen, Wiederholungen eindämmen, sichtbare Lorebook- und Gedächtnis-Treffer je Antwort, „Diese Nachricht merken“, Szenenbild eines Moments (auch als Chat-Hintergrund), alternative Begrüßungen als Swipes, Kartenmakros (Zufall, Würfel, Zeit, Notizen), SillyTavern-JSONL-Export. |
+| 🎭 **Avatare** | VRM 0.x/1.0, MMD (PMX/PMD + VMD, Spring-Bone-Physik), glTF/GLB (Knochen-Aliase für Mixamo/Unreal/Blender/VRoid/Bip001/MMD, ARKit-Morphs, Gesichter über Knochen, eingebettete Clips nach Rolle und Stimmung, Gesichts-Editor, Toon-Look), Live2D Cubism 2/4; VRMA- und Mixamo-FBX-Bewegungen mit Retargeting; Mundformen aus Formanten. Anleitung: [Eigenes 3D-Modell mit Animationen](docs/guide-3d-avatars.de.md). Bis zu 15 Porträtplätze pro Karte (sechs Stimmungen, Erröten/Necken/Angst/Ekel/Weinen, vier Romance-Plätze), gewählt über einen unsichtbaren `[emotion: …]`-Tag oder Hinweiswörter je Sprache (`presets/cues/<sprache>.json`); lebendiges 2D-Porträt (Atmen, Wiegen, Sprechbewegung, aus bei reduzierter Bewegung); Avatar-Manager mit Vorschaubildern. |
+| 🧠 **Kognitives Gedächtnis** | Vier Schichten (Psyche, Beziehung, episodische Themen, Tagebuch) in SQLite; Router-/Archivar-/Tagebuch-Agenten schreiben eine Reflexion in einer Transaktion; Quellen, Herkunft, Anheften, Prüfmarkierungen und Änderungsverlauf; Snapshots, Import/Export und Markdown-Abgleich (`MEMORY.md`, `USER.md`). FTS5-Volltextsuche wählt die zur Antwort passenden Erinnerungen (stabiler Kern im System-Prompt für den Prompt-Cache); überholte Erinnerungen werden abgelöst statt verdoppelt und bleiben wiederherstellbar; Vorhaben und Versprechen mit Fälligkeit (echte Zeit oder Zeit der Geschichte); Gewohnheiten zu höchstens 12 Mustern verdichtet; „Gedächtnis aufräumen“ fasst Überlappendes nach Bestätigung zusammen. |
 | 🎲 **Stage** | Zweistufiger Spielleiter (Planer + Erzähler), Regie mit Ansprache-Erkennung und Routing, szenengebundene NPCs mit gefilterten Erinnerungen und Beförderung zu vollwertigen Charakteren, Weltzustand (Fakten, Chronik, Handlungsbögen mit Archivierung und Konsistenzprüfung), Lorekarten, Flüstern/Denken/Regie, Auto-Play, Vorlesen mit Erzählerstimme und Ambient-Schleifen. |
 | ⚔️ **5e-Regeln** | Reine Rust-Engine mit injiziertem Zufall: SRD-Monster/-Klassen/-Zauber/-Ausrüstung, Rasterkarten mit Wegfindung, Gelegenheitsangriffen und Sichtlinie, Zauberflächen, Zustände, Konzentration, Reaktionen (*Schild*), Todesrettungswürfe, Fertigkeiten, Rasten, Klassenmerkmale, Begegnungsschwierigkeit nach SRD-EP, Erkundung (Räume, Fallen, Schlösser, Ausgänge), mehraktige Abenteuer mit Zielen. |
-| 🌐 **Hub** | Chub-AI-Browser mit Lorebook-Extraktion, kuratierte Registries aus [otakusoul-data](https://github.com/SnowwhiteOakheart/otakusoul-data) mit Revisionen und „Alle aktualisieren“; lokal veränderte Lorebooks sind geschützt (eigene Fassung bleibt als Kopie). Die Spieltexte, die die App selbst schreibt, frischt sie beim Start aus dem Daten-Repository auf. |
-| 🎙️ **Stimme** | CrispASR-Server (ohne Python): Qwen3-TTS (CustomVoice, Base-Klon, VoiceDesign), Chatterbox Multilingual/Turbo (Klang-Tags wie `[laugh]`), Kokoro, TADA 3B, F5; Spracherkennung mit whisper.cpp; Stimmeffekte (Tonhöhe per WSOLA, Hall, Echo, Filter); Klon-Zuschnitt mit Wellenform; geklonte Stimmen gehören zur Profil-Sicherung. |
+| 🌐 **Hub** | Chub-AI-Browser mit Lorebook-Extraktion, kuratierte Registries aus [otakusoul-data](https://github.com/SnowwhiteOakheart/otakusoul-data) mit Revisionen und „Alle aktualisieren“; lokal veränderte Lorebooks sind geschützt (eigene Fassung bleibt als Kopie). Die Spieltexte, die die App selbst schreibt, frischt sie beim Start aus dem Daten-Repository auf. Optionale 18+-Quelle mit einmaliger Altersbestätigung; installierte Erwachseneninhalte sind ausgeblendet, solange sie aus ist. Auch Oberflächensprachen (`locales/ui_registry.json`) lädt die App beim Start nach. |
+| 🎙️ **Stimme** | CrispASR-Server (ohne Python): Qwen3-TTS (CustomVoice, Base-Klon, VoiceDesign), Chatterbox Multilingual/Turbo (Klang-Tags wie `[laugh]`), Kokoro, TADA 3B, F5; Spracherkennung mit whisper.cpp; Stimmeffekte (Tonhöhe per WSOLA, Hall, Echo, Filter); Klon-Zuschnitt mit Wellenform; geklonte Stimmen gehören zur Profil-Sicherung. Stimmgalerie zum Anhören und Vergleichen über alle Engines. |
 | 🖼️ **Bilder** | stable-diffusion.cpp-Server (SD 1.5, SDXL, FLUX.1, Qwen-Image, FLUX.2), Katalog-LoRAs nur an ihre Modellfamilie, VRAM-Planer, der das Chat-Modell gestuft verkleinert oder tauscht und im Hintergrund neu startet. |
 | 🤖 **Companion** | Transparentes Always-on-Top-Overlay mit Click-Through, Hormonmodell, MCP-Client, interne Werkzeuge mit ausdrücklicher Freigabeliste; Code-Ausführung standardmäßig aus; Bestätigungsbanner für jede heikle Aktion. |
 | 📱 **Web-Client** | Axum-Server im LAN mit QR-Code, Token-Anmeldung und Schutz gegen DNS-Rebinding. |
-| 🎨 **Oberfläche** | 5 Themes plus heller Modus, DE/EN/RU, Befehlspalette (Strg+K), Tastaturnavigation (Strg+1…9), WCAG-AA-Kontraste, Expertenmodus, Aufgabenliste für Hintergrundvorgänge mit Fortschritt, Abbrechen und Wiederholen. |
+| 🎨 **Oberfläche** | 5 Themes plus heller Modus, DE/EN/RU plus eigene Sprachen als JSON-Dateien (Import in den Einstellungen, neue aus dem Daten-Repository, Prüfung mit `npm run i18n:check`), Zurücksetzen pro Einstellungsbereich, Befehlspalette (Strg+K), Tastaturnavigation (Strg+1…9), WCAG-AA-Kontraste, Expertenmodus, Aufgabenliste für Hintergrundvorgänge mit Fortschritt, Abbrechen und Wiederholen. |
 
 ### Architektur
 
@@ -235,9 +238,10 @@ flowchart LR
         Rel["Beziehung"]
         Episodes["Episodische Themen"]
         Diary["Tagebuch"]
+        Plans["Vorhaben & Versprechen"]
     end
-    Pipeline --> Psyche & Rel & Episodes & Diary
-    SQLiteMemory --> Prompt["Prompt-Builder"] --> Next["Nächste Runde"]
+    Pipeline --> Psyche & Rel & Episodes & Diary & Plans
+    SQLiteMemory --> Search["Passende Erinnerungen<br/>(Volltextsuche)"] --> Prompt["Prompt-Builder"] --> Next["Nächste Runde"]
 ```
 
 ### Gemessene Leistung
@@ -326,7 +330,7 @@ Lizenziert unter der **GNU General Public License v3.0** (`GPL-3.0-only`).
 
 **Modelle & Transparenz:**
 * Es werden keine Modellgewichte mitgeliefert. Laufzeiten und Modelle kommen von ihrer Originalquelle (z. B. Hugging Face) und werden per **SHA-256** geprüft.
-* Sprach- und Stimmmodelle mit nicht-kommerzieller Lizenz bleiben gesperrt, bis du sie freischaltest; nicht-kommerzielle Bildmodelle und LoRAs sind deutlich gekennzeichnet.
+* Chat-Modelle mit eingeschränkter oder nicht-kommerzieller Lizenz werden mit deutlichem Hinweis und Link zur Lizenz angeboten und nie automatisch empfohlen. Stimmmodelle mit nicht-kommerzieller Lizenz bleiben gesperrt, bis du sie freischaltest; nicht-kommerzielle Bildmodelle und LoRAs sind deutlich gekennzeichnet.
 * **Verantwortungsvolles Stimmklonen:** Klonen setzt die Bestätigung der Einwilligung der sprechenden Person voraus. Erzeugte Sprache erhält über CrispASR ein Wasserzeichen (**EU AI Act, Art. 50**).
 
 ---
