@@ -36,7 +36,7 @@ try {
   assert.equal(await browser.$('p*=Reflexion fehlgeschlagen:').isExisting(), false);
 
   const cid = sql('SELECT character_id FROM chat_sessions LIMIT 1;');
-  await tab(6);
+  await tab(7);
   await browser.$('button=Snapshot jetzt anlegen').click();
   await browser.$('p*=Snapshot ').waitForDisplayed();
   const directory = path.join(home, 'data', 'characters', cid, 'backups');

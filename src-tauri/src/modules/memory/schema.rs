@@ -13,6 +13,7 @@ pub(super) const MIGRATIONS: &[fn(&Connection) -> rusqlite::Result<()>] = &[
     migrate_v6_group_chats,
     migrate_v7_memory_fts,
     migrate_v8_memory_versions,
+    migrate_v9_memory_intentions,
 ];
 
 /// Brings the database to the latest schema, one transaction per step. A database written by a
@@ -386,6 +387,32 @@ pub(super) fn migrate_v8_memory_versions(conn: &Connection) -> rusqlite::Result<
         }
     }
     Ok(())
+}
+
+/// v9: intentions and promises with a time basis (`real` clock or `story` time), a status and,
+/// for `real` ones, a due date. A resolved one becomes an episodic memory (`memory_id`).
+pub(super) fn migrate_v9_memory_intentions(conn: &Connection) -> rusqlite::Result<()> {
+    conn.execute_batch(
+        "CREATE TABLE IF NOT EXISTS soul_intentions (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            character_id TEXT NOT NULL,
+            user_name TEXT NOT NULL,
+            title TEXT NOT NULL,
+            details TEXT NOT NULL DEFAULT '',
+            initiator TEXT NOT NULL DEFAULT 'both',
+            time_basis TEXT NOT NULL DEFAULT 'story',
+            status TEXT NOT NULL DEFAULT 'pending',
+            due_at INTEGER,
+            due_has_time INTEGER NOT NULL DEFAULT 0,
+            origin TEXT NOT NULL DEFAULT 'auto',
+            source_chat_id TEXT,
+            created_at INTEGER NOT NULL,
+            resolved_at INTEGER,
+            memory_id INTEGER
+        );
+        CREATE INDEX IF NOT EXISTS idx_intentions_char_status
+            ON soul_intentions(character_id, user_name, status);",
+    )
 }
 
 fn add_column_if_missing(

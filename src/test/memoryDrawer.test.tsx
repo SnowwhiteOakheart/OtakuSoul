@@ -75,10 +75,11 @@ describe('CognitiveMemoryDrawer', () => {
 
   it('renders every tab without crashing', async () => {
     const user = userEvent.setup();
+    vi.mocked(api.getIntentions).mockResolvedValue([]);
     render(<CognitiveMemoryDrawer isOpen onClose={() => {}} />);
 
     const tabs = screen.getAllByRole('tab');
-    expect(tabs).toHaveLength(7);
+    expect(tabs).toHaveLength(8);
     for (const tab of tabs) {
       await user.click(tab);
       expect(tab).toHaveAttribute('aria-selected', 'true');

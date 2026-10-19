@@ -21,15 +21,87 @@ pub fn get_cognitive_overview(
 pub fn get_prompt_memories(
     state: State<'_, AppState>,
     char_id: String,
+    user_name: String,
     query: String,
 ) -> Result<crate::modules::memory::PromptMemories, String> {
-    state
+    // Out-of-character directions to the AI say nothing about what to remember.
+    let mut memories = state
         .memory_db
         .select_prompt_memories(
             &char_id,
-            &query,
+            &crate::modules::ooc::strip(&query),
             crate::modules::memory::PROMPT_MEMORY_BUDGET,
         )
+        .map_err(|e| e.to_string())?;
+    memories.intentions = state
+        .memory_db
+        .prompt_intentions(&char_id, &user_name, chrono::Local::now())
+        .map_err(|e| e.to_string())?;
+    Ok(memories)
+}
+
+#[tauri::command]
+pub fn get_intentions(
+    state: State<'_, AppState>,
+    char_id: String,
+    user_name: String,
+    include_resolved: bool,
+) -> Result<Vec<crate::modules::memory::IntentionEntry>, String> {
+    state
+        .memory_db
+        .get_intentions(&char_id, &user_name, include_resolved)
+        .map_err(|e| e.to_string())
+}
+
+#[tauri::command]
+pub fn add_intention(
+    state: State<'_, AppState>,
+    char_id: String,
+    user_name: String,
+    draft: crate::modules::memory::IntentionDraft,
+) -> Result<Option<i64>, String> {
+    state
+        .memory_db
+        .add_intention(&char_id, &user_name, &draft)
+        .map_err(|e| e.to_string())
+}
+
+#[tauri::command]
+pub fn update_intention(
+    state: State<'_, AppState>,
+    char_id: String,
+    id: i64,
+    draft: crate::modules::memory::IntentionDraft,
+) -> Result<(), String> {
+    state
+        .memory_db
+        .update_intention(&char_id, id, &draft)
+        .map_err(|e| e.to_string())
+}
+
+/// `fulfilled` or `abandoned`: the intention becomes an episodic memory.
+#[tauri::command]
+pub fn set_intention_status(
+    state: State<'_, AppState>,
+    char_id: String,
+    id: i64,
+    status: String,
+) -> Result<bool, String> {
+    state
+        .memory_db
+        .set_intention_status(&char_id, id, &status)
+        .map_err(|e| e.to_string())
+}
+
+#[tauri::command]
+pub fn delete_intention(
+    state: State<'_, AppState>,
+    char_id: String,
+    id: i64,
+) -> Result<(), String> {
+    state
+        .memory_db
+        .delete_intention(&char_id, id)
         .map_err(|e| e.to_string())
 }
 

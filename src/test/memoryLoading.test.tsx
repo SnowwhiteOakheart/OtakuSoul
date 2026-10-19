@@ -51,7 +51,7 @@ describe('memory read failures', () => {
     const user = userEvent.setup();
     render(<CognitiveMemoryDrawer isOpen onClose={() => {}} />);
     await screen.findByRole('alert');
-    for (const [index, empty] of [[3, 'No episodic memories stored yet.'], [4, 'The diary is still empty.'], [5, 'No healing or contradiction events logged yet.']] as const) {
+    for (const [index, empty] of [[3, 'No episodic memories stored yet.'], [5, 'The diary is still empty.'], [6, 'No healing or contradiction events logged yet.']] as const) {
       await user.click(screen.getAllByRole('tab')[index]!);
       expect(screen.getByRole('alert')).toHaveTextContent('Database unavailable');
       expect(screen.queryByText(empty)).not.toBeInTheDocument();
@@ -62,7 +62,7 @@ describe('memory read failures', () => {
     vi.mocked(api.listMemoryBackups).mockRejectedValueOnce(new Error('Permission denied')).mockResolvedValueOnce([]);
     const user = userEvent.setup();
     render(<CognitiveMemoryDrawer isOpen onClose={() => {}} />);
-    await user.click(screen.getAllByRole('tab')[6]!);
+    await user.click(screen.getAllByRole('tab')[7]!);
     await screen.findByRole('alert');
     expect(screen.getByRole('alert')).toHaveTextContent('Could not load snapshot list: Permission denied');
     expect(screen.getByText(backup.filename)).toBeInTheDocument();
@@ -78,7 +78,7 @@ describe('memory read failures', () => {
     vi.mocked(api.listMemoryBackups).mockRejectedValue(new Error('Not a directory'));
     const user = userEvent.setup();
     render(<CognitiveMemoryDrawer isOpen onClose={() => {}} />);
-    await user.click(screen.getAllByRole('tab')[6]!);
+    await user.click(screen.getAllByRole('tab')[7]!);
     await screen.findByRole('alert');
     expect(screen.queryByText(/No snapshots yet/)).not.toBeInTheDocument();
   });

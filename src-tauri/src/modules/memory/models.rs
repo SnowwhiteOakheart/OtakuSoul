@@ -145,6 +145,62 @@ pub struct HealingLogEntry {
     pub created_at: u64,
 }
 
+/// Something a character or the user means to do: a plan, a promise, an appointment.
+#[derive(Debug, Clone, Serialize, Deserialize, TS)]
+#[ts(export)]
+pub struct IntentionEntry {
+    pub id: i64,
+    pub character_id: String,
+    pub user_name: String,
+    pub title: String,
+    pub details: String,
+    /// `character`, `user` or `both`.
+    pub initiator: String,
+    /// `real` (bound to the clock) or `story` (time inside the story, never due).
+    pub time_basis: String,
+    /// `pending`, `fulfilled`, `expired` or `abandoned`.
+    pub status: String,
+    /// When it is due (`real` only), UNIX seconds; local midnight for a whole day.
+    pub due_at: Option<u64>,
+    /// `due_at` names a time of day, not only the day.
+    pub due_has_time: bool,
+    /// `auto` (from a reflection) or `manual`.
+    pub origin: String,
+    pub source_chat_id: Option<String>,
+    pub created_at: u64,
+    pub resolved_at: Option<u64>,
+    /// The episodic memory it became once resolved.
+    pub memory_id: Option<i64>,
+}
+
+/// A new or changed intention as the user or a reflection describes it.
+#[derive(Debug, Clone, Default, Serialize, Deserialize, TS)]
+#[ts(export)]
+pub struct IntentionDraft {
+    pub title: String,
+    #[serde(default)]
+    pub details: String,
+    #[serde(default)]
+    pub initiator: String,
+    #[serde(default)]
+    pub time_basis: String,
+    #[serde(default)]
+    pub due_at: Option<u64>,
+    #[serde(default)]
+    pub due_has_time: bool,
+}
+
+/// An open intention as the prompt shows it; `label` says when it is due, worked out when the
+/// prompt is built.
+#[derive(Debug, Clone, Serialize, Deserialize, TS)]
+#[ts(export)]
+pub struct IntentionPrompt {
+    pub label: String,
+    pub title: String,
+    pub details: String,
+    pub initiator: String,
+}
+
 /// Memories for one prompt (`select_prompt_memories`).
 #[derive(Debug, Clone, Default, Serialize, Deserialize, TS)]
 #[ts(export)]
@@ -153,6 +209,9 @@ pub struct PromptMemories {
     pub core: Vec<EpisodicMemory>,
     /// Memories that fit the conversation, filled up with the newest.
     pub relevant: Vec<EpisodicMemory>,
+    /// Open intentions and promises, the ones due soonest first.
+    #[serde(default)]
+    pub intentions: Vec<IntentionPrompt>,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize, TS)]

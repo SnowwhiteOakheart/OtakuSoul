@@ -17,6 +17,8 @@ import {
   CognitiveOverview,
   PromptMemories,
   EpisodicMemory,
+  IntentionEntry,
+  IntentionDraft,
   PsychologyState,
   RelationshipState,
   DiaryEntry,
@@ -242,8 +244,30 @@ export const api = {
 
   // Phase 5: Cognitive Soul Memory
   /** Memories for the next reply: a stable core and the ones that fit `query` (recent messages). */
-  getPromptMemories: async (charId: string, query: string): Promise<PromptMemories> => {
-    return await invoke<PromptMemories>('get_prompt_memories', { charId, query });
+  getPromptMemories: async (charId: string, userName: string, query: string): Promise<PromptMemories> => {
+    return await invoke<PromptMemories>('get_prompt_memories', { charId, userName, query });
+  },
+
+  /** Plans and promises of a character towards one persona; open ones first. */
+  getIntentions: async (charId: string, userName: string, includeResolved: boolean): Promise<IntentionEntry[]> => {
+    return await invoke<IntentionEntry[]>('get_intentions', { charId, userName, includeResolved });
+  },
+
+  addIntention: async (charId: string, userName: string, draft: IntentionDraft): Promise<number | null> => {
+    return await invoke<number | null>('add_intention', { charId, userName, draft });
+  },
+
+  updateIntention: async (charId: string, id: number, draft: IntentionDraft): Promise<void> => {
+    await invoke('update_intention', { charId, id, draft });
+  },
+
+  /** `fulfilled` or `abandoned`: the intention becomes an episodic memory. */
+  setIntentionStatus: async (charId: string, id: number, status: 'fulfilled' | 'abandoned'): Promise<boolean> => {
+    return await invoke<boolean>('set_intention_status', { charId, id, status });
+  },
+
+  deleteIntention: async (charId: string, id: number): Promise<void> => {
+    await invoke('delete_intention', { charId, id });
   },
 
   searchEpisodicMemories: async (charId: string, query: string): Promise<EpisodicMemory[]> => {

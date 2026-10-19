@@ -37,7 +37,7 @@ afterEach(() => vi.restoreAllMocks());
 const openBackups = async () => {
   const user = userEvent.setup();
   const view = render(<CognitiveMemoryDrawer isOpen onClose={() => {}} />);
-  await user.click(screen.getAllByRole('tab')[6]!);
+  await user.click(screen.getAllByRole('tab')[7]!);
   return { user, view };
 };
 describe('memory operations', () => {

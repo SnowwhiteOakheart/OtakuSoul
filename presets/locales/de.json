@@ -86,5 +86,8 @@
   "Observe and respond.": "Beobachten und Antworten.",
   "The current conversation.": "Das aktuelle Gespräch.",
   "{name} (own version)": "{name} (eigene Fassung)",
-  "None.": "Keine."
+  "None.": "Keine.",
+  "Promise kept: {}": "Versprechen gehalten: {}",
+  "Promise not kept: {}": "Versprechen nicht eingehalten: {}",
+  "Plan dropped: {}": "Vorhaben verworfen: {}"
 }

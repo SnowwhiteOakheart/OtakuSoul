@@ -1060,6 +1060,7 @@ fn a_failed_reflection_write_changes_nothing() {
             healing: &healing,
             topics: &topics,
             supersede: &[],
+            intentions: None,
             source: MemorySource::auto(),
             diary: Some(("Innere Reflexion", "Heute war schön.", "Euphorisch")),
         },
@@ -1085,6 +1086,7 @@ fn a_failed_reflection_write_changes_nothing() {
                 healing: &healing,
                 topics: &topics,
                 supersede: &[],
+                intentions: None,
                 source: MemorySource::auto(),
                 diary: Some(("Innere Reflexion", "Heute war schön.", "Euphorisch")),
             },
@@ -1439,6 +1441,7 @@ fn reflect(db: &MemoryDb, topics: &[TopicMemory], supersede: &[MemorySupersede])
             healing: &[],
             topics,
             supersede,
+            intentions: None,
             source: MemorySource::auto(),
             diary: None,
         },
@@ -1655,4 +1658,274 @@ fn a_snapshot_restores_outdated_memories_with_their_successor() {
     assert_eq!(fresh.get_superseded_memories("ayu", 10).unwrap().len(), 1);
     assert_eq!(fresh.get_episodic_memories("ayu", 10).unwrap().len(), 2);
     let _ = std::fs::remove_dir_all(&dir);
+}
+
+fn local(y: i32, m: u32, d: u32, h: u32, min: u32) -> chrono::DateTime<chrono::Local> {
+    use chrono::TimeZone;
+    chrono::Local.with_ymd_and_hms(y, m, d, h, min, 0).unwrap()
+}
+
+fn plan(title: &str, basis: &str, due: Option<(u64, bool)>) -> IntentionDraft {
+    IntentionDraft {
+        title: title.into(),
+        details: String::new(),
+        initiator: "user".into(),
+        time_basis: basis.into(),
+        due_at: due.map(|(at, _)| at),
+        due_has_time: due.is_some_and(|(_, t)| t),
+    }
+}
+
+#[test]
+fn due_dates_are_read_in_local_time_and_must_lie_ahead() {
+    let now = local(2026, 10, 19, 14, 0);
+    assert_eq!(
+        parse_due("2026-10-20", now),
+        Some((local(2026, 10, 20, 0, 0).timestamp() as u64, false))
+    );
+    assert_eq!(
+        parse_due(" 2026-10-20T18:30 ", now),
+        Some((local(2026, 10, 20, 18, 30).timestamp() as u64, true))
+    );
+    // Today counts as a day; a time earlier today has passed.
+    assert!(parse_due("2026-10-19", now).is_some());
+    assert_eq!(parse_due("2026-10-19 09:00", now), None);
+    assert_eq!(parse_due("2026-10-18", now), None);
+    assert_eq!(parse_due("nächsten Montag", now), None);
+}
+
+#[test]
+fn due_labels_follow_the_clock() {
+    use super::intentions::due_label;
+    let now = local(2026, 10, 19, 14, 0); // a Monday
+    let entry = |basis: &str, due: Option<chrono::DateTime<chrono::Local>>, has_time: bool| {
+        IntentionEntry {
+            id: 1,
+            character_id: "ayu".into(),
+            user_name: "Kai".into(),
+            title: "Kochen".into(),
+            details: String::new(),
+            initiator: "user".into(),
+            time_basis: basis.into(),
+            status: "pending".into(),
+            due_at: due.map(|d| d.timestamp() as u64),
+            due_has_time: has_time,
+            origin: "auto".into(),
+            source_chat_id: None,
+            created_at: 0,
+            resolved_at: None,
+            memory_id: None,
+        }
+    };
+    let day = |d: u32| Some(local(2026, 10, d, 0, 0));
+    assert_eq!(due_label(&entry("real", day(19), false), now), "due today");
+    assert_eq!(
+        due_label(&entry("real", Some(local(2026, 10, 19, 18, 0)), true), now),
+        "due today at 18:00"
+    );
+    assert_eq!(
+        due_label(&entry("real", Some(local(2026, 10, 19, 9, 0)), true), now),
+        "overdue since today at 09:00"
+    );
+    assert_eq!(
+        due_label(&entry("real", day(20), false), now),
+        "due tomorrow"
+    );
+    assert_eq!(
+        due_label(&entry("real", day(18), false), now),
+        "overdue since yesterday"
+    );
+    assert_eq!(
+        due_label(&entry("real", day(23), false), now),
+        "due on Friday"
+    );
+    assert_eq!(
+        due_label(&entry("real", day(30), false), now),
+        "due on 2026-10-30"
+    );
+    assert_eq!(due_label(&entry("real", None, false), now), "open");
+    assert_eq!(
+        due_label(&entry("story", day(20), false), now),
+        "open in the story"
+    );
+}
+
+#[test]
+fn an_intention_lives_until_it_becomes_a_memory() {
+    let db = MemoryDb::new_in_memory().unwrap();
+    let id = db
+        .add_intention("ayu", "Kai", &plan("Zusammen kochen", "real", None))
+        .unwrap()
+        .unwrap();
+    // The same open plan is not added twice; a story plan never keeps a date.
+    assert_eq!(
+        db.add_intention("ayu", "Kai", &plan(" zusammen KOCHEN ", "real", None))
+            .unwrap(),
+        Some(id)
+    );
+    let story = db
+        .add_intention(
+            "ayu",
+            "Kai",
+            &plan("Zur Burg reiten", "story", Some((1, false))),
+        )
+        .unwrap()
+        .unwrap();
+    let open = db.get_intentions("ayu", "Kai", false).unwrap();
+    assert_eq!(open.len(), 2);
+    assert_eq!(open.iter().find(|e| e.id == story).unwrap().due_at, None);
+    assert!(db.get_intentions("ayu", "Mira", false).unwrap().is_empty());
+
+    assert!(db.set_intention_status("ayu", id, "fulfilled").unwrap());
+    assert!(
+        !db.set_intention_status("ayu", id, "abandoned").unwrap(),
+        "only open ones change"
+    );
+    assert!(
+        !db.set_intention_status("ayu", story, "pending").unwrap(),
+        "no such status"
+    );
+    let done = db
+        .get_intentions("ayu", "Kai", true)
+        .unwrap()
+        .into_iter()
+        .find(|e| e.id == id)
+        .unwrap();
+    assert_eq!(done.status, "fulfilled");
+    let memory = db.get_episodic_memories("ayu", 10).unwrap();
+    assert_eq!(memory.len(), 1);
+    assert_eq!(done.memory_id, Some(memory[0].id));
+    assert_eq!(memory[0].category, "promise");
+    assert!(memory[0].content.contains("Zusammen kochen"));
+}
+
+#[test]
+fn missed_real_intentions_expire_with_grace_but_story_ones_never() {
+    let db = MemoryDb::new_in_memory().unwrap();
+    let now = local(2026, 10, 19, 14, 0);
+    let ts = |d: chrono::DateTime<chrono::Local>| d.timestamp() as u64;
+    let yesterday = db
+        .add_intention(
+            "ayu",
+            "Kai",
+            &plan(
+                "Gestern anrufen",
+                "real",
+                Some((ts(local(2026, 10, 18, 0, 0)), false)),
+            ),
+        )
+        .unwrap()
+        .unwrap();
+    let two_days = db
+        .add_intention(
+            "ayu",
+            "Kai",
+            &plan(
+                "Vorgestern einkaufen",
+                "real",
+                Some((ts(local(2026, 10, 17, 0, 0)), false)),
+            ),
+        )
+        .unwrap()
+        .unwrap();
+    let this_morning = db
+        .add_intention(
+            "ayu",
+            "Kai",
+            &plan(
+                "Arzt um acht",
+                "real",
+                Some((ts(local(2026, 10, 19, 8, 0)), true)),
+            ),
+        )
+        .unwrap()
+        .unwrap();
+    let early = db
+        .add_intention(
+            "ayu",
+            "Kai",
+            &plan(
+                "Frühstück um sechs",
+                "real",
+                Some((ts(local(2026, 10, 19, 6, 0)), true)),
+            ),
+        )
+        .unwrap()
+        .unwrap();
+    db.add_intention("ayu", "Kai", &plan("Drachen besiegen", "story", None))
+        .unwrap();
+
+    let prompt = db.prompt_intentions("ayu", "Kai", now).unwrap();
+    let titles: Vec<&str> = prompt.iter().map(|p| p.title.as_str()).collect();
+    // Due soonest first, story plans after; missed ones are gone from the prompt.
+    assert_eq!(
+        titles,
+        ["Gestern anrufen", "Arzt um acht", "Drachen besiegen"]
+    );
+    assert_eq!(prompt[0].label, "overdue since yesterday");
+    let all = db.get_intentions("ayu", "Kai", true).unwrap();
+    let status = |id: i64| all.iter().find(|e| e.id == id).unwrap().status.clone();
+    assert_eq!(status(yesterday), "pending");
+    assert_eq!(status(this_morning), "pending");
+    assert_eq!(status(two_days), "expired");
+    assert_eq!(status(early), "expired");
+    assert_eq!(db.get_episodic_memories("ayu", 10).unwrap().len(), 2);
+}
+
+#[test]
+fn a_reflection_adds_and_resolves_only_its_own_intentions() {
+    let db = MemoryDb::new_in_memory().unwrap();
+    let own = db
+        .add_intention("ayu", "Kai", &plan("Buch mitbringen", "story", None))
+        .unwrap()
+        .unwrap();
+    let other_user = db
+        .add_intention("ayu", "Mira", &plan("Tanzen gehen", "story", None))
+        .unwrap()
+        .unwrap();
+    let other_char = db
+        .add_intention("sora", "Kai", &plan("Schwimmen", "story", None))
+        .unwrap()
+        .unwrap();
+    let changes = IntentionChanges {
+        user_name: "Kai",
+        create: vec![
+            plan("Morgen kochen", "real", None),
+            plan("  ", "story", None),
+        ],
+        resolve: vec![
+            (own, "fulfilled".into()),
+            (other_user, "fulfilled".into()),
+            (other_char, "fulfilled".into()),
+        ],
+        source_chat_id: Some("c1"),
+        now: chrono::Local::now(),
+    };
+    db.apply_reflection(
+        "ayu",
+        &ReflectionChanges {
+            psychology: None,
+            relationship: None,
+            healing: &[],
+            topics: &[],
+            supersede: &[],
+            intentions: Some(&changes),
+            source: MemorySource::auto(),
+            diary: None,
+        },
+    )
+    .unwrap();
+    let kai = db.get_intentions("ayu", "Kai", true).unwrap();
+    assert_eq!(kai.len(), 2);
+    let created = kai.iter().find(|e| e.title == "Morgen kochen").unwrap();
+    assert_eq!(
+        (created.origin.as_str(), created.source_chat_id.as_deref()),
+        ("auto", Some("c1"))
+    );
+    assert_eq!(
+        kai.iter().find(|e| e.id == own).unwrap().status,
+        "fulfilled"
+    );
+    assert_eq!(db.get_intentions("ayu", "Mira", false).unwrap().len(), 1);
+    assert_eq!(db.get_intentions("sora", "Kai", false).unwrap().len(), 1);
 }

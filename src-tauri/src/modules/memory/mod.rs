@@ -11,6 +11,7 @@ use tracing::{info, warn};
 
 mod chats;
 pub use chats::MAX_CHAT_GUESTS;
+mod intentions;
 mod markdown;
 mod models;
 mod recall;
@@ -20,6 +21,7 @@ mod soul;
 #[cfg(test)]
 mod tests;
 
+pub use intentions::{IntentionChanges, parse_due};
 pub use models::*;
 pub use recall::{MemoryBudget, PROMPT_MEMORY_BUDGET};
 use schema::migrate;

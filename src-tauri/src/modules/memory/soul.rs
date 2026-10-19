@@ -351,7 +351,7 @@ impl MemoryDb {
         Ok(())
     }
 
-    fn add_episodic_memory_sourced_on(
+    pub(super) fn add_episodic_memory_sourced_on(
         conn: &Connection,
         char_id: &str,
         category: &str,
@@ -740,6 +740,9 @@ impl MemoryDb {
                 contradictions += 1;
             }
         }
+        if let Some(intentions) = changes.intentions {
+            Self::apply_intention_changes_on(&tx, char_id, intentions)?;
+        }
         let diary = match changes.diary {
             Some((title, text, mood)) => {
                 Some(Self::add_diary_entry_on(&tx, char_id, title, text, mood)?)
@@ -939,6 +942,8 @@ pub struct ReflectionChanges<'a> {
     pub topics: &'a [TopicMemory],
     /// Memories the reflection found outdated (ids already checked against what it saw).
     pub supersede: &'a [MemorySupersede],
+    /// New and resolved intentions (plans, promises).
+    pub intentions: Option<&'a super::IntentionChanges<'a>>,
     pub source: MemorySource<'a>,
     /// Title, text and mood of the diary entry.
     pub diary: Option<(&'a str, &'a str, &'a str)>,

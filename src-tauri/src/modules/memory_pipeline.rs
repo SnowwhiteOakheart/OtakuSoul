@@ -52,7 +52,7 @@ You MUST otherwise output exactly this JSON structure:
     },
     "preferences_habits_add": [],
     "preferences_habits_remove": [],
-    "shared_milestones_promises_add": [],
+    "shared_milestones_promises_add": ["shared milestones only – promises and plans go into intentions_patch"],
     "shared_milestones_promises_remove": []
   },
   "healing_log_add": [
@@ -66,7 +66,13 @@ You MUST otherwise output exactly this JSON structure:
   },
   "memory_supersede": [
     {"id": 12, "reason": "Why memory #12 is outdated now", "replaced_by_topic": "filename of a topic in topic_plan that holds the corrected version, or null"}
-  ]
+  ],
+  "intentions_patch": {
+    "create": [
+      {"title": "Short plan or promise", "details": "", "initiator": "character | user | both", "time_basis": "real | story", "due": "YYYY-MM-DD or YYYY-MM-DDTHH:MM, or null"}
+    ],
+    "resolve": [{"id": 3, "status": "fulfilled | abandoned"}]
+  }
 }
 
 RULES:
@@ -75,6 +81,7 @@ RULES:
 - emotion_active: true if recent messages support the emotion; false if it is fading.
 - CONTRADICTION PROTOCOL: add the corrected version via *_add, put outdated fact in *_remove, and describe the fix in healing_log_add.
 - TOPICS: to update an existing topic, reuse its file name from its [Topic: …] header with action "update"; the archivist then merges the new facts into it and the old version is retired.
+- INTENTIONS: create one when someone commits to doing something later (a plan, a promise, an appointment) that is not already in OPEN INTENTIONS. time_basis "real" only when it is clearly about the real world and real time (e.g. "remind me on Monday about my job interview"); then work out "due" from CURRENT LOCAL TIME. Everything happening inside the story or role-play (e.g. "tomorrow we ride to the castle") is "story" with due null; if in doubt, use "story". Resolve an open intention by its id (#3) when the RECENT MESSAGES show it was done (fulfilled) or called off (abandoned).
 - MEMORY SUPERSEDE: list a memory only when the RECENT MESSAGES clearly contradict or outdate it (e.g. someone moved, a relationship ended), only with an id (#12) shown in RELEVANT TOPIC FILES, and put the corrected version into a topic or *_add. Leave it empty otherwise.
 "#;
 
@@ -258,6 +265,39 @@ pub struct RouterResponse {
     pub topic_plan: Option<TopicPlan>,
     #[serde(default)]
     pub memory_supersede: Vec<RouterMemorySupersede>,
+    pub intentions_patch: Option<RouterIntentionsPatch>,
+}
+
+/// New and resolved intentions as the router writes them.
+#[derive(Debug, Clone, Serialize, Deserialize, Default, TS)]
+#[ts(export)]
+pub struct RouterIntentionsPatch {
+    #[serde(default)]
+    pub create: Vec<RouterIntentionCreate>,
+    #[serde(default)]
+    pub resolve: Vec<RouterIntentionResolve>,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize, Default, TS)]
+#[ts(export)]
+pub struct RouterIntentionCreate {
+    pub title: String,
+    #[serde(default)]
+    pub details: String,
+    #[serde(default)]
+    pub initiator: String,
+    #[serde(default)]
+    pub time_basis: String,
+    /// `YYYY-MM-DD` or `YYYY-MM-DDTHH:MM` (local time).
+    #[serde(default)]
+    pub due: Option<String>,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize, Default, TS)]
+#[ts(export)]
+pub struct RouterIntentionResolve {
+    pub id: i64,
+    pub status: String,
 }
 
 /// A memory the router found outdated.
@@ -346,6 +386,27 @@ pub async fn execute_soul_memory_pipeline(
     req: SoulMemoryPipelineRequest,
 ) -> Result<SoulMemoryPipelineResult, String> {
     execute_memory_pipeline(state, req).await
+}
+
+/// One open intention as the router sees it: `- #id [basis, due …] title – details`.
+fn router_intention_line(entry: &crate::modules::memory::IntentionEntry) -> String {
+    let due = match entry
+        .due_at
+        .and_then(|d| chrono::TimeZone::timestamp_opt(&chrono::Local, d as i64, 0).single())
+    {
+        Some(due) if entry.due_has_time => format!(", due {}", due.format("%Y-%m-%d %H:%M")),
+        Some(due) => format!(", due {}", due.format("%Y-%m-%d")),
+        None => String::new(),
+    };
+    let details = if entry.details.is_empty() {
+        String::new()
+    } else {
+        format!(" – {}", entry.details)
+    };
+    format!(
+        "- #{} [{}{}, by {}] {}{}\n",
+        entry.id, entry.time_basis, due, entry.initiator, entry.title, details
+    )
 }
 
 /// Characters of one memory the router sees; topic files can be long.
@@ -466,12 +527,33 @@ pub async fn execute_memory_pipeline(
         .replace("{language}", &language)
         .replace("{none}", &content_lang.none_marker());
 
+    // Open intentions with their ids, so the router can resolve them (missed ones expire first).
+    let now = chrono::Local::now();
+    let open_intentions = state
+        .memory_db
+        .get_intentions(char_id, user_name, false)
+        .map_err(|e| e.to_string())?;
+    let mut intention_section = String::new();
+    for entry in &open_intentions {
+        intention_section.push_str(&router_intention_line(entry));
+    }
+    if intention_section.is_empty() {
+        intention_section = "(none)".to_string();
+    }
+
     let router_user_content = format!(
-        "=== CURRENT CHARACTER MEMORY (MEMORY.md) ===\n{}\n\n\
+        "=== CURRENT LOCAL TIME ===\n{}\n\n\
+         === CURRENT CHARACTER MEMORY (MEMORY.md) ===\n{}\n\n\
          === CURRENT USER PROFILE & RELATIONSHIP STATE (USER.md) ===\n{}\n\n\
          === RELEVANT TOPIC FILES / EPISODIC MEMORIES ===\n{}\n\n\
+         === OPEN INTENTIONS ===\n{}\n\n\
          === RECENT MESSAGES ===\n{}",
-        char_md, user_md, topic_section, dialog_formatted
+        now.format("%A, %Y-%m-%d %H:%M"),
+        char_md,
+        user_md,
+        topic_section,
+        intention_section,
+        dialog_formatted
     );
 
     let router_messages = vec![
@@ -688,6 +770,47 @@ pub async fn execute_memory_pipeline(
         }
     }
 
+    // Intentions: dates are read here; a Stage transcript only knows story time. Only open
+    // intentions the router was shown may be resolved.
+    let story_only = req
+        .transcript
+        .as_deref()
+        .is_some_and(|t| !t.trim().is_empty());
+    let mut intention_create = Vec::new();
+    let mut intention_resolve = Vec::new();
+    if let Some(patch) = parsed_router.intentions_patch {
+        for create in patch.create {
+            let time_basis = if story_only {
+                "story".to_string()
+            } else {
+                create.time_basis
+            };
+            let due = create
+                .due
+                .as_deref()
+                .filter(|_| time_basis.trim().eq_ignore_ascii_case("real"))
+                .and_then(|d| crate::modules::memory::parse_due(d, now));
+            intention_create.push(crate::modules::memory::IntentionDraft {
+                title: create.title,
+                details: create.details,
+                initiator: create.initiator,
+                time_basis,
+                due_at: due.map(|(at, _)| at),
+                due_has_time: due.is_some_and(|(_, has_time)| has_time),
+            });
+        }
+        for resolve in patch.resolve {
+            if open_intentions.iter().any(|e| e.id == resolve.id) {
+                intention_resolve.push((resolve.id, resolve.status));
+            } else {
+                info!(
+                    "[SoulMemory] Router wollte unbekanntes Vorhaben #{} abschließen – ignoriert.",
+                    resolve.id
+                );
+            }
+        }
+    }
+
     // 9. Archivist agent: one topic memory per planned topic
     let mut topics_processed = Vec::new();
     let mut topic_memories = Vec::new();
@@ -827,6 +950,13 @@ pub async fn execute_memory_pipeline(
                 healing: &healing_entries,
                 topics: &topic_memories,
                 supersede: &supersede,
+                intentions: Some(&crate::modules::memory::IntentionChanges {
+                    user_name,
+                    create: intention_create,
+                    resolve: intention_resolve,
+                    source_chat_id: source_chat_id.as_deref(),
+                    now,
+                }),
                 source: crate::modules::memory::MemorySource {
                     origin: "auto",
                     chat_id: if source_ids.is_empty() {
@@ -870,6 +1000,22 @@ pub async fn execute_memory_pipeline(
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    #[test]
+    fn the_router_can_plan_and_resolve_intentions() {
+        let parsed = parse_router_json(
+            r#"{"intentions_patch": {"create": [{"title": "Kochen", "time_basis": "real", "due": "2026-10-20"}], "resolve": [{"id": 4, "status": "fulfilled"}]}}"#,
+        )
+        .unwrap();
+        let patch = parsed.intentions_patch.unwrap();
+        assert_eq!(patch.create[0].due.as_deref(), Some("2026-10-20"));
+        assert_eq!(patch.create[0].initiator, "");
+        assert_eq!(
+            (patch.resolve[0].id, patch.resolve[0].status.as_str()),
+            (4, "fulfilled")
+        );
+        assert!(parse_router_json("{}").unwrap().intentions_patch.is_none());
+    }
 
     #[test]
     fn the_router_can_name_outdated_memories() {

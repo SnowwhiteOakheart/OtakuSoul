@@ -331,19 +331,43 @@ pub fn post_history_instruction(ctx: &PromptContext) -> Option<String> {
     (!text.trim().is_empty()).then(|| text.trim().to_string())
 }
 
-/// The memories that fit the current conversation, for after the history.
+/// The memories that fit the current conversation and open intentions, for after the history.
 fn relevant_memories_block(ctx: &PromptContext) -> Option<String> {
-    let relevant = &ctx.memories.as_ref()?.relevant;
-    if relevant.is_empty() {
-        return None;
+    let memories = ctx.memories.as_ref()?;
+    let mut parts = Vec::new();
+    if !memories.relevant.is_empty() {
+        let mut block = String::from(
+            "[Memories of yours that may matter right now – use them only where they fit naturally]",
+        );
+        for mem in &memories.relevant {
+            block.push_str(&format!("\n- [{}] {}", mem.category, mem.content));
+        }
+        parts.push(block);
     }
-    let mut block = String::from(
-        "[Memories of yours that may matter right now – use them only where they fit naturally]",
-    );
-    for mem in relevant {
-        block.push_str(&format!("\n- [{}] {}", mem.category, mem.content));
+    // Open plans and promises: the character can bring up what is due on their own.
+    if !memories.intentions.is_empty() {
+        let mut block = String::from(
+            "[Open plans and promises – bring them up naturally when it fits, especially what is due]",
+        );
+        for intention in &memories.intentions {
+            let who = match intention.initiator.as_str() {
+                "user" => ctx.user_name.as_str(),
+                "character" => ctx.char_name.as_str(),
+                _ => "both of you",
+            };
+            let details = if intention.details.is_empty() {
+                String::new()
+            } else {
+                format!(" ({})", intention.details)
+            };
+            block.push_str(&format!(
+                "\n- [{}] {}{} – from {}",
+                intention.label, intention.title, details, who
+            ));
+        }
+        parts.push(block);
     }
-    Some(block)
+    (!parts.is_empty()).then(|| parts.join("\n\n"))
 }
 
 /// Placeholder that memory fields hold when there is nothing to say (in any content language).
@@ -795,12 +819,25 @@ mod tests {
         ctx.memories = Some(crate::modules::memory::PromptMemories {
             core: vec![mem(1, "Kai heißt eigentlich Kaito")],
             relevant: vec![mem(2, "Lieblingstee ist Jasmin")],
+            intentions: Vec::new(),
         });
         let system = build_system_prompt(&ctx);
         assert!(system.contains("- [fact] Kai heißt eigentlich Kaito"));
         assert!(!system.contains("Jasmin") && !system.contains("Alte Übersicht"));
         let after = post_history_instruction(&ctx).unwrap();
         assert!(after.contains("- [fact] Lieblingstee ist Jasmin"));
+
+        // Open intentions follow the memories, with who made them.
+        ctx.memories.as_mut().unwrap().intentions = vec![crate::modules::memory::IntentionPrompt {
+            label: "due tomorrow".into(),
+            title: "Zusammen kochen".into(),
+            details: "italienisch".into(),
+            initiator: "user".into(),
+        }];
+        let after = post_history_instruction(&ctx).unwrap();
+        assert!(after.contains("- [due tomorrow] Zusammen kochen (italienisch) – from Kai"));
+        assert!(after.find("Jasmin") < after.find("Zusammen kochen"));
+        assert_eq!(build_system_prompt(&ctx), system);
 
         // Other relevant memories leave the system prompt as it was (prompt cache).
         ctx.memories.as_mut().unwrap().relevant = vec![mem(3, "Mag Regen")];

@@ -58,6 +58,8 @@ import type { DoneEvent } from './generated/DoneEvent';
 import type { EmotionState } from './generated/EmotionState';
 import type { EpisodicMemory } from './generated/EpisodicMemory';
 import type { PromptMemories } from './generated/PromptMemories';
+import type { IntentionEntry } from './generated/IntentionEntry';
+import type { IntentionDraft } from './generated/IntentionDraft';
 import type { MemoryChange } from './generated/MemoryChange';
 import type { GatewayCharacterEntry } from './generated/GatewayCharacterEntry';
 import type { GatewayLorebookEntry } from './generated/GatewayLorebookEntry';
@@ -180,6 +182,8 @@ export type {
   EmotionState,
   EpisodicMemory,
   PromptMemories,
+  IntentionEntry,
+  IntentionDraft,
   MemoryChange,
   GatewayCharacterEntry,
   GatewayLorebookEntry,

@@ -595,6 +595,17 @@ ru „персонаж/история/сцена“. Fachbegriffe nur im Experte
   `supersede_reason` (Drawer zeigt `memory.contradictedHint`; „Passt so“/Korrigieren leeren den Grund). Snapshot-
   Wiederherstellung legt überholte Einträge ohne Zusammenlegen mit aktiven an und biegt `superseded_by` per
   Alt→Neu-Zuordnung um (`relink_restored_memories_on`). `forget` setzt Verweise auf den gelöschten Eintrag auf NULL.
+- Vorhaben & Versprechen (Migration v9, `memory/intentions.rs`, Tabelle `soul_intentions` je Figur **und Persona**):
+  `time_basis` `real` (echte Uhr, optional `due_at`; ganzer Tag = lokale Mitternacht, `due_has_time`) oder `story`
+  (nie fällig, Datum wird verworfen). Abgelaufen (`real`, Kulanz 6 h bzw. bis Ende des Folgetags) → `expired`, geprüft
+  beim Laden, im Prompt und in jeder Reflexion. Abschluss (`fulfilled`/`expired`/`abandoned`) erzeugt eine Episode
+  `category = "promise"` (Spieltexte „Promise kept: {}“ usw. in `presets/locales` **und** `otakusoul-data/locales`)
+  und setzt `memory_id`. Router bekommt `CURRENT LOCAL TIME` und `OPEN INTENTIONS` mit IDs; `intentions_patch.due`
+  liest `parse_due` (ISO, lokal, Vergangenheit → kein Datum); Stage-Transkripte erzeugen nur `story`; `resolve` nur für
+  gezeigte offene IDs. `get_prompt_memories(char_id, user_name, query)` liefert `intentions` mit im Backend berechneter
+  Beschriftung (`due_label`, englisch wie der Prompt); `post_history_instruction` hängt sie hinter die passenden
+  Erinnerungen. Drawer-Reiter „Vorhaben“ (`IntentionsTab.tsx`) steht hinter „Episoden & Themen“ – E2E/Vitest, die
+  Reiter per Index ansprechen, zählen ihn mit.
 
 ### 9. Hub-Synchronisation, Registries & Daten-Pakete
 

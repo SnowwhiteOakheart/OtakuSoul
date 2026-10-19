@@ -130,15 +130,14 @@ export async function resolvePromptWithLore(
     }
   }
 
-  // 4. Memories for this reply: a stable core plus what fits the recent messages. Without
+  // 4. Memories for this reply: a stable core plus what fits the recent messages, and open
+  // intentions. Without
   // them (old backend, error) the overview's memories are used.
-  const memoryQuery = recentMemoryQuery(recentMessages);
-  const memories = memoryQuery
-    ? await waitWithAbort(() => api.getPromptMemories(activeCharacter.id, memoryQuery).catch((e) => {
-      console.warn('Failed getPromptMemories, using the overview:', e);
-      return null;
-    }), signal)
-    : null;
+  // Also with nothing to search for: the core and the open plans and promises still count.
+  const memories = await waitWithAbort(() => api.getPromptMemories(activeCharacter.id, activePersona.name, recentMemoryQuery(recentMessages)).catch((e) => {
+    console.warn('Failed getPromptMemories, using the overview:', e);
+    return null;
+  }), signal);
   signal?.throwIfAborted();
   const promptMemories = memories ? [...memories.core, ...memories.relevant] : cognitiveOverview?.recent_memories ?? [];
 

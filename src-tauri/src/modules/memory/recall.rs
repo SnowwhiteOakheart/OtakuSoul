@@ -357,6 +357,10 @@ impl MemoryDb {
             }
         }
 
-        Ok(PromptMemories { core, relevant })
+        Ok(PromptMemories {
+            core,
+            relevant,
+            intentions: Vec::new(),
+        })
     }
 }

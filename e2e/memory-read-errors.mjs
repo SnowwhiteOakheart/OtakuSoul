@@ -45,7 +45,7 @@ try {
   await selectTab(0);
   assert.equal(await tension.getValue(), draft);
 
-  await selectTab(6);
+  await selectTab(7);
   await browser.$('button=Snapshot jetzt anlegen').click();
   await browser.$('p*=Snapshot ').waitForDisplayed();
   const cid = sql('SELECT character_id FROM chat_sessions LIMIT 1;');
