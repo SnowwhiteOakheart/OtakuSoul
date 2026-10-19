@@ -172,6 +172,13 @@ Disk space: the app itself is small; local models need about 2–15 GB each. Sup
 
 ## 🛠️ For power users & developers
 
+### 🧭 Coming from SillyTavern, Backyard AI or Character.ai?
+
+* **All-in-one desktop app:** No separate Node.js or Python runtime to set up, and no external backends to configure manually. Everything runs natively in a single desktop app (Tauri 2 & Rust) with built-in C++ engines for local LLMs, image generation, speech cloning, and 3D/Live2D avatars.
+* **Character & lorebook compatible:** Import and export your existing SillyTavern cards (PNG/JSON), Chub characters, and lorebooks seamlessly. Your existing collection works out of the box.
+* **Honest note on extensions:** OtakuSoul currently does **not** feature a modular third-party extension/plugin system. Only characters, worlds, and lorebooks can be imported – custom extensions or scripts from other frontends cannot. All features in OtakuSoul are integrated directly into the core app.
+* **Beyond chat:** Besides open roleplay chat, OtakuSoul offers guided narrative stories, tactical 5e adventures on a battle map, and an automatic 4-layer cognitive long-term memory in SQLite.
+
 ### Feature reference
 
 | Area | Details |

@@ -172,6 +172,13 @@ Speicherplatz: Die App selbst ist klein; lokale Modelle brauchen je etwa 2–15 
 
 ## 🛠️ Für Fortgeschrittene & Entwickler
 
+### 🧭 Umstieg von SillyTavern, Backyard AI oder Character.ai?
+
+* **All-in-One Desktop-App:** Keine separate Node.js- oder Python-Laufzeitumgebung und kein manuelles Verknüpfen externer Server nötig. Alles läuft nativ in einer einzigen Desktop-App (Tauri 2 & Rust) mit direkt integrierten C++-Engines für lokale LLMs, Bildgenerierung, Stimmenklonen und 3D-/Live2D-Avatare.
+* **Charakter- & Lorebook-kompatibel:** Vorhandene SillyTavern-Karten (PNG/JSON), Chub-Charaktere und Lorebooks lassen sich nahtlos importieren und exportieren. Deine bisherige Sammlung funktioniert sofort.
+* **Ehrlicher Hinweis zu Erweiterungen:** OtakuSoul bietet Stand heute **kein** modulares Drittanbieter-Erweiterungs-/Plugin-System. Rein Charaktere, Welten und Lorebooks können übernommen werden – externe Skripte oder Extensions aus anderen Frontends jedoch nicht. Alle Werkzeuge sind fest im Kern der App integriert.
+* **Mehr als nur Chat:** Neben freiem Rollenspiel-Chat bietet OtakuSoul geführte interaktive Geschichten, taktische 5e-Abenteuer auf dem Spielbrett und ein automatisches vierstufiges kognitives Langzeitgedächtnis in SQLite.
+
 ### Funktionsübersicht
 
 | Bereich | Details |
