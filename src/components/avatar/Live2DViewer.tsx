@@ -103,6 +103,28 @@ ModelSettings.prototype.resolveURL = function (targetPath: string): string {
   return convertFileSrc(resolved);
 };
 
+/** GoEmotions fallback for romance / extra emotions on Live2D models without dedicated expressions. */
+const ROMANCE_FALLBACK: Record<string, string> = {
+  blush: 'embarrassment',
+  aroused: 'desire',
+  seductive: 'desire',
+  ecstasy: 'excitement',
+  afterglow: 'relief',
+  teasing: 'amusement',
+  crying: 'sadness',
+  fear: 'fear',
+  disgust: 'disgust',
+};
+
+/** Cheek blush intensity for romance/extra emotions on Live2D models. */
+const CHEEK_EMOTIONS: Record<string, number> = {
+  blush: 0.9,
+  aroused: 0.85,
+  ecstasy: 1.0,
+  afterglow: 0.6,
+  seductive: 0.45,
+};
+
 /**
  * Applies a GoEmotions label. Imported Soul-of-Waifu models name their expressions after the
  * emotion ("joy"), older exports use "joy_animation"; a motion group of the same name is the fallback.
@@ -111,6 +133,11 @@ const applyEmotion = async (model: Live2DModel, emotion: string) => {
   try {
     if (await model.expression(emotion)) return;
     if (await model.expression(`${emotion}_animation`)) return;
+    const fallback = ROMANCE_FALLBACK[emotion];
+    if (fallback) {
+      if (await model.expression(fallback)) return;
+      if (await model.expression(`${fallback}_animation`)) return;
+    }
     await model.motion(emotion);
   } catch (err) {
     console.warn('Could not set expression on Live2D model:', err);
@@ -183,6 +210,7 @@ export const Live2DViewer: React.FC<Live2DViewerProps> = ({
     let cleanupAudio: (() => void) | null = null;
     let stopSnapshots: (() => void) | null = null;
     let saveTimer: number | null = null;
+    let updateRomanceParams: (() => void) | null = null;
 
     const saveViewState = () => {
       const model = modelRef.current;
@@ -261,6 +289,33 @@ export const Live2DViewer: React.FC<Live2DViewerProps> = ({
             core.setParameterValueById?.('ParamMouthOpenY', Math.min(1.0, amplitude * 2.2));
           } catch {}
         });
+
+        // Dynamic parameter updates for romance/extra emotions (blush, heart eyes)
+        let currentCheek = 0;
+        let currentHeart = 0;
+        updateRomanceParams = () => {
+          const core = model.internalModel?.coreModel as
+            | { setParameterValueById?: (id: string, value: number) => void }
+            | undefined;
+          if (!core) return;
+          const mood = currentEmotionRef.current;
+          const targetCheek = CHEEK_EMOTIONS[mood] ?? 0;
+          const targetHeart = mood === 'aroused' || mood === 'ecstasy' ? 1.0 : 0;
+          currentCheek += (targetCheek - currentCheek) * 0.1;
+          currentHeart += (targetHeart - currentHeart) * 0.1;
+
+          for (const id of ['ParamCheek', 'PARAM_CHEEK', 'ParamBlush']) {
+            try {
+              core.setParameterValueById?.(id, currentCheek);
+            } catch {}
+          }
+          for (const id of ['ParamHeartEye', 'ParamEyeHeart', 'PARAM_HEART_EYE']) {
+            try {
+              core.setParameterValueById?.(id, currentHeart);
+            } catch {}
+          }
+        };
+        app.ticker.add(updateRomanceParams);
 
         // Set initial expression
         if (currentEmotionRef.current && currentEmotionRef.current !== 'neutral') {
@@ -375,6 +430,11 @@ export const Live2DViewer: React.FC<Live2DViewerProps> = ({
       if (saveTimer !== null) window.clearTimeout(saveTimer);
       saveViewState();
       if (cleanupAudio) cleanupAudio();
+      if (updateRomanceParams) {
+        try {
+          app.ticker.remove(updateRomanceParams);
+        } catch {}
+      }
       stopSnapshots?.();
       container.removeEventListener('click', handleCanvasClick);
       container.removeEventListener('pointermove', handlePointerMove);

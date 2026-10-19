@@ -32,6 +32,54 @@ export interface AvatarViewerProps {
 const VISEME_KEYS = Object.keys(SILENT_VISEMES) as (keyof Visemes)[];
 const EXPRESSION_WEIGHTS: Record<string, number> = { happy: 0.9, angry: 0.8, sad: 0.7, surprised: 0.8, relaxed: 0.6 };
 
+/** Base moods and weights for romance / extra emotions so standard VRM facial morphs react naturally. */
+const ROMANCE_VRM_BASE: Record<string, { baseMood: string; weight: number }> = {
+  blush: { baseMood: 'relaxed', weight: 0.4 },
+  aroused: { baseMood: 'relaxed', weight: 0.5 },
+  seductive: { baseMood: 'relaxed', weight: 0.6 },
+  ecstasy: { baseMood: 'happy', weight: 0.8 },
+  afterglow: { baseMood: 'relaxed', weight: 0.7 },
+  teasing: { baseMood: 'happy', weight: 0.6 },
+  crying: { baseMood: 'sad', weight: 0.9 },
+  fear: { baseMood: 'surprised', weight: 0.7 },
+  disgust: { baseMood: 'angry', weight: 0.6 },
+};
+
+/** Candidate expression names on the VRM model for specific romance/extra emotions. */
+const ROMANCE_EXPRESSIONS: Record<string, string[]> = {
+  blush: ['blush', 'Blush', 'cheek', 'Cheek', 'fcl_all_blush', 'Fcl_ALL_Blush'],
+  aroused: ['aroused', 'Aroused', 'blush', 'Blush', 'cheek', 'Cheek', 'heartEyes', 'HeartEyes', 'hearteyes', 'heart_eyes'],
+  seductive: ['seductive', 'Seductive', 'smug', 'Smug', 'wink', 'Wink'],
+  ecstasy: ['ecstasy', 'Ecstasy', 'blush', 'Blush', 'heartEyes', 'HeartEyes'],
+  afterglow: ['afterglow', 'Afterglow', 'blush', 'Blush', 'cheek', 'Cheek'],
+};
+
+interface MorphBind {
+  mesh: THREE.Mesh;
+  index: number;
+  kind: 'blush' | 'heartEyes' | 'smug';
+}
+
+function findMorphBinds(scene: THREE.Object3D): MorphBind[] {
+  const binds: MorphBind[] = [];
+  scene.traverse((obj) => {
+    const mesh = obj as THREE.Mesh;
+    if (mesh.isMesh && mesh.morphTargetDictionary && mesh.morphTargetInfluences) {
+      for (const [name, index] of Object.entries(mesh.morphTargetDictionary)) {
+        const lower = name.toLowerCase();
+        if (lower.includes('blush') || lower.includes('cheek')) {
+          binds.push({ mesh, index, kind: 'blush' });
+        } else if (lower.includes('heart') && (lower.includes('eye') || lower.includes('form'))) {
+          binds.push({ mesh, index, kind: 'heartEyes' });
+        } else if (lower.includes('smug')) {
+          binds.push({ mesh, index, kind: 'smug' });
+        }
+      }
+    }
+  });
+  return binds;
+}
+
 export const VrmViewer = ({
   modelPath,
   emotion = 'neutral',
@@ -72,6 +120,7 @@ export const VrmViewer = ({
     let leftArmDirection = 1;
     let rightArmDirection = -1;
     let vrm: VRM | null = null;
+    let morphBinds: MorphBind[] = [];
     const cleanupAudio = audioPlayer.onAudioFrame((_amplitude, visemes) => {
       audioVisemes = visemes;
     });
@@ -126,6 +175,7 @@ export const VrmViewer = ({
         rightArmDirection = Math.sign(loaded.humanoid.getNormalizedBoneNode('rightLowerArm')?.position.x ?? -1) || -1;
 
         vrm = loaded;
+        morphBinds = findMorphBinds(loaded.scene);
         stage.scene.add(loaded.scene);
         motionPlayerRef.current = new AvatarMotionPlayer(loaded.scene, () => setPlayingGesture(''));
         setLoadedVrm(loaded);
@@ -190,16 +240,50 @@ export const VrmViewer = ({
 
       // B. Face: blinking, emotion and mouth shapes from the voice.
       const em = model.expressionManager;
+      const currentMood = emotionRef.current;
       if (em) {
         em.setValue('blink', blink(elapsed));
+        const romanceBase = ROMANCE_VRM_BASE[currentMood];
+        const activeBaseMood = romanceBase ? romanceBase.baseMood : currentMood;
+
         for (const [expression, weight] of Object.entries(EXPRESSION_WEIGHTS)) {
-          em.setValue(expression, emotionRef.current === expression ? weight : 0);
+          const isBase = activeBaseMood === expression;
+          const targetWeight = romanceBase && isBase ? romanceBase.weight : weight;
+          em.setValue(expression, isBase ? targetWeight : 0);
         }
+
+        // Custom romance expressions on VRMExpressionManager (e.g. Blush, Cheek, HeartEyes)
+        for (const [romanceKey, names] of Object.entries(ROMANCE_EXPRESSIONS)) {
+          const isActive = currentMood === romanceKey;
+          for (const name of names) {
+            if (em.getExpression(name)) {
+              em.setValue(name, isActive ? 0.85 : 0);
+            }
+          }
+        }
+
         const target = mouthTarget(audioPlayer.isPlaying() ? audioVisemes : null, isSpeakingRef.current, elapsed);
         for (const key of VISEME_KEYS) {
           mouth[key] = THREE.MathUtils.lerp(mouth[key], target[key], 0.5);
           em.setValue(key, mouth[key]);
         }
+      }
+
+      // Direct mesh morph targets for models without VRMExpression metadata for blush/heartEyes
+      const isBlushing = ['blush', 'aroused', 'ecstasy', 'afterglow'].includes(currentMood);
+      const isHeartEyes = ['aroused', 'ecstasy'].includes(currentMood);
+      const isSmug = currentMood === 'seductive';
+      for (const bind of morphBinds) {
+        if (!bind.mesh.morphTargetInfluences) continue;
+        let targetVal = 0;
+        if (bind.kind === 'blush' && isBlushing) targetVal = 0.85;
+        else if (bind.kind === 'heartEyes' && isHeartEyes) targetVal = 1.0;
+        else if (bind.kind === 'smug' && isSmug) targetVal = 0.7;
+        bind.mesh.morphTargetInfluences[bind.index] = THREE.MathUtils.lerp(
+          bind.mesh.morphTargetInfluences[bind.index] ?? 0,
+          targetVal,
+          0.2
+        );
       }
 
       // C. Spring bones (hair, cloth) and expressions.

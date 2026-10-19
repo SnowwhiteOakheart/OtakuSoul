@@ -1377,4 +1377,37 @@ mod tests {
             (4, "2026-10-16".to_string())
         );
     }
+
+    #[tokio::test]
+    async fn nsfw_hub_live_registry_check() {
+        let chars = nsfw_registry_items("soul_registry.json", "characters").await;
+        assert!(!chars.is_empty(), "expected characters in nsfw repository");
+        assert!(
+            chars
+                .iter()
+                .any(|c| c.get("name").and_then(|v| v.as_str()) == Some("Mint")),
+            "expected Mint in nsfw character registry"
+        );
+
+        let scenes = nsfw_registry_items("stages_registry.json", "scenes").await;
+        assert!(!scenes.is_empty(), "expected scenes in nsfw repository");
+        assert!(
+            scenes
+                .iter()
+                .any(|s| s.get("id").and_then(|v| v.as_str()) == Some("nachtschicht_in_hethereau")),
+            "expected nachtschicht_in_hethereau in nsfw scenes registry"
+        );
+
+        let lorebooks = nsfw_registry_items("lorebooks_registry.json", "lorebooks").await;
+        assert!(
+            !lorebooks.is_empty(),
+            "expected lorebooks in nsfw repository"
+        );
+        assert!(
+            lorebooks
+                .iter()
+                .any(|l| l.get("name").and_then(|v| v.as_str()) == Some("Adulte Romance & Erotik")),
+            "expected adult lorebook in nsfw lorebooks registry"
+        );
+    }
 }
