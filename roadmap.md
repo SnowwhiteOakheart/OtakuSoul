@@ -1,11 +1,9 @@
 # 🗺️ OtakuSoul – Roadmap (offen)
 
-> Stand: 17.10.2026. Diese Datei ist die **einzige** Liste offener Punkte; `roadmap_abgeschlossen.md` (nur lokal, nicht im
+> Stand: 19.10.2026. Diese Datei ist die **einzige** Liste offener Punkte; `roadmap_abgeschlossen.md` (nur lokal, nicht im
 > Repository) enthält alles Erledigte (Portierung Phasen 1–18, Verbesserungen, Sprachausgabe, Neutralisierung, optionale Inhalte, Qualität &
-> Bedienung, 5e-Regeln, 3D-Figuren aus Spielen, Bedienbarkeit & Story-Einstieg). Sie ersetzt `ROADMAP.md`,
-> `ROADMAP_ABGESCHLOSSEN.md`, `Roadmap_abgeschlossen.md`, `Roadmap_TTS.md`, `Roadmap_rename.md`, `roadmap_chatgpt.md`,
-> `roadmap_optional_content.md` und seit 17.10.2026 auch `Roadmap_DND.md`, `roadmap_ue5.md`, `Roadmap_GUI.md` und
-> `todo_assets.md` (Grafik-Vorgaben jetzt in `docs/stage_assets.md`).
+> Bedienung, 5e-Regeln, 3D-Figuren aus Spielen, Bedienbarkeit & Story-Einstieg, Avatar-Manager, Oberflächensprachen, Chat-Erweiterungen,
+> Kognitives Gedächtnis 2.0 sowie FSK18/NSFW-Grundintegration). Sie ersetzt alle früheren separaten Roadmap-Dateien.
 >
 > Offene Punkte sind Vorschläge, keine zugesagten Features. Erledigtes wird hier abgehakt und beim nächsten
 > Aufräumen nach `roadmap_abgeschlossen.md` verschoben.
@@ -24,7 +22,7 @@
 6. **Prüfbar.** Jeder Schritt endet mit einem E2E-Durchlauf aus Einsteigersicht und Screenshots in
    `e2e/screenshots/`, die vor dem Abhaken angesehen werden.
 
-## 0. Bedienbarkeit
+## 0. Bedienbarkeit & Nutzertests
 
 - [ ] Kurze Nutzertests mit 2–3 Einsteigern anhand einer Aufgabenliste; Befunde hier als neue Punkte eintragen
   (alles Übrige aus dem Bedienbarkeitsplan ist erledigt, siehe `roadmap_abgeschlossen.md`, Abschnitt 10).
@@ -58,24 +56,68 @@
   im Kampfpanel, 16.10.2026) und bestand danach.
   17.10.2026: zweite Ursache behoben – der Test übersah Heilung durch „Zweiter Atem“ (zählt jetzt Heal-Ereignisse).
 
-## 3. Chat & Rollenspiel (Vorschläge vom 18.10.2026)
+## 3. 3D Desktop Pet (Mascot Companion)
 
-- [x] **Alternative Begrüßungen** einer Karte als Swipes der ersten Nachricht eines neuen Chats (übersetzt, Makros gefüllt).
-- [x] **Antwortvorschläge im Chat:** Knopf „Was könnte ich sagen?“ mit 2–3 kurzen Ideen im Stil der Persona (wie `pending_choices` in Stage).
-- [x] **„Schreib für mich“ (Impersonate):** KI entwirft die nächste Nutzernachricht in den Composer, Nutzer bearbeitet vor dem Senden.
-- [x] **Gruppen-Chats** mit mehreren Charakteren; Sprecherwahl/Ansprache-Erkennung aus `stage/director.rs` wiederverwenden, ohne Spielmechanik.
-- [x] **OOC-/Regie-Nachrichten:** `(( … ))` oder Umschalter „Regieanweisung“ geht als Hinweis ans Modell statt in die Erzählung.
-- [x] **Weitere Kartenmakros:** `{{random:a,b}}`, `{{roll:1d20}}`, `{{time}}`/`{{date}}`, `{{idle_duration}}` (Community-Karten zeigen sie sonst roh).
-- [x] **Wiederholungen eindämmen in Klartext:** Schalter „Abwechslungsreicher schreiben“ (DRY/XTC mit guten Werten), optional automatisches
-  Neu-Würfeln bei fast gleicher Antwort.
-- [x] **Ausgabe-Filter:** einfache Liste „Diese Wörter/Muster vermeiden“, Ersetzungsregeln für Antworten (Expertenmodus: RegEx).
-  Logit-Bias bewusst nicht: llama.cpp sperrt nur Einzeltokens, mehrteilige Wendungen träfen häufige Wortteile.
-- [x] **Antwortlänge pro Chat:** kurz/mittel/ausführlich, passt Prompt und `max_tokens` gemeinsam an.
-- [x] **Sichtbare Lorebook-/Gedächtnis-Treffer** je Antwort (welche Einträge einbezogen wurden).
-- [x] **„Diese Nachricht merken“** im Nachrichtenmenü (`add_episodic_memory_from`).
-- [x] **Szenenbild per Knopf** aus dem aktuellen Chat-Kontext (gab es als HUD-„Foto“ schon als Porträt; ergänzt: Bildart
-  „Moment“ je Antwort im Nachrichtenmenü, Bild als Chat-Hintergrund übernehmen).
-- [x] **Chat-Export/-Import im SillyTavern-Format (JSONL)** für Umsteiger (gab es schon in der Chat-Seitenleiste; ergänzt:
-  ST-Felder `extra.reasoning`/`swipe_info`/`note_prompt`, Zeitstempel, versteckte `is_system`-Zeilen, Export per Speichern-Dialog).
-- [x] **Inhalte für Erwachsene (18+)** optional mit einmaliger Altersbestätigung: zweite Hub-Quelle `otakusoul-data-nsfw`,
-  18+-Kennzeichnung, installierte 18+-Inhalte ausgeblendet, solange aus; neun weitere Emotionsbilder für alle Karten.
+> **Fokus:** Windows & macOS (Linux/Wayland ausgeklammert aufgrund von Compositor-Restriktionen bei freier Fensterplatzierung und Cross-App-Window-Sniffing).
+> Ziel: Aktiven 3D-Avatar (VRM / glTF / MMD) aus OtakuSoul als transparenten, frei schwebenden Begleiter auf den Desktop bringen.
+
+### Phase 1: Transparentes Companion-Fenster & Klick-Verhalten
+- [ ] **Multi-Window-Setup in Tauri 2:**
+  - Separater Window-Builder (`desktop_pet_window`) in Rust: `transparent: true`, `decorations: false`, `always_on_top: true`, `skip_taskbar: true`, `shadow: false`.
+  - Dedizierte schlanke Route im Frontend (`/desktop-pet` oder eigener HTML-Einstiegspunkt), die nur den Viewer lädt.
+- [ ] **Rendering & Transparenz:**
+  - Three.js WebGLRenderer mit `alpha: true` und Hintergrund `setClearColor(0x000000, 0)`.
+  - Wiederverwendung von `VrmViewer` / `AvatarCanvas` ohne Hintergrund-Mesh, Vignette oder Standard-Bühne.
+- [ ] **Intelligentes Click-Through (Maus-Durchlässigkeit):**
+  - Raycaster im Webview prüft kontinuierlich oder per `mousemove`, ob der Zeiger über einem Mesh/Knochen des Avatars liegt.
+  - Wenn Cursor über dem Avatar: `window.set_ignore_cursor_events(false)` (Avatar ist greifbar & anklickbar).
+  - Wenn Cursor über transparentem Leerraum: `window.set_ignore_cursor_events(true)` (Klicks gehen transparent an darunterliegende Desktop-Fenster durch).
+- [ ] **Manuelles Drag & Drop:**
+  - Greifen mit linker Maustaste bewegt das Fenster (`start_dragging()`).
+  - Kontextmenü mit Rechtsklick (z. B. „Zurück zur Haupt-App“, „Ausblenden“, „Stimmung wählen“).
+
+### Phase 2: Anbindung an OtakuSoul (Zustände, Gesten & Sprache)
+- [ ] **Synchronisation über Tauri-Events:**
+  - Übertragen des aktuellen Charakters & Modells an das Pet-Fenster (`pet:set-model`).
+  - Übertragen von Stimmungen und Gesten aus Chat-Antworten (`pet:play-gesture`, `pet:set-mood`).
+  - TTS & Lip-Sync Event-Bridge: Mundbewegungen synchron zum aktuellen Audio.
+- [ ] **Idle- & Verhaltens-Logik (State Machine):**
+  - Zustände: `IDLE_STAND`, `IDLE_SIT`, `WALKING`, `FALLING`, `REACTING`, `DRAGGED`.
+  - Zufällige Aktionen bei Inaktivität (umschauen, gähnen, hinsetzen, winken).
+  - Sprechblasen-Overlay über dem Kopf bei eingehenden Chat-Nachrichten.
+
+### Phase 3: Desktop-Physik & Bildschirmkanten
+- [ ] **Bildschirm-Grenzen erfassen:**
+  - Abfrage der Monitore via Tauri: `window.available_monitors()`.
+  - Erkennung der Taskleiste / des Docks (Work-Area vs. Gesamtauflösung).
+- [ ] **Gravitation & Kanten-Kollision:**
+  - Avatar hat Schwerkraft: Beim Loslassen in der Luft fällt das Modell nach unten.
+  - Landung auf der unteren Bildschirmkante (bzw. oberhalb der Windows-Taskleiste / macOS-Menüleiste).
+  - Wand-Kollision links/rechts: Umdrehen beim Erreichen des Bildschirmrands.
+
+### Phase 4: Interaktion mit fremden Fenstern (Windows & macOS)
+- [ ] **Windows-Integration (Win32 API über `windows-rs`):**
+  - Window Scanner (Hintergrund-Thread in Rust): Periodisches Abfragen offener Fenster via `EnumWindows()`.
+  - Filtern ungültiger Fenster (nur sichtbare, keine minimierten, keine Overlays oder das Pet selbst).
+  - Bestimmung der oberen Kante (Titelleiste) via `DwmGetWindowAttribute(DWMWA_EXTENDED_FRAME_BOUNDS)` bzw. `GetWindowRect()`.
+  - Kollisions-Plattformen: Sitzen & Laufen auf der Titelleiste des fokussierten Fensters. Avatar fällt herunter bei Fensterbewegung.
+- [ ] **macOS-Integration (CoreGraphics / Quartz Window Services):**
+  - Window Scanner via `CGWindowListCopyWindowInfo(kCGWindowListOptionOnScreenOnly | kCGWindowListExcludeDesktopElements, kCGNullWindowID)`.
+  - Auslesen der `kCGWindowBounds`-Rechtecke.
+  - Berechtigungsprüfung („Bedienungshilfen“ / „Screen Recording“).
+- [ ] **Mini-Interaktionen & Feinschliff:**
+  - Quick-Chat / Mini-Input bei Klick oder Tastenkürzel.
+  - Adaptive Framerate zur GPU-Schonung (15–30 FPS im Leerlauf, Pause bei Bildschirmsperre/Vollbild).
+  - Multi-Monitor-Übergang beim Laufen oder Ziehen.
+
+## 4. Kognitives Gedächtnis (Memory 2.0 – Ausblick & Folgepunkte)
+
+- [ ] **Lokale Embeddings (nur falls FTS5 nicht reicht):**
+  - Kleines GGUF-Embedding-Modell über den vorhandenen llama-server (`--embedding`).
+  - Vektoren als BLOB in SQLite, Kosinus-Ähnlichkeit in Rust (bei < 10.000 Erinnerungen pro Figur reicht Brute Force).
+  - Fusion mit BM25 per Reciprocal Rank Fusion (RRF). Erst messen, dann bauen.
+- [ ] **Stage-Prompt an `select_prompt_memories` anbinden:**
+  - Eigener Pfad und Abwägung für NPC-Gedächtnis im Stage-Modus.
+- [ ] **Signifikanz für Themen-Einträge:**
+  - Signifikanz vom Router bestimmen lassen statt des festen Werts 4.
+
