@@ -8,7 +8,7 @@ vi.mock('../services/audioPlayer', () => ({
 }));
 import { MorphingPortrait } from '../components/avatar/AvatarCanvas';
 import { useAppStore } from '../store/useAppStore';
-import { breathSeconds, readPortraitMotion } from '../utils/portraitMotion';
+import { breathSeconds, PORTRAIT_SPEAKING_FPS, portraitPose, readPortraitMotion } from '../utils/portraitMotion';
 
 beforeEach(() => {
   localStorage.clear();
@@ -24,19 +24,37 @@ describe('living portrait', () => {
   });
 
   it('moves with the voice while speaking and keeps still when switched off', () => {
-    const { container, rerender } = render(<MorphingPortrait src="data:a" alt="Ayu" isSpeaking breath={3} />);
-    const frame = container.firstElementChild as HTMLElement;
-    expect(frame.dataset.alive).toBe('true');
-    expect(frame.dataset.breath).toBe('3');
-    act(() => frames.callback?.(1));
-    const speech = container.querySelector('.portrait-speech') as HTMLElement;
-    expect(Number(speech.style.getPropertyValue('--speech'))).toBeGreaterThan(0);
-    rerender(<MorphingPortrait src="data:a" alt="Ayu" isSpeaking={false} breath={3} />);
-    expect(speech.style.getPropertyValue('--speech')).toBe('0');
+    vi.useFakeTimers();
+    try {
+      const { container, rerender } = render(<MorphingPortrait src="data:a" alt="Ayu" isSpeaking breath={3} />);
+      const frame = container.firstElementChild as HTMLElement;
+      expect(frame.dataset.alive).toBe('true');
+      expect(frame.dataset.breath).toBe('3');
+      const sway = container.querySelector('.portrait-alive') as HTMLElement;
+      const speech = container.querySelector('.portrait-speech') as HTMLElement;
+      const swayed = sway.style.transform;
+      expect(swayed).toContain('rotate(');
+      act(() => frames.callback?.(1));
+      act(() => vi.advanceTimersByTime(1000 / PORTRAIT_SPEAKING_FPS));
+      expect(speech.style.transform).toMatch(/translateY\(-0\.[1-9]/);
+      rerender(<MorphingPortrait src="data:a" alt="Ayu" isSpeaking={false} breath={3} />);
+      act(() => vi.advanceTimersByTime(1000));
+      expect(speech.style.transform).toContain('translateY(0.000%)');
+      expect(sway.style.transform).not.toBe(swayed);
 
-    act(() => useAppStore.getState().setPortraitMotion(false));
-    expect(frame.dataset.alive).toBeUndefined();
-    expect(container.querySelector('.portrait-alive')).toBeNull();
-    expect(readPortraitMotion()).toBe(false);
+      act(() => useAppStore.getState().setPortraitMotion(false));
+      expect(frame.dataset.alive).toBeUndefined();
+      expect(container.querySelector('.portrait-alive')).toBeNull();
+      expect(sway.style.transform).toBe('');
+      expect(readPortraitMotion()).toBe(false);
+    } finally {
+      vi.useRealTimers();
+    }
+  });
+
+  it('moves only a fraction of the picture', () => {
+    const pose = portraitPose(1.3, 4.2, 0.5, 1);
+    expect(pose.breath).toMatch(/^scale\(1\.00\d+, 1\.01?\d+\)/);
+    expect(pose.speech).toBe('translateY(-1.400%) scale(1.0180)');
   });
 });

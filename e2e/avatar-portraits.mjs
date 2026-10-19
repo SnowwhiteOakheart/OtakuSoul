@@ -31,14 +31,18 @@ const reloadSaved = async (id) => {
 try {
   await browser.$('textarea[aria-label="Nachricht"]').waitForDisplayed({ timeout: 30000 });
   await selectMood('Freude', 'happy');
-  // The portrait breathes and sways (CSS animations), the switch keeps it still.
+  // The portrait breathes and sways (transforms at a low frame rate), the switch keeps it still.
   const motion = () => browser.execute(() => {
     const frame = document.querySelector('[data-alive]');
     const sway = document.querySelector('.portrait-alive');
     const breath = document.querySelector('.portrait-alive > .portrait-breath');
-    return { alive: !!frame, sway: sway ? getComputedStyle(sway).animationName : '', breath: breath ? getComputedStyle(breath).animationName : '' };
+    return { alive: !!frame, sway: sway?.style.transform ?? '', breath: breath?.style.transform ?? '' };
   });
-  assert.deepEqual(await motion(), { alive: true, sway: 'portrait-sway', breath: 'portrait-breathe' });
+  const first = await motion();
+  assert.ok(first.alive && first.sway.startsWith('rotate(') && first.breath.startsWith('scale('), JSON.stringify(first));
+  await browser.waitUntil(async () => (await motion()).sway !== first.sway, { timeout: 3000, timeoutMsg: 'Porträt bewegt sich nicht' });
+  // No endless CSS animation is left: each makes WebKitGTK repaint the window 60 times a second.
+  assert.deepEqual(await browser.execute(() => document.getAnimations().map((a) => a.animationName ?? '').filter(Boolean)), []);
   await browser.saveScreenshot(path.join(screenshotDir, 'avatar-portrait-lebendig.png'));
   const motionSwitch = await browser.$('#setting-portrait-motion');
   await motionSwitch.click();

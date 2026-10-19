@@ -501,9 +501,12 @@ ru „персонаж/история/сцена“. Fachbegriffe nur im Experte
   `convertFileSrc` zu `asset://`-URLs. Unter `tauri dev` (Seite von `http://localhost:1420`) lädt WebKitGTK solche
   Bilder nicht in `<img>`, `fetch` aber schon → `loadDisplayableImage`/`assetAsBlobUrl` laden sie als Blob-URL;
   `MorphingPortrait` lädt vor dem Überblenden vollständig und trägt die Quelle in `data-portrait`.
-  Lebendiges Bild: `MorphingPortrait` atmet und wiegt sich per CSS (`.portrait-alive`/`.portrait-breath` in `App.css`, Tempo je
-  Ausdruck `utils/portraitMotion.ts` `breathSeconds`, zufällige Phase), beim Sprechen wippt `.portrait-speech` mit dem Pegel aus
-  `audioPlayer.onAudioFrame` (CSS-Variable `--speech`, kein Re-Render); Schalter `avatarSlice.portraitMotion` (localStorage,
+  Lebendiges Bild: `MorphingPortrait` atmet und wiegt sich (`.portrait-alive`/`.portrait-breath`, Tempo je Ausdruck
+  `utils/portraitMotion.ts` `breathSeconds`, zufällige Phase), beim Sprechen wippt `.portrait-speech` mit dem Pegel aus
+  `audioPlayer.onAudioFrame`. Die Transforms setzt ein Takt mit `PORTRAIT_FPS` (12, sprechend 20) aus `portraitPose` direkt
+  auf die Ebenen, kein Re-Render. **Keine endlosen CSS-Animationen/Transitions** (Keyframes, `animate-pulse` im Dauerzustand):
+  WebKitGTK zeichnet dafür 60×/s das Fenster neu – das 2D-Porträt per CSS hielt einen Kern bei 100 % und ließ das Tippen
+  verzögern (gemessen mit E2E-Build unter Xvfb: 100 % → 19 %). Schalter `avatarSlice.portraitMotion` (localStorage,
   Knopf `#setting-portrait-motion` im Bildmodus), `prefers-reduced-motion` hält es still; `data-alive`/`data-breath`. Die Asset-Freigabe
   bleibt eng (`tauri.conf.json` `scope: []`, Laufzeit-Freigabe in `lib.rs` `allow_app_asset_dirs`), niemals `**`.
   Relative Bildpfade einer Karte werden beim Laden/Speichern auf ihren Ordner bezogen

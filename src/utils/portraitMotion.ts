@@ -33,3 +33,21 @@ export function breathSeconds(emotion: Pick<EmotionResult, 'emotion' | 'vrm_expr
   if (SLOW.has(emotion.emotion)) return 4.8;
   return 4.2;
 }
+
+/** Frames per second of the living portrait: the motion is a fraction of a pixel per frame,
+ *  so few frames look the same; WebKitGTK repaints the window for every one (60 fps in CSS
+ *  kept a core busy and made typing lag). Speaking moves faster and gets more. */
+export const PORTRAIT_FPS = 12;
+export const PORTRAIT_SPEAKING_FPS = 20;
+
+/** Transforms of the sway, breath and speech layers at `seconds`; `phase` (0-1) offsets
+ *  portraits side by side, `speech` is the voice level (0-1). */
+export function portraitPose(seconds: number, breath: number, phase: number, speech: number) {
+  const breathing = (1 - Math.cos(((seconds + phase * 5) / breath) * 2 * Math.PI)) / 2;
+  const sway = -Math.cos(((seconds + phase * 9) / (breath * 1.73)) * Math.PI);
+  return {
+    sway: `rotate(${(0.3 * sway).toFixed(3)}deg) translateX(${(0.25 * sway).toFixed(3)}%)`,
+    breath: `scale(${(1 + 0.005 * breathing).toFixed(4)}, ${(1 + 0.014 * breathing).toFixed(4)}) translateY(${(-0.35 * breathing).toFixed(3)}%)`,
+    speech: `translateY(${(-1.4 * speech).toFixed(3)}%) scale(${(1 + 0.018 * speech).toFixed(4)})`,
+  };
+}

@@ -11,7 +11,7 @@ import { resolveLive2dPath } from '../avatars/avatarMatch';
 import { AvatarSkeleton, ScrollText } from '../ui';
 import { languageCode, localizeCard } from '../../utils/cardI18n';
 import { audioPlayer } from '../../services/audioPlayer';
-import { breathSeconds } from '../../utils/portraitMotion';
+import { breathSeconds, PORTRAIT_FPS, PORTRAIT_SPEAKING_FPS, portraitPose } from '../../utils/portraitMotion';
 
 // MMD brings its own loader and physics; only loaded for MMD avatars.
 const MmdViewer = lazy(() => import('./MmdViewer'));
@@ -63,25 +63,41 @@ export const MorphingPortrait: React.FC<MorphingPortraitProps> = ({
   isSpeaking,
   breath = 4.2,
 }) => {
-  // Living portrait: breathing and swaying in CSS (off with "reduce motion"), while speaking the
-  // picture bobs with the voice's level (written to a CSS variable, no re-render per frame).
+  // Living portrait: breathing and swaying (off with "reduce motion"), while speaking the
+  // picture bobs with the voice's level. Written straight to the layers at a low frame rate
+  // (`PORTRAIT_FPS`), no re-render per frame.
   const alive = useAppStore((s) => s.portraitMotion);
+  const swayRef = useRef<HTMLDivElement>(null);
+  const breathRef = useRef<HTMLDivElement>(null);
   const speechRef = useRef<HTMLDivElement>(null);
   // Each portrait starts somewhere in its breath, so several side by side don't move in step.
   const [phase] = useState(() => Math.random());
   useEffect(() => {
-    const element = speechRef.current;
-    if (!alive || !isSpeaking || !element) return;
+    const [sway, breathing, speech] = [swayRef.current, breathRef.current, speechRef.current];
+    if (!alive || !sway || !breathing || !speech) return;
+    const still = window.matchMedia?.('(prefers-reduced-motion: reduce)').matches ?? false;
     let level = 0;
-    const stop = audioPlayer.onAudioFrame((amplitude) => {
-      level = level * 0.6 + amplitude * 0.4;
-      element.style.setProperty('--speech', level.toFixed(3));
-    });
-    return () => {
-      stop();
-      element.style.setProperty('--speech', '0');
+    const apply = () => {
+      const pose = portraitPose(performance.now() / 1000, breath, phase, level);
+      if (!still) {
+        sway.style.transform = pose.sway;
+        breathing.style.transform = pose.breath;
+      }
+      speech.style.transform = still ? '' : pose.speech;
     };
-  }, [alive, isSpeaking]);
+    const stopFrames = isSpeaking
+      ? audioPlayer.onAudioFrame((amplitude) => {
+          level = level * 0.6 + amplitude * 0.4;
+        })
+      : () => {};
+    apply();
+    const timer = still ? undefined : window.setInterval(apply, 1000 / (isSpeaking ? PORTRAIT_SPEAKING_FPS : PORTRAIT_FPS));
+    return () => {
+      stopFrames();
+      window.clearInterval(timer);
+      for (const layer of [sway, breathing, speech]) layer.style.transform = '';
+    };
+  }, [alive, isSpeaking, breath, phase]);
   // The first picture shows right away; later ones are loaded first and then cross-faded.
   // `origin` is the portrait a layer stands for (its URL may be a blob under `tauri dev`).
   const [layers, setLayers] = useState<[PortraitLayer, PortraitLayer]>([{ url: src, origin: src }, null]);
@@ -146,8 +162,8 @@ export const MorphingPortrait: React.FC<MorphingPortraitProps> = ({
     <div className="relative w-full max-w-sm aspect-[4/5] rounded-3xl overflow-hidden border-2 border-accent-500/40 shadow-2xl shadow-accent-500/10 transition-transform duration-700 hover:scale-[1.02]"
       data-alive={alive || undefined} data-breath={alive ? breath : undefined}>
       {/* A little larger than the frame, so swaying never shows an edge. */}
-      <div className={`absolute ${alive ? '-inset-[3%] portrait-alive' : 'inset-0'}`} style={{ '--breath': `${breath}s`, '--breath-phase': phase } as React.CSSProperties}>
-      <div className="absolute inset-0 portrait-breath">
+      <div ref={swayRef} className={`absolute ${alive ? '-inset-[3%] portrait-alive' : 'inset-0'}`}>
+      <div ref={breathRef} className="absolute inset-0 portrait-breath">
       <div ref={speechRef} className="absolute inset-0 portrait-speech">
       {layers.map((layer, index) => layer && (
         <img
@@ -282,7 +298,8 @@ export const AvatarCanvas: React.FC<AvatarCanvasProps> = ({
           triggerClassName="flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-slate-900/80 border border-slate-700/60 text-xs backdrop-blur shadow-md hover:bg-slate-800 text-accent-300 transition-all outline-hidden focus-visible:ring-2 focus-visible:ring-accent-400"
           trigger={
             <>
-              <span className="w-2 h-2 rounded-full bg-accent-400 animate-pulse motion-reduce:animate-none" />
+              {/* No pulse: an endless animation makes WebKitGTK repaint the window every frame. */}
+              <span className="w-2 h-2 rounded-full bg-accent-400" />
               <span className="max-w-28 truncate">{tEmotion(currentEmotion.emotion)}</span>
               <ChevronDown className="w-3 h-3 text-slate-400" />
             </>
