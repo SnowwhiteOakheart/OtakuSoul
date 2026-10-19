@@ -126,6 +126,9 @@ export function startMockLlm() {
         stats.memoryRouter = (stats.memoryRouter ?? 0) + 1;
         (stats.memoryRequests ??= []).push(JSON.stringify(request.messages));
       }
+      // Memory cleanup ("tidy up memory"): answers with the groups a test sets.
+      const isCleanup = system.includes('[SOUL MEMORY — CLEANUP]');
+      if (isCleanup) { stats.cleanup = (stats.cleanup ?? 0) + 1; stats.lastCleanupMessages = request.messages ?? []; }
       const isArcArchive = system.includes('[SOUL STAGE — ARC ARCHIVE]') || system.includes('[STAGE — ARC ARCHIVE]');
       const isAudit = system.includes('[SOUL STAGE — CONSISTENCY]') || system.includes('[STAGE — CONSISTENCY]');
       if (isArcArchive) { stats.arcArchive = (stats.arcArchive ?? 0) + 1; stats.lastArcArchivePrompt = system; }
@@ -163,6 +166,7 @@ export function startMockLlm() {
       const plannerAmbient = stats.ambient ?? null;
       const text = stats.memoryRouterResult && JSON.stringify(request.messages ?? []).includes('=== RECENT MESSAGES ===')
         ? JSON.stringify(stats.memoryRouterResult)
+        : isCleanup ? JSON.stringify(stats.cleanupResult ?? { groups: [] })
         : isArcArchive ? 'ARC_SUMMARY: Das Tor wurde geöffnet, der Wächter ist frei.'
         : isAudit ? JSON.stringify(stats.auditResult ?? { prune_keys: [], updated_facts: {} })
         : isChatRouting ? JSON.stringify({ next_actor: stats.chatRoutes?.shift() ?? 'PLAYER' })

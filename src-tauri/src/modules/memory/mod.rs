@@ -10,6 +10,7 @@ use std::time::{SystemTime, UNIX_EPOCH};
 use tracing::{info, warn};
 
 mod chats;
+mod cleanup;
 pub use chats::MAX_CHAT_GUESTS;
 mod intentions;
 mod markdown;
@@ -21,6 +22,7 @@ mod soul;
 #[cfg(test)]
 mod tests;
 
+pub use cleanup::{CLEANUP_TOKENS, CleanupGroup, CleanupProposal, valid_cleanup_groups};
 pub use intentions::{IntentionChanges, parse_due};
 pub use models::*;
 pub use recall::{MemoryBudget, PROMPT_MEMORY_BUDGET};

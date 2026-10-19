@@ -1929,3 +1929,95 @@ fn a_reflection_adds_and_resolves_only_its_own_intentions() {
     assert_eq!(db.get_intentions("ayu", "Mira", false).unwrap().len(), 1);
     assert_eq!(db.get_intentions("sora", "Kai", false).unwrap().len(), 1);
 }
+
+#[test]
+fn a_cleanup_merges_overlapping_memories_and_keeps_them_restorable() {
+    let db = MemoryDb::new_in_memory().unwrap();
+    let a = db
+        .add_episodic_memory("ayu", "topic", "[Thema: tee]\nMag Grüntee", 3)
+        .unwrap();
+    let b = db
+        .add_episodic_memory("ayu", "fact", "Trinkt abends Jasmintee", 4)
+        .unwrap();
+    let manual = db
+        .add_episodic_memory_from(
+            "ayu",
+            "fact",
+            "Mag keinen Kaffee",
+            3,
+            &MemorySource::manual(),
+        )
+        .unwrap();
+    let c = db
+        .add_episodic_memory("ayu", "fact", "Hat eine Katze", 3)
+        .unwrap();
+    let foreign = db
+        .add_episodic_memory("sora", "fact", "Sora mag Tee", 3)
+        .unwrap();
+
+    // The model only sees memories it may merge.
+    let candidates: Vec<i64> = db
+        .cleanup_candidates("ayu", 10_000)
+        .unwrap()
+        .iter()
+        .map(|m| m.id)
+        .collect();
+    assert!(candidates.contains(&a) && candidates.contains(&c) && !candidates.contains(&manual));
+
+    let group = |ids: Vec<i64>, summary: &str| CleanupGroup {
+        memory_ids: ids,
+        category: "topic".into(),
+        title: "Tee".into(),
+        summary: summary.into(),
+    };
+    let merged = db
+        .apply_memory_cleanup(
+            "ayu",
+            &[
+                group(vec![a, b], "Trinkt gern Grüntee, abends Jasmintee"),
+                // A protected or foreign memory leaves too few to merge.
+                group(vec![c, manual], "Katze und Kaffee"),
+                group(vec![c, foreign], "Katze"),
+            ],
+        )
+        .unwrap();
+    assert_eq!(merged, 1);
+    let tea = db.active_topic_memory("ayu", "tee").unwrap().unwrap();
+    assert!(
+        tea.content
+            .ends_with("Trinkt gern Grüntee, abends Jasmintee")
+    );
+    assert_eq!(tea.significance, 4);
+    let outdated = db.get_superseded_memories("ayu", 10).unwrap();
+    assert_eq!(outdated.len(), 2);
+    assert!(outdated.iter().all(|m| m.superseded_by == Some(tea.id)));
+    let active: Vec<i64> = db
+        .get_episodic_memories("ayu", 10)
+        .unwrap()
+        .iter()
+        .map(|m| m.id)
+        .collect();
+    assert!(active.contains(&c) && active.contains(&manual));
+    db.restore_superseded_memory("ayu", a).unwrap();
+    assert_eq!(db.get_superseded_memories("ayu", 10).unwrap().len(), 1);
+}
+
+#[test]
+fn cleanup_groups_need_two_known_memories_each_once() {
+    let group = |ids: Vec<i64>, summary: &str| CleanupGroup {
+        memory_ids: ids,
+        summary: summary.into(),
+        ..Default::default()
+    };
+    let valid = valid_cleanup_groups(
+        vec![
+            group(vec![1, 2, 99], "A"),
+            group(vec![2, 3], "B"), // 2 is taken: only one left
+            group(vec![3, 3, 4], "C"),
+            group(vec![5, 6], "  "),
+        ],
+        &[1, 2, 3, 4, 5, 6],
+    );
+    let ids: Vec<Vec<i64>> = valid.iter().map(|g| g.memory_ids.clone()).collect();
+    assert_eq!(ids, [vec![1, 2], vec![3, 4]]);
+}

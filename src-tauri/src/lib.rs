@@ -249,6 +249,8 @@ pub fn run() {
             commands::memory::update_intention,
             commands::memory::set_intention_status,
             commands::memory::delete_intention,
+            commands::memory::propose_memory_cleanup,
+            commands::memory::apply_memory_cleanup,
             commands::memory::update_psychology,
             commands::memory::update_relationship,
             commands::memory::add_episodic_memory,

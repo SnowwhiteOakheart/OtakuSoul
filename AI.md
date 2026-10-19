@@ -606,6 +606,15 @@ ru „персонаж/история/сцена“. Fachbegriffe nur im Experte
   Beschriftung (`due_label`, englisch wie der Prompt); `post_history_instruction` hängt sie hinter die passenden
   Erinnerungen. Drawer-Reiter „Vorhaben“ (`IntentionsTab.tsx`) steht hinter „Episoden & Themen“ – E2E/Vitest, die
   Reiter per Index ansprechen, zählen ihn mit.
+- Konsolidierung: `preferences_habits` weich auf 12 (`HABITS_SOFT_CAP`), hart 25. Darüber stellt die Pipeline dem
+  Router eine `CONSOLIDATION TASK`; `preferences_habits_replace` wird **nur dann** übernommen (`accept_habits_replace`,
+  1–12 Einträge), sonst ignoriert – ein Modell darf die Liste nicht ungefragt leeren.
+- „Gedächtnis aufräumen“ (`memory/cleanup.rs`, `MemoryCleanup.tsx`): `propose_memory_cleanup` zeigt dem Modell nur
+  aktive, ungeschützte Erinnerungen (`cleanup_candidates`, ~6.000 Tokens) und schreibt nichts; `valid_cleanup_groups`
+  verlangt je Gruppe ≥ 2 bekannte IDs, jede nur einmal. Erst `apply_memory_cleanup` (nach Snapshot, eine Transaktion)
+  legt je Gruppe eine Erinnerung an und löst die Quellen per `supersede_memory_on` ab (wiederherstellbar). Sperre über
+  `memoryOperation = 'cleanup'`. Mock-LLM: `stats.cleanupResult`.
+- Raw-Strings für Prompts: ein `"#` (z. B. `"#12"`) beendet `r#"…"#` – dann `r##"…"##` nehmen.
 
 ### 9. Hub-Synchronisation, Registries & Daten-Pakete
 

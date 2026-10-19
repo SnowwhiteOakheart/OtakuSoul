@@ -2,4 +2,8 @@
 import type { RouterRelationshipMetadataPatch } from "./RouterRelationshipMetadataPatch";
 import type { RouterUserIdentityPatch } from "./RouterUserIdentityPatch";
 
-export type RouterUserMemoryPatch = { user_identity_status: RouterUserIdentityPatch | null, relationship_metadata: RouterRelationshipMetadataPatch | null, preferences_habits_add: Array<string>, preferences_habits_remove: Array<string>, shared_milestones_promises_add: Array<string>, shared_milestones_promises_remove: Array<string>, };
+export type RouterUserMemoryPatch = { user_identity_status: RouterUserIdentityPatch | null, relationship_metadata: RouterRelationshipMetadataPatch | null, preferences_habits_add: Array<string>, preferences_habits_remove: Array<string>, 
+/**
+ * The whole list, merged; only accepted when the router was asked to consolidate.
+ */
+preferences_habits_replace: Array<string>, shared_milestones_promises_add: Array<string>, shared_milestones_promises_remove: Array<string>, };

@@ -8,6 +8,8 @@ import type {
   DiaryEntry,
   MemoryBackupInfo,
   SoulMemoryPipelineResult,
+  CleanupGroup,
+  CleanupProposal,
 } from '../../types';
 import type { SliceCreator } from '../storeTypes';
 import { toast } from '../../components/ui/feedback';
@@ -22,6 +24,7 @@ const withoutPending = (overview: CognitiveOverview): CognitiveOverview =>
     ? overview
     : { ...overview, recent_memories: overview.recent_memories.filter((m) => !pendingForgets.has(m.id)) };
 import { trackTask } from './taskSlice';
+import { llmTarget } from '../helpers';
 import { chatSpeakers, memoryCharacter, presentedAs } from '../../utils/groupChat';
 
 /** Cognitive soul memory: psychology, relationship, diary, reflection and memory backups. */
@@ -36,7 +39,7 @@ export interface MemorySlice {
   memoryOverviewError: string | null;
   isReflecting: boolean;
   memoryReflectionError: string | null;
-  memoryOperation: 'backup' | 'restore' | null;
+  memoryOperation: 'backup' | 'restore' | 'cleanup' | null;
   lastReflectionResult: SoulMemoryPipelineResult | null;
   characterMarkdown: string;
   userMarkdown: string;
@@ -67,6 +70,10 @@ export interface MemorySlice {
   triggerEmotionalDecay: () => Promise<void>;
   /** Reflects on the open chat; `characterId` = a guest of a group chat learning into their own memory. */
   triggerMemoryPipeline: (recentTurns?: number, characterId?: string) => Promise<SoulMemoryPipelineResult | null>;
+  /** Asks the model which memories of the shown character could be merged (nothing written). */
+  proposeMemoryCleanup: () => Promise<CleanupProposal>;
+  /** Merges confirmed groups (after a snapshot); returns how many were merged. */
+  applyMemoryCleanup: (groups: CleanupGroup[]) => Promise<number>;
   fetchMemoryMarkdown: () => Promise<{ charMd: string; userMd: string }>;
   saveCharacterMarkdown: (markdown: string) => Promise<void>;
   saveUserMarkdown: (markdown: string) => Promise<void>;
@@ -454,6 +461,33 @@ export const createMemorySlice: SliceCreator<MemorySlice> = (set, get) => {
         if (isCurrent()) set({ memoryBackupsError: errorMessage(e) });
       } finally {
         if (isCurrent()) set({ isLoadingBackups: false });
+      }
+    },
+
+    proposeMemoryCleanup: async () => {
+      const cid = memoryCid();
+      if (!cid) throw new Error(translate('int.noCharacter'));
+      if (get().memoryOperation || get().isReflecting) throw new Error(translate('memory.busy'));
+      set({ memoryOperation: 'cleanup' });
+      try {
+        return await api.proposeMemoryCleanup({ character_id: cid, ...llmTarget(get()) });
+      } finally {
+        set({ memoryOperation: null });
+      }
+    },
+
+    applyMemoryCleanup: async (groups) => {
+      const cid = memoryCid();
+      const userName = get().activePersona.name;
+      if (!cid) throw new Error(translate('int.noCharacter'));
+      if (get().memoryOperation || get().isReflecting) throw new Error(translate('memory.busy'));
+      set({ memoryOperation: 'cleanup' });
+      try {
+        const merged = await api.applyMemoryCleanup(cid, userName, groups);
+        if (memoryCid() === cid && get().activePersona.name === userName) await refreshContext(cid, userName);
+        return merged;
+      } finally {
+        set({ memoryOperation: null });
       }
     },
 

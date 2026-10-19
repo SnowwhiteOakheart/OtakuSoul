@@ -9,6 +9,7 @@ import { errorMessage } from '../../../utils/errors';
 import { Search, Sparkles, X } from 'lucide-react';
 import { MemoryItem } from './MemoryItem';
 import { SupersededMemories } from './SupersededMemories';
+import { MemoryCleanup } from './MemoryCleanup';
 
 type MemoryCategory = 'fact' | 'secret' | 'promise' | 'event' | 'location';
 
@@ -173,6 +174,7 @@ export const MemoriesTab = () => {
         )}
 
         <div className="pt-2 border-t border-slate-800 space-y-2">
+          <MemoryCleanup />
           <label className="flex items-center gap-2 text-xs text-slate-400 cursor-pointer">
             <input
               type="checkbox"

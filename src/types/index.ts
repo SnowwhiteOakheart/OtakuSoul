@@ -60,6 +60,9 @@ import type { EpisodicMemory } from './generated/EpisodicMemory';
 import type { PromptMemories } from './generated/PromptMemories';
 import type { IntentionEntry } from './generated/IntentionEntry';
 import type { IntentionDraft } from './generated/IntentionDraft';
+import type { CleanupGroup } from './generated/CleanupGroup';
+import type { CleanupProposal } from './generated/CleanupProposal';
+import type { MemoryCleanupRequest } from './generated/MemoryCleanupRequest';
 import type { MemoryChange } from './generated/MemoryChange';
 import type { GatewayCharacterEntry } from './generated/GatewayCharacterEntry';
 import type { GatewayLorebookEntry } from './generated/GatewayLorebookEntry';
@@ -184,6 +187,9 @@ export type {
   PromptMemories,
   IntentionEntry,
   IntentionDraft,
+  CleanupGroup,
+  CleanupProposal,
+  MemoryCleanupRequest,
   MemoryChange,
   GatewayCharacterEntry,
   GatewayLorebookEntry,

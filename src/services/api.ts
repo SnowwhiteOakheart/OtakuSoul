@@ -19,6 +19,9 @@ import {
   EpisodicMemory,
   IntentionEntry,
   IntentionDraft,
+  CleanupGroup,
+  CleanupProposal,
+  MemoryCleanupRequest,
   PsychologyState,
   RelationshipState,
   DiaryEntry,
@@ -281,6 +284,16 @@ export const api = {
 
   restoreSupersededMemory: async (charId: string, id: number): Promise<void> => {
     await invoke('restore_superseded_memory', { charId, id });
+  },
+
+  /** Asks the model which memories could be merged; writes nothing. */
+  proposeMemoryCleanup: async (req: MemoryCleanupRequest): Promise<CleanupProposal> => {
+    return await invoke<CleanupProposal>('propose_memory_cleanup', { req });
+  },
+
+  /** Merges the confirmed groups after a snapshot; returns how many were merged. */
+  applyMemoryCleanup: async (charId: string, userName: string, groups: CleanupGroup[]): Promise<number> => {
+    return await invoke<number>('apply_memory_cleanup', { charId, userName, groups });
   },
 
   getCognitiveOverview: async (

@@ -52,6 +52,7 @@ You MUST otherwise output exactly this JSON structure:
     },
     "preferences_habits_add": [],
     "preferences_habits_remove": [],
+    "preferences_habits_replace": ["only when a CONSOLIDATION TASK asks for it: the whole merged list"],
     "shared_milestones_promises_add": ["shared milestones only – promises and plans go into intentions_patch"],
     "shared_milestones_promises_remove": []
   },
@@ -81,6 +82,7 @@ RULES:
 - emotion_active: true if recent messages support the emotion; false if it is fading.
 - CONTRADICTION PROTOCOL: add the corrected version via *_add, put outdated fact in *_remove, and describe the fix in healing_log_add.
 - TOPICS: to update an existing topic, reuse its file name from its [Topic: …] header with action "update"; the archivist then merges the new facts into it and the old version is retired.
+- CONSOLIDATION: only when the user message contains a CONSOLIDATION TASK, return preferences_habits_replace with the complete new list: merge related single facts into one pattern (e.g. three food likes into "Loves sweet Japanese snacks, especially dango"), keep what is distinct, drop nothing important. Otherwise omit it.
 - INTENTIONS: create one when someone commits to doing something later (a plan, a promise, an appointment) that is not already in OPEN INTENTIONS. time_basis "real" only when it is clearly about the real world and real time (e.g. "remind me on Monday about my job interview"); then work out "due" from CURRENT LOCAL TIME. Everything happening inside the story or role-play (e.g. "tomorrow we ride to the castle") is "story" with due null; if in doubt, use "story". Resolve an open intention by its id (#3) when the RECENT MESSAGES show it was done (fulfilled) or called off (abandoned).
 - MEMORY SUPERSEDE: list a memory only when the RECENT MESSAGES clearly contradict or outdate it (e.g. someone moved, a relationship ended), only with an id (#12) shown in RELEVANT TOPIC FILES, and put the corrected version into a topic or *_add. Leave it empty otherwise.
 "#;
@@ -101,6 +103,20 @@ GUIDELINES:
 
 Write the lorebook content directly in plain text.
 "#;
+
+pub const CLEANUP_SYSTEM_PROMPT: &str = r##"[SOUL MEMORY — CLEANUP]
+You tidy up the long-term memory of "{character}". Each memory is "#id [category] content".
+
+Find groups of two or more memories about the same subject that repeat, overlap or update each other, and write ONE dense summary per group that keeps every fact that still holds. When memories contradict, the one with the higher id is newer and wins. Leave memories that stand on their own alone – do not group unrelated things.
+
+Output ONLY this JSON object, nothing else:
+{"groups": [{"memory_ids": [3, 8], "category": "topic", "title": "short subject name", "summary": "the merged memory"}]}
+
+RULES:
+- category: one of the categories of the grouped memories ("topic" for topic files, otherwise e.g. "fact" or "event").
+- LANGUAGE: write title and summary in {language}.
+- Nothing worth merging: {"groups": []}
+"##;
 
 pub const DIARY_SYSTEM_PROMPT: &str = r#"[SYSTEM_INSTRUCTION]
 You are {character}. Your task is to write a secret, internal diary entry reflecting on your recent conversation with {user_name}.
@@ -231,6 +247,9 @@ pub struct RouterUserMemoryPatch {
     pub preferences_habits_add: Vec<String>,
     #[serde(default)]
     pub preferences_habits_remove: Vec<String>,
+    /// The whole list, merged; only accepted when the router was asked to consolidate.
+    #[serde(default)]
+    pub preferences_habits_replace: Vec<String>,
     #[serde(default)]
     pub shared_milestones_promises_add: Vec<String>,
     #[serde(default)]
@@ -409,6 +428,32 @@ fn router_intention_line(entry: &crate::modules::memory::IntentionEntry) -> Stri
     )
 }
 
+/// Preferences and habits a relationship keeps before the router is asked to merge them.
+const HABITS_SOFT_CAP: usize = 12;
+/// Never more than this, even when a reflection only adds (the oldest go).
+const HABITS_HARD_CAP: usize = 25;
+
+/// The task for the router when the preferences and habits grew too long.
+fn consolidation_task(habits: &[String]) -> Option<String> {
+    (habits.len() > HABITS_SOFT_CAP).then(|| {
+        format!(
+            "=== CONSOLIDATION TASK ===\nKnown Preferences & Habits has {} entries (limit {HABITS_SOFT_CAP}). \
+             Return preferences_habits_replace with at most {HABITS_SOFT_CAP} entries that merge related ones into patterns.\n\n",
+            habits.len()
+        )
+    })
+}
+
+/// A merged list replaces the habits only when it was asked for and is usable.
+fn accept_habits_replace(asked: bool, replace: &[String]) -> Option<Vec<String>> {
+    let cleaned: Vec<String> = replace
+        .iter()
+        .map(|h| h.trim().to_string())
+        .filter(|h| !h.is_empty())
+        .collect();
+    (asked && !cleaned.is_empty() && cleaned.len() <= HABITS_SOFT_CAP).then_some(cleaned)
+}
+
 /// Characters of one memory the router sees; topic files can be long.
 const ROUTER_MEMORY_CHARS: usize = 300;
 
@@ -541,13 +586,21 @@ pub async fn execute_memory_pipeline(
         intention_section = "(none)".to_string();
     }
 
+    let habits_before = state
+        .memory_db
+        .get_or_create_relationship(char_id, user_name)
+        .map_err(|e| e.to_string())?
+        .preferences_habits;
+    let consolidation = consolidation_task(&habits_before);
+
     let router_user_content = format!(
-        "=== CURRENT LOCAL TIME ===\n{}\n\n\
+        "{}=== CURRENT LOCAL TIME ===\n{}\n\n\
          === CURRENT CHARACTER MEMORY (MEMORY.md) ===\n{}\n\n\
          === CURRENT USER PROFILE & RELATIONSHIP STATE (USER.md) ===\n{}\n\n\
          === RELEVANT TOPIC FILES / EPISODIC MEMORIES ===\n{}\n\n\
          === OPEN INTENTIONS ===\n{}\n\n\
          === RECENT MESSAGES ===\n{}",
+        consolidation.as_deref().unwrap_or_default(),
         now.format("%A, %Y-%m-%d %H:%M"),
         char_md,
         user_md,
@@ -710,6 +763,16 @@ pub async fn execute_memory_pipeline(
             }
         }
 
+        if let Some(merged) =
+            accept_habits_replace(consolidation.is_some(), &up.preferences_habits_replace)
+        {
+            info!(
+                "[SoulMemory] Gewohnheiten zusammengefasst: {} → {} Einträge.",
+                updated_rel.preferences_habits.len(),
+                merged.len()
+            );
+            updated_rel.preferences_habits = merged;
+        }
         if !up.preferences_habits_remove.is_empty() {
             remove_matching(
                 &mut updated_rel.preferences_habits,
@@ -720,7 +783,7 @@ pub async fn execute_memory_pipeline(
             add_unique(
                 &mut updated_rel.preferences_habits,
                 &up.preferences_habits_add,
-                25,
+                HABITS_HARD_CAP,
             );
         }
 
@@ -1002,6 +1065,40 @@ mod tests {
     use super::*;
 
     #[test]
+    fn long_habit_lists_are_merged_only_when_asked() {
+        let habits = |n: usize| {
+            (0..n)
+                .map(|i| format!("Gewohnheit {i}"))
+                .collect::<Vec<_>>()
+        };
+        assert!(consolidation_task(&habits(HABITS_SOFT_CAP)).is_none());
+        assert!(
+            consolidation_task(&habits(HABITS_SOFT_CAP + 1))
+                .unwrap()
+                .contains("has 13 entries")
+        );
+        let merged = vec!["Liebt süße Snacks".to_string(), " ".to_string()];
+        assert_eq!(accept_habits_replace(false, &merged), None);
+        assert_eq!(
+            accept_habits_replace(true, &merged),
+            Some(vec!["Liebt süße Snacks".to_string()])
+        );
+        assert_eq!(
+            accept_habits_replace(true, &habits(HABITS_SOFT_CAP + 1)),
+            None
+        );
+        assert_eq!(accept_habits_replace(true, &[]), None);
+        let parsed = parse_router_json(
+            r#"{"user_memory_patch": {"preferences_habits_replace": ["Liebt Dango"]}}"#,
+        )
+        .unwrap();
+        assert_eq!(
+            parsed.user_memory_patch.unwrap().preferences_habits_replace,
+            ["Liebt Dango"]
+        );
+    }
+
+    #[test]
     fn the_router_can_plan_and_resolve_intentions() {
         let parsed = parse_router_json(
             r#"{"intentions_patch": {"create": [{"title": "Kochen", "time_basis": "real", "due": "2026-10-20"}], "resolve": [{"id": 4, "status": "fulfilled"}]}}"#,
@@ -1190,4 +1287,84 @@ mod tests {
         assert_eq!(parsed.healing_log_add.len(), 1);
         assert_eq!(parsed.topic_plan.unwrap().actions.len(), 1);
     }
+}
+
+/// What a memory cleanup needs: whose memory and which model.
+#[derive(Debug, Clone, Serialize, Deserialize, TS)]
+#[ts(export)]
+pub struct MemoryCleanupRequest {
+    pub character_id: String,
+    pub endpoint_url: String,
+    pub api_key: Option<String>,
+    pub model: Option<String>,
+    pub provider: Option<LlmProviderType>,
+}
+
+#[derive(Deserialize)]
+struct CleanupAnswer {
+    #[serde(default)]
+    groups: Vec<crate::modules::memory::CleanupGroup>,
+}
+
+/// Asks the model which memories belong together. Nothing is written: the user confirms the
+/// proposal first (`apply_memory_cleanup`).
+pub async fn propose_memory_cleanup(
+    state: &AppState,
+    req: MemoryCleanupRequest,
+) -> Result<crate::modules::memory::CleanupProposal, String> {
+    let candidates = state
+        .memory_db
+        .cleanup_candidates(&req.character_id, crate::modules::memory::CLEANUP_TOKENS)
+        .map_err(|e| e.to_string())?;
+    if candidates.len() < 2 {
+        return Ok(Default::default());
+    }
+    let listing: String = candidates
+        .iter()
+        .map(|m| format!("#{} [{}] {}\n", m.id, m.category, m.content.trim()))
+        .collect();
+    let language = crate::modules::content_lang::ContentLang::reply_language_name();
+    let request = ChatRequest {
+        endpoint_url: req.endpoint_url,
+        api_key: req.api_key,
+        model: req.model,
+        messages: vec![
+            ChatMessage {
+                role: "system".to_string(),
+                content: CLEANUP_SYSTEM_PROMPT
+                    .replace("{character}", &req.character_id)
+                    .replace("{language}", &language),
+                attachments: Vec::new(),
+            },
+            ChatMessage {
+                role: "user".to_string(),
+                content: format!("=== MEMORIES ===\n{listing}"),
+                attachments: Vec::new(),
+            },
+        ],
+        sampling: Some(SamplingParams {
+            temperature: Some(0.2),
+            max_tokens: Some(2500),
+            ..Default::default()
+        }),
+        reasoning_mode: Some(false),
+        provider: req.provider,
+    };
+    info!(
+        "[SoulMemory] Aufräumen für {}: {} Erinnerungen prüfen...",
+        req.character_id,
+        candidates.len()
+    );
+    let raw = state.inference_client.generate_direct(request).await?;
+    let json =
+        extract_json_object(&raw).ok_or_else(|| crate::err!("backend.memory.cleanupNoJson"))?;
+    let answer: CleanupAnswer = serde_json::from_str(&json)
+        .map_err(|e| crate::err!("backend.memory.cleanupBadJson", error = e))?;
+    let known: Vec<i64> = candidates.iter().map(|m| m.id).collect();
+    let groups = crate::modules::memory::valid_cleanup_groups(answer.groups, &known);
+    let sources = candidates
+        .into_iter()
+        .filter(|m| groups.iter().any(|g| g.memory_ids.contains(&m.id)))
+        .collect();
+    Ok(crate::modules::memory::CleanupProposal { groups, sources })
 }

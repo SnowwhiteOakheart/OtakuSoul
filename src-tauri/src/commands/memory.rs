@@ -290,6 +290,32 @@ pub fn apply_emotional_decay(
         .map_err(|e| e.to_string())
 }
 
+/// Asks the model which memories could be merged; writes nothing.
+#[tauri::command]
+pub async fn propose_memory_cleanup(
+    state: State<'_, AppState>,
+    req: crate::modules::memory_pipeline::MemoryCleanupRequest,
+) -> Result<crate::modules::memory::CleanupProposal, String> {
+    crate::modules::memory_pipeline::propose_memory_cleanup(&state, req).await
+}
+
+/// Writes the confirmed groups after a snapshot (every merge can be taken back).
+#[tauri::command]
+pub fn apply_memory_cleanup(
+    state: State<'_, AppState>,
+    char_id: String,
+    user_name: String,
+    groups: Vec<crate::modules::memory::CleanupGroup>,
+) -> Result<usize, String> {
+    state
+        .memory_db
+        .backup_memory_state(&char_id, Some(&user_name), None)?;
+    state
+        .memory_db
+        .apply_memory_cleanup(&char_id, &groups)
+        .map_err(|e| e.to_string())
+}
+
 #[tauri::command]
 pub async fn trigger_memory_pipeline(
     state: State<'_, AppState>,
