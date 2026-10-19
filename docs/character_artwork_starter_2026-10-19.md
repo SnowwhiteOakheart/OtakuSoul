@@ -4,6 +4,31 @@ Stand 19.10.2026. Vier frei erfundene Figuren ersetzen künftig Ayu Ikue, Cosmos
 Einsteigerfiguren (die drei wandern nach `otakusoul-data`). Karten und Platzhalterbilder liegen bereits in
 `presets/characters/`. Dieses Dokument ist der Auftrag, die Platzhalter durch fertige Bilder zu ersetzen.
 
+## Umsetzung am 19.10.2026
+
+Alle vier PNG-Grundporträts und 44 WebP-Emotionsbilder wurden mit dem eingebauten Imagegen-Werkzeug
+erstellt und an den unten genannten Originalpfaden eingesetzt. Verwendet wurden die Grundporträt- und
+Emotionsprompts dieses Dokuments; bei Shiori und Sota wurden erwachsene Gesichtszüge ausdrücklich
+betont, bei Lirwen ein erwachsenes Alter. Nicht sichtbare Handdetails wurden ausgelassen. Jede
+Mimikvariante wurde einzeln mit dem fertigen Grundporträt als strenger Bildreferenz erstellt.
+Alle Dateien wurden auf 640 × 800 Pixel gebracht und mit einem sRGB-ICC-Profil gespeichert.
+`neutral.webp` wurde jeweils direkt aus dem Grundporträt abgeleitet. Die Karten-JSONs blieben unverändert.
+
+Die technische Prüfung bestätigt 48 dekodierbare Dateien sowie elf unterschiedliche Emotionsbilder
+pro Figur. Alle vier Ausdrucksübersichten wurden auf Identität, Kleidung, Ausschnitt, Hintergrund und
+fehlende Platzhalter geprüft:
+
+- [Grundporträts](assets/character-artwork/starter-portraits.jpg)
+- [Shiori Amane – elf Ausdrücke](assets/character-artwork/shiori_amane-expressions.jpg)
+- [Sota Minase – elf Ausdrücke](assets/character-artwork/sota_minase-expressions.jpg)
+- [Lirwen – elf Ausdrücke](assets/character-artwork/lirwen-expressions.jpg)
+- [Faelion – elf Ausdrücke](assets/character-artwork/faelion-expressions.jpg)
+
+Der gezielte App-Test mit isoliertem Profil und Mock-LLM hat für alle vier Figuren die Charaktervorschau
+sowie den Wechsel auf `happy` und `crying` durch Chatantworten bestanden. Dafür wurden die neuen Assets
+in die Ressourcen des vorhandenen E2E-Debug-Builds kopiert. Screenshots liegen lokal unter
+`e2e/screenshots/starter-*-{preview,happy,crying}.png`.
+
 ## Dateien
 
 | Figur | Karte | Grundporträt | Emotionsbilder | Stil |
