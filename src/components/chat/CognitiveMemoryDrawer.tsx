@@ -117,7 +117,7 @@ export const CognitiveMemoryDrawer: React.FC<CognitiveMemoryDrawerProps> = ({
         } else {
           toast.success(translate('memory.reflectDone', {
             topics: res.topics_processed.length,
-            conflicts: res.healing_entries.length,
+            conflicts: res.healing_entries.length + (res.contradicted_memories ?? 0),
           }));
         }
       }

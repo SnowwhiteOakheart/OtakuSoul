@@ -13,7 +13,8 @@ import type { EpisodicMemory } from '../types';
 const initial = useAppStore.getState();
 const memory = (over: Partial<EpisodicMemory> = {}): EpisodicMemory => ({
   id: 7, category: 'fact', content: 'Der Nutzer heißt Hiroki', significance: 3, created_at: 0, last_accessed_at: 0,
-  source_chat_id: 'c1', source_message_ids: ['m1', 'm2'], origin: 'auto', pinned: false, needs_review: false, ...over,
+  source_chat_id: 'c1', source_message_ids: ['m1', 'm2'], origin: 'auto', pinned: false, needs_review: false,
+  topic_key: null, superseded_by: null, superseded_at: null, supersede_reason: '', ...over,
 });
 
 beforeEach(() => {

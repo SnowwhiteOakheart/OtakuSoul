@@ -585,6 +585,16 @@ ru „персонаж/история/сцена“. Fachbegriffe nur im Experte
   `resolvePromptWithLore` (`get_prompt_memories`, Query = letzte 2 Nutzer-Nachrichten + letzte Antwort, OOC
   entfernt); bei Fehler gilt `cognitive.recent_memories`. Budget über `MemoryBudget` (Chat 1.500 Tokens; der Router
   zählt nur die gezeigten 300 Zeichen). Der Reflexions-Router bekommt dieselbe Auswahl als `- #id [Kategorie] Text`.
+- Überholte Erinnerungen (Migration v8): `superseded_at` gesetzt = überholt (keine eigene `is_active`-Spalte), dazu
+  `superseded_by` (Nachfolger oder NULL), `supersede_reason`, `topic_key`. **Jede** Abfrage für Prompt, Router, Suche,
+  Drawer-Liste und Duplikatprüfung filtert `superseded_at IS NULL`; nur Snapshots (`get_all_episodic_memories`) und
+  `get_superseded_memories` sehen alles. Archivar-Themen haben `topic_key` (`normalize_topic_key` des Dateinamens):
+  der Archivar bekommt die aktive Fassung (`topic_body`) zum Zusammenführen, `apply_reflection` löst sie durch die
+  neue ab. Router-`memory_supersede` gilt nur für IDs, die er gezeigt bekam (Pipeline prüft), `supersede_memory_on`
+  prüft Figur und Aktivität; angepinnte/`manual`/`edited` werden nie abgelöst, sondern `needs_review` + Grund in
+  `supersede_reason` (Drawer zeigt `memory.contradictedHint`; „Passt so“/Korrigieren leeren den Grund). Snapshot-
+  Wiederherstellung legt überholte Einträge ohne Zusammenlegen mit aktiven an und biegt `superseded_by` per
+  Alt→Neu-Zuordnung um (`relink_restored_memories_on`). `forget` setzt Verweise auf den gelöschten Eintrag auf NULL.
 
 ### 9. Hub-Synchronisation, Registries & Daten-Pakete
 

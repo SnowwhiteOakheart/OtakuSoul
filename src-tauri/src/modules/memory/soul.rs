@@ -262,12 +262,51 @@ impl MemoryDb {
         )
     }
 
-    /// Restores a memory from a snapshot with its origin, sources, pin and review flag.
+    /// Restores a memory from a snapshot with its origin, sources, pin, review flag, topic and
+    /// whether it is outdated. Returns its id in this database; `superseded_by` still names the
+    /// snapshot's id and is mapped by the caller.
     pub(super) fn restore_episodic_memory_on(
         conn: &Connection,
         char_id: &str,
         memory: &EpisodicMemory,
     ) -> Result<i64, rusqlite::Error> {
+        if let Some(superseded_at) = memory.superseded_at {
+            // An outdated version must not merge into an active memory with the same text.
+            let existing: Option<i64> = conn
+                .query_row(
+                    "SELECT id FROM soul_episodic_memory
+                     WHERE character_id = ?1 AND LOWER(content) = LOWER(?2) AND superseded_at IS NOT NULL",
+                    params![char_id, memory.content.trim()],
+                    |row| row.get(0),
+                )
+                .optional()?;
+            if let Some(id) = existing {
+                return Ok(id);
+            }
+            conn.execute(
+                "INSERT INTO soul_episodic_memory (character_id, category, content, significance, created_at,
+                     last_accessed_at, source_chat_id, source_message_ids, origin, pinned, needs_review,
+                     topic_key, superseded_at, supersede_reason)
+                 VALUES (?1, ?2, ?3, ?4, ?5, ?5, ?6, ?7, ?8, ?9, ?10, ?11, ?12, ?13)",
+                params![
+                    char_id,
+                    memory.category,
+                    memory.content.trim(),
+                    memory.significance,
+                    current_timestamp(),
+                    memory.source_chat_id,
+                    serde_json::to_string(&memory.source_message_ids)
+                        .unwrap_or_else(|_| "[]".into()),
+                    memory.origin,
+                    memory.pinned,
+                    memory.needs_review,
+                    memory.topic_key,
+                    superseded_at,
+                    memory.supersede_reason,
+                ],
+            )?;
+            return Ok(conn.last_insert_rowid());
+        }
         let source = MemorySource {
             origin: &memory.origin,
             chat_id: memory.source_chat_id.as_deref(),
@@ -283,10 +322,33 @@ impl MemoryDb {
         )?;
         // An existing memory with the same text keeps its own flags unless the snapshot pins it.
         conn.execute(
-            "UPDATE soul_episodic_memory SET pinned = MAX(pinned, ?1), needs_review = MAX(needs_review, ?2) WHERE id = ?3",
-            params![memory.pinned, memory.needs_review, id],
+            "UPDATE soul_episodic_memory SET pinned = MAX(pinned, ?1), needs_review = MAX(needs_review, ?2),
+                 topic_key = COALESCE(topic_key, ?3)
+             WHERE id = ?4",
+            params![memory.pinned, memory.needs_review, memory.topic_key, id],
         )?;
         Ok(id)
+    }
+
+    /// After a restore: points `superseded_by` of the restored outdated memories to the new ids.
+    pub(super) fn relink_restored_memories_on(
+        conn: &Connection,
+        memories: &[EpisodicMemory],
+        new_ids: &std::collections::HashMap<i64, i64>,
+    ) -> Result<(), rusqlite::Error> {
+        for memory in memories {
+            if let (Some(_), Some(old_by), Some(id)) = (
+                memory.superseded_at,
+                memory.superseded_by,
+                new_ids.get(&memory.id),
+            ) {
+                conn.execute(
+                    "UPDATE soul_episodic_memory SET superseded_by = ?1 WHERE id = ?2",
+                    params![new_ids.get(&old_by), id],
+                )?;
+            }
+        }
+        Ok(())
     }
 
     fn add_episodic_memory_sourced_on(
@@ -302,7 +364,8 @@ impl MemoryDb {
         // 1. Duplicate check (case-insensitive normalized exact or substring match)
         let trimmed = content.trim();
         let mut check_stmt = conn.prepare(
-            "SELECT id, significance FROM soul_episodic_memory WHERE character_id = ?1 AND LOWER(content) = LOWER(?2)",
+            "SELECT id, significance FROM soul_episodic_memory
+             WHERE character_id = ?1 AND LOWER(content) = LOWER(?2) AND superseded_at IS NULL",
         )?;
         let mut rows = check_stmt.query(params![char_id, trimmed])?;
         if let Some(row) = rows.next()? {
@@ -345,7 +408,8 @@ impl MemoryDb {
         let conn = self.conn.lock();
         // Pinned memories always come first, so they are in every memory context.
         let mut stmt = conn.prepare(&format!(
-            "SELECT {EPISODIC_COLUMNS} FROM soul_episodic_memory WHERE character_id = ?1
+            "SELECT {EPISODIC_COLUMNS} FROM soul_episodic_memory
+             WHERE character_id = ?1 AND superseded_at IS NULL
              ORDER BY pinned DESC, significance DESC, created_at DESC, id DESC LIMIT ?2"
         ))?;
         let rows = stmt.query_map(params![char_id, limit as i64], episodic_from_row)?;
@@ -377,8 +441,8 @@ impl MemoryDb {
         let conn = self.conn.lock();
         let before = memory_content(&conn, char_id, id)?;
         conn.execute(
-            "UPDATE soul_episodic_memory SET category = ?1, content = ?2, significance = ?3, origin = 'edited', needs_review = 0
-             WHERE id = ?4 AND character_id = ?5",
+            "UPDATE soul_episodic_memory SET category = ?1, content = ?2, significance = ?3, origin = 'edited', needs_review = 0,
+                 supersede_reason = '' WHERE id = ?4 AND character_id = ?5",
             params![category, content.trim(), significance, id, char_id],
         )?;
         log_memory_change(&conn, id, char_id, "edited", &before, content.trim())
@@ -390,6 +454,11 @@ impl MemoryDb {
         let before = memory_content(&conn, char_id, id)?;
         conn.execute(
             "DELETE FROM soul_episodic_memory WHERE id = ?1 AND character_id = ?2",
+            params![id, char_id],
+        )?;
+        // Versions it replaced stay outdated, but no longer point to it.
+        conn.execute(
+            "UPDATE soul_episodic_memory SET superseded_by = NULL WHERE superseded_by = ?1 AND character_id = ?2",
             params![id, char_id],
         )?;
         log_memory_change(&conn, id, char_id, "forgotten", &before, "")
@@ -422,10 +491,103 @@ impl MemoryDb {
         let conn = self.conn.lock();
         let content = memory_content(&conn, char_id, id)?;
         conn.execute(
-            "UPDATE soul_episodic_memory SET needs_review = 0 WHERE id = ?1 AND character_id = ?2",
+            "UPDATE soul_episodic_memory SET needs_review = 0, supersede_reason = '' WHERE id = ?1 AND character_id = ?2",
             params![id, char_id],
         )?;
         log_memory_change(&conn, id, char_id, "confirmed", &content, &content)
+    }
+
+    /// Outdated memories of a character, most recently superseded first.
+    pub fn get_superseded_memories(
+        &self,
+        char_id: &str,
+        limit: usize,
+    ) -> Result<Vec<EpisodicMemory>, rusqlite::Error> {
+        let conn = self.conn.lock();
+        let mut stmt = conn.prepare(&format!(
+            "SELECT {EPISODIC_COLUMNS} FROM soul_episodic_memory
+             WHERE character_id = ?1 AND superseded_at IS NOT NULL
+             ORDER BY superseded_at DESC, id DESC LIMIT ?2"
+        ))?;
+        let rows = stmt.query_map(params![char_id, limit as i64], episodic_from_row)?;
+        rows.collect()
+    }
+
+    /// The user takes an outdated memory back: it is active again.
+    pub fn restore_superseded_memory(&self, char_id: &str, id: i64) -> Result<(), rusqlite::Error> {
+        let conn = self.conn.lock();
+        let content = memory_content(&conn, char_id, id)?;
+        conn.execute(
+            "UPDATE soul_episodic_memory SET superseded_by = NULL, superseded_at = NULL, supersede_reason = ''
+             WHERE id = ?1 AND character_id = ?2",
+            params![id, char_id],
+        )?;
+        log_memory_change(&conn, id, char_id, "restored", &content, &content)
+    }
+
+    /// Marks an active memory as outdated. A pinned or user-made memory is never changed
+    /// automatically: it is only flagged for review, with the reason.
+    pub(super) fn supersede_memory_on(
+        conn: &Connection,
+        char_id: &str,
+        id: i64,
+        by: Option<i64>,
+        reason: &str,
+    ) -> Result<Superseded, rusqlite::Error> {
+        let found: Option<(bool, String, String)> = conn
+            .query_row(
+                "SELECT pinned, origin, content FROM soul_episodic_memory
+                 WHERE id = ?1 AND character_id = ?2 AND superseded_at IS NULL",
+                params![id, char_id],
+                |row| Ok((row.get(0)?, row.get(1)?, row.get(2)?)),
+            )
+            .optional()?;
+        let Some((pinned, origin, content)) = found else {
+            return Ok(Superseded::Missing);
+        };
+        if pinned || origin == "manual" || origin == "edited" {
+            // An active memory keeps the reason only while it waits for review.
+            conn.execute(
+                "UPDATE soul_episodic_memory SET needs_review = 1, supersede_reason = ?1 WHERE id = ?2",
+                params![reason.trim(), id],
+            )?;
+            log_memory_change(conn, id, char_id, "contradicted", &content, reason.trim())?;
+            return Ok(Superseded::Flagged);
+        }
+        conn.execute(
+            "UPDATE soul_episodic_memory SET superseded_by = ?1, superseded_at = ?2, supersede_reason = ?3
+             WHERE id = ?4",
+            params![by, current_timestamp(), reason.trim(), id],
+        )?;
+        log_memory_change(conn, id, char_id, "superseded", &content, reason.trim())?;
+        Ok(Superseded::Yes)
+    }
+
+    /// The active memory of an archivist topic, if there is one (newest first).
+    pub fn active_topic_memory(
+        &self,
+        char_id: &str,
+        topic_key: &str,
+    ) -> Result<Option<EpisodicMemory>, rusqlite::Error> {
+        let conn = self.conn.lock();
+        Self::active_topic_memory_on(&conn, char_id, topic_key)
+    }
+
+    pub(super) fn active_topic_memory_on(
+        conn: &Connection,
+        char_id: &str,
+        topic_key: &str,
+    ) -> Result<Option<EpisodicMemory>, rusqlite::Error> {
+        conn.query_row(
+            &format!(
+                "SELECT {EPISODIC_COLUMNS} FROM soul_episodic_memory
+                 WHERE character_id = ?1 AND topic_key = ?2 AND superseded_at IS NULL
+                 ORDER BY id DESC LIMIT 1"
+            ),
+            params![char_id, topic_key],
+            episodic_from_row,
+        )
+        .optional()
     }
 
     /// Changes of one memory, oldest first.
@@ -526,7 +688,7 @@ impl MemoryDb {
         &self,
         char_id: &str,
         changes: &ReflectionChanges<'_>,
-    ) -> Result<Option<i64>, rusqlite::Error> {
+    ) -> Result<ReflectionOutcome, rusqlite::Error> {
         let conn = self.conn.lock();
         let tx = conn.unchecked_transaction()?;
         if let Some(psychology) = changes.psychology {
@@ -538,8 +700,45 @@ impl MemoryDb {
         for entry in changes.healing {
             Self::log_healing_on(&tx, char_id, "contradiction_resolved", entry)?;
         }
+        // A new version of a topic supersedes the active one (a protected one is flagged).
+        let mut topic_ids = std::collections::HashMap::new();
         for topic in changes.topics {
-            Self::add_episodic_memory_sourced_on(&tx, char_id, "topic", topic, 4, &changes.source)?;
+            let previous = match &topic.key {
+                Some(key) => Self::active_topic_memory_on(&tx, char_id, key)?,
+                None => None,
+            };
+            let id = Self::add_episodic_memory_sourced_on(
+                &tx,
+                char_id,
+                "topic",
+                &topic.text,
+                4,
+                &changes.source,
+            )?;
+            if let Some(key) = &topic.key {
+                tx.execute(
+                    "UPDATE soul_episodic_memory SET topic_key = ?1 WHERE id = ?2",
+                    params![key, id],
+                )?;
+                topic_ids.insert(key.clone(), id);
+                if let Some(previous) = previous.filter(|p| p.id != id) {
+                    Self::supersede_memory_on(&tx, char_id, previous.id, Some(id), "")?;
+                }
+            }
+        }
+        let mut contradictions = 0;
+        for outdated in changes.supersede {
+            let by = outdated
+                .replaced_by_topic
+                .as_deref()
+                .and_then(normalize_topic_key)
+                .and_then(|key| topic_ids.get(&key).copied());
+            if by != Some(outdated.id)
+                && Self::supersede_memory_on(&tx, char_id, outdated.id, by, &outdated.reason)?
+                    != Superseded::Missing
+            {
+                contradictions += 1;
+            }
         }
         let diary = match changes.diary {
             Some((title, text, mood)) => {
@@ -548,7 +747,10 @@ impl MemoryDb {
             None => None,
         };
         tx.commit()?;
-        Ok(diary)
+        Ok(ReflectionOutcome {
+            diary,
+            contradictions,
+        })
     }
 
     // --- Healing & Emotional Decay ---
@@ -734,7 +936,9 @@ pub struct ReflectionChanges<'a> {
     pub relationship: Option<&'a RelationshipState>,
     pub healing: &'a [String],
     /// Topic memories written by the archivist, with the messages they came from.
-    pub topics: &'a [String],
+    pub topics: &'a [TopicMemory],
+    /// Memories the reflection found outdated (ids already checked against what it saw).
+    pub supersede: &'a [MemorySupersede],
     pub source: MemorySource<'a>,
     /// Title, text and mood of the diary entry.
     pub diary: Option<(&'a str, &'a str, &'a str)>,
@@ -743,7 +947,10 @@ pub struct ReflectionChanges<'a> {
 /// Columns `episodic_from_row` reads, in this order.
 pub(super) const EPISODIC_COLUMNS: &str =
     "id, category, content, significance, created_at, last_accessed_at,
-    source_chat_id, source_message_ids, origin, pinned, needs_review";
+    source_chat_id, source_message_ids, origin, pinned, needs_review,
+    topic_key, superseded_by, superseded_at, supersede_reason";
+/// Number of columns in `EPISODIC_COLUMNS`.
+pub(super) const EPISODIC_COLUMN_COUNT: usize = 15;
 
 pub(super) fn episodic_from_row(row: &rusqlite::Row<'_>) -> rusqlite::Result<EpisodicMemory> {
     Ok(EpisodicMemory {
@@ -758,5 +965,79 @@ pub(super) fn episodic_from_row(row: &rusqlite::Row<'_>) -> rusqlite::Result<Epi
         origin: row.get(8)?,
         pinned: row.get(9)?,
         needs_review: row.get(10)?,
+        topic_key: row.get(11)?,
+        superseded_by: row.get(12)?,
+        superseded_at: row.get(13)?,
+        supersede_reason: row.get(14)?,
     })
+}
+
+/// Key of an archivist topic file name: lower case, without `.md`, words joined by `_`.
+pub fn normalize_topic_key(name: &str) -> Option<String> {
+    let name = name.trim();
+    let name = name
+        .strip_suffix(".md")
+        .or_else(|| name.strip_suffix(".MD"))
+        .unwrap_or(name);
+    let key = name
+        .split(|c: char| c.is_whitespace() || c == '-' || c == '_')
+        .filter(|part| !part.is_empty())
+        .collect::<Vec<_>>()
+        .join("_")
+        .to_lowercase();
+    (!key.is_empty()).then_some(key)
+}
+
+static TOPIC_HEADER_RE: LazyLock<regex::Regex> = LazyLock::new(|| {
+    regex::Regex::new(r"^\[[^:\]]+:\s*([^\]]+)\]").expect("static regex is valid")
+});
+
+/// Topic key from a stored topic memory (`[Topic: name]` header, the word is translated).
+pub(super) fn topic_key_of_content(content: &str) -> Option<String> {
+    let name = TOPIC_HEADER_RE
+        .captures(content.trim_start())?
+        .get(1)?
+        .as_str();
+    normalize_topic_key(name)
+}
+
+/// The text of a topic memory without its `[Topic: name]` header.
+pub fn topic_body(content: &str) -> &str {
+    match TOPIC_HEADER_RE.find(content.trim_start()) {
+        Some(header) => content.trim_start()[header.end()..].trim_start(),
+        None => content,
+    }
+}
+
+/// A topic file of the archivist as a memory.
+pub struct TopicMemory {
+    /// `normalize_topic_key` of the file name; `None` keeps no version history.
+    pub key: Option<String>,
+    pub text: String,
+}
+
+/// A memory the reflection found outdated.
+pub struct MemorySupersede {
+    pub id: i64,
+    pub reason: String,
+    /// File name of a topic of the same reflection that holds the corrected version.
+    pub replaced_by_topic: Option<String>,
+}
+
+/// What `supersede_memory_on` did.
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub(super) enum Superseded {
+    Yes,
+    /// Protected (pinned or made by the user): flagged for review instead.
+    Flagged,
+    /// Not an active memory of this character.
+    Missing,
+}
+
+/// What a reflection wrote.
+pub struct ReflectionOutcome {
+    /// Id of the diary entry, if one was written.
+    pub diary: Option<i64>,
+    /// Memories the reflection found contradicted (retired or flagged for review).
+    pub contradictions: usize,
 }

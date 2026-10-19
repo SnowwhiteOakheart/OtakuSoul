@@ -3,4 +3,8 @@ import type { DiaryEntry } from "./DiaryEntry";
 import type { PsychologyState } from "./PsychologyState";
 import type { RelationshipState } from "./RelationshipState";
 
-export type SoulMemoryPipelineResult = { no_change: boolean, character_id: string, psychology: PsychologyState, relationship: RelationshipState, topics_processed: Array<string>, diary_entry: DiaryEntry | null, healing_entries: Array<string>, };
+export type SoulMemoryPipelineResult = { no_change: boolean, character_id: string, psychology: PsychologyState, relationship: RelationshipState, topics_processed: Array<string>, diary_entry: DiaryEntry | null, healing_entries: Array<string>, 
+/**
+ * Memories found contradicted: retired, or flagged for review when protected.
+ */
+contradicted_memories: number, };

@@ -1047,7 +1047,10 @@ fn a_failed_reflection_write_changes_nothing() {
              BEGIN SELECT RAISE(ABORT, 'late reflection failure'); END;",
         )
         .unwrap();
-    let topics = vec!["[Thema: Kyoto]\nReise geplant".to_string()];
+    let topics = vec![TopicMemory {
+        key: Some("kyoto".into()),
+        text: "[Thema: Kyoto]\nReise geplant".to_string(),
+    }];
     let healing = vec!["Widerspruch gelöst".to_string()];
     let result = db.apply_reflection(
         "ayu",
@@ -1056,6 +1059,7 @@ fn a_failed_reflection_write_changes_nothing() {
             relationship: None,
             healing: &healing,
             topics: &topics,
+            supersede: &[],
             source: MemorySource::auto(),
             diary: Some(("Innere Reflexion", "Heute war schön.", "Euphorisch")),
         },
@@ -1080,12 +1084,13 @@ fn a_failed_reflection_write_changes_nothing() {
                 relationship: None,
                 healing: &healing,
                 topics: &topics,
+                supersede: &[],
                 source: MemorySource::auto(),
                 diary: Some(("Innere Reflexion", "Heute war schön.", "Euphorisch")),
             },
         )
         .unwrap();
-    assert!(diary.is_some());
+    assert!(diary.diary.is_some());
     assert_eq!(
         db.get_or_create_psychology("ayu").unwrap().primary_emotion,
         "Euphorisch"
@@ -1423,4 +1428,231 @@ fn memory_index_migration_indexes_existing_memories() {
         )
         .unwrap();
     assert_eq!(found, 1);
+}
+
+fn reflect(db: &MemoryDb, topics: &[TopicMemory], supersede: &[MemorySupersede]) -> usize {
+    db.apply_reflection(
+        "ayu",
+        &ReflectionChanges {
+            psychology: None,
+            relationship: None,
+            healing: &[],
+            topics,
+            supersede,
+            source: MemorySource::auto(),
+            diary: None,
+        },
+    )
+    .unwrap()
+    .contradictions
+}
+
+fn topic(key: &str, text: &str) -> TopicMemory {
+    TopicMemory {
+        key: Some(key.into()),
+        text: format!("[Thema: {key}]\n{text}"),
+    }
+}
+
+#[test]
+fn topic_keys_come_from_file_names_and_headers() {
+    assert_eq!(
+        normalize_topic_key(" Wohnort-Kai.md ").as_deref(),
+        Some("wohnort_kai")
+    );
+    assert_eq!(normalize_topic_key("  .md"), None);
+    assert_eq!(
+        super::soul::topic_key_of_content("[Тема: Дом Кая]\nТекст").as_deref(),
+        Some("дом_кая")
+    );
+    assert_eq!(
+        topic_body("[Topic: home.md]\nLives in Hamburg"),
+        "Lives in Hamburg"
+    );
+    assert_eq!(topic_body("No header"), "No header");
+}
+
+#[test]
+fn a_new_topic_version_supersedes_the_old_one() {
+    let db = MemoryDb::new_in_memory().unwrap();
+    reflect(&db, &[topic("wohnort", "Kai wohnt in München")], &[]);
+    let old = db.get_episodic_memories("ayu", 10).unwrap()[0].id;
+    reflect(
+        &db,
+        &[topic("wohnort", "Kai ist nach Hamburg gezogen")],
+        &[],
+    );
+
+    let active = db.get_episodic_memories("ayu", 10).unwrap();
+    assert_eq!(active.len(), 1);
+    assert!(active[0].content.contains("Hamburg"));
+    assert_eq!(active[0].topic_key.as_deref(), Some("wohnort"));
+    let outdated = db.get_superseded_memories("ayu", 10).unwrap();
+    assert_eq!(outdated.len(), 1);
+    assert_eq!(
+        (outdated[0].id, outdated[0].superseded_by),
+        (old, Some(active[0].id))
+    );
+    // Outdated memories are found neither by the prompt nor by the search.
+    let picked = db
+        .select_prompt_memories("ayu", "Wo wohnt Kai, München?", PROMPT_MEMORY_BUDGET)
+        .unwrap();
+    assert!(
+        !picked
+            .core
+            .iter()
+            .chain(&picked.relevant)
+            .any(|m| m.id == old)
+    );
+    assert!(
+        db.search_episodic_memories("ayu", "München", 5)
+            .unwrap()
+            .is_empty()
+    );
+    let history = db.get_memory_history("ayu", old).unwrap();
+    assert_eq!(history.last().unwrap().action, "superseded");
+}
+
+#[test]
+fn the_router_can_retire_a_memory_but_not_a_protected_or_foreign_one() {
+    let db = MemoryDb::new_in_memory().unwrap();
+    let auto = db
+        .add_episodic_memory("ayu", "fact", "Kai hat einen Hund", 3)
+        .unwrap();
+    let manual = db
+        .add_episodic_memory_from("ayu", "fact", "Kai mag Katzen", 3, &MemorySource::manual())
+        .unwrap();
+    let foreign = db
+        .add_episodic_memory("sora", "fact", "Sora hat einen Hund", 3)
+        .unwrap();
+    let supersede = |id: i64| MemorySupersede {
+        id,
+        reason: "Der Hund ist gestorben".into(),
+        replaced_by_topic: Some("Haustiere.md".into()),
+    };
+    reflect(
+        &db,
+        &[topic("haustiere", "Kai trauert um seinen Hund")],
+        &[
+            supersede(auto),
+            supersede(manual),
+            supersede(foreign),
+            supersede(9999),
+        ],
+    );
+
+    let outdated = db.get_superseded_memories("ayu", 10).unwrap();
+    assert_eq!(outdated.iter().map(|m| m.id).collect::<Vec<_>>(), [auto]);
+    assert_eq!(outdated[0].supersede_reason, "Der Hund ist gestorben");
+    let successor = db.active_topic_memory("ayu", "haustiere").unwrap().unwrap();
+    assert_eq!(outdated[0].superseded_by, Some(successor.id));
+    let kept = db.get_episodic_memories("ayu", 10).unwrap();
+    let manual_now = kept.iter().find(|m| m.id == manual).unwrap();
+    assert!(manual_now.needs_review && manual_now.superseded_at.is_none());
+    assert_eq!(manual_now.supersede_reason, "Der Hund ist gestorben");
+    // Keeping it clears the hint and its reason.
+    db.confirm_episodic_memory("ayu", manual).unwrap();
+    let confirmed = db.get_episodic_memories("ayu", 10).unwrap();
+    let confirmed = confirmed.iter().find(|m| m.id == manual).unwrap();
+    assert!(!confirmed.needs_review && confirmed.supersede_reason.is_empty());
+    assert!(db.get_superseded_memories("sora", 10).unwrap().is_empty());
+
+    db.restore_superseded_memory("ayu", auto).unwrap();
+    assert!(db.get_superseded_memories("ayu", 10).unwrap().is_empty());
+    assert_eq!(
+        db.get_memory_history("ayu", auto)
+            .unwrap()
+            .last()
+            .unwrap()
+            .action,
+        "restored"
+    );
+}
+
+#[test]
+fn forgetting_a_successor_unlinks_the_outdated_version() {
+    let db = MemoryDb::new_in_memory().unwrap();
+    reflect(&db, &[topic("tee", "Mag Grüntee")], &[]);
+    reflect(&db, &[topic("tee", "Mag Jasmintee")], &[]);
+    let newest = db.active_topic_memory("ayu", "tee").unwrap().unwrap();
+    db.forget_episodic_memory("ayu", newest.id).unwrap();
+    let outdated = db.get_superseded_memories("ayu", 10).unwrap();
+    assert_eq!(outdated.len(), 1);
+    assert_eq!(outdated[0].superseded_by, None);
+}
+
+#[test]
+fn migration_v8_keeps_only_the_newest_version_of_a_topic() {
+    let conn = Connection::open_in_memory().unwrap();
+    for step in &MIGRATIONS[..7] {
+        step(&conn).unwrap();
+    }
+    conn.execute_batch(
+        "INSERT INTO soul_episodic_memory (character_id, category, content, created_at, last_accessed_at, origin)
+         VALUES ('ayu', 'topic', '[Thema: kyoto.md]\nalt', 1, 1, 'auto'),
+                ('ayu', 'topic', '[Topic: Kyoto]\nneu', 2, 2, 'auto'),
+                ('ayu', 'topic', '[Thema: kyoto]\nvom Nutzer', 3, 3, 'edited'),
+                ('sora', 'topic', '[Thema: kyoto]\nSora', 4, 4, 'auto'),
+                ('ayu', 'fact', 'Mag Kyoto', 5, 5, 'auto');",
+    )
+    .unwrap();
+    super::schema::migrate_v8_memory_versions(&conn).unwrap();
+    let rows: Vec<(i64, Option<String>, Option<i64>)> = conn
+        .prepare("SELECT id, topic_key, superseded_by FROM soul_episodic_memory ORDER BY id")
+        .unwrap()
+        .query_map([], |row| Ok((row.get(0)?, row.get(1)?, row.get(2)?)))
+        .unwrap()
+        .collect::<Result<_, _>>()
+        .unwrap();
+    // The newest (an edited one) stays, the edited one is never retired automatically.
+    assert_eq!(
+        rows,
+        [
+            (1, Some("kyoto".into()), Some(3)),
+            (2, Some("kyoto".into()), Some(3)),
+            (3, Some("kyoto".into()), None),
+            (4, Some("kyoto".into()), None),
+            (5, None, None),
+        ]
+    );
+}
+
+#[test]
+fn a_snapshot_restores_outdated_memories_with_their_successor() {
+    let db = MemoryDb::new_in_memory().unwrap();
+    let dir = std::env::temp_dir().join(format!(
+        "otakusoul_snapshot_versions_{}",
+        rand::random::<u32>()
+    ));
+    std::fs::create_dir_all(&dir).unwrap();
+    reflect(&db, &[topic("wohnort", "München")], &[]);
+    reflect(&db, &[topic("wohnort", "Hamburg")], &[]);
+    let backup = db
+        .backup_memory_state("ayu", Some("User"), Some(&dir))
+        .unwrap();
+
+    let fresh = MemoryDb::new_in_memory().unwrap();
+    // Ids differ in the other database.
+    fresh
+        .add_episodic_memory("ayu", "fact", "Platzhalter", 1)
+        .unwrap();
+    fresh
+        .restore_memory_backup(&dir.join(&backup.filename))
+        .unwrap();
+    let active = fresh
+        .active_topic_memory("ayu", "wohnort")
+        .unwrap()
+        .unwrap();
+    assert!(active.content.contains("Hamburg"));
+    let outdated = fresh.get_superseded_memories("ayu", 10).unwrap();
+    assert_eq!(outdated.len(), 1);
+    assert!(outdated[0].content.contains("München"));
+    assert_eq!(outdated[0].superseded_by, Some(active.id));
+    // Restoring again changes nothing.
+    fresh
+        .restore_memory_backup(&dir.join(&backup.filename))
+        .unwrap();
+    assert_eq!(fresh.get_superseded_memories("ayu", 10).unwrap().len(), 1);
+    assert_eq!(fresh.get_episodic_memories("ayu", 10).unwrap().len(), 2);
+    let _ = std::fs::remove_dir_all(&dir);
 }

@@ -46,6 +46,29 @@ pub fn search_episodic_memories(
 }
 
 #[tauri::command]
+pub fn get_superseded_memories(
+    state: State<'_, AppState>,
+    char_id: String,
+) -> Result<Vec<crate::modules::memory::EpisodicMemory>, String> {
+    state
+        .memory_db
+        .get_superseded_memories(&char_id, 200)
+        .map_err(|e| e.to_string())
+}
+
+#[tauri::command]
+pub fn restore_superseded_memory(
+    state: State<'_, AppState>,
+    char_id: String,
+    id: i64,
+) -> Result<(), String> {
+    state
+        .memory_db
+        .restore_superseded_memory(&char_id, id)
+        .map_err(|e| e.to_string())
+}
+
+#[tauri::command]
 pub fn update_psychology(
     state: State<'_, AppState>,
     char_id: String,

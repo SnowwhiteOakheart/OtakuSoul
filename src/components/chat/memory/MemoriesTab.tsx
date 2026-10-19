@@ -8,6 +8,7 @@ import { toast } from '../../ui/feedback';
 import { errorMessage } from '../../../utils/errors';
 import { Search, Sparkles, X } from 'lucide-react';
 import { MemoryItem } from './MemoryItem';
+import { SupersededMemories } from './SupersededMemories';
 
 type MemoryCategory = 'fact' | 'secret' | 'promise' | 'event' | 'location';
 
@@ -27,6 +28,7 @@ export const MemoriesTab = () => {
   const [newMemSignificance, setNewMemSignificance] = useState(3);
   const [isSaving, setIsSaving] = useState(false);
   const characterId = useAppStore((state) => memoryCharacter(state)?.id);
+  const [showSuperseded, setShowSuperseded] = useState(false);
   const [search, setSearch] = useState('');
   // The answer belongs to one query; an older one is not shown for newer text.
   const [searchResult, setSearchResult] = useState<{ query: string; hits: EpisodicMemory[]; error: string | null } | null>(null);
@@ -169,6 +171,19 @@ export const MemoriesTab = () => {
             )}
           </div>
         )}
+
+        <div className="pt-2 border-t border-slate-800 space-y-2">
+          <label className="flex items-center gap-2 text-xs text-slate-400 cursor-pointer">
+            <input
+              type="checkbox"
+              checked={showSuperseded}
+              onChange={(e) => setShowSuperseded(e.target.checked)}
+              className="accent-accent-500"
+            />
+            {t('memory.showSuperseded')}
+          </label>
+          {showSuperseded && <SupersededMemories />}
+        </div>
       </div>
   );
 };

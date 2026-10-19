@@ -1,7 +1,7 @@
 //! Soul memory: per-character psychology, relationships, memories, diary and chats in SQLite.
 
 use parking_lot::Mutex;
-use rusqlite::{Connection, params};
+use rusqlite::{Connection, OptionalExtension, params};
 use serde::{Deserialize, Serialize};
 use std::path::{Path, PathBuf};
 use std::sync::Arc;
@@ -23,7 +23,10 @@ mod tests;
 pub use models::*;
 pub use recall::{MemoryBudget, PROMPT_MEMORY_BUDGET};
 use schema::migrate;
-pub use soul::{MemorySource, ReflectionChanges};
+pub use soul::{
+    MemorySource, MemorySupersede, ReflectionChanges, ReflectionOutcome, TopicMemory,
+    normalize_topic_key, topic_body,
+};
 
 pub struct MemoryDb {
     conn: Arc<Mutex<Connection>>,

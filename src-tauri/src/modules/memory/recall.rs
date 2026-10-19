@@ -1,6 +1,6 @@
 //! Recalling episodic memories that fit the conversation (full-text index, no model call).
 
-use super::soul::{EPISODIC_COLUMNS, episodic_from_row};
+use super::soul::{EPISODIC_COLUMN_COUNT, EPISODIC_COLUMNS, episodic_from_row};
 use super::*;
 use crate::modules::context_window::estimate_tokens;
 
@@ -247,12 +247,15 @@ impl MemoryDb {
         let mut stmt = conn.prepare(&format!(
             "SELECT {}, bm25(soul_episodic_memory_fts) AS score
              FROM soul_episodic_memory_fts JOIN soul_episodic_memory m ON m.id = soul_episodic_memory_fts.rowid
-             WHERE soul_episodic_memory_fts MATCH ?1 AND m.character_id = ?2
+             WHERE soul_episodic_memory_fts MATCH ?1 AND m.character_id = ?2 AND m.superseded_at IS NULL
              ORDER BY score LIMIT ?3",
             prefixed_columns()
         ))?;
         let rows = stmt.query_map(params![query, char_id, limit as i64], |row| {
-            Ok((episodic_from_row(row)?, row.get::<_, f64>(11)?))
+            Ok((
+                episodic_from_row(row)?,
+                row.get::<_, f64>(EPISODIC_COLUMN_COUNT)?,
+            ))
         })?;
         rows.collect()
     }
@@ -291,7 +294,8 @@ impl MemoryDb {
 
         // 1. Core: independent of the conversation, so the system prompt stays the same.
         let mut stmt = conn.prepare(&format!(
-            "SELECT {EPISODIC_COLUMNS} FROM soul_episodic_memory WHERE character_id = ?1
+            "SELECT {EPISODIC_COLUMNS} FROM soul_episodic_memory
+             WHERE character_id = ?1 AND superseded_at IS NULL
              ORDER BY pinned DESC, significance DESC, created_at DESC, id DESC"
         ))?;
         let ranked: Vec<EpisodicMemory> = stmt

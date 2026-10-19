@@ -135,7 +135,11 @@ export const MemoryItem = ({ memory }: { memory: EpisodicMemory }) => {
       {memory.needs_review && (
         <div role="note" className="flex flex-wrap items-center gap-2 text-xs text-amber-200">
           <AlertTriangle className="w-3.5 h-3.5 shrink-0" />
-          <span className="flex-1">{t('memory.reviewHint')}</span>
+          <span className="flex-1">
+            {memory.supersede_reason
+              ? t('memory.contradictedHint', { reason: memory.supersede_reason })
+              : t('memory.reviewHint')}
+          </span>
           <button
             type="button"
             onClick={() => void run(() => store().confirmMemory(memory.id), 'memory.memoryConfirmed')}

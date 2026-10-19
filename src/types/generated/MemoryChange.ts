@@ -5,6 +5,7 @@
  */
 export type MemoryChange = { 
 /**
- * `created`, `edited`, `forgotten`, `pinned`, `unpinned`, `confirmed`, `source_changed`.
+ * `created`, `edited`, `forgotten`, `pinned`, `unpinned`, `confirmed`, `source_changed`,
+ * `superseded`, `contradicted` (a protected memory was contradicted), `restored`.
  */
 action: string, content_before: string, content_after: string, at: number, };

@@ -63,7 +63,10 @@ You MUST otherwise output exactly this JSON structure:
     "actions": [
       {"action": "create", "filename": "example_topic.md", "summary": "Reason for creation"}
     ]
-  }
+  },
+  "memory_supersede": [
+    {"id": 12, "reason": "Why memory #12 is outdated now", "replaced_by_topic": "filename of a topic in topic_plan that holds the corrected version, or null"}
+  ]
 }
 
 RULES:
@@ -71,6 +74,8 @@ RULES:
 - intensity: integer 1-5.
 - emotion_active: true if recent messages support the emotion; false if it is fading.
 - CONTRADICTION PROTOCOL: add the corrected version via *_add, put outdated fact in *_remove, and describe the fix in healing_log_add.
+- TOPICS: to update an existing topic, reuse its file name from its [Topic: …] header with action "update"; the archivist then merges the new facts into it and the old version is retired.
+- MEMORY SUPERSEDE: list a memory only when the RECENT MESSAGES clearly contradict or outdate it (e.g. someone moved, a relationship ended), only with an id (#12) shown in RELEVANT TOPIC FILES, and put the corrected version into a topic or *_add. Leave it empty otherwise.
 "#;
 
 pub const ARCHIVIST_SYSTEM_PROMPT: &str = r#"[SOUL MEMORY — ARCHIVIST AGENT]
@@ -160,6 +165,9 @@ pub struct SoulMemoryPipelineResult {
     pub topics_processed: Vec<String>,
     pub diary_entry: Option<DiaryEntry>,
     pub healing_entries: Vec<String>,
+    /// Memories found contradicted: retired, or flagged for review when protected.
+    #[serde(default)]
+    pub contradicted_memories: usize,
 }
 
 pub type MemoryPipelineResult = SoulMemoryPipelineResult;
@@ -248,6 +256,19 @@ pub struct RouterResponse {
     #[serde(default)]
     pub healing_log_add: Vec<String>,
     pub topic_plan: Option<TopicPlan>,
+    #[serde(default)]
+    pub memory_supersede: Vec<RouterMemorySupersede>,
+}
+
+/// A memory the router found outdated.
+#[derive(Debug, Clone, Serialize, Deserialize, Default, TS)]
+#[ts(export)]
+pub struct RouterMemorySupersede {
+    pub id: i64,
+    #[serde(default)]
+    pub reason: String,
+    #[serde(default)]
+    pub replaced_by_topic: Option<String>,
 }
 
 pub fn extract_json_object(raw: &str) -> Option<String> {
@@ -507,6 +528,7 @@ pub async fn execute_memory_pipeline(
             topics_processed: Vec::new(),
             diary_entry: None,
             healing_entries: Vec::new(),
+            contradicted_memories: 0,
         });
     }
 
@@ -643,6 +665,29 @@ pub async fn execute_memory_pipeline(
         }
     }
 
+    // Only memories the router was shown may be retired (a model can invent ids).
+    let shown: std::collections::HashSet<i64> = recalled
+        .core
+        .iter()
+        .chain(&recalled.relevant)
+        .map(|m| m.id)
+        .collect();
+    let mut supersede = Vec::new();
+    for outdated in parsed_router.memory_supersede {
+        if shown.contains(&outdated.id) {
+            supersede.push(crate::modules::memory::MemorySupersede {
+                id: outdated.id,
+                reason: outdated.reason.trim().to_string(),
+                replaced_by_topic: outdated.replaced_by_topic,
+            });
+        } else {
+            info!(
+                "[SoulMemory] Router wollte unbekannte Erinnerung #{} ablösen – ignoriert.",
+                outdated.id
+            );
+        }
+    }
+
     // 9. Archivist agent: one topic memory per planned topic
     let mut topics_processed = Vec::new();
     let mut topic_memories = Vec::new();
@@ -659,10 +704,25 @@ pub async fn execute_memory_pipeline(
                 .replace("{action_type}", &action.action)
                 .replace("{language}", &language);
 
-            let arch_user = format!(
+            // An existing topic is merged instead of written anew, so nothing gets lost.
+            let topic_key = crate::modules::memory::normalize_topic_key(&action.filename);
+            let current = match &topic_key {
+                Some(key) => state
+                    .memory_db
+                    .active_topic_memory(char_id, key)
+                    .map_err(|e| e.to_string())?,
+                None => None,
+            };
+            let mut arch_user = format!(
                 "Conversation:\n{}\n\nReason for this topic:\n{}",
                 dialog_formatted, action.summary
             );
+            if let Some(current) = &current {
+                arch_user.push_str(&format!(
+                    "\n\nCurrent content of this topic file:\n{}\n\nWrite the complete updated file: keep what still holds, add the new facts and drop what the conversation contradicts.",
+                    crate::modules::memory::topic_body(&current.content)
+                ));
+            }
 
             let arch_req = ChatRequest {
                 endpoint_url: req.endpoint_url.clone(),
@@ -699,7 +759,10 @@ pub async fn execute_memory_pipeline(
                         action.filename,
                         trimmed
                     );
-                    topic_memories.push(formatted_topic);
+                    topic_memories.push(crate::modules::memory::TopicMemory {
+                        key: topic_key,
+                        text: formatted_topic,
+                    });
                     topics_processed.push(action.filename);
                 }
             }
@@ -754,7 +817,7 @@ pub async fn execute_memory_pipeline(
         .memory_db
         .backup_memory_state(char_id, Some(user_name), None)?;
     let diary_title = "Innere Reflexion";
-    let diary_id = state
+    let outcome = state
         .memory_db
         .apply_reflection(
             char_id,
@@ -763,6 +826,7 @@ pub async fn execute_memory_pipeline(
                 relationship: rel_changed.then_some(&updated_rel),
                 healing: &healing_entries,
                 topics: &topic_memories,
+                supersede: &supersede,
                 source: crate::modules::memory::MemorySource {
                     origin: "auto",
                     chat_id: if source_ids.is_empty() {
@@ -780,7 +844,7 @@ pub async fn execute_memory_pipeline(
             },
         )
         .map_err(|e| e.to_string())?;
-    let diary_result = diary_id.map(|id| DiaryEntry {
+    let diary_result = outcome.diary.map(|id| DiaryEntry {
         id,
         title: diary_title.to_string(),
         entry_text: diary_text.clone(),
@@ -799,12 +863,28 @@ pub async fn execute_memory_pipeline(
         topics_processed,
         diary_entry: diary_result,
         healing_entries,
+        contradicted_memories: outcome.contradictions,
     })
 }
 
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    #[test]
+    fn the_router_can_name_outdated_memories() {
+        let parsed = parse_router_json(
+            r#"{"memory_supersede": [{"id": 12, "reason": "umgezogen", "replaced_by_topic": "wohnort.md"}, {"id": 3}]}"#,
+        )
+        .unwrap();
+        assert_eq!(parsed.memory_supersede.len(), 2);
+        assert_eq!(
+            parsed.memory_supersede[0].replaced_by_topic.as_deref(),
+            Some("wohnort.md")
+        );
+        assert_eq!(parsed.memory_supersede[1].reason, "");
+        assert!(parse_router_json("{}").unwrap().memory_supersede.is_empty());
+    }
 
     #[test]
     fn the_router_sees_memory_ids_and_shortened_topics() {
@@ -820,6 +900,10 @@ mod tests {
             origin: "auto".into(),
             pinned: false,
             needs_review: false,
+            topic_key: None,
+            superseded_by: None,
+            superseded_at: None,
+            supersede_reason: String::new(),
         };
         assert_eq!(
             router_memory_line(&mem(7, "[Topic: tee]\nMag  Jasmintee")),

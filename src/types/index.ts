@@ -435,6 +435,8 @@ export interface MemoryPipelineResult {
   topics_processed: string[];
   diary_entry?: DiaryEntry | null;
   healing_entries: string[];
+  /** Memories found contradicted: retired, or flagged for review when protected. */
+  contradicted_memories?: number;
 }
 export type SoulMemoryPipelineResult = MemoryPipelineResult;
 

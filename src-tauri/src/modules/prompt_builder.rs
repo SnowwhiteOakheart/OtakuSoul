@@ -783,6 +783,10 @@ mod tests {
             origin: "auto".into(),
             pinned: false,
             needs_review: false,
+            topic_key: None,
+            superseded_by: None,
+            superseded_at: None,
+            supersede_reason: String::new(),
         };
         let mut ctx = context(None);
         let mut overview = db.get_cognitive_overview("aiko", "Kai").unwrap();

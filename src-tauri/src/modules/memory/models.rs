@@ -99,13 +99,27 @@ pub struct EpisodicMemory {
     /// A source message was edited or deleted since; the user should check it.
     #[serde(default)]
     pub needs_review: bool,
+    /// Normalized name of the archivist's topic file; a newer version of the same topic
+    /// supersedes the older one.
+    #[serde(default)]
+    pub topic_key: Option<String>,
+    /// The memory that replaced this one, if any.
+    #[serde(default)]
+    pub superseded_by: Option<i64>,
+    /// When it was superseded; set = outdated, never part of a prompt.
+    #[serde(default)]
+    pub superseded_at: Option<u64>,
+    /// Why it is outdated (from the reflection; empty for a newer topic version).
+    #[serde(default)]
+    pub supersede_reason: String,
 }
 
 /// One change of an episodic memory, for its history.
 #[derive(Debug, Clone, Serialize, Deserialize, TS)]
 #[ts(export)]
 pub struct MemoryChange {
-    /// `created`, `edited`, `forgotten`, `pinned`, `unpinned`, `confirmed`, `source_changed`.
+    /// `created`, `edited`, `forgotten`, `pinned`, `unpinned`, `confirmed`, `source_changed`,
+    /// `superseded`, `contradicted` (a protected memory was contradicted), `restored`.
     pub action: String,
     pub content_before: String,
     pub content_after: String,

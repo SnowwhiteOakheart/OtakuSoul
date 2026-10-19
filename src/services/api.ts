@@ -250,6 +250,15 @@ export const api = {
     return await invoke<EpisodicMemory[]>('search_episodic_memories', { charId, query });
   },
 
+  /** Outdated memories of a character (newest first); never part of a prompt. */
+  getSupersededMemories: async (charId: string): Promise<EpisodicMemory[]> => {
+    return await invoke<EpisodicMemory[]>('get_superseded_memories', { charId });
+  },
+
+  restoreSupersededMemory: async (charId: string, id: number): Promise<void> => {
+    await invoke('restore_superseded_memory', { charId, id });
+  },
+
   getCognitiveOverview: async (
     charId: string,
     userName: string

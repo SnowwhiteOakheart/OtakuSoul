@@ -21,4 +21,21 @@ pinned: boolean,
 /**
  * A source message was edited or deleted since; the user should check it.
  */
-needs_review: boolean, };
+needs_review: boolean, 
+/**
+ * Normalized name of the archivist's topic file; a newer version of the same topic
+ * supersedes the older one.
+ */
+topic_key: string | null, 
+/**
+ * The memory that replaced this one, if any.
+ */
+superseded_by: number | null, 
+/**
+ * When it was superseded; set = outdated, never part of a prompt.
+ */
+superseded_at: number | null, 
+/**
+ * Why it is outdated (from the reflection; empty for a newer topic version).
+ */
+supersede_reason: string, };

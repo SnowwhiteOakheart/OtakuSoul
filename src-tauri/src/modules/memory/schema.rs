@@ -12,6 +12,7 @@ pub(super) const MIGRATIONS: &[fn(&Connection) -> rusqlite::Result<()>] = &[
     migrate_v5_chat_style,
     migrate_v6_group_chats,
     migrate_v7_memory_fts,
+    migrate_v8_memory_versions,
 ];
 
 /// Brings the database to the latest schema, one transaction per step. A database written by a
@@ -310,6 +311,81 @@ pub(super) fn migrate_v7_memory_fts(conn: &Connection) -> rusqlite::Result<()> {
         END;
         INSERT INTO soul_episodic_memory_fts(soul_episodic_memory_fts) VALUES ('rebuild');",
     )
+}
+
+/// v8: versioned memories. A newer version supersedes an older one (`superseded_at` set =
+/// outdated, kept for the history but never in a prompt). Topic files of the archivist get a
+/// key from their `[Topic: name]` header; of several active versions of one topic only the
+/// newest stays active.
+pub(super) fn migrate_v8_memory_versions(conn: &Connection) -> rusqlite::Result<()> {
+    let has_memories: bool = conn.query_row(
+        "SELECT EXISTS(SELECT 1 FROM sqlite_master WHERE type = 'table' AND name = 'soul_episodic_memory')",
+        [],
+        |row| row.get(0),
+    )?;
+    if !has_memories {
+        return Ok(());
+    }
+    for (column, definition) in [
+        ("topic_key", "TEXT"),
+        ("superseded_by", "INTEGER"),
+        ("superseded_at", "INTEGER"),
+        ("supersede_reason", "TEXT NOT NULL DEFAULT ''"),
+    ] {
+        add_column_if_missing(conn, "soul_episodic_memory", column, definition)?;
+    }
+    conn.execute_batch(
+        "CREATE INDEX IF NOT EXISTS idx_mem_topic ON soul_episodic_memory(character_id, topic_key);",
+    )?;
+
+    let topics: Vec<(i64, String, String)> = {
+        let mut stmt = conn.prepare(
+            "SELECT id, character_id, content FROM soul_episodic_memory
+             WHERE category = 'topic' AND topic_key IS NULL ORDER BY id ASC",
+        )?;
+        stmt.query_map([], |row| Ok((row.get(0)?, row.get(1)?, row.get(2)?)))?
+            .collect::<Result<_, _>>()?
+    };
+    // Newest active version per character and topic; older ones are superseded by it.
+    let mut newest: std::collections::HashMap<(String, String), i64> =
+        std::collections::HashMap::new();
+    for (id, char_id, content) in topics {
+        let Some(key) = super::soul::topic_key_of_content(&content) else {
+            continue;
+        };
+        conn.execute(
+            "UPDATE soul_episodic_memory SET topic_key = ?1 WHERE id = ?2",
+            params![key, id],
+        )?;
+        newest.insert((char_id, key), id);
+    }
+    let now = current_timestamp();
+    for ((char_id, key), newest_id) in newest {
+        let older: Vec<(i64, String)> = {
+            let mut stmt = conn.prepare(
+                "SELECT id, content FROM soul_episodic_memory
+                 WHERE character_id = ?1 AND topic_key = ?2 AND id != ?3 AND superseded_at IS NULL
+                   AND pinned = 0 AND origin NOT IN ('manual', 'edited')",
+            )?;
+            stmt.query_map(params![char_id, key, newest_id], |row| {
+                Ok((row.get(0)?, row.get(1)?))
+            })?
+            .collect::<Result<_, _>>()?
+        };
+        for (id, content) in older {
+            conn.execute(
+                "UPDATE soul_episodic_memory SET superseded_by = ?1, superseded_at = ?2 WHERE id = ?3",
+                params![newest_id, now, id],
+            )?;
+            conn.execute(
+                "INSERT INTO soul_memory_history (memory_id, character_id, action, content_before, content_after, at)
+                 SELECT ?1, ?2, 'superseded', ?3, '', ?4
+                 WHERE EXISTS(SELECT 1 FROM sqlite_master WHERE type = 'table' AND name = 'soul_memory_history')",
+                params![id, char_id, content, now],
+            )?;
+        }
+    }
+    Ok(())
 }
 
 fn add_column_if_missing(

@@ -242,6 +242,8 @@ pub fn run() {
             commands::memory::get_cognitive_overview,
             commands::memory::get_prompt_memories,
             commands::memory::search_episodic_memories,
+            commands::memory::get_superseded_memories,
+            commands::memory::restore_superseded_memory,
             commands::memory::update_psychology,
             commands::memory::update_relationship,
             commands::memory::add_episodic_memory,

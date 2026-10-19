@@ -156,9 +156,14 @@ impl MemoryDb {
             Self::update_relationship_on(&tx, char_id, rel).map_err(|e| e.to_string())?;
         }
 
+        let mut new_ids = std::collections::HashMap::new();
         for mem in &snapshot.episodic_memories {
-            Self::restore_episodic_memory_on(&tx, char_id, mem).map_err(|e| e.to_string())?;
+            let id =
+                Self::restore_episodic_memory_on(&tx, char_id, mem).map_err(|e| e.to_string())?;
+            new_ids.insert(mem.id, id);
         }
+        Self::relink_restored_memories_on(&tx, &snapshot.episodic_memories, &new_ids)
+            .map_err(|e| e.to_string())?;
 
         for d in &snapshot.diary_entries {
             Self::add_diary_entry_on(&tx, char_id, &d.title, &d.entry_text, &d.mood)
