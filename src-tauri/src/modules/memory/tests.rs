@@ -1863,7 +1863,8 @@ fn missed_real_intentions_expire_with_grace_but_story_ones_never() {
         ["Gestern anrufen", "Arzt um acht", "Drachen besiegen"]
     );
     assert_eq!(prompt[0].label, "overdue since yesterday");
-    let all = db.get_intentions("ayu", "Kai", true).unwrap();
+    // Read without `get_intentions`: it expires against the real clock, not `now`.
+    let all = MemoryDb::list_intentions_on(&db.conn.lock(), "ayu", "Kai", true).unwrap();
     let status = |id: i64| all.iter().find(|e| e.id == id).unwrap().status.clone();
     assert_eq!(status(yesterday), "pending");
     assert_eq!(status(this_morning), "pending");
