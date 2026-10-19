@@ -28,30 +28,23 @@ export const MemoriesTab = () => {
   const [isSaving, setIsSaving] = useState(false);
   const characterId = useAppStore((state) => memoryCharacter(state)?.id);
   const [search, setSearch] = useState('');
-  const [searchHits, setSearchHits] = useState<EpisodicMemory[] | null>(null);
-  const [searchError, setSearchError] = useState<string | null>(null);
-  const searching = search.trim().length >= MIN_SEARCH_CHARS;
+  // The answer belongs to one query; an older one is not shown for newer text.
+  const [searchResult, setSearchResult] = useState<{ query: string; hits: EpisodicMemory[]; error: string | null } | null>(null);
+  const query = search.trim();
+  const searching = query.length >= MIN_SEARCH_CHARS;
+  const answer = searching && searchResult?.query === query ? searchResult : null;
 
   // Searches again after typing stops and whenever the memories change (edit, pin, forget).
   useEffect(() => {
-    const query = search.trim();
-    if (!characterId || query.length < MIN_SEARCH_CHARS) {
-      setSearchHits(null);
-      setSearchError(null);
-      return;
-    }
+    if (!characterId || query.length < MIN_SEARCH_CHARS) return;
     let current = true;
     const timer = setTimeout(() => {
       api.searchEpisodicMemories(characterId, query)
-        .then((hits) => {
-          if (current) { setSearchHits(hits); setSearchError(null); }
-        })
-        .catch((error) => {
-          if (current) setSearchError(errorMessage(error));
-        });
+        .then((hits) => { if (current) setSearchResult({ query, hits, error: null }); })
+        .catch((error) => { if (current) setSearchResult({ query, hits: [], error: errorMessage(error) }); });
     }, 250);
     return () => { current = false; clearTimeout(timer); };
-  }, [characterId, search, cognitiveOverview]);
+  }, [characterId, query, cognitiveOverview]);
 
   const handleAddMemory = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -150,13 +143,13 @@ export const MemoriesTab = () => {
 
         {searching ? (
           <div className="space-y-2">
-            {searchError && (
-              <div className="p-3 text-xs text-red-300">{t('memory.searchFailed', { error: searchError })}</div>
+            {answer?.error && (
+              <div className="p-3 text-xs text-red-300">{t('memory.searchFailed', { error: answer.error })}</div>
             )}
-            {searchHits?.map((mem) => (
+            {answer?.hits.map((mem) => (
               <MemoryItem key={mem.id} memory={mem} />
             ))}
-            {!searchError && searchHits?.length === 0 && (
+            {answer && !answer.error && answer.hits.length === 0 && (
               <div className="p-8 text-center text-xs text-slate-400 italic">
                 {t('memory.searchNoHits')}
               </div>
