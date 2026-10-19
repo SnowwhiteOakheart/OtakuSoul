@@ -344,35 +344,25 @@ impl MemoryDb {
     ) -> Result<Vec<EpisodicMemory>, rusqlite::Error> {
         let conn = self.conn.lock();
         // Pinned memories always come first, so they are in every memory context.
-        let mut stmt = conn.prepare(
-            "SELECT id, category, content, significance, created_at, last_accessed_at,
-                    source_chat_id, source_message_ids, origin, pinned, needs_review
-             FROM soul_episodic_memory WHERE character_id = ?1
-             ORDER BY pinned DESC, significance DESC, created_at DESC, id DESC LIMIT ?2",
-        )?;
+        let mut stmt = conn.prepare(&format!(
+            "SELECT {EPISODIC_COLUMNS} FROM soul_episodic_memory WHERE character_id = ?1
+             ORDER BY pinned DESC, significance DESC, created_at DESC, id DESC LIMIT ?2"
+        ))?;
+        let rows = stmt.query_map(params![char_id, limit as i64], episodic_from_row)?;
+        rows.collect()
+    }
 
-        let rows = stmt.query_map(params![char_id, limit as i64], |row| {
-            Ok(EpisodicMemory {
-                id: row.get(0)?,
-                category: row.get(1)?,
-                content: row.get(2)?,
-                significance: row.get(3)?,
-                created_at: row.get(4)?,
-                last_accessed_at: row.get(5)?,
-                source_chat_id: row.get(6)?,
-                source_message_ids: serde_json::from_str(&row.get::<_, String>(7)?)
-                    .unwrap_or_default(),
-                origin: row.get(8)?,
-                pinned: row.get(9)?,
-                needs_review: row.get(10)?,
-            })
-        })?;
-
-        let mut memories = Vec::new();
-        for r in rows {
-            memories.push(r?);
-        }
-        Ok(memories)
+    /// Every memory of a character, oldest first (for snapshots).
+    pub fn get_all_episodic_memories(
+        &self,
+        char_id: &str,
+    ) -> Result<Vec<EpisodicMemory>, rusqlite::Error> {
+        let conn = self.conn.lock();
+        let mut stmt = conn.prepare(&format!(
+            "SELECT {EPISODIC_COLUMNS} FROM soul_episodic_memory WHERE character_id = ?1 ORDER BY id ASC"
+        ))?;
+        let rows = stmt.query_map(params![char_id], episodic_from_row)?;
+        rows.collect()
     }
 
     /// The user corrects a memory: it counts as confirmed from now on.
@@ -748,4 +738,25 @@ pub struct ReflectionChanges<'a> {
     pub source: MemorySource<'a>,
     /// Title, text and mood of the diary entry.
     pub diary: Option<(&'a str, &'a str, &'a str)>,
+}
+
+/// Columns `episodic_from_row` reads, in this order.
+pub(super) const EPISODIC_COLUMNS: &str =
+    "id, category, content, significance, created_at, last_accessed_at,
+    source_chat_id, source_message_ids, origin, pinned, needs_review";
+
+pub(super) fn episodic_from_row(row: &rusqlite::Row<'_>) -> rusqlite::Result<EpisodicMemory> {
+    Ok(EpisodicMemory {
+        id: row.get(0)?,
+        category: row.get(1)?,
+        content: row.get(2)?,
+        significance: row.get(3)?,
+        created_at: row.get(4)?,
+        last_accessed_at: row.get(5)?,
+        source_chat_id: row.get(6)?,
+        source_message_ids: serde_json::from_str(&row.get::<_, String>(7)?).unwrap_or_default(),
+        origin: row.get(8)?,
+        pinned: row.get(9)?,
+        needs_review: row.get(10)?,
+    })
 }

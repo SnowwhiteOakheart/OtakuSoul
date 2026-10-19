@@ -32,7 +32,7 @@ impl MemoryDb {
                 .map_err(|e| e.to_string())?,
         );
         let episodic_memories = self
-            .get_episodic_memories(char_id, 100)
+            .get_all_episodic_memories(char_id)
             .map_err(|e| e.to_string())?;
         let diary_entries = self
             .get_diary_entries(char_id, 50)

@@ -14,7 +14,7 @@ You will receive:
   1. CURRENT CHARACTER MEMORY (MEMORY.md)
   2. CURRENT USER PROFILE & RELATIONSHIP STATE (USER.md)
   3. RECENT MESSAGES (the latest dialogue turns)
-  4. RELEVANT TOPIC FILES (associated episodic memories)
+  4. RELEVANT TOPIC FILES (associated episodic memories; #12 is the id of a memory, long ones are shortened)
 
 OUTPUT FORMAT — A FIELD PATCH, NOT A FULL REWRITE:
 Emit ONLY the fields that actually changed during this batch. Omit every unchanged field entirely — never re-list old facts.
@@ -327,6 +327,19 @@ pub async fn execute_soul_memory_pipeline(
     execute_memory_pipeline(state, req).await
 }
 
+/// Characters of one memory the router sees; topic files can be long.
+const ROUTER_MEMORY_CHARS: usize = 300;
+
+/// One memory as the router sees it: `- #id [category] content`, long text shortened.
+fn router_memory_line(mem: &crate::modules::memory::EpisodicMemory) -> String {
+    let flat = mem.content.split_whitespace().collect::<Vec<_>>().join(" ");
+    let text = match flat.char_indices().nth(ROUTER_MEMORY_CHARS) {
+        Some((cut, _)) => format!("{}…", &flat[..cut]),
+        None => flat,
+    };
+    format!("- #{} [{}] {}\n", mem.id, mem.category, text)
+}
+
 pub async fn execute_memory_pipeline(
     state: &AppState,
     req: SoulMemoryPipelineRequest,
@@ -410,7 +423,7 @@ pub async fn execute_memory_pipeline(
 
     let mut topic_section = String::new();
     for mem in episodic_mems {
-        topic_section.push_str(&format!("- [{}] {}\n", mem.category, mem.content));
+        topic_section.push_str(&router_memory_line(&mem));
     }
     if topic_section.is_empty() {
         topic_section = "(no topics or notes yet)".to_string();
@@ -785,6 +798,33 @@ pub async fn execute_memory_pipeline(
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    #[test]
+    fn the_router_sees_memory_ids_and_shortened_topics() {
+        let mem = |id: i64, content: &str| crate::modules::memory::EpisodicMemory {
+            id,
+            category: "topic".into(),
+            content: content.into(),
+            significance: 4,
+            created_at: 0,
+            last_accessed_at: 0,
+            source_chat_id: None,
+            source_message_ids: Vec::new(),
+            origin: "auto".into(),
+            pinned: false,
+            needs_review: false,
+        };
+        assert_eq!(
+            router_memory_line(&mem(7, "[Topic: tee]\nMag  Jasmintee")),
+            "- #7 [topic] [Topic: tee] Mag Jasmintee\n"
+        );
+        let long = router_memory_line(&mem(8, &"ä".repeat(400)));
+        assert!(long.ends_with("…\n"));
+        assert_eq!(
+            long.chars().filter(|c| *c == 'ä').count(),
+            ROUTER_MEMORY_CHARS
+        );
+    }
 
     #[test]
     fn a_group_chat_transcript_names_every_speaker() {

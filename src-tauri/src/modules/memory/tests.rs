@@ -1239,3 +1239,22 @@ fn group_chats_keep_guests_and_speakers() {
         .collect();
     assert_eq!(speakers, ["", "sora", ""]);
 }
+
+#[test]
+fn a_snapshot_keeps_every_memory() {
+    let db = MemoryDb::new_in_memory().unwrap();
+    let dir =
+        std::env::temp_dir().join(format!("otakusoul_snapshot_all_{}", rand::random::<u32>()));
+    std::fs::create_dir_all(&dir).unwrap();
+    for i in 0..150 {
+        db.add_episodic_memory("ayu", "fact", &format!("Erinnerung {i}"), 3)
+            .unwrap();
+    }
+    let backup = db
+        .backup_memory_state("ayu", Some("User"), Some(&dir))
+        .unwrap();
+    let json = std::fs::read_to_string(dir.join(&backup.filename)).unwrap();
+    let snapshot: MemoryBackupSnapshot = serde_json::from_str(&json).unwrap();
+    assert_eq!(snapshot.episodic_memories.len(), 150);
+    let _ = std::fs::remove_dir_all(&dir);
+}
