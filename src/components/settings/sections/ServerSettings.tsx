@@ -18,6 +18,7 @@ import {
   FolderOpen,
   Zap,
   Check,
+  Info,
 } from 'lucide-react';
 import { backendMessage } from '../../../utils/errors';
 import { RuntimeCard } from './RuntimeCard';
@@ -593,6 +594,13 @@ export const ServerSettings = () => {
               {t('settings.startError')}
             </div>
             <div className="font-mono text-xs whitespace-pre-wrap select-text">{errorMessage(serverStatus.error_message)}</div>
+          </div>
+        )}
+
+        {serverStatus.notice && !serverStatus.error_message && (
+          <div className="p-3 rounded-lg bg-sky-950/40 border border-sky-900/60 text-sky-200 text-xs flex items-start gap-1.5">
+            <Info className="w-3.5 h-3.5 mt-0.5 shrink-0" aria-hidden />
+            <span>{backendMessage(serverStatus.notice)}</span>
           </div>
         )}
 

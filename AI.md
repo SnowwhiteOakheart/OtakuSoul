@@ -204,6 +204,10 @@ ru „персонаж/история/сцена“. Fachbegriffe nur im Experte
   `hardware::estimate_llm_vram_mb` (+ mmproj) mit dem freien VRAM und meldet `backend.server.notEnoughVram` samt
   Belegern (`hardware::gpu_memory_users`, nvidia-smi); bricht llama.cpp trotzdem mit Speichermangel ab
   (`is_vram_failure`), wird daraus dieselbe Meldung. Server-Fehler im UI über `errorMessage()` anzeigen.
+- Chat-Modell neben lokaler TTS: `llama_manager::fit_beside_speech` reserviert beim Start den VRAM der in dieser Sitzung
+  genutzten Stimme (`tts_local::engine().reserved_vram_mb()`) – passt es mit f16 nicht, startet es mit q8_0-KV-Cache
+  (nur mit Flash-Attention, Hinweis `ServerStatus.notice`), sonst wird `crispasr` entladen. Startet `crispasr` neben einem
+  laufenden f16-Modell, wartet `make_room_for_speech` auf freie `/slots` und startet das LLM mit q8_0 neu.
   Neue Profile starten bei Bildern mit dem Anbieter `local` (stable-diffusion.cpp); gespeicherte Wahl bleibt.
 - Mehrere GPUs: iGPUs melden Dutzende GB geteilten Speicher; sd.cpp/llama.cpp würden sie wählen (FLUX.1 350 s statt
   48 s). Deshalb `--backend`/`--device` via `hardware::primary_gpu()` + `same_gpu()`.

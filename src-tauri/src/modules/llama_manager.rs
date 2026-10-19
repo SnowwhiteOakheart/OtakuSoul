@@ -74,6 +74,107 @@ fn vram_shortage(config: &LlamaServerConfig) -> Option<String> {
         .flatten()
 }
 
+/// Free VRAM of the dedicated GPU in MB; `None` without one or when the driver doesn't say.
+fn free_vram_mb() -> Option<u64> {
+    crate::modules::hardware::probe_hardware()
+        .primary_gpu()
+        .filter(|g| !g.integrated && g.free_vram_mb > 0)
+        .map(|g| g.free_vram_mb)
+}
+
+/// Head room kept free beside the chat and the local speech model.
+const SPEECH_MARGIN_MB: u64 = 512;
+
+/// How a chat model start makes room for the local speech model (`crispasr`).
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+struct SpeechFit {
+    /// Start with a q8_0 KV cache so both models stay loaded side by side.
+    quantize_cache: bool,
+    /// Stop `crispasr` first; it starts again by itself for the next line it has to speak.
+    stop_speech: bool,
+}
+
+/// `need`/`need_q8`: VRAM of the chat model with the configured and with a q8_0 KV cache
+/// (`None` when it can't be quantized); `free`: measured now, a running `crispasr` included;
+/// `speech_loaded`: VRAM of that `crispasr`; `speech_reserve`: of the speech model in use.
+fn fit_beside_speech(
+    need: u64,
+    need_q8: Option<u64>,
+    free: u64,
+    speech_loaded: u64,
+    speech_reserve: u64,
+) -> SpeechFit {
+    let room = free + speech_loaded;
+    let fits_with_speech = |n: u64| n + speech_reserve + SPEECH_MARGIN_MB <= room;
+    let quantize_cache =
+        speech_reserve > 0 && !fits_with_speech(need) && need_q8.is_some_and(fits_with_speech);
+    let need = if quantize_cache {
+        need_q8.unwrap_or(need)
+    } else {
+        need
+    };
+    SpeechFit {
+        quantize_cache,
+        stop_speech: speech_loaded > 0 && need > free && need <= room,
+    }
+}
+
+/// The config with a q8_0 KV cache instead of f16; `None` when it is quantized already or
+/// flash attention is off (llama.cpp needs it for a quantized V cache).
+fn quantized_cache(config: &LlamaServerConfig) -> Option<LlamaServerConfig> {
+    let f16 = |cache: &Option<String>| cache.as_deref().is_none_or(|t| t == "f16");
+    (config.flash_attn && f16(&config.cache_type_k) && f16(&config.cache_type_v)).then(|| {
+        LlamaServerConfig {
+            cache_type_k: Some("q8_0".to_string()),
+            cache_type_v: Some("q8_0".to_string()),
+            ..config.clone()
+        }
+    })
+}
+
+static SHARED: std::sync::OnceLock<Arc<LlamaServerManager>> = std::sync::OnceLock::new();
+
+/// Makes the app's chat server reachable for [`make_room_for_speech`].
+pub fn register_shared(manager: &Arc<LlamaServerManager>) {
+    let _ = SHARED.set(manager.clone());
+}
+
+/// Before `crispasr` starts: when it doesn't fit beside the running chat model but would with
+/// a q8_0 KV cache, restart the chat model that way once its current reply is finished.
+pub async fn make_room_for_speech(speech_mb: u64) {
+    let Some(llama) = SHARED.get() else { return };
+    let Some(config) = llama.running_config().await else {
+        return;
+    };
+    let Some(quantized) = quantized_cache(&config) else {
+        return;
+    };
+    let check = config.clone();
+    let worth_it = tokio::task::spawn_blocking(move || {
+        let need = vram_need(&check)?;
+        let need_q8 = vram_need(&quantized)?;
+        // The chat model's share counts as free: it is what a restart hands back first.
+        let fit = fit_beside_speech(need, Some(need_q8), free_vram_mb()? + need, 0, speech_mb);
+        Some(fit.quantize_cache)
+    })
+    .await
+    .ok()
+    .flatten()
+    .unwrap_or(false);
+    if !worth_it {
+        return;
+    }
+    if !llama.wait_until_idle(config.port).await {
+        warn!("Chat-Modell bleibt beschäftigt; Sprachausgabe startet ohne Platz zu schaffen");
+        return;
+    }
+    info!("Starte Chat-Modell mit q8_0-KV-Cache neu, damit die Sprachausgabe daneben passt");
+    // `start` sees the speech model in use and picks the quantized cache itself.
+    if let Err(e) = llama.start(config).await {
+        warn!("Chat-Modell konnte für die Sprachausgabe nicht neu starten: {e}");
+    }
+}
+
 /// llama.cpp aborted because the GPU ran out of memory (CUDA, Vulkan, ROCm).
 fn is_vram_failure(logs: &str) -> bool {
     const SIGNS: [&str; 5] = [
@@ -161,6 +262,9 @@ pub struct ServerStatus {
     pub pid: Option<u32>,
     pub model_name: Option<String>,
     pub error_message: Option<String>,
+    /// Translatable note on a setting the start changed by itself (e.g. the KV cache).
+    #[serde(default)]
+    pub notice: Option<String>,
     pub recent_logs: Vec<String>,
 }
 
@@ -187,6 +291,7 @@ impl LlamaServerManager {
             pid: None,
             model_name: None,
             error_message: None,
+            notice: None,
             recent_logs: Vec::new(),
         };
 
@@ -205,6 +310,37 @@ impl LlamaServerManager {
             return None;
         }
         self.last_config.lock().await.clone()
+    }
+
+    /// Waits until no slot of the server on `port` is generating (at most three minutes);
+    /// `false` when it stays busy or `/slots` can't be read.
+    async fn wait_until_idle(&self, port: u16) -> bool {
+        let Ok(client) = reqwest::Client::builder()
+            .timeout(Duration::from_secs(2))
+            .build()
+        else {
+            return false;
+        };
+        let deadline = std::time::Instant::now() + Duration::from_secs(180);
+        while std::time::Instant::now() < deadline {
+            let slots = match client
+                .get(format!("http://127.0.0.1:{port}/slots"))
+                .send()
+                .await
+            {
+                Ok(response) => response.json::<Vec<serde_json::Value>>().await,
+                Err(_) => return false,
+            };
+            let Ok(slots) = slots else { return false };
+            if !slots
+                .iter()
+                .any(|s| s["is_processing"].as_bool().unwrap_or(false))
+            {
+                return true;
+            }
+            tokio::time::sleep(Duration::from_millis(500)).await;
+        }
+        false
     }
 
     fn requires_prism_runtime(model_path: &str) -> bool {
@@ -377,7 +513,7 @@ impl LlamaServerManager {
         status
     }
 
-    pub async fn start(&self, config: LlamaServerConfig) -> Result<(), String> {
+    pub async fn start(&self, mut config: LlamaServerConfig) -> Result<(), String> {
         let _operation = self.operation.lock().await;
         // If already running or starting, stop first
         self.stop_process().await?;
@@ -393,7 +529,7 @@ impl LlamaServerManager {
                 return Err(message);
             }
         };
-        let model_path = Path::new(&config.model_path);
+        let model_path = PathBuf::from(&config.model_path);
         if !model_path.exists() {
             let message = format!("Modelldatei nicht gefunden: {}", config.model_path);
             let mut status = self.status.write().await;
@@ -401,6 +537,40 @@ impl LlamaServerManager {
             status.error_message = Some(message.clone());
             return Err(message);
         }
+        // Leave room for the local speech model in use, or make it yield, before checking.
+        let speech = crate::modules::tts_local::engine();
+        let speech_loaded = speech.loaded_vram_mb().await;
+        let speech_reserve = speech.reserved_vram_mb().max(speech_loaded);
+        let check = config.clone();
+        let fit = tokio::task::spawn_blocking(move || {
+            let need = vram_need(&check)?;
+            let need_q8 = quantized_cache(&check).and_then(|q| vram_need(&q));
+            Some(fit_beside_speech(
+                need,
+                need_q8,
+                free_vram_mb()?,
+                speech_loaded,
+                speech_reserve,
+            ))
+        })
+        .await
+        .ok()
+        .flatten();
+        let mut notice = None;
+        if let Some(fit) = fit {
+            if fit.quantize_cache
+                && let Some(quantized) = quantized_cache(&config)
+            {
+                info!("KV-Cache auf q8_0, damit die Sprachausgabe daneben in den VRAM passt");
+                config = quantized;
+                notice = Some(crate::err!("backend.server.kvCacheForSpeech"));
+            }
+            if fit.stop_speech {
+                info!("Entlade crispasr, damit das Chat-Modell in den VRAM passt");
+                speech.stop().await;
+            }
+        }
+
         // Too little free video memory (another program, a game): say so instead of letting
         // llama.cpp abort with a CUDA allocation error.
         let check = config.clone();
@@ -425,6 +595,7 @@ impl LlamaServerManager {
             s.port = config.port;
             s.model_name = Some(model_name.clone());
             s.error_message = None;
+            s.notice = notice;
         }
         {
             let mut l = self.logs.lock().await;
@@ -488,7 +659,7 @@ impl LlamaServerManager {
             cmd.arg("--device").arg(device);
         }
         // Never more context than the model was trained for: beyond it replies fall apart.
-        let context = match crate::modules::gguf::model_shape(model_path)
+        let context = match crate::modules::gguf::model_shape(&model_path)
             .and_then(|shape| shape.trained_context)
         {
             Some(trained) if config.context_size > trained => {
@@ -788,6 +959,76 @@ fn pick_device(listing: &str, gpu: &str) -> Option<String> {
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    fn fit(quantize_cache: bool, stop_speech: bool) -> SpeechFit {
+        SpeechFit {
+            quantize_cache,
+            stop_speech,
+        }
+    }
+
+    #[test]
+    fn chat_model_leaves_room_for_the_speech_model() {
+        // Measured on 16 GB: Bonsai 27B with 64k context (f16 ≈ 11.9 GB, q8_0 ≈ 9.6 GB)
+        // beside Qwen3-TTS 1.7B (≈ 3.6 GB), with the speech model loaded first.
+        assert_eq!(
+            fit_beside_speech(12_200, Some(9_800), 11_400, 3_600, 3_600),
+            fit(true, false)
+        );
+        // Speech model not loaded right now, but used in this session.
+        assert_eq!(
+            fit_beside_speech(12_200, Some(9_800), 15_000, 0, 3_600),
+            fit(true, false)
+        );
+        // Everything fits as configured: nothing changes.
+        assert_eq!(
+            fit_beside_speech(8_000, Some(6_000), 11_400, 3_600, 3_600),
+            fit(false, false)
+        );
+        // No speech model in use: the chat model keeps its f16 cache.
+        assert_eq!(
+            fit_beside_speech(12_200, Some(9_800), 15_000, 0, 0),
+            fit(false, false)
+        );
+    }
+
+    #[test]
+    fn speech_model_yields_when_quantizing_is_not_enough() {
+        // Even q8_0 doesn't fit beside it, but alone the chat model does: stop crispasr.
+        assert_eq!(
+            fit_beside_speech(13_000, Some(12_000), 11_400, 3_600, 3_600),
+            fit(false, true)
+        );
+        // Cache already quantized.
+        assert_eq!(
+            fit_beside_speech(13_000, None, 11_400, 3_600, 3_600),
+            fit(false, true)
+        );
+        // Doesn't fit even without crispasr: leave it, the start reports the shortage.
+        assert_eq!(
+            fit_beside_speech(16_000, Some(15_500), 11_400, 3_600, 3_600),
+            fit(false, false)
+        );
+    }
+
+    #[test]
+    fn only_an_f16_cache_with_flash_attention_is_quantized() {
+        let config = LlamaServerConfig {
+            flash_attn: true,
+            ..LlamaServerConfig::default()
+        };
+        let quantized = quantized_cache(&config).unwrap();
+        assert_eq!(quantized.cache_type_k.as_deref(), Some("q8_0"));
+        assert_eq!(quantized.cache_type_v.as_deref(), Some("q8_0"));
+        assert!(quantized_cache(&quantized).is_none());
+        assert!(
+            quantized_cache(&LlamaServerConfig {
+                flash_attn: false,
+                ..config
+            })
+            .is_none()
+        );
+    }
 
     #[test]
     fn running_out_of_video_memory_is_recognised() {

@@ -166,7 +166,7 @@ describe('context of the local model at start', () => {
 });
 
 describe('local AI on demand', () => {
-  const status = (state: string) => ({ state, port: 48596, pid: null, model_name: null, error_message: null, recent_logs: [] });
+  const status = (state: string) => ({ state, port: 48596, pid: null, model_name: null, error_message: null, notice: null, recent_logs: [] });
 
   it('starts a stopped local model before a request and waits for it', async () => {
     vi.mocked(api.getLlamaServerStatus).mockResolvedValueOnce(status('stopped') as never).mockResolvedValue(status('running') as never);

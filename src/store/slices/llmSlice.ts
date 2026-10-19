@@ -137,6 +137,7 @@ export const createLlmSlice: SliceCreator<LlmSlice> = (set, get) => ({
     pid: null,
     model_name: null,
     error_message: null,
+    notice: null,
     recent_logs: [],
   },
 

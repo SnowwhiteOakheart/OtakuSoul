@@ -19,6 +19,7 @@ const status = (state: ServerStatus['state'], error_message: string | null = nul
   pid: null,
   model_name: null,
   error_message,
+  notice: null,
   recent_logs: [],
 });
 

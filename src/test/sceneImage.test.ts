@@ -67,7 +67,7 @@ beforeEach(() => {
     activeChatId: 'chat-1',
     replyLanguage: 'English',
     selectedBackend: 'local',
-    serverStatus: { state: 'running', port: 48596, pid: 1, model_name: null, error_message: null, recent_logs: [] },
+    serverStatus: { state: 'running', port: 48596, pid: 1, model_name: null, error_message: null, notice: null, recent_logs: [] },
     messages: [
       { role: 'user', content: 'Shall we go to the library?' },
       { role: 'assistant', content: '*{{char}} nods* Sure!' },

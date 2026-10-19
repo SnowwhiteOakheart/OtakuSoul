@@ -46,11 +46,13 @@ impl AppState {
             MemoryDb::new_in_memory().expect("In-memory SQLite database failed to initialize")
         });
 
+        let llama_manager = Arc::new(LlamaServerManager::new());
+        crate::modules::llama_manager::register_shared(&llama_manager);
         let discord_rpc = Arc::new(DiscordRpcClient::new(None));
         discord_rpc.clone().start_background_worker();
 
         Self {
-            llama_manager: Arc::new(LlamaServerManager::new()),
+            llama_manager,
             local_image: Arc::new(LocalImageEngine::new()),
             inference_client: Arc::new(InferenceClient::new()),
             stage_inference_client: Arc::new(InferenceClient::new()),

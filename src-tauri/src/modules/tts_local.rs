@@ -11,7 +11,7 @@
 
 use serde::{Deserialize, Serialize};
 use std::path::PathBuf;
-use std::sync::atomic::{AtomicBool, Ordering};
+use std::sync::atomic::{AtomicBool, AtomicU64, Ordering};
 use std::sync::{Arc, OnceLock};
 use std::time::Duration;
 use tauri::Emitter;
@@ -1188,6 +1188,9 @@ pub struct LocalTtsEngine {
     process: Mutex<Option<CrispProcess>>,
     logs: Arc<Mutex<std::collections::VecDeque<String>>>,
     busy: Mutex<()>,
+    /// VRAM of the speech model used last in this session, kept after it is unloaded so the
+    /// chat model leaves room for it.
+    reserved_vram_mb: AtomicU64,
 }
 
 /// The one speech engine of the app (synthesis is called from chat, web server and Discord).
@@ -1197,6 +1200,7 @@ pub fn engine() -> &'static LocalTtsEngine {
         process: Mutex::new(None),
         logs: Arc::new(Mutex::new(std::collections::VecDeque::with_capacity(60))),
         busy: Mutex::new(()),
+        reserved_vram_mb: AtomicU64::new(0),
     })
 }
 
@@ -1260,6 +1264,11 @@ impl LocalTtsEngine {
             .await
             .and_then(|id| catalog_model(&id).ok())
             .map_or(0, |m| m.vram_mb)
+    }
+
+    /// VRAM to keep free for the speech model in use, 0 before the first line was spoken.
+    pub fn reserved_vram_mb(&self) -> u64 {
+        self.reserved_vram_mb.load(Ordering::Relaxed)
     }
 
     pub async fn stop(&self) {
@@ -1387,6 +1396,11 @@ impl LocalTtsEngine {
                 Ok(())
             });
         }
+
+        // The chat model may hold the VRAM the speech model needs; it can make room.
+        self.reserved_vram_mb
+            .store(model.vram_mb, Ordering::Relaxed);
+        crate::modules::llama_manager::make_room_for_speech(model.vram_mb).await;
 
         tracing::info!("Starte crispasr mit {}", model.id);
         self.logs.lock().await.clear();
