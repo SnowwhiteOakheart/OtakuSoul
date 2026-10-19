@@ -44,13 +44,20 @@
 | **Gedächtnis & Daten** | `memory/` (`chats.rs`, `soul.rs`, SQLite), `memory_pipeline.rs`, `settings.rs`, `characters.rs`, `lorebook.rs`, `profile_backup.rs`, `secrets.rs` | SQLite-Datenbank (`otakusoul.db`), Kognitives Gedächtnis, Episodisches Gedächtnis, V2-Charakterkarten (PNG/JSON), Lorebooks. |
 | **Stage & 5e Engine** | `stage/` (`director.rs`, `engine.rs`, `scenes.rs`, `combat5e.rs`, `explore5e.rs`, `party.rs`, `npc.rs`, `world.rs`, `rules5e/`) | Game-Master-Modus, Spielleiter-Orchestrierung, D&D 5e-Regelsystem (Klassen, Zauber, Kampf, Erkundung, Spielbrett). |
 | **Audio, Bild & Begleiter** | `voice.rs`, `kokoro.rs`, `image_generator.rs`, `companion.rs`, `companion_tools.rs`, `mcp_client.rs` | TTS/STT-Audioverarbeitung, Sprachklonen, Bildgenerierung (SD/Flux), MCP-Client und Werkzeuge des Desktop-Gefährten. |
-| **Hub & Synchronisation** | `hub.rs`, `hub_installed.rs`, `models_hub.rs`, `updater.rs`, `web_server.rs`, `discord.rs` | Online-Abgleich mit `otakusoul-data`, Revisionsprüfung von Karten/Stages/Lorebooks, Web-Server, Discord Rich Presence. |
+| **Sprachen & Lokalisierung** | `ui_locales.rs`, `content_lang.rs` | 3-Ebenen-Auflösung für UI-Sprachen (Presets, Hub-Cache, User-Verzeichnis mit Hot-Reload), `_template.json`, Trennung von UI- und Inhalts-/Spieltexten (`content_lang`), Tray-Lokalisierung. |
+| **Hub, NSFW & Synchronisation** | `hub.rs`, `hub_installed.rs`, `models_hub.rs`, `updater.rs`, `nsfw.rs`, `web_server.rs`, `discord.rs` | Online-Abgleich mit `otakusoul-data` (und NSFW-Hub `otakusoul-data-nsfw`), Revisionsprüfung von Inhalten, FSK18/NSFW-Tagging & Filterung, Web-Server, Discord Rich Presence. |
 
 ### 2. React-Frontend (`src/`)
 * **API-Brücke:** `services/api.ts` (Typsichere Wrapper um alle Tauri `invoke`-Befehle).
 * **Zustandsverwaltung (Zustand):** `store/slices/*.ts` (z. B. `chatSlice.ts`, `stageSlice.ts`, `characterSlice.ts`, `settingsSlice.ts`, `avatarSlice.ts`, `memorySlice.ts`). Zugriff per `useStoreFields('fieldA', 'fieldB')`.
 * **Prompt & Lore Hilfsfunktionen:** `store/helpers.ts` (`resolvePromptWithLore`, `llmTarget`).
-* **Internationalisierung:** JSON je Sprache in `presets/locales/ui/` (mitgeliefert), aus dem Daten-Repo (`<Daten>/locales/ui-hub/`) und `<Daten>/locales/ui/` (eigene/importierte, ohne Build); `modules/ui_locales.rs` erkennt/lädt sie, `i18n/registry.ts` (`loadLocale`, Fallback-Kette), Deutsch eingebaut als Typquelle. `npm run i18n:check` prüft Übersetzungen.
+* **Internationalisierung & 3-Ebenen-Sprachauflösung:**
+  * **Ebene 1 (Mitgelieferte Presets):** `presets/locales/ui/{de,en,ru}.json` (fest im App-Bundle integriert, Deutsch dient als TypeScript-Typquelle `TranslationKey`).
+  * **Ebene 2 (Hub-Cache):** `<Daten>/locales/ui-hub/*.json` (beim Start synchronisiert aus `otakusoul-data/locales/ui/` per `locales/ui_registry.json`; aktualisiert mitgelieferte Sprachen nur bei höherer `__meta.version`; Event `ui-languages-changed` stößt `refreshLanguages` an).
+  * **Ebene 3 (Eigene/Community-Sprachen):** `<Daten>/locales/ui/*.json` (Hot-Discovery ohne Build, Import über `import_ui_language` in Einstellungen, Löschen per `remove_ui_language` in Papierkorb; übersteuert Ebenen 1 & 2).
+  * **Format & Fallback-Kette:** Flache JSON-Paare mit Pflicht-Header `__meta` (`id`, `name`, `englishName`, `author`, `version`, optional `fallback`). Fallback-Kette: `Aktive Sprache → __meta.fallback → Deutsch (de) → Schlüsselname`. Dynamisches Laden über `i18n/registry.ts` (`loadLocale`), `availableLanguages` aus Store.
+  * **Trennung UI vs. Spieltexte:** UI-Texte in `presets/locales/ui/` vs. Inhalts-/Spiel-/D&D-Texte in `presets/locales/<kürzel>.json` (vom Backend per `content_lang.rs` verwaltet und mit `<Daten>/locales/` synchronisiert).
+  * **Werkzeuge:** `npm run i18n:check [-- datei.json]` prüft Vollständigkeit & Parameter; `open_ui_locales_folder` legt automatisch `_template.json` als Vorlage im User-Verzeichnis an.
 
 | UI-Bereich | Komponenten (`components/`) | Beschreibung |
 |---|---|---|
@@ -68,6 +75,7 @@ Wenn Du an einem bestimmten Subsystem arbeitest, lies gezielt die angegebenen Ze
 
 | Thema / Subsystem | Relevante Quellcode-Dateien | H3-Abschnitt in `AI.md` | Wichtigste Aspekte |
 |---|---|---|---|
+| **Sprachdateien & Dynamisches i18n** | `src-tauri/src/modules/ui_locales.rs`<br>`src-tauri/src/modules/content_lang.rs`<br>`presets/locales/ui/*.json`<br>`src/i18n/`<br>`src/components/settings/sections/GeneralSettings.tsx` | `## Richtlinien für Code und Oberfläche` (Zeilen 167–188) | 3-Ebenen-Auflösung (Presets → Hub-Cache → User-Verzeichnis), `__meta`-Header & Versionierung, Fallback-Kette (`fallback → de`), Trennung UI- vs. Spieltexte (`content_lang`), `_template.json`, Import/Papierkorb, `npm run i18n:check`. |
 | **Chat-Pipeline & Prompt** | `src-tauri/src/modules/inference.rs`<br>`src/store/slices/chatSlice.ts` | `### 3. Chat-Pipeline, Streaming, Abbrüche & Verlauf` | Streaming-Lifecycle, `generationId`, Abbrüche via `with_abort`, Kontextfenster-Einpassung, Swipes, Entwürfe. |
 | **Stage, GM & Story-Galerie** | `src-tauri/src/modules/stage/`<br>`src/components/stage/` | `### 4. Stage (Rollenspiel), GM-Director, NPCs & Story-Galerie` | Separater `stage-stream`, Sprecherreihenfolge (`director.rs`), NPC-Gedächtnis, dynamische Hintergründe, Story-Galerie. |
 | **D&D 5e Regelsystem** | `src-tauri/src/modules/stage/rules5e/`<br>`src/components/stage/Combat5e*.tsx` | `### 5. D&D 5e-Regelsystem (Kampf, Spielbrett, Magie, Erkundung)` | Engine entscheidet Regeln deterministisch (`CombatEvent`), LLM erzählt nur; Spielbrett-Wegfindung, Zauber, Nebel. |
@@ -76,6 +84,7 @@ Wenn Du an einem bestimmten Subsystem arbeitest, lies gezielt die angegebenen Ze
 | **Lokale TTS & Stimmklonen** | `src-tauri/src/modules/tts_local.rs`<br>`src/services/voiceEffects.ts` | `### 7. Audio, Lokale TTS, Stimmklonen & Effekte` | CrispASR / F5 / Chatterbox-Klonen (24-kHz-WAV), Pitch-Effekte via WebAudio WSOLA, Stimm-Audioschnitt (`CloneTrimmer`). |
 | **Gedächtnis & SQLite (Memory)** | `src-tauri/src/modules/memory/`<br>`src/store/slices/memorySlice.ts` | `### 8. Kognitives Gedächtnis, SQLite & Reflexion` | Transaktionen für Snapshots/Importe, gegenseitige Sperrung bei Reflexionen, Entwürfe im Drawer, Herkunft episodischer Fakten. |
 | **Hub-Synchronisation & Updates** | `src-tauri/src/modules/hub.rs`<br>`src/components/hub/` | `### 9. Hub-Synchronisation, Registries & Daten-Pakete` | Versionsprüfung via `revision`, Übersetzungsschlüssel, automatische Asset-Downloads (`backgrounds`), Konfliktbehandlung. |
+| **NSFW, FSK18 & Content-Filter** | `src-tauri/src/modules/nsfw.rs`<br>`src-tauri/src/modules/hub.rs`<br>`src/store/slices/settingsSlice.ts`<br>`src/components/settings/sections/NsfwSettings.tsx` | `### 9. Hub-Synchronisation, Registries & Daten-Pakete` | Altersfreigabe (`nsfw_enabled` + `adult_confirmed`), Multi-Hub (`otakusoul-data-nsfw`), Tagging per `extensions.otakusoul_nsfw`, Ausblenden ohne Datenverlust, 4 Romance-Zusatzemotionen. |
 | **Fenster, Tray & Lifecycles** | `src-tauri/src/lib.rs`<br>`src/hooks/useCloseToTray.ts` | `### 1. App-Lifecycle, Fenster, IPC & E2E-Harness` | `close_to_tray`, `PR_SET_PDEATHSIG` für Server-Kindprozesse, `target/e2e` gegen Überschreiben durch `cargo test`. |
 | **Begleiter & Sicherheit** | `src-tauri/src/modules/companion.rs`<br>`src/components/companion/` | `### 10. Begleiter (Companion) & Befehlspalette` | `execute_code`-Sicherheitsflag, HITL-Bestätigungsbanner für Tools/Dateizugriffe, Befehlspalette-Verknüpfung. |
 
@@ -85,11 +94,12 @@ Wenn Du an einem bestimmten Subsystem arbeitest, lies gezielt die angegebenen Ze
 
 Einige Inhalte in `OtakuSoul` sind gebündelte Standard-Kopien (Bundles) aus dem Inhalts-Repository [`otakusoul-data`](../otakusoul-data/). Vor Änderungen an diesen Inhalten immer prüfen, wo die primäre Quelle gepflegt wird:
 
-| Datei / Verzeichnis in `OtakuSoul` | Primäre Quelle (`otakusoul-data`) | Synchronisations- & Update-Mechanismus |
+| Datei / Verzeichnis in `OtakuSoul` | Primäre Quelle (`otakusoul-data` / `otakusoul-data-nsfw`) | Synchronisations- & Update-Mechanismus |
 |---|---|---|
 | `presets/locales/{de,ru}.json` (Spieltexte; jede Datei = Sprache) | `locales/<kürzel>.json` | `content_lang::refresh_locales` lädt bei App-Start nach `<Daten>/locales/` |
 | `presets/locales/ui/*.json` (Oberflächensprachen) | `locales/ui/*.json` + `locales/ui_registry.json` | `ui_locales::refresh_hub` lädt beim Start nach `<Daten>/locales/ui-hub/` (mitgelieferte Sprachen nur bei höherer `version`) |
 | `presets/recommended_models.json` | `recommended_models.json` | `model_catalog::refresh` lädt bei App-Start neuere Versionen nach |
 | `presets/characters/*` | `cards_gateway/*.png` / `presets/*` | Werden im Hub über `soul_registry.json` als V2-Karten bereitgestellt |
 | `presets/stories/scenes/*` | `stages_gateway/*.json` | Werden im Hub über `stages_registry.json` bezogen |
+| NSFW-Karten, Stages & Lorebooks | `otakusoul-data-nsfw` (`cards_gateway/`, `stages_gateway/`) | Werden nur bei aktiver 18+-Freigabe über `hub::nsfw_registry_items` eingebunden |
 
