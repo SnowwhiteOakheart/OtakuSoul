@@ -336,8 +336,9 @@ export const ChatView: React.FC = () => {
       {/* Slide-out Chat Sidebar */}
       <ChatSidebar isOpen={chatSidebarOpen} onClose={() => setChatSidebarOpen(false)} />
 
-      {/* Top Chat Bar: Backend Switcher, Session Info & Actions */}
-      <div className="h-11 border-b border-slate-800/80 bg-slate-900/40 px-4 flex items-center justify-between z-30">
+      {/* Top Chat Bar: Backend Switcher, Session Info & Actions. z-42: its menus open over the
+          character bar below (z-40), the slide-out sidebar (z-45) still covers it. */}
+      <div className="h-11 border-b border-slate-800/80 bg-slate-900/40 px-4 flex items-center justify-between z-42">
         <div className="flex items-center gap-3">
           {/* Chat Sessions Sidebar Toggle */}
           <button

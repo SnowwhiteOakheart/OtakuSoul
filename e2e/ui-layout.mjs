@@ -12,6 +12,20 @@ const assertNoOverflow = async (where) => {
   const { scroll, width } = await browser.execute(() => ({ scroll: document.documentElement.scrollWidth, width: window.innerWidth }));
   assert.ok(scroll <= width, `${where}: Seite ist ${scroll}px breit bei ${width}px Fenster`);
 };
+/** Opens a menu and checks that every entry lies on top (not under a bar or the cards below). */
+const assertMenuOnTop = async (trigger, where) => {
+  await browser.$(`button[aria-label="${trigger}"]`).click();
+  await browser.$('[role="menu"]').waitForDisplayed();
+  const covered = await browser.execute(() => {
+    const menu = document.querySelector('[role="menu"]');
+    return [...menu.querySelectorAll('[role^="menuitem"]')].filter((item) => {
+      const r = item.getBoundingClientRect();
+      return !menu.contains(document.elementFromPoint(r.left + r.width / 2, r.top + r.height / 2));
+    }).map((item) => item.textContent);
+  });
+  assert.deepEqual(covered, [], `${where}: Menüeinträge verdeckt`);
+  await browser.keys('Escape');
+};
 
 try {
   await browser.$('textarea[aria-label="Nachricht"]').waitForDisplayed({ timeout: 30_000 });
@@ -63,6 +77,14 @@ try {
   await shot('49-chat-kleines-fenster');
   await browser.setWindowSize(1280, 840);
 
+  // Menus in the bars open over what follows below them.
+  await assertMenuOnTop('Weitere Chat-Aktionen', 'Chat');
+  await browser.$('button*=Charaktere').click();
+  await browser.$('button[aria-label="Weitere Aktionen"]').waitForDisplayed({ timeout: 10_000 });
+  await assertMenuOnTop('Weitere Aktionen', 'Charakterbibliothek');
+  await browser.$('button*=Chat').click();
+  await browser.$('textarea[aria-label="Nachricht"]').waitForDisplayed({ timeout: 10_000 });
+
   // Themes and light mode (applied the same way the settings do).
   for (const [theme, mode] of [['sakura', 'light'], ['midnight', 'dark'], ['cyberpunk', 'dark']]) {
     await browser.execute((t, m) => {
@@ -73,7 +95,7 @@ try {
     await assertNoOverflow(theme);
     await shot(`50-theme-${theme}-${mode}`);
   }
-  console.log('Oberfläche: Kompaktansicht, einklappbares HUD, Tastaturmenü, kleines Fenster und Themes bestanden.');
+  console.log('Oberfläche: Kompaktansicht, einklappbares HUD, Tastaturmenü, Menüs über den Leisten, kleines Fenster und Themes bestanden.');
 } finally {
   await close();
 }
