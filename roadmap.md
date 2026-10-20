@@ -135,8 +135,13 @@
   seit 20.10.2026, siehe `roadmap_abgeschlossen.md`); andere Figuren bräuchten einen Prompt-Aufbau ohne aktiven Chat.
 - [ ] **Klick auf die Benachrichtigung öffnet den Chat:** Desktop-Benachrichtigungen von `tauri-plugin-notification` bieten
   keine Klick-Aktion; bis dahin zeigt die App außerhalb des Chats einen Toast mit „Zum Chat“.
-- [ ] **Referenzbilder auch für Qwen-Image 2.1:** braucht die Vision-Gewichte (`--llm_vision`, mmproj von Qwen3-VL-8B) im
-  Katalog; bis dahin nutzt Qwen-Image für Selfies img2img (GPU-Test 20.10.2026: ohne Vision „failed to encode prompt“).
+- [ ] **Referenzbilder auch für Qwen-Image 2.1** (verschoben, braucht einen GPU-Test ohne laufendes Spiel):
+  - Vision-Gewichte: `mmproj-Qwen3VL-8B-Instruct-Q8_0.gguf` (752 MB, SHA-256 `c6ba8550…5f3bfd`) bzw. `-F16` (1,16 GB,
+    `ca524100…f9cd38`) aus `Qwen/Qwen3-VL-8B-Instruct-GGUF`; `sd-server` nimmt sie per `--llm_vision`.
+  - Wählt der Nutzer Qwen-Image, lädt die App die mmproj automatisch mit (neue Rolle im Katalog, mit SHA-256) – auf
+    Wunsch abwählbar, dann bleibt es bei img2img.
+  - Danach `reference_use("qwen_image")` → Referenzbild wie bei FLUX.2; vorher prüfen, ob sd.cpp die mmproj aus dem
+    llama.cpp-Repo annimmt und ob Q8_0 reicht (sonst F16). GPU-Test 20.10.2026 ohne Vision: „failed to encode prompt“.
 
 ### Mobil
 - [ ] **Zugriff von unterwegs:** Web-Client außerhalb des WLANs über eine verschlüsselte Relay-Verbindung ohne Portfreigabe,
