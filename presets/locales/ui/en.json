@@ -3673,5 +3673,19 @@
   "stPreset.ignored.prompts": "Further prompt parts (besides the main and post-history prompt) are left out.",
   "stPreset.done": "Preset taken over.",
   "stPreset.promptFailed": "The sampler values are taken over, the prompt template could not be loaded.",
-  "stPreset.unsupported": "Samplers OtakuSoul does not have (stay off): {{names}}"
+  "stPreset.unsupported": "Samplers OtakuSoul does not have (stay off): {{names}}",
+  "openrouter.signIn": "Sign in with OpenRouter",
+  "openrouter.hint": "Opens OpenRouter in the browser: sign in or create an account, allow OtakuSoul – done, no key to copy. Without credit the app picks a free model.",
+  "openrouter.waiting": "Waiting for the sign-in in the browser …",
+  "openrouter.done": "Connected to OpenRouter.",
+  "openrouter.doneFree": "Connected to OpenRouter. Your account has no credit yet, so the free model {{model}} is set.",
+  "openrouter.browserDone": "Signed in – you can go back to OtakuSoul.",
+  "openrouter.browserDeclined": "Sign-in cancelled – you can go back to OtakuSoul.",
+  "backend.openrouter.listen": "The sign-in could not open a local callback: {{error}}",
+  "backend.openrouter.browser": "The browser could not be opened: {{error}}",
+  "backend.openrouter.timeout": "The sign-in took too long. Please try again.",
+  "backend.openrouter.cancelled": "Sign-in cancelled.",
+  "backend.openrouter.declined": "The sign-in was declined in the browser.",
+  "backend.openrouter.stateMismatch": "The answer from the browser did not match this sign-in. Please try again.",
+  "backend.openrouter.exchange": "OpenRouter issued no key: {{error}}"
 }

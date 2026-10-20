@@ -3673,5 +3673,19 @@
   "stPreset.ignored.prompts": "Прочие блоки промпта (кроме основного и пост-исторического) пропускаются.",
   "stPreset.done": "Пресет применён.",
   "stPreset.promptFailed": "Значения сэмплеров применены, шаблон промпта загрузить не удалось.",
-  "stPreset.unsupported": "Неподдерживаемые сэмплеры (остаются выключены): {{names}}"
+  "stPreset.unsupported": "Неподдерживаемые сэмплеры (остаются выключены): {{names}}",
+  "openrouter.signIn": "Войти через OpenRouter",
+  "openrouter.hint": "Открывает OpenRouter в браузере: войди или создай аккаунт, разреши доступ OtakuSoul – готово, ключ копировать не нужно. Без баланса приложение выберет бесплатную модель.",
+  "openrouter.waiting": "Ожидание входа в браузере …",
+  "openrouter.done": "Подключено к OpenRouter.",
+  "openrouter.doneFree": "Подключено к OpenRouter. На твоём аккаунте пока нет баланса, поэтому выбрана бесплатная модель {{model}}.",
+  "openrouter.browserDone": "Вход выполнен – можно вернуться в OtakuSoul.",
+  "openrouter.browserDeclined": "Вход отменён – можно вернуться в OtakuSoul.",
+  "backend.openrouter.listen": "Не удалось открыть локальный адрес для входа: {{error}}",
+  "backend.openrouter.browser": "Не удалось открыть браузер: {{error}}",
+  "backend.openrouter.timeout": "Вход занял слишком много времени. Попробуй ещё раз.",
+  "backend.openrouter.cancelled": "Вход отменён.",
+  "backend.openrouter.declined": "Вход отклонён в браузере.",
+  "backend.openrouter.stateMismatch": "Ответ из браузера не относится к этому входу. Попробуй ещё раз.",
+  "backend.openrouter.exchange": "OpenRouter не выдал ключ: {{error}}"
 }

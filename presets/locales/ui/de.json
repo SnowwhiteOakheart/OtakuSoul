@@ -3673,5 +3673,19 @@
   "stPreset.ignored.prompts": "Weitere Prompt-Bausteine (außer Haupt- und Nachspann-Prompt) werden ausgelassen.",
   "stPreset.done": "Preset übernommen.",
   "stPreset.promptFailed": "Die Sampler-Werte sind übernommen, die Prompt-Vorlage konnte nicht geladen werden.",
-  "stPreset.unsupported": "Nicht unterstützte Sampler (bleiben aus): {{names}}"
+  "stPreset.unsupported": "Nicht unterstützte Sampler (bleiben aus): {{names}}",
+  "openrouter.signIn": "Mit OpenRouter anmelden",
+  "openrouter.hint": "Öffnet OpenRouter im Browser: anmelden oder ein Konto anlegen, OtakuSoul erlauben – fertig, ohne Schlüssel zu kopieren. Ohne Guthaben wählt die App ein kostenloses Modell.",
+  "openrouter.waiting": "Warte auf die Anmeldung im Browser …",
+  "openrouter.done": "Mit OpenRouter verbunden.",
+  "openrouter.doneFree": "Mit OpenRouter verbunden. Dein Konto hat noch kein Guthaben, daher ist das kostenlose Modell {{model}} eingestellt.",
+  "openrouter.browserDone": "Angemeldet – du kannst zu OtakuSoul zurückkehren.",
+  "openrouter.browserDeclined": "Anmeldung abgebrochen – du kannst zu OtakuSoul zurückkehren.",
+  "backend.openrouter.listen": "Die Anmeldung konnte keinen lokalen Rückruf öffnen: {{error}}",
+  "backend.openrouter.browser": "Der Browser ließ sich nicht öffnen: {{error}}",
+  "backend.openrouter.timeout": "Die Anmeldung hat zu lange gedauert. Versuch es noch einmal.",
+  "backend.openrouter.cancelled": "Anmeldung abgebrochen.",
+  "backend.openrouter.declined": "Die Anmeldung wurde im Browser abgelehnt.",
+  "backend.openrouter.stateMismatch": "Die Antwort aus dem Browser passte nicht zu dieser Anmeldung. Versuch es noch einmal.",
+  "backend.openrouter.exchange": "OpenRouter hat keinen Schlüssel ausgegeben: {{error}}"
 }

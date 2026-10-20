@@ -206,3 +206,19 @@ pub async fn list_starter_models() -> Vec<crate::modules::models_hub::StarterMod
         .await
         .unwrap_or_default()
 }
+
+/// "Sign in with OpenRouter": opens the browser and waits for the key of the user's account
+/// (OAuth with PKCE); `language` is the interface language for the page shown afterwards.
+#[tauri::command]
+pub async fn openrouter_login(
+    app: tauri::AppHandle,
+    language: String,
+) -> Result<crate::modules::openrouter_auth::OpenRouterLogin, String> {
+    crate::modules::openrouter_auth::login(&app, &language).await
+}
+
+/// Ends a sign-in that waits for the browser.
+#[tauri::command]
+pub fn openrouter_login_cancel() {
+    crate::modules::openrouter_auth::cancel();
+}

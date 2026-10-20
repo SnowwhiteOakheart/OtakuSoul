@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react';
+import { OpenRouterLoginButton } from '../OpenRouterLoginButton';
 import { OptionHint } from '../OptionHint';
 import { useStoreFields } from '../../../store/useAppStore';
 import { useTranslation } from '../../../i18n';
@@ -111,6 +112,13 @@ export const ProviderSettings = () => {
               <option value="custom">{t('settings.providerCustom')}</option>
             </select>
           </div>
+
+          {cloudProvider === 'open_router' && (
+            <div className="space-y-1.5 md:col-span-2" id="setting-openrouter-login">
+              <OpenRouterLoginButton />
+              <p className="text-xs text-slate-400">{t('openrouter.hint')}</p>
+            </div>
+          )}
 
           {/* API Key */}
           <div className="space-y-1.5">

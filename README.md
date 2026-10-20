@@ -72,7 +72,7 @@ OtakuSoul updates itself: when a new version is out, a button appears in the tit
 1. **Start the app.** The setup assistant opens and asks for your language and colour theme.
 2. **Choose the AI.**
    * **Local** – private and free. The assistant checks your graphics card, recommends a matching model and sets everything up with *“Set everything up automatically”*. A traffic light shows whether a model fits your PC.
-   * **Cloud** – no strong graphics card needed. Pick a provider (OpenRouter, OpenAI, Anthropic, DeepSeek, Gemini, Mistral or your own server) and paste your API key; the link to the provider's key page is right there.
+   * **Cloud** – no strong graphics card needed. Pick a provider (OpenRouter, OpenAI, Anthropic, DeepSeek, Gemini, Mistral or your own server) and paste your API key; the link to the provider's key page is right there. Easiest: **“Sign in with OpenRouter”** – the browser opens, sign in, done; without credit the app sets a free model.
 3. **Pick a character** and, if you like, a voice and pictures – then off you go into a chat or straight into a story.
 
 <p align="center">

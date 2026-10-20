@@ -1,6 +1,7 @@
 import type { TokenEvent } from '../types/generated/TokenEvent';
 import type { ThoughtEvent } from '../types/generated/ThoughtEvent';
 import type { UiLanguage } from '../types/generated/UiLanguage';
+import type { OpenRouterLogin } from '../types/generated/OpenRouterLogin';
 import { invoke } from '@tauri-apps/api/core';
 import { listen, UnlistenFn } from '@tauri-apps/api/event';
 import {
@@ -236,6 +237,15 @@ export const api = {
   /** System prompt plus the instruction sent after the chat history. */
   assemblePrompt: async (context: PromptContext): Promise<AssembledPrompt> => {
     return await invoke<AssembledPrompt>('assemble_prompt', { context });
+  },
+
+  /** "Sign in with OpenRouter" in the browser; resolves with the account's key once signed in. */
+  openRouterLogin: async (language: string): Promise<OpenRouterLogin> => {
+    return await invoke<OpenRouterLogin>('openrouter_login', { language });
+  },
+
+  openRouterLoginCancel: async (): Promise<void> => {
+    await invoke('openrouter_login_cancel');
   },
 
   listPromptTemplates: async (): Promise<BuiltinPromptTemplate[]> => {

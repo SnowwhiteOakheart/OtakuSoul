@@ -72,7 +72,7 @@ OtakuSoul aktualisiert sich selbst: Gibt es eine neue Version, erscheint ein Kno
 1. **App starten.** Der Einrichtungsassistent öffnet sich und fragt nach Sprache und Farbschema.
 2. **KI wählen.**
    * **Lokal** – privat und kostenlos. Der Assistent prüft deine Grafikkarte, empfiehlt ein passendes Modell und richtet mit *„Alles automatisch einrichten“* alles ein. Eine Ampel zeigt, ob ein Modell zu deinem PC passt.
-   * **Cloud** – keine starke Grafikkarte nötig. Anbieter wählen (OpenRouter, OpenAI, Anthropic, DeepSeek, Gemini, Mistral oder ein eigener Server) und den API-Schlüssel einfügen; der Link zur Schlüssel-Seite des Anbieters steht direkt dabei.
+   * **Cloud** – keine starke Grafikkarte nötig. Anbieter wählen (OpenRouter, OpenAI, Anthropic, DeepSeek, Gemini, Mistral oder ein eigener Server) und den API-Schlüssel einfügen; der Link zur Schlüssel-Seite des Anbieters steht direkt dabei. Am einfachsten: **„Mit OpenRouter anmelden“** – Browser öffnet sich, anmelden, fertig; ohne Guthaben stellt die App ein kostenloses Modell ein.
 3. **Charakter aussuchen** und auf Wunsch Stimme und Bilder einstellen – dann geht es in den Chat oder direkt in eine Geschichte.
 
 <p align="center">

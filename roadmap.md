@@ -48,7 +48,7 @@
 ## 2. Technik & Tests
 
 - [ ] Umstieg auf erzeugte Command-Wrapper (`tauri-specta`), falls es eine stabile 2.0 gibt (bis dahin prüft
-  `src/test/commandCheck.test.ts` die Aufrufe; Stand 16.10.2026: weiterhin 2.0.0-rc.25 vom 08.05.2026,
+  `src/test/commandCheck.test.ts` die Aufrufe; Stand 20.10.2026: weiterhin 2.0.0-rc.25 vom 08.05.2026,
   verlangt exakte specta-Pins; Umstieg betrifft 257 Befehle und 232 Typen → abwarten).
 - [ ] Wackeligen E2E-Test beobachten: `chat-sidebar-errors` scheiterte einmal an einem Entwurfsvergleich und bestand
   danach wiederholt.
@@ -127,8 +127,6 @@
 - [ ] **Signierte Installer:** Windows-Code-Signierung (gegen SmartScreen-Warnung) und macOS-Notarisierung (statt
   Rechtsklick → Öffnen bzw. `xattr`) im Release-Workflow. Kosten: Zertifikat bzw. Apple Developer Account (~99 $/Jahr) –
   Entscheidung des Nutzers.
-- [ ] **OpenRouter-Anmeldung per Knopf:** OAuth mit PKCE statt Schlüssel kopieren und einfügen, im Einrichtungsassistenten;
-  voreingestellt ein kostenloses Modell, damit Cloud ohne Kosten und ohne Konto-Basteln startet.
 
 ### Die Figur meldet sich von selbst
 - [ ] **Von selbst melden auch außerhalb des offenen Chats:** Bisher schreibt nur die Figur des offenen Chats (Grundfunktion

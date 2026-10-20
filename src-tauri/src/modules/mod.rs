@@ -36,6 +36,7 @@ pub mod model_files;
 pub mod models_hub;
 pub mod nsfw;
 pub mod ooc;
+pub mod openrouter_auth;
 pub mod paths;
 pub mod profile_backup;
 pub mod prompt_builder;

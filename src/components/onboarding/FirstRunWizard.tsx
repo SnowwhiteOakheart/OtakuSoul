@@ -27,6 +27,7 @@ import { ModalOverlay } from '../ui/ModalOverlay';
 import { APP_THEMES } from '../settings/themes';
 import type { LlmProviderType } from '../../types';
 import { CloudConnectionTest, FirstReply, LocalModelSetup, ModelFit, prettyModelName } from './OnboardingParts';
+import { OpenRouterLoginButton } from '../settings/OpenRouterLoginButton';
 import { CharacterVoiceModal } from '../voice/CharacterVoiceModal';
 import { ImageSettings } from '../settings/sections/ImageSettings';
 
@@ -384,6 +385,17 @@ export const FirstRunWizard: React.FC = () => {
                       className={`${INPUT} font-mono`}
                     />
                   </div>
+                  {store.cloudProvider === 'open_router' && (
+                    <div className="space-y-1.5 sm:col-span-2 rounded-lg border border-accent-500/30 bg-accent-500/5 p-3">
+                      <OpenRouterLoginButton
+                        onDone={(login) => {
+                          setApiKeyDraft(login.key);
+                          if (login.model) setModelDraft(login.model);
+                        }}
+                      />
+                      <p className="text-xs text-slate-400">{t('openrouter.hint')}</p>
+                    </div>
+                  )}
                   <div className="space-y-1.5 sm:col-span-2">
                     <label htmlFor="onboarding-api-key" className="text-xs font-medium text-slate-300">
                       {t('onboarding.apiKeyLabel')}
