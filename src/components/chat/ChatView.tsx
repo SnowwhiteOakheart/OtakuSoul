@@ -31,6 +31,8 @@ import {
   MoreHorizontal,
   FileText,
   Wrench,
+  BellRing,
+  BellOff,
 } from 'lucide-react';
 import { DropdownMenu } from '../ui/DropdownMenu';
 import { usePersistentFlag } from '../../hooks/usePersistentFlag';
@@ -90,11 +92,13 @@ export const ChatView: React.FC = () => {
     activeVoiceConfig,
     setActiveTab,
     replyReplacements,
+    proactive,
+    setProactiveMuted,
   } = useStoreFields(
     'messages', 'storedMessages', 'isGenerating', 'generationChatId', 'generationId', 'isChatLoading', 'chatLoadError', 'clearChat', 'selectedBackend', 'setSelectedBackend', 'expertMode',
     'serverStatus', 'activeCharacter', 'activePersona', 'loadPresetCharacters', 'chatSidebarOpen',
     'setChatSidebarOpen', 'chatSessions', 'activeChatId', 'autoTtsEnabled', 'setAutoTtsEnabled',
-    'activeVoiceConfig', 'setActiveTab', 'replyReplacements',
+    'activeVoiceConfig', 'setActiveTab', 'replyReplacements', 'proactive', 'setProactiveMuted',
   );
 
   const [streamText, setStreamText] = useState('');
@@ -499,6 +503,12 @@ export const ChatView: React.FC = () => {
             trigger={<MoreHorizontal className="w-3.5 h-3.5" />}
             items={[
               { label: t('chat.voiceTooltip'), icon: Volume2, onSelect: () => setShowVoiceModal(true) },
+              // Only with "write on their own" on: whether this character may do it.
+              ...(proactive.enabled && activeCharacter
+                ? [proactive.muted_character_ids.includes(activeCharacter.id)
+                  ? { label: t('proactive.allowCharacter'), icon: BellRing, onSelect: () => setProactiveMuted(activeCharacter.id, false) }
+                  : { label: t('proactive.muteCharacter'), icon: BellOff, onSelect: () => setProactiveMuted(activeCharacter.id, true) }]
+                : []),
               ...(expertMode ? [{ label: t('promptLog.open'), icon: FileText, onSelect: () => setShowPromptLog(true) }] : []),
               ...(activeChatId ? [{ label: t('chat.deleteSession'), icon: Trash2, onSelect: () => void handleClearSession() }] : []),
             ]}

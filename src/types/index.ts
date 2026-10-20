@@ -4,6 +4,7 @@ export interface StageNpcPromotion { scene: SceneState; character: CharacterProf
 // Types that match the Rust side exactly come from ts-rs (src/types/generated, created by
 // `cargo test`); the rest are still hand-written and checked against Rust in wireCheck.ts.
 import type { AppPaths } from './generated/AppPaths';
+import type { ProactiveSettings } from './generated/ProactiveSettings';
 import type { RuntimeVariant } from './generated/RuntimeVariant';
 import type { RuntimeProgress } from './generated/RuntimeProgress';
 import type { RuntimeInfo } from './generated/RuntimeInfo';
@@ -871,6 +872,8 @@ export interface AppSettings {
   /** The chat model may use tools (date/time, calculator, web search). */
   chat_tools?: boolean;
   prompt_template?: PromptTemplate;
+  /** The chat character writes on their own (opt-in). */
+  proactive?: ProactiveSettings;
 }
 
 // Phase 14: Live2D & Emotion Classification

@@ -33,6 +33,56 @@ pub struct ReplyReplacement {
     pub regex: bool,
 }
 
+/// The chat character writes on their own after a pause or when a plan is due. Off by default:
+/// it uses the AI (and with a cloud provider, the user's credit) without being asked.
+#[derive(Debug, Clone, Serialize, Deserialize, PartialEq, TS)]
+#[serde(default)]
+#[ts(export)]
+pub struct ProactiveSettings {
+    pub enabled: bool,
+    /// Quiet time after the last message before the character writes.
+    pub idle_minutes: u32,
+    /// No messages from this hour (local time) until `quiet_end_hour`; equal hours = no quiet time.
+    pub quiet_start_hour: u8,
+    pub quiet_end_hour: u8,
+    /// Messages per calendar day at most, over all characters.
+    pub max_per_day: u32,
+    /// A system notification when the app is not in front.
+    pub notify: bool,
+    /// Characters that never write on their own.
+    pub muted_character_ids: Vec<String>,
+    /// Messages already sent, newest last (the app keeps the latest few).
+    pub sent: Vec<ProactiveSent>,
+}
+
+impl Default for ProactiveSettings {
+    fn default() -> Self {
+        Self {
+            enabled: false,
+            idle_minutes: 240,
+            quiet_start_hour: 22,
+            quiet_end_hour: 8,
+            max_per_day: 2,
+            notify: true,
+            muted_character_ids: Vec::new(),
+            sent: Vec::new(),
+        }
+    }
+}
+
+/// One message a character wrote on their own.
+#[derive(Debug, Clone, Default, Serialize, Deserialize, PartialEq, TS)]
+#[serde(default)]
+#[ts(export)]
+pub struct ProactiveSent {
+    /// UNIX seconds.
+    pub at: u64,
+    pub chat_id: String,
+    pub message_id: String,
+    /// The due intention it followed up on, if any (each is brought up once).
+    pub intention_id: Option<i64>,
+}
+
 #[derive(Debug, Clone, Serialize, Deserialize, TS)]
 #[ts(export)]
 // Missing fields fall back to the defaults instead of discarding the whole file.
@@ -114,6 +164,9 @@ pub struct AppSettings {
     pub reply_replacements: Vec<ReplyReplacement>,
     /// Editable parts of the chat system prompt.
     pub prompt_template: crate::modules::prompt_builder::PromptTemplate,
+    /// The character writes on their own (opt-in).
+    #[serde(default)]
+    pub proactive: ProactiveSettings,
 }
 
 fn default_true() -> bool {
@@ -196,6 +249,7 @@ impl Default for AppSettings {
             avoid_phrases: Vec::new(),
             reply_replacements: Vec::new(),
             prompt_template: Default::default(),
+            proactive: ProactiveSettings::default(),
         }
     }
 }

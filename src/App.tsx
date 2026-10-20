@@ -6,6 +6,7 @@ import { SafetyCountdownBanner } from './components/companion/SafetyCountdownBan
 import { useAppStore } from './store/useAppStore';
 import { useTabHistory } from './hooks/useTabHistory';
 import { useCloseToTray } from './hooks/useCloseToTray';
+import { useProactiveMessages } from './hooks/useProactiveMessages';
 import { useTranslation } from './i18n';
 import { ErrorBoundary } from './components/ui/ErrorBoundary';
 import { FeedbackHost } from './components/ui/feedback';
@@ -40,6 +41,7 @@ export function App() {
     typeof window !== 'undefined' && new URLSearchParams(window.location.search).get('overlay') === 'true';
   useTabHistory(!isOverlayMode);
   useCloseToTray(!isOverlayMode);
+  useProactiveMessages(!isOverlayMode);
 
   if (isOverlayMode) {
     return (

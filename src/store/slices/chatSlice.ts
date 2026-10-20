@@ -84,6 +84,11 @@ export interface ChatSlice {
   sendMessage: (content: string, files?: File[], storedMessageId?: string, replySpeaker?: string) => Promise<void>;
   /** A reply by one character of a group chat ('' = the chat's own) without a new user message. */
   replyAs: (speakerId: string) => Promise<void>;
+  /**
+   * The chat's character writes on their own (`instruction` says why, given their name); returns
+   * the saved message, or null when nothing was written (busy, other chat, failure).
+   */
+  writeOnOwn: (instruction: (name: string) => string) => Promise<StoredChatMessage | null>;
   /** Invites characters into a chat or removes them (group chat); throws on failure. */
   setChatMembers: (chatId: string, members: string[]) => Promise<void>;
   /** Who writes the running (or last) reply: '' = the chat's own character, else a guest's ID. */
@@ -274,6 +279,8 @@ export const createChatSlice: SliceCreator<ChatSlice> = (set, get) => {
     preparation: AbortController;
     /** No new user message before this reply ("reply as …"): tell the model whose turn it is. */
     nudge?: boolean;
+    /** Instead of the nudge: why the character writes now (on their own), given their name. */
+    instruction?: (name: string) => string;
   }) => {
     const { chatId, charId, history, speakerId, generationId, preparation } = run;
     // The local AI starts with the first message (the task list shows the loading).
@@ -291,7 +298,8 @@ export const createChatSlice: SliceCreator<ChatSlice> = (set, get) => {
       payloadMessages.splice(insertIdx, 0, { role: 'system', content: `[Author's note: ${session.author_note}]` });
     }
     payloadMessages.push(...postHistory(prompt));
-    if (run.nudge) payloadMessages.push({ role: 'system', content: `[It is ${setup.name}'s turn to speak.]` });
+    if (run.instruction) payloadMessages.push({ role: 'system', content: run.instruction(setup.name) });
+    else if (run.nudge) payloadMessages.push({ role: 'system', content: `[It is ${setup.name}'s turn to speak.]` });
 
     // A guest reads aloud with their own voice: load it before the first token arrives.
     if (speakerId) await get().loadSpeakerVoice(speakerId);
@@ -485,6 +493,30 @@ export const createChatSlice: SliceCreator<ChatSlice> = (set, get) => {
       if (inContext(activeChatId, activeCharacter.id)) {
         set({ generationFailure: { chatId: activeChatId, message: errorMessage(e), cause: e instanceof Error ? e.message : String(e), kind: 'speak', messageId: speakerId } });
       }
+    } finally {
+      await finishGeneration();
+    }
+  },
+
+  writeOnOwn: async (instruction) => {
+    const { activeChatId, activeCharacter } = get();
+    if (get().isGenerating || get().isChatLoading || get().chatLoadError || !activeChatId || !activeCharacter) return null;
+    cancelled = false;
+    generationSessionRequest = sessionRequest;
+    generationSequence += 1;
+    const preparation = new AbortController();
+    generationPreparation = preparation;
+    const generationId = crypto.randomUUID();
+    set({ isGenerating: true, generationId, generationChatId: activeChatId, generationFailure: null, streamingText: '', streamingThought: '' });
+    try {
+      const written = await writeReply({ chatId: activeChatId, charId: activeCharacter.id, history: get().storedMessages, speakerId: '',
+        generationId, preparation, instruction });
+      // A stopped message stays as far as it got, but does not count as written on their own.
+      return written && !written.done.aborted ? written.stored : null;
+    } catch (e) {
+      // Nobody asked for this message: a failure is only logged, the chat stays as it was.
+      console.warn('Writing on their own failed:', e);
+      return null;
     } finally {
       await finishGeneration();
     }

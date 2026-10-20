@@ -15,6 +15,9 @@ import { toast } from '../../components/ui/feedback';
 import { errorMessage } from '../../utils/errors';
 import { SHIPPED_LANGUAGES, forgetLocales, loadLocale, loadOptions, type SupportedLanguage } from '../../i18n/registry';
 import type { UiLanguage } from '../../types/generated/UiLanguage';
+import type { ProactiveSettings } from '../../types/generated/ProactiveSettings';
+import type { ProactiveSent } from '../../types/generated/ProactiveSent';
+import { PROACTIVE_DEFAULTS, PROACTIVE_SENT_KEPT } from '../../utils/proactive';
 import { normalizeColorMode, syncColorMode, type ColorModePreference } from '../../services/theme';
 
 /** Navigation, app lifecycle (init/save settings), language, theme, onboarding, logs and updater. */
@@ -72,6 +75,13 @@ export interface AppSlice {
   /** The chat model may use tools (date/time, calculator, web search). */
   chatTools: boolean;
   setChatTools: (on: boolean) => void;
+  /** The chat character writes on their own after a pause or when a plan is due (opt-in). */
+  proactive: ProactiveSettings;
+  setProactive: (patch: Partial<ProactiveSettings>) => void;
+  /** Whether `charId` may write on their own (and the switch per character). */
+  setProactiveMuted: (charId: string, muted: boolean) => void;
+  /** Notes a message the character wrote on their own (keeps the latest few). */
+  recordProactive: (sent: ProactiveSent) => void;
   /** The first-close hint about the tray was confirmed. */
   trayHintShown: boolean;
   /** Scene Stage reopens on the next start; empty = Stage starts with the story gallery. */
@@ -204,6 +214,7 @@ export const createAppSlice: SliceCreator<AppSlice> = (set, get) => ({
         avoidPhrases: settings.avoid_phrases ?? [],
         replyReplacements: settings.reply_replacements ?? [],
         chatTools: settings.chat_tools === true,
+        proactive: { ...PROACTIVE_DEFAULTS, ...settings.proactive },
         trayHintShown: settings.tray_hint_shown === true,
         stageLastScene: settings.stage_last_scene || '',
         startTab: settings.start_tab === 'chat' ? 'chat' : 'home',
@@ -329,6 +340,7 @@ export const createAppSlice: SliceCreator<AppSlice> = (set, get) => ({
         avoid_phrases: state.avoidPhrases,
         reply_replacements: state.replyReplacements,
         chat_tools: state.chatTools,
+        proactive: state.proactive,
         tray_hint_shown: state.trayHintShown,
         stage_last_scene: state.stageLastScene,
         start_tab: state.startTab,
@@ -466,6 +478,22 @@ export const createAppSlice: SliceCreator<AppSlice> = (set, get) => ({
   setChatTools: (on) => {
     set({ chatTools: on });
     get().saveCurrentSettings();
+  },
+
+  proactive: PROACTIVE_DEFAULTS,
+
+  setProactive: (patch) => {
+    set({ proactive: { ...get().proactive, ...patch } });
+    get().saveCurrentSettings();
+  },
+
+  setProactiveMuted: (charId, muted) => {
+    const others = get().proactive.muted_character_ids.filter((id) => id !== charId);
+    get().setProactive({ muted_character_ids: muted ? [...others, charId] : others });
+  },
+
+  recordProactive: (sent) => {
+    get().setProactive({ sent: [...get().proactive.sent, sent].slice(-PROACTIVE_SENT_KEPT) });
   },
 
   trayHintShown: false,

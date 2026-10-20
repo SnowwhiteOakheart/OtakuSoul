@@ -12,6 +12,7 @@ import { api } from '../../../services/api';
 import { toast } from '../../ui/feedback';
 import { Toggle } from '../../ui/Toggle';
 import { NsfwSettings } from '../NsfwSettings';
+import { ProactiveSettings } from '../ProactiveSettings';
 import { errorMessage } from '../../../utils/errors';
 import { APP_THEMES } from '../themes';
 import {
@@ -341,6 +342,8 @@ export const GeneralSettings = () => {
       </div>
 
       {/* 4. System-Diagnose & Updates */}
+      <ProactiveSettings />
+
       <NsfwSettings />
 
       <div id="setting-system" className="rounded-xl border border-slate-800 bg-slate-900/60 p-5 space-y-4">

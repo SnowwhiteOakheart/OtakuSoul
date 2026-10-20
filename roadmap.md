@@ -131,10 +131,10 @@
   voreingestellt ein kostenloses Modell, damit Cloud ohne Kosten und ohne Konto-Basteln startet.
 
 ### Die Figur meldet sich von selbst
-- [ ] **Proaktive Nachrichten im Chat:** Die Figur schreibt nach einer einstellbaren Pause oder wenn ein Vorhaben fällig wird
-  (Vorhaben mit `due_at` gibt es schon). Abschaltbar pro Figur, Ruhezeiten, Obergrenze pro Tag.
-- [ ] **Systembenachrichtigungen** (`tauri-plugin-notification`) für proaktive Nachrichten und fällige Vorhaben; Klick öffnet
-  den Chat.
+- [ ] **Von selbst melden auch außerhalb des offenen Chats:** Bisher schreibt nur die Figur des offenen Chats (Grundfunktion
+  seit 20.10.2026, siehe `roadmap_abgeschlossen.md`); andere Figuren bräuchten einen Prompt-Aufbau ohne aktiven Chat.
+- [ ] **Klick auf die Benachrichtigung öffnet den Chat:** Desktop-Benachrichtigungen von `tauri-plugin-notification` bieten
+  keine Klick-Aktion; bis dahin zeigt die App außerhalb des Chats einen Toast mit „Zum Chat“.
 - [ ] **Selfies mit wiedererkennbarem Gesicht:** Figurenbilder mit gleichbleibendem Aussehen (Referenzbild/IP-Adapter oder
   LoRA pro Figur, je nach Unterstützung in stable-diffusion.cpp), auf Wunsch von der Figur selbst angeboten.
 

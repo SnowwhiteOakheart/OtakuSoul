@@ -331,6 +331,13 @@ ru „персонаж/история/сцена“. Fachbegriffe nur im Experte
 - Lange Chats: Sprung zu einer Nachricht über `chatSlice.requestChatJump` → `MessageList` (`jumpTo`, scrollt die
   virtualisierte Liste, Klasse `message-flash`). Lesezeichen in `chat_bookmarks` (per Join an Nachrichten gebunden),
   „Ab hier neu“ = `branch_chat` (kopiert Verlauf, Varianten, Anhänge per `attachments::copy_to_chat`, Lesezeichen).
+- Von selbst melden (`AppSettings.proactive`, Standard aus): `hooks/useProactiveMessages.ts` prüft 15 s nach dem Start,
+  dann minütlich, nur den offenen Chat; Entscheidung rein in `utils/proactive.ts` (`proactiveReason`: Ruhezeit, Tageslimit
+  über `proactive.sent`, stummgeschaltete Figuren, erst nach einer Nutzernachricht, nie zweimal ohne Antwort; fälliges
+  `real`-Vorhaben je einmal ab 10 min Pause, sonst nach `idle_minutes`). `chatSlice.writeOnOwn` = `writeReply` mit
+  `instruction` statt Nudge; Fehler nur geloggt. Lokale KI wird dafür nicht gestartet. Benachrichtigung über
+  `tauri-plugin-notification` (`services/notifications.ts`) nur bei verdecktem Fenster, sonst Toast außerhalb des Chats.
+  Der Mock reicht die Anweisung nicht als `system`-Rolle durch: E2E `chat-proactive.mjs` sucht rollenunabhängig.
 
 ### 4. Stage (Rollenspiel), GM-Director, NPCs & Story-Galerie
 
