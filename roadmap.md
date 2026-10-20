@@ -1,6 +1,6 @@
 # 🗺️ OtakuSoul – Roadmap (offen)
 
-> Stand: 19.10.2026. Diese Datei ist die **einzige** Liste offener Punkte; `roadmap_abgeschlossen.md` (nur lokal, nicht im
+> Stand: 20.10.2026. Diese Datei ist die **einzige** Liste offener Punkte; `roadmap_abgeschlossen.md` (nur lokal, nicht im
 > Repository) enthält alles Erledigte (Portierung Phasen 1–18, Verbesserungen, Sprachausgabe, Neutralisierung, optionale Inhalte, Qualität &
 > Bedienung, 5e-Regeln, 3D-Figuren aus Spielen, Bedienbarkeit & Story-Einstieg, Avatar-Manager, Oberflächensprachen, Chat-Erweiterungen,
 > Kognitives Gedächtnis 2.0 sowie FSK18/NSFW-Grundintegration). Sie ersetzt alle früheren separaten Roadmap-Dateien.
@@ -160,3 +160,26 @@
 
 > Alleinstellungsmerkmal: Das Desktop-Pet (Abschnitt 3) zusammen mit Gedächtnis und proaktiven Nachrichten –
 > „Deine Figur lebt auf deinem PC.“
+
+## 6. Weitere Alleinstellungsmerkmale (Immersion, Storytelling & Alltag)
+
+### 🌙 Träume & Off-Screen-Eigenleben (Autonome Hintergrund-Welt)
+- [ ] **Traum-Tagebuch & Nachgedanken beim App-Start:** Wenn die App nach längerer Pause geöffnet wird, verknüpft eine kurze Hintergrund-Reflexion zufällige ältere Erinnerungen (`episodes`, `psyche`, `diary`) zu einem Traum oder einer kleinen Off-Screen-Anekdote (optional inklusive automatisch lokal generiertem Bild).
+- [ ] **Off-Screen-Gespräche zwischen Figuren:** In Gruppen-Chats oder der Stage können sich zwei Charaktere zwischen den Sitzungen kurz im Hintergrund ausgetauscht haben und beim nächsten Start davon berichten.
+
+### 🕸️ Interaktiver „Seelen- & Beziehungs-Atlas“ (Visual Memory Graph)
+- [ ] **Visuelle Sternenkarte der Erinnerungen:** Interaktive 2D/3D-Knotenansicht (Force-Graph) für das SQLite-Gedächtnis (`psyche`, `relationship`, `episodes`, `diary`, `plans`), in der leuchtende Verbindungen zeigen, welche Erlebnisse welche Überzeugungen geformt haben.
+- [ ] **Zeitreise-Checkpoints (Parallelwelt-Zeitlinien):** Klick auf einen historischen Knoten in der Beziehungs-Chronik startet von diesem Gedächtnis-Snapshot + Chat-Zeitpunkt aus einen neuen Branch („Was wäre, wenn ich mich damals anders entschieden hätte?“) mit eigenem Gedächtnisstand.
+
+### 🎬 Visual-Novel-, Light-Novel- & Hörbuch-Export („Verewige deine Geschichte“)
+- [ ] **Illustrierter Buch- & Webtoon-Export:** Verwandelt einen gespielten Story-Akt aus der Stage oder einen Chat-Verlauf auf Knopfdruck in ein flüssig geschriebenes Light-Novel-Kapitel (PDF/EPUB/HTML-Replay) oder einen Webtoon-Strip – inklusive eingebetteter Szenenbilder und passender Emotionsporträts.
+- [ ] **Hörbuch-Kapitel-Export:** Fügt die generierten Sprachdateien (Erzählerstimme + Charakterstimmen) eines Kapitels automatisch zu einer durchgängigen Audiodatei zusammen.
+
+### 🎭 „Puppenspieler & Regisseur“: Dynamische Musik-Dramaturgie & Kartenbau für die Stage
+- [ ] **Stimmungs- & phasenabhängiger Soundtrack:** Automatisches Crossfading von Hintergrundmusik und Ambient-Loops (z. B. „Taverne“, „Spannung“, „Bosskampf“, „Romantik“) anhand der erkannten `[emotion: …]`-Tags und 5e-Kampfevents (`CombatEvent`).
+- [ ] **1-Klick-Battlemap-Generierung aus Text:** Wenn der Spielleiter einen neuen Ort improvisiert, erzeugt `stable-diffusion.cpp` eine Top-Down-Karte, aus deren Helligkeits-/Strukturwerten automatisch Wände, Hindernisse und Sichtlinien für die 5e-Engine abgeleitet werden.
+
+### 💌 Tagebuch-Synchronisation & Cozy-Lebensbegleiter (Real-Life Companion)
+- [ ] **Cozy Focus- & Pomodoro-Modus:** Fokus-Timer (inspiriert von *Spirit City: Lofi Sessions*), bei dem der 3D/2D-Avatar am Schreibtisch mitarbeitet, liest oder Musik hört, Pausen ankündigt und erledigte Aufgaben feiert.
+- [ ] **Abend-Reflexion & Monatsrückblick:** Optionaler Journaling-Modus, in dem die Figur den Tag mit dem Nutzer reflektiert, Gewohnheiten (`habits` / `plans`) spielerisch begleitet und am Monatsende einen persönlichen Rückblick verfasst.
+
