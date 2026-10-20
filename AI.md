@@ -198,6 +198,9 @@ ru „персонаж/история/сцена“. Fachbegriffe nur im Experte
   neue Kindprozesse brauchen `kill_on_drop(true)` und unter Linux `PR_SET_PDEATHSIG`.
 - `cargo test`/`clippy` überschreiben `target/debug/otakusoul` mit einer Version ohne eingebettetes Frontend → E2E nutzt
   `target/e2e`.
+- Tauri kopiert `presets/` beim Build nach `target/e2e/debug/presets/`, löscht dort aber nie Dateien, die im Repository
+  entfernt wurden. Nach dem Entfernen oder Umbenennen von Presets (Figuren, Geschichten, Pakete) den Ordner vor
+  `npm run e2e:build` löschen, sonst sehen E2E-Tests und README-Screenshots noch die alten Inhalte.
 - Das Hauptfenster steht in `tauri.conf.json` mit `create: false` und wird in `lib.rs` (`create_main_window`) gebaut,
   damit `OTAKUSOUL_HOME` auch den Webview-Speicher umlenkt (`<home>/webview`); der E2E-Harness prüft das per Marker.
 - Bei gesperrter Desktop-Sitzung können WebKit-Screenshots und Animationsabfragen hängen. E2E dann unter
