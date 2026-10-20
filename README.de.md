@@ -110,7 +110,7 @@ Die Story-Galerie zeigt fertige Abenteuer mit Genre, Spieldauer und Schwierigkei
 ### 💬 Chat – Charaktere mit Persönlichkeit
 
 <p align="center">
-  <img src="docs/assets/screenshots/de/chat.png" alt="Chat mit Ayu: Porträt mit Gefühl, Stimmungsanzeige und Antwort" width="95%" />
+  <img src="docs/assets/screenshots/de/chat.png" alt="Chat mit Shiori: Porträt mit Gefühl, Stimmungsanzeige und Antwort" width="95%" />
 </p>
 
 * Das **Bild wechselt mit dem Gefühl** der Antwort – bis zu **15 Emotionsbilder** pro Figur: sechs Stimmungen plus Erröten, Necken, Angst, Ekel, Weinen und vier Romance-Bilder (die meisten Hub-Figuren bringen alle mit). Den Ausdruck wählt die KI selbst; das Porträt atmet leicht und bewegt sich beim Sprechen. Alternativ ein **3D-Avatar** (VRM, MMD, glTF aus Spielen) oder **Live2D** mit Lippensynchronität. Alle Modelle verwaltest Du in der **Bibliothek → Avatare**: ansehen, umbenennen und Charakteren per Haken zuweisen.

@@ -54,9 +54,6 @@
   danach wiederholt.
 - [ ] Wackeligen E2E-Test beobachten: `stage-5e` scheiterte einmal an einem veralteten Element (`button[aria-label*="gegen"]`
   im Kampfpanel, 16.10.2026) und bestand danach.
-- [ ] **README-Screenshots neu erzeugen** (`xvfb-run -a node e2e/readme-screenshots.mjs de|en|ru`), sobald die Porträts der
-  neuen Einsteigerfiguren fertig sind: Chat- und Geschichten-Bilder zeigen noch Ayu und Cosmos (seit 19.10.2026 nur im Hub);
-  danach die Bildbeschreibungen „Chat mit Ayu“ in den drei READMEs auf Shiori anpassen.
   17.10.2026: zweite Ursache behoben – der Test übersah Heilung durch „Zweiter Atem“ (zählt jetzt Heal-Ereignisse).
 
 ## 3. 3D Desktop Pet (Mascot Companion)

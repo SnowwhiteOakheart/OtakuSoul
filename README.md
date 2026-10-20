@@ -110,7 +110,7 @@ The story gallery shows ready-made adventures with genre, playing time and diffi
 ### 💬 Chat – characters with personality
 
 <p align="center">
-  <img src="docs/assets/screenshots/en/chat.png" alt="Chat with Ayu: portrait with emotion, mood display and reply" width="95%" />
+  <img src="docs/assets/screenshots/en/chat.png" alt="Chat with Shiori: portrait with emotion, mood display and reply" width="95%" />
 </p>
 
 * The **picture changes with the emotion** of the reply – up to **15 emotion pictures** per character: six moods plus blushing, teasing, fear, disgust, crying and four romance pictures (most Hub characters bring the full set). The AI picks the expression itself; the portrait breathes gently and moves while speaking. Alternatively a **3D avatar** (VRM, MMD, glTF from games) or **Live2D** with lip sync. All models live in **Library → Avatars**: look at them, rename them and give them to characters with a tick.

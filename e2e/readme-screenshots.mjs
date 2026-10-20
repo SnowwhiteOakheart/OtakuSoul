@@ -11,12 +11,11 @@ const lang = process.argv[2] ?? 'en';
 const outDir = path.join(root, 'docs', 'assets', 'screenshots', lang);
 mkdirSync(outDir, { recursive: true });
 
-// UI texts straight from the locale file, so selectors follow the chosen language.
-const locale = readFileSync(path.join(root, 'src', 'i18n', 'locales', `${lang}.ts`), 'utf8');
+// UI texts straight from the bundled locale file, so selectors follow the chosen language.
+const locale = JSON.parse(readFileSync(path.join(root, 'presets', 'locales', 'ui', `${lang}.json`), 'utf8'));
 const t = (key) => {
-  const match = locale.match(new RegExp(`"${key.replace(/\./g, '\\.')}":\\s*"((?:[^"\\\\]|\\\\.)*)"`));
-  if (!match) throw new Error(`Kein Text für ${key}`);
-  return JSON.parse(`"${match[1]}"`);
+  if (typeof locale[key] !== 'string') throw new Error(`Kein Text für ${key}`);
+  return locale[key];
 };
 
 const TEXT = {
