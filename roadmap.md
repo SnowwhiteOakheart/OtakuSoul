@@ -117,3 +117,40 @@
   - Vektoren als BLOB in SQLite, Kosinus-Ähnlichkeit in Rust (bei < 10.000 Erinnerungen pro Figur reicht Brute Force).
   - Fusion mit BM25 per Reciprocal Rank Fusion (RRF). Erst messen, dann bauen.
 
+
+## 5. Wettbewerbsfähigkeit (Vorschläge vom 20.10.2026)
+
+> Abgleich mit Character.AI, Kindroid, Nomi, Replika, SillyTavern und Backyard AI. Beim Funktionsumfang liegt OtakuSoul vorn;
+> die Lücken liegen bei Zugang, Vertrauen, proaktiver Bindung und Mobilität. Reihenfolge = vorgeschlagene Priorität.
+
+### Zugang & Vertrauen
+- [ ] **Signierte Installer:** Windows-Code-Signierung (gegen SmartScreen-Warnung) und macOS-Notarisierung (statt
+  Rechtsklick → Öffnen bzw. `xattr`) im Release-Workflow. Kosten: Zertifikat bzw. Apple Developer Account (~99 $/Jahr) –
+  Entscheidung des Nutzers.
+- [ ] **OpenRouter-Anmeldung per Knopf:** OAuth mit PKCE statt Schlüssel kopieren und einfügen, im Einrichtungsassistenten;
+  voreingestellt ein kostenloses Modell, damit Cloud ohne Kosten und ohne Konto-Basteln startet.
+
+### Die Figur meldet sich von selbst
+- [ ] **Proaktive Nachrichten im Chat:** Die Figur schreibt nach einer einstellbaren Pause oder wenn ein Vorhaben fällig wird
+  (Vorhaben mit `due_at` gibt es schon). Abschaltbar pro Figur, Ruhezeiten, Obergrenze pro Tag.
+- [ ] **Systembenachrichtigungen** (`tauri-plugin-notification`) für proaktive Nachrichten und fällige Vorhaben; Klick öffnet
+  den Chat.
+- [ ] **Selfies mit wiedererkennbarem Gesicht:** Figurenbilder mit gleichbleibendem Aussehen (Referenzbild/IP-Adapter oder
+  LoRA pro Figur, je nach Unterstützung in stable-diffusion.cpp), auf Wunsch von der Figur selbst angeboten.
+
+### Mobil
+- [ ] **Zugriff von unterwegs:** Web-Client außerhalb des WLANs über eine verschlüsselte Relay-Verbindung ohne Portfreigabe,
+  mit Push-Benachrichtigungen. Danach prüfen: eigene Handy-App über Tauri 2 (Android/iOS) mit Cloud-KI oder dem PC als Server.
+
+### Für erfahrene Nutzer
+- [ ] **Schlankes Erweiterungssystem:** Regex-Skripte für Ein-/Ausgabe, Quick-Replies und ein Skript-Hook – der häufigste Grund,
+  bei SillyTavern zu bleiben (README nennt das Fehlen offen).
+- [ ] **SillyTavern-Presets importieren:** Sampler-, Instruct- und Kontextvorlagen (Chat-Import per JSONL gibt es schon).
+
+### Gemeinschaft
+- [ ] **Eigene Figuren und Geschichten aus der App teilen:** Einreichen in den Hub (z. B. als Pull Request an `otakusoul-data`
+  oder über ein Formular), mit Prüfung vor der Aufnahme.
+- [ ] **Sync bzw. Backup zwischen Geräten** über Ordner-Sync oder WebDAV, ohne eigenen Server.
+
+> Alleinstellungsmerkmal: Das Desktop-Pet (Abschnitt 3) zusammen mit Gedächtnis und proaktiven Nachrichten –
+> „Deine Figur lebt auf deinem PC.“
