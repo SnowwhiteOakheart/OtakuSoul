@@ -4,6 +4,7 @@ import { OptionHint } from '../OptionHint';
 import { EXTRA_SAMPLING_FIELDS, VARIETY_OFF, VARIETY_SAMPLING, changedFields, samplingDefaults, varietyOn } from '../../../utils/settingDefaults';
 import { Toggle } from '../../ui/Toggle';
 import { ReplyFilterSettings } from '../ReplyFilterSettings';
+import { QuickReplySettings } from '../QuickReplySettings';
 import { useStoreFields } from '../../../store/useAppStore';
 import { translate, useTranslation } from '../../../i18n';
 import { confirmDialog } from '../../ui/feedback';
@@ -203,6 +204,7 @@ export const SamplerSettings = () => {
       </div>
 
       <ReplyFilterSettings />
+      <QuickReplySettings />
 
       {!expertMode && <p className="text-xs text-slate-500">{t('settings.samplerExpertHint')}</p>}
       {expertMode && (<>

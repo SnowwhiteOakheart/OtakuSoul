@@ -5,6 +5,7 @@ export interface StageNpcPromotion { scene: SceneState; character: CharacterProf
 // `cargo test`); the rest are still hand-written and checked against Rust in wireCheck.ts.
 import type { AppPaths } from './generated/AppPaths';
 import type { ProactiveSettings } from './generated/ProactiveSettings';
+import type { QuickReply } from './generated/QuickReply';
 import type { RuntimeVariant } from './generated/RuntimeVariant';
 import type { RuntimeProgress } from './generated/RuntimeProgress';
 import type { RuntimeInfo } from './generated/RuntimeInfo';
@@ -876,6 +877,8 @@ export interface AppSettings {
   prompt_template?: PromptTemplate;
   /** The chat character writes on their own (opt-in). */
   proactive?: ProactiveSettings;
+  /** Buttons above the chat input. */
+  quick_replies?: QuickReply[];
 }
 
 // Phase 14: Live2D & Emotion Classification

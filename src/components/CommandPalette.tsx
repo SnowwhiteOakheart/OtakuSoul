@@ -84,6 +84,7 @@ export const CommandPalette = ({ open, onOpen, onClose }: CommandPaletteProps) =
       ['setting-reply-language', 'settings.replyLanguage', Globe, 'reply language antwortsprache язык ответов'],
       ['setting-theme', 'settings.theme', Palette, 'theme farbe dark light hell dunkel тема цвет'],
       ['setting-close-to-tray', 'settings.closeToTray', Settings2, 'tray close schließen beenden quit трей закрыть'],
+      ['setting-quick-replies', 'quickReplies.title', Settings2, 'quick reply schnellantwort knopf button sillytavern быстрый ответ'],
       ['setting-proactive', 'proactive.title', Settings2, 'proactive nachricht melden benachrichtigung notification ruhezeit сообщение уведомление'],
       ['setting-nsfw', 'nsfw.title', Settings2, 'nsfw 18+ adult erwachsene erotik freigabe взрослые'],
       ['setting-avatars', 'settings.avatarDefaults', Users, 'avatar vrm live2d аватар'],

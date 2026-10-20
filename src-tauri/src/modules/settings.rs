@@ -60,6 +60,28 @@ impl Default for ReplyReplacement {
     }
 }
 
+/// A button above the chat input with a prepared message (`{{char}}`, `{{user}}`, `{{input}}` are
+/// filled in); SillyTavern quick reply sets import into it.
+#[derive(Debug, Clone, Serialize, Deserialize, PartialEq, TS)]
+#[serde(default)]
+#[ts(export)]
+pub struct QuickReply {
+    pub label: String,
+    pub message: String,
+    /// `send` sends at once, `insert` puts the text into the input field.
+    pub mode: String,
+}
+
+impl Default for QuickReply {
+    fn default() -> Self {
+        Self {
+            label: String::new(),
+            message: String::new(),
+            mode: "send".into(),
+        }
+    }
+}
+
 /// The chat character writes on their own after a pause or when a plan is due. Off by default:
 /// it uses the AI (and with a cloud provider, the user's credit) without being asked.
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq, TS)]
@@ -197,6 +219,9 @@ pub struct AppSettings {
     /// The character writes on their own (opt-in).
     #[serde(default)]
     pub proactive: ProactiveSettings,
+    /// Buttons above the chat input.
+    #[serde(default)]
+    pub quick_replies: Vec<QuickReply>,
 }
 
 fn default_true() -> bool {
@@ -280,6 +305,7 @@ impl Default for AppSettings {
             reply_replacements: Vec::new(),
             prompt_template: Default::default(),
             proactive: ProactiveSettings::default(),
+            quick_replies: Vec::new(),
         }
     }
 }

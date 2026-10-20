@@ -2,6 +2,7 @@
 import type { LlamaServerConfig } from "./LlamaServerConfig";
 import type { ProactiveSettings } from "./ProactiveSettings";
 import type { PromptTemplate } from "./PromptTemplate";
+import type { QuickReply } from "./QuickReply";
 import type { ReplyReplacement } from "./ReplyReplacement";
 import type { SamplingParams } from "./SamplingParams";
 
@@ -69,4 +70,8 @@ prompt_template: PromptTemplate,
 /**
  * The character writes on their own (opt-in).
  */
-proactive: ProactiveSettings, };
+proactive: ProactiveSettings, 
+/**
+ * Buttons above the chat input.
+ */
+quick_replies: Array<QuickReply>, };

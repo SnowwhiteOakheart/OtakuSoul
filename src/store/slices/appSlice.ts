@@ -17,6 +17,7 @@ import { SHIPPED_LANGUAGES, forgetLocales, loadLocale, loadOptions, type Support
 import type { UiLanguage } from '../../types/generated/UiLanguage';
 import type { ProactiveSettings } from '../../types/generated/ProactiveSettings';
 import type { ProactiveSent } from '../../types/generated/ProactiveSent';
+import type { QuickReply } from '../../types/generated/QuickReply';
 import { PROACTIVE_DEFAULTS, PROACTIVE_SENT_KEPT } from '../../utils/proactive';
 import { normalizeColorMode, syncColorMode, type ColorModePreference } from '../../services/theme';
 
@@ -82,6 +83,9 @@ export interface AppSlice {
   setProactiveMuted: (charId: string, muted: boolean) => void;
   /** Notes a message the character wrote on their own (keeps the latest few). */
   recordProactive: (sent: ProactiveSent) => void;
+  /** Buttons above the chat input with prepared messages. */
+  quickReplies: QuickReply[];
+  setQuickReplies: (replies: QuickReply[]) => void;
   /** The first-close hint about the tray was confirmed. */
   trayHintShown: boolean;
   /** Scene Stage reopens on the next start; empty = Stage starts with the story gallery. */
@@ -215,6 +219,7 @@ export const createAppSlice: SliceCreator<AppSlice> = (set, get) => ({
         replyReplacements: settings.reply_replacements ?? [],
         chatTools: settings.chat_tools === true,
         proactive: { ...PROACTIVE_DEFAULTS, ...settings.proactive },
+        quickReplies: settings.quick_replies ?? [],
         trayHintShown: settings.tray_hint_shown === true,
         stageLastScene: settings.stage_last_scene || '',
         startTab: settings.start_tab === 'chat' ? 'chat' : 'home',
@@ -341,6 +346,7 @@ export const createAppSlice: SliceCreator<AppSlice> = (set, get) => ({
         reply_replacements: state.replyReplacements,
         chat_tools: state.chatTools,
         proactive: state.proactive,
+        quick_replies: state.quickReplies,
         tray_hint_shown: state.trayHintShown,
         stage_last_scene: state.stageLastScene,
         start_tab: state.startTab,
@@ -490,6 +496,13 @@ export const createAppSlice: SliceCreator<AppSlice> = (set, get) => ({
   setProactiveMuted: (charId, muted) => {
     const others = get().proactive.muted_character_ids.filter((id) => id !== charId);
     get().setProactive({ muted_character_ids: muted ? [...others, charId] : others });
+  },
+
+  quickReplies: [],
+
+  setQuickReplies: (quickReplies) => {
+    set({ quickReplies });
+    get().saveCurrentSettings();
   },
 
   recordProactive: (sent) => {

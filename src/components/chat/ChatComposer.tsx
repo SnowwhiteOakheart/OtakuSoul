@@ -13,6 +13,8 @@ import { reportFailure } from '../../store/reportFailure';
 import { REPLY_LENGTHS } from '../../store/helpers';
 import { DEFAULT_CHAT_STYLE } from '../../utils/settingDefaults';
 import { chatSpeakers, presentedAs } from '../../utils/groupChat';
+import { fillQuickReply, usesInput } from '../../utils/quickReplies';
+import type { QuickReply } from '../../types/generated/QuickReply';
 
 /**
  * Message input with send/abort, voice controls and the context meter. Owns the draft so
@@ -94,6 +96,22 @@ export const ChatComposer: React.FC = () => {
     }
   });
 
+  // A quick reply sends its text at once or puts it into the field; `{{input}}` takes what was typed.
+  const applyQuickReply = (reply: QuickReply) => {
+    const state = useAppStore.getState();
+    const filled = fillQuickReply(reply.message, {
+      char: state.activeCharacter ? presentedAs(state.activeCharacter, state.replyLanguage).name : '',
+      user: state.activePersona.name,
+      input,
+    });
+    if (reply.mode === 'insert') {
+      setInput(usesInput(reply.message) || !input.trim() ? filled : `${input} ${filled}`);
+      textInput.current?.focus();
+    } else {
+      handleSend(filled);
+    }
+  };
+
   const pickIdea = (idea: string) => {
     setInput(idea);
     setIdeas({ key: null, items: [] });
@@ -105,10 +123,11 @@ export const ChatComposer: React.FC = () => {
     if (added.length > 0) setFiles((current) => [...current, ...added].slice(0, MAX_FILES));
   };
 
-  const handleSend = () => {
-    if ((!input.trim() && files.length === 0) || isGenerating || !activeChatId || isChatLoading || chatLoadError) return;
+  const handleSend = (override?: string) => {
+    const typed = override ?? input;
+    if ((!typed.trim() && files.length === 0) || isGenerating || !activeChatId || isChatLoading || chatLoadError) return;
     streamingTts.cancel();
-    const [text, attached] = [directing ? asDirection(input) : input, files];
+    const [text, attached] = [directing ? asDirection(typed) : typed, files];
     setInput('');
     setFiles([]);
     setIdeas({ key: null, items: [] });
@@ -200,6 +219,7 @@ export const ChatComposer: React.FC = () => {
         </div>
       )}
       <SpeakerChips />
+      <QuickReplyBar onUse={applyQuickReply} disabled={isGenerating || !activeChatId || isChatLoading || !!chatLoadError} />
       {imagesWithoutVision && (
         <p className="max-w-4xl mx-auto mb-2 text-xs text-amber-300">{t('chat.noVisionHint')}</p>
       )}
@@ -303,7 +323,7 @@ export const ChatComposer: React.FC = () => {
           </button>
         ) : (
           <button
-            onClick={handleSend}
+            onClick={() => handleSend()}
             disabled={!activeChatId || isChatLoading || !!chatLoadError || (!input.trim() && files.length === 0)}
             className="p-2.5 rounded-xl bg-accent-600 hover:bg-accent-500 disabled:opacity-40 disabled:cursor-not-allowed text-white transition-all shadow-md flex items-center justify-center"
             title={t('chat.send')}
@@ -366,6 +386,30 @@ const PendingFile: React.FC<{ file: File; onRemove: () => void }> = ({ file, onR
 };
 
 /** Group chat: let one of the characters answer now, without a new message of the user. */
+/** The user's quick replies as buttons above the input (hidden when there are none). */
+const QuickReplyBar: React.FC<{ onUse: (reply: QuickReply) => void; disabled: boolean }> = ({ onUse, disabled }) => {
+  const { t } = useTranslation();
+  const replies = useAppStore((s) => s.quickReplies);
+  const shown = replies.filter((r) => r.label.trim() && r.message.trim());
+  if (shown.length === 0) return null;
+  return (
+    <div className="max-w-4xl mx-auto mb-2 flex flex-wrap items-center gap-1.5" role="group" aria-label={t('quickReplies.bar')} data-quick-replies>
+      {shown.map((reply, index) => (
+        <button
+          key={`${index}-${reply.label}`}
+          type="button"
+          disabled={disabled && reply.mode !== 'insert'}
+          onClick={() => onUse(reply)}
+          title={reply.message}
+          className="rounded-lg border border-slate-700 bg-slate-800/70 px-2.5 py-1 text-xs text-slate-200 hover:border-accent-500/60 hover:bg-slate-800 disabled:opacity-40"
+        >
+          {reply.label}
+        </button>
+      ))}
+    </div>
+  );
+};
+
 const SpeakerChips: React.FC = () => {
   const { t } = useTranslation();
   const { activeChatId, chatSessions, activeCharacter, availableCharacters, replyLanguage, replyAs, isGenerating, isChatLoading, chatLoadError } = useStoreFields(

@@ -118,6 +118,11 @@ ru „персонаж/история/сцена“. Fachbegriffe nur im Experte
   neue Felder gelten weiter für Antworten (`Default` von `ReplyReplacement`). UI `settings/RegexScriptSettings.tsx` im Antwortstil,
   Textfelder speichern beim Verlassen. Logit-Bias/gesperrte Tokens bewusst nicht (llama.cpp sperrt nur Einzeltokens).
   E2E `chat-reply-filters.mjs`.
+- **Quick-Replies:** `AppSettings.quick_replies` (`QuickReply`: label/message/mode `send`|`insert`) → `QuickReplyBar` in
+  `ChatComposer` (nur wenn Einträge da sind, `data-quick-replies`); `utils/quickReplies.ts` füllt `{{char}}`/`{{user}}`/`{{input}}`
+  und importiert ST-Sets (`qrList` bzw. alte `quickReplySlots`; Einträge mit `/…` = STscript werden ausgelassen und gezählt).
+  `handleSend(override)` – nie `onClick={handleSend}`, sonst landet das Klick-Event als Text. UI `settings/QuickReplySettings.tsx`
+  im Antwortstil, E2E `chat-quick-replies.mjs` (Feld leeren mit `clearValue`, `setValue('')` lehnt WebDriver ab).
 - **Antwortlänge pro Chat:** `ChatStyle.reply_length` (`short`/`medium`/`long`, leer = Vorlage), Auswahl `ReplyLengthPicker` unter dem
   Eingabefeld; `ChatStylePanel` behält den Wert beim Speichern/Zurücksetzen. Prompt: `PromptContext.reply_length` →
   `reply_length_rule` am Ende des Nachspanns; `helpers.ts` `chatSampling` begrenzt `max_tokens` (400/900, ausführlich ≥ 2048,
