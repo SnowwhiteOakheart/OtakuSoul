@@ -197,6 +197,10 @@ pub struct VoiceConfig {
     #[serde(default)]
     #[ts(optional)]
     pub effects: Option<VoiceEffects>,
+    /// The character speaks only their own words; `*actions*` are read by the narrator voice
+    /// (profile `stage_narrator`, split in the frontend: `services/narratorVoice.ts`).
+    #[serde(default)]
+    pub narrator_for_actions: bool,
 }
 
 fn default_rate() -> String {
@@ -264,6 +268,7 @@ impl Default for VoiceConfig {
             rvc: RvcConfig::default(),
             stt: SttConfig::default(),
             effects: None,
+            narrator_for_actions: false,
         }
     }
 }

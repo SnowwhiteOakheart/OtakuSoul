@@ -55,6 +55,9 @@
 - [ ] Wackeligen E2E-Test beobachten: `stage-5e` scheiterte einmal an einem veralteten Element (`button[aria-label*="gegen"]`
   im Kampfpanel, 16.10.2026) und bestand danach.
   17.10.2026: zweite Ursache behoben – der Test übersah Heilung durch „Zweiter Atem“ (zählt jetzt Heal-Ereignisse).
+- [ ] E2E-Test `voice-effects` scheitert reproduzierbar mit „Nichts abgespielt“ (20.10.2026): schon auf `c2fe918` (vor den
+  Änderungen des Tages), also kein Rückschritt durch Erzählerstimme oder Selfies; `stage-voice` und `chat-narrator-voice` spielen
+  Audio ab. Ursache klären (Effekt-Rendering per OfflineAudioContext unter Xvfb? `window.Audio`-Hook nach dem Neuladen?).
 
 ## 3. 3D Desktop Pet (Mascot Companion)
 

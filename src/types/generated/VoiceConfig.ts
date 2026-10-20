@@ -14,4 +14,9 @@ local_model_id: string | null, output_device_id: string, rvc: RvcConfig, stt: St
 /**
  * Played with these effects; `None` = plain voice.
  */
-effects?: VoiceEffects, };
+effects?: VoiceEffects, 
+/**
+ * The character speaks only their own words; `*actions*` are read by the narrator voice
+ * (profile `stage_narrator`, split in the frontend: `services/narratorVoice.ts`).
+ */
+narrator_for_actions: boolean, };

@@ -3687,5 +3687,8 @@
   "backend.openrouter.cancelled": "Вход отменён.",
   "backend.openrouter.declined": "Вход отклонён в браузере.",
   "backend.openrouter.stateMismatch": "Ответ из браузера не относится к этому входу. Попробуй ещё раз.",
-  "backend.openrouter.exchange": "OpenRouter не выдал ключ: {{error}}"
+  "backend.openrouter.exchange": "OpenRouter не выдал ключ: {{error}}",
+  "voiceCfg.narratorForActions": "Читать действия (*…*) голосом рассказчика",
+  "voiceCfg.narratorForActionsHint": "Персонаж произносит свои реплики, описания в звёздочках читает голос рассказчика – как в аудиоспектакле. Голос рассказчика настраивается здесь в «Голос для» › Голос рассказчика; он же озвучивает ведущего и NPC в историях.",
+  "voiceCfg.serverPresets": "Шаблон:"
 }

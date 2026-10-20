@@ -590,6 +590,14 @@ ru „персонаж/история/сцена“. Fachbegriffe nur im Experte
 
 ### 7. Audio, Lokale TTS, Stimmklonen & Effekte
 
+- Erzählerstimme für Handlungen (`VoiceConfig.narrator_for_actions`, Schalter im Stimm-Dialog außer beim Erzähler selbst):
+  `services/narratorVoice.ts` – `splitActions` trennt `*Handlungen*` (auch `**…**`, offenes Ende) von den eigenen Worten,
+  `voiceParts` gibt jedem Teil seine Stimme (Erzähler = Profil `stage_narrator`, gecacht, `forgetNarratorVoice` beim
+  Speichern). Genutzt in `StreamingTtsManager` (lokale Teile – Figur **oder** Erzähler – warten bis zum Antwortende,
+  danach folgende Teile bleiben in der Reihe), im Vorlese-Knopf (`audioPlayer.stop()` einmal, dann `enqueue`; nicht
+  `playDataUrl`, das bricht den vorigen Teil ab) und für Gefährten in `speakStageMessages`. E2E `chat-narrator-voice.mjs`.
+  Vorlagen für OpenAI-kompatible Sprachserver im Dialog: Kokoro-FastAPI :8880, AllTalk v2 :7851, openedai-speech :8000
+  (GPT-SoVITS hat keinen OpenAI-Endpunkt).
 - Lokale TTS (`tts_local.rs`, `crispasr --server`): F5 bekommt unter CUDA `CRISPASR_F5_EMBED_GPU=1` (sonst ~20× langsamer).
   Parallel zum generierenden LLM läuft lokale TTS langsamer als Echtzeit (gemessen 7,3 s für 6,6 s Audio): `streamingTts`
   synthetisiert bei `engine === 'local'` weiter satzweise, hält die Wiedergabe aber bis `flush()` (Antwortende) zurück.

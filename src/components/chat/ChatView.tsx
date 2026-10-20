@@ -40,6 +40,7 @@ import { usePersistentFlag } from '../../hooks/usePersistentFlag';
 import { useAmbientSound } from '../../hooks/useAmbientSound';
 import { audioPlayer, gainFromVoiceVolume } from '../../services/audioPlayer';
 import { streamingTts } from '../../services/streamingTts';
+import { voiceParts } from '../../services/narratorVoice';
 
 import { CharacterVoiceModal } from '../voice/CharacterVoiceModal';
 import { PromptLogModal } from './PromptLogModal';
@@ -263,13 +264,18 @@ export const ChatView: React.FC = () => {
         if (state.generationSpeakerId === speakerId) state.setCurrentEmotion(res);
       }).catch(() => {});
 
-      const audioUrl = await api.synthesizeSpeech(text, voice);
-      await audioPlayer.playDataUrl(
-        audioUrl,
-        gainFromVoiceVolume(voice.volume),
-        voice.output_device_id,
-        voice.effects,
-      );
+      // Actions may be read by the narrator: each part with its own voice, queued in order
+      // (`playDataUrl` would cut off the part before).
+      audioPlayer.stop();
+      for (const part of await voiceParts(text, voice)) {
+        const audioUrl = await api.synthesizeSpeech(part.text, part.voice);
+        audioPlayer.enqueue(
+          audioUrl,
+          gainFromVoiceVolume(part.voice.volume),
+          part.voice.output_device_id,
+          part.voice.effects,
+        );
+      }
     } catch (e) {
       console.error('Speech synthesis failed:', e);
     }

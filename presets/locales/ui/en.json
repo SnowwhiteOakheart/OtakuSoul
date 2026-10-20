@@ -3687,5 +3687,8 @@
   "backend.openrouter.cancelled": "Sign-in cancelled.",
   "backend.openrouter.declined": "The sign-in was declined in the browser.",
   "backend.openrouter.stateMismatch": "The answer from the browser did not match this sign-in. Please try again.",
-  "backend.openrouter.exchange": "OpenRouter issued no key: {{error}}"
+  "backend.openrouter.exchange": "OpenRouter issued no key: {{error}}",
+  "voiceCfg.narratorForActions": "Read actions (*…*) with the narrator voice",
+  "voiceCfg.narratorForActionsHint": "The character speaks their own words, descriptions in asterisks are read by the narrator voice – like an audio drama. Set the narrator voice here under “Voice for” › Narrator voice; it also speaks for the game master and NPCs in stories.",
+  "voiceCfg.serverPresets": "Preset:"
 }

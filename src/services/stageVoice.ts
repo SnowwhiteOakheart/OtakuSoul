@@ -2,9 +2,9 @@ import { api } from './api';
 import { audioPlayer, gainFromVoiceVolume } from './audioPlayer';
 import type { CharacterProfile, SceneTurnMessage, VoiceConfig } from '../types';
 import { findCharacterByName } from '../utils/characterName';
+import { STAGE_NARRATOR_VOICE_ID, voiceParts } from './narratorVoice';
 
-/** Voice profile of the Soul Stage narrator (game master and NPCs), edited like a character's. */
-export const STAGE_NARRATOR_VOICE_ID = 'stage_narrator';
+export { STAGE_NARRATOR_VOICE_ID };
 
 /** Companions speak with their character voice; the game master and NPCs with the narrator's. */
 async function voiceFor(message: SceneTurnMessage, characters: CharacterProfile[]): Promise<VoiceConfig | null> {
@@ -34,8 +34,11 @@ export async function speakStageMessages(
     const config = await voiceFor(message, characters);
     if (!config) continue;
     try {
-      const url = await api.synthesizeSpeech(message.content, config);
-      audioPlayer.enqueue(url, gainFromVoiceVolume(config.volume), config.output_device_id, config.effects);
+      // A companion may leave their *actions* to the narrator.
+      for (const part of await voiceParts(message.content, config)) {
+        const url = await api.synthesizeSpeech(part.text, part.voice);
+        audioPlayer.enqueue(url, gainFromVoiceVolume(part.voice.volume), part.voice.output_device_id, part.voice.effects);
+      }
     } catch (error) {
       console.warn('Stage voice failed:', error);
     }

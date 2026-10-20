@@ -30,6 +30,7 @@ import { waitWithAbort } from '../../utils/cancellation';
 import { languageCode, localizeCard } from '../../utils/cardI18n';
 import { isRepeat } from '../../utils/repetition';
 import { applyReplacements, applyScripts, forPrompt } from '../../utils/replyFilters';
+import { STAGE_NARRATOR_VOICE_ID, forgetNarratorVoice } from '../../services/narratorVoice';
 import { GROUP_MAX_REPLIES, chatSpeakers, groupHistory, memoryCharacter, presentedAs } from '../../utils/groupChat';
 
 type GenerationFailure = {
@@ -1313,6 +1314,7 @@ export const createChatSlice: SliceCreator<ChatSlice> = (set, get) => {
   saveVoiceConfigForCharacter: async (charId, config) => {
     try {
       await api.saveCharacterVoiceConfig(charId, config);
+      if (charId === STAGE_NARRATOR_VOICE_ID) forgetNarratorVoice();
       if (get().activeCharacter?.id === charId) {
         set({ activeVoiceConfig: config });
       }

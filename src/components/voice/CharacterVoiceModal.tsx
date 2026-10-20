@@ -14,6 +14,7 @@ import { languageCode } from '../../utils/cardI18n';
 import { translate, useTranslation } from '../../i18n';
 import { errorMessage } from '../../utils/errors';
 import { toast } from '../ui/feedback';
+import { STAGE_NARRATOR_VOICE_ID } from '../../services/narratorVoice';
 
 interface CharacterVoiceModalProps {
   onClose?: () => void;
@@ -24,6 +25,13 @@ interface CharacterVoiceModalProps {
   /** Saves every change by itself (first-run wizard), so nothing is lost without "Save". */
   autoSave?: boolean;
 }
+
+/** Local speech servers with an OpenAI-compatible `/v1/audio/speech`, at their default ports. */
+const SPEECH_SERVERS = [
+  { name: 'Kokoro-FastAPI', endpoint: 'http://localhost:8880/v1/audio/speech', model: 'kokoro' },
+  { name: 'AllTalk v2', endpoint: 'http://localhost:7851/v1/audio/speech', model: 'tts-1' },
+  { name: 'openedai-speech (XTTS, Piper)', endpoint: 'http://localhost:8000/v1/audio/speech', model: 'tts-1-hd' },
+] as const;
 
 const DEFAULT_CONFIG: VoiceConfig = {
   engine: 'edge',
@@ -65,6 +73,7 @@ const DEFAULT_CONFIG: VoiceConfig = {
     vad_silence_ms: 900,
     input_device_id: '',
   },
+  narrator_for_actions: false,
 };
 
 type VoiceTab = 'tts' | 'effects' | 'stt' | 'rvc';
@@ -478,6 +487,21 @@ export function CharacterVoiceModal({ onClose, target, embedded = false, autoSav
                   {draft.engine === 'openai' && (
                     <div className="space-y-4 rounded-lg border border-slate-800 bg-app/40 p-4">
                       <p className="text-xs text-slate-400">{t('voiceCfg.openaiText')}</p>
+                      {/* Common local servers with an OpenAI-compatible speech endpoint (default ports). */}
+                      <div className="flex flex-wrap items-center gap-1.5 text-xs" role="group" aria-label={t('voiceCfg.serverPresets')}>
+                        <span className="text-slate-400">{t('voiceCfg.serverPresets')}</span>
+                        {SPEECH_SERVERS.map((server) => (
+                          <button
+                            key={server.name}
+                            type="button"
+                            onClick={() => edit((current) => ({ ...current, openai_endpoint: server.endpoint, openai_model: server.model }))}
+                            title={server.endpoint}
+                            className="rounded-lg border border-slate-700 px-2 py-0.5 text-slate-300 hover:bg-slate-800"
+                          >
+                            {server.name}
+                          </button>
+                        ))}
+                      </div>
                       <label>
                         <span className={labelClass}>{t('voiceCfg.speechEndpoint')}</span>
                         <input value={draft.openai_endpoint} onChange={(event) => update('openai_endpoint', event.target.value)} className={fieldClass} placeholder="http://localhost:8880/v1/audio/speech" />
@@ -521,6 +545,22 @@ export function CharacterVoiceModal({ onClose, target, embedded = false, autoSav
                       </select>
                       <OptionHint id="voice-filter-hint">{t('voiceCfg.filterHint')}</OptionHint>
                     </label>
+                    {(target?.id ?? activeCharacter?.id) !== STAGE_NARRATOR_VOICE_ID && (
+                      <label className="sm:col-span-2 flex items-start gap-2 text-sm text-slate-200">
+                        <input
+                          type="checkbox"
+                          checked={draft.narrator_for_actions}
+                          onChange={(event) => update('narrator_for_actions', event.target.checked)}
+                          aria-describedby="voice-narrator-hint"
+                          className="mt-1"
+                          data-narrator-for-actions
+                        />
+                        <span>
+                          {t('voiceCfg.narratorForActions')}
+                          <OptionHint id="voice-narrator-hint">{t('voiceCfg.narratorForActionsHint')}</OptionHint>
+                        </span>
+                      </label>
+                    )}
                     {expertMode && (
                       <label>
                         <span className={labelClass}>{t('voiceCfg.customRegex')}</span>

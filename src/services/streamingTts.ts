@@ -1,6 +1,7 @@
 import { VoiceConfig } from '../types';
 import { api } from './api';
 import { audioPlayer, gainFromVoiceVolume } from './audioPlayer';
+import { voiceParts } from './narratorVoice';
 
 const SENTENCE_END = /[.!?…]+[”"')\]]*(?:\s+|$)/g;
 
@@ -33,14 +34,15 @@ export class StreamingTtsManager {
   private session = 0;
   private config: VoiceConfig | null = null;
   private synthesisChain: Promise<void> = Promise.resolve();
-  private holding = false;
+  /** The reply is complete; local speech no longer waits for it. */
+  private done = false;
   private held: (() => void)[] = [];
 
   public begin(config: VoiceConfig) {
     this.cancel(false);
     this.active = true;
     this.config = config;
-    this.holding = config.engine === 'local';
+    this.done = false;
   }
 
   public push(token: string, config: VoiceConfig) {
@@ -75,17 +77,22 @@ export class StreamingTtsManager {
     if (!config || config.engine === 'disabled') return;
     this.synthesisChain = this.synthesisChain.then(async () => {
       try {
-        const audioUrl = await api.synthesizeSpeech(text, config);
-        if (session !== this.session || !this.active) return;
-        const play = () =>
-          audioPlayer.enqueue(
-            audioUrl,
-            gainFromVoiceVolume(config.volume),
-            config.output_device_id,
-            config.effects,
-          );
-        if (this.holding) this.held.push(play);
-        else play();
+        // Actions may go to the narrator: each part with its own voice, in order.
+        for (const part of await voiceParts(text, config)) {
+          const audioUrl = await api.synthesizeSpeech(part.text, part.voice);
+          if (session !== this.session || !this.active) return;
+          const play = () =>
+            audioPlayer.enqueue(
+              audioUrl,
+              gainFromVoiceVolume(part.voice.volume),
+              part.voice.output_device_id,
+              part.voice.effects,
+            );
+          // Local speech (character or narrator) waits until the reply is complete.
+          if (!this.done && (config.engine === 'local' || part.voice.engine === 'local')) this.held.push(play);
+          else if (this.held.length > 0) this.held.push(play);
+          else play();
+        }
       } catch (error) {
         console.error('Satzweises TTS fehlgeschlagen:', error);
       }
@@ -103,7 +110,7 @@ export class StreamingTtsManager {
 
   /** The reply is complete: play what was held back, later sentences play right away. */
   private releaseHeld() {
-    this.holding = false;
+    this.done = true;
     const held = this.held;
     this.held = [];
     held.forEach((play) => play());
@@ -120,7 +127,7 @@ export class StreamingTtsManager {
     this.receivedText = false;
     this.active = false;
     this.config = null;
-    this.holding = false;
+    this.done = false;
     this.held = [];
     this.synthesisChain = Promise.resolve();
     if (stopPlayback) audioPlayer.stop();
