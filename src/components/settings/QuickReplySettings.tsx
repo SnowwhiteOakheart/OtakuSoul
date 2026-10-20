@@ -33,8 +33,10 @@ export const QuickReplySettings = () => {
     try {
       const { replies: imported, skipped } = importSillyTavernQuickReplies(JSON.parse(await file.text()));
       commit([...replies, ...imported]);
-      toast.success(tPlural('quickReplies.imported', imported.length)
-        + (skipped > 0 ? ` ${tPlural('quickReplies.importSkipped', skipped)}` : ''));
+      const note = skipped > 0 ? tPlural('quickReplies.importSkipped', skipped) : '';
+      // Nothing usable (e.g. a set of slash commands only): a hint, not a success.
+      if (imported.length === 0) toast.info(note || t('quickReplies.importFailed'));
+      else toast.success(`${tPlural('quickReplies.imported', imported.length)} ${note}`.trim());
     } catch {
       toast.error(t('quickReplies.importFailed'));
     }

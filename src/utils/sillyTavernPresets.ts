@@ -10,7 +10,21 @@ export interface ImportedPreset {
   postHistory?: string;
   /** Parts without a counterpart, for the summary: `instruct`, `context`, `prompts`. */
   ignored: ('instruct' | 'context' | 'prompts')[];
+  /** Samplers switched on in the preset that OtakuSoul does not have (named in the summary). */
+  unsupported: string[];
 }
+
+/** Samplers OtakuSoul lacks, and when SillyTavern counts them as on. */
+const UNSUPPORTED: [key: string, on: (n: number) => boolean][] = [
+  ['typical_p', (n) => n < 1],
+  ['tfs', (n) => n < 1],
+  ['top_a', (n) => n > 0],
+  ['smoothing_factor', (n) => n > 0],
+  ['mirostat_mode', (n) => n > 0],
+  ['epsilon_cutoff', (n) => n > 0],
+  ['eta_cutoff', (n) => n > 0],
+  ['nsigma', (n) => n > 0],
+];
 
 const num = (value: unknown): number | undefined =>
   typeof value === 'number' && Number.isFinite(value) ? value : typeof value === 'string' && value.trim() && Number.isFinite(Number(value)) ? Number(value) : undefined;
@@ -68,11 +82,19 @@ function samplerValues(preset: Record<string, unknown>): Partial<SamplingParams>
 export function importSillyTavernPreset(json: unknown): ImportedPreset {
   if (!json || typeof json !== 'object' || Array.isArray(json)) throw new Error('no preset');
   const root = json as Record<string, unknown>;
-  const result: ImportedPreset = { sampling: {}, ignored: [] };
+  const result: ImportedPreset = { sampling: {}, ignored: [], unsupported: [] };
+  let recognized = false;
   const read = (part: Record<string, unknown>) => {
-    Object.assign(result.sampling, samplerValues(part));
+    const sampling = samplerValues(part);
+    if (Object.keys(sampling).length > 0) recognized = true;
+    Object.assign(result.sampling, sampling);
+    for (const [key, on] of UNSUPPORTED) {
+      const value = num(part[key]);
+      if (value !== undefined && on(value)) result.unsupported.push(key);
+    }
     // Chat completion preset: the prompt list.
     if (Array.isArray(part.prompts)) {
+      recognized = true;
       const prompt = (id: string) => (part.prompts as Record<string, unknown>[]).find((p) => p?.identifier === id)?.content;
       const main = prompt('main');
       const post = prompt('jailbreak');
@@ -86,9 +108,10 @@ export function importSillyTavernPreset(json: unknown): ImportedPreset {
       result.ignored.push('instruct');
     }
     if (typeof part.story_string === 'string') result.ignored.push('context');
-    // System prompt file.
-    if (typeof part.content === 'string' && typeof part.name === 'string' && part.content.trim() && !('prompts' in part)) {
-      result.main = part.content.trim();
+    // System prompt file (an empty one, like "Blank", is recognized but gives nothing).
+    if (typeof part.content === 'string' && typeof part.name === 'string' && !('prompts' in part)) {
+      recognized = true;
+      if (part.content.trim()) result.main = part.content.trim();
     }
   };
   read(root);
@@ -98,8 +121,7 @@ export function importSillyTavernPreset(json: unknown): ImportedPreset {
     if (part && typeof part === 'object' && !Array.isArray(part)) read(part as Record<string, unknown>);
   }
   result.ignored = [...new Set(result.ignored)];
-  if (Object.keys(result.sampling).length === 0 && !result.main && !result.postHistory && result.ignored.length === 0) {
-    throw new Error('no preset');
-  }
+  result.unsupported = [...new Set(result.unsupported)];
+  if (!recognized && !result.main && !result.postHistory && result.ignored.length === 0) throw new Error('no preset');
   return result;
 }

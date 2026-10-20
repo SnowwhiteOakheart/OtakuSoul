@@ -114,7 +114,8 @@ ru „персонаж/история/сцена“. Fachbegriffe nur im Experte
   Antworten vor `extractStateUpdates` (Senden, Swipe, Fortsetzen) und für Nutzernachrichten vor `addChatMessage`; `display`
   in `MessageList`/Live-Text; `prompt` per `forPrompt` an allen drei `sendChatMessage`-Stellen. `find` darf `/muster/flags`
   sein (sonst `gu`); ungültige RegEx überspringt `ruleError`. ST-Import `importSillyTavernScripts` (placement 1/2,
-  `markdownOnly`/`promptOnly`, `{{match}}` → `$&` – per Funktion, sonst setzt `replaceAll` `$&` selbst ein). Alte Regeln ohne
+  `markdownOnly`/`promptOnly` – beide gesetzt = zwei Regeln; `{{match}}` in jeder Schreibweise und `$0` → `$&`, per Funktion,
+  sonst setzt `replace` `$&` selbst ein; geprüft gegen `public/scripts/extensions/regex/engine.js`). Alte Regeln ohne
   neue Felder gelten weiter für Antworten (`Default` von `ReplyReplacement`). UI `settings/RegexScriptSettings.tsx` im Antwortstil,
   Textfelder speichern beim Verlassen. Logit-Bias/gesperrte Tokens bewusst nicht (llama.cpp sperrt nur Einzeltokens).
   E2E `chat-reply-filters.mjs`.
@@ -127,7 +128,9 @@ ru „персонаж/история/сцена“. Fachbegriffe nur im Experte
   `prompts` `main`/`jailbreak` → `PromptTemplate.main`/`post_history`), Text-Completion-Preset (`temp`, `rep_pen`, Dynatemp
   min/max → Mitte + `dynatemp_range`, DRY/XTC nur wenn an), Systemprompt (`name`+`content`), Instruct (nur altes
   `system_prompt`), Kontextvorlage und Master-Export (`instruct`/`context`/`sysprompt`). Instruct-Sequenzen und Kontextvorlage
-  werden nur gemeldet (Chat-Vorlage des Modells). Knopf `settings/SillyTavernPresetImport.tsx` in der Preset-Leiste,
+  werden nur gemeldet (Chat-Vorlage des Modells), ebenso aktive Sampler ohne Gegenstück (`unsupported`: Typical-P, TFS, Mirostat …).
+  Geprüft am 20.10.2026 mit allen 99 Presets aus `SillyTavern/default/content/presets` (leerer Systemprompt „Blank“ = erkannt,
+  nichts zu übernehmen; das mitgelieferte Quick-Reply-Set enthält nur Slash-Befehle → Hinweis statt Erfolgsmeldung). Knopf `settings/SillyTavernPresetImport.tsx` in der Preset-Leiste,
   Zusammenfassung per `confirmDialog`; ohne eigene Vorlage ist die erste eingebaute die Basis. Dateiauswahl lässt sich im E2E
   nicht bedienen → Komponententest `sillyTavernPresetImport.test.tsx`.
 - **Antwortlänge pro Chat:** `ChatStyle.reply_length` (`short`/`medium`/`long`, leer = Vorlage), Auswahl `ReplyLengthPicker` unter dem

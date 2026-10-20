@@ -25,8 +25,11 @@ describe('quick replies', () => {
       { label: 'Beschreibe die Umgebung', message: 'Beschreibe die Umgebung genauer, bitte.', mode: 'send' },
     ]);
     expect(v2.skipped).toBe(2);
-    expect(importSillyTavernQuickReplies({ quickReplySlots: [{ label: 'Hi', mes: 'Hallo!' }] }).replies)
-      .toEqual([{ label: 'Hi', message: 'Hallo!', mode: 'send' }]);
+    expect(importSillyTavernQuickReplies({ quickReplySlots: [{ label: 'Hi', mes: 'Hallo!' }, { label: 'Aus', mes: 'Nein', enabled: false }] }))
+      .toEqual({ replies: [{ label: 'Hi', message: 'Hallo!', mode: 'send' }], skipped: 1 });
+    // SillyTavern's own default set holds only slash commands.
+    expect(importSillyTavernQuickReplies({ quickReplySlots: [{ mes: '/?', label: 'HELP', enabled: true }, { mes: '/newchat', label: 'New Chat', enabled: true }] }))
+      .toEqual({ replies: [], skipped: 2 });
     expect(() => importSillyTavernQuickReplies({ scriptName: 'kein Set' })).toThrow();
   });
 });

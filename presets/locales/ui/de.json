@@ -3672,5 +3672,6 @@
   "stPreset.ignored.context": "Die Kontextvorlage wird nicht gebraucht – OtakuSoul baut den Figuren-Prompt selbst.",
   "stPreset.ignored.prompts": "Weitere Prompt-Bausteine (außer Haupt- und Nachspann-Prompt) werden ausgelassen.",
   "stPreset.done": "Preset übernommen.",
-  "stPreset.promptFailed": "Die Sampler-Werte sind übernommen, die Prompt-Vorlage konnte nicht geladen werden."
+  "stPreset.promptFailed": "Die Sampler-Werte sind übernommen, die Prompt-Vorlage konnte nicht geladen werden.",
+  "stPreset.unsupported": "Nicht unterstützte Sampler (bleiben aus): {{names}}"
 }

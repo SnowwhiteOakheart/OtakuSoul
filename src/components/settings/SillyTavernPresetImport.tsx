@@ -13,6 +13,7 @@ function summary(preset: ImportedPreset): string {
   if (preset.main) lines.push(translate('stPreset.main'));
   if (preset.postHistory) lines.push(translate('stPreset.postHistory'));
   for (const part of preset.ignored) lines.push(translate(`stPreset.ignored.${part}`));
+  if (preset.unsupported.length > 0) lines.push(translate('stPreset.unsupported', { names: preset.unsupported.join(', ') }));
   return lines.map((line) => `• ${line}`).join('\n');
 }
 

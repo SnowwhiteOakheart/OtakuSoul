@@ -3672,5 +3672,6 @@
   "stPreset.ignored.context": "The context template is not needed – OtakuSoul builds the character prompt itself.",
   "stPreset.ignored.prompts": "Further prompt parts (besides the main and post-history prompt) are left out.",
   "stPreset.done": "Preset taken over.",
-  "stPreset.promptFailed": "The sampler values are taken over, the prompt template could not be loaded."
+  "stPreset.promptFailed": "The sampler values are taken over, the prompt template could not be loaded.",
+  "stPreset.unsupported": "Samplers OtakuSoul does not have (stay off): {{names}}"
 }

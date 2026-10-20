@@ -13,7 +13,7 @@ export const usesInput = (message: string) => /\{\{input\}\}/i.test(message);
 /** What a SillyTavern quick reply set gave, and how many replies were left out. */
 export interface ImportedQuickReplies {
   replies: QuickReply[];
-  /** Slash command scripts (STscript), which OtakuSoul does not run, and empty ones. */
+  /** Slash command scripts (STscript), which OtakuSoul does not run, and empty, switched off or hidden ones. */
   skipped: number;
 }
 
@@ -33,7 +33,7 @@ export function importSillyTavernQuickReplies(json: unknown): ImportedQuickRepli
     if (!item || typeof item !== 'object') continue;
     const entry = item as Record<string, unknown>;
     const message = typeof entry.message === 'string' ? entry.message : typeof entry.mes === 'string' ? entry.mes : '';
-    if (!message.trim() || message.trimStart().startsWith('/')) {
+    if (!message.trim() || message.trimStart().startsWith('/') || entry.enabled === false || entry.isHidden === true) {
       skipped += 1;
       continue;
     }

@@ -33,11 +33,15 @@ describe('SillyTavern presets', () => {
     expect(preset.sampling).toMatchObject({ repeat_penalty: 1.07, dry_multiplier: 0.8, dry_base: 1.75, dry_allowed_length: 2, top_k: 40 });
     // XTC with probability 0 is off in SillyTavern.
     expect(preset.sampling.xtc_threshold).toBeUndefined();
+    const extra = importSillyTavernPreset({ temp: 1, typical_p: 0.9, tfs: 1, mirostat_mode: 2, top_a: 0 });
+    expect(extra.unsupported).toEqual(['typical_p', 'mirostat_mode']);
   });
 
   it('takes the system prompt and names what it leaves out', () => {
     expect(importSillyTavernPreset({ name: 'Roleplay - Immersive', content: 'You are {{char}}.' }))
       .toMatchObject({ main: 'You are {{char}}.', ignored: [] });
+    // An empty system prompt ("Blank") is a preset with nothing to take over.
+    expect(importSillyTavernPreset({ name: 'Blank', content: '' })).toMatchObject({ sampling: {}, ignored: [], unsupported: [] });
     const master = importSillyTavernPreset({
       instruct: { name: 'ChatML', input_sequence: '<|im_start|>user', output_sequence: '<|im_start|>assistant', system_prompt: '' },
       context: { name: 'ChatML', story_string: '{{#if description}}{{description}}{{/if}}' },

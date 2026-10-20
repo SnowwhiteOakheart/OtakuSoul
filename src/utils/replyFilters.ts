@@ -67,8 +67,9 @@ export interface ImportedScripts {
 
 /**
  * Reads SillyTavern regex scripts (one script or a list): placement 1 = user input, 2 = AI
- * output; `markdownOnly` → display, `promptOnly` → prompt; `{{match}}` becomes `$&`. Trim
- * strings and depth limits have no counterpart and are left out.
+ * output; `markdownOnly` → display, `promptOnly` → prompt (both: one rule each). SillyTavern
+ * reads `{{match}}` (any case) and `$0` as the whole match, JavaScript `$&`. Trim strings, depth
+ * limits and macros in the pattern have no counterpart and are left out.
  */
 export function importSillyTavernScripts(json: unknown): ImportedScripts {
   const list = Array.isArray(json) ? json : [json];
@@ -85,17 +86,22 @@ export function importSillyTavernScripts(json: unknown): ImportedScripts {
       skipped += 1;
       continue;
     }
-    rules.push({
-      ...NEW_RULE,
-      name: typeof script.scriptName === 'string' ? script.scriptName : '',
-      find: script.findRegex,
-      replace: (typeof script.replaceString === 'string' ? script.replaceString : '').replaceAll('{{match}}', () => '$&'),
-      regex: true,
-      disabled: script.disabled === true,
-      on_input: onInput,
-      on_output: onOutput,
-      mode: script.markdownOnly === true ? 'display' : script.promptOnly === true ? 'prompt' : 'save',
-    });
+    const replace = (typeof script.replaceString === 'string' ? script.replaceString : '')
+      .replace(/\{\{match\}\}|\$0(?!\d)/gi, () => '$&');
+    const modes = [...(script.markdownOnly === true ? ['display'] : []), ...(script.promptOnly === true ? ['prompt'] : [])];
+    for (const mode of modes.length > 0 ? modes : ['save']) {
+      rules.push({
+        ...NEW_RULE,
+        name: typeof script.scriptName === 'string' ? script.scriptName : '',
+        find: script.findRegex,
+        replace,
+        regex: true,
+        disabled: script.disabled === true,
+        on_input: onInput,
+        on_output: onOutput,
+        mode,
+      });
+    }
   }
   if (rules.length === 0 && skipped === 0) throw new Error('no regex scripts');
   return { rules, skipped };

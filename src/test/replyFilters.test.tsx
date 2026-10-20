@@ -57,6 +57,15 @@ describe('reply filters', () => {
     expect(() => importSillyTavernScripts({ name: 'kein Skript' })).toThrow();
   });
 
+  it('reads $0 and {{MATCH}} as the whole match and splits display-and-prompt scripts', () => {
+    const { rules } = importSillyTavernScripts({
+      scriptName: 'Beides', findRegex: '/Kyoto/g', replaceString: '[$0|{{MATCH}}|$01]', placement: [2], markdownOnly: true, promptOnly: true,
+    });
+    expect(rules.map((r) => r.mode)).toEqual(['display', 'prompt']);
+    expect(rules[0]!.replace).toBe('[$&|$&|$01]');
+    expect(applyScripts('in Kyoto', rules, 'assistant', 'display')).toBe('in [Kyoto|Kyoto|$01]');
+  });
+
   it('saves the phrase list on leaving the field and edits rules in expert mode', async () => {
     const user = userEvent.setup();
     useAppStore.setState({ expertMode: true });

@@ -36,8 +36,10 @@ export const RegexScriptSettings = () => {
     try {
       const { rules: imported, skipped } = importSillyTavernScripts(JSON.parse(await file.text()));
       commitRules([...rules, ...imported]);
-      toast.success(tPlural('scripts.imported', imported.length)
-        + (skipped > 0 ? ` ${tPlural('scripts.importSkipped', skipped)}` : ''));
+      const note = skipped > 0 ? tPlural('scripts.importSkipped', skipped) : '';
+      // Nothing usable (e.g. a set of slash commands only): a hint, not a success.
+      if (imported.length === 0) toast.info(note || t('scripts.importFailed'));
+      else toast.success(`${tPlural('scripts.imported', imported.length)} ${note}`.trim());
     } catch {
       toast.error(t('scripts.importFailed'));
     }
