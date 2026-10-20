@@ -5,6 +5,7 @@ import { EXTRA_SAMPLING_FIELDS, VARIETY_OFF, VARIETY_SAMPLING, changedFields, sa
 import { Toggle } from '../../ui/Toggle';
 import { ReplyFilterSettings } from '../ReplyFilterSettings';
 import { QuickReplySettings } from '../QuickReplySettings';
+import { SillyTavernPresetImport } from '../SillyTavernPresetImport';
 import { useStoreFields } from '../../../store/useAppStore';
 import { translate, useTranslation } from '../../../i18n';
 import { confirmDialog } from '../../ui/feedback';
@@ -78,13 +79,16 @@ export const SamplerSettings = () => {
             </div>
           </div>
 
-          {expertMode && <button
-            onClick={() => setIsCreatingPreset(true)}
-            className="px-3 py-1.5 rounded-lg bg-accent-600 hover:bg-accent-500 text-white text-xs font-semibold flex items-center gap-1.5"
-          >
-            <Plus className="w-3.5 h-3.5" />
-            <span className="whitespace-nowrap">{t('settings.saveAsPreset')}</span>
-          </button>}
+          <div className="flex flex-wrap items-center justify-end gap-2">
+            <SillyTavernPresetImport />
+            {expertMode && <button
+              onClick={() => setIsCreatingPreset(true)}
+              className="px-3 py-1.5 rounded-lg bg-accent-600 hover:bg-accent-500 text-white text-xs font-semibold flex items-center gap-1.5"
+            >
+              <Plus className="w-3.5 h-3.5" />
+              <span className="whitespace-nowrap">{t('settings.saveAsPreset')}</span>
+            </button>}
+          </div>
         </div>
 
         {/* Preset Selector Badges */}

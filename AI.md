@@ -123,6 +123,13 @@ ru „персонаж/история/сцена“. Fachbegriffe nur im Experte
   und importiert ST-Sets (`qrList` bzw. alte `quickReplySlots`; Einträge mit `/…` = STscript werden ausgelassen und gezählt).
   `handleSend(override)` – nie `onClick={handleSend}`, sonst landet das Klick-Event als Text. UI `settings/QuickReplySettings.tsx`
   im Antwortstil, E2E `chat-quick-replies.mjs` (Feld leeren mit `clearValue`, `setValue('')` lehnt WebDriver ab).
+- **SillyTavern-Presets:** `utils/sillyTavernPresets.ts` `importSillyTavernPreset` erkennt Chat-Completion-Preset (Sampler +
+  `prompts` `main`/`jailbreak` → `PromptTemplate.main`/`post_history`), Text-Completion-Preset (`temp`, `rep_pen`, Dynatemp
+  min/max → Mitte + `dynatemp_range`, DRY/XTC nur wenn an), Systemprompt (`name`+`content`), Instruct (nur altes
+  `system_prompt`), Kontextvorlage und Master-Export (`instruct`/`context`/`sysprompt`). Instruct-Sequenzen und Kontextvorlage
+  werden nur gemeldet (Chat-Vorlage des Modells). Knopf `settings/SillyTavernPresetImport.tsx` in der Preset-Leiste,
+  Zusammenfassung per `confirmDialog`; ohne eigene Vorlage ist die erste eingebaute die Basis. Dateiauswahl lässt sich im E2E
+  nicht bedienen → Komponententest `sillyTavernPresetImport.test.tsx`.
 - **Antwortlänge pro Chat:** `ChatStyle.reply_length` (`short`/`medium`/`long`, leer = Vorlage), Auswahl `ReplyLengthPicker` unter dem
   Eingabefeld; `ChatStylePanel` behält den Wert beim Speichern/Zurücksetzen. Prompt: `PromptContext.reply_length` →
   `reply_length_rule` am Ende des Nachspanns; `helpers.ts` `chatSampling` begrenzt `max_tokens` (400/900, ausführlich ≥ 2048,

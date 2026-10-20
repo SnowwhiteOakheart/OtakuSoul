@@ -3659,5 +3659,18 @@
   "quickReplies.importSkipped_one": "{{count}} запись – slash-команда или пустая и пропущена.",
   "quickReplies.importSkipped_few": "{{count}} записи – slash-команды или пустые и пропущены.",
   "quickReplies.importSkipped_many": "{{count}} записей – slash-команды или пустые и пропущены.",
-  "quickReplies.importSkipped_other": "{{count}} записи – slash-команды или пустые и пропущены."
+  "quickReplies.importSkipped_other": "{{count}} записи – slash-команды или пустые и пропущены.",
+  "stPreset.import": "Импорт пресета SillyTavern",
+  "stPreset.failed": "Файл не является пресетом SillyTavern.",
+  "stPreset.nothing": "В этом пресете нет ничего, что нужно OtakuSoul:",
+  "stPreset.confirmTitle": "Применить «{{name}}»?",
+  "stPreset.confirm": "Применить",
+  "stPreset.samplers": "Значения сэмплеров: {{names}}",
+  "stPreset.main": "Системный промпт (заменяет начало шаблона промпта)",
+  "stPreset.postHistory": "Инструкция после истории",
+  "stPreset.ignored.instruct": "Instruct-последовательности не нужны – OtakuSoul использует шаблон чата модели.",
+  "stPreset.ignored.context": "Шаблон контекста не нужен – OtakuSoul сам собирает промпт персонажа.",
+  "stPreset.ignored.prompts": "Прочие блоки промпта (кроме основного и пост-исторического) пропускаются.",
+  "stPreset.done": "Пресет применён.",
+  "stPreset.promptFailed": "Значения сэмплеров применены, шаблон промпта загрузить не удалось."
 }

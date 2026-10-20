@@ -3659,5 +3659,18 @@
   "quickReplies.importSkipped_one": "{{count}} entry is a slash command or empty and was left out.",
   "quickReplies.importSkipped_few": "{{count}} entries are slash commands or empty and were left out.",
   "quickReplies.importSkipped_many": "{{count}} entries are slash commands or empty and were left out.",
-  "quickReplies.importSkipped_other": "{{count}} entries are slash commands or empty and were left out."
+  "quickReplies.importSkipped_other": "{{count}} entries are slash commands or empty and were left out.",
+  "stPreset.import": "Import SillyTavern preset",
+  "stPreset.failed": "The file is not a SillyTavern preset.",
+  "stPreset.nothing": "This preset holds nothing OtakuSoul needs:",
+  "stPreset.confirmTitle": "Take over “{{name}}”?",
+  "stPreset.confirm": "Take over",
+  "stPreset.samplers": "Sampler values: {{names}}",
+  "stPreset.main": "System prompt (replaces the opening of the prompt template)",
+  "stPreset.postHistory": "Instruction after the history",
+  "stPreset.ignored.instruct": "Instruct sequences are not needed – OtakuSoul uses the model's chat template.",
+  "stPreset.ignored.context": "The context template is not needed – OtakuSoul builds the character prompt itself.",
+  "stPreset.ignored.prompts": "Further prompt parts (besides the main and post-history prompt) are left out.",
+  "stPreset.done": "Preset taken over.",
+  "stPreset.promptFailed": "The sampler values are taken over, the prompt template could not be loaded."
 }

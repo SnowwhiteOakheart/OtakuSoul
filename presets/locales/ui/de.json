@@ -3659,5 +3659,18 @@
   "quickReplies.importSkipped_one": "{{count}} Eintrag ist ein Slash-Befehl oder leer und wurde ausgelassen.",
   "quickReplies.importSkipped_few": "{{count}} Einträge sind Slash-Befehle oder leer und wurden ausgelassen.",
   "quickReplies.importSkipped_many": "{{count}} Einträge sind Slash-Befehle oder leer und wurden ausgelassen.",
-  "quickReplies.importSkipped_other": "{{count}} Einträge sind Slash-Befehle oder leer und wurden ausgelassen."
+  "quickReplies.importSkipped_other": "{{count}} Einträge sind Slash-Befehle oder leer und wurden ausgelassen.",
+  "stPreset.import": "SillyTavern-Preset importieren",
+  "stPreset.failed": "Die Datei ist kein SillyTavern-Preset.",
+  "stPreset.nothing": "In diesem Preset steckt nichts, was OtakuSoul braucht:",
+  "stPreset.confirmTitle": "„{{name}}“ übernehmen?",
+  "stPreset.confirm": "Übernehmen",
+  "stPreset.samplers": "Sampler-Werte: {{names}}",
+  "stPreset.main": "Systemprompt (ersetzt die Einleitung der Prompt-Vorlage)",
+  "stPreset.postHistory": "Anweisung nach dem Verlauf",
+  "stPreset.ignored.instruct": "Instruct-Sequenzen werden nicht gebraucht – OtakuSoul nutzt die Chat-Vorlage des Modells.",
+  "stPreset.ignored.context": "Die Kontextvorlage wird nicht gebraucht – OtakuSoul baut den Figuren-Prompt selbst.",
+  "stPreset.ignored.prompts": "Weitere Prompt-Bausteine (außer Haupt- und Nachspann-Prompt) werden ausgelassen.",
+  "stPreset.done": "Preset übernommen.",
+  "stPreset.promptFailed": "Die Sampler-Werte sind übernommen, die Prompt-Vorlage konnte nicht geladen werden."
 }

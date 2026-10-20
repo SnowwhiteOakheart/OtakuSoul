@@ -148,9 +148,9 @@
   mit Push-Benachrichtigungen. Danach prüfen: eigene Handy-App über Tauri 2 (Android/iOS) mit Cloud-KI oder dem PC als Server.
 
 ### Für erfahrene Nutzer
-- [ ] **Schlankes Erweiterungssystem:** Regex-Skripte für Ein-/Ausgabe, Quick-Replies und ein Skript-Hook – der häufigste Grund,
-  bei SillyTavern zu bleiben (README nennt das Fehlen offen).
-- [ ] **SillyTavern-Presets importieren:** Sampler-, Instruct- und Kontextvorlagen (Chat-Import per JSONL gibt es schon).
+- [ ] **Skript-Hook für eigenen Code:** Regex-Skripte und Quick-Replies gibt es seit 20.10.2026; offen ist nur ein Hook, der
+  eigenen Code (z. B. JavaScript) auf Ein-/Ausgabe anwendet. Nur in einer echten Sandbox ohne Netz und ohne Zugriff auf die
+  App (z. B. QuickJS als WebAssembly im Worker), weil importierte Skripte fremder Herkunft sein können.
 
 ### Gemeinschaft
 - [ ] **Eigene Figuren und Geschichten aus der App teilen:** Einreichen in den Hub (z. B. als Pull Request an `otakusoul-data`
