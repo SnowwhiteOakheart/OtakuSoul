@@ -17,6 +17,12 @@ pub const PROMPT_MEMORY_BUDGET: MemoryBudget = MemoryBudget {
     tokens: 1500,
     shown_chars: usize::MAX,
 };
+/// Memories of one companion in a Stage prompt: every speaker gets their own prompt each turn,
+/// next to the scene history, so less room than in a chat.
+pub const STAGE_MEMORY_BUDGET: MemoryBudget = MemoryBudget {
+    tokens: 700,
+    shown_chars: usize::MAX,
+};
 /// Search terms taken from one text at most.
 const MAX_QUERY_TERMS: usize = 24;
 /// Memories in the stable part besides the pinned ones.

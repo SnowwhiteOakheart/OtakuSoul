@@ -25,7 +25,7 @@ mod tests;
 pub use cleanup::{CLEANUP_TOKENS, CleanupGroup, CleanupProposal, valid_cleanup_groups};
 pub use intentions::{IntentionChanges, parse_due};
 pub use models::*;
-pub use recall::{MemoryBudget, PROMPT_MEMORY_BUDGET};
+pub use recall::{MemoryBudget, PROMPT_MEMORY_BUDGET, STAGE_MEMORY_BUDGET};
 use schema::migrate;
 pub use soul::{
     MemorySource, MemorySupersede, ReflectionChanges, ReflectionOutcome, TopicMemory,

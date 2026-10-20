@@ -116,8 +116,6 @@
   - Kleines GGUF-Embedding-Modell über den vorhandenen llama-server (`--embedding`).
   - Vektoren als BLOB in SQLite, Kosinus-Ähnlichkeit in Rust (bei < 10.000 Erinnerungen pro Figur reicht Brute Force).
   - Fusion mit BM25 per Reciprocal Rank Fusion (RRF). Erst messen, dann bauen.
-- [ ] **Stage-Prompt an `select_prompt_memories` anbinden:**
-  - Eigener Pfad und Abwägung für NPC-Gedächtnis im Stage-Modus.
 - [ ] **Signifikanz für Themen-Einträge:**
   - Signifikanz vom Router bestimmen lassen statt des festen Werts 4.
 

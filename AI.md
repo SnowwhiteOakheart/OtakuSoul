@@ -350,6 +350,10 @@ ru „персонаж/история/сцена“. Fachbegriffe nur im Experte
   Overlays (`overlay_block` nur für die Figur selbst) und Lorekarten (`relevant_lore_cards`: `party` → Snippets,
   `gm` → nur Planer). `take_memory_sync_batches` (Rundenende, je Mitglied die gefilterte Sicht) → Memory-Pipeline
   mit `transcript` im Hintergrund; Mock erkennt sie an „=== RECENT MESSAGES ===“.
+  Umgekehrt bekommen Gefährten mit Karte (auch beförderte NPCs) ihr Soul Memory in den Prompt: `soul_memory_block`
+  (`party.rs`) ruft `select_prompt_memories` mit `STAGE_MEMORY_BUDGET` (700 Tokens) und den letzten drei Zeilen aus
+  ihrer Sicht (`line_for`, Geflüstertes an andere zählt nicht) als Suchtext, dazu offene Vorhaben. `execute_stage_turn`
+  erhält dafür `&MemoryDb`. Szenengebundene NPCs bleiben bei `npc_memory_block` (keine Soul-ID).
   `stage/director.rs`: Sprecherfolge = Spielerwahl > Flüsterziel > direkte Ansprache > Planer; danach pro Beitrag
   Ansprache-Erkennung, sonst Routing-LLM (Mock erkennt „[STAGE — ROUTING]“). `turn_mode: "continue"` = Runde ohne
   Spieleraktion (Weiter/Auto-Play).

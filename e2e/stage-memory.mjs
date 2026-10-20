@@ -68,11 +68,15 @@ try {
   state = await invoke('get_stage_state');
   assert.equal(state.lore_cards.length, 2);
   assert.ok(state.overlays.some((o) => o.name === companion && o.current_role.includes('OVERLAY_ROLE')));
+  // The companion's Soul Memory: what fits the scene reaches their prompt.
+  const companionCard = (await invoke('scan_characters')).find((c) => c.card.data.name === companion);
+  await invoke('add_episodic_memory', { charId: companionCard.id, category: 'fact', content: 'SOUL_MEMORY: Das Siegel trägt das Wappen ihrer Familie.', significance: 2 });
   await turn(`${companion}, was weißt du über das Siegel?`);
   const companionPrompt = JSON.stringify(mock.stats.companionMessagesByName?.[companion] ?? mock.stats.lastCompanionMessages);
   assert.ok(companionPrompt.includes('OVERLAY_ROLE'), 'Overlay fehlt im Prompt der Figur');
   assert.ok(companionPrompt.includes('PARTY_LORE'), 'Gruppen-Lore fehlt bei passendem Stichwort');
   assert.ok(!companionPrompt.includes('GM_SECRET'), 'Spielleiter-Lore erreicht die Figur');
+  assert.ok(companionPrompt.includes('SOUL_MEMORY'), 'Soul-Memory-Erinnerung fehlt im Prompt der Figur');
   assert.ok(JSON.stringify(mock.stats.lastPlannerMessages).includes('GM_SECRET'), 'Spielleiter-Lore fehlt beim Planer');
 
   // 4. Soul Memory: after enough witnessed lines, the companion's own view goes to the pipeline.
@@ -101,7 +105,7 @@ try {
   const loreTitle = await browser.$('input[aria-label="Titel"][value="Der Verräter"]');
   await loreTitle.scrollIntoView();
   await shot('27-overlays-lorekarten');
-  console.log('Gedächtnis: Arc-Archiv, Konsistenzprüfung, Overlays, Lorekarten und Soul-Memory-Übernahme bestanden.');
+  console.log('Gedächtnis: Arc-Archiv, Konsistenzprüfung, Overlays, Lorekarten, Soul-Memory im Prompt und Soul-Memory-Übernahme bestanden.');
 } finally {
   await close();
 }

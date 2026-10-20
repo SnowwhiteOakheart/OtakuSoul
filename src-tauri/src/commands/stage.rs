@@ -273,6 +273,7 @@ pub async fn stage_regenerate_turn(
     crate::modules::stage::regenerate_stage_turn(
         &state.stage_engine,
         &state.stage_inference_client,
+        &state.memory_db,
         &scene_id,
         &emit,
     )
@@ -314,6 +315,7 @@ pub async fn run_stage_turn(
     let mut scene = crate::modules::stage::execute_stage_turn(
         &state.stage_engine,
         &state.stage_inference_client,
+        &state.memory_db,
         request,
         &emit,
     )

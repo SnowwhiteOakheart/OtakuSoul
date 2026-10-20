@@ -20,6 +20,7 @@ pub struct StageTurnRequest {
 pub async fn execute_stage_turn(
     engine: &StageEngine,
     inference: &InferenceClient,
+    memory_db: &crate::modules::memory::MemoryDb,
     req: StageTurnRequest,
     on_stream: StageStream<'_>,
 ) -> Result<SceneState, String> {
@@ -1104,6 +1105,8 @@ RULES:
                         .localized(&crate::modules::content_lang::language_code(
                             &reply_language,
                         ));
+                let memories =
+                    soul_memory_block(&state, memory_db, &ch.id, &ch.card.data.name, &user_name);
                 format!(
                     r#"You are {name}.
 Personality: {personality}
@@ -1112,7 +1115,7 @@ Scene context: {world_context}{lore_section}
 
 React in the first person to what the game master, {user_name} and any companions just did or said.
 Stay fully in character, use your own voice and express your feelings vividly and authentically. Keep it concise.
-Reply in {reply_language}.{secrets}"#,
+Reply in {reply_language}.{memories}{secrets}"#,
                     name = ch.card.data.name,
                     personality = localized_char.personality,
                     description = localized_char.description,

@@ -233,6 +233,74 @@ pub fn private_knowledge_block(state: &SceneState, name: &str) -> String {
         .unwrap_or_default()
 }
 
+/// Messages of the scene that pick a companion's long-term memories.
+const MEMORY_QUERY_MESSAGES: usize = 3;
+
+/// Long-term memories of a companion with a character card (Soul Memory, also promoted NPCs):
+/// what they keep from chats and earlier adventures, picked by what they just perceived, plus
+/// their open plans and promises. Scene-bound NPCs keep their own memories (`npc_memory_block`).
+pub fn soul_memory_block(
+    state: &SceneState,
+    db: &crate::modules::memory::MemoryDb,
+    char_id: &str,
+    name: &str,
+    user_name: &str,
+) -> String {
+    let start = state.chat_log.len().saturating_sub(MEMORY_QUERY_MESSAGES);
+    let query = state.chat_log[start..]
+        .iter()
+        .map(|msg| line_for(msg, Audience::Character(name)))
+        .collect::<Vec<_>>()
+        .join("\n");
+    let memories = match db.select_prompt_memories(
+        char_id,
+        &crate::modules::ooc::strip(&query),
+        crate::modules::memory::STAGE_MEMORY_BUDGET,
+    ) {
+        Ok(memories) => memories,
+        Err(error) => {
+            tracing::warn!(%error, "Stage: memories of {name} not available");
+            return String::new();
+        }
+    };
+    let mut block = String::new();
+    let remembered: Vec<_> = memories.core.iter().chain(&memories.relevant).collect();
+    if !remembered.is_empty() {
+        block.push_str(
+            "\n\nYour long-term memories (from chats and earlier adventures) – use them only where they fit naturally:",
+        );
+        for mem in remembered {
+            block.push_str(&format!("\n- [{}] {}", mem.category, mem.content));
+        }
+    }
+    let intentions = db
+        .prompt_intentions(char_id, user_name, chrono::Local::now())
+        .unwrap_or_else(|error| {
+            tracing::warn!(%error, "Stage: intentions of {name} not available");
+            Vec::new()
+        });
+    if !intentions.is_empty() {
+        block.push_str("\n\nOpen plans and promises – bring them up when it fits:");
+        for intention in intentions {
+            let who = match intention.initiator.as_str() {
+                "user" => user_name,
+                "character" => name,
+                _ => "both of you",
+            };
+            let details = if intention.details.is_empty() {
+                String::new()
+            } else {
+                format!(" ({})", intention.details)
+            };
+            block.push_str(&format!(
+                "\n- [{}] {}{details} – from {who}",
+                intention.label, intention.title
+            ));
+        }
+    }
+    block
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -268,6 +336,24 @@ mod tests {
         let thought = message("think", None);
         assert!(line_for(&thought, Audience::Planner).contains("Altar"));
         assert!(!line_for(&thought, Audience::Character("Ayu")).contains("Altar"));
+    }
+
+    #[test]
+    fn companions_recall_what_fits_and_not_what_was_whispered_to_others() {
+        let db = crate::modules::memory::MemoryDb::new_in_memory().unwrap();
+        db.add_episodic_memory("shiori_amane", "Chat", "Kai hat Angst vor Gewittern", 3)
+            .unwrap();
+        db.add_episodic_memory("shiori_amane", "Chat", "Kai liebt Leuchttürme", 3)
+            .unwrap();
+        let mut state = build_initial_scene_state(&StageEngine::new().get_state().definition);
+        let mut said = message("say", None);
+        said.content = "Draußen zieht ein Gewitter auf.".into();
+        state.chat_log.push(said);
+        let block = soul_memory_block(&state, &db, "shiori_amane", "Shiori", "Kai");
+        assert!(block.contains("long-term memories"));
+        assert!(block.contains("Gewittern"));
+        // Without memories nothing is added.
+        assert!(soul_memory_block(&state, &db, "sota_minase", "Sota", "Kai").is_empty());
     }
 
     #[test]

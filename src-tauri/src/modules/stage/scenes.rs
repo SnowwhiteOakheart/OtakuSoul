@@ -936,6 +936,7 @@ pub(super) fn delete_stage_turn_message_with_saver(
 pub async fn regenerate_stage_turn(
     engine: &StageEngine,
     inference: &InferenceClient,
+    memory_db: &crate::modules::memory::MemoryDb,
     scene_id: &str,
     on_stream: StageStream<'_>,
 ) -> Result<SceneState, String> {
@@ -961,6 +962,7 @@ pub async fn regenerate_stage_turn(
         execute_stage_turn(
             engine,
             inference,
+            memory_db,
             StageTurnRequest {
                 scene_id: scene_id.to_string(),
                 user_input: player_msg.content,
