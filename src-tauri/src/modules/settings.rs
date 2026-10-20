@@ -22,15 +22,42 @@ fn default_cloud_provider() -> String {
     "open_router".to_string()
 }
 
-/// One find/replace rule for replies: plain text, or a regular expression (JavaScript syntax,
-/// `$1` in `replace` for groups) when `regex` is set.
-#[derive(Debug, Clone, Default, Serialize, Deserialize, PartialEq, TS)]
+/// One regex script (find/replace rule): plain text, or a regular expression (JavaScript syntax,
+/// `/pattern/flags` allowed, `$1` in `replace` for groups) when `regex` is set. Applied in the
+/// frontend (`utils/replyFilters.ts`); SillyTavern regex scripts import into it.
+#[derive(Debug, Clone, Serialize, Deserialize, PartialEq, TS)]
 #[serde(default)]
 #[ts(export)]
 pub struct ReplyReplacement {
     pub find: String,
     pub replace: String,
     pub regex: bool,
+    /// Shown in the list; imported scripts keep their name.
+    pub name: String,
+    /// Kept in the list but not applied.
+    pub disabled: bool,
+    /// Applies to the user's messages.
+    pub on_input: bool,
+    /// Applies to the AI's replies (rules from before input rules existed did only this).
+    pub on_output: bool,
+    /// `save` changes the stored text, `display` only what the chat shows, `prompt` only what
+    /// the model reads.
+    pub mode: String,
+}
+
+impl Default for ReplyReplacement {
+    fn default() -> Self {
+        Self {
+            find: String::new(),
+            replace: String::new(),
+            regex: false,
+            name: String::new(),
+            disabled: false,
+            on_input: false,
+            on_output: true,
+            mode: "save".into(),
+        }
+    }
 }
 
 /// The chat character writes on their own after a pause or when a plan is due. Off by default:
@@ -407,6 +434,14 @@ fn save_app_settings_to_path(settings: &AppSettings, path: &std::path::Path) -> 
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    #[test]
+    fn older_replacement_rules_keep_working_on_replies() {
+        let rule: ReplyReplacement =
+            serde_json::from_str(r#"{"find": "Ah,", "replace": "", "regex": false}"#).unwrap();
+        assert!(rule.on_output && !rule.on_input && !rule.disabled);
+        assert_eq!(rule.mode, "save");
+    }
 
     #[test]
     fn test_settings_load_save() {

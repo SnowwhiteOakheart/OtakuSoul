@@ -109,9 +109,13 @@ ru „персонаж/история/сцена“. Fachbegriffe nur im Experte
   `hitKey(messageId, swipeIndex)` nur für die laufende Sitzung (Fortsetzen über `mergeHits`). Anzeige `chat/PromptHitsView.tsx`
   (Knopf in der Kopfzeile der Antwort, `data-prompt-hits`). E2E `chat-prompt-hits.mjs`.
 - **Wörter & Wendungen:** `AppSettings.avoid_phrases` (`avoidPhrases`) → `PromptContext.avoid_phrases` → `avoid_rule` im Nachspann
-  (vor der Antwortlänge); `AppSettings.reply_replacements` (`ReplyReplacement` find/replace/regex, nur Expertenmodus) wendet
-  `utils/replyFilters.ts` `applyReplacements` vor `extractStateUpdates` beim Speichern (Senden, Swipe, Fortsetzen) und auf den
-  Live-Text in `ChatView` an; ungültige RegEx überspringt `ruleError`. UI `settings/ReplyFilterSettings.tsx` im Antwortstil,
+  (vor der Antwortlänge); `AppSettings.reply_replacements` = Regex-Skripte (`ReplyReplacement`: find/replace/regex, `name`,
+  `disabled`, `on_input`/`on_output`, `mode` save|display|prompt; nur Expertenmodus). `utils/replyFilters.ts`: `save` für
+  Antworten vor `extractStateUpdates` (Senden, Swipe, Fortsetzen) und für Nutzernachrichten vor `addChatMessage`; `display`
+  in `MessageList`/Live-Text; `prompt` per `forPrompt` an allen drei `sendChatMessage`-Stellen. `find` darf `/muster/flags`
+  sein (sonst `gu`); ungültige RegEx überspringt `ruleError`. ST-Import `importSillyTavernScripts` (placement 1/2,
+  `markdownOnly`/`promptOnly`, `{{match}}` → `$&` – per Funktion, sonst setzt `replaceAll` `$&` selbst ein). Alte Regeln ohne
+  neue Felder gelten weiter für Antworten (`Default` von `ReplyReplacement`). UI `settings/RegexScriptSettings.tsx` im Antwortstil,
   Textfelder speichern beim Verlassen. Logit-Bias/gesperrte Tokens bewusst nicht (llama.cpp sperrt nur Einzeltokens).
   E2E `chat-reply-filters.mjs`.
 - **Antwortlänge pro Chat:** `ChatStyle.reply_length` (`short`/`medium`/`long`, leer = Vorlage), Auswahl `ReplyLengthPicker` unter dem

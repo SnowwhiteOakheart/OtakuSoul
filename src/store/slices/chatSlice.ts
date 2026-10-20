@@ -29,7 +29,7 @@ import { fileToBase64 } from '../../utils/files';
 import { waitWithAbort } from '../../utils/cancellation';
 import { languageCode, localizeCard } from '../../utils/cardI18n';
 import { isRepeat } from '../../utils/repetition';
-import { applyReplacements } from '../../utils/replyFilters';
+import { applyReplacements, applyScripts, forPrompt } from '../../utils/replyFilters';
 import { GROUP_MAX_REPLIES, chatSpeakers, groupHistory, memoryCharacter, presentedAs } from '../../utils/groupChat';
 
 type GenerationFailure = {
@@ -316,7 +316,7 @@ export const createChatSlice: SliceCreator<ChatSlice> = (set, get) => {
       provider: state.selectedBackend === 'cloud' ? state.cloudProvider : 'local_llama',
       api_key: state.selectedBackend === 'cloud' ? state.cloudApiKey : undefined,
       model: state.selectedBackend === 'cloud' ? state.cloudModel : undefined,
-      messages: payloadMessages,
+      messages: forPrompt(payloadMessages, get().replyReplacements),
       reasoning_mode: state.serverConfig.reasoning_mode,
       sampling: chatSampling(state),
     }, generationId, state.selectedBackend === 'cloud' ? state.cloudContextTokens : undefined, state.chatTools);
@@ -935,7 +935,7 @@ export const createChatSlice: SliceCreator<ChatSlice> = (set, get) => {
         provider: selectedBackend === 'cloud' ? cloudProvider : 'local_llama',
         api_key: selectedBackend === 'cloud' ? cloudApiKey : undefined,
         model: selectedBackend === 'cloud' ? cloudModel : undefined,
-        messages: payloadMessages,
+        messages: forPrompt(payloadMessages, get().replyReplacements),
         reasoning_mode: serverConfig.reasoning_mode,
         sampling: chatSampling(get()),
       }, generationId, selectedBackend === 'cloud' ? get().cloudContextTokens : undefined, get().chatTools);
@@ -1038,7 +1038,7 @@ export const createChatSlice: SliceCreator<ChatSlice> = (set, get) => {
         provider: selectedBackend === 'cloud' ? cloudProvider : 'local_llama',
         api_key: selectedBackend === 'cloud' ? cloudApiKey : undefined,
         model: selectedBackend === 'cloud' ? cloudModel : undefined,
-        messages: payloadMessages,
+        messages: forPrompt(payloadMessages, get().replyReplacements),
         reasoning_mode: serverConfig.reasoning_mode,
         sampling: chatSampling(get()),
       }, generationId, selectedBackend === 'cloud' ? get().cloudContextTokens : undefined, get().chatTools);
@@ -1158,6 +1158,8 @@ export const createChatSlice: SliceCreator<ChatSlice> = (set, get) => {
         }
         if (cancelled) throw new Error(translate('chat.sendCancelled'));
         if (!inContext(chatId, activeCharacter?.id)) return;
+        // The user's regex scripts that change what is saved apply before it is stored.
+        content = applyScripts(content, get().replyReplacements, 'user', 'save');
         userStored = await api.addChatMessage(chatId, 'user', content, null, attachments);
       }
       if (!isCurrentContext(chatId, activeCharacter?.id)) return;

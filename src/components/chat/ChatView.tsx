@@ -46,7 +46,7 @@ import { PromptLogModal } from './PromptLogModal';
 import { translate, useTranslation } from '../../i18n';
 import { toast } from '../ui/feedback';
 import { errorMessage } from '../../utils/errors';
-import { applyReplacements } from '../../utils/replyFilters';
+import { applyReplacements, applyScripts } from '../../utils/replyFilters';
 import { withoutEmotionTag } from '../../utils/replyTags';
 import { extractStateUpdates } from '../../utils/stateParser';
 import { hitKey } from '../../store/helpers';
@@ -672,7 +672,8 @@ export const ChatView: React.FC = () => {
                 {streamText && (
                   <div className="max-w-[85%] rounded-2xl px-4 py-2.5 text-sm leading-relaxed bg-slate-900 border border-accent-500/30 text-slate-100 shadow-md">
                     <RoleplayMessage 
-                      content={extractStateUpdates(withoutEmotionTag(applyReplacements(streamText, replyReplacements))).cleanedText} 
+                      content={applyScripts(extractStateUpdates(withoutEmotionTag(applyReplacements(streamText, replyReplacements))).cleanedText,
+                        replyReplacements, 'assistant', 'display')}
                       isUser={false} 
                       onSpeak={activeVoiceConfig?.engine !== 'disabled' ? () => handleSpeak(streamText) : undefined}
                     />

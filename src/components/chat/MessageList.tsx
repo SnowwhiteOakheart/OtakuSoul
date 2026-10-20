@@ -30,6 +30,7 @@ import { reportFailure } from '../../store/reportFailure';
 import { hitKey } from '../../store/helpers';
 import { presentedAs } from '../../utils/groupChat';
 import { api } from '../../services/api';
+import { applyScripts } from '../../utils/replyFilters';
 import type { Attachment, StoredChatMessage, UserPersona } from '../../types';
 
 const BUBBLE_ACTION =
@@ -199,6 +200,8 @@ const ChatMessageItem = React.memo<ChatMessageItemProps>(
     // A guest's reply in a group chat shows the guest's name.
     const guest = useAppStore((s) => (msg.speaker_id ? s.availableCharacters.find((c) => c.id === msg.speaker_id) : undefined));
     const replyLanguage = useAppStore((s) => s.replyLanguage);
+    // Regex scripts that only change how messages look (the stored text stays).
+    const scripts = useAppStore((s) => s.replyReplacements);
     // A guest who is hidden (adult content off) or gone is not named as somebody else.
     const speakerName = guest ? presentedAs(guest, replyLanguage).name : msg.speaker_id ? t('group.hiddenSpeaker') : characterName;
     // In a group chat every reply shows a small portrait of who wrote it.
@@ -394,7 +397,7 @@ const ChatMessageItem = React.memo<ChatMessageItemProps>(
               }`}
             >
               <RoleplayMessage
-                content={msg.content}
+                content={applyScripts(msg.content, scripts, msg.role, 'display')}
                 isUser={isUser}
                 onSpeak={!isUser && onSpeak ? () => onSpeak(msg.content, msg.speaker_id ?? '') : undefined}
               />
