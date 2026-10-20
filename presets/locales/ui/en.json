@@ -3614,5 +3614,11 @@
   "proactive.muteCharacter": "Don't write on their own",
   "proactive.allowCharacter": "Allow writing on their own",
   "proactive.wroteToYou": "{{name}} wrote to you.",
-  "proactive.openChat": "Open chat"
+  "proactive.openChat": "Open chat",
+  "selfie.fileName": "Selfie",
+  "selfie.request": "Ask for a selfie",
+  "selfie.failed": "The selfie could not be created: {{error}}",
+  "selfie.none": "Selfies need image generation (Integrations › Image generation).",
+  "proactive.withSelfie": "Send a selfie after a pause",
+  "proactive.withSelfieHint": "The character sends a picture of themselves that fits the conversation and looks like their portrait. Uses image generation and takes a few minutes depending on the model."
 }

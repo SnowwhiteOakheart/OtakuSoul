@@ -16,6 +16,7 @@ import type { TtsLocalSettings } from './generated/TtsLocalSettings';
 import type { ClonedVoice } from './generated/ClonedVoice';
 import type { ImageModelInfo } from './generated/ImageModelInfo';
 import type { ImagePromptRequest } from './generated/ImagePromptRequest';
+import type { CharacterReference } from './generated/CharacterReference';
 import type { ImageModelProgress } from './generated/ImageModelProgress';
 import type { LoraInfo } from './generated/LoraInfo';
 import type { QuickReplyRequest } from './generated/QuickReplyRequest';
@@ -142,6 +143,7 @@ export type {
   PromptLog,
   PromptLogMessage,
   ImagePromptRequest,
+  CharacterReference,
   TtsModelInfo,
   TtsModelProgress,
   TtsVoiceInfo,

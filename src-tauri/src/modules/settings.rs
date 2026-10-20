@@ -49,6 +49,8 @@ pub struct ProactiveSettings {
     pub max_per_day: u32,
     /// A system notification when the app is not in front.
     pub notify: bool,
+    /// After a pause the character also sends a selfie (uses the image engine).
+    pub with_selfie: bool,
     /// Characters that never write on their own.
     pub muted_character_ids: Vec<String>,
     /// Messages already sent, newest last (the app keeps the latest few).
@@ -64,6 +66,7 @@ impl Default for ProactiveSettings {
             quiet_end_hour: 8,
             max_per_day: 2,
             notify: true,
+            with_selfie: false,
             muted_character_ids: Vec::new(),
             sent: Vec::new(),
         }

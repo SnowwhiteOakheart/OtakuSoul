@@ -83,6 +83,45 @@ pub struct GeneratedImageInfo {
     pub created_at: String,
 }
 
+/// An image of a character that should look like their picture (see `local_image::ImageReference`).
+#[derive(Debug, Clone, Serialize, Deserialize, TS)]
+#[ts(export)]
+pub struct CharacterReference {
+    pub character_id: String,
+    /// A portrait or selfie: models without reference images may start from the picture.
+    pub portrait: bool,
+}
+
+/// Longest side of a character picture sent as reference (the image models work below it).
+const REFERENCE_MAX_SIDE: u32 = 1024;
+
+/// The character's picture as PNG for an image reference; `None` without a picture.
+pub fn character_reference_png(character_id: &str) -> Option<Vec<u8>> {
+    let character = crate::modules::paths::scan_available_characters()
+        .into_iter()
+        .find(|c| c.id == character_id)?;
+    let data_url = character.avatar_data_url?;
+    let (_, data) = data_url.split_once(";base64,")?;
+    let bytes =
+        base64::Engine::decode(&base64::engine::general_purpose::STANDARD, data.trim()).ok()?;
+    reference_png(&bytes)
+}
+
+/// Any picture (PNG, JPEG, WebP) as PNG of at most `REFERENCE_MAX_SIDE`: sd.cpp reads no WebP.
+fn reference_png(bytes: &[u8]) -> Option<Vec<u8>> {
+    let mut picture = image::load_from_memory(bytes).ok()?;
+    if picture.width().max(picture.height()) > REFERENCE_MAX_SIDE {
+        picture = picture.resize(
+            REFERENCE_MAX_SIDE,
+            REFERENCE_MAX_SIDE,
+            image::imageops::FilterType::Lanczos3,
+        );
+    }
+    let mut png = std::io::Cursor::new(Vec::new());
+    picture.write_to(&mut png, image::ImageFormat::Png).ok()?;
+    Some(png.into_inner())
+}
+
 /// Asks the chat model to turn a character or scene plus the recent story into a prompt for
 /// the image model. Runs before any VRAM swap, while the chat model is still loaded.
 #[derive(Debug, Clone, Serialize, Deserialize, TS)]
@@ -114,6 +153,9 @@ fn image_kind(kind: &str) -> &'static str {
         "scene" => "scene (environment first, characters small or absent)",
         "moment" => {
             "moment of the story (the character in the surroundings, showing the current action and mood; medium or wide shot, not a close-up)"
+        }
+        "selfie" => {
+            "selfie the character takes of themselves right now and sends to a friend (holding the phone, looking at the camera, where they are and what they do in the recent story; casual and personal)"
         }
         _ => "character portrait (upper body, looking at the viewer)",
     }
@@ -443,11 +485,13 @@ impl ImageGenerator {
     }
 
     /// Main dispatch function for image generation
+    /// `reference` keeps a character's look with the local engine; other providers ignore it.
     pub async fn generate_image(
         prompt: &str,
         negative: Option<&str>,
         custom_config: Option<ImageGenConfig>,
         local: Option<LocalBackend<'_>>,
+        reference: Option<crate::modules::local_image::ImageReference<'_>>,
     ) -> Result<GeneratedImageResult, String> {
         let config = custom_config.unwrap_or_else(Self::load_config);
         let negative_prompt = negative.unwrap_or(&config.negative_prompt);
@@ -479,6 +523,7 @@ impl ImageGenerator {
                             negative: negative_prompt,
                             seed: config.seed,
                             loras: &config.local_loras,
+                            reference,
                         },
                     )
                     .await?;
@@ -957,9 +1002,23 @@ mod tests {
     use super::*;
 
     #[test]
+    fn reference_pictures_become_small_pngs() {
+        let mut webp = std::io::Cursor::new(Vec::new());
+        image::DynamicImage::new_rgb8(2048, 1024)
+            .write_to(&mut webp, image::ImageFormat::WebP)
+            .unwrap();
+        let png = reference_png(webp.get_ref()).unwrap();
+        let picture = image::load_from_memory(&png).unwrap();
+        assert_eq!(image::guess_format(&png).unwrap(), image::ImageFormat::Png);
+        assert_eq!((picture.width(), picture.height()), (1024, 512));
+        assert!(reference_png(b"no picture").is_none());
+    }
+
+    #[test]
     fn image_kinds_tell_the_prompt_writer_what_to_show() {
         assert!(image_kind("moment").starts_with("moment of the story"));
         assert!(image_kind("scene").starts_with("scene"));
+        assert!(image_kind("selfie").starts_with("selfie"));
         assert!(image_kind("portrait").starts_with("character portrait"));
         assert!(image_kind("").starts_with("character portrait"));
     }

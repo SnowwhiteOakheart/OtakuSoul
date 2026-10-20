@@ -135,8 +135,8 @@
   seit 20.10.2026, siehe `roadmap_abgeschlossen.md`); andere Figuren bräuchten einen Prompt-Aufbau ohne aktiven Chat.
 - [ ] **Klick auf die Benachrichtigung öffnet den Chat:** Desktop-Benachrichtigungen von `tauri-plugin-notification` bieten
   keine Klick-Aktion; bis dahin zeigt die App außerhalb des Chats einen Toast mit „Zum Chat“.
-- [ ] **Selfies mit wiedererkennbarem Gesicht:** Figurenbilder mit gleichbleibendem Aussehen (Referenzbild/IP-Adapter oder
-  LoRA pro Figur, je nach Unterstützung in stable-diffusion.cpp), auf Wunsch von der Figur selbst angeboten.
+- [ ] **Referenzbilder auch für Qwen-Image 2.1:** braucht die Vision-Gewichte (`--llm_vision`, mmproj von Qwen3-VL-8B) im
+  Katalog; bis dahin nutzt Qwen-Image für Selfies img2img (GPU-Test 20.10.2026: ohne Vision „failed to encode prompt“).
 
 ### Mobil
 - [ ] **Zugriff von unterwegs:** Web-Client außerhalb des WLANs über eine verschlüsselte Relay-Verbindung ohne Portfreigabe,

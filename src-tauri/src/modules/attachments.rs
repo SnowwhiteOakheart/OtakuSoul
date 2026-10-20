@@ -200,21 +200,26 @@ const IMAGE_MESSAGES_SENT: usize = 3;
 
 /// Turns attachments into what the model gets: text files are appended to the message text,
 /// images stay as attachments when the model can see them (`vision`) and recent enough,
-/// otherwise they become a note in the text.
+/// otherwise they become a note in the text. Pictures a character sent (a selfie) are always a
+/// note: the APIs take images only from the user.
 pub fn prepare(messages: &mut [crate::modules::inference::ChatMessage], vision: bool) {
     let mut image_messages = 0usize;
     for msg in messages.iter_mut().rev() {
         if msg.attachments.is_empty() {
             continue;
         }
-        let keep_images = vision && msg.attachments.iter().any(|a| a.kind == "image") && {
-            image_messages += 1;
-            image_messages <= IMAGE_MESSAGES_SENT
-        };
+        let from_user = msg.role == "user";
+        let keep_images =
+            vision && from_user && msg.attachments.iter().any(|a| a.kind == "image") && {
+                image_messages += 1;
+                image_messages <= IMAGE_MESSAGES_SENT
+            };
         let mut extra = Vec::new();
         msg.attachments.retain(|a| {
             if a.kind == "image" {
-                if !keep_images {
+                if !from_user {
+                    extra.push(format!("[Picture sent: {}]", a.name));
+                } else if !keep_images {
                     extra.push(format!("[Image attached: {} (not shown to you)]", a.name));
                 }
                 keep_images
@@ -402,6 +407,17 @@ mod tests {
         prepare(&mut blind, false);
         assert!(blind[0].attachments.is_empty());
         assert!(blind[0].content.contains("foto.jpg"));
+    }
+
+    #[test]
+    fn pictures_a_character_sent_are_only_named() {
+        let mut selfie = with(vec![attachment("image", "Selfie.png")]);
+        selfie.role = "assistant".into();
+        selfie.content = String::new();
+        let mut messages = vec![selfie];
+        prepare(&mut messages, true);
+        assert!(messages[0].attachments.is_empty());
+        assert_eq!(messages[0].content, "[Picture sent: Selfie.png]");
     }
 
     #[test]

@@ -114,6 +114,7 @@ import {
   ImageModelInfo,
   ImageModelProgress,
   ImagePromptRequest,
+  CharacterReference,
   LoraInfo,
   QuickReplyRequest,
   StarterModel,
@@ -1577,15 +1578,18 @@ export const api = {
     });
   },
 
+  /** `characterReference`: the character's picture keeps their look (local image engine). */
   generateImageAction: async (
     prompt: string,
     negative?: string | null,
-    customConfig?: ImageGenConfig | null
+    customConfig?: ImageGenConfig | null,
+    characterReference?: CharacterReference | null,
   ): Promise<GeneratedImageResult> => {
     return await invoke<GeneratedImageResult>('generate_image_action', {
       prompt,
       negative: negative || null,
       customConfig: customConfig || null,
+      characterReference: characterReference || null,
     });
   },
 

@@ -10,6 +10,7 @@ export const PROACTIVE_DEFAULTS: ProactiveSettings = {
   quiet_end_hour: 8,
   max_per_day: 2,
   notify: true,
+  with_selfie: false,
   muted_character_ids: [],
   sent: [],
 };

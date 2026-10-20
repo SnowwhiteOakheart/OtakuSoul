@@ -33,6 +33,7 @@ import {
   Wrench,
   BellRing,
   BellOff,
+  Camera,
 } from 'lucide-react';
 import { DropdownMenu } from '../ui/DropdownMenu';
 import { usePersistentFlag } from '../../hooks/usePersistentFlag';
@@ -42,7 +43,9 @@ import { streamingTts } from '../../services/streamingTts';
 
 import { CharacterVoiceModal } from '../voice/CharacterVoiceModal';
 import { PromptLogModal } from './PromptLogModal';
-import { useTranslation } from '../../i18n';
+import { translate, useTranslation } from '../../i18n';
+import { toast } from '../ui/feedback';
+import { errorMessage } from '../../utils/errors';
 import { applyReplacements } from '../../utils/replyFilters';
 import { withoutEmotionTag } from '../../utils/replyTags';
 import { extractStateUpdates } from '../../utils/stateParser';
@@ -94,11 +97,13 @@ export const ChatView: React.FC = () => {
     replyReplacements,
     proactive,
     setProactiveMuted,
+    sendSelfie,
+    isGeneratingSceneImage,
   } = useStoreFields(
     'messages', 'storedMessages', 'isGenerating', 'generationChatId', 'generationId', 'isChatLoading', 'chatLoadError', 'clearChat', 'selectedBackend', 'setSelectedBackend', 'expertMode',
     'serverStatus', 'activeCharacter', 'activePersona', 'loadPresetCharacters', 'chatSidebarOpen',
     'setChatSidebarOpen', 'chatSessions', 'activeChatId', 'autoTtsEnabled', 'setAutoTtsEnabled',
-    'activeVoiceConfig', 'setActiveTab', 'replyReplacements', 'proactive', 'setProactiveMuted',
+    'activeVoiceConfig', 'setActiveTab', 'replyReplacements', 'proactive', 'setProactiveMuted', 'sendSelfie', 'isGeneratingSceneImage',
   );
 
   const [streamText, setStreamText] = useState('');
@@ -236,6 +241,13 @@ export const ChatView: React.FC = () => {
 
   // No confirmation: the toast offers "Undo" for a few seconds.
   const handleClearSession = () => void clearChat();
+  const requestSelfie = async () => {
+    try {
+      if (!(await sendSelfie())) toast.info(translate('selfie.none'));
+    } catch (e) {
+      toast.error(translate('selfie.failed', { error: errorMessage(e) }));
+    }
+  };
 
   const canSpeak = !!activeVoiceConfig && activeVoiceConfig.engine !== 'disabled';
   // A guest's reply in a group chat is read with the guest's voice; only the chat's own
@@ -503,6 +515,9 @@ export const ChatView: React.FC = () => {
             trigger={<MoreHorizontal className="w-3.5 h-3.5" />}
             items={[
               { label: t('chat.voiceTooltip'), icon: Volume2, onSelect: () => setShowVoiceModal(true) },
+              ...(activeChatId && activeCharacter && !isGeneratingSceneImage
+                ? [{ label: t('selfie.request'), icon: Camera, onSelect: () => void requestSelfie() }]
+                : []),
               // Only with "write on their own" on: whether this character may do it.
               ...(proactive.enabled && activeCharacter
                 ? [proactive.muted_character_ids.includes(activeCharacter.id)

@@ -3614,5 +3614,11 @@
   "proactive.muteCharacter": "Не писать самому",
   "proactive.allowCharacter": "Разрешить писать самому",
   "proactive.wroteToYou": "{{name}} написал(а) тебе.",
-  "proactive.openChat": "К чату"
+  "proactive.openChat": "К чату",
+  "selfie.fileName": "Селфи",
+  "selfie.request": "Попросить селфи",
+  "selfie.failed": "Не удалось создать селфи: {{error}}",
+  "selfie.none": "Для селфи нужна генерация изображений (Интеграции › Генерация изображений).",
+  "proactive.withSelfie": "После паузы присылать селфи",
+  "proactive.withSelfieHint": "Персонаж присылает своё фото, подходящее к разговору и узнаваемое по портрету. Использует генерацию изображений и в зависимости от модели занимает несколько минут."
 }

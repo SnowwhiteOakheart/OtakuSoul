@@ -703,6 +703,7 @@ async fn images() {
                         negative: "lowres, bad anatomy, bad hands, watermark, text",
                         seed: 42,
                         loras: &[],
+                        reference: None,
                     },
                 )
                 .await;
@@ -821,6 +822,7 @@ async fn loras() {
                     negative: "lowres, bad anatomy, worst quality",
                     seed: 42,
                     loras,
+                    reference: None,
                 },
             )
             .await

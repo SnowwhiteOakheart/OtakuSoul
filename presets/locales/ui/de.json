@@ -3614,5 +3614,11 @@
   "proactive.muteCharacter": "Nicht von selbst melden",
   "proactive.allowCharacter": "Von selbst melden erlauben",
   "proactive.wroteToYou": "{{name}} hat dir geschrieben.",
-  "proactive.openChat": "Zum Chat"
+  "proactive.openChat": "Zum Chat",
+  "selfie.fileName": "Selfie",
+  "selfie.request": "Um ein Selfie bitten",
+  "selfie.failed": "Das Selfie konnte nicht erzeugt werden: {{error}}",
+  "selfie.none": "Für Selfies braucht es eine Bildgenerierung (Integrationen › Bildgenerierung).",
+  "proactive.withSelfie": "Nach einer Pause ein Selfie mitschicken",
+  "proactive.withSelfieHint": "Die Figur schickt ein Bild von sich, passend zum Gespräch und wiedererkennbar nach ihrem Porträt. Nutzt die Bildgenerierung und braucht je nach Modell einige Minuten."
 }

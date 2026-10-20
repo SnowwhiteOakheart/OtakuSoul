@@ -144,7 +144,7 @@ A rules engine based on the SRD 5.1 decides every roll, hit and enemy move – t
 
 * **Characters remember you:** after a conversation the memory is updated – beliefs, mood, your relationship, topics and a diary in the first person. For every reply the character recalls the memories that fit the conversation; outdated ones are replaced instead of stored twice (and can be restored). **Plans and promises** (“I'll call you tomorrow”) are kept with a due date and come up again when they are due. *Tidy up memory* merges overlapping entries after you confirm. Every memory shows where it came from and can be corrected, pinned or forgotten.
 * **Voices:** speech output and recognition run locally (Qwen3-TTS, Chatterbox, Kokoro, TADA) or via Edge-TTS/ElevenLabs. **Clone a voice** from a short recording – the dialog suggests the best clip; only with the speaker's consent.
-* **Pictures:** generate scene pictures locally with stable-diffusion.cpp (SD 1.5 to FLUX.2).
+* **Pictures:** generate scene pictures locally with stable-diffusion.cpp (SD 1.5 to FLUX.2). The character looks like their portrait, and on request sends you a **selfie** in the chat.
 * **Desktop companion:** your character floats above your windows and can search the web, read the clipboard or control music – every sensitive action needs your confirmation.
 * **Your language:** German, English and Russian are included. More interface languages come from the Hub or as a JSON file you import in the settings – no new app version needed.
 * **On your phone:** chat from your phone or tablet in the same Wi-Fi via QR code.

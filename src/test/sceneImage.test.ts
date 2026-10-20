@@ -89,9 +89,23 @@ describe('generateSceneImage', () => {
     const request = vi.mocked(api.writeImagePrompt).mock.calls[0]![0];
     expect(request).toMatchObject({ kind: 'portrait', style: 'natural', subject: 'Ayu', description: 'Ayu is an idol.' });
     expect(request.context).toEqual(['User: Shall we go to the library?', 'Ayu: *Ayu nods* Sure!']);
-    expect(api.generateImageAction).toHaveBeenCalledWith('Ayu walking into a library, anime illustration, detailed.', null, config);
+    // The character's picture keeps their look.
+    expect(api.generateImageAction).toHaveBeenCalledWith('Ayu walking into a library, anime illustration, detailed.', null, config,
+      { character_id: 'ayu', portrait: true });
     expect(useAppStore.getState().chatSceneImages['chat-1']).toEqual(image);
     expect(useAppStore.getState().isGeneratingSceneImage).toBe(false);
+  });
+
+  it('keeps the composition of a moment and sends a selfie without the scene card', async () => {
+    vi.mocked(api.writeImagePrompt).mockResolvedValue('Ayu on a bench');
+    await useAppStore.getState().generateSceneImage('chat', { kind: 'moment' });
+    expect(api.generateImageAction).toHaveBeenLastCalledWith('Ayu on a bench', null, config, { character_id: 'ayu', portrait: false });
+
+    useAppStore.setState({ chatSceneImages: {} });
+    await useAppStore.getState().generateSceneImage('chat', { kind: 'selfie' });
+    expect(vi.mocked(api.writeImagePrompt).mock.calls.at(-1)![0]).toMatchObject({ kind: 'selfie' });
+    expect(api.generateImageAction).toHaveBeenLastCalledWith('Ayu on a bench', null, config, { character_id: 'ayu', portrait: true });
+    expect(useAppStore.getState().chatSceneImages).toEqual({});
   });
 
   it('falls back to the template prompt when the chat model is not available', async () => {
@@ -101,7 +115,7 @@ describe('generateSceneImage', () => {
     await useAppStore.getState().generateSceneImage('chat');
 
     expect(api.writeImagePrompt).not.toHaveBeenCalled();
-    expect(api.generateImageAction).toHaveBeenCalledWith('1girl, Ayu', null, config);
+    expect(api.generateImageAction).toHaveBeenCalledWith('1girl, Ayu', null, config, { character_id: 'ayu', portrait: true });
   });
 
   it('sets the generated image as the stage background', async () => {

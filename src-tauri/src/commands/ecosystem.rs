@@ -72,7 +72,28 @@ pub async fn generate_image_action(
     prompt: String,
     negative: Option<String>,
     custom_config: Option<crate::modules::image_generator::ImageGenConfig>,
+    character_reference: Option<crate::modules::image_generator::CharacterReference>,
 ) -> Result<crate::modules::image_generator::GeneratedImageResult, String> {
+    // A character without a picture is drawn from the prompt alone.
+    let png = match &character_reference {
+        Some(reference) => {
+            let id = reference.character_id.clone();
+            tokio::task::spawn_blocking(move || {
+                crate::modules::image_generator::character_reference_png(&id)
+            })
+            .await
+            .ok()
+            .flatten()
+        }
+        None => None,
+    };
+    let reference = png
+        .as_deref()
+        .zip(character_reference.as_ref())
+        .map(|(png, r)| crate::modules::local_image::ImageReference {
+            png,
+            img2img: r.portrait,
+        });
     crate::modules::image_generator::ImageGenerator::generate_image(
         &prompt,
         negative.as_deref(),
@@ -82,6 +103,7 @@ pub async fn generate_image_action(
             engine: &state.local_image,
             llama: state.llama_manager.clone(),
         }),
+        reference,
     )
     .await
 }

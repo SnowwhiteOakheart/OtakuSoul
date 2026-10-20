@@ -85,6 +85,14 @@ export const ProactiveSettings = () => {
             description={t('proactive.notifyHint')}
             className="-mx-2"
           />
+          <Toggle
+            id="setting-proactive-selfie"
+            checked={proactive.with_selfie}
+            onCheckedChange={(with_selfie) => setProactive({ with_selfie })}
+            label={t('proactive.withSelfie')}
+            description={t('proactive.withSelfieHint')}
+            className="-mx-2"
+          />
           <p className="text-[11px] text-slate-500">{t('proactive.howItWorks')}</p>
         </div>
       )}

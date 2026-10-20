@@ -692,6 +692,40 @@ pub struct GenerationRequest<'a> {
     pub negative: &'a str,
     pub seed: i64,
     pub loras: &'a [crate::modules::image_loras::LoraSelection],
+    /// The character's picture, so they look the same in every image of them.
+    pub reference: Option<ImageReference<'a>>,
+}
+
+/// A character's picture (PNG) for an image of them.
+#[derive(Clone, Copy)]
+pub struct ImageReference<'a> {
+    pub png: &'a [u8],
+    /// Models without reference images start from the picture instead (img2img). Only for
+    /// portraits and selfies: a scene would keep the portrait's composition.
+    pub img2img: bool,
+}
+
+/// How a model uses a character's picture.
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+enum ReferenceUse {
+    /// Reference image next to the prompt (`extra_images`); the model draws the person anew.
+    Reference,
+    /// Starts from the picture and changes it by `IMG2IMG_STRENGTH`.
+    Img2img,
+}
+
+/// How much img2img changes the picture: enough for a new pose and place, little enough for
+/// the face, hair and clothes to stay (GPU test 20.10.2026: 0.55 kept the pose, 0.7 varied it).
+const IMG2IMG_STRENGTH: f32 = 0.7;
+
+/// Only FLUX.2 takes reference images in the catalog (Qwen-Image 2.1 would need its vision
+/// weights, which the catalog does not load).
+fn reference_use(family: &str, img2img: bool) -> Option<ReferenceUse> {
+    match family {
+        "flux2" => Some(ReferenceUse::Reference),
+        _ if img2img => Some(ReferenceUse::Img2img),
+        _ => None,
+    }
 }
 
 impl LocalImageEngine {
@@ -941,7 +975,7 @@ impl LocalImageEngine {
             .build()
             .map_err(|e| crate::err!("backend.common.httpClient", error = e))?;
         let lora = self.known_loras(&client, &loras.request).await;
-        let payload = serde_json::json!({
+        let mut payload = serde_json::json!({
             "prompt": crate::modules::image_loras::with_triggers(req.prompt, &loras.triggers),
             "negative_prompt": req.negative,
             "width": model.width,
@@ -953,8 +987,24 @@ impl LocalImageEngine {
             "batch_size": 1,
             "lora": lora,
         });
+        let mut endpoint = "txt2img";
+        if let Some(reference) = req.reference {
+            let image =
+                base64::Engine::encode(&base64::engine::general_purpose::STANDARD, reference.png);
+            match reference_use(model.family, reference.img2img) {
+                Some(ReferenceUse::Reference) => {
+                    payload["extra_images"] = serde_json::json!([image])
+                }
+                Some(ReferenceUse::Img2img) => {
+                    payload["init_images"] = serde_json::json!([image]);
+                    payload["denoising_strength"] = serde_json::json!(IMG2IMG_STRENGTH);
+                    endpoint = "img2img";
+                }
+                None => {}
+            }
+        }
         let response = client
-            .post(format!("http://127.0.0.1:{SD_PORT}/sdapi/v1/txt2img"))
+            .post(format!("http://127.0.0.1:{SD_PORT}/sdapi/v1/{endpoint}"))
             .json(&payload)
             .send()
             .await
@@ -1110,6 +1160,19 @@ impl LocalImageEngine {
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    #[test]
+    fn only_flux2_takes_reference_images_and_others_start_from_portraits() {
+        assert_eq!(reference_use("flux2", false), Some(ReferenceUse::Reference));
+        assert_eq!(reference_use("flux2", true), Some(ReferenceUse::Reference));
+        assert_eq!(reference_use("sdxl", true), Some(ReferenceUse::Img2img));
+        assert_eq!(
+            reference_use("qwen_image", true),
+            Some(ReferenceUse::Img2img)
+        );
+        // A scene keeps its own composition.
+        assert_eq!(reference_use("sd15", false), None);
+    }
 
     fn input(total: u64, free: Option<u64>, llm: u64, image: u64) -> PlanInput {
         PlanInput {

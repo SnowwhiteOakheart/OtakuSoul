@@ -79,4 +79,9 @@ async function writeIfDue() {
       onClick: () => useAppStore.getState().setActiveTab('chat'),
     });
   }
+
+  // After a pause a selfie may follow (it takes a while); without a picture the message stands alone.
+  if (reason.kind === 'idle' && proactive.with_selfie) {
+    await useAppStore.getState().sendSelfie().catch((e) => console.warn('Selfie on their own failed:', e));
+  }
 }

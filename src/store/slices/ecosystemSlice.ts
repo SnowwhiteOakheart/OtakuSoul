@@ -5,6 +5,7 @@ import type {
   BackupGroupSelection,
   BackupEntryInfo,
   ImageGenConfig,
+  CharacterReference,
   GeneratedImageResult,
   GeneratedImageInfo,
   DiscordBotConfig,
@@ -37,7 +38,12 @@ export interface EcosystemSlice {
     userPrompt?: string | null
   ) => Promise<string>;
   /** Generates an image and refreshes the gallery; throws when generation fails. */
-  generateImageAction: (prompt: string, negative?: string | null, customConfig?: ImageGenConfig | null) => Promise<GeneratedImageResult | null>;
+  generateImageAction: (
+    prompt: string,
+    negative?: string | null,
+    customConfig?: ImageGenConfig | null,
+    characterReference?: CharacterReference | null,
+  ) => Promise<GeneratedImageResult | null>;
   /** Latest scene image per chat session id. */
   chatSceneImages: Record<string, GeneratedImageResult>;
   isGeneratingSceneImage: boolean;
@@ -45,11 +51,13 @@ export interface EcosystemSlice {
    * Lets the chat model write a prompt from the active character (chat) or scene (stage) and the
    * recent story, then generates the image. In the stage it becomes the scene background. In the
    * chat `kind` picks a portrait (default) or the moment of the story; `upToMessageId` ends the
-   * story at that message ("this moment as a picture").
+   * story at that message ("this moment as a picture"); `selfie` is a picture the character
+   * sends (it goes into the chat as a message, see `sendSelfie`, not onto the scene card). In the
+   * chat the character's picture keeps their look.
    */
   generateSceneImage: (
     target: 'chat' | 'stage',
-    options?: { kind?: 'portrait' | 'moment'; upToMessageId?: string },
+    options?: { kind?: 'portrait' | 'moment' | 'selfie'; upToMessageId?: string },
   ) => Promise<GeneratedImageResult | null>;
   /** Makes a chat scene image the chat's background (copied into the Stage backgrounds). */
   setSceneImageAsBackground: (chatId: string) => Promise<void>;
@@ -150,11 +158,11 @@ export const createEcosystemSlice: SliceCreator<EcosystemSlice> = (set, get) => 
     }
   },
 
-  generateImageAction: async (prompt, negative, customConfig) => {
+  generateImageAction: async (prompt, negative, customConfig, characterReference) => {
     // Retrying puts the picture into the gallery; the original caller is gone by then.
-    const retry = () => void get().generateImageAction(prompt, negative, customConfig).catch(() => undefined);
+    const retry = () => void get().generateImageAction(prompt, negative, customConfig, characterReference).catch(() => undefined);
     const task = { kind: 'image' as const, title: translate('task.image', { prompt: prompt.slice(0, 60) }), retry };
-    const res = await trackTask(get(), task, () => api.generateImageAction(prompt, negative, customConfig));
+    const res = await trackTask(get(), task, () => api.generateImageAction(prompt, negative, customConfig, characterReference));
     await get().fetchGeneratedImages();
     soundFx.playDiceRoll();
     return res;
@@ -242,12 +250,18 @@ export const createEcosystemSlice: SliceCreator<EcosystemSlice> = (set, get) => 
           description,
           target === 'chat' ? state.currentEmotion?.emotion : null,
           target === 'stage' ? subject : null,
-          null
+          options.kind === 'selfie' ? 'selfie, holding a phone, looking at the camera' : null
         );
       }
 
-      const res = await get().generateImageAction(prompt, null, config);
+      // The character's picture keeps their look; a moment keeps its own composition.
+      const kind = options.kind ?? 'portrait';
+      const reference = target === 'chat' && state.activeCharacter
+        ? { character_id: state.activeCharacter.id, portrait: kind !== 'moment' }
+        : null;
+      const res = await get().generateImageAction(prompt, null, config, reference);
       if (!res) return null;
+      if (kind === 'selfie') return res;
       if (target === 'stage' && state.stageState) {
         const name = await api.saveStageBackground(res.file_path);
         const current = get().stageState ?? state.stageState;

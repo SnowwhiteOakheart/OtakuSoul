@@ -23,6 +23,10 @@ max_per_day: number,
  */
 notify: boolean, 
 /**
+ * After a pause the character also sends a selfie (uses the image engine).
+ */
+with_selfie: boolean, 
+/**
  * Characters that never write on their own.
  */
 muted_character_ids: Array<string>, 

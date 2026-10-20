@@ -238,6 +238,13 @@ ru „персонаж/история/сцена“. Fachbegriffe nur im Experte
 - Bild-LoRAs (`image_loras.rs`): `sd-server` ignoriert `<lora:…>` im Prompt; LoRAs gehen als `lora: [{path, multiplier}]`
   an `txt2img`, und vorher muss `GET /sdapi/v1/loras` den Ordner neu einlesen, sonst „invalid lora path“. Eine LoRA
   fremder Modellfamilie wendet still 0 Tensoren an → Katalog-LoRAs nur an ihre `family` schicken.
+- Wiedererkennbare Figuren (`CharacterReference` an `generate_image_action`, nur lokale Engine): das Porträt der Karte
+  wird als PNG ≤ 1024 px geschickt (sd.cpp liest kein WebP). FLUX.2 bekommt es als `extra_images` (Referenzbild, beste
+  Wiedererkennung, ~3 min auf 16 GB); andere Familien nur bei Porträt/Selfie per `img2img` (`init_images`,
+  `denoising_strength` 0,7 – 0,55 hielt die Pose), bei „Moment“ gar nicht (sonst Porträt-Komposition). Qwen-Image 2.1
+  bräuchte für Referenzbilder `--llm_vision` (nicht im Katalog). Selfie = `generateSceneImage('chat', {kind: 'selfie'})`
+  + `chatSlice.sendSelfie` (Nachricht der Figur „📸“ mit Bildanhang). `attachments::prepare` macht Bilder in Nachrichten
+  der Figur immer zu „[Picture sent: …]“ – OpenAI/Anthropic nehmen Bilder nur in Nutzer-Nachrichten.
 - Lokale Vision nur mit gewählter `mmproj`; ohne macht `attachments::prepare` aus Bildern einen Hinweis.
 - Einrichtungsassistent: `components/onboarding/OnboardingParts.tsx` (Cloud-Test, lokaler Weg, erste Antwort) nutzt
   `quick_reply` (eine kurze Antwort außerhalb eines Chats, 90 s) und `list_starter_models` (Katalog `model_catalog.rs`:

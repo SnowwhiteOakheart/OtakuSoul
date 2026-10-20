@@ -89,6 +89,12 @@ export interface ChatSlice {
    * the saved message, or null when nothing was written (busy, other chat, failure).
    */
   writeOnOwn: (instruction: (name: string) => string) => Promise<StoredChatMessage | null>;
+  /**
+   * The chat's character sends a selfie (as their message with the picture), drawn from the
+   * recent chat and their portrait. Returns the message, or null when no picture came (no image
+   * engine, other chat meanwhile); failures are thrown.
+   */
+  sendSelfie: () => Promise<StoredChatMessage | null>;
   /** Invites characters into a chat or removes them (group chat); throws on failure. */
   setChatMembers: (chatId: string, members: string[]) => Promise<void>;
   /** Who writes the running (or last) reply: '' = the chat's own character, else a guest's ID. */
@@ -520,6 +526,22 @@ export const createChatSlice: SliceCreator<ChatSlice> = (set, get) => {
     } finally {
       await finishGeneration();
     }
+  },
+
+  sendSelfie: async () => {
+    const { activeChatId: chatId, activeCharacter } = get();
+    if (!chatId || !activeCharacter) return null;
+    const image = await get().generateSceneImage('chat', { kind: 'selfie' });
+    if (!image) return null;
+    const data = image.base64_data_url.slice(image.base64_data_url.indexOf(',') + 1);
+    const attachment = await api.saveAttachment(chatId, `${translate('selfie.fileName')}.png`, data);
+    // A caption in no language: the bubble with its actions needs some text.
+    const stored = await api.addChatMessage(chatId, 'assistant', '📸', null, [attachment]);
+    if (isCurrentContext(chatId, activeCharacter.id)) {
+      const storedMessages = [...get().storedMessages, stored];
+      set({ storedMessages, messages: storedMessages.map(toFlat) });
+    }
+    return stored;
   },
 
   translateText: async (text) => {
