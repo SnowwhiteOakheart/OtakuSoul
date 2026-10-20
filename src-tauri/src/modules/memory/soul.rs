@@ -707,12 +707,20 @@ impl MemoryDb {
                 Some(key) => Self::active_topic_memory_on(&tx, char_id, key)?,
                 None => None,
             };
+            let significance = topic.significance.map_or_else(
+                || {
+                    previous
+                        .as_ref()
+                        .map_or(DEFAULT_TOPIC_SIGNIFICANCE, |p| p.significance)
+                },
+                |s| s.clamp(1, 5),
+            );
             let id = Self::add_episodic_memory_sourced_on(
                 &tx,
                 char_id,
                 "topic",
                 &topic.text,
-                4,
+                significance,
                 &changes.source,
             )?;
             if let Some(key) = &topic.key {
@@ -1019,7 +1027,13 @@ pub struct TopicMemory {
     /// `normalize_topic_key` of the file name; `None` keeps no version history.
     pub key: Option<String>,
     pub text: String,
+    /// 1..5 as the router rated it; `None` keeps that of the previous version, else
+    /// `DEFAULT_TOPIC_SIGNIFICANCE`.
+    pub significance: Option<u32>,
 }
+
+/// Significance of a topic the router did not rate.
+const DEFAULT_TOPIC_SIGNIFICANCE: u32 = 4;
 
 /// A memory the reflection found outdated.
 pub struct MemorySupersede {

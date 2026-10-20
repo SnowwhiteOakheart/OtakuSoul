@@ -1050,6 +1050,7 @@ fn a_failed_reflection_write_changes_nothing() {
     let topics = vec![TopicMemory {
         key: Some("kyoto".into()),
         text: "[Thema: Kyoto]\nReise geplant".to_string(),
+        significance: None,
     }];
     let healing = vec!["Widerspruch gelöst".to_string()];
     let result = db.apply_reflection(
@@ -1454,6 +1455,7 @@ fn topic(key: &str, text: &str) -> TopicMemory {
     TopicMemory {
         key: Some(key.into()),
         text: format!("[Thema: {key}]\n{text}"),
+        significance: None,
     }
 }
 
@@ -1473,6 +1475,39 @@ fn topic_keys_come_from_file_names_and_headers() {
         "Lives in Hamburg"
     );
     assert_eq!(topic_body("No header"), "No header");
+}
+
+#[test]
+fn topics_keep_the_significance_the_router_gave_them() {
+    let db = MemoryDb::new_in_memory().unwrap();
+    // Unrated: the default.
+    reflect(&db, &[topic("tee", "Mag Jasmintee")], &[]);
+    assert_eq!(
+        db.get_episodic_memories("ayu", 10).unwrap()[0].significance,
+        4
+    );
+    // Rated (and clamped to 1..5).
+    let rated = |text: &str, value: u32| TopicMemory {
+        significance: Some(value),
+        ..topic("familie", text)
+    };
+    reflect(&db, &[rated("Kais Schwester heißt Mio", 9)], &[]);
+    let family = db
+        .get_episodic_memories("ayu", 10)
+        .unwrap()
+        .into_iter()
+        .find(|m| m.topic_key.as_deref() == Some("familie"))
+        .unwrap();
+    assert_eq!(family.significance, 5);
+    // An unrated new version keeps the rating of the old one.
+    reflect(&db, &[topic("familie", "Mio studiert in Kyoto")], &[]);
+    let family = db
+        .get_episodic_memories("ayu", 10)
+        .unwrap()
+        .into_iter()
+        .find(|m| m.topic_key.as_deref() == Some("familie"))
+        .unwrap();
+    assert_eq!(family.significance, 5);
 }
 
 #[test]

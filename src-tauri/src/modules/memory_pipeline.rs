@@ -62,7 +62,7 @@ You MUST otherwise output exactly this JSON structure:
   "topic_plan": {
     "reasoning": "Analyze if the recent conversation introduced new locations, NPCs, items, or deep backstories requiring a separate topic entry.",
     "actions": [
-      {"action": "create", "filename": "example_topic.md", "summary": "Reason for creation"}
+      {"action": "create", "filename": "example_topic.md", "summary": "Reason for creation", "significance": 3}
     ]
   },
   "memory_supersede": [
@@ -82,6 +82,7 @@ RULES:
 - emotion_active: true if recent messages support the emotion; false if it is fading.
 - CONTRADICTION PROTOCOL: add the corrected version via *_add, put outdated fact in *_remove, and describe the fix in healing_log_add.
 - TOPICS: to update an existing topic, reuse its file name from its [Topic: …] header with action "update"; the archivist then merges the new facts into it and the old version is retired.
+- TOPIC SIGNIFICANCE: integer 1-5 for each topic action, how much it matters for who someone is: 5 = core identity or the relationship itself (family, deep secrets, life goals), 3 = lasting useful background (places, people, hobbies), 1 = minor detail.
 - CONSOLIDATION: only when the user message contains a CONSOLIDATION TASK, return preferences_habits_replace with the complete new list: merge related single facts into one pattern (e.g. three food likes into "Loves sweet Japanese snacks, especially dango"), keep what is distinct, drop nothing important. Otherwise omit it.
 - INTENTIONS: create one when someone commits to doing something later (a plan, a promise, an appointment) that is not already in OPEN INTENTIONS. time_basis "real" only when it is clearly about the real world and real time (e.g. "remind me on Monday about my job interview"); then work out "due" from CURRENT LOCAL TIME. Everything happening inside the story or role-play (e.g. "tomorrow we ride to the castle") is "story" with due null; if in doubt, use "story". Resolve an open intention by its id (#3) when the RECENT MESSAGES show it was done (fulfilled) or called off (abandoned).
 - MEMORY SUPERSEDE: list a memory only when the RECENT MESSAGES clearly contradict or outdate it (e.g. someone moved, a relationship ended), only with an id (#12) shown in RELEVANT TOPIC FILES, and put the corrected version into a topic or *_add. Leave it empty otherwise.
@@ -277,6 +278,9 @@ pub struct TopicAction {
     pub filename: String,
     #[serde(default, deserialize_with = "lenient::text")]
     pub summary: String,
+    /// 1..5, how much the topic matters for who someone is; missing → previous or default.
+    #[serde(default, deserialize_with = "lenient::opt_u32")]
+    pub significance: Option<u32>,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize, Default, TS)]
@@ -1047,6 +1051,7 @@ pub async fn execute_memory_pipeline(
                     topic_memories.push(crate::modules::memory::TopicMemory {
                         key: topic_key,
                         text: formatted_topic,
+                        significance: action.significance,
                     });
                     topics_processed.push(action.filename);
                 }
@@ -1436,7 +1441,15 @@ mod tests {
         );
         assert_eq!(up.preferences_habits_add[0], "Mag Dango");
         assert_eq!(parsed.healing_log_add.len(), 1);
-        assert_eq!(parsed.topic_plan.unwrap().actions.len(), 1);
+        let actions = parsed.topic_plan.unwrap().actions;
+        assert_eq!(actions.len(), 1);
+        assert_eq!(actions[0].significance, None);
+        // Small models sometimes write the rating as text.
+        let rated = parse_router_json(
+            r#"{"topic_plan": {"actions": [{"action": "create", "filename": "a.md", "significance": "5"}]}}"#,
+        )
+        .unwrap();
+        assert_eq!(rated.topic_plan.unwrap().actions[0].significance, Some(5));
     }
 }
 

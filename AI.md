@@ -610,7 +610,8 @@ ru „персонаж/история/сцена“. Fachbegriffe nur im Experte
   Drawer-Liste und Duplikatprüfung filtert `superseded_at IS NULL`; nur Snapshots (`get_all_episodic_memories`) und
   `get_superseded_memories` sehen alles. Archivar-Themen haben `topic_key` (`normalize_topic_key` des Dateinamens):
   der Archivar bekommt die aktive Fassung (`topic_body`) zum Zusammenführen, `apply_reflection` löst sie durch die
-  neue ab. Router-`memory_supersede` gilt nur für IDs, die er gezeigt bekam (Pipeline prüft), `supersede_memory_on`
+  neue ab. Die Signifikanz eines Themas vergibt der Router (`topic_plan.actions[].significance`, 1–5, geklemmt);
+  fehlt sie, erbt die neue Fassung die der alten, sonst gilt `DEFAULT_TOPIC_SIGNIFICANCE` (4). Router-`memory_supersede` gilt nur für IDs, die er gezeigt bekam (Pipeline prüft), `supersede_memory_on`
   prüft Figur und Aktivität; angepinnte/`manual`/`edited` werden nie abgelöst, sondern `needs_review` + Grund in
   `supersede_reason` (Drawer zeigt `memory.contradictedHint`; „Passt so“/Korrigieren leeren den Grund). Snapshot-
   Wiederherstellung legt überholte Einträge ohne Zusammenlegen mit aktiven an und biegt `superseded_by` per
