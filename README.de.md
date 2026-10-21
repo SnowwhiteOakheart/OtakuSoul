@@ -146,7 +146,7 @@ Eine Regel-Engine nach SRD 5.1 entscheidet jeden Wurf, Treffer und Gegnerzug –
 * **Stimmen:** Sprachausgabe und -erkennung laufen lokal (Qwen3-TTS, Chatterbox, Kokoro, TADA) oder über Edge-TTS/ElevenLabs. **Stimme klonen** aus einer kurzen Aufnahme – der Dialog schlägt den besten Ausschnitt vor; nur mit Einwilligung der sprechenden Person. Auf Wunsch liest eine **Erzählerstimme** die *Handlungen*, während die Figur ihre eigenen Worte spricht – wie ein Hörspiel.
 * **Bilder:** Szenenbilder lokal mit stable-diffusion.cpp erzeugen (SD 1.5 bis FLUX.2). Die Figur sieht dabei aus wie auf ihrem Porträt und schickt dir auf Wunsch ein **Selfie** in den Chat.
 * **Desktop-Companion:** Deine Figur schwebt über deinen Fenstern und kann im Web suchen, die Zwischenablage lesen oder Musik steuern – jede heikle Aktion braucht deine Zustimmung.
-* **Deine Sprache:** Deutsch, Englisch und Russisch sind dabei. Weitere Oberflächensprachen kommen aus dem Hub oder als JSON-Datei, die du in den Einstellungen importierst – ohne neue App-Version.
+* **Deine Sprache:** Deutsch, Englisch, Russisch und Japanisch sind dabei. Weitere Oberflächensprachen kommen aus dem Hub oder als JSON-Datei, die du in den Einstellungen importierst – ohne neue App-Version.
 * **Auf dem Handy:** Im selben WLAN per QR-Code vom Smartphone oder Tablet chatten.
 
 <p align="center">
@@ -195,7 +195,7 @@ Speicherplatz: Die App selbst ist klein; lokale Modelle brauchen je etwa 2–15 
 | 🖼️ **Bilder** | stable-diffusion.cpp-Server (SD 1.5, SDXL, FLUX.1, Qwen-Image, FLUX.2), Katalog-LoRAs nur an ihre Modellfamilie, VRAM-Planer, der das Chat-Modell gestuft verkleinert oder tauscht und im Hintergrund neu startet. |
 | 🤖 **Companion** | Transparentes Always-on-Top-Overlay mit Click-Through, Hormonmodell, MCP-Client, interne Werkzeuge mit ausdrücklicher Freigabeliste; Code-Ausführung standardmäßig aus; Bestätigungsbanner für jede heikle Aktion. |
 | 📱 **Web-Client** | Axum-Server im LAN mit QR-Code, Token-Anmeldung und Schutz gegen DNS-Rebinding. |
-| 🎨 **Oberfläche** | 5 Themes plus heller Modus, DE/EN/RU plus eigene Sprachen als JSON-Dateien (Import in den Einstellungen, neue aus dem Daten-Repository, Prüfung mit `npm run i18n:check`), Zurücksetzen pro Einstellungsbereich, Befehlspalette (Strg+K), Tastaturnavigation (Strg+1…9), WCAG-AA-Kontraste, Expertenmodus, Aufgabenliste für Hintergrundvorgänge mit Fortschritt, Abbrechen und Wiederholen. |
+| 🎨 **Oberfläche** | 5 Themes plus heller Modus, DE/EN/RU/JA plus eigene Sprachen als JSON-Dateien (Import in den Einstellungen, neue aus dem Daten-Repository, Prüfung mit `npm run i18n:check`), Zurücksetzen pro Einstellungsbereich, Befehlspalette (Strg+K), Tastaturnavigation (Strg+1…9), WCAG-AA-Kontraste, Expertenmodus, Aufgabenliste für Hintergrundvorgänge mit Fortschritt, Abbrechen und Wiederholen. |
 
 ### Architektur
 

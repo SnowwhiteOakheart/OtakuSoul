@@ -52,7 +52,7 @@
 * **Zustandsverwaltung (Zustand):** `store/slices/*.ts` (z. B. `chatSlice.ts`, `stageSlice.ts`, `characterSlice.ts`, `settingsSlice.ts`, `avatarSlice.ts`, `memorySlice.ts`). Zugriff per `useStoreFields('fieldA', 'fieldB')`.
 * **Prompt & Lore Hilfsfunktionen:** `store/helpers.ts` (`resolvePromptWithLore`, `llmTarget`).
 * **Internationalisierung & 3-Ebenen-Sprachauflösung:**
-  * **Ebene 1 (Mitgelieferte Presets):** `presets/locales/ui/{de,en,ru}.json` (fest im App-Bundle integriert, Deutsch dient als TypeScript-Typquelle `TranslationKey`).
+  * **Ebene 1 (Mitgelieferte Presets):** `presets/locales/ui/{de,en,ru,ja}.json` (fest im App-Bundle integriert, Deutsch dient als TypeScript-Typquelle `TranslationKey`).
   * **Ebene 2 (Hub-Cache):** `<Daten>/locales/ui-hub/*.json` (beim Start synchronisiert aus `otakusoul-data/locales/ui/` per `locales/ui_registry.json`; aktualisiert mitgelieferte Sprachen nur bei höherer `__meta.version`; Event `ui-languages-changed` stößt `refreshLanguages` an).
   * **Ebene 3 (Eigene/Community-Sprachen):** `<Daten>/locales/ui/*.json` (Hot-Discovery ohne Build, Import über `import_ui_language` in Einstellungen, Löschen per `remove_ui_language` in Papierkorb; übersteuert Ebenen 1 & 2).
   * **Format & Fallback-Kette:** Flache JSON-Paare mit Pflicht-Header `__meta` (`id`, `name`, `englishName`, `author`, `version`, optional `fallback`). Fallback-Kette: `Aktive Sprache → __meta.fallback → Deutsch (de) → Schlüsselname`. Dynamisches Laden über `i18n/registry.ts` (`loadLocale`), `availableLanguages` aus Store.
@@ -96,7 +96,7 @@ Einige Inhalte in `OtakuSoul` sind gebündelte Standard-Kopien (Bundles) aus dem
 
 | Datei / Verzeichnis in `OtakuSoul` | Primäre Quelle (`otakusoul-data` / `otakusoul-data-nsfw`) | Synchronisations- & Update-Mechanismus |
 |---|---|---|
-| `presets/locales/{de,ru}.json` (Spieltexte; jede Datei = Sprache) | `locales/<kürzel>.json` | `content_lang::refresh_locales` lädt bei App-Start nach `<Daten>/locales/` |
+| `presets/locales/{de,ru,ja}.json` (Spieltexte; jede Datei = Sprache) | `locales/<kürzel>.json` | `content_lang::refresh_locales` lädt bei App-Start nach `<Daten>/locales/` |
 | `presets/locales/ui/*.json` (Oberflächensprachen) | `locales/ui/*.json` + `locales/ui_registry.json` | `ui_locales::refresh_hub` lädt beim Start nach `<Daten>/locales/ui-hub/` (mitgelieferte Sprachen nur bei höherer `version`) |
 | `presets/recommended_models.json` | `recommended_models.json` | `model_catalog::refresh` lädt bei App-Start neuere Versionen nach |
 | `presets/characters/*` | – (nur in der App: Einsteigerfiguren Shiori Amane, Sota Minase, Lirwen, Faelion) | Frühere Presets liegen nur noch im Hub: Ayu Ikue und Cosmos (`presets/sakura-succubus-3/`), Emilia (`presets/re-zero/`), jeweils über `soul_registry.json` / `cards_gateway/` |

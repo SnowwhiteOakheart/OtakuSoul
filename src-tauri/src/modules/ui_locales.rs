@@ -277,7 +277,7 @@ fn list_in(dirs: &Dirs) -> Vec<UiLanguage> {
         .collect();
     // Shipped languages first in their usual order, then the rest by name.
     let rank = |id: &str| {
-        ["de", "en", "ru"]
+        ["de", "en", "ru", "ja"]
             .iter()
             .position(|known| *known == id)
             .unwrap_or(usize::MAX)
@@ -701,6 +701,7 @@ mod tests {
             include_str!("../../../presets/locales/ui/de.json"),
             include_str!("../../../presets/locales/ui/en.json"),
             include_str!("../../../presets/locales/ui/ru.json"),
+            include_str!("../../../presets/locales/ui/ja.json"),
         ] {
             let file = parse_locale(raw).unwrap();
             assert!(file.meta.name.is_some());

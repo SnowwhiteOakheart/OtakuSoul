@@ -191,7 +191,7 @@ ru „персонаж/история/сцена“. Fachbegriffe nur im Experte
 - **Lösungsknöpfe:** `utils/errorFixes.ts` `errorFix(error, store)` ordnet häufige Codes einem Schritt zu (Chat-Banner über
   `generationFailure.cause`, Toasts über `reportFailure`); neue Codes mit klarer Abhilfe dort ergänzen.
 - **Oberflächensprachen:** je Sprache eine JSON-Datei, damit neue Sprachen ohne neuen Build gehen. Drei Ebenen, spätere
-  gewinnen je Schlüssel: mitgeliefert `presets/locales/ui/{de,en,ru}.json` → Daten-Repo (`locales/ui_registry.json` +
+  gewinnen je Schlüssel: mitgeliefert `presets/locales/ui/{de,en,ru,ja}.json` (Japanisch seit 21.10.2026, `__meta.fallback: en`) → Daten-Repo (`locales/ui_registry.json` +
   `locales/ui/<kürzel>.json`, beim Start nach `<Daten>/locales/ui-hub/`, für mitgelieferte Sprachen nur mit höherer
   `__meta.version`; Event `ui-languages-changed` → `refreshLanguages`) → eigene Dateien in `<Daten>/locales/ui/`
   (Import über die Einstellungen `import_ui_language`, Entfernen `remove_ui_language` in den Papierkorb; überleben Updates).

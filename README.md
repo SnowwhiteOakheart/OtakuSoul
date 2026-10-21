@@ -146,7 +146,7 @@ A rules engine based on the SRD 5.1 decides every roll, hit and enemy move – t
 * **Voices:** speech output and recognition run locally (Qwen3-TTS, Chatterbox, Kokoro, TADA) or via Edge-TTS/ElevenLabs. **Clone a voice** from a short recording – the dialog suggests the best clip; only with the speaker's consent. If you like, a **narrator voice** reads the *actions* while the character speaks their own words – like an audio drama.
 * **Pictures:** generate scene pictures locally with stable-diffusion.cpp (SD 1.5 to FLUX.2). The character looks like their portrait, and on request sends you a **selfie** in the chat.
 * **Desktop companion:** your character floats above your windows and can search the web, read the clipboard or control music – every sensitive action needs your confirmation.
-* **Your language:** German, English and Russian are included. More interface languages come from the Hub or as a JSON file you import in the settings – no new app version needed.
+* **Your language:** German, English, Russian and Japanese are included. More interface languages come from the Hub or as a JSON file you import in the settings – no new app version needed.
 * **On your phone:** chat from your phone or tablet in the same Wi-Fi via QR code.
 
 <p align="center">
@@ -195,7 +195,7 @@ Disk space: the app itself is small; local models need about 2–15 GB each. Sup
 | 🖼️ **Images** | stable-diffusion.cpp server (SD 1.5, SDXL, FLUX.1, Qwen-Image, FLUX.2), catalogue LoRAs only sent to their model family, VRAM planner that shrinks or swaps the chat model in stages and restarts it in the background. |
 | 🤖 **Companion** | Transparent always-on-top overlay with click-through, hormone model, MCP client, internal tools with explicit allow-list; code execution off by default; confirmation banner for every sensitive action. |
 | 📱 **Web client** | Axum server in the LAN with QR code, token auth and DNS-rebinding protection. |
-| 🎨 **UI** | 5 themes plus light mode, DE/EN/RU plus own languages as JSON files (import in the settings, new ones from the data repository, check with `npm run i18n:check`), reset per settings section, command palette (Ctrl+K), keyboard navigation (Ctrl+1…9), WCAG AA contrast, expert mode, background task centre with progress, cancel and retry. |
+| 🎨 **UI** | 5 themes plus light mode, DE/EN/RU/JA plus own languages as JSON files (import in the settings, new ones from the data repository, check with `npm run i18n:check`), reset per settings section, command palette (Ctrl+K), keyboard navigation (Ctrl+1…9), WCAG AA contrast, expert mode, background task centre with progress, cancel and retry. |
 
 ### Architecture
 

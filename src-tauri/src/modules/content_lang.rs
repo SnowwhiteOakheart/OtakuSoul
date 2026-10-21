@@ -221,6 +221,7 @@ mod tests {
         for (lang, raw) in [
             ("de", include_str!("../../../presets/locales/de.json")),
             ("ru", include_str!("../../../presets/locales/ru.json")),
+            ("ja", include_str!("../../../presets/locales/ja.json")),
         ] {
             let dict: HashMap<String, String> = serde_json::from_str(raw).unwrap();
             for key in [

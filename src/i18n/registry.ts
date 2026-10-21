@@ -5,7 +5,7 @@ import type { TranslationDictionary } from './types';
 
 /**
  * Interface language id: the name of a file in `presets/locales/ui/` or `<Daten>/locales/ui/`
- * (`de`, `en`, `ru` ship with the app; any other tag such as `pl` or `pt-BR` can be added there).
+ * (`de`, `en`, `ru`, `ja` ship with the app; any other tag such as `pl` or `pt-BR` can be added there).
  */
 export type SupportedLanguage = string;
 
@@ -29,6 +29,7 @@ export const SHIPPED_LANGUAGES: UiLanguage[] = [
   shipped('de', germanMeta.name, germanMeta.englishName),
   shipped('en', 'English', 'English'),
   shipped('ru', 'Русский', 'Russian'),
+  shipped('ja', '日本語', 'Japanese'),
 ];
 
 /**
