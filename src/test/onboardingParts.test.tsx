@@ -16,7 +16,7 @@ const starter = (over: Partial<StarterModel>): StarterModel => ({
   id: 'qwen3-8b', name: 'Qwen3 8B', license: 'Apache-2.0', vram_mb: 6800, recommended: false, fits_gpu: true, installed: false,
   file: { filename: 'Qwen_Qwen3-8B-Q4_K_M.gguf', size_bytes: 5e9, sha256: 'x', size_formatted: '4.7 GB', download_url: 'https://huggingface.co/x', quantization: 'Q4_K_M', runtime: 'standard', recommended: false, compatibility_note: '' },
   description: { de: 'Solider Allrounder.', en: 'Solid all-rounder.' },
-  license_kind: 'open', license_note: {}, license_url: 'https://huggingface.co/x',
+  license_kind: 'open', license_note: {}, license_url: 'https://huggingface.co/x', mmproj: null, mmproj_installed: false,
   ...over,
 });
 const ayu = { id: 'ayu', card: { data: { name: 'Ayu', description: 'Studentin.', personality: 'warm' } } } as CharacterProfile;
@@ -94,6 +94,34 @@ describe('setup wizard parts', () => {
     await waitFor(() => expect(screen.getByText(/Set up – the model is selected/)).toBeInTheDocument());
     expect(api.installRuntime).toHaveBeenCalledWith('llama', 'vulkan');
     expect(download).toHaveBeenCalledWith(expect.objectContaining({ filename: 'Qwen_Qwen3-8B-Q4_K_M.gguf' }));
+  });
+
+  it('brings the vision file of a model that can see images, unless switched off', async () => {
+    const user = userEvent.setup();
+    useAppStore.setState({ hardware: { gpus: [{ name: 'RTX 4060', total_vram_mb: 8192 }] } as never });
+    const mmproj = { filename: 'Qwen_Qwen3-8B-Q4_K_M-mmproj-F16.gguf', size_bytes: 1, sha256: 'y', size_formatted: '0.16 GB',
+      download_url: 'https://huggingface.co/x/resolve/main/mmproj-F16.gguf', quantization: 'F16', runtime: 'standard', recommended: false, compatibility_note: '' };
+    vi.mocked(api.listStarterModels).mockResolvedValue([starter({ recommended: true, mmproj })]);
+    vi.mocked(api.getRuntime).mockResolvedValue({ backend: 'vulkan' } as never);
+    const download = vi.fn().mockImplementation(async () => {
+      useAppStore.setState({ serverConfig: { ...useAppStore.getState().serverConfig, model_path: '/m/Qwen_Qwen3-8B-Q4_K_M.gguf' } });
+    });
+    const vision = vi.fn().mockResolvedValue(undefined);
+    useAppStore.setState({ downloadGgufModel: download, downloadVisionProjector: vision });
+    const { unmount } = render(<LocalModelSetup />);
+    expect(await screen.findByText(/Also understand pictures/)).toBeInTheDocument();
+    await user.click(screen.getByRole('button', { name: /Set everything up automatically/ }));
+    await waitFor(() => expect(vision).toHaveBeenCalledWith(expect.objectContaining({ filename: mmproj.filename }), '/m/Qwen_Qwen3-8B-Q4_K_M.gguf'));
+    unmount();
+
+    // Switched off: only the model.
+    vision.mockClear();
+    useAppStore.setState({ serverConfig: { ...useAppStore.getState().serverConfig, model_path: '' } });
+    render(<LocalModelSetup />);
+    await user.click(await screen.findByRole('checkbox', { name: /Also understand pictures/ }));
+    await user.click(screen.getByRole('button', { name: /Set everything up automatically/ }));
+    await waitFor(() => expect(download).toHaveBeenCalledTimes(2));
+    expect(vision).not.toHaveBeenCalled();
   });
 
   it('offers the PrismML runtime with a recommended Bonsai starter and keeps its runtime', async () => {

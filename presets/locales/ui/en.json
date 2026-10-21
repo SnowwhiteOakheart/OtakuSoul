@@ -3692,5 +3692,8 @@
   "voiceCfg.narratorForActionsHint": "The character speaks their own words, descriptions in asterisks are read by the narrator voice – like an audio drama. Set the narrator voice here under “Voice for” › Narrator voice; it also speaks for the game master and NPCs in stories.",
   "voiceCfg.serverPresets": "Preset:",
   "localImage.referenceExtras": "Also download files for recognizable selfies (Qwen-Image: vision weights, 0.75 GB). Without them Qwen-Image starts selfies from the portrait.",
-  "localImage.downloadExtras": "Add for selfies ({{size}} GB)"
+  "localImage.downloadExtras": "Add for selfies ({{size}} GB)",
+  "onboarding.withVision": "Also understand pictures: download the matching vision file ({{size}}).",
+  "onboarding.addVision": "Understand pictures ({{size}})",
+  "settings.mmprojDownload": "Download the matching vision file for this model ({{size}})"
 }

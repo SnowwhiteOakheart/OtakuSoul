@@ -1,4 +1,5 @@
 import { api } from '../../services/api';
+import { projectorFor } from '../../utils/visionProjector';
 import { CLOUD_PROVIDER_DEFAULTS } from '../helpers';
 import type {
   DownloadProgressEvent,
@@ -90,6 +91,11 @@ export interface LlmSlice {
   fetchHfModelFiles: (modelId: string) => Promise<void>;
   downloadProgress: Record<string, DownloadProgressEvent>;
   downloadGgufModel: (file: HfGgufFile) => Promise<void>;
+  /**
+   * Downloads the vision projector of `modelPath` (a starter's `mmproj`) and uses it while that
+   * model is selected; the running server restarts with it on the next reply.
+   */
+  downloadVisionProjector: (file: HfGgufFile, modelPath: string) => Promise<void>;
 }
 
 export const createLlmSlice: SliceCreator<LlmSlice> = (set, get) => ({
@@ -194,6 +200,10 @@ export const createLlmSlice: SliceCreator<LlmSlice> = (set, get) => ({
           : state.sampling,
       };
     });
+    // The model's own vision projector, or none when the current one belongs to another model.
+    const projectors = (await api.scanVisionProjectors().catch(() => null)) ?? [];
+    const projector = projectorFor(path, get().serverConfig.mmproj_path, projectors.map((p) => p.path));
+    if (projector !== undefined) set((state) => ({ serverConfig: { ...state.serverConfig, mmproj_path: projector } }));
     await get().fitServerToModel();
     await get().saveCurrentSettings();
   },
@@ -467,6 +477,34 @@ export const createLlmSlice: SliceCreator<LlmSlice> = (set, get) => ({
   },
 
   downloadProgress: {},
+
+  downloadVisionProjector: async (file, modelPath) => {
+    set({ hfError: null });
+    try {
+      const task = {
+        kind: 'download' as const,
+        title: translate('task.download', { name: file.filename }),
+        progressKey: file.filename,
+        cancel: () => void api.cancelGgufDownload(file.filename),
+        retry: () => void get().downloadVisionProjector(file, modelPath),
+      };
+      const path = await trackTask(get(), task, () => api.downloadGgufModel(file));
+      if (get().serverConfig.model_path !== modelPath) return;
+      // The server loads a projector only at its start.
+      await api.stopLlamaServer().catch(() => undefined);
+      await get().fetchServerStatus();
+      set((state) => ({ serverConfig: { ...state.serverConfig, mmproj_path: path } }));
+      await get().saveCurrentSettings();
+    } catch (e) {
+      set((state) => {
+        const { [file.filename]: _stale, ...downloadProgress } = state.downloadProgress;
+        return { downloadProgress };
+      });
+      if (errorCode(e)?.code === 'backend.models.downloadCancelled') return;
+      console.error('Failed to download the vision projector:', e);
+      set({ hfError: errorMessage(e) });
+    }
+  },
 
   downloadGgufModel: async (file: HfGgufFile) => {
     set({ hfError: null });

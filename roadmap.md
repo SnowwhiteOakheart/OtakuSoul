@@ -41,12 +41,9 @@
 - [ ] **TADA 3B Deutsch (GPU-Test 17.10.2026):** Vorgabestimme in CrispASR v0.8.43 nur noch 8 % verständlich (v0.8.41: 92 %);
   der deutsche Klon spricht mit vorgesprochenem KI-Hinweis nur den Hinweis (0 %), ohne Hinweis 75 %. Vorschlag: Fehler liegt bei
   CrispASR (neuere Version abwarten); Hinweis bei TADA als eigenen Clip vorweg erzeugen statt im selben Durchlauf (Entscheidung des Nutzers). Englisch ist unbetroffen.
-- [ ] **mmproj-Dateien der Startmodelle mitladen:** Vision funktioniert lokal (GPU-Test 21.10.2026), aber der Katalog sagt bei
-  Gemma 4 E4B/12B/26B-A4B nur „kann mit mmproj-Datei Bilder sehen“ – die Datei muss man selbst suchen und in den
-  Server-Einstellungen wählen. Vorschlag: optionales `mmproj` (Datei, Größe, SHA-256) je Katalogeintrag in
-  `presets/recommended_models.json` **und** `otakusoul-data/recommended_models.json` (Version erhöhen), beim Download
-  mitladen (abwählbar wie bei Qwen-Image) und `mmproj_path` automatisch setzen. Geprüfte Dateien (unsloth, F16):
-  E4B `mmproj-F16.gguf` 990 MB `ddf46c21…`, 12B 175 MB `91f08697…`, 26B-A4B 1,19 GB `418a6d87…`.
+- [ ] **mmproj im Daten-Repo nachziehen:** `otakusoul-data/recommended_models.json` braucht dieselben `mmproj`-Einträge,
+  Beschreibungen und `version` 3.2.0 wie `presets/recommended_models.json` (App-Teil seit 21.10.2026 fertig). Dort lagen
+  offene `ja`-Beschreibungen des Nutzers in der Datei – erst committen oder freigeben, dann nachziehen.
 - [ ] **Bildgenerierung parallel zum Chat auf 24 GB** testen (keine passende Karte vorhanden).
 - [ ] **Weitere Laufzeit-Backends** (HIP/ROCm, SYCL) neben CUDA, Vulkan, Metal und CPU – nur bei Bedarf.
 

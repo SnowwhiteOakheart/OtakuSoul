@@ -44,6 +44,28 @@ pub struct CatalogModel {
     /// Page with the licence text; the model page when missing.
     #[serde(default)]
     pub license_url: Option<String>,
+    /// Vision projector in the same repository: lets the model see attached images.
+    #[serde(default)]
+    pub mmproj: Option<CatalogMmproj>,
+}
+
+/// A vision projector (`mmproj-*.gguf`) of a catalog model.
+#[derive(Debug, Clone, Deserialize)]
+pub struct CatalogMmproj {
+    /// File name in the model's repository (often just `mmproj-F16.gguf`).
+    pub file: String,
+    pub size_bytes: u64,
+    pub sha256: String,
+}
+
+impl CatalogModel {
+    /// Name the projector is saved under: repositories share names like `mmproj-F16.gguf`, so
+    /// it starts with the model's file name (and contains `mmproj`, so the scan lists it as one).
+    pub fn mmproj_target(&self) -> Option<String> {
+        let mmproj = self.mmproj.as_ref()?;
+        let stem = self.file.strip_suffix(".gguf").unwrap_or(&self.file);
+        Some(format!("{stem}-{}", mmproj.file))
+    }
 }
 
 impl CatalogModel {
@@ -138,6 +160,14 @@ fn usable(model: &CatalogModel) -> bool {
             .as_deref()
             .is_none_or(|url| url.starts_with("https://"))
         && RUNTIMES.contains(&model.runtime.as_str())
+        && model.mmproj.as_ref().is_none_or(|m| {
+            plain_segment(&m.file)
+                && m.file.to_ascii_lowercase().contains("mmproj")
+                && m.file.to_ascii_lowercase().ends_with(".gguf")
+                && m.size_bytes > 0
+                && m.sha256.len() == 64
+                && m.sha256.chars().all(|c| c.is_ascii_hexdigit())
+        })
 }
 
 /// Reads a catalog and keeps the entries the app can offer; `None` if none is left.
@@ -255,7 +285,20 @@ mod tests {
             for lang in ["de", "en", "ru"] {
                 assert!(m.description.contains_key(lang), "{} ohne {lang}", m.id);
             }
+            // A description promising pictures comes with the projector to see them.
+            if m.description["en"].contains("pictures") {
+                assert!(m.mmproj.is_some(), "{} verspricht Bilder ohne mmproj", m.id);
+            }
         }
+        let gemma = bundled
+            .models
+            .iter()
+            .find(|m| m.id == "gemma-4-12b")
+            .unwrap();
+        assert_eq!(
+            gemma.mmproj_target().as_deref(),
+            Some("gemma-4-12b-it-Q4_K_M-mmproj-F16.gguf")
+        );
     }
 
     #[test]

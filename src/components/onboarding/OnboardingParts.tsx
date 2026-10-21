@@ -1,6 +1,6 @@
 import { openUrl } from '@tauri-apps/plugin-opener';
 import { useEffect, useState } from 'react';
-import { CheckCircle2, Cpu, Download, Loader2, MessageCircle, PlugZap, RefreshCw, Wand2, XCircle } from 'lucide-react';
+import { CheckCircle2, Cpu, Download, Eye, Loader2, MessageCircle, PlugZap, RefreshCw, Wand2, XCircle } from 'lucide-react';
 import { api } from '../../services/api';
 import { useStoreFields, useAppStore } from '../../store/useAppStore';
 import { llmTarget } from '../../store/helpers';
@@ -129,9 +129,11 @@ type Express = { phase: 'idle' | 'runtime' | 'model' | 'done' } | { phase: 'fail
  */
 export const LocalModelSetup = () => {
   const { t, currentLanguage } = useTranslation();
-  const { hardware, scannedModels, serverConfig, selectLocalModel, downloadGgufModel, downloadProgress, hfError } = useStoreFields(
-    'hardware', 'scannedModels', 'serverConfig', 'selectLocalModel', 'downloadGgufModel', 'downloadProgress', 'hfError',
+  const { hardware, scannedModels, serverConfig, selectLocalModel, downloadGgufModel, downloadVisionProjector, downloadProgress, hfError } = useStoreFields(
+    'hardware', 'scannedModels', 'serverConfig', 'selectLocalModel', 'downloadGgufModel', 'downloadVisionProjector', 'downloadProgress', 'hfError',
   );
+  // Models that can see images bring their vision file along, unless the user does without.
+  const [withVision, setWithVision] = useState(true);
   const [starters, setStarters] = useState<StarterModel[] | null>(null);
   const [downloading, setDownloading] = useState<string | null>(null);
   const [express, setExpress] = useState<Express>({ phase: 'idle' });
@@ -157,6 +159,20 @@ export const LocalModelSetup = () => {
     setDownloading(starter.id);
     // Selects the model when the download finished; errors land in `hfError`.
     await downloadGgufModel({ ...starter.file, runtime: starter.file.runtime === 'prism' ? 'prism' : 'standard' });
+    const modelPath = useAppStore.getState().serverConfig.model_path;
+    if (withVision && starter.mmproj && !starter.mmproj_installed && modelPath?.endsWith(starter.file.filename)) {
+      await downloadVisionProjector({ ...starter.mmproj, runtime: 'standard' }, modelPath);
+    }
+    setDownloading(null);
+    void refresh();
+  };
+
+  /** An installed model gets its vision file afterwards (and is selected for it). */
+  const addVision = async (starter: StarterModel, path: string) => {
+    if (!starter.mmproj) return;
+    setDownloading(starter.id);
+    await selectLocalModel(path);
+    await downloadVisionProjector({ ...starter.mmproj, runtime: 'standard' }, path);
     setDownloading(null);
     void refresh();
   };
@@ -177,8 +193,10 @@ export const LocalModelSetup = () => {
       }
       setExpress({ phase: 'model' });
       const path = pathOf(starter);
-      if (path) await selectLocalModel(path);
-      else await download(starter);
+      if (path) {
+        await selectLocalModel(path);
+        if (withVision && starter.mmproj && !starter.mmproj_installed) await downloadVisionProjector({ ...starter.mmproj, runtime: 'standard' }, path);
+      } else await download(starter);
       const ready = useAppStore.getState().serverConfig.model_path;
       setExpress(ready ? { phase: 'done' } : { phase: 'failed', error: useAppStore.getState().hfError || t('onboarding.expressFailed') });
     } catch (e) {
@@ -196,6 +214,12 @@ export const LocalModelSetup = () => {
             {t('onboarding.expressTitle', { name: recommended.name, size: recommended.file.size_formatted })}
           </p>
           <p className="text-xs text-slate-400">{t('onboarding.expressText')}</p>
+          {recommended.mmproj && (
+            <label className="flex items-start gap-2 text-xs text-slate-300">
+              <input type="checkbox" checked={withVision} onChange={(e) => setWithVision(e.target.checked)} className="mt-0.5 accent-accent-500" data-with-vision />
+              <span>{t('onboarding.withVision', { size: recommended.mmproj.size_formatted })}</span>
+            </label>
+          )}
           {recommendedSelected || express.phase === 'done' ? (
             <p role="status" className="flex items-center gap-1.5 text-xs text-emerald-300">
               <CheckCircle2 className="h-4 w-4" />
@@ -290,15 +314,29 @@ export const LocalModelSetup = () => {
                       {!starter.fits_gpu && <span className="block text-xs text-amber-300/90">{t('onboarding.starterTooBig')}</span>}
                     </span>
                     {path ? (
-                      <button
-                        type="button"
-                        aria-pressed={selected}
-                        onClick={() => void selectLocalModel(path)}
-                        className={SECONDARY_BUTTON}
-                      >
-                        {selected ? <CheckCircle2 className="h-4 w-4 text-accent-300" /> : null}
-                        {selected ? t('onboarding.starterSelected') : t('onboarding.starterUse')}
-                      </button>
+                      <span className="flex flex-wrap items-center gap-1.5">
+                        {starter.mmproj && !starter.mmproj_installed && (
+                          <button
+                            type="button"
+                            onClick={() => void addVision(starter, path)}
+                            disabled={downloading !== null}
+                            className={SECONDARY_BUTTON}
+                            data-add-vision={starter.id}
+                          >
+                            {isDownloading ? <Loader2 className="h-4 w-4 animate-spin" /> : <Eye className="h-4 w-4" />}
+                            {t('onboarding.addVision', { size: starter.mmproj.size_formatted })}
+                          </button>
+                        )}
+                        <button
+                          type="button"
+                          aria-pressed={selected}
+                          onClick={() => void selectLocalModel(path)}
+                          className={SECONDARY_BUTTON}
+                        >
+                          {selected ? <CheckCircle2 className="h-4 w-4 text-accent-300" /> : null}
+                          {selected ? t('onboarding.starterSelected') : t('onboarding.starterUse')}
+                        </button>
+                      </span>
                     ) : (
                       <button
                         type="button"

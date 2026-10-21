@@ -19,11 +19,13 @@ import {
   Zap,
   Check,
   Info,
+  Eye,
+  Loader2,
 } from 'lucide-react';
 import { backendMessage } from '../../../utils/errors';
 import { RuntimeCard } from './RuntimeCard';
 import { api } from '../../../services/api';
-import type { ScannedModel } from '../../../types';
+import type { ScannedModel, StarterModel } from '../../../types';
 
 export const ServerSettings = () => {
   const { t, tOptional } = useTranslation();
@@ -40,6 +42,24 @@ export const ServerSettings = () => {
   useEffect(() => {
     api.scanVisionProjectors().then(setProjectors).catch(() => setProjectors([]));
   }, []);
+  // A starter model that can see images, whose vision file is not there yet.
+  const [visionStarter, setVisionStarter] = useState<StarterModel | null>(null);
+  const [loadingVision, setLoadingVision] = useState(false);
+  useEffect(() => {
+    const path = serverConfig.model_path;
+    if (!path) return setVisionStarter(null);
+    api.listStarterModels()
+      .then((starters) => setVisionStarter(starters.find((s) => path.endsWith(s.file.filename) && s.mmproj && !s.mmproj_installed) ?? null))
+      .catch(() => setVisionStarter(null));
+  }, [serverConfig.model_path]);
+  const loadVision = async () => {
+    if (!visionStarter?.mmproj || !serverConfig.model_path) return;
+    setLoadingVision(true);
+    await useAppStore.getState().downloadVisionProjector({ ...visionStarter.mmproj, runtime: 'standard' }, serverConfig.model_path);
+    setLoadingVision(false);
+    setVisionStarter(null);
+    api.scanVisionProjectors().then(setProjectors).catch(() => undefined);
+  };
   // The recommendation (and the model's trained context) follows the chosen model.
   useEffect(() => {
     if (serverConfig.model_path) handleRecommendLayers();
@@ -299,6 +319,18 @@ export const ServerSettings = () => {
             </button>
           </div>
           <p className="text-xs text-slate-400">{t('settings.mmprojHint')}</p>
+          {visionStarter?.mmproj && (
+            <button
+              type="button"
+              onClick={() => void loadVision()}
+              disabled={loadingVision}
+              className="mt-1 inline-flex items-center gap-1.5 rounded-lg border border-accent-500/50 px-3 py-1.5 text-xs text-accent-200 hover:bg-accent-500/10 disabled:opacity-50"
+              data-load-vision
+            >
+              {loadingVision ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Eye className="w-3.5 h-3.5" />}
+              {t('settings.mmprojDownload', { size: visionStarter.mmproj.size_formatted })}
+            </button>
+          )}
         </div>
 
         {/* Core Parameters */}

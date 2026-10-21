@@ -3692,5 +3692,8 @@
   "voiceCfg.narratorForActionsHint": "Die Figur spricht ihre eigenen Worte, Beschreibungen in Sternchen liest die Erzählerstimme – wie ein Hörspiel. Die Erzählerstimme stellst du hier unter „Stimme für“ › Erzählerstimme ein; sie gilt auch für Spielleiter und NPCs in Geschichten.",
   "voiceCfg.serverPresets": "Vorlage:",
   "localImage.referenceExtras": "Zusatzdateien für wiedererkennbare Selfies mitladen (Qwen-Image: Vision-Datei, 0,75 GB). Ohne sie startet Qwen-Image Selfies vom Porträt aus.",
-  "localImage.downloadExtras": "Für Selfies nachladen ({{size}} GB)"
+  "localImage.downloadExtras": "Für Selfies nachladen ({{size}} GB)",
+  "onboarding.withVision": "Auch Bilder verstehen: die passende Vision-Datei mitladen ({{size}}).",
+  "onboarding.addVision": "Bilder verstehen ({{size}})",
+  "settings.mmprojDownload": "Passende Vision-Datei für dieses Modell laden ({{size}})"
 }

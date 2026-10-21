@@ -24,4 +24,9 @@ license_kind: string,
 /**
  * What the licence restricts, per language code.
  */
-license_note: { [key in string]: string }, license_url: string, };
+license_note: { [key in string]: string }, license_url: string, 
+/**
+ * Vision projector to download next to the model (`filename` is the name it is saved
+ * under, unique per model); `None` when the model cannot see images.
+ */
+mmproj: HfGgufFile | null, mmproj_installed: boolean, };

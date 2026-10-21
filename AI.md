@@ -246,6 +246,12 @@ ru „персонаж/история/сцена“. Fachbegriffe nur im Experte
 
 ### 2. Hardware, GPU-Auswahl & Lokale Modell-Server
 
+- Vision-Dateien der Startmodelle: Katalogeintrag `mmproj` (Datei, Größe, SHA-256, gleiches Repo; geprüft in `usable`).
+  Gespeichert als `<Modelldatei ohne .gguf>-mmproj-F16.gguf` (`CatalogModel::mmproj_target`), weil Repos dieselben Namen
+  nutzen; der Scan erkennt sie am „mmproj“. `StarterModel.mmproj`/`mmproj_installed`; Assistent lädt sie standardmäßig mit
+  (Haken „Auch Bilder verstehen“), Server-Einstellungen bieten „Passende Vision-Datei laden“ (`downloadVisionProjector`,
+  stoppt den Server, setzt `mmproj_path`). `selectLocalModel` wählt per `utils/visionProjector.ts` die eigene Datei des
+  Modells und entfernt die eines anderen Modells (sonst startet llama-server nicht); von Hand gewählte bleiben.
 - Lokale Vision (GPU-Test 21.10.2026, RTX 4070 Ti SUPER, llama.cpp b11669): Qwen3-VL-8B Q4 + mmproj Q8_0 und Gemma 4 12B
   + mmproj-F16 beschreiben ein Porträt treffend auf Deutsch (~1 s; 8,9 bzw. 10,7 GB bei 8K). Gemma 4 denkt standardmäßig
   vorher nach (~1.800 Zeichen Reasoning): mit knappem `max_tokens` bleibt `content` leer – Nachdenken aus oder genug Tokens.

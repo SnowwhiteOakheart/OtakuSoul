@@ -1,5 +1,5 @@
 {
-  "version": "3.1.0",
+  "version": "3.2.0",
   "last_updated": "2026-10-18",
   "notes": {
     "de": "Empfohlene Startmodelle für den Einrichtungsassistenten von OtakuSoul. Die App bringt eine Kopie mit und lädt beim Start diese Datei; die höhere `version` gilt. Für neue Empfehlungen hier Einträge ändern und `version` erhöhen. Nur Modelle, die ohne Anmeldung ladbar sind, mit SHA-256 der Datei auf Hugging Face; Modelle ohne freie Lizenz tragen license_note und werden in der App gekennzeichnet; ungültige Einträge überspringt die App. Automatisch empfohlen wird (nur unter frei lizenzierten) das bevorzugte Modell, wenn es in Grafikspeicher − `desktop_reserve_mb` passt, sonst das größte passende. Keine Modellgewichte in diesem Repository.",
@@ -22,9 +22,14 @@
       "vram_mb": 4500,
       "min_vram_gb": 6,
       "description": {
-        "de": "Klein, sehr schnell und überraschend gut: läuft auf fast jeder Grafikkarte (gemessen 3,9 GB bei 32K Kontext). Kann mit passender mmproj-Datei auch Bilder sehen.",
-        "en": "Small, very fast and surprisingly good: runs on almost any graphics card (measured 3.9 GB at 32K context). Can also see pictures with the matching mmproj file.",
-        "ru": "Маленькая, очень быстрая и на удивление хорошая: работает почти на любой видеокарте (3,9 ГБ при контексте 32K). С подходящим файлом mmproj видит и изображения."
+        "de": "Klein, sehr schnell und überraschend gut: läuft auf fast jeder Grafikkarte (gemessen 3,9 GB bei 32K Kontext). Kann auch Bilder sehen; die passende Vision-Datei lädt die App mit.",
+        "en": "Small, very fast and surprisingly good: runs on almost any graphics card (measured 3.9 GB at 32K context). Can also see pictures; the app downloads the matching vision file with it.",
+        "ru": "Маленькая, очень быстрая и на удивление хорошая: работает почти на любой видеокарте (3,9 ГБ при контексте 32K). Видит и изображения; подходящий файл зрения приложение загрузит само."
+      },
+      "mmproj": {
+        "file": "mmproj-F16.gguf",
+        "size_bytes": 990372672,
+        "sha256": "ddf46c21d7078e95338cfc22306b19b276a29a5ad089023449dd54d4b6170a51"
       }
     },
     {
@@ -60,9 +65,14 @@
       "vram_mb": 8300,
       "min_vram_gb": 10,
       "description": {
-        "de": "Starke Erzählerin für 10–12-GB-Karten: lebendiger Stil, gutes Deutsch, schnell (gemessen 8,2 GB bei 32K). Kann mit mmproj-Datei Bilder sehen.",
-        "en": "Strong storyteller for 10–12 GB cards: lively style, good multilingual output, fast (measured 8.2 GB at 32K). Can see pictures with the mmproj file.",
-        "ru": "Сильная рассказчица для карт на 10–12 ГБ: живой стиль, хорошая мультиязычность, быстрая (8,2 ГБ при 32K). С файлом mmproj видит изображения."
+        "de": "Starke Erzählerin für 10–12-GB-Karten: lebendiger Stil, gutes Deutsch, schnell (gemessen 8,2 GB bei 32K). Kann Bilder sehen (die Vision-Datei lädt die App mit).",
+        "en": "Strong storyteller for 10–12 GB cards: lively style, good multilingual output, fast (measured 8.2 GB at 32K). Can see pictures (the app downloads the vision file with it).",
+        "ru": "Сильная рассказчица для карт на 10–12 ГБ: живой стиль, хорошая мультиязычность, быстрая (8,2 ГБ при 32K). Видит изображения (файл зрения приложение загрузит само)."
+      },
+      "mmproj": {
+        "file": "mmproj-F16.gguf",
+        "size_bytes": 175115840,
+        "sha256": "91f086971e56d7a7d8d39e271873fccdb49541bd259d6e02c401a4f1cb7a219e"
       }
     },
     {
@@ -141,9 +151,14 @@
       "vram_mb": 14100,
       "min_vram_gb": 16,
       "description": {
-        "de": "Mixture-of-Experts für 16-GB-Karten: Qualität eines großen Modells, Tempo eines kleinen (gemessen 62 Tokens/s, teilweise ausgelagert). Kann mit mmproj-Datei Bilder sehen.",
-        "en": "Mixture of experts for 16 GB cards: quality of a large model at the speed of a small one (measured 62 tokens/s, partly offloaded). Can see pictures with the mmproj file.",
-        "ru": "Mixture of Experts для карт на 16 ГБ: качество большой модели со скоростью маленькой (62 токена/с при частичной выгрузке). С файлом mmproj видит изображения."
+        "de": "Mixture-of-Experts für 16-GB-Karten: Qualität eines großen Modells, Tempo eines kleinen (gemessen 62 Tokens/s, teilweise ausgelagert). Kann Bilder sehen (die Vision-Datei lädt die App mit).",
+        "en": "Mixture of experts for 16 GB cards: quality of a large model at the speed of a small one (measured 62 tokens/s, partly offloaded). Can see pictures (the app downloads the vision file with it).",
+        "ru": "Mixture of Experts для карт на 16 ГБ: качество большой модели со скоростью маленькой (62 токена/с при частичной выгрузке). Видит изображения (файл зрения приложение загрузит само)."
+      },
+      "mmproj": {
+        "file": "mmproj-F16.gguf",
+        "size_bytes": 1193058784,
+        "sha256": "418a6d8723067cd712235facbbc5cba6c8fbbd413fc1292d2aace5a027d5a42f"
       }
     },
     {

@@ -309,6 +309,10 @@ pub struct StarterModel {
     /// What the licence restricts, per language code.
     pub license_note: std::collections::HashMap<String, String>,
     pub license_url: String,
+    /// Vision projector to download next to the model (`filename` is the name it is saved
+    /// under, unique per model); `None` when the model cannot see images.
+    pub mmproj: Option<HfGgufFile>,
+    pub mmproj_installed: bool,
 }
 
 /// Index of the recommended starter for `vram_mb` (0 = no GPU): a preferred one that fits,
@@ -341,6 +345,30 @@ pub fn starter_models() -> Vec<StarterModel> {
         .into_iter()
         .enumerate()
         .map(|(i, s)| StarterModel {
+            mmproj: s
+                .mmproj
+                .as_ref()
+                .zip(s.mmproj_target())
+                .map(|(m, target)| HfGgufFile {
+                    size_formatted: format!("{:.2} GB", m.size_bytes as f64 / 1_073_741_824.0),
+                    download_url: format!(
+                        "https://huggingface.co/{}/resolve/main/{}",
+                        s.hf_id, m.file
+                    ),
+                    filename: target,
+                    size_bytes: m.size_bytes,
+                    sha256: Some(m.sha256.clone()),
+                    quantization: "F16".into(),
+                    runtime: s.runtime.clone(),
+                    recommended: false,
+                    compatibility_note: String::new(),
+                }),
+            mmproj_installed: s.mmproj.as_ref().zip(s.mmproj_target()).is_some_and(
+                |(m, target)| {
+                    std::fs::metadata(models_dir.join(target))
+                        .is_ok_and(|f| f.len() == m.size_bytes)
+                },
+            ),
             license_kind: s.license_kind().to_string(),
             license_url: s
                 .license_url

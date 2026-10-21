@@ -129,6 +129,33 @@ describe('local model selection', () => {
   });
 });
 
+describe('vision projector of the local model', () => {
+  const projector = (path: string) => ({ name: path, path, size_mb: 170, runtime: 'standard', recommended_context: 0, compatibility_note: '' });
+
+  it('switches to the projector of the newly selected model', async () => {
+    vi.mocked(api.scanVisionProjectors).mockResolvedValue([projector('/m/gemma-4-12b-it-Q4_K_M-mmproj-F16.gguf'), projector('/m/e4b-mmproj-F16.gguf')]);
+    useAppStore.setState({ serverConfig: { ...initialState.serverConfig, model_path: '/m/e4b.gguf', mmproj_path: '/m/e4b-mmproj-F16.gguf' } });
+    await useAppStore.getState().selectLocalModel('/m/gemma-4-12b-it-Q4_K_M.gguf');
+    expect(useAppStore.getState().serverConfig.mmproj_path).toBe('/m/gemma-4-12b-it-Q4_K_M-mmproj-F16.gguf');
+    // A model without its own projector drops the other model's one.
+    await useAppStore.getState().selectLocalModel('/m/nemo.gguf');
+    expect(useAppStore.getState().serverConfig.mmproj_path).toBeNull();
+    expect(lastSavedSettings().server_config.mmproj_path).toBeNull();
+  });
+
+  it('downloads a starter projector and uses it for its model', async () => {
+    vi.mocked(api.downloadGgufModel).mockResolvedValue('/m/gemma-4-12b-it-Q4_K_M-mmproj-F16.gguf');
+    useAppStore.setState({ serverConfig: { ...initialState.serverConfig, model_path: '/m/gemma-4-12b-it-Q4_K_M.gguf', mmproj_path: null } });
+    const file = { filename: 'gemma-4-12b-it-Q4_K_M-mmproj-F16.gguf', size_bytes: 175_115_840, sha256: 'x', size_formatted: '0.16 GB',
+      download_url: 'https://huggingface.co/unsloth/gemma-4-12b-it-GGUF/resolve/main/mmproj-F16.gguf', quantization: 'F16',
+      runtime: 'standard' as const, recommended: false, compatibility_note: '' };
+    await useAppStore.getState().downloadVisionProjector(file, '/m/gemma-4-12b-it-Q4_K_M.gguf');
+    expect(api.downloadGgufModel).toHaveBeenCalledWith(file);
+    expect(api.stopLlamaServer).toHaveBeenCalled();
+    expect(useAppStore.getState().serverConfig.mmproj_path).toBe('/m/gemma-4-12b-it-Q4_K_M-mmproj-F16.gguf');
+  });
+});
+
 describe('context of the local model at start', () => {
   const recommendation = {
     recommended_layers: 99,
