@@ -65,7 +65,8 @@ export function startMockLlm() {
       if (req.method === 'POST' && req.url.endsWith('/sdapi/v1/txt2img')) {
         const { prompt = '' } = JSON.parse(body || '{}');
         (stats.imagePrompts ??= []).push(prompt);
-        res.writeHead(200, { 'Content-Type': 'application/json' }).end(JSON.stringify({ images: [TINY_PNG] }));
+        // `stats.imageBase64`: a real picture (base64 PNG) instead of the 1×1 pixel, e.g. for screenshots.
+        res.writeHead(200, { 'Content-Type': 'application/json' }).end(JSON.stringify({ images: [stats.imageBase64 ?? TINY_PNG] }));
         return;
       }
       if (req.method !== 'POST' || !req.url.endsWith('/chat/completions')) {
@@ -231,8 +232,10 @@ export function startMockLlm() {
       }
       res.writeHead(200, { 'Content-Type': 'text/event-stream', 'Cache-Control': 'no-cache' });
       // A few chunks, like a real stream; the Stage narrator slowly, so live text can be observed.
-      const pieces = text.match(/.{1,40}/gs) ?? [];
-      const delay = isNarrator ? 250 : 0;
+      // `stats.chatChunkSize` / `stats.chatDelay` / `stats.narratorDelay` slow it down further (demos, recordings).
+      const chunkLen = (isChat && stats.chatChunkSize) || 40;
+      const pieces = text.match(new RegExp(`.{1,${chunkLen}}`, 'gs')) ?? [];
+      const delay = isNarrator ? (stats.narratorDelay ?? 250) : isChat ? (stats.chatDelay ?? 0) : 0;
       // `stallChatAfter`: a chat reply stops after that many pieces and hangs (user presses stop).
       const stallAfter = isChat && Number.isInteger(stats.stallChatAfter) ? stats.stallChatAfter : null;
       if (stallAfter !== null) res.on('close', () => { stats.cancelledChat = (stats.cancelledChat ?? 0) + 1; });
