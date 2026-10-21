@@ -835,6 +835,148 @@ async fn selfies() {
     engine.stop().await;
 }
 
+/// A dream told on start, with its picture, on real models: the chat model tells the dream from
+/// three memories (the app's instruction), the app's prompt writer turns it into an image prompt
+/// (kind `dream`) and Qwen-Image draws it with the character's portrait as reference, swapping the
+/// chat model out. Chat model from `OTAKUSOUL_E2E_LLM` (default: Gemma 4 12B in assets/models).
+/// `cargo test --test gpu_e2e dream_picture -- --ignored --nocapture`
+#[tokio::test(flavor = "multi_thread")]
+#[ignore = "needs a GPU, a chat model and Qwen-Image"]
+async fn dream_picture() {
+    use otakusoul_lib::modules::image_generator::{ImageGenerator, ImagePromptRequest};
+    use otakusoul_lib::modules::inference::InferenceClient;
+    use otakusoul_lib::modules::local_image::ImageReference;
+    use otakusoul_lib::modules::providers::LlmProviderType;
+    let out = out_dir();
+    ensure_runtime(RuntimeKind::Llama, &["cuda-12", "vulkan"]).await;
+    ensure_runtime(RuntimeKind::Sd, &["vulkan"]).await;
+    let root = Path::new(env!("CARGO_MANIFEST_DIR")).join("..");
+    let llm_path = std::env::var("OTAKUSOUL_E2E_LLM").unwrap_or_else(|_| {
+        root.join("assets/models/gemma-4-12b-it-Q4_K_M.gguf")
+            .to_string_lossy()
+            .into_owned()
+    });
+    let card: serde_json::Value = serde_json::from_str(
+        &std::fs::read_to_string(root.join("presets/characters/shiori_amane.json")).unwrap(),
+    )
+    .unwrap();
+    let data = card.get("data").unwrap_or(&card);
+    let description = data["description"]
+        .as_str()
+        .unwrap()
+        .replace("{{char}}", "Shiori Amane");
+    let portrait = std::fs::read(root.join("presets/characters/shiori_amane.png")).unwrap();
+
+    let llama = Arc::new(LlamaServerManager::new());
+    let port = 48_698;
+    llama
+        .start(LlamaServerConfig {
+            model_path: llm_path,
+            port,
+            context_size: 8192,
+            gpu_layers: 99,
+            flash_attn: true,
+            ..Default::default()
+        })
+        .await
+        .expect("chat model starts");
+    let endpoint = format!("http://127.0.0.1:{port}/v1/chat/completions");
+
+    // The instruction the app sends (utils/proactive.ts, kind `dream`).
+    let memories = [
+        "Kai hat Shiori ein altes Buch über Leuchttürme ausgeliehen",
+        "Bei einem Gewitter saßen beide in der Bibliothek fest",
+        "Shiori möchte einmal das Meer bei Kamakura im Winter sehen",
+    ];
+    let woven = memories
+        .iter()
+        .map(|m| format!("- {m}"))
+        .collect::<Vec<_>>()
+        .join("\n");
+    let instruction = format!(
+        "[Shiori Amane has just woken up and tells Kai on their own initiative, like a short text message, about a dream they had tonight. The dream strangely mixes these memories of theirs:\n{woven}\nMake it vivid, a little surreal and short, stay in character and end with a feeling or a small question. Do not list the memories, and do not mention timers or being an AI.]"
+    );
+    let client = reqwest::Client::new();
+    let started = Instant::now();
+    let reply: serde_json::Value = client
+        .post(&endpoint)
+        .json(&serde_json::json!({
+            "messages": [
+                {"role": "system", "content": format!("You are Shiori Amane. {description}\nReply in German.")},
+                {"role": "user", "content": "Gute Nacht, Shiori!"},
+                {"role": "assistant", "content": "*klappt das Buch zu* Gute Nacht, Kai. Schlaf gut."},
+                {"role": "user", "content": instruction},
+            ],
+            "max_tokens": 400,
+            "temperature": 0.8,
+            "chat_template_kwargs": {"enable_thinking": false},
+        }))
+        .send()
+        .await
+        .unwrap()
+        .json()
+        .await
+        .unwrap();
+    let dream = reply["choices"][0]["message"]["content"]
+        .as_str()
+        .unwrap_or_default()
+        .trim()
+        .to_string();
+    println!(
+        "[dream] {:.0}s:\n{dream}\n",
+        started.elapsed().as_secs_f32()
+    );
+    assert!(dream.chars().count() > 40, "kein Traum: {reply}");
+
+    let prompt = ImageGenerator::write_image_prompt(
+        &InferenceClient::new(),
+        ImagePromptRequest {
+            endpoint_url: endpoint,
+            api_key: None,
+            model: None,
+            provider: Some(LlmProviderType::LocalLlama),
+            kind: "dream".into(),
+            style: "natural".into(),
+            subject: "Shiori Amane".into(),
+            description,
+            context: vec![dream.clone()],
+        },
+    )
+    .await
+    .expect("image prompt");
+    println!("[dream] Bild-Prompt: {prompt}\n");
+
+    let engine = LocalImageEngine::new();
+    local_image::download_model_with("qwen-image-2.1-q4", true, &|_| {})
+        .await
+        .unwrap();
+    let started = Instant::now();
+    let png = engine
+        .generate(
+            &|s| println!("[dream] {}", s.phase),
+            llama.clone(),
+            GenerationRequest {
+                model_id: "qwen-image-2.1-q4",
+                strategy: VramStrategy::Swap,
+                prompt: &prompt,
+                negative: "lowres, bad anatomy, watermark, text",
+                seed: 7,
+                loras: &[],
+                reference: Some(ImageReference {
+                    png: &portrait,
+                    img2img: false,
+                }),
+            },
+        )
+        .await
+        .expect("dream picture");
+    println!("[dream] Bild nach {:.0}s", started.elapsed().as_secs_f32());
+    std::fs::write(out.join("dream.txt"), format!("{dream}\n\n{prompt}\n")).unwrap();
+    std::fs::write(out.join("dream-qwen-image.png"), &png).unwrap();
+    engine.stop().await;
+    llama.stop().await.ok();
+}
+
 /// LoRAs reach `sd-server` through the app's request: the same seed with and without a LoRA
 /// gives different images; the SD 1.5 tier generates. Downloads the catalog files it needs.
 /// `cargo test --test gpu_e2e loras -- --ignored --nocapture`
