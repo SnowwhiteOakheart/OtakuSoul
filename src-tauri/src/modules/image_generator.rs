@@ -36,6 +36,14 @@ pub struct ImageGenConfig {
     /// LoRAs for the local image model; each applies only to its own model family.
     #[serde(default)]
     pub local_loras: Vec<crate::modules::image_loras::LoraSelection>,
+    /// Download a model's optional files too (Qwen-Image's vision weights, so selfies look like
+    /// the portrait); off saves the space and keeps img2img.
+    #[serde(default = "default_true")]
+    pub reference_extras: bool,
+}
+
+fn default_true() -> bool {
+    true
 }
 
 impl Default for ImageGenConfig {
@@ -57,6 +65,7 @@ impl Default for ImageGenConfig {
             local_model_id: None,
             vram_strategy: Default::default(),
             local_loras: Vec::new(),
+            reference_extras: true,
         }
     }
 }

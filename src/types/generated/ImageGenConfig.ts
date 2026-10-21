@@ -18,4 +18,9 @@ vram_strategy: VramStrategy,
 /**
  * LoRAs for the local image model; each applies only to its own model family.
  */
-local_loras: Array<LoraSelection>, };
+local_loras: Array<LoraSelection>, 
+/**
+ * Download a model's optional files too (Qwen-Image's vision weights, so selfies look like
+ * the portrait); off saves the space and keeps img2img.
+ */
+reference_extras: boolean, };

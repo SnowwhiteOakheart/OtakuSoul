@@ -1052,6 +1052,8 @@ export interface ImageGenConfig {
   vram_strategy?: VramStrategy;
   /** LoRAs for the local image model; each applies only to its own model family. */
   local_loras?: LoraSelection[];
+  /** Download optional files too (Qwen-Image's vision weights for selfies). */
+  reference_extras?: boolean;
 }
 
 export interface DiscordRpcActivity {

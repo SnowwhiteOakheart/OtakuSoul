@@ -20,8 +20,8 @@ const download = (modelId: string, name: string, run: () => Promise<void>, cance
     run,
   );
 
-export const downloadImageModelTask = (modelId: string, name: string) =>
-  download(modelId, name, () => api.downloadImageModel(modelId), api.cancelImageModelDownload);
+export const downloadImageModelTask = (modelId: string, name: string, withExtras?: boolean) =>
+  download(modelId, name, () => api.downloadImageModel(modelId, withExtras), api.cancelImageModelDownload);
 
 /** LoRAs share the image download (and its cancel); progress uses the LoRA id. */
 export const downloadImageLoraTask = (loraId: string, name: string) =>

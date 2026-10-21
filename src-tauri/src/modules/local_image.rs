@@ -43,6 +43,8 @@ enum Role {
     T5xxl,
     /// LLM text encoder (Qwen-Image, Flux.2).
     Llm,
+    /// Vision weights of the LLM encoder (`mmproj`): Qwen-Image reads reference images with it.
+    LlmVision,
 }
 
 impl Role {
@@ -54,6 +56,7 @@ impl Role {
             Self::ClipL => "--clip_l",
             Self::T5xxl => "--t5xxl",
             Self::Llm => "--llm",
+            Self::LlmVision => "--llm_vision",
         }
     }
 }
@@ -96,6 +99,9 @@ struct CatalogModel {
     sampler: &'static str,
     /// Extra `sd-server` flags for this model.
     args: &'static [&'static str],
+    /// Optional files: downloaded with the model unless the user opts out
+    /// (`ImageGenConfig::reference_extras`), passed to `sd-server` only when present.
+    extras: &'static [CatalogFile],
 }
 
 const FLUX_VAE: CatalogFile = CatalogFile {
@@ -128,6 +134,7 @@ const CATALOG: &[CatalogModel] = &[
         cfg_scale: 7.0,
         sampler: "euler a",
         args: &["--vae-tiling"],
+        extras: &[],
     },
     CatalogModel {
         id: "animagine-xl-4",
@@ -148,6 +155,7 @@ const CATALOG: &[CatalogModel] = &[
         cfg_scale: 5.0,
         sampler: "euler a",
         args: &["--vae-tiling"],
+        extras: &[],
     },
     CatalogModel {
         id: "illustrious-xl-0.1",
@@ -168,6 +176,7 @@ const CATALOG: &[CatalogModel] = &[
         cfg_scale: 5.5,
         sampler: "euler a",
         args: &["--vae-tiling"],
+        extras: &[],
     },
     CatalogModel {
         id: "flux1-dev-q5",
@@ -205,6 +214,7 @@ const CATALOG: &[CatalogModel] = &[
         cfg_scale: 1.0,
         sampler: "euler",
         args: &["--clip-on-cpu", "--vae-tiling", "--diffusion-fa"],
+        extras: &[],
     },
     CatalogModel {
         id: "qwen-image-2.1-q4",
@@ -241,6 +251,15 @@ const CATALOG: &[CatalogModel] = &[
         cfg_scale: 6.0,
         sampler: "euler",
         args: &["--offload-to-cpu", "--diffusion-fa"],
+        // Without these vision weights Qwen-Image 2.1 cannot read reference images ("failed to
+        // encode prompt"); with them a selfie took 61 s on 16 GB (GPU test 21.10.2026).
+        extras: &[CatalogFile {
+            role: Role::LlmVision,
+            repo: "Qwen/Qwen3-VL-8B-Instruct-GGUF",
+            path: "mmproj-Qwen3VL-8B-Instruct-Q8_0.gguf",
+            size: 752_289_728,
+            sha256: "c6ba85508d82f42590e6eb77d5340369ab6fecf107a7561d809523d8aa5f3bfd",
+        }],
     },
     CatalogModel {
         id: "flux2-dev-q4",
@@ -277,6 +296,7 @@ const CATALOG: &[CatalogModel] = &[
         cfg_scale: 1.0,
         sampler: "euler",
         args: &["--offload-to-cpu", "--diffusion-fa"],
+        extras: &[],
     },
 ];
 
@@ -297,6 +317,19 @@ fn file_path(file: &CatalogFile) -> PathBuf {
 
 fn is_file_complete(file: &CatalogFile) -> bool {
     std::fs::metadata(file_path(file)).is_ok_and(|m| m.len() == file.size)
+}
+
+impl CatalogModel {
+    /// The optional files are all there (and there are some).
+    fn extras_ready(&self) -> bool {
+        !self.extras.is_empty() && self.extras.iter().all(is_file_complete)
+    }
+
+    /// Files a download fetches: the model, plus the extras when wanted.
+    fn wanted_files(&self, with_extras: bool) -> impl Iterator<Item = &'static CatalogFile> {
+        let extras: &'static [CatalogFile] = if with_extras { self.extras } else { &[] };
+        self.files.iter().chain(extras)
+    }
 }
 
 /// How the planner may share the GPU between chat and image model.
@@ -324,9 +357,12 @@ pub struct ImageModelInfo {
     pub family: String,
     pub vram_mb: u64,
     pub download_bytes: u64,
-    /// Bytes still missing (0 when installed).
+    /// Bytes still missing (0 when installed), including wanted extras.
     pub missing_bytes: u64,
+    /// The model itself is complete (extras may still be missing).
     pub installed: bool,
+    /// Size of optional files that are wanted but not there yet (Qwen-Image's vision weights).
+    pub extras_missing_bytes: u64,
     pub license: String,
     /// Largest model that fits this GPU on its own.
     pub recommended: bool,
@@ -334,8 +370,9 @@ pub struct ImageModelInfo {
     pub fits_gpu: bool,
 }
 
-/// Lists the catalog with install state and a recommendation for the detected GPU.
-pub fn list_models() -> Vec<ImageModelInfo> {
+/// Lists the catalog with install state and a recommendation for the detected GPU; `with_extras`
+/// counts the optional files as part of the download.
+pub fn list_models(with_extras: bool) -> Vec<ImageModelInfo> {
     let total_vram = best_gpu_vram().0;
     let usable = total_vram.saturating_sub(OS_RESERVE_MB);
     let recommended = CATALOG
@@ -346,13 +383,15 @@ pub fn list_models() -> Vec<ImageModelInfo> {
     CATALOG
         .iter()
         .map(|m| {
-            let download_bytes = m.files.iter().map(|f| f.size).sum();
-            let missing_bytes = m
-                .files
-                .iter()
-                .filter(|f| !is_file_complete(f))
-                .map(|f| f.size)
-                .sum::<u64>();
+            let download_bytes = m.wanted_files(with_extras).map(|f| f.size).sum();
+            let missing = |files: &mut dyn Iterator<Item = &'static CatalogFile>| {
+                files
+                    .filter(|f| !is_file_complete(f))
+                    .map(|f| f.size)
+                    .sum::<u64>()
+            };
+            let missing_bytes = missing(&mut m.wanted_files(with_extras));
+            let model_missing = missing(&mut m.files.iter());
             ImageModelInfo {
                 id: m.id.to_string(),
                 name: m.name.to_string(),
@@ -360,7 +399,8 @@ pub fn list_models() -> Vec<ImageModelInfo> {
                 vram_mb: m.vram_mb,
                 download_bytes,
                 missing_bytes,
-                installed: missing_bytes == 0,
+                installed: model_missing == 0,
+                extras_missing_bytes: missing_bytes - model_missing,
                 license: m.license.to_string(),
                 recommended: Some(m.id) == recommended,
                 fits_gpu: m.vram_mb <= usable,
@@ -406,8 +446,9 @@ pub fn cancel_download() {
 pub async fn download_model<R: tauri::Runtime>(
     app: &tauri::AppHandle<R>,
     model_id: &str,
+    with_extras: bool,
 ) -> Result<(), String> {
-    download_model_with(model_id, &|p| {
+    download_model_with(model_id, with_extras, &|p| {
         let _ = app.emit("image-model-progress", p);
     })
     .await
@@ -416,6 +457,7 @@ pub async fn download_model<R: tauri::Runtime>(
 /// [`download_model`] with a progress callback instead of the Tauri event (tests, tools).
 pub async fn download_model_with(
     model_id: &str,
+    with_extras: bool,
     emit: &(impl Fn(ImageModelProgress) + Sync),
 ) -> Result<(), String> {
     let model = catalog_model(model_id)?;
@@ -426,14 +468,16 @@ pub async fn download_model_with(
         .map_err(|e| crate::err!("backend.common.dirCreate", error = e))?;
     let client = crate::modules::model_files::http_client()?;
 
-    let total: u64 = model.files.iter().map(|f| f.size).sum();
+    let total: u64 = model.wanted_files(with_extras).map(|f| f.size).sum();
     let mut done: u64 = model
-        .files
-        .iter()
+        .wanted_files(with_extras)
         .filter(|f| is_file_complete(f))
         .map(|f| f.size)
         .sum();
-    for file in model.files.iter().filter(|f| !is_file_complete(f)) {
+    for file in model
+        .wanted_files(with_extras)
+        .filter(|f| !is_file_complete(f))
+    {
         let emit = |downloaded: u64| {
             emit(ImageModelProgress {
                 model_id: model.id.to_string(),
@@ -669,6 +713,8 @@ pub struct LocalImageStatus {
 struct SdProcess {
     child: Child,
     model_id: String,
+    /// Started with the model's optional files (vision weights).
+    with_extras: bool,
 }
 
 /// Owns the app's `sd-server` and serialises generations.
@@ -718,11 +764,11 @@ enum ReferenceUse {
 /// the face, hair and clothes to stay (GPU test 20.10.2026: 0.55 kept the pose, 0.7 varied it).
 const IMG2IMG_STRENGTH: f32 = 0.7;
 
-/// Only FLUX.2 takes reference images in the catalog (Qwen-Image 2.1 would need its vision
-/// weights, which the catalog does not load).
-fn reference_use(family: &str, img2img: bool) -> Option<ReferenceUse> {
+/// FLUX.2 takes reference images; Qwen-Image 2.1 only with its vision weights (`vision`).
+fn reference_use(family: &str, img2img: bool, vision: bool) -> Option<ReferenceUse> {
     match family {
         "flux2" => Some(ReferenceUse::Reference),
+        "qwen_image" if vision => Some(ReferenceUse::Reference),
         _ if img2img => Some(ReferenceUse::Img2img),
         _ => None,
     }
@@ -770,7 +816,15 @@ impl LocalImageEngine {
     }
 
     async fn ensure_server(&self, model: &CatalogModel) -> Result<(), String> {
-        if self.loaded_model().await.as_deref() == Some(model.id) {
+        // Extras downloaded after the start need a restart to be loaded.
+        let with_extras = model.extras_ready();
+        let same_extras = self
+            .process
+            .lock()
+            .await
+            .as_ref()
+            .is_some_and(|p| p.with_extras == with_extras);
+        if self.loaded_model().await.as_deref() == Some(model.id) && same_extras {
             return Ok(());
         }
         self.stop().await;
@@ -803,7 +857,11 @@ impl LocalImageEngine {
                 .map_err(|e| crate::err!("backend.localImage.startFailed", error = e))?;
         cmd.env(var, &joined);
 
-        for file in model.files {
+        for file in model
+            .files
+            .iter()
+            .chain(if with_extras { model.extras } else { &[] })
+        {
             cmd.arg(file.role.flag()).arg(file_path(file));
         }
         // sd.cpp's auto-fit prefers the device reporting the most free memory, which on laptops
@@ -887,6 +945,7 @@ impl LocalImageEngine {
         *self.process.lock().await = Some(SdProcess {
             child,
             model_id: model.id.to_string(),
+            with_extras,
         });
 
         // The server only starts listening once the model is loaded.
@@ -991,7 +1050,7 @@ impl LocalImageEngine {
         if let Some(reference) = req.reference {
             let image =
                 base64::Engine::encode(&base64::engine::general_purpose::STANDARD, reference.png);
-            match reference_use(model.family, reference.img2img) {
+            match reference_use(model.family, reference.img2img, model.extras_ready()) {
                 Some(ReferenceUse::Reference) => {
                     payload["extra_images"] = serde_json::json!([image])
                 }
@@ -1162,16 +1221,30 @@ mod tests {
     use super::*;
 
     #[test]
-    fn only_flux2_takes_reference_images_and_others_start_from_portraits() {
-        assert_eq!(reference_use("flux2", false), Some(ReferenceUse::Reference));
-        assert_eq!(reference_use("flux2", true), Some(ReferenceUse::Reference));
-        assert_eq!(reference_use("sdxl", true), Some(ReferenceUse::Img2img));
+    fn reference_images_for_flux2_and_qwen_with_vision_else_portraits() {
         assert_eq!(
-            reference_use("qwen_image", true),
+            reference_use("flux2", false, false),
+            Some(ReferenceUse::Reference)
+        );
+        assert_eq!(
+            reference_use("flux2", true, false),
+            Some(ReferenceUse::Reference)
+        );
+        assert_eq!(
+            reference_use("sdxl", true, false),
             Some(ReferenceUse::Img2img)
         );
+        // Qwen-Image reads the picture only with its vision weights.
+        assert_eq!(
+            reference_use("qwen_image", true, false),
+            Some(ReferenceUse::Img2img)
+        );
+        assert_eq!(
+            reference_use("qwen_image", false, true),
+            Some(ReferenceUse::Reference)
+        );
         // A scene keeps its own composition.
-        assert_eq!(reference_use("sd15", false), None);
+        assert_eq!(reference_use("sd15", false, false), None);
     }
 
     fn input(total: u64, free: Option<u64>, llm: u64, image: u64) -> PlanInput {

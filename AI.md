@@ -268,7 +268,11 @@ ru „персонаж/история/сцена“. Fachbegriffe nur im Experte
   wird als PNG ≤ 1024 px geschickt (sd.cpp liest kein WebP). FLUX.2 bekommt es als `extra_images` (Referenzbild, beste
   Wiedererkennung, ~3 min auf 16 GB); andere Familien nur bei Porträt/Selfie per `img2img` (`init_images`,
   `denoising_strength` 0,7 – 0,55 hielt die Pose), bei „Moment“ gar nicht (sonst Porträt-Komposition). Qwen-Image 2.1
-  bräuchte für Referenzbilder `--llm_vision` (nicht im Katalog). Selfie = `generateSceneImage('chat', {kind: 'selfie'})`
+  liest Referenzbilder nur mit seinen Vision-Gewichten: Katalog-`extras` (`Role::LlmVision` → `--llm_vision`, mmproj Q8_0
+  reicht), standardmäßig mitgeladen (`ImageGenConfig.reference_extras`, Frontend reicht die Formularwahl an
+  `list_image_models`/`download_image_model` durch); `sd-server` startet neu, wenn Extras nachträglich dazukommen
+  (`SdProcess.with_extras`). GPU-Test `selfies` (21.10.2026, RTX 4070 Ti SUPER): SD 1.5 img2img 7 s, Qwen-Image mit Vision
+  87 s; bei img2img muss der Prompt das Aussehen nennen (das Chat-Modell bekommt die Figurenbeschreibung). Selfie = `generateSceneImage('chat', {kind: 'selfie'})`
   + `chatSlice.sendSelfie` (Nachricht der Figur „📸“ mit Bildanhang). `attachments::prepare` macht Bilder in Nachrichten
   der Figur immer zu „[Picture sent: …]“ – OpenAI/Anthropic nehmen Bilder nur in Nutzer-Nachrichten.
 - Lokale Vision nur mit gewählter `mmproj`; ohne macht `attachments::prepare` aus Bildern einen Hinweis.

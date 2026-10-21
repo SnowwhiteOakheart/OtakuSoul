@@ -28,14 +28,19 @@ export const LocalImageSettings = ({ config, onChange }: LocalImageSettingsProps
   const [downloading, setDownloading] = useState<string | null>(null);
   const [progress, setProgress] = useState<ImageModelProgress | null>(null);
 
+  // Optional files (Qwen-Image's vision weights for selfies) count as the form shows it.
+  const withExtras = config.reference_extras !== false;
   const refresh = () =>
     api
-      .listImageModels()
+      .listImageModels(withExtras)
       .then(setModels)
       .catch((e: unknown) => toast.error(errorMessage(e)));
 
+  // Reloads only when the choice changes (refresh is recreated every render).
+  // oxlint-disable-next-line react-hooks/exhaustive-deps
+  useEffect(() => void refresh(), [withExtras]);
+
   useEffect(() => {
-    void refresh();
     let unlisten: (() => void) | undefined;
     api
       .onImageModelProgress(setProgress)
@@ -48,7 +53,7 @@ export const LocalImageSettings = ({ config, onChange }: LocalImageSettingsProps
     setDownloading(model.id);
     setProgress(null);
     try {
-      await downloadImageModelTask(model.id, model.name);
+      await downloadImageModelTask(model.id, model.name, withExtras);
       toast.success(translate('localImage.downloaded', { name: model.name }));
       if (!config.local_model_id) onChange({ ...config, local_model_id: model.id });
     } catch (e) {
@@ -87,6 +92,16 @@ export const LocalImageSettings = ({ config, onChange }: LocalImageSettingsProps
             {t('localImage.modelsTitle')}
           </h3>
           <p className="text-xs text-slate-400 mt-0.5">{t('localImage.modelsIntro')}</p>
+          <label className="mt-2 flex items-start gap-2 text-xs text-slate-300">
+            <input
+              type="checkbox"
+              checked={withExtras}
+              onChange={(e) => onChange({ ...config, reference_extras: e.target.checked })}
+              className="mt-0.5 accent-accent-500"
+              data-reference-extras
+            />
+            <span>{t('localImage.referenceExtras')}</span>
+          </label>
         </div>
 
         {!models ? (
@@ -144,6 +159,18 @@ export const LocalImageSettings = ({ config, onChange }: LocalImageSettingsProps
                             <Check className="w-3.5 h-3.5" />
                             {t('localImage.installed')}
                           </span>
+                          {model.extras_missing_bytes > 0 && !isDownloading && (
+                            <button
+                              type="button"
+                              onClick={() => void handleDownload(model)}
+                              disabled={downloading !== null}
+                              className="px-2 py-0.5 rounded-lg border border-accent-500/50 text-accent-200 hover:bg-accent-500/10 disabled:opacity-50 flex items-center gap-1"
+                              data-download-extras
+                            >
+                              <Download className="w-3 h-3" />
+                              {t('localImage.downloadExtras', { size: gb(model.extras_missing_bytes) })}
+                            </button>
+                          )}
                           <button
                             type="button"
                             onClick={() => void handleDelete(model)}

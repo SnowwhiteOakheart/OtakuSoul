@@ -1615,12 +1615,13 @@ export const api = {
     return await invoke<string>('save_stage_background', { filePath });
   },
 
-  listImageModels: async (): Promise<ImageModelInfo[]> => {
-    return await invoke<ImageModelInfo[]>('list_image_models');
+  /** `withExtras`: count optional files (vision weights) as the form shows it; default as saved. */
+  listImageModels: async (withExtras?: boolean): Promise<ImageModelInfo[]> => {
+    return await invoke<ImageModelInfo[]>('list_image_models', { withExtras: withExtras ?? null });
   },
 
-  downloadImageModel: async (modelId: string): Promise<void> => {
-    await invoke('download_image_model', { modelId });
+  downloadImageModel: async (modelId: string, withExtras?: boolean): Promise<void> => {
+    await invoke('download_image_model', { modelId, withExtras: withExtras ?? null });
   },
 
   cancelImageModelDownload: async (): Promise<void> => {

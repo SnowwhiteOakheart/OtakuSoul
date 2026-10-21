@@ -125,14 +125,27 @@ pub fn save_stage_background(file_path: String) -> Result<String, String> {
     crate::modules::image_generator::ImageGenerator::save_stage_background(&file_path)
 }
 
-#[tauri::command]
-pub fn list_image_models() -> Vec<crate::modules::local_image::ImageModelInfo> {
-    crate::modules::local_image::list_models()
+/// Whether a model's optional files count: as the settings form shows it right now, else as saved.
+fn wants_extras(with_extras: Option<bool>) -> bool {
+    with_extras.unwrap_or_else(|| {
+        crate::modules::image_generator::ImageGenerator::load_config().reference_extras
+    })
 }
 
 #[tauri::command]
-pub async fn download_image_model(app: tauri::AppHandle, model_id: String) -> Result<(), String> {
-    crate::modules::local_image::download_model(&app, &model_id).await
+pub fn list_image_models(
+    with_extras: Option<bool>,
+) -> Vec<crate::modules::local_image::ImageModelInfo> {
+    crate::modules::local_image::list_models(wants_extras(with_extras))
+}
+
+#[tauri::command]
+pub async fn download_image_model(
+    app: tauri::AppHandle,
+    model_id: String,
+    with_extras: Option<bool>,
+) -> Result<(), String> {
+    crate::modules::local_image::download_model(&app, &model_id, wants_extras(with_extras)).await
 }
 
 #[tauri::command]

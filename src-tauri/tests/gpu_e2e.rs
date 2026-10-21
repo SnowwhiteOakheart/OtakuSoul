@@ -610,7 +610,7 @@ async fn images() {
     for (id, _) in &selected {
         let started = Instant::now();
         let last = Mutex::new(0u32);
-        local_image::download_model_with(id, &|p| {
+        local_image::download_model_with(id, true, &|p| {
             let step = (p.percent / 10.0) as u32;
             let mut last = last.lock().unwrap();
             if step > *last {
@@ -783,6 +783,58 @@ async fn images() {
     );
 }
 
+/// Selfies keep the character's look: the app's request with the portrait as reference
+/// (Qwen-Image with its vision weights, FLUX.2) or as img2img start (SD 1.5). Pick models with
+/// `OTAKUSOUL_E2E_IMAGES` (default: SD 1.5 and Qwen-Image); images go to `OTAKUSOUL_E2E_OUT`.
+/// `cargo test --test gpu_e2e selfies -- --ignored --nocapture`
+#[tokio::test(flavor = "multi_thread")]
+#[ignore = "needs a GPU and downloads models"]
+async fn selfies() {
+    use otakusoul_lib::modules::local_image::ImageReference;
+    let out = out_dir();
+    ensure_runtime(RuntimeKind::Sd, &["vulkan"]).await;
+    let ids: Vec<String> = std::env::var("OTAKUSOUL_E2E_IMAGES")
+        .map(|s| s.split(',').map(str::to_string).collect())
+        .unwrap_or_else(|_| vec!["counterfeit-v3-sd15".into(), "qwen-image-2.1-q4".into()]);
+    let portrait = std::fs::read(
+        Path::new(env!("CARGO_MANIFEST_DIR")).join("../presets/characters/shiori_amane.png"),
+    )
+    .expect("Porträt");
+    let engine = LocalImageEngine::new();
+    let llama = Arc::new(LlamaServerManager::new());
+    for id in &ids {
+        local_image::download_model_with(id, true, &|_| {})
+            .await
+            .unwrap();
+        let started = Instant::now();
+        let png = engine
+            .generate(
+                &|_| {},
+                llama.clone(),
+                GenerationRequest {
+                    model_id: id,
+                    strategy: VramStrategy::Swap,
+                    // Like the app's prompt writer, which gets the character's description.
+                    prompt: "Selfie of a girl with shoulder-length brown hair, round glasses, beige cardigan and green bow tie, holding her phone in a cozy cafe, cherry blossoms outside the window, smiling, anime illustration",
+                    negative: "lowres, bad anatomy, watermark, text",
+                    seed: 42,
+                    loras: &[],
+                    reference: Some(ImageReference { png: &portrait, img2img: true }),
+                },
+            )
+            .await
+            .unwrap_or_else(|e| panic!("{id}: {e}"));
+        let name = format!("selfie-{id}.png");
+        std::fs::write(out.join(&name), &png).unwrap();
+        assert!(png.starts_with(b"\x89PNG"), "{id}: kein PNG");
+        println!(
+            "[selfie] {id}: {:.0}s → {name}",
+            started.elapsed().as_secs_f32()
+        );
+    }
+    engine.stop().await;
+}
+
 /// LoRAs reach `sd-server` through the app's request: the same seed with and without a LoRA
 /// gives different images; the SD 1.5 tier generates. Downloads the catalog files it needs.
 /// `cargo test --test gpu_e2e loras -- --ignored --nocapture`
@@ -793,7 +845,9 @@ async fn loras() {
     let out = out_dir();
     ensure_runtime(RuntimeKind::Sd, &["vulkan"]).await;
     for id in ["counterfeit-v3-sd15", "animagine-xl-4"] {
-        local_image::download_model_with(id, &|_| {}).await.unwrap();
+        local_image::download_model_with(id, true, &|_| {})
+            .await
+            .unwrap();
     }
     image_loras::download_lora_with("pastel-anime-xl", &|_| {})
         .await

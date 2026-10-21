@@ -1,6 +1,6 @@
 // @vitest-environment jsdom
 import { beforeEach, describe, expect, it, vi } from 'vitest';
-import { render, screen } from '@testing-library/react';
+import { render, screen, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 
 vi.mock('../services/api', async () => (await import('./mockApi')).apiModule);
@@ -18,6 +18,7 @@ const model = (over: Partial<ImageModelInfo>): ImageModelInfo => ({
   family: 'sdxl',
   vram_mb: 7_500,
   download_bytes: 7 * GB,
+  extras_missing_bytes: 0,
   missing_bytes: 7 * GB,
   installed: false,
   license: 'CreativeML Open RAIL++-M',
@@ -70,8 +71,24 @@ describe('LocalImageSettings', () => {
     expect(screen.getByText(/Larger than your graphics card/)).toBeInTheDocument();
 
     await user.click(screen.getByRole('button', { name: 'Download (7.0 GB)' }));
-    expect(api.downloadImageModel).toHaveBeenCalledWith('animagine-xl-4');
+    expect(api.downloadImageModel).toHaveBeenCalledWith('animagine-xl-4', true);
     expect(onChange).toHaveBeenCalledWith(expect.objectContaining({ local_model_id: 'animagine-xl-4' }));
+  });
+
+  it('offers the vision weights for selfies and can leave them out', async () => {
+    const user = userEvent.setup();
+    const qwen = model({ id: 'qwen-image-2.1-q4', name: 'Qwen-Image 2.1', family: 'qwen_image', installed: true, missing_bytes: GB, extras_missing_bytes: GB });
+    vi.mocked(api.listImageModels).mockResolvedValue([qwen]);
+    vi.mocked(api.downloadImageModel).mockResolvedValue(undefined);
+    const onChange = vi.fn();
+    const { rerender } = render(<LocalImageSettings config={config} onChange={onChange} />);
+    await user.click(await screen.findByRole('button', { name: 'Add for selfies (1.0 GB)' }));
+    expect(api.downloadImageModel).toHaveBeenCalledWith('qwen-image-2.1-q4', true);
+    await user.click(screen.getByRole('checkbox', { name: /recognizable selfies/ }));
+    expect(onChange).toHaveBeenCalledWith(expect.objectContaining({ reference_extras: false }));
+    // Switched off, the list is asked without the optional files.
+    rerender(<LocalImageSettings config={{ ...config, reference_extras: false }} onChange={onChange} />);
+    await waitFor(() => expect(api.listImageModels).toHaveBeenLastCalledWith(false));
   });
 
   it('changes the VRAM strategy', async () => {

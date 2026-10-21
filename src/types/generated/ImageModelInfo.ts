@@ -5,9 +5,17 @@
  */
 export type ImageModelInfo = { id: string, name: string, family: string, vram_mb: number, download_bytes: number, 
 /**
- * Bytes still missing (0 when installed).
+ * Bytes still missing (0 when installed), including wanted extras.
  */
-missing_bytes: number, installed: boolean, license: string, 
+missing_bytes: number, 
+/**
+ * The model itself is complete (extras may still be missing).
+ */
+installed: boolean, 
+/**
+ * Size of optional files that are wanted but not there yet (Qwen-Image's vision weights).
+ */
+extras_missing_bytes: number, license: string, 
 /**
  * Largest model that fits this GPU on its own.
  */

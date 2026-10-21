@@ -74,7 +74,7 @@ beforeEach(() => {
     ],
   });
   vi.mocked(api.listImageModels).mockResolvedValue([
-    { id: 'flux1-dev-q5', name: 'FLUX.1', family: 'flux', vram_mb: 10_000, download_bytes: 1, missing_bytes: 0, installed: true, license: '', recommended: true, fits_gpu: true },
+    { id: 'flux1-dev-q5', name: 'FLUX.1', family: 'flux', vram_mb: 10_000, download_bytes: 1, missing_bytes: 0, installed: true, license: '', recommended: true, fits_gpu: true, extras_missing_bytes: 0 },
   ]);
   vi.mocked(api.generateImageAction).mockResolvedValue(image);
   vi.mocked(api.listGeneratedImages).mockResolvedValue([]);
