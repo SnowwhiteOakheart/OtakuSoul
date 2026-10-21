@@ -30,12 +30,11 @@ pub struct StageNpcMemory {
 
 impl StageNpc {
     pub fn localized(&self, lang: &str) -> StageNpc {
-        let Some(translation) = self
-            .extensions
-            .get(crate::modules::characters::I18N_EXTENSION)
-            .and_then(|i18n| i18n.get("translations"))
-            .and_then(|t| t.get(lang))
-        else {
+        let Some(translation) = crate::modules::characters::i18n_translation(
+            self.extensions
+                .get(crate::modules::characters::I18N_EXTENSION),
+            lang,
+        ) else {
             return self.clone();
         };
         let mut loc = self.clone();

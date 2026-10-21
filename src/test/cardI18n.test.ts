@@ -33,10 +33,14 @@ describe('card translations', () => {
     expect(en.extensions.custom_title).toBe('Top idol');
   });
 
-  it('leaves cards without translations unchanged', () => {
-    expect(localizeCard(card, 'ru')).toBe(card);
+  it('shows the English translation where the language has none, the source text in the source language', () => {
+    expect(localizeCard(card, 'ja')).toEqual(localizeCard(card, 'en'));
+    expect(localizeCard(card, 'de')).toBe(card);
     const plain = { ...card, extensions: {} };
     expect(localizeCard(plain, 'en')).toBe(plain);
+    // Without a declared source language the base text may already be the one asked for.
+    const unknown = { ...card, extensions: { otakusoul_i18n: { translations: { en: { description: 'An idol.' } } } } };
+    expect(localizeCard(unknown, 'ja')).toBe(unknown);
   });
 
   it('maps reply language names to codes', () => {

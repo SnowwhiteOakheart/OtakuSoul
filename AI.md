@@ -200,7 +200,7 @@ ru „персонаж/история/сцена“. Fachbegriffe nur im Experte
   ignoriert). Backend `modules/ui_locales.rs` (`list_ui_languages`, `load_ui_language`, `open_ui_locales_folder` legt
   `_template.json` aus Englisch an; `ui_text` für das Tray-Menü). Frontend: Deutsch ist eingebaut und Typquelle
   (`i18n/types.ts` → `TranslationKey` aus `de.json`), andere Sprachen lädt `loadLocale` über das Backend;
-  `t()` fällt `Sprache → __meta.fallback → Deutsch → Schlüssel` zurück. Sprachlisten nie hart verdrahten, sondern
+  `t()` fällt `Sprache → __meta.fallback → Englisch → Deutsch → Schlüssel` zurück (Englisch lädt `loadLocale` mit; Backend `ui_text` gleich). Inhalte mit `otakusoul_i18n` nehmen ohne eigene Übersetzung die englische (`characters::i18n_translation` / `cardI18n.pickTranslation`), außer in der angegebenen `source_language`; Hub-Registry-Texte (Grundtext Deutsch) ebenso (`registryText`), Startvorschläge `choices[lang] → en`. Sprachlisten nie hart verdrahten, sondern
   `availableLanguages` aus dem Store nutzen; `refreshLanguages` liest Dateien neu (`localeRevision` rendert neu).
   Neue Schlüssel in **allen drei** mitgelieferten JSON-Dateien ergänzen (`src/test/i18n.test.ts` prüft Vollständigkeit
   und Platzhalter); `npm run i18n:check [-- datei.json]` prüft fremde Übersetzungen.

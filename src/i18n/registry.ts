@@ -70,6 +70,8 @@ export async function loadLocale(lang: SupportedLanguage, options: LoadLocaleOpt
   LOCALES[lang] = (await api.loadUiLanguage(lang)) as Partial<TranslationDictionary>;
   const next = FALLBACKS[lang];
   if (next && next !== 'de' && next !== lang) await loadLocale(next, { force }).catch(() => {});
+  // Texts a language lacks show in English before German (see `t`).
+  if (lang !== 'en' && next !== 'en') await loadLocale('en', { force }).catch(() => {});
 }
 
 /** Drops every loaded language except German's built-in texts (after files changed or were removed). */

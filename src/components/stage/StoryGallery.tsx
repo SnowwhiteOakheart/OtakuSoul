@@ -308,7 +308,7 @@ const StoryPreview = ({ scene, onClose, onPlay }: { scene: ScenePreview; onClose
   const kindId = kindOf(scene);
   const kind = KINDS[kindId];
   const story = scene.story;
-  const ideas = story ? (story.choices[appLanguage] ?? story.choices.de ?? []) : [];
+  const ideas = story ? (story.choices[appLanguage] ?? story.choices.en ?? story.choices.de ?? []) : [];
   const isActive = stageState?.definition.id === scene.id;
 
   const run = async (action: () => Promise<unknown>) => {

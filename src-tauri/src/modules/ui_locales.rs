@@ -324,7 +324,7 @@ pub fn load_language(id: &str) -> Option<HashMap<String, String>> {
     load_merged(&Dirs::current(), id).map(|merged| merged.file.texts)
 }
 
-/// A single interface text for the backend (tray menu): `lang`, its fallback, German.
+/// A single interface text for the backend (tray menu): `lang`, its fallback, English, German.
 pub fn ui_text(lang: &str, key: &str) -> Option<String> {
     let dirs = Dirs::current();
     let own = load_merged(&dirs, lang);
@@ -335,7 +335,7 @@ pub fn ui_text(lang: &str, key: &str) -> Option<String> {
     // Same order as `t()` in the frontend.
     fallback
         .into_iter()
-        .chain(["de".to_string()])
+        .chain(["en".to_string(), "de".to_string()])
         .filter(|id| id.as_str() != lang)
         .find_map(|id| load_merged(&dirs, &id)?.file.texts.remove(key))
 }

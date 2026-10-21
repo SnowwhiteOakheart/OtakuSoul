@@ -38,6 +38,27 @@ pub struct CharacterData {
 /// it (e.g. imported from the web) simply use their base fields in every language.
 pub const I18N_EXTENSION: &str = "otakusoul_i18n";
 
+/// The translation for `lang` in an `otakusoul_i18n` extension: the language's own, otherwise
+/// the English one (understood most widely) – unless `lang` is the declared source language, whose
+/// text is the base itself. `None` keeps the base text.
+pub fn i18n_translation<'a>(
+    i18n: Option<&'a serde_json::Value>,
+    lang: &str,
+) -> Option<&'a serde_json::Value> {
+    let i18n = i18n?;
+    let translations = i18n.get("translations")?;
+    if let Some(own) = translations.get(lang) {
+        return Some(own);
+    }
+    let source = i18n
+        .get("source_language")
+        .and_then(serde_json::Value::as_str)?;
+    if source == lang || source == "en" || lang == "en" {
+        return None;
+    }
+    translations.get("en")
+}
+
 /// Text fields a translation may override; empty or missing ones fall back to the base card.
 const TRANSLATABLE_TEXT: [&str; 9] = [
     "name",
@@ -54,11 +75,7 @@ const TRANSLATABLE_TEXT: [&str; 9] = [
 impl CharacterData {
     /// The card with its fields in `lang` (ISO 639-1) where a translation exists.
     pub fn localized(&self, lang: &str) -> CharacterData {
-        let Some(translation) = self
-            .extensions
-            .get(I18N_EXTENSION)
-            .and_then(|i18n| i18n.get("translations"))
-            .and_then(|translations| translations.get(lang))
+        let Some(translation) = i18n_translation(self.extensions.get(I18N_EXTENSION), lang)
             .and_then(serde_json::Value::as_object)
         else {
             return self.clone();
@@ -1250,6 +1267,23 @@ mod tests {
     use super::*;
 
     #[test]
+    fn missing_translations_fall_back_to_english_not_to_the_source() {
+        let i18n = serde_json::json!({
+            "source_language": "de",
+            "translations": { "en": { "name": "Bell" }, "ru": { "name": "Колокол" } }
+        });
+        let pick = |lang| i18n_translation(Some(&i18n), lang).and_then(|t| t["name"].as_str());
+        assert_eq!(pick("ru"), Some("Колокол"));
+        // Japanese has none: English rather than the German base.
+        assert_eq!(pick("ja"), Some("Bell"));
+        // German is the source: its base text.
+        assert_eq!(pick("de"), None);
+        // Without a declared source the base stays (it may be the language asked for).
+        let unknown = serde_json::json!({ "translations": { "en": { "name": "Bell" } } });
+        assert!(i18n_translation(Some(&unknown), "ja").is_none());
+    }
+
+    #[test]
     fn localizes_cards_and_falls_back_to_base_fields() {
         let card: CharacterData = serde_json::from_value(serde_json::json!({
             "name": "Ayu",
@@ -1278,8 +1312,10 @@ mod tests {
         assert_eq!(en.tags, vec!["Idol", "English"]);
         assert_eq!(en.extensions["sow_title"], "Top idol");
         assert_eq!(en.extensions["custom_title"], "Top idol");
-        // Languages without a translation (and plain imported cards) are unchanged.
-        assert_eq!(card.localized("ru").description, "Ein Idol.");
+        // A language without a translation gets the English one, not the German base.
+        assert_eq!(card.localized("ru").description, "An idol.");
+        assert_eq!(card.localized("de").description, "Ein Idol.");
+        // Plain imported cards are unchanged.
         let plain = CharacterData {
             description: "Plain".into(),
             ..Default::default()

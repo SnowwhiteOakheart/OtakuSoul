@@ -111,7 +111,14 @@ pub fn build_initial_scene_state(def: &SceneDefinition) -> SceneState {
         chat_log: vec![initial_msg],
         pending_choices: match def
             .story_info()
-            .and_then(|story| story.choices.get(&lang_code).cloned())
+            // Suggestions in the reply language, else the English ones.
+            .and_then(|story| {
+                story
+                    .choices
+                    .get(&lang_code)
+                    .or_else(|| story.choices.get("en"))
+                    .cloned()
+            })
             .filter(|choices| !choices.is_empty())
         {
             Some(choices) => choices,

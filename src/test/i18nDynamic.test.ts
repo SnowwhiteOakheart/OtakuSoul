@@ -11,15 +11,22 @@ afterEach(() => {
 });
 
 describe('languages from JSON files', () => {
-  it('loads a language the app does not ship and fills gaps from its fallback, then German', async () => {
+  it('loads a language the app does not ship and fills gaps from its fallback, then English', async () => {
     const load = vi.spyOn(api, 'loadUiLanguage').mockResolvedValue({ 'nav.chat': 'Czat' });
     await loadLocale('pl', { fallback: 'en' });
     expect(load).toHaveBeenCalledWith('pl');
     expect(t('nav.chat', 'pl')).toBe('Czat');
     // en is loaded in the test setup and stands in before German.
     expect(t('nav.characters', 'pl')).toBe('Characters');
+    // Without an own fallback English stands in as well, not German.
     delete FALLBACKS.pl;
+    expect(t('nav.characters', 'pl')).toBe('Characters');
+    // Only a text English lacks too comes from German.
+    const english = LOCALES.en as Record<string, string>;
+    const kept = english['nav.characters']!;
+    delete english['nav.characters'];
     expect(t('nav.characters', 'pl')).toBe('Charaktere');
+    english['nav.characters'] = kept;
   });
 
   it('keeps a loaded language until it is reread', async () => {

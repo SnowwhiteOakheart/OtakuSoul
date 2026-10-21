@@ -17,10 +17,11 @@ const reference = () => LOCALES.de as Record<string, string>;
 
 /**
  * Translates `key` into `lang`, falling back to the language's own fallback (`__meta.fallback`),
- * then German and then to the key itself. Placeholders are written as `{{name}}`.
+ * then English (understood most widely), then German (the complete reference) and then to the
+ * key itself. Placeholders are written as `{{name}}`.
  */
 export function t(key: TranslationKey | string, lang: SupportedLanguage = 'de', vars?: TranslationVars): string {
-  const text = lookup(lang, key) ?? lookup(FALLBACKS[lang], key) ?? reference()[key] ?? key;
+  const text = lookup(lang, key) ?? lookup(FALLBACKS[lang], key) ?? lookup('en', key) ?? reference()[key] ?? key;
   return interpolate(text, vars);
 }
 
@@ -37,7 +38,7 @@ export function tPlural(base: string, count: number, lang: SupportedLanguage = '
     // A tag the browser doesn't know: `_other` is always there.
   }
   const plural = `${base}_${category}`;
-  const known = lookup(lang, plural) ?? lookup(FALLBACKS[lang], plural) ?? reference()[plural];
+  const known = lookup(lang, plural) ?? lookup(FALLBACKS[lang], plural) ?? lookup('en', plural) ?? reference()[plural];
   const key = known !== undefined ? plural : `${base}_other`;
   return t(key, lang, { count, ...vars });
 }
