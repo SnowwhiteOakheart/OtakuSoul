@@ -3697,6 +3697,9 @@
   "onboarding.addVision": "Bilder verstehen ({{size}})",
   "settings.mmprojDownload": "Passende Vision-Datei für dieses Modell laden ({{size}})",
   "proactive.dreams": "Von Träumen erzählen",
-  "proactive.dreamsHint": "Startest du die App nach einer langen Pause (ab 8 Stunden), erzählt die Figur zuerst von einem Traum aus älteren gemeinsamen Erinnerungen. Er landet auch in ihrem Tagebuch.",
-  "dreams.diaryTitle": "Traum vom {{date}}"
+  "proactive.dreamsHint": "Startest du die App nach einer langen Pause (ab 8 Stunden), erzählt die Figur zuerst von einem Traum aus älteren gemeinsamen Erinnerungen – sobald es mindestens drei gibt. Er landet auch in ihrem Tagebuch.",
+  "dreams.diaryTitle": "Traum vom {{date}}",
+  "proactive.dreamImage": "Ein Bild vom Traum mitschicken",
+  "proactive.dreamImageHint": "Die Bildgenerierung zeichnet die erzählte Traumszene, die Figur bleibt nach ihrem Porträt erkennbar. Braucht je nach Modell einige Minuten.",
+  "dream.fileName": "Traumbild"
 }

@@ -103,4 +103,8 @@ async function writeIfDue(startup: boolean, decided: () => void) {
   if (reason.kind === 'idle' && proactive.with_selfie) {
     await useAppStore.getState().sendSelfie().catch((e) => console.warn('Selfie on their own failed:', e));
   }
+  // A picture of the dream, drawn from what was told (it takes a while).
+  if (reason.kind === 'dream' && proactive.dream_image) {
+    await useAppStore.getState().sendDreamPicture(stored.content).catch((e) => console.warn('Dream picture failed:', e));
+  }
 }

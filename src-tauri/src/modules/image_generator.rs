@@ -163,6 +163,9 @@ fn image_kind(kind: &str) -> &'static str {
         "moment" => {
             "moment of the story (the character in the surroundings, showing the current action and mood; medium or wide shot, not a close-up)"
         }
+        "dream" => {
+            "dream the character just told about (the scene of the dream, surreal and dreamlike, soft glowing light; the character may appear in it)"
+        }
         "selfie" => {
             "selfie the character takes of themselves right now and sends to a friend (holding the phone, looking at the camera, where they are and what they do in the recent story; casual and personal)"
         }
@@ -1028,6 +1031,7 @@ mod tests {
         assert!(image_kind("moment").starts_with("moment of the story"));
         assert!(image_kind("scene").starts_with("scene"));
         assert!(image_kind("selfie").starts_with("selfie"));
+        assert!(image_kind("dream").starts_with("dream"));
         assert!(image_kind("portrait").starts_with("character portrait"));
         assert!(image_kind("").starts_with("character portrait"));
     }

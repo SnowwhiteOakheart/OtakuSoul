@@ -386,8 +386,11 @@ ru „персонаж/история/сцена“. Fachbegriffe nur im Experte
   Der Mock reicht die Anweisung nicht als `system`-Rolle durch: E2E `chat-proactive.mjs` sucht rollenunabhängig.
   Träume (`proactive.dreams`, Standard an): `kind: 'dream'` nur beim ersten Check, der bis zur Entscheidung kommt (mit lokaler
   KI ggf. erst, wenn ihr Server läuft), ab 8 h Pause, nach fälligen Vorhaben; `get_dream_memories` liefert zufällige aktive
-  Erinnerungen ohne die 5 neuesten (bei wenigen: alle), ohne Erinnerungen wird es eine normale Nachricht. Der Traum geht
-  zusätzlich per `add_diary_entry` ins Tagebuch (Stimmung `dreamy`). E2E `chat-dream.mjs`.
+  Erinnerungen ohne die 5 neuesten und **nichts unter 3 aktiven Erinnerungen** (`DREAM_MIN_MEMORIES`) – dann wird es höchstens
+  eine normale Nachricht. Der Traum geht zusätzlich per `add_diary_entry` ins Tagebuch (Stimmung `dreamy`). Traumbild
+  (`proactive.dream_image`, Standard aus): `chatSlice.sendDreamPicture` → `generateSceneImage('chat', {kind: 'dream', story})`
+  (Prompt aus dem Traumtext, Referenz der Figur ohne img2img, eigene Komposition), Nachricht „🌙“ mit `Traumbild.png`;
+  Selfie und Traumbild teilen `sendPicture`. E2E `chat-dream.mjs`.
 
 ### 4. Stage (Rollenspiel), GM-Director, NPCs & Story-Galerie
 

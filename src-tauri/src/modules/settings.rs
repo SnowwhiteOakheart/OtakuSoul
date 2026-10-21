@@ -103,6 +103,8 @@ pub struct ProactiveSettings {
     /// After a long pause the first message on start is a dream woven from older memories
     /// (also kept in the diary).
     pub dreams: bool,
+    /// The dream comes with a picture of it (uses the image engine).
+    pub dream_image: bool,
     /// Characters that never write on their own.
     pub muted_character_ids: Vec<String>,
     /// Messages already sent, newest last (the app keeps the latest few).
@@ -120,6 +122,7 @@ impl Default for ProactiveSettings {
             notify: true,
             with_selfie: false,
             dreams: true,
+            dream_image: false,
             muted_character_ids: Vec::new(),
             sent: Vec::new(),
         }

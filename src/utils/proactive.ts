@@ -12,6 +12,7 @@ export const PROACTIVE_DEFAULTS: ProactiveSettings = {
   notify: true,
   with_selfie: false,
   dreams: true,
+  dream_image: false,
   muted_character_ids: [],
   sent: [],
 };

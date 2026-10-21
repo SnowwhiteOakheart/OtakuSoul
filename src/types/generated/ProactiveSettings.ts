@@ -32,6 +32,10 @@ with_selfie: boolean,
  */
 dreams: boolean, 
 /**
+ * The dream comes with a picture of it (uses the image engine).
+ */
+dream_image: boolean, 
+/**
  * Characters that never write on their own.
  */
 muted_character_ids: Array<string>, 

@@ -108,6 +108,14 @@ describe('generateSceneImage', () => {
     expect(useAppStore.getState().chatSceneImages).toEqual({});
   });
 
+  it('draws a dream from its text, with the character as reference but its own composition', async () => {
+    vi.mocked(api.writeImagePrompt).mockResolvedValue('Ayu in a lighthouse of glass');
+    await useAppStore.getState().generateSceneImage('chat', { kind: 'dream', story: ['Ich habe von einem Leuchtturm geträumt.'] });
+    expect(vi.mocked(api.writeImagePrompt).mock.calls.at(-1)![0]).toMatchObject({ kind: 'dream', context: ['Ich habe von einem Leuchtturm geträumt.'] });
+    expect(api.generateImageAction).toHaveBeenLastCalledWith('Ayu in a lighthouse of glass', null, config, { character_id: 'ayu', portrait: false });
+    expect(useAppStore.getState().chatSceneImages).toEqual({});
+  });
+
   it('falls back to the template prompt when the chat model is not available', async () => {
     useAppStore.setState({ serverStatus: { ...useAppStore.getState().serverStatus, state: 'stopped' } });
     vi.mocked(api.buildCharacterImagePrompt).mockResolvedValue('1girl, Ayu');

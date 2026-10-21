@@ -96,6 +96,8 @@ export interface ChatSlice {
    * engine, other chat meanwhile); failures are thrown.
    */
   sendSelfie: () => Promise<StoredChatMessage | null>;
+  /** A picture of the dream the character just told (`dream` = its text), as their message. */
+  sendDreamPicture: (dream: string) => Promise<StoredChatMessage | null>;
   /** Invites characters into a chat or removes them (group chat); throws on failure. */
   setChatMembers: (chatId: string, members: string[]) => Promise<void>;
   /** Who writes the running (or last) reply: '' = the chat's own character, else a guest's ID. */
@@ -390,6 +392,26 @@ export const createChatSlice: SliceCreator<ChatSlice> = (set, get) => {
       generationId: null, generationFailure: null, streamingText: '', streamingThought: '', isChatLoading: true, chatLoadError: null });
     return request;
   };
+  /**
+   * A picture the character sends as their message: a selfie from the recent chat, or a dream
+   * picture from the dream's text. Null when no picture came (no image engine, other chat).
+   */
+  const sendPicture = async (kind: 'selfie' | 'dream', story?: string[]): Promise<StoredChatMessage | null> => {
+    const { activeChatId: chatId, activeCharacter } = get();
+    if (!chatId || !activeCharacter) return null;
+    const image = await get().generateSceneImage('chat', { kind, story });
+    if (!image) return null;
+    const data = image.base64_data_url.slice(image.base64_data_url.indexOf(',') + 1);
+    const name = translate(kind === 'dream' ? 'dream.fileName' : 'selfie.fileName');
+    const attachment = await api.saveAttachment(chatId, `${name}.png`, data);
+    // A caption in no language: the bubble with its actions needs some text.
+    const stored = await api.addChatMessage(chatId, 'assistant', kind === 'dream' ? '🌙' : '📸', null, [attachment]);
+    if (isCurrentContext(chatId, activeCharacter.id)) {
+      const storedMessages = [...get().storedMessages, stored];
+      set({ storedMessages, messages: storedMessages.map(toFlat) });
+    }
+    return stored;
+  };
   const isSessionCurrent = (request: number, charId: string | undefined) =>
     request === sessionRequest && get().activeCharacter?.id === charId;
   return ({
@@ -529,21 +551,10 @@ export const createChatSlice: SliceCreator<ChatSlice> = (set, get) => {
     }
   },
 
-  sendSelfie: async () => {
-    const { activeChatId: chatId, activeCharacter } = get();
-    if (!chatId || !activeCharacter) return null;
-    const image = await get().generateSceneImage('chat', { kind: 'selfie' });
-    if (!image) return null;
-    const data = image.base64_data_url.slice(image.base64_data_url.indexOf(',') + 1);
-    const attachment = await api.saveAttachment(chatId, `${translate('selfie.fileName')}.png`, data);
-    // A caption in no language: the bubble with its actions needs some text.
-    const stored = await api.addChatMessage(chatId, 'assistant', '📸', null, [attachment]);
-    if (isCurrentContext(chatId, activeCharacter.id)) {
-      const storedMessages = [...get().storedMessages, stored];
-      set({ storedMessages, messages: storedMessages.map(toFlat) });
-    }
-    return stored;
-  },
+  sendSelfie: () => sendPicture('selfie'),
+
+  sendDreamPicture: (dream) => sendPicture('dream', [dream]),
+
 
   translateText: async (text) => {
     const state = get();

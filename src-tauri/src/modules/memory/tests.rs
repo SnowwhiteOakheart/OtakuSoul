@@ -2059,14 +2059,18 @@ fn cleanup_groups_need_two_known_memories_each_once() {
 }
 
 #[test]
-fn dreams_mix_older_memories_and_fall_back_to_what_there_is() {
+fn dreams_need_real_memories_and_prefer_older_ones() {
     let db = MemoryDb::new_in_memory().unwrap();
     db.add_episodic_memory("ayu", "event", "Erster Ausflug ans Meer", 3)
         .unwrap();
     db.add_episodic_memory("ayu", "fact", "Kai mag Gewitter", 2)
         .unwrap();
-    // Few memories: the dream takes what there is.
-    assert_eq!(db.dream_memories("ayu", 3).unwrap().len(), 2);
+    // Two memories are not enough to dream of.
+    assert!(db.dream_memories("ayu", 3).unwrap().is_empty());
+    db.add_episodic_memory("ayu", "fact", "Kai trinkt Jasmintee", 2)
+        .unwrap();
+    // Three: the dream takes what there is.
+    assert_eq!(db.dream_memories("ayu", 3).unwrap().len(), 3);
     for i in 0..8 {
         db.add_episodic_memory("ayu", "event", &format!("Neues Erlebnis {i}"), 3)
             .unwrap();

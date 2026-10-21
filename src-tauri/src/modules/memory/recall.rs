@@ -31,6 +31,8 @@ const CORE_UNPINNED: usize = 5;
 const MAX_RELEVANT: usize = 10;
 /// Newest memories a dream leaves out (the chat already knows them).
 const DREAM_SKIP_NEWEST: i64 = 5;
+/// Memories a character needs before dreaming of them.
+const DREAM_MIN_MEMORIES: i64 = 3;
 
 /// Frequent words that say nothing about a topic (German, English, Russian; three letters or more).
 const STOPWORDS: &[&str] = &[
@@ -269,7 +271,8 @@ impl MemoryDb {
     }
 
     /// Random active memories for a dream: older ones first (the newest few are what the chat
-    /// already knows); a character with few memories dreams of what there is.
+    /// already knows). Empty while the character has fewer than `DREAM_MIN_MEMORIES`: a dream
+    /// needs something real to weave.
     pub fn dream_memories(
         &self,
         char_id: &str,
@@ -291,8 +294,16 @@ impl MemoryDb {
             )?
             .collect()
         };
+        let count: i64 = conn.query_row(
+            "SELECT COUNT(*) FROM soul_episodic_memory WHERE character_id = ?1 AND superseded_at IS NULL",
+            params![char_id],
+            |row| row.get(0),
+        )?;
+        if count < DREAM_MIN_MEMORIES {
+            return Ok(Vec::new());
+        }
         let older = pick(DREAM_SKIP_NEWEST)?;
-        if older.len() >= limit.min(2) {
+        if older.len() >= limit.min(DREAM_MIN_MEMORIES as usize) {
             Ok(older)
         } else {
             pick(0)

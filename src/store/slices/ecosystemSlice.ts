@@ -52,12 +52,13 @@ export interface EcosystemSlice {
    * recent story, then generates the image. In the stage it becomes the scene background. In the
    * chat `kind` picks a portrait (default) or the moment of the story; `upToMessageId` ends the
    * story at that message ("this moment as a picture"); `selfie` is a picture the character
-   * sends (it goes into the chat as a message, see `sendSelfie`, not onto the scene card). In the
-   * chat the character's picture keeps their look.
+   * sends and `dream` one of a dream they told (`story` = its text); both go into the chat as a
+   * message (see `sendPicture`), not onto the scene card. In the chat the character's picture
+   * keeps their look.
    */
   generateSceneImage: (
     target: 'chat' | 'stage',
-    options?: { kind?: 'portrait' | 'moment' | 'selfie'; upToMessageId?: string },
+    options?: { kind?: 'portrait' | 'moment' | 'selfie' | 'dream'; upToMessageId?: string; story?: string[] },
   ) => Promise<GeneratedImageResult | null>;
   /** Makes a chat scene image the chat's background (copied into the Stage backgrounds). */
   setSceneImageAsBackground: (chatId: string) => Promise<void>;
@@ -211,9 +212,10 @@ export const createEcosystemSlice: SliceCreator<EcosystemSlice> = (set, get) => 
         const userName = state.activePersona.name;
         subject = character.name;
         description = fillCardMacros(character.description, character.name, userName);
-        // The last six turns, up to the chosen message ("this moment") or the end of the chat.
+        // The last six turns, up to the chosen message ("this moment") or the end of the chat;
+        // a dream brings its own text instead.
         const end = options.upToMessageId ? state.storedMessages.findIndex((m) => m.id === options.upToMessageId) + 1 : 0;
-        context = (end > 0 ? state.storedMessages.slice(0, end) : state.messages)
+        context = options.story ?? (end > 0 ? state.storedMessages.slice(0, end) : state.messages)
           .filter((m) => m.role !== 'system')
           .slice(-6)
           .map((m) => `${m.role === 'user' ? userName : character.name}: ${fillCardMacros(m.content, character.name, userName)}`);
@@ -257,11 +259,12 @@ export const createEcosystemSlice: SliceCreator<EcosystemSlice> = (set, get) => 
       // The character's picture keeps their look; a moment keeps its own composition.
       const kind = options.kind ?? 'portrait';
       const reference = target === 'chat' && state.activeCharacter
-        ? { character_id: state.activeCharacter.id, portrait: kind !== 'moment' }
+        ? { character_id: state.activeCharacter.id, portrait: kind === 'portrait' || kind === 'selfie' }
         : null;
       const res = await get().generateImageAction(prompt, null, config, reference);
       if (!res) return null;
-      if (kind === 'selfie') return res;
+      // Selfies and dream pictures go into the chat as messages, not onto the scene card.
+      if (kind === 'selfie' || kind === 'dream') return res;
       if (target === 'stage' && state.stageState) {
         const name = await api.saveStageBackground(res.file_path);
         const current = get().stageState ?? state.stageState;
