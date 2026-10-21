@@ -27,7 +27,7 @@ try {
   await jsClick(await browser.$('button=Charakter einladen'));
   const picker = await browser.$('[data-guest-picker]');
   await picker.waitForDisplayed({ timeout: 5000 });
-  await picker.$('input[type="search"]').setValue('Emil');
+  await picker.$('input[type="search"]').setValue('Lirw');
   await jsClick(await picker.$('button*=Lirwen'));
   await browser.$(`[data-guest="${lirwen.id}"]`).waitForDisplayed({ timeout: 5000 });
   await browser.$('[data-guest-avatars]').waitForExist({ timeout: 5000 });
