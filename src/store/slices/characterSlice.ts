@@ -114,9 +114,12 @@ export const createCharacterSlice: SliceCreator<CharacterSlice> = (set, get) => 
       streamingThought: '',
     });
     get().saveCurrentSettings();
+    // The voice loads alongside, not after the chats and the memory (the voice dialog and
+    // read-aloud need it right away).
+    const voice = get().loadVoiceConfigForCharacter(character.id);
     await get().loadChatSessions(character.id);
     await get().fetchCognitiveOverview(character.id, get().activePersona.name);
-    await get().loadVoiceConfigForCharacter(character.id);
+    await voice;
   },
 
   refreshCharacters: async (preferredId) => {

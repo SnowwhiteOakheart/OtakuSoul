@@ -120,16 +120,19 @@ export function CharacterVoiceModal({ onClose, target, embedded = false, autoSav
     if (!targetId && activeVoiceConfig && !touched.current) setDraft(activeVoiceConfig);
   }, [activeVoiceConfig, targetId]);
   /* oxlint-enable react/set-state-in-effect */
+  // The saved profile is read directly: right after the start the store may not have the active
+  // character's voice yet, and a draft from the defaults would overwrite it on saving.
+  const loadId = targetId ?? activeCharacter?.id;
   useEffect(() => {
-    if (!targetId) return;
+    if (!loadId) return;
     let subscribed = true;
-    api.getCharacterVoiceConfig(targetId).then((config) => {
-      if (subscribed && config) setDraft(config);
+    api.getCharacterVoiceConfig(loadId).then((config) => {
+      if (subscribed && config && !touched.current) setDraft(config);
     }).catch(() => {});
     return () => {
       subscribed = false;
     };
-  }, [targetId]);
+  }, [loadId]);
 
   useEffect(() => {
     // Local voices come with the model catalog (LocalTtsSettings).

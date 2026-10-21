@@ -20,14 +20,14 @@ try {
   // The app loaded the voice before it was written here: reload so the dialog starts from it.
   await browser.refresh();
   await browser.$('textarea[aria-label="Nachricht"]').waitForDisplayed({ timeout: 30_000 });
-  // Every Audio element the page creates is kept, so the played source can be inspected.
+  // Every source the page plays is recorded. The player creates its Audio element only once
+  // (possibly before this hook), so `play()` is watched instead of `new Audio()`.
   await browser.execute(() => {
-    const Original = window.Audio;
-    window.__audios = [];
-    window.Audio = function (src) {
-      const audio = new Original(src);
-      window.__audios.push(audio);
-      return audio;
+    window.__played = [];
+    const play = HTMLMediaElement.prototype.play;
+    HTMLMediaElement.prototype.play = function (...args) {
+      window.__played.push(this.src);
+      return play.apply(this, args);
     };
   });
 
@@ -43,10 +43,10 @@ try {
 
   // The player got a rendered WAV: longer than the plain clip (reverb tail), not the original.
   await browser.waitUntil(
-    () => browser.execute(() => (window.__audios ?? []).some((a) => a.src.startsWith('data:audio/wav'))),
+    () => browser.execute(() => (window.__played ?? []).some((src) => src.startsWith('data:audio/wav'))),
     { timeout: 15_000, timeoutMsg: 'Nichts abgespielt' },
   );
-  const played = await browser.execute(() => (window.__audios ?? []).map((a) => a.src).find((s) => s.startsWith('data:audio/wav')));
+  const played = await browser.execute(() => (window.__played ?? []).find((src) => src.startsWith('data:audio/wav')));
   assert.notEqual(played, plain, 'Effekte nicht angewendet');
   assert.ok(played.length > plain.length, 'Bearbeiteter Clip nicht länger (Hall-Ausklang fehlt)');
 
