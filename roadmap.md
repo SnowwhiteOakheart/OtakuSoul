@@ -1,6 +1,6 @@
 # 🗺️ OtakuSoul – Roadmap (offen)
 
-> Stand: 20.10.2026. Diese Datei ist die **einzige** Liste offener Punkte; `roadmap_abgeschlossen.md` (nur lokal, nicht im
+> Stand: 21.10.2026. Diese Datei ist die **einzige** Liste offener Punkte; `roadmap_abgeschlossen.md` (nur lokal, nicht im
 > Repository) enthält alles Erledigte (Portierung Phasen 1–18, Verbesserungen, Sprachausgabe, Neutralisierung, optionale Inhalte, Qualität &
 > Bedienung, 5e-Regeln, 3D-Figuren aus Spielen, Bedienbarkeit & Story-Einstieg, Avatar-Manager, Oberflächensprachen, Chat-Erweiterungen,
 > Kognitives Gedächtnis 2.0 sowie FSK18/NSFW-Grundintegration). Sie ersetzt alle früheren separaten Roadmap-Dateien.
@@ -170,4 +170,13 @@
 ### 💌 Tagebuch-Synchronisation & Cozy-Lebensbegleiter (Real-Life Companion)
 - [ ] **Cozy Focus- & Pomodoro-Modus:** Fokus-Timer (inspiriert von *Spirit City: Lofi Sessions*), bei dem der 3D/2D-Avatar am Schreibtisch mitarbeitet, liest oder Musik hört, Pausen ankündigt und erledigte Aufgaben feiert.
 - [ ] **Abend-Reflexion & Monatsrückblick:** Optionaler Journaling-Modus, in dem die Figur den Tag mit dem Nutzer reflektiert, Gewohnheiten (`habits` / `plans`) spielerisch begleitet und am Monatsende einen persönlichen Rückblick verfasst.
+
+### 🎙️ Echtzeit-Sprachdialog, Berührung & Visuelle Wahrnehmung (Ideen aus *Open-LLM-VTuber*)
+- [ ] **Natürliches Unterbrechen im Sprachanruf (Hands-Free Barge-In & Silero-VAD):** Im Telefon-Modus (`VoiceCallControls.tsx`) lauscht das Mikrofon per Echounterdrückung auch während die Figur spricht; fällt der Nutzer ihr ins Wort, stoppen TTS und Generierung sofort und markieren die Stelle im Kontext als unterbrochen. Optional Silero-VAD (ONNX/WASM) statt reinem RMS-Pegel (`voiceCapture.ts`), um Tastaturklappern und Atemgeräusche von echter Stimme zu unterscheiden.
+- [ ] **Visuelle Wahrnehmung („Mitguck-Modus“ für Bildschirm & Webcam):** Optionaler Live-Blick bei Sprachanrufen oder für das Desktop-Pet, der bei Vision-fähigen Modellen einen heruntergerechneten Snapshot des aktiven Fensters oder der Webcam mitschickt, damit die Figur auf das aktuelle Geschehen reagieren kann.
+- [ ] **Körperzonen-abhängige Touch-Reaktionen (Headpat & Tap-Feedback):** Unterscheidung der getroffenen Zone bei Live2D (`hitTest` auf `Head`, `Face`, `Body`) und 3D-Avataren (Raycasting auf Kopf/Körper) mit direkter Kopplung an das Hormonsystem (`companion.rs`: Oxytocin-Anstieg & Wangenröte bei Kopfstreicheln) sowie optionalem Kurz-Kommentar der Figur.
+- [ ] **Satzweiser „Bubble-Sync“ (Audio-synchrone Sprechblasen & Stimmungswechsel):** Lange Antworten im Desktop-Pet oder Stage-Modus Satz für Satz exakt synchron zum abgespielten TTS-Audio in der Sprechblase einblenden, inklusive satzweisem Wechsel des Gesichtsausdrucks (`[emotion: …]`).
+- [ ] **OBS- / Streaming-Overlay-Modus:** Die transparente `/desktop-pet`-Route über den eingebauten Web-Server (`web_server.rs`) auch als Browser-Source für OBS nutzbar machen.
+- [ ] **Kompakter „Audio-Prüfstand“ in den Spracheinstellungen:** Ein 1-Klick-Selbsttest („Einmal reinsprechen → VAD-Auslösung sehen → Whisper-Transkript lesen → Figur spricht es als Echo mit Lip-Sync nach“), damit Einsteiger Mikrofon, Spracherkennung und Stimmklon an einer Stelle prüfen können.
+
 
