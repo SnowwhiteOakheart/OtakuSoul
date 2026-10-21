@@ -10,6 +10,8 @@ import { proactiveInstruction, proactiveReason } from '../utils/proactive';
 /** First look shortly after the start (the chat is loaded by then), then once a minute. */
 const FIRST_CHECK_MS = 15_000;
 const CHECK_INTERVAL_MS = 60_000;
+/** Memories a dream weaves together. */
+const DREAM_MEMORIES = 3;
 
 /**
  * Lets the character of the open chat write on their own (settings: "Characters write on their
@@ -21,11 +23,16 @@ export function useProactiveMessages(enabled = true) {
   useEffect(() => {
     if (!enabled) return undefined;
     let checking = false;
+    // A dream belongs to the first check that gets as far as deciding (with a local AI that
+    // may be later than the start, once its server runs).
+    let startup = true;
     const check = async () => {
       if (checking) return;
       checking = true;
       try {
-        await writeIfDue();
+        await writeIfDue(startup, () => {
+          startup = false;
+        });
       } catch (e) {
         console.warn('Proactive check failed:', e);
       } finally {
@@ -41,7 +48,7 @@ export function useProactiveMessages(enabled = true) {
   }, [enabled]);
 }
 
-async function writeIfDue() {
+async function writeIfDue(startup: boolean, decided: () => void) {
   const state = useAppStore.getState();
   const { proactive, activeCharacter, activeChatId } = state;
   if (!proactive.enabled || !state.settingsLoaded || !state.onboardingCompleted) return;
@@ -50,14 +57,21 @@ async function writeIfDue() {
 
   const userName = state.activePersona.name;
   const intentions = await api.getIntentions(activeCharacter.id, userName, false).catch(() => []);
-  const reason = proactiveReason({
+  decided();
+  const input = {
     settings: proactive,
     charId: activeCharacter.id,
     chatId: activeChatId,
     messages: state.storedMessages,
     intentions,
     now: new Date(),
-  });
+  };
+  let reason = proactiveReason({ ...input, startup });
+  if (reason?.kind === 'dream') {
+    const memories = (await api.getDreamMemories(activeCharacter.id, DREAM_MEMORIES).catch(() => null)) ?? [];
+    // Nothing to dream of yet: an ordinary message after the pause instead.
+    reason = memories.length > 0 ? { ...reason, memories: memories.map((m) => m.content) } : proactiveReason(input);
+  }
   if (!reason) return;
 
   const stored = await state.writeOnOwn((name) => proactiveInstruction(reason, name, userName));
@@ -68,6 +82,11 @@ async function writeIfDue() {
     message_id: stored.id,
     intention_id: reason.kind === 'due' ? reason.intention.id : null,
   });
+  // The dream also goes into the character's diary.
+  if (reason.kind === 'dream') {
+    const title = translate('dreams.diaryTitle', { date: new Date().toLocaleDateString(state.appLanguage) });
+    await api.addDiaryEntry(activeCharacter.id, title, stored.content, 'dreamy').catch((e) => console.warn('Dream diary failed:', e));
+  }
 
   const name = presentedAs(activeCharacter, state.replyLanguage).name;
   const after = useAppStore.getState();

@@ -64,6 +64,18 @@ describe('proactive messages', () => {
     expect(reason({ now: at('2026-10-20T09:05:00'), intentions: [intention()] })).toBeNull();
   });
 
+  it('tells a dream only on the first check after a night-like pause', () => {
+    const night = at('2026-10-21T09:30:00'); // more than 8 hours after 09:01 the day before
+    const long = { ...on, idle_minutes: 48 * 60 };
+    expect(reason({ settings: long, now: night, startup: true })).toMatchObject({ kind: 'dream' });
+    expect(reason({ settings: long, now: night })).toBeNull();
+    expect(reason({ settings: { ...long, dreams: false }, now: night, startup: true })).toBeNull();
+    // Not after a short break, and a due plan comes first.
+    expect(reason({ settings: long, now: at('2026-10-20T15:00:00'), startup: true })).toBeNull();
+    expect(reason({ settings: long, now: night, startup: true, intentions: [intention({ due_at: seconds('2026-10-21T09:00:00') })] }))
+      .toMatchObject({ kind: 'due' });
+  });
+
   it('tells the model why it writes', () => {
     expect(pauseInWords(1800)).toBe('30 minutes');
     expect(pauseInWords(5 * 3600)).toBe('5 hours');
@@ -71,6 +83,9 @@ describe('proactive messages', () => {
     expect(proactiveInstruction({ kind: 'idle', idleSeconds: 5 * 3600 }, 'Shiori', 'Kai')).toContain('Kai has not written for 5 hours');
     const due = proactiveInstruction({ kind: 'due', intention: intention({ details: 'um 9 Uhr' }) }, 'Shiori', 'Kai');
     expect(due).toContain('"Vorstellungsgespräch" (um 9 Uhr) is due now');
+    const dream = proactiveInstruction({ kind: 'dream', idleSeconds: 30_000, memories: ['Erster Ausflug ans Meer', 'Kai mag Gewitter'] }, 'Shiori', 'Kai');
+    expect(dream).toContain('about a dream');
+    expect(dream).toContain('- Erster Ausflug ans Meer\n- Kai mag Gewitter');
   });
 
   it('shortens notification texts without role-play markup', () => {

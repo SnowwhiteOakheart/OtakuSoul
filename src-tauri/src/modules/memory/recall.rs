@@ -29,6 +29,8 @@ const MAX_QUERY_TERMS: usize = 24;
 const CORE_UNPINNED: usize = 5;
 /// Memories in the part that follows the conversation.
 const MAX_RELEVANT: usize = 10;
+/// Newest memories a dream leaves out (the chat already knows them).
+const DREAM_SKIP_NEWEST: i64 = 5;
 
 /// Frequent words that say nothing about a topic (German, English, Russian; three letters or more).
 const STOPWORDS: &[&str] = &[
@@ -264,6 +266,37 @@ impl MemoryDb {
             ))
         })?;
         rows.collect()
+    }
+
+    /// Random active memories for a dream: older ones first (the newest few are what the chat
+    /// already knows); a character with few memories dreams of what there is.
+    pub fn dream_memories(
+        &self,
+        char_id: &str,
+        limit: usize,
+    ) -> Result<Vec<EpisodicMemory>, rusqlite::Error> {
+        let conn = self.conn.lock();
+        let pick = |skip_newest: i64| -> Result<Vec<EpisodicMemory>, rusqlite::Error> {
+            let mut stmt = conn.prepare(&format!(
+                "SELECT {EPISODIC_COLUMNS} FROM soul_episodic_memory
+                 WHERE character_id = ?1 AND superseded_at IS NULL
+                   AND id NOT IN (SELECT id FROM soul_episodic_memory
+                                  WHERE character_id = ?1 AND superseded_at IS NULL
+                                  ORDER BY created_at DESC, id DESC LIMIT ?3)
+                 ORDER BY RANDOM() LIMIT ?2"
+            ))?;
+            stmt.query_map(
+                params![char_id, limit as i64, skip_newest],
+                episodic_from_row,
+            )?
+            .collect()
+        };
+        let older = pick(DREAM_SKIP_NEWEST)?;
+        if older.len() >= limit.min(2) {
+            Ok(older)
+        } else {
+            pick(0)
+        }
     }
 
     /// Full-text search in the memories of a character (memory drawer).

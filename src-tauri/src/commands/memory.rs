@@ -514,3 +514,16 @@ pub fn restore_memory_backup(
     };
     state.memory_db.restore_memory_backup(&resolved)
 }
+
+/// Random older memories of a character, for a dream told on the next start.
+#[tauri::command]
+pub fn get_dream_memories(
+    state: State<'_, AppState>,
+    char_id: String,
+    limit: usize,
+) -> Result<Vec<crate::modules::memory::EpisodicMemory>, String> {
+    state
+        .memory_db
+        .dream_memories(&char_id, limit.min(5))
+        .map_err(|e| e.to_string())
+}

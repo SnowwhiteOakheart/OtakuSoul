@@ -11,6 +11,7 @@ export const PROACTIVE_DEFAULTS: ProactiveSettings = {
   max_per_day: 2,
   notify: true,
   with_selfie: false,
+  dreams: true,
   muted_character_ids: [],
   sent: [],
 };
@@ -20,6 +21,9 @@ export const PROACTIVE_SENT_KEPT = 30;
 
 /** A due plan is brought up at the earliest this long after the last message (no interrupting). */
 const DUE_MIN_IDLE_SECONDS = 10 * 60;
+
+/** A dream is told on start only after a night-like pause. */
+export const DREAM_MIN_IDLE_SECONDS = 8 * 3600;
 
 /** Whether `date` lies in the quiet time; equal hours mean no quiet time. Over midnight works. */
 export function inQuietHours(date: Date, start: number, end: number): boolean {
@@ -34,7 +38,11 @@ export function sentToday(sent: ProactiveSent[], now: Date): number {
   return sent.filter((s) => new Date(s.at * 1000).toDateString() === day).length;
 }
 
-export type ProactiveReason = { kind: 'idle'; idleSeconds: number } | { kind: 'due'; intention: IntentionEntry };
+export type ProactiveReason =
+  | { kind: 'idle'; idleSeconds: number }
+  | { kind: 'due'; intention: IntentionEntry }
+  /** First check after the start following a long pause; the memories are added before writing. */
+  | { kind: 'dream'; idleSeconds: number; memories: string[] };
 
 /**
  * Whether the character of `chatId` should write on their own now, and why: a plan of theirs
@@ -48,8 +56,10 @@ export function proactiveReason(input: {
   messages: { id: string; role: string; created_at: number }[];
   intentions: IntentionEntry[];
   now: Date;
+  /** The first check since the app started (a dream is told only then). */
+  startup?: boolean;
 }): ProactiveReason | null {
-  const { settings, charId, chatId, messages, intentions, now } = input;
+  const { settings, charId, chatId, messages, intentions, now, startup = false } = input;
   if (!settings.enabled || settings.muted_character_ids.includes(charId)) return null;
   if (inQuietHours(now, settings.quiet_start_hour, settings.quiet_end_hour)) return null;
   if (sentToday(settings.sent, now) >= settings.max_per_day) return null;
@@ -65,6 +75,7 @@ export function proactiveReason(input: {
   const due = intentions.find((i) => i.status === 'pending' && i.time_basis === 'real' && i.due_at != null
     && i.due_at <= nowSeconds && !announced.has(i.id));
   if (due && idleSeconds >= DUE_MIN_IDLE_SECONDS) return { kind: 'due', intention: due };
+  if (startup && settings.dreams && idleSeconds >= DREAM_MIN_IDLE_SECONDS) return { kind: 'dream', idleSeconds, memories: [] };
   if (idleSeconds >= settings.idle_minutes * 60) return { kind: 'idle', idleSeconds };
   return null;
 }
@@ -80,6 +91,13 @@ export function pauseInWords(seconds: number): string {
 /** The instruction after the history that lets the character write on their own. */
 export function proactiveInstruction(reason: ProactiveReason, name: string, userName: string): string {
   const own = `${name} writes to ${userName} on their own initiative, like a short text message to a friend`;
+  if (reason.kind === 'dream') {
+    const woven = reason.memories.map((memory) => `- ${memory}`).join('\n');
+    return `[${name} has just woken up and tells ${userName} on their own initiative, like a short text message, about a dream `
+      + `they had tonight. The dream strangely mixes these memories of theirs:\n${woven}\n`
+      + `Make it vivid, a little surreal and short, stay in character and end with a feeling or a small question. `
+      + `Do not list the memories, and do not mention timers or being an AI.]`;
+  }
   if (reason.kind === 'due') {
     const details = reason.intention.details ? ` (${reason.intention.details})` : '';
     return `[${own}: the plan or promise "${reason.intention.title}"${details} is due now – bring it up naturally. `

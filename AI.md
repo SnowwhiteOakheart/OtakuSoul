@@ -384,6 +384,10 @@ ru „персонаж/история/сцена“. Fachbegriffe nur im Experte
   `instruction` statt Nudge; Fehler nur geloggt. Lokale KI wird dafür nicht gestartet. Benachrichtigung über
   `tauri-plugin-notification` (`services/notifications.ts`) nur bei verdecktem Fenster, sonst Toast außerhalb des Chats.
   Der Mock reicht die Anweisung nicht als `system`-Rolle durch: E2E `chat-proactive.mjs` sucht rollenunabhängig.
+  Träume (`proactive.dreams`, Standard an): `kind: 'dream'` nur beim ersten Check, der bis zur Entscheidung kommt (mit lokaler
+  KI ggf. erst, wenn ihr Server läuft), ab 8 h Pause, nach fälligen Vorhaben; `get_dream_memories` liefert zufällige aktive
+  Erinnerungen ohne die 5 neuesten (bei wenigen: alle), ohne Erinnerungen wird es eine normale Nachricht. Der Traum geht
+  zusätzlich per `add_diary_entry` ins Tagebuch (Stimmung `dreamy`). E2E `chat-dream.mjs`.
 
 ### 4. Stage (Rollenspiel), GM-Director, NPCs & Story-Galerie
 

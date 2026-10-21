@@ -27,6 +27,11 @@ notify: boolean,
  */
 with_selfie: boolean, 
 /**
+ * After a long pause the first message on start is a dream woven from older memories
+ * (also kept in the diary).
+ */
+dreams: boolean, 
+/**
  * Characters that never write on their own.
  */
 muted_character_ids: Array<string>, 

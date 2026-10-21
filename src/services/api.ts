@@ -375,6 +375,11 @@ export const api = {
     return await invoke<number>('count_memories_from_message', { chatId, messageId });
   },
 
+  /** Random older memories of a character, woven into a dream told on start. */
+  getDreamMemories: async (charId: string, limit: number): Promise<EpisodicMemory[]> => {
+    return await invoke<EpisodicMemory[]>('get_dream_memories', { charId, limit });
+  },
+
   addDiaryEntry: async (
     charId: string,
     title: string,

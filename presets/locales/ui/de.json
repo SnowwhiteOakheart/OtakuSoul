@@ -3695,5 +3695,8 @@
   "localImage.downloadExtras": "Für Selfies nachladen ({{size}} GB)",
   "onboarding.withVision": "Auch Bilder verstehen: die passende Vision-Datei mitladen ({{size}}).",
   "onboarding.addVision": "Bilder verstehen ({{size}})",
-  "settings.mmprojDownload": "Passende Vision-Datei für dieses Modell laden ({{size}})"
+  "settings.mmprojDownload": "Passende Vision-Datei für dieses Modell laden ({{size}})",
+  "proactive.dreams": "Von Träumen erzählen",
+  "proactive.dreamsHint": "Startest du die App nach einer langen Pause (ab 8 Stunden), erzählt die Figur zuerst von einem Traum aus älteren gemeinsamen Erinnerungen. Er landet auch in ihrem Tagebuch.",
+  "dreams.diaryTitle": "Traum vom {{date}}"
 }

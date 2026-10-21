@@ -153,7 +153,8 @@
 ## 6. Weitere Alleinstellungsmerkmale (Immersion, Storytelling & Alltag)
 
 ### 🌙 Träume & Off-Screen-Eigenleben (Autonome Hintergrund-Welt)
-- [ ] **Traum-Tagebuch & Nachgedanken beim App-Start:** Wenn die App nach längerer Pause geöffnet wird, verknüpft eine kurze Hintergrund-Reflexion zufällige ältere Erinnerungen (`episodes`, `psyche`, `diary`) zu einem Traum oder einer kleinen Off-Screen-Anekdote (optional inklusive automatisch lokal generiertem Bild).
+- [ ] **Traum-Bild:** Der Traum beim Start (seit 21.10.2026, siehe `roadmap_abgeschlossen.md`) könnte auf Wunsch ein lokal
+  erzeugtes Bild mitbringen (wie das Selfie, mit Referenzbild der Figur).
 - [ ] **Off-Screen-Gespräche zwischen Figuren:** In Gruppen-Chats oder der Stage können sich zwei Charaktere zwischen den Sitzungen kurz im Hintergrund ausgetauscht haben und beim nächsten Start davon berichten.
 
 ### 🕸️ Interaktiver „Seelen- & Beziehungs-Atlas“ (Visual Memory Graph)

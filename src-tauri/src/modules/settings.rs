@@ -100,6 +100,9 @@ pub struct ProactiveSettings {
     pub notify: bool,
     /// After a pause the character also sends a selfie (uses the image engine).
     pub with_selfie: bool,
+    /// After a long pause the first message on start is a dream woven from older memories
+    /// (also kept in the diary).
+    pub dreams: bool,
     /// Characters that never write on their own.
     pub muted_character_ids: Vec<String>,
     /// Messages already sent, newest last (the app keeps the latest few).
@@ -116,6 +119,7 @@ impl Default for ProactiveSettings {
             max_per_day: 2,
             notify: true,
             with_selfie: false,
+            dreams: true,
             muted_character_ids: Vec::new(),
             sent: Vec::new(),
         }

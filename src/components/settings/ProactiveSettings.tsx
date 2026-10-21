@@ -86,6 +86,14 @@ export const ProactiveSettings = () => {
             className="-mx-2"
           />
           <Toggle
+            id="setting-proactive-dreams"
+            checked={proactive.dreams}
+            onCheckedChange={(dreams) => setProactive({ dreams })}
+            label={t('proactive.dreams')}
+            description={t('proactive.dreamsHint')}
+            className="-mx-2"
+          />
+          <Toggle
             id="setting-proactive-selfie"
             checked={proactive.with_selfie}
             onCheckedChange={(with_selfie) => setProactive({ with_selfie })}

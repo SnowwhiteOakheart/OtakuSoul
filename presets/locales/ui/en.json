@@ -3695,5 +3695,8 @@
   "localImage.downloadExtras": "Add for selfies ({{size}} GB)",
   "onboarding.withVision": "Also understand pictures: download the matching vision file ({{size}}).",
   "onboarding.addVision": "Understand pictures ({{size}})",
-  "settings.mmprojDownload": "Download the matching vision file for this model ({{size}})"
+  "settings.mmprojDownload": "Download the matching vision file for this model ({{size}})",
+  "proactive.dreams": "Tell about dreams",
+  "proactive.dreamsHint": "When you open the app after a long pause (8 hours or more), the character first tells you about a dream woven from older shared memories. It also goes into their diary.",
+  "dreams.diaryTitle": "Dream of {{date}}"
 }

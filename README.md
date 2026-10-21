@@ -117,7 +117,7 @@ The story gallery shows ready-made adventures with genre, playing time and diffi
 * **Affection, energy, mood:** the bar at the top shows how the character feels – the AI updates it itself.
 * **Replies you don't like?** Generate a new one (swipe), edit it or continue from any message as a new chat.
 * **Group chats:** invite more characters into a chat – each keeps their own memory and voice. Choose who answers next or let them talk in rounds.
-* **Writes on their own:** If you like, the character writes to you after a pause or follows up when a plan is due ("How did your job interview go?") – with quiet time, a daily limit and a notification; single characters can be muted.
+* **Writes on their own:** If you like, the character writes to you after a pause or follows up when a plan is due ("How did your job interview go?"), and in the morning tells you about a dream woven from your memories – with quiet time, a daily limit and a notification; single characters can be muted.
 * **Help with writing:** *What could I say?* suggests replies, *Write for me* drafts your next message, notes in ((double brackets)) steer the AI, the reply length can be set per chat and unwanted words and phrases filtered out.
 * **Long chats** stay fast; older parts are summarised automatically so the character never loses the thread.
 
