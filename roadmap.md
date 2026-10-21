@@ -41,9 +41,6 @@
 - [ ] **TADA 3B Deutsch (GPU-Test 17.10.2026):** Vorgabestimme in CrispASR v0.8.43 nur noch 8 % verständlich (v0.8.41: 92 %);
   der deutsche Klon spricht mit vorgesprochenem KI-Hinweis nur den Hinweis (0 %), ohne Hinweis 75 %. Vorschlag: Fehler liegt bei
   CrispASR (neuere Version abwarten); Hinweis bei TADA als eigenen Clip vorweg erzeugen statt im selben Durchlauf (Entscheidung des Nutzers). Englisch ist unbetroffen.
-- [ ] **mmproj im Daten-Repo nachziehen:** `otakusoul-data/recommended_models.json` braucht dieselben `mmproj`-Einträge,
-  Beschreibungen und `version` 3.2.0 wie `presets/recommended_models.json` (App-Teil seit 21.10.2026 fertig). Dort lagen
-  offene `ja`-Beschreibungen des Nutzers in der Datei – erst committen oder freigeben, dann nachziehen.
 - [ ] **Bildgenerierung parallel zum Chat auf 24 GB** testen (keine passende Karte vorhanden).
 - [ ] **Weitere Laufzeit-Backends** (HIP/ROCm, SYCL) neben CUDA, Vulkan, Metal und CPU – nur bei Bedarf.
 
