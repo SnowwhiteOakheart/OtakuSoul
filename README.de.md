@@ -117,7 +117,7 @@ Die Story-Galerie zeigt fertige Abenteuer mit Genre, Spieldauer und Schwierigkei
 * **Zuneigung, Energie, Stimmung:** Die Leiste oben zeigt, wie es der Figur geht – die KI pflegt sie selbst.
 * **Antwort gefällt nicht?** Neu erzeugen (Swipe), bearbeiten oder ab einer beliebigen Nachricht als neuen Chat weiterführen.
 * **Gruppen-Chats:** Lade weitere Figuren in einen Chat ein – jede behält ihr eigenes Gedächtnis und ihre Stimme. Bestimme, wer als Nächstes antwortet, oder lass sie reihum sprechen.
-* **Meldet sich von selbst:** Auf Wunsch schreibt dir die Figur nach einer Pause oder fragt nach, wenn ein Vorhaben fällig ist („Wie lief dein Vorstellungsgespräch?“), und erzählt dir morgens von einem Traum aus euren Erinnerungen – mit Ruhezeit, Tageslimit und Benachrichtigung; einzelne Figuren lassen sich stummschalten.
+* **Meldet sich von selbst:** Auf Wunsch schreibt dir die Figur nach einer Pause oder fragt nach, wenn ein Vorhaben fällig ist („Wie lief dein Vorstellungsgespräch?“), und erzählt dir morgens von einem Traum aus euren Erinnerungen – im Gruppen-Chat stattdessen, was sie inzwischen mit einem Gast erlebt hat – mit Ruhezeit, Tageslimit und Benachrichtigung; einzelne Figuren lassen sich stummschalten.
 * **Hilfe beim Schreiben:** *Was könnte ich sagen?* schlägt Antworten vor, *Schreib für mich* formuliert deine nächste Nachricht, Hinweise in ((doppelten Klammern)) lenken die KI, die Antwortlänge lässt sich pro Chat einstellen und unerwünschte Wörter und Wendungen herausfiltern.
 * **Lange Chats** bleiben schnell; ältere Teile werden automatisch zusammengefasst, damit die Figur nie den Faden verliert.
 

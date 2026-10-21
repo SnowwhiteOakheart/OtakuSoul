@@ -76,6 +76,25 @@ describe('proactive messages', () => {
       .toMatchObject({ kind: 'due' });
   });
 
+  it('tells what happened with a guest of a group chat instead of a dream', () => {
+    const night = at('2026-10-21T09:30:00');
+    const long = { ...on, idle_minutes: 48 * 60 };
+    const sota = { id: 'sota', name: 'Sota', description: 'Gamer und Speedrunner' };
+    const lirwen = { id: 'lirwen', name: 'Lirwen', description: 'junge Elbin' };
+    const first = <T,>(items: T[]) => items[0]!;
+    expect(reason({ settings: long, now: night, startup: true, guests: [sota, lirwen], pick: first }))
+      .toMatchObject({ kind: 'offscreen', guest: { id: 'sota' } });
+    // Switched off, or without guests: the dream as before.
+    expect(reason({ settings: { ...long, offscreen: false }, now: night, startup: true, guests: [sota] })).toMatchObject({ kind: 'dream' });
+    expect(reason({ settings: long, now: night, startup: true, guests: [] })).toMatchObject({ kind: 'dream' });
+    // Only on the first check after a long pause.
+    expect(reason({ settings: long, now: night, guests: [sota] })).toBeNull();
+    const told = proactiveInstruction({ kind: 'offscreen', idleSeconds: 40_000, guest: sota, memories: ['Kai mag Gewitter'] }, 'Shiori', 'Kai');
+    expect(told).toContain('While Kai was away, Shiori and Sota (Gamer und Speedrunner) spent some time together');
+    expect(told).toContain('- Kai mag Gewitter');
+    expect(proactiveInstruction({ kind: 'offscreen', idleSeconds: 40_000, guest: sota, memories: [] }, 'Shiori', 'Kai')).not.toContain('memories');
+  });
+
   it('tells the model why it writes', () => {
     expect(pauseInWords(1800)).toBe('30 minutes');
     expect(pauseInWords(5 * 3600)).toBe('5 hours');

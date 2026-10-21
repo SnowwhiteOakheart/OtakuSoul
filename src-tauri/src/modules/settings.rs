@@ -105,6 +105,9 @@ pub struct ProactiveSettings {
     pub dreams: bool,
     /// The dream comes with a picture of it (uses the image engine).
     pub dream_image: bool,
+    /// In a group chat the character tells instead what they did with a guest while the user was
+    /// away (kept in both characters' memories).
+    pub offscreen: bool,
     /// Characters that never write on their own.
     pub muted_character_ids: Vec<String>,
     /// Messages already sent, newest last (the app keeps the latest few).
@@ -123,6 +126,7 @@ impl Default for ProactiveSettings {
             with_selfie: false,
             dreams: true,
             dream_image: false,
+            offscreen: true,
             muted_character_ids: Vec::new(),
             sent: Vec::new(),
         }

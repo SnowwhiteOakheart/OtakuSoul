@@ -3701,5 +3701,8 @@
   "dreams.diaryTitle": "Traum vom {{date}}",
   "proactive.dreamImage": "Ein Bild vom Traum mitschicken",
   "proactive.dreamImageHint": "Die Bildgenerierung zeichnet die erzählte Traumszene, die Figur bleibt nach ihrem Porträt erkennbar. Braucht je nach Modell einige Minuten.",
-  "dream.fileName": "Traumbild"
+  "dream.fileName": "Traumbild",
+  "proactive.offscreen": "Gäste erleben etwas miteinander",
+  "proactive.offscreenHint": "Im Gruppen-Chat erzählt die Figur nach einer langen Pause (ab 8 Stunden) statt eines Traums, was sie inzwischen mit einem Gast erlebt hat. Beide behalten es in Erinnerung.",
+  "offscreen.memory": "Während der Pause Zeit mit {{name}} verbracht: {{text}}"
 }

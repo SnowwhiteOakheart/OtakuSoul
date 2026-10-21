@@ -391,6 +391,10 @@ ru „персонаж/история/сцена“. Fachbegriffe nur im Experte
   (`proactive.dream_image`, Standard aus): `chatSlice.sendDreamPicture` → `generateSceneImage('chat', {kind: 'dream', story})`
   (Prompt aus dem Traumtext, Referenz der Figur ohne img2img, eigene Komposition), Nachricht „🌙“ mit `Traumbild.png`;
   Selfie und Traumbild teilen `sendPicture`. E2E `chat-dream.mjs`.
+  Off-Screen (`proactive.offscreen`, Standard an): beim selben ersten Check nach ≥ 8 h, aber im Gruppen-Chat mit Gästen
+  statt des Traums – `kind: 'offscreen'` mit einem zufälligen Gast (`presentedAs`), optional 2 ältere Erinnerungen der
+  Figur + 1 des Gastes (`get_dream_memories`, darf leer sein). Danach `add_episodic_memory` bei **beiden** (Kategorie
+  `event`, Quelle = die Nachricht, Text `offscreen.memory`), damit der Gast es später auch weiß. E2E `chat-offscreen.mjs`.
 
 ### 4. Stage (Rollenspiel), GM-Director, NPCs & Story-Galerie
 

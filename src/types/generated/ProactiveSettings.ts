@@ -36,6 +36,11 @@ dreams: boolean,
  */
 dream_image: boolean, 
 /**
+ * In a group chat the character tells instead what they did with a guest while the user was
+ * away (kept in both characters' memories).
+ */
+offscreen: boolean, 
+/**
  * Characters that never write on their own.
  */
 muted_character_ids: Array<string>, 

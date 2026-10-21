@@ -13,6 +13,7 @@ export const PROACTIVE_DEFAULTS: ProactiveSettings = {
   with_selfie: false,
   dreams: true,
   dream_image: false,
+  offscreen: true,
   muted_character_ids: [],
   sent: [],
 };
@@ -43,7 +44,16 @@ export type ProactiveReason =
   | { kind: 'idle'; idleSeconds: number }
   | { kind: 'due'; intention: IntentionEntry }
   /** First check after the start following a long pause; the memories are added before writing. */
-  | { kind: 'dream'; idleSeconds: number; memories: string[] };
+  | { kind: 'dream'; idleSeconds: number; memories: string[] }
+  /** Like a dream, but in a group chat: what the character did with a guest meanwhile. */
+  | { kind: 'offscreen'; idleSeconds: number; guest: Guest; memories: string[] };
+
+/** A guest of a group chat as the instruction names them. */
+export interface Guest {
+  id: string;
+  name: string;
+  description: string;
+}
 
 /**
  * Whether the character of `chatId` should write on their own now, and why: a plan of theirs
@@ -59,8 +69,13 @@ export function proactiveReason(input: {
   now: Date;
   /** The first check since the app started (a dream is told only then). */
   startup?: boolean;
+  /** Guests of a group chat; one of them may have spent the pause with the character. */
+  guests?: Guest[];
+  /** Picks the guest (tests pass a fixed one). */
+  pick?: <T>(items: T[]) => T;
 }): ProactiveReason | null {
-  const { settings, charId, chatId, messages, intentions, now, startup = false } = input;
+  const { settings, charId, chatId, messages, intentions, now, startup = false, guests = [] } = input;
+  const pick = input.pick ?? (<T,>(items: T[]) => items[Math.floor(Math.random() * items.length)]!);
   if (!settings.enabled || settings.muted_character_ids.includes(charId)) return null;
   if (inQuietHours(now, settings.quiet_start_hour, settings.quiet_end_hour)) return null;
   if (sentToday(settings.sent, now) >= settings.max_per_day) return null;
@@ -76,7 +91,10 @@ export function proactiveReason(input: {
   const due = intentions.find((i) => i.status === 'pending' && i.time_basis === 'real' && i.due_at != null
     && i.due_at <= nowSeconds && !announced.has(i.id));
   if (due && idleSeconds >= DUE_MIN_IDLE_SECONDS) return { kind: 'due', intention: due };
-  if (startup && settings.dreams && idleSeconds >= DREAM_MIN_IDLE_SECONDS) return { kind: 'dream', idleSeconds, memories: [] };
+  if (startup && idleSeconds >= DREAM_MIN_IDLE_SECONDS) {
+    if (settings.offscreen && guests.length > 0) return { kind: 'offscreen', idleSeconds, guest: pick(guests), memories: [] };
+    if (settings.dreams) return { kind: 'dream', idleSeconds, memories: [] };
+  }
   if (idleSeconds >= settings.idle_minutes * 60) return { kind: 'idle', idleSeconds };
   return null;
 }
@@ -92,6 +110,16 @@ export function pauseInWords(seconds: number): string {
 /** The instruction after the history that lets the character write on their own. */
 export function proactiveInstruction(reason: ProactiveReason, name: string, userName: string): string {
   const own = `${name} writes to ${userName} on their own initiative, like a short text message to a friend`;
+  if (reason.kind === 'offscreen') {
+    const { guest } = reason;
+    const memories = reason.memories.length > 0
+      ? ` It may touch on some of these shared memories:\n${reason.memories.map((m) => `- ${m}`).join('\n')}\n`
+      : ' ';
+    return `[While ${userName} was away, ${name} and ${guest.name} (${guest.description}) spent some time together. `
+      + `${name} tells ${userName} about it on their own initiative, like a short text message: what the two of them `
+      + `talked about or did, with one vivid detail about ${guest.name}.${memories}`
+      + `Keep it short, stay in character, and do not mention timers or being an AI.]`;
+  }
   if (reason.kind === 'dream') {
     const woven = reason.memories.map((memory) => `- ${memory}`).join('\n');
     return `[${name} has just woken up and tells ${userName} on their own initiative, like a short text message, about a dream `

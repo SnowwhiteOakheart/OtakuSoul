@@ -93,6 +93,14 @@ export const ProactiveSettings = () => {
             description={t('proactive.dreamsHint')}
             className="-mx-2"
           />
+          <Toggle
+            id="setting-proactive-offscreen"
+            checked={proactive.offscreen}
+            onCheckedChange={(offscreen) => setProactive({ offscreen })}
+            label={t('proactive.offscreen')}
+            description={t('proactive.offscreenHint')}
+            className="-mx-2"
+          />
           {proactive.dreams && (
             <Toggle
               id="setting-proactive-dream-image"

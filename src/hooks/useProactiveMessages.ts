@@ -4,7 +4,7 @@ import { notify } from '../services/notifications';
 import { translate } from '../i18n';
 import { useAppStore } from '../store/useAppStore';
 import { toast } from '../components/ui/feedback';
-import { presentedAs } from '../utils/groupChat';
+import { chatSpeakers, presentedAs } from '../utils/groupChat';
 import { proactiveInstruction, proactiveReason } from '../utils/proactive';
 
 /** First look shortly after the start (the chat is loaded by then), then once a minute. */
@@ -12,6 +12,8 @@ const FIRST_CHECK_MS = 15_000;
 const CHECK_INTERVAL_MS = 60_000;
 /** Memories a dream weaves together. */
 const DREAM_MEMORIES = 3;
+/** Length of what is kept of an off-screen story in the memories. */
+const OFFSCREEN_MEMORY_CHARS = 400;
 
 /**
  * Lets the character of the open chat write on their own (settings: "Characters write on their
@@ -58,6 +60,11 @@ async function writeIfDue(startup: boolean, decided: () => void) {
   const userName = state.activePersona.name;
   const intentions = await api.getIntentions(activeCharacter.id, userName, false).catch(() => []);
   decided();
+  // Guests of a group chat, as the instruction names them.
+  const session = state.chatSessions.find((s) => s.id === activeChatId);
+  const guests = chatSpeakers(activeCharacter, session, state.availableCharacters)
+    .filter((speaker) => speaker.id)
+    .map((speaker) => ({ id: speaker.id, ...presentedAs(speaker.character, state.replyLanguage) }));
   const input = {
     settings: proactive,
     charId: activeCharacter.id,
@@ -66,7 +73,15 @@ async function writeIfDue(startup: boolean, decided: () => void) {
     intentions,
     now: new Date(),
   };
-  let reason = proactiveReason({ ...input, startup });
+  let reason = proactiveReason({ ...input, startup, guests });
+  if (reason?.kind === 'offscreen') {
+    // Older memories of both may colour what they did; none is fine too.
+    const [own, theirs] = await Promise.all([
+      api.getDreamMemories(activeCharacter.id, 2).catch(() => null),
+      api.getDreamMemories(reason.guest.id, 1).catch(() => null),
+    ]);
+    reason = { ...reason, memories: [...(own ?? []), ...(theirs ?? [])].map((m) => m.content) };
+  }
   if (reason?.kind === 'dream') {
     const memories = (await api.getDreamMemories(activeCharacter.id, DREAM_MEMORIES).catch(() => null)) ?? [];
     // Nothing to dream of yet: an ordinary message after the pause instead.
@@ -82,6 +97,16 @@ async function writeIfDue(startup: boolean, decided: () => void) {
     message_id: stored.id,
     intention_id: reason.kind === 'due' ? reason.intention.id : null,
   });
+  // What they did together stays with both, so the guest knows it too when asked.
+  if (reason.kind === 'offscreen') {
+    const told = stored.content.replace(/\s+/g, ' ').trim().slice(0, OFFSCREEN_MEMORY_CHARS);
+    const hostName = presentedAs(activeCharacter, state.replyLanguage).name;
+    const source = { chatId: stored.chat_id, messageIds: [stored.id] };
+    await Promise.all([
+      api.addEpisodicMemory(activeCharacter.id, 'event', translate('offscreen.memory', { name: reason.guest.name, text: told }), 3, source),
+      api.addEpisodicMemory(reason.guest.id, 'event', translate('offscreen.memory', { name: hostName, text: told }), 3, source),
+    ]).catch((e) => console.warn('Off-screen memory failed:', e));
+  }
   // The dream also goes into the character's diary.
   if (reason.kind === 'dream') {
     const title = translate('dreams.diaryTitle', { date: new Date().toLocaleDateString(state.appLanguage) });

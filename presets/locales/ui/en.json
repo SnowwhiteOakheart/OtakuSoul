@@ -3701,5 +3701,8 @@
   "dreams.diaryTitle": "Dream of {{date}}",
   "proactive.dreamImage": "Send a picture of the dream",
   "proactive.dreamImageHint": "Image generation draws the dream scene that was told; the character stays recognizable from their portrait. Takes a few minutes depending on the model.",
-  "dream.fileName": "Dream picture"
+  "dream.fileName": "Dream picture",
+  "proactive.offscreen": "Guests spend time together",
+  "proactive.offscreenHint": "In a group chat, after a long pause (8 hours or more), the character tells you instead of a dream what they did with a guest meanwhile. Both remember it.",
+  "offscreen.memory": "Spent time with {{name}} during the pause: {{text}}"
 }
