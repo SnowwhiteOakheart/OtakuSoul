@@ -246,6 +246,9 @@ ru „персонаж/история/сцена“. Fachbegriffe nur im Experte
 
 ### 2. Hardware, GPU-Auswahl & Lokale Modell-Server
 
+- Lokale Vision (GPU-Test 21.10.2026, RTX 4070 Ti SUPER, llama.cpp b11669): Qwen3-VL-8B Q4 + mmproj Q8_0 und Gemma 4 12B
+  + mmproj-F16 beschreiben ein Porträt treffend auf Deutsch (~1 s; 8,9 bzw. 10,7 GB bei 8K). Gemma 4 denkt standardmäßig
+  vorher nach (~1.800 Zeichen Reasoning): mit knappem `max_tokens` bleibt `content` leer – Nachdenken aus oder genug Tokens.
 - Grafikspeicher beim Chat-Modell: `llama_manager::vram_shortage` vergleicht vor dem Start (nur bei voller GPU-Auslagerung)
   `hardware::estimate_llm_vram_mb` (+ mmproj) mit dem freien VRAM und meldet `backend.server.notEnoughVram` samt
   Belegern (`hardware::gpu_memory_users`, nvidia-smi); bricht llama.cpp trotzdem mit Speichermangel ab
