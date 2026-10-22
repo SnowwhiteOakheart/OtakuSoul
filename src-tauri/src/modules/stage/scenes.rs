@@ -1163,7 +1163,7 @@ mod tests {
             );
             assert!(["easy", "medium", "hard"].contains(&story.difficulty.as_str()));
             assert!(story.minutes >= 15);
-            for lang in ["de", "en", "ru"] {
+            for lang in ["de", "en", "ru", "ja"] {
                 assert_eq!(story.choices[lang].len(), 3, "{} {lang}", def.id);
                 let localized = def.localized(lang);
                 for (field, text) in [
