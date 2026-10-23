@@ -79,7 +79,53 @@ pub async fn download_file_as(
     download_from(client, &file.url(), file, target, cancel, emit).await
 }
 
+/// How often a dropped connection is resumed in a row before a download gives up.
+pub(crate) const MAX_RESUMES: u32 = 8;
+
+/// Pause before resume number `attempt` (2, 4, 8 … up to 30 s).
+pub(crate) fn resume_delay(attempt: u32) -> Duration {
+    if cfg!(test) {
+        return Duration::from_millis(10);
+    }
+    Duration::from_secs((1u64 << attempt.min(5)).min(30))
+}
+
+/// Connection errors are worth resuming; a cancel, a wrong checksum or an HTTP error is not.
+fn is_transient(error: &str) -> bool {
+    error.contains("backend.common.downloadInterrupted")
+        || error.contains("backend.common.downloadFailed")
+}
+
+/// Downloads with automatic resumes: the partial file stays, so each new attempt continues.
 async fn download_from(
+    client: &reqwest::Client,
+    url: &str,
+    file: &RemoteFile,
+    target: &Path,
+    cancel: &AtomicBool,
+    emit: &(impl Fn(u64) + Sync),
+) -> Result<(), String> {
+    let mut attempt = 0;
+    loop {
+        match download_once(client, url, file, target, cancel, emit).await {
+            Err(error)
+                if attempt < MAX_RESUMES
+                    && is_transient(&error)
+                    && !cancel.load(Ordering::SeqCst) =>
+            {
+                attempt += 1;
+                tracing::warn!(
+                    "Download von {} unterbrochen, setze fort (Versuch {attempt}): {error}",
+                    file.file_name()
+                );
+                tokio::time::sleep(resume_delay(attempt)).await;
+            }
+            result => return result,
+        }
+    }
+}
+
+async fn download_once(
     client: &reqwest::Client,
     url: &str,
     file: &RemoteFile,
@@ -119,8 +165,13 @@ async fn download_from(
     let response = request
         .send()
         .await
-        .and_then(reqwest::Response::error_for_status)
         .map_err(|e| crate::err!("backend.common.downloadFailed", error = e))?;
+    if !response.status().is_success() {
+        return Err(crate::err!(
+            "backend.common.downloadStatus",
+            status = response.status()
+        ));
+    }
     let resumed = have > 0 && response.status() == reqwest::StatusCode::PARTIAL_CONTENT;
     if !resumed {
         have = 0;
@@ -188,12 +239,82 @@ async fn download_from(
     Ok(())
 }
 
+/// Test server for `data` whose first response breaks off after 10 bytes (a dropped connection);
+/// range requests get the rest. Returns the URL.
+#[cfg(test)]
+pub(crate) async fn serve_flaky(data: &'static [u8]) -> String {
+    use axum::http::{HeaderMap, StatusCode, header};
+    let app = axum::Router::new().route(
+        "/file",
+        axum::routing::get(move |headers: HeaderMap| async move {
+            let start = headers
+                .get(header::RANGE)
+                .and_then(|v| v.to_str().ok())
+                .and_then(|v| v.strip_prefix("bytes="))
+                .and_then(|v| v.trim_end_matches('-').parse::<usize>().ok());
+            match start {
+                Some(n) => (
+                    StatusCode::PARTIAL_CONTENT,
+                    axum::body::Body::from(data[n..].to_vec()),
+                ),
+                None => {
+                    let chunks: Vec<Result<Vec<u8>, std::io::Error>> = vec![
+                        Ok(data[..10].to_vec()),
+                        Err(std::io::Error::other("connection dropped")),
+                    ];
+                    (
+                        StatusCode::OK,
+                        // The pause lets the headers and first bytes go out before the drop.
+                        axum::body::Body::from_stream(futures_util::stream::iter(chunks).then(
+                            |chunk| async move {
+                                tokio::time::sleep(Duration::from_millis(50)).await;
+                                chunk
+                            },
+                        )),
+                    )
+                }
+            }
+        }),
+    );
+    let listener = tokio::net::TcpListener::bind("127.0.0.1:0").await.unwrap();
+    let addr = listener.local_addr().unwrap();
+    tokio::spawn(async move { axum::serve(listener, app).await.unwrap() });
+    format!("http://{addr}/file")
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
     use axum::http::{HeaderMap, StatusCode, header};
 
     const DATA: &[u8] = b"0123456789abcdefghijklmnopqrstuvwxyz";
+
+    #[tokio::test]
+    async fn a_dropped_connection_resumes_by_itself() {
+        let url = serve_flaky(DATA).await;
+        let dir = std::env::temp_dir().join(format!("otakusoul-dl-flaky-{}", std::process::id()));
+        let _ = std::fs::remove_dir_all(&dir);
+        std::fs::create_dir_all(&dir).unwrap();
+        let digest: &'static str = Box::leak(sha(DATA).into_boxed_str());
+        let file = RemoteFile {
+            repo: "test/repo",
+            path: "flaky.gguf",
+            size: DATA.len() as u64,
+            sha256: Some(digest),
+        };
+        download_from(
+            &http_client().unwrap(),
+            &url,
+            &file,
+            &file.path_in(&dir),
+            &AtomicBool::new(false),
+            &|_| {},
+        )
+        .await
+        .unwrap();
+        assert_eq!(std::fs::read(file.path_in(&dir)).unwrap(), DATA);
+        let _ = std::fs::remove_dir_all(dir);
+    }
 
     /// Serves `DATA`, honouring `Range: bytes=N-`.
     async fn serve() -> String {

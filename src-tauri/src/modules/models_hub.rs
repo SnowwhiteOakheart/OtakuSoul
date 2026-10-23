@@ -569,9 +569,12 @@ pub async fn download_gguf_file<R: tauri::Runtime>(
         start: std::time::Instant::now(),
         last_emit: std::time::Instant::now(),
     };
+    let emit = |event: DownloadProgressEvent| {
+        let _ = app.emit("model-download-progress", event);
+    };
     let mut downloaded = Vec::with_capacity(parts.len());
     for (part, dest_path) in parts.iter().zip(&dest_paths) {
-        let partial = download_part(app, &client, part, dest_path, &mut progress).await?;
+        let partial = download_part(&emit, &client, part, dest_path, &mut progress).await?;
         downloaded.push(partial);
     }
 
@@ -615,10 +618,60 @@ struct Progress {
     last_emit: std::time::Instant,
 }
 
+/// Asks for the rest of `part` from byte `from` after a dropped connection, waiting a little
+/// longer each time; gives up after [`MAX_RESUMES`] attempts in a row or on a cancel.
+async fn resume_part(
+    client: &reqwest::Client,
+    part: &HfGgufPart,
+    from: u64,
+    resumes: &mut u32,
+    name: &str,
+    mut error: String,
+) -> Result<reqwest::Response, String> {
+    use crate::modules::model_files::{MAX_RESUMES, resume_delay};
+    loop {
+        *resumes += 1;
+        if *resumes > MAX_RESUMES {
+            return Err(crate::err!(
+                "backend.common.downloadInterrupted",
+                error = error
+            ));
+        }
+        tracing::warn!(
+            "Download von {name} unterbrochen ({error}), setze bei {from} Bytes fort (Versuch {resumes})"
+        );
+        tokio::time::sleep(resume_delay(*resumes)).await;
+        if CANCELLED_DOWNLOADS.lock().remove(name) {
+            return Err(crate::err!("backend.models.downloadCancelled"));
+        }
+        match client
+            .get(&part.download_url)
+            .header("User-Agent", "OtakuSoul-Desktop-Client")
+            .header(reqwest::header::RANGE, format!("bytes={from}-"))
+            .send()
+            .await
+        {
+            Ok(response) if response.status() == reqwest::StatusCode::PARTIAL_CONTENT => {
+                return Ok(response);
+            }
+            // Without range support a resume cannot work; trying again would not help.
+            Ok(response) if response.status().is_success() => {
+                return Err(crate::err!(
+                    "backend.common.downloadInterrupted",
+                    error = error
+                ));
+            }
+            Ok(response) => error = format!("HTTP {}", response.status()),
+            Err(e) => error = e.to_string(),
+        }
+    }
+}
+
 /// Downloads and verifies one file into a partial file next to `dest_path`; the returned guard
-/// removes it again once the caller has linked it into place (or given up).
-async fn download_part<R: tauri::Runtime>(
-    app: &tauri::AppHandle<R>,
+/// removes it again once the caller has linked it into place (or given up). A dropped
+/// connection resumes where it stopped.
+async fn download_part(
+    emit: &(impl Fn(DownloadProgressEvent) + Sync),
     client: &reqwest::Client,
     part: &HfGgufPart,
     dest_path: &std::path::Path,
@@ -675,43 +728,51 @@ async fn download_part<R: tauri::Runtime>(
         .map_err(|e| crate::err!("backend.common.fileCreate", error = e))?;
     let partial = PartialDownload(partial_path);
 
-    let mut stream = response.bytes_stream();
+    let mut response = response;
     let mut hasher = Sha256::new();
     let mut downloaded_bytes = 0u64;
+    let mut resumes = 0u32;
+    let mut resumed_at = 0u64;
 
-    while let Some(chunk_res) = stream.next().await {
-        if CANCELLED_DOWNLOADS.lock().remove(&progress.name) {
-            return Err(crate::err!("backend.models.downloadCancelled"));
-        }
-        let chunk =
-            chunk_res.map_err(|e| crate::err!("backend.common.downloadInterrupted", error = e))?;
-        file.write_all(&chunk)
-            .await
-            .map_err(|e| crate::err!("backend.common.fileWrite", error = e))?;
-
-        hasher.update(&chunk);
-        downloaded_bytes += chunk.len() as u64;
-        if total_bytes > 0 && downloaded_bytes > total_bytes {
-            return Err(crate::err!(
-                "backend.common.downloadInterrupted",
-                error = format!("Datei ist größer als die erwarteten {total_bytes} Bytes")
-            ));
-        }
-
-        if progress.last_emit.elapsed() >= std::time::Duration::from_millis(400) {
-            let all_bytes = progress.done_bytes + downloaded_bytes;
-            let elapsed_secs = progress.start.elapsed().as_secs_f32().max(0.001);
-            let speed_mbps = (all_bytes as f32 / (1024.0 * 1024.0)) / elapsed_secs;
-            let percent = if progress.total_bytes > 0 {
-                (all_bytes as f32 / progress.total_bytes as f32) * 100.0
-            } else {
-                0.0
+    loop {
+        let mut stream = response.bytes_stream();
+        let mut interrupted = None;
+        while let Some(chunk_res) = stream.next().await {
+            if CANCELLED_DOWNLOADS.lock().remove(&progress.name) {
+                return Err(crate::err!("backend.models.downloadCancelled"));
+            }
+            let chunk = match chunk_res {
+                Ok(chunk) => chunk,
+                Err(e) => {
+                    interrupted = Some(e.to_string());
+                    break;
+                }
             };
-            let eta_seconds = estimate_eta(all_bytes, progress.total_bytes, elapsed_secs);
+            file.write_all(&chunk)
+                .await
+                .map_err(|e| crate::err!("backend.common.fileWrite", error = e))?;
 
-            let _ = app.emit(
-                "model-download-progress",
-                DownloadProgressEvent {
+            hasher.update(&chunk);
+            downloaded_bytes += chunk.len() as u64;
+            if total_bytes > 0 && downloaded_bytes > total_bytes {
+                return Err(crate::err!(
+                    "backend.common.downloadInterrupted",
+                    error = format!("Datei ist größer als die erwarteten {total_bytes} Bytes")
+                ));
+            }
+
+            if progress.last_emit.elapsed() >= std::time::Duration::from_millis(400) {
+                let all_bytes = progress.done_bytes + downloaded_bytes;
+                let elapsed_secs = progress.start.elapsed().as_secs_f32().max(0.001);
+                let speed_mbps = (all_bytes as f32 / (1024.0 * 1024.0)) / elapsed_secs;
+                let percent = if progress.total_bytes > 0 {
+                    (all_bytes as f32 / progress.total_bytes as f32) * 100.0
+                } else {
+                    0.0
+                };
+                let eta_seconds = estimate_eta(all_bytes, progress.total_bytes, elapsed_secs);
+
+                emit(DownloadProgressEvent {
                     filename: progress.name.clone(),
                     downloaded_bytes: all_bytes,
                     total_bytes: progress.total_bytes,
@@ -720,11 +781,33 @@ async fn download_part<R: tauri::Runtime>(
                     eta_seconds,
                     finished: false,
                     error: None,
-                },
-            );
+                });
 
-            progress.last_emit = std::time::Instant::now();
+                progress.last_emit = std::time::Instant::now();
+            }
         }
+        // A connection that ends early counts as dropped, too.
+        let error = match interrupted {
+            Some(error) => error,
+            None if total_bytes > 0 && downloaded_bytes < total_bytes => {
+                format!("Verbindung nach {downloaded_bytes} von {total_bytes} Bytes beendet")
+            }
+            None => break,
+        };
+        // Progress since the last resume starts the count of attempts in a row again.
+        if downloaded_bytes > resumed_at {
+            resumes = 0;
+        }
+        resumed_at = downloaded_bytes;
+        response = resume_part(
+            client,
+            part,
+            downloaded_bytes,
+            &mut resumes,
+            &progress.name,
+            error,
+        )
+        .await?;
     }
 
     file.flush()
@@ -757,6 +840,44 @@ impl Drop for PartialDownload {
 
 #[cfg(test)]
 mod tests {
+
+    #[tokio::test]
+    async fn a_dropped_connection_resumes_where_it_stopped() {
+        const DATA: &[u8] = b"OtakuSoul model bytes that arrive in two pieces";
+        let url = crate::modules::model_files::serve_flaky(DATA).await;
+        let dir = std::env::temp_dir().join(format!("otakusoul-gguf-flaky-{}", std::process::id()));
+        let _ = std::fs::remove_dir_all(&dir);
+        std::fs::create_dir_all(&dir).unwrap();
+        let sha: String = <super::Sha256 as super::Digest>::digest(DATA)
+            .iter()
+            .map(|b| format!("{b:02x}"))
+            .collect();
+        let part = super::HfGgufPart {
+            filename: "flaky.gguf".into(),
+            size_bytes: DATA.len() as u64,
+            sha256: Some(sha),
+            download_url: url,
+        };
+        let mut progress = super::Progress {
+            name: "flaky.gguf".into(),
+            done_bytes: 0,
+            total_bytes: DATA.len() as u64,
+            start: std::time::Instant::now(),
+            last_emit: std::time::Instant::now(),
+        };
+        let partial = super::download_part(
+            &|_| {},
+            &reqwest::Client::new(),
+            &part,
+            &dir.join("flaky.gguf"),
+            &mut progress,
+        )
+        .await
+        .unwrap();
+        assert_eq!(std::fs::read(&partial.0).unwrap(), DATA);
+        drop(partial);
+        let _ = std::fs::remove_dir_all(dir);
+    }
 
     #[test]
     fn a_running_download_cannot_start_twice() {
