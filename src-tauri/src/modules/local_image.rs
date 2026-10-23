@@ -1109,7 +1109,15 @@ impl LocalImageEngine {
         let loras = crate::modules::image_loras::apply(req.loras, model.family);
 
         let llm_config = llama.running_config().await;
-        let image_already_loaded = self.loaded_model().await.as_deref() == Some(model.id);
+        let loaded_image = self.loaded_model().await;
+        let image_already_loaded = loaded_image.as_deref() == Some(model.id);
+        // Another image model still on the GPU makes way for this one, so its memory counts as
+        // free (otherwise the chat model would be unloaded for nothing).
+        let replaced_image_vram = loaded_image
+            .as_deref()
+            .filter(|id| *id != model.id)
+            .and_then(|id| catalog_model(id).ok())
+            .map_or(0, |m| m.vram_mb);
         let tts_vram = crate::modules::tts_local::engine().loaded_vram_mb().await;
         let decision = {
             let llm = llm_config.clone();
@@ -1144,7 +1152,7 @@ impl LocalImageEngine {
                             if image_already_loaded {
                                 f + image_vram
                             } else {
-                                f
+                                f + replaced_image_vram
                             }
                         }),
                         llm_running: llm.is_some(),
