@@ -3,6 +3,7 @@ import { audioPlayer, gainFromVoiceVolume } from './audioPlayer';
 import type { CharacterProfile, SceneTurnMessage, VoiceConfig } from '../types';
 import { findCharacterByName } from '../utils/characterName';
 import { STAGE_NARRATOR_VOICE_ID, voiceParts } from './narratorVoice';
+import { loadCharacterVoiceConfig } from './characterVoice';
 
 export { STAGE_NARRATOR_VOICE_ID };
 
@@ -13,7 +14,7 @@ async function voiceFor(message: SceneTurnMessage, characters: CharacterProfile[
     const character = findCharacterByName(characters, message.sender_name);
     if (character) id = character.id;
   }
-  const config = await api.getCharacterVoiceConfig(id).catch(() => null);
+  const config = await loadCharacterVoiceConfig(id, characters).catch(() => null);
   return config && config.engine !== 'disabled' ? config : null;
 }
 

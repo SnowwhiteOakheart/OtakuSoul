@@ -647,6 +647,10 @@ ru „персонаж/история/сцена“. Fachbegriffe nur im Experte
   Parallel zum generierenden LLM läuft lokale TTS langsamer als Echtzeit (gemessen 7,3 s für 6,6 s Audio): `streamingTts`
   synthetisiert bei `engine === 'local'` weiter satzweise, hält die Wiedergabe aber bis `flush()` (Antwortende) zurück.
   VoiceDesign-Modelle (`voice_design`) brauchen eine Beschreibung (`openai_instructions` der Stimme → `instructions`).
+  Reihenfolge: entworfene Stimme (`voice_id` `design:<id>` → `TtsLocalSettings.designed_voices`) vor eigener Beschreibung
+  vor der Karte: `extensions.otakusoul_voice.description` (Englisch, Editor-Feld „Stimmbeschreibung“) füllt eine leere
+  `openai_instructions` beim Laden (`services/characterVoice.ts`, `loadCharacterVoiceConfig` – alle Ladestellen einer
+  Figurenstimme gehen darüber, auch für OpenAI-TTS). Hub-Karten setzt `otakusoul-data/tools/set_card_voices.py`.
   TADA: `CRISPASR_TADA_WAV_CLONE=1` (WAV-Klon, Encoder/Aligner neben dem Modell), `CRISPASR_TADA_NUM_CANDIDATES=4`.
   Chatterbox klont nativ nur aus 24-kHz-WAV und braucht im Server die Stimme als `<id>.wav` (`clone_voice_name`);
   Katalog-Feld `clone_experimental` kennzeichnet das in der UI.

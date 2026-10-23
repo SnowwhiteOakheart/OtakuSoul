@@ -104,7 +104,10 @@
         "crying": "expressions/sota_minase/crying.webp"
       },
       "custom_title": "Gamer, Speedrunner und Dauergast der Spielhalle",
-      "custom_avatar": "sota_minase.png"
+      "custom_avatar": "sota_minase.png",
+      "otakusoul_voice": {
+        "description": "A relaxed 18-year-old boy with a casual, slightly husky tenor; laid-back and quick-witted, a little drawling, turns sharp and focused when competitive."
+      }
     }
   }
 }

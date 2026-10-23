@@ -2271,6 +2271,8 @@
   "editor.fiveEClassHint": "In scenes with 5e rules the character gets this class's level 1 values when joining (SRD 5.1). A choice in the scene comes first.",
   "editor.creatorNotes": "Creator notes",
   "editor.creatorNotesPlaceholder": "Optional notes from the author",
+  "editor.voiceDescription": "Voice description (AI voice)",
+  "editor.voiceDescriptionHint": "Best in English: age, timbre, pace, mood. Qwen3-TTS VoiceDesign and OpenAI speech use it for this character while the voice settings have no description of their own.",
   "editor.defaultAvatar": "Default avatar",
   "editor.description": "Description / background",
   "editor.descriptionPlaceholder": "Appearance, origin, clothing, backstory …",

@@ -104,7 +104,10 @@
         "crying": "expressions/lirwen/crying.webp"
       },
       "custom_title": "Junge Elbin aus Elanthil mit unstillbarem Wissensdurst",
-      "custom_avatar": "lirwen.png"
+      "custom_avatar": "lirwen.png",
+      "otakusoul_voice": {
+        "description": "A young elven woman with a bright, clear, melodic mid-high voice; curious and eager, speaks quickly with warm enthusiasm and an earnest, slightly naive tone."
+      }
     }
   }
 }

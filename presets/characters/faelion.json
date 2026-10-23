@@ -104,7 +104,10 @@
         "crying": "expressions/faelion/crying.webp"
       },
       "custom_title": "Elbenkrieger der Grenzwache – Waise aus dem Nebelforst",
-      "custom_avatar": "faelion.png"
+      "custom_avatar": "faelion.png",
+      "otakusoul_voice": {
+        "description": "A seasoned elven warrior with a low, calm, quiet baritone; speaks tersely and deliberately with long pauses, guarded and dry, a faint softness beneath the restraint."
+      }
     }
   }
 }

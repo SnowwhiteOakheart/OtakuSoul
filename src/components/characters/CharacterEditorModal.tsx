@@ -1,6 +1,7 @@
 import { startTransition, useActionState, useId, useState } from 'react';
 import { CharacterProfile, CharacterCardV2 } from '../../types';
-import { api } from '../../services/api';
+import { api } from '../../services/api';
+import { CARD_VOICE_KEY, cardVoiceDescription } from '../../services/characterVoice';
 import { useStoreFields } from '../../store/useAppStore';
 import { X, Save, Image, Plus, Trash2, Sparkles, User, FileText, Settings2, BookOpen, Globe } from 'lucide-react';
 import {
@@ -71,6 +72,8 @@ export const CharacterEditorModal = ({
   );
   const [systemPrompt, setSystemPrompt] = useState(character?.card.data.system_prompt || '');
   const [creatorNotes, setCreatorNotes] = useState(character?.card.data.creator_notes || '');
+  // Voice for VoiceDesign and OpenAI TTS (`extensions.otakusoul_voice`), used while the character has no own one.
+  const [voiceDescription, setVoiceDescription] = useState(cardVoiceDescription(character));
   const [sourceLanguage, setSourceLanguage] = useState<string>(
     (character?.card.data.extensions?.[I18N_EXTENSION] as Record<string, unknown>)?.source_language as string || 'de'
   );
@@ -188,6 +191,7 @@ export const CharacterEditorModal = ({
             [I18N_EXTENSION]: Object.keys(translations).length > 0
               ? { source_language: sourceLanguage, translations }
               : undefined,
+            [CARD_VOICE_KEY]: voiceDescription.trim() ? { description: voiceDescription.trim() } : undefined,
             otakusoul_5e: (() => {
               const { class: _old, ...rest } = fiveE;
               const next = fiveEClass ? { ...rest, class: fiveEClass } : rest;
@@ -502,6 +506,22 @@ export const CharacterEditorModal = ({
                     placeholder={t('editor.creatorNotesPlaceholder')}
                     className="w-full px-3 py-2 bg-app border border-slate-800 rounded-xl text-slate-200 placeholder-slate-500 focus:outline-hidden focus:border-accent-500"
                   />
+                </div>
+
+                <div>
+                  <label className="block text-xs font-semibold text-slate-300 mb-1" htmlFor={`${fieldId}-voice`}>
+                    {t('editor.voiceDescription')}
+                  </label>
+                  <textarea
+                    id={`${fieldId}-voice`}
+                    value={voiceDescription}
+                    onChange={(e) => setVoiceDescription(e.target.value)}
+                    rows={2}
+                    placeholder={t('localTts.voiceDescriptionPlaceholder')}
+                    className="w-full px-3 py-2 bg-app border border-slate-800 rounded-xl text-slate-200 placeholder-slate-500 focus:outline-hidden focus:border-accent-500 resize-y"
+                    data-voice-description
+                  />
+                  <p className="mt-1 text-[11px] text-slate-500">{t('editor.voiceDescriptionHint')}</p>
                 </div>
               </div>
             </div>

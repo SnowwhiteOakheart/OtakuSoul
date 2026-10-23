@@ -2272,6 +2272,8 @@
   "editor.fiveEClassHint": "5eルールを使用するシーンでは、キャラクターが参加する際にこのクラスのレベル1初期値（SRD 5.1）が適用されます。シーン内での選択が優先されます。",
   "editor.creatorNotes": "作者ノート",
   "editor.creatorNotesPlaceholder": "作者からの補足事項・注記（任意）",
+  "editor.voiceDescription": "声の説明（AI音声）",
+  "editor.voiceDescriptionHint": "英語がおすすめです：年齢、声質、テンポ、雰囲気。音声設定に独自の説明がない間、Qwen3-TTS VoiceDesign と OpenAI の音声出力がこのキャラクターに使います。",
   "editor.defaultAvatar": "デフォルトアバター",
   "editor.description": "説明 / 背景設定",
   "editor.descriptionPlaceholder": "容姿、出身、服装、生い立ちなど…",

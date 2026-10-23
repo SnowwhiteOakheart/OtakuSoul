@@ -10,6 +10,7 @@ import { audioPlayer, gainFromVoiceVolume } from '../../services/audioPlayer';
 import { ModalOverlay } from '../ui/ModalOverlay';
 import { LocalTtsSettings } from './LocalTtsSettings';
 import { VoiceGallery } from './VoiceGallery';
+import { loadCharacterVoiceConfig } from '../../services/characterVoice';
 import { languageCode } from '../../utils/cardI18n';
 import { translate, useTranslation } from '../../i18n';
 import { errorMessage } from '../../utils/errors';
@@ -98,8 +99,8 @@ function testText(config: VoiceConfig) {
 
 export function CharacterVoiceModal({ onClose, target, embedded = false, autoSave = false }: CharacterVoiceModalProps) {
   const { t } = useTranslation();
-  const { activeCharacter, activeVoiceConfig, saveVoiceConfigForCharacter, expertMode, replyLanguage } = useStoreFields(
-    'activeCharacter', 'activeVoiceConfig', 'saveVoiceConfigForCharacter', 'expertMode', 'replyLanguage',
+  const { activeCharacter, availableCharacters, activeVoiceConfig, saveVoiceConfigForCharacter, expertMode, replyLanguage } = useStoreFields(
+    'activeCharacter', 'availableCharacters', 'activeVoiceConfig', 'saveVoiceConfigForCharacter', 'expertMode', 'replyLanguage',
   );
   const [tab, setTab] = useState<VoiceTab>('tts');
   const [draft, setDraft] = useState<VoiceConfig>(activeVoiceConfig ?? DEFAULT_CONFIG);
@@ -126,7 +127,7 @@ export function CharacterVoiceModal({ onClose, target, embedded = false, autoSav
   useEffect(() => {
     if (!loadId) return;
     let subscribed = true;
-    api.getCharacterVoiceConfig(loadId).then((config) => {
+    loadCharacterVoiceConfig(loadId, [activeCharacter, ...availableCharacters]).then((config) => {
       if (subscribed && config && !touched.current) setDraft(config);
     }).catch(() => {});
     return () => {

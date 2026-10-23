@@ -2271,6 +2271,8 @@
   "editor.fiveEClassHint": "В сценах с правилами 5e персонаж при вступлении получает значения 1-го уровня этого класса (SRD 5.1). Выбор в сцене важнее.",
   "editor.creatorNotes": "Заметки автора",
   "editor.creatorNotesPlaceholder": "Необязательные заметки автора",
+  "editor.voiceDescription": "Описание голоса (ИИ-голос)",
+  "editor.voiceDescriptionHint": "Лучше на английском: возраст, тембр, темп, настроение. Qwen3-TTS VoiceDesign и озвучка OpenAI используют его для персонажа, пока в настройках голоса нет собственного описания.",
   "editor.defaultAvatar": "Аватар по умолчанию",
   "editor.description": "Описание / предыстория",
   "editor.descriptionPlaceholder": "Внешность, происхождение, одежда, предыстория …",

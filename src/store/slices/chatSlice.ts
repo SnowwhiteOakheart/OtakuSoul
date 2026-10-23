@@ -31,6 +31,7 @@ import { languageCode, localizeCard } from '../../utils/cardI18n';
 import { isRepeat } from '../../utils/repetition';
 import { applyReplacements, applyScripts, forPrompt } from '../../utils/replyFilters';
 import { STAGE_NARRATOR_VOICE_ID, forgetNarratorVoice } from '../../services/narratorVoice';
+import { loadCharacterVoiceConfig } from '../../services/characterVoice';
 import { GROUP_MAX_REPLIES, chatSpeakers, groupHistory, memoryCharacter, presentedAs } from '../../utils/groupChat';
 
 type GenerationFailure = {
@@ -517,7 +518,7 @@ export const createChatSlice: SliceCreator<ChatSlice> = (set, get) => {
   loadSpeakerVoice: async (speakerId) => {
     if (!speakerId) return get().activeVoiceConfig;
     if (speakerId in get().speakerVoices) return get().speakerVoices[speakerId] ?? null;
-    const config = await api.getCharacterVoiceConfig(speakerId).catch(() => null);
+    const config = await loadCharacterVoiceConfig(speakerId, [...get().availableCharacters, get().activeCharacter]).catch(() => null);
     set((st) => ({ speakerVoices: { ...st.speakerVoices, [speakerId]: config } }));
     return config;
   },
@@ -1405,7 +1406,7 @@ export const createChatSlice: SliceCreator<ChatSlice> = (set, get) => {
 
   loadVoiceConfigForCharacter: async (charId) => {
     try {
-      const config = await api.getCharacterVoiceConfig(charId);
+      const config = await loadCharacterVoiceConfig(charId, [get().activeCharacter, ...get().availableCharacters]);
       if (get().activeCharacter?.id === charId) set({ activeVoiceConfig: config });
     } catch (e) {
       console.error('Failed to load voice config:', e);
