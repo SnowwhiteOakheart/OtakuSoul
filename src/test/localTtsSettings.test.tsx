@@ -56,7 +56,7 @@ beforeEach(() => {
   resetApiMocks();
   useAppStore.setState({ appLanguage: 'en' });
   vi.mocked(api.listTtsModels).mockResolvedValue([qwen, f5]);
-  vi.mocked(api.getTtsLocalSettings).mockResolvedValue({ allow_noncommercial: false, spoken_disclaimer: true });
+  vi.mocked(api.getTtsLocalSettings).mockResolvedValue({ allow_noncommercial: false, spoken_disclaimer: true, designed_voices: [] });
   vi.mocked(api.listClonedVoices).mockResolvedValue([]);
   vi.mocked(api.onTtsModelProgress).mockResolvedValue(() => {});
   vi.mocked(api.onRuntimeProgress).mockResolvedValue(() => {});
@@ -65,16 +65,52 @@ beforeEach(() => {
 });
 
 describe('LocalTtsSettings', () => {
-  it('asks for a voice description instead of a voice for VoiceDesign models', async () => {
+  it('lets a VoiceDesign character use its own description', async () => {
     const design: TtsModelInfo = { ...qwen, id: 'qwen3-tts-1.7b-voicedesign', name: 'VoiceDesign', voice_design: true, cloning: false, voices: [] };
     vi.mocked(api.listTtsModels).mockResolvedValue([design]);
     const onChange = vi.fn();
-    render(<LocalTtsSettings config={{ ...config, local_model_id: design.id, openai_instructions: '' } as VoiceConfig} onChange={onChange} />);
+    render(<LocalTtsSettings config={{ ...config, local_model_id: design.id, voice_id: '', openai_instructions: '' } as VoiceConfig} onChange={onChange} />);
     const description = await screen.findByRole('textbox', { name: /Voice description/ });
-    expect(screen.queryByRole('combobox', { name: /^Voice$/ })).not.toBeInTheDocument();
+    expect(screen.getByRole('combobox', { name: /^Voice$/ })).toHaveValue('');
     fireEvent.change(description, { target: { value: 'A calm voice' } });
     expect(onChange).toHaveBeenLastCalledWith(expect.objectContaining({ openai_instructions: 'A calm voice' }));
   });
+
+  it('designs named voices once and assigns them to characters', async () => {
+    const design: TtsModelInfo = { ...qwen, id: 'qwen3-tts-1.7b-voicedesign', name: 'VoiceDesign', voice_design: true, cloning: false, voices: [] };
+    vi.mocked(api.listTtsModels).mockResolvedValue([design]);
+    vi.mocked(api.getTtsLocalSettings).mockResolvedValue({
+      allow_noncommercial: false,
+      spoken_disclaimer: true,
+      designed_voices: [{ id: 'hero', name: 'Young heroine', description: 'A bright, young female voice' }],
+    });
+    const user = userEvent.setup();
+    const onChange = vi.fn();
+    const base = { ...config, local_model_id: design.id, voice_id: 'design:hero', openai_instructions: '' } as VoiceConfig;
+    render(<LocalTtsSettings config={base} onChange={onChange} />);
+
+    // The chosen designed voice brings its description; no own description field.
+    expect(await screen.findByText('A bright, young female voice', { selector: 'span.text-slate-300' })).toBeInTheDocument();
+    expect(screen.queryByRole('textbox', { name: /Voice description/ })).not.toBeInTheDocument();
+
+    // A second voice is saved to the shared list and assigned to this character.
+    await user.type(screen.getByRole('textbox', { name: 'Name of the designed voice' }), 'Old wizard');
+    await user.type(screen.getByRole('textbox', { name: 'Description of the voice' }), 'A deep, raspy old male voice');
+    await user.click(screen.getByRole('button', { name: 'Add voice' }));
+    await waitFor(() =>
+      expect(api.saveTtsLocalSettings).toHaveBeenCalledWith(
+        expect.objectContaining({
+          designed_voices: [
+            { id: 'hero', name: 'Young heroine', description: 'A bright, young female voice' },
+            expect.objectContaining({ name: 'Old wizard', description: 'A deep, raspy old male voice' }),
+          ],
+        }),
+      ),
+    );
+    const saved = vi.mocked(api.saveTtsLocalSettings).mock.calls.at(-1)![0].designed_voices[1]!;
+    expect(onChange).toHaveBeenLastCalledWith(expect.objectContaining({ voice_id: `design:${saved.id}` }));
+  });
+
   it('keeps non-commercial models locked until the user confirms the licence', async () => {
     const user = userEvent.setup();
     render(
@@ -91,7 +127,7 @@ describe('LocalTtsSettings', () => {
     await user.click(screen.getByRole('checkbox', { name: 'Allow non-commercial models' }));
     await user.click(await screen.findByRole('button', { name: 'Understood, unlock' }));
     await waitFor(() =>
-      expect(api.saveTtsLocalSettings).toHaveBeenCalledWith({ allow_noncommercial: true, spoken_disclaimer: true })
+      expect(api.saveTtsLocalSettings).toHaveBeenCalledWith({ allow_noncommercial: true, spoken_disclaimer: true, designed_voices: [] })
     );
   });
 

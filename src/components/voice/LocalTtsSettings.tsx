@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
-import { Check, Download, Loader2, Mic, ShieldAlert, Square, Trash2, Upload, Wand2, X } from 'lucide-react';
+import { Check, Download, Loader2, Mic, Pencil, Play, ShieldAlert, Sparkles, Square, Trash2, Upload, Wand2, X } from 'lucide-react';
 import { api } from '../../services/api';
+import { audioPlayer, gainFromVoiceVolume } from '../../services/audioPlayer';
 import { downloadTtsModelTask } from '../../services/downloadTasks';
 import { translate, useTranslation } from '../../i18n';
 import { errorMessage } from '../../utils/errors';
@@ -9,7 +10,7 @@ import { RuntimeCard } from '../settings/sections/RuntimeCard';
 import { VoiceCapture, floatSamplesToBase64, resampleMono } from '../../services/voiceCapture';
 import { suggestClip, trimSamples, type ClipRange } from '../../utils/audioClip';
 import { CloneTrimmer } from './CloneTrimmer';
-import type { ClonedVoice, TtsLocalSettings, TtsModelInfo, TtsModelProgress, VoiceConfig } from '../../types';
+import type { ClonedVoice, DesignedVoice, TtsLocalSettings, TtsModelInfo, TtsModelProgress, VoiceConfig } from '../../types';
 
 const gb = (bytes: number) => (bytes / 1024 ** 3).toFixed(2);
 /** Voice references are stored at 24 kHz (Qwen3-TTS rejects other rates). */
@@ -185,7 +186,12 @@ export const LocalTtsSettings = ({ config, onChange }: LocalTtsSettingsProps) =>
                         checked={isSelected}
                         disabled={!usable}
                         onChange={() =>
-                          onChange({ ...config, local_model_id: model.id, voice_id: model.voices[0]?.voice_id ?? '' })
+                          onChange({
+                            ...config,
+                            local_model_id: model.id,
+                            // A character with its own description keeps it; otherwise the first designed voice.
+                            voice_id: model.voice_design && config.openai_instructions.trim() ? '' : model.voices[0]?.voice_id ?? '',
+                          })
                         }
                         className="mt-0.5 accent-accent-500"
                       />
@@ -264,19 +270,56 @@ export const LocalTtsSettings = ({ config, onChange }: LocalTtsSettingsProps) =>
         )}
       </div>
 
-      {selected?.voice_design && (
-        <label className="block">
-          <span className={labelClass}>{t('localTts.voiceDescription')}</span>
-          <textarea
-            value={config.openai_instructions}
-            onChange={(e) => onChange({ ...config, openai_instructions: e.target.value })}
-            rows={3}
-            placeholder={t('localTts.voiceDescriptionPlaceholder')}
-            className={`${fieldClass} min-h-20 resize-y`}
-          />
-          <span className="mt-1 block text-[11px] text-slate-400">{t('localTts.voiceDescriptionHint')}</span>
-        </label>
-      )}
+      {selected?.voice_design && (() => {
+        const designed = settings?.designed_voices.find((v) => `design:${v.id}` === config.voice_id);
+        return (
+          <div className="space-y-3">
+            <label className="block">
+              <span className={labelClass}>{t('localTts.voice')}</span>
+              <select
+                value={designed ? config.voice_id : ''}
+                onChange={(e) => onChange({ ...config, voice_id: e.target.value })}
+                className={fieldClass}
+                data-design-voice
+              >
+                {settings?.designed_voices.map((voice) => (
+                  <option key={voice.id} value={`design:${voice.id}`}>
+                    {voice.name}
+                  </option>
+                ))}
+                <option value="">{t('localTts.designOwn')}</option>
+              </select>
+            </label>
+            {designed ? (
+              <p className="text-xs text-slate-400">
+                <span className="text-slate-300">{designed.description}</span>
+                <span className="block mt-1 text-[11px]">{t('localTts.designChosenHint')}</span>
+              </p>
+            ) : (
+              <label className="block">
+                <span className={labelClass}>{t('localTts.voiceDescription')}</span>
+                <textarea
+                  value={config.openai_instructions}
+                  onChange={(e) => onChange({ ...config, openai_instructions: e.target.value })}
+                  rows={3}
+                  placeholder={t('localTts.voiceDescriptionPlaceholder')}
+                  className={`${fieldClass} min-h-20 resize-y`}
+                />
+                <span className="mt-1 block text-[11px] text-slate-400">{t('localTts.voiceDescriptionHint')}</span>
+              </label>
+            )}
+            {settings && (
+              <DesignedVoicesSection
+                settings={settings}
+                config={config}
+                modelId={selected.id}
+                onSave={saveSettings}
+                onChange={onChange}
+              />
+            )}
+          </div>
+        );
+      })()}
 
       {selected?.sound_tags && <p className="text-xs text-emerald-300/90">{t('localTts.soundTagsHint')}</p>}
 
@@ -315,6 +358,199 @@ export const LocalTtsSettings = ({ config, onChange }: LocalTtsSettingsProps) =>
       )}
 
       <VoiceCloneSection sttConfig={config.stt} onChanged={() => void refresh()} />
+    </div>
+  );
+};
+
+/**
+ * Named voice descriptions for VoiceDesign models: create, listen, edit and delete them; every
+ * character can pick one, and a changed description applies to all characters using it.
+ */
+const DesignedVoicesSection = ({
+  settings,
+  config,
+  modelId,
+  onSave,
+  onChange,
+}: {
+  settings: TtsLocalSettings;
+  config: VoiceConfig;
+  modelId: string;
+  onSave: (next: TtsLocalSettings) => Promise<void>;
+  onChange: (config: VoiceConfig) => void;
+}) => {
+  const { t } = useTranslation();
+  const [editingId, setEditingId] = useState<string | null>(null);
+  const [name, setName] = useState('');
+  const [description, setDescription] = useState('');
+  const [playing, setPlaying] = useState<string | null>(null);
+  const voices = settings.designed_voices;
+
+  const resetForm = () => {
+    setEditingId(null);
+    setName('');
+    setDescription('');
+  };
+
+  const preview = async (key: string, text: string) => {
+    setPlaying(key);
+    try {
+      const url = await api.synthesizeSpeech(translate('voiceCfg.testText'), {
+        ...config,
+        engine: 'local',
+        local_model_id: modelId,
+        voice_id: '',
+        openai_instructions: text,
+      });
+      await audioPlayer.playDataUrl(url, gainFromVoiceVolume(config.volume), config.output_device_id, config.effects);
+    } catch (e) {
+      toast.error(errorMessage(e));
+    } finally {
+      setPlaying(null);
+    }
+  };
+
+  const save = async () => {
+    const entry: DesignedVoice = { id: editingId ?? crypto.randomUUID(), name: name.trim(), description: description.trim() };
+    const next = editingId ? voices.map((v) => (v.id === editingId ? entry : v)) : [...voices, entry];
+    await onSave({ ...settings, designed_voices: next });
+    toast.success(translate('localTts.designedSaved', { name: entry.name }));
+    // A new voice goes straight to the character whose settings are open.
+    if (!editingId) onChange({ ...config, voice_id: `design:${entry.id}` });
+    resetForm();
+  };
+
+  const remove = async (voice: DesignedVoice) => {
+    const confirmed = await confirmDialog({
+      title: translate('localTts.designedDeleteTitle', { name: voice.name }),
+      message: translate('localTts.designedDeleteText'),
+      confirmLabel: translate('common.delete'),
+      tone: 'danger',
+    });
+    if (!confirmed) return;
+    await onSave({ ...settings, designed_voices: voices.filter((v) => v.id !== voice.id) });
+    if (config.voice_id === `design:${voice.id}`) onChange({ ...config, voice_id: '' });
+    if (editingId === voice.id) resetForm();
+  };
+
+  const busy = playing !== null;
+  return (
+    <div className="rounded-lg border border-slate-800 bg-app/40 p-4 space-y-3" data-designed-voices>
+      <div>
+        <p className="text-sm font-medium text-slate-200 flex items-center gap-2">
+          <Sparkles className="w-4 h-4 text-accent-400" />
+          {t('localTts.designedTitle')}
+        </p>
+        <p className="text-xs text-slate-400 mt-1">{t('localTts.designedIntro')}</p>
+      </div>
+
+      {voices.length === 0 ? (
+        <p className="text-xs text-slate-400">{t('localTts.designedEmpty')}</p>
+      ) : (
+        <ul className="space-y-1.5 text-xs" aria-label={t('localTts.designedTitle')}>
+          {voices.map((voice) => (
+            <li key={voice.id} className="flex items-start justify-between gap-2 rounded bg-slate-900/60 px-2.5 py-2">
+              <span className="min-w-0">
+                <span className="font-semibold text-slate-200">{voice.name}</span>
+                <span className="block text-slate-400 break-words">{voice.description}</span>
+              </span>
+              <span className="flex shrink-0 items-center gap-0.5">
+                <button
+                  type="button"
+                  onClick={() => void preview(voice.id, voice.description)}
+                  disabled={busy}
+                  aria-label={t('localTts.designedPreviewOf', { name: voice.name })}
+                  title={t('localTts.designedPreviewOf', { name: voice.name })}
+                  className="p-1 rounded text-slate-400 hover:text-accent-300 hover:bg-slate-800 disabled:opacity-40"
+                >
+                  {playing === voice.id ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Play className="w-3.5 h-3.5" />}
+                </button>
+                <button
+                  type="button"
+                  onClick={() => {
+                    setEditingId(voice.id);
+                    setName(voice.name);
+                    setDescription(voice.description);
+                  }}
+                  aria-label={t('localTts.designedEdit', { name: voice.name })}
+                  title={t('localTts.designedEdit', { name: voice.name })}
+                  className="p-1 rounded text-slate-400 hover:text-slate-200 hover:bg-slate-800"
+                >
+                  <Pencil className="w-3.5 h-3.5" />
+                </button>
+                <button
+                  type="button"
+                  onClick={() => void remove(voice)}
+                  aria-label={t('localTts.designedDelete', { name: voice.name })}
+                  title={t('localTts.designedDelete', { name: voice.name })}
+                  className="p-1 rounded text-slate-400 hover:text-rose-400 hover:bg-slate-800"
+                >
+                  <Trash2 className="w-3.5 h-3.5" />
+                </button>
+              </span>
+            </li>
+          ))}
+        </ul>
+      )}
+
+      <div className="space-y-2 border-t border-slate-800 pt-3">
+        <label className="block">
+          <span className={labelClass}>{t('localTts.designedName')}</span>
+          <input
+            value={name}
+            onChange={(e) => setName(e.target.value)}
+            placeholder={t('localTts.designedNamePlaceholder')}
+            className={fieldClass}
+            data-designed-name
+          />
+        </label>
+        <label className="block">
+          <span className={labelClass}>{t('localTts.designedDescription')}</span>
+          <textarea
+            value={description}
+            onChange={(e) => setDescription(e.target.value)}
+            rows={3}
+            placeholder={t('localTts.voiceDescriptionPlaceholder')}
+            className={`${fieldClass} min-h-20 resize-y`}
+            data-designed-description
+          />
+        </label>
+        <div className="flex flex-wrap items-center gap-2 text-xs">
+          <button
+            type="button"
+            onClick={() => void preview('draft', description)}
+            disabled={busy || !description.trim()}
+            className="px-3 py-1.5 rounded-lg bg-slate-800 border border-slate-700 text-slate-200 hover:bg-slate-700 disabled:opacity-50 flex items-center gap-1.5"
+          >
+            {playing === 'draft' ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Play className="w-3.5 h-3.5" />}
+            {t('localTts.designedPreview')}
+          </button>
+          <button
+            type="button"
+            onClick={() => void save()}
+            disabled={!name.trim() || !description.trim()}
+            className="px-3 py-1.5 rounded-lg bg-accent-600 hover:bg-accent-500 disabled:opacity-50 text-white font-medium flex items-center gap-1.5"
+            data-designed-save
+          >
+            <Check className="w-3.5 h-3.5" />
+            {editingId ? t('localTts.designedUpdate') : t('localTts.designedSave')}
+          </button>
+          {editingId && (
+            <button type="button" onClick={resetForm} className="px-3 py-1.5 rounded-lg text-slate-300 hover:bg-slate-800">
+              {t('common.cancel')}
+            </button>
+          )}
+          {!editingId && !name && !description && config.openai_instructions.trim() && (
+            <button
+              type="button"
+              onClick={() => setDescription(config.openai_instructions.trim())}
+              className="px-3 py-1.5 rounded-lg text-accent-300 hover:text-accent-200"
+            >
+              {t('localTts.designedFromOwn')}
+            </button>
+          )}
+        </div>
+      </div>
     </div>
   );
 };

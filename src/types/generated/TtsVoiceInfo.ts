@@ -2,6 +2,6 @@
 
 export type TtsVoiceInfo = { 
 /**
- * `preset:<id>` or `clone:<id>`, stored as the character's `voice_id`.
+ * `preset:<id>`, `clone:<id>` or `design:<id>`, stored as the character's `voice_id`.
  */
 voice_id: string, label: string, language: string, cloned: boolean, };

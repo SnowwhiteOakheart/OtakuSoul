@@ -15,6 +15,7 @@ import type { TtsModelProgress } from './generated/TtsModelProgress';
 import type { TtsVoiceInfo } from './generated/TtsVoiceInfo';
 import type { TtsLocalSettings } from './generated/TtsLocalSettings';
 import type { ClonedVoice } from './generated/ClonedVoice';
+import type { DesignedVoice } from './generated/DesignedVoice';
 import type { ImageModelInfo } from './generated/ImageModelInfo';
 import type { ImagePromptRequest } from './generated/ImagePromptRequest';
 import type { CharacterReference } from './generated/CharacterReference';
@@ -150,6 +151,7 @@ export type {
   TtsVoiceInfo,
   TtsLocalSettings,
   ClonedVoice,
+  DesignedVoice,
   LocalImageStatus,
   VramPlan,
   VramStrategy,

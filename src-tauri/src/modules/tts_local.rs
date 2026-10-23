@@ -771,6 +771,18 @@ pub struct TtsLocalSettings {
     /// Speak a short AI disclosure before lines in a cloned voice (CrispASR default).
     #[serde(default = "default_true")]
     pub spoken_disclaimer: bool,
+    /// Voices described in words for VoiceDesign models; characters pick them as `design:<id>`.
+    #[serde(default)]
+    pub designed_voices: Vec<DesignedVoice>,
+}
+
+/// A named voice description for VoiceDesign models, shared by any number of characters.
+#[derive(Debug, Clone, Serialize, Deserialize, TS)]
+#[ts(export)]
+pub struct DesignedVoice {
+    pub id: String,
+    pub name: String,
+    pub description: String,
 }
 
 fn default_true() -> bool {
@@ -782,8 +794,21 @@ impl Default for TtsLocalSettings {
         Self {
             allow_noncommercial: false,
             spoken_disclaimer: true,
+            designed_voices: Vec::new(),
         }
     }
+}
+
+/// The description a VoiceDesign model speaks with: the designed voice `voice_id` names
+/// (`design:<id>`), otherwise the character's own description.
+fn design_description(voice_id: &str, designed: &[DesignedVoice], own: &str) -> String {
+    voice_id
+        .strip_prefix("design:")
+        .and_then(|id| designed.iter().find(|v| v.id == id))
+        .map_or_else(
+            || own.trim().to_string(),
+            |v| v.description.trim().to_string(),
+        )
 }
 
 fn settings_path() -> PathBuf {
@@ -811,7 +836,7 @@ pub fn save_settings(settings: &TtsLocalSettings) -> Result<(), String> {
 #[derive(Debug, Clone, Serialize, Deserialize, TS)]
 #[ts(export)]
 pub struct TtsVoiceInfo {
-    /// `preset:<id>` or `clone:<id>`, stored as the character's `voice_id`.
+    /// `preset:<id>`, `clone:<id>` or `design:<id>`, stored as the character's `voice_id`.
     pub voice_id: String,
     pub label: String,
     pub language: String,
@@ -867,6 +892,14 @@ pub fn list_models() -> Vec<TtsModelInfo> {
                     cloned: false,
                 })
                 .collect();
+            if m.voice_design {
+                voices.extend(settings.designed_voices.iter().map(|v| TtsVoiceInfo {
+                    voice_id: format!("design:{}", v.id),
+                    label: v.name.clone(),
+                    language: "multi".to_string(),
+                    cloned: false,
+                }));
+            }
             if m.cloning {
                 voices.extend(clones.iter().map(|c| TtsVoiceInfo {
                     voice_id: format!("clone:{}", c.id),
@@ -1494,7 +1527,8 @@ impl LocalTtsEngine {
         let _busy = self.busy.lock().await;
         let model = catalog_model(model_id)?;
         ensure_allowed(model)?;
-        let description = description.trim();
+        let settings = load_settings();
+        let description = design_description(voice_id, &settings.designed_voices, description);
         if model.voice_design && description.is_empty() {
             return Err(crate::err!(
                 "backend.tts.needsDescription",
@@ -1502,7 +1536,6 @@ impl LocalTtsEngine {
             ));
         }
         let voice = resolve_voice(model, voice_id)?;
-        let settings = load_settings();
         self.ensure_server(model, settings.spoken_disclaimer)
             .await?;
 
@@ -1520,7 +1553,7 @@ impl LocalTtsEngine {
                     .into();
         }
         if model.voice_design {
-            body["instructions"] = description.into();
+            body["instructions"] = description.as_str().into();
         }
         match &voice {
             VoiceChoice::Default => {}
@@ -1593,6 +1626,20 @@ pub async fn synthesize_data_url(
 
 #[cfg(test)]
 mod tests {
+
+    #[test]
+    fn a_designed_voice_brings_its_description() {
+        let designed = [super::DesignedVoice {
+            id: "abc".into(),
+            name: "Rauchige Erzählerin".into(),
+            description: " A calm, smoky female voice ".into(),
+        }];
+        let pick = |voice_id, own| super::design_description(voice_id, &designed, own);
+        assert_eq!(pick("design:abc", "ignored"), "A calm, smoky female voice");
+        // A deleted designed voice falls back to the character's own description.
+        assert_eq!(pick("design:gone", " own "), "own");
+        assert_eq!(pick("", "own"), "own");
+    }
 
     #[test]
     fn chatterbox_gets_the_clone_as_wav_file() {
