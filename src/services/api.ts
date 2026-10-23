@@ -176,6 +176,11 @@ export const api = {
     return await invoke<DoneEvent>('send_chat_message', { request, generationId, contextTokens: contextTokens ?? null, tools });
   },
 
+  /** After a long pause a companion tells what happened between the sessions; null when nothing is due. */
+  stageTellOffscreen: async (sceneId: string): Promise<SceneState | null> => {
+    return await invoke<SceneState | null>('stage_tell_offscreen', { sceneId });
+  },
+
   abortStageTurn: async (): Promise<void> => {
     return await invoke<void>('abort_stage_turn');
   },

@@ -3,6 +3,7 @@ import { isAdultMarked } from '../../utils/adultContent';
 import { soundFx } from '../../services/soundFx';
 import { audioPlayer } from '../../services/audioPlayer';
 import { speakStageMessages, stopStageVoice } from '../../services/stageVoice';
+import { stageOffscreenDue } from '../../utils/stageOffscreen';
 import type {
   CampaignClock,
   CombatCondition,
@@ -94,6 +95,8 @@ export interface StageSlice {
   editStageTurnMessage: (messageId: string, newContent: string) => Promise<void>;
   deleteStageTurnMessage: (messageId: string) => Promise<void>;
   regenerateStageTurn: () => Promise<void>;
+  /** After a long pause a companion tells what happened between the sessions (when it is due). */
+  tellStageOffscreen: () => Promise<void>;
   loadStageScene: (sceneId: string) => Promise<void>;
   /** Remembers the scene Stage reopens on the next start. */
   rememberStageScene: (sceneId: string) => void;
@@ -341,6 +344,26 @@ export const createStageSlice: SliceCreator<StageSlice> = (set, get) => ({
       console.error('Failed to regenerate stage turn:', e);
       set({ isProcessingStageTurn: false, stageLive: [] });
       throw e;
+    }
+  },
+
+  tellStageOffscreen: async () => {
+    const current = get().stageState;
+    if (!current || get().isProcessingStageTurn || !stageOffscreenDue(current)) return;
+    set({ isProcessingStageTurn: true, stageLive: [] });
+    try {
+      await get().ensureLocalAi();
+      const updated = await api.stageTellOffscreen(current.definition.id);
+      // Another scene opened meanwhile: the story stays saved with its own scene.
+      if (updated && get().stageState?.definition.id === updated.definition.id) {
+        set({ stageState: updated });
+        if (get().stageReadAloud) void speakStageMessages(updated.chat_log.slice(current.chat_log.length), get().availableCharacters);
+      }
+    } catch (e) {
+      // Nobody asked for it: without a story the scene just continues.
+      console.warn('Story between the sessions failed:', e);
+    } finally {
+      set({ isProcessingStageTurn: false, stageLive: [] });
     }
   },
 

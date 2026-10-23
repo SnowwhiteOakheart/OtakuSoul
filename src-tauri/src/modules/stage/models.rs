@@ -281,6 +281,9 @@ pub enum StageEventCard {
     },
     #[serde(rename = "combat")]
     Combat { action: String, text: String },
+    /// A companion tells what happened between the sessions (with whom).
+    #[serde(rename = "offscreen")]
+    Offscreen { companions: Vec<String> },
 }
 
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize, TS)]
@@ -436,6 +439,9 @@ pub struct SceneDefinition {
     pub lock_bg: bool,
     #[serde(default)]
     pub disable_ambient: bool,
+    /// No stories of what the companions did between the sessions.
+    #[serde(default)]
+    pub disable_offscreen: bool,
     #[serde(default)]
     pub folder: String,
     #[serde(default)]

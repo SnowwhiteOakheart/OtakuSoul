@@ -150,10 +150,6 @@
 
 ## 6. Weitere Alleinstellungsmerkmale (Immersion, Storytelling & Alltag)
 
-### 🌙 Träume & Off-Screen-Eigenleben (Autonome Hintergrund-Welt)
-- [ ] **Off-Screen auch in der Stage:** Im Gruppen-Chat erzählt die Figur seit 21.10.2026 nach einer langen Pause, was sie mit einem
-  Gast erlebt hat (siehe `roadmap_abgeschlossen.md`); in Geschichten könnten Gefährten zwischen den Sitzungen ebenso etwas erlebt haben.
-
 ### 🕸️ Interaktiver „Seelen- & Beziehungs-Atlas“ (Visual Memory Graph)
 - [ ] **Visuelle Sternenkarte der Erinnerungen:** Interaktive 2D/3D-Knotenansicht (Force-Graph) für das SQLite-Gedächtnis (`psyche`, `relationship`, `episodes`, `diary`, `plans`), in der leuchtende Verbindungen zeigen, welche Erlebnisse welche Überzeugungen geformt haben.
 - [ ] **Zeitreise-Checkpoints (Parallelwelt-Zeitlinien):** Klick auf einen historischen Knoten in der Beziehungs-Chronik startet von diesem Gedächtnis-Snapshot + Chat-Zeitpunkt aus einen neuen Branch („Was wäre, wenn ich mich damals anders entschieden hätte?“) mit eigenem Gedächtnisstand.

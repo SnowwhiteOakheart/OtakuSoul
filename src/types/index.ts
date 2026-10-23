@@ -579,6 +579,8 @@ export interface SceneDefinition {
   folder?: string;
   lock_bg?: boolean;
   disable_ambient?: boolean;
+  /** No stories of what the companions did between the sessions. */
+  disable_offscreen?: boolean;
   solo_mode: boolean;
   max_actor_depth: number;
   dice_rolls_enabled: boolean;
@@ -669,7 +671,14 @@ export interface CombatEventData {
   text: string;
 }
 
+/** A companion tells what happened between the sessions (teller first). */
+export interface OffscreenEventData {
+  type: 'offscreen';
+  companions: string[];
+}
+
 export type StageEventCard =
+  | OffscreenEventData
   | DiceEventData
   | ClockUpdateData
   | RestEventData

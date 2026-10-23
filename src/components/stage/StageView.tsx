@@ -111,6 +111,12 @@ export const StageView: React.FC = () => {
   const [dangerInput, setDangerInput] = useState(2);
   const [questInput, setQuestInput] = useState('');
 
+  // After a long pause a companion tells what happened between the sessions.
+  const sceneId = stageState?.definition.id;
+  useEffect(() => {
+    if (sceneId) void useAppStore.getState().tellStageOffscreen();
+  }, [sceneId]);
+
   // Dynamic Background Image
   const [loadedBackground, setLoadedBackground] = useState<{ name: string; url: string | null } | null>(null);
   const activeBgName = stageState?.current_bg || stageState?.definition.starting_bg;

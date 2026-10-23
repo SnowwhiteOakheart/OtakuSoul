@@ -1,6 +1,6 @@
 import React from 'react';
 import { StageEventCard } from '../../types';
-import { Dices, Clock, Flame, Sparkles, AlertTriangle, CheckCircle2, XCircle, PackageOpen, HeartHandshake, Swords } from 'lucide-react';
+import { Dices, Clock, Flame, Sparkles, AlertTriangle, CheckCircle2, XCircle, PackageOpen, HeartHandshake, Swords, MoonStar } from 'lucide-react';
 import { useTranslation } from '../../i18n';
 
 interface StageEventCardViewProps {
@@ -219,6 +219,17 @@ export const StageEventCardView: React.FC<StageEventCardViewProps> = ({ card }) 
         <p className="text-xs text-slate-300 mt-1">
           {t('stage.cardBondText', { affinity: card.affinity, milestone: card.milestone })}
         </p>
+      </div>
+    );
+  }
+
+  if (card.type === 'offscreen') {
+    return (
+      <div className="my-2 px-3 py-2 rounded-xl bg-indigo-950/30 border border-indigo-500/30 flex items-center gap-2">
+        <MoonStar className="w-4 h-4 text-indigo-300 shrink-0" />
+        <span className="text-xs font-semibold text-indigo-200">
+          {t('stage.cardOffscreen', { names: card.companions.join(' & ') })}
+        </span>
       </div>
     );
   }

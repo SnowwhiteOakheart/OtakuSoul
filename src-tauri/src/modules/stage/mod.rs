@@ -23,6 +23,7 @@ mod explore5e;
 mod history;
 mod models;
 mod npc;
+mod offscreen;
 mod party;
 mod plan;
 pub mod rules5e;
@@ -41,6 +42,7 @@ pub use explore5e::{
 };
 pub use models::*;
 pub use npc::*;
+pub use offscreen::*;
 pub use party::*;
 pub use plan::*;
 pub use scenes::*;

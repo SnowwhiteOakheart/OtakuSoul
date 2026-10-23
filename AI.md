@@ -434,6 +434,10 @@ ru „персонаж/история/сцена“. Fachbegriffe nur im Experte
   `stage_last_scene: "default_scene"`, Galerie-Test `stage-gallery.mjs`, Lobby über `openSceneLobby`.
   „Eigene Geschichte“ = `StoryWizard.tsx` (`buildStoryDefinition`; Vorlagen `storyWizard.premise.<genre>.<n>.*` in allen Locales,
   `PREMISES_PER_GENRE`), Kurzanleitung `StageGuide.tsx` in `TurnControlBar` (`usePersistentFlag('stageGuideSeen')`).
+  Zwischen den Sitzungen: `stage/offscreen.rs` (`stage_tell_offscreen`, ausgelöst von `StageView` beim Öffnen; Bedingungen
+  gespiegelt in `utils/stageOffscreen.ts`): nach ≥ 8 h Pause erzählt ein Gefährte (mit einem zweiten, falls vorhanden) als
+  Logzeile mit Karte `offscreen`; ins Soul Memory gelangt es über `sync_party_memory`. Abschaltbar pro Szene
+  (`disable_offscreen`); Mock erkennt „[STAGE — OFFSCREEN]“.
   Kampf-Einführung im `Combat5ePanel` (`combat5eGuideSeen`); Hilfeknöpfe tragen `data-fight-help`, E2E-Tests klicken zum
   Weiterlaufen `button:not([disabled]):not([data-fight-help])`. Seltene Stage-Aktionen im Menü „Mehr“ (`DropdownMenu`).
 - Stage-Planungsabbruch: `history::prepare` liefert bei Abbruch `None` und umfasst Kontextzählung,

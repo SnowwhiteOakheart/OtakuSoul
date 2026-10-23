@@ -280,6 +280,31 @@ pub async fn stage_regenerate_turn(
     .await
 }
 
+/// After a long pause a companion tells what happened between the sessions (see
+/// `stage::tell_offscreen`); `None` when nothing is due.
+#[tauri::command]
+pub async fn stage_tell_offscreen(
+    app: tauri::AppHandle,
+    state: State<'_, AppState>,
+    scene_id: String,
+) -> Result<Option<crate::modules::stage::SceneState>, String> {
+    let Ok(_turn) = state.stage_turn.try_lock() else {
+        // A turn is running: the story would race with it, and the pause is over anyway.
+        return Ok(None);
+    };
+    let Some(mut scene) = crate::modules::stage::tell_offscreen(
+        &state.stage_engine,
+        &state.stage_inference_client,
+        &scene_id,
+    )
+    .await?
+    else {
+        return Ok(None);
+    };
+    sync_party_memory(&app, &state, &mut scene)?;
+    Ok(Some(scene))
+}
+
 #[tauri::command]
 pub fn abort_stage_turn(state: State<'_, AppState>) -> Result<(), String> {
     state.stage_inference_client.abort();

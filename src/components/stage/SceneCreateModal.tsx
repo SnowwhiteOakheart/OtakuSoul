@@ -137,6 +137,7 @@ export const SceneCreateModal: React.FC<SceneCreateModalProps> = ({
   const [ambient, setAmbient] = useState(definition?.starting_ambient ?? 'None');
   const [lockBg, setLockBg] = useState(definition?.lock_bg ?? false);
   const [disableAmbient, setDisableAmbient] = useState(definition?.disable_ambient ?? false);
+  const [disableOffscreen, setDisableOffscreen] = useState(definition?.disable_offscreen ?? false);
   const [assets, setAssets] = useState<{ backgrounds: string[]; ambient: string[] }>({ backgrounds: [], ambient: [] });
   const [backgroundPreview, setBackgroundPreview] = useState<{ name: string; url: string } | null>(null);
   const [assetError, setAssetError] = useState('');
@@ -203,6 +204,7 @@ export const SceneCreateModal: React.FC<SceneCreateModalProps> = ({
       starting_ambient: ambient,
       lock_bg: lockBg,
       disable_ambient: disableAmbient,
+      disable_offscreen: disableOffscreen,
       rules,
       created_at: definition?.created_at ?? new Date().toISOString(),
       last_played: definition?.last_played ?? new Date().toISOString(),
@@ -480,6 +482,7 @@ export const SceneCreateModal: React.FC<SceneCreateModalProps> = ({
               <div className="space-y-2">
                 <label className="flex gap-2"><input type="checkbox" checked={lockBg} onChange={(e) => setLockBg(e.target.checked)} />{t('sceneEdit.lockBg')}</label>
                 <label className="flex gap-2"><input type="checkbox" checked={disableAmbient} onChange={(e) => setDisableAmbient(e.target.checked)} />{t('sceneEdit.disableAmbient')}</label>
+                <label className="flex gap-2" title={t('sceneEdit.disableOffscreenHint')}><input type="checkbox" checked={disableOffscreen} onChange={(e) => setDisableOffscreen(e.target.checked)} />{t('sceneEdit.disableOffscreen')}</label>
                 <label htmlFor="scene-actors" className="block">{t('sceneEdit.actors')}</label>
                 <input id="scene-actors" type="number" min={1} max={6} required value={actorDepth} onChange={(e) => setActorDepth(Number(e.target.value))} className="w-24 p-2 bg-app border border-slate-700 rounded-xl" />
               </div>

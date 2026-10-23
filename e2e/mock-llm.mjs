@@ -140,6 +140,8 @@ export function startMockLlm() {
       if (isCombatAction) stats.combatActions = (stats.combatActions ?? 0) + 1;
       if (isCombatReport) { stats.combatReports = (stats.combatReports ?? 0) + 1; stats.lastCombatReport = system; }
       // 5e exploration: the narrator retells rooms, traps, locks and arrivals.
+      const isOffscreen = system.includes('[STAGE — OFFSCREEN]');
+      if (isOffscreen) { stats.offscreen = (stats.offscreen ?? 0) + 1; stats.lastOffscreenPrompt = system; }
       const isExploreReport = system.includes('[STAGE — EXPLORATION REPORT]');
       if (isExploreReport) { stats.exploreReports = (stats.exploreReports ?? 0) + 1; stats.lastExploreReport = system; }
       const isPlanner = system.includes('GAME MASTER PLANNER');
@@ -175,6 +177,7 @@ export function startMockLlm() {
         : isCombatAction ? ((stats.preferCast && system.match(/^(cast:\S+) —/m)?.[1]) || system.match(/^(attack:\S+) —/m)?.[1] || 'dodge')
         : isCombatReport ? COMBAT_NARRATION
         : isExploreReport ? 'Staub rieselt von der Decke, als die Gruppe weitergeht.'
+        : isOffscreen ? 'Wir haben am Fluss Kräuter gesammelt, und Faelion ist dabei ins Wasser gefallen.'
         : isPlanner
         ? JSON.stringify({
             narration_plan: 'Ein altes Tor taucht aus dem Nebel auf.',

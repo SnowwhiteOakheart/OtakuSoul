@@ -2,7 +2,11 @@
 import type { SceneRules } from "./SceneRules";
 import type { JsonValue } from "./serde_json/JsonValue";
 
-export type SceneDefinition = { id: string, title: string, description: string, world_context: string, starting_location: string, time_of_day: string, opening_narration: string, first_message: string, party: Array<string>, gm_tone: string, narrator_style: string, persona: string, lorebook: Array<string>, solo_mode: boolean, max_actor_depth: number, dice_rolls_enabled: boolean, starting_bg: string, starting_ambient: string, lock_bg: boolean, disable_ambient: boolean, folder: string, created_at: string, last_played: string | null, extensions: JsonValue, 
+export type SceneDefinition = { id: string, title: string, description: string, world_context: string, starting_location: string, time_of_day: string, opening_narration: string, first_message: string, party: Array<string>, gm_tone: string, narrator_style: string, persona: string, lorebook: Array<string>, solo_mode: boolean, max_actor_depth: number, dice_rolls_enabled: boolean, starting_bg: string, starting_ambient: string, lock_bg: boolean, disable_ambient: boolean, 
+/**
+ * No stories of what the companions did between the sessions.
+ */
+disable_offscreen: boolean, folder: string, created_at: string, last_played: string | null, extensions: JsonValue, 
 /**
  * Rules of the scene; absent = narrative scene (stress, free checks).
  */

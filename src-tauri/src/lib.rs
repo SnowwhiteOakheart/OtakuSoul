@@ -315,6 +315,7 @@ pub fn run() {
             commands::stage::list_srd_spells,
             commands::stage::list_srd_items,
             commands::stage::abort_stage_turn,
+            commands::stage::stage_tell_offscreen,
             commands::stage::undo_stage_turn,
             commands::stage::rest_stage_party,
             commands::stage::use_stage_inventory_item,
