@@ -38,6 +38,7 @@
 ## 1. Lokale Modelle, Hardware & Laufzeiten
 
 - [ ] **Apple Metal:** `recommendedMaxWorkingSetSize` statt des gesamten Arbeitsspeichers als GPU-Speicher.
+- [ ] **Modell-spezifische Profile & Presets (Kontext & Sampler):** Eigene Konfigurations-Profile pro Modell statt rein globaler Sampler-Werte mit hartcodierten Sonderabfragen (`isBonsai` in `llmSlice.ts`). Jedes lokale Modell speichert seine optimalen Vorgaben für Kontextfenster, GPU-Layer, Temperatur, Top-P, Reasoning-Budget und zugehörigen Vision-Projektor (`mmproj`), die beim Modellwechsel automatisch geladen werden.
 - [ ] **TADA 3B Deutsch (GPU-Test 17.10.2026):** Vorgabestimme in CrispASR v0.8.43 nur noch 8 % verständlich (v0.8.41: 92 %);
   der deutsche Klon spricht mit vorgesprochenem KI-Hinweis nur den Hinweis (0 %), ohne Hinweis 75 %. Vorschlag: Fehler liegt bei
   CrispASR (neuere Version abwarten); Hinweis bei TADA als eigenen Clip vorweg erzeugen statt im selben Durchlauf (Entscheidung des Nutzers). Englisch ist unbetroffen.
