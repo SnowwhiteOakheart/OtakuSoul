@@ -841,27 +841,28 @@ impl Drop for PartialDownload {
 #[cfg(test)]
 mod tests {
 
-    #[tokio::test]
+    #[tokio::test(flavor = "multi_thread")]
     async fn a_dropped_connection_resumes_where_it_stopped() {
-        const DATA: &[u8] = b"OtakuSoul model bytes that arrive in two pieces";
-        let url = crate::modules::model_files::serve_flaky(DATA).await;
+        // 4 MiB in 12 pieces: more drops than attempts in a row are allowed.
+        let data = crate::modules::model_files::noise(4 << 20);
+        let url = crate::modules::model_files::serve_flaky(data, 350 * 1024).await;
         let dir = std::env::temp_dir().join(format!("otakusoul-gguf-flaky-{}", std::process::id()));
         let _ = std::fs::remove_dir_all(&dir);
         std::fs::create_dir_all(&dir).unwrap();
-        let sha: String = <super::Sha256 as super::Digest>::digest(DATA)
+        let sha: String = <super::Sha256 as super::Digest>::digest(data)
             .iter()
             .map(|b| format!("{b:02x}"))
             .collect();
         let part = super::HfGgufPart {
             filename: "flaky.gguf".into(),
-            size_bytes: DATA.len() as u64,
+            size_bytes: data.len() as u64,
             sha256: Some(sha),
             download_url: url,
         };
         let mut progress = super::Progress {
             name: "flaky.gguf".into(),
             done_bytes: 0,
-            total_bytes: DATA.len() as u64,
+            total_bytes: data.len() as u64,
             start: std::time::Instant::now(),
             last_emit: std::time::Instant::now(),
         };
@@ -874,7 +875,7 @@ mod tests {
         )
         .await
         .unwrap();
-        assert_eq!(std::fs::read(&partial.0).unwrap(), DATA);
+        assert_eq!(std::fs::read(&partial.0).unwrap(), data);
         drop(partial);
         let _ = std::fs::remove_dir_all(dir);
     }

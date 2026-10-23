@@ -105,15 +105,22 @@ async fn download_from(
     cancel: &AtomicBool,
     emit: &(impl Fn(u64) + Sync),
 ) -> Result<(), String> {
+    let part = part_path(target);
+    let part_len = || std::fs::metadata(&part).map_or(0, |m| m.len());
     let mut attempt = 0;
+    let mut had = part_len();
     loop {
         match download_once(client, url, file, target, cancel, emit).await {
-            Err(error)
-                if attempt < MAX_RESUMES
-                    && is_transient(&error)
-                    && !cancel.load(Ordering::SeqCst) =>
-            {
+            Err(error) if is_transient(&error) && !cancel.load(Ordering::SeqCst) => {
+                // Only attempts in a row without new data count.
+                if part_len() > had {
+                    attempt = 0;
+                }
+                had = part_len();
                 attempt += 1;
+                if attempt > MAX_RESUMES {
+                    return Err(error);
+                }
                 tracing::warn!(
                     "Download von {} unterbrochen, setze fort (Versuch {attempt}): {error}",
                     file.file_name()
@@ -193,8 +200,15 @@ async fn download_once(
             out.flush().await.ok();
             return Err(crate::err!("backend.localImage.downloadCancelled"));
         }
-        let chunk =
-            chunk.map_err(|e| crate::err!("backend.common.downloadInterrupted", error = e))?;
+        let chunk = match chunk {
+            Ok(chunk) => chunk,
+            Err(e) => {
+                // Finish the write in flight first: the next attempt hashes the file and appends
+                // to it, and a late write would land behind the resumed data.
+                out.flush().await.ok();
+                return Err(crate::err!("backend.common.downloadInterrupted", error = e));
+            }
+        };
         out.write_all(&chunk)
             .await
             .map_err(|e| crate::err!("backend.common.fileWrite", error = e))?;
@@ -239,10 +253,10 @@ async fn download_once(
     Ok(())
 }
 
-/// Test server for `data` whose first response breaks off after 10 bytes (a dropped connection);
-/// range requests get the rest. Returns the URL.
+/// Test server for `data` that honours `Range: bytes=N-` but drops every connection after
+/// `per_response` bytes (unless the end is reached), in chunks of 16 KiB. Returns the URL.
 #[cfg(test)]
-pub(crate) async fn serve_flaky(data: &'static [u8]) -> String {
+pub(crate) async fn serve_flaky(data: &'static [u8], per_response: usize) -> String {
     use axum::http::{HeaderMap, StatusCode, header};
     let app = axum::Router::new().route(
         "/file",
@@ -252,34 +266,51 @@ pub(crate) async fn serve_flaky(data: &'static [u8]) -> String {
                 .and_then(|v| v.to_str().ok())
                 .and_then(|v| v.strip_prefix("bytes="))
                 .and_then(|v| v.trim_end_matches('-').parse::<usize>().ok());
-            match start {
-                Some(n) => (
-                    StatusCode::PARTIAL_CONTENT,
-                    axum::body::Body::from(data[n..].to_vec()),
-                ),
-                None => {
-                    let chunks: Vec<Result<Vec<u8>, std::io::Error>> = vec![
-                        Ok(data[..10].to_vec()),
-                        Err(std::io::Error::other("connection dropped")),
-                    ];
-                    (
-                        StatusCode::OK,
-                        // The pause lets the headers and first bytes go out before the drop.
-                        axum::body::Body::from_stream(futures_util::stream::iter(chunks).then(
-                            |chunk| async move {
-                                tokio::time::sleep(Duration::from_millis(50)).await;
-                                chunk
-                            },
-                        )),
-                    )
-                }
+            let from = start.unwrap_or(0);
+            let to = (from + per_response).min(data.len());
+            let mut chunks: Vec<Result<Vec<u8>, std::io::Error>> = data[from..to]
+                .chunks(16 * 1024)
+                .map(|c| Ok(c.to_vec()))
+                .collect();
+            if to < data.len() {
+                chunks.push(Err(std::io::Error::other("connection dropped")));
             }
+            let status = if start.is_some() {
+                StatusCode::PARTIAL_CONTENT
+            } else {
+                StatusCode::OK
+            };
+            (
+                status,
+                // The pause lets the headers and first bytes go out before the drop.
+                axum::body::Body::from_stream(futures_util::stream::iter(chunks).then(
+                    |chunk| async move {
+                        tokio::time::sleep(Duration::from_millis(2)).await;
+                        chunk
+                    },
+                )),
+            )
         }),
     );
     let listener = tokio::net::TcpListener::bind("127.0.0.1:0").await.unwrap();
     let addr = listener.local_addr().unwrap();
     tokio::spawn(async move { axum::serve(listener, app).await.unwrap() });
     format!("http://{addr}/file")
+}
+
+/// Pseudo-random bytes, so a misplaced or doubled piece changes the checksum.
+#[cfg(test)]
+pub(crate) fn noise(len: usize) -> &'static [u8] {
+    let mut x = 0x2545_f491_4f6c_dd1du64;
+    let data: Vec<u8> = (0..len)
+        .map(|_| {
+            x ^= x << 13;
+            x ^= x >> 7;
+            x ^= x << 17;
+            x as u8
+        })
+        .collect();
+    Box::leak(data.into_boxed_slice())
 }
 
 #[cfg(test)]
@@ -289,17 +320,19 @@ mod tests {
 
     const DATA: &[u8] = b"0123456789abcdefghijklmnopqrstuvwxyz";
 
-    #[tokio::test]
+    #[tokio::test(flavor = "multi_thread")]
     async fn a_dropped_connection_resumes_by_itself() {
-        let url = serve_flaky(DATA).await;
+        // 4 MiB that arrive in 12 pieces: more drops than attempts in a row are allowed.
+        let data = noise(4 << 20);
+        let url = serve_flaky(data, 350 * 1024).await;
         let dir = std::env::temp_dir().join(format!("otakusoul-dl-flaky-{}", std::process::id()));
         let _ = std::fs::remove_dir_all(&dir);
         std::fs::create_dir_all(&dir).unwrap();
-        let digest: &'static str = Box::leak(sha(DATA).into_boxed_str());
+        let digest: &'static str = Box::leak(sha(data).into_boxed_str());
         let file = RemoteFile {
             repo: "test/repo",
             path: "flaky.gguf",
-            size: DATA.len() as u64,
+            size: data.len() as u64,
             sha256: Some(digest),
         };
         download_from(
@@ -312,7 +345,7 @@ mod tests {
         )
         .await
         .unwrap();
-        assert_eq!(std::fs::read(file.path_in(&dir)).unwrap(), DATA);
+        assert_eq!(std::fs::read(file.path_in(&dir)).unwrap(), data);
         let _ = std::fs::remove_dir_all(dir);
     }
 
