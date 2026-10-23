@@ -24,6 +24,7 @@ const qwen: TtsModelInfo = {
   needs_clone: false,
   clone_experimental: false,
   voice_design: false,
+  style_control: false,
   sound_tags: false,
   vram_mb: 2000,
   download_bytes: 1.3 * GB,
@@ -65,6 +66,26 @@ beforeEach(() => {
 });
 
 describe('LocalTtsSettings', () => {
+  it('gives a style voice a speaking style and its feelings', async () => {
+    const styled: TtsModelInfo = { ...qwen, id: 'qwen3-tts-customvoice-1.7b', name: 'CustomVoice 1.7B', cloning: false, style_control: true };
+    vi.mocked(api.listTtsModels).mockResolvedValue([styled]);
+    const onChange = vi.fn();
+    const base = { ...config, local_model_id: styled.id, local_style: '', local_emotion: true } as VoiceConfig;
+    render(<LocalTtsSettings config={base} onChange={onChange} />);
+    // The preset voice stays selectable next to the style.
+    expect(await screen.findByRole('combobox', { name: /^Voice$/ })).toBeInTheDocument();
+    fireEvent.change(screen.getByRole('textbox', { name: /Speaking style/ }), { target: { value: 'Speak softly.' } });
+    expect(onChange).toHaveBeenLastCalledWith(expect.objectContaining({ local_style: 'Speak softly.' }));
+    fireEvent.click(screen.getByRole('checkbox', { name: /feeling of the reply/ }));
+    expect(onChange).toHaveBeenLastCalledWith(expect.objectContaining({ local_emotion: false }));
+  });
+
+  it('shows no style fields for voices without style control', async () => {
+    render(<LocalTtsSettings config={config} onChange={vi.fn()} />);
+    await screen.findByRole('combobox', { name: /^Voice$/ });
+    expect(screen.queryByRole('textbox', { name: /Speaking style/ })).not.toBeInTheDocument();
+  });
+
   it('lets a VoiceDesign character use its own description', async () => {
     const design: TtsModelInfo = { ...qwen, id: 'qwen3-tts-1.7b-voicedesign', name: 'VoiceDesign', voice_design: true, cloning: false, voices: [] };
     vi.mocked(api.listTtsModels).mockResolvedValue([design]);

@@ -15,6 +15,11 @@ clone_experimental: boolean,
  */
 voice_design: boolean, 
 /**
+ * A preset voice that takes a speaking style (`local_style` of the voice settings plus the
+ * feeling of each sentence).
+ */
+style_control: boolean, 
+/**
  * Roleplay actions such as *laughs* become sounds (`speaks_sound_tags`).
  */
 sound_tags: boolean, vram_mb: number, download_bytes: number, missing_bytes: number, installed: boolean, voices: Array<TtsVoiceInfo>, };

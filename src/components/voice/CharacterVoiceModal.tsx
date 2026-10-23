@@ -75,6 +75,8 @@ const DEFAULT_CONFIG: VoiceConfig = {
     input_device_id: '',
   },
   narrator_for_actions: false,
+  local_style: '',
+  local_emotion: true,
 };
 
 type VoiceTab = 'tts' | 'effects' | 'stt' | 'rvc';

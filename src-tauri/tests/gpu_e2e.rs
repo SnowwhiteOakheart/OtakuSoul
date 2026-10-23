@@ -254,6 +254,105 @@ fn median_pitch(bytes: &[u8]) -> f32 {
     pitches.get(pitches.len() / 2).copied().unwrap_or(0.0)
 }
 
+/// Qwen3-TTS 1.7B CustomVoice through the app's own path (`voice::synthesize_speech`): the
+/// spoken words are always the same, only a roleplay action in front differs (removed before
+/// speaking). Its feeling must change the delivery while the line stays intelligible, and a
+/// written speaking style must work, too. Downloads the model through the catalog.
+///
+/// ```text
+/// OTAKUSOUL_E2E_OUT=/tmp/e2e cargo test --test gpu_e2e style_voice -- --ignored --nocapture
+/// ```
+#[tokio::test(flavor = "multi_thread")]
+#[ignore = "downloads a model and needs a GPU"]
+async fn style_voice() {
+    use base64::Engine;
+    use otakusoul_lib::modules::voice::{self, TtsEngine, VoiceConfig};
+    let out = out_dir();
+    ensure_runtime(RuntimeKind::Crisp, &["vulkan"]).await;
+    let model = "qwen3-tts-customvoice-1.7b";
+    let started = Instant::now();
+    tts_local::download_model_with(model, &|_| {})
+        .await
+        .unwrap();
+    println!(
+        "[download] {model} bereit nach {:.0}s",
+        started.elapsed().as_secs_f32()
+    );
+
+    const LINE: &str = "Du bist also wirklich gekommen, nach all den Jahren.";
+    let base = VoiceConfig {
+        engine: TtsEngine::Local,
+        local_model_id: Some(model.into()),
+        voice_id: "preset:ryan".into(),
+        ..VoiceConfig::default()
+    };
+    let calm = VoiceConfig {
+        local_emotion: false,
+        ..base.clone()
+    };
+    let cases = [
+        ("neutral", LINE.to_string(), base.clone()),
+        ("traurig", format!("*weint leise* {LINE}"), base.clone()),
+        ("wuetend", format!("*funkelt wütend* {LINE}"), base.clone()),
+        ("belustigt", format!("*kichert* {LINE}"), base.clone()),
+        // The feeling can be switched off: the same sad action then sounds like the neutral line.
+        ("traurig-aus", format!("*weint leise* {LINE}"), calm.clone()),
+        (
+            "stil-fluestern",
+            LINE.to_string(),
+            VoiceConfig {
+                local_style: "Speak very slowly and quietly, almost whispering.".into(),
+                ..calm
+            },
+        ),
+    ];
+    let mut measured = std::collections::HashMap::new();
+    let mut unclear = Vec::new();
+    for (name, text, config) in cases {
+        let url = voice::synthesize_speech(&text, &config).await.unwrap();
+        let wav = base64::engine::general_purpose::STANDARD
+            .decode(url.split_once(',').unwrap().1)
+            .unwrap();
+        let path = out.join(format!("style-{name}.wav"));
+        std::fs::write(&path, &wav).unwrap();
+        let (seconds, pitch) = (wav_seconds(&wav), median_pitch(&wav));
+        let heard = transcribe(&path, "de");
+        let words = word_match(LINE, &heard);
+        println!(
+            "[style] {name:<15} {seconds:>5.2}s {pitch:>4.0} Hz Wörter {:>3.0}% → {heard}",
+            words * 100.0
+        );
+        if words < 0.8 {
+            unclear.push(format!("{name}: {heard}"));
+        }
+        measured.insert(name, (seconds, pitch));
+    }
+    // Stop the speech server before any assert, or a failure leaves it running.
+    tts_local::engine().stop().await;
+    assert!(unclear.is_empty(), "unverständlich: {unclear:?}");
+    let (neutral_s, neutral_hz) = measured["neutral"];
+    // Sadness sounds lower or slower; switched off, the sad action changes nothing (the same
+    // input gives the same audio); a whispered style is slower; anger or amusement raise the voice.
+    let (sad_s, sad_hz) = measured["traurig"];
+    assert!(
+        sad_hz < neutral_hz * 0.95 || sad_s > neutral_s * 1.1,
+        "traurig klingt wie neutral: {measured:?}"
+    );
+    let (off_s, off_hz) = measured["traurig-aus"];
+    assert!(
+        (off_s / neutral_s - 1.0).abs() < 0.05 && (off_hz / neutral_hz - 1.0).abs() < 0.05,
+        "Gefühle aus ändert trotzdem die Stimme: {measured:?}"
+    );
+    assert!(
+        measured["stil-fluestern"].0 > neutral_s * 1.1,
+        "Stil wirkt nicht: {measured:?}"
+    );
+    assert!(
+        measured["wuetend"].1 > neutral_hz * 1.1 || measured["belustigt"].1 > neutral_hz * 1.1,
+        "Gefühl hebt die Stimme nicht: {measured:?}"
+    );
+}
+
 /// Chatterbox clones natively from a WAV (CrispASR, 24 kHz path): a clone of Kokoro's high
 /// female voice must come out near its pitch, not near Chatterbox's own (lower) default voice.
 ///
@@ -278,7 +377,7 @@ async fn chatterbox_clone() {
     let say = async |model: &str, voice: &str, text: &str, lang: &str| {
         let started = Instant::now();
         let wav = engine
-            .synthesize_with(model, voice, text, lang, 1.0, "")
+            .synthesize_with(model, voice, text, lang, 1.0, Default::default())
             .await
             .unwrap_or_else(|e| panic!("{model} {voice}: {e}"));
         let name = format!("clone-{model}-{}-{lang}.wav", voice.replace(':', "_"));
@@ -297,7 +396,14 @@ async fn chatterbox_clone() {
 
     // Reference: Kokoro's female German voice, taken as the app's recorder delivers it (16 kHz).
     let reference = engine
-        .synthesize_with("kokoro-de", "preset:df_victoria", DE, "de", 1.0, "")
+        .synthesize_with(
+            "kokoro-de",
+            "preset:df_victoria",
+            DE,
+            "de",
+            1.0,
+            Default::default(),
+        )
         .await
         .unwrap();
     let reference_path = out.join("clone-reference-victoria.wav");
@@ -388,7 +494,10 @@ async fn tts() {
                 line.text,
                 line.lang,
                 1.0,
-                description,
+                otakusoul_lib::modules::tts_local::VoicePrompt {
+                    description,
+                    style: "",
+                },
             )
             .await;
         let secs = started.elapsed().as_secs_f32();

@@ -66,6 +66,8 @@ struct TtsModel {
     clone_experimental: bool,
     /// The voice comes from a description (`instructions`) instead of a preset or clone.
     voice_design: bool,
+    /// A preset voice that takes a speaking style (`instructions`): manner and feeling of a line.
+    style_control: bool,
     vram_mb: u64,
     files: &'static [TtsFile],
     voices: &'static [PresetVoice],
@@ -77,6 +79,64 @@ const QWEN_LANGS: &[&str] = &["de", "en", "ru", "ja", "zh", "ko", "fr", "es", "i
 const CHATTERBOX_LANGS: &[&str] = &[
     "ar", "da", "de", "el", "en", "es", "fi", "fr", "he", "hi", "it", "ja", "ko", "ms", "nl", "no",
     "pl", "pt", "ru", "sv", "sw", "tr", "zh",
+];
+
+/// The nine built-in speakers of Qwen3-TTS CustomVoice (0.6B and 1.7B).
+const QWEN_PRESET_VOICES: &[PresetVoice] = &[
+    PresetVoice {
+        id: "vivian",
+        label: "Vivian",
+        file: None,
+        language: "multi",
+    },
+    PresetVoice {
+        id: "serena",
+        label: "Serena",
+        file: None,
+        language: "multi",
+    },
+    PresetVoice {
+        id: "ono_anna",
+        label: "Ono Anna",
+        file: None,
+        language: "multi",
+    },
+    PresetVoice {
+        id: "sohee",
+        label: "Sohee",
+        file: None,
+        language: "multi",
+    },
+    PresetVoice {
+        id: "ryan",
+        label: "Ryan",
+        file: None,
+        language: "multi",
+    },
+    PresetVoice {
+        id: "aiden",
+        label: "Aiden",
+        file: None,
+        language: "multi",
+    },
+    PresetVoice {
+        id: "dylan",
+        label: "Dylan",
+        file: None,
+        language: "multi",
+    },
+    PresetVoice {
+        id: "eric",
+        label: "Eric",
+        file: None,
+        language: "multi",
+    },
+    PresetVoice {
+        id: "uncle_fu",
+        label: "Uncle Fu",
+        file: None,
+        language: "multi",
+    },
 ];
 
 const CATALOG: &[TtsModel] = &[
@@ -94,6 +154,7 @@ const CATALOG: &[TtsModel] = &[
         needs_clone: false,
         clone_experimental: false,
         voice_design: false,
+        style_control: false,
         vram_mb: 3_200,
         files: &[
             TtsFile {
@@ -119,62 +180,49 @@ const CATALOG: &[TtsModel] = &[
                 },
             },
         ],
-        voices: &[
-            PresetVoice {
-                id: "vivian",
-                label: "Vivian",
-                file: None,
-                language: "multi",
+        voices: QWEN_PRESET_VOICES,
+        start_language: None,
+    },
+    // Same speakers as the 0.6B, but they take a speaking style (`instructions`): manner and
+    // feeling per line. Age or gender in the style bend the voice (tested 23.10.2026).
+    TtsModel {
+        id: "qwen3-tts-customvoice-1.7b",
+        name: "Qwen3-TTS 1.7B (eingebaute Stimmen mit Sprechstil)",
+        backend: "qwen3-tts-1.7b-customvoice",
+        license: "Apache-2.0",
+        noncommercial: false,
+        languages: QWEN_LANGS,
+        cloning: false,
+        needs_clone: false,
+        clone_experimental: false,
+        voice_design: false,
+        style_control: true,
+        vram_mb: 3_600,
+        files: &[
+            TtsFile {
+                role: Role::Main,
+                file: RemoteFile {
+                    repo: "cstr/qwen3-tts-1.7b-customvoice-GGUF",
+                    path: "qwen3-tts-12hz-1.7b-customvoice-q8_0.gguf",
+                    size: 2_042_225_952,
+                    sha256: Some(
+                        "3985813e21a3f27407110ba3afcd8f12ebc19734a5160ec31992637cd62aa67e",
+                    ),
+                },
             },
-            PresetVoice {
-                id: "serena",
-                label: "Serena",
-                file: None,
-                language: "multi",
-            },
-            PresetVoice {
-                id: "ono_anna",
-                label: "Ono Anna",
-                file: None,
-                language: "multi",
-            },
-            PresetVoice {
-                id: "sohee",
-                label: "Sohee",
-                file: None,
-                language: "multi",
-            },
-            PresetVoice {
-                id: "ryan",
-                label: "Ryan",
-                file: None,
-                language: "multi",
-            },
-            PresetVoice {
-                id: "aiden",
-                label: "Aiden",
-                file: None,
-                language: "multi",
-            },
-            PresetVoice {
-                id: "dylan",
-                label: "Dylan",
-                file: None,
-                language: "multi",
-            },
-            PresetVoice {
-                id: "eric",
-                label: "Eric",
-                file: None,
-                language: "multi",
-            },
-            PresetVoice {
-                id: "uncle_fu",
-                label: "Uncle Fu",
-                file: None,
-                language: "multi",
+            TtsFile {
+                role: Role::Codec,
+                file: RemoteFile {
+                    repo: "cstr/qwen3-tts-tokenizer-12hz-GGUF",
+                    path: "qwen3-tts-tokenizer-12hz.gguf",
+                    size: 358_453_280,
+                    sha256: Some(
+                        "70dc95dbfdd9aa5d9d406236ff771d061bf17b0cda02a72513953355606e719b",
+                    ),
+                },
             },
         ],
+        voices: QWEN_PRESET_VOICES,
         start_language: None,
     },
     TtsModel {
@@ -188,6 +236,7 @@ const CATALOG: &[TtsModel] = &[
         needs_clone: true,
         clone_experimental: false,
         voice_design: false,
+        style_control: false,
         vram_mb: 3_600,
         files: &[
             TtsFile {
@@ -228,6 +277,7 @@ const CATALOG: &[TtsModel] = &[
         needs_clone: false,
         clone_experimental: false,
         voice_design: true,
+        style_control: false,
         vram_mb: 3_600,
         files: &[
             TtsFile {
@@ -269,6 +319,7 @@ const CATALOG: &[TtsModel] = &[
         needs_clone: false,
         clone_experimental: false,
         voice_design: false,
+        style_control: false,
         vram_mb: 7_500,
         files: &[
             TtsFile {
@@ -513,6 +564,7 @@ const CATALOG: &[TtsModel] = &[
         needs_clone: false,
         clone_experimental: true,
         voice_design: false,
+        style_control: false,
         vram_mb: 2_300,
         files: &[
             TtsFile {
@@ -558,6 +610,7 @@ const CATALOG: &[TtsModel] = &[
         needs_clone: false,
         clone_experimental: true,
         voice_design: false,
+        style_control: false,
         vram_mb: 2_000,
         files: &[
             TtsFile {
@@ -602,6 +655,7 @@ const CATALOG: &[TtsModel] = &[
         needs_clone: false,
         clone_experimental: false,
         voice_design: false,
+        style_control: false,
         vram_mb: 600,
         files: &[
             TtsFile {
@@ -712,6 +766,7 @@ const CATALOG: &[TtsModel] = &[
         needs_clone: true,
         clone_experimental: false,
         voice_design: false,
+        style_control: false,
         vram_mb: 2_000,
         files: &[TtsFile {
             role: Role::Main,
@@ -859,6 +914,9 @@ pub struct TtsModelInfo {
     pub clone_experimental: bool,
     /// The voice is described in words (`openai_instructions` of the voice settings).
     pub voice_design: bool,
+    /// A preset voice that takes a speaking style (`local_style` of the voice settings plus the
+    /// feeling of each sentence).
+    pub style_control: bool,
     /// Roleplay actions such as *laughs* become sounds (`speaks_sound_tags`).
     pub sound_tags: bool,
     pub vram_mb: u64,
@@ -919,6 +977,7 @@ pub fn list_models() -> Vec<TtsModelInfo> {
                 needs_clone: m.needs_clone,
                 clone_experimental: m.clone_experimental,
                 voice_design: m.voice_design,
+                style_control: m.style_control,
                 sound_tags: speaks_sound_tags(Some(m.id)),
                 vram_mb: m.vram_mb,
                 download_bytes,
@@ -1510,11 +1569,19 @@ impl LocalTtsEngine {
         language: &str,
         speed: f32,
     ) -> Result<Vec<u8>, String> {
-        self.synthesize_with(model_id, voice_id, text, language, speed, "")
-            .await
+        self.synthesize_with(
+            model_id,
+            voice_id,
+            text,
+            language,
+            speed,
+            VoicePrompt::default(),
+        )
+        .await
     }
 
-    /// `synthesize` with a voice description for VoiceDesign models.
+    /// `synthesize` with a voice description for VoiceDesign models and a speaking style for
+    /// models with style control.
     pub async fn synthesize_with(
         &self,
         model_id: &str,
@@ -1522,8 +1589,9 @@ impl LocalTtsEngine {
         text: &str,
         language: &str,
         speed: f32,
-        description: &str,
+        prompt: VoicePrompt<'_>,
     ) -> Result<Vec<u8>, String> {
+        let VoicePrompt { description, style } = prompt;
         let _busy = self.busy.lock().await;
         let model = catalog_model(model_id)?;
         ensure_allowed(model)?;
@@ -1554,6 +1622,8 @@ impl LocalTtsEngine {
         }
         if model.voice_design {
             body["instructions"] = description.as_str().into();
+        } else if model.style_control && !style.trim().is_empty() {
+            body["instructions"] = style.trim().into();
         }
         match &voice {
             VoiceChoice::Default => {}
@@ -1596,6 +1666,14 @@ pub fn speaks_sound_tags(model_id: Option<&str>) -> bool {
     matches!(model_id, Some("chatterbox-turbo"))
 }
 
+/// What a voice is asked for besides the text: the voice description of VoiceDesign models and
+/// the speaking style of models with style control (each ignored by the other models).
+#[derive(Debug, Clone, Copy, Default)]
+pub struct VoicePrompt<'a> {
+    pub description: &'a str,
+    pub style: &'a str,
+}
+
 /// Synthesises for the voice settings of a character and returns a WAV data URL.
 pub async fn synthesize_data_url(
     model_id: Option<&str>,
@@ -1603,6 +1681,7 @@ pub async fn synthesize_data_url(
     text: &str,
     rate: &str,
     description: &str,
+    style: &str,
 ) -> Result<String, String> {
     let model_id = model_id
         .filter(|id| !id.trim().is_empty())
@@ -1617,7 +1696,7 @@ pub async fn synthesize_data_url(
             text,
             &language,
             crate::modules::kokoro::rate_to_speed(rate),
-            description,
+            VoicePrompt { description, style },
         )
         .await?;
     let b64 = base64::Engine::encode(&base64::engine::general_purpose::STANDARD, wav);

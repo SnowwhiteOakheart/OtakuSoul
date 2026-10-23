@@ -147,6 +147,35 @@ fn emotion_of_mood(mood: &str) -> &'static str {
     }
 }
 
+/// How a sentence with this GoEmotion should sound, as an English style instruction for voices
+/// with style control (Qwen3-TTS 1.7B CustomVoice). Only manner and feeling, never age or gender:
+/// those bend the preset voice (tested 23.10.2026). `None` for neutral.
+pub fn speaking_style(emotion: &str) -> Option<&'static str> {
+    Some(match emotion {
+        "anger" => "Speak with clear anger, tense, sharp and forceful.",
+        "annoyance" | "disapproval" => "Speak with irritation, curt and slightly sharp.",
+        "disgust" => "Speak with distaste, cold and dismissive.",
+        // Stronger wording ("quietly and slowly") made lines slur (word match 78 %, 23.10.2026).
+        "sadness" | "grief" => "Speak sadly and softly, a little slower, with a heavy heart.",
+        "disappointment" | "remorse" => "Speak quietly and dejectedly, a little subdued.",
+        "fear" => "Speak fearfully, tense and slightly shaky.",
+        "nervousness" => "Speak nervously and hesitantly, a little unsteady.",
+        "embarrassment" => "Speak shyly and embarrassed, quieter and hesitant.",
+        "joy" | "optimism" | "approval" => "Speak cheerfully and warmly, with a bright tone.",
+        "excitement" => "Speak excitedly, energetic and lively.",
+        "amusement" => "Speak amused and playful, with a smile in the voice.",
+        "gratitude" | "admiration" => "Speak warmly and sincerely, with heartfelt appreciation.",
+        "pride" => "Speak proudly and confidently.",
+        "love" | "caring" => "Speak tenderly and affectionately, soft and warm.",
+        "desire" => "Speak softly and longingly, warm and intimate.",
+        "surprise" | "realization" => "Speak with surprise, lively and astonished.",
+        "curiosity" => "Speak curiously and attentively, with interest.",
+        "confusion" => "Speak puzzled and unsure, a little hesitant.",
+        "relief" => "Speak with relief, relaxed and calm.",
+        _ => return None,
+    })
+}
+
 /// The expression tag the model ends a chat reply with (`[emotion: blush]`, asked for by
 /// `prompt_builder`); also `<emotion>…</emotion>`.
 static EMOTION_TAG_RE: LazyLock<regex::Regex> = LazyLock::new(|| {
@@ -421,6 +450,27 @@ fn cues() -> &'static Cues {
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    #[test]
+    fn every_emotion_but_neutral_has_a_speaking_style() {
+        for emotion in GO_EMOTIONS {
+            assert_eq!(
+                speaking_style(emotion).is_none(),
+                emotion == "neutral",
+                "{emotion}"
+            );
+        }
+        // Styles never describe who speaks: that would bend a preset voice.
+        for emotion in GO_EMOTIONS {
+            let style = speaking_style(emotion).unwrap_or_default().to_lowercase();
+            let words: Vec<&str> = style.split(|c: char| !c.is_alphabetic()).collect();
+            for word in [
+                "woman", "man", "girl", "boy", "young", "old", "deep", "male",
+            ] {
+                assert!(!words.contains(&word), "{emotion}: {style}");
+            }
+        }
+    }
 
     #[test]
     fn test_explicit_emotion_tag() {

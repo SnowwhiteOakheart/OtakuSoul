@@ -651,6 +651,14 @@ ru „персонаж/история/сцена“. Fachbegriffe nur im Experte
   vor der Karte: `extensions.otakusoul_voice.description` (Englisch, Editor-Feld „Stimmbeschreibung“) füllt eine leere
   `openai_instructions` beim Laden (`services/characterVoice.ts`, `loadCharacterVoiceConfig` – alle Ladestellen einer
   Figurenstimme gehen darüber, auch für OpenAI-TTS). Hub-Karten setzt `otakusoul-data/tools/set_card_voices.py`.
+  Sprechstil (`style_control`, Qwen3-TTS 1.7B CustomVoice, Backend `qwen3-tts-1.7b-customvoice`): eingebaute Stimme plus
+  `instructions` = `VoiceConfig.local_style` + Gefühl des Satzes (`local_emotion`, Standard an:
+  `emotions::classify_emotion` auf dem *ungefilterten* Text, denn Aktionen sind die stärksten Hinweise →
+  `emotions::speaking_style`). Nie Alter/Geschlecht in den Stil: Ryan mit Shioris Kartenbeschreibung sprang von 124 auf
+  214 Hz; deshalb nicht `openai_instructions`/Karte verwenden. Formulierungen gemäßigt halten: „sadly, quietly and
+  slowly“ ließ Wörter verschwimmen (78 % statt 100 %). Gleiche Eingabe gibt gleiches Audio (deterministisch).
+  GPU-Test `style_voice` (23.10.2026, RTX 5090): Wut +24 % Tonhöhe, Trauer −12 %, Flüster-Stil 2,1× so lang, alles 100 %
+  verständlich, ~1 s je Satz, 3,6 GB VRAM.
   TADA: `CRISPASR_TADA_WAV_CLONE=1` (WAV-Klon, Encoder/Aligner neben dem Modell), `CRISPASR_TADA_NUM_CANDIDATES=4`.
   Chatterbox klont nativ nur aus 24-kHz-WAV und braucht im Server die Stimme als `<id>.wav` (`clone_voice_name`);
   Katalog-Feld `clone_experimental` kennzeichnet das in der UI.

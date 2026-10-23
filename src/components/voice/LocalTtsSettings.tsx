@@ -342,6 +342,34 @@ export const LocalTtsSettings = ({ config, onChange }: LocalTtsSettingsProps) =>
         </label>
       )}
 
+      {selected?.style_control && (
+        <div className="space-y-3" data-style-control>
+          <label className="block">
+            <span className={labelClass}>{t('localTts.styleLabel')}</span>
+            <textarea
+              value={config.local_style ?? ''}
+              onChange={(e) => onChange({ ...config, local_style: e.target.value })}
+              rows={2}
+              placeholder={t('localTts.stylePlaceholder')}
+              className={`${fieldClass} min-h-16 resize-y`}
+            />
+            <span className="mt-1 block text-[11px] text-slate-400">{t('localTts.styleHint')}</span>
+          </label>
+          <label className="flex items-start gap-2 text-xs text-slate-300">
+            <input
+              type="checkbox"
+              checked={config.local_emotion ?? true}
+              onChange={(e) => onChange({ ...config, local_emotion: e.target.checked })}
+              className="mt-0.5 accent-accent-500"
+            />
+            <span>
+              {t('localTts.emotionStyle')}
+              <span className="block text-slate-400">{t('localTts.emotionStyleHint')}</span>
+            </span>
+          </label>
+        </div>
+      )}
+
       {settings && (
         <label className="flex items-start gap-2 text-xs text-slate-300">
           <input

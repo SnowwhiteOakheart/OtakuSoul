@@ -201,6 +201,17 @@ pub struct VoiceConfig {
     /// (profile `stage_narrator`, split in the frontend: `services/narratorVoice.ts`).
     #[serde(default)]
     pub narrator_for_actions: bool,
+    /// How a local voice with style control speaks (Qwen3-TTS 1.7B CustomVoice), e.g. "softly
+    /// and a little shy". Only manner, never age or gender: those bend the preset voice.
+    #[serde(default)]
+    pub local_style: String,
+    /// Such a voice also takes on the feeling of each sentence (`emotions::speaking_style`).
+    #[serde(default = "default_local_emotion")]
+    pub local_emotion: bool,
+}
+
+fn default_local_emotion() -> bool {
+    true
 }
 
 fn default_rate() -> String {
@@ -269,6 +280,8 @@ impl Default for VoiceConfig {
             stt: SttConfig::default(),
             effects: None,
             narrator_for_actions: false,
+            local_style: String::new(),
+            local_emotion: true,
         }
     }
 }
@@ -1319,8 +1332,29 @@ async fn apply_rvc(data_url: &str, config: &RvcConfig) -> Result<String, String>
 // Unified Synthesis Dispatcher
 // ---------------------------------------------------------------------------
 
+/// The speaking style for a local voice with style control: the character's own style plus the
+/// feeling of this text (when enabled and not neutral).
+fn local_speaking_style(config: &VoiceConfig, text: &str) -> String {
+    let feeling = config
+        .local_emotion
+        .then(|| crate::modules::emotions::classify_emotion(text))
+        .and_then(|result| crate::modules::emotions::speaking_style(&result.emotion));
+    [config.local_style.trim(), feeling.unwrap_or_default()]
+        .into_iter()
+        .filter(|part| !part.is_empty())
+        .collect::<Vec<_>>()
+        .join(" ")
+}
+
 /// Dispatches TTS synthesis based on the VoiceConfig engine
 pub async fn synthesize_speech(text: &str, config: &VoiceConfig) -> Result<String, String> {
+    // The feeling comes from the text as written: actions (*sighs sadly*) are the strongest cues
+    // and the filter below removes them.
+    let style = if config.engine == TtsEngine::Local {
+        local_speaking_style(config, text)
+    } else {
+        String::new()
+    };
     let tagged;
     let text = if config.engine == TtsEngine::Local
         && crate::modules::tts_local::speaks_sound_tags(config.local_model_id.as_deref())
@@ -1377,6 +1411,7 @@ pub async fn synthesize_speech(text: &str, config: &VoiceConfig) -> Result<Strin
                 &cleaned,
                 &config.rate,
                 &config.openai_instructions,
+                &style,
             )
             .await
         }
@@ -1708,6 +1743,38 @@ fn uuid_v4() -> String {
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    #[test]
+    fn a_style_voice_speaks_with_the_feeling_of_the_line() {
+        let config = VoiceConfig {
+            engine: TtsEngine::Local,
+            local_style: " Speak softly. ".into(),
+            ..VoiceConfig::default()
+        };
+        let sad = local_speaking_style(&config, "*seufzt traurig* Ich vermisse dich so sehr.");
+        assert!(sad.starts_with("Speak softly. "), "{sad}");
+        assert!(sad.contains("sadly"), "{sad}");
+        // A plain line keeps only the character's own style.
+        assert_eq!(
+            local_speaking_style(&config, "Der Zug fährt um acht."),
+            "Speak softly."
+        );
+        // Without feelings the style stays as it is; without both there is nothing to send.
+        let calm = VoiceConfig {
+            local_emotion: false,
+            ..config.clone()
+        };
+        assert_eq!(
+            local_speaking_style(&calm, "*seufzt traurig*"),
+            "Speak softly."
+        );
+        let empty = VoiceConfig {
+            local_style: String::new(),
+            local_emotion: false,
+            ..config
+        };
+        assert_eq!(local_speaking_style(&empty, "*seufzt traurig*"), "");
+    }
 
     #[test]
     fn roleplay_actions_become_sound_tags() {

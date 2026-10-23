@@ -19,4 +19,13 @@ effects?: VoiceEffects,
  * The character speaks only their own words; `*actions*` are read by the narrator voice
  * (profile `stage_narrator`, split in the frontend: `services/narratorVoice.ts`).
  */
-narrator_for_actions: boolean, };
+narrator_for_actions: boolean, 
+/**
+ * How a local voice with style control speaks (Qwen3-TTS 1.7B CustomVoice), e.g. "softly
+ * and a little shy". Only manner, never age or gender: those bend the preset voice.
+ */
+local_style: string, 
+/**
+ * Such a voice also takes on the feeling of each sentence (`emotions::speaking_style`).
+ */
+local_emotion: boolean, };
