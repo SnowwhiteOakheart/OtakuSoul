@@ -285,6 +285,18 @@ ru „персонаж/история/сцена“. Fachbegriffe nur im Experte
   + `chatSlice.sendSelfie` (Nachricht der Figur „📸“ mit Bildanhang). `attachments::prepare` macht Bilder in Nachrichten
   der Figur immer zu „[Picture sent: …]“ – OpenAI/Anthropic nehmen Bilder nur in Nutzer-Nachrichten.
 - Lokale Vision nur mit gewählter `mmproj`; ohne macht `attachments::prepare` aus Bildern einen Hinweis.
+- VRAM-Planer (`local_image.rs`, `plan`): ein noch geladenes *anderes* Bildmodell zählt als frei, denn `ensure_server`
+  stoppt es vor dem neuen; sonst wird das Chat-Modell unnötig entladen. GPU-Test `images` (23.10.2026, RTX 5090 Laptop
+  24 GB, Bonsai 27B im Chat mit 16K = 8,1 GB): Animagine XL 17–26 s, Qwen-Image ~50 s und FLUX.1 Q5 38 s laufen parallel
+  (Spitze ≤ 17,3 GB), FLUX.2 Q4 tauscht (Spitze 20,9 GB, 200–216 s, Chat 8 s später wieder bereit).
+- Modell-Downloads (`model_files.rs` für Bild/Sprache, `models_hub::download_part` für GGUF) setzen nach Verbindungsabbruch
+  per `Range` an derselben Stelle fort; `MAX_RESUMES` zählt nur Versuche ohne neue Daten. Vor jedem neuen Versuch den
+  `tokio::fs::File` flushen: er schreibt im Hintergrund, ein verspätetes Stück landete sonst hinter den fortgesetzten Daten
+  (falsche Prüfsumme). Hugging Face drosselt je Verbindung (23.10.2026: ~2 MB/s, 16 parallele Ranges ~140 MB/s).
+- GPU-Test `llm` (23.10.2026, RTX 5090 Laptop 24 GB, llama.cpp b11669/PrismML b10787, Kontext wie empfohlen): VRAM-Schätzung
+  −1 bis −4 % genau; Antwort Gemma 4 12B 75 t/s, 26B-A4B 121 t/s, 31B 32 t/s, Qwen3.6 35B-A3B 132 t/s (21,8 GB),
+  Cydonia/Hearthfire 24B 43 t/s, Bonsai 27B 69–71 t/s (262K Kontext, 12,1 GB). `memory`: Gemma 4 12B/26B alles richtig,
+  Qwen3.6 ohne Geschichts-Vorhaben, Cydonia erkennt Erledigtes nicht und fasst Gewohnheiten nicht zusammen.
 - Einrichtungsassistent: `components/onboarding/OnboardingParts.tsx` (Cloud-Test, lokaler Weg, erste Antwort) nutzt
   `quick_reply` (eine kurze Antwort außerhalb eines Chats, 90 s) und `list_starter_models` (Katalog `model_catalog.rs`:
   mitgeliefert `presets/recommended_models.json`, beim Start lädt `model_catalog::refresh` die Fassung aus `otakusoul-data`

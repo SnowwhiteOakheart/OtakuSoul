@@ -41,7 +41,8 @@
 - [ ] **TADA 3B Deutsch (GPU-Test 17.10.2026):** Vorgabestimme in CrispASR v0.8.43 nur noch 8 % verständlich (v0.8.41: 92 %);
   der deutsche Klon spricht mit vorgesprochenem KI-Hinweis nur den Hinweis (0 %), ohne Hinweis 75 %. Vorschlag: Fehler liegt bei
   CrispASR (neuere Version abwarten); Hinweis bei TADA als eigenen Clip vorweg erzeugen statt im selben Durchlauf (Entscheidung des Nutzers). Englisch ist unbetroffen.
-- [ ] **Bildgenerierung parallel zum Chat auf 24 GB** testen (keine passende Karte vorhanden).
+- [ ] **Parallele Modell-Downloads:** Hugging Face drosselt je Verbindung (23.10.2026: ~2 MB/s, mit 16 parallelen
+  Range-Abschnitten ~140 MB/s). GGUF-, Bild- und Sprachmodelle in mehreren fortsetzbaren Abschnitten laden.
 - [ ] **Weitere Laufzeit-Backends** (HIP/ROCm, SYCL) neben CUDA, Vulkan, Metal und CPU – nur bei Bedarf.
 
 ## 2. Technik & Tests
