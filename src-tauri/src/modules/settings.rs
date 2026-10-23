@@ -233,6 +233,20 @@ pub struct AppSettings {
     /// Buttons above the chat input.
     #[serde(default)]
     pub quick_replies: Vec<QuickReply>,
+    /// Server and sampler settings per local model, by file name; loaded when the model is
+    /// chosen again.
+    #[serde(default)]
+    pub model_profiles: std::collections::HashMap<String, ModelProfile>,
+}
+
+/// What the app remembers for one local model.
+#[derive(Debug, Clone, Serialize, Deserialize, TS)]
+#[ts(export)]
+pub struct ModelProfile {
+    pub server_config: LlamaServerConfig,
+    pub sampling: SamplingParams,
+    #[serde(default)]
+    pub active_preset_id: Option<String>,
 }
 
 fn default_true() -> bool {
@@ -317,6 +331,7 @@ impl Default for AppSettings {
             prompt_template: Default::default(),
             proactive: ProactiveSettings::default(),
             quick_replies: Vec::new(),
+            model_profiles: Default::default(),
         }
     }
 }

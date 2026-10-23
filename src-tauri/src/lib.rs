@@ -409,6 +409,7 @@ pub fn run() {
             commands::llm::get_hf_model_files,
             commands::llm::download_gguf_model,
             commands::llm::cancel_gguf_download,
+            commands::llm::get_model_defaults,
             // Voice / TTS
             commands::voice::list_available_voices,
             commands::voice::get_kokoro_installation,

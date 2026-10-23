@@ -187,6 +187,7 @@
   "settings.localServer": "Lokaler llama-server (GGUF)",
   "settings.cloudProvider": "Cloud-Anbieter (OpenRouter, Anthropic, etc.)",
   "settings.modelPath": "GGUF-Modell",
+  "settings.modelProfileHint": "Kontext, GPU-Schichten, Antwortstil und Bildverständnis merkt sich die App für jedes Modell einzeln.",
   "settings.mmproj": "Bild-Erkennung (mmproj)",
   "settings.mmprojNone": "Keine – das Modell sieht keine Bilder",
   "settings.mmprojHint": "Vision-Modelle (z. B. Gemma, Qwen-VL) brauchen eine passende mmproj-Datei aus demselben Hugging-Face-Repository. Wirkt nach dem nächsten Serverstart.",

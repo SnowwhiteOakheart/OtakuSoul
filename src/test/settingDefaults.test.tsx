@@ -3,7 +3,8 @@ import { act, fireEvent, render, screen } from '@testing-library/react';
 import { describe, expect, it, vi } from 'vitest';
 import { ResetSection } from '../components/settings/ResetSection';
 import { toast } from '../components/ui/feedback';
-import { EXTRA_SAMPLING_FIELDS, changedFields, samplingDefaults, serverTuningDefaults } from '../utils/settingDefaults';
+import { EXTRA_SAMPLING_FIELDS, changedFields, samplingDefaults, serverTuningDefaults, settingsForNewModel } from '../utils/settingDefaults';
+import type { LlamaServerConfig, ModelDefaults, SamplingParams } from '../types';
 
 describe('setting defaults', () => {
   it('counts changed and additionally set sampler values', () => {
@@ -15,11 +16,31 @@ describe('setting defaults', () => {
     ).toEqual(['temperature', 'repeat_penalty', 'dry_multiplier', 'stop_strings']);
   });
 
-  it('uses the Bonsai settings as defaults for Bonsai', () => {
-    expect(samplingDefaults('/m/Ternary-Bonsai-2-27B.gguf', true)).toMatchObject({ top_p: 0.95, top_k: 20 });
-    expect(samplingDefaults('/m/Ternary-Bonsai-2-27B.gguf', false)).toMatchObject({ top_p: 0.9, top_k: 40 });
-    expect(serverTuningDefaults('/m/Ternary-Bonsai-2-27B.gguf')).toMatchObject({ cache_type_k: 'q4_0', reasoning_mode: true });
-    expect(serverTuningDefaults('/m/Nemo.gguf')).toMatchObject({ cache_type_k: 'f16', reasoning_mode: false });
+  const rules: ModelDefaults[] = [{
+    match: ['bonsai'],
+    server: { cache_type_k: 'q4_0', cache_type_v: 'q4_0', reasoning_mode: true },
+    sampling: { top_p: 0.95, top_k: 20 },
+  }];
+
+  it("uses the catalog's values as defaults for the model's family", () => {
+    expect(samplingDefaults('/m/Ternary-Bonsai-2-27B.gguf', true, rules)).toMatchObject({ top_p: 0.95, top_k: 20 });
+    expect(samplingDefaults('/m/Ternary-Bonsai-2-27B.gguf', false, rules)).toMatchObject({ top_p: 0.9, top_k: 40 });
+    expect(serverTuningDefaults('/m/Ternary-Bonsai-2-27B.gguf', rules)).toMatchObject({ cache_type_k: 'q4_0', reasoning_mode: true });
+    expect(serverTuningDefaults('/m/Nemo.gguf', rules)).toMatchObject({ cache_type_k: 'f16', reasoning_mode: false });
+    // Only the file name counts, not a folder named after a family.
+    expect(serverTuningDefaults('/bonsai/Nemo.gguf', rules)).toMatchObject({ cache_type_k: 'f16' });
+  });
+
+  it("keeps the user's settings for a new model and swaps only the family values", () => {
+    const server = { model_path: '/m/Ternary-Bonsai-2-27B.gguf', port: 1, context_size: 8192, gpu_layers: 99, flash_attn: true,
+      reasoning_mode: true, cache_type_k: 'q4_0', cache_type_v: 'q4_0', threads: 6 } as LlamaServerConfig;
+    const sampling = { temperature: 1.1, top_p: 0.95, top_k: 20, min_p: 0.05, max_tokens: 2048 } as SamplingParams;
+    const fromBonsai = settingsForNewModel(server.model_path, '/m/Nemo.gguf', server, sampling, rules);
+    expect(fromBonsai.server).toMatchObject({ cache_type_k: 'f16', reasoning_mode: false, threads: 6 });
+    expect(fromBonsai.sampling).toMatchObject({ temperature: 1.1, top_p: 0.9, top_k: 40 });
+    const toBonsai = settingsForNewModel('/m/Nemo.gguf', server.model_path, fromBonsai.server, fromBonsai.sampling, rules);
+    expect(toBonsai.server).toMatchObject({ cache_type_k: 'q4_0', reasoning_mode: true });
+    expect(toBonsai.sampling).toMatchObject({ temperature: 1.1, top_k: 20 });
   });
 });
 

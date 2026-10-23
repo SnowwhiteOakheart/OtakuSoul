@@ -10,6 +10,8 @@ import type {
   LlamaServerConfig,
   LlmPreset,
   LlmProviderType,
+  ModelDefaults,
+  ModelProfile,
   OpenRouterModelInfo,
   PromptTemplate,
   SamplingParams,
@@ -21,12 +23,15 @@ import { reportFailure } from '../reportFailure';
 import { errorCode, errorMessage } from '../../utils/errors';
 import { translate } from '../../i18n';
 import { trackTask } from './taskSlice';
-import { DEFAULT_CONTEXT_SIZE, serverTuningDefaults } from '../../utils/settingDefaults';
+import { DEFAULT_CONTEXT_SIZE, serverTuningDefaults, settingsForNewModel } from '../../utils/settingDefaults';
 
 /** The task of the model being loaded; the server status says when it is ready. */
 let serverTaskId: string | null = null;
 
 const fileName = (path: string) => path.split(/[\\/]/).pop() || path;
+
+/** Key of a model's profile: its file name, so a moved models folder keeps the profiles. */
+export const profileKey = fileName;
 
 /** Local llama-server, hardware, cloud providers, sampler, LLM presets and the GGUF model hub. */
 export interface LlmSlice {
@@ -45,6 +50,13 @@ export interface LlmSlice {
   serverStatus: ServerStatus;
   serverConfig: LlamaServerConfig;
   setServerConfig: (config: Partial<LlamaServerConfig>) => void;
+  /** Server and sampler settings per local model (by file name), loaded when it is chosen again. */
+  modelProfiles: Record<string, ModelProfile>;
+  /** The settings now in use as the profile of the chosen local model. */
+  recordModelProfile: () => void;
+  /** Values the model catalog gives families of models (used for models without a profile). */
+  modelDefaults: ModelDefaults[];
+  fetchModelDefaults: () => Promise<void>;
   selectLocalModel: (path: string) => Promise<void>;
   /** Context size and GPU layers for the chosen model (from its file and the graphics card). */
   fitServerToModel: () => Promise<void>;
@@ -161,6 +173,26 @@ export const createLlmSlice: SliceCreator<LlmSlice> = (set, get) => ({
     get().saveCurrentSettings();
   },
 
+  modelProfiles: {},
+
+  recordModelProfile: () => {
+    const { selectedBackend, serverConfig, sampling, activePresetId } = get();
+    // Cloud models share the sampler; only settings used with a local model belong to it.
+    if (selectedBackend !== 'local' || !serverConfig.model_path) return;
+    const profile: ModelProfile = { server_config: serverConfig, sampling, active_preset_id: activePresetId };
+    set((state) => ({ modelProfiles: { ...state.modelProfiles, [profileKey(serverConfig.model_path)]: profile } }));
+  },
+
+  modelDefaults: [],
+
+  fetchModelDefaults: async () => {
+    try {
+      set({ modelDefaults: (await api.getModelDefaults()) ?? [] });
+    } catch (e) {
+      console.error('Failed to load the model defaults:', e);
+    }
+  },
+
   selectLocalModel: async (path) => {
     if (path === get().serverConfig.model_path) return;
     try {
@@ -172,32 +204,33 @@ export const createLlmSlice: SliceCreator<LlmSlice> = (set, get) => ({
       console.error('Failed to stop the previous local model:', error);
       return;
     }
+    // The settings of the model left behind stay with it.
+    get().recordModelProfile();
+    const profile = get().modelProfiles[profileKey(path)];
+    if (profile) {
+      set((state) => ({
+        selectedBackend: 'local',
+        serverConfig: { ...profile.server_config, model_path: path, port: state.serverConfig.port },
+        sampling: profile.sampling,
+        activePresetId: profile.active_preset_id,
+      }));
+      // A saved projector may have been deleted in the meantime.
+      const projectors = (await api.scanVisionProjectors().catch(() => null)) ?? [];
+      const mmproj = get().serverConfig.mmproj_path;
+      if (mmproj && !projectors.some((p) => p.path === mmproj)) {
+        set((state) => ({ serverConfig: { ...state.serverConfig, mmproj_path: null } }));
+      }
+      await get().fetchLayerRecommendation(0, 0, get().serverConfig.context_size, path,
+        get().serverConfig.cache_type_k ?? 'f16', get().serverConfig.cache_type_v ?? 'f16');
+      await get().saveCurrentSettings();
+      return;
+    }
     set((state) => {
-      const model = state.scannedModels.find((item) => item.path === path);
-      const isBonsai = model?.name.toLowerCase().includes('bonsai') ?? path.toLowerCase().includes('bonsai');
+      const next = settingsForNewModel(state.serverConfig.model_path, path, state.serverConfig, state.sampling, state.modelDefaults);
       return {
         selectedBackend: 'local',
-        serverConfig: {
-          ...state.serverConfig,
-          model_path: path,
-          gpu_layers: 99,
-          ...(isBonsai
-            ? {
-                cache_type_k: 'q4_0',
-                cache_type_v: 'q4_0',
-                flash_attn: true,
-                reasoning_mode: true,
-              }
-            : {}),
-        },
-        sampling: isBonsai
-          ? {
-              ...state.sampling,
-              temperature: 0.7,
-              top_p: 0.95,
-              top_k: 20,
-            }
-          : state.sampling,
+        serverConfig: { ...next.server, model_path: path, gpu_layers: 99 },
+        sampling: next.sampling,
       };
     });
     // The model's own vision projector, or none when the current one belongs to another model.
@@ -238,7 +271,7 @@ export const createLlmSlice: SliceCreator<LlmSlice> = (set, get) => ({
 
   resetServerTuning: async () => {
     const previous = get().serverConfig;
-    set((state) => ({ serverConfig: { ...state.serverConfig, ...serverTuningDefaults(state.serverConfig.model_path) } }));
+    set((state) => ({ serverConfig: { ...state.serverConfig, ...serverTuningDefaults(state.serverConfig.model_path, state.modelDefaults) } }));
     await get().fitServerToModel();
     await get().saveCurrentSettings();
     return previous;

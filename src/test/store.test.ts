@@ -129,6 +129,42 @@ describe('local model selection', () => {
   });
 });
 
+describe('settings per local model', () => {
+  const bonsai = { match: ['bonsai'], server: { cache_type_k: 'q4_0', reasoning_mode: true }, sampling: { top_k: 20 } };
+
+  it('remembers the settings of each model and restores them when it is chosen again', async () => {
+    useAppStore.setState({
+      modelDefaults: [bonsai],
+      serverConfig: { ...initialState.serverConfig, model_path: '/m/nemo.gguf', context_size: 12_288, cache_type_k: 'f16' },
+      sampling: { ...initialState.sampling, temperature: 1.2, top_k: 40 },
+    });
+    await useAppStore.getState().selectLocalModel('/m/Ternary-Bonsai-2-27B.gguf');
+    // New model without a profile: the family values apply, the user's temperature stays.
+    expect(useAppStore.getState().serverConfig).toMatchObject({ cache_type_k: 'q4_0', reasoning_mode: true });
+    expect(useAppStore.getState().sampling).toMatchObject({ temperature: 1.2, top_k: 20 });
+    useAppStore.getState().setSampling({ temperature: 0.5 });
+
+    vi.mocked(api.getLayerRecommendation).mockClear();
+    await useAppStore.getState().selectLocalModel('/other/nemo.gguf');
+    // Known by its file name: back to its own context and sampler, without refitting.
+    expect(useAppStore.getState().serverConfig).toMatchObject({ model_path: '/other/nemo.gguf', context_size: 12_288, cache_type_k: 'f16' });
+    expect(useAppStore.getState().sampling).toMatchObject({ temperature: 1.2, top_k: 40 });
+    expect(lastSavedSettings().model_profiles?.['Ternary-Bonsai-2-27B.gguf']?.sampling.temperature).toBe(0.5);
+
+    await useAppStore.getState().selectLocalModel('/m/Ternary-Bonsai-2-27B.gguf');
+    expect(useAppStore.getState().sampling).toMatchObject({ temperature: 0.5, top_k: 20 });
+  });
+
+  it('does not take settings made for a cloud model into the local profile', async () => {
+    useAppStore.setState({
+      selectedBackend: 'cloud',
+      serverConfig: { ...initialState.serverConfig, model_path: '/m/nemo.gguf' },
+    });
+    useAppStore.getState().setSampling({ temperature: 1.4 });
+    expect(lastSavedSettings().model_profiles?.['nemo.gguf']).toBeUndefined();
+  });
+});
+
 describe('vision projector of the local model', () => {
   const projector = (path: string) => ({ name: path, path, size_mb: 170, runtime: 'standard', recommended_context: 0, compatibility_note: '' });
 
@@ -171,6 +207,7 @@ describe('context of the local model at start', () => {
     vi.mocked(api.loadPersonas).mockResolvedValue([]);
     vi.mocked(api.getLayerRecommendation).mockResolvedValue(recommendation);
     vi.mocked(api.loadSettings).mockResolvedValue({ server_config: serverConfig, ...extra } as unknown as AppSettings);
+    vi.mocked(api.getModelDefaults).mockResolvedValue([{ match: ['bonsai'], server: { cache_type_k: 'q4_0', cache_type_v: 'q4_0' }, sampling: {} }]);
     await useAppStore.getState().initApp();
   };
 

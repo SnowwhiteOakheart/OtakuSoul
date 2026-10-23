@@ -79,6 +79,7 @@ import {
   LlmPreset,
   HfModelSummary,
   HfGgufFile,
+  ModelDefaults,
   DownloadProgressEvent,
   ScannedVoice,
   SttConfig,
@@ -1228,6 +1229,11 @@ export const api = {
   /** One short answer outside a chat (connection test, first reply in the setup wizard). */
   quickReply: async (request: QuickReplyRequest): Promise<string> => {
     return await invoke<string>('quick_reply', { request });
+  },
+
+  /** Server and sampler values families of local models need (from the model catalog). */
+  getModelDefaults: async (): Promise<ModelDefaults[]> => {
+    return await invoke<ModelDefaults[]>('get_model_defaults');
   },
 
   /** Chat models for getting started, with the recommendation for this GPU. */

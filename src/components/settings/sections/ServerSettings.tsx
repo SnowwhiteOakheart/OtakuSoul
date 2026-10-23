@@ -31,10 +31,10 @@ export const ServerSettings = () => {
   const { t, tOptional } = useTranslation();
   const {
     hardware, layerRecommendation, fetchLayerRecommendation, serverStatus, serverConfig,
-    setServerConfig, selectLocalModel, startServer, stopServer, scannedModels, expertMode,
+    setServerConfig, selectLocalModel, startServer, stopServer, scannedModels, expertMode, modelDefaults,
   } = useStoreFields(
     'hardware', 'layerRecommendation', 'fetchLayerRecommendation', 'serverStatus', 'serverConfig',
-    'setServerConfig', 'selectLocalModel', 'startServer', 'stopServer', 'scannedModels', 'expertMode',
+    'setServerConfig', 'selectLocalModel', 'startServer', 'stopServer', 'scannedModels', 'expertMode', 'modelDefaults',
   );
 
   const [showLogs, setShowLogs] = useState(true);
@@ -80,7 +80,7 @@ export const ServerSettings = () => {
   const mmproj = serverConfig.mmproj_path ?? '';
   // Tuning plus context and GPU layers apart from what the planner recommends for this model.
   const changedServer =
-    changedFields(serverConfig, serverTuningDefaults(serverConfig.model_path)).length +
+    changedFields(serverConfig, serverTuningDefaults(serverConfig.model_path, modelDefaults)).length +
     (layerRecommendation && serverConfig.context_size !== layerRecommendation.recommended_context_size ? 1 : 0) +
     (layerRecommendation && layerRecommendation.available_vram_mb > 0 && serverConfig.gpu_layers !== layerRecommendation.recommended_layers ? 1 : 0);
   const resetServer = async () => {
@@ -99,10 +99,10 @@ export const ServerSettings = () => {
   const handleRecommendLayers = () => {
     const selectedModel = scannedModels.find((model) => model.path === serverConfig.model_path);
     const modelName = (selectedModel?.name || serverConfig.model_path).toLowerCase();
-    const isBonsai = modelName.includes('ternary-bonsai');
+    // Only a guess for files without a readable header; the backend reads size and layers itself.
     const isLarge = modelName.includes('27b') || modelName.includes('32b');
     const estimatedMb = selectedModel?.size_mb ?? (isLarge ? 16_500 : 7_500);
-    const layers = isBonsai || isLarge ? 64 : 40;
+    const layers = isLarge ? 64 : 40;
     fetchLayerRecommendation(
       estimatedMb,
       layers,
@@ -287,6 +287,7 @@ export const ServerSettings = () => {
               </div>
             );
           })()}
+          <p className="text-[11px] text-slate-500">{t('settings.modelProfileHint')}</p>
         </div>
 
         {/* Vision projector: lets the model see attached images */}

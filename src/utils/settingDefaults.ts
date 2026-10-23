@@ -1,4 +1,4 @@
-import type { ChatStyle, LlamaServerConfig, SamplingParams } from '../types';
+import type { ChatStyle, LlamaServerConfig, ModelDefaults, SamplingParams } from '../types';
 
 /** Look of a chat without own choices (sliders start here; empty texts = app defaults). */
 export const DEFAULT_CHAT_STYLE: ChatStyle = {
@@ -11,8 +11,14 @@ export const DEFAULT_CHAT_STYLE: ChatStyle = {
   reply_length: '',
 };
 
-/** Ternary Bonsai runs with a q4 KV cache, thinking on and its own sampler (PrismML's advice). */
-export const isBonsaiModel = (modelPath: string) => modelPath.toLowerCase().includes('bonsai');
+/**
+ * The model catalog's values for the family of `modelPath` (e.g. Ternary Bonsai: q4 KV cache,
+ * thinking on, its own sampler), matched by a text in the file name.
+ */
+export function modelDefaultsFor(modelPath: string, rules: ModelDefaults[] = []): ModelDefaults | undefined {
+  const name = (modelPath.split(/[\\/]/).pop() ?? modelPath).toLowerCase();
+  return rules.find((rule) => rule.match.some((text) => name.includes(text.toLowerCase())));
+}
 
 /**
  * "Write with more variety": DRY (penalizes repeating word sequences) and XTC (sometimes skips the
@@ -32,31 +38,63 @@ export const VARIETY_OFF: Partial<SamplingParams> = Object.fromEntries(
   Object.keys(VARIETY_SAMPLING).map((key) => [key, undefined]),
 );
 
-/** Reply style defaults (as `SamplingParams::default` in `inference.rs` gives new profiles); Bonsai on
- * the local server has its own. */
-export function samplingDefaults(modelPath: string, local: boolean): Partial<SamplingParams> {
+/** Reply style defaults (as `SamplingParams::default` in `inference.rs` gives new profiles); on the
+ * local server with the catalog's values for the model's family. */
+export function samplingDefaults(modelPath: string, local: boolean, rules: ModelDefaults[] = []): Partial<SamplingParams> {
   const base: Partial<SamplingParams> = { temperature: 0.7, top_p: 0.9, min_p: 0.05, top_k: 40, repeat_penalty: 1.05, max_tokens: 2048 };
-  return local && isBonsaiModel(modelPath) ? { ...base, top_p: 0.95, top_k: 20 } : base;
+  return local ? { ...base, ...modelDefaultsFor(modelPath, rules)?.sampling } : base;
 }
 
 /** The context a server config starts with before it is fitted to a model (`LlamaServerConfig::default`). */
 export const DEFAULT_CONTEXT_SIZE = 4096;
 
-/** Server tuning defaults (model, port and vision projector are not tuning and stay). */
-export function serverTuningDefaults(modelPath: string): Partial<LlamaServerConfig> {
-  const bonsai = isBonsaiModel(modelPath);
+/** Server tuning defaults with the catalog's values for the model's family (model, port and vision
+ * projector are not tuning and stay). */
+export function serverTuningDefaults(modelPath: string, rules: ModelDefaults[] = []): Partial<LlamaServerConfig> {
   return {
     flash_attn: true,
-    reasoning_mode: bonsai,
+    reasoning_mode: false,
     thinking_budget: 0,
     batch_size: 2048,
     ubatch_size: 512,
-    cache_type_k: bonsai ? 'q4_0' : 'f16',
-    cache_type_v: bonsai ? 'q4_0' : 'f16',
+    cache_type_k: 'f16',
+    cache_type_v: 'f16',
     mlock: false,
     no_mmap: false,
     cpu_moe: false,
     threads: undefined,
+    ...modelDefaultsFor(modelPath, rules)?.server,
+  };
+}
+
+const pick = <T extends object>(from: Partial<T>, keys: string[]): Partial<T> =>
+  Object.fromEntries(keys.filter((key) => key in from).map((key) => [key, from[key as keyof T]])) as Partial<T>;
+
+/**
+ * Settings for a model chosen for the first time (no saved profile): the user's settings stay,
+ * only the values the catalog set for the previous model's family go back to the defaults and
+ * those for the new model's family are applied.
+ */
+export function settingsForNewModel(
+  previousPath: string,
+  modelPath: string,
+  server: LlamaServerConfig,
+  sampling: SamplingParams,
+  rules: ModelDefaults[],
+): { server: LlamaServerConfig; sampling: SamplingParams } {
+  const previous = modelDefaultsFor(previousPath, rules);
+  const next = modelDefaultsFor(modelPath, rules);
+  return {
+    server: {
+      ...server,
+      ...pick(serverTuningDefaults(''), Object.keys(previous?.server ?? {})),
+      ...next?.server,
+    },
+    sampling: {
+      ...sampling,
+      ...pick(samplingDefaults('', false), Object.keys(previous?.sampling ?? {})),
+      ...next?.sampling,
+    },
   };
 }
 

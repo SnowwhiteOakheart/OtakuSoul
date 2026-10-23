@@ -26,14 +26,14 @@ export const SamplerSettings = () => {
   const {
     llmPresets, activePresetId, applyLlmPreset, saveLlmPreset, deleteLlmPreset, sampling,
     setSampling, lorebookScanDepth, setLorebookScanDepth, expertMode, serverConfig, selectedBackend,
-    rerollRepeats, setRerollRepeats,
+    rerollRepeats, setRerollRepeats, modelDefaults,
   } = useStoreFields(
     'llmPresets', 'activePresetId', 'applyLlmPreset', 'saveLlmPreset', 'deleteLlmPreset',
     'sampling', 'setSampling', 'lorebookScanDepth', 'setLorebookScanDepth', 'expertMode', 'serverConfig', 'selectedBackend',
-    'rerollRepeats', 'setRerollRepeats',
+    'rerollRepeats', 'setRerollRepeats', 'modelDefaults',
   );
   const variety = varietyOn(sampling);
-  const defaults = samplingDefaults(serverConfig.model_path, selectedBackend === 'local');
+  const defaults = samplingDefaults(serverConfig.model_path, selectedBackend === 'local', modelDefaults);
   const changedSampling = changedFields(sampling, defaults, EXTRA_SAMPLING_FIELDS).length;
   const resetSampling = () => {
     const previous = { ...sampling };

@@ -121,6 +121,12 @@ pub async fn download_gguf_model(
     .await
 }
 
+/// Server and sampler values families of local models need (from the model catalog).
+#[tauri::command]
+pub fn get_model_defaults() -> Vec<crate::modules::model_catalog::ModelDefaults> {
+    crate::modules::model_catalog::catalog().model_defaults
+}
+
 #[tauri::command]
 pub fn cancel_gguf_download(filename: String) {
     crate::modules::models_hub::cancel_gguf_download(&filename);

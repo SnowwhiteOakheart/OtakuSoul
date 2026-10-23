@@ -1,10 +1,10 @@
 {
-  "version": "3.2.0",
-  "last_updated": "2026-10-18",
+  "version": "3.3.0",
+  "last_updated": "2026-10-23",
   "notes": {
-    "de": "Empfohlene Startmodelle für den Einrichtungsassistenten von OtakuSoul. Die App bringt eine Kopie mit und lädt beim Start diese Datei; die höhere `version` gilt. Für neue Empfehlungen hier Einträge ändern und `version` erhöhen. Nur Modelle, die ohne Anmeldung ladbar sind, mit SHA-256 der Datei auf Hugging Face; Modelle ohne freie Lizenz tragen license_note und werden in der App gekennzeichnet; ungültige Einträge überspringt die App. Automatisch empfohlen wird (nur unter frei lizenzierten) das bevorzugte Modell, wenn es in Grafikspeicher − `desktop_reserve_mb` passt, sonst das größte passende. Keine Modellgewichte in diesem Repository.",
-    "en": "Recommended starter models for the OtakuSoul setup wizard. The app ships a copy and loads this file at start; the higher `version` wins. For new recommendations, change the entries here and raise `version`. Only models downloadable without sign-in, with the SHA-256 of the file on Hugging Face; models without an open licence carry license_note and are marked in the app; the app skips invalid entries. Among openly licensed models, the preferred one is recommended when it fits into VRAM − `desktop_reserve_mb`, otherwise the largest one that fits. No model weights in this repository.",
-    "ru": "Рекомендуемые стартовые модели для мастера настройки OtakuSoul. Приложение содержит копию и при запуске загружает этот файл; действует более высокая `version`. Для новых рекомендаций измените записи здесь и увеличьте `version`. Только модели, доступные без входа, с SHA-256 файла на Hugging Face; модели без свободной лицензии содержат license_note и помечаются в приложении; некорректные записи приложение пропускает. Среди свободно лицензированных рекомендуется предпочтительная модель, если она помещается в видеопамять минус `desktop_reserve_mb`, иначе самая большая из подходящих. Весов моделей в репозитории нет."
+    "de": "Empfohlene Startmodelle für den Einrichtungsassistenten von OtakuSoul. Die App bringt eine Kopie mit und lädt beim Start diese Datei; die höhere `version` gilt. Für neue Empfehlungen hier Einträge ändern und `version` erhöhen. Nur Modelle, die ohne Anmeldung ladbar sind, mit SHA-256 der Datei auf Hugging Face; Modelle ohne freie Lizenz tragen license_note und werden in der App gekennzeichnet; ungültige Einträge überspringt die App. Automatisch empfohlen wird (nur unter frei lizenzierten) das bevorzugte Modell, wenn es in Grafikspeicher − `desktop_reserve_mb` passt, sonst das größte passende. Keine Modellgewichte in diesem Repository. `model_defaults` legt Server- und Sampler-Werte für Modellfamilien fest (Teiltext im Dateinamen unter `match`); sie gelten für Modelle, für die noch kein Profil gespeichert ist.",
+    "en": "Recommended starter models for the OtakuSoul setup wizard. The app ships a copy and loads this file at start; the higher `version` wins. For new recommendations, change the entries here and raise `version`. Only models downloadable without sign-in, with the SHA-256 of the file on Hugging Face; models without an open licence carry license_note and are marked in the app; the app skips invalid entries. Among openly licensed models, the preferred one is recommended when it fits into VRAM − `desktop_reserve_mb`, otherwise the largest one that fits. No model weights in this repository. `model_defaults` sets server and sampler values for model families (text in the file name under `match`); they apply to models without a saved profile yet.",
+    "ru": "Рекомендуемые стартовые модели для мастера настройки OtakuSoul. Приложение содержит копию и при запуске загружает этот файл; действует более высокая `version`. Для новых рекомендаций измените записи здесь и увеличьте `version`. Только модели, доступные без входа, с SHA-256 файла на Hugging Face; модели без свободной лицензии содержат license_note и помечаются в приложении; некорректные записи приложение пропускает. Среди свободно лицензированных рекомендуется предпочтительная модель, если она помещается в видеопамять минус `desktop_reserve_mb`, иначе самая большая из подходящих. Весов моделей в репозитории нет. `model_defaults` задаёт параметры сервера и сэмплера для семейств моделей (часть имени файла в `match`); они применяются к моделям, для которых ещё нет сохранённого профиля."
   },
   "desktop_reserve_mb": 1536,
   "models": [
@@ -233,6 +233,24 @@
         "en": "The large Gemma 4 model for 24 GB cards: the family's best storytelling. Slow on 16 GB (8 tokens/s).",
         "ru": "Большая модель Gemma 4 для карт на 24 ГБ: лучшее повествование в семействе. На 16 ГБ медленно (8 токенов/с).",
         "ja": "24GB GPU向けGemma 4大型モデル: シリーズ最高峰のストーリーテリング品質を誇ります。16GBでは低速動作となります (8トークン/秒)。"
+      }
+    }
+  ],
+  "model_defaults": [
+    {
+      "match": [
+        "bonsai"
+      ],
+      "server": {
+        "cache_type_k": "q4_0",
+        "cache_type_v": "q4_0",
+        "flash_attn": true,
+        "reasoning_mode": true
+      },
+      "sampling": {
+        "temperature": 0.7,
+        "top_p": 0.95,
+        "top_k": 20
       }
     }
   ]

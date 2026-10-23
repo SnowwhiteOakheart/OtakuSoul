@@ -7,7 +7,7 @@
 //! Licences: chat models need no sign-in at the source; their licence may restrict use (Llama,
 //! Gemma, NVIDIA, non-commercial, none stated). Such models are listed with that marked
 //! (`license_kind`, `license_note`), and the automatic recommendation only picks openly licensed ones.
-use serde::Deserialize;
+use serde::{Deserialize, Serialize};
 use std::collections::HashMap;
 use std::path::PathBuf;
 use std::sync::atomic::{AtomicBool, Ordering};
@@ -95,6 +95,69 @@ pub struct Catalog {
     pub desktop_reserve_mb: u64,
     /// Sorted by VRAM.
     pub models: Vec<CatalogModel>,
+    /// Settings that families of models need, matched by file name.
+    pub model_defaults: Vec<ModelDefaults>,
+}
+
+/// Server and sampler values a family of models needs (e.g. Ternary Bonsai: q4 KV cache,
+/// thinking on, its own sampler). They are used when a model without a saved profile is chosen.
+#[derive(Debug, Clone, Default, PartialEq, Serialize, Deserialize)]
+pub struct ModelDefaults {
+    /// Applies to models whose file name contains one of these texts (ignoring case).
+    #[serde(rename = "match")]
+    pub matches: Vec<String>,
+    /// Fields of `LlamaServerConfig` (only tuning, see [`SERVER_KEYS`]).
+    #[serde(default)]
+    pub server: serde_json::Map<String, serde_json::Value>,
+    /// Fields of `SamplingParams` (see [`SAMPLING_KEYS`]).
+    #[serde(default)]
+    pub sampling: serde_json::Map<String, serde_json::Value>,
+}
+
+/// Server settings a catalog may set; model, port and projector stay the user's choice.
+const SERVER_KEYS: &[&str] = &[
+    "flash_attn",
+    "reasoning_mode",
+    "thinking_budget",
+    "cache_type_k",
+    "cache_type_v",
+    "batch_size",
+    "ubatch_size",
+];
+const SAMPLING_KEYS: &[&str] = &[
+    "temperature",
+    "top_p",
+    "top_k",
+    "min_p",
+    "repeat_penalty",
+    "presence_penalty",
+    "frequency_penalty",
+];
+
+/// Keeps rules with a name to match and only known fields with plain values.
+fn clean_defaults(rules: Vec<ModelDefaults>) -> Vec<ModelDefaults> {
+    let keep = |map: serde_json::Map<String, serde_json::Value>, keys: &[&str]| {
+        map.into_iter()
+            .filter(|(key, value)| {
+                keys.contains(&key.as_str())
+                    && (value.is_number() || value.is_boolean() || value.is_string())
+            })
+            .collect()
+    };
+    rules
+        .into_iter()
+        .map(|rule| ModelDefaults {
+            matches: rule
+                .matches
+                .into_iter()
+                .map(|m| m.trim().to_ascii_lowercase())
+                .filter(|m| !m.is_empty())
+                .collect(),
+            server: keep(rule.server, SERVER_KEYS),
+            sampling: keep(rule.sampling, SAMPLING_KEYS),
+        })
+        .filter(|rule| !rule.matches.is_empty())
+        .collect()
 }
 
 #[derive(Deserialize)]
@@ -103,6 +166,8 @@ struct CatalogFile {
     #[serde(default)]
     desktop_reserve_mb: Option<u64>,
     models: Vec<serde_json::Value>,
+    #[serde(default)]
+    model_defaults: Vec<ModelDefaults>,
 }
 
 /// Set once the start-up download finished (or failed).
@@ -191,6 +256,7 @@ fn parse(text: &str) -> Option<Catalog> {
         version: file.version,
         desktop_reserve_mb: file.desktop_reserve_mb.unwrap_or(DEFAULT_RESERVE_MB),
         models,
+        model_defaults: clean_defaults(file.model_defaults),
     })
 }
 
@@ -367,5 +433,37 @@ mod tests {
         );
         // Nothing usable left: the file is ignored.
         assert!(parse(&catalog_json("9", serde_json::json!([model("x", 0)]))).is_none());
+    }
+
+    #[test]
+    fn shipped_catalog_has_bonsai_defaults_and_drops_unknown_fields() {
+        let bundled = parse(BUNDLED).unwrap();
+        let bonsai = bundled
+            .model_defaults
+            .iter()
+            .find(|rule| rule.matches.iter().any(|m| m == "bonsai"))
+            .expect("Bonsai-Vorgaben im Katalog");
+        assert_eq!(bonsai.server["cache_type_k"], "q4_0");
+        assert_eq!(bonsai.server["reasoning_mode"], true);
+        assert_eq!(bonsai.sampling["top_k"], 20);
+
+        let rules = clean_defaults(vec![
+            ModelDefaults {
+                matches: vec![" Foo ".into()],
+                server: serde_json::json!({ "model_path": "/x", "flash_attn": false })
+                    .as_object()
+                    .unwrap()
+                    .clone(),
+                sampling: serde_json::json!({ "top_k": 5, "stop": ["x"] })
+                    .as_object()
+                    .unwrap()
+                    .clone(),
+            },
+            ModelDefaults::default(),
+        ]);
+        assert_eq!(rules.len(), 1);
+        assert_eq!(rules[0].matches, ["foo"]);
+        assert_eq!(rules[0].server.len(), 1);
+        assert_eq!(rules[0].sampling.len(), 1);
     }
 }

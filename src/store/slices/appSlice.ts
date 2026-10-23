@@ -220,6 +220,7 @@ export const createAppSlice: SliceCreator<AppSlice> = (set, get) => ({
         chatTools: settings.chat_tools === true,
         proactive: { ...PROACTIVE_DEFAULTS, ...settings.proactive },
         quickReplies: settings.quick_replies ?? [],
+        modelProfiles: settings.model_profiles ?? {},
         trayHintShown: settings.tray_hint_shown === true,
         stageLastScene: settings.stage_last_scene || '',
         startTab: settings.start_tab === 'chat' ? 'chat' : 'home',
@@ -279,10 +280,11 @@ export const createAppSlice: SliceCreator<AppSlice> = (set, get) => ({
       // fitted (e.g. a model chosen this way by an older version) and is fitted once; the expert
       // mode keeps a context set by hand. After opening the character: an await before it would let the
       // chat view pick the first character in the meantime.
+      await get().fetchModelDefaults();
       const autoChosen = !settings.server_config.model_path && !!modelPath;
       const neverFitted = !!modelPath && !settings.expert_mode && settings.server_config.context_size === DEFAULT_CONTEXT_SIZE;
       if (autoChosen) {
-        set((state) => ({ serverConfig: { ...state.serverConfig, ...serverTuningDefaults(modelPath), gpu_layers: 99 } }));
+        set((state) => ({ serverConfig: { ...state.serverConfig, ...serverTuningDefaults(modelPath, state.modelDefaults), gpu_layers: 99 } }));
       }
       if (autoChosen || neverFitted) {
         await get().fitServerToModel();
@@ -313,6 +315,7 @@ export const createAppSlice: SliceCreator<AppSlice> = (set, get) => ({
   saveCurrentSettings: async () => {
     if (!get().settingsLoaded) return;
     try {
+      get().recordModelProfile();
       const state = get();
       const settings: AppSettings = {
         server_config: state.serverConfig,
@@ -351,6 +354,7 @@ export const createAppSlice: SliceCreator<AppSlice> = (set, get) => ({
         stage_last_scene: state.stageLastScene,
         start_tab: state.startTab,
         expert_mode: state.expertMode,
+        model_profiles: state.modelProfiles,
       };
       await api.saveSettings(settings);
       settingsSaveFailureShown = false;

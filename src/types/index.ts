@@ -879,6 +879,8 @@ export interface AppSettings {
   proactive?: ProactiveSettings;
   /** Buttons above the chat input. */
   quick_replies?: QuickReply[];
+  /** Server and sampler settings per local model, by file name. */
+  model_profiles?: Record<string, ModelProfile>;
 }
 
 // Phase 14: Live2D & Emotion Classification
@@ -974,6 +976,21 @@ export interface HfGgufFile {
   /** Files of a model split into parts, in order; then `filename` is the first part and
    * `size_bytes` the size of all parts. Empty or missing for a single file. */
   parts?: HfGgufPart[];
+}
+
+/** Server and sampler values the model catalog gives a family of local models (`model_catalog.rs`). */
+export interface ModelDefaults {
+  /** Applies to models whose file name contains one of these texts. */
+  match: string[];
+  server: Partial<LlamaServerConfig>;
+  sampling: Partial<SamplingParams>;
+}
+
+/** What the app remembers for one local model (by file name in `AppSettings.model_profiles`). */
+export interface ModelProfile {
+  server_config: LlamaServerConfig;
+  sampling: SamplingParams;
+  active_preset_id: string | null;
 }
 
 /** One file of a split GGUF model. */

@@ -188,6 +188,7 @@
   "settings.localServer": "ローカル llama-server (GGUF)",
   "settings.cloudProvider": "クラウドプロバイダー (OpenRouter、Anthropicなど)",
   "settings.modelPath": "GGUFモデル",
+  "settings.modelProfileHint": "コンテキスト、GPUレイヤー、応答スタイル、画像認識の設定はモデルごとに個別に保存されます。",
   "settings.mmproj": "ビジョンプロジェクター (mmproj)",
   "settings.mmprojNone": "なし – モデルは画像を認識できません",
   "settings.mmprojHint": "ビジョンモデル (Gemma、Qwen-VLなど) には、同じHugging Faceリポジトリの対応するmmprojファイルが必要です。次回サーバー起動時に反映されます。",
