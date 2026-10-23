@@ -6,6 +6,7 @@ import { useStoreFields, useAppStore } from '../../store/useAppStore';
 import { llmTarget } from '../../store/helpers';
 import { translate, useTranslation } from '../../i18n';
 import { errorMessage } from '../../utils/errors';
+import { downloadKey } from '../../store/slices/llmSlice';
 import { RuntimeCard } from '../settings/sections/RuntimeCard';
 import type { CharacterProfile, LlmProviderType, StarterModel } from '../../types';
 
@@ -123,161 +124,81 @@ export function etaText(seconds: number | null | undefined): string {
 
 type Express = { phase: 'idle' | 'runtime' | 'model' | 'done' } | { phase: 'failed'; error: string };
 
+/** Whether the model (or its vision file) of a starter is downloading right now. */
+const useStarterBusy = () => {
+  const activeDownloads = useAppStore((s) => s.activeDownloads);
+  return (starter: StarterModel) =>
+    Boolean(activeDownloads[downloadKey(starter.file.filename)] || (starter.mmproj && activeDownloads[downloadKey(starter.mmproj.filename)]));
+};
+
 /**
- * The local path in one place: detected GPU, a one-click setup of the recommended starter
- * (runtime and model) and, for those who want to choose, the runtimes and all starter models.
+ * Downloads a starter (and its vision file unless the user does without). The store keeps track
+ * of it, so leaving the page neither hides the progress nor allows a second start.
  */
-export const LocalModelSetup = () => {
+export const downloadStarter = async (starter: StarterModel, withVision: boolean) => {
+  const store = useAppStore.getState();
+  // Selects the model when the download finished; errors land in `hfError`.
+  await store.downloadGgufModel({ ...starter.file, runtime: starter.file.runtime === 'prism' ? 'prism' : 'standard' });
+  const modelPath = useAppStore.getState().serverConfig.model_path;
+  if (withVision && starter.mmproj && !starter.mmproj_installed && modelPath?.endsWith(starter.file.filename)) {
+    await useAppStore.getState().downloadVisionProjector({ ...starter.mmproj, runtime: 'standard' }, modelPath);
+  }
+};
+
+interface StarterModelListProps {
+  starters: StarterModel[] | null;
+  withVision: boolean;
+  /** Called after a download or vision file finished, to reload the list. */
+  onChanged: () => void;
+  /** Starter ids shown elsewhere on the page. */
+  exclude?: string[];
+}
+
+/** All starter models of the catalogue with fit, licence, download and progress. */
+export const StarterModelList = ({ starters, withVision, onChanged, exclude = [] }: StarterModelListProps) => {
   const { t, currentLanguage } = useTranslation();
-  const { hardware, scannedModels, serverConfig, selectLocalModel, downloadGgufModel, downloadVisionProjector, downloadProgress, hfError } = useStoreFields(
-    'hardware', 'scannedModels', 'serverConfig', 'selectLocalModel', 'downloadGgufModel', 'downloadVisionProjector', 'downloadProgress', 'hfError',
+  const { scannedModels, serverConfig, selectLocalModel, downloadVisionProjector, downloadProgress, hfError } = useStoreFields(
+    'scannedModels', 'serverConfig', 'selectLocalModel', 'downloadVisionProjector', 'downloadProgress', 'hfError',
   );
-  // Models that can see images bring their vision file along, unless the user does without.
-  const [withVision, setWithVision] = useState(true);
-  const [starters, setStarters] = useState<StarterModel[] | null>(null);
-  const [downloading, setDownloading] = useState<string | null>(null);
-  const [express, setExpress] = useState<Express>({ phase: 'idle' });
-  const gpu = hardware?.gpus.find((g) => g.total_vram_mb > 0);
-
-  const refresh = () =>
-    api
-      .listStarterModels()
-      .then(setStarters)
-      .catch(() => setStarters([]));
-
-  useEffect(() => {
-    void refresh();
-  }, []);
-
+  const busyOf = useStarterBusy();
   const pathOf = (starter: StarterModel) => scannedModels.find((m) => m.path.endsWith(starter.file.filename))?.path;
-  // Ternary Bonsai (PQ2_0) only runs on the PrismML runtime.
-  const needsPrism = starters?.some(
-    (s) => s.file.runtime === 'prism' && (s.recommended || (pathOf(s) !== undefined && pathOf(s) === serverConfig.model_path)),
-  );
 
   const download = async (starter: StarterModel) => {
-    setDownloading(starter.id);
-    // Selects the model when the download finished; errors land in `hfError`.
-    await downloadGgufModel({ ...starter.file, runtime: starter.file.runtime === 'prism' ? 'prism' : 'standard' });
-    const modelPath = useAppStore.getState().serverConfig.model_path;
-    if (withVision && starter.mmproj && !starter.mmproj_installed && modelPath?.endsWith(starter.file.filename)) {
-      await downloadVisionProjector({ ...starter.mmproj, runtime: 'standard' }, modelPath);
-    }
-    setDownloading(null);
-    void refresh();
+    await downloadStarter(starter, withVision);
+    onChanged();
   };
 
   /** An installed model gets its vision file afterwards (and is selected for it). */
   const addVision = async (starter: StarterModel, path: string) => {
     if (!starter.mmproj) return;
-    setDownloading(starter.id);
     await selectLocalModel(path);
     await downloadVisionProjector({ ...starter.mmproj, runtime: 'standard' }, path);
-    setDownloading(null);
-    void refresh();
+    onChanged();
   };
-
-  const recommended = starters?.find((s) => s.recommended);
-  const recommendedSelected = !!recommended && pathOf(recommended) === serverConfig.model_path && !!serverConfig.model_path;
-
-  /** Installs what the recommended starter needs (runtimes not yet installed, the model) and selects it. */
-  const setUpRecommended = async (starter: StarterModel) => {
-    try {
-      setExpress({ phase: 'runtime' });
-      for (const kind of starter.file.runtime === 'prism' ? (['llama', 'prism'] as const) : (['llama'] as const)) {
-        const installed = await api.getRuntime(kind).catch(() => null);
-        if (installed) continue;
-        const variants = await api.listRuntimeVariants(kind);
-        const variant = variants.find((v) => v.recommended) ?? variants[0];
-        if (variant) await api.installRuntime(kind, variant.backend);
-      }
-      setExpress({ phase: 'model' });
-      const path = pathOf(starter);
-      if (path) {
-        await selectLocalModel(path);
-        if (withVision && starter.mmproj && !starter.mmproj_installed) await downloadVisionProjector({ ...starter.mmproj, runtime: 'standard' }, path);
-      } else await download(starter);
-      const ready = useAppStore.getState().serverConfig.model_path;
-      setExpress(ready ? { phase: 'done' } : { phase: 'failed', error: useAppStore.getState().hfError || t('onboarding.expressFailed') });
-    } catch (e) {
-      setExpress({ phase: 'failed', error: errorMessage(e) });
-    }
-  };
-  const expressBusy = express.phase === 'runtime' || express.phase === 'model';
-  const expressProgress = recommended ? downloadProgress[recommended.file.filename] : undefined;
 
   return (
-    <div className="space-y-3">
-      {recommended && (
-        <div className="rounded-xl border border-accent-500/40 bg-accent-500/10 p-4 space-y-2" data-express-setup={express.phase}>
-          <p className="text-sm font-semibold text-slate-100">
-            {t('onboarding.expressTitle', { name: recommended.name, size: recommended.file.size_formatted })}
-          </p>
-          <p className="text-xs text-slate-400">{t('onboarding.expressText')}</p>
-          {recommended.mmproj && (
-            <label className="flex items-start gap-2 text-xs text-slate-300">
-              <input type="checkbox" checked={withVision} onChange={(e) => setWithVision(e.target.checked)} className="mt-0.5 accent-accent-500" data-with-vision />
-              <span>{t('onboarding.withVision', { size: recommended.mmproj.size_formatted })}</span>
-            </label>
-          )}
-          {recommendedSelected || express.phase === 'done' ? (
-            <p role="status" className="flex items-center gap-1.5 text-xs text-emerald-300">
-              <CheckCircle2 className="h-4 w-4" />
-              {t('onboarding.expressDone')}
-            </p>
-          ) : (
-            <button
-              type="button"
-              disabled={expressBusy || downloading !== null}
-              onClick={() => void setUpRecommended(recommended)}
-              className="inline-flex items-center gap-1.5 rounded-xl bg-accent-600 px-4 py-2 text-sm font-semibold text-white hover:bg-accent-500 disabled:opacity-50"
-            >
-              {expressBusy ? <Loader2 className="h-4 w-4 animate-spin" /> : <Wand2 className="h-4 w-4" />}
-              {express.phase === 'runtime'
-                ? t('onboarding.expressRuntime')
-                : express.phase === 'model'
-                  ? `${t('onboarding.expressModel', { percent: (expressProgress?.percent ?? 0).toFixed(0) })}${etaText(expressProgress?.eta_seconds) ? ` · ${etaText(expressProgress?.eta_seconds)}` : ''}`
-                  : t('onboarding.expressButton')}
-            </button>
-          )}
-          {express.phase === 'model' && expressProgress && (
-            <div className="h-1.5 overflow-hidden rounded-full bg-slate-800">
-              <div className="h-full bg-accent-500 transition-all" style={{ width: `${expressProgress.percent}%` }} />
-            </div>
-          )}
-          {express.phase === 'failed' && <p role="alert" className="text-xs text-rose-300">{express.error}</p>}
-        </div>
-      )}
-
-      <details className="space-y-3" open={!recommended}>
-        <summary className="cursor-pointer text-xs font-semibold text-slate-300">{t('onboarding.chooseYourself')}</summary>
-      <p className="flex items-center gap-1.5 text-xs text-slate-400">
-        <Cpu className="h-3.5 w-3.5" />
-        {gpu
-          ? t('onboarding.gpuDetected', { name: gpu.name, vram: (gpu.total_vram_mb / 1024).toFixed(0) })
-          : t('onboarding.noGpu')}
-      </p>
-
-      <RuntimeCard kind="llama" />
-      {needsPrism && <RuntimeCard kind="prism" />}
-
-      <fieldset className="space-y-2">
-        <legend className="mb-1 text-xs font-semibold uppercase tracking-wider text-slate-400">{t('onboarding.starterTitle')}</legend>
-        {!starters ? (
-          <p className="flex items-center gap-1.5 text-xs text-slate-400">
-            <Loader2 className="h-3.5 w-3.5 animate-spin" />
-            {t('onboarding.starterLoading')}
-          </p>
-        ) : (
-          <ul className="space-y-2" aria-label={t('onboarding.starterTitle')}>
-            {starters.map((starter) => {
+    <fieldset className="space-y-2">
+      <legend className="mb-1 text-xs font-semibold uppercase tracking-wider text-slate-400">{t('onboarding.starterTitle')}</legend>
+      {!starters ? (
+        <p className="flex items-center gap-1.5 text-xs text-slate-400">
+          <Loader2 className="h-3.5 w-3.5 animate-spin" />
+          {t('onboarding.starterLoading')}
+        </p>
+      ) : (
+        <ul className="space-y-2" aria-label={t('onboarding.starterTitle')}>
+          {starters
+            .filter((starter) => !exclude.includes(starter.id))
+            .map((starter) => {
               const path = pathOf(starter);
               const selected = Boolean(path) && serverConfig.model_path === path;
-              const progress = downloadProgress[starter.file.filename];
-              const isDownloading = downloading === starter.id;
+              const busy = busyOf(starter);
+              const progress =
+                downloadProgress[downloadKey(starter.file.filename)] ??
+                (starter.mmproj ? downloadProgress[downloadKey(starter.mmproj.filename)] : undefined);
               return (
                 <li
                   key={starter.id}
+                  data-starter={starter.id}
                   className={`rounded-xl border p-3 text-sm space-y-2 ${selected ? 'border-accent-500/70 bg-accent-500/10' : 'border-slate-800 bg-app/60'}`}
                 >
                   <div className="flex flex-wrap items-center justify-between gap-2">
@@ -287,6 +208,9 @@ export const LocalModelSetup = () => {
                         <span className="ml-2 rounded border border-emerald-500/30 bg-emerald-500/15 px-1.5 py-0.5 text-[11px] text-emerald-300">
                           {t('onboarding.starterRecommended')}
                         </span>
+                      )}
+                      {starter.file.runtime === 'prism' && (
+                        <span className="ml-2 rounded border border-cyan-500/30 bg-cyan-500/15 px-1.5 py-0.5 text-[11px] text-cyan-300">PrismML</span>
                       )}
                       <span className="block text-xs text-slate-400">
                         {t('onboarding.starterMeta', { size: starter.file.size_formatted, vram: (starter.vram_mb / 1024).toFixed(0), license: starter.license })}
@@ -319,11 +243,11 @@ export const LocalModelSetup = () => {
                           <button
                             type="button"
                             onClick={() => void addVision(starter, path)}
-                            disabled={downloading !== null}
+                            disabled={busy}
                             className={SECONDARY_BUTTON}
                             data-add-vision={starter.id}
                           >
-                            {isDownloading ? <Loader2 className="h-4 w-4 animate-spin" /> : <Eye className="h-4 w-4" />}
+                            {busy ? <Loader2 className="h-4 w-4 animate-spin" /> : <Eye className="h-4 w-4" />}
                             {t('onboarding.addVision', { size: starter.mmproj.size_formatted })}
                           </button>
                         )}
@@ -341,16 +265,16 @@ export const LocalModelSetup = () => {
                       <button
                         type="button"
                         onClick={() => void download(starter)}
-                        disabled={downloading !== null}
+                        disabled={busy}
                         aria-label={t('onboarding.starterDownloadLabel', { name: starter.name })}
                         className={SECONDARY_BUTTON}
                       >
-                        {isDownloading ? <Loader2 className="h-4 w-4 animate-spin" /> : <Download className="h-4 w-4" />}
-                        {t('onboarding.starterDownload', { size: starter.file.size_formatted })}
+                        {busy ? <Loader2 className="h-4 w-4 animate-spin" /> : <Download className="h-4 w-4" />}
+                        {busy ? t('settings.downloadRunning') : t('onboarding.starterDownload', { size: starter.file.size_formatted })}
                       </button>
                     )}
                   </div>
-                  {isDownloading && progress && (
+                  {busy && progress && !progress.finished && (
                     <div role="status" className="space-y-1 text-xs text-slate-400">
                       <span>
                         {t('onboarding.starterProgress', { percent: progress.percent.toFixed(0) })}
@@ -364,10 +288,135 @@ export const LocalModelSetup = () => {
                 </li>
               );
             })}
-          </ul>
-        )}
-        {hfError && <p role="alert" className="text-xs text-rose-300">{hfError}</p>}
-      </fieldset>
+        </ul>
+      )}
+      {hfError && <p role="alert" className="text-xs text-rose-300">{hfError}</p>}
+    </fieldset>
+  );
+};
+
+/**
+ * The local path in one place: detected GPU, a one-click setup of the recommended starter
+ * (runtime and model) and, for those who want to choose, the runtimes and all starter models.
+ */
+export const LocalModelSetup = () => {
+  const { t } = useTranslation();
+  const { hardware, scannedModels, serverConfig, selectLocalModel, downloadVisionProjector, downloadProgress } = useStoreFields(
+    'hardware', 'scannedModels', 'serverConfig', 'selectLocalModel', 'downloadVisionProjector', 'downloadProgress',
+  );
+  // Models that can see images bring their vision file along, unless the user does without.
+  const [withVision, setWithVision] = useState(true);
+  const [starters, setStarters] = useState<StarterModel[] | null>(null);
+  const [express, setExpress] = useState<Express>({ phase: 'idle' });
+  const busyOf = useStarterBusy();
+  const gpu = hardware?.gpus.find((g) => g.total_vram_mb > 0);
+
+  const refresh = () =>
+    api
+      .listStarterModels()
+      .then(setStarters)
+      .catch(() => setStarters([]));
+
+  useEffect(() => {
+    void refresh();
+  }, []);
+
+  const pathOf = (starter: StarterModel) => scannedModels.find((m) => m.path.endsWith(starter.file.filename))?.path;
+  // Ternary Bonsai (PQ2_0) only runs on the PrismML runtime.
+  const needsPrism = starters?.some(
+    (s) => s.file.runtime === 'prism' && (s.recommended || (pathOf(s) !== undefined && pathOf(s) === serverConfig.model_path)),
+  );
+
+  const recommended = starters?.find((s) => s.recommended);
+  const recommendedSelected = !!recommended && pathOf(recommended) === serverConfig.model_path && !!serverConfig.model_path;
+
+  /** Installs what the recommended starter needs (runtimes not yet installed, the model) and selects it. */
+  const setUpRecommended = async (starter: StarterModel) => {
+    try {
+      setExpress({ phase: 'runtime' });
+      for (const kind of starter.file.runtime === 'prism' ? (['llama', 'prism'] as const) : (['llama'] as const)) {
+        const installed = await api.getRuntime(kind).catch(() => null);
+        if (installed) continue;
+        const variants = await api.listRuntimeVariants(kind);
+        const variant = variants.find((v) => v.recommended) ?? variants[0];
+        if (variant) await api.installRuntime(kind, variant.backend);
+      }
+      setExpress({ phase: 'model' });
+      const path = pathOf(starter);
+      if (path) {
+        await selectLocalModel(path);
+        if (withVision && starter.mmproj && !starter.mmproj_installed) await downloadVisionProjector({ ...starter.mmproj, runtime: 'standard' }, path);
+      } else {
+        await downloadStarter(starter, withVision);
+        void refresh();
+      }
+      const ready = useAppStore.getState().serverConfig.model_path;
+      setExpress(ready ? { phase: 'done' } : { phase: 'failed', error: useAppStore.getState().hfError || t('onboarding.expressFailed') });
+    } catch (e) {
+      setExpress({ phase: 'failed', error: errorMessage(e) });
+    }
+  };
+  // A download that runs on after the page was left counts as busy, too.
+  const recommendedBusy = !!recommended && busyOf(recommended);
+  const expressBusy = express.phase === 'runtime' || express.phase === 'model' || recommendedBusy;
+  const expressProgress = recommended ? downloadProgress[downloadKey(recommended.file.filename)] : undefined;
+
+  return (
+    <div className="space-y-3">
+      {recommended && (
+        <div className="rounded-xl border border-accent-500/40 bg-accent-500/10 p-4 space-y-2" data-express-setup={express.phase}>
+          <p className="text-sm font-semibold text-slate-100">
+            {t('onboarding.expressTitle', { name: recommended.name, size: recommended.file.size_formatted })}
+          </p>
+          <p className="text-xs text-slate-400">{t('onboarding.expressText')}</p>
+          {recommended.mmproj && (
+            <label className="flex items-start gap-2 text-xs text-slate-300">
+              <input type="checkbox" checked={withVision} onChange={(e) => setWithVision(e.target.checked)} className="mt-0.5 accent-accent-500" data-with-vision />
+              <span>{t('onboarding.withVision', { size: recommended.mmproj.size_formatted })}</span>
+            </label>
+          )}
+          {recommendedSelected || express.phase === 'done' ? (
+            <p role="status" className="flex items-center gap-1.5 text-xs text-emerald-300">
+              <CheckCircle2 className="h-4 w-4" />
+              {t('onboarding.expressDone')}
+            </p>
+          ) : (
+            <button
+              type="button"
+              disabled={expressBusy}
+              onClick={() => void setUpRecommended(recommended)}
+              className="inline-flex items-center gap-1.5 rounded-xl bg-accent-600 px-4 py-2 text-sm font-semibold text-white hover:bg-accent-500 disabled:opacity-50"
+            >
+              {expressBusy ? <Loader2 className="h-4 w-4 animate-spin" /> : <Wand2 className="h-4 w-4" />}
+              {express.phase === 'runtime'
+                ? t('onboarding.expressRuntime')
+                : express.phase === 'model' || recommendedBusy
+                  ? `${t('onboarding.expressModel', { percent: (expressProgress?.percent ?? 0).toFixed(0) })}${etaText(expressProgress?.eta_seconds) ? ` · ${etaText(expressProgress?.eta_seconds)}` : ''}`
+                  : t('onboarding.expressButton')}
+            </button>
+          )}
+          {(express.phase === 'model' || recommendedBusy) && expressProgress && !expressProgress.finished && (
+            <div className="h-1.5 overflow-hidden rounded-full bg-slate-800">
+              <div className="h-full bg-accent-500 transition-all" style={{ width: `${expressProgress.percent}%` }} />
+            </div>
+          )}
+          {express.phase === 'failed' && <p role="alert" className="text-xs text-rose-300">{express.error}</p>}
+        </div>
+      )}
+
+      <details className="space-y-3" open={!recommended}>
+        <summary className="cursor-pointer text-xs font-semibold text-slate-300">{t('onboarding.chooseYourself')}</summary>
+        <p className="flex items-center gap-1.5 text-xs text-slate-400">
+          <Cpu className="h-3.5 w-3.5" />
+          {gpu
+            ? t('onboarding.gpuDetected', { name: gpu.name, vram: (gpu.total_vram_mb / 1024).toFixed(0) })
+            : t('onboarding.noGpu')}
+        </p>
+
+        <RuntimeCard kind="llama" />
+        {needsPrism && <RuntimeCard kind="prism" />}
+
+        <StarterModelList starters={starters} withVision={withVision} onChanged={() => void refresh()} />
       </details>
     </div>
   );

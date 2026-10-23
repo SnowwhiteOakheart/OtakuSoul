@@ -102,6 +102,11 @@ export interface LlmSlice {
   isLoadingHfFiles: Record<string, boolean>;
   fetchHfModelFiles: (modelId: string) => Promise<void>;
   downloadProgress: Record<string, DownloadProgressEvent>;
+  /**
+   * Model downloads in progress by bare file name. Lives in the store, so every view still knows
+   * a download runs after the user left the page and came back.
+   */
+  activeDownloads: Record<string, true>;
   downloadGgufModel: (file: HfGgufFile) => Promise<void>;
   /**
    * Downloads the vision projector of `modelPath` (a starter's `mmproj`) and uses it while that
@@ -510,9 +515,12 @@ export const createLlmSlice: SliceCreator<LlmSlice> = (set, get) => ({
   },
 
   downloadProgress: {},
+  activeDownloads: {},
 
   downloadVisionProjector: async (file, modelPath) => {
-    set({ hfError: null });
+    const key = downloadKey(file.filename);
+    if (get().activeDownloads[key]) return;
+    set((state) => ({ hfError: null, activeDownloads: { ...state.activeDownloads, [key]: true } }));
     try {
       const task = {
         kind: 'download' as const,
@@ -536,13 +544,16 @@ export const createLlmSlice: SliceCreator<LlmSlice> = (set, get) => ({
       if (errorCode(e)?.code === 'backend.models.downloadCancelled') return;
       console.error('Failed to download the vision projector:', e);
       set({ hfError: errorMessage(e) });
+    } finally {
+      set((state) => ({ activeDownloads: withoutKey(state.activeDownloads, key) }));
     }
   },
 
   downloadGgufModel: async (file: HfGgufFile) => {
-    set({ hfError: null });
-    // The backend reports progress by the bare file name, without the repository folder.
-    const progressKey = file.filename.split('/').pop() ?? file.filename;
+    const progressKey = downloadKey(file.filename);
+    // A second click (e.g. after leaving the page and coming back) must not start it again.
+    if (get().activeDownloads[progressKey]) return;
+    set((state) => ({ hfError: null, activeDownloads: { ...state.activeDownloads, [progressKey]: true } }));
     try {
       const task = {
         kind: 'download' as const,
@@ -565,6 +576,16 @@ export const createLlmSlice: SliceCreator<LlmSlice> = (set, get) => ({
       if (errorCode(e)?.code === 'backend.models.downloadCancelled') return;
       console.error('Failed to download GGUF model:', e);
       set({ hfError: errorMessage(e) });
+    } finally {
+      set((state) => ({ activeDownloads: withoutKey(state.activeDownloads, progressKey) }));
     }
   },
 });
+
+/** The backend reports progress by the bare file name, without the repository folder. */
+export const downloadKey = (filename: string) => filename.split('/').pop() ?? filename;
+
+const withoutKey = (record: Record<string, true>, key: string) => {
+  const { [key]: _done, ...rest } = record;
+  return rest;
+};

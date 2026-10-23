@@ -468,6 +468,29 @@ static CANCELLED_DOWNLOADS: std::sync::LazyLock<
     parking_lot::Mutex<std::collections::HashSet<String>>,
 > = std::sync::LazyLock::new(Default::default);
 
+/// GGUF downloads in progress, by file name, so the same model never downloads twice at once.
+static ACTIVE_DOWNLOADS: std::sync::LazyLock<
+    parking_lot::Mutex<std::collections::HashSet<String>>,
+> = std::sync::LazyLock::new(Default::default);
+
+/// Marks a download as running while it lives.
+struct ActiveDownload(String);
+
+impl ActiveDownload {
+    fn claim(name: &str) -> Option<Self> {
+        ACTIVE_DOWNLOADS
+            .lock()
+            .insert(name.to_string())
+            .then(|| Self(name.to_string()))
+    }
+}
+
+impl Drop for ActiveDownload {
+    fn drop(&mut self) {
+        ACTIVE_DOWNLOADS.lock().remove(&self.0);
+    }
+}
+
 /// Stops the running download of `filename`; its partial file is removed.
 pub fn cancel_gguf_download(filename: &str) {
     if let Some(name) = std::path::Path::new(filename)
@@ -509,6 +532,9 @@ pub async fn download_gguf_file<R: tauri::Runtime>(
     };
     // Progress and cancelling go by the name of the whole model (its first part).
     let progress_name = safe_name(target_filename)?;
+    let Some(_active) = ActiveDownload::claim(&progress_name) else {
+        return Err(crate::err!("backend.models.downloadRunning"));
+    };
     let paths = crate::modules::paths::resolve_app_paths();
     let target_dir = PathBuf::from(&paths.bundled_models_dir);
     std::fs::create_dir_all(&target_dir).map_err(|e| e.to_string())?;
@@ -731,6 +757,14 @@ impl Drop for PartialDownload {
 
 #[cfg(test)]
 mod tests {
+
+    #[test]
+    fn a_running_download_cannot_start_twice() {
+        let first = super::ActiveDownload::claim("double-start-test.gguf").unwrap();
+        assert!(super::ActiveDownload::claim("double-start-test.gguf").is_none());
+        drop(first);
+        assert!(super::ActiveDownload::claim("double-start-test.gguf").is_some());
+    }
 
     #[test]
     fn starter_recommendation_follows_vram() {

@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { useStoreFields, type SettingsSection } from '../../../store/useAppStore';
 import { useTranslation } from '../../../i18n';
 import { openUrl } from '@tauri-apps/plugin-opener';
@@ -12,17 +12,23 @@ import {
 } from 'lucide-react';
 import { backendMessage } from '../../../utils/errors';
 import { api } from '../../../services/api';
+import { downloadKey } from '../../../store/slices/llmSlice';
+import { StarterModelList } from '../../onboarding/OnboardingParts';
+import type { StarterModel } from '../../../types';
+
+/** The starter of the catalogue that the hub presents on its own card. */
+const BONSAI_STARTER_ID = 'ternary-bonsai-2-27b';
 
 export const ModelHubSettings = ({ onNavigate }: { onNavigate: (section: SettingsSection) => void }) => {
   const { t } = useTranslation();
   const {
     hardware, serverConfig, selectLocalModel, hfSearchResults, isSearchingHf, hfError,
     searchHfModels, hfModelFiles, isLoadingHfFiles, fetchHfModelFiles, downloadProgress,
-    downloadGgufModel, scannedModels,
+    downloadGgufModel, scannedModels, activeDownloads,
   } = useStoreFields(
     'hardware', 'serverConfig', 'selectLocalModel', 'hfSearchResults', 'isSearchingHf', 'hfError',
     'searchHfModels', 'hfModelFiles', 'isLoadingHfFiles', 'fetchHfModelFiles', 'downloadProgress',
-    'downloadGgufModel', 'scannedModels',
+    'downloadGgufModel', 'scannedModels', 'activeDownloads',
   );
 
   // HuggingFace search
@@ -31,6 +37,18 @@ export const ModelHubSettings = ({ onNavigate }: { onNavigate: (section: Setting
   const [expandedModelId, setExpandedModelId] = useState<string | null>(null);
   const [hubView, setHubView] = useState<'recommended' | 'installed' | 'popular' | 'search'>('recommended');
   const gpu = hardware?.gpus[0];
+  const [starters, setStarters] = useState<StarterModel[] | null>(null);
+  const refreshStarters = useCallback(
+    () =>
+      api
+        .listStarterModels()
+        .then(setStarters)
+        .catch(() => setStarters([])),
+    [],
+  );
+  useEffect(() => {
+    void refreshStarters();
+  }, [refreshStarters]);
 
   useEffect(() => {
     if (
@@ -136,8 +154,12 @@ export const ModelHubSettings = ({ onNavigate }: { onNavigate: (section: Setting
         const files = hfModelFiles[BONSAI_MODEL_ID] || [];
         const recommendedFile = files.find((file) => file.recommended);
         const installed = scannedModels.find((model) => model.name.toLowerCase().includes('ternary-bonsai-2-27b-pq2_0'));
+        const bonsaiKey = recommendedFile ? downloadKey(recommendedFile.filename) : null;
+        const bonsaiBusy = !!bonsaiKey && !!activeDownloads[bonsaiKey];
+        const bonsaiProgress = bonsaiKey ? downloadProgress[bonsaiKey] : undefined;
         const vramGb = (gpu?.total_vram_mb || 0) / 1024;
         return (
+          <div className="space-y-4">
           <div className="rounded-2xl border border-accent-500/50 bg-linear-to-br from-accent-950/60 via-slate-900/80 to-cyan-950/40 p-5 space-y-4 shadow-xl shadow-accent-950/20">
             <div className="flex flex-col md:flex-row md:items-start justify-between gap-4">
               <div className="space-y-2">
@@ -187,9 +209,18 @@ export const ModelHubSettings = ({ onNavigate }: { onNavigate: (section: Setting
               ) : recommendedFile ? (
                 <button
                   onClick={() => downloadGgufModel(recommendedFile)}
-                  className="px-4 py-2 rounded-lg bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-semibold flex items-center gap-2"
+                  disabled={bonsaiBusy}
+                  className="px-4 py-2 rounded-lg bg-emerald-600 hover:bg-emerald-500 disabled:opacity-60 disabled:cursor-not-allowed text-white text-xs font-semibold flex items-center gap-2"
                 >
-                  <Download className="w-4 h-4" /> {t('settings.downloadRecommended')}
+                  {bonsaiBusy ? (
+                    <>
+                      <RefreshCw className="w-4 h-4 animate-spin" /> {t('settings.downloadRunningPercent', { percent: (bonsaiProgress?.percent ?? 0).toFixed(0) })}
+                    </>
+                  ) : (
+                    <>
+                      <Download className="w-4 h-4" /> {t('settings.downloadRecommended')}
+                    </>
+                  )}
                 </button>
               ) : (
                 <button
@@ -211,6 +242,13 @@ export const ModelHubSettings = ({ onNavigate }: { onNavigate: (section: Setting
                 {t('settings.bonsaiSelected', { file: recommendedFile?.filename || t('settings.bonsaiSearching') })}
               </div>
             )}
+          </div>
+
+          <div className="rounded-xl border border-slate-800 bg-slate-900/60 p-4 space-y-2" data-hub-starters>
+            <h3 className="text-sm font-semibold text-slate-200">{t('settings.hubMoreRecommended')}</h3>
+            <p className="text-xs text-slate-400">{t('settings.hubMoreRecommendedHint')}</p>
+            <StarterModelList starters={starters} withVision onChanged={() => void refreshStarters()} exclude={[BONSAI_STARTER_ID]} />
+          </div>
           </div>
         );
       })()}
@@ -397,11 +435,11 @@ export const ModelHubSettings = ({ onNavigate }: { onNavigate: (section: Setting
 
                             <button
                               onClick={() => downloadGgufModel(file)}
-                              disabled={file.runtime === 'legacy'}
+                              disabled={file.runtime === 'legacy' || !!activeDownloads[downloadKey(file.filename)]}
                               className="px-3 py-1.5 rounded bg-emerald-600 hover:bg-emerald-500 disabled:bg-slate-700 disabled:text-slate-400 text-white font-semibold text-xs flex items-center gap-1.5 transition-colors shrink-0"
                             >
                               <Download className="w-3.5 h-3.5" />
-                              <span className="whitespace-nowrap">{file.runtime === 'legacy' ? t('settings.doNotUse') : t('settings.downloadSelect')}</span>
+                              <span className="whitespace-nowrap">{file.runtime === 'legacy' ? t('settings.doNotUse') : activeDownloads[downloadKey(file.filename)] ? t('settings.downloadRunning') : t('settings.downloadSelect')}</span>
                             </button>
                           </div>
                         ))}
