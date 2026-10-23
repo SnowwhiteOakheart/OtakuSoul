@@ -508,11 +508,13 @@ export const createLlmSlice: SliceCreator<LlmSlice> = (set, get) => ({
 
   downloadGgufModel: async (file: HfGgufFile) => {
     set({ hfError: null });
+    // The backend reports progress by the bare file name, without the repository folder.
+    const progressKey = file.filename.split('/').pop() ?? file.filename;
     try {
       const task = {
         kind: 'download' as const,
-        title: translate('task.download', { name: file.filename }),
-        progressKey: file.filename,
+        title: translate('task.download', { name: progressKey }),
+        progressKey,
         cancel: () => void api.cancelGgufDownload(file.filename),
         retry: () => void get().downloadGgufModel(file),
       };
@@ -523,7 +525,7 @@ export const createLlmSlice: SliceCreator<LlmSlice> = (set, get) => ({
     } catch (e) {
       // The progress of a stopped or failed download would otherwise stay half full.
       set((state) => {
-        const { [file.filename]: _stale, ...downloadProgress } = state.downloadProgress;
+        const { [progressKey]: _stale, ...downloadProgress } = state.downloadProgress;
         return { downloadProgress };
       });
       // A stop by the user is no error; the task list shows it as cancelled.

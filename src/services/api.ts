@@ -1254,6 +1254,7 @@ export const api = {
       filename: file.filename,
       expectedSize: file.size_bytes,
       expectedSha256: file.sha256,
+      parts: file.parts?.length ? file.parts : null,
     });
   },
 

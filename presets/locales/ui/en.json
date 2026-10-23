@@ -493,6 +493,7 @@
   "settings.showFiles": "Show GGUF files",
   "settings.loadingFiles": "Loading file list from Hugging Face …",
   "settings.noGgufFiles": "No .gguf files found in this repository.",
+  "settings.ggufParts": "{{count}} parts",
   "settings.recommended": "Recommended",
   "settings.runtimePrismLabel": "PrismML runtime",
   "settings.runtimeLegacy": "Outdated",

@@ -4,7 +4,7 @@
 use std::collections::HashMap;
 use std::fs::File;
 use std::io::{BufReader, Read};
-use std::path::Path;
+use std::path::{Path, PathBuf};
 
 const MAGIC: &[u8; 4] = b"GGUF";
 /// Stop after this many metadata entries; the block count comes early in real files.
@@ -250,6 +250,50 @@ fn shape_of(meta: &HashMap<String, Value>) -> Option<ModelShape> {
     Some(shape)
 }
 
+/// A model split by `llama-gguf-split` into `<prefix>-00001-of-00004.gguf` and so on: the part
+/// before the numbers, the 1-based number of this file and the number of files.
+pub fn split_part(file_name: &str) -> Option<(&str, u32, u32)> {
+    let stem = file_name.strip_suffix(".gguf")?;
+    let (rest, count) = stem.rsplit_once("-of-")?;
+    let (prefix, index) = rest.rsplit_once('-')?;
+    let digits = |s: &str| s.len() == 5 && s.bytes().all(|b| b.is_ascii_digit());
+    if prefix.is_empty() || !digits(index) || !digits(count) {
+        return None;
+    }
+    let (index, count) = (index.parse().ok()?, count.parse().ok()?);
+    (count > 1 && (1..=count).contains(&index)).then_some((prefix, index, count))
+}
+
+/// File name of part `index` of a split model (see [`split_part`]).
+pub fn split_part_name(prefix: &str, index: u32, count: u32) -> String {
+    format!("{prefix}-{index:05}-of-{count:05}.gguf")
+}
+
+/// All files of the model that starts with `path`: every part of a split model, else `path`.
+/// llama.cpp is started with the first part and finds the others next to it.
+pub fn model_files(path: &Path) -> Vec<PathBuf> {
+    let split = path
+        .file_name()
+        .and_then(|n| n.to_str())
+        .and_then(split_part)
+        .filter(|(_, index, _)| *index == 1);
+    match split {
+        Some((prefix, _, count)) => (1..=count)
+            .map(|i| path.with_file_name(split_part_name(prefix, i, count)))
+            .collect(),
+        None => vec![path.to_path_buf()],
+    }
+}
+
+/// Size in bytes of the model starting with `path`, all parts of a split model together;
+/// `None` when a file is missing.
+pub fn model_size(path: &Path) -> Option<u64> {
+    model_files(path)
+        .iter()
+        .map(|file| std::fs::metadata(file).ok().map(|m| m.len()))
+        .sum()
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -393,5 +437,39 @@ mod tests {
         let shape = model_shape(Path::new(&path));
         println!("{path}: {shape:?}");
         assert!(shape.is_some_and(|s| s.layers > 0));
+    }
+
+    #[test]
+    fn recognises_split_model_parts() {
+        assert_eq!(
+            split_part("Qwen3-235B-Q4_K_M-00001-of-00004.gguf"),
+            Some(("Qwen3-235B-Q4_K_M", 1, 4))
+        );
+        assert_eq!(
+            split_part("model-00004-of-00004.gguf"),
+            Some(("model", 4, 4))
+        );
+        assert_eq!(split_part("model-00005-of-00004.gguf"), None);
+        assert_eq!(split_part("model-00001-of-00001.gguf"), None);
+        assert_eq!(split_part("model-1-of-4.gguf"), None);
+        assert_eq!(split_part("model-Q4_K_M.gguf"), None);
+        assert_eq!(split_part_name("model", 2, 4), "model-00002-of-00004.gguf");
+    }
+
+    #[test]
+    fn sums_the_parts_of_a_split_model() {
+        let dir = std::env::temp_dir().join(format!("gguf-split-{}", rand::random::<u64>()));
+        std::fs::create_dir_all(&dir).unwrap();
+        for (i, len) in [(1, 10), (2, 20), (3, 30)] {
+            std::fs::write(dir.join(split_part_name("m", i, 3)), vec![0u8; len]).unwrap();
+        }
+        let first = dir.join("m-00001-of-00003.gguf");
+        assert_eq!(model_files(&first).len(), 3);
+        assert_eq!(model_size(&first), Some(60));
+        std::fs::remove_file(dir.join("m-00003-of-00003.gguf")).unwrap();
+        assert_eq!(model_size(&first), None);
+        std::fs::write(dir.join("single.gguf"), [0u8; 7]).unwrap();
+        assert_eq!(model_size(&dir.join("single.gguf")), Some(7));
+        let _ = std::fs::remove_dir_all(&dir);
     }
 }

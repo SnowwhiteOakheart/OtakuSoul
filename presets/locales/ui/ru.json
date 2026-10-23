@@ -493,6 +493,7 @@
   "settings.showFiles": "Показать файлы GGUF",
   "settings.loadingFiles": "Загрузка списка файлов с Hugging Face …",
   "settings.noGgufFiles": "В этом репозитории нет файлов .gguf.",
+  "settings.ggufParts": "частей: {{count}}",
   "settings.recommended": "Рекомендуется",
   "settings.runtimePrismLabel": "Среда PrismML",
   "settings.runtimeLegacy": "Устарело",

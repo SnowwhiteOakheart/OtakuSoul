@@ -56,6 +56,7 @@ import type { StoredChatMessage as RustStoredChatMessage } from './generated/Sto
 import type { LlmPreset as RustLlmPreset } from './generated/LlmPreset';
 import type { HfModelSummary as RustHfModelSummary } from './generated/HfModelSummary';
 import type { HfGgufFile as RustHfGgufFile } from './generated/HfGgufFile';
+import type { HfGgufPart as RustHfGgufPart } from './generated/HfGgufPart';
 import type { DownloadProgressEvent as RustDownloadProgressEvent } from './generated/DownloadProgressEvent';
 import type { ChubSearchItem as RustChubSearchItem } from './generated/ChubSearchItem';
 import type { ChubSearchResult as RustChubSearchResult } from './generated/ChubSearchResult';
@@ -131,6 +132,7 @@ expectMatch<SameFields<Frontend.StoredChatMessage, RustStoredChatMessage>>();
 expectMatch<SameFields<Frontend.LlmPreset, RustLlmPreset>>();
 expectMatch<SameFields<Frontend.HfModelSummary, RustHfModelSummary>>();
 expectMatch<SameFields<Frontend.HfGgufFile, RustHfGgufFile>>();
+expectMatch<SameFields<Frontend.HfGgufPart, RustHfGgufPart>>();
 expectMatch<SameFields<Frontend.DownloadProgressEvent, RustDownloadProgressEvent>>();
 expectMatch<SameFields<Frontend.ChubSearchItem, RustChubSearchItem>>();
 expectMatch<SameFields<Frontend.ChubSearchResult, RustChubSearchResult>>();

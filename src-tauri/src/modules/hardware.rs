@@ -458,8 +458,8 @@ pub fn recommend_gpu_layers(
 
 fn actual_model_size_mb(fallback_mb: u64, model_path: Option<&str>) -> u64 {
     model_path
-        .and_then(|path| std::fs::metadata(path).ok())
-        .map(|metadata| metadata.len().div_ceil(1024 * 1024))
+        .and_then(|path| crate::modules::gguf::model_size(std::path::Path::new(path)))
+        .map(|bytes| bytes.div_ceil(1024 * 1024))
         .filter(|size| *size > 0)
         .unwrap_or(fallback_mb)
 }

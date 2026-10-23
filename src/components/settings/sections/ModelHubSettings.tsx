@@ -381,6 +381,9 @@ export const ModelHubSettings = ({ onNavigate }: { onNavigate: (section: Setting
                                   {file.quantization}
                                 </span>
                                 <span className="text-slate-400">{file.size_formatted}</span>
+                                {!!file.parts?.length && (
+                                  <span className="text-slate-400">{t('settings.ggufParts', { count: file.parts.length })}</span>
+                                )}
                                 <span className={file.runtime === 'prism' ? 'text-cyan-300' : file.runtime === 'legacy' ? 'text-rose-300' : 'text-slate-400'}>
                                   {file.runtime === 'prism'
                                     ? t('settings.runtimePrismLabel')

@@ -530,18 +530,25 @@ fn scan_gguf(projectors: bool) -> Vec<ScannedModel> {
             for entry in entries.flatten() {
                 let path = entry.path();
                 if path.is_file() && path.extension().and_then(|e| e.to_str()) == Some("gguf") {
-                    let name = path
-                        .file_stem()
-                        .and_then(|s| s.to_str())
-                        .unwrap_or("Model")
-                        .to_string();
+                    let file_name = path.file_name().and_then(|s| s.to_str()).unwrap_or("");
+                    let split = crate::modules::gguf::split_part(file_name);
+                    // A split model is listed once, under its first part.
+                    if split.is_some_and(|(_, index, _)| index > 1) {
+                        continue;
+                    }
+                    let name = match split {
+                        Some((prefix, _, _)) => prefix.to_string(),
+                        None => path
+                            .file_stem()
+                            .and_then(|s| s.to_str())
+                            .unwrap_or("Model")
+                            .to_string(),
+                    };
                     if is_mmproj(&name) != projectors {
                         continue;
                     }
-                    let size_mb = entry
-                        .metadata()
-                        .map(|m| m.len() / (1024 * 1024))
-                        .unwrap_or(0);
+                    let size_mb =
+                        crate::modules::gguf::model_size(&path).unwrap_or(0) / (1024 * 1024);
                     let lower_name = name.to_ascii_lowercase();
                     let is_prism = lower_name.contains("pq2_0") || lower_name.contains("ptq1_0");
                     let is_bonsai = lower_name.contains("bonsai");

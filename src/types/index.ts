@@ -971,6 +971,17 @@ export interface HfGgufFile {
   runtime: 'standard' | 'prism' | 'legacy';
   recommended: boolean;
   compatibility_note: string;
+  /** Files of a model split into parts, in order; then `filename` is the first part and
+   * `size_bytes` the size of all parts. Empty or missing for a single file. */
+  parts?: HfGgufPart[];
+}
+
+/** One file of a split GGUF model. */
+export interface HfGgufPart {
+  filename: string;
+  size_bytes: number;
+  sha256: string | null;
+  download_url: string;
 }
 
 export interface DownloadProgressEvent {

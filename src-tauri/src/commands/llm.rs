@@ -108,6 +108,7 @@ pub async fn download_gguf_model(
     filename: String,
     expected_size: u64,
     expected_sha256: Option<String>,
+    parts: Option<Vec<crate::modules::models_hub::HfGgufPart>>,
 ) -> Result<String, String> {
     crate::modules::models_hub::download_gguf_file(
         &app,
@@ -115,6 +116,7 @@ pub async fn download_gguf_model(
         &filename,
         expected_size,
         expected_sha256.as_deref(),
+        parts.as_deref().unwrap_or_default(),
     )
     .await
 }

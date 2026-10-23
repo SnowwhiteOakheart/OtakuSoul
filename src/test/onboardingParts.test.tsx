@@ -14,7 +14,7 @@ import type { CharacterProfile, StarterModel } from '../types';
 const initial = useAppStore.getState();
 const starter = (over: Partial<StarterModel>): StarterModel => ({
   id: 'qwen3-8b', name: 'Qwen3 8B', license: 'Apache-2.0', vram_mb: 6800, recommended: false, fits_gpu: true, installed: false,
-  file: { filename: 'Qwen_Qwen3-8B-Q4_K_M.gguf', size_bytes: 5e9, sha256: 'x', size_formatted: '4.7 GB', download_url: 'https://huggingface.co/x', quantization: 'Q4_K_M', runtime: 'standard', recommended: false, compatibility_note: '' },
+  file: { filename: 'Qwen_Qwen3-8B-Q4_K_M.gguf', size_bytes: 5e9, sha256: 'x', size_formatted: '4.7 GB', download_url: 'https://huggingface.co/x', quantization: 'Q4_K_M', runtime: 'standard', recommended: false, compatibility_note: '', parts: [] },
   description: { de: 'Solider Allrounder.', en: 'Solid all-rounder.' },
   license_kind: 'open', license_note: {}, license_url: 'https://huggingface.co/x', mmproj: null, mmproj_installed: false,
   ...over,
@@ -100,7 +100,7 @@ describe('setup wizard parts', () => {
     const user = userEvent.setup();
     useAppStore.setState({ hardware: { gpus: [{ name: 'RTX 4060', total_vram_mb: 8192 }] } as never });
     const mmproj = { filename: 'Qwen_Qwen3-8B-Q4_K_M-mmproj-F16.gguf', size_bytes: 1, sha256: 'y', size_formatted: '0.16 GB',
-      download_url: 'https://huggingface.co/x/resolve/main/mmproj-F16.gguf', quantization: 'F16', runtime: 'standard', recommended: false, compatibility_note: '' };
+      download_url: 'https://huggingface.co/x/resolve/main/mmproj-F16.gguf', quantization: 'F16', runtime: 'standard', recommended: false, compatibility_note: '', parts: [] };
     vi.mocked(api.listStarterModels).mockResolvedValue([starter({ recommended: true, mmproj })]);
     vi.mocked(api.getRuntime).mockResolvedValue({ backend: 'vulkan' } as never);
     const download = vi.fn().mockImplementation(async () => {

@@ -494,6 +494,7 @@
   "settings.showFiles": "GGUFファイルを表示",
   "settings.loadingFiles": "Hugging Faceからファイル一覧を読み込み中…",
   "settings.noGgufFiles": "このリポジトリに.ggufファイルは見つかりませんでした。",
+  "settings.ggufParts": "{{count}}分割",
   "settings.recommended": "おすすめ",
   "settings.runtimePrismLabel": "PrismMLランタイム",
   "settings.runtimeLegacy": "レガシー（旧版）",

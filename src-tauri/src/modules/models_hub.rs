@@ -33,6 +33,21 @@ pub struct HfGgufFile {
     pub runtime: String,
     pub recommended: bool,
     pub compatibility_note: String,
+    /// The files of a model split into several parts (`-00001-of-00004.gguf` …), in order;
+    /// empty for a single file. `filename` and `download_url` then name the first part and
+    /// `size_bytes` is the size of all parts together.
+    #[serde(default)]
+    pub parts: Vec<HfGgufPart>,
+}
+
+/// One file of a split GGUF model.
+#[derive(Debug, Clone, Serialize, Deserialize, TS)]
+#[ts(export)]
+pub struct HfGgufPart {
+    pub filename: String,
+    pub size_bytes: u64,
+    pub sha256: Option<String>,
+    pub download_url: String,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize, TS)]
@@ -236,7 +251,7 @@ pub async fn get_hf_model_files(model_id: &str) -> Result<Vec<HfGgufFile>, Strin
         .await
         .map_err(|e| crate::err!("backend.models.metadataParse", error = e))?;
 
-    let mut files = Vec::new();
+    let mut files: Vec<HfGgufFile> = Vec::new();
     if let Some(siblings) = val.get("siblings").and_then(|s| s.as_array()) {
         for s in siblings {
             if let Some(rfilename) = s.get("rfilename").and_then(|f| f.as_str())
@@ -274,11 +289,13 @@ pub async fn get_hf_model_files(model_id: &str) -> Result<Vec<HfGgufFile>, Strin
                     runtime,
                     recommended,
                     compatibility_note,
+                    parts: Vec::new(),
                 });
             }
         }
     }
 
+    let mut files = bundle_split_files(files);
     // Put the repository's recommended pack first, then keep the remaining list stable.
     files.sort_by(|a, b| {
         b.recommended
@@ -286,6 +303,51 @@ pub async fn get_hf_model_files(model_id: &str) -> Result<Vec<HfGgufFile>, Strin
             .then_with(|| a.filename.cmp(&b.filename))
     });
     Ok(files)
+}
+
+/// Replaces the parts of each split model with one entry for the whole model. Splits with a
+/// missing part are left out, since llama.cpp cannot load them.
+fn bundle_split_files(files: Vec<HfGgufFile>) -> Vec<HfGgufFile> {
+    use crate::modules::gguf::split_part;
+    use std::collections::BTreeMap;
+
+    let mut single = Vec::new();
+    let mut splits: BTreeMap<(String, u32), Vec<(u32, HfGgufFile)>> = BTreeMap::new();
+    for file in files {
+        match split_part(&file.filename) {
+            Some((prefix, index, count)) => splits
+                .entry((prefix.to_string(), count))
+                .or_default()
+                .push((index, file)),
+            None => single.push(file),
+        }
+    }
+    for ((_, count), mut parts) in splits {
+        parts.sort_by_key(|(index, _)| *index);
+        parts.dedup_by_key(|(index, _)| *index);
+        if parts.len() != count as usize {
+            continue;
+        }
+        let size_bytes = parts.iter().map(|(_, f)| f.size_bytes).sum();
+        let part_list = parts
+            .iter()
+            .map(|(_, f)| HfGgufPart {
+                filename: f.filename.clone(),
+                size_bytes: f.size_bytes,
+                sha256: f.sha256.clone(),
+                download_url: f.download_url.clone(),
+            })
+            .collect();
+        let (_, first) = parts.swap_remove(0);
+        single.push(HfGgufFile {
+            size_bytes,
+            size_formatted: format_bytes(size_bytes),
+            sha256: None,
+            parts: part_list,
+            ..first
+        });
+    }
+    single
 }
 
 /// A chat model for getting started, offered by the first-run wizard for the detected GPU.
@@ -362,6 +424,7 @@ pub fn starter_models() -> Vec<StarterModel> {
                     runtime: s.runtime.clone(),
                     recommended: false,
                     compatibility_note: String::new(),
+                    parts: Vec::new(),
                 }),
             mmproj_installed: s.mmproj.as_ref().zip(s.mmproj_target()).is_some_and(
                 |(m, target)| {
@@ -390,6 +453,7 @@ pub fn starter_models() -> Vec<StarterModel> {
                 runtime: s.runtime,
                 recommended: i == recommended,
                 compatibility_note: String::new(),
+                parts: Vec::new(),
             },
             id: s.id,
             name: s.name,
@@ -414,25 +478,128 @@ pub fn cancel_gguf_download(filename: &str) {
     }
 }
 
+/// Downloads a GGUF model into the models folder and returns the path to load: the file itself,
+/// or the first part of a model split into `parts`. All parts are verified before any of them
+/// appears in the folder, so a failed download never leaves half a model behind.
 pub async fn download_gguf_file<R: tauri::Runtime>(
     app: &tauri::AppHandle<R>,
     download_url: &str,
     target_filename: &str,
     expected_size: u64,
     expected_sha256: Option<&str>,
+    parts: &[HfGgufPart],
 ) -> Result<String, String> {
-    let url = reqwest::Url::parse(download_url)
-        .map_err(|error| crate::err!("backend.common.downloadFailed", error = error))?;
-    if url.scheme() != "https" || url.host_str() != Some("huggingface.co") {
-        return Err(crate::err!(
-            "backend.common.downloadFailed",
-            error = "Nur HTTPS-Downloads von huggingface.co sind zulässig"
-        ));
+    let parts = if parts.is_empty() {
+        vec![HfGgufPart {
+            filename: target_filename.to_string(),
+            size_bytes: expected_size,
+            sha256: expected_sha256.map(str::to_string),
+            download_url: download_url.to_string(),
+        }]
+    } else {
+        parts.to_vec()
+    };
+
+    let safe_name = |filename: &str| {
+        PathBuf::from(filename)
+            .file_name()
+            .and_then(|name| name.to_str())
+            .map(str::to_string)
+            .ok_or_else(|| crate::err!("backend.models.invalidFilename"))
+    };
+    // Progress and cancelling go by the name of the whole model (its first part).
+    let progress_name = safe_name(target_filename)?;
+    let paths = crate::modules::paths::resolve_app_paths();
+    let target_dir = PathBuf::from(&paths.bundled_models_dir);
+    std::fs::create_dir_all(&target_dir).map_err(|e| e.to_string())?;
+
+    let mut dest_paths = Vec::with_capacity(parts.len());
+    for part in &parts {
+        let url = reqwest::Url::parse(&part.download_url)
+            .map_err(|error| crate::err!("backend.common.downloadFailed", error = error))?;
+        if url.scheme() != "https" || url.host_str() != Some("huggingface.co") {
+            return Err(crate::err!(
+                "backend.common.downloadFailed",
+                error = "Nur HTTPS-Downloads von huggingface.co sind zulässig"
+            ));
+        }
+        let dest_path = target_dir.join(safe_name(&part.filename)?);
+        if dest_path.exists() {
+            return Err(crate::err!(
+                "backend.models.activate",
+                error = format!("{} ist bereits installiert", dest_path.display())
+            ));
+        }
+        dest_paths.push(dest_path);
     }
 
+    // A stop from an earlier attempt must not end this one.
+    CANCELLED_DOWNLOADS.lock().remove(&progress_name);
     let client = reqwest::Client::new();
+    let mut progress = Progress {
+        name: progress_name.clone(),
+        done_bytes: 0,
+        total_bytes: parts.iter().map(|p| p.size_bytes).sum(),
+        start: std::time::Instant::now(),
+        last_emit: std::time::Instant::now(),
+    };
+    let mut downloaded = Vec::with_capacity(parts.len());
+    for (part, dest_path) in parts.iter().zip(&dest_paths) {
+        let partial = download_part(app, &client, part, dest_path, &mut progress).await?;
+        downloaded.push(partial);
+    }
+
+    // hard_link fails if the destination appeared while downloading, so an existing
+    // model is never replaced by a concurrent download.
+    for (i, (partial, dest_path)) in downloaded.iter().zip(&dest_paths).enumerate() {
+        if let Err(e) = tokio::fs::hard_link(&partial.0, dest_path).await {
+            for linked in &dest_paths[..i] {
+                let _ = std::fs::remove_file(linked);
+            }
+            return Err(crate::err!("backend.models.activate", error = e));
+        }
+    }
+
+    let _ = app.emit(
+        "model-download-progress",
+        DownloadProgressEvent {
+            filename: progress_name,
+            downloaded_bytes: progress.done_bytes,
+            total_bytes: progress.total_bytes.max(progress.done_bytes),
+            percent: 100.0,
+            speed_mbps: 0.0,
+            eta_seconds: None,
+            finished: true,
+            error: None,
+        },
+    );
+
+    let model_path = &dest_paths[0];
+    info!("GGUF-Download abgeschlossen: {:?}", model_path);
+    Ok(model_path.to_string_lossy().to_string())
+}
+
+/// Progress of a whole model download over all its parts.
+struct Progress {
+    name: String,
+    /// Bytes of the parts already finished.
+    done_bytes: u64,
+    total_bytes: u64,
+    start: std::time::Instant,
+    last_emit: std::time::Instant,
+}
+
+/// Downloads and verifies one file into a partial file next to `dest_path`; the returned guard
+/// removes it again once the caller has linked it into place (or given up).
+async fn download_part<R: tauri::Runtime>(
+    app: &tauri::AppHandle<R>,
+    client: &reqwest::Client,
+    part: &HfGgufPart,
+    dest_path: &std::path::Path,
+    progress: &mut Progress,
+) -> Result<PartialDownload, String> {
     let response = client
-        .get(download_url)
+        .get(&part.download_url)
         .header("User-Agent", "OtakuSoul-Desktop-Client")
         .send()
         .await
@@ -445,6 +612,7 @@ pub async fn download_gguf_file<R: tauri::Runtime>(
         ));
     }
 
+    let expected_size = part.size_bytes;
     let content_length = response.content_length().unwrap_or(0);
     if expected_size > 0 && content_length > 0 && expected_size != content_length {
         return Err(crate::err!(
@@ -457,48 +625,36 @@ pub async fn download_gguf_file<R: tauri::Runtime>(
     } else {
         content_length
     };
-    if total_bytes == 0 && expected_sha256.is_none() {
+    if total_bytes == 0 && part.sha256.is_none() {
         return Err(crate::err!(
             "backend.common.downloadInterrupted",
             error = "Dateigröße und Prüfsumme fehlen"
         ));
     }
-
-    let paths = crate::modules::paths::resolve_app_paths();
-    let target_dir = PathBuf::from(&paths.bundled_models_dir);
-    std::fs::create_dir_all(&target_dir).map_err(|e| e.to_string())?;
-
-    let safe_filename = PathBuf::from(target_filename)
-        .file_name()
-        .and_then(|name| name.to_str())
-        .ok_or_else(|| crate::err!("backend.models.invalidFilename"))?
-        .to_string();
-    // A stop from an earlier attempt must not end this one.
-    CANCELLED_DOWNLOADS.lock().remove(&safe_filename);
-    let dest_path = target_dir.join(&safe_filename);
-    if dest_path.exists() {
-        return Err(crate::err!(
-            "backend.models.activate",
-            error = format!("{safe_filename} ist bereits installiert")
-        ));
+    if expected_size == 0 {
+        progress.total_bytes += total_bytes;
     }
-    let partial_path = target_dir.join(format!("{}.{}.part", safe_filename, rand::random::<u64>()));
+
+    let file_name = dest_path
+        .file_name()
+        .and_then(|n| n.to_str())
+        .unwrap_or_default();
+    let partial_path =
+        dest_path.with_file_name(format!("{file_name}.{}.part", rand::random::<u64>()));
     let mut file = tokio::fs::OpenOptions::new()
         .write(true)
         .create_new(true)
         .open(&partial_path)
         .await
         .map_err(|e| crate::err!("backend.common.fileCreate", error = e))?;
-    let _partial_cleanup = PartialDownload(partial_path.clone());
+    let partial = PartialDownload(partial_path);
 
     let mut stream = response.bytes_stream();
     let mut hasher = Sha256::new();
     let mut downloaded_bytes = 0u64;
-    let start_time = std::time::Instant::now();
-    let mut last_emit = std::time::Instant::now();
 
     while let Some(chunk_res) = stream.next().await {
-        if CANCELLED_DOWNLOADS.lock().remove(&safe_filename) {
+        if CANCELLED_DOWNLOADS.lock().remove(&progress.name) {
             return Err(crate::err!("backend.models.downloadCancelled"));
         }
         let chunk =
@@ -516,22 +672,23 @@ pub async fn download_gguf_file<R: tauri::Runtime>(
             ));
         }
 
-        if last_emit.elapsed() >= std::time::Duration::from_millis(400) {
-            let elapsed_secs = start_time.elapsed().as_secs_f32().max(0.001);
-            let speed_mbps = (downloaded_bytes as f32 / (1024.0 * 1024.0)) / elapsed_secs;
-            let percent = if total_bytes > 0 {
-                (downloaded_bytes as f32 / total_bytes as f32) * 100.0
+        if progress.last_emit.elapsed() >= std::time::Duration::from_millis(400) {
+            let all_bytes = progress.done_bytes + downloaded_bytes;
+            let elapsed_secs = progress.start.elapsed().as_secs_f32().max(0.001);
+            let speed_mbps = (all_bytes as f32 / (1024.0 * 1024.0)) / elapsed_secs;
+            let percent = if progress.total_bytes > 0 {
+                (all_bytes as f32 / progress.total_bytes as f32) * 100.0
             } else {
                 0.0
             };
-            let eta_seconds = estimate_eta(downloaded_bytes, total_bytes, elapsed_secs);
+            let eta_seconds = estimate_eta(all_bytes, progress.total_bytes, elapsed_secs);
 
             let _ = app.emit(
                 "model-download-progress",
                 DownloadProgressEvent {
-                    filename: safe_filename.clone(),
-                    downloaded_bytes,
-                    total_bytes,
+                    filename: progress.name.clone(),
+                    downloaded_bytes: all_bytes,
+                    total_bytes: progress.total_bytes,
                     percent,
                     speed_mbps,
                     eta_seconds,
@@ -540,7 +697,7 @@ pub async fn download_gguf_file<R: tauri::Runtime>(
                 },
             );
 
-            last_emit = std::time::Instant::now();
+            progress.last_emit = std::time::Instant::now();
         }
     }
 
@@ -554,34 +711,14 @@ pub async fn download_gguf_file<R: tauri::Runtime>(
         .map(|byte| format!("{byte:02x}"))
         .collect();
     verify_download(
-        &safe_filename,
+        file_name,
         downloaded_bytes,
         total_bytes,
-        expected_sha256,
+        part.sha256.as_deref(),
         &actual_sha256,
     )?;
-    // hard_link fails if the destination appeared while downloading, so an existing
-    // model is never replaced by a concurrent download.
-    tokio::fs::hard_link(&partial_path, &dest_path)
-        .await
-        .map_err(|e| crate::err!("backend.models.activate", error = e))?;
-
-    let _ = app.emit(
-        "model-download-progress",
-        DownloadProgressEvent {
-            filename: safe_filename,
-            downloaded_bytes,
-            total_bytes,
-            percent: 100.0,
-            speed_mbps: 0.0,
-            eta_seconds: None,
-            finished: true,
-            error: None,
-        },
-    );
-
-    info!("GGUF-Download abgeschlossen: {:?}", dest_path);
-    Ok(dest_path.to_string_lossy().to_string())
+    progress.done_bytes += downloaded_bytes;
+    Ok(partial)
 }
 
 struct PartialDownload(PathBuf);
@@ -682,5 +819,47 @@ mod tests {
     fn reports_prism_quantization_before_generic_q2() {
         assert_eq!(extract_quantization("model-PQ2_0.gguf"), "PQ2_0");
         assert_eq!(extract_quantization("model-Q2_g64.gguf"), "Q2_G64");
+    }
+
+    #[test]
+    fn bundles_the_parts_of_split_models() {
+        let file = |name: &str, size: u64| super::HfGgufFile {
+            filename: name.into(),
+            size_bytes: size,
+            sha256: Some(format!("sha-{name}")),
+            size_formatted: String::new(),
+            download_url: format!("https://huggingface.co/x/resolve/main/{name}"),
+            quantization: "Q4_K_M".into(),
+            runtime: "standard".into(),
+            recommended: false,
+            compatibility_note: String::new(),
+            parts: Vec::new(),
+        };
+        let files = super::bundle_split_files(vec![
+            file("Q4_K_M/m-Q4_K_M-00002-of-00002.gguf", 20),
+            file("small-Q4_K_M.gguf", 5),
+            file("Q4_K_M/m-Q4_K_M-00001-of-00002.gguf", 10),
+            // Incomplete: part 2 of 3 is missing.
+            file("Q8_0/m-Q8_0-00001-of-00003.gguf", 1),
+            file("Q8_0/m-Q8_0-00003-of-00003.gguf", 1),
+        ]);
+        assert_eq!(files.len(), 2);
+        assert!(files[0].parts.is_empty());
+        let split = &files[1];
+        assert_eq!(split.filename, "Q4_K_M/m-Q4_K_M-00001-of-00002.gguf");
+        assert_eq!(split.size_bytes, 30);
+        assert_eq!(split.sha256, None);
+        let names: Vec<_> = split.parts.iter().map(|p| p.filename.as_str()).collect();
+        assert_eq!(
+            names,
+            [
+                "Q4_K_M/m-Q4_K_M-00001-of-00002.gguf",
+                "Q4_K_M/m-Q4_K_M-00002-of-00002.gguf"
+            ]
+        );
+        assert_eq!(
+            split.parts[1].sha256.as_deref(),
+            Some("sha-Q4_K_M/m-Q4_K_M-00002-of-00002.gguf")
+        );
     }
 }
