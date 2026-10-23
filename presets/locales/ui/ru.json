@@ -2793,7 +2793,7 @@
   "onboarding.starterSelected": "Выбрано",
   "onboarding.starterDownload": "Скачать ({{size}})",
   "onboarding.starterDownloadLabel": "Скачать {{name}}",
-  "onboarding.starterProgress": "Скачано {{percent}} % – загрузка продолжится, если закрыть помощника.",
+  "onboarding.starterProgress": "Скачано {{percent}} % – загрузка продолжится, даже если вы уйдёте с этой страницы.",
   "onboarding.firstReplyIntro": "Попробуйте: {{name}} поприветствует вас первым ответом.",
   "onboarding.firstReplyButton": "Получить первый ответ",
   "onboarding.firstReplyRunning": "Ожидание ответа …",

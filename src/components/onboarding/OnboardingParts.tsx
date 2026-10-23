@@ -202,7 +202,7 @@ export const StarterModelList = ({ starters, withVision, onChanged, exclude = []
                   className={`rounded-xl border p-3 text-sm space-y-2 ${selected ? 'border-accent-500/70 bg-accent-500/10' : 'border-slate-800 bg-app/60'}`}
                 >
                   <div className="flex flex-wrap items-center justify-between gap-2">
-                    <span className="min-w-0">
+                    <span className="min-w-0 flex-1 basis-64">
                       <span className="font-semibold text-slate-100">{starter.name}</span>
                       {starter.recommended && (
                         <span className="ml-2 rounded border border-emerald-500/30 bg-emerald-500/15 px-1.5 py-0.5 text-[11px] text-emerald-300">

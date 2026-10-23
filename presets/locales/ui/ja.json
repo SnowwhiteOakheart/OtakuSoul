@@ -2794,7 +2794,7 @@
   "onboarding.starterSelected": "選択中",
   "onboarding.starterDownload": "ダウンロード ({{size}})",
   "onboarding.starterDownloadLabel": "{{name}} をダウンロード",
-  "onboarding.starterProgress": "{{percent}}% ダウンロード完了 — ウィザードを閉じてもダウンロードは継続されます。",
+  "onboarding.starterProgress": "{{percent}}% ダウンロード完了 — このページを離れてもダウンロードは継続されます。",
   "onboarding.firstReplyIntro": "試してみましょう: {{name}} が挨拶の返答をしてくれます。",
   "onboarding.firstReplyButton": "最初の返答を受け取る",
   "onboarding.firstReplyRunning": "返答を待っています…",

@@ -2793,7 +2793,7 @@
   "onboarding.starterSelected": "Selected",
   "onboarding.starterDownload": "Download ({{size}})",
   "onboarding.starterDownloadLabel": "Download {{name}}",
-  "onboarding.starterProgress": "{{percent}} % downloaded – the download continues if you close the wizard.",
+  "onboarding.starterProgress": "{{percent}} % downloaded – the download continues if you leave this page.",
   "onboarding.firstReplyIntro": "Try it: {{name}} greets you with a first reply.",
   "onboarding.firstReplyButton": "Get a first reply",
   "onboarding.firstReplyRunning": "Waiting for the reply …",
