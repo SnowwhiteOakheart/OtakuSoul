@@ -91,6 +91,11 @@ export interface ChatSlice {
    */
   writeOnOwn: (instruction: (name: string) => string) => Promise<StoredChatMessage | null>;
   /**
+   * Like `writeOnOwn`, for a character's chat that is not open: written in the background (a
+   * reply in the open chat has priority and stops it). Null when nothing was written.
+   */
+  writeOnOwnIn: (charId: string, chatId: string, instruction: (name: string) => string) => Promise<StoredChatMessage | null>;
+  /**
    * The chat's character sends a selfie (as their message with the picture), drawn from the
    * recent chat and their portrait. Returns the message, or null when no picture came (no image
    * engine, other chat meanwhile); failures are thrown.
@@ -166,6 +171,28 @@ const withEmotionTag = (tags: Record<string, string>, key: string, fullText: str
 
 const postHistory = (prompt: AssembledPrompt | null): ChatMessage[] =>
   prompt?.post_history ? [{ role: 'system', content: prompt.post_history }] : [];
+
+/** The chat's author's note at its depth (counted from the end of the history). */
+const withAuthorNote = (messages: ChatMessage[], session: ChatSession | undefined): ChatMessage[] => {
+  if (!session?.author_note || (session.author_note_depth || 0) <= 0) return messages;
+  const at = Math.max(1, messages.length - session.author_note_depth);
+  return [...messages.slice(0, at), { role: 'system', content: `[Author's note: ${session.author_note}]` }, ...messages.slice(at)];
+};
+
+/**
+ * A message a character writes on their own in another chat than the open one. The backend runs
+ * one chat generation at a time, so a reply in the open chat stops it first ([`makeRoomForChat`]).
+ */
+let backgroundWrite: { abort: AbortController; done: Promise<unknown> } | null = null;
+
+/** Stops a message being written in the background and waits until the backend is free. */
+async function makeRoomForChat() {
+  const running = backgroundWrite;
+  if (!running) return;
+  running.abort.abort();
+  await api.abortChatGeneration().catch(() => {});
+  await running.done.catch(() => {});
+}
 
 /**
  * Mirrors the backend (`discard_stale_summary`): changing a message the running summary already
@@ -300,12 +327,7 @@ export const createChatSlice: SliceCreator<ChatSlice> = (set, get) => {
     if (!inContext(chatId, charId)) return null;
     const payloadMessages: ChatMessage[] = prompt.system ? [{ role: 'system', content: prompt.system }, ...setup.flat] : [...setup.flat];
 
-    // Author's Note at its depth
-    const session = get().chatSessions.find((s) => s.id === chatId);
-    if (session?.author_note && (session.author_note_depth || 0) > 0) {
-      const insertIdx = Math.max(1, payloadMessages.length - session.author_note_depth);
-      payloadMessages.splice(insertIdx, 0, { role: 'system', content: `[Author's note: ${session.author_note}]` });
-    }
+    payloadMessages.splice(0, payloadMessages.length, ...withAuthorNote(payloadMessages, get().chatSessions.find((s) => s.id === chatId)));
     payloadMessages.push(...postHistory(prompt));
     if (run.instruction) payloadMessages.push({ role: 'system', content: run.instruction(setup.name) });
     else if (run.nudge) payloadMessages.push({ role: 'system', content: `[It is ${setup.name}'s turn to speak.]` });
@@ -314,6 +336,7 @@ export const createChatSlice: SliceCreator<ChatSlice> = (set, get) => {
     if (speakerId) await get().loadSpeakerVoice(speakerId);
     const state = get();
     set({ generationSpeakerId: speakerId });
+    await makeRoomForChat();
     const done = await api.sendChatMessage({
       endpoint_url: state.selectedBackend === 'local' ? `http://127.0.0.1:${state.serverConfig.port}/v1/chat/completions` : state.cloudEndpoint,
       provider: state.selectedBackend === 'cloud' ? state.cloudProvider : 'local_llama',
@@ -548,6 +571,72 @@ export const createChatSlice: SliceCreator<ChatSlice> = (set, get) => {
       return null;
     } finally {
       await finishGeneration();
+    }
+  },
+
+  writeOnOwnIn: async (charId, chatId, instruction) => {
+    const state = get();
+    const character = state.availableCharacters.find((c) => c.id === charId);
+    if (backgroundWrite || state.isGenerating || chatId === state.activeChatId || !character) return null;
+    const abort = new AbortController();
+    const signal = abort.signal;
+    const run = async (): Promise<StoredChatMessage | null> => {
+      const [session, history] = await Promise.all([api.getChatSession(chatId), api.getChatMessages(chatId)]);
+      if (!session || session.character_id !== charId) return null;
+      const userName = state.activePersona.name;
+      const speakers = chatSpeakers(character, session, state.availableCharacters);
+      const nameOf = (id: string) => presentedAs((speakers.find((s) => s.id === id) ?? speakers[0]!).character, state.replyLanguage).name;
+      const cognitive = await waitWithAbort(() => api.getCognitiveOverview(charId, userName).catch(() => null), signal);
+      const group = speakers.length > 1;
+      const flat = group ? groupHistory(history, '', nameOf, userName) : history.map(toFlat);
+      const speaker: PromptSpeaker | undefined = group
+        ? { character, cognitive, others: speakers.slice(1).map((s) => presentedAs(s.character, state.replyLanguage)) }
+        : undefined;
+      // The prompt as if this chat were open; the open chat's scene state stays untouched.
+      const view = {
+        ...get(), activeCharacter: character, activeChatId: chatId, chatSessions: [session], storedMessages: history,
+        cognitiveOverview: cognitive, stateVariables: [], activeLorebooks: [], sceneTensionEnabled: false,
+        currentTension: 0, setCurrentTension: () => {},
+      };
+      const prompt = await resolvePromptWithLore(view, flat, undefined, signal, speaker);
+      const messages: ChatMessage[] = [
+        ...withAuthorNote(prompt.system ? [{ role: 'system', content: prompt.system }, ...flat] : flat, session),
+        ...postHistory(prompt),
+        { role: 'system', content: instruction(group ? nameOf('') : presentedAs(character, state.replyLanguage).name) },
+      ];
+      signal.throwIfAborted();
+      const now = get();
+      const target = llmTarget(now);
+      const done = await api.sendChatMessage({
+        endpoint_url: target.endpoint_url,
+        provider: target.provider,
+        api_key: target.api_key ?? undefined,
+        model: target.model ?? undefined,
+        messages: forPrompt(messages, now.replyReplacements),
+        reasoning_mode: now.serverConfig.reasoning_mode,
+        sampling: chatSampling(view),
+      }, crypto.randomUUID(), now.selectedBackend === 'cloud' ? now.cloudContextTokens : undefined);
+      if (done.aborted || signal.aborted) return null;
+      const { cleanedText } = extractStateUpdates(withoutEmotionTag(applyReplacements(done.full_text, get().replyReplacements)));
+      if (!cleanedText.trim()) return null;
+      const stored = await api.addChatMessage(chatId, 'assistant', cleanedText, done.full_thought.trim() ? done.full_thought : null);
+      // Opened meanwhile: the message shows right away.
+      if (get().activeChatId === chatId && !get().isChatLoading) {
+        const storedMessages = [...get().storedMessages, stored];
+        set({ storedMessages, messages: storedMessages.map(toFlat) });
+      }
+      return stored;
+    };
+    const done = run().catch((e) => {
+      // Nobody asked for this message: a failure or a stop is only logged.
+      if (!signal.aborted) console.warn('Writing on their own in another chat failed:', e);
+      return null;
+    });
+    backgroundWrite = { abort, done };
+    try {
+      return await done;
+    } finally {
+      if (backgroundWrite?.done === done) backgroundWrite = null;
     }
   },
 
@@ -942,7 +1031,8 @@ export const createChatSlice: SliceCreator<ChatSlice> = (set, get) => {
           ? `http://127.0.0.1:${serverConfig.port}/v1/chat/completions`
           : cloudEndpoint;
 
-      const done = await api.sendChatMessage({
+      await makeRoomForChat();
+    const done = await api.sendChatMessage({
         endpoint_url: endpoint,
         provider: selectedBackend === 'cloud' ? cloudProvider : 'local_llama',
         api_key: selectedBackend === 'cloud' ? cloudApiKey : undefined,
@@ -1045,7 +1135,8 @@ export const createChatSlice: SliceCreator<ChatSlice> = (set, get) => {
           ? `http://127.0.0.1:${serverConfig.port}/v1/chat/completions`
           : cloudEndpoint;
 
-      const done = await api.sendChatMessage({
+      await makeRoomForChat();
+    const done = await api.sendChatMessage({
         endpoint_url: endpoint,
         provider: selectedBackend === 'cloud' ? cloudProvider : 'local_llama',
         api_key: selectedBackend === 'cloud' ? cloudApiKey : undefined,

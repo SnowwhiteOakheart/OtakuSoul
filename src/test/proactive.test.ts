@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { PROACTIVE_DEFAULTS, inQuietHours, pauseInWords, proactiveInstruction, proactiveReason, sentToday } from '../utils/proactive';
+import { PROACTIVE_DEFAULTS, inQuietHours, otherChatCandidates, pauseInWords, proactiveInstruction, proactiveReason, sentToday } from '../utils/proactive';
 import { notificationBody } from '../services/notifications';
 import type { IntentionEntry } from '../types/generated/IntentionEntry';
 
@@ -110,5 +110,26 @@ describe('proactive messages', () => {
   it('shortens notification texts without role-play markup', () => {
     expect(notificationBody('*winkt*  Hallo\nKai!')).toBe('winkt Hallo Kai!');
     expect(notificationBody('a'.repeat(300))).toHaveLength(160);
+  });
+});
+
+describe('chats of other characters', () => {
+  const session = (id: string, character_id: string, updatedIso: string, message_count = 6) => ({
+    id, character_id, title: '', created_at: 0, updated_at: seconds(updatedIso), author_note: '', author_note_depth: 0,
+    message_count, summary: '', summary_until: -1, members: [],
+  });
+  const now = at('2026-10-20T14:00:00');
+
+  it('picks recent conversations of others, newest first', () => {
+    const picked = otherChatCandidates([
+      session('open', 'shiori', '2026-10-20T08:00:00'),
+      session('old', 'sota', '2026-10-01T08:00:00'), // older than two weeks
+      session('greeting', 'lirwen', '2026-10-20T08:00:00', 1), // no conversation yet
+      session('fresh', 'faelion', '2026-10-20T13:55:00'), // just written
+      session('b', 'emilia', '2026-10-19T20:00:00'),
+      session('a', 'ayu', '2026-10-20T10:00:00'),
+      session('muted', 'cosmos', '2026-10-20T10:00:00'),
+    ], { settings: { ...on, muted_character_ids: ['cosmos'] }, activeChatId: 'open', now });
+    expect(picked.map((s) => s.id)).toEqual(['a', 'b']);
   });
 });

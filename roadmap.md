@@ -128,8 +128,6 @@
   Entscheidung des Nutzers.
 
 ### Die Figur meldet sich von selbst
-- [ ] **Von selbst melden auch außerhalb des offenen Chats:** Bisher schreibt nur die Figur des offenen Chats (Grundfunktion
-  seit 20.10.2026, siehe `roadmap_abgeschlossen.md`); andere Figuren bräuchten einen Prompt-Aufbau ohne aktiven Chat.
 - [ ] **Klick auf die Benachrichtigung öffnet den Chat:** Desktop-Benachrichtigungen von `tauri-plugin-notification` bieten
   keine Klick-Aktion; bis dahin zeigt die App außerhalb des Chats einen Toast mit „Zum Chat“.
 

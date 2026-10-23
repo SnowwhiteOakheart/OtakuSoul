@@ -101,6 +101,14 @@ export const ProactiveSettings = () => {
             description={t('proactive.offscreenHint')}
             className="-mx-2"
           />
+          <Toggle
+            id="setting-proactive-other-chats"
+            checked={proactive.other_chats}
+            onCheckedChange={(other_chats) => setProactive({ other_chats })}
+            label={t('proactive.otherChats')}
+            description={t('proactive.otherChatsHint')}
+            className="-mx-2"
+          />
           {proactive.dreams && (
             <Toggle
               id="setting-proactive-dream-image"

@@ -129,6 +129,51 @@ describe('local model selection', () => {
   });
 });
 
+describe('writing on their own in a chat that is not open', () => {
+  const lirwen = { id: 'lirwen', card: { data: { name: 'Lirwen', extensions: {} } } };
+  const session = { id: 'c-lirwen', character_id: 'lirwen', title: '', created_at: 0, updated_at: 0, author_note: '', author_note_depth: 0,
+    message_count: 2, summary: '', summary_until: -1, members: [] };
+  const history = [
+    { id: 'm1', chat_id: 'c-lirwen', role: 'user', content: 'Bis morgen!', created_at: 1, order_index: 0, attachments: [], swipe_index: 0, swipes: [] },
+  ];
+  const setup = () => {
+    useAppStore.setState({ availableCharacters: [lirwen] as never, activeChatId: 'c-open', storedMessages: [] });
+    vi.mocked(api.getChatSession).mockResolvedValue(session as never);
+    vi.mocked(api.getChatMessages).mockResolvedValue(history as never);
+    vi.mocked(api.assemblePrompt).mockResolvedValue({ system: 'Du bist Lirwen.', post_history: null } as never);
+    vi.mocked(api.addChatMessage).mockImplementation(async (chatId, role, content) => ({ id: 'new', chat_id: chatId, role, content } as never));
+  };
+
+  it("writes with the other character's card and history into their chat", async () => {
+    setup();
+    vi.mocked(api.sendChatMessage).mockResolvedValue({ generation_id: 'g', full_text: 'Na, wie war dein Tag?', full_thought: '', aborted: false } as never);
+    const stored = await useAppStore.getState().writeOnOwnIn('lirwen', 'c-lirwen', (name) => `[${name} schreibt]`);
+    expect(stored).toMatchObject({ chat_id: 'c-lirwen', content: 'Na, wie war dein Tag?' });
+    const request = vi.mocked(api.sendChatMessage).mock.calls[0]![0];
+    expect(request.messages.map((m) => m.content)).toEqual(['Du bist Lirwen.', 'Bis morgen!', '[Lirwen schreibt]']);
+    expect(vi.mocked(api.assemblePrompt).mock.calls[0]![0]).toMatchObject({ char_name: 'Lirwen' });
+    // The open chat is not touched.
+    expect(useAppStore.getState().storedMessages).toEqual([]);
+  });
+
+  it('gives way to a reply in the open chat', async () => {
+    setup();
+    let finish: (value: unknown) => void = () => {};
+    vi.mocked(api.sendChatMessage).mockImplementationOnce(() => new Promise((resolve) => { finish = resolve; }) as never);
+    vi.mocked(api.abortChatGeneration).mockImplementation(async () => finish({ generation_id: 'g', full_text: 'Na', full_thought: '', aborted: true }));
+    const writing = useAppStore.getState().writeOnOwnIn('lirwen', 'c-lirwen', () => '[x]');
+    await vi.waitFor(() => expect(api.sendChatMessage).toHaveBeenCalledTimes(1));
+    expect(await useAppStore.getState().writeOnOwnIn('lirwen', 'c-lirwen', () => '[x]')).toBeNull(); // one at a time
+    // What the open chat's reply does before sending.
+    vi.mocked(api.sendChatMessage).mockResolvedValue({ generation_id: 'h', full_text: 'Hallo', full_thought: '', aborted: false } as never);
+    useAppStore.setState({ activeCharacter: lirwen as never, activeChatId: 'c-open', chatSessions: [] });
+    await useAppStore.getState().writeOnOwn(() => '[y]');
+    expect(api.abortChatGeneration).toHaveBeenCalled();
+    expect(await writing).toBeNull();
+    expect(api.addChatMessage).not.toHaveBeenCalledWith('c-lirwen', 'assistant', expect.anything(), expect.anything());
+  });
+});
+
 describe('settings per local model', () => {
   const bonsai = { match: ['bonsai'], server: { cache_type_k: 'q4_0', reasoning_mode: true }, sampling: { top_k: 20 } };
 

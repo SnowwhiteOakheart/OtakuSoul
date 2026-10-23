@@ -41,6 +41,10 @@ dream_image: boolean,
  */
 offscreen: boolean, 
 /**
+ * Characters whose chat is not open write too (into their latest chat, in the background).
+ */
+other_chats: boolean, 
+/**
  * Characters that never write on their own.
  */
 muted_character_ids: Array<string>, 

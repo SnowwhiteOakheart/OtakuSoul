@@ -108,6 +108,8 @@ pub struct ProactiveSettings {
     /// In a group chat the character tells instead what they did with a guest while the user was
     /// away (kept in both characters' memories).
     pub offscreen: bool,
+    /// Characters whose chat is not open write too (into their latest chat, in the background).
+    pub other_chats: bool,
     /// Characters that never write on their own.
     pub muted_character_ids: Vec<String>,
     /// Messages already sent, newest last (the app keeps the latest few).
@@ -127,6 +129,7 @@ impl Default for ProactiveSettings {
             dreams: true,
             dream_image: false,
             offscreen: true,
+            other_chats: true,
             muted_character_ids: Vec::new(),
             sent: Vec::new(),
         }

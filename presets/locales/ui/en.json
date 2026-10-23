@@ -3585,9 +3585,9 @@
   "onboarding.licenseRestrictedHint": "Downloadable without sign-in, but the licence sets conditions on use – please read it first.",
   "onboarding.licenseView": "View licence",
   "proactive.title": "Characters write on their own",
-  "proactive.intro": "After a pause or when a plan is due, the character of your open chat writes to you on their own – like a short message between friends.",
+  "proactive.intro": "After a pause or when a plan is due, your characters write to you on their own – like a short message between friends.",
   "proactive.toggle": "Characters may write on their own",
-  "proactive.on": "On: the character of the open chat writes to you after a pause or when a plan is due.",
+  "proactive.on": "On: your characters write to you after a pause or when a plan is due.",
   "proactive.off": "Off: characters only answer when you write. When on, every message uses the AI – with a cloud provider, your credit.",
   "proactive.pause": "Write after a pause of",
   "proactive.hours_one": "{{count}} hour",
@@ -3706,5 +3706,7 @@
   "dream.fileName": "Dream picture",
   "proactive.offscreen": "Guests spend time together",
   "proactive.offscreenHint": "In a group chat, after a long pause (8 hours or more), the character tells you instead of a dream what they did with a guest meanwhile. Both remember it.",
+  "proactive.otherChats": "Also characters whose chat is not open",
+  "proactive.otherChatsHint": "Characters you wrote with in the last two weeks also get in touch when their chat is not open. The message goes into their latest chat; if you are writing yourself, your reply goes first.",
   "offscreen.memory": "Spent time with {{name}} during the pause: {{text}}"
 }

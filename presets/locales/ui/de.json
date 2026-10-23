@@ -3585,9 +3585,9 @@
   "onboarding.licenseRestrictedHint": "Ohne Anmeldung ladbar, aber die Lizenz stellt Bedingungen an die Nutzung – bitte vorher lesen.",
   "onboarding.licenseView": "Lizenz ansehen",
   "proactive.title": "Figuren melden sich von selbst",
-  "proactive.intro": "Nach einer Pause oder wenn ein Vorhaben fällig ist, schreibt dir die Figur deines offenen Chats von sich aus – wie eine kurze Nachricht unter Freunden.",
+  "proactive.intro": "Nach einer Pause oder wenn ein Vorhaben fällig ist, schreiben dir deine Figuren von sich aus – wie eine kurze Nachricht unter Freunden.",
   "proactive.toggle": "Figuren dürfen sich von selbst melden",
-  "proactive.on": "An: Die Figur des offenen Chats schreibt dir nach einer Pause oder wenn ein Vorhaben fällig ist.",
+  "proactive.on": "An: Deine Figuren schreiben dir nach einer Pause oder wenn ein Vorhaben fällig ist.",
   "proactive.off": "Aus: Figuren antworten nur, wenn du schreibst. Eingeschaltet nutzt jede Nachricht die KI – bei einem Cloud-Anbieter also dein Guthaben.",
   "proactive.pause": "Melden nach einer Pause von",
   "proactive.hours_one": "{{count}} Stunde",
@@ -3706,5 +3706,7 @@
   "dream.fileName": "Traumbild",
   "proactive.offscreen": "Gäste erleben etwas miteinander",
   "proactive.offscreenHint": "Im Gruppen-Chat erzählt die Figur nach einer langen Pause (ab 8 Stunden) statt eines Traums, was sie inzwischen mit einem Gast erlebt hat. Beide behalten es in Erinnerung.",
+  "proactive.otherChats": "Auch Figuren ohne offenen Chat",
+  "proactive.otherChatsHint": "Figuren, mit denen du in den letzten zwei Wochen geschrieben hast, melden sich auch, wenn ihr Chat gerade nicht offen ist. Die Nachricht landet in ihrem letzten Chat; schreibst du gerade selbst, hat deine Antwort Vorrang.",
   "offscreen.memory": "Während der Pause Zeit mit {{name}} verbracht: {{text}}"
 }

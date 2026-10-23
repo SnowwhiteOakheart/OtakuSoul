@@ -1,6 +1,7 @@
 import type { ProactiveSettings } from '../types/generated/ProactiveSettings';
 import type { ProactiveSent } from '../types/generated/ProactiveSent';
 import type { IntentionEntry } from '../types/generated/IntentionEntry';
+import type { ChatSession } from '../types/generated/ChatSession';
 
 /** Same defaults as the backend (`ProactiveSettings::default`). */
 export const PROACTIVE_DEFAULTS: ProactiveSettings = {
@@ -14,6 +15,7 @@ export const PROACTIVE_DEFAULTS: ProactiveSettings = {
   dreams: true,
   dream_image: false,
   offscreen: true,
+  other_chats: true,
   muted_character_ids: [],
   sent: [],
 };
@@ -23,6 +25,33 @@ export const PROACTIVE_SENT_KEPT = 30;
 
 /** A due plan is brought up at the earliest this long after the last message (no interrupting). */
 const DUE_MIN_IDLE_SECONDS = 10 * 60;
+
+/** Chats of other characters last written to longer ago than this are left alone. */
+export const OTHER_CHATS_MAX_AGE_SECONDS = 14 * 24 * 3600;
+/** Chats of other characters looked at per check (each needs its messages and plans). */
+export const OTHER_CHATS_CHECKED = 4;
+
+/**
+ * Chats of characters other than the open one that may get a message on their own: the latest
+ * chat of each, with a conversation going (greeting and an answer at least), quiet for at least
+ * as long as a due plan waits and not older than two weeks, newest first.
+ */
+export function otherChatCandidates(latest: ChatSession[], input: {
+  settings: ProactiveSettings;
+  activeChatId: string | null;
+  now: Date;
+}): ChatSession[] {
+  const { settings, activeChatId, now } = input;
+  const nowSeconds = now.getTime() / 1000;
+  return latest
+    .filter((session) => {
+      const age = nowSeconds - session.updated_at;
+      return session.id !== activeChatId && !settings.muted_character_ids.includes(session.character_id)
+        && session.message_count >= 2 && age >= DUE_MIN_IDLE_SECONDS && age <= OTHER_CHATS_MAX_AGE_SECONDS;
+    })
+    .sort((a, b) => b.updated_at - a.updated_at)
+    .slice(0, OTHER_CHATS_CHECKED);
+}
 
 /** A dream is told on start only after a night-like pause. */
 export const DREAM_MIN_IDLE_SECONDS = 8 * 3600;
