@@ -1274,6 +1274,18 @@ async fn memory() {
     std::fs::create_dir_all(home.join("data")).unwrap();
     #[cfg(unix)]
     std::os::unix::fs::symlink(real_data.join("runtimes"), home.join("data/runtimes")).unwrap();
+    // A junction needs no admin rights or developer mode (unlike a symlink).
+    #[cfg(windows)]
+    assert!(
+        std::process::Command::new("cmd")
+            .args(["/C", "mklink", "/J"])
+            .arg(home.join("data").join("runtimes"))
+            .arg(real_data.join("runtimes"))
+            .stdout(std::process::Stdio::null())
+            .status()
+            .is_ok_and(|s| s.success()),
+        "Runtime-Verknüpfung fehlgeschlagen"
+    );
     // SAFETY: set once before anything reads the environment.
     unsafe { std::env::set_var("OTAKUSOUL_HOME", &home) };
     let models: Vec<PathBuf> = std::env::var("OTAKUSOUL_E2E_LLMS")

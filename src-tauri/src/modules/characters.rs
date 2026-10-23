@@ -1203,8 +1203,10 @@ mod tests {
         })).unwrap();
         let root = std::env::temp_dir().join("otakusoul-portrait-paths");
         resolve_profile_expression_paths(&mut card, &root.join("presets/card.json"));
+        // Joined like the code does, so Windows separators match.
         let expected = root
-            .join("presets/expressions/happy.webp")
+            .join("presets")
+            .join("expressions/happy.webp")
             .to_string_lossy()
             .to_string();
         assert_eq!(card.data.extensions["expressions"]["happy"], expected);
@@ -1221,7 +1223,8 @@ mod tests {
         );
         assert_eq!(
             restored.data.extensions["custom_expressions"]["angry"],
-            root.join("presets/custom/angry.png")
+            root.join("presets")
+                .join("custom/angry.png")
                 .to_string_lossy()
                 .as_ref()
         );
