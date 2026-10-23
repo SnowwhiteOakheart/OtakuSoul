@@ -524,7 +524,7 @@ pub fn delete_model(model_id: &str) -> Result<(), String> {
         });
         if !shared {
             let _ = std::fs::remove_file(file_path(file));
-            let _ = std::fs::remove_file(crate::modules::model_files::part_path(&file_path(file)));
+            crate::modules::model_files::remove_partial(&file_path(file));
         }
     }
     Ok(())

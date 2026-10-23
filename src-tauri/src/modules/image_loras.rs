@@ -254,7 +254,7 @@ pub fn delete_lora(file: &str) -> Result<(), String> {
         return Err(crate::err!("backend.localImage.unknownModel", model = file));
     }
     let path = loras_dir().join(file);
-    let _ = std::fs::remove_file(crate::modules::model_files::part_path(&path));
+    crate::modules::model_files::remove_partial(&path);
     std::fs::remove_file(&path).map_err(|e| crate::err!("backend.common.fileWrite", error = e))
 }
 

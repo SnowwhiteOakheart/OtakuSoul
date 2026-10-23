@@ -1025,7 +1025,7 @@ pub async fn delete_model(model_id: &str) -> Result<(), String> {
     for file in model.files {
         let path = file.file.path_in(&dir);
         let _ = std::fs::remove_file(&path);
-        let _ = std::fs::remove_file(crate::modules::model_files::part_path(&path));
+        crate::modules::model_files::remove_partial(&path);
     }
     Ok(())
 }

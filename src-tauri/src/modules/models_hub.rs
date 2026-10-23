@@ -561,7 +561,7 @@ pub async fn download_gguf_file<R: tauri::Runtime>(
 
     // A stop from an earlier attempt must not end this one.
     CANCELLED_DOWNLOADS.lock().remove(&progress_name);
-    let client = reqwest::Client::new();
+    let client = crate::modules::model_files::http_client()?;
     let mut progress = Progress {
         name: progress_name.clone(),
         done_bytes: 0,
@@ -616,6 +616,99 @@ struct Progress {
     total_bytes: u64,
     start: std::time::Instant,
     last_emit: std::time::Instant,
+}
+
+impl Progress {
+    /// Progress with `part_bytes` of the current part on disk, `fresh_bytes` of them loaded in
+    /// this run (speed and remaining time leave out what an earlier run left behind).
+    fn event(&self, part_bytes: u64, fresh_bytes: u64) -> DownloadProgressEvent {
+        let all_bytes = self.done_bytes + part_bytes;
+        let fresh = self.done_bytes + fresh_bytes;
+        let elapsed_secs = self.start.elapsed().as_secs_f32().max(0.001);
+        let percent = if self.total_bytes > 0 {
+            (all_bytes as f32 / self.total_bytes as f32) * 100.0
+        } else {
+            0.0
+        };
+        let remaining = self.total_bytes.saturating_sub(all_bytes);
+        DownloadProgressEvent {
+            filename: self.name.clone(),
+            downloaded_bytes: all_bytes,
+            total_bytes: self.total_bytes,
+            percent,
+            speed_mbps: (fresh as f32 / (1024.0 * 1024.0)) / elapsed_secs,
+            eta_seconds: estimate_eta(fresh, fresh + remaining, elapsed_secs),
+            finished: false,
+            error: None,
+        }
+    }
+}
+
+/// Downloads a large part over several connections into `<file>.part` (see
+/// [`segmented_download`]). A dropped connection keeps the ranges for the next attempt, a cancel
+/// removes them. `Ok(None)` when the server ignores ranges.
+async fn download_part_segmented(
+    emit: &(impl Fn(DownloadProgressEvent) + Sync),
+    client: &reqwest::Client,
+    part: &HfGgufPart,
+    dest_path: &std::path::Path,
+    progress: &mut Progress,
+) -> Result<Option<PartialDownload>, String> {
+    use crate::modules::segmented_download::{self, Outcome, SegmentError};
+    let file_name = dest_path
+        .file_name()
+        .and_then(|n| n.to_str())
+        .unwrap_or_default()
+        .to_string();
+    let partial_path = dest_path.with_file_name(format!("{file_name}.part"));
+    let earlier = segmented_download::partial_bytes(&partial_path).min(part.size_bytes);
+    let outcome = {
+        let progress = &*progress;
+        segmented_download::download(
+            client,
+            &part.download_url,
+            &partial_path,
+            part.size_bytes,
+            &|| CANCELLED_DOWNLOADS.lock().contains(&progress.name),
+            &|bytes| emit(progress.event(bytes, bytes.saturating_sub(earlier))),
+        )
+        .await
+    };
+    let sha256 = match outcome {
+        Ok(Outcome::Done { sha256 }) => sha256,
+        Ok(Outcome::NoRanges) => return Ok(None),
+        Err(SegmentError::Cancelled) => {
+            CANCELLED_DOWNLOADS.lock().remove(&progress.name);
+            segmented_download::remove_partial(&partial_path);
+            return Err(crate::err!("backend.models.downloadCancelled"));
+        }
+        Err(SegmentError::Status(status)) => {
+            return Err(crate::err!(
+                "backend.common.downloadStatus",
+                status = status
+            ));
+        }
+        Err(SegmentError::Interrupted(error)) => {
+            return Err(crate::err!(
+                "backend.common.downloadInterrupted",
+                error = error
+            ));
+        }
+        Err(SegmentError::Io(error)) => {
+            return Err(crate::err!("backend.common.fileWrite", error = error));
+        }
+    };
+    // From here the guard removes the file if anything still goes wrong.
+    let partial = PartialDownload(partial_path);
+    verify_download(
+        &file_name,
+        part.size_bytes,
+        part.size_bytes,
+        part.sha256.as_deref(),
+        &sha256,
+    )?;
+    progress.done_bytes += part.size_bytes;
+    Ok(Some(partial))
 }
 
 /// Asks for the rest of `part` from byte `from` after a dropped connection, waiting a little
@@ -677,6 +770,13 @@ async fn download_part(
     dest_path: &std::path::Path,
     progress: &mut Progress,
 ) -> Result<PartialDownload, String> {
+    // Hugging Face limits each connection; large parts come over several at once.
+    if part.size_bytes >= crate::modules::segmented_download::min_size()
+        && let Some(partial) =
+            download_part_segmented(emit, client, part, dest_path, progress).await?
+    {
+        return Ok(partial);
+    }
     let response = client
         .get(&part.download_url)
         .header("User-Agent", "OtakuSoul-Desktop-Client")
@@ -762,27 +862,7 @@ async fn download_part(
             }
 
             if progress.last_emit.elapsed() >= std::time::Duration::from_millis(400) {
-                let all_bytes = progress.done_bytes + downloaded_bytes;
-                let elapsed_secs = progress.start.elapsed().as_secs_f32().max(0.001);
-                let speed_mbps = (all_bytes as f32 / (1024.0 * 1024.0)) / elapsed_secs;
-                let percent = if progress.total_bytes > 0 {
-                    (all_bytes as f32 / progress.total_bytes as f32) * 100.0
-                } else {
-                    0.0
-                };
-                let eta_seconds = estimate_eta(all_bytes, progress.total_bytes, elapsed_secs);
-
-                emit(DownloadProgressEvent {
-                    filename: progress.name.clone(),
-                    downloaded_bytes: all_bytes,
-                    total_bytes: progress.total_bytes,
-                    percent,
-                    speed_mbps,
-                    eta_seconds,
-                    finished: false,
-                    error: None,
-                });
-
+                emit(progress.event(downloaded_bytes, downloaded_bytes));
                 progress.last_emit = std::time::Instant::now();
             }
         }
@@ -877,6 +957,78 @@ mod tests {
         .unwrap();
         assert_eq!(std::fs::read(&partial.0).unwrap(), data);
         drop(partial);
+        let _ = std::fs::remove_dir_all(dir);
+    }
+
+    fn test_part(data: &[u8], url: String, name: &str) -> (super::HfGgufPart, super::Progress) {
+        let sha: String = <super::Sha256 as super::Digest>::digest(data)
+            .iter()
+            .map(|b| format!("{b:02x}"))
+            .collect();
+        (
+            super::HfGgufPart {
+                filename: name.into(),
+                size_bytes: data.len() as u64,
+                sha256: Some(sha),
+                download_url: url,
+            },
+            super::Progress {
+                name: name.into(),
+                done_bytes: 0,
+                total_bytes: data.len() as u64,
+                start: std::time::Instant::now(),
+                last_emit: std::time::Instant::now(),
+            },
+        )
+    }
+
+    #[tokio::test(flavor = "multi_thread")]
+    async fn a_small_part_resumes_over_one_connection() {
+        // Below the size for parallel ranges: the single stream resumes by itself.
+        let data = crate::modules::model_files::noise(40 * 1024);
+        let url = crate::modules::model_files::serve_flaky(data, 10 * 1024).await;
+        let dir = std::env::temp_dir().join(format!("otakusoul-gguf-small-{}", std::process::id()));
+        let _ = std::fs::remove_dir_all(&dir);
+        std::fs::create_dir_all(&dir).unwrap();
+        let (part, mut progress) = test_part(data, url, "small.gguf");
+        let partial = super::download_part(
+            &|_| {},
+            &reqwest::Client::new(),
+            &part,
+            &dir.join("small.gguf"),
+            &mut progress,
+        )
+        .await
+        .unwrap();
+        assert_eq!(std::fs::read(&partial.0).unwrap(), data);
+        drop(partial);
+        let _ = std::fs::remove_dir_all(dir);
+    }
+
+    #[tokio::test(flavor = "multi_thread")]
+    async fn cancelling_a_gguf_download_leaves_nothing_behind() {
+        let data = crate::modules::model_files::noise(2 << 20);
+        let url = crate::modules::model_files::serve_flaky(data, 64 * 1024).await;
+        let dir =
+            std::env::temp_dir().join(format!("otakusoul-gguf-cancel-{}", std::process::id()));
+        let _ = std::fs::remove_dir_all(&dir);
+        std::fs::create_dir_all(&dir).unwrap();
+        let (part, mut progress) = test_part(data, url, "cancel-test.gguf");
+        super::cancel_gguf_download("cancel-test.gguf");
+        let result = super::download_part(
+            &|_| {},
+            &reqwest::Client::new(),
+            &part,
+            &dir.join("cancel-test.gguf"),
+            &mut progress,
+        )
+        .await;
+        assert!(result.is_err_and(|e| e.contains("backend.models.downloadCancelled")));
+        assert_eq!(
+            std::fs::read_dir(&dir).unwrap().count(),
+            0,
+            "no partial or range files"
+        );
         let _ = std::fs::remove_dir_all(dir);
     }
 

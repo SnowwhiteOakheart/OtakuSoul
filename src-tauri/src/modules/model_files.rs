@@ -1,10 +1,12 @@
 //! Resumable, verified downloads of large model files from Hugging Face, shared by the image
 //! and speech model catalogs.
 //!
-//! A file is written to `<name>.part` and only renamed once its SHA-256 matches. An interrupted
-//! or cancelled download keeps the partial file; the next attempt hashes what is there and asks
-//! the server for the rest with an HTTP range request.
+//! A file is written to `<name>.part` and only renamed once its SHA-256 matches. Large files
+//! come over several connections at once ([`segmented_download`]); small ones, and servers
+//! without range support, over one. An interrupted or cancelled download keeps what it has; the
+//! next attempt continues with HTTP range requests.
 
+use crate::modules::segmented_download::{self, Outcome, SegmentError};
 use futures_util::StreamExt;
 use sha2::{Digest, Sha256};
 use std::path::{Path, PathBuf};
@@ -106,7 +108,7 @@ async fn download_from(
     emit: &(impl Fn(u64) + Sync),
 ) -> Result<(), String> {
     let part = part_path(target);
-    let part_len = || std::fs::metadata(&part).map_or(0, |m| m.len());
+    let part_len = || segmented_download::partial_bytes(&part);
     let mut attempt = 0;
     let mut had = part_len();
     loop {
@@ -141,6 +143,44 @@ async fn download_once(
     emit: &(impl Fn(u64) + Sync),
 ) -> Result<(), String> {
     let part = part_path(target);
+
+    // Large files: several connections at once (Hugging Face limits each one).
+    if file.size >= segmented_download::min_size() {
+        let outcome = segmented_download::download(
+            client,
+            url,
+            &part,
+            file.size,
+            &|| cancel.load(Ordering::SeqCst),
+            emit,
+        )
+        .await;
+        match outcome {
+            Ok(Outcome::Done { sha256 }) => {
+                return finish(file, &part, target, &sha256, file.size, emit).await;
+            }
+            // The server ignores ranges: one connection below.
+            Ok(Outcome::NoRanges) => {}
+            Err(SegmentError::Cancelled) => {
+                return Err(crate::err!("backend.localImage.downloadCancelled"));
+            }
+            Err(SegmentError::Status(status)) => {
+                return Err(crate::err!(
+                    "backend.common.downloadStatus",
+                    status = status
+                ));
+            }
+            Err(SegmentError::Interrupted(error)) => {
+                return Err(crate::err!(
+                    "backend.common.downloadInterrupted",
+                    error = error
+                ));
+            }
+            Err(SegmentError::Io(error)) => {
+                return Err(crate::err!("backend.common.fileWrite", error = error));
+            }
+        }
+    }
 
     // Hash what an earlier attempt already downloaded, then continue from there.
     let mut hasher = Sha256::new();
@@ -224,14 +264,27 @@ async fn download_once(
         .map_err(|e| crate::err!("backend.common.fileWrite", error = e))?;
     drop(out);
 
+    let actual: String = hasher
+        .finalize()
+        .iter()
+        .map(|b| format!("{b:02x}"))
+        .collect();
+    finish(file, &part, target, &actual, have, emit).await
+}
+
+/// Checks the finished partial file (`have` bytes, SHA-256 `actual`) and moves it into place;
+/// a wrong file is removed.
+async fn finish(
+    file: &RemoteFile,
+    part: &Path,
+    target: &Path,
+    actual: &str,
+    have: u64,
+    emit: &(impl Fn(u64) + Sync),
+) -> Result<(), String> {
     if let Some(expected) = file.sha256 {
-        let actual: String = hasher
-            .finalize()
-            .iter()
-            .map(|b| format!("{b:02x}"))
-            .collect();
         if actual != expected {
-            let _ = tokio::fs::remove_file(&part).await;
+            segmented_download::remove_partial(part);
             return Err(crate::err!(
                 "backend.runtime.checksum",
                 file = file.file_name(),
@@ -240,39 +293,53 @@ async fn download_once(
             ));
         }
     } else if have != file.size {
-        let _ = tokio::fs::remove_file(&part).await;
+        segmented_download::remove_partial(part);
         return Err(crate::err!(
             "backend.common.downloadInterrupted",
             error = file.file_name()
         ));
     }
-    tokio::fs::rename(&part, target)
+    tokio::fs::rename(part, target)
         .await
         .map_err(|e| crate::err!("backend.common.fileWrite", error = e))?;
     emit(have);
     Ok(())
 }
 
-/// Test server for `data` that honours `Range: bytes=N-` but drops every connection after
-/// `per_response` bytes (unless the end is reached), in chunks of 16 KiB. Returns the URL.
+/// Removes what an unfinished download of `target` left behind (partial and segment files).
+pub fn remove_partial(target: &Path) {
+    segmented_download::remove_partial(&part_path(target));
+}
+
+/// Test server for `data` that honours `Range: bytes=N-` and `bytes=N-M` but drops every
+/// connection after `per_response` bytes (unless the range is complete), in chunks of 16 KiB.
+/// Returns the URL.
 #[cfg(test)]
 pub(crate) async fn serve_flaky(data: &'static [u8], per_response: usize) -> String {
     use axum::http::{HeaderMap, StatusCode, header};
     let app = axum::Router::new().route(
         "/file",
         axum::routing::get(move |headers: HeaderMap| async move {
-            let start = headers
+            let range = headers
                 .get(header::RANGE)
                 .and_then(|v| v.to_str().ok())
                 .and_then(|v| v.strip_prefix("bytes="))
-                .and_then(|v| v.trim_end_matches('-').parse::<usize>().ok());
-            let from = start.unwrap_or(0);
-            let to = (from + per_response).min(data.len());
+                .and_then(|v| v.split_once('-'))
+                .and_then(|(from, to)| {
+                    let from = from.parse::<usize>().ok()?;
+                    let end = to
+                        .parse::<usize>()
+                        .map_or(data.len(), |to| (to + 1).min(data.len()));
+                    Some((from, end))
+                });
+            let start = range.map(|(from, _)| from);
+            let (from, end) = range.unwrap_or((0, data.len()));
+            let to = (from + per_response).min(end);
             let mut chunks: Vec<Result<Vec<u8>, std::io::Error>> = data[from..to]
                 .chunks(16 * 1024)
                 .map(|c| Ok(c.to_vec()))
                 .collect();
-            if to < data.len() {
+            if to < end {
                 chunks.push(Err(std::io::Error::other("connection dropped")));
             }
             let status = if start.is_some() {
@@ -291,6 +358,19 @@ pub(crate) async fn serve_flaky(data: &'static [u8], per_response: usize) -> Str
                 )),
             )
         }),
+    );
+    let listener = tokio::net::TcpListener::bind("127.0.0.1:0").await.unwrap();
+    let addr = listener.local_addr().unwrap();
+    tokio::spawn(async move { axum::serve(listener, app).await.unwrap() });
+    format!("http://{addr}/file")
+}
+
+/// Test server for `data` that ignores range requests (always the whole file). Returns the URL.
+#[cfg(test)]
+pub(crate) async fn serve_without_ranges(data: &'static [u8]) -> String {
+    let app = axum::Router::new().route(
+        "/file",
+        axum::routing::get(move || async move { data.to_vec() }),
     );
     let listener = tokio::net::TcpListener::bind("127.0.0.1:0").await.unwrap();
     let addr = listener.local_addr().unwrap();

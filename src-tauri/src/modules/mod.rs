@@ -44,6 +44,7 @@ pub mod prompt_log;
 pub mod providers;
 pub mod runtimes;
 pub mod secrets;
+pub mod segmented_download;
 pub mod settings;
 pub mod stage;
 pub use hub as soul_hub;

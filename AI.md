@@ -43,7 +43,7 @@ Backend `src-tauri/src/`: `lib.rs` (Plugins, Command-Registrierung), `state.rs` 
 | Bereich | Module |
 |---|---|
 | Chat-Pipeline | `inference.rs` (SSE-Streaming, `<think>`-Filter), `providers.rs` (OpenAI-Format/llama-server, Anthropic, …), `prompt_builder.rs` (System-Prompt, `PromptTemplate`), `context_window.rs`, `chat_summary.rs`, `attachments.rs`, `translate.rs` |
-| Lokale Server | `runtimes.rs` (Download/Prüfung llama.cpp, PrismML, sd.cpp, CrispASR; vorheriger Build für Rollback), `llama_manager.rs` (llama-server), `local_image.rs` (sd-server + VRAM-Planer, LoRAs in `image_loras.rs`), `tts_local.rs` (crispasr --server), `model_files.rs` (HF-Downloads), `gguf.rs`, `hardware.rs` (GPU-Probe) |
+| Lokale Server | `runtimes.rs` (Download/Prüfung llama.cpp, PrismML, sd.cpp, CrispASR; vorheriger Build für Rollback), `llama_manager.rs` (llama-server), `local_image.rs` (sd-server + VRAM-Planer, LoRAs in `image_loras.rs`), `tts_local.rs` (crispasr --server), `model_files.rs` (HF-Downloads), `segmented_download.rs` (parallele Range-Abschnitte), `gguf.rs`, `hardware.rs` (GPU-Probe) |
 | Daten | `memory/` (SQLite: Kognitives Gedächtnis, `chats.rs`, Snapshots), `settings.rs` (`settings.json`), `paths.rs`, `secrets.rs` (Schlüsselbund), `characters.rs` (V2-Karten PNG/JSON, Personas), `lorebook.rs`, `profile_backup.rs` |
 | Features | `memory_pipeline.rs` (Router/Archivist/Diary), `stage/` (Game-Master; `stage/rules5e/` = 5e-Regel-Engine, SRD-Daten in `presets/srd5/`), `companion.rs` + `companion_tools.rs` + `mcp_client.rs`, `voice.rs`/`kokoro.rs` (TTS/STT), `image_generator.rs`, `models_hub.rs`, `hub.rs`, `web_server.rs`, `discord.rs`, `updater.rs`, `logger.rs` |
 
@@ -292,7 +292,12 @@ ru „персонаж/история/сцена“. Fachbegriffe nur im Experte
 - Modell-Downloads (`model_files.rs` für Bild/Sprache, `models_hub::download_part` für GGUF) setzen nach Verbindungsabbruch
   per `Range` an derselben Stelle fort; `MAX_RESUMES` zählt nur Versuche ohne neue Daten. Vor jedem neuen Versuch den
   `tokio::fs::File` flushen: er schreibt im Hintergrund, ein verspätetes Stück landete sonst hinter den fortgesetzten Daten
-  (falsche Prüfsumme). Hugging Face drosselt je Verbindung (23.10.2026: ~2 MB/s, 16 parallele Ranges ~140 MB/s).
+  (falsche Prüfsumme). Hugging Face drosselt je Verbindung (23.10.2026: ~2 MB/s), daher laden Dateien ab 64 MB über
+  `segmented_download` in 8 Abschnitten parallel (Test in der App: ~105–175 MB/s): jeder Abschnitt in eigener Datei
+  `<part>.<start>-<end>.seg` (nie in eine vorbelegte Datei schreiben – NTFS füllt sonst alles davor erst mit Nullen),
+  fortsetzbar auch nach Neustart; am Ende ein Durchgang Anhängen + SHA-256. Server ohne Range → eine Verbindung.
+  GGUF: Abbruch durch den Nutzer löscht Teil- und Abschnittsdateien, ein Verbindungsabbruch lässt sie für den nächsten
+  Versuch liegen. Aufräumen nur über `model_files::remove_partial` (nimmt die Abschnitte mit).
 - GPU-Test `llm` (23.10.2026, RTX 5090 Laptop 24 GB, llama.cpp b11669/PrismML b10787, Kontext wie empfohlen): VRAM-Schätzung
   −1 bis −4 % genau; Antwort Gemma 4 12B 75 t/s, 26B-A4B 121 t/s, 31B 32 t/s, Qwen3.6 35B-A3B 132 t/s (21,8 GB),
   Cydonia/Hearthfire 24B 43 t/s, Bonsai 27B 69–71 t/s (262K Kontext, 12,1 GB). `memory`: Gemma 4 12B/26B alles richtig,
