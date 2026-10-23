@@ -105,6 +105,8 @@ export function CharacterVoiceModal({ onClose, target, embedded = false, autoSav
     'activeCharacter', 'availableCharacters', 'activeVoiceConfig', 'saveVoiceConfigForCharacter', 'expertMode', 'replyLanguage',
   );
   const [tab, setTab] = useState<VoiceTab>('tts');
+  // The narrator's own voice settings, opened from the "read actions with the narrator" option.
+  const [showNarrator, setShowNarrator] = useState(false);
   const [draft, setDraft] = useState<VoiceConfig>(activeVoiceConfig ?? DEFAULT_CONFIG);
   const [availableVoices, setAvailableVoices] = useState<ScannedVoice[]>([]);
   const [devices, setDevices] = useState<MediaDeviceInfo[]>([]);
@@ -564,8 +566,23 @@ export function CharacterVoiceModal({ onClose, target, embedded = false, autoSav
                         <span>
                           {t('voiceCfg.narratorForActions')}
                           <OptionHint id="voice-narrator-hint">{t('voiceCfg.narratorForActionsHint')}</OptionHint>
+                          <button
+                            type="button"
+                            onClick={() => setShowNarrator(true)}
+                            className="mt-1.5 inline-flex items-center gap-1.5 rounded-lg border border-slate-700 bg-slate-800/60 px-2.5 py-1 text-xs text-slate-200 hover:bg-slate-800"
+                            data-narrator-voice-button
+                          >
+                            <Mic className="h-3.5 w-3.5" />
+                            {t('voiceCfg.narratorVoiceButton')}
+                          </button>
                         </span>
                       </label>
+                    )}
+                    {showNarrator && (
+                      <CharacterVoiceModal
+                        target={{ id: STAGE_NARRATOR_VOICE_ID, name: t('stage.narratorVoice') }}
+                        onClose={() => setShowNarrator(false)}
+                      />
                     )}
                     {expertMode && (
                       <label>

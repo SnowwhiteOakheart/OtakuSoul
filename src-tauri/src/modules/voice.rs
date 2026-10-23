@@ -11,7 +11,6 @@ use ts_rs::TS;
 use crate::modules::paths::resolve_app_paths;
 
 const EDGE_TTS_TRUSTED_CLIENT_TOKEN: &str = "6A5AA1D4EAFF4E9FB37E23D68491D6F4";
-const EDGE_TTS_SEC_MS_GEC_VERSION: &str = "1-143.0.3650.75";
 const EDGE_TTS_USER_AGENT: &str = "Mozilla/5.0 (Windows NT 10.0; Win64; x64) \
     AppleWebKit/537.36 (KHTML, like Gecko) Chrome/143.0.0.0 Safari/537.36 Edg/143.0.0.0";
 
@@ -727,8 +726,10 @@ pub async fn list_available_voices(
     match engine {
         "edge" => {
             let url = format!(
-                "https://speech.platform.bing.com/consumer/speech/synthesize/readaloud/voices/list?trustedclienttoken={}",
-                EDGE_TTS_TRUSTED_CLIENT_TOKEN
+                "https://speech.platform.bing.com/consumer/speech/synthesize/readaloud/voices/list?trustedclienttoken={}&Sec-MS-GEC={}&Sec-MS-GEC-Version={}",
+                EDGE_TTS_TRUSTED_CLIENT_TOKEN,
+                generate_edge_sec_ms_gec(chrono::Utc::now().timestamp()),
+                crate::modules::edge_tts_drm::SEC_MS_GEC_VERSION
             );
             match http_client(15)?.get(&url).send().await {
                 Ok(response) if response.status().is_success() => {
@@ -1101,26 +1102,15 @@ fn edge_tts_websocket_url(connection_id: &str) -> String {
          ?TrustedClientToken={EDGE_TTS_TRUSTED_CLIENT_TOKEN}\
          &ConnectionId={connection_id}\
          &Sec-MS-GEC={}\
-         &Sec-MS-GEC-Version={EDGE_TTS_SEC_MS_GEC_VERSION}",
-        generate_edge_sec_ms_gec(chrono::Utc::now().timestamp())
+         &Sec-MS-GEC-Version={}",
+        generate_edge_sec_ms_gec(chrono::Utc::now().timestamp()),
+        crate::modules::edge_tts_drm::SEC_MS_GEC_VERSION
     )
 }
 
+/// The token the read-aloud service requires (version 2 since late 2026, see `edge_tts_drm`).
 fn generate_edge_sec_ms_gec(unix_timestamp: i64) -> String {
-    use sha2::{Digest, Sha256};
-
-    const WINDOWS_EPOCH_OFFSET_SECONDS: i64 = 11_644_473_600;
-    const FIVE_MINUTES_SECONDS: i64 = 300;
-    const HUNDRED_NANOSECONDS_PER_SECOND: i64 = 10_000_000;
-
-    let rounded_timestamp = unix_timestamp - unix_timestamp.rem_euclid(FIVE_MINUTES_SECONDS);
-    let windows_file_time =
-        (rounded_timestamp + WINDOWS_EPOCH_OFFSET_SECONDS) * HUNDRED_NANOSECONDS_PER_SECOND;
-    let value = format!("{windows_file_time}{EDGE_TTS_TRUSTED_CLIENT_TOKEN}");
-    Sha256::digest(value.as_bytes())
-        .iter()
-        .map(|b| format!("{:02X}", b))
-        .collect()
+    crate::modules::edge_tts_drm::sec_ms_gec(unix_timestamp, EDGE_TTS_TRUSTED_CLIENT_TOKEN)
 }
 
 // ---------------------------------------------------------------------------
@@ -1643,9 +1633,45 @@ fn get_voice_config_path(char_id: &str) -> PathBuf {
     get_voice_config_dir().join(format!("{}.json", safe_id))
 }
 
+/// Voice profile of the narrator: Soul Stage game master and NPCs, and `*actions*` in the chat
+/// (`narrator_for_actions`; frontend `services/narratorVoice.ts`).
+pub const NARRATOR_VOICE_ID: &str = "stage_narrator";
+
+/// The narrator's voice until the user saves one: a calm male storyteller that differs from the
+/// characters' default (a female voice). Works without any model (Edge-TTS in the reply
+/// language) and brings a description for VoiceDesign/OpenAI and a style for voices with style
+/// control, so switching to a local model sounds like a narrator, too.
+pub fn narrator_default_config(language: &str) -> VoiceConfig {
+    let voice_id = match language {
+        "de" => "de-DE-ConradNeural",
+        "ru" => "ru-RU-DmitryNeural",
+        "ja" => "ja-JP-KeitaNeural",
+        _ => "en-GB-RyanNeural",
+    };
+    VoiceConfig {
+        voice_id: voice_id.to_string(),
+        // The narrator reads the actions themselves (without asterisks): nothing to filter.
+        filter_mode: TtsFilterMode::All,
+        openai_instructions: "A calm, warm mature male narrator with a clear, resonant baritone; \
+            measured pace, gentle storytelling tone, like an audiobook reader."
+            .to_string(),
+        local_style:
+            "Speak calmly and evenly like an audiobook narrator, with a gentle storytelling tone."
+                .to_string(),
+        ..VoiceConfig::default()
+    }
+}
+
 pub fn load_character_voice_config(char_id: &str) -> VoiceConfig {
     let path = get_voice_config_path(char_id);
-    let mut config = load_voice_config_from_path(&path);
+    let mut config = if char_id == NARRATOR_VOICE_ID && !path.exists() {
+        let language = crate::modules::content_lang::language_code(
+            &crate::modules::content_lang::ContentLang::reply_language_name(),
+        );
+        narrator_default_config(&language)
+    } else {
+        load_voice_config_from_path(&path)
+    };
     let prefix = voice_secret_prefix(&path);
     let mut needs_migration = false;
     for (name, value) in voice_secret_fields(&mut config) {
@@ -1743,6 +1769,23 @@ fn uuid_v4() -> String {
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    #[test]
+    fn the_narrator_has_its_own_default_voice() {
+        let narrator = narrator_default_config("de");
+        let character = VoiceConfig::default();
+        assert_ne!(
+            narrator.voice_id, character.voice_id,
+            "sounds like the characters"
+        );
+        assert_eq!(narrator.voice_id, "de-DE-ConradNeural");
+        assert_eq!(narrator_default_config("ja").voice_id, "ja-JP-KeitaNeural");
+        assert_eq!(narrator_default_config("fr").voice_id, "en-GB-RyanNeural");
+        // It reads the actions it is given and is ready for VoiceDesign and style voices.
+        assert_eq!(narrator.filter_mode, TtsFilterMode::All);
+        assert!(!narrator.openai_instructions.is_empty() && !narrator.local_style.is_empty());
+        assert!(!narrator.narrator_for_actions);
+    }
 
     #[test]
     fn a_style_voice_speaks_with_the_feeling_of_the_line() {
@@ -1937,16 +1980,18 @@ mod tests {
 
     #[test]
     fn test_edge_tts_security_token_and_url() {
+        // Version 2: "<16 hex>-<64 hex>" (reference values in `edge_tts_drm`).
+        let token = generate_edge_sec_ms_gec(1_700_000_000);
         assert_eq!(
-            generate_edge_sec_ms_gec(0),
-            "7ECB79D14E3AA576D2D79E6D487A1388156D91E614B1BE11C64226A29BC8DD8C"
+            token,
+            "2CD23A2CA0B2595A-F3C846C370E05F9CC83ACC5F995C5F5D87A4D0F14CE8936A0F902E64099E38A2"
         );
 
         let url = edge_tts_websocket_url("test-connection");
         assert!(url.contains("TrustedClientToken=6A5AA1D4EAFF4E9FB37E23D68491D6F4"));
         assert!(url.contains("ConnectionId=test-connection"));
         assert!(url.contains("Sec-MS-GEC="));
-        assert!(url.contains("Sec-MS-GEC-Version=1-143.0.3650.75"));
+        assert!(url.contains("Sec-MS-GEC-Version=2-143.0.3650.75"));
     }
 
     #[tokio::test]

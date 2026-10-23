@@ -10,6 +10,7 @@ pub mod companion_tools;
 pub mod content_lang;
 pub mod context_window;
 pub mod discord;
+pub mod edge_tts_drm;
 pub mod emotions;
 pub mod error;
 pub mod gguf;
