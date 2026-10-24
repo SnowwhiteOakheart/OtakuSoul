@@ -370,8 +370,8 @@ export const createChatSlice: SliceCreator<ChatSlice> = (set, get) => {
   };
 
   /**
-   * Group chat: who answers next after `last` – someone addressed by name, else the routing
-   * model. `null` = the user's turn; right after the user's message someone always answers (the
+   * Group chat: who answers next after `last` – someone addressed by name (in `last`, then
+   * anyone the user's `userText` addressed who has not answered yet), else the routing model. `null` = the user's turn; right after the user's message someone always answers (the
    * chat's own character if routing gives none).
    */
   const nextSpeaker = async (
@@ -380,6 +380,7 @@ export const createChatSlice: SliceCreator<ChatSlice> = (set, get) => {
     thisTurn: string[],
     firstReply: boolean,
     signal: AbortSignal,
+    userText: string,
   ): Promise<string | null> => {
     const state = get();
     const speakers = chatSpeakers(state.activeCharacter, state.chatSessions.find((s) => s.id === chatId), state.availableCharacters);
@@ -390,7 +391,8 @@ export const createChatSlice: SliceCreator<ChatSlice> = (set, get) => {
     let answer = 'PLAYER';
     try {
       answer = await waitWithAbort(() => api.routeGroupChat({
-        last_speaker: last.name, last_text: last.text, candidates: named.map((n) => n.name), this_turn: [...thisTurn], recent, ...llmTarget(state),
+        last_speaker: last.name, last_text: last.text, candidates: named.map((n) => n.name), this_turn: [...thisTurn], recent, user_text: userText,
+        ...llmTarget(state),
       }), signal);
     } catch (e) {
       if (signal.aborted) throw e;
@@ -1285,7 +1287,7 @@ export const createChatSlice: SliceCreator<ChatSlice> = (set, get) => {
       const round = speakers.length > 1 && replySpeaker === undefined;
       const nameOf = (id: string) => presentedAs((speakers.find((s) => s.id === id) ?? speakers[0]!).character, state.replyLanguage).name;
       const firstSpeaker = round
-        ? (await nextSpeaker(chatId, { name: state.activePersona.name, text: content }, [], true, preparation.signal)) ?? ''
+        ? (await nextSpeaker(chatId, { name: state.activePersona.name, text: content }, [], true, preparation.signal, content)) ?? ''
         : replySpeaker ?? '';
       const written = await writeReply({ chatId, charId: activeCharacter?.id, history: updatedStored, speakerId: firstSpeaker,
         latestUserText: content, generationId, preparation });
@@ -1297,7 +1299,7 @@ export const createChatSlice: SliceCreator<ChatSlice> = (set, get) => {
         const thisTurn = [nameOf(firstSpeaker)];
         let last = { name: nameOf(firstSpeaker), text: cleanedText };
         for (let n = 1; n < GROUP_MAX_REPLIES && !cancelled && !done.aborted; n += 1) {
-          const next = await nextSpeaker(chatId, last, thisTurn, false, preparation.signal);
+          const next = await nextSpeaker(chatId, last, thisTurn, false, preparation.signal, content);
           if (next === null || cancelled) break;
           const replyId = crypto.randomUUID();
           set({ generationId: replyId });

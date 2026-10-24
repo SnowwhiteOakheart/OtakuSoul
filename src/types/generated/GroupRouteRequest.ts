@@ -17,4 +17,8 @@ this_turn: Array<string>,
 /**
  * Speakers of the last messages, oldest first.
  */
-recent: Array<string>, endpoint_url: string, api_key: string | null, model: string | null, provider: LlmProviderType | null, };
+recent: Array<string>, endpoint_url: string, api_key: string | null, model: string | null, provider: LlmProviderType | null, 
+/**
+ * The user's message that started this round: everyone it addresses gets a turn.
+ */
+user_text?: string, };

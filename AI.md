@@ -79,8 +79,9 @@ ru „персонаж/история/сцена“. Fachbegriffe nur im Experte
   `chat_messages.speaker_id` ('' = Gastgeberin; Swipe/Fortsetzen/Zweig behalten ihn). `chatSlice.writeReply` schreibt eine
   Antwort je Sprecher: `speakerSetup` → eigene Karte, eigenes Gedächtnis, `PromptContext.group` (andere Anwesende) und
   `utils/groupChat.ts` `groupHistory` (eigene Zeilen `assistant`, fremde als `user` mit „Name: “). Runde nach einer
-  Nutzernachricht: `nextSpeaker` → `route_group_chat` (`modules/group_chat.rs`: Ansprache, sonst Routing-Prompt aus Stage
-  mit „[CHAT — ROUTING]“), höchstens `GROUP_MAX_REPLIES` = 3, Ende bei `PLAYER`, „Stopp“ beendet die Runde; „Jetzt antwortet …“
+  Nutzernachricht: `nextSpeaker` → `route_group_chat` (`modules/group_chat.rs`: Ansprache in der letzten Zeile, dann noch
+  nicht drangewesene Angesprochene aus `user_text`, sonst Routing-Prompt aus Stage mit „[CHAT — ROUTING]“). Ansprache
+  (`director.rs` `detect_direct_addresses`) zählt auch „…! Name, …“ am Satzanfang; wer eine Frage bekommt, antwortet zuerst, höchstens `GROUP_MAX_REPLIES` = 3, Ende bei `PLAYER`, „Stopp“ beendet die Runde; „Jetzt antwortet …“
   = `replyAs` (Nachspann „It is X's turn“). Auto-Reflexion je Figur (`triggerMemoryPipeline(n, characterId)`, Transkript mit
   `speaker_names`), Stimme je Gast (`loadSpeakerVoice`). Avatar: `ChatView` zeigt den Sprecher (`generationSpeakerId`, bleibt bis
   zum nächsten; Chatwechsel setzt ihn zurück), jede Figur behält ihren Ausdruck (`avatarSlice.speakerEmotions`), Gesten nur

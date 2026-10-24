@@ -6,32 +6,51 @@ use super::*;
 const ATTENTION_MARKERS: &str = "hey|hi|hallo|hör mal|hoer mal|sag mal|warte|okay|also|na|du|listen|wait|well|now|so|\
 эй|послушай|подожди|окей|ну|итак|слушай|погоди|стой|слышишь";
 
-/// The name `text` speaks to, if any: `Ayu, …`, `@Ayu`, `Hey Ayu`, `…, Ayu?`. With several
-/// matches the one earliest in the text wins.
+/// The name `text` speaks to, if any: `Ayu, …`, `@Ayu`, `Hey Ayu`, `…, Ayu?`, `… ! Ayu, …`.
+/// With several, see [`detect_direct_addresses`].
 pub fn detect_direct_address(text: &str, names: &[String]) -> Option<String> {
+    detect_direct_addresses(text, names).into_iter().next()
+}
+
+/// Everyone `text` speaks to, in answer order: whoever is asked a question comes first
+/// ("Lirwen, klingt gut! Faelion, was meinst du?" → Faelion, Lirwen), otherwise the earliest.
+pub fn detect_direct_addresses(text: &str, names: &[String]) -> Vec<String> {
     let text = text.trim();
-    let mut best: Option<(usize, &String)> = None;
+    // (asked a question, position of the name, name)
+    let mut found: Vec<(bool, usize, &String)> = Vec::new();
     for name in names.iter().filter(|n| !n.trim().is_empty()) {
         let n = regex::escape(name.trim());
         let patterns = [
-            format!(r"(?i)^{n}[\s,!?.…:]"),
-            format!(r"(?i)@{n}\b"),
-            format!(r"(?i)\b(?:{ATTENTION_MARKERS}),?\s+{n}\b"),
+            format!(r"(?i)^(?P<n>{n})[\s,!?.…:]"),
+            // A new sentence that opens with the name and a comma: "… ! Faelion, wie …?"
+            format!(r"(?i)[.!?…]\s+(?P<n>{n})[,!?:]"),
+            format!(r"(?i)@(?P<n>{n})\b"),
+            format!(r"(?i)\b(?:{ATTENTION_MARKERS}),?\s+(?P<n>{n})\b"),
             // ", Sora!" addresses Sora; ", Sora hat recht" only mentions him.
-            format!(r"(?i),\s+{n}[,!?.…]"),
-            format!(r"(?i),\s+{n}[!?.…]?$"),
-            format!(r"(?i)^{n}$"),
+            format!(r"(?i),\s+(?P<n>{n})[,!?.…]"),
+            format!(r"(?i),\s+(?P<n>{n})[!?.…]?$"),
+            format!(r"(?i)^(?P<n>{n})$"),
         ];
+        let mut earliest: Option<(usize, usize)> = None;
         for pattern in patterns {
             if let Ok(re) = Regex::new(&pattern)
-                && let Some(found) = re.find(text)
-                && best.is_none_or(|(pos, _)| found.start() < pos)
+                && let Some(caps) = re.captures(text)
+                && let Some(m) = caps.name("n")
+                && earliest.is_none_or(|(start, _)| m.start() < start)
             {
-                best = Some((found.start(), name));
+                earliest = Some((m.start(), m.end()));
             }
         }
+        if let Some((start, end)) = earliest {
+            let question = text[end..]
+                .chars()
+                .find(|c| matches!(c, '.' | '!' | '?' | '…'))
+                == Some('?');
+            found.push((question, start, name));
+        }
     }
-    best.map(|(_, name)| name.clone())
+    found.sort_by_key(|(question, pos, _)| (!question, *pos));
+    found.into_iter().map(|(_, _, name)| name.clone()).collect()
 }
 
 /// Party members and present NPCs who can speak.
@@ -177,6 +196,16 @@ mod tests {
         assert_eq!(
             detect_direct_address("Shiro, frag Sora, ob er mitkommt", &names()).as_deref(),
             Some("Shiro")
+        );
+        // A name opening a later sentence addresses too, and a question goes first.
+        let text = "Sora, die Sternenwarte klingt fantastisch! Shiro, wie sicher ist der Weg?";
+        assert_eq!(
+            detect_direct_addresses(text, &names()),
+            vec!["Shiro", "Sora"]
+        );
+        assert_eq!(
+            detect_direct_addresses("Gut gemacht. Sora hat recht.", &names()),
+            Vec::<String>::new()
         );
     }
 

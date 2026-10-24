@@ -3,7 +3,9 @@
 //! game master).
 
 use crate::modules::inference::{ChatMessage, ChatRequest, InferenceClient, SamplingParams};
-use crate::modules::stage::{detect_direct_address, parse_routing, routing_prompt_with};
+use crate::modules::stage::{
+    detect_direct_address, detect_direct_addresses, parse_routing, routing_prompt_with,
+};
 use serde::{Deserialize, Serialize};
 use ts_rs::TS;
 
@@ -26,6 +28,10 @@ pub struct GroupRouteRequest {
     pub api_key: Option<String>,
     pub model: Option<String>,
     pub provider: Option<crate::modules::providers::LlmProviderType>,
+    /// The user's message that started this round: everyone it addresses gets a turn.
+    #[serde(default)]
+    #[ts(optional)]
+    pub user_text: Option<String>,
 }
 
 /// The name of the next speaker or [`PLAYER`]. A failed routing request means the user's turn.
@@ -41,6 +47,18 @@ pub async fn route(client: &InferenceClient, req: GroupRouteRequest) -> String {
         return PLAYER.to_string();
     }
     if let Some(name) = detect_direct_address(&req.last_text, &others) {
+        return name;
+    }
+    // "Lirwen, … ! Faelion, …?" – whoever the user addressed and has not answered yet.
+    if let Some(name) = req.user_text.as_deref().and_then(|text| {
+        detect_direct_addresses(text, &others)
+            .into_iter()
+            .find(|name| {
+                !req.this_turn
+                    .iter()
+                    .any(|done| done.eq_ignore_ascii_case(name))
+            })
+    }) {
         return name;
     }
     let prompt = routing_prompt_with(
@@ -95,6 +113,7 @@ mod tests {
             api_key: None,
             model: None,
             provider: None,
+            user_text: None,
         }
     }
 
@@ -114,5 +133,24 @@ mod tests {
             route(&client, request("Ayu", "Hey Sora, komm!")).await,
             "Sora"
         );
+    }
+
+    #[tokio::test]
+    async fn everyone_the_user_addressed_gets_a_turn() {
+        let client = InferenceClient::new();
+        let user_text = "Ayu, die Idee ist toll! Sora, was meinst du?";
+        let mut req = request("Kai", user_text);
+        req.user_text = Some(user_text.into());
+        // The question goes first …
+        assert_eq!(route(&client, req.clone()).await, "Sora");
+        // … then Ayu, who was addressed too.
+        req.last_speaker = "Sora".into();
+        req.last_text = "Klingt gefährlich.".into();
+        req.this_turn = vec!["Sora".into()];
+        assert_eq!(route(&client, req.clone()).await, "Ayu");
+        // Both answered: the (failed) routing request means the user's turn.
+        req.last_speaker = "Ayu".into();
+        req.this_turn.push("Ayu".into());
+        assert_eq!(route(&client, req).await, PLAYER);
     }
 }
