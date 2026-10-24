@@ -1003,7 +1003,7 @@ RULES:
         state.chat_log.push(SceneTurnMessage {
             id: format!("msg_{}_{}", Utc::now().timestamp_millis(), index),
             sender_id: "system".to_string(),
-            sender_name: "Kampagnen-Chronik".to_string(),
+            sender_name: lang.t("Campaign chronicle").to_string(),
             sender_role: "gm".to_string(),
             avatar_url: None,
             content,
