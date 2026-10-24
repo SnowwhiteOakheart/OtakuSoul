@@ -145,6 +145,39 @@ describe('generateSceneImage', () => {
     expect(api.saveStageScene).toHaveBeenCalledWith(expect.objectContaining({ current_bg: 'gen_1.png' }));
   });
 
+  it('draws the stage scene as English scenery when no chat model is running', async () => {
+    vi.mocked(api.saveStageBackground).mockResolvedValue('gen_1.png');
+    vi.mocked(api.saveStageScene).mockResolvedValue(undefined);
+    const translations = { en: { starting_location: 'The snowy village square', time_of_day: 'Dusk' } };
+    const scene = {
+      definition: {
+        title: 'Die Glocken',
+        description: '',
+        world_context: '',
+        starting_location: 'Der verschneite Dorfplatz',
+        time_of_day: 'Abenddämmerung',
+        extensions: { otakusoul_i18n: { source_language: 'de', translations } },
+      },
+      world: { location: 'Der verschneite Dorfplatz', time_of_day: 'Abenddämmerung', weather: 'Schnee' },
+      chat_log: [],
+      current_bg: null,
+    } as unknown as SceneState;
+    useAppStore.setState({
+      stageState: scene,
+      selectedBackend: 'local',
+      serverStatus: { ...useAppStore.getState().serverStatus, state: 'stopped' },
+      imageGenConfig: { ...config, positive_prompt_prefix: 'masterpiece' },
+    });
+
+    await useAppStore.getState().generateSceneImage('stage');
+
+    expect(api.writeImagePrompt).not.toHaveBeenCalled();
+    expect(api.buildCharacterImagePrompt).not.toHaveBeenCalled();
+    expect(vi.mocked(api.generateImageAction).mock.calls[0]![0]).toBe(
+      'masterpiece, scenery, no humans, detailed background, The snowy village square, Dusk',
+    );
+  });
+
   it('reports generation errors to the caller', async () => {
     vi.mocked(api.writeImagePrompt).mockResolvedValue('prompt');
     vi.mocked(api.generateImageAction).mockRejectedValue('{"code":"backend.localImage.noModel","params":{}}');

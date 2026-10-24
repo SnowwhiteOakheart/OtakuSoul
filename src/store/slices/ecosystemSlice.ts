@@ -1,6 +1,6 @@
 import { api } from '../../services/api';
 import { soundFx } from '../../services/soundFx';
-import { fillCardMacros, languageCode, localizeCard } from '../../utils/cardI18n';
+import { fillCardMacros, languageCode, localizeCard, sceneImageTemplatePrompt } from '../../utils/cardI18n';
 import type {
   BackupGroupSelection,
   BackupEntryInfo,
@@ -191,7 +191,8 @@ export const createEcosystemSlice: SliceCreator<EcosystemSlice> = (set, get) => 
       if (provider === 'local') {
         const models = await api.listImageModels().catch(() => []);
         const family = models.find((m) => m.id === config.local_model_id)?.family;
-        if (family && family !== 'sdxl') style = 'natural';
+        // SD 1.5 and SDXL read tags (CLIP); Flux and Qwen-Image read sentences.
+        if (family && family !== 'sdxl' && family !== 'sd15') style = 'natural';
       }
 
       const replyLang = languageCode(state.replyLanguage || 'Deutsch');
@@ -246,12 +247,18 @@ export const createEcosystemSlice: SliceCreator<EcosystemSlice> = (set, get) => 
             return '';
           });
       }
-      if (!prompt) {
+      if (!prompt && target === 'stage' && state.stageState) {
+        prompt = sceneImageTemplatePrompt(
+          state.stageState.definition,
+          state.stageState.world,
+          config.positive_prompt_prefix,
+        );
+      } else if (!prompt) {
         prompt = await api.buildCharacterImagePrompt(
-          target === 'stage' ? subject : (character?.name ?? subject),
+          character?.name ?? subject,
           description,
-          target === 'chat' ? state.currentEmotion?.emotion : null,
-          target === 'stage' ? subject : null,
+          state.currentEmotion?.emotion,
+          null,
           options.kind === 'selfie' ? 'selfie, holding a phone, looking at the camera' : null
         );
       }

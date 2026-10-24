@@ -99,3 +99,26 @@ export const localizeSceneHeader = (
     gm_tone: translation?.gm_tone?.trim() || definition.gm_tone,
   };
 };
+
+/**
+ * An image prompt for a stage scene when no chat model can write one: a landscape without a
+ * stand-in character. Image models only read English, so the location and time of day come from
+ * the scene's English translation while they are still the scene's starting values; a place the
+ * game master moved to keeps its own wording.
+ */
+export const sceneImageTemplatePrompt = (
+  definition: { title: string; starting_location: string; time_of_day: string; extensions?: unknown },
+  world: { location: string; time_of_day: string },
+  prefix: string,
+): string => {
+  const en = pickTranslation<{ title?: string; starting_location?: string; time_of_day?: string }>(
+    (definition.extensions as Record<string, unknown> | null | undefined)?.[I18N_EXTENSION], 'en');
+  const english = (current: string, base: string, translated?: string) =>
+    (current.trim() === base.trim() || !current.trim()) && translated?.trim() ? translated.trim() : current.trim();
+  const location = english(world.location, definition.starting_location, en?.starting_location)
+    || en?.title?.trim() || definition.title;
+  const time = english(world.time_of_day, definition.time_of_day, en?.time_of_day);
+  return [prefix.trim(), 'scenery, no humans, detailed background', location, time]
+    .filter(Boolean)
+    .join(', ');
+};
