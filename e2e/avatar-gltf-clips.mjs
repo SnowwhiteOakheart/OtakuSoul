@@ -42,7 +42,9 @@ try {
 
   await browser.$('button=Chat').click();
   const viewer = '[data-avatar-format="gltf"]';
-  await browser.$(`${viewer}[data-motions="4"][data-idle-clip="A_Idle_Breath"]`).waitForExist({ timeout: 30_000, timeoutMsg: 'eingebettete Clips werden nicht geladen' });
+  await browser.$(`${viewer}[data-motions="4"]`).waitForExist({ timeout: 30_000, timeoutMsg: 'eingebettete Clips werden nicht geladen' });
+  await browser.$('button[aria-label="Neutral"]').click();
+  await browser.$(`${viewer}[data-motions="4"][data-idle-clip="A_Idle_Breath"]`).waitForExist({ timeout: 10_000, timeoutMsg: 'eingebettete Ruhe-Schleife wird nicht geladen' });
   // No blendshapes, but eyelid and lip bones: the face is driven by bones.
   assert.equal(await browser.$(viewer).getAttribute('data-face'), 'bones', 'Gesicht über Knochen nicht erkannt');
   await reply('*winkt* "Hallo!"');

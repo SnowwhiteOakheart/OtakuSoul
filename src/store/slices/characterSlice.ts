@@ -37,6 +37,11 @@ export interface CharacterSlice {
   createCharacterFromDraft: (draft: CharacterDraft) => Promise<CharacterProfile | null>;
 }
 
+let pendingPreferredCharacterId: string | null | undefined;
+export const setPendingPreferredCharacterId = (id: string | null | undefined) => {
+  pendingPreferredCharacterId = id;
+};
+
 export const createCharacterSlice: SliceCreator<CharacterSlice> = (set, get) => ({
   personas: [
     {
@@ -126,6 +131,7 @@ export const createCharacterSlice: SliceCreator<CharacterSlice> = (set, get) => 
     // Before the settings are loaded the last opened character isn't known yet; a scan started
     // then must not pick one, even if it only finishes afterwards (it would show the wrong one).
     const knewSettings = get().settingsLoaded;
+    if (preferredId !== undefined) pendingPreferredCharacterId = preferredId;
     try {
       const chars = await api.scanCharacters();
       const firstChar = chars[0];
@@ -135,7 +141,9 @@ export const createCharacterSlice: SliceCreator<CharacterSlice> = (set, get) => 
         const active = get().activeCharacter;
         const hiddenActive = !!active && isAdultMarked(active.card.data.extensions) && !chars.some((c) => c.id === active.id);
         if ((!active || hiddenActive) && knewSettings && get().settingsLoaded) {
-          await get().selectCharacter(chars.find((c) => c.id === preferredId && !hiddenActive) ?? firstChar);
+          const targetId = preferredId ?? pendingPreferredCharacterId;
+          pendingPreferredCharacterId = undefined;
+          await get().selectCharacter(chars.find((c) => c.id === targetId && !hiddenActive) ?? firstChar);
         }
       }
     } catch (e) {

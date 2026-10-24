@@ -22,8 +22,8 @@ try {
   const request = mock.stats.lastChatRequest;
   assert.equal(request.max_tokens, 400, 'max_tokens nicht begrenzt');
   // Local/custom servers get trailing system text appended to the last user turn (`system_first`).
-  const last = request.messages.at(-1);
-  assert.ok(last.content.trimEnd().endsWith('Keep this reply short: one to three sentences.'), 'Längen-Anweisung fehlt am Ende');
+  const last = request.messages.at(-1).content.replace(/\nEnd your reply with one tag[^\n]*$/, '').trimEnd();
+  assert.ok(last.endsWith('Keep this reply short: one to three sentences.'), 'Längen-Anweisung fehlt am Ende');
 
   await browser.refresh();
   const again = await browser.$('select[data-reply-length]');

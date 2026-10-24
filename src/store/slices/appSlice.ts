@@ -1,4 +1,5 @@
 import { api } from '../../services/api';
+import { setPendingPreferredCharacterId } from './characterSlice';
 import { normalizeReplyLanguage, CLOUD_PROVIDER_DEFAULTS, type AppTab, type IntegrationsTab, type SettingsSection } from '../helpers';
 import type {
   AppPaths,
@@ -154,7 +155,6 @@ export const createAppSlice: SliceCreator<AppSlice> = (set, get) => ({
       // 3. Scan models and VRMs
       const models = await api.scanModels();
       const vrms = await api.scanVrmModels();
-      set({ scannedModels: models, scannedVrms: vrms });
       void get().refreshAvatarMotions();
 
       // If settings model path is empty or not in scan, choose first available
@@ -173,7 +173,6 @@ export const createAppSlice: SliceCreator<AppSlice> = (set, get) => ({
       const listed = await api.listUiLanguages().catch(() => null);
       const languages = listed?.length ? listed : get().availableLanguages;
       const language = languages.find((l) => l.id === (settings.app_language || 'de'));
-      set({ availableLanguages: languages });
       await loadLocale(settings.app_language || 'de', loadOptions(language)).catch(() => {});
       if (!languagesListening) {
         // Languages from the data repository arrive after the start.
@@ -181,7 +180,11 @@ export const createAppSlice: SliceCreator<AppSlice> = (set, get) => ({
         void api.onUiLanguagesChanged(() => void get().refreshLanguages().catch(() => {})).catch(() => {});
       }
 
+      setPendingPreferredCharacterId(settings.active_character_id);
       set({
+        scannedModels: models,
+        scannedVrms: vrms,
+        availableLanguages: languages,
         serverConfig: {
           ...settings.server_config,
           model_path: modelPath,

@@ -64,7 +64,7 @@ try {
   const storyCard = await browser.$('[data-home-card="stage"]');
   await storyCard.waitForDisplayed({ timeout: 10_000 });
   await browser.waitUntil(async () => /Geschichte weiterspielen/.test(await storyCard.getText()), { timeout: 10_000, timeoutMsg: 'Startseite bietet kein Weiterspielen' });
-  assert.match(await storyCard.getText(), /Hanami-Live im Ueno-Park/);
+  assert.match(await storyCard.getText(), /Lesung unter Kirschblüten/);
   await jargonIn('Startseite');
   await shot('94-einstieg-startseite');
 

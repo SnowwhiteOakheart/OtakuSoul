@@ -17,18 +17,18 @@ export const SettingsView = () => {
   const { fetchHardware, initApp, expertMode, setExpertMode } = useStoreFields('fetchHardware', 'initApp', 'expertMode', 'setExpertMode');
 
   const [activeTab, setActiveTab] = useState<SettingsSection>(
-    () => useAppStore.getState().consumePendingSettingsSection() ?? 'general'
+    () => useAppStore.getState().pendingSettingsSection ?? 'general'
   );
   // Jumps while the view is already open (command palette, header status).
-  useEffect(
-    () =>
-      useAppStore.subscribe((state, previous) => {
-        if (!state.pendingSettingsSection || state.pendingSettingsSection === previous.pendingSettingsSection) return;
-        const section = useAppStore.getState().consumePendingSettingsSection();
-        if (section) setActiveTab(section);
-      }),
-    [],
-  );
+  useEffect(() => {
+    const initial = useAppStore.getState().consumePendingSettingsSection();
+    if (initial) setActiveTab(initial);
+    return useAppStore.subscribe((state, previous) => {
+      if (!state.pendingSettingsSection || state.pendingSettingsSection === previous.pendingSettingsSection) return;
+      const section = useAppStore.getState().consumePendingSettingsSection();
+      if (section) setActiveTab(section);
+    });
+  }, []);
   // The prompt editor is for experts; a jump to it (palette) still shows it.
   const expertOnly: SettingsSection[] = ['prompt'];
   const allTabs: TabItem<SettingsSection>[] = [
