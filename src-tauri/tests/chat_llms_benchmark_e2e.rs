@@ -15,6 +15,13 @@ use std::path::{Path, PathBuf};
 use std::sync::Arc;
 use std::time::Instant;
 
+/// A path inside the repository (models in `assets/models`, reports in the root).
+fn repo(relative: &str) -> PathBuf {
+    Path::new(env!("CARGO_MANIFEST_DIR"))
+        .join("..")
+        .join(relative)
+}
+
 fn get_vram_mb() -> u64 {
     std::process::Command::new("nvidia-smi")
         .args(["--query-gpu=memory.used", "--format=csv,noheader,nounits"])
@@ -34,6 +41,7 @@ struct ModelCandidate {
 }
 
 #[tokio::test(flavor = "multi_thread")]
+#[ignore = "needs a GPU and local chat models"]
 async fn test_benchmark_all_chat_llms() {
     println!("\n================================================================================");
     println!("=== STARTE BENCHMARK ALLER LOKALEN CHAT- & VISION-LLMS IN OTAKUSOUL ===");
@@ -42,56 +50,56 @@ async fn test_benchmark_all_chat_llms() {
     let models: Vec<ModelCandidate> = vec![
         ModelCandidate {
             name: "Ternary-Bonsai-2-27B-PQ2_0",
-            path: "C:\\Users\\Sebas\\Development\\OtakuSoul\\assets\\models\\Ternary-Bonsai-2-27B-PQ2_0.gguf",
+            path: "assets/models/Ternary-Bonsai-2-27B-PQ2_0.gguf",
             mmproj: None,
             context_size: 16384,
             gpu_layers: 99,
         },
         ModelCandidate {
             name: "gemma-4-E4B-it-Q4_K_M (Vision)",
-            path: "C:\\Users\\Sebas\\Development\\OtakuSoul\\assets\\models\\gemma-4-E4B-it-Q4_K_M.gguf",
-            mmproj: Some("C:\\Users\\Sebas\\Development\\OtakuSoul\\assets\\models\\gemma-4-E4B-it-Q4_K_M-mmproj-F16.gguf"),
+            path: "assets/models/gemma-4-E4B-it-Q4_K_M.gguf",
+            mmproj: Some("assets/models/gemma-4-E4B-it-Q4_K_M-mmproj-F16.gguf"),
             context_size: 8192,
             gpu_layers: 99,
         },
         ModelCandidate {
             name: "gemma-4-12b-it-Q4_K_M",
-            path: "C:\\Users\\Sebas\\Development\\OtakuSoul\\assets\\models\\gemma-4-12b-it-Q4_K_M.gguf",
+            path: "assets/models/gemma-4-12b-it-Q4_K_M.gguf",
             mmproj: None,
             context_size: 8192,
             gpu_layers: 99,
         },
         ModelCandidate {
             name: "gemma-4-26B-A4B-it-UD-Q4_K_M (Vision)",
-            path: "C:\\Users\\Sebas\\Development\\OtakuSoul\\assets\\models\\gemma-4-26B-A4B-it-UD-Q4_K_M.gguf",
-            mmproj: Some("C:\\Users\\Sebas\\Development\\OtakuSoul\\assets\\models\\gemma-4-26B-A4B-it-UD-Q4_K_M-mmproj-F16.gguf"),
+            path: "assets/models/gemma-4-26B-A4B-it-UD-Q4_K_M.gguf",
+            mmproj: Some("assets/models/gemma-4-26B-A4B-it-UD-Q4_K_M-mmproj-F16.gguf"),
             context_size: 8192,
             gpu_layers: 99,
         },
         ModelCandidate {
             name: "gemma-4-31B-it-Q4_K_M",
-            path: "C:\\Users\\Sebas\\Development\\OtakuSoul\\assets\\models\\gemma-4-31B-it-Q4_K_M.gguf",
+            path: "assets/models/gemma-4-31B-it-Q4_K_M.gguf",
             mmproj: None,
             context_size: 8192,
             gpu_layers: 99,
         },
         ModelCandidate {
             name: "Cydonia-24B-v4zg-Q4_K_M",
-            path: "C:\\Users\\Sebas\\Development\\OtakuSoul\\assets\\models\\Cydonia-24B-v4zg-Q4_K_M.gguf",
+            path: "assets/models/Cydonia-24B-v4zg-Q4_K_M.gguf",
             mmproj: None,
             context_size: 8192,
             gpu_layers: 99,
         },
         ModelCandidate {
             name: "Hearthfire-24B-Q4_K_M",
-            path: "C:\\Users\\Sebas\\Development\\OtakuSoul\\assets\\models\\Hearthfire-24B-Q4_K_M.gguf",
+            path: "assets/models/Hearthfire-24B-Q4_K_M.gguf",
             mmproj: None,
             context_size: 8192,
             gpu_layers: 99,
         },
         ModelCandidate {
             name: "Qwen3.6-35B-A3B-UD-Q4_K_M",
-            path: "C:\\Users\\Sebas\\Development\\OtakuSoul\\assets\\models\\Qwen3.6-35B-A3B-UD-Q4_K_M.gguf",
+            path: "assets/models/Qwen3.6-35B-A3B-UD-Q4_K_M.gguf",
             mmproj: None,
             context_size: 8192,
             gpu_layers: 99,
@@ -100,7 +108,9 @@ async fn test_benchmark_all_chat_llms() {
 
     // Lade Charakter Hayase Nagatoro
     let all_chars = scan_available_characters();
-    let char_nagatoro = all_chars.iter().find(|c| c.card.data.name.to_lowercase().contains("nagatoro"))
+    let char_nagatoro = all_chars
+        .iter()
+        .find(|c| c.card.data.name.to_lowercase().contains("nagatoro"))
         .expect("Hayase Nagatoro nicht gefunden");
 
     let user_name = "Senpai";
@@ -108,10 +118,15 @@ async fn test_benchmark_all_chat_llms() {
     let endpoint = "http://127.0.0.1:48596/v1/chat/completions";
 
     // Test-Bild für Vision laden
-    let test_img_path = PathBuf::from("C:\\Users\\Sebas\\Development\\OtakuSoul\\target\\test_artifacts\\gruppenchat_szene.png");
+    let test_img_path = repo("target/test_artifacts/gruppenchat_szene.png");
     let test_img_bytes = fs::read(&test_img_path).unwrap_or_default();
     let test_attachment = if !test_img_bytes.is_empty() {
-        attachments::save("vision_benchmark", "skizze_sternenwarte.png", &test_img_bytes).ok()
+        attachments::save(
+            "vision_benchmark",
+            "skizze_sternenwarte.png",
+            &test_img_bytes,
+        )
+        .ok()
     } else {
         None
     };
@@ -119,12 +134,25 @@ async fn test_benchmark_all_chat_llms() {
     let mut model_evaluations: Vec<serde_json::Value> = Vec::new();
 
     for (m_idx, m) in models.iter().enumerate() {
-        println!("\n================================================================================");
-        println!(">>> [MODELL {}/{}] TESTE: {} <<<", m_idx + 1, models.len(), m.name);
-        println!("================================================================================");
+        println!(
+            "\n================================================================================"
+        );
+        println!(
+            ">>> [MODELL {}/{}] TESTE: {} <<<",
+            m_idx + 1,
+            models.len(),
+            m.name
+        );
+        println!(
+            "================================================================================"
+        );
 
-        if !Path::new(m.path).exists() {
-            println!("[ÜBERSPRUNGEN] Datei nicht gefunden: {}", m.path);
+        let model_path = repo(m.path);
+        if !model_path.exists() {
+            println!(
+                "[ÜBERSPRUNGEN] Datei nicht gefunden: {}",
+                model_path.display()
+            );
             continue;
         }
 
@@ -134,12 +162,12 @@ async fn test_benchmark_all_chat_llms() {
         println!("[SERVER] Starte llama-server mit {}...", m.name);
         let start_time = Instant::now();
         let config = LlamaServerConfig {
-            model_path: m.path.to_string(),
+            model_path: model_path.to_string_lossy().into_owned(),
             port: 48596,
             context_size: m.context_size,
             gpu_layers: m.gpu_layers,
             flash_attn: true,
-            mmproj_path: m.mmproj.map(str::to_string),
+            mmproj_path: m.mmproj.map(|p| repo(p).to_string_lossy().into_owned()),
             ..Default::default()
         };
 
@@ -182,7 +210,7 @@ async fn test_benchmark_all_chat_llms() {
         let mut history: Vec<(String, String)> = Vec::new();
         let mut turns_data: Vec<serde_json::Value> = Vec::new();
 
-        let user_prompts = vec![
+        let user_prompts = [
             "Hey Nagatoro, hast du heute nach der Schule Zeit? Ich dachte, wir könnten im Kunstraum an den neuen Zeichnungen arbeiten.",
             "Immer machst du dich über meine Bilder lustig... Aber schau mal, ich habe mir wirklich Mühe gegeben. Woran denkst du, wenn du an den Sommer denkst?",
             "Ein Eis am Strand klingt gut, aber du schubst mich bestimmt wieder ins Wasser! Gibt es etwas, das du mir schon lange mal sagen wolltest, ohne mich zu necken?",
@@ -191,7 +219,7 @@ async fn test_benchmark_all_chat_llms() {
                 "Schau dir mal diese Zeichnung hier an, die ich gerade gezeichnet habe: Was erkennst du darauf genau und wie gefällt sie dir?"
             } else {
                 "Wenn wir wirklich diesen Sommer ans Meer fahren... würdest du dich freuen, wenn nur wir beide gehen?"
-            }
+            },
         ];
 
         let mut asterisks_adherence = true;
@@ -219,7 +247,9 @@ async fn test_benchmark_all_chat_llms() {
 
             // In Runde 5 bei Vision-Modellen: Bild anhängen
             let current_attachments = if turn_num == 5 && m.mmproj.is_some() {
-                println!("  [VISION-TEST] Hänge Testbild (gruppenchat_szene.png) an Nachricht an...");
+                println!(
+                    "  [VISION-TEST] Hänge Testbild (gruppenchat_szene.png) an Nachricht an..."
+                );
                 test_attachment.clone().into_iter().collect()
             } else {
                 Vec::new()
@@ -232,42 +262,69 @@ async fn test_benchmark_all_chat_llms() {
             });
 
             let gen_start = Instant::now();
-            let res = client.generate_direct(ChatRequest {
-                endpoint_url: endpoint.to_string(),
-                api_key: None,
-                model: None,
-                messages,
-                sampling: Some(SamplingParams {
-                    temperature: Some(0.7),
-                    top_p: Some(0.9),
-                    max_tokens: Some(250),
-                    ..Default::default()
-                }),
-                reasoning_mode: Some(false),
-                provider: Some(LlmProviderType::LocalLlama),
-            }).await;
+            let res = client
+                .generate_direct(ChatRequest {
+                    endpoint_url: endpoint.to_string(),
+                    api_key: None,
+                    model: None,
+                    messages,
+                    sampling: Some(SamplingParams {
+                        temperature: Some(0.7),
+                        top_p: Some(0.9),
+                        // As the app for the reply length "medium" (`REPLY_LENGTH_TOKENS`).
+                        max_tokens: Some(900),
+                        ..Default::default()
+                    }),
+                    reasoning_mode: Some(false),
+                    provider: Some(LlmProviderType::LocalLlama),
+                })
+                .await;
 
             let gen_secs = gen_start.elapsed().as_secs_f32();
 
             match res {
                 Ok(raw) => {
-                    let cleaned = raw.strip_prefix("Hayase Nagatoro:")
+                    let cleaned = raw
+                        .strip_prefix("Hayase Nagatoro:")
                         .or_else(|| raw.strip_prefix("Nagatoro:"))
-                        .unwrap_or(&raw).trim().to_string();
+                        .unwrap_or(&raw)
+                        .trim()
+                        .to_string();
 
                     let has_asterisk = cleaned.contains('*');
-                    let has_quotes = cleaned.contains('"') || cleaned.contains('„') || cleaned.contains('“');
-                    if !has_asterisk { asterisks_adherence = false; }
-                    if !has_quotes { quotes_adherence = false; }
+                    let has_quotes =
+                        cleaned.contains('"') || cleaned.contains('„') || cleaned.contains('“');
+                    if !has_asterisk {
+                        asterisks_adherence = false;
+                    }
+                    if !has_quotes {
+                        quotes_adherence = false;
+                    }
 
                     if turn_num == 5 && m.mmproj.is_some() {
                         let lower = cleaned.to_lowercase();
-                        for kw in &["turm", "turms", "stein", "schnee", "wald", "bäume", "nacht", "dämmerung", "kristall", "leuchten", "gebäude", "sterne"] {
+                        for kw in &[
+                            "turm",
+                            "turms",
+                            "stein",
+                            "schnee",
+                            "wald",
+                            "bäume",
+                            "nacht",
+                            "dämmerung",
+                            "kristall",
+                            "leuchten",
+                            "gebäude",
+                            "sterne",
+                        ] {
                             if lower.contains(kw) {
                                 vision_detected_keywords.push(kw.to_string());
                             }
                         }
-                        println!("  [VISION-BEWERTUNG] Erkannte Elemente im Bild: {:?}", vision_detected_keywords);
+                        println!(
+                            "  [VISION-BEWERTUNG] Erkannte Elemente im Bild: {:?}",
+                            vision_detected_keywords
+                        );
                     }
 
                     println!("  [Antwort in {:.2}s] {}", gen_secs, cleaned);
@@ -290,12 +347,19 @@ async fn test_benchmark_all_chat_llms() {
 
         // Berechne Metriken
         let avg_time: f32 = if !turns_data.is_empty() {
-            turns_data.iter().filter_map(|t| t["time_sec"].as_f64()).sum::<f64>() as f32 / turns_data.len() as f32
+            turns_data
+                .iter()
+                .filter_map(|t| t["time_sec"].as_f64())
+                .sum::<f64>() as f32
+                / turns_data.len() as f32
         } else {
             0.0
         };
 
-        let total_chars: usize = turns_data.iter().filter_map(|t| t["chars"].as_u64()).sum::<u64>() as usize;
+        let total_chars: usize = turns_data
+            .iter()
+            .filter_map(|t| t["chars"].as_u64())
+            .sum::<u64>() as usize;
         let speed_char_per_sec = if avg_time > 0.0 {
             total_chars as f32 / (avg_time * turns_data.len() as f32)
         } else {
@@ -323,12 +387,20 @@ async fn test_benchmark_all_chat_llms() {
 
     println!("\n=== ERSTELLE SUMMARY_TEST_CHATLLMS.MD ===");
     let mut report = String::new();
-    report.push_str("# 🧠 Umfassender Benchmark aller installierten Chat- & Vision-LLMs in OtakuSoul\n\n");
-    report.push_str(&format!("- **Testdatum & Uhrzeit:** {}\n", chrono::Local::now().format("%Y-%m-%d %H:%M:%S")));
-    report.push_str(&format!("- **Test-Charakter:** Hayase Nagatoro (Kazehaya-Oberschule)\n"));
-    report.push_str(&format!("- **Test-Nutzer (Persona):** Senpai\n"));
-    report.push_str(&format!("- **Hardware:** NVIDIA GeForce RTX 5090 Laptop GPU (24.463 MB VRAM)\n"));
-    report.push_str(&format!("- **Getestete Modelle:** {}\n\n", model_evaluations.len()));
+    report.push_str(
+        "# 🧠 Umfassender Benchmark aller installierten Chat- & Vision-LLMs in OtakuSoul\n\n",
+    );
+    report.push_str(&format!(
+        "- **Testdatum & Uhrzeit:** {}\n",
+        chrono::Local::now().format("%Y-%m-%d %H:%M:%S")
+    ));
+    report.push_str("- **Test-Charakter:** Hayase Nagatoro (Kazehaya-Oberschule)\n");
+    report.push_str("- **Test-Nutzer (Persona):** Senpai\n");
+    report.push_str("- **Hardware:** NVIDIA GeForce RTX 5090 Laptop GPU (24.463 MB VRAM)\n");
+    report.push_str(&format!(
+        "- **Getestete Modelle:** {}\n\n",
+        model_evaluations.len()
+    ));
 
     report.push_str("## 1. Leistungs- & Vergleichsmatrix aller Modelle\n\n");
     report.push_str("| Modell | Vision-Support | Ladezeit | VRAM | Ø Latenz / Antwort | Geschw. (~Tok/s) | Syntax (*Aktion* / \"Rede\") | Gesamteindruck |\n");
@@ -336,15 +408,26 @@ async fn test_benchmark_all_chat_llms() {
 
     for m in &model_evaluations {
         let name = m["model_name"].as_str().unwrap_or("");
-        let vision = if m["is_vision"].as_bool().unwrap_or(false) { "✅ Ja (mmproj)" } else { "❌ Nein (Text)" };
+        let vision = if m["is_vision"].as_bool().unwrap_or(false) {
+            "✅ Ja (mmproj)"
+        } else {
+            "❌ Nein (Text)"
+        };
         let load = format!("{:.1}s", m["load_time_sec"].as_f64().unwrap_or(0.0));
         let vram = format!("{} MB", m["vram_mb"].as_i64().unwrap_or(0));
         let lat = format!("{:.2}s", m["avg_latency_sec"].as_f64().unwrap_or(0.0));
-        let tok_s = format!("{:.1} tok/s", m["approx_tok_per_sec"].as_f64().unwrap_or(0.0));
+        let tok_s = format!(
+            "{:.1} tok/s",
+            m["approx_tok_per_sec"].as_f64().unwrap_or(0.0)
+        );
         let asterisks = m["syntax_asterisks"].as_bool().unwrap_or(false);
         let quotes = m["syntax_quotes"].as_bool().unwrap_or(false);
-        let syntax = format!("{} / {}", if asterisks { "✅" } else { "⚠️" }, if quotes { "✅" } else { "⚠️" });
-        
+        let syntax = format!(
+            "{} / {}",
+            if asterisks { "✅" } else { "⚠️" },
+            if quotes { "✅" } else { "⚠️" }
+        );
+
         let impression = if m["approx_tok_per_sec"].as_f64().unwrap_or(0.0) > 40.0 {
             "⚡ Extrem schnell & flüssig"
         } else if m["approx_tok_per_sec"].as_f64().unwrap_or(0.0) > 25.0 {
@@ -353,8 +436,10 @@ async fn test_benchmark_all_chat_llms() {
             "🎯 Detailliert & atmosphärisch"
         };
 
-        report.push_str(&format!("| **{}** | {} | {} | {} | {} | {} | {} | {} |\n",
-            name, vision, load, vram, lat, tok_s, syntax, impression));
+        report.push_str(&format!(
+            "| **{}** | {} | {} | {} | {} | {} | {} | {} |\n",
+            name, vision, load, vram, lat, tok_s, syntax, impression
+        ));
     }
 
     report.push_str("\n---\n\n");
@@ -368,7 +453,9 @@ async fn test_benchmark_all_chat_llms() {
 
         if m["is_vision"].as_bool().unwrap_or(false) {
             let kws = m["vision_keywords"].as_array();
-            let kw_list: Vec<&str> = kws.map(|arr| arr.iter().filter_map(|v| v.as_str()).collect()).unwrap_or_default();
+            let kw_list: Vec<&str> = kws
+                .map(|arr| arr.iter().filter_map(|v| v.as_str()).collect())
+                .unwrap_or_default();
             report.push_str(&format!("- **Multimodal (Vision) Testergebnis:** Das Modell hat das Bild analysiert und folgende Bildelemente korrekt identifiziert: `{}`.\n", kw_list.join(", ")));
         }
 
@@ -398,7 +485,8 @@ async fn test_benchmark_all_chat_llms() {
     report.push_str("   - **Multimodal (Text + Bildverständnis):** `gemma-4-26B-A4B-it-UD-Q4_K_M` (hervorragende Bildbeschreibung und Rollentiefe).\n");
     report.push_str("   - **Kreatives Rollenspiel / Immersion:** `Cydonia-24B-v4zg` oder `Hearthfire-24B` (sehr nuancierter, ausdrucksstarker Text).\n\n");
 
-    let report_path = PathBuf::from("C:\\Users\\Sebas\\Development\\OtakuSoul\\summary_test_ChatLLMs.md");
-    fs::write(&report_path, &report).expect("summary_test_ChatLLMs.md konnte nicht geschrieben werden");
+    let report_path = repo("summary_test_ChatLLMs.md");
+    fs::write(&report_path, &report)
+        .expect("summary_test_ChatLLMs.md konnte nicht geschrieben werden");
     println!("[BERICHT GESPEICHERT] {:?}", report_path);
 }
