@@ -1056,10 +1056,10 @@ mod tests {
         );
         assert_eq!(pick(8_192), "qwen3.5-9b");
         assert_eq!(pick(10_240), "gemma-4-12b");
-        // Bonsai is preferred wherever it fits, even over larger models.
+        // No model is preferred any more: the largest that fits.
         assert_eq!(pick(12_288), "ternary-bonsai-2-27b");
-        assert_eq!(pick(16_384), "ternary-bonsai-2-27b");
-        assert_eq!(pick(24_576), "ternary-bonsai-2-27b");
+        assert_eq!(pick(16_384), "gemma-4-26b-a4b");
+        assert_eq!(pick(24_576), "gemma-4-31b");
         // Models without an open licence are listed, never picked by themselves.
         assert!(catalog.models.iter().any(|m| m.license_kind() != "open"));
         for vram in [0, 8_192, 12_288, 16_384, 24_576, 49_152] {

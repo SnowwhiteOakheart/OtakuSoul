@@ -309,8 +309,8 @@ ru „персонаж/история/сцена“. Fachbegriffe nur im Experte
   nach `<Daten>/recommended_models.json`; die höhere `version` gilt, Einträge nur mit SHA-256, Hugging-Face-Datei, angegebener
   Lizenz und bekannter Laufzeit; `license_kind` = open (Apache/MIT/BSD) | restricted | noncommercial, nicht offene zeigt der
   Assistent mit `license_note` und Link; bei neuen Releases die mitgelieferte Kopie mit dem Daten-Repo abgleichen;
-  Empfehlung = `preferred`-Modell (Ternary Bonsai 2 27B), wenn es in VRAM − 1,5 GB passt, sonst das größte passende – nur
-  unter frei lizenzierten).
+  Empfehlung = `preferred`-Modell, wenn es in VRAM − 1,5 GB passt, sonst das größte passende – nur unter frei lizenzierten;
+  seit Katalog 3.4.0 ist keins bevorzugt, Ternary Bonsai 2 27B nicht mehr wegen schwächeren Deutschs).
   Starter mit `runtime: "prism"` blenden im Assistenten zusätzlich die PrismML-Laufzeitkarte ein.
   Einfacher Weg: `LocalModelSetup` „Alles automatisch einrichten“ (fehlende Laufzeiten mit empfohlener Variante, dann Starter
   laden/auswählen; Details unter „Selbst auswählen“), Modellnamen über `prettyModelName`, Ampel `ModelFit`/`modelFit`.
