@@ -907,25 +907,28 @@ impl LlamaServerManager {
         let mut guard = self.child.lock().await;
         if let Some(mut child) = guard.take() {
             info!("Stoppe llama-server...");
-            // Graceful shutdown attempt
+            // Graceful shutdown attempt, waiting up to 3s before killing it.
             #[cfg(unix)]
-            if let Some(pid) = child.id() {
-                unsafe {
-                    libc::kill(pid as i32, libc::SIGTERM);
+            {
+                if let Some(pid) = child.id() {
+                    unsafe {
+                        libc::kill(pid as i32, libc::SIGTERM);
+                    }
+                }
+                tokio::select! {
+                    _ = child.wait() => {
+                        info!("llama-server sauber beendet");
+                    }
+                    _ = tokio::time::sleep(Duration::from_secs(3)) => {
+                        warn!("llama-server reagiert nicht auf SIGTERM, erzwinge SIGKILL...");
+                        child.kill().await.ok();
+                    }
                 }
             }
-
-            // Wait up to 3s for graceful termination, else kill
-            let kill_timeout = Duration::from_secs(3);
-            tokio::select! {
-                _ = child.wait() => {
-                    info!("llama-server sauber beendet");
-                }
-                _ = tokio::time::sleep(kill_timeout) => {
-                    warn!("llama-server reagiert nicht auf SIGTERM, erzwinge SIGKILL...");
-                    child.kill().await.ok();
-                }
-            }
+            // Windows has no signal to ask for it: waiting would only cost 3s on every switch,
+            // and the server keeps nothing it would have to save.
+            #[cfg(not(unix))]
+            child.kill().await.ok();
         }
 
         let mut s = self.status.write().await;

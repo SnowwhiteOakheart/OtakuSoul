@@ -5,7 +5,7 @@ use std::io::Cursor;
 use std::path::PathBuf;
 use std::sync::LazyLock;
 use std::time::Duration;
-use tracing::{info, warn};
+use tracing::{debug, info, warn};
 use ts_rs::TS;
 
 use crate::modules::paths::resolve_app_paths;
@@ -1022,7 +1022,7 @@ async fn synthesize_edge_tts_websocket(
             }
             Ok(Message::Text(txt)) => {
                 let txt_str: &str = &txt;
-                info!("Edge-TTS Message: {}", txt_str);
+                debug!("Edge-TTS Message: {}", txt_str);
                 if txt_str.contains("Path:turn.end") {
                     break;
                 }
