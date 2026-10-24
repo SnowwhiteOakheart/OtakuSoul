@@ -1,4 +1,4 @@
-import React, { useEffect, useRef, useState } from 'react';
+import React, { useEffect, useMemo, useRef, useState } from 'react';
 import { useStoreFields } from '../../store/useAppStore';
 import { api } from '../../services/api';
 import { speakStageMessages } from '../../services/stageVoice';
@@ -80,10 +80,7 @@ export const StageChatLog: React.FC = () => {
   }, [stageState?.chat_log?.length, isProcessingStageTurn, liveLength]);
   // While text streams, the "GM is thinking" note only shows between speakers.
   const waiting = isProcessingStageTurn && stageLive.every((m) => m.done);
-
-  if (!stageState) return null;
-
-  const messages = stageState.chat_log || [];
+  const messages = stageState?.chat_log || [];
 
   const handleStartEdit = (id: string, content: string) => {
     setEditingMessageId(id);
@@ -197,8 +194,8 @@ export const StageChatLog: React.FC = () => {
     }
   };
 
-  return (
-    <div className="flex-1 overflow-y-auto p-4 sm:p-6 space-y-4 relative z-10">
+  const renderedHistory = useMemo(() => (
+    <>
       {messages.map((msg, index) => {
         const isGm = msg.sender_role === 'gm';
         const isPlayer = msg.sender_role === 'player';
@@ -319,7 +316,7 @@ export const StageChatLog: React.FC = () => {
           >
             {/* Sender and mode header */}
             <div className="flex items-center gap-2 px-1">
-              {msg.avatar_url && <img src={msg.avatar_url} alt="" className="w-8 h-8 rounded-lg object-cover" />}
+              {msg.avatar_url && <img src={msg.avatar_url} alt="" decoding="async" className="w-8 h-8 rounded-lg object-cover" />}
               {msg.sender_role === 'npc' && <span className="text-[11px] text-emerald-400 font-semibold">NPC</span>}
               <span className="text-xs font-bold text-slate-300">
                 {msg.sender_name}
@@ -427,6 +424,15 @@ export const StageChatLog: React.FC = () => {
           </div>
         );
       })}
+    </>
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  ), [messages, isProcessingStageTurn, editingMessageId, editDraft, translations, translatingId, availableCharacters, t]);
+
+  if (!stageState) return null;
+
+  return (
+    <div className="flex-1 overflow-y-auto p-4 sm:p-6 space-y-4 relative z-10">
+      {renderedHistory}
 
       {/* Live text of the running turn */}
       {stageLive.map((live) =>
@@ -449,7 +455,7 @@ export const StageChatLog: React.FC = () => {
         ) : (
           <div key={live.message_id} className="flex flex-col items-start space-y-1.5">
             <div className="flex items-center gap-2 px-1">
-              {live.avatar_url && <img src={live.avatar_url} alt="" className="w-5 h-5 rounded-full object-cover" />}
+              {live.avatar_url && <img src={live.avatar_url} alt="" decoding="async" className="w-5 h-5 rounded-full object-cover" />}
               <span className="text-xs font-bold text-slate-300">{live.sender_name}</span>
             </div>
             <div className="max-w-[85%] sm:max-w-[75%] p-3.5 rounded-2xl rounded-tl-sm text-xs sm:text-sm shadow-md leading-relaxed whitespace-pre-wrap bg-accent-900/30 border border-accent-500/40 text-accent-100">

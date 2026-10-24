@@ -105,11 +105,20 @@ export function createAvatarStage(container: HTMLElement, modelPath: string): Av
       saveViewState();
     }, 200);
   };
+  let lastActiveTime = performance.now();
+  const markActive = () => {
+    lastActiveTime = performance.now();
+  };
   const markMoved = () => {
     userMoved = true;
+    markActive();
+  };
+  const markChanged = () => {
+    markActive();
+    scheduleViewSave();
   };
   controls.addEventListener('start', markMoved);
-  controls.addEventListener('change', scheduleViewSave);
+  controls.addEventListener('change', markChanged);
 
   // Framing of the loaded model; the fixed values only until it is there.
   let defaultView: VrmViewState = { camera: DEFAULT_CAMERA_POSITION, target: DEFAULT_CAMERA_TARGET };
@@ -123,15 +132,25 @@ export function createAvatarStage(container: HTMLElement, modelPath: string): Av
   rimLight.position.set(-1.0, 1.5, -1.0).normalize();
   scene.add(rimLight);
 
+  let cachedRect: DOMRect | null = null;
+  const invalidateRect = () => {
+    cachedRect = null;
+  };
   const mouse = { x: 0, y: 0 };
   const handleMouseMove = (e: MouseEvent) => {
-    const rect = container.getBoundingClientRect();
-    mouse.x = ((e.clientX - rect.left) / rect.width) * 2 - 1;
-    mouse.y = -((e.clientY - rect.top) / rect.height) * 2 + 1;
+    markActive();
+    const rect = (cachedRect ??= container.getBoundingClientRect());
+    if (rect.width > 0 && rect.height > 0) {
+      mouse.x = ((e.clientX - rect.left) / rect.width) * 2 - 1;
+      mouse.y = -((e.clientY - rect.top) / rect.height) * 2 + 1;
+    }
   };
+  container.addEventListener('mouseenter', invalidateRect);
   container.addEventListener('mousemove', handleMouseMove);
 
   const handleResize = () => {
+    invalidateRect();
+    markActive();
     camera.aspect = container.clientWidth / container.clientHeight;
     camera.updateProjectionMatrix();
     renderer.setSize(container.clientWidth, container.clientHeight);
@@ -177,8 +196,8 @@ export function createAvatarStage(container: HTMLElement, modelPath: string): Av
         for (const m of Array.isArray(material) ? material : material ? [material] : []) m.needsUpdate = true;
       });
     },
-    timeNextFrame: (modelPath) => {
-      timedFrame = modelPath;
+    timeNextFrame: (nextModelPath) => {
+      timedFrame = nextModelPath;
     },
     start: (onFrame) => {
       let lastTime = performance.now();
@@ -186,6 +205,17 @@ export function createAvatarStage(container: HTMLElement, modelPath: string): Av
       const animate = () => {
         animationFrameId = requestAnimationFrame(animate);
         const now = performance.now();
+        if (timedFrame === null) {
+          if (typeof document !== 'undefined' && document.hidden) {
+            lastTime = now;
+            return;
+          }
+          // Throttle idle breathing/blinking to ~30 FPS after 2s of no pointer/camera interaction
+          // so local LLM/SD GPU workloads aren't starved by 60-144 Hz WebGL redraws.
+          if (now - lastActiveTime > 2000 && now - lastTime < 31) {
+            return;
+          }
+        }
         // Long pauses (hidden window) must not make physics and motions jump.
         const delta = Math.min(0.1, (now - lastTime) / 1000);
         lastTime = now;
@@ -213,9 +243,10 @@ export function createAvatarStage(container: HTMLElement, modelPath: string): Av
       cancelAnimationFrame(animationFrameId);
       stopSnapshots();
       controls.removeEventListener('start', markMoved);
-      controls.removeEventListener('change', scheduleViewSave);
+      controls.removeEventListener('change', markChanged);
       controls.dispose();
       window.removeEventListener('resize', handleResize);
+      container.removeEventListener('mouseenter', invalidateRect);
       container.removeEventListener('mousemove', handleMouseMove);
       environment?.dispose();
       renderer.dispose();

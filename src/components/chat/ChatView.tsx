@@ -136,6 +136,25 @@ export const ChatView: React.FC = () => {
 
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const scrollRef = useRef<HTMLDivElement>(null);
+  const pendingStreamTextRef = useRef('');
+  const pendingStreamThoughtRef = useRef('');
+  const streamTextRafRef = useRef<number>(0);
+  const streamThoughtRafRef = useRef<number>(0);
+
+  const resetStreamBuffers = useCallback(() => {
+    if (streamTextRafRef.current) {
+      cancelAnimationFrame(streamTextRafRef.current);
+      streamTextRafRef.current = 0;
+    }
+    if (streamThoughtRafRef.current) {
+      cancelAnimationFrame(streamThoughtRafRef.current);
+      streamThoughtRafRef.current = 0;
+    }
+    pendingStreamTextRef.current = '';
+    pendingStreamThoughtRef.current = '';
+    setStreamText('');
+    setStreamThought('');
+  }, []);
 
   useEffect(() => {
     loadPresetCharacters();
@@ -153,7 +172,19 @@ export const ChatView: React.FC = () => {
     const setup = async () => {
       const uToken = await api.onLlmToken((token) => {
         if (acceptsStream(token.generation_id)) {
-          setStreamText((prev) => prev + token.text);
+          if (streamTextRafRef.current === 0) {
+            setStreamText((prev) => prev + token.text);
+            streamTextRafRef.current = requestAnimationFrame(() => {
+              streamTextRafRef.current = 0;
+              if (pendingStreamTextRef.current) {
+                const chunk = pendingStreamTextRef.current;
+                pendingStreamTextRef.current = '';
+                setStreamText((prev) => prev + chunk);
+              }
+            });
+          } else {
+            pendingStreamTextRef.current += token.text;
+          }
           const state = useAppStore.getState();
           const voiceConfig = speakerVoice(state);
           if (state.autoTtsEnabled && voiceConfig && voiceConfig.engine !== 'disabled') {
@@ -168,7 +199,21 @@ export const ChatView: React.FC = () => {
       }
 
       const uThought = await api.onLlmThought((thought) => {
-        if (acceptsStream(thought.generation_id)) setStreamThought((prev) => prev + thought.text);
+        if (acceptsStream(thought.generation_id)) {
+          if (streamThoughtRafRef.current === 0) {
+            setStreamThought((prev) => prev + thought.text);
+            streamThoughtRafRef.current = requestAnimationFrame(() => {
+              streamThoughtRafRef.current = 0;
+              if (pendingStreamThoughtRef.current) {
+                const chunk = pendingStreamThoughtRef.current;
+                pendingStreamThoughtRef.current = '';
+                setStreamThought((prev) => prev + chunk);
+              }
+            });
+          } else {
+            pendingStreamThoughtRef.current += thought.text;
+          }
+        }
       });
       if (!isSubscribed) {
         uThought();
@@ -178,8 +223,7 @@ export const ChatView: React.FC = () => {
 
       const uDone = await api.onLlmDone(async (data) => {
         if (acceptsStream(data.generation_id)) {
-          setStreamText('');
-          setStreamThought('');
+          resetStreamBuffers();
           
           const state = useAppStore.getState();
           const voiceConfig = speakerVoice(state);
@@ -219,25 +263,33 @@ export const ChatView: React.FC = () => {
 
     return () => {
       isSubscribed = false;
+      if (streamTextRafRef.current) cancelAnimationFrame(streamTextRafRef.current);
+      if (streamThoughtRafRef.current) cancelAnimationFrame(streamThoughtRafRef.current);
       cleanups.forEach((cleanup) => cleanup());
       streamingTts.cancel();
     };
-  }, []);
+  }, [resetStreamBuffers]);
 
   // Reset the buffer fed by native events when its generation/session changes.
   useEffect(() => {
-    // oxlint-disable-next-line react/set-state-in-effect
-    setStreamText('');
-    setStreamThought('');
-  }, [isGenerating, activeChatId, generationChatId, generationId]);
+    resetStreamBuffers();
+  }, [isGenerating, activeChatId, generationChatId, generationId, resetStreamBuffers]);
 
   useEffect(() => audioPlayer.onPlaybackState((state) => {
     setIsAudioSpeaking(state === 'playing');
   }), []);
 
-  // New messages scroll the message list; the live reply below it scrolls here.
+  // New messages scroll the message list; the live reply below it scrolls here without restarting smooth animations on every token.
   useEffect(() => {
-    if (streamText || streamThought) messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
+    if (!streamText && !streamThought) return;
+    const el = scrollRef.current;
+    if (el && el.scrollHeight > 0) {
+      if (el.scrollHeight - el.scrollTop - el.clientHeight < 120) {
+        el.scrollTop = el.scrollHeight;
+      }
+    } else {
+      messagesEndRef.current?.scrollIntoView({ behavior: 'auto' });
+    }
   }, [streamText, streamThought]);
 
   // No confirmation: the toast offers "Undo" for a few seconds.

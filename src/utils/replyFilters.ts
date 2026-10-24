@@ -13,22 +13,29 @@ export function withDefaults(rule: Partial<ReplyReplacement>): ReplyReplacement 
   return { ...NEW_RULE, ...rule };
 }
 
+const regexCache = new Map<string, RegExp | string>();
+
 /** `/pattern/flags` (SillyTavern style) or a bare pattern, which replaces every match. */
-function compile(find: string): RegExp {
-  const literal = /^\/([\s\S]+)\/([dgimsuvy]*)$/.exec(find);
-  if (literal) return new RegExp(literal[1]!, literal[2]);
-  return new RegExp(find, 'gu');
+function compileCached(find: string): RegExp | string {
+  let cached = regexCache.get(find);
+  if (cached === undefined) {
+    try {
+      const literal = /^\/([\s\S]+)\/([dgimsuvy]*)$/.exec(find);
+      cached = literal ? new RegExp(literal[1]!, literal[2]) : new RegExp(find, 'gu');
+    } catch (e) {
+      cached = e instanceof Error ? e.message : String(e);
+    }
+    regexCache.set(find, cached);
+  }
+  if (typeof cached !== 'string') cached.lastIndex = 0;
+  return cached;
 }
 
 /** Why a rule can't run (an invalid regular expression), or null. */
 export function ruleError(rule: Pick<ReplyReplacement, 'find' | 'regex'>): string | null {
   if (!rule.regex || !rule.find) return null;
-  try {
-    compile(rule.find);
-    return null;
-  } catch (e) {
-    return e instanceof Error ? e.message : String(e);
-  }
+  const compiled = compileCached(rule.find);
+  return typeof compiled === 'string' ? compiled : null;
 }
 
 /**
@@ -37,12 +44,19 @@ export function ruleError(rule: Pick<ReplyReplacement, 'find' | 'regex'>): strin
  * switched off and invalid rules are skipped, so a typo never breaks the chat.
  */
 export function applyScripts(text: string, rules: ReplyReplacement[], role: string, stage: ScriptStage): string {
+  if (!text || rules.length === 0) return text;
   let out = text;
   for (const raw of rules) {
     const rule = withDefaults(raw);
-    if (rule.disabled || !rule.find || ruleError(rule) || (rule.mode || 'save') !== stage) continue;
+    if (rule.disabled || !rule.find || (rule.mode || 'save') !== stage) continue;
     if (role === 'user' ? !rule.on_input : role === 'assistant' ? !rule.on_output : true) continue;
-    out = rule.regex ? out.replace(compile(rule.find), rule.replace) : out.split(rule.find).join(rule.replace);
+    if (rule.regex) {
+      const compiled = compileCached(rule.find);
+      if (typeof compiled === 'string') continue;
+      out = out.replace(compiled, rule.replace);
+    } else {
+      out = out.split(rule.find).join(rule.replace);
+    }
   }
   return out;
 }

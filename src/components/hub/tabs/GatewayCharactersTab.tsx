@@ -111,6 +111,7 @@ export const GatewayCharactersTab = () => {
                   src={char.download_url}
                   alt={char.name}
                   loading="lazy"
+                  decoding="async"
                   className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
                 />
                 <div className="absolute top-2 right-2 px-1.5 py-0.5 rounded-md bg-black/60 backdrop-blur text-[11px] text-accent-300 font-mono border border-white/10">

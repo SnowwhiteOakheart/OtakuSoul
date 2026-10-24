@@ -82,6 +82,7 @@ export const AdaptiveHud = ({ compact = false }: { compact?: boolean }) => {
             <img
               src={activeCharacter.avatar_data_url}
               alt={data.name}
+              decoding="async"
               className={`${compact ? 'w-7 h-7' : 'w-10 h-10'} rounded-full object-cover border-2 border-accent-500/60 shadow-md`}
             />
           ) : (
@@ -112,7 +113,7 @@ export const AdaptiveHud = ({ compact = false }: { compact?: boolean }) => {
                 description: localizeCard(char.card.data, currentLanguage).personality || t('hud.noDescription'),
                 checked: activeCharacter.id === char.id,
                 leading: char.avatar_data_url ? (
-                  <img src={char.avatar_data_url} alt="" className="w-8 h-8 rounded-full object-cover shrink-0" />
+                  <img src={char.avatar_data_url} alt="" decoding="async" className="w-8 h-8 rounded-full object-cover shrink-0" />
                 ) : (
                   <span className="w-8 h-8 rounded-full bg-accent-700 grid place-items-center text-xs font-bold shrink-0">
                     {char.card.data.name.charAt(0)}

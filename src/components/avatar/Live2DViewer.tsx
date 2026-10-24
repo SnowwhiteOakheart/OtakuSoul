@@ -338,6 +338,12 @@ export const Live2DViewer: React.FC<Live2DViewerProps> = ({
 
     void init();
 
+    let cachedRect: DOMRect | null = null;
+    const invalidateRect = () => {
+      cachedRect = null;
+    };
+    const getRect = () => (cachedRect ??= container.getBoundingClientRect());
+
     // Click on canvas to trigger Tap motion
     const handleCanvasClick = (e: MouseEvent) => {
       if (!modelRef.current || !container) return;
@@ -347,7 +353,7 @@ export const Live2DViewer: React.FC<Live2DViewerProps> = ({
         didDragRef.current = false;
         return;
       }
-      const rect = container.getBoundingClientRect();
+      const rect = getRect();
       const x = e.clientX - rect.left;
       const y = e.clientY - rect.top;
       try {
@@ -364,7 +370,7 @@ export const Live2DViewer: React.FC<Live2DViewerProps> = ({
     // Mouse tracking (look at cursor)
     const handlePointerMove = (e: PointerEvent) => {
       if (!modelRef.current || !container) return;
-      const rect = container.getBoundingClientRect();
+      const rect = getRect();
       const x = e.clientX - rect.left;
       const y = e.clientY - rect.top;
 
@@ -388,7 +394,8 @@ export const Live2DViewer: React.FC<Live2DViewerProps> = ({
       e.preventDefault();
       isDraggingRef.current = true;
       didDragRef.current = false;
-      const rect = container.getBoundingClientRect();
+      cachedRect = container.getBoundingClientRect();
+      const rect = cachedRect;
       dragStartRef.current = { x: e.clientX - rect.left, y: e.clientY - rect.top };
       container.setPointerCapture?.(e.pointerId);
     };
@@ -418,6 +425,8 @@ export const Live2DViewer: React.FC<Live2DViewerProps> = ({
       scheduleViewSave();
     };
 
+    window.addEventListener('resize', invalidateRect);
+    container.addEventListener('pointerenter', invalidateRect);
     container.addEventListener('click', handleCanvasClick);
     container.addEventListener('pointermove', handlePointerMove);
     container.addEventListener('pointerdown', handlePointerDown);
@@ -436,6 +445,8 @@ export const Live2DViewer: React.FC<Live2DViewerProps> = ({
         } catch {}
       }
       stopSnapshots?.();
+      window.removeEventListener('resize', invalidateRect);
+      container.removeEventListener('pointerenter', invalidateRect);
       container.removeEventListener('click', handleCanvasClick);
       container.removeEventListener('pointermove', handlePointerMove);
       container.removeEventListener('pointerdown', handlePointerDown);

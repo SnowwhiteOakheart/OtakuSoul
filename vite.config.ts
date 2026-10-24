@@ -20,6 +20,9 @@ export default defineConfig(({ mode }) => ({
     setupFiles: ['src/test/setup.ts'],
   },
   build: {
+    // Local Tauri assets load from memory/disk without network latency; target modern WebView engines directly.
+    target: 'esnext',
+    modulePreload: { polyfill: false },
     // Only the Three.js/VRM avatar chunk (~790 kB) is above Vite's 500 kB: three.js can't be split,
     // and it loads only when the avatar is visible. Startup code stays below 300 kB per chunk
     // (English and Russian load on demand, see `i18n/registry.ts`). Check with `npm run analyze`.

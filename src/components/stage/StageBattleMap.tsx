@@ -59,6 +59,41 @@ interface Props {
   exploring?: boolean;
 }
 
+const BattleMapTiles = React.memo<{ map: BattleMap }>(({ map }) => {
+  const revealed = (x: number, y: number) => map.revealed.length === 0 || !!map.revealed[y * map.width + x];
+  return (
+    <>
+      {map.cells.map((cell, index) => {
+        const x = index % map.width;
+        const y = Math.floor(index / map.width);
+        if (!revealed(x, y)) {
+          return <rect key={index} x={x * TILE} y={y * TILE} width={TILE} height={TILE} fill="#020617" data-fog="" />;
+        }
+        return (
+          <g key={index} transform={`translate(${x * TILE} ${y * TILE})`}>
+            <image href={groundTile(map, cell.ground, x, y)} width={TILE} height={TILE} />
+            {/* Walls darker and the 5-ft grid on open ground, so rooms read at a glance. */}
+            {cell.kind === 'wall' ? (
+              <rect width={TILE} height={TILE} fill="#020617" opacity={0.55} />
+            ) : (
+              <rect width={TILE} height={TILE} fill="none" stroke="#020617" strokeOpacity={0.35} strokeWidth={1} />
+            )}
+            {cell.object && (
+              <image
+                href={`/stage/tiles/${map.tileset}/${cell.object}.svg`}
+                width={TILE}
+                height={TILE}
+                transform={cell.object.startsWith('door') ? `rotate(${doorRotation(map, x, y)} ${TILE / 2} ${TILE / 2})` : undefined}
+              />
+            )}
+          </g>
+        );
+      })}
+    </>
+  );
+});
+BattleMapTiles.displayName = 'BattleMapTiles';
+
 /**
  * The 5e battle map: tiles from public/stage/tiles, tokens with health rings, the squares the
  * current combatant may move to (click to move) and enemies in reach (click to attack).
@@ -108,32 +143,7 @@ export const StageBattleMap: React.FC<Props> = ({ map, combatants, currentIndex,
           <circle cx="0.5" cy="0.5" r="0.5" />
         </clipPath>
       </defs>
-      {map.cells.map((cell, index) => {
-        const x = index % map.width;
-        const y = Math.floor(index / map.width);
-        if (!revealed(x, y)) {
-          return <rect key={index} x={x * TILE} y={y * TILE} width={TILE} height={TILE} fill="#020617" data-fog="" />;
-        }
-        return (
-          <g key={index} transform={`translate(${x * TILE} ${y * TILE})`}>
-            <image href={groundTile(map, cell.ground, x, y)} width={TILE} height={TILE} />
-            {/* Walls darker and the 5-ft grid on open ground, so rooms read at a glance. */}
-            {cell.kind === 'wall' ? (
-              <rect width={TILE} height={TILE} fill="#020617" opacity={0.55} />
-            ) : (
-              <rect width={TILE} height={TILE} fill="none" stroke="#020617" strokeOpacity={0.35} strokeWidth={1} />
-            )}
-            {cell.object && (
-              <image
-                href={`/stage/tiles/${map.tileset}/${cell.object}.svg`}
-                width={TILE}
-                height={TILE}
-                transform={cell.object.startsWith('door') ? `rotate(${doorRotation(map, x, y)} ${TILE / 2} ${TILE / 2})` : undefined}
-              />
-            )}
-          </g>
-        );
-      })}
+      <BattleMapTiles map={map} />
 
       {/* Exploring: walk to any seen square, use doors and chests. */}
       {exploring && !disabled && (

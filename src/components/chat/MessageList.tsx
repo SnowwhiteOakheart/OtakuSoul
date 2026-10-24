@@ -186,15 +186,7 @@ interface ChatMessageItemProps {
 const ChatMessageItem = React.memo<ChatMessageItemProps>(
   ({ msg, characterName, persona, isGenerating, onSpeak }) => {
     const { t } = useTranslation();
-    const switchMessageSwipe = useAppStore((s) => s.switchMessageSwipe);
-    const regenerateMessageSwipe = useAppStore((s) => s.regenerateMessageSwipe);
-    const continueChatMessage = useAppStore((s) => s.continueChatMessage);
-    const editChatMessage = useAppStore((s) => s.editChatMessage);
-    const deleteChatMessage = useAppStore((s) => s.deleteChatMessage);
-    const translateText = useAppStore((s) => s.translateText);
     const appLanguage = useAppStore((s) => s.appLanguage);
-    const toggleBookmark = useAppStore((s) => s.toggleBookmark);
-    const branchChatFrom = useAppStore((s) => s.branchChatFrom);
     const bookmarked = useAppStore((s) => s.bookmarkedMessageIds.includes(msg.id));
     const hits = useAppStore((s) => (msg.role === 'assistant' ? s.promptHits[hitKey(msg.id, msg.swipe_index)] : undefined));
     // A guest's reply in a group chat shows the guest's name.
@@ -211,12 +203,11 @@ const ChatMessageItem = React.memo<ChatMessageItemProps>(
     });
     const [hitsOpen, setHitsOpen] = useState(false);
     const [remembering, setRemembering] = useState(false);
-    const generateSceneImage = useAppStore((s) => s.generateSceneImage);
     const isGeneratingSceneImage = useAppStore((s) => s.isGeneratingSceneImage);
     // The story up to this reply as a picture; it shows in the scene image card above the chat.
     const pictureMoment = async () => {
       try {
-        if (await generateSceneImage('chat', { kind: 'moment', upToMessageId: msg.id })) toast.success(translate('hud.imageDone'));
+        if (await useAppStore.getState().generateSceneImage('chat', { kind: 'moment', upToMessageId: msg.id })) toast.success(translate('hud.imageDone'));
       } catch (e) {
         reportFailure('Scene image failed:', e);
       }
@@ -243,7 +234,7 @@ const ChatMessageItem = React.memo<ChatMessageItemProps>(
       }
       setTranslating(true);
       try {
-        const text = await translateText(msg.content);
+        const text = await useAppStore.getState().translateText(msg.content);
         translations.set(translationKey, text);
         setTranslation(text);
       } catch (e) {
@@ -261,7 +252,7 @@ const ChatMessageItem = React.memo<ChatMessageItemProps>(
       if (isSavingEdit || !editContent?.trim()) return;
       setIsSavingEdit(true);
       try {
-        await editChatMessage(msg.id, editContent.trim());
+        await useAppStore.getState().editChatMessage(msg.id, editContent.trim());
         setEditContent(null);
       } catch (e) {
         toast.error(translate('chat.editSaveFailed', { error: errorMessage(e) }));
@@ -271,7 +262,7 @@ const ChatMessageItem = React.memo<ChatMessageItemProps>(
     };
 
     // No confirmation: the message can be restored from the toast for a few seconds.
-    const remove = () => void deleteChatMessage(msg.id);
+    const remove = () => void useAppStore.getState().deleteChatMessage(msg.id);
 
     const branch = async () => {
       const confirmed = await confirmDialog({
@@ -279,7 +270,7 @@ const ChatMessageItem = React.memo<ChatMessageItemProps>(
         message: translate('confirm.branchText'),
         confirmLabel: translate('chat.branch'),
       });
-      if (confirmed) await branchChatFrom(msg.id);
+      if (confirmed) await useAppStore.getState().branchChatFrom(msg.id);
     };
 
     return (
@@ -287,7 +278,7 @@ const ChatMessageItem = React.memo<ChatMessageItemProps>(
         {/* Sender Header + Swipes Navigation */}
         <div className="chat-sender flex items-center gap-2 mb-1 px-1">
           {isUser && <PersonaAvatar persona={persona} className="w-5 h-5 text-[10px]" />}
-          {portrait && <img src={portrait} alt="" className="w-5 h-5 rounded-full object-cover" />}
+          {portrait && <img src={portrait} alt="" decoding="async" className="w-5 h-5 rounded-full object-cover" />}
           <span className="text-xs font-semibold text-slate-400">
             {isUser ? t('chat.you') : speakerName}
           </span>
@@ -296,7 +287,7 @@ const ChatMessageItem = React.memo<ChatMessageItemProps>(
           {hasMultipleSwipes && (
             <div className="flex items-center bg-slate-900 border border-accent-500/30 rounded-md text-[11px] text-accent-300 px-1 py-0.5 gap-1">
               <button
-                onClick={() => switchMessageSwipe(msg.id, msg.swipe_index - 1)}
+                onClick={() => void useAppStore.getState().switchMessageSwipe(msg.id, msg.swipe_index - 1)}
                 disabled={msg.swipe_index <= 0 || isGenerating || editContent !== null}
                 className="hover:text-white disabled:opacity-30 disabled:cursor-not-allowed transition-colors"
                 title={t('chat.prevSwipe')}
@@ -311,7 +302,7 @@ const ChatMessageItem = React.memo<ChatMessageItemProps>(
                 {msg.swipe_index + 1} / {msg.swipes.length}
               </span>
               <button
-                onClick={() => switchMessageSwipe(msg.id, msg.swipe_index + 1)}
+                onClick={() => void useAppStore.getState().switchMessageSwipe(msg.id, msg.swipe_index + 1)}
                 disabled={msg.swipe_index >= msg.swipes.length - 1 || isGenerating || editContent !== null}
                 className="hover:text-white disabled:opacity-30 disabled:cursor-not-allowed transition-colors"
                 title={t('chat.nextSwipe')}
@@ -421,7 +412,7 @@ const ChatMessageItem = React.memo<ChatMessageItemProps>(
               {isAssistant && (
                 <>
                   <button
-                    onClick={() => regenerateMessageSwipe(msg.id)}
+                    onClick={() => void useAppStore.getState().regenerateMessageSwipe(msg.id)}
                     disabled={isGenerating}
                     className={BUBBLE_ACTION}
                     title={t('chat.regenerateHint')}
@@ -440,7 +431,7 @@ const ChatMessageItem = React.memo<ChatMessageItemProps>(
                     {isGeneratingSceneImage ? <Loader2 className="w-3 h-3 animate-spin" /> : <ImageIcon className="w-3 h-3" />}
                   </button>
                   <button
-                    onClick={() => continueChatMessage(msg.id)}
+                    onClick={() => void useAppStore.getState().continueChatMessage(msg.id)}
                     disabled={isGenerating}
                     className={BUBBLE_ACTION}
                     title={t('chat.continueHint')}
@@ -488,7 +479,7 @@ const ChatMessageItem = React.memo<ChatMessageItemProps>(
                 <Brain className="w-3 h-3" />
               </button>
               <button
-                onClick={() => void toggleBookmark(msg.id)}
+                onClick={() => void useAppStore.getState().toggleBookmark(msg.id)}
                 className={`${BUBBLE_ACTION} ${bookmarked ? 'text-amber-300' : ''}`}
                 title={t(bookmarked ? 'chat.removeBookmark' : 'chat.addBookmark')}
                 aria-label={t(bookmarked ? 'chat.removeBookmark' : 'chat.addBookmark')}
@@ -546,6 +537,7 @@ const AttachmentView: React.FC<{ attachment: Attachment }> = ({ attachment }) =>
         src={src}
         alt={attachment.name}
         title={attachment.name}
+        decoding="async"
         className="max-h-48 max-w-full rounded-xl border border-slate-800 object-contain"
       />
     ) : (

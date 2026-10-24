@@ -532,15 +532,28 @@ pub fn load_character_from_file(path: &Path) -> Result<CharacterProfile, String>
         .unwrap_or_else(|| "character".to_string());
 
     let mut bound_lorebooks = Vec::new();
-    let mut card = if extension == "json" {
+    let (mut card, avatar_data_url) = if extension == "json" {
         let content = fs::read_to_string(path)
             .map_err(|e| crate::err!("backend.common.jsonRead", error = e))?;
-        parse_character_json(&content)?
+        let card = parse_character_json(&content)?;
+        let parent = path.parent().unwrap_or(Path::new("."));
+        let png_candidate = parent.join(format!("{}.png", id));
+        let avatar_data_url = if png_candidate.exists()
+            && let Ok(png_bytes) = fs::read(&png_candidate)
+        {
+            Some(format!(
+                "data:image/png;base64,{}",
+                BASE64_STANDARD.encode(&png_bytes)
+            ))
+        } else {
+            None
+        };
+        (card, avatar_data_url)
     } else if extension == "png" {
         let bytes =
             fs::read(path).map_err(|e| crate::err!("backend.characters.pngRead", error = e))?;
-        let (card, _) = parse_character_png(&bytes)?;
-        card
+        let (card, avatar_data_url) = parse_character_png(&bytes)?;
+        (card, Some(avatar_data_url))
     } else {
         return Err(crate::err!(
             "backend.common.unsupportedFormat",
@@ -569,39 +582,13 @@ pub fn load_character_from_file(path: &Path) -> Result<CharacterProfile, String>
         }
     }
 
-    if extension == "json" {
-        let mut avatar_data_url = None;
-        let parent = path.parent().unwrap_or(Path::new("."));
-        let png_candidate = parent.join(format!("{}.png", id));
-        if png_candidate.exists()
-            && let Ok(png_bytes) = fs::read(&png_candidate)
-        {
-            avatar_data_url = Some(format!(
-                "data:image/png;base64,{}",
-                BASE64_STANDARD.encode(&png_bytes)
-            ));
-        }
-
-        Ok(CharacterProfile {
-            id,
-            card,
-            avatar_data_url,
-            source_path: Some(path.to_string_lossy().to_string()),
-            bound_lorebooks,
-        })
-    } else {
-        let bytes =
-            fs::read(path).map_err(|e| crate::err!("backend.characters.pngRead", error = e))?;
-        let (_, avatar_data_url) = parse_character_png(&bytes)?;
-
-        Ok(CharacterProfile {
-            id,
-            card,
-            avatar_data_url: Some(avatar_data_url),
-            source_path: Some(path.to_string_lossy().to_string()),
-            bound_lorebooks,
-        })
-    }
+    Ok(CharacterProfile {
+        id,
+        card,
+        avatar_data_url,
+        source_path: Some(path.to_string_lossy().to_string()),
+        bound_lorebooks,
+    })
 }
 
 pub fn extract_and_save_embedded_lorebook(

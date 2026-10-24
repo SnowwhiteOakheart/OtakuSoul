@@ -373,6 +373,7 @@ export const CharacterLibraryView = () => {
                       <img
                         src={char.avatar_data_url}
                         alt={data.name}
+                        decoding="async"
                         className="w-full h-full object-cover transition-transform duration-300 group-hover:scale-105"
                       />
                     ) : (
