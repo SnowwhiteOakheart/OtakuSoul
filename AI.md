@@ -659,6 +659,14 @@ ru „персонаж/история/сцена“. Fachbegriffe nur im Experte
   slowly“ ließ Wörter verschwimmen (78 % statt 100 %). Gleiche Eingabe gibt gleiches Audio (deterministisch).
   GPU-Test `style_voice` (23.10.2026, RTX 5090): Wut +24 % Tonhöhe, Trauer −12 %, Flüster-Stil 2,1× so lang, alles 100 %
   verständlich, ~1 s je Satz, 3,6 GB VRAM.
+  Erzähler (`voice::NARRATOR_VOICE_ID` = `stage_narrator`, liest `*Aktionen*` bei `narrator_for_actions` sowie Spielleiter/
+  NPCs): ohne gespeichertes Profil `narrator_default_config` – Edge-TTS-Männerstimme je Antwortsprache (Conrad/Ryan/
+  Dmitry/Keita), Filter „alles“, dazu Beschreibung (VoiceDesign/OpenAI) und `local_style` (CustomVoice). Im Stimmdialog
+  öffnet „Erzählerstimme einstellen …“ unter der Aktions-Option sein Profil als zweiten Dialog.
+- Edge-TTS (`voice.rs`): Microsoft verlangt `Sec-MS-GEC` Version 2 (`edge_tts_drm.rs`, Port aus edge-tts/LGPL-3.0, gegen
+  Referenzwerte getestet; Version `2-<Edge>`), auch für `voices/list`. Das Token hängt am 5-Minuten-Fenster: eine falsch
+  gehende PC-Uhr (hier 65 min) gibt HTTP 403 – dann `Date` der Antwort übernehmen (`EDGE_CLOCK_SKEW`) und einmal neu
+  versuchen, wie edge-tts. Live-Test: `cargo test --lib test_edge_tts_live_synthesis -- --ignored`.
   TADA: `CRISPASR_TADA_WAV_CLONE=1` (WAV-Klon, Encoder/Aligner neben dem Modell), `CRISPASR_TADA_NUM_CANDIDATES=4`.
   Chatterbox klont nativ nur aus 24-kHz-WAV und braucht im Server die Stimme als `<id>.wav` (`clone_voice_name`);
   Katalog-Feld `clone_experimental` kennzeichnet das in der UI.

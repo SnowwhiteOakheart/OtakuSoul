@@ -728,7 +728,7 @@ pub async fn list_available_voices(
             let url = format!(
                 "https://speech.platform.bing.com/consumer/speech/synthesize/readaloud/voices/list?trustedclienttoken={}&Sec-MS-GEC={}&Sec-MS-GEC-Version={}",
                 EDGE_TTS_TRUSTED_CLIENT_TOKEN,
-                generate_edge_sec_ms_gec(chrono::Utc::now().timestamp()),
+                generate_edge_sec_ms_gec(edge_now()),
                 crate::modules::edge_tts_drm::SEC_MS_GEC_VERSION
             );
             match http_client(15)?.get(&url).send().await {
@@ -949,18 +949,31 @@ async fn synthesize_edge_tts_websocket(
     );
 
     let connection_id = uuid_v4().replace('-', "");
-    let ws_url = edge_tts_websocket_url(&connection_id);
 
     // We use tokio-tungstenite for WebSocket communication
     use futures_util::{SinkExt, StreamExt};
     use tokio_tungstenite::connect_async;
     use tokio_tungstenite::tungstenite::Message;
 
-    let request = build_edge_tts_request(&ws_url)?;
-
-    let (mut ws_stream, _response) = connect_async(request)
-        .await
-        .map_err(|e| crate::err!("backend.voice.websocket", error = e))?;
+    let mut retried = false;
+    let (mut ws_stream, _response) = loop {
+        let request = build_edge_tts_request(&edge_tts_websocket_url(&connection_id))?;
+        match connect_async(request).await {
+            Ok(connected) => break connected,
+            // The token depends on the time: a wrong system clock makes it invalid (HTTP 403).
+            // Take the service's time from the answer and try once more, as edge-tts does.
+            Err(tokio_tungstenite::tungstenite::Error::Http(response))
+                if !retried && response.status().as_u16() == 403 =>
+            {
+                let date = response.headers().get("date").and_then(|v| v.to_str().ok());
+                if !learn_edge_clock_skew(date) {
+                    return Err(crate::err!("backend.voice.websocket", error = "HTTP 403"));
+                }
+                retried = true;
+            }
+            Err(e) => return Err(crate::err!("backend.voice.websocket", error = e)),
+        }
+    };
 
     // Send speech config
     let timestamp =
@@ -1103,9 +1116,36 @@ fn edge_tts_websocket_url(connection_id: &str) -> String {
          &ConnectionId={connection_id}\
          &Sec-MS-GEC={}\
          &Sec-MS-GEC-Version={}",
-        generate_edge_sec_ms_gec(chrono::Utc::now().timestamp()),
+        generate_edge_sec_ms_gec(edge_now()),
         crate::modules::edge_tts_drm::SEC_MS_GEC_VERSION
     )
+}
+
+/// Seconds the read-aloud service's clock is ahead of this computer's, learned from a rejected
+/// request (a PC clock an hour off was enough for HTTP 403, 24.10.2026).
+static EDGE_CLOCK_SKEW: std::sync::atomic::AtomicI64 = std::sync::atomic::AtomicI64::new(0);
+
+/// The current time as the service sees it.
+fn edge_now() -> i64 {
+    chrono::Utc::now().timestamp() + EDGE_CLOCK_SKEW.load(std::sync::atomic::Ordering::Relaxed)
+}
+
+/// The skew an HTTP `Date` header reveals against `now`.
+fn clock_skew_from_date(date: &str, now: i64) -> Option<i64> {
+    chrono::DateTime::parse_from_rfc2822(date)
+        .ok()
+        .map(|server| server.timestamp() - now)
+}
+
+/// Adopts the service's time from a rejected answer's `Date` header; false without one.
+fn learn_edge_clock_skew(date: Option<&str>) -> bool {
+    let Some(skew) = date.and_then(|d| clock_skew_from_date(d, chrono::Utc::now().timestamp()))
+    else {
+        return false;
+    };
+    tracing::warn!("Edge-TTS: Systemuhr weicht {skew} s von der Serverzeit ab, korrigiere");
+    EDGE_CLOCK_SKEW.store(skew, std::sync::atomic::Ordering::Relaxed);
+    true
 }
 
 /// The token the read-aloud service requires (version 2 since late 2026, see `edge_tts_drm`).
@@ -1976,6 +2016,16 @@ mod tests {
                 .starts_with("muid=")
         );
         assert!(!headers.contains_key("sec-websocket-protocol"));
+    }
+
+    #[test]
+    fn the_service_time_comes_from_a_date_header() {
+        let now = 1_792_857_595; // Sat, 24 Oct 2026 15:59:55 GMT
+        assert_eq!(
+            clock_skew_from_date("Sat, 24 Oct 2026 17:04:35 GMT", now),
+            Some(3880)
+        );
+        assert_eq!(clock_skew_from_date("no date", now), None);
     }
 
     #[test]
