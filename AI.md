@@ -663,6 +663,9 @@ ru „персонаж/история/сцена“. Fachbegriffe nur im Experte
   NPCs): ohne gespeichertes Profil `narrator_default_config` – Edge-TTS-Männerstimme je Antwortsprache (Conrad/Ryan/
   Dmitry/Keita), Filter „alles“, dazu Beschreibung (VoiceDesign/OpenAI) und `local_style` (CustomVoice). Im Stimmdialog
   öffnet „Erzählerstimme einstellen …“ unter der Aktions-Option sein Profil als zweiten Dialog.
+- Wiedergabe (`services/audioPlayer.ts`): Clips werden vorab dekodiert, Stille vorn/hinten gekürzt (`utils/audioTrim.ts`,
+  30 ms Rand) und auf der Web-Audio-Uhr direkt hintereinander gestartet (`SENTENCE_GAP_SECONDS` = 0,18 s). Früher lud ein
+  `<audio>`-Element jeden Satz erst nach dem Ende des vorigen – das gab spürbare Pausen zwischen den Sätzen.
 - Edge-TTS (`voice.rs`): Microsoft verlangt `Sec-MS-GEC` Version 2 (`edge_tts_drm.rs`, Port aus edge-tts/LGPL-3.0, gegen
   Referenzwerte getestet; Version `2-<Edge>`), auch für `voices/list`. Das Token hängt am 5-Minuten-Fenster: eine falsch
   gehende PC-Uhr (hier 65 min) gibt HTTP 403 – dann `Date` der Antwort übernehmen (`EDGE_CLOCK_SKEW`) und einmal neu
