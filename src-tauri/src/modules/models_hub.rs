@@ -378,10 +378,11 @@ pub struct StarterModel {
 }
 
 /// Index of the recommended starter for `vram_mb` (0 = no GPU): a preferred one that fits,
-/// else the largest that fits, else the smallest; only openly licensed models are recommended.
+/// else the largest that fits, else the smallest; only openly licensed models with `auto_pick`
+/// are recommended.
 fn recommended_starter(catalog: &Catalog, vram_mb: u64) -> usize {
     let usable = vram_mb.saturating_sub(catalog.desktop_reserve_mb);
-    let open = |s: &CatalogModel| s.license_kind() == "open";
+    let open = |s: &CatalogModel| s.license_kind() == "open" && s.auto_pick;
     let fits = |s: &CatalogModel| open(s) && s.vram_mb <= usable;
     let models = &catalog.models;
     models
@@ -1056,17 +1057,16 @@ mod tests {
         );
         assert_eq!(pick(8_192), "qwen3.5-9b");
         assert_eq!(pick(10_240), "gemma-4-12b");
-        // No model is preferred any more: the largest that fits.
-        assert_eq!(pick(12_288), "ternary-bonsai-2-27b");
+        // No model is preferred any more: the largest that fits. Bonsai is only listed.
+        assert_eq!(pick(12_288), "gemma-4-12b");
         assert_eq!(pick(16_384), "gemma-4-26b-a4b");
         assert_eq!(pick(24_576), "gemma-4-31b");
         // Models without an open licence are listed, never picked by themselves.
         assert!(catalog.models.iter().any(|m| m.license_kind() != "open"));
         for vram in [0, 8_192, 12_288, 16_384, 24_576, 49_152] {
-            assert_eq!(
-                catalog.models[recommended_starter(&catalog, vram)].license_kind(),
-                "open"
-            );
+            let pick = &catalog.models[recommended_starter(&catalog, vram)];
+            assert_eq!(pick.license_kind(), "open");
+            assert!(pick.auto_pick, "{}", pick.id);
         }
         for s in &catalog.models {
             assert!(

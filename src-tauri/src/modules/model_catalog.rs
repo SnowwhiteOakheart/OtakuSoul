@@ -33,6 +33,9 @@ pub struct CatalogModel {
     /// Recommended whenever it fits, even over larger models.
     #[serde(default)]
     pub preferred: bool,
+    /// `false`: listed, but never recommended by itself (e.g. weak in some languages).
+    #[serde(default = "auto_pick_default")]
+    pub auto_pick: bool,
     /// Estimated VRAM with the start context, in MB.
     pub vram_mb: u64,
     /// Short description per language code.
@@ -47,6 +50,10 @@ pub struct CatalogModel {
     /// Vision projector in the same repository: lets the model see attached images.
     #[serde(default)]
     pub mmproj: Option<CatalogMmproj>,
+}
+
+fn auto_pick_default() -> bool {
+    true
 }
 
 /// A vision projector (`mmproj-*.gguf`) of a catalog model.
