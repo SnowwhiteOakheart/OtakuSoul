@@ -275,7 +275,7 @@ Reply ONLY with a single valid JSON object in this format:
   "inventory_remove": [],
   "encounter": null,
   "player_choices": [
-    {{"text": "Action 1", "badge": "Perception (DC 14)", "action_type": "do"}},
+    {{"text": "Action 1", "badge": "{example_badge}", "action_type": "do"}},
     {{"text": "Action 2", "badge": null, "action_type": "say"}},
     {{"text": "Action 3", "badge": null, "action_type": "do"}}
   ],
@@ -321,6 +321,9 @@ RULES:
             .map(|a| format!(": {a}"))
             .unwrap_or_default(),
         reply_language = reply_language,
+        // The model copies the example badge as it is: in the player's language.
+        example_badge =
+            crate::modules::content_lang::ContentLang::current().t("Perception (DC 13)"),
         encounter_rule = if state.definition.is_5e() {
             super::combat5e::planner_encounter_rule(&state)
         } else {

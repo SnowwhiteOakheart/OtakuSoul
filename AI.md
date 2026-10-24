@@ -465,6 +465,11 @@ ru „персонаж/история/сцена“. Fachbegriffe nur im Experte
   Archivierung und Konsistenzprüfung liegen ebenfalls in `with_abort`: abgebrochene Archive bleiben
   offen, die fällige Faktenprüfung behält ihren Zähler für die nächste Runde. Ein bereits gesetzter
   Stage-Abbruch startet keine Faktenprüfung und erhöht deren Zähler nicht.
+- Stage-Szenenbild (`generateSceneImage('stage')`): Prompt schreibt das Chat-Modell, solange es läuft; sonst
+  `sceneImageTemplatePrompt` (`utils/cardI18n.ts`): `scenery, no humans` + Ort/Tageszeit aus der englischen
+  Szenenübersetzung (nie `1girl` mit dem Ortsnamen). Stil: SD 1.5/SDXL Tags, Flux/Qwen-Image Sätze.
+- Stage-Nachrichten zeigen `**fett**`/`*kursiv*` über `stage/StageText.tsx` statt Sternchen. Beispiel-Badge im
+  Planer-Prompt (`{example_badge}`) steht in der Spielsprache, sonst übernimmt das Modell `Perception (DC 14)` wörtlich.
 
 ### 5. D&D 5e-Regelsystem (Kampf, Spielbrett, Magie, Erkundung)
 

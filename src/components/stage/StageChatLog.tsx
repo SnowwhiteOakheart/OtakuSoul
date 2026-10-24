@@ -4,6 +4,7 @@ import { api } from '../../services/api';
 import { speakStageMessages } from '../../services/stageVoice';
 import type { SceneTurnMessage } from '../../types';
 import { StageEventCardView } from './StageEventCardView';
+import { StageText } from './StageText';
 import {
   Compass,
   MessageSquare,
@@ -296,7 +297,7 @@ export const StageChatLog: React.FC = () => {
                 </div>
               ) : (
                 <div className="text-xs sm:text-sm text-slate-200 leading-relaxed whitespace-pre-wrap font-sans">
-                  {msg.content}
+                  <StageText text={msg.content} />
                   {translationBlock(msg)}
                 </div>
               )}
@@ -413,7 +414,7 @@ export const StageChatLog: React.FC = () => {
                       : 'bg-slate-800/80 border border-slate-700 text-slate-200 rounded-tl-sm'
                   }`}
                 >
-                  {msg.content}
+                  <StageText text={msg.content} />
                   {translationBlock(msg)}
 
                   {/* Event Card if attached */}
