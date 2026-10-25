@@ -2,6 +2,7 @@ import { api } from '../../services/api';
 import { projectorFor } from '../../utils/visionProjector';
 import { CLOUD_PROVIDER_DEFAULTS } from '../helpers';
 import type {
+  ChatLora,
   DownloadProgressEvent,
   HardwareInfo,
   HfGgufFile,
@@ -113,6 +114,13 @@ export interface LlmSlice {
    * model is selected; the running server restarts with it on the next reply.
    */
   downloadVisionProjector: (file: HfGgufFile, modelPath: string) => Promise<void>;
+  /**
+   * Downloads a catalog LoRA adapter for `modelPath` and uses it while that model is selected; the
+   * running server restarts with it on the next reply.
+   */
+  downloadChatLora: (lora: ChatLora, modelPath: string) => Promise<void>;
+  /** Uses `path` as the model's LoRA adapter (`null` = none) at `scale`; restarts the server. */
+  setChatLora: (path: string | null, scale: number) => Promise<void>;
 }
 
 export const createLlmSlice: SliceCreator<LlmSlice> = (set, get) => ({
@@ -544,6 +552,45 @@ export const createLlmSlice: SliceCreator<LlmSlice> = (set, get) => ({
       });
       if (errorCode(e)?.code === 'backend.models.downloadCancelled') return;
       console.error('Failed to download the vision projector:', e);
+      set({ hfError: errorMessage(e) });
+    } finally {
+      set((state) => ({ activeDownloads: withoutKey(state.activeDownloads, key) }));
+    }
+  },
+
+  setChatLora: async (path, scale) => {
+    const config = get().serverConfig;
+    if ((config.lora_path ?? null) === path && (config.lora_scale ?? 1) === scale) return;
+    // The server loads an adapter only at its start.
+    await api.stopLlamaServer().catch(() => undefined);
+    await get().fetchServerStatus();
+    set((state) => ({ serverConfig: { ...state.serverConfig, lora_path: path, lora_scale: scale } }));
+    await get().saveCurrentSettings();
+  },
+
+  downloadChatLora: async (lora, modelPath) => {
+    const filename = `${lora.id}.gguf`;
+    const key = downloadKey(filename);
+    if (get().activeDownloads[key]) return;
+    set((state) => ({ hfError: null, activeDownloads: { ...state.activeDownloads, [key]: true } }));
+    try {
+      const task = {
+        kind: 'download' as const,
+        title: translate('task.download', { name: lora.name }),
+        progressKey: filename,
+        cancel: () => void api.cancelGgufDownload(filename),
+        retry: () => void get().downloadChatLora(lora, modelPath),
+      };
+      const path = await trackTask(get(), task, () => api.downloadChatLora(lora.id));
+      if (get().serverConfig.model_path !== modelPath) return;
+      await get().setChatLora(path, lora.scale);
+    } catch (e) {
+      set((state) => {
+        const { [filename]: _stale, ...downloadProgress } = state.downloadProgress;
+        return { downloadProgress };
+      });
+      if (errorCode(e)?.code === 'backend.models.downloadCancelled') return;
+      console.error('Failed to download the LoRA adapter:', e);
       set({ hfError: errorMessage(e) });
     } finally {
       set((state) => ({ activeDownloads: withoutKey(state.activeDownloads, key) }));

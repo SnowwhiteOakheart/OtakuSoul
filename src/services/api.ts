@@ -120,6 +120,7 @@ import {
   LoraInfo,
   QuickReplyRequest,
   StarterModel,
+  ChatLora,
   TtsModelInfo,
   TtsModelProgress,
   TtsLocalSettings,
@@ -1239,6 +1240,16 @@ export const api = {
   /** Server and sampler values families of local models need (from the model catalog). */
   getModelDefaults: async (): Promise<ModelDefaults[]> => {
     return await invoke<ModelDefaults[]>('get_model_defaults');
+  },
+
+  /** LoRA adapters for chat models from the catalog (adult ones only while 18+ is on). */
+  listChatLoras: async (): Promise<ChatLora[]> => {
+    return await invoke<ChatLora[]>('list_chat_loras');
+  },
+
+  /** Downloads the catalog adapter `id` (SHA-256 checked) and returns its path. */
+  downloadChatLora: async (id: string): Promise<string> => {
+    return await invoke<string>('download_chat_lora', { id });
   },
 
   /** Chat models for getting started, with the recommendation for this GPU. */

@@ -100,6 +100,9 @@ export function settingsForNewModel(
       ...server,
       ...pick(serverTuningDefaults(''), Object.keys(previous?.server ?? {})),
       ...next?.server,
+      // An adapter belongs to the model it was made for.
+      lora_path: null,
+      lora_scale: 1,
     },
     sampling: {
       ...sampling,

@@ -237,6 +237,44 @@ describe('vision projector of the local model', () => {
   });
 });
 
+describe('LoRA adapter of the local model', () => {
+  const lora = {
+    id: 'gemma-4-e4b-heretic', name: 'Heretic', base_files: ['gemma-4-E4B-it-Q4_K_M.gguf'], kind: 'uncensor', nsfw: true,
+    scale: 1, description: {}, license: 'unspecified', license_kind: 'restricted', license_note: {}, license_url: 'https://huggingface.co/x',
+    size_bytes: 213_248, size_formatted: '209 KB', path: '/m/chat-loras/gemma-4-e4b-heretic.gguf', installed: false,
+  };
+
+  it('downloads a catalog adapter and uses it for its model', async () => {
+    vi.mocked(api.downloadChatLora).mockResolvedValue(lora.path);
+    useAppStore.setState({ serverConfig: { ...initialState.serverConfig, model_path: '/m/gemma-4-E4B-it-Q4_K_M.gguf', lora_path: null } });
+    await useAppStore.getState().downloadChatLora(lora, '/m/gemma-4-E4B-it-Q4_K_M.gguf');
+    expect(api.downloadChatLora).toHaveBeenCalledWith('gemma-4-e4b-heretic');
+    expect(api.stopLlamaServer).toHaveBeenCalled();
+    expect(useAppStore.getState().serverConfig).toMatchObject({ lora_path: lora.path, lora_scale: 1 });
+    expect(lastSavedSettings().server_config.lora_path).toBe(lora.path);
+  });
+
+  it('keeps no adapter when the model changed during the download', async () => {
+    vi.mocked(api.downloadChatLora).mockImplementation(async () => {
+      useAppStore.setState((s) => ({ serverConfig: { ...s.serverConfig, model_path: '/m/other.gguf' } }));
+      return lora.path;
+    });
+    useAppStore.setState({ serverConfig: { ...initialState.serverConfig, model_path: '/m/gemma-4-E4B-it-Q4_K_M.gguf', lora_path: null } });
+    await useAppStore.getState().downloadChatLora(lora, '/m/gemma-4-E4B-it-Q4_K_M.gguf');
+    expect(useAppStore.getState().serverConfig.lora_path).toBeNull();
+  });
+
+  it('drops the adapter when another model is chosen for the first time', async () => {
+    vi.mocked(api.scanVisionProjectors).mockResolvedValue([]);
+    useAppStore.setState({
+      modelProfiles: {},
+      serverConfig: { ...initialState.serverConfig, model_path: '/m/gemma-4-E4B-it-Q4_K_M.gguf', lora_path: lora.path, lora_scale: 0.6 },
+    });
+    await useAppStore.getState().selectLocalModel('/m/nemo.gguf');
+    expect(useAppStore.getState().serverConfig).toMatchObject({ lora_path: null, lora_scale: 1 });
+  });
+});
+
 describe('context of the local model at start', () => {
   const recommendation = {
     recommended_layers: 99,

@@ -23,6 +23,7 @@ import type { ImageModelProgress } from './generated/ImageModelProgress';
 import type { LoraInfo } from './generated/LoraInfo';
 import type { QuickReplyRequest } from './generated/QuickReplyRequest';
 import type { StarterModel } from './generated/StarterModel';
+import type { ChatLora } from './generated/ChatLora';
 import type { PromptLog } from './generated/PromptLog';
 import type { PromptLogMessage } from './generated/PromptLogMessage';
 import type { LoraSelection } from './generated/LoraSelection';
@@ -142,6 +143,7 @@ export type {
   LoraSelection,
   QuickReplyRequest,
   StarterModel,
+  ChatLora,
   PromptLog,
   PromptLogMessage,
   ImagePromptRequest,
@@ -258,6 +260,10 @@ export interface LlamaServerConfig {
   no_mmap?: boolean;
   cpu_moe?: boolean;
   mmproj_path?: string | null;
+  /** LoRA adapter on top of the model (`--lora`). */
+  lora_path?: string | null;
+  /** Strength of the adapter, 0–2. */
+  lora_scale?: number;
 }
 
 export interface ChatMessage {

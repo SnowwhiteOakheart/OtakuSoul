@@ -24,6 +24,7 @@ import {
 } from 'lucide-react';
 import { backendMessage } from '../../../utils/errors';
 import { RuntimeCard } from './RuntimeCard';
+import { ChatLoraPicker } from './ChatLoraPicker';
 import { api } from '../../../services/api';
 import type { ScannedModel, StarterModel } from '../../../types';
 
@@ -332,6 +333,8 @@ export const ServerSettings = () => {
             </button>
           )}
         </div>
+
+        <ChatLoraPicker />
 
         {/* Core Parameters */}
         <div className="grid grid-cols-1 md:grid-cols-3 gap-4 text-xs">
