@@ -63,9 +63,8 @@ describe('model downloads', () => {
     expect(within(item).getByRole('status')).toHaveTextContent('42');
   });
 
-  it('recommends the llama.cpp models in the hub next to Bonsai', async () => {
+  it('recommends only the catalog models in the hub, no Bonsai card', async () => {
     vi.mocked(api.listStarterModels).mockResolvedValue([
-      starter('ternary-bonsai-2-27b', 'Ternary Bonsai 2 27B', { file: file('Ternary-Bonsai-2-27B-PQ2_0.gguf', 'prism') }),
       starter('gemma-4-12b', 'Gemma 4 12B'),
       starter('qwen3.5-9b', 'Qwen3.5 9B'),
     ]);
@@ -74,7 +73,7 @@ describe('model downloads', () => {
     await waitFor(() => expect(within(list).getAllByRole('listitem')).toHaveLength(2));
     expect(list).toHaveTextContent('Gemma 4 12B');
     expect(list).toHaveTextContent('Qwen3.5 9B');
-    // Bonsai has its own card above and is not listed twice.
-    expect(list).not.toHaveTextContent('Ternary Bonsai');
+    expect(screen.queryByText(/Bonsai/)).toBeNull();
+    expect(screen.getByRole('searchbox')).toHaveValue('');
   });
 });

@@ -569,19 +569,8 @@ fn scan_gguf(projectors: bool) -> Vec<ScannedModel> {
         }
     }
 
-    models.sort_by(|a, b| {
-        let a_recommended = a
-            .name
-            .to_ascii_lowercase()
-            .contains("ternary-bonsai-2-27b-pq2_0");
-        let b_recommended = b
-            .name
-            .to_ascii_lowercase()
-            .contains("ternary-bonsai-2-27b-pq2_0");
-        b_recommended
-            .cmp(&a_recommended)
-            .then_with(|| a.name.to_lowercase().cmp(&b.name.to_lowercase()))
-    });
+    // By name only: no model is put first (new settings take the first one).
+    models.sort_by_key(|m| m.name.to_lowercase());
     models
 }
 

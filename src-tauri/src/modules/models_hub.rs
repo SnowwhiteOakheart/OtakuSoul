@@ -1057,7 +1057,7 @@ mod tests {
         );
         assert_eq!(pick(8_192), "qwen3.5-9b");
         assert_eq!(pick(10_240), "gemma-4-12b");
-        // No model is preferred any more: the largest that fits. Bonsai is only listed.
+        // No model is preferred any more: the largest that fits.
         assert_eq!(pick(12_288), "gemma-4-12b");
         // The MoE models only fit partly on 16 GB; there Gemma 4 12B tested better and faster.
         assert_eq!(pick(16_384), "gemma-4-12b");

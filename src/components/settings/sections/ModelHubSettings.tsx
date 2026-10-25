@@ -1,7 +1,6 @@
 import { useState, useEffect, useCallback } from 'react';
 import { useStoreFields, type SettingsSection } from '../../../store/useAppStore';
 import { useTranslation } from '../../../i18n';
-import { openUrl } from '@tauri-apps/plugin-opener';
 import {
   AlertTriangle,
   RefreshCw,
@@ -16,27 +15,22 @@ import { downloadKey } from '../../../store/slices/llmSlice';
 import { StarterModelList } from '../../onboarding/OnboardingParts';
 import type { StarterModel } from '../../../types';
 
-/** The starter of the catalogue that the hub presents on its own card. */
-const BONSAI_STARTER_ID = 'ternary-bonsai-2-27b';
-
 export const ModelHubSettings = ({ onNavigate }: { onNavigate: (section: SettingsSection) => void }) => {
   const { t } = useTranslation();
   const {
-    hardware, serverConfig, selectLocalModel, hfSearchResults, isSearchingHf, hfError,
+    serverConfig, selectLocalModel, hfSearchResults, isSearchingHf, hfError,
     searchHfModels, hfModelFiles, isLoadingHfFiles, fetchHfModelFiles, downloadProgress,
     downloadGgufModel, scannedModels, activeDownloads,
   } = useStoreFields(
-    'hardware', 'serverConfig', 'selectLocalModel', 'hfSearchResults', 'isSearchingHf', 'hfError',
+    'serverConfig', 'selectLocalModel', 'hfSearchResults', 'isSearchingHf', 'hfError',
     'searchHfModels', 'hfModelFiles', 'isLoadingHfFiles', 'fetchHfModelFiles', 'downloadProgress',
     'downloadGgufModel', 'scannedModels', 'activeDownloads',
   );
 
   // HuggingFace search
-  const BONSAI_MODEL_ID = 'prism-ml/Ternary-Bonsai-2-27B-gguf';
-  const [hfQuery, setHfQuery] = useState('Ternary-Bonsai-2-27B-gguf');
+  const [hfQuery, setHfQuery] = useState('');
   const [expandedModelId, setExpandedModelId] = useState<string | null>(null);
   const [hubView, setHubView] = useState<'recommended' | 'installed' | 'popular' | 'search'>('recommended');
-  const gpu = hardware?.gpus[0];
   const [starters, setStarters] = useState<StarterModel[] | null>(null);
   const refreshStarters = useCallback(
     () =>
@@ -49,24 +43,6 @@ export const ModelHubSettings = ({ onNavigate }: { onNavigate: (section: Setting
   useEffect(() => {
     void refreshStarters();
   }, [refreshStarters]);
-
-  useEffect(() => {
-    if (
-      hubView === 'recommended' &&
-      !hfModelFiles[BONSAI_MODEL_ID] &&
-      !isLoadingHfFiles[BONSAI_MODEL_ID]
-    ) {
-      fetchHfModelFiles(BONSAI_MODEL_ID);
-    }
-  }, [fetchHfModelFiles, hfModelFiles, hubView, isLoadingHfFiles]);
-
-  const showBonsaiRecommendation = () => {
-    setHubView('recommended');
-    setExpandedModelId(BONSAI_MODEL_ID);
-    if (!hfModelFiles[BONSAI_MODEL_ID]) {
-      fetchHfModelFiles(BONSAI_MODEL_ID);
-    }
-  };
 
   return (
     <div className="space-y-6">
@@ -82,7 +58,7 @@ export const ModelHubSettings = ({ onNavigate }: { onNavigate: (section: Setting
 
         <div role="group" aria-label={t('settings.hubViews')} className="flex flex-wrap gap-2 text-xs">
           <button
-            onClick={showBonsaiRecommendation}
+            onClick={() => setHubView('recommended')}
             aria-pressed={hubView === 'recommended'}
             className={`px-3 py-1.5 rounded-lg border transition-colors whitespace-nowrap outline-hidden focus-visible:ring-2 focus-visible:ring-accent-400 ${hubView === 'recommended' ? 'border-accent-500 bg-accent-500/15 text-accent-200' : 'border-slate-700 bg-app text-slate-400 hover:text-slate-200'}`}
           >
@@ -150,108 +126,13 @@ export const ModelHubSettings = ({ onNavigate }: { onNavigate: (section: Setting
         </div>
       )}
 
-      {hubView === 'recommended' && (() => {
-        const files = hfModelFiles[BONSAI_MODEL_ID] || [];
-        const recommendedFile = files.find((file) => file.recommended);
-        const installed = scannedModels.find((model) => model.name.toLowerCase().includes('ternary-bonsai-2-27b-pq2_0'));
-        const bonsaiKey = recommendedFile ? downloadKey(recommendedFile.filename) : null;
-        const bonsaiBusy = !!bonsaiKey && !!activeDownloads[bonsaiKey];
-        const bonsaiProgress = bonsaiKey ? downloadProgress[bonsaiKey] : undefined;
-        const vramGb = (gpu?.total_vram_mb || 0) / 1024;
-        return (
-          <div className="space-y-4">
-          <div className="rounded-2xl border border-accent-500/50 bg-linear-to-br from-accent-950/60 via-slate-900/80 to-cyan-950/40 p-5 space-y-4 shadow-xl shadow-accent-950/20">
-            <div className="flex flex-col md:flex-row md:items-start justify-between gap-4">
-              <div className="space-y-2">
-                <div className="flex flex-wrap items-center gap-2">
-                  <span className="px-2 py-0.5 rounded-full bg-emerald-500/20 text-emerald-300 text-[11px] font-bold border border-emerald-500/30 uppercase">{t('settings.bonsaiFirstChoice')}</span>
-                  <span className="px-2 py-0.5 rounded-full bg-cyan-500/15 text-cyan-300 text-[11px] font-bold border border-cyan-500/30">PRISM PQ2_0</span>
-                  <span className="text-[11px] text-slate-400">Apache-2.0</span>
-                </div>
-                <h3 className="text-lg font-bold text-slate-100">Ternary Bonsai 2 27B</h3>
-                <p className="text-xs text-slate-300 max-w-2xl leading-relaxed">
-                  {t('settings.bonsaiText')}
-                </p>
-              </div>
-              <div className="text-xs md:text-right space-y-1">
-                <div className="text-emerald-300 font-semibold">
-                  {vramGb >= 10 ? t('settings.bonsaiFits', { vram: vramGb.toFixed(0) }) : t('settings.bonsaiOffload')}
-                </div>
-                <div className="text-slate-400">{t('settings.bonsaiPeak')}</div>
-              </div>
-            </div>
-
-            <div className="grid grid-cols-2 md:grid-cols-4 gap-2 text-xs">
-              {[
-                ['27B', t('settings.statParams')],
-                ['~7,2 GB', t('settings.statDownload')],
-                ['32K', t('settings.statStartCtx')],
-                ['262K', t('settings.statMax')],
-              ].map(([value, label]) => (
-                <div key={label} className="rounded-lg bg-app/60 border border-slate-700/70 p-2 text-center">
-                  <div className="font-bold text-slate-100">{value}</div>
-                  <div className="text-slate-400">{label}</div>
-                </div>
-              ))}
-            </div>
-
-            <div className="flex flex-wrap items-center gap-2">
-              {installed ? (
-                <button
-                  onClick={() => {
-                    selectLocalModel(installed.path);
-                    onNavigate('server');
-                  }}
-                  className="px-4 py-2 rounded-lg bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-semibold flex items-center gap-2"
-                >
-                  <Check className="w-4 h-4" /> {t('settings.installedSelect')}
-                </button>
-              ) : recommendedFile ? (
-                <button
-                  onClick={() => downloadGgufModel(recommendedFile)}
-                  disabled={bonsaiBusy}
-                  className="px-4 py-2 rounded-lg bg-emerald-600 hover:bg-emerald-500 disabled:opacity-60 disabled:cursor-not-allowed text-white text-xs font-semibold flex items-center gap-2"
-                >
-                  {bonsaiBusy ? (
-                    <>
-                      <RefreshCw className="w-4 h-4 animate-spin" /> {t('settings.downloadRunningPercent', { percent: (bonsaiProgress?.percent ?? 0).toFixed(0) })}
-                    </>
-                  ) : (
-                    <>
-                      <Download className="w-4 h-4" /> {t('settings.downloadRecommended')}
-                    </>
-                  )}
-                </button>
-              ) : (
-                <button
-                  onClick={showBonsaiRecommendation}
-                  disabled={isLoadingHfFiles[BONSAI_MODEL_ID]}
-                  className="px-4 py-2 rounded-lg bg-accent-600 hover:bg-accent-500 disabled:opacity-50 text-white text-xs font-semibold flex items-center gap-2"
-                >
-                  <RefreshCw className={`w-4 h-4 ${isLoadingHfFiles[BONSAI_MODEL_ID] ? 'animate-spin' : ''}`} />
-                  {isLoadingHfFiles[BONSAI_MODEL_ID] ? t('settings.loadingModelData') : t('settings.prepareDownload')}
-                </button>
-              )}
-              <button type="button" onClick={() => openUrl(`https://huggingface.co/${BONSAI_MODEL_ID}`)} className="px-3 py-2 text-xs text-cyan-300 hover:text-cyan-200">
-                {t('settings.openModelPage')}
-              </button>
-            </div>
-
-            {files.length > 0 && !installed && (
-              <div className="pt-3 border-t border-accent-500/20 text-xs text-slate-400">
-                {t('settings.bonsaiSelected', { file: recommendedFile?.filename || t('settings.bonsaiSearching') })}
-              </div>
-            )}
-          </div>
-
-          <div className="rounded-xl border border-slate-800 bg-slate-900/60 p-4 space-y-2" data-hub-starters>
-            <h3 className="text-sm font-semibold text-slate-200">{t('settings.hubMoreRecommended')}</h3>
-            <p className="text-xs text-slate-400">{t('settings.hubMoreRecommendedHint')}</p>
-            <StarterModelList starters={starters} withVision onChanged={() => void refreshStarters()} exclude={[BONSAI_STARTER_ID]} />
-          </div>
-          </div>
-        );
-      })()}
+      {hubView === 'recommended' && (
+        <div className="rounded-xl border border-slate-800 bg-slate-900/60 p-4 space-y-2" data-hub-starters>
+          <h3 className="text-sm font-semibold text-slate-200">{t('settings.hubMoreRecommended')}</h3>
+          <p className="text-xs text-slate-400">{t('settings.hubMoreRecommendedHint')}</p>
+          <StarterModelList starters={starters} withVision onChanged={() => void refreshStarters()} />
+        </div>
+      )}
 
       {hubView === 'installed' && scannedModels.length === 0 && (
         <div className="text-center py-10 text-sm text-slate-400">{t('settings.noInstalledModels')}</div>
