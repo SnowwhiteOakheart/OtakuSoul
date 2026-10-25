@@ -184,7 +184,11 @@ export const SetupBundle = () => {
         {row(
           'tts',
           ttsOptions.map((m) => ({ id: m.id, label: `${m.name} · ${formatBytes(m.download_bytes, currentLanguage)}`, fits: true })),
-          tts ? t('setup.ttsDetail', { voice: tts.voices.find((v) => v.voice_id === ttsVoice)?.label ?? '–' }) : '',
+          tts
+            ? tts.voice_design
+              ? t('setup.ttsDetailDesign')
+              : t('setup.ttsDetail', { voice: tts.voices.find((v) => v.voice_id === ttsVoice)?.label ?? '–' })
+            : '',
           tts?.missing_bytes ?? 0,
           !!tts?.installed,
         )}
@@ -211,7 +215,7 @@ export const SetupBundle = () => {
             <button
               type="button"
               disabled={running || !enoughSpace}
-              onClick={() => void runBundle({ chat, image, tts: tts && ttsVoice ? { model: tts, voiceId: ttsVoice } : null })}
+              onClick={() => void runBundle({ chat, image, tts: tts && ttsVoice != null ? { model: tts, voiceId: ttsVoice } : null })}
               className="inline-flex items-center gap-1.5 rounded-xl bg-accent-600 px-4 py-2 text-sm font-semibold text-white hover:bg-accent-500 disabled:opacity-50"
               data-setup-run
             >

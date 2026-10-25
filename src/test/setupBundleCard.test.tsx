@@ -65,6 +65,18 @@ describe('SetupBundle', () => {
     });
   });
 
+  it('suggests VoiceDesign so every character speaks with its card voice', async () => {
+    const user = userEvent.setup();
+    vi.mocked(api.listTtsModels).mockResolvedValue([tts, { ...tts, id: 'qwen3-tts-1.7b-voicedesign', name: 'VoiceDesign', voice_design: true, voices: [] }]);
+    render(<SetupBundle />);
+    expect(await screen.findByLabelText('Voice')).toHaveValue('qwen3-tts-1.7b-voicedesign');
+    expect(screen.getByText(/Every character speaks with the voice described in its card/)).toBeInTheDocument();
+    await user.click(screen.getByRole('button', { name: 'Yes, download everything now' }));
+    expect(runBundle).toHaveBeenCalledWith(expect.objectContaining({
+      tts: { model: expect.objectContaining({ id: 'qwen3-tts-1.7b-voicedesign' }), voiceId: '' },
+    }));
+  });
+
   it('leaves a part out and counts only the rest', async () => {
     const user = userEvent.setup();
     render(<SetupBundle />);

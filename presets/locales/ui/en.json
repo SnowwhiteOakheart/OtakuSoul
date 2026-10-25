@@ -2802,6 +2802,7 @@
   "setup.imageDetailNc": "Paints scene pictures and selfies of your characters locally. Non-commercial use only ({{license}}).",
   "setup.noncommercial": "non-commercial",
   "setup.ttsDetail": "Reads replies aloud; your character gets the voice “{{voice}}” (changeable later).",
+  "setup.ttsDetailDesign": "Reads replies aloud. Every character speaks with the voice described in its card – nothing to choose (changeable later).",
   "setup.runtime": "Setting up the runtime …",
   "setup.downloading": "Downloading … {{percent}} %",
   "setup.ready": "Ready",

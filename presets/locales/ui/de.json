@@ -2802,6 +2802,7 @@
   "setup.imageDetailNc": "Malt Szenenbilder und Selfies Deiner Figuren lokal. Nur für nicht-kommerzielle Nutzung ({{license}}).",
   "setup.noncommercial": "nicht kommerziell",
   "setup.ttsDetail": "Liest Antworten vor; Deine Figur bekommt die Stimme „{{voice}}“ (später änderbar).",
+  "setup.ttsDetailDesign": "Liest Antworten vor. Jede Figur spricht mit der Stimme, die in ihrer Karte beschrieben ist – Du musst nichts auswählen (später änderbar).",
   "setup.runtime": "Laufzeit wird eingerichtet …",
   "setup.downloading": "Wird geladen … {{percent}} %",
   "setup.ready": "Bereit",

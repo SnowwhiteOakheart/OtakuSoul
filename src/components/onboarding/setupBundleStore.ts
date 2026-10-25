@@ -4,6 +4,8 @@ import { useAppStore } from '../../store/useAppStore';
 import { errorMessage } from '../../utils/errors';
 import { DEFAULT_IMG_CONFIG } from '../settings/sections/ImageSettings';
 import { downloadStarter } from './OnboardingParts';
+import { withCardVoice } from '../../services/characterVoice';
+import { DEFAULT_VOICE_DESCRIPTION } from '../../utils/setupBundle';
 import type { RuntimeKind, StarterModel, TtsModelInfo, ImageModelInfo } from '../../types';
 
 export type BundleKind = 'chat' | 'image' | 'tts';
@@ -18,6 +20,7 @@ export type PartStatus =
 /** A speech model and voice to give the chosen character once the wizard knows it. */
 export interface PendingVoice {
   modelId: string;
+  /** `''` for VoiceDesign: the character's own description is the voice. */
   voiceId: string;
 }
 
@@ -158,12 +161,15 @@ export async function applyPendingVoice() {
   const app = useAppStore.getState();
   const character = app.activeCharacter;
   if (!pendingVoice || !character) return;
-  const base = app.activeVoiceConfig ?? (await api.getCharacterVoiceConfig(character.id));
+  const base = withCardVoice(app.activeVoiceConfig ?? (await api.getCharacterVoiceConfig(character.id)), character);
+  // VoiceDesign speaks with the description of the card (or the character's own one).
+  const design = pendingVoice.voiceId === '';
   await app.saveVoiceConfigForCharacter(character.id, {
     ...base,
     engine: 'local',
     local_model_id: pendingVoice.modelId,
     voice_id: pendingVoice.voiceId,
+    openai_instructions: design ? base.openai_instructions?.trim() || DEFAULT_VOICE_DESCRIPTION : base.openai_instructions,
   });
   useSetupBundle.setState({ pendingVoice: null });
 }

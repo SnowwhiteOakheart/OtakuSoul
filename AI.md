@@ -334,8 +334,11 @@ ru „персонаж/история/сцена“. Fachbegriffe nur im Experte
   Qwen3.6 ohne Geschichts-Vorhaben, Cydonia erkennt Erledigtes nicht und fasst Gewohnheiten nicht zusammen.
 - Geführte Ersteinrichtung (`onboarding/SetupBundle.tsx`, Ablauf in `setupBundleStore.ts`, Regeln in `utils/setupBundle.ts`):
   Beim lokalen Weg empfiehlt eine Karte Chat (Katalogempfehlung), Bild (größtes frei nutzbares passendes Modell, nicht
-  `local_image::list_models().recommended`, das auch FLUX dev Non-Commercial nähme) und Stimme (`recommendTts`: beste
-  Modelle mit eingebauten Stimmen in der UI-Sprache, die neben das Chat-Modell in VRAM − 1,5 GB passen, sonst das kleinste).
+  `local_image::list_models().recommended`, das auch FLUX dev Non-Commercial nähme) und Stimme (`recommendTts`: zuerst
+  Qwen3-TTS VoiceDesign, weil jede Karte ihre Stimme in `extensions.otakusoul_voice` beschreibt – die Figur spricht dann
+  ohne Auswahl mit ihrer eigenen Stimme, `voice_id` leer, Beschreibung über `withCardVoice`, ohne Kartenstimme
+  `DEFAULT_VOICE_DESCRIPTION`; danach Modelle mit eingebauten Stimmen; jeweils in der UI-Sprache und neben dem Chat-Modell
+  in VRAM − 1,5 GB, sonst das kleinste).
   Gesamtgröße gegen `disk_space` (Modell- und Datenordner, längster passender Einhängepunkt, Windows ohne `\\?\`), dann
   „Ja, alles jetzt laden“: nacheinander Laufzeit (llama/prism, sd, crisp) + Download + Einrichtung; ein Fehler markiert nur
   diesen Teil. Der Zustand liegt außerhalb der Schritte (zustand), damit Weiterklicken den Fortschritt behält; die Stimme

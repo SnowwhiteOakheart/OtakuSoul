@@ -2803,6 +2803,7 @@
   "setup.imageDetailNc": "キャラクターの場面画像や自撮りをローカルで描きます。非商用利用のみ ({{license}})。",
   "setup.noncommercial": "非商用",
   "setup.ttsDetail": "応答を読み上げます。キャラクターの声は「{{voice}}」になります (後から変更可能)。",
+  "setup.ttsDetailDesign": "応答を読み上げます。各キャラクターはカードに書かれた声で話すので、選ぶ必要はありません (後から変更可能)。",
   "setup.runtime": "ランタイムを準備中 …",
   "setup.downloading": "ダウンロード中 … {{percent}} %",
   "setup.ready": "準備完了",

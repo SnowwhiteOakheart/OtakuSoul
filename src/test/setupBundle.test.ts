@@ -5,7 +5,7 @@ import { api } from '../services/api';
 import { useAppStore } from '../store/useAppStore';
 import { resetApiMocks } from './mockApi';
 import { applyPendingVoice, runBundle, useSetupBundle } from '../components/onboarding/setupBundleStore';
-import { bundleBytes, formatBytes, isNoncommercial, recommendImage, recommendTts, spaceSuffices, ttsCandidates, voiceFor } from '../utils/setupBundle';
+import { DEFAULT_VOICE_DESCRIPTION, bundleBytes, formatBytes, isNoncommercial, recommendImage, recommendTts, spaceSuffices, ttsCandidates, voiceFor } from '../utils/setupBundle';
 import type { ImageModelInfo, StarterModel, TtsModelInfo } from '../types';
 
 const tts = (id: string, vram: number, over: Partial<TtsModelInfo> = {}): TtsModelInfo => ({
@@ -26,19 +26,23 @@ const catalog = [
 ];
 
 describe('speech model recommendation', () => {
-  it('offers only models with built-in voices in the language, best first', () => {
-    expect(ttsCandidates(catalog, 'de').map((m) => m.id)).toEqual(['qwen3-tts-customvoice-1.7b', 'qwen3-tts-customvoice-0.6b', 'kokoro-de']);
+  it('offers VoiceDesign first, then models with built-in voices in the language', () => {
+    expect(ttsCandidates(catalog, 'de').map((m) => m.id)).toEqual([
+      'qwen3-tts-1.7b-voicedesign', 'qwen3-tts-customvoice-1.7b', 'qwen3-tts-customvoice-0.6b', 'kokoro-de',
+    ]);
     expect(ttsCandidates(catalog, 'en').map((m) => m.id)).toContain('chatterbox-turbo');
   });
 
   it('picks the best model that fits beside the chat model, else the smallest', () => {
-    // 16 GB card with a 7 GB chat model: Qwen3-TTS 1.7B fits beside it.
-    expect(recommendTts(catalog, 'de', 16_384, 7_000)?.id).toBe('qwen3-tts-customvoice-1.7b');
+    // 16 GB card with a 7 GB chat model: VoiceDesign fits beside it (the cards describe the voices).
+    expect(recommendTts(catalog, 'de', 16_384, 7_000)?.id).toBe('qwen3-tts-1.7b-voicedesign');
+    // Without VoiceDesign the model with built-in voices and speaking style.
+    expect(recommendTts(catalog.filter((m) => !m.voice_design), 'de', 16_384, 7_000)?.id).toBe('qwen3-tts-customvoice-1.7b');
     // 8 GB card with a 5 GB chat model: only Kokoro fits.
     expect(recommendTts(catalog, 'de', 8_192, 5_000)?.id).toBe('kokoro-de');
     // Nothing fits: the smallest one (it takes turns with the chat model).
     expect(recommendTts(catalog, 'de', 4_096, 4_000)?.id).toBe('kokoro-de');
-    expect(recommendTts(catalog, 'en', 16_384, 0)?.id).toBe('qwen3-tts-customvoice-1.7b');
+    expect(recommendTts(catalog, 'en', 16_384, 0)?.id).toBe('qwen3-tts-1.7b-voicedesign');
     expect(recommendTts(catalog, 'ja', 16_384, 0)).toBeNull();
     expect(recommendTts([], 'de', 16_384, 0)).toBeNull();
   });
@@ -46,6 +50,7 @@ describe('speech model recommendation', () => {
   it('chooses a voice in the language, else the first one', () => {
     expect(voiceFor(catalog[1]!, 'de')).toBe('preset:bernd');
     expect(voiceFor(catalog[1]!, 'ja')).toBe('preset:ryan');
+    expect(voiceFor(catalog[3]!, 'de')).toBe('');
   });
 });
 
@@ -129,11 +134,26 @@ describe('loading everything', () => {
 
   it('gives the chosen character the downloaded voice once', async () => {
     useSetupBundle.setState({ pendingVoice: { modelId: 'kokoro-de', voiceId: 'preset:bernd' } });
-    useAppStore.setState({ activeCharacter: { id: 'shiori' } as never, activeVoiceConfig: { engine: 'edge', voice_id: 'x', rate: '+0%' } as never });
+    useAppStore.setState({ activeCharacter: { id: 'shiori', card: { data: { extensions: {} } } } as never, activeVoiceConfig: { engine: 'edge', voice_id: 'x', rate: '+0%' } as never });
     const save = vi.spyOn(useAppStore.getState(), 'saveVoiceConfigForCharacter').mockResolvedValue();
     await applyPendingVoice();
     expect(save).toHaveBeenCalledWith('shiori', expect.objectContaining({ engine: 'local', local_model_id: 'kokoro-de', voice_id: 'preset:bernd', rate: '+0%' }));
     await applyPendingVoice();
     expect(save).toHaveBeenCalledTimes(1);
+  });
+
+  it('lets VoiceDesign speak with the voice the card describes, else a neutral one', async () => {
+    const save = vi.spyOn(useAppStore.getState(), 'saveVoiceConfigForCharacter').mockResolvedValue();
+    const card = (voice?: string) => ({ id: 'c', card: { data: { extensions: voice ? { otakusoul_voice: { description: voice } } : {} } } }) as never;
+    useSetupBundle.setState({ pendingVoice: { modelId: 'qwen3-tts-1.7b-voicedesign', voiceId: '' } });
+    useAppStore.setState({ activeCharacter: card('A bright, cheerful young woman, quick pace.'), activeVoiceConfig: { engine: 'edge', voice_id: 'x', openai_instructions: '' } as never });
+    await applyPendingVoice();
+    expect(save).toHaveBeenLastCalledWith('c', expect.objectContaining({
+      engine: 'local', local_model_id: 'qwen3-tts-1.7b-voicedesign', voice_id: '', openai_instructions: 'A bright, cheerful young woman, quick pace.',
+    }));
+    useSetupBundle.setState({ pendingVoice: { modelId: 'qwen3-tts-1.7b-voicedesign', voiceId: '' } });
+    useAppStore.setState({ activeCharacter: card(), activeVoiceConfig: { engine: 'edge', voice_id: 'x', openai_instructions: '' } as never });
+    await applyPendingVoice();
+    expect(save).toHaveBeenLastCalledWith('c', expect.objectContaining({ openai_instructions: DEFAULT_VOICE_DESCRIPTION }));
   });
 });

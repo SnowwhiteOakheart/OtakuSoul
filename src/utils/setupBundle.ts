@@ -4,15 +4,27 @@ import type { ImageModelInfo, StarterModel, TtsModelInfo } from '../types';
 export const DESKTOP_RESERVE_MB = 1536;
 
 /**
- * Speech models from best to plainest for a first setup: built-in voices, no clone or description
- * needed. Qwen3-TTS 1.7B speaks with feeling (style per sentence), Kokoro is tiny but German only.
+ * Speech models from best to plainest for a first setup. VoiceDesign comes first: every character
+ * card describes its voice (`extensions.otakusoul_voice`), so each one gets its own voice without
+ * choosing anything. Then built-in voices: Qwen3-TTS 1.7B speaks with feeling, Kokoro is tiny but
+ * German only. Clone-only models need a recording first and are left out.
  */
-const TTS_ORDER = ['qwen3-tts-customvoice-1.7b', 'qwen3-tts-customvoice-0.6b', 'chatterbox-multilingual', 'kokoro-de', 'chatterbox-turbo'];
+const TTS_ORDER = [
+  'qwen3-tts-1.7b-voicedesign',
+  'qwen3-tts-customvoice-1.7b',
+  'qwen3-tts-customvoice-0.6b',
+  'chatterbox-multilingual',
+  'kokoro-de',
+  'chatterbox-turbo',
+];
+
+/** Voice for characters whose card describes none (VoiceDesign needs a description). */
+export const DEFAULT_VOICE_DESCRIPTION = 'A warm, clear and friendly voice with a natural, relaxed pace.';
 
 /** Speech models a beginner can use right away in `language`. */
 export function ttsCandidates(models: TtsModelInfo[], language: string): TtsModelInfo[] {
   return models
-    .filter((m) => m.allowed && !m.needs_clone && !m.voice_design && m.voices.length > 0 && m.languages.includes(language))
+    .filter((m) => m.allowed && !m.needs_clone && (m.voice_design || m.voices.length > 0) && m.languages.includes(language))
     .sort((a, b) => rank(a.id) - rank(b.id));
 }
 
@@ -31,9 +43,13 @@ export function recommendTts(models: TtsModelInfo[], language: string, vramMb: n
   return candidates.find((m) => m.vram_mb <= budget) ?? [...candidates].sort((a, b) => a.vram_mb - b.vram_mb)[0] ?? null;
 }
 
-/** A built-in voice of `model` for `language` (the first one when none matches). */
+/**
+ * A built-in voice of `model` for `language` (the first one when none matches); `''` for VoiceDesign,
+ * which speaks with the character's own description.
+ */
 export function voiceFor(model: TtsModelInfo, language: string): string | null {
-  const voices = model.voices.filter((v) => !v.cloned);
+  if (model.voice_design) return '';
+  const voices = model.voices.filter((v) => !v.cloned && !v.voice_id.startsWith('design:'));
   return (voices.find((v) => v.language === language) ?? voices[0])?.voice_id ?? null;
 }
 
