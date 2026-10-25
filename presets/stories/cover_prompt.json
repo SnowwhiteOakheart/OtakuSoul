@@ -1,0 +1,18 @@
+{
+  "asset": "cover.webp",
+  "size": [
+    960,
+    540
+  ],
+  "generator": "OpenAI image_gen (integriertes Bildwerkzeug)",
+  "generated": "2026-10-25",
+  "prompt": "Use case: illustration-story. Create ONE polished landscape 16:9 story collection cover, no text, logo, watermark, no panels. OtakuSoul story collection: Shiori Amane with glasses and brown hair and Sota Minase with black hair and headphones at a cherry-blossom school festival with books and an arcade controller, while a softly blended wintry mountain village with frozen bells and the two elves Lirwen and Faelion appear deeper in the landscape. A small distant orbital research station in starry sky hints at science fiction. Cohesive cinematic storybook key art, no panels. Preserve reference identities, fully clothed and nonsexual. Several characters where listed, background visibly occupies at least half the frame, compelling thumbnail composition, faces safely within margins. No nudity or sexual content.",
+  "references": [
+    "presets/characters/shiori_amane.png",
+    "presets/characters/sota_minase.png",
+    "presets/characters/lirwen.png",
+    "presets/characters/faelion.png"
+  ],
+  "postprocessing": "Mittig auf 16:9 zugeschnitten und mit Lanczos auf 960×540 skaliert; WebP Qualität 92.",
+  "provenance": "KI-generiertes Titelbild; Figuren und Schauplätze anhand vorhandener Paketbilder. Bestehende Rechte- und Fanart-Hinweise gelten weiterhin."
+}
