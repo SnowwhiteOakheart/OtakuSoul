@@ -121,6 +121,36 @@ pub async fn download_gguf_model(
     .await
 }
 
+/// Speed test of the running local chat model; the result is kept with the others.
+#[tauri::command]
+pub async fn run_llm_benchmark(
+    state: tauri::State<'_, crate::state::AppState>,
+) -> Result<crate::modules::llm_benchmark::BenchmarkResult, String> {
+    let config = state
+        .llama_manager
+        .running_config()
+        .await
+        .ok_or_else(|| crate::err!("backend.benchmark.serverNotRunning"))?;
+    // A reply being written would share the GPU and spoil the numbers.
+    if !state.llama_manager.wait_until_idle(config.port).await {
+        return Err(crate::err!("backend.benchmark.busy"));
+    }
+    crate::modules::llm_benchmark::run(&config).await
+}
+
+/// Kept speed test results, newest first.
+#[tauri::command]
+pub async fn list_llm_benchmarks() -> Vec<crate::modules::llm_benchmark::BenchmarkResult> {
+    tokio::task::spawn_blocking(crate::modules::llm_benchmark::list)
+        .await
+        .unwrap_or_default()
+}
+
+#[tauri::command]
+pub fn clear_llm_benchmarks() -> Result<(), String> {
+    crate::modules::llm_benchmark::clear()
+}
+
 /// LoRA adapters for chat models from the catalog (adult ones only while 18+ is on).
 #[tauri::command]
 pub async fn list_chat_loras() -> Vec<crate::modules::models_hub::ChatLora> {

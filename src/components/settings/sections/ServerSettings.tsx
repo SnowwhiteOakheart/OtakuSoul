@@ -25,6 +25,7 @@ import {
 import { backendMessage } from '../../../utils/errors';
 import { RuntimeCard } from './RuntimeCard';
 import { ChatLoraPicker } from './ChatLoraPicker';
+import { LlmBenchmarkCard } from './LlmBenchmarkCard';
 import { api } from '../../../services/api';
 import type { ScannedModel, StarterModel } from '../../../types';
 
@@ -638,6 +639,8 @@ export const ServerSettings = () => {
             <span>{backendMessage(serverStatus.notice)}</span>
           </div>
         )}
+
+        <LlmBenchmarkCard />
 
         {/* Server Live Logs */}
         <div className="border border-slate-800 rounded-lg overflow-hidden bg-app">

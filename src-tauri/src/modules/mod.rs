@@ -24,6 +24,7 @@ pub mod inference;
 pub mod kokoro;
 pub mod live2d;
 pub mod llama_manager;
+pub mod llm_benchmark;
 pub mod llm_presets;
 pub mod local_image;
 pub mod logger;

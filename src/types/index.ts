@@ -24,6 +24,7 @@ import type { LoraInfo } from './generated/LoraInfo';
 import type { QuickReplyRequest } from './generated/QuickReplyRequest';
 import type { StarterModel } from './generated/StarterModel';
 import type { ChatLora } from './generated/ChatLora';
+import type { BenchmarkResult } from './generated/BenchmarkResult';
 import type { PromptLog } from './generated/PromptLog';
 import type { PromptLogMessage } from './generated/PromptLogMessage';
 import type { LoraSelection } from './generated/LoraSelection';
@@ -144,6 +145,7 @@ export type {
   QuickReplyRequest,
   StarterModel,
   ChatLora,
+  BenchmarkResult,
   PromptLog,
   PromptLogMessage,
   ImagePromptRequest,

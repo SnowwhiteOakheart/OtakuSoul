@@ -390,7 +390,7 @@ impl LlamaServerManager {
 
     /// Waits until no slot of the server on `port` is generating (at most three minutes);
     /// `false` when it stays busy or `/slots` can't be read.
-    async fn wait_until_idle(&self, port: u16) -> bool {
+    pub async fn wait_until_idle(&self, port: u16) -> bool {
         let Ok(client) = reqwest::Client::builder()
             .timeout(Duration::from_secs(2))
             .build()

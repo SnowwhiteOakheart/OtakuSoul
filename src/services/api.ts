@@ -121,6 +121,7 @@ import {
   QuickReplyRequest,
   StarterModel,
   ChatLora,
+  BenchmarkResult,
   TtsModelInfo,
   TtsModelProgress,
   TtsLocalSettings,
@@ -1240,6 +1241,20 @@ export const api = {
   /** Server and sampler values families of local models need (from the model catalog). */
   getModelDefaults: async (): Promise<ModelDefaults[]> => {
     return await invoke<ModelDefaults[]>('get_model_defaults');
+  },
+
+  /** Speed test of the running local chat model (kept with the earlier results). */
+  runLlmBenchmark: async (): Promise<BenchmarkResult> => {
+    return await invoke<BenchmarkResult>('run_llm_benchmark');
+  },
+
+  /** Kept speed test results, newest first. */
+  listLlmBenchmarks: async (): Promise<BenchmarkResult[]> => {
+    return await invoke<BenchmarkResult[]>('list_llm_benchmarks');
+  },
+
+  clearLlmBenchmarks: async (): Promise<void> => {
+    await invoke('clear_llm_benchmarks');
   },
 
   /** LoRA adapters for chat models from the catalog (adult ones only while 18+ is on). */

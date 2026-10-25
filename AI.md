@@ -269,6 +269,12 @@ ru „персонаж/история/сцена“. Fachbegriffe nur im Experte
   bleibt aber gespeichert und kommt mit 18+ zurück. Test 25.10.2026 (b11669): Die Heretic-/Abliterated-Adapter heben bei E4B,
   12B und 26B-A4B alle Ablehnungen der 5 Testprompts auf, harmlose deutsche Antworten bleiben fast gleich; Stärke 0 bringt
   die Ablehnung zurück. Stil-Adapter (Gutenberg) ändern an Ablehnungen nichts.
+- LLM-Benchmark (`llm_benchmark.rs`, Karte `LlmBenchmarkCard` in den Server-Einstellungen): `run_llm_benchmark` misst den
+  laufenden Server (wartet per `wait_until_idle` auf eine laufende Antwort), erst „Hallo“ zum Aufwärmen, dann festen
+  Prompt (~680 Tokens bei Gemma 4) mit `n_predict` 128, `ignore_eos`, `cache_prompt: false`; Werte aus `timings`
+  (`prompt_ms` = Zeit bis zur ersten Antwort). Grafikspeicher nur über `nvidia-smi`. Läuft das Modell nicht, startet die
+  Karte es vorher. Einordnung `rating`: ≥ 15 Tokens/s flüssig, ≥ 6 brauchbar. CPU-Probe 25.10.2026 (E4B, b11669):
+  681/128 Tokens, 243 bzw. 15,6 Tokens/s.
 - Lokale Vision (GPU-Test 21.10.2026, RTX 4070 Ti SUPER, llama.cpp b11669): Qwen3-VL-8B Q4 + mmproj Q8_0 und Gemma 4 12B
   + mmproj-F16 beschreiben ein Porträt treffend auf Deutsch (~1 s; 8,9 bzw. 10,7 GB bei 8K). Gemma 4 denkt standardmäßig
   vorher nach (~1.800 Zeichen Reasoning): mit knappem `max_tokens` bleibt `content` leer – Nachdenken aus oder genug Tokens.

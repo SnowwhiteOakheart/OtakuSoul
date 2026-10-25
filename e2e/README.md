@@ -38,6 +38,7 @@ Die Suite umfasst über 45 spezialisierte Testmodule:
    - `voice-effects.mjs`, `voice-clone-trim.mjs`: Audioeffekte und Wellenform-Zuschnitt für Stimmklone.
    - `image-loras.mjs`: Modellfamilien-Zuordnung lokaler Bild-LoRAs.
    - `chat-loras.mjs`: LoRA-Adapter fürs Chat-Modell (Katalog je Modell, 18+-Sperre, Stärke).
+   - `llm-benchmark.mjs`: Geschwindigkeitstest des Chat-Modells (gespeicherte Ergebnisse, Verlauf, Sperre ohne Modell).
    - `companion-safety.mjs`: Bestätigungsbanner bei sensiblen Aktionen (HITL-Sicherheitsabfrage).
 
 7. **Oberfläche, Zugänglichkeit & Hub:**
