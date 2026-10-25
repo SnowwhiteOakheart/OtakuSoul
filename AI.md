@@ -700,6 +700,12 @@ ru „персонаж/история/сцена“. Fachbegriffe nur im Experte
   `voice-clone-trim.mjs`. Geklonte Stimmen (`<Daten>/voices`, ohne Kokoro-`.gguf`) sichert `profile_backup` mit der
   Gruppe „settings“ unter `voices/`.
   Chatterbox Turbo (`speaks_sound_tags`): `voice::actions_to_sound_tags` macht *lacht* zu `[laugh]` vor dem Aktionsfilter.
+- Audio-Prüfstand (`components/voice/MicCheck.tsx`, Reiter „Spracherkennung“ im Stimm-Dialog): testet den *Entwurf*
+  (auch ungespeichert) – Aufnahme mit VAD-Abbruch (max. 15 s) → `transcribeSpeech` → `synthesizeSpeech` mit der Stimme
+  des Ziels, Mund-SVG aus `audioPlayer.onAudioFrame`. `utils/micCheck.ts` `judgeMicCheck` wertet Pegel aus (`VoiceCapture`
+  meldet Pegel skaliert auf 4× Schwelle, `rawLevel` rechnet zurück): stumm / zu leise / Hintergrund über Schwelle, mit
+  Knopf für eine vorgeschlagene Schwelle. E2E `voice-mic-check.mjs` ersetzt `getUserMedia` durch einen Oszillator; der
+  Mock beantwortet `/audio/transcriptions` (`stats.sttText`).
 - Stimmeffekte: `VoiceConfig.effects` (`VoiceEffects`), gerendert in `services/voiceEffects.ts` (OfflineAudioContext, Tonhöhe per
   WSOLA) über `audioPlayer.enqueue(…, effects)`; jeder neue Abspielweg muss `config.effects` mitgeben.
 

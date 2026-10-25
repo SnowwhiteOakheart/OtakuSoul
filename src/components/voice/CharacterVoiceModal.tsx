@@ -10,6 +10,7 @@ import { audioPlayer, gainFromVoiceVolume } from '../../services/audioPlayer';
 import { ModalOverlay } from '../ui/ModalOverlay';
 import { LocalTtsSettings } from './LocalTtsSettings';
 import { VoiceGallery } from './VoiceGallery';
+import { MicCheck } from './MicCheck';
 import { loadCharacterVoiceConfig } from '../../services/characterVoice';
 import { languageCode } from '../../utils/cardI18n';
 import { translate, useTranslation } from '../../i18n';
@@ -660,6 +661,12 @@ export function CharacterVoiceModal({ onClose, target, embedded = false, autoSav
                   <p className="text-xs text-slate-400">{t('voiceCfg.vadText')}</p>
                 </>
               )}
+
+              <MicCheck
+                config={draft}
+                speakerName={target?.name ?? activeCharacter?.card.data.name ?? t('voiceCfg.characterFallback')}
+                onThreshold={(value) => updateStt('vad_threshold', value)}
+              />
             </>
           )}
 

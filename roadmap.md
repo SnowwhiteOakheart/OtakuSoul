@@ -171,6 +171,5 @@
 - [ ] **Körperzonen-abhängige Touch-Reaktionen (Headpat & Tap-Feedback):** Unterscheidung der getroffenen Zone bei Live2D (`hitTest` auf `Head`, `Face`, `Body`) und 3D-Avataren (Raycasting auf Kopf/Körper) mit direkter Kopplung an das Hormonsystem (`companion.rs`: Oxytocin-Anstieg & Wangenröte bei Kopfstreicheln) sowie optionalem Kurz-Kommentar der Figur.
 - [ ] **Satzweiser „Bubble-Sync“ (Audio-synchrone Sprechblasen & Stimmungswechsel):** Lange Antworten im Desktop-Pet oder Stage-Modus Satz für Satz exakt synchron zum abgespielten TTS-Audio in der Sprechblase einblenden, inklusive satzweisem Wechsel des Gesichtsausdrucks (`[emotion: …]`).
 - [ ] **OBS- / Streaming-Overlay-Modus:** Die transparente `/desktop-pet`-Route über den eingebauten Web-Server (`web_server.rs`) auch als Browser-Source für OBS nutzbar machen.
-- [ ] **Kompakter „Audio-Prüfstand“ in den Spracheinstellungen:** Ein 1-Klick-Selbsttest („Einmal reinsprechen → VAD-Auslösung sehen → Whisper-Transkript lesen → Figur spricht es als Echo mit Lip-Sync nach“), damit Einsteiger Mikrofon, Spracherkennung und Stimmklon an einer Stelle prüfen können.
 
 

@@ -69,7 +69,7 @@ export const CommandPalette = ({ open, onOpen, onClose }: CommandPaletteProps) =
       ['sampler', 'settings.tabSampler', Sliders, 'temperature temperatur top_p preset сэмплер'],
       ['prompt', 'settings.tabPrompt', FileText, 'system prompt vorlage template промпт'],
       ['image', 'settings.tabImage', Image, 'image bild stable diffusion lora flux sdxl vram изображение'],
-      ['voice', 'settings.tabVoice', Mic, 'voice stimme tts stt sprache kokoro whisper rvc голос речь'],
+      ['voice', 'settings.tabVoice', Mic, 'voice stimme tts stt sprache kokoro whisper rvc mikrofon microphone prüfstand audio check голос речь микрофон マイク'],
       ['hub', 'settings.tabHub', Download, 'gguf model modell download huggingface модель'],
     ] as const).map(([section, label, icon, keywords]) => ({
       id: `settings-${section}`,

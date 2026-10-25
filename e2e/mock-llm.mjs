@@ -45,6 +45,14 @@ export function startMockLlm() {
         res.writeHead(200, { 'Content-Type': 'audio/wav' }).end(silentWav());
         return;
       }
+      // OpenAI-compatible speech recognition: always the same sentence (`stats.sttText` overrides it).
+      if (req.method === 'POST' && req.url.endsWith('/audio/transcriptions')) {
+        stats.stt = (stats.stt ?? 0) + 1;
+        stats.sttBytes = body.length;
+        res.writeHead(200, { 'Content-Type': 'application/json' })
+          .end(JSON.stringify({ text: stats.sttText ?? 'Hallo, das ist ein Test.' }));
+        return;
+      }
       // Adult hub source (OTAKUSOUL_NSFW_HUB_BASE): `stats.nsfwHubFiles`; every request is counted.
       if (req.method === 'GET' && req.url.startsWith('/hub-nsfw/')) {
         stats.nsfwHubRequests = (stats.nsfwHubRequests ?? 0) + 1;
