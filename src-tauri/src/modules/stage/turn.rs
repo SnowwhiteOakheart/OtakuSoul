@@ -289,7 +289,8 @@ Reply ONLY with a single valid JSON object in this format:
 RULES:
 - Write every text the player sees (player_choices text and badge, discovery, lasting_consequence, item names and descriptions, skill_name) in {reply_language}. Keep JSON keys and enum values in English.
 - dice_check: when a demanding check is needed, give e.g. {{"formula": "1d20+3", "dc": 14, "skill_name": "Perception"}}, otherwise null.
-- next_actor: who speaks after the game master's narration? A party member from [{party}], a present/new NPC by name, or "PLAYER".
+- The party members [{party}] are played by their own voices after your narration: never script their words, decisions or reactions in narration_plan. Plan only the world, events and NPCs.
+- next_actor: who speaks after the game master's narration? Usually the party member from [{party}] who would react first; a present/new NPC by name when they should speak; "PLAYER" only when the player must decide right now.
 - spawn_npcs: introduce or return NPCs with {{"name":"Name", "archetype":"citizen|innkeeper|guard|merchant|villain|creature|sage|noble", "personality":"Brief traits and background in {reply_language}"}}. Reuse known names; never create NPCs for party members.
 - despawn_npcs: names of NPCs who leave the scene. Their memories persist. Choose a present or newly spawned NPC as next_actor when they should speak.
 - bg_image: optionally the name of a fitting new background image (e.g. "Horizontal Elkia Grand Library.png"), or null.
@@ -902,6 +903,7 @@ Plan to follow:
 RULES:
 - Write gripping, atmospheric narration in {reply_language}, in the present tense.
 - If there was a dice check, weave its outcome in logically and dramatically.
+- Never speak, think or act for the party members ({party}) or for {user_name}: no dialogue, decisions or feelings of theirs. They react themselves right after you; end on a moment they can respond to.
 - Reply ONLY with the narration, without meta comments or addressing the reader."#,
         reply_language = reply_language,
         tone = localized_def.gm_tone,
@@ -1021,15 +1023,27 @@ RULES:
     let addressed = (!continues && whisper_to.is_none())
         .then(|| detect_direct_address(clean_input, &speaking_cast(&state)))
         .flatten();
+    // The planner's pick, matched loosely to the cast ("Stephanie" → "Stephanie Dola"). Outside
+    // combat the party always gets a word after the narration: on "PLAYER", an unknown name or a
+    // broken plan, whoever has waited longest speaks, so the game master never plays alone.
+    let planned = {
+        let cast = speaking_cast(&state);
+        let wanted = gm_plan.next_actor.as_deref().unwrap_or("PLAYER");
+        resolve_actor(wanted, &cast).or_else(|| {
+            (!state.combat.is_active)
+                .then(|| spotlight_pick(&state.definition.party, &recent_speakers(&state, 12)))
+                .flatten()
+        })
+    };
     let initial_next = req
         .force_next_actor
         .as_deref()
         .filter(|actor| !actor.trim().is_empty())
-        .or(whisper_to.as_deref())
-        .or(addressed.as_deref())
-        .or(gm_plan.next_actor.as_deref())
-        .unwrap_or("PLAYER")
-        .to_string();
+        .map(str::to_string)
+        .or(whisper_to.clone())
+        .or(addressed.clone())
+        .or(planned)
+        .unwrap_or_else(|| "PLAYER".to_string());
 
     let max_depth = state.definition.max_actor_depth.max(1);
     let mut current_actor = initial_next;

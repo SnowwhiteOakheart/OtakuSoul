@@ -488,7 +488,9 @@ ru „персонаж/история/сцена“. Fachbegriffe nur im Experte
   erhält dafür `&MemoryDb`. Szenengebundene NPCs bleiben bei `npc_memory_block` (keine Soul-ID).
   `stage/director.rs`: Sprecherfolge = Spielerwahl > Flüsterziel > direkte Ansprache > Planer; danach pro Beitrag
   Ansprache-Erkennung, sonst Routing-LLM (Mock erkennt „[STAGE — ROUTING]“). `turn_mode: "continue"` = Runde ohne
-  Spieleraktion (Weiter/Auto-Play).
+  Spieleraktion (Weiter/Auto-Play). Planer-Namen laufen über `resolve_actor` („Stephanie“ → „Stephanie Dola“); liefert er
+  außerhalb des Kampfs `PLAYER`, einen Unbekannten oder keinen Plan, spricht per `spotlight_pick` das am längsten stille
+  Gruppenmitglied – der Spielleiter spielt nie allein. Erzähler und Planer dürfen Gruppe und Spieler nichts vorschreiben.
   Der Abbruch-Merker wird nur am Runden-/Chat-Start zurückgesetzt (`reset_abort`), damit „Stopp“ die ganze Runde beendet.
   Story-Galerie: `StoryGallery.tsx` ist der Einstieg in Stage, wenn keine Szene gemerkt ist
   (`AppSettings.stage_last_scene`, `stageSlice.rememberStageScene`/`restoreStageScene`; fehlt die gemerkte Szene, bleibt eine

@@ -68,6 +68,61 @@ pub fn speaking_cast(state: &SceneState) -> Vec<String> {
     cast
 }
 
+/// The cast member a planner/routing name means: exact, then a name inside it
+/// ("Sora (Psychologin)" → Sora), then a first name ("Stephanie" → Stephanie Dola).
+pub fn resolve_actor(name: &str, cast: &[String]) -> Option<String> {
+    let name = name.trim();
+    if name.is_empty() {
+        return None;
+    }
+    let lower = name.to_lowercase();
+    if let Some(exact) = cast.iter().find(|c| c.trim().eq_ignore_ascii_case(name)) {
+        return Some(exact.clone());
+    }
+    let words = |s: &str| -> Vec<String> {
+        s.to_lowercase()
+            .split(|c: char| !c.is_alphanumeric())
+            .filter(|w| !w.is_empty())
+            .map(str::to_string)
+            .collect()
+    };
+    let name_words = words(&lower);
+    // The longest cast name whose words all appear in `name` ("Sora (Psychologin)").
+    let contained = cast
+        .iter()
+        .filter(|c| {
+            let cw = words(c);
+            !cw.is_empty() && cw.iter().all(|w| name_words.contains(w))
+        })
+        .max_by_key(|c| c.len());
+    if let Some(c) = contained {
+        return Some(c.clone());
+    }
+    // `name` is a part of exactly one cast name ("Stephanie" → "Stephanie Dola").
+    let mut partial = cast.iter().filter(|c| {
+        let cw = words(c);
+        !name_words.is_empty() && name_words.iter().all(|w| cw.contains(w))
+    });
+    match (partial.next(), partial.next()) {
+        (Some(only), None) => Some(only.clone()),
+        _ => None,
+    }
+}
+
+/// The party member who has waited longest for the spotlight (never spoke first).
+pub fn spotlight_pick(party: &[String], recent: &[String]) -> Option<String> {
+    party
+        .iter()
+        .filter(|p| !p.trim().is_empty())
+        .min_by_key(|p| {
+            recent
+                .iter()
+                .rposition(|r| r.eq_ignore_ascii_case(p))
+                .map_or(0, |i| i + 1)
+        })
+        .cloned()
+}
+
 /// Speakers of the last messages (oldest first), for fair spotlight.
 pub fn recent_speakers(state: &SceneState, limit: usize) -> Vec<String> {
     let mut speakers: Vec<String> = state
@@ -125,7 +180,8 @@ Rules, in this order:
 3. Natural reaction: a surprising, emotional or threatening moment earns a reaction from someone present.
 4. Do not let two characters ping-pong more than twice; characters who said their piece step back.
 5. Fair spotlight: prefer someone who has not spoken in a while, unless a rule above applies.
-6. When nothing calls for another voice, it is the PLAYER's turn.
+6. Companions who have not spoken this turn may add a short reaction before the player.
+7. When nothing calls for another voice, it is the PLAYER's turn.
 
 Reply ONLY with JSON: {{"next_actor": "<name or PLAYER>"}}"#,
         candidates = candidates.join(", "),
@@ -151,10 +207,7 @@ pub fn parse_routing(raw: &str, candidates: &[String]) -> Option<String> {
     if next.eq_ignore_ascii_case("PLAYER") {
         return Some("PLAYER".to_string());
     }
-    candidates
-        .iter()
-        .find(|c| c.eq_ignore_ascii_case(next))
-        .cloned()
+    resolve_actor(next, candidates)
 }
 
 #[cfg(test)]
@@ -221,5 +274,42 @@ mod tests {
         );
         assert_eq!(parse_routing(r#"{"next_actor": "Jibril"}"#, &names()), None);
         assert_eq!(parse_routing("no json", &names()), None);
+        assert_eq!(
+            parse_routing(r#"{"next_actor": "Ayu"}"#, &names()).as_deref(),
+            Some("Ayu Ikue")
+        );
+    }
+
+    #[test]
+    fn resolves_loose_actor_names() {
+        let cast: Vec<String> = vec!["Sora".into(), "Shiro".into(), "Stephanie Dola".into()];
+        assert_eq!(resolve_actor("sora", &cast).as_deref(), Some("Sora"));
+        assert_eq!(
+            resolve_actor("Sora (Psychologin)", &cast).as_deref(),
+            Some("Sora")
+        );
+        assert_eq!(
+            resolve_actor("Stephanie", &cast).as_deref(),
+            Some("Stephanie Dola")
+        );
+        assert_eq!(resolve_actor("Drakonus", &cast), None);
+        assert_eq!(resolve_actor("", &cast), None);
+    }
+
+    #[test]
+    fn spotlight_goes_to_the_longest_silent() {
+        let party: Vec<String> = vec!["Sora".into(), "Shiro".into(), "Stephanie Dola".into()];
+        assert_eq!(spotlight_pick(&party, &[]).as_deref(), Some("Sora"));
+        let recent: Vec<String> = vec!["Haru".into(), "Sora".into(), "Shiro".into()];
+        assert_eq!(
+            spotlight_pick(&party, &recent).as_deref(),
+            Some("Stephanie Dola")
+        );
+        let recent: Vec<String> = vec!["Stephanie Dola".into(), "Sora".into(), "Shiro".into()];
+        assert_eq!(
+            spotlight_pick(&party, &recent).as_deref(),
+            Some("Stephanie Dola")
+        );
+        assert_eq!(spotlight_pick(&[], &recent), None);
     }
 }
