@@ -299,7 +299,7 @@ export const StarterModelList = ({ starters, withVision, onChanged, exclude = []
  * The local path in one place: detected GPU, a one-click setup of the recommended starter
  * (runtime and model) and, for those who want to choose, the runtimes and all starter models.
  */
-export const LocalModelSetup = () => {
+export const LocalModelSetup = ({ express: showExpress = true }: { express?: boolean } = {}) => {
   const { t } = useTranslation();
   const { hardware, scannedModels, serverConfig, selectLocalModel, downloadVisionProjector, downloadProgress } = useStoreFields(
     'hardware', 'scannedModels', 'serverConfig', 'selectLocalModel', 'downloadVisionProjector', 'downloadProgress',
@@ -363,7 +363,7 @@ export const LocalModelSetup = () => {
 
   return (
     <div className="space-y-3">
-      {recommended && (
+      {showExpress && recommended && (
         <div className="rounded-xl border border-accent-500/40 bg-accent-500/10 p-4 space-y-2" data-express-setup={express.phase}>
           <p className="text-sm font-semibold text-slate-100">
             {t('onboarding.expressTitle', { name: recommended.name, size: recommended.file.size_formatted })}
@@ -404,7 +404,7 @@ export const LocalModelSetup = () => {
         </div>
       )}
 
-      <details className="space-y-3" open={!recommended}>
+      <details className="space-y-3" open={!recommended && showExpress}>
         <summary className="cursor-pointer text-xs font-semibold text-slate-300">{t('onboarding.chooseYourself')}</summary>
         <p className="flex items-center gap-1.5 text-xs text-slate-400">
           <Cpu className="h-3.5 w-3.5" />

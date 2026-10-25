@@ -372,6 +372,7 @@ pub fn run() {
             commands::app::scan_models,
             commands::app::scan_loras,
             commands::app::scan_vision_projectors,
+            commands::app::disk_space,
             commands::app::scan_vrm_models,
             commands::app::import_vrm_model,
             commands::app::list_avatar_model_files,

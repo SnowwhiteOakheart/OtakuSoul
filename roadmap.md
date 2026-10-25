@@ -34,10 +34,6 @@
   5. „Lass die Figur ihre Antworten vorlesen.“
   6. „Finde heraus, was ‚Kontext‘ bedeutet.“
   7. „Hol dir eine neue Figur aus dem Hub.“
-- [ ] **Geführte Ersteinrichtung für Einsteiger:** Beim ersten Start führt der Assistent durch die ganze Einrichtung und
-  zeigt für Chat, Bildgenerierung und Sprachausgabe (TTS) jeweils die Modelle, die zu Grafikkarte und Arbeitsspeicher passen
-  (Empfehlung vorausgewählt, Größe und Platzbedarf sichtbar). Am Ende fragt er, ob die gewählten Modelle gleich geladen werden
-  sollen, und lädt sie gesammelt mit Fortschritt; jeder Bereich lässt sich überspringen.
 
 ## 1. Lokale Modelle, Hardware & Laufzeiten
 

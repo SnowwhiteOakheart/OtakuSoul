@@ -30,6 +30,8 @@ import { CloudConnectionTest, FirstReply, LocalModelSetup, ModelFit, prettyModel
 import { OpenRouterLoginButton } from '../settings/OpenRouterLoginButton';
 import { CharacterVoiceModal } from '../voice/CharacterVoiceModal';
 import { ImageSettings } from '../settings/sections/ImageSettings';
+import { SetupBundle } from './SetupBundle';
+import { applyPendingVoice, useSetupBundle } from './setupBundleStore';
 
 const STEPS = ['welcome', 'model', 'character', 'media', 'done'] as const;
 type Step = (typeof STEPS)[number];
@@ -134,14 +136,18 @@ export const FirstRunWizard: React.FC = () => {
 
   const goTo = (target: Step) => {
     if (step === 'model') commitCloudDrafts();
+    // The character is chosen: it gets the downloaded speech model (shown in the voice step).
+    if (step === 'character') void applyPendingVoice().catch((e) => console.error('Failed to apply the voice:', e));
     setStep(target);
   };
 
   const finish = (after?: () => void) => {
     commitCloudDrafts();
+    void applyPendingVoice().catch((e) => console.error('Failed to apply the voice:', e));
     store.completeOnboarding();
     after?.();
   };
+  const bundleRunning = useSetupBundle((s) => s.running);
 
   const handleProviderChange = (provider: LlmProviderType) => {
     store.setCloudProvider(provider);
@@ -337,7 +343,8 @@ export const FirstRunWizard: React.FC = () => {
                     ))}
                   </fieldset>
                   )}
-                  <LocalModelSetup />
+                  <SetupBundle />
+                  <LocalModelSetup express={false} />
                   <button type="button" onClick={() => finish(() => store.openSettingsSection('hub'))} className={SECONDARY_BUTTON}>
                     <Download className="h-4 w-4" />
                     {t('onboarding.openModelHub')}
@@ -559,6 +566,12 @@ export const FirstRunWizard: React.FC = () => {
                   </div>
                 ))}
               </dl>
+
+              {bundleRunning && (
+                <p role="status" className="rounded-xl border border-accent-500/30 bg-accent-500/10 p-3 text-xs text-accent-100" data-setup-background>
+                  {t('setup.background')}
+                </p>
+              )}
 
               {store.activeCharacter && (isCloud ? store.cloudApiKey.trim() : localModel) && (
                 <FirstReply key={store.activeCharacter.id} character={store.activeCharacter} />

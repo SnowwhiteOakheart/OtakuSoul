@@ -221,6 +221,49 @@ fn parse_gpu_memory_users(csv: &str) -> Vec<(String, u64)> {
     users
 }
 
+/// Free space where downloads land, in MB (`None` when the disk is unknown).
+#[derive(Debug, Clone, Serialize, Deserialize, TS)]
+#[ts(export)]
+pub struct DiskSpace {
+    /// Chat models (models folder).
+    pub models_mb: Option<u64>,
+    /// Image and speech models, adapters (data folder).
+    pub data_mb: Option<u64>,
+}
+
+/// Free space on the disk that holds `path`: the mount point with the longest matching prefix.
+fn free_space_on(mounts: &[(std::path::PathBuf, u64)], path: &std::path::Path) -> Option<u64> {
+    mounts
+        .iter()
+        .filter(|(mount, _)| path.starts_with(mount))
+        .max_by_key(|(mount, _)| mount.as_os_str().len())
+        .map(|(_, free)| free / (1024 * 1024))
+}
+
+pub fn disk_space() -> DiskSpace {
+    let disks = sysinfo::Disks::new_with_refreshed_list();
+    let mounts: Vec<(std::path::PathBuf, u64)> = disks
+        .list()
+        .iter()
+        .map(|d| (d.mount_point().to_path_buf(), d.available_space()))
+        .collect();
+    let paths = crate::modules::paths::resolve_app_paths();
+    let resolve = |p: &str| {
+        let path = std::path::Path::new(p);
+        let full = std::fs::canonicalize(path).unwrap_or_else(|_| path.to_path_buf());
+        // Windows: `\\?\C:\…` does not start with the mount point `C:\`.
+        let plain = full
+            .to_string_lossy()
+            .strip_prefix(r"\\?\")
+            .map(std::path::PathBuf::from);
+        plain.unwrap_or(full)
+    };
+    DiskSpace {
+        models_mb: free_space_on(&mounts, &resolve(&paths.bundled_models_dir)),
+        data_mb: free_space_on(&mounts, &resolve(&paths.data_dir)),
+    }
+}
+
 pub fn probe_hardware() -> HardwareInfo {
     let mut sys = System::new();
     sys.refresh_memory();
@@ -593,6 +636,21 @@ fn recommend_gpu_layers_for_vram(
 
 #[cfg(test)]
 mod tests {
+
+    #[test]
+    fn free_space_comes_from_the_deepest_mount() {
+        let gb = 1024 * 1024 * 1024;
+        let mounts = vec![
+            (std::path::PathBuf::from("/"), 20 * gb),
+            (std::path::PathBuf::from("/home"), 300 * gb),
+            (std::path::PathBuf::from("/home/kai/games"), 5 * gb),
+        ];
+        let free = |p: &str| super::free_space_on(&mounts, std::path::Path::new(p));
+        assert_eq!(free("/home/kai/.local/share/otakusoul"), Some(300 * 1024));
+        assert_eq!(free("/home/kai/games/x"), Some(5 * 1024));
+        assert_eq!(free("/opt/otakusoul"), Some(20 * 1024));
+        assert_eq!(super::free_space_on(&[], std::path::Path::new("/x")), None);
+    }
 
     #[test]
     fn gpu_memory_users_are_named_without_path_and_sorted() {

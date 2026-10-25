@@ -332,6 +332,15 @@ ru „персонаж/история/сцена“. Fachbegriffe nur im Experte
   −1 bis −4 % genau; Antwort Gemma 4 12B 75 t/s, 26B-A4B 121 t/s, 31B 32 t/s, Qwen3.6 35B-A3B 132 t/s (21,8 GB),
   Cydonia/Hearthfire 24B 43 t/s, Bonsai 27B 69–71 t/s (262K Kontext, 12,1 GB). `memory`: Gemma 4 12B/26B alles richtig,
   Qwen3.6 ohne Geschichts-Vorhaben, Cydonia erkennt Erledigtes nicht und fasst Gewohnheiten nicht zusammen.
+- Geführte Ersteinrichtung (`onboarding/SetupBundle.tsx`, Ablauf in `setupBundleStore.ts`, Regeln in `utils/setupBundle.ts`):
+  Beim lokalen Weg empfiehlt eine Karte Chat (Katalogempfehlung), Bild (größtes frei nutzbares passendes Modell, nicht
+  `local_image::list_models().recommended`, das auch FLUX dev Non-Commercial nähme) und Stimme (`recommendTts`: beste
+  Modelle mit eingebauten Stimmen in der UI-Sprache, die neben das Chat-Modell in VRAM − 1,5 GB passen, sonst das kleinste).
+  Gesamtgröße gegen `disk_space` (Modell- und Datenordner, längster passender Einhängepunkt, Windows ohne `\\?\`), dann
+  „Ja, alles jetzt laden“: nacheinander Laufzeit (llama/prism, sd, crisp) + Download + Einrichtung; ein Fehler markiert nur
+  diesen Teil. Der Zustand liegt außerhalb der Schritte (zustand), damit Weiterklicken den Fortschritt behält; die Stimme
+  (`pendingVoice`) bekommt die Figur nach dem Figurenschritt bzw. am Ende (`applyPendingVoice`), nach Abschluss des
+  Assistenten direkt. Die frühere Nur-Chat-Expresskarte von `LocalModelSetup` ist dort ausgeblendet (`express={false}`).
 - Einrichtungsassistent: `components/onboarding/OnboardingParts.tsx` (Cloud-Test, lokaler Weg, erste Antwort) nutzt
   `quick_reply` (eine kurze Antwort außerhalb eines Chats, 90 s) und `list_starter_models` (Katalog `model_catalog.rs`:
   mitgeliefert `presets/recommended_models.json`, beim Start lädt `model_catalog::refresh` die Fassung aus `otakusoul-data`

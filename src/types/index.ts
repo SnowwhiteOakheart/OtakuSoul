@@ -25,6 +25,7 @@ import type { QuickReplyRequest } from './generated/QuickReplyRequest';
 import type { StarterModel } from './generated/StarterModel';
 import type { ChatLora } from './generated/ChatLora';
 import type { BenchmarkResult } from './generated/BenchmarkResult';
+import type { DiskSpace } from './generated/DiskSpace';
 import type { PromptLog } from './generated/PromptLog';
 import type { PromptLogMessage } from './generated/PromptLogMessage';
 import type { LoraSelection } from './generated/LoraSelection';
@@ -146,6 +147,7 @@ export type {
   StarterModel,
   ChatLora,
   BenchmarkResult,
+  DiskSpace,
   PromptLog,
   PromptLogMessage,
   ImagePromptRequest,

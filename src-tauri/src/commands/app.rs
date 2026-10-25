@@ -75,6 +75,17 @@ pub async fn scan_models() -> Vec<crate::modules::paths::ScannedModel> {
         .unwrap_or_default()
 }
 
+/// Free disk space where models are downloaded to.
+#[tauri::command]
+pub async fn disk_space() -> crate::modules::hardware::DiskSpace {
+    tokio::task::spawn_blocking(crate::modules::hardware::disk_space)
+        .await
+        .unwrap_or(crate::modules::hardware::DiskSpace {
+            models_mb: None,
+            data_mb: None,
+        })
+}
+
 #[tauri::command]
 pub fn scan_vision_projectors() -> Vec<crate::modules::paths::ScannedModel> {
     crate::modules::paths::scan_vision_projectors()

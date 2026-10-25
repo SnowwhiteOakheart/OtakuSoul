@@ -1,5 +1,6 @@
-// First-run wizard on a fresh profile: test the cloud connection, pick a character and end with a
-// real first reply of that character (all through the mock model).
+// First-run wizard on a fresh profile: the local way recommends chat, image and speech models for
+// this PC; then test the cloud connection, pick a character and end with a real first reply of
+// that character (all through the mock model).
 import assert from 'node:assert/strict';
 import path from 'node:path';
 import { launch, screenshotDir } from './harness.mjs';
@@ -22,9 +23,21 @@ try {
   await browser.$('h2=Willkommen bei OtakuSoul').waitForDisplayed({ timeout: 30_000 });
   await next();
 
-  // The local way: one-click setup of the recommended model, the rest under "choose yourself".
+  // The local way: chat, image and speech models for this PC, preselected, and one question to load
+  // them all (not clicked: that would download from Hugging Face); the rest under "choose yourself".
   await browser.$('[role="dialog"]').$('button*=Lokal').click();
-  await browser.$('[data-express-setup]').waitForDisplayed({ timeout: 15_000, timeoutMsg: 'Kein Ein-Klick-Weg für lokale Modelle' });
+  const bundle = await browser.$('[data-setup-bundle]');
+  await bundle.waitForDisplayed({ timeout: 15_000, timeoutMsg: 'Keine Empfehlung für Chat, Bilder und Stimme' });
+  assert.equal(await browser.$('#setup-chat').getValue(), 'e2e-model', 'Empfohlenes Chat-Modell nicht vorausgewählt');
+  for (const part of ['chat', 'image', 'tts']) {
+    assert.ok(await browser.$(`[data-setup-part="${part}"]`).isExisting(), `Bereich ${part} fehlt`);
+  }
+  const bundleText = await bundle.getText();
+  assert.ok(bundleText.includes('Zu laden:') && bundleText.includes('Sollen diese Modelle jetzt geladen werden?'), bundleText);
+  assert.ok(await browser.$('[data-setup-run]').isEnabled(), 'Laden-Knopf gesperrt');
+  await browser.execute(() => document.querySelector('[data-setup-bundle]')?.scrollIntoView({ block: 'start' }));
+  await browser.pause(300);
+  await shot('37a-assistent-ausstattung');
   const chooseYourself = await browser.$('[role="dialog"]').$('summary*=Selbst auswählen');
   // WebKit's driver reports <summary> as not interactable; a DOM click opens it the same way.
   await browser.execute((el) => el.click(), chooseYourself);
@@ -76,7 +89,7 @@ try {
   // New profiles show the character's picture, not the generic 3D model.
   const pressed = await browser.execute(() => [...document.querySelectorAll('button[aria-pressed="true"]')].map((b) => b.textContent.trim()));
   assert.ok(pressed.includes('Bild'), `Avatar-Modus: ${pressed}`);
-  console.log('Einrichtungsassistent: Verbindungstest, Charakterwahl und erste Antwort bestanden.');
+  console.log('Einrichtungsassistent: Empfehlung für Chat, Bilder und Stimme, Verbindungstest, Charakterwahl und erste Antwort bestanden.');
 } finally {
   await close();
 }
