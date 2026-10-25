@@ -88,12 +88,15 @@ impl MemoryProfile {
     }
 }
 
+/// Bytes of a cache type next to f16. Quantized types store a scale (and q4_1/q5_1 a minimum)
+/// per block of 32 values: q8_0 34 bytes, q4_0/iq4_nl 18, q4_1 20, q5_0 22, q5_1 24 (f16: 64).
 fn cache_precision_factor(cache_type: Option<&str>) -> f64 {
     match cache_type.unwrap_or("f16").to_ascii_lowercase().as_str() {
-        value if value.starts_with("q4") => 0.25,
-        value if value.starts_with("q5") => 0.3125,
-        value if value.starts_with("q6") => 0.375,
-        value if value.starts_with("q8") => 0.5,
+        "q4_1" => 20.0 / 64.0,
+        value if value.starts_with("q4") || value.starts_with("iq4") => 18.0 / 64.0,
+        "q5_1" => 24.0 / 64.0,
+        value if value.starts_with("q5") => 22.0 / 64.0,
+        value if value.starts_with("q8") => 34.0 / 64.0,
         "f32" => 2.0,
         _ => 1.0,
     }
@@ -702,7 +705,7 @@ mod tests {
         assert!(rec.fits_entirely_in_vram);
         assert_eq!(rec.recommended_layers, 99);
         assert_eq!(rec.recommended_context_size, 262_144);
-        assert_eq!(rec.estimated_context_vram_mb, 4_195);
+        assert_eq!(rec.estimated_context_vram_mb, 4_719);
         assert!(rec.estimated_vram_usage_mb < rec.available_vram_mb);
     }
 

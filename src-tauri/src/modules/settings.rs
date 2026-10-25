@@ -387,6 +387,13 @@ pub fn load_app_settings() -> AppSettings {
                     settings.active_vrm_path = Some(first_vrm.path.clone());
                 }
             }
+            if !kv_cache_migrated() {
+                if migrate_kv_cache(&mut settings) {
+                    info!("KV-Cache der gespeicherten Einstellungen von f16 auf q8_0 umgestellt");
+                    let _ = save_app_settings(&settings);
+                }
+                mark_kv_cache_migrated();
+            }
             return settings;
         } else {
             warn!("settings.json ist beschädigt; die Datei wird zur Wiederherstellung aufbewahrt.");
@@ -408,7 +415,47 @@ pub fn load_app_settings() -> AppSettings {
 
     let defaults = AppSettings::default();
     let _ = save_app_settings(&defaults);
+    // New settings start with q8_0 already; a later f16 is the user's choice.
+    mark_kv_cache_migrated();
     defaults
+}
+
+/// Marks that saved settings went from the old f16 KV cache default to q8_0 once. A file of its
+/// own, so the frontend (which writes the whole settings) can't reset it.
+fn kv_cache_marker() -> PathBuf {
+    get_settings_file_path().with_file_name("kv-cache-q8.migrated")
+}
+
+fn kv_cache_migrated() -> bool {
+    kv_cache_marker().exists()
+}
+
+fn mark_kv_cache_migrated() {
+    if let Err(e) = fs::write(kv_cache_marker(), "1") {
+        warn!("Merker für die KV-Cache-Umstellung nicht geschrieben: {e}");
+    }
+}
+
+/// f16 was the default KV cache until q8_0 replaced it; configs still on f16 (and profiles of
+/// single models) get q8_0. Other choices (q4_0 for Bonsai) stay. `true` when anything changed.
+fn migrate_kv_cache(settings: &mut AppSettings) -> bool {
+    let mut changed = false;
+    let configs = std::iter::once(&mut settings.server_config).chain(
+        settings
+            .model_profiles
+            .values_mut()
+            .map(|profile| &mut profile.server_config),
+    );
+    for config in configs {
+        let f16 =
+            |cache: &Option<String>| cache.as_deref().is_none_or(|t| t.is_empty() || t == "f16");
+        if f16(&config.cache_type_k) && f16(&config.cache_type_v) {
+            config.cache_type_k = Some("q8_0".to_string());
+            config.cache_type_v = Some("q8_0".to_string());
+            changed = true;
+        }
+    }
+    changed
 }
 
 pub fn save_app_settings(settings: &AppSettings) -> Result<(), String> {
@@ -489,6 +536,51 @@ fn save_app_settings_to_path(settings: &AppSettings, path: &std::path::Path) -> 
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    #[test]
+    fn an_old_f16_kv_cache_becomes_q8_0_and_other_choices_stay() {
+        let config = |k: Option<&str>, v: Option<&str>| LlamaServerConfig {
+            cache_type_k: k.map(str::to_string),
+            cache_type_v: v.map(str::to_string),
+            ..LlamaServerConfig::default()
+        };
+        let profile = |server_config| ModelProfile {
+            server_config,
+            sampling: SamplingParams::default(),
+            active_preset_id: None,
+        };
+        let mut settings: AppSettings = serde_json::from_str("{}").unwrap();
+        settings.server_config = config(Some("f16"), Some("f16"));
+        settings.model_profiles = [
+            ("old.gguf".to_string(), profile(config(None, None))),
+            (
+                "bonsai.gguf".to_string(),
+                profile(config(Some("q4_0"), Some("q4_0"))),
+            ),
+            (
+                "mixed.gguf".to_string(),
+                profile(config(Some("q8_0"), Some("f16"))),
+            ),
+        ]
+        .into();
+        assert!(migrate_kv_cache(&mut settings));
+        let types = |c: &LlamaServerConfig| (c.cache_type_k.clone(), c.cache_type_v.clone());
+        let q8 = (Some("q8_0".to_string()), Some("q8_0".to_string()));
+        assert_eq!(types(&settings.server_config), q8);
+        assert_eq!(
+            types(&settings.model_profiles["old.gguf"].server_config),
+            q8
+        );
+        assert_eq!(
+            types(&settings.model_profiles["bonsai.gguf"].server_config),
+            (Some("q4_0".to_string()), Some("q4_0".to_string()))
+        );
+        assert_eq!(
+            types(&settings.model_profiles["mixed.gguf"].server_config),
+            (Some("q8_0".to_string()), Some("f16".to_string()))
+        );
+        assert!(!migrate_kv_cache(&mut settings));
+    }
 
     #[test]
     fn older_replacement_rules_keep_working_on_replies() {

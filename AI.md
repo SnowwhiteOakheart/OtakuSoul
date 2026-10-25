@@ -260,6 +260,13 @@ ru „персонаж/история/сцена“. Fachbegriffe nur im Experte
   `hardware::estimate_llm_vram_mb` (+ mmproj) mit dem freien VRAM und meldet `backend.server.notEnoughVram` samt
   Belegern (`hardware::gpu_memory_users`, nvidia-smi); bricht llama.cpp trotzdem mit Speichermangel ab
   (`is_vram_failure`), wird daraus dieselbe Meldung. Server-Fehler im UI über `errorMessage()` anzeigen.
+- KV-Cache: Standard q8_0 für K und V (`LlamaServerConfig::default`, Frontend `DEFAULT_KV_CACHE`; halb so groß wie f16,
+  kaum Verlust). Gespeichertes f16 (alter Standard) stellt `settings::migrate_kv_cache` einmalig um (Merker
+  `kv-cache-q8.migrated` neben `settings.json`, weil das Frontend die Einstellungen komplett schreibt); andere Wahl bleibt.
+  Flash Attention: an → `-fa auto` (llama.cpp schaltet sie für quantisierten V-Cache selbst ein), aus → `-fa off` (ohne `-fa`
+  wäre es `auto`); ohne sie bleibt V f16 (`supported_cache`, Schätzung über `kvCacheTypes`). Größenfaktoren je Typ in
+  `hardware::cache_precision_factor` mit Blockskalen (q8_0 34/64, q4_0 18/64). Gemma 4 und Qwen3.6 haben kaum KV
+  (Gleitfenster/Hybrid, q8 spart bei 32K nur 0,3–0,5 GB), Mistral-Basis (Nemo, Cydonia, Hearthfire) rund 2,4 GB.
 - Chat-Modell neben lokaler TTS: `llama_manager::fit_beside_speech` reserviert beim Start den VRAM der in dieser Sitzung
   genutzten Stimme (`tts_local::engine().reserved_vram_mb()`) – passt es mit f16 nicht, startet es mit q8_0-KV-Cache
   (nur mit Flash-Attention, Hinweis `ServerStatus.notice`), sonst wird `crispasr` entladen. Startet `crispasr` neben einem

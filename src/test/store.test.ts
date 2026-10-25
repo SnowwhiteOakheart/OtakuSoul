@@ -123,7 +123,7 @@ describe('local model selection', () => {
     useAppStore.setState({ serverConfig: { ...initialState.serverConfig, model_path: '/old.gguf', context_size: 4096, gpu_layers: 20 } });
 
     await useAppStore.getState().selectLocalModel('/nemo.gguf');
-    expect(api.getLayerRecommendation).toHaveBeenCalledWith(0, 0, 4096, '/nemo.gguf', 'f16', 'f16');
+    expect(api.getLayerRecommendation).toHaveBeenCalledWith(0, 0, 4096, '/nemo.gguf', 'q8_0', 'q8_0');
     expect(useAppStore.getState().serverConfig).toMatchObject({ context_size: 32_768, gpu_layers: 99 });
     expect(lastSavedSettings().server_config.context_size).toBe(32_768);
   });

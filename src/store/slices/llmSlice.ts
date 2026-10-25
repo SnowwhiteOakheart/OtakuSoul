@@ -23,7 +23,7 @@ import { reportFailure } from '../reportFailure';
 import { errorCode, errorMessage } from '../../utils/errors';
 import { translate } from '../../i18n';
 import { trackTask } from './taskSlice';
-import { DEFAULT_CONTEXT_SIZE, serverTuningDefaults, settingsForNewModel } from '../../utils/settingDefaults';
+import { DEFAULT_CONTEXT_SIZE, DEFAULT_KV_CACHE, kvCacheTypes, serverTuningDefaults, settingsForNewModel } from '../../utils/settingDefaults';
 
 /** The task of the model being loaded; the server status says when it is ready. */
 let serverTaskId: string | null = null;
@@ -171,6 +171,8 @@ export const createLlmSlice: SliceCreator<LlmSlice> = (set, get) => ({
     gpu_layers: 99,
     flash_attn: true,
     reasoning_mode: false,
+    cache_type_k: DEFAULT_KV_CACHE,
+    cache_type_v: DEFAULT_KV_CACHE,
   },
 
   setServerConfig: (config) => {
@@ -226,7 +228,7 @@ export const createLlmSlice: SliceCreator<LlmSlice> = (set, get) => ({
         set((state) => ({ serverConfig: { ...state.serverConfig, mmproj_path: null } }));
       }
       await get().fetchLayerRecommendation(0, 0, get().serverConfig.context_size, path,
-        get().serverConfig.cache_type_k ?? 'f16', get().serverConfig.cache_type_v ?? 'f16');
+        ...kvCacheTypes(get().serverConfig));
       await get().saveCurrentSettings();
       return;
     }
@@ -258,8 +260,7 @@ export const createLlmSlice: SliceCreator<LlmSlice> = (set, get) => ({
         0,
         config.context_size,
         config.model_path,
-        config.cache_type_k ?? 'f16',
-        config.cache_type_v ?? 'f16',
+        ...kvCacheTypes(config),
       );
       set((state) => ({
         layerRecommendation: rec,

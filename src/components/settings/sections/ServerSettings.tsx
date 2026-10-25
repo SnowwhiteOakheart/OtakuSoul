@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react';
 import { ResetSection } from '../ResetSection';
 import { OptionHint } from '../OptionHint';
-import { changedFields, serverTuningDefaults } from '../../../utils/settingDefaults';
+import { changedFields, DEFAULT_KV_CACHE, kvCacheTypes, serverTuningDefaults } from '../../../utils/settingDefaults';
 import { useAppStore, useStoreFields } from '../../../store/useAppStore';
 import { translate, useTranslation } from '../../../i18n';
 import { errorMessage } from '../../../utils/errors';
@@ -108,8 +108,7 @@ export const ServerSettings = () => {
       layers,
       serverConfig.context_size,
       serverConfig.model_path,
-      serverConfig.cache_type_k ?? 'f16',
-      serverConfig.cache_type_v ?? 'f16'
+      ...kvCacheTypes(serverConfig)
     );
   };
 
@@ -470,7 +469,7 @@ export const ServerSettings = () => {
               <select
                 id="settings-kv"
                 aria-describedby="settings-kv-hint"
-                value={serverConfig.cache_type_k ?? 'f16'}
+                value={serverConfig.cache_type_k || DEFAULT_KV_CACHE}
                 onChange={(e) =>
                   setServerConfig({
                     cache_type_k: e.target.value,
@@ -479,8 +478,8 @@ export const ServerSettings = () => {
                 }
                 className="w-full bg-app border border-slate-800 rounded px-2.5 py-1 text-slate-200 font-mono"
               >
-                <option value="f16">{t('settings.kvF16')}</option>
                 <option value="q8_0">{t('settings.kvQ8')}</option>
+                <option value="f16">{t('settings.kvF16')}</option>
                 <option value="q4_0">{t('settings.kvQ4')}</option>
               </select>
               <OptionHint id="settings-kv-hint">{t('settings.kvHint')}</OptionHint>

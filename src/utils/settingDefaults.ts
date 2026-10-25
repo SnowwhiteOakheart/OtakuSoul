@@ -45,6 +45,17 @@ export function samplingDefaults(modelPath: string, local: boolean, rules: Model
   return local ? { ...base, ...modelDefaultsFor(modelPath, rules)?.sampling } : base;
 }
 
+/** KV cache a server config starts with (`LlamaServerConfig::default`): about half of f16, hardly any loss. */
+export const DEFAULT_KV_CACHE = 'q8_0';
+
+/** K and V cache types as llama-server runs them: without flash attention a quantized V cache
+ * stays f16 (`llama_manager::supported_cache`). For VRAM estimates. */
+export function kvCacheTypes(config: Pick<LlamaServerConfig, 'cache_type_k' | 'cache_type_v' | 'flash_attn'>): [string, string] {
+  const k = config.cache_type_k || DEFAULT_KV_CACHE;
+  const v = config.cache_type_v || DEFAULT_KV_CACHE;
+  return [k, config.flash_attn || /^b?f/.test(v) ? v : 'f16'];
+}
+
 /** The context a server config starts with before it is fitted to a model (`LlamaServerConfig::default`). */
 export const DEFAULT_CONTEXT_SIZE = 4096;
 
@@ -57,8 +68,8 @@ export function serverTuningDefaults(modelPath: string, rules: ModelDefaults[] =
     thinking_budget: 0,
     batch_size: 2048,
     ubatch_size: 512,
-    cache_type_k: 'f16',
-    cache_type_v: 'f16',
+    cache_type_k: DEFAULT_KV_CACHE,
+    cache_type_v: DEFAULT_KV_CACHE,
     mlock: false,
     no_mmap: false,
     cpu_moe: false,

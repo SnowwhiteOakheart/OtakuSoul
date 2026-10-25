@@ -132,6 +132,24 @@ fn quantized_cache(config: &LlamaServerConfig) -> Option<LlamaServerConfig> {
     })
 }
 
+/// The config llama.cpp can start: a quantized V cache needs flash attention, so without it
+/// the V cache stays f16 (a quantized K cache works either way).
+fn supported_cache(mut config: LlamaServerConfig) -> LlamaServerConfig {
+    let quantized = |cache: &Option<String>| {
+        cache
+            .as_deref()
+            .is_some_and(|t| !t.is_empty() && !t.starts_with('f') && !t.starts_with("bf"))
+    };
+    if !config.flash_attn && quantized(&config.cache_type_v) {
+        info!(
+            "Flash Attention aus: V-Cache läuft mit f16 statt {:?}",
+            config.cache_type_v
+        );
+        config.cache_type_v = Some("f16".to_string());
+    }
+    config
+}
+
 static SHARED: std::sync::OnceLock<Arc<LlamaServerManager>> = std::sync::OnceLock::new();
 
 /// Makes the app's chat server reachable for [`make_room_for_speech`].
@@ -234,8 +252,10 @@ impl Default for LlamaServerConfig {
             thinking_budget: Some(0),
             batch_size: Some(2048),
             ubatch_size: Some(512),
-            cache_type_k: Some("f16".to_string()),
-            cache_type_v: Some("f16".to_string()),
+            // q8_0 halves the KV cache next to f16 with hardly any loss: about twice the context
+            // in the same video memory.
+            cache_type_k: Some("q8_0".to_string()),
+            cache_type_v: Some("q8_0".to_string()),
             mlock: false,
             no_mmap: false,
             cpu_moe: false,
@@ -513,10 +533,11 @@ impl LlamaServerManager {
         status
     }
 
-    pub async fn start(&self, mut config: LlamaServerConfig) -> Result<(), String> {
+    pub async fn start(&self, config: LlamaServerConfig) -> Result<(), String> {
         let _operation = self.operation.lock().await;
         // If already running or starting, stop first
         self.stop_process().await?;
+        let mut config = supported_cache(config);
 
         let binary_path = match self
             .resolve_binary_for_model(config.binary_path.as_deref(), &config.model_path)
@@ -686,10 +707,9 @@ impl LlamaServerManager {
             .arg("--host")
             .arg("127.0.0.1");
 
-        if config.flash_attn {
-            cmd.arg("-fa");
-            cmd.arg("auto");
-        }
+        // Without `-fa` llama.cpp decides by itself (`auto`), so switching it off must say so.
+        cmd.arg("-fa")
+            .arg(if config.flash_attn { "auto" } else { "off" });
 
         if !config.reasoning_mode {
             cmd.arg("--reasoning")
@@ -1018,6 +1038,8 @@ mod tests {
     fn only_an_f16_cache_with_flash_attention_is_quantized() {
         let config = LlamaServerConfig {
             flash_attn: true,
+            cache_type_k: Some("f16".to_string()),
+            cache_type_v: Some("f16".to_string()),
             ..LlamaServerConfig::default()
         };
         let quantized = quantized_cache(&config).unwrap();
@@ -1031,6 +1053,33 @@ mod tests {
             })
             .is_none()
         );
+    }
+
+    #[test]
+    fn the_default_kv_cache_is_q8_0() {
+        let config = LlamaServerConfig::default();
+        assert_eq!(config.cache_type_k.as_deref(), Some("q8_0"));
+        assert_eq!(config.cache_type_v.as_deref(), Some("q8_0"));
+    }
+
+    #[test]
+    fn without_flash_attention_the_v_cache_stays_f16() {
+        let off = supported_cache(LlamaServerConfig {
+            flash_attn: false,
+            ..LlamaServerConfig::default()
+        });
+        assert_eq!(off.cache_type_k.as_deref(), Some("q8_0"));
+        assert_eq!(off.cache_type_v.as_deref(), Some("f16"));
+        let on = supported_cache(LlamaServerConfig::default());
+        assert_eq!(on.cache_type_v.as_deref(), Some("q8_0"));
+        for kept in ["f16", "bf16", "f32"] {
+            let config = supported_cache(LlamaServerConfig {
+                flash_attn: false,
+                cache_type_v: Some(kept.to_string()),
+                ..LlamaServerConfig::default()
+            });
+            assert_eq!(config.cache_type_v.as_deref(), Some(kept));
+        }
     }
 
     #[test]

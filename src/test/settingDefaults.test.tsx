@@ -3,7 +3,7 @@ import { act, fireEvent, render, screen } from '@testing-library/react';
 import { describe, expect, it, vi } from 'vitest';
 import { ResetSection } from '../components/settings/ResetSection';
 import { toast } from '../components/ui/feedback';
-import { EXTRA_SAMPLING_FIELDS, changedFields, samplingDefaults, serverTuningDefaults, settingsForNewModel } from '../utils/settingDefaults';
+import { EXTRA_SAMPLING_FIELDS, changedFields, kvCacheTypes, samplingDefaults, serverTuningDefaults, settingsForNewModel } from '../utils/settingDefaults';
 import type { LlamaServerConfig, ModelDefaults, SamplingParams } from '../types';
 
 describe('setting defaults', () => {
@@ -26,9 +26,15 @@ describe('setting defaults', () => {
     expect(samplingDefaults('/m/Ternary-Bonsai-2-27B.gguf', true, rules)).toMatchObject({ top_p: 0.95, top_k: 20 });
     expect(samplingDefaults('/m/Ternary-Bonsai-2-27B.gguf', false, rules)).toMatchObject({ top_p: 0.9, top_k: 40 });
     expect(serverTuningDefaults('/m/Ternary-Bonsai-2-27B.gguf', rules)).toMatchObject({ cache_type_k: 'q4_0', reasoning_mode: true });
-    expect(serverTuningDefaults('/m/Nemo.gguf', rules)).toMatchObject({ cache_type_k: 'f16', reasoning_mode: false });
+    expect(serverTuningDefaults('/m/Nemo.gguf', rules)).toMatchObject({ cache_type_k: 'q8_0', reasoning_mode: false });
     // Only the file name counts, not a folder named after a family.
-    expect(serverTuningDefaults('/bonsai/Nemo.gguf', rules)).toMatchObject({ cache_type_k: 'f16' });
+    expect(serverTuningDefaults('/bonsai/Nemo.gguf', rules)).toMatchObject({ cache_type_k: 'q8_0' });
+  });
+
+  it('estimates the KV cache as llama-server runs it', () => {
+    expect(kvCacheTypes({ flash_attn: true })).toEqual(['q8_0', 'q8_0']);
+    expect(kvCacheTypes({ flash_attn: false, cache_type_k: 'q4_0', cache_type_v: 'q4_0' })).toEqual(['q4_0', 'f16']);
+    expect(kvCacheTypes({ flash_attn: false, cache_type_k: 'f16', cache_type_v: 'bf16' })).toEqual(['f16', 'bf16']);
   });
 
   it("keeps the user's settings for a new model and swaps only the family values", () => {
@@ -36,7 +42,7 @@ describe('setting defaults', () => {
       reasoning_mode: true, cache_type_k: 'q4_0', cache_type_v: 'q4_0', threads: 6 } as LlamaServerConfig;
     const sampling = { temperature: 1.1, top_p: 0.95, top_k: 20, min_p: 0.05, max_tokens: 2048 } as SamplingParams;
     const fromBonsai = settingsForNewModel(server.model_path, '/m/Nemo.gguf', server, sampling, rules);
-    expect(fromBonsai.server).toMatchObject({ cache_type_k: 'f16', reasoning_mode: false, threads: 6 });
+    expect(fromBonsai.server).toMatchObject({ cache_type_k: 'q8_0', reasoning_mode: false, threads: 6 });
     expect(fromBonsai.sampling).toMatchObject({ temperature: 1.1, top_p: 0.9, top_k: 40 });
     const toBonsai = settingsForNewModel('/m/Nemo.gguf', server.model_path, fromBonsai.server, fromBonsai.sampling, rules);
     expect(toBonsai.server).toMatchObject({ cache_type_k: 'q4_0', reasoning_mode: true });
