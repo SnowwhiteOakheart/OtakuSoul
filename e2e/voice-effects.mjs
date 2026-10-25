@@ -20,14 +20,17 @@ try {
   // The app loaded the voice before it was written here: reload so the dialog starts from it.
   await browser.refresh();
   await browser.$('textarea[aria-label="Nachricht"]').waitForDisplayed({ timeout: 30_000 });
-  // Every source the page plays is recorded. The player creates its Audio element only once
-  // (possibly before this hook), so `play()` is watched instead of `new Audio()`.
+  // Every clip the page loads is recorded. The player decodes clips with Web Audio after
+  // fetching them (no <audio> element), so `fetch` of `data:audio/…` URLs is watched. The effect
+  // renderer fetches the plain clip too; the mock answers every text with the same clip, so the
+  // rendered one is the clip that differs from it.
   await browser.execute(() => {
     window.__played = [];
-    const play = HTMLMediaElement.prototype.play;
-    HTMLMediaElement.prototype.play = function (...args) {
-      window.__played.push(this.src);
-      return play.apply(this, args);
+    const original = window.fetch;
+    window.fetch = function (input, ...args) {
+      const url = typeof input === 'string' ? input : input?.url ?? String(input);
+      if (url.startsWith('data:audio/')) window.__played.push(url);
+      return original.call(this, input, ...args);
     };
   });
 
@@ -43,11 +46,10 @@ try {
 
   // The player got a rendered WAV: longer than the plain clip (reverb tail), not the original.
   await browser.waitUntil(
-    () => browser.execute(() => (window.__played ?? []).some((src) => src.startsWith('data:audio/wav'))),
-    { timeout: 15_000, timeoutMsg: 'Nichts abgespielt' },
+    () => browser.execute((original) => (window.__played ?? []).some((src) => src.startsWith('data:audio/wav') && src !== original), plain),
+    { timeout: 15_000, timeoutMsg: 'Kein bearbeiteter Clip abgespielt' },
   );
-  const played = await browser.execute(() => (window.__played ?? []).find((src) => src.startsWith('data:audio/wav')));
-  assert.notEqual(played, plain, 'Effekte nicht angewendet');
+  const played = await browser.execute((original) => (window.__played ?? []).find((src) => src.startsWith('data:audio/wav') && src !== original), plain);
   assert.ok(played.length > plain.length, 'Bearbeiteter Clip nicht länger (Hall-Ausklang fehlt)');
 
   await jsClick(await browser.$('button=Speichern'));
