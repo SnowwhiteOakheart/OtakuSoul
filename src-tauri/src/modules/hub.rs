@@ -196,6 +196,38 @@ pub struct GatewaySceneEntry {
     pub nsfw: bool,
 }
 
+/// A story collection: the lorebooks, scenes and characters of one series, shown as one card in
+/// the hub. The lists hold registry keys (lorebook and character names, scene ids); an entry may
+/// belong to several collections.
+#[derive(Debug, Clone, Serialize, Deserialize, TS)]
+#[ts(export)]
+pub struct GatewayCollectionEntry {
+    pub id: String,
+    pub title: String,
+    pub author: String,
+    pub description: String,
+    /// Cover image (16:9); empty = none.
+    #[serde(default)]
+    pub cover_url: String,
+    #[serde(default)]
+    pub lorebooks: Vec<String>,
+    #[serde(default)]
+    pub scenes: Vec<String>,
+    #[serde(default)]
+    pub characters: Vec<String>,
+    #[serde(default)]
+    pub revision: u32,
+    #[serde(default)]
+    pub updated: String,
+    /// Texts in other languages (`{"en": {"title": …, "description": …}}`).
+    #[serde(default)]
+    #[ts(type = "Record<string, Record<string, string>>")]
+    pub translations: std::collections::HashMap<String, std::collections::HashMap<String, String>>,
+    /// Content for adults (from the NSFW source or marked so).
+    #[serde(default)]
+    pub nsfw: bool,
+}
+
 #[derive(Debug, Clone, Serialize, Deserialize, TS)]
 #[ts(export)]
 pub struct ChubSearchItem {
@@ -1014,6 +1046,92 @@ fn install_lorebook(
 }
 
 // =========================================================================
+// 3b. Sammlungen (Story collections)
+// =========================================================================
+
+/// The story collections. A data repository without `collections_registry.json` (older state,
+/// E2E mock) has none, which is not an error: the hub then lists everything ungrouped.
+pub async fn fetch_collections_gateway_registry() -> Result<Vec<GatewayCollectionEntry>, String> {
+    let res = get_http_client()?
+        .get(hub_url("collections_registry.json"))
+        .send()
+        .await
+        .map_err(|e| crate::err!("backend.hub.collectionsFetch", error = e))?;
+    if res.status() == reqwest::StatusCode::NOT_FOUND {
+        return Ok(Vec::new());
+    }
+    if !res.status().is_success() {
+        return Err(crate::err!(
+            "backend.hub.registryStatus",
+            status = res.status()
+        ));
+    }
+    let val: serde_json::Value = res
+        .json()
+        .await
+        .map_err(|e| crate::err!("backend.hub.collectionsFetch", error = e))?;
+    let nsfw = crate::modules::settings::nsfw_allowed();
+    let mut results: Vec<GatewayCollectionEntry> = val
+        .get("collections")
+        .and_then(|v| v.as_array())
+        .map(|items| {
+            items
+                .iter()
+                .filter(|c| nsfw || !is_nsfw(c))
+                .filter_map(|c| collection_entry(c, false))
+                .collect()
+        })
+        .unwrap_or_default();
+    if nsfw {
+        for c in nsfw_registry_items("collections_registry.json", "collections").await {
+            results.extend(collection_entry(&c, true));
+        }
+    }
+    Ok(results)
+}
+
+fn collection_entry(c: &serde_json::Value, from_nsfw: bool) -> Option<GatewayCollectionEntry> {
+    let text = |key: &str| {
+        c.get(key)
+            .and_then(|v| v.as_str())
+            .unwrap_or("")
+            .to_string()
+    };
+    let names = |key: &str| -> Vec<String> {
+        c.get(key)
+            .and_then(|v| v.as_array())
+            .map(|items| {
+                items
+                    .iter()
+                    .filter_map(|v| v.as_str().map(str::to_string))
+                    .collect()
+            })
+            .unwrap_or_default()
+    };
+    let (revision, updated) = entry_revision(c);
+    let id = c.get("id")?.as_str()?.to_string();
+    let title = c
+        .get("title")
+        .and_then(|v| v.as_str())
+        .unwrap_or(&id)
+        .to_string();
+    Some(GatewayCollectionEntry {
+        id,
+        title,
+        author: text("author"),
+        description: text("description"),
+        cover_url: text("cover_url"),
+        lorebooks: names("lorebooks"),
+        scenes: names("scenes"),
+        characters: names("characters"),
+        revision,
+        updated,
+        translations: entry_translations(c),
+        nsfw: from_nsfw || is_nsfw(c),
+    })
+}
+
+// =========================================================================
 // 4. Soul-Stage-Szenarien (Soul Stage Scenarios)
 // =========================================================================
 
@@ -1367,6 +1485,33 @@ mod tests {
         assert!(lorebook_entry(&book, false).unwrap().nsfw);
         // Incomplete entries are skipped.
         assert!(character_entry(&serde_json::json!({"name": "X"}), false).is_none());
+    }
+
+    #[test]
+    fn collections_list_their_contents_by_registry_key() {
+        let entry = serde_json::json!({
+            "id": "steins_gate",
+            "title": "Steins;Gate",
+            "author": "A",
+            "description": "Akihabara",
+            "cover_url": "https://example.org/cover.webp",
+            "lorebooks": ["Steins;Gate – Weltlinien & Divergenz"],
+            "scenes": ["steins_gate_ep1_erste_dmail", 5],
+            "characters": ["Okabe Rintarou"],
+            "translations": {"en": {"description": "Akihabara (en)"}}
+        });
+        let c = collection_entry(&entry, false).unwrap();
+        assert_eq!(c.scenes, vec!["steins_gate_ep1_erste_dmail"]);
+        assert_eq!(c.lorebooks.len(), 1);
+        assert_eq!(c.characters, vec!["Okabe Rintarou"]);
+        assert_eq!(c.revision, 1);
+        assert_eq!(c.translations["en"]["description"], "Akihabara (en)");
+        assert!(!c.nsfw);
+        // Without a title the id is shown; without an id the entry is skipped.
+        let bare = collection_entry(&serde_json::json!({"id": "x"}), true).unwrap();
+        assert_eq!(bare.title, "x");
+        assert!(bare.nsfw && bare.lorebooks.is_empty());
+        assert!(collection_entry(&serde_json::json!({"title": "y"}), false).is_none());
     }
 
     #[test]

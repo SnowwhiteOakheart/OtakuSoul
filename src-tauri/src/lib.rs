@@ -464,6 +464,7 @@ pub fn run() {
             commands::hub::fetch_lorebooks_gateway_registry,
             commands::hub::import_lorebook_from_gateway,
             commands::hub::fetch_stages_gateway_registry,
+            commands::hub::fetch_collections_gateway_registry,
             commands::hub::import_scene_from_gateway,
             commands::hub::list_installed_hub_items,
             // Phase 17: Ecosystem, Backups, Image Gen, Discord, Web Client & AI Assistant

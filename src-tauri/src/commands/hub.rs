@@ -86,6 +86,12 @@ pub async fn import_lorebook_from_gateway(
 }
 
 #[tauri::command]
+pub async fn fetch_collections_gateway_registry()
+-> Result<Vec<crate::modules::hub::GatewayCollectionEntry>, String> {
+    crate::modules::hub::fetch_collections_gateway_registry().await
+}
+
+#[tauri::command]
 pub async fn fetch_stages_gateway_registry()
 -> Result<Vec<crate::modules::hub::GatewaySceneEntry>, String> {
     crate::modules::hub::fetch_stages_gateway_registry().await

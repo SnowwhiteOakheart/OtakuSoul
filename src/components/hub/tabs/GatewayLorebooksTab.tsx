@@ -2,35 +2,15 @@ import { registryText } from '../registryText';
 import { useEffect, useState } from 'react';
 import { BookOpen } from 'lucide-react';
 import { useShallow } from 'zustand/react/shallow';
-import { api } from '../../../services/api';
 import { translate, useTranslation } from '../../../i18n';
 import { useAppStore } from '../../../store/useAppStore';
 import { hubStatus, matchesQuery, useHubStore } from '../hubStore';
 import { HubListState, HubStatusBadge, NsfwBadge, ImportButton, UpdateAllBar, hubButtonLabel } from '../hubParts';
-import { confirmDialog, toast } from '../../ui/feedback';
-import { errorCode, errorMessage } from '../../../utils/errors';
+import { toast } from '../../ui/feedback';
+import { errorMessage } from '../../../utils/errors';
+import { importLorebookTask, installLorebook } from '../hubInstall';
+import { CollectionCard, HubSectionTitle, groupByCollection, useCollectionLists } from '../collections';
 import type { GatewayLorebookEntry } from '../../../types';
-
-/**
- * Installs or updates a gateway lorebook. When the user changed the installed copy (or has an own
- * lorebook of that name), they decide whether the update goes ahead with their version kept as a
- * copy; `null` = cancelled.
- */
-async function installLorebook(lb: GatewayLorebookEntry) {
-  const run = (keepCopy: boolean) =>
-    api.importLorebookFromGateway(lb.download_url, lb.name, lb.revision, lb.updated, keepCopy);
-  try {
-    return await run(false);
-  } catch (e) {
-    if (errorCode(e)?.code !== 'backend.hub.lorebookModified') throw e;
-    const confirmed = await confirmDialog({
-      title: translate('hub.lorebookModifiedTitle', { name: lb.name }),
-      message: translate('hub.lorebookModifiedText'),
-      confirmLabel: translate('hub.lorebookKeepCopy'),
-    });
-    return confirmed ? await run(true) : null;
-  }
-}
 
 /** World lorebooks from the gateway registry. */
 export const GatewayLorebooksTab = () => {
@@ -46,17 +26,10 @@ export const GatewayLorebooksTab = () => {
 
   const visible = list.items.filter((lb) => matchesQuery(query, lb.name, text(lb, 'name'), lb.description, text(lb, 'description'), lb.author));
 
-  const handleImport = (lb: GatewayLorebookEntry) =>
-    runImport(lb.name, async () => {
-      const wasInstalled = statusOf(lb) !== 'new';
-      const res = await installLorebook(lb);
-      await useAppStore.getState().refreshLorebooks();
-      if (!res) return null;
-      return {
-        message: translate(wasInstalled ? 'hub.updatedLorebook' : 'hub.importedLorebook', { name: res.name, count: res.entries.length }),
-        action: { label: translate('hub.viewLorebooks'), onClick: () => useAppStore.getState().setActiveTab('lorebooks') },
-      };
-    });
+  const { collections } = useCollectionLists();
+  const { groups, rest } = groupByCollection(collections, (c) => c.lorebooks, list.items, visible, (lb) => lb.name, query, currentLanguage);
+
+  const handleImport = (lb: GatewayLorebookEntry) => runImport(lb.name, () => importLorebookTask(lb, statusOf(lb)));
 
   const outdated = list.items.filter((lb) => statusOf(lb) === 'update');
   const updateAll = async () => {
@@ -80,7 +53,7 @@ export const GatewayLorebooksTab = () => {
     <UpdateAllBar count={outdated.length} busy={updatingAll} onClick={() => void updateAll()} />
     <HubListState
       list={list}
-      visibleCount={visible.length}
+      visibleCount={groups.length + rest.length}
       loadingText={t('hub.loadingLorebooks')}
       emptyText={t('hub.noLorebooks')}
       emptyIcon={BookOpen}
@@ -88,8 +61,17 @@ export const GatewayLorebooksTab = () => {
       errorText={(error) => t('hub.loadError', { error })}
       onRetry={load}
     >
+      {groups.length > 0 && (
+        <section className="mb-8">
+          <HubSectionTitle>{t('hub.collections')}</HubSectionTitle>
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+            {groups.map((collection) => <CollectionCard key={collection.id} collection={collection} />)}
+          </div>
+        </section>
+      )}
+      {groups.length > 0 && rest.length > 0 && <HubSectionTitle>{t('hub.singleLorebooks')}</HubSectionTitle>}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-        {visible.map((lb) => (
+        {rest.map((lb) => (
           <div
             key={lb.name}
             className="group rounded-2xl bg-slate-900/60 border border-slate-800/80 hover:border-amber-500/50 transition-all p-5 flex flex-col justify-between shadow-sm"

@@ -880,6 +880,12 @@ ru „персонаж/история/сцена“. Fachbegriffe nur im Experte
   `overwrite`. Lorebooks behalten ihre ID; lokal veränderte (Hash ≠ `local_sha256`) oder fremde gleichnamige lehnt der Import mit
   `backend.hub.lorebookModified` ab, mit `keep_copy` wird die eigene Fassung als `<id>_own` gesichert. Frontend: `hubStatus`,
   `HubStatusBadge`, `UpdateAllBar`. `OTAKUSOUL_HUB_BASE` lenkt die Registries um (E2E `hub-updates.mjs` über den Mock).
+- Hub-Sammlungen: `collections_registry.json` (Daten-Repo, optional auch im NSFW-Repo) listet je Geschichte `lorebooks`
+  (Registry-Namen), `scenes` (IDs), `characters` (Namen) und `cover_url` (`hub::fetch_collections_gateway_registry`, fehlende
+  Datei = keine Sammlungen). Das Frontend gruppiert erst beim Anzeigen (`components/hub/collections.tsx`, `groupByCollection`):
+  Einträge einer Sammlung erscheinen in ihrem Tab nur als Karte, der Dialog `CollectionModal` installiert einzeln oder alles
+  Fehlende (Figuren → Lorebooks → Szenen). Installiert wird je Eintrag wie in den Tabs (`hubInstall.ts`); eine Sammlung selbst
+  hat keinen Installationsstand. E2E `hub-collections.mjs`.
 - Charakter-Importe (Datei, Hub, Chub, URL) laufen über `characters::store_imported_card`: gleicher Name →
   `backend.characters.exists`, das Frontend fragt per `services/characterImport.ts` (`importWithOverwrite`) und ruft mit
   `overwrite` erneut auf. Nie umbenennen („_1“); alte Kopien gehen in den Papierkorb, gelöschte werden wieder sichtbar.

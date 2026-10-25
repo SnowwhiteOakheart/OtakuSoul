@@ -3,14 +3,13 @@ import { useVirtualizer } from '@tanstack/react-virtual';
 import { useGridCols } from '../../../hooks/useGridCols';
 import { Users } from 'lucide-react';
 import { useShallow } from 'zustand/react/shallow';
-import { api } from '../../../services/api';
 import { translate, useTranslation } from '../../../i18n';
 import { hubStatus, matchesQuery, useHubStore } from '../hubStore';
-import { HubListState, HubStatusBadge, NsfwBadge, ImportButton, UpdateAllBar, characterImported, hubButtonLabel } from '../hubParts';
+import { HubListState, HubStatusBadge, NsfwBadge, ImportButton, UpdateAllBar, hubButtonLabel } from '../hubParts';
 import { toast } from '../../ui/feedback';
 import { errorMessage } from '../../../utils/errors';
 import { useAppStore } from '../../../store/useAppStore';
-import { importWithOverwrite } from '../../../services/characterImport';
+import { importCharacterTask, installCharacter } from '../hubInstall';
 import type { GatewayCharacterEntry } from '../../../types';
 
 /** Curated characters from the Soul Gateway registry. */
@@ -21,9 +20,6 @@ export const GatewayCharactersTab = () => {
   );
   const [updatingAll, setUpdatingAll] = useState(false);
   const statusOf = (char: GatewayCharacterEntry) => hubStatus(installed, 'character', char.name, char.revision);
-  // An update replaces the installed card (the old one goes to the trash); chats and memories stay.
-  const install = (char: GatewayCharacterEntry, overwrite: boolean) =>
-    api.importSoulGatewayCharacter(char.name, char.author, char.download_url, overwrite, char.revision, char.updated);
 
   useEffect(() => ensureLoaded('gateway'), [ensureLoaded]);
 
@@ -39,14 +35,7 @@ export const GatewayCharactersTab = () => {
   });
 
 
-  const handleImport = (char: GatewayCharacterEntry) =>
-    runImport(char.name, async () => {
-      const res =
-        statusOf(char) === 'update'
-          ? await install(char, true)
-          : await importWithOverwrite((overwrite) => install(char, overwrite));
-      return res && characterImported(res);
-    });
+  const handleImport = (char: GatewayCharacterEntry) => runImport(char.name, () => importCharacterTask(char, statusOf(char)));
 
   const outdated = list.items.filter((char) => statusOf(char) === 'update');
   const updateAll = async () => {
@@ -54,7 +43,7 @@ export const GatewayCharactersTab = () => {
     let done = 0;
     for (const char of outdated) {
       try {
-        await install(char, true);
+        await installCharacter(char, 'update');
         done += 1;
       } catch (e) {
         toast.error(translate('hub.importFailed', { error: `${char.name}: ${errorMessage(e)}` }));

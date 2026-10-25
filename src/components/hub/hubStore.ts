@@ -4,7 +4,7 @@ import { useAppStore } from '../../store/useAppStore';
 import { translate } from '../../i18n';
 import { errorMessage } from '../../utils/errors';
 import { toast, type ToastAction } from '../ui/feedback';
-import type { ChubSearchItem, GatewayCharacterEntry, GatewayLorebookEntry, GatewaySceneEntry, InstalledHubItem } from '../../types';
+import type { ChubSearchItem, GatewayCharacterEntry, GatewayCollectionEntry, GatewayLorebookEntry, GatewaySceneEntry, InstalledHubItem } from '../../types';
 
 export type ChubSort = 'trending' | 'popular' | 'favorites' | 'recent';
 
@@ -26,7 +26,7 @@ export const nsfwAllowed = () => {
   return nsfwEnabled && adultConfirmed;
 };
 
-export type ListKey = 'gateway' | 'lorebooks' | 'scenes';
+export type ListKey = 'gateway' | 'lorebooks' | 'scenes' | 'collections';
 
 interface HubState {
   query: string;
@@ -35,6 +35,11 @@ interface HubState {
   gateway: RemoteList<GatewayCharacterEntry>;
   lorebooks: RemoteList<GatewayLorebookEntry>;
   scenes: RemoteList<GatewaySceneEntry>;
+  /** Story collections; while missing or failed the lists simply stay ungrouped. */
+  collections: RemoteList<GatewayCollectionEntry>;
+  /** Id of the collection shown in the detail dialog. */
+  openCollection: string | null;
+  setOpenCollection: (id: string | null) => void;
   /** `loadedKey` identifies the filters the current items belong to (see `chubFilterKey`). */
   chub: RemoteList<ChubSearchItem> & { page: number; hasMore: boolean; loadedKey: string };
   chubSort: ChubSort;
@@ -47,6 +52,7 @@ interface HubState {
   loadGateway: () => Promise<void>;
   loadLorebooks: () => Promise<void>;
   loadScenes: () => Promise<void>;
+  loadCollections: () => Promise<void>;
   loadChub: (page?: number, append?: boolean) => Promise<void>;
 
   /** Installed hub contents with their revisions (for "update available"). */
@@ -82,6 +88,9 @@ export const useHubStore = create<HubState>()((set, get) => {
     gateway: emptyList(),
     lorebooks: emptyList(),
     scenes: emptyList(),
+    collections: emptyList(),
+    openCollection: null,
+    setOpenCollection: (openCollection) => set({ openCollection }),
     chub: { ...emptyList<ChubSearchItem>(), page: 1, hasMore: false, loadedKey: '' },
     chubSort: 'trending',
     chubTag: '',
@@ -102,12 +111,13 @@ export const useHubStore = create<HubState>()((set, get) => {
       const list = get()[key];
       const nsfwChanged = list.loaded && (list.nsfw ?? false) !== nsfwAllowed();
       if (!nsfwChanged && (list.loaded || list.loading || list.error)) return;
-      void { gateway: get().loadGateway, lorebooks: get().loadLorebooks, scenes: get().loadScenes }[key]();
+      void { gateway: get().loadGateway, lorebooks: get().loadLorebooks, scenes: get().loadScenes, collections: get().loadCollections }[key]();
     },
 
     loadGateway: () => loadList('gateway', () => api.fetchSoulGatewayRegistry()),
     loadLorebooks: () => loadList('lorebooks', () => api.fetchLorebooksGatewayRegistry()),
     loadScenes: () => loadList('scenes', () => api.fetchStagesGatewayRegistry()),
+    loadCollections: () => loadList('collections', async () => (await api.fetchCollectionsGatewayRegistry()) ?? []),
 
     loadChub: async (page = 1, append = false) => {
       const { query, chubSort, chubTag, chubNsfw } = get();

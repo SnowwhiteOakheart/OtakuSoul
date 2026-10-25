@@ -145,6 +145,54 @@ describe('HubView', () => {
     await vi.waitFor(() => expect(api.importLorebookFromGateway).toHaveBeenLastCalledWith('x', 'Welt', 3, '', true));
   });
 
+  it('groups a story into one collection and installs it completely', async () => {
+    const user = userEvent.setup();
+    useAppStore.setState({ hubSubTab: 'lorebooks' });
+    vi.mocked(api.fetchLorebooksGatewayRegistry).mockResolvedValue([
+      { name: 'Welt', author: 'snow', description: 'Eine Welt', entry_count: 1, download_url: 'x', revision: 3, updated: '', translations: { en: { name: 'World', description: 'A world' } }, nsfw: false },
+      { name: 'Figuren', author: 'snow', description: 'Alle Figuren', entry_count: 2, download_url: 'y', revision: 1, updated: '', translations: {}, nsfw: false },
+      { name: 'Allein', author: 'snow', description: 'Ohne Sammlung', entry_count: 1, download_url: 'z', revision: 1, updated: '', translations: {}, nsfw: false },
+    ]);
+    vi.mocked(api.fetchStagesGatewayRegistry).mockResolvedValue([
+      { id: 'ep1', title: 'Folge 1', author: 'snow', description: 'Der Anfang', starting_location: 'Tor', download_url: 's', revision: 1, updated: '', translations: {}, nsfw: false },
+    ]);
+    vi.mocked(api.fetchCollectionsGatewayRegistry).mockResolvedValue([
+      { id: 'saga', title: 'Saga', author: 'snow', description: 'Die ganze Saga', cover_url: 'https://example.invalid/cover.webp', lorebooks: ['Welt', 'Figuren', 'Fehlt'], scenes: ['ep1'], characters: ['Ayu Ikue'], revision: 1, updated: '', translations: { en: { description: 'The whole saga' } }, nsfw: false },
+    ]);
+    vi.mocked(api.listInstalledHubItems).mockResolvedValue([
+      { kind: 'lorebook', hub_id: 'Welt', local_id: 'welt', revision: 3, updated: '', local_sha256: '', installed_at: '' },
+    ]);
+    vi.mocked(api.importSoulGatewayCharacter).mockResolvedValue({ profile: ayu, imported_lorebook: null });
+    vi.mocked(api.importLorebookFromGateway).mockResolvedValue({ id: 'figuren', name: 'Figuren', entries: [{}, {}] } as never);
+    vi.mocked(api.importSceneFromGateway).mockResolvedValue({ definition: { id: 'hub_ep1', title: 'Folge 1' } } as never);
+    renderHub();
+
+    // One card for the collection; its lorebooks no longer show on their own.
+    const card = await screen.findByRole('button', { name: 'Open collection “Saga”' });
+    expect(await within(card).findByText('1/4 installed')).toBeInTheDocument();
+    expect(screen.queryByRole('heading', { name: 'World' })).not.toBeInTheDocument();
+    expect(screen.getByRole('heading', { name: 'Allein' })).toBeInTheDocument();
+
+    await user.click(card);
+    const dialog = await screen.findByRole('dialog');
+    expect(dialog).toHaveTextContent('The whole saga');
+    expect(within(dialog).getByText('World')).toBeInTheDocument();
+    expect(within(dialog).getByText('Folge 1')).toBeInTheDocument();
+    expect(within(dialog).getByText('Ayu Ikue')).toBeInTheDocument();
+
+    // Everything not yet installed, characters first: the scene casts them by name.
+    await user.click(within(dialog).getByRole('button', { name: 'Install the rest (3)' }));
+    expect(await screen.findByText('“Saga”: 3 items installed.')).toBeInTheDocument();
+    expect(api.importSoulGatewayCharacter).toHaveBeenCalledWith('Ayu Ikue', 'snow', 'https://example.invalid/ayu.png', false, 1, '');
+    expect(api.importLorebookFromGateway).toHaveBeenCalledTimes(1);
+    expect(api.importLorebookFromGateway).toHaveBeenCalledWith('y', 'Figuren', 1, '', false);
+    expect(api.importSceneFromGateway).toHaveBeenCalledWith('s', 'Folge 1', 'ep1', 1, '');
+    const order = [api.importSoulGatewayCharacter, api.importLorebookFromGateway, api.importSceneFromGateway].map(
+      (fn) => vi.mocked(fn).mock.invocationCallOrder[0]
+    );
+    expect(order).toEqual([...order].sort((a, b) => a! - b!));
+  });
+
   it('shows load errors with a retry that does not loop', async () => {
     const user = userEvent.setup();
     vi.mocked(api.fetchSoulGatewayRegistry).mockRejectedValueOnce(new Error('offline'));

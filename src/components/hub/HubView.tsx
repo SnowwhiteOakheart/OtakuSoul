@@ -9,6 +9,7 @@ import { ChubFilters, ChubTab } from './tabs/ChubTab';
 import { GatewayLorebooksTab } from './tabs/GatewayLorebooksTab';
 import { GatewayScenesTab } from './tabs/GatewayScenesTab';
 import { UrlImportModal } from './UrlImportModal';
+import { CollectionModal } from './CollectionModal';
 
 type HubTab = 'soul_gateway' | 'chub_ai' | 'lorebooks' | 'scenes';
 
@@ -21,6 +22,7 @@ const TABS: { id: HubTab; label: string | TranslationKey; translate: boolean; ic
 
 const reloadTab = (tab: HubTab) => {
   const hub = useHubStore.getState();
+  if (tab === 'lorebooks' || tab === 'scenes') void hub.loadCollections();
   return { soul_gateway: hub.loadGateway, chub_ai: () => hub.loadChub(1, false), lorebooks: hub.loadLorebooks, scenes: hub.loadScenes }[tab]();
 };
 
@@ -35,6 +37,7 @@ export const HubView = () => {
       soul_gateway: s.gateway.items.length,
       lorebooks: s.lorebooks.items.length,
       scenes: s.scenes.items.length,
+      openCollection: s.openCollection,
     }))
   );
   const [isUrlModalOpen, setIsUrlModalOpen] = useState(false);
@@ -149,6 +152,7 @@ export const HubView = () => {
       </div>
 
       {isUrlModalOpen && <UrlImportModal onClose={() => setIsUrlModalOpen(false)} />}
+      {hub.openCollection && <CollectionModal />}
     </div>
   );
 };

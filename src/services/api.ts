@@ -92,6 +92,7 @@ import {
   GatewayCharacterEntry,
   GatewayLorebookEntry,
   GatewaySceneEntry,
+  GatewayCollectionEntry,
   InstalledHubItem,
   ChubSearchResult,
   ChubCharacterDetail,
@@ -1566,6 +1567,11 @@ export const api = {
       updated,
       keepCopy,
     });
+  },
+
+  /** Story collections (lorebooks, scenes and characters of one series); none without a registry. */
+  fetchCollectionsGatewayRegistry: async (): Promise<GatewayCollectionEntry[]> => {
+    return await invoke<GatewayCollectionEntry[]>('fetch_collections_gateway_registry');
   },
 
   fetchStagesGatewayRegistry: async (): Promise<GatewaySceneEntry[]> => {

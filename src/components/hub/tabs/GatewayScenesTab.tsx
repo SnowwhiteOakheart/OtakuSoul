@@ -2,13 +2,14 @@ import { registryText } from '../registryText';
 import { useEffect, useState } from 'react';
 import { Dice5 } from 'lucide-react';
 import { useShallow } from 'zustand/react/shallow';
-import { api } from '../../../services/api';
 import { translate, useTranslation } from '../../../i18n';
 import { useAppStore } from '../../../store/useAppStore';
 import { hubStatus, matchesQuery, useHubStore } from '../hubStore';
 import { HubListState, HubStatusBadge, NsfwBadge, ImportButton, UpdateAllBar, hubButtonLabel } from '../hubParts';
 import { toast } from '../../ui/feedback';
 import { errorMessage } from '../../../utils/errors';
+import { importSceneTask, installScene as install, sceneHubId as hubId } from '../hubInstall';
+import { CollectionCard, HubSectionTitle, groupByCollection, useCollectionLists } from '../collections';
 import type { GatewaySceneEntry } from '../../../types';
 
 /** Soul Stage scenarios from the gateway registry. */
@@ -20,10 +21,7 @@ export const GatewayScenesTab = () => {
     useShallow((s) => ({ list: s.scenes, query: s.query, importingId: s.importingId, ensureLoaded: s.ensureLoaded, load: s.loadScenes, runImport: s.runImport, installed: s.installed, loadInstalled: s.loadInstalled }))
   );
   const [updatingAll, setUpdatingAll] = useState(false);
-  const hubId = (scene: GatewaySceneEntry) => scene.id || scene.title;
   const statusOf = (scene: GatewaySceneEntry) => hubStatus(installed, 'scene', hubId(scene), scene.revision);
-  const install = (scene: GatewaySceneEntry) =>
-    api.importSceneFromGateway(scene.download_url, scene.title, hubId(scene), scene.revision, scene.updated);
 
   useEffect(() => ensureLoaded('scenes'), [ensureLoaded]);
 
@@ -31,22 +29,10 @@ export const GatewayScenesTab = () => {
     matchesQuery(query, sc.title, text(sc, 'title'), sc.description, text(sc, 'description'), sc.author, text(sc, 'starting_location'))
   );
 
-  const handleImport = (scene: GatewaySceneEntry) =>
-    runImport(scene.title, async () => {
-      const wasInstalled = statusOf(scene) !== 'new';
-      const res = await install(scene);
-      await useAppStore.getState().fetchStageScenes();
-      return {
-        message: translate(wasInstalled ? 'hub.updatedScene' : 'hub.importedScene', { name: res.definition.title }),
-        action: {
-          label: translate('hub.startInStage'),
-          onClick: async () => {
-            await useAppStore.getState().loadStageScene(res.definition.id);
-            useAppStore.getState().setActiveTab('stage');
-          },
-        },
-      };
-    });
+  const { collections } = useCollectionLists();
+  const { groups, rest } = groupByCollection(collections, (c) => c.scenes, list.items, visible, hubId, query, currentLanguage);
+
+  const handleImport = (scene: GatewaySceneEntry) => runImport(scene.title, () => importSceneTask(scene, statusOf(scene)));
 
   const outdated = list.items.filter((scene) => statusOf(scene) === 'update');
   const updateAll = async () => {
@@ -71,7 +57,7 @@ export const GatewayScenesTab = () => {
     <UpdateAllBar count={outdated.length} busy={updatingAll} onClick={() => void updateAll()} />
     <HubListState
       list={list}
-      visibleCount={visible.length}
+      visibleCount={groups.length + rest.length}
       loadingText={t('hub.loadingScenes')}
       emptyText={t('hub.noScenes')}
       emptyIcon={Dice5}
@@ -79,8 +65,17 @@ export const GatewayScenesTab = () => {
       errorText={(error) => t('hub.loadError', { error })}
       onRetry={load}
     >
+      {groups.length > 0 && (
+        <section className="mb-8">
+          <HubSectionTitle>{t('hub.collections')}</HubSectionTitle>
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+            {groups.map((collection) => <CollectionCard key={collection.id} collection={collection} />)}
+          </div>
+        </section>
+      )}
+      {groups.length > 0 && rest.length > 0 && <HubSectionTitle>{t('hub.singleScenes')}</HubSectionTitle>}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-        {visible.map((scene) => (
+        {rest.map((scene) => (
           <div
             key={scene.title}
             className="group rounded-2xl bg-slate-900/60 border border-slate-800/80 hover:border-emerald-500/50 transition-all p-5 flex flex-col justify-between shadow-sm"
