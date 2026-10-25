@@ -3,6 +3,7 @@ import { ArrowRight, BookOpen, Cloud, Compass, Cpu, Dice5, MessageSquare, Settin
 import { useStoreFields } from '../store/useAppStore';
 import { useTranslation } from '../i18n';
 import { continueScenes } from './stage/StoryGallery';
+import { useChatLora } from './settings/sections/ChatLoraPicker';
 
 /** Model name of a GGUF path: the file name without folder and extension. */
 const modelName = (path: string) => path.split(/[\\/]/).pop()?.replace(/\.gguf$/i, '') ?? '';
@@ -28,7 +29,9 @@ export const HomeView: React.FC = () => {
   }, [fetchStageScenes]);
 
   const isCloud = selectedBackend === 'cloud';
-  const localModel = modelName(serverConfig.model_path);
+  const { chosen: adapter } = useChatLora();
+  // The adapter in use belongs to the model's name (e.g. "gemma-4-E4B-it-Q4_K_M + Heretic").
+  const localModel = [modelName(serverConfig.model_path), adapter?.name].filter(Boolean).join(' + ');
   const configured = isCloud ? !!cloudModel && (!!cloudApiKey || cloudProvider === 'custom') : !!localModel;
   const lastStory = stageScenes.find((scene) => scene.id === stageLastScene) ?? continueScenes(stageScenes, 1)[0];
   const name = activePersona.name && activePersona.name !== 'User' ? activePersona.name : '';

@@ -129,6 +129,18 @@ pub async fn list_chat_loras() -> Vec<crate::modules::models_hub::ChatLora> {
         .unwrap_or_default()
 }
 
+/// Whether the adapter at `path` is one for adults that stays off while 18+ is off: the settings
+/// then show it as none (it is kept and comes back when 18+ is turned on).
+#[tauri::command]
+pub async fn chat_lora_hidden(path: String) -> bool {
+    tokio::task::spawn_blocking(move || {
+        !crate::modules::nsfw::allowed()
+            && crate::modules::models_hub::is_adult_lora(std::path::Path::new(&path))
+    })
+    .await
+    .unwrap_or(false)
+}
+
 /// Downloads the catalog adapter `id` from its source (SHA-256 checked); returns its path.
 #[tauri::command]
 pub async fn download_chat_lora(app: tauri::AppHandle, id: String) -> Result<String, String> {

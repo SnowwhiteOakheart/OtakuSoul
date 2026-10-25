@@ -17,28 +17,49 @@ export function lorasForModel(loras: ChatLora[], modelPath: string): ChatLora[] 
 const CUSTOM = '__custom__';
 
 /**
+ * Catalog adapters for the selected local model and the one in use. An adapter for adults chosen
+ * earlier counts as none while 18+ is off (the server leaves it out; it comes back with 18+).
+ */
+export function useChatLora() {
+  const { serverConfig, nsfwEnabled, adultConfirmed } = useStoreFields('serverConfig', 'nsfwEnabled', 'adultConfirmed');
+  const [loras, setLoras] = useState<ChatLora[]>([]);
+  const refresh = () => api.listChatLoras().then((list) => setLoras(list ?? [])).catch(() => setLoras([]));
+  useEffect(() => {
+    void refresh();
+  }, [nsfwEnabled, adultConfirmed]);
+  const savedPath = serverConfig.lora_path ?? '';
+  // Checked by the backend (it knows the catalog); until then the saved path counts as none, so a
+  // hidden adapter's name never shows.
+  const [check, setCheck] = useState<{ path: string; hidden: boolean } | null>(null);
+  useEffect(() => {
+    if (!savedPath) return;
+    api.chatLoraHidden(savedPath)
+      .then((hidden) => setCheck({ path: savedPath, hidden: hidden === true }))
+      .catch(() => setCheck({ path: savedPath, hidden: false }));
+  }, [savedPath, nsfwEnabled, adultConfirmed]);
+  const path = savedPath && check?.path === savedPath && !check.hidden ? savedPath : '';
+  const fitting = lorasForModel(loras, serverConfig.model_path);
+  const chosen = path ? fitting.find((lora) => lora.path === path) ?? null : null;
+  return { fitting, chosen, path, refresh };
+}
+
+/**
  * LoRA adapter for the local chat model: simple choice among the catalog adapters made for it,
  * own files and the strength in expert mode. Adapters for adults come from the backend only while
  * 18+ is on.
  */
-export const ChatLoraPicker = () => {
+export const ChatLoraPicker = ({ className = '' }: { className?: string }) => {
   const { t, currentLanguage } = useTranslation();
-  const { serverConfig, expertMode, nsfwEnabled, adultConfirmed, activeDownloads, downloadProgress } = useStoreFields(
-    'serverConfig', 'expertMode', 'nsfwEnabled', 'adultConfirmed', 'activeDownloads', 'downloadProgress',
+  const { serverConfig, expertMode, activeDownloads, downloadProgress } = useStoreFields(
+    'serverConfig', 'expertMode', 'activeDownloads', 'downloadProgress',
   );
-  const [loras, setLoras] = useState<ChatLora[]>([]);
-  useEffect(() => {
-    api.listChatLoras().then(setLoras).catch(() => setLoras([]));
-  }, [nsfwEnabled, adultConfirmed]);
+  const { fitting, chosen, path, refresh } = useChatLora();
 
   const scale = serverConfig.lora_scale ?? 1;
   // While the slider is dragged; saved (and the server restarted) only when it is let go.
   const [draft, setDraft] = useState<number | null>(null);
   const draftScale = draft ?? scale;
 
-  const fitting = lorasForModel(loras, serverConfig.model_path);
-  const path = serverConfig.lora_path ?? '';
-  const chosen = fitting.find((lora) => lora.path === path) ?? null;
   const value = chosen ? chosen.id : path ? CUSTOM : '';
   // Simple mode shows the choice only for models with adapters (or one already chosen).
   if (!serverConfig.model_path || (!expertMode && fitting.length === 0 && !path)) return null;
@@ -53,9 +74,7 @@ export const ChatLoraPicker = () => {
     const lora = fitting.find((item) => item.id === next);
     if (!lora) return;
     if (lora.installed) return void store().setChatLora(lora.path, lora.scale);
-    void store().downloadChatLora(lora, serverConfig.model_path).then(() =>
-      api.listChatLoras().then(setLoras).catch(() => undefined),
-    );
+    void store().downloadChatLora(lora, serverConfig.model_path).then(refresh);
   };
 
   const browse = async () => {
@@ -78,7 +97,7 @@ export const ChatLoraPicker = () => {
   const text = (map: Record<string, string> | undefined) => (map ? map[currentLanguage] || map.en || '' : '');
 
   return (
-    <div className="space-y-1.5" data-chat-lora>
+    <div className={`space-y-1.5 ${className}`} data-chat-lora>
       <label htmlFor="settings-chat-lora" className="text-xs font-medium text-slate-300 flex items-center gap-1.5">
         <Sparkles className="w-3.5 h-3.5 text-accent-300" />
         {t('settings.chatLora')}

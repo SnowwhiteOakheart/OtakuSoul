@@ -13,6 +13,7 @@ import { backendMessage } from '../../../utils/errors';
 import { api } from '../../../services/api';
 import { downloadKey } from '../../../store/slices/llmSlice';
 import { StarterModelList } from '../../onboarding/OnboardingParts';
+import { ChatLoraPicker } from './ChatLoraPicker';
 import type { StarterModel } from '../../../types';
 
 export const ModelHubSettings = ({ onNavigate }: { onNavigate: (section: SettingsSection) => void }) => {
@@ -162,6 +163,10 @@ export const ModelHubSettings = ({ onNavigate }: { onNavigate: (section: Setting
             </button>
           ))}
         </div>
+      )}
+      {/* The adapter of the selected model, right where the model is chosen. */}
+      {hubView === 'installed' && serverConfig.model_path && (
+        <ChatLoraPicker className="rounded-xl border border-slate-800 bg-slate-900/60 p-4" />
       )}
 
       {/* Active Downloads Section */}

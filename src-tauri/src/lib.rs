@@ -220,6 +220,7 @@ pub fn run() {
             commands::llm::list_starter_models,
             commands::llm::list_chat_loras,
             commands::llm::download_chat_lora,
+            commands::llm::chat_lora_hidden,
             commands::llm::stop_llama_server,
             commands::llm::get_llama_server_status,
             commands::llm::get_runtime,

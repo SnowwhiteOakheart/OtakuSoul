@@ -263,7 +263,10 @@ ru „персонаж/история/сцена“. Fachbegriffe nur im Experte
   und verweigert sie dann; `llama_manager::lora_choice` lässt einen Adapter für Erwachsene beim Start weg, solange 18+ aus
   ist. Start mit `--lora` (Pfad mit Komma in Anführungszeichen), die Stärke per `POST /lora-adapters` nach dem Start:
   `--lora-scaled` trennt am `:` und zerlegt Windows-Pfade. Ein Adapter gehört zu seinem Modell: `settingsForNewModel`
-  setzt ihn zurück, im Modellprofil bleibt er. Test 25.10.2026 (b11669): Die Heretic-/Abliterated-Adapter heben bei E4B,
+  setzt ihn zurück, im Modellprofil bleibt er. Auswahl (`ChatLoraPicker`) in den Server-Einstellungen und unter „Meine
+  Modelle“, die Startseite nennt ihn hinter dem Modell. Ist 18+ aus, zählt ein gewählter Uncensor-Adapter überall als
+  „Keiner“ (`useChatLora` fragt `chat_lora_hidden`, bis zur Antwort gilt der Pfad als leer, damit kein Name aufblitzt),
+  bleibt aber gespeichert und kommt mit 18+ zurück. Test 25.10.2026 (b11669): Die Heretic-/Abliterated-Adapter heben bei E4B,
   12B und 26B-A4B alle Ablehnungen der 5 Testprompts auf, harmlose deutsche Antworten bleiben fast gleich; Stärke 0 bringt
   die Ablehnung zurück. Stil-Adapter (Gutenberg) ändern an Ablehnungen nichts.
 - Lokale Vision (GPU-Test 21.10.2026, RTX 4070 Ti SUPER, llama.cpp b11669): Qwen3-VL-8B Q4 + mmproj Q8_0 und Gemma 4 12B

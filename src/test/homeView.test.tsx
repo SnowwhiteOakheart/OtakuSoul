@@ -46,4 +46,23 @@ describe('HomeView', () => {
     await user.click(screen.getByRole('button', { name: /Continue with Ayu/ }));
     expect(useAppStore.getState().activeTab).toBe('chat');
   });
+
+  it('names the LoRA adapter next to the local model, but not one hidden while 18+ is off', async () => {
+    const adapter = '/data/chat-loras/gemma-4-e4b-heretic.gguf';
+    vi.mocked(api.listChatLoras).mockResolvedValue([{ id: 'gemma-4-e4b-heretic', name: 'Heretic', path: adapter,
+      base_files: ['gemma-4-E4B-it-Q4_K_M.gguf'] } as never]);
+    vi.mocked(api.chatLoraHidden).mockResolvedValue(false);
+    useAppStore.setState({
+      selectedBackend: 'local',
+      serverConfig: { ...useAppStore.getState().serverConfig, model_path: '/m/gemma-4-E4B-it-Q4_K_M.gguf', lora_path: adapter },
+    });
+    const { unmount } = render(<HomeView />);
+    expect(await screen.findByText(/gemma-4-E4B-it-Q4_K_M \+ Heretic – locally/)).toBeInTheDocument();
+    unmount();
+    // 18+ off: the backend lists it no more and reports it hidden.
+    vi.mocked(api.listChatLoras).mockResolvedValue([]);
+    vi.mocked(api.chatLoraHidden).mockResolvedValue(true);
+    render(<HomeView />);
+    expect(await screen.findByText(/gemma-4-E4B-it-Q4_K_M – locally/)).toBeInTheDocument();
+  });
 });

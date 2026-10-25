@@ -1,6 +1,7 @@
 // LoRA adapters for the local chat model: the catalog offers adapters for the chosen Gemma 4 model,
 // uncensor adapters only with 18+ on (list, download and choice), choosing one stores it with the
-// model, expert mode shows the strength. Model and adapter are sparse files of the catalog size in
+// model, expert mode shows the strength. The adapter also shows in "My models" and on the start page;
+// with 18+ off a chosen uncensor adapter counts as none there but stays saved. Model and adapter are sparse files of the catalog size in
 // the test profile, so nothing is downloaded and no server starts.
 import assert from 'node:assert/strict';
 import { mkdirSync, truncateSync, writeFileSync } from 'node:fs';
@@ -27,6 +28,15 @@ const value = async (command, args) => {
   const result = await call(command, args);
   assert.ok(result.ok, `${command}: ${result.error}`);
   return result.value;
+};
+const jsClick = (element) => browser.execute((el) => el.click(), element);
+const pageText = () => browser.execute(() => document.body.innerText);
+const startPageShows = async (text, shown) => {
+  await jsClick(await browser.$('button=Start'));
+  await browser.waitUntil(async () => (await pageText()).includes(text) === shown, {
+    timeout: 10_000,
+    timeoutMsg: `Startseite ${shown ? 'ohne' : 'mit'} „${text}“`,
+  });
 };
 const openServerTab = async () => {
   await browser.$('button=Einstellungen').click();
@@ -55,7 +65,7 @@ try {
   assert.ok(!(await browser.$('#settings-chat-lora').isExisting()), 'Adapter-Auswahl ohne passende Adapter sichtbar');
 
   // 18+ on: the adapter for this model is offered and already on disk.
-  await saveSettingsAndReload(browser, { nsfw_enabled: true, adult_confirmed: true, expert_mode: true });
+  await saveSettingsAndReload(browser, { nsfw_enabled: true, adult_confirmed: true, expert_mode: true, selected_backend: 'local' });
   await browser.$('textarea[aria-label="Nachricht"]').waitForDisplayed({ timeout: 30_000 });
   const all = await value('list_chat_loras');
   const heretic = all.find((l) => l.id === 'gemma-4-e4b-heretic');
@@ -92,13 +102,43 @@ try {
   await browser.pause(400);
   await browser.saveScreenshot(path.join(screenshotDir, '110-chat-lora.png'));
 
+  // "My models" shows the adapter of the selected model too, the start page names it.
+  await jsClick(await browser.$('#settings-tab-hub'));
+  await jsClick(await browser.$('button*=Meine Modelle'));
+  const hubSelect = await browser.$('[data-chat-lora] select');
+  await hubSelect.waitForDisplayed({ timeout: 10_000 });
+  assert.equal(await hubSelect.getValue(), 'gemma-4-e4b-heretic', 'Adapter unter „Meine Modelle“ nicht gewählt');
+  await startPageShows('gemma-4-E4B-it-Q4_K_M + Heretic', true);
+
+  // 18+ off: the adapter counts as none (nothing names it), but stays saved for later.
+  await saveSettingsAndReload(browser, { nsfw_enabled: false });
+  await browser.$('textarea[aria-label="Nachricht"]').waitForDisplayed({ timeout: 30_000 });
+  await startPageShows('Heretic', false);
+  await openServerTab();
+  await browser.pause(1000);
+  // Expert mode keeps the choice for own files: it shows "none" and no uncensor adapter.
+  const hiddenSelect = await browser.$('#settings-chat-lora');
+  await hiddenSelect.waitForDisplayed({ timeout: 10_000 });
+  assert.equal(await hiddenSelect.getValue(), '', 'Ausgeblendeter Adapter als gewählt angezeigt');
+  const hiddenOptions = await browser.execute((el) => [...el.options].map((o) => o.textContent).join('|'), hiddenSelect);
+  assert.ok(!hiddenOptions.includes('Heretic'), `Uncensor-Adapter ohne 18+ angeboten: ${hiddenOptions}`);
+  assert.ok(!(await pageText()).includes('heretic'), 'Dateiname des ausgeblendeten Adapters sichtbar');
+  assert.equal((await value('load_settings')).server_config.lora_path, adapter, 'Adapter beim Ausblenden verloren');
+  assert.equal(await value('chat_lora_hidden', { path: adapter }), true);
+  await saveSettingsAndReload(browser, { nsfw_enabled: true });
+  await browser.$('textarea[aria-label="Nachricht"]').waitForDisplayed({ timeout: 30_000 });
+  await startPageShows('+ Heretic', true);
+  await openServerTab();
+
   // Back to none.
-  await select.selectByAttribute('value', '');
+  const again = await browser.$('#settings-chat-lora');
+  await again.waitForDisplayed({ timeout: 10_000 });
+  await again.selectByAttribute('value', '');
   await browser.waitUntil(async () => (await value('load_settings')).server_config.lora_path === null, {
     timeout: 10_000,
     timeoutMsg: 'Adapter lässt sich nicht abwählen',
   });
-  console.log('Chat-LoRAs: Katalog je Modell, 18+-Sperre für Liste und Download, Auswahl mit Stärke und Abwahl bestanden.');
+  console.log('Chat-LoRAs: Katalog je Modell, 18+-Sperre für Liste und Download, Auswahl mit Stärke, „Meine Modelle“, Startseite, Ausblenden ohne 18+ und Abwahl bestanden.');
 } finally {
   await close();
 }

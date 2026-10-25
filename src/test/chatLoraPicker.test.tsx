@@ -85,6 +85,17 @@ describe('ChatLoraPicker', () => {
     expect(setLora).toHaveBeenLastCalledWith(null, 1);
   });
 
+  it('shows an adult adapter hidden while 18+ is off as none, and keeps it saved', async () => {
+    useAppStore.setState({ serverConfig: config({ lora_path: '/m/chat-loras/gemma-4-e4b-heretic.gguf' }) });
+    vi.mocked(api.listChatLoras).mockResolvedValue([gutenberg]);
+    vi.mocked(api.chatLoraHidden).mockResolvedValue(true);
+    const { container } = render(<ChatLoraPicker />);
+    await waitFor(() => expect(api.chatLoraHidden).toHaveBeenCalledWith('/m/chat-loras/gemma-4-e4b-heretic.gguf'));
+    // No adapter fits the E4B without 18+: nothing to show (not the file name either).
+    await waitFor(() => expect(container).toBeEmptyDOMElement());
+    expect(useAppStore.getState().serverConfig.lora_path).toBe('/m/chat-loras/gemma-4-e4b-heretic.gguf');
+  });
+
   it('lists an own adapter file as its own entry', async () => {
     useAppStore.setState({ expertMode: true, serverConfig: config({ lora_path: '/x/my-style.gguf' }) });
     render(<ChatLoraPicker />);

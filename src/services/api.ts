@@ -1247,6 +1247,11 @@ export const api = {
     return await invoke<ChatLora[]>('list_chat_loras');
   },
 
+  /** Whether the adapter at `path` is one for adults kept off while 18+ is off. */
+  chatLoraHidden: async (path: string): Promise<boolean> => {
+    return await invoke<boolean>('chat_lora_hidden', { path });
+  },
+
   /** Downloads the catalog adapter `id` (SHA-256 checked) and returns its path. */
   downloadChatLora: async (id: string): Promise<string> => {
     return await invoke<string>('download_chat_lora', { id });
