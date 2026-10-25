@@ -1,4 +1,4 @@
-import { useState, useMemo } from 'react';
+import { useState, useMemo, useLayoutEffect, useRef } from 'react';
 import { useShallow } from 'zustand/react/shallow';
 import { useAppStore } from '../../store/useAppStore';
 import { CharacterProfile } from '../../types';
@@ -26,6 +26,7 @@ import { useVirtualizer } from '@tanstack/react-virtual';
 import { useGridCols } from '../../hooks/useGridCols';
 import { CharacterEditorModal } from './CharacterEditorModal';
 import { CharacterPreviewModal, isStarterCharacter } from './CharacterPreviewModal';
+import { StarterBanner } from './StarterBanner';
 import { translate, useTranslation } from '../../i18n';
 import { confirmDialog, toast } from '../ui/feedback';
 import { DropdownMenu } from '../ui/DropdownMenu';
@@ -106,12 +107,25 @@ export const CharacterLibraryView = () => {
   const [previewing, setPreviewing] = useState<CharacterProfile | null>(null);
 
   const { ref: parentRef, cols } = useGridCols({ 640: 2, 768: 3, 1024: 4, 1280: 5 }, 1);
+  // The starter characters come first; a cover above them introduces them.
+  const starterCount = filteredCharacters.filter(isStarterCharacter).length;
+  // The banner pushes the grid down: the virtualizer counts from the grid's top.
+  const gridRef = useRef<HTMLDivElement>(null);
+  const [scrollMargin, setScrollMargin] = useState(0);
+  useLayoutEffect(() => {
+    const panel = parentRef.current;
+    const grid = gridRef.current;
+    if (!panel || !grid) return;
+    const margin = grid.getBoundingClientRect().top - panel.getBoundingClientRect().top + panel.scrollTop;
+    setScrollMargin((current) => (Math.abs(current - margin) > 1 ? margin : current));
+  });
   // oxlint-disable-next-line react/incompatible-library
   const rowVirtualizer = useVirtualizer({
     count: Math.ceil(filteredCharacters.length / cols),
     getScrollElement: () => parentRef.current,
     estimateSize: () => 380, // rough height of a card + gap
     overscan: 2,
+    scrollMargin,
   });
 
 
@@ -322,7 +336,10 @@ export const CharacterLibraryView = () => {
             }
           />
         ) : (
+          <>
+          {starterCount > 0 && <StarterBanner count={starterCount} />}
           <div
+            ref={gridRef}
             style={{ height: `${rowVirtualizer.getTotalSize()}px`, width: '100%', position: 'relative' }}
           >
             {rowVirtualizer.getVirtualItems().map((virtualRow) => {
@@ -340,7 +357,7 @@ export const CharacterLibraryView = () => {
                     top: 0,
                     left: 0,
                     width: '100%',
-                    transform: `translateY(${virtualRow.start}px)`,
+                    transform: `translateY(${virtualRow.start - scrollMargin}px)`,
                     paddingBottom: '20px', // gap substitute since grid parent doesn't handle vertical gap between virtual rows
                   }}
                 >
@@ -471,6 +488,7 @@ export const CharacterLibraryView = () => {
               );
             })}
           </div>
+          </>
         )}
       </div>
 

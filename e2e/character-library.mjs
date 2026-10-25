@@ -14,6 +14,17 @@ try {
   await firstPreview.waitForExist({ timeout: 15_000 });
   const name = (await firstPreview.getAttribute('aria-label')).replace('Mehr über ', '');
   assert.ok(['Shiori Amane', 'Sota Minase', 'Lirwen', 'Faelion'].includes(name), `Erste Karte ist keine Einsteiger-Figur: ${name}`);
+  // A cover introduces the starter characters; the grid starts below it.
+  const banner = await browser.$('[data-starter-banner]');
+  assert.ok(await banner.isDisplayed(), 'Banner über den Starterfiguren fehlt');
+  assert.match(await banner.getText(), /Starterfiguren[\s\S]*4 Figuren/);
+  await browser.waitUntil(() => browser.execute((el) => { const img = el.querySelector('img'); return img.complete && img.naturalWidth > 0; }, banner), {
+    timeout: 5000,
+    timeoutMsg: 'Titelbild der Starterfiguren lädt nicht',
+  });
+  const [bannerBottom, cardTop] = await browser.execute((el, card) => [el.getBoundingClientRect().bottom, card.getBoundingClientRect().top], banner, firstPreview);
+  assert.ok(cardTop >= bannerBottom, `Karten liegen unter dem Banner (${cardTop} < ${bannerBottom})`);
+  await browser.saveScreenshot(path.join(screenshotDir, '86a-starterfiguren.png'));
   await jsClick(firstPreview);
 
   const preview = await browser.$('[data-character-preview]');
