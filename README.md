@@ -14,7 +14,7 @@
 </p>
 
 <p align="center">
-  <a href="https://github.com/SnowwhiteOakheart/OtakuSoul/releases/latest"><img alt="Version" src="https://img.shields.io/badge/OtakuSoul-v0.6.0-8b5cf6?style=for-the-badge&logo=sparkles&logoColor=white" /></a>
+  <a href="https://github.com/SnowwhiteOakheart/OtakuSoul/releases/latest"><img alt="Version" src="https://img.shields.io/badge/OtakuSoul-v0.6.1-8b5cf6?style=for-the-badge&logo=sparkles&logoColor=white" /></a>
   <a href="https://github.com/SnowwhiteOakheart/OtakuSoul/releases"><img alt="Downloads" src="https://img.shields.io/github/downloads/SnowwhiteOakheart/OtakuSoul/total?style=for-the-badge&logo=github" /></a>
   <a href="https://github.com/SnowwhiteOakheart/OtakuSoul/stargazers"><img alt="Stars" src="https://img.shields.io/github/stars/SnowwhiteOakheart/OtakuSoul?style=for-the-badge&logo=github" /></a>
   <a href="https://github.com/SnowwhiteOakheart/OtakuSoul/network/members"><img alt="Forks" src="https://img.shields.io/github/forks/SnowwhiteOakheart/OtakuSoul?style=for-the-badge&logo=github" /></a>
@@ -58,10 +58,10 @@ Get the latest version from the **[Releases page](https://github.com/SnowwhiteOa
 
 | System | File | How to start |
 |---|---|---|
-| 🪟 **Windows 10 / 11** | `OtakuSoul_0.6.0_x64-setup.exe` | Double-click and follow the installer. |
-| 🐧 **Linux** (any distribution) | `OtakuSoul_0.6.0_amd64.AppImage` | Make it executable (`chmod +x`) and start it. |
-| 🐧 **Debian / Ubuntu** | `OtakuSoul_0.6.0_amd64.deb` | `sudo apt install ./OtakuSoul_0.6.0_amd64.deb` |
-| 🍏 **macOS** (Apple Silicon) | `OtakuSoul_0.6.0_aarch64.dmg` | Drag OtakuSoul into *Applications*. The app is not notarised: on first start right-click → *Open* (or run `xattr -dr com.apple.quarantine /Applications/OtakuSoul.app`). |
+| 🪟 **Windows 10 / 11** | `OtakuSoul_0.6.1_x64-setup.exe` | Double-click and follow the installer. |
+| 🐧 **Linux** (any distribution) | `OtakuSoul_0.6.1_amd64.AppImage` | Make it executable (`chmod +x`) and start it. |
+| 🐧 **Debian / Ubuntu** | `OtakuSoul_0.6.1_amd64.deb` | `sudo apt install ./OtakuSoul_0.6.1_amd64.deb` |
+| 🍏 **macOS** (Apple Silicon) | `OtakuSoul_0.6.1_aarch64.dmg` | Drag OtakuSoul into *Applications*. The app is not notarised: on first start right-click → *Open* (or run `xattr -dr com.apple.quarantine /Applications/OtakuSoul.app`). |
 
 OtakuSoul updates itself: when a new version is out, a button appears in the title bar.
 
@@ -102,6 +102,7 @@ The story gallery shows ready-made adventures with genre, playing time and diffi
 * **Five starter stories** ship with the app – cosy, funny, a mystery, a ghost story and science fiction – plus the three-act 5e adventure *The Crypt of Forgotten Shadows*.
 * **How to play:** write what your character *says*, *does* or *thinks*, whisper to a single companion or give the game master a stage *direction*. No idea? Click one of the suggestions. *Continue* lets the story run a round without you, *Undo* takes back the last round.
 * **Your own story:** the story wizard asks for genre, your character, companions and the starting situation – with ready-made ideas for every genre.
+* **Companions with a memory:** characters you know from chats bring their memories into the story and tell you at the start of a new session what they experienced in between.
 
 <p align="center">
   <img src="docs/assets/screenshots/en/story-wizard.png" alt="Story wizard: choose a genre" width="85%" />
@@ -119,7 +120,7 @@ The story gallery shows ready-made adventures with genre, playing time and diffi
 * **Group chats:** invite more characters into a chat – each keeps their own memory and voice. Choose who answers next or let them talk in rounds.
 * **Writes on their own:** If you like, the character writes to you after a pause or follows up when a plan is due ("How did your job interview go?"), and in the morning tells you about a dream woven from your memories – in a group chat instead what they did with a guest meanwhile – with quiet time, a daily limit and a notification; single characters can be muted.
 * **Help with writing:** *What could I say?* suggests replies, *Write for me* drafts your next message, notes in ((double brackets)) steer the AI, the reply length can be set per chat and unwanted words and phrases filtered out.
-* **Long chats** stay fast; older parts are summarised automatically so the character never loses the thread.
+* **Long chats** stay fast: the local model keeps its conversation memory compact (q8_0 KV cache, about twice the context in the same graphics memory), older parts are dropped in larger steps so the already processed prompt can be reused, and they are summarised automatically so the character never loses the thread.
 
 ### 👥 Characters – find, preview, create
 
@@ -129,7 +130,7 @@ The story gallery shows ready-made adventures with genre, playing time and diffi
 </p>
 
 * **Included:** Shiori Amane, Sota Minase, Lirwen, Faelion and the four heroes of the 5e adventure. *Good to start with* marks the recommended ones.
-* **More in the Hub:** characters, worlds and stories (e.g. *No Game No Life*, *Sakura Succubus 3*) in German, English and Russian – with update notices when a new version is available. An optional 18+ section needs a one-time age confirmation and stays hidden otherwise.
+* **More in the Hub:** more than 60 characters, almost 60 scenes and stories and 27 lorebooks, e.g. from *Frieren*, *Re:Zero*, *Sword Art Online* or *No Game No Life* – in German, English and Russian – with update notices when a new version is available. An optional 18+ section needs a one-time age confirmation and stays hidden otherwise.
 * **Create your own:** a guided assistant turns a rough idea into a complete character; SillyTavern cards (PNG/JSON) can be imported and exported.
 
 ### 🎲 5e adventures – tactics with real rules
@@ -144,7 +145,9 @@ A rules engine based on the SRD 5.1 decides every roll, hit and enemy move – t
 
 * **Characters remember you:** after a conversation the memory is updated – beliefs, mood, your relationship, topics and a diary in the first person. For every reply the character recalls the memories that fit the conversation; outdated ones are replaced instead of stored twice (and can be restored). **Plans and promises** (“I'll call you tomorrow”) are kept with a due date and come up again when they are due. *Tidy up memory* merges overlapping entries after you confirm. Every memory shows where it came from and can be corrected, pinned or forgotten.
 * **Voices:** speech output and recognition run locally (Qwen3-TTS, Chatterbox, Kokoro, TADA) or via Edge-TTS/ElevenLabs. **Clone a voice** from a short recording – the dialog suggests the best clip; only with the speaker's consent. If you like, a **narrator voice** reads the *actions* while the character speaks their own words – like an audio drama.
+* **Voices with character:** Qwen3-TTS 1.7B speaks in a chosen style and with feeling – whispering, sad, excited – to suit the reply. A card can describe its voice (tone, age, pace), and VoiceDesign turns such descriptions into several designed voices.
 * **Pictures:** generate scene pictures locally with stable-diffusion.cpp (SD 1.5 to FLUX.2). The character looks like their portrait, and on request sends you a **selfie** in the chat.
+* **Models from the Hub:** downloads run over 8 connections at once and continue after an interruption, even after a restart; split GGUF files and the matching vision file come along. Every model keeps its own settings.
 * **Desktop companion:** your character floats above your windows and can search the web, read the clipboard or control music – every sensitive action needs your confirmation.
 * **Your language:** German, English, Russian and Japanese are included. More interface languages come from the Hub or as a JSON file you import in the settings – no new app version needed.
 * **On your phone:** chat from your phone or tablet in the same Wi-Fi via QR code.
@@ -163,10 +166,11 @@ The **settings** start in a simple view; the *expert mode* adds samplers, server
 | Your PC | Recommendation |
 |---|---|
 | No dedicated graphics card / laptop | **Cloud AI** – every computer works, you only need an API key. |
-| Graphics card with 6–8 GB memory | **Local** with a compact model; the assistant picks a fitting one. |
-| 12–16 GB or more | **Local** with large models, plus voice output and local pictures at the same time. |
+| Graphics card with 6–8 GB memory | **Local** with a compact model (Gemma 4 E4B, Qwen3.5 9B); the assistant picks a fitting one. |
+| 10–16 GB | **Local** with Gemma 4 12B – fast, sees pictures, with room for voice output and local pictures at the same time. |
+| 20 GB or more | **Local** with large models (Qwen3.6 35B-A3B from 20 GB, Gemma 4 31B from 24 GB). |
 
-Disk space: the app itself is small; local models need about 2–15 GB each. Supported graphics cards: NVIDIA (CUDA), AMD and Intel (Vulkan), Apple Silicon (Metal).
+Disk space: the app itself is small; local models need about 3–22 GB each. Supported graphics cards: NVIDIA (CUDA), AMD and Intel (Vulkan), Apple Silicon (Metal).
 
 ---
 ---
@@ -185,13 +189,13 @@ Disk space: the app itself is small; local models need about 2–15 GB each. Sup
 
 | Area | Details |
 |---|---|
-| 💬 **Chat** | Context management with exact token counting (llama-server `/tokenize`) or estimate for cloud, automatic summary of dropped turns, swipes, inline editor with draft protection, attachments (images, PDF, text; local vision via `mmproj`), translation, search (Ctrl+F), bookmarks, branching, per-chat style (background, text size, ambient sound), chat tools (date/time, calculator, web search via a text tool protocol for every provider), prompt log. Group chats (guests with own memory and voice, choice of speaker, automatic rounds), reply suggestions and “write for me”, directions in ((…)), reply length per chat, word & phrase filter, repetition control, visible lorebook and memory hits per reply, “remember this message”, scene picture of a moment (also as chat background), alternative greetings as swipes, card macros (random, dice, time, notes), SillyTavern JSONL export. |
+| 💬 **Chat** | Context management with exact token counting (llama-server `/tokenize`) or estimate for cloud, automatic summary of dropped turns, trimming in steps of a quarter window so the prompt cache keeps hitting, q8_0 KV cache by default (f16 V cache without flash attention), swipes, inline editor with draft protection, attachments (images, PDF, text; local vision via `mmproj`), translation, search (Ctrl+F), bookmarks, branching, per-chat style (background, text size, ambient sound), chat tools (date/time, calculator, web search via a text tool protocol for every provider), prompt log. Group chats (guests with own memory and voice, choice of speaker, automatic rounds), reply suggestions and “write for me”, directions in ((…)), reply length per chat, word & phrase filter, repetition control, visible lorebook and memory hits per reply, “remember this message”, scene picture of a moment (also as chat background), alternative greetings as swipes, card macros (random, dice, time, notes), SillyTavern JSONL export. |
 | 🎭 **Avatars** | VRM 0.x/1.0, MMD (PMX/PMD + VMD, spring-bone physics), glTF/GLB (Mixamo/Unreal/Blender/VRoid/Bip001/MMD bone aliases, ARKit morphs, bone-driven faces, embedded clips by role and mood, face editor, toon look), Live2D Cubism 2/4; VRMA and Mixamo FBX motions with retargeting; formant-based visemes. Guide: [Your own 3D model with animations](docs/guide-3d-avatars.md). Up to 15 portrait slots per card (six moods, blush/teasing/fear/disgust/crying, four romance slots), chosen by an invisible `[emotion: …]` tag or by cue words per language (`presets/cues/<lang>.json`); living 2D portrait (breathing, sway, speech motion, off with reduced motion); avatar manager with thumbnails. |
 | 🧠 **Cognitive Memory** | Four layers (psyche, relationship, episodic topics, diary) in SQLite; router/archivist/diary agents apply a reflection in one transaction; sources, origin, pinning, review flags and change history; snapshots, import/export and Markdown sync (`MEMORY.md`, `USER.md`). FTS5 full-text search picks the memories that fit each reply (stable core in the system prompt for prompt caching); outdated memories are superseded instead of duplicated and stay restorable; plans and promises with due dates (real time or story time); habits condensed to at most 12 patterns; “tidy up memory” merges overlapping memories after confirmation. |
 | 🎲 **Stage** | Two-stage game master (planner + narrator), director with addressing detection and routing, scene-bound NPCs with filtered memories and promotion to full characters, world state (facts, chronicle, arcs with archiving and consistency audits), lore cards, whisper/think/direct modes, auto-play, read-aloud with narrator voice and ambient loops. |
 | ⚔️ **5e rules** | Pure Rust engine with injected RNG: SRD monsters/classes/spells/equipment, grid maps with pathfinding, opportunity attacks and line of sight, spell areas, conditions, concentration, reactions (*Shield*), death saves, skills, rests, class features, encounter difficulty from SRD XP, exploration (rooms, traps, locks, exits), multi-act adventures with goals. |
-| 🌐 **Hub** | Chub AI browser with lorebook extraction, curated registries from [otakusoul-data](https://github.com/SnowwhiteOakheart/otakusoul-data) with revisions and “update all”; locally modified lorebooks are protected (own copy kept). Story texts written by the app itself refresh from the data repository at start. Optional 18+ source with one-time age confirmation; installed adult content is hidden while it is off. Interface languages (`locales/ui_registry.json`) are fetched at start as well. |
-| 🎙️ **Voice** | CrispASR server (no Python): Qwen3-TTS (CustomVoice, Base clone, VoiceDesign), Chatterbox Multilingual/Turbo (sound tags such as `[laugh]`), Kokoro, TADA 3B, F5; whisper.cpp recognition; voice effects (pitch via WSOLA, reverb, echo, filters); clone trimmer with waveform; cloned voices are part of the profile backup. Voice gallery to listen to and compare voices across engines. |
+| 🌐 **Hub** | Chub AI browser with lorebook extraction, curated registries from [otakusoul-data](https://github.com/SnowwhiteOakheart/otakusoul-data) with revisions and “update all”; locally modified lorebooks are protected (own copy kept). Story texts written by the app itself refresh from the data repository at start. Optional 18+ source with one-time age confirmation; installed adult content is hidden while it is off. Interface languages (`locales/ui_registry.json`) are fetched at start as well. Model downloads over 8 parallel connections with resume (also after a restart), split GGUF, vision files (`mmproj`) of the starter models; starter catalogue with recommendation by graphics memory (models with weaker German are listed, never recommended). |
+| 🎙️ **Voice** | CrispASR server (no Python): Qwen3-TTS (CustomVoice 0.6B/1.7B with speaking style and emotions, Base clone, VoiceDesign with several designed voices, voice description from the card), Chatterbox Multilingual/Turbo (sound tags such as `[laugh]`), Kokoro, TADA 3B, F5; whisper.cpp recognition; voice effects (pitch via WSOLA, reverb, echo, filters); clone trimmer with waveform; cloned voices are part of the profile backup. Voice gallery to listen to and compare voices across engines. |
 | 🖼️ **Images** | stable-diffusion.cpp server (SD 1.5, SDXL, FLUX.1, Qwen-Image, FLUX.2), catalogue LoRAs only sent to their model family, VRAM planner that shrinks or swaps the chat model in stages and restarts it in the background. |
 | 🤖 **Companion** | Transparent always-on-top overlay with click-through, hormone model, MCP client, internal tools with explicit allow-list; code execution off by default; confirmation banner for every sensitive action. |
 | 📱 **Web client** | Axum server in the LAN with QR code, token auth and DNS-rebinding protection. |
@@ -257,6 +261,15 @@ flowchart LR
 
 Reference system: **NVIDIA GeForce RTX 4070 Ti SUPER, 16 GB VRAM**, Linux, CUDA.
 
+**Chat models (llama.cpp, 4–8K context, image model loaded alongside)** – from the Stage, group chat and lorebook tests:
+
+| Model | Speed | VRAM | Note |
+|---|---|---|---|
+| **Gemma 4 E4B** (Q4_K_M) | 73–81 tokens/s | ~5.8 GB | Best overall result, sees pictures |
+| **Gemma 4 12B** (Q4_K_M) | 43–46 tokens/s | ~8.9 GB | Recommended for 10–16 GB, sees pictures |
+| **Gemma 4 26B-A4B** (MoE) | 20–22 tokens/s | ~11.3 GB | Partly offloaded on 16 GB |
+| **Qwen3.6 35B-A3B** (MoE) | 18–19 tokens/s | ~11.1 GB | Partly offloaded on 16 GB |
+
 **Local images (stable-diffusion.cpp)** – the VRAM planner shares graphics memory with the chat model:
 
 | Model | Time | VRAM | Behaviour |
@@ -301,7 +314,7 @@ npm run tauri dev          # development with hot reload (Linux: npm run tauri:l
 npm run tauri build        # installable package for your system
 ```
 
-Quality checks (there is no CI – everything runs locally):
+Quality checks (there is no CI for checks – everything runs locally; GitHub Actions only builds the release packages):
 
 ```bash
 npm run check      # oxlint, tsc, vitest, cargo fmt, clippy, cargo test
