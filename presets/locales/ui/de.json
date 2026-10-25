@@ -3748,5 +3748,9 @@
   "micCheck.applyThreshold": "Empfindlichkeit auf {{value}} setzen",
   "micCheck.noText": "Die Spracherkennung hat keinen Text geliefert. Sprich deutlicher oder stelle oben die Sprache ein.",
   "micCheck.needStt": "Wähle oben eine Spracherkennung, damit der Prüfstand auch die Abschrift testet.",
-  "micCheck.needTts": "Stelle im Reiter „Sprachausgabe“ eine Stimme ein, damit die Figur den Satz nachspricht."
+  "micCheck.needTts": "Stelle im Reiter „Sprachausgabe“ eine Stimme ein, damit die Figur den Satz nachspricht.",
+  "voice.state.interrupted": "Unterbrochen – hört zu …",
+  "voice.interrupt": "Unterbrechen und selbst sprechen",
+  "voiceCfg.bargeIn": "Ins Wort fallen erlauben",
+  "voiceCfg.bargeInText": "Im Sprachanruf hört das Mikrofon mit, während die Figur spricht. Sprichst Du dazwischen, verstummt sie sofort und merkt sich, wo sie unterbrochen wurde. Mit Lautsprechern kann ihre eigene Stimme sie unterbrechen – dann Kopfhörer nutzen oder hier ausschalten."
 }

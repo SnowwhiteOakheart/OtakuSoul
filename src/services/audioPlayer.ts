@@ -10,7 +10,11 @@ interface QueuedAudio {
   gain: number;
   outputDeviceId: string;
   effects?: VoiceEffects | null;
+  onScheduled?: ClipScheduled;
 }
+
+/** Called with a clip's start and end on the audio clock (`audioPlayer.now()`), once it is scheduled. */
+export type ClipScheduled = (start: number, end: number) => void;
 
 type SinkAwareAudioContext = AudioContext & {
   setSinkId?: (sinkId: string) => Promise<void>;
@@ -155,7 +159,7 @@ export class AudioPlaybackManager {
   }
 
   /** Starts `buffer` right after what is already scheduled. */
-  private schedule(context: AudioContext, buffer: AudioBuffer, gain: number) {
+  private schedule(context: AudioContext, buffer: AudioBuffer, gain: number, onScheduled?: ClipScheduled) {
     const source = context.createBufferSource();
     source.buffer = buffer;
     const volume = context.createGain();
@@ -167,6 +171,7 @@ export class AudioPlaybackManager {
     const start = Math.max(context.currentTime + START_LEAD_SECONDS, this.nextStart);
     source.start(start);
     this.nextStart = start + buffer.duration + SENTENCE_GAP_SECONDS;
+    onScheduled?.(start, start + buffer.duration);
     this.sources.add(source);
     const generation = this.generation;
     source.onended = () => {
@@ -204,7 +209,7 @@ export class AudioPlaybackManager {
           const encoded = await (await fetch(url)).arrayBuffer();
           const decoded = await context.decodeAudioData(encoded);
           if (generation !== this.generation) return;
-          this.schedule(context, this.trimmed(context, decoded), next.gain);
+          this.schedule(context, this.trimmed(context, decoded), next.gain, next.onScheduled);
         } catch (error) {
           console.error('Audio-Wiedergabe fehlgeschlagen:', error);
         }
@@ -226,8 +231,8 @@ export class AudioPlaybackManager {
     this.enqueue(dataUrl, gain, outputDeviceId, effects);
   }
 
-  public enqueue(dataUrl: string, gain = 1, outputDeviceId = '', effects?: VoiceEffects | null) {
-    this.pending.push({ dataUrl, gain, outputDeviceId, effects });
+  public enqueue(dataUrl: string, gain = 1, outputDeviceId = '', effects?: VoiceEffects | null, onScheduled?: ClipScheduled) {
+    this.pending.push({ dataUrl, gain, outputDeviceId, effects, onScheduled });
     void this.prepareQueue();
   }
 
@@ -252,6 +257,11 @@ export class AudioPlaybackManager {
     this.playing = false;
     this.onFrameCallbacks.forEach((callback) => callback(0, SILENT_VISEMES));
     this.setState('idle');
+  }
+
+  /** The audio clock that scheduled clips refer to (0 before the first clip). */
+  public now(): number {
+    return this.audioContext?.currentTime ?? 0;
   }
 
   public isPlaying(): boolean {

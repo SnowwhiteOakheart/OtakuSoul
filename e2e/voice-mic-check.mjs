@@ -11,7 +11,8 @@ const invoke = (command, args = {}) => browser.execute((cmd, payload) => window.
 
 /** Replaces the microphone with a tone: `loud` for 1.2 s, then silence. */
 const fakeMicrophone = (loud) => browser.execute((amplitude) => {
-  navigator.mediaDevices.getUserMedia = async () => {
+  // On the prototype: WebKit may hand out a new mediaDevices object later.
+  MediaDevices.prototype.getUserMedia = async () => {
     const context = new AudioContext();
     await context.resume();
     const tone = context.createOscillator();

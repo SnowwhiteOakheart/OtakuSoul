@@ -137,6 +137,9 @@ pub struct SttConfig {
     pub vad_silence_ms: u32,
     #[serde(default)]
     pub input_device_id: String,
+    /// Voice call: speaking while the character talks stops her (barge-in).
+    #[serde(default = "default_barge_in")]
+    pub barge_in: bool,
 }
 
 impl Default for SttConfig {
@@ -152,6 +155,7 @@ impl Default for SttConfig {
             vad_threshold: default_vad_threshold(),
             vad_silence_ms: default_vad_silence_ms(),
             input_device_id: String::new(),
+            barge_in: default_barge_in(),
         }
     }
 }
@@ -242,6 +246,9 @@ fn default_vad_threshold() -> f32 {
 }
 fn default_vad_silence_ms() -> u32 {
     900
+}
+fn default_barge_in() -> bool {
+    true
 }
 fn default_rvc_index_rate() -> f32 {
     0.75

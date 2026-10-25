@@ -19,14 +19,17 @@ export const STAGE_NARRATION =
 export const COMBAT_NARRATION = 'Stahl blitzt im Fackellicht, der Kampf tobt weiter.';
 export const SUMMARY = 'Testzusammenfassung: Kai und die Figur planten einen Ausflug zum Fushimi-Inari-Schrein.';
 
-/** 0.1 s of silence, 8 kHz mono. */
-function silentWav() {
-  const samples = 800;
+/** 0.1 s of silence, 8 kHz mono; with `toneSeconds` an audible tone of that length instead. */
+function silentWav(toneSeconds = 0) {
+  const samples = toneSeconds > 0 ? Math.round(toneSeconds * 8000) : 800;
   const wav = Buffer.alloc(44 + samples * 2);
   wav.write('RIFF'); wav.writeUInt32LE(36 + samples * 2, 4); wav.write('WAVEfmt ', 8);
   wav.writeUInt32LE(16, 16); wav.writeUInt16LE(1, 20); wav.writeUInt16LE(1, 22);
   wav.writeUInt32LE(8000, 24); wav.writeUInt32LE(16000, 28); wav.writeUInt16LE(2, 32);
   wav.writeUInt16LE(16, 34); wav.write('data', 36); wav.writeUInt32LE(samples * 2, 40);
+  if (toneSeconds > 0) {
+    for (let i = 0; i < samples; i += 1) wav.writeInt16LE(Math.round(Math.sin((2 * Math.PI * 200 * i) / 8000) * 8000), 44 + i * 2);
+  }
   return wav;
 }
 
@@ -42,7 +45,8 @@ export function startMockLlm() {
         stats.tts = (stats.tts ?? 0) + 1;
         (stats.ttsInputs ??= []).push(input);
         (stats.ttsModels ??= []).push(model);
-        res.writeHead(200, { 'Content-Type': 'audio/wav' }).end(silentWav());
+        // `stats.ttsToneSeconds`: every clip is an audible tone of that length (playback timing tests).
+        res.writeHead(200, { 'Content-Type': 'audio/wav' }).end(silentWav(stats.ttsToneSeconds ?? 0));
         return;
       }
       // OpenAI-compatible speech recognition: always the same sentence (`stats.sttText` overrides it).

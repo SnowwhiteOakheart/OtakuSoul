@@ -74,6 +74,7 @@ const DEFAULT_CONFIG: VoiceConfig = {
     vad_threshold: 0.025,
     vad_silence_ms: 900,
     input_device_id: '',
+    barge_in: true,
   },
   narrator_for_actions: false,
   local_style: '',
@@ -659,6 +660,19 @@ export function CharacterVoiceModal({ onClose, target, embedded = false, autoSav
                     <label><span className={`${labelClass} flex justify-between`}><span>{t('voiceCfg.vadSilence')}</span><span>{draft.stt.vad_silence_ms} ms</span></span><input type="range" min="300" max="2500" step="100" value={draft.stt.vad_silence_ms} onChange={(event) => updateStt('vad_silence_ms', Number(event.target.value))} className="w-full accent-cyan-500" /></label>
                   </div>
                   <p className="text-xs text-slate-400">{t('voiceCfg.vadText')}</p>
+                  <label className="flex items-center justify-between gap-3 rounded-lg border border-slate-800 bg-app/50 p-3">
+                    <span>
+                      <span className="block text-sm text-slate-200">{t('voiceCfg.bargeIn')}</span>
+                      <span className="block text-xs text-slate-400">{t('voiceCfg.bargeInText')}</span>
+                    </span>
+                    <input
+                      id="setting-barge-in"
+                      type="checkbox"
+                      checked={draft.stt.barge_in !== false}
+                      onChange={(event) => updateStt('barge_in', event.target.checked)}
+                      className="w-4 h-4 accent-cyan-500"
+                    />
+                  </label>
                 </>
               )}
 

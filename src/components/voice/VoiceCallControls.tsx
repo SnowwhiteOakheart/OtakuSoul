@@ -4,7 +4,7 @@ import { VoiceConfig } from '../../types';
 import { api } from '../../services/api';
 import { audioPlayer } from '../../services/audioPlayer';
 import { streamingTts } from '../../services/streamingTts';
-import { VoiceCapture, VoiceCaptureResult } from '../../services/voiceCapture';
+import { BARGE_IN_DEFAULTS, VoiceCapture, VoiceCaptureResult } from '../../services/voiceCapture';
 import { translate, type TranslationKey } from '../../i18n';
 
 type VoiceCallState = 'idle' | 'listening' | 'transcribing' | 'thinking' | 'speaking' | 'error';
@@ -16,6 +16,8 @@ interface VoiceCallControlsProps {
   onSend: (text: string) => Promise<void>;
   onAbort: () => Promise<void>;
   onEnsureAutoTts: () => void;
+  /** Barge-in: the user interrupted the reply after hearing `heard` of it. */
+  onInterrupted?: (heard: string) => Promise<void>;
 }
 
 const STATE_LABELS: Record<VoiceCallState, TranslationKey> = {
@@ -34,14 +36,23 @@ export function VoiceCallControls({
   onSend,
   onAbort,
   onEnsureAutoTts,
+  onInterrupted,
 }: VoiceCallControlsProps) {
   const captureRef = useRef(new VoiceCapture());
   const callActiveRef = useRef(false);
   const mountedRef = useRef(true);
+  /** Counts turns: an interruption or a new utterance makes older steps stop. */
+  const turnRef = useRef(0);
+  const generatingRef = useRef(isGenerating);
+  /** The send of the current turn (resolves once the reply is stored, also after an abort). */
+  const sendingRef = useRef<Promise<void> | null>(null);
+  /** Abort and cutting of an interrupted reply; the next send waits for it. */
+  const interruptionRef = useRef<Promise<void> | null>(null);
   const [callActive, setCallActive] = useState(false);
   const [state, setState] = useState<VoiceCallState>('idle');
   const [level, setLevel] = useState(0);
   const [error, setError] = useState('');
+  const [interrupted, setInterrupted] = useState(false);
 
   const updateCallActive = (active: boolean) => {
     callActiveRef.current = active;
@@ -63,13 +74,40 @@ export function VoiceCallControls({
     updateCallActive(false);
   };
 
-  const beginListening = async (continuous: boolean) => {
+  /**
+   * The user speaks while the character thinks or talks: her voice stops at once, the reply is
+   * aborted and cut after what was heard; the recording goes on as the user's next turn.
+   */
+  const interrupt = () => {
+    turnRef.current += 1;
+    const heard = streamingTts.heard();
+    streamingTts.cancel();
+    if (mountedRef.current) {
+      setState('listening');
+      setInterrupted(true);
+    }
+    const sending = sendingRef.current;
+    const wasGenerating = generatingRef.current;
+    const work = (async () => {
+      if (wasGenerating) await onAbort().catch((reason) => console.warn('Abbruch beim Unterbrechen fehlgeschlagen:', reason));
+      await sending?.catch(() => undefined);
+      if (heard && onInterrupted) {
+        await onInterrupted(heard).catch((reason) => console.warn('Unterbrochene Antwort nicht markiert:', reason));
+      }
+    })();
+    interruptionRef.current = work;
+    void work.finally(() => {
+      if (interruptionRef.current === work) interruptionRef.current = null;
+    });
+  };
+
+  const beginListening = async (continuous: boolean, listenAlong = false) => {
     if (!config || config.stt.engine === 'disabled') {
       fail(translate('voice.needStt'));
       return;
     }
     setError('');
-    setState('listening');
+    if (!listenAlong) setState('listening');
     try {
       await captureRef.current.start({
         inputDeviceId: config.stt.input_device_id,
@@ -77,6 +115,7 @@ export function VoiceCallControls({
         silenceMs: config.stt.vad_silence_ms,
         autoStopOnSilence: continuous,
         maxDurationMs: 60_000,
+        bargeIn: listenAlong ? { ...BARGE_IN_DEFAULTS, onBargeIn: interrupt } : undefined,
         onLevel: (nextLevel) => {
           if (mountedRef.current) setLevel(nextLevel);
         },
@@ -93,6 +132,7 @@ export function VoiceCallControls({
 
   const processRecording = async (recording: VoiceCaptureResult, autoSend: boolean) => {
     if (!config) return;
+    const turn = ++turnRef.current;
     setLevel(0);
     setState('transcribing');
     try {
@@ -104,23 +144,48 @@ export function VoiceCallControls({
         return;
       }
 
+      // An interrupted reply is aborted and cut first, so it is complete before the next turn.
+      await interruptionRef.current;
+      if (turn !== turnRef.current) return;
+      setInterrupted(false);
       setState('thinking');
-      await onSend(transcript.trim());
+      // Listening along while the character answers, so the user can cut in.
+      const listenAlong = callActiveRef.current && config.stt.barge_in !== false;
+      if (listenAlong) await beginListening(true, true);
+      const sending = onSend(transcript.trim());
+      sendingRef.current = sending;
+      await sending;
+      if (turn !== turnRef.current) return;
       if (!callActiveRef.current) {
+        await captureRef.current.cancel();
         resetToIdle();
         return;
       }
       setState('speaking');
       await streamingTts.waitForIdle();
-      if (callActiveRef.current) await beginListening(true);
-      else resetToIdle();
+      if (turn !== turnRef.current) return;
+      if (!callActiveRef.current) {
+        resetToIdle();
+      } else if (captureRef.current.isArmed()) {
+        // She finished without being interrupted: the same recording now waits for the user's turn.
+        captureRef.current.disarm();
+        setState('listening');
+      } else if (!captureRef.current.isActive()) {
+        await beginListening(true);
+      }
     } catch (reason) {
-      fail(reason);
+      if (turn === turnRef.current) fail(reason);
     }
   };
 
   const togglePushToTalk = async () => {
     const continueCall = callActiveRef.current;
+    // In a call while the character answers: the microphone button interrupts her.
+    if (captureRef.current.isArmed()) {
+      interrupt();
+      captureRef.current.disarm();
+      return;
+    }
     if (captureRef.current.isActive()) {
       const result = await captureRef.current.stop();
       if (result) await processRecording(result, continueCall);
@@ -135,7 +200,9 @@ export function VoiceCallControls({
   };
 
   const stopCall = async () => {
+    turnRef.current += 1;
     updateCallActive(false);
+    setInterrupted(false);
     if (captureRef.current.isActive()) await captureRef.current.cancel();
     streamingTts.cancel();
     if (isGenerating) await onAbort();
@@ -157,25 +224,39 @@ export function VoiceCallControls({
   };
 
   useEffect(() => {
+    generatingRef.current = isGenerating;
+  }, [isGenerating]);
+
+  useEffect(() => {
     const unsubscribe = audioPlayer.onPlaybackState((playbackState) => {
       if (callActiveRef.current && playbackState === 'playing') setState('speaking');
     });
     return unsubscribe;
   }, []);
 
-  useEffect(() => () => {
-    mountedRef.current = false;
-    callActiveRef.current = false;
-    void captureRef.current.cancel();
+  // Set on every mount: StrictMode and hidden views run the cleanup once and mount again.
+  useEffect(() => {
+    mountedRef.current = true;
+    const capture = captureRef.current;
+    return () => {
+      mountedRef.current = false;
+      callActiveRef.current = false;
+      turnRef.current += 1;
+      void capture.cancel();
+    };
   }, []);
 
   const busy = state === 'transcribing' || state === 'thinking';
+  // While she answers in a call, the microphone button cuts in (barge-in).
+  const canCutIn = callActive && config?.stt.barge_in !== false && (state === 'thinking' || state === 'speaking');
+  const micLabel: TranslationKey = canCutIn ? 'voice.interrupt'
+    : state === 'listening' && !callActive ? 'voice.stopRecording' : 'voice.startRecording';
   return (
-    <div className="relative flex items-center gap-1">
+    <div className="relative flex items-center gap-1" data-call-state={state} data-interrupted={interrupted ? 'true' : undefined}>
       {(state !== 'idle' || callActive) && (
         <div className="hidden sm:flex items-center gap-1.5 px-2 py-1 rounded-lg border border-cyan-500/30 bg-cyan-950/30 text-[11px] text-cyan-200">
           {busy ? <Loader2 className="w-3 h-3 animate-spin" /> : <Radio className="w-3 h-3" />}
-          <span>{translate(STATE_LABELS[state])}</span>
+          <span>{translate(interrupted && state === 'listening' ? 'voice.state.interrupted' : STATE_LABELS[state])}</span>
           {state === 'listening' && (
             <span className="w-12 h-1 rounded-full bg-slate-800 overflow-hidden">
               <span
@@ -188,14 +269,14 @@ export function VoiceCallControls({
       )}
       <button
         onClick={() => void togglePushToTalk()}
-        disabled={!config || config.stt.engine === 'disabled' || busy}
+        disabled={!config || config.stt.engine === 'disabled' || (busy && !canCutIn)}
         className={`p-2.5 rounded-xl border transition-colors disabled:opacity-35 disabled:cursor-not-allowed ${
           state === 'listening' && !callActive
             ? 'bg-rose-600 border-rose-400 text-white animate-pulse'
             : 'bg-slate-800 border-slate-700 text-slate-300 hover:text-white'
         }`}
-        title={translate(state === 'listening' && !callActive ? 'voice.stopRecording' : 'voice.startRecording')}
-        aria-label={translate(state === 'listening' && !callActive ? 'voice.stopRecording' : 'voice.startRecording')}
+        title={translate(micLabel)}
+        aria-label={translate(micLabel)}
       >
         {state === 'listening' && !callActive ? <MicOff className="w-4 h-4" /> : <Mic className="w-4 h-4" />}
       </button>

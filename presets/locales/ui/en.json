@@ -3748,5 +3748,9 @@
   "micCheck.applyThreshold": "Set sensitivity to {{value}}",
   "micCheck.noText": "Speech recognition returned no text. Speak more clearly or set the language above.",
   "micCheck.needStt": "Choose a speech recognition above so the check also tests the transcript.",
-  "micCheck.needTts": "Set a voice in the \"Speech output\" tab so the character repeats the sentence."
+  "micCheck.needTts": "Set a voice in the \"Speech output\" tab so the character repeats the sentence.",
+  "voice.state.interrupted": "Interrupted – listening …",
+  "voice.interrupt": "Interrupt and speak",
+  "voiceCfg.bargeIn": "Allow cutting in",
+  "voiceCfg.bargeInText": "During a voice call the microphone keeps listening while the character speaks. If you talk over her, she stops at once and remembers where she was interrupted. With speakers her own voice may interrupt her – use headphones or turn this off."
 }

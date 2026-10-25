@@ -2,6 +2,7 @@ import { VoiceConfig } from '../types';
 import { api } from './api';
 import { audioPlayer, gainFromVoiceVolume } from './audioPlayer';
 import { voiceParts } from './narratorVoice';
+import { heardText, type SpokenSentence } from '../utils/bargeIn';
 
 const SENTENCE_END = /[.!?…]+[”"')\]]*(?:\s+|$)/g;
 
@@ -37,12 +38,15 @@ export class StreamingTtsManager {
   /** The reply is complete; local speech no longer waits for it. */
   private done = false;
   private held: (() => void)[] = [];
+  /** Sentences of the current reply in order, with when they play (for barge-in). */
+  private spoken: SpokenSentence[] = [];
 
   public begin(config: VoiceConfig) {
     this.cancel(false);
     this.active = true;
     this.config = config;
     this.done = false;
+    this.spoken = [];
   }
 
   public push(token: string, config: VoiceConfig) {
@@ -75,6 +79,12 @@ export class StreamingTtsManager {
     const config = this.config;
     const session = this.session;
     if (!config || config.engine === 'disabled') return;
+    const sentence: SpokenSentence = { text, start: null, end: null };
+    this.spoken.push(sentence);
+    const scheduled = (start: number, end: number) => {
+      sentence.start = sentence.start === null ? start : Math.min(sentence.start, start);
+      sentence.end = sentence.end === null ? end : Math.max(sentence.end, end);
+    };
     this.synthesisChain = this.synthesisChain.then(async () => {
       try {
         // Actions may go to the narrator: each part with its own voice, in order.
@@ -87,6 +97,7 @@ export class StreamingTtsManager {
               gainFromVoiceVolume(part.voice.volume),
               part.voice.output_device_id,
               part.voice.effects,
+              scheduled,
             );
           // Local speech (character or narrator) waits until the reply is complete.
           if (!this.done && (config.engine === 'local' || part.voice.engine === 'local')) this.held.push(play);
@@ -116,6 +127,11 @@ export class StreamingTtsManager {
     held.forEach((play) => play());
   }
 
+  /** What the user has heard of the current reply so far (empty when nothing was played). */
+  public heard(): string {
+    return heardText(this.spoken, audioPlayer.now());
+  }
+
   public async waitForIdle() {
     await this.synthesisChain;
     await audioPlayer.waitForIdle();
@@ -129,6 +145,7 @@ export class StreamingTtsManager {
     this.config = null;
     this.done = false;
     this.held = [];
+    this.spoken = [];
     this.synthesisChain = Promise.resolve();
     if (stopPlayback) audioPlayer.stop();
   }

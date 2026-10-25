@@ -15,7 +15,25 @@ export interface VoiceCaptureOptions {
   maxDurationMs?: number;
   onLevel?: (level: number, speechDetected: boolean) => void;
   onAutoStop?: (result: VoiceCaptureResult | null) => void;
+  /**
+   * Starts "listening along" while the character speaks: the recording only counts once the
+   * voice stays above `vadThreshold × thresholdFactor` for `minSpeechMs` (her own voice from
+   * the speakers is quieter after echo cancellation). Then `onBargeIn` runs and it records like
+   * normal, keeping the last `preRollMs` before that so the first words are not lost.
+   * `disarm()` switches to normal listening without waiting.
+   */
+  bargeIn?: BargeInOptions;
 }
+
+export interface BargeInOptions {
+  thresholdFactor: number;
+  minSpeechMs: number;
+  preRollMs: number;
+  onBargeIn: () => void;
+}
+
+/** Defaults for the voice call: clearly louder than the threshold, for about a third of a second. */
+export const BARGE_IN_DEFAULTS = { thresholdFactor: 2.5, minSpeechMs: 300, preRollMs: 600 } as const;
 
 export function resampleMono(input: Float32Array, sourceRate: number, targetRate = 16_000) {
   if (sourceRate === targetRate) return input;
@@ -57,6 +75,10 @@ export class VoiceCapture {
   private peakLevel = 0;
   private active = false;
   private options: VoiceCaptureOptions = {};
+  /** Listening along (barge-in) and not triggered yet. */
+  private armed = false;
+  /** How long the voice has been above the barge-in threshold (ms, decays in pauses). */
+  private loudMs = 0;
 
   public async start(options: VoiceCaptureOptions = {}) {
     if (this.active) throw new Error(translate('errors.recordingActive'));
@@ -92,6 +114,8 @@ export class VoiceCapture {
     this.lastSpeechAt = this.startedAt;
     this.speechDetected = false;
     this.peakLevel = 0;
+    this.armed = Boolean(options.bargeIn);
+    this.loudMs = 0;
     this.active = true;
     this.processor.onaudioprocess = (event) => this.handleAudio(event);
   }
@@ -105,9 +129,14 @@ export class VoiceCapture {
     let energy = 0;
     for (const sample of copy) energy += sample * sample;
     const level = Math.sqrt(energy / copy.length);
-    this.peakLevel = Math.max(this.peakLevel, level);
     const now = performance.now();
     const threshold = this.options.vadThreshold ?? 0.025;
+    const bargeIn = this.options.bargeIn;
+    if (this.armed && bargeIn) {
+      this.listenAlong(level, threshold, bargeIn, (copy.length / this.sourceRate) * 1000, now);
+      return;
+    }
+    this.peakLevel = Math.max(this.peakLevel, level);
     if (level >= threshold) {
       this.speechDetected = true;
       this.lastSpeechAt = now;
@@ -121,6 +150,38 @@ export class VoiceCapture {
       const callback = this.options.onAutoStop;
       void this.stop().then((result) => callback?.(result));
     }
+  }
+
+  /** Barge-in watch: keeps only a short lead-in until the user clearly speaks. */
+  private listenAlong(level: number, threshold: number, bargeIn: BargeInOptions, frameMs: number, now: number) {
+    const keep = Math.max(1, Math.ceil(bargeIn.preRollMs / frameMs));
+    if (this.chunks.length > keep) this.chunks.splice(0, this.chunks.length - keep);
+    const loud = level >= threshold * bargeIn.thresholdFactor;
+    this.loudMs = loud ? this.loudMs + frameMs : Math.max(0, this.loudMs - frameMs);
+    this.options.onLevel?.(Math.min(1, level / Math.max(threshold * 4, 0.01)), false);
+    if (this.loudMs < bargeIn.minSpeechMs) return;
+    this.armed = false;
+    this.startedAt = now;
+    this.speechDetected = true;
+    this.lastSpeechAt = now;
+    this.peakLevel = Math.max(this.peakLevel, level);
+    bargeIn.onBargeIn();
+  }
+
+  /** Stops listening along: from now on it records like a normal turn (fresh, without the lead-in). */
+  public disarm() {
+    if (!this.active || !this.armed) return;
+    this.armed = false;
+    this.chunks = [];
+    this.startedAt = performance.now();
+    this.lastSpeechAt = this.startedAt;
+    this.speechDetected = false;
+    this.peakLevel = 0;
+  }
+
+  /** Whether it is still listening along without having been triggered. */
+  public isArmed() {
+    return this.active && this.armed;
   }
 
   public async stop(): Promise<VoiceCaptureResult | null> {
@@ -157,6 +218,7 @@ export class VoiceCapture {
 
   public async cancel() {
     if (!this.active) return;
+    this.armed = false;
     this.speechDetected = false;
     await this.stop();
   }

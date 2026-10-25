@@ -706,6 +706,17 @@ ru „персонаж/история/сцена“. Fachbegriffe nur im Experte
   meldet Pegel skaliert auf 4× Schwelle, `rawLevel` rechnet zurück): stumm / zu leise / Hintergrund über Schwelle, mit
   Knopf für eine vorgeschlagene Schwelle. E2E `voice-mic-check.mjs` ersetzt `getUserMedia` durch einen Oszillator; der
   Mock beantwortet `/audio/transcriptions` (`stats.sttText`).
+- Ins Wort fallen (Barge-In, `SttConfig.barge_in`, Standard an, Schalter `#setting-barge-in`): Während die Figur im Anruf
+  denkt/spricht, läuft `VoiceCapture` mit `bargeIn` („mithören“): zählt erst ab `vad_threshold × 2,5` für 300 ms
+  (`BARGE_IN_DEFAULTS`), behält bis dahin nur 600 ms Vorlauf; danach normale Aufnahme als nächster Zug. Endet die Antwort
+  ohne Unterbrechung, macht `disarm()` daraus direkt die nächste Aufnahme (kein neues Mikrofon). `streamingTts` merkt sich
+  je Satz Start/Ende auf der Audio-Uhr (`audioPlayer.enqueue(…, onScheduled)`, `audioPlayer.now()`); `heard()` gibt das
+  Gehörte (Teilsatz anteilig nach Zeit). `chatSlice.markReplyInterrupted` kürzt die gespeicherte Antwort danach
+  (`utils/bargeIn.ts` `cutAtHeard`, Wort für Wort, Ende ` —`), der nächste Send wartet darauf (`interruptionRef`).
+  `turnRef` lässt ältere Schritte nach Unterbrechung verstummen. Mikrofonknopf im Anruf = manuell unterbrechen.
+  E2E `voice-barge-in.mjs`: `getUserMedia` auf `MediaDevices.prototype` ersetzen (WebKit tauscht `navigator.mediaDevices`
+  aus) und `browser.refresh()` statt `location.reload()` (sonst läuft `execute` in einem anderen Kontext; die App nutzt
+  dann WebKits piepsendes Mock-Mikrofon). Mock: `stats.ttsToneSeconds` liefert hörbare Clips fester Länge.
 - Stimmeffekte: `VoiceConfig.effects` (`VoiceEffects`), gerendert in `services/voiceEffects.ts` (OfflineAudioContext, Tonhöhe per
   WSOLA) über `audioPlayer.enqueue(…, effects)`; jeder neue Abspielweg muss `config.effects` mitgeben.
 

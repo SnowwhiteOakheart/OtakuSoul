@@ -25,9 +25,11 @@ export const ChatComposer: React.FC = () => {
   const {
     sendMessage, suggestReplies, draftReply, isGenerating, abortGeneration, activeVoiceConfig, setAutoTtsEnabled, contextUsage,
     selectedBackend, serverConfig, generationFailure, retryGeneration, activeChatId, isChatLoading, chatLoadError, retryChatLoad,
+    markReplyInterrupted,
   } = useStoreFields(
     'sendMessage', 'suggestReplies', 'draftReply', 'isGenerating', 'abortGeneration', 'activeVoiceConfig', 'setAutoTtsEnabled', 'contextUsage',
     'selectedBackend', 'serverConfig', 'generationFailure', 'retryGeneration', 'activeChatId', 'isChatLoading', 'chatLoadError', 'retryChatLoad',
+    'markReplyInterrupted',
   );
   // The text of each chat survives switching chats and restarts (files don't).
   const draftKey = activeChatId ? `composer:${activeChatId}` : null;
@@ -339,6 +341,9 @@ export const ChatComposer: React.FC = () => {
           onSend={sendMessage}
           onAbort={abortGeneration}
           onEnsureAutoTts={() => setAutoTtsEnabled(true)}
+          onInterrupted={async (heard) => {
+            if (activeChatId) await markReplyInterrupted(activeChatId, heard);
+          }}
         />
       </div>
       <div className="max-w-4xl mx-auto mt-1.5 flex flex-wrap items-center justify-between gap-x-4 gap-y-1">

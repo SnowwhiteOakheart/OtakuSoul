@@ -1,6 +1,7 @@
 import { translate } from '../../i18n';
 import { api } from '../../services/api';
 import { soundFx } from '../../services/soundFx';
+import { cutAtHeard } from '../../utils/bargeIn';
 import { streamingTts } from '../../services/streamingTts';
 import { extractStateUpdates, applyStateUpdates } from '../../utils/stateParser';
 import { emotionTagOf, withoutEmotionTag } from '../../utils/replyTags';
@@ -114,6 +115,12 @@ export interface ChatSlice {
   loadSpeakerVoice: (speakerId: string) => Promise<VoiceConfig | null>;
   generationId: string | null;
   abortGeneration: () => Promise<void>;
+  /**
+   * Voice call barge-in: cuts the last reply of the open chat after what the user heard
+   * (`heard`) and marks it as interrupted, so the character knows where she was stopped.
+   * Leaves it as it is when the heard words are not found or all of it was heard.
+   */
+  markReplyInterrupted: (chatId: string, heard: string) => Promise<void>;
   clearChat: () => void;
   activeChatId: string | null;
   isChatLoading: boolean;
@@ -1392,6 +1399,15 @@ export const createChatSlice: SliceCreator<ChatSlice> = (set, get) => {
     } finally {
       if (abortPending === pending) abortPending = null;
     }
+  },
+
+  markReplyInterrupted: async (chatId, heard) => {
+    if (get().activeChatId !== chatId || get().isGenerating) return;
+    const last = get().storedMessages.at(-1);
+    if (!last || last.role !== 'assistant' || last.chat_id !== chatId) return;
+    const cut = cutAtHeard(last.content, heard);
+    if (cut === null) return;
+    await get().editChatMessage(last.id, cut);
   },
 
   clearChat: async () => {

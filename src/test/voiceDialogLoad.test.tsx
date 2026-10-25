@@ -29,7 +29,7 @@ describe('voice dialog', () => {
       elevenlabs_api_key: '', openai_endpoint: 'http://localhost:8880/v1/audio/speech', openai_api_key: '', openai_model: 'kokoro',
       openai_instructions: '', kokoro: { model_path: '', voices_path: '' }, local_model_id: null, output_device_id: '',
       rvc: { enabled: false, endpoint: '', api_key: '', model: '', pitch: 0, index_rate: 0.75, protect: 0.33 },
-      stt: { engine: 'disabled', whisper_model_path: '', endpoint: '', api_key: '', model: '', language: '', prompt: '', vad_threshold: 0.025, vad_silence_ms: 900, input_device_id: '' },
+      stt: { engine: 'disabled', whisper_model_path: '', endpoint: '', api_key: '', model: '', language: '', prompt: '', vad_threshold: 0.025, vad_silence_ms: 900, input_device_id: '', barge_in: true },
       narrator_for_actions: false,
     } as VoiceConfig);
     render(<CharacterVoiceModal onClose={() => {}} />);
@@ -43,7 +43,7 @@ describe('voice dialog', () => {
       volume: '+0%', filter_mode: 'strip_actions', custom_regex: '', elevenlabs_api_key: '', openai_endpoint: '', openai_api_key: '',
       openai_model: '', openai_instructions: '', kokoro: { model_path: '', voices_path: '' }, local_model_id: null, output_device_id: '',
       rvc: { enabled: false, endpoint: '', api_key: '', model: '', pitch: 0, index_rate: 0.75, protect: 0.33 },
-      stt: { engine: 'disabled', whisper_model_path: '', endpoint: '', api_key: '', model: '', language: '', prompt: '', vad_threshold: 0.025, vad_silence_ms: 900, input_device_id: '' },
+      stt: { engine: 'disabled', whisper_model_path: '', endpoint: '', api_key: '', model: '', language: '', prompt: '', vad_threshold: 0.025, vad_silence_ms: 900, input_device_id: '', barge_in: true },
       narrator_for_actions: true, local_style: '', local_emotion: true,
     }) as VoiceConfig);
     render(<CharacterVoiceModal onClose={() => {}} />);
