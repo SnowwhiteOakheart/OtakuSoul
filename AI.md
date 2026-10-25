@@ -71,7 +71,7 @@ ru „персонаж/история/сцена“. Fachbegriffe nur im Experte
 
 - **Nachricht senden:** `chatSlice.sendMessage` → Anhänge `save_attachment` → `add_chat_message` → `resolvePromptWithLore`
   (Lorebooks, `assemble_prompt` = System-Prompt + Nachspann) → Payload (+ Author's Note in Tiefe N, Nachspann am Ende)
-  → `send_chat_message`: `attachments::prepare` → `context_window::fit` (kürzt von vorn) → `stream_chat` (Events
+  → `send_chat_message`: `attachments::prepare` → `context_window::fit` (kürzt von vorn, blockweise) → `stream_chat` (Events
   `llm-token`/`llm-thought`/`llm-done`) → Antwort speichern → ggf. `summarizeDroppedMessages` im Hintergrund.
 - **Gruppen-Chats:** Ein Chat einer Figur (Gastgeberin, `character_id`) lädt bis zu `MAX_CHAT_GUESTS` = 4 Gäste ein
   (`chat_sessions.members_json`, `set_chat_members`, Reiter „Gruppe“ = `ChatGuestsPanel`; Knopf „Gruppenchat“ im Reiter
@@ -165,6 +165,9 @@ ru „персонаж/история/сцена“. Fachbegriffe nur im Experte
   „# Role & Identity“ (das E2E-Mock erkennt Chat-Anfragen daran).
 - **Kontext:** lokal exakt über llama-server `/props` + `/tokenize` (gecacht), Cloud geschätzt (Bytes/3) mit
   `cloud_context_tokens`. System-Nachrichten und letzte Nicht-System-Nachricht bleiben immer; Bild = 1000 Tokens.
+  Gekürzt wird blockweise (`stable_cut`): feste Schnittpunkte je ¼ Budget (geschätzt aus den älteren Nachrichten, ohne
+  Zustand), der Verlauf beginnt am ersten passenden – so bleibt der Anfang viele Runden gleich und llama-server nutzt den
+  Prompt-Cache, statt bei vollem Fenster jede Runde den ganzen Verlauf neu zu lesen; die Zusammenfassung folgt in Sprüngen.
   Größe je Modell: `gguf::model_shape` liest Schichten, gelernte Länge (`<arch>.context_length`) und den KV-Bedarf pro
   Token aus dem Header (KV-Köpfe je Schicht, `full_attention_interval` bei Hybrid-Modellen, Gleitfenster-Schichten mit
   festem Block `window + ub`; MLA → unbekannt, dann Schätzung). `hardware::MemoryProfile::context_mb` nutzt das;

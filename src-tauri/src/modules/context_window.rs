@@ -2,6 +2,10 @@
 //! message always go out, older messages are left out from the front until the rest fits next
 //! to the reply reserve. A local llama-server counts tokens exactly (`/tokenize`, cached per
 //! message); cloud models are estimated.
+//!
+//! The cut moves in steps of a quarter of the window ([`stable_cut`]) instead of one message per
+//! turn: the start of the history then stays the same for many turns, so llama-server (and cloud
+//! prompt caches) reuse the processed prompt instead of reading the whole history again.
 
 use crate::modules::inference::ChatMessage;
 use serde::{Deserialize, Serialize};
@@ -15,6 +19,8 @@ use ts_rs::TS;
 const PER_MESSAGE_TOKENS: usize = 6;
 /// An attached image, roughly (vision encoders use a few hundred to about a thousand tokens).
 const IMAGE_TOKENS: usize = 1_000;
+/// The cut moves in steps of this share of the budget (1/4).
+const CUT_STEPS: usize = 4;
 /// Messages cached per model; enough for very long chats.
 const CACHE_LIMIT: usize = 20_000;
 
@@ -102,6 +108,44 @@ pub fn select(
     (keep, used)
 }
 
+/// Tokens of message `i` by the estimate, with role markers: the same for a text on every turn,
+/// so cut points from it don't move when exact counts come and go.
+fn estimated_cost(message: &ChatMessage) -> usize {
+    estimate_tokens(&message.content)
+        + message.attachments.len() * IMAGE_TOKENS
+        + PER_MESSAGE_TOKENS
+}
+
+/// Moves the start of a trimmed history (`keep` from [`select`]) forward to the next cut point.
+/// Cut points sit wherever the (estimated) messages before them pass another `budget / 4`;
+/// they depend only on older messages, so the start stays put while the chat grows and then
+/// jumps a quarter of the window ahead. Without anything dropped `keep` stays as it is.
+pub fn stable_cut(messages: &[ChatMessage], mut keep: Vec<usize>, budget: usize) -> Vec<usize> {
+    let is_chat = |i: usize| messages[i].role != "system";
+    let Some(first) = keep.iter().copied().find(|&i| is_chat(i)) else {
+        return keep;
+    };
+    if !(0..first).any(is_chat) {
+        return keep;
+    }
+    let step = (budget / CUT_STEPS).max(1);
+    let mut before = 0usize;
+    let mut next = step;
+    let mut start = first;
+    for i in (0..messages.len()).filter(|&i| is_chat(i)) {
+        if before >= next {
+            if i >= first {
+                start = i;
+                break;
+            }
+            next = (before / step + 1) * step;
+        }
+        before += estimated_cost(&messages[i]);
+    }
+    keep.retain(|&i| !is_chat(i) || i >= start);
+    keep
+}
+
 impl TokenCounter {
     /// Drops the oldest messages that don't fit into `context_tokens` (for cloud models; local
     /// servers report their own size) minus the reply reserve.
@@ -152,11 +196,16 @@ impl TokenCounter {
                 used += tokens + PER_MESSAGE_TOKENS;
             }
         }
-        let (keep, used) = select(&messages, budget, |i| {
+        let (keep, _) = select(&messages, budget, |i| {
             *counts.entry(i).or_insert_with(|| {
                 estimate_tokens(&messages[i].content) + messages[i].attachments.len() * IMAGE_TOKENS
             })
         });
+        let keep = stable_cut(&messages, keep, budget);
+        let used = keep
+            .iter()
+            .map(|i| counts.get(i).copied().unwrap_or(0) + PER_MESSAGE_TOKENS)
+            .sum::<usize>();
         let dropped = messages.len() - keep.len();
         let usage = ContextUsage {
             prompt_tokens: used as u32,
@@ -276,6 +325,73 @@ mod tests {
         let messages = vec![msg("system", "prompt"), msg("user", "long")];
         let (keep, _) = select(&messages, 10, |i| if i == 1 { 1_000 } else { 1 });
         assert_eq!(keep, vec![0, 1]);
+    }
+
+    /// A chat of `n` messages of 100 bytes each (34 + 6 estimated tokens).
+    fn chat(n: usize) -> Vec<ChatMessage> {
+        let mut messages = vec![msg("system", "prompt")];
+        messages.extend((0..n).map(|i| {
+            msg(
+                if i % 2 == 0 { "user" } else { "assistant" },
+                &"x".repeat(100),
+            )
+        }));
+        messages
+    }
+
+    fn first_chat_message(messages: &[ChatMessage], budget: usize) -> usize {
+        let (keep, _) = select(messages, budget, |i| estimate_tokens(&messages[i].content));
+        let keep = stable_cut(messages, keep, budget);
+        assert_eq!(keep[0], 0, "the system prompt stays");
+        assert_eq!(
+            *keep.last().unwrap(),
+            messages.len() - 1,
+            "the latest message stays"
+        );
+        let used: usize = keep.iter().map(|&i| estimated_cost(&messages[i])).sum();
+        assert!(used <= budget, "{used} > {budget}");
+        keep[1]
+    }
+
+    #[test]
+    fn nothing_is_cut_while_everything_fits() {
+        let messages = chat(10);
+        let (keep, _) = select(&messages, 1_000, |i| estimate_tokens(&messages[i].content));
+        assert_eq!(stable_cut(&messages, keep.clone(), 1_000), keep);
+    }
+
+    #[test]
+    fn the_cut_stays_put_for_many_turns_and_then_jumps_a_quarter() {
+        // 800 tokens fit 19 messages of 40; a step is 200 tokens = 5 messages.
+        let budget = 800;
+        let starts: Vec<usize> = (20..60)
+            .map(|n| first_chat_message(&chat(n), budget))
+            .collect();
+        let changes = starts.windows(2).filter(|w| w[0] != w[1]).count();
+        // Sliding one message per turn would change the start 39 times.
+        assert!(changes <= 8, "{changes} changes: {starts:?}");
+        assert!(
+            starts.windows(2).all(|w| w[0] <= w[1]),
+            "the cut never moves back"
+        );
+        for w in starts.windows(2).filter(|w| w[0] != w[1]) {
+            assert!(w[1] - w[0] >= 4, "jumps about a quarter: {starts:?}");
+        }
+    }
+
+    #[test]
+    fn a_huge_latest_message_still_goes_out_alone() {
+        let mut messages = chat(10);
+        messages.push(msg("user", &"y".repeat(10_000)));
+        assert_eq!(
+            first_chat_message_unchecked(&messages, 500),
+            messages.len() - 1
+        );
+    }
+
+    fn first_chat_message_unchecked(messages: &[ChatMessage], budget: usize) -> usize {
+        let (keep, _) = select(messages, budget, |i| estimate_tokens(&messages[i].content));
+        stable_cut(messages, keep, budget)[1]
     }
 
     #[test]
