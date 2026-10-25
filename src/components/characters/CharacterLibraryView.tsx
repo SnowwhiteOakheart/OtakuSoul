@@ -24,6 +24,7 @@ import {
 } from 'lucide-react';
 import { useVirtualizer } from '@tanstack/react-virtual';
 import { useGridCols } from '../../hooks/useGridCols';
+import { useDragScroll } from '../../hooks/useDragScroll';
 import { CharacterEditorModal } from './CharacterEditorModal';
 import { CharacterPreviewModal, isStarterCharacter } from './CharacterPreviewModal';
 import { StarterBanner } from './StarterBanner';
@@ -111,6 +112,7 @@ export const CharacterLibraryView = () => {
   const starterCount = filteredCharacters.filter(isStarterCharacter).length;
   // The banner pushes the grid down: the virtualizer counts from the grid's top.
   const gridRef = useRef<HTMLDivElement>(null);
+  useDragScroll(parentRef);
   const [scrollMargin, setScrollMargin] = useState(0);
   useLayoutEffect(() => {
     const panel = parentRef.current;

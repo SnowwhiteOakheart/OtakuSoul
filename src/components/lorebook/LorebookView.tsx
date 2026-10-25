@@ -20,6 +20,7 @@ import { isGlobalLorebook } from './isGlobalLorebook';
 import { translate, useTranslation } from '../../i18n';
 import { confirmDialog, toast } from '../ui/feedback';
 import { errorMessage } from '../../utils/errors';
+import { useDragScroll } from '../../hooks/useDragScroll';
 
 export const LorebookView: React.FC = () => {
   const { t } = useTranslation();
@@ -65,6 +66,7 @@ export const LorebookView: React.FC = () => {
   });
 
   const parentRef = useRef<HTMLDivElement>(null);
+  useDragScroll(parentRef);
   // oxlint-disable-next-line react/incompatible-library
   const virtualizer = useVirtualizer({
     count: filteredEntries.length,

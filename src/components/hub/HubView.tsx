@@ -1,4 +1,5 @@
-import { useState } from 'react';
+import { useRef, useState } from 'react';
+import { useDragScroll } from '../../hooks/useDragScroll';
 import { useShallow } from 'zustand/react/shallow';
 import { BookOpen, Compass, Dice5, Globe, Link as LinkIcon, RotateCcw, Search, Sparkles, X, type LucideIcon } from 'lucide-react';
 import { useStoreFields } from '../../store/useAppStore';
@@ -41,6 +42,8 @@ export const HubView = () => {
     }))
   );
   const [isUrlModalOpen, setIsUrlModalOpen] = useState(false);
+  const panelRef = useRef<HTMLDivElement>(null);
+  useDragScroll(panelRef);
   const activeTab = TABS.find((tab) => tab.id === hubSubTab) ?? TABS[0]!;
 
   return (
@@ -144,7 +147,7 @@ export const HubView = () => {
       </div>
 
       {/* Content */}
-      <div id="hub-tabpanel" role="tabpanel" aria-labelledby={`hub-tab-${activeTab.id}`} className="flex-1 overflow-y-auto p-6">
+      <div ref={panelRef} id="hub-tabpanel" role="tabpanel" aria-labelledby={`hub-tab-${activeTab.id}`} className="flex-1 overflow-y-auto p-6">
         {activeTab.id === 'soul_gateway' && <GatewayCharactersTab />}
         {activeTab.id === 'chub_ai' && <ChubTab />}
         {activeTab.id === 'lorebooks' && <GatewayLorebooksTab />}
