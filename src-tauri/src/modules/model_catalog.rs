@@ -56,6 +56,53 @@ fn auto_pick_default() -> bool {
     true
 }
 
+/// A LoRA adapter for chat models: llama-server applies it on top of a matching model (`--lora`).
+#[derive(Debug, Clone, Deserialize)]
+pub struct CatalogLora {
+    pub id: String,
+    pub name: String,
+    /// Ids of the catalog models it was made for.
+    pub base: Vec<String>,
+    pub hf_id: String,
+    /// Path in the repository (may lie in a subfolder).
+    pub file: String,
+    pub size_bytes: u64,
+    pub sha256: String,
+    pub license: String,
+    /// `uncensor` (lifts refusals) or `style`.
+    pub kind: String,
+    /// Shown only while adult content is on.
+    #[serde(default)]
+    pub nsfw: bool,
+    /// Strength it was made for.
+    #[serde(default = "default_lora_scale")]
+    pub scale: f32,
+    #[serde(default)]
+    pub description: HashMap<String, String>,
+    #[serde(default)]
+    pub license_note: HashMap<String, String>,
+    #[serde(default)]
+    pub license_url: Option<String>,
+}
+
+fn default_lora_scale() -> f32 {
+    1.0
+}
+
+const LORA_KINDS: &[&str] = &["uncensor", "style"];
+
+impl CatalogLora {
+    /// Name it is saved under in the adapter folder: repositories reuse names like
+    /// `adapter_model.gguf`, the catalog id is unique.
+    pub fn target(&self) -> String {
+        format!("{}.gguf", self.id)
+    }
+
+    pub fn license_kind(&self) -> &'static str {
+        license_kind(&self.license)
+    }
+}
+
 /// A vision projector (`mmproj-*.gguf`) of a catalog model.
 #[derive(Debug, Clone, Deserialize)]
 pub struct CatalogMmproj {
@@ -78,20 +125,25 @@ impl CatalogModel {
 impl CatalogModel {
     /// `open` (Apache-2.0, MIT, BSD), `noncommercial` or `restricted` (any other or no licence).
     pub fn license_kind(&self) -> &'static str {
-        let license = self.license.to_ascii_lowercase();
-        if OPEN_LICENSES
-            .iter()
-            .any(|open| open.eq_ignore_ascii_case(&self.license))
-        {
-            "open"
-        } else if license.contains("-nc")
-            || license.contains("noncommercial")
-            || license.contains("non-commercial")
-        {
-            "noncommercial"
-        } else {
-            "restricted"
-        }
+        license_kind(&self.license)
+    }
+}
+
+/// `open` (Apache-2.0, MIT, BSD), `noncommercial` or `restricted` (any other or no licence).
+fn license_kind(license: &str) -> &'static str {
+    let lower = license.to_ascii_lowercase();
+    if OPEN_LICENSES
+        .iter()
+        .any(|open| open.eq_ignore_ascii_case(license))
+    {
+        "open"
+    } else if lower.contains("-nc")
+        || lower.contains("noncommercial")
+        || lower.contains("non-commercial")
+    {
+        "noncommercial"
+    } else {
+        "restricted"
     }
 }
 
@@ -104,6 +156,8 @@ pub struct Catalog {
     pub models: Vec<CatalogModel>,
     /// Settings that families of models need, matched by file name.
     pub model_defaults: Vec<ModelDefaults>,
+    /// LoRA adapters for the chat models above.
+    pub chat_loras: Vec<CatalogLora>,
 }
 
 /// Server and sampler values a family of models needs (e.g. Ternary Bonsai: q4 KV cache,
@@ -175,6 +229,8 @@ struct CatalogFile {
     models: Vec<serde_json::Value>,
     #[serde(default)]
     model_defaults: Vec<ModelDefaults>,
+    #[serde(default)]
+    chat_loras: Vec<serde_json::Value>,
 }
 
 /// Set once the start-up download finished (or failed).
@@ -224,8 +280,7 @@ fn usable(model: &CatalogModel) -> bool {
         && model.file.to_ascii_lowercase().ends_with(".gguf")
         && model.size_bytes > 0
         && model.vram_mb > 0
-        && model.sha256.len() == 64
-        && model.sha256.chars().all(|c| c.is_ascii_hexdigit())
+        && sha256_ok(&model.sha256)
         && !model.license.trim().is_empty()
         && model
             .license_url
@@ -237,9 +292,39 @@ fn usable(model: &CatalogModel) -> bool {
                 && m.file.to_ascii_lowercase().contains("mmproj")
                 && m.file.to_ascii_lowercase().ends_with(".gguf")
                 && m.size_bytes > 0
-                && m.sha256.len() == 64
-                && m.sha256.chars().all(|c| c.is_ascii_hexdigit())
+                && sha256_ok(&m.sha256)
         })
+}
+
+fn sha256_ok(hash: &str) -> bool {
+    hash.len() == 64 && hash.chars().all(|c| c.is_ascii_hexdigit())
+}
+
+/// A safe adapter entry for one of `models`: plain repository path, checksum, known kind.
+fn usable_lora(lora: &CatalogLora, models: &[CatalogModel]) -> bool {
+    let repo_ok = lora
+        .hf_id
+        .split_once('/')
+        .is_some_and(|(owner, name)| plain_segment(owner) && plain_segment(name));
+    plain_segment(&lora.id)
+        && !lora.name.trim().is_empty()
+        && repo_ok
+        && lora.file.split('/').all(plain_segment)
+        && lora.file.to_ascii_lowercase().ends_with(".gguf")
+        && lora.size_bytes > 0
+        && sha256_ok(&lora.sha256)
+        && !lora.license.trim().is_empty()
+        && lora
+            .license_url
+            .as_deref()
+            .is_none_or(|url| url.starts_with("https://"))
+        && LORA_KINDS.contains(&lora.kind.as_str())
+        && lora.scale.is_finite()
+        && (0.0..=2.0).contains(&lora.scale)
+        && lora
+            .base
+            .iter()
+            .any(|id| models.iter().any(|m| &m.id == id))
 }
 
 /// Reads a catalog and keeps the entries the app can offer; `None` if none is left.
@@ -259,11 +344,24 @@ fn parse(text: &str) -> Option<Catalog> {
         return None;
     }
     models.sort_by_key(|m| m.vram_mb);
+    let mut chat_loras: Vec<CatalogLora> = Vec::new();
+    for raw in file.chat_loras {
+        match serde_json::from_value::<CatalogLora>(raw) {
+            Ok(lora)
+                if usable_lora(&lora, &models) && !chat_loras.iter().any(|l| l.id == lora.id) =>
+            {
+                chat_loras.push(lora)
+            }
+            Ok(lora) => tracing::warn!("Modellkatalog: Adapter {} übersprungen", lora.id),
+            Err(e) => tracing::warn!("Modellkatalog: ungültiger Adapter übersprungen: {e}"),
+        }
+    }
     Some(Catalog {
         version: file.version,
         desktop_reserve_mb: file.desktop_reserve_mb.unwrap_or(DEFAULT_RESERVE_MB),
         models,
         model_defaults: clean_defaults(file.model_defaults),
+        chat_loras,
     })
 }
 
@@ -274,6 +372,12 @@ fn choose(downloaded: Option<&str>) -> Catalog {
         Some(remote) if is_newer(&remote.version, &bundled.version) => remote,
         _ => bundled,
     }
+}
+
+/// The catalog shipped with the app.
+#[cfg(test)]
+pub fn catalog_from_bundled() -> Catalog {
+    parse(BUNDLED).expect("mitgelieferter Modellkatalog ist gültig")
 }
 
 /// The catalog in effect now.
@@ -440,6 +544,87 @@ mod tests {
         );
         // Nothing usable left: the file is ignored.
         assert!(parse(&catalog_json("9", serde_json::json!([model("x", 0)]))).is_none());
+    }
+
+    #[test]
+    fn shipped_adapters_belong_to_gemma_and_uncensor_ones_are_adult_only() {
+        let bundled = parse(BUNDLED).unwrap();
+        let raw: serde_json::Value = serde_json::from_str(BUNDLED).unwrap();
+        assert_eq!(
+            bundled.chat_loras.len(),
+            raw["chat_loras"].as_array().unwrap().len(),
+            "mitgelieferte Adapter übersprungen"
+        );
+        for id in ["gemma-4-e4b", "gemma-4-12b", "gemma-4-26b-a4b"] {
+            assert!(
+                bundled
+                    .chat_loras
+                    .iter()
+                    .any(|l| l.kind == "uncensor" && l.base.iter().any(|b| b == id)),
+                "kein Adapter für {id}"
+            );
+        }
+        for lora in &bundled.chat_loras {
+            assert_eq!(lora.kind == "uncensor", lora.nsfw, "{}", lora.id);
+            for lang in ["de", "en", "ru", "ja"] {
+                assert!(
+                    lora.description.contains_key(lang),
+                    "{} ohne {lang}",
+                    lora.id
+                );
+            }
+            if lora.license_kind() != "open" {
+                assert!(
+                    lora.license_note.contains_key("de"),
+                    "{} ohne Lizenzhinweis",
+                    lora.id
+                );
+            }
+        }
+        let nested = bundled
+            .chat_loras
+            .iter()
+            .find(|l| l.file.contains('/'))
+            .expect("Adapter aus einem Unterordner");
+        assert_eq!(nested.target(), format!("{}.gguf", nested.id));
+    }
+
+    #[test]
+    fn unsafe_adapters_are_dropped() {
+        let lora = |id: &str| {
+            serde_json::json!({
+                "id": id, "name": id, "base": ["ok"], "hf_id": "owner/repo", "file": "sub/a.gguf",
+                "size_bytes": 10, "sha256": "b".repeat(64), "license": "Apache-2.0",
+                "kind": "uncensor", "nsfw": true
+            })
+        };
+        let mut traversal = lora("traversal");
+        traversal["file"] = "../a.gguf".into();
+        let mut no_base = lora("nobase");
+        no_base["base"] = serde_json::json!(["missing"]);
+        let mut strong = lora("strong");
+        strong["scale"] = 5.0.into();
+        let mut kind = lora("kind");
+        kind["kind"] = "exe".into();
+        let mut bad_id = lora("x");
+        bad_id["id"] = "../x".into();
+        let text = serde_json::json!({
+            "version": "9",
+            "models": [model("ok", 4000)],
+            "chat_loras": [traversal, no_base, strong, kind, bad_id, lora("good"), lora("good")]
+        })
+        .to_string();
+        let parsed = parse(&text).unwrap();
+        let ids: Vec<_> = parsed.chat_loras.iter().map(|l| l.id.as_str()).collect();
+        assert_eq!(ids, ["good"]);
+        assert_eq!(parsed.chat_loras[0].scale, 1.0);
+        // Catalogs without adapters (older files) still load.
+        assert!(
+            parse(&catalog_json("9", serde_json::json!([model("ok", 1)])))
+                .unwrap()
+                .chat_loras
+                .is_empty()
+        );
     }
 
     #[test]

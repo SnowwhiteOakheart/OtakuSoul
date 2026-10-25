@@ -21,6 +21,11 @@ fn vram_need(config: &LlamaServerConfig) -> Option<u64> {
         .as_deref()
         .and_then(|p| std::fs::metadata(p).ok())
         .map_or(0, |m| m.len() / (1024 * 1024));
+    let adapter = config
+        .lora_path
+        .as_deref()
+        .and_then(|p| std::fs::metadata(p).ok())
+        .map_or(0, |m| m.len() / (1024 * 1024));
     Some(
         crate::modules::hardware::estimate_llm_vram_mb(
             &config.model_path,
@@ -28,7 +33,8 @@ fn vram_need(config: &LlamaServerConfig) -> Option<u64> {
             config.context_size,
             config.cache_type_k.as_deref(),
             config.cache_type_v.as_deref(),
-        ) + projector,
+        ) + projector
+            + adapter,
     )
 }
 
@@ -236,6 +242,54 @@ pub struct LlamaServerConfig {
     /// Vision projector (`mmproj-*.gguf`) that lets the model see attached images.
     #[serde(default)]
     pub mmproj_path: Option<String>,
+    /// LoRA adapter applied on top of the model (`--lora`), e.g. one that lifts refusals.
+    #[serde(default)]
+    pub lora_path: Option<String>,
+    /// Strength of the adapter, 0–2 (1 = as it was made).
+    #[serde(default = "default_lora_scale")]
+    pub lora_scale: f32,
+}
+
+fn default_lora_scale() -> f32 {
+    1.0
+}
+
+/// The adapter to load and its strength: the file must exist, and an adapter for adults
+/// (`adult_only`) is left out while adult content is off.
+fn lora_choice(
+    config: &LlamaServerConfig,
+    exists: impl Fn(&str) -> bool,
+    adult_only: impl Fn(&str) -> bool,
+    adult_allowed: bool,
+) -> Option<(String, f32)> {
+    let path = config
+        .lora_path
+        .as_deref()
+        .map(str::trim)
+        .filter(|p| !p.is_empty())?;
+    if !exists(path) {
+        warn!("LoRA-Adapter fehlt, Start ohne: {path}");
+        return None;
+    }
+    if adult_only(path) && !adult_allowed {
+        warn!("LoRA-Adapter für Erwachsene bleibt aus, solange 18+ aus ist");
+        return None;
+    }
+    let scale = if config.lora_scale.is_finite() {
+        config.lora_scale.clamp(0.0, 2.0)
+    } else {
+        1.0
+    };
+    Some((path.to_string(), scale))
+}
+
+/// `--lora` takes comma-separated paths; a path with a comma or quote goes in quotes.
+fn lora_arg(path: &str) -> String {
+    if path.contains([',', '"']) {
+        format!("\"{}\"", path.replace('"', "\"\""))
+    } else {
+        path.to_string()
+    }
 }
 
 impl Default for LlamaServerConfig {
@@ -260,6 +314,8 @@ impl Default for LlamaServerConfig {
             no_mmap: false,
             cpu_moe: false,
             mmproj_path: None,
+            lora_path: None,
+            lora_scale: 1.0,
         }
     }
 }
@@ -752,6 +808,18 @@ impl LlamaServerManager {
         {
             cmd.arg("--mmproj").arg(mmproj);
         }
+        // `--lora-scaled` splits at `:` and breaks Windows paths, so the strength is set after
+        // the start (POST /lora-adapters).
+        let lora = lora_choice(
+            &config,
+            |p| Path::new(p).is_file(),
+            |p| crate::modules::models_hub::is_adult_lora(Path::new(p)),
+            crate::modules::nsfw::allowed(),
+        );
+        if let Some((path, scale)) = &lora {
+            info!("llama-server: LoRA {path} (Stärke {scale})");
+            cmd.arg("--lora").arg(lora_arg(path));
+        }
 
         if let Some(t) = config.threads {
             cmd.arg("-t").arg(t.to_string());
@@ -875,6 +943,18 @@ impl LlamaServerManager {
             }
         }
 
+        if healthy
+            && let Some((_, scale)) = lora
+            && (scale - 1.0).abs() > f32::EPSILON
+        {
+            let url = format!("http://127.0.0.1:{}/lora-adapters", config.port);
+            let body = serde_json::json!([{ "id": 0, "scale": scale }]);
+            let set = reqwest::Client::new().post(&url).json(&body).send().await;
+            if let Err(e) = set.and_then(reqwest::Response::error_for_status) {
+                warn!("LoRA-Stärke nicht gesetzt: {e}");
+            }
+        }
+
         if healthy {
             info!("llama-server ist bereit auf Port {}", config.port);
             *self.last_config.lock().await = Some(config.clone());
@@ -982,6 +1062,58 @@ fn pick_device(listing: &str, gpu: &str) -> Option<String> {
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    #[test]
+    fn lora_needs_the_file_and_adult_adapters_need_18_plus() {
+        let config = |path: Option<&str>, scale: f32| LlamaServerConfig {
+            lora_path: path.map(str::to_string),
+            lora_scale: scale,
+            ..Default::default()
+        };
+        let adult = |p: &str| p.ends_with("heretic.gguf");
+        let yes = |_: &str| true;
+        assert_eq!(lora_choice(&config(None, 1.0), yes, adult, true), None);
+        assert_eq!(
+            lora_choice(&config(Some("  "), 1.0), yes, adult, true),
+            None
+        );
+        assert_eq!(
+            lora_choice(&config(Some("/l/style.gguf"), 0.5), |_| false, adult, true),
+            None,
+            "fehlende Datei"
+        );
+        assert_eq!(
+            lora_choice(&config(Some("/l/style.gguf"), 0.5), yes, adult, false),
+            Some(("/l/style.gguf".into(), 0.5))
+        );
+        assert_eq!(
+            lora_choice(&config(Some("/l/x-heretic.gguf"), 1.0), yes, adult, false),
+            None
+        );
+        assert_eq!(
+            lora_choice(&config(Some("/l/x-heretic.gguf"), 9.0), yes, adult, true),
+            Some(("/l/x-heretic.gguf".into(), 2.0)),
+            "Stärke begrenzt"
+        );
+        assert_eq!(
+            lora_choice(&config(Some("/l/s.gguf"), f32::NAN), yes, adult, true),
+            Some(("/l/s.gguf".into(), 1.0))
+        );
+        // Old settings without the fields load with no adapter at full strength.
+        let old: LlamaServerConfig = serde_json::from_value(serde_json::json!({
+            "binary_path": null, "model_path": "m.gguf", "port": 1, "context_size": 4096,
+            "gpu_layers": 99, "threads": null, "flash_attn": true
+        }))
+        .unwrap();
+        assert_eq!((old.lora_path, old.lora_scale), (None, 1.0));
+    }
+
+    #[test]
+    fn lora_paths_with_commas_are_quoted() {
+        assert_eq!(lora_arg("C:\\m\\a.gguf"), "C:\\m\\a.gguf");
+        assert_eq!(lora_arg("/m/a,b.gguf"), "\"/m/a,b.gguf\"");
+        assert_eq!(lora_arg("/m/a\"b,c.gguf"), "\"/m/a\"\"b,c.gguf\"");
+    }
 
     fn fit(quantize_cache: bool, stop_speech: bool) -> SpeechFit {
         SpeechFit {

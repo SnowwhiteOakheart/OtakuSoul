@@ -1,10 +1,10 @@
 {
-  "version": "3.8.0",
+  "version": "3.9.0",
   "last_updated": "2026-10-25",
   "notes": {
-    "de": "Empfohlene Startmodelle für den Einrichtungsassistenten von OtakuSoul. Die App bringt eine Kopie mit und lädt beim Start diese Datei; die höhere `version` gilt. Für neue Empfehlungen hier Einträge ändern und `version` erhöhen. Nur Modelle, die ohne Anmeldung ladbar sind, mit SHA-256 der Datei auf Hugging Face; Modelle ohne freie Lizenz tragen license_note und werden in der App gekennzeichnet; ungültige Einträge überspringt die App. Automatisch empfohlen wird (nur unter frei lizenzierten) das bevorzugte Modell, wenn es in Grafikspeicher − `desktop_reserve_mb` passt, sonst das größte passende. Einträge mit `\"auto_pick\": false` stehen in der Liste, werden aber nie automatisch empfohlen. Keine Modellgewichte in diesem Repository. `model_defaults` legt Server- und Sampler-Werte für Modellfamilien fest (Teiltext im Dateinamen unter `match`); sie gelten für Modelle, für die noch kein Profil gespeichert ist.",
-    "en": "Recommended starter models for the OtakuSoul setup wizard. The app ships a copy and loads this file at start; the higher `version` wins. For new recommendations, change the entries here and raise `version`. Only models downloadable without sign-in, with the SHA-256 of the file on Hugging Face; models without an open licence carry license_note and are marked in the app; the app skips invalid entries. Among openly licensed models, the preferred one is recommended when it fits into VRAM − `desktop_reserve_mb`, otherwise the largest one that fits. Entries with `\"auto_pick\": false` are listed but never recommended automatically. No model weights in this repository. `model_defaults` sets server and sampler values for model families (text in the file name under `match`); they apply to models without a saved profile yet.",
-    "ru": "Рекомендуемые стартовые модели для мастера настройки OtakuSoul. Приложение содержит копию и при запуске загружает этот файл; действует более высокая `version`. Для новых рекомендаций измените записи здесь и увеличьте `version`. Только модели, доступные без входа, с SHA-256 файла на Hugging Face; модели без свободной лицензии содержат license_note и помечаются в приложении; некорректные записи приложение пропускает. Среди свободно лицензированных рекомендуется предпочтительная модель, если она помещается в видеопамять минус `desktop_reserve_mb`, иначе самая большая из подходящих. Записи с `\"auto_pick\": false` есть в списке, но никогда не рекомендуются автоматически. Весов моделей в репозитории нет. `model_defaults` задаёт параметры сервера и сэмплера для семейств моделей (часть имени файла в `match`); они применяются к моделям, для которых ещё нет сохранённого профиля."
+    "de": "Empfohlene Startmodelle für den Einrichtungsassistenten von OtakuSoul. Die App bringt eine Kopie mit und lädt beim Start diese Datei; die höhere `version` gilt. Für neue Empfehlungen hier Einträge ändern und `version` erhöhen. Nur Modelle, die ohne Anmeldung ladbar sind, mit SHA-256 der Datei auf Hugging Face; Modelle ohne freie Lizenz tragen license_note und werden in der App gekennzeichnet; ungültige Einträge überspringt die App. Automatisch empfohlen wird (nur unter frei lizenzierten) das bevorzugte Modell, wenn es in Grafikspeicher − `desktop_reserve_mb` passt, sonst das größte passende. Einträge mit `\"auto_pick\": false` stehen in der Liste, werden aber nie automatisch empfohlen. Keine Modellgewichte in diesem Repository. `model_defaults` legt Server- und Sampler-Werte für Modellfamilien fest (Teiltext im Dateinamen unter `match`); sie gelten für Modelle, für die noch kein Profil gespeichert ist. `chat_loras` sind LoRA-Adapter für Chat-Modelle (`base`: IDs der passenden Modelle, `file`: Pfad im Repository), geladen mit `--lora`; Einträge mit `\"nsfw\": true` zeigt die App nur mit aktiver 18+-Freigabe.",
+    "en": "Recommended starter models for the OtakuSoul setup wizard. The app ships a copy and loads this file at start; the higher `version` wins. For new recommendations, change the entries here and raise `version`. Only models downloadable without sign-in, with the SHA-256 of the file on Hugging Face; models without an open licence carry license_note and are marked in the app; the app skips invalid entries. Among openly licensed models, the preferred one is recommended when it fits into VRAM − `desktop_reserve_mb`, otherwise the largest one that fits. Entries with `\"auto_pick\": false` are listed but never recommended automatically. No model weights in this repository. `model_defaults` sets server and sampler values for model families (text in the file name under `match`); they apply to models without a saved profile yet. `chat_loras` are LoRA adapters for chat models (`base`: ids of the matching models, `file`: path in the repository), loaded with `--lora`; the app only shows entries with `\"nsfw\": true` while adult content is on.",
+    "ru": "Рекомендуемые стартовые модели для мастера настройки OtakuSoul. Приложение содержит копию и при запуске загружает этот файл; действует более высокая `version`. Для новых рекомендаций измените записи здесь и увеличьте `version`. Только модели, доступные без входа, с SHA-256 файла на Hugging Face; модели без свободной лицензии содержат license_note и помечаются в приложении; некорректные записи приложение пропускает. Среди свободно лицензированных рекомендуется предпочтительная модель, если она помещается в видеопамять минус `desktop_reserve_mb`, иначе самая большая из подходящих. Записи с `\"auto_pick\": false` есть в списке, но никогда не рекомендуются автоматически. Весов моделей в репозитории нет. `model_defaults` задаёт параметры сервера и сэмплера для семейств моделей (часть имени файла в `match`); они применяются к моделям, для которых ещё нет сохранённого профиля. `chat_loras` — LoRA-адаптеры для чат-моделей (`base`: id подходящих моделей, `file`: путь в репозитории), загружаются через `--lora`; записи с `\"nsfw\": true` приложение показывает только при включённом режиме 18+."
   },
   "desktop_reserve_mb": 1536,
   "models": [
@@ -234,6 +234,113 @@
         "en": "The large Gemma 4 model for 24 GB cards: the family's best storytelling. Slow on 16 GB (8 tokens/s).",
         "ru": "Большая модель Gemma 4 для карт на 24 ГБ: лучшее повествование в семействе. На 16 ГБ медленно (8 токенов/с).",
         "ja": "24GB GPU向けGemma 4大型モデル: シリーズ最高峰のストーリーテリング品質を誇ります。16GBでは低速動作となります (8トークン/秒)。"
+      }
+    }
+  ],
+  "chat_loras": [
+    {
+      "id": "gemma-4-e4b-heretic",
+      "name": "Heretic",
+      "base": [
+        "gemma-4-e4b"
+      ],
+      "hf_id": "Qwe1325/gemma-4-E4B-it-heretic-lora",
+      "file": "gemma-4-E4B-it-heretic-lora-F16-LoRA.gguf",
+      "size_bytes": 213248,
+      "sha256": "8d6e1eef8df83e5f4b5bcf4740227ee68f76a949dff8bed1b981448c1413f1eb",
+      "license": "unspecified",
+      "license_note": {
+        "de": "Im Adapter-Repository ist keine Lizenz angegeben. Er ist aus einem Apache-2.0-Modell abgeleitet; prüfe die Bedingungen selbst, bevor Du ihn weitergibst oder gewerblich nutzt.",
+        "en": "The adapter repository states no licence. It is derived from an Apache-2.0 model; check the terms yourself before sharing it or using it commercially.",
+        "ru": "В репозитории адаптера лицензия не указана. Он получен из модели под Apache-2.0; проверь условия сам, прежде чем распространять его или использовать в коммерческих целях.",
+        "ja": "アダプターのリポジトリにライセンスの記載がありません。Apache-2.0のモデルから派生したものです。再配布や商用利用の前に条件を自分で確認してください。"
+      },
+      "license_url": "https://huggingface.co/coder3101/gemma-4-E4B-it-heretic",
+      "kind": "uncensor",
+      "nsfw": true,
+      "scale": 1.0,
+      "description": {
+        "de": "Hebt die eingebauten Ablehnungen auf (Abliteration): Die Figur bleibt auch bei Gewalt- und Erwachsenenszenen in der Rolle. Antworten auf harmlose Fragen bleiben fast gleich.",
+        "en": "Lifts the built-in refusals (abliteration): the character stays in role in violent and adult scenes too. Answers to harmless prompts stay nearly the same.",
+        "ru": "Снимает встроенные отказы (аблитерация): персонаж остаётся в роли и в сценах насилия и для взрослых. Ответы на безобидные запросы почти не меняются.",
+        "ja": "組み込みの拒否応答を解除します (アブリテレーション)。暴力的・成人向けの場面でもキャラクターが役を保ちます。無害な質問への応答はほぼ変わりません。"
+      }
+    },
+    {
+      "id": "gemma-4-12b-heretic",
+      "name": "Heretic",
+      "base": [
+        "gemma-4-12b"
+      ],
+      "hf_id": "Qwe1325/gemma-4-12B-it-qat-q4_0-unquantized-heretic-lora",
+      "file": "gemma-4-12B-it-qat-unquantized-heretic-F16-LoRA.gguf",
+      "size_bytes": 417600,
+      "sha256": "f6bf1355fa0ce3e087b9996c5e3ea732477af38f810016ca0885afbd8e2231b8",
+      "license": "unspecified",
+      "license_note": {
+        "de": "Im Adapter-Repository ist keine Lizenz angegeben. Er ist aus einem Apache-2.0-Modell abgeleitet; prüfe die Bedingungen selbst, bevor Du ihn weitergibst oder gewerblich nutzt.",
+        "en": "The adapter repository states no licence. It is derived from an Apache-2.0 model; check the terms yourself before sharing it or using it commercially.",
+        "ru": "В репозитории адаптера лицензия не указана. Он получен из модели под Apache-2.0; проверь условия сам, прежде чем распространять его или использовать в коммерческих целях.",
+        "ja": "アダプターのリポジトリにライセンスの記載がありません。Apache-2.0のモデルから派生したものです。再配布や商用利用の前に条件を自分で確認してください。"
+      },
+      "license_url": "https://huggingface.co/coder3101/gemma-4-12B-it-qat-q4_0-unquantized-heretic",
+      "kind": "uncensor",
+      "nsfw": true,
+      "scale": 1.0,
+      "description": {
+        "de": "Hebt die eingebauten Ablehnungen auf (Abliteration): Die Figur bleibt auch bei Gewalt- und Erwachsenenszenen in der Rolle. Antworten auf harmlose Fragen bleiben fast gleich.",
+        "en": "Lifts the built-in refusals (abliteration): the character stays in role in violent and adult scenes too. Answers to harmless prompts stay nearly the same.",
+        "ru": "Снимает встроенные отказы (аблитерация): персонаж остаётся в роли и в сценах насилия и для взрослых. Ответы на безобидные запросы почти не меняются.",
+        "ja": "組み込みの拒否応答を解除します (アブリテレーション)。暴力的・成人向けの場面でもキャラクターが役を保ちます。無害な質問への応答はほぼ変わりません。"
+      }
+    },
+    {
+      "id": "gemma-4-26b-a4b-abliterated",
+      "name": "Abliterated",
+      "base": [
+        "gemma-4-26b-a4b"
+      ],
+      "hf_id": "hotdogs/gemma4-26b-abliterated-lora",
+      "file": "gguf/adapter_model.gguf",
+      "size_bytes": 3096352,
+      "sha256": "3c795818bfbd3be3f029455e18975dd9cbc7983cd32899c3836c7c560661d8a4",
+      "license": "Apache-2.0",
+      "kind": "uncensor",
+      "nsfw": true,
+      "scale": 1.0,
+      "description": {
+        "de": "Hebt die eingebauten Ablehnungen auf (Abliteration): Die Figur bleibt auch bei Gewalt- und Erwachsenenszenen in der Rolle. Antworten auf harmlose Fragen bleiben fast gleich.",
+        "en": "Lifts the built-in refusals (abliteration): the character stays in role in violent and adult scenes too. Answers to harmless prompts stay nearly the same.",
+        "ru": "Снимает встроенные отказы (аблитерация): персонаж остаётся в роли и в сценах насилия и для взрослых. Ответы на безобидные запросы почти не меняются.",
+        "ja": "組み込みの拒否応答を解除します (アブリテレーション)。暴力的・成人向けの場面でもキャラクターが役を保ちます。無害な質問への応答はほぼ変わりません。"
+      }
+    },
+    {
+      "id": "gemma-4-26b-a4b-gutenberg",
+      "name": "Gutenberg",
+      "base": [
+        "gemma-4-26b-a4b"
+      ],
+      "hf_id": "jir88/Gemma4-Gutenberg-26B-A4B-lora-F16-GGUF",
+      "file": "Gemma4-Gutenberg-26B-A4B-lora-f16.gguf",
+      "size_bytes": 148713824,
+      "sha256": "acbb6b529eca83aeadd93707c0c5c8dc6ac6245b514098d500bc8593a83bd35b",
+      "license": "unspecified",
+      "license_url": "https://huggingface.co/nbeerbower/Gemma4-Gutenberg-26B-A4B-lora",
+      "license_note": {
+        "de": "Im Adapter-Repository ist keine Lizenz angegeben; prüfe die Bedingungen selbst, bevor Du ihn weitergibst oder gewerblich nutzt.",
+        "en": "The adapter repository states no licence; check the terms yourself before sharing it or using it commercially.",
+        "ru": "В репозитории адаптера лицензия не указана; проверь условия сам, прежде чем распространять его или использовать в коммерческих целях.",
+        "ja": "アダプターのリポジトリにライセンスの記載がありません。再配布や商用利用の前に条件を自分で確認してください。"
+      },
+      "kind": "style",
+      "nsfw": false,
+      "scale": 1.0,
+      "description": {
+        "de": "Erzählstil: auf Romane aus dem Projekt Gutenberg nachtrainiert, für bildhaftere, literarischere Prosa (vor allem auf Englisch). Die Ablehnungen bleiben.",
+        "en": "Storytelling style: fine-tuned on Project Gutenberg novels for more vivid, literary prose (mostly in English). Refusals stay as they are.",
+        "ru": "Стиль повествования: дообучен на романах из проекта «Гутенберг» для более образной, литературной прозы (в основном на английском). Отказы сохраняются.",
+        "ja": "文体アダプター: プロジェクト・グーテンベルクの小説で追加学習し、より描写豊かで文学的な文章にします (主に英語)。拒否応答はそのままです。"
       }
     }
   ],

@@ -256,6 +256,16 @@ ru „персонаж/история/сцена“. Fachbegriffe nur im Experte
   (Haken „Auch Bilder verstehen“), Server-Einstellungen bieten „Passende Vision-Datei laden“ (`downloadVisionProjector`,
   stoppt den Server, setzt `mmproj_path`). `selectLocalModel` wählt per `utils/visionProjector.ts` die eigene Datei des
   Modells und entfernt die eines anderen Modells (sonst startet llama-server nicht); von Hand gewählte bleiben.
+- Chat-LoRAs: Katalogliste `chat_loras` (`base` = Modell-IDs, `file` darf in einem Unterordner liegen, `kind`
+  `uncensor`/`style`, `nsfw`, `scale`; geprüft in `usable_lora`). Gespeichert als `<id>.gguf` in `<Daten>/chat-loras/`
+  (nicht im Modellordner: der Scan würde sie als Modelle listen, und im E2E-Lauf zeigt der Modellordner auf das echte
+  `assets/models`). `list_chat_loras` blendet `nsfw`-Adapter ohne 18+ aus, `download_chat_lora` lädt nur per Katalog-ID
+  und verweigert sie dann; `llama_manager::lora_choice` lässt einen Adapter für Erwachsene beim Start weg, solange 18+ aus
+  ist. Start mit `--lora` (Pfad mit Komma in Anführungszeichen), die Stärke per `POST /lora-adapters` nach dem Start:
+  `--lora-scaled` trennt am `:` und zerlegt Windows-Pfade. Ein Adapter gehört zu seinem Modell: `settingsForNewModel`
+  setzt ihn zurück, im Modellprofil bleibt er. Test 25.10.2026 (b11669): Die Heretic-/Abliterated-Adapter heben bei E4B,
+  12B und 26B-A4B alle Ablehnungen der 5 Testprompts auf, harmlose deutsche Antworten bleiben fast gleich; Stärke 0 bringt
+  die Ablehnung zurück. Stil-Adapter (Gutenberg) ändern an Ablehnungen nichts.
 - Lokale Vision (GPU-Test 21.10.2026, RTX 4070 Ti SUPER, llama.cpp b11669): Qwen3-VL-8B Q4 + mmproj Q8_0 und Gemma 4 12B
   + mmproj-F16 beschreiben ein Porträt treffend auf Deutsch (~1 s; 8,9 bzw. 10,7 GB bei 8K). Gemma 4 denkt standardmäßig
   vorher nach (~1.800 Zeichen Reasoning): mit knappem `max_tokens` bleibt `content` leer – Nachdenken aus oder genug Tokens.

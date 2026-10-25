@@ -464,6 +464,143 @@ pub fn starter_models() -> Vec<StarterModel> {
         .collect()
 }
 
+/// Folder for chat-model LoRA adapters (`<Daten>/chat-loras`), apart from the models, so the model
+/// list never offers an adapter as a chat model.
+pub fn chat_lora_dir() -> PathBuf {
+    PathBuf::from(crate::modules::paths::resolve_app_paths().data_dir).join("chat-loras")
+}
+
+/// A LoRA adapter from the catalog for a chat model.
+#[derive(Debug, Clone, Serialize, Deserialize, TS)]
+#[ts(export)]
+pub struct ChatLora {
+    pub id: String,
+    pub name: String,
+    /// File names of the catalog models it fits (the chosen model's file ends with one of them).
+    pub base_files: Vec<String>,
+    /// `uncensor` or `style`.
+    pub kind: String,
+    pub nsfw: bool,
+    /// Strength it was made for.
+    pub scale: f32,
+    pub description: std::collections::HashMap<String, String>,
+    pub license: String,
+    pub license_kind: String,
+    pub license_note: std::collections::HashMap<String, String>,
+    pub license_url: String,
+    pub size_bytes: u64,
+    pub size_formatted: String,
+    /// Where it lies (or will lie) on disk.
+    pub path: String,
+    pub installed: bool,
+}
+
+fn format_small(bytes: u64) -> String {
+    if bytes >= 1_073_741_824 {
+        format!("{:.1} GB", bytes as f64 / 1_073_741_824.0)
+    } else if bytes >= 1_048_576 {
+        format!("{:.0} MB", bytes as f64 / 1_048_576.0)
+    } else {
+        format!("{} KB", bytes.div_ceil(1024))
+    }
+}
+
+/// The catalog's adapters with install state; adapters for adults only with `adult_allowed`.
+pub fn chat_loras_for(
+    catalog: &Catalog,
+    dir: &std::path::Path,
+    adult_allowed: bool,
+) -> Vec<ChatLora> {
+    catalog
+        .chat_loras
+        .iter()
+        .filter(|l| adult_allowed || !l.nsfw)
+        .map(|l| {
+            let path = dir.join(l.target());
+            ChatLora {
+                id: l.id.clone(),
+                name: l.name.clone(),
+                base_files: catalog
+                    .models
+                    .iter()
+                    .filter(|m| l.base.contains(&m.id))
+                    .map(|m| m.file.clone())
+                    .collect(),
+                kind: l.kind.clone(),
+                nsfw: l.nsfw,
+                scale: l.scale,
+                description: l.description.clone(),
+                license: l.license.clone(),
+                license_kind: l.license_kind().to_string(),
+                license_note: l.license_note.clone(),
+                license_url: l
+                    .license_url
+                    .clone()
+                    .unwrap_or_else(|| format!("https://huggingface.co/{}", l.hf_id)),
+                size_bytes: l.size_bytes,
+                size_formatted: format_small(l.size_bytes),
+                installed: std::fs::metadata(&path).is_ok_and(|m| m.len() == l.size_bytes),
+                path: path.to_string_lossy().to_string(),
+            }
+        })
+        .collect()
+}
+
+/// The adapters offered now (adult ones only while adult content is on).
+pub fn chat_loras() -> Vec<ChatLora> {
+    chat_loras_for(
+        &crate::modules::model_catalog::catalog(),
+        &chat_lora_dir(),
+        crate::modules::nsfw::allowed(),
+    )
+}
+
+/// Whether `path` is a catalog adapter for adults (they are left out while adult content is off).
+pub fn is_adult_lora(path: &std::path::Path) -> bool {
+    let Some(name) = path.file_name().and_then(|n| n.to_str()) else {
+        return false;
+    };
+    crate::modules::model_catalog::catalog()
+        .chat_loras
+        .iter()
+        .any(|l| l.nsfw && l.target() == name)
+}
+
+/// Downloads the catalog adapter `id` (checked against its SHA-256) and returns its path.
+pub async fn download_chat_lora<R: tauri::Runtime>(
+    app: &tauri::AppHandle<R>,
+    id: &str,
+) -> Result<String, String> {
+    let catalog = crate::modules::model_catalog::catalog();
+    let lora = catalog
+        .chat_loras
+        .iter()
+        .find(|l| l.id == id)
+        .ok_or_else(|| crate::err!("backend.models.loraUnknown"))?;
+    if lora.nsfw && !crate::modules::nsfw::allowed() {
+        return Err(crate::err!("backend.nsfw.disabled"));
+    }
+    let dir = chat_lora_dir();
+    let target = dir.join(lora.target());
+    if std::fs::metadata(&target).is_ok_and(|m| m.len() == lora.size_bytes) {
+        return Ok(target.to_string_lossy().to_string());
+    }
+    let url = format!(
+        "https://huggingface.co/{}/resolve/main/{}",
+        lora.hf_id, lora.file
+    );
+    download_gguf_into(
+        app,
+        &dir,
+        &url,
+        &lora.target(),
+        lora.size_bytes,
+        Some(&lora.sha256),
+        &[],
+    )
+    .await
+}
+
 /// GGUF downloads the user stopped, by file name; the download loop checks it per chunk.
 static CANCELLED_DOWNLOADS: std::sync::LazyLock<
     parking_lot::Mutex<std::collections::HashSet<String>>,
@@ -513,6 +650,29 @@ pub async fn download_gguf_file<R: tauri::Runtime>(
     expected_sha256: Option<&str>,
     parts: &[HfGgufPart],
 ) -> Result<String, String> {
+    let dir = PathBuf::from(crate::modules::paths::resolve_app_paths().bundled_models_dir);
+    download_gguf_into(
+        app,
+        &dir,
+        download_url,
+        target_filename,
+        expected_size,
+        expected_sha256,
+        parts,
+    )
+    .await
+}
+
+/// [`download_gguf_file`] into `target_dir`.
+async fn download_gguf_into<R: tauri::Runtime>(
+    app: &tauri::AppHandle<R>,
+    target_dir: &std::path::Path,
+    download_url: &str,
+    target_filename: &str,
+    expected_size: u64,
+    expected_sha256: Option<&str>,
+    parts: &[HfGgufPart],
+) -> Result<String, String> {
     let parts = if parts.is_empty() {
         vec![HfGgufPart {
             filename: target_filename.to_string(),
@@ -536,9 +696,7 @@ pub async fn download_gguf_file<R: tauri::Runtime>(
     let Some(_active) = ActiveDownload::claim(&progress_name) else {
         return Err(crate::err!("backend.models.downloadRunning"));
     };
-    let paths = crate::modules::paths::resolve_app_paths();
-    let target_dir = PathBuf::from(&paths.bundled_models_dir);
-    std::fs::create_dir_all(&target_dir).map_err(|e| e.to_string())?;
+    std::fs::create_dir_all(target_dir).map_err(|e| e.to_string())?;
 
     let mut dest_paths = Vec::with_capacity(parts.len());
     for part in &parts {
@@ -921,6 +1079,26 @@ impl Drop for PartialDownload {
 
 #[cfg(test)]
 mod tests {
+
+    #[test]
+    fn adult_adapters_are_hidden_while_18_plus_is_off() {
+        let catalog = crate::modules::model_catalog::catalog_from_bundled();
+        let dir = std::path::Path::new("/nowhere/chat-loras");
+        let all = super::chat_loras_for(&catalog, dir, true);
+        let safe = super::chat_loras_for(&catalog, dir, false);
+        assert!(all.iter().any(|l| l.nsfw));
+        assert!(safe.iter().all(|l| !l.nsfw));
+        assert!(
+            safe.iter().any(|l| l.kind == "style"),
+            "Stil-Adapter bleiben sichtbar"
+        );
+        let e4b = all.iter().find(|l| l.id == "gemma-4-e4b-heretic").unwrap();
+        assert_eq!(e4b.base_files, ["gemma-4-E4B-it-Q4_K_M.gguf"]);
+        assert!(!e4b.installed);
+        assert!(e4b.path.ends_with("gemma-4-e4b-heretic.gguf"));
+        assert_eq!(e4b.size_formatted, "209 KB");
+        assert_eq!(e4b.license_kind, "restricted");
+    }
 
     #[tokio::test(flavor = "multi_thread")]
     async fn a_dropped_connection_resumes_where_it_stopped() {

@@ -121,6 +121,20 @@ pub async fn download_gguf_model(
     .await
 }
 
+/// LoRA adapters for chat models from the catalog (adult ones only while 18+ is on).
+#[tauri::command]
+pub async fn list_chat_loras() -> Vec<crate::modules::models_hub::ChatLora> {
+    tokio::task::spawn_blocking(crate::modules::models_hub::chat_loras)
+        .await
+        .unwrap_or_default()
+}
+
+/// Downloads the catalog adapter `id` from its source (SHA-256 checked); returns its path.
+#[tauri::command]
+pub async fn download_chat_lora(app: tauri::AppHandle, id: String) -> Result<String, String> {
+    crate::modules::models_hub::download_chat_lora(&app, &id).await
+}
+
 /// Server and sampler values families of local models need (from the model catalog).
 #[tauri::command]
 pub fn get_model_defaults() -> Vec<crate::modules::model_catalog::ModelDefaults> {

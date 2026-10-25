@@ -4,4 +4,12 @@ export type LlamaServerConfig = { binary_path: string | null, model_path: string
 /**
  * Vision projector (`mmproj-*.gguf`) that lets the model see attached images.
  */
-mmproj_path: string | null, };
+mmproj_path: string | null, 
+/**
+ * LoRA adapter applied on top of the model (`--lora`), e.g. one that lifts refusals.
+ */
+lora_path: string | null, 
+/**
+ * Strength of the adapter, 0–2 (1 = as it was made).
+ */
+lora_scale: number, };
