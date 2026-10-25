@@ -321,7 +321,10 @@ ru „персонаж/история/сцена“. Fachbegriffe nur im Experte
   Assistent mit `license_note` und Link; bei neuen Releases die mitgelieferte Kopie mit dem Daten-Repo abgleichen;
   Empfehlung = `preferred`-Modell, wenn es in VRAM − 1,5 GB passt, sonst das größte passende – nur unter frei lizenzierten
   mit `auto_pick` (Standard `true`); seit Katalog 3.5.0 ist keins bevorzugt, Ternary Bonsai 2 27B hat wegen schwächeren
-  Deutschs `auto_pick: false`: nur gelistet, nie automatisch gewählt).
+  Deutschs `auto_pick: false`: nur gelistet, nie automatisch gewählt). Die App sortiert nach `vram_mb`. Seit 3.6.0 stehen
+  die MoE-Modelle (Gemma 4 26B-A4B, Qwen3.6 35B-A3B) mit ihrem Bedarf ab 20 GB drin: auf 16 GB nur teilweise ausgelagert,
+  dort war Gemma 4 12B im Test (Soulstage/Gruppe/Lorebooks, neben Bildgenerierung) besser und doppelt so schnell → 16 GB
+  Gemma 4 12B, 20 GB Qwen3.6, 24 GB Gemma 4 31B. Bonsai-Vorgabe q8_0 statt q4_0 (q4 merklich ungenauer).
   Starter mit `runtime: "prism"` blenden im Assistenten zusätzlich die PrismML-Laufzeitkarte ein.
   Einfacher Weg: `LocalModelSetup` „Alles automatisch einrichten“ (fehlende Laufzeiten mit empfohlener Variante, dann Starter
   laden/auswählen; Details unter „Selbst auswählen“), Modellnamen über `prettyModelName`, Ampel `ModelFit`/`modelFit`.

@@ -1,6 +1,6 @@
 {
-  "version": "3.5.0",
-  "last_updated": "2026-10-24",
+  "version": "3.6.0",
+  "last_updated": "2026-10-25",
   "notes": {
     "de": "Empfohlene Startmodelle für den Einrichtungsassistenten von OtakuSoul. Die App bringt eine Kopie mit und lädt beim Start diese Datei; die höhere `version` gilt. Für neue Empfehlungen hier Einträge ändern und `version` erhöhen. Nur Modelle, die ohne Anmeldung ladbar sind, mit SHA-256 der Datei auf Hugging Face; Modelle ohne freie Lizenz tragen license_note und werden in der App gekennzeichnet; ungültige Einträge überspringt die App. Automatisch empfohlen wird (nur unter frei lizenzierten) das bevorzugte Modell, wenn es in Grafikspeicher − `desktop_reserve_mb` passt, sonst das größte passende. Einträge mit `\"auto_pick\": false` stehen in der Liste, werden aber nie automatisch empfohlen. Keine Modellgewichte in diesem Repository. `model_defaults` legt Server- und Sampler-Werte für Modellfamilien fest (Teiltext im Dateinamen unter `match`); sie gelten für Modelle, für die noch kein Profil gespeichert ist.",
     "en": "Recommended starter models for the OtakuSoul setup wizard. The app ships a copy and loads this file at start; the higher `version` wins. For new recommendations, change the entries here and raise `version`. Only models downloadable without sign-in, with the SHA-256 of the file on Hugging Face; models without an open licence carry license_note and are marked in the app; the app skips invalid entries. Among openly licensed models, the preferred one is recommended when it fits into VRAM − `desktop_reserve_mb`, otherwise the largest one that fits. Entries with `\"auto_pick\": false` are listed but never recommended automatically. No model weights in this repository. `model_defaults` sets server and sampler values for model families (text in the file name under `match`); they apply to models without a saved profile yet.",
@@ -22,10 +22,10 @@
       "vram_mb": 4500,
       "min_vram_gb": 6,
       "description": {
-        "de": "Klein, sehr schnell und überraschend gut: läuft auf fast jeder Grafikkarte (gemessen 3,9 GB bei 32K Kontext). Kann auch Bilder sehen; die passende Vision-Datei lädt die App mit.",
-        "en": "Small, very fast and surprisingly good: runs on almost any graphics card (measured 3.9 GB at 32K context). Can also see pictures; the app downloads the matching vision file with it.",
-        "ru": "Маленькая, очень быстрая и на удивление хорошая: работает почти на любой видеокарте (3,9 ГБ при контексте 32K). Видит и изображения; подходящий файл зрения приложение загрузит само.",
-        "ja": "軽量・超高速で驚くほど優秀: ほぼすべてのグラフィックカードで動作します (32Kコンテキストで実測3.9GB)。対応するmmprojファイルを使用すれば画像認識も可能です。"
+        "de": "Klein, sehr schnell und überraschend gut: läuft auf fast jeder Grafikkarte (gemessen 3,9 GB bei 32K Kontext). Im Test bestes Gesamtergebnis in Stage, Gruppenchat und Lorebooks. Kann auch Bilder sehen; die passende Vision-Datei lädt die App mit.",
+        "en": "Small, very fast and surprisingly good: runs on almost any graphics card (measured 3.9 GB at 32K context). Best overall result in our Stage, group chat and lorebook tests. Can also see pictures; the app downloads the matching vision file with it.",
+        "ru": "Маленькая, очень быстрая и на удивление хорошая: работает почти на любой видеокарте (3,9 ГБ при контексте 32K). Лучший общий результат в наших тестах сцены, группового чата и лорбуков. Видит и изображения; подходящий файл зрения приложение загрузит само.",
+        "ja": "軽量・超高速で驚くほど優秀: ほぼすべてのグラフィックカードで動作します (32Kコンテキストで実測3.9GB)。ステージ・グループチャット・ロアブックのテストで総合1位。対応するmmprojファイルを使用すれば画像認識も可能です。"
       },
       "mmproj": {
         "file": "mmproj-F16.gguf",
@@ -67,10 +67,10 @@
       "vram_mb": 8300,
       "min_vram_gb": 10,
       "description": {
-        "de": "Starke Erzählerin für 10–12-GB-Karten: lebendiger Stil, gutes Deutsch, schnell (gemessen 8,2 GB bei 32K). Kann Bilder sehen (die Vision-Datei lädt die App mit).",
-        "en": "Strong storyteller for 10–12 GB cards: lively style, good multilingual output, fast (measured 8.2 GB at 32K). Can see pictures (the app downloads the vision file with it).",
-        "ru": "Сильная рассказчица для карт на 10–12 ГБ: живой стиль, хорошая мультиязычность, быстрая (8,2 ГБ при 32K). Видит изображения (файл зрения приложение загрузит само).",
-        "ja": "10〜12GB GPU向けの強力なストーリーテラー: 生き生きとした文体、優れた多言語出力、そして高速な動作が特長です (32Kで実測8.2GB)。mmprojファイルで画像認識にも対応。"
+        "de": "Starke Erzählerin für 10–16-GB-Karten: lebendiger Stil, gutes Deutsch, schnell (gemessen 8,2 GB bei 32K). Auf 16 GB im Test schneller und stimmiger als die großen MoE-Modelle, auch neben lokaler Bildgenerierung. Kann Bilder sehen (die Vision-Datei lädt die App mit).",
+        "en": "Strong storyteller for 10–16 GB cards: lively style, good multilingual output, fast (measured 8.2 GB at 32K). On 16 GB faster and more consistent than the large MoE models in our tests, even next to local image generation. Can see pictures (the app downloads the vision file with it).",
+        "ru": "Сильная рассказчица для карт на 10–16 ГБ: живой стиль, хорошая мультиязычность, быстрая (8,2 ГБ при 32K). На 16 ГБ в наших тестах быстрее и стабильнее больших MoE-моделей, даже рядом с локальной генерацией изображений. Видит изображения (файл зрения приложение загрузит само).",
+        "ja": "10〜16GB GPU向けの強力なストーリーテラー: 生き生きとした文体、優れた多言語出力、そして高速な動作が特長です (32Kで実測8.2GB)。16GBではローカル画像生成と併用しても、テストで大型MoEモデルより高速かつ安定。mmprojファイルで画像認識にも対応。"
       },
       "mmproj": {
         "file": "mmproj-F16.gguf",
@@ -126,26 +126,6 @@
       }
     },
     {
-      "id": "qwen3.6-35b-a3b",
-      "name": "Qwen3.6 35B-A3B (MoE)",
-      "hf_id": "unsloth/Qwen3.6-35B-A3B-GGUF",
-      "file": "Qwen3.6-35B-A3B-UD-Q4_K_M.gguf",
-      "size_bytes": 22134528992,
-      "sha256": "ac0e2c1189e055faa36eff361580e79c5bd6f8e76bffb4ce547f167d53e31a61",
-      "license": "Apache-2.0",
-      "quantization": "Q4_K_M",
-      "runtime": "standard",
-      "preferred": false,
-      "vram_mb": 13800,
-      "min_vram_gb": 15,
-      "description": {
-        "de": "Mixture-of-Experts: 35 Milliarden Parameter, je Wort rechnen nur 3 Milliarden. Läuft auf 16 GB teilweise ausgelagert flott (gemessen 39 Tokens/s), stark bei komplexen Szenen.",
-        "en": "Mixture of experts: 35 billion parameters, only 3 billion work per word. Runs fast on 16 GB partly offloaded (measured 39 tokens/s), strong in complex scenes.",
-        "ru": "Mixture of Experts: 35 млрд параметров, на каждое слово работают только 3 млрд. На 16 ГБ с частичной выгрузкой работает быстро (39 токенов/с), сильна в сложных сценах.",
-        "ja": "Mixture-of-Expertsモデル: 総パラメータ35Bのうち1単語あたり3Bのみが稼働。16GB GPUで一部オフロードして高速に動作し (実測39トークン/秒)、複雑なシーンに威力を発揮します。"
-      }
-    },
-    {
       "id": "gemma-4-26b-a4b",
       "name": "Gemma 4 26B-A4B (MoE)",
       "hf_id": "unsloth/gemma-4-26B-A4B-it-GGUF",
@@ -156,13 +136,13 @@
       "quantization": "Q4_K_M",
       "runtime": "standard",
       "preferred": false,
-      "vram_mb": 14100,
-      "min_vram_gb": 16,
+      "vram_mb": 17500,
+      "min_vram_gb": 19,
       "description": {
-        "de": "Mixture-of-Experts für 16-GB-Karten: Qualität eines großen Modells, Tempo eines kleinen (gemessen 62 Tokens/s, teilweise ausgelagert). Kann Bilder sehen (die Vision-Datei lädt die App mit).",
-        "en": "Mixture of experts for 16 GB cards: quality of a large model at the speed of a small one (measured 62 tokens/s, partly offloaded). Can see pictures (the app downloads the vision file with it).",
-        "ru": "Mixture of Experts для карт на 16 ГБ: качество большой модели со скоростью маленькой (62 токена/с при частичной выгрузке). Видит изображения (файл зрения приложение загрузит само).",
-        "ja": "16GB GPU向けMoEモデル: 小型モデル並みの速度 (一部オフロードで実測62トークン/秒) と大型モデル級の品質を両立。mmprojファイルによる画像認識にも対応。"
+        "de": "Mixture-of-Experts: Qualität eines großen Modells, Tempo eines kleinen, ab 20 GB ganz im Grafikspeicher. Auf 16 GB teilweise ausgelagert (allein gemessen 62 Tokens/s, neben Bildgenerierung 22). Kann Bilder sehen (die Vision-Datei lädt die App mit).",
+        "en": "Mixture of experts: quality of a large model at the speed of a small one, fully in video memory from 20 GB. On 16 GB partly offloaded (measured 62 tokens/s alone, 22 next to image generation). Can see pictures (the app downloads the vision file with it).",
+        "ru": "Mixture of Experts: качество большой модели со скоростью маленькой, от 20 ГБ целиком в видеопамяти. На 16 ГБ с частичной выгрузкой (62 токена/с отдельно, 22 рядом с генерацией изображений). Видит изображения (файл зрения приложение загрузит само).",
+        "ja": "MoEモデル: 小型モデル並みの速度と大型モデル級の品質を両立し、20GB以上ならすべてVRAMに収まります。16GBでは一部オフロード (単独で実測62トークン/秒、画像生成と併用で22)。mmprojファイルによる画像認識にも対応。"
       },
       "mmproj": {
         "file": "mmproj-F16.gguf",
@@ -217,6 +197,26 @@
       }
     },
     {
+      "id": "qwen3.6-35b-a3b",
+      "name": "Qwen3.6 35B-A3B (MoE)",
+      "hf_id": "unsloth/Qwen3.6-35B-A3B-GGUF",
+      "file": "Qwen3.6-35B-A3B-UD-Q4_K_M.gguf",
+      "size_bytes": 22134528992,
+      "sha256": "ac0e2c1189e055faa36eff361580e79c5bd6f8e76bffb4ce547f167d53e31a61",
+      "license": "Apache-2.0",
+      "quantization": "Q4_K_M",
+      "runtime": "standard",
+      "preferred": false,
+      "vram_mb": 17600,
+      "min_vram_gb": 19,
+      "description": {
+        "de": "Mixture-of-Experts: 35 Milliarden Parameter, je Wort rechnen nur 3 Milliarden. Stark bei komplexen Szenen. Ab 20 GB flott; auf 16 GB teilweise ausgelagert deutlich langsamer (neben Bildgenerierung gemessen 18 Tokens/s).",
+        "en": "Mixture of experts: 35 billion parameters, only 3 billion work per word. Strong in complex scenes. Fast from 20 GB; on 16 GB partly offloaded much slower (measured 18 tokens/s next to image generation).",
+        "ru": "Mixture of Experts: 35 млрд параметров, на каждое слово работают только 3 млрд. Сильна в сложных сценах. Быстро работает от 20 ГБ; на 16 ГБ с частичной выгрузкой заметно медленнее (18 токенов/с рядом с генерацией изображений).",
+        "ja": "Mixture-of-Expertsモデル: 総パラメータ35Bのうち1単語あたり3Bのみが稼働。複雑なシーンに強い。20GB以上で高速。16GBでは一部オフロードでかなり遅くなります (画像生成と併用で実測18トークン/秒)。"
+      }
+    },
+    {
       "id": "gemma-4-31b",
       "name": "Gemma 4 31B",
       "hf_id": "unsloth/gemma-4-31B-it-GGUF",
@@ -243,8 +243,8 @@
         "bonsai"
       ],
       "server": {
-        "cache_type_k": "q4_0",
-        "cache_type_v": "q4_0",
+        "cache_type_k": "q8_0",
+        "cache_type_v": "q8_0",
         "flash_attn": true,
         "reasoning_mode": true
       },

@@ -450,7 +450,7 @@ mod tests {
             .iter()
             .find(|rule| rule.matches.iter().any(|m| m == "bonsai"))
             .expect("Bonsai-Vorgaben im Katalog");
-        assert_eq!(bonsai.server["cache_type_k"], "q4_0");
+        assert_eq!(bonsai.server["cache_type_k"], "q8_0");
         assert_eq!(bonsai.server["reasoning_mode"], true);
         assert_eq!(bonsai.sampling["top_k"], 20);
 

@@ -1059,7 +1059,9 @@ mod tests {
         assert_eq!(pick(10_240), "gemma-4-12b");
         // No model is preferred any more: the largest that fits. Bonsai is only listed.
         assert_eq!(pick(12_288), "gemma-4-12b");
-        assert_eq!(pick(16_384), "gemma-4-26b-a4b");
+        // The MoE models only fit partly on 16 GB; there Gemma 4 12B tested better and faster.
+        assert_eq!(pick(16_384), "gemma-4-12b");
+        assert_eq!(pick(20_480), "qwen3.6-35b-a3b");
         assert_eq!(pick(24_576), "gemma-4-31b");
         // Models without an open licence are listed, never picked by themselves.
         assert!(catalog.models.iter().any(|m| m.license_kind() != "open"));
