@@ -63,17 +63,19 @@ describe('model downloads', () => {
     expect(within(item).getByRole('status')).toHaveTextContent('42');
   });
 
-  it('recommends only the catalog models in the hub, no Bonsai card', async () => {
+  it('lists Bonsai in the hub like the other catalog models, without a card of its own', async () => {
     vi.mocked(api.listStarterModels).mockResolvedValue([
+      starter('ternary-bonsai-2-27b', 'Ternary Bonsai 2 27B', { file: file('Ternary-Bonsai-2-27B-PQ2_0.gguf', 'prism') }),
       starter('gemma-4-12b', 'Gemma 4 12B'),
       starter('qwen3.5-9b', 'Qwen3.5 9B'),
     ]);
     render(<ModelHubSettings onNavigate={vi.fn()} />);
     const list = await screen.findByRole('list', { name: 'Recommended models to start with' });
-    await waitFor(() => expect(within(list).getAllByRole('listitem')).toHaveLength(2));
+    await waitFor(() => expect(within(list).getAllByRole('listitem')).toHaveLength(3));
     expect(list).toHaveTextContent('Gemma 4 12B');
-    expect(list).toHaveTextContent('Qwen3.5 9B');
-    expect(screen.queryByText(/Bonsai/)).toBeNull();
+    expect(list).toHaveTextContent('Ternary Bonsai 2 27B');
+    // No card of its own outside the list.
+    for (const match of screen.getAllByText(/Ternary Bonsai/)) expect(list).toContainElement(match);
     expect(screen.getByRole('searchbox')).toHaveValue('');
   });
 });

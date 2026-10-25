@@ -1,5 +1,5 @@
 {
-  "version": "3.7.0",
+  "version": "3.8.0",
   "last_updated": "2026-10-25",
   "notes": {
     "de": "Empfohlene Startmodelle für den Einrichtungsassistenten von OtakuSoul. Die App bringt eine Kopie mit und lädt beim Start diese Datei; die höhere `version` gilt. Für neue Empfehlungen hier Einträge ändern und `version` erhöhen. Nur Modelle, die ohne Anmeldung ladbar sind, mit SHA-256 der Datei auf Hugging Face; Modelle ohne freie Lizenz tragen license_note und werden in der App gekennzeichnet; ungültige Einträge überspringt die App. Automatisch empfohlen wird (nur unter frei lizenzierten) das bevorzugte Modell, wenn es in Grafikspeicher − `desktop_reserve_mb` passt, sonst das größte passende. Einträge mit `\"auto_pick\": false` stehen in der Liste, werden aber nie automatisch empfohlen. Keine Modellgewichte in diesem Repository. `model_defaults` legt Server- und Sampler-Werte für Modellfamilien fest (Teiltext im Dateinamen unter `match`); sie gelten für Modelle, für die noch kein Profil gespeichert ist.",
@@ -76,6 +76,27 @@
         "file": "mmproj-F16.gguf",
         "size_bytes": 175115840,
         "sha256": "91f086971e56d7a7d8d39e271873fccdb49541bd259d6e02c401a4f1cb7a219e"
+      }
+    },
+    {
+      "id": "ternary-bonsai-2-27b",
+      "name": "Ternary Bonsai 2 27B",
+      "hf_id": "prism-ml/Ternary-Bonsai-2-27B-gguf",
+      "file": "Ternary-Bonsai-2-27B-PQ2_0.gguf",
+      "size_bytes": 7206168928,
+      "sha256": "3907dc1658db1f78a9826bf8d5bcb8dc65db0d466388937af57f2294fae62ec1",
+      "license": "Apache-2.0",
+      "quantization": "PQ2_0",
+      "runtime": "prism",
+      "preferred": false,
+      "auto_pick": false,
+      "vram_mb": 9000,
+      "min_vram_gb": 11,
+      "description": {
+        "de": "Ein 27B-Modell in ternärer Quantisierung, das in rund 9 GB Grafikspeicher mit 32K Kontext läuft und sehr schnell antwortet. Auf Deutsch schreibt es merklich fehlerhafter als Gemma, Cydonia oder Hearthfire. Braucht die PrismML-Laufzeit (lädt die App selbst).",
+        "en": "A 27B model in ternary quantisation that runs in about 9 GB of VRAM with a 32K context and answers very fast. Its German is noticeably weaker than Gemma's, Cydonia's or Hearthfire's. Needs the PrismML runtime (the app downloads it).",
+        "ru": "Модель 27B в тернарной квантизации: работает примерно в 9 ГБ видеопамяти с контекстом 32K и отвечает очень быстро. По-немецки пишет заметно хуже, чем Gemma, Cydonia или Hearthfire. Нужна среда PrismML (приложение скачает её само).",
+        "ja": "3値量子化 (Ternary) の27Bモデル。約9GBのVRAMで32Kコンテキストを扱え、応答が非常に速い。ドイツ語の文章はGemma・Cydonia・Hearthfireより明らかに誤りが多い。PrismMLランタイムが必要です (アプリが自動ダウンロード)。"
       }
     },
     {

@@ -321,8 +321,8 @@ ru „персонаж/история/сцена“. Fachbegriffe nur im Experte
   Assistent mit `license_note` und Link; bei neuen Releases die mitgelieferte Kopie mit dem Daten-Repo abgleichen;
   Empfehlung = `preferred`-Modell, wenn es in VRAM − 1,5 GB passt, sonst das größte passende – nur unter frei lizenzierten
   mit `auto_pick` (Standard `true`, `false` = nur gelistet); seit Katalog 3.5.0 ist keins bevorzugt). Ternary Bonsai
-  (PrismML) wird wegen schwachen Deutschs nirgends mehr empfohlen (seit 3.7.0 nicht im Katalog, keine Hub-Karte, keine
-  Sortierung nach vorn in `scan_available_models`); vorhandene Dateien laufen weiter (Laufzeit-Erkennung, `model_defaults`).
+  (PrismML) wird wegen schwachen Deutschs nirgends mehr empfohlen, bleibt aber sichtbar: im Katalog mit `auto_pick: false`
+  (in der Liste, nie markiert/gewählt), keine eigene Hub-Karte, keine Sortierung nach vorn in `scan_available_models`.
   Die App sortiert nach `vram_mb`. Seit 3.6.0 stehen
   die MoE-Modelle (Gemma 4 26B-A4B, Qwen3.6 35B-A3B) mit ihrem Bedarf ab 20 GB drin: auf 16 GB nur teilweise ausgelagert,
   dort war Gemma 4 12B im Test (Soulstage/Gruppe/Lorebooks, neben Bildgenerierung) besser und doppelt so schnell → 16 GB
