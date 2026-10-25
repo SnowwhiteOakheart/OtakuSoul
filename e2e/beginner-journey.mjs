@@ -37,6 +37,8 @@ try {
   await browser.$('[data-story-gallery]').waitForDisplayed({ timeout: 15_000, timeoutMsg: 'Kein Weg vom Assistenten zur Geschichte' });
   await jargonIn('Story-Galerie');
   await shot('92-einstieg-galerie');
+  await jsClick(await browser.$('[data-gallery-collection="starter_stories"]'));
+  await browser.$('[data-story="story_hanami_live"]').waitForExist({ timeout: 5000, timeoutMsg: 'Starter-Geschichten lassen sich nicht öffnen' });
   await jsClick(await browser.$('[data-story="story_hanami_live"]').$('button*=Ansehen'));
   await jsClick(await browser.$('[data-story-preview]').$('button*=Geschichte starten'));
   const input = await browser.$('form textarea');

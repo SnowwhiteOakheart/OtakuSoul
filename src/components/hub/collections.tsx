@@ -1,5 +1,6 @@
 import { useEffect, type ReactNode } from 'react';
-import { BookOpen, Dice5, Library, Users } from 'lucide-react';
+import { BookOpen, Dice5, Users } from 'lucide-react';
+import { CoverCard, CoverCount } from '../ui/CoverCard';
 import { useShallow } from 'zustand/react/shallow';
 import { useTranslation } from '../../i18n';
 import { hubStatus, matchesQuery, useHubStore, type HubKind, type HubStatus } from './hubStore';
@@ -21,16 +22,24 @@ export interface CollectionMembers {
   characters: GatewayCharacterEntry[];
 }
 
-const pick = <T,>(keys: string[], items: T[], keyOf: (item: T) => string): T[] =>
-  keys.flatMap((key) => items.filter((item) => keyOf(item) === key).slice(0, 1));
+/**
+ * The entry for each key. Both repositories can have an entry of the same name (e.g. a character
+ * in a general and an adult version); a collection takes the one from its own repository.
+ */
+const pick = <T extends { nsfw: boolean },>(keys: string[], items: T[], keyOf: (item: T) => string, nsfw: boolean): T[] =>
+  keys.flatMap((key) => {
+    const matches = items.filter((item) => keyOf(item) === key);
+    const own = matches.find((item) => item.nsfw === nsfw) ?? matches[0];
+    return own ? [own] : [];
+  });
 
 export const collectionMembers = (
   collection: GatewayCollectionEntry,
   lists: { lorebooks: GatewayLorebookEntry[]; scenes: GatewaySceneEntry[]; gateway: GatewayCharacterEntry[] }
 ): CollectionMembers => ({
-  lorebooks: pick(collection.lorebooks, lists.lorebooks, (lb) => lb.name),
-  scenes: pick(collection.scenes, lists.scenes, sceneHubId),
-  characters: pick(collection.characters, lists.gateway, (c) => c.name),
+  lorebooks: pick(collection.lorebooks, lists.lorebooks, (lb) => lb.name, collection.nsfw),
+  scenes: pick(collection.scenes, lists.scenes, sceneHubId, collection.nsfw),
+  characters: pick(collection.characters, lists.gateway, (c) => c.name, collection.nsfw),
 });
 
 /** One member with its kind and install status. */
@@ -64,28 +73,28 @@ export const collectionText = (collection: GatewayCollectionEntry, field: 'title
   registryText(collection, field, collection[field], lang);
 
 /**
- * Splits a hub list into collection cards and the entries that belong to none. A collection shows
- * when it has members in `all`; with a search it needs a match in its own texts or in a member.
+ * Splits a hub list into collection cards and the entries that belong to none. `membersOf` gives
+ * a collection's entries of this list; a collection shows when it has some, with a search only
+ * when its own texts or a member match.
  */
 export function groupByCollection<T>(
   collections: GatewayCollectionEntry[],
-  keysOf: (collection: GatewayCollectionEntry) => string[],
-  all: T[],
+  membersOf: (collection: GatewayCollectionEntry) => T[],
   visible: T[],
-  keyOf: (item: T) => string,
   query: string,
   lang: string
 ): { groups: GatewayCollectionEntry[]; rest: T[] } {
-  const present = new Set(all.map(keyOf));
-  const visibleKeys = new Set(visible.map(keyOf));
-  const withMembers = collections.filter((c) => keysOf(c).some((key) => present.has(key)));
-  const grouped = new Set(withMembers.flatMap(keysOf));
-  const groups = withMembers.filter(
-    (c) =>
-      keysOf(c).some((key) => visibleKeys.has(key)) ||
-      matchesQuery(query, c.title, collectionText(c, 'title', lang), c.description, collectionText(c, 'description', lang))
-  );
-  return { groups, rest: visible.filter((item) => !grouped.has(keyOf(item))) };
+  const shown = new Set(visible);
+  const withMembers = collections.map((c) => ({ c, members: membersOf(c) })).filter(({ members }) => members.length > 0);
+  const grouped = new Set(withMembers.flatMap(({ members }) => members));
+  const groups = withMembers
+    .filter(
+      ({ c, members }) =>
+        members.some((m) => shown.has(m)) ||
+        matchesQuery(query, c.title, collectionText(c, 'title', lang), c.description, collectionText(c, 'description', lang))
+    )
+    .map(({ c }) => c);
+  return { groups, rest: visible.filter((item) => !grouped.has(item)) };
 }
 
 /** Loads everything a collection card needs to show its status. */
@@ -113,16 +122,6 @@ export const useCollectionLists = () => {
   return state;
 };
 
-/** Small icon + number, e.g. "📖 3". */
-const Count = ({ icon: Icon, count, label, className }: { icon: typeof BookOpen; count: number; label: string; className: string }) =>
-  count > 0 ? (
-    <span title={label} className="inline-flex items-center gap-1 rounded-full bg-slate-800/80 border border-slate-700/60 px-2 py-0.5 text-[11px] font-mono text-slate-300">
-      <Icon className={`w-3 h-3 ${className}`} />
-      {count}
-      <span className="sr-only">{label}</span>
-    </span>
-  ) : null;
-
 /** Cover card of a story collection; opens the detail dialog. */
 export const CollectionCard = ({ collection }: { collection: GatewayCollectionEntry }) => {
   const { t, currentLanguage } = useTranslation();
@@ -134,55 +133,32 @@ export const CollectionCard = ({ collection }: { collection: GatewayCollectionEn
   const title = collectionText(collection, 'title', currentLanguage);
 
   return (
-    <button
-      type="button"
+    <CoverCard
       data-hub-collection={collection.id}
       onClick={() => setOpenCollection(collection.id)}
       aria-label={t('hub.collectionOpen', { name: title })}
-      className="group text-left rounded-2xl bg-slate-900/60 border border-slate-800/80 hover:border-accent-500/60 transition-all overflow-hidden flex flex-col shadow-sm hover:shadow-accent-950/30 outline-hidden focus-visible:border-accent-400"
-    >
-      <div className="relative aspect-video w-full bg-app overflow-hidden">
-        {collection.cover_url ? (
-          <img
-            src={collection.cover_url}
-            alt=""
-            loading="lazy"
-            decoding="async"
-            className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
-          />
-        ) : (
-          <div className="w-full h-full bg-linear-to-br from-accent-900/60 via-slate-900 to-slate-950 flex items-center justify-center">
-            <Library className="w-10 h-10 text-accent-400/60" />
-          </div>
-        )}
-        <div className="absolute inset-0 bg-linear-to-t from-slate-950/95 via-slate-950/30 to-transparent" />
-        <span className="absolute top-2 left-2 inline-flex items-center gap-1 rounded-md bg-black/60 backdrop-blur px-2 py-0.5 text-[11px] font-semibold text-accent-200 border border-white/10">
-          <Library className="w-3 h-3" />
-          {t('hub.collection')}
-        </span>
-        <h3 className="absolute bottom-2.5 left-3 right-3 font-bold text-base text-white drop-shadow-md group-hover:text-accent-200 transition-colors">
-          {title}
-        </h3>
-      </div>
-      <div className="p-4 flex flex-col gap-2 flex-1">
-        <div className="flex flex-wrap items-center gap-1.5">
-          <Count icon={BookOpen} count={collection.lorebooks.length} label={t('hub.tabLorebooks')} className="text-amber-400" />
-          <Count icon={Dice5} count={collection.scenes.length} label={t('hub.tabScenes')} className="text-emerald-400" />
-          <Count icon={Users} count={collection.characters.length} label={t('hub.collectionCharacters')} className="text-accent-400" />
-          <span className="ml-auto">
-            {status === 'new' && installedCount > 0 ? (
-              <span className="text-[11px] text-slate-400">{t('hub.collectionPartly', { installed: installedCount, total: items.length })}</span>
-            ) : (
-              <HubStatusBadge status={status} updated={collection.updated} />
-            )}
-            <NsfwBadge nsfw={collection.nsfw} />
-          </span>
-        </div>
-        <p className="text-xs text-slate-400 leading-relaxed line-clamp-2">
-          {collectionText(collection, 'description', currentLanguage) || t('hub.noDescription')}
-        </p>
-      </div>
-    </button>
+      cover={collection.cover_url}
+      title={title}
+      label={t('hub.collection')}
+      description={collectionText(collection, 'description', currentLanguage) || t('hub.noDescription')}
+      chips={
+        <>
+          <CoverCount icon={BookOpen} count={collection.lorebooks.length} label={t('hub.tabLorebooks')} className="text-amber-400" />
+          <CoverCount icon={Dice5} count={collection.scenes.length} label={t('hub.tabScenes')} className="text-emerald-400" />
+          <CoverCount icon={Users} count={collection.characters.length} label={t('hub.collectionCharacters')} className="text-accent-400" />
+        </>
+      }
+      status={
+        <>
+          {status === 'new' && installedCount > 0 ? (
+            <span className="text-[11px] text-slate-400">{t('hub.collectionPartly', { installed: installedCount, total: items.length })}</span>
+          ) : (
+            <HubStatusBadge status={status} updated={collection.updated} />
+          )}
+          <NsfwBadge nsfw={collection.nsfw} />
+        </>
+      }
+    />
   );
 };
 

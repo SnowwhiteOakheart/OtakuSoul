@@ -17,24 +17,41 @@ try {
   await browser.$('button=Stage').click();
   const gallery = await browser.$('[data-story-gallery]');
   await gallery.waitForDisplayed({ timeout: 15_000, timeoutMsg: 'Stage zeigt keine Galerie beim ersten Besuch' });
-  await browser.$('[data-story="story_frozen_bells"]').waitForExist({ timeout: 10_000 });
-  const stories = await browser.execute(() => [...document.querySelectorAll('[data-story]')].map((el) => el.getAttribute('data-story')));
-  for (const id of ['story_frozen_bells', 'story_hanami_live', 'story_missing_mic', 'story_silent_station', 'story_ryokan_night', 'akt1_waldstrasse']) {
-    assert.ok(stories.includes(id), `Karte fehlt: ${id} (${stories})`);
-  }
-  // Beginner stories come first.
-  assert.deepEqual(stories.slice(0, 2).sort(), ['story_frozen_bells', 'story_hanami_live']);
-  assert.match(await browser.$('[data-story="story_frozen_bells"]').getText(), /Die Glocken von Frostweiler[\s\S]*Für Einsteiger|Für Einsteiger[\s\S]*Die Glocken von Frostweiler/);
+  // The bundled stories and the 5e adventure are collections with a cover; no single cards for them.
+  const starter = await browser.$('[data-gallery-collection="starter_stories"]');
+  await starter.waitForExist({ timeout: 10_000, timeoutMsg: 'Sammlung Starter-Geschichten fehlt' });
+  assert.ok(await browser.$('[data-gallery-collection="crypt_of_shadows"]').isExisting(), 'Sammlung Gruft fehlt');
+  assert.equal(await browser.$('[data-story="story_frozen_bells"]').isExisting(), false, 'Starter-Geschichte steht zusätzlich einzeln da');
+  await browser.waitUntil(() => browser.execute(() => [...document.querySelectorAll('[data-gallery-collection] img')].every((img) => img.complete && img.naturalWidth > 0)), {
+    timeout: 5000,
+    timeoutMsg: 'Titelbilder der Sammlungen fehlen',
+  });
   await browser.pause(300);
   await shot(browser, '81-story-galerie');
 
-  // Genre filter in one row.
+  await jsClick(await browser.$('[data-gallery-collection="crypt_of_shadows"]'));
+  await browser.$('[data-gallery-collection-open="crypt_of_shadows"]').waitForDisplayed({ timeout: 5000 });
+  assert.ok(await browser.$('[data-story="akt1_waldstrasse"]').isExisting(), 'Abenteuer fehlt in seiner Sammlung');
+  await jsClick(await browser.$('button*=Alle Geschichten'));
+
+  // Genre filter in one row: it lists matching stories of every collection.
   await jsClick(await browser.$('button[role="tab"]=Krimi'));
   await browser.waitUntil(
     () => browser.execute(() => document.querySelectorAll('[data-story]').length === 1),
     { timeout: 3000, timeoutMsg: 'Krimi-Filter zeigt mehr als eine Geschichte' },
   );
   await jsClick(await browser.$('button[role="tab"]=Alle'));
+
+  await jsClick(await browser.$('[data-gallery-collection="starter_stories"]'));
+  await browser.$('[data-story="story_frozen_bells"]').waitForExist({ timeout: 5000 });
+  const stories = await browser.execute(() => [...document.querySelectorAll('[data-story]')].map((el) => el.getAttribute('data-story')));
+  for (const id of ['story_frozen_bells', 'story_hanami_live', 'story_missing_mic', 'story_silent_station', 'story_ryokan_night']) {
+    assert.ok(stories.includes(id), `Karte fehlt: ${id} (${stories})`);
+  }
+  // Beginner stories come first.
+  assert.deepEqual(stories.slice(0, 2).sort(), ['story_frozen_bells', 'story_hanami_live']);
+  assert.match(await browser.$('[data-story="story_frozen_bells"]').getText(), /Die Glocken von Frostweiler[\s\S]*Für Einsteiger|Für Einsteiger[\s\S]*Die Glocken von Frostweiler/);
+  await shot(browser, '81b-story-sammlung');
 
   await jsClick(await browser.$('[data-story="story_frozen_bells"]').$('button*=Ansehen'));
   const preview = await browser.$('[data-story-preview="story_frozen_bells"]');

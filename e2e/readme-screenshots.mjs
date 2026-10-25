@@ -109,6 +109,8 @@ await session({ start_tab: 'home', stage_last_scene: '', active_character_id: 's
   await browser.$('[data-story-gallery]').waitForDisplayed({ timeout: 15_000 });
   await shot('story-gallery');
 
+  await click(await browser.$('[data-gallery-collection="starter_stories"]'));
+  await browser.$('[data-story="story_hanami_live"]').waitForDisplayed({ timeout: 10_000 });
   await click(await browser.$('[data-story="story_hanami_live"] > div button'));
   const preview = await browser.$('[data-story-preview]');
   await preview.waitForDisplayed({ timeout: 10_000 });

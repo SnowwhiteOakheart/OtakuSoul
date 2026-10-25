@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useLayoutEffect, useState } from 'react';
 import { useVirtualizer } from '@tanstack/react-virtual';
 import { useGridCols } from '../../../hooks/useGridCols';
 import { Users } from 'lucide-react';
@@ -10,11 +10,12 @@ import { toast } from '../../ui/feedback';
 import { errorMessage } from '../../../utils/errors';
 import { useAppStore } from '../../../store/useAppStore';
 import { importCharacterTask, installCharacter } from '../hubInstall';
+import { CollectionCard, HubSectionTitle, collectionMembers, groupByCollection, useCollectionLists } from '../collections';
 import type { GatewayCharacterEntry } from '../../../types';
 
 /** Curated characters from the Soul Gateway registry. */
 export const GatewayCharactersTab = () => {
-  const { t, tPlural } = useTranslation();
+  const { t, tPlural, currentLanguage } = useTranslation();
   const { list, query, importingId, ensureLoaded, load, runImport, installed, loadInstalled } = useHubStore(
     useShallow((s) => ({ list: s.gateway, query: s.query, importingId: s.importingId, ensureLoaded: s.ensureLoaded, load: s.loadGateway, runImport: s.runImport, installed: s.installed, loadInstalled: s.loadInstalled }))
   );
@@ -24,14 +25,27 @@ export const GatewayCharactersTab = () => {
   useEffect(() => ensureLoaded('gateway'), [ensureLoaded]);
 
   const visible = list.items.filter((c) => matchesQuery(query, c.name, c.author));
+  // Characters of a story collection show as its card; the grid holds the others.
+  const lists = useCollectionLists();
+  const { groups, rest } = groupByCollection(lists.collections, (c) => collectionMembers(c, lists).characters, visible, query, currentLanguage);
 
   const { ref: gridRef, cols } = useGridCols({ 640: 3, 768: 4, 1024: 5, 1280: 6 }, 2);
+  // The collection cards above the grid push it down: the virtualizer counts from the grid's top.
+  const [scrollMargin, setScrollMargin] = useState(0);
+  useLayoutEffect(() => {
+    const panel = document.getElementById('hub-tabpanel');
+    const grid = gridRef.current;
+    if (!panel || !grid) return;
+    const margin = grid.getBoundingClientRect().top - panel.getBoundingClientRect().top + panel.scrollTop;
+    setScrollMargin((current) => (Math.abs(current - margin) > 1 ? margin : current));
+  });
   // oxlint-disable-next-line react/incompatible-library
   const virtualizer = useVirtualizer({
-    count: Math.ceil(visible.length / cols),
+    count: Math.ceil(rest.length / cols),
     getScrollElement: () => document.getElementById('hub-tabpanel'),
     estimateSize: () => 360,
     overscan: 2,
+    scrollMargin,
   });
 
 
@@ -60,7 +74,7 @@ export const GatewayCharactersTab = () => {
     <UpdateAllBar count={outdated.length} busy={updatingAll} onClick={() => void updateAll()} />
     <HubListState
       list={list}
-      visibleCount={visible.length}
+      visibleCount={groups.length + rest.length}
       loadingText={t('hub.loadingGateway')}
       emptyText={t('hub.noResults')}
       emptyIcon={Users}
@@ -68,10 +82,19 @@ export const GatewayCharactersTab = () => {
       errorText={(error) => t('hub.loadError', { error })}
       onRetry={load}
     >
+      {groups.length > 0 && (
+        <section className="mb-8">
+          <HubSectionTitle>{t('hub.collections')}</HubSectionTitle>
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+            {groups.map((collection) => <CollectionCard key={collection.id} collection={collection} />)}
+          </div>
+        </section>
+      )}
+      {groups.length > 0 && rest.length > 0 && <HubSectionTitle>{t('hub.singleCharacters')}</HubSectionTitle>}
       <div ref={gridRef} style={{ height: `${virtualizer.getTotalSize()}px`, width: '100%', position: 'relative' }}>
         {virtualizer.getVirtualItems().map((virtualRow) => {
           const startIndex = virtualRow.index * cols;
-          const rowItems = visible.slice(startIndex, startIndex + cols);
+          const rowItems = rest.slice(startIndex, startIndex + cols);
 
           return (
             <div
@@ -84,7 +107,7 @@ export const GatewayCharactersTab = () => {
                 top: 0,
                 left: 0,
                 width: '100%',
-                transform: `translateY(${virtualRow.start}px)`,
+                transform: `translateY(${virtualRow.start - scrollMargin}px)`,
                 paddingBottom: '16px',
               }}
             >

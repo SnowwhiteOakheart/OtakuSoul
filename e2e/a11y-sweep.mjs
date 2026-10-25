@@ -74,6 +74,8 @@ try {
   await browser.keys('Escape');
   await jsClick(await browser.$('button=Stage'));
   await browser.$('[data-story-gallery]').waitForExist({ timeout: 10_000 });
+  await jsClick(await browser.$('[data-gallery-collection="starter_stories"]'));
+  await browser.$('[data-story="story_frozen_bells"]').waitForExist({ timeout: 5000 });
   await jsClick(await browser.$('[data-story="story_frozen_bells"]').$('button*=Ansehen'));
   await browser.$('[data-story-preview]').waitForDisplayed({ timeout: 5000 });
   await check('Story-Vorschau');

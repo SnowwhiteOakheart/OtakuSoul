@@ -73,7 +73,8 @@ export const useHubStore = create<HubState>()((set, get) => {
     set((state) => ({ [key]: { ...state[key], loading: true, error: null } }) as Partial<HubState>);
     const nsfw = nsfwAllowed();
     try {
-      const items = await fetch();
+      // A missing answer counts as an empty list (older backends, test doubles).
+      const items = (await fetch()) ?? [];
       set({ [key]: { items, loading: false, error: null, loaded: true, nsfw } } as Partial<HubState>);
     } catch (e) {
       console.error(`Failed to load hub list "${key}":`, e);
@@ -117,7 +118,7 @@ export const useHubStore = create<HubState>()((set, get) => {
     loadGateway: () => loadList('gateway', () => api.fetchSoulGatewayRegistry()),
     loadLorebooks: () => loadList('lorebooks', () => api.fetchLorebooksGatewayRegistry()),
     loadScenes: () => loadList('scenes', () => api.fetchStagesGatewayRegistry()),
-    loadCollections: () => loadList('collections', async () => (await api.fetchCollectionsGatewayRegistry()) ?? []),
+    loadCollections: () => loadList('collections', () => api.fetchCollectionsGatewayRegistry()),
 
     loadChub: async (page = 1, append = false) => {
       const { query, chubSort, chubTag, chubNsfw } = get();

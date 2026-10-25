@@ -193,6 +193,33 @@ describe('HubView', () => {
     expect(order).toEqual([...order].sort((a, b) => a! - b!));
   });
 
+  it('groups characters too and takes same-named entries from the collection\'s own repository', async () => {
+    const user = userEvent.setup();
+    useAppStore.setState({ nsfwEnabled: true, adultConfirmed: true });
+    vi.mocked(api.fetchSoulGatewayRegistry).mockResolvedValue([
+      { name: 'Jibril', author: 'snow', download_url: 'https://example.invalid/jibril.png', revision: 1, updated: '', nsfw: false },
+      { name: 'Jibril', author: 'snow', download_url: 'https://example.invalid/jibril-18.png', revision: 1, updated: '', nsfw: true },
+      { name: 'Sora', author: 'snow', download_url: 'https://example.invalid/sora.png', revision: 1, updated: '', nsfw: false },
+    ]);
+    const collection = (id: string, title: string, characters: string[], nsfw: boolean) =>
+      ({ id, title, author: 'snow', description: title, cover_url: '', lorebooks: [], scenes: [], characters, revision: 1, updated: '', translations: {}, nsfw });
+    vi.mocked(api.fetchCollectionsGatewayRegistry).mockResolvedValue([collection('ngnl', 'NGNL', ['Jibril'], false), collection('ngnl18', 'NGNL 18+', ['Jibril'], true)]);
+    vi.mocked(api.importSoulGatewayCharacter).mockResolvedValue({ profile: ayu, imported_lorebook: null });
+    renderHub();
+
+    expect(await screen.findByRole('button', { name: 'Open collection “NGNL 18+”' })).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: 'Open collection “NGNL”' })).toBeInTheDocument();
+    // Both Jibrils sit in their collections; Sora belongs to none.
+    expect(screen.queryByRole('heading', { name: 'Jibril' })).not.toBeInTheDocument();
+    expect(screen.getByRole('heading', { name: 'Sora' })).toBeInTheDocument();
+
+    await user.click(screen.getByRole('button', { name: 'Open collection “NGNL 18+”' }));
+    await user.click(within(await screen.findByRole('dialog')).getByRole('button', { name: 'Install everything' }));
+    await vi.waitFor(() =>
+      expect(api.importSoulGatewayCharacter).toHaveBeenCalledWith('Jibril', 'snow', 'https://example.invalid/jibril-18.png', false, 1, '')
+    );
+  });
+
   it('shows load errors with a retry that does not loop', async () => {
     const user = userEvent.setup();
     vi.mocked(api.fetchSoulGatewayRegistry).mockRejectedValueOnce(new Error('offline'));

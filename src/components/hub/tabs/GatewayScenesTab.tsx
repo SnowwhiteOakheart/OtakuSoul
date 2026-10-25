@@ -9,7 +9,7 @@ import { HubListState, HubStatusBadge, NsfwBadge, ImportButton, UpdateAllBar, hu
 import { toast } from '../../ui/feedback';
 import { errorMessage } from '../../../utils/errors';
 import { importSceneTask, installScene as install, sceneHubId as hubId } from '../hubInstall';
-import { CollectionCard, HubSectionTitle, groupByCollection, useCollectionLists } from '../collections';
+import { CollectionCard, HubSectionTitle, collectionMembers, groupByCollection, useCollectionLists } from '../collections';
 import type { GatewaySceneEntry } from '../../../types';
 
 /** Soul Stage scenarios from the gateway registry. */
@@ -29,8 +29,8 @@ export const GatewayScenesTab = () => {
     matchesQuery(query, sc.title, text(sc, 'title'), sc.description, text(sc, 'description'), sc.author, text(sc, 'starting_location'))
   );
 
-  const { collections } = useCollectionLists();
-  const { groups, rest } = groupByCollection(collections, (c) => c.scenes, list.items, visible, hubId, query, currentLanguage);
+  const lists = useCollectionLists();
+  const { groups, rest } = groupByCollection(lists.collections, (c) => collectionMembers(c, lists).scenes, visible, query, currentLanguage);
 
   const handleImport = (scene: GatewaySceneEntry) => runImport(scene.title, () => importSceneTask(scene, statusOf(scene)));
 

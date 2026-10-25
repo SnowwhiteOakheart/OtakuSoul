@@ -9,7 +9,7 @@ import { HubListState, HubStatusBadge, NsfwBadge, ImportButton, UpdateAllBar, hu
 import { toast } from '../../ui/feedback';
 import { errorMessage } from '../../../utils/errors';
 import { importLorebookTask, installLorebook } from '../hubInstall';
-import { CollectionCard, HubSectionTitle, groupByCollection, useCollectionLists } from '../collections';
+import { CollectionCard, HubSectionTitle, collectionMembers, groupByCollection, useCollectionLists } from '../collections';
 import type { GatewayLorebookEntry } from '../../../types';
 
 /** World lorebooks from the gateway registry. */
@@ -26,8 +26,8 @@ export const GatewayLorebooksTab = () => {
 
   const visible = list.items.filter((lb) => matchesQuery(query, lb.name, text(lb, 'name'), lb.description, text(lb, 'description'), lb.author));
 
-  const { collections } = useCollectionLists();
-  const { groups, rest } = groupByCollection(collections, (c) => c.lorebooks, list.items, visible, (lb) => lb.name, query, currentLanguage);
+  const lists = useCollectionLists();
+  const { groups, rest } = groupByCollection(lists.collections, (c) => collectionMembers(c, lists).lorebooks, visible, query, currentLanguage);
 
   const handleImport = (lb: GatewayLorebookEntry) => runImport(lb.name, () => importLorebookTask(lb, statusOf(lb)));
 

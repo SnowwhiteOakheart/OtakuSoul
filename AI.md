@@ -885,7 +885,13 @@ ru „персонаж/история/сцена“. Fachbegriffe nur im Experte
   Datei = keine Sammlungen). Das Frontend gruppiert erst beim Anzeigen (`components/hub/collections.tsx`, `groupByCollection`):
   Einträge einer Sammlung erscheinen in ihrem Tab nur als Karte, der Dialog `CollectionModal` installiert einzeln oder alles
   Fehlende (Figuren → Lorebooks → Szenen). Installiert wird je Eintrag wie in den Tabs (`hubInstall.ts`); eine Sammlung selbst
-  hat keinen Installationsstand. E2E `hub-collections.mjs`.
+  hat keinen Installationsstand. Auch der Charaktere-Tab gruppiert (virtualisiertes Raster mit `scrollMargin` unter den
+  Sammlungskarten). Gleichnamige Einträge aus beiden Repos (Jibril, Albedo, Mint) löst `collectionMembers` nach der Quelle
+  der Sammlung auf (`nsfw`). Die Stage-Galerie zeigt Sammlungen ebenfalls (`galleryCollections` in `StoryGallery.tsx`):
+  mitgelieferte Starter-Geschichten (`story_*`) und das 5e-Abenteuer mit den Titelbildern aus `presets/stories/cover.webp`
+  bzw. `presets/crypt-of-shadows/cover.webp` (Vite-Import), dazu jede Hub-Sammlung mit mindestens einer installierten Szene
+  (über `hub_installed`); „Fehlende im Hub laden“ öffnet deren Hub-Dialog. Unter „Alle“ stehen Geschichten einer Sammlung nur
+  in ihr, Genre-Filter listen alle Treffer. E2E `hub-collections.mjs`, `stage-gallery.mjs`.
 - Charakter-Importe (Datei, Hub, Chub, URL) laufen über `characters::store_imported_card`: gleicher Name →
   `backend.characters.exists`, das Frontend fragt per `services/characterImport.ts` (`importWithOverwrite`) und ruft mit
   `overwrite` erneut auf. Nie umbenennen („_1“); alte Kopien gehen in den Papierkorb, gelöschte werden wieder sichtbar.

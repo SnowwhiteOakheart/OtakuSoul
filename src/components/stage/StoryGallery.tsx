@@ -1,4 +1,5 @@
 import React, { useEffect, useState } from 'react';
+import { useShallow } from 'zustand/react/shallow';
 import {
   ArrowLeft,
   BookOpen,
@@ -6,9 +7,11 @@ import {
   Compass,
   FolderCog,
   Flower2,
+  Dice5,
   Ghost,
   Heart,
   Laugh,
+  Library,
   MapPin,
   Play,
   Plus,
@@ -23,7 +26,12 @@ import {
 } from 'lucide-react';
 import { useAppStore, useStoreFields } from '../../store/useAppStore';
 import { translate, useTranslation, type TranslationKey } from '../../i18n';
-import type { ScenePreview } from '../../types';
+import type { GatewayCollectionEntry, InstalledHubItem, ScenePreview } from '../../types';
+import { CoverCard, CoverCount } from '../ui/CoverCard';
+import { useHubStore } from '../hub/hubStore';
+import { collectionText } from '../hub/collections';
+import storiesCover from '../../../presets/stories/cover.webp';
+import cryptCover from '../../../presets/crypt-of-shadows/cover.webp';
 import { ModalOverlay } from '../ui/ModalOverlay';
 import { confirmDialog, toast } from '../ui/feedback';
 import { errorMessage } from '../../utils/errors';
@@ -72,6 +80,55 @@ export function galleryScenes(scenes: ScenePreview[]): ScenePreview[] {
   return [...stories, ...(adventure ? [adventure] : []), ...own];
 }
 
+/** Stories that belong together, shown as one card with a cover in the gallery. */
+export interface GalleryCollection {
+  id: string;
+  title: string;
+  description: string;
+  cover?: string;
+  scenes: ScenePreview[];
+  /** A collection from the hub: its id there and how many of its scenes are not installed. */
+  hubId?: string;
+  missing: number;
+}
+
+/**
+ * Collections of the gallery: the bundled starter stories and the 5e adventure, then every hub
+ * collection with at least one installed scene (found through the installed hub items).
+ */
+export function galleryCollections(
+  scenes: ScenePreview[],
+  hub: { collections: GatewayCollectionEntry[]; installed: InstalledHubItem[] },
+  lang: string
+): GalleryCollection[] {
+  const result: GalleryCollection[] = [];
+  const starter = galleryScenes(scenes).filter((sc) => sc.id.startsWith('story_') && sc.story && !sc.rules_5e);
+  if (starter.length) {
+    result.push({ id: 'starter_stories', title: translate('gallery.collectionStarter'), description: translate('gallery.collectionStarterText'), cover: storiesCover, scenes: starter, missing: 0 });
+  }
+  const adventure = adventureCard(scenes);
+  if (adventure) {
+    result.push({ id: 'crypt_of_shadows', title: translate('gallery.collectionCrypt'), description: translate('gallery.collectionCryptText'), cover: cryptCover, scenes: [adventure], missing: 0 });
+  }
+  for (const collection of hub.collections) {
+    const localIds = new Set(
+      collection.scenes.flatMap((id) => hub.installed.filter((item) => item.kind === 'scene' && item.hub_id === id).map((item) => item.local_id))
+    );
+    const own = scenes.filter((sc) => localIds.has(sc.id) && !sc.rules_5e);
+    if (!own.length) continue;
+    result.push({
+      id: `hub:${collection.id}`,
+      hubId: collection.id,
+      title: collectionText(collection, 'title', lang),
+      description: collectionText(collection, 'description', lang),
+      cover: collection.cover_url || undefined,
+      scenes: own,
+      missing: Math.max(0, collection.scenes.length - own.length),
+    });
+  }
+  return result;
+}
+
 /** Scenes with progress, last played first. */
 export function continueScenes(scenes: ScenePreview[], limit = 3): ScenePreview[] {
   return scenes
@@ -96,14 +153,22 @@ interface StoryGalleryProps {
  * companions; stories with progress can be continued first. Management stays in the lobby.
  */
 export const StoryGallery: React.FC<StoryGalleryProps> = ({ onPlay, onManage, onCreate, onBack }) => {
-  const { t } = useTranslation();
+  const { t, currentLanguage } = useTranslation();
   const { stageScenes, fetchStageScenes } = useStoreFields('stageScenes', 'fetchStageScenes');
   const [filter, setFilter] = useState<Filter>('all');
   const [preview, setPreview] = useState<ScenePreview | null>(null);
+  const [collectionId, setCollectionId] = useState<string | null>(null);
+  const hub = useHubStore(useShallow((s) => ({ collections: s.collections.items, installed: s.installed })));
 
   useEffect(() => {
     void fetchStageScenes();
+    // Hub collections group installed hub scenes; offline the gallery simply has none.
+    useHubStore.getState().ensureLoaded('collections');
   }, [fetchStageScenes]);
+
+  const collections = galleryCollections(stageScenes, hub, currentLanguage);
+  const openCollection = collections.find((c) => c.id === collectionId);
+  const grouped = new Set(collections.flatMap((c) => c.scenes));
 
   const cards = galleryScenes(stageScenes);
   const continuing = continueScenes(stageScenes);
@@ -112,9 +177,17 @@ export const StoryGallery: React.FC<StoryGalleryProps> = ({ onPlay, onManage, on
   const filters = (['all', 'beginner', 'fantasy', 'adventure', 'slice_of_life', 'comedy', 'romance', 'mystery', 'scifi', 'horror', 'adventure5e', 'custom'] as Filter[]).filter(
     (f) => f === 'all' || counts(f) > 0,
   );
-  const shown = cards.filter((sc) =>
-    filter === 'all' ? true : filter === 'beginner' ? sc.story?.beginner : kindOf(sc) === filter,
-  );
+  // "All" shows a collection's stories only inside it; a genre filter lists every match.
+  const shown = openCollection
+    ? openCollection.scenes
+    : cards.filter((sc) =>
+        filter === 'all' ? !grouped.has(sc) : filter === 'beginner' ? sc.story?.beginner : kindOf(sc) === filter,
+      );
+  const loadMissing = (hubId: string) => {
+    useAppStore.getState().setHubSubTab('scenes');
+    useAppStore.getState().setActiveTab('hub');
+    useHubStore.getState().setOpenCollection(hubId);
+  };
 
   return (
     <div className="flex-1 overflow-y-auto" data-story-gallery>
@@ -185,6 +258,86 @@ export const StoryGallery: React.FC<StoryGalleryProps> = ({ onPlay, onManage, on
           </section>
         )}
 
+        {openCollection ? (
+          <section data-gallery-collection-open={openCollection.id} className="overflow-hidden rounded-2xl border border-slate-800 bg-slate-900/70">
+            {openCollection.cover && (
+              <div className="relative h-40 sm:h-52">
+                <img src={openCollection.cover} alt="" className="w-full h-full object-cover" />
+                <div className="absolute inset-0 bg-linear-to-t from-slate-900 via-slate-900/30 to-transparent" />
+              </div>
+            )}
+            <div className={`px-5 pb-5 ${openCollection.cover ? '-mt-10 relative' : 'pt-5'} flex flex-wrap items-end gap-4`}>
+              <div className="flex-1 min-w-0 space-y-1">
+                <span className="inline-flex items-center gap-1 text-[11px] font-semibold text-accent-200">
+                  <Library className="w-3.5 h-3.5" />
+                  {t('gallery.collection')}
+                </span>
+                <h2 className="text-2xl font-bold text-white drop-shadow-md">{openCollection.title}</h2>
+                <p className="text-sm text-slate-300 max-w-3xl">{openCollection.description}</p>
+              </div>
+              <div className="flex flex-wrap gap-2">
+                {openCollection.hubId && openCollection.missing > 0 && (
+                  <button
+                    type="button"
+                    onClick={() => loadMissing(openCollection.hubId!)}
+                    className="inline-flex items-center gap-1.5 px-3 py-2 rounded-xl bg-accent-600 hover:bg-accent-500 text-white text-sm font-semibold"
+                  >
+                    <Compass className="w-4 h-4" />
+                    {t('gallery.collectionLoadMissing', { count: openCollection.missing })}
+                  </button>
+                )}
+                <button
+                  type="button"
+                  onClick={() => setCollectionId(null)}
+                  className="inline-flex items-center gap-1.5 px-3 py-2 rounded-xl border border-slate-700 text-slate-300 hover:bg-slate-800 text-sm"
+                >
+                  <ArrowLeft className="w-4 h-4" />
+                  {t('gallery.collectionAll')}
+                </button>
+              </div>
+            </div>
+          </section>
+        ) : (
+        <>
+        {filter === 'all' && collections.length > 0 && (
+          <section aria-labelledby="gallery-collections" className="space-y-2">
+            <h2 id="gallery-collections" className="text-xs font-semibold uppercase tracking-wider text-slate-400">
+              {t('gallery.collections')}
+            </h2>
+            <div className="grid sm:grid-cols-2 xl:grid-cols-3 gap-4">
+              {collections.map((collection) => {
+                const cast = new Set(collection.scenes.flatMap((sc) => sc.party));
+                const running = collection.scenes.some((sc) => sc.has_progress);
+                return (
+                  <CoverCard
+                    key={collection.id}
+                    data-gallery-collection={collection.id}
+                    onClick={() => setCollectionId(collection.id)}
+                    aria-label={t('gallery.collectionOpen', { name: collection.title })}
+                    cover={collection.cover}
+                    title={collection.title}
+                    label={t('gallery.collection')}
+                    description={collection.description}
+                    chips={
+                      <>
+                        <CoverCount icon={Dice5} count={collection.scenes.length} label={t('gallery.collectionStories')} className="text-emerald-400" />
+                        <CoverCount icon={Users} count={cast.size} label={t('gallery.collectionCharacters')} className="text-accent-400" />
+                      </>
+                    }
+                    status={
+                      collection.missing > 0 ? (
+                        <span className="text-[11px] text-slate-400">{t('gallery.collectionMissing', { count: collection.missing })}</span>
+                      ) : running ? (
+                        <span className="rounded-full bg-accent-600/90 px-2 py-0.5 text-[11px] font-semibold text-white">{t('gallery.inProgress')}</span>
+                      ) : null
+                    }
+                  />
+                );
+              })}
+            </div>
+          </section>
+        )}
+
         <div role="tablist" aria-label={t('gallery.filters')} className="flex flex-wrap gap-1.5">
           {filters.map((f) => (
             <button
@@ -203,11 +356,14 @@ export const StoryGallery: React.FC<StoryGalleryProps> = ({ onPlay, onManage, on
             </button>
           ))}
         </div>
+        </>
+        )}
 
         <div className="grid sm:grid-cols-2 xl:grid-cols-3 gap-4">
           {shown.map((scene) => (
             <StoryCard key={scene.id} scene={scene} onOpen={() => setPreview(scene)} />
           ))}
+          {!openCollection && (
           <button
             type="button"
             onClick={onCreate}
@@ -217,6 +373,7 @@ export const StoryGallery: React.FC<StoryGalleryProps> = ({ onPlay, onManage, on
             <span className="text-sm font-semibold">{t('gallery.create')}</span>
             <span className="text-xs max-w-56">{t('gallery.createHint')}</span>
           </button>
+          )}
         </div>
       </div>
 
