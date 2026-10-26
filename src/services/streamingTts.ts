@@ -21,6 +21,9 @@ function hasUnclosedAsteriskSpan(text: string) {
   return delimiters % 2 !== 0;
 }
 
+/** A sentence of the current reply starts playing: its text and roughly how long it plays (ms). */
+export type SentenceListener = (text: string, durationMs: number) => void;
+
 /**
  * Converts completed sentences while an LLM response is still streaming.
  * Synthesis stays serialized so audio is always queued in textual order.
@@ -40,6 +43,28 @@ export class StreamingTtsManager {
   private held: (() => void)[] = [];
   /** Sentences of the current reply in order, with when they play (for barge-in). */
   private spoken: SpokenSentence[] = [];
+  private readonly sentenceListeners = new Set<SentenceListener>();
+  /** Timers that announce a sentence when its audio starts. */
+  private sentenceTimers = new Set<ReturnType<typeof setTimeout>>();
+
+  /** Called when each sentence starts playing (desktop pet: bubble and face in time with the voice). */
+  public onSentence(listener: SentenceListener) {
+    this.sentenceListeners.add(listener);
+    return () => {
+      this.sentenceListeners.delete(listener);
+    };
+  }
+
+  private announceSentence(text: string, start: number, end: number, session: number) {
+    if (this.sentenceListeners.size === 0) return;
+    const delay = Math.max(0, (start - audioPlayer.now()) * 1000);
+    const timer = setTimeout(() => {
+      this.sentenceTimers.delete(timer);
+      if (session !== this.session) return;
+      this.sentenceListeners.forEach((listener) => listener(text, Math.max(0, (end - start) * 1000)));
+    }, delay);
+    this.sentenceTimers.add(timer);
+  }
 
   public begin(config: VoiceConfig) {
     this.cancel(false);
@@ -82,6 +107,8 @@ export class StreamingTtsManager {
     const sentence: SpokenSentence = { text, start: null, end: null };
     this.spoken.push(sentence);
     const scheduled = (start: number, end: number) => {
+      // The first part of a sentence (narrator and voice may take turns) starts it.
+      if (sentence.start === null) this.announceSentence(text, start, end, session);
       sentence.start = sentence.start === null ? start : Math.min(sentence.start, start);
       sentence.end = sentence.end === null ? end : Math.max(sentence.end, end);
     };
@@ -147,6 +174,8 @@ export class StreamingTtsManager {
     this.held = [];
     this.spoken = [];
     this.synthesisChain = Promise.resolve();
+    this.sentenceTimers.forEach((timer) => clearTimeout(timer));
+    this.sentenceTimers.clear();
     if (stopPlayback) audioPlayer.stop();
   }
 }

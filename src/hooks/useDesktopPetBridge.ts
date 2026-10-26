@@ -2,6 +2,8 @@ import { useEffect } from 'react';
 import { emitTo, listen } from '@tauri-apps/api/event';
 import { useAppStore } from '../store/useAppStore';
 import { audioPlayer } from '../services/audioPlayer';
+import { streamingTts } from '../services/streamingTts';
+import { api } from '../services/api';
 import { manualEmotion, resolveVrmPath } from '../components/avatars/avatarMatch';
 import { APP_DEFAULT_COMPANION_NAME } from '../constants/branding';
 import {
@@ -12,12 +14,14 @@ import {
   PET_READY_EVENT,
   PET_SAY_EVENT,
   PET_SEND_EVENT,
+  PET_SENTENCE_EVENT,
   PET_STATE_EVENT,
   PET_TOGGLE_EVENT,
   PET_VISIBILITY_EVENT,
   loadPetOpen,
   type PetAudioFrame,
   type PetSay,
+  type PetSentence,
   type PetState,
 } from '../services/desktopPet';
 import { bubbleText } from '../components/companion/petBehavior';
@@ -128,6 +132,19 @@ export function useDesktopPetBridge(enabled = true) {
       void emitTo(PET_LABEL, PET_AUDIO_EVENT, frame).catch(() => {});
     });
 
+    // Sentence by sentence while the voice reads a reply: the bubble and the face follow it.
+    const stopSentences = streamingTts.onSentence((sentence, ms) => {
+      if (!open) return;
+      const text = bubbleText(sentence);
+      if (!text) return;
+      void api
+        .classifyTextEmotion(sentence)
+        .then((result) => result.vrm_expression || null)
+        .catch(() => null)
+        .then((expression) => emitTo(PET_LABEL, PET_SENTENCE_EVENT, { text, ms, expression } satisfies PetSentence))
+        .catch(() => {});
+    });
+
     const unlisteners: Promise<() => void>[] = [
       listen<boolean>(PET_VISIBILITY_EVENT, (event) => {
         open = event.payload;
@@ -176,6 +193,7 @@ export function useDesktopPetBridge(enabled = true) {
       isSubscribed = false;
       unsubscribeStore();
       stopReopen();
+      stopSentences();
       stopFrames();
       for (const unlisten of unlisteners) void unlisten.then((stop) => stop());
     };

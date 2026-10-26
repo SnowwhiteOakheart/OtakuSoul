@@ -6,7 +6,7 @@ vi.mock('../services/api', () => ({
   },
 }));
 vi.mock('../services/audioPlayer', () => ({
-  audioPlayer: { enqueue: vi.fn(), stop: vi.fn(), waitForIdle: vi.fn(async () => {}) },
+  audioPlayer: { enqueue: vi.fn(), stop: vi.fn(), waitForIdle: vi.fn(async () => {}), now: vi.fn(() => 10) },
   gainFromVoiceVolume: () => 1,
 }));
 import { StreamingTtsManager } from '../services/streamingTts';
@@ -46,6 +46,27 @@ describe('sentence-wise speech while the reply streams', () => {
     tts.cancel();
     tts.flush();
     expect(played()).toEqual([]);
+  });
+
+  it('announces each sentence when its audio starts, with its length', async () => {
+    vi.useFakeTimers();
+    try {
+      // The player schedules each clip: the first at 10.5 s (now 10 s), lasting 2 s.
+      vi.mocked(audioPlayer.enqueue).mockImplementation((_url, _gain, _device, _effects, onScheduled) => {
+        onScheduled?.(10.5, 12.5);
+      });
+      const tts = new StreamingTtsManager();
+      const heard: [string, number][] = [];
+      tts.onSentence((text, ms) => heard.push([text, ms]));
+      tts.push('Hallo du. ', { engine: 'edge' } as VoiceConfig);
+      await vi.advanceTimersByTimeAsync(0);
+      expect(heard).toEqual([]);
+      await vi.advanceTimersByTimeAsync(500);
+      expect(heard).toEqual([['Hallo du.', 2000]]);
+    } finally {
+      vi.mocked(audioPlayer.enqueue).mockReset();
+      vi.useRealTimers();
+    }
   });
 
   it('leaves actions to the narrator when the character wants that', async () => {

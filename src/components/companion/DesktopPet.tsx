@@ -27,6 +27,7 @@ import {
   PET_SAY_EVENT,
   PET_SCREEN_EVENT,
   PET_SEND_EVENT,
+  PET_SENTENCE_EVENT,
   PET_SIZES,
   PET_STATE_EVENT,
   savePetPlacement,
@@ -36,6 +37,7 @@ import {
   type PetPrefs,
   type PetSay,
   type PetScreen,
+  type PetSentence,
   type PetSize,
   type PetState,
 } from '../../services/desktopPet';
@@ -98,6 +100,9 @@ export const DesktopPet: React.FC = () => {
   const [behavior] = useState(() => new PetBehavior(performance.now()));
   const [mode, setMode] = useState<PetMode>('idle');
   const [faceOverride, setFaceOverride] = useState<string | null>(null);
+  /** Face of the sentence the voice is reading right now. */
+  const [sentenceFace, setSentenceFace] = useState<string | null>(null);
+  const sentenceTimer = useRef<number | null>(null);
   const [hop, setHop] = useState(false);
   const [walking, setWalking] = useState(false);
   /** Desktop physics: the window (physical px), its size, the floor's work area and the scale. */
@@ -308,6 +313,15 @@ export const DesktopPet: React.FC = () => {
           }
         }
       }),
+      listen<PetSentence>(PET_SENTENCE_EVENT, ({ payload }) => {
+        // Shown a little longer than spoken, so a short sentence can be read.
+        const ms = Math.max(1500, payload.ms + 600);
+        behavior.say(performance.now(), ms);
+        if (prefsRef.current.chatBubbles) say(payload.text, ms);
+        setSentenceFace(payload.expression);
+        if (sentenceTimer.current !== null) window.clearTimeout(sentenceTimer.current);
+        sentenceTimer.current = window.setTimeout(() => setSentenceFace(null), ms);
+      }),
       listen<PetSay>(PET_SAY_EVENT, ({ payload }) => {
         if (!prefsRef.current.chatBubbles || !payload.text) return;
         const ms = bubbleMs(payload.text);
@@ -368,6 +382,7 @@ export const DesktopPet: React.FC = () => {
       for (const unlisten of unlisteners) void unlisten.then((stop) => stop());
       void stopMoved.then((stop) => stop());
       if (bubbleTimer.current !== null) window.clearTimeout(bubbleTimer.current);
+      if (sentenceTimer.current !== null) window.clearTimeout(sentenceTimer.current);
     };
   }, [setIgnore, behavior, say]);
 
@@ -541,7 +556,11 @@ export const DesktopPet: React.FC = () => {
   const viewerProps = {
     modelPath,
     // Only VRM models have a blush; glTF and MMD show their relaxed face instead.
-    emotion: (faceOverride === 'blush' && /\.(pmx|pmd|glb|gltf)$/i.test(modelPath) ? 'relaxed' : faceOverride) ?? pet?.expression ?? 'neutral',
+    emotion:
+      (faceOverride === 'blush' && /\.(pmx|pmd|glb|gltf)$/i.test(modelPath) ? 'relaxed' : faceOverride) ??
+      sentenceFace ??
+      pet?.expression ??
+      'neutral',
     isSpeaking,
     motions: pet?.motions ?? [],
     gesture,

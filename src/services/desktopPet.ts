@@ -36,6 +36,17 @@ export interface PetScreen {
 
 /** Backend → pet: walkable top edges of the other windows (Windows only). */
 export const PET_PLATFORMS_EVENT = 'pet:platforms';
+/** Main → pet: a sentence of the reply starts playing (bubble and face in time with the voice). */
+export const PET_SENTENCE_EVENT = 'pet:sentence';
+
+export interface PetSentence {
+  text: string;
+  /** How long it plays (ms). */
+  ms: number;
+  /** VRM expression of this sentence; null when unknown. */
+  expression: string | null;
+}
+
 /** Pet → main: the user wrote something in the pet's quick chat (sent to the active chat). */
 export const PET_SEND_EVENT = 'pet:send';
 
