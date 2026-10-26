@@ -933,6 +933,15 @@ ru „персонаж/история/сцена“. Fachbegriffe nur im Experte
   sind physische Pixel wie die Pet-Physik. Jede Änderung unter `src-tauri/` startet die App in `tauri dev` neu – ein
   Scan-Test läuft dann evtl. ohne OtakuSoul-Fenster. Mitfahren (`rideWindows`) folgt der Kante nur, solange deren
   sichtbare Breite gleich bleibt – sonst ist der seitliche Versatz unbekannt und nur die Höhe wird übernommen.
+- Pet-Ziehen und Werfen: Das Ende eines System-Drags sieht das Pet nur über `pet:cursor.button` (Windows,
+  `GetAsyncKeyState`); Fenster-`onMoved` kommt gebündelt und über 100 ms zu spät, die Wurfgeschwindigkeit daher aus
+  den Zeigerdaten mit Rust-Zeitstempel (`gx`/`gy`/`t`). Ohne Tastenstatus (macOS/Linux) endet ein Drag nach 1,2 s
+  Ruhe. Testen per Computer-Use: Mausbewegungen springen, deshalb misst `finishDrag` bis zur letzten echten
+  Positionsänderung.
+- Pet-Schleifen `walk`/`sit` (`AvatarMotionPlayer.setLoopState`): gelten statt der Ruhe-Schleife; Sitzen nur mit
+  Sitz-Animation und nur auf Fensterkanten, gezeichnet `SIT_DROP` tiefer (Treffertest gleicht aus).
+- Chat-Blasen der Brücke: nur frische Antworten (nach Generierungsende oder < 2 min) – der Verlauf eines Chats kommt
+  nach dem Chatwechsel und sein Ende ist sonst „neu“. Satzweise Blasen über `streamingTts.onSentence`.
 
 ## Stand
 

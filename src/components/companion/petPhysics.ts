@@ -88,6 +88,31 @@ export const LANDING_GRACE = 28;
  */
 const SAME_WIDTH = 4;
 
+/** Monitors closer than this (physical px) count as side by side (rounding, small gaps). */
+const MONITOR_GAP = 8;
+
+/**
+ * The area to walk in: floor and height from the monitor under the feet, walls only where no
+ * other monitor continues to the side, so the figure walks over to the next screen.
+ */
+export function walkArea(monitors: Rect[], feetX: number, fallback: Rect): Rect {
+  const under = monitors.find((m) => feetX >= m.x && feetX < m.x + m.width) ?? fallback;
+  const beside = (a: Rect, b: Rect) => Math.min(a.y + a.height, b.y + b.height) - Math.max(a.y, b.y) > 0;
+  let left = under;
+  let right = under;
+  for (let guard = 0; guard < monitors.length; guard++) {
+    const next = monitors.find((m) => m !== left && Math.abs(m.x + m.width - left.x) <= MONITOR_GAP && beside(m, under));
+    if (!next) break;
+    left = next;
+  }
+  for (let guard = 0; guard < monitors.length; guard++) {
+    const next = monitors.find((m) => m !== right && Math.abs(m.x - (right.x + right.width)) <= MONITOR_GAP && beside(m, under));
+    if (!next) break;
+    right = next;
+  }
+  return { x: left.x, y: under.y, width: right.x + right.width - left.x, height: under.height };
+}
+
 /** The floor (window top when the feet are on it) and the side limits for a window of `size`. */
 export function bounds(size: Size, area: Rect) {
   const overhang = size.width * SIDE_OVERHANG;

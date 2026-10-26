@@ -1,7 +1,14 @@
 import { lazy, Suspense, useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import type React from 'react';
 import { emitTo, listen } from '@tauri-apps/api/event';
-import { currentMonitor, getCurrentWindow, LogicalSize, monitorFromPoint, PhysicalPosition } from '@tauri-apps/api/window';
+import {
+  availableMonitors,
+  currentMonitor,
+  getCurrentWindow,
+  LogicalSize,
+  monitorFromPoint,
+  PhysicalPosition,
+} from '@tauri-apps/api/window';
 import { Menu } from '@tauri-apps/api/menu';
 import { Brain, Camera, Clipboard, Flame, Heart, MessageCircle, Moon, Send, Smile, X, Zap } from 'lucide-react';
 import { VrmViewer } from '../avatar/VrmViewer';
@@ -12,7 +19,7 @@ import { api } from '../../services/api';
 import { audioPlayer } from '../../services/audioPlayer';
 import { SILENT_VISEMES } from '../../services/lipSync';
 import { bubbleMs, HEAD_ZONE_END, PetBehavior, type Gaze, type PetMode, type TouchZone } from './petBehavior';
-import { stepBody, throwVelocity, type Body, type Platform, type Rect } from './petPhysics';
+import { stepBody, throwVelocity, walkArea, type Body, type Platform, type Rect } from './petPhysics';
 import type { GestureRequest, LoopRole } from '../../utils/avatarGestures';
 import {
   loadPetPlacement,
@@ -123,6 +130,8 @@ export const DesktopPet: React.FC = () => {
   const body = useRef<Body | null>(null);
   const windowSize = useRef({ width: 0, height: 0 });
   const area = useRef<Rect | null>(null);
+  /** Work areas of all monitors: the figure walks over to one that continues to the side. */
+  const monitors = useRef<Rect[]>([]);
   const monitorScale = useRef(1);
   const walkDirection = useRef<-1 | 0 | 1>(0);
   /** Top edges of the other windows to stand on (empty outside Windows). */
@@ -224,6 +233,15 @@ export const DesktopPet: React.FC = () => {
       const { position: at, size: extent } = monitor.workArea;
       area.current = { x: at.x, y: at.y, width: extent.width, height: extent.height };
     }
+    const all = await within(availableMonitors()).catch(() => null);
+    if (all) {
+      monitors.current = all.map(({ workArea }) => ({
+        x: workArea.position.x,
+        y: workArea.position.y,
+        width: workArea.size.width,
+        height: workArea.size.height,
+      }));
+    }
   }, []);
 
   useEffect(() => {
@@ -247,7 +265,7 @@ export const DesktopPet: React.FC = () => {
       const result = stepBody(
         current,
         windowSize.current,
-        area.current,
+        walkArea(monitors.current, current.x + windowSize.current.width / 2, area.current),
         dt,
         walkDirection.current,
         monitorScale.current,

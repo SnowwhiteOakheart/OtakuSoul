@@ -69,7 +69,6 @@
   - Auslesen der `kCGWindowBounds`-Rechtecke.
   - Berechtigungsprüfung („Bedienungshilfen“ / „Screen Recording“).
 - [ ] **Mini-Interaktionen & Feinschliff:**
-  - Multi-Monitor-Übergang beim Laufen oder Ziehen.
 
 ## 4. Kognitives Gedächtnis (Memory 2.0 – Ausblick & Folgepunkte)
 

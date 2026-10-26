@@ -5,6 +5,7 @@ import {
   stepBody,
   throwVelocity,
   usablePlatforms,
+  walkArea,
   WALK_SPEED,
   type Body,
   type Platform,
@@ -60,6 +61,26 @@ describe('petPhysics on the floor', () => {
   it('uses the work area of a second monitor', () => {
     const second = { x: 1920, y: -200, width: 1280, height: 984 };
     expect(stepBody(at(2100, 900), size, second, 0.1, 0, 1).body.y).toBe(-200 + 984 - 440);
+  });
+});
+
+describe('petPhysics across monitors', () => {
+  // Laptop left, a taller external screen to its right, a third one far away above.
+  const laptop = { x: 0, y: 0, width: 1920, height: 1040 };
+  const external = { x: 1920, y: -400, width: 2560, height: 1400 };
+  const away = { x: 5000, y: -2000, width: 1000, height: 800 };
+  const monitors = [laptop, external, away];
+
+  it('walks through to a monitor beside it, with the floor of the one under the feet', () => {
+    const onLaptop = walkArea(monitors, 1000, laptop);
+    expect(onLaptop).toEqual({ x: 0, y: 0, width: 1920 + 2560, height: 1040 });
+    const onExternal = walkArea(monitors, 2500, laptop);
+    expect(onExternal).toEqual({ x: 0, y: -400, width: 1920 + 2560, height: 1400 });
+  });
+
+  it('keeps the wall where no monitor continues', () => {
+    expect(walkArea(monitors, 5500, laptop)).toEqual(away);
+    expect(walkArea([laptop], 100, laptop)).toEqual(laptop);
   });
 });
 
