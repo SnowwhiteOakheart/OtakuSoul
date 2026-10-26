@@ -3886,5 +3886,7 @@
   "pet.headpatReply1": "Mmh … das mag ich.",
   "pet.headpatReply2": "Hehe, mach ruhig weiter~",
   "pet.pokeReply1": "Hey! Das kitzelt!",
-  "pet.pokeReply2": "Huch! Was gibt's?"
+  "pet.pokeReply2": "Huch! Was gibt's?",
+  "motions.role.walk": "Gehen (Schleife, Desktop-Pet)",
+  "motions.role.sit": "Sitzen (Schleife, Desktop-Pet)"
 }

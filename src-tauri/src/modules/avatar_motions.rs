@@ -13,7 +13,7 @@ use std::path::{Path, PathBuf};
 use ts_rs::TS;
 
 /// Uses a motion can have; the frontend plays them on emotions and roleplay actions.
-pub const ROLES: [&str; 8] = [
+pub const ROLES: [&str; 10] = [
     "idle",
     "greeting",
     "nod",
@@ -22,6 +22,9 @@ pub const ROLES: [&str; 8] = [
     "angry",
     "surprised",
     "thinking",
+    // Loops of the desktop pet while it walks or sits (instead of the idle loop).
+    "walk",
+    "sit",
 ];
 
 /// Moods a motion can be meant for (VRM expressions); empty = any mood. With several motions for

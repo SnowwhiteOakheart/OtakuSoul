@@ -3886,5 +3886,7 @@
   "pet.headpatReply1": "Мм … мне нравится.",
   "pet.headpatReply2": "Хи-хи, продолжай~",
   "pet.pokeReply1": "Эй! Щекотно!",
-  "pet.pokeReply2": "Ой! Что такое?"
+  "pet.pokeReply2": "Ой! Что такое?",
+  "motions.role.walk": "Ходьба (цикл, питомец)",
+  "motions.role.sit": "Сидение (цикл, питомец)"
 }

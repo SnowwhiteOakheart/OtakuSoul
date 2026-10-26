@@ -45,6 +45,7 @@ export const MmdViewer = ({
   gesture = null,
   onPickEmotion = () => {},
   pet,
+  loop = null,
 }: AvatarViewerProps) => {
   const { t } = useTranslation();
   const containerRef = useRef<HTMLDivElement>(null);
@@ -211,6 +212,8 @@ export const MmdViewer = ({
   }, [modelPath]);
 
   const motionCount = useAvatarMotions({
+    loop,
+    onLoops: pet?.onLoops,
     model: loaded,
     motions: motions.filter((m) => m.kind === 'vmd'),
     player: motionPlayerRef,

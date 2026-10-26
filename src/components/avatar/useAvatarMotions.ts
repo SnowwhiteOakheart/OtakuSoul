@@ -1,7 +1,7 @@
 import { useEffect, useRef, useState, type RefObject } from 'react';
 import type * as THREE from 'three';
 import type { AvatarMotion } from '../../types';
-import type { GestureRequest, MotionRole } from '../../utils/avatarGestures';
+import type { GestureRequest, LoopRole, MotionRole } from '../../utils/avatarGestures';
 import type { AvatarMotionPlayer } from './vrmMotions';
 
 interface Options<Model> {
@@ -23,13 +23,29 @@ interface Options<Model> {
   ownClips?: Map<MotionRole, THREE.AnimationClip[]>;
   /** Clips of the model without a use, played only when picked by hand. */
   extraClips?: THREE.AnimationClip[];
+  /** A state loop to play instead of the idle loop (desktop pet walking or sitting). */
+  loop?: LoopRole | null;
+  /** Which state loops this avatar has motions for (after its motions loaded). */
+  onLoops?: (available: Record<LoopRole, boolean>) => void;
 }
 
 /**
  * Loads the motions that have a use for this avatar and plays requested gestures. Returns
  * how many motions are loaded.
  */
-export function useAvatarMotions<Model>({ model, motions, player, load, gesture, mood = 'neutral', onGesture, ownClips, extraClips }: Options<Model>): number {
+export function useAvatarMotions<Model>({
+  model,
+  motions,
+  player,
+  load,
+  gesture,
+  mood = 'neutral',
+  onGesture,
+  ownClips,
+  extraClips,
+  loop = null,
+  onLoops,
+}: Options<Model>): number {
   const [count, setCount] = useState(0);
   // Only gestures requested after the viewer opened play; an old one is not replayed.
   const lastGesture = useRef(gesture?.id ?? 0);
@@ -88,6 +104,20 @@ export function useAvatarMotions<Model>({ model, motions, player, load, gesture,
     }
     // oxlint-disable-next-line react-hooks/exhaustive-deps
   }, [gesture]);
+
+  // State loops follow the request, also once motions arrived after it.
+  const onLoopsRef = useRef(onLoops);
+  useEffect(() => {
+    onLoopsRef.current = onLoops;
+  }, [onLoops]);
+  useEffect(() => {
+    const current = player.current;
+    if (!current) return;
+    current.setLoopState(loop);
+    onLoopsRef.current?.({ walk: current.has('walk'), sit: current.has('sit') });
+    // `player` is stable per viewer; `count` changes once the clips are set.
+    // oxlint-disable-next-line react-hooks/exhaustive-deps
+  }, [loop, count]);
 
   return count;
 }

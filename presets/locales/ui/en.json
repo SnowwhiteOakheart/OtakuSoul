@@ -3886,5 +3886,7 @@
   "pet.headpatReply1": "Mmh … I like that.",
   "pet.headpatReply2": "Hehe, keep going~",
   "pet.pokeReply1": "Hey! That tickles!",
-  "pet.pokeReply2": "Oh! What is it?"
+  "pet.pokeReply2": "Oh! What is it?",
+  "motions.role.walk": "Walking (loop, desktop pet)",
+  "motions.role.sit": "Sitting (loop, desktop pet)"
 }

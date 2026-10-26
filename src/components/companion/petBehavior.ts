@@ -1,4 +1,4 @@
-import type { MotionRole } from '../../utils/avatarGestures';
+import type { LoopRole, MotionRole } from '../../utils/avatarGestures';
 import { withoutEmotionTag } from '../../utils/replyTags';
 
 /**
@@ -10,9 +10,9 @@ import { withoutEmotionTag } from '../../utils/replyTags';
  * With desktop physics on (`petPhysics.ts`) the figure also walks along the floor and falls
  * when let go in the air; `DesktopPet` reports the floor contact and walls back.
  */
-export type PetMode = 'idle' | 'walking' | 'falling' | 'dozing' | 'reacting' | 'dragged' | 'talking';
+export type PetMode = 'idle' | 'walking' | 'sitting' | 'falling' | 'dozing' | 'reacting' | 'dragged' | 'talking';
 
-export type PetAction = 'lookAround' | 'yawn' | 'hop' | 'wave' | 'think' | 'nod' | 'walk';
+export type PetAction = 'lookAround' | 'yawn' | 'hop' | 'wave' | 'think' | 'nod' | 'walk' | 'sit';
 
 export interface Gaze {
   x: number;
@@ -33,6 +33,8 @@ export interface PetFrame {
   walk: -1 | 0 | 1;
   /** Turn of the figure (radians, positive = towards the right of the screen). */
   turn: number;
+  /** Motion loop instead of the idle loop (only plays when the avatar has such a motion). */
+  loop: LoopRole | null;
 }
 
 /** Where the figure was touched: a stroke on the head or a poke elsewhere. */
@@ -57,6 +59,8 @@ const REACT_MS = 1400;
 const HOP_MS = 600;
 /** A walk lasts this long (random within). */
 const WALK_MS: [number, number] = [3000, 7000];
+/** Sitting on a window's edge lasts this long (random within). */
+const SIT_MS: [number, number] = [12_000, 30_000];
 /** How far the figure turns into its walking direction (about 50°, the face stays visible). */
 export const WALK_TURN = 0.9;
 
@@ -68,6 +72,7 @@ const DURATION: Record<PetAction, number> = {
   think: 2800,
   nod: 1500,
   walk: WALK_MS[0],
+  sit: SIT_MS[0],
 };
 
 interface RunningAction {
@@ -95,6 +100,9 @@ export class PetBehavior {
   private idleActions = true;
   private physics = true;
   private grounded = true;
+  /** Standing on another window's edge (sitting is only done there, legs over the edge). */
+  private onWindow = false;
+  private sitMotion = false;
 
   constructor(
     now: number,
@@ -194,6 +202,18 @@ export class PetBehavior {
     }
   }
 
+  /** Whether it stands on another window's edge (from the physics). */
+  setOnWindow(onWindow: boolean) {
+    this.onWindow = onWindow;
+    if (!onWindow && this.action?.kind === 'sit') this.action = null;
+  }
+
+  /** Whether the avatar has a sitting motion; without one it never sits. */
+  setSitMotion(available: boolean) {
+    this.sitMotion = available;
+    if (!available && this.action?.kind === 'sit') this.action = null;
+  }
+
   /** The figure ran into a side wall (-1 left, 1 right): a walk that way turns around. */
   bumped(wall: -1 | 1) {
     const action = this.action;
@@ -211,6 +231,7 @@ export class PetBehavior {
       ['think', 15],
       ['nod', 10],
       ['walk', this.physics && this.grounded ? 30 : 0],
+      ['sit', this.physics && this.onWindow && this.sitMotion ? 25 : 0],
     ];
     const total = weights.reduce((sum, [, w]) => sum + w, 0);
     let pick = this.random() * total;
@@ -220,6 +241,7 @@ export class PetBehavior {
       action.direction = this.random() < 0.5 ? -1 : 1;
       action.end = now + WALK_MS[0] + this.random() * (WALK_MS[1] - WALK_MS[0]);
     }
+    if (kind === 'sit') action.end = now + SIT_MS[0] + this.random() * (SIT_MS[1] - SIT_MS[0]);
     if (kind === 'lookAround') {
       const side = this.random() < 0.5 ? -1 : 1;
       action.gazes = [
@@ -274,7 +296,7 @@ export class PetBehavior {
       this.startAction(now);
     }
 
-    const still = { mouth: 0, hop: false, walk: 0 as const, turn: 0 };
+    const still = { mouth: 0, hop: false, walk: 0 as const, turn: 0, loop: null };
     let frame: PetFrame;
     switch (this.mode) {
       case 'dozing':
@@ -294,12 +316,14 @@ export class PetBehavior {
         break;
       default: {
         const direction = this.action?.kind === 'walk' ? this.action.direction! : 0;
+        const sitting = this.action?.kind === 'sit';
         frame = {
           ...still,
           ...this.actionFrame(now),
-          mode: direction ? 'walking' : 'idle',
+          mode: direction ? 'walking' : sitting ? 'sitting' : 'idle',
           walk: direction,
           turn: direction * WALK_TURN,
+          loop: direction ? 'walk' : sitting ? 'sit' : null,
         };
       }
     }

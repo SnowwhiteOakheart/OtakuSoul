@@ -1,6 +1,8 @@
 /** Uses of avatar motions (same list as `avatar_motions::ROLES` in the backend). */
-export const MOTION_ROLES = ['idle', 'greeting', 'nod', 'happy', 'sad', 'angry', 'surprised', 'thinking'] as const;
+export const MOTION_ROLES = ['idle', 'greeting', 'nod', 'happy', 'sad', 'angry', 'surprised', 'thinking', 'walk', 'sit'] as const;
 export type MotionRole = (typeof MOTION_ROLES)[number];
+/** Uses that loop while a state lasts (desktop pet walking or sitting) instead of the idle loop. */
+export type LoopRole = 'walk' | 'sit';
 
 /**
  * A gesture the 3D avatar should play: by use (from the chat or a preview) or a clip of the model

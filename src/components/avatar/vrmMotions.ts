@@ -4,7 +4,7 @@ import type { VRM } from '@pixiv/three-vrm';
 import { createVRMAnimationClip, VRMAnimationLoaderPlugin, type VRMAnimation } from '@pixiv/three-vrm-animation';
 import { api } from '../../services/api';
 import type { AvatarMotion } from '../../types';
-import { bestByMood, pickByMood, type MotionRole } from '../../utils/avatarGestures';
+import { bestByMood, pickByMood, type LoopRole, type MotionRole } from '../../utils/avatarGestures';
 
 const FADE_SECONDS = 0.35;
 
@@ -50,6 +50,9 @@ export class AvatarMotionPlayer {
   private readonly mixer: THREE.AnimationMixer;
   private idle: THREE.AnimationAction | null = null;
   private gesture: THREE.AnimationAction | null = null;
+  /** A state loop (walking, sitting) that stands in for the idle loop while it lasts. */
+  private loop: THREE.AnimationAction | null = null;
+  private loopRole: LoopRole | null = null;
   private clips = new Map<MotionRole, THREE.AnimationClip[]>();
   private extras: THREE.AnimationClip[] = [];
   private mood = 'neutral';
@@ -61,9 +64,10 @@ export class AvatarMotionPlayer {
     this.mixer.addEventListener('finished', (event) => {
       if (event.action !== this.gesture) return;
       this.onGestureEnd?.();
-      if (this.idle) {
-        this.idle.reset().play();
-        this.idle.crossFadeFrom(event.action, FADE_SECONDS, false);
+      const back = this.loop ?? this.idle;
+      if (back) {
+        back.reset().play();
+        back.crossFadeFrom(event.action, FADE_SECONDS, false);
       } else {
         event.action.fadeOut(FADE_SECONDS);
       }
@@ -82,6 +86,43 @@ export class AvatarMotionPlayer {
     this.idle = idleClip ? this.mixer.clipAction(idleClip) : null;
     this.idle?.setLoop(THREE.LoopRepeat, Infinity).play();
     this.onClipChange?.('idle', idleClip?.name ?? '');
+    // Clips arrive after the state was asked for: start its loop now.
+    this.loop = null;
+    if (this.loopRole) this.setLoopState(this.loopRole);
+  }
+
+  /** Whether a motion has this use (the desktop pet sits only with a sitting motion). */
+  has(role: MotionRole): boolean {
+    return !!this.clips.get(role)?.length;
+  }
+
+  /**
+   * Plays the loop of a state (walking, sitting) instead of the idle loop, or goes back to idle
+   * (`null`). False when no motion has that use; the avatar then keeps its idle motion.
+   */
+  setLoopState(role: LoopRole | null): boolean {
+    this.loopRole = role;
+    const previous = this.loop;
+    const options = role ? this.clips.get(role) : undefined;
+    const pick = options?.length ? pickByMood(options.map((clip) => ({ clip, mood: clipMood(clip) })), this.mood) : undefined;
+    if (pick && previous?.getClip() === pick.clip) return true;
+    const from = this.gesture ?? previous ?? this.idle;
+    if (!pick) {
+      this.loop = null;
+      if (previous && !this.gesture) {
+        this.idle?.reset().play();
+        if (this.idle) this.idle.crossFadeFrom(previous, FADE_SECONDS, false);
+        else previous.fadeOut(FADE_SECONDS);
+      }
+      return false;
+    }
+    const action = this.mixer.clipAction(pick.clip).setLoop(THREE.LoopRepeat, Infinity);
+    action.reset().play();
+    if (from && from !== action) action.crossFadeFrom(from, FADE_SECONDS, false);
+    else action.fadeIn(FADE_SECONDS);
+    this.loop = action;
+    this.gesture = null;
+    return true;
   }
 
   /** The avatar's mood changed: switch to the idle loop that fits it best. */
@@ -92,8 +133,8 @@ export class AvatarMotionPlayer {
     const previous = this.idle;
     this.idle = this.mixer.clipAction(clip).setLoop(THREE.LoopRepeat, Infinity);
     this.onClipChange?.('idle', clip.name);
-    // During a gesture the new loop starts when it ends ('finished' fades into `idle`).
-    if (this.gesture) {
+    // During a gesture or a state loop the new idle loop starts when they end.
+    if (this.gesture || this.loop) {
       previous?.fadeOut(FADE_SECONDS);
       return;
     }
@@ -154,11 +195,13 @@ export class AvatarMotionPlayer {
   /** 0 = only the procedural pose, 1 = only the animations. */
   get bodyWeight(): number {
     let weight = 0;
-    for (const action of [this.idle, this.gesture]) if (action?.isRunning()) weight += action.getEffectiveWeight();
+    for (const action of [this.idle, this.gesture, this.loop]) if (action?.isRunning()) weight += action.getEffectiveWeight();
     // A gesture fading out after its end is no longer running but still blends.
     for (const clip of this.allClips()) {
       const action = this.mixer.existingAction(clip);
-      if (action && action !== this.idle && action !== this.gesture && action.enabled) weight += action.getEffectiveWeight();
+      if (action && action !== this.idle && action !== this.gesture && action !== this.loop && action.enabled) {
+        weight += action.getEffectiveWeight();
+      }
     }
     return Math.min(1, weight);
   }

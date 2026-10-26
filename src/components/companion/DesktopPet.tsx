@@ -13,7 +13,7 @@ import { audioPlayer } from '../../services/audioPlayer';
 import { SILENT_VISEMES } from '../../services/lipSync';
 import { bubbleMs, HEAD_ZONE_END, PetBehavior, type Gaze, type PetMode, type TouchZone } from './petBehavior';
 import { stepBody, throwVelocity, type Body, type Platform, type Rect } from './petPhysics';
-import type { GestureRequest } from '../../utils/avatarGestures';
+import type { GestureRequest, LoopRole } from '../../utils/avatarGestures';
 import {
   loadPetPlacement,
   loadPetPrefs,
@@ -45,6 +45,11 @@ import {
 const MmdViewer = lazy(() => import('../avatar/MmdViewer'));
 const GltfViewer = lazy(() => import('../avatar/GltfViewer'));
 const isMmdModel = (path: string) => /\.(pmx|pmd)$/i.test(path);
+/**
+ * Sitting on a window's edge: the figure is drawn this share of the window lower, so its hips
+ * rest on the edge and the legs hang over it (the window itself keeps standing on the edge).
+ */
+const SIT_DROP = 0.2;
 const isGltfModel = (path: string) => /\.(glb|gltf)$/i.test(path);
 
 /** How long a speech bubble stays. */
@@ -112,6 +117,8 @@ export const DesktopPet: React.FC = () => {
   const sentenceTimer = useRef<number | null>(null);
   const [hop, setHop] = useState(false);
   const [walking, setWalking] = useState(false);
+  const [loop, setLoop] = useState<LoopRole | null>(null);
+  const sittingRef = useRef(false);
   /** Desktop physics: the window (physical px), its size, the floor's work area and the scale. */
   const body = useRef<Body | null>(null);
   const windowSize = useRef({ width: 0, height: 0 });
@@ -248,6 +255,7 @@ export const DesktopPet: React.FC = () => {
         prefsRef.current.rideWindows,
       );
       behavior.setGrounded(result.grounded, now);
+      behavior.setOnWindow(result.body.support !== null);
       if (result.wall) behavior.bumped(result.wall);
       const [x, y] = [Math.round(result.body.x), Math.round(result.body.y)];
       body.current = result.body;
@@ -307,6 +315,8 @@ export const DesktopPet: React.FC = () => {
       setFaceOverride(frame.expression);
       setHop(frame.hop);
       setWalking(frame.walk !== 0);
+      setLoop(frame.loop);
+      sittingRef.current = frame.loop === 'sit';
       walkDirection.current = frame.walk;
       gazeOverride.current = frame.gaze;
       const stage = stageRef.current;
@@ -382,10 +392,10 @@ export const DesktopPet: React.FC = () => {
       listen<PetScreen>(PET_SCREEN_EVENT, ({ payload }) => {
         setScreen(payload);
       }),
-      listen<PetCursor>(PET_CURSOR_EVENT, ({ payload: { x, y, inside, button, gx, gy, t } }) => {
+      listen<PetCursor>(PET_CURSOR_EVENT, ({ payload: { x, y, inside, button, gx, gy, t: polledAt } }) => {
         const dragging = drag.current;
         if (dragging && !dragging.ending) {
-          dragging.samples.push({ t, x: gx, y: gy });
+          dragging.samples.push({ t: polledAt, x: gx, y: gy });
           if (dragging.samples.length > 30) dragging.samples.shift();
           // Released: the drag ends now, and a release in motion throws the figure.
           if (button === false) finishDrag(true);
@@ -415,7 +425,8 @@ export const DesktopPet: React.FC = () => {
           setIgnore(true);
           return;
         }
-        stage.probe(x, y, (hit) => setIgnore(!hit));
+        // Sitting draws the figure lower than the window: probe where it really is.
+        stage.probe(x, sittingRef.current ? y - h * SIT_DROP : y, (hit) => setIgnore(!hit));
       }),
     ];
     void Promise.all(unlisteners).then(() => {
@@ -602,7 +613,11 @@ export const DesktopPet: React.FC = () => {
       void syncWindow().catch(() => {});
     }
   }, [away, setIgnore, syncWindow]);
-  const petLink = useMemo(() => ({ onStage }), [onStage]);
+  const onLoops = useCallback(
+    (available: Record<LoopRole, boolean>) => behavior.setSitMotion(available.sit),
+    [behavior],
+  );
+  const petLink = useMemo(() => ({ onStage, onLoops }), [onStage, onLoops]);
 
   const modelPath = pet?.modelPath ?? '';
   const viewerProps = {
@@ -617,6 +632,7 @@ export const DesktopPet: React.FC = () => {
     motions: pet?.motions ?? [],
     gesture,
     pet: petLink,
+    loop,
   };
   const hormones = companionState?.hormones;
   const thought = companionState?.scratchpad?.[0]?.thought;
@@ -634,6 +650,7 @@ export const DesktopPet: React.FC = () => {
     >
       <div
         className={`absolute inset-0 ${hop ? 'pet-hop' : walking ? 'pet-walk' : ''}`}
+        style={loop === 'sit' ? { transform: `translateY(${SIT_DROP * 100}%)` } : undefined}
         onPointerDown={onPointerDown}
         onPointerMove={onPointerMove}
         onPointerUp={onPointerUp}

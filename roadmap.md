@@ -60,13 +60,8 @@
 > Ziel: Aktiven 3D-Avatar (VRM / glTF / MMD) aus OtakuSoul als transparenten, frei schwebenden Begleiter auf den Desktop bringen.
 
 ### Phase 2: Verhalten (Fenster, Anbindung und Zustandsautomat sind erledigt, siehe `roadmap_abgeschlossen.md`)
-- [ ] **Hinsetzen (`IDLE_SIT`):** Sitzhaltung per Knochen für VRM, glTF (`gltfRig`) und MMD, als weitere
-  Leerlauf-Aktion in `petBehavior.ts`. Ohne importierte Sitz-Animation braucht jedes Format eine eigene Pose.
 
 ### Phase 3: Desktop-Physik (erledigt bis auf Feinschliff, siehe `roadmap_abgeschlossen.md`)
-- [ ] **Geh-Animation:** Gehen ist bisher Drehung plus Wippen; mit einer importierten Bewegung der Rolle „Gehen“
-  (neue Rolle in `MOTION_ROLES` / `avatar_motions::ROLES`) liefe die Figur richtig.
-- [ ] **Werfen:** Schwung beim Loslassen mitnehmen (seitliche Geschwindigkeit aus den letzten `onMoved`-Ereignissen).
 
 ### Phase 4: Interaktion mit fremden Fenstern (Windows erledigt, siehe `roadmap_abgeschlossen.md`)
 - [ ] **macOS-Integration (CoreGraphics / Quartz Window Services):**

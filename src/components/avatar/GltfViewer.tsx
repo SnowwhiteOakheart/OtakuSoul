@@ -143,6 +143,7 @@ export const GltfViewer = ({
   gesture = null,
   onPickEmotion = () => {},
   pet,
+  loop = null,
 }: AvatarViewerProps) => {
   const { t } = useTranslation();
   const containerRef = useRef<HTMLDivElement>(null);
@@ -412,6 +413,8 @@ export const GltfViewer = ({
   }, [embedded, modelPath, modelClipRevision]);
 
   const motionCount = useAvatarMotions({
+    loop,
+    onLoops: pet?.onLoops,
     model: loaded,
     motions: motions.filter((m) => m.kind === 'fbx'),
     player: motionPlayerRef,

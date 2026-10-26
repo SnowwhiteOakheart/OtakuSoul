@@ -3887,5 +3887,7 @@
   "pet.headpatReply1": "んん…それ好き。",
   "pet.headpatReply2": "えへへ、もっと~",
   "pet.pokeReply1": "ちょっと！くすぐったい！",
-  "pet.pokeReply2": "わっ！どうしたの？"
+  "pet.pokeReply2": "わっ！どうしたの？",
+  "motions.role.walk": "歩く（ループ、デスクトップペット）",
+  "motions.role.sit": "座る（ループ、デスクトップペット）"
 }

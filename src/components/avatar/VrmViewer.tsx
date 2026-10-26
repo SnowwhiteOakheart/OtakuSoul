@@ -10,7 +10,7 @@ import { translate, useTranslation } from '../../i18n';
 import { errorMessage } from '../../utils/errors';
 import { mouthTarget, SILENT_VISEMES, type Visemes } from '../../services/lipSync';
 import type { AvatarMotion } from '../../types';
-import type { GestureRequest } from '../../utils/avatarGestures';
+import type { GestureRequest, LoopRole } from '../../utils/avatarGestures';
 import { loadMotionClip, AvatarMotionPlayer } from './vrmMotions';
 import { createAvatarStage, createBlinker, type AvatarStage } from './avatarStage';
 import { AvatarViewerChrome } from './AvatarViewerChrome';
@@ -31,7 +31,13 @@ export interface AvatarViewerProps {
    * Desktop pet: transparent, whole figure, no camera controls or buttons. Receives the stage
    * (pointer for looking, hit test for click-through) and `null` when it goes.
    */
-  pet?: { onStage: (stage: AvatarStage | null) => void };
+  pet?: {
+    onStage: (stage: AvatarStage | null) => void;
+    /** Which state loops (walk, sit) this avatar has motions for. */
+    onLoops?: (available: Record<LoopRole, boolean>) => void;
+  };
+  /** State loop instead of the idle loop (desktop pet walking or sitting). */
+  loop?: LoopRole | null;
 }
 
 const VISEME_KEYS = Object.keys(SILENT_VISEMES) as (keyof Visemes)[];
@@ -93,6 +99,7 @@ export const VrmViewer = ({
   gesture = null,
   onPickEmotion = () => {},
   pet,
+  loop = null,
 }: AvatarViewerProps) => {
   const { t } = useTranslation();
   const containerRef = useRef<HTMLDivElement>(null);
@@ -317,6 +324,8 @@ export const VrmViewer = ({
   }, [modelPath]);
 
   const motionCount = useAvatarMotions({
+    loop,
+    onLoops: pet?.onLoops,
     model: loadedVrm,
     motions: motions.filter((m) => m.kind === 'vrma' || m.kind === 'fbx'),
     player: motionPlayerRef,

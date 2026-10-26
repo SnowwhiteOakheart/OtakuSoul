@@ -130,6 +130,27 @@ describe('PetBehavior on the desktop floor', () => {
     expect(frame.turn).toBeLessThan(0);
   });
 
+  it('sits on a window edge only with a sitting motion', () => {
+    // Random 0.99 picks the last weighted action: sit once it is possible.
+    const without = new PetBehavior(0, fixed(0.99));
+    without.setOnWindow(true);
+    expect(run(without, 0, 21_000).frame.mode).toBe('walking');
+
+    const pet = new PetBehavior(0, fixed(0.99));
+    pet.setOnWindow(true);
+    pet.setSitMotion(true);
+    const { frame } = run(pet, 0, 21_000);
+    expect(frame).toMatchObject({ mode: 'sitting', loop: 'sit', walk: 0 });
+    // Its window goes away: it stops sitting.
+    pet.setOnWindow(false);
+    expect(pet.tick(21_100).frame.loop).not.toBe('sit');
+  });
+
+  it('asks for the walking loop while walking', () => {
+    const pet = new PetBehavior(0, fixed(0.99));
+    expect(run(pet, 0, 21_000).frame.loop).toBe('walk');
+  });
+
   it('does not walk without physics', () => {
     const pet = new PetBehavior(0, fixed(0.99));
     pet.setPhysics(false);
