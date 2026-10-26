@@ -12,7 +12,9 @@ import {
   PET_READY_EVENT,
   PET_SAY_EVENT,
   PET_STATE_EVENT,
+  PET_TOGGLE_EVENT,
   PET_VISIBILITY_EVENT,
+  loadPetOpen,
   type PetAudioFrame,
   type PetSay,
   type PetState,
@@ -133,7 +135,23 @@ export function useDesktopPetBridge(enabled = true) {
       listen<string>(PET_PICK_EMOTION_EVENT, (event) => {
         useAppStore.getState().setCurrentEmotion(manualEmotion(event.payload));
       }),
+      // Tray menu and global shortcut.
+      listen(PET_TOGGLE_EVENT, () => {
+        void useAppStore.getState().toggleDesktopPet(!open);
+      }),
     ];
+
+    // Open at start when it was open before; after the settings, so the right model is known.
+    let reopened = false;
+    const reopen = () => {
+      if (reopened || !useAppStore.getState().settingsLoaded) return;
+      reopened = true;
+      if (loadPetOpen() && !open) void useAppStore.getState().toggleDesktopPet(true);
+    };
+    const stopReopen = useAppStore.subscribe((s) => {
+      if (s.settingsLoaded) reopen();
+    });
+    reopen();
     // A pet that was open before this window (re)loaded reports back.
     void Promise.all(unlisteners).then(() => {
       if (isSubscribed) void emitTo(PET_LABEL, PET_HELLO_EVENT).catch(() => {});
@@ -142,6 +160,7 @@ export function useDesktopPetBridge(enabled = true) {
     return () => {
       isSubscribed = false;
       unsubscribeStore();
+      stopReopen();
       stopFrames();
       for (const unlisten of unlisteners) void unlisten.then((stop) => stop());
     };

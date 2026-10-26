@@ -3878,5 +3878,7 @@
   "pet.chatBubbles": "チャットの返事を吹き出しで表示",
   "pet.physics": "重力と歩行",
   "pet.rideWindows": "ウィンドウと一緒に移動",
-  "pet.hideInFullscreen": "全画面表示中は隠す"
+  "pet.hideInFullscreen": "全画面表示中は隠す",
+  "tray.pet": "デスクトップペット オン/オフ",
+  "pet.hintShortcut": "Ctrl+Alt+Shift+P またはトレイアイコンでペットを表示・非表示にできます。最後に開いていた場合は次回起動時にまた現れます。"
 }

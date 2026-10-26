@@ -95,6 +95,17 @@ pub fn run() {
     // Signed in-app updates; the public key and manifest URL are in tauri.conf.json.
     #[cfg(desktop)]
     let builder = builder.plugin(tauri_plugin_updater::Builder::new().build());
+    // Desktop pet on and off from anywhere (`commands::desktop_pet::PET_SHORTCUT`).
+    #[cfg(desktop)]
+    let builder = builder.plugin(
+        tauri_plugin_global_shortcut::Builder::new()
+            .with_handler(|app, _shortcut, event| {
+                if event.state == tauri_plugin_global_shortcut::ShortcutState::Pressed {
+                    commands::desktop_pet::request_toggle(app);
+                }
+            })
+            .build(),
+    );
 
     builder
         .plugin(tauri_plugin_opener::init())
@@ -116,6 +127,8 @@ pub fn run() {
             tauri::async_runtime::spawn(modules::model_catalog::refresh());
             allow_app_asset_dirs(app);
             create_main_window(app)?;
+            #[cfg(desktop)]
+            commands::desktop_pet::register_shortcut(app.handle());
             // Attachment files left by failed or stopped sends; in the background.
             let db = app.state::<AppState>().memory_db.clone();
             std::thread::spawn(move || match db.attachment_references() {
@@ -169,10 +182,12 @@ pub fn run() {
                             .unwrap_or_else(|| german.to_string())
                     };
                     let show_label = label("tray.show", "Anzeigen");
+                    let pet_label = label("tray.pet", "Desktop-Pet ein/aus");
                     let quit_label = label("tray.quit", "Beenden");
                     let show_i = MenuItem::with_id(app, "show", &show_label, true, None::<&str>)?;
+                    let pet_i = MenuItem::with_id(app, "pet", &pet_label, true, None::<&str>)?;
                     let quit_i = MenuItem::with_id(app, "quit", &quit_label, true, None::<&str>)?;
-                    let menu = Menu::with_items(app, &[&show_i, &quit_i])?;
+                    let menu = Menu::with_items(app, &[&show_i, &pet_i, &quit_i])?;
 
                     let _tray = TrayIconBuilder::new()
                         .menu(&menu)
@@ -188,6 +203,7 @@ pub fn run() {
                                     let _ = window.set_focus();
                                 }
                             }
+                            "pet" => commands::desktop_pet::request_toggle(app),
                             _ => {}
                         })
                         .on_tray_icon_event(|tray, event| {

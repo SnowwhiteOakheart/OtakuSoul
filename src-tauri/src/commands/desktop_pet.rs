@@ -209,6 +209,26 @@ pub async fn toggle_desktop_pet(
     Ok(enable)
 }
 
+/// Global shortcut for the pet: Ctrl+Alt+Shift+P (Cmd on macOS). Unusual on purpose – a global
+/// shortcut takes the keys from every other program, and AltGr+P (= Ctrl+Alt) stays free.
+#[cfg(desktop)]
+pub const PET_SHORTCUT: &str = "CommandOrControl+Alt+Shift+P";
+
+/// Tray menu or shortcut: the main window toggles the pet, so its remembered state ("open at
+/// start") stays in one place.
+pub fn request_toggle(app: &AppHandle) {
+    let _ = app.emit_to("main", "pet:toggle", ());
+}
+
+/// A shortcut another program holds already is no reason to fail the start.
+#[cfg(desktop)]
+pub fn register_shortcut(app: &AppHandle) {
+    use tauri_plugin_global_shortcut::GlobalShortcutExt;
+    if let Err(e) = app.global_shortcut().register(PET_SHORTCUT) {
+        tracing::warn!("Tastenkürzel {PET_SHORTCUT} für das Desktop-Pet nicht belegt: {e}");
+    }
+}
+
 /// "Back to OtakuSoul" from the pet's menu: also brings the main window back from the tray.
 #[tauri::command]
 pub fn show_main_window(app: AppHandle) {

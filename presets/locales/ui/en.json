@@ -3877,5 +3877,7 @@
   "pet.chatBubbles": "Chat replies as speech bubble",
   "pet.physics": "Gravity and walking",
   "pet.rideWindows": "Ride along on windows",
-  "pet.hideInFullscreen": "Hide during fullscreen"
+  "pet.hideInFullscreen": "Hide during fullscreen",
+  "tray.pet": "Desktop pet on/off",
+  "pet.hintShortcut": "Ctrl+Alt+Shift+P or the tray icon shows and hides the pet. If it was open last, it comes back at the next start."
 }

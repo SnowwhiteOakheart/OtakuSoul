@@ -23,6 +23,9 @@ export const PET_PICK_EMOTION_EVENT = 'pet:pick-emotion';
 export const PET_VISIBILITY_EVENT = 'pet:visibility';
 /** Backend → pet: global pointer position relative to the pet window. */
 export const PET_CURSOR_EVENT = 'pet:cursor';
+/** Backend → main: tray menu or global shortcut asks to show or hide the pet. */
+export const PET_TOGGLE_EVENT = 'pet:toggle';
+
 /** Backend → pet: a fullscreen window or the lock screen is in front (Windows only). */
 export const PET_SCREEN_EVENT = 'pet:screen';
 
@@ -101,6 +104,25 @@ export function savePetPlacement(change: Partial<PetPlacement>) {
     localStorage.setItem(PLACEMENT_KEY, JSON.stringify({ ...loadPetPlacement(), ...change }));
   } catch {
     // Only a convenience: the pet then opens at its default place.
+  }
+}
+
+const OPEN_KEY = 'otakusoul.desktopPetOpen';
+
+/** The pet was open when last switched (not when the app quit): it opens again at start. */
+export function loadPetOpen(): boolean {
+  try {
+    return localStorage.getItem(OPEN_KEY) === 'true';
+  } catch {
+    return false;
+  }
+}
+
+export function savePetOpen(open: boolean) {
+  try {
+    localStorage.setItem(OPEN_KEY, String(open));
+  } catch {
+    // Only a convenience: the pet then stays closed at the next start.
   }
 }
 

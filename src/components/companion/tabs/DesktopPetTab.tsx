@@ -1,7 +1,7 @@
 import type React from 'react';
 import { useStoreFields } from '../../../store/useAppStore';
 import { useTranslation } from '../../../i18n';
-import { Eye, EyeOff, MousePointerClick, Move, Menu, Tv } from 'lucide-react';
+import { Eye, EyeOff, Keyboard, MousePointerClick, Move, Menu, Tv } from 'lucide-react';
 
 /** Opens the desktop pet (the active avatar on the desktop) and explains how to handle it. */
 export const DesktopPetTab: React.FC = () => {
@@ -14,6 +14,7 @@ export const DesktopPetTab: React.FC = () => {
     { icon: MousePointerClick, text: t('pet.hintClick') },
     { icon: Menu, text: t('pet.hintMenu') },
     { icon: Eye, text: t('pet.hintClickThrough') },
+    { icon: Keyboard, text: t('pet.hintShortcut') },
   ];
 
   return (
