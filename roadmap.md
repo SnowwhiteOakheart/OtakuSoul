@@ -56,19 +56,60 @@
 
 ## 3. 3D Desktop Pet (Mascot Companion)
 
-> **Fokus:** Windows & macOS (Linux/Wayland ausgeklammert aufgrund von Compositor-Restriktionen bei freier Fensterplatzierung und Cross-App-Window-Sniffing).
-> Ziel: Aktiven 3D-Avatar (VRM / glTF / MMD) aus OtakuSoul als transparenten, frei schwebenden Begleiter auf den Desktop bringen.
+> Ziel: Die aktive Figur (VRM / glTF / MMD) lebt als transparenter Begleiter auf dem Desktop.
+> **Stand 26.10.2026 (Windows):** eigenes Pet-Fenster mit Click-Through, Ziehen, Werfen, Kontextmenü und Status-Panel;
+> Figur, Stimmung, Gesten, Lippensync und Chat-Antworten (satzweise zur Stimme) aus dem Hauptfenster; Schnell-Chat;
+> Leerlauf-Verhalten (umschauen, gähnen, hüpfen, dösen, gehen, sitzen mit Animation), Streicheln nach Körperzone;
+> Schwerkraft, Bildschirmkanten, mehrere Monitore, Stehen/Laufen/Mitfahren auf Titelleisten anderer Fenster;
+> Pause bei Vollbild und Sperre; Tray-Eintrag, Tastenkürzel Strg+Alt+Umschalt+P, Wiederkehr beim Start.
+> Details und Stolperfallen: `roadmap_abgeschlossen.md` (Abschnitt 3) und `AI.md` (Abschnitt 10).
 
-### Phase 2: Verhalten (Fenster, Anbindung und Zustandsautomat sind erledigt, siehe `roadmap_abgeschlossen.md`)
+### Plattformen
+- [ ] **macOS-Integration:** Fenster-Scanner über `CGWindowListCopyWindowInfo(kCGWindowListOptionOnScreenOnly |
+  kCGWindowListExcludeDesktopElements)` (`kCGWindowBounds`, Ebene 0, eigene PID ausnehmen), Berechtigung „Bildschirm-
+  aufnahme“ für Fenstertitel prüfen und erklären; Maustastenstatus (`NSEvent.pressedMouseButtons`) für sofortiges
+  Drag-Ende und Werfen; Vollbild/Sperre (`CGSessionCopyCurrentDictionary`). Braucht einen Mac zum Bauen und Testen.
+- [ ] **Linux (X11, nach Möglichkeit):** Transparenz und Click-Through hängen vom Fenstermanager ab; unter X11 Fenster
+  über `_NET_CLIENT_LIST_STACKING` lesen, unter Wayland bewusst nur Boden und Ränder.
 
-### Phase 3: Desktop-Physik (erledigt bis auf Feinschliff, siehe `roadmap_abgeschlossen.md`)
+### Bedienung & Einstellungen
+- [ ] **Pet-Einstellungen im Desktop-Pet-Tab:** Alle Menü-Schalter (Bewegungen, Sprechblasen, Schwerkraft, Mitfahren,
+  Vollbild) auch dort, plus Vorschau – das Rechtsklick-Menü bleibt die schnelle Variante.
+- [ ] **Tastenkürzel frei belegen:** Strg+Alt+Umschalt+P ist fest; Aufnahme eines eigenen Kürzels im Tab, Hinweis bei
+  Belegung durch ein anderes Programm (bisher nur Log-Warnung).
+- [ ] **Größe stufenlos:** Strg+Mausrad über der Figur statt nur Klein/Mittel/Groß; Größe pro Modell merken.
+- [ ] **Ausschnitt pro Modell:** Modelle mit ungewöhnlichen Proportionen (Chibi, sehr große Haare, MMD mit Zubehör)
+  geraten mit dem festen Ganzkörper-Ausschnitt zu klein oder abgeschnitten; Feinjustierung im Avatar-Manager.
+- [ ] **„Komm her“:** Menüpunkt und Doppelklick aufs Tray-Symbol, damit die Figur zum Mauszeiger läuft (oder hinspringt,
+  wenn Schwerkraft aus ist).
 
-### Phase 4: Interaktion mit fremden Fenstern (Windows erledigt, siehe `roadmap_abgeschlossen.md`)
-- [ ] **macOS-Integration (CoreGraphics / Quartz Window Services):**
-  - Window Scanner via `CGWindowListCopyWindowInfo(kCGWindowListOptionOnScreenOnly | kCGWindowListExcludeDesktopElements, kCGNullWindowID)`.
-  - Auslesen der `kCGWindowBounds`-Rechtecke.
-  - Berechtigungsprüfung („Bedienungshilfen“ / „Screen Recording“).
-- [ ] **Mini-Interaktionen & Feinschliff:**
+### Verhalten & Persönlichkeit
+- [ ] **Kopfzone aus dem Modell:** Kopf-Knochen auf den Bildschirm projizieren statt fester 34 % der Fensterhöhe – stimmt
+  dann auch bei Drehung, Sitzen und Chibi-Proportionen; zusätzlich Hände (Hand halten / abklatschen).
+- [ ] **Hormone und Tageszeit steuern das Verhalten:** Erschöpfung → öfter gähnen und dösen, Dopamin → mehr hüpfen und
+  laufen, Cortisol → unruhiges Umschauen; nachts schläft die Figur früher ein und wird leiser.
+- [ ] **Springen und Klettern:** Von Titelleiste zu nahe gelegener Titelleiste springen bzw. auf ein Fenster klettern,
+  statt nur dort zu landen, wo man sie absetzt.
+- [ ] **Reaktion auf den Desktop:** auf Fensterwechsel, Musik-Wiedergabe (Kopfnicken im Takt) oder lange Untätigkeit
+  reagieren – nur aus lokalen Signalen, ohne Bildschirminhalt zu lesen.
+- [ ] **Proaktive Nachrichten über das Pet:** Schreibt die Figur von sich aus (auch für andere Chats), meldet sie sich
+  per Sprechblase und kurzer Geste statt nur per Benachrichtigung; Klick öffnet den Chat.
+- [ ] **Mehrere Pets:** Bei Gruppenchats auf Wunsch mehrere Figuren gleichzeitig, die sich gegenseitig anschauen und
+  nacheinander sprechen (eigene Fenster, gemeinsame Physik).
+
+### Darstellung
+- [ ] **Live2D- und Porträt-Pet:** Für Nutzer ohne 3D-Modell das Live2D-Modell bzw. das atmende Porträt als Pet
+  (Treffertest und Zonen über `hitTest` bzw. Bildmaske).
+- [ ] **Weicher Schatten unter den Füßen** auf Boden und Titelleisten, damit die Figur „steht“ statt schwebt.
+- [ ] **Sprechblase mit Zeiger zum Kopf**, automatisch links/rechts, wenn die Figur am Bildschirmrand steht, und
+  Scrollen für lange Sätze.
+
+### Leistung & Qualität
+- [ ] **E2E-Test fürs Pet-Fenster:** tauri-driver mit zweitem Fenster (Öffnen, Zustand vom Hauptfenster, Ausblenden,
+  Wiederkehr beim Start); Physik und Verhalten sind bereits per Vitest abgedeckt.
+- [ ] **Sparmodus im Akkubetrieb:** Leerlauf mit 10–15 FPS und ohne zufällige Aktionen, wenn das Gerät auf Akku läuft.
+- [ ] **Speicher des Pet-Webviews messen** (zweiter WebView2-Prozess, Modell doppelt geladen) und ggf. Modelldaten aus
+  dem Hauptfenster übergeben statt erneut zu lesen.
 
 ## 4. Kognitives Gedächtnis (Memory 2.0 – Ausblick & Folgepunkte)
 
@@ -130,8 +171,13 @@
 ### 🎙️ Echtzeit-Sprachdialog, Berührung & Visuelle Wahrnehmung (Ideen aus *Open-LLM-VTuber*)
 - [ ] **Silero-VAD für Sprachanruf und Unterbrechen:** Silero-VAD (ONNX/WASM) statt reinem RMS-Pegel (`voiceCapture.ts`), damit Tastaturklappern, Atemgeräusche und die eigene Stimme der Figur aus Lautsprechern nicht als Sprache zählen. Das Unterbrechen selbst ist erledigt (25.10.2026); bis dahin gilt dort die 2,5-fache Schwelle für 300 ms.
 - [ ] **Visuelle Wahrnehmung („Mitguck-Modus“ für Bildschirm & Webcam):** Optionaler Live-Blick bei Sprachanrufen oder für das Desktop-Pet, der bei Vision-fähigen Modellen einen heruntergerechneten Snapshot des aktiven Fensters oder der Webcam mitschickt, damit die Figur auf das aktuelle Geschehen reagieren kann.
-- [ ] **Körperzonen-abhängige Touch-Reaktionen (Headpat & Tap-Feedback):** Unterscheidung der getroffenen Zone bei Live2D (`hitTest` auf `Head`, `Face`, `Body`) und 3D-Avataren (Raycasting auf Kopf/Körper) mit direkter Kopplung an das Hormonsystem (`companion.rs`: Oxytocin-Anstieg & Wangenröte bei Kopfstreicheln) sowie optionalem Kurz-Kommentar der Figur.
-- [ ] **Satzweiser „Bubble-Sync“ (Audio-synchrone Sprechblasen & Stimmungswechsel):** Lange Antworten im Desktop-Pet oder Stage-Modus Satz für Satz exakt synchron zum abgespielten TTS-Audio in der Sprechblase einblenden, inklusive satzweisem Wechsel des Gesichtsausdrucks (`[emotion: …]`).
-- [ ] **OBS- / Streaming-Overlay-Modus:** Die transparente `/desktop-pet`-Route über den eingebauten Web-Server (`web_server.rs`) auch als Browser-Source für OBS nutzbar machen.
+- [ ] **Körperzonen-abhängige Touch-Reaktionen im Hauptfenster:** Im Desktop-Pet erledigt (Kopf/Körper, Hormone
+  `headpat`/`poke`, 26.10.2026); offen für den Avatar im Chat: Live2D (`hitTest` auf `Head`, `Face`, `Body`) und 3D per
+  Raycasting, mit denselben Reaktionen.
+- [ ] **Satzweiser „Bubble-Sync“ in der Stage:** Im Desktop-Pet erledigt (`streamingTts.onSentence`, 26.10.2026); offen
+  für den Stage-Modus (Sprecher-Porträt zeigt den gerade gesprochenen Satz samt Ausdruck).
+- [ ] **OBS- / Streaming-Overlay-Modus:** Die transparente Pet-Ansicht (`index.html?pet=true`, `DesktopPet.tsx`) über den
+  eingebauten Web-Server (`web_server.rs`) als Browser-Source für OBS anbieten – ohne Tauri-Fensteraufrufe, Zustand
+  per WebSocket statt Tauri-Events.
 
 
